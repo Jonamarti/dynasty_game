@@ -15,7 +15,8 @@ export interface WorldConfig {
   berryBushes: number;
   flintOutcrops: number;
   deadwood: number;
-  gameAnimals: number;
+  /** Herds of wild animals placed at world generation, not individual beasts. */
+  gameHerds: number;
   reedBeds: number;
   clayBanks: number;
   /**
@@ -35,7 +36,10 @@ export interface TimeConfig {
    * nobody can survive.
    */
   startDay: number;
-  /** Default real-time steps per second. */
+  /**
+   * Default real-time steps per second, and the value the speed slider opens
+   * on. One source of truth: it used to be hardcoded in three places.
+   */
   tickRate: number;
   /** Ceiling on catch-up steps per rendered frame, so a stall cannot spiral. */
   maxTicksPerFrame: number;
@@ -85,7 +89,11 @@ export const DEFAULT_CONFIG: SimConfig = {
     berryBushes: 280,
     flintOutcrops: 60,
     deadwood: 150,
-    gameAnimals: 40,
+    // Twenty-two herds, not fourteen. The `game` resource node this replaced was
+    // spread over forty separate sites; the same number of animals gathered into
+    // fourteen herds is far harder to *find*, and wild meat is the one food that
+    // does not stop existing in winter — which is when the island kills people.
+    gameHerds: 22,
     reedBeds: 90,
     clayBanks: 60,
     treeDensity: 0.55,
@@ -94,7 +102,11 @@ export const DEFAULT_CONFIG: SimConfig = {
     ticksPerDay: 240,
     daysPerSeason: 20,
     startDay: 10,
-    tickRate: 20,
+    // Five steps a second, not twenty. At twenty the world is unreadable: a
+    // harvest cycle passes in under half a second and there is no following
+    // what anyone is doing. This is the one place the default lives — the
+    // browser loop and the HUD slider both read it rather than repeating it.
+    tickRate: 5,
     maxTicksPerFrame: 5,
   },
   needs: {
@@ -108,8 +120,15 @@ export const DEFAULT_CONFIG: SimConfig = {
     recoveryRate: 0.02,
   },
   population: {
-    bands: 2,
-    peoplePerBand: 15,
+    // Three tribes, not two. With two, "another band" is one specific set of
+    // people, and every question about outsiders has the same answer.
+    bands: 3,
+    // Ten, not fifteen. Three bands of families are far more mouths than two
+    // bands of unrelated adults: every family brings children, who eat a full
+    // share and forage at a fraction of an adult's rate. At fifteen the island
+    // carried 48 people on forage tuned for 30 and the difference came out as
+    // mass starvation inside a season.
+    peoplePerBand: 10,
   },
   sightRadius: 12,
   thinkInterval: 5,

@@ -161,18 +161,69 @@ html, body, #app {
   right: 10px;
   width: 286px;
   max-height: calc(100% - 20px);
-  overflow-y: auto;
-  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 7px;
   backdrop-filter: blur(6px);
 }
 
+/* The header stays when the body folds away, so there is always something to
+   click to bring the panel back. */
+.hud-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 14px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.hud-panel-title {
+  flex: 1;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-collapse {
+  width: 22px;
+  padding: 1px 0;
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.hud-panel-body {
+  overflow-y: auto;
+  padding: 10px 14px 12px;
+}
+
+.hud-panel.is-collapsed { max-height: none; }
+.hud-panel.is-collapsed .hud-panel-head { border-bottom: none; }
+.hud-panel.is-collapsed .hud-panel-body { display: none; }
+
+/* H hides the lot. Pointer events go with it, so the map underneath is fully
+   clickable rather than merely visible. */
+#hud.is-hidden { display: none; }
+
 .hud-doing {
   margin-top: 2px;
   color: var(--accent);
   font-weight: 600;
+}
+
+/* Why the last order stopped. Sits under the action line for a few seconds,
+   because the floater on the map fades and the player may have looked away. */
+.hud-stopped {
+  margin-top: 2px;
+  color: #e0b055;
+  font-size: 11px;
+  font-weight: 400;
 }
 
 .hud-ordered {
@@ -226,7 +277,7 @@ html, body, #app {
 
 .hud-tie {
   display: grid;
-  grid-template-columns: 1fr 88px 34px;
+  grid-template-columns: 1fr 18px 74px 34px;
   align-items: center;
   gap: 6px;
   padding: 5px 0;
@@ -268,6 +319,24 @@ html, body, #app {
   color: var(--text-dim);
   font-size: 11px;
 }
+
+/* The "look at them" button beside each name in Ties. Deliberately small and
+   quiet: it sits on every row, and a row is mostly the opinion meter. */
+.hud-goto {
+  width: 18px;
+  padding: 0;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.hud-goto:hover { color: var(--accent); border-color: var(--accent); }
+.hud-goto.is-gone { border-color: transparent; background: none; cursor: default; }
 
 /* --- life chronicle ------------------------------------------------------ */
 
@@ -397,6 +466,147 @@ html, body, #app {
 
 .radial-icon { font-size: 17px; line-height: 1.1; }
 .radial-label { text-align: center; line-height: 1.2; }
+
+/* --- character creation --------------------------------------------------- */
+
+/* Same shape as the succession overlay, deliberately: they are the two moments
+   the game stops and asks who you are. */
+.newgame {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 10, 15, 0.82);
+  backdrop-filter: blur(3px);
+}
+
+/* An author `display` beats the browser's own rule for the `hidden` attribute,
+   so a hidden full-screen overlay stays laid out and quietly swallows every
+   click on the game underneath it. See `.succession` below — same trap. */
+.newgame[hidden] { display: none; }
+
+.newgame-card {
+  width: min(560px, calc(100vw - 40px));
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  padding: 22px 26px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 9px;
+}
+
+.newgame-title {
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.newgame-lead {
+  margin: 6px 0 14px;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.newgame-options { display: grid; gap: 8px; }
+
+.newgame-option {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.newgame-option:hover { border-color: var(--accent); }
+.newgame-option-name { font-weight: 600; }
+.newgame-option-sub { margin-top: 2px; color: var(--text-dim); font-size: 12px; }
+.newgame-option-note { margin-top: 3px; font-size: 12px; font-style: italic; }
+
+.newgame-skills {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+}
+
+.newgame-skill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.newgame-skill span:first-child { flex: 1; }
+.newgame-skill-value { min-width: 22px; text-align: right; font-variant-numeric: tabular-nums; }
+
+.newgame-step {
+  width: 20px;
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.newgame-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.newgame-begin { margin-left: auto; border-color: var(--accent); }
+
+/* --- entity picker ------------------------------------------------------- */
+
+/* A column of bubbles, one per thing under the cursor. Deliberately not a
+   radial: this is a list to read, not a set of verbs to aim at, and a stack of
+   five is common where a fan of five verbs is not. */
+.picker {
+  position: fixed;
+  z-index: 21;
+  display: grid;
+  gap: 3px;
+  padding: 5px;
+  background: rgba(14, 17, 24, 0.96);
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+}
+
+/* Same trap as `.newgame` and `.succession`: the author `display` above beats
+   the browser's rule for `hidden`, and an invisible menu still takes clicks. */
+.picker[hidden] { display: none; }
+
+.picker-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 170px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  color: var(--text);
+  background: rgba(20, 24, 32, 0.95);
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.picker-item:hover {
+  background: rgba(52, 60, 76, 0.98);
+  border-color: var(--accent);
+}
+
+.picker-icon { font-size: 15px; }
+.picker-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* --- knowledge gating ---------------------------------------------------- */
 

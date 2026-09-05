@@ -18,8 +18,10 @@ import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import { ITEMS } from '../entities/Item.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
+import type { Animal } from '../entities/Animal.ts';
 
-export type TargetKind = 'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile';
+export type TargetKind =
+  'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal';
 
 export interface ActionTarget {
   kind: TargetKind;
@@ -30,6 +32,7 @@ export interface ActionTarget {
   building?: Building;
   tree?: Tree;
   pile?: ItemPile;
+  animal?: Animal;
 }
 
 export interface ActionOption {
@@ -134,6 +137,7 @@ export function availableActions(
       enabled: actor.carrying < actor.carryCapacity,
       reason: actor.carrying < actor.carryCapacity ? undefined : 'Your hands are full',
     }];
+    case 'animal': return animalActions(actor, target.animal!);
     case 'building': return buildingActions(actor, target.building!);
     case 'ground': return groundActions(actor, target, ctx);
   }
@@ -187,6 +191,19 @@ function personActions(actor: Person, other: Person): ActionOption[] {
       label: 'Play as ' + other.name,
       icon: '\u{1F464}',
       enabled: true,
+    },
+  ];
+}
+
+function animalActions(actor: Person, animal: Animal): ActionOption[] {
+  const laden = actor.carrying >= actor.carryCapacity;
+  return [
+    {
+      id: 'hunt',
+      label: 'Hunt the ' + animal.def.label.toLowerCase(),
+      icon: '\u{1F3F9}',
+      enabled: !laden,
+      reason: laden ? 'Your hands are full' : undefined,
     },
   ];
 }
@@ -267,6 +284,15 @@ function buildingActions(actor: Person, building: Building): ActionOption[] {
       });
     }
     if (building.def.shelter > 0) {
+      // Sheltering is standing indoors waiting out the cold; sleeping is
+      // sleeping. They restore different things at very different rates, and
+      // offering only one of them made "go to bed" impossible to order.
+      options.push({
+        id: 'sleep',
+        label: 'Sleep here',
+        icon: '\u{1F6CC}',
+        enabled: true,
+      });
       options.push({
         id: 'shelter',
         label: 'Shelter here',

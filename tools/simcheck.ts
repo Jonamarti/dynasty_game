@@ -34,7 +34,7 @@ export const SCENARIOS: Record<string, Scenario> = {
     description: 'Small island, one band. Quick smoke run.',
     config: {
       seed: 'tiny',
-      world: { width: 64, height: 64, berryBushes: 60, flintOutcrops: 20, deadwood: 40, gameAnimals: 12 },
+      world: { width: 64, height: 64, berryBushes: 60, flintOutcrops: 20, deadwood: 40, gameHerds: 5 },
       population: { bands: 1, peoplePerBand: 8 },
     },
     steps: 2000,
@@ -50,7 +50,7 @@ export const SCENARIOS: Record<string, Scenario> = {
     description: 'Four bands, thin forage. Stresses competition for resources.',
     config: {
       seed: 'crowded',
-      world: { berryBushes: 90, gameAnimals: 15 },
+      world: { berryBushes: 90, gameHerds: 8 },
       population: { bands: 4, peoplePerBand: 18 },
     },
     steps: 3000,
@@ -130,6 +130,25 @@ export interface Check {
   skipped?: boolean;
 }
 
+/**
+ * Things that can only be measured *while* the run happens.
+ *
+ * Displacement and flight are differences between two moments, and a report
+ * assembled from the final state cannot see either — an animal that ran ten
+ * tiles and came back looks identical to one that never moved.
+ */
+export interface WildlifeWatch {
+  /** Mean tiles an animal covers per in-game day. */
+  driftPerDay: number;
+  /** Times an animal near a person was further away a few ticks later. */
+  fledSuccessfully: number;
+  /** Times it was not. Both must happen for flight to mean anything. */
+  fledAndStayedClose: number;
+  /** Peak fatigue seen on someone asleep, and where it ended up. */
+  sleepStarts: number;
+  sleepFatigueFalls: number;
+}
+
 export interface Report {
   scenario: string;
   seed: string;
@@ -145,12 +164,18 @@ export interface Report {
   normsByBand: { band: string; theft: number; murder: number }[];
   biomes: Record<string, number>;
   spatial: { cells: number; items: number; maxBucket: number };
+  wildlife: WildlifeWatch;
   checks: Check[];
 }
 
 /** 23529 -> "23,529", independent of the machine's locale. */
 export function thousands(n: number): string {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/** One decimal, or "n/a" for a mean with nothing in it. */
+function fmt(n: number): string {
+  return Number.isNaN(n) ? 'n/a' : n.toFixed(1);
 }
 
 function isBad(n: number): boolean {
@@ -165,10 +190,12 @@ function sample(sim: Simulation): Sample {
 
   for (const person of living) {
     if (isBad(person.x) || isBad(person.y) || isBad(person.health)) nonFinite++;
-    else if (
-      person.x < 0 || person.y < 0 ||
-      person.x > sim.world.width - 1 || person.y > sim.world.height - 1
-    ) outOfBounds++;
+    // Asked of the world rather than recomputed here. The hand-written version
+    // used `> width - 1`, which is a tile stricter than `World.inBounds` — so
+    // somebody standing at x=127.6 on a 128-wide map, on a walkable tile the
+    // movement system had just approved, was reported as having escaped the
+    // island. Two definitions of "in the world" is one too many.
+    else if (!sim.world.inBounds(person.x, person.y)) outOfBounds++;
     else if (!sim.world.isWalkable(person.x, person.y)) onUnwalkable++;
   }
 
@@ -282,13 +309,15 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     'drink=' + (tel.drink ?? 0)
   );
 
+  // `harvest_game` is gone: game is not a resource node any more, it is an
+  // animal that runs away. Meat arrives through `harvest_meat` and the hunt.
   const harvests =
-    (tel.harvest_berries ?? 0) + (tel.harvest_game ?? 0) +
+    (tel.harvest_berries ?? 0) + (tel.harvest_meat ?? 0) +
     (tel.harvest_wood ?? 0) + (tel.harvest_flint ?? 0);
   add(
     'people-harvest',
     harvests > 0,
-    'berries=' + (tel.harvest_berries ?? 0) + ' game=' + (tel.harvest_game ?? 0) +
+    'berries=' + (tel.harvest_berries ?? 0) + ' meat=' + (tel.harvest_meat ?? 0) +
       ' wood=' + (tel.harvest_wood ?? 0) + ' flint=' + (tel.harvest_flint ?? 0)
   );
 
@@ -535,6 +564,135 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ' items across ' + base.spatial.cells + ' cells'
   );
 
+  // --- M6a: wildlife, families, sleep and the opinion ladder ----------------
+
+  if (sim.animals.length === 0 && (tel.animal_killed ?? 0) === 0) {
+    skip('animals-move', 'no animals in this scenario');
+    skip('animals-flee', 'no animals in this scenario');
+    skip('hunts-succeed-and-fail', 'no animals in this scenario');
+  } else {
+    // Game used to be a resource node standing still. If the mean drift is near
+    // zero the herd system has stopped running and hunting is foraging again.
+    add('animals-move',
+      base.wildlife.driftPerDay > 2,
+      'mean drift ' + base.wildlife.driftPerDay.toFixed(1) + ' tiles/day (floor is 2)');
+
+    const bolts = base.wildlife.fledSuccessfully + base.wildlife.fledAndStayedClose;
+    if (bolts === 0) {
+      skip('animals-flee', 'no animal was ever spooked in this run');
+    } else {
+      add('animals-flee',
+        base.wildlife.fledSuccessfully > base.wildlife.fledAndStayedClose,
+        base.wildlife.fledSuccessfully + ' bolts opened the distance, ' +
+          base.wildlife.fledAndStayedClose + ' did not');
+    }
+
+    // Both outcomes, deliberately. A hunt that always works is gathering with
+    // extra steps, and one that never works is a skill nobody can ever raise.
+    const kills = tel.hunt_killed ?? 0;
+    const misses = tel.hunt_missed ?? 0;
+    // Below a handful of strikes the run genuinely cannot tell "hunting always
+    // works" from "four coin flips came up heads" — a blown animal is meant to
+    // be easy prey, so a short run of kills is the design, not a broken roll.
+    if (kills + misses < 8) {
+      skip('hunts-succeed-and-fail',
+        'too few strikes to tell (' + kills + ' kills, ' + misses + ' misses)');
+    } else {
+      add('hunts-succeed-and-fail',
+        kills > 0 && misses > 0,
+        kills + ' kills, ' + misses + ' misses, ' + (tel.hunt_lost ?? 0) + ' outrun');
+    }
+  }
+
+  if ((tel.harvest_meat ?? 0) === 0) {
+    skip('people-eat-meat', 'no meat entered the world in this run');
+  } else {
+    add('people-eat-meat',
+      (tel.eat ?? 0) > 0,
+      (tel.harvest_meat ?? 0) + ' meat taken; ' + (tel.eat ?? 0) + ' meals eaten');
+  }
+
+  // A band that keeps planning huts while three stand empty is the failure this
+  // guards: the planner used to count structures rather than what they held.
+  const perBand = new Map<number, number>();
+  for (const building of sim.buildings) {
+    if (!building.complete) continue;
+    perBand.set(building.ownerBandId, (perBand.get(building.ownerBandId) ?? 0) + 1);
+  }
+  const livingPerBand = new Map<number, number>();
+  for (const person of sim.livingPeople()) {
+    livingPerBand.set(person.bandId, (livingPerBand.get(person.bandId) ?? 0) + 1);
+  }
+  let overbuilt = 0;
+  let idleStores = 0;
+  for (const [bandId, built] of perBand) {
+    // The population a band's structures were built for is its peak, not its
+    // survivors: a band of twenty that has dwindled to four is not overbuilt,
+    // it is bereaved. Peak population is the only figure available here, so the
+    // ceiling is generous by design.
+    const peak = Math.max(livingPerBand.get(bandId) ?? 0, 4);
+    if (built > Math.ceil(peak / 4) + 6) overbuilt++;
+    const stores = sim.buildings.filter(b =>
+      b.complete && b.ownerBandId === bandId && b.def.storage >= 100);
+    const empty = stores.filter(b => b.store.total < b.def.storage * 0.1).length;
+    if (stores.length >= 2 && empty >= 2) idleStores++;
+  }
+  add('bands-dont-overbuild',
+    overbuilt === 0 && idleStores === 0,
+    [...perBand.entries()].map(([b, n]) => 'band' + b + '=' + n).join(' ') +
+      '; ' + overbuilt + ' over the ceiling, ' + idleStores + ' holding empty stores');
+
+  // The world now opens with families rather than thirty strangers. If this
+  // fails, `Founding` has stopped running and every household is one person.
+  const multi = sim.households.filter(h => h.memberIds.length > 1).length;
+  const kinEdges = sim.livingPeople().filter(p =>
+    p.spouseId !== null || p.motherId !== null || p.fatherId !== null ||
+    p.childIds.length > 0
+  ).length;
+  add('families-exist',
+    multi > 0 && kinEdges > 0,
+    multi + ' households of more than one; ' + kinEdges + ' people with family');
+
+  if (base.wildlife.sleepStarts === 0) {
+    skip('sleep-restores', 'nobody had a roof to sleep under in this run');
+  } else {
+    add('sleep-restores',
+      base.wildlife.sleepFatigueFalls > 0,
+      base.wildlife.sleepStarts + ' sleeps begun, fatigue fell on ' +
+        base.wildlife.sleepFatigueFalls + ' ticks of them');
+  }
+
+  // The three-rung ladder, measured rather than asserted: household above band
+  // above everyone else. This is what replaced a flat +10 / -14.
+  const opinionOf = (
+    pick: (a: { p: typeof sim.people[number] }, b: { p: typeof sim.people[number] }) => boolean
+  ): number => {
+    let total = 0;
+    let n = 0;
+    for (const a of sim.livingPeople()) {
+      for (const b of sim.livingPeople()) {
+        if (a.id === b.id) continue;
+        if (!pick({ p: a }, { p: b })) continue;
+        if (!sim.relationships.peek(a.id, b.id)) continue;
+        total += sim.relationships.opinion(a.id, b.id);
+        n++;
+      }
+    }
+    return n === 0 ? NaN : total / n;
+  };
+  const kin = opinionOf((a, b) =>
+    a.p.householdId !== null && a.p.householdId === b.p.householdId);
+  const band = opinionOf((a, b) =>
+    a.p.bandId === b.p.bandId && a.p.householdId !== b.p.householdId);
+  const outsider = opinionOf((a, b) => a.p.bandId !== b.p.bandId);
+  const detail =
+    'household=' + fmt(kin) + ' band=' + fmt(band) + ' outsider=' + fmt(outsider);
+  if (Number.isNaN(kin) || Number.isNaN(band) || Number.isNaN(outsider)) {
+    skip('kin-outrank-strangers', 'not all three kinds of tie occur here: ' + detail);
+  } else {
+    add('kin-outrank-strangers', kin > band && band > outsider, detail);
+  }
+
   add(
     'world-has-land',
     (base.biomes.grass ?? 0) + (base.biomes.forest ?? 0) > sim.world.width * sim.world.height * 0.08,
@@ -569,6 +727,20 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   // up only briefly still counts as the AI having used it.
   const actionTotals: Record<string, number> = {};
 
+  // Wildlife has to be watched as it happens; see `WildlifeWatch`.
+  const watch: WildlifeWatch = {
+    driftPerDay: 0,
+    fledSuccessfully: 0,
+    fledAndStayedClose: 0,
+    sleepStarts: 0,
+    sleepFatigueFalls: 0,
+  };
+  const lastAnimalPos = new Map<number, { x: number; y: number }>();
+  const threatened = new Map<number, { personId: number; distance: number }>();
+  const sleeperFatigue = new Map<number, number>();
+  let drift = 0;
+  const WATCH_EVERY = 20;
+
   const started = Date.now();
   for (let i = 1; i <= steps; i++) {
     sim.step();
@@ -576,10 +748,68 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     // ticks at a time is still the AI using it, and sparse sampling misses it.
     for (const person of sim.livingPeople()) {
       actionTotals[person.action] = (actionTotals[person.action] ?? 0) + 1;
+
+      // Sleep: did fatigue actually fall while they were under the roof?
+      if (person.action === 'sleep') {
+        const before = sleeperFatigue.get(person.id);
+        if (before === undefined) {
+          watch.sleepStarts++;
+          sleeperFatigue.set(person.id, person.needs.fatigue);
+        } else if (person.needs.fatigue < before) {
+          watch.sleepFatigueFalls++;
+          sleeperFatigue.set(person.id, person.needs.fatigue);
+        }
+      } else {
+        sleeperFatigue.delete(person.id);
+      }
     }
+
+    if (i % WATCH_EVERY === 0) {
+      for (const animal of sim.animals) {
+        if (!animal.alive) continue;
+        const was = lastAnimalPos.get(animal.id);
+        if (was) drift += Math.hypot(animal.x - was.x, animal.y - was.y);
+        lastAnimalPos.set(animal.id, { x: animal.x, y: animal.y });
+
+        // Flight: an animal that is bolting should end up further from the
+        // person it is running from. Keyed off `alarmed` rather than off
+        // proximity, because by the time any sampled tick comes round an animal
+        // that noticed somebody is already a dozen tiles away — measured by
+        // proximity, the moment of flight is never observable at all.
+        //
+        // And measured against *that* person, not against whoever is nearest
+        // now: on an island with three camps, running away from one band
+        // regularly runs you toward another, and "distance to the nearest human
+        // being" then reports a successful escape as a failure.
+        const earlier = threatened.get(animal.id);
+        if (earlier !== undefined) {
+          const from = sim.peopleById.get(earlier.personId);
+          if (from && from.alive) {
+            const now = Math.hypot(from.x - animal.x, from.y - animal.y);
+            if (now > earlier.distance) watch.fledSuccessfully++;
+            else watch.fledAndStayedClose++;
+          }
+          threatened.delete(animal.id);
+        } else if (animal.alarmed) {
+          const near = sim.peopleHash.findNearest(animal.x, animal.y, 40, p => p.alive);
+          if (near) {
+            threatened.set(animal.id, {
+              personId: near.id,
+              distance: Math.hypot(near.x - animal.x, near.y - animal.y),
+            });
+          }
+        }
+      }
+    }
+
     if (i % sampleEvery === 0 || i === steps) samples.push(sample(sim));
   }
   const wallClockMs = Math.max(1, Date.now() - started);
+
+  const days = Math.max(1, sim.time.tick / sim.config.time.ticksPerDay);
+  watch.driftPerDay = sim.animals.length === 0
+    ? 0
+    : drift / Math.max(1, sim.animals.length) / days;
 
   const base: Omit<Report, 'checks'> = {
     scenario: scenario.name,
@@ -593,6 +823,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     actionTotals,
     biomes: sim.world.countBiomes(),
     spatial: sim.peopleHash.stats(),
+    wildlife: watch,
     relationships: sim.relationships.stats(),
     buildings: {
       total: sim.buildings.length,

@@ -42,8 +42,9 @@ export class NeedsSystem {
       person.needs.hunger = Math.min(100, person.needs.hunger + cfg.hungerRate);
       person.needs.thirst = Math.min(100, person.needs.thirst + cfg.thirstRate);
 
-      // Resting is handled by the action system; everything else tires you.
-      if (person.action !== 'rest') {
+      // Resting and sleeping are handled by the action system, which restores
+      // fatigue directly; everything else tires you.
+      if (person.action !== 'rest' && person.action !== 'sleep') {
         person.needs.fatigue = Math.min(100, person.needs.fatigue + cfg.fatigueRate);
       }
 

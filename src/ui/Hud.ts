@@ -26,6 +26,7 @@ import type { ResourceNode } from '../sim/entities/ResourceNode.ts';
 import type { Building, BuildingDef } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
+import type { Animal } from '../sim/entities/Animal.ts';
 import { NEEDS, SKILLS, TRAITS } from '../sim/entities/Person.ts';
 import { lastScores } from '../sim/ai/Brain.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
@@ -36,6 +37,9 @@ import {
 } from '../sim/social/Knowledge.ts';
 import { TECH, type Tech } from '../sim/knowledge/Tech.ts';
 import { itemActions } from '../sim/ai/ActionCatalog.ts';
+import { DEFAULT_CONFIG } from '../sim/core/Config.ts';
+import { noticeRadius } from '../sim/systems/WildlifeSystem.ts';
+import { workProgressOf } from '../sim/core/Progress.ts';
 
 export type PanelTab = 'now' | 'self' | 'kit' | 'ties' | 'life';
 
@@ -44,19 +48,25 @@ export type Selection =
   | { kind: 'node'; node: ResourceNode }
   | { kind: 'building'; building: Building }
   | { kind: 'tree'; tree: Tree }
-  | { kind: 'pile'; pile: ItemPile };
+  | { kind: 'pile'; pile: ItemPile }
+  | { kind: 'animal'; animal: Animal };
 
 export interface HudCallbacks {
   /** A verb chosen against one stack in the inspected person's pack. */
   onItemAction: (person: Person, itemId: string, action: string) => void;
   /** Enter or leave command mode for the selected person. */
   onCommand: (person: Person | null) => void;
+  /** Move the camera to somebody named in the Ties tab. */
+  onFocus: (person: Person) => void;
   onSpeedChange: (stepsPerSecond: number) => void;
   onTogglePause: () => void;
   onPossess: (person: Person) => void;
   onSelect: (person: Person) => void;
   onPickDesign: (def: BuildingDef | null) => void;
 }
+
+/** How long the panel keeps saying why the last order stopped. */
+const STOP_NOTICE_MS = 6000;
 
 const NEED_COLORS: Record<string, string> = {
   hunger: '#d98032',
@@ -71,6 +81,10 @@ export class Hud {
   private clockEl!: HTMLElement;
   private statsEl!: HTMLElement;
   private panelEl!: HTMLElement;
+  private panelHeaderEl!: HTMLElement;
+  private panelTitleEl!: HTMLElement;
+  private panelBodyEl!: HTMLElement;
+  private collapseButton!: HTMLButtonElement;
   private buildBarEl!: HTMLElement;
   private commandBarEl!: HTMLElement;
   private pauseButton!: HTMLButtonElement;
@@ -78,15 +92,70 @@ export class Hud {
   private tab: PanelTab = 'now';
   private activeDesign: BuildingDef | null = null;
 
+  /**
+   * The last reason an order stopped, and who it happened to.
+   *
+   * Held for a few seconds beside the action line. The floater on the map fades
+   * in three; a player who looked away needs it to still be somewhere.
+   */
+  private lastStop: { personId: number; text: string; at: number } | null = null;
+
+  /** Folded down to its header strip, so the map behind it is visible. */
+  private collapsed = false;
+  /** Every piece of chrome hidden at once. Not persisted: it is a look, not a setting. */
+  private chromeHidden = false;
+
   /** What the panel was last built for, so it is rebuilt only when it changes. */
   private builtFor: string | null = null;
   private currentSim: Simulation | null = null;
   private currentSelection: Selection | null = null;
 
-  constructor(container: HTMLElement, private readonly callbacks: HudCallbacks) {
+  constructor(
+    container: HTMLElement,
+    private readonly callbacks: HudCallbacks,
+    /**
+     * Steps per second the slider opens on. Passed in from the simulation's own
+     * config rather than repeated here — it used to be written out in three
+     * places, and they disagreed the moment one of them changed.
+     */
+    private readonly initialSpeed: number = DEFAULT_CONFIG.time.tickRate
+  ) {
     this.root = container;
+    this.collapsed = readFlag(COLLAPSED_KEY);
     this.build();
     this.delegate();
+    this.applyChrome();
+  }
+
+  /**
+   * Folds the character panel down to its header strip.
+   *
+   * The panel is 286px of opaque overlay pinned to the right edge, and the map
+   * is the game. Mirrored to `localStorage` because a player who folds it away
+   * has said something about how they want to play, and asking again on every
+   * reload is the wrong answer.
+   */
+  toggleCollapsed(): void {
+    this.collapsed = !this.collapsed;
+    writeFlag(COLLAPSED_KEY, this.collapsed);
+    this.applyChrome();
+  }
+
+  /** Records why somebody's order stopped, for the panel's action line. */
+  noteStop(personId: number, text: string): void {
+    this.lastStop = { personId, text, at: performance.now() };
+  }
+
+  /** Hides every piece of HUD chrome at once, for the map and for screenshots. */
+  toggleChrome(): void {
+    this.chromeHidden = !this.chromeHidden;
+    this.applyChrome();
+  }
+
+  private applyChrome(): void {
+    this.root.classList.toggle('is-hidden', this.chromeHidden);
+    this.panelEl.classList.toggle('is-collapsed', this.collapsed);
+    if (this.collapseButton) this.collapseButton.textContent = this.collapsed ? '▸' : '▾';
   }
 
   private build(): void {
@@ -105,11 +174,11 @@ export class Hud {
     speed.type = 'range';
     speed.min = '1';
     speed.max = '120';
-    speed.value = '20';
+    speed.value = String(this.initialSpeed);
     speed.className = 'hud-speed';
 
     const speedLabel = el('span', 'hud-speed-label');
-    speedLabel.textContent = '20/s';
+    speedLabel.textContent = this.initialSpeed + '/s';
     speed.oninput = () => {
       this.callbacks.onSpeedChange(Number(speed.value));
       speedLabel.textContent = speed.value + '/s';
@@ -117,7 +186,22 @@ export class Hud {
 
     topBar.append(this.clockEl, this.statsEl, this.pauseButton, speed, speedLabel);
 
+    // The panel is a header strip plus a body, so collapsing it can leave the
+    // strip in place: a panel that vanishes entirely gives the player nothing
+    // to click to bring it back.
     this.panelEl = el('div', 'hud-panel');
+    this.panelHeaderEl = el('div', 'hud-panel-head');
+    this.panelTitleEl = el('span', 'hud-panel-title');
+    this.panelTitleEl.textContent = 'Nothing selected';
+    this.collapseButton = document.createElement('button');
+    this.collapseButton.className = 'hud-collapse';
+    this.collapseButton.textContent = '▾';
+    this.collapseButton.title = 'Fold the panel away (P)';
+    this.collapseButton.onclick = () => this.toggleCollapsed();
+    this.panelHeaderEl.append(this.panelTitleEl, this.collapseButton);
+    this.panelBodyEl = el('div', 'hud-panel-body');
+    this.panelEl.append(this.panelHeaderEl, this.panelBodyEl);
+
     this.buildBarEl = el('div', 'hud-buildbar');
     this.commandBarEl = el('div', 'hud-commandbar');
     this.commandBarEl.hidden = true;
@@ -126,7 +210,8 @@ export class Hud {
     help.innerHTML =
       '<b>WASD</b> walk &middot; <b>drag</b> pan &middot; <b>F</b> re-centre &middot; ' +
       '<b>click</b> inspect &middot; <b>right-click</b> actions &middot; ' +
-      '<b>B</b> build &middot; <b>C</b> command &middot; <b>space</b> pause';
+      '<b>B</b> build &middot; <b>C</b> command &middot; <b>P</b> fold panel &middot; ' +
+      '<b>H</b> hide overlay &middot; <b>space</b> pause';
 
     this.root.append(topBar, this.panelEl, this.buildBarEl, this.commandBarEl, help);
   }
@@ -141,13 +226,19 @@ export class Hud {
   private delegate(): void {
     this.panelEl.addEventListener('click', event => {
       const found = (event.target as HTMLElement)
-        .closest('[data-tab], [data-person], [data-possess], [data-command], [data-verb]');
+        .closest('[data-tab], [data-person], [data-focus], [data-possess], ' +
+          '[data-command], [data-verb]');
       if (!found) return;
       const node = found as HTMLElement;
 
       if (node.dataset.tab) {
         this.tab = node.dataset.tab as PanelTab;
         this.builtFor = null;
+        return;
+      }
+      if (node.dataset.focus && this.currentSim) {
+        const target = this.currentSim.peopleById.get(Number(node.dataset.focus));
+        if (target && target.alive) this.callbacks.onFocus(target);
         return;
       }
       if (node.dataset.person && this.currentSim) {
@@ -269,7 +360,8 @@ export class Hud {
 
     const observer = sim.player;
     if (!selection || !observer) {
-      this.panelEl.innerHTML = '<div class="hud-empty">Nothing selected.</div>';
+      this.panelBodyEl.innerHTML = '<div class="hud-empty">Nothing selected.</div>';
+      this.panelTitleEl.textContent = 'Nothing selected';
       this.builtFor = null;
       return;
     }
@@ -288,21 +380,28 @@ export class Hud {
   }
 
   private renderPanel(observer: Person, selection: Selection, sim: Simulation): void {
+    // The header names what is selected even when the body is folded away, so
+    // a collapsed panel still says who you are looking at.
+    this.panelTitleEl.textContent = panelTitle(observer, selection, sim);
+
     switch (selection.kind) {
       case 'person':
-        this.panelEl.innerHTML = this.personRows(observer, selection.person, sim).join('');
+        this.panelBodyEl.innerHTML = this.personRows(observer, selection.person, sim).join('');
         break;
       case 'node':
-        this.panelEl.innerHTML = this.nodeRows(observer, selection.node, sim).join('');
+        this.panelBodyEl.innerHTML = this.nodeRows(observer, selection.node, sim).join('');
         break;
       case 'building':
-        this.panelEl.innerHTML = this.buildingRows(observer, selection.building).join('');
+        this.panelBodyEl.innerHTML = this.buildingRows(observer, selection.building).join('');
         break;
       case 'tree':
-        this.panelEl.innerHTML = this.treeRows(observer, selection.tree).join('');
+        this.panelBodyEl.innerHTML = this.treeRows(observer, selection.tree).join('');
         break;
       case 'pile':
-        this.panelEl.innerHTML = this.pileRows(selection.pile, sim).join('');
+        this.panelBodyEl.innerHTML = this.pileRows(selection.pile, sim).join('');
+        break;
+      case 'animal':
+        this.panelBodyEl.innerHTML = this.animalRows(observer, selection.animal).join('');
         break;
     }
   }
@@ -311,15 +410,12 @@ export class Hud {
   private refreshPerson(observer: Person, person: Person, sim: Simulation): void {
     const known = knowledgeOfPerson(observer, person, sim.relationships);
 
-    const doing = this.panelEl.querySelector('.hud-doing');
-    if (doing) {
-      doing.innerHTML = escapeHtml(actionLabel(person.action)) +
-        (person.order ? ' <span class="hud-ordered">ordered</span>' : '');
-    }
+    const doing = this.panelBodyEl.querySelector('.hud-doing');
+    if (doing) doing.innerHTML = this.doingLine(person);
 
     if (!known.knowsCondition) return;
 
-    for (const row of this.panelEl.querySelectorAll('[data-need]')) {
+    for (const row of this.panelBodyEl.querySelectorAll('[data-need]')) {
       const need = (row as HTMLElement).dataset.need as string;
       const raw = need === 'health'
         ? person.health
@@ -331,7 +427,18 @@ export class Hud {
       if (readout) readout.textContent = clamped.toFixed(0);
     }
 
-    const scoreHost = this.panelEl.querySelector('.hud-scores');
+    // The work bar is patched rather than rebuilt: it moves every tick, and
+    // rebuilding the panel that often would fight every click landing in it.
+    const work = this.panelBodyEl.querySelector('.hud-work');
+    if (work) {
+      const pct = Math.max(0, Math.min(100, (workProgressOf(person, sim) ?? 0) * 100));
+      const fill = work.querySelector('i') as HTMLElement | null;
+      const readout = work.querySelector('.hud-need-value');
+      if (fill) fill.style.width = pct.toFixed(0) + '%';
+      if (readout) readout.textContent = pct.toFixed(0);
+    }
+
+    const scoreHost = this.panelBodyEl.querySelector('.hud-scores');
     if (scoreHost) scoreHost.innerHTML = this.scoreRows(person).join('');
   }
 
@@ -362,10 +469,7 @@ export class Hud {
       ' · ' + bandText + '</div>'
     );
     rows.push('<div class="hud-known">' + escapeHtml(known.because) + '</div>');
-    rows.push(
-      '<div class="hud-doing">' + escapeHtml(actionLabel(person.action)) +
-      (person.order ? ' <span class="hud-ordered">ordered</span>' : '') + '</div>'
-    );
+    rows.push('<div class="hud-doing">' + this.doingLine(person) + '</div>');
 
     const tabs: [PanelTab, string][] = [
       ['now', 'Now'], ['self', 'Self'], ['kit', 'Kit'], ['ties', 'Ties'], ['life', 'Life'],
@@ -394,6 +498,19 @@ export class Hud {
     return rows;
   }
 
+  /**
+   * What they are doing, and — briefly — why the last thing they were told to
+   * do stopped.
+   */
+  private doingLine(person: Person): string {
+    const stop = this.lastStop;
+    const fresh = stop !== null && stop.personId === person.id &&
+      performance.now() - stop.at < STOP_NOTICE_MS;
+    return escapeHtml(actionLabel(person.action)) +
+      (person.order ? ' <span class="hud-ordered">ordered</span>' : '') +
+      (fresh ? '<div class="hud-stopped">' + escapeHtml(stop!.text) + '</div>' : '');
+  }
+
   private tabNow(person: Person, known: ReturnType<typeof knowledgeOfPerson>): string[] {
     const rows: string[] = [];
     rows.push('<div class="hud-section">Condition</div>');
@@ -418,6 +535,18 @@ export class Hud {
         ? 'nothing'
         : carried.map(([id, n]) => escapeHtml(ITEMS[id]?.label ?? id) + ' &times;' + n).join(', ')) +
       '</div>');
+
+    // The same bar the renderer floats over the actor's head, in the panel that
+    // claims to say what they are doing. A player watching a progress bar on the
+    // map and a static panel beside it reasonably concludes one of them is lying
+    // — and one of them was: this read `cycleProgress`, which is null for the
+    // whole of felling and building, so the panel showed nothing at all for the
+    // ninety seconds it takes to fell a tree by hand.
+    const progress = this.currentSim ? workProgressOf(person, this.currentSim) : null;
+    if (progress !== null) {
+      rows.push('<div class="hud-section">Working</div>');
+      rows.push(bar('progress', progress * 100, '#7fd4ff', undefined, 'hud-work'));
+    }
 
     rows.push('<div class="hud-section">Wants to</div>');
     rows.push('<div class="hud-scores">' + this.scoreRows(person).join('') + '</div>');
@@ -639,6 +768,14 @@ export class Hud {
         '<div class="hud-tie">' +
         '<button class="hud-person-link" data-person="' + other.id + '">' +
           escapeHtml(theirName) + (other.alive ? '' : ' †') + '</button>' +
+        // A name you cannot find on the map is a dead end. This moves the view,
+        // and nothing else: what the knowledge layer withholds is a stranger's
+        // name, skills, condition and history, none of which a camera position
+        // touches — and the player can already pan anywhere on the island.
+        (other.alive
+          ? '<button class="hud-goto" data-focus="' + other.id +
+            '" title="Look at ' + escapeHtml(theirName) + '">◎</button>'
+          : '<span class="hud-goto is-gone">·</span>') +
         '<div class="hud-tie-meter">' +
           '<span class="hud-tie-neg">' +
             (positive ? '' : '<i style="width:' + width.toFixed(0) + '%;"></i>') + '</span>' +
@@ -720,6 +857,38 @@ export class Hud {
       (node.def.regrowPerTick === 0
         ? 'Does not come back. Once it is gone, it is gone.'
         : 'Recovers with the seasons — barely at all in winter.') + '</div>');
+    return rows;
+  }
+
+  /**
+   * What a person can tell about an animal.
+   *
+   * Not routed through `sim/social/Knowledge.ts` the way people and bushes are,
+   * and deliberately: the knowledge layer exists to withhold what is *private*
+   * — a stranger's name, their skills, their history. A deer standing in a
+   * field is none of those. What a hunter reads off it is whether it has seen
+   * them, and that is legible to anyone with eyes.
+   */
+  private animalRows(observer: Person, animal: Animal): string[] {
+    const rows: string[] = [];
+    const distance = observer.distanceTo(animal);
+    const notice = noticeRadius(animal, observer);
+
+    rows.push('<div class="hud-name">' + escapeHtml(animal.label) + '</div>');
+    rows.push('<div class="hud-sub">' +
+      distance.toFixed(1) + ' tiles away · notices you at ' + notice.toFixed(1) +
+      '</div>');
+    rows.push('<div class="hud-doing">' +
+      (animal.alarmed ? 'bolting' : distance <= notice ? 'has seen you' : 'grazing') +
+      '</div>');
+
+    rows.push('<div class="hud-section">The hunt</div>');
+    const odds = Math.max(0.05, Math.min(0.9,
+      observer.skillFactor('hunt') * (1 - animal.def.evasion) + 0.15
+    ));
+    rows.push(bar('your odds', odds * 100, odds > 0.5 ? '#7ddc96' : '#e0b055'));
+    rows.push('<div class="hud-sub">' + animal.def.meat + ' meat if it goes well. ' +
+      'Tracking is what closes the distance before it runs.</div>');
     return rows;
   }
 
@@ -842,18 +1011,69 @@ const NODE_LABELS: Record<string, string> = {
   berries: 'Berry bush',
   flint: 'Flint outcrop',
   wood: 'Fallen wood',
-  game: 'Game animal',
   reeds: 'Reed bed',
   clay: 'Clay bank',
 };
 
+/** Where the panel's folded state is remembered between sessions. */
+const COLLAPSED_KEY = 'dynasty.panelCollapsed';
+
+/**
+ * localStorage, defensively.
+ *
+ * A page opened from a file:// URL or in a private window can throw on the
+ * first access, and losing a UI preference is never worth an exception that
+ * stops the whole HUD from being built.
+ */
+function readFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeFlag(key: string, value: boolean): void {
+  try {
+    localStorage.setItem(key, value ? '1' : '0');
+  } catch {
+    // Nothing to do: the preference simply does not persist.
+  }
+}
+
+/** The header line: what is selected, named as far as the player can name it. */
+function panelTitle(observer: Person, selection: Selection, sim: Simulation): string {
+  switch (selection.kind) {
+    case 'person': {
+      const known = knowledgeOfPerson(observer, selection.person, sim.relationships);
+      return known.knowsName ? selection.person.fullName : known.displayName;
+    }
+    case 'node': return selection.node.kind;
+    case 'building': return selection.building.def.label;
+    case 'tree': return selection.tree.def.label;
+    case 'pile': return 'Dropped goods';
+    case 'animal': return selection.animal.label;
+  }
+}
+
 export function selectionKey(selection: Selection): string {
   switch (selection.kind) {
-    case 'person': return 'p' + selection.person.id;
+    // The pack's version is part of a person's identity as far as the panel is
+    // concerned. Without it the Kit tab is built once and never touched again:
+    // `refreshPerson` patches only the action line, the need bars and the score
+    // table, none of which the Kit tab has, so berries landed in the pack and
+    // the panel went on saying what it said a minute ago.
+    case 'person': return 'p' + selection.person.id +
+      'v' + selection.person.inventory.version +
+      // Whether there *is* a work bar, not how full it is: the row has to be
+      // created and removed on a rebuild, but its width is patched every frame.
+      (selection.person.action === 'chop' || selection.person.action === 'build' ||
+        selection.person.cycleProgress !== null ? 'w1' : 'w0');
     case 'node': return 'n' + selection.node.id;
     case 'building': return 'b' + selection.building.id;
     case 'tree': return 't' + selection.tree.id;
     case 'pile': return 'i' + selection.pile.id;
+    case 'animal': return 'a' + selection.animal.id;
   }
 }
 
@@ -876,10 +1096,11 @@ function veil(text: string): string {
   return '<div class="hud-veil">' + escapeHtml(text) + '</div>';
 }
 
-function bar(label: string, value: number, color: string, need?: string): string {
+function bar(label: string, value: number, color: string, need?: string, extra?: string): string {
   const pct = Math.max(0, Math.min(100, value));
   return (
-    '<div class="hud-need"' + (need ? ' data-need="' + need + '"' : '') + '>' +
+    '<div class="hud-need' + (extra ? ' ' + extra : '') + '"' +
+    (need ? ' data-need="' + need + '"' : '') + '>' +
     '<span>' + escapeHtml(label) + '</span>' +
     '<span class="hud-need-track"><i style="width:' + pct.toFixed(0) +
     '%;background:' + color + '"></i></span>' +

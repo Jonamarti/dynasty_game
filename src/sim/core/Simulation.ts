@@ -31,12 +31,17 @@ import { Building, BUILDINGS, resetBuildingIds, type BuildingDef } from '../enti
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
+import {
+  Animal, resetAnimalIds, SPECIES, SPECIES_DEFS, type Species,
+} from '../entities/Animal.ts';
+import { WildlifeSystem } from '../systems/WildlifeSystem.ts';
 import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
 import {
   LifeSystem, setChildFactory, findHeir, settleEstate,
 } from '../systems/LifeSystem.ts';
-import { KIN_PARENT, KIN_SIBLING } from '../social/SocialSystem.ts';
+import { linkFamily } from '../social/SocialSystem.ts';
 import { BandSystem } from '../systems/BandSystem.ts';
+import { foundBand, type FoundingContext } from '../systems/Founding.ts';
 import { KnowledgeSystem, countHolders } from '../systems/KnowledgeSystem.ts';
 import { eraFor, TECHS, type EraDef, type Tech } from '../knowledge/Tech.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
@@ -44,6 +49,26 @@ import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 
 /** Era ids in order, so a change can be reported as a gain or a loss. */
 const ERA_ORDER = ['stone', 'fire', 'hearth', 'tools', 'craft', 'sowing'];
+
+/** One ended action, waiting to be reported. See `Simulation.interruptions`. */
+export interface StopNotice {
+  personId: number;
+  /** What they were doing, captured before the action reset to `idle`. */
+  action: string;
+  /** The raw reason id; `stopReasonLabel` turns it into something readable. */
+  reason: string;
+}
+
+/**
+ * Stops worth coming back to.
+ *
+ * A need, not a fact about the world: "he went for a drink" is an interruption,
+ * "the tree is gone" is the end of the matter.
+ */
+const RESUMABLE_STOPS = new Set(['thirsty', 'hungry', 'cold']);
+
+/** Ticks an interrupted order waits to be resumed before it is forgotten. */
+const RESUME_WINDOW = 2000;
 
 export interface Band {
   id: number;
@@ -73,6 +98,7 @@ export class Simulation {
   buildings: Building[] = [];
   trees: Tree[] = [];
   piles: ItemPile[] = [];
+  animals: Animal[] = [];
   households: Household[] = [];
   bands: Band[] = [];
 
@@ -103,9 +129,28 @@ export class Simulation {
   readonly treeHash = new SpatialHash<Tree>(8);
   readonly pileHash = new SpatialHash<ItemPile>(8);
   readonly pilesById = new Map<number, ItemPile>();
+  readonly animalHash = new SpatialHash<Animal>(8);
+  readonly animalsById = new Map<number, Animal>();
 
   /** Why the most recent order was refused. Read by the UI, then cleared. */
   lastRefusal: string | null = null;
+
+  /**
+   * Actions that ended for a reason, oldest first, waiting to be told about.
+   *
+   * `lastRefusal` answers "why would he not start?"; this answers "why did he
+   * stop?", which until now nothing anywhere could answer. Every reason
+   * `ActionSystem` produces used to be a telemetry counter and nothing else, so
+   * an order simply ended and the character went back to thinking.
+   *
+   * A queue rather than a single slot because several people can stop on the
+   * same step and the UI reads once a frame. Only people under an *order* are
+   * recorded — an NPC breaking off to drink is ordinary life, not news — and
+   * the queue is capped so a headless run that never drains it cannot grow
+   * without bound.
+   */
+  readonly interruptions: StopNotice[] = [];
+  private readonly interruptionCap = 32;
 
   /** Set when the player's character dies, so the UI can offer the succession. */
   succession: { died: Person; heir: Person | null } | null = null;
@@ -122,7 +167,9 @@ export class Simulation {
   private readonly forestSystem = new ForestSystem();
   readonly bandSystem = new BandSystem();
   private readonly knowledgeSystem = new KnowledgeSystem();
+  private readonly wildlifeSystem = new WildlifeSystem();
   private readonly knowledgeRng: RNG;
+  private readonly wildlifeRng: RNG;
   /** Recomputed daily from who is alive. An era can be lost as well as gained. */
   era: EraDef = { id: 'stone', label: 'Stone Age', needs: [], heldBy: 0, description: '' };
   /** Living holders per tech, for the UI and the health report. */
@@ -157,6 +204,10 @@ export class Simulation {
     this.forestRng = this.rng.fork();
     this.commandRng = this.rng.fork();
     this.knowledgeRng = this.rng.fork();
+    // Appended, never inserted. The fork order is part of the seed contract:
+    // slotting a new stream in above `knowledgeRng` would shift every draw in
+    // every system below it and silently invalidate every saved seed.
+    this.wildlifeRng = this.rng.fork();
 
     resetPersonIds();
     resetResourceIds();
@@ -166,6 +217,7 @@ export class Simulation {
     resetHouseholdIds();
     resetTreeIds();
     resetPileIds();
+    resetAnimalIds();
 
     // Births need to construct people, but LifeSystem cannot import the Person
     // constructor without a cycle (Person -> Memory -> Events, and Simulation
@@ -184,6 +236,7 @@ export class Simulation {
     this.treeHash.rebuild(this.trees);
 
     this.spawnResources(spawnRng);
+    this.spawnHerds(spawnRng);
     this.spawnPeople(spawnRng);
     this.rebuildHashes();
   }
@@ -198,7 +251,6 @@ export class Simulation {
       ['berries', cfg.berryBushes],
       ['flint', cfg.flintOutcrops],
       ['sticks', cfg.deadwood],
-      ['game', cfg.gameAnimals],
       ['reeds', cfg.reedBeds],
       ['clay', cfg.clayBanks],
     ];
@@ -220,6 +272,40 @@ export class Simulation {
     }
   }
 
+  /**
+   * Scatters herds across the grass and the woods.
+   *
+   * Herds rather than individuals: a herd is the unit that gets spooked and the
+   * unit worth walking across the island for, and scattering forty lone deer
+   * produces neither.
+   */
+  private spawnHerds(rng: RNG): void {
+    for (let h = 0; h < this.config.world.gameHerds; h++) {
+      const species: Species = rng.pick(SPECIES as unknown as Species[]);
+      const def = SPECIES_DEFS[species];
+
+      let home: { x: number; y: number } | null = null;
+      for (let attempt = 0; attempt < 40 && !home; attempt++) {
+        const spot = this.world.randomWalkable(rng, 1);
+        if (!spot) continue;
+        const biome = this.world.biomeAt(spot.x, spot.y);
+        if (biome === 'grass' || biome === 'forest') home = spot;
+      }
+      if (!home) continue;
+
+      const size = Math.max(1, Math.round(def.herdSize * rng.range(0.6, 1.4)));
+      for (let i = 0; i < size; i++) {
+        const spot = this.world.findWalkableNear(
+          Math.round(home.x + rng.range(-3, 3)),
+          Math.round(home.y + rng.range(-3, 3))
+        ) ?? home;
+        const animal = new Animal(species, spot.x, spot.y, h, rng);
+        this.animals.push(animal);
+        this.animalsById.set(animal.id, animal);
+      }
+    }
+  }
+
   /** Resources cluster where they belong, which is what gives regions character. */
   private suitsBiome(kind: ResourceKind, x: number, y: number): boolean {
     const biome = this.world.biomeAt(x, y);
@@ -231,7 +317,6 @@ export class Simulation {
         return (biome === 'forest' || biome === 'grass' || biome === 'hills') &&
           this.treeHash.findNearest(x, y, 6, t => t.standing) !== null;
       case 'flint': return biome === 'hills' || biome === 'beach';
-      case 'game': return biome === 'grass' || biome === 'forest';
       // Reeds and clay both belong at the water's edge, which quietly makes
       // shoreline the most valuable ground to camp on.
       case 'reeds': return biome === 'beach' && this.world.isShore(x, y);
@@ -279,28 +364,35 @@ export class Simulation {
       // headless run without the player having to place anything.
       this.placeCampSites(band, rng);
 
-      for (let i = 0; i < peoplePerBand; i++) {
-        const spot = this.world.findWalkableNear(
-          Math.round(home.x + rng.range(-5, 5)),
-          Math.round(home.y + rng.range(-5, 5))
-        ) ?? home;
-        const name = rng.pick(NAME_ONSETS) + rng.pick(NAME_CODAS);
-        const person = new Person(name, spot.x, spot.y, band.id, rng);
-        person.surname = rng.pick(NAME_ONSETS) + rng.pick(NAME_CODAS) + 'sen';
+      // The band is filled with families rather than with unrelated adults.
+      // See `systems/Founding.ts` — every part of it goes through the same code
+      // an in-game marriage, birth or adoption would.
+      const founded = foundBand(band, peoplePerBand, this.foundingContext(rng));
+      for (const person of founded.people) {
         this.people.push(person);
         this.peopleById.set(person.id, person);
-
-        // Everyone begins as the head of their own household of one. Marriage
-        // merges two into one; children are born into their parents'. Starting
-        // from households of one means the succession machinery is exercised
-        // from the first day rather than only after the first wedding.
-        const household = new Household(person.surname, person.id, band.id, 0);
-        household.add(person.id);
-        person.householdId = household.id;
+      }
+      for (const household of founded.households) {
         this.households.push(household);
         this.householdsById.set(household.id, household);
       }
     }
+  }
+
+  /**
+   * The handles `Founding` needs. Exposed as a method so character creation can
+   * build a tribe through exactly the same path world generation does.
+   */
+  foundingContext(rng: RNG): FoundingContext {
+    return {
+      world: this.world,
+      rng,
+      relationships: this.relationships,
+      social: this.social,
+      makePerson: (name, x, y, bandId, personRng) =>
+        new Person(name, x, y, bandId, personRng),
+      placeNear: (x, y) => this.world.findWalkableNear(x, y) ?? { x, y },
+    };
   }
 
   /** Marks out a band's first two structures somewhere near their camp. */
@@ -336,17 +428,7 @@ export class Simulation {
       : this.householdsById.get(child.householdId);
     if (household) household.add(child.id);
 
-    for (const parent of [mother, father]) {
-      if (!parent) continue;
-      this.relationships.setKinship(parent.id, child.id, KIN_PARENT);
-      this.relationships.setKinship(child.id, parent.id, KIN_PARENT);
-      // Siblings, both ways.
-      for (const siblingId of parent.childIds) {
-        if (siblingId === child.id) continue;
-        this.relationships.setKinship(child.id, siblingId, KIN_SIBLING);
-        this.relationships.setKinship(siblingId, child.id, KIN_SIBLING);
-      }
-    }
+    linkFamily(child, [mother, father], this.relationships);
 
     const text = mother.name + ' bore ' + child.name;
     mother.chronicle.push({
@@ -521,7 +603,7 @@ export class Simulation {
     const outcasts = this.outcastBand();
     person.bandId = outcasts.id;
     person.clearTarget();
-    person.clearOrder();
+    person.forgetPlans();
     person.action = 'idle';
     void averageOpinion;
     void band;
@@ -601,6 +683,26 @@ export class Simulation {
     pile.contents.add(itemId, taken);
     telemetry.count('dropped', taken);
     return pile;
+  }
+
+  /**
+   * Puts goods on the ground at a place rather than at a person.
+   *
+   * `drop` takes them out of somebody's pack; this is for yields that never
+   * reached a pack at all — the timber from a tree felled by someone whose
+   * hands were already full.
+   */
+  dropAt(x: number, y: number, itemId: string, count: number): void {
+    if (count <= 0) return;
+    let pile = this.pileHash.findNearest(x, y, 1.2);
+    if (!pile) {
+      pile = new ItemPile(Math.round(x), Math.round(y), null, this.time.tick);
+      this.piles.push(pile);
+      this.pilesById.set(pile.id, pile);
+      this.pileHash.rebuild(this.piles);
+    }
+    pile.contents.add(itemId, count);
+    telemetry.count('dropped', count);
   }
 
   /** Picks a pile back up, as far as the carrier has room for. */
@@ -700,6 +802,94 @@ export class Simulation {
     this.treeHash.rebuild(this.trees);
   }
 
+  /**
+   * Records that somebody's order ended, for the UI to read.
+   *
+   * Only orders: the queue exists so the player can be told why the thing they
+   * asked for stopped happening, and an NPC who broke off foraging because they
+   * were thirsty is not answering any question the player asked.
+   */
+  private noteStop(person: Person, action: string, reason: string): void {
+    if (person.order === null) return;
+    this.interruptions.push({ personId: person.id, action, reason });
+    if (this.interruptions.length > this.interruptionCap) this.interruptions.shift();
+
+    // An order broken off for a need is set aside, not thrown away. Called
+    // before `finish` clears the targets, which is the only moment the order is
+    // still fully described. Reasons that are not needs — the tree is gone, the
+    // bush is empty — are not worth coming back to.
+    if (!RESUMABLE_STOPS.has(reason)) return;
+    person.resume = {
+      action,
+      expiresAt: this.time.tick + RESUME_WINDOW,
+      nodeId: person.targetNodeId,
+      treeId: person.targetTreeId,
+      buildingId: person.targetBuildingId,
+      personId: person.targetPersonId,
+      animalId: person.targetAnimalId,
+      x: person.targetX,
+      y: person.targetY,
+    };
+  }
+
+  /**
+   * Picks an interrupted order back up once the need behind it is answered.
+   *
+   * The thresholds are well below the ones that interrupted the work, so a
+   * person cannot ping-pong between the bush and the river: they have to be
+   * genuinely comfortable again, not merely one point under the line.
+   */
+  private resumeOrders(person: Person): void {
+    const pending = person.resume;
+    if (!pending) return;
+    // Not "only while idle": a person is idle for exactly the one tick between
+    // finishing something and the brain planning the next thing, and the odds of
+    // that tick coinciding with them being comfortable again are poor. The real
+    // condition is that they are under no other order and not mid-job.
+    if (person.order !== null || person.actionTimer > 0) return;
+
+    if (this.time.tick > pending.expiresAt) {
+      person.resume = null;
+      telemetry.count('resume_expired');
+      return;
+    }
+    // Comfortable, not merely under the line that interrupted them: thirst is
+    // interrupted at 35, so coming back at 34 would break off again within the
+    // minute and the pair would ping-pong.
+    if (person.needs.thirst > 20 || person.needs.hunger > 25 || person.needs.cold > 25) return;
+
+    person.resume = null;
+    const ok = this.order(person, pending.action, {
+      nodeId: pending.nodeId ?? undefined,
+      treeId: pending.treeId ?? undefined,
+      buildingId: pending.buildingId ?? undefined,
+      personId: pending.personId ?? undefined,
+      animalId: pending.animalId ?? undefined,
+      x: pending.nodeId === null && pending.treeId === null &&
+        pending.buildingId === null && pending.personId === null &&
+        pending.animalId === null ? pending.x ?? undefined : undefined,
+      y: pending.nodeId === null && pending.treeId === null &&
+        pending.buildingId === null && pending.personId === null &&
+        pending.animalId === null ? pending.y ?? undefined : undefined,
+    });
+    // A refusal here is ordinary — the bush was stripped while they drank — and
+    // must not surface as a refusal message the player never asked for.
+    this.lastRefusal = null;
+    telemetry.count(ok ? 'order_resumed' : 'resume_impossible');
+  }
+
+  /** Takes a killed animal out of the world and its index. */
+  private removeAnimal(animal: Animal): void {
+    this.animalsById.delete(animal.id);
+    this.animals = this.animals.filter(a => a.id !== animal.id);
+    telemetry.count('animal_killed');
+  }
+
+  /** The animal nearest a point, within a click's reach. */
+  animalAt(x: number, y: number): Animal | null {
+    return this.animalHash.findNearest(x, y, 1.2, a => a.alive);
+  }
+
   /** The standing tree nearest a point, within a click's reach. */
   treeAt(x: number, y: number): Tree | null {
     return this.treeHash.findNearest(x, y, 1.6, t => t.standing);
@@ -725,10 +915,15 @@ export class Simulation {
     target: {
       x?: number; y?: number;
       nodeId?: number; personId?: number; buildingId?: number; treeId?: number;
+      animalId?: number;
     } = {}
   ): boolean {
     if (!person.alive) return false;
 
+    // A new order supersedes whatever was set aside. Doing this here rather
+    // than at every call site means the player changing their mind cannot leave
+    // a stale job to spring back later.
+    person.resume = null;
     person.clearTarget();
     person.action = action;
     person.order = action;
@@ -739,6 +934,14 @@ export class Simulation {
       person.targetPersonId = other.id;
       person.targetX = other.x;
       person.targetY = other.y;
+      return true;
+    }
+    if (target.animalId !== undefined) {
+      const animal = this.animalsById.get(target.animalId);
+      if (!animal || !animal.alive) return this.cancelOrder(person, 'it is gone');
+      person.targetAnimalId = animal.id;
+      person.targetX = animal.x;
+      person.targetY = animal.y;
       return true;
     }
     if (target.treeId !== undefined) {
@@ -802,7 +1005,7 @@ export class Simulation {
    */
   private cancelOrder(person: Person, reason = 'that cannot be done'): boolean {
     person.clearTarget();
-    person.clearOrder();
+    person.forgetPlans();
     person.action = 'idle';
     this.lastRefusal = reason;
     return false;
@@ -862,6 +1065,30 @@ export class Simulation {
     return building;
   }
 
+  /**
+   * Takes a site out of the world.
+   *
+   * Anything already delivered to it is dropped where it stood rather than
+   * vanishing: the band spent the walk fetching it, and a band that can lose
+   * timber by changing its mind will lose a winter's work to a planner tweak.
+   */
+  private removeBuilding(building: Building): void {
+    for (const [itemId, count] of building.delivered.entries()) {
+      const taken = building.delivered.remove(itemId, count);
+      if (taken <= 0) continue;
+      const pile = new ItemPile(
+        Math.round(building.centerX), Math.round(building.centerY), null, this.time.tick
+      );
+      pile.contents.add(itemId, taken);
+      this.piles.push(pile);
+      this.pilesById.set(pile.id, pile);
+    }
+    this.pileHash.rebuild(this.piles);
+
+    this.buildingsById.delete(building.id);
+    this.buildings = this.buildings.filter(b => b.id !== building.id);
+  }
+
   /** The building covering a point, if any. */
   buildingAt(x: number, y: number): Building | null {
     for (const building of this.buildings) {
@@ -876,15 +1103,26 @@ export class Simulation {
     this.order(this.player, 'goto', { x, y });
   }
 
-  /** Hands the player a body. Called by the browser build, not by the harness. */
+  /**
+   * Hands the player a body.
+   *
+   * The one path into a character, used by character creation, by the "play as"
+   * verb and by the headless fallback alike — a second copy of this is how the
+   * previous player ends up still flagged `isPlayer` and being steered by the
+   * brain from inside the grave.
+   */
+  possess(person: Person): Person {
+    if (this.player && this.player.id !== person.id) this.player.isPlayer = false;
+    person.isPlayer = true;
+    this.player = person;
+    return person;
+  }
+
+  /** The fallback when nobody has chosen: whoever is first in the list. */
   possessFirst(): Person | null {
     const living = this.livingPeople();
     if (living.length === 0) return null;
-    const chosen = living[0]!;
-    if (this.player) this.player.isPlayer = false;
-    chosen.isPlayer = true;
-    this.player = chosen;
-    return chosen;
+    return this.possess(living[0]!);
   }
 
   // -------------------------------------------------------------------------
@@ -901,6 +1139,13 @@ export class Simulation {
       const growth = this.time.growth;
       for (const node of this.nodes) node.regrow(20, growth);
     }
+
+    this.wildlifeSystem.update(this.animals, {
+      world: this.world,
+      rng: this.wildlifeRng,
+      tick: this.time.tick,
+      peopleHash: this.peopleHash,
+    });
 
     this.needsSystem.update(this.people, this.time, this.buildings);
 
@@ -934,6 +1179,7 @@ export class Simulation {
         buildings: this.buildings,
         place: (defId, x, y, bandId) => this.place(defId, x, y, bandId),
         onExile: (person, band, average) => this.exile(person, band, average),
+        abandonSite: site => this.removeBuilding(site),
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),
       });
@@ -966,6 +1212,7 @@ export class Simulation {
       relationships: this.relationships,
       buildings: this.buildings,
       treeHash: this.treeHash,
+      animalHash: this.animalHash,
       sightRadius: this.config.sightRadius,
     };
     const actionCtx = {
@@ -974,6 +1221,8 @@ export class Simulation {
       nodesById: this.nodesById,
       buildingsById: this.buildingsById,
       treesById: this.treesById,
+      animalsById: this.animalsById,
+      onAnimalKilled: (animal: Animal) => this.removeAnimal(animal),
       knowledge: this.knowledgeSystem,
       relationships: this.relationships,
       onTreeFelled: (tree: Tree) => this.removeTree(tree),
@@ -983,6 +1232,12 @@ export class Simulation {
       rng: this.actionRng,
       tick: this.time.tick,
       sightRadius: this.config.sightRadius,
+      isNight: this.time.isNight,
+      needs: this.config.needs,
+      dropAt: (x: number, y: number, itemId: string, count: number) =>
+        this.dropAt(x, y, itemId, count),
+      onStopped: (person: Person, action: string, reason: string) =>
+        this.noteStop(person, action, reason),
     };
 
     const interval = this.config.thinkInterval;
@@ -1006,6 +1261,10 @@ export class Simulation {
         this.movementSystem.nudge(person, this.playerIntent.dx, this.playerIntent.dy);
         continue;
       }
+
+      // Anything set aside for a drink is picked back up once they are
+      // comfortable again, before the brain gets a chance to plan something else.
+      this.resumeOrders(person);
 
       // A player order holds until the action system completes or abandons it.
       const committed = person.actionTimer > 0 || person.order !== null;
@@ -1035,6 +1294,13 @@ export class Simulation {
       if (person.alive) this.peopleHash.insert(person);
     }
     this.nodeHash.rebuild(this.nodes);
+
+    // Animals move every step, so their index is rebuilt every step — unlike
+    // trees and piles, which only change when something happens to them.
+    this.animalHash.clear();
+    for (const animal of this.animals) {
+      if (animal.alive) this.animalHash.insert(animal);
+    }
   }
 
   /**
@@ -1111,7 +1377,7 @@ export class Simulation {
       avgHealth: mean(living.map(p => p.health)),
       resources: this.nodes.reduce((sum, n) => sum + n.amount, 0),
       foodInWorld: this.nodes.reduce(
-        (sum, n) => sum + (n.kind === 'berries' || n.kind === 'game' ? n.amount : 0), 0
+        (sum, n) => sum + (n.kind === 'berries' ? n.amount : 0), 0
       ),
       depletedNodes: this.nodes.filter(n => n.depleted).length,
       households: this.households.filter(h => !h.extinct).length,
@@ -1127,6 +1393,7 @@ export class Simulation {
       children: living.filter(p => p.isChild).length,
       elders: living.filter(p => p.isElder).length,
       avgAge: mean(living.map(p => p.years)),
+      animals: this.animals.length,
       trees: this.trees.length,
       matureTrees: this.trees.filter(t => t.isMature).length,
       seedlings: this.trees.filter(t => t.isSeedling).length,

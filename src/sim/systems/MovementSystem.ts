@@ -41,6 +41,61 @@ export function resetMovementState(): void {
   stuckTicks.clear();
 }
 
+/**
+ * One step of greedy steering, for anything with a position.
+ *
+ * Extracted so that animals and people cannot disagree about what walkable
+ * means. A second steerer written for wildlife would drift from this one, and
+ * the first symptom would be deer standing in lakes — which is exactly the
+ * class of bug the shared `World.isWalkable` chokepoint exists to prevent.
+ *
+ * Returns how far the entity actually moved, so the caller can run its own
+ * stuck detection. Measuring displacement rather than trusting a branch to have
+ * succeeded is the lesson at the top of this file, and it applies to anything
+ * that walks.
+ */
+export function moveToward(
+  entity: { x: number; y: number },
+  targetX: number,
+  targetY: number,
+  speed: number,
+  world: World,
+  rng: RNG
+): number {
+  const dx = targetX - entity.x;
+  const dy = targetY - entity.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < 1e-6) return 0;
+
+  const startX = entity.x;
+  const startY = entity.y;
+
+  const nx = entity.x + (dx / dist) * speed;
+  const ny = entity.y + (dy / dist) * speed;
+
+  if (world.isWalkable(nx, ny)) {
+    entity.x = nx;
+    entity.y = ny;
+  } else if (world.isWalkable(nx, entity.y)) {
+    entity.x = nx;
+  } else if (world.isWalkable(entity.x, ny)) {
+    entity.y = ny;
+  } else {
+    // Slide along the obstacle, perpendicular to the desired heading.
+    const jitter = rng.range(-0.5, 0.5);
+    const sx = entity.x + (dy / dist) * speed + jitter * speed;
+    const sy = entity.y - (dx / dist) * speed + jitter * speed;
+    if (world.isWalkable(sx, sy)) {
+      entity.x = sx;
+      entity.y = sy;
+    }
+  }
+
+  return Math.sqrt(
+    (entity.x - startX) * (entity.x - startX) + (entity.y - startY) * (entity.y - startY)
+  );
+}
+
 export class MovementSystem {
   constructor(private readonly world: World, private readonly rng: RNG) {}
 
@@ -86,33 +141,10 @@ export class MovementSystem {
     // Fatigue and poor health slow people down; this is what makes an exhausted
     // forager fail to get home before dark.
     const speed = this.speedOf(person);
-    const startX = person.x;
-    const startY = person.y;
-
-    const nx = person.x + (dx / dist) * speed;
-    const ny = person.y + (dy / dist) * speed;
-
-    if (this.world.isWalkable(nx, ny)) {
-      person.x = nx;
-      person.y = ny;
-    } else if (this.world.isWalkable(nx, person.y)) {
-      person.x = nx;
-    } else if (this.world.isWalkable(person.x, ny)) {
-      person.y = ny;
-    } else {
-      // Slide along the obstacle, perpendicular to the desired heading.
-      const jitter = this.rng.range(-0.5, 0.5);
-      const sx = person.x + (dy / dist) * speed + jitter * speed;
-      const sy = person.y - (dx / dist) * speed + jitter * speed;
-      if (this.world.isWalkable(sx, sy)) {
-        person.x = sx;
-        person.y = sy;
-      }
-    }
 
     // The honest test: did we actually get anywhere?
-    const progress = Math.sqrt(
-      (person.x - startX) * (person.x - startX) + (person.y - startY) * (person.y - startY)
+    const progress = moveToward(
+      person, person.targetX, person.targetY, speed, this.world, this.rng
     );
     if (progress >= speed * PROGRESS_THRESHOLD) {
       stuckTicks.delete(person.id);

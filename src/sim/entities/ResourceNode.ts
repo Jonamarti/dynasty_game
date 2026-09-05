@@ -1,6 +1,10 @@
 /**
  * A harvestable thing standing on a tile: a berry bush, a flint outcrop, a
- * fallen branch, a grazing animal.
+ * fallen branch, a clay bank.
+ *
+ * Game is deliberately *not* one of these. It was, and that made hunting
+ * identical to picking berries except for the skill it practised — two food
+ * systems where one would do. Animals live in `entities/Animal.ts` and move.
  *
  * Nodes deplete and regrow rather than vanishing, so a band can exhaust the
  * ground around its camp and be forced to range further or move — which is the
@@ -8,7 +12,7 @@
  */
 import type { RNG } from '../core/RNG.ts';
 
-export const RESOURCE_KINDS = ['berries', 'flint', 'sticks', 'game', 'reeds', 'clay'] as const;
+export const RESOURCE_KINDS = ['berries', 'flint', 'sticks', 'reeds', 'clay'] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 
 export interface ResourceDef {
@@ -28,7 +32,6 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
   berries: { kind: 'berries', itemId: 'berries', maxAmount: 14, regrowPerTick: 0.0042, harvestTicks: 8, skill: 'forage' },
   flint:   { kind: 'flint',   itemId: 'flint',   maxAmount: 30, regrowPerTick: 0,      harvestTicks: 14, skill: 'knap' },
   sticks:  { kind: 'sticks',  itemId: 'sticks',  maxAmount: 12, regrowPerTick: 0.0035, harvestTicks: 7,  skill: 'forage' },
-  game:    { kind: 'game',    itemId: 'meat',    maxAmount: 3,  regrowPerTick: 0.0014, harvestTicks: 24, skill: 'hunt' },
   reeds:   { kind: 'reeds',   itemId: 'thatch',  maxAmount: 16, regrowPerTick: 0.005,  harvestTicks: 9,  skill: 'forage' },
   clay:    { kind: 'clay',    itemId: 'mud',     maxAmount: 24, regrowPerTick: 0.001,  harvestTicks: 12, skill: 'build' },
 };

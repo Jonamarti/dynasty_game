@@ -18,10 +18,12 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
+import type { Animal } from '../entities/Animal.ts';
 import type { KnowledgeSystem } from './KnowledgeSystem.ts';
 import type { RelationshipGraph } from '../social/Relationships.ts';
 import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
+import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
 export interface ActionContext {
@@ -30,6 +32,9 @@ export interface ActionContext {
   nodesById: Map<number, ResourceNode>;
   buildingsById: Map<number, Building>;
   treesById: Map<number, Tree>;
+  animalsById: Map<number, Animal>;
+  /** Called when an animal is killed, so the world can take it out. */
+  onAnimalKilled: (animal: Animal, hunter: Person) => void;
   knowledge: KnowledgeSystem;
   relationships: RelationshipGraph;
   /** Called when a tree is felled, so the world can remove it. */
@@ -40,6 +45,22 @@ export interface ActionContext {
   rng: RNG;
   tick: number;
   sightRadius: number;
+  /** Whether it is dark out. Sleep ends at dawn; nothing else reads it yet. */
+  isNight: boolean;
+  /** Need rates, so an interruption can look one work cycle ahead. */
+  needs: NeedsConfig;
+  /** Puts goods on the ground, for yields nobody has room to carry. */
+  dropAt: (x: number, y: number, itemId: string, count: number) => void;
+  /**
+   * Called whenever an action ends for a reason, so the world can tell the
+   * player about it.
+   *
+   * Every reason this file produces used to be a telemetry counter and nothing
+   * else, which meant that from inside the game an order simply stopped and the
+   * character went back to thinking. A simulation that knows exactly why it
+   * refused you and does not say is worse than one that does not know.
+   */
+  onStopped: (person: Person, action: string, reason: string) => void;
 }
 
 /** How close two people must be to hand something over, or land a blow. */
@@ -57,6 +78,14 @@ const COURT_TICKS = 60;
 /** Ticks to show somebody how a thing is done. Longer than any conversation. */
 const TEACH_TICKS = 90;
 
+/** How `interruption` should be asked. See the comments on it. */
+interface InterruptionOptions {
+  /** Ticks of work still to come, so the check can look one cycle ahead. */
+  lookaheadTicks?: number;
+  /** True for work that does not need pack room until it finishes. */
+  ignoreLaden?: boolean;
+}
+
 /** No single stretch of work runs longer than this, whatever else is true. */
 const MAX_WORK_STRETCH = 900;
 
@@ -65,6 +94,14 @@ const STEAL_TICKS = 30;
 
 /** Ticks before a person will deliberately approach anyone again. */
 const SOCIAL_COOLDOWN = 220;
+
+/**
+ * Fatigue restored per tick of real sleep.
+ *
+ * Well above `rest`'s 0.35: lying down in a hut for the night should clear a
+ * day's tiredness, where dozing in a field only takes the edge off.
+ */
+const SLEEP_RECOVERY = 0.9;
 
 /** Ticks between blows. Long enough that a fight is watchable and escapable. */
 const ATTACK_WINDUP = 12;
@@ -88,11 +125,12 @@ export class ActionSystem {
 
     switch (person.action) {
       case 'drink': this.doDrink(person, ctx); break;
-      case 'eat': this.doEat(person); break;
+      case 'eat': this.doEat(person, ctx); break;
       case 'forage':
       case 'gather': this.doHarvest(person, ctx); break;
       case 'pick': this.doPickFruit(person, ctx); break;
       case 'chop': this.doChop(person, ctx); break;
+      case 'hunt': this.doHunt(person, ctx); break;
       case 'rest': this.doRest(person); break;
       case 'flee': this.doFlee(person, ctx); break;
       case 'haul': this.doHaul(person, ctx); break;
@@ -100,6 +138,7 @@ export class ActionSystem {
       case 'store': this.doStore(person, ctx); break;
       case 'take': this.doTake(person, ctx); break;
       case 'shelter': this.doShelter(person, ctx); break;
+      case 'sleep': this.doSleep(person, ctx); break;
       case 'talk': this.doTalk(person, ctx); break;
       case 'court': this.doCourt(person, ctx); break;
       case 'teach': this.doTeach(person, ctx); break;
@@ -134,8 +173,34 @@ export class ActionSystem {
   }
 
   /** Abandons an action that turned out to be impossible. */
-  private abandon(person: Person, reason: string): void {
+  /**
+   * Gives up on an action because the world changed under it.
+   *
+   * Reports before finishing, because `finish` resets the action to `idle` and
+   * the reason is only meaningful attached to what was being attempted.
+   */
+  private abandon(person: Person, reason: string, ctx: ActionContext): void {
     telemetry.count('abandoned_' + reason);
+    ctx.onStopped(person, person.action, reason);
+    this.finish(person);
+  }
+
+  /**
+   * Ends a stretch of work for a stated reason.
+   *
+   * The counterpart to `abandon`: nothing has gone wrong, the person has simply
+   * had enough. Both routes report, because from the player's side "the tree is
+   * gone" and "he stopped for a drink" are the same question — why did the thing
+   * I asked for stop happening?
+   */
+  private stop(
+    person: Person,
+    reason: string,
+    ctx: ActionContext,
+    prefix = 'work_ended_'
+  ): void {
+    telemetry.count(prefix + reason);
+    ctx.onStopped(person, person.action, reason);
     this.finish(person);
   }
 
@@ -151,7 +216,7 @@ export class ActionSystem {
     // land on the tile next door. Test the neighbourhood rather than one tile,
     // otherwise people walk to the water's edge and then refuse to drink.
     if (!this.waterWithinReach(person.x, person.y, ctx)) {
-      this.abandon(person, 'no_water');
+      this.abandon(person, 'no_water', ctx);
       return;
     }
     person.needs.thirst = Math.max(0, person.needs.thirst - 6);
@@ -181,14 +246,14 @@ export class ActionSystem {
     return false;
   }
 
-  private doEat(person: Person): void {
+  private doEat(person: Person, ctx: ActionContext): void {
     const foodId = person.inventory.bestFood();
     if (!foodId) {
-      this.abandon(person, 'no_food');
+      this.abandon(person, 'no_food', ctx);
       return;
     }
     if (person.inventory.remove(foodId, 1) === 0) {
-      this.abandon(person, 'no_food');
+      this.abandon(person, 'no_food', ctx);
       return;
     }
     // Cooking makes food go further. It is the plainest possible payoff for
@@ -212,8 +277,18 @@ export class ActionSystem {
    * hopeless as an economy. People now keep at a job until something actually
    * stops them, and this is the list of things that do.
    */
-  private interruption(person: Person, ctx: ActionContext): string | null {
-    if (person.isLaden) return 'hands_full';
+  private interruption(
+    person: Person,
+    ctx: ActionContext,
+    opts: InterruptionOptions = {}
+  ): string | null {
+    // Not every long action is gated by carrying capacity.
+    //
+    // Felling is the case that made this an option rather than a constant: a
+    // tree needs pack room only at the instant the trunk drops, so a laden
+    // woodcutter used to abort on the very first swing. Sleeping had the same
+    // problem, and answers it by not using this function at all.
+    if (!opts.ignoreLaden && person.isLaden) return 'hands_full';
     if (person.lastHarmedTick > ctx.tick - 40) return 'under_attack';
 
     // The thresholds here are the whole difficulty of letting work continue.
@@ -228,8 +303,19 @@ export class ActionSystem {
     // line and stops there, so wherever these sit is where the population's
     // average hunger and thirst will settle. They are set low for that reason,
     // not because the danger starts here.
-    if (person.needs.thirst > 35) return 'thirsty';
-    if (person.needs.hunger > 40) return 'hungry';
+    //
+    // `lookaheadTicks` asks the question one work cycle ahead: would finishing
+    // the next pull leave them over the line? Without it, whether a job is ever
+    // interrupted depends entirely on how long the job runs — a berry bush is
+    // stripped in 148 ticks and never crosses the threshold, a flint outcrop
+    // takes 416 and always does. Same code, same rule, and from outside it looks
+    // like berries are uninterruptible and flint is not.
+    const ahead = opts.lookaheadTicks ?? 0;
+    if (person.needs.thirst + ctx.needs.thirstRate * ahead > 35) return 'thirsty';
+    if (person.needs.hunger + ctx.needs.hungerRate * ahead > 40) return 'hungry';
+    // Cold is read as it stands: its rate depends on the season and the roof
+    // overhead, so projecting it forward from a per-tick constant would be a
+    // guess dressed up as arithmetic.
     if (person.needs.cold > 45) return 'cold';
 
     // A hard ceiling on any one stretch, so no combination of conditions can
@@ -241,7 +327,7 @@ export class ActionSystem {
   private doHarvest(person: Person, ctx: ActionContext): void {
     const node = person.targetNodeId === null ? null : ctx.nodesById.get(person.targetNodeId);
     if (!node || node.depleted) {
-      this.abandon(person, 'node_gone');
+      this.abandon(person, 'node_gone', ctx);
       return;
     }
 
@@ -265,10 +351,12 @@ export class ActionSystem {
     }
 
     // Keep going unless something stops us.
-    const stop = node.depleted ? 'node_empty' : this.interruption(person, ctx);
+    const nextPull = Math.ceil(node.def.harvestTicks / person.skillFactor(node.def.skill));
+    const stop = node.depleted
+      ? 'node_empty'
+      : this.interruption(person, ctx, { lookaheadTicks: nextPull });
     if (stop) {
-      telemetry.count('work_ended_' + stop);
-      this.finish(person);
+      this.stop(person, stop, ctx);
       return;
     }
     person.actionTimer = Math.ceil(node.def.harvestTicks / person.skillFactor(node.def.skill));
@@ -278,7 +366,7 @@ export class ActionSystem {
   private doPickFruit(person: Person, ctx: ActionContext): void {
     const tree = person.targetTreeId === null ? null : ctx.treesById.get(person.targetTreeId);
     if (!tree || !tree.standing || tree.fruit < 1) {
-      this.abandon(person, 'no_fruit');
+      this.abandon(person, 'no_fruit', ctx);
       return;
     }
 
@@ -303,8 +391,7 @@ export class ActionSystem {
 
     const stop = tree.fruit < 1 ? 'tree_bare' : this.interruption(person, ctx);
     if (stop) {
-      telemetry.count('work_ended_' + stop);
-      this.finish(person);
+      this.stop(person, stop, ctx);
       return;
     }
     person.actionTimer = Math.ceil(9 / person.skillFactor('forage'));
@@ -320,7 +407,7 @@ export class ActionSystem {
   private doChop(person: Person, ctx: ActionContext): void {
     const tree = person.targetTreeId === null ? null : ctx.treesById.get(person.targetTreeId);
     if (!tree || !tree.standing) {
-      this.abandon(person, 'tree_gone');
+      this.abandon(person, 'tree_gone', ctx);
       return;
     }
 
@@ -341,17 +428,24 @@ export class ActionSystem {
     person.practice('build', 0.05);
 
     if (tree.chopProgress < required) {
-      const stop = this.interruption(person, ctx);
-      if (stop) {
-        telemetry.count('work_ended_' + stop);
-        this.finish(person);
-      }
+      // `ignoreLaden`: a tree needs pack room only at the instant it falls, so
+      // a full pack is no reason not to swing. It used to be — a laden feller
+      // aborted on the very first tick, and the order died in silence.
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx);
       return;
     }
 
+    // The trunk is down. Take what will fit and leave the rest where it fell:
+    // this world's standing rule is that goods move rather than appearing and
+    // vanishing, and a laden feller used to have the remainder simply cease to
+    // exist.
     const wood = tree.woodYield;
     tree.standing = false;
-    person.inventory.add('wood', Math.min(wood, Math.max(1, person.carryCapacity - person.carrying)));
+    const room = Math.max(0, person.carryCapacity - person.carrying);
+    const carried = Math.min(wood, room);
+    if (carried > 0) person.inventory.add('wood', carried);
+    if (wood - carried > 0) ctx.dropAt(tree.x, tree.y, 'wood', wood - carried);
     person.practice('build', 2.5);
     telemetry.count('tree_felled');
     telemetry.count('wood_cut', wood);
@@ -396,7 +490,7 @@ export class ActionSystem {
       ? null
       : ctx.buildingsById.get(person.targetBuildingId);
     if (!building) {
-      this.abandon(person, 'site_gone');
+      this.abandon(person, 'site_gone', ctx);
       return null;
     }
     if (building.contains(person.x, person.y)) return building;
@@ -422,7 +516,7 @@ export class ActionSystem {
     }
 
     if (delivered === 0) {
-      this.abandon(person, 'nothing_to_haul');
+      this.abandon(person, 'nothing_to_haul', ctx);
       return;
     }
     telemetry.count('materials_delivered', delivered);
@@ -439,7 +533,7 @@ export class ActionSystem {
     if (!site) return;
 
     if (site.complete) {
-      this.abandon(person, 'already_built');
+      this.abandon(person, 'already_built', ctx);
       return;
     }
     if (!site.materialsReady) {
@@ -448,7 +542,7 @@ export class ActionSystem {
         person.action = 'haul';
         return;
       }
-      this.abandon(person, 'site_needs_materials');
+      this.abandon(person, 'site_needs_materials', ctx);
       return;
     }
 
@@ -458,8 +552,7 @@ export class ActionSystem {
     // until the roof went on or they died — which is what happened.
     const stop = this.interruption(person, ctx);
     if (stop) {
-      telemetry.count('work_ended_' + stop);
-      this.finish(person);
+      this.stop(person, stop, ctx);
       return;
     }
 
@@ -483,7 +576,7 @@ export class ActionSystem {
     if (!store) return;
 
     if (!store.complete || store.def.storage === 0) {
-      this.abandon(person, 'not_a_store');
+      this.abandon(person, 'not_a_store', ctx);
       return;
     }
 
@@ -497,7 +590,7 @@ export class ActionSystem {
     }
 
     if (moved === 0) {
-      this.abandon(person, 'store_full');
+      this.abandon(person, 'store_full', ctx);
       return;
     }
     telemetry.count('stored', moved);
@@ -512,7 +605,7 @@ export class ActionSystem {
     const foodId = store.store.bestFood();
     const itemId = foodId ?? store.store.entries()[0]?.[0];
     if (!itemId) {
-      this.abandon(person, 'store_empty');
+      this.abandon(person, 'store_empty', ctx);
       return;
     }
     const taken = store.store.remove(itemId, Math.min(6, store.store.count(itemId)));
@@ -535,6 +628,144 @@ export class ActionSystem {
     }
   }
 
+  /**
+   * A hunt: close on a moving, fleeing animal, then roll for the kill.
+   *
+   * This is what replaced the `game` resource node. Standing next to a bush for
+   * twenty-four ticks and receiving meat was not hunting; it was foraging with
+   * a different skill attached. Here the animal runs faster than a person can,
+   * so a hunt is won on approach — which is what finally gives `track` a job,
+   * through `noticeRadius`.
+   */
+  private doHunt(person: Person, ctx: ActionContext): void {
+    const animal = person.targetAnimalId === null
+      ? null
+      : ctx.animalsById.get(person.targetAnimalId);
+    if (!animal || !animal.alive) {
+      this.abandon(person, 'quarry_gone', ctx);
+      return;
+    }
+
+    const distance = person.distanceTo(animal);
+    if (distance > PURSUIT_LIMIT * 2) {
+      // Outrun. A chase that never ends is a person who never eats again.
+      telemetry.count('hunt_lost');
+      this.abandon(person, 'quarry_escaped', ctx);
+      return;
+    }
+
+    // The chase is long, and every long action gets an interruption check.
+    const stop = this.interruption(person, ctx);
+    if (stop) {
+      telemetry.count('hunt_ended_' + stop);
+      this.finish(person);
+      return;
+    }
+    person.workedTicks++;
+
+    if (distance > REACH) {
+      person.targetX = animal.x;
+      person.targetY = animal.y;
+      ctx.movement.step(person);
+      return;
+    }
+
+    // Within reach: strike. Skill against the animal's evasion, so a novice
+    // after a hare mostly goes hungry and an expert after a boar mostly does
+    // not — and both outcomes happen, which is what makes it a hunt.
+    person.practice('hunt', 0.6);
+    person.practice('track', 0.2);
+    // A blown animal is far easier to bring down than a fresh one, which is
+    // what makes the chase itself worth something rather than just a delay.
+    const chance = Math.max(0.05, Math.min(0.9,
+      person.skillFactor('hunt') * (1 - animal.def.evasion) + 0.15
+        + (1 - animal.stamina) * 0.35
+    ));
+
+    if (!ctx.rng.chance(chance)) {
+      telemetry.count('hunt_missed');
+      // A miss costs the stalk: the herd is gone and the hunter is winded.
+      person.needs.fatigue = Math.min(100, person.needs.fatigue + 4);
+      animal.alarmedUntil = ctx.tick + 90;
+      return;
+    }
+
+    animal.health = 0;
+    animal.alive = false;
+    ctx.onAnimalKilled(animal, person);
+
+    const yielded = Math.max(1, Math.round(animal.def.meat * person.skillFactor('hunt')));
+    const room = person.carryCapacity - person.carrying;
+    person.inventory.add('meat', Math.min(yielded, Math.max(0, room)));
+    telemetry.count('hunt_killed');
+    telemetry.count('harvest_meat', yielded);
+
+    person.chronicle.push({
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: 'brought down a ' + animal.def.label.toLowerCase(),
+      kind: 'did',
+    });
+    this.finish(person);
+  }
+
+  /**
+   * Sleeping, which is not the same thing as sheltering.
+   *
+   * `shelter` is standing indoors waiting out the cold and `rest` is sitting
+   * down anywhere; neither is sleeping, and until now nobody in this world ever
+   * went to bed. Warmth needs no special case here: `NeedsSystem.shelterAt`
+   * reads position, so someone asleep in a hut is warm because of where they
+   * are lying, not because sleeping is warm.
+   */
+  private doSleep(person: Person, ctx: ActionContext): void {
+    const building = this.reachBuilding(person, ctx);
+    if (!building) return;
+
+    telemetry.count('sleeping');
+    person.needs.fatigue = Math.max(0, person.needs.fatigue - SLEEP_RECOVERY);
+
+    // Note what is *not* here: `person.workedTicks++`. Sleeping is not work, and
+    // counting it toward `MAX_WORK_STRETCH` would eventually report that
+    // somebody had been asleep long enough to need a break.
+
+    const wake = this.wakeReason(person, ctx);
+    if (wake) {
+      this.stop(person, wake, ctx, 'woke_');
+      return;
+    }
+  }
+
+  /**
+   * Why somebody wakes up.
+   *
+   * Deliberately *not* `interruption()`, which is the list of reasons to stop
+   * working. Borrowing it made sleep unusable in the most ordinary case in the
+   * game: its first clause is `isLaden`, so a player who had been out foraging
+   * came home with a full pack, lay down, and was woken on the same tick by
+   * "your hands are full" — which is a reason to stop picking berries and has
+   * nothing whatever to do with lying down.
+   *
+   * The thresholds sit above the working ones on purpose. You work through mild
+   * thirst and stop at 35; you sleep through it and wake at 45. Waking for a
+   * need you would not even have broken off work for is not rest.
+   */
+  private wakeReason(person: Person, ctx: ActionContext): string | null {
+    if (person.lastHarmedTick > ctx.tick - 40) return 'under_attack';
+    if (person.needs.thirst > 45) return 'thirsty';
+    if (person.needs.hunger > 50) return 'hungry';
+    // Cold is deliberately absent. The roof overhead is the thing that fixes
+    // cold, and throwing somebody out of the hut for being cold in it is a
+    // circle. `NeedsSystem.shelterAt` warms them where they lie.
+
+    if (person.needs.fatigue <= 0) return 'rested';
+    // A player order holds through the daylight the way `rest` does — being told
+    // to lie down and being ignored is worse than a pointless nap. Left to their
+    // own judgement, nobody sleeps through the day.
+    if (!ctx.isNight && !person.order) return 'daylight';
+    return null;
+  }
+
   // -------------------------------------------------------------------------
   // Social
   // -------------------------------------------------------------------------
@@ -549,7 +780,7 @@ export class ActionSystem {
   private approach(person: Person, ctx: ActionContext): Person | null {
     const other = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
     if (!other || !other.alive) {
-      this.abandon(person, 'target_gone');
+      this.abandon(person, 'target_gone', ctx);
       return null;
     }
     if (person.distanceTo(other) <= REACH) return other;
@@ -601,7 +832,7 @@ export class ActionSystem {
     if (!other) return;
 
     if (other.spouseId !== null || person.spouseId !== null) {
-      this.abandon(person, 'already_wed');
+      this.abandon(person, 'already_wed', ctx);
       return;
     }
 
@@ -658,11 +889,11 @@ export class ActionSystem {
    */
   private doCraft(person: Person, ctx: ActionContext): void {
     if (!person.knownTech.has('hafting')) {
-      this.abandon(person, 'dont_know_how');
+      this.abandon(person, 'dont_know_how', ctx);
       return;
     }
     if (!person.inventory.has('flint') || !person.inventory.has('sticks')) {
-      this.abandon(person, 'lack_materials');
+      this.abandon(person, 'lack_materials', ctx);
       return;
     }
 
@@ -698,13 +929,13 @@ export class ActionSystem {
 
     const foodId = person.inventory.bestFood();
     if (!foodId) {
-      this.abandon(person, 'nothing_to_give');
+      this.abandon(person, 'nothing_to_give', ctx);
       return;
     }
     const units = Math.max(1, Math.min(3, Math.floor(person.inventory.count(foodId) / 2)));
     const given = person.inventory.remove(foodId, units);
     if (given === 0) {
-      this.abandon(person, 'nothing_to_give');
+      this.abandon(person, 'nothing_to_give', ctx);
       return;
     }
     other.inventory.add(foodId, given);
@@ -732,7 +963,7 @@ export class ActionSystem {
 
     const carried = other.inventory.entries();
     if (carried.length === 0) {
-      this.abandon(person, 'nothing_to_steal');
+      this.abandon(person, 'nothing_to_steal', ctx);
       return;
     }
 
@@ -750,7 +981,7 @@ export class ActionSystem {
     const units = Math.max(1, Math.ceil(other.inventory.count(bestId) / 2));
     const taken = other.inventory.remove(bestId, units);
     if (taken === 0) {
-      this.abandon(person, 'nothing_to_steal');
+      this.abandon(person, 'nothing_to_steal', ctx);
       return;
     }
     person.inventory.add(bestId, taken);

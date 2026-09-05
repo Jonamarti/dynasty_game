@@ -127,13 +127,8 @@ export class LifeSystem {
     // one place; the caller supplies the constructor via a factory instead of
     // this module importing Person concretely for `new`.
     const child = makeChild(mother, rng);
+    inheritTraits(child, mother, father, rng);
 
-    for (const trait of TRAITS) {
-      const inherited = father
-        ? (mother.traits[trait] + father.traits[trait]) / 2
-        : mother.traits[trait];
-      child.traits[trait] = Math.max(0, Math.min(1, inherited + rng.gaussian(0, 0.09)));
-    }
     for (const skill of SKILLS) {
       child.skills[skill] = Math.max(0, rng.gaussian(1.5, 1));
     }
@@ -166,6 +161,28 @@ export class LifeSystem {
     if (ctx.rng.chance(chance)) {
       ctx.onDeath(person, 'old age');
     }
+  }
+}
+
+/**
+ * Blends a child's temperament from their parents', plus drift.
+ *
+ * A family has a recognisable temperament that is never quite fixed. Shared
+ * with world founding so a family the world starts with and a family grown in
+ * play are built the same way — two copies of this would drift apart, and the
+ * founding generation would quietly stop resembling its own children.
+ */
+export function inheritTraits(
+  child: Person,
+  mother: Person,
+  father: Person | null,
+  rng: RNG
+): void {
+  for (const trait of TRAITS) {
+    const inherited = father
+      ? (mother.traits[trait] + father.traits[trait]) / 2
+      : mother.traits[trait];
+    child.traits[trait] = Math.max(0, Math.min(1, inherited + rng.gaussian(0, 0.09)));
   }
 }
 

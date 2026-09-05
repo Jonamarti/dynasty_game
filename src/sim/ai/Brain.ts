@@ -25,6 +25,7 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { RelationshipGraph } from '../social/Relationships.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
+import type { Animal } from '../entities/Animal.ts';
 import { ITEMS } from '../entities/Item.ts';
 
 export interface BrainContext {
@@ -37,6 +38,7 @@ export interface BrainContext {
   relationships: RelationshipGraph;
   buildings: Building[];
   treeHash: SpatialHash<Tree>;
+  animalHash: SpatialHash<Animal>;
   sightRadius: number;
 }
 
@@ -51,6 +53,7 @@ export const lastScores = new Map<number, ScoredAction[]>();
 interface FoundTargets {
   water: { x: number; y: number } | null;
   foodNode: ResourceNode | null;
+  quarry: Animal | null;
   matNode: ResourceNode | null;
   site: Building | null;
   shelter: Building | null;
@@ -74,8 +77,39 @@ interface FoundTargets {
 /** Ticks before a person will strike up a conversation with the same neighbour. */
 const TALK_COOLDOWN = 500;
 
+/**
+ * How much a hunt is worth, before the odds and the size of the animal.
+ *
+ * Tuned against the score table rather than by feel. Below about 6 nothing in
+ * the world ever hunts at all — berry bushes outnumber animals six to one, so
+ * they are always nearer, and proximity alone settled every comparison. Around
+ * 9, hunting tops the table for roughly one think in forty, which is a band
+ * that eats meat sometimes and does not abandon the bushes.
+ */
+const HUNT_APPETITE = 9;
+
+/**
+ * How much a trip to the store is worth, before distance and stock.
+ *
+ * Above `forage`'s 1.6 on purpose: a stocked pit is a certainty and a bush is a
+ * walk and a gamble, and in winter the bushes are not regrowing at all.
+ */
+const TAKE_APPETITE = 4.2;
+
+/** Items in a store above which it is fully worth crossing the camp for. */
+const LARDER_WORTH_THE_WALK = 40;
+
 /** Nutrition a person keeps for themselves before giving any away. */
 const GIVING_RESERVE = 90;
+
+/**
+ * The same, for one's own small children. Far lower, deliberately.
+ *
+ * A day's food held back before being generous with a neighbour is prudence.
+ * The same reserve applied to a hungry two-year-old of your own household is
+ * how a band fails to raise a second generation.
+ */
+const DEPENDANT_RESERVE = 15;
 
 function urgencyCurve(value: number): number {
   const u = value / 100;
@@ -137,7 +171,7 @@ export class Brain {
     }
 
     // --- Forage / hunt -----------------------------------------------------
-    const foodNode = this.findNode(person, ctx, n => (n.kind === 'berries' || n.kind === 'game') && !n.depleted);
+    const foodNode = this.findNode(person, ctx, n => n.kind === 'berries' && !n.depleted);
     if (foodNode) {
       // Hunger drives foraging only to the extent it is not already answered by
       // what you carry — but the reserve is generous. A first attempt cut the
@@ -297,8 +331,34 @@ export class Brain {
       // same handful of berries between them twenty-six thousand times in a
       // twelve-day run — each transfer a public act of generosity that every
       // bystander dutifully admired.
-      const spareFood = this.carriedNutrition(person) - person.needs.hunger - GIVING_RESERVE;
-      if (spareFood > 0) {
+      //
+      // Feeding your own small children is not generosity and is not governed
+      // by the same reserve. An infant cannot forage, cannot walk to a bush and
+      // cannot ask; it eats what a parent hands it or it does not eat. With one
+      // reserve for everybody, the people starving in a long run were newborns
+      // and toddlers — ages 0, 0, 0, 1, 3, 3, 5 in one two-year sample — while
+      // their parents walked around holding food they were not desperate enough
+      // to part with.
+      const carriedNut = this.carriedNutrition(person);
+      const dependants = neighbours.filter(other =>
+        other.isChild &&
+        (person.childIds.includes(other.id) || other.householdId === person.householdId) &&
+        other.needs.hunger > person.needs.hunger + 5
+      );
+      const spareForKin = carriedNut - person.needs.hunger - DEPENDANT_RESERVE;
+      const spareFood = carriedNut - person.needs.hunger - GIVING_RESERVE;
+
+      if (spareForKin > 0 && dependants.length > 0) {
+        beneficiary = this.pickBest(dependants,
+          other => other.needs.hunger - person.distanceTo(other) * 2);
+        if (beneficiary) {
+          // Scored well above ordinary giving and barely weighted by
+          // temperament: a greedy parent still feeds their own child.
+          add('feed', (0.8 + (beneficiary.needs.hunger / 100) * 1.4)
+            * (1 - person.traits.greed * 0.25)
+            * this.proximityBonus(person, beneficiary, ctx.sightRadius));
+        }
+      } else if (spareFood > 0) {
         // And only ever to someone hungrier than you. Generosity that flows
         // uphill is just an infinite loop with good manners.
         const hungrier = neighbours.filter(other =>
@@ -455,15 +515,26 @@ export class Brain {
         }
       }
 
-      if (!carriedFood && person.needs.hunger > 25) {
+      // What you are carrying, measured against what you need — not merely
+      // whether you hold a single berry.
+      //
+      // The gate used to be `!carriedFood`, so one berry in the pack ruled the
+      // store out entirely. In winter people forage more or less constantly and
+      // therefore almost always hold *something*, which is how a band came to
+      // starve beside a pit holding fourteen hundred items: over a two-year run
+      // `take` accounted for a thousand ticks out of a million.
+      if (carried < person.needs.hunger && person.needs.hunger > 25) {
         const larder = this.pickBest(
           stores.filter(b => b.ownerBandId === person.bandId && b.store.bestFood() !== null),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })
         );
         if (larder) {
-          // Weighted above foraging: a full pit beats a picked-over bush, and
-          // this is the behaviour that makes stored food worth having.
-          add('take', hunger * 2.4
+          // Weighted well above foraging, and scaled by how well stocked it is.
+          // A full pit is a certainty; a bush in February is a walk and a
+          // gamble. Making stored food worth crossing camp for is the whole
+          // point of having built the pit.
+          const stocked = Math.min(1, larder.store.total / LARDER_WORTH_THE_WALK);
+          add('take', hunger * TAKE_APPETITE * (0.4 + 0.6 * stocked)
             * this.proximityBonus(person, { x: larder.centerX, y: larder.centerY }, ctx.sightRadius));
           storeTarget = storeTarget ?? larder;
           larderTarget = larder;
@@ -471,17 +542,47 @@ export class Brain {
       }
     }
 
-    // --- Shelter -----------------------------------------------------------
+    // --- Hunt --------------------------------------------------------------
+    // Meat is worth several times what a handful of berries is, and a hunt can
+    // fail, so this is scored on expected return rather than on hunger alone:
+    // a poor hunter should keep picking berries and a good one should go out.
+    let quarry: Animal | null = null;
+    if (!person.isChild && !person.isLaden) {
+      quarry = ctx.animalHash.findNearest(
+        person.x, person.y, ctx.sightRadius * 1.5, a => a.alive
+      );
+      if (quarry) {
+        const odds = Math.max(0.05, Math.min(0.9,
+          person.skillFactor('hunt') * (1 - quarry.def.evasion) + 0.15
+        ));
+        // Expected return, not appetite. A kill is worth several bushes and a
+        // hunt can fail, so the two terms have to be multiplied out or the
+        // scorer cannot tell a boar from a hare — and with hunger alone driving
+        // it, foraging won every single time and nobody in the world ever
+        // hunted at all.
+        const payoff = quarry.def.meat / 20;
+        add('hunt', hunger * HUNT_APPETITE * odds * payoff
+          * this.proximityBonus(person, quarry, ctx.sightRadius));
+      }
+    }
+
+    // --- Shelter and sleep -------------------------------------------------
     // Cold sends people indoors. This is the payoff for building anything at
-    // all, and the reason a winter is now survivable.
-    if (person.needs.cold > 25) {
+    // all, and the reason a winter is now survivable. The same roof is also
+    // where anyone tired enough goes to bed, so both are scored off one search.
+    if (person.needs.cold > 25 || (ctx.time.isNight && person.needs.fatigue > 20)) {
       shelter = this.pickBest(
         ctx.buildings.filter(b => b.complete && b.def.shelter > 0.2),
         b => b.def.shelter * 40 - person.distanceTo({ x: b.centerX, y: b.centerY })
       );
       if (shelter) {
-        add('shelter', urgencyCurve(person.needs.cold) * 2.6 * shelter.def.shelter
-          * this.proximityBonus(person, { x: shelter.centerX, y: shelter.centerY }, ctx.sightRadius));
+        const nearness =
+          this.proximityBonus(person, { x: shelter.centerX, y: shelter.centerY }, ctx.sightRadius);
+        add('shelter', urgencyCurve(person.needs.cold) * 2.6 * shelter.def.shelter * nearness);
+        // Above `rest` at night by construction, and below it by day: a roof
+        // within reach after dark is where a tired person should be, and
+        // sleeping through the afternoon is not.
+        add('sleep', fatigue * (ctx.time.isNight ? 3.2 : 1.0) * nearness);
       }
     }
 
@@ -516,6 +617,8 @@ export class Brain {
     }
 
     // --- Rest --------------------------------------------------------------
+    // Still here for people with no roof, which after a bad winter is most of
+    // them. Sleeping is strictly better and scores higher when it is available.
     add('rest', fatigue * (ctx.time.isNight ? 2.4 : 1.2));
 
     // --- Wander ------------------------------------------------------------
@@ -531,6 +634,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, student, victim, beneficiary, fleeFrom,
+        quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
       },
     };
@@ -594,6 +698,15 @@ export class Brain {
           person.targetY = found.water.y;
         }
         break;
+      case 'hunt': {
+        const animal = found.quarry;
+        if (animal) {
+          person.targetAnimalId = animal.id;
+          person.targetX = animal.x;
+          person.targetY = animal.y;
+        }
+        break;
+      }
       case 'pick':
       case 'chop': {
         const tree = action === 'pick' ? found.fruitTree : found.fellTree;
@@ -608,9 +721,10 @@ export class Brain {
       case 'take':
       case 'build':
       case 'haul':
+      case 'sleep':
       case 'shelter': {
         const building =
-          action === 'shelter' ? found.shelter :
+          action === 'shelter' || action === 'sleep' ? found.shelter :
           action === 'take' ? found.larderTarget :
           action === 'store' ? found.storeTarget :
           found.site;
@@ -673,14 +787,19 @@ export class Brain {
       case 'talk':
       case 'teach':
       case 'court':
+      case 'feed':
       case 'give':
       case 'steal':
       case 'attack': {
+        // `feed` is ordinary giving aimed at one's own hungry child; the action
+        // system does not need to know the difference, only the scorer does.
+        // Same arrangement as `gather_for_site`.
+        if (action === 'feed') person.action = 'give';
         const other =
           action === 'talk' ? found.companion :
           action === 'teach' ? found.student :
           action === 'court' ? found.suitor :
-          action === 'give' ? found.beneficiary :
+          action === 'feed' || action === 'give' ? found.beneficiary :
           found.victim;
         if (other) {
           person.targetX = other.x;

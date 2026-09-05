@@ -31,9 +31,51 @@ async function ready(page: Page): Promise<void> {
   // same island, the same band and the same person standing in the same place.
   // Without this the suite rolled a new world each run and the menu assertions
   // passed or failed on where the player happened to have spawned.
-  await page.goto('/?seed=e2e-fixture');
+  // `skipIntro` bypasses character creation. These specs were all written
+  // against a game that starts immediately, and teaching every one of them to
+  // dismiss an overlay first is a large change for no assertion gained — the
+  // overlay has its own spec below.
+  await page.goto('/?seed=e2e-fixture&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
   await expect(page.locator('.hud-name')).not.toBeEmpty();
+}
+
+/**
+ * Clicks the map, and chooses from the entity picker when one opens.
+ *
+ * A click on a crowded tile no longer selects blindly: two or more things under
+ * the cursor put up a bubble per candidate and wait to be told which was meant.
+ * That is the point of the picker, and it means a test aiming at a berry bush
+ * standing under an oak has to say so — the old blind behaviour would have
+ * silently handed it the oak.
+ */
+async function clickAndChoose(
+  page: Page,
+  x: number,
+  y: number,
+  want: RegExp
+): Promise<void> {
+  await page.mouse.click(x, y);
+  const picker = page.locator('.picker');
+  if (!(await picker.isVisible())) return;
+
+  // Matched by reading each bubble rather than with a `hasText` filter: the
+  // label sits in a child span next to an emoji icon, and the filter does not
+  // reliably see through that.
+  const items = picker.locator('.picker-item');
+  const count = await items.count();
+  const seen: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const item = items.nth(i);
+    const text = (await item.textContent()) ?? '';
+    seen.push(text);
+    if (want.test(text)) {
+      await item.click();
+      return;
+    }
+  }
+  throw new Error('picker offered ' + JSON.stringify(seen) +
+    ' but nothing matched ' + want);
 }
 
 /**
@@ -297,18 +339,35 @@ test('a stranger gives up nothing but what you can see', async ({ page }) => {
       __dynasty: {
         sim: {
           player: { id: number };
-          livingPeople: () => { id: number; x: number; y: number }[];
+          livingPeople: () => { id: number; bandId: number; x: number; y: number }[];
         };
-        camera: { worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+        camera: {
+          worldToScreenX: (x: number) => number;
+          worldToScreenY: (y: number) => number;
+          snapTo: (x: number, y: number) => void;
+          following: boolean;
+        };
       };
     }).__dynasty;
-    const other = d.sim.livingPeople().find(p => p.id !== d.sim.player.id);
+    // Someone from another tribe. "The next person in the list" used to be a
+    // stranger, when a band was fifteen unrelated adults; since the world
+    // started being founded from families it is the player's own wife.
+    const self = d.sim.livingPeople().find(p => p.id === d.sim.player.id);
+    if (!self) return null;
+    const other = d.sim.livingPeople().find(p => p.bandId !== self.bandId);
     if (!other) return null;
+    // Their camp is across the island, so the click has to be aimed somewhere
+    // actually on screen. Releasing the follow keeps the loop from dragging the
+    // view back to the player between the snap and the click.
+    d.camera.snapTo(other.x, other.y);
+    d.camera.following = false;
     return { x: d.camera.worldToScreenX(other.x), y: d.camera.worldToScreenY(other.y) };
   });
   expect(clicked).not.toBeNull();
 
-  await page.mouse.click(clicked!.x, clicked!.y);
+  // A stranger reads as "a man" / "a woman" in the picker too, for the same
+  // reason they do in the panel: the picker must not leak a name either.
+  await clickAndChoose(page, clicked!.x, clicked!.y, /(man|woman|child)/i);
 
   // No name, and an explicit statement of why you know nothing.
   await expect(page.locator('.hud-name')).toContainText(/^a (child|young |older )?(wo)?man$/i);
@@ -337,7 +396,12 @@ test('a berry bush reads as an estimate until you are close', async ({ page }) =
           player: { x: number; y: number };
           nodes: { kind: string; x: number; y: number }[];
         };
-        camera: { worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+        camera: {
+          worldToScreenX: (x: number) => number;
+          worldToScreenY: (y: number) => number;
+          snapTo: (x: number, y: number) => void;
+          following: boolean;
+        };
       };
     }).__dynasty;
     const far = d.sim.nodes.find(n => {
@@ -347,11 +411,16 @@ test('a berry bush reads as an estimate until you are close', async ({ page }) =
       return n.kind === 'berries' && dist > 4 && dist < 18;
     });
     if (!far) return null;
+    // A bush the player can see is not necessarily a bush *on screen*: the
+    // camera frames the player, and a click outside the canvas never reaches
+    // the game at all. Bring the view to it and let go of the follow.
+    d.camera.snapTo(far.x, far.y);
+    d.camera.following = false;
     return { x: d.camera.worldToScreenX(far.x), y: d.camera.worldToScreenY(far.y) };
   });
   if (!clicked) test.skip(true, 'no berry bush at a useful distance on this seed');
 
-  await page.mouse.click(clicked!.x, clicked!.y);
+  await clickAndChoose(page, clicked!.x, clicked!.y, /berries/i);
   await expect(page.locator('.hud-name')).toContainText('Berry bush');
   await expect(page.locator('.hud-known')).toContainText('too far to judge');
   await expect(page.locator('.hud-veil')).toBeVisible();
@@ -400,10 +469,12 @@ test('the family panel names spouse, parents and children', async ({ page }) => 
 
   await page.locator('.hud-tab', { hasText: 'Ties' }).click();
   await expect(page.locator('.hud-section', { hasText: 'Family' })).toBeVisible();
-  // A founding character starts alone: unmarried, no children, own household.
-  await expect(page.locator('.hud-panel')).toContainText('unmarried');
-  await expect(page.locator('.hud-panel')).toContainText('no children');
+  // A founding character is a member of a founding family, not a household of
+  // one: the world now opens with three tribes made of married couples, their
+  // children and the occasional widowed parent. Asserting "unmarried, no
+  // children" would now be asserting that founding had not happened.
   await expect(page.locator('.hud-panel')).toContainText('household');
+  await expect(page.locator('.hud-panel')).toContainText('married to');
 
   expect(errors).toEqual([]);
 });
@@ -424,16 +495,30 @@ test('standing over someone is shown, and command mode can be entered', async ({
   const other = await page.evaluate(() => {
     const d = (window as never as {
       __dynasty: {
-        sim: { player: { id: number }; livingPeople: () => { id: number; x: number; y: number }[] };
-        camera: { worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+        sim: {
+          player: { id: number };
+          livingPeople: () => { id: number; bandId: number; x: number; y: number }[];
+        };
+        camera: {
+          worldToScreenX: (x: number) => number;
+          worldToScreenY: (y: number) => number;
+          snapTo: (x: number, y: number) => void;
+          following: boolean;
+        };
       };
     }).__dynasty;
-    const pick = d.sim.livingPeople().find(p => p.id !== d.sim.player.id);
+    // Another tribe, for the same reason as the stranger test above: the
+    // nearest other person is now family, and family owes you a great deal.
+    const self = d.sim.livingPeople().find(p => p.id === d.sim.player.id);
+    if (!self) return null;
+    const pick = d.sim.livingPeople().find(p => p.bandId !== self.bandId);
     if (!pick) return null;
+    d.camera.snapTo(pick.x, pick.y);
+    d.camera.following = false;
     return { x: d.camera.worldToScreenX(pick.x), y: d.camera.worldToScreenY(pick.y) };
   });
   expect(other).not.toBeNull();
-  await page.mouse.click(other!.x, other!.y);
+  await clickAndChoose(page, other!.x, other!.y, /(man|woman|child)/i);
 
   await page.locator('.hud-tab', { hasText: 'Ties' }).click();
   await expect(page.locator('.hud-section', { hasText: 'Your standing' })).toBeVisible();
@@ -607,6 +692,67 @@ test('right-clicking water sends you to the bank instead of refusing', async ({ 
   // It is accepted and routed to a bank, rather than mutely refused.
   await expect.poll(async () => page.locator('.hud-doing').textContent(), { timeout: 10_000 })
     .toMatch(/drinking|walking/i);
+
+  expect(errors).toEqual([]);
+});
+
+test('character creation picks a life inside a world that already exists', async ({ page }) => {
+  const errors = guardErrors(page);
+  // Deliberately *without* `skipIntro`: this is the one spec that wants the
+  // overlay, and every other spec bypasses it.
+  await page.goto('/?seed=e2e-fixture');
+
+  // Three tribes, each described by its own norms rather than by a hand-written
+  // blurb, and the world behind them already generated.
+  const tribes = page.locator('.newgame-option');
+  await expect(tribes).toHaveCount(3, { timeout: 15_000 });
+  await tribes.first().click();
+
+  // A shortlist of that tribe's adults, and a reshuffle that shows a different
+  // slice of the same fixed set of people rather than inventing anyone.
+  const first = await page.locator('.newgame-option-name').first().innerText();
+  await page.locator('.hud-button', { hasText: 'Roll again' }).click();
+  await expect(page.locator('.newgame-option-name').first()).not.toHaveText(first);
+
+  await page.locator('.newgame-option').first().click();
+
+  // Point-buy replaces the rolled skills rather than adding to them.
+  await page.locator('.hud-button', { hasText: 'Choose skills instead' }).click();
+  await expect(page.locator('.newgame-skill').first()).toContainText('0');
+
+  await page.locator('.hud-button', { hasText: 'Begin' }).click();
+
+  // The overlay is gone, the clock is running, and the player is somebody.
+  await expect(page.locator('.newgame')).toBeHidden();
+  await expect(page.locator('.hud-tag')).toHaveText('you');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty();
+
+  expect(errors).toEqual([]);
+});
+
+test('the ties tab can send the camera to somebody', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.locator('.hud-tab', { hasText: 'Ties' }).click();
+  const goTo = page.locator('.hud-goto').first();
+  await expect(goTo).toBeVisible();
+
+  const cameraAt = () => page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: { camera: { x: number; y: number; following: boolean } };
+    }).__dynasty;
+    return { x: d.camera.x, y: d.camera.y, following: d.camera.following };
+  });
+
+  const before = await cameraAt();
+  await goTo.click();
+  const after = await cameraAt();
+
+  // It moved, and it let go of the player — otherwise the view slides straight
+  // back to wherever the player is standing and the button does nothing.
+  expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeGreaterThan(0);
+  expect(after.following).toBe(false);
 
   expect(errors).toEqual([]);
 });

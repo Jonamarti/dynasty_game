@@ -43,6 +43,20 @@ export type Need = (typeof NEEDS)[number];
 
 export type Sex = 'male' | 'female';
 
+/** An order set aside while a need is dealt with. See `Person.resume`. */
+export interface ResumedOrder {
+  action: string;
+  /** Tick after which it is forgotten rather than resumed. */
+  expiresAt: number;
+  nodeId: number | null;
+  treeId: number | null;
+  buildingId: number | null;
+  personId: number | null;
+  animalId: number | null;
+  x: number | null;
+  y: number | null;
+}
+
 /** In-game days in a year. Ages, gestation and lifespans are all in days. */
 export const DAYS_PER_YEAR = 80;
 
@@ -132,6 +146,8 @@ export class Person {
   targetBuildingId: number | null = null;
   /** Which tree the current action is aimed at, for felling and picking. */
   targetTreeId: number | null = null;
+  /** Which animal the current action is aimed at, for the hunt. */
+  targetAnimalId: number | null = null;
   /**
    * The last person to draw blood, and when. Fear is what stops a grudge
    * cascade from consuming a band: without somewhere to run, every fight
@@ -148,6 +164,23 @@ export class Person {
    * brawl really is a rapid exchange.
    */
   socialCooldownUntil = 0;
+  /**
+   * An order that was interrupted by a need, waiting to be picked back up.
+   *
+   * This is what makes a long job and a short one behave the same from the
+   * player's side. The interruption thresholds are absolute need levels, so
+   * whether a job is ever interrupted depends almost entirely on how long it
+   * runs: a berry bush is stripped in 148 ticks and never crosses the line, a
+   * flint outcrop takes 400 and always does. Same rule, same code — but from
+   * outside it looked like berries were uninterruptible and flint was not, and
+   * an order the player gave simply evaporated halfway through.
+   *
+   * Now the order is remembered, the person goes and drinks, and then goes back
+   * to it. Cleared by any new order and by an expiry, so a task nobody can get
+   * back to cannot haunt someone forever.
+   */
+  resume: ResumedOrder | null = null;
+
   /**
    * A player-issued order overrides the utility scorer until it completes or
    * becomes impossible. This is how the radial menu reaches the world, and it
@@ -320,11 +353,26 @@ export class Person {
     this.targetPersonId = null;
     this.targetBuildingId = null;
     this.targetTreeId = null;
+    this.targetAnimalId = null;
     this.actionTimer = 0;
   }
 
-  /** Abandons any player order, returning the person to their own judgement. */
+  /**
+   * Abandons any player order, returning the person to their own judgement.
+   *
+   * Deliberately leaves `resume` alone: this is called by `finish` at the end of
+   * *every* action, including the interruption that set `resume` a moment
+   * earlier, so clearing it here silently made resumption impossible. Callers
+   * that mean "forget the whole errand" — a refusal, an exile, the player
+   * taking the controls — use `forgetPlans`.
+   */
   clearOrder(): void {
     this.order = null;
+  }
+
+  /** Drops the current order *and* anything set aside to come back to. */
+  forgetPlans(): void {
+    this.order = null;
+    this.resume = null;
   }
 }

@@ -12,7 +12,7 @@ import { Simulation } from '../core/Simulation.ts';
 
 const SMALL = {
   seed: 'determinism',
-  world: { width: 48, height: 48, berryBushes: 40, flintOutcrops: 10, deadwood: 20, gameAnimals: 8 },
+  world: { width: 48, height: 48, berryBushes: 40, flintOutcrops: 10, deadwood: 20, gameHerds: 4 },
   population: { bands: 1, peoplePerBand: 6 },
 };
 

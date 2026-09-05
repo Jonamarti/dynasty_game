@@ -10,16 +10,20 @@
 import './style.css';
 import { Simulation } from './sim/core/Simulation.ts';
 import { Camera } from './render/Camera.ts';
-import { Renderer } from './render/Renderer.ts';
-import { actionLabel } from './render/Floaters.ts';
+import { Renderer, hitRadiusOf, GRAB_MARGIN, type HitTarget } from './render/Renderer.ts';
+import { actionLabel, stopReasonLabel } from './render/Floaters.ts';
 import { Hud, type Selection } from './ui/Hud.ts';
 import { RadialMenu } from './ui/RadialMenu.ts';
+import { EntityPicker, type PickerEntry } from './ui/EntityPicker.ts';
+import { NewGame } from './ui/NewGame.ts';
 import { SuccessionOverlay } from './ui/Succession.ts';
 import { availableActions, type ActionTarget } from './sim/ai/ActionCatalog.ts';
 import type { Person } from './sim/entities/Person.ts';
 import type { BuildingDef } from './sim/entities/Building.ts';
 import { describeEvent } from './sim/social/Events.ts';
-import { knowledgeOfPerson } from './sim/social/Knowledge.ts';
+import {
+  knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree,
+} from './sim/social/Knowledge.ts';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement;
 const hudRoot = document.getElementById('hud') as HTMLElement;
@@ -33,9 +37,19 @@ const hudRoot = document.getElementById('hud') as HTMLElement;
  * new world every run and passing or failing on where the player happened to
  * be standing.
  */
-const seedParam = new URLSearchParams(location.search).get('seed');
+const params = new URLSearchParams(location.search);
+const seedParam = params.get('seed');
 const seed: string | number = seedParam ?? Math.floor(Math.random() * 1e9);
 const sim = new Simulation({ seed });
+
+/**
+ * `?skipIntro=1` goes straight into the first living body.
+ *
+ * The Playwright specs and every screenshot in the tour were written against a
+ * game that starts immediately, and a character-creation screen that they all
+ * have to be taught to dismiss is a screen that will silently break them.
+ */
+const skipIntro = params.get('skipIntro') === '1';
 const player = sim.possessFirst();
 
 const camera = new Camera();
@@ -47,7 +61,10 @@ window.addEventListener('resize', () => renderer.resize());
 
 let selected: Selection | null = player ? { kind: 'person', person: player } : null;
 let paused = false;
-let stepsPerSecond = 20;
+// The default lives in `Config.time.tickRate`, and the HUD slider reads the
+// same number: three hardcoded 20s is how the slider and the loop came to
+// disagree about what speed the game opens at.
+let stepsPerSecond = sim.config.time.tickRate;
 const maxStepsPerFrame = 8;
 
 /**
@@ -67,6 +84,10 @@ let activeDesign: BuildingDef | null = null;
 // menu living inside it was silently erased the moment the HUD re-rendered.
 const radial = new RadialMenu(document.body);
 
+// The chooser for a stack of things under one click. On the body for the same
+// reason the radial menu is.
+const picker = new EntityPicker(document.body);
+
 // On the body for the same reason as the radial menu: the HUD rebuilds its own
 // subtree and would erase anything living inside it.
 const succession = new SuccessionOverlay(document.body, heir => {
@@ -83,6 +104,16 @@ const hud = new Hud(hudRoot, {
   onTogglePause: () => { paused = !paused; hud.setPaused(paused); },
   onPossess: person => possess(person),
   onSelect: person => { selected = { kind: 'person', person }; },
+  onFocus: person => {
+    // `snapTo` and release the follow, not `recentre`: recentre re-attaches the
+    // camera to the player, so the view would slide straight back off whoever
+    // the player just asked to look at. `F` re-attaches it when they are done.
+    camera.snapTo(person.x, person.y);
+    camera.following = false;
+    renderer.floaters.push(person.x, person.y,
+      knowledgeOfPerson(sim.player ?? person, person, sim.relationships).displayName,
+      { color: '#7fd4ff', boxed: true, ttl: 2 });
+  },
   onPickDesign: def => { activeDesign = def; },
   onItemAction: (person, itemId, verb) => handleItemAction(person, itemId, verb),
   onCommand: person => {
@@ -92,8 +123,28 @@ const hud = new Hud(hudRoot, {
         'commanding ' + commanding.name, { color: '#7fd4ff', boxed: true });
     }
   },
-});
+}, sim.config.time.tickRate);
 hud.renderBuildBar(sim, false);
+
+/**
+ * Character creation, over a world that already exists.
+ *
+ * The game is paused behind it, so the first step does not run until the player
+ * has chosen who they are — otherwise the tribe they are reading about is
+ * already burying people by the time they pick.
+ */
+const newGame = new NewGame(document.body, sim, person => {
+  possess(person);
+  camera.snapTo(person.x, person.y);
+  paused = false;
+  hud.setPaused(false);
+});
+
+if (!skipIntro && sim.livingPeople().length > 0) {
+  paused = true;
+  hud.setPaused(true);
+  newGame.open();
+}
 
 /**
  * A verb chosen against one stack in the pack.
@@ -135,9 +186,7 @@ function handleItemAction(person: Person, itemId: string, verb: string): void {
 }
 
 function possess(person: Person): void {
-  if (sim.player) sim.player.isPlayer = false;
-  person.isPlayer = true;
-  sim.player = person;
+  sim.possess(person);
   selected = { kind: 'person', person };
   renderer.floaters.push(person.x, person.y, 'you are now ' + person.name, {
     color: '#ffd35c', boxed: true, ttl: 3,
@@ -151,6 +200,7 @@ function possess(person: Person): void {
 const held = new Set<string>();
 
 window.addEventListener('keydown', event => {
+  if (newGame.isOpen) return;
   const key = event.key.toLowerCase();
 
   if (key === ' ') {
@@ -166,6 +216,14 @@ window.addEventListener('keydown', event => {
   if (key === 'escape') {
     if (buildMode) setBuildMode(false);
     commanding = null;
+    return;
+  }
+  if (key === 'h') {
+    hud.toggleChrome();
+    return;
+  }
+  if (key === 'p') {
+    hud.toggleCollapsed();
     return;
   }
   if (key === 'f') {
@@ -230,43 +288,56 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
     return [{ kind: 'ground', x: Math.round(worldX), y: Math.round(worldY) }];
   }
 
-  const person = renderer.pickPerson(worldX, worldY, 1.2);
+  /**
+   * Keeps a candidate only if the click landed on the thing as it is drawn.
+   *
+   * The picker used to use fixed radii regardless of how large the renderer
+   * painted the target, so a seedling drawn as a two-pixel sprig captured
+   * clicks a tile and a half away. `hitRadiusOf` lives beside the drawing code
+   * for exactly this reason.
+   */
+  const consider = (target: ActionTarget, hit: HitTarget, x: number, y: number) => {
+    const distance = Math.hypot(x - worldX, y - worldY);
+    if (distance > hitRadiusOf(hit) + GRAB_MARGIN) return;
+    scored.push({ target, distance });
+  };
+
+  const person = renderer.pickPerson(worldX, worldY);
   if (person && person.id !== sim.player?.id) {
-    scored.push({
-      target: { kind: 'person', x: person.x, y: person.y, person },
-      distance: Math.hypot(person.x - worldX, person.y - worldY),
-    });
+    consider({ kind: 'person', x: person.x, y: person.y, person },
+      { kind: 'person', person }, person.x, person.y);
   }
 
-  const node = renderer.pickNode(worldX, worldY, 1.4);
+  const node = renderer.pickNode(worldX, worldY);
   if (node) {
-    scored.push({
-      target: { kind: 'node', x: node.x, y: node.y, node },
-      distance: Math.hypot(node.x - worldX, node.y - worldY),
-    });
+    consider({ kind: 'node', x: node.x, y: node.y, node },
+      { kind: 'node', node }, node.x, node.y);
   }
 
-  const tree = renderer.pickTree(worldX, worldY, 1.6);
+  const tree = renderer.pickTree(worldX, worldY);
   if (tree) {
-    scored.push({
-      target: { kind: 'tree', x: tree.x, y: tree.y, tree },
-      distance: Math.hypot(tree.x - worldX, tree.y - worldY),
-    });
+    consider({ kind: 'tree', x: tree.x, y: tree.y, tree },
+      { kind: 'tree', tree }, tree.x, tree.y);
   }
 
-  const pile = renderer.pickPile(worldX, worldY, 1.2);
+  const pile = renderer.pickPile(worldX, worldY);
   if (pile) {
-    scored.push({
-      target: { kind: 'pile', x: pile.x, y: pile.y, pile },
-      distance: Math.hypot(pile.x - worldX, pile.y - worldY),
-    });
+    consider({ kind: 'pile', x: pile.x, y: pile.y, pile },
+      { kind: 'pile', pile }, pile.x, pile.y);
+  }
+
+  const animal = renderer.pickAnimal(worldX, worldY);
+  if (animal) {
+    consider({ kind: 'animal', x: animal.x, y: animal.y, animal },
+      { kind: 'animal', animal }, animal.x, animal.y);
   }
 
   scored.sort((a, b) => a.distance - b.distance);
   const targets = scored.map(entry => entry.target);
 
   // A building covers whole tiles rather than a point, so it sits behind the
-  // things standing on it but ahead of bare ground.
+  // things standing on it but ahead of bare ground. Its footprint is already
+  // exact, so it needs no hit radius of its own.
   const building = sim.buildingAt(worldX, worldY);
   if (building) {
     targets.push({ kind: 'building', x: building.centerX, y: building.centerY, building });
@@ -275,7 +346,8 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
   // Your own character last: reachable by clicking a spot with nothing else on
   // it, and never in the way of the thing you were actually aiming at.
   const self = sim.player;
-  if (!excludePlayer && self && person && person.id === self.id) {
+  if (!excludePlayer && self &&
+      Math.hypot(self.x - worldX, self.y - worldY) <= hitRadiusOf({ kind: 'person', person: self }) + GRAB_MARGIN) {
     targets.push({ kind: 'person', x: self.x, y: self.y, person: self });
   }
 
@@ -283,9 +355,93 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
   return targets;
 }
 
-/** Nearest thing under the cursor. */
-function targetAt(worldX: number, worldY: number, excludePlayer = false): ActionTarget {
-  return candidatesAt(worldX, worldY, excludePlayer)[0]!;
+/** The candidates worth choosing between: everything but the bare ground. */
+function realCandidates(targets: ActionTarget[]): ActionTarget[] {
+  return targets.filter(t => t.kind !== 'ground');
+}
+
+const PICKER_ICONS: Record<string, string> = {
+  person: '\u{1F464}',
+  node: '\u{1F33F}',
+  tree: '\u{1F333}',
+  pile: '\u{1F4E6}',
+  animal: '\u{1F98C}',
+  building: '\u{1F3E0}',
+  ground: '\u{1F45F}',
+};
+
+/**
+ * How a candidate reads in the chooser.
+ *
+ * Routed through the knowledge layer rather than the raw entity, because a
+ * picker that prints a stranger's name hands the player exactly the god's-eye
+ * view the rest of the interface is built to withhold.
+ */
+function describeCandidate(observer: Person, target: ActionTarget): string {
+  switch (target.kind) {
+    case 'person':
+      return knowledgeOfPerson(observer, target.person!, sim.relationships).displayName;
+    case 'node':
+      return target.node!.kind + ' — ' + knowledgeOfNode(observer, target.node!).estimate;
+    case 'tree':
+      return target.tree!.def.label + ' — ' + knowledgeOfTree(observer, target.tree!).estimate;
+    case 'animal':
+      // No knowledge gating: a deer is a deer to anyone who has seen one.
+      return target.animal!.label + (target.animal!.alarmed ? ' — alarmed' : '');
+    case 'pile':
+      return 'dropped goods';
+    case 'building':
+      return target.building!.def.label;
+    case 'ground':
+      return 'the ground here';
+  }
+}
+
+function pickerEntries(observer: Person, targets: ActionTarget[]): PickerEntry[] {
+  return targets.map(target => ({
+    target,
+    icon: PICKER_ICONS[target.kind] ?? '•',
+    label: describeCandidate(observer, target),
+  }));
+}
+
+/** Where to draw the hover ring for a candidate, and how big. */
+function ringFor(target: ActionTarget): { x: number; y: number; radius: number } {
+  const pad = 0.3;
+  switch (target.kind) {
+    case 'person':
+      return { x: target.x, y: target.y,
+        radius: hitRadiusOf({ kind: 'person', person: target.person! }) + pad };
+    case 'node':
+      return { x: target.x, y: target.y,
+        radius: hitRadiusOf({ kind: 'node', node: target.node! }) + pad };
+    case 'tree':
+      return { x: target.x, y: target.y,
+        radius: hitRadiusOf({ kind: 'tree', tree: target.tree! }) + pad };
+    case 'animal':
+      return { x: target.x, y: target.y,
+        radius: hitRadiusOf({ kind: 'animal', animal: target.animal! }) + pad };
+    case 'pile':
+      return { x: target.x, y: target.y, radius: 0.6 };
+    case 'building':
+      return { x: target.x, y: target.y,
+        radius: Math.max(target.building!.def.width, target.building!.def.height) * 0.7 };
+    case 'ground':
+      return { x: target.x, y: target.y, radius: 0.5 };
+  }
+}
+
+/** Makes a clicked candidate the current selection. */
+function selectTarget(target: ActionTarget): void {
+  selected =
+    target.kind === 'person' && target.person ? { kind: 'person', person: target.person } :
+    target.kind === 'node' && target.node ? { kind: 'node', node: target.node } :
+    target.kind === 'tree' && target.tree ? { kind: 'tree', tree: target.tree } :
+    target.kind === 'pile' && target.pile ? { kind: 'pile', pile: target.pile } :
+    target.kind === 'animal' && target.animal ? { kind: 'animal', animal: target.animal } :
+    target.kind === 'building' && target.building
+      ? { kind: 'building', building: target.building }
+      : (sim.player ? { kind: 'person', person: sim.player } : null);
 }
 
 canvas.addEventListener('mousemove', event => {
@@ -330,6 +486,7 @@ const drag = { active: false, panning: false, lastX: 0, lastY: 0, button: 0 };
 const DRAG_THRESHOLD = 4;
 
 canvas.addEventListener('mousedown', event => {
+  if (newGame.isOpen) return;
   if (event.button === 0 || event.button === 1) {
     drag.active = true;
     drag.panning = event.button === 1;
@@ -363,29 +520,20 @@ canvas.addEventListener('mousedown', event => {
     const actor = sim.player;
     if (!actor || !actor.alive) return;
 
-    const target = targetAt(point.x, point.y, true);
-    const nearWater = isNearWater(point.x, point.y);
-    // In command mode the verbs are worked out for the person being commanded,
-    // not for the player: what *they* can carry, what *they* know how to make.
-    const subject = commanding && commanding.alive ? commanding : actor;
-    const options = availableActions(subject, target, {
-      world: sim.world, nearWater, commanding,
-    });
+    const options = candidatesAt(point.x, point.y, true);
+    const real = realCandidates(options);
 
-    const title =
-      target.kind === 'person'
-        ? knowledgeOfPerson(actor, target.person!, sim.relationships).displayName :
-      target.kind === 'node' ? target.node!.kind :
-      target.kind === 'building' ? target.building!.def.label :
-      target.kind === 'tree' ? target.tree!.def.label :
-      target.kind === 'pile' ? 'Dropped goods' :
-      'Ground';
-
-    radial.show(
+    // Same rule as the left click: one target goes straight to the menu, a
+    // stack asks which of them the order is aimed at first.
+    if (real.length < 2) {
+      openRadial(actor, options[0]!, event.clientX, event.clientY);
+      return;
+    }
+    picker.show(
       event.clientX, event.clientY,
-      commanding && commanding.alive ? title + ' \u2014 ordering ' + commanding.name : title,
-      options,
-      option => issue(actor, option.id, target)
+      pickerEntries(actor, [...real, options[options.length - 1]!]),
+      target => openRadial(actor, target, event.clientX, event.clientY),
+      target => { renderer.hoverRing = target ? ringFor(target) : null; }
     );
     return;
   }
@@ -400,33 +548,29 @@ window.addEventListener('mouseup', event => {
   drag.active = false;
   drag.panning = false;
   if (wasDragging || event.button !== 0) return;
-  if (buildMode || radial.isOpen) return;
+  if (buildMode || radial.isOpen || picker.isOpen) return;
   if (event.target !== canvas) return;
 
   const point = worldPoint(event);
   const options = candidatesAt(point.x, point.y, false);
+  const real = realCandidates(options);
+  const observer = sim.player;
 
-  // Clicking the same spot again steps to the next thing stacked there, so a
-  // person, the bush they are picking and the hut they are standing in are all
-  // reachable without moving the mouse.
-  const samePlace = Math.hypot(point.x - lastPick.x, point.y - lastPick.y) < 1;
-  lastPick.index = samePlace ? (lastPick.index + 1) % options.length : 0;
-  lastPick.x = point.x;
-  lastPick.y = point.y;
+  // One thing under the cursor (or none): behave exactly as before. Two or
+  // more, and the player is asked which — the old behaviour cycled blindly
+  // through the stack on repeated clicks, which is a guessing game.
+  if (real.length < 2 || !observer) {
+    selectTarget(options[0]!);
+    return;
+  }
 
-  const target = options[lastPick.index]!;
-  selected =
-    target.kind === 'person' && target.person ? { kind: 'person', person: target.person } :
-    target.kind === 'node' && target.node ? { kind: 'node', node: target.node } :
-    target.kind === 'tree' && target.tree ? { kind: 'tree', tree: target.tree } :
-    target.kind === 'pile' && target.pile ? { kind: 'pile', pile: target.pile } :
-    target.kind === 'building' && target.building
-      ? { kind: 'building', building: target.building }
-      : (sim.player ? { kind: 'person', person: sim.player } : null);
+  picker.show(
+    event.clientX, event.clientY,
+    pickerEntries(observer, [...real, options[options.length - 1]!]),
+    target => selectTarget(target),
+    target => { renderer.hoverRing = target ? ringFor(target) : null; }
+  );
 });
-
-/** Where the last selecting click landed, and how deep into the stack it went. */
-const lastPick = { x: Number.NaN, y: Number.NaN, index: 0 };
 
 // Suppressed document-wide, not just on the canvas: right-click is this game's
 // primary verb, and the browser menu covered the radial one whenever the cursor
@@ -451,6 +595,40 @@ function isNearWater(x: number, y: number): boolean {
   return false;
 }
 
+/**
+ * Opens the action menu for one target.
+ *
+ * Split out of the mousedown handler because the entity picker now sits in
+ * front of it: with a stack under the cursor the menu opens only once the
+ * player has said which of the stack they meant.
+ */
+function openRadial(actor: Person, target: ActionTarget, screenX: number, screenY: number): void {
+  const nearWater = isNearWater(target.x, target.y);
+  // In command mode the verbs are worked out for the person being commanded,
+  // not for the player: what *they* can carry, what *they* know how to make.
+  const subject = commanding && commanding.alive ? commanding : actor;
+  const options = availableActions(subject, target, {
+    world: sim.world, nearWater, commanding,
+  });
+
+  const title =
+    target.kind === 'person'
+      ? knowledgeOfPerson(actor, target.person!, sim.relationships).displayName :
+    target.kind === 'node' ? target.node!.kind :
+    target.kind === 'building' ? target.building!.def.label :
+    target.kind === 'tree' ? target.tree!.def.label :
+    target.kind === 'animal' ? target.animal!.label :
+    target.kind === 'pile' ? 'Dropped goods' :
+    'Ground';
+
+  radial.show(
+    screenX, screenY,
+    commanding && commanding.alive ? title + ' — ordering ' + commanding.name : title,
+    options,
+    option => issue(actor, option.id, target)
+  );
+}
+
 /** Turns a menu choice into a simulation order. */
 function issue(actor: Person, actionId: string, target: ActionTarget): void {
   if (actionId === 'possess' && target.person) {
@@ -472,6 +650,7 @@ function issue(actor: Person, actionId: string, target: ActionTarget): void {
     nodeId: target.node?.id,
     buildingId: target.building?.id,
     treeId: target.tree?.id,
+    animalId: target.animal?.id,
   };
 
   // Commanding somebody else: they may simply refuse, in public.
@@ -494,6 +673,7 @@ function issue(actor: Person, actionId: string, target: ActionTarget): void {
     nodeId: target.node?.id,
     buildingId: target.building?.id,
     treeId: target.tree?.id,
+    animalId: target.animal?.id,
   });
 
   // A refusal says why. `lastRefusal` is set by the simulation and read once.
@@ -519,6 +699,29 @@ const EVENT_COLORS: Record<string, string> = {
   share_food: '#7ddc96',
   gift: '#7ddc96',
 };
+
+/**
+ * Says why an order stopped.
+ *
+ * The simulation queues these; the decision about *whose* are worth reporting
+ * belongs here, because "worth reporting" means "the player asked for it" and
+ * the simulation has no idea who the player is commanding. A chief ordering his
+ * band about all day is not news.
+ */
+function reportInterruptions(): void {
+  const notices = sim.interruptions.splice(0, sim.interruptions.length);
+  for (const notice of notices) {
+    const person = sim.peopleById.get(notice.personId);
+    if (!person) continue;
+    const mine = person.isPlayer || person.id === commanding?.id;
+    if (!mine) continue;
+
+    const text = actionLabel(notice.action) + ' stopped — ' + stopReasonLabel(notice.reason);
+    renderer.floaters.push(person.x, person.y, text,
+      { color: '#e0b055', boxed: true, ttl: 3.4 });
+    hud.noteStop(person.id, stopReasonLabel(notice.reason));
+  }
+}
 
 function updateFloaters(): void {
   // The player's own action, and the selected person's, are always labelled:
@@ -595,7 +798,9 @@ function frame(now: number): void {
       const intent = readIntent();
       // Walking by hand overrides a standing order; the player has changed
       // their mind, and fighting them over it is maddening.
-      if (intent && sim.player) sim.player.clearOrder();
+      // Walking by hand abandons the errand entirely, set-aside job included:
+      // the player has taken the controls and is not coming back to it.
+      if (intent && sim.player) sim.player.forgetPlans();
       sim.playerIntent = intent;
       sim.step();
       accumulator -= stepDuration;
@@ -615,6 +820,7 @@ function frame(now: number): void {
   renderer.commandedId = commanding && commanding.alive ? commanding.id : null;
   hud.setCommanding(commanding);
   succession.update(sim);
+  reportInterruptions();
   updateFloaters();
   renderer.floaters.update(delta);
   renderer.render(
@@ -623,6 +829,7 @@ function frame(now: number): void {
     selected.kind === 'node' ? { nodeId: selected.node.id } :
     selected.kind === 'tree' ? { treeId: selected.tree.id } :
     selected.kind === 'pile' ? { pileId: selected.pile.id } :
+    selected.kind === 'animal' ? { animalId: selected.animal.id } :
     { buildingId: selected.building.id }
   );
   hud.update(sim, selected);

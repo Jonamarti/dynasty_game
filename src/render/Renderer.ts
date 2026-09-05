@@ -13,10 +13,13 @@ import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import type { World } from '../sim/core/World.ts';
 import { BIOMES, type Biome } from '../sim/core/World.ts';
-import type { ResourceKind } from '../sim/entities/ResourceNode.ts';
+import type { ResourceKind, ResourceNode } from '../sim/entities/ResourceNode.ts';
+import type { ItemPile } from '../sim/entities/ItemPile.ts';
+import type { Animal } from '../sim/entities/Animal.ts';
 import type { Building } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { TreeSpecies } from '../sim/entities/Tree.ts';
+import { workProgressOf } from '../sim/core/Progress.ts';
 import { Camera, TILE } from './Camera.ts';
 import { Floaters } from './Floaters.ts';
 
@@ -34,7 +37,6 @@ const RESOURCE_COLORS: Record<ResourceKind, string> = {
   berries: '#c0392b',
   flint:   '#c8ccd0',
   sticks:  '#8b5a2b',
-  game:    '#d8a860',
   reeds:   '#b3b76a',
   clay:    '#a97b5d',
 };
@@ -71,6 +73,7 @@ export interface Highlight {
   buildingId?: number;
   treeId?: number;
   pileId?: number;
+  animalId?: number;
 }
 
 export class Renderer {
@@ -79,6 +82,14 @@ export class Renderer {
   commandedId: number | null = null;
   /** Tile the build cursor is hovering, or null when not in build mode. */
   buildGhost: { x: number; y: number; width: number; height: number; ok: boolean } | null = null;
+  /**
+   * Ring drawn around whichever bubble of the entity picker the cursor is over.
+   *
+   * A chooser that names three bushes without saying *which* bush is barely
+   * better than the blind cycling it replaced, so hovering a bubble points at
+   * the thing on the map.
+   */
+  hoverRing: { x: number; y: number; radius: number } | null = null;
 
   private ctx: CanvasRenderingContext2D;
   private terrain: HTMLCanvasElement;
@@ -213,6 +224,16 @@ export class Renderer {
       }
     }
 
+    // --- Animals -----------------------------------------------------------
+    // Under people, like buildings: a hunter standing over a kill should be the
+    // figure you can see.
+    for (const animal of sim.animals) {
+      if (!animal.alive) continue;
+      if (animal.x < view.minX || animal.x > view.maxX) continue;
+      if (animal.y < view.minY || animal.y > view.maxY) continue;
+      this.drawAnimal(animal, highlight?.animalId === animal.id);
+    }
+
     // --- People ------------------------------------------------------------
     for (const person of sim.livingPeople()) {
       if (person.x < view.minX || person.x > view.maxX || person.y < view.minY || person.y > view.maxY) continue;
@@ -229,6 +250,19 @@ export class Renderer {
       ctx.strokeStyle = g.ok ? '#7ddc96' : '#e66464';
       ctx.lineWidth = 2;
       ctx.strokeRect(px, py, g.width * scale, g.height * scale);
+    }
+
+    // --- Picker hover ------------------------------------------------------
+    // Over everything but the night overlay, since it answers a question the
+    // player is asking right now.
+    if (this.hoverRing) {
+      const px = camera.worldToScreenX(this.hoverRing.x);
+      const py = camera.worldToScreenY(this.hoverRing.y);
+      ctx.strokeStyle = '#ffd35c';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(px, py, Math.max(8, this.hoverRing.radius * scale), 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     // --- Night overlay -----------------------------------------------------
@@ -431,41 +465,140 @@ export class Renderer {
     }
   }
 
-  /** How far through their current job somebody is, 0-1, or null if idle. */
-  workProgress(person: Person): number | null {
-    const cycle = person.cycleProgress;
-    if (cycle !== null) return cycle;
+  /**
+   * An animal, sized and coloured by species.
+   *
+   * Drawn low and wide rather than upright, so at a glance a herd never reads
+   * as a group of people — which matters, because the two are told apart at
+   * distance and the verbs for them are entirely different.
+   */
+  private drawAnimal(animal: Animal, selected: boolean): void {
+    const { ctx, camera } = this;
+    const scale = camera.scale;
+    const px = camera.worldToScreenX(animal.x);
+    const py = camera.worldToScreenY(animal.y);
 
-    if (person.action === 'chop' && person.targetTreeId !== null) {
-      const tree = this.sim.treesById.get(person.targetTreeId);
-      if (tree && tree.fellingTicks > 0) {
-        return Math.max(0, Math.min(1, tree.chopProgress / tree.fellingTicks));
-      }
+    const size = ANIMAL_SIZES[animal.species];
+    const w = scale * size;
+    const h = scale * size * 0.62;
+
+    ctx.fillStyle = ANIMAL_COLORS[animal.species];
+    ctx.fillRect(px - w / 2, py - h / 2, w, h);
+    // Head, offset, so the thing has a facing at a glance.
+    ctx.fillRect(px + w * 0.34, py - h * 0.72, w * 0.3, h * 0.42);
+
+    // An alarmed animal is the single most useful thing to see on this map:
+    // it is the difference between a stalk that is working and one that is not.
+    if (animal.alarmed) {
+      ctx.fillStyle = '#ffd35c';
+      ctx.fillRect(px - 1, py - h / 2 - scale * 0.42, 2, scale * 0.2);
     }
-    if (person.action === 'build' && person.targetBuildingId !== null) {
-      const site = this.sim.buildingsById.get(person.targetBuildingId);
-      if (site && !site.complete) return site.completion;
+
+    if (selected) {
+      ctx.strokeStyle = '#7fd4ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px - w / 2 - 3, py - h / 2 - 3, w + 6, h + 6);
     }
-    return null;
+  }
+
+  /**
+   * How far through their current job somebody is, 0-1, or null if idle.
+   *
+   * Delegates to `workProgressOf` so the bar over the head and the bar in the
+   * character panel cannot say different things — which they did, for the whole
+   * of felling and building.
+   */
+  workProgress(person: Person): number | null {
+    return workProgressOf(person, this.sim);
   }
 
   /** The living person nearest a world point within `radius` tiles, or null. */
-  pickPerson(worldX: number, worldY: number, radius = 1.2): Person | null {
+  pickPerson(worldX: number, worldY: number, radius = PICK_RANGE): Person | null {
     return this.sim.peopleHash.findNearest(worldX, worldY, radius);
   }
 
   /** The resource node nearest a world point within `radius` tiles, or null. */
-  pickNode(worldX: number, worldY: number, radius = 1.2) {
+  pickNode(worldX: number, worldY: number, radius = PICK_RANGE) {
     return this.sim.nodeHash.findNearest(worldX, worldY, radius);
   }
 
   /** The dropped pile nearest a world point, or null. */
-  pickPile(worldX: number, worldY: number, radius = 1.2) {
+  pickPile(worldX: number, worldY: number, radius = PICK_RANGE) {
     return this.sim.pileHash.findNearest(worldX, worldY, radius);
   }
 
   /** The standing tree nearest a world point, or null. */
-  pickTree(worldX: number, worldY: number, radius = 1.4) {
+  pickTree(worldX: number, worldY: number, radius = PICK_RANGE) {
     return this.sim.treeHash.findNearest(worldX, worldY, radius, t => t.standing);
   }
+
+  /** The living animal nearest a world point, or null. */
+  pickAnimal(worldX: number, worldY: number, radius = PICK_RANGE) {
+    return this.sim.animalHash.findNearest(worldX, worldY, radius, a => a.alive);
+  }
 }
+
+/** Drawn size in tiles, per species. A hare is not a boar. */
+const ANIMAL_SIZES: Record<string, number> = { deer: 0.55, boar: 0.6, hare: 0.3 };
+const ANIMAL_COLORS: Record<string, string> = {
+  deer: '#b3844e',
+  boar: '#6b5442',
+  hare: '#c9b191',
+};
+
+/**
+ * How far a broad-phase pick looks before `hitRadiusOf` narrows it down.
+ *
+ * The spatial hash needs *some* radius to query with; this is deliberately
+ * generous, because rejecting a candidate is `hitRadiusOf`'s job and a range
+ * that is too small would hide large things from the picker entirely.
+ */
+export const PICK_RANGE = 2.2;
+
+/**
+ * Slack added to every hit radius, so precise clicking is not miserable.
+ *
+ * A quarter of a tile at the default zoom is a few pixels — enough that a click
+ * aimed at a sprig of a seedling still lands on it, and not so much that the
+ * seedling swallows clicks aimed at the grass beside it.
+ */
+export const GRAB_MARGIN = 0.25;
+
+/**
+ * How large a thing is to click on, matching what `drawPerson`, `drawNode`,
+ * `drawTree` and `drawPile` above actually paint.
+ *
+ * These live here, beside the drawing code that produces them, precisely so
+ * that the picker and the painter cannot drift apart. The picker used to carry
+ * its own fixed radii — person 1.2, node 1.4, tree 1.6 — so a seedling drawn as
+ * a two-pixel sprig captured clicks a tile and a half away and the bush you were
+ * pointing at lost every one of them.
+ */
+export function hitRadiusOf(target: HitTarget): number {
+  switch (target.kind) {
+    // Body is 0.34 x 0.52 tiles plus a head; 0.45 covers the drawn silhouette.
+    case 'person': return 0.45;
+    // A stripped bush is small. Fullness is what the renderer scales it by, so
+    // the click target shrinks as the thing itself does.
+    case 'node': {
+      const def = target.node.def;
+      const fullness = def.maxAmount > 0
+        ? Math.max(0, Math.min(1, target.node.amount / def.maxAmount))
+        : 0;
+      return Math.max(0.3, 0.18 + fullness * 0.22);
+    }
+    // `drawTree` paints a canopy of `tree.radius * 0.55`; a seedling is ~0.2.
+    case 'tree': return Math.max(0.2, target.tree.radius * 0.55);
+    case 'pile': return 0.3;
+    // Matches `ANIMAL_SIZES`, which is what `drawAnimal` paints.
+    case 'animal': return (ANIMAL_SIZES[target.animal.species] ?? 0.5) * 0.75;
+  }
+}
+
+/** The kinds `hitRadiusOf` knows how to size. Buildings use `contains`. */
+export type HitTarget =
+  | { kind: 'person'; person: Person }
+  | { kind: 'node'; node: ResourceNode }
+  | { kind: 'tree'; tree: Tree }
+  | { kind: 'pile'; pile: ItemPile }
+  | { kind: 'animal'; animal: Animal };

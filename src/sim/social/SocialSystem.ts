@@ -39,16 +39,70 @@ export const KIN_SPOUSE = 55;
 export const KIN_PARENT = 60;
 export const KIN_SIBLING = 40;
 
-/** Standing regard for a member of one's own band, before any deed. */
-const IN_GROUP_BIAS = 10;
-/** Standing wariness toward someone from another band. */
-const OUT_GROUP_BIAS = -14;
+/**
+ * First impressions, before anyone has done anything.
+ *
+ * Three rungs, checked household first, because family outranks band and the
+ * flat band/stranger pair could not express that at all. The household rung is
+ * what covers in-laws, step-kin and fostered members who have no blood kinship
+ * edge — `KIN_PARENT`, `KIN_SIBLING` and `KIN_SPOUSE` stay separate and
+ * additive on top of whichever rung applies.
+ *
+ * Wariness of outsiders is deliberately small. At −14 a stranger started most
+ * of the way to the exile threshold before doing anything at all, which made
+ * meeting anyone from another band a near-irreversible act.
+ */
+const HOUSEHOLD_BIAS = 18;
+const IN_GROUP_BIAS = 6;
+const OUT_GROUP_BIAS = -6;
 
 /** Confidence lost each time a story is passed on. */
 const RUMOR_DECAY = 0.75;
 
 /** Opinion weight of a story you were merely told, relative to seeing it. */
 const HEARSAY_WEIGHT = 0.45;
+
+/**
+ * The standing regard one person owes another before any deed.
+ *
+ * Household first: a household is a family, and someone married into yours is
+ * closer than a neighbour from the same camp whatever the blood says.
+ */
+export function firstImpression(observer: Person, subject: Person): number {
+  if (observer.householdId !== null && observer.householdId === subject.householdId) {
+    return HOUSEHOLD_BIAS;
+  }
+  return observer.bandId === subject.bandId ? IN_GROUP_BIAS : OUT_GROUP_BIAS;
+}
+
+/**
+ * Writes the kinship edges a new family member implies, in both directions.
+ *
+ * Shared by birth and by world founding so that a sibling you were born beside
+ * and a sibling the world started you with cannot end up with different edges —
+ * which is exactly the sort of divergence that produces a family who are
+ * strangers to each other for no reason anyone can find.
+ *
+ * The caller must have pushed `child.id` onto each parent's `childIds` first;
+ * that is where the sibling set comes from.
+ */
+export function linkFamily(
+  child: Person,
+  parents: (Person | null)[],
+  relationships: RelationshipGraph
+): void {
+  for (const parent of parents) {
+    if (!parent) continue;
+    relationships.setKinship(parent.id, child.id, KIN_PARENT);
+    relationships.setKinship(child.id, parent.id, KIN_PARENT);
+    // Siblings, both ways.
+    for (const siblingId of parent.childIds) {
+      if (siblingId === child.id) continue;
+      relationships.setKinship(child.id, siblingId, KIN_SIBLING);
+      relationships.setKinship(siblingId, child.id, KIN_SIBLING);
+    }
+  }
+}
 
 let nextEventId = 1;
 
@@ -246,11 +300,7 @@ export class SocialSystem {
 
   /** Stamps a first impression the first time one person notices another. */
   introduce(observer: Person, subject: Person): void {
-    this.relationships.introduce(
-      observer.id,
-      subject.id,
-      observer.bandId === subject.bandId ? IN_GROUP_BIAS : OUT_GROUP_BIAS
-    );
+    this.relationships.introduce(observer.id, subject.id, firstImpression(observer, subject));
   }
 
   /** `teller` passes their best story to `listener`. */

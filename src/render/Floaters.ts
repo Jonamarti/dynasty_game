@@ -149,8 +149,62 @@ export const ACTION_LABELS: Record<string, string> = {
   store: 'storing goods',
   take: 'taking from store',
   shelter: 'sheltering',
+  sleep: 'asleep',
+  hunt: 'hunting',
 };
 
 export function actionLabel(action: string): string {
   return ACTION_LABELS[action] ?? action;
+}
+
+/**
+ * Why an action stopped, in words a player can act on.
+ *
+ * The simulation names these for itself — `hands_full`, `tree_gone` — and until
+ * this table existed every one of them was a telemetry counter and nothing
+ * else. Kept beside `ACTION_LABELS` because it answers the other half of the
+ * same question: what were they doing, and why did they stop?
+ */
+export const STOP_REASONS: Record<string, string> = {
+  // Ran out of room, need or patience.
+  hands_full: 'their hands are full',
+  thirsty: 'they stopped for a drink',
+  hungry: 'they stopped to eat',
+  cold: 'they were too cold to carry on',
+  under_attack: 'somebody attacked them',
+  long_enough: 'they had worked long enough',
+  daylight: 'nobody sleeps through the day',
+  rested: 'they had slept enough',
+
+  // The job finished itself.
+  node_empty: 'there was nothing left to take',
+  tree_bare: 'there was no fruit left on it',
+
+  // The world changed underneath them.
+  node_gone: 'it was gone',
+  tree_gone: 'the tree was gone',
+  site_gone: 'the site was gone',
+  target_gone: 'they were gone',
+  quarry_gone: 'the animal was gone',
+  quarry_escaped: 'the animal outran them',
+
+  // They could not do it after all.
+  no_water: 'there was no water within reach',
+  no_food: 'they had nothing to eat',
+  no_fruit: 'there was nothing to pick',
+  nothing_to_haul: 'they carried nothing the site needed',
+  site_needs_materials: 'the site still wants materials',
+  already_built: 'it was already finished',
+  not_a_store: 'it is not a store',
+  store_full: 'the store was full',
+  store_empty: 'the store was empty',
+  nothing_to_give: 'they had nothing to give',
+  nothing_to_steal: 'there was nothing to take',
+  dont_know_how: 'they do not know how',
+  lack_materials: 'they lacked the materials',
+  already_wed: 'they are already married',
+};
+
+export function stopReasonLabel(reason: string): string {
+  return STOP_REASONS[reason] ?? reason.replace(/_/g, ' ');
 }

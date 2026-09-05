@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 const DIR = 'artifacts/screenshots';
 
 test('tour', async ({ page }) => {
-  await page.goto('/?seed=tour');
+  await page.goto('/?seed=tour&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
   await page.waitForTimeout(800);
   await page.screenshot({ path: DIR + '/01-start.png' });

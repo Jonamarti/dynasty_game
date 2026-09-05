@@ -29,8 +29,26 @@ const EXILE_THRESHOLD = -28;
 /** At least this many people must hold that opinion for it to count. */
 const EXILE_QUORUM = 4;
 
-/** People per completed shelter before the band wants another. */
-const PEOPLE_PER_HUT = 5;
+/**
+ * How full a band's stores must be before another is worth digging.
+ *
+ * The old rule counted *pits*, not what was in them, so a band with three empty
+ * storage pits planned a fourth. An empty pit is proof you do not need another.
+ */
+const STORE_PRESSURE = 0.6;
+
+/**
+ * Days a site can go with no work done and nothing delivered before the band
+ * gives up on it.
+ *
+ * Without this, `underway >= MAX_SITES` deadlocks the planner behind a hut
+ * nobody will ever haul timber to: the band is permanently "already building"
+ * and never marks out the windbreak it actually needs.
+ */
+const STALE_SITE_DAYS = 6;
+
+/** Completed structures a band will hold, per this many members, plus two. */
+const MEMBERS_PER_STRUCTURE = 4;
 
 /** Days between a band considering new construction. */
 const PLANNING_INTERVAL = 3;
@@ -48,6 +66,8 @@ export interface BandContext {
   place: (defId: string, x: number, y: number, bandId: number) => Building | null;
   /** Called when someone is cast out, so the world can resettle them. */
   onExile: (person: Person, band: Band, averageOpinion: number) => void;
+  /** Removes an abandoned site from the world. */
+  abandonSite: (building: Building) => void;
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
   command: (leader: Person, subordinate: Person, action: string,
     target: { buildingId?: number }) => boolean;
@@ -56,6 +76,15 @@ export interface BandContext {
 export class BandSystem {
   /** Chief per band, by band id. Read by the authority system. */
   readonly chiefByBand = new Map<number, number>();
+
+  /**
+   * Last day each site visibly moved, and the reading that said so.
+   *
+   * Kept here rather than on `Building` because it is the band's judgement
+   * about its own work, not a property of the structure — and the simulation
+   * has no other reason to remember it.
+   */
+  private readonly siteProgress = new Map<number, { mark: number; day: number }>();
 
   daily(bands: Band[], people: Person[], ctx: BandContext): void {
     const byBand = new Map<number, Person[]>();
@@ -138,25 +167,42 @@ export class BandSystem {
    */
   private planBuildings(band: Band, members: Person[], ctx: BandContext): void {
     const theirs = ctx.buildings.filter(b => b.ownerBandId === band.id);
-    const underway = theirs.filter(b => !b.complete).length;
+    this.dropStaleSites(theirs, ctx);
+
+    const live = ctx.buildings.filter(b => b.ownerBandId === band.id);
+    const underway = live.filter(b => !b.complete).length;
     if (underway >= MAX_SITES) return;
 
-    const shelters = theirs.filter(b => b.complete && b.def.shelter > 0.3).length;
-    const planned = theirs.filter(b => !b.complete && b.def.shelter > 0.3).length;
-    const stores = theirs.filter(b => b.complete && b.def.storage >= 100).length;
-    const roofs = shelters + planned;
+    // A hard ceiling, so that no combination of the conditions below can
+    // produce a field of huts. Whatever else is true, a band of twelve does not
+    // need eleven structures.
+    const built = live.filter(b => b.complete).length;
+    if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
+
+    // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
+    // windbreak are not the same amount of shelter, and counting them as one
+    // each is how a band with two windbreaks decided it had housed ten people.
+    const roofArea = live
+      .filter(b => b.def.shelter > 0.3)
+      .reduce((sum, b) => sum + b.def.width * b.def.height, 0);
+
+    const stores = live.filter(b => b.complete && b.def.storage >= 100);
+    const capacity = stores.reduce((sum, b) => sum + b.def.storage, 0);
+    const used = stores.reduce((sum, b) => sum + b.store.total, 0);
+    const plannedStores = live.filter(b => !b.complete && b.def.storage >= 100).length;
 
     let wanted: string | null = null;
-    if (roofs * PEOPLE_PER_HUT < members.length) {
+    if (roofArea < members.length) {
       // A mud hut is warmer and holds goods, but it wants felled timber and the
       // better part of a season. A band that is *badly* short of roof — which
       // is what a population growing faster than it builds looks like — throws
       // up a windbreak instead: a quarter of the work, sticks and thatch only,
       // and the difference between a hard winter and twenty funerals.
-      const badlyShort = roofs * PEOPLE_PER_HUT * 2 < members.length;
-      wanted = badlyShort ? 'windbreak' : 'mud_hut';
-    } else if (stores === 0) wanted = 'storage_pit';
-    else if (stores * 14 < members.length) wanted = 'storage_pit';
+      wanted = roofArea * 2 < members.length ? 'windbreak' : 'mud_hut';
+    } else if (plannedStores === 0) {
+      if (stores.length === 0) wanted = 'storage_pit';
+      else if (capacity > 0 && used / capacity > STORE_PRESSURE) wanted = 'storage_pit';
+    }
     if (!wanted) return;
 
     for (let attempt = 0; attempt < 30; attempt++) {
@@ -167,6 +213,34 @@ export class BandSystem {
         telemetry.count('band_planned_' + wanted);
         return;
       }
+    }
+  }
+
+  /**
+   * Forgets sites nobody is working on.
+   *
+   * A site counts as moving if work has gone in or materials have arrived. One
+   * that has done neither for `STALE_SITE_DAYS` is a foundation in a field, and
+   * holding a build slot open for it stops the band from planning anything
+   * else.
+   */
+  private dropStaleSites(theirs: Building[], ctx: BandContext): void {
+    for (const site of theirs) {
+      if (site.complete) {
+        this.siteProgress.delete(site.id);
+        continue;
+      }
+      const mark = site.progress + site.delivered.total;
+      const seen = this.siteProgress.get(site.id);
+      if (!seen || seen.mark !== mark) {
+        this.siteProgress.set(site.id, { mark, day: ctx.day });
+        continue;
+      }
+      if (ctx.day - seen.day < STALE_SITE_DAYS) continue;
+
+      this.siteProgress.delete(site.id);
+      telemetry.count('site_abandoned');
+      ctx.abandonSite(site);
     }
   }
 

@@ -1,0 +1,31 @@
+# Dynasty — project documentation
+
+Written 2026-09-02, at the end of the M6a pass.
+
+The top-level [README](../README.md) is the pitch and the quick start. This
+folder is the working documentation: how the thing is built, what is wrong with
+it, what to do next, and why each change was made.
+
+| document | what it answers |
+|---|---|
+| [architecture.md](architecture.md) | How the simulation is put together, and which rules are load-bearing |
+| [bugs.md](bugs.md) | Known defects and rough edges, with how to reproduce each |
+| [next-steps.md](next-steps.md) | What to build next, in order, and why that order |
+| [optimizations.md](optimizations.md) | Where the time goes, what has been done about it, and what is left |
+| [changelog.md](changelog.md) | Every change, with its date and the reason for it |
+| [m6_plan_households_sleep.md](m6_plan_households_sleep.md) | The M6a plan this pass implemented |
+
+If you are an AI agent picking this project up, read
+[../AGENTS.md](../AGENTS.md) first — it is shorter and tells you what will
+waste your time.
+
+## The shape of the thing in one paragraph
+
+A deterministic, seeded life simulation. One island, three tribes made of
+families, and a few dozen people who each score every action they could take and
+do the best one. They forage, hunt, build, marry, bear children, teach each other
+how to make fire, form opinions of one another from what they personally saw, and
+die. The player inhabits one of them, with no extra abilities, and when that
+person dies the game hands them an heir. Nothing calls `Math.random()`; the
+simulation never imports the renderer; and a headless harness runs exactly the
+code the browser runs, roughly four thousand steps a second.

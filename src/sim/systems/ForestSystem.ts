@@ -62,6 +62,18 @@ export class ForestSystem {
       if (!tree.standing) continue;
 
       if (tree.advanceDay(ctx.season, ctx.growth)) {
+        // A tree somebody is part way through felling gets a stay of execution.
+        //
+        // The axe work is stored on the trunk, so retiring it at a day boundary
+        // threw away however many hundred ticks had gone into it and ended the
+        // woodcutter's order with a bare "the tree was gone". It is still past
+        // its span and will be offered up again tomorrow, by which time the
+        // feller has either finished or walked away.
+        if (tree.chopProgress > 0) {
+          tree.standing = true;
+          telemetry.count('tree_death_deferred');
+          continue;
+        }
         died.push(tree);
         telemetry.count('tree_died_old');
         continue;

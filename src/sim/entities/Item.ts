@@ -37,9 +37,22 @@ export const ITEMS: Record<string, ItemDef> = {
 export class Inventory {
   private stacks = new Map<string, number>();
 
+  /**
+   * Bumped on every change to the contents.
+   *
+   * The inventory panel caches its DOM against a key and only patches a handful
+   * of live values on a hit, so a pack that changed while the key stayed the
+   * same left the Kit tab showing what it showed a minute ago. Folding this
+   * counter into that key means any change to the pack rebuilds the panel —
+   * which is also the correct behaviour for the per-item verbs, since what can
+   * be done with a stack depends on what is in it.
+   */
+  version = 0;
+
   add(itemId: string, count = 1): void {
     if (count <= 0) return;
     this.stacks.set(itemId, (this.stacks.get(itemId) ?? 0) + count);
+    this.version++;
   }
 
   /** Removes up to `count`; returns how many were actually removed. */
@@ -49,6 +62,7 @@ export class Inventory {
     if (taken <= 0) return 0;
     if (have - taken <= 0) this.stacks.delete(itemId);
     else this.stacks.set(itemId, have - taken);
+    this.version++;
     return taken;
   }
 
