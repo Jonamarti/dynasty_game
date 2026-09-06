@@ -6,6 +6,110 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-06 — M6b phase 3: the tech web
+
+The visualiser for phase 2, and equally the instrument for telling whether
+phase 2 works. The project already values that pairing — `npm run why` and the
+HUD render the *same* `lastScores` table two ways — and this is the same idea
+applied to knowledge: the web draws the same `TECH` table and the same `Notice`
+that `KnowledgeSystem.tryConceive` decides on, so a picture that looks wrong is
+a simulation that is wrong.
+
+### The panel
+
+- **`src/ui/TechWeb.ts`**, a full-screen overlay on **`G`**, following the
+  `Succession`/`NewGame` boilerplate: own root on `document.body` rather than
+  `#hud` — which rebuilds its subtree every frame — one delegated listener
+  dispatching on `data-*`, and Escape to dismiss.
+- **Five node states**, which are the whole legend: *proven* (lit, domain
+  coloured, refinement pips), *in hand* (a ring drawn to the idea's insight),
+  *within reach* (dashed outline — a spark fires right now), *understood but
+  unsuggested* (faint), and *out of sight* (a small dark circle with **no
+  label**). *Reason:* the shape of what is unknown should be visible without its
+  content being handed over. Naming everything turns the web into a walkthrough.
+- **Hovering answers "why not"**: each route in, with every ingredient marked
+  present or missing — "✓ knowing firemaking, ✗ holding raw meat".
+  *Reason:* this is the standing "the UI must say why" rule applied to
+  discovery, and it is the half that makes the panel teach the player how the
+  world works rather than decorate it. It is also the reason the panel is worth
+  building at all: a tree that shows a locked node and nothing else is a list of
+  things you cannot have.
+- **`Simulation.noticeOf`** and **`describeIngredient`** in `Synthesis.ts`.
+  *Reason:* the panel must answer out of the *same* situation the simulation
+  decides on, and out of the same vocabulary. A UI holding its own copy of
+  either would drift the first time an ingredient was added, and would then go
+  on confidently describing a spark that no longer exists. A unit test asserts
+  every ingredient the table names has words.
+- **Gated through `knowledgeOfPerson`.** Opened on a stranger it shows the veil
+  and not one node. *Reason:* `AGENTS.md` names "any new panel" explicitly, and
+  a map of somebody's mind is the easiest possible way to hand the player the
+  god's-eye view the whole design is built to withhold.
+
+### The layout
+
+- **`src/ui/TechWebLayout.ts`**, kept apart because it is pure arithmetic and
+  touches no DOM, which is what lets `techweb.test.ts` test it. Domains own
+  angular sectors, `requires` depth sets the radius, and a fixed number of
+  relaxation passes — repulsion between all pairs, springs along the edges —
+  pulls the seeded arrangement into an organic shape. Computed once per size and
+  cached.
+- **No randomness of any kind.** Not `Math.random`, which the project forbids
+  outright, and not a fork of a simulation stream either: `RNG.fork()` consumes
+  a draw from its parent, so opening a panel would shift every subsequent draw
+  in the world and two players who pressed `G` at different moments would get
+  different games.
+- **Two kinds of edge.** `requires` is scaffolding and is drawn as a solid line;
+  a faint dashed line joins two technologies sparked by two or more of the same
+  things, which is a real relation in the table and the thing that makes the
+  picture read as a web rather than a family tree. Cross-domain prerequisites
+  get longer springs, so the areas that feed each other drift together and the
+  arcs between clusters are the shape of the image rather than lines drawn over
+  it.
+
+### Two defects found while building it
+
+- **The panel rebuilt its DOM every frame**, which detached whatever node the
+  cursor was over before a hover could land on it. Playwright said so in as many
+  words — "element was detached from the DOM, retrying", a hundred times over —
+  and in play the detail pane would simply never have filled in. It now keeps a
+  digest of everything on screen and redraws only when that changes. The digest
+  includes the *notice*, not just the known technologies, because that is what
+  moves a node between "could occur to them now" and "nothing has suggested it".
+- **`KnowledgeSystem.advance` would refine an already-retired idea** past its
+  ceiling. Found by `research.test.ts` in phase 2 and fixed there; noted here
+  because the guard is what the ceiling now rests on rather than on where the
+  callers happen to look.
+
+### Two facts about the game recorded rather than changed
+
+- **A conversation is four and a half in-game hours**, not the "half an hour"
+  the comment beside `TALK_TICKS` claimed — 45 ticks at 240 ticks to the day.
+  The comment was wrong by a factor of nine and is corrected; the number is
+  deliberately left alone, because `next-steps.md` §O1 replaces the single
+  conversation with several modes at several costs and changing it first would
+  only move the problem.
+- **The owner's list is written down** as `next-steps.md` §O1–O8: conversation
+  modes, talking while working, learning by working alongside somebody,
+  tribe-owned buildings that rivals may be refused, sabotage, continuous
+  movement instead of five discrete jumps a second, and offering the ground as a
+  choice when a single entity is clicked. Each is checked against the code, so
+  whoever picks one up starts from what is there rather than from a guess.
+
+### Verification
+
+`techweb.test.ts`: the layout is byte-identical between two runs, no node
+overlaps another at two different panel sizes, every edge has both endpoints on
+the web, no pair is joined twice, and the cross-domain arcs exist. Two e2e specs
+cover the panel opening on `G` with its five states and its "why not" pane, and
+the veil on a stranger. The tour gained `12-techweb.png`.
+
+The mandatory `.techweb[hidden] { display: none; }` is in place and the e2e spec
+asserts it, because an author `display` beats the browser's rule for `hidden`
+and this project has now made that exact mistake four times. The z-index ladder
+is radial 20, picker 21, **techweb 30**, newgame/succession 40.
+
+---
+
 ## 2026-09-06 — M6b phase 2: the mind, and where ideas come from
 
 The largest phase of M6b and the heart of it

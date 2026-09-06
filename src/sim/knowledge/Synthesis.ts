@@ -116,6 +116,80 @@ export function sparkStatus(
   return { met, missing };
 }
 
+/**
+ * One ingredient in words, as a plain noun phrase.
+ *
+ * Lives here beside the predicate that tests it rather than in the panel that
+ * shows it, so that the answer the tech web gives to "why has this not occurred
+ * to me?" is phrased from the same table the simulation decides on. A UI with
+ * its own copy of this vocabulary would drift from the data the first time
+ * somebody added an ingredient, and the panel would go on confidently
+ * describing a spark that no longer exists.
+ *
+ * Neutral person, deliberately: the web can be opened on somebody else, and
+ * "you are holding a hide" is wrong when the answer is about your daughter.
+ */
+export function describeIngredient(
+  ingredient: Ingredient,
+  labelFor: (kind: 'tech' | 'item', id: string) => string
+): string {
+  switch (ingredient.kind) {
+    case 'knows': return 'knowing ' + labelFor('tech', ingredient.tech).toLowerCase();
+    case 'holding': return 'holding ' + labelFor('item', ingredient.item).toLowerCase();
+    case 'doing': return 'having been ' + DOING_WORDS[ingredient.action];
+    case 'feeling': return FEELING_WORDS[ingredient.need] ?? ingredient.need;
+    case 'place': return PLACE_WORDS[ingredient.biome] ?? ('on ' + ingredient.biome);
+    case 'saw': return 'having ' + (SAW_WORDS[ingredient.what] ?? 'seen ' + ingredient.what);
+    case 'season': return 'in ' + ingredient.season;
+  }
+}
+
+/**
+ * The verbs, as something that reads in a list.
+ *
+ * Falls back to the raw id rather than throwing, because a missing entry here
+ * should degrade to a slightly clumsy sentence and not to a blank panel — but
+ * `synthesis.test.ts` asserts every action a spark actually names has one, so
+ * the fallback is for verbs no spark uses.
+ */
+const DOING_WORDS: Record<string, string> = {
+  forage: 'foraging', gather: 'gathering', pick: 'picking fruit', chop: 'felling trees',
+  hunt: 'hunting', build: 'building', haul: 'hauling materials', store: 'storing goods',
+  craft: 'making things', wander: 'walking the country', talk: 'talking',
+  teach: 'teaching', take: 'living out of the store', drink: 'fetching water',
+  eat: 'eating', rest: 'resting', sleep: 'sleeping', shelter: 'sheltering',
+  give: 'giving things away', steal: 'stealing', attack: 'fighting',
+  court: 'courting', ponder: 'thinking', discuss: 'arguing things out',
+  prototype: 'building the first one', flee: 'running away', goto: 'walking',
+};
+
+const FEELING_WORDS: Record<string, string> = {
+  cold: 'being cold', hunger: 'being hungry', thirst: 'being thirsty',
+  fatigue: 'being worn out', company: 'being lonely',
+};
+
+const PLACE_WORDS: Record<string, string> = {
+  forest: 'standing in woodland', grass: 'standing on open grass',
+  hills: 'standing in the hills', beach: 'standing on the shore',
+  rock: 'standing on bare rock', water: 'standing at the water',
+};
+
+const SAW_WORDS: Record<string, string> = {
+  // Deeds, from `social/Events.ts`.
+  gift: 'watched a gift given', share_food: 'watched food shared',
+  help: 'watched somebody helped', talk: 'listened to people talking',
+  trade: 'watched a trade', teach: 'watched somebody taught',
+  theft: 'witnessed a theft', assault: 'witnessed a beating',
+  murder: 'witnessed a killing',
+  // Reasons their own work stopped, from `ActionSystem`.
+  hands_full: 'run out of hands', quarry_escaped: 'lost an animal in the chase',
+  node_empty: 'worked a place until nothing was left',
+  long_enough: 'worked a whole day at one thing',
+  cold: 'given up on a day of work for the cold',
+  hungry: 'broken off work to eat', thirsty: 'broken off work to drink',
+  tree_bare: 'stripped a tree bare', under_attack: 'been set upon at work',
+};
+
 // ---------------------------------------------------------------------------
 // The lifecycle of an idea
 // ---------------------------------------------------------------------------

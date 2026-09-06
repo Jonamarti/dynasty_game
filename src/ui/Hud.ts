@@ -210,8 +210,8 @@ export class Hud {
     help.innerHTML =
       '<b>WASD</b> walk &middot; <b>drag</b> pan &middot; <b>F</b> re-centre &middot; ' +
       '<b>click</b> inspect &middot; <b>right-click</b> actions &middot; ' +
-      '<b>B</b> build &middot; <b>C</b> command &middot; <b>P</b> fold panel &middot; ' +
-      '<b>H</b> hide overlay &middot; <b>space</b> pause';
+      '<b>B</b> build &middot; <b>C</b> command &middot; <b>G</b> tech web &middot; ' +
+      '<b>P</b> fold panel &middot; <b>H</b> hide overlay &middot; <b>space</b> pause';
 
     this.root.append(topBar, this.panelEl, this.buildBarEl, this.commandBarEl, help);
   }

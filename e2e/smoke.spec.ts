@@ -631,6 +631,136 @@ test('thinking is offered only once something has occurred to you', async ({ pag
   expect(errors).toEqual([]);
 });
 
+test('the tech web opens on G and answers why an idea has not arrived', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.evaluate(() => {
+    const d = (window as never as { __dynasty: { sim: { player: {
+      knownTech: Set<string>; techLevel: Map<string, number>; ideas: unknown[];
+    } | null } } }).__dynasty;
+    const player = d.sim.player;
+    if (!player) return;
+    player.knownTech.add('firemaking');
+    player.techLevel.set('firemaking', 1);
+    player.ideas.push({
+      tech: 'cordage', stage: 'researching', insight: 0.5,
+      story: 'kept running out of hands',
+      conceivedTick: 0, effort: 5, discussedWith: [], failedTests: 0,
+    });
+  });
+
+  await page.keyboard.press('g');
+  await expect(page.locator('.techweb-card')).toBeVisible({ timeout: 10_000 });
+
+  // Every technology is on the web, and the states are distinguishable.
+  await expect(page.locator('.techweb-node')).toHaveCount(10);
+  await expect(page.locator('.techweb-node.is-proven')).toHaveCount(1);
+  await expect(page.locator('.techweb-node.is-working')).toHaveCount(1);
+  // Out of reach means unlabelled: the shape of what is unknown is visible,
+  // its content is not.
+  const dark = page.locator('.techweb-node.is-unknown').first();
+  await expect(dark).toHaveText('');
+
+  // The whole reason the panel exists: hovering says which half of a spark is
+  // satisfied and which is missing, in words.
+  await page.locator('.techweb-node[data-tech="cooking"]').hover();
+  await expect(page.locator('.techweb-title')).toHaveText('Cooking');
+  await expect(page.locator('.techweb-ing.is-met').first())
+    .toContainText('knowing firemaking');
+  await expect(page.locator('.techweb-detail')).toContainText('holding');
+
+  // Escape dismisses, and a dismissed overlay must not be left swallowing
+  // clicks — the trap this project has now fallen into four times.
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.techweb-card')).toHaveCount(0);
+  await expect(page.locator('.techweb')).toHaveCSS('display', 'none');
+
+  expect(errors).toEqual([]);
+});
+
+test('the tech web keeps a stranger to themselves', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  // Paused first. People walk, so a position read in one evaluate and clicked
+  // a moment later is a position they have already left — the click landed on
+  // a mud hut the stranger happened to be standing on, the selection became the
+  // building, and the panel opened on the player instead.
+  await page.keyboard.press(' ');
+
+  // Somebody from another band, which since founding families is the only
+  // reliable way to get an actual stranger: "the next person in the list" is
+  // now very often the player's own wife, and three specs learned that the
+  // hard way when households landed.
+  const found = await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: {
+        sim: {
+          player: { id: number; bandId: number; householdId: number | null } | null;
+          livingPeople: () => {
+            id: number; x: number; y: number; bandId: number; householdId: number | null;
+          }[];
+          buildingAt: (x: number, y: number) => unknown;
+        };
+        camera: {
+          snapTo: (x: number, y: number) => void; following: boolean;
+          worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+        };
+      };
+    }).__dynasty;
+    const player = d.sim.player;
+    if (!player) return null;
+    // And not standing on a building: two candidates under one cursor opens the
+    // chooser rather than selecting, so the click would land on neither. The
+    // fixture seed puts this stranger squarely on an unfinished mud hut.
+    const other = d.sim.livingPeople().find(p =>
+      p.id !== player.id && p.bandId !== player.bandId &&
+      p.householdId !== player.householdId &&
+      d.sim.buildingAt(p.x, p.y) === null);
+    if (!other) return null;
+    d.camera.snapTo(other.x, other.y);
+    d.camera.following = false;
+    return { id: other.id };
+  });
+  expect(found, 'this seed has nobody from another band').not.toBeNull();
+
+  // The screen position is read in a *second* pass, after the camera has
+  // settled. Taken in the same breath as the snap it was 65 pixels out — the
+  // frame loop clamps the camera to the world bounds afterwards — and the click
+  // landed on a mud hut a little way off.
+  await page.waitForTimeout(300);
+  const at = await page.evaluate((id: number) => {
+    const d = (window as never as {
+      __dynasty: {
+        sim: { peopleById: Map<number, { x: number; y: number }> };
+        camera: {
+          worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+        };
+      };
+    }).__dynasty;
+    const who = d.sim.peopleById.get(id)!;
+    return { x: d.camera.worldToScreenX(who.x), y: d.camera.worldToScreenY(who.y) };
+  }, found!.id);
+
+  await page.mouse.click(at.x, at.y);
+  // The panel names them the way the player's character would, which is also
+  // the proof the click landed on the stranger and not on whatever they were
+  // standing on.
+  await expect(page.locator('.hud-panel'))
+    .toContainText('not of your band', { timeout: 5_000 });
+  await page.keyboard.press('g');
+  await expect(page.locator('.techweb-card')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.techweb-veil')).toBeVisible();
+  // Not one node: a map of somebody's mind is the easiest possible way to hand
+  // the player the god's-eye view the design is built to withhold.
+  await expect(page.locator('.techweb-node')).toHaveCount(0);
+
+  await page.keyboard.press('Escape');
+  await page.keyboard.press(' ');
+  expect(errors).toEqual([]);
+});
+
 test('teaching appears in the menu only when you have something to teach', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);

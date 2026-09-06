@@ -11,7 +11,9 @@
  */
 import { describe, it, expect } from 'vitest';
 import { TECH, TECHS, DOMAINS, type Tech } from '../knowledge/Tech.ts';
-import { satisfies, sparkFires, sparkStatus, type Notice } from '../knowledge/Synthesis.ts';
+import {
+  describeIngredient, satisfies, sparkFires, sparkStatus, type Notice,
+} from '../knowledge/Synthesis.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { NEEDS } from '../entities/Person.ts';
 import { BIOMES } from '../core/World.ts';
@@ -94,6 +96,25 @@ describe('the spark table', () => {
           if (ingredient.kind !== 'knows') continue;
           expect(TECH[tech].requires, tech + ' is sparked by ' + ingredient.tech +
             ' without requiring it').toContain(ingredient.tech);
+        }
+      }
+    }
+  });
+
+  it('can put every ingredient it names into words', () => {
+    // The tech web answers "why has this not occurred to me?" out of this
+    // vocabulary. A missing entry degrades to a raw id in the panel, which is
+    // the sort of thing nobody notices until a player asks what `node_empty`
+    // means, so it is asserted rather than left to a fallback.
+    const label = (kind: 'tech' | 'item', id: string) =>
+      kind === 'tech' ? TECH[id as Tech].label : (ITEMS[id]?.label ?? id);
+    for (const tech of TECHS) {
+      for (const spark of TECH[tech].sparks) {
+        for (const ingredient of spark.needs) {
+          const words = describeIngredient(ingredient, label);
+          expect(words.length, tech + ' ' + ingredient.kind).toBeGreaterThan(0);
+          // A raw id leaking through is the failure this is looking for.
+          expect(words, tech + ' ' + ingredient.kind).not.toMatch(/_/);
         }
       }
     }

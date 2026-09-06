@@ -76,6 +76,21 @@ test('tour', async ({ page }) => {
       conceivedTick: 0, effort: 60, discussedWith: [], failedTests: 0,
     });
   });
+  // The tech web, opened on the player, with a node hovered so the pane that
+  // answers "why has this not occurred to me" is filled in. That pane is the
+  // reason the panel exists, so a tour shot of the picture alone would be
+  // showing the least interesting half.
+  await page.keyboard.press('g');
+  await page.waitForTimeout(400);
+  const unproven = page.locator('.techweb-node.is-conceivable, .techweb-node.is-understood');
+  if (await unproven.count() > 0) {
+    await unproven.first().hover();
+    await page.waitForTimeout(250);
+  }
+  await page.screenshot({ path: DIR + '/12-techweb.png' });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+
   await page.locator('.hud-tab', { hasText: 'Self' }).click();
   // A taller window rather than a scroll: the panel rebuilds its subtree every
   // frame, so anything scrolled into view is scrolled back out again before the

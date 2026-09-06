@@ -43,6 +43,7 @@ import { linkFamily } from '../social/SocialSystem.ts';
 import { BandSystem } from '../systems/BandSystem.ts';
 import { foundBand, type FoundingContext } from '../systems/Founding.ts';
 import { KnowledgeSystem, countHolders } from '../systems/KnowledgeSystem.ts';
+import type { Notice } from '../knowledge/Synthesis.ts';
 import {
   eraFor, nutritionFactor, ERA_ORDER, TECHS, type EraDef, type Tech,
 } from '../knowledge/Tech.ts';
@@ -837,6 +838,22 @@ export class Simulation {
    * knows what the player can see; the cap is here so that a headless run which
    * never drains the queue cannot grow without bound.
    */
+  /**
+   * What is on somebody's mind right now: everything a spark could fire on.
+   *
+   * Exposed for the tech web, which answers "why has this not occurred to me?"
+   * and must answer it out of the *same* situation `tryConceive` decides on.
+   * A panel that assembled its own view of what a person is holding and feeling
+   * would eventually disagree with the simulation, and the disagreement would
+   * read as a bug in the game rather than in the panel.
+   */
+  noticeOf(person: Person): Notice {
+    return this.knowledgeSystem.notice(person, {
+      world: this.world,
+      season: this.time.season,
+    });
+  }
+
   private noteInsight(person: Person, text: string, kind: 'idea' | 'gain' | 'setback'): void {
     this.insights.push({ personId: person.id, text, kind });
     if (this.insights.length > this.interruptionCap) this.insights.shift();

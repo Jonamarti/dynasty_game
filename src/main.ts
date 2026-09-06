@@ -17,6 +17,7 @@ import { RadialMenu } from './ui/RadialMenu.ts';
 import { EntityPicker, type PickerEntry } from './ui/EntityPicker.ts';
 import { NewGame } from './ui/NewGame.ts';
 import { SuccessionOverlay } from './ui/Succession.ts';
+import { TechWebOverlay } from './ui/TechWeb.ts';
 import { availableActions, type ActionTarget } from './sim/ai/ActionCatalog.ts';
 import type { Person } from './sim/entities/Person.ts';
 import type { BuildingDef } from './sim/entities/Building.ts';
@@ -87,6 +88,11 @@ const radial = new RadialMenu(document.body);
 // The chooser for a stack of things under one click. On the body for the same
 // reason the radial menu is.
 const picker = new EntityPicker(document.body);
+
+// The map of somebody's mind. On `document.body` rather than `#hud`, like every
+// other overlay here: the HUD rebuilds its subtree every frame and would throw
+// this away mid-hover.
+const techWeb = new TechWebOverlay(document.body);
 
 // On the body for the same reason as the radial menu: the HUD rebuilds its own
 // subtree and would erase anything living inside it.
@@ -214,6 +220,7 @@ window.addEventListener('keydown', event => {
     return;
   }
   if (key === 'escape') {
+    if (techWeb.isOpen) techWeb.close();
     if (buildMode) setBuildMode(false);
     commanding = null;
     return;
@@ -228,6 +235,15 @@ window.addEventListener('keydown', event => {
   }
   if (key === 'f') {
     if (sim.player) camera.recentre(sim.player.x, sim.player.y);
+    return;
+  }
+  if (key === 'g') {
+    // Opens on whoever is selected, falling back to the player. Opening it on
+    // somebody else is the point as much as opening it on yourself: knowing
+    // which of your band has the idea nobody else has had is the question the
+    // panel exists to answer.
+    const subject = selected?.kind === 'person' ? selected.person : sim.player;
+    techWeb.toggle(sim, subject);
     return;
   }
   if (key === 'c') {
@@ -548,7 +564,7 @@ window.addEventListener('mouseup', event => {
   drag.active = false;
   drag.panning = false;
   if (wasDragging || event.button !== 0) return;
-  if (buildMode || radial.isOpen || picker.isOpen) return;
+  if (buildMode || radial.isOpen || picker.isOpen || techWeb.isOpen) return;
   if (event.target !== canvas) return;
 
   const point = worldPoint(event);
@@ -849,6 +865,7 @@ function frame(now: number): void {
   renderer.commandedId = commanding && commanding.alive ? commanding.id : null;
   hud.setCommanding(commanding);
   succession.update(sim);
+  techWeb.update(sim);
   reportInterruptions();
   reportInsights();
   updateFloaters();

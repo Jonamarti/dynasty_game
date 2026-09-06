@@ -103,10 +103,22 @@ did not exist, which made it unbuildable for its entire existence without
 anything noticing.
 
 **The player is not omniscient.** Everything the inspector shows is filtered
-through `sim/social/Knowledge.ts`. This now extends to the entity picker: a
-bubble for a stranger says "a man", never their name. A UI that reads out a
+through `sim/social/Knowledge.ts`. This now extends to the entity picker and to
+the tech web: a bubble for a stranger says "a man", never their name, and the
+web opened on a stranger shows the veil and not one node. A UI that reads out a
 stranger's private state hands the player exactly the god's-eye view the
-simulation is built to withhold.
+simulation is built to withhold, and a map of somebody's *mind* is the easiest
+possible way to do it.
+
+> Overlays live on `document.body`, never inside `#hud`, which rebuilds its
+> subtree every frame. The z-index ladder is radial 20, picker 21, techweb 30,
+> newgame/succession 40. Each needs `[hidden] { display: none; }` — see
+> `AGENTS.md`; the project has made that mistake four times now.
+>
+> A panel that redraws every frame also detaches whatever the cursor is over
+> before a hover can land on it. `TechWeb` keeps a digest of what is on screen
+> and redraws only when it changes; anything else that updates in place will
+> need the same.
 
 **Every long action gets an interruption check.** `ActionSystem.interruption`
 is the only thing that can reach a committed worker, because a committed person

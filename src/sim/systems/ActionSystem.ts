@@ -79,7 +79,16 @@ export interface ActionContext {
 /** How close two people must be to hand something over, or land a blow. */
 const REACH = 1.6;
 
-/** Ticks a conversation occupies. Roughly half an in-game hour. */
+/**
+ * Ticks a conversation occupies.
+ *
+ * At `ticksPerDay` 240 a tick is six in-game minutes, so this is four and a
+ * half hours — not the "half an hour" this comment used to claim, which was
+ * wrong by a factor of nine and is very likely why the social layer reads as
+ * sparse. Deliberately left alone for now: `next-steps.md` §O1 replaces the
+ * single conversation with several modes at several costs, and changing the
+ * number here first would only move the problem.
+ */
 const TALK_TICKS = 45;
 
 /** Ticks to hand something over and be thanked for it. */
