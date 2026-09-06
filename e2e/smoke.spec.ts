@@ -49,6 +49,63 @@ async function ready(page: Page): Promise<void> {
  * standing under an oak has to say so — the old blind behaviour would have
  * silently handed it the oak.
  */
+/**
+ * Aims at a person from another tribe, and returns where they are on screen.
+ *
+ * Two round trips on purpose. `snapTo` is not the last word on where the camera
+ * ends up: the frame loop calls `clampTo` straight afterwards, which pulls the
+ * view back inside the map. A camp near the edge therefore settles somewhere
+ * other than where the snap asked for, so a screen coordinate computed in the
+ * same evaluate as the snap is already stale — the click lands on whatever
+ * happens to be standing there instead, which in a camp is a mud hut, and the
+ * test then fails with a message about huts. Snap, let a frame settle it, then
+ * read the position.
+ *
+ * Callers pause the world first, so nobody walks off between the two trips.
+ */
+async function aimAtStranger(page: Page): Promise<{ x: number; y: number } | null> {
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { id: number };
+        livingPeople: () => { id: number; bandId: number; x: number; y: number }[];
+      };
+      camera: {
+        worldToScreenX: (x: number) => number;
+        worldToScreenY: (y: number) => number;
+        snapTo: (x: number, y: number) => void;
+        following: boolean;
+      };
+    };
+  };
+
+  // Someone from another tribe. "The next person in the list" used to be a
+  // stranger, when a band was fifteen unrelated adults; since the world started
+  // being founded from families it is the player's own wife.
+  const id = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.livingPeople().find(p => p.id === d.sim.player.id);
+    if (!self) return null;
+    const other = d.sim.livingPeople().find(p => p.bandId !== self.bandId);
+    if (!other) return null;
+    d.camera.snapTo(other.x, other.y);
+    d.camera.following = false;
+    return other.id;
+  });
+  if (id === null) return null;
+
+  await page.evaluate(() => new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+
+  return await page.evaluate((personId) => {
+    const d = (window as never as Debug).__dynasty;
+    const who = d.sim.livingPeople().find(p => p.id === personId);
+    if (!who) return null;
+    return { x: d.camera.worldToScreenX(who.x), y: d.camera.worldToScreenY(who.y) };
+  }, id);
+}
+
 async function clickAndChoose(
   page: Page,
   x: number,
@@ -333,36 +390,19 @@ test('a stranger gives up nothing but what you can see', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);
 
+  // Freeze the world before working out where anybody is standing.
+  //
+  // The target is computed in one `evaluate`, then clicked in a separate round
+  // trip, and the simulation keeps stepping in between: by the time the click
+  // lands the person has walked several tiles and the cursor is over whatever
+  // did not move, which in a camp is the mud hut they were standing in. The
+  // test then selects a building and fails on a message about huts. This is not
+  // seed-dependent behaviour worth preserving — it passed before only because
+  // the person the spec happened to pick was standing still.
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
   // Pick someone the player has certainly never met and click where they stand.
-  const clicked = await page.evaluate(() => {
-    const d = (window as never as {
-      __dynasty: {
-        sim: {
-          player: { id: number };
-          livingPeople: () => { id: number; bandId: number; x: number; y: number }[];
-        };
-        camera: {
-          worldToScreenX: (x: number) => number;
-          worldToScreenY: (y: number) => number;
-          snapTo: (x: number, y: number) => void;
-          following: boolean;
-        };
-      };
-    }).__dynasty;
-    // Someone from another tribe. "The next person in the list" used to be a
-    // stranger, when a band was fifteen unrelated adults; since the world
-    // started being founded from families it is the player's own wife.
-    const self = d.sim.livingPeople().find(p => p.id === d.sim.player.id);
-    if (!self) return null;
-    const other = d.sim.livingPeople().find(p => p.bandId !== self.bandId);
-    if (!other) return null;
-    // Their camp is across the island, so the click has to be aimed somewhere
-    // actually on screen. Releasing the follow keeps the loop from dragging the
-    // view back to the player between the snap and the click.
-    d.camera.snapTo(other.x, other.y);
-    d.camera.following = false;
-    return { x: d.camera.worldToScreenX(other.x), y: d.camera.worldToScreenY(other.y) };
-  });
+  const clicked = await aimAtStranger(page);
   expect(clicked).not.toBeNull();
 
   // A stranger reads as "a man" / "a woman" in the picker too, for the same
@@ -491,32 +531,19 @@ test('standing over someone is shown, and command mode can be entered', async ({
   const errors = guardErrors(page);
   await ready(page);
 
+  // Freeze the world before working out where anybody is standing.
+  //
+  // The target is computed in one `evaluate`, then clicked in a separate round
+  // trip, and the simulation keeps stepping in between: by the time the click
+  // lands the person has walked several tiles and the cursor is over whatever
+  // did not move, which in a camp is the mud hut they were standing in. The
+  // test then selects a building and fails on a message about huts. This is not
+  // seed-dependent behaviour worth preserving — it passed before only because
+  // the person the spec happened to pick was standing still.
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
   // Select somebody else, then read what the player could make them do.
-  const other = await page.evaluate(() => {
-    const d = (window as never as {
-      __dynasty: {
-        sim: {
-          player: { id: number };
-          livingPeople: () => { id: number; bandId: number; x: number; y: number }[];
-        };
-        camera: {
-          worldToScreenX: (x: number) => number;
-          worldToScreenY: (y: number) => number;
-          snapTo: (x: number, y: number) => void;
-          following: boolean;
-        };
-      };
-    }).__dynasty;
-    // Another tribe, for the same reason as the stranger test above: the
-    // nearest other person is now family, and family owes you a great deal.
-    const self = d.sim.livingPeople().find(p => p.id === d.sim.player.id);
-    if (!self) return null;
-    const pick = d.sim.livingPeople().find(p => p.bandId !== self.bandId);
-    if (!pick) return null;
-    d.camera.snapTo(pick.x, pick.y);
-    d.camera.following = false;
-    return { x: d.camera.worldToScreenX(pick.x), y: d.camera.worldToScreenY(pick.y) };
-  });
+  const other = await aimAtStranger(page);
   expect(other).not.toBeNull();
   await clickAndChoose(page, other!.x, other!.y, /(man|woman|child)/i);
 

@@ -62,13 +62,17 @@ export class KnowledgeSystem {
     const tech = options[ctx.rng.int(0, options.length - 1)]!;
     const def = TECH[tech];
 
+    // Curiosity is whether you look; intelligence is whether you see it when
+    // you do. Both, because either alone produces a caricature.
     const curiosity = 0.3 + person.traits.curiosity * 1.7;
+    const wit = 0.6 + person.traits.intelligence * 0.8;
     const competence = 0.2 + person.skills[def.skill] / 60;
     const pressure = def.pressure === null
       ? 0.5
       : 0.25 + (person.needs[def.pressure] / 100) * 1.75;
 
-    const chance = (DISCOVERY_BASE / def.difficulty) * curiosity * competence * pressure;
+    const chance =
+      (DISCOVERY_BASE / def.difficulty) * curiosity * wit * competence * pressure;
     if (!ctx.rng.chance(chance)) return;
 
     person.knownTech.add(tech);
@@ -125,8 +129,11 @@ export class KnowledgeSystem {
     if (teachable.length === 0) return null;
 
     const tech = teachable[rng.int(0, teachable.length - 1)]!;
+    // The pupil's wits count as much as the teacher's skill here: an
+    // explanation only lands if somebody on the other end can follow it.
     const chance = Math.min(0.95,
-      0.25 + teacher.skillFactor('teach') * 0.5 + Math.max(0, regard) * 0.3);
+      0.25 + teacher.skillFactor('teach') * 0.5 + Math.max(0, regard) * 0.3
+      + (pupil.traits.intelligence - 0.5) * 0.3);
     if (!rng.chance(chance)) {
       telemetry.count('teaching_failed');
       return null;

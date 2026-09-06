@@ -35,7 +35,7 @@ import {
   knowledgeOfPerson, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree,
   rememberedAbout,
 } from '../sim/social/Knowledge.ts';
-import { TECH, type Tech } from '../sim/knowledge/Tech.ts';
+import { TECH, TECH_EFFECTS, type Tech } from '../sim/knowledge/Tech.ts';
 import { itemActions } from '../sim/ai/ActionCatalog.ts';
 import { DEFAULT_CONFIG } from '../sim/core/Config.ts';
 import { noticeRadius } from '../sim/systems/WildlifeSystem.ts';
@@ -656,10 +656,16 @@ export class Hud {
     if (person.knownTech.size === 0) {
       rows.push('<div class="hud-sub">nothing anyone has had to work out yet</div>');
     } else {
-      rows.push('<div class="hud-sub">' +
-        [...person.knownTech]
-          .map(t => escapeHtml(TECH[t as Tech]?.label ?? t))
-          .join(', ') + '</div>');
+      // What it is *for*, not just its name. A list of nouns told the player
+      // nothing about why a dead potter mattered.
+      for (const id of person.knownTech) {
+        const def = TECH[id as Tech];
+        if (!def) continue;
+        rows.push('<div class="hud-know">' +
+          '<b>' + escapeHtml(def.label) + '</b>' +
+          '<span>' + escapeHtml(TECH_EFFECTS[def.id].summary) + '</span>' +
+          '</div>');
+      }
       rows.push('<div class="hud-note">Knowledge lives in people. Anything nobody ' +
         'alive knows is simply gone.</div>');
     }

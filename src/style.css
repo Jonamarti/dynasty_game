@@ -273,6 +273,18 @@ html, body, #app {
   line-height: 1.4;
 }
 
+/* One known technology and what it buys. A list of bare nouns told the player
+   nothing about why the band's only potter dying mattered. */
+.hud-know {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.hud-know b { color: var(--text); font-weight: 600; }
+.hud-know span { color: var(--text-dim); font-size: 11px; line-height: 1.35; }
+
 /* --- ties ---------------------------------------------------------------- */
 
 .hud-tie {

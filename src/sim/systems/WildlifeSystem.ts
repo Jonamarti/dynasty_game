@@ -19,6 +19,7 @@ import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import { moveToward } from './MovementSystem.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { stealthFactor } from '../knowledge/Tech.ts';
 
 /** Ticks an animal keeps running after it stops seeing what spooked it. */
 const ALARM_TICKS = 90;
@@ -219,10 +220,12 @@ export class WildlifeSystem {
 /**
  * How close this person can get before this animal notices them.
  *
- * The first and so far only thing `track` does. At skill 0 an animal notices
- * you at its full awareness; at 100 you halve it.
+ * Two terms, and they are different things on purpose. The `track` skill is
+ * practice — at skill 0 an animal notices you at its full awareness, at 100 you
+ * halve it. `stealthFactor` is knowledge: someone who has been taught to read a
+ * trail also knows how to approach one, and shrinks it again.
  */
 export function noticeRadius(animal: Animal, person: Person): number {
-  const stealth = 1 - (person.skills.track / 100) * 0.5;
-  return animal.def.awareness * stealth;
+  const practice = 1 - (person.skills.track / 100) * 0.5;
+  return animal.def.awareness * practice * stealthFactor(person);
 }

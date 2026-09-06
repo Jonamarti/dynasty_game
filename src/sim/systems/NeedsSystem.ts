@@ -9,6 +9,7 @@ import type { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { warmthFrom } from '../knowledge/Tech.ts';
 
 export class NeedsSystem {
   constructor(private readonly config: NeedsConfig) {}
@@ -52,12 +53,14 @@ export class NeedsSystem {
       // building blunts the chill and, in a good hut, reverses it — which is
       // what makes building one the difference between a band that survives a
       // winter and a band that does not.
-      // Fire is warmth you carry with you. Someone who knows how to make it is
-      // never as cold as someone who does not, wherever they are standing —
-      // which is why it is the first thing anyone should work out, and why a
-      // band that loses it feels the loss immediately.
-      const fire = person.knownTech.has('firemaking') ? 0.45 : 0;
-      const shelter = Math.max(fire, this.shelterAt(person, buildings));
+      // Fire and clothing are warmth you carry with you. Someone who knows how
+      // to make fire is never as cold as someone who does not, wherever they
+      // are standing — which is why it is the first thing anyone should work
+      // out, and why a band that loses it feels the loss immediately. Clothing
+      // answers the same problem a second way; `warmthFrom` combines them with
+      // diminishing returns rather than by adding them.
+      const carried = warmthFrom(person);
+      const shelter = Math.max(carried, this.shelterAt(person, buildings));
       const effectiveChill = chill * (1 - shelter);
       const effectiveWarming = warming + shelter * 0.8;
       person.needs.cold = Math.max(

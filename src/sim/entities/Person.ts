@@ -7,6 +7,7 @@ import type { RNG } from '../core/RNG.ts';
 import { Inventory } from './Item.ts';
 import { Memory } from '../social/Memory.ts';
 import type { LifeEvent } from '../social/SocialSystem.ts';
+import { carryFactor } from '../knowledge/Tech.ts';
 
 export const SKILLS = [
   'forage', 'hunt', 'knap', 'build', 'cook',
@@ -15,10 +16,25 @@ export const SKILLS = [
 export type Skill = (typeof SKILLS)[number];
 
 /**
- * Five heritable personality axes, each in [0, 1]. They weight the utility
+ * Seven heritable personality axes, each in [0, 1]. They weight the utility
  * scorer, so a greedy, low-loyalty person genuinely prefers stealing to asking.
+ *
+ * `intelligence` is how quickly someone works an idea out, teaches it, and
+ * picks it up again from somebody else. `industriousness` is how much they want
+ * to be working at all — and note that it biases the *scorer* only. It is
+ * deliberately not wired to how fast work actually goes: work rates set the
+ * whole food economy, which is measured across ten seeds rather than in one
+ * run, and a trait that quietly moved them would be invisible until a
+ * population collapsed.
+ *
+ * Rebelliousness is *not* here. It is derived from `loyalty` and standing grief
+ * in `social/Authority.ts`, because two knobs for one behaviour is how a scorer
+ * becomes untunable.
  */
-export const TRAITS = ['aggression', 'greed', 'loyalty', 'curiosity', 'tradition'] as const;
+export const TRAITS = [
+  'aggression', 'greed', 'loyalty', 'curiosity', 'tradition',
+  'intelligence', 'industriousness',
+] as const;
 export type Trait = (typeof TRAITS)[number];
 
 /**
@@ -294,7 +310,7 @@ export class Person {
    * everything else they do.
    */
   get carryCapacity(): number {
-    return Math.round(40 * this.vigour);
+    return Math.round(40 * this.vigour * carryFactor(this));
   }
 
   get carrying(): number {
@@ -325,7 +341,20 @@ export class Person {
   /** Practice. Gains shrink as the skill rises, so early progress feels fast. */
   practice(skill: Skill, amount = 1): void {
     const level = this.skills[skill];
-    this.skills[skill] = Math.min(100, level + amount * (1 - level / 110));
+    // A quick study gets more out of the same hour's work.
+    //
+    // A bonus only, never a penalty, and that is not generosity — it is the
+    // difference between this trait costing the world food and not. Skill gain
+    // is damped by the level already reached, so it is concave: a multiplier
+    // centred on 1 takes more from the slow learners than it gives the quick
+    // ones, average skill across the band falls, and skill is what forage
+    // yields are scaled by. Measured across ten seeds, the centred version cost
+    // roughly nine points of mean survival for a piece of flavour. The band is
+    // narrow for a second reason: coefficients here are calibrated against each
+    // other, and one lucky roll at birth should not produce somebody the rest
+    // of the band can never catch.
+    const wit = 1 + this.traits.intelligence * 0.25;
+    this.skills[skill] = Math.min(100, level + amount * wit * (1 - level / 110));
   }
 
   /** Skill as a multiplier, floored so a novice is slow rather than useless. */

@@ -27,6 +27,7 @@ import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { quarryReachFactor, techPower } from '../knowledge/Tech.ts';
 
 export interface BrainContext {
   world: World;
@@ -111,6 +112,21 @@ const GIVING_RESERVE = 90;
  */
 const DEPENDANT_RESERVE = 15;
 
+/**
+ * The verbs `industriousness` pulls toward, and the ones it pulls away from.
+ *
+ * Named sets rather than a flag on each `add` call because the scorer has two
+ * dozen terms and a per-call argument would have been forgotten at half of
+ * them. Social verbs are in neither: wanting to work is not the same as being
+ * unsociable, and folding the two together made industrious people into
+ * hermits, which then suppressed both teaching and courtship.
+ */
+const WORK_ACTIONS = new Set([
+  'forage', 'gather', 'gather_for_site', 'pick', 'chop', 'hunt',
+  'build', 'haul', 'store', 'craft',
+]);
+const IDLE_ACTIONS = new Set(['rest', 'wander']);
+
 function urgencyCurve(value: number): number {
   const u = value / 100;
   return u * u;
@@ -142,8 +158,20 @@ export class Brain {
     // starting something else. Without this people dither on the spot, walking
     // half way to the water, half way to a bush, and satisfying neither need.
     const current = person.action;
+    // Industriousness is appetite for work, not speed at it.
+    //
+    // It biases the *scorer* and nothing else: it never touches how fast a job
+    // actually goes. Work rates set the whole food economy, which is measured
+    // across ten seeds rather than in one run, so a trait quietly moving them
+    // would not show up until a population collapsed and nobody would know why.
+    // Kept to a narrow band for the reason every coefficient here is: they are
+    // calibrated against each other, and a wide multiplier on half the verbs
+    // would silently disable gates elsewhere.
+    const drive = 0.8 + person.traits.industriousness * 0.4;
+    const idle = 1.2 - person.traits.industriousness * 0.4;
     const add = (id: string, score: number) => {
-      const weighted = id === current ? score * 1.25 : score;
+      const appetite = WORK_ACTIONS.has(id) ? drive : IDLE_ACTIONS.has(id) ? idle : 1;
+      const weighted = (id === current ? score * 1.25 : score) * appetite;
       if (weighted > 0) scores.push({ id, score: weighted });
     };
 
@@ -548,8 +576,13 @@ export class Brain {
     // a poor hunter should keep picking berries and a good one should go out.
     let quarry: Animal | null = null;
     if (!person.isChild && !person.isLaden) {
+      // Tracking is what turns hunting from a thing you stumble into to a
+      // thing you go out and do: it widens the search before proximity gets to
+      // settle the comparison, which it otherwise always does.
       quarry = ctx.animalHash.findNearest(
-        person.x, person.y, ctx.sightRadius * 1.5, a => a.alive
+        person.x, person.y,
+        ctx.sightRadius * 1.5 * quarryReachFactor(person),
+        a => a.alive
       );
       if (quarry) {
         const odds = Math.max(0.05, Math.min(0.9,
@@ -608,7 +641,7 @@ export class Brain {
     // A hand axe, once somebody knows how. Scored well above idle gathering
     // because the payoff is large and obvious: everything involving wood halves.
     if (
-      person.knownTech.has('hafting') &&
+      techPower(person, 'hafting') > 0 &&
       !person.inventory.has('handaxe') &&
       person.inventory.has('flint') &&
       person.inventory.has('sticks')

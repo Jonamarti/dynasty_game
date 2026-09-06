@@ -6,6 +6,134 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-05 — M6b phase 1: the tech tree becomes a registry
+
+First phase of M6b ([next-steps.md](next-steps.md) §1). The goal of this phase
+was not new content for its own sake — it was to put a seam in place that the
+research lifecycle, weapons and jobs can all be built behind, and to stop the
+tree accumulating nodes that do nothing.
+
+### Every technology now does something, and a test says so
+
+- **`TECH_EFFECTS` and `techs-have-effects`.** A technology may not enter
+  `TECHS` without an entry saying what it does and where the simulation reads
+  it, and `src/sim/__tests__/tech.test.ts` fails the build otherwise.
+  *Reason:* the opposite kept happening and nothing caught it. `farming` gated
+  an entire era and changed nothing on the ground; `clothing` and `cordage`
+  unlocked nothing at all; `ItemDef.spoilTicks` carries six distinct values and
+  is never read. The guard was verified against a broken build before being
+  kept — reintroducing `farming` with no effect fails with `farming has no
+  declared effect` — because a check that detects nothing is worse than none.
+- **`farming` is removed from `TECHS`** until fields, sowing and reaping arrive
+  with it, and the Age of Sowing with it. The top era is now the Age of
+  Building, off `stoneworking` and `carpentry`.
+  *Reason:* shipping it inert is the exact thing the rule above forbids, and
+  leaving it in would have made the new test a lie on its first day.
+
+### The longhouse has never been buildable
+
+- **`carpentry` is a real technology now**, which fixes it.
+  *Reason:* `BUILDINGS.longhouse` was gated behind `requiresTech: 'carpentry'`
+  and `'carpentry'` was not a member of `TECHS`. Nothing could ever satisfy the
+  gate, so the best shelter in the game has been permanently unbuildable and
+  permanently listed in `lockedDesigns()` for its whole existence. A test now
+  asserts every `requiresTech` names a real tech.
+
+### One seam instead of six call sites
+
+- **`techPower(person, tech)`**, with `carryFactor`, `forageYieldFactor`,
+  `nutritionFactor`, `buildFactor`, `quarryReachFactor`, `stealthFactor` and
+  `warmthFrom` on top of it. The six inline `knownTech.has(<literal>)` tests are
+  gone.
+  *Reason:* refinement — a design its holder has improved — is coming in phase
+  2, and six call sites would each have had to learn about it separately. One
+  function learns instead. Refinement will live on the *knower*, not the object:
+  a fine axe in a novice's hand is just an axe. That is a deliberate trade for
+  keeping per-unit quality out of `Inventory`'s stacks, which are relied on as a
+  plain id-to-count map nearly everywhere.
+- **`ERA_ORDER` is derived from `ERAS`** rather than hand-written in
+  `Simulation`. *Reason:* it was a second list of era ids that nothing kept in
+  step, and an era missing from it would have been silently reported as a loss.
+
+### Four new technologies, and two old ones that finally pay
+
+`plant_lore` (forage and fruit yield ×1.3), `tracking` (quarry search ×1.6 and
+notice radius ×0.75), `stoneworking` (flint yield ×1.5) and `carpentry` (the
+longhouse, and build speed ×1.3). `cordage` now gives carry capacity ×1.25 and
+`clothing` gives real warmth, where both previously unlocked nothing.
+
+`warmthFrom` combines fire and clothing with diminishing returns rather than by
+adding them. *Reason:* summed, a clothed firemaker exceeds 1, which inverts the
+chill term into warming and makes February the most comfortable month of the
+year.
+
+### Two new trait axes
+
+- **`intelligence` and `industriousness`**, taking `TRAITS` to seven.
+  `intelligence` speeds skill practice, discovery and being taught;
+  `industriousness` biases the scorer toward work and away from rest and
+  wandering. Rebelliousness is deliberately *not* here — it stays derived from
+  `loyalty` in `Authority.ts`, because two knobs for one behaviour is how a
+  scorer becomes untunable.
+- **`industriousness` never touches how fast work actually goes**, only how
+  much a person wants to do it. *Reason:* work rates set the whole food economy,
+  which is measured across many seeds rather than in one run, so a trait quietly
+  moving them would not surface until a population collapsed.
+- **`intelligence` is a bonus to `practice`, never a penalty.** *Reason:* skill
+  gain is damped by the level already reached, so it is concave — a multiplier
+  centred on 1 takes more from slow learners than it gives quick ones and drags
+  the band's average skill down, and skill is what forage yields scale by.
+- Two extra `rng.gaussian` draws per person shift every later draw on
+  `spawnRng` and `lifeRng`, so **pinned worlds have changed**. This is a
+  draw-count change, not a fork reorder: the fork order in `Simulation`'s
+  constructor is untouched and the seed contract holds. The determinism test
+  compares two runs of one seed and still passes.
+
+### What this did to the world: nothing measurable, and that is the finding
+
+Across **twenty** seeds of `century`, mean survival went **65.7% → 64.6%** —
+neutral within the noise.
+
+The more useful result is about the measurement itself. Four variants of this
+change, none of which touched the food economy on purpose, produced ten-seed
+means of 73.1%, 65.2%, 64.4%, 63.6% and 59.3%; at one point a *strictly better*
+learning rate measured nine points worse than the version it replaced, which is
+not a mechanism, it is chaos. **Ten seeds cannot resolve a difference of under
+about ten points.** The larder fix that moved 40% → 59% was far outside that
+band, which is why it read clearly. Use twenty seeds for anything smaller, and
+do not tune against a single ten-seed figure.
+
+`century`'s `population-persists` failed on one intermediate variant and passed
+again on the next with no food mechanism changed in between — more divergence,
+and consistent with what [bugs.md](bugs.md) already says about that check
+sitting near its threshold.
+
+### Interface
+
+- The Self tab lists what each technology **does**, not just its name.
+  *Reason:* a list of bare nouns told the player nothing about why the band's
+  only potter dying mattered.
+
+### Two test-harness fixes, both measurement rather than world
+
+- **`e2e` picks its target in two round trips, with the world paused.**
+  *Reason:* the spec snapped the camera and computed a screen coordinate in the
+  same `evaluate`, but the frame loop calls `clampTo` immediately afterwards and
+  pulls the view back inside the map, so for a camp near the edge the coordinate
+  was stale before it was used. The click landed on whatever had not moved —
+  the mud hut the person was standing in — and two specs failed with a message
+  about huts. They passed before only because the person the spec happened to
+  pick was standing still. The world is not wrong: a person may stand in a hut,
+  and the picker correctly offers both.
+- **The Playwright port is overridable via `DYNASTY_PORT`.** *Reason:* Windows
+  reserves blocks of TCP ports for Hyper-V, and on this machine the reserved
+  range 5111-5210 swallows Vite's default 5173 outright — the dev server dies
+  with `EACCES` before a single test runs. `netsh interface ipv4 show
+  excludedportrange protocol=tcp` lists the ranges. Default behaviour is
+  unchanged.
+
+---
+
 ## 2026-09-02 — The winter economy
 
 Item 0 of [next-steps.md](next-steps.md): the island was only marginally

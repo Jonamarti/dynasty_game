@@ -43,12 +43,11 @@ import { linkFamily } from '../social/SocialSystem.ts';
 import { BandSystem } from '../systems/BandSystem.ts';
 import { foundBand, type FoundingContext } from '../systems/Founding.ts';
 import { KnowledgeSystem, countHolders } from '../systems/KnowledgeSystem.ts';
-import { eraFor, TECHS, type EraDef, type Tech } from '../knowledge/Tech.ts';
+import {
+  eraFor, nutritionFactor, ERA_ORDER, TECHS, type EraDef, type Tech,
+} from '../knowledge/Tech.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
-
-/** Era ids in order, so a change can be reported as a gain or a loss. */
-const ERA_ORDER = ['stone', 'fire', 'hearth', 'tools', 'craft', 'sowing'];
 
 /** One ended action, waiting to be reported. See `Simulation.interruptions`. */
 export interface StopNotice {
@@ -738,7 +737,7 @@ export class Simulation {
     if (!def || def.nutrition <= 0) return false;
     if (person.inventory.remove(itemId, 1) === 0) return false;
 
-    const cooked = person.knownTech.has('cooking') ? 1.35 : 1;
+    const cooked = nutritionFactor(person);
     person.needs.hunger = Math.max(0, person.needs.hunger - def.nutrition * cooked);
     telemetry.count('eat');
     return true;

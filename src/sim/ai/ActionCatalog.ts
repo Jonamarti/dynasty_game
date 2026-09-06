@@ -17,6 +17,7 @@ import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { techPower } from '../knowledge/Tech.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import type { Animal } from '../entities/Animal.ts';
 
@@ -339,7 +340,7 @@ function groundActions(
     options.push({ id: 'drink', label: 'Drink', icon: '\u{1F4A7}', enabled: true });
   }
 
-  const canCraft = actor.knownTech.has('hafting');
+  const canCraft = techPower(actor, 'hafting') > 0;
   const hasParts = actor.inventory.has('flint') && actor.inventory.has('sticks');
   if (canCraft) {
     options.push({

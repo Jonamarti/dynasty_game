@@ -287,6 +287,10 @@ function temperament(person: Person): string {
     [1 - traits.curiosity, 'incurious'],
     [traits.tradition, 'keeps to the old ways'],
     [1 - traits.tradition, 'careless of tradition'],
+    [traits.intelligence, 'quick-witted'],
+    [1 - traits.intelligence, 'slow to see it'],
+    [traits.industriousness, 'never still'],
+    [1 - traits.industriousness, 'takes their ease'],
   ];
   const strongest = notes
     .filter(([weight]) => weight > 0.62)

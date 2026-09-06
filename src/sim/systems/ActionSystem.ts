@@ -25,6 +25,9 @@ import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
 import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import {
+  buildFactor, forageYieldFactor, nutritionFactor, techPower,
+} from '../knowledge/Tech.ts';
 
 export interface ActionContext {
   world: World;
@@ -260,7 +263,7 @@ export class ActionSystem {
     // knowing something, and it compounds: a band that cooks needs a third less
     // forage than one that does not, and can therefore support more people on
     // the same ground.
-    const cooked = person.knownTech.has('cooking') ? 1.35 : 1;
+    const cooked = nutritionFactor(person);
     person.needs.hunger = Math.max(
       0,
       person.needs.hunger - (ITEMS[foodId]?.nutrition ?? 0) * cooked
@@ -341,7 +344,9 @@ export class ActionSystem {
     person.workedTicks++;
     if (person.actionTimer > 0) return;
 
-    const yieldUnits = Math.max(1, Math.round(1 + person.skillFactor(node.def.skill)));
+    const yieldUnits = Math.max(1, Math.round(
+      (1 + person.skillFactor(node.def.skill)) * forageYieldFactor(person, node.kind)
+    ));
     const room = Math.max(0, person.carryCapacity - person.carrying);
     const taken = node.take(Math.min(yieldUnits, room));
     if (taken > 0) {
@@ -382,7 +387,9 @@ export class ActionSystem {
     if (person.actionTimer > 0) return;
 
     const room = Math.max(0, person.carryCapacity - person.carrying);
-    const picked = tree.pick(Math.min(Math.max(1, Math.round(person.skillFactor('forage') * 2)), room));
+    const picked = tree.pick(Math.min(Math.max(1, Math.round(
+      person.skillFactor('forage') * 2 * forageYieldFactor(person, 'fruit')
+    )), room));
     if (picked > 0 && tree.def.fruitItem) {
       person.inventory.add(tree.def.fruitItem, picked);
       person.practice('forage', 0.5);
@@ -556,7 +563,7 @@ export class ActionSystem {
       return;
     }
 
-    const work = person.skillFactor('build');
+    const work = person.skillFactor('build') * buildFactor(person);
     person.workedTicks++;
     person.practice('build', 0.25);
     if (site.addWork(work)) {
@@ -888,7 +895,7 @@ export class ActionSystem {
    * and an afternoon's.
    */
   private doCraft(person: Person, ctx: ActionContext): void {
-    if (!person.knownTech.has('hafting')) {
+    if (techPower(person, 'hafting') <= 0) {
       this.abandon(person, 'dont_know_how', ctx);
       return;
     }
