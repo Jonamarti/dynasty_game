@@ -27,7 +27,8 @@ import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import { ITEMS } from '../entities/Item.ts';
-import { quarryReachFactor, techPower } from '../knowledge/Tech.ts';
+import { TECH, quarryReachFactor, techPower } from '../knowledge/Tech.ts';
+import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 
 export interface BrainContext {
   world: World;
@@ -65,6 +66,7 @@ interface FoundTargets {
   companion: Person | null;
   suitor: Person | null;
   student: Person | null;
+  colleague: Person | null;
   victim: Person | null;
   beneficiary: Person | null;
   fleeFrom: Person | null;
@@ -123,8 +125,15 @@ const DEPENDANT_RESERVE = 15;
  */
 const WORK_ACTIONS = new Set([
   'forage', 'gather', 'gather_for_site', 'pick', 'chop', 'hunt',
-  'build', 'haul', 'store', 'craft',
+  'build', 'haul', 'store', 'craft', 'prototype',
 ]);
+/**
+ * `ponder` and `discuss` are in neither set, for the reason the social verbs
+ * are not: wanting to be *working* is not the same as wanting to think, and an
+ * industrious person who would not sit down with a problem is a worse
+ * caricature than the one this trait already risks. `prototype` is work — it is
+ * a person building a thing out of materials — and is weighted as such.
+ */
 const IDLE_ACTIONS = new Set(['rest', 'wander']);
 
 function urgencyCurve(value: number): number {
@@ -637,6 +646,63 @@ export class Brain {
       fleeFrom = threat;
     }
 
+    // --- Research ----------------------------------------------------------
+    // Thinking, arguing and building the first one. All three are gated on
+    // comfort the way gathering is, and for the same reason: a person with an
+    // idea and an empty stomach should be foraging. The risk this whole section
+    // carries is stealing ticks from food, and if survival drops across twenty
+    // seeds after this milestone, the cause is here rather than in the
+    // synthesis maths.
+    let colleague: Person | null = null;
+    const idea = this.workableIdea(person);
+    const buildable = person.ideas.find(candidate =>
+      candidate.stage === 'researching' && candidate.insight >= PROTOTYPE_AT) ?? null;
+
+    if (comfortNow > 0.45 && idea) {
+      const spare = (comfortNow - 0.45) * 2;
+      // Deliberately close to `gather`, which is the other thing a comfortable
+      // person does with a spare hour. It was half again higher on a first pass
+      // and thinking became the sixth most common activity in the world, ahead
+      // of building and sleeping, which is not a stone age.
+      add('ponder', spare * spare * (0.18 + person.traits.curiosity * 0.3)
+        * (0.4 + person.traits.intelligence));
+
+      if (socialReady && neighbours.length > 0) {
+        const def = TECH[idea.tech];
+        // Somebody who has handled the materials or understands what the thing
+        // rests on. A partner with neither has nothing to offer, and the action
+        // would refuse on arrival — the scorer should not send anyone there.
+        const informed = neighbours.filter(other =>
+          !other.isChild &&
+          (other.skills[def.skill] >= 12 ||
+            def.requires.some(required => other.knownTech.has(required))) &&
+          ctx.relationships.opinion(other.id, person.id) >= -20
+        );
+        colleague = this.pickBest(informed, other =>
+          other.skills[def.skill] +
+          ctx.relationships.opinion(person.id, other.id) -
+          person.distanceTo(other) * 2
+        );
+        if (colleague) {
+          add('discuss', spare * (0.3 + person.traits.curiosity * 0.4)
+            * this.proximityBonus(person, colleague, ctx.sightRadius));
+        }
+      }
+    }
+
+    if (buildable) {
+      const def = TECH[buildable.tech];
+      const ready = Object.entries(def.prototype)
+        .every(([itemId, count]) => person.inventory.count(itemId) >= count);
+      if (ready) {
+        // Scored like crafting, and for the same reason: the materials are
+        // already in hand, the payoff is large, and leaving a finished design
+        // unbuilt while carrying everything it needs is the one outcome here
+        // that would read as broken.
+        add('prototype', 0.6 * (0.4 + person.skillFactor(def.skill)));
+      }
+    }
+
     // --- Craft -------------------------------------------------------------
     // A hand axe, once somebody knows how. Scored well above idle gathering
     // because the payoff is large and obvious: everything involving wood halves.
@@ -666,11 +732,29 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodNode, matNode, companion, suitor, student, victim, beneficiary, fleeFrom,
+        water, foodNode, matNode, companion, suitor, student, colleague,
+        victim, beneficiary, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
       },
     };
+  }
+
+  /**
+   * The idea this person would get furthest with by working on it.
+   *
+   * Deliberately the same rule `ActionSystem.workableIdea` applies, because the
+   * scorer choosing one idea and the action working on another is how you get a
+   * person who thinks about hafting all day and never finishes anything.
+   */
+  private workableIdea(person: Person): Idea | null {
+    let best: Idea | null = null;
+    for (const candidate of person.ideas) {
+      if (candidate.stage === 'prototyped') continue;
+      if (candidate.insight >= 1) continue;
+      if (best === null || candidate.insight < best.insight) best = candidate;
+    }
+    return best;
   }
 
   /** Highest-scoring candidate, or null for an empty list. Deterministic. */
@@ -819,6 +903,7 @@ export class Brain {
       }
       case 'talk':
       case 'teach':
+      case 'discuss':
       case 'court':
       case 'feed':
       case 'give':
@@ -831,6 +916,7 @@ export class Brain {
         const other =
           action === 'talk' ? found.companion :
           action === 'teach' ? found.student :
+          action === 'discuss' ? found.colleague :
           action === 'court' ? found.suitor :
           action === 'feed' || action === 'give' ? found.beneficiary :
           found.victim;
@@ -841,7 +927,8 @@ export class Brain {
         }
         break;
       }
-      // 'eat' and 'rest' happen where you stand and need no target.
+      // 'eat', 'rest', 'ponder' and 'prototype' happen where you stand and need
+      // no target.
     }
   }
 }

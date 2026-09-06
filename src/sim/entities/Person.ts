@@ -8,6 +8,7 @@ import { Inventory } from './Item.ts';
 import { Memory } from '../social/Memory.ts';
 import type { LifeEvent } from '../social/SocialSystem.ts';
 import { carryFactor } from '../knowledge/Tech.ts';
+import type { Idea } from '../knowledge/Synthesis.ts';
 
 export const SKILLS = [
   'forage', 'hunt', 'knap', 'build', 'cook',
@@ -81,6 +82,25 @@ export const ADULT_YEARS = 14;
 /** Above this, skills start to fade and the years begin to tell. */
 export const ELDER_YEARS = 50;
 
+/**
+ * How much of `lately` and `noticed` survives each day.
+ *
+ * Chosen so that a thing done a few times a day sits comfortably above
+ * `LATELY_ENOUGH` while a thing done once a fortnight ago is gone entirely.
+ */
+const RECENCY_DECAY = 0.6;
+
+/**
+ * How much of a thing counts as having been doing it, or having seen it.
+ *
+ * With `RECENCY_DECAY` at 0.6 this works out as "at least once since
+ * yesterday", which is the right sense of *lately* for verbs a person does
+ * rarely. Felling is the case that set it: a tree is the better part of a day's
+ * work and nobody does it twice, so a threshold that demanded repetition would
+ * have made `doing: chop` an ingredient no spark could ever contain.
+ */
+export const LATELY_ENOUGH = 1.0;
+
 let nextPersonId = 1;
 
 export function resetPersonIds(): void {
@@ -153,6 +173,49 @@ export class Person {
    * chronicle is what remains of who they were.
    */
   chronicle: LifeEvent[] = [];
+
+  /**
+   * Ideas being worked on, and how far each has got. Capped at `MAX_IDEAS`, so
+   * nobody dabbles at everything.
+   *
+   * Per-person and lost on death, exactly like `knownTech`. Knowledge is held
+   * by people, not by a civilisation, and a half-finished design dies with the
+   * person who was half-finishing it.
+   */
+  ideas: Idea[] = [];
+  /**
+   * How far each proven technology has been refined by *this* holder.
+   *
+   * On the knower rather than the object, so a fine axe handed to a novice is
+   * just an axe. See the note at `techPower`.
+   */
+  techLevel = new Map<string, number>();
+
+  /**
+   * A decaying tally of what this person has actually been doing.
+   *
+   * There was no such record anywhere before M6b phase 2, and synthesis is
+   * impossible without one: `workedTicks` is zeroed on every `finish` and never
+   * knew which action it counted, `skills` are cumulative, lossy and saturating
+   * with ten of them covering two dozen verbs, `telemetry` is global, takes no
+   * person and is disabled in the browser build, and `actionCounts()` is an
+   * instantaneous census of the living rather than a history.
+   *
+   * Note that the two scorer aliases are invisible here: `Brain.setup` rewrites
+   * `feed` to `give` and `gather_for_site` to `gather` long before an action
+   * ever ends, so those are the ids that arrive. If either is ever wanted as an
+   * ingredient in its own right, capture it at the scorer.
+   */
+  lately = new Map<string, number>();
+  /**
+   * The same, for things that happened *to* them rather than things they chose:
+   * the reasons their own work kept stopping.
+   *
+   * Kept apart from `lately` because they answer different questions. Giving up
+   * on a tree because your hands were full is not an activity you took up, and
+   * it is the sort of thing that makes a person think about carrying straps.
+   */
+  noticed = new Map<string, number>();
 
   /** Current action id, for the inspector and for the AI-variety health check. */
   action = 'idle';
@@ -336,6 +399,45 @@ export class Person {
       }
     }
     return { need: worst, value };
+  }
+
+  /**
+   * Records that a stretch of work just ended, whatever it was.
+   *
+   * Called from `ActionSystem.finish`, the single funnel every ended action
+   * passes through — `stop` and `abandon` both delegate to it — so there is one
+   * call site rather than one per verb.
+   */
+  noteDid(action: string): void {
+    if (action === 'idle' || action === 'dead') return;
+    this.lately.set(action, (this.lately.get(action) ?? 0) + 1);
+  }
+
+  /** Records that something stopped them, or that they watched it happen. */
+  noteSaw(what: string): void {
+    this.noticed.set(what, (this.noticed.get(what) ?? 0) + 1);
+  }
+
+  /**
+   * Ages both senses once a day.
+   *
+   * Fast decay on purpose. These are the ingredients of "what is on your mind
+   * *right now*", and a tally that took a season to fade would mean everybody
+   * had done everything lately and no spark could distinguish anybody.
+   */
+  decayRecent(): void {
+    for (const map of [this.lately, this.noticed]) {
+      for (const [key, value] of map) {
+        const faded = value * RECENCY_DECAY;
+        if (faded < 0.1) map.delete(key);
+        else map.set(key, faded);
+      }
+    }
+  }
+
+  /** The idea about `tech` this person is working on, if any. */
+  ideaFor(tech: string): Idea | null {
+    return this.ideas.find(idea => idea.tech === tech) ?? null;
   }
 
   /** Practice. Gains shrink as the skill rises, so early progress feels fast. */

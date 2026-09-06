@@ -548,6 +548,101 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         (tel.teaching_failed ?? 0) + ' lessons that did not take');
   }
 
+  // --- The research lifecycle ----------------------------------------------
+  // M6b phase 2 turned discovery from one roll into conceive, research,
+  // prototype, test, refine. Every one of those stages is somewhere the chain
+  // can silently stop dead, and a chain that stops at stage two looks, from the
+  // outside, exactly like a world where nobody is curious.
+  const sum = (prefix: string) => Object.entries(tel)
+    .filter(([k]) => k.startsWith(prefix))
+    .reduce((total, [, v]) => total + v, 0);
+
+  const conceived = sum('conceived_');
+  const proven = sum('proven_');
+  const sparkRoutes = Object.keys(tel).filter(k => k.startsWith('spark_'));
+  const breakthroughsAlone = tel.breakthrough_ponder ?? 0;
+  const breakthroughsTogether = tel.breakthrough_discuss ?? 0;
+  const testsFailed = tel.prototype_failed ?? 0;
+  const prototypes = sum('prototyped_');
+  const refined = sum('refined_');
+  const adultDays = samples.reduce((total, sample) => total + sample.population, 0) /
+    Math.max(1, samples.length) * Math.max(1, last.day - first.day);
+
+  if ((last.day - first.day) < 30) {
+    skip('ideas-are-conceived', 'run too short for anybody to have an idea');
+    skip('sparks-are-various', 'run too short for more than one route to fire');
+    skip('ideas-become-tech', 'run too short to carry an idea to a proven design');
+    skip('research-is-social', 'run too short for anybody to argue anything out');
+    skip('prototypes-can-fail', 'run too short to build anything');
+    skip('techs-are-refined', 'run too short to improve a design');
+  } else {
+    // Both bounds matter. Zero means the synthesis table is unsatisfiable in
+    // play; a flood means everybody has every idea and the web is decoration.
+    const perPersonYear = conceived / Math.max(1, adultDays / 80);
+    add('ideas-are-conceived',
+      conceived > 0 && perPersonYear < 3,
+      conceived + ' ideas conceived (' + perPersonYear.toFixed(2) +
+        ' per person-year; wanted some, and fewer than 3)');
+
+    // The web is not one path. If only one spark ever fires, every band arrives
+    // at the same technology for the same reason and the whole point of
+    // authoring several routes has been lost.
+    add('sparks-are-various',
+      sparkRoutes.length > 1,
+      sparkRoutes.length + ' distinct spark routes fired: ' + sparkRoutes
+        .map(k => k.slice(6)).join(' '));
+
+    add('ideas-become-tech',
+      proven > 0,
+      conceived + ' conceived, ' + prototypes + ' built, ' + proven + ' proven');
+
+    // Thinking alone is always available; arguing needs somebody who knows
+    // something and is willing to talk. If none of the second ever happens the
+    // action is dead weight and the partner terms are untested.
+    if (breakthroughsAlone + breakthroughsTogether === 0) {
+      skip('research-is-social', 'nobody made a breakthrough at all in this run');
+    } else {
+      add('research-is-social',
+        breakthroughsTogether > 0,
+        breakthroughsAlone + ' breakthroughs alone, ' + breakthroughsTogether +
+          ' by arguing it out');
+    }
+
+    // A test that always passes is a delay with a dice roll drawn over it.
+    if (prototypes === 0) {
+      skip('prototypes-can-fail', 'nothing was built in this run');
+    } else {
+      add('prototypes-can-fail',
+        testsFailed > 0 && testsFailed < prototypes,
+        prototypes + ' built, ' + testsFailed + ' failed their trial');
+    }
+
+    if (proven === 0) {
+      skip('techs-are-refined', 'nothing was proven, so nothing could be improved');
+    } else {
+      add('techs-are-refined',
+        refined > 0,
+        refined + ' improvements to proven designs, ' + sum('mastered_') +
+          ' carried as far as they go');
+    }
+  }
+
+  // Discovery is situated: an idea arrives to somebody in the situation that
+  // suggests it. Verified from the routes that actually fired rather than from
+  // a correlation, because a two-year run has too few discoveries in it for a
+  // correlation to mean anything — a check that looks reassuring and detects
+  // nothing is worse than no check.
+  if (sparkRoutes.length === 0) {
+    skip('discovery-is-situated', 'no idea was conceived in this run');
+  } else {
+    const cold = sparkRoutes.filter(k => k.startsWith('spark_clothing_') ||
+      k.startsWith('spark_firemaking_')).length;
+    add('discovery-is-situated',
+      conceived === sparkRoutes.reduce((total, k) => total + tel[k]!, 0),
+      'every one of ' + conceived + ' ideas came by a named route; ' + cold +
+        ' of them into the technologies cold suggests');
+  }
+
   add(
     'population-bounded',
     Math.max(...samples.map(s => s.population)) < 5000,
@@ -684,7 +779,17 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     a.p.householdId !== null && a.p.householdId === b.p.householdId);
   const band = opinionOf((a, b) =>
     a.p.bandId === b.p.bandId && a.p.householdId !== b.p.householdId);
-  const outsider = opinionOf((a, b) => a.p.bandId !== b.p.bandId);
+  // Household-mates are excluded here for the same reason they are excluded
+  // from `band`: the three categories are meant to be disjoint, and a person
+  // cannot be both your household and a stranger. They were not, and it is a
+  // real gap rather than a tidiness point — `bandId` is not reassigned on
+  // marriage, so somebody who marries across a band line stays an "outsider"
+  // to this measurement for the rest of their life while sharing a roof with
+  // their spouse. On the century seed, one such marriage plus a band worn down
+  // to three survivors was enough to put mean stranger regard above mean band
+  // regard and fail a check about a design property that had not changed.
+  const outsider = opinionOf((a, b) =>
+    a.p.bandId !== b.p.bandId && a.p.householdId !== b.p.householdId);
   const detail =
     'household=' + fmt(kin) + ' band=' + fmt(band) + ' outsider=' + fmt(outsider);
   if (Number.isNaN(kin) || Number.isNaN(band) || Number.isNaN(outsider)) {

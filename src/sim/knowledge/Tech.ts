@@ -30,8 +30,19 @@
  *
  * `farming` is deliberately absent for the same reason. It comes back when
  * fields, sowing and reaping arrive with it.
+ *
+ * ## Not a tree: a web
+ *
+ * `requires` is not the only thing standing between a person and a technology,
+ * and since M6b phase 2 it is not even the interesting one. Each node also
+ * carries **sparks** — several different situations, each of which can put the
+ * idea into somebody's head. See `Synthesis.ts`: `requires` is what you must
+ * already understand, `sparks` is what makes it occur to you, and the two are
+ * deliberately different questions.
  */
 import type { Person, Skill } from '../entities/Person.ts';
+import type { Spark } from './Synthesis.ts';
+import { PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
 
 export const TECHS = [
   'firemaking', 'cordage', 'plant_lore', 'tracking',
@@ -39,81 +50,234 @@ export const TECHS = [
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
+/**
+ * The area of life a technology belongs to.
+ *
+ * Sparks that reach across two domains are the ones worth having — fur and
+ * cold, fire and a raw vegetable — so this is both a label and, from phase 3,
+ * what lays the web out and colours it.
+ */
+export const DOMAINS = ['fire', 'plants', 'stone', 'cloth', 'timber', 'beasts'] as const;
+export type Domain = (typeof DOMAINS)[number];
+
 export interface TechDef {
   id: Tech;
   label: string;
+  domain: Domain;
   /** Everything that must already be known before this can be worked out. */
   requires: Tech[];
   /**
-   * How hard it is to arrive at unaided, 0-1. Higher is harder; the discovery
+   * How hard it is to arrive at unaided, 0-1. Higher is harder; the conception
    * roll divides by this.
    */
   difficulty: number;
   /** The skill whose practice tends to turn it up. */
   skill: Skill;
   /**
-   * The need whose pressure makes it likely to be found. Cold winters invent
-   * clothing; hunger invents tracking. Null for the merely curious.
+   * The situations that can put this idea in somebody's head. Several, always:
+   * one route in makes a tree, and several make a web.
+   *
+   * There is no `pressure` field any more. Need used to be a multiplier on the
+   * discovery roll, and it is now an ingredient — cold *is* the reason clothing
+   * occurred to you, and saying it twice would double-count it.
    */
-  pressure: 'cold' | 'hunger' | 'thirst' | null;
+  sparks: Spark[];
+  /**
+   * What building a first one costs. Everything named here must be something
+   * the world can actually produce, or the idea stalls at `prototyped` forever.
+   */
+  prototype: Record<string, number>;
+  /** How far a holder can improve the design before there is nothing left to fix. */
+  maxRefinement: number;
   description: string;
 }
 
+/**
+ * Every technology, with the several ways it can occur to somebody.
+ *
+ * Reading a spark: each is one *whole situation*, and every ingredient in it
+ * must be true at the same moment. Weights are relative to the other sparks
+ * competing for one head on one day, so the heavier route is the one a band
+ * usually arrives by and the lighter one is the story you get occasionally.
+ *
+ * Every node wants at least one spark built out of commonly-available
+ * ingredients. A technology all of whose routes need an unlikely coincidence is
+ * unreachable in play while still passing every static test in the suite, which
+ * is the failure mode `sparks-are-various` and `ideas-are-conceived` exist to
+ * catch.
+ */
 export const TECH: Record<Tech, TechDef> = {
   firemaking: {
-    id: 'firemaking', label: 'Firemaking',
-    requires: [], difficulty: 0.35, skill: 'knap', pressure: 'cold',
+    id: 'firemaking', label: 'Firemaking', domain: 'fire',
+    requires: [], difficulty: 0.35, skill: 'knap',
+    prototype: { sticks: 2, flint: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'holding', item: 'flint' }, { kind: 'feeling', need: 'cold' }],
+        weight: 1.0, story: 'struck two cold stones together and one of them spat a spark' },
+      { needs: [{ kind: 'holding', item: 'sticks' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 0.6, story: 'was cold, with an armful of dry sticks and nothing to do with them' },
+      { needs: [{ kind: 'place', biome: 'forest' }, { kind: 'season', season: 'winter' },
+                { kind: 'feeling', need: 'cold' }],
+        weight: 0.4, story: 'stood freezing in a winter wood made entirely of firewood' },
+      // The route that does not need anybody to be cold. Every other spark here
+      // wants it, and cold is the one need the band answers *well* — shelter
+      // takes it at 25 — so without this the whole fire branch of the web was
+      // measurably unreachable in play while passing every static test.
+      { needs: [{ kind: 'holding', item: 'flint' }, { kind: 'holding', item: 'sticks' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 0.7, story: 'struck flint against flint for the noise of it, over and over' },
+    ],
     description: 'A spark from struck flint, and a cold night stops being dangerous.',
   },
   cordage: {
-    id: 'cordage', label: 'Cordage',
-    requires: [], difficulty: 0.3, skill: 'forage', pressure: null,
+    id: 'cordage', label: 'Cordage', domain: 'cloth',
+    requires: [], difficulty: 0.3, skill: 'forage',
+    prototype: { thatch: 3 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'holding', item: 'thatch' }, { kind: 'doing', action: 'gather' }],
+        weight: 1.0, story: 'twisted a handful of reeds out of boredom, and the twist held' },
+      { needs: [{ kind: 'saw', what: 'hands_full' }],
+        weight: 0.7, story: 'kept running out of hands' },
+      { needs: [{ kind: 'doing', action: 'haul' }, { kind: 'holding', item: 'sticks' }],
+        weight: 0.5, story: 'carried sticks across camp one armful at a time all afternoon' },
+    ],
     description: 'Twisted fibre. On its own, string; with a blade and a haft, everything else.',
   },
   plant_lore: {
-    id: 'plant_lore', label: 'Plant lore',
-    requires: [], difficulty: 0.25, skill: 'forage', pressure: 'hunger',
+    id: 'plant_lore', label: 'Plant lore', domain: 'plants',
+    requires: [], difficulty: 0.25, skill: 'forage',
+    prototype: { berries: 4 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'doing', action: 'forage' }, { kind: 'feeling', need: 'hunger' }],
+        weight: 1.0, story: 'went hungry in a place that looked full of food' },
+      { needs: [{ kind: 'doing', action: 'pick' }, { kind: 'season', season: 'autumn' }],
+        weight: 0.8, story: 'watched, one autumn, which trees gave and which did not' },
+      { needs: [{ kind: 'doing', action: 'forage' }, { kind: 'place', biome: 'grass' }],
+        weight: 0.5, story: 'spent a season with both hands in the same hillside' },
+    ],
     description:
       'Which leaf, which berry, and when. The same hillside feeds more people ' +
       'once somebody has learned to read it.',
   },
   tracking: {
-    id: 'tracking', label: 'Tracking',
-    requires: [], difficulty: 0.4, skill: 'track', pressure: 'hunger',
+    id: 'tracking', label: 'Tracking', domain: 'beasts',
+    requires: [], difficulty: 0.4, skill: 'track',
+    prototype: { sticks: 2 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'saw', what: 'quarry_escaped' }],
+        weight: 1.0, story: 'watched a deer become a rustle and then nothing at all' },
+      { needs: [{ kind: 'doing', action: 'hunt' }, { kind: 'feeling', need: 'hunger' }],
+        weight: 0.8, story: 'came back empty-handed once too often' },
+      { needs: [{ kind: 'place', biome: 'forest' }, { kind: 'season', season: 'winter' },
+                { kind: 'doing', action: 'wander' }],
+        weight: 0.4, story: 'read the marks something heavy had left in a winter wood' },
+    ],
     description:
       'Prints, droppings, a bent stem. Game stops being something you stumble ' +
       'across and becomes something you go and find.',
   },
   cooking: {
-    id: 'cooking', label: 'Cooking',
-    requires: ['firemaking'], difficulty: 0.25, skill: 'cook', pressure: 'hunger',
+    id: 'cooking', label: 'Cooking', domain: 'fire',
+    requires: ['firemaking'], difficulty: 0.25, skill: 'cook',
+    prototype: { sticks: 2, meat: 1 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'meat' }],
+        weight: 1.0, story: 'held raw meat beside a fire long enough to wonder' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'berries' },
+                { kind: 'feeling', need: 'hunger' }],
+        weight: 0.6, story: 'was hungry enough to put the berries in the flames and find out' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'hazelnut' }],
+        weight: 0.5, story: 'dropped a hazelnut in the embers and fished out something better' },
+    ],
     description: 'Heat makes food go further, and makes food of things that were not.',
   },
   hafting: {
-    id: 'hafting', label: 'Hafting',
-    requires: ['cordage'], difficulty: 0.45, skill: 'knap', pressure: null,
+    id: 'hafting', label: 'Hafting', domain: 'stone',
+    requires: ['cordage'], difficulty: 0.45, skill: 'knap',
+    prototype: { flint: 1, sticks: 1, thatch: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'holding', item: 'flint' },
+                { kind: 'holding', item: 'sticks' }],
+        weight: 1.0, story: 'had cord, a stone and a stick, and only two hands' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'doing', action: 'chop' }],
+        weight: 0.8,
+        story: 'hacked at a trunk with a loose stone until the stone hurt more than the tree' },
+      { needs: [{ kind: 'saw', what: 'long_enough' }, { kind: 'doing', action: 'chop' }],
+        weight: 0.4, story: 'spent a whole day on one tree, and went to bed thinking about handles' },
+    ],
     description: 'A worked edge bound to a handle. The first tool worth the name.',
   },
   clothing: {
-    id: 'clothing', label: 'Clothing',
-    requires: ['cordage', 'plant_lore'], difficulty: 0.4, skill: 'forage', pressure: 'cold',
+    id: 'clothing', label: 'Clothing', domain: 'cloth',
+    requires: ['cordage'], difficulty: 0.4, skill: 'forage',
+    // Plaited fibre, not a fur coat. Hide is the *idea*'s strongest spark and
+    // it stays one, but a kill is rare enough in this world that costing the
+    // first prototype two of them left clothing permanently conceivable and
+    // permanently unbuildable — an idea nobody could ever finish, which is the
+    // inert-content rule wearing a different hat. Hide garments arrive with
+    // leatherwork.
+    prototype: { thatch: 4 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'feeling', need: 'cold' }, { kind: 'holding', item: 'hide' }],
+        weight: 1.0, story: 'was cold, and had a hide in their hands' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'spent one winter too many bound in nothing but cord' },
+      { needs: [{ kind: 'saw', what: 'cold' }, { kind: 'holding', item: 'hide' }],
+        weight: 0.6, story: 'gave up a day of work to the cold, with a hide across their shoulders' },
+    ],
     description: 'Hide and sinew against the weather. Winter stops choosing who lives.',
   },
   pottery: {
-    id: 'pottery', label: 'Pottery',
-    requires: ['firemaking'], difficulty: 0.55, skill: 'build', pressure: 'hunger',
+    id: 'pottery', label: 'Pottery', domain: 'fire',
+    requires: ['firemaking'], difficulty: 0.55, skill: 'build',
+    prototype: { mud: 3, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'mud' }],
+        weight: 1.0, story: 'left daub too near the fire and found it had gone hard as stone' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'doing', action: 'store' },
+                { kind: 'feeling', need: 'hunger' }],
+        weight: 0.6, story: 'wanted to keep more of the autumn than a basket would hold' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'mud' },
+                { kind: 'place', biome: 'beach' }],
+        weight: 0.4, story: 'shaped river clay on a beach and left it out in the sun' },
+    ],
     description: 'Fired clay. Grain keeps, water travels, and a surplus becomes a year.',
   },
   stoneworking: {
-    id: 'stoneworking', label: 'Stoneworking',
-    requires: ['hafting'], difficulty: 0.5, skill: 'knap', pressure: null,
+    id: 'stoneworking', label: 'Stoneworking', domain: 'stone',
+    requires: ['hafting'], difficulty: 0.5, skill: 'knap',
+    prototype: { flint: 3 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'holding', item: 'flint' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'noticed the core broke the same way twice' },
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'doing', action: 'gather' },
+                { kind: 'place', biome: 'hills' }],
+        weight: 0.7, story: 'worked a hillside outcrop until its grain was obvious' },
+      { needs: [{ kind: 'saw', what: 'node_empty' }, { kind: 'holding', item: 'flint' }],
+        weight: 0.5, story: 'watched good flint run out before the work did' },
+    ],
     description:
       'Reading the grain of a core and striking along it. Twice the edge from ' +
       'the same stone, and the beginning of everything sharp.',
   },
   carpentry: {
-    id: 'carpentry', label: 'Carpentry',
-    requires: ['hafting', 'stoneworking'], difficulty: 0.6, skill: 'build', pressure: 'cold',
+    id: 'carpentry', label: 'Carpentry', domain: 'timber',
+    requires: ['hafting', 'stoneworking'], difficulty: 0.6, skill: 'build',
+    prototype: { wood: 4, thatch: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'doing', action: 'chop' },
+                { kind: 'holding', item: 'wood' }],
+        weight: 1.0, story: 'cut a notch to carry a log, and saw a joint in it' },
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'doing', action: 'build' },
+                { kind: 'feeling', need: 'cold' }, { kind: 'season', season: 'winter' }],
+        weight: 0.6, story: 'raised a roof in a winter that came in through it anyway' },
+      { needs: [{ kind: 'saw', what: 'cold' }, { kind: 'place', biome: 'forest' },
+                { kind: 'knows', tech: 'stoneworking' }],
+        weight: 0.4, story: 'was driven out of a wood by weather, standing in the answer to it' },
+    ],
     description:
       'Timber jointed rather than piled. Roofs that span a room, and a house a ' +
       'family can grow inside.',
@@ -183,23 +347,37 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
 };
 
 /**
- * How strong a technology is in one person's hands: 0 if they do not know it,
- * 1 once they do.
+ * How strong a technology is in one person's hands.
+ *
+ * Three answers, not two: nothing at all, half of it while the design is still
+ * an untested prototype, and one or more once it has been proven and refined.
  *
  * Every effect goes through this one function rather than asking
  * `knownTech.has(...)` at the point of use. There were six such call sites
  * before this existed, and every one of them would have had to learn about
- * refinement separately; now one function does and the sites do not change
- * again. Refinement raises the return above 1 for a design its holder has
- * improved.
+ * prototypes and refinement separately; one function learns instead.
  *
- * Refinement will live on the *knower*, not on the object: a fine axe in a
- * novice's hand is just an axe. That is a deliberate trade for keeping per-unit
- * quality out of `Inventory`'s stacks, which are a plain id-to-count map and
- * are relied on as one nearly everywhere.
+ * **This is pure and must stay pure.** It is called from the renderer, the HUD
+ * and the action catalogue as well as from the simulation, so a draw from an
+ * `RNG` in here would make what the world does depend on how often it was
+ * drawn — which is exactly why an untested prototype returns a fixed reduced
+ * power and the roll that proves or breaks it happens once a day in
+ * `KnowledgeSystem` instead.
+ *
+ * Refinement lives on the *knower*, not on the object: a fine axe in a novice's
+ * hand is just an axe. That is a deliberate trade for keeping per-unit quality
+ * out of `Inventory`'s stacks, which are a plain id-to-count map and are relied
+ * on as one nearly everywhere.
  */
 export function techPower(person: Person, tech: Tech): number {
-  return person.knownTech.has(tech) ? 1 : 0;
+  if (person.knownTech.has(tech)) {
+    return 1 + (person.techLevel.get(tech) ?? 0) * REFINEMENT_STEP;
+  }
+  // An unproven design still does something, because it has to be used for
+  // anyone to find out whether it works. A prototype nobody can use is not a
+  // prototype, it is a delay.
+  const idea = person.ideas.find(candidate => candidate.tech === tech);
+  return idea && idea.stage === 'prototyped' ? PROTOTYPE_POWER : 0;
 }
 
 /** Scales a bonus by how well its holder knows the technology behind it. */
@@ -341,7 +519,17 @@ export function prerequisitesMet(tech: Tech, known: ReadonlySet<string>): boolea
   return TECH[tech].requires.every(required => known.has(required));
 }
 
-/** Techs a person could plausibly arrive at next. */
+/**
+ * Techs whose prerequisites are met but which are not known yet.
+ *
+ * **This is no longer how discovery picks anything.** Conception used to draw
+ * uniformly from this list; since M6b phase 2 it needs a spark as well, and
+ * `KnowledgeSystem.conceivable` is the function that answers "what could occur
+ * to this person right now". What survives here is the *understanding* half of
+ * the question, which is what the acyclicity test walks the graph with: start
+ * knowing nothing, keep taking whatever has become reachable, and anything a
+ * cycle encloses is left over at the end.
+ */
 export function reachableFrom(known: ReadonlySet<string>): Tech[] {
   return TECHS.filter(tech => !known.has(tech) && prerequisitesMet(tech, known));
 }

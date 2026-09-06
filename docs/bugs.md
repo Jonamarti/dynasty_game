@@ -37,6 +37,53 @@ a locked design looks like content you have not reached yet. `carpentry` is a
 real technology now, and `tech.test.ts` asserts every `requiresTech` in
 `BUILDINGS` names one.
 
+## Found during M6b phase 2 — open
+
+### Band membership is never reassigned on marriage
+
+`Person.bandId` is set at birth or at founding and nothing ever changes it.
+Marriage merges *households* (`Simulation.mergeHouseholds`) and leaves both
+spouses in the bands they were born into, so a woman who marries into the band
+across the valley remains, forever, an outsider to every social measurement and
+to anything that reads `bandId` — chief authority, exile quorums, `ownerBandId`
+on a store.
+
+Found because it broke `kin-outrank-strangers` on the century seed: that check
+compares mean opinion for household, band and outsider ties, and one cross-band
+marriage in a population worn down to twelve survivors put mean *stranger*
+regard above mean *band* regard. The check itself had a real defect alongside it
+— its three categories were not disjoint — and that is fixed. The underlying
+model is not.
+
+Not fixed here because it is not a phase 2 problem and it is not small:
+reassigning `bandId` on marriage touches chiefs, exile, band-owned stores and
+who counts toward an era, and every one of those wants a deliberate answer to
+"which band does a married couple belong to?" rather than a default.
+
+### Nobody hunts, so hides are scarce
+
+Known since M6a and unchanged, but phase 2 made a consequence of it visible.
+Over a two-year century run hunting accounts for under a hundred ticks out of a
+million, so `hide` — added in this pass, taken off every kill — almost never
+enters the world. Clothing's heaviest spark is cold hands holding fur, and in
+practice it is the *other* routes that fire.
+
+The prototype cost was moved off hides for exactly this reason, because an idea
+that can be had and never built is inert content. The spark is left alone: it is
+the right story, and phase 5's weapons and `tracking` are the intended fix for
+the hunting rate rather than anything in the knowledge system.
+
+### A century run reports fewer technologies than it feels like it should
+
+Four to seven proven technologies over two in-game years, against five for the
+build before this pass. That is not a regression in reachability — the pipeline
+now has five stages where it had one roll, and `ideas-are-conceived` reports
+around one idea per person-year with eleven distinct spark routes firing — but
+it does mean the *rate* is set by the slowest stage rather than by
+`CONCEPTION_BASE`, and nobody has measured which stage that is. Worth an
+instrumented run before anyone reaches for the conception constant, which is the
+obvious wrong knob.
+
 ## Open — behaviour
 
 ### The island supports a population, but only just

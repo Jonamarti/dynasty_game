@@ -6,6 +6,163 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-06 — M6b phase 2: the mind, and where ideas come from
+
+The largest phase of M6b and the heart of it
+([m6b_plan.md](m6b_plan.md) §Phase 2). Discovery stops being a uniform random
+pick from whatever is reachable and becomes a lifecycle: a named person in a
+particular situation has an idea, works on it alone and with people who know
+something, builds one, finds out whether it works — it can fail — and afterwards
+improves it. It had to land whole, because an idea that can be conceived and
+never proven is inert content by another name.
+
+### The tree is not a tree
+
+- **`knowledge/Synthesis.ts`**, and `TechDef.sparks`. A technology is now
+  reached by a *situation*: what you know together with what is in your hands,
+  underfoot, on your mind, in front of you and what season it is. Each node has
+  two to four such routes.
+  *Reason:* the design decision taken with the project owner after phase 1. The
+  register is the owner's own: holding a vegetable while knowing fire suggests
+  putting the two together; holding fur while cold suggests wrapping it round
+  yourself. Several routes per node is what makes this a web rather than a tree,
+  and it is why the same technology arrives for different reasons in different
+  bands — on a two-year run, eleven distinct spark routes fired.
+- **`requires` stays and means something different.** It is what you must
+  already understand, and it gates teaching, observation and conception alike;
+  `sparks` is what makes a thing occur to you, and gates conception only.
+  *Reason:* they are honestly different questions, and collapsing them would
+  lose both. A person can be perfectly equipped to understand clothing and never
+  think of it, which is the interesting case.
+- **`TechDef.pressure` is gone.** Need used to be a multiplier on the discovery
+  roll; it is now an ingredient. *Reason:* cold *is* the reason clothing
+  occurred to you, and multiplying by it as well would count it twice.
+- **`clothing` no longer requires `plant_lore`**, only `cordage`.
+  *Reason:* it follows the worked example in the plan, and the plant-lore
+  prerequisite was scaffolding that nothing about clothing actually rests on.
+
+### Two senses that did not exist
+
+- **`Person.lately`** — a decayed tally of what somebody has actually been
+  doing, written from `ActionSystem.finish`, the single funnel every ended
+  action passes through. *Reason:* there was no such record anywhere.
+  `workedTicks` is zeroed on every finish and never knew which action it
+  counted, `skills` are cumulative and saturating with ten of them covering two
+  dozen verbs, `telemetry` is global and disabled in the browser build, and
+  `actionCounts()` is a census of the living rather than a history. Synthesis is
+  impossible without one.
+- **`Person.noticed`** — the same, for the reasons somebody's own work kept
+  stopping, written from `abandon` and `stop`. *Reason:* being brought up short
+  is one of the things that puts an idea in a head. Somebody whose hands keep
+  being full is somebody who might think of a carrying strap, and `cordage` has
+  exactly that spark.
+- **The ground underfoot.** `World.biomeAt` has existed since M0 and nothing in
+  `Brain` or `ActionSystem` had ever called it — the only biome the player could
+  read was the one under a *selected* node, never under the person doing the
+  noticing. `KnowledgeSystem.notice` calls it once a day.
+
+### An idea has five stages, and can fail at four of them
+
+`Person.ideas` (capped at two, so nobody dabbles at everything) and
+`Person.techLevel`.
+
+- **Conceived** by a spark; **researched** by two new actions; **prototyped** at
+  0.6 insight for real materials; **tested** in use, which can fail and costs
+  insight when it does; **refined** afterwards to a per-technology ceiling, at
+  which point the idea retires and frees its slot.
+- **`ponder` and `discuss`**, both with interruption checks. Both roll for a
+  *breakthrough* rather than accruing smoothly. *Reason:* insight that creeps up
+  a hundredth at a time is a progress bar; insight that lurches when somebody
+  finally sees it is an event that can carry a floater and a chronicle line.
+  Discussion is worth more than thinking alone and a second conversation with
+  the same partner is worth a third of the first, or two people would sit in a
+  field discussing hafting until one of them starved.
+- **The test is a daily roll, not an action**, and `techPower` hands a prototype
+  half its effect meanwhile. *Reason:* the world has to actually use a thing to
+  find out whether it works, and `techPower` is called from the renderer and the
+  HUD as well as the simulation — a draw from an `RNG` in there would make what
+  the world does depend on how often it was looked at.
+- **`KnowledgeSystem.advance` refuses an idea that has already retired.** Found
+  by `research.test.ts`. Nothing in the game can reach one, but the ceiling was
+  being enforced by where the callers happened to look rather than by the rule.
+
+### Every stall says so
+
+Five new `STOP_REASONS` — nothing on their mind, nothing came of it, not ready
+to build, a partner who knows nothing about it, a partner who would not discuss
+it — and a second queue, `Simulation.insights`, carrying the other half: an idea
+had, a breakthrough made, a prototype that did not work, a design improved.
+Gated on line of sight from the player's own character, the way witnessed deeds
+are. *Reason:* the standing instruction from the project owner, applied to a
+whole new subsystem rather than retrofitted to it later. An idea that silently
+evaporates is indistinguishable from one nobody ever had.
+
+- **An idea thought all the way through and never built is given up on after
+  ninety days**, with a chronicle line and a floater. *Reason:* without it, an
+  idea whose materials never turn up occupies one of two slots for the rest of a
+  life and the person never thinks of anything again.
+
+### Two things the sparks needed, which did not exist
+
+- **`hide` is a real item**, taken off every kill alongside the meat.
+  *Reason:* clothing's heaviest route is cold hands holding fur, and nothing in
+  the world produced a hide. The ingredient did not exist, so the route could
+  never have fired.
+- **Clothing's *prototype* costs reeds, not hides.** *Reason:* measured. Hunting
+  is rare enough that costing the first garment two hides left clothing
+  permanently conceivable and permanently unbuildable — the inert-content rule
+  wearing a different hat. The hide spark stays; hide garments arrive with
+  leatherwork in phase 5.
+
+### Two coefficients that were measured rather than guessed
+
+- **`FELT_AT` is 30, not 40.** *Reason:* the interruption thresholds are where a
+  need *parks*, so a population's hunger settles at 40 and cold is answered by
+  shelter at 25. At 40 the whole fire branch of the web was unreachable: across
+  a two-year run nobody made fire where the previous build had eight people
+  doing it. Firemaking also gained a route that needs nobody to be cold, since
+  every other route into it wanted the one need the band answers well.
+- **`ponder` is weighted close to `gather`.** *Reason:* half again higher on a
+  first pass and thinking became the sixth most common activity in the world,
+  ahead of building and sleeping, which is not a stone age.
+
+**Survival is unchanged.** Twenty seeds before and after: **64.6% both times.**
+That was the risk this phase carried — two long actions and a think-tick
+competitor to foraging — and it did not materialise.
+
+### The health report
+
+Seven new checks, and one fix to an old one:
+
+`ideas-are-conceived` (bounded at both ends, because a flood means the web is
+decoration), `discovery-is-situated`, `sparks-are-various`, `ideas-become-tech`,
+`research-is-social`, `prototypes-can-fail` (a test that always passes is a
+delay with a dice roll drawn over it) and `techs-are-refined`. New unit files
+`synthesis.test.ts` and `research.test.ts`; the ingredient and prerequisite
+checks were both verified against a deliberately broken table before being kept.
+
+- **`kin-outrank-strangers` was measuring three categories that were not
+  disjoint.** `kin` and `band` both exclude household-mates and `outsider` did
+  not, so somebody who marries across a band line — `bandId` is not reassigned
+  on marriage — counted as a stranger to their own in-laws for life. On the
+  century seed one such marriage plus a band worn down to three survivors put
+  mean stranger regard above mean band regard. *This is a fix to the
+  measurement, not a tuning:* a plausible theory that the new `discuss` action
+  was mixing bands was tested by biasing partner choice toward one's own band,
+  which made the figure **worse**, and was reverted rather than kept with a
+  false explanation attached. Twenty seeds, before and after: the outsider mean
+  sits within a few points of zero in nineteen of them.
+
+### UI
+
+A "Working on" section in the Self tab — the idea, its stage in the player's
+words, the story that started it, an insight bar and a count of attempts that
+did not work — refinement pips beside each known technology, `Think`, `Build the
+first…` and `Discuss … with` in the radial menu, and floaters for every beat.
+Two e2e specs cover the panel and the greyed-out `Think` with its reason.
+
+---
+
 ## 2026-09-05 — M6b phase 1: the tech tree becomes a registry
 
 First phase of M6b ([next-steps.md](next-steps.md) §1). The goal of this phase

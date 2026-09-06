@@ -26,8 +26,9 @@ import { ITEMS } from '../entities/Item.ts';
 import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import {
-  buildFactor, forageYieldFactor, nutritionFactor, techPower,
+  TECH, buildFactor, forageYieldFactor, nutritionFactor, techPower,
 } from '../knowledge/Tech.ts';
+import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 
 export interface ActionContext {
   world: World;
@@ -64,6 +65,15 @@ export interface ActionContext {
    * refused you and does not say is worse than one that does not know.
    */
   onStopped: (person: Person, action: string, reason: string) => void;
+  /**
+   * Announces a breakthrough, a prototype built, or a design improved.
+   *
+   * The same channel `KnowledgeSystem` reports through. Research is deliberately
+   * lumpy — insight moves in jumps rather than creeping — precisely so that
+   * there is a moment worth announcing, and a moment nobody is told about is
+   * not a moment.
+   */
+  onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') => void;
 }
 
 /** How close two people must be to hand something over, or land a blow. */
@@ -80,6 +90,41 @@ const COURT_TICKS = 60;
 
 /** Ticks to show somebody how a thing is done. Longer than any conversation. */
 const TEACH_TICKS = 90;
+
+/**
+ * Ticks of sitting and turning a problem over.
+ *
+ * Long, because thinking should cost a visible part of a day and compete with
+ * foraging for it. Not so long that it cannot finish between two meals: a
+ * stretch of work that always ends in an interruption is a stretch of work that
+ * never pays out, and the person doing it would simply be worse off than a
+ * neighbour who never had an idea.
+ */
+const PONDER_TICKS = 150;
+
+/** Ticks spent arguing a problem out with somebody who knows something. */
+const DISCUSS_TICKS = 70;
+
+/** Ticks to build the first one of a thing. */
+const PROTOTYPE_TICKS = 120;
+
+/**
+ * How much insight a breakthrough is worth.
+ *
+ * A jump, not a trickle. Insight that accrued smoothly made research a progress
+ * bar; insight that lurches when somebody finally sees it makes research a
+ * series of events, each of which can carry a floater and a chronicle line.
+ */
+const BREAKTHROUGH = 0.22;
+
+/**
+ * What a second conversation with the same person about the same idea is worth.
+ *
+ * Sharply reduced, because a partner has a finite amount to offer on one
+ * problem. Without this, two people would sit in a field discussing hafting
+ * until one of them starved, and it would have been the optimal thing to do.
+ */
+const REPEAT_DISCUSSION = 0.35;
 
 /** How `interruption` should be asked. See the comments on it. */
 interface InterruptionOptions {
@@ -146,6 +191,9 @@ export class ActionSystem {
       case 'court': this.doCourt(person, ctx); break;
       case 'teach': this.doTeach(person, ctx); break;
       case 'craft': this.doCraft(person, ctx); break;
+      case 'ponder': this.doPonder(person, ctx); break;
+      case 'discuss': this.doDiscuss(person, ctx); break;
+      case 'prototype': this.doPrototype(person, ctx); break;
       case 'give': this.doGive(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
@@ -161,8 +209,16 @@ export class ActionSystem {
     }
   }
 
-  /** Ends the current action cleanly, releasing any player order with it. */
+  /**
+   * Ends the current action cleanly, releasing any player order with it.
+   *
+   * Also the one place a person's own history of what they have been doing is
+   * written. Every ended action passes through here — `stop` and `abandon` both
+   * delegate to it — so `noteDid` needs one call site rather than one per verb,
+   * and a verb added later cannot forget to record itself.
+   */
   private finish(person: Person): void {
+    person.noteDid(person.action);
     person.clearTarget();
     person.clearOrder();
     person.action = 'idle';
@@ -185,6 +241,10 @@ export class ActionSystem {
   private abandon(person: Person, reason: string, ctx: ActionContext): void {
     telemetry.count('abandoned_' + reason);
     ctx.onStopped(person, person.action, reason);
+    // Recorded on the person as well as reported to the player. Being stopped
+    // is one of the senses an idea can be built out of: somebody whose hands
+    // keep being full is somebody who might think of a carrying strap.
+    person.noteSaw(reason);
     this.finish(person);
   }
 
@@ -204,6 +264,7 @@ export class ActionSystem {
   ): void {
     telemetry.count(prefix + reason);
     ctx.onStopped(person, person.action, reason);
+    person.noteSaw(reason);
     this.finish(person);
   }
 
@@ -706,6 +767,16 @@ export class ActionSystem {
     person.inventory.add('meat', Math.min(yielded, Math.max(0, room)));
     telemetry.count('hunt_killed');
     telemetry.count('harvest_meat', yielded);
+    // The skin comes off with the meat. Nothing consumed hides before M6b, and
+    // that was the reason clothing's strongest spark — cold hands holding fur —
+    // could never fire: the ingredient did not exist in the world.
+    const hideRoom = person.carryCapacity - person.carrying;
+    if (hideRoom > 0) {
+      person.inventory.add('hide', 1);
+      telemetry.count('harvest_hide');
+    } else {
+      ctx.dropAt(animal.x, animal.y, 'hide', 1);
+    }
 
     person.chronicle.push({
       tick: ctx.tick,
@@ -920,6 +991,219 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick, ageDays: person.age, text: 'made a hand axe', kind: 'did',
     });
+    this.finish(person);
+  }
+
+  // -------------------------------------------------------------------------
+  // Research
+  // -------------------------------------------------------------------------
+
+  /**
+   * The idea this person would get furthest with by working on it.
+   *
+   * An idea being tested is excluded: there is nothing to think about while you
+   * are waiting to find out whether the thing you built works. Everything else
+   * — newly conceived, half researched, proven and being improved — is fair
+   * game, and the least advanced comes first so that nobody leaves an idea
+   * hanging at nine tenths while polishing something they already have.
+   */
+  private workableIdea(person: Person): Idea | null {
+    let best: Idea | null = null;
+    for (const idea of person.ideas) {
+      if (idea.stage === 'prototyped') continue;
+      if (idea.insight >= 1) continue;
+      if (best === null || idea.insight < best.insight) best = idea;
+    }
+    return best;
+  }
+
+  /**
+   * Sitting with a problem.
+   *
+   * Solitary research. Slow, free, and the only route available to somebody
+   * with nobody to talk to — which, after a bad winter, is most people.
+   */
+  private doPonder(person: Person, ctx: ActionContext): void {
+    const idea = this.workableIdea(person);
+    if (!idea) {
+      this.abandon(person, 'nothing_to_think_about', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = PONDER_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    person.workedTicks++;
+    idea.effort++;
+    if (person.actionTimer > 0) {
+      // Thinking needs a head, not hands, so a full pack is no reason to stop —
+      // but hunger and cold still reach them, which is the whole point of this
+      // check existing on every long action.
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx);
+      return;
+    }
+
+    const def = TECH[idea.tech];
+    const chance = Math.min(0.85,
+      0.18 + person.traits.intelligence * 0.3 + person.traits.curiosity * 0.15
+      + person.skillFactor(def.skill) * 0.2);
+    if (!ctx.rng.chance(chance)) {
+      telemetry.count('ponder_nothing');
+      // Nothing came of it, and the player is told so. An hour of a character's
+      // day disappearing without explanation is the exact complaint this
+      // project's standing rule about refusals exists to answer.
+      this.stop(person, 'nothing_came_of_it', ctx, 'thought_');
+      return;
+    }
+
+    person.practice(def.skill, 0.4);
+    this.breakthrough(person, idea, BREAKTHROUGH, ctx, 'ponder');
+    this.finish(person);
+  }
+
+  /**
+   * Arguing a problem out with somebody whose skills bear on it.
+   *
+   * Far faster than thinking alone and correspondingly harder to arrange: it
+   * needs a willing partner, in reach, who actually knows something about the
+   * thing — and it goes through the ordinary social cooldown, so nobody spends
+   * their life in conversation.
+   */
+  private doDiscuss(person: Person, ctx: ActionContext): void {
+    const idea = this.workableIdea(person);
+    if (!idea) {
+      this.abandon(person, 'nothing_to_think_about', ctx);
+      return;
+    }
+    const partner = this.approach(person, ctx);
+    if (!partner) return;
+
+    const def = TECH[idea.tech];
+    // What a partner brings: they have handled the materials, or they already
+    // understand what the thing rests on. Somebody with neither is not being
+    // rude, they simply have nothing to offer on this particular problem.
+    const theirSkill = partner.skills[def.skill];
+    const theirGrounding = def.requires.filter(r => partner.knownTech.has(r)).length;
+    if (partner.isChild || (theirSkill < 12 && theirGrounding === 0)) {
+      this.abandon(person, 'partner_ignorant', ctx);
+      return;
+    }
+    const regard = ctx.relationships.opinion(partner.id, person.id) / 100;
+    if (regard < -0.2) {
+      this.abandon(person, 'partner_unwilling', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = DISCUSS_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    idea.effort++;
+    if (person.actionTimer > 0) return;
+
+    const repeat = idea.discussedWith.includes(partner.id);
+    if (!repeat) idea.discussedWith.push(partner.id);
+
+    const chance = Math.min(0.9,
+      0.2 + partner.skillFactor(def.skill) * 0.35
+      + (partner.traits.intelligence - 0.5) * 0.4
+      + Math.max(0, regard) * 0.3) * (repeat ? REPEAT_DISCUSSION : 1);
+
+    partner.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
+    person.practice('persuade', 0.3);
+
+    if (!ctx.rng.chance(chance)) {
+      telemetry.count('discuss_nothing');
+      this.stop(person, 'nothing_came_of_it', ctx, 'talked_');
+      person.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
+      return;
+    }
+
+    // A conversation that produced something is worth more than an hour alone,
+    // which is what makes a band with an expert in it different from a band of
+    // strangers who happen to live together.
+    partner.practice(def.skill, 0.3);
+    this.breakthrough(person, idea, BREAKTHROUGH * 1.4, ctx, 'discuss');
+    this.finishSocial(person, ctx.tick);
+  }
+
+  /** Insight jumps, and everybody watching is told about it. */
+  private breakthrough(
+    person: Person,
+    idea: Idea,
+    amount: number,
+    ctx: ActionContext,
+    route: string
+  ): void {
+    const def = TECH[idea.tech];
+    telemetry.count('breakthrough_' + route);
+    const refined = ctx.knowledge.advance(person, idea, amount, ctx.tick);
+    if (refined) {
+      ctx.onInsight(person, refined, 'gain');
+      return;
+    }
+    person.chronicle.push({
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: 'saw further into ' + def.label.toLowerCase(),
+      kind: 'did',
+    });
+    ctx.onInsight(person, 'a breakthrough on ' + def.label.toLowerCase(), 'gain');
+  }
+
+  /**
+   * Building the first one.
+   *
+   * The step where an idea stops being talk and costs real materials. It does
+   * not prove anything: a prototype works at half strength and unreliably, and
+   * whether it is any good is settled later, in use.
+   */
+  private doPrototype(person: Person, ctx: ActionContext): void {
+    const idea = person.ideas.find(
+      candidate => candidate.stage === 'researching' && candidate.insight >= PROTOTYPE_AT
+    ) ?? null;
+    if (!idea) {
+      this.abandon(person, 'nothing_to_build_yet', ctx);
+      return;
+    }
+
+    const def = TECH[idea.tech];
+    const missing = Object.entries(def.prototype)
+      .some(([itemId, count]) => person.inventory.count(itemId) < count);
+    if (missing) {
+      this.abandon(person, 'lack_materials', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = Math.ceil(PROTOTYPE_TICKS / person.skillFactor(def.skill));
+      return;
+    }
+    person.actionTimer--;
+    person.workedTicks++;
+    if (person.actionTimer > 0) {
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx);
+      return;
+    }
+
+    for (const [itemId, count] of Object.entries(def.prototype)) {
+      person.inventory.remove(itemId, count);
+    }
+    idea.stage = 'prototyped';
+    person.practice(def.skill, 2);
+    telemetry.count('prototyped_' + idea.tech);
+    person.chronicle.push({
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: 'built the first ' + def.label.toLowerCase() + ' anyone had ever built',
+      kind: 'did',
+    });
+    ctx.onInsight(person, 'built a ' + def.label.toLowerCase() + ' to try', 'idea');
     this.finish(person);
   }
 

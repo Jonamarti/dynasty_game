@@ -579,6 +579,58 @@ test('knowledge is listed on the person who holds it', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('an idea in progress is shown, with the story that started it', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  // Put an idea on the player the way conception would, and check the whole
+  // lifecycle is legible from inside the game. Before M6b phase 2 research was
+  // entirely invisible: a character sat down, some time passed, and eventually
+  // a technology appeared in a list.
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: { sim: { player: { ideas: unknown[] } | null } };
+    }).__dynasty;
+    d.sim.player?.ideas.push({
+      tech: 'cordage', stage: 'researching', insight: 0.4,
+      story: 'kept running out of hands',
+      conceivedTick: 0, effort: 12, discussedWith: [], failedTests: 1,
+    });
+  });
+
+  await page.locator('.hud-tab', { hasText: 'Self' }).click();
+  await expect(page.locator('.hud-section', { hasText: 'Working on' })).toBeVisible();
+  await expect(page.locator('.hud-panel')).toContainText('Cordage');
+  await expect(page.locator('.hud-panel')).toContainText('working it out');
+  await expect(page.locator('.hud-panel')).toContainText('kept running out of hands');
+  // A failed attempt is part of the story, not something to hide.
+  await expect(page.locator('.hud-panel')).toContainText('1 attempt that did not work');
+
+  expect(errors).toEqual([]);
+});
+
+test('thinking is offered only once something has occurred to you', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  // Right-click empty ground: the verb is there and greyed, with the reason.
+  // An option that is simply absent teaches the player nothing about why.
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: { sim: { player: { ideas: unknown[] } | null } };
+    }).__dynasty;
+    if (d.sim.player) d.sim.player.ideas.length = 0;
+  });
+
+  const ground = await emptyGround(page);
+  await page.mouse.click(ground.x, ground.y, { button: 'right' });
+  const think = page.locator('.radial-item', { hasText: 'Think' }).first();
+  await expect(think).toBeVisible({ timeout: 10_000 });
+  await expect(think).toHaveClass(/is-disabled/);
+
+  expect(errors).toEqual([]);
+});
+
 test('teaching appears in the menu only when you have something to teach', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);

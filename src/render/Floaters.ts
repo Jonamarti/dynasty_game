@@ -141,6 +141,9 @@ export const ACTION_LABELS: Record<string, string> = {
   court: 'courting',
   teach: 'teaching',
   craft: 'making a hand axe',
+  ponder: 'turning something over',
+  discuss: 'arguing it out',
+  prototype: 'building the first one',
   give: 'giving food',
   steal: 'stealing',
   attack: 'fighting',
@@ -203,6 +206,14 @@ export const STOP_REASONS: Record<string, string> = {
   dont_know_how: 'they do not know how',
   lack_materials: 'they lacked the materials',
   already_wed: 'they are already married',
+
+  // Research. Every one of these is a way an idea can stall, and a stalled idea
+  // that says nothing is indistinguishable from a character standing still.
+  nothing_to_think_about: 'they have nothing on their mind',
+  nothing_came_of_it: 'nothing came of it this time',
+  nothing_to_build_yet: 'the idea is not ready to build',
+  partner_ignorant: 'they know nothing about it',
+  partner_unwilling: 'they would not discuss it',
 };
 
 export function stopReasonLabel(reason: string): string {

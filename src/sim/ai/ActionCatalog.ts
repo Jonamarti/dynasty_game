@@ -17,7 +17,8 @@ import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import { ITEMS } from '../entities/Item.ts';
-import { techPower } from '../knowledge/Tech.ts';
+import { TECH, techPower } from '../knowledge/Tech.ts';
+import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import type { Animal } from '../entities/Animal.ts';
 
@@ -147,7 +148,24 @@ export function availableActions(
 function personActions(actor: Person, other: Person): ActionOption[] {
   const carriedFood = actor.inventory.bestFood();
   const teachable = [...actor.knownTech].some(t => !other.knownTech.has(t));
+
+  // Talking a problem over with somebody who knows something about it. Offered
+  // only when there is a problem: an option that is always visible and almost
+  // never enabled teaches the player nothing.
+  const idea = actor.ideas.find(candidate => candidate.stage !== 'prototyped');
+  const informed = idea !== undefined && !other.isChild && (
+    other.skills[TECH[idea.tech].skill] >= 12 ||
+    TECH[idea.tech].requires.some(required => other.knownTech.has(required))
+  );
+
   return [
+    ...(idea ? [{
+      id: 'discuss',
+      label: 'Discuss ' + TECH[idea.tech].label.toLowerCase() + ' with ' + other.name,
+      icon: '\u{1F914}',
+      enabled: informed,
+      reason: informed ? undefined : 'They know nothing about it',
+    }] : []),
     {
       id: 'teach',
       label: 'Teach ' + other.name,
@@ -338,6 +356,39 @@ function groundActions(
   // clicking a lake and being told to go and drink is exactly right.
   if (ctx.nearWater) {
     options.push({ id: 'drink', label: 'Drink', icon: '\u{1F4A7}', enabled: true });
+  }
+
+  // Thinking, and building the first one. Both are aimed at nothing, so they
+  // belong with the other verbs that happen where you stand.
+  const thinkable = actor.ideas.find(
+    candidate => candidate.stage !== 'prototyped' && candidate.insight < 1
+  );
+  options.push({
+    id: 'ponder',
+    label: thinkable
+      ? 'Think about ' + TECH[thinkable.tech].label.toLowerCase()
+      : 'Think',
+    icon: '\u{1F4AD}',
+    enabled: thinkable !== undefined,
+    reason: thinkable === undefined ? 'Nothing has occurred to you yet' : undefined,
+  });
+
+  const buildable = actor.ideas.find(
+    candidate => candidate.stage === 'researching' && candidate.insight >= PROTOTYPE_AT
+  );
+  if (buildable) {
+    const def = TECH[buildable.tech];
+    const ready = Object.entries(def.prototype)
+      .every(([itemId, count]) => actor.inventory.count(itemId) >= count);
+    options.push({
+      id: 'prototype',
+      label: 'Build the first ' + def.label.toLowerCase(),
+      icon: '\u{1F528}',
+      enabled: ready,
+      reason: ready ? undefined : 'You need ' + Object.entries(def.prototype)
+        .map(([itemId, count]) => count + ' ' + (ITEMS[itemId]?.label.toLowerCase() ?? itemId))
+        .join(' and '),
+    });
   }
 
   const canCraft = techPower(actor, 'hafting') > 0;

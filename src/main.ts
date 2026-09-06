@@ -723,6 +723,35 @@ function reportInterruptions(): void {
   }
 }
 
+/**
+ * Says that somebody worked something out.
+ *
+ * Gated on line of sight from the player's own character, exactly the way
+ * witnessed deeds are. Announcing every idea on the island would hand the
+ * player the omniscience the whole design is built to withhold — and knowing
+ * that a stranger three valleys away has invented pottery is precisely the kind
+ * of thing this game should never tell you.
+ */
+function reportInsights(): void {
+  const notices = sim.insights.splice(0, sim.insights.length);
+  const observer = sim.player;
+  for (const notice of notices) {
+    const person = sim.peopleById.get(notice.personId);
+    if (!person) continue;
+    const mine = person.isPlayer || person.id === commanding?.id;
+    if (!mine) {
+      if (!observer || !observer.alive) continue;
+      const dx = person.x - observer.x;
+      const dy = person.y - observer.y;
+      if (Math.sqrt(dx * dx + dy * dy) > sim.config.sightRadius) continue;
+    }
+    const color = notice.kind === 'setback' ? '#e0705c'
+      : notice.kind === 'gain' ? '#c88ad8' : '#8ab4d8';
+    renderer.floaters.push(person.x, person.y, notice.text,
+      { color, boxed: person.isPlayer, ttl: 3.4 });
+  }
+}
+
 function updateFloaters(): void {
   // The player's own action, and the selected person's, are always labelled:
   // these are the two people whose behaviour the player is actually tracking.
@@ -821,6 +850,7 @@ function frame(now: number): void {
   hud.setCommanding(commanding);
   succession.update(sim);
   reportInterruptions();
+  reportInsights();
   updateFloaters();
   renderer.floaters.update(delta);
   renderer.render(

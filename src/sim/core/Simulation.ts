@@ -49,6 +49,22 @@ import {
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 
+/**
+ * Something somebody worked out, waiting to be reported. See
+ * `Simulation.insights`.
+ *
+ * A separate queue from `interruptions` because it answers a different
+ * question. That one says why a thing the player asked for stopped; this one
+ * says that somebody in view has just had an idea, made a breakthrough, built
+ * a thing that did not work, or improved a design they already had. Research
+ * moves in jumps precisely so that there is something here to report.
+ */
+export interface InsightNotice {
+  personId: number;
+  text: string;
+  kind: 'idea' | 'gain' | 'setback';
+}
+
 /** One ended action, waiting to be reported. See `Simulation.interruptions`. */
 export interface StopNotice {
   personId: number;
@@ -150,6 +166,9 @@ export class Simulation {
    */
   readonly interruptions: StopNotice[] = [];
   private readonly interruptionCap = 32;
+
+  /** Ideas, breakthroughs and failed prototypes, waiting to be told about. */
+  readonly insights: InsightNotice[] = [];
 
   /** Set when the player's character dies, so the UI can offer the succession. */
   succession: { died: Person; heir: Person | null } | null = null;
@@ -808,6 +827,21 @@ export class Simulation {
    * asked for stopped happening, and an NPC who broke off foraging because they
    * were thirsty is not answering any question the player asked.
    */
+  /**
+   * Records that somebody saw further into something.
+   *
+   * Unlike `noteStop` this is *not* limited to people under orders. Knowledge
+   * is the one thing in this world that outlives the person who found it, and a
+   * neighbour working something out in front of you is worth knowing about
+   * whether or not you told them to. Whether it is shown is decided by whoever
+   * knows what the player can see; the cap is here so that a headless run which
+   * never drains the queue cannot grow without bound.
+   */
+  private noteInsight(person: Person, text: string, kind: 'idea' | 'gain' | 'setback'): void {
+    this.insights.push({ personId: person.id, text, kind });
+    if (this.insights.length > this.interruptionCap) this.insights.shift();
+  }
+
   private noteStop(person: Person, action: string, reason: string): void {
     if (person.order === null) return;
     this.interruptions.push({ personId: person.id, action, reason });
@@ -1187,6 +1221,15 @@ export class Simulation {
         rng: this.knowledgeRng,
         tick: this.time.tick,
         peopleHash: this.peopleHash,
+        // Both new to M6b phase 2, and both were confirmed absent before it.
+        // `World.biomeAt` has existed since M0 and nothing in `Brain` or
+        // `ActionSystem` had ever called it — the only biome the player could
+        // read was the one under a *selected* node, never the one under the
+        // person doing the noticing.
+        world: this.world,
+        season: this.time.season,
+        ticksPerDay: this.config.time.ticksPerDay,
+        onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
       });
       this.refreshEra();
 
@@ -1237,6 +1280,8 @@ export class Simulation {
         this.dropAt(x, y, itemId, count),
       onStopped: (person: Person, action: string, reason: string) =>
         this.noteStop(person, action, reason),
+      onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') =>
+        this.noteInsight(person, text, kind),
     };
 
     const interval = this.config.thinkInterval;

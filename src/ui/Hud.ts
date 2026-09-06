@@ -652,6 +652,32 @@ export class Hud {
     rows.push('<div class="hud-note">Temperament weights every choice they make. ' +
       'A greedy, disloyal person genuinely prefers taking to asking.</div>');
 
+    // What they are working on now, before what they already know. An idea in
+    // progress is the more interesting half: it has a story attached, it can
+    // fail, and until this section existed the whole research lifecycle was
+    // invisible from inside the game.
+    rows.push('<div class="hud-section">Working on</div>');
+    if (person.ideas.length === 0) {
+      rows.push('<div class="hud-sub">nothing has occurred to them lately</div>');
+    } else {
+      for (const idea of person.ideas) {
+        const def = TECH[idea.tech];
+        if (!def) continue;
+        rows.push('<div class="hud-know">' +
+          '<b>' + escapeHtml(def.label) + ' \u2014 ' + STAGE_LABELS[idea.stage] + '</b>' +
+          '<span>' + escapeHtml(idea.story) + '</span>' +
+          '</div>');
+        rows.push(bar(idea.stage === 'proven' ? 'refining' : 'insight',
+          idea.insight * 100, idea.stage === 'proven' ? '#7ddc96' : '#c88ad8'));
+        if (idea.failedTests > 0) {
+          rows.push('<div class="hud-sub">' + idea.failedTests +
+            (idea.failedTests === 1 ? ' attempt' : ' attempts') + ' that did not work</div>');
+        }
+      }
+      rows.push('<div class="hud-note">An idea has to be thought about, argued ' +
+        'over, built and tried before it is knowledge. Any of those can fail.</div>');
+    }
+
     rows.push('<div class="hud-section">Knows how to</div>');
     if (person.knownTech.size === 0) {
       rows.push('<div class="hud-sub">nothing anyone has had to work out yet</div>');
@@ -661,8 +687,17 @@ export class Hud {
       for (const id of person.knownTech) {
         const def = TECH[id as Tech];
         if (!def) continue;
+        // Pips, not a number. Refinement is a small integer with a per-tech
+        // ceiling, and a filled circle against an empty one says "there is more
+        // of this to be had" in a way that "2" does not.
+        const level = person.techLevel.get(id) ?? 0;
+        const pips = def.maxRefinement > 0
+          ? ' <i class="hud-pips">' +
+            '\u25CF'.repeat(level) + '\u25CB'.repeat(Math.max(0, def.maxRefinement - level)) +
+            '</i>'
+          : '';
         rows.push('<div class="hud-know">' +
-          '<b>' + escapeHtml(def.label) + '</b>' +
+          '<b>' + escapeHtml(def.label) + pips + '</b>' +
           '<span>' + escapeHtml(TECH_EFFECTS[def.id].summary) + '</span>' +
           '</div>');
       }
@@ -1097,6 +1132,20 @@ function describeHealth(health: number): string {
   if (health > 30) return 'They look badly hurt.';
   return 'They can barely stand.';
 }
+
+/**
+ * The stages of an idea, in the player's words rather than the simulation's.
+ *
+ * `proven` reads as "refining" because from the outside that is what a proven
+ * idea somebody is still working on *is* — the technology is already theirs and
+ * what remains is making it better.
+ */
+const STAGE_LABELS: Record<string, string> = {
+  conceived: 'just an idea',
+  researching: 'working it out',
+  prototyped: 'built, and being tried',
+  proven: 'refining',
+};
 
 function veil(text: string): string {
   return '<div class="hud-veil">' + escapeHtml(text) + '</div>';

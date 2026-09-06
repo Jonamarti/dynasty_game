@@ -50,6 +50,43 @@ test('tour', async ({ page }) => {
   await page.locator('.hud-tab', { hasText: 'Life' }).click();
   await page.screenshot({ path: DIR + '/04-life.png' });
 
+  // The mind: an idea mid-lifecycle, and a refined design beside it. Staged
+  // rather than waited for, because a two-year run is what it takes to see one
+  // arrive naturally and this is a tour rather than a test.
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: {
+        sim: {
+          player: { ideas: unknown[]; knownTech: Set<string>; techLevel: Map<string, number> };
+        };
+      };
+    }).__dynasty;
+    const player = d.sim.player;
+    player.knownTech.add('cordage');
+    player.techLevel.set('cordage', 1);
+    player.ideas.length = 0;
+    player.ideas.push({
+      tech: 'hafting', stage: 'researching', insight: 0.45,
+      story: 'hacked at a trunk with a loose stone until the stone hurt more than the tree',
+      conceivedTick: 0, effort: 40, discussedWith: [], failedTests: 1,
+    });
+    player.ideas.push({
+      tech: 'firemaking', stage: 'prototyped', insight: 0.7,
+      story: 'struck two cold stones together and one of them spat a spark',
+      conceivedTick: 0, effort: 60, discussedWith: [], failedTests: 0,
+    });
+  });
+  await page.locator('.hud-tab', { hasText: 'Self' }).click();
+  // A taller window rather than a scroll: the panel rebuilds its subtree every
+  // frame, so anything scrolled into view is scrolled back out again before the
+  // shutter opens.
+  const viewport = page.viewportSize();
+  await page.setViewportSize({ width: viewport?.width ?? 1280, height: 1160 });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: DIR + '/04-mind.png' });
+  await page.setViewportSize({ width: viewport?.width ?? 1280, height: viewport?.height ?? 800 });
+  await page.waitForTimeout(300);
+
   // Build mode, with the locked designs visible.
   await page.keyboard.press('b');
   await page.waitForTimeout(300);

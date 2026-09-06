@@ -284,6 +284,17 @@ html, body, #app {
 }
 .hud-know b { color: var(--text); font-weight: 600; }
 .hud-know span { color: var(--text-dim); font-size: 11px; line-height: 1.35; }
+/* Refinement, as filled and empty circles. A small integer with a per-technology
+   ceiling reads better as pips than as a number: the empty ones say there is
+   more of this to be had, which "2" does not. */
+.hud-know .hud-pips {
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #7ddc96;
+  margin-left: 4px;
+  vertical-align: 1px;
+}
 
 /* --- ties ---------------------------------------------------------------- */
 

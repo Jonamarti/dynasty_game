@@ -59,7 +59,40 @@ anywhere having to remember to take it away.
 > Every effect a technology has goes through `techPower(person, tech)` in
 > `knowledge/Tech.ts` rather than through `knownTech.has(...)` at the point of
 > use. There were six such call sites and each would have had to learn
-> separately about refinement; one function learns instead.
+> separately about prototypes and refinement; one function learns instead.
+>
+> `techPower` returns three things, not two: 0, `PROTOTYPE_POWER` while the
+> design is built but untested, and `1 + level × REFINEMENT_STEP` once proven.
+> **It is pure and must stay pure** — the renderer, the HUD and the action
+> catalogue all call it, so a draw from an `RNG` in there would make what the
+> world does depend on how often it was looked at. That is why the roll that
+> proves or breaks a prototype happens once a day in `KnowledgeSystem` rather
+> than at the point of use.
+
+**Ideas are held by people too, and are lost the same way.** `Person.ideas` and
+`Person.techLevel` are per-person state with no global counterpart, so a
+half-finished design dies with the person who was half-finishing it, and a
+refinement somebody spent years on is not transferred by teaching — what you are
+shown is the plain version. Refinement lives on the *knower* rather than the
+object: a fine axe handed to a novice is just an axe. That is a deliberate trade
+for keeping per-unit quality out of `Inventory`'s stacks, which are a plain
+id-to-count map that nearly everything relies on being one.
+
+**Discovery is situated, and `requires` is not `sparks`.** Since M6b phase 2 the
+tree is a web. `TechDef.requires` is the scaffolding you must already have to
+*understand* a thing; it gates teaching, observation and conception alike and is
+what keeps the graph acyclic. `TechDef.sparks` is the set of situations that
+make it *occur to you*, and gates conception only. Each is a whole situation —
+what you know, what is in your hands, what you have been doing, what you feel,
+what is underfoot, what you saw, what season it is — and each technology has
+several, which is where the web comes from. See `knowledge/Synthesis.ts`.
+
+> A spark naming an ingredient that does not exist would be a technology nobody
+> could ever conceive of, passing every other test in the suite — the same shape
+> of defect as `requiresTech: 'carpentry'`. `synthesis.test.ts` checks every
+> item, action, biome, need, season and deed id named in the table, and checks
+> that every node has at least one route built out of things an ordinary day
+> supplies.
 
 **No technology ships inert.** A node may not enter `TECHS` without an entry in
 `TECH_EFFECTS` saying what it does and where that is read, and `tech.test.ts`
@@ -85,10 +118,13 @@ deliberate exception: it has its own `wakeReason`, because the work list's first
 clause is `isLaden` and a full pack is not a reason to stop sleeping.
 
 **If the simulation stops something, the UI says why.** `interruption()` and
-`abandon()` between them carry twenty-odd reasons; they reach the player through
+`abandon()` between them carry thirty-odd reasons; they reach the player through
 `ActionContext.onStopped` → `Simulation.interruptions` → a floater and the
 panel. Before this they were telemetry counters only, and an order simply
-stopped.
+stopped. Research added five of its own — nothing on your mind, nothing came of
+it, not ready to build, a partner who knows nothing about it, a partner who will
+not discuss it — plus a second queue, `Simulation.insights`, for the other half
+of the same duty: saying that somebody *did* work something out.
 
 **One `step()` is one simulation step.** No hidden amplification, so the step
 budgets in the harness mean what they say.
