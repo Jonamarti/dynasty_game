@@ -65,6 +65,22 @@ export interface NeedsConfig {
 export interface PopulationConfig {
   bands: number;
   peoplePerBand: number;
+  /**
+   * Technologies the founding adults already hold.
+   *
+   * Empty in every world a player will ever start, and the reason it exists is
+   * the health harness: knowledge is worked out by individuals over years, so
+   * even a twenty-year run proves only a handful of technologies and anything
+   * gated behind one is unreachable by any check the suite can run. Crafting
+   * and the granary were both invisible to the harness for exactly this reason,
+   * which is part of how the granary stayed unbuildable for its whole existence
+   * without anything noticing.
+   *
+   * The same affordance `harsh-winter` uses when it shortens a season to six
+   * days: move the starting conditions so a run can reach the thing under test,
+   * rather than weaken the test until it passes.
+   */
+  startingTech: string[];
 }
 
 export interface SimConfig {
@@ -129,6 +145,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     // carried 48 people on forage tuned for 30 and the difference came out as
     // mass starvation inside a season.
     peoplePerBand: 10,
+    startingTech: [],
   },
   sightRadius: 12,
   thinkInterval: 5,

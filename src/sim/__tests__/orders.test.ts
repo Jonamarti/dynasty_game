@@ -264,3 +264,113 @@ describe('orders that stop', () => {
     expect(person.resume).toBeNull();
   });
 });
+
+describe('crafting', () => {
+  /** Somebody who knows a recipe and is holding what it takes. */
+  function knapper(sim: Simulation): Person {
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.knownTech.add('hafting');
+    person.inventory.add('flint', 1);
+    person.inventory.add('sticks', 1);
+    return person;
+  }
+
+  it('finishes and leaves the made thing in the pack', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const person = knapper(sim);
+
+    sim.order(person, 'craft', { recipeId: 'handaxe' });
+    for (let i = 0; i < 400 && person.order !== null; i++) {
+      // Kept comfortable, or the interruption below would fire instead.
+      settle(person);
+      person.inventory.add('flint', 1);
+      person.inventory.add('sticks', 1);
+      sim.step();
+    }
+
+    expect(person.inventory.count('handaxe')).toBeGreaterThan(0);
+  });
+
+  it('is interrupted by thirst, and says so, and is picked back up', () => {
+    // The regression this whole pass turns on. `doCraft` had no interruption
+    // check at all, so for the 258 ticks a novice takes over a hand axe the
+    // knapper was unreachable: `committed` stops the brain re-planning, and
+    // nothing inside the action could stop them. Thirst, hunger, cold and being
+    // attacked all bounced off. It is the omission `AGENTS.md` blames for the
+    // two worst bugs this project has had.
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const person = knapper(sim);
+
+    sim.order(person, 'craft', { recipeId: 'handaxe' });
+    sim.interruptions.length = 0;
+    // Over the threshold `interruption` uses for work, and nowhere near lethal.
+    person.needs.thirst = 40;
+
+    for (let i = 0; i < 60 && person.order !== null; i++) sim.step();
+
+    expect(person.order, 'the craft was never interrupted').toBeNull();
+    const mine = sim.interruptions.filter(n => n.personId === person.id);
+    expect(mine.length, 'it stopped without telling anybody').toBeGreaterThan(0);
+    expect(mine[0]!.reason).toBe('thirsty');
+    // The recipe travels with the notice, or the report would read "making
+    // something stopped" — `finish` has already cleared it off the person.
+    expect(mine[0]!.recipe).toBe('handaxe');
+
+    // Nothing was consumed: materials are taken at the last tick, so an
+    // interrupted craft costs the player nothing but the time.
+    expect(person.inventory.count('flint')).toBe(1);
+    expect(person.resume?.action).toBe('craft');
+    expect(person.resume?.recipe).toBe('handaxe');
+
+    person.needs.thirst = 0;
+    for (let i = 0; i < 5 && person.order === null; i++) sim.step();
+    expect(person.order).toBe('craft');
+    expect(person.targetRecipe).toBe('handaxe');
+  });
+
+  it('gives up with a reason when the recipe is unknown', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const person = knapper(sim);
+    person.knownTech.delete('hafting');
+
+    sim.order(person, 'craft', { recipeId: 'handaxe' });
+    sim.interruptions.length = 0;
+    for (let i = 0; i < 5 && person.order !== null; i++) sim.step();
+
+    const mine = sim.interruptions.filter(n => n.personId === person.id);
+    expect(mine.map(n => n.reason)).toContain('dont_know_how');
+  });
+});
+
+describe('a refusal by authority', () => {
+  it('carries the reason the standing calculation already worked out', () => {
+    // `standing.because` is computed one line above the refusal and was thrown
+    // away, so the player read a bare "X refuses" — while the Ties tab showed
+    // this very sentence right up until the moment it mattered.
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const people = sim.livingPeople();
+    const leader = people[0]!;
+    const subordinate = people.find(p => p.id !== leader.id)!;
+
+    // Asked repeatedly rather than rigged to a zero chance: whether these two
+    // are kin depends on the seed, and the thing under test is what happens on
+    // a failed roll, not how likely one is. `attack` is the costliest order
+    // there is, so a refusal comes quickly.
+    let refused: string | null = null;
+    for (let attempt = 0; attempt < 60 && refused === null; attempt++) {
+      const standing = sim.standing(leader, subordinate, 'attack');
+      sim.lastRefusal = null;
+      if (sim.command(leader, subordinate, 'attack', { personId: leader.id })) continue;
+      refused = sim.lastRefusal;
+      expect(refused, 'the refusal said nothing').toBe(standing.because);
+    }
+
+    expect(refused, 'nobody refused in sixty attempts').not.toBeNull();
+    expect(refused!.length).toBeGreaterThan(0);
+  });
+});

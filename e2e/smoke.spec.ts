@@ -7,6 +7,11 @@
  * belongs in `npm run sim:check`, which is a hundred times faster.
  */
 import { test, expect, type Page } from '@playwright/test';
+// The one import from the simulation in this file, and it earns its place: the
+// node count used to be written here as a literal and broke the moment a
+// milestone added a technology, which is a test asserting a number rather than
+// a fact. The fact is "every technology is on the web".
+import { TECHS } from '../src/sim/knowledge/Tech.ts';
 
 /** Fails the test on any uncaught error or console error, not just assertions. */
 function guardErrors(page: Page): string[] {
@@ -43,11 +48,15 @@ async function ready(page: Page): Promise<void> {
 /**
  * Clicks the map, and chooses from the entity picker when one opens.
  *
- * A click on a crowded tile no longer selects blindly: two or more things under
- * the cursor put up a bubble per candidate and wait to be told which was meant.
- * That is the point of the picker, and it means a test aiming at a berry bush
- * standing under an oak has to say so — the old blind behaviour would have
- * silently handed it the oak.
+ * A click on anything no longer selects blindly: every candidate under the
+ * cursor puts up a bubble and waits to be told which was meant. That is the
+ * point of the picker, and it means a test aiming at a berry bush standing
+ * under an oak has to say so — the old blind behaviour would have silently
+ * handed it the oak.
+ *
+ * Since O7 this includes a *single* candidate, because the bare ground is
+ * always one of the choices: clicking a person standing on the tile you meant
+ * to walk to used to give you the person and no way at all to say otherwise.
  */
 /**
  * Aims at a person from another tribe, and returns where they are on screen.
@@ -110,9 +119,10 @@ async function clickAndChoose(
   page: Page,
   x: number,
   y: number,
-  want: RegExp
+  want: RegExp,
+  button: 'left' | 'right' = 'left'
 ): Promise<void> {
-  await page.mouse.click(x, y);
+  await page.mouse.click(x, y, { button });
   const picker = page.locator('.picker');
   if (!(await picker.isVisible())) return;
 
@@ -142,6 +152,13 @@ async function clickAndChoose(
  * were selectable and everything else fell through to the player. Now that a
  * click picks whatever is under it, "the middle of the screen" is whoever
  * happens to be walking past, and the test asserts against a stranger.
+ *
+ * Since O7 this has to mean genuinely empty. The chooser opens for a *single*
+ * candidate now, so a tile with one tree on it no longer falls through to the
+ * radial menu — and this helper used to check only people, nodes and buildings.
+ * Animals are the reason it also wants margin: they wander while the test is
+ * doing its round trips, so a tile that was clear when it was chosen can have a
+ * deer on it by the time the click lands.
  */
 async function emptyGround(page: Page): Promise<{ x: number; y: number }> {
   const point = await page.evaluate(() => {
@@ -152,6 +169,9 @@ async function emptyGround(page: Page): Promise<{ x: number; y: number }> {
           world: { isWalkable: (x: number, y: number) => boolean };
           livingPeople: () => { x: number; y: number }[];
           nodes: { x: number; y: number }[];
+          trees: { x: number; y: number; standing: boolean }[];
+          piles: { x: number; y: number }[];
+          animals: { x: number; y: number; alive: boolean }[];
           buildingAt: (x: number, y: number) => unknown;
         };
         camera: { worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
@@ -162,7 +182,11 @@ async function emptyGround(page: Page): Promise<{ x: number; y: number }> {
       d.sim.world.isWalkable(x, y) &&
       !d.sim.buildingAt(x, y) &&
       d.sim.livingPeople().every(p => Math.hypot(p.x - x, p.y - y) > 2.5) &&
-      d.sim.nodes.every(n => Math.hypot(n.x - x, n.y - y) > 2.5);
+      d.sim.nodes.every(n => Math.hypot(n.x - x, n.y - y) > 2.5) &&
+      d.sim.trees.every(t => !t.standing || Math.hypot(t.x - x, t.y - y) > 2.5) &&
+      d.sim.piles.every(pile => Math.hypot(pile.x - x, pile.y - y) > 2.5) &&
+      // Wider, because these move between choosing the tile and clicking it.
+      d.sim.animals.every(a => !a.alive || Math.hypot(a.x - x, a.y - y) > 6);
 
     for (let radius = 3; radius <= 10; radius++) {
       for (let angle = 0; angle < 16; angle++) {
@@ -654,7 +678,7 @@ test('the tech web opens on G and answers why an idea has not arrived', async ({
   await expect(page.locator('.techweb-card')).toBeVisible({ timeout: 10_000 });
 
   // Every technology is on the web, and the states are distinguishable.
-  await expect(page.locator('.techweb-node')).toHaveCount(10);
+  await expect(page.locator('.techweb-node')).toHaveCount(TECHS.length);
   await expect(page.locator('.techweb-node.is-proven')).toHaveCount(1);
   await expect(page.locator('.techweb-node.is-working')).toHaveCount(1);
   // Out of reach means unlabelled: the shape of what is unknown is visible,
@@ -743,7 +767,10 @@ test('the tech web keeps a stranger to themselves', async ({ page }) => {
     return { x: d.camera.worldToScreenX(who.x), y: d.camera.worldToScreenY(who.y) };
   }, found!.id);
 
-  await page.mouse.click(at.x, at.y);
+  // The bubble for a person, not the one for the tile they are standing on.
+  // A stranger is "a man" or "a woman" — the picker is knowledge-gated too, so
+  // there is no name here to match against.
+  await clickAndChoose(page, at.x, at.y, /man|woman|child/i);
   // The panel names them the way the player's character would, which is also
   // the proof the click landed on the stranger and not on whatever they were
   // standing on.
@@ -765,29 +792,65 @@ test('teaching appears in the menu only when you have something to teach', async
   const errors = guardErrors(page);
   await ready(page);
 
-  const other = await page.evaluate(() => {
-    const d = (window as never as {
-      __dynasty: {
-        sim: {
-          player: { id: number; knownTech: Set<string> } | null;
-          livingPeople: () => { id: number; x: number; y: number; knownTech: Set<string> }[];
-        };
-        camera: { worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+  // Paused before anything is measured. The target has to be found, then
+  // chosen out of the picker, then found again in the radial, and people walk:
+  // read in one round trip and clicked in another, the pupil has left the tile
+  // and the click lands on open ground. This spec passed alone and failed in
+  // the suite until it stopped racing the world.
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { id: number; knownTech: Set<string> } | null;
+        livingPeople: () => {
+          id: number; x: number; y: number; name: string; knownTech: Set<string>;
+        }[];
       };
-    }).__dynasty;
+      camera: {
+        snapTo: (x: number, y: number) => void; following: boolean;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+      };
+    };
+  };
+
+  const chosen = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
     const pick = d.sim.livingPeople().find(p => p.id !== d.sim.player?.id);
     if (!pick) return null;
     d.sim.player?.knownTech.add('cordage');
     pick.knownTech.clear();
-    return { x: d.camera.worldToScreenX(pick.x), y: d.camera.worldToScreenY(pick.y) };
+    d.camera.snapTo(pick.x, pick.y);
+    d.camera.following = false;
+    return { id: pick.id, name: pick.name };
   });
-  expect(other).not.toBeNull();
+  expect(chosen).not.toBeNull();
 
-  await page.mouse.click(other!.x, other!.y, { button: 'right' });
+  // The screen position after the camera has settled: `clampTo` runs in the
+  // frame loop after `snapTo` and can pull the view back inside the map.
+  await page.evaluate(() => new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  const other = await page.evaluate((id: number) => {
+    const d = (window as never as Debug).__dynasty;
+    const who = d.sim.livingPeople().find(p => p.id === id)!;
+    return {
+      x: d.camera.worldToScreenX(who.x),
+      y: d.camera.worldToScreenY(who.y),
+      name: who.name,
+    };
+  }, chosen!.id);
+
+  // Right-clicking somebody now offers the ground as well as the person, so the
+  // radial opens once the person has been chosen. `pick` is a bandmate whose
+  // name the player knows, so match on that rather than on a veiled label.
+  await clickAndChoose(page, other!.x, other!.y, new RegExp(other!.name), 'right');
   const teach = page.locator('.radial-item', { hasText: 'Teach' }).first();
   await expect(teach).toBeVisible({ timeout: 10_000 });
   await expect(teach).not.toHaveClass(/is-disabled/);
 
+  await page.keyboard.press('Escape');
+  await page.locator('.hud-button', { hasText: 'Resume' }).click();
   expect(errors).toEqual([]);
 });
 
@@ -963,5 +1026,270 @@ test('the ties tab can send the camera to somebody', async ({ page }) => {
   expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeGreaterThan(0);
   expect(after.following).toBe(false);
 
+  expect(errors).toEqual([]);
+});
+
+test('clicking a lone person still offers the ground under them', async ({ page }) => {
+  // O7. The chooser used to need *two* stacked candidates, and the ground was
+  // only ever added as an extra entry once a stack had already opened it. So
+  // clicking somebody standing on the tile you meant to walk to gave you the
+  // person and no way at all to say you meant the tile — and standing on the
+  // thing you are working on is the ordinary state of affairs here.
+  const errors = guardErrors(page);
+  await ready(page);
+
+  // Paused, so the target does not walk out from under the cursor between the
+  // evaluate that finds them and the click that lands on them.
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  const at = await aimAtStranger(page);
+  expect(at, 'this seed has nobody from another band').not.toBeNull();
+
+  await page.mouse.click(at!.x, at!.y);
+
+  const picker = page.locator('.picker');
+  await expect(picker).toBeVisible({ timeout: 5_000 });
+
+  // Both choices are there: the person, and the tile they are standing on.
+  const labels: string[] = [];
+  const items = picker.locator('.picker-item');
+  for (let i = 0; i < await items.count(); i++) {
+    labels.push((await items.nth(i).textContent()) ?? '');
+  }
+  expect(labels.some(text => /(man|woman|child)/i.test(text)),
+    'the person was not offered: ' + JSON.stringify(labels)).toBe(true);
+  expect(labels.some(text => /ground/i.test(text)),
+    'the ground was not offered: ' + JSON.stringify(labels)).toBe(true);
+
+  // And choosing the ground selects the tile rather than the person.
+  const ground = labels.findIndex(text => /ground/i.test(text));
+  await items.nth(ground).click();
+  await expect(picker).toBeHidden();
+
+  await page.locator('.hud-button', { hasText: 'Resume' }).click();
+  expect(errors).toEqual([]);
+});
+
+test('clicking yourself alone does not put a chooser in the way', async ({ page }) => {
+  // The one exception O7 asks for. Clicking your own character is the most
+  // common click in the game, and a two-entry menu in front of every one of
+  // them would be worse than the problem it solves.
+  const errors = guardErrors(page);
+  await ready(page);
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { x: number; y: number; forgetPlans: () => void } | null;
+        world: { isWalkable: (x: number, y: number) => boolean };
+        livingPeople: () => { x: number; y: number }[];
+        nodes: { x: number; y: number }[];
+        trees: { x: number; y: number; standing: boolean }[];
+        piles: { x: number; y: number }[];
+        animals: { x: number; y: number; alive: boolean }[];
+        buildingAt: (x: number, y: number) => unknown;
+      };
+      camera: {
+        snapTo: (x: number, y: number) => void; following: boolean;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+      };
+    };
+  };
+
+  // Stood somewhere genuinely empty first. Anything else under the cursor is a
+  // second candidate, and the chooser is then correct to open — which is what
+  // the test above asserts.
+  const moved = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player;
+    if (!self) return false;
+    const clear = (x: number, y: number) =>
+      d.sim.world.isWalkable(x, y) &&
+      !d.sim.buildingAt(x, y) &&
+      d.sim.livingPeople().every(p => p === self || Math.hypot(p.x - x, p.y - y) > 3) &&
+      d.sim.nodes.every(n => Math.hypot(n.x - x, n.y - y) > 3) &&
+      d.sim.trees.every(t => !t.standing || Math.hypot(t.x - x, t.y - y) > 3) &&
+      d.sim.piles.every(pile => Math.hypot(pile.x - x, pile.y - y) > 3) &&
+      d.sim.animals.every(a => !a.alive || Math.hypot(a.x - x, a.y - y) > 3);
+
+    for (let radius = 3; radius <= 14; radius++) {
+      for (let angle = 0; angle < 24; angle++) {
+        const x = Math.round(self.x + Math.cos(angle) * radius);
+        const y = Math.round(self.y + Math.sin(angle) * radius);
+        if (!clear(x, y)) continue;
+        // Standing orders would walk them straight off the clear tile again.
+        self.forgetPlans();
+        self.x = x;
+        self.y = y;
+        d.camera.snapTo(x, y);
+        d.camera.following = false;
+        return true;
+      }
+    }
+    return false;
+  });
+  expect(moved, 'no empty ground near the player on this seed').toBe(true);
+
+  // Two frames so the move reaches the spatial hashes the picker queries, and
+  // so the camera settles: `clampTo` runs after `snapTo` and can pull the view
+  // back inside the map, which leaves a screen coordinate read too early
+  // pointing at open country.
+  await page.evaluate(() => new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  const at = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player!;
+    return { x: d.camera.worldToScreenX(self.x), y: d.camera.worldToScreenY(self.y) };
+  });
+
+  await page.mouse.click(at.x, at.y);
+  await expect(page.locator('.picker')).toBeHidden();
+  await expect(page.locator('.hud-name')).not.toBeEmpty();
+
+  await page.locator('.hud-button', { hasText: 'Resume' }).click();
+  expect(errors).toEqual([]);
+});
+
+test('a walking person is drawn between steps, not only on them', async ({ page }) => {
+  // O6. The simulation runs at five steps a second and the renderer at sixty,
+  // so every position used to be painted for twelve identical frames and then
+  // jump about ten pixels. The gate is here rather than in `simcheck` because
+  // the headless harness does not render at all.
+  const errors = guardErrors(page);
+  await ready(page);
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { id: number; x: number; y: number } | null;
+        world: { isWalkable: (x: number, y: number) => boolean };
+        order: (person: unknown, action: string, target: unknown) => boolean;
+      };
+      renderer: {
+        interpolator: {
+          at: (kind: string, e: { id: number; x: number; y: number }, alpha: number)
+            => { x: number; y: number };
+        };
+      };
+    };
+  };
+
+  // Send them somewhere far enough that they are certainly still walking.
+  const walking = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player;
+    if (!self) return false;
+    for (let distance = 12; distance >= 4; distance--) {
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const x = Math.round(self.x + dx * distance);
+        const y = Math.round(self.y + dy * distance);
+        if (d.sim.world.isWalkable(x, y) && d.sim.order(self, 'goto', { x, y })) return true;
+      }
+    }
+    return false;
+  });
+  expect(walking, 'nowhere to walk to on this seed').toBe(true);
+
+  // Sampled over a second of real time, which at five steps a second is several
+  // whole steps: at least one of them catches the player mid-stride.
+  const spans = await page.evaluate(() => new Promise<number[]>(resolve => {
+    const d = (window as never as Debug).__dynasty;
+    const seen: number[] = [];
+    let frames = 0;
+    const sample = () => {
+      const self = d.sim.player;
+      if (self) {
+        // The two ends of the move currently being drawn. On a build with no
+        // interpolation these are the same point and every gap is zero.
+        const from = d.renderer.interpolator.at('person', self, 0);
+        const to = d.renderer.interpolator.at('person', self, 1);
+        seen.push(Math.hypot(to.x - from.x, to.y - from.y));
+      }
+      if (++frames < 60) requestAnimationFrame(sample);
+      else resolve(seen);
+    };
+    requestAnimationFrame(sample);
+  }));
+
+  // A step of walking is about 0.32 tiles, so a real span is well under a tile
+  // and comfortably above nothing at all.
+  const widest = Math.max(...spans);
+  expect(widest, 'the player was drawn at one fixed point all second').toBeGreaterThan(0.01);
+  expect(widest, 'that is further than anybody moves in one step').toBeLessThan(2);
+
+  expect(errors).toEqual([]);
+});
+
+test('a record says nothing to somebody who cannot read it', async ({ page }) => {
+  // The rule the whole of phase 4b turns on. A band can sit on a library
+  // holding the answer to its own dark age, and the panel has to say so rather
+  // than quietly naming the technology anyway — a UI that reads out a stone to
+  // an illiterate character hands over the one thing writing is meant to cost.
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { x: number; y: number; knownTech: Set<string> } | null;
+        placeInscription: (
+          form: string, x: number, y: number, author: unknown
+        ) => { begin: (t: string) => boolean; addWork: (n: number) => boolean } | null;
+      };
+      camera: {
+        snapTo: (x: number, y: number) => void; following: boolean;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+      };
+    };
+  };
+
+  // A finished stone beside the player, cut by them, saying one thing.
+  const at = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player;
+    if (!self) return null;
+    const x = Math.round(self.x) + 1;
+    const y = Math.round(self.y);
+    const stone = d.sim.placeInscription('stone', x, y, self);
+    if (!stone) return null;
+    stone.begin('cordage');
+    stone.addWork(10_000);
+    self.knownTech.delete('writing');
+    d.camera.snapTo(x, y);
+    d.camera.following = false;
+    return { x, y };
+  });
+  expect(at, 'no room for a stone beside the player').not.toBeNull();
+
+  await page.evaluate(() => new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  const point = await page.evaluate((p: { x: number; y: number }) => {
+    const d = (window as never as Debug).__dynasty;
+    return { x: d.camera.worldToScreenX(p.x), y: d.camera.worldToScreenY(p.y) };
+  }, at!);
+
+  // Illiterate: told there are marks, and not what they say.
+  await clickAndChoose(page, point.x, point.y, /carved stone/i);
+  const panel = page.locator('.hud-panel');
+  await expect(panel).toContainText('Carved stone', { timeout: 5_000 });
+  // Singular or plural depending on how much is on the stone; the point is
+  // that it is counted rather than named.
+  await expect(panel).toContainText(/mark(s)? you cannot read/);
+  await expect(panel).not.toContainText('Cordage');
+
+  // The same stone, to somebody who learned to read. Nothing about the record
+  // changed; the reader did.
+  await page.evaluate(() => {
+    (window as never as Debug).__dynasty.sim.player!.knownTech.add('writing');
+  });
+  await expect(panel).toContainText('Cordage', { timeout: 5_000 });
+  await expect(panel).not.toContainText(/mark(s)? you cannot read/);
+
+  await page.locator('.hud-button', { hasText: 'Resume' }).click();
   expect(errors).toEqual([]);
 });

@@ -47,6 +47,9 @@ import { PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
 export const TECHS = [
   'firemaking', 'cordage', 'plant_lore', 'tracking',
   'cooking', 'hafting', 'clothing', 'pottery', 'stoneworking', 'carpentry',
+  // Phase 4: the fourth channel. Everything above travels only between living
+  // heads; these are how a thing gets past the death of everyone who knew it.
+  'marking', 'writing', 'clay_tablet', 'library',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -245,6 +248,70 @@ export const TECH: Record<Tech, TechDef> = {
     ],
     description: 'Fired clay. Grain keeps, water travels, and a surplus becomes a year.',
   },
+  marking: {
+    id: 'marking', label: 'Tallies', domain: 'cloth',
+    requires: ['cordage'], difficulty: 0.4, skill: 'build',
+    prototype: { sticks: 2 }, maxRefinement: 1,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'doing', action: 'store' },
+                { kind: 'saw', what: 'store_empty' }],
+        weight: 1.0, story: 'went to the pit once too often and found it bare, and began keeping count' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'doing', action: 'store' },
+                { kind: 'feeling', need: 'hunger' }],
+        weight: 0.7, story: 'counted what was left against the days still to come' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'saw', what: 'theft' }],
+        weight: 0.5, story: 'could not prove anything was missing, and resolved never to be in that position again' },
+    ],
+    description: 'Knots in a cord, notches on a stick. The first thing anybody wrote down was a number.',
+  },
+  writing: {
+    id: 'writing', label: 'Writing', domain: 'stone',
+    requires: ['marking', 'stoneworking'], difficulty: 0.75, skill: 'knap',
+    prototype: { flint: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'doing', action: 'teach' }],
+        weight: 1.0, story: 'was tired of explaining the same thing to every new pair of hands' },
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'holding', item: 'flint' },
+                { kind: 'place', biome: 'hills' }],
+        weight: 0.7, story: 'sat on bare rock with a flint in hand and cut rather more than a tally' },
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'saw', what: 'teach' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'watched what an old woman knew go into the ground with her' },
+    ],
+    description: 'Marks that say more than how many. What one person knew, a stone can hold.',
+  },
+  clay_tablet: {
+    id: 'clay_tablet', label: 'Clay tablets', domain: 'fire',
+    requires: ['writing', 'pottery'], difficulty: 0.55, skill: 'build',
+    prototype: { mud: 3 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'writing' }, { kind: 'holding', item: 'mud' }],
+        weight: 1.0, story: 'had soft clay in their hands and no rock worth the effort' },
+      { needs: [{ kind: 'knows', tech: 'writing' }, { kind: 'knows', tech: 'pottery' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'pressed a mark into a pot before firing it, and saw what that meant' },
+      { needs: [{ kind: 'knows', tech: 'writing' }, { kind: 'place', biome: 'beach' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 0.5, story: 'wrote in wet river clay and wondered how to keep it' },
+    ],
+    description: 'Quicker than stone and holds more of it, and it will not last a century.',
+  },
+  library: {
+    id: 'library', label: 'The library', domain: 'timber',
+    requires: ['writing', 'carpentry'], difficulty: 0.7, skill: 'build',
+    prototype: { wood: 3, sticks: 3 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'writing' }, { kind: 'doing', action: 'ponder' }],
+        weight: 1.0, story: 'wanted every stone they had cut within arm\u2019s reach at once' },
+      { needs: [{ kind: 'knows', tech: 'writing' }, { kind: 'knows', tech: 'carpentry' },
+                { kind: 'doing', action: 'build' }],
+        weight: 0.7, story: 'was raising a roof and thought of what ought to go under it' },
+      { needs: [{ kind: 'knows', tech: 'writing' }, { kind: 'season', season: 'autumn' },
+                { kind: 'feeling', need: 'fatigue' }],
+        weight: 0.5, story: 'was too tired to walk to the far stone one more time' },
+    ],
+    description: 'A roof over the records, and somewhere to sit and think under it.',
+  },
   stoneworking: {
     id: 'stoneworking', label: 'Stoneworking', domain: 'stone',
     requires: ['hafting'], difficulty: 0.5, skill: 'knap',
@@ -334,7 +401,23 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   pottery: {
     summary: 'Fired vessels, and a granary to keep a year in.',
-    site: 'BuildingDef.requiresTech on the granary',
+    site: 'RECIPES.pot, and BuildingDef.requiresTech on the granary',
+  },
+  marking: {
+    summary: 'A count you can point at, so an argument has something in it.',
+    site: 'ActionSystem.doDiscuss, via tallyFactor',
+  },
+  writing: {
+    summary: 'Cut a thing into stone and it outlives you. Read one and it is yours.',
+    site: 'ActionSystem.doInscribe and doRead',
+  },
+  clay_tablet: {
+    summary: 'A second, cheaper hand: holds two things, and perishes.',
+    site: 'ActionSystem.doInscribe, choosing the form',
+  },
+  library: {
+    summary: 'Records under one roof, and thinking goes better beside them.',
+    site: 'BuildingDef.requiresTech on the library, and ActionSystem.doPonder',
   },
   stoneworking: {
     summary: 'More usable edge from every core struck.',
@@ -410,6 +493,17 @@ export function nutritionFactor(person: Person): number {
 /** Multiplier on how fast building work goes. */
 export function buildFactor(person: Person): number {
   return scaled(person, 'carpentry', 1.3);
+}
+
+/**
+ * Multiplier on an argument's chance of getting somewhere.
+ *
+ * What tallies buy. Two people disagreeing about whether the store will last
+ * the winter are guessing; two people with a knotted cord between them are
+ * having a different conversation, and one of them can be shown to be wrong.
+ */
+export function tallyFactor(person: Person): number {
+  return scaled(person, 'marking', 1.25);
 }
 
 /** How far a hunter will look for a quarry, as a multiple of sight radius. */

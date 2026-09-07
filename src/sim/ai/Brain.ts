@@ -27,7 +27,12 @@ import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import { ITEMS } from '../entities/Item.ts';
-import { TECH, quarryReachFactor, techPower } from '../knowledge/Tech.ts';
+import {
+  TECH, quarryReachFactor, techPower, prerequisitesMet, type Tech,
+} from '../knowledge/Tech.ts';
+import { RECIPES, hasIngredients, recipeFor } from '../entities/Recipe.ts';
+import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
+import { pressedByNeed } from '../systems/ActionSystem.ts';
 import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 
 export interface BrainContext {
@@ -41,6 +46,9 @@ export interface BrainContext {
   buildings: Building[];
   treeHash: SpatialHash<Tree>;
   animalHash: SpatialHash<Animal>;
+  inscriptionHash: SpatialHash<Inscription>;
+  /** Everything written down anywhere, so nobody cuts the same word twice. */
+  recorded: ReadonlySet<string>;
   sightRadius: number;
 }
 
@@ -66,10 +74,18 @@ interface FoundTargets {
   companion: Person | null;
   suitor: Person | null;
   student: Person | null;
+  /** The child a `teach_child` is aimed at. See the scorer for why it is separate. */
+  childPupil: Person | null;
   colleague: Person | null;
   victim: Person | null;
   beneficiary: Person | null;
   fleeFrom: Person | null;
+  /** Which entry of `RECIPES` a chosen `craft` would make. */
+  recipe: string | null;
+  /** The record a chosen `read` is aimed at. */
+  record: Inscription | null;
+  /** A half-cut record a chosen `inscribe` should go and finish. */
+  unfinished: Inscription | null;
 }
 
 /**
@@ -276,11 +292,16 @@ export class Brain {
     let beneficiary: Person | null = null;
     let fleeFrom: Person | null = null;
     let site: Building | null = null;
+    let craftRecipe: string | null = null;
+    let craftScore = 0;
+    let record: Inscription | null = null;
+    let unfinished: Inscription | null = null;
     let shelter: Building | null = null;
     let storeTarget: Building | null = null;
     let larderTarget: Building | null = null;
     let suitor: Person | null = null;
     let student: Person | null = null;
+    let childPupil: Person | null = null;
 
 
     // Deliberate social approaches are rationed; violence and flight are not.
@@ -342,10 +363,18 @@ export class Brain {
       // sharply by age. An elder with something to pass on and not many years
       // left to do it in is the single most valuable person in a band.
       if (!person.isChild && person.knownTech.size > 0) {
-        const pupils = neighbours.filter(other =>
-          !other.isChild &&
-          [...person.knownTech].some(t => !other.knownTech.has(t))
-        );
+        // Something they could actually take in, not merely something they do
+        // not have: `KnowledgeSystem.teach` drops anything whose prerequisites
+        // the pupil is missing, so without this the scorer would keep sending
+        // people to teach a lesson that cannot land. It matters far more for
+        // children, who start with nothing to build on.
+        const canLearn = (other: Person) =>
+          [...person.knownTech].some(t =>
+            TECH[t as Tech] !== undefined &&
+            !other.knownTech.has(t) &&
+            prerequisitesMet(t as Tech, other.knownTech));
+
+        const pupils = neighbours.filter(other => !other.isChild && canLearn(other));
         const pupil = this.pickBest(pupils, other =>
           ctx.relationships.opinion(person.id, other.id) +
           (other.knownTech.size < person.knownTech.size ? 20 : 0) -
@@ -357,6 +386,37 @@ export class Brain {
             * (0.5 + person.traits.tradition) * urgency
             * this.proximityBonus(person, pupil, ctx.sightRadius));
           student = pupil;
+        }
+
+        // Teaching a child, scored separately from teaching an adult.
+        //
+        // Its own term rather than a wider filter on the one above, because the
+        // two are not the same act and must not compete on the same weights: an
+        // adult is chosen for how much they lack and how well you get on, and a
+        // child is chosen because it is *yours*. A shared scorer would have
+        // every elder in the band teaching the same brightest child, and nobody
+        // teaching their own.
+        //
+        // Rewritten to `teach` in `setup`, the idiom `feed` and
+        // `gather_for_site` already use: the action system does not need to
+        // know the difference, only the scorer does.
+        const young = neighbours.filter(other => other.isChild && canLearn(other));
+        const heir = this.pickBest(young, other =>
+          (other.motherId === person.id || other.fatherId === person.id ? 40 : 0) +
+          ctx.relationships.kinship(person.id, other.id) * 0.5 +
+          ctx.relationships.opinion(person.id, other.id) * 0.3 -
+          person.distanceTo(other) * 2
+        );
+        if (heir) {
+          const mine = heir.motherId === person.id || heir.fatherId === person.id;
+          // An elder with something to hand on and not many years left to do it
+          // in is the most valuable person in a band, and handing it to their
+          // own grandchildren is the whole shape of a dynasty.
+          const urgency = person.isElder ? 1.8 : 1;
+          add('teach_child', (0.08 + person.skillFactor('teach') * 0.16)
+            * (0.5 + person.traits.tradition) * urgency * (mine ? 1.5 : 0.7)
+            * this.proximityBonus(person, heir, ctx.sightRadius));
+          childPupil = heir;
         }
       }
 
@@ -518,7 +578,26 @@ export class Brain {
             const kindFor: Record<string, string> = {
               sticks: 'sticks', thatch: 'reeds', mud: 'clay', flint: 'flint',
             };
-            const wantedKind = missing ? kindFor[missing] : undefined;
+            // A material the site wants may be something nobody can pick up.
+            // The granary asks for six pots, and a pot is made rather than
+            // found: `kindFor` had no entry for it, so `wantedKind` came out
+            // undefined, `gather_for_site` was never scored, and the site sat
+            // six pots short for ever. That is how a building could be gated
+            // behind a real technology, listed in the build menu, and still be
+            // unbuildable — the same shape of defect as the longhouse, and just
+            // as silent.
+            //
+            // Fetch what the recipe is made of instead; the craft scorer below
+            // turns the parts into the thing once they are in the pack.
+            let wanted = missing;
+            const short = wanted ? recipeFor(wanted) : null;
+            if (short) {
+              wanted = techPower(person, short.tech) > 0
+                ? Object.keys(short.ingredients)
+                  .find(id => person.inventory.count(id) < short.ingredients[id]!)
+                : undefined;
+            }
+            const wantedKind = wanted ? kindFor[wanted] : undefined;
             if (wantedKind) {
               const source = this.findNode(person, ctx, n => n.kind === wantedKind && !n.depleted);
               if (source) {
@@ -704,15 +783,91 @@ export class Brain {
     }
 
     // --- Craft -------------------------------------------------------------
-    // A hand axe, once somebody knows how. Scored well above idle gathering
-    // because the payoff is large and obvious: everything involving wood halves.
-    if (
-      techPower(person, 'hafting') > 0 &&
-      !person.inventory.has('handaxe') &&
-      person.inventory.has('flint') &&
-      person.inventory.has('sticks')
-    ) {
-      add('craft', 0.55 * (0.4 + person.skillFactor('knap')));
+    // Table-driven, so a new recipe needs no edit here. Two reasons to make
+    // something, deliberately at different weights: one you want for yourself
+    // (`keep`, which today is the hand axe and its halving of every job
+    // involving wood), and one a half-built structure is waiting on.
+    //
+    // The site case scores higher because it is the last link of a chain
+    // somebody has already walked most of — dig the clay, carry it back, make
+    // the pot — and a chain that gets abandoned at its last link never finishes.
+    //
+    // Nobody starts one while a need is already over the line that stops work.
+    // A craft is a single long pull rather than a run of short ones, so its
+    // interruption check fires *during* the job: somebody one point past the
+    // thirst threshold would arm a two-hundred-tick timer, be stopped on the
+    // next tick, re-score and choose it again. The threshold is asked of
+    // `ActionSystem` rather than copied, because two copies of a number like
+    // this drift and the drift resurfaces as exactly that thrash.
+    for (const recipe of pressedByNeed(person) ? [] : Object.values(RECIPES)) {
+      if (techPower(person, recipe.tech) <= 0) continue;
+      if (!hasIngredients(person.inventory, recipe)) continue;
+      const output = Object.keys(recipe.output)[0]!;
+      const forSelf = person.inventory.count(output) < recipe.keep;
+      const forSite = site !== null && site.stillNeeds(output) > 0;
+      if (!forSelf && !forSite) continue;
+      const score = (forSite ? 0.75 : 0.55) * (0.4 + person.skillFactor(recipe.skill));
+      if (score > craftScore) {
+        craftScore = score;
+        craftRecipe = recipe.id;
+      }
+    }
+    if (craftRecipe !== null) add('craft', craftScore);
+
+    // --- Writing and reading ------------------------------------------------
+    // The fourth channel, and the only one that crosses a death. Both are long
+    // and both are gated on comfort, for the same reason crafting is: they are
+    // discretionary jobs of a couple of hundred ticks, and a person already
+    // over the interruption line would start one and be stopped on the next
+    // tick.
+    if (!pressedByNeed(person) && techPower(person, 'writing') > 0) {
+      // Writing: something you know that is nowhere on the ground yet.
+      const unrecorded = [...person.knownTech].some(t =>
+        TECH[t as Tech] !== undefined && !ctx.recorded.has(t));
+      const canCut = Object.values(INSCRIPTIONS).some(def =>
+        (def.id !== 'clay' || techPower(person, 'clay_tablet') > 0) &&
+        Object.entries(def.materials)
+          .every(([itemId, count]) => person.inventory.count(itemId) >= count));
+      // A stone somebody left half cut, theirs or anybody's. Finishing one is
+      // strictly better than starting another: the flint is already spent and
+      // the work is already banked, and a world where every carving is
+      // abandoned at half is a world with no records in it.
+      const halfCut = ctx.inscriptionHash.findNearest(
+        person.x, person.y, ctx.sightRadius * 2,
+        candidate => candidate.unfinished &&
+          ctx.world.sameRegion(person.x, person.y, candidate.x, candidate.y)
+      );
+      if (halfCut) {
+        add('inscribe', (0.45 + person.traits.tradition * 0.4)
+          * this.proximityBonus(person, halfCut, ctx.sightRadius));
+        unfinished = halfCut;
+      } else if (unrecorded && canCut) {
+        // Weighted by tradition rather than by curiosity: cutting a thing into
+        // rock is an act about the people who come after you, not about
+        // finding anything out. An elder does it hardest, for the same reason
+        // an elder teaches hardest.
+        add('inscribe', (0.3 + person.traits.tradition * 0.5)
+          * (person.isElder ? 1.5 : 1)
+          * (0.4 + person.skillFactor('knap') * 0.3));
+      }
+
+      // Reading: a record within reach with something on it you could take in.
+      const nearest = ctx.inscriptionHash.findNearest(
+        person.x, person.y, ctx.sightRadius * 2,
+        candidate => candidate.techs.some(t =>
+          !person.knownTech.has(t) &&
+          TECH[t as Tech] !== undefined &&
+          prerequisitesMet(t as Tech, person.knownTech)) &&
+          ctx.world.sameRegion(person.x, person.y, candidate.x, candidate.y)
+      );
+      if (nearest) {
+        // Scored high. Walking to a stone and getting a whole technology off it
+        // is the best return on a couple of hundred ticks available anywhere in
+        // the game, and it should look like it from the outside.
+        add('read', (0.7 + person.traits.curiosity * 0.6)
+          * this.proximityBonus(person, nearest, ctx.sightRadius));
+        record = nearest;
+      }
     }
 
     // --- Rest --------------------------------------------------------------
@@ -732,10 +887,11 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodNode, matNode, companion, suitor, student, colleague,
+        water, foodNode, matNode, companion, suitor, student, childPupil, colleague,
         victim, beneficiary, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
+        recipe: craftRecipe, record, unfinished,
       },
     };
   }
@@ -867,6 +1023,32 @@ export class Brain {
         }
         break;
       }
+      case 'read':
+        if (found.record) {
+          person.targetInscriptionId = found.record.id;
+          person.targetX = found.record.x;
+          person.targetY = found.record.y;
+        }
+        break;
+      case 'inscribe':
+        // Aimed at a half-cut stone when there is one, and otherwise cut where
+        // they stand. A record is a place as much as a thing, and choosing
+        // where a *new* one ought to go would mean deciding where records live
+        // — which is what a library is for, and the library decides it by being
+        // somewhere people already are.
+        if (found.unfinished) {
+          person.targetInscriptionId = found.unfinished.id;
+          person.targetX = found.unfinished.x;
+          person.targetY = found.unfinished.y;
+        }
+        break;
+      case 'craft':
+        // The only target a craft has is what is being made. Without this the
+        // action would find `targetRecipe` null — `clearTarget` at the top of
+        // this function having just wiped it — and abandon itself on the very
+        // first tick.
+        person.targetRecipe = found.recipe;
+        break;
       case 'wander': {
         // A short hop rather than a cross-map trek, so wandering reads as
         // milling about camp instead of migration.
@@ -903,6 +1085,7 @@ export class Brain {
       }
       case 'talk':
       case 'teach':
+      case 'teach_child':
       case 'discuss':
       case 'court':
       case 'feed':
@@ -913,9 +1096,11 @@ export class Brain {
         // system does not need to know the difference, only the scorer does.
         // Same arrangement as `gather_for_site`.
         if (action === 'feed') person.action = 'give';
+        if (action === 'teach_child') person.action = 'teach';
         const other =
           action === 'talk' ? found.companion :
           action === 'teach' ? found.student :
+          action === 'teach_child' ? found.childPupil :
           action === 'discuss' ? found.colleague :
           action === 'court' ? found.suitor :
           action === 'feed' || action === 'give' ? found.beneficiary :

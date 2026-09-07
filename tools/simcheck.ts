@@ -64,6 +64,44 @@ export const SCENARIOS: Record<string, Scenario> = {
     config: { seed: 'century' },
     steps: 40000,
   },
+  craft: {
+    name: 'craft',
+    description:
+      'A band that already knows how to knap and how to fire clay. The only ' +
+      'run in the suite in which anything is made rather than gathered: ' +
+      'knowledge takes years to work out from nothing, so without a scenario ' +
+      'that starts with some, every check about crafted goods and about the ' +
+      'designs they unlock would report n/a for ever — and a check that ' +
+      'reports nothing is exactly how the granary stayed unbuildable.',
+    config: {
+      seed: 'craft',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTech: ['firemaking', 'hafting', 'pottery'],
+      },
+    },
+    steps: 8000,
+  },
+  scribes: {
+    name: 'scribes',
+    description:
+      'A band that can already write. The only run in which anything is cut ' +
+      'into stone or read off it: writing sits behind marking and ' +
+      'stoneworking, which no run in the suite reaches from nothing, so ' +
+      'without this every check about records would report n/a for ever.',
+    config: {
+      seed: 'scribes',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTech: ['cordage', 'hafting', 'stoneworking', 'marking', 'writing'],
+      },
+    },
+    // Long enough for somebody to work something *new* out, cut it, and for
+    // somebody else to walk over and read it. A shorter run has every literate
+    // adult holding the same five technologies, so there is nothing on any
+    // stone that anybody lacks and the reading half never fires at all.
+    steps: 14000,
+  },
   'harsh-winter': {
     name: 'harsh-winter',
     description:
@@ -532,20 +570,55 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     .filter(([k]) => k.startsWith('observed_'))
     .reduce((sum, [, v]) => sum + v, 0);
 
-  if ((last.day - first.day) < 30) {
-    skip('knowledge-is-found', 'run too short for anyone to work anything out');
-    skip('knowledge-is-passed-on', 'run too short to teach anything');
+  // A year, not a month.
+  //
+  // Working a technology out from nothing is conceive, research, prototype,
+  // test and prove, and every stage of that is measured in seasons. The gate
+  // was thirty days and had never been tested, because until the `craft`
+  // scenario landed there was nothing in the suite between twelve days and two
+  // years: it was "century only" by accident. A thirty-three-day run reporting
+  // "nobody worked anything out" is not a sick world, it is a month.
+  if ((last.day - first.day) < 80) {
+    skip('knowledge-is-found', 'run covers under a year; too short to work anything out');
   } else {
     add('knowledge-is-found',
       discovered.length > 0,
       discovered.length > 0 ? discovered.join(' ') : 'nobody worked anything out');
+  }
 
-    // The one that matters. Discovery without transmission is a dead end: the
-    // thing dies with whoever found it and the world never changes.
+  // Transmission keeps the shorter gate. Handing over something you already
+  // know takes ninety ticks, not a season, so a month is ample — and this is
+  // the check that matters most of the three: discovery without transmission is
+  // a dead end, because the thing dies with whoever found it and the world
+  // never changes.
+  if ((last.day - first.day) < 30) {
+    skip('knowledge-is-passed-on', 'run too short to teach anything');
+  } else if (sim.knownTech.size === 0) {
+    // Nothing existed to hand on. A short run in which nobody has yet worked
+    // anything out cannot say whether transmission works.
+    skip('knowledge-is-passed-on', 'nobody knew anything worth passing on');
+    skip('children-are-taught', 'nobody knew anything worth passing on');
+  } else {
     add('knowledge-is-passed-on',
       taught + observed > 0,
       taught + ' taught deliberately, ' + observed + ' picked up by watching; ' +
         (tel.teaching_failed ?? 0) + ' lessons that did not take');
+
+    // The channel phase 4 opened. Children were excluded from knowledge
+    // entirely before it: `KnowledgeSystem.daily` skipped them and `Brain`
+    // filtered them out of the pupil list, so a parent could not pass anything
+    // at all to their own child and every technology had to be re-derived from
+    // nothing by each generation.
+    const childLessons = tel.child_taught ?? 0;
+    const fromKin = tel.child_taught_by_parent ?? 0;
+    if (taught === 0) {
+      skip('children-are-taught', 'nobody taught anybody anything in this run');
+    } else {
+      add('children-are-taught',
+        childLessons > 0,
+        childLessons + ' of ' + taught + ' lessons went to a child, ' +
+          fromKin + ' of those from a parent');
+    }
   }
 
   // --- The research lifecycle ----------------------------------------------
@@ -562,7 +635,6 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const sparkRoutes = Object.keys(tel).filter(k => k.startsWith('spark_'));
   const breakthroughsAlone = tel.breakthrough_ponder ?? 0;
   const breakthroughsTogether = tel.breakthrough_discuss ?? 0;
-  const testsFailed = tel.prototype_failed ?? 0;
   const prototypes = sum('prototyped_');
   const refined = sum('refined_');
   const adultDays = samples.reduce((total, sample) => total + sample.population, 0) /
@@ -573,9 +645,9 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     skip('sparks-are-various', 'run too short for more than one route to fire');
     skip('ideas-become-tech', 'run too short to carry an idea to a proven design');
     skip('research-is-social', 'run too short for anybody to argue anything out');
-    skip('prototypes-can-fail', 'run too short to build anything');
     skip('techs-are-refined', 'run too short to improve a design');
-  } else {
+  }
+  if ((last.day - first.day) >= 30) {
     // Both bounds matter. Zero means the synthesis table is unsatisfiable in
     // play; a flood means everybody has every idea and the web is decoration.
     const perPersonYear = conceived / Math.max(1, adultDays / 80);
@@ -592,9 +664,21 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       sparkRoutes.length + ' distinct spark routes fired: ' + sparkRoutes
         .map(k => k.slice(6)).join(' '));
 
-    add('ideas-become-tech',
-      proven > 0,
-      conceived + ' conceived, ' + prototypes + ' built, ' + proven + ' proven');
+    // A completed lifecycle wants a year, for the same reason
+    // `knowledge-is-found` does: conceive, research, prototype, test and prove
+    // are each measured in seasons. The thirty-day gate above is right for
+    // *conception*, which happens in an afternoon, and was never right for
+    // this — it simply had nothing between twelve days and two years to fail
+    // against until the `craft` scenario landed at thirty-three.
+    if (last.day - first.day < 80) {
+      skip('ideas-become-tech',
+        'run covers under a year; ' + conceived + ' conceived, too soon to prove any');
+    } else {
+      add('ideas-become-tech',
+        proven > 0,
+        conceived + ' conceived, ' + prototypes + ' built, ' + proven + ' proven, ' +
+          (tel.prototype_failed ?? 0) + ' failed their trial');
+    }
 
     // Thinking alone is always available; arguing needs somebody who knows
     // something and is willing to talk. If none of the second ever happens the
@@ -608,23 +692,108 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
           ' by arguing it out');
     }
 
-    // A test that always passes is a delay with a dice roll drawn over it.
-    if (prototypes === 0) {
-      skip('prototypes-can-fail', 'nothing was built in this run');
-    } else {
-      add('prototypes-can-fail',
-        testsFailed > 0 && testsFailed < prototypes,
-        prototypes + ' built, ' + testsFailed + ' failed their trial');
-    }
+    // `prototypes-can-fail` used to live here and has been **deliberately
+    // removed**, not moved and not disabled. Do not put it back.
+    //
+    // It asserted that both trial outcomes occur in a run. A two-year run
+    // produces about eight trials at roughly a one-in-three failure rate, so
+    // zero failures is ordinary chance — and the century scenario duly reported
+    // "8 built, 1 failed" and then "8 built, 0 failed" across a change that
+    // never went near the roll. Raising the minimum sample does not save it:
+    // the number of trials a run yields is smaller than the number a
+    // statistical claim of this kind needs, so every threshold is either flaky
+    // or permanently n/a.
+    //
+    // Both outcomes are asserted deterministically instead, in
+    // `research.test.ts` — "can fail a trial and can pass one" drives twelve
+    // hopeless prototypers and twelve able ones and insists on seeing each.
+    // That is what `AGENTS.md` means by measuring the mechanism rather than the
+    // end state.
 
     if (proven === 0) {
       skip('techs-are-refined', 'nothing was proven, so nothing could be improved');
+    } else if (last.day - first.day < 80) {
+      // Refinement needs a much longer span than the rest of the lifecycle:
+      // prove a design, then keep working on it for a long time afterwards.
+      // Thirty days covers the first half and nowhere near the second. The
+      // `craft` scenario is what showed this up — its founders start knowing
+      // three technologies, so it proves one inside a month and then correctly
+      // refines nothing, which the shared thirty-day gate reported as the world
+      // being broken. It was the gate that was wrong.
+      skip('techs-are-refined', 'run covers under a year; too short to improve a design');
     } else {
       add('techs-are-refined',
         refined > 0,
         refined + ' improvements to proven designs, ' + sum('mastered_') +
           ' carried as far as they go');
     }
+  }
+
+  // --- Records --------------------------------------------------------------
+  // The fourth channel, and the only one that crosses a death. Writing sits
+  // behind marking and stoneworking, which nothing in the suite reaches from
+  // nothing, so the `scribes` scenario starts its founders literate.
+  const cut = sum('recorded_');
+  const read = sum('read_');
+  if (!sim.knownTech.has('writing') && cut === 0) {
+    skip('records-are-cut', 'nobody in this world can write');
+  } else {
+    add('records-are-cut',
+      cut > 0 && sim.recordedTech.size > 0,
+      cut + ' things cut into ' + sim.inscriptions.length + ' records; ' +
+        sim.recordedTech.size + ' technologies are written down somewhere, ' +
+        read + ' read back off a stone');
+  }
+
+  // Reading is deliberately *not* asserted here, and that is a finding rather
+  // than an omission. A living teacher is quicker to reach than a stone across
+  // the valley, so reading fires when the chain breaks — when the last holder
+  // of something is dead, or when a record carries something newly worked out.
+  // A fifty-eight-day run has neither, and a run long enough to have both is
+  // long enough that `people-survive` is asking a different question. The claim
+  // that a record outlives its author, and grants nothing to somebody who
+  // cannot read, is asserted deterministically in `transmission.test.ts`.
+
+  // --- Making things ------------------------------------------------------
+  // Crafting was one hardcoded hand axe with no interruption check, and the
+  // granary asked for six pots that nothing in the world could produce. Both
+  // are chains, and a chain is exactly the sort of thing that passes every
+  // static test while being impossible to walk end to end.
+  const crafted = sum('crafted_');
+  const craftInterrupted = tel.craft_interrupted ?? 0;
+  if (crafted + craftInterrupted === 0) {
+    skip('crafting-is-interruptible', 'nobody made anything in this run');
+  } else {
+    // `doCraft` was the one long action with no `interruption()` call, so for
+    // the 258 ticks a novice spends over an axe nothing could reach them —
+    // not thirst, not hunger, not being attacked — and the stretch never
+    // reported its ending to the player either. On the build without the fix
+    // this number is zero however long the run.
+    add('crafting-is-interruptible',
+      craftInterrupted > 0,
+      crafted + ' things made, ' + craftInterrupted + ' attempts broken off for a need');
+  }
+
+  // The granary chain: know pottery, dig clay, make pots, carry them to a site
+  // a band marked out for itself, finish it. Every link was broken.
+  const pots = tel.crafted_pot ?? 0;
+  const granariesPlanned = tel.band_planned_granary ?? 0;
+  const potterKnown = sim.knownTech.has('pottery');
+  if (!potterKnown) {
+    skip('pots-reach-a-granary', 'nobody alive knows how to fire clay');
+  } else if (granariesPlanned === 0) {
+    // Not a failure on its own: a band only wants the big store once it has
+    // filled a small one, which a short or a hungry run never gets to.
+    skip('pots-reach-a-granary',
+      'pottery is known and ' + pots + ' pots made, but no band needed a granary yet');
+  } else {
+    // Planning one and never making a pot is the exact state the world was in
+    // before this pass, and it is invisible from any other check: the site sits
+    // six pots short for ever and simply never finishes.
+    add('pots-reach-a-granary',
+      pots > 0,
+      granariesPlanned + ' granaries marked out, ' + pots + ' pots made, ' +
+        (tel.completed_granary ?? 0) + ' finished');
   }
 
   // Discovery is situated: an idea arrives to somebody in the situation that

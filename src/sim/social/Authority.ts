@@ -58,7 +58,18 @@ const ORDER_COST: Record<string, number> = {
   take: 0.15,
   build: 0.2,
   chop: 0.28,
+  craft: 0.2,
   talk: 0.15,
+  teach: 0.2,
+  // Research is cheap to ask for and hard to compel: sitting somebody down to
+  // think is barely an imposition, and being told whom to argue with is one.
+  ponder: 0.25,
+  discuss: 0.2,
+  prototype: 0.3,
+  sleep: 0.1,
+  flee: 0.1,
+  // Long, and it can get you killed.
+  hunt: 0.35,
   give: 0.4,
   court: 0.6,
   steal: 0.75,
@@ -148,21 +159,4 @@ export function standingOver(
     chance,
     because: reasons.join(', '),
   };
-}
-
-/**
- * Rolls for it. Returns whether the order was accepted.
- *
- * The caller applies the order on success and reports the refusal on failure;
- * this function deliberately does neither, so the same roll serves the player's
- * radial menu and a chief directing their band.
- */
-export function willObey(
-  leader: Person,
-  subordinate: Person,
-  action: string,
-  ctx: AuthorityContext,
-  roll: number
-): boolean {
-  return roll < standingOver(leader, subordinate, action, ctx).chance;
 }

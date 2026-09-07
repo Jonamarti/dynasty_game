@@ -70,6 +70,10 @@ export interface ResumedOrder {
   buildingId: number | null;
   personId: number | null;
   animalId: number | null;
+  /** Which recipe a set-aside `craft` was making. */
+  recipe: string | null;
+  /** Which record a set-aside `read` was aimed at. */
+  inscriptionId: number | null;
   x: number | null;
   y: number | null;
 }
@@ -202,7 +206,8 @@ export class Person {
    * instantaneous census of the living rather than a history.
    *
    * Note that the two scorer aliases are invisible here: `Brain.setup` rewrites
-   * `feed` to `give` and `gather_for_site` to `gather` long before an action
+   * `feed` to `give`, `gather_for_site` to `gather` and `teach_child` to
+   * `teach` long before an action
    * ever ends, so those are the ids that arrive. If either is ever wanted as an
    * ingredient in its own right, capture it at the scorer.
    */
@@ -227,6 +232,17 @@ export class Person {
   targetTreeId: number | null = null;
   /** Which animal the current action is aimed at, for the hunt. */
   targetAnimalId: number | null = null;
+  /**
+   * Which entry of `RECIPES` a `craft` is making.
+   *
+   * A string rather than an id because recipes are authored content keyed by
+   * name, the way buildings are. Before the table there was only ever one thing
+   * to make, so the action carried no target at all and three separate places
+   * hardcoded the hand axe between them.
+   */
+  targetRecipe: string | null = null;
+  /** Which record a `read` is aimed at. */
+  targetInscriptionId: number | null = null;
   /**
    * The last person to draw blood, and when. Fear is what stops a grudge
    * cascade from consuming a band: without somewhere to run, every fight
@@ -485,6 +501,8 @@ export class Person {
     this.targetBuildingId = null;
     this.targetTreeId = null;
     this.targetAnimalId = null;
+    this.targetRecipe = null;
+    this.targetInscriptionId = null;
     this.actionTimer = 0;
   }
 

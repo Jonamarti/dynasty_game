@@ -18,7 +18,10 @@ import { EntityPicker, type PickerEntry } from './ui/EntityPicker.ts';
 import { NewGame } from './ui/NewGame.ts';
 import { SuccessionOverlay } from './ui/Succession.ts';
 import { TechWebOverlay } from './ui/TechWeb.ts';
-import { availableActions, type ActionTarget } from './sim/ai/ActionCatalog.ts';
+import {
+  availableActions, type ActionOption, type ActionTarget,
+} from './sim/ai/ActionCatalog.ts';
+import { TECH, techPower, type Tech } from './sim/knowledge/Tech.ts';
 import type { Person } from './sim/entities/Person.ts';
 import type { BuildingDef } from './sim/entities/Building.ts';
 import { describeEvent } from './sim/social/Events.ts';
@@ -66,7 +69,10 @@ let paused = false;
 // same number: three hardcoded 20s is how the slider and the loop came to
 // disagree about what speed the game opens at.
 let stepsPerSecond = sim.config.time.tickRate;
-const maxStepsPerFrame = 8;
+// Also from the config, for the same reason. It was declared there, never read,
+// and written out as an 8 here — the very duplication the comment above says
+// was fixed for `tickRate`.
+const maxStepsPerFrame = sim.config.time.maxTicksPerFrame;
 
 /**
  * Who the player is currently giving orders to, or null for themselves.
@@ -336,6 +342,14 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
       { kind: 'tree', tree }, tree.x, tree.y);
   }
 
+  // Above piles and below people: a stone somebody is standing on should still
+  // be reachable, which is the whole reason the chooser offers everything.
+  const record = renderer.pickInscription(worldX, worldY);
+  if (record) {
+    consider({ kind: 'inscription', x: record.x, y: record.y, inscription: record },
+      { kind: 'inscription', inscription: record }, record.x, record.y);
+  }
+
   const pile = renderer.pickPile(worldX, worldY);
   if (pile) {
     consider({ kind: 'pile', x: pile.x, y: pile.y, pile },
@@ -376,11 +390,31 @@ function realCandidates(targets: ActionTarget[]): ActionTarget[] {
   return targets.filter(t => t.kind !== 'ground');
 }
 
+/**
+ * Whether a click should open the chooser rather than go straight through.
+ *
+ * It used to take *two* stacked entities. The ground was only ever offered as
+ * an extra entry once a stack had already forced the chooser open, so clicking
+ * a person standing on the tile you meant to walk to gave you the person and no
+ * way at all to say you meant the tile — and standing on the thing you are
+ * working on is the normal state of affairs in this game, not an edge case.
+ *
+ * The one exception is your own character alone under the cursor. Opening a
+ * two-entry menu every time the player clicks themselves would put a chooser in
+ * front of the most common click there is.
+ */
+function wantsPicker(real: ActionTarget[]): boolean {
+  if (real.length === 0) return false;
+  if (real.length === 1 && real[0]!.person?.id === sim.player?.id) return false;
+  return true;
+}
+
 const PICKER_ICONS: Record<string, string> = {
   person: '\u{1F464}',
   node: '\u{1F33F}',
   tree: '\u{1F333}',
   pile: '\u{1F4E6}',
+  inscription: '\u{1FAA8}',
   animal: '\u{1F98C}',
   building: '\u{1F3E0}',
   ground: '\u{1F45F}',
@@ -406,6 +440,20 @@ function describeCandidate(observer: Person, target: ActionTarget): string {
       return target.animal!.label + (target.animal!.alarmed ? ' — alarmed' : '');
     case 'pile':
       return 'dropped goods';
+    case 'inscription': {
+      // Gated like everything else the picker says. Somebody who cannot read is
+      // told there are marks, not what they are.
+      const record = target.inscription!;
+      const literate = techPower(observer, 'writing') > 0;
+      const marks = record.unfinished
+        ? 'half cut'
+        : record.techs.length === 0
+          ? 'blank'
+          : literate
+            ? record.techs.map(t => TECH[t as Tech]?.label ?? t).join(', ').toLowerCase()
+            : record.techs.length + ' marks';
+      return record.def.label.toLowerCase() + ' — ' + marks;
+    }
     case 'building':
       return target.building!.def.label;
     case 'ground':
@@ -439,6 +487,8 @@ function ringFor(target: ActionTarget): { x: number; y: number; radius: number }
         radius: hitRadiusOf({ kind: 'animal', animal: target.animal! }) + pad };
     case 'pile':
       return { x: target.x, y: target.y, radius: 0.6 };
+    case 'inscription':
+      return { x: target.x, y: target.y, radius: 0.6 };
     case 'building':
       return { x: target.x, y: target.y,
         radius: Math.max(target.building!.def.width, target.building!.def.height) * 0.7 };
@@ -454,6 +504,8 @@ function selectTarget(target: ActionTarget): void {
     target.kind === 'node' && target.node ? { kind: 'node', node: target.node } :
     target.kind === 'tree' && target.tree ? { kind: 'tree', tree: target.tree } :
     target.kind === 'pile' && target.pile ? { kind: 'pile', pile: target.pile } :
+    target.kind === 'inscription' && target.inscription
+      ? { kind: 'inscription', inscription: target.inscription } :
     target.kind === 'animal' && target.animal ? { kind: 'animal', animal: target.animal } :
     target.kind === 'building' && target.building
       ? { kind: 'building', building: target.building }
@@ -539,9 +591,10 @@ canvas.addEventListener('mousedown', event => {
     const options = candidatesAt(point.x, point.y, true);
     const real = realCandidates(options);
 
-    // Same rule as the left click: one target goes straight to the menu, a
-    // stack asks which of them the order is aimed at first.
-    if (real.length < 2) {
+    // Same rule as the left click: nothing under the cursor goes straight to
+    // the menu for the ground, and anything else asks what the order is aimed
+    // at — including the ground, which is always the last entry.
+    if (!wantsPicker(real)) {
       openRadial(actor, options[0]!, event.clientX, event.clientY);
       return;
     }
@@ -572,10 +625,11 @@ window.addEventListener('mouseup', event => {
   const real = realCandidates(options);
   const observer = sim.player;
 
-  // One thing under the cursor (or none): behave exactly as before. Two or
-  // more, and the player is asked which — the old behaviour cycled blindly
-  // through the stack on repeated clicks, which is a guessing game.
-  if (real.length < 2 || !observer) {
+  // Nothing under the cursor: select the ground and be done. Anything else is
+  // put to the player, with the ground among the choices, because the old
+  // behaviour cycled blindly through a stack on repeated clicks and never
+  // offered the tile at all.
+  if (!wantsPicker(real) || !observer) {
     selectTarget(options[0]!);
     return;
   }
@@ -634,6 +688,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     target.kind === 'building' ? target.building!.def.label :
     target.kind === 'tree' ? target.tree!.def.label :
     target.kind === 'animal' ? target.animal!.label :
+    target.kind === 'inscription' ? target.inscription!.def.label :
     target.kind === 'pile' ? 'Dropped goods' :
     'Ground';
 
@@ -641,12 +696,13 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     screenX, screenY,
     commanding && commanding.alive ? title + ' — ordering ' + commanding.name : title,
     options,
-    option => issue(actor, option.id, target)
+    option => issue(actor, option, target)
   );
 }
 
 /** Turns a menu choice into a simulation order. */
-function issue(actor: Person, actionId: string, target: ActionTarget): void {
+function issue(actor: Person, option: ActionOption, target: ActionTarget): void {
+  const actionId = option.id;
   if (actionId === 'possess' && target.person) {
     possess(target.person);
     return;
@@ -659,6 +715,10 @@ function issue(actor: Person, actionId: string, target: ActionTarget): void {
     return;
   }
 
+  // Built once and used by both branches below. It used to be written out
+  // twice, identically, which is precisely how the second copy comes to be
+  // missing whatever the first one gains — `recipeId` being the first such
+  // field to arrive.
   const place = {
     x: target.kind === 'ground' ? target.x : undefined,
     y: target.kind === 'ground' ? target.y : undefined,
@@ -667,6 +727,8 @@ function issue(actor: Person, actionId: string, target: ActionTarget): void {
     buildingId: target.building?.id,
     treeId: target.tree?.id,
     animalId: target.animal?.id,
+    recipeId: option.recipeId,
+    inscriptionId: target.inscription?.id,
   };
 
   // Commanding somebody else: they may simply refuse, in public.
@@ -682,21 +744,13 @@ function issue(actor: Person, actionId: string, target: ActionTarget): void {
     return;
   }
 
-  const ok = sim.order(actor, actionId, {
-    x: target.kind === 'ground' ? target.x : undefined,
-    y: target.kind === 'ground' ? target.y : undefined,
-    personId: target.person?.id,
-    nodeId: target.node?.id,
-    buildingId: target.building?.id,
-    treeId: target.tree?.id,
-    animalId: target.animal?.id,
-  });
+  const ok = sim.order(actor, actionId, place);
 
   // A refusal says why. `lastRefusal` is set by the simulation and read once.
   const reason = sim.lastRefusal;
   sim.lastRefusal = null;
   renderer.floaters.push(actor.x, actor.y,
-    ok ? actionLabel(actionId) : (reason ?? 'cannot do that'),
+    ok ? actionLabel(actionId, option.recipeId) : (reason ?? 'cannot do that'),
     { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
 }
 
@@ -732,7 +786,8 @@ function reportInterruptions(): void {
     const mine = person.isPlayer || person.id === commanding?.id;
     if (!mine) continue;
 
-    const text = actionLabel(notice.action) + ' stopped — ' + stopReasonLabel(notice.reason);
+    const text = actionLabel(notice.action, notice.recipe) +
+      ' stopped — ' + stopReasonLabel(notice.reason);
     renderer.floaters.push(person.x, person.y, text,
       { color: '#e0b055', boxed: true, ttl: 3.4 });
     hud.noteStop(person.id, stopReasonLabel(notice.reason));
@@ -778,7 +833,7 @@ function updateFloaters(): void {
     if (previous === person.action) continue;
     lastActions.set(person.id, person.action);
     if (person.action === 'idle') continue;
-    renderer.floaters.push(person.x, person.y, actionLabel(person.action), {
+    renderer.floaters.push(person.x, person.y, actionLabel(person.action, person.targetRecipe), {
       color: person.isPlayer ? '#ffd35c' : '#7fd4ff',
       boxed: person.isPlayer,
     });
@@ -820,6 +875,15 @@ function updateFloaters(): void {
 
 let lastTime = performance.now();
 let accumulator = 0;
+/**
+ * How far the world is between the last completed step and the next one.
+ *
+ * Held outside `frame` so that it survives a paused frame. `accumulator` stops
+ * moving while paused, and recomputing alpha from it would be fine — but the
+ * catch-up branch below zeroes the accumulator, and an alpha of 0 there would
+ * yank everybody back to where they were a step ago.
+ */
+let alpha = 1;
 
 function readIntent(): { dx: number; dy: number } | null {
   let dx = 0;
@@ -848,18 +912,39 @@ function frame(now: number): void {
       if (intent && sim.player) sim.player.forgetPlans();
       sim.playerIntent = intent;
       sim.step();
+      // Inside the loop, not outside it: with the speed slider up this runs
+      // several times a frame, and the previous position worth drawing from is
+      // the one before the *last* step.
+      renderer.interpolator.capture('person', sim.livingPeople());
+      renderer.interpolator.capture('animal', sim.animals);
       accumulator -= stepDuration;
       stepsThisFrame++;
     }
     // Drop any backlog we could not work through, rather than carrying it into
     // the next frame and falling further behind every frame.
-    if (stepsThisFrame === maxStepsPerFrame) accumulator = 0;
+    if (stepsThisFrame === maxStepsPerFrame) {
+      accumulator = 0;
+      // A dropped backlog means the last step is the newest truth there is.
+      // Deriving alpha from the zeroed accumulator would rewind the whole world
+      // by one step at exactly the moment it is already struggling.
+      alpha = 1;
+    } else {
+      // Clamped because the speed slider can change `stepDuration` underneath
+      // an accumulator filled at the old rate.
+      alpha = Math.max(0, Math.min(1, accumulator / stepDuration));
+    }
   }
 
   if (selected?.kind === 'person' && !selected.person.alive && !sim.succession) {
     selected = sim.player && sim.player.alive ? { kind: 'person', person: sim.player } : null;
   }
-  if (sim.player && sim.player.alive) camera.follow(sim.player.x, sim.player.y);
+  // The camera follows the *drawn* player, not the stepped one. Following the
+  // simulation position instead would slide the world smoothly underneath a
+  // character who was still jumping, which is worse than both halves alone.
+  if (sim.player && sim.player.alive) {
+    const at = renderer.interpolator.at('person', sim.player, alpha);
+    camera.follow(at.x, at.y, delta);
+  }
   camera.clampTo(sim.world.width, sim.world.height);
 
   renderer.commandedId = commanding && commanding.alive ? commanding.id : null;
@@ -870,15 +955,16 @@ function frame(now: number): void {
   reportInsights();
   updateFloaters();
   renderer.floaters.update(delta);
-  renderer.render(
+  renderer.render((
     selected === null ? null :
     selected.kind === 'person' ? { personId: selected.person.id } :
     selected.kind === 'node' ? { nodeId: selected.node.id } :
     selected.kind === 'tree' ? { treeId: selected.tree.id } :
     selected.kind === 'pile' ? { pileId: selected.pile.id } :
     selected.kind === 'animal' ? { animalId: selected.animal.id } :
+    selected.kind === 'inscription' ? { inscriptionId: selected.inscription.id } :
     { buildingId: selected.building.id }
-  );
+  ), alpha);
   hud.update(sim, selected);
 
   requestAnimationFrame(frame);

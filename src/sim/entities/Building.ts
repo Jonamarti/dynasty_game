@@ -109,6 +109,21 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     requiresTech: 'pottery',
     description: 'Raised and sealed. Grain keeps for a year, and a year of grain changes everything.',
   },
+  library: {
+    id: 'library',
+    label: 'Library',
+    icon: '\u{1F3DB}',
+    width: 3, height: 3,
+    materials: { wood: 16, sticks: 12, thatch: 14, mud: 12 },
+    workTicks: 700,
+    // A roof and walls, but it is not somewhere anybody sleeps.
+    shelter: 0.25,
+    storage: 0,
+    requiresTech: 'library',
+    description:
+      'A roof over the records, and somewhere to sit and think under it. ' +
+      'Ideas come faster where the stones are.',
+  },
   longhouse: {
     id: 'longhouse',
     label: 'Longhouse',

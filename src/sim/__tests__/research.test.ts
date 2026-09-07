@@ -118,10 +118,72 @@ describe('the shape of an idea', () => {
     expect(carryFactor(person)).toBeCloseTo(1.25);
   });
 
-  it('costs insight when a test fails, and does not quietly prove itself', () => {
+  /**
+   * Puts one prototype through trials until it is settled either way.
+   *
+   * Returns what happened, so a caller can insist on seeing both outcomes.
+   */
+  function trial(seed: string, able: boolean): { failed: number; proven: boolean; insight: number } {
     const knowledge = new KnowledgeSystem();
-    const person = adult();
-    // A hopeless prototyper: no skill and no wits, so the trial goes badly.
+    const person = adult('T' + seed);
+    for (const skill of Object.keys(person.skills) as (keyof typeof person.skills)[]) {
+      person.skills[skill] = able ? 100 : 0;
+    }
+    person.traits.intelligence = able ? 1 : 0;
+    const idea = ideaFor('cordage', 'prototyped');
+    idea.insight = able ? 1 : 0.7;
+    person.ideas.push(idea);
+
+    const ctx = context(seed);
+    for (let day = 0; day < 200; day++) {
+      knowledge.daily([person], { ...ctx, tick: 1000 + day * config.time.ticksPerDay });
+      if (person.knownTech.has('cordage') || idea.failedTests > 0) break;
+    }
+    return {
+      failed: idea.failedTests,
+      proven: person.knownTech.has('cordage'),
+      insight: idea.insight,
+    };
+  }
+
+  it('can fail a trial and can pass one, so testing is not merely a delay', () => {
+    // Both outcomes asserted here rather than in `simcheck`, and that is a
+    // deliberate move rather than a convenience.
+    //
+    // A two-year run produces about eight trials, and zero failures in eight is
+    // ordinary chance at these odds — the century scenario reported "8 built, 1
+    // failed" and then "8 built, 0 failed" across a change that never touched
+    // the roll. A statistical echo of something that can be settled
+    // deterministically is a check that flakes, and this project has already
+    // deleted two checks for looking reassuring and detecting nothing.
+    let failures = 0;
+    let proofs = 0;
+    for (let seed = 0; seed < 12; seed++) {
+      if (trial('hopeless-' + seed, false).failed > 0) failures++;
+      if (trial('able-' + seed, true).proven) proofs++;
+    }
+    expect(failures, 'no trial ever failed; testing is a delay with dice on it')
+      .toBeGreaterThan(0);
+    expect(proofs, 'no trial ever succeeded; nothing could ever be proven')
+      .toBeGreaterThan(0);
+  });
+
+  it('costs insight when a test fails, and does not quietly prove itself', () => {
+    // The consequences of the failing branch, on a seed that takes it.
+    let seen = false;
+    for (let seed = 0; seed < 12 && !seen; seed++) {
+      const outcome = trial('cost-' + seed, false);
+      if (outcome.failed === 0) continue;
+      seen = true;
+      expect(outcome.proven, 'a failed trial proved the design anyway').toBe(false);
+      expect(outcome.insight).toBeLessThan(0.7);
+    }
+    expect(seen, 'twelve hopeless prototypers and not one failure').toBe(true);
+  });
+
+  it('sends a failed design back to be researched, not silently forgotten', () => {
+    const knowledge = new KnowledgeSystem();
+    const person = adult('back-to-work');
     for (const skill of Object.keys(person.skills) as (keyof typeof person.skills)[]) {
       person.skills[skill] = 0;
     }
@@ -130,18 +192,13 @@ describe('the shape of an idea', () => {
     idea.insight = 0.7;
     person.ideas.push(idea);
 
-    // Enough days that the trial certainly happens; the outcome is the point.
-    const ctx = context('failing');
+    const ctx = context('back-to-work');
     for (let day = 0; day < 200 && idea.failedTests === 0; day++) {
       knowledge.daily([person], { ...ctx, tick: 1000 + day * config.time.ticksPerDay });
       if (person.knownTech.has('cordage')) break;
     }
-    if (!person.knownTech.has('cordage')) {
-      expect(idea.failedTests).toBeGreaterThan(0);
-      expect(idea.insight).toBeLessThan(0.7);
-      // And it goes back to being researched, not silently forgotten.
-      expect(idea.stage).toBe('researching');
-    }
+    expect(idea.failedTests).toBeGreaterThan(0);
+    expect(idea.stage).toBe('researching');
   });
 
   it('refines to a ceiling and then retires the idea', () => {

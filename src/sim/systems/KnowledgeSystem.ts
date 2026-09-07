@@ -45,6 +45,18 @@ const CONCEPTION_BASE = 0.045;
 /** Daily chance of picking something up merely from being near a knower. */
 const OBSERVATION_CHANCE = 0.02;
 
+/**
+ * The same chance for a child, who is doing nothing else.
+ *
+ * Higher than an adult's on purpose. A child spends its whole day underfoot
+ * while the people around it work, and picking things up by watching is most of
+ * what childhood *is*; an adult watching somebody else work is an adult not
+ * doing their own. It is the cheapest of the four channels for exactly this
+ * reason — free, passive, and slow enough that a band still needs somebody to
+ * sit down and explain.
+ */
+const CHILD_OBSERVATION_CHANCE = 0.055;
+
 /** How far you have to be to learn by watching. */
 const WATCHING_RANGE = 5;
 
@@ -118,16 +130,25 @@ export class KnowledgeSystem {
   /**
    * The daily pass: conception, observation, and the testing of prototypes.
    *
-   * Children are no longer skipped wholesale. They are skipped for
-   * *conception* — a nine-year-old does not invent hafting — but the decay of
-   * what they have been doing still has to run, or a child's tallies would sit
-   * frozen until their fourteenth birthday and then spark everything at once.
+   * Children are skipped for *conception* — a nine-year-old does not invent
+   * hafting, and an idea needs years of work behind it that a child does not
+   * have — but they watch, and they can be taught. Before phase 4 they were
+   * skipped wholesale, so a parent could not pass anything at all to their own
+   * child and every technology in the world had to be re-derived by each
+   * generation from nothing. That is not how any of this works.
+   *
+   * The decay of what they have been doing runs for everybody either way, or a
+   * child's tallies would sit frozen until their fourteenth birthday and then
+   * spark everything at once.
    */
   daily(people: Person[], ctx: KnowledgeContext): void {
     for (const person of people) {
       if (!person.alive) continue;
       person.decayRecent();
-      if (person.isChild) continue;
+      if (person.isChild) {
+        this.tryObserve(person, ctx);
+        continue;
+      }
       this.abandonStaleIdeas(person, ctx);
       this.tryConceive(person, ctx);
       this.testPrototypes(person, ctx);
@@ -410,7 +431,8 @@ export class KnowledgeSystem {
    * whether the one person who knows a thing can be bothered to teach it.
    */
   private tryObserve(person: Person, ctx: KnowledgeContext): void {
-    if (!ctx.rng.chance(OBSERVATION_CHANCE)) return;
+    const chance = person.isChild ? CHILD_OBSERVATION_CHANCE : OBSERVATION_CHANCE;
+    if (!ctx.rng.chance(chance)) return;
 
     const neighbours = ctx.peopleHash.queryRadius(person.x, person.y, WATCHING_RANGE);
     for (const other of neighbours) {
@@ -423,6 +445,7 @@ export class KnowledgeSystem {
 
         this.receive(person, tech as Tech);
         telemetry.count('observed_' + tech);
+        if (person.isChild) telemetry.count('child_watched');
         return;
       }
     }
@@ -442,6 +465,18 @@ export class KnowledgeSystem {
   }
 
   /**
+   * Somebody takes a technology off a record.
+   *
+   * The same landing as being taught it — level zero, the plain design — but by
+   * a different road, and one that does not need its author to be alive. This
+   * is the only channel in the game that crosses a death.
+   */
+  receiveFromRecord(person: Person, tech: Tech): void {
+    this.receive(person, tech);
+    telemetry.count('recovered_' + tech);
+  }
+
+  /**
    * One person deliberately teaching another. Called by the action system.
    *
    * Returns what was taught, or null if there was nothing to pass on. Success
@@ -449,6 +484,13 @@ export class KnowledgeSystem {
    * learn much from somebody you have no time for.
    */
   teach(teacher: Person, pupil: Person, regard: number, tick: number, rng: RNG): Tech | null {
+    // A child can be taught and cannot teach. What they hold is real and
+    // personal, but it is held at level 0 and it does not travel any further
+    // until they are grown — which is also why the world's `knownTech` is
+    // counted from adults. Knowing a thing and being able to explain it are
+    // separated by about ten years.
+    if (teacher.isChild) return null;
+
     const teachable: Tech[] = [];
     for (const tech of teacher.knownTech) {
       if (pupil.knownTech.has(tech)) continue;
@@ -473,6 +515,19 @@ export class KnowledgeSystem {
     this.receive(pupil, tech);
     teacher.practice('teach', 2.5);
     telemetry.count('taught_' + tech);
+    // Counted apart so `children-are-taught` can ask whether the channel that
+    // phase 4 opened is actually carrying anything, and whether it is mostly
+    // kin doing it.
+    //
+    // Named `child_taught_*` rather than `taught_child`: `knowledge-is-passed-on`
+    // sums every counter beginning `taught_` to count lessons, so a second
+    // counter under that prefix would have been added to the total and reported
+    // twice as much teaching as happened.
+    if (pupil.isChild) {
+      telemetry.count('child_taught');
+      const parent = pupil.motherId === teacher.id || pupil.fatherId === teacher.id;
+      if (parent) telemetry.count('child_taught_by_parent');
+    }
     const text = teacher.name + ' taught ' + pupil.name + ' ' + TECH[tech].label.toLowerCase();
     teacher.chronicle.push({ tick, ageDays: teacher.age, text, kind: 'did' });
     pupil.chronicle.push({ tick, ageDays: pupil.age, text, kind: 'milestone' });

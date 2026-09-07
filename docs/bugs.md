@@ -1,6 +1,6 @@
 # Known bugs and rough edges
 
-As of 2026-09-02. Everything here is real and reproducible; nothing here is
+As of 2026-09-07. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
 ## Reported from play, 2026-09-02 — fixed
@@ -36,6 +36,134 @@ sat permanently in `lockedDesigns()`, which is exactly how it stayed invisible:
 a locked design looks like content you have not reached yet. `carpentry` is a
 real technology now, and `tech.test.ts` asserts every `requiresTech` in
 `BUILDINGS` names one.
+
+## Fixed in M6b phase 4, 2026-09-07
+
+- **Children were excluded from knowledge entirely**, so a parent could not
+  teach their own child anything and every technology had to be re-derived from
+  nothing by each generation.
+- **Neither the scorer nor the radial menu checked a pupil's prerequisites**,
+  though `KnowledgeSystem.teach` has always dropped what a pupil cannot follow.
+  People were sent to give lessons that could not land, and the menu offered a
+  Teach that silently did nothing.
+- **A long single-pull job could never be finished by a novice.** Carving a
+  stone was twelve hundred ticks and thirst interrupts at four hundred, so the
+  action restarted from nothing every time. Work banks on the record now.
+
+## Open — behaviour, found in phase 4
+
+### Reading only happens when the chain breaks
+
+By design, and recorded because it looks like a defect from the outside. A
+living teacher is quicker to reach than a stone across the valley, so `read`
+fires when the last holder of something is dead or when a record carries
+something newly worked out. Neither happens inside a fifty-eight-day run, so
+`scribes` shows plenty of carving and no reading. A twenty-four-thousand-step
+run does produce both (`read_firemaking`, `recovered_firemaking`).
+
+If it should be more common, the lever is not the `read` weight — it is how
+readily knowledge is *lost*, which is the same lever as mortality.
+
+### `people-survive` asks the wrong question of a run between one and two years
+
+The check demands 67% survival below two in-game years and switches to "the line
+continues" above. That threshold was calibrated against runs of twelve to
+thirty-three days; nothing in the suite sat between thirty-three days and two
+years until `scribes` did. At a hundred days the world loses more than a third
+of its people to two winters, and an **illiterate control at the same length
+survived worse** (6/24 against 10/24), so it is the question and not the world.
+
+Left alone deliberately: moving the survival bar is a food-economy decision and
+this was a knowledge-transmission pass. `scribes` is fifty-eight days, which
+sits inside the calibrated range. Whoever takes on the supply half of
+`next-steps.md` §0 should fix the check as part of it.
+
+### A half-cut record can be orphaned
+
+If the carver dies or wanders off and nobody else is literate, a stone sits half
+cut with its flint already spent. The scorer prefers finishing a nearby
+half-cut record over starting a new one, so this self-heals wherever there is a
+second scribe, and does not where there is not. That is arguably the right
+story; it has not been measured.
+
+### `clay_tablet` is not portable
+
+The plan called clay tablets portable. They are not: they are cheaper, hold two,
+and perish, which are three real differences the world acts on. Portability was
+dropped because **nothing in the world would read it** — bands do not move camp,
+and a `portable` flag nothing acts on is precisely the class of declared-inert
+content this project keeps deleting. It comes back with whatever gives it a
+consumer.
+
+## Fixed in pass A, 2026-09-06
+
+Four defects, three of them reported from play and one found while checking the
+other three. Diagnosis and reasons are in [changelog.md](changelog.md).
+
+- **`doCraft` had no interruption check** — 258 ticks for a novice during which
+  nothing at all could reach the knapper, and no report to the player when the
+  stretch ended.
+- **The granary was unbuildable**, and in four separate ways: nothing produced
+  `pottery`, `doCraft` knew only the hand axe, `Brain` could not fetch a
+  material that has to be made rather than found, and **no band ever planned a
+  granary or a longhouse at all** — `planBuildings` chose between three
+  hardcoded ids and never asked what its members could actually raise.
+- **A refusal by authority never set `lastRefusal`**, so the player read a bare
+  "X refuses" while `standing.because` was computed and discarded one line
+  earlier.
+
+## Found during pass A — open
+
+### The screenshot tour had quietly stopped showing what it claims to
+
+Two shots in `e2e/screenshots.spec.ts` were pictures of the player's own panel
+rather than of a tree and its menu. The tour runs at 120 steps a second and the
+camera follows the player, so a screen position read in one round trip pointed
+somewhere else by the time the click landed in the next. Fixed by pausing for
+those shots — but the general point stands and is worth remembering: **the tour
+asserts nothing, so it degrades silently.** Anything that depends on a click
+landing needs the world held still, and anything it stops showing has to be
+noticed by a person looking at the images.
+
+### The player is not told when a chief is refused
+
+`BandSystem.directWork` goes through `Simulation.command` like any other order,
+so a refusal there now sets `lastRefusal` — but nothing reads it on that path,
+and `reportInterruptions` in `main.ts` filters to `person.isPlayer` or the
+person the player is currently commanding. A chief being told no by their own
+band is invisible unless you happen to be one of the two people involved.
+
+Deliberately left. Whether the player should see refusals between NPCs at all is
+a question about omniscience rather than a defect: the same gate is why insights
+and deeds are reported only within sight of the player's own character. It wants
+an answer, not a patch.
+
+### What is drawn and what is clickable are up to a third of a tile apart
+
+Interpolation moved the drawn position off the stepped one, while hit-testing
+still asks the simulation's spatial hashes — as it should, since the alternative
+is the renderer answering questions about where things are. The gap is at most
+one step of movement, 0.32 tiles at `BASE_SPEED`, and `GRAB_MARGIN` 0.25 plus a
+person's 0.45 hit radius absorb it comfortably. Recorded because it is a real
+difference that did not exist before, and because it will grow if anything ever
+moves faster.
+
+### Floaters do not follow the entity they are about
+
+`Floaters.push` freezes a world position at the moment it is called, so a label
+over somebody walking is left behind by up to a step. Visible now that people
+move smoothly rather than in jumps. The clean fix is an optional `followId` on
+`Floater`; it was not worth widening this pass for.
+
+### Crafting is interrupted often, and NPC crafts are not resumed
+
+`person.resume` is only set for *ordered* work — `noteStop` returns early when
+`person.order === null` — so an NPC whose craft is broken off by thirst simply
+starts again from the beginning later, losing the ticks already spent. Nothing
+is lost but time, since materials are consumed only on the last tick, and the
+alternative is set-aside errands accumulating on people nobody is watching. In
+the `craft` scenario this shows up as 14 broken-off attempts against 10 finished
+items. Worth revisiting if crafting ever becomes central rather than occasional.
 
 ## Found during M6b phase 2 — open
 

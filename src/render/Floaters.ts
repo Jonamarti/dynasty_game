@@ -11,6 +11,7 @@
  * dropped, doubled or skipped without affecting a single outcome.
  */
 import type { Camera } from './Camera.ts';
+import { RECIPES } from '../sim/entities/Recipe.ts';
 
 export interface Floater {
   x: number;
@@ -140,10 +141,15 @@ export const ACTION_LABELS: Record<string, string> = {
   talk: 'talking',
   court: 'courting',
   teach: 'teaching',
-  craft: 'making a hand axe',
+  // A scorer alias: `Brain.setup` rewrites it to `teach` before the action
+  // system ever sees it. Listed so the HUD's score table has words for it.
+  teach_child: 'teaching a child',
+  craft: 'making something',
   ponder: 'turning something over',
   discuss: 'arguing it out',
   prototype: 'building the first one',
+  inscribe: 'cutting it into stone',
+  read: 'reading a record',
   give: 'giving food',
   steal: 'stealing',
   attack: 'fighting',
@@ -156,7 +162,19 @@ export const ACTION_LABELS: Record<string, string> = {
   hunt: 'hunting',
 };
 
-export function actionLabel(action: string): string {
+/**
+ * What somebody is doing, in words.
+ *
+ * `craft` takes the optional second argument because the verb alone stopped
+ * being enough the moment there was more than one recipe: the label used to
+ * read "making a hand axe" whatever was on the workbench. The recipe's own
+ * `label` is the single source, so a new entry in `RECIPES` needs no edit here.
+ */
+export function actionLabel(action: string, recipe?: string | null): string {
+  if (action === 'craft') {
+    const def = recipe ? RECIPES[recipe] : null;
+    if (def) return 'making a ' + def.label.toLowerCase();
+  }
   return ACTION_LABELS[action] ?? action;
 }
 
@@ -205,6 +223,7 @@ export const STOP_REASONS: Record<string, string> = {
   nothing_to_steal: 'there was nothing to take',
   dont_know_how: 'they do not know how',
   lack_materials: 'they lacked the materials',
+  no_recipe: 'they had nothing in mind to make',
   already_wed: 'they are already married',
 
   // Research. Every one of these is a way an idea can stall, and a stalled idea
@@ -214,6 +233,16 @@ export const STOP_REASONS: Record<string, string> = {
   nothing_to_build_yet: 'the idea is not ready to build',
   partner_ignorant: 'they know nothing about it',
   partner_unwilling: 'they would not discuss it',
+
+  // Records. The literacy gate is the one worth spelling out: a stone that
+  // grants nothing to somebody who cannot read is the point of writing, and a
+  // silent refusal there would read as a bug.
+  cannot_write: 'they never learned to write',
+  cannot_read: 'they cannot read it',
+  nothing_to_record: 'everything they know is already written down',
+  nowhere_to_write: 'there was nowhere left to cut it',
+  record_gone: 'the record is gone',
+  nothing_new_on_it: 'there was nothing on it they did not know',
 };
 
 export function stopReasonLabel(reason: string): string {

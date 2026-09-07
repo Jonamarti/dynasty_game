@@ -171,7 +171,12 @@ export class TechWebOverlay {
    * putting a hide down would be quietly lying.
    */
   private digest(subject: Person, notice: Notice, boxKey: string): string {
-    const parts = [subject.id, boxKey, this.focused ?? '-'];
+    // The records are in the digest because a stone cut on the far side of the
+    // island changes what this panel says about a node, and a panel that
+    // redraws only on its subject's own changes would go on showing the old
+    // reading until something else happened to them.
+    const parts = [subject.id, boxKey, this.focused ?? '-',
+      this.sim ? [...this.sim.recordedTech].sort().join(',') : ''];
     for (const tech of Object.keys(TECH) as Tech[]) {
       const idea = subject.ideaFor(tech);
       parts.push(tech + ':' + this.stateOf(subject, tech, notice) +
@@ -250,12 +255,21 @@ export class TechWebOverlay {
           Math.round(idea.insight * 100) + '%"></i>'
         : '';
 
+      // A scroll on anything this person does not know that is written down
+      // somewhere. The second reading the web gains from phase 4, and the one
+      // that turns it from a map of a mind into a map of what a mind could
+      // *recover*: a ghosted node with a scroll on it is a technology nobody
+      // here understands and somebody, once, cut into a stone.
+      const written = !subject.knownTech.has(node.tech) && sim.recordedTech.has(node.tech)
+        ? '<i class="techweb-scroll" title="written down somewhere">\u{1FAA8}</i>'
+        : '';
+
       return '<button class="techweb-node is-' + state +
         (this.focused === node.tech ? ' is-focused' : '') +
         '" data-tech="' + node.tech + '"' +
         ' style="left:' + node.x.toFixed(1) + 'px;top:' + node.y.toFixed(1) +
         'px;--domain:' + colour + '">' +
-        ring +
+        ring + written +
         '<span class="techweb-name">' + label + '</span>' + pips +
         '</button>';
     }).join('');

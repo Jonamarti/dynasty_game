@@ -17,13 +17,16 @@ import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import { ITEMS } from '../entities/Item.ts';
-import { TECH, techPower } from '../knowledge/Tech.ts';
+import { RECIPES, hasIngredients, missingIngredients } from '../entities/Recipe.ts';
+import { INSCRIPTIONS } from '../entities/Inscription.ts';
+import { TECH, techPower, prerequisitesMet, type Tech } from '../knowledge/Tech.ts';
 import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
+import type { Inscription } from '../entities/Inscription.ts';
 import type { Animal } from '../entities/Animal.ts';
 
 export type TargetKind =
-  'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal';
+  'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription';
 
 export interface ActionTarget {
   kind: TargetKind;
@@ -35,6 +38,7 @@ export interface ActionTarget {
   tree?: Tree;
   pile?: ItemPile;
   animal?: Animal;
+  inscription?: Inscription;
 }
 
 export interface ActionOption {
@@ -42,6 +46,13 @@ export interface ActionOption {
   label: string;
   /** A single glyph for the radial menu. */
   icon: string;
+  /**
+   * Which entry of `RECIPES` a `craft` option makes.
+   *
+   * The menu offers one option per recipe under the single `craft` verb, so the
+   * id alone no longer says what would be made.
+   */
+  recipeId?: string;
   /** False when the action is shown but not currently possible. */
   enabled: boolean;
   /** Why it is disabled, for the tooltip. */
@@ -141,13 +152,63 @@ export function availableActions(
     }];
     case 'animal': return animalActions(actor, target.animal!);
     case 'building': return buildingActions(actor, target.building!);
+    case 'inscription': return recordActions(actor, target.inscription!);
     case 'ground': return groundActions(actor, target, ctx);
   }
 }
 
+/**
+ * What can be done with a record.
+ *
+ * Both verbs say why they are greyed out, and the literacy one is why that
+ * matters here more than anywhere: an option that silently did nothing for an
+ * illiterate character would hide the single rule the whole feature turns on.
+ */
+function recordActions(actor: Person, record: Inscription): ActionOption[] {
+  const literate = techPower(actor, 'writing') > 0;
+
+  if (record.unfinished) {
+    return [{
+      id: 'inscribe',
+      label: 'Finish cutting it',
+      icon: '\u{1FAA8}',
+      enabled: literate,
+      reason: literate ? undefined : 'You never learned to write',
+    }];
+  }
+
+  const useful = record.techs.some(tech =>
+    TECH[tech as Tech] !== undefined &&
+    !actor.knownTech.has(tech) &&
+    prerequisitesMet(tech as Tech, actor.knownTech));
+  return [{
+    id: 'read',
+    label: 'Read it',
+    icon: '\u{1F4D6}',
+    enabled: literate && useful,
+    reason: !literate
+      ? 'You never learned to read'
+      : useful
+        ? undefined
+        : record.techs.length === 0
+          ? 'There is nothing on it yet'
+          : 'Nothing on it that you could follow',
+  }];
+}
+
 function personActions(actor: Person, other: Person): ActionOption[] {
   const carriedFood = actor.inventory.bestFood();
-  const teachable = [...actor.knownTech].some(t => !other.knownTech.has(t));
+  // Something they could actually take in. `KnowledgeSystem.teach` drops any
+  // technology whose prerequisites the pupil is missing, so a menu that only
+  // asked "do they lack it?" offered a lesson that would quietly fail — and
+  // since children can be taught, the pupil who lacks the scaffolding is now
+  // the common case rather than the rare one.
+  const teachable = [...actor.knownTech].some(t =>
+    TECH[t as Tech] !== undefined &&
+    !other.knownTech.has(t) &&
+    prerequisitesMet(t as Tech, other.knownTech));
+  const onlyGroundwork = !teachable && actor.knownTech.size > 0 &&
+    [...actor.knownTech].some(t => !other.knownTech.has(t));
 
   // Talking a problem over with somebody who knows something about it. Offered
   // only when there is a problem: an option that is always visible and almost
@@ -175,7 +236,9 @@ function personActions(actor: Person, other: Person): ActionOption[] {
         ? undefined
         : actor.knownTech.size === 0
           ? 'You know nothing worth passing on'
-          : 'They already know everything you do',
+          : onlyGroundwork
+            ? 'They lack the groundwork for anything you could show them'
+            : 'They already know everything you do',
     },
     {
       id: 'talk',
@@ -391,15 +454,37 @@ function groundActions(
     });
   }
 
-  const canCraft = techPower(actor, 'hafting') > 0;
-  const hasParts = actor.inventory.has('flint') && actor.inventory.has('sticks');
-  if (canCraft) {
+  // Writing where you stand. Offered on the ground rather than on a record,
+  // because a new one is *made* here — the ground is what you are writing on.
+  if (techPower(actor, 'writing') > 0) {
+    const spare = Object.values(INSCRIPTIONS).some(def =>
+      (def.id !== 'clay' || techPower(actor, 'clay_tablet') > 0) &&
+      Object.entries(def.materials)
+        .every(([itemId, count]) => actor.inventory.count(itemId) >= count));
+    options.push({
+      id: 'inscribe',
+      label: 'Write something down',
+      icon: '\u{1FAA8}',
+      enabled: spare,
+      reason: spare ? undefined : 'You need flint to cut with',
+    });
+  }
+
+  // One entry per recipe the actor knows, rather than the hand axe written out
+  // by name. A recipe nobody has conceived of is not offered at all — a menu
+  // full of greyed-out things would give away the shape of the tech web for
+  // free — but one they know and lack the parts for is shown greyed with what
+  // is missing, which is the question the `reason` channel exists to answer.
+  for (const recipe of Object.values(RECIPES)) {
+    if (techPower(actor, recipe.tech) <= 0) continue;
+    const ready = hasIngredients(actor.inventory, recipe);
     options.push({
       id: 'craft',
-      label: 'Make a hand axe',
-      icon: '\u{1FA93}',
-      enabled: hasParts,
-      reason: hasParts ? undefined : 'You need flint and a stick',
+      recipeId: recipe.id,
+      label: 'Make a ' + recipe.label.toLowerCase(),
+      icon: recipe.icon,
+      enabled: ready,
+      reason: ready ? undefined : missingIngredients(actor.inventory, recipe),
     });
   }
   return options;

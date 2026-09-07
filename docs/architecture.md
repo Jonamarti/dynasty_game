@@ -11,7 +11,7 @@ src/
     core/       Simulation, World, TimeManager, RNG, SpatialHash, Telemetry,
                 Config, Progress
     entities/   Person, Household, Tree, ResourceNode, Building, Animal,
-                Item/Inventory, ItemPile
+                Item/Inventory, ItemPile, Recipe, Inscription
     ai/         Brain (utility scorer), ActionCatalog (every verb, and when)
     social/     Events + norms, Memory, Relationships, SocialSystem, Authority,
                 Knowledge (what one person can tell about another)
@@ -45,16 +45,34 @@ seed are byte-identical after 500 steps.
 > invalidates every saved seed in the project.
 
 **Every proximity query goes through a spatial hash.** `peopleHash`,
-`nodeHash`, `treeHash`, `pileHash`, `shoreHash`, `animalHash`. The predecessor
+`nodeHash`, `treeHash`, `pileHash`, `shoreHash`, `animalHash`,
+`inscriptionHash`. The predecessor
 project scanned all entities for every "nearest X" question, which made
 per-step cost quadratic in population. `SpatialHash` is checked against brute
 force in the tests, because an index that returns a *different* answer than the
 naive scan is worse than no index at all.
 
 **Knowledge is held by people, not by a civilisation.** There is no global tech
-tree and no unlock. `Simulation.knownTech` is recomputed daily from who is
-alive, so a technology leaves the world when its last holder dies with nothing
-anywhere having to remember to take it away.
+tree and no unlock. `Simulation.knownTech` is recomputed daily from the
+**adults** alive, so a technology leaves the world when its last holder dies
+with nothing anywhere having to remember to take it away.
+
+> Adults, since phase 4, because children can now be taught and can pick things
+> up by watching. What a child holds is real and personal and they keep it — but
+> it is latent: they cannot pass it on, and the world does not count on it until
+> they are grown. Two concrete reasons beyond the story. The era fraction
+> divides holders by adults, so children in the numerator alone could put it
+> over one; and `knownTech` gates the build menu, so a band would otherwise
+> raise a granary because somebody's daughter watched a pot being fired.
+
+**Writing is the one exception, bought on purpose.** `Simulation.recordedTech`
+is what a society could *get back*; `knownTech` is what it can presently *do*.
+They come apart exactly when a band loses its last holder of something and still
+has the stone. It is not free: materials, a long job, stone that cannot be
+moved, later forms that perish — and **a record is inert to anyone who cannot
+read**, which is what makes literacy the thing worth having and the death of the
+last reader worse than the death of the last potter. See
+`entities/Inscription.ts`.
 
 > Every effect a technology has goes through `techPower(person, tech)` in
 > `knowledge/Tech.ts` rather than through `knownTech.has(...)` at the point of
@@ -94,9 +112,19 @@ several, which is where the web comes from. See `knowledge/Synthesis.ts`.
 > that every node has at least one route built out of things an ordinary day
 > supplies.
 
-**No technology ships inert.** A node may not enter `TECHS` without an entry in
-`TECH_EFFECTS` saying what it does and where that is read, and `tech.test.ts`
-fails the build otherwise. This is a reaction to a real pattern: `farming` gated
+**No technology ships inert, and neither does anything it gates.** A node may
+not enter `TECHS` without an entry in `TECH_EFFECTS` saying what it does and
+where that is read, and `tech.test.ts` fails the build otherwise.
+
+> The rule was not enough on its own. `pottery`'s declared effect was the
+> granary — and the granary asked for six `pottery`, which nothing in the world
+> could produce, while no band ever planned one in the first place. It passed
+> `techs-have-effects` and did nothing. Two more tests close that gap: every
+> material in `BUILDINGS` must be something the world can actually make, and
+> every recipe's output must be something that is either worth carrying or asked
+> for by a building. **`BandSystem.planBuildings` also asks what its own members
+> can raise** rather than choosing from hardcoded ids, which is what makes a
+> gated design something the simulation can reach and not only the player. This is a reaction to a real pattern: `farming` gated
 a whole era while doing nothing on the ground, `clothing` and `cordage` unlocked
 nothing, and the longhouse sat behind a `requiresTech` naming a technology that
 did not exist, which made it unbuildable for its entire existence without
@@ -128,6 +156,24 @@ chief had ordered onto a hut who worked through a winter until they died.
 `doHunt` calls it, and any new long action must too. `doSleep` is the one
 deliberate exception: it has its own `wakeReason`, because the work list's first
 clause is `isLaden` and a full pack is not a reason to stop sleeping.
+
+> **A long job must bank its progress somewhere.** The interruption check is
+> not the only ceiling: a novice picks up thirty-five points of thirst in four
+> hundred ticks, so any single uninterrupted pull longer than that restarts for
+> ever and never completes. Carving a stone is twelve hundred, and the first
+> version of it spent forty-five thousand ticks producing nothing. Work
+> accumulates on the record the way it accumulates on a building site. Shrinking
+> the job until it fits only moves the line.
+>
+> `doCraft` was found without an interruption check at all in pass A, having
+> gone the whole life of the project unreachable for 258 ticks at a time. It also showed the other half of
+> the rule: **an action that is one long pull rather than a run of short ones
+> needs the scorer to know where the line is.** Every other long action checks
+> *between* cycles, so it never begins on the wrong side of a threshold; a craft
+> checks *during*, so `Brain` would start one for somebody a point over the
+> limit, watch them stop on the next tick, and choose it again. The thresholds
+> live in `WORK_LIMITS` and are asked for through `pressedByNeed` rather than
+> copied, because two copies of them would drift.
 
 **If the simulation stops something, the UI says why.** `interruption()` and
 `abandon()` between them carry thirty-odd reasons; they reach the player through
@@ -230,7 +276,15 @@ npm run e2e            # Playwright                    ~21s
 
 `npm run sim:seeds` runs a scenario across ten seeds and reports mean survival —
 the only way to tell whether a change to the food economy helped, since one long
-run is chaotic.
+run is chaotic. Ten seeds cannot resolve a change of under about ten points; use
+`--seeds 20` for anything smaller.
+
+The `craft` scenario exists because knowledge takes years to work out, so no run
+in the suite ever made anything or reached a gated design, and every check about
+either reported n/a. Its founders start knowing three technologies through
+`population.startingTech`, which is empty in every world a player starts. Moving
+the starting conditions until a run can reach the thing under test is the same
+affordance `harsh-winter` uses when it shortens a season to six days.
 
 `npm run sim:check` is the one to reach for first: 38 named checks across five
 scenarios, and checks a scenario cannot exercise report **n/a** rather than

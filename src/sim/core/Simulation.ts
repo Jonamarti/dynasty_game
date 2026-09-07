@@ -48,6 +48,9 @@ import {
   eraFor, nutritionFactor, ERA_ORDER, TECHS, type EraDef, type Tech,
 } from '../knowledge/Tech.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
+import {
+  Inscription, INSCRIPTIONS, resetInscriptionIds, type InscriptionForm,
+} from '../entities/Inscription.ts';
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 
 /**
@@ -73,6 +76,13 @@ export interface StopNotice {
   action: string;
   /** The raw reason id; `stopReasonLabel` turns it into something readable. */
   reason: string;
+  /**
+   * Which recipe a `craft` was making, captured here because `finish` clears it.
+   *
+   * Without it the report would read "making something stopped", which is
+   * exactly the shrug this whole channel exists to replace.
+   */
+  recipe: string | null;
 }
 
 /**
@@ -119,10 +129,45 @@ export class Simulation {
   bands: Band[] = [];
 
   /**
-   * Knowledge the world has. Empty to begin with: the advanced designs in
-   * `BUILDINGS` are declared but unreachable until M4 makes discovery real.
+   * Knowledge the world has, counted from the adults alive right now.
+   *
+   * Not stored anywhere — recounted daily — which is the whole conceit: when
+   * the last person who can fire clay dies, pottery leaves the world and the
+   * granary stops being buildable, with no bookkeeping anywhere to say so.
    */
   readonly knownTech = new Set<string>();
+
+  /**
+   * Knowledge that is written down somewhere, whether or not anybody alive
+   * knows it.
+   *
+   * The deliberate exception, and the point of writing. `knownTech` is what a
+   * society can presently *do*; this is what it could get back. The two come
+   * apart exactly when a band loses its last holder of something and still has
+   * the stone — which is the dark age this milestone exists to make possible,
+   * and it is only recoverable by somebody who can read.
+   */
+  readonly recordedTech = new Set<string>();
+
+  /**
+   * What is written down **or being written down right now**.
+   *
+   * A separate set from `recordedTech`, and the distinction is load-bearing in
+   * both directions. This one is what a would-be carver asks, so that seven
+   * people do not spend a week each cutting the same word into seven different
+   * stones — which is exactly what happened before it existed, because the
+   * daily recount could not see a carving that was still under way.
+   *
+   * `recordedTech` stays strictly what is *legible*, because that is what the
+   * checks and the panel mean by "recoverable": a half-cut stone holds nothing
+   * and an abandoned one is a waste of flint, not a library.
+   */
+  readonly recordsInHand = new Set<string>();
+
+  inscriptions: Inscription[] = [];
+  readonly inscriptionsById = new Map<number, Inscription>();
+  /** Records are static once cut, so the index is rebuilt only on change. */
+  readonly inscriptionHash = new SpatialHash<Inscription>(8);
   /** The person the player currently inhabits. Null in headless runs. */
   player: Person | null = null;
   /**
@@ -189,6 +234,7 @@ export class Simulation {
   private readonly wildlifeSystem = new WildlifeSystem();
   private readonly knowledgeRng: RNG;
   private readonly wildlifeRng: RNG;
+  private readonly recordRng: RNG;
   /** Recomputed daily from who is alive. An era can be lost as well as gained. */
   era: EraDef = { id: 'stone', label: 'Stone Age', needs: [], heldBy: 0, description: '' };
   /** Living holders per tech, for the UI and the health report. */
@@ -227,6 +273,9 @@ export class Simulation {
     // slotting a new stream in above `knowledgeRng` would shift every draw in
     // every system below it and silently invalidate every saved seed.
     this.wildlifeRng = this.rng.fork();
+    // Appended after `wildlifeRng`, for the same reason. Records decay on their
+    // own stream so that adding one does not move the wildlife.
+    this.recordRng = this.rng.fork();
 
     resetPersonIds();
     resetResourceIds();
@@ -236,6 +285,7 @@ export class Simulation {
     resetHouseholdIds();
     resetTreeIds();
     resetPileIds();
+    resetInscriptionIds();
     resetAnimalIds();
 
     // Births need to construct people, but LifeSystem cannot import the Person
@@ -388,6 +438,15 @@ export class Simulation {
       // an in-game marriage, birth or adoption would.
       const founded = foundBand(band, peoplePerBand, this.foundingContext(rng));
       for (const person of founded.people) {
+        // Knowledge the scenario says the founders already hold. Adults only:
+        // a child holding a technology would be able to teach it, and children
+        // are excluded from the knowledge system on purpose. Empty for every
+        // world a player starts — see `PopulationConfig.startingTech`.
+        if (!person.isChild) {
+          for (const tech of this.config.population.startingTech) {
+            person.knownTech.add(tech as Tech);
+          }
+        }
         this.people.push(person);
         this.peopleById.set(person.id, person);
       }
@@ -594,6 +653,12 @@ export class Simulation {
     const standing = this.standing(leader, subordinate, action);
     if (this.commandRng.next() >= standing.chance) {
       telemetry.count('order_refused');
+      // Why they refused, in the words `standingOver` already wrote for exactly
+      // this purpose. It was being computed one line above and thrown away, so
+      // a social refusal reached the player as a bare "X refuses" — while the
+      // Ties tab showed this same sentence right up until the moment it
+      // mattered. The standing rule is that a refusal says why.
+      this.lastRefusal = standing.because;
       subordinate.chronicle.push({
         tick: this.time.tick,
         ageDays: subordinate.age,
@@ -657,7 +722,23 @@ export class Simulation {
    */
   private refreshEra(): void {
     const living = this.livingPeople();
-    const holders = countHolders(living);
+    // Counted from **adults**, not from everybody alive.
+    //
+    // Since phase 4 a child can be taught and can pick things up by watching,
+    // and their knowledge is real — they keep it, and it becomes the world's
+    // the day they grow up. But it is latent: they cannot pass it on, and what
+    // this count answers is what a society can presently *do*. Two concrete
+    // reasons beyond the story. The era fraction divides holders by adults, so
+    // counting children in the numerator alone could put it over one and
+    // advance an age on a cohort of six-year-olds. And `knownTech` is what
+    // gates the build menu: a band should not be able to raise a granary
+    // because somebody's daughter once watched a pot being fired.
+    //
+    // The consequence is deliberate and is one of the better stories this model
+    // tells: a technology whose last adult holder dies leaves the world, and
+    // comes back years later when the child who was watching is grown.
+    const adultsAlive = living.filter(p => !p.isChild);
+    const holders = countHolders(adultsAlive);
     this.techHolders.clear();
     for (const [tech, count] of holders) this.techHolders.set(tech, count);
 
@@ -666,7 +747,7 @@ export class Simulation {
       if ((holders.get(tech) ?? 0) > 0) this.knownTech.add(tech);
     }
 
-    const adults = living.filter(p => !p.isChild).length;
+    const adults = adultsAlive.length;
     const era = eraFor(holders, adults);
     if (era.id !== this.era.id) {
       telemetry.count(
@@ -861,7 +942,9 @@ export class Simulation {
 
   private noteStop(person: Person, action: string, reason: string): void {
     if (person.order === null) return;
-    this.interruptions.push({ personId: person.id, action, reason });
+    this.interruptions.push({
+      personId: person.id, action, reason, recipe: person.targetRecipe,
+    });
     if (this.interruptions.length > this.interruptionCap) this.interruptions.shift();
 
     // An order broken off for a need is set aside, not thrown away. Called
@@ -877,6 +960,8 @@ export class Simulation {
       buildingId: person.targetBuildingId,
       personId: person.targetPersonId,
       animalId: person.targetAnimalId,
+      recipe: person.targetRecipe,
+      inscriptionId: person.targetInscriptionId,
       x: person.targetX,
       y: person.targetY,
     };
@@ -915,6 +1000,8 @@ export class Simulation {
       buildingId: pending.buildingId ?? undefined,
       personId: pending.personId ?? undefined,
       animalId: pending.animalId ?? undefined,
+      recipeId: pending.recipe ?? undefined,
+      inscriptionId: pending.inscriptionId ?? undefined,
       x: pending.nodeId === null && pending.treeId === null &&
         pending.buildingId === null && pending.personId === null &&
         pending.animalId === null ? pending.x ?? undefined : undefined,
@@ -966,6 +1053,10 @@ export class Simulation {
       x?: number; y?: number;
       nodeId?: number; personId?: number; buildingId?: number; treeId?: number;
       animalId?: number;
+      /** Which entry of `RECIPES` a `craft` is for. */
+      recipeId?: string;
+      /** Which record a `read` or a half-finished `inscribe` is aimed at. */
+      inscriptionId?: number;
     } = {}
   ): boolean {
     if (!person.alive) return false;
@@ -977,6 +1068,19 @@ export class Simulation {
     person.clearTarget();
     person.action = action;
     person.order = action;
+    // Set before the target branches below, every one of which returns: a craft
+    // carries no place and would otherwise fall out of the bottom having lost
+    // the only thing that says what is being made.
+    if (target.recipeId !== undefined) person.targetRecipe = target.recipeId;
+
+    if (target.inscriptionId !== undefined) {
+      const record = this.inscriptionsById.get(target.inscriptionId);
+      if (!record) return this.cancelOrder(person, 'that record is gone');
+      person.targetInscriptionId = record.id;
+      person.targetX = record.x;
+      person.targetY = record.y;
+      return true;
+    }
 
     if (target.personId !== undefined) {
       const other = this.peopleById.get(target.personId);
@@ -1059,6 +1163,104 @@ export class Simulation {
     person.action = 'idle';
     this.lastRefusal = reason;
     return false;
+  }
+
+  // -------------------------------------------------------------------------
+  // Records
+  // -------------------------------------------------------------------------
+
+  /**
+   * Cuts a new record at a point, and returns it.
+   *
+   * No placement test beyond the tile being walkable. A carved stone is not a
+   * structure: two of them can sit on the same ground, and a record under a
+   * building is a record in a library, which is exactly what a library is for.
+   */
+  placeInscription(
+    form: InscriptionForm,
+    x: number,
+    y: number,
+    author: Person
+  ): Inscription | null {
+    const def = INSCRIPTIONS[form];
+    if (!def) return null;
+    const tx = Math.round(x);
+    const ty = Math.round(y);
+    if (!this.world.isWalkable(tx, ty)) return null;
+
+    const made = new Inscription(def, tx, ty, author, this.time.tick);
+    this.inscriptions.push(made);
+    this.inscriptionsById.set(made.id, made);
+    this.inscriptionHash.rebuild(this.inscriptions);
+    telemetry.count('inscribed_' + form);
+    return made;
+  }
+
+  /**
+   * Whether a point is inside a finished library.
+   *
+   * A linear scan over the buildings, like `buildingAt` and
+   * `NeedsSystem.shelterAt` beside it, and correct while a camp holds a handful
+   * of structures. It is called once per `ponder`, which is a hundred and fifty
+   * ticks apart, so it is nowhere near the hot path — `optimizations.md`
+   * records the general case if settlements ever grow into towns.
+   */
+  inLibrary(x: number, y: number): boolean {
+    for (const building of this.buildings) {
+      if (!building.complete || building.def.id !== 'library') continue;
+      if (building.contains(x, y, 1.5)) return true;
+    }
+    return false;
+  }
+
+  /**
+   * The nearest record within reach of a point, or null.
+   *
+   * `filter` is not decoration: records stack, because a carving is a place
+   * rather than a structure and a library is a heap of them on one floor. A
+   * carver standing over a finished stone and a half-cut one needs the half-cut
+   * one, and asking for "the nearest" got them whichever the index returned
+   * first — which stranded every second carving for ever.
+   */
+  inscriptionAt(
+    x: number,
+    y: number,
+    radius = 1.6,
+    filter?: (record: Inscription) => boolean
+  ): Inscription | null {
+    return this.inscriptionHash.findNearest(x, y, radius, filter);
+  }
+
+  private removeInscription(record: Inscription): void {
+    this.inscriptionsById.delete(record.id);
+    this.inscriptions = this.inscriptions.filter(i => i.id !== record.id);
+    this.inscriptionHash.rebuild(this.inscriptions);
+    telemetry.count('record_lost');
+  }
+
+  /**
+   * Records crumble, and what is still legible is recounted.
+   *
+   * Once a day rather than per tick, like every other slow process here. The
+   * recount is derived rather than maintained for the same reason `knownTech`
+   * is: a record that is lost takes what it held out of the world with nothing
+   * anywhere having to remember to do it.
+   */
+  private refreshRecords(): void {
+    for (const record of [...this.inscriptions]) {
+      if (record.def.decayPerDay <= 0) continue;
+      if (this.recordRng.chance(record.def.decayPerDay)) this.removeInscription(record);
+    }
+
+    this.recordedTech.clear();
+    this.recordsInHand.clear();
+    for (const record of this.inscriptions) {
+      for (const tech of record.techs) {
+        this.recordedTech.add(tech);
+        this.recordsInHand.add(tech);
+      }
+      if (record.pending !== null) this.recordsInHand.add(record.pending);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -1248,6 +1450,7 @@ export class Simulation {
         ticksPerDay: this.config.time.ticksPerDay,
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
       });
+      this.refreshRecords();
       this.refreshEra();
 
       this.lifeSystem.daily(this.people, {
@@ -1272,6 +1475,8 @@ export class Simulation {
       buildings: this.buildings,
       treeHash: this.treeHash,
       animalHash: this.animalHash,
+      inscriptionHash: this.inscriptionHash,
+      recorded: this.recordsInHand,
       sightRadius: this.config.sightRadius,
     };
     const actionCtx = {
@@ -1295,6 +1500,15 @@ export class Simulation {
       needs: this.config.needs,
       dropAt: (x: number, y: number, itemId: string, count: number) =>
         this.dropAt(x, y, itemId, count),
+      recorded: this.recordsInHand,
+      inscriptionsById: this.inscriptionsById,
+      inscriptionAt: (x: number, y: number) => this.inscriptionAt(x, y),
+      unfinishedAt: (x: number, y: number) =>
+        this.inscriptionAt(x, y, 1.6, record => record.unfinished),
+      claimRecord: (tech: string) => this.recordsInHand.add(tech),
+      inLibrary: (x: number, y: number) => this.inLibrary(x, y),
+      inscribe: (form: InscriptionForm, x: number, y: number, author: Person) =>
+        this.placeInscription(form, x, y, author),
       onStopped: (person: Person, action: string, reason: string) =>
         this.noteStop(person, action, reason),
       onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') =>

@@ -188,6 +188,8 @@ const SAW_WORDS: Record<string, string> = {
   cold: 'given up on a day of work for the cold',
   hungry: 'broken off work to eat', thirsty: 'broken off work to drink',
   tree_bare: 'stripped a tree bare', under_attack: 'been set upon at work',
+  store_empty: 'gone to the store and found it bare',
+  store_full: 'had nowhere left to put a surplus',
 };
 
 // ---------------------------------------------------------------------------

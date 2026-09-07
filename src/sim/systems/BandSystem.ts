@@ -18,7 +18,9 @@
  */
 import type { Person } from '../entities/Person.ts';
 import type { Band } from '../core/Simulation.ts';
-import type { Building } from '../entities/Building.ts';
+import type { Building, BuildingDef } from '../entities/Building.ts';
+import { BUILDINGS } from '../entities/Building.ts';
+import { techPower, type Tech } from '../knowledge/Tech.ts';
 import type { RelationshipGraph } from './../social/Relationships.ts';
 import type { RNG } from '../core/RNG.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -191,17 +193,61 @@ export class BandSystem {
     const used = stores.reduce((sum, b) => sum + b.store.total, 0);
     const plannedStores = live.filter(b => !b.complete && b.def.storage >= 100).length;
 
+    // What this band could actually raise.
+    //
+    // Asked of the band's own members rather than of the world's `knownTech`,
+    // because knowledge is held by people: a granary is something *this* band
+    // can build when *this* band has somebody who can fire clay, and it stops
+    // being one when that person dies. The whole tech pillar would be a lie if
+    // a band could build on the strength of a potter three valleys away.
+    //
+    // Before this, the three ids below were written out by hand, and the effect
+    // was that **no band ever planned a granary or a longhouse in the game's
+    // history**. Both sat in the build menu, correctly gated behind a real
+    // technology, reachable by the player and by nobody else — which made
+    // `pottery` a technology whose only declared effect never happened.
+    // The cast is safe because `tech.test.ts` fails the build if any
+    // `requiresTech` names something that is not a member of `TECHS` — which is
+    // the check that was written after the longhouse spent its whole existence
+    // gated behind a technology that did not exist.
+    const buildable = Object.values(BUILDINGS).filter(def =>
+      def.requiresTech === null ||
+      members.some(m => techPower(m, def.requiresTech as Tech) > 0));
+
     let wanted: string | null = null;
     if (roofArea < members.length) {
       // A mud hut is warmer and holds goods, but it wants felled timber and the
       // better part of a season. A band that is *badly* short of roof — which
       // is what a population growing faster than it builds looks like — throws
-      // up a windbreak instead: a quarter of the work, sticks and thatch only,
-      // and the difference between a hard winter and twenty funerals.
-      wanted = roofArea * 2 < members.length ? 'windbreak' : 'mud_hut';
+      // up the cheapest roof there is instead: a quarter of the work, sticks
+      // and thatch only, and the difference between a hard winter and twenty
+      // funerals.
+      const shelters = buildable.filter(def => def.shelter > 0.3);
+      if (roofArea * 2 < members.length) {
+        wanted = this.cheapest(shelters)?.id ?? null;
+      } else {
+        // The best roof they know how to raise — but nothing grander than a mud
+        // hut until they have finished one, because a band whose first ever
+        // structure is an eighteen-hundred-tick longhouse spends its first
+        // winter under an unfinished frame.
+        const proven = live.some(b => b.complete && b.def.shelter > 0.3);
+        const affordable = shelters.filter(def =>
+          proven || def.workTicks <= BUILDINGS.mud_hut!.workTicks);
+        wanted = this.bestBy(affordable, def => def.shelter)?.id ?? null;
+      }
     } else if (plannedStores === 0) {
-      if (stores.length === 0) wanted = 'storage_pit';
-      else if (capacity > 0 && used / capacity > STORE_PRESSURE) wanted = 'storage_pit';
+      // `storage >= 100` skips the stockpile, which is bare ground and costs
+      // nothing to place; a band that "built" one would never plan a real store.
+      const granaries = buildable.filter(def => def.storage >= 100 && def.workTicks > 0);
+      if (stores.length === 0) {
+        // The first store is the cheap one, always. Being told to keep a season
+        // of food in a pit you have not dug yet is worse than the pit.
+        wanted = this.cheapest(granaries)?.id ?? null;
+      } else if (capacity > 0 && used / capacity > STORE_PRESSURE) {
+        // Already storing, and running out of room: now the big one is worth
+        // the season it costs.
+        wanted = this.bestBy(granaries, def => def.storage)?.id ?? null;
+      }
     }
     if (!wanted) return;
 
@@ -214,6 +260,34 @@ export class BandSystem {
         return;
       }
     }
+  }
+
+  /** The least work of a set of designs. Ties go to the first, which is stable. */
+  private cheapest(designs: BuildingDef[]): BuildingDef | null {
+    return this.bestBy(designs, def => -def.workTicks);
+  }
+
+  /**
+   * The highest-ranked design, or null for an empty set.
+   *
+   * Deliberately free of any random draw: the planner runs inside the daily
+   * pass and a tie broken by an RNG here would shift every subsequent draw in
+   * the world, which is the seed contract `architecture.md` is built on.
+   */
+  private bestBy(
+    designs: BuildingDef[],
+    rank: (def: BuildingDef) => number
+  ): BuildingDef | null {
+    let best: BuildingDef | null = null;
+    let bestRank = -Infinity;
+    for (const def of designs) {
+      const value = rank(def);
+      if (value > bestRank) {
+        bestRank = value;
+        best = def;
+      }
+    }
+    return best;
   }
 
   /**

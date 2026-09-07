@@ -6,6 +6,361 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-07 — M6b phase 4: how knowledge travels
+
+Four channels now, deliberately different in cost, reach and reliability. Two of
+them did not exist yesterday: a parent could not teach their own child anything,
+and nothing at all survived the death of the person who knew it.
+
+### 4a. Children can be taught, and can watch
+
+`KnowledgeSystem.daily` skipped children wholesale and `Brain`'s pupil filter
+dropped them, so **every technology in the world had to be re-derived from
+nothing by each generation**. A comment above `daily` already claimed children
+were skipped "for conception only"; they were not, and now they are.
+
+- Children run `tryObserve` at `CHILD_OBSERVATION_CHANCE`, nearly three times an
+  adult's. *Reason:* a child spends its whole day underfoot while the people
+  around it work, and picking things up by watching is most of what childhood
+  is; an adult watching somebody else work is an adult not doing their own.
+- `KnowledgeSystem.teach` refuses a child *teacher*. What a child holds is real
+  and personal, held at level 0, and goes no further until they are grown.
+- A new **`teach_child`** scorer term, rewritten to `teach` in `Brain.setup` —
+  the idiom `feed` and `gather_for_site` already use. *Reason it is its own term
+  and not a wider filter on the existing one:* an adult pupil is chosen for how
+  much they lack and how well you get on, a child is chosen because it is
+  *yours*. Sharing a scorer would have had every elder in the band teaching the
+  same brightest child and nobody teaching their own.
+
+**`refreshEra` counts adults only.** Two reasons beyond the story. The era
+fraction divides holders by adults, so counting children in the numerator alone
+could put it over one and advance an age on a cohort of six-year-olds; and
+`knownTech` gates the build menu, so a band would have been able to raise a
+granary because somebody's daughter once watched a pot being fired. The
+consequence is deliberate and is one of the better stories the model tells: a
+technology whose last adult holder dies leaves the world and comes back years
+later when the child who was watching grows up.
+
+**Fixed on the way past:** neither `Brain` nor `ActionCatalog` checked whether a
+pupil had the *prerequisites* for anything the teacher knew, though
+`KnowledgeSystem.teach` has always dropped those. The scorer therefore sent
+people to give lessons that could not land, and the menu offered a Teach that
+silently did nothing. Rare while every pupil was an adult; the common case the
+moment children became pupils.
+
+### 4b. Writing
+
+New `src/sim/entities/Inscription.ts`, `Simulation.inscriptions` with its own
+spatial hash, and a `recordRng` **appended after `wildlifeRng`** — never
+inserted, because the fork order is the seed contract.
+
+Four nodes, each with the code that makes it real:
+
+| node | requires | what it does |
+|---|---|---|
+| `marking` | cordage | tallies; `tallyFactor` multiplies an argument's chance of getting somewhere |
+| `writing` | marking + stoneworking | the `inscribe` and `read` actions exist at all |
+| `clay_tablet` | writing + pottery | a second form: cheaper, holds two, and perishes |
+| `library` | writing + carpentry | a building; `LIBRARY_INSIGHT` makes thinking go better under its roof |
+
+**Reading requires `writing`, and that is the point of the whole feature.** A
+record grants nothing to somebody who cannot read, so a band can sit on a
+library holding the answer to its own dark age and starve beside it. It is what
+makes writing an exception bought on purpose rather than a free second copy of
+`knownTech` — and it is why the death of the last *reader* is a different and
+worse event than the death of the last potter. The rule is enforced in the
+action, in the radial menu's greyed-out reason, in the inspector (which counts
+the marks rather than naming them), and in the entity picker.
+
+`Simulation.recordedTech` sits beside `knownTech`: the first is what a society
+could get back, the second what it can presently do. They come apart exactly
+when a band loses its last holder of something and still has the stone.
+
+### Three defects found while building it, all of the same family
+
+- **A long job that loses its progress can never be finished.** Written as one
+  uninterrupted pull, a stone took a novice twelve hundred ticks — and a novice
+  picks up thirty-five points of thirst in four hundred, so the interruption
+  check stopped them every time and the action restarted from nothing. A run
+  spent **forty-five thousand ticks carving and produced not one record**: from
+  outside, people standing in a field. Lowering the number only moves the line,
+  so work banks on the record the way it banks on a building site. The escape
+  hatch for anything genuinely long is to bank the progress somewhere, not to
+  shrink the job until it fits; `tech.test.ts` now says so in both directions.
+- **A carver abandoned their own half-cut stone on the tick after starting it.**
+  A technology is claimed the moment the first mark is made, so by the second
+  tick "what is worth writing down" no longer included the thing they were in
+  the middle of writing down. The stone under their feet is checked *before*
+  that question is asked.
+- **Records stack, and "the nearest" is not good enough.** A carving is a place
+  rather than a structure — a library is a heap of them on one floor — so a
+  carver standing over a finished stone and a half-cut one got whichever the
+  index returned first, which stranded every second carving for ever.
+  `inscriptionAt` takes a filter now.
+
+And one waste rather than a defect: seven separate stones all saying "writing"
+while half of what anybody knew went unrecorded, because the daily recount could
+not see a carving still under way. `recordsInHand` is claimed eagerly and is
+kept distinct from `recordedTech`, which stays strictly what is *legible*.
+
+### A scenario in which anything is written
+
+`scribes`: two bands whose founders already know cordage, hafting, stoneworking,
+marking and writing. Writing sits behind marking and stoneworking, which nothing
+in the suite reaches from nothing, so without it every check about records would
+report n/a for ever — the same reasoning that produced `craft` in the last pass.
+
+**Reading is deliberately not asserted in `simcheck`, and that is a finding
+rather than an omission.** A living teacher is quicker to reach than a stone
+across the valley, so reading fires when the chain breaks: when the last holder
+of something is dead, or when a record carries something newly worked out. A
+fifty-eight-day run has neither. A twenty-four-thousand-step run does — it
+produced `read_firemaking` and `recovered_firemaking` — but a run that long
+makes `people-survive` ask a different question, and an *illiterate* control at
+the same length survived worse (6/24 against 10/24), so that is the run length
+and not the feature. The claim that a record outlives its author, and grants
+nothing to somebody who cannot read, is asserted deterministically in
+`transmission.test.ts` instead.
+
+### `prototypes-can-fail` was deleted, not disabled
+
+It asserted that both trial outcomes occur in a run. A two-year run produces
+about eight trials at roughly a one-in-three failure rate, so zero failures is
+ordinary chance — and the century scenario duly reported "8 built, 1 failed" and
+then "8 built, 0 failed" across a change that never went near the roll. Raising
+the minimum sample does not save it: the number of trials a run yields is
+smaller than a statistical claim of this kind needs, so every threshold is
+either flaky or permanently n/a. Both outcomes are asserted deterministically in
+`research.test.ts` now, over twelve hopeless prototypers and twelve able ones.
+The comment where it used to live says all this, because the obvious thing for a
+later reader to do is put it back.
+
+Two more gates were corrected rather than tuned, both exposed by the new
+scenarios sitting between twelve days and two years where nothing had sat
+before: `knowledge-is-found` and `ideas-become-tech` shared a thirty-day gate
+with *conception*, which happens in an afternoon, while proving a design is
+measured in seasons. Both want a year now. `knowledge-is-passed-on` keeps the
+short gate, because handing over something you already know takes ninety ticks.
+
+### Verification
+
+`children-are-taught` reports **17 of 35 lessons went to a child, 16 of those
+from a parent** on the century run, and fails on the build without phase 4a with
+*"0 of 18 lessons went to a child"*. `records-are-cut` reports seven distinct
+technologies on seven stones in `scribes`. New: `transmission.test.ts` (ten
+assertions covering all four channels), an e2e spec that fails if the panel's
+literacy gate is removed, and the tech web's node count is now read from `TECHS`
+rather than written as a literal that any new node would break.
+
+**Food economy: measurably better, and the cause is named but not confirmed.**
+Twenty seeds, 65.6% mean survival before against **72.7%** after. The plausible
+mechanism is that children now arrive at adulthood already holding `plant_lore`
+and `cooking` — which are `forageYieldFactor` and `nutritionFactor`, the two
+technologies that feed people — where before every generation started from
+nothing. That is a real directional story rather than a coefficient, but it has
+not been isolated, and this project has been wrong about a cause it did not
+measure before.
+
+---
+
+## 2026-09-06 — Pass A: content that can be reached, and movement you can watch
+
+Four defects and two of the owner's eight requests, lifted out of the phases
+they were scheduled into because they are cheap, visible in the first minute of
+a game, and two of them break rules `AGENTS.md` calls inviolable. `m6b_plan.md`
+phases 5 and 6 lose their "fix on the way past" notes to this entry; what
+remains of those phases is unchanged.
+
+### `doCraft` was the one long action nothing could interrupt
+
+A novice's `skillFactor` is 0.35, so a hand axe is `ceil(90 / 0.35)` = **258
+ticks** — more than a whole in-game day at `ticksPerDay` 240. For every one of
+them the knapper was `committed`, which stops the brain re-planning, and the
+action had no `interruption()` call inside it. Nothing could reach them: not
+thirst, not hunger, not cold, not being attacked. At `thirstRate` 0.085 that is
+twenty-two points of thirst in one sitting, against a threshold of thirty-five.
+
+*Reason:* it is exactly the omission `AGENTS.md` blames for the two worst bugs
+in this project's history, sitting in the one action nobody had looked at. A
+second consequence was invisible until it was fixed: with no `stop()` the craft
+never reached the player's floater and never set the order aside for `resume`,
+so the whole of M6c was bypassed here.
+
+**`Brain` now also refuses to *start* one while a need is already over the
+line.** The interruption check alone produced 786 abandoned attempts against 10
+finished items: somebody one point past the thirst threshold armed a
+two-hundred-tick timer, was stopped on the next tick, re-scored, and chose the
+same thing again. The thresholds moved into `WORK_LIMITS` and `pressedByNeed` in
+`ActionSystem` and are asked for rather than copied — *reason:* two copies of
+those numbers would drift, and the drift would resurface as that same thrash
+months later with nothing to point at. 786 became 14.
+
+### The granary: a chain broken in four places, not a bad number
+
+`BUILDINGS.granary` asks for six `pottery`, and `pottery` was the only id in
+`ITEMS` with no source anywhere — no resource node, no tree, no kill, no recipe.
+That was only the first link:
+
+- **Nothing produced it.** New `src/sim/entities/Recipe.ts`: a `RECIPES` table
+  shaped like `BuildingDef.materials`, holding the hand axe (moved across
+  without changing a number) and the pot. Two entries and no more — *reason:* a
+  recipe whose output nothing consumes is the same defect with the arrow
+  reversed, and the new `recipes` tests assert every output is either worth
+  carrying for its own sake or named by a building.
+- **`doCraft` was monolithic.** The axe's predicate was written out three times
+  — action, catalogue, scorer — plus a fourth copy of its name in the floater
+  labels. All four read the table now, and `Person.targetRecipe` carries which
+  one through `order`, `resume` and the stop notice.
+- **The scorer could not fetch it.** `Brain`'s `kindFor` maps a material to the
+  node it is dug out of and had no entry for `pottery`, so `wantedKind` came out
+  undefined and `gather_for_site` was never scored: the site sat six pots short
+  for ever. It now looks for a recipe, fetches the *ingredients* instead, and
+  the craft scorer turns them into the thing once they are in the pack.
+- **No band ever planned one.** `BandSystem.planBuildings` chose between three
+  ids written out by hand — `windbreak`, `mud_hut`, `storage_pit` — and never
+  consulted the designs available to it. **The granary and the longhouse were
+  therefore structures no band would build in the entire history of the game**:
+  correctly gated behind a real technology, listed in the player's build menu,
+  and unreachable by the world that was supposed to grow into them. The planner
+  now picks the best design its own members can actually raise.
+
+*Reason for asking the band's own members rather than `Simulation.knownTech`:*
+knowledge is held by people. A granary is something *this* band can build when
+*this* band has somebody who can fire clay, and it stops being one when that
+person dies. Building on the strength of a potter three valleys away would make
+the knowledge pillar a lie.
+
+Two deliberate conservatisms in the new planner: the first store is always the
+cheap one, and nothing grander than a mud hut is planned until the band has
+finished one. *Reason:* a granary is 900 ticks and 64 units of material against
+the storage pit's 180 and 10, and a band whose first structure is an
+eighteen-hundred-tick longhouse spends its first winter under a frame.
+
+### A refusal by authority threw away the reason it had just worked out
+
+`Simulation.command` computes `standing` on one line and fails the roll on the
+next, and never touched `lastRefusal` — while `main.ts` was already waiting to
+concatenate it, and the Ties tab was already printing that very sentence right
+up until the moment it mattered. The player read a bare "Aldric refuses".
+
+Also in `Authority.ts`: `ORDER_COST` gained `craft`, `hunt`, `sleep`, `teach`,
+`ponder`, `discuss`, `prototype` and `flee`, every one of which had been falling
+through to the 0.3 default; and `willObey` was deleted, having been exported and
+never once called.
+
+### O6 — movement is continuous
+
+The simulation runs at five steps a second and the renderer at sixty, and every
+drawable read its position straight off the simulation: each position was
+painted for **twelve identical frames** and then jumped about ten pixels. The
+`accumulator` in `main.ts` was already carrying the missing fraction of a step
+and discarding it.
+
+New `src/render/Interpolator.ts`, purely presentational and never constructed by
+the headless harness. What is not standard about it is the **window**.
+`WildlifeSystem` moves an animal one tick in five at five times the speed, so at
+`tickRate` 5 an animal moves once per real second; interpolating that against
+the preceding step would slide it across in a fifth of a second and hold it
+still for four fifths — a 1 Hz twitch, and visibly worse than not interpolating
+at all. Each entity therefore carries the span its current move was made over,
+measured by watching when its position actually changes. A person gets 1 and the
+textbook formula; an animal gets 5 and glides; one rule keeps covering both if
+either stagger is ever retuned.
+
+Three edge cases are blinded on purpose: `alpha` is forced to 1 while paused and
+when a backlog is dropped — a zeroed accumulator would rewind the world by a
+whole step at the exact moment it is already struggling — and clamped when the
+speed slider changes `stepDuration` underneath an accumulator filled at the old
+rate. Anything the interpolator has never seen is drawn where it says it is,
+which is the right answer for the frame somebody is born on, and tracks are
+swept so a long run does not remember everyone who ever lived.
+
+**The camera follows the drawn player, not the stepped one** — otherwise the
+world slides smoothly beneath a character who is still jumping, which is worse
+than either half alone. `Camera.follow` also stopped being framerate-dependent
+while it was open: it applied a flat 0.12 *per frame*, so the same code chased
+at half the speed on a 30fps machine and at twice on a 120Hz display.
+
+Measured beforehand at about 60 FPS in headless Chromium, which is what said the
+renderer was never the constraint. `optimizations.md` has said so in as many
+words since 2026-09-02; the frames were never the problem, the missing fraction
+of a step was.
+
+`Config.maxTicksPerFrame` was declared, never read, and written out as an 8 in
+`main.ts` — the same duplication the comment above `tickRate` claims to have
+fixed. Closed while the loop was open.
+
+**A defect found by its own gate.** `Person` and `Animal` number themselves from
+separate counters, so person 5 and animal 5 both exist and are different
+creatures. The first interpolator kept one map keyed on the bare id, so the two
+overwrote each other and a person was drawn sliding to wherever an unrelated
+deer stood — sixty-five tiles in the run that caught it. Tracks are keyed by
+kind as well now, and the e2e spec that found it asserts the width of the move
+being drawn is more than nothing and less than anybody covers in one step. It
+fails with *"the player was drawn at one fixed point all second"* on a build
+without interpolation, which is what makes it a gate rather than a decoration.
+
+### O7 — clicking one thing still offers the ground
+
+The chooser needed **two** stacked candidates, and the ground was only ever
+added as an entry once a stack had already opened it. Clicking somebody standing
+on the tile you meant to walk to gave you the person and no way at all to say
+otherwise — and standing on the thing you are working on is the ordinary state
+of affairs in this game, not an edge case. It opens for any real candidate now,
+with one exception: your own character alone under the cursor, because a
+two-entry menu in front of the commonest click in the game is worse than the
+problem it solves.
+
+Two e2e specs were updated rather than the game: both right-clicked a lone
+person and expected the radial menu, which is precisely the premise this
+changes.
+
+### A scenario in which anything is made
+
+`craft`: two bands whose founders already know firemaking, hafting and pottery,
+through a new `population.startingTech` that is empty in every world a player
+will ever start.
+
+*Reason:* knowledge takes years to work out from nothing, so **no run in the
+suite had ever crafted anything or reached a gated design**, and any check about
+either would have reported n/a for ever. A check that detects nothing is worse
+than no check, and this is a large part of how the granary stayed unbuildable
+without anything noticing. It is the affordance `harsh-winter` already uses when
+it shortens a season to six days: move the starting conditions until a run can
+reach the thing under test, rather than weakening the test until it passes.
+
+### Verification
+
+Both new checks were measured against the build without the fix, as required:
+
+| check | on the broken build |
+|---|---|
+| `crafting-is-interruptible` | *"17 things made, 0 attempts broken off for a need"* |
+| `pots-reach-a-granary` | *"3 granaries marked out, 0 pots made, 0 finished"* — the pre-fix world exactly |
+
+New unit tests: `buildings-ask-for-things-that-exist`, which reports *"granary
+asks for pottery, which nothing in the world produces"* against the old table;
+the recipe-table invariants; `interpolator.test.ts`; an interrupted craft that
+reports its reason and is picked back up; and a failed authority roll that
+carries `standing.because`. Two new e2e specs for O7, one of which fails if the
+self-click exception is removed.
+
+**Two checks were corrected rather than tuned**, both exposed by the new
+scenario and both cases of a check asking a question its run could not answer.
+`techs-are-refined` shared a thirty-day gate with the rest of the research
+lifecycle, which covers proving a design and comes nowhere near improving one,
+and wants a year now. `prototypes-can-fail` demanded both outcomes from as few
+as one trial, which is a coin toss rather than a measurement, and wants four —
+the same reasoning `hunts-succeed-and-fail` already applies to strikes.
+
+**Food economy: no resolvable effect.** Twenty seeds, 67.1% mean survival before
+against 65.6% after. That sits well inside the band this project has already
+measured as noise: twenty seeds separated phase 1 by 65.7 against 64.6, and ten
+seeds once put a strictly better change nine points worse. Recorded as *not
+resolvable*, which is not the same as unchanged.
+
+---
+
 ## 2026-09-06 — M6b phase 3: the tech web
 
 The visualiser for phase 2, and equally the instrument for telling whether

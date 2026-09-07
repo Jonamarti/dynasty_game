@@ -7,6 +7,9 @@
  */
 export const TILE = 16;
 
+/** Fraction of the remaining distance the view closes each 1/60th of a second. */
+const FOLLOW_SMOOTHING = 0.12;
+
 export class Camera {
   /** Centre of the view, in world tiles. */
   x = 0;
@@ -36,10 +39,21 @@ export class Camera {
     return TILE * this.zoom;
   }
 
-  follow(targetX: number, targetY: number, smoothing = 0.12): void {
+  /**
+   * Drifts the view towards a target.
+   *
+   * `delta` is seconds of real time, and it is not decoration. The lerp used to
+   * apply a flat 0.12 *per frame*, so the camera chased at half the speed on a
+   * 30fps machine as on a 60fps one and at twice the speed on a 120Hz display:
+   * the same code produced three different games. Raising the retention to the
+   * power of the elapsed time makes the pursuit take the same wall-clock time
+   * everywhere, and reduces to the old constant exactly at 60fps.
+   */
+  follow(targetX: number, targetY: number, delta: number): void {
     if (!this.following) return;
-    this.x += (targetX - this.x) * smoothing;
-    this.y += (targetY - this.y) * smoothing;
+    const t = 1 - Math.pow(1 - FOLLOW_SMOOTHING, Math.max(0, delta) * 60);
+    this.x += (targetX - this.x) * t;
+    this.y += (targetY - this.y) * t;
   }
 
   /** Moves the view by a screen-pixel delta, releasing the follow. */

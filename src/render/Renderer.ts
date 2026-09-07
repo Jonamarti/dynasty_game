@@ -10,6 +10,8 @@
  * Everything here reads the simulation and never writes to it.
  */
 import type { Simulation } from '../sim/core/Simulation.ts';
+import { Interpolator, type Placed } from './Interpolator.ts';
+import type { Inscription } from '../sim/entities/Inscription.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import type { World } from '../sim/core/World.ts';
 import { BIOMES, type Biome } from '../sim/core/World.ts';
@@ -73,6 +75,7 @@ export interface Highlight {
   buildingId?: number;
   treeId?: number;
   pileId?: number;
+  inscriptionId?: number;
   animalId?: number;
 }
 
@@ -90,6 +93,15 @@ export class Renderer {
    * the thing on the map.
    */
   hoverRing: { x: number; y: number; radius: number } | null = null;
+
+  /**
+   * Where moving things were on the previous step, so they can be drawn between
+   * steps instead of teleporting once every `1 / tickRate` seconds.
+   *
+   * Owned by the renderer rather than by the loop because it is presentation
+   * and nothing else — see the header of `Interpolator.ts`.
+   */
+  readonly interpolator = new Interpolator();
 
   private ctx: CanvasRenderingContext2D;
   private terrain: HTMLCanvasElement;
@@ -143,7 +155,15 @@ export class Renderer {
     this.camera.setViewport(width, height);
   }
 
-  render(highlight: Highlight | null): void {
+  /**
+   * Draws one frame.
+   *
+   * `alpha` is how far the world is between the last completed simulation step
+   * and the next one, and it is what turns five positions a second into sixty.
+   * It comes from the fixed-step accumulator in `main.ts`, which was already
+   * computing it and throwing it away.
+   */
+  render(highlight: Highlight | null, alpha = 1): void {
     const { ctx, camera, sim } = this;
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, camera.viewWidth, camera.viewHeight);
@@ -224,20 +244,78 @@ export class Renderer {
       }
     }
 
+    // --- Records -----------------------------------------------------------
+    // Above buildings, because a stone inside a library is the thing you are
+    // looking for when you look at a library, and below people for the usual
+    // reason. A half-cut one carries a progress bar: a carving that takes four
+    // hundred ticks and shows nothing looks exactly like a game that has
+    // stopped responding, which is the complaint `workProgressOf` exists for.
+    for (const record of sim.inscriptions) {
+      if (record.x < view.minX || record.x > view.maxX) continue;
+      if (record.y < view.minY || record.y > view.maxY) continue;
+      const px = camera.worldToScreenX(record.x);
+      const py = camera.worldToScreenY(record.y);
+      const size = scale * 0.34;
+      const clay = record.def.id === 'clay';
+
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath();
+      ctx.ellipse(px, py + size * 0.42, size * 0.5, size * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // A standing stone reads as upright; a tablet lies flat and pale.
+      ctx.fillStyle = record.unfinished ? '#6d6a63' : (clay ? '#c2a678' : '#8d8a82');
+      if (clay) ctx.fillRect(px - size * 0.5, py - size * 0.2, size, size * 0.6);
+      else ctx.fillRect(px - size * 0.3, py - size * 0.6, size * 0.6, size);
+
+      // The marks themselves, once there are any. Two strokes is enough to read
+      // "there is writing on this" at a glance and from across the valley.
+      if (record.techs.length > 0) {
+        ctx.strokeStyle = clay ? '#6b5433' : '#4c4a45';
+        ctx.lineWidth = Math.max(1, scale * 0.03);
+        for (let i = 0; i < Math.min(3, record.techs.length + 1); i++) {
+          const ly = py - size * (clay ? 0.02 : 0.4) + i * size * 0.18;
+          ctx.beginPath();
+          ctx.moveTo(px - size * 0.18, ly);
+          ctx.lineTo(px + size * 0.18, ly);
+          ctx.stroke();
+        }
+      }
+
+      if (record.unfinished) {
+        const barW = size * 1.1;
+        const barY = py - size * 0.95;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(px - barW / 2 - 1, barY - 1, barW + 2, 5);
+        ctx.fillStyle = '#c9b06a';
+        ctx.fillRect(px - barW / 2, barY, barW * record.cutProgress, 3);
+      }
+
+      if (highlight?.inscriptionId === record.id) {
+        ctx.strokeStyle = '#7fd4ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px - size * 0.6, py - size * 0.8, size * 1.2, size * 1.5);
+      }
+    }
+
     // --- Animals -----------------------------------------------------------
     // Under people, like buildings: a hunter standing over a kill should be the
     // figure you can see.
+    // Culled on the drawn position rather than the simulation one, so nothing
+    // pops out of the view half a step before it leaves it.
     for (const animal of sim.animals) {
       if (!animal.alive) continue;
-      if (animal.x < view.minX || animal.x > view.maxX) continue;
-      if (animal.y < view.minY || animal.y > view.maxY) continue;
-      this.drawAnimal(animal, highlight?.animalId === animal.id);
+      const at = this.interpolator.at('animal', animal, alpha);
+      if (at.x < view.minX || at.x > view.maxX) continue;
+      if (at.y < view.minY || at.y > view.maxY) continue;
+      this.drawAnimal(animal, highlight?.animalId === animal.id, at);
     }
 
     // --- People ------------------------------------------------------------
     for (const person of sim.livingPeople()) {
-      if (person.x < view.minX || person.x > view.maxX || person.y < view.minY || person.y > view.maxY) continue;
-      this.drawPerson(person, highlight?.personId === person.id);
+      const at = this.interpolator.at('person', person, alpha);
+      if (at.x < view.minX || at.x > view.maxX || at.y < view.minY || at.y > view.maxY) continue;
+      this.drawPerson(person, highlight?.personId === person.id, at);
     }
 
     // --- Build ghost -------------------------------------------------------
@@ -397,11 +475,11 @@ export class Renderer {
     }
   }
 
-  private drawPerson(person: Person, selected: boolean): void {
+  private drawPerson(person: Person, selected: boolean, at: Placed): void {
     const { ctx, camera } = this;
     const scale = camera.scale;
-    const px = camera.worldToScreenX(person.x);
-    const py = camera.worldToScreenY(person.y);
+    const px = camera.worldToScreenX(at.x);
+    const py = camera.worldToScreenY(at.y);
     const w = scale * 0.34;
     const h = scale * 0.52;
 
@@ -472,11 +550,11 @@ export class Renderer {
    * as a group of people — which matters, because the two are told apart at
    * distance and the verbs for them are entirely different.
    */
-  private drawAnimal(animal: Animal, selected: boolean): void {
+  private drawAnimal(animal: Animal, selected: boolean, at: Placed): void {
     const { ctx, camera } = this;
     const scale = camera.scale;
-    const px = camera.worldToScreenX(animal.x);
-    const py = camera.worldToScreenY(animal.y);
+    const px = camera.worldToScreenX(at.x);
+    const py = camera.worldToScreenY(at.y);
 
     const size = ANIMAL_SIZES[animal.species];
     const w = scale * size;
@@ -520,6 +598,11 @@ export class Renderer {
   /** The resource node nearest a world point within `radius` tiles, or null. */
   pickNode(worldX: number, worldY: number, radius = PICK_RANGE) {
     return this.sim.nodeHash.findNearest(worldX, worldY, radius);
+  }
+
+  /** The record nearest a world point, or null. */
+  pickInscription(worldX: number, worldY: number, radius = 1.2): Inscription | null {
+    return this.sim.inscriptionHash.findNearest(worldX, worldY, radius);
   }
 
   /** The dropped pile nearest a world point, or null. */
@@ -590,6 +673,9 @@ export function hitRadiusOf(target: HitTarget): number {
     // `drawTree` paints a canopy of `tree.radius * 0.55`; a seedling is ~0.2.
     case 'tree': return Math.max(0.2, target.tree.radius * 0.55);
     case 'pile': return 0.3;
+    // Matches the upright stone painted above: small, and easy to miss under
+    // somebody standing on it, which is what the picker is for.
+    case 'inscription': return 0.32;
     // Matches `ANIMAL_SIZES`, which is what `drawAnimal` paints.
     case 'animal': return (ANIMAL_SIZES[target.animal.species] ?? 0.5) * 0.75;
   }
@@ -601,4 +687,5 @@ export type HitTarget =
   | { kind: 'node'; node: ResourceNode }
   | { kind: 'tree'; tree: Tree }
   | { kind: 'pile'; pile: ItemPile }
+  | { kind: 'inscription'; inscription: Inscription }
   | { kind: 'animal'; animal: Animal };

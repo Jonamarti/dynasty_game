@@ -27,6 +27,7 @@ import type { Building, BuildingDef } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
+import type { Inscription } from '../sim/entities/Inscription.ts';
 import { NEEDS, SKILLS, TRAITS } from '../sim/entities/Person.ts';
 import { lastScores } from '../sim/ai/Brain.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
@@ -35,7 +36,7 @@ import {
   knowledgeOfPerson, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree,
   rememberedAbout,
 } from '../sim/social/Knowledge.ts';
-import { TECH, TECH_EFFECTS, type Tech } from '../sim/knowledge/Tech.ts';
+import { TECH, TECH_EFFECTS, techPower, type Tech } from '../sim/knowledge/Tech.ts';
 import { itemActions } from '../sim/ai/ActionCatalog.ts';
 import { DEFAULT_CONFIG } from '../sim/core/Config.ts';
 import { noticeRadius } from '../sim/systems/WildlifeSystem.ts';
@@ -49,6 +50,7 @@ export type Selection =
   | { kind: 'building'; building: Building }
   | { kind: 'tree'; tree: Tree }
   | { kind: 'pile'; pile: ItemPile }
+  | { kind: 'inscription'; inscription: Inscription }
   | { kind: 'animal'; animal: Animal };
 
 export interface HudCallbacks {
@@ -400,6 +402,10 @@ export class Hud {
       case 'pile':
         this.panelBodyEl.innerHTML = this.pileRows(selection.pile, sim).join('');
         break;
+      case 'inscription':
+        this.panelBodyEl.innerHTML =
+          this.recordRows(observer, selection.inscription, sim).join('');
+        break;
       case 'animal':
         this.panelBodyEl.innerHTML = this.animalRows(observer, selection.animal).join('');
         break;
@@ -506,7 +512,7 @@ export class Hud {
     const stop = this.lastStop;
     const fresh = stop !== null && stop.personId === person.id &&
       performance.now() - stop.at < STOP_NOTICE_MS;
-    return escapeHtml(actionLabel(person.action)) +
+    return escapeHtml(actionLabel(person.action, person.targetRecipe)) +
       (person.order ? ' <span class="hud-ordered">ordered</span>' : '') +
       (fresh ? '<div class="hud-stopped">' + escapeHtml(stop!.text) + '</div>' : '');
   }
@@ -974,6 +980,49 @@ export class Hud {
     return rows;
   }
 
+  /**
+   * What a record says, to whoever is looking at it.
+   *
+   * Gated on literacy exactly as the action is, and that is the whole point of
+   * the panel: an illiterate player character is told there are marks and not
+   * what they say. Naming the technologies to somebody who cannot read them
+   * would hand over the one thing writing is supposed to cost.
+   */
+  private recordRows(observer: Person, record: Inscription, sim: Simulation): string[] {
+    const rows: string[] = [];
+    const literate = techPower(observer, 'writing') > 0;
+    const daysAgo = Math.floor((sim.time.tick - record.madeTick) / sim.config.time.ticksPerDay);
+
+    rows.push('<div class="hud-name">' + escapeHtml(record.def.label) + '</div>');
+    rows.push('<div class="hud-sub">' + record.x + ',' + record.y +
+      ' · cut by ' + escapeHtml(record.authorName) +
+      (daysAgo > 0 ? ' · ' + daysAgo + 'd ago' : ' · today') + '</div>');
+
+    if (record.unfinished) {
+      rows.push('<div class="hud-section">Half cut</div>');
+      rows.push(bar('cut', record.cutProgress * 100, '#c9b06a'));
+    }
+
+    rows.push('<div class="hud-section">What it says</div>');
+    if (record.techs.length === 0) {
+      rows.push('<div class="hud-sub">nothing yet</div>');
+    } else if (!literate) {
+      rows.push('<div class="hud-sub">' + record.techs.length +
+        (record.techs.length === 1 ? ' mark you cannot read' : ' marks you cannot read') +
+        '</div>');
+      rows.push(veil('A record is worth nothing to somebody who never learned to read it.'));
+    } else {
+      rows.push('<div class="hud-sub">' + record.techs
+        .map(t => escapeHtml(TECH[t as Tech]?.label ?? t))
+        .join(', ') + '</div>');
+    }
+
+    if (record.def.decayPerDay > 0) {
+      rows.push(veil('Clay does not last. What is only here is not safe here.'));
+    }
+    return rows;
+  }
+
   private pileRows(pile: ItemPile, sim: Simulation): string[] {
     const rows: string[] = [];
     const owner = pile.ownerId === null ? null : sim.peopleById.get(pile.ownerId);
@@ -1093,6 +1142,7 @@ function panelTitle(observer: Person, selection: Selection, sim: Simulation): st
     case 'building': return selection.building.def.label;
     case 'tree': return selection.tree.def.label;
     case 'pile': return 'Dropped goods';
+    case 'inscription': return selection.inscription.def.label;
     case 'animal': return selection.animal.label;
   }
 }
@@ -1114,6 +1164,11 @@ export function selectionKey(selection: Selection): string {
     case 'building': return 'b' + selection.building.id;
     case 'tree': return 't' + selection.tree.id;
     case 'pile': return 'i' + selection.pile.id;
+    // The marks on it change as it is cut, and the reading of it changes with
+    // who is looking, so both go in the key.
+    case 'inscription': return 'r' + selection.inscription.id +
+      'm' + selection.inscription.techs.length +
+      (selection.inscription.unfinished ? 'u' : 'f');
     case 'animal': return 'a' + selection.animal.id;
   }
 }

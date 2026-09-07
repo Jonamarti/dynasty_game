@@ -23,10 +23,15 @@ import type { KnowledgeSystem } from './KnowledgeSystem.ts';
 import type { RelationshipGraph } from '../social/Relationships.ts';
 import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
+import {
+  INSCRIPTIONS, type Inscription, type InscriptionDef, type InscriptionForm,
+} from '../entities/Inscription.ts';
 import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import {
-  TECH, buildFactor, forageYieldFactor, nutritionFactor, techPower,
+  TECH, buildFactor, forageYieldFactor, nutritionFactor, prerequisitesMet, tallyFactor,
+  techPower, type Tech,
 } from '../knowledge/Tech.ts';
 import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 
@@ -55,6 +60,21 @@ export interface ActionContext {
   needs: NeedsConfig;
   /** Puts goods on the ground, for yields nobody has room to carry. */
   dropAt: (x: number, y: number, itemId: string, count: number) => void;
+  /** Everything written down anywhere, so nobody cuts the same word twice. */
+  recorded: ReadonlySet<string>;
+  inscriptionsById: Map<number, Inscription>;
+  /** The record under a point, if there is one within arm's reach. */
+  inscriptionAt: (x: number, y: number) => Inscription | null;
+  /** The *half-cut* record under a point. Records stack; see `inscriptionAt`. */
+  unfinishedAt: (x: number, y: number) => Inscription | null;
+  /** Whether a point is under a finished library's roof. */
+  inLibrary: (x: number, y: number) => boolean;
+  /** Notes that a technology is now being written down somewhere. */
+  claimRecord: (tech: string) => void;
+  /** Cuts a new record. Returns null if the ground will not take one. */
+  inscribe: (
+    form: InscriptionForm, x: number, y: number, author: Person
+  ) => Inscription | null;
   /**
    * Called whenever an action ends for a reason, so the world can tell the
    * player about it.
@@ -118,6 +138,25 @@ const DISCUSS_TICKS = 70;
 const PROTOTYPE_TICKS = 120;
 
 /**
+ * Ticks to get one thing off a record.
+ *
+ * Shorter than being taught it, and much shorter than working it out: the
+ * hard part of reading was learning to read. It is scaled by `teach`, which is
+ * this world's skill for putting things into and taking them out of words.
+ */
+const READ_TICKS = 110;
+
+/**
+ * How much better thinking goes under a library's roof.
+ *
+ * Deliberately a multiplier on the whole chance rather than a term added to
+ * it, so it helps a dull person and a brilliant one in the same proportion. A
+ * flat bonus would have made the building matter enormously to somebody with no
+ * wits and not at all to somebody with plenty.
+ */
+const LIBRARY_INSIGHT = 1.35;
+
+/**
  * How much insight a breakthrough is worth.
  *
  * A jump, not a trickle. Insight that accrued smoothly made research a progress
@@ -145,6 +184,34 @@ interface InterruptionOptions {
 
 /** No single stretch of work runs longer than this, whatever else is true. */
 const MAX_WORK_STRETCH = 900;
+
+/**
+ * The need levels at which a stretch of work is broken off.
+ *
+ * Exported because `Brain` has to be able to ask the same question before it
+ * starts somebody on a long job. Crafting is the case that forced this out into
+ * the open: it is one long pull rather than a run of short ones, so the check
+ * fires *during* the work, and a scorer that did not know where the line was
+ * would arm a two-hundred-tick timer for somebody one point over it, watch them
+ * be stopped on the next tick, and choose the same thing again — a hundred
+ * abandoned attempts for every finished axe.
+ *
+ * Two copies of these numbers would drift, and the drift would show up as that
+ * same thrash months later with nothing to point at.
+ */
+export const WORK_LIMITS = { thirst: 35, hunger: 40, cold: 45 } as const;
+
+/**
+ * True if a need is already past the point where work stops.
+ *
+ * Deliberately without the lookahead `interruption` applies: this answers "is it
+ * sensible to begin?", not "will the next cycle carry them over?".
+ */
+export function pressedByNeed(person: Person): boolean {
+  return person.needs.thirst > WORK_LIMITS.thirst ||
+    person.needs.hunger > WORK_LIMITS.hunger ||
+    person.needs.cold > WORK_LIMITS.cold;
+}
 
 /** Ticks to take something that is not yours without being obvious about it. */
 const STEAL_TICKS = 30;
@@ -200,6 +267,8 @@ export class ActionSystem {
       case 'court': this.doCourt(person, ctx); break;
       case 'teach': this.doTeach(person, ctx); break;
       case 'craft': this.doCraft(person, ctx); break;
+      case 'inscribe': this.doInscribe(person, ctx); break;
+      case 'read': this.doRead(person, ctx); break;
       case 'ponder': this.doPonder(person, ctx); break;
       case 'discuss': this.doDiscuss(person, ctx); break;
       case 'prototype': this.doPrototype(person, ctx); break;
@@ -384,12 +453,12 @@ export class ActionSystem {
     // takes 416 and always does. Same code, same rule, and from outside it looks
     // like berries are uninterruptible and flint is not.
     const ahead = opts.lookaheadTicks ?? 0;
-    if (person.needs.thirst + ctx.needs.thirstRate * ahead > 35) return 'thirsty';
-    if (person.needs.hunger + ctx.needs.hungerRate * ahead > 40) return 'hungry';
+    if (person.needs.thirst + ctx.needs.thirstRate * ahead > WORK_LIMITS.thirst) return 'thirsty';
+    if (person.needs.hunger + ctx.needs.hungerRate * ahead > WORK_LIMITS.hunger) return 'hungry';
     // Cold is read as it stands: its rate depends on the season and the roof
     // overhead, so projecting it forward from a per-tick constant would be a
     // guess dressed up as arithmetic.
-    if (person.needs.cold > 45) return 'cold';
+    if (person.needs.cold > WORK_LIMITS.cold) return 'cold';
 
     // A hard ceiling on any one stretch, so no combination of conditions can
     // leave somebody locked in a job forever.
@@ -638,6 +707,10 @@ export class ActionSystem {
     person.practice('build', 0.25);
     if (site.addWork(work)) {
       telemetry.count('building_completed');
+      // Per design as well as in total: "did anybody ever finish a granary?" is
+      // a question about whether a gated design is reachable, and an aggregate
+      // cannot answer it.
+      telemetry.count('completed_' + site.def.id);
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
@@ -968,38 +1041,295 @@ export class ActionSystem {
   }
 
   /**
-   * Making a hand axe: flint, a haft, and knowing how the two go together.
+   * Making something out of what is in the pack, to a recipe.
    *
-   * The first thing in the game that only knowledge unlocks. An axe halves
-   * felling time, which is the difference between a hut being a season's work
-   * and an afternoon's.
+   * Table-driven since the recipes moved to `RECIPES`. The hand axe used to be
+   * written into this function, into the radial menu and into the scorer — the
+   * same fact in three places, which is how two copies of an idea drift apart.
+   *
+   * **The interruption check is the point of this pass.** There was none.
+   * `workTicks` divided by a novice's 0.35 `skillFactor` is 258 ticks, more
+   * than a whole in-game day, and for every one of them the knapper was
+   * `committed`: the brain does not re-plan while a timer runs, so with no
+   * check inside nothing whatever could reach them. Not thirst, not hunger, not
+   * cold, not being attacked. That is exactly the omission `AGENTS.md` blames
+   * for the two worst bugs this project has had, and it had been sitting in the
+   * one action nobody had looked at.
+   *
+   * It also meant a craft never called `stop()`, so it never reached the
+   * player's floater and never set the order aside for `resume` to pick back
+   * up — the whole of M6c was bypassed here.
    */
   private doCraft(person: Person, ctx: ActionContext): void {
-    if (techPower(person, 'hafting') <= 0) {
+    const recipe = person.targetRecipe === null ? null : RECIPES[person.targetRecipe];
+    if (!recipe) {
+      this.abandon(person, 'no_recipe', ctx);
+      return;
+    }
+    if (techPower(person, recipe.tech) <= 0) {
       this.abandon(person, 'dont_know_how', ctx);
       return;
     }
-    if (!person.inventory.has('flint') || !person.inventory.has('sticks')) {
+    if (!hasIngredients(person.inventory, recipe)) {
       this.abandon(person, 'lack_materials', ctx);
       return;
     }
 
     if (person.actionTimer <= 0) {
-      person.actionTimer = Math.ceil(90 / person.skillFactor('knap'));
+      person.actionTimer = Math.ceil(recipe.workTicks / person.skillFactor(recipe.skill));
       return;
     }
     person.actionTimer--;
     person.workedTicks++;
-    if (person.actionTimer > 0) return;
+    if (person.actionTimer > 0) {
+      // `ignoreLaden`, for the same reason felling passes it: nothing is taken
+      // out of the pack and nothing is put into it until the final tick, so a
+      // full pack is not a reason to stop — and an interrupted craft therefore
+      // loses nothing and can be resumed from the beginning at no cost.
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) {
+        // Counted apart from the generic `work_ended_` tally so that
+        // `crafting-is-interruptible` can tell whether this one action can be
+        // reached at all — which, for the whole of the game's history, it
+        // could not.
+        telemetry.count('craft_interrupted');
+        this.stop(person, stop, ctx);
+      }
+      return;
+    }
 
-    person.inventory.remove('flint', 1);
-    person.inventory.remove('sticks', 1);
-    person.inventory.add('handaxe', 1);
-    person.practice('knap', 3);
-    telemetry.count('crafted_handaxe');
+    for (const [itemId, count] of Object.entries(recipe.ingredients)) {
+      person.inventory.remove(itemId, count);
+    }
+    for (const [itemId, count] of Object.entries(recipe.output)) {
+      person.inventory.add(itemId, count);
+    }
+    person.practice(recipe.skill, 3);
+    telemetry.count('crafted_' + recipe.id);
     person.chronicle.push({
-      tick: ctx.tick, ageDays: person.age, text: 'made a hand axe', kind: 'did',
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: 'made a ' + recipe.label.toLowerCase(),
+      kind: 'did',
     });
+    this.finish(person);
+  }
+
+
+  // -------------------------------------------------------------------------
+  // Records
+  // -------------------------------------------------------------------------
+
+  /**
+   * What this person could usefully write down.
+   *
+   * Something they know that is not already recorded anywhere. Recording what
+   * is already on a stone across the valley is not worthless in the fiction —
+   * two copies survive a fire better than one — but it is worthless to the
+   * simulation, and a scorer that could not tell the difference would have a
+   * literate band cutting the same word into every rock on the island.
+   */
+  private worthRecording(person: Person, ctx: ActionContext): string | null {
+    for (const tech of person.knownTech) {
+      if (!TECH[tech as Tech]) continue;
+      if (ctx.recorded.has(tech)) continue;
+      return tech;
+    }
+    return null;
+  }
+
+  /** The best form this person can presently write on, or null. */
+  private inscriptionForm(person: Person): InscriptionDef | null {
+    // Clay first when it is known and affordable: it holds two and costs less
+    // work. Stone is the fallback and the permanent one, so a band that has
+    // both writes its cheap notes on clay and still has rock for what matters.
+    const order: InscriptionForm[] = ['clay', 'stone'];
+    for (const form of order) {
+      const def = INSCRIPTIONS[form];
+      if (form === 'clay' && techPower(person, 'clay_tablet') <= 0) continue;
+      const affordable = Object.entries(def.materials)
+        .every(([itemId, count]) => person.inventory.count(itemId) >= count);
+      if (affordable) return def;
+    }
+    return null;
+  }
+
+  /**
+   * Cutting something you know into something that will outlast you.
+   *
+   * The one channel in this game that is not a conversation, and the only way
+   * anything survives a winter that kills everybody who understood it. It is
+   * deliberately the most expensive of the four: materials, a long job, and a
+   * reader at the other end who has to be literate before any of it counts.
+   */
+  private doInscribe(person: Person, ctx: ActionContext): void {
+    if (techPower(person, 'writing') <= 0) {
+      this.abandon(person, 'cannot_write', ctx);
+      return;
+    }
+
+    // A stone somebody has already started, walked to first. Half-cut records
+    // are the normal state of affairs now that work banks on them — a carver
+    // breaks off to drink and comes back, or somebody else finishes it — and a
+    // scorer that could not aim at one would leave them lying about for ever.
+    const aim = person.targetInscriptionId === null
+      ? null
+      : ctx.inscriptionsById.get(person.targetInscriptionId);
+    if (aim && aim.unfinished) {
+      person.targetX = aim.x;
+      person.targetY = aim.y;
+      if (!ctx.movement.step(person)) return;
+      this.cut(person, aim, ctx);
+      return;
+    }
+
+    // The stone under their own hands, checked **before** asking what is worth
+    // recording. That order is not cosmetic: a technology is claimed the moment
+    // the first mark is made, so by the second tick "what is worth writing
+    // down" no longer includes the thing they are in the middle of writing
+    // down. Asked the other way round, a carver abandoned their own half-cut
+    // stone on the tick after starting it, every time, with the reason
+    // "everything they know is already written down".
+    const started = ctx.unfinishedAt(person.x, person.y);
+    if (started) {
+      this.cut(person, started, ctx);
+      return;
+    }
+
+    const tech = this.worthRecording(person, ctx);
+    if (tech === null) {
+      this.abandon(person, 'nothing_to_record', ctx);
+      return;
+    }
+    const def = this.inscriptionForm(person);
+    if (!def) {
+      this.abandon(person, 'lack_materials', ctx);
+      return;
+    }
+
+    {
+      // Nothing under way. Add to a record with room on it if there is one, and
+      // start a fresh one otherwise — which is what makes a clay tablet's
+      // capacity of two mean anything, and why a library fills rather than
+      // sprawls.
+      // A record under their feet with room left on it — a clay tablet holding
+      // one of its two, say. Anything full is not worth walking round.
+      const here = ctx.inscriptionAt(person.x, person.y);
+      const spare = here && !here.isFull && here.def.id === def.id ? here : null;
+      const fresh = spare ?? ctx.inscribe(def.id, person.x, person.y, person);
+      if (!fresh || !fresh.begin(tech)) {
+        this.abandon(person, 'nowhere_to_write', ctx);
+        return;
+      }
+      // Claimed the moment the first mark is made, not at the next daily
+      // recount. Two people who start on the same morning would otherwise both
+      // pick the same word, and a run produced seven separate stones all saying
+      // "writing" while half the things anybody knew went unrecorded.
+      ctx.claimRecord(tech);
+      // The materials go the moment the first mark is made. A carving abandoned
+      // half way is flint spent, which is most of what makes writing a
+      // commitment rather than a habit.
+      for (const [itemId, count] of Object.entries(def.materials)) {
+        person.inventory.remove(itemId, count);
+      }
+      this.cut(person, fresh, ctx);
+    }
+  }
+
+  /** One tick of carving, wherever the record came from. */
+  private cut(person: Person, target: Inscription, ctx: ActionContext): void {
+    if (!target.unfinished) {
+      this.abandon(person, 'nothing_to_record', ctx);
+      return;
+    }
+    person.workedTicks++;
+    if (!target.addWork(person.skillFactor(target.def.skill))) {
+      // `ignoreLaden` for the same reason felling passes it: nothing goes into
+      // the pack, so a full one is not a reason to put the chisel down. Being
+      // stopped here costs only the ticks not yet spent — the work already done
+      // is on the stone.
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx);
+      return;
+    }
+
+    const done = target.techs[target.techs.length - 1]!;
+    person.practice(target.def.skill, 2);
+    telemetry.count('recorded_' + done);
+    const label = TECH[done as Tech].label.toLowerCase();
+    person.chronicle.push({
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: 'cut ' + label + ' into ' + target.def.label.toLowerCase(),
+      kind: 'milestone',
+    });
+    ctx.onInsight(person, 'wrote down ' + label, 'gain');
+    this.finish(person);
+  }
+
+  /**
+   * Reading what somebody else cut.
+   *
+   * **Literacy is the gate, and it is the point of the whole feature.** A
+   * record grants nothing at all to somebody who cannot read, so a band can sit
+   * on a library holding the answer to its own dark age and starve beside it.
+   * That is what makes writing an exception bought on purpose rather than a
+   * free second copy of `knownTech`.
+   */
+  private doRead(person: Person, ctx: ActionContext): void {
+    const record = person.targetInscriptionId === null
+      ? null
+      : ctx.inscriptionsById.get(person.targetInscriptionId);
+    if (!record) {
+      this.abandon(person, 'record_gone', ctx);
+      return;
+    }
+    if (techPower(person, 'writing') <= 0) {
+      this.abandon(person, 'cannot_read', ctx);
+      return;
+    }
+
+    person.targetX = record.x;
+    person.targetY = record.y;
+    if (!ctx.movement.step(person)) return;
+
+    // What is on it that they could take in. Checked before the work rather
+    // than after, so nobody spends half a day staring at something they already
+    // know — and `requires` gates a record exactly as it gates a lesson.
+    const useful = record.techs.filter(tech =>
+      !person.knownTech.has(tech) &&
+      TECH[tech as Tech] !== undefined &&
+      prerequisitesMet(tech as Tech, person.knownTech));
+    if (useful.length === 0) {
+      this.abandon(person, 'nothing_new_on_it', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = Math.ceil(READ_TICKS / person.skillFactor('teach'));
+      return;
+    }
+    person.actionTimer--;
+    person.workedTicks++;
+    if (person.actionTimer > 0) {
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx);
+      return;
+    }
+
+    const tech = useful[0]!;
+    ctx.knowledge.receiveFromRecord(person, tech as Tech);
+    person.practice('teach', 1);
+    telemetry.count('read_' + tech);
+    const label = TECH[tech as Tech].label.toLowerCase();
+    person.chronicle.push({
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: 'read ' + label + ' off ' + record.def.label.toLowerCase() +
+        ' cut by ' + record.authorName,
+      kind: 'milestone',
+    });
+    ctx.onInsight(person, 'read ' + label + ' off a stone', 'gain');
     this.finish(person);
   }
 
@@ -1056,9 +1386,14 @@ export class ActionSystem {
     }
 
     const def = TECH[idea.tech];
+    // Thinking goes better where the records are — the library's whole effect,
+    // and the reason it is worth seven hundred ticks of building. Read as a
+    // place rather than as a possession: anybody sitting in it gets it,
+    // including somebody from the band across the valley.
+    const shelvesNear = ctx.inLibrary(person.x, person.y);
     const chance = Math.min(0.85,
-      0.18 + person.traits.intelligence * 0.3 + person.traits.curiosity * 0.15
-      + person.skillFactor(def.skill) * 0.2);
+      (0.18 + person.traits.intelligence * 0.3 + person.traits.curiosity * 0.15
+        + person.skillFactor(def.skill) * 0.2) * (shelvesNear ? LIBRARY_INSIGHT : 1));
     if (!ctx.rng.chance(chance)) {
       telemetry.count('ponder_nothing');
       // Nothing came of it, and the player is told so. An hour of a character's
@@ -1117,10 +1452,14 @@ export class ActionSystem {
     const repeat = idea.discussedWith.includes(partner.id);
     if (!repeat) idea.discussedWith.push(partner.id);
 
+    // `tallyFactor` is what `marking` buys, and it is deliberately applied to
+    // the *arguer's* tallies rather than the partner's: it is your evidence you
+    // are putting on the ground between you.
     const chance = Math.min(0.9,
-      0.2 + partner.skillFactor(def.skill) * 0.35
-      + (partner.traits.intelligence - 0.5) * 0.4
-      + Math.max(0, regard) * 0.3) * (repeat ? REPEAT_DISCUSSION : 1);
+      (0.2 + partner.skillFactor(def.skill) * 0.35
+        + (partner.traits.intelligence - 0.5) * 0.4
+        + Math.max(0, regard) * 0.3) * tallyFactor(person)
+    ) * (repeat ? REPEAT_DISCUSSION : 1);
 
     partner.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
     person.practice('persuade', 0.3);

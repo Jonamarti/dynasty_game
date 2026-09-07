@@ -908,6 +908,20 @@ html, body, #app {
   mask-composite: exclude;
 }
 
+/* A record of this, somewhere out there. Pinned to the corner rather than laid
+   over the label, because on an unlabelled "out of sight" node the scroll is
+   the only thing on it and it has to read as a marker rather than as content. */
+.techweb-scroll {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+
 .techweb-detail {
   width: 300px;
   flex: none;

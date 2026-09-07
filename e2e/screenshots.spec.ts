@@ -8,6 +8,40 @@ import { test, expect } from '@playwright/test';
 
 const DIR = 'artifacts/screenshots';
 
+/**
+ * Clicks something and takes it out of the chooser.
+ *
+ * Since O7 the chooser opens for a single candidate as well as for a stack,
+ * because the bare ground is always one of the choices. The tour is a record
+ * rather than an assertion suite, so before this it degraded silently: the
+ * tree shots caught a picker and then an empty screen instead of the panel and
+ * the radial menu they are there to show.
+ *
+ * Matched on the bubble's icon rather than its label, because labels are routed
+ * through the knowledge layer and a stranger has no name to match.
+ */
+async function clickThrough(
+  page: import('@playwright/test').Page,
+  x: number,
+  y: number,
+  icon: string,
+  button: 'left' | 'right' = 'left'
+): Promise<void> {
+  await page.mouse.click(x, y, { button });
+  await page.waitForTimeout(200);
+  const picker = page.locator('.picker');
+  if (!(await picker.isVisible())) return;
+  const items = picker.locator('.picker-item');
+  for (let i = 0; i < await items.count(); i++) {
+    if (((await items.nth(i).textContent()) ?? '').includes(icon)) {
+      await items.nth(i).click();
+      await page.waitForTimeout(200);
+      return;
+    }
+  }
+  await page.keyboard.press('Escape');
+}
+
 test('tour', async ({ page }) => {
   await page.goto('/?seed=tour&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
@@ -121,6 +155,13 @@ test('tour', async ({ page }) => {
   await page.waitForTimeout(300);
 
 // A fruit tree, and what a woodsman can and cannot tell about it.
+  //
+  // Paused first. The tour runs at 120 steps a second and the camera follows the
+  // player, so a screen coordinate read in one round trip is pointing somewhere
+  // else by the time the click lands in the next — which is why these two shots
+  // had quietly become a picture of the player's own panel.
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  await page.waitForTimeout(200);
   const tree = await page.evaluate(() => {
     const d = (window as never as {
       __dynasty: {
@@ -135,14 +176,13 @@ test('tour', async ({ page }) => {
     return { x: d.camera.worldToScreenX(near.x), y: d.camera.worldToScreenY(near.y) };
   });
   if (tree) {
-    await page.mouse.click(tree.x, tree.y);
-    await page.waitForTimeout(200);
+    await clickThrough(page, tree.x, tree.y, '\u{1F333}');
     await page.screenshot({ path: DIR + '/09-tree.png' });
-    await page.mouse.click(tree.x, tree.y, { button: 'right' });
-    await page.waitForTimeout(200);
+    await clickThrough(page, tree.x, tree.y, '\u{1F333}', 'right');
     await page.screenshot({ path: DIR + '/10-tree-menu.png' });
     await page.keyboard.press('Escape');
   }
+  await page.locator('.hud-button', { hasText: 'Resume' }).click();
 
   // The kit tab. A tree is selected at this point in the tour, and a tree has no
   // tabs, so put the player back in the panel first.
