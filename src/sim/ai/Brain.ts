@@ -33,6 +33,7 @@ import {
 import { RECIPES, hasIngredients, recipeFor } from '../entities/Recipe.ts';
 import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
 import { pressedByNeed } from '../systems/ActionSystem.ts';
+import type { NeedsConfig } from '../core/Config.ts';
 import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 
 export interface BrainContext {
@@ -50,6 +51,14 @@ export interface BrainContext {
   /** Everything written down anywhere, so nobody cuts the same word twice. */
   recorded: ReadonlySet<string>;
   sightRadius: number;
+  /**
+   * Need rates and the base work limits.
+   *
+   * Here so the scorer asks `pressedByNeed` the same question `ActionSystem`
+   * will ask a tick later. Before the limits moved into config the two shared a
+   * module constant; they must not come apart now that a scenario can move them.
+   */
+  needs: NeedsConfig;
 }
 
 export interface ScoredAction {
@@ -672,7 +681,18 @@ export class Brain {
         ctx.sightRadius * 1.5 * quarryReachFactor(person),
         a => a.alive
       );
-      if (quarry) {
+      // Do not *begin* a chase already over the line, the same rule crafting
+      // learned. A hunt checks its interruption during the work rather than
+      // between pulls, so a thirsty hunter arms a chase, is stopped on the next
+      // tick, re-scores, and picks the same quarry again. It cost 786 abandoned
+      // attempts per finished axe when crafting had this shape; when thirst
+      // started answering to exertion it cost a two-year run **eleven thousand**
+      // broken-off chases and the whole population, because a world of people
+      // starting hunts is a world where nobody forages.
+      //
+      // `'hunger'` because hunting is *for* food: being hungry is the reason to
+      // go, not a reason to stay. Thirst and cold still hold somebody back.
+      if (quarry && !pressedByNeed(person, ctx.needs.workLimits, 'hunger')) {
         const odds = Math.max(0.05, Math.min(0.9,
           person.skillFactor('hunt') * (1 - quarry.def.evasion) + 0.15
         ));
@@ -799,7 +819,8 @@ export class Brain {
     // next tick, re-score and choose it again. The threshold is asked of
     // `ActionSystem` rather than copied, because two copies of a number like
     // this drift and the drift resurfaces as exactly that thrash.
-    for (const recipe of pressedByNeed(person) ? [] : Object.values(RECIPES)) {
+    for (const recipe of
+      pressedByNeed(person, ctx.needs.workLimits) ? [] : Object.values(RECIPES)) {
       if (techPower(person, recipe.tech) <= 0) continue;
       if (!hasIngredients(person.inventory, recipe)) continue;
       const output = Object.keys(recipe.output)[0]!;
@@ -820,7 +841,7 @@ export class Brain {
     // discretionary jobs of a couple of hundred ticks, and a person already
     // over the interruption line would start one and be stopped on the next
     // tick.
-    if (!pressedByNeed(person) && techPower(person, 'writing') > 0) {
+    if (!pressedByNeed(person, ctx.needs.workLimits) && techPower(person, 'writing') > 0) {
       // Writing: something you know that is nowhere on the ground yet.
       const unrecorded = [...person.knownTech].some(t =>
         TECH[t as Tech] !== undefined && !ctx.recorded.has(t));

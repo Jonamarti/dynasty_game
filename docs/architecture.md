@@ -148,14 +148,39 @@ possible way to do it.
 > and redraws only when it changes; anything else that updates in place will
 > need the same.
 
-**Every long action gets an interruption check.** `ActionSystem.interruption`
-is the only thing that can reach a committed worker, because a committed person
-does not re-plan. Omitting it has produced the two worst bugs in this project's
-history — woodcutters who chopped through to a hundred thirst, and builders a
-chief had ordered onto a hut who worked through a winter until they died.
-`doHunt` calls it, and any new long action must too. `doSleep` is the one
-deliberate exception: it has its own `wakeReason`, because the work list's first
-clause is `isLaden` and a full pack is not a reason to stop sleeping.
+**Every long action gets an interruption check, and the line it checks is not
+flat.** `ActionSystem.interruption` is the only thing that can reach a committed
+worker, because a committed person does not re-plan. Omitting it has produced the
+two worst bugs in this project's history — woodcutters who chopped through to a
+hundred thirst, and builders a chief had ordered onto a hut who worked through a
+winter until they died. `doHunt` calls it, and any new long action must too.
+`doSleep` is the one deliberate exception: it has its own `wakeReason`, because
+the work list's first clause is `isLaden` and a full pack is not a reason to stop
+sleeping.
+
+> **The base limits are low because a need parks at whatever line stops it.**
+> Work continues right up to the limit and ends there, so `Config.needs.workLimits`
+> is also where the population's average hunger and thirst settle. An early build
+> put them near the lethal line and a healthy band was carrying 82 thirst inside
+> a fortnight. Raising them is therefore not a way to make people work longer;
+> it is a way to make everyone permanently hungrier.
+>
+> `ActionSystem.workLimit` is how work gets to continue without moving that
+> average, by making the exceptions *per job* rather than raising the line for
+> everybody. **A job is not interrupted by the need it is answering** — picking
+> berries is how you stop being hungry — decided per node rather than per verb,
+> since `forage` is berries at one bush and flint at the next. A pull that is
+> nearly done finishes, which is the far half of the berries-versus-flint
+> asymmetry `bugs.md` recorded as untunable. Work the player ordered gets a
+> little more rope. Everything else still stops where it always did.
+>
+> **`pressedByNeed` asks the same function**, because the scorer has to know
+> where the line is before it starts a long job. An action that checks its
+> interruption *during* one long pull rather than *between* short ones will
+> otherwise be started by somebody already over the line, stopped on the next
+> tick, and chosen again — 786 abandoned attempts per finished axe when crafting
+> had this shape, and eleven and a half thousand broken-off chases when `hunt`
+> turned out to have it too.
 
 > **A long job must bank its progress somewhere.** The interruption check is
 > not the only ceiling: a novice picks up thirty-five points of thirst in four
@@ -166,14 +191,23 @@ clause is `isLaden` and a full pack is not a reason to stop sleeping.
 > the job until it fits only moves the line.
 >
 > `doCraft` was found without an interruption check at all in pass A, having
-> gone the whole life of the project unreachable for 258 ticks at a time. It also showed the other half of
-> the rule: **an action that is one long pull rather than a run of short ones
+> gone the whole life of the project unreachable for 258 ticks at a time. It also showed the other half
+> of the rule: **an action that is one long pull rather than a run of short ones
 > needs the scorer to know where the line is.** Every other long action checks
 > *between* cycles, so it never begins on the wrong side of a threshold; a craft
 > checks *during*, so `Brain` would start one for somebody a point over the
 > limit, watch them stop on the next tick, and choose it again. The thresholds
-> live in `WORK_LIMITS` and are asked for through `pressedByNeed` rather than
-> copied, because two copies of them would drift.
+> live in `Config.needs.workLimits` and are asked for through `workLimit` and
+> `pressedByNeed` rather than copied, because two copies of them would drift.
+
+**Needs are not all alike, and thirst answers to effort.** Hunger, fatigue and
+company climb at a flat rate; cold is a function of the season and what is over
+your head; and thirst is a function of what you are *doing*, through `EXERTION`
+in `NeedsSystem` and a heat term read off the same `time.temperature` that drives
+cold. Before that a person asleep in a hut in February got thirsty at exactly the
+rate of one felling a tree in July. Hunger is deliberately still flat: the food
+economy is the most fragile thing in this world, and giving two needs the same
+treatment at once would have put two changes inside one measurement.
 
 **If the simulation stops something, the UI says why.** `interruption()` and
 `abandon()` between them carry thirty-odd reasons; they reach the player through

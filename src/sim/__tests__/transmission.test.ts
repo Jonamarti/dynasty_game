@@ -44,6 +44,7 @@ function context(seed = 'transmission-ctx'): Parameters<KnowledgeSystem['daily']
     world: world(),
     season: 'summer',
     ticksPerDay: config.time.ticksPerDay,
+    knowledge: config.knowledge,
     onInsight: () => {},
   };
 }

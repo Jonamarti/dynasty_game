@@ -299,6 +299,58 @@ export class Person {
     return this.timer;
   }
 
+  /**
+   * How far through the current pull of work this is, 0 to 1.
+   *
+   * Read by `ActionSystem.workLimit` so that a job nine-tenths done is allowed
+   * to finish rather than being thrown away one tick short and started again
+   * from nothing. Zero for anything that is not on a countdown — building,
+   * felling and carving bank their progress on the thing being worked instead,
+   * and cannot lose it.
+   */
+  /**
+   * Ticks already spent on one long solo job, and which job they were spent on.
+   *
+   * The escape hatch `AGENTS.md` demands for anything much over 140 workTicks:
+   * a novice's hand axe is 258 ticks against about 400 of thirst, so an
+   * interrupted craft used to start again from nothing every time. Building,
+   * felling and carving bank on the *thing being worked*, which is better —
+   * anyone can pick the job up. A craft has no such thing to bank on until the
+   * final tick, when the item appears, so it banks on the person instead.
+   *
+   * Keyed, so that starting a different job discards it rather than crediting
+   * pot-shaping hours to an axe. Cleared by `forgetPlans`.
+   */
+  workBankKey: string | null = null;
+  workBankTicks = 0;
+
+  /**
+   * Ticks already banked towards `key`, and none if the last job was different.
+   */
+  bankedFor(key: string): number {
+    return this.workBankKey === key ? this.workBankTicks : 0;
+  }
+
+  /** Records another tick spent on `key`, discarding any other job's progress. */
+  bankWork(key: string): void {
+    if (this.workBankKey !== key) {
+      this.workBankKey = key;
+      this.workBankTicks = 0;
+    }
+    this.workBankTicks++;
+  }
+
+  /** Throws away banked progress, on finishing a job or on giving one up. */
+  clearWorkBank(): void {
+    this.workBankKey = null;
+    this.workBankTicks = 0;
+  }
+
+  pullProgress(): number {
+    if (this.actionTotal <= 0) return 0;
+    return Math.min(1, Math.max(0, 1 - this.timer / this.actionTotal));
+  }
+
   set actionTimer(value: number) {
     // Rising means a fresh stretch of work; falling is the countdown.
     if (value > this.timer) this.actionTotal = value;
@@ -523,5 +575,6 @@ export class Person {
   forgetPlans(): void {
     this.order = null;
     this.resume = null;
+    this.clearWorkBank();
   }
 }

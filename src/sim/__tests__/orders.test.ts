@@ -220,6 +220,20 @@ describe('orders that stop', () => {
     expect(mine[0]!.reason).toBeTruthy();
   });
 
+  /**
+   * Thirst far enough over the line to stop work, whatever the line currently is.
+   *
+   * These tests used to write `40` by hand, which cleared the old flat limit of
+   * 35 and stopped clearing it the moment the limits became contextual and
+   * configurable — the base rose to 42 and ordered work gets a further six
+   * points of rope, so 40 no longer interrupts anything. The tests are about the
+   * *set-aside and resume* machinery and never cared about the number, so they
+   * ask for it now instead of restating it.
+   */
+  function thirstyEnough(sim: Simulation): number {
+    return sim.config.needs.workLimits.thirst + 20;
+  }
+
   it('are set aside and picked back up after a need is answered', () => {
     const sim = new Simulation(SMALL);
     for (let i = 0; i < 50; i++) sim.step();
@@ -232,7 +246,7 @@ describe('orders that stop', () => {
 
     sim.order(person, 'gather', { nodeId: node.id });
     // Thirsty enough that the next pull will not be started.
-    person.needs.thirst = 40;
+    person.needs.thirst = thirstyEnough(sim);
     for (let i = 0; i < 30 && person.order !== null; i++) sim.step();
 
     expect(person.order).toBeNull();
@@ -256,7 +270,7 @@ describe('orders that stop', () => {
     person.y = node.y;
 
     sim.order(person, 'gather', { nodeId: node.id });
-    person.needs.thirst = 40;
+    person.needs.thirst = thirstyEnough(sim);
     for (let i = 0; i < 30 && person.order !== null; i++) sim.step();
     expect(person.resume).not.toBeNull();
 
@@ -293,6 +307,37 @@ describe('crafting', () => {
     expect(person.inventory.count('handaxe')).toBeGreaterThan(0);
   });
 
+  it('banks its hours so an interrupted craft is not begun again', () => {
+    // The escape hatch `AGENTS.md` demands for a long job, and the thing
+    // `tech.test.ts` stopped asserting when the recipe ceiling stopped binding.
+    //
+    // A novice's hand axe is 258 ticks against roughly 400 of thirst, and less
+    // than 200 after a resume, so before this the craft restarted from nothing
+    // every time it was broken off. Building and felling bank on the site and
+    // the trunk; a craft has nothing to bank on until the item appears, so it
+    // banks on the crafter.
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const person = knapper(sim);
+
+    sim.order(person, 'craft', { recipeId: 'handaxe' });
+    for (let i = 0; i < 20; i++) sim.step();
+    const banked = person.bankedFor('craft:handaxe');
+    expect(banked, 'no hours were banked at all').toBeGreaterThan(0);
+
+    // Break it off the way thirst would, and the hours survive it.
+    person.needs.thirst = sim.config.needs.workLimits.thirst + 20;
+    for (let i = 0; i < 40 && person.order !== null; i++) sim.step();
+    expect(person.order, 'the craft was never interrupted').toBeNull();
+    expect(person.bankedFor('craft:handaxe'),
+      'the interruption threw away the work').toBeGreaterThanOrEqual(banked);
+
+    // Starting a different job discards them, or pot-shaping hours would be
+    // credited to an axe.
+    person.bankWork('craft:pot');
+    expect(person.bankedFor('craft:handaxe')).toBe(0);
+  });
+
   it('is interrupted by thirst, and says so, and is picked back up', () => {
     // The regression this whole pass turns on. `doCraft` had no interruption
     // check at all, so for the 258 ticks a novice takes over a hand axe the
@@ -307,7 +352,7 @@ describe('crafting', () => {
     sim.order(person, 'craft', { recipeId: 'handaxe' });
     sim.interruptions.length = 0;
     // Over the threshold `interruption` uses for work, and nowhere near lethal.
-    person.needs.thirst = 40;
+    person.needs.thirst = sim.config.needs.workLimits.thirst + 20;
 
     for (let i = 0; i < 60 && person.order !== null; i++) sim.step();
 

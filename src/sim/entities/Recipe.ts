@@ -20,8 +20,12 @@
  * A recipe whose output nothing consumes would be exactly the defect above with
  * the arrow reversed, so this table holds only what something already asks for:
  * the axe, which halves felling time, and the pot, which the granary is built
- * out of. Phase 5's weapons — `spear`, `bow`, `hide_armour` — belong here when
- * `doAttack` and `doHunt` have the terms that read them, and not before.
+ * out of.
+ *
+ * Phase 5 added the weapons on exactly the terms this paragraph set: they are
+ * here **because** `doAttack` and `doHunt` gained the terms that read them in
+ * the same pass. Before that `doAttack` had no item term at all, so a spear
+ * would have been an expensive way to carry a stick.
  */
 import type { Skill } from './Person.ts';
 import type { Tech } from '../knowledge/Tech.ts';
@@ -73,6 +77,41 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 90,
     ingredients: { flint: 1, sticks: 1 },
     output: { handaxe: 1 },
+    keep: 1,
+  },
+  spear: {
+    id: 'spear',
+    label: 'Spear',
+    icon: '🗡',
+    tech: 'spear',
+    skill: 'knap',
+    workTicks: 100,
+    ingredients: { sticks: 2, flint: 1 },
+    output: { spear: 1 },
+    // Worth carrying for its own sake: it makes every hunt and every fight go
+    // better, which is exactly what `keep` is for.
+    keep: 1,
+  },
+  bow: {
+    id: 'bow',
+    label: 'Bow',
+    icon: '🏹',
+    tech: 'bow',
+    skill: 'hunt',
+    workTicks: 140,
+    ingredients: { sticks: 3, thatch: 2 },
+    output: { bow: 1 },
+    keep: 1,
+  },
+  hide_armour: {
+    id: 'hide_armour',
+    label: 'Hide armour',
+    icon: '🦺',
+    tech: 'leatherwork',
+    skill: 'build',
+    workTicks: 130,
+    ingredients: { hide: 2, thatch: 1 },
+    output: { hide_armour: 1 },
     keep: 1,
   },
   pot: {

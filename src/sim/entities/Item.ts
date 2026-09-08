@@ -16,6 +16,22 @@ export interface ItemDef {
   spoilTicks: number;
   /** Rough scarcity weight used as the base of subjective barter value. */
   baseValue: number;
+  /**
+   * What this is worth in a fight, if anything.
+   *
+   * `doAttack` had no item term at all: a man with a spear hit exactly as hard
+   * as a man with his hands, which made every weapon in the game a decoration.
+   *
+   * `reach` widens the range `approach` will settle for, which is how a spear
+   * beats a fist without ranged combat existing — the spearman lands blows from
+   * a step further back than the other party can. `hunt` is the separate
+   * multiplier on bringing an animal down, because a bow is a far better answer
+   * to a deer than to a neighbour. `tech` routes the whole thing through
+   * `techPower`, so a refined design hits harder than a first attempt at one.
+   */
+  weapon?: { damage: number; reach: number; hunt: number; tech: string };
+  /** How much of a blow this turns aside, 0 to 1. */
+  armour?: number;
 }
 
 export const ITEMS: Record<string, ItemDef> = {
@@ -28,10 +44,35 @@ export const ITEMS: Record<string, ItemDef> = {
   // A kill yields a hide as well as meat, and a hide in cold hands is the
   // heaviest spark clothing has. Without it that route could never fire.
   hide:     { id: 'hide',     label: 'Hide',       nutrition: 0,  spoilTicks: 0,    baseValue: 3 },
+  // Weapons. Each is gated on a technology and read through `techPower`, so the
+  // same spear is worth more in the hands of whoever kept improving the design.
+  spear: {
+    id: 'spear', label: 'Spear', nutrition: 0, spoilTicks: 0, baseValue: 9,
+    // The reach is the point of it. Damage a little above a hand axe; what a
+    // spear actually buys is hitting first.
+    weapon: { damage: 0.55, reach: 0.9, hunt: 1.6, tech: 'spear' },
+  },
+  bow: {
+    id: 'bow', label: 'Bow', nutrition: 0, spoilTicks: 0, baseValue: 14,
+    // Poor in a brawl and decisive against an animal that outruns you, which is
+    // the whole reason hunting has been a garnish: a fresh deer is faster than a
+    // person and a hunt could only ever be won by exhausting one.
+    weapon: { damage: 0.3, reach: 1.6, hunt: 2.4, tech: 'bow' },
+  },
+  hide_armour: {
+    id: 'hide_armour', label: 'Hide armour', nutrition: 0, spoilTicks: 0, baseValue: 11,
+    armour: 0.3,
+  },
   flint:    { id: 'flint',    label: 'Flint',      nutrition: 0,  spoilTicks: 0,    baseValue: 2 },
   sticks:   { id: 'sticks',   label: 'Sticks',     nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   wood:     { id: 'wood',     label: 'Timber',     nutrition: 0,  spoilTicks: 0,    baseValue: 4 },
-  handaxe:  { id: 'handaxe',  label: 'Hand axe',   nutrition: 0,  spoilTicks: 0,    baseValue: 8 },
+  handaxe:  {
+    id: 'handaxe', label: 'Hand axe', nutrition: 0, spoilTicks: 0, baseValue: 8,
+    // It was always a weapon in everything but the code. No reach — you have to
+    // be on top of somebody to use it — and poor for hunting, because the animal
+    // has to be caught first.
+    weapon: { damage: 0.35, reach: 0, hunt: 1.15, tech: 'hafting' },
+  },
   thatch:   { id: 'thatch',   label: 'Thatch',     nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   mud:      { id: 'mud',      label: 'Daub',       nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   pottery:  { id: 'pottery',  label: 'Pot',        nutrition: 0,  spoilTicks: 0,    baseValue: 6 },

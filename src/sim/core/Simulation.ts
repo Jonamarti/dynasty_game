@@ -45,8 +45,9 @@ import { foundBand, type FoundingContext } from '../systems/Founding.ts';
 import { KnowledgeSystem, countHolders } from '../systems/KnowledgeSystem.ts';
 import type { Notice } from '../knowledge/Synthesis.ts';
 import {
-  eraFor, nutritionFactor, ERA_ORDER, TECHS, type EraDef, type Tech,
+  eraFor, nutritionFactor, techPower, ERA_ORDER, TECHS, type EraDef, type Tech,
 } from '../knowledge/Tech.ts';
+import { RECIPES, type RecipeDef } from '../entities/Recipe.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
 import {
   Inscription, INSCRIPTIONS, resetInscriptionIds, type InscriptionForm,
@@ -1286,6 +1287,31 @@ export class Simulation {
   }
 
   /**
+   * Recipes this person can make right now, and the ones they cannot yet.
+   *
+   * Deliberately **per person**, where `availableDesigns` is per society. That
+   * is not an inconsistency: a building is raised by a band and gated on
+   * `knownTech`, which is what any adult alive knows; an axe is made by one pair
+   * of hands out of one head's worth of knowledge. Asking `techPower` rather
+   * than `knownTech.has` also means a design still on the bench counts, which is
+   * the whole point of the prototype stage — you can make the thing while you
+   * are still finding out whether it works.
+   *
+   * There was no craft menu at all before this. `RECIPES` was reachable only by
+   * right-clicking bare ground, and an entry the actor could not make was left
+   * out rather than greyed, so proving hafting changed nothing anywhere the
+   * player could see.
+   */
+  availableRecipes(person: Person): RecipeDef[] {
+    return Object.values(RECIPES).filter(recipe => techPower(person, recipe.tech) > 0);
+  }
+
+  /** Recipes that exist but are out of this person's reach, for the greyed line. */
+  lockedRecipes(person: Person): RecipeDef[] {
+    return Object.values(RECIPES).filter(recipe => techPower(person, recipe.tech) <= 0);
+  }
+
+  /**
    * True if `def` can stand with its top-left corner at (x, y): every tile
    * walkable, and nothing already there.
    */
@@ -1448,6 +1474,7 @@ export class Simulation {
         world: this.world,
         season: this.time.season,
         ticksPerDay: this.config.time.ticksPerDay,
+        knowledge: this.config.knowledge,
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
       });
       this.refreshRecords();
@@ -1478,6 +1505,7 @@ export class Simulation {
       inscriptionHash: this.inscriptionHash,
       recorded: this.recordsInHand,
       sightRadius: this.config.sightRadius,
+      needs: this.config.needs,
     };
     const actionCtx = {
       world: this.world,

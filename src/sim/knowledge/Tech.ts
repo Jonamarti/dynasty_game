@@ -43,6 +43,7 @@
 import type { Person, Skill } from '../entities/Person.ts';
 import type { Spark } from './Synthesis.ts';
 import { PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
+import { ITEMS } from '../entities/Item.ts';
 
 export const TECHS = [
   'firemaking', 'cordage', 'plant_lore', 'tracking',
@@ -50,6 +51,10 @@ export const TECHS = [
   // Phase 4: the fourth channel. Everything above travels only between living
   // heads; these are how a thing gets past the death of everyone who knew it.
   'marking', 'writing', 'clay_tablet', 'library',
+  // Phase 5: the first things made to be *used on* something. Until these,
+  // `doAttack` had no item term at all and a hunt could only be won by
+  // outlasting an animal that runs faster than a person.
+  'spear', 'bow', 'leatherwork',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -162,6 +167,58 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Which leaf, which berry, and when. The same hillside feeds more people ' +
       'once somebody has learned to read it.',
+  },
+  spear: {
+    id: 'spear', label: 'The spear', domain: 'beasts',
+    requires: ['hafting'], difficulty: 0.35, skill: 'knap',
+    prototype: { sticks: 2, flint: 1 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'saw', what: 'quarry_escaped' }],
+        weight: 1.0, story: 'lost a deer by the length of one arm' },
+      { needs: [{ kind: 'doing', action: 'hunt' }, { kind: 'holding', item: 'sticks' }],
+        weight: 0.8, story: 'was carrying a long straight stick when the boar turned' },
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'saw', what: 'under_attack' }],
+        weight: 0.6, story: 'wished, while being beaten, for a longer arm' },
+    ],
+    description:
+      'A blade on the end of a shaft. The first tool made to be used at a ' +
+      'distance, however short that distance is.',
+  },
+  bow: {
+    id: 'bow', label: 'The bow', domain: 'beasts',
+    requires: ['cordage', 'spear'], difficulty: 0.6, skill: 'hunt',
+    prototype: { sticks: 3, thatch: 2 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'doing', action: 'hunt' },
+               { kind: 'feeling', need: 'hunger' }],
+        weight: 1.0, story: 'drew a cord back around a green branch and felt it want to go' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'saw', what: 'quarry_escaped' }],
+        weight: 0.7, story: 'threw a spear as far as an arm goes, and watched it fall short' },
+    ],
+    description:
+      'Cord, tension, and a shaft that goes where a thrown one cannot. The ' +
+      'first time the wilderness stops being faster than you are.',
+  },
+  leatherwork: {
+    id: 'leatherwork', label: 'Leatherwork', domain: 'cloth',
+    requires: ['clothing'], difficulty: 0.45, skill: 'build',
+    prototype: { hide: 1, thatch: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'clothing' }, { kind: 'holding', item: 'hide' }],
+        weight: 1.0, story: 'worked a stiff hide soft and wondered what else it would take' },
+      { needs: [{ kind: 'saw', what: 'under_attack' }, { kind: 'holding', item: 'hide' }],
+        weight: 0.7, story: 'was struck while carrying a hide, and thought about the difference' },
+      // A route that needs nothing scarce. Both routes above want a hide in
+      // hand, and `every-tech-has-an-ordinary-route` caught that at once: hides
+      // are rare precisely because hunting is, so a node reachable only by
+      // holding one is a node reachable in principle and not in play.
+      { needs: [{ kind: 'knows', tech: 'clothing' }, { kind: 'feeling', need: 'cold' },
+               { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'spent a winter deciding that what they wore was not enough' },
+    ],
+    description:
+      'Hide worked until it bends without cracking. Warm, and it turns a blow ' +
+      'that bare skin does not.',
   },
   tracking: {
     id: 'tracking', label: 'Tracking', domain: 'beasts',
@@ -371,6 +428,18 @@ export interface TechEffect {
 }
 
 export const TECH_EFFECTS: Record<Tech, TechEffect> = {
+  spear: {
+    summary: 'A blade at the end of a shaft: harder blows, and landed first.',
+    site: 'ActionSystem.doAttack and doHunt, via weaponOf; RECIPES.spear',
+  },
+  bow: {
+    summary: 'Meat from an animal that would have outrun you.',
+    site: 'ActionSystem.doHunt, via weaponOf; RECIPES.bow',
+  },
+  leatherwork: {
+    summary: 'Worked hide that turns a blow.',
+    site: 'ActionSystem.doAttack, via armourOf; RECIPES.hide_armour',
+  },
   firemaking: {
     summary: 'Warmth you carry with you, wherever you are standing.',
     site: 'NeedsSystem.update, via warmthFrom',
@@ -452,6 +521,51 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
  * out of `Inventory`'s stacks, which are a plain id-to-count map and are relied
  * on as one nearly everywhere.
  */
+/**
+ * The best weapon in somebody's pack, and what it is worth to them.
+ *
+ * Scaled by `techPower`, so the same spear is worth more to whoever went on
+ * improving the design — the trade-off recorded at the top of this file, that a
+ * fine spear handed to a novice is just a spear, because refinement lives on the
+ * knower rather than on the object.
+ *
+ * `forHunt` picks by a different measure, because a bow is a far better answer
+ * to a deer than to a neighbour and a hand axe is the reverse.
+ */
+export function weaponOf(
+  person: Person,
+  forHunt: boolean
+): { damage: number; reach: number; hunt: number; power: number } | null {
+  let best = null as
+    { damage: number; reach: number; hunt: number; power: number } | null;
+  for (const [itemId, count] of person.inventory.entries()) {
+    if (count <= 0) continue;
+    const weapon = ITEMS[itemId]?.weapon;
+    if (!weapon) continue;
+    const power = techPower(person, weapon.tech as Tech);
+    if (power <= 0) continue;
+    const worth = forHunt ? weapon.hunt * power : weapon.damage * power;
+    const bestWorth = best === null
+      ? 0
+      : (forHunt ? best.hunt * best.power : best.damage * best.power);
+    if (best === null || worth > bestWorth) {
+      best = { damage: weapon.damage, reach: weapon.reach, hunt: weapon.hunt, power };
+    }
+  }
+  return best;
+}
+
+/** How much of a blow the best thing they are wearing turns aside, 0 to 1. */
+export function armourOf(person: Person): number {
+  let best = 0;
+  for (const [itemId, count] of person.inventory.entries()) {
+    if (count <= 0) continue;
+    const armour = ITEMS[itemId]?.armour;
+    if (armour !== undefined && armour > best) best = armour;
+  }
+  return best;
+}
+
 export function techPower(person: Person, tech: Tech): number {
   if (person.knownTech.has(tech)) {
     return 1 + (person.techLevel.get(tech) ?? 0) * REFINEMENT_STEP;

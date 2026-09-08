@@ -37,6 +37,8 @@ import {
   rememberedAbout,
 } from '../sim/social/Knowledge.ts';
 import { TECH, TECH_EFFECTS, techPower, type Tech } from '../sim/knowledge/Tech.ts';
+import { STAGE_LABELS } from '../sim/knowledge/Synthesis.ts';
+import { missingIngredients } from '../sim/entities/Recipe.ts';
 import { itemActions } from '../sim/ai/ActionCatalog.ts';
 import { DEFAULT_CONFIG } from '../sim/core/Config.ts';
 import { noticeRadius } from '../sim/systems/WildlifeSystem.ts';
@@ -65,6 +67,8 @@ export interface HudCallbacks {
   onPossess: (person: Person) => void;
   onSelect: (person: Person) => void;
   onPickDesign: (def: BuildingDef | null) => void;
+  /** A recipe chosen from the craft bar. Ordered against the player's own hands. */
+  onCraft: (recipeId: string) => void;
 }
 
 /** How long the panel keeps saying why the last order stopped. */
@@ -88,6 +92,18 @@ export class Hud {
   private panelBodyEl!: HTMLElement;
   private collapseButton!: HTMLButtonElement;
   private buildBarEl!: HTMLElement;
+  private craftBarEl!: HTMLElement;
+  /**
+   * A digest of what the craft bar is showing, so it redraws only on a change.
+   *
+   * The bar is called every frame, because whether a recipe is makeable changes
+   * as the pack does and a stale "you need 1 flint" is exactly the sort of lie
+   * this pass exists to remove. Rebuilding `innerHTML` sixty times a second
+   * detaches whatever the cursor is over before a hover or a click can land —
+   * `TechWeb` learned this the hard way and Playwright reported it as "element
+   * was detached from the DOM, retrying", a hundred times over.
+   */
+  private craftBarKey = '';
   private commandBarEl!: HTMLElement;
   private pauseButton!: HTMLButtonElement;
 
@@ -205,6 +221,16 @@ export class Hud {
     this.panelEl.append(this.panelHeaderEl, this.panelBodyEl);
 
     this.buildBarEl = el('div', 'hud-buildbar');
+    // Its own bar rather than a second row inside the build bar: a structure is
+    // placed on the map and a hand axe is not, so one bar would have carried two
+    // different interactions under one heading.
+    // Its own class, not `hud-buildbar` as well. Sharing the container class
+    // made `.hud-buildbar` match two elements, which is a selector that can no
+    // longer name either bar — Playwright called it a strict mode violation and
+    // it would have been just as ambiguous in a stylesheet. The styling is
+    // shared by naming both in the CSS instead.
+    this.craftBarEl = el('div', 'hud-craftbar');
+    this.craftBarEl.hidden = true;
     this.commandBarEl = el('div', 'hud-commandbar');
     this.commandBarEl.hidden = true;
 
@@ -212,10 +238,12 @@ export class Hud {
     help.innerHTML =
       '<b>WASD</b> walk &middot; <b>drag</b> pan &middot; <b>F</b> re-centre &middot; ' +
       '<b>click</b> inspect &middot; <b>right-click</b> actions &middot; ' +
-      '<b>B</b> build &middot; <b>C</b> command &middot; <b>G</b> tech web &middot; ' +
+      '<b>B</b> build &middot; <b>M</b> make &middot; <b>C</b> command &middot; ' +
+      '<b>G</b> tech web &middot; ' +
       '<b>P</b> fold panel &middot; <b>H</b> hide overlay &middot; <b>space</b> pause';
 
-    this.root.append(topBar, this.panelEl, this.buildBarEl, this.commandBarEl, help);
+    this.root.append(
+      topBar, this.panelEl, this.buildBarEl, this.craftBarEl, this.commandBarEl, help);
   }
 
   /**
@@ -336,14 +364,94 @@ export class Hud {
     const lockedDefs = sim.lockedDesigns();
     if (lockedDefs.length > 0) {
       const note = el('div', 'hud-buildbar-locked');
+      // `TECH[...].label`, not the raw id: this line read "Granary (needs
+      // pottery)" only because the ids happen to be English words, and would
+      // have read "(needs clay_tablet)" the moment one of them was not.
       note.textContent = 'Not yet known: ' +
-        lockedDefs.map(d => d.label + ' (needs ' + d.requiresTech + ')').join(', ');
+        lockedDefs.map(d => d.label + ' (needs ' +
+          (d.requiresTech !== null
+            ? TECH[d.requiresTech as Tech].label
+            : 'nothing') + ')').join(', ');
       this.buildBarEl.appendChild(note);
     }
   }
 
   clearDesign(): void {
     this.activeDesign = null;
+  }
+
+  // -------------------------------------------------------------------------
+  // Craft bar
+  // -------------------------------------------------------------------------
+
+  /**
+   * What the player can make with their own hands, and what they cannot yet.
+   *
+   * A deliberate copy of `renderBuildBar`'s shape rather than a shared generic
+   * one: the two lists answer different questions of different objects, and the
+   * only thing they share is a row of buttons. What they *do* share — the
+   * "why can I not do this?" wording — comes from `missingIngredients` in the
+   * simulation, so the greyed-out reason here is the same sentence the radial
+   * menu gives.
+   *
+   * Unlike the build bar this is per person, because a recipe is gated on what
+   * *this* pair of hands knows. See `Simulation.availableRecipes`.
+   */
+  renderCraftBar(sim: Simulation, person: Person | null, visible: boolean): void {
+    if (!visible || !person) {
+      this.craftBarEl.innerHTML = '';
+      this.craftBarEl.hidden = true;
+      this.craftBarKey = '';
+      return;
+    }
+
+    const key = person.id + '|' + person.inventory.version + '|' +
+      sim.availableRecipes(person).map(r => r.id).join(',');
+    if (key === this.craftBarKey && this.craftBarEl.childElementCount > 0) return;
+    this.craftBarKey = key;
+
+    this.craftBarEl.hidden = false;
+    this.craftBarEl.innerHTML = '';
+
+    const title = el('div', 'hud-buildbar-title');
+    title.textContent = 'Make something — Esc to cancel';
+    this.craftBarEl.appendChild(title);
+
+    const row = el('div', 'hud-buildbar-row');
+    const known = sim.availableRecipes(person);
+    if (known.length === 0) {
+      const none = el('div', 'hud-buildbar-locked');
+      none.textContent = 'They do not know how to make anything yet.';
+      this.craftBarEl.appendChild(none);
+    }
+    for (const recipe of known) {
+      const button = document.createElement('button');
+      const short = missingIngredients(person.inventory, recipe);
+      button.className = 'hud-design' + (short === '' ? '' : ' is-disabled');
+      const cost = Object.entries(recipe.ingredients)
+        .map(([id, n]) => n + ' ' + (ITEMS[id]?.label ?? id).toLowerCase())
+        .join(', ') || 'nothing';
+      button.innerHTML =
+        '<span class="hud-design-icon">' + recipe.icon + '</span>' +
+        '<span class="hud-design-name">' + escapeHtml(recipe.label) + '</span>' +
+        '<span class="hud-design-cost">' + escapeHtml(cost) + '</span>';
+      // The standing rule: if it cannot be done, the interface says why.
+      button.title = short === '' ? recipe.label : short;
+      if (short === '') button.onclick = () => this.callbacks.onCraft(recipe.id);
+      row.appendChild(button);
+    }
+    this.craftBarEl.appendChild(row);
+
+    // Shown, not hidden, and named by their technology rather than its id. The
+    // build bar's own reasoning: progression the player can see from the first
+    // hut beats content that appears out of nowhere in a later age.
+    const locked = sim.lockedRecipes(person);
+    if (locked.length > 0) {
+      const note = el('div', 'hud-buildbar-locked');
+      note.textContent = 'Not yet known: ' +
+        locked.map(r => r.label + ' (needs ' + TECH[r.tech].label + ')').join(', ');
+      this.craftBarEl.appendChild(note);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -673,11 +781,24 @@ export class Hud {
           '<b>' + escapeHtml(def.label) + ' \u2014 ' + STAGE_LABELS[idea.stage] + '</b>' +
           '<span>' + escapeHtml(idea.story) + '</span>' +
           '</div>');
-        rows.push(bar(idea.stage === 'proven' ? 'refining' : 'insight',
-          idea.insight * 100, idea.stage === 'proven' ? '#7ddc96' : '#c88ad8'));
+        // Which bar depends on what is actually standing between them and
+        // knowing it. While a design is on the bench that is the trials, not the
+        // insight — insight barely moves then, so showing it would park a bar
+        // for days while something was happening every morning.
+        if (idea.stage === 'prototyped') {
+          rows.push(bar('proving', idea.proof * 100, '#7ddc96'));
+          rows.push('<div class="hud-sub">one built; ' +
+            (idea.trials === 0
+              ? 'not tried yet'
+              : idea.trials + (idea.trials === 1 ? ' try' : ' tries') + ' so far') +
+            '</div>');
+        } else {
+          rows.push(bar(idea.stage === 'proven' ? 'refining' : 'insight',
+            idea.insight * 100, idea.stage === 'proven' ? '#7ddc96' : '#c88ad8'));
+        }
         if (idea.failedTests > 0) {
           rows.push('<div class="hud-sub">' + idea.failedTests +
-            (idea.failedTests === 1 ? ' attempt' : ' attempts') + ' that did not work</div>');
+            (idea.failedTests === 1 ? ' try' : ' tries') + ' that did not work</div>');
         }
       }
       rows.push('<div class="hud-note">An idea has to be thought about, argued ' +
@@ -1195,13 +1316,6 @@ function describeHealth(health: number): string {
  * idea somebody is still working on *is* — the technology is already theirs and
  * what remains is making it better.
  */
-const STAGE_LABELS: Record<string, string> = {
-  conceived: 'just an idea',
-  researching: 'working it out',
-  prototyped: 'built, and being tried',
-  proven: 'refining',
-};
-
 function veil(text: string): string {
   return '<div class="hud-veil">' + escapeHtml(text) + '</div>';
 }

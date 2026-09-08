@@ -328,6 +328,9 @@ test('build mode offers designs and marks locked ones', async ({ page }) => {
   // Advanced designs exist but need knowledge nobody has yet; showing them is
   // how the progression stays visible instead of appearing from nowhere.
   await expect(page.locator('.hud-buildbar-locked')).toContainText(/granary|longhouse/i);
+  // Named by the technology, not by its id. This line used to read "(needs
+  // pottery)" only because the ids happen to be English words.
+  await expect(page.locator('.hud-buildbar-locked')).toContainText(/needs [a-z]/i);
 
   await page.keyboard.press('Escape');
   await expect(bar).toBeHidden();
@@ -618,7 +621,8 @@ test('an idea in progress is shown, with the story that started it', async ({ pa
     d.sim.player?.ideas.push({
       tech: 'cordage', stage: 'researching', insight: 0.4,
       story: 'kept running out of hands',
-      conceivedTick: 0, effort: 12, discussedWith: [], failedTests: 1,
+      conceivedTick: 0, effort: 12, discussedWith: [],
+      trials: 1, proof: 0.11, failedTests: 1,
     });
   });
 
@@ -627,8 +631,8 @@ test('an idea in progress is shown, with the story that started it', async ({ pa
   await expect(page.locator('.hud-panel')).toContainText('Cordage');
   await expect(page.locator('.hud-panel')).toContainText('working it out');
   await expect(page.locator('.hud-panel')).toContainText('kept running out of hands');
-  // A failed attempt is part of the story, not something to hide.
-  await expect(page.locator('.hud-panel')).toContainText('1 attempt that did not work');
+  // A failed try is part of the story, not something to hide.
+  await expect(page.locator('.hud-panel')).toContainText('1 try that did not work');
 
   expect(errors).toEqual([]);
 });
@@ -1291,5 +1295,82 @@ test('a record says nothing to somebody who cannot read it', async ({ page }) =>
   await expect(panel).not.toContainText(/mark(s)? you cannot read/);
 
   await page.locator('.hud-button', { hasText: 'Resume' }).click();
+  expect(errors).toEqual([]);
+});
+
+test('the craft bar shows what you can make, and why you cannot', async ({ page }) => {
+  // There was no craft menu at all before this pass. `RECIPES` was reachable
+  // only by right-clicking bare ground, and a recipe the actor could not make
+  // was left out of that menu rather than greyed, so proving hafting changed
+  // nothing anywhere the player could see. The owner reported exactly that.
+  const errors = guardErrors(page);
+  await ready(page);
+
+  const bar = page.locator('.hud-craftbar');
+
+  // Nothing known yet: the bar opens and says so, rather than opening empty.
+  await page.keyboard.press('m');
+  await expect(bar).toBeVisible();
+  await expect(bar).toContainText('Not yet known');
+
+  // Now they know how to haft a blade, and have neither the flint nor a stick.
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: { sim: { player: { knownTech: Set<string> } | null } };
+    }).__dynasty;
+    d.sim.player?.knownTech.add('hafting');
+  });
+
+  await expect(bar).toContainText('Hand axe');
+  const axe = page.locator('.hud-craftbar .hud-design', { hasText: 'Hand axe' });
+  // Greyed, and carrying the reason — the standing rule that a refusal says why.
+  await expect(axe).toHaveClass(/is-disabled/);
+  await expect(axe).toHaveAttribute('title', /you need/i);
+
+  // The two bars are mutually exclusive: both sit on the bottom edge.
+  await page.keyboard.press('b');
+  await expect(bar).toBeHidden();
+  await expect(page.locator('.hud-buildbar')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});
+
+test('a proven design stops asking for its prototype materials', async ({ page }) => {
+  // The defect the owner reported in as many words: cordage worked out and
+  // built, and the tech web still saying "Needs 3 thatch to build one"
+  // underneath it. An idea survives being proven — it stays on the person to be
+  // refined — so the pane has to ask what stage it is at, not merely whether an
+  // idea exists.
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: { sim: { player: {
+        knownTech: Set<string>; techLevel: Map<string, number>; ideas: unknown[];
+      } | null } };
+    }).__dynasty;
+    const player = d.sim.player;
+    if (!player) return;
+    player.knownTech.add('cordage');
+    player.techLevel.set('cordage', 0);
+    player.ideas.push({
+      tech: 'cordage', stage: 'proven', insight: 0,
+      story: 'kept running out of hands',
+      conceivedTick: 0, effort: 40, discussedWith: [],
+      trials: 3, proof: 1, failedTests: 1,
+    });
+  });
+
+  await page.keyboard.press('g');
+  const web = page.locator('.techweb');
+  await expect(web).toBeVisible();
+  await page.locator('.techweb-node', { hasText: 'Cordage' }).first().hover();
+
+  await expect(web).toContainText('Cordage');
+  await expect(web).not.toContainText('to build one');
+
+  await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
 });

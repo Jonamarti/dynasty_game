@@ -260,20 +260,30 @@ describe('recipes', () => {
     // points of thirst in four hundred ticks and thirst interrupts first — so
     // the ceiling here is deliberately conservative.
     //
-    // Recipes are single-pull and are held to it. Inscriptions are *not* in
-    // this list, and that is the point: cutting a stone takes twelve hundred
-    // ticks for a novice, which no ceiling could accommodate, so the work banks
-    // on the record the way it banks on a building site. That is the escape
-    // hatch for anything genuinely long — bank the progress somewhere, do not
-    // shrink the job until it fits.
+    // Inscriptions are *not* in this list, and that is the point: cutting a
+    // stone takes twelve hundred ticks for a novice, which no ceiling could
+    // accommodate, so the work banks on the record the way it banks on a
+    // building site. That is the escape hatch for anything genuinely long —
+    // bank the progress somewhere, do not shrink the job until it fits.
     //
     // Actions that work in short repeated cycles — harvesting, felling — are
     // unaffected either way, because the check runs between cycles.
+    //
+    // **Recipes used to be held to the tight ceiling and no longer are**, and
+    // the reason is the escape hatch above rather than a relaxed standard:
+    // `doCraft` banks its hours on the crafter now, so an interrupted craft
+    // resumes where it stopped instead of starting again. The bow is what
+    // exposed the stale premise — 140 ticks is exactly 400 for a novice — and
+    // shortening it to squeeze under a line that had stopped meaning anything
+    // would have been the wrong fix. What guards the banking is an end-to-end
+    // case in `orders.test.ts`, "banks its hours so an interrupted craft is not
+    // begun again"; what is left here is a sanity bound, because a recipe longer
+    // than a whole stretch of work is still a design mistake.
     const NOVICE = 0.35;
     const CEILING = 400;
     for (const recipe of Object.values(RECIPES)) {
-      expect(recipe.workTicks / NOVICE, recipe.id + ' can never be finished')
-        .toBeLessThan(CEILING);
+      expect(recipe.workTicks / NOVICE, recipe.id + ' is longer than any one stretch')
+        .toBeLessThan(900);
     }
     // The counterpart: anything longer than that had better be banking work.
     for (const def of Object.values(INSCRIPTIONS)) {

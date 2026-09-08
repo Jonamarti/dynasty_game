@@ -379,7 +379,8 @@ html, body, #app {
 
 /* --- build bar ----------------------------------------------------------- */
 
-.hud-buildbar {
+.hud-buildbar,
+.hud-craftbar {
   position: absolute;
   bottom: 48px;
   left: 50%;
@@ -950,6 +951,10 @@ html, body, #app {
   overflow: hidden;
 }
 .techweb-bar i { display: block; height: 100%; background: #c88ad8; }
+/* Trials, not insight. A different colour because it is a different question:
+   the purple bar is how well the idea is understood, the green one is how far
+   the thing on the bench has got towards being believed. */
+.techweb-bar.is-proof i { background: #7ddc96; }
 
 /* One route in, with each ingredient marked. This is the answer to "why has
    this not occurred to me", and it is the reason the panel exists. */

@@ -72,12 +72,16 @@ export const SCENARIOS: Record<string, Scenario> = {
       'knowledge takes years to work out from nothing, so without a scenario ' +
       'that starts with some, every check about crafted goods and about the ' +
       'designs they unlock would report n/a for ever — and a check that ' +
-      'reports nothing is exactly how the granary stayed unbuildable.',
+      'reports nothing is exactly how the granary stayed unbuildable. It ' +
+      'carries the spear for the same reason: weapons sit behind hafting and ' +
+      'are the only thing in the game made to be used *on* something, so ' +
+      'without them here nothing would ever measure an armed blow or an armed ' +
+      'hunt.',
     config: {
       seed: 'craft',
       population: {
         bands: 2, peoplePerBand: 12,
-        startingTech: ['firemaking', 'hafting', 'pottery'],
+        startingTech: ['firemaking', 'hafting', 'pottery', 'spear'],
       },
     },
     steps: 8000,
@@ -341,11 +345,81 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     deaths.length === 0 ? 'nobody died' : deaths.join(' ')
   );
 
+  // `weapons-are-made-and-used` was written here and **deliberately not kept**,
+  // for the reason the comment beside `prototypes-can-fail` gives further down.
+  //
+  // A world check needs the world to produce a sample. Personal crafting does
+  // not: a recipe is only ever scored when its ingredients are *already* in the
+  // pack, because nothing sends anyone to fetch materials for something they
+  // want for themselves — only for a building site. The whole `craft` scenario
+  // yields one spear and two hand axes across twenty-four people and eight
+  // thousand steps, so whether an armed blow lands in any given run is chance,
+  // and a check on it is either flaky or permanently n/a. That gap is recorded
+  // in `bugs.md`; it is older than weapons and is why the hand axe has always
+  // been rare.
+  //
+  // The mechanism is asserted deterministically in `combat.test.ts` instead: an
+  // armed blow beats a bare one, armour turns part of it, and reach decides who
+  // lands first. The counters are still emitted — `armed_blow` and `armed_hunt`
+  // read out in the events table — so anybody looking can see how often it
+  // actually happens.
+
   add(
     'people-drink',
     (tel.drink ?? 0) > 0,
     'drink=' + (tel.drink ?? 0)
   );
+
+  // How often somebody actually stops what they are doing and goes to the water.
+  //
+  // The owner reported people forever going to drink, and nothing in this report
+  // could say whether that was true — `people-drink` only asks whether drinking
+  // happens at all. `drink` counts ticks spent at the water's edge;
+  // `drink_finished` counts trips that ran to the bottom of the thirst, which is
+  // the one that answers "how often?".
+  //
+  // Bounded at both ends on purpose. Zero completed drinks means people are
+  // being dragged off the water before they finish, which is its own defect; a
+  // high figure is the reported complaint. The ceiling is deliberately generous
+  // because thirst now answers to exertion and to summer, so a working
+  // population in a hot year is *meant* to drink appreciably more than a
+  // resting one in a cold one.
+  // Mean population times the span, the same measure `ideas-are-conceived` uses
+  // further down. Computed here rather than shared because that one is scoped to
+  // the knowledge block and this check runs whether or not anybody had an idea.
+  const personDays = Math.max(1,
+    samples.reduce((total, sample) => total + sample.population, 0) /
+      Math.max(1, samples.length) * Math.max(1, last.day - first.day));
+  const drinksPerPersonDay = (tel.drink_finished ?? 0) / personDays;
+  if ((last.day - first.day) < 10) {
+    skip('drinking-is-paced', 'run too short to say anything about a daily rhythm');
+  } else {
+    add(
+      'drinking-is-paced',
+      drinksPerPersonDay > 0 && drinksPerPersonDay < 4,
+      (tel.drink_finished ?? 0) + ' drinks finished over ' + Math.round(personDays) +
+        ' person-days (' + drinksPerPersonDay.toFixed(2) +
+        ' each per day; wanted some, and fewer than 4)'
+    );
+  }
+
+  // The exemption the owner asked for, in as many words: picking berries is how
+  // you stop being hungry, so being hungry must not stop you picking berries.
+  // Counted as ticks of work that continued only because the job was answering
+  // the need that would otherwise have ended it.
+  if ((tel.harvest_berries ?? 0) + (tel.picked_apple ?? 0) === 0) {
+    skip('food-work-continues', 'nobody gathered any food in this run');
+  } else {
+    const gatheredOn = (tel.pushed_on_hunger_forage ?? 0) +
+      (tel.pushed_on_hunger_gather ?? 0) + (tel.pushed_on_hunger_pick ?? 0);
+    add(
+      'food-work-continues',
+      gatheredOn > 0,
+      gatheredOn + ' ticks of food-gathering continued through hunger that ' +
+        'would otherwise have stopped it (' +
+        (tel.pushed_on_hunger_hunt ?? 0) + ' hunting)'
+    );
+  }
 
   // `harvest_game` is gone: game is not a resource node any more, it is an
   // animal that runs away. Meat arrives through `harvest_meat` and the hunt.
@@ -690,6 +764,23 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         breakthroughsTogether > 0,
         breakthroughsAlone + ' breakthroughs alone, ' + breakthroughsTogether +
           ' by arguing it out');
+    }
+
+    // Proving a design takes several trials that went well, not one.
+    //
+    // The sharpest available statement of the change, and it detects its own
+    // removal exactly: under the old model one good trial proved a design
+    // outright, so passed trials and proofs were the same number. Under this one
+    // a proof costs `trialsToProve` of them, less whatever credit the failures
+    // along the way were worth — so passed trials must strictly exceed proofs
+    // wherever anything was proven at all.
+    if (proven === 0) {
+      skip('trials-accumulate', 'nothing was proven, so nothing was tried more than once');
+    } else {
+      add('trials-accumulate',
+        (tel.prototype_trial_passed ?? 0) > proven,
+        (tel.prototype_trial_passed ?? 0) + ' trials went well across ' + proven +
+          ' designs proven, ' + (tel.prototype_failed ?? 0) + ' went badly');
     }
 
     // `prototypes-can-fail` used to live here and has been **deliberately

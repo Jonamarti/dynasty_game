@@ -37,6 +37,98 @@ a locked design looks like content you have not reached yet. `carpentry` is a
 real technology now, and `tech.test.ts` asserts every `requiresTech` in
 `BUILDINGS` names one.
 
+## Fixed in M6b phase 5, 2026-09-07
+
+The three things reported in `docs/notes.txt`, and four defects found beside them.
+Diagnosis and reasons in [changelog.md](changelog.md).
+
+- **Work was interrupted by the need it was answering** — a forager stopped
+  picking berries because they were hungry. The limits are contextual now.
+- **A proven design went on advertising its prototype cost.** `TechWeb.detail`
+  asked whether an idea existed, not what stage it was at, and an idea survives
+  being proven.
+- **A failed trial destroyed the work and the materials**, so a design could look
+  permanently stuck. Proof accumulates and cannot go backwards.
+- **There was no craft menu**; `RECIPES` was reachable only by right-clicking
+  bare ground, and unmakeable entries were hidden rather than greyed.
+- **`hunt` was never gated by `pressedByNeed`**, the same defect crafting was
+  fixed for in pass A. Latent until thirst started answering to exertion, at
+  which point it cost a run its entire population.
+- **`doHunt` never told the player anything**, calling `finish` directly.
+- **The build bar printed raw technology ids.**
+
+### Nobody fetches materials for something they want for themselves
+
+The reason the hand axe has always been rare, found while trying to write a
+health check for weapons and worth more than the check was.
+
+`Brain`'s craft term only scores a recipe whose ingredients are **already in the
+pack** (`hasIngredients`). Pass A taught the scorer to go and fetch ingredients
+for a recipe a *building site* is waiting on — `gather_for_site` looks up the
+recipe and fetches its parts — but there is no equivalent for `keep`, the "you
+want one of these on you" case. So a personal craft only ever happens when the
+right materials happen to have been picked up for some other reason.
+
+The numbers: the whole `craft` scenario, whose founders already know how to knap
+and now how to make a spear, yields **one spear and two hand axes** across
+twenty-four people and eight thousand steps, against twenty pots — because the
+pots are what a granary is waiting for and the axes are not waiting for anything.
+
+This is why `weapons-are-made-and-used` was written and not kept: whether an
+armed blow lands in a given run is chance, and a check on it is either flaky or
+permanently n/a. The mechanism is asserted in `combat.test.ts` instead.
+
+Not fixed here because it is a scorer change and `Brain`'s coefficients are
+calibrated against each other — a new fetch term competes with foraging for the
+same ticks, and this pass had already spent its risk budget on the needs rework.
+It is the obvious next thing for anyone who wants weapons, axes or clothing to be
+ordinary rather than occasional.
+
+## Open — behaviour, found in phase 5
+
+### Nobody knows how often the owner thinks people drink
+
+The note asked for "twice a day at baseline, four times under hard work or in
+summer", against a reported "several times a day". The report can now measure it
+and the answer is **0.07 to 0.22 completed drinks per person-day** across every
+scenario — two orders of magnitude below the target and well below the
+complaint.
+
+The gap is almost certainly what is being counted. The walk to the water happens
+*inside* the `drink` action, so what a player watches is a character heading for
+the river, and there are far more of those than there are drinks that run to the
+bottom of the thirst: `century` spends 8,255 ticks drinking to produce 563
+completions, so roughly half of all trips are broken off part-way. Somebody
+watching two or three characters at speed would reasonably call that "several
+times a day".
+
+**This pass therefore did not tune to the number**, because tuning to a number
+whose definition is unknown is how you ship a coefficient chosen by noise. What
+it did is give thirst the *shape* the note describes — sleeping is cheap, felling
+a tree in July is not — and lower the base rate, which took drinking ticks down
+by 27% and thirst interruptions from 72 to 18 on `century`. If the owner wants an
+actual frequency, `drinking-is-paced` is the instrument and the first question is
+which of the two numbers they mean.
+
+### The proof bar can sit still for a long time
+
+`trialChance` is 0.18 a day and a design needs three good trials, so the median
+gap between building a prototype and proving it is now appreciably longer than it
+was under the single roll — around three weeks of game time at the shipped
+numbers. That is the intended shape: the days between building a thing and
+believing it are no longer silent, since each trial fires a floater and moves a
+bar. It has not been checked against how it *feels* at normal speed, which is a
+question only play answers.
+
+### `century/population-persists` fails, and it is not this pass
+
+10 alive against a threshold of 11. Investigated rather than tuned: the same seed
+ends at **8** with `conceptionBase` restored to its old 0.045, and at 10 with the
+thirst model wholly neutralised, so the build under test is if anything the
+better of the three. Twenty seeds moved 72.7% to 75.0% over the pass. This is the
+divergence `AGENTS.md` warns about on this scenario. The check has *not* been
+moved to accommodate it.
+
 ## Fixed in M6b phase 4, 2026-09-07
 
 - **Children were excluded from knowledge entirely**, so a parent could not
@@ -238,10 +330,16 @@ What remains, and it is a different problem from the one that was fixed:
 Do not attempt to fix this by tuning `interruption()` thresholds or the scorer's
 food weights. That ground has been covered and the numbers are in the changelog.
 
-### Hunting is rare
+### Hunting is rare — fixed in phase 5, kept for the diagnosis
 
-`hunts-succeed-and-fail` reports **n/a** on most scenarios — "too few strikes to
-tell". A 3,000-step band run produces about three kills. The chain works end to
+**Fixed 2026-09-07 by weapons.** `hunts-succeed-and-fail` now reports 12 kills
+against 9 misses on `craft`, where it had reported n/a for the whole life of the
+project. The diagnosis below was right and is kept because it names the mechanism:
+the answer turned out to be the second half of it — an armed hunter does not have
+to outlast the animal.
+
+`hunts-succeed-and-fail` reported **n/a** on most scenarios — "too few strikes to
+tell". A 3,000-step band run produced about three kills. The chain works end to
 end (`people-eat-meat` passes, meat is taken and eaten), but wild meat is a
 garnish rather than a food source.
 

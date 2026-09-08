@@ -60,6 +60,49 @@ export interface NeedsConfig {
   criticalDamage: number;
   /** Health regained per tick when no need is critical. */
   recoveryRate: number;
+  /**
+   * Need levels at which a stretch of work stops.
+   *
+   * Here rather than as a constant in `ActionSystem` because a scenario needs
+   * to be able to move them: they are the single strongest lever on how much
+   * work the world gets done. `ActionSystem.workLimit` reads these as a *base*
+   * and adjusts them per job — read the comment there before changing a number,
+   * because a need parks at whatever line stops it.
+   */
+  workLimits: { thirst: number; hunger: number; cold: number };
+  /**
+   * Multiplier on `thirstRate` at the hottest point of a summer day.
+   *
+   * Hard work and hot weather are the two things that actually make somebody
+   * thirsty, and until this existed neither did: a person asleep in a hut in
+   * February drank at exactly the rate of one felling a tree in July.
+   */
+  heatThirst: number;
+}
+
+/**
+ * The research lifecycle's numbers.
+ *
+ * Exposed here rather than left as module constants because the owner asked for
+ * them to be adjustable, and because the pace of discovery is the kind of thing
+ * a scenario legitimately wants to move — `craft` and `scribes` both already
+ * cheat with `startingTech` for want of it.
+ */
+export interface KnowledgeConfig {
+  /** Base chance per day that a satisfied spark actually becomes an idea. */
+  conceptionBase: number;
+  /** Chance per day that somebody puts a prototype to the test at all. */
+  trialChance: number;
+  /** Successful trials needed to prove a design. */
+  trialsToProve: number;
+  /**
+   * What a *failed* trial is worth, as a fraction of a successful one.
+   *
+   * Not zero: finding out that something does not work is how you find out how
+   * to make it work. At 0.34 three failures are worth about one success, so a
+   * run of bad luck is a delay rather than a wall.
+   */
+  failedTrialCredit: number;
 }
 
 export interface PopulationConfig {
@@ -89,6 +132,7 @@ export interface SimConfig {
   time: TimeConfig;
   needs: NeedsConfig;
   population: PopulationConfig;
+  knowledge: KnowledgeConfig;
   /** Tiles a person can see; the radius of witness and target queries. */
   sightRadius: number;
   /** A person re-scores their action every this many ticks (staggered by id). */
@@ -127,13 +171,27 @@ export const DEFAULT_CONFIG: SimConfig = {
   },
   needs: {
     hungerRate: 0.055,
-    thirstRate: 0.085,
+    // 0.075, not the 0.085 this shipped with, because `EXERTION` now multiplies
+    // it and the owner asked for the need itself to be lower. Hard work in high
+    // summer reaches about 1.9x this, which is a touch above the old flat rate;
+    // resting through a winter night is about 0.4x it. The point of the change
+    // is the *spread* — a person asleep in a hut used to get thirsty at exactly
+    // the rate of one felling a tree in July.
+    thirstRate: 0.075,
     fatigueRate: 0.04,
     coldRate: 0.06,
     companyRate: 0.07,
     criticalThreshold: 85,
     criticalDamage: 0.06,
     recoveryRate: 0.02,
+    // 42/48/50, not the 35/40/45 this shipped with. Raised because work stopped
+    // so readily that the owner reported it from play — but raised only a
+    // little, because a need parks *at* the line that stops it and these are
+    // therefore also where the population's average hunger and thirst settle.
+    // The real answer to "my forager keeps wandering off" is not this number,
+    // it is `ActionSystem.workLimit` exempting a job from the need it answers.
+    workLimits: { thirst: 42, hunger: 48, cold: 50 },
+    heatThirst: 1.25,
   },
   population: {
     // Three tribes, not two. With two, "another band" is one specific set of
@@ -147,6 +205,16 @@ export const DEFAULT_CONFIG: SimConfig = {
     peoplePerBand: 10,
     startingTech: [],
   },
+  knowledge: {
+    // 0.06, not the 0.045 this shipped with. The owner asked for ideas to come
+    // a little more readily; the ceiling is not taste but the
+    // `ideas-are-conceived` check, which fails above three ideas per
+    // person-year and reported about one before this was raised.
+    conceptionBase: 0.06,
+    trialChance: 0.18,
+    trialsToProve: 3,
+    failedTrialCredit: 0.34,
+  },
   sightRadius: 12,
   thinkInterval: 5,
 };
@@ -158,8 +226,18 @@ export function makeConfig(overrides: DeepPartial<SimConfig> = {}): SimConfig {
     ...overrides,
     world: { ...DEFAULT_CONFIG.world, ...overrides.world },
     time: { ...DEFAULT_CONFIG.time, ...overrides.time },
-    needs: { ...DEFAULT_CONFIG.needs, ...overrides.needs },
+    needs: {
+      ...DEFAULT_CONFIG.needs,
+      ...overrides.needs,
+      // One level deeper than everything else: `workLimits` is an object, so a
+      // scenario overriding thirst alone would otherwise drop hunger and cold.
+      workLimits: {
+        ...DEFAULT_CONFIG.needs.workLimits,
+        ...(overrides.needs?.workLimits ?? {}),
+      },
+    },
     population: { ...DEFAULT_CONFIG.population, ...overrides.population },
+    knowledge: { ...DEFAULT_CONFIG.knowledge, ...overrides.knowledge },
   } as SimConfig;
 }
 

@@ -6,6 +6,206 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-07 — M6b phase 5: the loop the player can see, and weapons
+
+Three things reported from play (`docs/notes.txt`), and all three sat on the seam
+between the simulation working and the player being able to tell. Folded into
+phase 5 rather than made a pass of their own, at the owner's direction, because
+the craft bar wants recipes worth opening it for.
+
+### Work stops for a need it is answering
+
+The reported symptom was people downing tools far too readily. The cause was that
+`WORK_LIMITS` was one flat triple — thirst 35, hunger 40, cold 45 — asked of every
+job alike, so **picking berries was interrupted by hunger**, which is absurd on
+its face: gathering food is how you stop being hungry.
+
+The limits could not simply be raised, and the comment that said so was right: a
+need *parks* at whatever line stops it, so wherever these sit is where the whole
+population's average hunger and thirst settle, and an early build near the lethal
+line had a healthy band carrying 82 thirst inside a fortnight. So the base moved
+only a little — into `Config.needs.workLimits`, where a scenario can reach it —
+and `ActionSystem.workLimit` puts three *per-job exceptions* on top:
+
+- **A job that answers a need is not stopped by it** until 90, near the critical
+  line rather than at it, so somebody who genuinely cannot feed themselves where
+  they stand still gives up and looks elsewhere. Decided per *node*, not per
+  verb: `forage` is berries at one bush and flint at the next.
+- **A nearly-finished pull finishes.** This is the far half of a rule `bugs.md`
+  recorded as untunable — because the limits are absolute need levels, whether a
+  job is ever interrupted depended on how long it ran, so berries looked
+  uninterruptible and flint hopeless under identical code.
+- **Work the player asked for gets a little more rope.**
+
+### Thirst answers to what you are doing
+
+A person asleep in a hut in February got thirsty at exactly the rate of one
+felling a tree in July. New `EXERTION` table in `NeedsSystem`, a heat term off
+`time.temperature` — the same reading that drives cold, with the sign the other
+way — and the base rate lowered from 0.085 to 0.075, because the owner asked for
+the need itself to be lower. Hard work in high summer now reaches about 1.9x the
+base and sleeping through a winter night about 0.4x, where before everything was
+1.0x. **Hunger is deliberately left flat**: the food economy is this world's most
+fragile part and only drinking was reported.
+
+**This nearly destroyed the world, and how it did is worth recording.** The first
+version used multipliers up to 1.8 on the fastest-climbing need, and a two-year
+run ended with **nobody alive** and *eleven and a half thousand* broken-off
+hunts. The thirst model was not really the culprit: `hunt` was never gated by
+`pressedByNeed` in the scorer, so a thirsty hunter armed a chase, was stopped on
+the next tick, re-scored, and chose the same quarry again — the exact thrash
+crafting was fixed for in pass A, latent all along and set off by thirst crossing
+the line mid-chase. Gating it took 11,503 thirst interruptions to 66. **A
+coefficient that exposes a structural defect looks exactly like a bad
+coefficient**, and both had to be fixed.
+
+### Proving a design is progress that cannot be lost
+
+A trial was one all-or-nothing daily roll. A failure cost a quarter of the
+insight, set the stage back to `researching` **and left the prototype materials
+spent** — so a second attempt at cordage wanted another three thatch, and nothing
+anywhere recorded that two trials had already happened. The owner reported it as
+being stuck, which from inside the game is indistinguishable.
+
+`Idea` now carries `trials` and `proof`. Proof only goes up: a good trial adds
+`1 / trialsToProve`, a bad one adds `failedTrialCredit` of that, and the design
+stays on the bench either way. Luck decides how long a design takes, not whether
+it arrives. The numbers are in `Config.knowledge` — `trialsToProve: 3`,
+`failedTrialCredit: 0.34`, `trialChance`, `conceptionBase` — which is the
+"adjustable via parameters" the note asked for; conception also rose from 0.045
+to 0.06, bounded by `ideas-are-conceived` rather than by taste.
+
+`FAILED_TRIAL_CEILING` is documented for what it actually does, which is **not**
+what its first comment claimed. That at least one trial must go well is
+guaranteed by the control flow — only the passing branch calls `prove` — and a
+test written against that comment duly passed with the ceiling removed, because
+nothing rested on it. What the ceiling buys is an honest bar: without it a run of
+failures under a generous credit fills the proof bar to the brim and parks it
+there beside a design that is not proven. The test asserts *that* now, and fails
+when the ceiling goes.
+
+### Three things the player could not see
+
+- **A proven design went on asking for its prototype materials.** An idea
+  survives being proven — it stays on the person to be refined and only retires
+  at its ceiling — and `TechWeb.detail` gated the whole "where it has got to"
+  block on whether an idea *existed*. So cordage, built and worked out, still
+  said "Needs 3 thatch to build one", under an insight bar showing the refinement
+  progress `prove` had just reset to zero. It asks the stage now, shows trials
+  rather than insight while a design is on the bench, and says whether the
+  materials are actually in hand. `STAGE_LABELS` moved to `Synthesis.ts` beside
+  the stages it names, rather than being copied into a second panel.
+- **There was no craft menu at all.** `RECIPES` was reachable only by
+  right-clicking bare ground, and an entry the actor could not make was left out
+  rather than greyed — so proving hafting changed nothing anywhere visible. New
+  craft bar on **M**, mirroring the build bar, with ingredients, greyed entries
+  carrying `missingIngredients`' reason, and a "not yet known" line. It is **per
+  person** where the build bar is per society, and that is not an inconsistency:
+  a building is raised by a band, an axe is made by one pair of hands.
+- **Proving something now says what it gave you** — the building or the recipe it
+  unlocks, falling back to `TECH_EFFECTS` for the quiet ones. Cordage unlocks
+  neither, which is exactly why the owner saw nothing happen.
+
+### 5b. Weapons, and the first thing made to be used *on* something
+
+`doAttack`'s damage line had **no item term at all**, so a man with a spear hit
+exactly as hard as a man with his hands and every weapon in the game was a
+decoration. `ItemDef` gains `weapon?: { damage, reach, hunt, tech }` and
+`armour?`, read through two new helpers in `Tech.ts` — `weaponOf` and `armourOf`
+— and therefore through `techPower`, so a refined design is worth more than a
+first attempt at one and a fine spear handed to a novice is still just a spear.
+
+- **`reach` is how a spear beats a fist without ranged combat existing.** It
+  widens the gap `approach` will settle for, and only for a blow, so a fight is
+  decided partly by who has to close the distance.
+- **`hunt` is a separate number from `damage`**, because a bow is a far better
+  answer to a deer than to a neighbour and a hand axe is the reverse.
+- Three new nodes — `spear`, `bow`, `leatherwork` — each with the code that makes
+  it real, three recipes, and `handaxe` gains the small weapon block it always
+  deserved.
+
+**`hunts-succeed-and-fail` has reported n/a for the whole life of the project**
+and now passes: 12 kills against 9 misses on `craft`. A fresh deer outruns a
+person, so before this a hunt could only be won by draining an animal's stamina,
+which is why a two-year run produced about three kills. That is the long-standing
+"hunting is a garnish" entry in `bugs.md` closed at its root, and it is upstream
+of two more: hides are taken off kills, and a hide in cold hands is clothing's
+heaviest spark.
+
+**`leatherwork` shipped briefly unreachable and a test caught it.** All of its
+routes wanted a hide in hand, and hides are scarce precisely because hunting is —
+the deadlock `every-tech-has-an-ordinary-route` exists to catch. It has a winter
+route now that needs nothing scarce.
+
+**`weapons-are-made-and-used` was written and deliberately not kept**, for the
+reason recorded beside `prototypes-can-fail`: a world check needs the world to
+produce a sample, and this one cannot. See the finding in `bugs.md`. The claims
+are asserted deterministically in a new `combat.test.ts` instead, and the
+`armed_blow` and `armed_hunt` counters still read out in the events table so
+anybody can see how often it actually happens.
+
+### The recipe ceiling stopped meaning what it said
+
+`tech.test.ts` held every recipe to 400 novice ticks, on the stated grounds that
+a longer craft is interrupted, restarts from the beginning and never finishes.
+That stopped being true in this same pass: `doCraft` and `doPrototype` bank their
+hours on the person now, the way a building banks on the site and a carving on
+the stone. The bow — 140 ticks, exactly 400 for a novice — is what exposed it,
+and shortening the bow to squeeze under a line that had stopped meaning anything
+would have been the wrong fix. The ceiling is a sanity bound now, and the
+banking is guarded end to end in `orders.test.ts` instead.
+
+Banking is worth its own line: on the `craft` scenario it took finished goods
+from **10 to 22** against the same run length.
+
+### Fixed on the way past
+
+- **`doHunt` reported to nobody.** It counted `hunt_ended_<reason>` and called
+  `finish` directly, so a chase broken off by thirst reached neither the player's
+  floater nor `person.resume`: the standing "the UI says why" rule with a hole in
+  it, and the telemetry counter beside it is what made the hole look deliberate.
+- **The build bar printed raw technology ids.** "Granary (needs pottery)" read
+  correctly only because the ids happen to be English words.
+- **`.hud-buildbar` matched two elements** once the craft bar borrowed the class.
+  A selector that can no longer name either bar is as ambiguous in a stylesheet
+  as it is to Playwright; the craft bar has its own class and the styling is
+  shared by naming both.
+
+### Verification
+
+Twenty seeds, before and after the whole pass: **72.7% → 75.7%** mean survival,
+268 born against 317, adult starvation 165 against 149 — and collapses below a
+quarter went 1 to 2. A three-point move is **not** resolvable at twenty seeds,
+where a strictly better change has measured nine points worse, so the honest
+claim is that none of this is a regression rather than that any of it is an
+improvement. The needs rework alone measured 75.0% at its own checkpoint.
+
+`century/population-persists` fails at 10 alive against a threshold of 11.
+Investigated rather than tuned: it fails at **8** with `conceptionBase` put back
+to 0.045, and at 10 with the whole thirst model neutralised, so it is the
+divergence `AGENTS.md` warns about on this scenario and not this pass. Left
+failing.
+
+Three new checks, every one verified against a build without its feature:
+
+| check | reports (century) |
+|---|---|
+| `drinking-is-paced` | 563 drinks finished over 2807 person-days |
+| `food-work-continues` | 14 ticks of gathering pushed through hunger; **0 with the exemption removed** |
+| `trials-accumulate` | 22 good trials across 7 designs proven; equal to the proof count under the old one-roll model |
+
+`food-work-continues` is keyed by verb as well as by need, because a first
+version could not tell hunting from berry-picking and passed happily on a build
+with the gathering exemption removed — the hunts alone kept it above zero.
+
+Two new e2e specs — the craft bar's greyed reason, and a proven design that no
+longer asks for materials, which fails if the stage guard is removed. Three
+existing specs and three unit tests encoded rules this pass changed; they were
+updated, and the order tests now ask `sim.config` for the thirst that stops work
+rather than restating 40, which is why they broke when the limits moved.
+
+---
+
 ## 2026-09-07 — M6b phase 4: how knowledge travels
 
 Four channels now, deliberately different in cost, reach and reliability. Two of

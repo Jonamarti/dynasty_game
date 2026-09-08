@@ -85,6 +85,7 @@ const maxStepsPerFrame = sim.config.time.maxTicksPerFrame;
 let commanding: Person | null = null;
 
 let buildMode = false;
+let craftMode = false;
 let activeDesign: BuildingDef | null = null;
 
 // Attached to the body, not to #hud: the HUD rebuilds its own subtree, and a
@@ -127,6 +128,12 @@ const hud = new Hud(hudRoot, {
       { color: '#7fd4ff', boxed: true, ttl: 2 });
   },
   onPickDesign: def => { activeDesign = def; },
+  onCraft: recipeId => {
+    // Down the same path the radial menu's "Make a ..." already uses, so an
+    // order to craft reaches the simulation one way rather than two.
+    if (sim.player) sim.order(sim.player, 'craft', { recipeId });
+    setCraftMode(false);
+  },
   onItemAction: (person, itemId, verb) => handleItemAction(person, itemId, verb),
   onCommand: person => {
     commanding = commanding?.id === person?.id ? null : person;
@@ -137,6 +144,7 @@ const hud = new Hud(hudRoot, {
   },
 }, sim.config.time.tickRate);
 hud.renderBuildBar(sim, false);
+hud.renderCraftBar(sim, sim.player, false);
 
 /**
  * Character creation, over a world that already exists.
@@ -225,9 +233,14 @@ window.addEventListener('keydown', event => {
     setBuildMode(!buildMode);
     return;
   }
+  if (key === 'm') {
+    setCraftMode(!craftMode);
+    return;
+  }
   if (key === 'escape') {
     if (techWeb.isOpen) techWeb.close();
     if (buildMode) setBuildMode(false);
+    if (craftMode) setCraftMode(false);
     commanding = null;
     return;
   }
@@ -273,8 +286,22 @@ window.addEventListener('keydown', event => {
 window.addEventListener('keyup', event => held.delete(event.key.toLowerCase()));
 window.addEventListener('blur', () => held.clear());
 
+/**
+ * Opens and closes the craft bar.
+ *
+ * The two bars are mutually exclusive. Both live along the bottom edge, and a
+ * player with both open would be looking at two rows of buttons where one of
+ * them places a ghost on the map and the other does not.
+ */
+function setCraftMode(on: boolean): void {
+  craftMode = on;
+  if (on && buildMode) setBuildMode(false);
+  hud.renderCraftBar(sim, sim.player, on);
+}
+
 function setBuildMode(on: boolean): void {
   buildMode = on;
+  if (on && craftMode) setCraftMode(false);
   if (!on) {
     activeDesign = null;
     hud.clearDesign();
@@ -966,6 +993,10 @@ function frame(now: number): void {
     { buildingId: selected.building.id }
   ), alpha);
   hud.update(sim, selected);
+  // Kept current while it is open: whether a recipe can be made depends on the
+  // pack, and the pack changes while the bar is on screen. `renderCraftBar`
+  // keeps its own digest and does nothing when nothing has changed.
+  if (craftMode) hud.renderCraftBar(sim, sim.player, true);
 
   requestAnimationFrame(frame);
 }

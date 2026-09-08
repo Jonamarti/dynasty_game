@@ -40,6 +40,7 @@ function context(seed = 'research-ctx'): Parameters<KnowledgeSystem['daily']>[1]
     world: world(),
     season: 'winter',
     ticksPerDay: config.time.ticksPerDay,
+    knowledge: config.knowledge,
     onInsight: () => {},
   };
 }
@@ -47,7 +48,8 @@ function context(seed = 'research-ctx'): Parameters<KnowledgeSystem['daily']>[1]
 function ideaFor(tech: 'cordage' | 'firemaking', stage: Idea['stage'] = 'conceived'): Idea {
   return {
     tech, stage, insight: 0, story: 'for the test',
-    conceivedTick: 0, effort: 0, discussedWith: [], failedTests: 0,
+    conceivedTick: 0, effort: 0, discussedWith: [],
+    trials: 0, proof: 0, failedTests: 0,
   };
 }
 
@@ -181,7 +183,16 @@ describe('the shape of an idea', () => {
     expect(seen, 'twelve hopeless prototypers and not one failure').toBe(true);
   });
 
-  it('sends a failed design back to be researched, not silently forgotten', () => {
+  it('keeps a failed design on the bench instead of unbuilding it', () => {
+    // This test used to assert the opposite — that a failure sent the idea back
+    // to `researching` — and it is the rule that changed, not the world.
+    //
+    // The old model spent the prototype materials, and a failure returned the
+    // idea to a stage from which they had to be spent again. The owner played it
+    // and reported the symptom exactly: cordage prototyped, trialled, failed,
+    // and the panel asking for another three thatch with nothing anywhere to say
+    // that two trials had already happened. A design on the bench stays on the
+    // bench; what a failure costs is time and a little insight.
     const knowledge = new KnowledgeSystem();
     const person = adult('back-to-work');
     for (const skill of Object.keys(person.skills) as (keyof typeof person.skills)[]) {
@@ -198,7 +209,105 @@ describe('the shape of an idea', () => {
       if (person.knownTech.has('cordage')) break;
     }
     expect(idea.failedTests).toBeGreaterThan(0);
-    expect(idea.stage).toBe('researching');
+    expect(idea.stage).toBe('prototyped');
+    // And it is not merely unharmed: the trial that went badly still moved it
+    // towards being proven, which is what stops a run of bad luck reading as a
+    // wall rather than as a delay.
+    expect(idea.proof).toBeGreaterThan(0);
+  });
+
+  it('proves a design on the configured number of good trials, and not before', () => {
+    // The number is `Config.knowledge.trialsToProve`, which is the "adjustable
+    // via parameters" the owner asked for. Driving `testPrototypes` through a
+    // rigged RNG would test the RNG, so this drives the real daily pass on
+    // somebody who cannot fail — skill and insight at their ceiling put the pass
+    // chance at its 0.9 cap — and counts the trials it actually took.
+    const knowledge = new KnowledgeSystem();
+    const person = adult('sure-hand');
+    for (const skill of Object.keys(person.skills) as (keyof typeof person.skills)[]) {
+      person.skills[skill] = 100;
+    }
+    person.traits.intelligence = 1;
+    const idea = ideaFor('cordage', 'prototyped');
+    idea.insight = 1;
+    person.ideas.push(idea);
+
+    const ctx = context('sure-hand');
+    for (let day = 0; day < 400 && !person.knownTech.has('cordage'); day++) {
+      knowledge.daily([person], { ...ctx, tick: 1000 + day * config.time.ticksPerDay });
+    }
+    expect(person.knownTech.has('cordage')).toBe(true);
+    expect(idea.trials).toBeGreaterThanOrEqual(config.knowledge.trialsToProve);
+  });
+
+  it('never proves a design on failures alone', () => {
+    // Failures carry a design most of the way and then stop: somebody has to see
+    // the thing actually work before it is knowledge. Without that ceiling a long
+    // run of bad luck would tip a design over the line and put "it did not work"
+    // and "worked it out" in one chronicle on the same day.
+    //
+    // Asserted as "every proof had at least one good trial behind it" rather than
+    // by recomputing the ceiling here, because restating the formula would pass
+    // whatever the code did.
+    //
+    // Run under a deliberately extreme config. At the shipped numbers a failure
+    // is worth a third of a success and three successes prove a design, so nine
+    // consecutive failures would be needed to reach the line and a hopeless
+    // prototyper stumbles into a success long before that — the ceiling never
+    // binds, and a version of this test on the default config passed happily
+    // with the ceiling removed. Here a failure is worth a whole trial and two
+    // prove it, so failures alone reach the line almost at once and the guard is
+    // the only thing standing between them and a proof.
+    const rigged = { ...config.knowledge, failedTrialCredit: 1, trialsToProve: 2 };
+    let everProven = 0;
+    for (let seed = 0; seed < 24; seed++) {
+      const knowledge = new KnowledgeSystem();
+      const person = adult('ceiling-' + seed);
+      for (const skill of Object.keys(person.skills) as (keyof typeof person.skills)[]) {
+        person.skills[skill] = 0;
+      }
+      person.traits.intelligence = 0;
+      const idea = ideaFor('cordage', 'prototyped');
+      person.ideas.push(idea);
+
+      const ctx = { ...context('ceiling-' + seed), knowledge: rigged };
+      for (let day = 0; day < 600 && !person.knownTech.has('cordage'); day++) {
+        knowledge.daily([person], { ...ctx, tick: 1000 + day * config.time.ticksPerDay });
+      }
+      if (!person.knownTech.has('cordage')) continue;
+      everProven++;
+      expect(
+        idea.trials - idea.failedTests,
+        'a design was proven with no trial that went well behind it'
+      ).toBeGreaterThanOrEqual(1);
+    }
+
+    // And the bar stays honest on the way there. Under this config failures are
+    // worth as much as successes, so without the ceiling two of them fill the
+    // bar completely and leave it full beside an unproven design — a full bar
+    // has to mean proven or it means nothing.
+    for (let seed = 0; seed < 24; seed++) {
+      const knowledge = new KnowledgeSystem();
+      const person = adult('bar-' + seed);
+      for (const skill of Object.keys(person.skills) as (keyof typeof person.skills)[]) {
+        person.skills[skill] = 0;
+      }
+      person.traits.intelligence = 0;
+      const idea = ideaFor('cordage', 'prototyped');
+      person.ideas.push(idea);
+
+      const ctx = { ...context('bar-' + seed), knowledge: rigged };
+      for (let day = 0; day < 600 && !person.knownTech.has('cordage'); day++) {
+        knowledge.daily([person], { ...ctx, tick: 1000 + day * config.time.ticksPerDay });
+        if (person.knownTech.has('cordage')) break;
+        expect(idea.proof, 'the proof bar read full beside an unproven design')
+          .toBeLessThan(1);
+      }
+    }
+    // If nobody ever got there the assertion above never ran, and a check that
+    // cannot fire is worse than none.
+    expect(everProven, 'twenty-four hopeless prototypers and not one proof')
+      .toBeGreaterThan(0);
   });
 
   it('refines to a ceiling and then retires the idea', () => {

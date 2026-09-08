@@ -33,14 +33,19 @@ import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { World, Biome } from '../core/World.ts';
 import type { Season } from '../core/TimeManager.ts';
-import { TECH, TECHS, prerequisitesMet, type Tech } from '../knowledge/Tech.ts';
+import type { KnowledgeConfig } from '../core/Config.ts';
+import { TECH, TECH_EFFECTS, TECHS, prerequisitesMet, type Tech } from '../knowledge/Tech.ts';
+import { BUILDINGS } from '../entities/Building.ts';
+import { RECIPES } from '../entities/Recipe.ts';
 import {
   MAX_IDEAS, sparkFires, type Idea, type Notice, type Spark,
 } from '../knowledge/Synthesis.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
-/** Base daily chance a curious adult in the right situation has an idea. */
-const CONCEPTION_BASE = 0.045;
+// `CONCEPTION_BASE`, `TEST_CHANCE`, the number of trials a design needs and what
+// a failed one is worth all live in `Config.knowledge` now rather than here.
+// The owner asked for them to be adjustable, and a scenario has as much right to
+// move the pace of discovery as it has to shorten a season.
 
 /** Daily chance of picking something up merely from being near a knower. */
 const OBSERVATION_CHANCE = 0.02;
@@ -84,17 +89,50 @@ const FELT_AT = 30;
 const WITNESS_SALIENCE = 0.15;
 
 /**
- * Daily chance a prototype gets put to the test.
+ * Insight knocked off by a trial that went badly.
  *
- * The test is not an action. A first attempt made it one and it read as a
- * chore: the honest description is that somebody carries the thing around for a
- * few days using it, and one of those uses is the one that settles it. Skill
- * raises the chance of the trial going well, not of it happening.
+ * Much smaller than the 0.25 this shipped with, and it no longer decides
+ * anything on its own: progress towards proving a design is `Idea.proof`, which
+ * only goes up. This is the sting, not the setback.
  */
-const TEST_CHANCE = 0.18;
+const FAILED_TRIAL_INSIGHT = 0.08;
 
-/** Insight lost by a prototype that did not work. */
-const FAILED_TEST_COST = 0.25;
+/**
+ * How far trials that went *badly* can carry a design on their own.
+ *
+ * That at least one trial has to go *well* is guaranteed by the control flow
+ * below — only the passing branch calls `prove` — so this is not what enforces
+ * it, and a first version of this comment claiming otherwise was wrong: a test
+ * written against that claim passed with the ceiling removed, because nothing
+ * was resting on it.
+ *
+ * What it actually buys is an honest bar. Progress towards a proof is drawn in
+ * the Self tab and the tech web, and without a ceiling a run of failures under a
+ * generous `failedTrialCredit` fills it to the brim and parks it there, so the
+ * player reads a full bar beside a design that is not proven and never will be
+ * until a trial goes well. It stays below one so that a full bar means proven.
+ */
+const FAILED_TRIAL_CEILING = 0.9;
+
+/**
+ * What proving this hands the player, in words, or null if it is a quiet one.
+ *
+ * The owner's report was that finishing cordage appeared to do nothing: no new
+ * button, no new line, and the tech web still advertising the prototype cost.
+ * Two of those are interface bugs and this is the third — the moment a
+ * technology arrives is the moment to say what it is *for*, and for the ones
+ * that unlock neither a building nor a recipe there is still `TECH_EFFECTS`.
+ */
+function unlockedBy(tech: Tech): string | null {
+  const parts: string[] = [];
+  for (const def of Object.values(BUILDINGS)) {
+    if (def.requiresTech === tech) parts.push('build a ' + def.label.toLowerCase());
+  }
+  for (const recipe of Object.values(RECIPES)) {
+    if (recipe.tech === tech) parts.push('make a ' + recipe.label.toLowerCase());
+  }
+  return parts.length > 0 ? parts.join(', and ') : null;
+}
 
 /**
  * Days a fully worked-out idea may sit unbuilt before its owner gives up on it.
@@ -114,6 +152,7 @@ export interface KnowledgeContext {
   world: World;
   season: Season;
   ticksPerDay: number;
+  knowledge: KnowledgeConfig;
   /**
    * Announces something worth a floater and a chronicle line: an idea, a
    * breakthrough, a prototype that failed, a design proven or improved.
@@ -289,7 +328,8 @@ export class KnowledgeSystem {
     const competence = 0.2 + person.skills[def.skill] / 60;
 
     const chance =
-      (CONCEPTION_BASE / def.difficulty) * chosen.spark.weight * curiosity * wit * competence;
+      (ctx.knowledge.conceptionBase / def.difficulty) *
+      chosen.spark.weight * curiosity * wit * competence;
     if (!ctx.rng.chance(chance)) return;
 
     const idea: Idea = {
@@ -300,6 +340,8 @@ export class KnowledgeSystem {
       conceivedTick: ctx.tick,
       effort: 0,
       discussedWith: [],
+      trials: 0,
+      proof: 0,
       failedTests: 0,
     };
     person.ideas.push(idea);
@@ -330,29 +372,49 @@ export class KnowledgeSystem {
   private testPrototypes(person: Person, ctx: KnowledgeContext): void {
     for (const idea of [...person.ideas]) {
       if (idea.stage !== 'prototyped') continue;
-      if (!ctx.rng.chance(TEST_CHANCE)) continue;
+      if (!ctx.rng.chance(ctx.knowledge.trialChance)) continue;
 
       const def = TECH[idea.tech];
       const chance = Math.min(0.9,
         0.2 + person.skillFactor(def.skill) * 0.35 + idea.insight * 0.35
         + (person.traits.intelligence - 0.5) * 0.2);
 
+      idea.trials++;
+      const step = 1 / Math.max(1, ctx.knowledge.trialsToProve);
+
       if (!ctx.rng.chance(chance)) {
+        // A failed trial no longer undoes the work. It used to cost a quarter of
+        // the insight, set the stage back to `researching` **and leave the
+        // prototype materials spent**, so a second go at cordage wanted another
+        // three thatch and the panel said "Needs 3 thatch to build one" for the
+        // third time. From inside the game that is indistinguishable from being
+        // stuck, which is exactly how the owner reported it. Progress towards
+        // proving a design only ever goes up; luck decides how long it takes.
         idea.failedTests++;
-        idea.insight = Math.max(0, idea.insight - FAILED_TEST_COST);
-        idea.stage = 'researching';
+        idea.proof = Math.min(
+          FAILED_TRIAL_CEILING, idea.proof + step * ctx.knowledge.failedTrialCredit);
+        idea.insight = Math.max(0, idea.insight - FAILED_TRIAL_INSIGHT);
         telemetry.count('prototype_failed');
         person.chronicle.push({
           tick: ctx.tick,
           ageDays: person.age,
-          text: 'built a ' + def.label.toLowerCase() + ' that did not work',
+          text: 'tried out a ' + def.label.toLowerCase() + ' and it did not work',
           kind: 'did',
         });
         ctx.onInsight(person, def.label.toLowerCase() + ' did not work', 'setback');
         continue;
       }
 
-      this.prove(person, idea, ctx);
+      idea.proof = Math.min(1, idea.proof + step);
+      telemetry.count('prototype_trial_passed');
+      if (idea.proof >= 1) {
+        this.prove(person, idea, ctx);
+        continue;
+      }
+      // A trial that went well without settling it. Said out loud because the
+      // whole complaint about the old model was that the days between the
+      // prototype and the proof were silent.
+      ctx.onInsight(person, def.label.toLowerCase() + ' is beginning to work', 'gain');
     }
   }
 
@@ -371,10 +433,23 @@ export class KnowledgeSystem {
       tick: ctx.tick,
       ageDays: person.age,
       text: 'worked out ' + def.label.toLowerCase() +
-        (idea.failedTests > 0 ? ', after ' + idea.failedTests + ' that failed' : ''),
+        (idea.failedTests > 0
+          ? ', after ' + idea.failedTests + ' ' +
+            (idea.failedTests === 1 ? 'try' : 'tries') + ' that failed'
+          : ''),
       kind: 'milestone',
     });
-    ctx.onInsight(person, 'worked out ' + def.label.toLowerCase(), 'gain');
+    // Say what it is *for*, not only that it happened. A technology that unlocks
+    // nothing you can point at — cordage is the case the owner hit — otherwise
+    // arrives as a line of text and no visible change anywhere in the game.
+    const unlocked = unlockedBy(idea.tech);
+    ctx.onInsight(
+      person,
+      'worked out ' + def.label.toLowerCase() +
+        (unlocked !== null
+          ? ' — can now ' + unlocked
+          : ' — ' + TECH_EFFECTS[idea.tech].summary.toLowerCase().replace(/.$/, '')),
+      'gain');
   }
 
   /**

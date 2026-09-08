@@ -224,8 +224,40 @@ export interface Idea {
   effort: number;
   /** Who has been talked to about it; a second conversation is worth far less. */
   discussedWith: number[];
+  /**
+   * Trials held so far, and how far they have got towards proving the design.
+   *
+   * `proof` only ever goes up. The first version of this was a single
+   * all-or-nothing roll: one pass proved a design outright, and one failure cost
+   * a quarter of the insight, set the stage back to `researching` **and left
+   * the prototype materials spent**, so a second attempt at cordage wanted
+   * another three thatch. From inside the game that is indistinguishable from
+   * being stuck — the panel said "Needs 3 thatch to build one" for the third
+   * time and nothing anywhere showed that the last two trials had happened.
+   *
+   * A failed trial still teaches you something, so it still adds progress, just
+   * far less of it. The design gets there either way; bad luck decides how long
+   * it takes, not whether it happens.
+   */
+  trials: number;
+  proof: number;
   failedTests: number;
 }
+
+/**
+ * Where an idea has got to, in the player's words.
+ *
+ * Beside `IdeaStage` rather than in the HUD because two panels show it — the
+ * Self tab and the tech web — and a second copy of this vocabulary is a second
+ * copy that can drift out of step with the stages it names. Same reasoning as
+ * `describeIngredient` below: the words live beside the thing they describe.
+ */
+export const STAGE_LABELS: Record<IdeaStage, string> = {
+  conceived: 'just an idea',
+  researching: 'working it out',
+  prototyped: 'built, and being tried',
+  proven: 'refining',
+};
 
 /** Nobody dabbles at everything. Two ideas at a time, and no more. */
 export const MAX_IDEAS = 2;

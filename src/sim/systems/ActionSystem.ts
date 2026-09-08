@@ -31,7 +31,7 @@ import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import {
   TECH, buildFactor, forageYieldFactor, nutritionFactor, prerequisitesMet, tallyFactor,
-  techPower, type Tech,
+  techPower, weaponOf, armourOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 
@@ -180,6 +180,14 @@ interface InterruptionOptions {
   lookaheadTicks?: number;
   /** True for work that does not need pack room until it finishes. */
   ignoreLaden?: boolean;
+  /**
+   * The need this job is *answering*, if any.
+   *
+   * Passed by the caller rather than read off `person.action`, because only the
+   * caller knows: `forage` is picking berries at one bush and knapping flint at
+   * the next, and only one of those is food.
+   */
+  answers?: LethalNeed;
 }
 
 /** No single stretch of work runs longer than this, whatever else is true. */
@@ -199,18 +207,88 @@ const MAX_WORK_STRETCH = 900;
  * Two copies of these numbers would drift, and the drift would show up as that
  * same thrash months later with nothing to point at.
  */
-export const WORK_LIMITS = { thirst: 35, hunger: 40, cold: 45 } as const;
+export type LethalNeed = 'thirst' | 'hunger' | 'cold';
+
+/**
+ * How far a need may go before it stops a job that is *answering* it.
+ *
+ * The reported symptom was a forager who kept downing tools. Picking berries is
+ * how you stop being hungry, so being hungry is a poor reason to stop picking
+ * berries. Near the critical line (85) rather than at it, so somebody who
+ * genuinely cannot feed themselves where they are standing still gives up and
+ * goes to look elsewhere instead of starving at the bush.
+ *
+ * This is also what keeps the base limits honest. Those are where a need
+ * *parks*, so raising them raises the whole population's average hunger and
+ * thirst; this raises the ceiling only for the person actually doing something
+ * about it, which costs nothing on the average.
+ */
+const ANSWERING_LIMIT: Record<LethalNeed, number> = { hunger: 90, thirst: 90, cold: 80 };
+
+/**
+ * Most a nearly-finished pull may push past the line, in need points.
+ *
+ * The honest half of a rule `bugs.md` recorded as untunable: because the limits
+ * are absolute need levels, whether a job is *ever* interrupted depends on how
+ * long it runs, so berries looked uninterruptible and flint looked hopeless
+ * under identical code. Lookahead fixed the near end of that. This fixes the far
+ * end, by letting the last tenth of a stretch finish rather than throwing it
+ * away one pull short of the end.
+ */
+const NEARLY_DONE_SLACK = 10;
+
+/** Extra room for work the player actually asked for, in need points. */
+const ORDERED_SLACK = 6;
+
+/**
+ * Where work stops, for this person, on this job, right now.
+ *
+ * This was a flat `WORK_LIMITS` triple, and the base of it still is —
+ * `Config.needs.workLimits`, so a scenario can move it. What sits on top is the
+ * answer to the owner's report that people stop working far too readily.
+ *
+ * **The base numbers are low on purpose and must stay lowish.** A need parks at
+ * whatever line stops it: work continues right up to the limit and ends there,
+ * so wherever these sit is where the population's average hunger and thirst
+ * settle. An early build put them near the lethal line and a healthy band was
+ * carrying 82 thirst inside a fortnight. Every modifier here is therefore a
+ * *per-job exception* rather than a raise, which is what lets somebody push on
+ * without moving the average.
+ */
+export function workLimit(
+  person: Person,
+  need: LethalNeed,
+  limits: NeedsConfig['workLimits'],
+  answers?: LethalNeed
+): number {
+  if (answers === need) return ANSWERING_LIMIT[need];
+  return limits[need] +
+    NEARLY_DONE_SLACK * person.pullProgress() +
+    (person.order !== null ? ORDERED_SLACK : 0);
+}
 
 /**
  * True if a need is already past the point where work stops.
  *
  * Deliberately without the lookahead `interruption` applies: this answers "is it
- * sensible to begin?", not "will the next cycle carry them over?".
+ * sensible to begin?", not "will the next cycle carry them over?". It asks
+ * `workLimit` rather than keeping a second copy of the numbers.
+ *
+ * Exported because `Brain` has to ask the same question before it starts
+ * somebody on a long job. Crafting forced this into the open: it is one long
+ * pull rather than a run of short ones, so the check fires *during* the work,
+ * and a scorer that did not know where the line was would arm a two-hundred-tick
+ * timer for somebody one point over it, watch them stop on the next tick, and
+ * choose the same thing again — 786 abandoned attempts against 10 finished axes.
  */
-export function pressedByNeed(person: Person): boolean {
-  return person.needs.thirst > WORK_LIMITS.thirst ||
-    person.needs.hunger > WORK_LIMITS.hunger ||
-    person.needs.cold > WORK_LIMITS.cold;
+export function pressedByNeed(
+  person: Person,
+  limits: NeedsConfig['workLimits'],
+  answers?: LethalNeed
+): boolean {
+  return person.needs.thirst > workLimit(person, 'thirst', limits, answers) ||
+    person.needs.hunger > workLimit(person, 'hunger', limits, answers) ||
+    person.needs.cold > workLimit(person, 'cold', limits, answers);
 }
 
 /** Ticks to take something that is not yours without being obvious about it. */
@@ -362,8 +440,15 @@ export class ActionSystem {
       return;
     }
     person.needs.thirst = Math.max(0, person.needs.thirst - 6);
+    // `drink` counts *ticks* spent drinking; `drink_finished` counts trips to the
+    // water. Only the second answers "how often does somebody stop what they are
+    // doing and go to the river?", which is the question the owner asked and
+    // which nothing here could answer before.
     telemetry.count('drink');
-    if (person.needs.thirst <= 0) this.finish(person);
+    if (person.needs.thirst <= 0) {
+      telemetry.count('drink_finished');
+      this.finish(person);
+    }
   }
 
   /**
@@ -435,16 +520,13 @@ export class ActionSystem {
 
     // The thresholds here are the whole difficulty of letting work continue.
     //
-    // A committed worker does not re-plan — that is the point — so these are
-    // the *only* thing that lets a need reach them. Setting them near the
-    // lethal line (80+) meant people stripped a bush while dying of thirst and
-    // a healthy band was at 82 thirst inside a fortnight. They sit instead
-    // where the scorer would have started preferring the need anyway, so
-    // continuation buys uninterrupted work through mild need and nothing more.
-    // Note that a need parks *at* its threshold: work continues right up to the
-    // line and stops there, so wherever these sit is where the population's
-    // average hunger and thirst will settle. They are set low for that reason,
-    // not because the danger starts here.
+    // A committed worker does not re-plan — that is the point — so these are the
+    // *only* thing that lets a need reach them. They are no longer a flat triple:
+    // `workLimit` keeps the low base — a need parks at whatever line stops it, so
+    // the base is also where the population's averages settle — and adds per-job
+    // exceptions on top. A job that answers the need does not stop for it, a
+    // nearly-finished pull gets to finish, and work the player asked for is given
+    // a little more rope.
     //
     // `lookaheadTicks` asks the question one work cycle ahead: would finishing
     // the next pull leave them over the line? Without it, whether a job is ever
@@ -453,12 +535,29 @@ export class ActionSystem {
     // takes 416 and always does. Same code, same rule, and from outside it looks
     // like berries are uninterruptible and flint is not.
     const ahead = opts.lookaheadTicks ?? 0;
-    if (person.needs.thirst + ctx.needs.thirstRate * ahead > WORK_LIMITS.thirst) return 'thirsty';
-    if (person.needs.hunger + ctx.needs.hungerRate * ahead > WORK_LIMITS.hunger) return 'hungry';
+    const limits = ctx.needs.workLimits;
+
+    // Ticks of work that only continued because the job was answering the need
+    // that would otherwise have stopped it — a hungry forager still picking.
+    // Counted so the exemption is measurable rather than merely asserted: it is
+    // the whole of the owner's "my people keep downing tools", and a feature the
+    // health report cannot see is a feature nobody can tell has regressed.
+    if (opts.answers !== undefined &&
+      person.needs[opts.answers] > limits[opts.answers]) {
+      // Keyed by the verb as well as the need. Hunting and berry-picking both
+      // answer hunger, and a check that could not tell them apart passed
+      // happily on a build with the gathering exemption removed — the hunts
+      // alone kept the total above zero.
+      telemetry.count('pushed_on_' + opts.answers + '_' + person.action);
+    }
+    if (person.needs.thirst + ctx.needs.thirstRate * ahead >
+      workLimit(person, 'thirst', limits, opts.answers)) return 'thirsty';
+    if (person.needs.hunger + ctx.needs.hungerRate * ahead >
+      workLimit(person, 'hunger', limits, opts.answers)) return 'hungry';
     // Cold is read as it stands: its rate depends on the season and the roof
     // overhead, so projecting it forward from a per-tick constant would be a
     // guess dressed up as arithmetic.
-    if (person.needs.cold > WORK_LIMITS.cold) return 'cold';
+    if (person.needs.cold > workLimit(person, 'cold', limits, opts.answers)) return 'cold';
 
     // A hard ceiling on any one stretch, so no combination of conditions can
     // leave somebody locked in a job forever.
@@ -495,10 +594,18 @@ export class ActionSystem {
     }
 
     // Keep going unless something stops us.
+    //
+    // `answers` is decided per node rather than per verb: `forage` is berries at
+    // one bush and flint at the next, and only one of those is a reason to keep
+    // going while hungry.
     const nextPull = Math.ceil(node.def.harvestTicks / person.skillFactor(node.def.skill));
+    const feeds = (ITEMS[node.def.itemId]?.nutrition ?? 0) > 0;
     const stop = node.depleted
       ? 'node_empty'
-      : this.interruption(person, ctx, { lookaheadTicks: nextPull });
+      : this.interruption(person, ctx, {
+          lookaheadTicks: nextPull,
+          answers: feeds ? 'hunger' : undefined,
+        });
     if (stop) {
       this.stop(person, stop, ctx);
       return;
@@ -535,7 +642,9 @@ export class ActionSystem {
       telemetry.count('picked_' + tree.def.fruitItem);
     }
 
-    const stop = tree.fruit < 1 ? 'tree_bare' : this.interruption(person, ctx);
+    const stop = tree.fruit < 1
+      ? 'tree_bare'
+      : this.interruption(person, ctx, { answers: 'hunger' });
     if (stop) {
       this.stop(person, stop, ctx);
       return;
@@ -805,10 +914,21 @@ export class ActionSystem {
     }
 
     // The chase is long, and every long action gets an interruption check.
-    const stop = this.interruption(person, ctx);
+    //
+    // `answers: 'hunger'` because a hunt is *for* food: a hunter who breaks off
+    // a chase because they are hungry has thrown away the meal they were three
+    // minutes from catching.
+    //
+    // Reported through `stop` rather than counted and dropped. This was the one
+    // long action that called `finish` directly, so a chase broken off by thirst
+    // reached neither the player's floater nor `person.resume` — the standing
+    // "if the simulation stops something, the UI says why" rule with a hole in
+    // it, and the telemetry counter beside it is exactly what made the hole look
+    // deliberate. The counter is kept because the health report reads it.
+    const stop = this.interruption(person, ctx, { answers: 'hunger' });
     if (stop) {
       telemetry.count('hunt_ended_' + stop);
-      this.finish(person);
+      this.stop(person, stop, ctx);
       return;
     }
     person.workedTicks++;
@@ -827,8 +947,16 @@ export class ActionSystem {
     person.practice('track', 0.2);
     // A blown animal is far easier to bring down than a fresh one, which is
     // what makes the chase itself worth something rather than just a delay.
+    // The weapon term, and the intended answer to "hunting is rare". A fresh
+    // deer outruns a person, so before this a hunt could only be won by draining
+    // an animal's stamina, and a two-year run produced about three kills. A bow
+    // is worth more here than a hand axe by a wide margin and less than one in a
+    // brawl, which is what `weapon.hunt` is separate from `weapon.damage` for.
+    const weapon = weaponOf(person, true);
+    const armed = weapon === null ? 1 : weapon.hunt * weapon.power;
+    if (weapon !== null) telemetry.count('armed_hunt');
     const chance = Math.max(0.05, Math.min(0.9,
-      person.skillFactor('hunt') * (1 - animal.def.evasion) + 0.15
+      person.skillFactor('hunt') * (1 - animal.def.evasion) * armed + 0.15
         + (1 - animal.stamina) * 0.35
     ));
 
@@ -943,7 +1071,13 @@ export class ActionSystem {
       this.abandon(person, 'target_gone', ctx);
       return null;
     }
-    if (person.distanceTo(other) <= REACH) return other;
+    // A weapon's reach widens what counts as close enough, and only for a blow.
+    // This is how a spear beats a fist without ranged combat existing: the
+    // spearman lands from a step further back than the other party can reach,
+    // so a fight is decided partly by who has to close the distance.
+    const weapon = person.action === 'attack' ? weaponOf(person, false) : null;
+    const reach = REACH + (weapon?.reach ?? 0);
+    if (person.distanceTo(other) <= reach) return other;
 
     person.targetX = other.x;
     person.targetY = other.y;
@@ -1075,17 +1209,28 @@ export class ActionSystem {
       return;
     }
 
+    // Hours already spent on this same recipe come off the timer.
+    //
+    // A novice's hand axe is 258 ticks and thirst reaches them at about 400 —
+    // less than 200 after a resume — so an interrupted craft used to start again
+    // from nothing, over and over. `AGENTS.md` puts the line for this at around
+    // 140 workTicks. Building and felling bank on the site and the trunk, which
+    // is better because anyone can take the job up; a craft has nothing to bank
+    // on until the final tick, when the item appears, so it banks on the crafter.
+    const bankKey = 'craft:' + recipe.id;
     if (person.actionTimer <= 0) {
-      person.actionTimer = Math.ceil(recipe.workTicks / person.skillFactor(recipe.skill));
+      const total = Math.ceil(recipe.workTicks / person.skillFactor(recipe.skill));
+      person.actionTimer = Math.max(1, total - person.bankedFor(bankKey));
       return;
     }
     person.actionTimer--;
     person.workedTicks++;
+    person.bankWork(bankKey);
     if (person.actionTimer > 0) {
       // `ignoreLaden`, for the same reason felling passes it: nothing is taken
       // out of the pack and nothing is put into it until the final tick, so a
-      // full pack is not a reason to stop — and an interrupted craft therefore
-      // loses nothing and can be resumed from the beginning at no cost.
+      // full pack is not a reason to stop — and an interrupted craft loses only
+      // the walk back, because the hours are banked above.
       const stop = this.interruption(person, ctx, { ignoreLaden: true });
       if (stop) {
         // Counted apart from the generic `work_ended_` tally so that
@@ -1105,6 +1250,7 @@ export class ActionSystem {
       person.inventory.add(itemId, count);
     }
     person.practice(recipe.skill, 3);
+    person.clearWorkBank();
     telemetry.count('crafted_' + recipe.id);
     person.chronicle.push({
       tick: ctx.tick,
@@ -1527,12 +1673,18 @@ export class ActionSystem {
       return;
     }
 
+    // Banked like a craft, and more urgently: at 120 base ticks a novice needs
+    // 343 of them, which is most of a full stretch of thirst. Building the first
+    // one of anything was among the longest single pulls in the game.
+    const bankKey = 'prototype:' + idea.tech;
     if (person.actionTimer <= 0) {
-      person.actionTimer = Math.ceil(PROTOTYPE_TICKS / person.skillFactor(def.skill));
+      const total = Math.ceil(PROTOTYPE_TICKS / person.skillFactor(def.skill));
+      person.actionTimer = Math.max(1, total - person.bankedFor(bankKey));
       return;
     }
     person.actionTimer--;
     person.workedTicks++;
+    person.bankWork(bankKey);
     if (person.actionTimer > 0) {
       const stop = this.interruption(person, ctx, { ignoreLaden: true });
       if (stop) this.stop(person, stop, ctx);
@@ -1543,6 +1695,7 @@ export class ActionSystem {
       person.inventory.remove(itemId, count);
     }
     idea.stage = 'prototyped';
+    person.clearWorkBank();
     person.practice(def.skill, 2);
     telemetry.count('prototyped_' + idea.tech);
     person.chronicle.push({
@@ -1660,9 +1813,19 @@ export class ActionSystem {
     person.actionTimer--;
     if (person.actionTimer > 0) return;
 
-    const attack = person.skillFactor('fight') * (0.6 + person.traits.aggression * 0.8);
+    // Until phase 5 this line had **no item term at all**: a man with a spear hit
+    // exactly as hard as a man with his hands, which made every weapon in the
+    // game a decoration. The weapon is scaled through `techPower`, so a refined
+    // design is worth more than a first attempt at one, and armour comes off the
+    // blow at the far end.
+    const weapon = weaponOf(person, false);
+    const armed = 1 + (weapon === null ? 0 : weapon.damage * weapon.power);
+    if (weapon !== null) telemetry.count('armed_blow');
+    const attack = person.skillFactor('fight') *
+      (0.6 + person.traits.aggression * 0.8) * armed;
     const defence = other.skillFactor('fight') * 0.7;
-    const damage = Math.max(3, (attack - defence * 0.5) * 22 * ctx.rng.range(0.6, 1.4));
+    const damage = Math.max(3, (attack - defence * 0.5) * 22 * ctx.rng.range(0.6, 1.4)) *
+      (1 - armourOf(other));
 
     other.health -= damage;
     other.lastHarmedBy = person.id;

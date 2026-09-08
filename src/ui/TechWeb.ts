@@ -35,7 +35,7 @@ import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { TECH, TECH_EFFECTS, prerequisitesMet, type Tech } from '../sim/knowledge/Tech.ts';
 import {
-  describeIngredient, sparkStatus, type Notice, type Spark,
+  describeIngredient, sparkStatus, STAGE_LABELS, type Notice, type Spark,
 } from '../sim/knowledge/Synthesis.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
 import { knowledgeOfPerson } from '../sim/social/Knowledge.ts';
@@ -181,7 +181,14 @@ export class TechWebOverlay {
       const idea = subject.ideaFor(tech);
       parts.push(tech + ':' + this.stateOf(subject, tech, notice) +
         ':' + (subject.techLevel.get(tech) ?? 0) +
-        ':' + (idea ? idea.stage + Math.round(idea.insight * 100) + idea.failedTests : '-'));
+        // `proof` and `trials` belong here as much as insight does: while a
+        // design is on the bench they are the only things moving, so leaving
+        // them out would freeze the pane on the one stage that has a bar the
+        // player is watching.
+        ':' + (idea
+          ? idea.stage + Math.round(idea.insight * 100) + idea.failedTests +
+            '/' + Math.round(idea.proof * 100) + '/' + idea.trials
+          : '-'));
     }
     return parts.join('|');
   }
@@ -353,20 +360,51 @@ export class TechWebOverlay {
       escapeHtml(TECH_EFFECTS[tech].summary) + '</div>');
     rows.push('<div class="techweb-state">' + STATE_NOTE[state] + '</div>');
 
-    if (idea) {
+    // An idea survives being proven — it stays on the person to be refined, and
+    // only retires at its ceiling — so everything below has to ask what stage it
+    // is at rather than merely whether it exists.
+    //
+    // It did not, and the owner reported the consequence: cordage proven and
+    // built, and this pane still saying "Needs 3 thatch to build one" underneath
+    // it. The insight bar was as stale, reading the refinement progress that
+    // `prove` had just reset to zero under a heading that said "where it has got
+    // to", and the failed-trial count was history presented as news.
+    if (idea && idea.stage !== 'proven') {
       rows.push('<div class="techweb-section">Where it has got to</div>');
+      rows.push('<div class="techweb-note">' +
+        escapeHtml(STAGE_LABELS[idea.stage]) + '</div>');
       rows.push('<div class="techweb-note"><i>' + escapeHtml(idea.story) + '</i></div>');
-      rows.push('<div class="techweb-bar"><i style="width:' +
-        Math.round(idea.insight * 100) + '%"></i></div>');
+
+      if (idea.stage === 'prototyped') {
+        // On the bench and being tried. Insight is no longer what stands between
+        // this and knowing it — trials are — so show those instead of a bar that
+        // would sit still for days while something was actually happening.
+        rows.push('<div class="techweb-bar is-proof"><i style="width:' +
+          Math.round(idea.proof * 100) + '%"></i></div>');
+        rows.push('<div class="techweb-note">One has been built. ' +
+          (idea.trials === 0
+            ? 'It has not been tried yet.'
+            : idea.trials + (idea.trials === 1 ? ' try' : ' tries') + ' so far.') +
+          '</div>');
+      } else {
+        rows.push('<div class="techweb-bar"><i style="width:' +
+          Math.round(idea.insight * 100) + '%"></i></div>');
+        // What building one would cost, and whether they can. Only worth saying
+        // while there is still a first one to build.
+        const short = Object.entries(def.prototype)
+          .filter(([itemId, count]) => subject.inventory.count(itemId) < count);
+        rows.push('<div class="techweb-note">Needs ' +
+          Object.entries(def.prototype).map(([itemId, count]) =>
+            count + ' ' + escapeHtml((ITEMS[itemId]?.label ?? itemId).toLowerCase())
+          ).join(', ') + ' to build one' +
+          (short.length === 0 ? ', and they have them.' : '.') + '</div>');
+      }
+
       if (idea.failedTests > 0) {
         rows.push('<div class="techweb-note">' + idea.failedTests +
-          (idea.failedTests === 1 ? ' attempt' : ' attempts') +
+          (idea.failedTests === 1 ? ' try' : ' tries') +
           ' that did not work</div>');
       }
-      rows.push('<div class="techweb-note">Needs ' +
-        Object.entries(def.prototype).map(([itemId, count]) =>
-          count + ' ' + escapeHtml((ITEMS[itemId]?.label ?? itemId).toLowerCase())
-        ).join(', ') + ' to build one.</div>');
     }
 
     if (state !== 'proven') {
