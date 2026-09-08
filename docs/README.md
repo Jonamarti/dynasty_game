@@ -13,7 +13,9 @@ it, what to do next, and why each change was made.
 | [next-steps.md](next-steps.md) | What to build next, in order, and why that order |
 | [optimizations.md](optimizations.md) | Where the time goes, what has been done about it, and what is left |
 | [changelog.md](changelog.md) | Every change, with its date and the reason for it |
-| [m6_plan_households_sleep.md](m6_plan_households_sleep.md) | The M6a plan this pass implemented |
+| [m6_plan_households_sleep.md](m6_plan_households_sleep.md) | The M6a and M6c plans |
+| [m6b_plan.md](m6b_plan.md) | M6b — the tech web, research, transmission, weapons, jobs |
+| [m8_plan_the_ages.md](m8_plan_the_ages.md) | M8 — the technology ladder from flint to iron, and the mechanisms it needs |
 
 If you are an AI agent picking this project up, read
 [../AGENTS.md](../AGENTS.md) first — it is shorter and tells you what will

@@ -27,8 +27,11 @@
  */
 import { TECH, TECHS, DOMAINS, type Domain, type Tech } from '../sim/knowledge/Tech.ts';
 import type { Ingredient } from '../sim/knowledge/Synthesis.ts';
+import { relax, settleOverlaps, shiftToOrigin, type GraphEdge } from './GraphLayout.ts';
 
 export interface LaidOutNode {
+  /** Same string as `tech`. Required by the shared relaxation engine. */
+  id: Tech;
   tech: Tech;
   domain: Domain;
   /** Longest chain of prerequisites behind it. Drives the seeded radius. */
@@ -57,8 +60,21 @@ export interface WebLayout {
   height: number;
 }
 
-/** How far the finished arrangement may be blown up to fill its box. */
-const MAX_SCALE = 1.5;
+/**
+ * Shared-spark edges any one node may keep, the highest shared-count ones
+ * first.
+ *
+ * Measured, not guessed: at today's seventeen nodes `firemaking` alone draws
+ * eight of them at the two-shared-ingredient threshold below, which is most
+ * of the way to the "hundreds of faint lines fighting the layout" this
+ * rebuild exists to head off — and M8 triples the vocabulary of ingredients
+ * as well as the node count, so the hub only gets worse from here. Raising
+ * the threshold instead was tried first and measured, not assumed: at three
+ * shared ingredients only three edges survive in the whole table today, which
+ * is a wall of unrelated nodes rather than a web. The cap is the lever that
+ * actually works at this size.
+ */
+const MAX_SHARED_DEGREE = 4;
 
 /** Half the space a node needs to itself. Nothing may be laid out closer. */
 export const NODE_RADIUS = 46;
@@ -148,6 +164,7 @@ export function webEdges(): LaidOutEdge[] {
   // and an edge between every pair is not a picture.
   const keys = new Map<Tech, Set<string>>();
   for (const tech of TECHS) keys.set(tech, ingredientKeys(tech));
+  const candidates: { a: Tech; b: Tech; shared: number; crossDomain: boolean }[] = [];
   for (let i = 0; i < TECHS.length; i++) {
     for (let j = i + 1; j < TECHS.length; j++) {
       const a = TECHS[i]!;
@@ -161,23 +178,46 @@ export function webEdges(): LaidOutEdge[] {
         if (keys.get(b)!.has(key)) shared++;
       }
       if (shared < 2) continue;
-      edges.push({
-        from: a, to: b, kind: 'shared',
-        crossDomain: TECH[a].domain !== TECH[b].domain,
-      });
+      candidates.push({ a, b, shared, crossDomain: TECH[a].domain !== TECH[b].domain });
     }
+  }
+
+  // The strongest relations first, and a hard cap on how many any one node
+  // may keep — see `MAX_SHARED_DEGREE`. Sorted by shared count and then by
+  // table order, never by anything that could vary between two runs of the
+  // same build.
+  candidates.sort((x, y) => y.shared - x.shared || TECHS.indexOf(x.a) - TECHS.indexOf(y.a));
+  const degree = new Map<Tech, number>();
+  for (const candidate of candidates) {
+    const da = degree.get(candidate.a) ?? 0;
+    const db = degree.get(candidate.b) ?? 0;
+    if (da >= MAX_SHARED_DEGREE || db >= MAX_SHARED_DEGREE) continue;
+    degree.set(candidate.a, da + 1);
+    degree.set(candidate.b, db + 1);
+    edges.push({
+      from: candidate.a, to: candidate.b, kind: 'shared', crossDomain: candidate.crossDomain,
+    });
   }
   return edges;
 }
 
 /**
- * Lays the whole web out inside a box.
+ * Lays the whole web out.
  *
  * Called once when the panel opens and cached by the caller. It is O(n²) per
  * iteration over about ten nodes, which is nothing, and will still be nothing
  * at the two dozen the milestone ends with.
+ *
+ * Takes no box to fit into any more. The picture used to be squeezed into a
+ * fixed 1080x720 with `fitInto`'s uniform scale, which is the defect this
+ * rebuild exists to fix: at seventeen nodes the pre-fit span was already
+ * ~908px, the fit scale was ~0.65, and the 92px hard separation the
+ * relaxation had won landed at about 60px on screen — under a node's own
+ * width. `TechWeb.ts` now owns a pan-and-zoom viewport instead, so the layout
+ * only has to give every node a well-defined, non-overlapping position and
+ * let the player decide how much of it to look at.
  */
-export function layOutWeb(width: number, height: number): WebLayout {
+export function layOutWeb(): WebLayout {
   const nodes: LaidOutNode[] = [];
 
   // Seed: each domain owns an angular sector, and depth sets the radius. The
@@ -202,7 +242,7 @@ export function layOutWeb(width: number, height: number): WebLayout {
       const angle = centre + spread;
       const radius = INNER_RADIUS + depth * RING_GAP;
       nodes.push({
-        tech, domain, depth,
+        id: tech, tech, domain, depth,
         x: Math.cos(angle) * radius,
         y: Math.sin(angle) * radius,
       });
@@ -210,110 +250,18 @@ export function layOutWeb(width: number, height: number): WebLayout {
   });
 
   const edges = webEdges();
-  const index = new Map<Tech, LaidOutNode>();
-  for (const node of nodes) index.set(node.tech, node);
+  const springs: GraphEdge[] = edges.map(edge => ({
+    from: edge.from,
+    to: edge.to,
+    rest: edge.kind === 'shared' ? SPRING_SHARED : edge.crossDomain ? SPRING_FAR : SPRING_NEAR,
+    k: edge.kind === 'shared' ? SHARED_K : SPRING_K,
+  }));
 
-  for (let pass = 0; pass < ITERATIONS; pass++) {
-    // Repulsion between every pair, so nothing ends up under anything else.
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const a = nodes[i]!;
-        const b = nodes[j]!;
-        let dx = b.x - a.x;
-        let dy = b.y - a.y;
-        let distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < 0.001) {
-          // Exactly coincident: break the tie by table order rather than by a
-          // random jitter, or the layout stops being reproducible.
-          dx = (j - i) * 0.01;
-          dy = 0.01;
-          distance = Math.sqrt(dx * dx + dy * dy);
-        }
-        const push = REPULSION / (distance * distance);
-        const nx = (dx / distance) * push;
-        const ny = (dy / distance) * push;
-        a.x -= nx; a.y -= ny;
-        b.x += nx; b.y += ny;
-      }
-    }
+  relax(nodes, springs, { iterations: ITERATIONS, repulsion: REPULSION, centring: CENTRING });
+  settleOverlaps(nodes, NODE_RADIUS * 2);
+  const { width, height } = shiftToOrigin(nodes, NODE_RADIUS);
 
-    // Springs along the edges.
-    for (const edge of edges) {
-      const a = index.get(edge.from)!;
-      const b = index.get(edge.to)!;
-      const rest = edge.kind === 'shared'
-        ? SPRING_SHARED
-        : edge.crossDomain ? SPRING_FAR : SPRING_NEAR;
-      const k = edge.kind === 'shared' ? SHARED_K : SPRING_K;
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const distance = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
-      const pull = (distance - rest) * k;
-      const nx = (dx / distance) * pull;
-      const ny = (dy / distance) * pull;
-      a.x += nx; a.y += ny;
-      b.x -= nx; b.y -= ny;
-    }
-
-    for (const node of nodes) {
-      node.x -= node.x * CENTRING;
-      node.y -= node.y * CENTRING;
-    }
-  }
-
-  // A last hard pass that simply moves overlapping pairs apart. The spring
-  // system is a compromise between several forces and can settle with two
-  // nodes slightly too close; the picture cannot, and `techweb.test.ts` says so.
-  for (let pass = 0; pass < 60; pass++) {
-    let moved = false;
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const a = nodes[i]!;
-        const b = nodes[j]!;
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const distance = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
-        const overlap = NODE_RADIUS * 2 - distance;
-        if (overlap <= 0) continue;
-        const nx = (dx / distance) * overlap * 0.5;
-        const ny = (dy / distance) * overlap * 0.5;
-        a.x -= nx; a.y -= ny;
-        b.x += nx; b.y += ny;
-        moved = true;
-      }
-    }
-    if (!moved) break;
-  }
-
-  return { nodes: fitInto(nodes, width, height), edges, width, height };
-}
-
-/**
- * Scales and shifts the arrangement so it fills the box it was given.
- *
- * Uniform: stretching the axes independently would distort the domain sectors
- * into ellipses and the clusters would stop reading as clusters. Capped, so
- * that a web of ten nodes on a large monitor grows enough to use the space and
- * not so much that the nodes look like buttons on a poster — at 1 the ten-node
- * web sat in the top-left third of its own panel with the rest empty.
- */
-function fitInto(nodes: LaidOutNode[], width: number, height: number): LaidOutNode[] {
-  if (nodes.length === 0) return nodes;
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (const node of nodes) {
-    minX = Math.min(minX, node.x); maxX = Math.max(maxX, node.x);
-    minY = Math.min(minY, node.y); maxY = Math.max(maxY, node.y);
-  }
-  const spanX = Math.max(1, maxX - minX) + NODE_RADIUS * 2;
-  const spanY = Math.max(1, maxY - minY) + NODE_RADIUS * 2;
-  const scale = Math.min(MAX_SCALE, width / spanX, height / spanY);
-  const midX = (minX + maxX) / 2;
-  const midY = (minY + maxY) / 2;
-  for (const node of nodes) {
-    node.x = (node.x - midX) * scale + width / 2;
-    node.y = (node.y - midY) * scale + height / 2;
-  }
-  return nodes;
+  return { nodes, edges, width, height };
 }
 
 /** Domain colours. One hue per area, so a cluster reads as a cluster. */

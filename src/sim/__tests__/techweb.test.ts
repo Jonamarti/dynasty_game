@@ -12,55 +12,69 @@ import { describe, it, expect } from 'vitest';
 import {
   layOutWeb, webEdges, depthOf, NODE_RADIUS, DOMAIN_COLORS,
 } from '../../ui/TechWebLayout.ts';
-import { TECH, TECHS, DOMAINS } from '../knowledge/Tech.ts';
+import { TECH, TECHS, DOMAINS, type Tech } from '../knowledge/Tech.ts';
 
 describe('the tech web layout', () => {
-  it('is byte-identical between two runs of the same size', () => {
-    const first = layOutWeb(900, 600);
-    const second = layOutWeb(900, 600);
+  it('is byte-identical between two runs', () => {
+    const first = layOutWeb();
+    const second = layOutWeb();
     expect(JSON.stringify(second.nodes)).toBe(JSON.stringify(first.nodes));
     expect(JSON.stringify(second.edges)).toBe(JSON.stringify(first.edges));
   });
 
   it('places every technology exactly once', () => {
-    const layout = layOutWeb(900, 600);
+    const layout = layOutWeb();
     expect(layout.nodes.map(n => n.tech).sort()).toEqual([...TECHS].sort());
   });
 
   it('never puts one node on top of another', () => {
-    // Checked at two sizes, because the fit-to-box scale is the step most
-    // likely to reintroduce an overlap the relaxation had removed.
-    for (const [width, height] of [[900, 600], [1400, 820]] as const) {
-      const layout = layOutWeb(width, height);
-      for (let i = 0; i < layout.nodes.length; i++) {
-        for (let j = i + 1; j < layout.nodes.length; j++) {
-          const a = layout.nodes[i]!;
-          const b = layout.nodes[j]!;
-          const distance = Math.hypot(a.x - b.x, a.y - b.y);
-          expect(distance, a.tech + ' overlaps ' + b.tech + ' at ' + width + 'x' + height)
-            .toBeGreaterThan(NODE_RADIUS);
-        }
+    const layout = layOutWeb();
+    for (let i = 0; i < layout.nodes.length; i++) {
+      for (let j = i + 1; j < layout.nodes.length; j++) {
+        const a = layout.nodes[i]!;
+        const b = layout.nodes[j]!;
+        const distance = Math.hypot(a.x - b.x, a.y - b.y);
+        expect(distance, a.tech + ' overlaps ' + b.tech).toBeGreaterThan(NODE_RADIUS);
       }
     }
   });
 
-  it('keeps every node inside the box it was given', () => {
-    const layout = layOutWeb(900, 600);
+  it('keeps every node within the layout\'s own bounds', () => {
+    // No box is handed in any more — `TechWeb.ts` pans and zooms a viewport
+    // over whatever extent the relaxation settles on — so what this asserts
+    // is that `shiftToOrigin` did its job: everything sits at or after the
+    // margin, and at or before the reported width and height.
+    const layout = layOutWeb();
     for (const node of layout.nodes) {
-      expect(node.x, node.tech).toBeGreaterThanOrEqual(0);
-      expect(node.x, node.tech).toBeLessThanOrEqual(900);
-      expect(node.y, node.tech).toBeGreaterThanOrEqual(0);
-      expect(node.y, node.tech).toBeLessThanOrEqual(600);
       expect(Number.isFinite(node.x) && Number.isFinite(node.y), node.tech).toBe(true);
+      expect(node.x, node.tech).toBeGreaterThanOrEqual(0);
+      expect(node.x, node.tech).toBeLessThanOrEqual(layout.width);
+      expect(node.y, node.tech).toBeGreaterThanOrEqual(0);
+      expect(node.y, node.tech).toBeLessThanOrEqual(layout.height);
     }
   });
 
   it('gives every edge two endpoints that are really on the web', () => {
-    const placed = new Set(layOutWeb(900, 600).nodes.map(n => n.tech));
+    const placed = new Set(layOutWeb().nodes.map(n => n.tech));
     for (const edge of webEdges()) {
       expect(placed, 'edge from ' + edge.from).toContain(edge.from);
       expect(placed, 'edge to ' + edge.to).toContain(edge.to);
       expect(edge.from).not.toBe(edge.to);
+    }
+  });
+
+  it('caps how many shared-spark edges any one node keeps', () => {
+    // The measured defect this rebuild fixes: `firemaking` alone drew eight
+    // of these before the cap existed, most of the way to the "hundreds of
+    // faint lines" problem `next-steps.md` describes.
+    const degree = new Map<Tech, number>();
+    for (const edge of webEdges()) {
+      if (edge.kind !== 'shared') continue;
+      degree.set(edge.from, (degree.get(edge.from) ?? 0) + 1);
+      degree.set(edge.to, (degree.get(edge.to) ?? 0) + 1);
+    }
+    for (const [tech, count] of degree) {
+      expect(count, tech).toBeLessThanOrEqual(4);
     }
   });
 

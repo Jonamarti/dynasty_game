@@ -43,8 +43,9 @@ import { itemActions } from '../sim/ai/ActionCatalog.ts';
 import { DEFAULT_CONFIG } from '../sim/core/Config.ts';
 import { noticeRadius } from '../sim/systems/WildlifeSystem.ts';
 import { workProgressOf } from '../sim/core/Progress.ts';
+import { JOBS, type JobId } from '../sim/entities/Job.ts';
 
-export type PanelTab = 'now' | 'self' | 'kit' | 'ties' | 'life';
+export type PanelTab = 'now' | 'self' | 'kit' | 'work' | 'ties' | 'life';
 
 export type Selection =
   | { kind: 'person'; person: Person }
@@ -69,6 +70,8 @@ export interface HudCallbacks {
   onPickDesign: (def: BuildingDef | null) => void;
   /** A recipe chosen from the craft bar. Ordered against the player's own hands. */
   onCraft: (recipeId: string) => void;
+  /** A job chosen from the Work tab, for the inspected person. Null clears it. */
+  onAssignJob: (person: Person, job: JobId | null) => void;
 }
 
 /** How long the panel keeps saying why the last order stopped. */
@@ -239,7 +242,7 @@ export class Hud {
       '<b>WASD</b> walk &middot; <b>drag</b> pan &middot; <b>F</b> re-centre &middot; ' +
       '<b>click</b> inspect &middot; <b>right-click</b> actions &middot; ' +
       '<b>B</b> build &middot; <b>M</b> make &middot; <b>C</b> command &middot; ' +
-      '<b>G</b> tech web &middot; ' +
+      '<b>G</b> tech web &middot; <b>K</b> family tree &middot; <b>T</b> tribe graph &middot; ' +
       '<b>P</b> fold panel &middot; <b>H</b> hide overlay &middot; <b>space</b> pause';
 
     this.root.append(
@@ -257,10 +260,16 @@ export class Hud {
     this.panelEl.addEventListener('click', event => {
       const found = (event.target as HTMLElement)
         .closest('[data-tab], [data-person], [data-focus], [data-possess], ' +
-          '[data-command], [data-verb]');
+          '[data-command], [data-verb], [data-job]');
       if (!found) return;
       const node = found as HTMLElement;
 
+      if (node.dataset.job !== undefined && this.currentSelection?.kind === 'person') {
+        const job = node.dataset.job === 'none' ? null : node.dataset.job as JobId;
+        this.callbacks.onAssignJob(this.currentSelection.person, job);
+        this.builtFor = null;
+        return;
+      }
       if (node.dataset.tab) {
         this.tab = node.dataset.tab as PanelTab;
         this.builtFor = null;
@@ -586,7 +595,8 @@ export class Hud {
     rows.push('<div class="hud-doing">' + this.doingLine(person) + '</div>');
 
     const tabs: [PanelTab, string][] = [
-      ['now', 'Now'], ['self', 'Self'], ['kit', 'Kit'], ['ties', 'Ties'], ['life', 'Life'],
+      ['now', 'Now'], ['self', 'Self'], ['kit', 'Kit'], ['work', 'Work'],
+      ['ties', 'Ties'], ['life', 'Life'],
     ];
     rows.push(
       '<div class="hud-tabs">' +
@@ -601,6 +611,7 @@ export class Hud {
       case 'now': rows.push(...this.tabNow(person, known)); break;
       case 'self': rows.push(...this.tabSelf(person, known)); break;
       case 'kit': rows.push(...this.tabKit(observer, person, known, sim)); break;
+      case 'work': rows.push(...this.tabWork(observer, person, known, sim)); break;
       case 'ties': rows.push(...this.tabTies(observer, person, known, sim)); break;
       case 'life': rows.push(...this.tabLife(observer, person, sim)); break;
     }
@@ -831,6 +842,60 @@ export class Hud {
       rows.push('<div class="hud-note">Knowledge lives in people. Anything nobody ' +
         'alive knows is simply gone.</div>');
     }
+    return rows;
+  }
+
+  /**
+   * A standing job, and the option to give somebody a different one.
+   *
+   * Gated the same way `tabSelf` is: a job is something you learn about
+   * somebody by spending time with them, not something written on their face.
+   */
+  private tabWork(
+    observer: Person,
+    person: Person,
+    known: ReturnType<typeof knowledgeOfPerson>,
+    sim: Simulation
+  ): string[] {
+    if (!known.knowsCharacter) {
+      return [
+        '<div class="hud-section">Work</div>',
+        veil('What someone spends their days doing, you learn by spending time ' +
+          'with them. Talk to them.'),
+      ];
+    }
+
+    const rows: string[] = [];
+    const current = person.job ? JOBS[person.job] : null;
+    rows.push('<div class="hud-section">Work</div>');
+    rows.push('<div class="hud-sub">' + (current
+      ? 'Works as ' + current.label.toLowerCase() + '.'
+      : 'Has no settled work — follows their own judgement.') + '</div>');
+
+    if (observer.id !== person.id) {
+      const standing = sim.standing(observer, person, 'job');
+      rows.push(bar('would take work from you', standing.chance * 100,
+        standing.chance > 0.5 ? '#5cc98a' : standing.chance > 0.25 ? '#e0b055' : '#e0705c'));
+      rows.push('<div class="hud-sub">' + escapeHtml(standing.because) + '</div>');
+    }
+
+    rows.push('<div class="hud-section">Assign</div>');
+    rows.push('<div class="hud-buildbar-row">' +
+      Object.values(JOBS).map(job =>
+        '<button class="hud-design' + (person.job === job.id ? ' is-active' : '') +
+        '" data-job="' + job.id + '">' +
+        '<span class="hud-design-icon">' + job.icon + '</span>' +
+        '<span class="hud-design-name">' + escapeHtml(job.label) + '</span>' +
+        '</button>'
+      ).join('') +
+      '<button class="hud-design' + (person.job === null ? ' is-active' : '') + '" data-job="none">' +
+      '<span class="hud-design-icon">—</span><span class="hud-design-name">None</span>' +
+      '</button></div>');
+
+    rows.push('<div class="hud-note">' + escapeHtml(current
+      ? 'Leans them toward ' + current.actions.map(a => actionLabel(a)).join(', ') + '.'
+      : 'A settled job leans someone toward its own work and a little away ' +
+        'from everything else — it is a preference, not a command.') + '</div>');
     return rows;
   }
 

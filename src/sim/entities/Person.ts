@@ -9,10 +9,19 @@ import { Memory } from '../social/Memory.ts';
 import type { LifeEvent } from '../social/SocialSystem.ts';
 import { carryFactor } from '../knowledge/Tech.ts';
 import type { Idea } from '../knowledge/Synthesis.ts';
+import type { JobId } from './Job.ts';
 
+/**
+ * `farm` and `smith` are added ahead of the technologies that will use them.
+ * `SKILLS` is iterated by founding, inheritance, ageing and the
+ * character-creation point budget, so a new skill has to migrate through all
+ * four the moment it exists — hiding that migration inside the M8 content
+ * pass that first gives either of them an action would make the two changes
+ * impossible to measure apart.
+ */
 export const SKILLS = [
   'forage', 'hunt', 'knap', 'build', 'cook',
-  'fight', 'persuade', 'teach', 'heal', 'track',
+  'fight', 'persuade', 'teach', 'heal', 'track', 'farm', 'smith',
 ] as const;
 export type Skill = (typeof SKILLS)[number];
 
@@ -126,6 +135,13 @@ export class Person {
 
   bandId: number;
   isPlayer = false;
+  /**
+   * A standing occupation, or none. Leans `Brain`'s scorer toward the job's
+   * own verbs and damps the rest of `WORK_ACTIONS` a little — see `Job.ts`.
+   * Assigning somebody else's is an order, subject to the same compliance
+   * roll as `Simulation.command`; assigning your own always succeeds.
+   */
+  job: JobId | null = null;
 
   // --- Family ---------------------------------------------------------------
   /** Household this person belongs to; null only before the world is settled. */

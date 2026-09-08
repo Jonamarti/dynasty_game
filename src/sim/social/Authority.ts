@@ -59,6 +59,10 @@ const ORDER_COST: Record<string, number> = {
   build: 0.2,
   chop: 0.28,
   craft: 0.2,
+  // Not a task but a standing arrangement: cheaper than telling someone to
+  // attack, dearer than telling them to go and eat, because it is asking them
+  // to spend their days differently rather than just this next hour.
+  job: 0.25,
   talk: 0.15,
   teach: 0.2,
   // Research is cheap to ask for and hard to compel: sitting somebody down to

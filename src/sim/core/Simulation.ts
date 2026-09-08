@@ -49,6 +49,7 @@ import {
 } from '../knowledge/Tech.ts';
 import { RECIPES, type RecipeDef } from '../entities/Recipe.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
+import { JOBS, type JobId } from '../entities/Job.ts';
 import {
   Inscription, INSCRIPTIONS, resetInscriptionIds, type InscriptionForm,
 } from '../entities/Inscription.ts';
@@ -685,13 +686,69 @@ export class Simulation {
    * is most of what a band is for.
    */
   private exile(person: Person, band: Band, averageOpinion: number): void {
+    this.removeBandMembership(person);
+    void averageOpinion;
+    void band;
+  }
+
+  /**
+   * Takes someone out of their band, whether they were cast out or left of
+   * their own accord.
+   *
+   * Shared by `exile` and by `BandSystem.considerRebellion`'s "leave" outcome
+   * — the mechanical effect is identical, only the story attached to it
+   * differs, and that story is the caller's to tell in the chronicle.
+   */
+  private removeBandMembership(person: Person): void {
     const outcasts = this.outcastBand();
     person.bandId = outcasts.id;
     person.clearTarget();
     person.forgetPlans();
     person.action = 'idle';
-    void averageOpinion;
-    void band;
+  }
+
+  /**
+   * Assigns somebody's job, or clears it with `null`.
+   *
+   * A standing arrangement rather than a one-off task, but still an order:
+   * asking someone else to spend their days differently goes through the same
+   * compliance roll `command` does, with its own entry in `ORDER_COST`.
+   * Assigning your own job always succeeds, the same exception `command`
+   * makes for yourself.
+   */
+  assignJob(leader: Person, subordinate: Person, job: JobId | null): boolean {
+    if (!leader.alive || !subordinate.alive) return false;
+    if (leader.id === subordinate.id) {
+      subordinate.job = job;
+      telemetry.count('job_assigned');
+      return true;
+    }
+
+    const standing = this.standing(leader, subordinate, 'job');
+    if (this.commandRng.next() >= standing.chance) {
+      telemetry.count('job_refused');
+      this.lastRefusal = standing.because;
+      subordinate.chronicle.push({
+        tick: this.time.tick,
+        ageDays: subordinate.age,
+        text: 'refused to take up work for ' + leader.name,
+        kind: 'did',
+      });
+      this.relationships.addDeed(subordinate.id, leader.id, -3, this.time.tick);
+      return false;
+    }
+
+    subordinate.job = job;
+    telemetry.count('job_assigned');
+    subordinate.chronicle.push({
+      tick: this.time.tick,
+      ageDays: subordinate.age,
+      text: job !== null
+        ? 'was put to work as a ' + JOBS[job].label.toLowerCase()
+        : 'was released from their work',
+      kind: 'milestone',
+    });
+    return true;
   }
 
   /** The band of no band. Created the first time anyone is cast out. */
@@ -1460,6 +1517,9 @@ export class Simulation {
         abandonSite: site => this.removeBuilding(site),
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),
+        assignJob: (leader, subordinate, job) => this.assignJob(leader, subordinate, job),
+        leaveBand: person => this.removeBandMembership(person),
+        onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
       });
 
       this.knowledgeSystem.daily(this.people, {

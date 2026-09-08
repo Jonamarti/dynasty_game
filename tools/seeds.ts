@@ -25,6 +25,8 @@
  *   npm run sim:seeds -- --scenario harsh-winter --seeds 20
  */
 import { Simulation } from '../src/sim/core/Simulation.ts';
+import { telemetry } from '../src/sim/core/Telemetry.ts';
+import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { SCENARIOS, thousands } from './simcheck.ts';
 
 interface SeedResult {
@@ -35,6 +37,12 @@ interface SeedResult {
   starvedInfants: number;
   starvedChildren: number;
   starvedAdults: number;
+  /** Technologies known to somebody still alive at the end. */
+  known: number;
+  /** Distinct technologies ever conceived that are not root nodes. */
+  pastRoots: number;
+  /** Lessons taught and things picked up by watching, over the whole run. */
+  transmitted: number;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -43,6 +51,11 @@ const INFANT_YEARS = 5;
 function runSeed(scenarioName: string, seed: string, steps: number): SeedResult {
   const scenario = SCENARIOS[scenarioName];
   if (!scenario) throw new Error('unknown scenario: ' + scenarioName);
+
+  // Telemetry is off by default and `runScenario` is not what runs here, so
+  // the tech columns below would be silently zero without this.
+  telemetry.reset();
+  telemetry.enable();
 
   const sim = new Simulation({ ...scenario.config, seed });
   let peak = 0;
@@ -67,6 +80,23 @@ function runSeed(scenarioName: string, seed: string, steps: number): SeedResult 
     else starvedAdults++;
   }
 
+  // What the world worked out, beside whether it survived.
+  //
+  // A root node is one with an empty `requires` — firemaking, cordage,
+  // plant_lore and tracking — so `pastRoots` counts only the nodes somebody had
+  // to already hold something to reach. That is the number the whole of M8
+  // moves or fails to, and it belongs here rather than in a single run for the
+  // same reason mean survival does: on the century seed it is 0 and on eleven
+  // other seeds it is 2 to 6, so one run says nothing at all.
+  const counts = telemetry.snapshot();
+  const pastRoots = Object.keys(counts)
+    .filter(k => k.startsWith('conceived_'))
+    .map(k => k.slice('conceived_'.length))
+    .filter(id => id in TECH && TECH[id as Tech].requires.length > 0).length;
+  const transmitted = Object.entries(counts)
+    .filter(([k]) => k.startsWith('taught_') || k.startsWith('observed_'))
+    .reduce((n, [, v]) => n + v, 0);
+
   return {
     seed,
     peak,
@@ -75,6 +105,9 @@ function runSeed(scenarioName: string, seed: string, steps: number): SeedResult 
     starvedInfants,
     starvedChildren,
     starvedAdults,
+    known: sim.knownTech.size,
+    pastRoots,
+    transmitted,
   };
 }
 
@@ -110,7 +143,7 @@ function main(): void {
   console.log('SEED COHORT  -  scenario "' + scenarioName + '", ' + seeds.length +
     ' seeds, ' + thousands(steps) + ' steps each');
   console.log('='.repeat(78));
-  console.log('  seed      peak   end    survived   born   starved: infant child adult');
+  console.log('  seed      peak   end    survived   born   starved: inf chi adu   known past taught');
 
   const results: SeedResult[] = [];
   const started = Date.now();
@@ -122,8 +155,10 @@ function main(): void {
       '  ' + r.seed.padEnd(10) +
       String(r.peak).padStart(4) + String(r.end).padStart(6) +
       (pct + '%').padStart(11) + String(r.born).padStart(7) +
-      String(r.starvedInfants).padStart(17) +
-      String(r.starvedChildren).padStart(7) + String(r.starvedAdults).padStart(6)
+      String(r.starvedInfants).padStart(14) +
+      String(r.starvedChildren).padStart(4) + String(r.starvedAdults).padStart(4) +
+      String(r.known).padStart(8) + String(r.pastRoots).padStart(5) +
+      String(r.transmitted).padStart(7)
     );
   }
 
@@ -142,6 +177,19 @@ function main(): void {
     '  starved: ' + sum(r => r.starvedInfants) + ' infants (' + INFANT_YEARS +
     ' or under), ' + sum(r => r.starvedChildren) + ' older children, ' +
     sum(r => r.starvedAdults) + ' adults'
+  );
+
+  // The climb, across seeds. `the-tree-is-climbed` in `sim:check` is a tripwire
+  // on one world; this is the measurement, and the only thing a change to the
+  // pace of discovery should be judged on.
+  const mean = (pick: (r: SeedResult) => number) =>
+    (sum(pick) / Math.max(1, results.length)).toFixed(1);
+  const stuck = results.filter(r => r.pastRoots === 0).length;
+  console.log(
+    '  MEAN ' + mean(r => r.known) + ' technologies known at the end, ' +
+    mean(r => r.pastRoots) + ' conceived past the root nodes, ' +
+    mean(r => r.transmitted) + ' passed on   ·  ' +
+    stuck + '/' + results.length + ' never got past a root node'
   );
   console.log('  ' + ((Date.now() - started) / 1000).toFixed(1) + 's');
   console.log('');

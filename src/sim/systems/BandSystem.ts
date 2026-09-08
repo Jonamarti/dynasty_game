@@ -21,6 +21,7 @@ import type { Band } from '../core/Simulation.ts';
 import type { Building, BuildingDef } from '../entities/Building.ts';
 import { BUILDINGS } from '../entities/Building.ts';
 import { techPower, type Tech } from '../knowledge/Tech.ts';
+import { JOB_IDS, type JobId } from '../entities/Job.ts';
 import type { RelationshipGraph } from './../social/Relationships.ts';
 import type { RNG } from '../core/RNG.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -30,6 +31,27 @@ const EXILE_THRESHOLD = -28;
 
 /** At least this many people must hold that opinion for it to count. */
 const EXILE_QUORUM = 4;
+
+/**
+ * The most aggrieved member's opinion of the chief, below which they are
+ * willing to act on it.
+ *
+ * Deliberately read off the *worst* opinion rather than the band's average,
+ * and that is a finding rather than a starting choice: `chooseChief` elects
+ * whoever the band regards most and re-elects daily, so a chief's average
+ * regard measured across a two-year run never once went negative — a chief
+ * who lost the band's favour was simply replaced by `chooseChief` before
+ * resentment could accumulate against them collectively. One person hating a
+ * generally well-liked chief is common by comparison; the same measurement
+ * ranged from -22.8 to comfortably positive across that run. `EXILE_QUORUM`
+ * still gates the check, but on whether the measurement means anything —
+ * enough of the band has to know the chief at all — not on whether everyone
+ * shares the grievance.
+ */
+const REBELLION_THRESHOLD = -8;
+
+/** At least this many people must hold an opinion of the chief for it to count. */
+const REBELLION_QUORUM = 3;
 
 /**
  * How full a band's stores must be before another is worth digging.
@@ -73,6 +95,12 @@ export interface BandContext {
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
   command: (leader: Person, subordinate: Person, action: string,
     target: { buildingId?: number }) => boolean;
+  /** Assigns a job, subject to the same roll `command` uses. */
+  assignJob: (leader: Person, subordinate: Person, job: JobId | null) => boolean;
+  /** Moves someone out of their band of their own accord, not by exile. */
+  leaveBand: (person: Person) => void;
+  /** A story beat worth a floater, gated on line of sight like any other. */
+  onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') => void;
 }
 
 export class BandSystem {
@@ -105,7 +133,9 @@ export class BandSystem {
       }
 
       this.chooseChief(band, members, ctx);
+      this.assignJobs(band, members, ctx);
       this.considerExile(band, members, ctx);
+      this.considerRebellion(band, members, ctx);
       if (ctx.day % PLANNING_INTERVAL === 0) this.planBuildings(band, members, ctx);
       this.directWork(band, members, ctx);
     }
@@ -128,12 +158,7 @@ export class BandSystem {
 
     for (const candidate of members) {
       if (candidate.isChild) continue;
-      let regard = 0;
-      for (const other of members) {
-        if (other.id === candidate.id) continue;
-        regard += ctx.relationships.opinion(other.id, candidate.id);
-      }
-      const score = regard + candidate.years * 1.5 + candidate.skills.persuade * 0.8;
+      const score = this.standingScore(candidate, members, ctx);
       if (score > bestScore) {
         bestScore = score;
         best = candidate;
@@ -153,6 +178,190 @@ export class BandSystem {
       text: 'became chief of the ' + band.name,
       kind: 'milestone',
     });
+  }
+
+  /**
+   * How much the band, collectively, regards `candidate`.
+   *
+   * Shared by `chooseChief`, which asks it of everyone, and
+   * `considerRebellion`'s challenge outcome, which asks it of exactly two
+   * people — a candidate for chief and the incumbent are the same
+   * measurement, and writing the sum out twice is how the two drift apart.
+   */
+  private standingScore(candidate: Person, members: Person[], ctx: BandContext): number {
+    let regard = 0;
+    for (const other of members) {
+      if (other.id === candidate.id) continue;
+      regard += ctx.relationships.opinion(other.id, candidate.id);
+    }
+    return regard + candidate.years * 1.5 + candidate.skills.persuade * 0.8;
+  }
+
+  // -------------------------------------------------------------------------
+  // Work
+  // -------------------------------------------------------------------------
+
+  /**
+   * The chief settles unemployed adults into a job.
+   *
+   * One a day, and only ever the job the band currently has fewest of — a
+   * deterministic rule rather than a rolled one, so no draw is spent choosing
+   * who does what and the fork order in `Simulation`'s constructor is
+   * untouched. A job is a lean on the utility scorer, not a guarantee of
+   * competence, so there is no reason to match a candidate's existing skill:
+   * that would only concentrate work further, which `Brain`'s own bias
+   * already does once someone has the job.
+   */
+  private assignJobs(band: Band, members: Person[], ctx: BandContext): void {
+    const chiefId = this.chiefByBand.get(band.id);
+    if (chiefId === undefined) return;
+    const chief = members.find(m => m.id === chiefId);
+    if (!chief) return;
+
+    const unassigned = members.filter(m => !m.isChild && m.job === null && m.id !== chief.id);
+    if (unassigned.length === 0) return;
+
+    const counts: Record<JobId, number> = { forager: 0, hunter: 0, builder: 0, crafter: 0 };
+    for (const member of members) if (member.job) counts[member.job]++;
+
+    let wanted: JobId = JOB_IDS[0]!;
+    let fewest = Infinity;
+    for (const id of JOB_IDS) {
+      if (counts[id] < fewest) {
+        fewest = counts[id];
+        wanted = id;
+      }
+    }
+
+    ctx.assignJob(chief, unassigned[0]!, wanted);
+  }
+
+  // -------------------------------------------------------------------------
+  // Rebellion
+  // -------------------------------------------------------------------------
+
+  /**
+   * Whether anyone in the band resents the chief enough to act on it.
+   *
+   * Reuses `considerExile`'s shape — a quorum of people with an opinion at
+   * all, measured against a threshold — but not its statistic. Exile asks for
+   * the *average* opinion of a suspect, and that question has an answer here
+   * too, but the answer is always comfortably positive: see
+   * `REBELLION_THRESHOLD`'s comment for why a chief's average regard is the
+   * wrong thing to gate on. This asks instead whether the single most
+   * aggrieved member hates the chief enough, and even then crossing the
+   * threshold does not itself cause anything — `defiance` below is what makes
+   * this rare rather than a formality.
+   */
+  private considerRebellion(band: Band, members: Person[], ctx: BandContext): void {
+    if (members.length < REBELLION_QUORUM + 1) return;
+    const chiefId = this.chiefByBand.get(band.id);
+    if (chiefId === undefined) return;
+    const chief = members.find(m => m.id === chiefId);
+    if (!chief) return;
+
+    let voices = 0;
+    let worst: Person | null = null;
+    let worstOpinion = Infinity;
+    for (const member of members) {
+      if (member.id === chiefId || member.isChild) continue;
+      const opinion = ctx.relationships.peek(member.id, chiefId)
+        ? ctx.relationships.opinion(member.id, chiefId)
+        : null;
+      if (opinion === null) continue;
+      voices++;
+      if (opinion < worstOpinion) {
+        worstOpinion = opinion;
+        worst = member;
+      }
+    }
+    if (voices < REBELLION_QUORUM || !worst) return;
+    if (worstOpinion > REBELLION_THRESHOLD) return;
+
+    const grievance = Math.max(0, -worstOpinion) / 100;
+    const defiance = grievance * (1 - worst.traits.loyalty);
+    if (ctx.rng.next() > defiance) return;
+
+    // Three rising outcomes. Public refusal is the common, cheap one; leaving
+    // is rarer and costs the band a member; challenging for the chiefdom
+    // outright is the rarest and the only one that can actually change who
+    // leads.
+    const roll = ctx.rng.next();
+    if (roll < 0.5) this.refuseChief(worst, chief, ctx);
+    else if (roll < 0.85) this.leaveOverChief(worst, band, chief, ctx);
+    else this.challengeChief(worst, chief, band, members, ctx);
+  }
+
+  /** Public defiance: no mechanical change beyond how it sours the record. */
+  private refuseChief(rebel: Person, chief: Person, ctx: BandContext): void {
+    telemetry.count('rebellion_refused');
+    rebel.chronicle.push({
+      tick: ctx.tick,
+      ageDays: rebel.age,
+      text: 'openly refused to answer to ' + chief.name + ' any longer',
+      kind: 'did',
+    });
+    // Louder than an ordinary refused order: this is a stand taken in front of
+    // the whole band, not one request declined in private.
+    ctx.relationships.addDeed(rebel.id, chief.id, -6, ctx.tick);
+    ctx.onInsight(rebel, 'defied ' + chief.name + ' openly', 'setback');
+  }
+
+  /** Rather than go on answering to a chief they cannot stand, they leave. */
+  private leaveOverChief(rebel: Person, band: Band, chief: Person, ctx: BandContext): void {
+    telemetry.count('rebellion_left');
+    rebel.chronicle.push({
+      tick: ctx.tick,
+      ageDays: rebel.age,
+      text: 'left the ' + band.name + ' rather than answer to ' + chief.name,
+      kind: 'did',
+    });
+    ctx.leaveBand(rebel);
+    ctx.onInsight(rebel, 'left rather than answer to ' + chief.name, 'setback');
+  }
+
+  /**
+   * A public bid for the chiefdom, decided by the same regard `chooseChief`
+   * would use if it ran again today.
+   *
+   * Not a fight: a challenge that only ever came down to `fight` skill would
+   * make persuasion and years of standing worthless the moment somebody
+   * younger and stronger showed up, and the chief who has held a band's
+   * loyalty for a decade would lose it to whoever can hit hardest.
+   */
+  private challengeChief(
+    rebel: Person, chief: Person, band: Band, members: Person[], ctx: BandContext
+  ): void {
+    const challengerScore = this.standingScore(rebel, members, ctx);
+    const chiefScore = this.standingScore(chief, members, ctx);
+
+    if (challengerScore > chiefScore) {
+      this.chiefByBand.set(band.id, rebel.id);
+      band.chiefId = rebel.id;
+      telemetry.count('rebellion_challenge_won');
+      rebel.chronicle.push({
+        tick: ctx.tick, ageDays: rebel.age,
+        text: 'challenged ' + chief.name + ' for the chiefdom and won',
+        kind: 'milestone',
+      });
+      chief.chronicle.push({
+        tick: ctx.tick, ageDays: chief.age,
+        text: 'was deposed by ' + rebel.name,
+        kind: 'suffered',
+      });
+      ctx.onInsight(rebel, 'became chief in ' + chief.name + '\'s place', 'gain');
+    } else {
+      telemetry.count('rebellion_challenge_lost');
+      rebel.chronicle.push({
+        tick: ctx.tick, ageDays: rebel.age,
+        text: 'challenged ' + chief.name + ' for the chiefdom and lost',
+        kind: 'did',
+      });
+      // Losing a public bid for leadership costs standing beyond an ordinary
+      // refusal: everyone just watched it happen.
+      ctx.relationships.addDeed(rebel.id, chief.id, -8, ctx.tick);
+      ctx.onInsight(rebel, 'lost a bid to replace ' + chief.name, 'setback');
+    }
   }
 
   // -------------------------------------------------------------------------

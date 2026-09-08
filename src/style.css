@@ -837,8 +837,39 @@ html, body, #app {
 
 .techweb-body { display: flex; min-height: 0; }
 
-.techweb-canvas { position: relative; flex: none; }
+/* The pan-and-zoom viewport: a fixed window (sized by `TechWeb.boxSize`) that
+   clips a `.techweb-canvas` laid out at its own natural size, however much
+   bigger than the window that turns out to be. `.techweb-canvas` carries the
+   transform `applyTransform` writes on every drag and every wheel notch —
+   never rebuilt, only ever `translate()`d and `scale()`d, which is what keeps
+   panning free of the redraw that would detach a hovered node. */
+.techweb-viewport {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  cursor: grab;
+}
+.techweb-viewport.is-panning { cursor: grabbing; }
+
+.techweb-canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
 .techweb-edges { position: absolute; inset: 0; overflow: visible; }
+
+/* Collapse to a chip below `CHIP_ZOOM`: at that scale a node's own label has
+   gone illegible, and a box full of text too small to read is clutter rather
+   than information. The state colours on `border-color` still show through a
+   chip, so the *shape* of the web — which clusters are lit, which are dark —
+   reads at a glance even zoomed all the way out. Specificity beats the state
+   rules below on class count alone, so this does not need `!important`. */
+.techweb-canvas.is-far .techweb-node {
+  width: 14px;
+  min-height: 14px;
+  padding: 0;
+  border-radius: 50%;
+}
+.techweb-canvas.is-far .techweb-name,
+.techweb-canvas.is-far .techweb-pips,
+.techweb-canvas.is-far .techweb-ring,
+.techweb-canvas.is-far .techweb-scroll { display: none; }
 
 /* A prerequisite is scaffolding and is drawn as one; a shared-spark line is a
    family resemblance between two ideas that arise from some of the same things,
@@ -973,3 +1004,178 @@ html, body, #app {
 .techweb-spark.is-ready { border-left-color: #7ddc96; }
 .techweb-ing { color: var(--text-dim); }
 .techweb-ing.is-met { color: #7ddc96; }
+
+/* --- the family tree ------------------------------------------------------ */
+
+/* Same shape as `.techweb`: DOM nodes over an inline <svg> of edges, at the
+   same tier in the z-index ladder — see the tech web's own comment. Only one
+   of the three full-screen graphs is ever open at a time. */
+.familytree {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 10, 15, 0.86);
+  backdrop-filter: blur(3px);
+}
+.familytree[hidden] { display: none; }
+
+.familytree-card {
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  background: rgba(14, 17, 24, 0.97);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.familytree-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.familytree-head b { font-size: 15px; }
+.familytree-sub { color: var(--text-dim); font-size: 12px; }
+.familytree-close {
+  margin-left: auto;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(30, 34, 44, 0.9);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.familytree-close:hover { color: var(--text); border-color: var(--accent); }
+
+.familytree-veil {
+  max-width: 380px;
+  padding: 22px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.familytree-canvas { position: relative; flex: none; }
+.familytree-edges { position: absolute; inset: 0; overflow: visible; }
+
+/* Descent is drawn solid; a marriage is drawn faint and dashed, the same
+   distinction `.techweb-edge` makes between scaffolding and a resemblance. */
+.familytree-edge { stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.6; }
+.familytree-edge.is-spouse { stroke: rgba(200, 138, 216, 0.4); stroke-dasharray: 3 4; }
+
+.familytree-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 80px;
+  min-height: 34px;
+  padding: 5px 6px;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text);
+  background: rgba(24, 28, 38, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+}
+.familytree-node.is-subject {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 20%, rgba(14, 17, 24, 0.95));
+}
+.familytree-node.is-dead { opacity: 0.55; border-style: dashed; }
+
+/* --- the tribe graph ------------------------------------------------------ */
+
+/* Third and last of the three full-screen graphs, same tier and same shape.
+   Colours reuse `.hud-tie-value.is-pos`/`.is-neg`'s exact palette rather than
+   inventing a second one, so warmth reads the same colour in the Ties tab and
+   on the graph it is drawn from. */
+.tribegraph {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 10, 15, 0.86);
+  backdrop-filter: blur(3px);
+}
+.tribegraph[hidden] { display: none; }
+
+.tribegraph-card {
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  background: rgba(14, 17, 24, 0.97);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.tribegraph-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.tribegraph-head b { font-size: 15px; }
+.tribegraph-sub { color: var(--text-dim); font-size: 12px; }
+.tribegraph-close {
+  margin-left: auto;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(30, 34, 44, 0.9);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.tribegraph-close:hover { color: var(--text); border-color: var(--accent); }
+
+.tribegraph-veil {
+  max-width: 380px;
+  padding: 22px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.tribegraph-canvas { position: relative; flex: none; }
+.tribegraph-edges { position: absolute; inset: 0; overflow: visible; }
+.tribegraph-edge.is-pos { stroke: rgba(92, 201, 138, 0.45); }
+.tribegraph-edge.is-neg { stroke: rgba(224, 112, 92, 0.45); }
+
+.tribegraph-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 74px;
+  min-height: 32px;
+  padding: 4px 6px;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text);
+  background: rgba(24, 28, 38, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+}
+.tribegraph-node.is-subject {
+  width: 84px;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 20%, rgba(14, 17, 24, 0.95));
+}
+.tribegraph-node.is-pos { border-color: #5cc98a; }
+.tribegraph-node.is-neg { border-color: #e0705c; }
+.tribegraph-node.is-dead { opacity: 0.55; border-style: dashed; }

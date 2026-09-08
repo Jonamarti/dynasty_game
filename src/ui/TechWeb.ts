@@ -52,13 +52,46 @@ const STATE_NOTE: Record<NodeState, string> = {
   unknown: 'Out of reach: something it rests on is missing.',
 };
 
+/** Wheel notches multiply zoom by this, in or out. */
+const ZOOM_STEP = 1.12;
+const MIN_ZOOM = 0.15;
+const MAX_ZOOM = 2.5;
+/** Below this, nodes collapse to unlabelled chips — see the `.is-far` CSS. */
+const CHIP_ZOOM = 0.55;
+/** Pixels of mouse movement before a press counts as a pan rather than a click. */
+const DRAG_THRESHOLD = 4;
+
 export class TechWebOverlay {
   private root: HTMLElement;
+  /**
+   * The whole web's arrangement. Computed once, ever — unlike the rest of
+   * this panel's state it does not depend on which subject the panel is open
+   * on, or on how big the window is, because there is no box it has to fit
+   * into any more. See `layOutWeb`'s own comment.
+   */
   private layout: WebLayout | null = null;
-  private layoutKey = '';
   private subject: Person | null = null;
   private sim: Simulation | null = null;
   private focused: Tech | null = null;
+
+  // --- Pan and zoom ----------------------------------------------------
+  // The fix for the box the layout used to be squeezed into: the arrangement
+  // is laid out at its natural size and the player moves a viewport over it,
+  // the same relationship the game's own camera has to the world.
+  private panX = 0;
+  private panY = 0;
+  private zoom = 1;
+  /** True once `fitToView` has run for the subject currently open. */
+  private fitted = false;
+  private dragging = false;
+  private dragMoved = false;
+  private dragStartX = 0;
+  private dragStartY = 0;
+  private panStartX = 0;
+  private panStartY = 0;
+  private viewportEl: HTMLElement | null = null;
+  private canvasEl: HTMLElement | null = null;
+
   /**
    * A digest of everything currently on screen, so a redraw only happens when
    * something actually changed.
@@ -67,7 +100,9 @@ export class TechWebOverlay {
    * rebuilding `innerHTML` sixty times a second detaches whatever node the
    * cursor is over before a hover can land on it. The panel was unusable and
    * Playwright said so in as many words: "element was detached from the DOM,
-   * retrying", a hundred times over.
+   * retrying", a hundred times over. Panning and zooming go through
+   * `applyTransform` instead, which touches only a `style.transform` and
+   * never rebuilds anything, for exactly the same reason.
    */
   private signature = '';
 
@@ -86,6 +121,13 @@ export class TechWebOverlay {
       this.focus(node.getAttribute('data-tech') as Tech);
     });
     this.root.addEventListener('click', event => {
+      // A drag that happened to end over a node or the backdrop is a pan, not
+      // a click on either of them — `mousedown` armed this and `mouseup`
+      // below leaves it set for exactly this one event.
+      if (this.dragMoved) {
+        this.dragMoved = false;
+        return;
+      }
       const target = event.target as HTMLElement;
       if (target.closest('[data-close]')) {
         this.close();
@@ -100,6 +142,41 @@ export class TechWebOverlay {
       // not, or reading the detail pane would close the thing you were reading.
       if (target === this.root) this.close();
     });
+
+    // Panning: a plain mouse drag over the viewport. `mousemove`/`mouseup` are
+    // on `window` rather than the viewport so a drag that leaves the panel
+    // before releasing the button still ends cleanly.
+    this.root.addEventListener('mousedown', event => {
+      if (event.button !== 0 || !this.viewportEl?.contains(event.target as Node)) return;
+      this.dragging = true;
+      this.dragMoved = false;
+      this.dragStartX = event.clientX;
+      this.dragStartY = event.clientY;
+      this.panStartX = this.panX;
+      this.panStartY = this.panY;
+      this.viewportEl.classList.add('is-panning');
+    });
+    window.addEventListener('mousemove', event => {
+      if (!this.dragging) return;
+      const dx = event.clientX - this.dragStartX;
+      const dy = event.clientY - this.dragStartY;
+      if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) this.dragMoved = true;
+      this.panX = this.panStartX + dx;
+      this.panY = this.panStartY + dy;
+      this.applyTransform();
+    });
+    window.addEventListener('mouseup', () => {
+      this.dragging = false;
+      this.viewportEl?.classList.remove('is-panning');
+    });
+
+    // Zooming: the wheel, centred on the cursor so the technology under it
+    // stays under it rather than the view recentring on the middle of the box.
+    this.root.addEventListener('wheel', event => {
+      if (!this.viewportEl?.contains(event.target as Node)) return;
+      event.preventDefault();
+      this.zoomAt(event.clientX, event.clientY, event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP);
+    }, { passive: false });
 
     window.addEventListener('keydown', event => {
       if (!this.isOpen) return;
@@ -124,6 +201,7 @@ export class TechWebOverlay {
     this.sim = sim;
     this.subject = subject;
     this.focused = null;
+    this.fitted = false;
     this.signature = '';
     this.render();
     this.root.hidden = false;
@@ -135,6 +213,8 @@ export class TechWebOverlay {
     this.subject = null;
     this.sim = null;
     this.focused = null;
+    this.viewportEl = null;
+    this.canvasEl = null;
     this.signature = '';
   }
 
@@ -143,7 +223,7 @@ export class TechWebOverlay {
    *
    * Cheap because the layout is cached: only the node classes and the detail
    * pane are rebuilt, and the arrangement — the expensive part — is computed
-   * once per size.
+   * once, ever.
    */
   update(sim: Simulation): void {
     if (!this.isOpen) return;
@@ -161,6 +241,43 @@ export class TechWebOverlay {
     this.render();
   }
 
+  /** Sets the view so the whole web fits in the box, centred. Runs once per open. */
+  private fitToView(layout: WebLayout, box: { width: number; height: number }): void {
+    this.zoom = Math.max(MIN_ZOOM, Math.min(1.1, box.width / layout.width, box.height / layout.height));
+    this.panX = (box.width - layout.width * this.zoom) / 2;
+    this.panY = (box.height - layout.height * this.zoom) / 2;
+    this.fitted = true;
+  }
+
+  /** Zooms about a screen point, keeping whatever is under it in place. */
+  private zoomAt(clientX: number, clientY: number, factor: number): void {
+    if (!this.viewportEl) return;
+    const rect = this.viewportEl.getBoundingClientRect();
+    const localX = clientX - rect.left;
+    const localY = clientY - rect.top;
+    const worldX = (localX - this.panX) / this.zoom;
+    const worldY = (localY - this.panY) / this.zoom;
+    this.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.zoom * factor));
+    this.panX = localX - worldX * this.zoom;
+    this.panY = localY - worldY * this.zoom;
+    this.applyTransform();
+  }
+
+  /**
+   * Writes the current pan and zoom to the DOM without touching anything else.
+   *
+   * The whole reason panning and zooming are cheap: a wheel notch or a mouse
+   * move only ever calls this, never `render`, so sixty small transform
+   * updates a second cost nothing and never risk detaching a hovered node.
+   */
+  private applyTransform(): void {
+    if (!this.canvasEl) return;
+    this.canvasEl.style.transform =
+      'translate(' + this.panX.toFixed(1) + 'px,' + this.panY.toFixed(1) + 'px) ' +
+      'scale(' + this.zoom.toFixed(3) + ')';
+    this.canvasEl.classList.toggle('is-far', this.zoom < CHIP_ZOOM);
+  }
+
   /**
    * Everything that would change the picture, as one string.
    *
@@ -170,12 +287,15 @@ export class TechWebOverlay {
    * now" and "nothing has suggested it", and a web that did not notice somebody
    * putting a hide down would be quietly lying.
    */
-  private digest(subject: Person, notice: Notice, boxKey: string): string {
+  private digest(subject: Person, notice: Notice): string {
     // The records are in the digest because a stone cut on the far side of the
     // island changes what this panel says about a node, and a panel that
     // redraws only on its subject's own changes would go on showing the old
-    // reading until something else happened to them.
-    const parts = [subject.id, boxKey, this.focused ?? '-',
+    // reading until something else happened to them. Pan and zoom are
+    // deliberately absent: they go through `applyTransform`, not a rebuild,
+    // and including them here would mean every wheel notch fought this method
+    // for the right to touch the DOM.
+    const parts = [subject.id, this.focused ?? '-',
       this.sim ? [...this.sim.recordedTech].sort().join(',') : ''];
     for (const tech of Object.keys(TECH) as Tech[]) {
       const idea = subject.ideaFor(tech);
@@ -208,6 +328,8 @@ export class TechWebOverlay {
     // private as what they are good at, and a map of it more so.
     if (observer && known && !known.knowsCharacter) {
       this.signature = 'veiled:' + subject.id;
+      this.viewportEl = null;
+      this.canvasEl = null;
       if (this.root.childElementCount > 0 &&
           this.root.firstElementChild?.querySelector('.techweb-veil')) return;
       this.root.innerHTML =
@@ -221,17 +343,25 @@ export class TechWebOverlay {
     }
 
     const box = this.boxSize();
-    const key = box.width + 'x' + box.height;
-    if (!this.layout || this.layoutKey !== key) {
-      this.layout = layOutWeb(box.width, box.height);
-      this.layoutKey = key;
-    }
+    this.layout ??= layOutWeb();
     const layout = this.layout;
     const notice = sim.noticeOf(subject);
 
-    const digest = this.digest(subject, notice, key);
-    if (digest === this.signature && this.root.childElementCount > 0) return;
+    const digest = this.digest(subject, notice);
+    const rebuild = digest !== this.signature || this.root.childElementCount === 0;
     this.signature = digest;
+    if (!this.fitted) this.fitToView(layout, box);
+    if (!rebuild) {
+      // Still worth doing on an otherwise-quiet frame: the window can be
+      // resized while the panel is open, and the viewport box needs to track
+      // it even though nothing about the web itself changed.
+      if (this.viewportEl) {
+        this.viewportEl.style.width = box.width + 'px';
+        this.viewportEl.style.height = box.height + 'px';
+      }
+      this.applyTransform();
+      return;
+    }
 
     const edges = layout.edges.map(edge => {
       const from = layout.nodes.find(n => n.tech === edge.from)!;
@@ -293,19 +423,27 @@ export class TechWebOverlay {
         '<b>' + escapeHtml(name) + '</b>' +
         '<span class="techweb-sub">' + counts.proven + ' known &middot; ' +
           counts.working + ' in hand &middot; ' + counts.conceivable +
-          ' within reach &middot; ' + counts.unknown + ' out of sight</span>' +
+          ' within reach &middot; ' + counts.unknown + ' out of sight' +
+          ' &middot; drag to pan, wheel to zoom</span>' +
         '<button class="techweb-close" data-close="1">close</button>' +
       '</div>' +
       '<div class="techweb-body">' +
-        '<div class="techweb-canvas" style="width:' + layout.width +
-          'px;height:' + layout.height + 'px">' +
-          '<svg class="techweb-edges" width="' + layout.width + '" height="' +
-            layout.height + '">' + edges + '</svg>' +
-          nodes +
+        '<div class="techweb-viewport" style="width:' + box.width +
+          'px;height:' + box.height + 'px">' +
+          '<div class="techweb-canvas" style="width:' + layout.width +
+            'px;height:' + layout.height + 'px">' +
+            '<svg class="techweb-edges" width="' + layout.width + '" height="' +
+              layout.height + '">' + edges + '</svg>' +
+            nodes +
+          '</div>' +
         '</div>' +
         '<div class="techweb-detail">' + this.detail(subject, notice) + '</div>' +
       '</div>' +
       '</div>';
+
+    this.viewportEl = this.root.querySelector('.techweb-viewport');
+    this.canvasEl = this.root.querySelector('.techweb-canvas');
+    this.applyTransform();
   }
 
   /** How one node stands, in the five states the plan names. */

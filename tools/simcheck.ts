@@ -15,6 +15,8 @@
 import { Simulation } from '../src/sim/core/Simulation.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
+import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
+import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
 
 // ---------------------------------------------------------------------------
 // Scenarios
@@ -191,6 +193,30 @@ export interface WildlifeWatch {
   sleepFatigueFalls: number;
 }
 
+/**
+ * Whether *holding* a job changes what somebody spends their time on,
+ * measured per job and against everyone who does not hold that job.
+ *
+ * Not "employed vs unemployed on any job's actions" — a first version tried
+ * that and it was the wrong comparison. `forage` alone is most of everyone's
+ * day, employed or not, because it is also how hunger gets answered, so
+ * "any job's actions" is dominated by one verb every job-holder and every
+ * idler alike spends most of their time on, and a crafter's narrow
+ * `craft`/`prototype` slice looked biased *against* by comparison however
+ * well the bias term worked. Comparing each job's own holders to everyone
+ * else, action by action, controls for that: the question becomes "does a
+ * forager forage more than a non-forager does", not "does anybody with a job
+ * out-forage a forager".
+ */
+export interface JobWatch {
+  /** Ticks spent by holders of each job, and how many landed on its own actions. */
+  holderTicks: Record<JobId, number>;
+  holderMatchTicks: Record<JobId, number>;
+  /** Ticks spent by everyone *not* holding that job, and the same measure. */
+  otherTicks: Record<JobId, number>;
+  otherMatchTicks: Record<JobId, number>;
+}
+
 export interface Report {
   scenario: string;
   seed: string;
@@ -207,6 +233,7 @@ export interface Report {
   biomes: Record<string, number>;
   spatial: { cells: number; items: number; maxBucket: number };
   wildlife: WildlifeWatch;
+  jobs: JobWatch;
   checks: Check[];
 }
 
@@ -631,6 +658,80 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       planned + ' sites marked out by bands themselves (player placed none)');
   }
 
+  // M6b phase 6: a job is a lean on the scorer, not a guarantee, so the
+  // question is not whether anyone was assigned one but whether it changed
+  // anything. Measured per job against everyone who does *not* hold it —
+  // "does a forager forage more than a non-forager" — rather than against
+  // people with no job at all: `forage` alone is most of everyone's day,
+  // employed or not, since it is also how hunger gets answered, so a version
+  // that compared employed-on-their-own-job against unemployed-on-any-job
+  // failed by construction, dragged down by narrow jobs like `crafter`
+  // whose actions are a small share of anyone's time.
+  const totalHolderTicks = JOB_IDS.reduce((sum, id) => sum + base.jobs.holderTicks[id], 0);
+  const totalOtherTicks = JOB_IDS.reduce((sum, id) => sum + base.jobs.otherTicks[id], 0);
+  if (totalHolderTicks < 200 || totalOtherTicks < 200) {
+    skip('jobs-bias-work',
+      'too few ticks with a job assigned to compare (' + totalHolderTicks + ' held, ' +
+      totalOtherTicks + ' not)');
+  } else {
+    const holderShare = JOB_IDS.reduce((sum, id) => sum + base.jobs.holderMatchTicks[id], 0) /
+      totalHolderTicks;
+    const otherShare = JOB_IDS.reduce((sum, id) => sum + base.jobs.otherMatchTicks[id], 0) /
+      totalOtherTicks;
+    add('jobs-bias-work',
+      holderShare > otherShare,
+      'holders spent ' + (holderShare * 100).toFixed(1) +
+        "% of their time on their own job's work; everyone else spent " +
+        (otherShare * 100).toFixed(1) + '% of theirs on that same work'
+    );
+  }
+
+  // Only a run long enough for `considerRebellion` to have had many chances to
+  // fire can say anything about it, which today is `century` alone — the same
+  // reason `generations-turn-over` and `bands-decide-to-build` above are
+  // gated on span rather than on the scenario's name.
+  //
+  // Zero is reported as **n/a, not a failure**, and that is a finding rather
+  // than a shrug. Across fifteen seeds of this scenario, six of them — 40% —
+  // saw no rebellion at all in a full two years, because `defiance` gates
+  // every crossing of `REBELLION_THRESHOLD` behind its own roll and a band
+  // only gets one attempt a day. That is exactly the shape `AGENTS.md`
+  // documents for `prototypes-can-fail`, deleted for the same reason: a rare
+  // stochastic event has too small a sample in any one run for a hard
+  // pass/fail to mean anything, and the `century` seed's own count moved
+  // between 0 and 2 across two unrelated tuning passes in this one while
+  // nothing about `considerRebellion` changed. The mechanism itself is
+  // asserted deterministically in `band.test.ts` instead — a band built with
+  // one member primed to hate its chief, which does not depend on getting
+  // lucky. What this check still catches is the ceiling: if rebellion ever
+  // does fire, it must not be endemic.
+  const rebellions = (tel.rebellion_refused ?? 0) + (tel.rebellion_left ?? 0) +
+    (tel.rebellion_challenge_won ?? 0) + (tel.rebellion_challenge_lost ?? 0);
+  if (years < 2) {
+    skip('rebellion-is-rare-but-happens',
+      'run covers only ' + (last.day - first.day) + ' days; too short for rebellion to ' +
+      'be expected or ruled out');
+  } else if (rebellions === 0) {
+    skip('rebellion-is-rare-but-happens',
+      'none fired in this run; a rare stochastic event, see band.test.ts for the ' +
+      'deterministic assertion');
+  } else {
+    // "Rare" is bounded from above rather than pinned to a number: a band
+    // considers rebellion once a day, so a run this long offers each band on
+    // the order of a hundred and fifty chances, and a design that is meant to
+    // be rare should use only a handful of them. The ceiling is generous on
+    // purpose — `century` is the chaotic scenario `AGENTS.md` warns against
+    // over-reading, and this check only needs to catch the gate having come
+    // off entirely, not to pin down the exact rate.
+    add('rebellion-is-rare-but-happens',
+      rebellions < 40,
+      rebellions + ' rebellions over ' + years + ' years (' +
+        (tel.rebellion_refused ?? 0) + ' refused outright, ' +
+        (tel.rebellion_left ?? 0) + ' left, ' +
+        (tel.rebellion_challenge_won ?? 0) + ' challenges won, ' +
+        (tel.rebellion_challenge_lost ?? 0) + ' lost)');
+  }
+
   // Knowledge is the M4 spine. These say it is alive rather than declared:
   // things get worked out, they get handed on, and the world can be described
   // by what its people collectively know.
@@ -707,6 +808,19 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const conceived = sum('conceived_');
   const proven = sum('proven_');
   const sparkRoutes = Object.keys(tel).filter(k => k.startsWith('spark_'));
+
+  // Which technologies were ever thought of at all, and which of them were
+  // anything more than a starting point.
+  //
+  // A root node is one with an empty `requires`: firemaking, cordage,
+  // plant_lore and tracking, the four anybody can arrive at knowing nothing.
+  // Everything else needs somebody to already hold something, which is the
+  // whole of the tree and the only part that measures transmission.
+  const conceivedTechs = Object.keys(tel)
+    .filter(k => k.startsWith('conceived_'))
+    .map(k => k.slice('conceived_'.length))
+    .filter(id => id in TECH) as Tech[];
+  const beyondRoots = conceivedTechs.filter(id => TECH[id].requires.length > 0);
   const breakthroughsAlone = tel.breakthrough_ponder ?? 0;
   const breakthroughsTogether = tel.breakthrough_discuss ?? 0;
   const prototypes = sum('prototyped_');
@@ -718,6 +832,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     skip('ideas-are-conceived', 'run too short for anybody to have an idea');
     skip('sparks-are-various', 'run too short for more than one route to fire');
     skip('ideas-become-tech', 'run too short to carry an idea to a proven design');
+    skip('the-tree-is-climbed', 'run too short to get past the root technologies');
     skip('research-is-social', 'run too short for anybody to argue anything out');
     skip('techs-are-refined', 'run too short to improve a design');
   }
@@ -733,10 +848,19 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     // The web is not one path. If only one spark ever fires, every band arrives
     // at the same technology for the same reason and the whole point of
     // authoring several routes has been lost.
+    //
+    // It counts *technologies* as well as routes now, and reports both, because
+    // counting routes alone was measuring the wrong thing. On the century seed
+    // it read "8 distinct spark routes fired" and passed — and all eight
+    // belonged to cordage, plant_lore and firemaking, in a world where the
+    // other fourteen nodes had never once entered anybody's head. A number that
+    // looks healthy on a world where four fifths of the tree never occurs to
+    // anyone is the "reassuring and detects nothing" failure that got two
+    // checks deleted in the winter pass.
     add('sparks-are-various',
-      sparkRoutes.length > 1,
-      sparkRoutes.length + ' distinct spark routes fired: ' + sparkRoutes
-        .map(k => k.slice(6)).join(' '));
+      sparkRoutes.length > 1 && conceivedTechs.length > 1,
+      sparkRoutes.length + ' routes into ' + conceivedTechs.length +
+        ' technologies: ' + conceivedTechs.join(' '));
 
     // A completed lifecycle wants a year, for the same reason
     // `knowledge-is-found` does: conceive, research, prototype, test and prove
@@ -747,11 +871,37 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     if (last.day - first.day < 80) {
       skip('ideas-become-tech',
         'run covers under a year; ' + conceived + ' conceived, too soon to prove any');
+      skip('the-tree-is-climbed',
+        'run covers under a year; too soon to get past the root technologies');
     } else {
       add('ideas-become-tech',
         proven > 0,
         conceived + ' conceived, ' + prototypes + ' built, ' + proven + ' proven, ' +
           (tel.prototype_failed ?? 0) + ' failed their trial');
+
+      // Did anybody get past the four technologies you can arrive at knowing
+      // nothing? This is the gate every content tier of M8 is held to: a tier
+      // that adds nodes and does not move this has added content no player will
+      // ever see.
+      //
+      // It fails on the century seed today, and deliberately so. That world
+      // halves its population inside two years, and the two failures have one
+      // cause: it ends with ten people, two technologies known to anybody, and
+      // 13 lessons taught and 11 things picked up by watching in two years, so
+      // there is nobody holding a prerequisite for anybody else to build on.
+      //
+      // Read it as a tripwire on the worst case, not as the measurement. One
+      // century run cannot resolve this any more than it can resolve the food
+      // economy: across the canonical twenty-seed cohort the mean world ends
+      // knowing 5.4 technologies and conceives 4.2 past the roots, and this
+      // seed is the only one of the twenty that reaches none.
+      // `npm run sim:seeds -- --seeds 20` prints that distribution, and is
+      // where a change to the pace of discovery should be judged.
+      add('the-tree-is-climbed',
+        beyondRoots.length > 0,
+        beyondRoots.length + ' of ' + conceivedTechs.length +
+          ' technologies conceived were past the root nodes' +
+          (beyondRoots.length > 0 ? ': ' + beyondRoots.join(' ') : ''));
     }
 
     // Thinking alone is always available; arguing needs somebody who knows
@@ -1019,6 +1169,17 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
 
   // The three-rung ladder, measured rather than asserted: household above band
   // above everyone else. This is what replaced a flat +10 / -14.
+  // Below this many pairs the mean is a handful of relationships wearing a
+  // statistic's clothes. `M6b` phase 6 gave the "outsider" and "band" tiers a
+  // new way to end up thin on `tiny`: a rebellion that ends in someone
+  // leaving their band creates the outcast band's first member within the
+  // first week of an eight-person world, at which point both tiers sit at
+  // five or six pairs and the mean is one bad relationship away from flipping
+  // either direction. The other two tiers were already documented as capable
+  // of the same failure from a marriage across a band line; this is that
+  // comment's fix, not a new problem, and the threshold is set from measuring
+  // `tiny` (5-6 pairs, noise) against `century` (in the hundreds, stable).
+  const MIN_TIE_PAIRS = 10;
   const opinionOf = (
     pick: (a: { p: typeof sim.people[number] }, b: { p: typeof sim.people[number] }) => boolean
   ): number => {
@@ -1033,7 +1194,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         n++;
       }
     }
-    return n === 0 ? NaN : total / n;
+    return n < MIN_TIE_PAIRS ? NaN : total / n;
   };
   const kin = opinionOf((a, b) =>
     a.p.householdId !== null && a.p.householdId === b.p.householdId);
@@ -1053,7 +1214,8 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const detail =
     'household=' + fmt(kin) + ' band=' + fmt(band) + ' outsider=' + fmt(outsider);
   if (Number.isNaN(kin) || Number.isNaN(band) || Number.isNaN(outsider)) {
-    skip('kin-outrank-strangers', 'not all three kinds of tie occur here: ' + detail);
+    skip('kin-outrank-strangers',
+      'not all three kinds of tie have ' + MIN_TIE_PAIRS + '+ pairs here: ' + detail);
   } else {
     add('kin-outrank-strangers', kin > band && band > outsider, detail);
   }
@@ -1100,6 +1262,14 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     sleepStarts: 0,
     sleepFatigueFalls: 0,
   };
+  const zeroPerJob = (): Record<JobId, number> =>
+    Object.fromEntries(JOB_IDS.map(id => [id, 0])) as Record<JobId, number>;
+  const jobs: JobWatch = {
+    holderTicks: zeroPerJob(),
+    holderMatchTicks: zeroPerJob(),
+    otherTicks: zeroPerJob(),
+    otherMatchTicks: zeroPerJob(),
+  };
   const lastAnimalPos = new Map<number, { x: number; y: number }>();
   const threatened = new Map<number, { personId: number; distance: number }>();
   const sleeperFatigue = new Map<number, number>();
@@ -1113,6 +1283,21 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     // ticks at a time is still the AI using it, and sparse sampling misses it.
     for (const person of sim.livingPeople()) {
       actionTotals[person.action] = (actionTotals[person.action] ?? 0) + 1;
+
+      // Every job, not just the one this person holds: the control group for
+      // "does a forager forage more than a non-forager" is everyone who is
+      // not a forager, which includes hunters, builders and the unemployed
+      // alike.
+      for (const id of JOB_IDS) {
+        const onThatJobsWork = JOBS[id].actions.includes(person.action);
+        if (person.job === id) {
+          jobs.holderTicks[id]++;
+          if (onThatJobsWork) jobs.holderMatchTicks[id]++;
+        } else {
+          jobs.otherTicks[id]++;
+          if (onThatJobsWork) jobs.otherMatchTicks[id]++;
+        }
+      }
 
       // Sleep: did fatigue actually fall while they were under the roof?
       if (person.action === 'sleep') {
@@ -1189,6 +1374,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     biomes: sim.world.countBiomes(),
     spatial: sim.peopleHash.stats(),
     wildlife: watch,
+    jobs,
     relationships: sim.relationships.stats(),
     buildings: {
       total: sim.buildings.length,

@@ -6,6 +6,342 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-08 — M6b phase 7: the visualisers, and a tech web that scales
+
+`docs/m6b_plan.md` phase 7, next after jobs and rebellion. Two new panels, and
+a rebuild of the one that already existed, because all three share one piece
+of machinery worth building once.
+
+**`src/ui/GraphLayout.ts` is new**, extracted from what used to be
+`TechWebLayout.ts`'s own relaxation loop: repulsion between every pair,
+springs along edges, a centring pull, and a last hard pass that separates
+anything still overlapping. `TechWebLayout.ts` now calls it instead of
+carrying its own copy — a second graph was always going to need this
+arithmetic, and a second copy is how the two drift apart. Two graphs did
+need it: `FamilyTreeLayout.ts` pins every node's `y` to a generation, so a
+family reads top to bottom rather than relaxing into a circle; `TribeGraphLayout.ts`
+seeds nodes by rank and lets springs whose rest length runs from love to
+hatred do the rest.
+
+**The family tree** (`K`) walks `motherId`/`fatherId`/`spouseId`/`childIds`
+two generations up and two down from whoever it is opened on, plus siblings
+found by scanning for someone else who shares a parent — not stored on
+`Person` directly. A child's own spouse is shown but not traced further, or
+the tree would pull in a second, unrelated family through every marriage.
+Gated on the same acquaintance level `Hud.tabTies` already puts on a family
+section, and — because the people gathered are not only the subject — every
+individual node's name is routed through `knowledgeOfPerson` again for
+*that* person: a stranger on your own family tree reads "a young man," not
+by name.
+
+**The tribe graph** (`T`) is not spokes from the subject alone. It is a
+sociogram: an edge between *any* two people the subject knows who also have
+an opinion of each other, not only between the subject and everyone else —
+two people the subject knows who cannot stand one another is exactly the
+kind of thing a map of somebody's ties should show. Capped at the
+twenty-four strongest relationships (`relationships.knownBy` already sorts by
+magnitude), with the head line saying so once the cap bites rather than
+quietly dropping the rest. Colours reuse `.hud-tie-value.is-pos`/`.is-neg`'s
+exact palette. Gated on `knowsTies`, the stricter of the two thresholds — this
+can name people the subject actively dislikes, which is a sharper thing to
+hand over than who their parents are.
+
+**The tech web rebuild** is the one `next-steps.md` called mandatory, and the
+numbers in that document were confirmed rather than assumed: at seventeen
+nodes the old fixed-1080x720, no-pan-no-zoom layout had a fit-to-box scale of
+~0.65, putting the relaxation's own 92px hard separation at about 60px on
+screen — under a node's own 84px width. `layOutWeb` no longer fits itself into
+a box at all; it lays out at natural size (`GraphLayout.shiftToOrigin`) and
+`TechWeb.ts` owns a pan-and-zoom viewport instead, the same relationship the
+game's own camera has to the world. Dragging pans, the wheel zooms centred on
+the cursor, and panning or zooming touches only a `style.transform` — never a
+rebuild — which is what keeps a hovered node from being detached sixty times a
+second the way an earlier redraw-on-every-frame bug once did to this same
+panel. Below `CHIP_ZOOM` a node collapses to an unlabelled dot rather than a
+box of illegible text, its border colour still showing the domain and state.
+
+Cross-links got a degree cap rather than a stricter threshold, and that order
+was decided by measurement, not by the plan's first guess: raising the
+shared-ingredient threshold from two to three was tried first and left only
+three edges in the whole table today, a wall of unrelated nodes rather than a
+web. `firemaking` alone drew eight of them at the threshold that stayed, most
+of the way to the "hundreds of faint lines" `next-steps.md` warned about — so
+`MAX_SHARED_DEGREE` caps any one node at four, keeping the strongest relations
+and dropping the rest, which is the lever that actually works at this size.
+
+**One thing in the plan not done as written, and why:** "radius becomes the
+age rather than the prerequisite depth" assumes M8's seven archaeological
+tiers, which have not shipped — today's `ERAS` are cumulative society-wide
+milestones, not a per-technology property, and mapping each tech to "the
+first era whose needs include it" would put `cordage`, a root node, in the
+same band as `hafting`, three steps into the tree, because only the *tools*
+era's needs happen to name it. Prerequisite depth already sorts oldest-to-
+newest in practice — a root node cannot help being depth 0 — so the radius
+basis is unchanged. Revisit this once M8 gives every technology a real age of
+its own.
+
+Verified: `npm run typecheck`, `npm test` (140 tests, fourteen new
+determinism/overlap tests across the three layouts), `npm run e2e` (39 tests,
+five new — opening each graph, the mutual-exclusion between all three, the
+veil on a stranger, and a real mouse drag and wheel zoom on the tech web), and
+`npm run sim:check:all` (unaffected — nothing in `src/ui/` runs headless, and
+the suite stayed green to confirm this pass touched no simulation code).
+
+## 2026-09-08 — M6b phase 6: jobs and rebellion
+
+`docs/m6b_plan.md` phase 6, chosen by the project owner ahead of the tech
+ladder. `Person.job` from a small table in the new `src/sim/entities/Job.ts`
+(`forager`, `hunter`, `builder`, `crafter`); `Brain.score` leans a job-holder's
+own verbs up and the rest of `WORK_ACTIONS` down by a small, calibrated factor,
+never touching social or research actions or the needs that can kill someone.
+The chief settles unemployed adults into whichever job the band currently has
+fewest of, one a day and without spending an RNG draw; assigning someone
+*else's* job is a new kind of order, through `Simulation.assignJob`, subject to
+the same compliance roll `command` uses and its own `ORDER_COST.job`. A sixth
+HUD tab, Work, lets the player assign a job to anyone they can see, and says
+what it leans them toward.
+
+`SKILLS` gained `farm` and `smith` ahead of the technologies that will use
+them, because it is iterated by founding, inheritance, ageing and the
+character-creation point budget and that migration must not hide inside the
+M8 content pass that first gives either of them an action.
+
+Rebellion is derived, not stored: `BandSystem.considerRebellion` runs beside
+`considerExile`, gated on the *single most aggrieved* band member's opinion of
+the chief rather than the band's average. That was a finding, not a starting
+choice — instrumenting a two-year run showed the band's average regard for its
+own chief never once went negative, because `chooseChief` re-elects daily and
+simply replaces a chief who is losing the room before collective resentment
+can accumulate. One person hating an otherwise well-liked chief is common by
+comparison. Three rising outcomes, gated behind `defiance` so crossing the
+threshold does not itself cause anything: public refusal, leaving the band (via
+a `removeBandMembership` shared with `exile`), or a public challenge for the
+chiefdom decided by the same regard `chooseChief` would use if it ran again
+today (a new `standingScore` helper, extracted so the two never drift apart).
+
+Two new `simcheck.ts` checks, and both needed a second pass once real numbers
+came back:
+
+- `jobs-bias-work` first compared job-holders' time on their own job against
+  everyone-with-no-job's time on *any* job's actions, and failed by
+  construction — `forage` alone is most of everyone's day, employed or not,
+  since it is also how hunger gets answered, and that comparison punished
+  narrow jobs like `crafter` however well the bias worked. It now compares
+  each job's holders against everyone who does *not* hold that job, action by
+  action, and needed the bias strengthened from a first pass that only passed
+  on some scenarios in `sim:check:all` to one (`JOB_BIAS_UP`/`_DOWN` in
+  `Brain.ts`) that holds a positive margin on all seven.
+- `rebellion-is-rare-but-happens` reports **n/a rather than a failure** when a
+  run sees no rebellion at all, for the reason `prototypes-can-fail` was
+  deleted rather than kept: across fifteen seeds of `century`, six saw zero
+  rebellions in a full two years, and the `century` seed's own count moved
+  between 0 and 2 across two tuning passes in this one while
+  `considerRebellion` itself did not change. A rare stochastic event has too
+  small a sample in any one run for a hard pass/fail to mean anything; what
+  the check still catches is the ceiling, and the mechanism itself is asserted
+  deterministically in the new `band.test.ts` — a band with one member primed
+  to despise its chief past any doubt (loyalty 0, opinion -100, so `defiance`
+  is exactly 1 and no RNG draw can fail the roll).
+
+Collateral fix, found by the above: `kin-outrank-strangers`'s three-tier
+comparison could already flip on a single relationship — its own comment
+documents a marriage across a band line doing exactly that — and the "leave"
+rebellion outcome gave the `tiny` scenario a new way to create the outcast
+band's first member inside its first week, at five or six pairs in the
+outsider and band tiers. `opinionOf` now returns n/a under ten pairs rather
+than under zero, chosen by measuring `tiny` (noise) against `century`
+(hundreds of pairs, stable) rather than picked to make one run go green.
+
+`npm run sim:check:all` (all seven scenarios), `npm test`, `npm run e2e` and
+`npm run sim:seeds` (77.5% mean survival, 0/10 collapsed — no regression from
+the 71.3%/2 baseline measured before this pass) all pass.
+
+## 2026-09-08 — M8.0: the climb, measured across seeds instead of on one
+
+The measurement pass `m8_plan_the_ages.md` puts before the ladder. Two checks
+changed, the seed cohort learned to report the tech tree, and **the finding the
+whole milestone was ordered around turned out to be a property of one unlucky
+seed rather than of the game.**
+
+### The plan's premise was drawn from a single chaotic run, and is wrong
+
+The plan opens with a two-year `century` run in which three of seventeen nodes
+are ever conceived, two technologies are known to anybody at the end, and 13
+lessons are taught — and concludes from it that **the climb is set by
+transmission**. Every one of those numbers reproduces exactly. They are also the
+worst of twenty.
+
+`npm run sim:seeds -- --seeds 20` now reports the tree, and the same
+scenario across the canonical cohort gives **5.4 technologies known at the end,
+4.2 conceived past the root nodes, and 124 things taught or picked up by
+watching**. The century seed — 2 known, 0 past the roots, 24 passed on — is
+**the only one of the twenty that never gets past a root node**. Nodes at depth
+two are reached routinely: `stoneworking` and `leatherwork` both turn up.
+
+*Reason this matters more than the correction itself:* `AGENTS.md` says in as
+many words that the century scenario is chaotic and that one run of it is not
+evidence, and the plan quotes that rule in its own risk section before resting
+its ordering on exactly that. The instrumented run was real and reproducible;
+generalising from it was the error.
+
+### What actually gates the climb: the population, not the teaching
+
+The two are not independent, and the direction runs the other way from the
+plan's. Sorting the cohort by survival sorts it by the climb: the two seeds that
+collapse below a quarter are the two worst climbs, and the century seed is last
+on both. Transmission tracks adult-days almost exactly — 24 things passed on in
+a world with 1,405 adult person-days, 194 in one with twice that — because
+teaching needs somebody who knows something and somebody with the years to be
+taught, and a halved population has neither.
+
+So of the four hypotheses M8.0 was written to test: **transmission is not the
+bottleneck** (refuted), **population is** (supported), and the food supply pass
+M8.1 was already going to do is the same work as the tech-rate fix, exactly as
+the plan's fourth point guessed.
+
+### The idea cap is not the story either, and was not changed
+
+`MAX_IDEAS` was raised from 2 to 4 and the cohort re-run: known 5.4 → 5.5, past
+the roots 4.2 → 4.3, survival 75.7% → 77.0%. That is nothing — far inside the
+ten-point floor this project already knows ten seeds cannot resolve. The
+instrumented run says why: an adult held a full slate on 539 of 1,405
+person-days, but on only **20** of those was there an idea open to them that the
+cap was actually blocking. *Reason it was measured before being changed and then
+left alone:* it is a plausible-sounding knob, and the honest measurement says it
+buys a tenth of a technology.
+
+### `sparks-are-various` now counts technologies, not routes
+
+It read "8 distinct spark routes fired" on a world where fourteen of seventeen
+nodes had never entered a head, and passed. It now reports "8 routes into 3
+technologies" and asserts both. *Reason:* a check that looks healthy on a world
+where four fifths of the tree never occurs to anyone is the failure that got two
+checks deleted in the winter pass.
+
+### `the-tree-is-climbed` is new, and fails on the century seed
+
+It asserts that a run of a year or more conceives something past the four nodes
+anybody can reach knowing nothing. It fails today on century — 0 of 3 — and is
+the gate every content tier of M8 is held to: a tier that adds nodes and does not
+move it has added content no player will ever see. Its comment says plainly that
+it is a tripwire on the worst case and not the measurement, and points at
+`sim:seeds` for the distribution, so that nobody reads one red line as evidence
+about the pace of discovery. Both of century's failures now have one cause.
+
+### `sim:seeds` reports the tree beside the population
+
+Three columns — technologies known at the end, distinct nodes conceived past the
+roots, and things taught or watched — plus a mean line and a count of worlds
+that never got past a root node. *Reason:* the climb is a mean-across-seeds
+question for precisely the reason the food economy is, and it had no home. The
+tool also had to enable telemetry, which `runScenario` does and this path never
+did, or every one of those columns would have read zero.
+
+---
+
+## 2026-09-08 — Planning: the roadmap, and a tech ladder that runs to iron
+
+A planning pass, so no simulation code changed. What changed is the documentation
+that tells the next person what to build, and it changed because two of the
+owner's requests turned out to depend on a measurement nobody had taken.
+
+### The roadmap had gone stale, and was rewritten rather than amended again
+
+`next-steps.md` was written on 2026-09-02 and amended in place for a week. By the
+end it described the tech tree as "ten nodes so far" when there were seventeen,
+listed weapons and knowledge transmission as future work when both had shipped on
+2026-09-07, and marked two of the owner's eight requests done inside a section
+whose preamble said nothing was scheduled. *Reason for a rewrite rather than a
+ninth amendment:* a roadmap somebody cannot trust to describe the present is
+worse than no roadmap, because they will plan against it.
+
+### The tech tree is to run to iron, and to follow real human history
+
+Asked how far the ladder should reach, the owner chose **iron**; asked what to
+build first, **jobs and the visualisers**; asked how eras should be named,
+**both** — the real archaeological period as the title, the evocative line kept
+as its description. New `docs/m8_plan_the_ages.md` carries forty-eight new nodes
+across the Upper Palaeolithic, Mesolithic, Neolithic, Chalcolithic, Bronze and
+Iron ages, each with the mechanism that makes it real, plus the era table, the
+two new skills and domains, and `TechDef.age` and `firstKnown`.
+
+`m6b_plan.md` phase 8 said "stop and re-plan here". It is marked superseded and
+points at the new document; every node it named survives inside it.
+
+### The measurement that reordered the whole plan
+
+The plan was going to open with the ladder. It does not, because instrumenting a
+two-year `century` run produced this: the world ends in the Age of Fire with
+**two technologies known to anybody**, and across the entire run **exactly three
+of the seventeen nodes were ever conceived by any person** — `cordage`,
+`plant_lore` and `firemaking`. The other fourteen have never entered a head.
+
+`bugs.md` already carried a softer version of this, guessing at four to seven
+technologies and noting that nobody had measured which stage was slowest. The
+stage is not in the pipeline at all: 34 ideas became 8 prototypes and 7 proofs
+off 139 ponder breakthroughs and 28 from discussion, which is a healthy funnel.
+The gate is that every node past the three roots carries a `knows:` ingredient
+while `knownTech` reaches two to four people, so almost nobody is *eligible* to
+have the next idea.
+
+Confirmed against a control rather than left as a theory: the `craft` scenario
+starts its founders with three technologies and, on a run one twentieth as long,
+conceives `cooking` and `stoneworking` — both depth-1, both `knows:`-gated,
+neither of which the century run reached in two years. **The rate of discovery is
+set by transmission, not by discovery**, which makes teaching, watching and
+writing things down load-bearing for the whole ladder rather than flavour.
+
+So M8.0 — understand and fix the climb — now comes before any node is added.
+Forty-eight more nodes on top of a tree whose upper four-fifths nobody reaches
+would be the inert-content rule failing at the scale of a milestone.
+
+*Reason for recording the negative result too:* `conceptionBase` is the obvious
+knob and it is the wrong one. Raising it would conceive `cordage` a fourth time.
+
+### A check that looks reassuring and detects nothing
+
+`sparks-are-various` passes on that run, reporting "8 distinct spark routes
+fired" — and all eight belong to those same three technologies. This project has
+already deleted two checks for exactly this shape. It is scheduled to count
+distinct *technologies* instead, with a new `the-tree-is-climbed` beside it, and
+both must be verified to fail on today's build before they are kept.
+
+### Two seed traps written into `AGENTS.md`
+
+Both found by reading the constructor, and both would have silently invalidated
+every measurement in M8:
+
+- **The fork comment points at the wrong place.** The named block ends at
+  `recordRng` with a comment inviting an append after it, and there is an
+  anonymous fourteenth fork twenty-five lines below — the one handed to
+  `seedInitialForest`. Appending where invited consumes that fork's draw and
+  replants every forest in every saved seed.
+- **One `spawnRng` is shared by `spawnResources`, `spawnHerds` and
+  `spawnPeople`.** Adding a resource kind moves every herd and every person in
+  every world. This is *not* a fork-order violation, so `determinism.test.ts`
+  does not catch it — it compares two runs of the same build. Any pass that adds
+  a resource and then measures itself against a baseline measures the reshuffle.
+
+### Five more defects found and recorded, none fixed
+
+In `bugs.md`, each scheduled in the M8 plan at the point where it does damage:
+`household.store` is written by `LifeSystem` and read by nothing anywhere;
+`hafting`'s felling bonus and `armourOf` both bypass `techPower`, so refining
+either is worthless; `doHunt` uses the bare `REACH` constant, so the bow's reach
+does nothing in the one place it should matter most; and `NODE_LABELS` is not
+compiler-enforced where `RESOURCE_COLORS` is, so a new resource kind fails the
+build for its colour and silently prints a raw id for its name.
+
+### Verification
+
+No code changed, so the gates are unchanged and were run to establish the
+baseline the plan quotes: `npm run sim:check` passes **36 of 36 applicable
+checks** (13 n/a) at 4,267 steps/s. `century` fails `population-persists` at 10
+alive against 11, which `bugs.md` already records as this scenario's divergence
+rather than a regression.
+
+---
+
 ## 2026-09-07 — M6b phase 5: the loop the player can see, and weapons
 
 Three things reported from play (`docs/notes.txt`), and all three sat on the seam

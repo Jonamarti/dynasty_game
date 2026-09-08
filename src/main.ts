@@ -18,6 +18,8 @@ import { EntityPicker, type PickerEntry } from './ui/EntityPicker.ts';
 import { NewGame } from './ui/NewGame.ts';
 import { SuccessionOverlay } from './ui/Succession.ts';
 import { TechWebOverlay } from './ui/TechWeb.ts';
+import { FamilyTreeOverlay } from './ui/FamilyTree.ts';
+import { TribeGraphOverlay } from './ui/TribeGraph.ts';
 import {
   availableActions, type ActionOption, type ActionTarget,
 } from './sim/ai/ActionCatalog.ts';
@@ -101,6 +103,34 @@ const picker = new EntityPicker(document.body);
 // this away mid-hover.
 const techWeb = new TechWebOverlay(document.body);
 
+// The other two full-screen graphs, on the body for the same reason. Only one
+// of the three is ever open: `openGraph` below is the single door into all of
+// them, so opening a second cannot leave two stacked on screen at once.
+const familyTree = new FamilyTreeOverlay(document.body);
+const tribeGraph = new TribeGraphOverlay(document.body);
+
+/** True while any of the three full-screen graphs is open. */
+function graphOpen(): boolean {
+  return techWeb.isOpen || familyTree.isOpen || tribeGraph.isOpen;
+}
+
+/**
+ * Opens one graph, closing whichever of the other two was open.
+ *
+ * All three occupy the same fixed, centred overlay, and each one's own
+ * `toggle` only knows how to close *itself* — opening the tribe graph while
+ * the tech web was already up would otherwise leave both in the DOM, one
+ * painted over the other.
+ */
+function openGraph(which: 'tech' | 'family' | 'tribe', subject: Person | null): void {
+  if (which !== 'tech' && techWeb.isOpen) techWeb.close();
+  if (which !== 'family' && familyTree.isOpen) familyTree.close();
+  if (which !== 'tribe' && tribeGraph.isOpen) tribeGraph.close();
+  if (which === 'tech') techWeb.toggle(sim, subject);
+  if (which === 'family') familyTree.toggle(sim, subject);
+  if (which === 'tribe') tribeGraph.toggle(sim, subject);
+}
+
 // On the body for the same reason as the radial menu: the HUD rebuilds its own
 // subtree and would erase anything living inside it.
 const succession = new SuccessionOverlay(document.body, heir => {
@@ -135,6 +165,12 @@ const hud = new Hud(hudRoot, {
     setCraftMode(false);
   },
   onItemAction: (person, itemId, verb) => handleItemAction(person, itemId, verb),
+  onAssignJob: (person, job) => {
+    // Down the same path a chief's own order would use, so a job handed out
+    // from the panel is subject to the same compliance roll as one given in
+    // the field.
+    if (sim.player) sim.assignJob(sim.player, person, job);
+  },
   onCommand: person => {
     commanding = commanding?.id === person?.id ? null : person;
     if (commanding) {
@@ -239,6 +275,8 @@ window.addEventListener('keydown', event => {
   }
   if (key === 'escape') {
     if (techWeb.isOpen) techWeb.close();
+    if (familyTree.isOpen) familyTree.close();
+    if (tribeGraph.isOpen) tribeGraph.close();
     if (buildMode) setBuildMode(false);
     if (craftMode) setCraftMode(false);
     commanding = null;
@@ -256,13 +294,23 @@ window.addEventListener('keydown', event => {
     if (sim.player) camera.recentre(sim.player.x, sim.player.y);
     return;
   }
+  // Opens on whoever is selected, falling back to the player. Opening it on
+  // somebody else is the point as much as opening it on yourself: knowing
+  // which of your band has the idea nobody else has had, or who they cannot
+  // stand, is the question each of these three panels exists to answer.
   if (key === 'g') {
-    // Opens on whoever is selected, falling back to the player. Opening it on
-    // somebody else is the point as much as opening it on yourself: knowing
-    // which of your band has the idea nobody else has had is the question the
-    // panel exists to answer.
     const subject = selected?.kind === 'person' ? selected.person : sim.player;
-    techWeb.toggle(sim, subject);
+    openGraph('tech', subject);
+    return;
+  }
+  if (key === 'k') {
+    const subject = selected?.kind === 'person' ? selected.person : sim.player;
+    openGraph('family', subject);
+    return;
+  }
+  if (key === 't') {
+    const subject = selected?.kind === 'person' ? selected.person : sim.player;
+    openGraph('tribe', subject);
     return;
   }
   if (key === 'c') {
@@ -278,8 +326,9 @@ window.addEventListener('keydown', event => {
   if (key === '1') hud.setTab('now');
   if (key === '2') hud.setTab('self');
   if (key === '3') hud.setTab('kit');
-  if (key === '4') hud.setTab('ties');
-  if (key === '5') hud.setTab('life');
+  if (key === '4') hud.setTab('work');
+  if (key === '5') hud.setTab('ties');
+  if (key === '6') hud.setTab('life');
 
   held.add(key);
 });
@@ -644,7 +693,7 @@ window.addEventListener('mouseup', event => {
   drag.active = false;
   drag.panning = false;
   if (wasDragging || event.button !== 0) return;
-  if (buildMode || radial.isOpen || picker.isOpen || techWeb.isOpen) return;
+  if (buildMode || radial.isOpen || picker.isOpen || graphOpen()) return;
   if (event.target !== canvas) return;
 
   const point = worldPoint(event);
@@ -978,6 +1027,8 @@ function frame(now: number): void {
   hud.setCommanding(commanding);
   succession.update(sim);
   techWeb.update(sim);
+  familyTree.update(sim);
+  tribeGraph.update(sim);
   reportInterruptions();
   reportInsights();
   updateFloaters();

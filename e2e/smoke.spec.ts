@@ -272,6 +272,27 @@ test('the character tabs each render', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('a job can be assigned from the Work tab and changes what it says', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.locator('.hud-tab', { hasText: 'Work' }).click();
+  await expect(page.locator('.hud-section', { hasText: 'Work' })).toBeVisible();
+  await expect(page.locator('.hud-sub', { hasText: 'no settled work' })).toBeVisible();
+
+  // Assigning your own job is never refused, so the panel's own wording is
+  // the only thing that has to change here — the compliance roll shown for
+  // someone else's job lives in `standing over people`, tested elsewhere.
+  await page.locator('[data-job="hunter"]').click();
+  await expect(page.locator('.hud-sub', { hasText: 'Works as hunter' })).toBeVisible();
+  await expect(page.locator('.hud-note', { hasText: 'hunting' })).toBeVisible();
+
+  await page.locator('[data-job="none"]').click();
+  await expect(page.locator('.hud-sub', { hasText: 'no settled work' })).toBeVisible();
+
+  expect(errors).toEqual([]);
+});
+
 test('right-click opens a radial menu whose options fit the target', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);
@@ -789,6 +810,158 @@ test('the tech web keeps a stranger to themselves', async ({ page }) => {
 
   await page.keyboard.press('Escape');
   await page.keyboard.press(' ');
+  expect(errors).toEqual([]);
+});
+
+test('the tech web can be dragged and zoomed', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.keyboard.press('g');
+  await expect(page.locator('.techweb-card')).toBeVisible({ timeout: 10_000 });
+
+  const node = page.locator('.techweb-node').first();
+  const before = (await node.boundingBox())!;
+
+  // Dragging the empty canvas pans the whole web, the same gesture that pans
+  // the map behind it.
+  await page.mouse.move(before.x + 200, before.y + 150);
+  await page.mouse.down();
+  await page.mouse.move(before.x + 130, before.y + 90, { steps: 6 });
+  await page.mouse.up();
+
+  const afterDrag = (await node.boundingBox())!;
+  expect(Math.abs(afterDrag.x - before.x) + Math.abs(afterDrag.y - before.y))
+    .toBeGreaterThan(20);
+
+  // The drag must not have been read as a click on whatever it ended over —
+  // the panel is still open and no node's detail pane was forced into focus
+  // by the release.
+  await expect(page.locator('.techweb-card')).toBeVisible();
+
+  const beforeZoom = (await node.boundingBox())!;
+  await page.mouse.move(afterDrag.x + 5, afterDrag.y + 5);
+  await page.mouse.wheel(0, -400);
+  await expect.poll(async () => {
+    const box = await node.boundingBox();
+    return box ? box.width : 0;
+  }).toBeGreaterThan(beforeZoom.width * 1.1);
+
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});
+
+test('the family tree opens on K and reads top to bottom', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.keyboard.press('k');
+  await expect(page.locator('.familytree-card')).toBeVisible({ timeout: 10_000 });
+  // At least the player's own node is on their own family tree.
+  await expect(page.locator('.familytree-node.is-subject')).toHaveCount(1);
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.familytree-card')).toHaveCount(0);
+  await expect(page.locator('.familytree')).toHaveCSS('display', 'none');
+
+  expect(errors).toEqual([]);
+});
+
+test('the tribe graph opens on T and is empty rather than broken for a friendless founder', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.keyboard.press('t');
+  await expect(page.locator('.tribegraph-card')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.tribegraph-node.is-subject')).toHaveCount(1);
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.tribegraph-card')).toHaveCount(0);
+  await expect(page.locator('.tribegraph')).toHaveCSS('display', 'none');
+
+  expect(errors).toEqual([]);
+});
+
+test('the family tree and tribe graph are gated the same as the tech web', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.keyboard.press(' ');
+
+  const found = await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: {
+        sim: {
+          player: { id: number; bandId: number; householdId: number | null } | null;
+          livingPeople: () => {
+            id: number; x: number; y: number; bandId: number; householdId: number | null;
+          }[];
+          buildingAt: (x: number, y: number) => unknown;
+        };
+        camera: { snapTo: (x: number, y: number) => void; following: boolean };
+      };
+    }).__dynasty;
+    const player = d.sim.player;
+    if (!player) return null;
+    const other = d.sim.livingPeople().find(p =>
+      p.id !== player.id && p.bandId !== player.bandId &&
+      p.householdId !== player.householdId &&
+      d.sim.buildingAt(p.x, p.y) === null);
+    if (!other) return null;
+    d.camera.snapTo(other.x, other.y);
+    d.camera.following = false;
+    return { id: other.id };
+  });
+  expect(found, 'this seed has nobody from another band').not.toBeNull();
+
+  await page.waitForTimeout(300);
+  const at = await page.evaluate((id: number) => {
+    const d = (window as never as {
+      __dynasty: {
+        sim: { peopleById: Map<number, { x: number; y: number }> };
+        camera: {
+          worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+        };
+      };
+    }).__dynasty;
+    const who = d.sim.peopleById.get(id)!;
+    return { x: d.camera.worldToScreenX(who.x), y: d.camera.worldToScreenY(who.y) };
+  }, found!.id);
+
+  await clickAndChoose(page, at.x, at.y, /man|woman|child/i);
+  await expect(page.locator('.hud-panel'))
+    .toContainText('not of your band', { timeout: 5_000 });
+
+  await page.keyboard.press('k');
+  await expect(page.locator('.familytree-veil')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.familytree-node')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
+  await page.keyboard.press('t');
+  await expect(page.locator('.tribegraph-veil')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.tribegraph-node')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
+  await page.keyboard.press(' ');
+  expect(errors).toEqual([]);
+});
+
+test('the three graphs are mutually exclusive', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.keyboard.press('g');
+  await expect(page.locator('.techweb-card')).toBeVisible({ timeout: 10_000 });
+  await page.keyboard.press('k');
+  await expect(page.locator('.familytree-card')).toBeVisible({ timeout: 10_000 });
+  // Opening the second closed the first, rather than stacking on top of it.
+  await expect(page.locator('.techweb-card')).toHaveCount(0);
+  await expect(page.locator('.techweb')).toHaveCSS('display', 'none');
+
+  await page.keyboard.press('t');
+  await expect(page.locator('.tribegraph-card')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.familytree-card')).toHaveCount(0);
+
+  await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
 });
 

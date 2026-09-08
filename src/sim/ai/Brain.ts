@@ -35,6 +35,7 @@ import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
 import { pressedByNeed } from '../systems/ActionSystem.ts';
 import type { NeedsConfig } from '../core/Config.ts';
 import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
+import { JOBS } from '../entities/Job.ts';
 
 export interface BrainContext {
   world: World;
@@ -161,6 +162,22 @@ const WORK_ACTIONS = new Set([
  */
 const IDLE_ACTIONS = new Set(['rest', 'wander']);
 
+/**
+ * How much a settled job leans someone toward its own work and away from
+ * everyone else's.
+ *
+ * A smaller pair measured as "close to 1" only shifted `jobs-bias-work`'s
+ * margin a few points either side of zero on `crowded` and `harsh-winter` —
+ * both scenarios where survival stress and the chief's own `directWork`
+ * orders already crowd the action distribution, so a gentle lean was noise
+ * beside them. This is the value that held a positive margin across every
+ * scenario in `sim:check:all` while leaving `ai-uses-many-actions`'
+ * distribution intact — a forager who is starving still eats first, and a
+ * hunter still helps build in a hard winter.
+ */
+const JOB_BIAS_UP = 1.3;
+const JOB_BIAS_DOWN = 0.85;
+
 function urgencyCurve(value: number): number {
   const u = value / 100;
   return u * u;
@@ -203,9 +220,17 @@ export class Brain {
     // would silently disable gates elsewhere.
     const drive = 0.8 + person.traits.industriousness * 0.4;
     const idle = 1.2 - person.traits.industriousness * 0.4;
+    // Only `WORK_ACTIONS` are biased by a job. Damping social or research
+    // verbs for a hunter would make a job a personality change rather than a
+    // work assignment, and eating, drinking and fleeing must never be leaned
+    // against by an occupation.
+    const job = person.job ? JOBS[person.job] : null;
     const add = (id: string, score: number) => {
       const appetite = WORK_ACTIONS.has(id) ? drive : IDLE_ACTIONS.has(id) ? idle : 1;
-      const weighted = (id === current ? score * 1.25 : score) * appetite;
+      const jobBias = job && WORK_ACTIONS.has(id)
+        ? (job.actions.includes(id) ? JOB_BIAS_UP : JOB_BIAS_DOWN)
+        : 1;
+      const weighted = (id === current ? score * 1.25 : score) * appetite * jobBias;
       if (weighted > 0) scores.push({ id, score: weighted });
     };
 
