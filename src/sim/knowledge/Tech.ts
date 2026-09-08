@@ -225,6 +225,14 @@ export const TECH: Record<Tech, TechDef> = {
     requires: [], difficulty: 0.4, skill: 'track',
     prototype: { sticks: 2 }, maxRefinement: 3,
     sparks: [
+      // The ordinary route. The other three all wait on a hunt, and hunting is
+      // rare enough that they fired in 1 of 20 twenty-seed-cohort worlds — see
+      // bugs.md, "tracking is unreachable". Anybody foraging in a forest walks
+      // past prints and droppings daily whether or not they are hunting, which
+      // is both the realistic story and, unlike the routes below, common enough
+      // to actually fire.
+      { needs: [{ kind: 'doing', action: 'forage' }, { kind: 'place', biome: 'forest' }],
+        weight: 0.7, story: 'noticed, while picking, the same trail crossed twice' },
       { needs: [{ kind: 'saw', what: 'quarry_escaped' }],
         weight: 1.0, story: 'watched a deer become a rustle and then nothing at all' },
       { needs: [{ kind: 'doing', action: 'hunt' }, { kind: 'feeling', need: 'hunger' }],

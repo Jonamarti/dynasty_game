@@ -6,6 +6,34 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-08 — `tracking`'s spark, the M8.1 blocker
+
+`m8_plan_the_ages.md` named this the one thing that had to happen before
+`snares` and `taming` could land behind `tracking` without shipping
+unreachable, the `leatherwork` failure again. M8.0 had found `tracking`
+conceived in none of twelve instrumented worlds because its weight-1.0 route
+needs `saw: quarry_escaped`, which fires about twice in two years, and its
+other two routes both wait on a hunt, which is rare for the same reason.
+Independently reproduced before touching anything: 1 of 20 seeds ever
+conceived it (`vite-node tools/_tracking_probe.ts`, a throwaway instrument,
+not kept).
+
+**Added one ordinary route**: `{ doing: forage, place: forest }`, weight 0.7.
+Anybody foraging in a forest walks past prints and droppings daily whether or
+not they are hunting — the realistic story, and unlike the three routes
+already there, common enough to actually fire. The three existing routes are
+untouched; they are still true, just rare.
+
+Measured across the canonical twenty-seed cohort before and after, per
+`AGENTS.md`'s rule that ten seeds cannot resolve anything smaller than the
+larder fix and this is smaller: mean survival 76.9% → 76.2% (noise), mean
+technologies known 5.3 → 6.2, mean past-root conceptions 4.5 → 4.3 (noise),
+mean taught 122.7 → 142.5. `tracking` itself went from conceiving in 1 of 20
+seeds to 20 of 20, averaging 5.65 conceptions a seed — between firemaking's
+and cordage's established rates on the instrumented run M8.0 quoted, not a
+flood. `npm run typecheck`, `npm test` and `npm run sim:check:all` all stay
+green. M8.1 is unblocked.
+
 ## 2026-09-08 — M6b phase 7: the visualisers, and a tech web that scales
 
 `docs/m6b_plan.md` phase 7, next after jobs and rebellion. Two new panels, and
