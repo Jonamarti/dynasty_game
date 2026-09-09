@@ -6,6 +6,160 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-09 — M8.1 continues: traps, and work that goes on without you
+
+Mechanism 3 of [m8_plan_the_ages.md](m8_plan_the_ages.md), with the four nodes it
+needs: **`basketry`, `netting`, `snares` and `fish_trap`**. A snare line and a
+fish trap are the first things in this game that produce food while nobody is
+standing over them, which is most of what a Mesolithic band actually had over a
+Palaeolithic one — and the basket and the net are the same story told in cordage,
+since a woven container is what a trap *is*.
+
+Twenty-two technologies now, seven recipes, nine buildings, twenty items.
+
+**A trap is a `Building` with a `yields` field**, not a new entity. That was the
+plan's call and it held: `ownerBandId` gives it an owner, `place`/`canPlace` and
+the build menu give it placement, `store` gives it somewhere to put a catch, and
+`doTake`/`reachBuilding` give it collection — nine existing systems reused
+against a new entity's zero. `Inscription` is what the other road looks like and
+it touched about twelve files.
+
+**Accrual is one daily sweep that draws no `RNG` at all**, which is worth stating
+rather than discovering: rates are data and the remainder is banked on the
+building, so traps needed no new stream and no change to the fork order. The
+fractional carry lives in `core/Progress.ts` as `accrueUnits`, beside
+`workProgressOf`, because spoilage is the same arithmetic pointed the other way
+and two copies of it is the drift the house style rule exists to prevent. A rate
+below one a day floored at the point of use would catch nothing for ever, which
+is what the remainder is for.
+
+**A trap's rate is scaled by what the owning band still knows.** Knowledge in
+this game is held by people, and a trap is the first structure whose *output*
+depends on that: a snare line outlives the person who set it but not their
+knowledge, so a band with nobody left who understands snares owns a loop of
+rotting cord. The character panel says so — "nobody here remembers how to work
+it" — because a trap that has quietly stopped is otherwise indistinguishable from
+one that is working.
+
+### Three caveats the plan named, and all three were real
+
+- **Nothing is 1x1.** A one-tile footprint spans half a tile either side of its
+  centre, `reachBuilding` wants `contains` at margin 0, and movement stops within
+  0.6 tiles: a person could arrive and never be inside, walking on the spot in a
+  loop with no interruption check in it. Both traps are 2x2, and a unit test
+  fails the build if a future one is not.
+- **Traps do not count against the band's structure ceiling.** That ceiling is
+  about roofs and pits, and counting three snares would have quietly stopped a
+  band ever raising another hut — and `bands-dont-overbuild` would have failed
+  for a band doing exactly the right thing.
+- **`planBuildings` needed a third branch**, because it wanted only shelter or
+  storage and a trap is neither. That is the defect that made the granary and the
+  longhouse player-only content for their whole existence.
+
+### What the measurements changed, twice
+
+**Traps were first planned whenever nothing else was *wanted*, and that was
+wrong.** A band has two site slots, and the first version spent them on snares
+while the storage pit it had already decided on was still a hole in the ground:
+storing collapsed from 4,549 ticks to 394 in one run and three more people
+starved than in the same world without traps. Surplus now waits behind survival,
+and "survival" includes the pit that is half dug — a trap is planned only when
+there is a finished store and nothing at all under construction.
+
+**Nothing walked to a trap, and hunger was never going to fix that.** Proximity
+dominates the scorer, hunger is what puts anybody near a store, and a trap is out
+at the treeline: across ten seeds traps stood full for around fifty trap-days a
+run while people went hungry beside them. A full trap has also stopped catching,
+so the food in it was costing food. `Brain` gained a second route to `take` —
+**the round**: emptying a trap that is at least two fifths full, scored on
+fullness times nearness, behind the same fair-weather gate as storing, and
+weighted between storing a surplus and answering an actual appetite. With it, the
+same ten seeds collect nearly everything a trap catches, catches per run roughly
+doubled, and days-spent-full went to zero in eight of ten.
+
+**One principled-looking change was reverted after measuring it.** Ranking the
+hungry route's larder by expected score — fullness times nearness, the same
+expression the round uses — reads better than "the nearest store with food in
+it", and cost **eight points of mean survival across ten seeds of the default
+scenario, in worlds with no traps in them at all**. It is gone, with the number
+in a comment where the next person will find it. Traps are reached by their own
+route rather than by bending the one that already worked.
+
+**The tier itself:** across twenty seeds of the new `traps` scenario against the
+same scenario without the trap half of the ladder, mean survival is 89.8% either
+way — no measurable change over 37 days. What does move: no seed collapses with
+traps against one without, infant starvation halves (6 against 12) while adult
+starvation rises (53 against 38), which is what food arriving at camp rather than
+where the foragers are looks like. Traps caught between 10 and 268 items a run
+and were emptied in every seed. The honest summary is that this is supply the
+world did not have, and that a 37-day run is too short for it to show up as
+survival.
+
+### The nodes, and their effects
+
+| node | requires | what it does, and where |
+|---|---|---|
+| `basketry` | cordage | a `basket` recipe, read by `carryFactor` |
+| `netting` | cordage, fishing | a `net` recipe, read by `forageYieldFactor` on a fishing spot |
+| `snares` | cordage, tracking | the `snare` design; `Simulation.workTraps` |
+| `fish_trap` | netting, basketry | the `fish_trap` design, shore-only; `workTraps` |
+
+Both items are gated on **carrying one and knowing how it works**, which is
+deliberate. Knowledge alone would make the recipe pointless; the item alone is
+the `handaxe` bug the M8 plan lists under repairs to make while passing — a tool
+that works identically in the hands of somebody who could not have made it, and
+that refinement never improves.
+
+### Placement, and saying why
+
+`canPlace` had no per-design predicate, because until the fish trap nothing cared
+where it stood. It has one now (`BuildingDef.placement`), and the interesting half
+is `placementRefusal`: the build cursor used to say "cannot build there", which is
+the least useful thing a game can say, and the fish trap is the first design that
+can be refused somewhere a hut would have stood happily. It now says which of the
+three reasons it was — the ground, something already there, or the water's edge.
+
+Band placement searches in widening rings from the fire rather than scattering
+across a square, and for a trap that is the difference between a mechanism and a
+decoration: a fish trap sixteen tiles down the coast fills up and is never
+emptied again.
+
+`doStore` refuses a trap out loud (`not_a_store`), and the scorer will not offer
+one as somewhere to put a surplus, because filling a trap is a person carefully
+stopping their own snare line from catching anything.
+
+### Checks
+
+- **`bands-set-traps`** — the tripwire on the granary failure happening a third
+  time: does a band ever plan one, and could it be sited.
+- **`traps-catch`** — a standing trap catches something, and the line reports
+  what was collected, how many trap-days were spent full, and how many days
+  nobody could work one.
+- **A new `traps` scenario**, on the same terms as `craft` and `scribes`: a snare
+  sits behind two technologies and a fish trap behind four, no run in the suite
+  reaches either from nothing, and every check about passive yield would
+  otherwise report n/a for ever.
+- **`src/sim/__tests__/traps.test.ts`, eleven tests**, and the important one is
+  "is worth a walk to somebody who is not hungry at all" — it fails on the build
+  without the round. **There is deliberately no `traps-are-emptied` world check**:
+  measured against the broken build the collection counts overlap (6 items of 59
+  caught broken, 6 of 42 fixed), which is exactly the check that "looks
+  reassuring and detects nothing", and two of those were deleted in the winter
+  pass. Whether the scorer will walk to a full trap is a property of `Brain` and
+  is tested as one.
+- **`sparks-are-various` now skips honestly** when a scenario hands out six or
+  more technologies. `traps` hands out eight so that both traps exist at all, and
+  it read "3 routes into 1 technologies" and failed — the check being asked a
+  question the world cannot answer, rather than the web having collapsed to one
+  path. `craft` (four) and `scribes` (five) sit below the line and still answer
+  it.
+
+The default twelve-day scenario is **bit-identical** before and after this pass —
+same drinks, same berries, same fish, same 36 checks — because no world without
+trap knowledge in it takes any of the new branches. `tiny` still fails
+`food-work-continues` on the one-tick margin already recorded in
+[bugs.md](bugs.md), identically on both builds.
+
 ## 2026-09-09 — the game opens on its settings
 
 Asked for by the project owner, straight after the settings screen shipped: it

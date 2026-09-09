@@ -27,7 +27,10 @@ import { Brain } from '../ai/Brain.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
 import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
 import { DEFAULT_NORMS, VARIABLE_NORMS, type Norms } from '../social/Events.ts';
-import { Building, BUILDINGS, resetBuildingIds, type BuildingDef } from '../entities/Building.ts';
+import {
+  Building, BUILDINGS, isTrap, resetBuildingIds, type BuildingDef,
+} from '../entities/Building.ts';
+import { accrueUnits } from './Progress.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -1430,17 +1433,49 @@ export class Simulation {
    * walkable, and nothing already there.
    */
   canPlace(def: BuildingDef, x: number, y: number): boolean {
+    return this.placementRefusal(def, x, y) === null;
+  }
+
+  /**
+   * Why this design cannot stand here, in words, or null if it can.
+   *
+   * `canPlace` used to be the whole answer and the build cursor could only say
+   * "cannot build there", which is the same defect the project owner has already
+   * had to report once: if the simulation refuses something, the player is owed
+   * the reason. "The ground is not clear" and "a fish trap has to sit in the
+   * water's edge" are different problems with different fixes, and a fish trap
+   * is the first design in the game that can be refused for somewhere a hut
+   * would have been perfectly happy.
+   */
+  placementRefusal(def: BuildingDef, x: number, y: number): string | null {
     for (let dy = 0; dy < def.height; dy++) {
       for (let dx = 0; dx < def.width; dx++) {
-        if (!this.world.isWalkable(x + dx, y + dy)) return false;
+        if (!this.world.isWalkable(x + dx, y + dy)) {
+          return 'the ground there will not take it';
+        }
       }
     }
     for (const existing of this.buildings) {
       const overlapsX = x < existing.x + existing.def.width && x + def.width > existing.x;
       const overlapsY = y < existing.y + existing.def.height && y + def.height > existing.y;
-      if (overlapsX && overlapsY) return false;
+      if (overlapsX && overlapsY) {
+        return 'the ' + existing.def.label.toLowerCase() + ' is already there';
+      }
     }
-    return true;
+    if (def.placement === 'shore' && !this.touchesShore(def, x, y)) {
+      return 'a ' + def.label.toLowerCase() + ' has to sit at the water\u2019s edge';
+    }
+    return null;
+  }
+
+  /** True if any tile of the footprint has water for a neighbour. */
+  private touchesShore(def: BuildingDef, x: number, y: number): boolean {
+    for (let dy = 0; dy < def.height; dy++) {
+      for (let dx = 0; dx < def.width; dx++) {
+        if (this.world.isShore(x + dx, y + dy)) return true;
+      }
+    }
+    return false;
   }
 
   /** Places a site. Returns the new building, or null if it will not fit. */
@@ -1455,6 +1490,102 @@ export class Simulation {
     this.buildingsById.set(building.id, building);
     telemetry.count('site_placed');
     return building;
+  }
+
+  /**
+   * A day's catch in every trap in the world. M8.1, mechanism 3.
+   *
+   * Three things about this are deliberate.
+   *
+   * **It draws no `RNG` at all.** A trap's rate is data and the remainder is
+   * banked on the building, so nothing here touches the seed contract — which is
+   * why traps could be added without appending a stream, and worth stating
+   * because the same will be true of spoilage.
+   *
+   * **The rate is scaled by what the owning band still knows.** Knowledge in
+   * this game is held by people, not by a civilisation, and a trap is the first
+   * structure whose *output* depends on that: a snare line outlives the person
+   * who set it, but not their knowledge. A band with nobody left who understands
+   * snares owns a loop of rotting cord, and the character panel says so rather
+   * than leaving the player to wonder why the trap stopped.
+   *
+   * **A full trap stops catching.** That is the pressure that makes emptying it
+   * a decision somebody has to take, and it is the difference between a trap and
+   * a food faucet.
+   */
+  private workTraps(): void {
+    // Best grasp of each trap technology, per band. Computed once rather than
+    // per trap: `techPower` is cheap but this is a daily sweep over every
+    // building, and a band of ten with four traps would otherwise walk the
+    // membership four times.
+    const grasp = new Map<string, number>();
+    for (const person of this.people) {
+      if (!person.alive) continue;
+      for (const def of Object.values(BUILDINGS)) {
+        if (!isTrap(def) || def.requiresTech === null) continue;
+        const key = person.bandId + ':' + def.id;
+        const power = techPower(person, def.requiresTech as Tech);
+        if (power > (grasp.get(key) ?? 0)) grasp.set(key, power);
+      }
+    }
+
+    for (const building of this.buildings) {
+      const yielded = building.def.yields;
+      if (!yielded || !building.complete) continue;
+
+      const power = grasp.get(building.ownerBandId + ':' + building.def.id) ?? 0;
+      if (power <= 0) {
+        // Nobody left who can work it. Forget the part-caught hare as well: a
+        // band that relearns snares a generation later should start the catch
+        // from nothing rather than collect twenty years of arithmetic.
+        building.yieldCarry = 0;
+        telemetry.count('trap_unworked_' + building.def.id);
+        continue;
+      }
+      if (building.storageFree <= 0) {
+        telemetry.count('trap_full_' + building.def.id);
+        continue;
+      }
+
+      const accrued = accrueUnits(building.yieldCarry, yielded.perDay * power);
+      building.yieldCarry = accrued.carry;
+      if (accrued.units <= 0) continue;
+
+      const caught = Math.min(accrued.units, building.storageFree);
+      building.store.add(yielded.item, caught);
+      telemetry.count('trap_caught_' + yielded.item, caught);
+    }
+  }
+
+  /**
+   * What one trap catches a day as things stand, and why, for the HUD.
+   *
+   * The panel could compute this itself, but then the number the player reads
+   * and the number the simulation applies would be two implementations of one
+   * rule, and the first divergence would be invisible — the trap would simply
+   * fill more slowly than the panel promised.
+   */
+  trapYield(building: Building): { perDay: number; reason: string } | null {
+    const yielded = building.def.yields;
+    if (!yielded) return null;
+    if (!building.complete) return { perDay: 0, reason: 'not finished yet' };
+
+    let power = 0;
+    for (const person of this.people) {
+      if (!person.alive || person.bandId !== building.ownerBandId) continue;
+      if (building.def.requiresTech === null) continue;
+      power = Math.max(power, techPower(person, building.def.requiresTech as Tech));
+    }
+    if (power <= 0) {
+      return { perDay: 0, reason: 'nobody here remembers how to work it' };
+    }
+    if (building.storageFree <= 0) {
+      return { perDay: 0, reason: 'full, and catching nothing until it is emptied' };
+    }
+    return {
+      perDay: yielded.perDay * power,
+      reason: 'catching on its own, and nobody has to stand here',
+    };
   }
 
   /**
@@ -1598,6 +1729,8 @@ export class Simulation {
       });
       this.refreshRecords();
       this.refreshEra();
+
+      this.workTraps();
 
       this.lifeSystem.daily(this.people, {
         rng: this.lifeRng,

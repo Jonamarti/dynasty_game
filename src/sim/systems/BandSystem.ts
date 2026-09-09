@@ -19,7 +19,7 @@
 import type { Person } from '../entities/Person.ts';
 import type { Band } from '../core/Simulation.ts';
 import type { Building, BuildingDef } from '../entities/Building.ts';
-import { BUILDINGS } from '../entities/Building.ts';
+import { BUILDINGS, isTrap } from '../entities/Building.ts';
 import { techPower, type Tech } from '../knowledge/Tech.ts';
 import { JOB_IDS, type JobId } from '../entities/Job.ts';
 import type { RelationshipGraph } from './../social/Relationships.ts';
@@ -73,6 +73,16 @@ const STALE_SITE_DAYS = 6;
 
 /** Completed structures a band will hold, per this many members, plus two. */
 const MEMBERS_PER_STRUCTURE = 4;
+
+/**
+ * How many traps one band will set. M8.1, mechanism 3.
+ *
+ * Small, and not because traps are expensive. Each one is a walk somebody has to
+ * take to empty it, `Brain` scores that walk against foraging on distance, and a
+ * ring of eight snares round a camp is a band that spends its day collecting
+ * instead of a band that eats better.
+ */
+const TRAPS_PER_BAND = 3;
 
 /** Days between a band considering new construction. */
 const PLANNING_INTERVAL = 3;
@@ -387,7 +397,14 @@ export class BandSystem {
     // A hard ceiling, so that no combination of the conditions below can
     // produce a field of huts. Whatever else is true, a band of twelve does not
     // need eleven structures.
-    const built = live.filter(b => b.complete).length;
+    //
+    // Traps do not count against it, and must not. The ceiling is about roofs
+    // and pits — things a band needs a certain number of and no more — whereas a
+    // snare line is a food supply, and counting five of them would quietly stop
+    // a band ever raising another hut. It is also how `bands-dont-overbuild`
+    // would have started failing for a band that was doing exactly the right
+    // thing.
+    const built = live.filter(b => b.complete && !isTrap(b.def)).length;
     if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
 
     // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
@@ -458,17 +475,71 @@ export class BandSystem {
         wanted = this.bestBy(granaries, def => def.storage)?.id ?? null;
       }
     }
+
+    // --- Traps, the third thing a band can want -----------------------------
+    //
+    // `planBuildings` wanted exactly two things — a roof and a pit — and both
+    // `architecture.md` and `bugs.md` name the consequence: a design that is
+    // neither is one no band will ever plan, however well it is gated. That is
+    // how the granary and the longhouse spent their existence player-only, and a
+    // trap would have been the third case.
+    //
+    // Third rather than first because shelter and a store are survival and a
+    // trap is surplus, and a band that snares hares instead of raising a roof
+    // dies in the same winter it ate well in. `TRAPS_PER_BAND` is a small
+    // number: traps are cheap, and the ceiling above no longer restrains them.
+    //
+    // And a trap is planned only when there is nothing else to build at all —
+    // not merely when nothing else is *wanted*. A band has two site slots, and
+    // the first version of this branch spent them on snares while the storage
+    // pit that had already been decided on was still a hole in the ground:
+    // storing collapsed from 4,549 ticks to 394 across a run, and three more
+    // people starved than in the same world without traps. Surplus waits behind
+    // survival, and "survival" includes the pit that is half dug.
+    if (!wanted && underway === 0 && stores.length > 0) {
+      const traps = live.filter(b => isTrap(b.def));
+      if (traps.length < TRAPS_PER_BAND) {
+        const settable = buildable.filter(def => isTrap(def) &&
+          !traps.some(existing => existing.def.id === def.id && !existing.complete));
+        // The best catch they know how to set, which is a stable ranking with no
+        // draw in it — the planner runs inside the daily pass and a tie broken
+        // by an `RNG` here would shift every draw in the world.
+        wanted = this.bestBy(settable, def => def.yields?.perDay ?? 0)?.id ?? null;
+      }
+    }
     if (!wanted) return;
 
-    for (let attempt = 0; attempt < 30; attempt++) {
-      const x = Math.round(band.homeX + ctx.rng.range(-8, 8));
-      const y = Math.round(band.homeY + ctx.rng.range(-8, 8));
+    // A design that has to touch the shore needs a wider search and more tries:
+    // `spawnPeople` sites every band with water in reach, but "in reach" is not
+    // "eight tiles from the fire", and thirty draws inside a square that mostly
+    // is not coastline is how a fish trap would have looked unbuildable to every
+    // band in the world while being perfectly placeable by the player.
+    //
+    // The search widens in rings rather than scattering across the whole square,
+    // and for a trap that is the difference between a mechanism and a decoration.
+    // Nothing walks to a trap on its own: `Brain` scores collecting from one
+    // against foraging, and proximity dominates that scorer, so a fish trap
+    // sixteen tiles down the coast fills up and is never emptied again. Measured
+    // across ten seeds, scattered siting left traps standing full for fifty
+    // trap-days a run with people going hungry beside them, which is the
+    // "starving next to a full pit" failure this project has already shipped
+    // once.
+    const shore = BUILDINGS[wanted]?.placement === 'shore';
+    const tries = shore ? 80 : 30;
+    for (let attempt = 0; attempt < tries; attempt++) {
+      const reach = shore ? 5 + Math.floor(attempt / 16) * 4 : 8;
+      const x = Math.round(band.homeX + ctx.rng.range(-reach, reach));
+      const y = Math.round(band.homeY + ctx.rng.range(-reach, reach));
       const placed = ctx.place(wanted, x, y, band.id);
       if (placed) {
         telemetry.count('band_planned_' + wanted);
         return;
       }
     }
+    // Worth counting rather than passing over in silence: a band that wants a
+    // trap it can never site is the only way this branch fails, and the counter
+    // is the difference between finding that out and guessing at it.
+    telemetry.count('band_could_not_site_' + wanted);
   }
 
   /** The least work of a set of designs. Ties go to the first, which is stable. */

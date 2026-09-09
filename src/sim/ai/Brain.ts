@@ -24,6 +24,7 @@ import type { TimeManager } from '../core/TimeManager.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { RelationshipGraph } from '../social/Relationships.ts';
+import { isTrap } from '../entities/Building.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -128,6 +129,25 @@ const TAKE_APPETITE = 4.2;
 
 /** Items in a store above which it is fully worth crossing the camp for. */
 const LARDER_WORTH_THE_WALK = 40;
+
+/**
+ * How full a trap has to be before anybody walks out to it, 0-1.
+ *
+ * Not zero, because a trap holding one fish is a walk for one fish, and not one,
+ * because a trap that has to be brimming is a trap that spends its life full and
+ * catching nothing.
+ */
+const TRAP_WORTH_A_ROUND = 0.4;
+
+/**
+ * What emptying a full trap is worth to somebody who is not hungry.
+ *
+ * Sits between storing (0.35) and the pull of an actual appetite, because that
+ * is what it is: a chore worth more than tidying a pit and less than a meal.
+ * Traps are the only thing in the game that produces while nobody watches, and
+ * they are also the only thing that stops producing when nobody comes.
+ */
+const TRAP_ROUND = 1.1;
 
 /** Nutrition a person keeps for themselves before giving any away. */
 const GIVING_RESERVE = 90;
@@ -657,8 +677,12 @@ export class Brain {
       const carried = this.carriedNutrition(person);
       const surplus = carried - person.needs.hunger - GIVING_RESERVE;
       if (surplus > 0 && comfortNow > 0.4) {
+        // A trap is somewhere food comes *from*. Filling one with berries would
+        // be a person carefully stopping their own snare line from catching
+        // anything, because a full trap stops accruing.
         const store = this.pickBest(
-          stores.filter(b => b.storageFree > 0 && b.ownerBandId === person.bandId),
+          stores.filter(b => b.storageFree > 0 && b.ownerBandId === person.bandId &&
+            !isTrap(b.def)),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })
         );
         if (store) {
@@ -668,30 +692,75 @@ export class Brain {
         }
       }
 
-      // What you are carrying, measured against what you need — not merely
-      // whether you hold a single berry.
+      // Two different reasons to walk to a store, scored against each other and
+      // added once, because `take` can only aim at one building.
+      const nearness = (b: Building): number =>
+        this.proximityBonus(person, { x: b.centerX, y: b.centerY }, ctx.sightRadius);
+      let bestTake = 0;
+      let takeTarget: Building | null = null;
+      const wantTake = (b: Building | null, score: number): void => {
+        if (b && score > bestTake) {
+          bestTake = score;
+          takeTarget = b;
+        }
+      };
+
+      // 1. Hunger. What you are carrying, measured against what you need — not
+      //    merely whether you hold a single berry.
       //
-      // The gate used to be `!carriedFood`, so one berry in the pack ruled the
-      // store out entirely. In winter people forage more or less constantly and
-      // therefore almost always hold *something*, which is how a band came to
-      // starve beside a pit holding fourteen hundred items: over a two-year run
-      // `take` accounted for a thousand ticks out of a million.
+      //    The gate used to be `!carriedFood`, so one berry in the pack ruled
+      //    the store out entirely. In winter people forage more or less
+      //    constantly and therefore almost always hold *something*, which is how
+      //    a band came to starve beside a pit holding fourteen hundred items:
+      //    over a two-year run `take` accounted for a thousand ticks out of a
+      //    million.
+      //
+      //    The candidate is the nearest store with food in it, and that ranking
+      //    is deliberately left alone. Ranking it by expected score instead —
+      //    fullness times nearness, which is what the trap round below uses —
+      //    looks more principled and measured eight points of mean survival
+      //    worse across ten seeds of the default scenario, in worlds with no
+      //    traps in them at all. Traps get walked to by the separate route
+      //    below rather than by bending this one.
       if (carried < person.needs.hunger && person.needs.hunger > 25) {
         const larder = this.pickBest(
           stores.filter(b => b.ownerBandId === person.bandId && b.store.bestFood() !== null),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })
         );
+        // Weighted well above foraging, and scaled by how well stocked it is. A
+        // full pit is a certainty; a bush in February is a walk and a gamble.
         if (larder) {
-          // Weighted well above foraging, and scaled by how well stocked it is.
-          // A full pit is a certainty; a bush in February is a walk and a
-          // gamble. Making stored food worth crossing camp for is the whole
-          // point of having built the pit.
-          const stocked = Math.min(1, larder.store.total / LARDER_WORTH_THE_WALK);
-          add('take', hunger * TAKE_APPETITE * (0.4 + 0.6 * stocked)
-            * this.proximityBonus(person, { x: larder.centerX, y: larder.centerY }, ctx.sightRadius));
-          storeTarget = storeTarget ?? larder;
-          larderTarget = larder;
+          wantTake(larder,
+            hunger * TAKE_APPETITE * (0.4 + 0.6 * this.stocked(larder)) * nearness(larder));
         }
+      }
+
+      // 2. The round. Emptying a trap is a chore somebody does because it is
+      //    theirs and it is full, not because they are hungry — and without this
+      //    the whole of mechanism 3 quietly fails.
+      //
+      //    Measured, before it existed: across ten seeds traps stood full for
+      //    fifty trap-days a run while people went hungry beside them, because
+      //    hunger is what put anybody near a store and a trap is out at the
+      //    treeline. A full trap has also stopped catching, so the food that is
+      //    in it is costing more food.
+      //
+      //    Behind the same comfort gate as storing, and it is the same idea: a
+      //    round of the traps is a fair-weather job, and somebody who is cold,
+      //    parched or exhausted has better things to do than walk the treeline.
+      if (comfortNow > 0.4) {
+        const round = this.pickBest(
+          stores.filter(b => isTrap(b.def) && b.ownerBandId === person.bandId &&
+            b.store.bestFood() !== null && this.stocked(b) >= TRAP_WORTH_A_ROUND),
+          b => this.stocked(b) * nearness(b)
+        );
+        if (round) wantTake(round, TRAP_ROUND * this.stocked(round) * nearness(round));
+      }
+
+      if (takeTarget) {
+        add('take', bestTake);
+        storeTarget = storeTarget ?? takeTarget;
+        larderTarget = takeTarget;
       }
     }
 
@@ -979,6 +1048,20 @@ export class Brain {
   private carriedNutrition(person: Person): number {
     return person.inventory.entries()
       .reduce((sum, [id, count]) => sum + (ITEMS[id]?.nutrition ?? 0) * count, 0);
+  }
+
+  /**
+   * How certain a meal this store is, 0-1.
+   *
+   * Measured against what the thing *can* hold, never past the floor: a snare
+   * holding ten of ten is a certainty, a granary holding ten of four hundred is
+   * a rumour, and against a flat constant the two scored the same. For every
+   * store the game had before traps — forty upwards — this is exactly the
+   * expression it replaced.
+   */
+  private stocked(store: Building): number {
+    const worthTheWalk = Math.min(LARDER_WORTH_THE_WALK, store.def.storage);
+    return Math.min(1, store.store.total / worthTheWalk);
   }
 
   /** Closer targets are worth more, but distance never zeroes a desperate need. */

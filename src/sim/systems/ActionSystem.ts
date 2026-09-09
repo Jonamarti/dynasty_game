@@ -16,7 +16,7 @@ import type { World } from '../core/World.ts';
 import type { MovementSystem } from './MovementSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
-import type { Building } from '../entities/Building.ts';
+import { isTrap, type Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import type { KnowledgeSystem } from './KnowledgeSystem.ts';
@@ -834,7 +834,11 @@ export class ActionSystem {
     const store = this.reachBuilding(person, ctx);
     if (!store) return;
 
-    if (!store.complete || store.def.storage === 0) {
+    // A trap is a place food comes from, not a place to put it: filling one
+    // stops it catching, since a full trap accrues nothing. The player can
+    // still order it, and gets told why it did not happen — which is the whole
+    // reason this refuses out loud rather than quietly dropping the order.
+    if (!store.complete || store.def.storage === 0 || isTrap(store.def)) {
       this.abandon(person, 'not_a_store', ctx);
       return;
     }
@@ -870,6 +874,13 @@ export class ActionSystem {
     const taken = store.store.remove(itemId, Math.min(6, store.store.count(itemId)));
     person.inventory.add(itemId, taken);
     telemetry.count('withdrawn', taken);
+    // Counted apart from an ordinary withdrawal because it answers a different
+    // question. A trap that fills and is never emptied stops catching, and from
+    // the outside that is indistinguishable from a trap that works: the catch
+    // counter keeps rising for a while and then quietly stops. This is the only
+    // signal that the other half of the mechanism — somebody walking out to it —
+    // is actually happening.
+    if (isTrap(store.def)) telemetry.count('trap_emptied', taken);
     this.finish(person);
   }
 

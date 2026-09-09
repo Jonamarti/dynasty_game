@@ -17,6 +17,7 @@ import { telemetry } from '../src/sim/core/Telemetry.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
+import { isTrap } from '../src/sim/entities/Building.ts';
 
 // ---------------------------------------------------------------------------
 // Scenarios
@@ -138,6 +139,30 @@ export const SCENARIOS: Record<string, Scenario> = {
       },
     },
     steps: 4000,
+  },
+  traps: {
+    name: 'traps',
+    description:
+      'A band that has the whole Mesolithic in its head: cordage and tracking, ' +
+      'the basket and the net, and both traps. The same trick `craft` and ' +
+      '`scribes` play, for the same reason — a snare sits behind two ' +
+      'technologies and a fish trap behind four, no run in the suite reaches ' +
+      'either from nothing, and every check about passive yield would report ' +
+      'n/a for ever. Eight to a band rather than twelve because a band plans a ' +
+      'roof and a store before it plans anything else, and a smaller band is ' +
+      'housed sooner; long enough after that for a trap to be planned, built, ' +
+      'to fill, and for somebody to walk out and empty it.',
+    config: {
+      seed: 'beta',
+      population: {
+        bands: 2, peoplePerBand: 8,
+        startingTech: [
+          'cordage', 'tracking', 'spear', 'fishing',
+          'basketry', 'netting', 'snares', 'fish_trap',
+        ],
+      },
+    },
+    steps: 9000,
   },
 };
 
@@ -846,6 +871,22 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const adultDays = samples.reduce((total, sample) => total + sample.population, 0) /
     Math.max(1, samples.length) * Math.max(1, last.day - first.day);
 
+  // A scenario that starts its people knowing most of what they could reach has
+  // nothing left to say about discovery. `traps` hands out eight nodes so that
+  // both traps exist at all, and what is conceived after that is decided by the
+  // scenario rather than by the web: it read "3 routes into 1 technologies" and
+  // failed, which is the check being asked a question this world cannot answer
+  // rather than the web having collapsed to one path. `craft` (four) and
+  // `scribes` (five) sit below the line and still answer it honestly.
+  const handedOut = sim.config.population.startingTech?.length ?? 0;
+  const TREE_GIVEN_AWAY = 6;
+
+  if ((last.day - first.day) >= 30 && handedOut >= TREE_GIVEN_AWAY) {
+    skip('sparks-are-various',
+      'this world was handed ' + handedOut + ' technologies; what is left to ' +
+      'conceive is the scenario talking, not the web');
+  }
+
   if ((last.day - first.day) < 30) {
     skip('ideas-are-conceived', 'run too short for anybody to have an idea');
     skip('sparks-are-various', 'run too short for more than one route to fire');
@@ -875,7 +916,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     // looks healthy on a world where four fifths of the tree never occurs to
     // anyone is the "reassuring and detects nothing" failure that got two
     // checks deleted in the winter pass.
-    add('sparks-are-various',
+    if (handedOut < TREE_GIVEN_AWAY) add('sparks-are-various',
       sparkRoutes.length > 1 && conceivedTechs.length > 1,
       sparkRoutes.length + ' routes into ' + conceivedTechs.length +
         ' technologies: ' + conceivedTechs.join(' '));
@@ -1153,6 +1194,48 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       (tel.eat ?? 0) > 0,
       (tel.harvest_fish ?? 0) + ' fish taken; ' + (tel.eat ?? 0) + ' meals eaten');
   }
+
+  // M8.1, mechanism 3. Three checks, because a trap has three ways to be
+  // useless and only the first is obvious: nobody plans one, nobody can site
+  // one, or one fills up and nobody ever walks out to it.
+  const trapsBuilt = sim.buildings.filter(b => b.complete && isTrap(b.def));
+  const trapsPlanned = (tel.band_planned_snare ?? 0) + (tel.band_planned_fish_trap ?? 0);
+  if (trapsBuilt.length === 0 && trapsPlanned === 0) {
+    skip('bands-set-traps', 'nobody in this world knows how to set a trap');
+  } else {
+    // The planner wanted only a roof or a store for the whole of the game's
+    // history, which is why the granary and the longhouse were player-only
+    // content. This is the tripwire on that happening a third time.
+    add('bands-set-traps',
+      trapsPlanned > 0,
+      trapsPlanned + ' planned by bands, ' + trapsBuilt.length + ' standing; ' +
+        (tel.band_could_not_site_fish_trap ?? 0) + ' could not be sited');
+  }
+
+  const caught = (tel.trap_caught_meat ?? 0) + (tel.trap_caught_fish ?? 0);
+  if (trapsBuilt.length === 0) {
+    skip('traps-catch', 'no trap was finished in this run');
+  } else {
+    add('traps-catch',
+      caught > 0,
+      caught + ' taken from traps (' + (tel.trap_caught_meat ?? 0) + ' meat, ' +
+        (tel.trap_caught_fish ?? 0) + ' fish); ' + (tel.trap_emptied ?? 0) +
+        ' collected, ' + ((tel.trap_full_snare ?? 0) + (tel.trap_full_fish_trap ?? 0)) +
+        ' days spent full, ' + (tel.trap_unworked_snare ?? 0) +
+        ' days nobody could work one');
+  }
+
+  // There is deliberately no `traps-are-emptied` check here, and the reason is
+  // worth recording. Whether anybody walks out to a trap depends on whether the
+  // band is hungry: on a well-fed seed a trap catches ten fish, nobody needs
+  // them, and nothing is wrong. Measured against the broken build — the scorer
+  // picking a larder by distance alone, so a full snare never wins against a
+  // pit with four berries in it — the collection counts overlap (6 of 59
+  // collected broken, 6 of 42 fixed). That is precisely the check that "looks
+  // reassuring and detects nothing", and two of those were deleted in the
+  // winter pass. The scorer's preference is a property of `Brain`, not of a
+  // world, and it is tested as one in `brain.test.ts`. The numbers are reported
+  // above so a human can still see them.
 
   // A band that keeps planning huts while three stand empty is the failure this
   // guards: the planner used to count structures rather than what they held.

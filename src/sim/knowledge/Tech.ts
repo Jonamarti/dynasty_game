@@ -55,10 +55,10 @@ export const TECHS = [
   // `doAttack` had no item term at all and a hunt could only be won by
   // outlasting an animal that runs faster than a person.
   'spear', 'bow', 'leatherwork',
-  // M8.1: the food half of the tree, see m8_plan_the_ages.md. `fishing` is
-  // the first entry; the rest of the fourteen-node tier follows in later
-  // passes.
-  'fishing',
+  // M8.1: the food half of the tree, see m8_plan_the_ages.md. `fishing` came
+  // first, with mechanism 2; these four are mechanism 3 and the two carried
+  // tools that lead to it. The rest of the fourteen-node tier follows.
+  'fishing', 'basketry', 'netting', 'snares', 'fish_trap',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -447,6 +447,93 @@ export const TECH: Record<Tech, TechDef> = {
       'A spear turned on the shallows. Food that does not stop existing when ' +
       'the ground freezes.',
   },
+  // M8.1, mechanism 3, and the two carried tools that lead to it.
+  //
+  // Read the four together, because they are one idea. Every kind of work in
+  // the game above this line happens only while somebody is standing over it;
+  // a snare and a fish trap are the first things in the world that produce food
+  // while nobody is looking at them, and that is most of what a Mesolithic band
+  // actually had over a Palaeolithic one. The basket and the net are the same
+  // story told with cordage: a woven container is what a trap *is*.
+  basketry: {
+    id: 'basketry', label: 'Basketry', domain: 'cloth',
+    requires: ['cordage'], difficulty: 0.35, skill: 'build',
+    prototype: { thatch: 4, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'holding', item: 'thatch' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 1.0, story: 'twisted one withy round another until the bundle held its own shape' },
+      // `hands_full` sparks `cordage` as well, and that is the point rather than
+      // a duplicate: the first answer to carrying too much is a strap, and the
+      // second is something to put it in.
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'saw', what: 'hands_full' }],
+        weight: 0.8, story: 'carried an armful home twice and dropped half of it both times' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'doing', action: 'haul' },
+                { kind: 'season', season: 'autumn' }],
+        weight: 0.5, story: 'ferried a whole autumn of fruit across camp in two hands' },
+    ],
+    description:
+      'Withies woven into a shape that holds. More carried in one trip, and ' +
+      'the first container in the world that is not a pair of hands.',
+  },
+  netting: {
+    id: 'netting', label: 'Netting', domain: 'water',
+    requires: ['cordage', 'fishing'], difficulty: 0.45, skill: 'forage',
+    prototype: { thatch: 6 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'holding', item: 'fish' }],
+        weight: 1.0, story: 'lost a fish out of a wet hand while the other held a cord' },
+      { needs: [{ kind: 'knows', tech: 'fishing' }, { kind: 'doing', action: 'forage' },
+                { kind: 'place', biome: 'beach' }],
+        weight: 0.7, story: 'watched a shoal go past faster than one spear could answer' },
+      { needs: [{ kind: 'knows', tech: 'fishing' }, { kind: 'saw', what: 'node_empty' }],
+        weight: 0.5, story: 'stood over water that had been full of fish an hour before' },
+    ],
+    description:
+      'Cordage knotted into a mesh. A spear takes one fish; a net takes ' +
+      'whatever swims into it.',
+  },
+  snares: {
+    id: 'snares', label: 'Snares', domain: 'beasts',
+    requires: ['cordage', 'tracking'], difficulty: 0.45, skill: 'track',
+    prototype: { thatch: 3, sticks: 3 }, maxRefinement: 3,
+    sparks: [
+      // The heaviest route is a failure, deliberately. A snare is what occurs to
+      // you after the thing you were chasing has gone, and `quarry_escaped` is a
+      // real stop reason that both `tracking` and `spear` already read.
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'knows', tech: 'tracking' },
+                { kind: 'saw', what: 'quarry_escaped' }],
+        weight: 1.0, story: 'lost a hare on foot and thought about where it would run tomorrow' },
+      { needs: [{ kind: 'knows', tech: 'tracking' }, { kind: 'doing', action: 'forage' },
+                { kind: 'place', biome: 'forest' }],
+        weight: 0.7, story: 'passed the same run through the same thicket every day for a month' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'feeling', need: 'hunger' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'went hungry in a winter wood that plainly had animals in it' },
+    ],
+    description:
+      'A loop of cord set where something small runs, and the patience to come ' +
+      'back to it. The first work in the world that goes on without you.',
+  },
+  fish_trap: {
+    id: 'fish_trap', label: 'Fish trap', domain: 'water',
+    requires: ['netting', 'basketry'], difficulty: 0.5, skill: 'forage',
+    prototype: { thatch: 6, sticks: 4 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'netting' }, { kind: 'knows', tech: 'basketry' },
+                { kind: 'place', biome: 'beach' }],
+        weight: 1.0, story: 'stood at the water holding a basket and a net, and saw one thing' },
+      { needs: [{ kind: 'knows', tech: 'basketry' }, { kind: 'holding', item: 'fish' },
+                { kind: 'doing', action: 'forage' }],
+        weight: 0.7, story: 'noticed which way a fish turns when it finds a wall' },
+      { needs: [{ kind: 'knows', tech: 'netting' }, { kind: 'saw', what: 'node_empty' },
+                { kind: 'place', biome: 'beach' }],
+        weight: 0.5, story: 'wanted the water worked on a day nobody could stand in it' },
+    ],
+    description:
+      'A woven mouth set where the water runs, emptied when it suits you. Fish ' +
+      'that arrive whether or not anybody walked down to the shore.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -540,6 +627,22 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   fishing: {
     summary: 'More from every fishing spot, and food that keeps coming in winter.',
     site: 'ActionSystem.doHarvest, via forageYieldFactor',
+  },
+  basketry: {
+    summary: 'Something to put it in: more carried home in one trip.',
+    site: 'Person.carryCapacity, via carryFactor, when a basket is in the pack',
+  },
+  netting: {
+    summary: 'A mesh instead of a point: far more from every fishing spot.',
+    site: 'ActionSystem.doHarvest, via forageYieldFactor, when a net is in the pack',
+  },
+  snares: {
+    summary: 'Small game caught while you were somewhere else.',
+    site: 'Simulation.workTraps, via BUILDINGS.snare.yields',
+  },
+  fish_trap: {
+    summary: 'The shore worked without anybody standing on it.',
+    site: 'Simulation.workTraps, via BUILDINGS.fish_trap.yields',
   },
 };
 
@@ -636,13 +739,27 @@ function scaled(person: Person, tech: Tech, full: number): number {
  */
 export function forageYieldFactor(person: Person, nodeKind: string): number {
   if (nodeKind === 'flint') return scaled(person, 'stoneworking', 1.5);
-  if (nodeKind === 'fish') return scaled(person, 'fishing', 1.5);
+  // A net multiplies a fishing spot rather than replacing the spear, and it is
+  // gated on *carrying* one as well as on knowing how to make one. Both halves
+  // matter: knowledge alone would make the recipe pointless, and the item alone
+  // is the `handaxe` bug — a tool that works identically in the hands of
+  // somebody who could not have made it, and that refinement never improves.
+  if (nodeKind === 'fish') {
+    const net = person.inventory.has('net') ? scaled(person, 'netting', 1.7) : 1;
+    return scaled(person, 'fishing', 1.5) * net;
+  }
   return scaled(person, 'plant_lore', 1.3);
 }
 
-/** Multiplier on how much a person can carry at once. */
+/**
+ * Multiplier on how much a person can carry at once.
+ *
+ * Cordage is the strap and applies always; the basket has to be in the pack.
+ * See the note in `forageYieldFactor` on why both gates are there.
+ */
 export function carryFactor(person: Person): number {
-  return scaled(person, 'cordage', 1.25);
+  const basket = person.inventory.has('basket') ? scaled(person, 'basketry', 1.3) : 1;
+  return scaled(person, 'cordage', 1.25) * basket;
 }
 
 /** Multiplier on the nutrition of anything eaten. */

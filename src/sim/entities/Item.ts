@@ -64,6 +64,13 @@ export const ITEMS: Record<string, ItemDef> = {
     id: 'hide_armour', label: 'Hide armour', nutrition: 0, spoilTicks: 0, baseValue: 11,
     armour: 0.3,
   },
+  // M8.1. Both are carried tools rather than materials, and both are read
+  // through an item-presence test *and* `techPower` — a basket in the hands of
+  // somebody who does not know basketry is a bundle of withies. That double
+  // gate is deliberate: `handaxe` tests presence alone, which is the bug the
+  // M8 plan lists under "three repairs to make while passing".
+  basket:   { id: 'basket',   label: 'Basket',     nutrition: 0,  spoilTicks: 0,    baseValue: 5 },
+  net:      { id: 'net',      label: 'Net',        nutrition: 0,  spoilTicks: 0,    baseValue: 7 },
   flint:    { id: 'flint',    label: 'Flint',      nutrition: 0,  spoilTicks: 0,    baseValue: 2 },
   sticks:   { id: 'sticks',   label: 'Sticks',     nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   wood:     { id: 'wood',     label: 'Timber',     nutrition: 0,  spoilTicks: 0,    baseValue: 4 },

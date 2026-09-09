@@ -48,3 +48,29 @@ export function workProgressOf(person: Person, world: ProgressView): number | nu
 
   return null;
 }
+
+/**
+ * Turns a fractional per-day rate into whole items, keeping the remainder.
+ *
+ * A snare that catches a hare every other day yields 0.5 a day, and a rate
+ * below 1 rounded or floored at the point of use produces **nothing, for
+ * ever** — which is how a passive yield ends up looking like a broken trap
+ * rather than a slow one. The remainder has to live somewhere between sweeps,
+ * so the caller owns it and hands it back on the next call.
+ *
+ * It lives here, beside `workProgressOf`, because passive traps are not the
+ * only customer: spoilage is the same arithmetic pointed the other way (a
+ * fractional number of items lost per sweep), and mechanism 1 of
+ * `m8_plan_the_ages.md` is explicit that writing it twice is the drift this
+ * project's house style exists to prevent.
+ *
+ * Deliberately free of any `RNG`. Accrual runs once a day over every trap in
+ * the world, and a draw in here would make what a trap catches depend on how
+ * many traps were swept before it.
+ */
+export function accrueUnits(carry: number, rate: number): { units: number; carry: number } {
+  if (!(rate > 0)) return { units: 0, carry };
+  const total = carry + rate;
+  const units = Math.floor(total);
+  return { units, carry: total - units };
+}

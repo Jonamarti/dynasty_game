@@ -590,7 +590,8 @@ export class Hud {
         this.panelBodyEl.innerHTML = this.nodeRows(observer, selection.node, sim).join('');
         break;
       case 'building':
-        this.panelBodyEl.innerHTML = this.buildingRows(observer, selection.building).join('');
+        this.panelBodyEl.innerHTML =
+          this.buildingRows(observer, selection.building, sim).join('');
         break;
       case 'tree':
         this.panelBodyEl.innerHTML = this.treeRows(observer, selection.tree).join('');
@@ -1311,7 +1312,7 @@ export class Hud {
     return rows;
   }
 
-  private buildingRows(observer: Person, building: Building): string[] {
+  private buildingRows(observer: Person, building: Building, sim: Simulation): string[] {
     const known = knowledgeOfBuilding(observer, building);
     const rows: string[] = [];
 
@@ -1339,6 +1340,20 @@ export class Hud {
     }
 
     rows.push('<div class="hud-section">Finished</div>');
+    // A trap that has stopped catching looks exactly like a trap that is
+    // working, from outside, and the standing instruction on this project is
+    // that anything the simulation refuses or abandons has to say so in the UI.
+    // The two silent failures are both real: the band's last snare-setter dies,
+    // or the thing is simply full.
+    const trap = sim.trapYield(building);
+    if (trap) {
+      rows.push('<div class="hud-sub">' +
+        (trap.perDay > 0
+          ? escapeHtml(ITEMS[building.def.yields!.item]?.label ?? building.def.yields!.item) +
+            ' about ' + trap.perDay.toFixed(1) + ' a day &mdash; ' + escapeHtml(trap.reason)
+          : escapeHtml(trap.reason)) +
+        '</div>');
+    }
     if (building.def.shelter > 0) {
       rows.push('<div class="hud-sub">Shelter ' +
         (building.def.shelter * 100).toFixed(0) + '% — people inside stay warm.</div>');

@@ -114,6 +114,40 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { hide_armour: 1 },
     keep: 1,
   },
+  // M8.1, the two carried tools of the Mesolithic. Both obey the paragraph
+  // above: each is here because something reads it in the same pass —
+  // `carryFactor` for the basket, `forageYieldFactor` on a fishing spot for the
+  // net — and neither is a building material, so `keep` is 1 for both.
+  //
+  // Both sit at or under 140 `workTicks` on purpose. Above roughly that a single
+  // uninterrupted pull outlasts the thirst a novice picks up while making it, so
+  // the job is stopped, restarted from nothing and never finished; see
+  // `AGENTS.md`. Anything longer has to bank its progress on the thing being
+  // worked, and a recipe has nowhere to bank it.
+  basket: {
+    id: 'basket',
+    label: 'Basket',
+    icon: '\u{1F9FA}',
+    tech: 'basketry',
+    // Weaving withies is the builder's hand rather than the knapper's, the same
+    // call `pot` already makes.
+    skill: 'build',
+    workTicks: 110,
+    ingredients: { thatch: 4, sticks: 2 },
+    output: { basket: 1 },
+    keep: 1,
+  },
+  net: {
+    id: 'net',
+    label: 'Net',
+    icon: '\u{1F578}',
+    tech: 'netting',
+    skill: 'build',
+    workTicks: 140,
+    ingredients: { thatch: 6 },
+    output: { net: 1 },
+    keep: 1,
+  },
   pot: {
     id: 'pot',
     label: 'Pot',

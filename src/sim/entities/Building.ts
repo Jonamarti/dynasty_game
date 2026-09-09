@@ -39,7 +39,44 @@ export interface BuildingDef {
    * it with sticks, mud and patience.
    */
   requiresTech: string | null;
+  /**
+   * Passive production: what this structure catches on its own, per day.
+   *
+   * The first thing in the game that produces without anybody standing over it,
+   * and the reason M8.1's Mesolithic is a real tier rather than a list of nodes.
+   * `perDay` is fractional on purpose — a snare that takes a hare every second
+   * day is 0.5 — and `Progress.accrueUnits` keeps the remainder between sweeps
+   * so a slow trap is slow rather than broken. `Simulation.workTraps` reads it.
+   *
+   * The rate is scaled by how well the owning band still knows the technology
+   * behind the trap, which is what keeps the tech pillar honest: a snare line
+   * whose only setter died is a loop of rotting cord, not a food supply.
+   */
+  yields?: { item: string; perDay: number };
+  /**
+   * Where it may stand, beyond "on land, and not on top of something else".
+   *
+   * `canPlace` had no per-design predicate at all, because until the fish trap
+   * nothing cared where it was: a hut is a hut anywhere. A trap set for fish has
+   * to be in the water's edge, and a design whose whole point is the shore is
+   * worse than useless in the middle of a field.
+   */
+  placement?: 'shore';
   description: string;
+}
+
+/**
+ * True if a design is a trap rather than a building.
+ *
+ * A predicate rather than a `kind` field, because "is this a trap?" is asked by
+ * four systems for four different reasons and every one of them means "does it
+ * yield on its own": the band planner must not count traps against its hut
+ * ceiling, the scorer must not treat one as somewhere to *put* food, `doStore`
+ * refuses to fill one, and the health report counts them separately. Writing
+ * the test out four times is how the four answers drift apart.
+ */
+export function isTrap(def: BuildingDef): boolean {
+  return def.yields !== undefined;
 }
 
 export const BUILDINGS: Record<string, BuildingDef> = {
@@ -94,6 +131,51 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     description:
       'Daubed walls on a felled-timber frame, under thatch. Warm enough to ' +
       'winter in, and the first thing worth cutting a tree for.',
+  },
+
+  // --- M8.1, mechanism 3: the traps -----------------------------------------
+  //
+  // Both are 2x2 and neither may be 1x1, which is not a style choice. A 1x1
+  // footprint spans half a tile either side of its centre, `reachBuilding`
+  // demands `contains(x, y)` at margin 0, and movement stops within 0.6 tiles —
+  // so a person can arrive, fail the containment test for ever, and walk on the
+  // spot in a loop with no interruption check in it. See mechanism 3 in
+  // `m8_plan_the_ages.md`.
+  //
+  // The storage is small and it is the mechanism, not a rounding. A trap holds a
+  // few days of catch and then fills, which is what makes emptying it a thing
+  // somebody has to decide to do; `Brain`'s larder floor is measured against
+  // `def.storage` for exactly this reason.
+  snare: {
+    id: 'snare',
+    label: 'Snare line',
+    icon: '\u{1FAA4}',
+    width: 2, height: 2,
+    materials: { sticks: 4, thatch: 3 },
+    workTicks: 130,
+    shelter: 0,
+    storage: 10,
+    yields: { item: 'meat', perDay: 1.2 },
+    requiresTech: 'snares',
+    description:
+      'Cord loops set on a run through the undergrowth. Small game, caught ' +
+      'while whoever set it was somewhere else entirely.',
+  },
+  fish_trap: {
+    id: 'fish_trap',
+    label: 'Fish trap',
+    icon: '\u{1F3A3}',
+    width: 2, height: 2,
+    materials: { sticks: 6, thatch: 5 },
+    workTicks: 160,
+    shelter: 0,
+    storage: 12,
+    yields: { item: 'fish', perDay: 2.0 },
+    placement: 'shore',
+    requiresTech: 'fish_trap',
+    description:
+      'A woven funnel staked in the shallows. The shore keeps working through ' +
+      'the night, and through the winter.',
   },
 
   // --- Gated behind knowledge that does not exist yet (M4) -----------------
@@ -161,6 +243,18 @@ export class Building {
   /** Ticks of work done. Complete when it reaches `def.workTicks`. */
   progress = 0;
   complete: boolean;
+
+  /**
+   * The fraction of a catch a trap has accrued but not yet turned into an item.
+   *
+   * Lives on the building rather than in the sweep because the sweep is
+   * stateless by design: `Simulation.workTraps` runs once a day over every trap
+   * and draws no `RNG`, so the only thing that has to survive between days is
+   * this remainder. Reset to zero when nobody left can work the trap, so that a
+   * band which loses and later regains the knowledge starts the catch again
+   * rather than banking a decade of half-hares.
+   */
+  yieldCarry = 0;
 
   constructor(def: BuildingDef, x: number, y: number, ownerBandId: number) {
     this.id = nextBuildingId++;

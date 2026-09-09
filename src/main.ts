@@ -859,7 +859,13 @@ canvas.addEventListener('mousedown', event => {
         placed.complete ? placed.def.label + ' marked out' : placed.def.label + ' planned',
         { color: '#7ddc96', boxed: true });
     } else {
-      renderer.floaters.push(x, y, 'cannot build there', { color: '#e66464', boxed: true });
+      // "Cannot build there" is the least useful thing a game can say. The
+      // simulation knows which of the three reasons it was — and with the fish
+      // trap there is now a design that can be refused somewhere a hut would
+      // have stood happily.
+      const why = sim.placementRefusal(activeDesign, x, y)
+        ?? 'that cannot be built there';
+      renderer.floaters.push(x, y, why, { color: '#e66464', boxed: true });
     }
     return;
   }

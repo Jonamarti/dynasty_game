@@ -1,7 +1,59 @@
 # Known bugs and rough edges
 
-As of 2026-09-08. Everything here is real and reproducible; nothing here is
+As of 2026-09-09. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found while building M8.1's traps, 2026-09-09 — open
+
+### Adult starvation rose while infant starvation halved, and nothing explains it yet
+
+Across twenty seeds of the `traps` scenario against the same scenario without the
+trap half of the ladder, mean survival is identical at 89.8%, but the deaths move:
+**6 infants starved against 12, and 53 adults against 38.** The plausible reading
+is that trap food is collected and eaten at camp, where the youngest are, and that
+the walk to empty a trap is time an adult did not spend foraging for themselves —
+but that is a story, not a measurement, and this project has a rule about shipping
+a comment that asserts an unconfirmed cause.
+
+Not fixed, and deliberately not tuned: the totals are inside the noise this
+project already knows twenty seeds cannot resolve, and `TRAP_ROUND` in `Brain.ts`
+is the coefficient anybody chasing it would reach for. Whoever does should measure
+`forage` ticks per adult-day either side, not survival.
+
+### A trap is sited from where the band was founded, not from where its people are
+
+`planBuildings` searches out from `band.homeX/homeY`, which never moves, and the
+ring search added for the fish trap makes traps as close to that point as the
+coastline allows. Collection is then scored on proximity to whoever is walking
+past. A band whose daily range has drifted away from its founding fire will
+therefore keep a trap it rarely passes, and that trap fills and stops catching.
+
+Not a defect in the trap so much as the absence of anything that moves a camp, and
+worth remembering when M7's interiors or any later migration lands: the trap
+sweep counts `trap_full_<id>` days precisely so this is visible when it happens.
+
+### `sparks-are-various` now skips on any scenario handed six or more technologies
+
+Added in this pass, and the trade-off is real in both directions. Without the skip
+the check fails on `traps` for a reason that has nothing to do with the web: a band
+handed eight nodes has almost nothing left to conceive, and it read "3 routes into
+1 technologies". With the skip, a future scenario that starts people rich would
+stop reporting a genuine collapse of the spark table.
+
+The line is drawn at six because `craft` (four) and `scribes` (five) still answer
+the question honestly and `traps` (eight) cannot. If a third rich scenario arrives,
+the better fix is to measure routes against *what was left to conceive* rather than
+against the whole table.
+
+### `basketry` does not make stores cheaper, though the plan said it would
+
+The plan's line for the node was "a `basket` item raising `carryFactor`; a cheap
+material for stores". Only the first half shipped. Adding `basket` to
+`storage_pit`'s materials would have made the pit — the first thing any band
+builds — unbuildable until somebody could weave, which is the granary defect in
+miniature and exactly what `buildings-ask-for-things-that-exist` was written
+after. A new cheap store gated on `basketry` is the honest way to do it, and it
+belongs with the rest of the tier rather than retrofitted onto the pit.
 
 ## From the owner's notes, triaged 2026-09-09
 
