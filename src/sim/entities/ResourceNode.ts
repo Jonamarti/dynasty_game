@@ -86,13 +86,17 @@ export class ResourceNode {
    * storage pit from decoration into the difference between a band that eats in
    * winter and one that does not.
    */
-  regrow(ticks: number, growth: number): void {
+  regrow(ticks: number, growth: number, multiplier = 1): void {
     if (this.def.regrowPerTick === 0) return;
     if (this.amount >= this.def.maxAmount) return;
     const rate = Math.max(growth, this.def.winterFloor ?? 0);
+    // The multiplier lands on the final term, not on `growth`. Scaling growth
+    // would be swallowed by the `winterFloor` clamp on the line above, so
+    // `world.regrowthRate` would silently do nothing to fish — the one food
+    // that keeps growing through the winter, and so the one it matters most for.
     this.amount = Math.min(
       this.def.maxAmount,
-      this.amount + this.def.regrowPerTick * ticks * rate
+      this.amount + this.def.regrowPerTick * ticks * rate * multiplier
     );
   }
 

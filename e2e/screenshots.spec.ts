@@ -239,3 +239,39 @@ test('tour', async ({ page }) => {
   await page.waitForTimeout(500);
   await page.screenshot({ path: DIR + '/06-island.png' });
 });
+
+test('the menu and the settings screen', async ({ page }) => {
+  await page.goto('/?seed=tour&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.pausemenu')).toBeVisible();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: DIR + '/20-menu.png' });
+
+  await page.locator('.pausemenu button', { hasText: 'Settings' }).click();
+  await expect(page.locator('.settings')).toBeVisible();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: DIR + '/21-settings.png' });
+
+  // And again at the far end of the slider, so the record shows what a
+  // difficulty actually does to the numbers under it.
+  const difficulty = page.locator('.settings-difficulty-range');
+  await difficulty.fill('4');
+  await difficulty.dispatchEvent('input');
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: DIR + '/22-settings-extreme.png' });
+});
+
+test('the screen the game opens on', async ({ page }) => {
+  // No `skipIntro`: the tour should show what a player actually sees first.
+  await page.goto('/?seed=tour');
+  await expect(page.locator('.settings')).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: DIR + '/19-start.png' });
+
+  await page.locator('.settings button', { hasText: 'Begin' }).click();
+  await expect(page.locator('.newgame')).toBeVisible();
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: DIR + '/19b-newgame-after-settings.png' });
+});

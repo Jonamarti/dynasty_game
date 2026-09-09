@@ -20,6 +20,12 @@ import { SuccessionOverlay } from './ui/Succession.ts';
 import { TechWebOverlay } from './ui/TechWeb.ts';
 import { FamilyTreeOverlay } from './ui/FamilyTree.ts';
 import { TribeGraphOverlay } from './ui/TribeGraph.ts';
+import { PauseMenu } from './ui/PauseMenu.ts';
+import { SettingsOverlay } from './ui/Settings.ts';
+import {
+  configFrom, defaultSettings, loadSettings, saveSettings,
+} from './ui/SettingsStore.ts';
+import { TUNABLES, readPath, valuesFor } from './sim/core/Difficulty.ts';
 import {
   availableActions, type ActionOption, type ActionTarget,
 } from './sim/ai/ActionCatalog.ts';
@@ -46,7 +52,22 @@ const hudRoot = document.getElementById('hud') as HTMLElement;
 const params = new URLSearchParams(location.search);
 const seedParam = params.get('seed');
 const seed: string | number = seedParam ?? Math.floor(Math.random() * 1e9);
-const sim = new Simulation({ seed });
+
+/**
+ * The player's difficulty and any field they moved by hand, from last time.
+ *
+ * `?defaults=1` ignores them, so a seed pasted into a bug report reproduces the
+ * reporter's world rather than the reader's difficulty preference — the stored
+ * settings otherwise take part in world generation, and a seed alone stops
+ * being enough to name a world.
+ */
+let settings = params.get('defaults') === '1' ? defaultSettings() : loadSettings();
+// Seed last: whatever else the settings say, the URL owns the seed.
+//
+// A `let`, because the settings screen the game now opens on can change the
+// size of the map or the amount of food on it, and those are spent when the
+// world is generated. See `rebuildBeforeStart`.
+let sim = new Simulation({ ...configFrom(settings), seed });
 
 /**
  * `?skipIntro=1` goes straight into the first living body.
@@ -56,7 +77,7 @@ const sim = new Simulation({ seed });
  * have to be taught to dismiss is a screen that will silently break them.
  */
 const skipIntro = params.get('skipIntro') === '1';
-const player = sim.possessFirst();
+let player = sim.possessFirst();
 
 const camera = new Camera();
 if (player) camera.snapTo(player.x, player.y);
@@ -75,6 +96,49 @@ let stepsPerSecond = sim.config.time.tickRate;
 // and written out as an 8 here — the very duplication the comment above says
 // was fixed for `tickRate`.
 const maxStepsPerFrame = sim.config.time.maxTicksPerFrame;
+
+/**
+ * Whether the settings now on the form describe a different island.
+ *
+ * Only the `restart` tunables are asked about: everything else is read live out
+ * of `sim.config` and has already taken effect by the time this is called.
+ */
+function worldWouldDiffer(): boolean {
+  const values = { ...valuesFor(settings.preset), ...settings.overrides };
+  return TUNABLES.some(t => t.restart && values[t.path] !== readPath(sim.config, t.path));
+}
+
+/**
+ * Throws the boot world away and builds the one the player actually asked for.
+ *
+ * **Only ever called before the first step**, from the start screen, and the
+ * distinction matters. At that moment the only things holding the old world are
+ * the renderer's `sim` field and its pre-rendered terrain, `NewGame`'s `sim`
+ * field, and the three module variables reset below — everything else in this
+ * file reaches the simulation through a function that reads `sim` when it is
+ * called. A few minutes into a game that is no longer true: `lastActions`,
+ * `lastEventId`, `commanding`, `selected`, the floaters and half the HUD are
+ * all holding ids from the world being discarded, and the in-game "New world"
+ * button therefore saves and reloads the page instead of coming through here.
+ * One mechanism each, for two situations that are genuinely different.
+ */
+function rebuildBeforeStart(): void {
+  sim = new Simulation({ ...configFrom(settings), seed });
+  player = sim.possessFirst();
+  renderer.setSim(sim);
+  newGame.setSim(sim);
+  selected = player ? { kind: 'person', person: player } : null;
+  if (player) camera.snapTo(player.x, player.y);
+  stepsPerSecond = sim.config.time.tickRate;
+  hud.setSpeed(stepsPerSecond);
+  // The unlock dots watch these two for growth, and -1 means "nothing to
+  // compare against yet" — without the reset, a smaller world reads as a
+  // technology being lost and a larger one as one being gained.
+  lastDesignCount = -1;
+  lastRecipeCount = -1;
+  hud.renderBuildBar(sim, false);
+  hud.renderCraftBar(sim, sim.player, false);
+}
 
 /**
  * Who the player is currently giving orders to, or null for themselves.
@@ -108,6 +172,22 @@ const techWeb = new TechWebOverlay(document.body);
 // them, so opening a second cannot leave two stacked on screen at once.
 const familyTree = new FamilyTreeOverlay(document.body);
 const tribeGraph = new TribeGraphOverlay(document.body);
+
+/**
+ * Whether anything was on screen at the instant Escape was pressed.
+ *
+ * The three graphs, the radial menu and the picker each register their own
+ * bubble-phase Escape listener when they are constructed — above this line — so
+ * by the time the main handler below runs they have *already closed
+ * themselves*, and it reads "nothing was open". Without this snapshot,
+ * dismissing the tech web would pop the pause menu on top of it every single
+ * time. A capture-phase listener runs before every one of them.
+ */
+let escapeFoundSomething = false;
+window.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+  escapeFoundSomething = radial.isOpen || picker.isOpen || graphOpen();
+}, true);
 
 /** True while any of the three full-screen graphs is open. */
 function graphOpen(): boolean {
@@ -171,6 +251,9 @@ const hud = new Hud(hudRoot, {
     // the field.
     if (sim.player) sim.assignJob(sim.player, person, job);
   },
+  onOpenMenu: () => { if (!menuOpen()) openMenu(); },
+  onToggleBuild: () => setBuildMode(!buildMode),
+  onToggleCraft: () => setCraftMode(!craftMode),
   onCommand: person => {
     commanding = commanding?.id === person?.id ? null : person;
     if (commanding) {
@@ -196,10 +279,99 @@ const newGame = new NewGame(document.body, sim, person => {
   hud.setPaused(false);
 });
 
+/**
+ * The pause menu and the tuning screen, on the body like every overlay here.
+ *
+ * Neither listens for Escape itself. The key means three different things
+ * depending on how deep the player is, so the whole precedence chain lives in
+ * one place — the `keydown` handler below — rather than being split between
+ * three objects that each know only about themselves.
+ */
+const pauseMenu = new PauseMenu(document.body, {
+  onResume: () => closeMenu(),
+  onSettings: () => {
+    pauseMenu.close();
+    settingsScreen.open(sim, settings);
+  },
+});
+
+const settingsScreen = new SettingsOverlay(document.body, {
+  onBegin: () => {
+    settings = settingsScreen.current();
+    saveSettings(settings);
+    // Only when it would actually make a different island. Choosing a
+    // difficulty always does; nudging a hunger rate never does.
+    if (worldWouldDiffer()) rebuildBeforeStart();
+    settingsScreen.close();
+    newGame.open();
+  },
+  onBack: () => {
+    settings = settingsScreen.current();
+    settingsScreen.close();
+    pauseMenu.open(sim);
+  },
+  onSpeedChange: value => {
+    stepsPerSecond = value;
+    hud.setSpeed(value);
+  },
+  onNewWorld: nextSeed => {
+    saveSettings(settingsScreen.current());
+    const next = new URLSearchParams(location.search);
+    next.set('seed', nextSeed);
+    // A reload rather than rebuilding the world in place. `sim` is captured by
+    // the renderer, by `NewGame` and by two dozen closures in this file, and
+    // there is no save system for a restart to preserve — `?seed=` and a reload
+    // is already how a specific world is replayed.
+    location.search = next.toString();
+  },
+});
+
+/** True while the player has deliberately stopped the game to look at a screen. */
+function menuOpen(): boolean {
+  return pauseMenu.isOpen || settingsScreen.isOpen;
+}
+
+/** Whether the game was already paused when the menu went up. */
+let menuWasPaused = false;
+
+function openMenu(): void {
+  menuWasPaused = paused;
+  paused = true;
+  hud.setPaused(true);
+  // `readIntent` walks from `held`, not from the keyboard, so a key still down
+  // when the menu opened would keep walking the player the moment it closed.
+  held.clear();
+  pauseMenu.open(sim);
+}
+
+function closeMenu(): void {
+  pauseMenu.close();
+  settingsScreen.close();
+  // Back to whatever the player had, not to running: `NewGame`'s callback
+  // un-pauses unconditionally, which is right for character creation and wrong
+  // for a menu somebody opened while already paused.
+  paused = menuWasPaused;
+  hud.setPaused(paused);
+}
+
+/**
+ * The game opens on its settings, then on character creation.
+ *
+ * In that order because the settings decide what island there is to be born on
+ * — how much food is on it, how many tribes — and being asked to pick a life
+ * out of a world that is about to be replaced is the wrong way round. The world
+ * built at boot is a draft: `Begin` keeps it if nothing that shapes it moved,
+ * and builds it again if something did.
+ *
+ * `?skipIntro=1` bypasses both, as it always has. Forty-two browser specs and
+ * every screenshot in the tour were written against a game that starts
+ * immediately, and a second screen they all have to be taught to dismiss is a
+ * second screen that will silently break them.
+ */
 if (!skipIntro && sim.livingPeople().length > 0) {
   paused = true;
   hud.setPaused(true);
-  newGame.open();
+  settingsScreen.open(sim, settings, 'start');
 }
 
 /**
@@ -256,8 +428,14 @@ function possess(person: Person): void {
 const held = new Set<string>();
 
 window.addEventListener('keydown', event => {
-  if (newGame.isOpen) return;
+  // The two screens the game opens on take no keys at all. There is no game
+  // behind them yet to pause, walk around or escape back into.
+  if (newGame.isOpen || settingsScreen.isStartScreen) return;
   const key = event.key.toLowerCase();
+  // While a menu is up, Escape is the only key the game listens to. Space must
+  // not un-pause a world the player deliberately stopped, and `b` must not open
+  // the build bar behind a screen that covers it.
+  if (menuOpen() && key !== 'escape') return;
 
   if (key === ' ') {
     event.preventDefault();
@@ -274,12 +452,37 @@ window.addEventListener('keydown', event => {
     return;
   }
   if (key === 'escape') {
+    // Innermost first. Settings steps back to the menu it was opened from
+    // rather than all the way to the game: dropping two levels on one key is
+    // how a player loses a screen they were still reading.
+    if (settingsScreen.isOpen) {
+      settings = settingsScreen.current();
+      settingsScreen.close();
+      pauseMenu.open(sim);
+      return;
+    }
+    if (pauseMenu.isOpen) {
+      closeMenu();
+      return;
+    }
+
+    // The graphs, the radial menu and the picker have already closed
+    // themselves by now — see `escapeFoundSomething` above. These three calls
+    // stay as belt and braces for anything constructed after this handler.
     if (techWeb.isOpen) techWeb.close();
     if (familyTree.isOpen) familyTree.close();
     if (tribeGraph.isOpen) tribeGraph.close();
-    if (buildMode) setBuildMode(false);
-    if (craftMode) setCraftMode(false);
-    commanding = null;
+
+    // Each of these *consumes* the key. That is a deliberate change: Escape
+    // used to clear `commanding` even while it was also closing a graph, which
+    // is fine when nothing is waiting at the end of the chain and wrong now
+    // that something is.
+    let consumed = escapeFoundSomething;
+    if (buildMode) { setBuildMode(false); consumed = true; }
+    if (craftMode) { setCraftMode(false); consumed = true; }
+    if (commanding) { commanding = null; consumed = true; }
+
+    if (!consumed) openMenu();
     return;
   }
   if (key === 'h') {
@@ -630,7 +833,9 @@ const drag = { active: false, panning: false, lastX: 0, lastY: 0, button: 0 };
 const DRAG_THRESHOLD = 4;
 
 canvas.addEventListener('mousedown', event => {
-  if (newGame.isOpen) return;
+  // The overlays cover the canvas, so this should be unreachable — but so
+  // should the four `[hidden]` bugs this project has shipped, and it is a line.
+  if (newGame.isOpen || menuOpen()) return;
   if (event.button === 0 || event.button === 1) {
     drag.active = true;
     drag.panning = event.button === 1;
@@ -693,7 +898,7 @@ window.addEventListener('mouseup', event => {
   drag.active = false;
   drag.panning = false;
   if (wasDragging || event.button !== 0) return;
-  if (buildMode || radial.isOpen || picker.isOpen || graphOpen()) return;
+  if (buildMode || radial.isOpen || picker.isOpen || graphOpen() || menuOpen()) return;
   if (event.target !== canvas) return;
 
   const point = worldPoint(event);
@@ -879,6 +1084,29 @@ function reportInterruptions(): void {
  * that a stranger three valleys away has invented pottery is precisely the kind
  * of thing this game should never tell you.
  */
+/**
+ * How many designs and recipes were open to the player last frame.
+ *
+ * The bars already re-read `availableDesigns` and `availableRecipes` every time
+ * they render, so a newly proven technology *does* appear in them — silently,
+ * in a menu that is closed. Watching the counts here is what turns that into
+ * something the player can see, and it catches a technology picked up by being
+ * taught just as well as one worked out, which watching `prove` would not.
+ */
+let lastDesignCount = -1;
+let lastRecipeCount = -1;
+
+function watchUnlocks(): void {
+  const designs = sim.availableDesigns().length;
+  if (lastDesignCount >= 0 && designs > lastDesignCount) hud.markNew('build');
+  lastDesignCount = designs;
+
+  const player = sim.player;
+  const recipes = player ? sim.availableRecipes(player).length : 0;
+  if (lastRecipeCount >= 0 && recipes > lastRecipeCount) hud.markNew('craft');
+  lastRecipeCount = recipes;
+}
+
 function reportInsights(): void {
   const notices = sim.insights.splice(0, sim.insights.length);
   const observer = sim.player;
@@ -1031,6 +1259,7 @@ function frame(now: number): void {
   tribeGraph.update(sim);
   reportInterruptions();
   reportInsights();
+  watchUnlocks();
   updateFloaters();
   renderer.floaters.update(delta);
   renderer.render((
@@ -1058,7 +1287,15 @@ function frame(now: number): void {
  * bundle, so it cannot become something the game itself depends on.
  */
 if (import.meta.env.DEV) {
-  (window as unknown as Record<string, unknown>).__dynasty = { sim, camera, renderer };
+  // `sim` behind a getter, not copied into the object. The start screen can
+  // replace the world before the first step, and a handle that had snapshotted
+  // the boot world would go on describing an island that no longer exists —
+  // silently, and to the browser tests as much as to the console.
+  (window as unknown as Record<string, unknown>).__dynasty = {
+    get sim() { return sim; },
+    camera,
+    renderer,
+  };
 }
 
 requestAnimationFrame(frame);

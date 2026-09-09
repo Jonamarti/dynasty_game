@@ -389,6 +389,17 @@ export class Person {
    */
   readonly thinkOffset: number;
 
+  /**
+   * This world's skill-gain multiplier, stamped on by `Simulation`.
+   *
+   * An instance field and not a module-level global on purpose. Six simulations
+   * are constructed back to back by `sim:check:all`, and a global would have
+   * the last one constructed silently retune the others — a failure the
+   * determinism test could never see, because it compares two runs of the same
+   * build. Defaulted to 1 so a `Person` built by a unit test needs no config.
+   */
+  skillGain = 1;
+
   constructor(name: string, x: number, y: number, bandId: number, rng: RNG) {
     this.id = nextPersonId++;
     this.name = name;
@@ -540,7 +551,8 @@ export class Person {
     // other, and one lucky roll at birth should not produce somebody the rest
     // of the band can never catch.
     const wit = 1 + this.traits.intelligence * 0.25;
-    this.skills[skill] = Math.min(100, level + amount * wit * (1 - level / 110));
+    this.skills[skill] =
+      Math.min(100, level + amount * wit * this.skillGain * (1 - level / 110));
   }
 
   /** Skill as a multiplier, floored so a novice is slow rather than useless. */

@@ -18,6 +18,7 @@ import type { Person } from '../entities/Person.ts';
 import { DAYS_PER_YEAR, SKILLS, TRAITS } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
 import type { RNG } from '../core/RNG.ts';
+import type { PopulationConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
 /** Days a pregnancy runs. Roughly a season. */
@@ -26,14 +27,17 @@ export const GESTATION_DAYS = 20;
 /** Days a mother waits before she can conceive again. */
 const BIRTH_SPACING_DAYS = 40;
 
-/** Daily chance a fertile, partnered woman conceives, in good conditions. */
-const CONCEPTION_CHANCE = 0.12;
-
 /** Skill lost per day past elderhood, as a fraction of the current level. */
 const ELDER_SKILL_DECAY = 0.0012;
 
 export interface LifeContext {
   rng: RNG;
+  /**
+   * Carried for `conceptionChance` alone, which is the only member of
+   * `PopulationConfig` read after the constructor — the other three are spent
+   * laying out the founding bands and need a new world to change.
+   */
+  population: PopulationConfig;
   tick: number;
   day: number;
   peopleById: Map<number, Person>;
@@ -94,7 +98,7 @@ export class LifeSystem {
       (mother.years < 38 ? 1 : 0.6);
     if (condition <= 0) return;
 
-    if (ctx.rng.chance(CONCEPTION_CHANCE * condition)) {
+    if (ctx.rng.chance(ctx.population.conceptionChance * condition)) {
       mother.pregnant = true;
       mother.gestationLeft = GESTATION_DAYS;
       mother.pregnantBy = father.id;

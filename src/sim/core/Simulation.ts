@@ -295,7 +295,11 @@ export class Simulation {
     // owns them all), so the factory is injected here.
     setChildFactory((mother, childRng) => {
       const name = childRng.pick(NAME_ONSETS) + childRng.pick(NAME_CODAS);
-      return new Person(name, mother.x, mother.y, mother.bandId, childRng);
+      const child = new Person(name, mother.x, mother.y, mother.bandId, childRng);
+      // Stamped here as well as in `applyLearning`: the sweep catches everyone
+      // already alive when the setting changes, this catches everyone born after.
+      child.skillGain = this.config.learning.skillGain;
+      return child;
     });
 
     this.shoreHash.rebuild(this.world.shoreTiles);
@@ -504,8 +508,11 @@ export class Simulation {
       rng,
       relationships: this.relationships,
       social: this.social,
-      makePerson: (name, x, y, bandId, personRng) =>
-        new Person(name, x, y, bandId, personRng),
+      makePerson: (name, x, y, bandId, personRng) => {
+        const person = new Person(name, x, y, bandId, personRng);
+        person.skillGain = this.config.learning.skillGain;
+        return person;
+      },
       placeNear: (x, y) => this.world.findWalkableNear(x, y) ?? { x, y },
     };
   }
@@ -1356,6 +1363,21 @@ export class Simulation {
     }
   }
 
+  /**
+   * Pushes the config values that live on entities back onto every entity.
+   *
+   * Called by the settings screen after it edits `config` in place. Everything
+   * else in `SimConfig` is read through an object reference the systems already
+   * hold — `NeedsSystem` and `TimeManager` were handed theirs in the
+   * constructor, and the per-tick contexts are rebuilt from `this.config` every
+   * step — so a live edit reaches them for free. `skillGain` is the exception:
+   * it is stamped on a `Person` at birth, and a multiplier stamped at birth is
+   * a promise the settings screen cannot otherwise keep to anyone already alive.
+   */
+  applyLearning(): void {
+    for (const person of this.people) person.skillGain = this.config.learning.skillGain;
+  }
+
   // -------------------------------------------------------------------------
   // Building
   // -------------------------------------------------------------------------
@@ -1507,7 +1529,8 @@ export class Simulation {
     // twentieth as much and is indistinguishable at the timescales that matter.
     if (this.time.tick % 20 === 0) {
       const growth = this.time.growth;
-      for (const node of this.nodes) node.regrow(20, growth);
+      const regrowth = this.config.world.regrowthRate;
+      for (const node of this.nodes) node.regrow(20, growth, regrowth);
     }
 
     this.wildlifeSystem.update(this.animals, {
@@ -1570,6 +1593,7 @@ export class Simulation {
         season: this.time.season,
         ticksPerDay: this.config.time.ticksPerDay,
         knowledge: this.config.knowledge,
+        learning: this.config.learning,
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
       });
       this.refreshRecords();
@@ -1577,6 +1601,7 @@ export class Simulation {
 
       this.lifeSystem.daily(this.people, {
         rng: this.lifeRng,
+        population: this.config.population,
         tick: this.time.tick,
         day: this.time.day,
         peopleById: this.peopleById,

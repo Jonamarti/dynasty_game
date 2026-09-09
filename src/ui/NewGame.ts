@@ -45,7 +45,7 @@ export class NewGame {
 
   constructor(
     container: HTMLElement,
-    private readonly sim: Simulation,
+    private sim: Simulation,
     private readonly onDone: (person: Person) => void
   ) {
     this.root = document.createElement('div');
@@ -53,6 +53,11 @@ export class NewGame {
     this.root.hidden = true;
     container.appendChild(this.root);
     this.root.addEventListener('click', event => this.onClick(event));
+  }
+
+  /** Points character creation at a rebuilt world. See `Renderer.setSim`. */
+  setSim(sim: Simulation): void {
+    this.sim = sim;
   }
 
   get isOpen(): boolean {

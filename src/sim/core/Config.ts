@@ -26,6 +26,17 @@ export interface WorldConfig {
    * thins this out a great deal; forest carries most of them.
    */
   treeDensity: number;
+  /**
+   * Multiplier on every resource node's `regrowPerTick`.
+   *
+   * In `world` rather than beside the learning rates because a player tuning
+   * "how much food this island carries" wants it next to `berryBushes` — but it
+   * is the one field in this interface that is *not* baked in at worldgen, which
+   * is why the settings screen carries a restart flag per field rather than per
+   * section. It covers berries, sticks, reeds, clay and fish; trees grow on
+   * their own model in `ForestSystem` and are deliberately not scaled by it.
+   */
+  regrowthRate: number;
 }
 
 export interface TimeConfig {
@@ -107,9 +118,34 @@ export interface KnowledgeConfig {
   failedTrialCredit: number;
 }
 
+/**
+ * How ability and knowledge move, outside the research lifecycle.
+ *
+ * Separate from `KnowledgeConfig`, which is about *working something out*: this
+ * is the three channels that need no idea at all — doing the job, watching
+ * somebody else do it, and being a child in a camp where it is being done.
+ */
+export interface LearningConfig {
+  /** Multiplier on every gain from `Person.practice`. 1 is the shipped pace. */
+  skillGain: number;
+  /** Daily chance an adult picks up a technology merely from being near a knower. */
+  observationChance: number;
+  /** The same for a child, who is watching rather than working. */
+  childObservationChance: number;
+}
+
 export interface PopulationConfig {
   bands: number;
   peoplePerBand: number;
+  /**
+   * Daily chance a fertile couple conceive, before hunger and health scale it.
+   *
+   * The strongest single lever on how fast a band grows, and until now the only
+   * one of its kind left as a module constant while `bands` and `peoplePerBand`
+   * sat here. It is also the only member of this interface read *live*: the
+   * other three are spent in the constructor and need a new world.
+   */
+  conceptionChance: number;
   /**
    * Technologies the founding adults already hold.
    *
@@ -135,6 +171,7 @@ export interface SimConfig {
   needs: NeedsConfig;
   population: PopulationConfig;
   knowledge: KnowledgeConfig;
+  learning: LearningConfig;
   /** Tiles a person can see; the radius of witness and target queries. */
   sightRadius: number;
   /** A person re-scores their action every this many ticks (staggered by id). */
@@ -160,6 +197,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     clayBanks: 60,
     fishingSpots: 50,
     treeDensity: 0.55,
+    regrowthRate: 1,
   },
   time: {
     ticksPerDay: 240,
@@ -206,6 +244,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     // carried 48 people on forage tuned for 30 and the difference came out as
     // mass starvation inside a season.
     peoplePerBand: 10,
+    conceptionChance: 0.12,
     startingTech: [],
   },
   knowledge: {
@@ -217,6 +256,15 @@ export const DEFAULT_CONFIG: SimConfig = {
     trialChance: 0.18,
     trialsToProve: 3,
     failedTrialCredit: 0.34,
+  },
+  learning: {
+    // Every default here is exactly the constant it replaced, so the world this
+    // ships is unchanged: 1 is "the pace this game was tuned at", and the two
+    // observation chances came from `KnowledgeSystem`. A child's is nearly three
+    // times an adult's because a child in a camp is doing nothing else.
+    skillGain: 1,
+    observationChance: 0.02,
+    childObservationChance: 0.055,
   },
   sightRadius: 12,
   thinkInterval: 5,
@@ -241,6 +289,7 @@ export function makeConfig(overrides: DeepPartial<SimConfig> = {}): SimConfig {
     },
     population: { ...DEFAULT_CONFIG.population, ...overrides.population },
     knowledge: { ...DEFAULT_CONFIG.knowledge, ...overrides.knowledge },
+    learning: { ...DEFAULT_CONFIG.learning, ...overrides.learning },
   } as SimConfig;
 }
 

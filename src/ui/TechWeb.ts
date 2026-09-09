@@ -543,6 +543,26 @@ export class TechWebOverlay {
           (idea.failedTests === 1 ? ' try' : ' tries') +
           ' that did not work</div>');
       }
+    } else if (idea) {
+      // Proven, and still being turned over. The block above deliberately says
+      // nothing once a design is proven — that is the fix for the pane still
+      // reading "Needs 3 thatch to build one" underneath a cordage the owner had
+      // already made — but saying nothing at all leaves a person who is quietly
+      // improving something looking idle. Refinement is the only thing that
+      // raises `techPower` above 1, so it is worth watching.
+      const level = subject.techLevel.get(tech) ?? 0;
+      rows.push('<div class="techweb-section">Making it better</div>');
+      rows.push('<div class="techweb-note">' +
+        (level === 0 ? 'As first worked out.' :
+          'Improved ' + level + (level === 1 ? ' time' : ' times') + '.') +
+        (level >= def.maxRefinement
+          ? ' As good as they will get it.'
+          : ' They are still turning it over.') +
+        '</div>');
+      if (level < def.maxRefinement) {
+        rows.push('<div class="techweb-bar"><i style="width:' +
+          Math.round(idea.insight * 100) + '%"></i></div>');
+      }
     }
 
     if (state !== 'proven') {

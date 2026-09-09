@@ -72,6 +72,16 @@ export interface HudCallbacks {
   onCraft: (recipeId: string) => void;
   /** A job chosen from the Work tab, for the inspected person. Null clears it. */
   onAssignJob: (person: Person, job: JobId | null) => void;
+  /**
+   * The three modes the top bar can now reach.
+   *
+   * Build and Make were keys and nothing else, so the whole crafting half of
+   * the game was invisible to anybody who had not read the help line — which is
+   * itself hideable with `H`. The menu is the same argument for Escape.
+   */
+  onOpenMenu: () => void;
+  onToggleBuild: () => void;
+  onToggleCraft: () => void;
 }
 
 /** How long the panel keeps saying why the last order stopped. */
@@ -109,6 +119,10 @@ export class Hud {
   private craftBarKey = '';
   private commandBarEl!: HTMLElement;
   private pauseButton!: HTMLButtonElement;
+  private speedEl!: HTMLInputElement;
+  private speedLabelEl!: HTMLElement;
+  private buildButton!: HTMLButtonElement;
+  private craftButton!: HTMLButtonElement;
 
   private tab: PanelTab = 'now';
   private activeDesign: BuildingDef | null = null;
@@ -197,15 +211,43 @@ export class Hud {
     speed.max = '120';
     speed.value = String(this.initialSpeed);
     speed.className = 'hud-speed';
+    this.speedEl = speed;
 
     const speedLabel = el('span', 'hud-speed-label');
     speedLabel.textContent = this.initialSpeed + '/s';
+    this.speedLabelEl = speedLabel;
     speed.oninput = () => {
       this.callbacks.onSpeedChange(Number(speed.value));
       speedLabel.textContent = speed.value + '/s';
     };
 
-    topBar.append(this.clockEl, this.statsEl, this.pauseButton, speed, speedLabel);
+    // Build, Make and the menu as buttons as well as keys. Until now the craft
+    // bar could only be reached by pressing `M`, which is named in one line of
+    // chrome that `H` hides — the owner reported the craft menu as missing, and
+    // a menu nobody can find is missing whether or not it renders.
+    const buildButton = document.createElement('button');
+    this.buildButton = buildButton;
+    buildButton.className = 'hud-button';
+    buildButton.textContent = 'Build';
+    buildButton.title = 'Place a structure (B)';
+    buildButton.onclick = () => this.callbacks.onToggleBuild();
+
+    const craftButton = document.createElement('button');
+    this.craftButton = craftButton;
+    craftButton.className = 'hud-button';
+    craftButton.textContent = 'Make';
+    craftButton.title = 'Craft something by hand (M)';
+    craftButton.onclick = () => this.callbacks.onToggleCraft();
+
+    const menuButton = document.createElement('button');
+    menuButton.className = 'hud-button';
+    menuButton.textContent = '⚙';
+    menuButton.title = 'Menu and settings (Esc)';
+    menuButton.onclick = () => this.callbacks.onOpenMenu();
+
+    topBar.append(
+      this.clockEl, this.statsEl, this.pauseButton, speed, speedLabel,
+      buildButton, craftButton, menuButton);
 
     // The panel is a header strip plus a body, so collapsing it can leave the
     // strip in place: a panel that vanishes entirely gives the player nothing
@@ -243,7 +285,8 @@ export class Hud {
       '<b>click</b> inspect &middot; <b>right-click</b> actions &middot; ' +
       '<b>B</b> build &middot; <b>M</b> make &middot; <b>C</b> command &middot; ' +
       '<b>G</b> tech web &middot; <b>K</b> family tree &middot; <b>T</b> tribe graph &middot; ' +
-      '<b>P</b> fold panel &middot; <b>H</b> hide overlay &middot; <b>space</b> pause';
+      '<b>P</b> fold panel &middot; <b>H</b> hide overlay &middot; <b>space</b> pause &middot; ' +
+      '<b>Esc</b> menu';
 
     this.root.append(
       topBar, this.panelEl, this.buildBarEl, this.craftBarEl, this.commandBarEl, help);
@@ -344,6 +387,7 @@ export class Hud {
     }
     this.buildBarEl.hidden = false;
     this.buildBarEl.innerHTML = '';
+    this.buildButton.classList.remove('has-new');
 
     const title = el('div', 'hud-buildbar-title');
     title.textContent = 'Place a structure — click the map, Esc to cancel';
@@ -385,6 +429,32 @@ export class Hud {
     }
   }
 
+  /**
+   * Moves the speed slider from outside, without firing its own handler.
+   *
+   * The settings screen owns `time.tickRate` too, and the slider is built once
+   * with `initialSpeed`: without this it would go on showing the old number
+   * while the game ran at the new one, which is the same class of lie as a stale
+   * ingredient list.
+   */
+  /**
+   * Marks that something new can be built or made.
+   *
+   * A technology proved in the field already announces itself over the person
+   * who worked it out, but the *consequence* of it lands in a bar the player has
+   * no reason to open. Without this a discovery changes a menu nobody is looking
+   * at, which from the outside is indistinguishable from changing nothing.
+   */
+  markNew(which: 'build' | 'craft'): void {
+    (which === 'build' ? this.buildButton : this.craftButton)
+      .classList.add('has-new');
+  }
+
+  setSpeed(value: number): void {
+    this.speedEl.value = String(value);
+    this.speedLabelEl.textContent = value + '/s';
+  }
+
   clearDesign(): void {
     this.activeDesign = null;
   }
@@ -421,6 +491,7 @@ export class Hud {
 
     this.craftBarEl.hidden = false;
     this.craftBarEl.innerHTML = '';
+    this.craftButton.classList.remove('has-new');
 
     const title = el('div', 'hud-buildbar-title');
     title.textContent = 'Make something — Esc to cancel';
@@ -430,7 +501,15 @@ export class Hud {
     const known = sim.availableRecipes(person);
     if (known.length === 0) {
       const none = el('div', 'hud-buildbar-locked');
-      none.textContent = 'They do not know how to make anything yet.';
+      // Naming what it is waiting on, not just that it is empty. An empty bar
+      // is indistinguishable from a bar that does not work — which is how the
+      // owner reported it — and the standing rule is that when the game cannot
+      // do something, the interface says why.
+      const waiting = sim.lockedRecipes(person);
+      none.textContent = waiting.length === 0
+        ? 'There is nothing to make in this world.'
+        : 'They have not worked out how to make anything yet. Every recipe ' +
+          'below is waiting on a discovery.';
       this.craftBarEl.appendChild(none);
     }
     for (const recipe of known) {

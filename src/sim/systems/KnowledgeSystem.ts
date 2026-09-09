@@ -33,7 +33,7 @@ import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { World, Biome } from '../core/World.ts';
 import type { Season } from '../core/TimeManager.ts';
-import type { KnowledgeConfig } from '../core/Config.ts';
+import type { KnowledgeConfig, LearningConfig } from '../core/Config.ts';
 import { TECH, TECH_EFFECTS, TECHS, prerequisitesMet, type Tech } from '../knowledge/Tech.ts';
 import { BUILDINGS } from '../entities/Building.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -47,20 +47,13 @@ import { telemetry } from '../core/Telemetry.ts';
 // The owner asked for them to be adjustable, and a scenario has as much right to
 // move the pace of discovery as it has to shorten a season.
 
-/** Daily chance of picking something up merely from being near a knower. */
-const OBSERVATION_CHANCE = 0.02;
-
-/**
- * The same chance for a child, who is doing nothing else.
- *
- * Higher than an adult's on purpose. A child spends its whole day underfoot
- * while the people around it work, and picking things up by watching is most of
- * what childhood *is*; an adult watching somebody else work is an adult not
- * doing their own. It is the cheapest of the four channels for exactly this
- * reason — free, passive, and slow enough that a band still needs somebody to
- * sit down and explain.
- */
-const CHILD_OBSERVATION_CHANCE = 0.055;
+// The two observation chances moved to `Config.learning` for the same reason
+// the research numbers above moved to `Config.knowledge`: they are the cheapest
+// of the four transmission channels — free, passive, and slow enough that a band
+// still needs somebody to sit down and explain — and how fast knowledge spreads
+// without being taught is exactly a difficulty setting. A child's is nearly
+// three times an adult's because a child spends its whole day underfoot while
+// the people around it work, where an adult watching is an adult not working.
 
 /** How far you have to be to learn by watching. */
 const WATCHING_RANGE = 5;
@@ -153,6 +146,7 @@ export interface KnowledgeContext {
   season: Season;
   ticksPerDay: number;
   knowledge: KnowledgeConfig;
+  learning: LearningConfig;
   /**
    * Announces something worth a floater and a chronicle line: an idea, a
    * breakthrough, a prototype that failed, a design proven or improved.
@@ -506,7 +500,9 @@ export class KnowledgeSystem {
    * whether the one person who knows a thing can be bothered to teach it.
    */
   private tryObserve(person: Person, ctx: KnowledgeContext): void {
-    const chance = person.isChild ? CHILD_OBSERVATION_CHANCE : OBSERVATION_CHANCE;
+    const chance = person.isChild
+      ? ctx.learning.childObservationChance
+      : ctx.learning.observationChance;
     if (!ctx.rng.chance(chance)) return;
 
     const neighbours = ctx.peopleHash.queryRadius(person.x, person.y, WATCHING_RANGE);

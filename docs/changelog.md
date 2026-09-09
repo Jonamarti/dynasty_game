@@ -6,6 +6,177 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-09 — the game opens on its settings
+
+Asked for by the project owner, straight after the settings screen shipped: it
+should come up **before** character creation, not only from the pause menu.
+
+The order is the argument. The settings decide how much food is on the island
+and how many tribes are on it, so being asked to pick a life out of a world that
+is about to be replaced is the wrong way round.
+
+**The world built at boot is now a draft.** `Begin` keeps it if nothing that
+shapes an island moved, and builds it again if something did — which choosing
+any difficulty other than Normal always does, since the resource counts are on
+the slider. `worldWouldDiffer()` asks only the `restart` tunables, because
+everything else has already taken effect live by then.
+
+**`rebuildBeforeStart` is deliberately not a general restart.** Before the first
+step the only things holding the old world are `Renderer`'s `sim` field and its
+pre-rendered terrain, `NewGame`'s `sim` field, and three module variables — so
+two new `setSim` methods and a short reset cover it. A few minutes into a game
+that is no longer true: `lastActions`, `lastEventId`, `commanding`, `selected`,
+the floaters and half the HUD are all holding ids from the world being thrown
+away. The in-game "New world with these settings" button therefore still saves
+and reloads the page. One mechanism each, for two situations that are genuinely
+different, and both say so in a comment.
+
+**`window.__dynasty.sim` is a getter now.** It used to copy the reference into
+the handle object, which was harmless while `sim` was a `const` and became a
+silent lie the moment the start screen could replace the world — the browser
+tests read that handle, and the first version of the new spec failed on exactly
+this, reporting the boot island's numbers after the rebuild.
+
+The screen itself is the same form in a `start` mode: "Before you begin", a
+`Begin` in place of "back" and "new world with these settings", no restart note
+(nothing has been handed over yet), no backdrop-click to leave, and no keys at
+all — Escape included, for the same reason `NewGame` and `Succession` ignore it.
+The action row became sticky in both modes, because the form is longer than any
+screen and `Begin` was below the fold: the way into the game is not something a
+player should have to go looking for.
+
+`?skipIntro=1` bypasses both screens as it always has.
+
+**One existing spec changed** — `character creation picks a life inside a world
+that already exists` now dismisses the settings screen first. That is the spec
+encoding a premise this change deliberately alters, not the game breaking.
+
+## 2026-09-09 — the settings screen, and a difficulty from peaceful to extreme
+
+Asked for by the project owner: tuning the game meant editing `Config.ts` and
+reloading, and half the levers that matter were not in that file at all.
+
+**The hard constraint was that the defaults must not move**, and it is enforced
+rather than asserted. `src/sim/__tests__/config.test.ts` builds one world plainly
+and one through the Normal anchor, steps both 500 times and compares the
+determinism fingerprint. It also checks that every tunable path resolves against
+`DEFAULT_CONFIG` — the failure that would otherwise be silent, a settings screen
+writing `needs.hungerrate` and moving a slider that changes nothing — and that
+peaceful and extreme move in opposite directions from normal, which is the
+column-pasted-into-the-wrong-difficulty mistake that would otherwise only ever
+show up as "extreme feels oddly generous".
+
+`sim:check:all` is unchanged: 33/34, 36/36, 38/38, 53/53, 46/46, 48/48, 39/39,
+37/37 with `tiny`'s `food-work-continues` failing exactly as before.
+
+### Five constants became config, each wired in the same pass
+
+Nothing was declared without something reading it.
+
+- **`learning.skillGain`** multiplies `Person.practice`. An **instance field on
+  `Person`**, not a module global: six simulations are constructed back to back
+  by `sim:check:all`, a global would have the last one silently retune the
+  others, and the determinism test could never see it because it compares two
+  runs of the *same* build. Stamped at the only two `new Person` sites in `src/`,
+  plus `Simulation.applyLearning()` to sweep the living — a multiplier stamped at
+  birth is otherwise a promise the settings screen cannot keep to anyone who is
+  already alive.
+- **`learning.observationChance` / `childObservationChance`** replace the two
+  constants in `KnowledgeSystem`. `KnowledgeContext` already carried
+  `KnowledgeConfig`, so this was one field on each side.
+- **`world.regrowthRate`** multiplies every node's regrowth, threaded through the
+  single `node.regrow` call site. It lands on the **final term**, not on
+  `growth`: `regrow` clamps with `Math.max(growth, winterFloor)`, so scaling
+  growth would be swallowed entirely for fish — the one food that keeps growing
+  through winter, and so the one the lever matters most for.
+- **`population.conceptionChance`** replaces `LifeSystem`'s constant. It is the
+  only member of `PopulationConfig` read after the constructor.
+
+`GESTATION_DAYS` and `BIRTH_SPACING_DAYS` were deliberately left alone: nothing
+in the UI would read them, and two config fields added for symmetry are two
+fields that can drift.
+
+### Five anchors, snapped, not a hundred interpolated points
+
+`src/sim/core/Difficulty.ts` holds `TUNABLES` and `DIFFICULTIES` in one file so
+the labels and the numbers cannot disagree about thirty dotted paths.
+
+The slider snaps to peaceful / easy / normal / hard / extreme rather than
+interpolating, for two reasons. Nine of the scaled fields are integers, so a
+continuous slider rounds them at nine different places and the panel twitches
+incoherently mid-drag. And ten seeds cannot resolve a change under about ten
+points of mean survival — five anchors is five things that can be measured, a
+hundred interpolated points is ninety-six claims nobody has checked. The anchors
+ship as *designed* numbers and the changelog says so; measuring `hard` and
+`extreme` is a follow-up, not something this pass pretends it did.
+
+Eleven fields are exposed but **pinned** — editable, not moved by the slider.
+`needs.workLimits` and `criticalThreshold` because a need parks *at* whatever
+line stops work, so they are also where the band's average hunger and thirst
+settle; `population.bands` because more tribes is both more rivalry and more
+hands and the direction is genuinely ambiguous; the clock because pacing is
+taste. Difficulty gets its winter pressure from `coldRate` and `regrowthRate`.
+
+### Live where it can be, a new world where it cannot
+
+Live edits are written straight into `sim.config`, which works because of object
+identity rather than luck: `NeedsSystem` and `TimeManager` were handed the very
+objects inside `SimConfig` in the constructor, and the per-tick and per-day
+contexts are rebuilt from `this.config` every step.
+
+`time.ticksPerDay` is the field that must never be live, and the reason is worth
+recording: `TimeManager.day` is derived from an ever-increasing tick, so halving
+it mid-run jumps the calendar by hundreds of days in one frame. Every absolute
+day stored anywhere is then wrong at once — `lastBirthDay` locks every mother out
+of conceiving, and `STALE_DAYS` abandons every idea in every head.
+
+A new world is a **save and reload**, not an in-process restart. `main.ts` holds
+`const sim`, captured by the renderer, by `NewGame` and by two dozen closures,
+and there is no save system for a restart to preserve; `?seed=` and a reload is
+already how a specific world is replayed. Settings persist as **the diff from an
+anchor**, never as an expanded config, so a later retune of `hard` reaches a
+player who never touched hunger and leaves alone one who set it by hand.
+`?defaults=1` ignores stored settings, so a seed pasted into a bug report still
+reproduces the reporter's world.
+
+### Escape became a precedence chain, and three dead lines came to light
+
+`main.ts`'s Escape handler had three lines that could never fire: each graph
+overlay registers its own bubble-phase Escape listener at construction, above
+the main handler, so they had already closed themselves by the time it ran.
+Harmless until something needed to know whether Escape had been *consumed*.
+A capture-phase snapshot now records what was open before anything closes
+itself — without it, dismissing the tech web would pop the pause menu on top of
+it every single time.
+
+**One deliberate behaviour change:** clearing `commanding` now consumes the key,
+where Escape used to clear it even while also closing a graph. That is the right
+reading of a chain once something is waiting at the end of it.
+
+### The notes.txt triage
+
+- The "still says *Needs 3 thatch to build one*" report **did not reproduce** —
+  that pane has been gated on `stage !== 'proven'` since the earlier fix, and
+  refinement never puts the stage back. Recorded in `bugs.md` rather than
+  dropped. The investigation did find a blank: a proven design being refined
+  showed nothing at all, so somebody improving something for days looked idle.
+  The pane now shows the refinement level and its progress.
+- **"Adjustable trials to get an idea, with failures worth less"** was already
+  shipped as `knowledge.trialsToProve` and `failedTrialCredit`. Both are now on
+  the settings screen, which is the half that was missing.
+- **The craft bar** now has a button beside Build and the menu, and says what it
+  is waiting on instead of only that it is empty. See `bugs.md` — the bar was
+  working; it was unfindable and usually empty, which is the same thing from
+  outside.
+- **A proven technology now flags its bar.** The announcement over the person
+  already named what it unlocked; what was missing is that the *consequence*
+  landed in a menu nobody was looking at. Watching the two list lengths catches a
+  technology picked up by being taught as well as one worked out, which watching
+  `prove` would not.
+- Fishing spots on the coastline, rivers and salt water, and curiosity as a
+  fourth transmission channel are written up in `next-steps.md` as N1–N3. The
+  first two are movement-system and worldgen work that belongs with M7.
+
 ## 2026-09-08 — M8.1 begins: fishing, mechanism 2
 
 The first node and the first mechanism of `m8_plan_the_ages.md`'s M8.1 tier,

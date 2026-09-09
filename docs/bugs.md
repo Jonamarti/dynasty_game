@@ -3,6 +3,63 @@
 As of 2026-09-08. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## From the owner's notes, triaged 2026-09-09
+
+### "Needs 3 thatch to build one" after cordage was already made — **not reproducible**
+
+Reported in `notes.txt`. Investigated on 2026-09-09 and the line cannot appear
+in that situation any more: `TechWeb.detail` gates the whole prototype block on
+`idea.stage !== 'proven'`, and `KnowledgeSystem.advance` never puts a proven
+idea's stage back — refinement raises `techLevel` and leaves the stage alone. So
+the note predates the fix rather than describing a live defect. Recorded here
+rather than silently dropped, because "the owner reported it and nothing was
+found" is worth being able to look up.
+
+What the investigation *did* find was a blank: a proven design being refined
+showed nothing at all in that pane, so somebody quietly improving something for
+days looked idle. Filled in the same pass — see the changelog.
+
+### The craft bar was reachable only by pressing `M` — **fixed 2026-09-09**
+
+Reported as "cannot see the crafting menu for things that are not buildings".
+The bar itself was correct: `renderCraftBar` renders, `availableRecipes` gates
+per person on `techPower`, and the CSS is shared with the build bar. Two things
+made it read as missing, and both are fixed:
+
+1. **It had no button.** `B` and `M` were named in one line of HUD chrome that
+   `H` hides. A menu nobody can find is missing whether or not it renders.
+2. **It is usually empty.** Every recipe is gated on a technology, and
+   [next-steps.md](next-steps.md) records that a typical run ends with two to
+   five known — so the honest common case is a bar saying "they do not know how
+   to make anything yet", which from outside is indistinguishable from a broken
+   bar. It now says what it is waiting on.
+
+### The calendar and the ageing clock are two different clocks
+
+`TimeManager.year` divides by `daysPerSeason * 4`; `Person.years` divides by
+`DAYS_PER_YEAR`, a module constant of 80 in `Person.ts` that `Tree`,
+`LifeSystem`, `ForestSystem` and `Founding` all import. They agree only because
+20 × 4 = 80. Now that `daysPerSeason` is a player-facing setting, moving it
+decouples them: at `daysPerSeason: 30` the HUD prints Y2 while somebody born on
+day 1 is three years old.
+
+Not fixed, deliberately. Making `DAYS_PER_YEAR` derived means threading the
+season length into `Person`, `Tree` and two systems, and it silently rescales
+every lifespan, gestation, tree maturity and elder-decay curve in the game. The
+setting instead says in its own hint that it changes the calendar and the
+weather and not how fast anyone ages, and the difficulty slider does not touch
+it.
+
+### Three lines in `main.ts`'s Escape handler were dead code
+
+`if (techWeb.isOpen) techWeb.close()` and its two siblings could never fire.
+Each graph overlay registers its own bubble-phase Escape listener when it is
+constructed, and all of them are constructed above the main `keydown` handler,
+so they had already closed themselves by the time it ran. Harmless until
+something needed to know whether Escape had been *consumed* — which the pause
+menu does. Fixed with a capture-phase snapshot; the three lines are kept as belt
+and braces and now say so.
+
 ## Found while building M6b phase 6, 2026-09-08 — open
 
 ### A job does not protect someone from the chief's own labour draft

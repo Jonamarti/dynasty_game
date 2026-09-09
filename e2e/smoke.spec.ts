@@ -1151,6 +1151,13 @@ test('character creation picks a life inside a world that already exists', async
   // overlay, and every other spec bypasses it.
   await page.goto('/?seed=e2e-fixture');
 
+  // The settings screen comes first now — the island has to be settled before
+  // anybody can be born on it. Taking the defaults leaves the boot world alone,
+  // so what character creation opens over is the world generated from the seed,
+  // exactly as this spec has always assumed.
+  await expect(page.locator('.settings')).toBeVisible({ timeout: 15_000 });
+  await page.locator('.settings button', { hasText: 'Begin' }).click();
+
   // Three tribes, each described by its own norms rather than by a hand-written
   // blurb, and the world behind them already generated.
   const tribes = page.locator('.newgame-option');
@@ -1169,7 +1176,7 @@ test('character creation picks a life inside a world that already exists', async
   await page.locator('.hud-button', { hasText: 'Choose skills instead' }).click();
   await expect(page.locator('.newgame-skill').first()).toContainText('0');
 
-  await page.locator('.hud-button', { hasText: 'Begin' }).click();
+  await page.locator('.newgame .hud-button', { hasText: 'Begin' }).click();
 
   // The overlay is gone, the clock is running, and the player is somebody.
   await expect(page.locator('.newgame')).toBeHidden();
@@ -1545,5 +1552,159 @@ test('a proven design stops asking for its prototype materials', async ({ page }
   await expect(web).not.toContainText('to build one');
 
   await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});
+
+test('Escape opens the menu only when nothing else is in the way', async ({ page }) => {
+  // The trap this guards is specific. Every graph overlay closes itself on
+  // Escape from a listener registered before main.ts's own, so by the time the
+  // main handler runs the graph is already shut and it looks as though nothing
+  // was open. Without the capture-phase snapshot, dismissing the tech web pops
+  // the pause menu on top of it — every time.
+  const errors = guardErrors(page);
+  await ready(page);
+
+  const menu = page.locator('.pausemenu');
+  await expect(menu).toBeHidden();
+
+  await page.keyboard.press('g');
+  await expect(page.locator('.techweb')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.techweb')).toBeHidden();
+  await expect(menu).toBeHidden();
+
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeVisible();
+  // The seed is on this screen and nowhere else in the game, which is what
+  // makes a bug report reproducible.
+  await expect(menu).toContainText('e2e-fixture');
+
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  // The `[hidden]` rule, not just the attribute: an author `display` beats the
+  // browser's own rule and leaves the overlay swallowing every click beneath it.
+  await expect(menu).toHaveCSS('display', 'none');
+
+  expect(errors).toEqual([]);
+});
+
+test('the difficulty slider stamps every field, and a hand edit reads as custom', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.keyboard.press('Escape');
+  await page.locator('.pausemenu button', { hasText: 'Settings' }).click();
+  const settings = page.locator('.settings');
+  await expect(settings).toBeVisible();
+  await expect(settings.locator('.settings-preset-note')).toContainText('Normal');
+
+  // Extreme, by index. The slider snaps to the five anchors rather than
+  // interpolating, so this is a value and not a drag distance.
+  const difficulty = settings.locator('.settings-difficulty-range');
+  await difficulty.fill('4');
+  await difficulty.dispatchEvent('input');
+  await expect(settings.locator('.settings-preset-note')).toContainText('Extreme');
+
+  const hunger = settings.locator('.settings-row', { hasText: 'Hunger' }).first();
+  await expect(hunger.locator('.settings-number')).toHaveValue('0.094');
+
+  // A live field reaches the running world at once, with no apply step.
+  const applied = await page.evaluate(() => (window as never as {
+    __dynasty: { sim: { config: { needs: { hungerRate: number } } } };
+  }).__dynasty.sim.config.needs.hungerRate);
+  expect(applied).toBeCloseTo(0.094, 5);
+
+  // And one field moved by hand makes the preset custom without disturbing the
+  // rest of the anchor.
+  await hunger.locator('.settings-number').fill('0.2');
+  await hunger.locator('.settings-number').dispatchEvent('change');
+  await expect(settings.locator('.settings-preset-note')).toContainText('Custom');
+  await expect(settings.locator('.settings-row', { hasText: 'Thirst' }).first()
+    .locator('.settings-number')).toHaveValue('0.128');
+
+  // Escape steps back to the menu it was opened from, not all the way out.
+  await page.keyboard.press('Escape');
+  await expect(settings).toBeHidden();
+  await expect(page.locator('.pausemenu')).toBeVisible();
+
+  expect(errors).toEqual([]);
+});
+
+test('a worldgen setting says it needs a new world instead of pretending', async ({ page }) => {
+  // The standing rule, applied to a settings screen: a field the world in front
+  // of you cannot honour must say so rather than accepting the number silently.
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.keyboard.press('Escape');
+  await page.locator('.pausemenu button', { hasText: 'Settings' }).click();
+  const settings = page.locator('.settings');
+  const note = settings.locator('.settings-restart-note');
+  await expect(note).toBeHidden();
+
+  const bushes = settings.locator('.settings-row', { hasText: 'Berry bushes' }).first();
+  await expect(bushes.locator('.settings-tag')).toHaveText('new world');
+  await bushes.locator('.settings-number').fill('500');
+  await bushes.locator('.settings-number').dispatchEvent('change');
+
+  await expect(note).toBeVisible();
+  await expect(note).toContainText('berry bushes');
+
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});
+
+test('the game opens on its settings, and Begin rebuilds the island they describe', async ({ page }) => {
+  // The order matters and is the whole point: the settings decide how much food
+  // is on the island and how many tribes are on it, so being asked to pick a
+  // life out of a world that is about to be replaced is the wrong way round.
+  const errors = guardErrors(page);
+  // No `skipIntro`: this is the one spec that watches the game actually open.
+  await page.goto('/?seed=e2e-start');
+
+  const settings = page.locator('.settings');
+  const newGame = page.locator('.newgame');
+  await expect(settings).toBeVisible({ timeout: 15_000 });
+  await expect(settings).toContainText('Before you begin');
+  await expect(newGame).toBeHidden();
+  // Nothing to go back to, and no world to replace, so neither button is here.
+  await expect(settings.locator('.settings-back')).toBeHidden();
+  await expect(settings.locator('button', { hasText: 'New world with these' })).toBeHidden();
+
+  // Escape must not skip it, for the same reason character creation ignores it.
+  await page.keyboard.press('Escape');
+  await expect(settings).toBeVisible();
+  await expect(page.locator('.pausemenu')).toBeHidden();
+
+  const before = await page.evaluate(() => (window as never as {
+    __dynasty: { sim: { config: { world: { berryBushes: number } } } };
+  }).__dynasty.sim.config.world.berryBushes);
+  expect(before).toBe(280);
+
+  const difficulty = settings.locator('.settings-difficulty-range');
+  await difficulty.fill('4');
+  await difficulty.dispatchEvent('input');
+  await settings.locator('button', { hasText: 'Begin' }).click();
+
+  // Character creation, over the island the settings asked for — and it is a
+  // genuinely different island, not the boot one with a label changed.
+  await expect(settings).toBeHidden();
+  await expect(newGame).toBeVisible();
+  const after = await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: { sim: {
+        config: { world: { berryBushes: number } };
+        nodes: { kind: string }[];
+      } };
+    }).__dynasty;
+    return {
+      configured: d.sim.config.world.berryBushes,
+      placed: d.sim.nodes.filter(n => n.kind === 'berries').length,
+    };
+  });
+  expect(after.configured).toBe(155);
+  expect(after.placed).toBeLessThan(200);
+
   expect(errors).toEqual([]);
 });

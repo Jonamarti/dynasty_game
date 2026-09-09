@@ -41,6 +41,7 @@ function context(seed = 'research-ctx'): Parameters<KnowledgeSystem['daily']>[1]
     season: 'winter',
     ticksPerDay: config.time.ticksPerDay,
     knowledge: config.knowledge,
+    learning: config.learning,
     onInsight: () => {},
   };
 }

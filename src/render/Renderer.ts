@@ -109,13 +109,33 @@ export class Renderer {
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
-    private readonly sim: Simulation,
+    private sim: Simulation,
     private readonly camera: Camera
   ) {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('2D canvas context unavailable');
     this.ctx = ctx;
     this.terrain = this.prerenderTerrain(sim.world);
+  }
+
+  /**
+   * Points the renderer at a different world.
+   *
+   * Exists for exactly one caller: the settings screen shown *before* a game
+   * starts, where changing the map or the amount of food in it means the world
+   * built at boot has to be thrown away and built again. The terrain is
+   * pre-rendered once at construction, so it has to be re-rendered here or the
+   * old island goes on being painted under the new one's people.
+   *
+   * Not a general "restart the game" seam, and deliberately not used as one.
+   * Before the first step nothing has accumulated; a few minutes in, this
+   * object's interpolator, the floaters, and half a dozen ids in `main.ts` are
+   * all holding people from the old world. See `rebuildBeforeStart` there.
+   */
+  setSim(sim: Simulation): void {
+    this.sim = sim;
+    this.terrain = this.prerenderTerrain(sim.world);
+    this.interpolator.clear();
   }
 
   /** One tile per TILE pixels, drawn once. */
