@@ -188,6 +188,31 @@ export const SCENARIOS: Record<string, Scenario> = {
     // for the meal to be carried home and eaten.
     steps: 11000,
   },
+  hunters: {
+    name: 'hunters',
+    description:
+      'A band that butchers properly and sews. The bone tier is a *chain* — ' +
+      'kill an animal, take bone and sinew off it, knap a needle, then sew a ' +
+      'coat out of three hides and the needle — and a chain is exactly the ' +
+      'thing that passes every static test while being impossible to walk end ' +
+      'to end. Nothing else in the suite reaches it: `bone_working` sits behind ' +
+      'hafting and `tailoring` behind two more, and no run in the suite gets ' +
+      'that far from nothing. Cold seasons, because a coat that is never ' +
+      'needed is a coat nobody measures.',
+    config: {
+      seed: 'ivory',
+      time: { daysPerSeason: 8 },
+      needs: { coldRate: 0.12 },
+      population: {
+        bands: 2, peoplePerBand: 10,
+        startingTech: [
+          'hafting', 'tracking', 'spear', 'clothing',
+          'bone_working', 'tailoring', 'atlatl',
+        ],
+      },
+    },
+    steps: 9000,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -853,8 +878,17 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     // nothing by each generation.
     const childLessons = tel.child_taught ?? 0;
     const fromKin = tel.child_taught_by_parent ?? 0;
-    if (taught === 0) {
-      skip('children-are-taught', 'nobody taught anybody anything in this run');
+    // The floor is five and it used to be one, which was a gap in the check
+    // rather than a property of any world. Below a handful of lessons this
+    // cannot tell "children are excluded from knowledge" — the real defect,
+    // where `KnowledgeSystem.daily` skipped them outright — from "three adults
+    // happened to teach three adults", and `hunters` was the first scenario thin
+    // enough to expose it by failing at 0 of 3. The same reasoning
+    // `crafting-is-interruptible` uses for its own floor, and the claim itself
+    // is asserted deterministically in `transmission.test.ts` regardless.
+    if (taught < 5) {
+      skip('children-are-taught',
+        'too few lessons to tell (' + taught + ' taught, ' + childLessons + ' to a child)');
     } else {
       add('children-are-taught',
         childLessons > 0,
@@ -1103,6 +1137,35 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('crafting-is-interruptible',
       craftInterrupted > 0,
       crafted + ' things made, ' + craftInterrupted + ' attempts broken off for a need');
+  }
+
+  // --- The bone tier: M8.1 --------------------------------------------------
+  //
+  // The longest chain the milestone adds, and every link of it can break
+  // silently. A carcass has to be butchered by somebody who knows how, the bone
+  // has to reach a knapper, the needle has to survive being carried until three
+  // hides and two lengths of sinew are in the same pack, and only then is there
+  // a coat. `techs-have-effects` would call all three nodes wired and be right
+  // about the code and wrong about the world.
+  const boneTaken = (tel.harvest_bone ?? 0) + (tel.harvest_sinew ?? 0);
+  const boneTools = (tel.crafted_bone_point ?? 0) + (tel.crafted_needle ?? 0);
+  const coats = tel.crafted_fur_coat ?? 0;
+  if (!sim.knownTech.has('bone_working')) {
+    skip('kills-are-butchered-for-bone', 'nobody alive knows what to do with a carcass');
+  } else if ((tel.hunt_killed ?? 0) === 0) {
+    skip('kills-are-butchered-for-bone', 'nothing was killed in this run');
+  } else {
+    // The coat is only demanded of a world that can actually sew one, and it is
+    // demanded, because it is the far end of the chain: bone and a needle
+    // getting made proves two links and says nothing about the third. Without
+    // this clause `tailoring` could be wired, declared, offered and never once
+    // reached, and every other test in the suite would pass.
+    const sews = sim.knownTech.has('tailoring');
+    add('kills-are-butchered-for-bone',
+      boneTaken > 0 && boneTools > 0 && (!sews || coats > 0),
+      (tel.hunt_killed ?? 0) + ' kills gave ' + boneTaken + ' of bone and sinew, ' +
+      'worked into ' + boneTools + ' tools and ' + coats + ' coats' +
+      (sews ? '' : ' (nobody here can sew)'));
   }
 
   // --- Stations: M8.1, mechanism 4 ----------------------------------------

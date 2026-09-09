@@ -960,7 +960,17 @@ export class ActionSystem {
     }
     person.workedTicks++;
 
-    if (distance > REACH) {
+    // The weapon is chosen before the range test, not after, and that is M8.1
+    // closing one of the three repairs the plan lists.
+    //
+    // `doHunt` used the bare `REACH` constant, so a bow's `reach: 1.6` did
+    // nothing at all in the one place it should matter most: the archer walked
+    // to arm's length of a deer like everybody else, and the field existed only
+    // to win brawls. The atlatl arriving in this pass is a weapon whose *whole
+    // point* is the throw, so leaving it would have shipped a third node with a
+    // decorative stat.
+    const weapon = weaponOf(person, true);
+    if (distance > REACH + (weapon?.reach ?? 0)) {
       person.targetX = animal.x;
       person.targetY = animal.y;
       ctx.movement.step(person);
@@ -979,7 +989,6 @@ export class ActionSystem {
     // an animal's stamina, and a two-year run produced about three kills. A bow
     // is worth more here than a hand axe by a wide margin and less than one in a
     // brawl, which is what `weapon.hunt` is separate from `weapon.damage` for.
-    const weapon = weaponOf(person, true);
     const armed = weapon === null ? 1 : weapon.hunt * weapon.power;
     if (weapon !== null) telemetry.count('armed_hunt');
     const chance = Math.max(0.05, Math.min(0.9,
@@ -1013,6 +1022,26 @@ export class ActionSystem {
       telemetry.count('harvest_hide');
     } else {
       ctx.dropAt(animal.x, animal.y, 'hide', 1);
+    }
+
+    // M8.1: bone and sinew, and only for a butcher who knows what they are for.
+    //
+    // Gated on the knowledge rather than dropping off every kill, for two
+    // reasons that happen to agree. It is honest — nobody strips sinew out of a
+    // leg without a use for it, and a band that has never worked bone leaves the
+    // carcass where it lies. And it is what keeps every world that has not
+    // worked this out bit-identical to the one before this shipped: a pack
+    // filling up with material nobody can use would move `isLaden`, and
+    // `isLaden` moves everything.
+    if (techPower(person, 'bone_working') > 0) {
+      for (const [itemId, count] of [['bone', 3], ['sinew', 2]] as const) {
+        if (person.carryCapacity - person.carrying > 0) {
+          person.inventory.add(itemId, count);
+          telemetry.count('harvest_' + itemId, count);
+        } else {
+          ctx.dropAt(animal.x, animal.y, itemId, count);
+        }
+      }
     }
 
     person.chronicle.push({

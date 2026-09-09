@@ -6,6 +6,79 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-09 — M8.1 continues: the bone tier
+
+Three nodes — **`bone_working`, `tailoring` and `atlatl`** — and the first
+two-stage craft in the game. Twenty-six technologies, twelve recipes,
+twenty-eight items.
+
+A kill has always given meat and a hide and thrown the rest away. `bone_working`
+is noticing that the rest is the best material on the animal: out of it come a
+barbed point that throws further than flint and **the eyed needle**, and out of
+the needle comes the first garment that actually fits. That is as nearly as one
+mechanic can put it the reason our species could live where it was cold, and
+`warmthFrom` gains its third and largest term to say so.
+
+**Bone and sinew are taken only by a butcher who knows what they are for**, which
+is honest — nobody strips sinew out of a leg without a use for it — and is also
+what keeps every world that has not worked it out identical to the one before
+this shipped. A pack filling with material nobody can use would move `isLaden`,
+and `isLaden` moves everything. The acorn follows the same rule and for the same
+reason.
+
+**Two stages rather than one, and the second was measured into existence.** The
+coat could have cost "three hides and a bone" in one recipe. It costs a *needle*,
+because the needle is the artefact the Upper Palaeolithic turns on and folding it
+into an ingredient list would have said none of that. Making that chain actually
+run took two corrections, both from measurement:
+
+- **The needle costs bone and nothing else.** It cost a flint as well at first,
+  and made *no needles at all* in a whole run while bone points were being
+  knapped beside it — bone is the scarce half, and whoever has bone has sinew and
+  sticks off the same carcass far more often than they happen to be carrying
+  flint too. The flint burin a needle is split with is a tool rather than a
+  consumable anyway, so this is also the truer description.
+- **`needle` is declared ahead of `bone_point`.** Both are `knap` and both cost
+  one bone, so they score identically in `Brain` and its `score > craftScore`
+  hands a tie to whichever is reached first. The needle is the gateway to the
+  coat and the point is the gateway to nothing.
+
+A carcass now gives three bone and two sinew rather than two and one, because at
+the lower figures a good third of every kill was dropped on the ground by a
+hunter whose pack was already full.
+
+**The third of the plan's "repairs to make while passing" is done**: `doHunt`
+used the bare `REACH` constant, so a bow's `reach: 1.6` did nothing in the one
+place it should matter most. The archer walked to arm's length of a deer like
+everybody else and the field existed only to win brawls. Fixed here rather than
+later because the atlatl is a weapon whose *whole point* is the throw, and
+shipping it against a constant would have been a third node with a decorative
+stat. Measured across twenty seeds of `craft`, which is the scenario that arms
+people: mean survival 94.4% → 93.5%, which is noise, and conceptions past the
+root nodes 1.7 → 2.2, which is the three new nodes becoming reachable.
+
+**A new scenario, `hunters`**, with cold seasons: the bone tier is a chain four
+links long and a chain is exactly the thing that passes every static test while
+being impossible to walk end to end. It reports 11 kills giving 43 of bone and
+sinew, worked into 14 tools and 2 coats.
+
+New check `kills-are-butchered-for-bone`, verified failing (with the yields
+removed it reports 10 kills and 0 of everything). It demands a *coat* rather than
+merely a tool whenever the world can sew one, because bone and a needle getting
+made proves two links and says nothing about the third — without that clause
+`tailoring` could be wired, declared, offered and never once reached.
+
+**One check was fixed rather than tuned, and it is the check that was wrong.**
+`children-are-taught` asserted on a floor of one lesson, and `hunters` was the
+first scenario thin enough to fail it at 0 of 3. Below a handful of lessons it
+cannot tell "children are excluded from knowledge" — the real defect it was
+written for, where `KnowledgeSystem.daily` skipped them outright — from "three
+adults happened to teach three adults". The floor is five now, the same reasoning
+`crafting-is-interruptible` already uses, and the claim itself stays asserted
+deterministically in `transmission.test.ts` regardless.
+
+---
+
 ## 2026-09-09 — M8.1 continues: crafting stations, and an oak worth standing under
 
 Mechanism 4 of [m8_plan_the_ages.md](m8_plan_the_ages.md), with the node it

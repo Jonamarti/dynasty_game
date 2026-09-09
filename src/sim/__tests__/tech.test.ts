@@ -82,6 +82,34 @@ describe('the tech table', () => {
     }
   });
 
+  it('makes a sewn coat the largest thing anybody carries against the cold', () => {
+    // M8.1's third term in `warmthFrom`, and the double gate the basket and the
+    // net already use: knowing how is not enough, and carrying one is not
+    // enough either. A coat in the hands of somebody who could not have made it
+    // is a heap of skins — the rule `handaxe` still breaks.
+    const bare = someone();
+    const sewer = someone();
+    sewer.knownTech.add('tailoring');
+    const carrier = someone();
+    carrier.inventory.add('fur_coat', 1);
+    const clad = someone();
+    clad.knownTech.add('tailoring');
+    clad.inventory.add('fur_coat', 1);
+
+    expect(warmthFrom(sewer)).toBe(warmthFrom(bare));
+    expect(warmthFrom(carrier)).toBe(warmthFrom(bare));
+    expect(warmthFrom(clad)).toBeGreaterThan(warmthFrom(bare));
+    // And it stacks with the other two answers without ever reaching 1, which
+    // is what would invert the chill into warming.
+    const everything = someone();
+    everything.knownTech.add('tailoring');
+    everything.knownTech.add('firemaking');
+    everything.knownTech.add('clothing');
+    everything.inventory.add('fur_coat', 1);
+    expect(warmthFrom(everything)).toBeGreaterThan(warmthFrom(clad));
+    expect(warmthFrom(everything)).toBeLessThan(1);
+  });
+
   it('sends station recipes to buildings that exist and are stations', () => {
     // M8.1, mechanism 4, and the same shape of check as the one above it. A
     // `station: 'kiln'` with no kiln in `BUILDINGS` is the longhouse defect one

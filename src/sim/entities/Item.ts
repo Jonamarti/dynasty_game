@@ -81,6 +81,38 @@ export const ITEMS: Record<string, ItemDef> = {
     id: 'hide_armour', label: 'Hide armour', nutrition: 0, spoilTicks: 0, baseValue: 11,
     armour: 0.3,
   },
+  // --- M8.1: what comes off a carcass once you know what to do with it -------
+  //
+  // Bone and sinew are taken only by a hunter who knows `bone_working`, which is
+  // both honest — nobody butchers sinew out of a leg without a use for it — and
+  // what keeps every world that has not worked it out bit-identical to the one
+  // before this shipped. The same rule the acorn follows.
+  bone:     { id: 'bone',     label: 'Bone',       nutrition: 0,  spoilTicks: 0,    baseValue: 2 },
+  sinew:    { id: 'sinew',    label: 'Sinew',      nutrition: 0,  spoilTicks: 0,    baseValue: 3 },
+  // A needle is a *stage*, not an ornament: it is worth making only because the
+  // fur coat consumes one, and it is the reason `tailoring` sits behind
+  // `bone_working` rather than behind `clothing` alone. An eyed needle is the
+  // single artefact that separates people who could survive a glacial winter
+  // from people who could not, and this is the closest the game can come to
+  // saying so.
+  needle:   { id: 'needle',   label: 'Bone needle', nutrition: 0, spoilTicks: 0,    baseValue: 6 },
+  bone_point: {
+    id: 'bone_point', label: 'Bone point', nutrition: 0, spoilTicks: 0, baseValue: 10,
+    // Between the flint spear and the bow, and closer to the bow: a barbed bone
+    // head is light, so it throws further than it hits hard. Poor in a brawl for
+    // exactly the same reason.
+    weapon: { damage: 0.4, reach: 1.15, hunt: 2.0, tech: 'bone_working' },
+  },
+  atlatl: {
+    id: 'atlatl', label: 'Spear-thrower', nutrition: 0, spoilTicks: 0, baseValue: 12,
+    // It precedes the bow by twenty thousand years and sits just below it here,
+    // which is the whole reason it requires only `spear`: a lever on the end of
+    // your arm is a smaller idea than a bow, and it arrived first.
+    weapon: { damage: 0.5, reach: 1.35, hunt: 2.1, tech: 'atlatl' },
+  },
+  fur_coat: {
+    id: 'fur_coat', label: 'Fur coat', nutrition: 0, spoilTicks: 0, baseValue: 15,
+  },
   // M8.1. Both are carried tools rather than materials, and both are read
   // through an item-presence test *and* `techPower` — a basket in the hands of
   // somebody who does not know basketry is a bundle of withies. That double

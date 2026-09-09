@@ -163,6 +163,82 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { net: 1 },
     keep: 1,
   },
+  // --- M8.1: the bone tier --------------------------------------------------
+  //
+  // Three recipes and a chain. The needle is made to be *consumed*, which is the
+  // first two-stage craft in the game: bone and flint into a needle, then hide
+  // and sinew and the needle into a coat. Two stages rather than one because the
+  // eyed needle is genuinely the artefact the Upper Palaeolithic turns on — you
+  // cannot sew a fitted garment without one, and a fitted garment is the
+  // difference between surviving a glacial winter and not — and folding it into
+  // the coat's ingredient list as "one bone" would have said none of that.
+  needle: {
+    id: 'needle',
+    label: 'Bone needle',
+    icon: '\u{1FAA1}',
+    tech: 'bone_working',
+    skill: 'knap',
+    workTicks: 80,
+    // Bone and nothing else. It cost a flint as well at first and made **no
+    // needles at all** in a whole run while bone points were being knapped
+    // beside it: bone is the scarce half and whoever has bone has sinew and
+    // sticks off the same carcass far more often than they happen to be
+    // carrying flint too. The flint burin a needle is split with is a tool
+    // rather than a consumable anyway, so this is also the truer description.
+    ingredients: { bone: 2 },
+    output: { needle: 1 },
+    // One at a time. A second needle in the pack is worth nothing until the
+    // first has been used up, and `keep` is exactly the field that says so.
+    //
+    // Declared ahead of `bone_point` on purpose. Both are `knap` and both cost
+    // one bone, so the two score identically in `Brain` and the scorer's
+    // `score > craftScore` gives a tie to whichever is reached first. The needle
+    // is the gateway to the coat and the point is not the gateway to anything,
+    // so the tie should go this way — and it was measured going the other way:
+    // three bone points and no needles at all in a whole run.
+    keep: 1,
+  },
+  bone_point: {
+    id: 'bone_point',
+    label: 'Bone point',
+    icon: '\u{1F3F9}',
+    tech: 'bone_working',
+    skill: 'knap',
+    workTicks: 100,
+    ingredients: { bone: 1, sinew: 1, sticks: 1 },
+    output: { bone_point: 1 },
+    keep: 1,
+  },
+  fur_coat: {
+    id: 'fur_coat',
+    label: 'Fur coat',
+    icon: '\u{1F9E5}',
+    tech: 'tailoring',
+    skill: 'build',
+    // At the ceiling `AGENTS.md` sets for a single uninterrupted pull, and no
+    // higher: a craft banks on the crafter rather than on the thing being made,
+    // so there is nowhere to put the hours of a longer job.
+    workTicks: 140,
+    ingredients: { hide: 2, sinew: 2, needle: 1 },
+    output: { fur_coat: 1 },
+    keep: 1,
+  },
+  atlatl: {
+    id: 'atlatl',
+    label: 'Spear-thrower',
+    icon: '\u{1F94D}',
+    tech: 'atlatl',
+    skill: 'knap',
+    workTicks: 120,
+    // Wood and cord and a notch. Deliberately no bone and no sinew: `atlatl`
+    // requires only `spear`, so a band that has never butchered a carcass
+    // properly must still be able to make one, or the node is unreachable
+    // through the route its own prerequisites promise.
+    ingredients: { sticks: 3, thatch: 1 },
+    output: { atlatl: 1 },
+    keep: 1,
+  },
+
   // M8.1, mechanism 4: the first recipe in the game that is about a place.
   //
   // Three acorns into one of meal, and the gain is not a percentage: it is the

@@ -62,6 +62,9 @@ export const TECHS = [
   // M8.1, mechanism 4: the first technology whose effect is a *place to work*
   // rather than a thing to carry.
   'grinding',
+  // M8.1, the bone tier: what a carcass is worth once you know what to do with
+  // the parts nobody was eating.
+  'bone_working', 'tailoring', 'atlatl',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -576,6 +579,70 @@ export const TECH: Record<Tech, TechDef> = {
       'A saddle stone and a muller. An acorn is bitter and an oak is the ' +
       'commonest tree in the wood; ground and leached, it is a winter food.',
   },
+  // --- M8.1, the bone tier ---------------------------------------------------
+  //
+  // Read the three together. A kill has always given meat and a hide and thrown
+  // the rest away; `bone_working` is noticing that the rest is the best material
+  // on the animal. Out of it come a point that throws better than flint and the
+  // eyed needle, and out of the needle comes the first garment that actually
+  // fits — which is, as nearly as one mechanic can be, the reason our species
+  // could live where it was cold.
+  bone_working: {
+    id: 'bone_working', label: 'Bone working', domain: 'beasts',
+    requires: ['hafting'], difficulty: 0.4, skill: 'knap',
+    prototype: { flint: 1, sticks: 1 }, maxRefinement: 3,
+    sparks: [
+      // The heaviest route needs no bone in hand, and must not: bone is taken
+      // off a kill only by somebody who already knows this, so "holding a bone"
+      // is a condition only a holder can meet. The same deadlock the acorn
+      // taught, one node along.
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'doing', action: 'hunt' }],
+        weight: 1.0, story: 'looked at what was left of a carcass and saw a set of tools in it' },
+      { needs: [{ kind: 'holding', item: 'hide' }, { kind: 'knows', tech: 'hafting' }],
+        weight: 0.7, story: 'skinned a beast and found the hard parts more interesting than the soft' },
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'saw', what: 'quarry_escaped' },
+                { kind: 'feeling', need: 'hunger' }],
+        weight: 0.5, story: 'wanted a point that would go further than a flint one would' },
+    ],
+    description:
+      'Antler, bone and sinew: the parts of a kill nobody was eating. A barbed ' +
+      'point, and a needle with an eye in it.',
+  },
+  tailoring: {
+    id: 'tailoring', label: 'Tailoring', domain: 'cloth',
+    requires: ['clothing', 'bone_working'], difficulty: 0.5, skill: 'build',
+    prototype: { hide: 2, sinew: 1 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'clothing' }, { kind: 'holding', item: 'needle' },
+                { kind: 'feeling', need: 'cold' }],
+        weight: 1.0, story: 'held a needle in one hand and a draughty hide in the other' },
+      { needs: [{ kind: 'knows', tech: 'bone_working' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.7, story: 'spent a winter night finding out where a wrapped skin lets the cold in' },
+      { needs: [{ kind: 'knows', tech: 'clothing' }, { kind: 'holding', item: 'sinew' }],
+        weight: 0.5, story: 'pulled a length of sinew straight and thought of it as thread' },
+    ],
+    description:
+      'Skins cut to a shape and sewn shut. A wrapped hide keeps the wind off; ' +
+      'a fitted coat keeps the winter out.',
+  },
+  atlatl: {
+    id: 'atlatl', label: 'Spear-thrower', domain: 'beasts',
+    requires: ['spear'], difficulty: 0.45, skill: 'hunt',
+    prototype: { sticks: 2, thatch: 1 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'saw', what: 'quarry_escaped' }],
+        weight: 1.0, story: 'watched a spear fall short of something already running' },
+      { needs: [{ kind: 'holding', item: 'spear' }, { kind: 'doing', action: 'hunt' },
+                { kind: 'place', biome: 'grass' }],
+        weight: 0.7, story: 'threw across open ground at a range no arm could cover' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'doing', action: 'chop' }],
+        weight: 0.5, story: 'felt how much further a long haft carries the end of a swing' },
+    ],
+    description:
+      'A notched stick that lengthens the arm. Twenty thousand years before ' +
+      'the bow, and most of the way to it.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -689,6 +756,18 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   grinding: {
     summary: 'Acorns become food. The oak stops being timber and starts being a harvest.',
     site: 'BUILDINGS.quern, and RECIPES.meal through RecipeDef.station',
+  },
+  bone_working: {
+    summary: 'Bone and sinew off every kill, and a point that throws further than flint.',
+    site: 'ActionSystem.doHunt, and RECIPES.bone_point / RECIPES.needle',
+  },
+  tailoring: {
+    summary: 'A coat that fits. The largest single answer to cold anybody carries.',
+    site: 'NeedsSystem, via warmthFrom, when a fur coat is in the pack',
+  },
+  atlatl: {
+    summary: 'Reach on a throw: a strike landed from further off than an arm can cover.',
+    site: 'ActionSystem.doHunt and doAttack, via weaponOf',
   },
 };
 
@@ -854,7 +933,14 @@ export function stealthFactor(person: Person): number {
 export function warmthFrom(person: Person): number {
   const fire = 0.45 * techPower(person, 'firemaking');
   const cloth = 0.3 * techPower(person, 'clothing');
-  return 1 - (1 - fire) * (1 - cloth);
+  // M8.1's third term, and the largest of the three, because a sewn coat is the
+  // largest of the three. Double-gated on carrying one as well as on knowing
+  // how — the rule the basket and the net already follow, and the one
+  // `handaxe` still breaks.
+  const furs = person.inventory.has('fur_coat')
+    ? 0.4 * techPower(person, 'tailoring')
+    : 0;
+  return 1 - (1 - fire) * (1 - cloth) * (1 - furs);
 }
 
 // ---------------------------------------------------------------------------
