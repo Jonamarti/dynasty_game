@@ -41,6 +41,7 @@ const RESOURCE_COLORS: Record<ResourceKind, string> = {
   sticks:  '#8b5a2b',
   reeds:   '#b3b76a',
   clay:    '#a97b5d',
+  fish:    '#4a90a4',
 };
 
 /** [canopy, shadow side] per species; fruit is drawn over the top. */

@@ -11,8 +11,9 @@
  * pressure that later makes territory, migration and farming matter.
  */
 import type { RNG } from '../core/RNG.ts';
+import { ITEMS } from './Item.ts';
 
-export const RESOURCE_KINDS = ['berries', 'flint', 'sticks', 'reeds', 'clay'] as const;
+export const RESOURCE_KINDS = ['berries', 'flint', 'sticks', 'reeds', 'clay', 'fish'] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 
 export interface ResourceDef {
@@ -26,6 +27,15 @@ export interface ResourceDef {
   harvestTicks: number;
   /** Skill whose level scales the yield. */
   skill: 'forage' | 'hunt' | 'knap' | 'build';
+  /**
+   * A floor under `regrow`'s seasonal multiplier, for the kinds that do not
+   * stop existing in winter the way a stripped bush does. Undefined means no
+   * floor — plant regrowth genuinely stops in deep winter, and that stoppage
+   * is what makes a storage pit matter. Fish are the deliberate exception: the
+   * whole point of adding them was food that does not vanish exactly when it
+   * is needed most, the same reasoning `gameHerds` was scaled up for.
+   */
+  winterFloor?: number;
 }
 
 export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
@@ -34,6 +44,10 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
   sticks:  { kind: 'sticks',  itemId: 'sticks',  maxAmount: 12, regrowPerTick: 0.0035, harvestTicks: 7,  skill: 'forage' },
   reeds:   { kind: 'reeds',   itemId: 'thatch',  maxAmount: 16, regrowPerTick: 0.005,  harvestTicks: 9,  skill: 'forage' },
   clay:    { kind: 'clay',    itemId: 'mud',     maxAmount: 24, regrowPerTick: 0.001,  harvestTicks: 12, skill: 'build' },
+  // A shoal at a fixed spot rather than a moving animal, the same trade-off the
+  // plan made for the fish channel: it reuses `doHarvest` wholesale rather than
+  // needing a swimming entity and a second notion of passable ground.
+  fish:    { kind: 'fish',    itemId: 'fish',    maxAmount: 10, regrowPerTick: 0.006,  harvestTicks: 11, skill: 'hunt', winterFloor: 0.4 },
 };
 
 let nextNodeId = 1;
@@ -75,9 +89,10 @@ export class ResourceNode {
   regrow(ticks: number, growth: number): void {
     if (this.def.regrowPerTick === 0) return;
     if (this.amount >= this.def.maxAmount) return;
+    const rate = Math.max(growth, this.def.winterFloor ?? 0);
     this.amount = Math.min(
       this.def.maxAmount,
-      this.amount + this.def.regrowPerTick * ticks * growth
+      this.amount + this.def.regrowPerTick * ticks * rate
     );
   }
 
@@ -86,4 +101,16 @@ export class ResourceNode {
     this.amount -= taken;
     return taken;
   }
+}
+
+/**
+ * Whether a node's yield is something a hungry person can eat.
+ *
+ * Data-driven off `ITEMS[...].nutrition` rather than a hardcoded list of
+ * kinds, so that `Brain`'s forage scorer and `Simulation.stats().foodInWorld`
+ * — the two places that used to both test `n.kind === 'berries'` — read one
+ * definition of "what counts as food" instead of two that can drift apart.
+ */
+export function isFoodKind(node: ResourceNode): boolean {
+  return (ITEMS[node.def.itemId]?.nutrition ?? 0) > 0;
 }

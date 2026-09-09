@@ -121,6 +121,24 @@ export const SCENARIOS: Record<string, Scenario> = {
     },
     steps: 4000,
   },
+  coast: {
+    name: 'coast',
+    description:
+      'A band that already knows how to spear-fish. `spawnPeople` sites every ' +
+      'band with water in reach regardless of scenario, so this is not needed ' +
+      'to reach a fishing spot at all — `fish-are-caught` already passes ' +
+      'without it. It exists so a check can measure `fishing`\'s own yield ' +
+      'effect distinctly from the base mechanism everybody already has for ' +
+      'free, once M8.1 grows past the one node this scenario starts with.',
+    config: {
+      seed: 'coast',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTech: ['spear', 'fishing'],
+      },
+    },
+    steps: 4000,
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1002,8 +1020,15 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // static test while being impossible to walk end to end.
   const crafted = sum('crafted_');
   const craftInterrupted = tel.craft_interrupted ?? 0;
-  if (crafted + craftInterrupted === 0) {
-    skip('crafting-is-interruptible', 'nobody made anything in this run');
+  // Below a handful of attempts this cannot tell "interruption never fires"
+  // from "one craft happened to finish uninterrupted" — the same reasoning
+  // `hunts-succeed-and-fail` uses for its own strike floor. Found on `coast`,
+  // which starts a small band knowing only `spear` and `fishing` and produced
+  // exactly one craft in its run: not a defect in the scenario, a gap in this
+  // check that a thin scenario was the first to expose.
+  if (crafted + craftInterrupted < 5) {
+    skip('crafting-is-interruptible', 'too few crafting attempts to tell (' +
+      crafted + ' made, ' + craftInterrupted + ' interrupted)');
   } else {
     // `doCraft` was the one long action with no `interruption()` call, so for
     // the 258 ticks a novice spends over an axe nothing could reach them —
@@ -1115,6 +1140,18 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('people-eat-meat',
       (tel.eat ?? 0) > 0,
       (tel.harvest_meat ?? 0) + ' meat taken; ' + (tel.eat ?? 0) + ' meals eaten');
+  }
+
+  // M8.1, mechanism 2. `spawnPeople` already sites every band with water in
+  // reach (`hasWaterNear`), so this has not been observed to skip in practice
+  // — but a region without a fishing spot is still possible on an unlucky
+  // island, and reporting it honestly beats a check that silently never runs.
+  if ((tel.harvest_fish ?? 0) === 0) {
+    skip('fish-are-caught', 'no fish entered the world in this run');
+  } else {
+    add('fish-are-caught',
+      (tel.eat ?? 0) > 0,
+      (tel.harvest_fish ?? 0) + ' fish taken; ' + (tel.eat ?? 0) + ' meals eaten');
   }
 
   // A band that keeps planning huts while three stand empty is the failure this

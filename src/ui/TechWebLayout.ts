@@ -272,4 +272,5 @@ export const DOMAIN_COLORS: Record<Domain, string> = {
   cloth: '#c88ad8',
   timber: '#c8a45c',
   beasts: '#e0705c',
+  water: '#4a90d0',
 };

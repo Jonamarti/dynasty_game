@@ -55,6 +55,10 @@ export const TECHS = [
   // `doAttack` had no item term at all and a hunt could only be won by
   // outlasting an animal that runs faster than a person.
   'spear', 'bow', 'leatherwork',
+  // M8.1: the food half of the tree, see m8_plan_the_ages.md. `fishing` is
+  // the first entry; the rest of the fourteen-node tier follows in later
+  // passes.
+  'fishing',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -65,7 +69,12 @@ export type Tech = (typeof TECHS)[number];
  * cold, fire and a raw vegetable — so this is both a label and, from phase 3,
  * what lays the web out and colours it.
  */
-export const DOMAINS = ['fire', 'plants', 'stone', 'cloth', 'timber', 'beasts'] as const;
+export const DOMAINS = [
+  'fire', 'plants', 'stone', 'cloth', 'timber', 'beasts',
+  // M8.1 adds a domain for the shore and the water it borders — fishing,
+  // netting and the fish trap all belong here. `metal` follows in M8.3.
+  'water',
+] as const;
 export type Domain = (typeof DOMAINS)[number];
 
 export interface TechDef {
@@ -414,6 +423,30 @@ export const TECH: Record<Tech, TechDef> = {
       'Timber jointed rather than piled. Roofs that span a room, and a house a ' +
       'family can grow inside.',
   },
+  // M8.1: the first node of the food half of the tree. See
+  // m8_plan_the_ages.md, mechanism 2 — a fish node reuses `ResourceNode`
+  // wholesale, so this technology is a yield multiplier, the same shape as
+  // `plant_lore` on berries, rather than a hard gate on catching anything at
+  // all: a spear already answers "how", and refining `fishing` answers "how
+  // well".
+  fishing: {
+    id: 'fishing', label: 'Fishing', domain: 'water',
+    requires: ['spear'], difficulty: 0.45, skill: 'hunt',
+    prototype: { sticks: 2, flint: 1 }, maxRefinement: 3,
+    sparks: [
+      // The ordinary route: everybody goes to the water's edge to drink, far
+      // more often than anybody hunts, so this is the route that actually
+      // fires — the lesson from `tracking`'s own spark applied on the way in
+      // rather than found the hard way afterward.
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'doing', action: 'drink' }],
+        weight: 0.8, story: 'stood at the water with a spear in hand and watched something dart past' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'doing', action: 'hunt' }],
+        weight: 0.5, story: 'carried the same throw that worked on a boar down to the shore' },
+    ],
+    description:
+      'A spear turned on the shallows. Food that does not stop existing when ' +
+      'the ground freezes.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -503,6 +536,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   carpentry: {
     summary: 'Jointed timber: the longhouse, and faster building.',
     site: 'BuildingDef.requiresTech on the longhouse, and ActionSystem.doBuild',
+  },
+  fishing: {
+    summary: 'More from every fishing spot, and food that keeps coming in winter.',
+    site: 'ActionSystem.doHarvest, via forageYieldFactor',
   },
 };
 
@@ -599,6 +636,7 @@ function scaled(person: Person, tech: Tech, full: number): number {
  */
 export function forageYieldFactor(person: Person, nodeKind: string): number {
   if (nodeKind === 'flint') return scaled(person, 'stoneworking', 1.5);
+  if (nodeKind === 'fish') return scaled(person, 'fishing', 1.5);
   return scaled(person, 'plant_lore', 1.3);
 }
 

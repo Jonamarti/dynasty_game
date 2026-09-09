@@ -19,6 +19,8 @@ export interface WorldConfig {
   gameHerds: number;
   reedBeds: number;
   clayBanks: number;
+  /** Fishing spots, placed on shore tiles like reed beds and clay banks. */
+  fishingSpots: number;
   /**
    * Fraction of tiles considered for a starting tree. Suitability by biome
    * thins this out a great deal; forest carries most of them.
@@ -156,6 +158,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     gameHerds: 22,
     reedBeds: 90,
     clayBanks: 60,
+    fishingSpots: 50,
     treeDensity: 0.55,
   },
   time: {

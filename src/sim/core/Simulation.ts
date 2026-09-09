@@ -19,7 +19,7 @@ import { telemetry } from './Telemetry.ts';
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
 import { Person, resetPersonIds } from '../entities/Person.ts';
 import { ITEMS } from '../entities/Item.ts';
-import { ResourceNode, resetResourceIds, type ResourceKind } from '../entities/ResourceNode.ts';
+import { ResourceNode, resetResourceIds, isFoodKind, type ResourceKind } from '../entities/ResourceNode.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import { MovementSystem, resetMovementState } from '../systems/MovementSystem.ts';
 import { ActionSystem } from '../systems/ActionSystem.ts';
@@ -306,9 +306,21 @@ export class Simulation {
     for (const tree of this.trees) this.treesById.set(tree.id, tree);
     this.treeHash.rebuild(this.trees);
 
+    // Forked last, genuinely last: every other fork call in this constructor
+    // sits above this line. `spawnResources`, `spawnHerds` and `spawnPeople`
+    // all draw from the single shared `spawnRng` forked at the top, and
+    // touching that draw sequence — by inserting a fork above it, or by adding
+    // fish to its own `plan` array — would shift every herd and every person
+    // in every saved seed. See "a seed trap that sits above all four" in
+    // m8_plan_the_ages.md. Fish get a dedicated stream instead, and are spawned
+    // in their own pass after people, so the pre-change world is bit-identical
+    // except for the fish.
+    const fishRng = this.rng.fork();
+
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
     this.spawnPeople(spawnRng);
+    this.spawnFish(fishRng);
     this.rebuildHashes();
   }
 
@@ -340,6 +352,28 @@ export class Simulation {
         this.nodesById.set(node.id, node);
         placed++;
       }
+    }
+  }
+
+  /**
+   * Places fishing spots on the shore, on their own RNG stream and in their
+   * own pass after everything else has been placed — see the comment above
+   * the `fishRng` fork in the constructor.
+   */
+  private spawnFish(rng: RNG): void {
+    const count = this.config.world.fishingSpots;
+    let placed = 0;
+    let attempts = 0;
+    const maxAttempts = count * 60;
+    while (placed < count && attempts < maxAttempts) {
+      attempts++;
+      const spot = this.world.randomWalkable(rng, 1);
+      if (!spot) continue;
+      if (!this.suitsBiome('fish', spot.x, spot.y)) continue;
+      const node = new ResourceNode('fish', spot.x, spot.y, rng);
+      this.nodes.push(node);
+      this.nodesById.set(node.id, node);
+      placed++;
     }
   }
 
@@ -392,6 +426,7 @@ export class Simulation {
       // shoreline the most valuable ground to camp on.
       case 'reeds': return biome === 'beach' && this.world.isShore(x, y);
       case 'clay': return (biome === 'beach' || biome === 'grass') && this.world.isShore(x, y);
+      case 'fish': return biome === 'beach' && this.world.isShore(x, y);
     }
   }
 
@@ -1739,8 +1774,12 @@ export class Simulation {
       avgCompany: mean(living.map(p => p.needs.company)),
       avgHealth: mean(living.map(p => p.health)),
       resources: this.nodes.reduce((sum, n) => sum + n.amount, 0),
+      // Data-driven rather than `n.kind === 'berries'`: two copies of "what
+      // counts as food" is exactly the drift the house style rule exists to
+      // prevent, and fish are food too. See `isFoodKind` and
+      // m8_plan_the_ages.md, mechanism 2.
       foodInWorld: this.nodes.reduce(
-        (sum, n) => sum + (n.kind === 'berries' ? n.amount : 0), 0
+        (sum, n) => sum + (isFoodKind(n) ? n.amount : 0), 0
       ),
       depletedNodes: this.nodes.filter(n => n.depleted).length,
       households: this.households.filter(h => !h.extinct).length,

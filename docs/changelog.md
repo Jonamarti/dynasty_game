@@ -6,6 +6,81 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-08 — M8.1 begins: fishing, mechanism 2
+
+The first node and the first mechanism of `m8_plan_the_ages.md`'s M8.1 tier,
+shipped as its own vertical slice per the plan's stated order ("fishing, then
+traps, then stations, then spoilage"). Thirteen more M8.1 nodes and the trap,
+station and spoilage mechanisms are not in this pass; the era-ladder rename
+and the `TechDef.age`/`firstKnown` axes are also deferred, since most of the
+new era table's `needs` name technologies that do not exist yet.
+
+**Fish is a `ResourceKind`, not a new action.** `doHarvest` is driven entirely
+by `node.def` (kind, item, skill, harvest ticks), so a `fish` entry in
+`RESOURCE_DEFS` (`entities/ResourceNode.ts`) inherits the food-work hunger
+exemption, the interruption check and the stop/resume reporting with no new
+code in `ActionSystem` at all — the same reasoning the plan gave for
+rejecting a dedicated `doFish` action or a swimming entity. Placed on shore
+tiles (`biome === 'beach' && world.isShore(...)`), the same rule `reeds` and
+`clay` already use.
+
+**The two hardcoded `n.kind === 'berries'` food predicates are now one
+function.** `isFoodKind(node)` in `ResourceNode.ts` reads
+`ITEMS[node.def.itemId].nutrition > 0`; `Brain`'s forage filter and
+`Simulation.stats().foodInWorld` both call it instead of testing a literal
+kind string. `fishing` itself is a yield multiplier on `forageYieldFactor`
+(`scaled(person, 'fishing', 1.5)`), the same shape as `plant_lore` on berries
+and `stoneworking` on flint — **not** a hard gate on catching fish at all, by
+design: every other primary resource in this game is free to gather and only
+the yield is technology-scaled, and fish measurably follows that precedent
+rather than breaking it (see the measurement below).
+
+**Decided deliberately: fish get a winter floor.** `ResourceNode.regrow`
+scales by `time.growth`, which is zero in deep winter — correct for a
+stripped bush, wrong for a food source whose entire purpose is not vanishing
+when berries do. `ResourceDef.winterFloor` (0.4 for fish, undefined
+everywhere else) sets a floor under the seasonal multiplier rather than
+hardcoding a fish-specific case into `regrow`.
+
+**The RNG seed trap the plan named twice, avoided as specified.** Fish are
+placed on a dedicated `fishRng`, forked genuinely last — after the anonymous
+`seedInitialForest` fork the plan flagged as a trap in its own right — and
+spawned in their own pass after `spawnPeople`, never added to the `plan`
+array `spawnResources`/`spawnHerds`/`spawnPeople` all share. The pre-change
+world is bit-identical except for the fish.
+
+**New: a `water` domain**, `fishingSpots` in `WorldConfig` (50, the scale of
+`reedBeds`/`clayBanks`), a `fish` item (nutrition 18, spoils in 800 ticks —
+faster than meat's 1200, which is real and sets up `preserving` later), a
+`coast` scenario, and a `fish-are-caught` check that skips honestly rather
+than assuming every region has a fishing spot (in practice it never has,
+since `spawnPeople` already sites every band with water in reach).
+
+**One check needed a sample-size floor it never had.** `crafting-is-
+interruptible` only skipped at exactly zero attempts, unlike its sibling
+`hunts-succeed-and-fail`; `coast`'s thin starting roster (two techs, one band)
+produced exactly one craft and failed the check on a sample of one. Given the
+same floor `hunts-succeed-and-fail` uses in spirit: skip under 5 attempts.
+Not new behaviour from fishing, a gap in the check a thin scenario was first
+to expose.
+
+**Measured across the canonical twenty-seed cohort**, before and after, per
+`AGENTS.md`: mean survival 76.2% → 79.2%, technologies known 6.2 → 6.5, taught
+138.2 (noise against 142.5). Fish were caught in 20 of 20 seeds, 18,879 catches
+total — the mechanism works. `fishing` itself was conceived in 0 of 20: its
+only prerequisite, `spear`, was itself conceived in 2 of 20 in this same
+cohort, so this is `spear`'s existing depth-two rarity inherited by anything
+built on it, not a new dead spark — `tracking`'s fix does not generalise
+here, because unlike `tracking` this is not a root node with a broken
+ingredient, it is a node one level behind a chain that is already rare by
+design. Left as a finding rather than a fix: re-tuning `spear`'s reachability
+is out of scope for shipping one mechanism and risks the exact kind of
+un-isolated, unmeasured change this project's own rules warn against.
+
+`npm run typecheck`, `npm test` (140/140), `npm run sim:check:all` (all eight
+scenarios, `tiny`'s one-tick `food-work-continues` flip aside — see
+`bugs.md`) and `npm run e2e` (39/39, `DYNASTY_PORT=5290`) all green.
+
 ## 2026-09-08 — `tracking`'s spark, the M8.1 blocker
 
 `m8_plan_the_ages.md` named this the one thing that had to happen before

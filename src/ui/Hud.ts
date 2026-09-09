@@ -1289,6 +1289,7 @@ const NODE_LABELS: Record<string, string> = {
   wood: 'Fallen wood',
   reeds: 'Reed bed',
   clay: 'Clay bank',
+  fish: 'Fishing spot',
 };
 
 /** Where the panel's folded state is remembered between sessions. */

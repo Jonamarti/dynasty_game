@@ -1,7 +1,155 @@
 # Known bugs and rough edges
 
-As of 2026-09-07. Everything here is real and reproducible; nothing here is
+As of 2026-09-08. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found while building M6b phase 6, 2026-09-08 — open
+
+### A job does not protect someone from the chief's own labour draft
+
+`BandSystem.directWork` sends any available idle adult to build or haul for an
+unfinished site, without asking what job they hold. A hunter can be drafted
+onto a hut for the day exactly as readily as an unemployed person can, and
+`Brain`'s job bias does nothing to stop it — an explicit order from `directWork`
+goes through `command`, not the scorer, so there is no bias term for it to
+weigh against. This is arguably correct today (a job is described everywhere
+in the UI as "a lean, not a command"), but it means a band can never actually
+protect its hunter from spending the week on scaffolding, which will read as a
+bug the day the player has deliberately built a specialised workforce and
+watches the chief draft it away regardless.
+
+### `farm` and `smith` are real skills with nothing that trains or reads them
+
+Both were added to `SKILLS` in this pass, deliberately, so that founding,
+inheritance, ageing and the character-creation point budget all know about
+them before M8 gives either one an action — see the comment beside `SKILLS` in
+`Person.ts`. Until then they behave like `heal`, already in the roster and
+already unused: a character can be built with points in `farm` and nothing in
+the game will ever notice. Not a defect on its own, since `techs-have-effects`
+and its siblings police *technologies* declared without an effect and a skill
+is not a technology, but worth a name here so nobody mistakes silence from
+`farm` for a bug once M8.2 exists to compare it against.
+
+## Found while planning M8, 2026-09-08 — open
+
+Seven findings from reading the code and instrumenting two runs. None was fixed,
+because the pass was a planning pass; each is scheduled in
+[m8_plan_the_ages.md](m8_plan_the_ages.md) at the point where it does damage.
+
+### Only three of seventeen technologies are ever conceived — on one seed in twenty
+
+**Corrected on 2026-09-08 by M8.0.** As written below this was a finding about
+the game; it is a finding about the `century` seed, which is the worst of twenty.
+
+A two-year `century` run ends in the Age of Fire with two technologies known to
+anybody, and across the whole run exactly three nodes are ever conceived:
+`cordage` (16 times), `plant_lore` (13) and `firemaking` (5). Every one of those
+numbers reproduces exactly. Across the canonical twenty-seed cohort
+(`npm run sim:seeds -- --seeds 20`) the same scenario averages **5.4
+technologies known at the end, 4.2 conceived past the root nodes and 124 things
+taught or picked up by watching**, and reaches depth two — `stoneworking` and
+`leatherwork` — routinely. The century seed is the only one of the twenty that
+never gets past a root node.
+
+The research pipeline is healthy, which the original entry had right: 34 ideas
+became 8 prototypes and 7 proofs off 139 ponder breakthroughs and 28 from
+discussion. What is wrong is the conclusion that **the rate of discovery is set
+by transmission**. Transmission tracks adult person-days almost exactly — 24
+things passed on in a world with 1,405 of them, 194 in a world with twice that —
+so on the collapsing seed the thin teaching is a symptom, not the cause. Sorting
+the cohort by survival sorts it by the climb.
+
+**The open defect is the collapse**, not the tree: two of twenty worlds fall
+below a quarter of their peak population, and those two are the two worst
+climbs. `conceptionBase` remains the obvious wrong knob, and so, it turns out,
+does anything else in `KnowledgeSystem`.
+
+### `sparks-are-various` passed while detecting nothing — fixed in M8.0
+
+It reported "8 distinct spark routes fired" on the run above and passed — and
+all eight routes belonged to those same three technologies. A check that reads as
+healthy on a world where 82% of the tree has never occurred to anyone is exactly
+the "looks reassuring and detects nothing" failure `AGENTS.md` warns about, and
+this project has already deleted two checks for it. It now counts technologies as
+well as routes and asserts both, and `the-tree-is-climbed` was added beside it.
+
+### One `spawnRng` is shared by three spawn passes
+
+`spawnResources`, `spawnHerds` and `spawnPeople` all draw from the same forked
+stream, so **adding one entry to the `plan` array in `spawnResources` moves every
+herd and every person in every world.** This is not a fork-order violation, so
+`determinism.test.ts` does not catch it — it compares two runs of the same build.
+Any pass that adds a resource kind and then measures itself against a baseline
+will be measuring the reshuffle. Now recorded in `AGENTS.md`.
+
+### `tracking` is unreachable, and two spark ingredients never occur
+
+**`tracking` fixed 2026-09-08; `store_empty` still open, see below.** Found by
+instrumenting the daily conception pass in M8.0. `tracking` is a **root node**
+— empty `requires`, so every adult in the world qualifies for it on every day
+of their life — and it was conceived in **none** of twelve instrumented
+worlds, and independently reproduced at 1 of 20 seeds in the canonical cohort
+before the fix. On the century seed it was one ingredient short of firing on
+1,404 of 1,405 adult person-days, and the missing ingredient was always the
+same one.
+
+Two `saw:` ingredients in `TECH` are keyed to events that essentially never
+happen:
+
+- **`quarry_escaped`**, the weight-1.0 route into `tracking`, is emitted only
+  when an animal gets more than twice `PURSUIT_LIMIT` away. `hunt_lost` is **2**
+  over two in-game years. Tracking's other two routes need `doing: hunt` with
+  hunger, or forest plus winter plus wandering, and between them they fire twice
+  in two years and have never carried an idea. **Fixed**: a fourth route,
+  `{ doing: forage, place: forest }` at weight 0.7, gives `tracking` an
+  ordinary daily story that does not wait on a hunt. Measured across the
+  twenty-seed cohort — see `changelog.md`. The three original routes are
+  untouched.
+- **`store_empty`**, the weight-1.0 route into `marking`, is emitted by `doTake`
+  when somebody walks to a store and finds nothing in it. `Brain` scores stores
+  by what is in them, so it never sends anyone to an empty one, and the counter
+  is **0** in every run inspected. `marking` survives on its other two routes,
+  so this one is **still open** but no longer blocks anything in M8.1.
+
+`tracking` no longer blocks M8.1, which puts `snares` and `taming` behind it.
+
+### The RNG fork comment points at the wrong place
+
+The named fork block ends at `recordRng` with a comment saying to append after
+it, and there is an **anonymous fourteenth fork twenty-five lines below**, the
+one handed to `seedInitialForest`. Appending where the comment invites you to
+consumes that fork's draw and silently replants every forest in every saved seed.
+Also now in `AGENTS.md`.
+
+### `household.store` is written and never read
+
+`LifeSystem` puts a dead person's goods into their household's store, and
+**nothing anywhere in the codebase ever takes them out again** — verified by
+grep; that line is the only reference to the field. An estate therefore
+disappears into a container nobody can open. Harmless today, and it will become
+visible the moment food spoilage exists, since it is the one stock whose losses
+nobody will ever see.
+
+### Two effects bypass `techPower`, and one weapon stat is ignored
+
+Every technology effect is supposed to read the seam. Three do not:
+
+- **`hafting`'s felling bonus** is `inventory.has('handaxe') ? 0.5 : 1` in both
+  `doChop` and `Progress.ts` — item presence, unscaled by refinement. Refining
+  hafting therefore does nothing to felling.
+- **`armourOf`** reads `ITEMS[id].armour` directly, so hide armour protects
+  somebody who could not make it and refining `leatherwork` is worthless.
+- **`doHunt` uses the bare `REACH` constant** rather than the weapon's, so the
+  bow's `reach: 1.6` does nothing while hunting — the one place it should matter
+  most. `doAttack` applies reach correctly; only the hunt path misses it.
+
+### `NODE_LABELS` is not compiler-enforced and `RESOURCE_COLORS` is
+
+The renderer's colour table is keyed on `ResourceKind`, so a new resource kind
+fails the build until it is coloured. The HUD's label table is a plain
+`Record<string, string>`, so the same new kind silently prints its raw id in the
+panel. Cheap to fix; the point is the asymmetry, because one of the two will be
+forgotten.
 
 ## Reported from play, 2026-09-02 — fixed
 
@@ -295,6 +443,11 @@ the hunting rate rather than anything in the knowledge system.
 
 ### A century run reports fewer technologies than it feels like it should
 
+**Superseded 2026-09-08 — see "Only three of seventeen technologies are ever
+conceived" at the top of this file.** The instrumented run this entry asked for
+was done, and the answer was not a slow stage in the pipeline. Original text
+follows.
+
 Four to seven proven technologies over two in-game years, against five for the
 build before this pass. That is not a regression in reachability — the pipeline
 now has five stages where it had one roll, and `ideas-are-conceived` reports
@@ -396,6 +549,21 @@ changes the size of the larder fix, which moved 40% → 59%. For anything smalle
 pass `--seeds 20`, and never tune against a single ten-seed figure — that is how
 you ship a coefficient chosen by noise and a comment asserting a cause the data
 does not support.
+
+### `food-work-continues` flips on a one-tick margin on `tiny`
+
+Found landing fishing (M8.1, mechanism 2). The check was already passing
+`tiny` by the barest possible margin — one tick of food-gathering pushed
+through hunger, against a floor of more than zero — and adding fish as a
+second food option, with no change to `interruption()` or to `tiny`'s berries,
+flint or people at all, tipped that one tick to zero and failed it. Confirmed
+by stashing the fishing changes and re-running the same seed: 1 before, 0
+after. Not investigated further, because it is exactly the class of thing
+`AGENTS.md` already warns about — a single small scenario amplifying an
+unrelated change into a threshold flip — and guessing a new floor from one
+run is how a coefficient gets chosen by noise. Left as-is; whoever next
+touches food-gathering-under-hunger on `tiny` should know this check has no
+margin to spare there.
 
 ### Older-child starvation may have risen, and nobody has confirmed it
 

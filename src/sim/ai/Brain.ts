@@ -18,6 +18,7 @@
  */
 import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
+import { isFoodKind } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { TimeManager } from '../core/TimeManager.ts';
 import type { RNG } from '../core/RNG.ts';
@@ -258,7 +259,9 @@ export class Brain {
     }
 
     // --- Forage / hunt -----------------------------------------------------
-    const foodNode = this.findNode(person, ctx, n => n.kind === 'berries' && !n.depleted);
+    // Data-driven rather than `n.kind === 'berries'`, so fish count as food
+    // too — see `isFoodKind` and m8_plan_the_ages.md, mechanism 2.
+    const foodNode = this.findNode(person, ctx, n => isFoodKind(n) && !n.depleted);
     if (foodNode) {
       // Hunger drives foraging only to the extent it is not already answered by
       // what you carry — but the reserve is generous. A first attempt cut the
