@@ -223,6 +223,20 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { fur_coat: 1 },
     keep: 1,
   },
+  flute: {
+    id: 'flute',
+    label: 'Flute',
+    icon: '\u{1F3B5}',
+    tech: 'flute',
+    skill: 'build',
+    workTicks: 110,
+    // A hollow bird bone and a flint to bore it with.
+    ingredients: { bone: 1, flint: 1 },
+    output: { flute: 1 },
+    // One in the band is a band with music in it. `keep` is 1 and the scorer's
+    // `forSelf` test does the rest: nobody makes a second while carrying one.
+    keep: 1,
+  },
   atlatl: {
     id: 'atlatl',
     label: 'Spear-thrower',

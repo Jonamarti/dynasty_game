@@ -1688,6 +1688,7 @@ export class Simulation {
       rng: this.wildlifeRng,
       tick: this.time.tick,
       peopleHash: this.peopleHash,
+      peopleById: this.peopleById,
     });
 
     this.needsSystem.update(this.people, this.time, this.buildings);

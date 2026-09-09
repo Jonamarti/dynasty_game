@@ -104,6 +104,41 @@ export class Animal {
   /** Who has fed this animal. The hook taming and loyalty will read. */
   readonly fedBy = new Set<number>();
 
+  /**
+   * Whose animal this is, once feeding it has worked. Null for everything wild.
+   *
+   * M8.1's `taming`, and the field that finally reads `fedBy` and
+   * `temperament` — both of which have been on this class since M6a doing
+   * nothing, deliberately, because adding them later would have been a
+   * migration. `fedBy` is the count of hands that have offered it food and
+   * `temperament` is how many it takes; a placid beast comes round in two
+   * meals and a wary one never does.
+   *
+   * A tamed animal stops fleeing its owner, follows them about, and makes the
+   * hunt roll better — see `WildlifeSystem` and `ActionSystem.doHunt`. It is
+   * still an animal: it can be killed, and it forgets nobody, because nothing
+   * in this game remembers who fed it. That last one is section 8 of
+   * `next-steps.md` and is not this pass.
+   */
+  tamedBy: number | null = null;
+
+  /**
+   * How many meals this animal has accepted, from anybody.
+   *
+   * Separate from `fedBy` because the two answer different questions and the
+   * first version of taming conflated them: `fedBy` is a `Set` of person ids,
+   * so one person feeding an animal every day for a season added themselves to
+   * it exactly once and the threshold could never be reached. A hundred and one
+   * meals were offered across a run and nothing was ever tamed.
+   *
+   * So `fedBy` is *who it will let near*, and taming is a matter of persistence
+   * rather than of committee. That split turns out to be the better design as
+   * well as the working one: an animal that has taken food from you once stops
+   * bolting when you approach, which is what makes the second meal possible at
+   * all, and the two stages together are recognisably how it actually goes.
+   */
+  meals = 0;
+
   constructor(species: Species, x: number, y: number, herdId: number, rng: RNG) {
     this.id = nextAnimalId++;
     this.species = species;

@@ -102,6 +102,9 @@ interface FoundTargets {
   record: Inscription | null;
   /** A half-cut record a chosen `inscribe` should go and finish. */
   unfinished: Inscription | null;
+  /** Who a `tend` is aimed at, and which beast a `tame` is coaxing. */
+  patient: Person | null;
+  strayAnimal: Animal | null;
 }
 
 /**
@@ -143,6 +146,16 @@ const LARDER_WORTH_THE_WALK = 40;
  * the commonest tree on the island invisible to every world that cannot grind.
  */
 const LEANEST_FRUIT = 13;
+
+/**
+ * How hurt somebody has to be before anyone will sit with them.
+ *
+ * Not 100. `needs.recoveryRate` mends a scratch on its own in a few hundred
+ * ticks, and a healer who downs tools for every graze is a healer who never
+ * forages — the same reasoning the larder floor uses about walking to a store
+ * that holds one berry.
+ */
+const TEND_WORTH_IT = 80;
 
 /**
  * How full a trap has to be before anybody walks out to it, 0-1.
@@ -391,6 +404,8 @@ export class Brain {
     let suitor: Person | null = null;
     let student: Person | null = null;
     let childPupil: Person | null = null;
+    let patient: Person | null = null;
+    let strayAnimal: Animal | null = null;
 
 
     // Deliberate social approaches are rationed; violence and flight are not.
@@ -992,18 +1007,86 @@ export class Brain {
     }
     if (craftRecipe !== null) add('craft', craftScore);
 
+    // --- M8.1: music, medicine and the animal that follows you --------------
+    //
+    // All three are placed here, after work and before writing, because all
+    // three are what somebody does when there is nothing pressing — and all
+    // three are gated on `pressedByNeed` for the reason crafting is: they are
+    // long jobs with their interruption check *inside* the pull, so a person
+    // one point over the line would start one and be stopped on the next tick.
+    if (!pressedByNeed(person, ctx.needs.workLimits)) {
+      // Play: worth doing when the people around you are lonely, not only when
+      // you are. This is the first scorer in the game that reads somebody
+      // else's need as its own reason, which is exactly what a flute is for —
+      // `talk` answers two people and a tune answers everybody in earshot.
+      if (person.inventory.has('flute') && techPower(person, 'flute') > 0) {
+        const lonelyNear = neighbours.reduce(
+          (worst, other) => Math.max(worst, other.needs.company), person.needs.company);
+        add('play', urgencyCurve(lonelyNear) * 1.5 + 0.05);
+      }
+
+      // Tend: somebody hurt, in your own band, who is not you. Weighted by how
+      // badly and by kinship, because sitting with the sick for four hundred
+      // ticks is something people do for their own before they do it for
+      // anyone.
+      if (techPower(person, 'herbalism') > 0) {
+        patient = this.pickBest(
+          neighbours.filter(other => other.health < TEND_WORTH_IT &&
+            other.bandId === person.bandId),
+          other => (100 - other.health) + ctx.relationships.opinion(person.id, other.id) * 0.4
+            - person.distanceTo(other)
+        );
+        if (patient) {
+          const hurt = (100 - patient.health) / 100;
+          add('tend', hurt * 1.6 * (0.4 + person.skillFactor('heal'))
+            * (1 + ctx.relationships.opinion(person.id, patient.id) / 200)
+            * this.proximityBonus(person, patient, ctx.sightRadius));
+        }
+      }
+
+      // Tame: an animal near enough to walk up to, food in the pack to spare,
+      // and none of your own already following you. Scored low and gated hard,
+      // because it spends food in a world where food is the constraint and most
+      // attempts come to nothing — which is the honest shape of the first
+      // domestication anybody attempted.
+      if (techPower(person, 'taming') > 0 && !person.isChild) {
+        const carried = this.carriedNutrition(person);
+        const spare = carried - person.needs.hunger - GIVING_RESERVE;
+        const hasOne = [...ctx.animalHash.queryRadius(person.x, person.y, ctx.sightRadius * 2)]
+          .some(a => a.alive && a.tamedBy === person.id);
+        if (spare > 0 && !hasOne) {
+          strayAnimal = ctx.animalHash.findNearest(
+            person.x, person.y, ctx.sightRadius,
+            a => a.alive && a.tamedBy === null &&
+              ctx.world.sameRegion(person.x, person.y, a.x, a.y));
+          if (strayAnimal) {
+            // Calmer beasts are worth trying and skittish ones are not, which
+            // is the only place in the game `Animal.temperament` is read and
+            // the reason it has been sitting on that class since M6a.
+            add('tame', 0.35 * (1 - strayAnimal.temperament) * (0.4 + person.skillFactor('track'))
+              * this.proximityBonus(person, strayAnimal, ctx.sightRadius));
+          }
+        }
+      }
+    }
+
     // --- Writing and reading ------------------------------------------------
     // The fourth channel, and the only one that crosses a death. Both are long
     // and both are gated on comfort, for the same reason crafting is: they are
     // discretionary jobs of a couple of hundred ticks, and a person already
     // over the interruption line would start one and be stopped on the next
     // tick.
-    if (!pressedByNeed(person, ctx.needs.workLimits) && techPower(person, 'writing') > 0) {
+    // Gated on being able to use *some* form rather than on `writing`, which
+    // since M8.1 is a different question: `ochre` is a record and is not
+    // writing, and it is the only one of the three most bands ever reach.
+    const anyForm = Object.values(INSCRIPTIONS)
+      .some(def => techPower(person, def.literacy) > 0);
+    if (!pressedByNeed(person, ctx.needs.workLimits) && anyForm) {
       // Writing: something you know that is nowhere on the ground yet.
       const unrecorded = [...person.knownTech].some(t =>
         TECH[t as Tech] !== undefined && !ctx.recorded.has(t));
       const canCut = Object.values(INSCRIPTIONS).some(def =>
-        (def.id !== 'clay' || techPower(person, 'clay_tablet') > 0) &&
+        techPower(person, def.literacy) > 0 &&
         Object.entries(def.materials)
           .every(([itemId, count]) => person.inventory.count(itemId) >= count));
       // A stone somebody left half cut, theirs or anybody's. Finishing one is
@@ -1013,6 +1096,7 @@ export class Brain {
       const halfCut = ctx.inscriptionHash.findNearest(
         person.x, person.y, ctx.sightRadius * 2,
         candidate => candidate.unfinished &&
+          techPower(person, candidate.def.literacy) > 0 &&
           ctx.world.sameRegion(person.x, person.y, candidate.x, candidate.y)
       );
       if (halfCut) {
@@ -1070,6 +1154,7 @@ export class Brain {
         quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, record, unfinished,
+        patient, strayAnimal,
       },
     };
   }
@@ -1269,6 +1354,23 @@ export class Brain {
           person.targetX = found.unfinished.x;
           person.targetY = found.unfinished.y;
         }
+        break;
+      case 'tend':
+        if (found.patient) {
+          person.targetPersonId = found.patient.id;
+          person.targetX = found.patient.x;
+          person.targetY = found.patient.y;
+        }
+        break;
+      case 'tame':
+        if (found.strayAnimal) {
+          person.targetAnimalId = found.strayAnimal.id;
+          person.targetX = found.strayAnimal.x;
+          person.targetY = found.strayAnimal.y;
+        }
+        break;
+      case 'play':
+        // Played where they stand. A tune has no destination.
         break;
       case 'craft':
         // The only target a craft has is what is being made. Without this the

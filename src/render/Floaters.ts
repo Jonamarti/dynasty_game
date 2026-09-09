@@ -161,6 +161,9 @@ export const ACTION_LABELS: Record<string, string> = {
   shelter: 'sheltering',
   sleep: 'asleep',
   hunt: 'hunting',
+  play: 'playing a tune',
+  tend: 'tending the hurt',
+  tame: 'coaxing an animal',
 };
 
 /**
@@ -225,6 +228,13 @@ export const STOP_REASONS: Record<string, string> = {
   dont_know_how: 'they do not know how',
   lack_materials: 'they lacked the materials',
   no_recipe: 'they had nothing in mind to make',
+  // M8.1's three verbs. Each is a way one of them can turn out to be
+  // impossible, and a verb whose failures are invisible is not finished.
+  nothing_to_play: 'they have no flute to play',
+  nobody_to_tend: 'there is nobody here to look after',
+  nothing_to_treat: 'they are not hurt any more',
+  nothing_to_offer: 'they had no food to offer it',
+  already_tame: 'it already follows somebody',
   already_wed: 'they are already married',
 
   // Research. Every one of these is a way an idea can stall, and a stalled idea

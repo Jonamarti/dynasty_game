@@ -14,6 +14,7 @@ import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { MovementSystem } from './MovementSystem.ts';
+import { companionBonus } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
 import { isTrap, type Building } from '../entities/Building.ts';
@@ -321,6 +322,31 @@ const PURSUIT_LIMIT = 9;
  */
 const GRUDGE_DISCHARGE = 9;
 
+/**
+ * M8.1's three verbs, in numbers.
+ *
+ * `PLAY_TICKS` is well under the roughly-140 ceiling `AGENTS.md` sets for a
+ * single uninterrupted pull, so playing needs nothing banked. `EARSHOT` is
+ * wider than `sightRadius` on purpose — a tune carries further than a look —
+ * and it is what makes one flute worth having in a band of ten. `PLAY_RELIEF`
+ * is per tick and per listener, so a whole tune is worth rather more than a
+ * conversation to the player and rather less to each person hearing it, which
+ * is the right shape: music is not a substitute for being spoken to.
+ */
+const PLAY_TICKS = 120;
+const EARSHOT = 16;
+const PLAY_RELIEF = 0.35;
+
+/**
+ * Health mended per tick of being tended, before skill and refinement.
+ *
+ * Against `needs.recoveryRate` of 0.02 this is about thirty times as fast, and
+ * it should be: the alternative is lying still for a week. A full recovery from
+ * near death still takes several hundred ticks of somebody else's time, which
+ * is what stops a healer from being a switch that turns injury off.
+ */
+const TEND_RATE = 0.6;
+
 export class ActionSystem {
   execute(person: Person, ctx: ActionContext): void {
     if (!person.alive) return;
@@ -353,6 +379,12 @@ export class ActionSystem {
       case 'give': this.doGive(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
+      // M8.1's three new verbs. All three answer something the world could not
+      // answer before: loneliness for more than two people at once, being hurt
+      // beyond waiting it out, and an animal that is neither food nor a threat.
+      case 'play': this.doPlay(person, ctx); break;
+      case 'tend': this.doTend(person, ctx); break;
+      case 'tame': this.doTame(person, ctx); break;
       case 'goto':
         // A walk order. Identical to wandering except that arriving ends it,
         // so the person stands where they were sent.
@@ -991,8 +1023,13 @@ export class ActionSystem {
     // brawl, which is what `weapon.hunt` is separate from `weapon.damage` for.
     const armed = weapon === null ? 1 : weapon.hunt * weapon.power;
     if (weapon !== null) telemetry.count('armed_hunt');
+    // M8.1: and whoever came with you. A dog at the hunter's side is worth more
+    // than any weapon in the game, which is the correct order — it cost a
+    // season of feeding an animal that could have been eaten.
+    const companion = companionBonus(person, ctx.animalsById.values());
+    if (companion > 1) telemetry.count('hunt_with_companion');
     const chance = Math.max(0.05, Math.min(0.9,
-      person.skillFactor('hunt') * (1 - animal.def.evasion) * armed + 0.15
+      person.skillFactor('hunt') * (1 - animal.def.evasion) * armed * companion + 0.15
         + (1 - animal.stamina) * 0.35
     ));
 
@@ -1050,6 +1087,200 @@ export class ActionSystem {
       text: 'brought down a ' + animal.def.label.toLowerCase(),
       kind: 'did',
     });
+    this.finish(person);
+  }
+
+  // -------------------------------------------------------------------------
+  // M8.1: music, medicine, and the animal that follows you home
+  // -------------------------------------------------------------------------
+
+  /**
+   * Playing a flute.
+   *
+   * The first thing in this game that answers a need for *more than the person
+   * doing it*. Every other social act is a pair: `SocialSystem.converse` sets
+   * `company` to zero for exactly two people and nothing else touches it. A
+   * player sitting by the fire relieves the loneliness of whoever is in
+   * earshot, which is why one flute in a band is worth having and a second is
+   * not — and it is also, at last, a use for company that does not require
+   * somebody to be free to talk.
+   *
+   * It runs long and therefore has an interruption check, and it is under the
+   * `AGENTS.md` ceiling for a single pull so there is nothing to bank.
+   */
+  private doPlay(person: Person, ctx: ActionContext): void {
+    if (techPower(person, 'flute') <= 0 || !person.inventory.has('flute')) {
+      this.abandon(person, 'nothing_to_play', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = PLAY_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    person.workedTicks++;
+
+    // Relief goes to the listeners every tick, in small amounts, rather than
+    // in one lump at the end: somebody who walks past halfway through has still
+    // heard half a tune, and a player interrupted has still done some good.
+    const heard = ctx.peopleHash.queryRadius(person.x, person.y, EARSHOT);
+    let listeners = 0;
+    for (const other of heard) {
+      if (!other.alive) continue;
+      const before = other.needs.company;
+      other.needs.company = Math.max(0, before - PLAY_RELIEF * techPower(person, 'flute'));
+      if (other.id !== person.id && before > 0) listeners++;
+    }
+    telemetry.count('flute_listener_ticks', listeners);
+    person.practice('build', 0.15);
+
+    if (person.actionTimer > 0) {
+      // `ignoreLaden` for the same reason crafting passes it: nothing goes into
+      // the pack or comes out of it.
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx);
+      return;
+    }
+    telemetry.count('flute_played');
+    this.finish(person);
+  }
+
+  /**
+   * Sitting with somebody who is hurt.
+   *
+   * **The first use the `heal` skill has ever had.** It has been in `SKILLS`
+   * since the beginning, spent points on at character creation, inherited,
+   * aged and never once practised by any action — which made it the clearest
+   * piece of inert content left in the game.
+   *
+   * Health is otherwise recovered at a flat `needs.recoveryRate` and by nothing
+   * else at all, so being badly hurt has always been a thing you wait out
+   * alone. This is the alternative, and it is deliberately somebody *else's*
+   * work: you cannot tend yourself, because the point of the node is that a
+   * band with a healer in it is a different band.
+   */
+  private doTend(person: Person, ctx: ActionContext): void {
+    const patient = person.targetPersonId === null
+      ? null
+      : ctx.peopleById.get(person.targetPersonId);
+    if (!patient || !patient.alive || patient.id === person.id) {
+      this.abandon(person, 'nobody_to_tend', ctx);
+      return;
+    }
+    if (techPower(person, 'herbalism') <= 0) {
+      this.abandon(person, 'dont_know_how', ctx);
+      return;
+    }
+    if (patient.health >= 100) {
+      this.abandon(person, 'nothing_to_treat', ctx);
+      return;
+    }
+
+    person.targetX = patient.x;
+    person.targetY = patient.y;
+    if (!ctx.movement.step(person)) return;
+
+    person.workedTicks++;
+    const mended = TEND_RATE * techPower(person, 'herbalism')
+      * (0.4 + person.skillFactor('heal'));
+    patient.health = Math.min(100, patient.health + mended);
+    person.practice('heal', 0.4);
+    telemetry.count('tended_ticks');
+
+    if (patient.health >= 100) {
+      telemetry.count('tended_to_health');
+      person.chronicle.push({
+        tick: ctx.tick,
+        ageDays: person.age,
+        text: 'nursed ' + patient.name + ' back to health',
+        kind: 'did',
+      });
+      this.finish(person);
+      return;
+    }
+    const stop = this.interruption(person, ctx, { ignoreLaden: true });
+    if (stop) this.stop(person, stop, ctx);
+  }
+
+  /**
+   * Offering food to an animal instead of a spear.
+   *
+   * Reads `Animal.fedBy` and `Animal.temperament`, which have sat on that class
+   * since M6a doing nothing — deliberately, because adding them later would
+   * have been a migration. `temperament` decides how many meals it takes: a
+   * placid beast comes round in two and a wary one is never worth the meat.
+   *
+   * Deliberately expensive. It costs food, in a world where `bugs.md` says
+   * total food is the constraint, and most attempts are simply thrown away —
+   * which is the correct shape for the first domestication anybody attempted.
+   */
+  private doTame(person: Person, ctx: ActionContext): void {
+    const animal = person.targetAnimalId === null
+      ? null
+      : ctx.animalsById.get(person.targetAnimalId);
+    if (!animal || !animal.alive) {
+      this.abandon(person, 'quarry_gone', ctx);
+      return;
+    }
+    if (techPower(person, 'taming') <= 0) {
+      this.abandon(person, 'dont_know_how', ctx);
+      return;
+    }
+    if (animal.tamedBy !== null) {
+      this.abandon(person, 'already_tame', ctx);
+      return;
+    }
+    const food = person.inventory.bestFood();
+    if (food === null) {
+      this.abandon(person, 'nothing_to_offer', ctx);
+      return;
+    }
+
+    // A wild animal will not stand still to be approached, so this is a chase
+    // with a different ending. The interruption check comes first for the same
+    // reason it does in `doHunt`.
+    const stop = this.interruption(person, ctx);
+    if (stop) {
+      this.stop(person, stop, ctx);
+      return;
+    }
+    person.workedTicks++;
+
+    if (person.distanceTo(animal) > REACH) {
+      person.targetX = animal.x;
+      person.targetY = animal.y;
+      ctx.movement.step(person);
+      return;
+    }
+
+    person.inventory.remove(food, 1);
+    animal.fedBy.add(person.id);
+    animal.meals++;
+    person.practice('track', 0.8);
+    telemetry.count('animal_fed');
+
+    // How many meals it takes. `temperament` runs 0 to 1 and this maps it onto
+    // four for the placid and ten for the wariest — scaled by how well the
+    // feeder knows what they are doing, so a refined design is the difference
+    // between a wolf that comes back and a wolf that does not.
+    //
+    // Meals rather than *feeders*, which is what it counted first and is the
+    // reason nothing was ever tamed: `fedBy` is a `Set` of ids, so one person
+    // feeding an animal all season put themselves in it once.
+    const needed = Math.max(1, Math.round(
+      (4 + animal.temperament * 6) / techPower(person, 'taming')));
+    if (animal.meals >= needed) {
+      animal.tamedBy = person.id;
+      animal.alarmedUntil = 0;
+      telemetry.count('animal_tamed');
+      person.chronicle.push({
+        tick: ctx.tick,
+        ageDays: person.age,
+        text: 'tamed a ' + animal.def.label.toLowerCase(),
+        kind: 'milestone',
+      });
+    }
     this.finish(person);
   }
 
@@ -1358,15 +1589,33 @@ export class ActionSystem {
     return null;
   }
 
+  /**
+   * True if this person can make marks in this form, and take them back out.
+   *
+   * One function rather than the bare string `'writing'` written out in five
+   * places. M8.1's `ochre` is the reason: a painted picture is legible to
+   * anybody who can recognise what it is a picture of, so literacy stopped
+   * being one question and became a property of the form. `InscriptionDef`
+   * carries it, and the clay tablet's old hardcoded second gate folds into the
+   * same field.
+   */
+  private canUse(person: Person, def: InscriptionDef): boolean {
+    return techPower(person, def.literacy) > 0;
+  }
+
   /** The best form this person can presently write on, or null. */
   private inscriptionForm(person: Person): InscriptionDef | null {
     // Clay first when it is known and affordable: it holds two and costs less
-    // work. Stone is the fallback and the permanent one, so a band that has
-    // both writes its cheap notes on clay and still has rock for what matters.
-    const order: InscriptionForm[] = ['clay', 'stone'];
+    // work. Stone next, the permanent one, so a band that has both writes its
+    // cheap notes on clay and still has rock for what matters. Ochre last
+    // despite being the cheapest, because it is the worst record of the three
+    // and is only ever reached by somebody who cannot do better — which is
+    // exactly the band that has never worked out writing at all, and is the
+    // whole reason the node exists.
+    const order: InscriptionForm[] = ['clay', 'stone', 'ochre'];
     for (const form of order) {
       const def = INSCRIPTIONS[form];
-      if (form === 'clay' && techPower(person, 'clay_tablet') <= 0) continue;
+      if (!this.canUse(person, def)) continue;
       const affordable = Object.entries(def.materials)
         .every(([itemId, count]) => person.inventory.count(itemId) >= count);
       if (affordable) return def;
@@ -1383,7 +1632,10 @@ export class ActionSystem {
    * reader at the other end who has to be literate before any of it counts.
    */
   private doInscribe(person: Person, ctx: ActionContext): void {
-    if (techPower(person, 'writing') <= 0) {
+    // Asked of the *forms* rather than of `writing`, because since M8.1 they
+    // are different questions: somebody who knows only `ochre` can leave a
+    // painting on a rock and cannot cut a word into one.
+    if (!Object.values(INSCRIPTIONS).some(def => this.canUse(person, def))) {
       this.abandon(person, 'cannot_write', ctx);
       return;
     }
@@ -1396,6 +1648,13 @@ export class ActionSystem {
       ? null
       : ctx.inscriptionsById.get(person.targetInscriptionId);
     if (aim && aim.unfinished) {
+      // Per form, not in general. Walking across the valley to finish somebody
+      // else's carved stone when all you know is how to grind red earth is the
+      // sort of thing that would have gone unnoticed for months.
+      if (!this.canUse(person, aim.def)) {
+        this.abandon(person, 'cannot_write', ctx);
+        return;
+      }
       person.targetX = aim.x;
       person.targetY = aim.y;
       if (!ctx.movement.step(person)) return;
@@ -1411,7 +1670,7 @@ export class ActionSystem {
     // stone on the tick after starting it, every time, with the reason
     // "everything they know is already written down".
     const started = ctx.unfinishedAt(person.x, person.y);
-    if (started) {
+    if (started && this.canUse(person, started.def)) {
       this.cut(person, started, ctx);
       return;
     }
@@ -1476,6 +1735,10 @@ export class ActionSystem {
     const done = target.techs[target.techs.length - 1]!;
     person.practice(target.def.skill, 2);
     telemetry.count('recorded_' + done);
+    // Per form as well as per technology. M8.1's `ochre` is the only record in
+    // the game that is not writing, and "did anybody paint anything?" cannot be
+    // answered from a count of what was written down.
+    telemetry.count('inscribed_' + target.def.id);
     const label = TECH[done as Tech].label.toLowerCase();
     person.chronicle.push({
       tick: ctx.tick,
@@ -1504,7 +1767,7 @@ export class ActionSystem {
       this.abandon(person, 'record_gone', ctx);
       return;
     }
-    if (techPower(person, 'writing') <= 0) {
+    if (!this.canUse(person, record.def)) {
       this.abandon(person, 'cannot_read', ctx);
       return;
     }

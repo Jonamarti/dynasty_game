@@ -32,14 +32,20 @@ checks pass**, 15 n/a, 4,071 steps/s against a 2,000 floor.
 | M6b phase 8 — the content nodes | **superseded** by [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | Fix `tracking`'s spark, the M8.1 blocker | shipped 2026-09-08 |
 | M8.1 — `fishing`, mechanism 2 | shipped 2026-09-08 |
-| **M8.1 — the remaining thirteen nodes; traps, stations, spoilage** | **next** |
+| M8.1 — `basketry`, `netting`, `snares`, `fish_trap`; mechanism 3, the traps | shipped 2026-09-09 |
+| **M8.1 — the remaining nine nodes; mechanism 4 (stations), then 1 (spoilage)** | **next** |
 | M8.2–M8.4 — the rest of The Ages | planned; see that document |
 | M7 — A\*, walls, interiors, beds | not started, and lands alone |
 | Owner's list O1–O5 | untouched. O6 and O7 shipped in pass A |
 
-Seventeen technologies, five recipes, seven buildings, seventeen items,
+Twenty-two technologies, seven recipes, nine buildings, twenty items,
 twenty-nine actions, twelve skills (`farm` and `smith` new, and unused until
-M8), four jobs, six domains, six eras, three full-screen graphs (`G`/`K`/`T`).
+M8), four jobs, seven domains, six eras, three full-screen graphs (`G`/`K`/`T`).
+
+The figures above the table are from 2026-09-08 and the default scenario is
+bit-identical since, because a world in which nobody knows how to set a trap
+takes none of the branches M8.1's second pass added. Nine scenarios now: `traps`
+is new, and `sim:check:all` reports 46 of 46 on it.
 
 ---
 
@@ -61,8 +67,14 @@ M8), four jobs, six domains, six eras, three full-screen graphs (`G`/`K`/`T`).
 4. ~~**Fix `tracking`.**~~ **Done, 2026-09-08**: see below and
    [changelog.md](changelog.md). It was unreachable in play and M8.1 puts two
    nodes behind it.
-5. **M8.1–M8.4 — The Ages**, the ladder to iron in four tiers. Unblocked; not
-   started.
+5. **M8.1–M8.4 — The Ages**, the ladder to iron in four tiers. In progress:
+   `fishing` and mechanism 2 on 2026-09-08, and the four trap nodes with
+   mechanism 3 on 2026-09-09. **Mechanism 4, the crafting stations, is next**,
+   and the plan's warning about it is the one to read first: do not retrofit a
+   station onto `pot`, and give the `craft` scenario a kiln at founding or the
+   station checks all report n/a. Spoilage ships last and alone, because it is a
+   supply *cut* and doing it earlier hides every gain in this tier inside its
+   recovery.
 6. **M7**, alone, whenever it is picked up.
 
 ---
@@ -292,6 +304,68 @@ landmass index that keeps people from walking at food across water — any tile
 change needs incremental region repair, and that is exactly the machinery M7's
 walls need. **M8.3's mining is now a second customer.** Build it once in M7 and
 both digging and mining become content on top of it.
+
+## 7b. The owner's notes of 2026-09-09
+
+Triaged out of `notes.txt` on 2026-09-09. Two of the four were fixed in that
+pass and are in [changelog.md](changelog.md); these two are not scheduled.
+
+### N1. Fishing spots belong in the water, not on the beach
+
+Today `spawnFish` (`Simulation.ts`) places a fish node on a **land** tile:
+`suitsBiome('fish')` is `biome === 'beach' && world.isShore(x, y)`. The owner
+wants them on the coastline proper — in the water at the edge, with the fisher
+standing on the shore.
+
+That is a movement-system change rather than a placement tweak, which is why it
+is here and not in M8.1:
+
+- Placement can no longer go through `World.randomWalkable`; it needs water
+  tiles that have a walkable four-neighbour.
+- `Brain.findNode` rejects them outright today. Its `world.sameRegion` check
+  fails because water carries `region === -1`, so it must test the region of the
+  node's adjacent shore tile instead.
+- `Brain.setup`'s `forage` case sets `targetX/Y` to the node's own tile, so the
+  fisher would walk into the sea. It must target the adjacent shore tile, which
+  means the node has to carry or derive one.
+- `Renderer` draws a node at its own tile, so that half is free.
+- Determinism: a new placement pass needs its **own appended RNG stream**, run
+  after `spawnPeople`. The genuinely-last fork is now the `fishRng` in
+  `Simulation`'s constructor, not `recordRng` and not `seedInitialForest`'s —
+  see `AGENTS.md`.
+
+**It shares machinery with M7.** "Stand on one tile to work another" is exactly
+the problem walls and A\* create, and doing it twice is how two copies of an idea
+drift apart. Worth doing with M7 rather than before it.
+
+### N2. Sea water should not be drinkable, which means rivers
+
+Nothing distinguishes fresh water from salt. `Brain.findWater` and the
+right-click Drink path both read `world.shoreTiles`, which is every walkable
+tile with a water neighbour, and `World.generate` has no river pass at all.
+
+Milestone-sized, and it arrives as three things at once: a river generator, a
+fresh/salt distinction that `shoreTiles` and everything reading it must respect,
+and a bigger map to put rivers on. The map is the expensive part — `World.region`
+is a flood fill over every walkable tile and the LOD chunking is sized against
+the current 128×128 — so this wants to land near M7 and section 7 above, which
+already need incremental region repair.
+
+It pairs with N1: both are about the coastline meaning something.
+
+### N3. Curiosity as a fourth transmission channel
+
+From the same notes: somebody who sees an unfamiliar object or an unfamiliar
+technique should want to find out about it — asking around, seeking out whoever
+has it — and a rival band that sees a thing worth having should be able to copy
+it. Knowledge would then be slow to *originate* and much faster to *spread*.
+
+This belongs beside O1–O3, and section 0 above is the argument for it: the tree
+is gated by transmission, and this is a transmission channel that does not
+depend on anybody deciding to teach. `KnowledgeSystem.tryObserve` is the seam —
+it already pairs neighbours by proximity and reads `WATCHING_RANGE` — and
+`learning.observationChance` is now the settings-screen lever over the passive
+version of it.
 
 ## 8. Wildlife, second pass
 

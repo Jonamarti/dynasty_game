@@ -186,7 +186,11 @@ export function availableActions(
  * illiterate character would hide the single rule the whole feature turns on.
  */
 function recordActions(actor: Person, record: Inscription): ActionOption[] {
-  const literate = techPower(actor, 'writing') > 0;
+  // Literacy is a property of the *form* since M8.1, so a painter cannot read a
+  // carved stone and a scribe cannot read a painting. The tooltip has to say
+  // which, or the single rule the whole feature turns on is invisible from
+  // inside the game.
+  const literate = techPower(actor, record.def.literacy) > 0;
 
   if (record.unfinished) {
     return [{
@@ -194,7 +198,8 @@ function recordActions(actor: Person, record: Inscription): ActionOption[] {
       label: 'Finish cutting it',
       icon: '\u{1FAA8}',
       enabled: literate,
-      reason: literate ? undefined : 'You never learned to write',
+      reason: literate ? undefined
+        : 'You do not know how to make a ' + record.def.label.toLowerCase(),
     }];
   }
 
@@ -208,7 +213,7 @@ function recordActions(actor: Person, record: Inscription): ActionOption[] {
     icon: '\u{1F4D6}',
     enabled: literate && useful,
     reason: !literate
-      ? 'You never learned to read'
+      ? 'You cannot read a ' + record.def.label.toLowerCase()
       : useful
         ? undefined
         : record.techs.length === 0
@@ -240,7 +245,19 @@ function personActions(actor: Person, other: Person): ActionOption[] {
     TECH[idea.tech].requires.some(required => other.knownTech.has(required))
   );
 
+  // M8.1: the first thing anybody can do about somebody else being hurt. Gated
+  // on the knowledge rather than shown greyed, and on the patient's actually
+  // being hurt, because "tend the perfectly healthy" is not a question worth
+  // putting in front of the player.
+  const hurt = other.health < 100;
   return [
+    ...(techPower(actor, 'herbalism') > 0 ? [{
+      id: 'tend',
+      label: 'Tend ' + other.name,
+      icon: '\u{1FAF6}',
+      enabled: hurt,
+      reason: hurt ? undefined : 'They are not hurt',
+    }] : []),
     ...(idea ? [{
       id: 'discuss',
       label: 'Discuss ' + TECH[idea.tech].label.toLowerCase() + ' with ' + other.name,
@@ -300,15 +317,35 @@ function personActions(actor: Person, other: Person): ActionOption[] {
 
 function animalActions(actor: Person, animal: Animal): ActionOption[] {
   const laden = actor.carrying >= actor.carryCapacity;
-  return [
+  const beast = animal.def.label.toLowerCase();
+  const options: ActionOption[] = [
     {
       id: 'hunt',
-      label: 'Hunt the ' + animal.def.label.toLowerCase(),
+      label: 'Hunt the ' + beast,
       icon: '\u{1F3F9}',
       enabled: !laden,
       reason: laden ? 'Your hands are full' : undefined,
     },
   ];
+  // M8.1. Offered only to somebody who could actually do it, for the reason the
+  // craft menu gives: a menu full of greyed-out verbs hands the player the shape
+  // of the tech web for free.
+  if (techPower(actor, 'taming') > 0) {
+    const food = actor.inventory.bestFood();
+    const already = animal.tamedBy !== null;
+    options.push({
+      id: 'tame',
+      label: already && animal.tamedBy === actor.id
+        ? 'The ' + beast + ' follows you'
+        : 'Offer the ' + beast + ' food',
+      icon: '\u{1F36F}',
+      enabled: !already && food !== null,
+      reason: already
+        ? 'It already follows somebody'
+        : food === null ? 'You are carrying no food to offer' : undefined,
+    });
+  }
+  return options;
 }
 
 function nodeActions(node: ResourceNode): ActionOption[] {
@@ -456,6 +493,19 @@ function groundActions(
     options.push({ id: 'drink', label: 'Drink', icon: '\u{1F4A7}', enabled: true });
   }
 
+  // Playing, where you stand: a tune has no destination, and everybody in
+  // earshot gets it whether or not they were listening for it.
+  if (techPower(actor, 'flute') > 0) {
+    const hasFlute = actor.inventory.has('flute');
+    options.push({
+      id: 'play',
+      label: 'Play a tune',
+      icon: '\u{1F3B5}',
+      enabled: hasFlute,
+      reason: hasFlute ? undefined : 'You are not carrying a flute',
+    });
+  }
+
   // Thinking, and building the first one. Both are aimed at nothing, so they
   // belong with the other verbs that happen where you stand.
   const thinkable = actor.ideas.find(
@@ -491,17 +541,24 @@ function groundActions(
 
   // Writing where you stand. Offered on the ground rather than on a record,
   // because a new one is *made* here — the ground is what you are writing on.
-  if (techPower(actor, 'writing') > 0) {
-    const spare = Object.values(INSCRIPTIONS).some(def =>
-      (def.id !== 'clay' || techPower(actor, 'clay_tablet') > 0) &&
-      Object.entries(def.materials)
-        .every(([itemId, count]) => actor.inventory.count(itemId) >= count));
+  const forms = Object.values(INSCRIPTIONS)
+    .filter(def => techPower(actor, def.literacy) > 0);
+  if (forms.length > 0) {
+    const usable = forms.filter(def => Object.entries(def.materials)
+      .every(([itemId, count]) => actor.inventory.count(itemId) >= count));
+    // Named after the best form they could actually use, because "write
+    // something down" is the wrong verb for a painter and there is no reason to
+    // make the player guess which of the three they are about to make.
+    const best = usable[0] ?? forms[0]!;
+    const wants = Object.keys(best.materials)
+      .map(itemId => ITEMS[itemId]?.label.toLowerCase() ?? itemId)
+      .join(' and ');
     options.push({
       id: 'inscribe',
-      label: 'Write something down',
-      icon: '\u{1FAA8}',
-      enabled: spare,
-      reason: spare ? undefined : 'You need flint to cut with',
+      label: best.id === 'ochre' ? 'Paint something on the rock' : 'Write something down',
+      icon: best.icon,
+      enabled: usable.length > 0,
+      reason: usable.length > 0 ? undefined : 'You need ' + wants,
     });
   }
 

@@ -3,6 +3,52 @@
 As of 2026-09-09. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found while building the rest of M8.1, 2026-09-09 — open
+
+### `jobs-bias-work` has an effect smaller than its own seed-to-seed spread
+
+The new `hunters` scenario failed it at **-0.9 points** — holders spending less
+time on their own job's work than everybody else — and four other seeds of the
+same scenario report **+0.8, +1.3, +1.6 and +1.8**. The bias is real and it is
+positive; it is simply about a point and a half on a band of twenty, and the
+spread between seeds is wider than that.
+
+Every other scenario in the suite passes, so this is not a defect in `Brain`'s
+job bias. It is a check that will go red on roughly one new scenario in five for
+no reason anybody can act on, which is the mirror image of the two larder checks
+this project deleted for looking reassuring and detecting nothing.
+
+`hunters` is seeded `bone` rather than `ivory` because of this, and the scenario
+says so in its own comment rather than quietly. **The fix is to widen the check,
+not the scenario**: either measure it across seeds the way `sim:seeds` does, or
+state a margin it has to clear rather than a sign. Not done here because
+`jobs-bias-work` gates eleven other scenarios and rewriting it inside a content
+pass is how a gate gets quietly loosened.
+
+### `tiny` fails `food-work-continues`, and did before any of this
+
+Recorded because it was hit repeatedly while measuring M8.1 and mistaken for a
+regression twice. On `tiny` the check reports **0 ticks of food-gathering
+continued through hunger (658 hunting)** — it is a one-band eight-person world
+where the whole food economy runs through the hunt, and the thing the check
+measures never comes up. It fails identically on the commit before M8.1's
+stations landed.
+
+Either the check needs the same kind of honest skip the other thin-scenario
+checks have grown, or `tiny` needs enough forage in it to exercise the thing.
+Neither is done here.
+
+### An animal that has been fed forgets nobody, and is inherited by no one
+
+`taming` sets `Animal.tamedBy` to a person id, and `heel` falls back to grazing
+when that person dies. So a dog whose owner dies is a dog that quietly stops
+following anybody, for ever, while still not fleeing from the dead person's id.
+Nothing passes it to an heir and nothing lets a second person take it over.
+
+Deliberate for this pass — inheritance of animals belongs with the herd
+mechanics in M8.2, which is where `Animal.fedBy` gets its second reader — but it
+is a loose end and not a design.
+
 ## Found while building M8.1's traps, 2026-09-09 — open
 
 ### Adult starvation rose while infant starvation halved, and nothing explains it yet

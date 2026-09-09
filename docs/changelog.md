@@ -6,6 +6,94 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-09 — M8.1 completes its content: a picture, a tune, a healer and a dog
+
+The last four nodes of the tier — **`ochre`, `flute`, `herbalism` and
+`taming`** — and three of them are the first technologies in this game that are
+not about getting more out of the ground. Thirty technologies now, thirteen
+recipes, ten buildings, twenty-nine items, thirty-two actions.
+
+**`ochre` made literacy a property of the record rather than of the reader.**
+The gate was the bare string `'writing'` in five places, and the clay tablet's
+own extra gate was a hardcoded `def.id !== 'clay'` sitting beside it.
+`InscriptionDef.literacy` replaces both. A script is an agreed code and is worth
+nothing outside the agreement; a painted picture of a thing being done is legible
+to anybody who can recognise the thing — so a band that has never worked out
+writing can leave a record on a rock wall, and **a scribe who has never seen
+ochre cannot read one**. Both directions are asserted in `transmission.test.ts`,
+because the second is the one that would have gone unnoticed.
+
+That makes ochre the first record most bands will ever make despite being listed
+last: `writing` sits behind `marking` and `stoneworking` and no run in the suite
+reaches it from nothing. It pays for that with everything else — one thing only,
+and gone in about six weeks of weather.
+
+**`flute` is the first scorer in the game that reads somebody else's need as its
+own reason.** Every social act until now was a pair: `SocialSystem.converse` sets
+`company` to zero for exactly two people and nothing else touches it. A tune
+reaches everybody within sixteen tiles, in small amounts every tick rather than
+one lump at the end, so somebody who walks past halfway through has still heard
+half of it.
+
+**`herbalism` gives the `heal` skill the first use it has ever had.** It has been
+in `SKILLS` since the beginning — spent points on at character creation,
+inherited, aged, and never once practised by any action. Health was recovered at
+a flat `needs.recoveryRate` and by nothing else at all, so being badly hurt has
+always been a thing you wait out alone. You cannot tend yourself: the point of
+the node is that a band with a healer in it is a different band.
+
+**`taming` finally reads `Animal.fedBy` and `Animal.temperament`**, both of which
+have been on that class since M6a doing nothing, deliberately, because adding
+them later would have been a migration. It took two goes:
+
+- **It counted feeders, not meals.** `fedBy` is a `Set` of person ids, so one
+  person feeding an animal every day for a season added themselves to it exactly
+  once and the threshold could never be reached: **a hundred and one meals were
+  offered across a run and nothing was ever tamed.** `Animal.meals` is the
+  counter; `fedBy` keeps the question it actually answers.
+- **Which turned out to be the better design.** `fedBy` is now *who the animal
+  will let near*: it does not bolt from somebody it has taken food from, which is
+  what makes the second meal possible at all. Two stages rather than one, and
+  recognisably how it actually goes. It also cut the waste enormously — 15 meals
+  for 3 tamed animals, where the broken version threw away 101 for none.
+
+A tamed animal heels, stops treating its owner as a threat, and multiplies the
+hunt roll through `companionBonus` — capped at one companion, so a band that
+tames six wolves is a band with six wolves and not a band that cannot miss.
+
+**A new scenario, `culture`**, grouping the four because they share a
+precondition rather than a mechanism: all four are what somebody does when
+nothing is pressing. Ochre could not have been measured anywhere else at all —
+`scribes` starts people knowing how to write, which is precisely the case ochre
+exists to cover the absence of. Four new checks, all four verified failing on a
+build with their feature broken.
+
+**Two checks were fixed rather than tuned, and both were the check being wrong.**
+
+- `crafting-is-interruptible` asserted on a floor of five attempts. The
+  interruption *rate* varies by more than an order of magnitude across the suite
+  — `craft` reports 192 broken-off attempts against 13 finished, `traps` reports
+  3 against 27 — so at the low end, ten attempts producing no interruption has a
+  probability around a third. `culture` failed at 10 and 0. The floor is
+  twenty-five, which is where zero becomes surprising rather than merely quiet.
+  The alternative, making `culture` less comfortable until it passed, is tuning
+  the world to satisfy a measurement.
+- `jobs-bias-work` is **not** fixed, and that is recorded in `bugs.md` rather
+  than worked around in silence. `hunters` fails it at -0.9 on seed `ivory` while
+  four other seeds of the same scenario report +0.8, +1.3, +1.6 and +1.8: the
+  effect is about a point and a half and the seed spread is wider than that. The
+  scenario is seeded `bone` and says so in its own comment. Widening the check
+  belongs in its own pass, because it gates eleven other scenarios.
+
+**Adding four nodes to `TECHS` changes worlds that cannot reach them**, and that
+is worth stating once. `hunters` diverges from step 1800 despite never firing any
+of the four verbs, because `flute` and `taming` sit behind `bone_working` and
+`tracking` — which that band starts with — so there is more to think about:
+`ponder` doubled and work fell. That is the tree growing, not a defect, and it is
+why every content tier gets measured rather than assumed.
+
+---
+
 ## 2026-09-09 — M8.1 continues: the bone tier
 
 Three nodes — **`bone_working`, `tailoring` and `atlatl`** — and the first

@@ -27,9 +27,10 @@
  * project relies on being one — a marked stone and an unmarked stone are not
  * interchangeable, and a stack cannot say so.
  */
+import type { Tech } from '../knowledge/Tech.ts';
 
 /** The forms a record can take, in the order they are worked out. */
-export type InscriptionForm = 'stone' | 'clay';
+export type InscriptionForm = 'stone' | 'clay' | 'ochre';
 
 export interface InscriptionDef {
   id: InscriptionForm;
@@ -67,6 +68,23 @@ export interface InscriptionDef {
    * the expensive one obsolete.
    */
   decayPerDay: number;
+  /**
+   * What somebody must know to make marks in this, and to take them back out.
+   *
+   * **The two are the same and they are not always `writing`**, which is M8.1's
+   * `ochre` and the whole historical point of it. Script is an agreed code and
+   * is worth nothing to anybody outside the agreement; a painted picture of a
+   * thing being done is legible to whoever can recognise the thing. So a band
+   * that has never worked out writing can still leave a record on a rock wall,
+   * and a literate stranger who has never seen ochre cannot read it.
+   *
+   * Before this the gate was the bare string `'writing'` in five places —
+   * `doInscribe`, `doRead`, `inscriptionForm`, `Brain` and `ActionCatalog` —
+   * and the clay tablet's own extra gate was a hardcoded `def.id !== 'clay'`
+   * beside it. Both are data now, for the reason the house style gives: five
+   * copies of one predicate is how the five answers drift apart.
+   */
+  literacy: Tech;
   description: string;
 }
 
@@ -81,6 +99,7 @@ export const INSCRIPTIONS: Record<InscriptionForm, InscriptionDef> = {
     skill: 'knap',
     capacity: 1,
     decayPerDay: 0,
+    literacy: 'writing',
     description: 'One thing, cut into rock. It will be here long after everyone who can read it.',
   },
   clay: {
@@ -94,7 +113,37 @@ export const INSCRIPTIONS: Record<InscriptionForm, InscriptionDef> = {
     // About one in a hundred and forty days: a lifetime for a person, an
     // eyeblink for a record that is supposed to outlast one.
     decayPerDay: 0.007,
+    literacy: 'clay_tablet',
     description: 'Quicker to write and holds more, and it will not see out a century.',
+  },
+  // M8.1. The cheapest record in the game and the only one that is not writing.
+  //
+  // It is the *first* record most bands will ever make, despite being listed
+  // last, because it is the only one that does not sit behind `writing` — and
+  // `writing` sits behind `marking` and `stoneworking`, which no run in the
+  // suite reaches from nothing. A painted hand and a painted animal is what
+  // people actually left on rock walls for thirty thousand years before anybody
+  // wrote anything down.
+  //
+  // It pays for that with everything else: one thing only, and gone in about six
+  // weeks of weather.
+  ochre: {
+    id: 'ochre',
+    label: 'Ochre painting',
+    icon: '\u{1F58C}',
+    // Red earth, and the fire that makes it red. `firemaking` is what `ochre`
+    // requires and this is why: heating yellow earth is what turns it.
+    materials: { mud: 2 },
+    workTicks: 150,
+    skill: 'build',
+    capacity: 1,
+    // About one day in fifty. A record that will not see out a bad summer,
+    // which is the trade for its being the one anybody can make.
+    decayPerDay: 0.02,
+    literacy: 'ochre',
+    description:
+      'Earth burnt red and laid on rock. Anybody who knows what the picture ' +
+      'is of can read it, which is more than can be said for a script.',
   },
 };
 

@@ -113,6 +113,9 @@ export const ITEMS: Record<string, ItemDef> = {
   fur_coat: {
     id: 'fur_coat', label: 'Fur coat', nutrition: 0, spoilTicks: 0, baseValue: 15,
   },
+  // The only object in the game that does nothing useful at all, and the most
+  // valuable thing a Palaeolithic band owns for exactly that reason.
+  flute: { id: 'flute', label: 'Flute', nutrition: 0, spoilTicks: 0, baseValue: 16 },
   // M8.1. Both are carried tools rather than materials, and both are read
   // through an item-presence test *and* `techPower` — a basket in the hands of
   // somebody who does not know basketry is a bundle of withies. That double

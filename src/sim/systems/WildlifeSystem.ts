@@ -19,7 +19,7 @@ import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import { moveToward } from './MovementSystem.ts';
 import { telemetry } from '../core/Telemetry.ts';
-import { stealthFactor } from '../knowledge/Tech.ts';
+import { techPower, stealthFactor } from '../knowledge/Tech.ts';
 
 /** Ticks an animal keeps running after it stops seeing what spooked it. */
 const ALARM_TICKS = 90;
@@ -43,6 +43,9 @@ const FLIGHT_BEARINGS = [0, 0.5, -0.5, 1.0, -1.0, 1.6, -1.6];
 /** How far from the herd's centre an animal will drift before coming back. */
 const HERD_SPREAD = 3.5;
 
+/** How near a tamed animal keeps to the person it follows. */
+const HEEL_DISTANCE = 2.5;
+
 /**
  * Animals move on a stagger, like people think on one.
  *
@@ -57,6 +60,16 @@ export interface WildlifeContext {
   rng: RNG;
   tick: number;
   peopleHash: SpatialHash<Person>;
+  /**
+   * Everybody, by id, so a tamed animal can find the one person it follows.
+   *
+   * By id rather than through `peopleHash`, because "where is this particular
+   * person?" is not a proximity question and the hash would have to be searched
+   * at map range to answer it — which is exactly the kind of scan `AGENTS.md`
+   * forbids. Optional so that the tests which build a context by hand keep
+   * compiling; without it a tamed animal simply grazes.
+   */
+  peopleById?: Map<number, Person>;
 }
 
 export class WildlifeSystem {
@@ -90,6 +103,7 @@ export class WildlifeSystem {
       if (threat) this.alarm(animal, threat, ctx, animals);
 
       if (animal.alarmedUntil > ctx.tick) this.bolt(animal, ctx);
+      else if (animal.tamedBy !== null && this.heel(animal, ctx)) continue;
       else this.graze(animal, centroids.get(animal.herdId), ctx);
     }
   }
@@ -103,7 +117,15 @@ export class WildlifeSystem {
   private threatNear(animal: Animal, ctx: WildlifeContext): Person | null {
     return ctx.peopleHash.findNearest(
       animal.x, animal.y, animal.def.awareness,
-      person => person.alive &&
+      // M8.1, and the halfway stage that makes taming possible at all.
+      //
+      // An animal does not bolt from somebody it has taken food from, which is
+      // what `fedBy` is for — and without it the second meal could never be
+      // delivered, because the beast would run the moment the same person came
+      // back. Its owner is covered by the same test once `tamedBy` is set, and
+      // no longer bolting is most of what being tamed *is* from the animal's
+      // side; everything else follows from it.
+      person => person.alive && !animal.fedBy.has(person.id) &&
         person.distanceTo(animal) <= noticeRadius(animal, person)
     );
   }
@@ -196,6 +218,36 @@ export class WildlifeSystem {
   }
 
   /** Wanders around the herd's centre, coming back when it strays too far. */
+  /**
+   * A tamed animal keeping up with the person it follows.
+   *
+   * Returns false — and falls back to grazing — when its person is dead or off
+   * the map, which is the whole of what happens to a dog whose owner dies:
+   * nothing dramatic, it simply goes back to being an animal near a herd. It
+   * keeps `tamedBy` set, so whoever inherits the camp inherits a beast that
+   * still will not run from them.
+   *
+   * Note what this does *not* draw: an `RNG`. `graze` takes two draws per move
+   * and this takes none, so a world with a tamed animal in it does diverge from
+   * one without — which is correct and unavoidable, and is confined to worlds
+   * where somebody has actually worked `taming` out.
+   */
+  private heel(animal: Animal, ctx: WildlifeContext): boolean {
+    const owner = ctx.peopleById?.get(animal.tamedBy!);
+    if (!owner || !owner.alive) return false;
+    animal.alarmedUntil = 0;
+    animal.stamina = Math.min(1, animal.stamina + STAMINA_RECOVERY);
+    // Only closes the gap when there is one. An animal that walked to its
+    // owner's exact tile would stand inside them, and a companion that never
+    // strays reads as a sprite glued on rather than as an animal.
+    if (Math.hypot(animal.x - owner.x, animal.y - owner.y) <= HEEL_DISTANCE) return true;
+    moveToward(
+      animal, owner.x, owner.y,
+      animal.def.speed * MOVE_INTERVAL * 0.5, ctx.world, ctx.rng
+    );
+    return true;
+  }
+
   private graze(
     animal: Animal,
     centre: { x: number; y: number } | undefined,
@@ -229,3 +281,26 @@ export function noticeRadius(animal: Animal, person: Person): number {
   const practice = 1 - (person.skills.track / 100) * 0.5;
   return animal.def.awareness * practice * stealthFactor(person);
 }
+
+/**
+ * How much better a hunt goes for somebody with a tamed animal at their side.
+ *
+ * M8.1's `taming`, and the second half of what a dog is for — the first being
+ * that it stops running away from you. A companion works the ground ahead and
+ * holds what it finds, which is worth more than any weapon in the game and is
+ * meant to be: it costs a season of feeding an animal you could have eaten.
+ *
+ * Counted per hunter rather than per animal, and capped at one, so a band that
+ * tames six wolves is a band with six wolves and not a band that cannot miss.
+ */
+export function companionBonus(person: Person, animals: Iterable<Animal>): number {
+  for (const animal of animals) {
+    if (!animal.alive || animal.tamedBy !== person.id) continue;
+    if (person.distanceTo(animal) > COMPANION_RANGE) continue;
+    return 1 + 0.35 * techPower(person, 'taming');
+  }
+  return 1;
+}
+
+/** How close a companion has to be to be hunting with you rather than near you. */
+const COMPANION_RANGE = 8;

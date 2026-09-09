@@ -1,0 +1,5 @@
+When two npcs are together and we click on them there appears options to click on ground, one of the npcs... but not both.
+People would try to have a good relationship with their tribe members, and specially with their leader, unless rebellious.
+My controlled npc doesnt try to drink, eat or sleep on its own.
+Thinking should not be confused with wandering or relaxing. It may be an autonomous activity npcs do when their needs are satisfied, they are not fatigued, not work left to do, not being ordered around. It should greatly increase chance of sparks to improve tech discovery speed.
+Talking should show more options:

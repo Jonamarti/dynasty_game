@@ -65,6 +65,10 @@ export const TECHS = [
   // M8.1, the bone tier: what a carcass is worth once you know what to do with
   // the parts nobody was eating.
   'bone_working', 'tailoring', 'atlatl',
+  // M8.1, the last four. Three of them are the first technologies in this game
+  // that are not about getting more out of the ground, and that is most of the
+  // point of them: a picture, a tune, and somebody sitting with the sick.
+  'ochre', 'flute', 'herbalism', 'taming',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -643,6 +647,83 @@ export const TECH: Record<Tech, TechDef> = {
       'A notched stick that lengthens the arm. Twenty thousand years before ' +
       'the bow, and most of the way to it.',
   },
+  // --- M8.1, the last four ---------------------------------------------------
+  ochre: {
+    id: 'ochre', label: 'Ochre', domain: 'stone',
+    requires: ['firemaking'], difficulty: 0.3, skill: 'build',
+    prototype: { mud: 2, sticks: 1 }, maxRefinement: 2,
+    sparks: [
+      // The whole idea is in the fire, which is why the only prerequisite is
+      // one: yellow earth goes red when it is heated, and somebody noticed.
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'mud' }],
+        weight: 1.0, story: 'left a lump of yellow earth in the embers and pulled out a red one' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'doing', action: 'gather' },
+                { kind: 'place', biome: 'hills' }],
+        weight: 0.7, story: 'dug clay out of a bank and found it stained everything it touched' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'doing', action: 'hunt' },
+                { kind: 'feeling', need: 'company' }],
+        weight: 0.5, story: 'came back from a hunt with something worth telling and no way to keep it' },
+    ],
+    description:
+      'Earth burnt red, and a rock wall. The cheapest way in the world to ' +
+      'leave something behind, and the only one that needs no script.',
+  },
+  flute: {
+    id: 'flute', label: 'Flute', domain: 'beasts',
+    requires: ['bone_working'], difficulty: 0.45, skill: 'build',
+    prototype: { bone: 1, flint: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'bone_working' }, { kind: 'feeling', need: 'company' }],
+        weight: 1.0, story: 'blew across the end of a hollow bone and startled themselves' },
+      { needs: [{ kind: 'holding', item: 'bone' }, { kind: 'doing', action: 'rest' }],
+        weight: 0.7, story: 'sat idle with a bird bone and nothing better to do with it' },
+      { needs: [{ kind: 'knows', tech: 'bone_working' }, { kind: 'season', season: 'winter' },
+                { kind: 'feeling', need: 'company' }],
+        weight: 0.5, story: 'spent a long winter night making the only noise anybody had heard all day' },
+    ],
+    description:
+      'A hollow bone with holes bored in it. The first thing anybody made that ' +
+      'does nothing at all except be worth listening to.',
+  },
+  herbalism: {
+    id: 'herbalism', label: 'Herbalism', domain: 'plants',
+    requires: ['plant_lore'], difficulty: 0.45, skill: 'heal',
+    prototype: { berries: 3 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'plant_lore' }, { kind: 'doing', action: 'forage' },
+                { kind: 'place', biome: 'forest' }],
+        weight: 1.0, story: 'knew which leaves were food and started wondering about the rest' },
+      { needs: [{ kind: 'knows', tech: 'plant_lore' }, { kind: 'saw', what: 'assault' }],
+        weight: 0.7, story: 'sat with somebody who had been beaten and wanted to do more than sit' },
+      { needs: [{ kind: 'knows', tech: 'plant_lore' }, { kind: 'season', season: 'spring' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 0.5, story: 'chewed a spring root for want of anything else and felt the ache go' },
+    ],
+    description:
+      'Which leaf for a fever and which root for a wound. The first answer ' +
+      'anybody has ever had to being hurt beyond waiting it out.',
+  },
+  taming: {
+    id: 'taming', label: 'Taming', domain: 'beasts',
+    requires: ['tracking'], difficulty: 0.5, skill: 'track',
+    prototype: { meat: 2 }, maxRefinement: 3,
+    sparks: [
+      // The historical route exactly: nobody goes out and tames a wolf, they
+      // stop driving off the one that keeps coming back to the middens.
+      { needs: [{ kind: 'knows', tech: 'tracking' }, { kind: 'holding', item: 'meat' },
+                { kind: 'saw', what: 'quarry_escaped' }],
+        weight: 1.0, story: 'noticed the same beast following the camp and threw it something' },
+      { needs: [{ kind: 'knows', tech: 'tracking' }, { kind: 'doing', action: 'hunt' },
+                { kind: 'feeling', need: 'company' }],
+        weight: 0.7, story: 'hunted alone often enough to want something at their shoulder' },
+      { needs: [{ kind: 'knows', tech: 'tracking' }, { kind: 'holding', item: 'meat' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'fed a hungry animal in a hard winter instead of killing it' },
+    ],
+    description:
+      'An animal that comes back rather than runs. It begins with feeding ' +
+      'something you could have eaten.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -768,6 +849,22 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   atlatl: {
     summary: 'Reach on a throw: a strike landed from further off than an arm can cover.',
     site: 'ActionSystem.doHunt and doAttack, via weaponOf',
+  },
+  ochre: {
+    summary: 'A record anybody can leave, and anybody who knows the picture can read.',
+    site: 'INSCRIPTIONS.ochre, through InscriptionDef.literacy',
+  },
+  flute: {
+    summary: 'Music. It answers loneliness for everybody in earshot, not only the player.',
+    site: 'ActionSystem.doPlay',
+  },
+  herbalism: {
+    summary: 'Tending the hurt: they mend far faster than waiting would have managed.',
+    site: 'ActionSystem.doTend, the only use the heal skill has ever had',
+  },
+  taming: {
+    summary: 'An animal that follows you, and hunts better than you do alone.',
+    site: 'ActionSystem.doTame, Animal.tamedBy, and WildlifeSystem.noticeRadius',
   },
 };
 

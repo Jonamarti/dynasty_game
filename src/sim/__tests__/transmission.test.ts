@@ -295,4 +295,47 @@ describe('a record', () => {
     const mine = sim.interruptions.filter(n => n.personId === illiterate.id);
     expect(mine.map(n => n.reason)).toContain('cannot_read');
   });
+
+  /**
+   * M8.1's `ochre`, and the reason literacy stopped being one question.
+   *
+   * A script is an agreed code and is worth nothing outside the agreement; a
+   * painted picture of a thing being done is legible to whoever can recognise
+   * the thing. That cuts both ways, and the second direction is the one that
+   * would have gone unnoticed: a scribe who has never seen ochre cannot read a
+   * painting either.
+   */
+  it('makes literacy a property of the form, in both directions', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 20; i++) sim.step();
+
+    // A painter who cannot write at all. This is the case the node exists for:
+    // `writing` sits behind `marking` and `stoneworking`, and most bands never
+    // get there.
+    const painter = sim.livingPeople()[0]!;
+    painter.knownTech.add('ochre');
+    painter.knownTech.add('cordage');
+    painter.inventory.add('mud', 24);
+    driveInscribe(sim, painter, 'cordage');
+    const painting = sim.inscriptions.find(r => r.techs.includes('cordage'))!;
+
+    expect(painting.def.id, 'a band that cannot write left something else').toBe('ochre');
+    expect(painter.knownTech.has('writing')).toBe(false);
+
+    // A scribe, who can read every word ever cut and cannot read this.
+    const scribeOnly = sim.livingPeople().find(p => p.id !== painter.id && !p.isChild)!;
+    scribeOnly.knownTech.add('writing');
+    scribeOnly.knownTech.delete('ochre');
+    scribeOnly.knownTech.delete('cordage');
+    scribeOnly.x = painting.x;
+    scribeOnly.y = painting.y;
+
+    sim.interruptions.length = 0;
+    sim.order(scribeOnly, 'read', { inscriptionId: painting.id });
+    for (let i = 0; i < 200 && scribeOnly.order !== null; i++) sim.step();
+
+    expect(scribeOnly.knownTech.has('cordage'), 'a scribe read a painting').toBe(false);
+    const refusals = sim.interruptions.filter(n => n.personId === scribeOnly.id);
+    expect(refusals.map(n => n.reason)).toContain('cannot_read');
+  });
 });
