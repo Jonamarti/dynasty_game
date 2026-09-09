@@ -18,6 +18,7 @@ import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
 import { isTrap } from '../src/sim/entities/Building.ts';
+import { RECIPES } from '../src/sim/entities/Recipe.ts';
 
 // ---------------------------------------------------------------------------
 // Scenarios
@@ -163,6 +164,29 @@ export const SCENARIOS: Record<string, Scenario> = {
       },
     },
     steps: 9000,
+  },
+  millers: {
+    name: 'millers',
+    description:
+      'A band that knows how to grind, starting in late summer so the run ' +
+      'spans a whole autumn. The station scenario, and it needs the calendar ' +
+      'as much as the knowledge: hazels fruit in autumn and nothing else in ' +
+      'the world grinds, so a quern raised in spring is a quern nobody has an ' +
+      'ingredient for. `craft` could not do this job — it starts on day 10 and ' +
+      'runs thirty-three days, so it never sees an autumn, and every station ' +
+      'check on it would report n/a for ever. n/a is not a pass.',
+    config: {
+      seed: 'quern',
+      time: { startDay: 30 },
+      population: {
+        bands: 2, peoplePerBand: 8,
+        startingTech: ['stoneworking', 'grinding', 'cordage'],
+      },
+    },
+    // Day 30 to about day 76: ten days to raise a roof and dig a store, the
+    // whole of autumn (days 40-59) with hazel on the trees, and enough after it
+    // for the meal to be carried home and eaten.
+    steps: 11000,
   },
 };
 
@@ -1079,6 +1103,37 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('crafting-is-interruptible',
       craftInterrupted > 0,
       crafted + ' things made, ' + craftInterrupted + ' attempts broken off for a need');
+  }
+
+  // --- Stations: M8.1, mechanism 4 ----------------------------------------
+  //
+  // The chain here is longer than the granary's and breaks in more places: a
+  // band has to know the technology, want the workshop enough to spend a site
+  // slot on it, finish it, and *then* somebody has to be carrying the right
+  // thing, be comfortable enough to start a long job, and score the walk to a
+  // fixed point above whatever is underfoot. Any one of those failing leaves a
+  // finished quern standing in camp that nobody ever uses, which is the shape
+  // of inert content this milestone is most likely to ship.
+  const stationRecipes = Object.values(RECIPES).filter(r => r.station !== undefined);
+  const stationIds = new Set(stationRecipes.map(r => r.station!));
+  const stationsBuilt = [...stationIds]
+    .reduce((n, id) => n + (tel['completed_' + id] ?? 0), 0);
+  const stationCrafts = stationRecipes
+    .reduce((n, r) => n + (tel['crafted_' + r.id] ?? 0), 0);
+  const noStation = sum('abandoned_no_station_');
+  if (stationsBuilt === 0) {
+    skip('crafts-happen-at-stations',
+      stationIds.size + ' station designs exist and no band finished one in this run');
+  } else {
+    // Two halves, and the second is the one worth having. Goods getting made is
+    // the mechanism working; `abandoned_no_station_*` staying small is how you
+    // find out that a station has been demolished, or sited across a river, and
+    // everybody is still walking to where it was. A per-station reason id is
+    // what makes that answerable at all — an aggregate could not say which.
+    add('crafts-happen-at-stations',
+      stationCrafts > 0 && noStation <= stationCrafts,
+      stationsBuilt + ' stations finished, ' + stationCrafts + ' things made at one, ' +
+      noStation + ' walks that found no station');
   }
 
   // The granary chain: know pottery, dig clay, make pots, carry them to a site

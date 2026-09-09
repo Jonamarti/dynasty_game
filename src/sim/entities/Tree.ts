@@ -42,11 +42,23 @@ export interface TreeDef {
 }
 
 export const TREES: Record<TreeSpecies, TreeDef> = {
+  // The oak bears acorns as of M8.1, and until `grinding` exists in a world
+  // nobody picks them: an acorn is `nutrition: 0`, and `Brain`'s fruit scorer
+  // now weighs a tree by what its fruit is worth *to the person looking at it*.
+  // That is what makes this a safe change to the commonest tree on the island —
+  // every scenario in which nobody can grind behaves exactly as it did, and the
+  // before-and-after measurements this milestone rests on stay comparable.
   oak: {
     species: 'oak', label: 'Oak',
     maturityYears: 30, maxAgeYears: 220,
     woodAtMaturity: 26,
-    fruitItem: null, fruitSeasons: [], fruitYield: 0,
+    // The heaviest yield of any tree in the game, and that is not generosity: a
+    // mature oak in a mast year drops more food than any orchard tree in this
+    // table, which is the single reason acorns were worth the enormous trouble
+    // of leaching them. `advanceDay` swells fruit at `fruitYield / 18` a day
+    // scaled by growth, and autumn growth is low, so a smaller number never gets
+    // the ground properly covered before winter takes it off again.
+    fruitItem: 'acorn', fruitSeasons: ['autumn'], fruitYield: 40,
     fecundity: 0.7, canopy: 2.2,
   },
   pine: {

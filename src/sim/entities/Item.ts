@@ -40,6 +40,23 @@ export const ITEMS: Record<string, ItemDef> = {
   pear:     { id: 'pear',     label: 'Pears',      nutrition: 15, spoilTicks: 4800, baseValue: 1 },
   plum:     { id: 'plum',     label: 'Plums',      nutrition: 13, spoilTicks: 3000, baseValue: 1 },
   hazelnut: { id: 'hazelnut', label: 'Hazelnuts',  nutrition: 22, spoilTicks: 0,    baseValue: 2 },
+  // M8.1, mechanism 4. The first inedible food in the game, and the point of
+  // the quern.
+  //
+  // An acorn is `nutrition: 0` because a raw acorn genuinely is: it is bitter
+  // with tannin and makes you ill, which is exactly why every people who lived
+  // on them ground and leached them first. That makes `grinding` a far better
+  // technology than a yield multiplier would have been — before it, the oak is
+  // the commonest tree in the wood and yields nothing but timber; after it, the
+  // same tree is an autumn food supply.
+  //
+  // It also removes the failure the hazelnut version was measured hitting.
+  // Three hazelnuts into meal fired twice in a whole autumn across two bands,
+  // because a hazelnut at 22 nutrition is the best thing in most packs and
+  // anybody holding enough to grind had eaten them by the time they reached the
+  // stone. Nothing competes for an acorn.
+  acorn:    { id: 'acorn',    label: 'Acorns',     nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
+  meal:     { id: 'meal',     label: 'Meal',       nutrition: 34, spoilTicks: 0,    baseValue: 4 },
   meat:     { id: 'meat',     label: 'Raw meat',   nutrition: 30, spoilTicks: 1200, baseValue: 3 },
   fish:     { id: 'fish',     label: 'Fish',       nutrition: 18, spoilTicks: 800,  baseValue: 2 },
   // A kill yields a hide as well as meat, and a hide in cold hands is the

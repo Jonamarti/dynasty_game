@@ -19,7 +19,8 @@
 import type { Person } from '../entities/Person.ts';
 import type { Band } from '../core/Simulation.ts';
 import type { Building, BuildingDef } from '../entities/Building.ts';
-import { BUILDINGS, isTrap } from '../entities/Building.ts';
+import { BUILDINGS, isTrap, isStation } from '../entities/Building.ts';
+import { RECIPES } from '../entities/Recipe.ts';
 import { techPower, type Tech } from '../knowledge/Tech.ts';
 import { JOB_IDS, type JobId } from '../entities/Job.ts';
 import type { RelationshipGraph } from './../social/Relationships.ts';
@@ -404,7 +405,7 @@ export class BandSystem {
     // a band ever raising another hut. It is also how `bands-dont-overbuild`
     // would have started failing for a band that was doing exactly the right
     // thing.
-    const built = live.filter(b => b.complete && !isTrap(b.def)).length;
+    const built = live.filter(b => b.complete && !isTrap(b.def) && !isStation(b.def)).length;
     if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
 
     // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
@@ -496,6 +497,29 @@ export class BandSystem {
     // storing collapsed from 4,549 ticks to 394 across a run, and three more
     // people starved than in the same world without traps. Surplus waits behind
     // survival, and "survival" includes the pit that is half dug.
+    // --- Stations, the fourth thing a band can want -------------------------
+    //
+    // Ahead of traps and behind shelter and a store, for the same reason the
+    // trap branch gives: survival first, and a quern is not survival. Ahead of
+    // traps because a station multiplies food a band already has where a trap
+    // adds more of it, and the multiplier is worth having before the third
+    // snare line — and because one quern serves a band for ever, so it competes
+    // for a site slot exactly once.
+    //
+    // The band must actually have somebody who could make something at it. A
+    // quern raised by a band that knows `grinding` but has never held a hazelnut
+    // is still a quern, but a station nobody has a recipe for would be the
+    // inert-content rule failing in the one table it is hardest to see from.
+    if (!wanted && underway === 0 && stores.length > 0) {
+      const stations = live.filter(b => isStation(b.def));
+      const missing = buildable.filter(def => isStation(def) &&
+        !stations.some(existing => existing.def.id === def.id) &&
+        Object.values(RECIPES).some(recipe => recipe.station === def.id &&
+          members.some(m => techPower(m, recipe.tech) > 0)));
+      // Cheapest first: a band's first workshop should be the one it can finish.
+      wanted = this.cheapest(missing)?.id ?? null;
+    }
+
     if (!wanted && underway === 0 && stores.length > 0) {
       const traps = live.filter(b => isTrap(b.def));
       if (traps.length < TRAPS_PER_BAND) {

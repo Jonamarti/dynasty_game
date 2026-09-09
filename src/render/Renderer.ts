@@ -59,6 +59,9 @@ const FRUIT_COLORS: Record<string, string> = {
   pear: '#c8b23a',
   plum: '#7a3f8a',
   hazelnut: '#a8763f',
+  // M8.1: the oak bears now. A duller brown than the hazel, because an acorn on
+  // the branch should not read as something worth eating.
+  acorn: '#8a6a34',
 };
 
 const BAND_COLORS = ['#3b6ea8', '#a83b52', '#7a4ea8', '#a8843b', '#3ba88a', '#a83b8f'];

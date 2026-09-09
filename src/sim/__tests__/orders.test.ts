@@ -197,6 +197,121 @@ describe('the forest', () => {
   });
 });
 
+/**
+ * M8.1, mechanism 4: a recipe that has to be made somewhere.
+ *
+ * Deterministic rather than a `simcheck` row for the reason the file header
+ * gives. The refusal half in particular can never be measured from a world run
+ * at all — nobody in the simulation ever orders a craft they cannot do — and a
+ * check that can only ever report n/a is worse than no check, because n/a is
+ * not a pass.
+ */
+describe('crafting stations', () => {
+  /**
+   * A world in which somebody can grind.
+   *
+   * The knowledge goes in through `startingTech` rather than being added to a
+   * person afterwards, because `Simulation.knownTech` is *derived* from the
+   * living population once a day and `place` gates on it — so a quern placed
+   * before the next daily pass is refused, and the test fails for a reason that
+   * has nothing to do with what it is testing.
+   */
+  const MILLING = { ...SMALL, population: { ...SMALL.population, startingTech: ['grinding'] } };
+
+  /**
+   * Far enough in that the daily pass has run at least once.
+   *
+   * `Simulation.knownTech` is rebuilt in the daily block, so thirty steps of a
+   * two-hundred-and-forty-tick day leaves it empty however the band was founded
+   * — and `place` gates on it, so the quern is silently refused.
+   */
+  function settleIn(sim: Simulation): void {
+    for (let i = 0; i < 300; i++) sim.step();
+  }
+
+  /** Somebody standing well away from a finished quern, holding what it takes. */
+  function miller(sim: Simulation): { person: Person; quern: Building } {
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('acorn', 9);
+    // Placed a short walk away rather than underfoot — the walk is half of what
+    // this describe block is about — but the offset has to find open ground, so
+    // it is searched for rather than assumed.
+    let quern: Building | null = null;
+    for (const [dx, dy] of [[6, 6], [-6, 6], [6, -6], [-6, -6], [8, 0], [0, 8], [4, 0], [0, 4]]) {
+      quern = sim.place('quern', Math.round(person.x) + dx!, Math.round(person.y) + dy!,
+        person.bandId);
+      if (quern) break;
+    }
+    expect(quern).not.toBeNull();
+    quern!.complete = true;
+    return { person, quern: quern! };
+  }
+
+  it('refuses a station recipe away from its station, and says why', () => {
+    const sim = new Simulation(MILLING);
+    settleIn(sim);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('acorn', 9);
+
+    const ok = sim.order(person, 'craft', { recipeId: 'meal' });
+
+    expect(ok).toBe(false);
+    // The reason is the point of the test. A bare `false` is what the player
+    // used to get, and "nothing happened" is indistinguishable from a bug.
+    expect(sim.lastRefusal).toBeTruthy();
+    expect(sim.lastRefusal).toContain('quern');
+    expect(person.action).toBe('idle');
+  });
+
+  it('refuses when the building named is not the station the recipe wants', () => {
+    const sim = new Simulation(MILLING);
+    settleIn(sim);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('acorn', 9);
+    const wrong = shelterOver(sim, person);
+
+    expect(sim.order(person, 'craft', { recipeId: 'meal', buildingId: wrong.id })).toBe(false);
+    expect(sim.lastRefusal).toContain('quern');
+  });
+
+  it('walks to the station and finishes there', () => {
+    const sim = new Simulation(MILLING);
+    settleIn(sim);
+    const { person, quern } = miller(sim);
+    const startedWith = person.inventory.count('meal');
+
+    expect(sim.order(person, 'craft', { recipeId: 'meal', buildingId: quern.id })).toBe(true);
+    // Long enough to cover the walk plus a novice's grind several times over.
+    for (let i = 0; i < 1200 && person.inventory.count('meal') === startedWith; i++) {
+      settle(person);
+      person.inventory.add('acorn', 9);
+      sim.step();
+    }
+
+    expect(person.inventory.count('meal')).toBeGreaterThan(startedWith);
+    expect(quern.contains(person.x, person.y)).toBe(true);
+  });
+
+  it('gives up with a named reason if the station goes while they are walking', () => {
+    const sim = new Simulation(MILLING);
+    settleIn(sim);
+    const { person, quern } = miller(sim);
+    expect(sim.order(person, 'craft', { recipeId: 'meal', buildingId: quern.id })).toBe(true);
+
+    sim.interruptions.length = 0;
+    // Demolished under them: the second of the two channels a missing station
+    // reaches the player through.
+    quern.complete = false;
+
+    for (let i = 0; i < 60 && sim.interruptions.length === 0; i++) sim.step();
+    const mine = sim.interruptions.filter(n => n.personId === person.id);
+    expect(mine.map(n => n.reason)).toContain('no_station_quern');
+  });
+});
+
 describe('orders that stop', () => {
   it('say why, instead of ending in silence', () => {
     const sim = new Simulation(SMALL);

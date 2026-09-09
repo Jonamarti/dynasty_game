@@ -59,6 +59,9 @@ export const TECHS = [
   // first, with mechanism 2; these four are mechanism 3 and the two carried
   // tools that lead to it. The rest of the fourteen-node tier follows.
   'fishing', 'basketry', 'netting', 'snares', 'fish_trap',
+  // M8.1, mechanism 4: the first technology whose effect is a *place to work*
+  // rather than a thing to carry.
+  'grinding',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -534,6 +537,45 @@ export const TECH: Record<Tech, TechDef> = {
       'A woven mouth set where the water runs, emptied when it suits you. Fish ' +
       'that arrive whether or not anybody walked down to the shore.',
   },
+  // M8.1, mechanism 4. The other half of the food answer, and the opposite kind
+  // of one to the traps: a snare gets you more food, a quern gets more food out
+  // of what you already had. Requires only `stoneworking`, because a saddle
+  // quern is two stones and the idea of rubbing them together — the hard part
+  // was never the tool.
+  grinding: {
+    id: 'grinding', label: 'Grinding', domain: 'plants',
+    requires: ['stoneworking'], difficulty: 0.4, skill: 'cook',
+    prototype: { flint: 2, sticks: 1 }, maxRefinement: 2,
+    sparks: [
+      // **No spark may require holding an acorn**, and the reason is worth
+      // stating because it is the exact deadlock this project has shipped once
+      // already with `leatherwork`. `Brain` will not pick a fruit that is worth
+      // nothing to the picker, and an acorn is worth nothing to anybody who
+      // cannot grind — so "holding an acorn" is a condition only a person who
+      // already knows this technology can ever meet, and the node would have
+      // been unreachable in play while passing every static test in the suite.
+      //
+      // The heaviest route is therefore the *sight* of a mast year rather than
+      // the holding of one: standing hungry in an autumn wood on ground
+      // carpeted with food nobody can eat is the historical moment exactly.
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'place', biome: 'forest' },
+                { kind: 'season', season: 'autumn' }, { kind: 'feeling', need: 'hunger' }],
+        weight: 1.0, story: 'went hungry in an autumn wood ankle-deep in something nothing could chew' },
+      // A hazelnut is edible and is therefore genuinely carried, which is what
+      // makes this a real route where an acorn would not be.
+      { needs: [{ kind: 'holding', item: 'hazelnut' }, { kind: 'knows', tech: 'stoneworking' },
+                { kind: 'feeling', need: 'hunger' }],
+        weight: 0.7, story: 'chewed at a nut that would not give and reached for a stone' },
+      // The route that needs no autumn at all, so the node is not shut out of
+      // three seasons of the year. Knapping is one stone rubbed on another and
+      // always was; noticing what the grit underneath is doing is the whole step.
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'watched the dust come off a core and wondered what else would powder' },
+    ],
+    description:
+      'A saddle stone and a muller. An acorn is bitter and an oak is the ' +
+      'commonest tree in the wood; ground and leached, it is a winter food.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -643,6 +685,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   fish_trap: {
     summary: 'The shore worked without anybody standing on it.',
     site: 'Simulation.workTraps, via BUILDINGS.fish_trap.yields',
+  },
+  grinding: {
+    summary: 'Acorns become food. The oak stops being timber and starts being a harvest.',
+    site: 'BUILDINGS.quern, and RECIPES.meal through RecipeDef.station',
   },
 };
 

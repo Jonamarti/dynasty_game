@@ -739,13 +739,29 @@ export class ActionSystem {
   /**
    * Walks to the structure this action is aimed at. Returns it once standing
    * on the footprint, or null while still travelling or if it is gone.
+   *
+   * `requirement` is M8.1, mechanism 4: a station recipe needs the target to be
+   * a *finished quern* rather than merely a building that still exists, and the
+   * five callers that predate stations pass nothing and are unaffected. The
+   * reason travels with the predicate because a per-station id — the
+   * `abandoned_no_station_quern` that falls out of this — is the only way to
+   * find out that a station has been demolished and everybody is still walking
+   * to where it was.
    */
-  private reachBuilding(person: Person, ctx: ActionContext): Building | null {
+  private reachBuilding(
+    person: Person,
+    ctx: ActionContext,
+    requirement?: { ok: (building: Building) => boolean; reason: string }
+  ): Building | null {
     const building = person.targetBuildingId === null
       ? null
       : ctx.buildingsById.get(person.targetBuildingId);
     if (!building) {
-      this.abandon(person, 'site_gone', ctx);
+      this.abandon(person, requirement?.reason ?? 'site_gone', ctx);
+      return null;
+    }
+    if (requirement && !requirement.ok(building)) {
+      this.abandon(person, requirement.reason, ctx);
       return null;
     }
     if (building.contains(person.x, person.y)) return building;
@@ -1218,6 +1234,24 @@ export class ActionSystem {
     if (!hasIngredients(person.inventory, recipe)) {
       this.abandon(person, 'lack_materials', ctx);
       return;
+    }
+
+    // M8.1, mechanism 4. Some things are made at a place, and this is the walk
+    // to it.
+    //
+    // `doCraft` deliberately does not go looking for a station: buildings have
+    // no spatial hash and `optimizations.md` owns the decision that those scans
+    // stay linear, so whoever issued the order — the scorer, or the menu —
+    // names the one to use. Checked before the timer is armed rather than after,
+    // so that somebody sent to a quern that was demolished while they walked
+    // gives up on arrival instead of grinding air.
+    if (recipe.station !== undefined) {
+      const stationId = recipe.station;
+      const station = this.reachBuilding(person, ctx, {
+        ok: building => building.complete && building.def.id === stationId,
+        reason: 'no_station_' + stationId,
+      });
+      if (!station) return;
     }
 
     // Hours already spent on this same recipe come off the timer.

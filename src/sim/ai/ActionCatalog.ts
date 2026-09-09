@@ -15,9 +15,10 @@ import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
+import { BUILDINGS, isStation } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import { ITEMS } from '../entities/Item.ts';
-import { RECIPES, hasIngredients, missingIngredients } from '../entities/Recipe.ts';
+import { RECIPES, hasIngredients, missingIngredients, type RecipeDef } from '../entities/Recipe.ts';
 import { INSCRIPTIONS } from '../entities/Inscription.ts';
 import { TECH, techPower, prerequisitesMet, type Tech } from '../knowledge/Tech.ts';
 import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
@@ -53,6 +54,14 @@ export interface ActionOption {
    * id alone no longer says what would be made.
    */
   recipeId?: string;
+  /**
+   * The building a `craft` option is to be done at, for a station recipe.
+   *
+   * M8.1, mechanism 4. `issue` in `main.ts` prefers this over the building that
+   * was clicked, which is what lets "Grind meal" be offered on bare ground and
+   * still arrive at the quern.
+   */
+  buildingId?: number;
   /** False when the action is shown but not currently possible. */
   enabled: boolean;
   /** Why it is disabled, for the tooltip. */
@@ -65,6 +74,18 @@ export interface CatalogContext {
   world: World;
   /** True if the actor is standing close enough to water to drink. */
   nearWater: boolean;
+  /**
+   * The nearest finished station of a given `BUILDINGS` id that the actor could
+   * work at, or null.
+   *
+   * Precomputed and handed in, following `nearWater`, precisely so the
+   * catalogue does no world queries of its own — buildings have no spatial hash
+   * and `optimizations.md` owns the decision that those scans stay linear, so
+   * the one caller that already walks the list is the right place for it.
+   * Optional so that the tests and the e2e specs which build a context by hand
+   * keep compiling; a context without it simply offers no station recipes.
+   */
+  stationFor?: (stationId: string) => Building | null;
   /**
    * Set when the player is commanding someone else rather than acting
    * themselves. The verbs are the same; only who carries them out changes, and
@@ -151,7 +172,7 @@ export function availableActions(
       reason: actor.carrying < actor.carryCapacity ? undefined : 'Your hands are full',
     }];
     case 'animal': return animalActions(actor, target.animal!);
-    case 'building': return buildingActions(actor, target.building!);
+    case 'building': return buildingActions(actor, target.building!, ctx);
     case 'inscription': return recordActions(actor, target.inscription!);
     case 'ground': return groundActions(actor, target, ctx);
   }
@@ -332,7 +353,11 @@ function treeActions(tree: Tree): ActionOption[] {
   return options;
 }
 
-function buildingActions(actor: Person, building: Building): ActionOption[] {
+function buildingActions(
+  actor: Person,
+  building: Building,
+  ctx: CatalogContext
+): ActionOption[] {
   const options: ActionOption[] = [];
   if (!building.complete) {
     options.push({
@@ -381,6 +406,16 @@ function buildingActions(actor: Person, building: Building): ActionOption[] {
         icon: '\u{1F3E0}',
         enabled: true,
       });
+    }
+    // M8.1, mechanism 4: what this station is *for*, offered on the station
+    // itself. Passing `building` as the station means the one that was clicked
+    // is the one used, rather than whichever the UI thinks is nearest.
+    if (isStation(building.def)) {
+      for (const recipe of Object.values(RECIPES)) {
+        if (recipe.station !== building.def.id) continue;
+        if (techPower(actor, recipe.tech) <= 0) continue;
+        options.push(craftOption(actor, recipe, ctx, building));
+      }
     }
   }
   return options;
@@ -477,15 +512,48 @@ function groundActions(
   // is missing, which is the question the `reason` channel exists to answer.
   for (const recipe of Object.values(RECIPES)) {
     if (techPower(actor, recipe.tech) <= 0) continue;
-    const ready = hasIngredients(actor.inventory, recipe);
-    options.push({
-      id: 'craft',
-      recipeId: recipe.id,
-      label: 'Make a ' + recipe.label.toLowerCase(),
-      icon: recipe.icon,
-      enabled: ready,
-      reason: ready ? undefined : missingIngredients(actor.inventory, recipe),
-    });
+    options.push(craftOption(actor, recipe, ctx));
   }
   return options;
+}
+
+/**
+ * One craft entry, with the station question answered.
+ *
+ * Shared by the ground menu and by the menu on a station itself, because "can
+ * he make this, and where?" must not get two answers — the drift between two
+ * copies of a predicate is what `Recipe.ts` was written to end.
+ */
+function craftOption(
+  actor: Person,
+  recipe: RecipeDef,
+  ctx: CatalogContext,
+  at: Building | null = null
+): ActionOption {
+  const station = recipe.station === undefined
+    ? null
+    : at ?? ctx.stationFor?.(recipe.station) ?? null;
+  const label = 'Make ' + (recipe.station === undefined ? 'a ' : '') +
+    recipe.label.toLowerCase();
+  if (recipe.station !== undefined && !station) {
+    // The station is missing, and saying which one is the whole point: a greyed
+    // entry reading "you cannot do that" is the refusal channel failing at the
+    // one moment it is easiest to get right.
+    return {
+      id: 'craft', recipeId: recipe.id, label, icon: recipe.icon,
+      enabled: false,
+      reason: 'You need a ' +
+        (BUILDINGS[recipe.station]?.label.toLowerCase() ?? recipe.station) + ' to work at',
+    };
+  }
+  const ready = hasIngredients(actor.inventory, recipe);
+  return {
+    id: 'craft',
+    recipeId: recipe.id,
+    buildingId: station?.id,
+    label,
+    icon: recipe.icon,
+    enabled: ready,
+    reason: ready ? undefined : missingIngredients(actor.inventory, recipe),
+  };
 }

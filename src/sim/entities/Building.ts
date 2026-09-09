@@ -62,6 +62,19 @@ export interface BuildingDef {
    * worse than useless in the middle of a field.
    */
   placement?: 'shore';
+  /**
+   * True if this is somewhere work is done rather than somewhere anybody lives.
+   *
+   * M8.1, mechanism 4. A recipe may name a station in `RecipeDef.station`, and
+   * `doCraft` will then refuse to run anywhere else — which is what makes a
+   * quern, and later a kiln and a loom, a *place* rather than another item in a
+   * pack. The flag is here rather than derived from `RECIPES` because
+   * `Recipe.ts` imports this file and not the other way round, and because
+   * `tech.test.ts` asserts the two tables agree: a `station: 'kiln'` naming
+   * nothing flagged here is exactly the longhouse-behind-a-technology-that-
+   * does-not-exist defect, one table along.
+   */
+  station?: boolean;
   description: string;
 }
 
@@ -77,6 +90,19 @@ export interface BuildingDef {
  */
 export function isTrap(def: BuildingDef): boolean {
   return def.yields !== undefined;
+}
+
+/**
+ * True if a design is a crafting station.
+ *
+ * The same kind of predicate as `isTrap`, and it exists for the same reason:
+ * "is this a workshop?" is asked by the band planner (a quern must not count
+ * against the roof ceiling, and must not be planned ahead of a store), by the
+ * scorer and by the catalogue, and three hand-written copies of
+ * `def.station === true` is how the three answers drift apart.
+ */
+export function isStation(def: BuildingDef): boolean {
+  return def.station === true;
 }
 
 export const BUILDINGS: Record<string, BuildingDef> = {
@@ -176,6 +202,39 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     description:
       'A woven funnel staked in the shallows. The shore keeps working through ' +
       'the night, and through the winter.',
+  },
+
+  // --- M8.1, mechanism 4: the first crafting station -------------------------
+  //
+  // A quern is two stones and the patience to use them, and it is the first
+  // thing in the game that is a *place to work* rather than a tool in a pack.
+  // That distinction is the whole of mechanism 4: everything craftable until now
+  // could be made standing in a bog in the dark, and from here some things
+  // cannot.
+  //
+  // 3x3 rather than 2x2, for the reason the traps above record — a footprint
+  // has to be big enough that `reachBuilding`'s containment test can actually be
+  // satisfied by somebody who stopped walking within 0.6 tiles of the centre —
+  // and because a quern is worked at rather than stood on: several people
+  // grinding at once is the picture.
+  //
+  // No storage, deliberately. A station that held goods would be picked up by
+  // `Brain`'s larder scorer and by `doStore`, and a band carefully filling its
+  // quern with berries is not the mechanism.
+  quern: {
+    id: 'quern',
+    label: 'Quern',
+    icon: '\u{1FAA8}',
+    width: 3, height: 3,
+    materials: { flint: 6, sticks: 4 },
+    workTicks: 210,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'grinding',
+    description:
+      'A saddle stone and a muller, set where the band can get at them. Nuts ' +
+      'and seed become food the body can actually use.',
   },
 
   // --- Gated behind knowledge that does not exist yet (M4) -----------------

@@ -17,7 +17,7 @@ import {
   techPower, carryFactor, forageYieldFactor, nutritionFactor, warmthFrom,
   type Tech,
 } from '../knowledge/Tech.ts';
-import { BUILDINGS } from '../entities/Building.ts';
+import { BUILDINGS, isStation } from '../entities/Building.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RESOURCE_DEFS } from '../entities/ResourceNode.ts';
 import { TREES } from '../entities/Tree.ts';
@@ -79,6 +79,36 @@ describe('the tech table', () => {
       if (def.requiresTech === null) continue;
       expect(TECHS, def.id + ' requires unknown tech ' + def.requiresTech)
         .toContain(def.requiresTech as Tech);
+    }
+  });
+
+  it('sends station recipes to buildings that exist and are stations', () => {
+    // M8.1, mechanism 4, and the same shape of check as the one above it. A
+    // `station: 'kiln'` with no kiln in `BUILDINGS` is the longhouse defect one
+    // table along: the recipe would be offered, ordered, refused every time, and
+    // every other test in the suite would pass. Naming a building that exists
+    // but is not flagged `station` is the same failure wearing a coat — the
+    // planner would never raise it and the catalogue would never offer the
+    // recipe on it.
+    for (const recipe of Object.values(RECIPES)) {
+      if (recipe.station === undefined) continue;
+      const def = BUILDINGS[recipe.station];
+      expect(def, recipe.id + ' is made at unknown building ' + recipe.station)
+        .toBeDefined();
+      expect(isStation(def!), recipe.station + ' is not flagged as a station').toBe(true);
+    }
+  });
+
+  it('gives every station something that can be made at it', () => {
+    // The arrow reversed, and the rule `Recipe.ts` was written to keep: a
+    // workshop nothing has a recipe for is declared content that does nothing,
+    // and the band planner would spend a site slot on it every time.
+    for (const def of Object.values(BUILDINGS)) {
+      if (!isStation(def)) continue;
+      expect(
+        Object.values(RECIPES).some(recipe => recipe.station === def.id),
+        def.id + ' is a station with no recipe'
+      ).toBe(true);
     }
   });
 

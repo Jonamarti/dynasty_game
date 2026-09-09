@@ -6,6 +6,123 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-09 — M8.1 continues: crafting stations, and an oak worth standing under
+
+Mechanism 4 of [m8_plan_the_ages.md](m8_plan_the_ages.md), with the node it
+exists for: **`grinding`**, the quern, and the first recipe in the game that is
+about a *place*. Twenty-three technologies, eight recipes, ten buildings,
+twenty-two items.
+
+**`RecipeDef.station` was as cheap as the plan promised, and for the two reasons
+it named.** `ActionSystem.reachBuilding` took an optional predicate and its five
+existing callers were untouched; `Simulation.order` already set `targetRecipe`
+before the target branches, so ordering a craft with both a recipe and a building
+needed no change to `order` at all, and resume works because `noteStop` captures
+both. `doCraft` does **not** search for a station — buildings have no spatial
+hash and `optimizations.md` owns that decision — so the scorer and the menu
+choose it and hand the id over.
+
+**The refusal reaches the player through both channels the plan asked for**, and
+they answer different questions. `cancelOrder` refuses up front when the player
+orders meal with no quern in the world ("that has to be made at a quern");
+`onStopped` reports `no_station_quern` when the quern is demolished while
+somebody walks to it. The reason id is **per station** rather than generic, so
+`abandoned_no_station_quern` is available to say which station everybody is
+walking to and not finding — an aggregate could not.
+
+**The quern grinds acorns, and that was the second design in this pass, not the
+first.** The plan's node table says the quern makes a `meal` item, and hazelnuts
+were the obvious input. Measured across a full autumn in a two-band world, the
+hazelnut recipe fired **twice**: a hazel is picked in pulls of one to three nuts,
+a hazelnut at 22 nutrition is the best thing in most packs, and anybody who had
+gathered enough to grind had eaten them before reaching the stone. The
+competition with simply eating them is the mechanism and is meant to be there;
+needing a third nut on top of it was the difference between a seasonal habit and
+a curiosity.
+
+So the oak bears now. An acorn is `nutrition: 0` — which is the honest number,
+because a raw acorn is bitter with tannin and that is exactly why every people
+who lived on them ground and leached them first — and `grinding` turns the
+commonest tree in the wood from timber into a harvest. That is a far better
+technology than a yield multiplier: before it a band walks past four hundred oaks
+all autumn, and after it, it does not. Nothing competes for an acorn.
+
+**Hanging fruit on the oak is a change to the commonest tree on the island, and
+it is invisible to every world that cannot grind.** `Brain`'s fruit scorer now
+weighs a tree by what its fruit is worth *to the person looking at it*
+(`fruitWorth`), which is nutrition for everything that existed before this and,
+for something inedible, what it becomes in the hands of somebody who can make it
+into food — discounted, because an acorn is not food until it has been carried to
+a stone. `band`, `century`, `harsh-winter`, `traps`, `craft`, `scribes`, `coast`
+and `crowded` are all **bit-identical** before and after, every column of every
+sample, which is what makes the milestone's before-and-after measurements still
+comparable.
+
+**Two candidates are scored, not one, and that is a finding.** The first version
+simply widened the existing `findNearest` predicate to include acorns. But
+`findNearest` returns the *nearest* match, so it quietly replaced the apple two
+steps further on with an oak underfoot, everywhere, all autumn: total fruit
+picked fell by a fifth and not one acorn was ground, because the oak won the
+search and then lost the score. The nearest edible tree and the nearest tree
+worth anything are now scored against each other, and where nobody can grind the
+two queries return the same tree.
+
+**`LEANEST_FRUIT` is 13 on purpose.** It is the least nourishing fruit that
+existed before acorns, so every fruit in the game up to now clamps to 1 in
+`worthRatio` and the term is a no-op for them by construction. An acorn comes out
+around a half.
+
+**The plan's warning about `proximityBonus` was measured and came out backwards.**
+It predicted that without the bonus a station craft "will simply never fire". In
+fact removing it produced *more* crafts — 26 against 16 — because the walk stops
+being a cost and people cross the map to grind. The bonus is kept anyway: it is
+the idiom every other destination scorer in the file uses, and somebody
+abandoning what is underfoot to walk to a workshop is the wrong behaviour even
+when it makes the counter look better. Recorded here rather than quietly
+dropped, because the plan's reasoning was sound and only its prediction was
+wrong.
+
+**A new scenario, `millers`, and it needs the calendar as much as the
+knowledge.** Acorns fall in autumn, and `craft` starts on day 10 and runs
+thirty-three days, so it never sees one — every station check on it would have
+reported n/a for ever, and n/a is not a pass. `millers` starts on day 30 and runs
+to day 76: ten days to raise a roof and dig a store, the whole of autumn with
+mast on the ground, and enough after it for the meal to be carried home.
+
+**The band planner wants a station now**, ahead of traps and behind shelter and a
+store. Ahead of traps because a station multiplies food a band already has where
+a trap adds more, and one quern serves a band for ever so it costs a site slot
+exactly once. Behind shelter and a store for the reason the trap branch already
+records: a band that builds a workshop instead of a roof dies in the winter it
+ate well in. Stations are exempt from the roof ceiling, like traps and for the
+same reason.
+
+**Measured, twenty seeds, `millers` with and without `grinding`:** mean survival
+77.7% → **80.3%**, infant starvation 13 → 10, older children 4 → 2, adult
+starvation 39 → 43. Twenty seeds cannot resolve two and a half points and this
+is not claimed as one; the infant and child numbers are the more honest signal,
+and adults rising slightly alongside them is what happens when more of the
+vulnerable survive to be adults at risk. It is a seasonal gain of a few weeks a
+year, which is the size it ought to be.
+
+New checks: `crafts-happen-at-stations` (verified failing — with the station
+handoff removed it reports 0 made against 8,832 walks that found no station).
+`stations-are-required` is **not** a `simcheck` row, deliberately: nobody in the
+simulation ever orders a craft they cannot do, so it could only ever report n/a.
+It is four deterministic tests in `orders.test.ts` instead — refused with no
+station, refused at the wrong building, walks there and finishes, and gives up by
+name if the quern goes while they are walking. `tech.test.ts` gains both
+directions of the table check: every `recipe.station` names a building that
+exists *and is flagged* a station, and every station has something that can be
+made at it.
+
+**`fruitOnTrees` in the health report counts edible fruit only.** `AGENTS.md`
+tells the next reader to watch that column against `cold` and `store` to find the
+winter die-offs, and quadrupling it overnight with acorns nobody can eat would
+have made a number that no longer means what its reader thinks it means.
+
+---
+
 ## 2026-09-09 — M8.1 continues: traps, and work that goes on without you
 
 Mechanism 3 of [m8_plan_the_ages.md](m8_plan_the_ages.md), with the four nodes it

@@ -31,7 +31,7 @@ import {
 } from './sim/ai/ActionCatalog.ts';
 import { TECH, techPower, type Tech } from './sim/knowledge/Tech.ts';
 import type { Person } from './sim/entities/Person.ts';
-import type { BuildingDef } from './sim/entities/Building.ts';
+import type { Building, BuildingDef } from './sim/entities/Building.ts';
 import { describeEvent } from './sim/social/Events.ts';
 import {
   knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree,
@@ -941,6 +941,34 @@ canvas.addEventListener('wheel', event => {
   camera.zoom = Math.max(0.5, Math.min(5, camera.zoom * (event.deltaY < 0 ? 1.12 : 0.89)));
 }, { passive: false });
 
+/**
+ * The finished station of a kind that `who` could actually get to, or null.
+ *
+ * M8.1, mechanism 4. A linear scan, deliberately: buildings have no spatial
+ * hash and `optimizations.md` owns the decision that those scans stay linear,
+ * and this one runs once per opened menu rather than once per tick. Doing it
+ * here rather than inside `ActionCatalog` is what keeps the catalogue free of
+ * world queries — the same split `nearWater` already makes.
+ *
+ * Any band's station, unlike the AI's own rule in `Brain`: the player is
+ * allowed to try, and being refused by whoever owns it is the owner's O4 rather
+ * than something to pre-empt by hiding the option.
+ */
+function nearestStation(who: Person, stationId: string): Building | null {
+  let best: Building | null = null;
+  let bestDistance = Infinity;
+  for (const building of sim.buildings) {
+    if (!building.complete || building.def.id !== stationId) continue;
+    if (!sim.world.sameRegion(who.x, who.y, building.centerX, building.centerY)) continue;
+    const distance = who.distanceTo({ x: building.centerX, y: building.centerY });
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = building;
+    }
+  }
+  return best;
+}
+
 function isNearWater(x: number, y: number): boolean {
   const cx = Math.round(x);
   const cy = Math.round(y);
@@ -966,6 +994,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
   const subject = commanding && commanding.alive ? commanding : actor;
   const options = availableActions(subject, target, {
     world: sim.world, nearWater, commanding,
+    stationFor: stationId => nearestStation(subject, stationId),
   });
 
   const title =
@@ -1011,7 +1040,9 @@ function issue(actor: Person, option: ActionOption, target: ActionTarget): void 
     y: target.kind === 'ground' ? target.y : undefined,
     personId: target.person?.id,
     nodeId: target.node?.id,
-    buildingId: target.building?.id,
+    // The option's own station wins over whatever was clicked: "Grind meal" is
+    // offered on bare ground and has to arrive at the quern all the same.
+    buildingId: option.buildingId ?? target.building?.id,
     treeId: target.tree?.id,
     animalId: target.animal?.id,
     recipeId: option.recipeId,

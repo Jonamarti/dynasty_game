@@ -51,6 +51,21 @@ export interface RecipeDef {
   ingredients: Record<string, number>;
   output: Record<string, number>;
   /**
+   * A `BUILDINGS` id this must be made at, or undefined for anywhere.
+   *
+   * M8.1, mechanism 4, and the first thing in this table that is about a
+   * *place*. `doCraft` reaches the named building and refuses away from it with
+   * a per-station reason, `Brain` scores the walk, and the catalogue greys the
+   * entry out with the name of what is missing.
+   *
+   * **Do not retrofit one onto an existing recipe.** Adding `station: 'kiln'`
+   * to `pot` would make the granary unbuildable again — the defect that took
+   * four separate fixes to close — and break `pots-reach-a-granary` in the same
+   * stroke. New recipes only, and the retrofit gets its own pass with the
+   * starting conditions of the `craft` scenario extended to match.
+   */
+  station?: string;
+  /**
    * How many of the output somebody wants on them for its own sake.
    *
    * The scorer's answer to "why would anyone make this?". An axe is worth
@@ -148,6 +163,41 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { net: 1 },
     keep: 1,
   },
+  // M8.1, mechanism 4: the first recipe in the game that is about a place.
+  //
+  // Three acorns into one of meal, and the gain is not a percentage: it is the
+  // difference between nothing and food. An acorn is `nutrition: 0` — see
+  // `ITEMS` for why that is the honest number — so a band without a quern walks
+  // past the commonest tree on the island all autumn, and a band with one does
+  // not.
+  //
+  // Hazelnuts were tried first and measured failing. Three hazelnuts into meal
+  // fired *twice* in a whole autumn across two bands, because a hazelnut at 22
+  // nutrition is the best thing in most packs and anybody who had gathered
+  // enough to grind had eaten them before reaching the stone. Nothing competes
+  // for an acorn, and there are four times as many oaks as hazels.
+  //
+  // Seasonal all the same, and deliberately: acorns fall in autumn, so the quern
+  // is a thing a band uses hard for three weeks and walks past for the rest of
+  // the year. That shape is the point of it.
+  //
+  // `keep` is 3 rather than 1: meal is food, and a person wants a few days of it
+  // on them the way they want a spear, not one for the collection.
+  meal: {
+    id: 'meal',
+    label: 'Meal',
+    icon: '\u{1F35A}',
+    tech: 'grinding',
+    // The first action in the game to practise `cook`, which until now was a
+    // skill every character carried, spent points on at character creation, and
+    // could never improve at. `herbalism` does the same for `heal`.
+    skill: 'cook',
+    workTicks: 90,
+    ingredients: { acorn: 3 },
+    output: { meal: 1 },
+    station: 'quern',
+    keep: 3,
+  },
   pot: {
     id: 'pot',
     label: 'Pot',
@@ -184,6 +234,34 @@ export function recipeFor(itemId: string): RecipeDef | null {
     if (recipe.output[itemId] !== undefined) return recipe;
   }
   return null;
+}
+
+/**
+ * A recipe that consumes `itemId`, or null.
+ *
+ * The mirror of `recipeFor`, and single-valued for the same reason. It exists
+ * because M8.1 puts the first *inedible ingredient* in the world: `Brain` has to
+ * be able to ask "is this worth picking up?" about an acorn, and the only honest
+ * answer runs through what it can be turned into and by whom.
+ */
+export function recipeUsing(itemId: string): RecipeDef | null {
+  for (const recipe of Object.values(RECIPES)) {
+    if (recipe.ingredients[itemId] !== undefined) return recipe;
+  }
+  return null;
+}
+
+/**
+ * Nutrition this recipe yields per unit of `itemId` put into it.
+ *
+ * Zero if the recipe does not consume it or makes nothing anybody can eat.
+ */
+export function nutritionPerUnit(recipe: RecipeDef, itemId: string): number {
+  const consumed = recipe.ingredients[itemId] ?? 0;
+  if (consumed <= 0) return 0;
+  const fed = Object.entries(recipe.output)
+    .reduce((sum, [id, count]) => sum + (ITEMS[id]?.nutrition ?? 0) * count, 0);
+  return fed / consumed;
 }
 
 /** Whether a pack holds everything one run of `recipe` consumes. */

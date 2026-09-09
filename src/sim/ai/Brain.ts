@@ -32,7 +32,9 @@ import { ITEMS } from '../entities/Item.ts';
 import {
   TECH, quarryReachFactor, techPower, prerequisitesMet, type Tech,
 } from '../knowledge/Tech.ts';
-import { RECIPES, hasIngredients, recipeFor } from '../entities/Recipe.ts';
+import {
+  RECIPES, hasIngredients, recipeFor, recipeUsing, nutritionPerUnit,
+} from '../entities/Recipe.ts';
 import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
 import { pressedByNeed } from '../systems/ActionSystem.ts';
 import type { NeedsConfig } from '../core/Config.ts';
@@ -94,6 +96,8 @@ interface FoundTargets {
   fleeFrom: Person | null;
   /** Which entry of `RECIPES` a chosen `craft` would make. */
   recipe: string | null;
+  /** The station a `craft` is to be done at, for the recipes that need one. */
+  craftStation: Building | null;
   /** The record a chosen `read` is aimed at. */
   record: Inscription | null;
   /** A half-cut record a chosen `inscribe` should go and finish. */
@@ -129,6 +133,16 @@ const TAKE_APPETITE = 4.2;
 
 /** Items in a store above which it is fully worth crossing the camp for. */
 const LARDER_WORTH_THE_WALK = 40;
+
+/**
+ * The least nourishing fruit that existed before M8.1 hung acorns on the oak.
+ *
+ * Used as the divisor in `worthRatio`, so that every fruit the game already had
+ * scores exactly as it did and only the inedible ones are discounted. See the
+ * note there — the whole reason for the constant is that it makes a change to
+ * the commonest tree on the island invisible to every world that cannot grind.
+ */
+const LEANEST_FRUIT = 13;
 
 /**
  * How full a trap has to be before anybody walks out to it, 0-1.
@@ -306,19 +320,36 @@ export class Brain {
     // Orchard fruit is worth more per trip than berries and only exists in its
     // season, which is what gives the year a shape: a glut in autumn worth
     // storing, and nothing on the branches in spring.
-    fruitTree = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
-      t => t.standing && t.fruit >= 1 &&
-        ctx.world.sameRegion(person.x, person.y, t.x, t.y));
-    if (fruitTree) {
-      const carriedNutrition = this.carriedNutrition(person);
-      const shortfall = Math.max(0.15, 1 - carriedNutrition / (person.needs.hunger + 70));
+    const carriedNutrition = this.carriedNutrition(person);
+    const shortfall = Math.max(0.15, 1 - carriedNutrition / (person.needs.hunger + 70));
+    const pickScore = (tree: Tree): number => {
       // A laden fruit tree is a far better haul than a bush, and only exists
       // for part of the year, so it should pull people off berries while it
       // lasts. That seasonal swing is most of what gives the year a shape.
-      const laden = Math.min(1, fruitTree.fruit / 8);
-      add('pick', (hunger * 2.3 * shortfall + person.traits.greed * 0.35) * (0.6 + laden * 0.7)
-        * this.proximityBonus(person, fruitTree, ctx.sightRadius));
-    }
+      const laden = Math.min(1, tree.fruit / 8);
+      return (hunger * 2.3 * shortfall + person.traits.greed * 0.35) * (0.6 + laden * 0.7)
+        * this.worthRatio(this.fruitWorth(person, tree))
+        * this.proximityBonus(person, tree, ctx.sightRadius);
+    };
+    // Two candidates rather than one, and the reason is worth recording because
+    // the single-candidate version was written first and measured.
+    // `findNearest` returns the *nearest* match, so widening one predicate to
+    // include acorns quietly replaced the apple two steps further on with an
+    // oak underfoot — everywhere, all autumn. Total fruit picked fell by a fifth
+    // and not one acorn was ground, because the oak won the search and then lost
+    // the score. Scoring the nearest edible tree against the nearest tree worth
+    // anything at all fixes it, and in a world where nobody can grind the two
+    // queries return the same tree and this costs one extra hash lookup.
+    const reachable = (t: Tree): boolean =>
+      t.standing && t.fruit >= 1 && ctx.world.sameRegion(person.x, person.y, t.x, t.y);
+    const edible = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
+      t => reachable(t) && (ITEMS[t.def.fruitItem ?? '']?.nutrition ?? 0) > 0);
+    const worthwhile = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
+      t => reachable(t) && this.fruitWorth(person, t) > 0);
+    fruitTree = !edible ? worthwhile
+      : !worthwhile || worthwhile.id === edible.id ? edible
+      : pickScore(worthwhile) > pickScore(edible) ? worthwhile : edible;
+    if (fruitTree) add('pick', pickScore(fruitTree));
 
     // --- Gather materials --------------------------------------------------
     let matNode = this.findNode(person, ctx,
@@ -350,6 +381,7 @@ export class Brain {
     let fleeFrom: Person | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
+    let craftStation: Building | null = null;
     let craftScore = 0;
     let record: Inscription | null = null;
     let unfinished: Inscription | null = null;
@@ -924,10 +956,38 @@ export class Brain {
       const forSelf = person.inventory.count(output) < recipe.keep;
       const forSite = site !== null && site.stillNeeds(output) > 0;
       if (!forSelf && !forSite) continue;
-      const score = (forSite ? 0.75 : 0.55) * (0.4 + person.skillFactor(recipe.skill));
+
+      // M8.1, mechanism 4. A station recipe carries a walk, and without the
+      // `proximityBonus` every other scorer with a destination already uses it
+      // would score identically to a stationless one and then lose to whatever
+      // is underfoot — which, since proximity dominates this scorer, means never
+      // firing at all.
+      //
+      // Somebody else's quern is not offered, matching the rule the store
+      // scorer already applies: `Building.ownerBandId` is honoured in exactly
+      // one place today and this is the second. Deciding access by the standing
+      // between two bands instead is the owner's O4, and it belongs in one place
+      // for both when it lands.
+      let station: Building | null = null;
+      let nearness = 1;
+      if (recipe.station !== undefined) {
+        const stationId = recipe.station;
+        station = this.pickBest(
+          ctx.buildings.filter(b =>
+            b.complete && b.def.id === stationId && b.ownerBandId === person.bandId &&
+            ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY)),
+          b => -person.distanceTo({ x: b.centerX, y: b.centerY })
+        );
+        if (!station) continue;
+        nearness = this.proximityBonus(
+          person, { x: station.centerX, y: station.centerY }, ctx.sightRadius);
+      }
+
+      const score = (forSite ? 0.75 : 0.55) * (0.4 + person.skillFactor(recipe.skill)) * nearness;
       if (score > craftScore) {
         craftScore = score;
         craftRecipe = recipe.id;
+        craftStation = station;
       }
     }
     if (craftRecipe !== null) add('craft', craftScore);
@@ -1009,7 +1069,7 @@ export class Brain {
         victim, beneficiary, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
-        recipe: craftRecipe, record, unfinished,
+        recipe: craftRecipe, craftStation, record, unfinished,
       },
     };
   }
@@ -1043,6 +1103,42 @@ export class Brain {
       }
     }
     return best;
+  }
+
+  /**
+   * What one unit of a tree's fruit is worth to *this* person, in nutrition.
+   *
+   * Not `ITEMS[...].nutrition`, because M8.1 hangs the first inedible fruit in
+   * the game on the commonest tree in it. A raw acorn is worth nothing — that
+   * is why nobody ever ate one raw — and worth a good deal to somebody who owns
+   * a quern and knows what to do at it. Without this the scorer below, which
+   * weighs a tree by how hungry the person is, would send starving people up an
+   * oak for a pocketful of tannin.
+   *
+   * Discounted for the work still to come: an acorn is not food until it has
+   * been carried to a stone and ground, and something that is food *now* should
+   * win the tie.
+   */
+  private fruitWorth(person: Person, tree: Tree): number {
+    const itemId = tree.def.fruitItem;
+    if (itemId === null) return 0;
+    const direct = ITEMS[itemId]?.nutrition ?? 0;
+    if (direct > 0) return direct;
+    const recipe = recipeUsing(itemId);
+    if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
+    return nutritionPerUnit(recipe, itemId) * 0.6;
+  }
+
+  /**
+   * How much of a fruit tree's ordinary pull an unusually poor fruit deserves.
+   *
+   * The divisor is the least nourishing fruit that existed before acorns did, so
+   * **every fruit in the game up to M8.1 clamps to 1 and this term is a no-op
+   * for them by construction** — which is what makes hanging fruit on the oak a
+   * change no existing scenario can feel. An acorn comes out around a half.
+   */
+  private worthRatio(worth: number): number {
+    return Math.min(1, worth / LEANEST_FRUIT);
   }
 
   private carriedNutrition(person: Person): number {
@@ -1180,6 +1276,13 @@ export class Brain {
         // this function having just wiped it — and abandon itself on the very
         // first tick.
         person.targetRecipe = found.recipe;
+        // And where, for a station recipe. `doCraft` will not go looking for
+        // one; the scorer chose it above and this is how it is handed over.
+        if (found.craftStation) {
+          person.targetBuildingId = found.craftStation.id;
+          person.targetX = found.craftStation.centerX;
+          person.targetY = found.craftStation.centerY;
+        }
         break;
       case 'wander': {
         // A short hop rather than a cross-map trek, so wandering reads as

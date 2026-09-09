@@ -12,6 +12,7 @@
  */
 import type { Camera } from './Camera.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
+import { BUILDINGS } from '../sim/entities/Building.ts';
 
 export interface Floater {
   x: number;
@@ -246,5 +247,16 @@ export const STOP_REASONS: Record<string, string> = {
 };
 
 export function stopReasonLabel(reason: string): string {
-  return STOP_REASONS[reason] ?? reason.replace(/_/g, ' ');
+  const known = STOP_REASONS[reason];
+  if (known !== undefined) return known;
+  // M8.1, mechanism 4. Station reasons are per-station — `no_station_quern`,
+  // and `no_station_kiln` when the kiln lands — because an aggregate cannot
+  // answer "which station is everybody walking to and not finding?". That makes
+  // them a family rather than a list, so they are phrased here rather than
+  // written out one by one and forgotten one by one.
+  if (reason.startsWith('no_station_')) {
+    const id = reason.slice('no_station_'.length);
+    return 'there was no ' + (BUILDINGS[id]?.label.toLowerCase() ?? id) + ' to work at';
+  }
+  return reason.replace(/_/g, ' ');
 }

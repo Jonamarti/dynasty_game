@@ -1174,7 +1174,26 @@ export class Simulation {
     // Set before the target branches below, every one of which returns: a craft
     // carries no place and would otherwise fall out of the bottom having lost
     // the only thing that says what is being made.
-    if (target.recipeId !== undefined) person.targetRecipe = target.recipeId;
+    if (target.recipeId !== undefined) {
+      person.targetRecipe = target.recipeId;
+
+      // M8.1, mechanism 4: the first of the two channels a missing station
+      // reaches the player through. This one answers "why would he not start?"
+      // — the player asked for meal with no quern in the world — and the other
+      // is `onStopped`, for the quern that is demolished while he walks to it.
+      // Refusing here rather than letting `doCraft` abandon on the first tick
+      // is the difference between being told and watching somebody shrug.
+      const stationId = RECIPES[target.recipeId]?.station;
+      if (stationId !== undefined) {
+        const named = target.buildingId === undefined
+          ? null
+          : this.buildingsById.get(target.buildingId);
+        const label = BUILDINGS[stationId]?.label.toLowerCase() ?? stationId;
+        if (!named || !named.complete || named.def.id !== stationId) {
+          return this.cancelOrder(person, 'that has to be made at a ' + label);
+        }
+      }
+    }
 
     if (target.inscriptionId !== undefined) {
       const record = this.inscriptionsById.get(target.inscriptionId);
@@ -1957,7 +1976,15 @@ export class Simulation {
       trees: this.trees.length,
       matureTrees: this.trees.filter(t => t.isMature).length,
       seedlings: this.trees.filter(t => t.isSeedling).length,
-      fruitOnTrees: Math.round(this.trees.reduce((sum, t) => sum + t.fruit, 0)),
+      // Edible fruit only, and that qualifier is M8.1's. The oak bears acorns
+      // now, and an acorn is `nutrition: 0` until somebody grinds it — counting
+      // them here would have quadrupled this column overnight in every world in
+      // the game, including every world that cannot grind, and `AGENTS.md`
+      // tells the next reader to watch this column against `cold` and `store`
+      // to find the winter die-offs. A number that stops meaning what its
+      // reader thinks it means is worse than no number.
+      fruitOnTrees: Math.round(this.trees.reduce(
+        (sum, t) => sum + ((ITEMS[t.def.fruitItem ?? '']?.nutrition ?? 0) > 0 ? t.fruit : 0), 0)),
       buildings: this.buildings.length,
       buildingsComplete: this.buildings.filter(b => b.complete).length,
       stored: this.buildings.reduce((sum, b) => sum + b.store.total, 0),
