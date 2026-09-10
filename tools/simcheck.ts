@@ -341,6 +341,19 @@ export interface WildlifeWatch {
 }
 
 /**
+ * Whether anybody under an order stands still for a full day without the
+ * action system ever noticing.
+ *
+ * Cause-agnostic on purpose: it watches position and action rather than any
+ * particular code path, so it catches any future way of freezing, not just
+ * the zombie-order bug M7 was written to fix.
+ */
+export interface StallWatch {
+  /** Times a stall under order ran a full `ticksPerDay` before being cleared. */
+  stalledPeople: number;
+}
+
+/**
  * Whether *holding* a job changes what somebody spends their time on,
  * measured per job and against everyone who does not hold that job.
  *
@@ -381,6 +394,7 @@ export interface Report {
   spatial: { cells: number; items: number; maxBucket: number };
   wildlife: WildlifeWatch;
   jobs: JobWatch;
+  stall: StallWatch;
   checks: Check[];
 }
 
@@ -517,6 +531,18 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     'deaths-explained',
     deaths.length === 0 || last.population > 0,
     deaths.length === 0 ? 'nobody died' : deaths.join(' ')
+  );
+
+  // See `StallWatch`. Somebody under an order is either walking, mid-action,
+  // or about to be re-planned for — never motionless with nothing changing for
+  // a full day, which is what the pre-M7 zombie-order bug looked like from the
+  // outside: `gave_up_walking` incremented and then nothing else ever did.
+  add(
+    'nobody-stalls-under-orders',
+    base.stall.stalledPeople === 0,
+    base.stall.stalledPeople + ' people stalled under order for a full day; ' +
+      (tel.gave_up_walking ?? 0) + ' gave up walking, ' +
+      (tel.gave_up_under_orders ?? 0) + ' of those under order'
   );
 
   // `weapons-are-made-and-used` was written here and **deliberately not kept**,
@@ -1720,6 +1746,11 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   let drift = 0;
   const WATCH_EVERY = 20;
 
+  // See `StallWatch`. Position and action from the previous step, and how many
+  // consecutive steps have gone by without either changing while under order.
+  const stall: StallWatch = { stalledPeople: 0 };
+  const stallState = new Map<number, { x: number; y: number; action: string; ticks: number }>();
+
   const started = Date.now();
   for (let i = 1; i <= steps; i++) {
     sim.step();
@@ -1755,6 +1786,23 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
         }
       } else {
         sleeperFatigue.delete(person.id);
+      }
+
+      // Stalled: under an order, mid-action rather than walking there
+      // (`actionTimer === 0` means no committed action is under way), and
+      // neither position nor action moved since the last step.
+      if (person.order !== null && person.actionTimer === 0) {
+        const was = stallState.get(person.id);
+        const moved = was ? Math.hypot(person.x - was.x, person.y - was.y) : Infinity;
+        const ticks = was && moved <= 0.05 && was.action === person.action ? was.ticks + 1 : 0;
+        if (ticks >= sim.config.time.ticksPerDay) {
+          stall.stalledPeople++;
+          stallState.set(person.id, { x: person.x, y: person.y, action: person.action, ticks: 0 });
+        } else {
+          stallState.set(person.id, { x: person.x, y: person.y, action: person.action, ticks });
+        }
+      } else {
+        stallState.delete(person.id);
       }
     }
 
@@ -1819,6 +1867,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     spatial: sim.peopleHash.stats(),
     wildlife: watch,
     jobs,
+    stall,
     relationships: sim.relationships.stats(),
     buildings: {
       total: sim.buildings.length,

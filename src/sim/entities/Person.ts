@@ -397,6 +397,28 @@ export class Person {
   targetNodeId: number | null = null;
 
   /**
+   * Consecutive ticks `MovementSystem` has measured as making no real
+   * progress toward the current target.
+   *
+   * Lives here rather than in a module-level `Map` keyed by person id, which
+   * is what `MovementSystem` used before: that map was shared by every
+   * `Simulation` in the process, so a stale entry from one world's person id
+   * could pollute the next, and nothing ever deleted the id of somebody who
+   * died mid-slide either. A field on the person is bounded by the person's
+   * own lifetime instead.
+   *
+   * Deliberately *not* reset by `clearTarget()` — `MovementSystem` resets it
+   * itself, at the same three points the old map was cleared (arrival,
+   * sufficient progress, and giving up). Clearing it here too would also
+   * clear it on every ordinary new order, which the old map never did; that
+   * reads like it should not matter, but this simulation is chaotic enough
+   * that changing which tick a `giveUp` roll happens on shifts every draw
+   * after it, so it would have made this migration a behaviour change
+   * wearing an instrumentation commit's clothes.
+   */
+  stuckSteps = 0;
+
+  /**
    * Spreads think ticks across the tick cycle so the whole population does not
    * re-plan on the same step — both a cost smoother and a look fix, since
    * synchronized NPCs move like a shoal.

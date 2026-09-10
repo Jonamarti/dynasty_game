@@ -35,11 +35,19 @@ const PROGRESS_THRESHOLD = 0.25;
 /** Consecutive stuck steps before a person gives up on where they were going. */
 const PATIENCE = 25;
 
-const stuckTicks = new Map<number, number>();
-
-export function resetMovementState(): void {
-  stuckTicks.clear();
-}
+/**
+ * No longer has anything to clear.
+ *
+ * `stuckTicks` used to live here as a module-level `Map<personId, count>`,
+ * shared by every `Simulation` in the process, which leaked an entry for
+ * everyone who died mid-slide and could carry a stale entry from one world
+ * into the next. It is now `Person.stuckSteps` (see that field's own note on
+ * why it is not simply cleared by `clearTarget`), bounded by the person's
+ * own lifetime. Kept as a no-op rather than removed along with its one call
+ * site (`Simulation.ts`) so this commit stays instrumentation-only; both go
+ * away together once M7's `MovementSystem` rewrite lands.
+ */
+export function resetMovementState(): void {}
 
 /**
  * One step of greedy steering, for anything with a position.
@@ -134,7 +142,8 @@ export class MovementSystem {
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < 0.6) {
-      stuckTicks.delete(person.id);
+      person.stuckSteps = 0;
+      telemetry.count('walk_arrived');
       return true;
     }
 
@@ -147,14 +156,13 @@ export class MovementSystem {
       person, person.targetX, person.targetY, speed, this.world, this.rng
     );
     if (progress >= speed * PROGRESS_THRESHOLD) {
-      stuckTicks.delete(person.id);
+      person.stuckSteps = 0;
       return false;
     }
 
-    const stuck = (stuckTicks.get(person.id) ?? 0) + 1;
-    stuckTicks.set(person.id, stuck);
-    if (stuck > PATIENCE) {
-      stuckTicks.delete(person.id);
+    person.stuckSteps++;
+    if (person.stuckSteps > PATIENCE) {
+      person.stuckSteps = 0;
       this.giveUp(person);
     }
     return false;
@@ -170,6 +178,11 @@ export class MovementSystem {
    */
   private giveUp(person: Person): void {
     telemetry.count('gave_up_walking');
+    // Counted apart from the general tally because this is the shape of the
+    // zombie-order bug M7 exists to fix: `clearTarget` below does not clear
+    // `person.order`, so a give-up reached under an order left the order
+    // standing with nothing left to walk toward.
+    if (person.order !== null) telemetry.count('gave_up_under_orders');
     person.clearTarget();
     person.action = 'wander';
 
