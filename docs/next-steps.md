@@ -12,8 +12,11 @@ nothing was scheduled. It has been rewritten rather than amended again.
 
 ## Where things actually stand
 
-`npm run sim:check` on the default twelve-day scenario: **37 of 37 applicable
-checks pass**, 15 n/a, 4,071 steps/s against a 2,000 floor.
+`npm run sim:check` on the default twelve-day scenario: **36 of 36 applicable
+checks pass**, 27 n/a, 3,836 steps/s against a 2,000 floor. The n/a count has
+grown because M8.1 added checks for content a twelve-day run cannot reach; the
+scenario that covers each one is named in its skip line, and `npm run
+sim:check:all` is the number that matters.
 
 | milestone | state |
 |---|---|
@@ -33,19 +36,32 @@ checks pass**, 15 n/a, 4,071 steps/s against a 2,000 floor.
 | Fix `tracking`'s spark, the M8.1 blocker | shipped 2026-09-08 |
 | M8.1 — `fishing`, mechanism 2 | shipped 2026-09-08 |
 | M8.1 — `basketry`, `netting`, `snares`, `fish_trap`; mechanism 3, the traps | shipped 2026-09-09 |
-| **M8.1 — the remaining nine nodes; mechanism 4 (stations), then 1 (spoilage)** | **next** |
-| M8.2–M8.4 — the rest of The Ages | planned; see that document |
+| M8.1 — `grinding`; mechanism 4, the crafting stations | shipped 2026-09-09 |
+| M8.1 — `bone_working`, `tailoring`, `atlatl` | shipped 2026-09-09 |
+| M8.1 — `ochre`, `flute`, `herbalism`, `taming` | shipped 2026-09-09 |
+| M8.1 — mechanism 1, spoilage | **built and switched off, 2026-09-10.** See below |
+| M8.1 — `preserving` and the drying rack | **held.** They are what spoilage is switched off *from* |
+| **M8.2 — the Neolithic** | **next** |
+| M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M7 — A\*, walls, interiors, beds | not started, and lands alone |
 | Owner's list O1–O5 | untouched. O6 and O7 shipped in pass A |
 
-Twenty-two technologies, seven recipes, nine buildings, twenty items,
-twenty-nine actions, twelve skills (`farm` and `smith` new, and unused until
-M8), four jobs, seven domains, six eras, three full-screen graphs (`G`/`K`/`T`).
+**Thirty technologies**, thirteen recipes, ten buildings, twenty-nine items,
+thirty-two actions, twelve skills (`heal` and `cook` finally have a use;
+`farm` and `smith` still do not, and wait for M8.2), four jobs, seven domains,
+six eras, three forms of record, three full-screen graphs (`G`/`K`/`T`).
 
-The figures above the table are from 2026-09-08 and the default scenario is
-bit-identical since, because a world in which nobody knows how to set a trap
-takes none of the branches M8.1's second pass added. Nine scenarios now: `traps`
-is new, and `sim:check:all` reports 46 of 46 on it.
+**Thirteen scenarios**, four of them new in this tier: `millers` for the
+stations, `hunters` for the bone chain, `culture` for the four nodes that are
+not about food, and `fishers`, which is the only run in the suite where food
+goes off.
+
+The default world is **bit-identical** to where it was before M8.1's second half
+began. Every node added since either gates its effect on knowledge nobody starts
+with (bone and sinew come off a carcass only for a butcher who knows what they
+are for; an acorn is worth nothing to anybody who cannot grind) or ships
+switched off (spoilage). That is deliberate and it is what keeps the
+before-and-after measurements in this milestone comparable.
 
 ---
 
@@ -67,14 +83,28 @@ is new, and `sim:check:all` reports 46 of 46 on it.
 4. ~~**Fix `tracking`.**~~ **Done, 2026-09-08**: see below and
    [changelog.md](changelog.md). It was unreachable in play and M8.1 puts two
    nodes behind it.
-5. **M8.1–M8.4 — The Ages**, the ladder to iron in four tiers. In progress:
-   `fishing` and mechanism 2 on 2026-09-08, and the four trap nodes with
-   mechanism 3 on 2026-09-09. **Mechanism 4, the crafting stations, is next**,
-   and the plan's warning about it is the one to read first: do not retrofit a
-   station onto `pot`, and give the `craft` scenario a kiln at founding or the
-   station checks all report n/a. Spoilage ships last and alone, because it is a
-   supply *cut* and doing it earlier hides every gain in this tier inside its
-   recovery.
+5. ~~**M8.1 — Upper Palaeolithic and Mesolithic.**~~ **Done, 2026-09-10**, in
+   four commits and one deliberate non-delivery. Fourteen nodes were planned;
+   **thirteen shipped and `preserving` is held**, because the mechanism it
+   answers is switched off. See section 0b below, and `changelog.md` for the
+   numbers behind every decision in the tier.
+
+6. **M8.2 — the Neolithic.** Seventeen nodes and the pass where a band stops
+   moving to the food: fields, herds, the loom, the kiln, masonry. The node
+   tables are in [m8_plan_the_ages.md](m8_plan_the_ages.md).
+
+   Three things carried forward into it from M8.1:
+
+   - **`farm` and `smith` are still skills nothing trains.** `farming` is what
+     finally reads the first of them.
+   - **The kiln is mechanism 4's second customer**, and the machinery is all in
+     place: `RecipeDef.station`, `reachBuilding`'s predicate, the per-station
+     refusal reasons, `CatalogContext.stationFor` and the band planner's station
+     branch. It should be a data change plus a recipe.
+   - **Retrofitting `station: 'kiln'` onto `pot` is still the trap the plan
+     warns about**, and is still not done: it would make the granary unbuildable
+     again. When it happens it needs `craft`'s starting conditions extended and
+     `pots-reach-a-granary` re-verified in the same pass.
 6. **M7**, alone, whenever it is picked up.
 
 ---
@@ -116,23 +146,57 @@ M8.1 puts `snares` and `taming` behind it. Fix the spark before adding the nodes
 
 Full detail: [m8_plan_the_ages.md](m8_plan_the_ages.md), and `bugs.md`.
 
+## 0b. Spoilage is built and switched off, and that is the open decision
+
+`needs.spoilRate` is 0 in the default config. The whole mechanism ships —
+`Inventory.spoil`, the daily sweep over packs, stores, piles and household
+goods, `BuildingDef.preserves`, the dry-run counters — and the `fishers`
+scenario turns it on so the code stays exercised and gated.
+
+It is off because it was measured. Twenty seeds on `traps`: mean survival
+**92.2% → 88.8%**, infant starvation **4 → 10**, one world in twenty collapsing
+where none had. Four rates between 0.35 and 1 are indistinguishable from one
+another. `preserving` does not bring it back — the band that could preserve
+survived *worse* than the band that could not — and making stores nearly perfect
+keepers changed nothing, which locates the loss in **packs**.
+
+**`preserving` and the drying rack are therefore held**, because a technology
+whose effect is a multiplier on zero is exactly the declared-and-inert content
+this project has a rule against. They are ready in
+[m8_plan_the_ages.md](m8_plan_the_ages.md) and are three small commits whenever
+the answer changes.
+
+What would have to change first is in [bugs.md](bugs.md), and the short version
+is: **people carry a larder.** The pack is where the loss lands, and the answer
+is not a better pack but a reason to put food down — which is the same scorer
+question the larder fix answered from the other side.
+
 ## 1. Food supply — the remaining half of the winter problem
 
 The distribution half is done (2026-09-02): mean survival across ten seeds went
 from 40% to 59% and nothing collapses any more. Measure with `npm run sim:seeds`
 rather than a single run — one `century` is too chaotic to read.
 
-What is left is supply, and **M8.1 is now the plan for it.** Fishing, snares,
-fish traps, preserving and grinding are all supply, and they are historically
-what the Mesolithic was, so the food answer and the tech ladder turn out to be
-the same pass. The three candidates this section used to list are resolved:
+What is left is supply, and **M8.1 was the plan for it, and has shipped.**
+Fishing, snares, fish traps and grinding are all supply, and they are
+historically what the Mesolithic was, so the food answer and the tech ladder
+turned out to be the same pass. Measured gains, twenty seeds each: fishing
++3.0 points, grinding +2.6, the traps a wash on survival with infant starvation
+halved. `preserving` is the one piece of it that did not ship — see 0b.
+
+**The next honest measurement is a long one**: M8.1 added four supply channels
+in a week and none of them has been played against a settled world. Section 1's
+third candidate below is still the cheapest remaining lever and still untried.
+
+The three candidates this section used to list are resolved:
 
 1. ~~**Make hunting matter.**~~ Largely done 2026-09-07 by phase 5's weapons.
    `hunts-succeed-and-fail` reports kills against misses where it had always
    reported n/a.
-2. **Give the wood a winter role.** Hazelnuts already never spoil. Folded into
-   M8.1: `preserving` and `grinding` are exactly this, and an autumn glut worth
-   deliberately storing is what a drying rack is for.
+2. ~~**Give the wood a winter role.**~~ **Done 2026-09-09 by `grinding`**, and
+   by more than was asked: the oak bears acorns now, they are inedible raw, and
+   a quern turns the commonest tree on the island from timber into an autumn
+   harvest. `preserving` was to have been the other half and is held; see 0b.
 3. **Slow the birth rate under pressure.** Still the cheapest lever and still the
    least interesting one. Untried.
 
@@ -200,11 +264,26 @@ technology a real archaeological age.
 Forty-eight new technologies across the Upper Palaeolithic, Mesolithic,
 Neolithic, Chalcolithic, Bronze and Iron ages, each shipping with the mechanism
 that makes it real — spoilage, fishing, passive traps, crafting stations, fields,
-herds, ore and smelting. Eras gain their real archaeological names with the
-evocative line kept as the description.
+herds, ore and smelting.
 
-The whole design, the node tables, the four validated mechanisms and their traps:
-**[m8_plan_the_ages.md](m8_plan_the_ages.md)**.
+**Thirteen of the forty-eight have shipped**, and all four of M8.1's mechanisms
+are built: fishing, traps and stations are live, spoilage is built and switched
+off. What remains is M8.2 to M8.4, and the whole design, the node tables and the
+traps are in **[m8_plan_the_ages.md](m8_plan_the_ages.md)**.
+
+**Two pieces of the plan's own preamble are still undone**, and both are cheap:
+
+- **The era ladder still has the old names.** `ERAS` is `stone`, `fire`,
+  `hearth`, `tools`, `craft`, `building`; the plan replaces it with the real
+  archaeological periods, keeping the evocative line as the description — which
+  is what the owner asked for. Two existing tests hardcode `stone` and `fire`,
+  so it is a test change as well as a data change.
+- **`TechDef.age` and `TechDef.firstKnown` are not there.** `age` is what makes
+  the tech web legible as history and is what the web's radius should read
+  instead of prerequisite depth; `firstKnown` ("about 40,000 years ago") is free
+  to add and is most of what "as realistic as possible" actually asks for. Both
+  are best done in one pass with the era rename, and doing them before M8.2
+  triples the node count is the cheaper order.
 
 ## 5. The owner's list, O1–O5
 
