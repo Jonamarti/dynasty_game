@@ -72,15 +72,22 @@ describe('rebellion', () => {
     rebel.traits.loyalty = 0;
     sim.relationships.addDeed(rebel.id, chief.id, -100, sim.time.tick);
 
-    // Five days, not one: `REBELLION_QUORUM` also has to be met by band
+    // Twenty days, not one: `REBELLION_QUORUM` also has to be met by band
     // members who have actually crossed paths with the chief, and with a
     // freshly engineered grievance that can take a day longer to reach than
-    // `defiance` itself, which is guaranteed the moment it is checked. Widened
-    // from three days in M7: routed movement reaches the same places by a
-    // different, sometimes slightly longer, sequence of steps, which pushed
-    // this particular quorum out to just under four days.
+    // `defiance` itself, which is guaranteed the moment it is checked.
+    //
+    // Widened twice for the same reason, and the reason is not that the
+    // mechanism weakened — it is that this test measures *how long people take
+    // to bump into each other*, which is a movement number wearing a politics
+    // test's clothes. M7 took it from three days to five when routing landed.
+    // M7 stage C fixed the half-tile aim bias, and people who no longer grind
+    // against terrain spend far less of the day milling about within sight of
+    // one another: on this seed the rebellion now fires on day 14, measured
+    // directly rather than guessed. Twenty leaves headroom for the next
+    // movement change without pretending this is a tight bound.
     const before = sim.insights.length;
-    for (let i = 0; i < 5 * 240; i++) sim.step();
+    for (let i = 0; i < 20 * 240; i++) sim.step();
 
     const fired = sim.insights.slice(before).some(n => n.personId === rebel.id);
     expect(fired).toBe(true);

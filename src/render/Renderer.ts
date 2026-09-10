@@ -15,6 +15,7 @@ import type { Inscription } from '../sim/entities/Inscription.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import type { World } from '../sim/core/World.ts';
 import { BIOMES, type Biome } from '../sim/core/World.ts';
+import { WAYPOINT_AIM } from '../sim/systems/MovementSystem.ts';
 import type { ResourceKind, ResourceNode } from '../sim/entities/ResourceNode.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
@@ -685,8 +686,12 @@ export class Renderer {
     ctx.beginPath();
     ctx.moveTo(camera.worldToScreenX(person.x), camera.worldToScreenY(person.y));
     for (let i = person.pathAt; i < person.pathCount; i++) {
-      const wx = person.path![i * 2]!;
-      const wy = person.path![i * 2 + 1]!;
+      // The same `WAYPOINT_AIM` offset the walker is actually steered by. Not
+      // cosmetic: this line is the only way to *see* routing in play, and
+      // drawing raw tile indices is what let a half-tile aim bias hide behind
+      // a picture of a route running neatly along the water's edge.
+      const wx = person.path![i * 2]! + WAYPOINT_AIM;
+      const wy = person.path![i * 2 + 1]! + WAYPOINT_AIM;
       ctx.lineTo(camera.worldToScreenX(wx), camera.worldToScreenY(wy));
     }
     if (person.targetX !== null && person.targetY !== null) {

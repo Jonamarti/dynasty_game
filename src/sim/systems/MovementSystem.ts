@@ -37,6 +37,41 @@ import { Pathfinder, PathStatus } from '../core/Pathfinder.ts';
 export const ARRIVAL_RADIUS = 0.6;
 
 /**
+ * How far inside its own tile a waypoint is aimed at: the centre.
+ *
+ * `World.index` truncates, so tile `(tx, ty)` owns `[tx, tx+1) x [ty, ty+1)`
+ * and the float point `(tx, ty)` is its *north-west corner* — the meeting
+ * point of four tiles, only one of which anything ever checked. `Pathfinder`
+ * emits waypoints as integer tile indices, and this file used to aim straight
+ * at them, which put a systematic half-tile north-west bias on every routed
+ * aim point in the game. Wherever the coast lay north or west of the leg, the
+ * last fraction of every step landed in the water.
+ *
+ * Aiming at the centre restores the guarantee the corner rule already earns
+ * for the route: a compressed run is a straight sequence of *adjacent* tile
+ * centres, and every lattice point that line crosses truncates into a tile
+ * the corner rule (`Pathfinder.ts`) has already proved walkable.
+ */
+export const WAYPOINT_AIM = 0.5;
+
+/**
+ * How far inside its own tile a real target is aimed at.
+ *
+ * The same defect reaches the final leg from the other end: `World.shoreTiles`
+ * holds integer coordinates and `Brain.setup` assigns them straight to
+ * `person.targetX` for a `drink` — so the one errand that by construction ends
+ * at the boundary between land and water aimed at a point *on* that boundary.
+ *
+ * Smaller than `WAYPOINT_AIM` because the arrival test must stay exact. The
+ * invariant is `TARGET_AIM_MARGIN * Math.SQRT2 < ARRIVAL_RADIUS` (0.283 <
+ * 0.6): the clamp moves the aim by at most that much, so standing on the
+ * clamped aim implies standing inside `ARRIVAL_RADIUS` of the real target and
+ * the check at the top of `advance` needs no adjustment. Raise this past the
+ * invariant and a walker parks short of where it was sent, for ever.
+ */
+const TARGET_AIM_MARGIN = 0.2;
+
+/**
  * Deliberately not a boolean: `step` returned one and two of its fifteen
  * callers threw the answer away, which is how a person under orders came to
  * stand still until they starved.
@@ -99,6 +134,18 @@ const MAX_PATHS_PER_TICK = 3;
  * succeeded is the lesson at the top of this file, and it applies to anything
  * that walks.
  */
+/**
+ * Pulls a coordinate `margin` inside the tile it falls in — the other half of
+ * "never aim at a point you could not stand on".
+ *
+ * Truncates rather than rounds, because `World.index` truncates and this file
+ * has already learned once what disagreeing at a tile edge costs.
+ */
+function clampIntoTile(value: number, margin: number): number {
+  const tile = value | 0;
+  return Math.min(tile + 1 - margin, Math.max(tile + margin, value));
+}
+
 export function moveToward(
   entity: { x: number; y: number },
   targetX: number,
@@ -246,19 +293,34 @@ export class MovementSystem {
     // radius: a fixed 0.3 against a 0.32 step is stepped over every tick, and
     // the walker would orbit the waypoint forever while `moveToward` reports
     // full progress every time — invisible to a displacement-based detector.
+    // Measured to the same point the walker is actually steered at, below. A
+    // skip ball half a tile north-west of the thing being walked to would let
+    // somebody count a waypoint as spent while still walking toward it.
     const skipRadius = Math.max(0.5, this.speedOf(person) * 1.1);
     while (person.pathAt < person.pathCount) {
-      const wx = person.path![person.pathAt * 2]!;
-      const wy = person.path![person.pathAt * 2 + 1]!;
+      const wx = person.path![person.pathAt * 2]! + WAYPOINT_AIM;
+      const wy = person.path![person.pathAt * 2 + 1]! + WAYPOINT_AIM;
       const wdx = wx - person.x;
       const wdy = wy - person.y;
       if (Math.sqrt(wdx * wdx + wdy * wdy) > skipRadius) break;
       person.pathAt++;
     }
 
-    const aimingAtWaypoint = person.pathAt < person.pathCount;
-    const aimX = aimingAtWaypoint ? person.path![person.pathAt * 2]! : person.targetX;
-    const aimY = aimingAtWaypoint ? person.path![person.pathAt * 2 + 1]! : person.targetY;
+    let aimX: number;
+    let aimY: number;
+    if (person.pathAt < person.pathCount) {
+      aimX = person.path![person.pathAt * 2]! + WAYPOINT_AIM;
+      aimY = person.path![person.pathAt * 2 + 1]! + WAYPOINT_AIM;
+    } else if (this.world.isWalkable(person.targetX, person.targetY)) {
+      aimX = clampIntoTile(person.targetX, TARGET_AIM_MARGIN);
+      aimY = clampIntoTile(person.targetY, TARGET_AIM_MARGIN);
+    } else {
+      // A target standing on ground nobody can walk on — a fishing spot out
+      // over water, once those exist — keeps the old behaviour rather than
+      // being pulled into the middle of a tile it was never in.
+      aimX = person.targetX;
+      aimY = person.targetY;
+    }
 
     // Fatigue and poor health slow people down; this is what makes an exhausted
     // forager fail to get home before dark.
@@ -322,6 +384,12 @@ export class MovementSystem {
     // — building footprints are always walkable — and the hook that makes
     // incremental region repair an addition later rather than a rewrite now.
     if (person.pathAt < person.pathCount) {
+      // Deliberately *not* offset by `WAYPOINT_AIM`, unlike every other read
+      // of this array. The stored value is a tile index and this is the one
+      // consumer that legitimately wants the tile rather than a point in it;
+      // adding the half tile here would turn a tile test into a point test
+      // that happens to agree, which is the sort of accident that survives
+      // until the day it does not.
       const nx = person.path![person.pathAt * 2]!;
       const ny = person.path![person.pathAt * 2 + 1]!;
       if (!this.world.isWalkable(nx, ny)) return true;

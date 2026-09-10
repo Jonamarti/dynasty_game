@@ -51,6 +51,97 @@ consumed the routes was not.
   and `path_denied_budget` staying near zero everywhere but `crowded` says the
   per-tick search budget is not the gate anybody needs to touch.
 
+- **Commit 2, never aim at a point you could not stand on.** `World.index`
+  truncates, so tile `(tx, ty)` owns `[tx, tx+1) x [ty, ty+1)` and the float
+  point `(tx, ty)` is its *north-west corner* — where four tiles meet, only one
+  of which anything ever checked. Both of the game's aim sources handed out
+  exactly that point: `Pathfinder` emits waypoints as integer tile indices and
+  `MovementSystem` aimed straight at them, and `World.shoreTiles` holds integer
+  coordinates that `Brain.setup` assigns straight to `person.targetX` for a
+  `drink` — so the one errand that by construction ends at the boundary between
+  land and water aimed at a point *on* that boundary. The net effect was a
+  systematic half-tile north-west bias on every aim point in the game, which is
+  why the owner saw it as intermittent and as "a tiny amount": it only bites
+  where the coast lies north or west of the leg.
+
+  Waypoints are now aimed at the tile centre (`WAYPOINT_AIM`), which restores
+  the guarantee the corner rule already earns for the route — a compressed run
+  is a straight sequence of *adjacent* tile centres, and every lattice point
+  that line crosses truncates into a tile the corner rule has already proved
+  walkable. Real targets are clamped `TARGET_AIM_MARGIN` inside their own tile,
+  but only when that tile is walkable, so a fishing spot standing out over
+  water keeps today's behaviour. The margin is small on purpose and the
+  invariant is written down beside it: `TARGET_AIM_MARGIN * Math.SQRT2 <
+  ARRIVAL_RADIUS`, so arriving at the clamped aim implies arriving at the real
+  target and the arrival test needed no adjustment. The waypoint-skip test
+  moved with the aim — a skip ball half a tile north-west of the thing being
+  walked to would let somebody count a waypoint as spent while still walking at
+  it — and `Renderer.drawPath` moved with it too, because it is the only way to
+  *see* routing in play and drawing raw tile indices is precisely what let this
+  hide behind a picture of a route running neatly along the water's edge.
+  `needsRoute`'s walkability test deliberately did *not* move, and now says so:
+  it is the one consumer that wants the tile rather than a point in it.
+
+  New `src/sim/__tests__/shorewalk.test.ts`, and it is the honest instrument
+  for this whole pass — deterministic, no draw from any shared stream, immune
+  to the chaos that makes a scenario check useless for a specific geometric
+  failure. 200 shore tiles sampled by a coprime stride, a walker dropped six
+  tiles inland on the same landmass, target set to the raw integer coordinate
+  `Brain.findWater` would have produced. Verified failing first, as `AGENTS.md`
+  requires: **162/200 arrived, 19 gave up, 19 ran out of 400 ticks, 10,449
+  stuck ticks**. After: **200/200, zero stuck ticks.** The hand-authored inlet
+  case, which is the owner's screenshot in twelve columns, went 3/4 to 4/4.
+
+  In play, per 1,000 walk ticks:
+
+  | scenario | stuck ticks | step_blocked | axis_null |
+  |---|---|---|---|
+  | default | 192.4 → **18.8** | 263.9 → 63.8 | 5,482 → 406 |
+  | coast   | 267.7 → **15.7** | 347.5 → 163.2 | 7,577 → 1,965 |
+  | fishers | 249.5 → **13.1** | 316.8 → 74.9 | 19,533 → 1,198 |
+  | century | 181.5 → **62.3** | 298.9 → 219.9 | 60,763 → 22,774 |
+  | crowded | 213.1 → 235.0 | 305.2 → 374.1 | 17,178 → 21,178 |
+
+  `century`'s worst-case expansions fell from the 2,000 bail-out to 1,704, so
+  **`paths-are-found` passes on `century` for the first time**, and `coast`'s
+  `opinions-diverge` came back. Across the canonical twenty-seed cohort, mean
+  survival **82.6% → 91.4%**, collapses **1/20 → 0/20**, adults starved
+  **91 → 38**, technologies known 7.5 → 8.3, lessons passed on 157 → 204. This
+  is a movement commit and those are food-economy numbers, which is the point:
+  travel time *is* the food economy.
+
+  `crowded` is the one scenario that got worse, and it is not mysterious. At 73
+  people the population-wide search budget is the binding constraint —
+  `path_denied_budget` 9,733 → 16,502 — and people who now actually *arrive*
+  finish errands and ask for new routes instead of grinding to a halt and
+  re-targeting something nearer, so mean expansions rose 131.5 → 230.9. Its
+  `perf-budget` was already failing before this pass and still is. Commit 4
+  looks at the budgets directly.
+
+  Two other checks moved, and both were chased rather than shrugged at, because
+  `AGENTS.md` is right that a check going quiet usually means removed
+  behaviour:
+  - `century`'s `the-hurt-are-tended` fails at exactly 40,000 steps. It is a
+    knife edge, not a break: the same seed on the same build gives `tend=101`
+    and 32 tended ticks at 42,000 steps, and skips as "nobody here knows a herb
+    from a weed" at 38,000. Herbalism is discovered within a hundred-odd ticks
+    of the cutoff and this commit moved it across.
+  - `tiny`'s `food-work-continues` reports 0 and does so stably at every run
+    length, so it is *not* chaos — it is the check's premise evaporating. At
+    step 800 mean hunger on that seed fell from 26.0 to 8.1, because eight
+    people who no longer grind against terrain reach food before hunger ever
+    reaches the threshold the exemption exists to override. `harvest_berries`
+    went up (68 → 71) and five other scenarios still exercise and pass the
+    check. A check that fails because the world got healthier is a defective
+    check; it gains the same "premise never arose" skip clause
+    `the-hurt-are-tended` already has, in commit 7.
+
+  `band.test.ts`'s rebellion case was widened from five days to twenty. It was
+  widened once already in M7 for this exact reason, and the honest reading is
+  that it measures *how long people take to bump into each other*, which is a
+  movement number wearing a politics test's clothes. The rebellion fires on day
+  14 on that seed now, measured rather than guessed.
+
 ---
 
 ## 2026-09-10 — M7 stage B: the zombie-order bug, and A\* to actually fix coastline traps
