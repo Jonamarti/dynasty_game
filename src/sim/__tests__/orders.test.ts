@@ -14,6 +14,7 @@ import { RNG } from '../core/RNG.ts';
 import { ForestSystem } from '../systems/ForestSystem.ts';
 import { Tree } from '../entities/Tree.ts';
 import { workProgressOf } from '../core/Progress.ts';
+import { PATIENCE } from '../systems/MovementSystem.ts';
 import type { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
 
@@ -391,6 +392,50 @@ describe('orders that stop', () => {
 
     person.forgetPlans();
     expect(person.resume).toBeNull();
+  });
+});
+
+/**
+ * M7's diagnosis: `giveUp` (`MovementSystem`) cleared only the target, not
+ * `person.order`, so a walk that ran out of patience under a player's order —
+ * the player's own character, anyone they commanded, anyone a chief commanded
+ * — left `committed` (`Simulation.step`) true forever. The brain never
+ * re-planned and the action system's own `case 'wander': default:` discarded
+ * `step`'s return value, so nothing else ever noticed either: a person who
+ * looked like they were thinking stood still until they starved.
+ */
+describe('the zombie order', () => {
+  /** A walkable tile a short, real walk away, so the order is accepted. */
+  function nearbyGoal(sim: Simulation, from: Person): { x: number; y: number } {
+    for (const [dx, dy] of [[4, 0], [-4, 0], [0, 4], [0, -4], [4, 4], [-4, -4], [4, -4], [-4, 4]]) {
+      const x = Math.round(from.x) + dx;
+      const y = Math.round(from.y) + dy;
+      if (sim.world.isWalkable(x, y) && sim.world.sameRegion(from.x, from.y, x, y)) return { x, y };
+    }
+    throw new Error('no walkable goal found near the test person');
+  }
+
+  it('is cleared, not just the target, when a walk under order runs out of patience', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+
+    const goal = nearbyGoal(sim, person);
+    expect(sim.order(person, 'goto', goal)).toBe(true);
+    expect(person.order).toBe('goto');
+
+    // Standing in for a concave shoreline: nothing is walkable in any
+    // direction, so `moveToward`'s three fallbacks all fail and this tick
+    // makes no real progress, whatever the actual terrain looks like.
+    sim.world.isWalkable = () => false;
+    person.stuckSteps = PATIENCE + 1;
+
+    sim.step();
+
+    // This fails on the pre-M7 build: `giveUp` cleared `person.target*` but
+    // left `person.order` set to `'goto'` forever.
+    expect(person.order).toBeNull();
   });
 });
 

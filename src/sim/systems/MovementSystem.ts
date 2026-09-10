@@ -1,10 +1,9 @@
 /**
  * Movement toward a target tile.
  *
- * Greedy steering with a sidestep, not A*. On open terrain this reaches the
- * target the overwhelming majority of the time at a fraction of the cost, and
- * pathfinding is only worth adding once walls and buildings make dead ends
- * common.
+ * Greedy steering with a sidestep, not yet A* (M7 adds that in `Pathfinder`).
+ * On open terrain this reaches the target the overwhelming majority of the
+ * time at a fraction of the cost.
  *
  * What greedy steering absolutely must have is an honest stuck detector, and
  * getting that wrong cost a whole population. The first version asked "did any
@@ -14,11 +13,30 @@
  * triggered the give-up, and starved standing up with food six tiles away. So
  * the detector now measures *actual displacement*: a step that goes nowhere is
  * a step that failed, whatever branch produced it.
+ *
+ * The second thing it must have, learned the same way: giving up must be
+ * *visible* to the caller. `advance` used to be `step`, returning a boolean,
+ * and two of its fifteen callers threw the answer away — which on a concave
+ * shoreline meant a person under a player's order stood still until they
+ * starved, "thinking" the whole time. `Arrival` is a tri-state so the compiler
+ * catches every caller that ignores it, and *deciding what a stuck walk means*
+ * moved out to `ActionSystem.travel`, which is where the rest of "this action
+ * turned out to be impossible" already lived.
  */
 import type { World } from '../core/World.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { Person } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
+
+/** A person is considered to have arrived within this many tiles of a target. */
+export const ARRIVAL_RADIUS = 0.6;
+
+/**
+ * Deliberately not a boolean: `step` returned one and two of its fifteen
+ * callers threw the answer away, which is how a person under orders came to
+ * stand still until they starved.
+ */
+export const enum Arrival { Moving = 0, Arrived = 1, Blocked = 2 }
 
 /**
  * Tiles per tick. At 240 ticks per day this is roughly 75 tiles a day, which is
@@ -33,7 +51,7 @@ const BASE_SPEED = 0.32;
 const PROGRESS_THRESHOLD = 0.25;
 
 /** Consecutive stuck steps before a person gives up on where they were going. */
-const PATIENCE = 25;
+export const PATIENCE = 25;
 
 /**
  * No longer has anything to clear.
@@ -133,18 +151,30 @@ export class MovementSystem {
     }
   }
 
-  /** Returns true when the person is standing on (or adjacent to) their target. */
-  step(person: Person): boolean {
-    if (person.targetX === null || person.targetY === null) return true;
+  /**
+   * One tick of travel toward `person.targetX/Y`.
+   *
+   * `tick` is unused until M7's route-following lands in `Pathfinder`'s wake
+   * (it will gate how often a stuck walker is allowed to search for a new
+   * route); taken now so every one of `advance`'s callers already threads it
+   * through, rather than changing every call site's arity twice.
+   *
+   * Deciding what `Blocked` *means* — abandon the order, or just try again —
+   * is deliberately not this method's job. `ActionSystem.travel` is the one
+   * place that already knows the difference between an action somebody
+   * ordered and a wander nobody did.
+   */
+  advance(person: Person, _tick: number): Arrival {
+    if (person.targetX === null || person.targetY === null) return Arrival.Arrived;
 
     const dx = person.targetX - person.x;
     const dy = person.targetY - person.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist < 0.6) {
+    if (dist < ARRIVAL_RADIUS) {
       person.stuckSteps = 0;
       telemetry.count('walk_arrived');
-      return true;
+      return Arrival.Arrived;
     }
 
     // Fatigue and poor health slow people down; this is what makes an exhausted
@@ -157,44 +187,19 @@ export class MovementSystem {
     );
     if (progress >= speed * PROGRESS_THRESHOLD) {
       person.stuckSteps = 0;
-      return false;
+      return Arrival.Moving;
     }
 
     person.stuckSteps++;
     if (person.stuckSteps > PATIENCE) {
       person.stuckSteps = 0;
-      this.giveUp(person);
+      telemetry.count('gave_up_walking');
+      // Counted apart from the general tally because this is the shape of the
+      // zombie-order bug M7 exists to fix: a give-up reached under an order
+      // used to leave the order standing with nothing left to walk toward.
+      if (person.order !== null) telemetry.count('gave_up_under_orders');
+      return Arrival.Blocked;
     }
-    return false;
-  }
-
-  /**
-   * Abandons an unreachable target and steps away from it.
-   *
-   * Simply going idle is not enough: the brain re-scores, picks the same
-   * nearest bush, and walks straight back into the same rock. Moving somewhere
-   * else first means the next attempt approaches from a different angle, which
-   * is usually all a greedy walker needs.
-   */
-  private giveUp(person: Person): void {
-    telemetry.count('gave_up_walking');
-    // Counted apart from the general tally because this is the shape of the
-    // zombie-order bug M7 exists to fix: `clearTarget` below does not clear
-    // `person.order`, so a give-up reached under an order left the order
-    // standing with nothing left to walk toward.
-    if (person.order !== null) telemetry.count('gave_up_under_orders');
-    person.clearTarget();
-    person.action = 'wander';
-
-    for (let attempt = 0; attempt < 10; attempt++) {
-      const tx = Math.round(person.x + this.rng.range(-7, 7));
-      const ty = Math.round(person.y + this.rng.range(-7, 7));
-      if (this.world.isWalkable(tx, ty)) {
-        person.targetX = tx;
-        person.targetY = ty;
-        return;
-      }
-    }
-    person.action = 'idle';
+    return Arrival.Moving;
   }
 }

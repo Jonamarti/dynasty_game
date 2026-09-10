@@ -540,7 +540,12 @@ export class Person {
    * call site rather than one per verb.
    */
   noteDid(action: string): void {
-    if (action === 'idle' || action === 'dead') return;
+    // M7: `case 'wander'` in `ActionSystem` now reaches `finish` (it used to
+    // discard `MovementSystem`'s return value and never get there at all),
+    // which would otherwise start entering `wander` here for the first time —
+    // reviving `tracking`'s fourth spark route in `Tech.ts`, a tech-economy
+    // change with no business riding inside a movement fix.
+    if (action === 'idle' || action === 'dead' || action === 'wander') return;
     this.lately.set(action, (this.lately.get(action) ?? 0) + 1);
   }
 

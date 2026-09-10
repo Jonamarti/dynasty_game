@@ -13,7 +13,7 @@
 import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
-import type { MovementSystem } from './MovementSystem.ts';
+import { Arrival, type MovementSystem } from './MovementSystem.ts';
 import { companionBonus } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
@@ -388,11 +388,20 @@ export class ActionSystem {
       case 'goto':
         // A walk order. Identical to wandering except that arriving ends it,
         // so the person stands where they were sent.
-        if (ctx.movement.step(person)) this.finish(person);
+        if (this.travel(person, ctx)) this.finish(person);
         break;
       case 'wander':
       default:
-        ctx.movement.step(person);
+        // Nobody ordered a wander, so there is nothing to abandon and no
+        // reason to report — nothing here goes through `travel`. `Blocked`
+        // and `Arrived` both just end the leg the same way: `finish` puts
+        // `action` back to `idle`, which is what lets the brain plan the next
+        // one instead of a random hop trying to route around the failure
+        // itself. This is also what stops the player's own character from
+        // showing `action = 'walk'` forever after the keys are released:
+        // `targetX/Y` are null by then, so `advance` reports `Arrived`
+        // immediately and `finish` resets it.
+        if (ctx.movement.advance(person, ctx.tick) !== Arrival.Moving) this.finish(person);
         break;
     }
   }
@@ -437,6 +446,31 @@ export class ActionSystem {
   }
 
   /**
+   * Advances one tick toward `person`'s target, for every action that walks
+   * somewhere before doing something. Returns whether they have arrived.
+   *
+   * The one place that decides what `Arrival.Blocked` means for an action
+   * somebody actually asked for: abandon it, with a reason, through the same
+   * `onStopped` → floater path every other refusal already uses. `finish`
+   * (via `abandon`) clears both the target and the order, which is what stops
+   * a stuck walk under a player's order from freezing forever — `giveUp` used
+   * to clear only the target, leaving the order standing with nothing left to
+   * walk toward.
+   *
+   * Not reached by `case 'wander'`: nobody ordered a wander, so there is
+   * nothing to abandon and no reason to report — see that case's own
+   * handling of `Arrival.Blocked`.
+   */
+  private travel(person: Person, ctx: ActionContext): boolean {
+    const arrival = ctx.movement.advance(person, ctx.tick);
+    if (arrival === Arrival.Blocked) {
+      this.abandon(person, 'cannot_reach', ctx);
+      return false;
+    }
+    return arrival === Arrival.Arrived;
+  }
+
+  /**
    * Ends a stretch of work for a stated reason.
    *
    * The counterpart to `abandon`: nothing has gone wrong, the person has simply
@@ -461,8 +495,7 @@ export class ActionSystem {
   // -------------------------------------------------------------------------
 
   private doDrink(person: Person, ctx: ActionContext): void {
-    const arrived = ctx.movement.step(person);
-    if (!arrived) return;
+    if (!this.travel(person, ctx)) return;
 
     // Movement stops within 0.6 tiles of the target, so the rounded position can
     // land on the tile next door. Test the neighbourhood rather than one tile,
@@ -604,7 +637,7 @@ export class ActionSystem {
       return;
     }
 
-    if (!ctx.movement.step(person)) return;
+    if (!this.travel(person, ctx)) return;
 
     // Work phase: a pull takes time, scaled by the relevant skill.
     if (person.actionTimer <= 0) {
@@ -655,7 +688,7 @@ export class ActionSystem {
 
     person.targetX = tree.x;
     person.targetY = tree.y;
-    if (!ctx.movement.step(person)) return;
+    if (!this.travel(person, ctx)) return;
 
     if (person.actionTimer <= 0) {
       person.actionTimer = Math.ceil(9 / person.skillFactor('forage'));
@@ -700,7 +733,7 @@ export class ActionSystem {
 
     person.targetX = tree.x;
     person.targetY = tree.y;
-    if (!ctx.movement.step(person)) return;
+    if (!this.travel(person, ctx)) return;
 
     // Felling accumulates on the trunk instead of running down a single
     // uninterruptible timer. The timer version committed the woodcutter for
@@ -747,7 +780,7 @@ export class ActionSystem {
   }
 
   private doFlee(person: Person, ctx: ActionContext): void {
-    if (ctx.movement.step(person)) {
+    if (this.travel(person, ctx)) {
       telemetry.count('fled');
       this.finish(person);
     }
@@ -800,7 +833,11 @@ export class ActionSystem {
 
     person.targetX = building.centerX;
     person.targetY = building.centerY;
-    ctx.movement.step(person);
+    // `travel`'s own return is not the arrival signal here — `contains` above
+    // already is, on the next call once it is true. What matters is that a
+    // `Blocked` route now abandons instead of the six callers below walking
+    // this person on the spot forever.
+    this.travel(person, ctx);
     return null;
   }
 
@@ -1033,7 +1070,7 @@ export class ActionSystem {
     if (distance > REACH + (weapon?.reach ?? 0)) {
       person.targetX = animal.x;
       person.targetY = animal.y;
-      ctx.movement.step(person);
+      this.travel(person, ctx);
       return;
     }
 
@@ -1207,7 +1244,7 @@ export class ActionSystem {
 
     person.targetX = patient.x;
     person.targetY = patient.y;
-    if (!ctx.movement.step(person)) return;
+    if (!this.travel(person, ctx)) return;
 
     person.workedTicks++;
     const mended = TEND_RATE * techPower(person, 'herbalism')
@@ -1278,7 +1315,7 @@ export class ActionSystem {
     if (person.distanceTo(animal) > REACH) {
       person.targetX = animal.x;
       person.targetY = animal.y;
-      ctx.movement.step(person);
+      this.travel(person, ctx);
       return;
     }
 
@@ -1396,7 +1433,10 @@ export class ActionSystem {
 
     person.targetX = other.x;
     person.targetY = other.y;
-    ctx.movement.step(person);
+    // Same shape as `reachBuilding`: arrival is `distanceTo <= reach` above, on
+    // the next call. What `travel` adds is a `Blocked` route abandoning
+    // instead of every social verb below walking on the spot forever.
+    this.travel(person, ctx);
     return null;
   }
 
@@ -1685,7 +1725,7 @@ export class ActionSystem {
       }
       person.targetX = aim.x;
       person.targetY = aim.y;
-      if (!ctx.movement.step(person)) return;
+      if (!this.travel(person, ctx)) return;
       this.cut(person, aim, ctx);
       return;
     }
@@ -1802,7 +1842,7 @@ export class ActionSystem {
 
     person.targetX = record.x;
     person.targetY = record.y;
-    if (!ctx.movement.step(person)) return;
+    if (!this.travel(person, ctx)) return;
 
     // What is on it that they could take in. Checked before the work rather
     // than after, so nobody spends half a day staring at something they already
