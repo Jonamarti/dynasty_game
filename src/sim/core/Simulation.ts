@@ -21,7 +21,8 @@ import { Person, resetPersonIds } from '../entities/Person.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
 import { ResourceNode, resetResourceIds, isFoodKind, type ResourceKind } from '../entities/ResourceNode.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
-import { MovementSystem, resetMovementState } from '../systems/MovementSystem.ts';
+import { MovementSystem } from '../systems/MovementSystem.ts';
+import { Pathfinder } from './Pathfinder.ts';
 import { ActionSystem } from '../systems/ActionSystem.ts';
 import { Brain } from '../ai/Brain.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
@@ -229,6 +230,13 @@ export class Simulation {
   private readonly normsByBand = new Map<number, Norms>();
 
   private readonly needsSystem: NeedsSystem;
+  /**
+   * The one A* instance this world uses, for `MovementSystem`, the health
+   * checks and later `Brain` alike — two definitions of "can they get there"
+   * is one too many, and the checks should measure the same instance the
+   * simulation actually walks people with.
+   */
+  readonly pathfinder: Pathfinder;
   private readonly movementSystem: MovementSystem;
   private readonly actionSystem = new ActionSystem();
   private readonly brain = new Brain();
@@ -266,7 +274,8 @@ export class Simulation {
     this.time = new TimeManager(this.config.time);
 
     this.needsSystem = new NeedsSystem(this.config.needs);
-    this.movementSystem = new MovementSystem(this.world, moveRng);
+    this.pathfinder = new Pathfinder(this.world);
+    this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder);
     this.social = new SocialSystem(this.relationships, this.normsByBand);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
     this.actionRng = this.rng.fork();
@@ -284,7 +293,6 @@ export class Simulation {
 
     resetPersonIds();
     resetResourceIds();
-    resetMovementState();
     resetEventIds();
     resetBuildingIds();
     resetHouseholdIds();

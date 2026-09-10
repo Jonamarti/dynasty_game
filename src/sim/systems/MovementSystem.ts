@@ -1,32 +1,37 @@
 /**
  * Movement toward a target tile.
  *
- * Greedy steering with a sidestep, not yet A* (M7 adds that in `Pathfinder`).
- * On open terrain this reaches the target the overwhelming majority of the
- * time at a fraction of the cost.
+ * A person walks a route from `Pathfinder`, one waypoint at a time, via the
+ * same greedy `moveToward` primitive direct control always used — routing
+ * decides *where* to aim, not *how* a step lands, so animals (which never
+ * route) and people cannot disagree about what a legal step is. A stuck
+ * detector is still the backstop underneath all of it: a route can go stale
+ * under a walker in ways `needsRoute` cannot see coming (a wall goes up), and
+ * greedy steering along a good waypoint can still slide on real terrain.
  *
- * What greedy steering absolutely must have is an honest stuck detector, and
- * getting that wrong cost a whole population. The first version asked "did any
- * of my fallback moves succeed?" — and when a person was walking almost due
- * south into a shoreline, the east-west fallback moved them four ten-thousandths
- * of a tile, which counted as success. They slid sideways forever, never
- * triggered the give-up, and starved standing up with food six tiles away. So
- * the detector now measures *actual displacement*: a step that goes nowhere is
- * a step that failed, whatever branch produced it.
+ * What that detector absolutely must have is an honest measure of progress,
+ * and getting that wrong cost a whole population once already. The first
+ * version asked "did any of my fallback moves succeed?" — and when a person
+ * was walking almost due south into a shoreline, the east-west fallback moved
+ * them four ten-thousandths of a tile, which counted as success. They slid
+ * sideways forever and starved standing up with food six tiles away. So the
+ * detector measures *actual displacement*: a step that goes nowhere is a step
+ * that failed, whatever produced it.
  *
  * The second thing it must have, learned the same way: giving up must be
- * *visible* to the caller. `advance` used to be `step`, returning a boolean,
- * and two of its fifteen callers threw the answer away — which on a concave
- * shoreline meant a person under a player's order stood still until they
- * starved, "thinking" the whole time. `Arrival` is a tri-state so the compiler
- * catches every caller that ignores it, and *deciding what a stuck walk means*
- * moved out to `ActionSystem.travel`, which is where the rest of "this action
- * turned out to be impossible" already lived.
+ * *visible* to the caller. `advance` returns a tri-state rather than a
+ * boolean because two of its callers, before M7, threw a boolean answer away
+ * — which on a concave shoreline meant a person under a player's order stood
+ * still until they starved, "thinking" the whole time. *Deciding what a stuck
+ * walk means* is deliberately not this file's job either: `ActionSystem.travel`
+ * is the one place that already knows the difference between an action
+ * somebody ordered and a wander nobody did.
  */
 import type { World } from '../core/World.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { Person } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { Pathfinder, PathStatus } from '../core/Pathfinder.ts';
 
 /** A person is considered to have arrived within this many tiles of a target. */
 export const ARRIVAL_RADIUS = 0.6;
@@ -54,18 +59,32 @@ const PROGRESS_THRESHOLD = 0.25;
 export const PATIENCE = 25;
 
 /**
- * No longer has anything to clear.
- *
- * `stuckTicks` used to live here as a module-level `Map<personId, count>`,
- * shared by every `Simulation` in the process, which leaked an entry for
- * everyone who died mid-slide and could carry a stale entry from one world
- * into the next. It is now `Person.stuckSteps` (see that field's own note on
- * why it is not simply cleared by `clearTarget`), bounded by the person's
- * own lifetime. Kept as a no-op rather than removed along with its one call
- * site (`Simulation.ts`) so this commit stays instrumentation-only; both go
- * away together once M7's `MovementSystem` rewrite lands.
+ * How far a target has to move from the goal a route was computed for before
+ * the route counts as stale. Not zero: `doHunt` rewrites `targetX/Y` every
+ * tick chasing a moving animal, and a tolerance is what lets the walker
+ * follow one route for more than a single tick instead of invalidating it
+ * every time the quarry so much as twitches.
  */
-export function resetMovementState(): void {}
+const GOAL_TOLERANCE = 2;
+
+/**
+ * Ticks between route searches for one person. Bounds the worst case at
+ * `population / REPATH_COOLDOWN` searches per tick, and stops a person with a
+ * genuinely unroutable target searching every tick for nothing — fifteen
+ * ticks of greedy steering between attempts is exactly what a person with no
+ * route at all already does, so the fallback while waiting out the cooldown
+ * does not regress on today's behaviour.
+ */
+const REPATH_COOLDOWN = 15;
+
+/**
+ * Route searches allowed across the whole population in one tick. Reset
+ * lazily inside `requestRoute` when the tick changes, rather than from
+ * `Simulation.step` — a budget nobody outside this file has to remember to
+ * reset is a budget that cannot be reset in the wrong order relative to
+ * whichever person happens to ask first.
+ */
+const MAX_PATHS_PER_TICK = 3;
 
 /**
  * One step of greedy steering, for anything with a position.
@@ -123,7 +142,15 @@ export function moveToward(
 }
 
 export class MovementSystem {
-  constructor(private readonly world: World, private readonly rng: RNG) {}
+  /** Route searches already spent this tick, across the whole population. */
+  private searchesUsed = 0;
+  private budgetTick = -1;
+
+  constructor(
+    private readonly world: World,
+    private readonly rng: RNG,
+    private readonly pathfinder: Pathfinder
+  ) {}
 
   /** Speed for a given person, shared by pathing and direct player control. */
   speedOf(person: Person): number {
@@ -152,19 +179,24 @@ export class MovementSystem {
   }
 
   /**
-   * One tick of travel toward `person.targetX/Y`.
+   * One tick of travel toward `person.targetX/Y`, along `person.path` when
+   * there is one.
    *
-   * `tick` is unused until M7's route-following lands in `Pathfinder`'s wake
-   * (it will gate how often a stuck walker is allowed to search for a new
-   * route); taken now so every one of `advance`'s callers already threads it
-   * through, rather than changing every call site's arity twice.
+   * In order: the arrival check (unchanged by routing — it has always been
+   * about the real target, never about a waypoint); `needsRoute` and
+   * `requestRoute`, which between them decide whether this is the tick to ask
+   * `Pathfinder` for a fresh route; skipping past any waypoints already
+   * behind the walker; `moveToward` aimed at the next waypoint, or at the
+   * real target on the final leg when the route is exhausted or there never
+   * was one; the same displacement-based stuck detector as always, as the
+   * backstop for everything routing cannot see coming.
    *
    * Deciding what `Blocked` *means* — abandon the order, or just try again —
    * is deliberately not this method's job. `ActionSystem.travel` is the one
    * place that already knows the difference between an action somebody
    * ordered and a wander nobody did.
    */
-  advance(person: Person, _tick: number): Arrival {
+  advance(person: Person, tick: number): Arrival {
     if (person.targetX === null || person.targetY === null) return Arrival.Arrived;
 
     const dx = person.targetX - person.x;
@@ -173,26 +205,61 @@ export class MovementSystem {
 
     if (dist < ARRIVAL_RADIUS) {
       person.stuckSteps = 0;
+      person.pathCount = 0;
       telemetry.count('walk_arrived');
       return Arrival.Arrived;
     }
+
+    if (this.needsRoute(person)) this.requestRoute(person, tick);
+
+    // Skip waypoints already behind us. Speed-relative, and not the arrival
+    // radius: a fixed 0.3 against a 0.32 step is stepped over every tick, and
+    // the walker would orbit the waypoint forever while `moveToward` reports
+    // full progress every time — invisible to a displacement-based detector.
+    const skipRadius = Math.max(0.5, this.speedOf(person) * 1.1);
+    while (person.pathAt < person.pathCount) {
+      const wx = person.path![person.pathAt * 2]!;
+      const wy = person.path![person.pathAt * 2 + 1]!;
+      const wdx = wx - person.x;
+      const wdy = wy - person.y;
+      if (Math.sqrt(wdx * wdx + wdy * wdy) > skipRadius) break;
+      person.pathAt++;
+    }
+
+    const aimingAtWaypoint = person.pathAt < person.pathCount;
+    const aimX = aimingAtWaypoint ? person.path![person.pathAt * 2]! : person.targetX;
+    const aimY = aimingAtWaypoint ? person.path![person.pathAt * 2 + 1]! : person.targetY;
 
     // Fatigue and poor health slow people down; this is what makes an exhausted
     // forager fail to get home before dark.
     const speed = this.speedOf(person);
 
     // The honest test: did we actually get anywhere?
-    const progress = moveToward(
-      person, person.targetX, person.targetY, speed, this.world, this.rng
-    );
+    const progress = moveToward(person, aimX, aimY, speed, this.world, this.rng);
     if (progress >= speed * PROGRESS_THRESHOLD) {
       person.stuckSteps = 0;
+      person.pathRetried = false;
       return Arrival.Moving;
     }
 
     person.stuckSteps++;
     if (person.stuckSteps > PATIENCE) {
+      // Out of patience buys one free re-route before giving up outright —
+      // a route can go stale under a walker (a wall goes up, `walkable`
+      // changes) in a way `needsRoute` cannot see coming, and a single bad
+      // stretch is not yet evidence the whole route is wrong. `requestRoute`
+      // is still subject to its own cooldown and budget, so this is a chance
+      // at a fresh route, not a guarantee of one.
+      if (!person.pathRetried) {
+        person.pathRetried = true;
+        person.stuckSteps = 0;
+        person.pathCount = 0;
+        person.pathAt = 0;
+        return Arrival.Moving;
+      }
+
       person.stuckSteps = 0;
+      person.pathRetried = false;
       telemetry.count('gave_up_walking');
       // Counted apart from the general tally because this is the shape of the
       // zombie-order bug M7 exists to fix: a give-up reached under an order
@@ -201,5 +268,75 @@ export class MovementSystem {
       return Arrival.Blocked;
     }
     return Arrival.Moving;
+  }
+
+  /**
+   * Whether `person.path` is missing, aimed at a goal that has since moved,
+   * or about to walk into a tile that stopped being walkable under it.
+   */
+  private needsRoute(person: Person): boolean {
+    if (person.pathCount === 0) return true;
+
+    const gdx = person.targetX! - person.pathGoalX;
+    const gdy = person.targetY! - person.pathGoalY;
+    if (gdx * gdx + gdy * gdy > GOAL_TOLERANCE * GOAL_TOLERANCE) return true;
+
+    // One line for M7's walls and M8.3's mining rather than a live case today
+    // — building footprints are always walkable — and the hook that makes
+    // incremental region repair an addition later rather than a rewrite now.
+    if (person.pathAt < person.pathCount) {
+      const nx = person.path![person.pathAt * 2]!;
+      const ny = person.path![person.pathAt * 2 + 1]!;
+      if (!this.world.isWalkable(nx, ny)) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Asks `Pathfinder` for a route, if this person's own cooldown and the
+   * whole population's per-tick budget both allow it.
+   *
+   * Pursuit needs no special case here: `doHunt` rewrites `targetX/Y` every
+   * tick, so `needsRoute` sees the goal move past `GOAL_TOLERANCE` and this
+   * runs again — but no more than once every `REPATH_COOLDOWN` ticks.
+   * Between searches the walker follows the stale route and then aims
+   * straight at the animal once it runs out, which is the right shape
+   * anyway: routing matters for closing on the herd, and the last few tiles
+   * of a chase are open ground.
+   */
+  private requestRoute(person: Person, tick: number): void {
+    if (tick !== this.budgetTick) {
+      this.budgetTick = tick;
+      this.searchesUsed = 0;
+    }
+    if (tick - person.pathTick < REPATH_COOLDOWN) return;
+    if (this.searchesUsed >= MAX_PATHS_PER_TICK) return;
+
+    person.pathTick = tick;
+    this.searchesUsed++;
+
+    const status = this.pathfinder.find(person.x, person.y, person.targetX!, person.targetY!);
+    if (status !== PathStatus.Found) {
+      // `AlreadyThere` is handled by the arrival check above in practice;
+      // `NoRoute`/`GaveUp` leave nothing to store, so the walker aims
+      // straight at the real target below until the stuck backstop decides
+      // what a route that never arrives means.
+      person.pathCount = 0;
+      person.pathAt = 0;
+      return;
+    }
+
+    const routeLength = this.pathfinder.routeLength;
+    if (!person.path || person.path.length < routeLength * 2) {
+      // Grows rather than reallocating on every route — one buffer per
+      // person for life in the overwhelmingly common case, since a route
+      // this size has, by definition, never been needed before.
+      person.path = new Int16Array(Math.max(routeLength * 2, (person.path?.length ?? 8) * 2));
+    }
+    person.path.set(this.pathfinder.route.subarray(0, routeLength * 2));
+    person.pathCount = routeLength;
+    person.pathAt = 0;
+    person.pathGoalX = person.targetX!;
+    person.pathGoalY = person.targetY!;
   }
 }

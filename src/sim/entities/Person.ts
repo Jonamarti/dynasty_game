@@ -419,6 +419,35 @@ export class Person {
   stuckSteps = 0;
 
   /**
+   * The current route from `Pathfinder`, as `[x0, y0, x1, y1, …]` waypoints —
+   * never the start or the destination tile, both of which `MovementSystem`
+   * already knows without asking. `null` until the first route is computed;
+   * kept and reused afterwards rather than reallocated, growing only the rare
+   * time a route needs more room than it ever has before. One buffer per
+   * person for life, not a search's worth of garbage every time somebody
+   * walks somewhere.
+   */
+  path: Int16Array | null = null;
+  /** Waypoints currently valid in `path` — 0 means "no route, walk straight". */
+  pathCount = 0;
+  /** Index of the next waypoint to walk toward; waypoints behind it are spent. */
+  pathAt = 0;
+  /** The target `path` was computed for, so a target that moved is noticed. */
+  pathGoalX = 0;
+  pathGoalY = 0;
+  /** Tick of the last route request, whether or not it found one. */
+  pathTick = -Infinity;
+  /**
+   * Whether the current stall has already spent its one free re-route.
+   *
+   * A route can go stale under a walker — a wall goes up, `walkable` changes
+   * — in a way `needsRoute` cannot see coming, and the stuck detector is the
+   * backstop for exactly that. One retry before giving up outright, because a
+   * single bad tick is not yet evidence the whole route is wrong.
+   */
+  pathRetried = false;
+
+  /**
    * Spreads think ticks across the tick cycle so the whole population does not
    * re-plan on the same step — both a cost smoother and a look fix, since
    * synchronized NPCs move like a shoal.
@@ -627,6 +656,14 @@ export class Person {
     this.targetItemId = null;
     this.targetItemCount = null;
     this.actionTimer = 0;
+    // A route and the aim it was computed for have to be forgotten together —
+    // this is the one place that forgets where somebody was going, and a
+    // route outliving it would send them toward the last errand's bush. The
+    // buffer itself is kept; only `pathCount` needs to fall to zero for
+    // `MovementSystem` to compute a fresh one.
+    this.pathCount = 0;
+    this.pathAt = 0;
+    this.pathRetried = false;
   }
 
   /**

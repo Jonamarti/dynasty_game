@@ -72,12 +72,15 @@ describe('rebellion', () => {
     rebel.traits.loyalty = 0;
     sim.relationships.addDeed(rebel.id, chief.id, -100, sim.time.tick);
 
-    // Two days, not one: `REBELLION_QUORUM` also has to be met by band
+    // Five days, not one: `REBELLION_QUORUM` also has to be met by band
     // members who have actually crossed paths with the chief, and with a
     // freshly engineered grievance that can take a day longer to reach than
-    // `defiance` itself, which is guaranteed the moment it is checked.
+    // `defiance` itself, which is guaranteed the moment it is checked. Widened
+    // from three days in M7: routed movement reaches the same places by a
+    // different, sometimes slightly longer, sequence of steps, which pushed
+    // this particular quorum out to just under four days.
     const before = sim.insights.length;
-    for (let i = 0; i < 3 * 240; i++) sim.step();
+    for (let i = 0; i < 5 * 240; i++) sim.step();
 
     const fired = sim.insights.slice(before).some(n => n.personId === rebel.id);
     expect(fired).toBe(true);

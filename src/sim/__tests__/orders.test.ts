@@ -430,6 +430,10 @@ describe('the zombie order', () => {
     // makes no real progress, whatever the actual terrain looks like.
     sim.world.isWalkable = () => false;
     person.stuckSteps = PATIENCE + 1;
+    // M7 gives a stuck walk one free re-route before it gives up outright —
+    // exhaust it up front, so this one step lands on the real give-up rather
+    // than the retry.
+    person.pathRetried = true;
 
     sim.step();
 
