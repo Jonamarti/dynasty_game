@@ -75,6 +75,17 @@ export interface BuildingDef {
    * does-not-exist defect, one table along.
    */
   station?: boolean;
+  /**
+   * How much longer food keeps in here. 1 is no better than a pack.
+   *
+   * M8.1, mechanism 1. A *building* multiplier rather than a person one,
+   * because a store belongs to a band and not to whoever last walked in — and
+   * baking the storer's own skill in at deposit time would need per-unit state,
+   * which `Inventory` deliberately does not have. It is also the second reason
+   * to build a drying rack, which otherwise would have been a hut that does
+   * nothing.
+   */
+  preserves?: number;
   description: string;
 }
 
@@ -141,6 +152,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     workTicks: 180,
     shelter: 0,
     storage: 120,
+    // A lined hollow in cold ground is a root cellar, and keeping food is the
+    // entire reason anybody ever dug one — the description has said so since
+    // M2 and nothing read it until M8.1 gave `spoilTicks` a reader. Without
+    // this the pit is a hole that food rots in at exactly the rate it rots in a
+    // pack, which would make the sentence below a lie.
+    preserves: 1.6,
     requiresTech: null,
     description: 'A lined hollow. Holds a band’s surplus through a season.',
   },
@@ -153,6 +170,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     workTicks: 520,
     shelter: 0.85,
     storage: 40,
+    // Indoors and out of the sun, but it is a house rather than a store.
+    preserves: 1.2,
     requiresTech: null,
     description:
       'Daubed walls on a felled-timber frame, under thatch. Warm enough to ' +
@@ -247,6 +266,9 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     workTicks: 900,
     shelter: 0.2,
     storage: 400,
+    // Raised, sealed and dark. The best keeping in the game until somebody
+    // works out how to dry things.
+    preserves: 1.8,
     requiresTech: 'pottery',
     description: 'Raised and sealed. Grain keeps for a year, and a year of grain changes everything.',
   },

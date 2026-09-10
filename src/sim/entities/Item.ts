@@ -188,6 +188,75 @@ export class Inventory {
     return [...this.stacks.entries()];
   }
 
+  /**
+   * Accumulated fractional loss, for perishable ids only.
+   *
+   * M8.1, mechanism 1. Deliberately a *carry* rather than a per-stack age, and
+   * the trade is worth stating because it is visible in play: **adding fresh
+   * units does not reset it.** A pile picked on day three and topped up on day
+   * nine rots on day thirteen as one pile. That is the same trade
+   * `architecture.md` already made keeping per-unit quality out of `stacks`,
+   * which nearly everything in this project relies on being a plain id-to-count
+   * map, and `world.test.ts` asserts the decision rather than leaving it to be
+   * discovered.
+   *
+   * Two alternatives were weighed and rejected. A decay *roll* per stack needs
+   * an appended `RNG` fork and injects variance into the exact system ten seeds
+   * cannot resolve. An age-cohort list tells the nicer story but needs the day
+   * at all thirty-six `add` sites, for three to five times the code. The cohort
+   * list is the upgrade path if per-batch preservation is ever wanted.
+   */
+  private spoilage = new Map<string, number>();
+
+  /**
+   * Ages the contents by `elapsedTicks` and removes whatever has gone off.
+   *
+   * `factorFor` multiplies an item's `spoilTicks`: higher keeps longer. It is a
+   * function rather than a number because a person's answer comes through
+   * `spoilFactor` and a building's through `BuildingDef.preserves`, and the
+   * sweep should not have to know which it is holding.
+   *
+   * Returns what was lost, by id, so the caller can count it — the dry-run
+   * staging this shipped under depended on being able to measure the loss
+   * before paying for it.
+   */
+  spoil(
+    elapsedTicks: number,
+    factorFor: (itemId: string) => number,
+    apply = true
+  ): Map<string, number> {
+    const lost = new Map<string, number>();
+    if (elapsedTicks <= 0) return lost;
+    for (const [itemId, count] of this.stacks) {
+      const keeps = ITEMS[itemId]?.spoilTicks ?? 0;
+      // Zero means it keeps indefinitely — hazelnuts, flint, a spear.
+      if (keeps <= 0) continue;
+      const life = keeps * Math.max(0.05, factorFor(itemId));
+      // Loss is proportional to how much is held: a pile of forty berries loses
+      // four times what a pile of ten does over the same day, which is what
+      // makes storing more of something a real decision rather than a free one.
+      const carried = (this.spoilage.get(itemId) ?? 0) + (elapsedTicks / life) * count;
+      const whole = Math.floor(carried);
+      if (whole <= 0) {
+        if (apply) this.spoilage.set(itemId, carried);
+        else lost.set(itemId, carried);
+        continue;
+      }
+      if (!apply) {
+        lost.set(itemId, whole);
+        continue;
+      }
+      const taken = this.remove(itemId, whole);
+      if (taken > 0) lost.set(itemId, taken);
+      // Whatever could not be taken is dropped rather than banked: a stack that
+      // has run out has nothing left to go off, and carrying the remainder
+      // forward would make the *next* delivery rot on arrival.
+      if (this.count(itemId) <= 0) this.spoilage.delete(itemId);
+      else this.spoilage.set(itemId, carried - whole);
+    }
+    return lost;
+  }
+
   /** The most nourishing edible thing carried, or null. */
   bestFood(): string | null {
     let best: string | null = null;

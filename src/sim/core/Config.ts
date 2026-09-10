@@ -71,6 +71,22 @@ export interface NeedsConfig {
   criticalThreshold: number;
   /** Health lost per tick per critical need. */
   criticalDamage: number;
+  /**
+   * How fast perishable food goes off, as a multiple of `ItemDef.spoilTicks`.
+   *
+   * M8.1, mechanism 1, and the lever the whole feature shipped behind. At 0
+   * nothing spoils at all and the sweep still runs, which is what let "the
+   * sweep changed the world" and "spoilage changed the world" be measured as
+   * two separate questions.
+   *
+   * **It defaults to 0, deliberately, and `Simulation.spoilFood` carries the
+   * measurements.** Spoilage costs three to five points of mean survival and
+   * doubles infant starvation at every rate tried, and `preserving` could not be
+   * shown to bring any of it back — so the technology and the drying rack are
+   * held and the machinery ships dormant. The `fishers` scenario sets it to 1,
+   * which is what keeps the code exercised.
+   */
+  spoilRate: number;
   /** Health regained per tick when no need is critical. */
   recoveryRate: number;
   /**
@@ -224,6 +240,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     companyRate: 0.07,
     criticalThreshold: 85,
     criticalDamage: 0.06,
+    spoilRate: 0,
     recoveryRate: 0.02,
     // 42/48/50, not the 35/40/45 this shipped with. Raised because work stopped
     // so readily that the owner reported it from play — but raised only a

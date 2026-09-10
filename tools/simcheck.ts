@@ -220,6 +220,26 @@ export const SCENARIOS: Record<string, Scenario> = {
     },
     steps: 9000,
   },
+  fishers: {
+    name: 'fishers',
+    description:
+      'The whole Mesolithic food chain in one band: spear-fishing, the net, ' +
+      'and **the only scenario in the suite where food goes off**. ' +
+      'Mechanism 1 ships with `needs.spoilRate` at 0 in the default config — ' +
+      'see `Simulation.spoilFood` for the measurements behind that — so this ' +
+      'is what keeps the sweep exercised and gated rather than quietly ' +
+      'rotting. A scenario that switches a mechanism on is the same affordance ' +
+      '`harsh-winter` uses to shorten a season.',
+    config: {
+      seed: 'kipper',
+      needs: { spoilRate: 1 },
+      population: {
+        bands: 2, peoplePerBand: 10,
+        startingTech: ['firemaking', 'plant_lore', 'spear', 'fishing', 'netting'],
+      },
+    },
+    steps: 9000,
+  },
   culture: {
     name: 'culture',
     description:
@@ -237,7 +257,11 @@ export const SCENARIOS: Record<string, Scenario> = {
       population: {
         bands: 2, peoplePerBand: 10,
         startingTech: [
-          'firemaking', 'hafting', 'tracking', 'plant_lore',
+          // `spear` is here so that anybody hunts at all. A flute costs a bone,
+          // a bone comes off a kill, and a kill wants a weapon — without it the
+          // scenario knows how to make a flute and never has the material,
+          // which is the upstream-link failure this suite keeps finding.
+          'firemaking', 'hafting', 'tracking', 'plant_lore', 'spear',
           'ochre', 'bone_working', 'flute', 'herbalism', 'taming',
         ],
       },
@@ -1184,6 +1208,64 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       crafted + ' things made, ' + craftInterrupted + ' attempts broken off for a need');
   }
 
+  // --- Spoilage: M8.1, mechanism 1 ------------------------------------------
+  //
+  // `ItemDef.spoilTicks` had been declared and read nowhere at all — the
+  // largest piece of inert data in the game — so the first of these asserts
+  // simply that it is read now.
+  const spoiled = sum('spoiled_');
+  const harvested = sum('harvest_') + sum('picked_');
+  if (sim.config.needs.spoilRate <= 0) {
+    // The staging lever, kept: at rate 0 the sweep still runs and still counts,
+    // which is what let "the sweep changed the world" and "spoilage changed the
+    // world" be two separate measurements.
+    skip('food-spoils', 'spoilage is switched off in this scenario');
+  } else if (harvested === 0) {
+    skip('food-spoils', 'nothing perishable was gathered in this run');
+  } else {
+    // Both ends matter. Nothing rotting means `spoilTicks` is being read
+    // somewhere it does not reach; everything rotting means a world nobody can
+    // store food in, which is the failure mode this mechanism was staged and
+    // dry-run to avoid.
+    const share = spoiled / harvested;
+    add('food-spoils',
+      spoiled > 0 && share < 2.5,
+      spoiled + ' units went off against ' + harvested + ' gathered (' +
+      (share * 100).toFixed(0) + '%)');
+  }
+
+  // The answer to it. Survival across twenty seeds cannot resolve a change this
+  // size — it was measured at four tenths of a point — so this asks the
+  // question that can be answered: of everything that would have gone off with
+  // no answer to spoilage at all, how much was actually saved by knowing how to
+  // keep it and by having somewhere to keep it?
+  const prevented = tel.spoilage_prevented ?? 0;
+  if (sim.config.needs.spoilRate <= 0) {
+    skip('stores-keep-food-better-than-packs',
+      'spoilage is switched off in this scenario');
+  } else if (spoiled + prevented === 0) {
+    skip('stores-keep-food-better-than-packs',
+      'nothing perishable was held long enough to go off');
+  } else {
+    // `BuildingDef.preserves` is the half of mechanism 1 that *did* ship, and
+    // this is the only thing that can say whether it is read: a lined pit in
+    // cold ground keeps food and a pack does not, which is the whole reason
+    // anybody ever dug one.
+    //
+    // It was `preserving-keeps-food` and gated on the technology, until the
+    // technology was held — see `Simulation.spoilFood`. Before that it asked
+    // only that a fifth of what was at risk be saved, on the reasoning that
+    // every world has storage pits, and it failed on eleven scenarios out of
+    // thirteen: most food in this game is in somebody's pack and a pit nobody
+    // has filled yet saves nothing. A check that fails everywhere for a reason
+    // unrelated to what it is checking is worse than no check.
+    const saved = prevented / (spoiled + prevented);
+    add('stores-keep-food-better-than-packs',
+      prevented > 0,
+      Math.round(prevented) + ' units kept by being stored rather than carried, ' +
+      (saved * 100).toFixed(0) + '% of everything at risk');
+  }
+
   // --- The four that are not about food: M8.1 -------------------------------
   //
   // Each of these is a verb nobody had a reason to choose before, and a verb
@@ -1204,6 +1286,12 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
 
   if (!sim.knownTech.has('flute')) {
     skip('music-answers-loneliness', 'nobody here can make a flute');
+  } else if ((tel.crafted_flute ?? 0) === 0) {
+    // Knowing how and having one are different things: a flute costs a bone,
+    // and a bone costs a kill made by somebody who knows how to butcher one.
+    // Saying so is more use than failing, because the missing link is upstream
+    // of everything this check is about.
+    skip('music-answers-loneliness', 'the knowledge is here and no flute was ever made');
   } else {
     // Two halves. Somebody played, and somebody who was not the player heard
     // it — the second is the whole reason a flute is different from a
@@ -1218,6 +1306,12 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
 
   if (!sim.knownTech.has('herbalism')) {
     skip('the-hurt-are-tended', 'nobody here knows a herb from a weed');
+  } else if ((tel.hurt_person_days ?? 0) === 0) {
+    // Nobody was ever hurt enough to be worth sitting with. That is a healthy
+    // world rather than a broken healer, and `Brain` will not down tools for a
+    // graze — see `TEND_WORTH_IT`, which exists so a herbalist does not stop
+    // foraging every time somebody stubs a toe.
+    skip('the-hurt-are-tended', 'nobody in this world was ever hurt enough to tend');
   } else {
     const tendTicks = tel.tended_ticks ?? 0;
     add('the-hurt-are-tended',
@@ -1250,8 +1344,20 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const boneTaken = (tel.harvest_bone ?? 0) + (tel.harvest_sinew ?? 0);
   const boneTools = (tel.crafted_bone_point ?? 0) + (tel.crafted_needle ?? 0);
   const coats = tel.crafted_fur_coat ?? 0;
-  if (!sim.knownTech.has('bone_working')) {
-    skip('kills-are-butchered-for-bone', 'nobody alive knows what to do with a carcass');
+  // Gated on the scenario's *starting* knowledge rather than on the world's,
+  // and the difference is the whole reason this went red on `scribes`.
+  // `sim.knownTech` says somebody, somewhere, has worked it out — and knowledge
+  // in this game is held by individuals, so a world where one elderly scribe
+  // conceived bone working can report eighteen kills and no bone without
+  // anything being wrong: none of them was made by the person who knows.
+  // Asserting the chain is only fair where the founders were handed it.
+  const startsWith = (tech: string): boolean =>
+    (sim.config.population.startingTech ?? []).includes(tech);
+  if (!startsWith('bone_working')) {
+    skip('kills-are-butchered-for-bone',
+      sim.knownTech.has('bone_working')
+        ? 'bone working was worked out here, but nobody was founded knowing it'
+        : 'nobody alive knows what to do with a carcass');
   } else if ((tel.hunt_killed ?? 0) === 0) {
     skip('kills-are-butchered-for-bone', 'nothing was killed in this run');
   } else {

@@ -1063,7 +1063,16 @@ export class Brain {
             // Calmer beasts are worth trying and skittish ones are not, which
             // is the only place in the game `Animal.temperament` is read and
             // the reason it has been sitting on that class since M6a.
-            add('tame', 0.35 * (1 - strayAnimal.temperament) * (0.4 + person.skillFactor('track'))
+            //
+            // Weighted by how well this person *hunts*, which is the term that
+            // makes the verb viable at all. A companion is worth 35% on every
+            // hunt for the rest of its life, so the best hunter in the band has
+            // the most to gain from one — and without saying so the scorer sees
+            // only "spear it now" against "feed it and walk away hungry", and
+            // hunting wins every time. Measured: handing `culture` a spear took
+            // taming from fifteen meals offered in a run to none.
+            add('tame', 0.5 * (1 - strayAnimal.temperament)
+              * (0.35 + person.skillFactor('hunt'))
               * this.proximityBonus(person, strayAnimal, ctx.sightRadius));
           }
         }

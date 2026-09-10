@@ -18,7 +18,7 @@ import { SpatialHash } from './SpatialHash.ts';
 import { telemetry } from './Telemetry.ts';
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
 import { Person, resetPersonIds } from '../entities/Person.ts';
-import { ITEMS } from '../entities/Item.ts';
+import { ITEMS, Inventory } from '../entities/Item.ts';
 import { ResourceNode, resetResourceIds, isFoodKind, type ResourceKind } from '../entities/ResourceNode.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import { MovementSystem, resetMovementState } from '../systems/MovementSystem.ts';
@@ -1512,6 +1512,111 @@ export class Simulation {
   }
 
   /**
+   * A day of rot, everywhere food is kept. M8.1, mechanism 1.
+   *
+   * **It ships switched off, and that was a decision taken on measurements
+   * rather than a job left half done.** `needs.spoilRate` is 0 in the default
+   * config, so the machinery runs, counts what *would* go off, and removes
+   * nothing. The `fishers` scenario turns it on, which is what keeps this code
+   * exercised and gated rather than quietly rotting.
+   *
+   * The measurements, twenty seeds each on `traps`, spoilage off against on:
+   * mean survival **92.2% → 88.8%** at rate 0.4 and 88.4% at rate 1, infant
+   * starvation 4 → 10 either way, and one world in twenty collapsing where none
+   * had. Four rates were tried between 0.35 and 1 and they are indistinguishable
+   * from each other at twenty seeds — 0.6 measured *worse* than 1.0 — so the
+   * cost is not something a coefficient tunes away.
+   *
+   * The plan's own condition for holding was whether `preserving` brings the
+   * loss back, and it does not: on `fishers`, the scenario built for it, the
+   * band that knows how to preserve survived at **91.5%** against **94.1%** for
+   * the band that does not. That is noise in the wrong direction rather than a
+   * mechanism. Giving stores nearly perfect keeping (a pit at 4, a granary at 8)
+   * was tried as well and changed nothing — 87.1% — which locates the harm in
+   * *packs*: people carry a great deal of food and all of it rots.
+   *
+   * So `preserving` and the drying rack are **not shipped**. A technology whose
+   * effect is a multiplier on zero is exactly the declared-and-inert content
+   * this project has a rule against, and half of one is worse than neither.
+   * Both are three lines away in `m8_plan_the_ages.md` when the food economy
+   * has the headroom for a supply cut — the honest reading is that it does not
+   * yet, and that the supply half of M8.1 should be allowed to bed in first.
+   
+   *
+   * Placed immediately after `refreshRecords` because it is the same kind of
+   * thing pointed at a different target: the two processes in this world that
+   * take something away while nobody is looking.
+   *
+   * **Once a day, not once a tick.** About a hundred and forty inventories of
+   * four stacks is six hundred map entries, one lookup and one float add each —
+   * roughly two and a half map operations per step amortised, three to four
+   * orders of magnitude under the noise floor at four thousand steps a second.
+   * A per-tick sweep would be six hundred operations per step, comparable to
+   * the whole of `NeedsSystem.update`, and is the version to refuse.
+   *
+   * **It draws no `RNG`.** Loss is proportional and the remainder is carried on
+   * the inventory, so this needed no new stream and no change to the fork
+   * order — the same property `workTraps` has, and it is a design advantage
+   * rather than an accident.
+   *
+   * Four collections, and one of them is a black hole: `household.store` is
+   * written by `LifeSystem` when somebody dies and **read by nothing anywhere**.
+   * Spoiling it is correct and must not be counted as the feature working. See
+   * `bugs.md`.
+   */
+  private spoilFood(): void {
+    const rate = this.config.needs.spoilRate;
+    const ticks = this.config.time.ticksPerDay;
+    // Everything still runs at rate 0, and that is the point of the staging:
+    // the dry run accrues and counts without removing anything, so the size of
+    // the change could be read off a run before it was paid for.
+    const dry = rate <= 0;
+    const elapsed = dry ? ticks : ticks * rate;
+    const prefix = dry ? 'would_spoil_' : 'spoiled_';
+
+    const sweep = (inventory: Inventory, keeps: number): void => {
+      // What would have gone off with no answer to spoilage at all, measured
+      // first and not applied. It is the only honest way to ask whether
+      // `preserving` is doing anything: survival across twenty seeds cannot
+      // resolve a change this size, and "food still rots" says nothing about
+      // whether keeping it well helped. Counted rather than asserted from the
+      // multiplier, because a multiplier that is read in the wrong place is
+      // exactly the kind of bug this project keeps finding.
+      if (keeps > 1) {
+        let bare = 0;
+        for (const [, count] of inventory.spoil(elapsed, () => 1, false)) bare += count;
+        let kept = 0;
+        for (const [, count] of inventory.spoil(elapsed, () => keeps, false)) kept += count;
+        if (bare > kept) telemetry.count('spoilage_prevented', Math.round(bare - kept));
+      }
+      const lost = inventory.spoil(elapsed, () => keeps, !dry);
+      for (const [itemId, count] of lost) {
+        if (count > 0) telemetry.count(prefix + itemId, Math.round(count));
+      }
+    };
+
+    // A pack keeps food no better than the open air, and there is nothing
+    // anybody can carry that changes that — see the note on this method for why
+    // `preserving` is not in `TECHS`. When it ships, this is the one line that
+    // changes: `sweep(person.inventory, spoilFactor(person))`.
+    for (const person of this.people) {
+      if (!person.alive) continue;
+      sweep(person.inventory, 1);
+    }
+    for (const building of this.buildings) {
+      const keeps = building.def.preserves ?? 1;
+      sweep(building.store, keeps);
+      // Materials on a site rot too, and a site is exactly where food should
+      // not be: nothing delivers berries to a hut, so this is almost always a
+      // no-op and is here so that the one day something does, it behaves.
+      sweep(building.delivered, keeps);
+    }
+    // Dropped goods and a dead person's effects keep no better than a pack.
+    for (const pile of this.piles) sweep(pile.contents, 1);
+    for (const household of this.households.values()) sweep(household.store, 1);
+  }
+
+  /**
    * A day's catch in every trap in the world. M8.1, mechanism 3.
    *
    * Three things about this are deliberate.
@@ -1748,6 +1853,16 @@ export class Simulation {
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
       });
       this.refreshRecords();
+      this.spoilFood();
+      // How much injury there is in this world, in person-days. Counted here
+      // rather than derived from the health column because that column is an
+      // *average* and one badly hurt person in a band of twenty barely moves
+      // it — so a run in which nobody was ever hurt and a run in which somebody
+      // nearly died look the same from outside. `the-hurt-are-tended` needs to
+      // be able to skip honestly when there was nothing to tend.
+      for (const person of this.people) {
+        if (person.alive && person.health < 80) telemetry.count('hurt_person_days');
+      }
       this.refreshEra();
 
       this.workTraps();

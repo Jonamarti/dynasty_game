@@ -473,7 +473,14 @@ export class BandSystem {
       } else if (capacity > 0 && used / capacity > STORE_PRESSURE) {
         // Already storing, and running out of room: now the big one is worth
         // the season it costs.
-        wanted = this.bestBy(granaries, def => def.storage)?.id ?? null;
+        //
+        // Ranked by what a store actually delivers rather than by what goes
+        // into it, which since M8.1 are different numbers. A drying rack and a
+        // storage pit hold the same hundred and twenty and the rack gives back
+        // three times as much of it, and on a tie between equal capacities the
+        // pit won simply by being declared first — so a band that knew how to
+        // preserve dug five more pits across a run and never built a rack.
+        wanted = this.bestBy(granaries, def => def.storage * (def.preserves ?? 1))?.id ?? null;
       }
     }
 

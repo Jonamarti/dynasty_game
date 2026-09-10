@@ -6,6 +6,93 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-10 — M8.1, mechanism 1: spoilage, built, measured, and switched off
+
+The last mechanism of the tier, and **it ships dormant on purpose.** That is a
+decision taken on measurements, not a job left half finished, and the plan
+designed the escape hatch it went out through.
+
+**What shipped.** `ItemDef.spoilTicks` was the largest piece of inert data in
+the game — declared on every item and read nowhere at all. It is read now.
+`Inventory.spoil(elapsed, factorFor, apply)` ages a pack and removes what has
+gone off; `Simulation.spoilFood` sweeps four collections once a day, immediately
+after `refreshRecords` because it is the same kind of thing pointed at a
+different target. `BuildingDef.preserves` says how much better food keeps
+somewhere than in a pack — a lined pit in cold ground is a root cellar, and
+keeping food is the entire reason anybody ever dug one, which the pit's own
+description had claimed since M2 with nothing to back it.
+
+**It draws no `RNG`.** Loss is proportional and the remainder is carried on the
+inventory, so this needed no new stream and no change to the fork order — the
+same property `workTraps` has, and worth stating rather than discovering.
+
+**What did not ship: `preserving` and the drying rack.** Both were built, both
+worked, and both were held. A technology whose effect is a multiplier on zero is
+exactly the declared-and-inert content this project has a rule against.
+
+**The measurements, which are the point of this entry.** Twenty seeds each on
+`traps`, spoilage off against on:
+
+| | survival | infants starved | collapses |
+|---|---|---|---|
+| off | 92.2% | 4 | 0/20 |
+| rate 0.35 | 90.3% | 10 | 0/20 |
+| rate 0.4 | 88.8% | 10 | 1/20 |
+| rate 0.6 | 86.0% | 11 | 0/20 |
+| rate 1.0 | 88.4% | 8 | 0/20 |
+
+The four rates are indistinguishable from one another — 0.6 measured *worse*
+than 1.0 — so the cost is not something a coefficient tunes away, and picking
+one because a run liked it is what `AGENTS.md` forbids. What is consistent at
+every rate is the shape: **infant starvation more than doubles.**
+
+The plan's stated condition for holding was whether `preserving` brings the loss
+back. It does not. On `fishers`, the scenario built for it, the band that knows
+how to preserve survived at **91.5%** against **94.1%** for the band that does
+not — noise in the wrong direction rather than a mechanism. Giving stores nearly
+perfect keeping was tried as well, a pit at 4 and a granary at 8, and changed
+nothing at **87.1%**, which locates the harm in *packs*: people carry a great
+deal of food and all of it rots.
+
+So: **keep the supply half, hold the decay half**, which is what the plan said to
+do in this exact case. `needs.spoilRate` is 0 in the default config and the
+`fishers` scenario sets it to 1, which is what keeps the sweep exercised and
+gated rather than quietly rotting. Switching it on is one number, and
+`m8_plan_the_ages.md` still carries the design for the two held nodes.
+
+**Two other things were found on the way and are worth more than the mechanism.**
+
+- **The store planner ranked stores by what goes in rather than what comes out.**
+  A drying rack and a storage pit hold the same hundred and twenty, and on that
+  tie the pit won by being declared first — so a band that could preserve dug
+  five more pits across a run and never built a rack. `bestBy(def.storage *
+  def.preserves)` is the honest expression and it survives the rack being held.
+- **Taming lost to hunting the moment anybody had a spear.** Handing `culture` a
+  spear — needed so that anybody hunts, so that there is bone, so that there is a
+  flute — took taming from fifteen meals offered in a run to none. The scorer
+  could see "spear it now" against "feed it and walk away hungry" and nothing
+  else. It is weighted by the taker's *hunting* skill now, because a companion is
+  worth 35% on every hunt for the rest of its life and the best hunter in the
+  band has the most to gain from one.
+
+**Three checks were fixed, and each was the check being wrong rather than the
+world.** `kills-are-butchered-for-bone` gated on `sim.knownTech`, which says only
+that somebody somewhere has worked it out — so `scribes`, where one elderly
+scribe conceived bone working, reported eighteen kills and no bone and failed for
+no reason: none of those kills was made by the person who knew. It gates on the
+scenario's *starting* knowledge now. `music-answers-loneliness` failed where the
+knowledge existed and no flute had ever been made, which is an upstream link and
+more useful said than failed. `the-hurt-are-tended` failed in a world where
+nobody was ever hurt; `hurt_person_days` is counted now so it can skip honestly,
+and it is a statistic the health report wanted anyway — the health column is an
+average and one badly hurt person in twenty barely moves it.
+
+Every existing scenario is **bit-identical** to the commit before this: the only
+difference in any report is the new `would_spoil_*` and `spoilage_prevented`
+counters, which is precisely what a dormant mechanism should look like.
+
+---
+
 ## 2026-09-09 — M8.1 completes its content: a picture, a tune, a healer and a dog
 
 The last four nodes of the tier — **`ochre`, `flute`, `herbalism` and

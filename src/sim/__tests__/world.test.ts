@@ -118,6 +118,100 @@ describe('TimeManager', () => {
   });
 });
 
+/**
+ * M8.1, mechanism 1.
+ *
+ * The mechanism ships with `needs.spoilRate` at 0 — see `Simulation.spoilFood`
+ * for the measurements behind that — so these are the only place in the suite
+ * where the arithmetic is pinned. That makes them more important rather than
+ * less: dormant code with no tests on it is code that will be wrong by the time
+ * somebody switches it on.
+ */
+describe('Inventory spoilage', () => {
+  /** Berries keep 2400 ticks; hazelnuts and flint keep for ever. */
+  function packed(): Inventory {
+    const pack = new Inventory();
+    pack.add('berries', 100);
+    pack.add('hazelnut', 100);
+    pack.add('flint', 5);
+    return pack;
+  }
+
+  it('never spoils something that keeps indefinitely', () => {
+    const pack = packed();
+    // A year of it. `spoilTicks: 0` means exactly that and not "very fast",
+    // which is the reading a naive division would have given.
+    pack.spoil(240 * 400, () => 1);
+    expect(pack.count('hazelnut')).toBe(100);
+    expect(pack.count('flint')).toBe(5);
+  });
+
+  it('takes a share of a perishable stack, proportional to how much is held', () => {
+    const pack = packed();
+    // A tenth of a berry's 2400-tick life.
+    pack.spoil(240, () => 1);
+    expect(pack.count('berries')).toBe(90);
+  });
+
+  it('keeps the fraction between sweeps rather than rounding it away', () => {
+    const pack = new Inventory();
+    pack.add('berries', 10);
+    // A tenth of a berry a day at this size: sweeps that each rounded to zero
+    // would lose nothing for ever, which is how a slow rate becomes no rate.
+    // The exact sweep the first berry goes on is not asserted, because a tenth
+    // is not representable and ten of them come to 0.9999999999999999 — pinning
+    // the boundary would be pinning the float rather than the behaviour.
+    for (let day = 0; day < 9; day++) pack.spoil(24, () => 1);
+    expect(pack.count('berries')).toBe(10);
+    for (let day = 0; day < 3; day++) pack.spoil(24, () => 1);
+    expect(pack.count('berries')).toBe(9);
+  });
+
+  it('keeps food longer where the factor is higher', () => {
+    const bare = packed();
+    const stored = packed();
+    bare.spoil(240, () => 1);
+    stored.spoil(240, () => 4);
+    expect(stored.count('berries')).toBeGreaterThan(bare.count('berries'));
+  });
+
+  it('does not reset the carry when fresh units are added', () => {
+    // The deliberate trade, asserted rather than left to be discovered. A pile
+    // picked on day three and topped up on day nine rots as one pile, because
+    // `stacks` is a plain id-to-count map that nearly everything in this project
+    // relies on being one. The upgrade path is an age-cohort list; see the note
+    // on `Inventory.spoilage`.
+    const pack = new Inventory();
+    pack.add('berries', 10);
+    for (let day = 0; day < 9; day++) pack.spoil(24, () => 1);
+    pack.add('berries', 10);
+    pack.spoil(24, () => 1);
+    // 20 held, and the ninth day's accumulated fraction still on the books, so
+    // the tenth sweep takes more than a fresh stack of twenty would have.
+    expect(pack.count('berries')).toBeLessThan(20);
+  });
+
+  it('reports what was lost without touching anything on a dry run', () => {
+    const pack = packed();
+    const would = pack.spoil(240, () => 1, false);
+    expect(pack.count('berries')).toBe(100);
+    expect(would.get('berries')).toBe(10);
+  });
+
+  it('loses the last unit rather than leaving an unspoilable remainder', () => {
+    const pack = new Inventory();
+    pack.add('fish', 1);
+    // Fish keep 800 ticks; four days is far past it.
+    pack.spoil(240 * 4, () => 1);
+    expect(pack.count('fish')).toBe(0);
+    // And the carry does not survive the stack, or the next fish put in this
+    // pack would rot the instant it arrived.
+    pack.add('fish', 1);
+    pack.spoil(1, () => 1);
+    expect(pack.count('fish')).toBe(1);
+  });
+});
+
 describe('Inventory', () => {
   it('adds, counts and removes stacks', () => {
     const inv = new Inventory();

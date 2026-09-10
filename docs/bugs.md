@@ -3,6 +3,37 @@
 As of 2026-09-09. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## The open question left by M8.1, 2026-09-10
+
+### The food economy has no headroom for spoilage, and that is the finding
+
+Not a bug in the mechanism — the mechanism works and is tested. It is a fact
+about the world that only building it could establish, and it is the reason
+`needs.spoilRate` ships at 0.
+
+Twenty seeds on `traps`: mean survival **92.2% → 88.8%**, infant starvation
+**4 → 10**, and one world in twenty collapsing where none had. Four rates
+between 0.35 and 1 are indistinguishable from each other, so this is not a
+coefficient. `preserving` does not recover it — the band that could preserve
+survived *worse* than the band that could not, at 91.5% against 94.1%, which is
+noise rather than a mechanism. Making stores nearly perfect keepers changed
+nothing, which locates the loss in **packs**: people carry a great deal of food
+and all of it rots.
+
+What would have to change before the decay half is worth switching on:
+
+- **People should not carry a larder.** The pack is where the loss lands, and
+  the answer is not a better pack — it is a reason to put food down. That is a
+  scorer question, and it is the same one the larder fix answered from the other
+  side.
+- **Or the supply half needs to bed in first.** M8.1 added fishing, traps,
+  grinding and bone in one milestone; the world has not been played at length
+  with all four. Measuring a supply *cut* against a food economy that has not
+  settled is measuring two changes at once.
+
+The full machinery is in place and `fishers` exercises it, so this is a one-number
+decision whenever the answer changes.
+
 ## Found while building the rest of M8.1, 2026-09-09 — open
 
 ### `jobs-bias-work` has an effect smaller than its own seed-to-seed spread
