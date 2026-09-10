@@ -12,24 +12,36 @@
  * than inside `#hud` for the same reason `RadialMenu` does — the HUD rebuilds
  * its own subtree and would silently erase anything living in it.
  */
-import type { ActionTarget } from '../sim/ai/ActionCatalog.ts';
-
-export interface PickerEntry {
-  target: ActionTarget;
+export interface PickerEntry<T> {
+  target: T;
   icon: string;
   /** As the player's character knows it: never a stranger's real name. */
   label: string;
 }
 
-export class EntityPicker {
+/**
+ * Generic over what a bubble stands for. `ActionTarget` for the map's own
+ * click chooser; a bare item id for M9 phase 2's "which item?" step of
+ * ordering a `take` — the column of bubbles is the same either way, and only
+ * the map click chooser needs a hover ring on the world underneath it.
+ */
+export class EntityPicker<T> {
   private root: HTMLElement;
   private open = false;
-  private onPick: ((target: ActionTarget) => void) | null = null;
-  private onHover: ((target: ActionTarget | null) => void) | null = null;
+  private onPick: ((target: T) => void) | null = null;
+  private onHover: ((target: T | null) => void) | null = null;
 
-  constructor(container: HTMLElement) {
+  /**
+   * `rootClass` defaults to `picker`, the map click chooser's long-standing
+   * class. A second, permanently-mounted instance for the item chooser needs
+   * a class of its own — several e2e specs assert on `.picker` expecting
+   * exactly one match, a premise that held when only one ever existed, and a
+   * second element sharing the class broke it for tests with nothing to do
+   * with items at all.
+   */
+  constructor(container: HTMLElement, rootClass = 'picker') {
     this.root = document.createElement('div');
-    this.root.className = 'picker';
+    this.root.className = rootClass;
     this.root.hidden = true;
     container.appendChild(this.root);
 
@@ -59,9 +71,9 @@ export class EntityPicker {
   show(
     screenX: number,
     screenY: number,
-    entries: PickerEntry[],
-    onPick: (target: ActionTarget) => void,
-    onHover: (target: ActionTarget | null) => void
+    entries: PickerEntry<T>[],
+    onPick: (target: T) => void,
+    onHover: (target: T | null) => void
   ): void {
     if (entries.length === 0) return;
     this.onPick = onPick;

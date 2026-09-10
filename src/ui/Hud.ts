@@ -57,8 +57,14 @@ export type Selection =
   | { kind: 'animal'; animal: Animal };
 
 export interface HudCallbacks {
-  /** A verb chosen against one stack in the inspected person's pack. */
-  onItemAction: (person: Person, itemId: string, action: string) => void;
+  /**
+   * A verb chosen against one stack in the inspected person's pack.
+   *
+   * Carries the click's screen position so `give`/`store` can anchor a
+   * quantity or recipient popup where the player is already looking, the way
+   * the entity picker anchors on the cursor that opened it.
+   */
+  onItemAction: (person: Person, itemId: string, action: string, screenX: number, screenY: number) => void;
   /** Enter or leave command mode for the selected person. */
   onCommand: (person: Person | null) => void;
   /** Move the camera to somebody named in the Ties tab. */
@@ -338,7 +344,8 @@ export class Hud {
       }
       if (node.dataset.verb && node.dataset.item && this.currentSelection?.kind === 'person') {
         this.callbacks.onItemAction(
-          this.currentSelection.person, node.dataset.item, node.dataset.verb
+          this.currentSelection.person, node.dataset.item, node.dataset.verb,
+          event.clientX, event.clientY
         );
         // The pack changed, so the panel has to be rebuilt rather than refreshed.
         this.builtFor = null;
@@ -806,8 +813,12 @@ export class Hud {
       return rows;
     }
 
-    const nearbyPerson = own
-      ? sim.peopleHash.findNearest(person.x, person.y, 2.2, p => p.alive && p.id !== person.id)
+    // A count, not the nearest one — see `itemActions`'s own note on why.
+    const nearby = own
+      ? sim.peopleHash.queryRadius(person.x, person.y, 2.2).filter(p => p.alive && p.id !== person.id)
+      : [];
+    const soleRecipientName = nearby.length === 1
+      ? knowledgeOfPerson(observer, nearby[0]!, sim.relationships).displayName
       : null;
     const nearbyStore = own ? sim.storeWithinReach(person) : null;
 
@@ -822,7 +833,7 @@ export class Hud {
         '</div>');
 
       if (!own) continue;
-      const verbs = itemActions(itemId, nearbyPerson, nearbyStore);
+      const verbs = itemActions(itemId, nearby.length, soleRecipientName, nearbyStore);
       rows.push('<div class="hud-item-verbs">' +
         verbs.map(v =>
           '<button class="hud-verb' + (v.enabled ? '' : ' is-disabled') + '"' +

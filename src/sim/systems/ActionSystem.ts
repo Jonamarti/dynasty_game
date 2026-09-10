@@ -912,14 +912,19 @@ export class ActionSystem {
     const store = this.reachBuilding(person, ctx);
     if (!store) return;
 
-    // Food first: taking from the store is nearly always about eating.
-    const foodId = store.store.bestFood();
-    const itemId = foodId ?? store.store.entries()[0]?.[0];
-    if (!itemId) {
-      this.abandon(person, 'store_empty', ctx);
+    // A player order that named a specific item takes precedence — M9 phase 2.
+    // Everyone else, including every AI-planned trip to the larder, still falls
+    // back to food first: taking from the store is nearly always about eating.
+    const requested = person.targetItemId;
+    const itemId = requested ?? store.store.bestFood() ?? store.store.entries()[0]?.[0];
+    if (!itemId || store.store.count(itemId) === 0) {
+      this.abandon(person, requested !== null ? 'take_item_gone' : 'store_empty', ctx);
       return;
     }
-    const taken = store.store.remove(itemId, Math.min(6, store.store.count(itemId)));
+    const amount = requested !== null && person.targetItemCount !== null
+      ? person.targetItemCount
+      : 6;
+    const taken = store.store.remove(itemId, Math.min(amount, store.store.count(itemId)));
     person.inventory.add(itemId, taken);
     telemetry.count('withdrawn', taken);
     // Counted apart from an ordinary withdrawal because it answers a different

@@ -6,6 +6,60 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-10 — M9 phase 2: quantities, recipients, and a `give_item` refusal that reached nobody
+
+Second code of M9. Note 9 and the `give_item` defect from the triage, both
+gated on `npm run sim:check` staying bit-identical — nothing here touches a
+scorer, only what the player is offered and asked before a transfer happens.
+
+- **`Simulation.handOver` and `storeItem` take a `count`.** Both used to move
+  the whole stack unconditionally, defaulting `count` to
+  `inventory.count(itemId)` so every existing caller (the AI's own giving and
+  storing) is unaffected byte-for-byte; only the inventory panel now asks for
+  less.
+- **A `QuantityPicker`.** One popup, built on `sliderRow` rather than a second
+  slider-and-number-box pair, reused by give, store and the new take flow
+  below. Defaults to the whole stack for give/store — the old, unconditional
+  behaviour — and to `min(6, stock)` for take, so withdrawing an entire granary
+  is not the new default for what used to be a handful.
+- **`give_item` gained a recipient picker and stopped discarding
+  `lastRefusal`.** `handleItemAction` now queries every living neighbour
+  within reach with `SpatialHash.queryRadius` instead of `findNearest` — the
+  same fix phase 1 gave the world picker — and opens `EntityPicker` when more
+  than one is in range. The branch reads `sim.lastRefusal` on a failed
+  `handOver`, so a recipient whose hands are full is reported as refusing
+  rather than as nobody having been there at all.
+- **`doTake` can be told what to take.** `Person` gained `targetItemId` /
+  `targetItemCount`, threaded through `Simulation.order`'s target object and
+  `ResumedOrder` so an interrupted, player-ordered withdrawal comes back for
+  the same item and count rather than whatever `doTake` would improvise.
+  `doTake` itself still falls back to `bestFood() ?? entries()[0]` and a
+  six-unit grab whenever nothing was named — every AI-planned trip to the
+  larder, which never names an item, is unaffected.
+- **"Take from store" chooses an item and an amount when the contents are
+  known.** `issueTake` in `main.ts` reads `knowledgeOfBuilding` — the same gate
+  the store panel already reads — and only offers a choice when the store
+  belongs to the actor's own band. One item kind goes straight to the quantity
+  popup; more than one opens `EntityPicker<string>` first. Unknown contents (or
+  commanding somebody else, left blind deliberately — see the function's own
+  note) keep the old surprise grab.
+- **`EntityPicker` is now generic** (`EntityPicker<T>`), so the same bubble
+  column serves both the map's `ActionTarget` chooser and the new item-id
+  chooser, and takes an optional root class: a second permanently-mounted
+  instance sharing `.picker` broke several e2e specs that assert on it
+  expecting exactly one match. The item picker uses `.itempicker`, with the
+  same rule block as `.picker` in `style.css` so the two cannot look different
+  by accident.
+- **A `take_item_gone` stop reason.** Distinct from `store_empty`: the store
+  can still hold plenty of everything else when the one thing that was ordered
+  is gone by the time the walk finishes.
+
+Verified in the browser as well as by `npm run verify`: giving with several
+bandmates in reach opens the recipient bubbles before the quantity slider;
+storing and taking both default sensibly and move exactly the confirmed
+amount; and a hand-built two-item storage pit offers the item chooser before
+the quantity popup, while a one-item store and an unknown one both skip it.
+
 ## 2026-09-10 — M9 phase 1: the plural picker, node shapes, pile labels
 
 First code of M9. Three UI-only changes, none of which touch a scorer — `npm

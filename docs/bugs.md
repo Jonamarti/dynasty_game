@@ -7,29 +7,12 @@ speculative. Fixed defects are in [changelog.md](changelog.md).
 
 Eight of the owner's thirteen open notes turned out to name real defects rather
 than only missing features. Full diagnosis and where each is scheduled:
-[m9_plan_words_and_hands.md](m9_plan_words_and_hands.md). Two of the eight —
-the picker offering only one candidate per kind, and the near-identical node
-art that carried `NODE_LABELS`'s type asymmetry along with it — were M9
-phase 1, and are fixed; see `changelog.md`.
-
-### `give_item` picks the recipient itself and discards the refusal it gets
-
-`handleItemAction`'s `give_item` case ([main.ts:400-405](../src/main.ts#L400-L405))
-grabs the nearest living neighbour without asking which one, and when
-`Simulation.handOver` sets `lastRefusal` to `"<name> cannot carry any more"`
-([Simulation.ts:960](../src/sim/core/Simulation.ts#L960)) because the recipient
-is full, that branch never reads it — the player sees "nobody to give it to"
-even though somebody was right there and refused. This is a direct violation of
-the standing rule in `AGENTS.md` that every refusal must reach the player.
-Scheduled as M9 phase 2.
-
-### `doTake` always takes a fixed 6 units of an item the player did not choose
-
-[ActionSystem.ts:911-933](../src/sim/systems/ActionSystem.ts#L911-L933): the
-amount is `Math.min(6, store.store.count(itemId))` and `itemId` is
-`store.bestFood() ?? entries()[0]` — whichever the simulation likes. No action
-in the game lets a player choose either the item or the amount taken from a
-store, handed over, or moved into storage. Scheduled as M9 phase 2.
+[m9_plan_words_and_hands.md](m9_plan_words_and_hands.md). Four of the eight are
+now fixed and removed from this list; see `changelog.md`: the picker offering
+only one candidate per kind and the near-identical node art that carried
+`NODE_LABELS`'s type asymmetry along with it (M9 phase 1), and `give_item`
+discarding a real refusal and `doTake`'s fixed six-of-whatever grab (M9
+phase 2).
 
 ### `doDiscuss` changes no relationship at all, and design gap rather than defect
 

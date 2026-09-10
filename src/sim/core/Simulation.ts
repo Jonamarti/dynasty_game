@@ -953,14 +953,18 @@ export class Simulation {
    * Emits the same `share_food` deed the AI's own giving does when the goods are
    * food, so generosity from the panel is witnessed and remembered exactly like
    * generosity in the field. Anything else is a plain transfer.
+   *
+   * `count` defaults to the whole stack, which is what every call site before
+   * M9 phase 2 always moved — `handOver` itself was never the problem note 9
+   * found; the panel calling it with no way to ask for less was.
    */
-  handOver(giver: Person, receiver: Person, itemId: string): number {
+  handOver(giver: Person, receiver: Person, itemId: string, count = giver.inventory.count(itemId)): number {
     const room = receiver.carryCapacity - receiver.carrying;
     if (room <= 0) {
       this.lastRefusal = receiver.name + ' cannot carry any more';
       return 0;
     }
-    const moved = giver.inventory.remove(itemId, Math.min(room, giver.inventory.count(itemId)));
+    const moved = giver.inventory.remove(itemId, Math.min(room, count, giver.inventory.count(itemId)));
     if (moved === 0) return 0;
     receiver.inventory.add(itemId, moved);
 
@@ -973,11 +977,17 @@ export class Simulation {
     return moved;
   }
 
-  /** Puts a stack into a store. Returns how much fitted. */
-  storeItem(person: Person, store: Building, itemId: string): number {
+  /**
+   * Puts a stack into a store. Returns how much fitted.
+   *
+   * `count` defaults to the whole stack, matching `handOver`'s default and
+   * `drop`'s existing signature — the panel is what gained a way to ask for
+   * less, in M9 phase 2, not this method.
+   */
+  storeItem(person: Person, store: Building, itemId: string, count = person.inventory.count(itemId)): number {
     const room = store.storageFree;
     if (room <= 0) return 0;
-    const moved = person.inventory.remove(itemId, Math.min(room, person.inventory.count(itemId)));
+    const moved = person.inventory.remove(itemId, Math.min(room, count, person.inventory.count(itemId)));
     if (moved === 0) return 0;
     store.store.add(itemId, moved);
     telemetry.count('stored', moved);
@@ -1065,6 +1075,8 @@ export class Simulation {
       animalId: person.targetAnimalId,
       recipe: person.targetRecipe,
       inscriptionId: person.targetInscriptionId,
+      itemId: person.targetItemId,
+      count: person.targetItemCount,
       x: person.targetX,
       y: person.targetY,
     };
@@ -1105,6 +1117,8 @@ export class Simulation {
       animalId: pending.animalId ?? undefined,
       recipeId: pending.recipe ?? undefined,
       inscriptionId: pending.inscriptionId ?? undefined,
+      itemId: pending.itemId ?? undefined,
+      count: pending.count ?? undefined,
       x: pending.nodeId === null && pending.treeId === null &&
         pending.buildingId === null && pending.personId === null &&
         pending.animalId === null ? pending.x ?? undefined : undefined,
@@ -1160,6 +1174,17 @@ export class Simulation {
       recipeId?: string;
       /** Which record a `read` or a half-finished `inscribe` is aimed at. */
       inscriptionId?: number;
+      /**
+       * Which item and how much a `take` should withdraw.
+       *
+       * Optional: a `take` with no `itemId` lets `doTake` fall back to its own
+       * sensible default, which is what every AI-planned trip to the larder
+       * still does. Only the player's own explicit choice — made in the
+       * quantity picker `main.ts` opens when the store's contents are already
+       * known to them — sets this.
+       */
+      itemId?: string;
+      count?: number;
     } = {}
   ): boolean {
     if (!person.alive) return false;
@@ -1173,7 +1198,14 @@ export class Simulation {
     person.order = action;
     // Set before the target branches below, every one of which returns: a craft
     // carries no place and would otherwise fall out of the bottom having lost
-    // the only thing that says what is being made.
+    // the only thing that says what is being made. `itemId` is the same story
+    // for `take`, which is always aimed at a `buildingId` and would otherwise
+    // lose the chosen item to that branch's own return.
+    if (target.itemId !== undefined) {
+      person.targetItemId = target.itemId;
+      person.targetItemCount = target.count ?? null;
+    }
+
     if (target.recipeId !== undefined) {
       person.targetRecipe = target.recipeId;
 

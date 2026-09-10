@@ -83,6 +83,9 @@ export interface ResumedOrder {
   recipe: string | null;
   /** Which record a set-aside `read` was aimed at. */
   inscriptionId: number | null;
+  /** Which item and count a set-aside player-ordered `take` named. */
+  itemId: string | null;
+  count: number | null;
   x: number | null;
   y: number | null;
 }
@@ -259,6 +262,17 @@ export class Person {
   targetRecipe: string | null = null;
   /** Which record a `read` is aimed at. */
   targetInscriptionId: number | null = null;
+  /**
+   * Which item and how much a player-ordered `take` should withdraw.
+   *
+   * Null lets `doTake` pick sensibly on its own, which is what the AI's own
+   * trips to the larder still do — this is only ever set by a player order
+   * that named a specific item and count, M9 phase 2's fix for `doTake` always
+   * grabbing a fixed six units of whatever the simulation felt like handing
+   * over.
+   */
+  targetItemId: string | null = null;
+  targetItemCount: number | null = null;
   /**
    * The last person to draw blood, and when. Fear is what stops a grudge
    * cascade from consuming a band: without somewhere to run, every fight
@@ -583,6 +597,8 @@ export class Person {
     this.targetAnimalId = null;
     this.targetRecipe = null;
     this.targetInscriptionId = null;
+    this.targetItemId = null;
+    this.targetItemCount = null;
     this.actionTimer = 0;
   }
 

@@ -223,6 +223,11 @@ export const STOP_REASONS: Record<string, string> = {
   not_a_store: 'it is not a store',
   store_full: 'the store was full',
   store_empty: 'the store was empty',
+  // What was actually asked for was gone by the time they got there — someone
+  // else emptied that stack between the order and the walk. Kept apart from
+  // `store_empty`, which means the whole store was bare: this store may still
+  // hold plenty of everything else.
+  take_item_gone: 'it was gone by the time they got there',
   nothing_to_give: 'they had nothing to give',
   nothing_to_steal: 'there was nothing to take',
   dont_know_how: 'they do not know how',

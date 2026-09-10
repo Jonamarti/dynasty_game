@@ -15,6 +15,7 @@ import { actionLabel, stopReasonLabel } from './render/Floaters.ts';
 import { Hud, type Selection } from './ui/Hud.ts';
 import { RadialMenu } from './ui/RadialMenu.ts';
 import { EntityPicker, type PickerEntry } from './ui/EntityPicker.ts';
+import { QuantityPicker } from './ui/QuantityPicker.ts';
 import { NewGame } from './ui/NewGame.ts';
 import { SuccessionOverlay } from './ui/Succession.ts';
 import { TechWebOverlay } from './ui/TechWeb.ts';
@@ -32,9 +33,10 @@ import {
 import { TECH, techPower, type Tech } from './sim/knowledge/Tech.ts';
 import type { Person } from './sim/entities/Person.ts';
 import type { Building, BuildingDef } from './sim/entities/Building.ts';
+import { ITEMS } from './sim/entities/Item.ts';
 import { describeEvent } from './sim/social/Events.ts';
 import {
-  knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree,
+  knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree, knowledgeOfBuilding,
 } from './sim/social/Knowledge.ts';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement;
@@ -160,7 +162,19 @@ const radial = new RadialMenu(document.body);
 
 // The chooser for a stack of things under one click. On the body for the same
 // reason the radial menu is.
-const picker = new EntityPicker(document.body);
+const picker = new EntityPicker<ActionTarget>(document.body);
+
+// The same chooser, reused for M9 phase 2's two other lists of bubbles: who to
+// give something to when more than one person is within reach, and which item
+// to take from a store that holds more than one kind of thing. A second
+// instance rather than a shared one because both a person-picker and an
+// item-picker can conceivably be wanted from the same click in future, and a
+// shared instance could only ever show one.
+const itemPicker = new EntityPicker<string>(document.body, 'itempicker');
+
+// A slider popup for how much of a stack to give, store or take. M9 phase 2's
+// answer to note 9: none of the three ever offered less than the whole stack.
+const quantityPicker = new QuantityPicker(document.body);
 
 // The map of somebody's mind. On `document.body` rather than `#hud`, like every
 // other overlay here: the HUD rebuilds its subtree every frame and would throw
@@ -244,7 +258,8 @@ const hud = new Hud(hudRoot, {
     if (sim.player) sim.order(sim.player, 'craft', { recipeId });
     setCraftMode(false);
   },
-  onItemAction: (person, itemId, verb) => handleItemAction(person, itemId, verb),
+  onItemAction: (person, itemId, verb, screenX, screenY) =>
+    handleItemAction(person, itemId, verb, screenX, screenY),
   onAssignJob: (person, job) => {
     // Down the same path a chief's own order would use, so a job handed out
     // from the panel is subject to the same compliance roll as one given in
@@ -381,10 +396,13 @@ if (!skipIntro && sim.livingPeople().length > 0) {
  * directly, so the UI stays a reader of the world and the same moves remain
  * available to NPCs later.
  */
-function handleItemAction(person: Person, itemId: string, verb: string): void {
+function handleItemAction(
+  person: Person, itemId: string, verb: string, screenX: number, screenY: number
+): void {
   const say = (text: string, good: boolean) =>
     renderer.floaters.push(person.x, person.y, text,
       { color: good ? '#7ddc96' : '#e66464', boxed: true });
+  const label = ITEMS[itemId]?.label ?? itemId;
 
   switch (verb) {
     case 'eat_item': {
@@ -398,16 +416,57 @@ function handleItemAction(person: Person, itemId: string, verb: string): void {
       break;
     }
     case 'give_item': {
-      const other = sim.peopleHash.findNearest(person.x, person.y, 2.2,
-        p => p.alive && p.id !== person.id);
-      const given = other ? sim.handOver(person, other, itemId) : 0;
-      say(given > 0 ? 'gave ' + given + ' to ' + other!.name : 'nobody to give it to', given > 0);
+      // Every living neighbour within reach, not just the nearest one — the
+      // `findNearest` this replaced is exactly the bug M9's note 1 diagnosed
+      // for the world picker, and giving had the same one.
+      const recipients = sim.peopleHash.queryRadius(person.x, person.y, 2.2)
+        .filter(p => p.alive && p.id !== person.id);
+      if (recipients.length === 0) {
+        say('nobody within reach to give it to', false);
+        break;
+      }
+
+      const giveTo = (other: Person) => {
+        quantityPicker.show(screenX, screenY, 'Give ' + label.toLowerCase(),
+          person.inventory.count(itemId), count => {
+            const given = sim.handOver(person, other, itemId, count);
+            // A refusal says why — `handOver` sets `lastRefusal` when the
+            // recipient's hands are full, and this branch used to say "nobody
+            // to give it to" even when somebody was right there and simply
+            // could not carry any more. That was the `give_item` defect M9's
+            // triage found and this closes it.
+            const reason = sim.lastRefusal;
+            sim.lastRefusal = null;
+            say(given > 0 ? 'gave ' + given + ' to ' + other.name : (reason ?? 'could not give it'),
+              given > 0);
+          });
+      };
+
+      if (recipients.length === 1) {
+        giveTo(recipients[0]!);
+        break;
+      }
+      const entries: PickerEntry<ActionTarget>[] = recipients.map(other => ({
+        target: { kind: 'person', x: other.x, y: other.y, person: other },
+        icon: '\u{1F464}',
+        label: knowledgeOfPerson(person, other, sim.relationships).displayName,
+      }));
+      picker.show(screenX, screenY, entries,
+        target => { if (target.person) giveTo(target.person); },
+        target => { renderer.hoverRing = target ? ringFor(target) : null; });
       break;
     }
     case 'store_item': {
       const store = sim.storeWithinReach(person);
-      const stored = store ? sim.storeItem(person, store, itemId) : 0;
-      say(stored > 0 ? 'stored ' + stored : 'no room in the store', stored > 0);
+      if (!store) {
+        say('no store within reach', false);
+        break;
+      }
+      quantityPicker.show(screenX, screenY, 'Store ' + label.toLowerCase(),
+        person.inventory.count(itemId), count => {
+          const stored = sim.storeItem(person, store, itemId, count);
+          say(stored > 0 ? 'stored ' + stored : 'no room in the store', stored > 0);
+        });
       break;
     }
   }
@@ -749,7 +808,7 @@ function describeCandidate(observer: Person, target: ActionTarget): string {
   }
 }
 
-function pickerEntries(observer: Person, targets: ActionTarget[]): PickerEntry[] {
+function pickerEntries(observer: Person, targets: ActionTarget[]): PickerEntry<ActionTarget>[] {
   return targets.map(target => ({
     target,
     icon: PICKER_ICONS[target.kind] ?? '•',
@@ -1021,12 +1080,14 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     screenX, screenY,
     commanding && commanding.alive ? title + ' — ordering ' + commanding.name : title,
     options,
-    option => issue(actor, option, target)
+    option => issue(actor, option, target, screenX, screenY)
   );
 }
 
 /** Turns a menu choice into a simulation order. */
-function issue(actor: Person, option: ActionOption, target: ActionTarget): void {
+function issue(
+  actor: Person, option: ActionOption, target: ActionTarget, screenX: number, screenY: number
+): void {
   const actionId = option.id;
   if (actionId === 'possess' && target.person) {
     possess(target.person);
@@ -1037,6 +1098,14 @@ function issue(actor: Person, option: ActionOption, target: ActionTarget): void 
     renderer.floaters.push(actor.x, actor.y,
       taken > 0 ? 'picked up ' + taken : 'hands full',
       { color: taken > 0 ? '#7ddc96' : '#e66464', boxed: true });
+    return;
+  }
+  // Choosing which item and how much, when there is a real choice to make and
+  // the player is acting for themselves rather than commanding somebody else
+  // — see `issueTake`'s own note on why commanding stays blind for now.
+  if (actionId === 'take' && target.building &&
+      !(commanding && commanding.alive && commanding.id !== actor.id)) {
+    issueTake(actor, target.building, screenX, screenY);
     return;
   }
 
@@ -1079,6 +1148,68 @@ function issue(actor: Person, option: ActionOption, target: ActionTarget): void 
   renderer.floaters.push(actor.x, actor.y,
     ok ? actionLabel(actionId, option.recipeId) : (reason ?? 'cannot do that'),
     { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
+}
+
+/** Issues a `take` order, reporting the outcome the same way `issue` does. */
+function orderTake(
+  actor: Person, store: Building, itemId: string | undefined, count: number | undefined
+): void {
+  const ok = sim.order(actor, 'take', { buildingId: store.id, itemId, count });
+  const reason = sim.lastRefusal;
+  sim.lastRefusal = null;
+  renderer.floaters.push(actor.x, actor.y,
+    ok ? actionLabel('take') : (reason ?? 'cannot do that'),
+    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
+}
+
+/**
+ * "Take from store", turned into a choice of item and amount — M9 phase 2's
+ * fix for note 9: `doTake` used to always grab a fixed six units of whatever
+ * `bestFood()` picked, with no way to ask for a specific thing or a specific
+ * count.
+ *
+ * Gated on `knowledgeOfBuilding`, the same rule the store panel already reads
+ * `known.knowsContents` through: a store's contents are only legible to the
+ * band it belongs to, and a picker built from what is actually in there would
+ * otherwise hand a stranger's larder to anyone who right-clicked it. Blind, it
+ * falls back to the old surprise grab — a real choice needs something to
+ * choose between.
+ *
+ * Only reached for the player's own character; commanding somebody else at a
+ * store they may or may not know the contents of is left blind for now, the
+ * way it always was, rather than asking the player to choose on a
+ * subordinate's behalf from knowledge that is really the subordinate's to
+ * have or not.
+ */
+function issueTake(actor: Person, store: Building, screenX: number, screenY: number): void {
+  const askAmount = (itemId: string) => {
+    const max = store.store.count(itemId);
+    quantityPicker.show(screenX, screenY, 'Take ' + (ITEMS[itemId]?.label ?? itemId).toLowerCase(),
+      max, count => orderTake(actor, store, itemId, count), Math.min(6, max));
+  };
+
+  if (!knowledgeOfBuilding(actor, store).knowsContents) {
+    orderTake(actor, store, undefined, undefined);
+    return;
+  }
+  const contents = store.store.entries();
+  if (contents.length === 0) {
+    // Unreachable in practice — the menu option is disabled when the store is
+    // empty — but a refusal always says why rather than doing nothing at all.
+    orderTake(actor, store, undefined, undefined);
+    return;
+  }
+  if (contents.length === 1) {
+    askAmount(contents[0]![0]);
+    return;
+  }
+
+  const entries: PickerEntry<string>[] = contents.map(([id, n]) => ({
+    target: id,
+    icon: '\u{1F4E6}',
+    label: (ITEMS[id]?.label ?? id) + ' ×' + n,
+  }));
+  itemPicker.show(screenX, screenY, entries, askAmount, () => {});
 }
 
 // ---------------------------------------------------------------------------

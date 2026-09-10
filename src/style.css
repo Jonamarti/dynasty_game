@@ -593,7 +593,11 @@ html, body, #app {
 /* A column of bubbles, one per thing under the cursor. Deliberately not a
    radial: this is a list to read, not a set of verbs to aim at, and a stack of
    five is common where a fan of five verbs is not. */
-.picker {
+/* `.itempicker` is the same chooser (`EntityPicker`), given a class of its own
+   — see the constructor's own note — for M9 phase 2's "which item?" step of
+   ordering a `take`. Sharing the rule block rather than copying it keeps the
+   two impossible to look different by accident. */
+.picker, .itempicker {
   position: fixed;
   z-index: 21;
   display: grid;
@@ -606,7 +610,7 @@ html, body, #app {
 
 /* Same trap as `.newgame` and `.succession`: the author `display` above beats
    the browser's rule for `hidden`, and an invisible menu still takes clicks. */
-.picker[hidden] { display: none; }
+.picker[hidden], .itempicker[hidden] { display: none; }
 
 .picker-item {
   display: flex;
@@ -631,6 +635,64 @@ html, body, #app {
 
 .picker-icon { font-size: 15px; }
 .picker-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* --- quantity picker ------------------------------------------------------ */
+
+/* One popup, reused for give/store/take. `.settings-row` supplies the slider
+   and number box, which is the whole point of building it on `sliderRow`
+   rather than writing a second one. */
+.quantity-picker {
+  position: fixed;
+  z-index: 21;
+  width: 260px;
+  padding: 8px 10px;
+  background: rgba(14, 17, 24, 0.96);
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+}
+
+/* Same trap as `.picker` and every other overlay in this file: the author
+   `display` above beats the browser's rule for `hidden`. */
+.quantity-picker[hidden] { display: none; }
+
+.quantity-picker-label {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.quantity-picker .settings-row {
+  grid-template-columns: 40px 1fr 46px 16px;
+  padding: 4px 0;
+  border-bottom: none;
+}
+
+.quantity-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.quantity-picker-actions button {
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.quantity-picker-confirm {
+  color: #0e1118;
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+.quantity-picker-actions button:hover { border-color: var(--accent); }
 
 /* --- knowledge gating ---------------------------------------------------- */
 

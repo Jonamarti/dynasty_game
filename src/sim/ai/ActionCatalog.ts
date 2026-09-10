@@ -112,7 +112,16 @@ const NODE_VERBS: Record<string, { label: string; icon: string; action: string }
  */
 export function itemActions(
   itemId: string,
-  nearbyPerson: Person | null,
+  /**
+   * How many living neighbours are within giving reach.
+   *
+   * A count rather than the nearest one: M9 phase 2 gave `give_item` a
+   * recipient picker for exactly the reason `candidatesAt` got one in phase 1
+   * — a single `findNearest` swallows the second person standing right there.
+   */
+  nearbyCount: number,
+  /** The one neighbour's name, as the actor knows it, when `nearbyCount` is 1. */
+  soleRecipientName: string | null,
   nearbyStore: Building | null
 ): ActionOption[] {
   const def = ITEMS[itemId];
@@ -128,10 +137,14 @@ export function itemActions(
     },
     {
       id: 'give_item',
-      label: nearbyPerson ? 'Give to ' + nearbyPerson.name : 'Give',
+      label: nearbyCount === 0
+        ? 'Give'
+        : nearbyCount === 1
+          ? 'Give to ' + soleRecipientName
+          : 'Give to...',
       icon: '\u{1F381}',
-      enabled: nearbyPerson !== null,
-      reason: nearbyPerson ? undefined : 'Nobody within reach',
+      enabled: nearbyCount > 0,
+      reason: nearbyCount > 0 ? undefined : 'Nobody within reach',
     },
     {
       id: 'store_item',
