@@ -6,6 +6,109 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-10 — M9 phase 1: the plural picker, node shapes, pile labels
+
+First code of M9. Three UI-only changes, none of which touch a scorer — `npm
+run sim:check` reports the same 36-of-36-pass, 27-n/a result before and after,
+which is the gate the plan set for this phase.
+
+- **The entity picker now offers every candidate of a kind, not just the
+  nearest.** `candidatesAt` used to call `Renderer.pickPerson` and five
+  `findNearest` siblings — one match each, nearest wins, so two people
+  standing together silently gave up the second one. It now queries
+  `SpatialHash.queryRadius` on each of `sim.peopleHash`, `nodeHash`,
+  `treeHash`, `inscriptionHash`, `pileHash` and `animalHash` directly, filters
+  by `hitRadiusOf(target) + GRAB_MARGIN` the same as before, and caps the
+  result at `PICKER_CAP` (6) — the DOM bubble column needs protecting from a
+  crowded tile, not a simulation budget. Renderer's six singular `pick*`
+  methods had no other callers and are removed.
+- **Resource nodes are shaped by kind, not just coloured.** `drawNode` drew
+  one square for every kind, scaled by `fullness`; `sticks` and `clay` are the
+  two closest browns in `RESOURCE_COLORS`, and dropped-item piles added a
+  third right next to them. Now: crossed sticks, an angular flint shard, a
+  clay mound, upright reeds, a cluster of berry dots, a fish wedge. Every
+  shape stays within the same `size / 2` bound the square used, so
+  `hitRadiusOf`'s `'node'` case — already sized from the same `fullness`
+  formula — still covers what is drawn without changing.
+- **`ItemPile.label` reaches the picker and the map.** The picker used to say
+  "dropped goods" for every pile regardless of contents, even though
+  `ItemPile.label` already distinguished "nothing", one item, or "N kinds of
+  goods" — nobody read it. It now does. A pile within `PILE_LABEL_RANGE` (6
+  tiles) of the player's own character also carries that label on the map
+  itself, the same distance limit `Knowledge.ts` puts on everything else the
+  screen is allowed to say — reading a pile's contents from across the valley
+  would be exactly the omniscience that rule exists to withhold.
+- **`NODE_LABELS` is now typed `Record<ResourceKind, string>`**, matching
+  `RESOURCE_COLORS`. It had been a plain `Record<string, string>` keyed
+  `wood` — which never matched the real `ResourceKind` value `sticks` — so
+  the HUD's node panel had been silently printing the raw id `sticks` instead
+  of "Fallen wood" since M8.0. A new resource kind now fails the build here
+  the same way it already failed the renderer's colour table.
+
+Verified in the browser as well as by the four `npm run verify` layers: a
+household of five strangers standing together now lists all five in the
+chooser instead of one, each of the six node shapes renders distinctly at
+close zoom, and a mixed two-item pile drops the label "2 kinds of goods" at
+the player's feet.
+
+## 2026-09-10 — M9 triaged and planned: `notes.txt` emptied, no code touched
+
+A documentation-only pass. The owner decided the next milestone is the social
+and interface layer — talking, teaching, choosing, seeing what is on the
+ground — ahead of M8.2's Neolithic, because `docs/notes.txt` had accumulated
+thirteen untriaged notes, eight of them since the last triage on 2026-09-09,
+and nearly all of them named that layer rather than content.
+
+**What shipped is six documents, and the reason it is documents rather than
+code is that the owner asked for a plan first.** Each of the thirteen notes was
+verified against the current code before being assigned a destination — not
+assumed from the note's wording — and three further defects turned up doing
+that:
+
+- **`give_item` picks its own recipient and discards the refusal it gets.**
+  `Simulation.handOver` has always set `lastRefusal` when a recipient is full;
+  the `give_item` branch in `main.ts` never read it, so the player saw "nobody
+  to give it to" even when somebody was standing right there. This breaks the
+  standing rule that every refusal must reach the player.
+- **`next-steps.md` asserted that bands carry standing with each other.** They
+  do not, and never did: `normsByBand` maps a band to its own norms, not to how
+  it regards another band, and `Band` itself carries nothing about other bands.
+  O4 and O5 had been planned against a mechanism that does not exist; both are
+  redesigned in [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md)'s
+  closing section and rescheduled as M10, after M8.2 gives a band something
+  worth fighting over.
+- **`NODE_LABELS` is not compiler-enforced while `RESOURCE_COLORS` is** — known
+  since M8.0, and note 7 (indistinguishable resource art) is the pass that
+  finally closes it, since both tables are touched by the same commit.
+
+**The plan itself corrected one of its own draft claims before shipping.** An
+earlier version of the milestone plan attributed the warning "thinking became
+the sixth most common activity in the world... which is not a stone age" to
+`AGENTS.md`. Re-reading the code found that comment actually lives at
+[Brain.ts:906-909](../src/sim/ai/Brain.ts#L906-L909), beside the line it
+warns about, not in `AGENTS.md` at all. Fixed before the plan was finalised, on
+the same principle the plan itself uses throughout: a citation is checked
+against the file it names, not trusted because it reads plausibly.
+
+**Documents touched:** `m9_plan_words_and_hands.md` (new — six phases, ordered
+by how much simulation risk each carries: three interface-only phases that
+must leave `sim:check` bit-identical, then two scorer-touching phases each
+measured with twenty seeds, then one independent control-scheme change);
+`bugs.md` (the three defects above, plus the eight notes that turned out to
+name real gaps); `next-steps.md` (M9 inserted ahead of M8.2, the false
+band-standing claim corrected in two places, O1-O3 pointed at M9's phases,
+O4-O5 and N3 pointed at M9's closing section and phase 3 respectively, and a
+new §7c indexing all thirteen notes to their destination); `notes.txt` (emptied
+— all thirteen notes now have a destination); `README.md` (the plan's row).
+
+**Verification, since there is no world to measure:** `npm run typecheck` and
+`npm test` pass unchanged (16 files, 181 tests); `npm run sim:check` reports
+the same 36 of 36 applicable checks passing, 27 n/a, that `next-steps.md`
+already recorded for this date — recorded again here as the line M9 phase 1
+promises to hold bit-identical. Every `file:line` citation added in this pass
+was read from the file it names on 2026-09-10, the same way
+`m8_plan_the_ages.md` dates its own.
+
 ## 2026-09-10 — M8.1, mechanism 1: spoilage, built, measured, and switched off
 
 The last mechanism of the tier, and **it ships dormant on purpose.** That is a

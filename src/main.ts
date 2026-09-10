@@ -10,7 +10,7 @@
 import './style.css';
 import { Simulation } from './sim/core/Simulation.ts';
 import { Camera } from './render/Camera.ts';
-import { Renderer, hitRadiusOf, GRAB_MARGIN, type HitTarget } from './render/Renderer.ts';
+import { Renderer, hitRadiusOf, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
 import { actionLabel, stopReasonLabel } from './render/Floaters.ts';
 import { Hud, type Selection } from './ui/Hud.ts';
 import { RadialMenu } from './ui/RadialMenu.ts';
@@ -570,6 +570,9 @@ function worldPoint(event: MouseEvent): { x: number; y: number } {
   };
 }
 
+/** How many stacked candidates the chooser will show before it stops listing. */
+const PICKER_CAP = 6;
+
 /**
  * Everything under the cursor, nearest first.
  *
@@ -603,46 +606,50 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
     scored.push({ target, distance });
   };
 
-  const person = renderer.pickPerson(worldX, worldY);
-  if (person && person.id !== sim.player?.id) {
+  // Every kind queries its own hash for *everything* in range rather than only
+  // the nearest, so two people standing together are both offered instead of
+  // one swallowing the other's click — `findNearest` used to be the only way
+  // in, and "nearest wins" is exactly the bug this replaced.
+  for (const person of sim.peopleHash.queryRadius(worldX, worldY, PICK_RANGE)) {
+    if (person.id === sim.player?.id) continue;
     consider({ kind: 'person', x: person.x, y: person.y, person },
       { kind: 'person', person }, person.x, person.y);
   }
 
-  const node = renderer.pickNode(worldX, worldY);
-  if (node) {
+  for (const node of sim.nodeHash.queryRadius(worldX, worldY, PICK_RANGE)) {
     consider({ kind: 'node', x: node.x, y: node.y, node },
       { kind: 'node', node }, node.x, node.y);
   }
 
-  const tree = renderer.pickTree(worldX, worldY);
-  if (tree) {
+  for (const tree of sim.treeHash.queryRadius(worldX, worldY, PICK_RANGE)) {
+    if (!tree.standing) continue;
     consider({ kind: 'tree', x: tree.x, y: tree.y, tree },
       { kind: 'tree', tree }, tree.x, tree.y);
   }
 
   // Above piles and below people: a stone somebody is standing on should still
   // be reachable, which is the whole reason the chooser offers everything.
-  const record = renderer.pickInscription(worldX, worldY);
-  if (record) {
+  for (const record of sim.inscriptionHash.queryRadius(worldX, worldY, 1.2)) {
     consider({ kind: 'inscription', x: record.x, y: record.y, inscription: record },
       { kind: 'inscription', inscription: record }, record.x, record.y);
   }
 
-  const pile = renderer.pickPile(worldX, worldY);
-  if (pile) {
+  for (const pile of sim.pileHash.queryRadius(worldX, worldY, PICK_RANGE)) {
     consider({ kind: 'pile', x: pile.x, y: pile.y, pile },
       { kind: 'pile', pile }, pile.x, pile.y);
   }
 
-  const animal = renderer.pickAnimal(worldX, worldY);
-  if (animal) {
+  for (const animal of sim.animalHash.queryRadius(worldX, worldY, PICK_RANGE)) {
+    if (!animal.alive) continue;
     consider({ kind: 'animal', x: animal.x, y: animal.y, animal },
       { kind: 'animal', animal }, animal.x, animal.y);
   }
 
   scored.sort((a, b) => a.distance - b.distance);
-  const targets = scored.map(entry => entry.target);
+  // The bubble column is DOM, not a simulation budget — nothing here needs
+  // protecting except the player's ability to read the list. A crowded
+  // household clustered on one tile would otherwise hand back a dozen bubbles.
+  const targets = scored.slice(0, PICKER_CAP).map(entry => entry.target);
 
   // A building covers whole tiles rather than a point, so it sits behind the
   // things standing on it but ahead of bare ground. Its footprint is already
@@ -718,7 +725,9 @@ function describeCandidate(observer: Person, target: ActionTarget): string {
       // No knowledge gating: a deer is a deer to anyone who has seen one.
       return target.animal!.label + (target.animal!.alarmed ? ' — alarmed' : '');
     case 'pile':
-      return 'dropped goods';
+      // `ItemPile.label` already exists and used to go unread here — the
+      // picker said "dropped goods" for a stack of six flints and a fish.
+      return target.pile!.label;
     case 'inscription': {
       // Gated like everything else the picker says. Somebody who cannot read is
       // told there are marks, not what they are.

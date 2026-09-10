@@ -1,7 +1,78 @@
 # Known bugs and rough edges
 
-As of 2026-09-09. Everything here is real and reproducible; nothing here is
+As of 2026-09-10. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found triaging the owner's notes for M9, 2026-09-10
+
+Eight of the owner's thirteen open notes turned out to name real defects rather
+than only missing features. Full diagnosis and where each is scheduled:
+[m9_plan_words_and_hands.md](m9_plan_words_and_hands.md). Two of the eight —
+the picker offering only one candidate per kind, and the near-identical node
+art that carried `NODE_LABELS`'s type asymmetry along with it — were M9
+phase 1, and are fixed; see `changelog.md`.
+
+### `give_item` picks the recipient itself and discards the refusal it gets
+
+`handleItemAction`'s `give_item` case ([main.ts:400-405](../src/main.ts#L400-L405))
+grabs the nearest living neighbour without asking which one, and when
+`Simulation.handOver` sets `lastRefusal` to `"<name> cannot carry any more"`
+([Simulation.ts:960](../src/sim/core/Simulation.ts#L960)) because the recipient
+is full, that branch never reads it — the player sees "nobody to give it to"
+even though somebody was right there and refused. This is a direct violation of
+the standing rule in `AGENTS.md` that every refusal must reach the player.
+Scheduled as M9 phase 2.
+
+### `doTake` always takes a fixed 6 units of an item the player did not choose
+
+[ActionSystem.ts:911-933](../src/sim/systems/ActionSystem.ts#L911-L933): the
+amount is `Math.min(6, store.store.count(itemId))` and `itemId` is
+`store.bestFood() ?? entries()[0]` — whichever the simulation likes. No action
+in the game lets a player choose either the item or the amount taken from a
+store, handed over, or moved into storage. Scheduled as M9 phase 2.
+
+### `doDiscuss` changes no relationship at all, and design gap rather than defect
+
+[ActionSystem.ts:1902-1963](../src/sim/systems/ActionSystem.ts#L1902-L1963)
+reads `regard` to gate whether a partner is willing, and writes to
+`idea.discussedWith`, `person.practice`, and `partner.practice` — but never to
+`Relationships` or to `company`. `doTeach` is the same shape: it emits the
+`teach` deed but never touches familiarity either. Not a bug so much as a
+missing mechanism the owner asked for directly. Scheduled as M9 phase 4.
+
+### Nothing records who sleeps under the same roof
+
+`Building` ([Building.ts:310](../src/sim/entities/Building.ts#L310)) carries no
+occupant list and no capacity field. `NeedsSystem.shelterAt`
+([NeedsSystem.ts:72](../src/sim/systems/NeedsSystem.ts#L72)) tests geometric
+containment per person, per tick, and forgets the answer immediately. A
+"sleeping together builds familiarity" mechanism has nothing to read.
+Scheduled as M9 phase 4.
+
+### `ponder` requires a workable idea, so a comfortable person with none just wanders
+
+`Brain.think` only adds the `ponder` score when `workableIdea(person)` returns
+something ([Brain.ts:900-911](../src/sim/ai/Brain.ts#L900-L911)); with none, a
+comfortable, unfatigued, unordered person falls to `wander` at score 0.02, which
+reads on screen as idling rather than thinking. There is also no autonomous
+"thinking" activity that can *originate* an idea with nothing to build on —
+`tryConceive` ([KnowledgeSystem.ts:298-353](../src/sim/systems/KnowledgeSystem.ts#L298-L353))
+never checks whether the person has been pondering at all. Scheduled as M9
+phase 5, deliberately last: `Brain.ts:906-909` already records that raising
+`ponder`'s weight once made thinking the sixth most common activity in the
+world, ahead of building and sleeping.
+
+### No state exists between bands, though `next-steps.md` said otherwise
+
+`Band` ([Simulation.ts:104-119](../src/sim/core/Simulation.ts#L104-L119)) is
+`id`, `name`, `homeX/homeY`, `norms`, `chiefId`, `outcast` — nothing about how
+one band regards another. `BandSystem` is entirely intra-band, and `steal` and
+`attack` do not check the victim's band membership at all. `next-steps.md` had
+claimed bands carry "standing with each other" in its open-gaps section, which
+O4 depended on; that line is now corrected there. War, raiding and slavery
+between bands are designed in
+[m9_plan_words_and_hands.md](m9_plan_words_and_hands.md)'s closing section, for
+M10, after M8.2 gives a band something worth raiding for.
 
 ## The open question left by M8.1, 2026-09-10
 
@@ -328,14 +399,6 @@ Every technology effect is supposed to read the seam. Three do not:
 - **`doHunt` uses the bare `REACH` constant** rather than the weapon's, so the
   bow's `reach: 1.6` does nothing while hunting — the one place it should matter
   most. `doAttack` applies reach correctly; only the hunt path misses it.
-
-### `NODE_LABELS` is not compiler-enforced and `RESOURCE_COLORS` is
-
-The renderer's colour table is keyed on `ResourceKind`, so a new resource kind
-fails the build until it is coloured. The HUD's label table is a plain
-`Record<string, string>`, so the same new kind silently prints its raw id in the
-panel. Cheap to fix; the point is the asymmetry, because one of the two will be
-forgotten.
 
 ## Reported from play, 2026-09-02 — fixed
 

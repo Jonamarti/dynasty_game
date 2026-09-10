@@ -212,24 +212,7 @@ export class Renderer {
     // --- Resource nodes ----------------------------------------------------
     for (const node of sim.nodes) {
       if (node.x < view.minX || node.x > view.maxX || node.y < view.minY || node.y > view.maxY) continue;
-      const px = camera.worldToScreenX(node.x);
-      const py = camera.worldToScreenY(node.y);
-      const fullness = node.amount / node.def.maxAmount;
-      if (fullness <= 0) {
-        ctx.fillStyle = 'rgba(0,0,0,0.18)';
-        ctx.fillRect(px - scale * 0.12, py - scale * 0.12, scale * 0.24, scale * 0.24);
-        continue;
-      }
-      const size = scale * (0.18 + fullness * 0.22);
-      ctx.fillStyle = RESOURCE_COLORS[node.kind];
-      ctx.fillRect(px - size / 2, py - size / 2, size, size);
-      ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ctx.fillRect(px - size / 2, py + size / 2 - 2, size, 2);
-      if (highlight?.nodeId === node.id) {
-        ctx.strokeStyle = '#7fd4ff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(px - size / 2 - 3, py - size / 2 - 3, size + 6, size + 6);
-      }
+      this.drawNode(node, highlight?.nodeId === node.id);
     }
 
     // --- Trees -------------------------------------------------------------
@@ -265,6 +248,19 @@ export class Renderer {
         ctx.strokeStyle = '#7fd4ff';
         ctx.lineWidth = 2;
         ctx.strokeRect(px - size / 2 - 3, py - size / 4 - 3, size + 6, size * 0.55 + 6);
+      }
+
+      // What is in it, close up only. The player's own eyes can read a pile a
+      // few tiles away, not one across the valley — the same limit `Knowledge`
+      // puts on everything else the UI is allowed to say.
+      if (sim.player && Math.hypot(pile.x - sim.player.x, pile.y - sim.player.y) <= PILE_LABEL_RANGE) {
+        ctx.font = '10px ui-sans-serif, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(10, 12, 18, 0.8)';
+        ctx.strokeText(pile.label, px, py + size * 0.28 + 12);
+        ctx.fillStyle = 'rgba(240, 237, 232, 0.9)';
+        ctx.fillText(pile.label, px, py + size * 0.28 + 12);
       }
     }
 
@@ -377,6 +373,109 @@ export class Renderer {
     // Floaters last, over the night overlay: an action label that dims with
     // nightfall is exactly the label you most need to read.
     this.floaters.draw(ctx, camera);
+  }
+
+  /**
+   * A resource node, shaped by kind rather than one square recoloured.
+   *
+   * Every kind used to be the same square scaled by `fullness`, distinguished
+   * only by fill colour — and `sticks` and `clay` are the two closest browns in
+   * `RESOURCE_COLORS`, with dropped-item piles adding a third right next to
+   * them. Shape is legible where colour alone was not. Every point below stays
+   * within `size / 2` of the centre, matching the square it replaces, so
+   * `hitRadiusOf`'s `'node'` case — sized from the same `fullness` formula —
+   * still covers what is actually drawn.
+   */
+  private drawNode(node: ResourceNode, selected: boolean): void {
+    const { ctx, camera } = this;
+    const scale = camera.scale;
+    const px = camera.worldToScreenX(node.x);
+    const py = camera.worldToScreenY(node.y);
+    const fullness = node.amount / node.def.maxAmount;
+    if (fullness <= 0) {
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.fillRect(px - scale * 0.12, py - scale * 0.12, scale * 0.24, scale * 0.24);
+      return;
+    }
+    const size = scale * (0.18 + fullness * 0.22);
+    ctx.fillStyle = RESOURCE_COLORS[node.kind];
+
+    switch (node.kind) {
+      case 'sticks':
+        // Two crossed branches: reads as wood at a glance, not a mound.
+        ctx.strokeStyle = RESOURCE_COLORS.sticks;
+        ctx.lineWidth = Math.max(1.5, size * 0.16);
+        ctx.beginPath();
+        ctx.moveTo(px - size * 0.45, py - size * 0.32);
+        ctx.lineTo(px + size * 0.45, py + size * 0.32);
+        ctx.moveTo(px - size * 0.45, py + size * 0.32);
+        ctx.lineTo(px + size * 0.45, py - size * 0.32);
+        ctx.stroke();
+        break;
+      case 'flint': {
+        // An angular shard: flint is the one resource that should look sharp.
+        ctx.beginPath();
+        ctx.moveTo(px, py - size * 0.5);
+        ctx.lineTo(px + size * 0.45, py - size * 0.05);
+        ctx.lineTo(px + size * 0.22, py + size * 0.5);
+        ctx.lineTo(px - size * 0.28, py + size * 0.38);
+        ctx.lineTo(px - size * 0.45, py - size * 0.12);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      }
+      case 'clay':
+        // A low, rounded mound — the one node that is not angular at all.
+        ctx.beginPath();
+        ctx.ellipse(px, py + size * 0.08, size * 0.48, size * 0.36, 0, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      case 'reeds':
+        // Upright blades: reeds stand, they do not sit like the others.
+        ctx.strokeStyle = RESOURCE_COLORS.reeds;
+        ctx.lineWidth = Math.max(1, size * 0.1);
+        for (let i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.moveTo(px + i * size * 0.24, py + size * 0.45);
+          ctx.lineTo(px + i * size * 0.32, py - size * 0.48);
+          ctx.stroke();
+        }
+        break;
+      case 'berries':
+        // A cluster of dots — the one node that is visibly plural, matching
+        // what a bush actually is.
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.arc(px + Math.cos(a) * size * 0.3, py + Math.sin(a) * size * 0.3, size * 0.15, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      case 'fish':
+        // A wedge with a tail-flick: the only node that reads as an animal
+        // rather than a plant or a mineral.
+        ctx.beginPath();
+        ctx.moveTo(px - size * 0.45, py);
+        ctx.lineTo(px + size * 0.2, py - size * 0.28);
+        ctx.lineTo(px + size * 0.2, py + size * 0.28);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(px + size * 0.2, py - size * 0.28);
+        ctx.lineTo(px + size * 0.48, py);
+        ctx.lineTo(px + size * 0.2, py + size * 0.28);
+        ctx.closePath();
+        ctx.fill();
+        break;
+    }
+
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(px - size / 2, py + size / 2 - 2, size, 2);
+    if (selected) {
+      ctx.strokeStyle = '#7fd4ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px - size / 2 - 3, py - size / 2 - 3, size + 6, size + 6);
+    }
   }
 
   /**
@@ -614,35 +713,6 @@ export class Renderer {
     return workProgressOf(person, this.sim);
   }
 
-  /** The living person nearest a world point within `radius` tiles, or null. */
-  pickPerson(worldX: number, worldY: number, radius = PICK_RANGE): Person | null {
-    return this.sim.peopleHash.findNearest(worldX, worldY, radius);
-  }
-
-  /** The resource node nearest a world point within `radius` tiles, or null. */
-  pickNode(worldX: number, worldY: number, radius = PICK_RANGE) {
-    return this.sim.nodeHash.findNearest(worldX, worldY, radius);
-  }
-
-  /** The record nearest a world point, or null. */
-  pickInscription(worldX: number, worldY: number, radius = 1.2): Inscription | null {
-    return this.sim.inscriptionHash.findNearest(worldX, worldY, radius);
-  }
-
-  /** The dropped pile nearest a world point, or null. */
-  pickPile(worldX: number, worldY: number, radius = PICK_RANGE) {
-    return this.sim.pileHash.findNearest(worldX, worldY, radius);
-  }
-
-  /** The standing tree nearest a world point, or null. */
-  pickTree(worldX: number, worldY: number, radius = PICK_RANGE) {
-    return this.sim.treeHash.findNearest(worldX, worldY, radius, t => t.standing);
-  }
-
-  /** The living animal nearest a world point, or null. */
-  pickAnimal(worldX: number, worldY: number, radius = PICK_RANGE) {
-    return this.sim.animalHash.findNearest(worldX, worldY, radius, a => a.alive);
-  }
 }
 
 /** Drawn size in tiles, per species. A hare is not a boar. */
@@ -661,6 +731,17 @@ const ANIMAL_COLORS: Record<string, string> = {
  * that is too small would hide large things from the picker entirely.
  */
 export const PICK_RANGE = 2.2;
+
+/**
+ * How close the player's own character must be before a pile's contents are
+ * labelled on the map.
+ *
+ * Not a knowledge-gated value — `Knowledge.ts` governs what a *person* knows,
+ * and this never reaches the sim — but the same principle applies to what the
+ * screen tells the player: reading the contents of a pile across the valley
+ * would be an omniscience the rest of the interface is built to withhold.
+ */
+const PILE_LABEL_RANGE = 6;
 
 /**
  * Slack added to every hit radius, so precise clicking is not miserable.

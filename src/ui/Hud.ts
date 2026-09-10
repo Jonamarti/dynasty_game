@@ -22,7 +22,7 @@
  */
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
-import type { ResourceNode } from '../sim/entities/ResourceNode.ts';
+import type { ResourceKind, ResourceNode } from '../sim/entities/ResourceNode.ts';
 import type { Building, BuildingDef } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
@@ -1150,7 +1150,7 @@ export class Hud {
     const rows: string[] = [];
 
     rows.push('<div class="hud-name">' +
-      escapeHtml(NODE_LABELS[node.kind] ?? node.kind) + '</div>');
+      escapeHtml(NODE_LABELS[node.kind]) + '</div>');
     rows.push('<div class="hud-sub">' + escapeHtml(sim.world.biomeAt(node.x, node.y)) +
       ' · ' + node.x + ',' + node.y + '</div>');
     rows.push('<div class="hud-known">' + escapeHtml(known.because) + '</div>');
@@ -1377,10 +1377,14 @@ export class Hud {
   }
 }
 
-const NODE_LABELS: Record<string, string> = {
+// Typed over `ResourceKind`, not a plain `Record<string, string>` — a new
+// resource kind now fails the build here the same way it already fails
+// `RESOURCE_COLORS` in Renderer.ts, rather than silently printing its raw id.
+// This table's `wood` never matched `sticks` for exactly that reason.
+const NODE_LABELS: Record<ResourceKind, string> = {
   berries: 'Berry bush',
   flint: 'Flint outcrop',
-  wood: 'Fallen wood',
+  sticks: 'Fallen wood',
   reeds: 'Reed bed',
   clay: 'Clay bank',
   fish: 'Fishing spot',

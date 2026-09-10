@@ -1,6 +1,17 @@
 # Next steps
 
-Rewritten 2026-09-08. Ordered, with the reason for the order.
+Rewritten 2026-09-08, reordered 2026-09-10. Ordered, with the reason for the
+order.
+
+**2026-09-10: the owner moved the social and interface pass ahead of the
+Neolithic.** `docs/notes.txt` had accumulated thirteen untriaged notes, eight of
+them since the last triage on 2026-09-09, nearly all about talking, teaching,
+choosing and seeing — the layer the player touches rather than the content
+underneath it. That pass is now **M9**, planned in full in
+[m9_plan_words_and_hands.md](m9_plan_words_and_hands.md), and it runs before
+M8.2. See §7c below for the triage itself, and note the correction to §5's
+O4/O5 discussion: this document previously said bands carry "standing with
+each other." They do not, and never did; see below.
 
 The previous version was written on 2026-09-02 and amended in place for a week.
 By the end it described the tech tree as "ten nodes so far" when there were
@@ -41,10 +52,12 @@ sim:check:all` is the number that matters.
 | M8.1 — `ochre`, `flute`, `herbalism`, `taming` | shipped 2026-09-09 |
 | M8.1 — mechanism 1, spoilage | **built and switched off, 2026-09-10.** See below |
 | M8.1 — `preserving` and the drying rack | **held.** They are what spoilage is switched off *from* |
-| **M8.2 — the Neolithic** | **next** |
+| **M9 — words and hands (social and interface)** | **next.** See [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) |
+| M8.2 — the Neolithic | planned, runs after M9 |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
+| M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
 | M7 — A\*, walls, interiors, beds | not started, and lands alone |
-| Owner's list O1–O5 | untouched. O6 and O7 shipped in pass A |
+| Owner's list O1–O5 | O1-O3 scheduled into M9. O4-O5 scheduled into M10. O6 and O7 shipped in pass A |
 
 **Thirty technologies**, thirteen recipes, ten buildings, twenty-nine items,
 thirty-two actions, twelve skills (`heal` and `cook` finally have a use;
@@ -89,7 +102,18 @@ before-and-after measurements in this milestone comparable.
    answers is switched off. See section 0b below, and `changelog.md` for the
    numbers behind every decision in the tier.
 
-6. **M8.2 — the Neolithic.** Seventeen nodes and the pass where a band stops
+6. **M9 — words and hands.** Chosen by the owner on 2026-09-10, ahead of the
+   Neolithic, because thirteen untriaged notes in `notes.txt` were nearly all
+   about the interface and social layer rather than content. Full plan,
+   phase-by-phase, in [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md).
+   Six phases: the plural picker and distinguishable resource art, quantities
+   and recipients, nesting menus and an `ask` verb, conversation modes and
+   relationship-building through discussion and shared shelter, an autonomous
+   `reflect` verb, and a self-care mode for the player's own character. The
+   first three phases are interface-only and must leave `sim:check`
+   bit-identical; the last two change `Brain`'s scorer and are measured with
+   twenty seeds each, never one run.
+7. **M8.2 — the Neolithic.** Seventeen nodes and the pass where a band stops
    moving to the food: fields, herds, the loom, the kiln, masonry. The node
    tables are in [m8_plan_the_ages.md](m8_plan_the_ages.md).
 
@@ -105,7 +129,12 @@ before-and-after measurements in this milestone comparable.
      warns about**, and is still not done: it would make the granary unbuildable
      again. When it happens it needs `craft`'s starting conditions extended and
      `pots-reach-a-granary` re-verified in the same pass.
-6. **M7**, alone, whenever it is picked up.
+8. **M10 — standing, territory and raids between bands.** Designed in M9's
+   closing section rather than scheduled inside it, on the same argument as
+   O4/O5 below: a band that owns fields, a herd and a kiln has property worth
+   refusing a rival and worth burning, and today it owns a storage pit. Runs
+   after M8.2.
+9. **M7**, alone, whenever it is picked up.
 
 ---
 
@@ -289,15 +318,29 @@ traps are in **[m8_plan_the_ages.md](m8_plan_the_ages.md)**.
 
 Eight things asked for by the project owner on 2026-09-06. **O6 (continuous
 movement) and O7 (clicking a single entity still offers the ground) shipped in
-pass A.** The rest are untouched and are not scheduled against each other; the
-numbering is only so they can be referred to.
+pass A.** **O1, O2 and O3 are now scheduled inside M9** — see
+[m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) phases 3 and 4 — and
+**O4 and O5 are scheduled inside M10**, after M8.2.
+
+**Correction, 2026-09-10.** This section previously said the decision for O4
+"lives" in `normsByBand` and the standing machinery in `social/Authority.ts`.
+Verified false while triaging `notes.txt` for M9: `normsByBand`
+([Simulation.ts:229](../src/sim/core/Simulation.ts#L229)) maps a band to *its
+own* norms — how that band judges a deed — not to how it regards another band,
+and `standingOver` in `Authority.ts` is one person's authority over another,
+not band-to-band relations. **No state between bands exists anywhere in the
+codebase**; `Band` itself ([Simulation.ts:104-119](../src/sim/core/Simulation.ts#L104-L119))
+carries nothing beyond `id`, `name`, `homeX/homeY`, `norms`, `chiefId` and
+`outcast`. O4 and O5 are therefore redesigned in M9's closing section against a
+mechanism that has to be built first, not retrofitted onto one that already
+exists, and that whole mechanism is what M10 is.
 
 **O4 and O5 are worth more after M8.2.** A band that owns fields, a herd and a
 kiln has property worth refusing a rival and property worth burning; today it
 owns a storage pit. Doing them after the Neolithic tier is not a delay, it is the
 difference between a mechanic and a reason.
 
-### O1. Talking takes far too long, and needs Sims-style modes
+### O1. Talking takes far too long, and needs Sims-style modes — scheduled as M9 phase 4
 
 `TALK_TICKS` is 45 against `ticksPerDay` 240, so **one conversation is four and a
 half in-game hours** — the comment beside it claiming "roughly half an in-game
@@ -316,7 +359,7 @@ talk** (long, expensive, worth much more).
 no new state. Each mode wants its own cost and cooldown. Watch
 `ai-uses-many-actions`: conversation competes with foraging for ticks.
 
-### O2. People should be able to talk while working alongside each other
+### O2. People should be able to talk while working alongside each other — scheduled as M9 phase 4
 
 Today `talk` is a whole action, so two people picking the same bush cannot say a
 word. `Person.action` is a single string, so "foraging and talking" has nowhere
@@ -326,7 +369,7 @@ radius and running a cheap `converse` without touching either one's action. It
 should feed `company` and `Relationships` and must **not** grant the full value
 of a deliberate conversation, or nobody will ever choose `talk` again.
 
-### O3. Working alongside somebody teaches you faster
+### O3. Working alongside somebody teaches you faster — scheduled as M9 phase 3/4
 
 `Person.practice(skill, amount)` is the single seam every gain goes through, so
 this is a per-tick company bonus computed once from `peopleHash` rather than a
@@ -338,17 +381,17 @@ expertise.
 **This is also a candidate answer to M8.0**, since it is a transmission channel
 and transmission is what gates the tree.
 
-### O4. Buildings belong to a tribe, and rivals may be refused the use of them
+### O4. Buildings belong to a tribe, and rivals may be refused the use of them — scheduled as M10
 
 `Building.ownerBandId` exists and is honoured in exactly one place: `Brain` only
 sends somebody to a store belonging to their own band. What is wanted is access
-decided by **the relationship between two tribes**, not a hard same-band test.
-`normsByBand` and the standing machinery in `social/Authority.ts` are where the
-decision lives, and refusal must reach the player through `lastRefusal` — a store
-that silently is not offered is exactly what that standing rule exists to
-prevent.
+decided by **the relationship between two tribes**, not a hard same-band test —
+and no such relationship exists yet to decide it (see the correction above).
+M10 has to build inter-band standing before this can read it, and refusal must
+reach the player through `lastRefusal` once it does — a store that silently is
+not offered is exactly what that standing rule exists to prevent.
 
-### O5. Sabotage, so war between tribes is more than beating people up
+### O5. Sabotage, so war between tribes is more than beating people up — scheduled as M10
 
 `Building` has no condition or hit points — `complete` is a boolean and
 `progress` only counts up — so this needs a durability field, a `sabotage` action
@@ -432,19 +475,49 @@ already need incremental region repair.
 
 It pairs with N1: both are about the coastline meaning something.
 
-### N3. Curiosity as a fourth transmission channel
+### N3. Curiosity as a fourth transmission channel — folded into M9 phase 3
 
 From the same notes: somebody who sees an unfamiliar object or an unfamiliar
 technique should want to find out about it — asking around, seeking out whoever
 has it — and a rival band that sees a thing worth having should be able to copy
 it. Knowledge would then be slow to *originate* and much faster to *spread*.
 
-This belongs beside O1–O3, and section 0 above is the argument for it: the tree
-is gated by transmission, and this is a transmission channel that does not
-depend on anybody deciding to teach. `KnowledgeSystem.tryObserve` is the seam —
-it already pairs neighbours by proximity and reads `WATCHING_RANGE` — and
+**2026-09-10: this is the same channel as M9 phase 3's `ask` verb, seen from the
+other side.** Phase 3 lets a pupil ask a specific teacher; N3 is the same want
+without a specific person in mind — "find out about it" rather than "ask
+them" — so the two are one design question, not two, and N3 is no longer listed
+separately here. `KnowledgeSystem.tryObserve` is the seam — it already pairs
+neighbours by proximity and reads `WATCHING_RANGE` — and
 `learning.observationChance` is now the settings-screen lever over the passive
-version of it.
+version of it. Whoever builds phase 3 should read this note first.
+
+## 7c. The owner's notes of 2026-09-10, and where each one went
+
+Triaged out of `notes.txt` on 2026-09-10 — thirteen notes, all thirteen given a
+destination, `notes.txt` now empty. Full diagnosis, verified against the code,
+is in [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md); this is the
+index.
+
+| note | destination |
+|---|---|
+| Two NPCs together only offer one to click | M9 phase 1 |
+| Cultivate relationship with tribe and leader | M9 phase 4 |
+| Controlled NPC does not drink, eat or sleep alone | M9 phase 6 |
+| Thinking should not be confused with wandering | M9 phase 5 |
+| Conversation needs modes | M9 phase 4 (= O1, above) |
+| Discussing and teaching should build relationship | M9 phase 4 (= part of O1-O3) |
+| Sticks, clay and flint look alike | M9 phase 1 |
+| Sleeping together should build closeness | M9 phase 4 |
+| Choosing quantities given, stored, taken | M9 phase 2 |
+| Menu should nest, not name one recipe | M9 phase 3 |
+| Ask to be taught; order someone to teach | M9 phase 3 |
+| War, raiding and slavery between tribes | Designed in M9's closing section; scheduled as M10 |
+| See and choose what to take from a pile | M9 phase 1 |
+
+Three defects were found alongside the notes rather than in them —
+`give_item`'s swallowed refusal, `doTake`'s fixed six units, and this
+document's own false claim about standing between bands — and are recorded in
+[bugs.md](bugs.md) and corrected above respectively.
 
 ## 8. Wildlife, second pass
 
