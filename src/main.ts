@@ -34,6 +34,7 @@ import { TECH, techPower, type Tech } from './sim/knowledge/Tech.ts';
 import type { Person } from './sim/entities/Person.ts';
 import type { Building, BuildingDef } from './sim/entities/Building.ts';
 import { ITEMS } from './sim/entities/Item.ts';
+import type { ItemPile } from './sim/entities/ItemPile.ts';
 import { describeEvent } from './sim/social/Events.ts';
 import {
   knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree, knowledgeOfBuilding,
@@ -1098,10 +1099,7 @@ function issue(
     return;
   }
   if (actionId === 'pickup' && target.pile) {
-    const taken = sim.takeFromPile(actor, target.pile);
-    renderer.floaters.push(actor.x, actor.y,
-      taken > 0 ? 'picked up ' + taken : 'hands full',
-      { color: taken > 0 ? '#7ddc96' : '#e66464', boxed: true });
+    issuePickup(actor, target.pile, screenX, screenY);
     return;
   }
   // Choosing which item and how much, when there is a real choice to make and
@@ -1201,6 +1199,56 @@ function issueTake(actor: Person, store: Building, screenX: number, screenY: num
     // Unreachable in practice — the menu option is disabled when the store is
     // empty — but a refusal always says why rather than doing nothing at all.
     orderTake(actor, store, undefined, undefined);
+    return;
+  }
+  if (contents.length === 1) {
+    askAmount(contents[0]![0]);
+    return;
+  }
+
+  const entries: PickerEntry<string>[] = contents.map(([id, n]) => ({
+    target: id,
+    icon: '\u{1F4E6}',
+    label: (ITEMS[id]?.label ?? id) + ' ×' + n,
+  }));
+  itemPicker.show(screenX, screenY, entries, askAmount, () => {});
+}
+
+/** Reports what a pickup moved, the same way `issue` reports every order. */
+function reportPickup(actor: Person, taken: number): void {
+  renderer.floaters.push(actor.x, actor.y,
+    taken > 0 ? 'picked up ' + taken : 'hands full',
+    { color: taken > 0 ? '#7ddc96' : '#e66464', boxed: true });
+}
+
+/**
+ * "Pick up", turned into a choice of item and amount, mirroring `issueTake`.
+ *
+ * The room guard runs before either picker opens: `quantityPicker.show`
+ * refuses a `max` of zero or less silently, and a popup that never appears
+ * would be the worst outcome for a player standing over goods they cannot
+ * carry.
+ *
+ * No knowledge gate — goods on the ground are visible to anyone standing over
+ * them, unlike a store's contents.
+ */
+function issuePickup(actor: Person, pile: ItemPile, screenX: number, screenY: number): void {
+  if (actor.carrying >= actor.carryCapacity) {
+    reportPickup(actor, 0);
+    return;
+  }
+
+  const askAmount = (itemId: string) => {
+    const max = Math.min(pile.contents.count(itemId), actor.carryCapacity - actor.carrying);
+    quantityPicker.show(screenX, screenY, 'Pick up ' + (ITEMS[itemId]?.label ?? itemId).toLowerCase(),
+      max, count => reportPickup(actor, sim.takeFromPile(actor, pile, itemId, count)));
+  };
+
+  const contents = pile.contents.entries();
+  if (contents.length === 0) {
+    // Unreachable in practice — an empty pile removes itself — but a refusal
+    // always says why rather than doing nothing at all.
+    reportPickup(actor, 0);
     return;
   }
   if (contents.length === 1) {

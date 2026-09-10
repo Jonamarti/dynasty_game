@@ -177,7 +177,16 @@ export function availableActions(
     case 'person': return personActions(actor, target.person!);
     case 'node': return nodeActions(target.node!);
     case 'tree': return treeActions(target.tree!);
-    case 'pile': return [{
+    // There is no `pickup` verb in `ActionSystem`, so it cannot be ordered —
+    // commanding somebody else to pick something up is refused here, in the
+    // menu, rather than silently having the player do it themselves instead.
+    case 'pile': return [ctx.commanding ? {
+      id: 'pickup',
+      label: 'Pick up',
+      icon: '\u{1F91A}',
+      enabled: false,
+      reason: 'You cannot order somebody else to pick that up',
+    } : {
       id: 'pickup',
       label: 'Pick up',
       icon: '\u{1F91A}',

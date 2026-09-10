@@ -908,15 +908,30 @@ export class Simulation {
     telemetry.count('dropped', count);
   }
 
-  /** Picks a pile back up, as far as the carrier has room for. */
-  takeFromPile(person: Person, pile: ItemPile): number {
+  /**
+   * Picks a pile back up, as far as the carrier has room for.
+   *
+   * `itemId`/`count` omitted means everything, in pile order — today's
+   * behaviour, byte-for-byte, which is what every AI caller still wants. M9.3
+   * gave the player a choice of item and amount without changing that default.
+   */
+  takeFromPile(person: Person, pile: ItemPile, itemId?: string, count?: number): number {
     let moved = 0;
-    for (const [itemId, count] of pile.contents.entries()) {
-      const room = person.carryCapacity - person.carrying - moved;
-      if (room <= 0) break;
-      const taken = pile.contents.remove(itemId, Math.min(count, room));
-      person.inventory.add(itemId, taken);
-      moved += taken;
+    if (itemId !== undefined) {
+      const room = person.carryCapacity - person.carrying;
+      const want = Math.min(count ?? pile.contents.count(itemId), pile.contents.count(itemId), room);
+      if (want > 0) {
+        moved = pile.contents.remove(itemId, want);
+        person.inventory.add(itemId, moved);
+      }
+    } else {
+      for (const [id, stackCount] of pile.contents.entries()) {
+        const room = person.carryCapacity - person.carrying - moved;
+        if (room <= 0) break;
+        const taken = pile.contents.remove(id, Math.min(stackCount, room));
+        person.inventory.add(id, taken);
+        moved += taken;
+      }
     }
     if (pile.empty) this.removePile(pile);
     if (moved > 0) telemetry.count('picked_up', moved);
