@@ -215,6 +215,7 @@ export class Pathfinder {
       if (current === goalIndex) {
         this.lastExpanded = expanded;
         telemetry.count('path_expanded', expanded);
+        telemetry.max('path_worst_expanded', expanded);
         telemetry.count('path_found');
         this.reconstruct(startIndex, goalIndex);
         return PathStatus.Found;
@@ -223,6 +224,7 @@ export class Pathfinder {
       if (expanded >= maxExpansions) {
         this.lastExpanded = expanded;
         telemetry.count('path_expanded', expanded);
+        telemetry.max('path_worst_expanded', expanded);
         telemetry.count('path_gave_up');
         return PathStatus.GaveUp;
       }
@@ -266,6 +268,7 @@ export class Pathfinder {
     // is exactly the kind of claim a terrain edge case likes to disprove.
     this.lastExpanded = expanded;
     telemetry.count('path_expanded', expanded);
+    telemetry.max('path_worst_expanded', expanded);
     telemetry.count('path_no_route');
     return PathStatus.NoRoute;
   }

@@ -205,8 +205,13 @@ export class MovementSystem {
 
     if (dist < ARRIVAL_RADIUS) {
       person.stuckSteps = 0;
-      person.pathCount = 0;
       telemetry.count('walk_arrived');
+      // Separate from `walk_arrived`, which counts every arrival: this one
+      // counts only arrivals that involved following at least one waypoint
+      // from `Pathfinder`, so the report can say what share of walks actually
+      // needed routing rather than a straight line.
+      if (person.pathCount > 0) telemetry.count('route_arrived');
+      person.pathCount = 0;
       return Arrival.Arrived;
     }
 

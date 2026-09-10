@@ -659,11 +659,41 @@ export class Renderer {
       ctx.strokeStyle = '#ffd35c';
       ctx.lineWidth = 2;
       ctx.strokeRect(px - w / 2 - 2, py - h / 2 - w * 0.6, w + 4, h + w * 0.6);
+      this.drawPath(person);
     } else if (selected) {
       ctx.strokeStyle = '#7fd4ff';
       ctx.lineWidth = 2;
       ctx.strokeRect(px - w / 2 - 2, py - h / 2 - w * 0.6, w + 4, h + w * 0.6);
     }
+  }
+
+  /**
+   * The player's own remaining route: current position, through whichever
+   * waypoints `Pathfinder` left unspent, on to the real target. The only way
+   * to *see* M7's routing in play. Restricted to the player's own character
+   * on purpose — a stranger's planned route is exactly the kind of private
+   * state `Knowledge.ts`'s visibility rules exist to withhold, and drawing it
+   * for everyone would read a mind nobody offered.
+   */
+  private drawPath(person: Person): void {
+    if (person.pathAt >= person.pathCount && person.targetX === null) return;
+    const { ctx, camera } = this;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 211, 92, 0.55)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(camera.worldToScreenX(person.x), camera.worldToScreenY(person.y));
+    for (let i = person.pathAt; i < person.pathCount; i++) {
+      const wx = person.path![i * 2]!;
+      const wy = person.path![i * 2 + 1]!;
+      ctx.lineTo(camera.worldToScreenX(wx), camera.worldToScreenY(wy));
+    }
+    if (person.targetX !== null && person.targetY !== null) {
+      ctx.lineTo(camera.worldToScreenX(person.targetX), camera.worldToScreenY(person.targetY));
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 
   /**

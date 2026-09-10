@@ -11,6 +11,11 @@ import { World } from '../core/World.ts';
 import { RNG } from '../core/RNG.ts';
 import { DEFAULT_CONFIG } from '../core/Config.ts';
 import { Pathfinder, PathStatus, DEFAULT_MAX_EXPANSIONS } from '../core/Pathfinder.ts';
+import { Simulation } from '../core/Simulation.ts';
+// `strandedPeople` backs `nobody-walled-in` in the health harness. Imported
+// from `tools/` rather than duplicated here, so this test exercises the
+// exact function the report runs, not a copy of it that could drift.
+import { strandedPeople } from '../../../tools/simcheck.ts';
 
 /**
  * A `World` whose `walkable`/`region` are exactly what `rows` describes,
@@ -182,5 +187,59 @@ describe('Pathfinder', () => {
     const pf = new Pathfinder(world);
     expect(pf.find(0, 0, 4, 4)).toBe(PathStatus.Found);
     expect(pf.lastExpanded).toBeLessThan(DEFAULT_MAX_EXPANSIONS);
+  });
+});
+
+/**
+ * `strandedPeople` (`nobody-walled-in`'s own logic), mutation-verified: a
+ * person who is genuinely reachable is reported as such, and painting a ring
+ * of `walkable = 0` around them — standing in for a wall built after the
+ * world was already generated — is reported as stranded.
+ *
+ * `World.region` is deliberately left stale by the ring: nothing here calls
+ * the private flood fill again. That staleness is exactly what this check
+ * exists to catch — `sameRegion` alone would still call the walled-in person
+ * reachable, and only a live search over the real, current `walkable` array
+ * knows otherwise.
+ */
+describe('strandedPeople', () => {
+  const SMALL = {
+    seed: 'walled-in',
+    world: { width: 48, height: 48, berryBushes: 40, flintOutcrops: 10, deadwood: 20, gameHerds: 4 },
+    population: { bands: 1, peoplePerBand: 6 },
+  };
+
+  it('reports nobody stranded in an unmodified world', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const result = strandedPeople(sim);
+    expect(result.checked).toBeGreaterThan(0);
+    expect(result.strandedFromWater).toBe(0);
+    expect(result.strandedFromFood).toBe(0);
+  });
+
+  it('reports a person stranded once a ring of unwalkable tiles closes them in', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const person = sim.livingPeople()[0]!;
+
+    const cx = Math.round(person.x);
+    const cy = Math.round(person.y);
+    person.x = cx;
+    person.y = cy;
+
+    // The full perimeter at Chebyshev distance 2 — every tile any 8-connected
+    // step out of the 3x3 core around the person would have to cross.
+    for (let dy = -2; dy <= 2; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== 2) continue;
+        const x = cx + dx;
+        const y = cy + dy;
+        if (sim.world.inBounds(x, y)) sim.world.walkable[sim.world.index(x, y)] = 0;
+      }
+    }
+
+    const result = strandedPeople(sim);
+    expect(result.strandedFromWater + result.strandedFromFood).toBeGreaterThan(0);
   });
 });

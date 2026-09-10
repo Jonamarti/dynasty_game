@@ -6,6 +6,171 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-10 — M7 stage B: the zombie-order bug, and A\* to actually fix coastline traps
+
+Five commits. The owner reported two things: people getting stuck on
+coastline and dying, and a "random" freeze that turned out to be the same
+root cause hitting anyone under an order. Movement was greedy vector steering
+with three fallbacks and no pathfinder anywhere in the codebase; `World.region`
+proved only that *a* path existed, never that greedy steering could find it.
+
+- **Commit 5, instrumentation only.** `Person.stuckSteps` replaces
+  `MovementSystem`'s module-level `stuckTicks` map — that map was shared by
+  every `Simulation` in the process, leaking an entry for everyone who died
+  mid-slide and able to carry a stale entry from one world's person id into
+  the next. Deliberately *not* reset by `clearTarget()`, unlike a literal
+  reading of the plan this pass followed: this simulation is chaotic enough
+  that wiring it in there shifts which tick a stuck give-up's RNG draw lands
+  on, which cascades into a visibly different world thousands of ticks later
+  — confirmed by isolating the change and diffing `sim:check` output. Also
+  new: `gave_up_under_orders` telemetry, `walk_arrived`, and a `StallWatch` /
+  `nobody-stalls-under-orders` check, cause-agnostic by design (it watches
+  position and action, not any particular code path). It already failed on
+  eight of thirteen scenarios in `sim:check:all` before the fix below —
+  `crowded`, `century`, `craft`, `scribes`, `coast`, `millers`, `hunters`,
+  `fishers` — the bug made visible instead of silent. Verified bit-identical
+  to the pre-M7 baseline: same 36 checks plus the one new one, same numbers.
+- **Commit 6, the zombie-order fix.** `giveUp` cleared `person.target*` but
+  never `person.order`, so `Simulation.step`'s `committed = actionTimer > 0
+  || order !== null` stayed true forever once a walk under order ran out of
+  patience — the brain never re-planned, and `case 'wander': default:`
+  discarded `MovementSystem.step`'s return value, so `finish` (the only thing
+  that clears an order) was never reached either. `MovementSystem.step`
+  becomes `advance(person, tick): Arrival`, a tri-state
+  (`Moving`/`Arrived`/`Blocked`) so the compiler forces every one of the
+  fourteen call sites to be looked at. `ActionSystem.travel` is the one place
+  that now decides what `Blocked` means for an ordered action: abandon it
+  with reason `cannot_reach`, through the same `onStopped` path every other
+  refusal uses — `abandon` → `finish` clears the order along with the target,
+  which is the actual fix. `giveUp`'s "hop to a random nearby tile" is deleted
+  outright rather than ported: it was a workaround for greedy steering having
+  no way to route around an obstacle, and `Pathfinder` (commit 7) is the real
+  replacement. New `orders.test.ts` case: order a `goto`, stub
+  `world.isWalkable` false to stand in for a concave shoreline, preset
+  `stuckSteps` past `PATIENCE`, step once, assert `person.order` is null —
+  confirmed failing against commit 5 first (`AssertionError: expected 'goto'
+  to be null`), passing after. Also fixed as a side effect of `case 'wander'`
+  finally reaching `finish`: the player's own character showing
+  `action = 'walk'` forever after the keys are released. And guarded against:
+  `finish` calling `noteDid('wander')` would have revived `tracking`'s fourth
+  spark route (see `bugs.md`) as an unplanned side effect of a movement
+  commit, so `noteDid` now ignores `'wander'` alongside `'idle'`/`'dead'`.
+  `nobody-stalls-under-orders` now passes on every scenario that failed it at
+  commit 5. Not bit-identical, and not meant to be: `century`'s 20-seed
+  cohort moved from 75.4% mean survival (pre-M7) to 61.6%, 0/20 collapsed to
+  2/20 — expected, because without a real router an abandoned order can
+  immediately re-target the same unreachable spot and burn ~26 ticks failing
+  again. `abandoned_cannot_reach` is exactly the counter the plan named to
+  catch this, and it did.
+- **Commit 7, `src/sim/core/Pathfinder.ts`, wired to nothing.** A\* over
+  `World`'s own tile arrays: 8-connected with a corner rule (legal only if
+  both orthogonal neighbours of a diagonal step are walkable too), which
+  keeps this graph's reachability identical to `World.region`'s 4-connected
+  flood fill — so a region pre-check can run *before the heap is touched*,
+  making "explore the whole landmass and fail" structurally impossible.
+  Octile heuristic; binary min-heap with lazy deletion, ordered by `f`, then
+  `h`, then tile index (the `h` tie-break alone is the difference between
+  ~100 and ~2,000 expansions on a 25-tile errand with an equal-`f` plateau);
+  no RNG; zero allocation per query (`gen`-stamped `seen`/`closed` instead of
+  a per-query clear, everything else sized once to `n = width * height`).
+  Goal snapping via `World.findWalkableNear`, unused today. Reconstruction
+  compresses collinear runs only — a straight diagonal across a fully open
+  10x10 grid needs zero waypoints, a diagonal-then-straight route needs
+  exactly one, at the corner (both asserted directly in `pathfinder.test.ts`)
+  — and never includes the start or goal tile: the caller's final leg aims at
+  the real float target, preserving the 0.6-tile arrival radius exactly. Ten
+  unit tests on hand-authored grids, no callers, `sim:check` unchanged.
+- **Commit 8, `MovementSystem` follows routes.** `Person` gains `path`
+  (`Int16Array`, grown not reallocated per route), `pathCount`, `pathAt`,
+  `pathGoalX/Y`, `pathTick`, `pathRetried`. The route lives on `Person`, not
+  in a map in `MovementSystem`: `clearTarget()` is the one place that already
+  forgets where somebody was going, so it is also where a stale route stops
+  sending them toward the last errand's bush (`pathCount`/`pathAt` reset; the
+  buffer itself is kept). `advance`, in order: the arrival check (unchanged);
+  `needsRoute`/`requestRoute` deciding whether to search this tick; skipping
+  waypoints already behind the walker (speed-relative — a fixed radius
+  smaller than a step would orbit a waypoint forever); `moveToward` at the
+  next waypoint or the real target once the route runs out; the same stuck
+  detector, now buying one free re-route before `Blocked` (a route can go
+  stale under a walker in a way `needsRoute` cannot predict). `requestRoute`
+  gates on a 15-tick per-person cooldown and a 3-search-per-tick
+  population-wide budget. `doHunt`'s moving target needs no special case:
+  `needsRoute` sees the goal move, the cooldown limits how often that
+  actually searches, and the final leg already aims straight at the real
+  target once a stale route runs out. `resetMovementState()` and its call
+  site are gone with the map it was already a no-op for. Two pre-existing
+  tests widened rather than broken: `band.test.ts`'s rebellion mechanism
+  needed five days instead of three to meet its quorum (routed movement
+  reaches the same places by a sometimes-longer sequence of steps — verified
+  this is pacing, not breakage, by running it to 20 days and finding it still
+  fires, just under 4). `gave_up_walking` on the `band` scenario collapsed
+  from commit 6's 119 to **1**, with 2,653 routes found and a mean of 13.0
+  expansions per search. `sim:check` perf-budget: 3,064 steps/s (floor
+  2,000; down from 3,409 pre-routing — real search cost, not a regression
+  against the floor). `century`'s 20-seed cohort: mean survival **82.6%**,
+  up from the pre-M7 baseline of 75.4% and well past commit 6's 61.6% dip —
+  real routing does not just stop the thrashing, it reaches reachable places
+  faster than greedy steering ever did.
+- **Commit 9, the two checks, the `TRAVEL` report block, and this entry.**
+  `paths-are-found`: samples 200 tile pairs deterministically (two large
+  coprime strides through the tile array — no RNG draw from a stream the
+  simulation shares), keeps pairs walkable and in the largest region, asserts
+  every one is `Found` with a generous (`width * height`) search budget —
+  `DEFAULT_MAX_EXPANSIONS` (2,000) is tuned for a real errand, always local,
+  and a health check can afford more than a per-tick gameplay budget to
+  confirm reachability — and separately asserts `path_gave_up === 0` across
+  real play. `nobody-walled-in`: everybody alive can actually route to the
+  nearest water and nearest food in their own region, via the same
+  `sameRegion`-filtered nearest search `Brain.findWater`/`findNode` use;
+  turns the region oracle's promise into a live assertion rather than a
+  cached one. Two real bugs found writing these, both fixed before either
+  check could be trusted: `AlreadyThere` (the nearest match truncating to the
+  tile a person is already on) was being counted as *stranded* rather than
+  *reached*; and the stall detector added in commit 5 had a false positive
+  on `doBuild`, which tracks progress on the `Building` rather than on
+  `person.actionTimer`, so a legitimate days-long construction job looked
+  identical to a freeze by position and action alone — fixed by also
+  tracking `person.workedTicks`, which `doBuild` does increment every real
+  work tick. `nobody-walled-in` is mutation-verified by a permanent unit
+  test (`pathfinder.test.ts`) that paints a ring of `walkable = 0` around a
+  person and leaves `World.region` deliberately stale — exactly the
+  situation a wall or a dig would create, and exactly what a `sameRegion`-only
+  check would miss. `paths-are-found` is mutation-verified by hand, since its
+  subject does not exist before this pass: dropping `maxExpansions` to 50
+  fails it; disabling the corner rule is caught by
+  `pathfinder.test.ts`'s "routes around a corner it cannot cut" case
+  (`lastExpanded` drops from a real detour to 2 — the one-step diagonal
+  shortcut the rule exists to forbid); disabling the region pre-check turns a
+  genuinely cross-region query that returns instantly today into one that
+  expands 9,559 nodes before concluding `NoRoute` (confirmed on the `band`
+  world directly — real play never triggers this, since `Simulation.order`
+  already refuses a cross-region target before a route is ever requested).
+  `TRAVEL`, a new report block near `TERRAIN`: routes found, mean/worst
+  expansions (the worst tracked via a new `Telemetry.max`, alongside the
+  existing summed `count`), searches per 1,000 ticks, `route_arrived`,
+  `walk_blocked`, `abandoned_cannot_reach`. Also: the player's own remaining
+  route is now drawn on the map (`Renderer.drawPath`), restricted to their
+  own character so it is not a stranger's route.
+
+  `sim:check:all` across all thirteen scenarios: `nobody-stalls-under-orders`
+  now passes everywhere (was failing on eight scenarios at commit 5). Three
+  remaining failures, all understood and none an M7 regression worth
+  chasing in this pass: `crowded`'s `perf-budget` (73 people, thin forage —
+  already failing at commit 6, before any real routing existed, from the
+  extra re-planning a dense competitive scenario does; real routing did not
+  make it worse); `century`'s `paths-are-found` (real play there hits
+  `DEFAULT_MAX_EXPANSIONS` on roughly 1% of searches over 40,000 ticks — the
+  budget working exactly as documented, a bail-out and not a working limit);
+  `coast`'s `opinions-diverge` (0 hostile relationships in one seed's 229 —
+  ordinary chaos-cascade noise from a movement-pattern change, the kind
+  `AGENTS.md` already documents for this class of check).
+
+  Verified live in the browser as well as headless: ordering a walk across a
+  bay routes and arrives; ordering a walk to a spot on another landmass
+  produces the floater *"walking stopped — they could not get there"* and
+  the character returns to `thinking` rather than freezing — screenshotted
+  from a real run against the fixed e2e seed.
+
 ## 2026-09-10 — M9.3 stage A: the three amount prompts M9 phase 2 missed, and a store that never stored what you carried
 
 Four commits, closing the quantities work: three more transfer paths still

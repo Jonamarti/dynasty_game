@@ -353,6 +353,19 @@ happen:
 
 `tracking` no longer blocks M8.1, which puts `snares` and `taming` behind it.
 
+**A fifth ingredient found while fixing M7's zombie-order bug, 2026-09-10.**
+One of the two "essentially never happen" original routes needs `{ kind:
+'doing', action: 'wander' }`. It could not have been satisfied *ever*, on any
+seed: `ActionSystem`'s `case 'wander': default:` discarded `MovementSystem`'s
+return value, so `finish` — the only place `Person.noteDid` is called — was
+never reached for a wander. M7's fix makes `case 'wander'` reach `finish`
+honestly, which would revive this route as a side effect of a movement fix
+nobody asked for there. `Person.noteDid` now ignores `'wander'` explicitly
+(alongside the pre-existing `'idle'`/`'dead'`) to hold that off. Reviving it
+for real — deleting that one line and measuring `conceived_tracking` across
+the seed cohort — is a candidate for the M7 plan's optional last commit,
+not yet done.
+
 ### The RNG fork comment points at the wrong place
 
 The named fork block ends at `recordRng` with a comment saying to append after
@@ -851,3 +864,29 @@ project from a directory you intend to delete.
 the movement system had just approved, was reported as having escaped the
 island. The check now asks the world. Do not recompute a predicate the
 simulation already owns.
+
+## Found reading the code for M7 (movement and A\*), 2026-09-10
+
+### The radial menu's "Pick up" has no reach test
+
+`ActionCatalog.ts`'s `case 'pile':` gates the option on `actor.carrying <
+actor.carryCapacity` alone — nothing checks the actor is actually near the
+pile. `Simulation.takeFromPile` does not check distance either. A pile visible
+on screen but far from the player's character currently offers "Pick up" as
+enabled and, if clicked, hands over the goods with no walk and no distance
+check at all — every other radial verb that acts at range routes through an
+order and a walk first. Not touched in the M7 pass, which only widened
+`takeFromPile`'s signature (M9.3, `issuePickup`) without changing when the
+option is offered.
+
+### `heel` has no stuck handling at all
+
+`WildlifeSystem.heel` (a tamed animal keeping up with its owner) calls
+`moveToward` directly — the same greedy primitive people used before M7, with
+none of `MovementSystem`'s stuck detector, let alone a route from
+`Pathfinder`. A tamed dog following its owner around a headland will press
+into the shoreline indefinitely, the same way a person once did. Deferred to
+a future wildlife pass with its own measurement: giving animals a path is a
+food-economy-adjacent, RNG-stream-adjacent change (`moveToward`'s jitter
+branch draws from `moveRng`, which animals and people currently share) and
+does not belong inside a pass whose seed cohort is measuring people.

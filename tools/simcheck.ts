@@ -19,6 +19,8 @@ import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
 import { isTrap } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
+import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
+import { PathStatus } from '../src/sim/core/Pathfinder.ts';
 
 // ---------------------------------------------------------------------------
 // Scenarios
@@ -395,6 +397,8 @@ export interface Report {
   wildlife: WildlifeWatch;
   jobs: JobWatch;
   stall: StallWatch;
+  /** The one number `Telemetry.max` tracks rather than sums; see its own note. */
+  travel: { worstExpanded: number };
   checks: Check[];
 }
 
@@ -467,6 +471,50 @@ function sample(sim: Simulation): Sample {
 // ---------------------------------------------------------------------------
 // Checks — each encodes an expectation from the design
 // ---------------------------------------------------------------------------
+
+/**
+ * Everybody alive who cannot actually route to the nearest water or the
+ * nearest food in their own region, even though `World.region` says they
+ * should be able to. Exported (rather than inlined in `buildChecks`) so
+ * `pathfinder.test.ts` can mutation-test it directly: paint a ring of
+ * `walkable = 0` around a person and confirm this reports them stranded.
+ *
+ * `AlreadyThere` counts as reached, not stranded — the nearest match can
+ * truncate to the tile a person is already standing on. The search budget is
+ * `width * height` rather than `DEFAULT_MAX_EXPANSIONS`: the nearest water or
+ * food in a large, sparse region can be a genuinely long walk, and a health
+ * check can afford to spend more than a per-tick gameplay budget to confirm
+ * it is at least reachable.
+ */
+export function strandedPeople(
+  sim: Simulation
+): { checked: number; strandedFromWater: number; strandedFromFood: number } {
+  const reach = Math.hypot(sim.world.width, sim.world.height);
+  const exhaustive = sim.world.width * sim.world.height;
+  const reached = (status: PathStatus) =>
+    status === PathStatus.Found || status === PathStatus.AlreadyThere;
+
+  let checked = 0;
+  let strandedFromWater = 0;
+  let strandedFromFood = 0;
+
+  for (const person of sim.livingPeople()) {
+    checked++;
+    const water = sim.shoreHash.findNearest(person.x, person.y, reach,
+      tile => sim.world.sameRegion(person.x, person.y, tile.x, tile.y));
+    if (water && !reached(sim.pathfinder.find(person.x, person.y, water.x, water.y, exhaustive))) {
+      strandedFromWater++;
+    }
+    const food = sim.nodeHash.findNearest(person.x, person.y, reach,
+      node => isFoodKind(node) && !node.depleted &&
+        sim.world.sameRegion(person.x, person.y, node.x, node.y));
+    if (food && !reached(sim.pathfinder.find(person.x, person.y, food.x, food.y, exhaustive))) {
+      strandedFromFood++;
+    }
+  }
+
+  return { checked, strandedFromWater, strandedFromFood };
+}
 
 function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'checks'>): Check[] {
   const checks: Check[] = [];
@@ -544,6 +592,100 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       (tel.gave_up_walking ?? 0) + ' gave up walking, ' +
       (tel.gave_up_under_orders ?? 0) + ' of those under order'
   );
+
+  // Deterministic sampling — no RNG draw, so a check never touches a stream
+  // the simulation shares. Two coprime-with-the-map strides through the tile
+  // array in lockstep visit 200 pairs spread across the whole region rather
+  // than clustered near tile 0, the way a single small stride would.
+  //
+  // This check cannot fail on the pre-M7 build, because its subject —
+  // `Pathfinder` — does not exist there at all. Verified by mutation instead,
+  // each named here so a future reader can reproduce it: drop
+  // `maxExpansions` to 50 and pairs on the far side of the map start
+  // returning `GaveUp`; delete the corner rule's two `isWalkable` guards and
+  // the diagonal-water unit test in `pathfinder.test.ts` fails outright;
+  // delete the region pre-check and `path_no_route` goes non-zero while
+  // worst-case expansions jump from tens to five figures, because a
+  // cross-region query now explores the entire reachable landmass before
+  // admitting defeat instead of being refused before the heap is touched.
+  {
+    const width = sim.world.width;
+    const height = sim.world.height;
+    const n = width * height;
+    const region = sim.world.largestRegion();
+    // Both prime, both far smaller than any map this project generates, so
+    // striding by them visits a great many distinct tiles before repeating.
+    const STRIDE_A = 104729;
+    const STRIDE_B = 92821;
+    const SAMPLE_TARGET = 200;
+    const MAX_ATTEMPTS = n * 2;
+    // DEFAULT_MAX_EXPANSIONS is tuned for a real errand, always local; this
+    // check samples arbitrary pairs across the whole region, some of them
+    // opposite corners of the map, and a real long-distance route through
+    // 40%-unwalkable terrain can legitimately need more than that to find. A
+    // check can afford to spend what a per-tick gameplay budget cannot — `n`
+    // is enough for any query this graph can pose, since the region
+    // pre-check already guarantees a route exists.
+    const EXHAUSTIVE = n;
+
+    let sampled = 0;
+    let allFound = true;
+    let sumExpanded = 0;
+    let worstExpanded = 0;
+
+    for (let i = 0; sampled < SAMPLE_TARGET && i < MAX_ATTEMPTS; i++) {
+      const aIndex = (i * STRIDE_A) % n;
+      const bIndex = (i * STRIDE_B + 1) % n;
+      const ax = aIndex % width;
+      const ay = (aIndex - ax) / width;
+      const bx = bIndex % width;
+      const by = (bIndex - bx) / width;
+      if (ax === bx && ay === by) continue;
+      if (sim.world.regionAt(ax, ay) !== region || sim.world.regionAt(bx, by) !== region) continue;
+
+      sampled++;
+      if (sim.pathfinder.find(ax, ay, bx, by, EXHAUSTIVE) !== PathStatus.Found) allFound = false;
+      sumExpanded += sim.pathfinder.lastExpanded;
+      if (sim.pathfinder.lastExpanded > worstExpanded) worstExpanded = sim.pathfinder.lastExpanded;
+    }
+
+    if (sampled === 0) {
+      skip('paths-are-found', 'no region large enough to sample tile pairs from');
+    } else {
+      const meanExpanded = sumExpanded / sampled;
+      const gaveUpInPlay = tel.path_gave_up ?? 0;
+      add(
+        'paths-are-found',
+        allFound && gaveUpInPlay === 0,
+        sampled + ' pairs sampled on the largest region' +
+          (allFound ? ', every one found' : ', NOT EVERY ONE FOUND') +
+          ' — mean ' + meanExpanded.toFixed(1) + ' / worst ' + worstExpanded + ' expansions; ' +
+          gaveUpInPlay + ' gave up mid-play'
+      );
+    }
+  }
+
+  // Turns the region oracle's promise into an assertion: everybody alive can
+  // actually route to the nearest water and the nearest food in their own
+  // region, via the same `sameRegion`-filtered nearest search `Brain.findWater`
+  // and `Brain.findNode` use. Passes today by construction — nothing here
+  // mutates `walkable` after a world is generated — and is the gate for the
+  // day walls, digging or mining can strand somebody. Mutation-verified by
+  // `pathfinder.test.ts`'s "walled in" case, which paints a ring of
+  // `walkable = 0` around a person and confirms this reports it stranded.
+  {
+    const result = strandedPeople(sim);
+    if (result.checked === 0) {
+      skip('nobody-walled-in', 'nobody alive to check');
+    } else {
+      add(
+        'nobody-walled-in',
+        result.strandedFromWater === 0 && result.strandedFromFood === 0,
+        result.checked + ' checked; ' + result.strandedFromWater + ' cut off from water, ' +
+          result.strandedFromFood + ' cut off from food in their own region'
+      );
+    }
+  }
 
   // `weapons-are-made-and-used` was written here and **deliberately not kept**,
   // for the reason the comment beside `prototypes-can-fail` gives further down.
@@ -1749,7 +1891,8 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   // See `StallWatch`. Position and action from the previous step, and how many
   // consecutive steps have gone by without either changing while under order.
   const stall: StallWatch = { stalledPeople: 0 };
-  const stallState = new Map<number, { x: number; y: number; action: string; ticks: number }>();
+  const stallState =
+    new Map<number, { x: number; y: number; action: string; workedTicks: number; ticks: number }>();
 
   const started = Date.now();
   for (let i = 1; i <= steps; i++) {
@@ -1790,16 +1933,27 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
 
       // Stalled: under an order, mid-action rather than walking there
       // (`actionTimer === 0` means no committed action is under way), and
-      // neither position nor action moved since the last step.
+      // neither position, action, nor `workedTicks` moved since the last
+      // step. `workedTicks` matters alongside position: `doBuild` tracks its
+      // progress on the site rather than on a timer, so a person can stand
+      // at the same spot doing the same `build` action, genuinely working,
+      // for longer than a day on a big structure — indistinguishable from a
+      // freeze by position and action alone. `workedTicks` climbing is what
+      // tells the two apart without this watch needing to know anything
+      // about buildings specifically.
       if (person.order !== null && person.actionTimer === 0) {
         const was = stallState.get(person.id);
         const moved = was ? Math.hypot(person.x - was.x, person.y - was.y) : Infinity;
-        const ticks = was && moved <= 0.05 && was.action === person.action ? was.ticks + 1 : 0;
+        const workedMore = was ? person.workedTicks > was.workedTicks : true;
+        const ticks =
+          was && moved <= 0.05 && was.action === person.action && !workedMore ? was.ticks + 1 : 0;
         if (ticks >= sim.config.time.ticksPerDay) {
           stall.stalledPeople++;
-          stallState.set(person.id, { x: person.x, y: person.y, action: person.action, ticks: 0 });
+          stallState.set(person.id,
+            { x: person.x, y: person.y, action: person.action, workedTicks: person.workedTicks, ticks: 0 });
         } else {
-          stallState.set(person.id, { x: person.x, y: person.y, action: person.action, ticks });
+          stallState.set(person.id,
+            { x: person.x, y: person.y, action: person.action, workedTicks: person.workedTicks, ticks });
         }
       } else {
         stallState.delete(person.id);
@@ -1862,6 +2016,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     stepsPerSecond: Math.round((sim.time.tick / wallClockMs) * 1000),
     samples,
     telemetry: telemetry.snapshot(),
+    travel: { worstExpanded: telemetry.maxSnapshot().path_worst_expanded ?? 0 },
     actionTotals,
     biomes: sim.world.countBiomes(),
     spatial: sim.peopleHash.stats(),
@@ -1976,6 +2131,29 @@ export function formatReport(r: Report): string {
 
   lines.push('TERRAIN');
   lines.push('  ' + Object.entries(r.biomes).map(([k, v]) => k + '=' + v).join('  '));
+  lines.push('');
+
+  // AGENTS.md: chase the report, not the check. The expansions figure here is
+  // what will explain a steps/s move before `perf-budget` ever notices one.
+  lines.push('TRAVEL');
+  {
+    const found = r.telemetry.path_found ?? 0;
+    const noRoute = r.telemetry.path_no_route ?? 0;
+    const gaveUp = r.telemetry.path_gave_up ?? 0;
+    const searches = found + noRoute + gaveUp;
+    const meanExpanded = searches > 0 ? (r.telemetry.path_expanded ?? 0) / searches : 0;
+    const per1000 = r.stepsSimulated > 0 ? (searches / r.stepsSimulated) * 1000 : 0;
+    lines.push(
+      '  ' + found + ' routes found  ·  ' +
+      meanExpanded.toFixed(1) + ' mean / ' + r.travel.worstExpanded + ' worst expansions  ·  ' +
+      per1000.toFixed(1) + ' searches per 1,000 ticks'
+    );
+    lines.push(
+      '  route_arrived=' + (r.telemetry.route_arrived ?? 0) +
+      '  walk_blocked=' + (r.telemetry.gave_up_walking ?? 0) +
+      '  abandoned_cannot_reach=' + (r.telemetry.abandoned_cannot_reach ?? 0)
+    );
+  }
   lines.push('');
 
   lines.push('CHECKS');

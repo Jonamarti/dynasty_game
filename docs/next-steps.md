@@ -400,21 +400,65 @@ by the work that built it. It pairs with the long-standing gap below: bands have
 norms, chiefs, territory and standing with each other, and nothing organises a
 raiding party. Sabotage is what a raiding party would be *for*.
 
-## 6. M7 — A\*, walls, interiors, beds
+## 6. M7 — landed: A\* and the zombie-order fix. Still owed: walls, interiors, beds, boats, region repair
 
-`World.isWalkable` is the single chokepoint walls insert behind.
+**What landed**, in `src/sim/core/Pathfinder.ts` and the `MovementSystem`/
+`ActionSystem` rewrite around it:
 
-**This lands alone.** The greedy steerer has produced two of the worst bugs in
-this project's history, and replacing the movement system every agent uses every
-tick must not share a milestone with anything else. M6a made animals share
-`moveToward` with people, so A\* has two callers now.
+- The zombie-order bug (`giveUp` cleared the target but never `person.order`,
+  so `committed` stayed true forever and a stuck walk under a player's or a
+  chief's order froze until the person starved). `ActionSystem.travel` is now
+  the one place that decides what a blocked walk means, and `abandon` clears
+  the order along with the target.
+- `Pathfinder`: 8-connected A\* with a corner rule that keeps its reachability
+  identical to `World.region`'s 4-connected flood fill, a region pre-check
+  before the heap is ever touched, octile heuristic, zero allocation per
+  query.
+- `MovementSystem` follows the route a waypoint at a time, with a per-person
+  repath cooldown and a population-wide per-tick search budget, and one free
+  re-route before a genuinely stuck walk gives up.
+- Two health checks, `paths-are-found` and `nobody-walled-in`, and a `TRAVEL`
+  report block.
 
-Gates: `paths-are-found`, `nobody-walled-in`, `people-on-land`, `perf-budget`.
+Measured effect: `gave_up_walking` on the `band` scenario went from 119
+(zombie fix alone, no real routing) to 1 once routing landed. Across the
+`century` 20-seed cohort, mean survival went 75.4% (before M7) → 61.6%
+(zombie fix alone — real, and expected: without a real router, an abandoned
+order can immediately re-target the same unreachable spot) → **82.6%** once
+`Pathfinder` was wired in — routing does not just stop the thrashing, it
+reaches reachable places faster than greedy steering ever did. See
+`docs/changelog.md`'s M7 entries for the full numbers and the two pre-existing
+scenario quirks it turned up (`crowded`'s `perf-budget`, `century`'s
+`paths-are-found` — both are pre-existing-since-the-zombie-fix or explained by
+the search budget being tuned for a local errand, not documented as newly
+broken by this pass).
 
-**M8.2's `masonry` is what supplies its walls with a material**, and **boats are
-blocked behind it**: `World.sameRegion` forbids crossing water at all, so a
-logboat is a movement-system change and belongs here rather than in a content
-tier, however Neolithic it is.
+**Still owed**, all deferred on purpose because each would confound measuring
+the above:
+
+- **Walls, interiors, beds.** `World.isWalkable` stays the single chokepoint
+  they insert behind; `MovementSystem.needsRoute` already has the one-line
+  hook (a next waypoint that stopped being walkable) they need.
+- **Dynamic tiles and incremental region repair**, and M8.3's mining as its
+  second customer. `Pathfinder`'s region pre-check assumes `World.region` is
+  immutable, and that assumption did real work in this pass — build region
+  repair once and both digging and mining become content on top of it.
+- **Boats.** `World.sameRegion` forbids crossing water by construction; a
+  logboat changes the reachability model, not the search. **M8.2's `masonry`**
+  is what supplies walls with a material, so boats are blocked behind it too.
+- **N1's fishing spots.** `Pathfinder`'s goal-snapping (`World.findWalkableNear`
+  when the target tile itself is unwalkable) shipped and is unused today —
+  it is the cheap half of what a fishing spot standing over water will need.
+- **Terrain movement costs, animal pathing, path distance in `Brain`'s scorer**
+  (`proximityBonus` runs over every candidate for every person every five
+  ticks — a search per candidate is orders of magnitude over budget; the cheap
+  future version is a chunk-graph oracle, and `World.chunkIndex` already
+  exists with zero callers), and **any `Brain` coefficient change** (they are
+  calibrated against each other).
+- **Reviving `tracking`'s fourth spark route.** `case 'wander'` now reaches
+  `finish`, which would have started entering `'wander'` into `person.lately`
+  as a side effect; `Person.noteDid` ignores it for now. One line, on its own,
+  measured on `conceived_tracking`.
 
 ## 7. Dynamic tiles
 

@@ -72,6 +72,25 @@ changes, and patches a handful of live values otherwise. M6a folded
 one rebuild per harvest cycle (8–35 ticks), which is nothing, and it fixed a
 Kit tab that was built once and never touched again.
 
+**M7's `Pathfinder`: one path per errand, budgeted per tick.** A* is not free,
+so `MovementSystem` never runs it unconditionally — a person only asks for a
+route when `needsRoute` says the one they have is missing, stale (the goal
+moved more than two tiles) or walking into a tile that stopped being walkable,
+and even then only if their own 15-tick repath cooldown and the whole
+population's 3-searches-per-tick budget both allow it. On the `band` scenario
+(30 people) this measures 13.0 mean / 573 worst expansions per search and
+about 880 searches per 1,000 ticks, for `perf-budget` of ~3,000-3,500 steps/s
+(floor 2,000) — down from ~3,400-4,200 pre-M7, which is the price of a real
+search replacing an O(1) greedy step. `crowded` (70+ people, already the
+scenario `perf-budget`'s note above calls out) now fails the floor outright
+(~1,500-1,800 steps/s): a dense, resource-scarce population both re-plans and
+re-routes far more than the default scenario, and it is worth a look before
+the population cap or the search budget is tuned again. `century`'s very long
+runs (40,000 ticks) occasionally exhaust `DEFAULT_MAX_EXPANSIONS` (2,000, ~12%
+of a 128x128 map) on a genuinely long walk — `path_gave_up` sits at roughly
+1% of all searches there — and fall back to a direct greedy step rather than
+searching further, by design; see `docs/changelog.md`'s M7 entry.
+
 ## What is left, roughly in order of value
 
 1. **Simulation LOD.** The chunked freeze/thaw tiering the original plan
