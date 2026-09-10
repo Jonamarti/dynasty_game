@@ -118,14 +118,23 @@ export function moveToward(
   const nx = entity.x + (dx / dist) * speed;
   const ny = entity.y + (dy / dist) * speed;
 
+  // Which branch below actually ran: 0 the step the walker wanted, 1 one of
+  // the two axis fallbacks, 2 the perpendicular slide. Recorded rather than
+  // inferred because the counters at the bottom are the only way the health
+  // report can tell a walk along a shoreline from a walk across a meadow.
+  let outcome = 0;
+
   if (world.isWalkable(nx, ny)) {
     entity.x = nx;
     entity.y = ny;
   } else if (world.isWalkable(nx, entity.y)) {
     entity.x = nx;
+    outcome = 1;
   } else if (world.isWalkable(entity.x, ny)) {
     entity.y = ny;
+    outcome = 1;
   } else {
+    outcome = 2;
     // Slide along the obstacle, perpendicular to the desired heading.
     const jitter = rng.range(-0.5, 0.5);
     const sx = entity.x + (dy / dist) * speed + jitter * speed;
@@ -136,9 +145,25 @@ export function moveToward(
     }
   }
 
-  return Math.sqrt(
+  const moved = Math.sqrt(
     (entity.x - startX) * (entity.x - startX) + (entity.y - startY) * (entity.y - startY)
   );
+
+  if (outcome !== 0) {
+    telemetry.count('step_blocked');
+    if (outcome === 2) {
+      telemetry.count('step_slide');
+    } else if (moved < speed * PROGRESS_THRESHOLD) {
+      // An axis fallback that reported success while displacing nothing the
+      // stuck detector would accept. This is the same lie the file header
+      // records costing a whole population — "did a branch succeed?" instead
+      // of "did we get anywhere?" — surviving inside the branch itself, and
+      // this counter is the only thing that can say how often it happens.
+      telemetry.count('step_axis_null');
+    }
+  }
+
+  return moved;
 }
 
 export class MovementSystem {
@@ -239,6 +264,12 @@ export class MovementSystem {
     // forager fail to get home before dark.
     const speed = this.speedOf(person);
 
+    // The denominator for `walk_stuck_tick`: every tick somebody spent walking
+    // somewhere. A raw stuck count says nothing without it — a thousand stuck
+    // ticks is a catastrophe in a scenario with ten thousand walk ticks and a
+    // rounding error in one with a million.
+    telemetry.count('walk_tick');
+
     // The honest test: did we actually get anywhere?
     const progress = moveToward(person, aimX, aimY, speed, this.world, this.rng);
     if (progress >= speed * PROGRESS_THRESHOLD) {
@@ -247,6 +278,7 @@ export class MovementSystem {
       return Arrival.Moving;
     }
 
+    telemetry.count('walk_stuck_tick');
     person.stuckSteps++;
     if (person.stuckSteps > PATIENCE) {
       // Out of patience buys one free re-route before giving up outright —
@@ -314,8 +346,18 @@ export class MovementSystem {
       this.budgetTick = tick;
       this.searchesUsed = 0;
     }
-    if (tick - person.pathTick < REPATH_COOLDOWN) return;
-    if (this.searchesUsed >= MAX_PATHS_PER_TICK) return;
+    // Both refusals leave the walker greedy-steering with no route, which is
+    // indistinguishable from "no route exists" everywhere downstream. Counted
+    // apart so the report can say which of the two gates is actually binding
+    // before anybody reaches for the constants.
+    if (tick - person.pathTick < REPATH_COOLDOWN) {
+      telemetry.count('path_denied_cooldown');
+      return;
+    }
+    if (this.searchesUsed >= MAX_PATHS_PER_TICK) {
+      telemetry.count('path_denied_budget');
+      return;
+    }
 
     person.pathTick = tick;
     this.searchesUsed++;

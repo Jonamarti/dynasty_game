@@ -2153,6 +2153,26 @@ export function formatReport(r: Report): string {
       '  walk_blocked=' + (r.telemetry.gave_up_walking ?? 0) +
       '  abandoned_cannot_reach=' + (r.telemetry.abandoned_cannot_reach ?? 0)
     );
+
+    // The steering half of travel. `gave_up_walking` only counts the walks
+    // that ran all the way out of patience; these count the grinding that
+    // precedes one, which is where a shoreline bug is visible long before
+    // anybody gives up. Both are rates, because a raw count says nothing
+    // about a scenario whose length you have to look up.
+    const walkTicks = r.telemetry.walk_tick ?? 0;
+    const steps = r.telemetry.step_blocked ?? 0;
+    const stuck = r.telemetry.walk_stuck_tick ?? 0;
+    const perWalkTick = (n: number) => (walkTicks > 0 ? ((n / walkTicks) * 1000).toFixed(1) : 'n/a');
+    lines.push(
+      '  step_blocked=' + steps + ' (' + perWalkTick(steps) + ' per 1,000 walk ticks)' +
+      '  ·  axis_null=' + (r.telemetry.step_axis_null ?? 0) +
+      '  ·  slides=' + (r.telemetry.step_slide ?? 0)
+    );
+    lines.push(
+      '  stuck ticks=' + stuck + ' (' + perWalkTick(stuck) + ' per 1,000 walk ticks)' +
+      '  ·  denied: cooldown=' + (r.telemetry.path_denied_cooldown ?? 0) +
+      ' budget=' + (r.telemetry.path_denied_budget ?? 0)
+    );
   }
   lines.push('');
 

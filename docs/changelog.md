@@ -6,6 +6,53 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-10 — M7 stage C: the coastline is still sticky, and it was never the router
+
+The owner reported people still getting stuck on shoreline after stage B, with
+a screenshot: a walker halted at a sand/water seam, the dashed route running
+*exactly along the tile boundary*. Their reading — "it tries to go around an
+edge but just doesn't by a tiny amount… it should have separated a little more
+from the edge, or recalculated when it saw it was stuck" — turned out to name
+three separate defects, none of them in `Pathfinder`. Routing was fine. What
+consumed the routes was not.
+
+- **Commit 1, instrumentation only.** Six new counters and two new `TRAVEL`
+  lines, because stage B could measure whether a route was *found* and whether
+  a walk was *given up on*, and nothing in between — which is where all of this
+  lives. `moveToward` counts `step_blocked` (the step the walker actually
+  wanted, refused by terrain), `step_slide` (the perpendicular fallback), and
+  `step_axis_null` — an axis fallback that reported success while displacing
+  less than the stuck detector's own threshold. That last one is the file
+  header's lesson ("did a branch succeed?" instead of "did we get anywhere?")
+  surviving *inside* the branch, and it needed a number before it could be
+  called a bug. `advance` counts `walk_tick` and `walk_stuck_tick`;
+  `requestRoute` counts `path_denied_cooldown` and `path_denied_budget`
+  separately, since both leave a walker greedy-steering and are
+  indistinguishable everywhere downstream. Verified bit-identical: `sim:check`
+  output diffs to the new lines and the wall-clock timing, nothing else.
+
+  The baseline, which is the finding:
+
+  | scenario | step_blocked /1k walk ticks | axis_null | slides | stuck ticks /1k | denied cooldown | denied budget |
+  |---|---|---|---|---|---|---|
+  | default  | 263.9 |  5,482 |  1,468 | 192.4 |  23,692 |   202 |
+  | coast    | 347.5 |  7,577 |  4,064 | 267.7 |  29,542 |   149 |
+  | fishers  | 316.8 | 19,533 |  2,209 | 249.5 |  56,495 |   139 |
+  | century  | 298.9 | 60,763 | 35,811 | 181.5 | 323,763 |   826 |
+  | crowded  | 305.2 | 17,178 |  6,833 | 213.1 |  73,776 | 9,733 |
+
+  Between a quarter and a third of every walking tick in the game has its
+  intended step refused by terrain, and roughly a fifth of walking ticks make
+  no progress at all — on `fishers`, four out of five blocked steps take a
+  fallback that moves the walker nowhere. `gave_up_walking` stayed at 0-4 the
+  whole time, so none of this was visible: people were not giving up, they were
+  grinding, and grinding reads on screen as being stuck. `path_denied_cooldown`
+  in the tens and hundreds of thousands is a second finding in its own right,
+  and `path_denied_budget` staying near zero everywhere but `crowded` says the
+  per-tick search budget is not the gate anybody needs to touch.
+
+---
+
 ## 2026-09-10 — M7 stage B: the zombie-order bug, and A\* to actually fix coastline traps
 
 Five commits. The owner reported two things: people getting stuck on
