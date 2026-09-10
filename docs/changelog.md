@@ -6,6 +6,75 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-10 — M9.3 stage A: the three amount prompts M9 phase 2 missed, and a store that never stored what you carried
+
+Four commits, closing the quantities work: three more transfer paths still
+moved everything unconditionally after M9 phase 2 shipped `QuantityPicker`,
+and reading `doStore` for the third of them turned up a real arithmetic bug.
+Commits 1-3 gated on `npm run sim:check` staying bit-identical to the
+documented 36-of-36-pass, 27-n/a baseline — nothing in them touches a scorer,
+only what the player is asked before a transfer happens. Commit 4 does touch
+one, and is measured accordingly.
+
+- **`drop_item` prompts, and Escape closes the new pickers.**
+  `handleItemAction`'s `drop_item` branch wrapped `sim.drop` in
+  `quantityPicker.show`, `initial` defaulting to the whole stack like `give`
+  and `store` — no change to `Simulation.drop`, which already took a count.
+  `escapeFoundSomething` had been snapshotting only `radial.isOpen` and
+  `picker.isOpen`; it now also reads `itemPicker.isOpen` and
+  `quantityPicker.isOpen`, so Escape on an amount prompt closes the prompt
+  instead of falling through to the pause menu underneath it.
+- **Pile pickup prompts.** `Simulation.takeFromPile` gained optional
+  `itemId`/`count` parameters, both omitted meaning "everything, in pile
+  order" — today's behaviour, byte-for-byte, which is what every AI caller
+  still gets. `main.ts` gained `issuePickup`, mirroring `issueTake`: a room
+  guard before either picker opens (`quantityPicker.show` refuses a `max` of
+  zero silently, and a popup that never appears is the worst outcome), then
+  straight to the amount for one stack or `itemPicker` first for several. No
+  knowledge gate — goods on the ground are visible to anyone standing over
+  them. Also fixed: the radial menu's `pickup` branch always acted for
+  `sim.player` even while commanding somebody else, because there is no
+  `pickup` verb in `ActionSystem` for a command to reach. `ActionCatalog` now
+  disables the option while commanding, with the reason spoken in the menu.
+- **The radial "Store what you carry" prompts, opt-in on a chosen item.**
+  Exactly the shape `doTake` already has: `person.targetItemId` unset means
+  "empty the pack," which is what every AI-planned trip to a granary still
+  does (`Brain.setup`'s `store` case sets only `targetBuildingId`; `BandSystem`
+  commands carry `{ buildingId }` alone), so this stays bit-identical for
+  every caller that never named an item. `main.ts` gained `issueStore` beside
+  `issueTake`, same one-stack skip, same "commanding stays blind" precedent.
+  A new `store_item_gone` reason covers an order that named a stack which left
+  the pack before the walk finished. Extracted `Building.accept(from, itemId,
+  count)` so `Simulation.storeItem` and `doStore`'s new single-item branch
+  share one definition of how much fits rather than a second copy of the
+  arithmetic — `AGENTS.md`'s standing instruction to extract rather than
+  duplicate.
+- **Fixed `doStore` under-filling a store.** `store.storageFree` is derived
+  (`def.storage - store.total`), so it already reflects an earlier stack's
+  addition in the same loop; the loop's `room = store.storageFree - moved`
+  subtracted that progress a second time, so a second stack that would have
+  fit on its own saw a negative room and the loop broke out without taking
+  it. "Store what you carry" had never stored what you carry. Two characters
+  (`- moved` deleted), but it changes AI behaviour — every band's stores fill
+  more completely now — so it is its own commit rather than riding inside the
+  one above. `npm run sim:check`: `stored` 168 → 180, items in store 128 →
+  138. `npm run sim:seeds -- --seeds 20` (`century`, before → after): mean
+  survival **82.5% → 75.4%**, 326 → 311 born. That is a real move, not
+  cohort noise (`AGENTS.md`'s chaos floor is under-10-points at this sample
+  size), and it runs the wrong way for a bug fix — food that used to be
+  stranded in a walker's own pack, still eatable on the spot, now more often
+  reaches a shared store a hungry person has to walk to first. Left as
+  found rather than compensated for in the same pass: the fix is correct on
+  its own terms, and tuning the food economy around it is a separate
+  decision. Worth a specific look before M7 re-baselines seeds on top of it.
+
+Verified in the browser: dropping, picking up a mixed pile, and storing from
+a full pack each open the amount prompt (single-item picks and stores skip
+straight to the slider); Escape dismisses the slider rather than the pause
+menu; a two-stack store trip that used to abandon halfway now empties the
+pack; and commanding a subordinate onto a pile offers "Pick up" greyed out
+with "You cannot order somebody else to pick that up."
+
 ## 2026-09-10 — M9 phase 2: quantities, recipients, and a `give_item` refusal that reached nobody
 
 Second code of M9. Note 9 and the `give_item` defect from the triage, both
