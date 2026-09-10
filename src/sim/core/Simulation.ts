@@ -1000,11 +1000,8 @@ export class Simulation {
    * less, in M9 phase 2, not this method.
    */
   storeItem(person: Person, store: Building, itemId: string, count = person.inventory.count(itemId)): number {
-    const room = store.storageFree;
-    if (room <= 0) return 0;
-    const moved = person.inventory.remove(itemId, Math.min(room, count, person.inventory.count(itemId)));
+    const moved = store.accept(person.inventory, itemId, count);
     if (moved === 0) return 0;
-    store.store.add(itemId, moved);
     telemetry.count('stored', moved);
     return moved;
   }

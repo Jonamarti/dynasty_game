@@ -402,6 +402,22 @@ export class Building {
     return Math.max(0, this.def.storage - this.store.total);
   }
 
+  /**
+   * Moves as much of one stack from `from` into the store as fits. Returns how
+   * much moved.
+   *
+   * Shared by `Simulation.storeItem` and `doStore`'s single-item branch in
+   * `ActionSystem`, so there is one definition of how much fits rather than a
+   * second copy of this arithmetic.
+   */
+  accept(from: Inventory, itemId: string, count: number): number {
+    const room = this.storageFree;
+    if (room <= 0) return 0;
+    const moved = from.remove(itemId, Math.min(room, count, from.count(itemId)));
+    if (moved > 0) this.store.add(itemId, moved);
+    return moved;
+  }
+
   /** Adds work. Returns true if this was the moment it was finished. */
   addWork(amount: number): boolean {
     if (this.complete || !this.materialsReady) return false;

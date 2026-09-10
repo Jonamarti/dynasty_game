@@ -891,6 +891,29 @@ export class ActionSystem {
       return;
     }
 
+    // A player order that named a specific item takes precedence — M9.3, the
+    // same opt-in `doTake` already honours. No AI caller ever sets
+    // `targetItemId` for `store` (`Brain.setup`'s `store` case sets only
+    // `targetBuildingId`, and `BandSystem` commands carry `{ buildingId }`
+    // alone), so this branch is reached only from a player's choice in the
+    // radial menu; every AI-planned trip to the store still empties the pack.
+    const requested = person.targetItemId;
+    if (requested !== null) {
+      if (person.inventory.count(requested) === 0) {
+        this.abandon(person, 'store_item_gone', ctx);
+        return;
+      }
+      const amount = person.targetItemCount ?? person.inventory.count(requested);
+      const moved = store.accept(person.inventory, requested, amount);
+      if (moved === 0) {
+        this.abandon(person, 'store_full', ctx);
+        return;
+      }
+      telemetry.count('stored', moved);
+      this.finish(person);
+      return;
+    }
+
     let moved = 0;
     for (const [itemId, count] of person.inventory.entries()) {
       const room = store.storageFree - moved;

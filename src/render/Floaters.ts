@@ -228,6 +228,10 @@ export const STOP_REASONS: Record<string, string> = {
   // `store_empty`, which means the whole store was bare: this store may still
   // hold plenty of everything else.
   take_item_gone: 'it was gone by the time they got there',
+  // The same story as `take_item_gone`, from the other end of the trip: what
+  // was chosen to store left the pack — given away, dropped, eaten — before
+  // they reached the store.
+  store_item_gone: 'they no longer had it to store',
   nothing_to_give: 'they had nothing to give',
   nothing_to_steal: 'there was nothing to take',
   dont_know_how: 'they do not know how',

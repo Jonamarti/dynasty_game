@@ -1110,6 +1110,11 @@ function issue(
     issueTake(actor, target.building, screenX, screenY);
     return;
   }
+  if (actionId === 'store' && target.building &&
+      !(commanding && commanding.alive && commanding.id !== actor.id)) {
+    issueStore(actor, target.building, screenX, screenY);
+    return;
+  }
 
   // Built once and used by both branches below. It used to be written out
   // twice, identically, which is precisely how the second copy comes to be
@@ -1201,6 +1206,58 @@ function issueTake(actor: Person, store: Building, screenX: number, screenY: num
     orderTake(actor, store, undefined, undefined);
     return;
   }
+  if (contents.length === 1) {
+    askAmount(contents[0]![0]);
+    return;
+  }
+
+  const entries: PickerEntry<string>[] = contents.map(([id, n]) => ({
+    target: id,
+    icon: '\u{1F4E6}',
+    label: (ITEMS[id]?.label ?? id) + ' ×' + n,
+  }));
+  itemPicker.show(screenX, screenY, entries, askAmount, () => {});
+}
+
+/** Issues a `store` order, reporting the outcome the same way `issue` does. */
+function orderStore(
+  actor: Person, store: Building, itemId: string | undefined, count: number | undefined
+): void {
+  const ok = sim.order(actor, 'store', { buildingId: store.id, itemId, count });
+  const reason = sim.lastRefusal;
+  sim.lastRefusal = null;
+  renderer.floaters.push(actor.x, actor.y,
+    ok ? actionLabel('store') : (reason ?? 'cannot do that'),
+    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
+}
+
+/**
+ * "Store what you carry", turned into a choice of item and amount, mirroring
+ * `issueTake`.
+ *
+ * No knowledge gate — the player is choosing from their own pack, not reading
+ * a stranger's store. Skips the picker at one stack, the same precedent
+ * `issueTake` follows.
+ *
+ * Only reached for the player's own character; commanding somebody else at a
+ * store is left blind, the way `issueTake` already is, down the existing
+ * `sim.command` path in `issue`.
+ */
+function issueStore(actor: Person, store: Building, screenX: number, screenY: number): void {
+  const contents = actor.inventory.entries();
+  if (contents.length === 0) {
+    // Unreachable in practice — the menu option is disabled while the pack is
+    // empty — but a refusal always says why rather than doing nothing at all.
+    orderStore(actor, store, undefined, undefined);
+    return;
+  }
+
+  const askAmount = (itemId: string) => {
+    const max = actor.inventory.count(itemId);
+    quantityPicker.show(screenX, screenY, 'Store ' + (ITEMS[itemId]?.label ?? itemId).toLowerCase(),
+      max, count => orderStore(actor, store, itemId, count));
+  };
+
   if (contents.length === 1) {
     askAmount(contents[0]![0]);
     return;
