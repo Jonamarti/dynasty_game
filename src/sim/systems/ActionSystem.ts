@@ -916,7 +916,7 @@ export class ActionSystem {
 
     let moved = 0;
     for (const [itemId, count] of person.inventory.entries()) {
-      const room = store.storageFree - moved;
+      const room = store.storageFree;
       if (room <= 0) break;
       const taken = person.inventory.remove(itemId, Math.min(count, room));
       store.store.add(itemId, taken);
