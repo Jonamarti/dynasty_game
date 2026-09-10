@@ -1073,6 +1073,10 @@ test('dropping puts goods on the ground where they can be picked up', async ({ p
   await page.locator('.hud-tab', { hasText: 'Kit' }).click();
   await page.locator('.hud-verb', { hasText: 'Drop' }).first().click();
 
+  // Drop now asks how many before it moves anything; confirm the default,
+  // which is the whole stack.
+  await page.locator('.quantity-picker-confirm').click();
+
   // The goods left the pack and exist in the world rather than being deleted.
   const state = await page.evaluate(() => {
     const d = (window as never as {

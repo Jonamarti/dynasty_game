@@ -200,7 +200,8 @@ const tribeGraph = new TribeGraphOverlay(document.body);
 let escapeFoundSomething = false;
 window.addEventListener('keydown', event => {
   if (event.key !== 'Escape') return;
-  escapeFoundSomething = radial.isOpen || picker.isOpen || graphOpen();
+  escapeFoundSomething = radial.isOpen || picker.isOpen || itemPicker.isOpen ||
+    quantityPicker.isOpen || graphOpen();
 }, true);
 
 /** True while any of the three full-screen graphs is open. */
@@ -411,8 +412,11 @@ function handleItemAction(
       break;
     }
     case 'drop_item': {
-      const dropped = sim.drop(person, itemId, person.inventory.count(itemId));
-      say(dropped ? 'dropped ' + itemId : 'nothing to drop', dropped !== null);
+      quantityPicker.show(screenX, screenY, 'Drop ' + label.toLowerCase(),
+        person.inventory.count(itemId), count => {
+          const dropped = sim.drop(person, itemId, count);
+          say(dropped ? 'dropped ' + itemId : 'nothing to drop', dropped !== null);
+        });
       break;
     }
     case 'give_item': {
