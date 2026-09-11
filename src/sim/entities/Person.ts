@@ -26,6 +26,26 @@ export const SKILLS = [
 ] as const;
 export type Skill = (typeof SKILLS)[number];
 
+/** Where each skill sits in `Person.alongside`. Built once, read per practice. */
+export const SKILL_INDEX: Record<Skill, number> =
+  Object.fromEntries(SKILLS.map((skill, i) => [skill, i])) as Record<Skill, number>;
+
+/**
+ * How much faster a good pair of hands nearby makes the learning, at most.
+ *
+ * O3: the owner's note was that working alongside somebody should teach you
+ * faster, and `practice` is the single seam every skill gain in the game passes
+ * through — so this is one multiplier here rather than twenty at the call
+ * sites.
+ *
+ * Scaled by the *gap* to the best worker nearby, which is the caution
+ * `next-steps.md` §O3 records: scaled by their level alone, a crowd of novices
+ * would teach itself expertise. A master beside a beginner is worth half again
+ * as much as working alone, and two equals are worth nothing extra to each
+ * other, which is right — you learn from somebody who is better than you.
+ */
+const ALONGSIDE_LEARN = 0.5;
+
 /**
  * Seven heritable personality axes, each in [0, 1]. They weight the utility
  * scorer, so a greedy, low-loyalty person genuinely prefers stealing to asking.
@@ -651,6 +671,19 @@ export class Person {
     return this.ideas.find(idea => idea.tech === tech) ?? null;
   }
 
+  /**
+   * The best skill of anybody working within arm's reach, as of the last pass
+   * of `SocialSystem.workingAlongside`. Zeroed when nobody is.
+   *
+   * A flat array rather than a record because it is written for every working
+   * person several times a day and read on every skill gain, and because a
+   * record of twelve keys per person is twelve times the allocation for the
+   * same twelve numbers. Up to forty ticks stale, which is the same staleness
+   * the pass that fills it already accepts: who is standing next to whom
+   * changes over hours, not ticks.
+   */
+  readonly alongside = new Float32Array(SKILLS.length);
+
   /** Practice. Gains shrink as the skill rises, so early progress feels fast. */
   practice(skill: Skill, amount = 1): void {
     const level = this.skills[skill];
@@ -667,8 +700,16 @@ export class Person {
     // other, and one lucky roll at birth should not produce somebody the rest
     // of the band can never catch.
     const wit = 1 + this.traits.intelligence * 0.25;
+    // And so does somebody better than you working beside them. A bonus only
+    // and never a penalty, for the same reason `wit` is one: skill gain is
+    // concave, so a multiplier centred on 1 takes more from the people it
+    // damps than it gives the people it lifts, average skill across the band
+    // falls, and skill is what forage yields are scaled by. Working alone is
+    // the baseline; company is the bonus.
+    const gap = this.alongside[SKILL_INDEX[skill]]! - level;
+    const shown = gap > 0 ? 1 + (gap / 100) * ALONGSIDE_LEARN : 1;
     this.skills[skill] =
-      Math.min(100, level + amount * wit * this.skillGain * (1 - level / 110));
+      Math.min(100, level + amount * wit * shown * this.skillGain * (1 - level / 110));
   }
 
   /** Skill as a multiplier, floored so a novice is slow rather than useless. */

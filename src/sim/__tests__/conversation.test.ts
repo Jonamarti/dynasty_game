@@ -13,7 +13,7 @@ import {
 } from '../social/Conversation.ts';
 import { SocialSystem } from '../social/SocialSystem.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
-import { Person } from '../entities/Person.ts';
+import { Person, SKILL_INDEX } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 
 function edge(familiarity: number, lastContact: number) {
@@ -189,5 +189,48 @@ describe('a night under one roof', () => {
     // warmth out of the one night.
     expect(crowded).toBeGreaterThan(alone);
     expect(crowded).toBeLessThanOrEqual(alone * 3 + 1e-9);
+  });
+});
+
+describe('learning from the best hand nearby', () => {
+  function worker(skill: number): Person {
+    const made = new Person('Hand', 4, 4, 0, new RNG('alongside-' + skill));
+    made.skills.knap = skill;
+    // Held level so that the only difference between the cases below is who is
+    // standing next to them.
+    made.traits.intelligence = 0.5;
+    return made;
+  }
+
+  it('gains faster beside somebody better', () => {
+    const alone = worker(10);
+    const taught = worker(10);
+    taught.alongside[SKILL_INDEX.knap] = 90;
+
+    alone.practice('knap', 1);
+    taught.practice('knap', 1);
+    expect(taught.skills.knap).toBeGreaterThan(alone.skills.knap);
+  });
+
+  it('gains nothing extra beside an equal', () => {
+    // The caution in `next-steps.md` §O3: scaled by the neighbour's level
+    // alone, a crowd of novices would teach itself expertise.
+    const alone = worker(40);
+    const paired = worker(40);
+    paired.alongside[SKILL_INDEX.knap] = 40;
+
+    alone.practice('knap', 1);
+    paired.practice('knap', 1);
+    expect(paired.skills.knap).toBeCloseTo(alone.skills.knap);
+  });
+
+  it('is never a penalty beside somebody worse', () => {
+    const alone = worker(60);
+    const paired = worker(60);
+    paired.alongside[SKILL_INDEX.knap] = 5;
+
+    alone.practice('knap', 1);
+    paired.practice('knap', 1);
+    expect(paired.skills.knap).toBeCloseTo(alone.skills.knap);
   });
 });

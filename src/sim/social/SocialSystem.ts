@@ -16,7 +16,7 @@
  * locally, from what they saw and what they were told — which is why it can be
  * wrong, and why moving somewhere new genuinely works.
  */
-import type { Person } from '../entities/Person.ts';
+import { SKILLS, type Person } from '../entities/Person.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { RelationshipGraph } from './Relationships.ts';
 import type { EventType, Norms, SocialEvent } from './Events.ts';
@@ -365,6 +365,10 @@ export class SocialSystem {
    */
   workingAlongside(people: Person[], peopleHash: SpatialHash<Person>, tick: number): void {
     for (const person of people) {
+      // Cleared for everybody, not only for workers: somebody who has stopped
+      // working has stopped learning from whoever they were standing next to,
+      // and a stale mentor would go on teaching them from across the island.
+      person.alongside.fill(0);
       if (!person.alive || !WORK_ACTIONS.has(person.action)) continue;
       let alongside = 0;
       // Into the same array every time. `queryRadius` takes one for exactly
@@ -376,6 +380,13 @@ export class SocialSystem {
         if (!other.alive || other.id === person.id) continue;
         if (!WORK_ACTIONS.has(other.action)) continue;
         alongside++;
+        // O3: the best hand nearby, per skill. `practice` reads it and scales
+        // the gain by the gap, so a beginner beside a master learns faster and
+        // two equals are worth nothing extra to each other.
+        for (let i = 0; i < SKILLS.length; i++) {
+          const theirs = other.skills[SKILLS[i]!];
+          if (theirs > person.alongside[i]!) person.alongside[i] = theirs;
+        }
         if (other.id > person.id) {
           this.settle(person, other, tick, ALONGSIDE_WARMTH, 0, 0);
           telemetry.count('worked_alongside');
