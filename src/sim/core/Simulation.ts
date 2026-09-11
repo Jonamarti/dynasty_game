@@ -1158,6 +1158,35 @@ export class Simulation {
     telemetry.count(ok ? 'order_resumed' : 'resume_impossible');
   }
 
+  /**
+   * Who slept under the same roof, handed to `SocialSystem.hearth`.
+   *
+   * Called from the daily block, which runs at `tick % ticksPerDay === 0` —
+   * midnight, by `TimeManager.daylight`, which is precisely when the people
+   * who are going to sleep indoors are lying in them. That is why this is a
+   * sample of one moment rather than a tally kept through the night: a night
+   * has a middle, and it costs one pass over the population instead of a
+   * counter on every sleeping tick.
+   *
+   * The containment test is `reachBuilding`'s own, with a tile of margin.
+   * Somebody still walking to the hut has `action === 'sleep'` and
+   * `targetBuildingId` set, and has shared nothing with anybody yet.
+   */
+  private shareTheHearth(): void {
+    const byRoof = new Map<number, Person[]>();
+    for (const person of this.people) {
+      if (!person.alive || person.action !== 'sleep') continue;
+      if (person.targetBuildingId === null) continue;
+      const roof = this.buildingsById.get(person.targetBuildingId);
+      if (!roof || !roof.complete || roof.def.shelter <= 0) continue;
+      if (!roof.contains(person.x, person.y, 1)) continue;
+      const under = byRoof.get(roof.id);
+      if (under) under.push(person);
+      else byRoof.set(roof.id, [person]);
+    }
+    for (const under of byRoof.values()) this.social.hearth(under, this.time.tick);
+  }
+
   /** Takes a killed animal out of the world and its index. */
   private removeAnimal(animal: Animal): void {
     this.animalsById.delete(animal.id);
@@ -1896,6 +1925,7 @@ export class Simulation {
     // thing in the loop, and nothing in the design could tell the difference.
     if (this.time.tick % this.config.time.ticksPerDay === 0) {
       this.social.dailyUpkeep(this.people);
+      this.shareTheHearth();
       const forest = this.forestSystem.daily(this.trees, {
         world: this.world,
         rng: this.forestRng,

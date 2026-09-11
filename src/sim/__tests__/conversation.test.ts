@@ -139,3 +139,55 @@ describe('what a shared problem is worth as company', () => {
     expect(meetingOfMinds(thinker(1), 1)).toBeLessThan(1);
   });
 });
+
+describe('a night under one roof', () => {
+  function roomFor(count: number) {
+    const relationships = new RelationshipGraph();
+    const social = new SocialSystem(relationships, new Map());
+    const sleepers = Array.from({ length: count }, (_, i) =>
+      new Person('Sleeper' + i, 4, 4, 0, new RNG('hearth-' + i)));
+    for (const person of sleepers) person.needs.company = 100;
+    return { relationships, social, sleepers };
+  }
+
+  /** Everything one sleeper took from the night, across all their housemates. */
+  function gained(relationships: RelationshipGraph, who: number): number {
+    return relationships.knownBy(who)
+      .reduce((total, entry) => total + entry.relationship.familiarity, 0);
+  }
+
+  it('warms two people who share a windbreak', () => {
+    const { relationships, social, sleepers } = roomFor(2);
+    social.hearth(sleepers, 100);
+    expect(gained(relationships, sleepers[0]!.id)).toBeGreaterThan(0);
+  });
+
+  it('does nothing for somebody sleeping alone', () => {
+    const { relationships, social, sleepers } = roomFor(1);
+    social.hearth(sleepers, 100);
+    expect(relationships.knownBy(sleepers[0]!.id)).toHaveLength(0);
+  });
+
+  it('answers no loneliness at all', () => {
+    // Sleeping in company is not being in company. A band that could answer
+    // its loneliness by going to bed would stop talking to each other.
+    const { social, sleepers } = roomFor(4);
+    social.hearth(sleepers, 100);
+    expect(sleepers[0]!.needs.company).toBe(100);
+  });
+
+  it('is worth no more in a longhouse than in a hut', () => {
+    const pair = roomFor(2);
+    pair.social.hearth(pair.sleepers, 100);
+    const alone = gained(pair.relationships, pair.sleepers[0]!.id);
+
+    const hall = roomFor(13);
+    hall.social.hearth(hall.sleepers, 100);
+    const crowded = gained(hall.relationships, hall.sleepers[0]!.id);
+
+    // Twelve housemates instead of one, and at most three nights' worth of
+    // warmth out of the one night.
+    expect(crowded).toBeGreaterThan(alone);
+    expect(crowded).toBeLessThanOrEqual(alone * 3 + 1e-9);
+  });
+});

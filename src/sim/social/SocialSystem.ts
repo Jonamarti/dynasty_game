@@ -58,6 +58,19 @@ const HOUSEHOLD_BIAS = 18;
 const IN_GROUP_BIAS = 6;
 const OUT_GROUP_BIAS = -6;
 
+/**
+ * What a night under one roof is worth, and how many people it can be worth it
+ * with.
+ *
+ * Set against the conversation rungs rather than in isolation: at 2.5 a
+ * fortnight of sharing a hut carries two people from strangers to the rung
+ * where they ask what each other are like, which is about right for people who
+ * have never once sat down together, and nowhere near what a fortnight of
+ * evenings would do.
+ */
+const HEARTH_WARMTH = 2.5;
+const HEARTH_REACH = 3;
+
 /** Confidence lost each time a story is passed on. */
 const RUMOR_DECAY = 0.75;
 
@@ -293,6 +306,44 @@ export class SocialSystem {
     // without the difference ever showing up in a need.
     a.needs.company = Math.max(0, a.needs.company * (1 - reliefA));
     b.needs.company = Math.max(0, b.needs.company * (1 - reliefB));
+  }
+
+  /**
+   * A night under the same roof.
+   *
+   * Note 8, and the quietest of the four things this phase does. Every bond in
+   * the game was made by somebody deciding to make it — walking over, spending
+   * the ticks, having the conversation — and the most ordinary closeness there
+   * is came of nothing anybody decided: you sleep beside the same people every
+   * night and after a season you know them. Without it a household could share
+   * a hut for a year and remain, as far as the relationship graph was
+   * concerned, three strangers who happened to be indoors at the same time.
+   *
+   * No loneliness is answered, which is why it routes through `settle` with
+   * both reliefs at zero rather than being a fourth way to spend `company`.
+   * Sleeping in company is not the same as being in company, and a band that
+   * could answer its loneliness by going to bed would stop talking.
+   *
+   * **Capped, and the cap is the interesting part.** One night is worth the
+   * same to the two in a windbreak as to the twelve in a longhouse, so each
+   * sleeper takes at most `HEARTH_REACH` nights' worth of warmth from any one
+   * night: past that the amount per pair tapers. A longhouse should be a warm
+   * place to live, not a machine for making everybody close to everybody.
+   *
+   * Who slept where is the caller's business — this module knows about people
+   * and what they feel, and nothing about buildings.
+   */
+  hearth(sleepers: Person[], tick: number): void {
+    if (sleepers.length < 2) return;
+    const share = Math.min(1, HEARTH_REACH / (sleepers.length - 1));
+    const warmth = HEARTH_WARMTH * share;
+    for (let i = 0; i < sleepers.length; i++) {
+      for (let j = i + 1; j < sleepers.length; j++) {
+        this.settle(sleepers[i]!, sleepers[j]!, tick, warmth, 0, 0);
+      }
+    }
+    telemetry.count('shared_a_roof', sleepers.length);
+    telemetry.count('hearths');
   }
 
   /**
