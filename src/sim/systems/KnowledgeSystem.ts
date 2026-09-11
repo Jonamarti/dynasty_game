@@ -38,7 +38,7 @@ import { TECH, TECH_EFFECTS, TECHS, prerequisitesMet, type Tech } from '../knowl
 import { BUILDINGS } from '../entities/Building.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import {
-  MAX_IDEAS, sparkFires, type Idea, type Notice, type Spark,
+  MAX_IDEAS, TRIES_TO_TEST, sparkFires, type Idea, type Notice, type Spark,
 } from '../knowledge/Synthesis.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
@@ -182,6 +182,7 @@ export class KnowledgeSystem {
         this.tryObserve(person, ctx);
         continue;
       }
+      this.settleIntoPractice(person, ctx);
       this.abandonStaleIdeas(person, ctx);
       this.tryConceive(person, ctx);
       this.testPrototypes(person, ctx);
@@ -262,6 +263,57 @@ export class KnowledgeSystem {
   }
 
   /**
+   * A practice that has been used often enough to stop being an experiment.
+   *
+   * The counterpart of `ActionSystem.doPrototype`, and the reason that verb no
+   * longer has to pretend plant lore is a thing you build out of four berries.
+   * A device is tried by making one; a practice is tried by doing it, and
+   * `Person.noteDid` has been counting. At `TRIES_TO_TEST` the idea moves onto
+   * the same bench every prototype stands on and `testPrototypes` takes it
+   * from there — one lifecycle, two roads in.
+   *
+   * Announced, like every other stage change. A stage that moved silently
+   * would leave the panel saying something new with nothing to explain why.
+   */
+  private settleIntoPractice(person: Person, ctx: KnowledgeContext): void {
+    for (const idea of person.ideas) {
+      if (idea.stage !== 'researching') continue;
+      const def = TECH[idea.tech];
+      if (def.kind !== 'practice') continue;
+      // Two roads, and the owner named both: plant lore "should improve by
+      // harvesting **and** thinking about it". Half a dozen times out in the
+      // field is the fast one; thinking it all the way through to a full
+      // insight is the slow one, and it is what keeps a practice whose work
+      // is rare from being unreachable rather than merely hard.
+      //
+      // The slow road is not a consolation prize, it is the difference between
+      // this being a design and being a dead end. Measured without it,
+      // herbalism was conceived twelve times in a century-long run and tried
+      // none, because `tend` only happens when somebody is hurt and a healer
+      // is standing over them — so every one of those twelve ideas sat in one
+      // of two idea slots until it went stale.
+      const tried = idea.tries >= TRIES_TO_TEST;
+      if (!tried && idea.insight < 1) continue;
+
+      idea.stage = 'prototyped';
+      telemetry.count((tried ? 'practised_' : 'reasoned_out_') + idea.tech);
+      person.chronicle.push({
+        tick: ctx.tick,
+        ageDays: person.age,
+        text: tried
+          ? 'had been going about ' + def.label.toLowerCase() +
+            ' their own way long enough to believe in it'
+          : 'had thought ' + def.label.toLowerCase() +
+            ' through as far as thinking would take it',
+        kind: 'did',
+      });
+      ctx.onInsight(person, tried
+        ? 'has made a habit of ' + def.label.toLowerCase()
+        : 'has ' + def.label.toLowerCase() + ' worked out, in theory', 'idea');
+    }
+  }
+
+  /**
    * Giving up on an idea that has been thought all the way through and never
    * built, because whatever it needed never turned up.
    *
@@ -280,7 +332,13 @@ export class KnowledgeSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'gave up on ' + def.label.toLowerCase() + ' for want of the materials',
+        // Two different failures, and saying the wrong one is worse than
+        // saying nothing: a device was never built because the materials never
+        // turned up, and a practice was never tried because they never got
+        // round to doing the thing it was about.
+        text: def.kind === 'practice'
+          ? 'gave up on ' + def.label.toLowerCase() + ', never having put it to use'
+          : 'gave up on ' + def.label.toLowerCase() + ' for want of the materials',
         kind: 'did',
       });
       ctx.onInsight(person, 'gave up on ' + def.label.toLowerCase(), 'setback');
@@ -337,6 +395,7 @@ export class KnowledgeSystem {
       trials: 0,
       proof: 0,
       failedTests: 0,
+      tries: 0,
     };
     person.ideas.push(idea);
     telemetry.count('conceived_' + chosen.tech);

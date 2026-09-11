@@ -990,6 +990,25 @@ html, body, #app {
   background: rgba(20, 23, 30, 0.95);
   border-color: rgba(255, 255, 255, 0.12);
 }
+/* A practice is a way of doing something, not a thing you can hold, and the
+   owner asked for the two to look different. Rounded ends against the square
+   corners of a device — a shape rather than a colour, because the colours are
+   already spoken for by domain, and a shape survives the zoomed-out view where
+   a node is fourteen pixels wide.
+
+   Never applied to `is-unknown`, which is deliberately blank so the shape of
+   what is unknown shows without its content. */
+.techweb-kind {
+  margin-bottom: 4px;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.techweb-node.is-practice { border-radius: 999px; padding: 5px 10px; }
+.techweb-canvas.is-far .techweb-node.is-practice { border-radius: 50%; }
+
 .techweb-node.is-focused { outline: 1px solid var(--accent); outline-offset: 2px; }
 .techweb-node:hover { border-color: var(--accent); }
 

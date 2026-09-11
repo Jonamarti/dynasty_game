@@ -15,6 +15,9 @@ import {
   describeIngredient, satisfies, sparkFires, sparkStatus, type Notice,
 } from '../knowledge/Synthesis.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { RECIPES } from '../entities/Recipe.ts';
+import { BUILDINGS } from '../entities/Building.ts';
+import { INSCRIPTIONS } from '../entities/Inscription.ts';
 import { NEEDS } from '../entities/Person.ts';
 import { BIOMES } from '../core/World.ts';
 import { SEASONS } from '../core/TimeManager.ts';
@@ -72,17 +75,53 @@ describe('the spark table', () => {
     }
   });
 
-  it('only asks a prototype for materials the world can produce', () => {
-    // An idea whose prototype cost cannot be met is conceivable and permanently
+  it('gives every technology exactly one road past the drawing board', () => {
+    // An idea with no way out of `researching` is conceivable and permanently
     // unfinishable, which is the inert-content rule wearing a different hat.
+    //
+    // There are two roads now and a technology must take exactly one. A device
+    // is built, so its prototype has to cost materials the world can actually
+    // produce. A practice is tried by doing it, so it must cost nothing *and*
+    // name the actions that count — a practice with an empty `practisedBy` is
+    // the same permanent stall, arrived at from the other side, and it is the
+    // mistake this half of the check exists to catch.
     for (const tech of TECHS) {
-      const cost = TECH[tech].prototype;
+      const def = TECH[tech];
+      const cost = def.prototype;
+      if (def.kind === 'practice') {
+        expect(Object.keys(cost).length, tech + ' is a practice with materials')
+          .toBe(0);
+        expect(def.practisedBy?.length ?? 0, tech + ' can never be tried out')
+          .toBeGreaterThan(0);
+        continue;
+      }
+      expect(def.practisedBy, tech + ' is a device with practice actions')
+        .toBeUndefined();
       expect(Object.keys(cost).length, tech + ' costs nothing to build')
         .toBeGreaterThan(0);
       for (const [itemId, count] of Object.entries(cost)) {
         expect(Object.keys(ITEMS), tech + ' wants unknown ' + itemId).toContain(itemId);
         expect(count).toBeGreaterThan(0);
       }
+    }
+  });
+
+  it('never calls a technology a practice when it unlocks something', () => {
+    // The line between the two kinds is not a matter of taste: a device is a
+    // technology that gates a recipe, a building or a form of writing. This is
+    // that rule, enforced — a practice that quietly starts gating a recipe
+    // would leave the player with something to make and no way to be told they
+    // had made the first one.
+    const gated = new Set<string>();
+    for (const recipe of Object.values(RECIPES)) gated.add(recipe.tech);
+    for (const building of Object.values(BUILDINGS)) {
+      if (building.requiresTech) gated.add(building.requiresTech);
+    }
+    for (const form of Object.values(INSCRIPTIONS)) gated.add(form.literacy);
+
+    for (const tech of TECHS) {
+      if (TECH[tech].kind !== 'practice') continue;
+      expect(gated.has(tech), tech + ' is a practice that unlocks something').toBe(false);
     }
   });
 

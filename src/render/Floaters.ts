@@ -267,6 +267,9 @@ export const STOP_REASONS: Record<string, string> = {
   idea_moved_on: 'that idea had moved on without them',
   nothing_came_of_it: 'nothing came of it this time',
   nothing_to_build_yet: 'the idea is not ready to build',
+  // There is no first one to build: what is on their mind is a way of doing
+  // something, not a thing. It is tried by going and doing it.
+  nothing_to_build: 'that is not something you build',
   partner_ignorant: 'they know nothing about it',
   partner_unwilling: 'they would not discuss it',
   // The three ways asking to be taught can come to nothing. Kept apart because

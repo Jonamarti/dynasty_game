@@ -942,8 +942,13 @@ export class Brain {
     // synthesis maths.
     let colleague: Person | null = null;
     const idea = this.workableIdea(person);
+    // Devices only. A practice reaches the same stage by being used — see
+    // `KnowledgeSystem.settleIntoPractice` — and scoring a `prototype` for one
+    // would send somebody off to build a plant lore, which is the sentence the
+    // owner's note was about.
     const buildable = person.ideas.find(candidate =>
-      candidate.stage === 'researching' && candidate.insight >= PROTOTYPE_AT) ?? null;
+      candidate.stage === 'researching' && candidate.insight >= PROTOTYPE_AT &&
+      TECH[candidate.tech].kind === 'device') ?? null;
 
     if (comfortNow > 0.45 && idea) {
       const spare = (comfortNow - 0.45) * 2;

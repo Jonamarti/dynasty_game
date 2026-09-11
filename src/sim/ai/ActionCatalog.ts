@@ -612,8 +612,15 @@ function groundActions(
     options.push(...grouped(thinkable, 'Think about…', '\u{1F4AD}', ''));
   }
 
+  // Devices only: "Build the first plant lore" is not a thing anybody can do,
+  // and it was on this menu until the owner pointed at it. A practice at the
+  // same stage is being tried out already — it works at half strength the
+  // moment there is enough of an idea to try — so there is nothing for the
+  // menu to offer beyond the verbs that were always there.
   const buildable = actor.ideas.find(
-    candidate => candidate.stage === 'researching' && candidate.insight >= PROTOTYPE_AT
+    candidate => candidate.stage === 'researching' &&
+      candidate.insight >= PROTOTYPE_AT &&
+      TECH[candidate.tech].kind === 'device'
   );
   if (buildable) {
     const def = TECH[buildable.tech];

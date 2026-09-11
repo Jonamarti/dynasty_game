@@ -2250,10 +2250,21 @@ export class ActionSystem {
    */
   private doPrototype(person: Person, ctx: ActionContext): void {
     const idea = person.ideas.find(
-      candidate => candidate.stage === 'researching' && candidate.insight >= PROTOTYPE_AT
+      candidate => candidate.stage === 'researching' &&
+        candidate.insight >= PROTOTYPE_AT &&
+        // A practice has no first one to build — it is tried by doing the
+        // thing it is about, and `Person.noteDid` counts that. Skipped here
+        // rather than refused below, because somebody with plant lore in one
+        // hand and basketry in the other should build the basket.
+        TECH[candidate.tech].kind === 'device'
     ) ?? null;
     if (!idea) {
-      this.abandon(person, 'nothing_to_build_yet', ctx);
+      // Named apart when the reason is that the only idea they have is a
+      // practice: "the idea is not ready to build" is a lie about plant lore,
+      // and the whole of the owner's note is that the game kept telling it.
+      const practice = person.ideas.some(candidate =>
+        candidate.stage === 'researching' && TECH[candidate.tech].kind === 'practice');
+      this.abandon(person, practice ? 'nothing_to_build' : 'nothing_to_build_yet', ctx);
       return;
     }
 

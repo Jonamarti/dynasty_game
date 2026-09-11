@@ -35,7 +35,8 @@ import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { TECH, TECH_EFFECTS, prerequisitesMet, type Tech } from '../sim/knowledge/Tech.ts';
 import {
-  describeIngredient, sparkStatus, STAGE_LABELS, type Notice, type Spark,
+  describeIngredient, sparkStatus, STAGE_LABELS, PRACTICE_STAGE_LABELS,
+  PROTOTYPE_AT, TRIES_TO_TEST, type Notice, type Spark,
 } from '../sim/knowledge/Synthesis.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
 import { knowledgeOfPerson } from '../sim/social/Knowledge.ts';
@@ -401,7 +402,15 @@ export class TechWebOverlay {
         ? '<i class="techweb-scroll" title="written down somewhere">\u{1FAA8}</i>'
         : '';
 
-      return '<button class="techweb-node is-' + state +
+      // Drawn differently, which the owner asked for and which the web needs
+      // anyway: a rounded node is a way of doing something, a square-cornered
+      // one is a thing you can hold. Never on an `unknown` node — those are
+      // deliberately blank so the shape of what is unknown shows without its
+      // content, and marking them would give away which half of the tree each
+      // unreachable node belongs to.
+      const shape = state !== 'unknown' && def.kind === 'practice'
+        ? ' is-practice' : '';
+      return '<button class="techweb-node is-' + state + shape +
         (this.focused === node.tech ? ' is-focused' : '') +
         '" data-tech="' + node.tech + '"' +
         ' style="left:' + node.x.toFixed(1) + 'px;top:' + node.y.toFixed(1) +
@@ -468,7 +477,9 @@ export class TechWebOverlay {
     if (!this.focused) {
       return '<div class="techweb-hint">Hover a node. Lit is known, ringed is ' +
         'being worked on, outlined could occur to them today, faint is ' +
-        'understandable but unsuggested, and dark is out of reach.</div>';
+        'understandable but unsuggested, and dark is out of reach. ' +
+        'Rounded nodes are ways of doing things and are learned by doing them; ' +
+        'square ones are things you build.</div>';
     }
 
     const tech = this.focused;
@@ -493,6 +504,9 @@ export class TechWebOverlay {
 
     const rows: string[] = [];
     rows.push('<div class="techweb-title">' + escapeHtml(def.label) + '</div>');
+    rows.push('<div class="techweb-kind">' + (def.kind === 'practice'
+      ? 'A way of doing something — there is nothing to build'
+      : 'Something you make') + '</div>');
     rows.push('<div class="techweb-note">' + escapeHtml(def.description) + '</div>');
     rows.push('<div class="techweb-effect">' +
       escapeHtml(TECH_EFFECTS[tech].summary) + '</div>');
@@ -508,9 +522,10 @@ export class TechWebOverlay {
     // `prove` had just reset to zero under a heading that said "where it has got
     // to", and the failed-trial count was history presented as news.
     if (idea && idea.stage !== 'proven') {
+      const stages = def.kind === 'practice' ? PRACTICE_STAGE_LABELS : STAGE_LABELS;
       rows.push('<div class="techweb-section">Where it has got to</div>');
       rows.push('<div class="techweb-note">' +
-        escapeHtml(STAGE_LABELS[idea.stage]) + '</div>');
+        escapeHtml(stages[idea.stage]) + '</div>');
       rows.push('<div class="techweb-note"><i>' + escapeHtml(idea.story) + '</i></div>');
 
       if (idea.stage === 'prototyped') {
@@ -519,23 +534,39 @@ export class TechWebOverlay {
         // would sit still for days while something was actually happening.
         rows.push('<div class="techweb-bar is-proof"><i style="width:' +
           Math.round(idea.proof * 100) + '%"></i></div>');
-        rows.push('<div class="techweb-note">One has been built. ' +
+        rows.push('<div class="techweb-note">' +
+          (def.kind === 'practice'
+            ? 'They go about it this way now. '
+            : 'One has been built. ') +
           (idea.trials === 0
-            ? 'It has not been tried yet.'
+            ? 'It has not been put to the test yet.'
             : idea.trials + (idea.trials === 1 ? ' try' : ' tries') + ' so far.') +
           '</div>');
       } else {
         rows.push('<div class="techweb-bar"><i style="width:' +
           Math.round(idea.insight * 100) + '%"></i></div>');
-        // What building one would cost, and whether they can. Only worth saying
-        // while there is still a first one to build.
-        const short = Object.entries(def.prototype)
-          .filter(([itemId, count]) => subject.inventory.count(itemId) < count);
-        rows.push('<div class="techweb-note">Needs ' +
-          Object.entries(def.prototype).map(([itemId, count]) =>
-            count + ' ' + escapeHtml((ITEMS[itemId]?.label ?? itemId).toLowerCase())
-          ).join(', ') + ' to build one' +
-          (short.length === 0 ? ', and they have them.' : '.') + '</div>');
+        // What it will take to get past this stage. Two different sentences,
+        // because they are two different things: a device wants materials and
+        // an afternoon's building, and a practice wants doing — which is the
+        // whole of the owner's note, in the one panel that used to say "needs
+        // 4 berries to build one" underneath plant lore.
+        if (def.kind === 'practice') {
+          const trying = idea.insight >= PROTOTYPE_AT;
+          rows.push('<div class="techweb-note">' + (trying
+            ? 'Nothing to build: it is tried by doing it. ' +
+              Math.min(idea.tries, TRIES_TO_TEST) + ' of ' + TRIES_TO_TEST +
+              ' times so far.'
+            : 'Nothing to build — once there is enough of an idea, it is tried ' +
+              'by doing it.') + '</div>');
+        } else {
+          const short = Object.entries(def.prototype)
+            .filter(([itemId, count]) => subject.inventory.count(itemId) < count);
+          rows.push('<div class="techweb-note">Needs ' +
+            Object.entries(def.prototype).map(([itemId, count]) =>
+              count + ' ' + escapeHtml((ITEMS[itemId]?.label ?? itemId).toLowerCase())
+            ).join(', ') + ' to build one' +
+            (short.length === 0 ? ', and they have them.' : '.') + '</div>');
+        }
       }
 
       if (idea.failedTests > 0) {

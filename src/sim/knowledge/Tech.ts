@@ -42,7 +42,7 @@
  */
 import type { Person, Skill } from '../entities/Person.ts';
 import type { Spark } from './Synthesis.ts';
-import { PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
+import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
 import { ITEMS } from '../entities/Item.ts';
 
 export const TECHS = [
@@ -87,10 +87,55 @@ export const DOMAINS = [
 ] as const;
 export type Domain = (typeof DOMAINS)[number];
 
+/**
+ * What kind of thing a technology *is*, and therefore how it is arrived at.
+ *
+ * The owner's note: "All techs should be developed the same. Plant lore for
+ * example shouldn't show a 'build a plant lore', it doesn't make sense — it
+ * should improve by harvesting and thinking about it, but doesn't have a
+ * prototype to build. We should distinguish technologies that are improvements
+ * of actions from technologies that unlock objects, like baskets, that actually
+ * have prototypes."
+ *
+ * They are right, and the tell is in `TECH_EFFECTS`: half the table reads
+ * `RECIPES.spear` or `BuildingDef.requiresTech`, and the other half reads
+ * `forageYieldFactor` or `doTend`. The first half makes something you can hold;
+ * the second half makes you better at something you already do. Every node was
+ * arriving by the first route, so plant lore cost four berries and a hundred
+ * and twenty ticks of *building* a plant lore.
+ *
+ * The line is not a matter of taste. **A `device` is a technology that gates a
+ * recipe, a building or a form of writing** — nineteen of them do, and the
+ * compiler can see it. A `practice` gates nothing and changes a number instead.
+ *
+ * Both still go conceived → worked out → tried → proven, and that symmetry is
+ * the point: the same four stages, reached by the road the thing itself
+ * implies. A device is tried by building one, out of materials. A practice is
+ * tried by *doing it* — see `practisedBy` — because there is nothing to build.
+ */
+export type TechKind = 'practice' | 'device';
+
 export interface TechDef {
   id: Tech;
   label: string;
   domain: Domain;
+  /** Whether this makes a thing or makes you better at a thing. */
+  kind: TechKind;
+  /**
+   * For a `practice`, the actions that count as trying it out in earnest.
+   *
+   * Action ids as `ActionSystem` names them, matched when one *finishes* —
+   * `Person.noteDid` is the hook, which is the single place every completed
+   * action already passes through. Deliberately not derived from `skill`: the
+   * skill a technology belongs to is not the same question as what you were
+   * doing when you found it out. Nothing in the game practises the `cook`
+   * skill at all, and `ponder` practises the idea's own skill, so a
+   * skill-matched version would have counted sitting and thinking about
+   * cooking as having cooked.
+   *
+   * Empty for a device, whose trying-out is `doPrototype` and its materials.
+   */
+  practisedBy?: string[];
   /** Everything that must already be known before this can be worked out. */
   requires: Tech[];
   /**
@@ -112,6 +157,11 @@ export interface TechDef {
   /**
    * What building a first one costs. Everything named here must be something
    * the world can actually produce, or the idea stalls at `prototyped` forever.
+   *
+   * Empty for a `practice`: there is nothing to build. `doPrototype` refuses
+   * outright rather than treating an empty requirement as satisfiable, which
+   * is what it would otherwise do — vacuously, and in a hundred and twenty
+   * ticks.
    */
   prototype: Record<string, number>;
   /** How far a holder can improve the design before there is nothing left to fix. */
@@ -136,6 +186,7 @@ export interface TechDef {
 export const TECH: Record<Tech, TechDef> = {
   firemaking: {
     id: 'firemaking', label: 'Firemaking', domain: 'fire',
+    kind: 'device',
     requires: [], difficulty: 0.35, skill: 'knap',
     prototype: { sticks: 2, flint: 1 }, maxRefinement: 2,
     sparks: [
@@ -159,6 +210,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   cordage: {
     id: 'cordage', label: 'Cordage', domain: 'cloth',
+    kind: 'device',
     requires: [], difficulty: 0.3, skill: 'forage',
     prototype: { thatch: 3 }, maxRefinement: 2,
     sparks: [
@@ -173,8 +225,9 @@ export const TECH: Record<Tech, TechDef> = {
   },
   plant_lore: {
     id: 'plant_lore', label: 'Plant lore', domain: 'plants',
+    kind: 'practice', practisedBy: ['forage', 'pick'],
     requires: [], difficulty: 0.25, skill: 'forage',
-    prototype: { berries: 4 }, maxRefinement: 3,
+    prototype: {}, maxRefinement: 3,
     sparks: [
       { needs: [{ kind: 'doing', action: 'forage' }, { kind: 'feeling', need: 'hunger' }],
         weight: 1.0, story: 'went hungry in a place that looked full of food' },
@@ -189,6 +242,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   spear: {
     id: 'spear', label: 'The spear', domain: 'beasts',
+    kind: 'device',
     requires: ['hafting'], difficulty: 0.35, skill: 'knap',
     prototype: { sticks: 2, flint: 1 }, maxRefinement: 3,
     sparks: [
@@ -205,6 +259,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   bow: {
     id: 'bow', label: 'The bow', domain: 'beasts',
+    kind: 'device',
     requires: ['cordage', 'spear'], difficulty: 0.6, skill: 'hunt',
     prototype: { sticks: 3, thatch: 2 }, maxRefinement: 3,
     sparks: [
@@ -220,6 +275,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   leatherwork: {
     id: 'leatherwork', label: 'Leatherwork', domain: 'cloth',
+    kind: 'device',
     requires: ['clothing'], difficulty: 0.45, skill: 'build',
     prototype: { hide: 1, thatch: 2 }, maxRefinement: 2,
     sparks: [
@@ -241,8 +297,9 @@ export const TECH: Record<Tech, TechDef> = {
   },
   tracking: {
     id: 'tracking', label: 'Tracking', domain: 'beasts',
+    kind: 'practice', practisedBy: ['hunt'],
     requires: [], difficulty: 0.4, skill: 'track',
-    prototype: { sticks: 2 }, maxRefinement: 3,
+    prototype: {}, maxRefinement: 3,
     sparks: [
       // The ordinary route. The other three all wait on a hunt, and hunting is
       // rare enough that they fired in 1 of 20 twenty-seed-cohort worlds — see
@@ -266,8 +323,9 @@ export const TECH: Record<Tech, TechDef> = {
   },
   cooking: {
     id: 'cooking', label: 'Cooking', domain: 'fire',
+    kind: 'practice', practisedBy: ['eat'],
     requires: ['firemaking'], difficulty: 0.25, skill: 'cook',
-    prototype: { sticks: 2, meat: 1 }, maxRefinement: 3,
+    prototype: {}, maxRefinement: 3,
     sparks: [
       { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'meat' }],
         weight: 1.0, story: 'held raw meat beside a fire long enough to wonder' },
@@ -281,6 +339,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   hafting: {
     id: 'hafting', label: 'Hafting', domain: 'stone',
+    kind: 'device',
     requires: ['cordage'], difficulty: 0.45, skill: 'knap',
     prototype: { flint: 1, sticks: 1, thatch: 1 }, maxRefinement: 2,
     sparks: [
@@ -297,6 +356,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   clothing: {
     id: 'clothing', label: 'Clothing', domain: 'cloth',
+    kind: 'device',
     requires: ['cordage'], difficulty: 0.4, skill: 'forage',
     // Plaited fibre, not a fur coat. Hide is the *idea*'s strongest spark and
     // it stays one, but a kill is rare enough in this world that costing the
@@ -318,6 +378,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   pottery: {
     id: 'pottery', label: 'Pottery', domain: 'fire',
+    kind: 'device',
     requires: ['firemaking'], difficulty: 0.55, skill: 'build',
     prototype: { mud: 3, sticks: 2 }, maxRefinement: 2,
     sparks: [
@@ -334,6 +395,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   marking: {
     id: 'marking', label: 'Tallies', domain: 'cloth',
+    kind: 'device',
     requires: ['cordage'], difficulty: 0.4, skill: 'build',
     prototype: { sticks: 2 }, maxRefinement: 1,
     sparks: [
@@ -350,6 +412,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   writing: {
     id: 'writing', label: 'Writing', domain: 'stone',
+    kind: 'device',
     requires: ['marking', 'stoneworking'], difficulty: 0.75, skill: 'knap',
     prototype: { flint: 2 }, maxRefinement: 2,
     sparks: [
@@ -366,6 +429,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   clay_tablet: {
     id: 'clay_tablet', label: 'Clay tablets', domain: 'fire',
+    kind: 'device',
     requires: ['writing', 'pottery'], difficulty: 0.55, skill: 'build',
     prototype: { mud: 3 }, maxRefinement: 2,
     sparks: [
@@ -382,6 +446,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   library: {
     id: 'library', label: 'The library', domain: 'timber',
+    kind: 'device',
     requires: ['writing', 'carpentry'], difficulty: 0.7, skill: 'build',
     prototype: { wood: 3, sticks: 3 }, maxRefinement: 2,
     sparks: [
@@ -398,8 +463,9 @@ export const TECH: Record<Tech, TechDef> = {
   },
   stoneworking: {
     id: 'stoneworking', label: 'Stoneworking', domain: 'stone',
+    kind: 'practice', practisedBy: ['gather', 'craft'],
     requires: ['hafting'], difficulty: 0.5, skill: 'knap',
-    prototype: { flint: 3 }, maxRefinement: 3,
+    prototype: {}, maxRefinement: 3,
     sparks: [
       { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'holding', item: 'flint' },
                 { kind: 'doing', action: 'craft' }],
@@ -416,6 +482,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   carpentry: {
     id: 'carpentry', label: 'Carpentry', domain: 'timber',
+    kind: 'device',
     requires: ['hafting', 'stoneworking'], difficulty: 0.6, skill: 'build',
     prototype: { wood: 4, thatch: 2 }, maxRefinement: 2,
     sparks: [
@@ -441,8 +508,9 @@ export const TECH: Record<Tech, TechDef> = {
   // well".
   fishing: {
     id: 'fishing', label: 'Fishing', domain: 'water',
+    kind: 'practice', practisedBy: ['forage', 'hunt'],
     requires: ['spear'], difficulty: 0.45, skill: 'hunt',
-    prototype: { sticks: 2, flint: 1 }, maxRefinement: 3,
+    prototype: {}, maxRefinement: 3,
     sparks: [
       // The ordinary route: everybody goes to the water's edge to drink, far
       // more often than anybody hunts, so this is the route that actually
@@ -467,6 +535,7 @@ export const TECH: Record<Tech, TechDef> = {
   // story told with cordage: a woven container is what a trap *is*.
   basketry: {
     id: 'basketry', label: 'Basketry', domain: 'cloth',
+    kind: 'device',
     requires: ['cordage'], difficulty: 0.35, skill: 'build',
     prototype: { thatch: 4, sticks: 2 }, maxRefinement: 2,
     sparks: [
@@ -488,6 +557,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   netting: {
     id: 'netting', label: 'Netting', domain: 'water',
+    kind: 'device',
     requires: ['cordage', 'fishing'], difficulty: 0.45, skill: 'forage',
     prototype: { thatch: 6 }, maxRefinement: 3,
     sparks: [
@@ -505,6 +575,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   snares: {
     id: 'snares', label: 'Snares', domain: 'beasts',
+    kind: 'device',
     requires: ['cordage', 'tracking'], difficulty: 0.45, skill: 'track',
     prototype: { thatch: 3, sticks: 3 }, maxRefinement: 3,
     sparks: [
@@ -527,6 +598,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   fish_trap: {
     id: 'fish_trap', label: 'Fish trap', domain: 'water',
+    kind: 'device',
     requires: ['netting', 'basketry'], difficulty: 0.5, skill: 'forage',
     prototype: { thatch: 6, sticks: 4 }, maxRefinement: 3,
     sparks: [
@@ -551,6 +623,7 @@ export const TECH: Record<Tech, TechDef> = {
   // was never the tool.
   grinding: {
     id: 'grinding', label: 'Grinding', domain: 'plants',
+    kind: 'device',
     requires: ['stoneworking'], difficulty: 0.4, skill: 'cook',
     prototype: { flint: 2, sticks: 1 }, maxRefinement: 2,
     sparks: [
@@ -593,6 +666,7 @@ export const TECH: Record<Tech, TechDef> = {
   // could live where it was cold.
   bone_working: {
     id: 'bone_working', label: 'Bone working', domain: 'beasts',
+    kind: 'device',
     requires: ['hafting'], difficulty: 0.4, skill: 'knap',
     prototype: { flint: 1, sticks: 1 }, maxRefinement: 3,
     sparks: [
@@ -614,6 +688,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   tailoring: {
     id: 'tailoring', label: 'Tailoring', domain: 'cloth',
+    kind: 'device',
     requires: ['clothing', 'bone_working'], difficulty: 0.5, skill: 'build',
     prototype: { hide: 2, sinew: 1 }, maxRefinement: 3,
     sparks: [
@@ -632,6 +707,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   atlatl: {
     id: 'atlatl', label: 'Spear-thrower', domain: 'beasts',
+    kind: 'device',
     requires: ['spear'], difficulty: 0.45, skill: 'hunt',
     prototype: { sticks: 2, thatch: 1 }, maxRefinement: 3,
     sparks: [
@@ -650,6 +726,7 @@ export const TECH: Record<Tech, TechDef> = {
   // --- M8.1, the last four ---------------------------------------------------
   ochre: {
     id: 'ochre', label: 'Ochre', domain: 'stone',
+    kind: 'device',
     requires: ['firemaking'], difficulty: 0.3, skill: 'build',
     prototype: { mud: 2, sticks: 1 }, maxRefinement: 2,
     sparks: [
@@ -670,6 +747,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   flute: {
     id: 'flute', label: 'Flute', domain: 'beasts',
+    kind: 'device',
     requires: ['bone_working'], difficulty: 0.45, skill: 'build',
     prototype: { bone: 1, flint: 1 }, maxRefinement: 2,
     sparks: [
@@ -687,8 +765,9 @@ export const TECH: Record<Tech, TechDef> = {
   },
   herbalism: {
     id: 'herbalism', label: 'Herbalism', domain: 'plants',
+    kind: 'practice', practisedBy: ['tend'],
     requires: ['plant_lore'], difficulty: 0.45, skill: 'heal',
-    prototype: { berries: 3 }, maxRefinement: 3,
+    prototype: {}, maxRefinement: 3,
     sparks: [
       { needs: [{ kind: 'knows', tech: 'plant_lore' }, { kind: 'doing', action: 'forage' },
                 { kind: 'place', biome: 'forest' }],
@@ -705,8 +784,9 @@ export const TECH: Record<Tech, TechDef> = {
   },
   taming: {
     id: 'taming', label: 'Taming', domain: 'beasts',
+    kind: 'practice', practisedBy: ['tame'],
     requires: ['tracking'], difficulty: 0.5, skill: 'track',
-    prototype: { meat: 2 }, maxRefinement: 3,
+    prototype: {}, maxRefinement: 3,
     sparks: [
       // The historical route exactly: nobody goes out and tames a wolf, they
       // stop driving off the one that keeps coming back to the middens.
@@ -944,7 +1024,22 @@ export function techPower(person: Person, tech: Tech): number {
   // anyone to find out whether it works. A prototype nobody can use is not a
   // prototype, it is a delay.
   const idea = person.ideas.find(candidate => candidate.tech === tech);
-  return idea && idea.stage === 'prototyped' ? PROTOTYPE_POWER : 0;
+  if (!idea) return 0;
+  if (idea.stage === 'prototyped') return PROTOTYPE_POWER;
+  // A practice has nothing to build, so the moment there is enough of an idea
+  // to try is the moment it starts working — clumsily, at the same half
+  // strength a built prototype gets, and for exactly the same reason: the
+  // world has to use the thing to find out whether it is any good.
+  //
+  // Without this, two practices could never be tried at all. `tend` is offered
+  // only to somebody with `techPower('herbalism') > 0` and `tame` only with
+  // `techPower('taming') > 0`, so the one action that counts as trying each of
+  // them out was locked behind having already finished trying it out.
+  if (TECH[tech].kind === 'practice' &&
+      idea.stage === 'researching' && idea.insight >= PROTOTYPE_AT) {
+    return PROTOTYPE_POWER;
+  }
+  return 0;
 }
 
 /** Scales a bonus by how well its holder knows the technology behind it. */

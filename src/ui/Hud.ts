@@ -37,7 +37,9 @@ import {
   rememberedAbout,
 } from '../sim/social/Knowledge.ts';
 import { TECH, TECH_EFFECTS, techPower, type Tech } from '../sim/knowledge/Tech.ts';
-import { STAGE_LABELS } from '../sim/knowledge/Synthesis.ts';
+import {
+  STAGE_LABELS, PRACTICE_STAGE_LABELS, PROTOTYPE_AT, TRIES_TO_TEST,
+} from '../sim/knowledge/Synthesis.ts';
 import { missingIngredients } from '../sim/entities/Recipe.ts';
 import { itemActions } from '../sim/ai/ActionCatalog.ts';
 import { DEFAULT_CONFIG } from '../sim/core/Config.ts';
@@ -879,8 +881,9 @@ export class Hud {
       for (const idea of person.ideas) {
         const def = TECH[idea.tech];
         if (!def) continue;
+        const stages = def.kind === 'practice' ? PRACTICE_STAGE_LABELS : STAGE_LABELS;
         rows.push('<div class="hud-know">' +
-          '<b>' + escapeHtml(def.label) + ' \u2014 ' + STAGE_LABELS[idea.stage] + '</b>' +
+          '<b>' + escapeHtml(def.label) + ' \u2014 ' + stages[idea.stage] + '</b>' +
           '<span>' + escapeHtml(idea.story) + '</span>' +
           '</div>');
         // Which bar depends on what is actually standing between them and
@@ -889,7 +892,8 @@ export class Hud {
         // for days while something was happening every morning.
         if (idea.stage === 'prototyped') {
           rows.push(bar('proving', idea.proof * 100, '#7ddc96'));
-          rows.push('<div class="hud-sub">one built; ' +
+          rows.push('<div class="hud-sub">' +
+            (def.kind === 'practice' ? 'in use; ' : 'one built; ') +
             (idea.trials === 0
               ? 'not tried yet'
               : idea.trials + (idea.trials === 1 ? ' try' : ' tries') + ' so far') +
@@ -897,6 +901,16 @@ export class Hud {
         } else {
           rows.push(bar(idea.stage === 'proven' ? 'refining' : 'insight',
             idea.insight * 100, idea.stage === 'proven' ? '#7ddc96' : '#c88ad8'));
+          // A practice past the point of being worth trying is already being
+          // tried, and this is the only place that says so. Without it the
+          // panel would show an insight bar sitting still while the thing it
+          // measures had stopped being what stands in the way.
+          if (def.kind === 'practice' && idea.stage === 'researching' &&
+              idea.insight >= PROTOTYPE_AT) {
+            rows.push('<div class="hud-sub">trying it out: ' +
+              Math.min(idea.tries, TRIES_TO_TEST) + ' of ' + TRIES_TO_TEST +
+              ' times so far</div>');
+          }
         }
         if (idea.failedTests > 0) {
           rows.push('<div class="hud-sub">' + idea.failedTests +

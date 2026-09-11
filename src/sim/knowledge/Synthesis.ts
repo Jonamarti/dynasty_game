@@ -243,6 +243,18 @@ export interface Idea {
   trials: number;
   proof: number;
   failedTests: number;
+  /**
+   * For a practice, how many times it has been tried out in earnest.
+   *
+   * The counterpart of a device's `doPrototype`: plant lore is not *built*, it
+   * is taken out to the bushes and used, and this counts that. Raised by
+   * `Person.noteDid` when a finished action appears in the technology's
+   * `practisedBy`, and only while the idea is far enough along to be worth
+   * trying — sparks and half-formed hunches do not count as fieldwork.
+   *
+   * Always 0 for a device, which reaches the same stage by spending materials.
+   */
+  tries: number;
 }
 
 /**
@@ -259,6 +271,32 @@ export const STAGE_LABELS: Record<IdeaStage, string> = {
   prototyped: 'built, and being tried',
   proven: 'refining',
 };
+
+/**
+ * The same four stages, in the words a practice deserves.
+ *
+ * "Built, and being tried" is the wrong sentence about plant lore, and it was
+ * the visible half of the owner's note. A practice is not built; it is put to
+ * use until it is either borne out or quietly dropped.
+ */
+export const PRACTICE_STAGE_LABELS: Record<IdeaStage, string> = {
+  conceived: 'just an idea',
+  researching: 'working it out',
+  prototyped: 'in use, and being borne out',
+  proven: 'getting better at it',
+};
+
+/**
+ * How many times a practice has to be used in earnest before it is being
+ * tested rather than tried.
+ *
+ * Priced against a device, which costs its materials plus `PROTOTYPE_TICKS`
+ * — a hundred and twenty ticks of work, half an in-game day. Half a dozen
+ * harvests or hunts is about the same investment and reads the way the thing
+ * actually happens: you do not decide plant lore works, you notice it has
+ * been working.
+ */
+export const TRIES_TO_TEST = 6;
 
 /** Nobody dabbles at everything. Two ideas at a time, and no more. */
 export const MAX_IDEAS = 2;

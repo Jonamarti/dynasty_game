@@ -50,7 +50,7 @@ function ideaFor(tech: 'cordage' | 'firemaking', stage: Idea['stage'] = 'conceiv
   return {
     tech, stage, insight: 0, story: 'for the test',
     conceivedTick: 0, effort: 0, discussedWith: [],
-    trials: 0, proof: 0, failedTests: 0,
+    trials: 0, proof: 0, failedTests: 0, tries: 0,
   };
 }
 

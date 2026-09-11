@@ -7,8 +7,9 @@ import type { RNG } from '../core/RNG.ts';
 import { Inventory } from './Item.ts';
 import { Memory } from '../social/Memory.ts';
 import type { LifeEvent } from '../social/SocialSystem.ts';
-import { carryFactor } from '../knowledge/Tech.ts';
+import { carryFactor, TECH } from '../knowledge/Tech.ts';
 import type { Idea } from '../knowledge/Synthesis.ts';
+import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { JobId } from './Job.ts';
 
 /**
@@ -594,6 +595,22 @@ export class Person {
     // change with no business riding inside a movement fix.
     if (action === 'idle' || action === 'dead' || action === 'wander') return;
     this.lately.set(action, (this.lately.get(action) ?? 0) + 1);
+
+    // Trying a practice out. A technology that improves an action rather than
+    // producing an object has nothing to build, so this — a finished piece of
+    // the work it makes better — is its equivalent of `doPrototype`, and this
+    // is the one place every completed action already passes through.
+    //
+    // Gated on the idea being far enough along to be worth trying: a hunch
+    // about plant lore does not make every berry you pick an experiment.
+    // `KnowledgeSystem` reads the count and does the promoting, because moving
+    // a stage is worth announcing and a person has nobody to announce to.
+    for (const idea of this.ideas) {
+      if (idea.stage !== 'researching' || idea.insight < PROTOTYPE_AT) continue;
+      const def = TECH[idea.tech];
+      if (def === undefined || def.kind !== 'practice') continue;
+      if (def.practisedBy?.includes(action)) idea.tries++;
+    }
   }
 
   /** Records that something stopped them, or that they watched it happen. */
