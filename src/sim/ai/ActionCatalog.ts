@@ -177,22 +177,23 @@ export function availableActions(
     case 'person': return personActions(actor, target.person!);
     case 'node': return nodeActions(target.node!);
     case 'tree': return treeActions(target.tree!);
-    // There is no `pickup` verb in `ActionSystem`, so it cannot be ordered —
-    // commanding somebody else to pick something up is refused here, in the
-    // menu, rather than silently having the player do it themselves instead.
-    case 'pile': return [ctx.commanding ? {
-      id: 'pickup',
-      label: 'Pick up',
-      icon: '\u{1F91A}',
-      enabled: false,
-      reason: 'You cannot order somebody else to pick that up',
-    } : {
-      id: 'pickup',
-      label: 'Pick up',
-      icon: '\u{1F91A}',
-      enabled: actor.carrying < actor.carryCapacity,
-      reason: actor.carrying < actor.carryCapacity ? undefined : 'Your hands are full',
-    }];
+    // `pickup` is a verb in `ActionSystem` as of the pass that answered the
+    // owner's "to pick things up npcs must go near the object", so it can be
+    // ordered like anything else — this used to be refused here because there
+    // was no such action for a subordinate to carry out. `actor` is the
+    // subject, so the capacity asked about belongs to whoever would actually
+    // walk over and bend down.
+    case 'pile': {
+      const room = actor.carrying < actor.carryCapacity;
+      return [{
+        id: 'pickup',
+        label: 'Pick up',
+        icon: '\u{1F91A}',
+        enabled: room,
+        reason: room ? undefined
+          : ctx.commanding ? 'Their hands are full' : 'Your hands are full',
+      }];
+    }
     case 'animal': return animalActions(actor, target.animal!);
     case 'building': return buildingActions(actor, target.building!, ctx);
     case 'inscription': return recordActions(actor, target.inscription!);

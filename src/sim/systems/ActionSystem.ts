@@ -20,6 +20,7 @@ import type { SocialSystem } from '../social/SocialSystem.ts';
 import { isTrap, type Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
+import type { ItemPile } from '../entities/ItemPile.ts';
 import type { KnowledgeSystem } from './KnowledgeSystem.ts';
 import type { RelationshipGraph } from '../social/Relationships.ts';
 import type { RNG } from '../core/RNG.ts';
@@ -61,6 +62,17 @@ export interface ActionContext {
   needs: NeedsConfig;
   /** Puts goods on the ground, for yields nobody has room to carry. */
   dropAt: (x: number, y: number, itemId: string, count: number) => void;
+  pilesById: Map<number, ItemPile>;
+  /**
+   * Takes goods off a heap on the ground, as far as the carrier has room.
+   *
+   * A callback into `Simulation.takeFromPile` rather than a transfer written
+   * out here, because emptying a heap has to remove it from the world and its
+   * spatial hash, and that is the world's business rather than an action's.
+   */
+  takeFromPile: (
+    person: Person, pile: ItemPile, itemId?: string, count?: number
+  ) => number;
   /** Everything written down anywhere, so nobody cuts the same word twice. */
   recorded: ReadonlySet<string>;
   inscriptionsById: Map<number, Inscription>;
@@ -365,6 +377,7 @@ export class ActionSystem {
       case 'build': this.doBuild(person, ctx); break;
       case 'store': this.doStore(person, ctx); break;
       case 'take': this.doTake(person, ctx); break;
+      case 'pickup': this.doPickup(person, ctx); break;
       case 'shelter': this.doShelter(person, ctx); break;
       case 'sleep': this.doSleep(person, ctx); break;
       case 'talk': this.doTalk(person, ctx); break;
@@ -1003,6 +1016,70 @@ export class ActionSystem {
     // signal that the other half of the mechanism — somebody walking out to it —
     // is actually happening.
     if (isTrap(store.def)) telemetry.count('trap_emptied', taken);
+    this.finish(person);
+  }
+
+  /**
+   * Picking goods up off the ground — which means walking to them first.
+   *
+   * This used to happen on the click: `main.ts` called `Simulation.takeFromPile`
+   * straight out of the radial menu, so a player could right-click a heap
+   * across the camp and have it arrive in their pack without anybody moving.
+   * The owner reported it in one line — "to pick things up npcs must go near
+   * the object" — and the fix is not a distance check on the menu but a verb
+   * like every other: an order, a walk, and a refusal that says why if the
+   * heap is gone when they get there.
+   *
+   * Making it a verb is also what lets it be *ordered*. Until now the menu had
+   * to refuse "you cannot order somebody else to pick that up", because there
+   * was no such action for a subordinate to carry out.
+   *
+   * The chosen item and count ride on `targetItemId`/`targetItemCount`, the
+   * same pair `take` and `store` already use, so an order and the amount the
+   * player asked for travel together and survive being set aside and resumed.
+   */
+  private doPickup(person: Person, ctx: ActionContext): void {
+    // Checked before the walk as well as after it: somebody whose hands are
+    // already full should be told so where they stand, not after crossing the
+    // camp. The check after arrival is the one that matters, since a walk is
+    // long enough for a pack to fill on the way.
+    if (person.carrying >= person.carryCapacity) {
+      this.abandon(person, 'hands_full', ctx);
+      return;
+    }
+
+    const pile = person.targetPileId === null
+      ? null
+      : ctx.pilesById.get(person.targetPileId) ?? null;
+    if (!pile || pile.empty) {
+      this.abandon(person, 'goods_gone', ctx);
+      return;
+    }
+    // The heap does not move, but it can be emptied while somebody walks to
+    // it, so the aim is refreshed the way `doHunt` refreshes a quarry's — it
+    // costs nothing and keeps one rule for where a walk is headed.
+    person.targetX = pile.x;
+    person.targetY = pile.y;
+    if (!this.travel(person, ctx)) return;
+
+    const requested = person.targetItemId;
+    if (requested !== null && pile.contents.count(requested) === 0) {
+      // Somebody else took that stack while this one was walking. Kept apart
+      // from `goods_gone` for the same reason `take_item_gone` is kept apart
+      // from `store_empty`: the heap may still hold plenty of everything else.
+      this.abandon(person, 'pile_item_gone', ctx);
+      return;
+    }
+
+    const moved = ctx.takeFromPile(
+      person, pile,
+      requested ?? undefined,
+      person.targetItemCount ?? undefined);
+    if (moved === 0) {
+      this.abandon(person, 'hands_full', ctx);
+      return;
+    }
+    telemetry.count('pickup_ordered', moved);
     this.finish(person);
   }
 

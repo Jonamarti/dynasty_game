@@ -156,6 +156,7 @@ export const ACTION_LABELS: Record<string, string> = {
   attack: 'fighting',
   build: 'building',
   haul: 'hauling materials',
+  pickup: 'fetching what is on the ground',
   store: 'storing goods',
   take: 'taking from store',
   shelter: 'sheltering',
@@ -232,6 +233,12 @@ export const STOP_REASONS: Record<string, string> = {
   // `store_empty`, which means the whole store was bare: this store may still
   // hold plenty of everything else.
   take_item_gone: 'it was gone by the time they got there',
+  // The two ways a walk to a heap of dropped goods can come to nothing. The
+  // heap itself is gone — somebody else cleared it, or it rotted away — or the
+  // one stack that was asked for is, which is a different sentence because the
+  // rest of the heap may still be sitting there.
+  goods_gone: 'the goods were gone',
+  pile_item_gone: 'somebody else had taken it',
   // The same story as `take_item_gone`, from the other end of the trip: what
   // was chosen to store left the pack — given away, dropped, eaten — before
   // they reached the store.

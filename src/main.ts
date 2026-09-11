@@ -1099,7 +1099,13 @@ function issue(
     return;
   }
   if (actionId === 'pickup' && target.pile) {
-    issuePickup(actor, target.pile, screenX, screenY);
+    // The subject, not the player: what is on the ground is in plain sight of
+    // anybody, so unlike a store's contents there is nothing here the player
+    // should not be choosing from on a subordinate's behalf — but the room in
+    // the pack, and therefore the largest amount worth asking for, is the
+    // carrier's own.
+    const subject = commanding && commanding.alive ? commanding : actor;
+    issuePickup(actor, subject, target.pile, screenX, screenY);
     return;
   }
   // Choosing which item and how much, when there is a real choice to make and
@@ -1271,11 +1277,40 @@ function issueStore(actor: Person, store: Building, screenX: number, screenY: nu
   itemPicker.show(screenX, screenY, entries, askAmount, () => {});
 }
 
-/** Reports what a pickup moved, the same way `issue` reports every order. */
-function reportPickup(actor: Person, taken: number): void {
-  renderer.floaters.push(actor.x, actor.y,
-    taken > 0 ? 'picked up ' + taken : 'hands full',
-    { color: taken > 0 ? '#7ddc96' : '#e66464', boxed: true });
+/**
+ * Issues a `pickup` order, reporting the outcome the way `issue` does.
+ *
+ * An order rather than a transfer. Until the pass that answered the owner's
+ * "to pick things up npcs must go near the object", this called
+ * `Simulation.takeFromPile` on the click and the goods arrived in the pack
+ * from wherever the player was standing.
+ */
+function orderPickup(
+  leader: Person, subject: Person, pile: ItemPile,
+  itemId: string | undefined, count: number | undefined
+): void {
+  // Commanding somebody else goes down the same road every other verb does —
+  // they may refuse, in public, and the refusal has to be the subordinate's
+  // rather than a floater over the player.
+  if (subject.id !== leader.id) {
+    const subordinate = subject;
+    const obeyed = sim.command(
+      leader, subordinate, 'pickup', { pileId: pile.id, itemId, count });
+    const why = sim.lastRefusal;
+    sim.lastRefusal = null;
+    renderer.floaters.push(subordinate.x, subordinate.y,
+      obeyed ? subordinate.name + ' obeys'
+        : subordinate.name + ' refuses' + (why ? ': ' + why : ''),
+      { color: obeyed ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
+    return;
+  }
+
+  const ok = sim.order(subject, 'pickup', { pileId: pile.id, itemId, count });
+  const reason = sim.lastRefusal;
+  sim.lastRefusal = null;
+  renderer.floaters.push(subject.x, subject.y,
+    ok ? actionLabel('pickup') : (reason ?? 'cannot do that'),
+    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
 }
 
 /**
@@ -1289,23 +1324,26 @@ function reportPickup(actor: Person, taken: number): void {
  * No knowledge gate — goods on the ground are visible to anyone standing over
  * them, unlike a store's contents.
  */
-function issuePickup(actor: Person, pile: ItemPile, screenX: number, screenY: number): void {
-  if (actor.carrying >= actor.carryCapacity) {
-    reportPickup(actor, 0);
+function issuePickup(
+  leader: Person, subject: Person, pile: ItemPile, screenX: number, screenY: number
+): void {
+  if (subject.carrying >= subject.carryCapacity) {
+    renderer.floaters.push(subject.x, subject.y, 'hands full',
+      { color: '#e66464', boxed: true });
     return;
   }
 
   const askAmount = (itemId: string) => {
-    const max = Math.min(pile.contents.count(itemId), actor.carryCapacity - actor.carrying);
+    const max = Math.min(pile.contents.count(itemId), subject.carryCapacity - subject.carrying);
     quantityPicker.show(screenX, screenY, 'Pick up ' + (ITEMS[itemId]?.label ?? itemId).toLowerCase(),
-      max, count => reportPickup(actor, sim.takeFromPile(actor, pile, itemId, count)));
+      max, count => orderPickup(leader, subject, pile, itemId, count));
   };
 
   const contents = pile.contents.entries();
   if (contents.length === 0) {
     // Unreachable in practice — an empty pile removes itself — but a refusal
     // always says why rather than doing nothing at all.
-    reportPickup(actor, 0);
+    orderPickup(leader, subject, pile, undefined, undefined);
     return;
   }
   if (contents.length === 1) {

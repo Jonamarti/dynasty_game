@@ -83,6 +83,8 @@ export interface ResumedOrder {
   recipe: string | null;
   /** Which record a set-aside `read` was aimed at. */
   inscriptionId: number | null;
+  /** Which heap of goods a set-aside `pickup` was walking to. */
+  pileId: number | null;
   /** Which item and count a set-aside player-ordered `take` named. */
   itemId: string | null;
   count: number | null;
@@ -262,6 +264,17 @@ export class Person {
   targetRecipe: string | null = null;
   /** Which record a `read` is aimed at. */
   targetInscriptionId: number | null = null;
+  /**
+   * Which heap of dropped goods a `pickup` is aimed at.
+   *
+   * Picking up used to have no target at all, because it was not an action:
+   * the menu moved the goods into the pack on the click, from wherever the
+   * player happened to be standing. The owner reported the obvious
+   * consequence — "to pick things up npcs must go near the object" — and the
+   * fix was to make it a verb like every other, which means it needs a target
+   * like every other.
+   */
+  targetPileId: number | null = null;
   /**
    * Which item and how much a player-ordered `take` should withdraw.
    *
@@ -644,6 +657,7 @@ export class Person {
     this.targetAnimalId = null;
     this.targetRecipe = null;
     this.targetInscriptionId = null;
+    this.targetPileId = null;
     this.targetItemId = null;
     this.targetItemCount = null;
     this.actionTimer = 0;

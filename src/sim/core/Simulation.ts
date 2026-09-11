@@ -1095,6 +1095,7 @@ export class Simulation {
       animalId: person.targetAnimalId,
       recipe: person.targetRecipe,
       inscriptionId: person.targetInscriptionId,
+      pileId: person.targetPileId,
       itemId: person.targetItemId,
       count: person.targetItemCount,
       x: person.targetX,
@@ -1137,14 +1138,17 @@ export class Simulation {
       animalId: pending.animalId ?? undefined,
       recipeId: pending.recipe ?? undefined,
       inscriptionId: pending.inscriptionId ?? undefined,
+      pileId: pending.pileId ?? undefined,
       itemId: pending.itemId ?? undefined,
       count: pending.count ?? undefined,
       x: pending.nodeId === null && pending.treeId === null &&
         pending.buildingId === null && pending.personId === null &&
-        pending.animalId === null ? pending.x ?? undefined : undefined,
+        pending.animalId === null && pending.pileId === null
+        ? pending.x ?? undefined : undefined,
       y: pending.nodeId === null && pending.treeId === null &&
         pending.buildingId === null && pending.personId === null &&
-        pending.animalId === null ? pending.y ?? undefined : undefined,
+        pending.animalId === null && pending.pileId === null
+        ? pending.y ?? undefined : undefined,
     });
     // A refusal here is ordinary — the bush was stripped while they drank — and
     // must not surface as a refusal message the player never asked for.
@@ -1194,6 +1198,8 @@ export class Simulation {
       recipeId?: string;
       /** Which record a `read` or a half-finished `inscribe` is aimed at. */
       inscriptionId?: number;
+      /** Which heap of dropped goods a `pickup` is aimed at. */
+      pileId?: number;
       /**
        * Which item and how much a `take` should withdraw.
        *
@@ -1253,6 +1259,15 @@ export class Simulation {
       person.targetInscriptionId = record.id;
       person.targetX = record.x;
       person.targetY = record.y;
+      return true;
+    }
+
+    if (target.pileId !== undefined) {
+      const pile = this.pilesById.get(target.pileId);
+      if (!pile || pile.empty) return this.cancelOrder(person, 'those goods are gone');
+      person.targetPileId = pile.id;
+      person.targetX = pile.x;
+      person.targetY = pile.y;
       return true;
     }
 
@@ -1968,6 +1983,13 @@ export class Simulation {
       needs: this.config.needs,
       dropAt: (x: number, y: number, itemId: string, count: number) =>
         this.dropAt(x, y, itemId, count),
+      pilesById: this.pilesById,
+      // The same method the inventory panel and the radial menu call, rather
+      // than a second transfer written out inside `doPickup`: how much fits,
+      // what the telemetry says, and when an emptied heap leaves the world are
+      // one definition here, and were about to become two.
+      takeFromPile: (person: Person, pile: ItemPile, itemId?: string, count?: number) =>
+        this.takeFromPile(person, pile, itemId, count),
       recorded: this.recordsInHand,
       inscriptionsById: this.inscriptionsById,
       inscriptionAt: (x: number, y: number) => this.inscriptionAt(x, y),

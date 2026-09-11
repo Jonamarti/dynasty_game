@@ -56,6 +56,9 @@ const ORDER_COST: Record<string, number> = {
   haul: 0.15,
   store: 0.15,
   take: 0.15,
+  // Fetching a heap off the ground: the same imposition as a trip to the
+  // store, which is what it is.
+  pickup: 0.15,
   build: 0.2,
   chop: 0.28,
   craft: 0.2,
