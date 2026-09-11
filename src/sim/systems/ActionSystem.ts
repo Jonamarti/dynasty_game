@@ -607,6 +607,15 @@ export class ActionSystem {
     // Counted so the exemption is measurable rather than merely asserted: it is
     // the whole of the owner's "my people keep downing tools", and a feature the
     // health report cannot see is a feature nobody can tell has regressed.
+    // The denominator for the one above, and deliberately *outside* the
+    // `answers` guard: this counts a worker being over the hunger line at all,
+    // whether or not their job is the kind that exempts them. Without it
+    // `food-work-continues` cannot tell "the exemption is broken" from "nobody
+    // in this world ever got hungry mid-gather", and M7 stage C made the
+    // second case common by making people reach food faster.
+    if (person.needs.hunger > limits.hunger) {
+      telemetry.count('hungry_at_work_' + person.action);
+    }
     if (opts.answers !== undefined &&
       person.needs[opts.answers] > limits[opts.answers]) {
       // Keyed by the verb as well as the need. Hunting and berry-picking both

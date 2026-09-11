@@ -593,6 +593,35 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       (tel.gave_up_under_orders ?? 0) + ' of those under order'
   );
 
+  // `nobody-stalls-under-orders` above catches a walk that failed outright;
+  // this catches the thing that precedes one and used to be invisible.
+  //
+  // For the whole of M7 people spent between a fifth and a quarter of every
+  // walking tick making no real progress — 192 per 1,000 on the default
+  // scenario, 268 on `coast` — while `gave_up_walking` sat at 0 to 4, because
+  // they were not giving up, they were *grinding*, and grinding reads on
+  // screen as being stuck. That is exactly what the owner reported and nothing
+  // in the report could see it.
+  //
+  // The floor is set from the worst *fixed* scenario plus a lot of headroom:
+  // after M7 stage C every scenario in the matrix measures 0.0 to 0.2 per
+  // 1,000, so 5 is twenty-five times the worst observed and still forty times
+  // below the broken build. A number this far from both edges is a regression
+  // tripwire rather than a tuned threshold.
+  const walkTicks = tel.walk_tick ?? 0;
+  const stuckTicks = tel.walk_stuck_tick ?? 0;
+  if (walkTicks < 1000) {
+    skip('walkers-do-not-grind', 'too few walking ticks to say anything about them');
+  } else {
+    const per1000 = (stuckTicks / walkTicks) * 1000;
+    add(
+      'walkers-do-not-grind',
+      per1000 < 5,
+      stuckTicks + ' of ' + thousands(walkTicks) + ' walking ticks made no real progress (' +
+        per1000.toFixed(1) + ' per 1,000; wanted under 5)'
+    );
+  }
+
   // Deterministic sampling — no RNG draw, so a check never touches a stream
   // the simulation shares. Two coprime-with-the-map strides through the tile
   // array in lockstep visit 200 pairs spread across the whole region rather
@@ -749,8 +778,25 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // you stop being hungry, so being hungry must not stop you picking berries.
   // Counted as ticks of work that continued only because the job was answering
   // the need that would otherwise have ended it.
+  const hungryAtGather = (tel.hungry_at_work_forage ?? 0) +
+    (tel.hungry_at_work_gather ?? 0) + (tel.hungry_at_work_pick ?? 0);
   if ((tel.harvest_berries ?? 0) + (tel.picked_apple ?? 0) === 0) {
     skip('food-work-continues', 'nobody gathered any food in this run');
+  } else if (hungryAtGather === 0) {
+    // Nobody ever crossed the hunger line *while gathering*, so the exemption
+    // had nothing to override and there is nothing here to measure. Added in
+    // M7 stage C, where fixing movement made this check fail on `tiny` and
+    // `craft` by making the world healthier: mean hunger on `tiny` at step 800
+    // fell from 26.0 to 8.1 once people stopped grinding against terrain, and
+    // the pushed-on count went from 6 to 0 with it. A check that fails because
+    // the world improved reports the wrong thing.
+    //
+    // The skip is gated on `hungry_at_work_*` rather than on the pushed-on
+    // count itself, and that distinction is the whole point: deleting the
+    // exemption takes the pushed-on count to zero while leaving people just as
+    // hungry, so the mutation this check exists to catch still reaches the
+    // assertion below rather than being skipped past.
+    skip('food-work-continues', 'nobody got hungry enough mid-gather to be worth exempting');
   } else {
     const gatheredOn = (tel.pushed_on_hunger_forage ?? 0) +
       (tel.pushed_on_hunger_gather ?? 0) + (tel.pushed_on_hunger_pick ?? 0);

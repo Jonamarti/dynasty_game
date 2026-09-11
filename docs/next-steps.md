@@ -433,6 +433,43 @@ scenario quirks it turned up (`crowded`'s `perf-budget`, `century`'s
 the search budget being tuned for a local errand, not documented as newly
 broken by this pass).
 
+**M7 stage C finished the job, and the router was never the problem.** The
+owner reported people still stuck on coastline after stage B. Four separate
+defects downstream of routing turned out to be responsible, none of them in
+`Pathfinder`:
+
+- **Aim points were tile corners.** `World.index` truncates, so the float
+  point `(tx, ty)` is a tile's north-west corner. `Pathfinder` emitted integer
+  waypoints and `MovementSystem` aimed at them; `World.shoreTiles` holds
+  integer coordinates that `Brain.setup` assigns straight to `targetX` for a
+  `drink`. Every routed aim point in the game carried a half-tile north-west
+  bias, and the one errand that ends at the water's edge aimed *at* the seam.
+- **`moveToward`'s perpendicular slide was unreachable** for any axis-aligned
+  heading, because the third fallback tested the tile the walker was already
+  standing in, "succeeded", and returned first. Somebody pressed square into a
+  shoreline vibrated sub-threshold until they ran out of patience.
+- **`clearTarget()` did not reset `pathTick`,** so every new errand inherited
+  the last one's repath cooldown and walked its first five tiles with no route.
+- **`DEFAULT_MAX_EXPANSIONS` was 2,000, below the 4,218 worst case
+  `paths-are-found` itself reports.** The bail-out was cutting off legitimate
+  searches, and a search that fails leaves a walker greedy-steering into
+  terrain. It was manufacturing the stuck walkers. Raising it made the game
+  *faster*.
+
+Plus `MAX_PATHS_PER_TICK` 3 → 12, which was the last thing still making people
+grind on `crowded`. Effect across the canonical twenty-seed cohort: mean
+survival **82.6% → 99.9%**, collapses 1/20 → 0/20, infants starved 77 → 12,
+adults 91 → 17. Stuck walking ticks went from 180-270 per 1,000 to **0.0-0.2 on
+every scenario in the matrix**, and `century` passed `paths-are-found` for the
+first time. New gate: `walkers-do-not-grind`.
+
+A **clearance penalty** — routes standing off the water's edge, which the owner
+also asked for — was built, swept and deliberately **not shipped**: by the time
+the four defects above were fixed there were no stuck ticks left for it to
+prevent, and it cost 30-57% more search on the one scenario already failing
+`perf-budget`. The sweep tables are in the changelog. Worth re-reading before
+anyone proposes it again.
+
 **Still owed**, all deferred on purpose because each would confound measuring
 the above:
 

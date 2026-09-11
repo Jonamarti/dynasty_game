@@ -885,8 +885,38 @@ option is offered.
 `moveToward` directly — the same greedy primitive people used before M7, with
 none of `MovementSystem`'s stuck detector, let alone a route from
 `Pathfinder`. A tamed dog following its owner around a headland will press
-into the shoreline indefinitely, the same way a person once did. Deferred to
-a future wildlife pass with its own measurement: giving animals a path is a
-food-economy-adjacent, RNG-stream-adjacent change (`moveToward`'s jitter
-branch draws from `moveRng`, which animals and people currently share) and
-does not belong inside a pass whose seed cohort is measuring people.
+into the shoreline indefinitely, the same way a person once did.
+
+Less badly than before, though: M7 stage C's fixes to `moveToward` itself are
+shared by everything that walks. The two axis fallbacks no longer "succeed"
+while displacing nothing, and the perpendicular slide now tries both hands
+rather than one, so an animal pressed square into terrain does at least come
+off it. What animals still lack is the *route* — nothing calls `Pathfinder`
+for them, and nothing measures whether they got anywhere.
+
+Deferred to a future wildlife pass with its own measurement, because giving
+animals a path is a food-economy-adjacent change and does not belong inside a
+pass whose seed cohort is measuring people.
+
+**Correction, M7 stage C.** This entry used to add "`moveToward`'s jitter
+branch draws from `moveRng`, which animals and people currently share", and
+that is false. `Simulation.ts:271,278` hands `moveRng` to `MovementSystem`
+alone; `Simulation.ts:289,1845` hands `wildlifeRng` to `WildlifeSystem`, which
+passes `ctx.rng` at all three of its `moveToward` call sites. The two streams
+are separate, and the note mattered because it is the sentence a future reader
+would have sized the RNG risk from.
+
+### `Building` measures tiles from their centres and `World` from their corners
+
+`Building.centerX` is `this.x + width / 2 - 0.5` and `contains` tests
+`[x - 0.5, x + 0.5)`, so a building treats tile `(x, y)` as the *square
+centred on* the integer coordinate. `World.index` truncates, so everything
+else in the game treats it as the square whose north-west *corner* is that
+coordinate. The two conventions are half a tile apart, and `Renderer.ts`
+compensates with a literal `- 0.5` in two places while nothing else does.
+
+Not a live bug: every offset it produces is smaller than `ARRIVAL_RADIUS`, so
+nobody currently fails to reach a door because of it. Filed because it is the
+same class of defect M7 stage C spent a commit on at the other end — an aim
+point half a tile from where the walkability test thought it was — and the
+next person to hit it will hit it from the building side.

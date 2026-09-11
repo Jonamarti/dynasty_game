@@ -51,6 +51,77 @@ consumed the routes was not.
   and `path_denied_budget` staying near zero everywhere but `crowded` says the
   per-tick search budget is not the gate anybody needs to touch.
 
+- **Commit 7, the last thing still grinding, a gate, and the docs.** With the
+  four defects fixed, twelve of the thirteen scenarios measured 0.0 to 0.2
+  stuck walking ticks per 1,000. `crowded` measured **44.4**, and the reason
+  was in the report: `path_denied_budget` at 63,206. `MAX_PATHS_PER_TICK` was
+  3, and at 73 people the queue never cleared.
+
+  It is 12 now, and it was not even a trade:
+
+  | | stuck /1k | steps/s |
+  |---|---|---|
+  | `crowded` | 44.4 → **0.0** | 1,535 → 1,425 |
+  | `century` | 0.7 → **0.0** | 2,931 → **3,190** |
+  | `coast`   | 0.0 → 0.0 | 3,364 → **3,824** |
+  | `band`, `tiny` | 0.0 → 0.0 | unchanged |
+
+  Only `crowded` pays anything at all, and it buys the last grinding in the
+  game. Everywhere else it is free or better, for the same reason raising the
+  expansion bail-out was: a search that finds a route is cheaper than the ticks
+  of grinding it prevents. 24 was measured too and buys nothing further.
+
+  **`walkers-do-not-grind`** joins the report: stuck walking ticks as a share
+  of walking ticks, under 5 per 1,000. `nobody-stalls-under-orders` catches a
+  walk that failed outright; this catches the thing that precedes one and was
+  invisible for the whole of M7, when people spent a fifth to a quarter of
+  every walking tick making no progress while `gave_up_walking` sat at 0 to 4.
+  They were not giving up, they were grinding, and grinding reads on screen as
+  being stuck — which is exactly what the owner reported and exactly what
+  nothing in the report could see.
+
+  Mutation-verified against the real pre-pass build rather than a guess, and
+  the result is worth recording honestly: running the current check against
+  commit 1's `src/` fails on every scenario tried — `coast` 267.7, `crowded`
+  213.1, `century` 181.5 per 1,000 against a threshold of 5. But reverting
+  *only* `WAYPOINT_AIM` to 0 on the finished build still **passes** at 0.5.
+  This check does not isolate any single one of the four defects; the other
+  three cover for whichever one is broken. It is a regression tripwire for the
+  class, not a bisection tool, and it should not be mistaken for one.
+
+  `food-work-continues` gains the "premise never arose" skip
+  `the-hurt-are-tended` already had. It had started failing on `tiny` and
+  `craft` because the world got *healthier*: mean hunger on `tiny` at step 800
+  fell from 26.0 to 8.1 once people reached food instead of grinding at
+  terrain, so nobody was ever hungry enough mid-gather for the exemption to
+  have anything to override. The skip is gated on a new `hungry_at_work_*`
+  counter rather than on the pushed-on count itself, and that distinction is
+  load-bearing — deleting the exemption takes the pushed-on count to zero while
+  leaving people just as hungry, so the mutation the check exists to catch
+  still reaches the assertion instead of being skipped past. Verified: with the
+  exemption suppressed, `tiny` and `craft` both still FAIL rather than skip.
+
+  `docs/bugs.md`: the `heel` entry claimed animals and people "currently share"
+  `moveRng`. **That is false** — `Simulation.ts:271,278` gives `moveRng` to
+  `MovementSystem` alone and `:289,1845` gives `wildlifeRng` to
+  `WildlifeSystem` — and it mattered because it is the sentence a future reader
+  would size the RNG risk from. Corrected, along with a note that animals did
+  get the `moveToward` half of this pass for free. Newly filed: `Building`
+  measures tiles from their centres while `World` truncates from their corners,
+  a half-tile disagreement that `Renderer` compensates for in two places and
+  nothing else does. Not live — every offset it produces is smaller than
+  `ARRIVAL_RADIUS` — but it is the same class of defect commit 2 spent itself
+  on, approached from the building side.
+
+  Final state. Twenty seeds: **99.6% mean survival**, 0/20 collapsed, 466 born,
+  infants starved **77 → 15**, adults **91 → 15**. Stuck walking ticks: **0.0
+  on every scenario in the matrix**. Ten of thirteen scenarios fully green.
+  What remains is `crowded`'s `perf-budget`, which was failing before this pass
+  began; `century`'s `the-hurt-are-tended`, which is a knife edge at exactly
+  40,000 steps and passes at 42,000 with `tend=101`; and `harsh-winter`'s
+  `jobs-bias-work`, a ten-against-thirteen-percent margin on a chaotic
+  scenario. None of the three is a movement defect and none is new.
+
 - **Commit 6, clearance: built, measured, and not shipped.** The owner's second
   suggestion was a standoff — "it should have tried going a little more around
   the edge, separating a little more from the edge" — and it is a real gap in

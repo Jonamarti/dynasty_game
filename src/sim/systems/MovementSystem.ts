@@ -118,8 +118,21 @@ const REPATH_COOLDOWN = 15;
  * `Simulation.step` — a budget nobody outside this file has to remember to
  * reset is a budget that cannot be reset in the wrong order relative to
  * whichever person happens to ask first.
+ *
+ * It was 3, and 3 was the last thing in the game still making people grind.
+ * A denial is a queue rather than a refusal — `pathTick` is not stamped, so
+ * the walker asks again next tick — but on `crowded`'s 73 people the queue
+ * never cleared: 63,206 denials in one run, and 44.4 stuck ticks per 1,000
+ * against 0.0 on every other scenario in the matrix.
+ *
+ * Twelve takes that to **0.0**, and it is not even a trade. Measured:
+ * `crowded` 44.4 -> 0.0 stuck per 1,000 for 1,535 -> 1,425 steps/s; `century`
+ * 0.7 -> 0.0 and 2,931 -> **3,190** steps/s; `coast` 3,364 -> 3,824; `band`
+ * and `tiny` unchanged. A search that finds a route is cheaper than the ticks
+ * of grinding it prevents, so raising the cap mostly buys its own cost back.
+ * 24 was measured too and buys nothing further — the queue already clears.
  */
-const MAX_PATHS_PER_TICK = 3;
+const MAX_PATHS_PER_TICK = 12;
 
 /**
  * Ticks of no progress between recovery re-paths, inside `PATIENCE`.
