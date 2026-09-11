@@ -6,6 +6,149 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-11 — M9 phase 3, and two notes from the owner
+
+Two notes had come in since the last triage, and both turned out to name
+things the code was doing wrong rather than features it was missing. They are
+folded into this pass alongside M9 phase 3, which was next in
+[m9_plan_words_and_hands.md](m9_plan_words_and_hands.md).
+
+- **Picking things up means walking to them.** The owner's note was one line
+  — "to pick things up npcs must go near the object" — and the diagnosis was
+  that `pickup` was not an action at all. The radial menu called
+  `Simulation.takeFromPile` on the click, so goods arrived in the pack from
+  wherever the player happened to be standing, at any range the camera could
+  show. It is a verb now, walking to the heap through the same `travel`
+  helper every other errand uses, carrying the chosen item and count on
+  `targetItemId`/`targetItemCount` so an interrupted fetch resumes for the
+  same stack. Two refusals reach the player where there was previously
+  nothing to refuse: `goods_gone` when the heap has been cleared by the time
+  they arrive, and `pile_item_gone` when only the stack they wanted has.
+
+  Making it a verb is also what let the menu stop lying. `case 'pile'` had
+  said "You cannot order somebody else to pick that up", which was true only
+  because no such action existed; it now goes down `Simulation.command` with
+  its own `ORDER_COST` entry, priced like a trip to the store.
+
+- **The menu nests.** Note 10. `RadialMenu` was one flat ring and
+  `groundActions` puts one option per recipe on it, so a crafter who knew a
+  dozen things got a dozen overlapping buttons. `ActionOption.children` plus
+  a page stack, with the grouping decided in the catalogue rather than in the
+  menu — the menu draws what the simulation says is possible and must not
+  invent categories of its own. Three details are the whole difference
+  between a menu that nests and one that hides: a group of fewer than three
+  is not a group and stays on the ring; a group with nothing available still
+  *opens*, because the reason a recipe is out of reach lives on the recipe;
+  and the title becomes the way back, with Escape popping one page before it
+  closes anything. The dismissal listener runs in the capture phase and had
+  to be taught that the title is part of the menu, or going back would have
+  been indistinguishable from dismissing.
+
+- **The order names the idea.** The other half of note 10. "Only cordage" was
+  never a menu bug: `doDiscuss` and `doPonder` both called `workableIdea`,
+  which picks the least advanced idea and re-picks it every tick, so the menu
+  could not offer a choice the action would honour and the second idea in
+  somebody's head was unreachable. `Person.targetTech` joins the pair `take`
+  and `store` already use. A named idea that is no longer workable refuses
+  with `idea_moved_on` rather than silently substituting another — being
+  handed a different conversation from the one you asked for is worse than
+  being told it is too late. Every AI caller leaves the field unset, so
+  nothing the simulation plans for itself changed.
+
+- **Asking to be shown.** Note 11, and the one with numbers behind it. There
+  was no `ask` verb: a lesson could only ever begin with the teacher, which
+  is a strange gap in a game whose central claim is that knowledge lives in
+  heads and dies with them. `doAsk` mirrors `doTeach` from the other end, and
+  two things differ deliberately — the lesson is the *teacher's* to refuse,
+  rolled on `opinion(teacher → pupil)` rather than the pupil's regard for
+  them, and the pupil does the walking. What does not differ is what gets
+  taught or whether it lands: that stays `KnowledgeSystem.teach`, shared.
+
+  The menu offers it always and does not gate it on what the other person
+  knows — every other option on that ring is computed from what the actor can
+  see, and what is in somebody else's head is precisely what nobody can see.
+  The scorer gets it too, outside the `knownTech.size > 0` block, because the
+  person with the most to gain from asking is the one who knows nothing: a
+  child, who cannot teach and until now could not seek anything out either.
+  Weighted by curiosity rather than tradition, since wanting to know and
+  wanting things to carry on are different dispositions.
+
+  `npm run sim:seeds -- --seeds 20`, before and after:
+
+  | | before | after |
+  |---|---|---|
+  | mean survival | 99.6% | **99.9%** |
+  | starved infants / adults | 15 / 15 | **8 / 10** |
+  | technologies known at the end | 8.9 | 9.2 |
+  | **lessons passed on** | 265.4 | **367.0** |
+
+  Transmission — which `next-steps.md` §0 names as the tree's real bottleneck
+  — up 38%, and nobody paid for it. On `craft` the shape is visible:
+  deliberate lessons 6 → 20, and 20 of those 20 went to a child, 16 from a
+  parent. Foraging falls 5.6% and mean hunger rises 3.6 points, which is what
+  ninety ticks of somebody's day costs; the starvation counts say the world
+  absorbed it.
+
+- **Some technologies are things you build, and some are ways of doing.** The
+  owner's second note, and the larger of the two. Plant lore cost four
+  berries and a hundred and twenty ticks of *building a plant lore*, because
+  every node reached "tried" by the one road. `TechDef.kind` splits them on a
+  rule the compiler can check — a device gates a recipe, a building or a form
+  of writing, and twenty-three do; the other seven gate nothing and change a
+  number instead. A static check now enforces that, so a practice that
+  quietly starts gating a recipe fails the build.
+
+  Both kinds still go conceived → worked out → tried → proven. A device is
+  tried by building one; a practice is tried by doing it, with
+  `TechDef.practisedBy` naming the actions and `Person.noteDid` counting them
+  — the one place every finished action already passes through. Not derived
+  from `skill`, because nothing in the game practises the `cook` skill at all
+  and `ponder` practises the idea's own skill, so a skill-matched version
+  would have counted sitting and thinking about cooking as having cooked. And
+  a practice works at half strength the moment there is enough of an idea to
+  try, the same half a built prototype gets: without it, `tend` and `tame` —
+  the only actions that count as trying herbalism and taming — were locked
+  behind having already finished trying them out.
+
+  **Two roads out, and the second is what makes it work rather than merely
+  read better.** With only the fieldwork road, twenty seeds lost 1.7
+  technologies: herbalism was conceived twelve times in a century-long run
+  and tried none, because `tend` happens only when somebody is hurt and a
+  healer is standing over them, so twelve ideas squatted in two idea slots
+  until they went stale. Thinking a practice through to a full insight now
+  reaches the same bench — the other half of the owner's own sentence, "by
+  harvesting *and thinking about it*".
+
+  | | before the pass | fieldwork only | both roads |
+  |---|---|---|---|
+  | mean survival | 99.9% | 99.4% | **99.9%** |
+  | technologies known | 9.2 | 7.5 | **9.1** |
+  | lessons passed on | 367 | 305 | **360** |
+
+  `TRIES_TO_TEST` was measured at 3 and at 6 and changed none of it, which is
+  worth recording: the threshold was never the gate, the reachability of the
+  action was.
+
+  The interface says which is which throughout — no "Build the first plant
+  lore" in the menu and none planned by `Brain`; a separate stage vocabulary
+  for practices in the Self panel and the tech web ("in use, and being borne
+  out"); a count of times tried where a device lists materials; a stale
+  practice that says it was never put to use rather than blaming materials it
+  never wanted. In the web a practice is drawn with rounded ends against a
+  device's square corners — a shape rather than a colour, because colour is
+  spoken for by domain and a shape survives the zoomed-out view — and never
+  on an out-of-reach node, which stays blank so the shape of what is unknown
+  shows without its content.
+
+**State at the end of the pass.** 13 scenarios, 11 fully green. The two that
+are not — `crowded`'s `perf-budget` and `harsh-winter`'s `jobs-bias-work` —
+were both failing before this pass and neither is related to it; `century`'s
+`the-hurt-are-tended`, which was a knife edge before, now passes. 200 unit
+tests green. Twenty seeds: 99.9% mean survival, 0/20 collapsed, 9.1
+technologies known, 360 lessons passed on.
+
+---
+
 ## 2026-09-10 — M7 stage C: the coastline is still sticky, and it was never the router
 
 The owner reported people still getting stuck on shoreline after stage B, with

@@ -1,7 +1,52 @@
 # Known bugs and rough edges
 
-As of 2026-09-10. Everything here is real and reproducible; nothing here is
+As of 2026-09-11. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found during M9 phase 3, 2026-09-11
+
+### The catalogue reads a stranger's knowledge to decide whether to offer a lesson
+
+`personActions` ([ActionCatalog.ts](../src/sim/ai/ActionCatalog.ts)) computes
+`teachable` from `other.knownTech` and the `discuss` options from
+`other.skills` and `other.knownTech`. `AGENTS.md` forbids the UI reading a
+stranger's private state and routes names, skills, condition and history
+through `sim/social/Knowledge.ts`; what is in somebody's head is the most
+private thing in the game and has no route at all. The options are computed in
+the simulation rather than in the UI, which is why this has never tripped a
+rule, but the effect on screen is the same: hovering a stranger tells the
+player exactly which technologies that stranger holds.
+
+The `ask` verb added in the same pass deliberately does *not* do this — it is
+offered unconditionally and the refusals are spoken by `doAsk` — so the shape
+of the fix is already in the file. Doing the same for `teach` and `discuss`
+means offering them always and letting the action refuse, which costs the
+player a greyed-out tooltip and buys back the knowledge gate. Not done here
+because it changes what the AI-facing half of the catalogue reports and wants
+measuring on its own.
+
+### Nobody ever picks anything up off the ground but the player
+
+`pickup` became a real verb in this pass, but only the radial menu issues it.
+`Brain` has no score for it, so a heap of goods — what a dead forager was
+carrying, the timber from a tree felled by somebody whose hands were full —
+sits where it fell until a player walks over and collects it. `dropAt` is
+called from several places in `ActionSystem`, so this is a genuine leak of
+goods out of the economy rather than a rare case. Worth a scorer term weighted
+by what is in the heap and how far away it is; not attempted here because a
+new work verb competes for foraging ticks and wants twenty seeds of its own.
+
+### A practice is easier to reach than a device, and only the numbers say by how much
+
+Splitting `TechDef.kind` gave practices two roads to the testing bench — half
+a dozen uses in the field, or a full insight worked out by thinking — against
+a device's single road of materials plus a hundred and twenty ticks. Twenty
+seeds put mean technologies known at 9.1 against 9.2 before the pass, so the
+overall pace is unchanged, but "conceived past the root nodes" moved 9.6 → 8.8
+and that is the one figure that did not come back. It is within the range
+`AGENTS.md` says twenty seeds cannot resolve, and it is recorded here rather
+than acted on for exactly that reason: the next person to touch the tech
+economy should know it moved and should not attribute it to their own change.
 
 ## Found triaging the owner's notes for M9, 2026-09-10
 

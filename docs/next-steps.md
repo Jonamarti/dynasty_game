@@ -1,7 +1,7 @@
 # Next steps
 
-Rewritten 2026-09-08, reordered 2026-09-10. Ordered, with the reason for the
-order.
+Rewritten 2026-09-08, reordered 2026-09-10, brought up to date 2026-09-11.
+Ordered, with the reason for the order.
 
 **2026-09-10: the owner moved the social and interface pass ahead of the
 Neolithic.** `docs/notes.txt` had accumulated thirteen untriaged notes, eight of
@@ -23,11 +23,13 @@ nothing was scheduled. It has been rewritten rather than amended again.
 
 ## Where things actually stand
 
-`npm run sim:check` on the default twelve-day scenario: **36 of 36 applicable
-checks pass**, 27 n/a, 3,836 steps/s against a 2,000 floor. The n/a count has
-grown because M8.1 added checks for content a twelve-day run cannot reach; the
-scenario that covers each one is named in its skip line, and `npm run
-sim:check:all` is the number that matters.
+`npm run sim:check` on the default twelve-day scenario, re-run 2026-09-11:
+**41 of 41 applicable checks pass**, 26 n/a, 3,067 steps/s against a 2,000
+floor. The n/a count is high because M8.1 added checks for content a twelve-day
+run cannot reach; the scenario that covers each one is named in its skip line,
+and `npm run sim:check:all` is the number that matters — 13 scenarios, 11 fully
+green, and the two that are not (`crowded`'s `perf-budget`, `harsh-winter`'s
+`jobs-bias-work`) have been failing since before M7.
 
 | milestone | state |
 |---|---|
@@ -52,15 +54,18 @@ sim:check:all` is the number that matters.
 | M8.1 — `ochre`, `flute`, `herbalism`, `taming` | shipped 2026-09-09 |
 | M8.1 — mechanism 1, spoilage | **built and switched off, 2026-09-10.** See below |
 | M8.1 — `preserving` and the drying rack | **held.** They are what spoilage is switched off *from* |
-| **M9 — words and hands (social and interface)** | **next.** See [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) |
+| M7 — stages A, B and C: routing, and the coastline | shipped 2026-09-10 |
+| M9 phases 1-2 — seeing, pointing, quantities, recipients | shipped 2026-09-10 |
+| M9 phase 3 — menus that nest, and asking | shipped 2026-09-11 |
+| **M9 phases 4-6 — conversation, thinking, looking after yourself** | **next.** See [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) |
 | M8.2 — the Neolithic | planned, runs after M9 |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
-| M7 — A\*, walls, interiors, beds | not started, and lands alone |
+| M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
 | Owner's list O1–O5 | O1-O3 scheduled into M9. O4-O5 scheduled into M10. O6 and O7 shipped in pass A |
 
 **Thirty technologies**, thirteen recipes, ten buildings, twenty-nine items,
-thirty-two actions, twelve skills (`heal` and `cook` finally have a use;
+thirty-four actions (`pickup` and `ask` are new), twelve skills (`heal` and `cook` finally have a use;
 `farm` and `smith` still do not, and wait for M8.2), four jobs, seven domains,
 six eras, three forms of record, three full-screen graphs (`G`/`K`/`T`).
 
@@ -69,12 +74,14 @@ stations, `hunters` for the bone chain, `culture` for the four nodes that are
 not about food, and `fishers`, which is the only run in the suite where food
 goes off.
 
-The default world is **bit-identical** to where it was before M8.1's second half
-began. Every node added since either gates its effect on knowledge nobody starts
-with (bone and sinew come off a carcass only for a butcher who knows what they
-are for; an acorn is worth nothing to anybody who cannot grind) or ships
-switched off (spoilage). That is deliberate and it is what keeps the
-before-and-after measurements in this milestone comparable.
+**The default world stopped being bit-identical at M7**, and everything before
+that milestone is a different world rather than a worse or better one: people
+now route around a headland instead of grinding into it, so they arrive at
+different ticks, meet different neighbours and spook different herds. M9 phase
+3's `ask` verb and the practice/device split moved it again, both deliberately
+and both measured across twenty seeds. Pre-M7 figures anywhere in these
+documents are not comparable with post-M7 ones; each milestone's entry in
+[changelog.md](changelog.md) carries its own before-and-after pair.
 
 ---
 
@@ -590,8 +597,8 @@ index.
 | Sticks, clay and flint look alike | M9 phase 1 |
 | Sleeping together should build closeness | M9 phase 4 |
 | Choosing quantities given, stored, taken | M9 phase 2 |
-| Menu should nest, not name one recipe | M9 phase 3 |
-| Ask to be taught; order someone to teach | M9 phase 3 |
+| Menu should nest, not name one recipe | M9 phase 3 — **shipped 2026-09-11** |
+| Ask to be taught; order someone to teach | M9 phase 3 — **shipped 2026-09-11** |
 | War, raiding and slavery between tribes | Designed in M9's closing section; scheduled as M10 |
 | See and choose what to take from a pile | M9 phase 1 |
 
@@ -599,6 +606,22 @@ Three defects were found alongside the notes rather than in them —
 `give_item`'s swallowed refusal, `doTake`'s fixed six units, and this
 document's own false claim about standing between bands — and are recorded in
 [bugs.md](bugs.md) and corrected above respectively.
+
+## 7d. The owner's notes of 2026-09-11
+
+Two notes, both fixed in the pass that read them, so neither has a scheduled
+destination — the diagnosis and the measurements are in
+[changelog.md](changelog.md).
+
+| note | what it turned out to be |
+|---|---|
+| "To pick things up npcs must go near the object" | `pickup` was not an action at all: the menu moved goods into the pack on the click, from any range. It is a verb now, with a walk and two refusals |
+| Practices should not have prototypes to build, and should be drawn differently in the web | `TechDef.kind`: twenty-three devices that gate a recipe, a building or a form of writing, and seven practices that gate nothing. A practice is tried by doing it or by thinking it through, never built, and the web draws it with rounded ends |
+
+Three things were found alongside them and not fixed — the catalogue reading a
+stranger's knowledge to decide whether to offer a lesson, nobody but the player
+ever picking anything up off the ground, and the one figure the tech-kind split
+moved and did not bring back. All three are in [bugs.md](bugs.md).
 
 ## 8. Wildlife, second pass
 

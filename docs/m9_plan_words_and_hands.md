@@ -113,6 +113,12 @@ Note 9, and the `give_item` defect.
 
 ### Phase 3 — Menus that nest, and asking
 
+**Shipped 2026-09-11** — see `changelog.md`. Not bit-identical, and the plan
+was wrong to expect it to be: the `ask` verb it calls for is a channel the AI
+uses too, so it was measured with twenty seeds instead. Transmission went from
+265.4 lessons passed on to 367.0, mean survival from 99.6% to 99.9%, and
+starvation down on both counts.
+
 Notes 10 and 11.
 
 - `ActionOption` gains `children`; `RadialMenu` gains a page stack with a way

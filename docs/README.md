@@ -17,6 +17,7 @@ it, what to do next, and why each change was made.
 | [m6b_plan.md](m6b_plan.md) | M6b — the tech web, research, transmission, weapons, jobs |
 | [m8_plan_the_ages.md](m8_plan_the_ages.md) | M8 — the technology ladder from flint to iron, and the mechanisms it needs |
 | [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) | M9 — the social and interface pass: talking, teaching, choosing, and seeing what is on the ground |
+| [m7_mov_m9_3_quant_plan.md](m7_mov_m9_3_quant_plan.md) | M7 — routing, and the quantity prompts that shipped alongside it |
 
 If you are an AI agent picking this project up, read
 [../AGENTS.md](../AGENTS.md) first — it is shorter and tells you what will
