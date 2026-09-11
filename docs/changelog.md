@@ -6,6 +6,151 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-11 — M9 phase 4: a conversation worth having
+
+Notes 5, 6, 2 and 8 from the owner's list of 2026-09-10, and O1, O2 and O3 from
+the older list, which phase 4 was scheduled to close. Eight commits, every one
+of them measured across twenty seeds because all eight change what the
+simulation decides for itself.
+
+The milestone's own before-and-after, `npm run sim:seeds -- --seeds 20` on
+d823cb3 and on ad88eb1:
+
+|                       | before | after |
+|---|---|---|
+| mean survival         | 99.9%  | 100.0% |
+| collapsed below a quarter | 0/20 | 0/20 |
+| born                  | 458    | 471   |
+| starved               | 20     | 19    |
+| technologies known    | 9.1    | 10.1  |
+| conceived past roots  | 8.8    | 9.4   |
+| lessons passed on     | 360.1  | 420.7 |
+
+Transmission is up 16.8% and a whole technology more is known at the end of a
+century. `next-steps.md` §0 names transmission as the bottleneck the whole tree
+waits on, and none of the four notes below was aimed at it directly.
+
+`npm run sim:check:all` finishes with twelve of thirteen scenarios fully green
+and only `crowded`'s `perf-budget` failing, which it has done since before M7 —
+better than the state the milestone started in, where `harsh-winter` was failing
+as well.
+
+- **Four conversations where there was one.** Note 5 and O1. `TALK_TICKS` was 45
+  against a 240-tick day, so nodding at a stranger and sitting with a brother
+  cost the same four and a half in-game hours, followed by a near-whole day of
+  `SOCIAL_COOLDOWN`. `social/Conversation.ts` is a ladder of four — greeting,
+  small talk, asking what somebody is like, a long talk — each with its own
+  length, cooldown, warmth, share of loneliness answered, and number of stories
+  carried. The rung is derived from `familiarity` and `lastContact`, both of
+  which `Relationship` has carried since the beginning: no new state, because a
+  mode stored on the edge would be a second opinion about how well two people
+  know each other and would drift from the first. `chat` opens at
+  `Knowledge.ts`'s `KNOWN_AT` and `deep` at its `CLOSE_AT`, which are the
+  thresholds the game already uses to say a relationship has changed in kind.
+
+  **Two tunings of it were wrong, and measurement is the only reason anybody
+  knows.** At 1.5 familiarity a greeting could not carry anybody up to small
+  talk inside a twelve-day run, so everyone nodded at each other for ever and
+  `rumor-propagates` went to zero. Pricing each rung about equally per tick of
+  day it occupies fixed that — and so did replacing `Brain`'s flat 500-tick
+  re-approach gate with the rung's own cooldown, since with one figure for all
+  four the ladder could only be climbed by waiting. That then cost the world
+  people: starvation across twenty seeds **doubled**, 20 deaths to 41, while
+  `talk` itself rose by under two per cent of all ticks. The expense was never
+  the conversation, it was the walk to it — six ticks of greeting behind thirty
+  of crossing the camp, with the scorer pulling on the full weight of the
+  walker's loneliness to collect a quarter of it. Scaling that pull by what the
+  rung actually answers put survival back and left transmission 9.9% above where
+  the milestone started.
+
+- **The player picks which conversation to have.** "Talk to X…" nests, one entry
+  per rung, carried on the option the way `craft` carries its recipe. A rung out
+  of reach is greyed rather than hidden, because what it says is a fact about
+  the player's own relationship — *except* when commanding somebody else, where
+  the menu is deliberately blind and the refusal is spoken by `doTalk` instead.
+  How warmly a subordinate feels toward a third person is the subordinate's own
+  business, and greying an option out would leak it; that is the rule
+  `issueTake` follows at a store and `ask` follows over what is in somebody's
+  head. `modeAllowed` is one predicate shared by the menu and the action, so the
+  menu cannot offer a conversation the simulation then declines to have.
+
+- **An afternoon on the same problem is time spent together.** Note 6, and the
+  most valuable single thing in the phase. `SocialSystem.converse` was the only
+  thing in the game that touched familiarity or loneliness, so two people could
+  argue a design out for a season or sit through a whole lesson and come away
+  exactly as distant as they began. `SocialSystem.settle` is now the shared
+  settlement and `converse` is its first caller rather than its owner;
+  `doDiscuss`, `doTeach` and `doAsk` are the others. The relief is passed per
+  side, because `meetingOfMinds` scales it by `intelligence`: an afternoon
+  arguing about how to bind a haft is company for somebody who finds the problem
+  interesting and an afternoon's work for somebody who does not. Capped below 1
+  however clever they are — a lesson is not an evening by the fire, and if it
+  were, nobody would ever choose `talk`. Twenty seeds: technologies known 9.4 →
+  10.3, lessons passed on 395.9 → 416.3, survival to 100.0%.
+
+- **Belonging is a reason to cross the camp.** Note 2. Every social term read
+  `opinion`, which is a fact about two individuals, so a band was a set of people
+  who shared a camp and its chief was somebody nobody had any reason to visit.
+  `Brain.bond` is the pull toward one's own, scaled by `loyalty` and cancelled in
+  proportion to `grievance * (1 - loyalty)` — not a new account but the exact
+  `defiance` figure `BandSystem.considerRebellion` already spends, so the person
+  on the edge of walking out is visibly the same person who has stopped seeking
+  the chief out. **It went in twice.** As a multiplier on the score of talking it
+  made people talk *more* rather than talk to different people, and the social
+  cooldown that rations conversation is the same one that rations arguing a
+  design out: lessons passed on fell 416.3 → 395.9. Belonging now decides *who*
+  somebody crosses the camp for and not how much of the day they spend talking,
+  which costs nothing, because it redirects a conversation that was going to
+  happen anyway.
+
+- **The people you wake up beside.** Note 8. Every bond in the game was made by
+  somebody deciding to make it, and the most ordinary closeness there is comes of
+  nothing anybody decides. `Simulation.shareTheHearth` runs in the daily block —
+  which fires at midnight, exactly when the people who sleep indoors are lying in
+  them — groups the living who are actually inside a finished shelter, and hands
+  each roof to `SocialSystem.hearth`. It answers no loneliness at all: sleeping
+  in company is not being in company, and a band that could answer its loneliness
+  by going to bed would stop talking to each other. Capped, so that one night is
+  worth the same to the two in a windbreak as to the twelve in a longhouse.
+
+- **Two people picking the same bush can now say something.** O2.
+  `Person.action` is a single string, so "foraging and talking" had nowhere to
+  live. `SocialSystem.workingAlongside` runs every forty ticks and settles
+  familiarity once per pair and loneliness once per person, touching neither
+  one's action and taking no draw from any stream. The relief went in at twice
+  its final value and produced §O2's own stated failure — conversations in `tiny`
+  fell by two thirds and news stopped travelling — so it is now a third of a
+  day's loneliness slowed rather than answered. Starvation 27 → 22 across twenty
+  seeds, lessons passed on 414.3 → 442.1.
+
+- **You learn faster from the best hand on the job.** O3. `Person.practice` is
+  the single seam every skill gain passes through, so one multiplier there rather
+  than twenty at the call sites. The pass stamps `Person.alongside`, the best
+  skill of anybody working within arm's reach, and the gain is scaled by the
+  **gap** rather than by their level — the caution §O3 records, because scaled by
+  level alone a crowd of novices would teach itself expertise. A bonus only and
+  never a penalty, for the same reason `wit` beside it is one. Technologies known
+  10.4 → 11.0.
+
+- **A greeting carries news after all.** It shipped carrying none, and in a young
+  band nearly every conversation is a greeting — 19 of 20 in `tiny` — so
+  `rumor-propagates` reached zero twice, by two different routes. A greeting in a
+  stone-age camp is "morning, did you hear about Korak"; the rungs differ in what
+  they cost and what they are worth, not in whether anybody says anything at all.
+  It cost 11.0 technologies known against 10.1, which is inside the band twenty
+  seeds cannot resolve, and is recorded in `bugs.md` rather than rounded away.
+
+Found and not fixed, all in [bugs.md](bugs.md): `RelationshipGraph.decay` can
+never forget anybody once `introduce` has stamped a bias on the edge, which is
+what makes the working-alongside pass cost 17% of the `crowded` scenario;
+`ORDER_COST` prices all four conversations the same, so commanding somebody to
+sit down for an evening is as cheap as telling them to say hello; and a sixth of
+all conversations in a century run are now broken off for thirst by `doTalk`'s
+new interruption check, which is the check doing its job and a good deal of
+walking wasted.
+
+---
+
 ## 2026-09-11 — M9 phase 3, and two notes from the owner
 
 Two notes had come in since the last triage, and both turned out to name

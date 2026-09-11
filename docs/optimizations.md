@@ -91,6 +91,24 @@ of a 128x128 map) on a genuinely long walk — `path_gave_up` sits at roughly
 1% of all searches there — and fall back to a direct greedy step rather than
 searching further, by design; see `docs/changelog.md`'s M7 entry.
 
+**M9 phase 4's social passes, and the graph they grow.** Two new periodic
+passes and one daily one. `SocialSystem.workingAlongside` runs every forty ticks
+over the living, asking the people hash who is working within two and a half
+tiles; `Simulation.shareTheHearth` runs once a day over the population. Neither
+query is expensive — measured with `settle` stubbed out and both loops left in
+place, `crowded` returns to the 1,330 steps/s it had before the passes existed.
+
+What costs is the **relationship graph**, and it is worth knowing which of the
+two it is before anybody optimises the wrong one. Everybody who works beside
+anybody now knows them, so edges roughly doubled on the twelve-day run (352 to
+718), and `RelationshipGraph.decay` walks every edge every day while
+`introduce`'s stamped `bias` means no edge is ever deleted — see `bugs.md`.
+`crowded` (73 people) went from ~1,350 to ~1,115 steps/s, a 17% cost on a
+scenario whose `perf-budget` has failed since before M7. The default `band`
+scenario measures ~3,100-3,300 against the 2,000 floor and is unaffected in
+practice. The cheapest available fix is not a faster pass; it is letting a faded
+acquaintance be forgotten.
+
 ## What is left, roughly in order of value
 
 1. **Simulation LOD.** The chunked freeze/thaw tiering the original plan

@@ -23,13 +23,17 @@ nothing was scheduled. It has been rewritten rather than amended again.
 
 ## Where things actually stand
 
-`npm run sim:check` on the default twelve-day scenario, re-run 2026-09-11:
-**41 of 41 applicable checks pass**, 26 n/a, 3,067 steps/s against a 2,000
-floor. The n/a count is high because M8.1 added checks for content a twelve-day
-run cannot reach; the scenario that covers each one is named in its skip line,
-and `npm run sim:check:all` is the number that matters — 13 scenarios, 11 fully
-green, and the two that are not (`crowded`'s `perf-budget`, `harsh-winter`'s
-`jobs-bias-work`) have been failing since before M7.
+`npm run sim:check` on the default twelve-day scenario, re-run 2026-09-11 after
+M9 phase 4: **40 of 40 applicable checks pass**, 27 n/a, ~3,100 steps/s against
+a 2,000 floor. The n/a count is high because M8.1 added checks for content a
+twelve-day run cannot reach; the scenario that covers each one is named in its
+skip line, and `npm run sim:check:all` is the number that matters — 13
+scenarios, **12 fully green**, and the one that is not (`crowded`'s
+`perf-budget`) has been failing since before M7. M9 phase 4 made that one worse
+rather than better, by 17%, and `optimizations.md` and `bugs.md` between them
+name the cause: a relationship graph that grew denser because people who work
+side by side now know each other, walked daily by a `decay` that can never
+delete an edge.
 
 | milestone | state |
 |---|---|
@@ -57,12 +61,13 @@ green, and the two that are not (`crowded`'s `perf-budget`, `harsh-winter`'s
 | M7 — stages A, B and C: routing, and the coastline | shipped 2026-09-10 |
 | M9 phases 1-2 — seeing, pointing, quantities, recipients | shipped 2026-09-10 |
 | M9 phase 3 — menus that nest, and asking | shipped 2026-09-11 |
-| **M9 phases 4-6 — conversation, thinking, looking after yourself** | **next.** See [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) |
+| M9 phase 4 — a conversation worth having | shipped 2026-09-11 |
+| **M9 phases 5-6 — thinking, looking after yourself** | **next.** See [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) |
 | M8.2 — the Neolithic | planned, runs after M9 |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
-| Owner's list O1–O5 | O1-O3 scheduled into M9. O4-O5 scheduled into M10. O6 and O7 shipped in pass A |
+| Owner's list O1–O5 | **O1, O2 and O3 shipped in M9 phase 4.** O4-O5 scheduled into M10. O6 and O7 shipped in pass A |
 
 **Thirty technologies**, thirteen recipes, ten buildings, twenty-nine items,
 thirty-four actions (`pickup` and `ask` are new), twelve skills (`heal` and `cook` finally have a use;
@@ -78,8 +83,9 @@ goes off.
 that milestone is a different world rather than a worse or better one: people
 now route around a headland instead of grinding into it, so they arrive at
 different ticks, meet different neighbours and spook different herds. M9 phase
-3's `ask` verb and the practice/device split moved it again, both deliberately
-and both measured across twenty seeds. Pre-M7 figures anywhere in these
+3's `ask` verb and the practice/device split moved it again, and so did all
+eight commits of M9 phase 4 — every one of them deliberately, and every one
+measured across twenty seeds. Pre-M7 figures anywhere in these
 documents are not comparable with post-M7 ones; each milestone's entry in
 [changelog.md](changelog.md) carries its own before-and-after pair.
 
@@ -120,6 +126,14 @@ documents are not comparable with post-M7 ones; each milestone's entry in
    first three phases are interface-only and must leave `sim:check`
    bit-identical; the last two change `Brain`'s scorer and are measured with
    twenty seeds each, never one run.
+
+   **Phases 1 through 4 have shipped**, the last of them on 2026-09-11. Phase 3
+   was the first to break the bit-identical promise, and the plan was wrong to
+   make it rather than the phase wrong to break it: an `ask` verb is a channel
+   the AI uses too. Phase 4 closed O1, O2 and O3 as well as its own four notes,
+   and took transmission from 360.1 lessons passed on to 420.7 across the
+   canonical twenty-seed cohort. Phases 5 and 6 — the `reflect` verb and the
+   self-care mode — are what remain.
 7. **M8.2 — the Neolithic.** Seventeen nodes and the pass where a band stops
    moving to the food: fields, herds, the loom, the kiln, masonry. The node
    tables are in [m8_plan_the_ages.md](m8_plan_the_ages.md).
@@ -325,9 +339,8 @@ traps are in **[m8_plan_the_ages.md](m8_plan_the_ages.md)**.
 
 Eight things asked for by the project owner on 2026-09-06. **O6 (continuous
 movement) and O7 (clicking a single entity still offers the ground) shipped in
-pass A.** **O1, O2 and O3 are now scheduled inside M9** — see
-[m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) phases 3 and 4 — and
-**O4 and O5 are scheduled inside M10**, after M8.2.
+pass A.** **O1, O2 and O3 shipped in M9 phase 4 on 2026-09-11** — see
+`changelog.md` — and **O4 and O5 are scheduled inside M10**, after M8.2.
 
 **Correction, 2026-09-10.** This section previously said the decision for O4
 "lives" in `normsByBand` and the standing machinery in `social/Authority.ts`.
@@ -347,7 +360,16 @@ kiln has property worth refusing a rival and property worth burning; today it
 owns a storage pit. Doing them after the Neolithic tier is not a delay, it is the
 difference between a mechanic and a reason.
 
-### O1. Talking takes far too long, and needs Sims-style modes — scheduled as M9 phase 4
+### O1. Talking takes far too long, and needs Sims-style modes — shipped 2026-09-11
+
+**Shipped as M9 phase 4.** Four rungs in `social/Conversation.ts`, chosen from
+`familiarity` and `lastContact` with no new state, and a nested menu so the
+player can choose one. What the plan below did not know: a rung is priced by its
+**cooldown** rather than by its warmth, and the cost of a cheap conversation is
+the walk to it rather than the conversation, so `Brain` has to scale its pull by
+what the rung will actually answer. Both were found by measurement, and both are
+in `changelog.md` with the numbers. The original diagnosis, kept because it is
+still the clearest statement of what was wrong:
 
 `TALK_TICKS` is 45 against `ticksPerDay` 240, so **one conversation is four and a
 half in-game hours** — the comment beside it claiming "roughly half an in-game
@@ -366,7 +388,14 @@ talk** (long, expensive, worth much more).
 no new state. Each mode wants its own cost and cooldown. Watch
 `ai-uses-many-actions`: conversation competes with foraging for ticks.
 
-### O2. People should be able to talk while working alongside each other — scheduled as M9 phase 4
+### O2. People should be able to talk while working alongside each other — shipped 2026-09-11
+
+**Shipped as M9 phase 4**, in the shape this section calls for:
+`SocialSystem.workingAlongside`, every forty ticks, touching neither party's
+action and taking no draw. The warning below — that it must not grant the full
+value of a deliberate conversation — was earned rather than heeded: at twice its
+final relief, conversations in `tiny` fell by two thirds and news stopped
+travelling altogether. The diagnosis, unchanged:
 
 Today `talk` is a whole action, so two people picking the same bush cannot say a
 word. `Person.action` is a single string, so "foraging and talking" has nowhere
@@ -376,7 +405,12 @@ radius and running a cheap `converse` without touching either one's action. It
 should feed `company` and `Relationships` and must **not** grant the full value
 of a deliberate conversation, or nobody will ever choose `talk` again.
 
-### O3. Working alongside somebody teaches you faster — scheduled as M9 phase 3/4
+### O3. Working alongside somebody teaches you faster — shipped 2026-09-11
+
+**Shipped as M9 phase 4**, exactly as described below: one multiplier in
+`Person.practice`, fed by `Person.alongside`, scaled by the gap to the best
+worker nearby rather than by their level. Technologies known across twenty seeds
+went 10.4 → 11.0. The diagnosis, unchanged:
 
 `Person.practice(skill, amount)` is the single seam every gain goes through, so
 this is a per-tick company bonus computed once from `peopleHash` rather than a
@@ -589,13 +623,13 @@ index.
 | note | destination |
 |---|---|
 | Two NPCs together only offer one to click | M9 phase 1 |
-| Cultivate relationship with tribe and leader | M9 phase 4 |
+| Cultivate relationship with tribe and leader | M9 phase 4 — **shipped 2026-09-11** |
 | Controlled NPC does not drink, eat or sleep alone | M9 phase 6 |
 | Thinking should not be confused with wandering | M9 phase 5 |
-| Conversation needs modes | M9 phase 4 (= O1, above) |
-| Discussing and teaching should build relationship | M9 phase 4 (= part of O1-O3) |
+| Conversation needs modes | M9 phase 4 (= O1, above) — **shipped 2026-09-11** |
+| Discussing and teaching should build relationship | M9 phase 4 — **shipped 2026-09-11** |
 | Sticks, clay and flint look alike | M9 phase 1 |
-| Sleeping together should build closeness | M9 phase 4 |
+| Sleeping together should build closeness | M9 phase 4 — **shipped 2026-09-11** |
 | Choosing quantities given, stored, taken | M9 phase 2 |
 | Menu should nest, not name one recipe | M9 phase 3 — **shipped 2026-09-11** |
 | Ask to be taught; order someone to teach | M9 phase 3 — **shipped 2026-09-11** |

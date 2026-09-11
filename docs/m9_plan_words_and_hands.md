@@ -137,6 +137,21 @@ Notes 10 and 11.
 
 ### Phase 4 — A conversation worth having
 
+**Shipped 2026-09-11** — see `changelog.md`. Eight commits, each measured across
+twenty seeds. Against the phase's own starting point: mean survival 99.9% →
+100.0%, technologies known 9.1 → 10.1, conceived past roots 8.8 → 9.4, lessons
+passed on 360.1 → 420.7.
+
+Two things the plan did not anticipate, both caught by measurement. The
+conversation rungs are priced by their **cooldown**, not their warmth, and the
+first tuning — which read "a greeting is worth little" as a small familiarity
+gain — closed the gossip channel outright. And the cost of a cheap conversation
+is the **walk to it**, not the conversation: the scorer has to scale its pull by
+what the rung will actually answer, or the ladder doubles starvation while `talk`
+itself takes under two per cent more of the day. O2's own warning, that a passive
+pass must not grant the full value of a deliberate conversation, was earned
+twice by two different routes.
+
 Notes 5, 6, 2 and 8 — and this closes O1, O2 and O3 from the owner's older list.
 
 - Conversation modes in `SocialSystem.converse`, chosen by `familiarity` and

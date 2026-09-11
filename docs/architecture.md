@@ -14,6 +14,7 @@ src/
                 Item/Inventory, ItemPile, Recipe, Inscription
     ai/         Brain (utility scorer), ActionCatalog (every verb, and when)
     social/     Events + norms, Memory, Relationships, SocialSystem, Authority,
+                Conversation (the four rungs a conversation can be),
                 Knowledge (what one person can tell about another)
     knowledge/  Tech definitions and eras
     systems/    Needs, Movement, Action, Life, Forest, Band, Knowledge,

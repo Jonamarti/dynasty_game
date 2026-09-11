@@ -3,6 +3,94 @@
 As of 2026-09-11. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found during M9 phase 4, 2026-09-11
+
+### A relationship, once made, can never be forgotten
+
+`RelationshipGraph.decay` ([Relationships.ts](../src/sim/social/Relationships.ts))
+drops an edge whose components have all faded, and the comment above the
+condition says exactly why: "an edge with nothing left in it is just noise in a
+map that will hold centuries of acquaintances." The condition then requires
+`rel.bias === 0` — and `introduce` stamps a bias of +18, +6 or −6 on every edge
+the moment it is created, and nothing ever clears it. So no edge is ever
+deleted. Every person anybody has ever spoken to, witnessed a deed by, or
+walked past while working stays in their map for the rest of their life, at the
+bare first impression their band membership implied.
+
+This was harmless while edges were made only by conversations and witnessed
+deeds. `SocialSystem.workingAlongside`, added in this phase, makes many more of
+them: relationship edges roughly doubled on the twelve-day run, 352 to 718. That
+is **the whole cost of the pass**, and it was measured rather than guessed —
+with `settle` stubbed out and the query and the loop left in place, the
+`crowded` scenario measures 1,330 steps/s against 1,115 with it, which is the
+same figure the build had before the pass existed.
+
+Not fixed here because deleting a faded edge changes what people think of each
+other: somebody forgotten reverts to an opinion of 0 rather than staying at the
+−6 an outsider was stamped with, which is a change to the social scorer and
+wants twenty seeds of its own. The shape of the fix is to let `bias` decay like
+everything else, or to exclude it from the emptiness test and re-stamp a fresh
+first impression the next time the two meet — which is arguably what a first
+impression *is*.
+
+### `ORDER_COST` prices all four conversations the same
+
+`orderCost` ([Authority.ts](../src/sim/social/Authority.ts)) is keyed by action
+id, and all four rungs of `Conversation.ts` are the action `talk`. So ordering
+somebody to sit down with a near-stranger for ninety ticks is exactly as much of
+an imposition, in the compliance roll, as telling them to say good morning to
+somebody they already like. The menu offers the rungs separately as of this
+phase, so the player can feel the difference everywhere except in whether they
+are obeyed.
+
+Not fixed because `orderCost` takes only the action and threading the rung into
+it touches `standingOver`, `command` and `assignJob` — a small change to a
+function whose output feeds a refusal roll, which is to say a change that needs
+measuring rather than reading.
+
+### A sixth of all conversations are broken off for thirst
+
+`doTalk` gained an interruption check in this phase, because the longest rung is
+ninety ticks and `AGENTS.md` is explicit about long actions with no way into
+them. It fires a great deal: a century run reports 663 conversations stopped by
+thirst against 3,251 completed, so roughly one exchange in six ends with
+somebody walking off to the river.
+
+That is the check doing its job — they really are thirsty, and `thirsty` is in
+`RESUMABLE_STOPS` so the conversation is picked up again — but it is also a
+great deal of walking spent on conversations that do not happen. Worth knowing
+before anyone concludes the rungs are not being used: they are, and a sixth of
+them are abandoned. The likely cause is that `Brain` scores `talk` without
+consulting `pressedByNeed`, unlike `play`, `tend` and `tame`, which are gated on
+it for precisely this reason.
+
+### Technologies known moved from 11.0 to 10.1 and did not come back
+
+Letting a greeting carry a story (the last commit of the phase) fixed
+`rumor-propagates` in two scenarios where it had reached zero, and cost nine
+tenths of a technology across the canonical twenty-seed cohort. Survival and
+starvation both improved in the same run, and every figure involved is inside
+the range `AGENTS.md` says twenty seeds cannot resolve.
+
+Recorded for the same reason the tech-kind split's 9.6 → 8.8 is recorded above:
+the next person to touch the tech economy should know this moved here, and
+should not attribute it to their own change.
+
+### Two health checks are one or two events wide
+
+Neither is a defect in the world and both cost time to diagnose during this
+phase, so they are written down as a warning rather than as a bug.
+
+`the-hurt-are-tended` on `century` passed on 151 tend ticks before this phase
+and reported 0 after it, which reads like a broken healer and is not one: the
+same build tends for 583 ticks at 80,000 steps, so the world simply reached its
+first injury later. `hunts-succeed-and-fail` on `band` skips below eight
+strikes and reported exactly eight kills with no misses on one build, while
+`hunters` — the scenario built to exercise it — reported 9 kills against 5
+misses on that same build. Both are the documented chaos of long scenarios
+landing on a threshold, and `AGENTS.md` already warns about it for `century`;
+the note here is that `band` has a knife-edge check too.
+
 ## Found during M9 phase 3, 2026-09-11
 
 ### The catalogue reads a stranger's knowledge to decide whether to offer a lesson
@@ -52,30 +140,17 @@ economy should know it moved and should not attribute it to their own change.
 
 Eight of the owner's thirteen open notes turned out to name real defects rather
 than only missing features. Full diagnosis and where each is scheduled:
-[m9_plan_words_and_hands.md](m9_plan_words_and_hands.md). Four of the eight are
+[m9_plan_words_and_hands.md](m9_plan_words_and_hands.md). Six of the eight are
 now fixed and removed from this list; see `changelog.md`: the picker offering
 only one candidate per kind and the near-identical node art that carried
-`NODE_LABELS`'s type asymmetry along with it (M9 phase 1), and `give_item`
+`NODE_LABELS`'s type asymmetry along with it (M9 phase 1), `give_item`
 discarding a real refusal and `doTake`'s fixed six-of-whatever grab (M9
-phase 2).
-
-### `doDiscuss` changes no relationship at all, and design gap rather than defect
-
-[ActionSystem.ts:1902-1963](../src/sim/systems/ActionSystem.ts#L1902-L1963)
-reads `regard` to gate whether a partner is willing, and writes to
-`idea.discussedWith`, `person.practice`, and `partner.practice` — but never to
-`Relationships` or to `company`. `doTeach` is the same shape: it emits the
-`teach` deed but never touches familiarity either. Not a bug so much as a
-missing mechanism the owner asked for directly. Scheduled as M9 phase 4.
-
-### Nothing records who sleeps under the same roof
-
-`Building` ([Building.ts:310](../src/sim/entities/Building.ts#L310)) carries no
-occupant list and no capacity field. `NeedsSystem.shelterAt`
-([NeedsSystem.ts:72](../src/sim/systems/NeedsSystem.ts#L72)) tests geometric
-containment per person, per tick, and forgets the answer immediately. A
-"sleeping together builds familiarity" mechanism has nothing to read.
-Scheduled as M9 phase 4.
+phase 2), and — in M9 phase 4 — `doDiscuss` and `doTeach` changing no
+relationship at all, and nothing in the world recording who sleeps under the
+same roof. The second of those is answered without the occupant list it seemed
+to need: `Simulation.shareTheHearth` reads geometric containment once, at
+midnight, rather than keeping a list that would then have to be maintained
+through every death, move and demolition.
 
 ### `ponder` requires a workable idea, so a comfortable person with none just wanders
 
