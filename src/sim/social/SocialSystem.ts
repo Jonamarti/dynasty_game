@@ -22,7 +22,7 @@ import type { RelationshipGraph } from './Relationships.ts';
 import type { EventType, Norms, SocialEvent } from './Events.ts';
 import { DEED_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
 import type { ConversationMode } from './Conversation.ts';
-import { CONVERSATION_MODES, warmthOf } from './Conversation.ts';
+import { CONVERSATION_MODES, crossBand } from './Conversation.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
 export interface LifeEvent {
@@ -239,24 +239,8 @@ export class SocialSystem {
     peopleById: Map<number, Person>,
     mode: ConversationMode
   ): void {
-    this.introduce(a, b);
-    this.introduce(b, a);
-
-    // Familiarity grows more slowly across a band boundary: it takes longer to
-    // warm to a stranger than to someone you grew up beside.
-    const sameBand = a.bandId === b.bandId;
-    const warmth = warmthOf(mode, sameBand);
-    this.relationships.addFamiliarity(a.id, b.id, warmth, tick);
-    this.relationships.addFamiliarity(b.id, a.id, warmth, tick);
-
-    // Only the longest rung answers loneliness outright. A nod across the camp
-    // is worth something and is not worth a whole evening, and until the modes
-    // landed every conversation in the game cleared `company` to zero — which
-    // is why a band could be sociable and lonely at the same time without the
-    // difference ever showing up in a need.
     const def = CONVERSATION_MODES[mode];
-    a.needs.company = Math.max(0, a.needs.company * (1 - def.relief));
-    b.needs.company = Math.max(0, b.needs.company * (1 - def.relief));
+    this.settle(a, b, tick, def.warmth, def.relief, def.relief);
     telemetry.count('conversation');
     telemetry.count('conversation_' + mode);
 
@@ -268,6 +252,47 @@ export class SocialSystem {
       this.gossip(a, b, peopleById);
       this.gossip(b, a, peopleById);
     }
+  }
+
+  /**
+   * The social residue of time spent in somebody's company: they know each
+   * other a little better, and neither is quite as alone as they were.
+   *
+   * Shared, because until M9 phase 4 a conversation was the *only* thing in
+   * the game that had this effect. Two people could spend a season arguing a
+   * design out or a whole afternoon on a lesson and come away exactly as
+   * distant as they began, which is the note the owner wrote down: discussing
+   * and teaching should build a relationship. One definition rather than three,
+   * for the reason `moveToward` and `linkFamily` are one definition — the
+   * copies drift, and the drift surfaces months later as an unaccountable
+   * difference between two things that ought to feel the same.
+   *
+   * The relief is given per side rather than once. What a technical
+   * conversation answers depends on who is having it — see `meetingOfMinds` —
+   * and the conversation rungs, where it answers the same for both, pass the
+   * same figure twice.
+   */
+  settle(
+    a: Person, b: Person, tick: number,
+    warmth: number, reliefA: number, reliefB: number
+  ): void {
+    this.introduce(a, b);
+    this.introduce(b, a);
+
+    // Familiarity grows more slowly across a band boundary: it takes longer to
+    // warm to a stranger than to someone you grew up beside.
+    const sameBand = a.bandId === b.bandId;
+    const gained = crossBand(warmth, sameBand);
+    this.relationships.addFamiliarity(a.id, b.id, gained, tick);
+    this.relationships.addFamiliarity(b.id, a.id, gained, tick);
+
+    // Only the longest conversation answers loneliness outright. A nod across
+    // the camp is worth something and is not worth a whole evening, and until
+    // the rungs landed every conversation in the game cleared `company` to
+    // zero — which is why a band could be sociable and lonely at the same time
+    // without the difference ever showing up in a need.
+    a.needs.company = Math.max(0, a.needs.company * (1 - reliefA));
+    b.needs.company = Math.max(0, b.needs.company * (1 - reliefB));
   }
 
   /**

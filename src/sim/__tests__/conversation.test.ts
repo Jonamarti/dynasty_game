@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  CONVERSATION_MODES, MODE_LADDER, chooseMode, modeAllowed, warmthOf,
+  CONVERSATION_MODES, MODE_LADDER, chooseMode, crossBand, meetingOfMinds, modeAllowed,
 } from '../social/Conversation.ts';
 import { SocialSystem } from '../social/SocialSystem.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
@@ -62,7 +62,8 @@ describe('choosing a conversation', () => {
   });
 
   it('warms more slowly across a band boundary', () => {
-    expect(warmthOf('chat', false)).toBeLessThan(warmthOf('chat', true));
+    expect(crossBand(10, false)).toBeLessThan(crossBand(10, true));
+    expect(crossBand(10, true)).toBe(10);
   });
 });
 
@@ -117,5 +118,24 @@ describe('which conversations may be asked for', () => {
   it('lets a close friend have any of them', () => {
     const close = edge(60, 1000);
     for (const mode of MODE_LADDER) expect(modeAllowed(close, 1000, mode)).toBe(true);
+  });
+});
+
+describe('what a shared problem is worth as company', () => {
+  function thinker(intelligence: number): Person {
+    const made = new Person('Thinker', 4, 4, 0, new RNG('minds-' + intelligence));
+    made.traits.intelligence = intelligence;
+    return made;
+  }
+
+  it('is worth more to somebody who finds the problem interesting', () => {
+    expect(meetingOfMinds(thinker(1), 0.5))
+      .toBeGreaterThan(meetingOfMinds(thinker(0), 0.5));
+  });
+
+  it('is never the whole of it, however clever they are', () => {
+    // A lesson is not an evening by the fire. If it were, nobody would ever
+    // choose `talk` again.
+    expect(meetingOfMinds(thinker(1), 1)).toBeLessThan(1);
   });
 });

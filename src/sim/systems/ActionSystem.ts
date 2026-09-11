@@ -24,7 +24,7 @@ import type { ItemPile } from '../entities/ItemPile.ts';
 import type { KnowledgeSystem } from './KnowledgeSystem.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
 import {
-  CONVERSATION_MODES, chooseMode, modeAllowed, type ConversationMode,
+  CONVERSATION_MODES, chooseMode, meetingOfMinds, modeAllowed, type ConversationMode,
 } from '../social/Conversation.ts';
 import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
@@ -156,6 +156,26 @@ const PONDER_TICKS = 150;
 
 /** Ticks spent arguing a problem out with somebody who knows something. */
 const DISCUSS_TICKS = 70;
+
+/**
+ * What an hour on a shared problem is worth socially.
+ *
+ * Note 6: until M9 phase 4 two people could argue a design out or sit through a
+ * whole lesson and come away exactly as distant as they began, because
+ * `SocialSystem.converse` was the only thing in the game that touched
+ * familiarity or loneliness. Both are worth less than a conversation of the
+ * same length — the subject is the flint, not each other — and both are worth
+ * more to somebody who finds the problem interesting, which is what
+ * `meetingOfMinds` reads `intelligence` for.
+ *
+ * A lesson warms the pair slightly less than an argument does for the reason
+ * it takes longer: teaching is one person talking and the other following,
+ * where a discussion is two people with a problem between them.
+ */
+const DISCUSS_WARMTH = 5;
+const DISCUSS_RELIEF = 0.5;
+const LESSON_WARMTH = 4;
+const LESSON_RELIEF = 0.35;
 
 /** Ticks to build the first one of a thing. */
 const PROTOTYPE_TICKS = 120;
@@ -457,6 +477,23 @@ export class ActionSystem {
   private finishSocial(person: Person, tick: number, cooldown = SOCIAL_COOLDOWN): void {
     person.socialCooldownUntil = tick + cooldown;
     this.finish(person);
+  }
+
+  /**
+   * What two people take away from having spent the time side by side.
+   *
+   * A thin wrapper on `SocialSystem.settle` so that the three verbs which are
+   * *about* something — a lesson, an argument over a design — ask the same
+   * question in the same words, and so that the per-person part of it is
+   * written once. Each of them gets as much company out of it as the problem
+   * was worth to them, which is not the same number for both.
+   */
+  private settleOverWork(
+    person: Person, other: Person, ctx: ActionContext, warmth: number, relief: number
+  ): void {
+    ctx.social.settle(person, other, ctx.tick, warmth,
+      meetingOfMinds(person, relief), meetingOfMinds(other, relief));
+    telemetry.count('settled_over_work');
   }
 
   /** Abandons an action that turned out to be impossible. */
@@ -1660,6 +1697,10 @@ export class ActionSystem {
       // Teaching is a gift, and it is received as one.
       ctx.social.emit('teach', person, pupil, 0.6, ctx.tick, ctx.peopleHash, ctx.sightRadius);
     }
+    // Whether or not anything landed. An afternoon was spent side by side and
+    // that is what `settle` is about — a lesson that failed to take is a
+    // disappointment, not a reason to come away strangers.
+    this.settleOverWork(person, pupil, ctx, LESSON_WARMTH, LESSON_RELIEF);
     pupil.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
     this.finishSocial(person, ctx.tick);
   }
@@ -1738,6 +1779,10 @@ export class ActionSystem {
     }
 
     telemetry.count('ask_taught');
+    // Settled only on a lesson that actually happened. Being turned down is
+    // not time spent in somebody's company, and the two refusals above return
+    // before this line for that reason.
+    this.settleOverWork(person, teacher, ctx, LESSON_WARMTH, LESSON_RELIEF);
     // The deed is the teacher's, because it is the teacher who gave something
     // away — the same gift `doTeach` emits, and it has to be attributed the
     // same way or asking would quietly be worth less socially than being
@@ -2249,6 +2294,11 @@ export class ActionSystem {
 
     partner.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
     person.practice('persuade', 0.3);
+
+    // Before the roll, so that both outcomes settle the same way: the hour was
+    // spent either way, and an argument that went nowhere still leaves two
+    // people who have spent an afternoon on the same problem.
+    this.settleOverWork(person, partner, ctx, DISCUSS_WARMTH, DISCUSS_RELIEF);
 
     if (!ctx.rng.chance(chance)) {
       telemetry.count('discuss_nothing');

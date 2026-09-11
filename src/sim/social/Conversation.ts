@@ -25,6 +25,7 @@
  * deliberate: a mode stored on the edge would be a second opinion about how
  * well two people know each other, and it would drift from the first.
  */
+import type { Person } from '../entities/Person.ts';
 import type { Relationship } from './Relationships.ts';
 
 export type ConversationMode = 'greet' | 'chat' | 'interests' | 'deep';
@@ -143,10 +144,15 @@ export function chooseMode(rel: Relationship | null, tick: number): Conversation
   return MODE_LADDER[rung]!;
 }
 
-/** Familiarity one conversation of this kind is worth, given where it happens. */
-export function warmthOf(mode: ConversationMode, sameBand: boolean): number {
-  const def = CONVERSATION_MODES[mode];
-  return sameBand ? def.warmth : def.warmth * CROSS_BAND;
+/**
+ * Familiarity actually gained, given where the two people are from.
+ *
+ * Takes the amount rather than the rung because it covers a lesson and an
+ * argument over a design as well as a conversation: whatever the two were
+ * doing, warming to somebody from another band takes longer.
+ */
+export function crossBand(warmth: number, sameBand: boolean): number {
+  return sameBand ? warmth : warmth * CROSS_BAND;
 }
 
 /**
@@ -173,4 +179,24 @@ export function whyNotYet(mode: ConversationMode): string {
   return mode === 'deep'
     ? 'They do not know them well enough to talk at length'
     : 'They do not know them well enough for that yet';
+}
+
+/**
+ * How much of an hour spent on a shared problem answers this person's
+ * loneliness.
+ *
+ * Note 6 was that discussing and teaching should build a relationship, and the
+ * thing that made it worth a mechanism rather than a constant is *who* it is
+ * worth it to. An afternoon arguing about how to bind a haft is company for
+ * somebody who finds the problem interesting and an afternoon's work for
+ * somebody who does not — and `intelligence` is the trait the note was reaching
+ * for when it said "intellectual". It is already how quickly somebody works an
+ * idea out, teaches it and picks it up again; this makes it also how much they
+ * get out of doing any of that in company.
+ *
+ * Deliberately never the whole of it, however clever they are: a lesson is not
+ * an evening by the fire, and if it were, nobody would ever choose `talk`.
+ */
+export function meetingOfMinds(person: Person, base: number): number {
+  return Math.min(0.95, base * (0.4 + person.traits.intelligence * 1.2));
 }
