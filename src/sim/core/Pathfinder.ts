@@ -51,6 +51,11 @@
  * truncates too. Disagreeing at a tile edge is exactly how a walker used to
  * end up aiming into a rock.
  *
+ * **One tile can be asked to be avoided**, as a penalty rather than a wall —
+ * see `AVOID_PENALTY`. `MovementSystem` uses it when a walker has been stuck
+ * long enough to want a route that is *different*, which a deterministic
+ * search over an unchanged world will otherwise never give it.
+ *
  * **Reconstruction compresses collinear runs only.** A forty-tile route
  * becomes four to eight waypoints. No string-pulling or any-angle smoothing —
  * a line-of-sight shortcut between distant waypoints is how a walker would
@@ -70,8 +75,46 @@ import { telemetry } from './Telemetry.ts';
 
 export const enum PathStatus { Found = 0, AlreadyThere = 1, NoRoute = 2, GaveUp = 3 }
 
-/** A bail-out, not a working limit — roughly 12% of a 128x128 map. */
-export const DEFAULT_MAX_EXPANSIONS = 2000;
+/**
+ * A bail-out, not a working limit — roughly half a 128x128 map.
+ *
+ * It was 2,000, and that was below the *known* requirement: `paths-are-found`
+ * samples tile pairs on `century`'s largest region and reports a worst case of
+ * 4,218 expansions, so the cap sat under the legitimate worst search the
+ * harness itself measures. Real play hit it on about 1% of searches for the
+ * whole of M7, and the consequence was not a slightly worse route — it was no
+ * route at all, a walker greedy-steering into a shoreline, and eventually an
+ * abandoned errand. The bail-out was manufacturing the stuck walkers this pass
+ * exists to fix.
+ *
+ * Raising it is also *free*, which took measuring to believe: on `century`,
+ * 2,000 -> 4,000 took `path_gave_up` from 2,011 to zero and steps/s from 2,634
+ * *up* to 2,848, because a search that runs to the cap is by definition the
+ * most expensive kind and does no useful work at the end of it. 4,000, 6,000
+ * and 10,000 produce byte-identical worlds, so nothing in play needs more than
+ * 4,000 and this is genuine headroom rather than a tuned number.
+ */
+export const DEFAULT_MAX_EXPANSIONS = 8000;
+
+/**
+ * Extra cost, in tiles, for entering the one tile a caller asked `find` to
+ * avoid.
+ *
+ * Additive, never a hard block, and the distinction is load-bearing. Removing
+ * a tile from the graph would break the equivalence between this graph's
+ * reachability and `World.region`'s that the whole region pre-check rests on:
+ * on a one-tile isthmus the search would expand the entire landmass and fall
+ * through to `NoRoute` — the single search shape `perf-budget` cannot survive
+ * — and it would do it in the recovery path, which by definition only runs
+ * when something has already gone wrong. As a penalty it routes around the
+ * tile whenever any local detour exists, still routes through when that tile
+ * is the only way, and needs no fallback second search.
+ *
+ * Eight tiles because a detour worth taking to get unstuck is a short one; a
+ * walker who would have to go eight tiles out of their way to avoid the tile
+ * they are pressed against is better off pressing.
+ */
+export const AVOID_PENALTY = 8;
 
 const SQRT2 = Math.SQRT2;
 
@@ -167,7 +210,8 @@ export class Pathfinder {
    */
   find(
     fromX: number, fromY: number, toX: number, toY: number,
-    maxExpansions = DEFAULT_MAX_EXPANSIONS
+    maxExpansions = DEFAULT_MAX_EXPANSIONS,
+    avoidIndex = -1
   ): PathStatus {
     const fx = fromX | 0;
     const fy = fromY | 0;
@@ -248,7 +292,11 @@ export class Pathfinder {
         const neighbor = ny * width + nx;
         if (this.closed[neighbor] === this.gen) continue;
 
-        const tentativeG = this.gScore[current]! + NEIGHBOR_COST[i]!;
+        // The avoid penalty is charged on *entering* the tile, so it is paid
+        // once however the route arrives, and it cannot make a reachable goal
+        // unreachable. See `AVOID_PENALTY`.
+        const tentativeG = this.gScore[current]! + NEIGHBOR_COST[i]! +
+          (neighbor === avoidIndex ? AVOID_PENALTY : 0);
         if (this.seen[neighbor] === this.gen && tentativeG >= this.gScore[neighbor]!) continue;
 
         this.cameFrom[neighbor] = current;

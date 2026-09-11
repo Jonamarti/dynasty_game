@@ -430,11 +430,12 @@ describe('the zombie order', () => {
     // makes no real progress, whatever the actual terrain looks like.
     sim.world.isWalkable = () => false;
     person.stuckSteps = PATIENCE + 1;
-    // M7 gives a stuck walk one free re-route before it gives up outright —
-    // exhaust it up front, so this one step lands on the real give-up rather
-    // than the retry.
-    person.pathRetried = true;
-
+    // M7 used to give a stuck walk one free re-route before giving up, and
+    // this test exhausted it up front. M7 stage C proved that retry was a
+    // no-op — the search has no RNG and `World.walkable` never changes, so
+    // re-running it from an unmoved walker returned the identical route — and
+    // deleted it in favour of `STUCK_REPATH` recoveries that actually differ.
+    // Nothing needs exhausting now: one step past `PATIENCE` is the give-up.
     sim.step();
 
     // This fails on the pre-M7 build: `giveUp` cleared `person.target*` but

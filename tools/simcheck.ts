@@ -2179,6 +2179,10 @@ export function formatReport(r: Report): string {
       '  ·  denied: cooldown=' + (r.telemetry.path_denied_cooldown ?? 0) +
       ' budget=' + (r.telemetry.path_denied_budget ?? 0)
     );
+    lines.push(
+      '  recoveries=' + (r.telemetry.path_recovery ?? 0) +
+      ' (' + (r.telemetry.path_recovery_found ?? 0) + ' found a route)'
+    );
   }
   lines.push('');
 

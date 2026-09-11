@@ -437,15 +437,6 @@ export class Person {
   pathGoalY = 0;
   /** Tick of the last route request, whether or not it found one. */
   pathTick = -Infinity;
-  /**
-   * Whether the current stall has already spent its one free re-route.
-   *
-   * A route can go stale under a walker — a wall goes up, `walkable` changes
-   * — in a way `needsRoute` cannot see coming, and the stuck detector is the
-   * backstop for exactly that. One retry before giving up outright, because a
-   * single bad tick is not yet evidence the whole route is wrong.
-   */
-  pathRetried = false;
 
   /**
    * Spreads think ticks across the tick cycle so the whole population does not
@@ -663,7 +654,6 @@ export class Person {
     // `MovementSystem` to compute a fresh one.
     this.pathCount = 0;
     this.pathAt = 0;
-    this.pathRetried = false;
     // And the cooldown, for the same reason. `MovementSystem.REPATH_COOLDOWN`
     // justifies itself with "fifteen ticks of greedy steering between attempts
     // is exactly what a person with no route at all already does" — an

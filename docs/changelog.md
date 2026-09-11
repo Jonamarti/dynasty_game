@@ -51,6 +51,88 @@ consumed the routes was not.
   and `path_denied_budget` staying near zero everywhere but `crowded` says the
   per-tick search budget is not the gate anybody needs to touch.
 
+- **Commit 5, a recovery re-path that is actually different — and the bail-out
+  that was manufacturing the problem.** The third defect. When a walk ran out
+  of `PATIENCE`, `pathRetried` bought it "one free re-route": clear the route,
+  return `Moving`, and let `requestRoute` ask again next tick. But
+  `Pathfinder` has no RNG, `World.walkable` is written once at worldgen and
+  never again, and a walker who has not moved is searching from the same tile —
+  so the search returned **the identical route it was already failing to
+  follow**. Twenty-five ticks of standing still to be told the same thing
+  twice. It only ever appeared to work because the stuck threshold allows about
+  0.08 tiles a tick, so twenty-five stuck ticks can drift somebody onto a
+  different start tile, which is worse than never working and is most of why
+  this bug read as intermittent. `pathRetried` is deleted rather than fixed:
+  the honest outcome of proving a field was a no-op.
+
+  In its place, `moveToward` fills an optional scratch object with the tile it
+  was **refused into** — recorded before any fallback runs, since the fallbacks
+  are about coping and this is about what blocked them — and every
+  `STUCK_REPATH` ticks of no progress the walker asks `Pathfinder` for a route
+  that avoids that tile. Three genuinely different attempts inside `PATIENCE`
+  instead of one identical one. `WildlifeSystem`'s three call sites pass
+  nothing, so the one shared steering primitive is not forked. The recovery
+  search is exempt from `REPATH_COOLDOWN` — that cooldown exists to stop
+  somebody with an unroutable target searching every tick, and a walker who has
+  not moved for eight ticks is a different case — and has its own small
+  per-tick allowance so that routine planning and getting somebody unstuck
+  cannot starve each other.
+
+  `AVOID_PENALTY` is **additive, never a wall**, and the distinction is the
+  whole design. Deleting a tile from the graph would break the equivalence
+  between this graph's reachability and `World.region`'s that the region
+  pre-check rests on: on a one-tile isthmus the search would expand the entire
+  landmass and then fail — the one search shape `perf-budget` cannot survive —
+  and it would do it in the path that only runs when something has already gone
+  wrong. `pathfinder.test.ts` gains the test that catches exactly that, and it
+  was mutation-verified: turning `avoid` into a `continue` makes "still routes
+  through the avoided tile when it is the only way" fail with `NoRoute`.
+
+  **And then the recovery did not work, which was the useful part.** On
+  `century`, 603 recoveries found 3 routes, `walk_blocked` went 0 → 169, and
+  sweeping `AVOID_PENALTY` across 1.5, 2, 3, 5 and 8 produced *byte-identical*
+  worlds — the signature of a penalty that is never reaching the outcome.
+  Instrumenting the status directly: 600 of 603 recoveries returned `GaveUp`.
+  They were hitting `DEFAULT_MAX_EXPANSIONS`.
+
+  That cap was 2,000, and it was below the **known** requirement.
+  `paths-are-found` samples tile pairs on `century`'s largest region and has
+  been reporting a worst case of **4,218 expansions** in the same report that
+  failed for hitting 2,000 in play. The bail-out was not protecting the frame
+  from pathological searches; it was cutting off legitimate ones, and the
+  consequence was not a worse route but *no route at all* — a walker
+  greedy-steering into a shoreline and eventually abandoning the errand. The
+  bail-out was manufacturing the stuck walkers this whole pass exists to fix.
+
+  Raising it is free, which took measuring to believe. On `century`:
+
+  | max expansions | path_gave_up | recoveries (found) | walk_blocked | stuck /1k | steps/s |
+  |---|---|---|---|---|---|
+  | 2,000  | 2,011 | 603 (3)  | 169 | 13.2 | 2,634 |
+  | 4,000  | **0** | 14 (14)  | **0** | **0.7** | **2,848** |
+  | 6,000  | 0 | 14 (14) | 0 | 0.7 | 2,821 |
+  | 10,000 | 0 | 14 (14) | 0 | 0.7 | 2,850 |
+
+  It runs *faster* with a higher cap, because a search that runs to the cap is
+  by definition the most expensive kind and does no useful work at the end of
+  it. 4,000, 6,000 and 10,000 give byte-identical worlds, so nothing in play
+  needs more than 4,000; it ships at **8,000** as genuine headroom rather than
+  a tuned number.
+
+  **`century` passes 58 of 58 for the first time**, `paths-are-found`
+  included — it had failed since M7 stage B, which recorded it as "~1% of
+  searches" and left it. Twenty seeds: mean survival **99.9%**, 0/20 collapsed,
+  462 born, infants starved 77 → **12** against where this pass started.
+
+  Remaining failures on the matrix, all chased rather than shrugged at:
+  `crowded`'s `perf-budget`, which was failing before this pass began and still
+  is; and `craft`'s `hunts-succeed-and-fail` and `food-work-continues`,
+  `hunters`' `kills-are-butchered-for-bone`, `fishers`' `pots-reach-a-granary`
+  — every one of them a sample-size artefact rather than a mechanism. `craft`
+  run out to 12,000 steps instead of 8,000 passes both of its checks (15 kills,
+  4 misses), so hunting still misses; it simply had not missed yet by step
+  8,000.
+
 - **Commit 4, a new errand gets a route on its first tick.** `clearTarget()`
   forgot the route, the aim and the retry flag, and left `pathTick` — the
   timestamp `REPATH_COOLDOWN` gates on — untouched. `requestRoute` stamps it on

@@ -31,7 +31,7 @@ import type { World } from '../core/World.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { Person } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
-import { Pathfinder, PathStatus } from '../core/Pathfinder.ts';
+import { Pathfinder, PathStatus, DEFAULT_MAX_EXPANSIONS } from '../core/Pathfinder.ts';
 
 /** A person is considered to have arrived within this many tiles of a target. */
 export const ARRIVAL_RADIUS = 0.6;
@@ -122,6 +122,29 @@ const REPATH_COOLDOWN = 15;
 const MAX_PATHS_PER_TICK = 3;
 
 /**
+ * Ticks of no progress between recovery re-paths, inside `PATIENCE`.
+ *
+ * Eight gives three genuinely different attempts before a walk is abandoned,
+ * where the old "one free re-route at `PATIENCE`" gave one identical one: the
+ * search has no RNG, `World.walkable` never changes, and a walker who has not
+ * moved is searching from the same tile, so it returned the same route it was
+ * already failing to follow. It only *appeared* to work at all because the
+ * stuck threshold allows about 0.08 tiles a tick, so twenty-five stuck ticks
+ * can still drift somebody onto a different start tile — which is worse than
+ * never working, and is why this read as intermittent.
+ */
+export const STUCK_REPATH = 8;
+
+/**
+ * Recovery searches allowed across the whole population in one tick, separate
+ * from `MAX_PATHS_PER_TICK` so that routine re-planning and getting somebody
+ * unstuck cannot starve each other. A stuck walker should not have to win a
+ * race against everybody's ordinary errands, and a pathological mass-stall
+ * should not be able to blow the frame budget either.
+ */
+const MAX_RECOVERY_PATHS_PER_TICK = 2;
+
+/**
  * One step of greedy steering, for anything with a position.
  *
  * Extracted so that animals and people cannot disagree about what walkable
@@ -152,7 +175,8 @@ export function moveToward(
   targetY: number,
   speed: number,
   world: World,
-  rng: RNG
+  rng: RNG,
+  refused?: { x: number; y: number }
 ): number {
   const dx = targetX - entity.x;
   const dy = targetY - entity.y;
@@ -193,28 +217,40 @@ export function moveToward(
   if (world.isWalkable(nx, ny)) {
     entity.x = nx;
     entity.y = ny;
-  } else if (alongX && world.isWalkable(nx, entity.y)) {
-    entity.x = nx;
-    outcome = 1;
-  } else if (alongY && world.isWalkable(entity.x, ny)) {
-    entity.y = ny;
-    outcome = 1;
   } else {
-    outcome = 2;
-    // Slide along the obstacle, perpendicular to the desired heading — and try
-    // *both* hands, not one. There is no reason to prefer a fixed rotation,
-    // and a walker pressed into a concave corner whose first perpendicular
-    // happens to be blocked used to stand still with an open side next to it.
-    // The second try costs one walkability lookup and no extra draw.
-    const jitter = rng.range(-0.5, 0.5) * speed;
-    const px = (dy / dist) * speed;
-    const py = -(dx / dist) * speed;
-    if (world.isWalkable(entity.x + px + jitter, entity.y + py + jitter)) {
-      entity.x += px + jitter;
-      entity.y += py + jitter;
-    } else if (world.isWalkable(entity.x - px + jitter, entity.y - py + jitter)) {
-      entity.x += -px + jitter;
-      entity.y += -py + jitter;
+    // The tile the walker actually wanted, for a caller that wants to route
+    // around it rather than merely cope with it. Recorded here, before any
+    // fallback runs: the fallbacks are about coping, and this is about what
+    // blocked them. Written into a scratch object the caller owns, so a step
+    // still allocates nothing.
+    if (refused) {
+      refused.x = nx | 0;
+      refused.y = ny | 0;
+    }
+
+    if (alongX && world.isWalkable(nx, entity.y)) {
+      entity.x = nx;
+      outcome = 1;
+    } else if (alongY && world.isWalkable(entity.x, ny)) {
+      entity.y = ny;
+      outcome = 1;
+    } else {
+      outcome = 2;
+      // Slide along the obstacle, perpendicular to the desired heading — and
+      // try *both* hands, not one. There is no reason to prefer a fixed
+      // rotation, and a walker pressed into a concave corner whose first
+      // perpendicular happens to be blocked used to stand still with an open
+      // side next to it. The second try costs one lookup and no extra draw.
+      const jitter = rng.range(-0.5, 0.5) * speed;
+      const px = (dy / dist) * speed;
+      const py = -(dx / dist) * speed;
+      if (world.isWalkable(entity.x + px + jitter, entity.y + py + jitter)) {
+        entity.x += px + jitter;
+        entity.y += py + jitter;
+      } else if (world.isWalkable(entity.x - px + jitter, entity.y - py + jitter)) {
+        entity.x += -px + jitter;
+        entity.y += -py + jitter;
+      }
     }
   }
 
@@ -242,7 +278,15 @@ export function moveToward(
 export class MovementSystem {
   /** Route searches already spent this tick, across the whole population. */
   private searchesUsed = 0;
+  /** Recovery searches already spent this tick; see `MAX_RECOVERY_PATHS_PER_TICK`. */
+  private recoveriesUsed = 0;
   private budgetTick = -1;
+
+  /**
+   * Where the last `moveToward` call was refused, reused every step rather
+   * than allocated. `x < 0` means the step was not refused at all.
+   */
+  private readonly refused = { x: -1, y: -1 };
 
   constructor(
     private readonly world: World,
@@ -359,32 +403,18 @@ export class MovementSystem {
     telemetry.count('walk_tick');
 
     // The honest test: did we actually get anywhere?
-    const progress = moveToward(person, aimX, aimY, speed, this.world, this.rng);
+    this.refused.x = -1;
+    const progress = moveToward(person, aimX, aimY, speed, this.world, this.rng, this.refused);
     if (progress >= speed * PROGRESS_THRESHOLD) {
       person.stuckSteps = 0;
-      person.pathRetried = false;
       return Arrival.Moving;
     }
 
     telemetry.count('walk_stuck_tick');
     person.stuckSteps++;
-    if (person.stuckSteps > PATIENCE) {
-      // Out of patience buys one free re-route before giving up outright —
-      // a route can go stale under a walker (a wall goes up, `walkable`
-      // changes) in a way `needsRoute` cannot see coming, and a single bad
-      // stretch is not yet evidence the whole route is wrong. `requestRoute`
-      // is still subject to its own cooldown and budget, so this is a chance
-      // at a fresh route, not a guarantee of one.
-      if (!person.pathRetried) {
-        person.pathRetried = true;
-        person.stuckSteps = 0;
-        person.pathCount = 0;
-        person.pathAt = 0;
-        return Arrival.Moving;
-      }
 
+    if (person.stuckSteps > PATIENCE) {
       person.stuckSteps = 0;
-      person.pathRetried = false;
       telemetry.count('gave_up_walking');
       // Counted apart from the general tally because this is the shape of the
       // zombie-order bug M7 exists to fix: a give-up reached under an order
@@ -392,7 +422,82 @@ export class MovementSystem {
       if (person.order !== null) telemetry.count('gave_up_under_orders');
       return Arrival.Blocked;
     }
+
+    // A route that is *different*, three times over, before giving up — not
+    // the single identical one the old `pathRetried` bought. Run here rather
+    // than by clearing `pathCount` and waiting for the next tick, because the
+    // refusal scratch is fresh exactly now and waiting spends a tick of the
+    // patience this is trying to save.
+    if (person.stuckSteps % STUCK_REPATH === 0) this.recoverRoute(person, tick);
+
     return Arrival.Moving;
+  }
+
+  /**
+   * The re-path a stuck walker gets, which differs from `requestRoute` in the
+   * two ways that matter when somebody is pressed against terrain.
+   *
+   * It is exempt from `REPATH_COOLDOWN`: that cooldown exists to stop a person
+   * with an unroutable target searching every tick for nothing, and somebody
+   * who has not moved for eight ticks is a different case entirely.
+   *
+   * And it asks `Pathfinder` to avoid the tile the walker is actually pressed
+   * against, which is the whole point. The search has no RNG and
+   * `World.walkable` never changes, so re-running it from an unchanged
+   * position returns the identical route — the old retry spent twenty-five
+   * ticks to be told the same thing twice. One tile of penalty is enough to
+   * make the answer genuinely different wherever a detour exists at all.
+   */
+  private recoverRoute(person: Person, tick: number): void {
+    if (tick !== this.budgetTick) {
+      this.budgetTick = tick;
+      this.searchesUsed = 0;
+      this.recoveriesUsed = 0;
+    }
+    if (this.recoveriesUsed >= MAX_RECOVERY_PATHS_PER_TICK) return;
+    this.recoveriesUsed++;
+    telemetry.count('path_recovery');
+
+    const avoid = this.refused.x >= 0
+      ? this.world.index(this.refused.x, this.refused.y)
+      : -1;
+
+    person.pathTick = tick;
+    const status = this.pathfinder.find(
+      person.x, person.y, person.targetX!, person.targetY!, DEFAULT_MAX_EXPANSIONS, avoid
+    );
+    if (this.storeRoute(person, status)) telemetry.count('path_recovery_found');
+  }
+
+  /**
+   * Copies `Pathfinder`'s result onto the person, or clears their route when
+   * there was none. Shared by the routine and recovery searches so the two
+   * cannot drift about what a stored route means.
+   */
+  private storeRoute(person: Person, status: PathStatus): boolean {
+    if (status !== PathStatus.Found) {
+      // `AlreadyThere` is handled by the arrival check in `advance` in
+      // practice; `NoRoute`/`GaveUp` leave nothing to store, so the walker
+      // aims straight at the real target until the stuck backstop decides
+      // what a route that never arrives means.
+      person.pathCount = 0;
+      person.pathAt = 0;
+      return false;
+    }
+
+    const routeLength = this.pathfinder.routeLength;
+    if (!person.path || person.path.length < routeLength * 2) {
+      // Grows rather than reallocating on every route — one buffer per
+      // person for life in the overwhelmingly common case, since a route
+      // this size has, by definition, never been needed before.
+      person.path = new Int16Array(Math.max(routeLength * 2, (person.path?.length ?? 8) * 2));
+    }
+    person.path.set(this.pathfinder.route.subarray(0, routeLength * 2));
+    person.pathCount = routeLength;
+    person.pathAt = 0;
+    person.pathGoalX = person.targetX!;
+    person.pathGoalY = person.targetY!;
+    return true;
   }
 
   /**
@@ -439,6 +544,7 @@ export class MovementSystem {
     if (tick !== this.budgetTick) {
       this.budgetTick = tick;
       this.searchesUsed = 0;
+      this.recoveriesUsed = 0;
     }
     // Both refusals leave the walker greedy-steering with no route, which is
     // indistinguishable from "no route exists" everywhere downstream. Counted
@@ -456,28 +562,9 @@ export class MovementSystem {
     person.pathTick = tick;
     this.searchesUsed++;
 
-    const status = this.pathfinder.find(person.x, person.y, person.targetX!, person.targetY!);
-    if (status !== PathStatus.Found) {
-      // `AlreadyThere` is handled by the arrival check above in practice;
-      // `NoRoute`/`GaveUp` leave nothing to store, so the walker aims
-      // straight at the real target below until the stuck backstop decides
-      // what a route that never arrives means.
-      person.pathCount = 0;
-      person.pathAt = 0;
-      return;
-    }
-
-    const routeLength = this.pathfinder.routeLength;
-    if (!person.path || person.path.length < routeLength * 2) {
-      // Grows rather than reallocating on every route — one buffer per
-      // person for life in the overwhelmingly common case, since a route
-      // this size has, by definition, never been needed before.
-      person.path = new Int16Array(Math.max(routeLength * 2, (person.path?.length ?? 8) * 2));
-    }
-    person.path.set(this.pathfinder.route.subarray(0, routeLength * 2));
-    person.pathCount = routeLength;
-    person.pathAt = 0;
-    person.pathGoalX = person.targetX!;
-    person.pathGoalY = person.targetY!;
+    this.storeRoute(
+      person,
+      this.pathfinder.find(person.x, person.y, person.targetX!, person.targetY!)
+    );
   }
 }

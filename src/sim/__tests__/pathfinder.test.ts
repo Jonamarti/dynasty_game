@@ -243,3 +243,82 @@ describe('strandedPeople', () => {
     expect(result.strandedFromWater + result.strandedFromFood).toBeGreaterThan(0);
   });
 });
+
+/**
+ * The one-tile avoid penalty `MovementSystem` uses to get a *different* route
+ * out of a search that has no RNG and an unchanging world.
+ */
+describe('Pathfinder avoid penalty', () => {
+  it('routes around the avoided tile when a detour exists', () => {
+    // Two open lanes between the same endpoints, so avoiding a tile on the
+    // direct one has somewhere to go.
+    const world = gridWorld([
+      '.......',
+      '.......',
+      '.......',
+    ]);
+    const finder = new Pathfinder(world);
+
+    expect(finder.find(0, 1, 6, 1)).toBe(PathStatus.Found);
+    const plain = Array.from(finder.route.subarray(0, finder.routeLength * 2));
+
+    const avoided = world.index(3, 1);
+    expect(finder.find(0, 1, 6, 1, DEFAULT_MAX_EXPANSIONS, avoided)).toBe(PathStatus.Found);
+    const detour = Array.from(finder.route.subarray(0, finder.routeLength * 2));
+
+    // The point of the whole mechanism: a route that is not the same route.
+    expect(detour).not.toEqual(plain);
+
+    // And the avoided tile is genuinely not on it. Waypoints only mark turns,
+    // so this walks the compressed route back out into tiles.
+    const tiles: string[] = [];
+    let cx = 0;
+    let cy = 1;
+    for (let i = 0; i < finder.routeLength; i++) {
+      const wx = finder.route[i * 2]!;
+      const wy = finder.route[i * 2 + 1]!;
+      while (cx !== wx || cy !== wy) {
+        cx += Math.sign(wx - cx);
+        cy += Math.sign(wy - cy);
+        tiles.push(cx + ',' + cy);
+      }
+    }
+    expect(tiles).not.toContain('3,1');
+  });
+
+  it('still routes through the avoided tile when it is the only way', () => {
+    // A one-tile isthmus. This is the test that would have caught treating
+    // `avoid` as a wall: removing the tile from the graph would make the goal
+    // unreachable, and the search would expand the whole map before saying so
+    // — the one search shape `perf-budget` cannot survive, in the recovery
+    // path that only runs when something has already gone wrong.
+    const world = gridWorld([
+      '...#...',
+      '.......',
+      '...#...',
+    ]);
+    const finder = new Pathfinder(world);
+    const isthmus = world.index(3, 1);
+
+    expect(finder.find(0, 1, 6, 1, DEFAULT_MAX_EXPANSIONS, isthmus)).toBe(PathStatus.Found);
+  });
+
+  it('is byte-identical to an unpenalised search when nothing is avoided', () => {
+    // A regression guard on the plumbing rather than on the penalty: the
+    // default argument must not perturb an ordinary search at all.
+    const world = gridWorld([
+      '.......',
+      '..##...',
+      '.......',
+    ]);
+    const finder = new Pathfinder(world);
+
+    expect(finder.find(0, 0, 6, 2)).toBe(PathStatus.Found);
+    const plain = Array.from(finder.route.subarray(0, finder.routeLength * 2));
+    const expanded = finder.lastExpanded;
+
+    expect(finder.find(0, 0, 6, 2, DEFAULT_MAX_EXPANSIONS, -1)).toBe(PathStatus.Found);
+    expect(Array.from(finder.route.subarray(0, finder.routeLength * 2))).toEqual(plain);
+    expect(finder.lastExpanded).toBe(expanded);
+  });
+});
