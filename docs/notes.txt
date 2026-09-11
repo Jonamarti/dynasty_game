@@ -1,0 +1,2 @@
+All techs should be developed the same. Plant lore for example shouldnt show a "build a plant lore" it doesnt make sense, it should improve by harvesting and thinking about it, but doesnt have a prototype to build. We should distinguish from technologies that are improvements of actions (like plant lore, helps to gather more) and technologies that are/unlock objects, like baskets, that actually have prototypes. Maybe also draw them differently in the tech web too. 
+To pick things up npcs must  go near the object.

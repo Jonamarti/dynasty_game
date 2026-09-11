@@ -488,6 +488,19 @@ html, body, #app {
 
 .radial-item.is-hostile:hover { border-color: #e06a5a; }
 
+/* A group opens a page rather than doing anything, so it stays clickable even
+   when everything inside it is out of reach — the reason a recipe cannot be
+   made lives on the recipe, and a group that refused to open would lock its
+   own explanation away. `is-disabled` would otherwise put `not-allowed` under
+   the cursor of a button that works. */
+.radial-item.has-children.is-disabled { opacity: 0.62; cursor: pointer; }
+.radial-item.has-children { border-style: dashed; }
+
+/* The title is the way back out of a submenu. It has to look like something
+   you can press, which the plain title deliberately does not. */
+.radial-title.is-back { cursor: pointer; }
+.radial-title.is-back:hover { border-color: var(--accent); color: var(--text); }
+
 .radial-icon { font-size: 17px; line-height: 1.1; }
 .radial-label { text-align: center; line-height: 1.2; }
 

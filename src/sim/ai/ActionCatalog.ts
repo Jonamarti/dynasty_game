@@ -68,6 +68,20 @@ export interface ActionOption {
   reason?: string;
   /** True for deeds others will judge you for; the menu marks these. */
   hostile?: boolean;
+  /**
+   * A ring of options this one opens instead of doing anything itself.
+   *
+   * M9 phase 3, note 10. The catalogue had outgrown a flat menu: one option
+   * per recipe meant a competent crafter right-clicking the ground got a ring
+   * of a dozen overlapping buttons, and every technology added made it worse.
+   * Grouping is decided here rather than in `RadialMenu` for the same reason
+   * every other question about verbs is — the menu draws what the simulation
+   * says is possible, and it must not invent categories of its own.
+   *
+   * An option with children carries no verb: `enabled` is what the group looks
+   * like, and picking it opens the ring rather than issuing anything.
+   */
+  children?: ActionOption[];
 }
 
 export interface CatalogContext {
@@ -471,11 +485,14 @@ function buildingActions(
     // itself. Passing `building` as the station means the one that was clicked
     // is the one used, rather than whichever the UI thinks is nearest.
     if (isStation(building.def)) {
+      const crafts: ActionOption[] = [];
       for (const recipe of Object.values(RECIPES)) {
         if (recipe.station !== building.def.id) continue;
         if (techPower(actor, recipe.tech) <= 0) continue;
-        options.push(craftOption(actor, recipe, ctx, building));
+        crafts.push(craftOption(actor, recipe, ctx, building));
       }
+      options.push(...grouped(crafts, 'Make…', '\u{1F528}',
+        'You know nothing that is made here'));
     }
   }
   return options;
@@ -590,12 +607,53 @@ function groundActions(
   // full of greyed-out things would give away the shape of the tech web for
   // free — but one they know and lack the parts for is shown greyed with what
   // is missing, which is the question the `reason` channel exists to answer.
+  const crafts: ActionOption[] = [];
   for (const recipe of Object.values(RECIPES)) {
     if (techPower(actor, recipe.tech) <= 0) continue;
-    options.push(craftOption(actor, recipe, ctx));
+    crafts.push(craftOption(actor, recipe, ctx));
   }
+  options.push(...grouped(crafts, 'Make…', '\u{1F528}',
+    'You do not know how to make anything yet'));
   return options;
 }
+
+/**
+ * Folds a run of related options into one entry, once there are enough of them
+ * to be worth a page of their own.
+ *
+ * M9 phase 3, note 10. Below the threshold the options stay on the ring they
+ * were on: a forager who knows one recipe should not have to open a submenu to
+ * reach the only thing in it, and burying a single option is how a menu that
+ * nests becomes a menu that hides.
+ *
+ * The group reports the state of what is inside it — greyed when nothing in
+ * there can be done — but stays *openable* either way, because the reason a
+ * recipe is out of reach lives on the recipe, and a group that refused to open
+ * would be a refusal with its explanation locked inside it.
+ */
+function grouped(
+  options: ActionOption[], label: string, icon: string, emptyReason: string
+): ActionOption[] {
+  if (options.length < GROUP_AT) return options;
+  const any = options.some(option => option.enabled);
+  return [{
+    id: 'group',
+    label,
+    icon,
+    enabled: any,
+    reason: any ? undefined : emptyReason,
+    children: options,
+  }];
+}
+
+/**
+ * How many related options it takes before they are worth folding away.
+ *
+ * Three. Two extra buttons on a ring of eight are nothing; the ring stops
+ * being readable somewhere around ten, and a crafter late in the tree has
+ * fifteen recipes on their own.
+ */
+const GROUP_AT = 3;
 
 /**
  * One craft entry, with the station question answered.
