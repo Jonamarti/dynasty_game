@@ -1987,6 +1987,7 @@ export class Simulation {
       recorded: this.recordsInHand,
       sightRadius: this.config.sightRadius,
       needs: this.config.needs,
+      chiefByBand: this.bandSystem.chiefByBand,
     };
     const actionCtx = {
       world: this.world,

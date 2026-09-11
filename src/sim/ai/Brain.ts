@@ -24,6 +24,7 @@ import type { TimeManager } from '../core/TimeManager.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
+import { telemetry } from '../core/Telemetry.ts';
 import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
 import { isTrap } from '../entities/Building.ts';
 import type { Building } from '../entities/Building.ts';
@@ -65,6 +66,15 @@ export interface BrainContext {
    * module constant; they must not come apart now that a scenario can move them.
    */
   needs: NeedsConfig;
+  /**
+   * Who leads each band, so that standing with the person who leads yours is
+   * something anybody can want rather than something only `BandSystem` knows.
+   *
+   * `BandSystem.chiefByBand` itself, handed straight in rather than copied:
+   * `Band.chiefId` is written at the same moment and two readings of who leads
+   * a band is one too many.
+   */
+  chiefByBand: ReadonlyMap<number, number>;
 }
 
 export interface ScoredAction {
@@ -130,6 +140,30 @@ interface FoundTargets {
 function talkGate(rel: Relationship, tick: number): number {
   return CONVERSATION_MODES[chooseMode(rel, tick)].cooldown;
 }
+
+/**
+ * The pull toward one's own people, and toward whoever leads them.
+ *
+ * Note 2: the owner wanted a reason to cultivate a relationship with the tribe
+ * and its leader, and there was none. Every social scorer read `opinion`, which
+ * is a fact about two individuals — so a band was a set of people who happened
+ * to share a camp, and its chief was somebody the band system elected daily and
+ * nobody had any reason to go and talk to.
+ *
+ * Loyalty is what turns belonging into a motive, and grievance is what undoes
+ * it: the account is `grievance * (1 - loyalty)`, exactly the `defiance` figure
+ * `BandSystem.considerRebellion` already spends when somebody refuses their
+ * chief, leaves over him, or challenges him outright. One account, so that a
+ * person on the edge of walking out is visibly the same person who has stopped
+ * seeking him out — rather than two unrelated numbers that happen to point the
+ * same way.
+ *
+ * The chief's figure is not much larger than a bandmate's. It is a reason to
+ * cross the camp, not a reason to do nothing else: a band where everybody
+ * queues to talk to the chief is a court, and this is a stone age.
+ */
+const BAND_BOND = 0.25;
+const CHIEF_BOND = 0.7;
 
 /**
  * How much a hunt is worth, before the odds and the size of the animal.
@@ -441,6 +475,10 @@ export class Brain {
       });
       companion = this.pickBest(freshCompany, other =>
         ctx.relationships.opinion(person.id, other.id) + 5 - person.distanceTo(other)
+        // Worth about a dozen tiles of walking toward whoever leads your band,
+        // and a couple toward anybody else in it. In opinion's units because
+        // everything else in this comparison is.
+        + this.bond(person, other, ctx) * 12
       );
       if (companion) {
         const regard = ctx.relationships.opinion(person.id, companion.id) / 100;
@@ -462,6 +500,15 @@ export class Brain {
         // anything about anyone. It is deliberately *not* scaled by the rung —
         // striking up an acquaintance with somebody you barely know is the
         // whole of what the floor is for.
+        // Note that `bond` is deliberately absent here, and present in the
+        // choice of companion above. Belonging decides *who* you cross the
+        // camp for; it is not a reason to spend more of the day talking, and
+        // when it was one — a `* (1 + bond * 0.6)` on this line — twenty seeds
+        // said so: transmission fell from 416.3 lessons passed on to 395.9 and
+        // technologies known from 10.3 to 10.1, because the same social
+        // cooldown that rations conversation rations arguing a design out, and
+        // talk won more of it. The pull toward one's own people costs nothing
+        // if it only redirects a conversation that was going to happen anyway.
         add('talk', (loneliness * 1.8 * worth + 0.09) * (1 + regard * 0.5)
           * this.proximityBonus(person, companion, ctx.sightRadius));
       }
@@ -644,12 +691,17 @@ export class Brain {
           // its own young does not have a second generation.
           const kin = ctx.relationships.kinship(person.id, other.id);
           const young = other.isChild ? 40 : 0;
-          return regard + kin + young + other.needs.hunger * 0.4 - person.distanceTo(other) * 2;
+          // And one's own band before strangers, which is the half of note 2
+          // that is about the tribe rather than the leader. Well under `kin`:
+          // a gift is how you court a chief and blood still comes first.
+          return regard + kin + young + this.bond(person, other, ctx) * 12
+            + other.needs.hunger * 0.4 - person.distanceTo(other) * 2;
         });
         if (beneficiary) {
           const regard = Math.max(0, ctx.relationships.opinion(person.id, beneficiary.id)) / 100;
           const theirNeed = beneficiary.needs.hunger / 100;
-          add('give', (0.3 + regard * 0.8 + theirNeed * 0.5) *
+          add('give', (0.3 + regard * 0.8 + theirNeed * 0.5
+              + this.bond(person, beneficiary, ctx) * 0.6) *
             (1 - person.traits.greed * 0.7) * (0.3 + person.traits.loyalty)
             * this.proximityBonus(person, beneficiary, ctx.sightRadius));
         }
@@ -1332,6 +1384,24 @@ export class Brain {
     return Math.min(1, store.store.total / worthTheWalk);
   }
 
+  /**
+   * How strongly this person is pulled toward that one as *one of their own*,
+   * 0 to about 0.9.
+   *
+   * Zero across a band boundary, and zero toward somebody they have a grudge
+   * against in proportion to how little loyalty they have left — see
+   * `BAND_BOND`. Nothing here reads how the *other* person feels: belonging is
+   * a fact about the one doing the belonging, which is why a chief nobody
+   * likes still has a band and an outcast who likes everybody does not.
+   */
+  private bond(person: Person, other: Person, ctx: BrainContext): number {
+    if (other.bandId !== person.bandId || other.id === person.id) return 0;
+    const base = ctx.chiefByBand.get(person.bandId) === other.id ? CHIEF_BOND : BAND_BOND;
+    const grievance = Math.max(0, -ctx.relationships.opinion(person.id, other.id)) / 100;
+    const defiance = grievance * (1 - person.traits.loyalty);
+    return base * (0.3 + person.traits.loyalty) * (1 - defiance);
+  }
+
   /** Closer targets are worth more, but distance never zeroes a desperate need. */
   private proximityBonus(person: Person, target: { x: number; y: number }, sight: number): number {
     const d = person.distanceTo(target);
@@ -1535,6 +1605,14 @@ export class Brain {
           person.targetX = other.x;
           person.targetY = other.y;
           person.targetPersonId = other.id;
+          // Whether the person somebody crossed the camp for was the one
+          // leading their band. Counted because `bond` is otherwise a term in
+          // a scorer with no visible consequence: `AGENTS.md` says to chase the
+          // report rather than the check, and without this line "people court
+          // their chief" is an assertion in a comment and nothing else.
+          if (ctx.chiefByBand.get(person.bandId) === other.id) {
+            telemetry.count('sought_out_chief_' + action);
+          }
         }
         break;
       }
