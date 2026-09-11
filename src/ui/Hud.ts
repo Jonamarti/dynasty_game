@@ -720,7 +720,7 @@ export class Hud {
     const stop = this.lastStop;
     const fresh = stop !== null && stop.personId === person.id &&
       performance.now() - stop.at < STOP_NOTICE_MS;
-    return escapeHtml(actionLabel(person.action, person.targetRecipe)) +
+    return escapeHtml(actionLabel(person.action, person.targetRecipe, person.talkMode)) +
       (person.order ? ' <span class="hud-ordered">ordered</span>' : '') +
       (fresh ? '<div class="hud-stopped">' + escapeHtml(stop!.text) + '</div>' : '');
   }

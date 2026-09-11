@@ -13,6 +13,7 @@
 import type { Camera } from './Camera.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { BUILDINGS } from '../sim/entities/Building.ts';
+import { CONVERSATION_MODES, type ConversationMode } from '../sim/social/Conversation.ts';
 
 export interface Floater {
   x: number;
@@ -176,10 +177,19 @@ export const ACTION_LABELS: Record<string, string> = {
  * read "making a hand axe" whatever was on the workbench. The recipe's own
  * `label` is the single source, so a new entry in `RECIPES` needs no edit here.
  */
-export function actionLabel(action: string, recipe?: string | null): string {
+export function actionLabel(
+  action: string, recipe?: string | null, mode?: string | null
+): string {
   if (action === 'craft') {
     const def = recipe ? RECIPES[recipe] : null;
     if (def) return 'making a ' + def.label.toLowerCase();
+  }
+  // Same story as `craft`, and for the same reason: since M9 phase 4 there are
+  // four conversations behind the one verb, and "talking" for all of them
+  // hides the difference between nodding at somebody in passing and sitting
+  // with them for a quarter of the day.
+  if (action === 'talk' && mode && mode in CONVERSATION_MODES) {
+    return CONVERSATION_MODES[mode as ConversationMode].doing;
   }
   return ACTION_LABELS[action] ?? action;
 }
@@ -275,6 +285,11 @@ export const STOP_REASONS: Record<string, string> = {
   // The three ways asking to be taught can come to nothing. Kept apart because
   // they call for different things from the player: wait until the child grows
   // up, mend the relationship, or try again.
+  // Asked for a conversation these two are not close enough to have. The menu
+  // greys the rung out, so this is the order that was given while they knew
+  // each other better than they do now — familiarity decays — or one given to
+  // a subordinate whose own view of the person the player cannot see.
+  hardly_know_them: 'they hardly know them well enough for that',
   too_young_to_teach: 'they are too young to show anybody anything',
   would_not_teach: 'they would not show them',
   learned_nothing: 'they came away no wiser',

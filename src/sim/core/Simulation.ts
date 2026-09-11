@@ -1211,6 +1211,17 @@ export class Simulation {
        */
       techId?: string;
       /**
+       * Which rung of `Conversation.ts` a `talk` is.
+       *
+       * Optional, and omitted by every AI caller: `Brain.setup` names no rung
+       * and `doTalk` reads one off the relationship exactly as it does for
+       * everybody. Only a player choosing from the menu sets this, and
+       * `doTalk` refuses a rung the relationship does not warrant rather than
+       * quietly holding a cheaper conversation than the one that was asked
+       * for.
+       */
+      mode?: string;
+      /**
        * Which item and how much a `take` should withdraw.
        *
        * Optional: a `take` with no `itemId` lets `doTake` fall back to its own
@@ -1244,6 +1255,8 @@ export class Simulation {
     // Set here for the same reason: a `discuss` is aimed at a person and would
     // otherwise lose the technology to that branch's own return.
     if (target.techId !== undefined) person.targetTech = target.techId;
+    // And here for the same reason again: a `talk` is aimed at a person.
+    if (target.mode !== undefined) person.talkMode = target.mode;
 
     if (target.recipeId !== undefined) {
       person.targetRecipe = target.recipeId;

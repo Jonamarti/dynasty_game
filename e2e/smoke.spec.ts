@@ -1031,6 +1031,83 @@ test('teaching appears in the menu only when you have something to teach', async
   expect(errors).toEqual([]);
 });
 
+test('the talk menu nests, and offers a stranger only a greeting', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  // Paused for the same reason the teaching spec is: the target has to be
+  // found, chosen out of the picker and found again in the radial, and people
+  // walk between round trips.
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { id: number } | null;
+        livingPeople: () => { id: number; x: number; y: number; name: string }[];
+        relationships: {
+          edge: (a: number, b: number) => { familiarity: number; lastContact: number };
+        };
+      };
+      camera: {
+        snapTo: (x: number, y: number) => void; following: boolean;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+      };
+    };
+  };
+
+  // Made strangers on purpose. The four rungs are a statement about the
+  // relationship, so the spec has to say what the relationship is rather than
+  // take whatever the pinned world happened to grow.
+  const chosen = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const me = d.sim.player;
+    const pick = d.sim.livingPeople().find(p => p.id !== me?.id);
+    if (!me || !pick) return null;
+    d.sim.relationships.edge(me.id, pick.id).familiarity = 0;
+    d.sim.relationships.edge(pick.id, me.id).familiarity = 0;
+    d.camera.snapTo(pick.x, pick.y);
+    d.camera.following = false;
+    return { id: pick.id, name: pick.name };
+  });
+  expect(chosen).not.toBeNull();
+
+  await page.evaluate(() => new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  const other = await page.evaluate((id: number) => {
+    const d = (window as never as Debug).__dynasty;
+    const who = d.sim.livingPeople().find(p => p.id === id)!;
+    return {
+      x: d.camera.worldToScreenX(who.x),
+      y: d.camera.worldToScreenY(who.y),
+      name: who.name,
+    };
+  }, chosen!.id);
+
+  await clickAndChoose(page, other!.x, other!.y, new RegExp(other!.name), 'right');
+
+  // One entry on the ring, not four: the conversations are a group.
+  const group = page.locator('.radial-item', { hasText: 'Talk to' }).first();
+  await expect(group).toBeVisible({ timeout: 10_000 });
+  await group.click();
+
+  // Inside it, a stranger may be greeted and nothing more — and the rungs out
+  // of reach are shown greyed rather than hidden, because what they say is a
+  // fact about the relationship the player is entitled to know.
+  const greet = page.locator('.radial-item', { hasText: 'Greet' }).first();
+  const deep = page.locator('.radial-item', { hasText: 'Talk at length' }).first();
+  await expect(greet).toBeVisible({ timeout: 10_000 });
+  await expect(greet).not.toHaveClass(/is-disabled/);
+  await expect(deep).toBeVisible();
+  await expect(deep).toHaveClass(/is-disabled/);
+
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.locator('.hud-button', { hasText: 'Resume' }).click();
+  expect(errors).toEqual([]);
+});
+
 test('the kit tab lists what you carry and offers verbs on it', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);

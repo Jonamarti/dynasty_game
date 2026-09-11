@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  CONVERSATION_MODES, MODE_LADDER, chooseMode, warmthOf,
+  CONVERSATION_MODES, MODE_LADDER, chooseMode, modeAllowed, warmthOf,
 } from '../social/Conversation.ts';
 import { SocialSystem } from '../social/SocialSystem.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
@@ -97,5 +97,25 @@ describe('what a conversation settles', () => {
     const back = relationships.peek(b.id, a.id)!;
     expect(there.familiarity).toBeCloseTo(CONVERSATION_MODES.chat.warmth);
     expect(back.familiarity).toBeCloseTo(CONVERSATION_MODES.chat.warmth);
+  });
+});
+
+describe('which conversations may be asked for', () => {
+  it('allows the rung the relationship warrants and every cheaper one', () => {
+    const acquaintance = edge(12, 1000);
+    expect(modeAllowed(acquaintance, 1000, 'greet')).toBe(true);
+    expect(modeAllowed(acquaintance, 1000, 'chat')).toBe(true);
+    expect(modeAllowed(acquaintance, 1000, 'interests')).toBe(false);
+    expect(modeAllowed(acquaintance, 1000, 'deep')).toBe(false);
+  });
+
+  it('always lets somebody nod at a stranger', () => {
+    expect(modeAllowed(null, 9000, 'greet')).toBe(true);
+    expect(modeAllowed(null, 9000, 'deep')).toBe(false);
+  });
+
+  it('lets a close friend have any of them', () => {
+    const close = edge(60, 1000);
+    for (const mode of MODE_LADDER) expect(modeAllowed(close, 1000, mode)).toBe(true);
   });
 });

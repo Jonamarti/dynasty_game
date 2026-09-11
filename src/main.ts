@@ -1068,6 +1068,15 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
   const options = availableActions(subject, target, {
     world: sim.world, nearWater, commanding,
     stationFor: stationId => nearestStation(subject, stationId),
+    // The player's own view of whoever was clicked, so the conversation rungs
+    // offered are the ones the two of them could actually have. Deliberately
+    // left out when commanding somebody else: which conversations *they* could
+    // have with a third person is a reading of their private relationships,
+    // and the catalogue offers all four blind instead, with `doTalk` speaking
+    // the refusal — the same rule `issueTake` follows at a store.
+    ...(commanding && commanding.alive
+      ? {}
+      : { relationships: sim.relationships, tick: sim.time.tick }),
   });
 
   const title =
@@ -1142,6 +1151,9 @@ function issue(
     // rather than worked out again by the action, which is what made the
     // second idea in somebody's head unreachable from the menu.
     techId: option.techId,
+    // Which of the four conversations was chosen. Same story as `techId`: the
+    // verb is `talk` for all of them and the option is what says which.
+    mode: option.mode,
   };
 
   // Commanding somebody else: they may simply refuse, in public.
@@ -1163,7 +1175,7 @@ function issue(
   const reason = sim.lastRefusal;
   sim.lastRefusal = null;
   renderer.floaters.push(actor.x, actor.y,
-    ok ? actionLabel(actionId, option.recipeId) : (reason ?? 'cannot do that'),
+    ok ? actionLabel(actionId, option.recipeId, option.mode) : (reason ?? 'cannot do that'),
     { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
 }
 

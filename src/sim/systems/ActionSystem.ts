@@ -24,7 +24,7 @@ import type { ItemPile } from '../entities/ItemPile.ts';
 import type { KnowledgeSystem } from './KnowledgeSystem.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
 import {
-  CONVERSATION_MODES, chooseMode, type ConversationMode,
+  CONVERSATION_MODES, chooseMode, modeAllowed, type ConversationMode,
 } from '../social/Conversation.ts';
 import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
@@ -1562,7 +1562,19 @@ export class ActionSystem {
       // The rung is chosen once, here, and held on the person for the rest of
       // the conversation: what it costs and what it is worth have to be the
       // same decision, and they are separated by up to ninety ticks.
-      const mode = talkModeOf(person, ctx.relationships.peek(person.id, other.id), ctx.tick);
+      const rel = ctx.relationships.peek(person.id, other.id);
+      const mode = talkModeOf(person, rel, ctx.tick);
+      // A rung the player asked for that these two have no business having.
+      // The menu greys it out when the player is acting for themselves, so
+      // this is either an order given while they were better acquainted than
+      // they are now — familiarity decays — or, the common case, one issued
+      // down `Simulation.command`: how well a subordinate knows a third person
+      // is not the player's to read, so the menu offers all four rungs blind
+      // and the answer arrives here, out loud.
+      if (!modeAllowed(rel, ctx.tick, mode)) {
+        this.abandon(person, 'hardly_know_them', ctx);
+        return;
+      }
       person.talkMode = mode;
       person.actionTimer = CONVERSATION_MODES[mode].ticks;
       return;

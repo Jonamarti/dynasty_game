@@ -25,6 +25,10 @@ import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import type { Inscription } from '../entities/Inscription.ts';
 import type { Animal } from '../entities/Animal.ts';
+import type { RelationshipGraph } from '../social/Relationships.ts';
+import {
+  CONVERSATION_MODES, MODE_LADDER, modeAllowed, whyNotYet, type ConversationMode,
+} from '../social/Conversation.ts';
 
 export type TargetKind =
   'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription';
@@ -71,6 +75,14 @@ export interface ActionOption {
    * the interface entirely. The option names it and the order carries it.
    */
   techId?: string;
+  /**
+   * Which rung of `Conversation.ts` a `talk` option asks for.
+   *
+   * M9 phase 4. The menu offers four conversations under one verb, so the id
+   * alone no longer says which one — the same reason `recipeId` exists on
+   * `craft` and `techId` on `discuss`.
+   */
+  mode?: ConversationMode;
   /** False when the action is shown but not currently possible. */
   enabled: boolean;
   /** Why it is disabled, for the tooltip. */
@@ -115,6 +127,19 @@ export interface CatalogContext {
    * whether they agree to.
    */
   commanding?: Person | null;
+  /**
+   * The actor's own view of everybody, and the tick, so the conversation rungs
+   * can say which of them these two could actually have.
+   *
+   * Reading the actor's own familiarity with somebody is the actor's own
+   * knowledge. Reading a *subordinate's* is not, so these are left out when
+   * the player is commanding somebody else, and every rung is then offered
+   * with the refusal left to `doTalk` to speak — the rule `issueTake` and
+   * `ask` already follow. Optional also for the reason `stationFor` is: a
+   * context built by hand in a test keeps compiling.
+   */
+  relationships?: RelationshipGraph;
+  tick?: number;
 }
 
 const NODE_VERBS: Record<string, { label: string; icon: string; action: string }> = {
@@ -197,7 +222,7 @@ export function availableActions(
   ctx: CatalogContext
 ): ActionOption[] {
   switch (target.kind) {
-    case 'person': return personActions(actor, target.person!);
+    case 'person': return personActions(actor, target.person!, ctx);
     case 'node': return nodeActions(target.node!);
     case 'tree': return treeActions(target.tree!);
     // `pickup` is a verb in `ActionSystem` as of the pass that answered the
@@ -268,8 +293,21 @@ function recordActions(actor: Person, record: Inscription): ActionOption[] {
   }];
 }
 
-function personActions(actor: Person, other: Person): ActionOption[] {
+function personActions(actor: Person, other: Person, ctx: CatalogContext): ActionOption[] {
   const carriedFood = actor.inventory.bestFood();
+  // How well the actor knows this person, which is what decides which
+  // conversations the two of them could have.
+  //
+  // Absent — which is how `main.ts` calls this when the player is commanding
+  // somebody else — every rung is offered and `doTalk` speaks the refusal. How
+  // warmly a subordinate feels toward a third person is the subordinate's own
+  // business, and a menu that greyed out "talk at length" would tell the
+  // player something `AGENTS.md` says the UI must never read. Exactly the rule
+  // `issueTake` follows at a store whose contents are not the player's to see,
+  // and the one `ask` follows over what is in somebody's head.
+  const blind = ctx.relationships === undefined;
+  const rel = ctx.relationships?.peek(actor.id, other.id) ?? null;
+  const tick = ctx.tick ?? 0;
   // Something they could actually take in. `KnowledgeSystem.teach` drops any
   // technology whose prerequisites the pupil is missing, so a menu that only
   // asked "do they lack it?" offered a lesson that would quietly fail — and
@@ -352,12 +390,29 @@ function personActions(actor: Person, other: Person): ActionOption[] {
       enabled: !other.isChild,
       reason: other.isChild ? 'They are too young to show anybody anything' : undefined,
     },
-    {
-      id: 'talk',
-      label: 'Talk to ' + other.name,
-      icon: '\u{1F4AC}',
-      enabled: true,
-    },
+    // M9 phase 4, note 5. One entry per rung of `Conversation.ts` rather than
+    // the single "Talk to X" that stood for all four: the simulation now has
+    // four conversations at four prices, and a menu offering one of them is
+    // the defect the single `discuss` entry had — a choice the action would
+    // honour that the player had no way to make.
+    //
+    // The rungs out of reach are shown and greyed rather than hidden, because
+    // what the player is being told is a fact about their own relationship,
+    // and a conversation that quietly is not offered teaches nobody anything.
+    // `modeAllowed` is shared with `doTalk` so the menu cannot offer a
+    // conversation the simulation would then decline to have.
+    ...grouped(MODE_LADDER.map(mode => {
+      const allowed = blind || modeAllowed(rel, tick, mode);
+      return {
+        id: 'talk',
+        mode,
+        label: CONVERSATION_MODES[mode].verb,
+        icon: '\u{1F4AC}',
+        enabled: allowed,
+        reason: allowed ? undefined : whyNotYet(mode),
+      };
+    }), 'Talk to ' + other.name + '…', '\u{1F4AC}',
+      'They do not know them well enough to say anything'),
     {
       id: 'give',
       label: 'Give food',

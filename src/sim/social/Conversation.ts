@@ -31,6 +31,10 @@ export type ConversationMode = 'greet' | 'chat' | 'interests' | 'deep';
 
 export interface ConversationModeDef {
   id: ConversationMode;
+  /** What the radial menu offers it as. */
+  verb: string;
+  /** What somebody doing it is doing, for the HUD and the floaters. */
+  doing: string;
   /** Ticks the conversation occupies. Six in-game minutes each. */
   ticks: number;
   /** Ticks before either party will deliberately approach anybody again. */
@@ -75,16 +79,20 @@ export interface ConversationModeDef {
  */
 export const CONVERSATION_MODES: Record<ConversationMode, ConversationModeDef> = {
   greet: {
-    id: 'greet', ticks: 6, cooldown: 60, warmth: 3, relief: 0.25, stories: 0, from: 0,
+    id: 'greet', verb: 'Greet', doing: 'passing the time of day',
+    ticks: 6, cooldown: 60, warmth: 3, relief: 0.25, stories: 0, from: 0,
   },
   chat: {
-    id: 'chat', ticks: 18, cooldown: 140, warmth: 6, relief: 0.6, stories: 1, from: 12,
+    id: 'chat', verb: 'Make small talk', doing: 'making small talk',
+    ticks: 18, cooldown: 140, warmth: 6, relief: 0.6, stories: 1, from: 12,
   },
   interests: {
-    id: 'interests', ticks: 45, cooldown: 220, warmth: 11, relief: 0.85, stories: 1, from: 24,
+    id: 'interests', verb: 'Ask what they are like', doing: 'asking what they are like',
+    ticks: 45, cooldown: 220, warmth: 11, relief: 0.85, stories: 1, from: 24,
   },
   deep: {
-    id: 'deep', ticks: 90, cooldown: 320, warmth: 18, relief: 1, stories: 2, from: 35,
+    id: 'deep', verb: 'Talk at length', doing: 'deep in conversation',
+    ticks: 90, cooldown: 320, warmth: 18, relief: 1, stories: 2, from: 35,
   },
 };
 
@@ -139,4 +147,30 @@ export function chooseMode(rel: Relationship | null, tick: number): Conversation
 export function warmthOf(mode: ConversationMode, sameBand: boolean): number {
   const def = CONVERSATION_MODES[mode];
   return sameBand ? def.warmth : def.warmth * CROSS_BAND;
+}
+
+/**
+ * Whether somebody may ask for this conversation with this person.
+ *
+ * The rung the relationship warrants, or any cheaper one. You can always nod at
+ * a friend; you cannot sit a stranger down for the evening, because the rungs
+ * above are not a menu of intensities to choose from but a description of what
+ * two people already have to say to each other.
+ *
+ * Shared by the radial menu, which greys the rungs that are out of reach, and
+ * by `doTalk`, which refuses one that went out of reach while the asker walked
+ * over. Two copies of this rule would drift, and the drift would show up as a
+ * menu offering a conversation the simulation then declines to have.
+ */
+export function modeAllowed(
+  rel: Relationship | null, tick: number, mode: ConversationMode
+): boolean {
+  return MODE_LADDER.indexOf(mode) <= MODE_LADDER.indexOf(chooseMode(rel, tick));
+}
+
+/** Why a rung is out of reach, in words a player can act on. */
+export function whyNotYet(mode: ConversationMode): string {
+  return mode === 'deep'
+    ? 'They do not know them well enough to talk at length'
+    : 'They do not know them well enough for that yet';
 }
