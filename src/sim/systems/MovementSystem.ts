@@ -171,24 +171,50 @@ export function moveToward(
   // report can tell a walk along a shoreline from a walk across a meadow.
   let outcome = 0;
 
+  // A fallback that does not move is not a fallback.
+  //
+  // For a heading that is almost due east, `ny` stays inside the walker's own
+  // row, so `isWalkable(entity.x, ny)` tests the tile they are already
+  // standing in, succeeds unconditionally, displaces about nothing — and
+  // returns *before* the slide below ever runs. A walker pressed perpendicular
+  // into a shoreline therefore did not slide, did not jitter and did not move:
+  // it vibrated sub-threshold until it ran out of patience, and the slide, the
+  // only branch that can carry somebody *along* an obstacle, was unreachable
+  // for every axis-aligned heading in the game.
+  //
+  // Each axis fallback is now gated on the heading actually having enough of
+  // itself on that axis to produce a step the stuck detector would accept.
+  // Reusing `PROGRESS_THRESHOLD` is the point: "a fallback counts as a move"
+  // and "a step counts as progress" become one definition instead of two that
+  // disagreed.
+  const alongX = Math.abs(dx) / dist >= PROGRESS_THRESHOLD;
+  const alongY = Math.abs(dy) / dist >= PROGRESS_THRESHOLD;
+
   if (world.isWalkable(nx, ny)) {
     entity.x = nx;
     entity.y = ny;
-  } else if (world.isWalkable(nx, entity.y)) {
+  } else if (alongX && world.isWalkable(nx, entity.y)) {
     entity.x = nx;
     outcome = 1;
-  } else if (world.isWalkable(entity.x, ny)) {
+  } else if (alongY && world.isWalkable(entity.x, ny)) {
     entity.y = ny;
     outcome = 1;
   } else {
     outcome = 2;
-    // Slide along the obstacle, perpendicular to the desired heading.
-    const jitter = rng.range(-0.5, 0.5);
-    const sx = entity.x + (dy / dist) * speed + jitter * speed;
-    const sy = entity.y - (dx / dist) * speed + jitter * speed;
-    if (world.isWalkable(sx, sy)) {
-      entity.x = sx;
-      entity.y = sy;
+    // Slide along the obstacle, perpendicular to the desired heading — and try
+    // *both* hands, not one. There is no reason to prefer a fixed rotation,
+    // and a walker pressed into a concave corner whose first perpendicular
+    // happens to be blocked used to stand still with an open side next to it.
+    // The second try costs one walkability lookup and no extra draw.
+    const jitter = rng.range(-0.5, 0.5) * speed;
+    const px = (dy / dist) * speed;
+    const py = -(dx / dist) * speed;
+    if (world.isWalkable(entity.x + px + jitter, entity.y + py + jitter)) {
+      entity.x += px + jitter;
+      entity.y += py + jitter;
+    } else if (world.isWalkable(entity.x - px + jitter, entity.y - py + jitter)) {
+      entity.x += -px + jitter;
+      entity.y += -py + jitter;
     }
   }
 

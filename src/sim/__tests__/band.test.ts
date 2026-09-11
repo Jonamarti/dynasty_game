@@ -72,22 +72,23 @@ describe('rebellion', () => {
     rebel.traits.loyalty = 0;
     sim.relationships.addDeed(rebel.id, chief.id, -100, sim.time.tick);
 
-    // Twenty days, not one: `REBELLION_QUORUM` also has to be met by band
+    // Forty-five days, not one: `REBELLION_QUORUM` also has to be met by band
     // members who have actually crossed paths with the chief, and with a
     // freshly engineered grievance that can take a day longer to reach than
     // `defiance` itself, which is guaranteed the moment it is checked.
     //
-    // Widened twice for the same reason, and the reason is not that the
-    // mechanism weakened — it is that this test measures *how long people take
-    // to bump into each other*, which is a movement number wearing a politics
-    // test's clothes. M7 took it from three days to five when routing landed.
-    // M7 stage C fixed the half-tile aim bias, and people who no longer grind
-    // against terrain spend far less of the day milling about within sight of
-    // one another: on this seed the rebellion now fires on day 14, measured
-    // directly rather than guessed. Twenty leaves headroom for the next
-    // movement change without pretending this is a tight bound.
+    // Widened three times now, and never because the mechanism weakened. The
+    // honest reading is that this bound measures *how long people take to bump
+    // into each other*, which is a movement number wearing a politics test's
+    // clothes: M7 took it from three days to five when routing landed, and
+    // M7 stage C moved it twice more, to day 10 once aim points were fixed and
+    // to day 26 once `moveToward`'s dead axis fallback was. Both were measured
+    // on this seed rather than guessed. It is deliberately generous now,
+    // because the assertion worth making here is that the mechanism fires at
+    // all — a tight bound on this number is a movement regression test that
+    // nobody would think to look for in `band.test.ts`.
     const before = sim.insights.length;
-    for (let i = 0; i < 20 * 240; i++) sim.step();
+    for (let i = 0; i < 45 * 240; i++) sim.step();
 
     const fired = sim.insights.slice(before).some(n => n.personId === rebel.id);
     expect(fired).toBe(true);

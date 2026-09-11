@@ -2159,17 +2159,23 @@ export function formatReport(r: Report): string {
     // precedes one, which is where a shoreline bug is visible long before
     // anybody gives up. Both are rates, because a raw count says nothing
     // about a scenario whose length you have to look up.
+    // The `step_*` counters come from `moveToward`, which animals call too, so
+    // they are deliberately raw counts rather than rates: dividing them by
+    // `walk_tick` — which only people increment — would be a ratio of two
+    // different populations, and would read as a rate while being nothing of
+    // the sort. `walk_stuck_tick` shares `walk_tick`'s denominator and is the
+    // one number here that is honestly a rate.
     const walkTicks = r.telemetry.walk_tick ?? 0;
-    const steps = r.telemetry.step_blocked ?? 0;
     const stuck = r.telemetry.walk_stuck_tick ?? 0;
-    const perWalkTick = (n: number) => (walkTicks > 0 ? ((n / walkTicks) * 1000).toFixed(1) : 'n/a');
+    const stuckRate = walkTicks > 0 ? ((stuck / walkTicks) * 1000).toFixed(1) : 'n/a';
     lines.push(
-      '  step_blocked=' + steps + ' (' + perWalkTick(steps) + ' per 1,000 walk ticks)' +
+      '  everything that walks: step_blocked=' + (r.telemetry.step_blocked ?? 0) +
       '  ·  axis_null=' + (r.telemetry.step_axis_null ?? 0) +
       '  ·  slides=' + (r.telemetry.step_slide ?? 0)
     );
     lines.push(
-      '  stuck ticks=' + stuck + ' (' + perWalkTick(stuck) + ' per 1,000 walk ticks)' +
+      '  people only: ' + stuck + ' stuck of ' + walkTicks + ' walk ticks (' +
+      stuckRate + ' per 1,000)' +
       '  ·  denied: cooldown=' + (r.telemetry.path_denied_cooldown ?? 0) +
       ' budget=' + (r.telemetry.path_denied_budget ?? 0)
     );

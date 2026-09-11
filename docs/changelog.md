@@ -51,6 +51,82 @@ consumed the routes was not.
   and `path_denied_budget` staying near zero everywhere but `crowded` says the
   per-tick search budget is not the gate anybody needs to touch.
 
+- **Commit 3, a fallback that does not move is not a fallback.** The second
+  defect, and the one that most literally matches the owner's "it just doesn't
+  by a tiny amount". Take a walker heading almost due east into a seam, so
+  `dy ≈ 0`. `moveToward`'s first branch is refused by the water. Its second,
+  `isWalkable(nx, entity.y)`, tests the same tile and is refused too. Its
+  third, `isWalkable(entity.x, ny)`, computes `ny = y + (dy/dist)*speed` — and
+  with `dy ≈ 0` that stays inside the walker's **own row**, so it tests the
+  tile they are already standing in, succeeds unconditionally, displaces about
+  four ten-thousandths of a tile, and *returns before the slide*. The
+  perpendicular slide is the only branch that can carry somebody **along** an
+  obstacle, and it was unreachable for every axis-aligned heading in the game.
+  A walker pressed square into a shoreline did not slide, did not jitter and
+  did not move: it vibrated sub-threshold for the full twenty-five ticks of
+  `PATIENCE` and then gave up. The displacement detector called that stuck,
+  correctly — the lesson at the top of the file — but nothing could ever
+  *escape* it.
+
+  This is the same lie the file header records costing a whole population,
+  surviving inside the branch itself: "did a fallback succeed?" rather than
+  "did we get anywhere?". Each axis fallback is now gated on the heading having
+  enough of itself on that axis to produce a step the stuck detector would
+  accept, reusing `PROGRESS_THRESHOLD` so that "a fallback counts as a move"
+  and "a step counts as progress" stop being two definitions that disagree.
+
+  And the slide now tries **both** perpendiculars rather than one. That was not
+  in the plan; it came out of measuring the first version, which fixed
+  `axis_null` and made `coast` *worse* (stuck ticks 15.7 → 26.0 per 1,000).
+  With the dead branch gone, walkers reached the slide constantly, and a fixed
+  rotation left anybody in a concave corner standing still with an open side
+  beside them. Trying the other hand costs one walkability lookup and no extra
+  draw, and it turned the regression around.
+
+  `step_axis_null` is **0 on every scenario** — the branch is gone, not merely
+  rarer. Stuck ticks per 1,000 walk ticks, against commit 2:
+
+  | scenario | commit 2 | commit 3 |
+  |---|---|---|
+  | coast   | 15.7  | **8.9**  |
+  | fishers | 13.1  | **2.4**  |
+  | century | 62.3  | **20.5** |
+  | crowded | 235.0 | **59.4** |
+  | tiny    | 2.7   | **0.0**  |
+
+  Twenty-seed cohort: 89.2% mean survival against commit 2's 91.4% and the
+  82.6% this pass started from, 0/20 collapsed, infants starved 69 → 43 and
+  adults 38 → 43. The 2.2-point move is inside the noise band `AGENTS.md`
+  draws at about ten points and the starvation counts move in opposite
+  directions, so the honest reading is that the cohort cannot resolve this
+  commit and the mechanism counters above are the evidence.
+
+  `century`'s `paths-are-found` reads FAIL again, and the number matters:
+  354 searches hit the 2,000-expansion bail-out, against **420 on the
+  pre-pass baseline** and 0 at commit 2. This is the pre-existing failure M7
+  stage B already documented at "~1% of searches", returning to view because
+  people who can now escape an obstacle travel further and ask harder
+  questions; commit 2 had masked it rather than fixed it. Total expansions
+  across the run still fell, 1.86M baseline → 1.45M. Raising the bail-out is a
+  `Pathfinder` decision and belongs with the cost changes in commit 6, not in
+  a movement commit.
+
+  One correction to this pass's own instrumentation, made here because it was
+  this commit's numbers that exposed it: `step_blocked`, `step_axis_null` and
+  `step_slide` come from `moveToward`, which **animals call too**, while
+  `walk_tick` is incremented only by people. Commit 1's report divided the
+  first by the second and printed the result as a rate, which was a ratio of
+  two different populations wearing a rate's clothes. The `TRAVEL` block now
+  labels the two groups and only calls `walk_stuck_tick` a rate, which is the
+  one number that honestly is one.
+
+  `band.test.ts`'s rebellion window went to forty-five days, and the comment
+  there now says plainly that this bound is a movement number wearing a
+  politics test's clothes — it has been widened three times, never because the
+  mechanism weakened. Measured on that seed: day 10 after commit 2, day 26
+  after this one. (Commit 2's entry above originally recorded day 14; that was
+  measured against the wrong seed and is corrected to day 10.)
+
 - **Commit 2, never aim at a point you could not stand on.** `World.index`
   truncates, so tile `(tx, ty)` owns `[tx, tx+1) x [ty, ty+1)` and the float
   point `(tx, ty)` is its *north-west corner* — where four tiles meet, only one
@@ -136,11 +212,11 @@ consumed the routes was not.
     check; it gains the same "premise never arose" skip clause
     `the-hurt-are-tended` already has, in commit 7.
 
-  `band.test.ts`'s rebellion case was widened from five days to twenty. It was
-  widened once already in M7 for this exact reason, and the honest reading is
-  that it measures *how long people take to bump into each other*, which is a
-  movement number wearing a politics test's clothes. The rebellion fires on day
-  14 on that seed now, measured rather than guessed.
+  `band.test.ts`'s rebellion case was widened from five days. It was widened
+  once already in M7 for this exact reason, and the honest reading is that it
+  measures *how long people take to bump into each other*, which is a movement
+  number wearing a politics test's clothes. The rebellion fires on day 10 on
+  that seed after this commit, measured rather than guessed.
 
 ---
 
