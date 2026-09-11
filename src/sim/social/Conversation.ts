@@ -44,7 +44,20 @@ export interface ConversationModeDef {
   warmth: number;
   /** Share of the loneliness answered. Only the longest rung answers all of it. */
   relief: number;
-  /** Stories passed each way. Gossip is what a long conversation is *for*. */
+  /**
+   * Stories passed each way. A long conversation is worth two.
+   *
+   * A greeting carried none at first, on the reasoning that there is no time in
+   * one to say anything. Two scenarios said otherwise: in a young band nearly
+   * every conversation is a greeting — 19 of 20 in `tiny` — so news stopped
+   * travelling altogether and `rumor-propagates` went to zero, twice, by two
+   * different routes. That is not a band being tight-lipped, it is the gossip
+   * channel closed by arithmetic, and `next-steps.md` §0 names transmission as
+   * the thing the whole tree waits on. A greeting in a stone-age camp is
+   * "morning — did you hear about Korak", and the difference between the rungs
+   * is in what they cost and what they are worth, not in whether anybody says
+   * anything at all.
+   */
   stories: number;
   /**
    * Familiarity at which this rung becomes the natural one.
@@ -81,7 +94,7 @@ export interface ConversationModeDef {
 export const CONVERSATION_MODES: Record<ConversationMode, ConversationModeDef> = {
   greet: {
     id: 'greet', verb: 'Greet', doing: 'passing the time of day',
-    ticks: 6, cooldown: 60, warmth: 3, relief: 0.25, stories: 0, from: 0,
+    ticks: 6, cooldown: 60, warmth: 3, relief: 0.25, stories: 1, from: 0,
   },
   chat: {
     id: 'chat', verb: 'Make small talk', doing: 'making small talk',
