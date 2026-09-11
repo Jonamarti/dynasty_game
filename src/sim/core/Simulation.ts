@@ -1096,6 +1096,7 @@ export class Simulation {
       recipe: person.targetRecipe,
       inscriptionId: person.targetInscriptionId,
       pileId: person.targetPileId,
+      tech: person.targetTech,
       itemId: person.targetItemId,
       count: person.targetItemCount,
       x: person.targetX,
@@ -1139,6 +1140,7 @@ export class Simulation {
       recipeId: pending.recipe ?? undefined,
       inscriptionId: pending.inscriptionId ?? undefined,
       pileId: pending.pileId ?? undefined,
+      techId: pending.tech ?? undefined,
       itemId: pending.itemId ?? undefined,
       count: pending.count ?? undefined,
       x: pending.nodeId === null && pending.treeId === null &&
@@ -1201,6 +1203,14 @@ export class Simulation {
       /** Which heap of dropped goods a `pickup` is aimed at. */
       pileId?: number;
       /**
+       * Which technology a `ponder` or a `discuss` is about.
+       *
+       * Optional, and omitted by every AI caller: `Brain.setup` names no
+       * technology and the action falls back to `workableIdea` exactly as it
+       * always did. Only a player choosing from the menu sets this.
+       */
+      techId?: string;
+      /**
        * Which item and how much a `take` should withdraw.
        *
        * Optional: a `take` with no `itemId` lets `doTake` fall back to its own
@@ -1231,6 +1241,9 @@ export class Simulation {
       person.targetItemId = target.itemId;
       person.targetItemCount = target.count ?? null;
     }
+    // Set here for the same reason: a `discuss` is aimed at a person and would
+    // otherwise lose the technology to that branch's own return.
+    if (target.techId !== undefined) person.targetTech = target.techId;
 
     if (target.recipeId !== undefined) {
       person.targetRecipe = target.recipeId;

@@ -1138,6 +1138,10 @@ function issue(
     animalId: target.animal?.id,
     recipeId: option.recipeId,
     inscriptionId: target.inscription?.id,
+    // Which idea a `ponder` or `discuss` is about. Carried on the option
+    // rather than worked out again by the action, which is what made the
+    // second idea in somebody's head unreachable from the menu.
+    techId: option.techId,
   };
 
   // Commanding somebody else: they may simply refuse, in public.

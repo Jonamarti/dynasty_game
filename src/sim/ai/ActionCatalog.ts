@@ -62,6 +62,15 @@ export interface ActionOption {
    * still arrive at the quern.
    */
   buildingId?: number;
+  /**
+   * Which technology a `discuss` or a `ponder` option is about.
+   *
+   * M9 phase 3. The menu offered one conversation and one line of thought,
+   * because the action re-derived the subject from `workableIdea` on every
+   * tick: with two ideas in somebody's head the second was unreachable from
+   * the interface entirely. The option names it and the order carries it.
+   */
+  techId?: string;
   /** False when the action is shown but not currently possible. */
   enabled: boolean;
   /** Why it is disabled, for the tooltip. */
@@ -276,11 +285,28 @@ function personActions(actor: Person, other: Person): ActionOption[] {
   // Talking a problem over with somebody who knows something about it. Offered
   // only when there is a problem: an option that is always visible and almost
   // never enabled teaches the player nothing.
-  const idea = actor.ideas.find(candidate => candidate.stage !== 'prototyped');
-  const informed = idea !== undefined && !other.isChild && (
-    other.skills[TECH[idea.tech].skill] >= 12 ||
-    TECH[idea.tech].requires.some(required => other.knownTech.has(required))
-  );
+  //
+  // One entry per idea, not one entry. The filter is `workableIdea`'s, and it
+  // has to stay `workableIdea`'s: an option the action would refuse the moment
+  // it was picked is worse than no option, and the two predicates drifting
+  // apart is how that happens.
+  const discussions: ActionOption[] = actor.ideas
+    .filter(candidate => candidate.stage !== 'prototyped' && candidate.insight < 1)
+    .map(candidate => {
+      const def = TECH[candidate.tech];
+      const informed = !other.isChild && (
+        other.skills[def.skill] >= 12 ||
+        def.requires.some(required => other.knownTech.has(required))
+      );
+      return {
+        id: 'discuss',
+        techId: candidate.tech,
+        label: 'Discuss ' + def.label.toLowerCase() + ' with ' + other.name,
+        icon: '\u{1F914}',
+        enabled: informed,
+        reason: informed ? undefined : 'They know nothing about it',
+      };
+    });
 
   // M8.1: the first thing anybody can do about somebody else being hurt. Gated
   // on the knowledge rather than shown greyed, and on the patient's actually
@@ -295,13 +321,8 @@ function personActions(actor: Person, other: Person): ActionOption[] {
       enabled: hurt,
       reason: hurt ? undefined : 'They are not hurt',
     }] : []),
-    ...(idea ? [{
-      id: 'discuss',
-      label: 'Discuss ' + TECH[idea.tech].label.toLowerCase() + ' with ' + other.name,
-      icon: '\u{1F914}',
-      enabled: informed,
-      reason: informed ? undefined : 'They know nothing about it',
-    }] : []),
+    ...grouped(discussions, 'Discuss with ' + other.name + '…', '\u{1F914}',
+      'They know nothing about what is on your mind'),
     {
       id: 'teach',
       label: 'Teach ' + other.name,
@@ -548,18 +569,32 @@ function groundActions(
 
   // Thinking, and building the first one. Both are aimed at nothing, so they
   // belong with the other verbs that happen where you stand.
-  const thinkable = actor.ideas.find(
-    candidate => candidate.stage !== 'prototyped' && candidate.insight < 1
-  );
-  options.push({
-    id: 'ponder',
-    label: thinkable
-      ? 'Think about ' + TECH[thinkable.tech].label.toLowerCase()
-      : 'Think',
-    icon: '\u{1F4AD}',
-    enabled: thinkable !== undefined,
-    reason: thinkable === undefined ? 'Nothing has occurred to you yet' : undefined,
-  });
+  //
+  // One entry per idea, for the reason `discuss` gained one: `doPonder` picked
+  // the least advanced idea for itself, so the other one in somebody's head
+  // could not be worked on at all from the menu. The disabled single entry
+  // survives for the case of having no ideas, because "why can I not think?"
+  // deserves the same answer every other greyed verb gives.
+  const thinkable: ActionOption[] = actor.ideas
+    .filter(candidate => candidate.stage !== 'prototyped' && candidate.insight < 1)
+    .map(candidate => ({
+      id: 'ponder',
+      techId: candidate.tech,
+      label: 'Think about ' + TECH[candidate.tech].label.toLowerCase(),
+      icon: '\u{1F4AD}',
+      enabled: true,
+    }));
+  if (thinkable.length === 0) {
+    options.push({
+      id: 'ponder',
+      label: 'Think',
+      icon: '\u{1F4AD}',
+      enabled: false,
+      reason: 'Nothing has occurred to you yet',
+    });
+  } else {
+    options.push(...grouped(thinkable, 'Think about…', '\u{1F4AD}', ''));
+  }
 
   const buildable = actor.ideas.find(
     candidate => candidate.stage === 'researching' && candidate.insight >= PROTOTYPE_AT

@@ -1984,6 +1984,21 @@ export class ActionSystem {
    * hanging at nine tenths while polishing something they already have.
    */
   private workableIdea(person: Person): Idea | null {
+    // Named by the player, if they named one. `targetTech` is only ever set by
+    // an order out of the radial menu, so every AI-planned think and argument
+    // still falls through to the choice below and is unchanged.
+    //
+    // A named technology that is no longer workable — proven while they walked
+    // over, or dropped as stale — deliberately does *not* fall back to
+    // whatever else is in their head. Being handed a different conversation
+    // from the one you asked for is worse than being told it is too late, and
+    // the caller turns this null into a refusal that says so.
+    if (person.targetTech !== null) {
+      return person.ideas.find(idea =>
+        idea.tech === person.targetTech &&
+        idea.stage !== 'prototyped' &&
+        idea.insight < 1) ?? null;
+    }
     let best: Idea | null = null;
     for (const idea of person.ideas) {
       if (idea.stage === 'prototyped') continue;
@@ -2002,7 +2017,8 @@ export class ActionSystem {
   private doPonder(person: Person, ctx: ActionContext): void {
     const idea = this.workableIdea(person);
     if (!idea) {
-      this.abandon(person, 'nothing_to_think_about', ctx);
+      this.abandon(person,
+        person.targetTech !== null ? 'idea_moved_on' : 'nothing_to_think_about', ctx);
       return;
     }
 
@@ -2056,7 +2072,8 @@ export class ActionSystem {
   private doDiscuss(person: Person, ctx: ActionContext): void {
     const idea = this.workableIdea(person);
     if (!idea) {
-      this.abandon(person, 'nothing_to_think_about', ctx);
+      this.abandon(person,
+        person.targetTech !== null ? 'idea_moved_on' : 'nothing_to_think_about', ctx);
       return;
     }
     const partner = this.approach(person, ctx);

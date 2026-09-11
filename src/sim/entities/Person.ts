@@ -85,6 +85,8 @@ export interface ResumedOrder {
   inscriptionId: number | null;
   /** Which heap of goods a set-aside `pickup` was walking to. */
   pileId: number | null;
+  /** Which technology a set-aside `ponder` or `discuss` was about. */
+  tech: string | null;
   /** Which item and count a set-aside player-ordered `take` named. */
   itemId: string | null;
   count: number | null;
@@ -286,6 +288,18 @@ export class Person {
    */
   targetItemId: string | null = null;
   targetItemCount: number | null = null;
+  /**
+   * Which technology a player-ordered `ponder` or `discuss` is about.
+   *
+   * Null lets the action pick for itself, which is what every AI-planned
+   * think and argument still does — `Brain.setup` names no technology, so the
+   * fallback is the whole of the old behaviour. M9 phase 3, note 10: the menu
+   * offered exactly one idea to think or argue about, because `doDiscuss`
+   * re-derived it from `workableIdea` on every tick rather than being told,
+   * so a player with two ideas in their head could only ever work on one of
+   * them and the other could never be reached at all.
+   */
+  targetTech: string | null = null;
   /**
    * The last person to draw blood, and when. Fear is what stops a grudge
    * cascade from consuming a band: without somewhere to run, every fight
@@ -658,6 +672,7 @@ export class Person {
     this.targetRecipe = null;
     this.targetInscriptionId = null;
     this.targetPileId = null;
+    this.targetTech = null;
     this.targetItemId = null;
     this.targetItemCount = null;
     this.actionTimer = 0;

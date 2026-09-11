@@ -260,6 +260,10 @@ export const STOP_REASONS: Record<string, string> = {
   // Research. Every one of these is a way an idea can stall, and a stalled idea
   // that says nothing is indistinguishable from a character standing still.
   nothing_to_think_about: 'they have nothing on their mind',
+  // They were told which idea to work on and it has moved past working on —
+  // proven while they walked over, or given up as stale. Kept apart from
+  // having nothing on their mind, which is a different thing entirely.
+  idea_moved_on: 'that idea had moved on without them',
   nothing_came_of_it: 'nothing came of it this time',
   nothing_to_build_yet: 'the idea is not ready to build',
   partner_ignorant: 'they know nothing about it',
