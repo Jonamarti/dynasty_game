@@ -21,6 +21,8 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { RelationshipGraph } from './Relationships.ts';
 import type { EventType, Norms, SocialEvent } from './Events.ts';
 import { DEED_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
+import type { ConversationMode } from './Conversation.ts';
+import { CONVERSATION_MODES, warmthOf } from './Conversation.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
 export interface LifeEvent {
@@ -218,12 +220,24 @@ export class SocialSystem {
   /**
    * Two people talk: they grow familiar, and each passes on the most striking
    * thing they know that the other does not.
+   *
+   * What *kind* of conversation is the caller's to decide, because the rung is
+   * chosen when the conversation starts and the cost is paid over the ticks
+   * that follow — see `Conversation.ts`. Re-deriving it here, at the end,
+   * would let a relationship that moved in between be settled at a price
+   * nobody agreed to, which is the same defect `doDiscuss` had when it
+   * re-picked its idea every tick.
+   *
+   * The parameter is deliberately required rather than defaulted: a caller
+   * that forgets it should not quietly get somebody else's idea of an ordinary
+   * chat.
    */
   converse(
     a: Person,
     b: Person,
     tick: number,
-    peopleById: Map<number, Person>
+    peopleById: Map<number, Person>,
+    mode: ConversationMode
   ): void {
     this.introduce(a, b);
     this.introduce(b, a);
@@ -231,15 +245,29 @@ export class SocialSystem {
     // Familiarity grows more slowly across a band boundary: it takes longer to
     // warm to a stranger than to someone you grew up beside.
     const sameBand = a.bandId === b.bandId;
-    const warmth = sameBand ? 3.5 : 1.5;
+    const warmth = warmthOf(mode, sameBand);
     this.relationships.addFamiliarity(a.id, b.id, warmth, tick);
     this.relationships.addFamiliarity(b.id, a.id, warmth, tick);
-    a.needs.company = 0;
-    b.needs.company = 0;
-    telemetry.count('conversation');
 
-    this.gossip(a, b, peopleById);
-    this.gossip(b, a, peopleById);
+    // Only the longest rung answers loneliness outright. A nod across the camp
+    // is worth something and is not worth a whole evening, and until the modes
+    // landed every conversation in the game cleared `company` to zero — which
+    // is why a band could be sociable and lonely at the same time without the
+    // difference ever showing up in a need.
+    const def = CONVERSATION_MODES[mode];
+    a.needs.company = Math.max(0, a.needs.company * (1 - def.relief));
+    b.needs.company = Math.max(0, b.needs.company * (1 - def.relief));
+    telemetry.count('conversation');
+    telemetry.count('conversation_' + mode);
+
+    // News travels down the long conversations. A greeting carries none at
+    // all, which is the mechanical difference that makes the dear rungs worth
+    // their price: gossip is the only channel a deed reaches anyone who did
+    // not see it, and `next-steps.md` §0 names transmission as the bottleneck.
+    for (let i = 0; i < def.stories; i++) {
+      this.gossip(a, b, peopleById);
+      this.gossip(b, a, peopleById);
+    }
   }
 
   /**

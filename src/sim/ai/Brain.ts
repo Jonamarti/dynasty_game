@@ -23,7 +23,8 @@ import type { World } from '../core/World.ts';
 import type { TimeManager } from '../core/TimeManager.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
-import type { RelationshipGraph } from '../social/Relationships.ts';
+import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
+import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
 import { isTrap } from '../entities/Building.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
@@ -114,8 +115,21 @@ interface FoundTargets {
  * overwhelming, which is what stops people from constantly interrupting useful
  * work to top off a need that is only at 30.
  */
-/** Ticks before a person will strike up a conversation with the same neighbour. */
-const TALK_COOLDOWN = 500;
+/**
+ * Ticks before a person will strike up a conversation with the same neighbour.
+ *
+ * No longer one number. It was 500 flat, chosen when every conversation in the
+ * game cost forty-five ticks and answered loneliness outright; with the rungs
+ * of `Conversation.ts` the same figure meant a band could nod at each other
+ * once a fortnight and never climb off the bottom rung — familiarity never
+ * reached `chat`, so no story was ever passed on and the gossip channel closed
+ * altogether. How soon you can say something to somebody again depends on what
+ * you last said to them, so the gate is the rung's own cooldown: a greeting is
+ * repeatable within the hour, an evening is not.
+ */
+function talkGate(rel: Relationship, tick: number): number {
+  return CONVERSATION_MODES[chooseMode(rel, tick)].cooldown;
+}
 
 /**
  * How much a hunt is worth, before the odds and the size of the animal.
@@ -422,18 +436,33 @@ export class Brain {
       // anything else.
       const freshCompany = neighbours.filter(other => {
         const rel = ctx.relationships.peek(person.id, other.id);
-        return !rel || ctx.time.tick - rel.lastContact > TALK_COOLDOWN;
+        if (!rel) return true;
+        return ctx.time.tick - rel.lastContact > talkGate(rel, ctx.time.tick);
       });
       companion = this.pickBest(freshCompany, other =>
         ctx.relationships.opinion(person.id, other.id) + 5 - person.distanceTo(other)
       );
       if (companion) {
         const regard = ctx.relationships.opinion(person.id, companion.id) / 100;
+        // How much of the loneliness this particular conversation would
+        // actually answer. A greeting settles a quarter of it, and pulling
+        // somebody across the camp with the full weight of their loneliness to
+        // collect a quarter of it is how the rungs first cost this world
+        // people: the six ticks of a greeting are nothing beside the thirty
+        // spent walking to deliver it, and across twenty seeds that walk
+        // doubled starvation while `talk` itself rose by under two per cent of
+        // all ticks. The price of a rung lives in `Conversation.ts`, and the
+        // scorer has to read it or the cheap rungs are not cheap at all.
+        const worth = CONVERSATION_MODES[
+          chooseMode(ctx.relationships.peek(person.id, companion.id), ctx.time.tick)
+        ].relief;
         // The floor matters more than the loneliness term. People with nothing
         // pressing to do should talk, not wander: conversation is the only
         // channel gossip travels down, and a band that never chats never learns
-        // anything about anyone.
-        add('talk', (loneliness * 1.8 + 0.09) * (1 + regard * 0.5)
+        // anything about anyone. It is deliberately *not* scaled by the rung —
+        // striking up an acquaintance with somebody you barely know is the
+        // whole of what the floor is for.
+        add('talk', (loneliness * 1.8 * worth + 0.09) * (1 + regard * 0.5)
           * this.proximityBonus(person, companion, ctx.sightRadius));
       }
 

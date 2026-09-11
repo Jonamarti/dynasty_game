@@ -302,6 +302,17 @@ export class Person {
    */
   targetTech: string | null = null;
   /**
+   * Which kind of conversation the current `talk` is.
+   *
+   * Decided once, when the conversation begins, and held for its duration —
+   * the rung sets how many ticks it occupies, so re-deriving it at the end
+   * from a relationship that moved in between would settle a conversation at a
+   * price nobody agreed to. Null means nobody has decided yet, and `doTalk`
+   * chooses from the relationship; only a player picking a rung off the menu
+   * sets it in advance.
+   */
+  talkMode: string | null = null;
+  /**
    * The last person to draw blood, and when. Fear is what stops a grudge
    * cascade from consuming a band: without somewhere to run, every fight
    * continues until someone dies.
@@ -690,6 +701,7 @@ export class Person {
     this.targetInscriptionId = null;
     this.targetPileId = null;
     this.targetTech = null;
+    this.talkMode = null;
     this.targetItemId = null;
     this.targetItemCount = null;
     this.actionTimer = 0;

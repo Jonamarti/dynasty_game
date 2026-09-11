@@ -22,7 +22,10 @@ import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import type { KnowledgeSystem } from './KnowledgeSystem.ts';
-import type { RelationshipGraph } from '../social/Relationships.ts';
+import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
+import {
+  CONVERSATION_MODES, chooseMode, type ConversationMode,
+} from '../social/Conversation.ts';
 import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
@@ -113,16 +116,23 @@ export interface ActionContext {
 const REACH = 1.6;
 
 /**
- * Ticks a conversation occupies.
+ * Which conversation somebody is having.
  *
- * At `ticksPerDay` 240 a tick is six in-game minutes, so this is four and a
- * half hours — not the "half an hour" this comment used to claim, which was
- * wrong by a factor of nine and is very likely why the social layer reads as
- * sparse. Deliberately left alone for now: `next-steps.md` §O1 replaces the
- * single conversation with several modes at several costs, and changing the
- * number here first would only move the problem.
+ * There used to be one length for all of them — `TALK_TICKS = 45` against a
+ * 240-tick day, four and a half in-game hours to nod at a stranger — and
+ * `Conversation.ts` records why that is now a ladder of four instead.
+ *
+ * Almost always the rung `chooseMode` reads off the relationship. The
+ * exception is a player who picked one off the menu, which is why the choice
+ * is a field on `Person` and not simply a call: an order names the
+ * conversation it asked for, and the simulation must not quietly hold a
+ * different one.
  */
-const TALK_TICKS = 45;
+function talkModeOf(person: Person, rel: Relationship | null, tick: number): ConversationMode {
+  const asked = person.talkMode;
+  if (asked !== null && asked in CONVERSATION_MODES) return asked as ConversationMode;
+  return chooseMode(rel, tick);
+}
 
 /** Ticks to hand something over and be thanked for it. */
 const GIVE_TICKS = 15;
@@ -436,9 +446,16 @@ export class ActionSystem {
     person.workedTicks = 0;
   }
 
-  /** Ends a deliberate social act and starts the cooldown before the next. */
-  private finishSocial(person: Person, tick: number): void {
-    person.socialCooldownUntil = tick + SOCIAL_COOLDOWN;
+  /**
+   * Ends a deliberate social act and starts the cooldown before the next.
+   *
+   * The cooldown is a parameter because a conversation's length is no longer
+   * one number: a greeting that cost six ticks must not lock somebody out of
+   * company for the rest of the day, and a long evening should. Everything
+   * that is not a conversation keeps the single figure it always had.
+   */
+  private finishSocial(person: Person, tick: number, cooldown = SOCIAL_COOLDOWN): void {
+    person.socialCooldownUntil = tick + cooldown;
     this.finish(person);
   }
 
@@ -1542,17 +1559,36 @@ export class ActionSystem {
     if (!other) return;
 
     if (person.actionTimer <= 0) {
-      person.actionTimer = TALK_TICKS;
+      // The rung is chosen once, here, and held on the person for the rest of
+      // the conversation: what it costs and what it is worth have to be the
+      // same decision, and they are separated by up to ninety ticks.
+      const mode = talkModeOf(person, ctx.relationships.peek(person.id, other.id), ctx.tick);
+      person.talkMode = mode;
+      person.actionTimer = CONVERSATION_MODES[mode].ticks;
       return;
     }
     person.actionTimer--;
-    if (person.actionTimer > 0) return;
+    if (person.actionTimer > 0) {
+      // The longest rung is ninety ticks, twice what a single conversation used
+      // to cost, and `AGENTS.md` is explicit that a long action with no way in
+      // is how the two worst bugs in this project's history happened. A talk
+      // had none because forty-five ticks was short enough to get away with.
+      // `ignoreLaden` because a full pack is a reason to stop picking berries
+      // and no reason at all to stop mid-sentence — the same trap `doSleep`
+      // records having fallen into.
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx, 'talked_');
+      return;
+    }
 
-    ctx.social.converse(person, other, ctx.tick, ctx.peopleById);
+    const mode = talkModeOf(person, ctx.relationships.peek(person.id, other.id), ctx.tick);
+    ctx.social.converse(person, other, ctx.tick, ctx.peopleById, mode);
     person.practice('persuade', 0.3);
-    // Both parties were in the conversation, so both wait before the next one.
-    other.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
-    this.finishSocial(person, ctx.tick);
+    // Both parties were in the conversation, so both wait before the next one,
+    // and for as long as this kind of conversation is worth waiting after.
+    const cooldown = CONVERSATION_MODES[mode].cooldown;
+    other.socialCooldownUntil = ctx.tick + cooldown;
+    this.finishSocial(person, ctx.tick, cooldown);
   }
 
   /**
