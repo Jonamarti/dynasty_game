@@ -142,6 +142,7 @@ export const ACTION_LABELS: Record<string, string> = {
   talk: 'talking',
   court: 'courting',
   teach: 'teaching',
+  ask: 'asking to be shown',
   // A scorer alias: `Brain.setup` rewrites it to `teach` before the action
   // system ever sees it. Listed so the HUD's score table has words for it.
   teach_child: 'teaching a child',
@@ -268,6 +269,12 @@ export const STOP_REASONS: Record<string, string> = {
   nothing_to_build_yet: 'the idea is not ready to build',
   partner_ignorant: 'they know nothing about it',
   partner_unwilling: 'they would not discuss it',
+  // The three ways asking to be taught can come to nothing. Kept apart because
+  // they call for different things from the player: wait until the child grows
+  // up, mend the relationship, or try again.
+  too_young_to_teach: 'they are too young to show anybody anything',
+  would_not_teach: 'they would not show them',
+  learned_nothing: 'they came away no wiser',
 
   // Records. The literacy gate is the one worth spelling out: a stone that
   // grants nothing to somebody who cannot read is the point of writing, and a

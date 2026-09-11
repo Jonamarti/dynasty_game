@@ -68,6 +68,10 @@ const ORDER_COST: Record<string, number> = {
   job: 0.25,
   talk: 0.15,
   teach: 0.2,
+  // Being told whom to go and learn from. Cheaper than being told to teach:
+  // an afternoon of somebody else's time is being spent on you rather than by
+  // you.
+  ask: 0.15,
   // Research is cheap to ask for and hard to compel: sitting somebody down to
   // think is barely an imposition, and being told whom to argue with is one.
   ponder: 0.25,

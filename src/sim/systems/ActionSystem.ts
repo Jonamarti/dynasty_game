@@ -383,6 +383,7 @@ export class ActionSystem {
       case 'talk': this.doTalk(person, ctx); break;
       case 'court': this.doCourt(person, ctx); break;
       case 'teach': this.doTeach(person, ctx); break;
+      case 'ask': this.doAsk(person, ctx); break;
       case 'craft': this.doCraft(person, ctx); break;
       case 'inscribe': this.doInscribe(person, ctx); break;
       case 'read': this.doRead(person, ctx); break;
@@ -1612,6 +1613,89 @@ export class ActionSystem {
       ctx.social.emit('teach', person, pupil, 0.6, ctx.tick, ctx.peopleHash, ctx.sightRadius);
     }
     pupil.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
+    this.finishSocial(person, ctx.tick);
+  }
+
+  /**
+   * Asking somebody to show you how.
+   *
+   * The mirror of `doTeach`, started from the other end. Until M9 phase 3 a
+   * lesson could only ever begin with the teacher: a person who could see
+   * that the woman across the camp knew how to make fire had no way to ask,
+   * and the player had none either. That is a strange gap in a game whose
+   * central claim is that knowledge lives in heads and dies with them —
+   * `next-steps.md` §0 names transmission as the tree's real bottleneck, and
+   * this is a whole channel of it that did not exist.
+   *
+   * Two things separate it from being taught. The lesson is **the teacher's
+   * to refuse**, on `opinion(teacher → pupil)` rather than the pupil's regard
+   * for them, which is the opposite way round from `KnowledgeSystem.teach`'s
+   * own roll and deliberately so: whether they will sit down with you and
+   * whether you can follow them once they have are different questions, and
+   * both are asked. And the pupil does the walking.
+   *
+   * What is *not* different: nothing here decides what gets taught or whether
+   * it lands. That is `KnowledgeSystem.teach`, unchanged and shared, because a
+   * second implementation of "what could you pass on to them" would drift from
+   * the first and the drift would surface as a mystifying difference between
+   * being taught and asking to be.
+   */
+  private doAsk(person: Person, ctx: ActionContext): void {
+    const teacher = this.approach(person, ctx);
+    if (!teacher) return;
+
+    // A child holds what it knows at level zero and cannot explain it — the
+    // rule `KnowledgeSystem.teach` already enforces, said out loud here so the
+    // asker is told why rather than watching a lesson produce nothing.
+    if (teacher.isChild) {
+      this.abandon(person, 'too_young_to_teach', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = TEACH_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) return;
+
+    // Whether they agree at all. Their opinion of the asker, not the asker's of
+    // them: being willing to spend an afternoon on somebody is a fact about the
+    // teacher. A roll rather than a threshold, so that a cool relationship
+    // makes a lesson unlikely rather than impossible — a flat cut-off would
+    // make the whole channel unavailable to exactly the newcomers who most need
+    // it, which is how a band of strangers stays a band of strangers.
+    const standing = ctx.relationships.opinion(teacher.id, person.id) / 100;
+    const willing = Math.min(0.95, Math.max(0.05,
+      0.4 + standing * 0.5 + (teacher.traits.industriousness - 0.5) * 0.1));
+    person.practice('persuade', 0.3);
+    teacher.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
+
+    if (!ctx.rng.chance(willing)) {
+      telemetry.count('ask_refused');
+      this.stop(person, 'would_not_teach', ctx, 'asked_');
+      return;
+    }
+
+    const regard = ctx.relationships.opinion(person.id, teacher.id) / 100;
+    const taught = ctx.knowledge.teach(teacher, person, regard, ctx.tick, ctx.rng);
+    if (!taught) {
+      // Two different disappointments under one roof, and they are worth
+      // telling apart: either the teacher had nothing the asker could follow,
+      // or the explanation simply did not land this time. `teach` counts the
+      // second itself as `teaching_failed`.
+      telemetry.count('ask_taught_nothing');
+      this.stop(person, 'learned_nothing', ctx, 'asked_');
+      return;
+    }
+
+    telemetry.count('ask_taught');
+    // The deed is the teacher's, because it is the teacher who gave something
+    // away — the same gift `doTeach` emits, and it has to be attributed the
+    // same way or asking would quietly be worth less socially than being
+    // offered.
+    ctx.social.emit('teach', teacher, person, 0.6, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+    ctx.onInsight(person, 'was shown how by ' + teacher.name, 'gain');
     this.finishSocial(person, ctx.tick);
   }
 

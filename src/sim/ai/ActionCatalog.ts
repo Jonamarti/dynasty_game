@@ -337,6 +337,22 @@ function personActions(actor: Person, other: Person): ActionOption[] {
             : 'They already know everything you do',
     },
     {
+      // M9 phase 3, note 11: the mirror of `teach`, started by the pupil.
+      //
+      // Always offered, and deliberately not gated on what `other` knows.
+      // Every other option here is computed from what the actor can see, and
+      // what is in somebody else's head is the one thing nobody can see —
+      // working out whether they have anything to show you would hand the
+      // player a reading of a stranger's knowledge that the character does not
+      // have. Asking is free and the answer is the interesting part, so the
+      // refusals live in `doAsk` where they can be spoken.
+      id: 'ask',
+      label: 'Ask ' + other.name + ' to show you how',
+      icon: '\u{1F64B}',
+      enabled: !other.isChild,
+      reason: other.isChild ? 'They are too young to show anybody anything' : undefined,
+    },
+    {
       id: 'talk',
       label: 'Talk to ' + other.name,
       icon: '\u{1F4AC}',

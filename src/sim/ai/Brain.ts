@@ -90,6 +90,8 @@ interface FoundTargets {
   student: Person | null;
   /** The child a `teach_child` is aimed at. See the scorer for why it is separate. */
   childPupil: Person | null;
+  /** Whoever an `ask` would be addressed to: the teacher, not the pupil. */
+  mentor: Person | null;
   colleague: Person | null;
   victim: Person | null;
   beneficiary: Person | null;
@@ -404,6 +406,7 @@ export class Brain {
     let suitor: Person | null = null;
     let student: Person | null = null;
     let childPupil: Person | null = null;
+    let mentor: Person | null = null;
     let patient: Person | null = null;
     let strayAnimal: Animal | null = null;
 
@@ -521,6 +524,47 @@ export class Brain {
             * (0.5 + person.traits.tradition) * urgency * (mine ? 1.5 : 0.7)
             * this.proximityBonus(person, heir, ctx.sightRadius));
           childPupil = heir;
+        }
+      }
+
+      // Ask: the same lesson, wanted from the other end.
+      //
+      // Outside the `knownTech.size > 0` block above on purpose, because the
+      // person with the most to gain from asking is the one who knows nothing
+      // — a child, who cannot teach and until now had no way to seek anything
+      // out either. Children weigh it higher than adults for the same reason
+      // `teach_child` weighs an elder higher: that is where the channel
+      // actually carries anything.
+      //
+      // Curiosity rather than tradition, which is the axis `teach` uses.
+      // Wanting to know and wanting things to carry on are different
+      // dispositions, and a band where the same trait drove both ends of a
+      // lesson would have the incurious never learning from anyone.
+      {
+        const couldShowMe = (other: Person) =>
+          [...other.knownTech].some(t =>
+            TECH[t as Tech] !== undefined &&
+            !person.knownTech.has(t) &&
+            prerequisitesMet(t as Tech, person.knownTech));
+
+        // The willingness roll in `doAsk` is on the teacher's opinion of the
+        // asker, so somebody who cannot stand them is a wasted afternoon. The
+        // scorer refuses to send anyone there rather than paying ninety ticks
+        // to find out, which is the same courtesy `discuss` already extends.
+        const mentors = neighbours.filter(other =>
+          !other.isChild &&
+          couldShowMe(other) &&
+          ctx.relationships.opinion(other.id, person.id) >= -20);
+        const found = this.pickBest(mentors, other =>
+          other.knownTech.size * 2 +
+          ctx.relationships.opinion(person.id, other.id) -
+          person.distanceTo(other) * 2
+        );
+        if (found) {
+          add('ask', (0.1 + person.traits.curiosity * 0.26)
+            * (person.isChild ? 1.6 : 1)
+            * this.proximityBonus(person, found, ctx.sightRadius));
+          mentor = found;
         }
       }
 
@@ -1158,7 +1202,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodNode, matNode, companion, suitor, student, childPupil, colleague,
+        water, foodNode, matNode, companion, suitor, student, childPupil, mentor, colleague,
         victim, beneficiary, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
@@ -1432,6 +1476,7 @@ export class Brain {
       case 'talk':
       case 'teach':
       case 'teach_child':
+      case 'ask':
       case 'discuss':
       case 'court':
       case 'feed':
@@ -1447,6 +1492,7 @@ export class Brain {
           action === 'talk' ? found.companion :
           action === 'teach' ? found.student :
           action === 'teach_child' ? found.childPupil :
+          action === 'ask' ? found.mentor :
           action === 'discuss' ? found.colleague :
           action === 'court' ? found.suitor :
           action === 'feed' || action === 'give' ? found.beneficiary :
