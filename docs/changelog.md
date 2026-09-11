@@ -51,6 +51,63 @@ consumed the routes was not.
   and `path_denied_budget` staying near zero everywhere but `crowded` says the
   per-tick search budget is not the gate anybody needs to touch.
 
+- **Commit 4, a new errand gets a route on its first tick.** `clearTarget()`
+  forgot the route, the aim and the retry flag, and left `pathTick` — the
+  timestamp `REPATH_COOLDOWN` gates on — untouched. `requestRoute` stamps it on
+  every attempt whether or not one succeeds, and `Brain.setup` calls
+  `clearTarget()` on *every re-plan*. So anybody who changed their mind within
+  fifteen ticks of their last search walked the first five tiles of the new
+  errand with no route at all, greedy-steering — which on a coastline is
+  exactly the stretch where people got pressed.
+
+  The cooldown's own comment is what gives the game away: "fifteen ticks of
+  greedy steering between attempts is exactly what a person with no route at
+  all already does". That is an argument about *retrying a failed search*, and
+  it is sound; it was silently inherited by a brand-new errand, where it is
+  simply false. One line, and it is the smallest change in this pass by a wide
+  margin.
+
+  It is also, by the cohort, the largest. Twenty seeds:
+
+  | | baseline | commit 2 | commit 3 | commit 4 |
+  |---|---|---|---|---|
+  | mean survival | 82.6% | 91.4% | 89.2% | **99.6%** |
+  | collapsed | 1/20 | 0/20 | 0/20 | **0/20** |
+  | born | 359 | 405 | 384 | **447** |
+  | infants starved | 77 | 69 | 43 | **21** |
+  | children starved | 18 | 8 | 8 | **5** |
+  | adults starved | 91 | 38 | 43 | **17** |
+
+  Seventeen points of survival over where this pass started, which is well past
+  the ten-point line `AGENTS.md` draws for believing a cohort at all, and the
+  starvation counts fall together rather than trading against each other.
+  Stuck ticks per 1,000 walk ticks fell again: `coast` 8.9 → **0.0**, `century`
+  20.5 → 12.7, `crowded` 59.4 → 51.7.
+
+  The cost is search volume, and it is not small: routes found on `century`
+  30,804 → 84,544, on `coast` 2,482 → 6,137. `path_denied_cooldown` collapsed
+  (century 286,828 → 155,338) and `path_denied_budget` exploded in its place
+  (740 → 40,459; `crowded` 12,877 → 68,956), so `MAX_PATHS_PER_TICK = 3` is now
+  unambiguously the binding gate everywhere rather than only on `crowded`.
+
+  **It is deliberately left at 3.** A budget denial does not stamp `pathTick`,
+  so a denied walker simply asks again next tick — the budget is a queue, not a
+  refusal, and the stuck counters say the queue is working. Raising it would
+  buy a shorter queue at the cost of steps/s on `crowded`, the one scenario
+  whose `perf-budget` is already failing. `century` paid 3,387 → 2,828 steps/s
+  for this commit and stays well above the 2,000 floor; `crowded` went the
+  other way, 1,430 → 1,656, because most of the new searches are short
+  first-tick ones and the mean expansion count more than halved there,
+  271.2 → 107.5.
+
+  `century`'s `paths-are-found` reads worse in absolutes — 1,118 give-ups
+  against 354 at commit 3 and 420 at the baseline — and that is the denominator
+  moving, not the mechanism. As a rate it is 1.3%, against 1.1% and 1.2%: flat
+  across the whole pass, which is the ~1% M7 stage B already recorded. The
+  check counts absolutes, so tripling the number of searches trebles the count.
+  The bail-out itself is dealt with in commit 6, where `Pathfinder`'s costs are
+  open anyway.
+
 - **Commit 3, a fallback that does not move is not a fallback.** The second
   defect, and the one that most literally matches the owner's "it just doesn't
   by a tiny amount". Take a walker heading almost due east into a seam, so

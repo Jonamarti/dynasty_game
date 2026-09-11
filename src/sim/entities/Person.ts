@@ -664,6 +664,20 @@ export class Person {
     this.pathCount = 0;
     this.pathAt = 0;
     this.pathRetried = false;
+    // And the cooldown, for the same reason. `MovementSystem.REPATH_COOLDOWN`
+    // justifies itself with "fifteen ticks of greedy steering between attempts
+    // is exactly what a person with no route at all already does" — an
+    // argument about *retrying a failed search*, which a brand-new errand
+    // silently inherited because `pathTick` is stamped on every attempt and
+    // nothing here cleared it. `Brain.setup` calls this on every re-plan, so
+    // anybody who changed their mind within fifteen ticks of their last search
+    // walked the first five tiles of the new errand with no route at all —
+    // which on a coastline is precisely the stretch where people got pressed.
+    //
+    // Deliberately unlike `stuckSteps`, which stays: that exclusion was about
+    // not smuggling a behaviour change into an instrumentation commit, not a
+    // principle that `clearTarget` should forget less than it means to.
+    this.pathTick = -Infinity;
   }
 
   /**
