@@ -51,6 +51,80 @@ consumed the routes was not.
   and `path_denied_budget` staying near zero everywhere but `crowded` says the
   per-tick search budget is not the gate anybody needs to touch.
 
+- **Commit 6, clearance: built, measured, and not shipped.** The owner's second
+  suggestion was a standoff — "it should have tried going a little more around
+  the edge, separating a little more from the edge" — and it is a real gap in
+  the cost function: uniform step costs make a route hugging a shoreline for
+  forty tiles and one running a tile inland cost *exactly* the same, and the
+  tie-break that picks between them is tile index. It was built:
+  `World.nearBlocked`, a one-pass 8-neighbour scan beside `findShores`, and a
+  per-step penalty in `Pathfinder`'s neighbour loop. Then it was swept, as the
+  plan required, and the sweep said no.
+
+  Penalty ε, on the two scenarios it was supposed to help most:
+
+  | ε | scenario | stuck /1k | mean/worst expansions | steps/s |
+  |---|---|---|---|---|
+  | 0    | coast   | **0.0** | 27.4 / 1242 | 3,454 |
+  | 0.15 | coast   | 0.0 | 32.5 / 981  | 3,704 |
+  | 0.3  | coast   | 0.0 | 20.1 / 951  | 3,607 |
+  | 0.6  | coast   | 0.0 | 34.0 / 922  | 3,728 |
+  | 0    | fishers | **0.0** | 19.7 / 1080 | 4,543 |
+  | 0.6  | fishers | 0.0 | 38.3 / 1584 | 4,449 |
+
+  The column that decides it is the first one: by commit 5, stuck ticks on
+  `coast` and `fishers` are already **zero**. There is nothing left for a
+  standoff to fix there, and `step_blocked` bounces around without a trend
+  because the worlds diverge. On the two scenarios that still have any stuck
+  ticks at all:
+
+  | ε | century stuck /1k | century mean | crowded stuck /1k | crowded mean | crowded steps/s |
+  |---|---|---|---|---|---|
+  | 0    | 0.7 | 23.0 | 44.4 | 82.4  | 1,522 |
+  | 0.15 | 0.2 | 27.5 | 43.4 | 103.9 | 1,414 |
+  | 0.3  | 0.8 | 27.2 | 39.2 | 129.1 | 1,330 |
+  | 0.6  | 0.4 | 29.8 | 38.9 | 110.8 | 1,467 |
+
+  `century` is noise around half a stuck tick per thousand with no trend, and
+  pays 30% more expansions for it. `crowded` shows the only real signal —
+  stuck ticks down 12% at ε=0.6 — and it is the one scenario already failing
+  `perf-budget`, which this would cost another 30-57% of search to buy. That
+  is the exact shape of trade the plan said to refuse.
+
+  A free version was then tried and also rejected, and it is worth recording
+  why, because the idea is tempting. Clearance can be made a **tie-break on
+  equal `g`** rather than a cost: `f` untouched, heuristic still exact, the
+  same set of nodes expanded, and among genuinely equal-cost routes the one
+  spending fewer tiles against the water wins. Measured over 200 sampled
+  routes on a real world it works exactly as advertised and costs almost
+  nothing — **identical 9,142 tiles walked** (so it provably never lengthens a
+  route), 947 → 925 near-blocked tiles, 80,942 → 81,347 expansions. But 2.3%
+  is the whole prize, because genuine cost ties are rare in an 8-connected
+  grid with irrational diagonals; and making it actually bite requires ordering
+  the heap by clearance ahead of `h`, which took `century`'s mean expansions
+  from 23.0 to 29.9. Paying 30% of the search budget for 2.3% less
+  shore-hugging is not a trade worth making either.
+
+  So nothing from this commit ships, and `World.nearBlocked` is not left
+  standing as an array nobody reads. The finding is the deliverable: **the
+  standoff was a fix for a problem that no longer exists.** The owner's
+  instinct about the cost function was right, and it was right about a cause
+  that turned out not to be the one hurting them — aim points, a dead fallback
+  branch, an inherited cooldown and a bail-out set below its own measured
+  requirement were, and all four are gone.
+
+  What did ship from this pass is a test fix. `band.test.ts`'s rebellion case
+  had been widened three times in two milestones, twice by this pass, and the
+  fourth widening was where it became clear that widening was never the right
+  fix at all: on this seed the rebellion now fires on **day 4**, and the test
+  still failed at forty-five days. `Simulation.insights` is capped at
+  `interruptionCap` and `shift()`s, so the evidence had scrolled out of the
+  buffer before the assertion looked for it — a longer window made the test
+  *less* robust, not more, by giving the thing it watches for more time to be
+  evicted. It now steps a day, looks, and stops at the first sighting, which is
+  immune to both failure modes and no longer encodes a movement constant in a
+  politics test.
+
 - **Commit 5, a recovery re-path that is actually different — and the bail-out
   that was manufacturing the problem.** The third defect. When a walk ran out
   of `PATIENCE`, `pathRetried` bought it "one free re-route": clear the route,

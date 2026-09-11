@@ -72,25 +72,34 @@ describe('rebellion', () => {
     rebel.traits.loyalty = 0;
     sim.relationships.addDeed(rebel.id, chief.id, -100, sim.time.tick);
 
-    // Forty-five days, not one: `REBELLION_QUORUM` also has to be met by band
-    // members who have actually crossed paths with the chief, and with a
-    // freshly engineered grievance that can take a day longer to reach than
-    // `defiance` itself, which is guaranteed the moment it is checked.
+    // Polled daily rather than checked once at the end, and that is the whole
+    // point of the shape.
     //
-    // Widened three times now, and never because the mechanism weakened. The
-    // honest reading is that this bound measures *how long people take to bump
-    // into each other*, which is a movement number wearing a politics test's
-    // clothes: M7 took it from three days to five when routing landed, and
-    // M7 stage C moved it twice more, to day 10 once aim points were fixed and
-    // to day 26 once `moveToward`'s dead axis fallback was. Both were measured
-    // on this seed rather than guessed. It is deliberately generous now,
-    // because the assertion worth making here is that the mechanism fires at
-    // all — a tight bound on this number is a movement regression test that
-    // nobody would think to look for in `band.test.ts`.
+    // This assertion is about the *mechanism*: prime one person to despise the
+    // chief past all doubt and confirm something gives. How many days that
+    // takes is incidental — and it is a movement number, because
+    // `REBELLION_QUORUM` has to be met by band members who have actually
+    // crossed paths with the chief. M7 widened the window from three days to
+    // five when routing landed; M7 stage C moved it again, and again.
+    //
+    // Widening it a fourth time would have been the wrong fix, and measuring
+    // said so: on this seed the rebellion now fires on **day 4**, yet the test
+    // failed at forty-five days. `Simulation.insights` is capped at
+    // `interruptionCap` and `shift()`s, so the evidence had simply scrolled
+    // out of the buffer before the assertion looked for it. A long window does
+    // not make this test more robust; it makes it *less*, by giving the thing
+    // it is watching for more time to be evicted.
+    //
+    // So: step a day, look, stop on the first sighting. Immune to both
+    // failures at once, and it no longer encodes a movement constant nobody
+    // would think to look for in `band.test.ts`.
     const before = sim.insights.length;
-    for (let i = 0; i < 45 * 240; i++) sim.step();
+    let fired = false;
+    for (let day = 0; day < 45 && !fired; day++) {
+      for (let i = 0; i < 240; i++) sim.step();
+      fired = sim.insights.slice(before).some(n => n.personId === rebel.id);
+    }
 
-    const fired = sim.insights.slice(before).some(n => n.personId === rebel.id);
     expect(fired).toBe(true);
     expect(sim.bandSystem.chiefByBand.get(band.id)).toBeDefined();
   });
