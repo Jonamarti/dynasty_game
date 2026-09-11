@@ -41,7 +41,7 @@ import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
 import { pressedByNeed } from '../systems/ActionSystem.ts';
 import type { NeedsConfig } from '../core/Config.ts';
 import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
-import { JOBS } from '../entities/Job.ts';
+import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 
 export interface BrainContext {
   world: World;
@@ -239,19 +239,16 @@ const GIVING_RESERVE = 90;
 const DEPENDANT_RESERVE = 15;
 
 /**
- * The verbs `industriousness` pulls toward, and the ones it pulls away from.
+ * The verbs `industriousness` pulls away from.
  *
  * Named sets rather than a flag on each `add` call because the scorer has two
  * dozen terms and a per-call argument would have been forgotten at half of
  * them. Social verbs are in neither: wanting to work is not the same as being
  * unsociable, and folding the two together made industrious people into
- * hermits, which then suppressed both teaching and courtship.
- */
-const WORK_ACTIONS = new Set([
-  'forage', 'gather', 'gather_for_site', 'pick', 'chop', 'hunt',
-  'build', 'haul', 'store', 'craft', 'prototype',
-]);
-/**
+ * hermits, which then suppressed both teaching and courtship. The other half of
+ * the pair, `WORK_ACTIONS`, moved to `Job.ts` when `SocialSystem` gained a
+ * second use for it.
+ *
  * `ponder` and `discuss` are in neither set, for the reason the social verbs
  * are not: wanting to be *working* is not the same as wanting to think, and an
  * industrious person who would not sit down with a problem is a worse

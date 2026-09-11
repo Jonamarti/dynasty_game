@@ -99,6 +99,15 @@ export interface StopNotice {
  */
 const RESUMABLE_STOPS = new Set(['thirsty', 'hungry', 'cold']);
 
+/**
+ * Ticks between passes over who is working beside whom.
+ *
+ * Forty, so six of them fall in a working day. Often enough that an afternoon
+ * spent on the same bush reads as an afternoon spent together, and rare enough
+ * that the spatial query it costs does not show up beside the rest of the step.
+ */
+const ALONGSIDE_EVERY = 40;
+
 /** Ticks an interrupted order waits to be resumed before it is forgotten. */
 const RESUME_WINDOW = 2000;
 
@@ -1908,6 +1917,14 @@ export class Simulation {
       const growth = this.time.growth;
       const regrowth = this.config.world.regrowthRate;
       for (const node of this.nodes) node.regrow(20, growth, regrowth);
+    }
+
+    // Work done side by side, and the talk that goes with it. On a cadence
+    // rather than every tick for the reason the regrowth pass above is: the
+    // answer changes over hours, and the spatial query is the expensive part.
+    // After `rebuildHashes`, because it is one of its readers.
+    if (this.time.tick % ALONGSIDE_EVERY === 0) {
+      this.social.workingAlongside(this.people, this.peopleHash, this.time.tick);
     }
 
     this.wildlifeSystem.update(this.animals, {

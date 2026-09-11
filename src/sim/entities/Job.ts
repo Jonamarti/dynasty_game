@@ -18,6 +18,21 @@
  */
 import type { Skill } from './Person.ts';
 
+/**
+ * The verbs that count as working.
+ *
+ * Here rather than in `Brain`, where it was written and where this file's own
+ * header already described it as living, because it now has a second reader:
+ * `SocialSystem.workingAlongside` needs to know what working looks like, and a
+ * second list of the same verbs would drift from this one the first time a verb
+ * was added. `industriousness` pulls toward these and away from
+ * `IDLE_ACTIONS`; social verbs are in neither, for the reason `Brain` records.
+ */
+export const WORK_ACTIONS = new Set([
+  'forage', 'gather', 'gather_for_site', 'pick', 'chop', 'hunt',
+  'build', 'haul', 'store', 'craft', 'prototype',
+]);
+
 export const JOB_IDS = ['forager', 'hunter', 'builder', 'crafter'] as const;
 export type JobId = (typeof JOB_IDS)[number];
 

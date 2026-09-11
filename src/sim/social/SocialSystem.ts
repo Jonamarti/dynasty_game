@@ -23,6 +23,7 @@ import type { EventType, Norms, SocialEvent } from './Events.ts';
 import { DEED_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
 import type { ConversationMode } from './Conversation.ts';
 import { CONVERSATION_MODES, crossBand } from './Conversation.ts';
+import { WORK_ACTIONS } from '../entities/Job.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
 export interface LifeEvent {
@@ -70,6 +71,40 @@ const OUT_GROUP_BIAS = -6;
  */
 const HEARTH_WARMTH = 2.5;
 const HEARTH_REACH = 3;
+
+/**
+ * How near two people have to be to be working *together* rather than merely in
+ * the same clearing, and what an hour of it is worth.
+ *
+ * O2: `Person.action` is a single string, so "foraging and talking" has nowhere
+ * to live and two people picking the same bush could not say a word to each
+ * other. This is the cheapest honest shape for it — a periodic pass, on the
+ * model of `KnowledgeSystem.tryObserve`, that touches neither one's action.
+ *
+ * Deliberately far below a conversation. A day's work beside somebody is worth
+ * about what one greeting is worth, and it answers loneliness slowly rather
+ * than settling it: if working near people were as good as talking to them,
+ * nobody would ever choose `talk` again and the gossip channel would close —
+ * which is the failure the first tuning of the conversation rungs produced by a
+ * different route.
+ *
+ * **It was made again here, and the relief is what made it.** At 0.06 the six
+ * passes of a working day took nearly a third off a person's loneliness, which
+ * is more than it rises in a day; conversations in the `tiny` scenario fell by
+ * two thirds, from 35 to 12, and `rumor-propagates` went to zero because ten of
+ * the twelve survivors were greetings and a greeting carries no news. At 0.03 a
+ * day of working side by side slows loneliness by something like a third
+ * without ever answering it, which is the shape O2 asked for: company you did
+ * not have to stop working for, and no substitute for sitting down with
+ * somebody.
+ *
+ * No draw is taken here. The pass runs on a fixed cadence and pairs people in
+ * index order, so it adds nothing to any RNG stream and the fork order is
+ * untouched.
+ */
+const ELBOW_ROOM = 2.5;
+const ALONGSIDE_WARMTH = 0.6;
+const ALONGSIDE_RELIEF = 0.03;
 
 /** Confidence lost each time a story is passed on. */
 const RUMOR_DECAY = 0.75;
@@ -128,6 +163,8 @@ export function resetEventIds(): void {
 export class SocialSystem {
   /** Recent events, newest last, for the UI feed. Bounded. */
   readonly recent: SocialEvent[] = [];
+  /** Scratch for `workingAlongside`'s query. Reused; never read across calls. */
+  private readonly nearby: Person[] = [];
   private readonly recentCap = 200;
 
   /**
@@ -306,6 +343,48 @@ export class SocialSystem {
     // without the difference ever showing up in a need.
     a.needs.company = Math.max(0, a.needs.company * (1 - reliefA));
     b.needs.company = Math.max(0, b.needs.company * (1 - reliefB));
+  }
+
+  /**
+   * People working within arm's reach of each other, and the hour of talk that
+   * goes with it.
+   *
+   * Runs on a cadence rather than every tick, for the reason `dailyUpkeep`
+   * does: the answer changes slowly and the query is the expensive part.
+   *
+   * Familiarity is settled once per pair and loneliness once per person. Both
+   * halves of a pair find each other in the same pass — `settle` is symmetric,
+   * so the canonical ordering is what stops a day's work counting double — and
+   * somebody in the middle of a work party should not be four times less lonely
+   * than somebody with one companion, because the company of one other person
+   * is most of what company is.
+   *
+   * `hunt` is in `WORK_ACTIONS` and stays there. Two hunters within two and a
+   * half tiles of each other really are working side by side; a chase puts
+   * them further apart than that on its own, without a rule about it.
+   */
+  workingAlongside(people: Person[], peopleHash: SpatialHash<Person>, tick: number): void {
+    for (const person of people) {
+      if (!person.alive || !WORK_ACTIONS.has(person.action)) continue;
+      let alongside = 0;
+      // Into the same array every time. `queryRadius` takes one for exactly
+      // this reason, and this is the only query in the game that runs once per
+      // living person: on the `crowded` scenario a fresh array per call was
+      // worth about 4% of the whole step to the garbage collector.
+      for (const other of peopleHash.queryRadius(
+        person.x, person.y, ELBOW_ROOM, this.nearby)) {
+        if (!other.alive || other.id === person.id) continue;
+        if (!WORK_ACTIONS.has(other.action)) continue;
+        alongside++;
+        if (other.id > person.id) {
+          this.settle(person, other, tick, ALONGSIDE_WARMTH, 0, 0);
+          telemetry.count('worked_alongside');
+        }
+      }
+      if (alongside > 0) {
+        person.needs.company = Math.max(0, person.needs.company * (1 - ALONGSIDE_RELIEF));
+      }
+    }
   }
 
   /**
