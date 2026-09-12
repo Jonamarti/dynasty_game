@@ -16,8 +16,45 @@ import {
   DIFFICULTY_IDS, TUNABLES, configFor, type DifficultyId,
 } from '../sim/core/Difficulty.ts';
 import type { DeepPartial, SimConfig } from '../sim/core/Config.ts';
+import { AUTONOMY_ORDER, type Autonomy } from '../sim/ai/Autonomy.ts';
 
 const KEY = 'dynasty.settings';
+
+/**
+ * How much the player's character looks after itself, kept apart from the
+ * difficulty document above on purpose.
+ *
+ * It is not a tunable and not an override: `Settings` is a *difference from an
+ * anchor*, and every anchor operation on that screen — dragging the difficulty
+ * slider, "Reset everything to Normal" — legitimately throws the whole
+ * `overrides` map away. A control-scheme preference living in there would be
+ * silently reset by a player retuning their hunger rate, which is the same
+ * class of surprise the comment at the top of this file exists to prevent.
+ *
+ * M9 phase 6's plan called for "a new `Settings` field" before that shape was
+ * looked at closely; this is the same preference stored somewhere it survives.
+ */
+const AUTONOMY_KEY = 'dynasty.autonomy';
+
+export function loadAutonomy(): Autonomy {
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(AUTONOMY_KEY);
+  } catch {
+    return 'manual';
+  }
+  // Anything unrecognised — an older build's spelling, a hand-edited value —
+  // degrades to the mode the game has always had rather than throwing on boot.
+  return AUTONOMY_ORDER.includes(raw as Autonomy) ? (raw as Autonomy) : 'manual';
+}
+
+export function saveAutonomy(value: Autonomy): void {
+  try {
+    localStorage.setItem(AUTONOMY_KEY, value);
+  } catch {
+    // Nothing to do: the preference simply does not persist.
+  }
+}
 
 export interface Settings {
   /** Schema version, so a later shape change can be migrated rather than guessed. */

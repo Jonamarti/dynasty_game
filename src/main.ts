@@ -24,8 +24,9 @@ import { TribeGraphOverlay } from './ui/TribeGraph.ts';
 import { PauseMenu } from './ui/PauseMenu.ts';
 import { SettingsOverlay } from './ui/Settings.ts';
 import {
-  configFrom, defaultSettings, loadSettings, saveSettings,
+  configFrom, defaultSettings, loadAutonomy, loadSettings, saveAutonomy, saveSettings,
 } from './ui/SettingsStore.ts';
+import { AUTONOMY_LABELS, nextAutonomy, type Autonomy } from './sim/ai/Autonomy.ts';
 import { TUNABLES, readPath, valuesFor } from './sim/core/Difficulty.ts';
 import {
   availableActions, type ActionOption, type ActionTarget,
@@ -278,6 +279,7 @@ const hud = new Hud(hudRoot, {
         'commanding ' + commanding.name, { color: '#7fd4ff', boxed: true });
     }
   },
+  onAutonomy: mode => setAutonomy(mode),
 }, sim.config.time.tickRate);
 hud.renderBuildBar(sim, false);
 hud.renderCraftBar(sim, sim.player, false);
@@ -485,6 +487,55 @@ function possess(person: Person): void {
   });
 }
 
+/**
+ * Changes how much the player's character looks after itself.
+ *
+ * One funnel for the button, the key and the boot path, because the simulation
+ * holds the authority, the HUD holds the display and `localStorage` holds the
+ * preference, and three call sites each remembering all three is how a button
+ * ends up disagreeing with the game it is attached to.
+ *
+ * The floater is not decoration. Switching this on is the player handing part of
+ * their character over, and a silent switch means the next thing the character
+ * does by itself looks like a bug.
+ */
+function setAutonomy(mode: Autonomy, announce = true): void {
+  sim.autonomy = mode;
+  // A stale reason would otherwise sit under the action line saying the
+  // character is thirsty and stuck, in a mode where it is no longer trying.
+  sim.autonomyStall = null;
+  saveAutonomy(mode);
+  hud.setAutonomy(mode);
+  if (announce && sim.player) {
+    renderer.floaters.push(sim.player.x, sim.player.y,
+      AUTONOMY_LABELS[mode].toLowerCase(), { color: '#9fd8a0', boxed: true, ttl: 2.4 });
+  }
+}
+
+// The stored preference, applied once the HUD exists to show it. Silently: the
+// player has not just chosen anything, and a floater on the first frame of every
+// session is the kind of noise that trains people to ignore floaters.
+setAutonomy(loadAutonomy(), false);
+
+/**
+ * The last stall the player was told about, so they are told once and not once
+ * a frame.
+ *
+ * `autonomyStall` is a standing condition rather than an event — see the field
+ * on `Simulation` — so the floater fires on the *change*, while the panel line
+ * keeps saying it for as long as it is true.
+ */
+let toldAboutStall: string | null = null;
+
+function reportAutonomyStall(): void {
+  const stall = sim.autonomyStall;
+  if (stall === toldAboutStall) return;
+  toldAboutStall = stall;
+  if (stall === null || !sim.player) return;
+  renderer.floaters.push(sim.player.x, sim.player.y, stall,
+    { color: '#e0b055', boxed: true, ttl: 3.4 });
+}
+
 // ---------------------------------------------------------------------------
 // Input
 // ---------------------------------------------------------------------------
@@ -559,6 +610,13 @@ window.addEventListener('keydown', event => {
   }
   if (key === 'f') {
     if (sim.player) camera.recentre(sim.player.x, sim.player.y);
+    return;
+  }
+  // Cycles rather than toggles: there are three states and `R` has to be able
+  // to reach all of them, since the segmented control it mirrors is hidden with
+  // the rest of the chrome by `H`.
+  if (key === 'r') {
+    setAutonomy(nextAutonomy(sim.autonomy));
     return;
   }
   // Opens on whoever is selected, falling back to the player. Opening it on
@@ -1598,6 +1656,7 @@ function frame(now: number): void {
   familyTree.update(sim);
   tribeGraph.update(sim);
   reportInterruptions();
+  reportAutonomyStall();
   reportInsights();
   watchUnlocks();
   updateFloaters();

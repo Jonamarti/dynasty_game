@@ -46,6 +46,9 @@ import { DEFAULT_CONFIG } from '../sim/core/Config.ts';
 import { noticeRadius } from '../sim/systems/WildlifeSystem.ts';
 import { workProgressOf } from '../sim/core/Progress.ts';
 import { JOBS, type JobId } from '../sim/entities/Job.ts';
+import {
+  AUTONOMY_LABELS, AUTONOMY_NOTES, AUTONOMY_ORDER, type Autonomy,
+} from '../sim/ai/Autonomy.ts';
 
 export type PanelTab = 'now' | 'self' | 'kit' | 'work' | 'ties' | 'life';
 
@@ -90,6 +93,16 @@ export interface HudCallbacks {
   onOpenMenu: () => void;
   onToggleBuild: () => void;
   onToggleCraft: () => void;
+  /**
+   * A different answer to "how much does your character do for itself?".
+   *
+   * Three buttons rather than one that cycles, even though `R` cycles them,
+   * because the middle state is the one nobody would guess exists — a cycling
+   * button shows one label at a time and hides the fact that there is a choice
+   * at all, and this setting decides whether the player's character can starve
+   * while they read the tech web.
+   */
+  onAutonomy: (mode: Autonomy) => void;
 }
 
 /** How long the panel keeps saying why the last order stopped. */
@@ -148,6 +161,8 @@ export class Hud {
   /** Every piece of chrome hidden at once. Not persisted: it is a look, not a setting. */
   private chromeHidden = false;
 
+  private autonomyBar!: HTMLElement;
+
   /** What the panel was last built for, so it is rebuilt only when it changes. */
   private builtFor: string | null = null;
   private currentSim: Simulation | null = null;
@@ -182,6 +197,20 @@ export class Hud {
     this.collapsed = !this.collapsed;
     writeFlag(COLLAPSED_KEY, this.collapsed);
     this.applyChrome();
+  }
+
+  /**
+   * Shows which autonomy state is in force.
+   *
+   * The HUD never decides this and never stores the authority for it — the
+   * simulation holds the one copy — so this is display only, called after
+   * whoever owns the change has made it. Two copies of a mode is how a button
+   * ends up lying about what the game is doing.
+   */
+  setAutonomy(mode: Autonomy): void {
+    for (const button of Array.from(this.autonomyBar.children) as HTMLElement[]) {
+      button.classList.toggle('is-active', button.dataset.autonomy === mode);
+    }
   }
 
   /** Records why somebody's order stopped, for the panel's action line. */
@@ -253,9 +282,27 @@ export class Hud {
     menuButton.title = 'Menu and settings (Esc)';
     menuButton.onclick = () => this.callbacks.onOpenMenu();
 
+    // How much the character does for itself, as a segmented control. In the
+    // top bar and not in the settings screen because it is a thing the player
+    // changes *during* play — switched on before opening the tech web and off
+    // again before doing anything deliberate — and a preference buried two
+    // screens deep would be found once and then forgotten.
+    this.autonomyBar = el('div', 'hud-seg');
+    this.autonomyBar.title = 'How much your character does for itself (R)';
+    for (const mode of AUTONOMY_ORDER) {
+      const button = document.createElement('button');
+      button.className = 'hud-seg-button';
+      button.dataset.autonomy = mode;
+      button.textContent = AUTONOMY_LABELS[mode];
+      button.title = AUTONOMY_NOTES[mode];
+      button.onclick = () => this.callbacks.onAutonomy(mode);
+      this.autonomyBar.appendChild(button);
+    }
+    this.setAutonomy('manual');
+
     topBar.append(
       this.clockEl, this.statsEl, this.pauseButton, speed, speedLabel,
-      buildButton, craftButton, menuButton);
+      buildButton, craftButton, this.autonomyBar, menuButton);
 
     // The panel is a header strip plus a body, so collapsing it can leave the
     // strip in place: a panel that vanishes entirely gives the player nothing
@@ -293,6 +340,7 @@ export class Hud {
       '<b>click</b> inspect &middot; <b>right-click</b> actions &middot; ' +
       '<b>B</b> build &middot; <b>M</b> make &middot; <b>C</b> command &middot; ' +
       '<b>G</b> tech web &middot; <b>K</b> family tree &middot; <b>T</b> tribe graph &middot; ' +
+      '<b>R</b> who steers &middot; ' +
       '<b>P</b> fold panel &middot; <b>H</b> hide overlay &middot; <b>space</b> pause &middot; ' +
       '<b>Esc</b> menu';
 
@@ -623,7 +671,7 @@ export class Hud {
     const known = knowledgeOfPerson(observer, person, sim.relationships);
 
     const doing = this.panelBodyEl.querySelector('.hud-doing');
-    if (doing) doing.innerHTML = this.doingLine(person);
+    if (doing) doing.innerHTML = this.doingLine(person, sim);
 
     if (!known.knowsCondition) return;
 
@@ -681,7 +729,7 @@ export class Hud {
       ' · ' + bandText + '</div>'
     );
     rows.push('<div class="hud-known">' + escapeHtml(known.because) + '</div>');
-    rows.push('<div class="hud-doing">' + this.doingLine(person) + '</div>');
+    rows.push('<div class="hud-doing">' + this.doingLine(person, sim) + '</div>');
 
     const tabs: [PanelTab, string][] = [
       ['now', 'Now'], ['self', 'Self'], ['kit', 'Kit'], ['work', 'Work'],
@@ -715,13 +763,25 @@ export class Hud {
   /**
    * What they are doing, and — briefly — why the last thing they were told to
    * do stopped.
+   *
+   * For the player's own character it also says when the character is acting on
+   * its own rather than on an order, and when it is trying to and cannot. The
+   * top bar says which state is switched on; this says what the state is
+   * actually *doing*, which is a different question — "Acts alone" on a button
+   * and a character walking off to talk to somebody only line up if the player
+   * can see them line up.
    */
-  private doingLine(person: Person): string {
+  private doingLine(person: Person, sim: Simulation): string {
     const stop = this.lastStop;
     const fresh = stop !== null && stop.personId === person.id &&
       performance.now() - stop.at < STOP_NOTICE_MS;
+    const alone = person.isPlayer && person.order === null && sim.autonomy !== 'manual';
+    const stall = person.isPlayer ? sim.autonomyStall : null;
     return escapeHtml(actionLabel(person.action, person.targetRecipe, person.talkMode)) +
       (person.order ? ' <span class="hud-ordered">ordered</span>' : '') +
+      (alone ? ' <span class="hud-alone">' +
+        escapeHtml(AUTONOMY_LABELS[sim.autonomy].toLowerCase()) + '</span>' : '') +
+      (stall ? '<div class="hud-stopped">' + escapeHtml(stall) + '</div>' : '') +
       (fresh ? '<div class="hud-stopped">' + escapeHtml(stop!.text) + '</div>' : '');
   }
 

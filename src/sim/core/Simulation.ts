@@ -24,7 +24,10 @@ import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import { MovementSystem } from '../systems/MovementSystem.ts';
 import { Pathfinder } from './Pathfinder.ts';
 import { ActionSystem } from '../systems/ActionSystem.ts';
-import { Brain } from '../ai/Brain.ts';
+import { Brain, type BrainContext } from '../ai/Brain.ts';
+import {
+  stallReason, survivalActions, urgentNeeds, type Autonomy,
+} from '../ai/Autonomy.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
 import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
 import { DEFAULT_NORMS, VARIABLE_NORMS, type Norms } from '../social/Events.ts';
@@ -210,6 +213,30 @@ export class Simulation {
 
   /** Why the most recent order was refused. Read by the UI, then cleared. */
   lastRefusal: string | null = null;
+
+  /**
+   * How much of itself the player's character looks after. See `steerPlayer`.
+   *
+   * Lives on the simulation rather than in the UI because `step` is what reads
+   * it, and it survives succession on purpose: it is a statement about how this
+   * player wants to play, not about the person they are currently playing, and
+   * an heir who inherits the estate and not the setting would be a small nasty
+   * surprise at the worst possible moment. Defaults to `manual`, which is
+   * exactly the behaviour every build before M9 phase 6 had — no headless run
+   * possesses anybody, so no scenario can reach any other value.
+   */
+  autonomy: Autonomy = 'manual';
+
+  /**
+   * Why the player's character, left to look after itself, is doing nothing.
+   *
+   * Polled by the UI every frame rather than consumed once like `lastRefusal`,
+   * because this is a *standing* condition — thirsty with no water in sight
+   * stays true until one of the two facts changes — and a read-once slot would
+   * flash the reason for a frame and then leave the player watching a mode that
+   * appears to be broken.
+   */
+  autonomyStall: string | null = null;
 
   /**
    * Actions that ended for a reason, oldest first, waiting to be told about.
@@ -2111,13 +2138,13 @@ export class Simulation {
         !committed &&
         ((this.time.tick + person.thinkOffset) % interval === 0 || person.action === 'idle');
       if (needsThink) {
-        // The player's character is scored but never steered: the HUD shows
-        // what they feel like doing, and the human decides whether to listen.
-        if (person.isPlayer) this.brain.score(person, brainCtx);
+        if (person.isPlayer) this.steerPlayer(person, brainCtx);
         else this.brain.think(person, brainCtx);
       } else if (person.isPlayer && (this.time.tick + person.thinkOffset) % interval === 0) {
-        // The player is scored even while under orders, so the HUD can always
-        // show what their character feels like doing. They are never steered.
+        // Scored even while under orders, so the HUD can always show what their
+        // character feels like doing. Never *steered* here whatever `autonomy`
+        // says: an order the player gave outranks every state of it, and this
+        // branch is the one that runs while an order is live.
         this.brain.score(person, brainCtx);
       }
 
@@ -2125,6 +2152,64 @@ export class Simulation {
     }
 
     this.cleanupDead();
+  }
+
+  /**
+   * What the player's character does when the player is not saying.
+   *
+   * **The original decision, which still holds for `manual`.** From M6a: the
+   * player's character is scored but never steered. The HUD shows what they
+   * feel like doing and the human decides whether to listen, because this game
+   * is one person's life rather than a colony to be supervised, and a brain
+   * that acted on its own score would be quietly playing the game for you.
+   *
+   * **Why that is no longer the only state.** The owner's note 4 in
+   * `m9_plan_words_and_hands.md`: the character does not drink, eat or sleep on
+   * its own. Needs climb whether or not anybody is steering, so the cost of the
+   * rule above was that reading the tech web for two minutes could kill you —
+   * and a death nobody chose is not the same thing as a death you walked into.
+   * `autonomy` names which of the three answers is in force; the middle one
+   * exists because both ends of the range are wrong for most of the game.
+   *
+   * Two invariants hold in every state, and both are enforced by where this is
+   * called from rather than by anything in it:
+   *
+   *  - **An order always wins.** This runs only when `committed` is false, so a
+   *    live order is never interrupted, and `order()` overwrites whatever was
+   *    chosen here the moment the player asks for something.
+   *  - **Held keys always win.** The `playerIntent` branch above returns before
+   *    reaching this.
+   */
+  private steerPlayer(person: Person, ctx: BrainContext): void {
+    if (this.autonomy === 'auto') {
+      this.autonomyStall = null;
+      this.brain.think(person, ctx);
+      return;
+    }
+
+    if (this.autonomy === 'manual') {
+      this.autonomyStall = null;
+      this.brain.score(person, ctx);
+      return;
+    }
+
+    const urgent = urgentNeeds(person, this.config.needs);
+    if (urgent.length === 0) {
+      this.autonomyStall = null;
+      this.brain.score(person, ctx);
+      return;
+    }
+
+    // Scoring happens inside `think` either way, so the HUD's table is filled
+    // on this path as well as the other two.
+    const chosen = this.brain.think(person, ctx, survivalActions(urgent));
+    // Nothing that answers the need scored: there is no water in sight, or
+    // nothing to eat. The mode is on, the need is dangerous, and the character
+    // is standing still — which is precisely the kind of silent refusal the
+    // standing rule in `AGENTS.md` exists to stop. The person is left exactly
+    // as `think` found them; only the explanation is new, and it names the
+    // worst of the needs rather than all of them because a floater is one line.
+    this.autonomyStall = chosen === null ? stallReason(urgent[0]!) : null;
   }
 
   private rebuildHashes(): void {

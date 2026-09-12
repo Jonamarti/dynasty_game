@@ -42,9 +42,19 @@ html, body, #app {
   position: absolute;
   top: 10px;
   left: 10px;
+  /* Stops short of the inspector panel (286px wide, 10px from the right) and
+     wraps rather than running underneath it. M9 phase 6 added a fourth control
+     and pushed the menu button under the panel, where it was still clickable
+     for Playwright and invisible to a person — the same class of silent
+     degradation the screenshot tour has now caught twice. */
+  max-width: calc(100% - 326px);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  /* 8px, not the 12 this had: the row fits on one line at 1280 with the fourth
+     control and does not at 12, and wrapping is the fallback for narrower
+     windows rather than the normal case. */
+  gap: 8px;
   padding: 7px 12px;
   background: var(--panel);
   border: 1px solid var(--panel-border);
@@ -72,7 +82,39 @@ html, body, #app {
 
 .hud-button:hover { background: rgba(255, 255, 255, 0.16); }
 
-.hud-speed { width: 110px; accent-color: var(--accent); }
+.hud-speed { width: 84px; accent-color: var(--accent); }
+
+/* How much the character does for itself: three states, all visible at once.
+   One button per state rather than a cycling label, because the middle state —
+   looking after itself and nothing more — is the one no player would guess was
+   there if only the current one were on screen. */
+.hud-seg {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.hud-seg-button {
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 6px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.04);
+  border: none;
+  border-right: 1px solid var(--panel-border);
+  cursor: pointer;
+}
+
+.hud-seg-button:last-child { border-right: none; }
+.hud-seg-button:hover { background: rgba(255, 255, 255, 0.14); color: var(--text); }
+
+.hud-seg-button.is-active {
+  color: #10131a;
+  background: var(--accent);
+  font-weight: 600;
+}
 .hud-speed-label { color: var(--text-dim); font-variant-numeric: tabular-nums; min-width: 42px; }
 
 /* --- inspector ---------------------------------------------------------- */
@@ -233,6 +275,21 @@ html, body, #app {
   text-transform: uppercase;
   color: #10131a;
   background: #7fd4ff;
+  border-radius: 3px;
+  padding: 1px 5px;
+  vertical-align: 1px;
+}
+
+/* The same shape as `.hud-ordered` in a different colour, and deliberately so:
+   both answer "who decided this?" about the line above them, and two different
+   shapes for one question would read as two unrelated things. */
+.hud-alone {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #10131a;
+  background: #9fd8a0;
   border-radius: 3px;
   padding: 1px 5px;
   vertical-align: 1px;

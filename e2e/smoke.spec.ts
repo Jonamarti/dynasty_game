@@ -1792,3 +1792,60 @@ test('the game opens on its settings, and Begin rebuilds the island they describ
 
   expect(errors).toEqual([]);
 });
+
+/**
+ * M9 phase 6: the control that decides how much the character does for itself.
+ *
+ * The simulation half of this is covered by `src/sim/__tests__/autonomy.test.ts`
+ * — no scenario run can reach it, since the headless harness never possesses
+ * anybody. What is left for the browser is the half that only exists here: that
+ * the three states are on screen, that the key and the buttons agree with each
+ * other and with the simulation, and that the preference survives a reload.
+ */
+test('how much your character does for itself is a visible, remembered choice', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  type Debug = { __dynasty: { sim: {
+    autonomy: string;
+    autonomyStall: string | null;
+    player: { id: number; needs: Record<string, number>; action: string };
+  } } };
+  const modeOf = () => page.evaluate(
+    () => (window as never as Debug).__dynasty.sim.autonomy);
+
+  const bar = page.locator('.hud-seg');
+  await expect(bar.locator('.hud-seg-button')).toHaveCount(3);
+  // The state the game has always had is the one it still opens on.
+  await expect(bar.locator('.hud-seg-button.is-active')).toHaveText('You steer');
+  expect(await modeOf()).toBe('manual');
+
+  // The button and the key are two ways at one setting, not two settings.
+  await bar.locator('.hud-seg-button', { hasText: 'Acts alone' }).click();
+  await expect(bar.locator('.hud-seg-button.is-active')).toHaveText('Acts alone');
+  expect(await modeOf()).toBe('auto');
+
+  await page.keyboard.press('r');
+  await expect(bar.locator('.hud-seg-button.is-active')).toHaveText('You steer');
+  expect(await modeOf()).toBe('manual');
+  await page.keyboard.press('r');
+  await expect(bar.locator('.hud-seg-button.is-active')).toHaveText('Stays alive');
+  expect(await modeOf()).toBe('urgent');
+
+  // The promise the middle state makes, and the report that prompted the whole
+  // phase: a character left alone does not stand still until it dies of thirst.
+  await page.evaluate(() => {
+    (window as never as Debug).__dynasty.sim.player.needs.thirst = 84;
+  });
+  await expect.poll(async () => page.evaluate(
+    () => (window as never as Debug).__dynasty.sim.player.action)).toBe('drink');
+  // And the panel says so, rather than leaving the player to infer it.
+  await expect(page.locator('.hud-doing .hud-alone')).toHaveText('stays alive');
+
+  // A preference, not a per-session mood.
+  await page.reload();
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await expect(page.locator('.hud-seg .hud-seg-button.is-active')).toHaveText('Stays alive');
+
+  expect(errors).toEqual([]);
+});

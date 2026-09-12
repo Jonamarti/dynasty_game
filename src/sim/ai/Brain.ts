@@ -285,10 +285,23 @@ function urgencyCurve(value: number): number {
 export class Brain {
   /**
    * Chooses and sets up an action. Returns the chosen action id.
+   *
+   * `allowed`, when given, restricts the choice to those verbs and returns
+   * **null** rather than falling back to `wander` when none of them scored.
+   * That distinction is the whole reason the parameter exists: it is how the
+   * player's character in `urgent` autonomy goes to the water without also
+   * wandering off whenever there is no water — see `sim/ai/Autonomy.ts`. A
+   * filtered call that found nothing has left the person exactly as it found
+   * them, and the caller is the one that knows what to say about it.
    */
-  think(person: Person, ctx: BrainContext): string {
+  think(person: Person, ctx: BrainContext, allowed?: ReadonlySet<string>): string | null {
     const { scores, found } = this.score(person, ctx);
-    const chosen = scores[0]?.id ?? 'wander';
+    // `score` sorts descending and only keeps positive scores, so the first
+    // match is the best one this person is actually inclined to do.
+    const chosen = allowed
+      ? scores.find(s => allowed.has(s.id))?.id ?? null
+      : scores[0]?.id ?? 'wander';
+    if (chosen === null) return null;
     this.setup(person, chosen, ctx, found);
     return chosen;
   }
