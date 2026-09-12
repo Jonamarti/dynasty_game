@@ -658,12 +658,15 @@ test('an idea in progress is shown, with the story that started it', async ({ pa
   expect(errors).toEqual([]);
 });
 
-test('thinking is offered only once something has occurred to you', async ({ page }) => {
+test('somebody with no ideas can still sit and think', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);
 
-  // Right-click empty ground: the verb is there and greyed, with the reason.
-  // An option that is simply absent teaches the player nothing about why.
+  // This spec used to assert the opposite — a greyed "Think" reading "Nothing
+  // has occurred to you yet" — and the premise changed under it in M9 phase 5
+  // rather than the game breaking. The owner's note 4 is that having no idea
+  // yet is precisely the moment thinking is *for*, so `reflect` is offered
+  // here, enabled, where a refusal used to be.
   await page.evaluate(() => {
     const d = (window as never as {
       __dynasty: { sim: { player: { ideas: unknown[] } | null } };
@@ -673,9 +676,9 @@ test('thinking is offered only once something has occurred to you', async ({ pag
 
   const ground = await emptyGround(page);
   await page.mouse.click(ground.x, ground.y, { button: 'right' });
-  const think = page.locator('.radial-item', { hasText: 'Think' }).first();
+  const think = page.locator('.radial-item', { hasText: 'Sit and think' }).first();
   await expect(think).toBeVisible({ timeout: 10_000 });
-  await expect(think).toHaveClass(/is-disabled/);
+  await expect(think).not.toHaveClass(/is-disabled/);
 
   expect(errors).toEqual([]);
 });

@@ -154,6 +154,41 @@ const TEACH_TICKS = 90;
  */
 const PONDER_TICKS = 150;
 
+/**
+ * Ticks of sitting with no particular problem.
+ *
+ * A small fraction of `PONDER_TICKS`, and the gap is the whole distinction:
+ * with 240 ticks to a day, 150 is `ponder` spending most of one on a problem
+ * it actually has, and 20 is the hour before supper with nothing in your head.
+ *
+ * **This is the lever that controls what reflection costs the world, and the
+ * coefficient in `Brain` is not.** What conception reads is the *occasion* —
+ * `noteDid` puts `reflect` into `lately` once per completed stretch, whatever
+ * its length — while what shows up in `ai-uses-many-actions`, and what is
+ * actually taken away from foraging, is occasions times this number. Measured
+ * at 90 it made reflection the ninth most common activity in a century, ahead
+ * of building and sleeping, on **650 occasions across fifty lifetimes** — the
+ * frequency was already modest and the duration was the whole problem. That is
+ * the failure `Brain.ts` records from the time `ponder`'s weight was raised,
+ * and halving the coefficient instead dropped reflection out of the world
+ * entirely (58,606 ticks to zero), because the score sits on a cliff where
+ * every neighbouring option is proximity-discounted and this one is not.
+ */
+const REFLECT_TICKS = 20;
+
+/**
+ * Ticks before somebody sits down with their own thoughts again.
+ *
+ * A little under a day, which is the shortest gap that does two things at
+ * once: it stops `reflect` cycling — see `Person.reflectCooldownUntil` for
+ * what that looked like measured — while still letting a habitual thinker
+ * reflect most days, which is what `Person.LATELY_ENOUGH` requires before
+ * `doing: reflect` counts as an ingredient at all. A longer gap would leave
+ * the spark routes that read it permanently unsatisfiable, which is the
+ * `wander` mistake in `Tech.ts` made a second time.
+ */
+const REFLECT_COOLDOWN = 200;
+
 /** Ticks spent arguing a problem out with somebody who knows something. */
 const DISCUSS_TICKS = 70;
 
@@ -418,6 +453,7 @@ export class ActionSystem {
       case 'inscribe': this.doInscribe(person, ctx); break;
       case 'read': this.doRead(person, ctx); break;
       case 'ponder': this.doPonder(person, ctx); break;
+      case 'reflect': this.doReflect(person, ctx); break;
       case 'discuss': this.doDiscuss(person, ctx); break;
       case 'prototype': this.doPrototype(person, ctx); break;
       case 'give': this.doGive(person, ctx); break;
@@ -2235,6 +2271,55 @@ export class ActionSystem {
 
     person.practice(def.skill, 0.4);
     this.breakthrough(person, idea, BREAKTHROUGH, ctx, 'ponder');
+    this.finish(person);
+  }
+
+  /**
+   * Sitting with nothing in particular.
+   *
+   * Note 4, and the distinction the owner drew: *thinking is not the same as
+   * wandering*. `doPonder` above needs a workable idea, so until this verb
+   * existed a comfortable person with nothing in their head scored `wander` at
+   * 0.02 and milled about camp — which reads on screen as idling, and which
+   * meant the game had no way at all for an idea to *originate* in somebody
+   * deciding to think. Every technology in the web had to be stumbled into
+   * while doing something else.
+   *
+   * It produces nothing by itself, and that is deliberate. What it leaves
+   * behind is a single fact — `noteDid('reflect')` putting `reflect` into
+   * `lately` — which `KnowledgeSystem.tryConceive` and the spark table then
+   * read. One mechanism, two readers. A version that rolled for an idea here
+   * would be a second conception site competing with the daily one, and the
+   * two would drift the first time either was tuned.
+   *
+   * No `workableIdea` check, no target, no partner: the whole point is that
+   * this is the verb available to somebody who has none of those.
+   */
+  private doReflect(person: Person, ctx: ActionContext): void {
+    if (person.actionTimer <= 0) {
+      person.actionTimer = REFLECT_TICKS;
+      // Started, not finished. An interrupted reflection still spends the
+      // cooldown: the alternative is that being pulled away by hunger lets
+      // somebody sit straight back down the moment they have eaten, which is
+      // the per-tick loop this exists to prevent arriving by another door.
+      person.reflectCooldownUntil = ctx.tick + REFLECT_COOLDOWN;
+      return;
+    }
+    person.actionTimer--;
+    person.workedTicks++;
+    if (person.actionTimer > 0) {
+      // `ignoreLaden` for `doPonder`'s reason: thinking needs a head, not
+      // hands, so a full pack is no cause to stop — but hunger and cold still
+      // reach them, which is what this check exists for on every long action.
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx);
+      return;
+    }
+
+    telemetry.count('reflected');
+    // Practised, not rolled. `doPonder` ends in a chance because it is trying
+    // to crack a specific problem and can fail to; this has no problem to fail
+    // at, so it always completes — and `finish` is what records it.
     this.finish(person);
   }
 

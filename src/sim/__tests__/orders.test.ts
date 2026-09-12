@@ -584,3 +584,48 @@ describe('a refusal by authority', () => {
     expect(refused!.length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * M9 phase 5, note 4: *thinking is not the same as wandering*.
+ *
+ * A scenario check can say reflection happens somewhere in a century; these say
+ * what the verb actually does, which is the half a statistical run cannot
+ * answer — and the second of them guards the failure that made the tuning hard
+ * to find, where reflection is short, needs no target and nothing about the
+ * world changes while it runs, so the scorer picks it again the instant it ends.
+ */
+describe('reflect', () => {
+  it('can be done with no idea in your head, and is recorded as having been done', () => {
+    const sim = new Simulation(SMALL);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.ideas.length = 0;
+
+    expect(sim.order(person, 'reflect')).toBe(true);
+    // Longer than the action takes, so it has certainly ended.
+    for (let i = 0; i < 60; i++) sim.step();
+
+    // `noteDid` is only reached through `finish`, so this is also the assertion
+    // that reflection completes rather than running for ever — the exact way
+    // `case 'wander'` was broken for the whole life of the project before M7.
+    expect(person.lately.has('reflect')).toBe(true);
+    // And the order is released, rather than leaving a zombie behind it.
+    expect(person.order).toBeNull();
+  });
+
+  it('will not be started again the moment it ends', () => {
+    const sim = new Simulation(SMALL);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.ideas.length = 0;
+
+    sim.order(person, 'reflect');
+    sim.step();
+    const until = person.reflectCooldownUntil;
+
+    // Set on the first tick rather than the last: an interrupted reflection
+    // spends the cooldown too, or being pulled away by hunger lets somebody sit
+    // straight back down the moment they have eaten.
+    expect(until).toBeGreaterThan(sim.time.tick);
+  });
+});

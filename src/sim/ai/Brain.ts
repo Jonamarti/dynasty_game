@@ -249,11 +249,15 @@ const DEPENDANT_RESERVE = 15;
  * the pair, `WORK_ACTIONS`, moved to `Job.ts` when `SocialSystem` gained a
  * second use for it.
  *
- * `ponder` and `discuss` are in neither set, for the reason the social verbs
- * are not: wanting to be *working* is not the same as wanting to think, and an
- * industrious person who would not sit down with a problem is a worse
- * caricature than the one this trait already risks. `prototype` is work — it is
- * a person building a thing out of materials — and is weighted as such.
+ * `ponder`, `reflect` and `discuss` are in neither set, for the reason the
+ * social verbs are not: wanting to be *working* is not the same as wanting to
+ * think, and an industrious person who would not sit down with a problem is a
+ * worse caricature than the one this trait already risks. `reflect` is the
+ * closest call of the three — it looks like doing nothing — but an
+ * industriousness penalty on it would mean the hardest workers are the people
+ * ideas never occur to, which is a claim about the world nobody made.
+ * `prototype` is work — it is a person building a thing out of materials — and
+ * is weighted as such.
  */
 const IDLE_ACTIONS = new Set(['rest', 'wander']);
 
@@ -1028,6 +1032,24 @@ export class Brain {
       candidate.stage === 'researching' && candidate.insight >= PROTOTYPE_AT &&
       TECH[candidate.tech].kind === 'device') ?? null;
 
+    // Note 4: the verb for somebody with nothing in their head. Strictly the
+    // complement of `ponder` below — `idea` is null here and non-null there —
+    // so the two never compete, and the risk this carries is not that it beats
+    // thinking but that it beats *foraging*. Priced well under `ponder` for
+    // that reason: sitting with a real problem should be worth more of a day
+    // than sitting with none, and `Brain.ts` already records what happened the
+    // one time thinking was priced too near work.
+    //
+    // The "not fatigued" half of the condition is already in `comfortNow`,
+    // which is one minus the worst of hunger, thirst and fatigue: at the 0.45
+    // gate a person is below 55 fatigue. A second explicit test would be a
+    // second opinion about the same thing.
+    if (comfortNow > 0.45 && !idea && ctx.time.tick >= person.reflectCooldownUntil) {
+      const spare = (comfortNow - 0.45) * 2;
+      add('reflect', spare * spare * (0.10 + person.traits.curiosity * 0.16)
+        * (0.4 + person.traits.intelligence));
+    }
+
     if (comfortNow > 0.45 && idea) {
       const spare = (comfortNow - 0.45) * 2;
       // Deliberately close to `gather`, which is the other thing a comfortable
@@ -1613,8 +1635,8 @@ export class Brain {
         }
         break;
       }
-      // 'eat', 'rest', 'ponder' and 'prototype' happen where you stand and need
-      // no target.
+      // 'eat', 'rest', 'ponder', 'reflect' and 'prototype' happen where you
+      // stand and need no target.
     }
   }
 }

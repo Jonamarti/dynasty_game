@@ -127,7 +127,12 @@ function roundRect(
 
 /** Human-readable label for an action id, for the floaters and the HUD. */
 export const ACTION_LABELS: Record<string, string> = {
-  idle: 'thinking',
+  // Not 'thinking', which is what it said until M9 phase 5. `idle` is the gap
+  // between two actions — the brain has not chosen yet — and calling that
+  // thinking was the specific lie the owner's note 4 pointed at: the game
+  // showed "thinking" for somebody doing nothing, and had no word left for
+  // somebody actually doing it. `reflect` below now has that word.
+  idle: 'at a loose end',
   wander: 'wandering',
   goto: 'walking',
   walk: 'walking',
@@ -149,6 +154,9 @@ export const ACTION_LABELS: Record<string, string> = {
   teach_child: 'teaching a child',
   craft: 'making something',
   ponder: 'turning something over',
+  // Distinct from `ponder` above, and from `idle`'s 'thinking': this is the
+  // one of the three that is actually somebody sitting down to think.
+  reflect: 'sitting and thinking',
   discuss: 'arguing it out',
   prototype: 'building the first one',
   inscribe: 'cutting it into stone',

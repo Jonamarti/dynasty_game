@@ -349,6 +349,23 @@ export class Person {
    */
   socialCooldownUntil = 0;
   /**
+   * Earliest tick at which this person will sit down and think again.
+   *
+   * `socialCooldownUntil` above exists because a social act without one
+   * degenerates into a per-tick loop, and `reflect` degenerates the same way
+   * for the same reason: it is short, it needs no target and nothing about the
+   * world changes while it runs, so the moment it ends the scorer is looking
+   * at the identical board and picks it again. Measured without this, cutting
+   * the action from 90 ticks to 20 did not cut what reflection cost the world
+   * — occasions went from 650 to 2,185 and simply refilled the gap.
+   *
+   * Kept apart from the social cooldown rather than folded into it: sitting
+   * with your own thoughts is not a thing you do *to* somebody, and sharing
+   * one counter would mean an afternoon's thinking made you unable to greet
+   * your wife.
+   */
+  reflectCooldownUntil = 0;
+  /**
    * An order that was interrupted by a need, waiting to be picked back up.
    *
    * This is what makes a long job and a short one behave the same from the

@@ -75,6 +75,11 @@ const ORDER_COST: Record<string, number> = {
   // Research is cheap to ask for and hard to compel: sitting somebody down to
   // think is barely an imposition, and being told whom to argue with is one.
   ponder: 0.25,
+  // Level with `rest` and `goto`, the cheapest things anybody can be told.
+  // Telling somebody to sit with their own thoughts for half an hour asks no
+  // more of them than telling them to go and lie down, and unlike `ponder` it
+  // does not hand them a problem to solve.
+  reflect: 0.05,
   discuss: 0.2,
   prototype: 0.3,
   sleep: 0.1,

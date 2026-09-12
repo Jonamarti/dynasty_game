@@ -656,12 +656,16 @@ function groundActions(
       enabled: true,
     }));
   if (thinkable.length === 0) {
+    // M9 phase 5: this used to be a greyed "Think" reading "Nothing has
+    // occurred to you yet", which was a true sentence about `ponder` and a
+    // false one about the character — the owner's note 4 is precisely that
+    // having no idea yet is the moment thinking is *for*. `reflect` needs no
+    // idea, so the answer to "why can I not think?" stopped being a refusal.
     options.push({
-      id: 'ponder',
-      label: 'Think',
+      id: 'reflect',
+      label: 'Sit and think',
       icon: '\u{1F4AD}',
-      enabled: false,
-      reason: 'Nothing has occurred to you yet',
+      enabled: true,
     });
   } else {
     options.push(...grouped(thinkable, 'Think about…', '\u{1F4AD}', ''));
