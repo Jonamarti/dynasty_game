@@ -1,7 +1,58 @@
 # Known bugs and rough edges
 
-As of 2026-09-11. Everything here is real and reproducible; nothing here is
+As of 2026-09-12. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found during M9 phase 5, 2026-09-12
+
+### A world that reaches herbalism never tends anybody with it
+
+`the-hurt-are-tended` fails on `century` as of 26dfbe3, reporting **0 ticks
+spent sitting with the hurt, 0 of them nursed back to full health** — in a world
+where `hurt_person_days` is non-zero, so the check's own "nobody was hurt enough
+to be worth tending" skip did not apply. Somebody needed tending and nobody
+went.
+
+This is not a regression from M9 phase 5 and the distinction matters. The check
+skips entirely unless `sim.knownTech.has('herbalism')`
+([simcheck.ts:1521](../tools/simcheck.ts#L1521)), and before this phase no
+scenario in the suite ever got there: `traps` and `band` report *"nobody here
+knows a herb from a weed"*, `culture` reports *"nobody in this world was ever
+hurt enough to tend"*, and `century` reported the first of those. Reflection
+pushes worlds far enough up the tree that `century` reaches herbalism, which
+makes it **the only scenario in the suite that exercises tending at all** — and
+the first time anything did, it failed.
+
+So the finding is that `tend` has never been exercised end to end by the
+harness, and on its first exposure nobody performs it. The likely cause is
+`Brain`'s `tend` weight against `TEND_WORTH_IT`, which is exactly the class of
+change M9 phase 5 was forbidden to make — `AGENTS.md` records that `Brain`'s
+coefficients are calibrated against each other, and the plan schedules this
+phase alone specifically so its measurement is not confounded. Worth its own
+pass, with `ai-uses-many-actions` and a seed cohort.
+
+### `spatial-hash-spreads` reads one instant, and trips on small worlds
+
+`millers` fails it at **11 of 19 items in the largest bucket** against a bound of
+`max(8, items * 0.5)` = 9.5. `base.spatial` is `sim.peopleHash.stats()` called
+once, on the final tick ([simcheck.ts:2068](../tools/simcheck.ts#L2068)) — a
+single snapshot of where nineteen people happen to be standing, not a measure of
+anything over the run.
+
+It is not a clustering regression, and that was checked rather than assumed.
+Across the same before-and-after: `tiny` 4/8 → 4/8, `band` 9/30 → **6**/30,
+`crowded` 10/70 → **9**/70, `hunters` 4/24 → 4/24, `millers` 7/19 → 11/19. Two
+scenarios got *less* clustered and two did not move; only the smallest world
+moved the other way.
+
+Left alone deliberately. `AGENTS.md` says not to tune a check until it goes
+green, and the honest reading is that the check is mis-specified at small `n`
+rather than that the world is wrong: the floor of 8 exists to protect small
+populations, and `items * 0.5` overtakes it at nineteen people — a band that
+camps together. The check's stated purpose is that query cost has not "quietly
+gone quadratic", which is a statement about large populations. Fixing it means
+either sampling over the run instead of at one instant, or raising the floor,
+and either is a change to a measuring instrument that should be made on its own.
 
 ## Found during M9 phase 4, 2026-09-11
 
@@ -152,7 +203,15 @@ to need: `Simulation.shareTheHearth` reads geometric containment once, at
 midnight, rather than keeping a list that would then have to be maintained
 through every death, move and demolition.
 
-### `ponder` requires a workable idea, so a comfortable person with none just wanders
+### ~~`ponder` requires a workable idea, so a comfortable person with none just wanders~~
+
+**Fixed 2026-09-12, M9 phase 5.** `reflect` is the verb for having nothing in
+your head: scored as the strict complement of `ponder`, 20 ticks long with a
+200-tick cooldown, and read by conception in two places. `idle`'s HUD label
+stopped saying "thinking" in the same commit. See `changelog.md` for the three
+numbers and why two of them are not the ones the plan expected to matter. The
+original diagnosis follows.
+
 
 `Brain.think` only adds the `ponder` score when `workableIdea(person)` returns
 something ([Brain.ts:900-911](../src/sim/ai/Brain.ts#L900-L911)); with none, a
@@ -481,10 +540,28 @@ return value, so `finish` — the only place `Person.noteDid` is called — was
 never reached for a wander. M7's fix makes `case 'wander'` reach `finish`
 honestly, which would revive this route as a side effect of a movement fix
 nobody asked for there. `Person.noteDid` now ignores `'wander'` explicitly
-(alongside the pre-existing `'idle'`/`'dead'`) to hold that off. Reviving it
-for real — deleting that one line and measuring `conceived_tracking` across
-the seed cohort — is a candidate for the M7 plan's optional last commit,
-not yet done.
+(alongside the pre-existing `'idle'`/`'dead'`) to hold that off.
+
+**Closed 2026-09-12, M9 phase 5, and not by reviving `wander`.** The route now
+reads `{ kind: 'doing', action: 'reflect' }`, which is what it should have said:
+somebody stopping in a winter wood to sit and think is the story, and walking
+through one was never the part that taught anybody to read a trail. `noteDid`
+still ignores `'wander'`, so the tech economy is not changed by the back door.
+
+The class of bug is closed too, which matters more than the instance.
+`synthesis.test.ts`'s **`names no action that nobody is ever recorded as having
+done`** walks every `doing:` ingredient in `TECH` through `Person.noteDid` and
+asserts it survives — the spark table already checked that action ids were
+spelled correctly, and `wander` was spelled perfectly for the whole life of the
+project while being dead. Mutation-verified: restoring `wander` fails it with
+`tracking has a route through "wander", which noteDid never records`.
+
+The repaired route is still deliberately rare — forest, winter, and having
+lately thought — and fires **zero times in a century-long run**, so play cannot
+distinguish it from the impossible route it replaced. A second test asserts it
+fires on the `Notice` that should fire it. `marking`'s `store_empty` route
+below remains open, but `marking` gained a `reflect` route in the same pass and
+that one does fire.
 
 ### The RNG fork comment points at the wrong place
 

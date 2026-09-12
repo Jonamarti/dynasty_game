@@ -170,6 +170,28 @@ Notes 5, 6, 2 and 8 — and this closes O1, O2 and O3 from the owner's older lis
 
 ### Phase 5 — Thinking
 
+**Shipped 2026-09-12** — see `changelog.md`. Two commits, both measured across
+twenty seeds. Against d3f1294: technologies known 10.1 → 11.1, conceived past
+roots 9.4 → 10.3, lessons passed on 420.7 → 449.1, starved 19 → 11, mean
+survival level at 100.0%.
+
+The plan named the right risk and the wrong lever. `reflect` did reproduce the
+"sixth activity" failure `Brain.ts` records — ninth in a century, ahead of
+building and sleeping — but it got there on 650 occasions across fifty
+lifetimes, so the **duration** was the problem and not the weight. Halving the
+coefficient took it from 58,606 ticks to zero: the score sits on a cliff because
+every neighbouring option is proximity-discounted and this one is not. And
+shortening the action alone did not help either, because a short, targetless
+action whose running changes nothing about the world is re-chosen the instant it
+ends — occasions went 650 to 2,185 and refilled the gap. It needed a cooldown,
+which is `socialCooldownUntil`'s argument arriving at a verb that is not social.
+
+`conceptionBase` was not touched, as promised. The two spark routes both went to
+technologies whose existing routes `bugs.md` already recorded as dead or
+never-firing, and the first version of the `marking` one fired zero times in a
+century — rare enough to be indistinguishable from the inert route it replaced,
+which is the failure it existed to fix. The general form is now a test.
+
 Note 4, and it runs **alone and last** among the simulation-touching phases
 because it is the riskiest: it competes for the same ticks food-gathering
 needs, and it touches idea conception.

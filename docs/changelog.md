@@ -6,6 +6,108 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-12 — M9 phase 5: thinking is not the same as wandering
+
+Note 4 from the owner's list, and the phase the plan scheduled **last and
+alone** among the simulation-touching ones, because it competes for the same
+ticks food-gathering needs and it touches idea conception — the two things this
+changelog has the longest history of overtuning by accident. Two commits.
+
+`doPonder` needs a workable idea. Until now a comfortable person with nothing in
+their head scored `wander` at 0.02 and milled about camp, and the game had no
+way at all for an idea to **originate** in somebody deciding to think: every
+technology in the web had to be stumbled into while doing something else.
+`reflect` is the strict complement of `ponder` — scored only where
+`workableIdea` returns null, so the two never compete.
+
+The milestone's own before-and-after, `npm run sim:seeds -- --seeds 20` on
+d3f1294 and on 26dfbe3:
+
+|                       | before | after |
+|---|---|---|
+| mean survival         | 100.0% | 100.0% |
+| collapsed below a quarter | 0/20 | 0/20 |
+| born                  | 471    | 474   |
+| starved               | 19     | 11    |
+| technologies known    | 10.1   | 11.1  |
+| conceived past roots  | 9.4    | 10.3  |
+| lessons passed on     | 420.7  | 449.1 |
+
+A whole technology more known at the end of a century, and transmission up 6.8%
+— from a phase whose gate was simply *do not starve anybody*. The starvation
+column should not be read as closely as the rest: an intermediate build differing
+by one spark ingredient measured 22 on the same cohort, so the shape of that
+difference is noise at these counts even though the direction is welcome.
+
+**The tuning was the work, and two of the three numbers are not the ones the
+plan expected to matter.**
+
+`Brain.ts` already records that raising `ponder`'s weight once made thinking the
+sixth most common activity in the world, ahead of building and sleeping, "which
+is not a stone age". Priced at a first-pass 90 ticks, `reflect` reproduced that
+exactly: ninth in a century, ahead of both. But it got there on **650 occasions
+across fifty lifetimes** — the frequency was already modest and the *duration*
+was the whole problem. Conception reads occasions; the activity distribution
+reads occasions times length. `REFLECT_TICKS` is 20.
+
+The coefficient turned out not to be a lever at all. Halving it took reflection
+from 58,606 ticks to **zero** — the score sits on a cliff, because every
+neighbouring option is proximity-discounted and this one is not.
+
+And shortening the action did not, by itself, reduce what it cost: occasions
+went from 650 to 2,185 and simply refilled the gap. `reflect` is short, needs no
+target, and nothing about the world changes while it runs, so the scorer sees an
+identical board the instant it ends — the same degeneration `socialCooldownUntil`
+already exists to prevent, arriving at a verb that is not social.
+`REFLECT_COOLDOWN` is 200, on its own counter so that an afternoon's thinking
+cannot stop you greeting your wife. Settled at 316 occasions and 6,322 ticks,
+twentieth of twenty-seven and below both sleeping and building.
+
+**What reads the verb.** One fact — the `reflect` entry `noteDid` leaves in
+`lately` — and two readers, which is the arrangement that keeps them from
+drifting. A factor in `tryConceive`'s chance, capped at +70%, read off the
+decayed tally rather than the `LATELY_ENOUGH` boolean: at 316 occasions across
+fifty lifetimes a threshold would hand the whole effect to whoever happened to
+be over it that morning. **`conceptionBase` is untouched**, as the plan
+required — it would have raised conception for everybody, including for the
+people the note is contrasting thinkers with.
+
+And two spark routes, both of them places where reflection **repairs something
+already known broken** rather than adding a channel beside a working one.
+`tracking`'s fourth route needed `doing: wander`, which `Person.noteDid` drops
+on the floor, so it could not fire on any seed ever run; `bugs.md` has carried
+it since M7. `marking` gains a fourth because its weight-1.0 route needs
+`store_empty`, which fires zero times in every run inspected. The marking route
+was written with three ingredients, measured at zero fires in a century —
+indistinguishable from the inert route it was replacing, which is the whole
+failure being fixed — and cut to two.
+
+**The test that generalises the bug.** The spark table already asserted every
+action id is spelled correctly. `wander` was spelled perfectly and was still
+dead. `names no action that nobody is ever recorded as having done` walks every
+`doing:` ingredient through `Person.noteDid` and asserts it survives;
+mutation-verified by restoring `wander`, which fails it by name. Tracking's
+repaired route is deliberately rare — forest, winter, and having lately thought
+— and still fires zero times in a century, so a second test asserts it fires on
+the `Notice` that should fire it. Play cannot tell "rare" from "impossible".
+
+**Two labels the verb made dishonest.** `idle` read "thinking", which was
+precisely the lie note 4 pointed at: the game said thinking for somebody doing
+nothing, and had no word left for somebody doing it. It reads "at a loose end"
+now. The radial menu's greyed *"Think — nothing has occurred to you yet"* is an
+enabled **"Sit and think"**, because having no idea yet is the moment thinking
+is for; the e2e spec that asserted the refusal was updated, the premise having
+changed under it rather than the game having broken.
+
+`npm run sim:check:all` finishes with eleven of thirteen scenarios fully green.
+`crowded`'s `perf-budget` fails as it has since before M7. `millers`'
+`spatial-hash-spreads` reads one instant at the end of a nineteen-person run and
+is noise — `band` and `crowded` both got *less* clustered on the same change.
+`century`'s `the-hurt-are-tended` is a real finding and not a regression: see
+`bugs.md`.
+
+---
+
 ## 2026-09-11 — M9 phase 4: a conversation worth having
 
 Notes 5, 6, 2 and 8 from the owner's list of 2026-09-10, and O1, O2 and O3 from

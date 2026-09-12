@@ -23,17 +23,28 @@ nothing was scheduled. It has been rewritten rather than amended again.
 
 ## Where things actually stand
 
-`npm run sim:check` on the default twelve-day scenario, re-run 2026-09-11 after
-M9 phase 4: **40 of 40 applicable checks pass**, 27 n/a, ~3,100 steps/s against
+`npm run sim:check` on the default twelve-day scenario, re-run 2026-09-12 after
+M9 phase 5: **40 of 40 applicable checks pass**, 27 n/a, ~3,100 steps/s against
 a 2,000 floor. The n/a count is high because M8.1 added checks for content a
 twelve-day run cannot reach; the scenario that covers each one is named in its
 skip line, and `npm run sim:check:all` is the number that matters — 13
-scenarios, **12 fully green**, and the one that is not (`crowded`'s
-`perf-budget`) has been failing since before M7. M9 phase 4 made that one worse
-rather than better, by 17%, and `optimizations.md` and `bugs.md` between them
-name the cause: a relationship graph that grew denser because people who work
-side by side now know each other, walked daily by a `decay` that can never
-delete an edge.
+scenarios, **11 fully green** as of M9 phase 5, and the three failures are three
+different kinds of thing:
+
+- `crowded`'s **`perf-budget`** has been failing since before M7. M9 phase 4
+  made it worse rather than better, by 17%, and `optimizations.md` and
+  `bugs.md` between them name the cause: a relationship graph that grew denser
+  because people who work side by side now know each other, walked daily by a
+  `decay` that can never delete an edge. **This is the real one.**
+- `century`'s **`the-hurt-are-tended`** is newly *applicable* rather than newly
+  broken. Phase 5 pushed worlds far enough up the tree that `century` reaches
+  herbalism, making it the only scenario in the suite that exercises tending at
+  all — and on its first exposure nobody tends anybody. See `bugs.md`.
+- `millers`' **`spatial-hash-spreads`** is a mis-specified instrument: one
+  snapshot on the final tick of a nineteen-person world, against a bound that
+  `items * 0.5` pushes above the floor of 8 exactly where the floor was meant to
+  protect. `band` and `crowded` both got *less* clustered on the same change.
+  See `bugs.md`.
 
 | milestone | state |
 |---|---|
@@ -62,7 +73,8 @@ delete an edge.
 | M9 phases 1-2 — seeing, pointing, quantities, recipients | shipped 2026-09-10 |
 | M9 phase 3 — menus that nest, and asking | shipped 2026-09-11 |
 | M9 phase 4 — a conversation worth having | shipped 2026-09-11 |
-| **M9 phases 5-6 — thinking, looking after yourself** | **next.** See [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) |
+| M9 phase 5 — thinking | shipped 2026-09-12 |
+| **M9 phase 6 — letting the character look after itself** | **next.** See [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) |
 | M8.2 — the Neolithic | planned, runs after M9 |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
