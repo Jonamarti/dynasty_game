@@ -160,6 +160,7 @@ const DOING_WORDS: Record<string, string> = {
   eat: 'eating', rest: 'resting', sleep: 'sleeping', shelter: 'sheltering',
   give: 'giving things away', steal: 'stealing', attack: 'fighting',
   court: 'courting', ponder: 'thinking', discuss: 'arguing things out',
+  reflect: 'sitting and thinking',
   prototype: 'building the first one', flee: 'running away', goto: 'walking',
   play: 'playing a tune', tend: 'tending the hurt', tame: 'coaxing an animal',
 };

@@ -313,9 +313,15 @@ export const TECH: Record<Tech, TechDef> = {
         weight: 1.0, story: 'watched a deer become a rustle and then nothing at all' },
       { needs: [{ kind: 'doing', action: 'hunt' }, { kind: 'feeling', need: 'hunger' }],
         weight: 0.8, story: 'came back empty-handed once too often' },
+      // `doing: wander` until M9 phase 5, which could not be satisfied on any
+      // seed ever run: `noteDid` ignores `'wander'` outright — see the note
+      // there — so this route was dead from the day it was written. `reflect`
+      // is what it should have said all along. Somebody stopping in a winter
+      // wood to sit and think is the story; walking through one was never the
+      // part that taught anybody to read a trail.
       { needs: [{ kind: 'place', biome: 'forest' }, { kind: 'season', season: 'winter' },
-                { kind: 'doing', action: 'wander' }],
-        weight: 0.4, story: 'read the marks something heavy had left in a winter wood' },
+                { kind: 'doing', action: 'reflect' }],
+        weight: 0.4, story: 'sat still in a winter wood long enough to read what had crossed it' },
     ],
     description:
       'Prints, droppings, a bent stem. Game stops being something you stumble ' +
@@ -407,6 +413,14 @@ export const TECH: Record<Tech, TechDef> = {
         weight: 0.7, story: 'counted what was left against the days still to come' },
       { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'saw', what: 'theft' }],
         weight: 0.5, story: 'could not prove anything was missing, and resolved never to be in that position again' },
+      // A fourth, because the weight-1.0 route above needs `store_empty`, which
+      // `bugs.md` records as firing zero times in every run inspected: `Brain`
+      // scores stores by what is in them and so never sends anybody to an empty
+      // one. Counting is the one step on this tree that is an act of pure
+      // abstraction rather than a thing anybody's hands found out, which makes
+      // it the right place for the new verb to earn its keep.
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'doing', action: 'reflect' }],
+        weight: 0.6, story: 'sat working out how many days were left, and how little there was to meet them' },
     ],
     description: 'Knots in a cord, notches on a stick. The first thing anybody wrote down was a number.',
   },

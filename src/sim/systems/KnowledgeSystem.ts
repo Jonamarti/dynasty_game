@@ -44,6 +44,20 @@ import { telemetry } from '../core/Telemetry.ts';
 
 // `CONCEPTION_BASE`, `TEST_CHANCE`, the number of trials a design needs and what
 // a failed one is worth all live in `Config.knowledge` now rather than here.
+
+/**
+ * What one recent sitting-and-thinking is worth to the chance of an idea, and
+ * the ceiling on stacking them.
+ *
+ * Small on purpose, and capped for the reason `Brain` gives for everything in
+ * this corner of the game: conception is the one number this project's
+ * changelog has the longest history of overtuning by accident. At the cap a
+ * habitual thinker is 70% likelier to have an idea on a day one was available
+ * to them anyway — which is a real advantage over somebody who never sits
+ * down, and is nothing like a second conception rate.
+ */
+const REFLECTION_PER = 0.35;
+const REFLECTION_CAP = 0.7;
 // The owner asked for them to be adjustable, and a scenario has as much right to
 // move the pace of discovery as it has to shorten a season.
 
@@ -378,10 +392,31 @@ export class KnowledgeSystem {
     const curiosity = 0.3 + person.traits.curiosity * 1.7;
     const wit = 0.6 + person.traits.intelligence * 0.8;
     const competence = 0.2 + person.skills[def.skill] / 60;
+    // Note 4's second half: having actually sat down and thought. `curiosity`
+    // above is whether you are the sort of person who looks; this is whether
+    // you did.
+    //
+    // Read off the decayed tally rather than `notice.lately`, which is a
+    // boolean at `LATELY_ENOUGH = 1`. That threshold is right for the spark
+    // table, where an ingredient has to be either present or absent, and wrong
+    // here: reflection is measurably rarer than daily — around 374 occasions
+    // across fifty lifetimes — so a threshold would hand the entire effect to
+    // whoever happened to be over it that morning and nothing at all to
+    // everybody else. A tally of 0.4 is a person who sat and thought the day
+    // before yesterday, and that is worth something.
+    //
+    // **Deliberately not `conceptionBase`**, which is the lever this project's
+    // own record says has never been the right one. This multiplies the chance
+    // for the people who did the thing; raising the base would have raised it
+    // for everybody, including for the people the note is contrasting them
+    // with.
+    const reflection = 1 + Math.min(
+      REFLECTION_CAP, (person.lately.get('reflect') ?? 0) * REFLECTION_PER
+    );
 
     const chance =
       (ctx.knowledge.conceptionBase / def.difficulty) *
-      chosen.spark.weight * curiosity * wit * competence;
+      chosen.spark.weight * curiosity * wit * competence * reflection;
     if (!ctx.rng.chance(chance)) return;
 
     const idea: Idea = {

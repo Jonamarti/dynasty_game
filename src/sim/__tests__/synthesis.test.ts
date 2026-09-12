@@ -18,7 +18,8 @@ import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { BUILDINGS } from '../entities/Building.ts';
 import { INSCRIPTIONS } from '../entities/Inscription.ts';
-import { NEEDS } from '../entities/Person.ts';
+import { NEEDS, Person } from '../entities/Person.ts';
+import { RNG } from '../core/RNG.ts';
 import { BIOMES } from '../core/World.ts';
 import { SEASONS } from '../core/TimeManager.ts';
 import { EVENT_TYPES } from '../social/Events.ts';
@@ -159,6 +160,32 @@ describe('the spark table', () => {
     }
   });
 
+  it('names no action that nobody is ever recorded as having done', () => {
+    // The generalised form of a bug that sat in this table undetected for the
+    // whole life of the project. `tracking`'s fourth route needed
+    // `doing: wander`, and `Person.noteDid` drops `'wander'` on the floor, so
+    // that route could not fire on any seed ever run — while passing every
+    // other test here, because the action id was perfectly well spelled.
+    //
+    // Spelling is what the rest of this file checks. This checks the other
+    // half: that the verb is one the recorder actually keeps.
+    const person = new Person('Test', 0, 0, 0, new RNG('doing-ingredients'));
+    for (const tech of TECHS) {
+      for (const spark of TECH[tech].sparks) {
+        for (const ingredient of spark.needs) {
+          if (ingredient.kind !== 'doing') continue;
+          person.lately.clear();
+          person.noteDid(ingredient.action);
+          expect(
+            person.lately.has(ingredient.action),
+            tech + ' has a route through "' + ingredient.action +
+              '", which `noteDid` never records'
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
   it('gives every technology a domain and a refinement ceiling', () => {
     for (const tech of TECHS) {
       expect(DOMAINS).toContain(TECH[tech].domain);
@@ -232,6 +259,25 @@ describe('reading a situation', () => {
     expect(status.met).toHaveLength(1);
     expect(status.missing).toHaveLength(1);
     expect(status.missing[0]).toEqual({ kind: 'holding', item: 'mud' });
+  });
+
+  it('can fire the winter-wood route into tracking, which never could before', () => {
+    // The repaired route, asserted directly. It is a deliberately rare story —
+    // standing in a forest, in winter, having lately sat and thought — and it
+    // fires zero times in a century-long run, so play cannot tell the
+    // difference between "rare" and the "impossible" it used to be. This can.
+    const winterWood: Notice = {
+      ...notice,
+      place: 'forest',
+      season: 'winter',
+      lately: new Set(['reflect']),
+    };
+    const route = TECH['tracking' as Tech].sparks
+      .find(spark => spark.needs.some(
+        need => need.kind === 'doing' && need.action === 'reflect'
+      ));
+    expect(route, 'tracking lost its reflect route').toBeDefined();
+    expect(sparkFires(route!, winterWood)).toBe(true);
   });
 
   it('finds the worked example in the plan satisfiable', () => {
