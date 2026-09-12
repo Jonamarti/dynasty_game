@@ -211,6 +211,28 @@ needs, and it touches idea conception.
 
 ### Phase 6 — Letting the character look after itself
 
+**Shipped 2026-09-12** — see `changelog.md`. One commit. `sim:check` stayed
+bit-identical to ae18f64, which is the only headless result available: the
+harness never possesses anybody, so the phase's real gate is sixteen unit tests
+in `src/sim/__tests__/autonomy.test.ts`, each mutation-verified against a broken
+build before being trusted.
+
+Two departures from what is written below, both with reasons.
+
+The preference is **not** a `Settings` field. `Settings` is a difference from a
+difficulty anchor, and both the difficulty slider and "reset everything to
+Normal" throw its overrides away by design — a control-scheme preference stored
+there would be silently reset by a player retuning their hunger rate. It has its
+own `localStorage` key alongside it.
+
+And "the brain acts only on a critical need" turned out to need two refinements
+the plan does not name. The trigger is fifteen points *below*
+`criticalThreshold`, because at the threshold itself health is already draining
+and the walk to the water has not started; and the verbs on offer are keyed to
+**the need that fired** rather than being one flat survival allowlist, because
+`forage` carries a standing stockpiling term and the flat version sent a
+freezing character off to pick berries.
+
 Note 3. Independent of everything above it.
 
 - Three visible, switchable states: manual (today's behaviour), "handle what's

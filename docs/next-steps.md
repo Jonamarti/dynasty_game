@@ -1,6 +1,7 @@
 # Next steps
 
-Rewritten 2026-09-08, reordered 2026-09-10, brought up to date 2026-09-11.
+Rewritten 2026-09-08, reordered 2026-09-10, brought up to date 2026-09-12 on
+the close of M9.
 Ordered, with the reason for the order.
 
 **2026-09-10: the owner moved the social and interface pass ahead of the
@@ -25,7 +26,9 @@ nothing was scheduled. It has been rewritten rather than amended again.
 
 `npm run sim:check` on the default twelve-day scenario, re-run 2026-09-12 after
 M9 phase 5: **40 of 40 applicable checks pass**, 27 n/a, ~3,100 steps/s against
-a 2,000 floor. The n/a count is high because M8.1 added checks for content a
+a 2,000 floor. Phase 6 left every one of those numbers bit-identical, as it had
+to: no scenario possesses a player, so nothing it added is reachable from the
+harness at all. The n/a count is high because M8.1 added checks for content a
 twelve-day run cannot reach; the scenario that covers each one is named in its
 skip line, and `npm run sim:check:all` is the number that matters — 13
 scenarios, **11 fully green** as of M9 phase 5, and the three failures are three
@@ -74,8 +77,8 @@ different kinds of thing:
 | M9 phase 3 — menus that nest, and asking | shipped 2026-09-11 |
 | M9 phase 4 — a conversation worth having | shipped 2026-09-11 |
 | M9 phase 5 — thinking | shipped 2026-09-12 |
-| **M9 phase 6 — letting the character look after itself** | **next.** See [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) |
-| M8.2 — the Neolithic | planned, runs after M9 |
+| M9 phase 6 — letting the character look after itself | shipped 2026-09-12. **M9 is complete** |
+| **M8.2 — the Neolithic** | **next.** See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
@@ -139,13 +142,21 @@ documents are not comparable with post-M7 ones; each milestone's entry in
    bit-identical; the last two change `Brain`'s scorer and are measured with
    twenty seeds each, never one run.
 
-   **Phases 1 through 4 have shipped**, the last of them on 2026-09-11. Phase 3
-   was the first to break the bit-identical promise, and the plan was wrong to
-   make it rather than the phase wrong to break it: an `ask` verb is a channel
-   the AI uses too. Phase 4 closed O1, O2 and O3 as well as its own four notes,
-   and took transmission from 360.1 lessons passed on to 420.7 across the
-   canonical twenty-seed cohort. Phases 5 and 6 — the `reflect` verb and the
-   self-care mode — are what remain.
+   **All six phases have shipped**, the last two on 2026-09-12, and every one
+   of the owner's thirteen notes is either delivered or designed into M10.
+   Phase 3 was the first to break the bit-identical promise, and the plan was
+   wrong to make it rather than the phase wrong to break it: an `ask` verb is a
+   channel the AI uses too. Phase 4 closed O1, O2 and O3 as well as its own four
+   notes. Across the milestone's own twenty-seed cohort, transmission went from
+   360.1 lessons passed on to 449.1 and technologies known from 9.1 to 11.1,
+   with mean survival at 100.0%.
+
+   Phase 6 is the one phase in the project with **no headless gate of any
+   kind** — the harness never possesses anybody, so `sim:check` builds worlds in
+   which the player-autonomy code is unreachable. Its gate is sixteen unit
+   tests, each mutation-verified against a deliberately broken build. That is
+   the pattern for anything else that only exists on the player's side of the
+   game.
 7. **M8.2 — the Neolithic.** Seventeen nodes and the pass where a band stops
    moving to the food: fields, herds, the loom, the kiln, masonry. The node
    tables are in [m8_plan_the_ages.md](m8_plan_the_ages.md).
@@ -636,8 +647,8 @@ index.
 |---|---|
 | Two NPCs together only offer one to click | M9 phase 1 |
 | Cultivate relationship with tribe and leader | M9 phase 4 — **shipped 2026-09-11** |
-| Controlled NPC does not drink, eat or sleep alone | M9 phase 6 |
-| Thinking should not be confused with wandering | M9 phase 5 |
+| Controlled NPC does not drink, eat or sleep alone | M9 phase 6 — **shipped 2026-09-12** |
+| Thinking should not be confused with wandering | M9 phase 5 — **shipped 2026-09-12** |
 | Conversation needs modes | M9 phase 4 (= O1, above) — **shipped 2026-09-11** |
 | Discussing and teaching should build relationship | M9 phase 4 — **shipped 2026-09-11** |
 | Sticks, clay and flint look alike | M9 phase 1 |

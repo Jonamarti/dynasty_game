@@ -6,6 +6,99 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-12 — M9 phase 6: a character that can look after itself, if you let it
+
+Note 3 from the owner's list, and the last phase of M9. One commit, and the only
+phase in the milestone with **no simulation gate at all** — not because it is
+small, but because the headless harness never calls `possess`, so every world
+`sim:check` builds is one in which none of this code is reachable.
+
+The note was that the controlled character does not drink, eat or sleep on its
+own. That was a deliberate decision from M6a and the comment recording it is
+still in the file: the player's character is scored but never steered, because
+this game is one person's life and not a colony to supervise, and a brain acting
+on its own score would be quietly playing the game for you. What the note
+identified is the *cost* of that rule, which nobody had priced. Needs climb
+whether or not anybody is steering, so reading the tech web for two minutes
+could kill you — and a death nobody chose is not the same thing as a death you
+walked into.
+
+**Three states, not a switch.** Both ends of the range are wrong for most of the
+game, so `manual` is exactly what every build until now did, `auto` hands the
+character back to the brain, and `urgent` — "Stays alive" on the control — is
+the one that answers the note: the character does nothing you did not ask for
+*except* stop itself from dying. Two invariants hold in all three, and both are
+enforced by where `steerPlayer` is called from rather than by anything inside
+it: a live order is never interrupted, and held movement keys return before
+reaching it.
+
+`Brain.think` gains an optional allowlist and, when given one, returns **null**
+rather than falling back to `wander`. That distinction is the whole reason the
+parameter exists — a thirsty character with no water in sight has to stand
+still, not wander off, or the feature becomes the thing it was added to prevent.
+
+**The allowlist is keyed by the need that fired, and the flat one was written
+first and thrown away.** Every survival verb can score above zero for reasons
+that have nothing to do with the need: `forage` carries a standing
+`greed * 0.25` stockpiling term, so a freezing character with no roof anywhere
+and a berry bush in sight went and picked berries. A perfectly sensible score,
+an absurd thing to watch, and precisely the "it does things I did not ask for"
+complaint the middle state exists to avoid. Within a need the scorer still
+arbitrates — eat what you carry or walk to the bush is `eat` against `forage`,
+a sum it already computes well.
+
+Three absences are decisions. **`hunt`** is on no allowlist: a safety net must
+not pick a fight, the odds discount is never zero, and a starving character sent
+alone at an aurochs by a convenience feature is a death the player did not
+choose. **`sleep` and `rest`** are out because fatigue is not in `LETHAL_NEEDS`
+and nobody has ever died of it here — a character wandering off for a nap in the
+middle of what the player was doing is taking over, not surviving. **`flee`** is
+out for a different reason, and it is in `bugs.md` rather than smuggled in:
+being attacked is urgent in every ordinary sense, but it is not a *need*, and a
+character that runs away by itself is a real change to what combat feels like.
+
+The trigger is `criticalThreshold - 15` rather than a number of its own, because
+the threshold is a difficulty setting: a player who moves the line where health
+starts draining has moved what counts as dangerous, and a net pinned to an
+absolute 70 would sit *above* the line on a hard world and fire only after the
+damage had started. Fifteen points is about two hundred ticks of default thirst,
+which is the walk to the water with room for it to be the long way round — and
+far later than anyone else in the world leaves it, since `workLimits.thirst`
+stops an ordinary person working at 42. That gap is the point.
+
+**The stall reason is not decoration.** The mode switched on, the need
+dangerous, and nothing happening at all is the quietest possible refusal, and
+the standing rule in `AGENTS.md` is that every one of them reaches the player.
+It is a *standing* condition rather than an event — thirsty with no water in
+sight stays true until one of those two facts changes — so `autonomyStall` is
+polled every frame rather than read once like `lastRefusal`, the floater fires
+on the change, and the panel line keeps saying it for as long as it holds.
+
+Stored under its own `localStorage` key rather than as the `Settings` field the
+plan asked for, and the plan was written before that shape was looked at
+closely. `Settings` is *a difference from a difficulty anchor*, and both "reset
+everything to Normal" and any drag of the difficulty slider legitimately throw
+its overrides away — a control preference living in there would be silently
+reset by somebody retuning their hunger rate, which is the exact surprise the
+comment at the top of `SettingsStore.ts` exists to prevent.
+
+**Sixteen unit tests, which are the only gate this phase has.** All of them
+drive `step()` rather than calling `steerPlayer`, since a test that called it
+directly would pass with both invariants broken. Mutation-verified three ways
+before being trusted, as `AGENTS.md` requires: stubbing the steering back to
+score-only fails four of them, dropping the allowlist fails two, and dropping
+the no-urgent-need guard fails one. `sim:check` is bit-identical to ae18f64,
+which for a change no scenario can see is the result to want. 241 unit tests and
+45 e2e pass.
+
+One thing found by looking rather than by testing. The top bar had no room for a
+fourth control: the screenshot tour showed the menu button sitting **under** the
+inspector panel, where Playwright could still click it and a person could not —
+the same silent visual degradation the tour has now caught twice. The bar stops
+short of the panel and wraps, and the row still fits on one line at 1280.
+
+---
+
 ## 2026-09-12 — M9 phase 5: thinking is not the same as wandering
 
 Note 4 from the owner's list, and the phase the plan scheduled **last and

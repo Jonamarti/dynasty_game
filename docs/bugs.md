@@ -3,6 +3,43 @@
 As of 2026-09-12. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found during M9 phase 6, 2026-09-12
+
+### A character looking after itself will not run away
+
+`urgent` autonomy ("Stays alive") fires on `LETHAL_NEEDS` and nothing else, so a
+player character left in that state stands and takes a mauling. `flee` is on no
+allowlist in [Autonomy.ts](../src/sim/ai/Autonomy.ts) and the trigger is
+`urgentNeeds`, which knows nothing about being attacked.
+
+Deliberate for this pass rather than missed. Being attacked is urgent in every
+ordinary sense of the word, but it is not a *need*, and adding it means a second
+trigger concept — health, or a hostile within some radius — plus a judgement
+about whether a character that runs away by itself is a feature or a way of
+losing a fight the player meant to have. That is a change to what combat feels
+like and it deserves its own pass and its own measurement, not a line in a
+convenience feature.
+
+### Nothing stops an `auto` character walking out of a fight you started
+
+The same boundary from the other side, and worth recording together with it.
+`auto` hands the character wholly back to `Brain`, which includes `flee` at its
+full weight, so a player who switches to "Acts alone" mid-fight will watch their
+character leave. This is correct — it is what the state promises — but nobody
+has played enough of it to say whether it reads as the character being sensible
+or as the game taking the controls away. Worth a session of play before anything
+is built on top of it.
+
+### The top bar has no room left
+
+Fixed for now by letting the bar stop short of the inspector panel and wrap, but
+the underlying fact is that it is a fixed row of controls that has grown four
+times and has about thirty pixels of slack at 1280 wide. The next control added
+to it will wrap onto a second line on a common laptop screen. Before that
+happens it wants a decision — fold the speed slider behind a button, shorten the
+stats string, or accept two rows and design for them — rather than another round
+of shaving padding.
+
 ## Found during M9 phase 5, 2026-09-12
 
 ### A world that reaches herbalism never tends anybody with it
