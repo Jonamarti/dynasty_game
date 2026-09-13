@@ -6,6 +6,55 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-13 — CI, and a URL you can send to someone
+
+Until now the only way to see Dynasty was to clone it and run `npm run dev`.
+This makes every push to `master` rebuild the game and publish it to GitHub
+Pages at <https://jonamarti.github.io/dynasty_game/>. Nothing about the build is
+committed — `dist/` stays gitignored and the workflow builds its own artifact.
+
+**The one code change was `base`, and it was the whole problem.** There was no
+`vite.config.ts` at all, so Vite built with the default `base: '/'` and wrote
+`<script src="/assets/index-….js">` into `dist/index.html`. Pages serves this
+repo from the `/dynasty_game/` subpath, where that URL resolves to
+`jonamarti.github.io/assets/…` — a 404 and a blank canvas, with the build
+itself reporting success. The new config sets `base: './'` rather than a
+hardcoded `'/dynasty_game/'`, because the game has no client-side router, no
+`fetch` of its own, and no runtime asset URLs: every import is relative and the
+one absolute reference in `index.html` is rewritten at build time. A relative
+base is therefore correct at the subpath, at the root under `npm run preview`,
+and at a custom domain later, and it writes the repo's name down nowhere, so a
+rename cannot silently break it. Vite normalises it to `/` for the dev server,
+so `npm run dev` is untouched — checked, not assumed.
+
+**Two workflows, not one.** `ci.yml` runs typecheck, unit tests and a build on
+every push and pull request on any branch; `deploy.yml` runs the same three and
+then publishes, only from `master`. Splitting them means a red check on a branch
+is legible as a check rather than as a failed deploy, and it keeps the
+publishing permissions (`pages: write`, `id-token: write`) off the workflow that
+runs on arbitrary branches.
+
+**Node 24, deliberately.** The `--legacy-peer-deps` caveat in the README is an
+npm 10.9.2 bug; Node 24 ships npm 11 and is past it. The install step is still
+written `npm ci || npm ci --legacy-peer-deps`, because a one-line retry is
+cheaper than reading CI logs to rediscover something already documented.
+
+### Deliberately not done
+
+- **The scenario harness and the Playwright specs are not in the deploy path.**
+  They are the two slow layers — a browser download and a dev server between a
+  push and a live build — and the point of a Pages deploy is that it is live a
+  minute later. `npm run verify` remains the gate before pushing; the workflows
+  are a backstop, not a replacement for it.
+- **No `.nojekyll`.** `upload-pages-artifact` bypasses Jekyll outright, and
+  Vite's output directory is `assets/` with no leading underscore, so the file
+  would sit in the repo doing nothing.
+- **Pages itself still has to be switched on by hand** — Settings → Pages →
+  Source: GitHub Actions. It is a repo setting, not a file, so it cannot be
+  committed; until it is set the deploy job fails saying Pages is not enabled.
+
+---
+
 ## 2026-09-12 — M9 phase 6: a character that can look after itself, if you let it
 
 Note 3 from the owner's list, and the last phase of M9. One commit, and the only

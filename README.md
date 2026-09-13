@@ -31,6 +31,9 @@ by one curious person on a cold night, taught to whoever will listen, and lost
 outright if the last person who knows it dies without passing it on. A twenty
 year run reaches the Age of Tools. See [Roadmap](#roadmap).
 
+**Play the current build:** <https://jonamarti.github.io/dynasty_game/> — rebuilt
+from `master` on every push. To run it locally instead:
+
 ```bash
 npm install --legacy-peer-deps   # see "Installing" below
 npm run dev                      # http://localhost:5173
@@ -237,6 +240,42 @@ resolver crashes with `Cannot read properties of null (reading 'edgesOut')` whil
 walking vitest's optional peer set; the legacy resolver sidesteps it. Node 23 is
 also outside vitest 4's supported range and prints an `EBADENGINE` warning —
 everything runs, but Node 22 or 24 would be quieter.
+
+## Deploying
+
+The game is published to GitHub Pages at
+**<https://jonamarti.github.io/dynasty_game/>**. Every push to `master` rebuilds
+it and replaces what is there — there is no manual publish step, and nothing
+about the build is committed (`dist/` stays gitignored). The Actions tab shows
+whether the last push made it out.
+
+Two workflows do the work:
+
+- [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — typecheck, unit tests
+  and a build, on every push and every pull request, on any branch.
+- [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) — the same
+  three checks, then upload and deploy, only from `master`. A failing typecheck
+  or a failing test stops the deploy, so what is live has at least passed the
+  two fast layers. The scenario harness and the Playwright specs are
+  deliberately left out of the deploy path: they need a dev server and a browser
+  download, and the point of this workflow is that a push is live a minute
+  later. `npm run verify` is still the gate before pushing.
+
+`workflow_dispatch` is enabled on the deploy workflow, so it can also be run by
+hand from the Actions tab without a commit.
+
+**[`vite.config.ts`](vite.config.ts) sets `base: './'` and must keep doing so.**
+Pages serves the game from the `/dynasty_game/` subpath, and Vite's default
+`base: '/'` writes `<script src="/assets/…">` into `dist/index.html` — which
+resolves to `jonamarti.github.io/assets/…`, four-oh-fours, and a blank canvas.
+A relative base sidesteps the whole question: it works at the subpath, at the
+root under `npm run preview`, and at a custom domain later, with no repo name
+written down anywhere. Vite normalises it to `/` for the dev server, so
+`npm run dev` never notices.
+
+The one thing not in the repo is the repo setting: **Settings → Pages → Build
+and deployment → Source: GitHub Actions**. Without it `deploy-pages` fails with
+an error about Pages not being enabled.
 
 ## Roadmap
 
