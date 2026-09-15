@@ -739,6 +739,9 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
   }
 
   for (const node of sim.nodeHash.queryRadius(worldX, worldY, PICK_RANGE)) {
+    // Buried under enough snow: not offered, same as a stripped bush that
+    // regrew nothing yet — see `Simulation.isBuried`.
+    if (node.def.groundLevel && sim.isBuried(node.x, node.y)) continue;
     consider({ kind: 'node', x: node.x, y: node.y, node },
       { kind: 'node', node }, node.x, node.y);
   }
@@ -757,6 +760,7 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
   }
 
   for (const pile of sim.pileHash.queryRadius(worldX, worldY, PICK_RANGE)) {
+    if (sim.isBuried(pile.x, pile.y)) continue;
     consider({ kind: 'pile', x: pile.x, y: pile.y, pile },
       { kind: 'pile', pile }, pile.x, pile.y);
   }

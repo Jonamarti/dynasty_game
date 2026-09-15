@@ -6,6 +6,63 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-15 — M9.5 phase 2b: snow accumulates, and buries what is small
+
+The owner's note: small things like sticks may not be visible, and small
+stuff left on the ground may become invisible as more snow falls on top. A
+purely cosmetic burial would be a lie — the player would see bare ground
+while the AI still found and hauled a stick that, on screen, was not there —
+so this reaches the simulation, not only the renderer.
+
+**`Simulation.snowDepth`**, a scalar 0-3, advances once a day
+(`advanceSnowDepth` in new `src/sim/core/Snow.ts`) from
+`TimeManager.temperature`: a hard freeze piles it on in steps, not a
+fractional drip, and any day above freezing melts it a step at a time.
+**No new tile array and no new RNG stream**: whether a specific point is
+buried (`isBuried`) reads `snowDepth`, whether a standing tree's canopy
+shelters it (a full step shallower), and the same deterministic positional
+hash `Renderer.prerenderTerrain` already uses for its speckle — nothing
+here can move a seed on its own.
+
+**What gets buried.** `ResourceDef` gained `groundLevel` (true for `sticks`,
+`flint` and `clay` — false for everything that grows above the ground, sits
+in water, or is a fish); a buried node or dropped pile is skipped by three
+places at once so the world cannot show one truth and act on another:
+`Brain.findNode` (via `BrainContext.snowDepth`/`snowBuries`), the entity
+picker's `candidatesAt` in `main.ts`, and the renderer's node/pile draw
+loops, all three reading the same `Simulation.isBuried`. A pile or node
+buried in a hard winter comes back on its own at the thaw — burial is a
+pure read of current depth, so there is no separate "return" state to get
+wrong.
+
+**The player is told.** Ordering `gather` on a buried node, or `pickup` on a
+buried pile, is refused through `lastRefusal`: *"it is under the snow"* —
+the same mechanism every other refusal in this game already uses.
+
+**`config.world.snowBuries`**, default on, is the one-line switch the plan
+asked for. Off, `snowDepth` still accumulates and the ground still looks
+wintry (phase 2a's frost overlay, now driven by real `snowDepth` instead of
+an instantaneous temperature guess — a single mild day inside a hard winter
+must not paint the ground bare while `isBuried` still says otherwise) — only
+the burial *consequence* is switched off, so turning it off cannot also
+erase the season's look.
+
+**Verification.** A direct before/after on `harsh-winter` (`store` and
+`cold` columns) showed no degradation — if anything, burial's `stored: 445`
+beat the same run with the switch off at `376`, likely because a buried node
+cannot be over-harvested down to nothing while it is inaccessible. A direct
+before/after on the `tour` seed over 14,400 steps showed identical
+population growth and lower average hunger with burial on. `sim:check:all`
+shows the same structural `perf-budget`/`crowded` failure and a
+seed-sensitive drift on `century` recorded in `bugs.md` rather than a new
+defect. `npm test` (250, nine of them new: `snow.test.ts`), `npm run e2e`
+(45) and `npm run shots` all pass; the "four seasons" tour test now steps
+the simulation through every day to each checkpoint instead of jumping
+`time.tick` directly, since `snowDepth` only accumulates that way.
+
+Phases 3-4 of `docs/m9_5_plan.md` (a shorter calendar year, and
+threats/chiefs/the tribe pyramid) are not started.
+
 ## 2026-09-15 — M9.5 phase 2a: the ground turns with the year
 
 The renderer never read `season` or `temperature` before this; the terrain

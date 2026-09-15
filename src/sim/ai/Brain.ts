@@ -19,6 +19,7 @@
 import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import { isFoodKind } from '../entities/ResourceNode.ts';
+import { isBuried } from '../core/Snow.ts';
 import type { World } from '../core/World.ts';
 import type { TimeManager } from '../core/TimeManager.ts';
 import type { RNG } from '../core/RNG.ts';
@@ -75,6 +76,10 @@ export interface BrainContext {
    * a band is one too many.
    */
   chiefByBand: ReadonlyMap<number, number>;
+  /** How deep the snow lies right now, and whether that is allowed to hide
+   * anything — see `Snow.ts` and `Simulation.isBuried`. */
+  snowDepth: number;
+  snowBuries: boolean;
 }
 
 export interface ScoredAction {
@@ -1454,7 +1459,8 @@ export class Brain {
     filter: (n: ResourceNode) => boolean
   ): ResourceNode | null {
     return ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
-      n => filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y));
+      n => filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y) &&
+        !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)));
   }
 
   private setup(

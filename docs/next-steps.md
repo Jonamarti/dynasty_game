@@ -80,7 +80,8 @@ different kinds of thing:
 | M9 phase 6 — letting the character look after itself | shipped 2026-09-12. **M9 is complete** |
 | M9.5 phase 1 — people who look like people, drawn once | shipped 2026-09-14. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 2a — the ground turns with the year | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
-| **M9.5 phase 2b, 3-4 — snow that buries, a shorter year, threats and the pyramid** | **next.** See [m9_5_plan.md](m9_5_plan.md) |
+| M9.5 phase 2b — snow accumulates, and buries what is small | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
+| **M9.5 phases 3-4 — a shorter year, threats and the pyramid** | **next.** See [m9_5_plan.md](m9_5_plan.md) |
 | M8.2 — the Neolithic | after M9.5. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
@@ -692,7 +693,7 @@ that document's summary.
 | # | note | destination |
 |---|---|---|
 | 1 | Children smaller; bodies with limbs; carried tools and weapons; faces with eyes, eyebrows, mouth | M9.5 phase 1 — **shipped 2026-09-14** |
-| 3 | Seasons should look different — snow, flowers, leaf litter, browning | M9.5 phase 2a — **shipped 2026-09-15** (snow accumulating and burying things is phase 2b) |
+| 3 | Seasons should look different — snow, flowers, leaf litter, browning | M9.5 phases 2a and 2b — **shipped 2026-09-15** |
 | 4 | Seasons should be shorter, so tech and buildings pass to the next generations | M9.5 phase 3 |
 | 2 | The tribe graph should be a layered pyramid, unlocked by a primitive "giving orders" technology | M9.5 phase 4 |
 | 7 | Ground fertility, exhaustion, compost, crop rotation, burying fish | M8.2, in the same pass as `farming` |

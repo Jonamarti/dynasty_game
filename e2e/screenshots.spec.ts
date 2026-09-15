@@ -242,10 +242,12 @@ test('tour', async ({ page }) => {
 
 test('the four seasons', async ({ page }) => {
   // M9.5 phase 2a's gate: the ground and the trees should look different in
-  // each season, and `sim:check` should stay bit-identical since nothing
-  // here writes to the simulation — only `sim.time.tick` is nudged forward,
-  // the same clock the game itself advances, read back by the renderer's
-  // own `seasonVisual`.
+  // each season. Phase 2b added `Simulation.snowDepth`, a real accumulator
+  // advanced once a day (`advanceSnowDepth`) — winter's frost overlay and
+  // buried goods both read it, so getting to each checkpoint has to mean
+  // actually stepping the simulation through every day in between rather
+  // than jumping `time.tick` directly, or winter would arrive with no snow
+  // ever having fallen.
   await page.goto('/?seed=tour&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
@@ -253,20 +255,31 @@ test('the four seasons', async ({ page }) => {
 
   // Config defaults: ticksPerDay 240, daysPerSeason 20, startDay 10
   // (`Config.ts`). These land mid-season rather than on a boundary, so
-  // temperature has settled into the season's typical range rather than
-  // showing whatever a transition tick happens to look like.
+  // temperature (and snowfall) has settled into the season's typical range
+  // rather than showing whatever a transition tick happens to look like.
   const midSeasonTicks: [string, number][] = [
     ['spring', 1200],  // day 15
     ['summer', 4800],  // day 30
     ['autumn', 9600],  // day 50
     ['winter', 14400], // day 70
   ];
+  let stepped = 0;
   for (const [season, tick] of midSeasonTicks) {
-    await page.evaluate((t) => {
-      const d = (window as never as { __dynasty: { sim: { time: { tick: number } } } }).__dynasty;
-      d.sim.time.tick = t;
-    }, tick);
+    const toStep = tick - stepped;
+    stepped = tick;
+    await page.evaluate((n) => {
+      const d = (window as never as { __dynasty: { sim: { step: () => void } } }).__dynasty;
+      for (let i = 0; i < n; i++) d.sim.step();
+    }, toStep);
     await page.waitForTimeout(150);
+    // Over 14,400 real steps somebody in an unwatched band can die of
+    // ordinary old age or misfortune, which raises the succession screen —
+    // a tour of what winter looks like should not stall on it.
+    const succession = page.locator('.succession-go');
+    if (await succession.isVisible()) {
+      await succession.click();
+      await page.waitForTimeout(150);
+    }
     await page.screenshot({ path: `${DIR}/13-season-${season}.png` });
   }
 });

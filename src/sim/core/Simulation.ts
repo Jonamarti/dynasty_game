@@ -14,6 +14,7 @@
 import { RNG } from './RNG.ts';
 import { World } from './World.ts';
 import { TimeManager } from './TimeManager.ts';
+import { advanceSnowDepth, isBuried } from './Snow.ts';
 import { SpatialHash } from './SpatialHash.ts';
 import { telemetry } from './Telemetry.ts';
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
@@ -213,6 +214,13 @@ export class Simulation {
 
   /** Why the most recent order was refused. Read by the UI, then cleared. */
   lastRefusal: string | null = null;
+
+  /**
+   * How deep the snow lies, 0-`SNOW_MAX_DEPTH`. Advanced once a day in
+   * `advanceDay` from `time.temperature`, and read by `isBuried` — see
+   * `Snow.ts`'s header for why this is a scalar rather than a tile array.
+   */
+  snowDepth = 0;
 
   /**
    * How much of itself the player's character looks after. See `steerPlayer`.
@@ -1356,6 +1364,7 @@ export class Simulation {
     if (target.pileId !== undefined) {
       const pile = this.pilesById.get(target.pileId);
       if (!pile || pile.empty) return this.cancelOrder(person, 'those goods are gone');
+      if (this.isBuried(pile.x, pile.y)) return this.cancelOrder(person, 'it is under the snow');
       person.targetPileId = pile.id;
       person.targetX = pile.x;
       person.targetY = pile.y;
@@ -1397,6 +1406,9 @@ export class Simulation {
     if (target.nodeId !== undefined) {
       const node = this.nodesById.get(target.nodeId);
       if (!node || node.depleted) return this.cancelOrder(person, 'there is nothing left there');
+      if (node.def.groundLevel && this.isBuried(node.x, node.y)) {
+        return this.cancelOrder(person, 'it is under the snow');
+      }
       person.targetNodeId = node.id;
       person.targetX = node.x;
       person.targetY = node.y;
@@ -1902,6 +1914,16 @@ export class Simulation {
     return null;
   }
 
+  /**
+   * Whether deep snow currently hides a point on the ground. `config.world.
+   * snowBuries` is the one-line switch the M9.5 phase 2b plan asked for: off,
+   * `snowDepth` still accumulates and the ground still looks wintry, but
+   * nothing is ever hidden by it.
+   */
+  isBuried(x: number, y: number): boolean {
+    return this.config.world.snowBuries && isBuried(x, y, this.snowDepth, this.treeHash);
+  }
+
   /** Orders the player's character to walk to a tile. */
   orderPlayerTo(x: number, y: number): void {
     if (!this.player) return;
@@ -1968,6 +1990,7 @@ export class Simulation {
     // sixty people's worth of both every step would be the most expensive
     // thing in the loop, and nothing in the design could tell the difference.
     if (this.time.tick % this.config.time.ticksPerDay === 0) {
+      this.snowDepth = advanceSnowDepth(this.snowDepth, this.time.temperature);
       this.social.dailyUpkeep(this.people);
       this.shareTheHearth();
       const forest = this.forestSystem.daily(this.trees, {
@@ -2062,6 +2085,8 @@ export class Simulation {
       sightRadius: this.config.sightRadius,
       needs: this.config.needs,
       chiefByBand: this.bandSystem.chiefByBand,
+      snowDepth: this.snowDepth,
+      snowBuries: this.config.world.snowBuries,
     };
     const actionCtx = {
       world: this.world,

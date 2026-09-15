@@ -245,12 +245,13 @@ export class Renderer {
    */
   private seasonVisual(): SeasonVisual {
     const season = this.sim.time.season;
-    const t = this.sim.time.temperature;
-    // 0-2, rising as it gets colder than freezing; the "and then white" step
-    // `prerenderTerrain`'s frost overlay paints in.
-    const frost = season === 'winter' ? Math.min(2, Math.floor(Math.max(0, -t) * 3)) : 0;
+    // Real accumulated snow (`Simulation.snowDepth`, M9.5 phase 2b) rather
+    // than a temperature guess: a single mild day inside a hard winter must
+    // not paint the ground bare while `isBuried` still says otherwise. 0-2,
+    // the "and then white" step `prerenderTerrain`'s frost overlay paints in.
+    const frost = Math.min(2, Math.floor(this.sim.snowDepth));
     // High summer only: the driest, hottest stretch gets dried patches.
-    const heat = season === 'summer' && t > 0.5 ? 1 : 0;
+    const heat = season === 'summer' && this.sim.time.temperature > 0.5 ? 1 : 0;
     return { season, frost, heat, key: `${season}:${frost}:${heat}` };
   }
 
@@ -367,6 +368,10 @@ export class Renderer {
     // --- Resource nodes ----------------------------------------------------
     for (const node of sim.nodes) {
       if (node.x < view.minX || node.x > view.maxX || node.y < view.minY || node.y > view.maxY) continue;
+      // Buried under enough snow: not drawn, not clickable — see
+      // `Simulation.isBuried`. A cosmetic burial the AI could still reach
+      // through would be a lie the player could catch just by watching.
+      if (node.def.groundLevel && sim.isBuried(node.x, node.y)) continue;
       this.drawNode(node, highlight?.nodeId === node.id);
     }
 
@@ -392,6 +397,7 @@ export class Renderer {
     for (const pile of sim.piles) {
       if (pile.x < view.minX || pile.x > view.maxX) continue;
       if (pile.y < view.minY || pile.y > view.maxY) continue;
+      if (sim.isBuried(pile.x, pile.y)) continue;
       const px = camera.worldToScreenX(pile.x);
       const py = camera.worldToScreenY(pile.y);
       const size = scale * 0.3;

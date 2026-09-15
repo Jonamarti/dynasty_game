@@ -36,14 +36,22 @@ export interface ResourceDef {
    * is needed most, the same reasoning `gameHerds` was scaled up for.
    */
   winterFloor?: number;
+  /**
+   * Sits on the ground itself rather than growing out of it or standing in
+   * water — M9.5 phase 2b's owner's note that small things on the ground can
+   * be buried by enough snow. `Simulation.isBuried` reads this to decide
+   * which nodes deep winter can hide; berries, reeds and fish are all above,
+   * around, or under things snow does not settle on.
+   */
+  groundLevel?: boolean;
 }
 
 export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
   berries: { kind: 'berries', itemId: 'berries', maxAmount: 14, regrowPerTick: 0.0042, harvestTicks: 8, skill: 'forage' },
-  flint:   { kind: 'flint',   itemId: 'flint',   maxAmount: 30, regrowPerTick: 0,      harvestTicks: 14, skill: 'knap' },
-  sticks:  { kind: 'sticks',  itemId: 'sticks',  maxAmount: 12, regrowPerTick: 0.0035, harvestTicks: 7,  skill: 'forage' },
+  flint:   { kind: 'flint',   itemId: 'flint',   maxAmount: 30, regrowPerTick: 0,      harvestTicks: 14, skill: 'knap', groundLevel: true },
+  sticks:  { kind: 'sticks',  itemId: 'sticks',  maxAmount: 12, regrowPerTick: 0.0035, harvestTicks: 7,  skill: 'forage', groundLevel: true },
   reeds:   { kind: 'reeds',   itemId: 'thatch',  maxAmount: 16, regrowPerTick: 0.005,  harvestTicks: 9,  skill: 'forage' },
-  clay:    { kind: 'clay',    itemId: 'mud',     maxAmount: 24, regrowPerTick: 0.001,  harvestTicks: 12, skill: 'build' },
+  clay:    { kind: 'clay',    itemId: 'mud',     maxAmount: 24, regrowPerTick: 0.001,  harvestTicks: 12, skill: 'build', groundLevel: true },
   // A shoal at a fixed spot rather than a moving animal, the same trade-off the
   // plan made for the fish channel: it reuses `doHarvest` wholesale rather than
   // needing a swimming entity and a second notion of passable ground.

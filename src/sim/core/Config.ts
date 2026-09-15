@@ -37,6 +37,14 @@ export interface WorldConfig {
    * their own model in `ForestSystem` and are deliberately not scaled by it.
    */
   regrowthRate: number;
+  /**
+   * Whether deep snow hides and blocks ground-level nodes and dropped piles.
+   * `Simulation.snowDepth` accumulates and thaws either way — this only gates
+   * the consequence, so turning it off cannot also erase the season's look.
+   * Default on; the M9.5 phase 2b plan asked for a one-line way to turn it
+   * back off if a twenty-seed run showed it made for a strictly worse world.
+   */
+  snowBuries: boolean;
 }
 
 export interface TimeConfig {
@@ -214,6 +222,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     fishingSpots: 50,
     treeDensity: 0.55,
     regrowthRate: 1,
+    snowBuries: true,
   },
   time: {
     ticksPerDay: 240,

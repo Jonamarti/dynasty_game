@@ -1,7 +1,29 @@
 # Known bugs and rough edges
 
-As of 2026-09-14. Everything here is real and reproducible; nothing here is
+As of 2026-09-15. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found during M9.5 phase 2b, 2026-09-15
+
+### A behavioural change moves which borderline check fails on `century`
+
+`sim:check:all`'s `century` scenario has failed `the-hurt-are-tended` since
+before this phase, recorded below. With snow burial active it instead fails
+`pictures-are-painted` — `the-hurt-are-tended` itself now passes. Confirmed
+as the mechanic's own doing rather than a new defect: re-running `century`
+with `config.world.snowBuries: false` (everything else identical) restores
+the original failure, `the-hurt-are-tended`, exactly. `findNode` now refuses
+a handful of buried candidates every winter, which changes what a person
+does next and so which random numbers everything downstream of that
+decision draws — over a hundred simulated years that is enough drift to
+flip which of two already-marginal, seed-sensitive checks lands on the
+wrong side of its line. Population health is unaffected: a direct
+before/after comparison on the `tour` seed over 14,400 steps showed
+identical population growth (31 to 38) and *lower* average hunger with
+burial on (13.0) than off (15.9), and `harsh-winter`'s `store` and `cold`
+columns move by less than a point either way. No action taken; recording it
+so the next person who sees `century` fail a check not in this file knows
+where the drift came from.
 
 ## Found during M9.5 phase 1, 2026-09-14
 
