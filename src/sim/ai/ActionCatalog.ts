@@ -429,6 +429,16 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       hostile: true,
     },
     {
+      // Coercion that needs no technology: a demand made openly, unlike
+      // `steal`, so it costs standing whether or not it is met.
+      id: 'threaten',
+      label: 'Threaten ' + other.name,
+      icon: '\u{270A}',
+      enabled: other.inventory.total > 0,
+      reason: other.inventory.total === 0 ? 'They carry nothing' : undefined,
+      hostile: true,
+    },
+    {
       id: 'attack',
       label: 'Attack ' + other.name,
       icon: '⚔',

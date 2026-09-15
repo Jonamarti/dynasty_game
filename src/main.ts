@@ -1192,6 +1192,11 @@ function issue(
     issueStore(actor, target.building, screenX, screenY);
     return;
   }
+  if (actionId === 'threaten' && target.person &&
+      !(commanding && commanding.alive && commanding.id !== actor.id)) {
+    issueThreaten(actor, target.person, screenX, screenY);
+    return;
+  }
 
   // Built once and used by both branches below. It used to be written out
   // twice, identically, which is precisely how the second copy comes to be
@@ -1296,6 +1301,52 @@ function issueTake(actor: Person, store: Building, screenX: number, screenY: num
   }
 
   const entries: PickerEntry<string>[] = contents.map(([id, n]) => ({
+    target: id,
+    icon: '\u{1F4E6}',
+    label: (ITEMS[id]?.label ?? id) + ' ×' + n,
+  }));
+  itemPicker.show(screenX, screenY, entries, askAmount, () => {});
+}
+
+/** Issues a `threaten` order, reporting the outcome the same way `issue` does. */
+function orderThreaten(
+  actor: Person, target: Person, itemId: string | undefined, count: number | undefined
+): void {
+  const ok = sim.order(actor, 'threaten', { personId: target.id, itemId, count });
+  const reason = sim.lastRefusal;
+  sim.lastRefusal = null;
+  renderer.floaters.push(actor.x, actor.y,
+    ok ? actionLabel('threaten') : (reason ?? 'cannot do that'),
+    { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
+}
+
+/**
+ * "Threaten X", turned into a choice of item and amount — the same picker
+ * `issueTake` uses, reused rather than built a second time (M9.5 phase 4a).
+ *
+ * This floater only confirms the demand was made, not how it went: whether
+ * the target hands anything over is a compliance roll made later, at the end
+ * of the wind-up, and reaches the player through the same interruption
+ * channel every other mid-action refusal already uses.
+ */
+function issueThreaten(actor: Person, target: Person, screenX: number, screenY: number): void {
+  const askAmount = (itemId: string) => {
+    const max = target.inventory.count(itemId);
+    quantityPicker.show(screenX, screenY, 'Demand ' + (ITEMS[itemId]?.label ?? itemId).toLowerCase(),
+      max, count => orderThreaten(actor, target, itemId, count), Math.min(3, max));
+  };
+
+  const carried = target.inventory.entries();
+  if (carried.length === 0) {
+    orderThreaten(actor, target, undefined, undefined);
+    return;
+  }
+  if (carried.length === 1) {
+    askAmount(carried[0]![0]);
+    return;
+  }
+
+  const entries: PickerEntry<string>[] = carried.map(([id, n]) => ({
     target: id,
     icon: '\u{1F4E6}',
     label: (ITEMS[id]?.label ?? id) + ' ×' + n,
@@ -1444,11 +1495,12 @@ function issuePickup(
 const lastActions = new Map<number, string>();
 let lastEventId = 0;
 
-const NOTABLE = new Set(['theft', 'assault', 'murder', 'share_food', 'gift']);
+const NOTABLE = new Set(['theft', 'assault', 'murder', 'share_food', 'gift', 'threaten']);
 const EVENT_COLORS: Record<string, string> = {
   theft: '#e0a04a',
   assault: '#e06a5a',
   murder: '#ff5b5b',
+  threaten: '#e0a04a',
   share_food: '#7ddc96',
   gift: '#7ddc96',
 };

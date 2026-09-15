@@ -6,6 +6,63 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-15 — M9.5 phase 4a: `threaten`, coercion that needs no technology
+
+Before anyone has the idea of assigning work, one person can still make
+another hand over food — by menace. `Authority.ts` gained `menaceOver`, a
+sibling to `standingOver` that deliberately ignores headship and
+chieftainship and reads only the fight-skill gap `standingOver`'s own fear
+term already uses, the victim's `traits.aggression`, and whether they were
+hurt by this specific leader in the last 300 ticks — the same "recently
+harmed" window `Brain`'s flee scoring uses. That is what lets it work on a
+stranger or another band, which a legitimate order through `Simulation.command`
+cannot: `standingOver`'s `authority` starts at 0.08 and is dominated by
+`isHead`/`isChief`, terms a stranger has none of.
+
+**`doThreaten`** (`ActionSystem.ts`) is shaped like `doSteal` — approach, a
+short wind-up (`THREATEN_TICKS`, with its own `interruption()` check `doSteal`
+never needed), then a transfer — demanding a named item and amount if the
+player chose one through the quantity picker, or the most valuable stack a
+thief would take otherwise. **The cost is paid whether or not the demand is
+met**: `ctx.social.emit('threaten', ...)` runs *before* the compliance roll,
+because making the threat in the open is the shameful act, not only
+succeeding at it — a demand refused to your face was still a demand made,
+and every witness (the victim always among them, at three times the weight)
+judges it through their own band's `norms`. `threaten` joins `Events.ts`'s
+`EVENT_TYPES`, `DEED_WEIGHT` (-18, between `theft` and `assault`), and
+`VARIABLE_NORMS`, so "a tolerant band shrugs at a threat and a peaceable one
+remembers it" is a real, per-band number rather than a line in a comment —
+this is also what already feeds exile and rebellion, which read the same
+`opinion()` `addDeed` moves, with no new wiring needed.
+
+**The player's side** reuses M9 phase 2's quantity picker exactly as
+`issueTake` does — pick the target, pick the item if there is a real choice,
+pick the amount — through a new `issueThreaten`/`orderThreaten` pair in
+`main.ts`, and a `threaten` entry in the person right-click menu between
+`steal` and `attack`. Refusal is decided later, at the end of the wind-up,
+not at order-issue time, so it reaches the player through the same
+interruption channel `doAsk`'s refusal already uses rather than
+`Simulation.lastRefusal`, which only ever answers a *synchronous* rejection.
+
+**The AI's own use of it** is scored in `Brain.ts` beside `steal`'s existing
+"whoever nearby is carrying the most" candidate: gated on a real fight-skill
+edge (below it, the safer stealthy option wins out), weighted up by
+`traits.aggression` and down by `traits.loyalty`. Tuned against the `century`
+scenario's `ai-uses-many-actions` report rather than guessed — the first
+version gated correctly but never once won the argmax against `steal` for
+the same target, and `threaten` never appeared in a full century of a
+156-person world. Retuned so the edge term reaches its ceiling at a solid
+rather than an enormous gap; it now settles at roughly the same order of
+magnitude as `attack` (1,467 against 626 over one `century` run).
+
+Determinism: this phase's own gate is `--seeds 20`, not bit-identical,
+because `threaten`'s entry in `VARIABLE_NORMS` draws one more `rng.range()`
+per band at world generation — see `docs/bugs.md`'s new entry for what that
+does to one already-marginal scenario, and `docs/next-steps.md` for the
+`--seeds 20` numbers this phase is actually judged on: population health
+unaffected (100% mean survival across 20 seeds, 0/20 collapsed, technology
+progression unchanged in shape).
+
 ## 2026-09-15 — M9.5 phase 3: a shorter year, and one clock instead of two
 
 The owner's note asked for shorter seasons so a lifetime covers less of the

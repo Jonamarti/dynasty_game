@@ -82,7 +82,8 @@ different kinds of thing:
 | M9.5 phase 2a — the ground turns with the year | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 2b — snow accumulates, and buries what is small | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 3 — a shorter year, and one clock instead of two | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
-| **M9.5 phase 4 — threats, chiefs with a term, and the pyramid** | **next.** See [m9_5_plan.md](m9_5_plan.md) |
+| M9.5 phase 4a — `threaten`: coercion that needs no technology | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
+| **M9.5 phase 4b — a chief holds a term, and a new chief is welcomed** | **next.** 4c-4e (division of labour, chiefdom, the layered graph) follow. See [m9_5_plan.md](m9_5_plan.md) |
 | M8.2 — the Neolithic | after M9.5. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |

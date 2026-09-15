@@ -745,6 +745,22 @@ export class Brain {
           (1 - person.traits.loyalty * 0.6) * privacy *
           this.proximityBonus(person, carrier, ctx.sightRadius));
         victim = carrier;
+
+        // Threaten: the same want, met by menace instead of stealth. It gets
+        // no help from privacy — a demand is made to the victim's face — but
+        // it only appeals once the demander could plausibly make it stick,
+        // which is the fight-skill gap `menaceOver` itself reads: below a
+        // real edge, biting off more than you can chew, and the safer
+        // stealthy option is preferred. A loyal person still will not do it;
+        // an aggressive one barely needs the excuse `dislike` provides.
+        const edge = person.skillFactor('fight') - carrier.skillFactor('fight');
+        if (edge > 0.05) {
+          add('threaten',
+            (hunger * 0.7 + person.traits.greed * 0.3 + dislike * 0.35) *
+            (0.4 + person.traits.aggression * 1.2) * (1 - person.traits.loyalty * 0.55) *
+            Math.min(1.3, 0.3 + edge * 2.5) *
+            this.proximityBonus(person, carrier, ctx.sightRadius));
+        }
       }
 
     }
@@ -1624,6 +1640,7 @@ export class Brain {
       case 'feed':
       case 'give':
       case 'steal':
+      case 'threaten':
       case 'attack': {
         // `feed` is ordinary giving aimed at one's own hungry child; the action
         // system does not need to know the difference, only the scorer does.

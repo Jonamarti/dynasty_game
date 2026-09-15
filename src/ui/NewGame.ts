@@ -264,6 +264,7 @@ export function describeNorms(band: Band): string {
     murder: 'a killing',
     gift: 'generosity',
     share_food: 'sharing food',
+    threaten: 'menace',
   };
 
   for (const [type, label] of Object.entries(named)) {

@@ -12,7 +12,7 @@
 
 export const EVENT_TYPES = [
   'gift', 'share_food', 'help', 'talk', 'trade', 'teach',
-  'theft', 'assault', 'murder',
+  'theft', 'assault', 'murder', 'threaten',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -46,6 +46,10 @@ export const DEED_WEIGHT: Record<EventType, number> = {
   theft: -14,
   assault: -20,
   murder: -45,
+  // Between theft and assault: no blow is struck, but the menace is not
+  // hidden the way a theft is — a threat is made in the open, to the
+  // victim's face, and everyone who sees it knows exactly what it was.
+  threaten: -18,
 };
 
 /**
@@ -63,6 +67,7 @@ export const DEED_SALIENCE: Record<EventType, number> = {
   theft: 0.7,
   assault: 0.85,
   murder: 1,
+  threaten: 0.8,
 };
 
 /** Being on the receiving end matters far more than watching from the treeline. */
@@ -77,7 +82,7 @@ export type Norms = Record<EventType, number>;
 
 export const DEFAULT_NORMS: Norms = {
   gift: 1, share_food: 1, help: 1, talk: 1, trade: 1, teach: 1,
-  theft: 1, assault: 1, murder: 1,
+  theft: 1, assault: 1, murder: 1, threaten: 1,
 };
 
 /**
@@ -91,6 +96,9 @@ export const VARIABLE_NORMS: { type: EventType; min: number; max: number }[] = [
   { type: 'murder', min: 0.7, max: 1.3 },
   { type: 'gift', min: 0.7, max: 1.5 },
   { type: 'share_food', min: 0.7, max: 1.6 },
+  // Coercion needs no technology, but a culture still has an opinion of it —
+  // a tolerant band shrugs at a threat and a peaceable one remembers it.
+  { type: 'threaten', min: 0.4, max: 1.6 },
 ];
 
 /** A short phrase for the UI: "saw you steal from Korak". */
@@ -110,5 +118,6 @@ export function describeEvent(
     case 'theft': return actorName + ' stole from ' + target;
     case 'assault': return actorName + ' attacked ' + target;
     case 'murder': return actorName + ' killed ' + target;
+    case 'threaten': return actorName + ' threatened ' + target;
   }
 }

@@ -89,6 +89,9 @@ const ORDER_COST: Record<string, number> = {
   give: 0.4,
   court: 0.6,
   steal: 0.75,
+  // Below `attack`: nobody comes home hurt, but being sent to menace a
+  // neighbour is a heavier ask than being sent to rob one quietly.
+  threaten: 0.8,
   attack: 0.9,
 };
 
@@ -175,4 +178,48 @@ export function standingOver(
     chance,
     because: reasons.join(', '),
   };
+}
+
+/**
+ * Whether a demand backed by nothing but menace gets what it asks for.
+ *
+ * Before anyone has the idea of assigning work, one person can still make
+ * another hand over food — by threat. This is deliberately *not*
+ * `standingOver`: it ignores headship and chieftainship entirely, which is
+ * what lets it work on strangers and other bands, where legitimate authority
+ * has no purchase at all. It reads only the fight-skill gap that already
+ * powers `standingOver`'s own fear term, the victim's temperament, and
+ * whether the leader is somebody who has hurt them recently — an old grudge
+ * buys nothing, but a fresh one does.
+ */
+export function menaceOver(leader: Person, subordinate: Person, tick: number): Standing {
+  if (leader.id === subordinate.id) {
+    return { isHead: false, isChief: false, isKin: false, chance: 1, because: 'yourself' };
+  }
+
+  const reasons: string[] = [];
+  let chance = 0.12;
+
+  const menace = leader.skillFactor('fight') - subordinate.skillFactor('fight');
+  if (menace > 0) {
+    chance += Math.min(0.45, menace * 0.6);
+    reasons.push('you are the stronger');
+  }
+
+  // A biddable person gives way; an aggressive one is more likely to call the
+  // bluff and refuse, whatever the odds.
+  chance -= (subordinate.traits.aggression - 0.5) * 0.3;
+
+  // Fresh fear outweighs everything else. The window matches the one
+  // `Brain`'s own flee scoring uses for "recently harmed" — long enough to
+  // matter, short enough that an old fight is not a standing threat.
+  if (subordinate.lastHarmedBy === leader.id && tick - subordinate.lastHarmedTick < 300) {
+    chance += 0.35;
+    reasons.push('still afraid of you');
+  }
+
+  chance = Math.max(0.02, Math.min(0.92, chance));
+  if (reasons.length === 0) reasons.push('no fear of you');
+
+  return { isHead: false, isChief: false, isKin: false, chance, because: reasons.join(', ') };
 }

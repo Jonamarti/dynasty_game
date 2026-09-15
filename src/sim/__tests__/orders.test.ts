@@ -15,8 +15,9 @@ import { ForestSystem } from '../systems/ForestSystem.ts';
 import { Tree } from '../entities/Tree.ts';
 import { workProgressOf } from '../core/Progress.ts';
 import { PATIENCE } from '../systems/MovementSystem.ts';
-import type { Person } from '../entities/Person.ts';
+import { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
+import { menaceOver } from '../social/Authority.ts';
 
 const SMALL = {
   seed: 'orders',
@@ -582,6 +583,181 @@ describe('a refusal by authority', () => {
 
     expect(refused, 'nobody refused in sixty attempts').not.toBeNull();
     expect(refused!.length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * M9.5 phase 4a: coercion that needs no technology. `menaceOver` is pure —
+ * no household, no band, no `Simulation` — so its shape is asserted directly
+ * rather than through a world.
+ */
+describe('menaceOver', () => {
+  function bystander(name: string, id: number): Person {
+    const person = new Person(name, 4, 4, id, new RNG('menace-' + name));
+    person.age = 30 * person.daysPerYear;
+    return person;
+  }
+
+  it('reads the same fight-skill gap standingOver does, not standing', () => {
+    const victim = bystander('victim', 1);
+    victim.skills.fight = 20;
+    victim.traits.aggression = 0.5;
+
+    const strong = bystander('strong', 0);
+    strong.skills.fight = 90;
+    const equal = bystander('equal', 2);
+    equal.skills.fight = 20;
+
+    const overmatched = menaceOver(strong, victim, 0);
+    const evenlyMatched = menaceOver(equal, victim, 0);
+    expect(overmatched.chance).toBeGreaterThan(evenlyMatched.chance);
+    // No household, no band, no context object at all was passed in — this is
+    // exactly what lets it work on a stranger or another band, which
+    // `standingOver` cannot.
+    expect(overmatched.isHead).toBe(false);
+    expect(overmatched.isChief).toBe(false);
+  });
+
+  it('is resisted harder by an aggressive victim than a timid one', () => {
+    const leader = bystander('leader', 0);
+    leader.skills.fight = 90;
+
+    const timid = bystander('timid', 1);
+    timid.skills.fight = 20;
+    timid.traits.aggression = 0.1;
+
+    const defiant = bystander('defiant', 2);
+    defiant.skills.fight = 20;
+    defiant.traits.aggression = 0.9;
+
+    expect(menaceOver(leader, timid, 0).chance)
+      .toBeGreaterThan(menaceOver(leader, defiant, 0).chance);
+  });
+
+  it('reads fresh fear of this leader specifically, not an old grudge or a stranger', () => {
+    const leader = bystander('leader', 0);
+    leader.skills.fight = 50;
+    const other = bystander('other', 2);
+    other.skills.fight = 50;
+
+    const victim = bystander('victim', 1);
+    victim.skills.fight = 50;
+    victim.traits.aggression = 0.5;
+    const baseline = menaceOver(leader, victim, 1000).chance;
+
+    // Hurt recently, but by somebody else entirely — buys nothing.
+    victim.lastHarmedBy = other.id;
+    victim.lastHarmedTick = 950;
+    expect(menaceOver(leader, victim, 1000).chance).toBeCloseTo(baseline, 5);
+
+    // Hurt recently by this leader — the fear that matters.
+    victim.lastHarmedBy = leader.id;
+    victim.lastHarmedTick = 950;
+    expect(menaceOver(leader, victim, 1000).chance).toBeGreaterThan(baseline);
+
+    // The same leader, but it was a long time ago — an old grudge, not a
+    // standing threat.
+    victim.lastHarmedTick = 200;
+    expect(menaceOver(leader, victim, 1000).chance).toBeCloseTo(baseline, 5);
+  });
+
+  it('never refuses yourself', () => {
+    const person = bystander('self', 0);
+    expect(menaceOver(person, person, 0).chance).toBe(1);
+  });
+});
+
+/**
+ * M9.5 phase 4a: `threaten` demands by menace rather than by right, and its
+ * cost — a sharp drop in the victim's regard — is paid whether or not the
+ * demand is met. Both outcomes are asserted by looping until they occur
+ * rather than rigging a zero or certain chance, the same approach `a refusal
+ * by authority` above uses: what is under test is what each outcome does,
+ * not how likely it is.
+ */
+describe('threaten', () => {
+  function armed(sim: Simulation): { leader: Person; victim: Person } {
+    const people = sim.livingPeople();
+    const leader = people[0]!;
+    const victim = people.find(p => p.id !== leader.id)!;
+    settle(leader);
+    settle(victim);
+    leader.x = victim.x;
+    leader.y = victim.y;
+    return { leader, victim };
+  }
+
+  it('takes what was demanded when the demand is met, and costs standing', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const { leader, victim } = armed(sim);
+    leader.skills.fight = 100;
+    victim.skills.fight = 0;
+    victim.traits.aggression = 0;
+
+    const deedsBefore = sim.relationships.peek(victim.id, leader.id)?.deeds ?? 0;
+    let taken = 0;
+    for (let attempt = 0; attempt < 30 && taken === 0; attempt++) {
+      victim.inventory.add('berries', 6);
+      expect(sim.order(leader, 'threaten',
+        { personId: victim.id, itemId: 'berries', count: 2 })).toBe(true);
+      for (let i = 0; i < 40 && leader.action !== 'idle'; i++) sim.step();
+      taken = leader.inventory.count('berries');
+    }
+
+    expect(taken, 'never once succeeded in thirty attempts').toBeGreaterThan(0);
+    // The demand being met is not what makes it cost something — see the
+    // refusal test below for the other half of that claim — but it should
+    // never cost *nothing*.
+    expect(sim.relationships.peek(victim.id, leader.id)!.deeds)
+      .toBeLessThan(deedsBefore);
+    expect(sim.social.recent.some(e => e.type === 'threaten' && e.actorId === leader.id))
+      .toBe(true);
+  });
+
+  it('costs standing even when the victim refuses, and says so', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const { leader, victim } = armed(sim);
+    leader.skills.fight = 0;
+    victim.skills.fight = 100;
+    victim.traits.aggression = 1;
+
+    let refused: string | null = null;
+    for (let attempt = 0; attempt < 30 && refused === null; attempt++) {
+      victim.inventory.add('berries', 6);
+      const before = leader.inventory.count('berries');
+      sim.interruptions.length = 0;
+      expect(sim.order(leader, 'threaten',
+        { personId: victim.id, itemId: 'berries', count: 2 })).toBe(true);
+      for (let i = 0; i < 40 && leader.action !== 'idle'; i++) sim.step();
+      if (leader.inventory.count('berries') > before) continue;
+      const mine = sim.interruptions.filter(n => n.personId === leader.id);
+      if (mine.some(n => n.reason === 'refused_demand')) {
+        refused = mine.find(n => n.reason === 'refused_demand')!.reason;
+      }
+    }
+
+    expect(refused, 'nobody refused in thirty attempts').toBe('refused_demand');
+    // The threat was still made, and it still cost something: a demand
+    // refused to your face was still a demand made, and witnesses — the
+    // victim always among them — judge it whether or not it worked.
+    expect(sim.social.recent.some(e => e.type === 'threaten' && e.actorId === leader.id))
+      .toBe(true);
+  });
+
+  it('gives up with a named reason when the target carries nothing worth demanding', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const { leader, victim } = armed(sim);
+    for (const [id, count] of victim.inventory.entries()) victim.inventory.remove(id, count);
+
+    sim.interruptions.length = 0;
+    expect(sim.order(leader, 'threaten', { personId: victim.id })).toBe(true);
+    for (let i = 0; i < 40 && leader.action !== 'idle'; i++) sim.step();
+
+    const mine = sim.interruptions.filter(n => n.personId === leader.id);
+    expect(mine.map(n => n.reason)).toContain('nothing_to_demand');
   });
 });
 

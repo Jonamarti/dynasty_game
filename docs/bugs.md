@@ -3,6 +3,51 @@
 As of 2026-09-15. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found during M9.5 phase 4a, 2026-09-15
+
+### `threaten`'s variable norm pushes the `millers` scenario's already-thin margin past breaking
+
+`threaten` needed a band-level norm — "a tolerant band shrugs at a threat and
+a peaceable one remembers it" is the whole point of `VARIABLE_NORMS` — so it
+was added there alongside `theft` and `assault`. `Simulation.foundBands`
+draws one `rng.range(min, max)` per entry of `VARIABLE_NORMS` per band, so
+every band founded from this point on consumes one more number from the
+world's RNG stream than it used to, before a single person is placed or a
+single tree is grown (the loop is inside `Simulation.spawnPeople`).
+`worldRng` (terrain) is forked off `rng` *before* this loop runs, so no
+island's layout moves — but band placement, every person's
+traits, and every decision anyone ever makes for the rest of the run are all
+drawn from the same unforked `rng`, so all of it shifts, for every scenario,
+on every seed.
+
+Confirmed as exactly this and nothing else: `sim:check:all` is otherwise
+unchanged (the same single `perf-budget` and `the-hurt-are-tended` failures
+already recorded below), except `millers`, which now additionally fails
+`crafts-happen-at-stations` — "1 stations finished, 0 things made at one" —
+and, after `Brain`'s `threaten` scorer was retuned to actually compete for
+ticks (see below), `the-hurt-are-tended` as well. The second of those is not
+a new phenomenon: it is the exact "borderline check trades places under
+enough downstream RNG drift" pattern the phase 2b and phase 3 entries below
+already recorded on `century`, showing up on a second scenario because this
+change, unlike those, touches every scenario's world generation rather than
+just one calendar's worth of ticks. `crafts-happen-at-stations` is the one
+worth explaining. That scenario's own comment in `tools/simcheck.ts` already
+names it as
+living on a knife's edge: on this exact seed the acorn-grinding chain took
+three autumns to first fire even before this phase, at step 23,938 against a
+26,000-step budget. Raising the budget further does not rescue it — 40,000
+steps still shows nothing ground — which says the shift did not just delay
+the chain, it moved the world enough (which of two bands ends up within
+reach of which oaks; every person's downstream choices) that this run's
+particular path to a first grind is simply gone. A ten-seed run of the
+default `century` scenario (`npm run sim:seeds -- --seeds 10`) shows the
+world is otherwise healthy under the same change: 99.9% mean survival, every
+seed reaching technology past the root nodes. No action taken — the plan's
+own gate for this phase measures `--seeds 20`, not single-seed stability,
+because exactly this kind of drift is expected from any change that touches
+world-generation-time RNG, and `millers` was already the scenario in this
+matrix with the least room to absorb one.
+
 ## Found during M9.5 phase 3, 2026-09-15
 
 ### A season-gated harvest is a much narrower window now that a season is half as long

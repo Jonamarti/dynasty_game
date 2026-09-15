@@ -23,6 +23,7 @@ import type { Animal } from '../entities/Animal.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import type { KnowledgeSystem } from './KnowledgeSystem.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
+import { menaceOver } from '../social/Authority.ts';
 import {
   CONVERSATION_MODES, chooseMode, meetingOfMinds, modeAllowed, type ConversationMode,
 } from '../social/Conversation.ts';
@@ -372,6 +373,14 @@ export function pressedByNeed(
 /** Ticks to take something that is not yours without being obvious about it. */
 const STEAL_TICKS = 30;
 
+/**
+ * Ticks to make a demand. Shorter than `STEAL_TICKS`: a threat is made in the
+ * open and does not need the wait a quiet theft does, but it is not
+ * instantaneous — a menace has to be stood over and felt, or the interruption
+ * check below never gets a chance to run.
+ */
+const THREATEN_TICKS = 18;
+
 /** Ticks before a person will deliberately approach anyone again. */
 const SOCIAL_COOLDOWN = 220;
 
@@ -458,6 +467,7 @@ export class ActionSystem {
       case 'prototype': this.doPrototype(person, ctx); break;
       case 'give': this.doGive(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
+      case 'threaten': this.doThreaten(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
       // M8.1's three new verbs. All three answer something the world could not
       // answer before: loneliness for more than two people at once, being hurt
@@ -2571,6 +2581,84 @@ export class ActionSystem {
       ctx.tick, ctx.peopleHash, ctx.sightRadius
     );
     telemetry.count('theft_succeeded');
+    this.finishSocial(person, ctx.tick);
+  }
+
+  /**
+   * Demanding by menace, not by right — coercion that needs no technology.
+   * Unlike `doSteal` this is not hidden: the demand is made to the victim's
+   * face, which is exactly what lets `menaceOver` skip headship and
+   * chieftainship and still work on a stranger or another band.
+   *
+   * The cost is paid whether or not the demand succeeds. `ctx.social.emit`
+   * runs before the compliance roll, because making the threat is the
+   * shameful act — a demand refused to your face was still made, and
+   * witnesses judge it through their own band's norms either way.
+   */
+  private doThreaten(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = THREATEN_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      // Short as this wind-up is, it still has to give way to thirst, hunger,
+      // cold or a blow — every action that waits needs a way out.
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'threatened_');
+      return;
+    }
+
+    let itemId: string | null = person.targetItemId;
+    if (itemId === null || other.inventory.count(itemId) === 0) {
+      // Nothing was named, or it is gone — demand whatever is worth the most,
+      // the same choice an opportunist thief makes in `doSteal`.
+      const carried = other.inventory.entries();
+      if (carried.length === 0) {
+        this.abandon(person, 'nothing_to_demand', ctx);
+        return;
+      }
+      let bestId = carried[0]![0];
+      let bestValue = -1;
+      for (const [id, count] of carried) {
+        const value = (ITEMS[id]?.baseValue ?? 1) * count;
+        if (value > bestValue) {
+          bestValue = value;
+          bestId = id;
+        }
+      }
+      itemId = bestId;
+    }
+
+    const available = other.inventory.count(itemId);
+    const want = Math.max(1, Math.min(
+      person.targetItemCount ?? Math.ceil(available / 2), available
+    ));
+
+    const worth = (ITEMS[itemId]?.baseValue ?? 1) * want;
+    ctx.social.emit(
+      'threaten', person, other,
+      Math.min(1, worth / 10),
+      ctx.tick, ctx.peopleHash, ctx.sightRadius
+    );
+
+    const compliance = menaceOver(person, other, ctx.tick);
+    if (!ctx.rng.chance(compliance.chance)) {
+      telemetry.count('threaten_refused');
+      this.stop(person, 'refused_demand', ctx, 'threatened_');
+      return;
+    }
+
+    const taken = other.inventory.remove(itemId, want);
+    if (taken === 0) {
+      this.abandon(person, 'nothing_to_demand', ctx);
+      return;
+    }
+    person.inventory.add(itemId, taken);
+    telemetry.count('threaten_succeeded');
     this.finishSocial(person, ctx.tick);
   }
 
