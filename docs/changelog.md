@@ -6,6 +6,71 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-14 — M9.5 phase 1: people who look like people, drawn once
+
+A person used to be two `fillRect` calls: a torso rectangle in the band
+colour and a skin-coloured rectangle for a head, identical at every age.
+`src/render/Sprites.ts` now bakes bodies (five size classes x six band
+colours x four walk-cycle poses), heads (hair colour x beard), faces (nine
+expressions) and held items (seven tools and weapons) into one offscreen
+atlas at `Renderer` construction — the same trick `prerenderTerrain` already
+used for the ground — and `drawPerson` composites a figure from three or four
+`drawImage` calls instead of drawing limbs from scratch sixty times a second.
+Layers are baked separately rather than in combination (baking every
+body-x-head-x-face-x-item permutation would have multiplied the counts
+together), so the atlas is 174 small cells rather than tens of thousands.
+
+**Child and elder scaling reads `Person.years`/`vigour` through a new
+`bodyScaleOf`, shared by the renderer and by `hitRadiusOf`.** A four-year-old
+is drawn at roughly 55% of adult height with a proportionally larger head; an
+elder loses height and stoops. `hitRadiusOf`'s person case used to be a flat
+0.45 regardless of age — the exact "drawn small, clicked large" bug its own
+header already warns about — and now scales with the same function the
+renderer draws from, so what is on screen and what is clickable cannot drift
+apart.
+
+**Faces read simulation state that already existed; nothing new was added to
+`Person`.** `src/sim/core/Mood.ts`'s `expressionOf` is a pure function over
+needs, health, who last hurt you, what keeps interrupting your work
+(`noticed`), and the regard of whoever is standing nearest
+(`RelationshipGraph.opinion`, via the spatial hash rather than a scan). A
+persistent, heritable mood was considered and deliberately deferred: it would
+be a new `Person` field migrating through founding, inheritance, ageing and
+the character-creation point budget, and that does not belong hiding inside
+an art pass. Which expression a face wears — beyond simply being visibly
+hurt, which the health pip already shows everyone — is gated behind
+`Knowledge.ts`'s `knowsCondition`, through a new `knowsPersonCondition` helper
+that answers the one boolean without building the full `PersonKnowledge`
+object; a stranger's face reads neutral. Recomputed at most once per
+simulation tick per person rather than once a frame, since nothing it reads
+changes faster than a tick.
+
+**Held items come from `Person.inventory` through `heldItemFor`,** so the
+canvas can never show a spear that is not actually in a hand.
+
+**Below 14 px/tile a person is a single flat silhouette** — one `drawImage`,
+no face, no tool — the same shape the existing `if (scale > 20)` building-icon
+LOD already used.
+
+**On the `perf-budget` gate the plan called for:** `sim:check`'s `perf-budget`
+check turned out to measure `Simulation.stepsPerSecond` in the headless
+harness, which never constructs a `Renderer` and cannot be moved by a canvas
+change — confirmed by it failing on `crowded` identically before and after
+this pass, which is expected since no `src/sim/` file's behaviour changed.
+The actual cost this phase set out to cut — draw calls per person per frame —
+was checked qualitatively instead: `npm run shots`'s full tour renders
+without error at every zoom level the tour visits, ages read visibly apart
+(a four-year-old beside adults in `11-kit.png`), and `npm run e2e` (45
+specs) and `npm test` (241 tests, including `sim:check:all`'s
+`determinism.test.ts`) all pass unchanged. `sim:check:all` reports the same
+three pre-existing failures (`perf-budget`/`crowded`,
+`the-hurt-are-tended`/`century`, `spatial-hash-spreads`/`millers`) that
+`docs/bugs.md` already records — proof that nothing here touched simulation
+state, since the sim is otherwise bit-identical to what it was.
+
+Phases 2 through 4 of `docs/m9_5_plan.md` (seasons, a shorter calendar year,
+and threats/chiefs/the tribe pyramid) are not started.
+
 ## 2026-09-13 — CI, and a URL you can send to someone
 
 Until now the only way to see Dynasty was to clone it and run `npm run dev`.

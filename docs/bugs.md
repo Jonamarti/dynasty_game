@@ -1,7 +1,28 @@
 # Known bugs and rough edges
 
-As of 2026-09-12. Everything here is real and reproducible; nothing here is
+As of 2026-09-14. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found during M9.5 phase 1, 2026-09-14
+
+### `perf-budget` cannot measure a renderer change
+
+`docs/m9_5_plan.md`'s phase 1 gate calls for measuring `perf-budget` on
+`crowded` before and after the sprite atlas, on the theory that baking
+bodies once and drawing them with `drawImage` should make it better. It
+cannot move that check at all: `sim:check`'s `perf-budget`
+([simcheck.ts:1889](../tools/simcheck.ts#L1889)) is
+`base.stepsPerSecond > 2000` from the headless harness, which never
+constructs a `Renderer` — per `AGENTS.md`, `src/sim/` never imports it — so
+no amount of drawing efficiency can touch the number the check reads.
+Confirmed rather than assumed: `sim:check:all` failed `perf-budget` on
+`crowded` identically before and after this phase's renderer changes, which
+is exactly what a metric this decoupled from rendering should do. There is
+no automated check anywhere in this project for *rendering* cost — frames
+per second, or draw calls per frame — so a real regression there would only
+show up as someone noticing the game feels slower. If sprite draw cost is
+ever worth measuring on its own, it wants a new check that actually
+constructs a `Renderer` and times `render()`, not a reading of this one.
 
 ## Found during M9 phase 6, 2026-09-12
 

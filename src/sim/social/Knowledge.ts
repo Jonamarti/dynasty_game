@@ -130,6 +130,28 @@ export function knowledgeOfPerson(
 }
 
 /**
+ * The `knowsCondition` half of `knowledgeOfPerson`, on its own.
+ *
+ * M9.5 phase 1 needs this every frame, for every face on screen, to decide
+ * whether the renderer may paint a real expression or has to fall back to a
+ * neutral one — too hot a path to build the full `PersonKnowledge` object (and
+ * the `ageBracket` string it computes for a case that never gets used) just to
+ * read one boolean out of it. Kept beside `knowledgeOfPerson` and matching its
+ * thresholds exactly, rather than reinvented, so the two can never disagree
+ * about who knows whom.
+ */
+export function knowsPersonCondition(
+  observerId: number,
+  subjectId: number,
+  relationships: RelationshipGraph
+): boolean {
+  if (observerId === subjectId) return true;
+  const rel = relationships.peek(observerId, subjectId);
+  if (!rel) return false;
+  return rel.familiarity >= KNOWN_AT || rel.kinship !== 0;
+}
+
+/**
  * What the observer remembers happening to or being done by the subject,
  * newest first.
  *

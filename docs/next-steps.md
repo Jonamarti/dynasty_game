@@ -78,7 +78,9 @@ different kinds of thing:
 | M9 phase 4 — a conversation worth having | shipped 2026-09-11 |
 | M9 phase 5 — thinking | shipped 2026-09-12 |
 | M9 phase 6 — letting the character look after itself | shipped 2026-09-12. **M9 is complete** |
-| **M8.2 — the Neolithic** | **next.** See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
+| M9.5 phase 1 — people who look like people, drawn once | shipped 2026-09-14. See [m9_5_plan.md](m9_5_plan.md) |
+| **M9.5 phases 2-4 — seasons, a shorter year, threats and the pyramid** | **next.** See [m9_5_plan.md](m9_5_plan.md) |
+| M8.2 — the Neolithic | after M9.5. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
@@ -679,6 +681,31 @@ Three things were found alongside them and not fixed — the catalogue reading a
 stranger's knowledge to decide whether to offer a lesson, nobody but the player
 ever picking anything up off the ground, and the one figure the tech-kind split
 moved and did not bring back. All three are in [bugs.md](bugs.md).
+
+## 7e. The owner's notes of 2026-09-14
+
+Seven notes accumulated since M9 closed. The full triage, and the plan for
+where each one goes, is [m9_5_plan.md](m9_5_plan.md); the table below is
+that document's summary.
+
+| # | note | destination |
+|---|---|---|
+| 1 | Children smaller; bodies with limbs; carried tools and weapons; faces with eyes, eyebrows, mouth | M9.5 phase 1 — **shipped 2026-09-14** |
+| 3 | Seasons should look different — snow, flowers, leaf litter, browning | M9.5 phase 2 |
+| 4 | Seasons should be shorter, so tech and buildings pass to the next generations | M9.5 phase 3 |
+| 2 | The tribe graph should be a layered pyramid, unlocked by a primitive "giving orders" technology | M9.5 phase 4 |
+| 7 | Ground fertility, exhaustion, compost, crop rotation, burying fish | M8.2, in the same pass as `farming` |
+| 5 | Buildings degrade after a number of uses and need repair | M10 phase 1 |
+| 6 | Fences that claim territory; a border-guard job | M10 phase 2 (with O4 and O5) |
+
+The owner's decisions taken while planning this pass: the look-and-calendar
+work runs before M8.2, as M9 did when the notes were about the interface;
+NPC art is baked once into a sprite atlas rather than drawn shape by shape
+every frame; the ageing clock and the calendar become one clock; and
+coercion needs no technology — legitimate authority is what gets discovered.
+`§4`'s era-rename note (real archaeological period names for `TechDef.age`)
+stays where it is, and is still the cheaper thing to do before M8.2 triples
+the node count.
 
 ## 8. Wildlife, second pass
 

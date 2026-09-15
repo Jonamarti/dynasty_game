@@ -23,8 +23,13 @@ import type { Building } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { TreeSpecies } from '../sim/entities/Tree.ts';
 import { workProgressOf } from '../sim/core/Progress.ts';
+import { expressionOf, type Expression } from '../sim/core/Mood.ts';
+import { knowsPersonCondition } from '../sim/social/Knowledge.ts';
 import { Camera, TILE } from './Camera.ts';
 import { Floaters } from './Floaters.ts';
+import {
+  SpriteAtlas, BAND_COLORS, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
+} from './Sprites.ts';
 
 const BIOME_COLORS: Record<Biome, [string, string]> = {
   // [base, speckle] — the speckle is dotted in per-tile to break up flat fields.
@@ -35,6 +40,14 @@ const BIOME_COLORS: Record<Biome, [string, string]> = {
   hills:  ['#8a8163', '#7d755a'],
   rock:   ['#6d6d72', '#636368'],
 };
+
+/**
+ * Below this many pixels per tile, a person is drawn as a flat silhouette:
+ * no face, no held item, one `drawImage` instead of up to four. Chosen the
+ * same way the building-icon LOD at `if (scale > 20)` below was — a face two
+ * or three pixels wide reads as noise, not detail.
+ */
+const PERSON_LOD_BELOW = 14;
 
 const RESOURCE_COLORS: Record<ResourceKind, string> = {
   berries: '#c0392b',
@@ -64,8 +77,6 @@ const FRUIT_COLORS: Record<string, string> = {
   // the branch should not read as something worth eating.
   acorn: '#8a6a34',
 };
-
-const BAND_COLORS = ['#3b6ea8', '#a83b52', '#7a4ea8', '#a8843b', '#3ba88a', '#a83b8f'];
 
 /**
  * What is currently selected, by id.
@@ -108,6 +119,32 @@ export class Renderer {
    */
   readonly interpolator = new Interpolator();
 
+  /**
+   * Every baked body, head, face and held-item cell a person can be drawn
+   * from. Built once per `Renderer` instance — see `Sprites.ts`'s header —
+   * and never rebuilt by `setSim`: unlike the terrain, nothing about it
+   * depends on which world is loaded.
+   */
+  private readonly atlas = new SpriteAtlas();
+
+  /**
+   * Walk-cycle phase per person, presentation state exactly like
+   * `interpolator` above: advanced by *drawn* distance (interpolated, so it
+   * keeps pace with what is on screen) rather than by anything the
+   * simulation tracks, and swept the same way `Interpolator` sweeps its own
+   * tracks so a century of dead people does not accumulate here.
+   */
+  private readonly walkPhase = new Map<number, { x: number; y: number; distance: number; seen: number }>();
+  private walkPhaseCapture = 0;
+
+  /**
+   * `expressionOf` and the `knowsCondition` check behind it are worth
+   * computing once per simulation step, not once per render frame — the sim
+   * steps a handful of times a second, the screen draws sixty times, and
+   * nothing either reads changes any faster than a tick.
+   */
+  private readonly moodCache = new Map<number, { tick: number; expr: Expression }>();
+
   private ctx: CanvasRenderingContext2D;
   private terrain: HTMLCanvasElement;
 
@@ -140,6 +177,12 @@ export class Renderer {
     this.sim = sim;
     this.terrain = this.prerenderTerrain(sim.world);
     this.interpolator.clear();
+    // A new world restarts person ids from 1 (`resetPersonIds`), so anything
+    // keyed by id from the old world is now about a stranger who happens to
+    // share a number, exactly the case `interpolator.clear()` above exists
+    // for.
+    this.walkPhase.clear();
+    this.moodCache.clear();
   }
 
   /** One tile per TILE pixels, drawn once. */
@@ -604,8 +647,12 @@ export class Renderer {
     const scale = camera.scale;
     const px = camera.worldToScreenX(at.x);
     const py = camera.worldToScreenY(at.y);
-    const w = scale * 0.34;
-    const h = scale * 0.52;
+    const bodyScale = bodyScaleOf(person);
+    // Torso footprint in screen pixels — the same 0.34 x 0.52 tile fraction
+    // this always was, now scaled by age. `hitRadiusOf` reads the same
+    // `bodyScaleOf`, so a child drawn small is a child clicked small.
+    const w = scale * bodyScale * 0.34;
+    const h = scale * bodyScale * 0.52;
 
     // Shadow first, so bodies read as standing on the ground.
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
@@ -613,12 +660,24 @@ export class Renderer {
     ctx.ellipse(px, py + h * 0.45, w * 0.6, w * 0.28, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = BAND_COLORS[person.bandId % BAND_COLORS.length]!;
-    ctx.fillRect(px - w / 2, py - h / 2, w, h);
+    const sizeClass = sizeClassOf(person);
+    const bandColorIndex = person.bandId % BAND_COLORS.length;
 
-    // Head
-    ctx.fillStyle = '#e8c9a0';
-    ctx.fillRect(px - w * 0.32, py - h / 2 - w * 0.52, w * 0.64, w * 0.56);
+    if (scale < PERSON_LOD_BELOW) {
+      // Too small on screen for a face or a tool to read. One `drawImage`,
+      // matching the shape `if (scale > 20)` already gives building icons.
+      this.atlas.drawSilhouette(ctx, sizeClass, bandColorIndex, px, py, this.atlas.bodyDrawSize(sizeClass, w) * 1.15);
+    } else {
+      const bodySize = this.atlas.bodyDrawSize(sizeClass, w);
+      this.atlas.drawPerson(ctx, {
+        sizeClass, bandColorIndex,
+        pose: this.walkPoseFor(person, at),
+        hairVariant: hairVariantOf(person),
+        hasBeard: hasBeardOf(person),
+        expression: this.expressionFor(person),
+        heldItem: heldItemFor(person),
+      }, px, py, bodySize);
+    }
 
     // What they are working on, and how far through it they are.
     //
@@ -666,6 +725,66 @@ export class Renderer {
       ctx.lineWidth = 2;
       ctx.strokeRect(px - w / 2 - 2, py - h / 2 - w * 0.6, w + 4, h + w * 0.6);
     }
+  }
+
+  /** Screen-tile distance a walk cycle covers before advancing to the next
+   * of the atlas's four pose frames. */
+  private static readonly WALK_STEP_TILES = 0.38;
+
+  /**
+   * Which of the atlas's four walk-cycle body frames a person is on right
+   * now, advanced by how far they have actually moved on screen (the
+   * interpolated position, not the raw tick-to-tick one) so the legs keep
+   * time with the glide `Interpolator` already smooths everything else
+   * into. Standing still holds the last frame rather than resetting to a
+   * neutral stance, which would otherwise snap on every single stop.
+   */
+  private walkPoseFor(person: Person, at: Placed): number {
+    this.walkPhaseCapture++;
+    let track = this.walkPhase.get(person.id);
+    if (!track) {
+      track = { x: at.x, y: at.y, distance: 0, seen: this.walkPhaseCapture };
+      this.walkPhase.set(person.id, track);
+    }
+    track.distance += Math.hypot(at.x - track.x, at.y - track.y);
+    track.x = at.x;
+    track.y = at.y;
+    track.seen = this.walkPhaseCapture;
+
+    // Swept the same way `Interpolator` sweeps its own tracks: rarely, and
+    // only entries this pass never touched, so a century of the dead does
+    // not sit in this map forever.
+    if (this.walkPhaseCapture % (64 * 200) === 0) {
+      for (const [id, t] of this.walkPhase) {
+        if (t.seen !== this.walkPhaseCapture) this.walkPhase.delete(id);
+      }
+    }
+
+    return Math.floor(track.distance / Renderer.WALK_STEP_TILES) % 4;
+  }
+
+  /**
+   * The face a person wears this frame. Recomputed at most once per
+   * simulation step — `expressionOf` and the `knowsCondition` check behind
+   * it read state that only changes at tick granularity, so recomputing on
+   * every one of the sixty frames a step is drawn across would be work
+   * spent on an answer that has not changed.
+   */
+  private expressionFor(person: Person): Expression {
+    const { sim } = this;
+    const cached = this.moodCache.get(person.id);
+    if (cached && cached.tick === sim.time.tick) return cached.expr;
+
+    // Being visibly hurt at all is coarse and public — the health pip draws
+    // for everyone below, whoever is watching. Which particular expression a
+    // face wears is finer than that, so it stays behind `knowsCondition`
+    // exactly like every other read of somebody's private state, and a
+    // stranger gets the neutral cell instead.
+    const knows = !sim.player || sim.player.id === person.id ||
+      knowsPersonCondition(sim.player.id, person.id, sim.relationships);
+    const expr = knows ? expressionOf(person, sim) : 'neutral';
+    this.moodCache.set(person.id, { tick: sim.time.tick, expr });
+    return expr;
   }
 
   /**
@@ -799,8 +918,13 @@ export const GRAB_MARGIN = 0.25;
  */
 export function hitRadiusOf(target: HitTarget): number {
   switch (target.kind) {
-    // Body is 0.34 x 0.52 tiles plus a head; 0.45 covers the drawn silhouette.
-    case 'person': return 0.45;
+    // Body is 0.34 x 0.52 tiles plus a head; 0.45 covers the drawn silhouette
+    // at adult size. M9.5 phase 1 draws a child small and an elder stooped
+    // through the same `bodyScaleOf`, so the click target has to shrink and
+    // grow with them or a child is clicked at the size of the adult standing
+    // beside them — the "what is drawn and what is clickable are a third of
+    // a tile apart" bug this file already warns about, one paragraph up.
+    case 'person': return 0.45 * bodyScaleOf(target.person);
     // A stripped bush is small. Fullness is what the renderer scales it by, so
     // the click target shrinks as the thing itself does.
     case 'node': {
