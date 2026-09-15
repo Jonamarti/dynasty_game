@@ -240,6 +240,37 @@ test('tour', async ({ page }) => {
   await page.screenshot({ path: DIR + '/06-island.png' });
 });
 
+test('the four seasons', async ({ page }) => {
+  // M9.5 phase 2a's gate: the ground and the trees should look different in
+  // each season, and `sim:check` should stay bit-identical since nothing
+  // here writes to the simulation — only `sim.time.tick` is nudged forward,
+  // the same clock the game itself advances, read back by the renderer's
+  // own `seasonVisual`.
+  await page.goto('/?seed=tour&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  await page.waitForTimeout(200);
+
+  // Config defaults: ticksPerDay 240, daysPerSeason 20, startDay 10
+  // (`Config.ts`). These land mid-season rather than on a boundary, so
+  // temperature has settled into the season's typical range rather than
+  // showing whatever a transition tick happens to look like.
+  const midSeasonTicks: [string, number][] = [
+    ['spring', 1200],  // day 15
+    ['summer', 4800],  // day 30
+    ['autumn', 9600],  // day 50
+    ['winter', 14400], // day 70
+  ];
+  for (const [season, tick] of midSeasonTicks) {
+    await page.evaluate((t) => {
+      const d = (window as never as { __dynasty: { sim: { time: { tick: number } } } }).__dynasty;
+      d.sim.time.tick = t;
+    }, tick);
+    await page.waitForTimeout(150);
+    await page.screenshot({ path: `${DIR}/13-season-${season}.png` });
+  }
+});
+
 test('the menu and the settings screen', async ({ page }) => {
   await page.goto('/?seed=tour&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });

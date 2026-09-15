@@ -15,6 +15,7 @@ import type { Inscription } from '../sim/entities/Inscription.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import type { World } from '../sim/core/World.ts';
 import { BIOMES, type Biome } from '../sim/core/World.ts';
+import type { Season } from '../sim/core/TimeManager.ts';
 import { WAYPOINT_AIM } from '../sim/systems/MovementSystem.ts';
 import type { ResourceKind, ResourceNode } from '../sim/entities/ResourceNode.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
@@ -33,6 +34,8 @@ import {
 
 const BIOME_COLORS: Record<Biome, [string, string]> = {
   // [base, speckle] — the speckle is dotted in per-tile to break up flat fields.
+  // This is also spring and summer's palette: the two growing seasons keep
+  // the ground's year-round colours, and only autumn and winter override it.
   water:  ['#24506f', '#2b5c7e'],
   beach:  ['#d6c493', '#c9b585'],
   grass:  ['#6b9c4a', '#628f43'],
@@ -40,6 +43,43 @@ const BIOME_COLORS: Record<Biome, [string, string]> = {
   hills:  ['#8a8163', '#7d755a'],
   rock:   ['#6d6d72', '#636368'],
 };
+
+/**
+ * Autumn and winter overrides for the biomes that actually carry vegetation.
+ * Water, beach and rock do not green up in summer, so there is no reason for
+ * them to turn gold or grey either — only `grass`, `forest` and `hills` are
+ * redefined here, and everything else falls back to `BIOME_COLORS` year-round.
+ * Winter's further "and then white" step is a frost overlay in
+ * `prerenderTerrain`, not a fourth colour table, so it can scale smoothly with
+ * `SeasonVisual.frost` instead of jumping between fixed palettes.
+ */
+const SEASON_BIOME_COLORS: Partial<Record<Season, Partial<Record<Biome, [string, string]>>>> = {
+  autumn: {
+    grass:  ['#9c8a3e', '#8f7d37'],
+    forest: ['#6b5a2c', '#5c4d26'],
+    hills:  ['#8f7a54', '#82704c'],
+  },
+  winter: {
+    grass:  ['#8a8a7a', '#7d7d6f'],
+    forest: ['#5f5f56', '#55554d'],
+    hills:  ['#7d7a72', '#726f68'],
+  },
+};
+
+/**
+ * What the ground looks like right now, derived from `TimeManager` and
+ * nothing else. `frost` (0-2) only rises in winter and drives the white
+ * overlay in `prerenderTerrain`; `heat` (0-1) marks the driest stretch of
+ * summer. Both are quantised on purpose: `sim.time.temperature` swings with
+ * the time of day as well as the season, and a repaint of 16k tiles belongs
+ * on a season or hard-freeze change, not on every sunrise.
+ */
+interface SeasonVisual {
+  season: Season;
+  frost: number;
+  heat: number;
+  key: string;
+}
 
 /**
  * Below this many pixels per tile, a person is drawn as a flat silhouette:
@@ -58,7 +98,8 @@ const RESOURCE_COLORS: Record<ResourceKind, string> = {
   fish:    '#4a90a4',
 };
 
-/** [canopy, shadow side] per species; fruit is drawn over the top. */
+/** [canopy, shadow side] per species; fruit is drawn over the top. This is
+ * also spring and summer's palette — see `drawTree`. */
 const TREE_COLORS: Record<TreeSpecies, [string, string]> = {
   oak:   ['#4a7a35', '#3a5f29'],
   pine:  ['#2f5c3a', '#25482e'],
@@ -67,6 +108,13 @@ const TREE_COLORS: Record<TreeSpecies, [string, string]> = {
   plum:  ['#557f4a', '#43653a'],
   hazel: ['#6a9450', '#54763f'],
 };
+
+/** Every species but pine, one shared autumn palette — the note asked that
+ * the canopy turn with the season, not that each species get its own hue. */
+const AUTUMN_TREE_COLORS: [string, string] = ['#b8862f', '#96701f'];
+
+/** Pine is the only conifer on the island; everything else drops its leaves. */
+const EVERGREEN_SPECIES: ReadonlySet<TreeSpecies> = new Set(['pine']);
 
 const FRUIT_COLORS: Record<string, string> = {
   apple: '#d8452f',
@@ -147,6 +195,8 @@ export class Renderer {
 
   private ctx: CanvasRenderingContext2D;
   private terrain: HTMLCanvasElement;
+  /** The `SeasonVisual.key` the current `terrain` canvas was baked for. */
+  private seasonKey: string;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -156,7 +206,9 @@ export class Renderer {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('2D canvas context unavailable');
     this.ctx = ctx;
-    this.terrain = this.prerenderTerrain(sim.world);
+    const visual = this.seasonVisual();
+    this.terrain = this.prerenderTerrain(sim.world, visual);
+    this.seasonKey = visual.key;
   }
 
   /**
@@ -175,7 +227,9 @@ export class Renderer {
    */
   setSim(sim: Simulation): void {
     this.sim = sim;
-    this.terrain = this.prerenderTerrain(sim.world);
+    const visual = this.seasonVisual();
+    this.terrain = this.prerenderTerrain(sim.world, visual);
+    this.seasonKey = visual.key;
     this.interpolator.clear();
     // A new world restarts person ids from 1 (`resetPersonIds`), so anything
     // keyed by id from the old world is now about a stranger who happens to
@@ -185,18 +239,41 @@ export class Renderer {
     this.moodCache.clear();
   }
 
-  /** One tile per TILE pixels, drawn once. */
-  private prerenderTerrain(world: World): HTMLCanvasElement {
+  /**
+   * Reads `sim.time` and nothing else — pure and cheap enough to call every
+   * frame, unlike the terrain bake it decides whether to trigger.
+   */
+  private seasonVisual(): SeasonVisual {
+    const season = this.sim.time.season;
+    const t = this.sim.time.temperature;
+    // 0-2, rising as it gets colder than freezing; the "and then white" step
+    // `prerenderTerrain`'s frost overlay paints in.
+    const frost = season === 'winter' ? Math.min(2, Math.floor(Math.max(0, -t) * 3)) : 0;
+    // High summer only: the driest, hottest stretch gets dried patches.
+    const heat = season === 'summer' && t > 0.5 ? 1 : 0;
+    return { season, frost, heat, key: `${season}:${frost}:${heat}` };
+  }
+
+  /**
+   * One tile per TILE pixels, drawn once per season change rather than once
+   * per session — see this class's `seasonKey` and `render`'s repaint check.
+   * `visual.season` picks the base palette (`SEASON_BIOME_COLORS`, falling
+   * back to spring/summer's `BIOME_COLORS`); `frost` and `heat` add a scatter
+   * of season-specific texture on the same per-tile hash the speckle already
+   * uses, on different bits so the two never land on the same tile.
+   */
+  private prerenderTerrain(world: World, visual: SeasonVisual): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     canvas.width = world.width * TILE;
     canvas.height = world.height * TILE;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('2D canvas context unavailable');
+    const { season, frost, heat } = visual;
 
     for (let y = 0; y < world.height; y++) {
       for (let x = 0; x < world.width; x++) {
         const biome = BIOMES[world.biome[world.index(x, y)]!]!;
-        const [base, speckle] = BIOME_COLORS[biome];
+        const [base, speckle] = SEASON_BIOME_COLORS[season]?.[biome] ?? BIOME_COLORS[biome];
         ctx.fillStyle = base;
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
 
@@ -206,6 +283,30 @@ export class Renderer {
         if ((h & 7) === 0) {
           ctx.fillStyle = speckle;
           ctx.fillRect(x * TILE + ((h >> 3) & 3) * 4, y * TILE + ((h >> 5) & 3) * 4, 4, 4);
+        }
+
+        if (biome === 'water') continue;
+
+        if (frost > 0) {
+          // The "and then white" step: a translucent wash that thickens with
+          // frost, so deep winter is whiter than its first frosty week
+          // without a third colour table.
+          ctx.fillStyle = `rgba(255,255,255,${frost * 0.28})`;
+          ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+          const mask = frost >= 2 ? 3 : 7;
+          if (((h >> 9) & mask) === 0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.fillRect(x * TILE + ((h >> 11) & 3) * 4, y * TILE + ((h >> 13) & 3) * 4, 3, 3);
+          }
+        } else if (season === 'spring' && (biome === 'grass' || biome === 'forest') && ((h >> 9) & 31) === 0) {
+          ctx.fillStyle = ((h >> 14) & 1) === 0 ? '#e8d24a' : '#e88fc4';
+          ctx.fillRect(x * TILE + ((h >> 11) & 3) * 4 + 2, y * TILE + ((h >> 13) & 3) * 4 + 2, 3, 3);
+        } else if (season === 'autumn' && (biome === 'grass' || biome === 'forest') && ((h >> 9) & 15) === 0) {
+          ctx.fillStyle = ((h >> 14) & 1) === 0 ? '#b5651d' : '#8a5a1f';
+          ctx.fillRect(x * TILE + ((h >> 11) & 3) * 4, y * TILE + ((h >> 13) & 3) * 4, 5, 3);
+        } else if (heat > 0 && biome === 'grass' && ((h >> 9) & 31) === 0) {
+          ctx.fillStyle = '#b89a4a';
+          ctx.fillRect(x * TILE + ((h >> 11) & 3) * 4, y * TILE + ((h >> 13) & 3) * 4, 4, 4);
         }
       }
     }
@@ -238,6 +339,16 @@ export class Renderer {
 
     const view = camera.visibleTiles();
     const scale = camera.scale;
+
+    // Repaint the whole terrain canvas only when the season (or a hard
+    // freeze threshold within winter) actually changes — a few times a game
+    // year, not sixty times a second. See `seasonVisual` and
+    // `prerenderTerrain`.
+    const visual = this.seasonVisual();
+    if (visual.key !== this.seasonKey) {
+      this.terrain = this.prerenderTerrain(sim.world, visual);
+      this.seasonKey = visual.key;
+    }
 
     // --- Terrain: one blit of the visible slice ----------------------------
     const sx = Math.max(0, view.minX) * TILE;
@@ -531,16 +642,23 @@ export class Renderer {
    * decision the player can actually make.
    */
   private drawTree(tree: Tree, selected: boolean): void {
-    const { ctx, camera } = this;
+    const { ctx, camera, sim } = this;
     const scale = camera.scale;
     const px = camera.worldToScreenX(tree.x);
     const py = camera.worldToScreenY(tree.y);
     const radius = tree.radius * scale * 0.55;
-    const [canopy, shade] = TREE_COLORS[tree.def.species];
+    const season = sim.time.season;
+    const evergreen = EVERGREEN_SPECIES.has(tree.def.species);
+    // Bare in winter, gold in autumn, its own green the rest of the year —
+    // pine is exempt from all of it, the one canopy that stays green.
+    const bare = !evergreen && season === 'winter';
+    const [canopy, shade] = season === 'autumn' && !evergreen
+      ? AUTUMN_TREE_COLORS
+      : TREE_COLORS[tree.def.species];
 
     if (tree.isSeedling) {
       // A sprig: two strokes, no canopy worth drawing.
-      ctx.strokeStyle = canopy;
+      ctx.strokeStyle = bare ? '#8a7256' : canopy;
       ctx.lineWidth = Math.max(1, scale * 0.05);
       ctx.beginPath();
       ctx.moveTo(px, py + radius * 0.5);
@@ -557,14 +675,28 @@ export class Renderer {
       const trunkW = Math.max(1, radius * 0.22);
       ctx.fillRect(px - trunkW / 2, py - radius * 0.1, trunkW, radius * 0.65);
 
-      ctx.fillStyle = shade;
-      ctx.beginPath();
-      ctx.arc(px, py - radius * 0.25, radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = canopy;
-      ctx.beginPath();
-      ctx.arc(px - radius * 0.2, py - radius * 0.4, radius * 0.78, 0, Math.PI * 2);
-      ctx.fill();
+      if (bare) {
+        // No canopy fill — a fan of bare branches off the trunk instead.
+        ctx.strokeStyle = '#6b5539';
+        ctx.lineWidth = Math.max(1, radius * 0.06);
+        const branchTop = py - radius * 0.1;
+        for (let i = 0; i < 5; i++) {
+          const a = -Math.PI / 2 + (i / 4 - 0.5) * Math.PI * 0.75;
+          ctx.beginPath();
+          ctx.moveTo(px, branchTop);
+          ctx.lineTo(px + Math.cos(a) * radius * 0.8, branchTop + Math.sin(a) * radius * 0.8);
+          ctx.stroke();
+        }
+      } else {
+        ctx.fillStyle = shade;
+        ctx.beginPath();
+        ctx.arc(px, py - radius * 0.25, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = canopy;
+        ctx.beginPath();
+        ctx.arc(px - radius * 0.2, py - radius * 0.4, radius * 0.78, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     // Fruit, when there is any: a handful of dots is enough to read "worth a

@@ -6,6 +6,52 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-15 — M9.5 phase 2a: the ground turns with the year
+
+The renderer never read `season` or `temperature` before this; the terrain
+canvas was rasterised exactly twice in a session's life (construction and
+`setSim`) with no invalidation path below whole-canvas granularity. `render`
+now calls a new pure `seasonVisual()` every frame — season, plus a
+quantised 0-2 `frost` level and a 0/1 high-summer `heat` flag, both derived
+from `TimeManager.temperature` — and only re-runs `prerenderTerrain` when
+that key actually changes, which is a handful of times an in-game year, not
+sixty times a second.
+
+**Palette.** `grass`, `forest` and `hills` get an autumn (gold-brown) and a
+winter (grey-brown) override in a new `SEASON_BIOME_COLORS` table; spring
+and summer keep the original `BIOME_COLORS` unchanged, and water, beach and
+rock never change, since they have no vegetation to turn. Winter's further
+"and then white" step is a translucent frost overlay scaled by `frost`
+rather than a fourth colour table, so deep winter is visibly whiter than
+its first frosty week.
+
+**Scatter.** Flowers (spring), leaf litter (autumn), snow flecks (winter,
+denser at `frost` 2) and dried patches (high summer) reuse the terrain's
+existing per-tile position hash on bits the base speckle does not read, so
+none of the four features can land on the same tile as another or as the
+speckle.
+
+**Trees.** `drawTree` now reads `sim.time.season`: every species but pine
+(the island's only conifer, via a new `EVERGREEN_SPECIES` set) shares one
+autumn palette and goes bare in winter — trunk and a fan of bare branches,
+no canopy fill — while pine stays green year-round. Fruit visibility is
+untouched: it was already sim-controlled through `Tree.fruit`, and this
+phase does not guess at seasons the simulation has not already decided.
+
+**Verification.** A new "the four seasons" Playwright test pauses the
+`tour` seed and steps `sim.time.tick` to a mid-season tick for each of the
+four seasons (`Config.ts`'s defaults — `ticksPerDay: 240, daysPerSeason:
+20, startDay: 10` — give the tick for each), screenshotting the result;
+`npm run shots` shows visibly distinct ground and trees at each stop.
+`npm test` (241), `npm run e2e` (45) and `sim:check:all` all pass with the
+same three pre-existing failures `bugs.md` already records
+(`perf-budget`/`crowded`, `the-hurt-are-tended`/`century`,
+`spatial-hash-spreads`/`millers`) — proof this phase is bit-identical, as a
+renderer-only phase must be.
+
+Phase 2b (snow that accumulates and buries what is small) and phases 3-4 of
+`docs/m9_5_plan.md` are not started.
+
 ## 2026-09-14 — M9.5 phase 1: people who look like people, drawn once
 
 A person used to be two `fillRect` calls: a torso rectangle in the band
