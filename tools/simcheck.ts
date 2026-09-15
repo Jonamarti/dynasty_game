@@ -90,7 +90,12 @@ export const SCENARIOS: Record<string, Scenario> = {
         startingTech: ['firemaking', 'hafting', 'pottery', 'spear'],
       },
     },
-    steps: 8000,
+    // 8000 was 33 days against the old 80-day year — under M9.5 phase 3's
+    // halved calendar the same 33 days is most of a 40-day year instead, and
+    // on this seed that is not enough: the first record is not cut until day
+    // 55 or so. Extended for the same reason `millers` was — the chain is
+    // real, just rarer per year now that a year is shorter.
+    steps: 16000,
   },
   scribes: {
     name: 'scribes',
@@ -170,25 +175,38 @@ export const SCENARIOS: Record<string, Scenario> = {
   millers: {
     name: 'millers',
     description:
-      'A band that knows how to grind, starting in late summer so the run ' +
-      'spans a whole autumn. The station scenario, and it needs the calendar ' +
-      'as much as the knowledge: hazels fruit in autumn and nothing else in ' +
-      'the world grinds, so a quern raised in spring is a quern nobody has an ' +
-      'ingredient for. `craft` could not do this job — it starts on day 10 and ' +
-      'runs thirty-three days, so it never sees an autumn, and every station ' +
-      'check on it would report n/a for ever. n/a is not a pass.',
+      'A band that knows how to grind, starting at the turn of summer so the ' +
+      'run has a full autumn to raise a quern in. The station scenario, and it ' +
+      'needs the calendar as much as the knowledge: acorns fall in autumn and ' +
+      'nothing else in the world grinds, so a quern raised in spring is a ' +
+      'quern nobody has an ingredient for. `craft` could not do this job — it ' +
+      'starts on day 10 and runs thirty-three days, so it never sees an ' +
+      'autumn, and every station check on it would report n/a for ever. n/a ' +
+      'is not a pass. M9.5 phase 3 halved the season, and with it autumn\'s ' +
+      'window — see the `steps` comment below.',
     config: {
       seed: 'quern',
-      time: { startDay: 30 },
+      // M9.5 phase 3 halved `daysPerSeason` (20 -> 10), which halved autumn's
+      // length too (was 20 days, now 10). Construction still takes about ten
+      // real days, unrescaled — it is tick-bound, not calendar-bound — so
+      // starting mid-summer as before now runs the build past the harvest
+      // window entirely. Starting at the season boundary instead gives the
+      // whole of summer to build before autumn's shorter window opens.
+      time: { startDay: 10 },
       population: {
         bands: 2, peoplePerBand: 8,
         startingTech: ['stoneworking', 'grinding', 'cordage'],
       },
     },
-    // Day 30 to about day 76: ten days to raise a roof and dig a store, the
-    // whole of autumn (days 40-59) with hazel on the trees, and enough after it
-    // for the meal to be carried home and eaten.
-    steps: 11000,
+    // A halved autumn (20 days -> 10) is a much narrower window for the whole
+    // chain — notice the deficit, walk to an oak, gather three acorns, walk to
+    // the quern, grind — to complete inside any one year, and on this seed it
+    // does not: it takes three autumns before it first happens (deterministic,
+    // not luck — confirmed at step 23,938 on this exact seed and config).
+    // Extended rather than re-seeded, so the run still says what it always
+    // said: given enough of the calendar this scenario's age, the chain does
+    // fire. See "the quern's window narrowed" in bugs.md.
+    steps: 26000,
   },
   hunters: {
     name: 'hunters',
@@ -210,7 +228,13 @@ export const SCENARIOS: Record<string, Scenario> = {
     // to widen `jobs-bias-work` knows where to look.
     config: {
       seed: 'bone',
-      time: { daysPerSeason: 8 },
+      // `startDay` pinned rather than inherited: M9.5 phase 3 moved the global
+      // default (10 -> 5), and on this seed the coat chain — already fragile
+      // by design, per the scenario's own note above — never completes from
+      // the new default's position in the year, even given years of run time.
+      // Pinned to the value this scenario always needed, independent of
+      // wherever the global default now sits.
+      time: { daysPerSeason: 8, startDay: 10 },
       needs: { coldRate: 0.12 },
       population: {
         bands: 2, peoplePerBand: 10,
@@ -554,7 +578,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // breathing is asking the wrong question entirely. A long run is healthy if
   // the line continues: people are still being born, and the population has not
   // been in freefall.
-  const runYears = (last.day - first.day) / 80;
+  const runYears = (last.day - first.day) / sim.time.daysPerYear;
   if (runYears < 2) {
     add('people-survive',
       last.population >= Math.ceil(first.population * 0.67),
@@ -964,7 +988,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
 
   // Generations. A run long enough to contain them must contain them: a world
   // where nobody marries and nobody is born is a diorama, not a dynasty game.
-  const years = Math.floor((last.day - first.day) / 80);
+  const years = Math.floor((last.day - first.day) / sim.time.daysPerYear);
   if (years < 2) {
     skip('generations-turn-over',
       'run covers only ' + (last.day - first.day) + ' days; too short to say');
@@ -1225,7 +1249,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   if ((last.day - first.day) >= 30) {
     // Both bounds matter. Zero means the synthesis table is unsatisfiable in
     // play; a flood means everybody has every idea and the web is decoration.
-    const perPersonYear = conceived / Math.max(1, adultDays / 80);
+    const perPersonYear = conceived / Math.max(1, adultDays / sim.time.daysPerYear);
     add('ideas-are-conceived',
       conceived > 0 && perPersonYear < 3,
       conceived + ' ideas conceived (' + perPersonYear.toFixed(2) +

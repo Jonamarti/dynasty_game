@@ -350,7 +350,7 @@ export class Simulation {
     // owns them all), so the factory is injected here.
     setChildFactory((mother, childRng) => {
       const name = childRng.pick(NAME_ONSETS) + childRng.pick(NAME_CODAS);
-      const child = new Person(name, mother.x, mother.y, mother.bandId, childRng);
+      const child = new Person(name, mother.x, mother.y, mother.bandId, childRng, this.time.daysPerYear);
       // Stamped here as well as in `applyLearning`: the sweep catches everyone
       // already alive when the setting changes, this catches everyone born after.
       child.skillGain = this.config.learning.skillGain;
@@ -361,7 +361,9 @@ export class Simulation {
 
     // The wood is planted before anything else looks for it: a band founded in
     // a clearing and a band founded under oaks have very different prospects.
-    this.trees = seedInitialForest(this.world, this.rng.fork(), this.config.world.treeDensity);
+    this.trees = seedInitialForest(
+      this.world, this.rng.fork(), this.config.world.treeDensity, this.time.daysPerYear
+    );
     for (const tree of this.trees) this.treesById.set(tree.id, tree);
     this.treeHash.rebuild(this.trees);
 
@@ -564,7 +566,7 @@ export class Simulation {
       relationships: this.relationships,
       social: this.social,
       makePerson: (name, x, y, bandId, personRng) => {
-        const person = new Person(name, x, y, bandId, personRng);
+        const person = new Person(name, x, y, bandId, personRng, this.time.daysPerYear);
         person.skillGain = this.config.learning.skillGain;
         return person;
       },

@@ -6,6 +6,85 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-15 — M9.5 phase 3: a shorter year, and one clock instead of two
+
+The owner's note asked for shorter seasons so a lifetime covers less of the
+tech ladder — and that only works if a life gets shorter *in days*, because
+every discovery roll is per-day. It could not: the calendar (`TimeManager.year`,
+dividing by `daysPerSeason * 4`) and the ageing clock (`Person.years`, dividing
+by the module constant `DAYS_PER_YEAR = 80`) were two different clocks that
+happened to agree because 20 × 4 = 80. `bugs.md` recorded this as a deliberate
+non-fix at M9's close; this phase is the pass that closes it.
+
+**One clock.** `Person` and `Tree` each gained a `readonly daysPerYear`, set at
+construction from `TimeManager.daysPerYear` (`daysPerSeason * 4`) and
+defaulting to the old `DAYS_PER_YEAR` so bare test fixtures need no config —
+two simulations exist at once in the tests. Every caller that divided or
+multiplied by the module constant — `years`, `isChild`, `isElder`,
+`canBearChildren`, `vigour`, `LifeSystem`'s lifespan and mortality curves,
+`Tree.maturity`, `ForestSystem`'s initial ages, `Founding`'s family
+arithmetic — now reads the instance's own clock instead. The literal `50` in
+`LifeSystem`'s elder-decay rate became `ELDER_YEARS`, found on the way through.
+At the unchanged default this commit is bit-identical (`sim:check:all`,
+`npm test`, `npm run e2e` all pass with exactly the pre-existing failures
+`bugs.md` already names) — that identity is the proof it is right.
+
+**`GESTATION_DAYS` and `BIRTH_SPACING_DAYS` are derived too**, a quarter and a
+half of `daysPerYear` respectively rather than fixed at 20 and 40 — the same
+fractions they always were of the old 80-day year, now correct for any
+calendar rather than only the one that happened to make the arithmetic agree.
+
+**The harness's own hardcoded `80`s.** Three literals in `tools/simcheck.ts`
+(`runYears`, the generations count, `perPersonYear`) divided by 80 rather than
+importing anything, so they silently decoupled from both clocks — confirmed
+harmless at the unchanged default (`sim:check:all` identical before and
+after) but wrong for `harsh-winter` and `hunters`, which already override
+`daysPerSeason`. All three now read `sim.time.daysPerYear`.
+
+**The year is shorter.** Default `daysPerSeason` 20 → **10** (year 80 → 40
+days), `startDay` 10 → **5** to hold the same mid-spring start on the new
+clock, and the difficulty slider's `startDay` range tightened from 0-79 to
+0-39 to match. A 64-year life now spans half the days it used to, so roughly
+half the discovery rolls per lifetime, while the ladder advances at the same
+rate per real minute — the technology ladder genuinely passes to the
+grandchildren rather than one generation finishing it alone.
+
+**Confirmed, not assumed, on `--seeds 20` for the `century` scenario**
+(40,000 steps, before and after, everything else identical):
+
+| | before | after |
+|---|---|---|
+| mean survival | 99.8% | 100.0% |
+| total born (20 seeds) | 467 | 803 |
+| total starved (infant + child + adult) | 20 | 10 |
+| mean technologies known at the end | 10.3 | 10.4 |
+| mean ideas conceived past the root nodes | 10.1 | 9.4 |
+| mean lessons taught/observed | 429.4 | 596.6 |
+
+Population and births roughly doubled, and starvation roughly halved — the
+narrower, twice-as-frequent winters the plan predicted did narrow the die-off
+window rather than widen it. And the number that matters most held almost
+exactly flat — **10.3 known technologies before, 10.4 after** — while nearly
+twice as many people were born to reach it: the same technological reach is
+now being sustained by many more, shorter lives passing it on, rather than a
+few long-lived founders finishing the tree themselves. That is the shape the
+note asked for.
+
+**Deliberately not done.** `GESTATION_DAYS`'s new value is still a quarter of
+whatever year the scenario is running (real human gestation is three-quarters
+of a year) — the obvious next step, and deliberately not this commit. Every
+other per-day rate in the game — needs, skill decay, and notably a fruit
+tree's daily swell toward its seasonal peak — was deliberately left alone
+rather than rescaled to the new calendar, per the plan's "hold everything else
+at its current fraction of a year". That is mostly invisible, but it does mean
+a season-gated harvest (acorns ripening across autumn, say) now has half as
+many days to be gathered in before winter takes it back. Found on three of
+`sim:check:all`'s single-seed scenarios — `millers`, `hunters`, `craft` — and
+fixed there by retuning the scenario (more run time, or a pinned `startDay`
+where the global default's move was what actually broke it), not by
+rescaling the simulation. See `bugs.md` for the finding and why it was left
+in the simulation itself.
+
 ## 2026-09-15 — M9.5 phase 2b: snow accumulates, and buries what is small
 
 The owner's note: small things like sticks may not be visible, and small

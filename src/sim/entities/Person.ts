@@ -156,6 +156,12 @@ export class Person {
   sex: Sex;
   /** In days. The needs and skills systems both read it; aging arrives in M2. */
   age: number;
+  /**
+   * Days in a year, for this person. Set at construction from the scenario's
+   * calendar (`daysPerSeason * 4`), defaulting to `DAYS_PER_YEAR` so a bare
+   * test fixture needs no config — two simulations exist at once in the tests.
+   */
+  readonly daysPerYear: number;
   alive = true;
   causeOfDeath: string | null = null;
   /** True once goods, household headship and succession have been resolved. */
@@ -532,19 +538,23 @@ export class Person {
    */
   skillGain = 1;
 
-  constructor(name: string, x: number, y: number, bandId: number, rng: RNG) {
+  constructor(
+    name: string, x: number, y: number, bandId: number, rng: RNG,
+    daysPerYear: number = DAYS_PER_YEAR
+  ) {
     this.id = nextPersonId++;
     this.name = name;
     this.x = x;
     this.y = y;
     this.bandId = bandId;
+    this.daysPerYear = daysPerYear;
     this.sex = rng.chance(0.5) ? 'male' : 'female';
     // A founding band skews young: a population that starts at the average age
     // of its lifespan has no breeding cohort and dies out before it can produce
     // a second generation, whatever else is working.
-    this.age = rng.range(16, 32) * DAYS_PER_YEAR;
+    this.age = rng.range(16, 32) * this.daysPerYear;
     // Most people who reach adulthood see their sixties; a few see much more.
-    this.lifespanDays = rng.gaussian(64, 9) * DAYS_PER_YEAR;
+    this.lifespanDays = rng.gaussian(64, 9) * this.daysPerYear;
     this.thinkOffset = this.id;
     this.memory = new Memory(this.id);
 
@@ -556,7 +566,7 @@ export class Person {
   }
 
   get years(): number {
-    return Math.floor(this.age / DAYS_PER_YEAR);
+    return Math.floor(this.age / this.daysPerYear);
   }
 
   get isChild(): boolean {

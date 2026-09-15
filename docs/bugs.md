@@ -3,6 +3,48 @@
 As of 2026-09-15. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found during M9.5 phase 3, 2026-09-15
+
+### A season-gated harvest is a much narrower window now that a season is half as long
+
+M9.5 phase 3 halved `daysPerSeason` (20 → 10) so a lifetime covers half as many
+days, and deliberately left every per-day rate alone — `Tree.advanceDay`'s
+fruit swell (`fruitYield / 18` a day), decay, needs and skill decay are all
+still absolute, calendar-day rates, per the plan's "hold everything else at
+its current fraction of a year". That was the right call for rates that run
+every day regardless of season, but it has a real, un-obvious consequence for
+anything gated on a *season* specifically: an oak's acorns used to have 20
+days of autumn to swell and be gathered before winter's decay took them back;
+now they have 10, well under the 18 days the swell curve assumes, so a crop
+that used to be abundant for most of the season is now only briefly so.
+
+Confirmed on three of `sim:check:all`'s scenarios, all seed-sensitive rather
+than structurally broken: `millers` (grinding acorns into meal) took three
+autumns instead of one before this seed's band first managed it; `hunters`
+(the bone-tool coat chain) turned out not to depend on the season at all and
+was fixed by pinning `startDay` instead, once measurement ruled the season
+length out; `craft` (cutting the first record) needed roughly double the
+steps. All three were extended or pinned in `tools/simcheck.ts` rather than
+re-balanced in the simulation itself — see the M9.5 phase 3 changelog entry —
+so the harness passes again, but the underlying tightening is real and
+reaches ordinary play, not just these scenarios. Not fixed: `Tree.ts`'s
+`fruitYield / 18` swell rate is itself an implicit calendar assumption, in
+exactly the spirit of the constant this phase spent its budget removing
+(`DAYS_PER_YEAR`), and rescaling it (or every other season-gated rate in the
+game) was judged out of scope for this pass. If a future run reports fruiting
+trees as chronically stripped before anyone benefits, or a `--seeds 20`
+economy run showing wild fruit intake down against a pre-phase-3 baseline,
+this is where to look first.
+
+### A behavioural change moves which borderline check fails on `century`, again
+
+`the-hurt-are-tended` is back to failing on `century` instead of
+`pictures-are-painted`, which M9.5 phase 2b's entry below already named as one
+of two already-marginal, seed-sensitive checks that trade places under enough
+downstream RNG drift. Phase 3's calendar change is exactly that kind of
+change — a hundred simulated years of different day-to-tick timing — so this
+is the same phenomenon recurring, not a new defect. No action taken.
+
 ## Found during M9.5 phase 2b, 2026-09-15
 
 ### A behavioural change moves which borderline check fails on `century`
@@ -475,22 +517,6 @@ made it read as missing, and both are fixed:
    five known — so the honest common case is a bar saying "they do not know how
    to make anything yet", which from outside is indistinguishable from a broken
    bar. It now says what it is waiting on.
-
-### The calendar and the ageing clock are two different clocks
-
-`TimeManager.year` divides by `daysPerSeason * 4`; `Person.years` divides by
-`DAYS_PER_YEAR`, a module constant of 80 in `Person.ts` that `Tree`,
-`LifeSystem`, `ForestSystem` and `Founding` all import. They agree only because
-20 × 4 = 80. Now that `daysPerSeason` is a player-facing setting, moving it
-decouples them: at `daysPerSeason: 30` the HUD prints Y2 while somebody born on
-day 1 is three years old.
-
-Not fixed, deliberately. Making `DAYS_PER_YEAR` derived means threading the
-season length into `Person`, `Tree` and two systems, and it silently rescales
-every lifespan, gestation, tree maturity and elder-decay curve in the game. The
-setting instead says in its own hint that it changes the calendar and the
-weather and not how fast anyone ages, and the difficulty slider does not touch
-it.
 
 ### Three lines in `main.ts`'s Escape handler were dead code
 

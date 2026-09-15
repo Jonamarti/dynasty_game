@@ -18,7 +18,7 @@
  * from is the same tribe the simulation would have generated anyway.
  */
 import type { Person } from '../entities/Person.ts';
-import { DAYS_PER_YEAR, ADULT_YEARS } from '../entities/Person.ts';
+import { ADULT_YEARS } from '../entities/Person.ts';
 import { Household } from '../entities/Household.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { World } from '../core/World.ts';
@@ -118,7 +118,7 @@ function foundFamily(
       rng.pick(NAME_ONSETS) + rng.pick(NAME_CODAS), spot.x, spot.y, band.id, rng
     );
     if (sex) person.sex = sex;
-    person.age = years * DAYS_PER_YEAR;
+    person.age = years * person.daysPerYear;
     person.surname = surname;
     return person;
   };

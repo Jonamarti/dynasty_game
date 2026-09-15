@@ -33,8 +33,17 @@ export class TimeManager {
     return SEASONS[seasonIndex]!;
   }
 
+  /**
+   * In-game days in a year — the same clock `Person.daysPerYear` and
+   * `Tree.daysPerYear` are constructed with, so the calendar and ageing agree
+   * by construction rather than by the coincidence of two constants.
+   */
+  get daysPerYear(): number {
+    return this.config.daysPerSeason * 4;
+  }
+
   get year(): number {
-    return Math.floor(this.day / (this.config.daysPerSeason * 4));
+    return Math.floor(this.day / this.daysPerYear);
   }
 
   /** 0 at midnight, 1 at midday. Drives visibility and foraging yield. */
@@ -66,8 +75,7 @@ export class TimeManager {
 
   /** Position through the year: 0 at the first day of spring, 1 a year later. */
   private get yearFraction(): number {
-    const daysPerYear = this.config.daysPerSeason * 4;
-    return (this.day % daysPerYear) / daysPerYear;
+    return (this.day % this.daysPerYear) / this.daysPerYear;
   }
 
   /**
@@ -81,7 +89,7 @@ export class TimeManager {
   label(): string {
     const hour = Math.floor(this.dayFraction * 24);
     const minute = Math.floor((this.dayFraction * 24 - hour) * 60);
-    return `Y${this.year} ${this.season} d${this.day % (this.config.daysPerSeason * 4)} ` +
+    return `Y${this.year} ${this.season} d${this.day % this.daysPerYear} ` +
       `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
   }
 }

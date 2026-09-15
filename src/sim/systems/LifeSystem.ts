@@ -15,17 +15,27 @@
  * most expensive thing in the simulation.
  */
 import type { Person } from '../entities/Person.ts';
-import { DAYS_PER_YEAR, SKILLS, TRAITS } from '../entities/Person.ts';
+import { ELDER_YEARS, SKILLS, TRAITS } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { PopulationConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
-/** Days a pregnancy runs. Roughly a season. */
-export const GESTATION_DAYS = 20;
+/**
+ * Days a pregnancy runs: a quarter of the calendar year, whatever the
+ * scenario's season length says that is. Kept a function rather than a
+ * constant now that a person's `daysPerYear` need not be eighty — a fixed
+ * number here would silently decouple gestation from the calendar exactly as
+ * `DAYS_PER_YEAR` itself used to.
+ */
+export function gestationDays(mother: Person): number {
+  return mother.daysPerYear / 4;
+}
 
-/** Days a mother waits before she can conceive again. */
-const BIRTH_SPACING_DAYS = 40;
+/** Days a mother waits before she can conceive again: half the calendar year. */
+function birthSpacingDays(mother: Person): number {
+  return mother.daysPerYear / 2;
+}
 
 /** Skill lost per day past elderhood, as a fraction of the current level. */
 const ELDER_SKILL_DECAY = 0.0012;
@@ -73,14 +83,14 @@ export class LifeSystem {
    */
   private ageSkills(person: Person): void {
     if (!person.isElder) return;
-    const rate = ELDER_SKILL_DECAY * (person.years - 50 + 1);
+    const rate = ELDER_SKILL_DECAY * (person.years - ELDER_YEARS + 1);
     for (const skill of SKILLS) {
       person.skills[skill] = Math.max(0, person.skills[skill] * (1 - rate));
     }
   }
 
   private tryConceive(mother: Person, ctx: LifeContext): void {
-    if (ctx.day - mother.lastBirthDay < BIRTH_SPACING_DAYS) return;
+    if (ctx.day - mother.lastBirthDay < birthSpacingDays(mother)) return;
 
     const father = mother.spouseId === null ? null : ctx.peopleById.get(mother.spouseId);
     if (!father || !father.alive || father.isChild) return;
@@ -100,7 +110,7 @@ export class LifeSystem {
 
     if (ctx.rng.chance(ctx.population.conceptionChance * condition)) {
       mother.pregnant = true;
-      mother.gestationLeft = GESTATION_DAYS;
+      mother.gestationLeft = gestationDays(mother);
       mother.pregnantBy = father.id;
       telemetry.count('conception');
     }
@@ -138,7 +148,7 @@ export class LifeSystem {
     }
 
     child.age = 0;
-    child.lifespanDays = Math.max(30, rng.gaussian(64, 9)) * DAYS_PER_YEAR;
+    child.lifespanDays = Math.max(30, rng.gaussian(64, 9)) * child.daysPerYear;
     child.motherId = mother.id;
     child.fatherId = father?.id ?? null;
     child.bandId = mother.bandId;
@@ -158,7 +168,7 @@ export class LifeSystem {
   private checkMortality(person: Person, ctx: LifeContext): void {
     if (person.age < person.lifespanDays * 0.85) return;
 
-    const overdue = (person.age - person.lifespanDays * 0.85) / DAYS_PER_YEAR;
+    const overdue = (person.age - person.lifespanDays * 0.85) / person.daysPerYear;
     const frailty = person.health < 50 ? 1.8 : 1;
     const chance = Math.min(0.5, 0.002 * overdue * overdue * frailty);
 

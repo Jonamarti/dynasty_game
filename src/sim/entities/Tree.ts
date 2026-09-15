@@ -124,22 +124,28 @@ export class Tree {
    * so two people can fell one trunk between them.
    */
   chopProgress = 0;
+  /** Days in a year, matching the scenario's calendar. See `Person.daysPerYear`. */
+  readonly daysPerYear: number;
 
-  constructor(species: TreeSpecies, x: number, y: number, ageDays: number) {
+  constructor(
+    species: TreeSpecies, x: number, y: number, ageDays: number,
+    daysPerYear: number = DAYS_PER_YEAR
+  ) {
     this.id = nextTreeId++;
     this.def = TREES[species];
     this.x = x;
     this.y = y;
     this.age = ageDays;
+    this.daysPerYear = daysPerYear;
   }
 
   get years(): number {
-    return Math.floor(this.age / DAYS_PER_YEAR);
+    return Math.floor(this.age / this.daysPerYear);
   }
 
   /** 0-1 through to maturity. A seedling is 0; anything grown is 1. */
   get maturity(): number {
-    return Math.min(1, this.age / (this.def.maturityYears * DAYS_PER_YEAR));
+    return Math.min(1, this.age / (this.def.maturityYears * this.daysPerYear));
   }
 
   get isSeedling(): boolean {

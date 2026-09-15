@@ -215,10 +215,11 @@ export const TUNABLES: Tunable[] = [
       'the step count, so changing it mid-run would jump the calendar by years.' },
   { path: 'time.daysPerSeason', label: 'Season length', group: 'clock', scaled: false, restart: true,
     min: 4, max: 90, step: 1, places: 0,
-    hint: 'Days in a season. Changes the calendar and the weather, not how fast ' +
-      'anyone ages — a person always reaches adulthood in eighty days.' },
+    hint: 'Days in a season. Changes the calendar, the weather, and the pace of ' +
+      'a life — a person always reaches adulthood at fourteen years old, but a ' +
+      'shorter season makes that fourteen years pass in fewer days.' },
   { path: 'time.startDay', label: 'Starting day', group: 'clock', scaled: false, restart: true,
-    min: 0, max: 79, step: 1, places: 0,
+    min: 0, max: 39, step: 1, places: 0,
     hint: 'Where in the year a new world opens. The default is mid-spring, so a ' +
       'new band does not begin in a winter it cannot yet survive.' },
 ];

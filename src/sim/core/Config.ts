@@ -226,8 +226,13 @@ export const DEFAULT_CONFIG: SimConfig = {
   },
   time: {
     ticksPerDay: 240,
-    daysPerSeason: 20,
-    startDay: 10,
+    // A shorter year than the M1-M9 default: a lifetime now spans about half
+    // as many days, so roughly half the discovery rolls per lifetime, and the
+    // technology ladder genuinely passes to the grandchildren rather than
+    // being finished by the founders. See "M9.5 phase 3" in changelog.md.
+    daysPerSeason: 10,
+    // Half of `daysPerSeason`: mid-spring, same as always, on the new clock.
+    startDay: 5,
     // Five steps a second, not twenty. At twenty the world is unreadable: a
     // harvest cycle passes in under half a second and there is no following
     // what anyone is doing. This is the one place the default lives — the

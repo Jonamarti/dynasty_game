@@ -120,7 +120,7 @@ export class ForestSystem {
       if (!this.hasRoom(x, y, ctx)) continue;
 
       telemetry.count('tree_seeded');
-      return new Tree(species, x, y, 0);
+      return new Tree(species, x, y, 0, parent.daysPerYear);
     }
     return null;
   }
@@ -148,7 +148,8 @@ export class ForestSystem {
 export function seedInitialForest(
   world: World,
   rng: RNG,
-  density: number
+  density: number,
+  daysPerYear: number = DAYS_PER_YEAR
 ): Tree[] {
   const trees: Tree[] = [];
   const occupied = new Set<number>();
@@ -171,10 +172,10 @@ export function seedInitialForest(
     const chance = biome === 'forest' ? 0.55 : biome === 'hills' ? 0.12 : 0.07;
     if (!rng.chance(chance)) continue;
 
-    const maxAge = 220 * DAYS_PER_YEAR;
-    const age = Math.min(maxAge, rng.range(0, 1) ** 0.7 * 90 * DAYS_PER_YEAR);
+    const maxAge = 220 * daysPerYear;
+    const age = Math.min(maxAge, rng.range(0, 1) ** 0.7 * 90 * daysPerYear);
     occupied.add(key);
-    trees.push(new Tree(species, x, y, age));
+    trees.push(new Tree(species, x, y, age, daysPerYear));
   }
   return trees;
 }
