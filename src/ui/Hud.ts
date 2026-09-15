@@ -336,13 +336,15 @@ export class Hud {
 
     const help = el('div', 'hud-help');
     help.innerHTML =
-      '<b>WASD</b> walk &middot; <b>drag</b> pan &middot; <b>F</b> re-centre &middot; ' +
+      '<span class="hud-help-desktop"><b>WASD</b> walk &middot; <b>drag</b> pan &middot; <b>F</b> re-centre &middot; ' +
       '<b>click</b> inspect &middot; <b>right-click</b> actions &middot; ' +
       '<b>B</b> build &middot; <b>M</b> make &middot; <b>C</b> command &middot; ' +
       '<b>G</b> tech web &middot; <b>K</b> family tree &middot; <b>T</b> tribe graph &middot; ' +
       '<b>R</b> who steers &middot; ' +
       '<b>P</b> fold panel &middot; <b>H</b> hide overlay &middot; <b>space</b> pause &middot; ' +
-      '<b>Esc</b> menu';
+      '<b>Esc</b> menu</span>' +
+      '<span class="hud-help-touch"><b>Tap</b> inspect &middot; <b>hold</b> actions &middot; ' +
+      '<b>drag</b> pan</span>';
 
     this.root.append(
       topBar, this.panelEl, this.buildBarEl, this.craftBarEl, this.commandBarEl, help);

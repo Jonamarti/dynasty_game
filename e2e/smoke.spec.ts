@@ -1849,3 +1849,66 @@ test('how much your character does for itself is a visible, remembered choice', 
 
   expect(errors).toEqual([]);
 });
+
+test('a phone viewport keeps the HUD reachable and touch pans the map', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  const errors = guardErrors(page);
+  await ready(page);
+
+  const viewport = page.viewportSize()!;
+  for (const selector of ['.hud-bar', '.hud-panel']) {
+    const box = await page.locator(selector).boundingBox();
+    expect(box, selector + ' has no box').not.toBeNull();
+    expect(box!.x, selector + ' escapes left').toBeGreaterThanOrEqual(0);
+    expect(box!.y, selector + ' escapes above').toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width, selector + ' escapes right').toBeLessThanOrEqual(viewport.width);
+    expect(box!.y + box!.height, selector + ' escapes below').toBeLessThanOrEqual(viewport.height);
+  }
+  await expect(page.locator('.hud-button', { hasText: 'Build' })).toBeVisible();
+  await expect(page.locator('.hud-button', { hasText: 'Make' })).toBeVisible();
+  await expect(page.locator('.hud-help-touch')).toBeVisible();
+
+  const before = await page.evaluate(() => {
+    const camera = (window as never as { __dynasty: { camera: {
+      x: number; y: number; following: boolean;
+    } } }).__dynasty.camera;
+    return { x: camera.x, y: camera.y, following: camera.following };
+  });
+
+  // Real browser touch input, not a synthetic pointer event: pointer capture
+  // and the browser's default gesture arbitration are both part of this bug.
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart', touchPoints: [{ x: 190, y: 330 }],
+  });
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove', touchPoints: [{ x: 250, y: 370 }],
+  });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+
+  const after = await page.evaluate(() => {
+    const camera = (window as never as { __dynasty: { camera: {
+      x: number; y: number; following: boolean;
+    } } }).__dynasty.camera;
+    return { x: camera.x, y: camera.y, following: camera.following };
+  });
+  expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeGreaterThan(0.1);
+  expect(after.following).toBe(false);
+
+  // A hold is the phone's route to the same actions desktop opens with the
+  // secondary button. Ground is enough to prove the radial path is reachable.
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart', touchPoints: [{ x: 195, y: 300 }],
+  });
+  await page.waitForTimeout(600);
+  await expect(page.locator('.radial, .picker').filter({ visible: true }).first()).toBeVisible();
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+
+  expect(errors).toEqual([]);
+  await context.close();
+});

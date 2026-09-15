@@ -684,7 +684,7 @@ function setBuildMode(on: boolean): void {
   hud.renderBuildBar(sim, on);
 }
 
-function worldPoint(event: MouseEvent): { x: number; y: number } {
+function worldPoint(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { x: number; y: number } {
   const rect = canvas.getBoundingClientRect();
   return {
     x: camera.screenToWorldX(event.clientX - rect.left),
@@ -926,13 +926,16 @@ function selectTarget(target: ActionTarget): void {
       : (sim.player ? { kind: 'person', person: sim.player } : null);
 }
 
-canvas.addEventListener('mousemove', event => {
+canvas.addEventListener('pointermove', event => {
+  if (event.pointerId !== drag.pointerId) return;
   if (drag.active) {
     const dx = event.clientX - drag.lastX;
     const dy = event.clientY - drag.lastY;
     if (!drag.panning && drag.button === 0 &&
-        Math.abs(event.clientX - drag.lastX) + Math.abs(event.clientY - drag.lastY) > DRAG_THRESHOLD) {
+        Math.abs(event.clientX - drag.startX) + Math.abs(event.clientY - drag.startY) >
+          (drag.pointerType === 'touch' ? TOUCH_DRAG_THRESHOLD : DRAG_THRESHOLD)) {
       drag.panning = true;
+      cancelLongPress();
     }
     if (drag.panning) {
       camera.panByPixels(dx, dy);
@@ -964,19 +967,68 @@ canvas.addEventListener('mousemove', event => {
  * a plain click still selects. Middle-drag always pans. Panning releases the
  * camera from the player; `F` (or the button in the top bar) re-attaches it.
  */
-const drag = { active: false, panning: false, lastX: 0, lastY: 0, button: 0 };
+const drag = {
+  active: false, panning: false, longPressed: false,
+  lastX: 0, lastY: 0, startX: 0, startY: 0,
+  button: 0, pointerId: -1, pointerType: '',
+};
 const DRAG_THRESHOLD = 4;
+const TOUCH_DRAG_THRESHOLD = 10;
+const LONG_PRESS_MS = 500;
+let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
-canvas.addEventListener('mousedown', event => {
+function cancelLongPress(): void {
+  if (longPressTimer !== null) clearTimeout(longPressTimer);
+  longPressTimer = null;
+}
+
+/** Opens the action chooser shared by right-click and touch hold. */
+function openActionsAt(event: Pick<PointerEvent, 'clientX' | 'clientY'>): void {
+  const actor = sim.player;
+  if (!actor || !actor.alive) return;
+  const point = worldPoint(event);
+  const options = candidatesAt(point.x, point.y, true);
+  const real = realCandidates(options);
+  if (!wantsPicker(real)) {
+    openRadial(actor, options[0]!, event.clientX, event.clientY);
+    return;
+  }
+  picker.show(
+    event.clientX, event.clientY,
+    pickerEntries(actor, [...real, options[options.length - 1]!]),
+    target => openRadial(actor, target, event.clientX, event.clientY),
+    target => { renderer.hoverRing = target ? ringFor(target) : null; }
+  );
+}
+
+canvas.addEventListener('pointerdown', event => {
   // The overlays cover the canvas, so this should be unreachable — but so
   // should the four `[hidden]` bugs this project has shipped, and it is a line.
   if (newGame.isOpen || menuOpen()) return;
   if (event.button === 0 || event.button === 1) {
+    if (drag.active) return;
     drag.active = true;
     drag.panning = event.button === 1;
+    drag.longPressed = false;
     drag.lastX = event.clientX;
     drag.lastY = event.clientY;
+    drag.startX = event.clientX;
+    drag.startY = event.clientY;
     drag.button = event.button;
+    drag.pointerId = event.pointerId;
+    drag.pointerType = event.pointerType;
+    canvas.setPointerCapture(event.pointerId);
+
+    if (event.pointerType === 'touch' && !buildMode) {
+      cancelLongPress();
+      const at = { clientX: event.clientX, clientY: event.clientY };
+      longPressTimer = setTimeout(() => {
+        longPressTimer = null;
+        if (!drag.active || drag.panning || drag.pointerId !== event.pointerId) return;
+        drag.longPressed = true;
+        openActionsAt(at);
+      }, LONG_PRESS_MS);
+    }
   }
   const point = worldPoint(event);
 
@@ -1007,25 +1059,7 @@ canvas.addEventListener('mousedown', event => {
 
   // --- Right click: the radial menu ----------------------------------------
   if (event.button === 2) {
-    const actor = sim.player;
-    if (!actor || !actor.alive) return;
-
-    const options = candidatesAt(point.x, point.y, true);
-    const real = realCandidates(options);
-
-    // Same rule as the left click: nothing under the cursor goes straight to
-    // the menu for the ground, and anything else asks what the order is aimed
-    // at — including the ground, which is always the last entry.
-    if (!wantsPicker(real)) {
-      openRadial(actor, options[0]!, event.clientX, event.clientY);
-      return;
-    }
-    picker.show(
-      event.clientX, event.clientY,
-      pickerEntries(actor, [...real, options[options.length - 1]!]),
-      target => openRadial(actor, target, event.clientX, event.clientY),
-      target => { renderer.hoverRing = target ? ringFor(target) : null; }
-    );
+    openActionsAt(event);
     return;
   }
 
@@ -1034,11 +1068,15 @@ canvas.addEventListener('mousedown', event => {
   // happened to be under the cursor when the press started.
 });
 
-window.addEventListener('mouseup', event => {
+window.addEventListener('pointerup', event => {
+  if (event.pointerId !== drag.pointerId) return;
+  cancelLongPress();
   const wasDragging = drag.panning;
+  const wasLongPress = drag.longPressed;
   drag.active = false;
   drag.panning = false;
-  if (wasDragging || event.button !== 0) return;
+  drag.pointerId = -1;
+  if (wasDragging || wasLongPress || event.button !== 0) return;
   if (buildMode || radial.isOpen || picker.isOpen || graphOpen() || menuOpen()) return;
   if (event.target !== canvas) return;
 
@@ -1062,6 +1100,14 @@ window.addEventListener('mouseup', event => {
     target => selectTarget(target),
     target => { renderer.hoverRing = target ? ringFor(target) : null; }
   );
+});
+
+window.addEventListener('pointercancel', event => {
+  if (event.pointerId !== drag.pointerId) return;
+  cancelLongPress();
+  drag.active = false;
+  drag.panning = false;
+  drag.pointerId = -1;
 });
 
 // Suppressed document-wide, not just on the canvas: right-click is this game's

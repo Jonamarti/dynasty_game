@@ -47,7 +47,7 @@ export class EntityPicker<T> {
 
     // Dismissed by a click elsewhere or Escape, exactly like the radial menu.
     // Captured on the document so it works over the canvas too.
-    document.addEventListener('mousedown', event => {
+    document.addEventListener('pointerdown', event => {
       if (!this.open) return;
       if (!(event.target as HTMLElement).closest('.picker-item')) this.close();
     }, true);

@@ -6,6 +6,20 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-15 — Mobile layout and touch map controls
+
+The deployed game assumed a desktop mouse and a viewport wide enough to reserve
+326 pixels for the inspector. On a phone that squeezed the top bar down to one
+control, placed the inspector beyond the useful canvas area, and handed map
+drags to the browser instead of the camera. Narrow screens now use the full
+safe width for a wrapping toolbar and a scrollable bottom-sheet inspector,
+respect dynamic viewport height and device cut-outs, and enlarge touch targets.
+
+The canvas now uses pointer events for both mouse and touch: tap inspects, drag
+pans, and a 500 ms hold opens the same action chooser as desktop right-click.
+The mobile help text advertises those gestures. Desktop mouse behaviour keeps
+the same code path so the two input modes cannot drift apart.
+
 ## 2026-09-15 — M9.5 phase 4b: a chief holds a term, and a new chief is welcomed
 
 Daily re-election made leadership follow ordinary relationship noise: on the

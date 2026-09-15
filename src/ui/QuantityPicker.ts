@@ -25,7 +25,7 @@ export class QuantityPicker {
     this.root.hidden = true;
     container.appendChild(this.root);
 
-    document.addEventListener('mousedown', event => {
+    document.addEventListener('pointerdown', event => {
       if (!this.open) return;
       if (!(event.target as HTMLElement).closest('.quantity-picker')) this.close();
     }, true);

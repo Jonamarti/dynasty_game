@@ -54,7 +54,7 @@ export class RadialMenu {
 
     // Any click that is not on a segment dismisses. Captured on the document so
     // it works over the canvas too.
-    document.addEventListener('mousedown', event => {
+    document.addEventListener('pointerdown', event => {
       if (!this.open) return;
       // The back title is part of the menu, not somewhere else on the screen.
       // This listener is in the capture phase, so without naming it here it
@@ -123,7 +123,7 @@ export class RadialMenu {
       // the player is already looking at to know where they are.
       label.classList.add('is-back');
       label.textContent = '‹ ' + title;
-      label.onmousedown = event => {
+      label.onpointerdown = event => {
         event.preventDefault();
         event.stopPropagation();
         const parent = this.stack.pop();
