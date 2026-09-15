@@ -128,6 +128,8 @@ export interface Band {
   norms: Norms;
   /** Whoever the band currently holds in the highest regard. Null if empty. */
   chiefId: number | null;
+  /** Absolute day the present chief took office. Null while there is none. */
+  chiefSince: number | null;
   /** True for the standing-place of the exiled: no camp, no chief, no norms. */
   outcast?: boolean;
 }
@@ -521,6 +523,7 @@ export class Simulation {
         homeY: home.y,
         norms,
         chiefId: null,
+        chiefSince: null,
       };
       this.bands.push(band);
       this.normsByBand.set(band.id, norms);
@@ -727,6 +730,8 @@ export class Simulation {
       relationships: this.relationships,
       householdsById: this.householdsById,
       chiefByBand: this.bandSystem.chiefByBand,
+      bands: this.bands,
+      day: this.time.day,
     };
   }
 
@@ -862,6 +867,7 @@ export class Simulation {
       homeY: this.world.height / 2,
       norms: { ...DEFAULT_NORMS },
       chiefId: null,
+      chiefSince: null,
       outcast: true,
     };
     this.bands.push(band);

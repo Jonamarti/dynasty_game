@@ -4,9 +4,9 @@
  * Three jobs, run once per in-game day:
  *
  *  1. **Choosing a chief.** Whoever the band collectively thinks most of, with
- *    age and headship counting for something. Nobody votes; the position simply
- *    belongs to whoever holds it in everyone's regard, and it changes hands when
- *    that changes.
+ *    age and headship counting for something. Nobody votes; an incumbent holds
+ *    a term so ordinary relationship noise cannot change the office every day,
+ *    then the position returns to whoever holds it in everyone's regard.
  *  2. **Deciding to build.** Until now only the player could place a site, so a
  *    band with fifteen people and one hut simply froze every winter and nobody
  *    ever did anything about it. A chief who can see their people are cold marks
@@ -26,6 +26,7 @@ import { JOB_IDS, type JobId } from '../entities/Job.ts';
 import type { RelationshipGraph } from './../social/Relationships.ts';
 import type { RNG } from '../core/RNG.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { CHIEF_TERM_DAYS, chiefHoneymoon } from '../social/Leadership.ts';
 
 /** Average opinion below which a band casts someone out. */
 const EXILE_THRESHOLD = -28;
@@ -140,6 +141,8 @@ export class BandSystem {
       const members = byBand.get(band.id) ?? [];
       if (members.length === 0) {
         this.chiefByBand.delete(band.id);
+        band.chiefId = null;
+        band.chiefSince = null;
         continue;
       }
 
@@ -157,19 +160,29 @@ export class BandSystem {
   // -------------------------------------------------------------------------
 
   /**
-   * The chief is whoever the band holds in the highest regard.
+   * At an open election, the chief is whoever the band holds in highest regard.
    *
    * Summed rather than averaged, so being widely known matters as much as being
    * well liked — a saint nobody has met does not lead anyone. Children are not
    * eligible; age and headship carry weight, because standing accrues.
    */
   private chooseChief(band: Band, members: Person[], ctx: BandContext): void {
+    const incumbentId = this.chiefByBand.get(band.id);
+    const incumbentIsHere = incumbentId !== undefined &&
+      members.some(member => member.id === incumbentId);
+
+    // Regard moves every day, but leadership should not move with every small
+    // fluctuation in it. Death and departure bypass the term because there is
+    // nobody left to hold office; a successful challenge does so below.
+    if (incumbentIsHere && band.chiefSince !== null &&
+        ctx.day - band.chiefSince < CHIEF_TERM_DAYS) return;
+
     let best: Person | null = null;
     let bestScore = -Infinity;
 
     for (const candidate of members) {
       if (candidate.isChild) continue;
-      const score = this.standingScore(candidate, members, ctx);
+      const score = this.standingScore(candidate, band, members, ctx);
       if (score > bestScore) {
         bestScore = score;
         best = candidate;
@@ -177,11 +190,18 @@ export class BandSystem {
     }
 
     if (!best) return;
-    const previous = this.chiefByBand.get(band.id);
-    if (previous === best.id) return;
+    const previous = incumbentId;
+    if (previous === best.id) {
+      // Winning a new term starts its clock again. Without this, an incumbent
+      // who won once at term end would be reconsidered every day thereafter —
+      // the same noisy daily election this pass exists to remove.
+      band.chiefSince = ctx.day;
+      return;
+    }
 
     this.chiefByBand.set(band.id, best.id);
     band.chiefId = best.id;
+    band.chiefSince = ctx.day;
     telemetry.count('chief_chosen');
     best.chronicle.push({
       tick: ctx.tick,
@@ -189,6 +209,7 @@ export class BandSystem {
       text: 'became chief of the ' + band.name,
       kind: 'milestone',
     });
+    ctx.onInsight(best, 'was welcomed as chief of the ' + band.name, 'gain');
   }
 
   /**
@@ -199,13 +220,20 @@ export class BandSystem {
    * people — a candidate for chief and the incumbent are the same
    * measurement, and writing the sum out twice is how the two drift apart.
    */
-  private standingScore(candidate: Person, members: Person[], ctx: BandContext): number {
+  private standingScore(
+    candidate: Person, band: Band, members: Person[], ctx: BandContext
+  ): number {
     let regard = 0;
     for (const other of members) {
       if (other.id === candidate.id) continue;
       regard += ctx.relationships.opinion(other.id, candidate.id);
     }
-    return regard + candidate.years * 1.5 + candidate.skills.persuade * 0.8;
+    // Forty points is enough to absorb a few days of noisy encounters, not
+    // enough to save an incumbent whom the band plainly prefers to replace.
+    const welcome = candidate.id === band.chiefId
+      ? chiefHoneymoon(band, ctx.day) * 40
+      : 0;
+    return regard + candidate.years * 1.5 + candidate.skills.persuade * 0.8 + welcome;
   }
 
   // -------------------------------------------------------------------------
@@ -343,12 +371,14 @@ export class BandSystem {
   private challengeChief(
     rebel: Person, chief: Person, band: Band, members: Person[], ctx: BandContext
   ): void {
-    const challengerScore = this.standingScore(rebel, members, ctx);
-    const chiefScore = this.standingScore(chief, members, ctx);
+    const challengerScore = this.standingScore(rebel, band, members, ctx);
+    const chiefScore = this.standingScore(chief, band, members, ctx);
 
     if (challengerScore > chiefScore) {
       this.chiefByBand.set(band.id, rebel.id);
       band.chiefId = rebel.id;
+      band.chiefSince = ctx.day;
+      telemetry.count('chief_chosen');
       telemetry.count('rebellion_challenge_won');
       rebel.chronicle.push({
         tick: ctx.tick, ageDays: rebel.age,

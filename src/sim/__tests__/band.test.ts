@@ -11,12 +11,85 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
+import { CHIEF_TERM_DAYS, chiefHoneymoon } from '../social/Leadership.ts';
 
 const SMALL = {
   seed: 'rebellion',
   world: { width: 48, height: 48, berryBushes: 40, flintOutcrops: 10, deadwood: 20, gameHerds: 4 },
   population: { bands: 1, peoplePerBand: 10 },
 };
+
+function stepDays(sim: Simulation, days: number): void {
+  for (let i = 0; i < sim.config.time.ticksPerDay * days; i++) sim.step();
+}
+
+function chooseFirstChief(sim: Simulation): number {
+  const band = sim.bands[0]!;
+  while (sim.bandSystem.chiefByBand.get(band.id) === undefined) sim.step();
+  return sim.bandSystem.chiefByBand.get(band.id)!;
+}
+
+describe('chief terms', () => {
+  it('holds an incumbent through a term and reconsiders the band when it ends', () => {
+    const sim = new Simulation(SMALL);
+    const band = sim.bands[0]!;
+    const firstId = chooseFirstChief(sim);
+    expect(sim.insights.some(note =>
+      note.personId === firstId && note.text.includes('welcomed as chief'))).toBe(true);
+    const rival = sim.livingPeople().find(person =>
+      person.bandId === band.id && person.id !== firstId && !person.isChild)!;
+
+    // Make the result beyond doubt without poisoning a relationship and
+    // accidentally exercising rebellion instead of the term boundary.
+    rival.skills.persuade = 10_000;
+
+    // Land directly on the two daily boundaries. Running the intervening
+    // weeks would turn this into a survival/courtship/rebellion scenario test
+    // when the mechanism under test is just the election clock.
+    const firstDay = band.chiefSince!;
+    sim.time.tick = (firstDay + CHIEF_TERM_DAYS - 1 - sim.config.time.startDay) *
+      sim.config.time.ticksPerDay - 1;
+    sim.step();
+    expect(sim.bandSystem.chiefByBand.get(band.id)).toBe(firstId);
+
+    sim.time.tick = (firstDay + CHIEF_TERM_DAYS - sim.config.time.startDay) *
+      sim.config.time.ticksPerDay - 1;
+    sim.step();
+    expect(sim.bandSystem.chiefByBand.get(band.id)).toBe(rival.id);
+    expect(band.chiefSince).toBe(sim.time.day);
+    expect(rival.chronicle.some(entry => entry.text.includes('became chief'))).toBe(true);
+  });
+
+  it('replaces a chief who is no longer there without waiting for term end', () => {
+    const sim = new Simulation(SMALL);
+    const band = sim.bands[0]!;
+    const firstId = chooseFirstChief(sim);
+    sim.peopleById.get(firstId)!.alive = false;
+
+    stepDays(sim, 1);
+
+    expect(sim.bandSystem.chiefByBand.get(band.id)).not.toBe(firstId);
+    expect(band.chiefSince).toBe(sim.time.day);
+  });
+
+  it('derives a fading welcome from the band timestamp for both readers', () => {
+    const sim = new Simulation(SMALL);
+    const band = sim.bands[0]!;
+    const chiefId = chooseFirstChief(sim);
+    const chief = sim.peopleById.get(chiefId)!;
+    const member = sim.livingPeople().find(person =>
+      person.bandId === band.id && person.id !== chiefId)!;
+    const firstDay = band.chiefSince!;
+
+    expect(chiefHoneymoon(band, firstDay)).toBe(1);
+    expect(chiefHoneymoon(band, firstDay + 4)).toBeCloseTo(0.5);
+
+    const welcomedChance = sim.standing(chief, member, 'goto').chance;
+    sim.time.tick += sim.config.time.ticksPerDay * 8;
+    const fadedChance = sim.standing(chief, member, 'goto').chance;
+    expect(fadedChance).toBeLessThan(welcomedChance);
+  });
+});
 
 describe('jobs', () => {
   it('assigns a job to yourself without a compliance roll', () => {

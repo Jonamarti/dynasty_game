@@ -6,6 +6,43 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-15 — M9.5 phase 4b: a chief holds a term, and a new chief is welcomed
+
+Daily re-election made leadership follow ordinary relationship noise: on the
+`century` seed three bands changed chief **41 times in four years**. A band now
+stores `chiefSince`, and `BandSystem.chooseChief` opens the choice only after a
+20-day term — half of the current forty-day year — unless the incumbent has
+died or left. A successful challenge still changes the office immediately and
+now resets the same term clock. If an incumbent wins a new term, its clock is
+renewed rather than accidentally reopening the election every day thereafter.
+
+**A welcome without per-relationship state.** New `social/Leadership.ts`
+derives `chiefHoneymoon(band, day)` purely from `chiefSince`: full strength on
+the first day and a four-day half-life. `standingScore` reads it so a newly
+chosen chief is not displaced by the first few noisy encounters, while
+`standingOver` reads the same value so the band is more willing to follow a
+new chief's early orders. The regular election records the milestone and sends
+the visible insight "was welcomed as chief"; a successful public challenge
+keeps its existing, more specific succession message. No relationship edge is
+created or mutated, and no RNG draw or stream was added.
+
+**Measured on the mechanism, then across worlds.** The same `century` seed now
+changes chief **15 times rather than 41** (−63%) while ending with 67 people
+alive. Across twenty `century` seeds, mean survival remains 100%, no world
+collapses, 851 people are born, and the end state averages 11.85 known
+technologies with 10.8 conceived beyond the roots. On the first ten seeds — an
+exact comparison with the pre-change cohort — starvation is identical (one
+infant and two adults), and the sub-one-node movement in technology reach is
+below the resolution the project documents for a ten-seed cohort.
+
+Three deterministic tests pin the term boundary, immediate replacement of an
+absent chief, the honeymoon's decay, and its authority effect. Typecheck and
+all 260 unit tests pass. All 45 Playwright cases passed, although the runner's
+web-server process had to be stopped after the cases completed because it did
+not exit on its own. The scenario matrix retains exactly the three failures
+already recorded in `bugs.md`: `crowded`'s headless performance threshold,
+`century`'s marginal care check, and `millers`' marginal station chain.
+
 ## 2026-09-15 — M9.5 phase 4a: `threaten`, coercion that needs no technology
 
 Before anyone has the idea of assigning work, one person can still make

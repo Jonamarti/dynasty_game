@@ -15,13 +15,19 @@
  */
 import type { Person } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
+import type { Band } from '../core/Simulation.ts';
 import type { RelationshipGraph } from './Relationships.ts';
+import { chiefHoneymoon } from './Leadership.ts';
 
 export interface AuthorityContext {
   relationships: RelationshipGraph;
   householdsById: Map<number, Household>;
   /** Band chiefs, by band id. */
   chiefByBand: Map<number, number>;
+  /** Bands carry the one timestamp from which a chief's welcome is derived. */
+  bands: readonly Band[];
+  /** Absolute day, on the same clock as `Band.chiefSince`. */
+  day: number;
 }
 
 export interface Standing {
@@ -143,6 +149,16 @@ export function standingOver(
   if (isChief) {
     authority += 0.45;
     reasons.push('chief of their band');
+
+    // A new chief gets a brief chance to lead before ordinary relationship
+    // noise has caught up. This is band state, not a deed painted onto every
+    // member: it fades quickly and leaves no edge-by-edge residue behind.
+    const band = ctx.bands.find(candidate => candidate.id === subordinate.bandId);
+    if (band) {
+      const welcome = chiefHoneymoon(band, ctx.day);
+      authority += welcome * 0.18;
+      if (welcome > 0.25) reasons.push('newly welcomed as chief');
+    }
   }
   if (isKin && !isHead) {
     authority += 0.1;

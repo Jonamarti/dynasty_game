@@ -3,6 +3,23 @@
 As of 2026-09-15. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found during M9.5 phase 4b, 2026-09-15
+
+### The documented extra `--` drops named CLI flags on this machine's npm
+
+The examples throughout `AGENTS.md` and `docs/` say, for example,
+`npm run sim:seeds -- --seeds 20`. The package script itself already ends in
+`--`; with the npm version installed on this machine, the documented command
+arrives at the script as `vite-node tools/seeds.ts -- 20`: the name
+`--seeds` has disappeared, so the default ten-seed cohort runs while its caller
+believes it requested twenty. The same thing made a requested `century`
+`sim:check` silently run the default `band` scenario. Confirmed from npm's own
+echo of the expanded command and both report headers. Direct invocation works:
+`npx vite-node tools/seeds.ts --seeds 20` and
+`npx vite-node tools/headless.ts --scenario century`. Not fixed in this phase:
+changing all four package scripts and every live invocation is tooling work,
+not part of the leadership mechanic; the direct form was used for 4b's gates.
+
 ## Found during M9.5 phase 4a, 2026-09-15
 
 ### `threaten`'s variable norm pushes the `millers` scenario's already-thin margin past breaking
