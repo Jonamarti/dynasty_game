@@ -1,5 +1,13 @@
 # Dynasty
 
+## Human introduction
+This is an experiment to see first hand what would AI vibe coding a game look like. 
+I tell the AI the features I want or the bugs Ive seen, tell a big model to do
+the planning and then a less powerful model to write the code. Once in a while 
+I interrupt the plan flow to introduce changes that the AI has to rewrite into the
+plan, something like what Agile development is like, with the client requesting changes to features mid development.
+
+## AI summary
 A life-and-lineage simulation. You play one person in a world of people who have
 their own needs, skills and agendas — you gather, craft, trade, ally, steal or
 kill, and everyone who saw you do it forms their own opinion and passes it on.
