@@ -95,15 +95,15 @@ sides three times, which is a finding in itself — see `bugs.md`:
 | M9.5 phase 4e — the layered view | shipped 2026-09-16. **M9.5 is complete.** See [m9_5_plan.md](m9_5_plan.md) |
 | The ages get their real names | shipped 2026-09-16. §4's two remaining bullets, deliberately before M8.2 |
 | M8.2 — the ground, and the first field | shipped 2026-09-17. `farming`, soil, wild grain, `sow` and `reap` |
-| **M8.2 — `composting`** | **next**, and it is what makes exhaustion answerable |
-| M8.2 — the other fifteen Neolithic nodes | after it. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
+| M8.2 — `composting` | shipped 2026-09-17. The heap, `spread`, and the answer to exhaustion |
+| **M8.2 — the other fifteen Neolithic nodes** | **next.** See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
 | Owner's list O1–O5 | **O1, O2 and O3 shipped in M9 phase 4.** O4-O5 scheduled into M10. O6 and O7 shipped in pass A |
 
-**Thirty-three technologies**, fourteen recipes, eleven buildings, thirty items,
-thirty-six actions (`sow` and `reap` are new), twelve skills (`heal`, `cook` and
+**Thirty-four technologies**, fourteen recipes, twelve buildings, thirty-one items,
+thirty-seven actions (`sow`, `reap` and `spread` are new), twelve skills (`heal`, `cook` and
 now `farm` all have a use; **`smith` still does not**, and waits for M8.3),
 **five jobs** (the farmer, offered only to a band with ground broken), eight domains,
 **four eras** — Lower Palaeolithic, Middle, Upper, Mesolithic, the real periods
@@ -111,8 +111,9 @@ since 2026-09-16, and the ladder stops there until M8.2 brings a Neolithic
 anybody can reach — three forms of record, three full-screen graphs
 (`G`/`K`/`T`).
 
-**Fifteen scenarios** (`labour` joined in M9.5 phase 4c and `farmers` in M8.2),
-four of them new in the M8.1 tier: `millers` for the
+**Sixteen scenarios** (`labour` joined in M9.5 phase 4c, and `farmers` and
+`stewards` in M8.2 — the same seed and the same ground, with and without the
+idea of putting something back), four of them new in the M8.1 tier: `millers` for the
 stations, `hunters` for the bone chain, `culture` for the four nodes that are
 not about food, and `fishers`, which is the only run in the suite where food
 goes off.
@@ -188,10 +189,12 @@ documents are not comparable with post-M7 ones; each milestone's entry in
    soil under it, wild cereal to domesticate, a `field` design, `sow` and
    `reap`, the `farmer` job and a `farmers` scenario. The default world is
    bit-identical and the twenty-seed cohort is unmoved, because wild grain is
-   invisible to anybody who cannot grind it. What it does **not** yet have is a
-   remedy for exhaustion beyond letting a plot lie or breaking new ground:
-   `composting` is the next commit, and the plan is explicit that decline
-   without an answer is a strictly worse world. See `changelog.md`.
+   invisible to anybody who cannot grind it. **`composting` followed the same day**, because the
+   plan is explicit that decline without an answer is a strictly worse world: a
+   heap that ripens what is put into it, a `spread` verb that fetches and
+   carries as one errand, and a `stewards` scenario that ends with its ground at
+   95.4% of resting against `farmers`' 81.1% on the same seed. Fifteen Neolithic
+   nodes remain. See `changelog.md`.
 
    Three things carried forward into it from M8.1:
 
@@ -740,7 +743,7 @@ that document's summary.
 | 3 | Seasons should look different — snow, flowers, leaf litter, browning | M9.5 phases 2a and 2b — **shipped 2026-09-15** |
 | 4 | Seasons should be shorter, so tech and buildings pass to the next generations | M9.5 phase 3 — **shipped 2026-09-15** |
 | 2 | The tribe graph should be a layered pyramid, unlocked by a primitive "giving orders" technology | M9.5 phase 4 — **shipped 2026-09-16**, 4a to 4e |
-| 7 | Ground fertility, exhaustion, compost, crop rotation, burying fish | M8.2 — **fertility and exhaustion shipped 2026-09-17** with `farming`; compost is next, then rotation and middens |
+| 7 | Ground fertility, exhaustion, compost, crop rotation, burying fish | M8.2 — **fertility, exhaustion and compost all shipped 2026-09-17**; rotation, middens and manure follow with `herding` and `calendar` |
 | 5 | Buildings degrade after a number of uses and need repair | M10 phase 1 |
 | 6 | Fences that claim territory; a border-guard job | M10 phase 2 (with O4 and O5) |
 
