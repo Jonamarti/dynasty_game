@@ -93,6 +93,11 @@ export interface HudCallbacks {
   onOpenMenu: () => void;
   onToggleBuild: () => void;
   onToggleCraft: () => void;
+  /** Touch-accessible counterparts to keyboard-only camera and graph commands. */
+  onRecentre: () => void;
+  onOpenTech: () => void;
+  onOpenFamily: () => void;
+  onOpenTribe: () => void;
   /**
    * A different answer to "how much does your character do for itself?".
    *
@@ -300,9 +305,28 @@ export class Hud {
     }
     this.setAutonomy('manual');
 
+    // Keyboard shortcuts are not shortcuts on a phone: they are missing
+    // features. This row is hidden on desktop and gives touch screens the four
+    // map-level commands that otherwise have no reachable control.
+    const mobileTools = el('div', 'hud-mobile-tools');
+    const mobileTool = (label: string, title: string, action: () => void): HTMLButtonElement => {
+      const button = document.createElement('button');
+      button.className = 'hud-button hud-mobile-tool';
+      button.textContent = label;
+      button.title = title;
+      button.onclick = action;
+      return button;
+    };
+    mobileTools.append(
+      mobileTool('⌾ Centre', 'Re-centre on your character', () => this.callbacks.onRecentre()),
+      mobileTool('Tech', 'Technology web', () => this.callbacks.onOpenTech()),
+      mobileTool('Family', 'Family tree', () => this.callbacks.onOpenFamily()),
+      mobileTool('Tribe', 'Tribe graph', () => this.callbacks.onOpenTribe()),
+    );
+
     topBar.append(
       this.clockEl, this.statsEl, this.pauseButton, speed, speedLabel,
-      buildButton, craftButton, this.autonomyBar, menuButton);
+      buildButton, craftButton, this.autonomyBar, menuButton, mobileTools);
 
     // The panel is a header strip plus a body, so collapsing it can leave the
     // strip in place: a panel that vanishes entirely gives the player nothing

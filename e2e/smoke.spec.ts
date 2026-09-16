@@ -1873,6 +1873,18 @@ test('a phone viewport keeps the HUD reachable and touch pans the map', async ({
   await expect(page.locator('.hud-button', { hasText: 'Make' })).toBeVisible();
   await expect(page.locator('.hud-help-touch')).toBeVisible();
 
+  const mobileTools = page.locator('.hud-mobile-tool');
+  await expect(mobileTools).toHaveCount(4);
+  await page.locator('.hud-mobile-tool', { hasText: 'Tech' }).click();
+  await expect(page.locator('.techweb')).toBeVisible();
+  await page.locator('.techweb-close').click();
+  await page.locator('.hud-mobile-tool', { hasText: 'Family' }).click();
+  await expect(page.locator('.familytree')).toBeVisible();
+  await page.locator('.familytree-close').click();
+  await page.locator('.hud-mobile-tool', { hasText: 'Tribe' }).click();
+  await expect(page.locator('.tribegraph')).toBeVisible();
+  await page.locator('.tribegraph-close').click();
+
   const before = await page.evaluate(() => {
     const camera = (window as never as { __dynasty: { camera: {
       x: number; y: number; following: boolean;
@@ -1900,13 +1912,33 @@ test('a phone viewport keeps the HUD reachable and touch pans the map', async ({
   expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeGreaterThan(0.1);
   expect(after.following).toBe(false);
 
+  await page.locator('.hud-mobile-tool', { hasText: 'Centre' }).click();
+  await expect.poll(() => page.evaluate(() =>
+    (window as never as { __dynasty: { camera: { following: boolean } } })
+      .__dynasty.camera.following)).toBe(true);
+
+  const zoomBefore = await page.evaluate(() =>
+    (window as never as { __dynasty: { camera: { zoom: number } } }).__dynasty.camera.zoom);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x: 145, y: 330 }, { x: 245, y: 330 }],
+  });
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ x: 115, y: 330 }, { x: 275, y: 330 }],
+  });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const zoomAfter = await page.evaluate(() =>
+    (window as never as { __dynasty: { camera: { zoom: number } } }).__dynasty.camera.zoom);
+  expect(zoomAfter).toBeGreaterThan(zoomBefore);
+
   // A hold is the phone's route to the same actions desktop opens with the
   // secondary button. Ground is enough to prove the radial path is reachable.
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchStart', touchPoints: [{ x: 195, y: 300 }],
   });
   await page.waitForTimeout(600);
-  await expect(page.locator('.radial, .picker').filter({ visible: true }).first()).toBeVisible();
+  await expect(page.locator('.radial-item:visible, .picker-item:visible').first()).toBeVisible();
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 
   expect(errors).toEqual([]);

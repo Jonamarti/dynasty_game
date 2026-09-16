@@ -272,6 +272,13 @@ const hud = new Hud(hudRoot, {
   onOpenMenu: () => { if (!menuOpen()) openMenu(); },
   onToggleBuild: () => setBuildMode(!buildMode),
   onToggleCraft: () => setCraftMode(!craftMode),
+  onRecentre: () => { if (sim.player) camera.recentre(sim.player.x, sim.player.y); },
+  onOpenTech: () => openGraph(
+    'tech', selected?.kind === 'person' ? selected.person : sim.player),
+  onOpenFamily: () => openGraph(
+    'family', selected?.kind === 'person' ? selected.person : sim.player),
+  onOpenTribe: () => openGraph(
+    'tribe', selected?.kind === 'person' ? selected.person : sim.player),
   onCommand: person => {
     commanding = commanding?.id === person?.id ? null : person;
     if (commanding) {
@@ -927,6 +934,13 @@ function selectTarget(target: ActionTarget): void {
 }
 
 canvas.addEventListener('pointermove', event => {
+  if (event.pointerType === 'touch' && touches.has(event.pointerId)) {
+    touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinch.active) {
+      updatePinch();
+      return;
+    }
+  }
   if (event.pointerId !== drag.pointerId) return;
   if (drag.active) {
     const dx = event.clientX - drag.lastX;
@@ -976,10 +990,56 @@ const DRAG_THRESHOLD = 4;
 const TOUCH_DRAG_THRESHOLD = 10;
 const LONG_PRESS_MS = 500;
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+const touches = new Map<number, { x: number; y: number }>();
+const pinch = { active: false, used: false, distance: 0, midX: 0, midY: 0 };
 
 function cancelLongPress(): void {
   if (longPressTimer !== null) clearTimeout(longPressTimer);
   longPressTimer = null;
+}
+
+function touchPair(): [{ x: number; y: number }, { x: number; y: number }] | null {
+  const points = [...touches.values()];
+  return points.length >= 2 ? [points[0]!, points[1]!] : null;
+}
+
+function startPinch(): void {
+  const pair = touchPair();
+  if (!pair) return;
+  const [a, b] = pair;
+  pinch.active = true;
+  pinch.used = true;
+  pinch.distance = Math.hypot(b.x - a.x, b.y - a.y);
+  pinch.midX = (a.x + b.x) / 2;
+  pinch.midY = (a.y + b.y) / 2;
+  drag.longPressed = true;
+  drag.panning = false;
+  cancelLongPress();
+}
+
+/** Pans with the midpoint and zooms around it, so the land between the fingers stays put. */
+function updatePinch(): void {
+  const pair = touchPair();
+  if (!pair) return;
+  const [a, b] = pair;
+  const distance = Math.hypot(b.x - a.x, b.y - a.y);
+  const midX = (a.x + b.x) / 2;
+  const midY = (a.y + b.y) / 2;
+
+  camera.panByPixels(midX - pinch.midX, midY - pinch.midY);
+  if (pinch.distance > 0 && distance > 0) {
+    const rect = canvas.getBoundingClientRect();
+    const screenX = midX - rect.left;
+    const screenY = midY - rect.top;
+    const worldX = camera.screenToWorldX(screenX);
+    const worldY = camera.screenToWorldY(screenY);
+    camera.zoom = Math.max(0.5, Math.min(5, camera.zoom * distance / pinch.distance));
+    camera.x += worldX - camera.screenToWorldX(screenX);
+    camera.y += worldY - camera.screenToWorldY(screenY);
+  }
+  pinch.distance = distance;
+  pinch.midX = midX;
+  pinch.midY = midY;
 }
 
 /** Opens the action chooser shared by right-click and touch hold. */
@@ -1005,6 +1065,15 @@ canvas.addEventListener('pointerdown', event => {
   // The overlays cover the canvas, so this should be unreachable — but so
   // should the four `[hidden]` bugs this project has shipped, and it is a line.
   if (newGame.isOpen || menuOpen()) return;
+  if (event.pointerType === 'touch') {
+    touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    canvas.setPointerCapture(event.pointerId);
+    if (touches.size === 1) pinch.used = false;
+    if (touches.size >= 2) {
+      startPinch();
+      return;
+    }
+  }
   if (event.button === 0 || event.button === 1) {
     if (drag.active) return;
     drag.active = true;
@@ -1069,14 +1138,30 @@ canvas.addEventListener('pointerdown', event => {
 });
 
 window.addEventListener('pointerup', event => {
+  if (event.pointerType === 'touch') {
+    touches.delete(event.pointerId);
+    if (pinch.active && touches.size < 2) {
+      pinch.active = false;
+      // A pinch is one indivisible gesture. Forget the remaining contact and
+      // require a fresh press; otherwise a browser that coalesces the two
+      // releases can leave a ghost finger which turns the next hold into a
+      // second pinch and makes the action menu unreachable.
+      touches.clear();
+      drag.active = false;
+      drag.panning = false;
+      drag.pointerId = -1;
+      cancelLongPress();
+    }
+  }
   if (event.pointerId !== drag.pointerId) return;
   cancelLongPress();
   const wasDragging = drag.panning;
   const wasLongPress = drag.longPressed;
+  const wasPinching = pinch.used;
   drag.active = false;
   drag.panning = false;
   drag.pointerId = -1;
-  if (wasDragging || wasLongPress || event.button !== 0) return;
+  if (wasDragging || wasLongPress || wasPinching || event.button !== 0) return;
   if (buildMode || radial.isOpen || picker.isOpen || graphOpen() || menuOpen()) return;
   if (event.target !== canvas) return;
 
@@ -1103,6 +1188,14 @@ window.addEventListener('pointerup', event => {
 });
 
 window.addEventListener('pointercancel', event => {
+  if (event.pointerType === 'touch') {
+    touches.delete(event.pointerId);
+    if (pinch.active && touches.size < 2) {
+      pinch.active = false;
+      touches.clear();
+      drag.pointerId = -1;
+    }
+  }
   if (event.pointerId !== drag.pointerId) return;
   cancelLongPress();
   drag.active = false;

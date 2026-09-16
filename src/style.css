@@ -203,6 +203,7 @@ html, body, #app {
 
 .hud-help b { color: var(--text); }
 .hud-help-touch { display: none; }
+.hud-mobile-tools { display: none; }
 
 /* --- character panel ----------------------------------------------------- */
 
@@ -1646,6 +1647,13 @@ html, body, #app {
   .hud-speed-label { min-width: 36px; }
   .hud-seg { order: 20; flex: 1 1 100%; }
   .hud-seg-button { flex: 1; min-height: 36px; padding: 6px 3px; }
+  .hud-mobile-tools {
+    order: 30;
+    display: flex;
+    flex: 1 1 100%;
+    gap: 5px;
+  }
+  .hud-mobile-tool { flex: 1; min-width: 0; padding-inline: 4px; }
 
   /* The inspector becomes a bottom sheet instead of consuming nearly the
      entire width while still being laid out as a desktop side panel. */
@@ -1680,7 +1688,7 @@ html, body, #app {
     transform: none;
   }
   .hud-design { width: 104px; min-height: 56px; }
-  .hud-commandbar { top: 146px; max-width: calc(100% - 20px); }
+  .hud-commandbar { top: 190px; max-width: calc(100% - 20px); }
 
   .newgame-card, .succession-card, .pausemenu-card, .settings-card {
     width: calc(100vw - 16px);

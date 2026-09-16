@@ -20,6 +20,11 @@ pans, and a 500 ms hold opens the same action chooser as desktop right-click.
 The mobile help text advertises those gestures. Desktop mouse behaviour keeps
 the same code path so the two input modes cannot drift apart.
 
+A follow-up put the keyboard-only map commands on a dedicated mobile row:
+re-centre, technology, family and tribe. A two-finger pinch now pans and zooms
+around the fingers' midpoint, preserving the piece of land the player is
+looking at instead of zooming around the centre of the screen.
+
 ## 2026-09-15 — M9.5 phase 4b: a chief holds a term, and a new chief is welcomed
 
 Daily re-election made leadership follow ordinary relationship noise: on the
