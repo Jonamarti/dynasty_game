@@ -93,18 +93,23 @@ sides three times, which is a finding in itself — see `bugs.md`:
 | M9.5 phase 4c — `division_of_labour`, a real gate | shipped 2026-09-16. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 4d — `chiefdom`, the second rung | shipped 2026-09-16. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 4e — the layered view | shipped 2026-09-16. **M9.5 is complete.** See [m9_5_plan.md](m9_5_plan.md) |
+| The ages get their real names | shipped 2026-09-16. §4's two remaining bullets, deliberately before M8.2 |
 | **M8.2 — the Neolithic** | **next**, with soil folded into `farming`. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
 | Owner's list O1–O5 | **O1, O2 and O3 shipped in M9 phase 4.** O4-O5 scheduled into M10. O6 and O7 shipped in pass A |
 
-**Thirty technologies**, thirteen recipes, ten buildings, twenty-nine items,
+**Thirty-two technologies**, thirteen recipes, ten buildings, twenty-nine items,
 thirty-four actions (`pickup` and `ask` are new), twelve skills (`heal` and `cook` finally have a use;
-`farm` and `smith` still do not, and wait for M8.2), four jobs, seven domains,
-six eras, three forms of record, three full-screen graphs (`G`/`K`/`T`).
+`farm` and `smith` still do not, and wait for M8.2), four jobs, eight domains,
+**four eras** — Lower Palaeolithic, Middle, Upper, Mesolithic, the real periods
+since 2026-09-16, and the ladder stops there until M8.2 brings a Neolithic
+anybody can reach — three forms of record, three full-screen graphs
+(`G`/`K`/`T`).
 
-**Thirteen scenarios**, four of them new in this tier: `millers` for the
+**Fourteen scenarios** (`labour` joined in M9.5 phase 4c), four of them new in
+this tier: `millers` for the
 stations, `hunters` for the bone chain, `culture` for the four nodes that are
 not about food, and `fishers`, which is the only run in the suite where food
 goes off.
@@ -359,19 +364,34 @@ are built: fishing, traps and stations are live, spoilage is built and switched
 off. What remains is M8.2 to M8.4, and the whole design, the node tables and the
 traps are in **[m8_plan_the_ages.md](m8_plan_the_ages.md)**.
 
-**Two pieces of the plan's own preamble are still undone**, and both are cheap:
+**Both pieces of the plan's own preamble shipped on 2026-09-16**, in one pass,
+before M8.2 as intended — see `changelog.md`:
 
-- **The era ladder still has the old names.** `ERAS` is `stone`, `fire`,
-  `hearth`, `tools`, `craft`, `building`; the plan replaces it with the real
-  archaeological periods, keeping the evocative line as the description — which
-  is what the owner asked for. Two existing tests hardcode `stone` and `fire`,
-  so it is a test change as well as a data change.
-- **`TechDef.age` and `TechDef.firstKnown` are not there.** `age` is what makes
-  the tech web legible as history and is what the web's radius should read
-  instead of prerequisite depth; `firstKnown` ("about 40,000 years ago") is free
-  to add and is most of what "as realistic as possible" actually asks for. Both
-  are best done in one pass with the era rename, and doing them before M8.2
-  triples the node count is the cheaper order.
+- **The era ladder has the real period names.** `ERAS` is now Lower
+  Palaeolithic → Middle → Upper → Mesolithic, with the evocative line each rung
+  already had kept as its `description`. Two departures from the plan's table,
+  both argued in the doc comment on `ERAS`: a **Middle Palaeolithic** rung the
+  table did not have, without which a band that has carried fire for three
+  generations still reads as Lower Palaeolithic; and `netting` in the Mesolithic
+  where the table asked for `preserving`, which is the M8.1 node held back in
+  §0b. **The ladder stops at the Mesolithic on purpose** — the Neolithic needs
+  `farming`, `herding` and `masonry`, and a rung no world can reach is declared
+  content that does nothing. It is M8.2's to add, in the same commit as the
+  field.
+- **`TechDef.age` and `TechDef.firstKnown` are on all thirty-two nodes.** The
+  tech web seeds its radius from the period rather than from prerequisite depth,
+  so `bow` and `fish_trap` share a Mesolithic ring though one rests on three
+  things and the other on four, and the detail pane reads *Middle Palaeolithic ·
+  about 300,000 years ago* under a node's title. `age` is descriptive and
+  `requires` is still the only gate: `writing` is Bronze Age and rests on two
+  Palaeolithic nodes, so a lucky band can have it early, and a test exists to
+  stop anybody "fixing" that.
+
+**What M8.2 inherits from this pass**: seventeen new nodes each need an `age`
+and a `firstKnown` as they are written — `techs-have-effects`' sibling tests will
+not let them ship without — and the Neolithic, Chalcolithic, Bronze and Iron
+rungs of `ERAS` are waiting in `AGES` for the technologies that would make them
+reachable.
 
 ## 5. The owner's list, O1–O5
 

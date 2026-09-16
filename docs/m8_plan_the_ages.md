@@ -134,6 +134,24 @@ this one is left open and does not block M8.1.
 
 ## The era ladder
 
+> **Shipped 2026-09-16**, as far as the technologies that exist allow — see
+> `changelog.md`, "The ages get their real names". What is live is the bottom of
+> this table with two changes, both argued in the doc comment on `ERAS`: a
+> **Middle Palaeolithic** rung this table did not have, holding `firemaking`
+> alone, because without it a band that has carried fire for three generations
+> still reads as Lower Palaeolithic and the one rung a short run reliably climbs
+> would not exist; and `netting` in the Mesolithic where the table says
+> `preserving`, which is the M8.1 node held back with spoilage. **The rungs from
+> the Neolithic down this table are not in the code**, because their `needs`
+> name technologies nobody can learn yet, and a rung no world can reach is
+> declared content that does nothing. **Adding the Neolithic rung is part of
+> M8.2**, in the same commit as the field — and `eras-name-only-real-
+> technologies` fails on the spot if it arrives early.
+>
+> The `age` and `firstKnown` axes below also shipped in that pass, on all
+> thirty-two existing nodes. **Every node this document adds needs both**, and
+> the age test refuses a node dated earlier than something it rests on.
+
 `ERAS` in `knowledge/Tech.ts` is replaced. The real period is the `label`; the
 evocative line the project already wrote survives as the `description`.
 
@@ -161,6 +179,12 @@ test change as well as a data change. That is the spec being out of date rather
 than the game being broken — but check which it is before editing a test. The HUD
 and the health report both read `stats.era`, which is the *label*, so they need
 nothing.
+
+> **It was three, not two.** `e2e/smoke.spec.ts` also asserted the top bar reads
+> "Stone Age" — the label, exactly as this paragraph says nothing would — and
+> `Simulation` held a fourth copy of the first rung, hand-written as a field
+> initialiser, which is the same "second list nothing keeps in step" defect
+> `ERA_ORDER` was derived to fix. It now reads `ERAS[0]`.
 
 **Say the honest thing in the doc comment:** on a 128x128 island with three bands
 of ten, a playthrough will usually stop in the Neolithic, and that is the correct

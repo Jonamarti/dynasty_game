@@ -105,6 +105,54 @@ export const DOMAINS = [
 export type Domain = (typeof DOMAINS)[number];
 
 /**
+ * The archaeological periods, in order, and the one vocabulary two different
+ * questions are answered in.
+ *
+ * The questions are deliberately different, and conflating them is the mistake
+ * this comment exists to prevent:
+ *
+ *  - **`TechDef.age`** — when *our* species got there. It is descriptive. It
+ *    drives the ring a node is drawn on in the tech web and nothing else.
+ *  - **`ERAS`** — what a world must widely know to be reported as living in a
+ *    period. That is about a society, and it can be lost again.
+ *
+ * Neither of them is `requires`, which is the only thing that actually gates a
+ * discovery. `writing` sits in the Bronze Age because that is when writing
+ * happened, while it rests on nothing but `marking` and `stoneworking` — so a
+ * lucky band can work it out in the Mesolithic, and that anachronism is the
+ * player's to earn. Do not "fix" it by gating on the age; the same distinction
+ * the project already draws between `requires` and `sparks` is being drawn
+ * again here.
+ *
+ * All eight periods are listed even though the table stops in the Neolithic,
+ * because the list is a historical fact rather than a content manifest — but
+ * **`AGES` is not a licence to declare a technology before the code that makes
+ * it real**: the rule in the file header still holds.
+ */
+export const AGES = [
+  'lower_palaeolithic', 'middle_palaeolithic', 'upper_palaeolithic', 'mesolithic',
+  'neolithic', 'chalcolithic', 'bronze', 'iron',
+] as const;
+export type AgeId = (typeof AGES)[number];
+
+/** The period names as a player should read them. Written once, used twice. */
+export const AGE_LABELS: Record<AgeId, string> = {
+  lower_palaeolithic: 'Lower Palaeolithic',
+  middle_palaeolithic: 'Middle Palaeolithic',
+  upper_palaeolithic: 'Upper Palaeolithic',
+  mesolithic: 'Mesolithic',
+  neolithic: 'Neolithic',
+  chalcolithic: 'Chalcolithic',
+  bronze: 'Bronze Age',
+  iron: 'Iron Age',
+};
+
+/** Where a period sits on the ladder, for "is this one later than that one". */
+export function ageIndex(age: AgeId): number {
+  return AGES.indexOf(age);
+}
+
+/**
  * What kind of thing a technology *is*, and therefore how it is arrived at.
  *
  * The owner's note: "All techs should be developed the same. Plant lore for
@@ -136,6 +184,25 @@ export interface TechDef {
   id: Tech;
   label: string;
   domain: Domain;
+  /**
+   * The archaeological period our own species arrived at this in.
+   *
+   * **Descriptive, never a gate.** See the comment on `AGES`: `requires` is
+   * what stands between a person and an idea, and this is what the tech web
+   * draws a ring for. A test asserts a node's age is never earlier than any of
+   * its prerequisites' — the picture would otherwise draw an arrow pointing
+   * backwards through time — but nothing in the simulation reads it.
+   */
+  age: AgeId;
+  /**
+   * When, in plain words: "about 40,000 years ago", "about 3200 BC".
+   *
+   * Shown in the tech web's detail pane, and most of what the owner's "as
+   * realistic as possible to human history" actually asks for — the player
+   * finds out that the needle is older than the pot, and that iron is younger
+   * than writing.
+   */
+  firstKnown: string;
   /** Whether this makes a thing or makes you better at a thing. */
   kind: TechKind;
   /**
@@ -203,6 +270,7 @@ export interface TechDef {
 export const TECH: Record<Tech, TechDef> = {
   firemaking: {
     id: 'firemaking', label: 'Firemaking', domain: 'fire',
+    age: 'middle_palaeolithic', firstKnown: 'about 400,000 years ago',
     kind: 'device',
     requires: [], difficulty: 0.35, skill: 'knap',
     prototype: { sticks: 2, flint: 1 }, maxRefinement: 2,
@@ -227,6 +295,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   cordage: {
     id: 'cordage', label: 'Cordage', domain: 'cloth',
+    age: 'middle_palaeolithic', firstKnown: 'about 50,000 years ago',
     kind: 'device',
     requires: [], difficulty: 0.3, skill: 'forage',
     prototype: { thatch: 3 }, maxRefinement: 2,
@@ -242,6 +311,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   plant_lore: {
     id: 'plant_lore', label: 'Plant lore', domain: 'plants',
+    age: 'lower_palaeolithic', firstKnown: 'older than our species',
     kind: 'practice', practisedBy: ['forage', 'pick'],
     requires: [], difficulty: 0.25, skill: 'forage',
     prototype: {}, maxRefinement: 3,
@@ -259,6 +329,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   spear: {
     id: 'spear', label: 'The spear', domain: 'beasts',
+    age: 'middle_palaeolithic', firstKnown: 'about 200,000 years ago',
     kind: 'device',
     requires: ['hafting'], difficulty: 0.35, skill: 'knap',
     prototype: { sticks: 2, flint: 1 }, maxRefinement: 3,
@@ -276,6 +347,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   bow: {
     id: 'bow', label: 'The bow', domain: 'beasts',
+    age: 'mesolithic', firstKnown: 'about 12,000 years ago',
     kind: 'device',
     requires: ['cordage', 'spear'], difficulty: 0.6, skill: 'hunt',
     prototype: { sticks: 3, thatch: 2 }, maxRefinement: 3,
@@ -292,6 +364,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   leatherwork: {
     id: 'leatherwork', label: 'Leatherwork', domain: 'cloth',
+    age: 'middle_palaeolithic', firstKnown: 'about 50,000 years ago',
     kind: 'device',
     requires: ['clothing'], difficulty: 0.45, skill: 'build',
     prototype: { hide: 1, thatch: 2 }, maxRefinement: 2,
@@ -314,6 +387,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   tracking: {
     id: 'tracking', label: 'Tracking', domain: 'beasts',
+    age: 'lower_palaeolithic', firstKnown: 'older than our species',
     kind: 'practice', practisedBy: ['hunt'],
     requires: [], difficulty: 0.4, skill: 'track',
     prototype: {}, maxRefinement: 3,
@@ -346,6 +420,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   cooking: {
     id: 'cooking', label: 'Cooking', domain: 'fire',
+    age: 'middle_palaeolithic', firstKnown: 'about 300,000 years ago',
     kind: 'practice', practisedBy: ['eat'],
     requires: ['firemaking'], difficulty: 0.25, skill: 'cook',
     prototype: {}, maxRefinement: 3,
@@ -362,6 +437,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   hafting: {
     id: 'hafting', label: 'Hafting', domain: 'stone',
+    age: 'middle_palaeolithic', firstKnown: 'about 200,000 years ago',
     kind: 'device',
     requires: ['cordage'], difficulty: 0.45, skill: 'knap',
     prototype: { flint: 1, sticks: 1, thatch: 1 }, maxRefinement: 2,
@@ -379,6 +455,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   clothing: {
     id: 'clothing', label: 'Clothing', domain: 'cloth',
+    age: 'middle_palaeolithic', firstKnown: 'at least 120,000 years ago',
     kind: 'device',
     requires: ['cordage'], difficulty: 0.4, skill: 'forage',
     // Plaited fibre, not a fur coat. Hide is the *idea*'s strongest spark and
@@ -401,6 +478,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   pottery: {
     id: 'pottery', label: 'Pottery', domain: 'fire',
+    age: 'upper_palaeolithic', firstKnown: 'about 20,000 years ago',
     kind: 'device',
     requires: ['firemaking'], difficulty: 0.55, skill: 'build',
     prototype: { mud: 3, sticks: 2 }, maxRefinement: 2,
@@ -418,6 +496,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   marking: {
     id: 'marking', label: 'Tallies', domain: 'cloth',
+    age: 'upper_palaeolithic', firstKnown: 'about 40,000 years ago',
     kind: 'device',
     requires: ['cordage'], difficulty: 0.4, skill: 'build',
     prototype: { sticks: 2 }, maxRefinement: 1,
@@ -443,6 +522,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   writing: {
     id: 'writing', label: 'Writing', domain: 'stone',
+    age: 'bronze', firstKnown: 'about 3200 BC',
     kind: 'device',
     requires: ['marking', 'stoneworking'], difficulty: 0.75, skill: 'knap',
     prototype: { flint: 2 }, maxRefinement: 2,
@@ -460,6 +540,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   clay_tablet: {
     id: 'clay_tablet', label: 'Clay tablets', domain: 'fire',
+    age: 'bronze', firstKnown: 'about 3200 BC',
     kind: 'device',
     requires: ['writing', 'pottery'], difficulty: 0.55, skill: 'build',
     prototype: { mud: 3 }, maxRefinement: 2,
@@ -477,6 +558,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   library: {
     id: 'library', label: 'The library', domain: 'timber',
+    age: 'bronze', firstKnown: 'about 2300 BC',
     kind: 'device',
     requires: ['writing', 'carpentry'], difficulty: 0.7, skill: 'build',
     prototype: { wood: 3, sticks: 3 }, maxRefinement: 2,
@@ -494,6 +576,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   stoneworking: {
     id: 'stoneworking', label: 'Stoneworking', domain: 'stone',
+    age: 'upper_palaeolithic', firstKnown: 'about 45,000 years ago',
     kind: 'practice', practisedBy: ['gather', 'craft'],
     requires: ['hafting'], difficulty: 0.5, skill: 'knap',
     prototype: {}, maxRefinement: 3,
@@ -513,6 +596,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   carpentry: {
     id: 'carpentry', label: 'Carpentry', domain: 'timber',
+    age: 'mesolithic', firstKnown: 'about 11,000 years ago',
     kind: 'device',
     requires: ['hafting', 'stoneworking'], difficulty: 0.6, skill: 'build',
     prototype: { wood: 4, thatch: 2 }, maxRefinement: 2,
@@ -539,6 +623,7 @@ export const TECH: Record<Tech, TechDef> = {
   // well".
   fishing: {
     id: 'fishing', label: 'Fishing', domain: 'water',
+    age: 'upper_palaeolithic', firstKnown: 'about 42,000 years ago',
     kind: 'practice', practisedBy: ['forage', 'hunt'],
     requires: ['spear'], difficulty: 0.45, skill: 'hunt',
     prototype: {}, maxRefinement: 3,
@@ -566,6 +651,7 @@ export const TECH: Record<Tech, TechDef> = {
   // story told with cordage: a woven container is what a trap *is*.
   basketry: {
     id: 'basketry', label: 'Basketry', domain: 'cloth',
+    age: 'upper_palaeolithic', firstKnown: 'about 27,000 years ago',
     kind: 'device',
     requires: ['cordage'], difficulty: 0.35, skill: 'build',
     prototype: { thatch: 4, sticks: 2 }, maxRefinement: 2,
@@ -588,6 +674,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   netting: {
     id: 'netting', label: 'Netting', domain: 'water',
+    age: 'upper_palaeolithic', firstKnown: 'about 27,000 years ago',
     kind: 'device',
     requires: ['cordage', 'fishing'], difficulty: 0.45, skill: 'forage',
     prototype: { thatch: 6 }, maxRefinement: 3,
@@ -606,6 +693,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   snares: {
     id: 'snares', label: 'Snares', domain: 'beasts',
+    age: 'upper_palaeolithic', firstKnown: 'about 25,000 years ago',
     kind: 'device',
     requires: ['cordage', 'tracking'], difficulty: 0.45, skill: 'track',
     prototype: { thatch: 3, sticks: 3 }, maxRefinement: 3,
@@ -629,6 +717,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   fish_trap: {
     id: 'fish_trap', label: 'Fish trap', domain: 'water',
+    age: 'mesolithic', firstKnown: 'about 8,000 years ago',
     kind: 'device',
     requires: ['netting', 'basketry'], difficulty: 0.5, skill: 'forage',
     prototype: { thatch: 6, sticks: 4 }, maxRefinement: 3,
@@ -654,6 +743,7 @@ export const TECH: Record<Tech, TechDef> = {
   // was never the tool.
   grinding: {
     id: 'grinding', label: 'Grinding', domain: 'plants',
+    age: 'upper_palaeolithic', firstKnown: 'about 30,000 years ago',
     kind: 'device',
     requires: ['stoneworking'], difficulty: 0.4, skill: 'cook',
     prototype: { flint: 2, sticks: 1 }, maxRefinement: 2,
@@ -697,6 +787,7 @@ export const TECH: Record<Tech, TechDef> = {
   // could live where it was cold.
   bone_working: {
     id: 'bone_working', label: 'Bone working', domain: 'beasts',
+    age: 'upper_palaeolithic', firstKnown: 'about 45,000 years ago',
     kind: 'device',
     requires: ['hafting'], difficulty: 0.4, skill: 'knap',
     prototype: { flint: 1, sticks: 1 }, maxRefinement: 3,
@@ -719,6 +810,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   tailoring: {
     id: 'tailoring', label: 'Tailoring', domain: 'cloth',
+    age: 'upper_palaeolithic', firstKnown: 'about 40,000 years ago',
     kind: 'device',
     requires: ['clothing', 'bone_working'], difficulty: 0.5, skill: 'build',
     prototype: { hide: 2, sinew: 1 }, maxRefinement: 3,
@@ -738,6 +830,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   atlatl: {
     id: 'atlatl', label: 'Spear-thrower', domain: 'beasts',
+    age: 'upper_palaeolithic', firstKnown: 'about 18,000 years ago',
     kind: 'device',
     requires: ['spear'], difficulty: 0.45, skill: 'hunt',
     prototype: { sticks: 2, thatch: 1 }, maxRefinement: 3,
@@ -757,6 +850,7 @@ export const TECH: Record<Tech, TechDef> = {
   // --- M8.1, the last four ---------------------------------------------------
   ochre: {
     id: 'ochre', label: 'Ochre', domain: 'stone',
+    age: 'middle_palaeolithic', firstKnown: 'about 100,000 years ago',
     kind: 'device',
     requires: ['firemaking'], difficulty: 0.3, skill: 'build',
     prototype: { mud: 2, sticks: 1 }, maxRefinement: 2,
@@ -778,6 +872,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   flute: {
     id: 'flute', label: 'Flute', domain: 'beasts',
+    age: 'upper_palaeolithic', firstKnown: 'about 40,000 years ago',
     kind: 'device',
     requires: ['bone_working'], difficulty: 0.45, skill: 'build',
     prototype: { bone: 1, flint: 1 }, maxRefinement: 2,
@@ -796,6 +891,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   herbalism: {
     id: 'herbalism', label: 'Herbalism', domain: 'plants',
+    age: 'middle_palaeolithic', firstKnown: 'about 50,000 years ago',
     kind: 'practice', practisedBy: ['tend'],
     requires: ['plant_lore'], difficulty: 0.45, skill: 'heal',
     prototype: {}, maxRefinement: 3,
@@ -815,6 +911,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   taming: {
     id: 'taming', label: 'Taming', domain: 'beasts',
+    age: 'upper_palaeolithic', firstKnown: 'about 30,000 years ago',
     kind: 'practice', practisedBy: ['tame'],
     requires: ['tracking'], difficulty: 0.5, skill: 'track',
     prototype: {}, maxRefinement: 3,
@@ -837,6 +934,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   division_of_labour: {
     id: 'division_of_labour', label: 'Division of labour', domain: 'people',
+    age: 'upper_palaeolithic', firstKnown: 'about 40,000 years ago',
     // A practice, and it could not be anything else: there is nothing to
     // build. It is tried by doing it — `Simulation.assignJob` calls
     // `noteDid('assign')` on every arrangement that sticks — which is the same
@@ -892,6 +990,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   chiefdom: {
     id: 'chiefdom', label: 'Chiefdom', domain: 'people',
+    age: 'neolithic', firstKnown: 'about 7,000 years ago',
     // Practised by presiding: giving an order to somebody who is neither your
     // kin nor under your roof, and being obeyed because of the rank rather
     // than in spite of the lack of one. `Simulation.command` records that as
@@ -1275,54 +1374,85 @@ export function warmthFrom(person: Person): number {
 // ---------------------------------------------------------------------------
 
 /**
- * Eras, named by what is widely known rather than by a date.
+ * Eras, named by the archaeological period they correspond to.
  *
  * `heldBy` is the fraction of living adults who must know *all* of the listed
  * techs. Fractions rather than counts because an era is about a society, and
  * because it lets the world fall back down the list when a generation dies
  * badly — which is the whole reason to model it this way.
+ *
+ * ## Why the real period names, and not "the Age of Fire"
+ *
+ * The ladder used to read stone → fire → hearth → tools → craft → building:
+ * evocative, invented, and saying nothing true. The project owner asked for the
+ * real archaeological periods, and the evocative line each rung already had
+ * survives as its `description`, which is where it was always doing its work.
+ * The rungs are now the same vocabulary as `TechDef.age`, so the period the HUD
+ * names and the ring the tech web draws a node on are the same word.
+ *
+ * ## The ladder stops at the Mesolithic, and that is not an oversight
+ *
+ * The Neolithic and everything above it are planned in
+ * `docs/m8_plan_the_ages.md` and need `farming`, `herding` and `masonry`, none
+ * of which exist yet. A rung whose `needs` name a technology nobody can learn
+ * is a rung no world can ever reach — declared content that does nothing, which
+ * is the defect this project checks for in `techs-have-effects` — so the
+ * Neolithic arrives in M8.2, in the commit that makes a field something you can
+ * sow. `eras-name-only-real-technologies` fails the moment somebody adds one
+ * early.
+ *
+ * ## Two deliberate departures from the table in the plan
+ *
+ * **A Middle Palaeolithic rung**, which the plan's table did not have. Without
+ * it, a band that has carried fire for three generations is still reported as
+ * Lower Palaeolithic, and the one rung a world reliably climbs in a twelve-day
+ * run would have stopped existing. Habitual, controlled fire is the textbook
+ * marker of the period, so the rung is honest as well as useful.
+ *
+ * **The Mesolithic asks for `netting` where the plan asked for `preserving`**,
+ * because `preserving` is the one node of M8.1's fourteen that was deliberately
+ * held back — see `docs/next-steps.md` §0b, spoilage is built and switched off.
+ * Nets and the fish they take are as Mesolithic as anything in the tier, and
+ * the rung can be revisited if spoilage is ever switched on.
  */
 export interface EraDef {
-  id: string;
+  /** One of `AGES`: the ladder and `TechDef.age` share a vocabulary. */
+  id: AgeId;
   label: string;
   needs: Tech[];
   heldBy: number;
   description: string;
 }
 
-export const ERAS: EraDef[] = [
+/**
+ * The rungs, without their labels: the label is `AGE_LABELS[id]` and is written
+ * once, in the period list, rather than twice here.
+ */
+const ERA_LADDER: Omit<EraDef, 'label'>[] = [
   {
-    id: 'stone', label: 'Stone Age', needs: [], heldBy: 0,
+    id: 'lower_palaeolithic', needs: [], heldBy: 0,
     description: 'Flint, sticks and what the land offers.',
   },
   {
-    id: 'fire', label: 'Age of Fire', needs: ['firemaking'], heldBy: 0.35,
+    id: 'middle_palaeolithic', needs: ['firemaking'], heldBy: 0.35,
     description: 'Warmth that travels, and the night pushed back.',
   },
   {
-    id: 'hearth', label: 'Age of the Hearth', needs: ['firemaking', 'cooking'], heldBy: 0.4,
-    description: 'Cooked food, and more of it than the land seemed to hold.',
+    id: 'upper_palaeolithic',
+    needs: ['firemaking', 'cooking', 'hafting', 'clothing'], heldBy: 0.35,
+    description: 'Fire carried, hide sewn, and a winter night that can be survived.',
   },
   {
-    id: 'tools', label: 'Age of Tools',
-    needs: ['firemaking', 'cooking', 'cordage', 'hafting'], heldBy: 0.4,
-    description: 'Hafted edges. Everything gets faster at once.',
-  },
-  {
-    id: 'craft', label: 'Age of Craft',
-    needs: ['firemaking', 'cooking', 'cordage', 'hafting', 'clothing', 'pottery'], heldBy: 0.35,
-    description: 'Clothes against the winter and pots against the lean year.',
-  },
-  {
-    id: 'building', label: 'Age of Building',
-    needs: [
-      'firemaking', 'cooking', 'cordage', 'hafting',
-      'clothing', 'pottery', 'stoneworking', 'carpentry',
-    ],
+    id: 'mesolithic',
+    needs: ['firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow'],
     heldBy: 0.3,
-    description: 'Jointed timber and worked stone. A house outlasts the people who raised it.',
+    description:
+      'The bow, the net and the snare — food you go and take rather than food ' +
+      'you find.',
   },
 ];
+
+export const ERAS: EraDef[] = ERA_LADDER.map(rung => ({ ...rung, label: AGE_LABELS[rung.id] }));
 
 /**
  * Era ids in order, so a change can be reported as a gain or a loss.

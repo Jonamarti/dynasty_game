@@ -1125,6 +1125,10 @@ html, body, #app {
 .techweb-title { font-size: 14px; font-weight: 600; }
 .techweb-note { margin-top: 4px; color: var(--text-dim); font-size: 12px; line-height: 1.4; }
 .techweb-effect { margin-top: 6px; font-size: 12px; color: var(--accent); }
+/* The real-world date. Quiet on purpose: it is history, not something the
+   player can act on, and it sits directly under the title where the eye
+   already is. */
+.techweb-when { margin-top: 2px; font-size: 11px; color: var(--text-dim); font-style: italic; }
 .techweb-state { margin-top: 6px; font-size: 12px; }
 .techweb-hint { color: var(--text-dim); font-size: 12px; line-height: 1.5; }
 .techweb-section {

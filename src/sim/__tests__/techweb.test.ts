@@ -10,9 +10,9 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  layOutWeb, webEdges, depthOf, NODE_RADIUS, DOMAIN_COLORS,
+  layOutWeb, webEdges, depthOf, webRings, NODE_RADIUS, DOMAIN_COLORS,
 } from '../../ui/TechWebLayout.ts';
-import { TECH, TECHS, DOMAINS, type Tech } from '../knowledge/Tech.ts';
+import { TECH, TECHS, DOMAINS, AGES, ageIndex, type Tech } from '../knowledge/Tech.ts';
 
 describe('the tech web layout', () => {
   it('is byte-identical between two runs', () => {
@@ -108,6 +108,35 @@ describe('the tech web layout', () => {
     // Carpentry rests on stoneworking, which rests on hafting, which rests on
     // cordage: the longest chain, not the shortest.
     expect(depthOf('carpentry')).toBe(3);
+  });
+
+  it('rings the web by period, earliest in the middle', () => {
+    const rings = webRings();
+    // Dense and in historical order: every period the table uses, once, with
+    // nothing skipped in between. A gap here would seed a node on an empty
+    // ring and leave the relaxation to drag it back over the hole.
+    expect(rings.length).toBeGreaterThan(1);
+    for (let i = 1; i < rings.length; i++) {
+      expect(ageIndex(rings[i]!)).toBeGreaterThan(ageIndex(rings[i - 1]!));
+    }
+    for (const age of rings) expect(AGES).toContain(age);
+
+    for (const node of layOutWeb().nodes) {
+      expect(node.age, node.tech).toBe(TECH[node.tech].age);
+      expect(node.ring, node.tech).toBe(rings.indexOf(node.age));
+    }
+  });
+
+  it('rings by when it happened, not by how deep the table is', () => {
+    // The change this replaced: the seed radius used to be prerequisite depth,
+    // which is a fact about how this table happens to be wired rather than
+    // about history. `bow` rests on three things and `fish_trap` on four, and
+    // both are Mesolithic — they belong on the same ring, and under depth they
+    // did not. Verified against the old behaviour: with the seed switched back
+    // to `depthOf` these two rings differ.
+    expect(depthOf('bow')).not.toBe(depthOf('fish_trap'));
+    const nodes = new Map(layOutWeb().nodes.map(node => [node.tech, node]));
+    expect(nodes.get('bow')!.ring).toBe(nodes.get('fish_trap')!.ring);
   });
 
   it('gives every domain a colour', () => {

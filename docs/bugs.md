@@ -3,6 +3,25 @@
 As of 2026-09-16. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found during the era rename, 2026-09-16
+
+### The ladder has four rungs where it had six, so promotions are rarer
+
+The real periods are coarser than the invented ones. `pottery`, `stoneworking`
+and `carpentry` used to carry two rungs of their own — the Age of Craft and the
+Age of Building — and under the archaeological names they carry none, because
+worked stone and jointed timber are not what separates one period from the next
+and a pot is Upper Palaeolithic in a world that has no farming. A band that
+climbs that far now sees the top bar change twice in a run rather than four
+times.
+
+This is the rename being honest rather than a defect, and the ladder is short
+only until M8.2: the Neolithic rung is the one those bands will actually earn,
+and it arrives with the field that makes it mean something. Recorded here
+because it is a visible change to a number the player watches, and because
+"the era stopped advancing" is exactly the kind of thing that gets reported as
+a bug three weeks later.
+
 ## Found during M9.5 phase 4e, 2026-09-16
 
 ### The three graphs relax their whole layout every frame, open or idle

@@ -586,8 +586,10 @@ test('the family panel names spouse, parents and children', async ({ page }) => 
 test('the era is named in the top bar', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);
-  // A fresh world knows nothing, so it opens in the Stone Age by definition.
-  await expect(page.locator('.hud-stats')).toContainText('Stone Age');
+  // A fresh world knows nothing, so it opens on the bottom rung by definition
+  // — which is now the real period rather than the invented one: the ladder
+  // reads Lower Palaeolithic → Middle → Upper → Mesolithic.
+  await expect(page.locator('.hud-stats')).toContainText('Lower Palaeolithic');
   expect(errors).toEqual([]);
 });
 
@@ -734,6 +736,11 @@ test('the tech web opens on G and answers why an idea has not arrived', async ({
   // satisfied and which is missing, in words.
   await page.locator('.techweb-node[data-tech="cooking"]').hover();
   await expect(page.locator('.techweb-title')).toHaveText('Cooking');
+  // And when our own species got there, which is the one line in the panel
+  // about the real world rather than about this band. A node out of reach is
+  // deliberately not given one — see the `unknown` return in `TechWeb.detail`.
+  await expect(page.locator('.techweb-when'))
+    .toHaveText('Middle Palaeolithic · about 300,000 years ago');
   await expect(page.locator('.techweb-ing.is-met').first())
     .toContainText('knowing firemaking');
   await expect(page.locator('.techweb-detail')).toContainText('holding');

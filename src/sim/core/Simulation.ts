@@ -53,7 +53,7 @@ import { foundBand, type FoundingContext } from '../systems/Founding.ts';
 import { KnowledgeSystem, countHolders } from '../systems/KnowledgeSystem.ts';
 import { ORDER_REFUSED, type Notice } from '../knowledge/Synthesis.ts';
 import {
-  eraFor, nutritionFactor, techPower, ERA_ORDER, TECHS, type EraDef, type Tech,
+  eraFor, nutritionFactor, techPower, ERA_ORDER, ERAS, TECHS, type EraDef, type Tech,
 } from '../knowledge/Tech.ts';
 import { RECIPES, type RecipeDef } from '../entities/Recipe.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
@@ -313,7 +313,11 @@ export class Simulation {
   private readonly wildlifeRng: RNG;
   private readonly recordRng: RNG;
   /** Recomputed daily from who is alive. An era can be lost as well as gained. */
-  era: EraDef = { id: 'stone', label: 'Stone Age', needs: [], heldBy: 0, description: '' };
+  // The first rung itself, not a hand-written copy of it. The copy that used
+  // to sit here was a second list nothing kept in step with `ERAS` — the same
+  // defect `ERA_ORDER` was derived to fix — and it went stale the moment the
+  // ladder was renamed to the real archaeological periods.
+  era: EraDef = ERAS[0]!;
   /** Living holders per tech, for the UI and the health report. */
   readonly techHolders = new Map<Tech, number>();
   private readonly lifeRng: RNG;

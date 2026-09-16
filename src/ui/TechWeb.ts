@@ -33,7 +33,9 @@
  */
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
-import { TECH, TECH_EFFECTS, prerequisitesMet, type Tech } from '../sim/knowledge/Tech.ts';
+import {
+  TECH, TECH_EFFECTS, AGE_LABELS, prerequisitesMet, type Tech,
+} from '../sim/knowledge/Tech.ts';
 import {
   describeIngredient, sparkStatus, STAGE_LABELS, PRACTICE_STAGE_LABELS,
   PROTOTYPE_AT, TRIES_TO_TEST, type Notice, type Spark,
@@ -507,6 +509,14 @@ export class TechWebOverlay {
     rows.push('<div class="techweb-kind">' + (def.kind === 'practice'
       ? 'A way of doing something — there is nothing to build'
       : 'Something you make') + '</div>');
+    // When our own species got there, which is not when this band will. It is
+    // the reason the ring exists and the one line in this panel that is about
+    // the real world rather than about the person being looked at — the player
+    // finds out that the needle is older than the pot. Deliberately below the
+    // `unknown` early return above: a node out of reach keeps its secrets, and
+    // a date is a strong hint about what the node is.
+    rows.push('<div class="techweb-when">' + escapeHtml(AGE_LABELS[def.age]) +
+      ' &middot; ' + escapeHtml(def.firstKnown) + '</div>');
     rows.push('<div class="techweb-note">' + escapeHtml(def.description) + '</div>');
     rows.push('<div class="techweb-effect">' +
       escapeHtml(TECH_EFFECTS[tech].summary) + '</div>');

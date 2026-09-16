@@ -13,7 +13,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  TECH, TECHS, TECH_EFFECTS, ERAS, ERA_ORDER, eraFor, reachableFrom,
+  TECH, TECHS, TECH_EFFECTS, ERAS, ERA_ORDER, AGES, ageIndex, eraFor, reachableFrom,
   techPower, carryFactor, forageYieldFactor, nutritionFactor, warmthFrom,
   type Tech,
 } from '../knowledge/Tech.ts';
@@ -185,22 +185,86 @@ describe('eras', () => {
     }
   });
 
-  it('needs strictly more as it goes on, so an era cannot be skipped backwards', () => {
+  it('climbs the real archaeological periods, in the order they happened', () => {
+    // The ladder shares its vocabulary with `TechDef.age`, so a rung that is
+    // not a period is a rung the tech web cannot draw a ring for. It also has
+    // to climb: a ladder whose rungs are out of historical order would report
+    // a world as Mesolithic and then Middle Palaeolithic on the way up.
+    for (const era of ERAS) expect(AGES).toContain(era.id);
     for (let i = 1; i < ERAS.length; i++) {
-      expect(ERAS[i]!.needs.length).toBeGreaterThanOrEqual(ERAS[i - 1]!.needs.length);
+      expect(ageIndex(ERAS[i]!.id)).toBeGreaterThan(ageIndex(ERAS[i - 1]!.id));
     }
   });
 
-  it('falls back to the stone age when everybody is gone', () => {
-    expect(eraFor(new Map(), 0).id).toBe('stone');
+  it('needs strictly more as it goes on, so an era cannot be skipped backwards', () => {
+    for (let i = 1; i < ERAS.length; i++) {
+      expect(ERAS[i]!.needs.length).toBeGreaterThanOrEqual(ERAS[i - 1]!.needs.length);
+      // Cumulative in substance, not merely in count: everything an earlier
+      // rung asked for is still asked for. The old test compared lengths
+      // alone, which a rung that swapped one technology for two would have
+      // satisfied while quietly letting a world climb past something it had
+      // lost.
+      for (const tech of ERAS[i - 1]!.needs) expect(ERAS[i]!.needs).toContain(tech);
+    }
+  });
+
+  it('never rests a period on a technology from a later one', () => {
+    // A society is not in the Mesolithic on the strength of a Bronze Age idea.
+    // `age` is descriptive and `needs` is the test a world passes, and this is
+    // the one place the two have to agree.
+    for (const era of ERAS) {
+      for (const tech of era.needs) {
+        expect(ageIndex(TECH[tech].age), tech + ' in ' + era.id)
+          .toBeLessThanOrEqual(ageIndex(era.id));
+      }
+    }
+  });
+
+  it('falls back to the first period when everybody is gone', () => {
+    expect(eraFor(new Map(), 0).id).toBe('lower_palaeolithic');
   });
 
   it('rises and falls with how many people hold the knowledge', () => {
     const holders = new Map<Tech, number>([['firemaking', 8]]);
-    expect(eraFor(holders, 10).id).toBe('fire');
+    expect(eraFor(holders, 10).id).toBe('middle_palaeolithic');
     // The same knowledge in fewer heads is not an age.
     holders.set('firemaking', 1);
-    expect(eraFor(holders, 10).id).toBe('stone');
+    expect(eraFor(holders, 10).id).toBe('lower_palaeolithic');
+  });
+});
+
+describe('when each thing was really worked out', () => {
+  it('gives every technology a period and a date in plain words', () => {
+    for (const tech of TECHS) {
+      expect(AGES, tech).toContain(TECH[tech].age);
+      expect(TECH[tech].firstKnown.length, tech).toBeGreaterThan(0);
+    }
+  });
+
+  it('never dates a technology earlier than something it rests on', () => {
+    // The tech web draws a ring per period, so a node older than its own
+    // prerequisite is an arrow pointing backwards through time. This is the
+    // only rule `age` has to obey; it is otherwise pure description, and it
+    // deliberately does *not* have to agree with `requires` about what is
+    // reachable — see the comment on `AGES`.
+    for (const tech of TECHS) {
+      for (const required of TECH[tech].requires) {
+        expect(ageIndex(TECH[tech].age), tech + ' before its own ' + required)
+          .toBeGreaterThanOrEqual(ageIndex(TECH[required].age));
+      }
+    }
+  });
+
+  it('is history rather than a second gate', () => {
+    // The anachronism is the point, and this test is here so that nobody
+    // "fixes" it: writing is a Bronze Age technology resting on two
+    // Palaeolithic ones, so a lucky band can have it long before the Bronze
+    // Age. If this ever fails because somebody made `age` a prerequisite
+    // check, that is the regression, not this expectation.
+    expect(TECH.writing.age).toBe('bronze');
+    for (const required of TECH.writing.requires) {
+      expect(ageIndex(TECH[required].age)).toBeLessThan(ageIndex('bronze'));
+    }
   });
 });
 

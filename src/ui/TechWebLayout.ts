@@ -25,7 +25,9 @@
  * spring along each of those edges pulls the clusters together until the
  * cross-domain arcs are the shape of the image rather than lines drawn over it.
  */
-import { TECH, TECHS, DOMAINS, type Domain, type Tech } from '../sim/knowledge/Tech.ts';
+import {
+  TECH, TECHS, DOMAINS, AGES, type AgeId, type Domain, type Tech,
+} from '../sim/knowledge/Tech.ts';
 import type { Ingredient } from '../sim/knowledge/Synthesis.ts';
 import { relax, settleOverlaps, shiftToOrigin, type GraphEdge } from './GraphLayout.ts';
 
@@ -34,8 +36,28 @@ export interface LaidOutNode {
   id: Tech;
   tech: Tech;
   domain: Domain;
-  /** Longest chain of prerequisites behind it. Drives the seeded radius. */
-  depth: number;
+  /**
+   * The period it belongs to, and the ring it is seeded on.
+   *
+   * It used to be `depth`, the longest chain of prerequisites behind a node,
+   * and the two answer different questions. Depth said how far into *this
+   * table* something is, so the rings were an artefact of how the tech tree
+   * happens to be wired; age says how far into *history* it is, which is what
+   * a picture of a tech tree is for. `bow` and `carpentry` sit three and four
+   * prerequisites deep and are both Mesolithic, and drawing them on the same
+   * ring is the whole gain.
+   */
+  age: AgeId;
+  /**
+   * Which ring, counting only periods something in the table actually belongs
+   * to.
+   *
+   * Not `ageIndex`, deliberately. Nothing in the table is Chalcolithic, so an
+   * absolute index would seed `writing` two empty rings further out than
+   * anything it touches and leave the relaxation to drag it back in over a
+   * gap it never needed to cross.
+   */
+  ring: number;
   x: number;
   y: number;
 }
@@ -79,7 +101,7 @@ const MAX_SHARED_DEGREE = 4;
 /** Half the space a node needs to itself. Nothing may be laid out closer. */
 export const NODE_RADIUS = 46;
 
-/** How far apart consecutive rings of `requires` depth start out. */
+/** How far apart consecutive period rings start out. */
 const RING_GAP = 78;
 
 /** Radius of the innermost ring, so the roots are not all on top of each other. */
@@ -106,10 +128,15 @@ const CENTRING = 0.0016;
 /**
  * The longest chain of prerequisites behind a technology.
  *
- * Longest rather than shortest: depth is being used as "how far into the tree
- * is this", and a node reachable by both a short and a long route belongs on
- * the outer ring, with the things that are genuinely as far in as it is.
+ * Longest rather than shortest: a node reachable by both a short and a long
+ * route is as far into the table as its longest route says it is.
  * `tech.test.ts` already asserts the graph is acyclic, so this terminates.
+ *
+ * **It no longer sets the radius** — the period does, see `LaidOutNode.age`.
+ * Kept, and still tested, because it is the one statement anything makes about
+ * the *shape* of the table rather than its contents, and because the ring test
+ * uses it to prove the two are genuinely different questions: `bow` and
+ * `fish_trap` are three and four deep and both Mesolithic.
  */
 export function depthOf(tech: Tech, seen: Set<Tech> = new Set()): number {
   const requires = TECH[tech].requires;
@@ -122,6 +149,18 @@ export function depthOf(tech: Tech, seen: Set<Tech> = new Set()): number {
   }
   seen.delete(tech);
   return deepest;
+}
+
+/**
+ * The periods the table actually uses, earliest first.
+ *
+ * Derived rather than written down: a period gains its ring the moment the
+ * first node dated to it ships, and loses it again if that node ever goes, so
+ * there is no second list to fall out of step with `TECH`.
+ */
+export function webRings(): AgeId[] {
+  const used = new Set<AgeId>(TECHS.map(tech => TECH[tech].age));
+  return AGES.filter(age => used.has(age));
 }
 
 /** Every ingredient of every spark of a technology, as comparable keys. */
@@ -220,8 +259,11 @@ export function webEdges(): LaidOutEdge[] {
 export function layOutWeb(): WebLayout {
   const nodes: LaidOutNode[] = [];
 
-  // Seed: each domain owns an angular sector, and depth sets the radius. The
-  // relaxation below only ever adjusts this, so the clusters survive it.
+  // Seed: each domain owns an angular sector, and the period sets the radius —
+  // so the picture reads outward as history as well as around as subject
+  // matter. The relaxation below only ever adjusts this, so the clusters
+  // survive it.
+  const rings = webRings();
   const byDomain = new Map<Domain, Tech[]>();
   for (const domain of DOMAINS) byDomain.set(domain, []);
   for (const tech of TECHS) byDomain.get(TECH[tech].domain)!.push(tech);
@@ -231,7 +273,7 @@ export function layOutWeb(): WebLayout {
     const members = byDomain.get(domain)!;
     const centre = domainIndex * sector - Math.PI / 2;
     members.forEach((tech, index) => {
-      const depth = depthOf(tech);
+      const age = TECH[tech].age;
       // Fan the members of one domain across its sector rather than stacking
       // them on the sector's spine, which put same-depth siblings exactly on
       // top of each other and left the relaxation to guess which way to break
@@ -240,9 +282,10 @@ export function layOutWeb(): WebLayout {
         ? 0
         : (index / (members.length - 1) - 0.5) * sector * 0.72;
       const angle = centre + spread;
-      const radius = INNER_RADIUS + depth * RING_GAP;
+      const ring = rings.indexOf(age);
+      const radius = INNER_RADIUS + ring * RING_GAP;
       nodes.push({
-        id: tech, tech, domain, depth,
+        id: tech, tech, domain, age, ring,
         x: Math.cos(angle) * radius,
         y: Math.sin(angle) * radius,
       });

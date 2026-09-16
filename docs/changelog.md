@@ -6,6 +6,74 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-16 — The ages get their real names
+
+The two bullets `next-steps.md` §4 has carried since M8 was planned, done in one
+pass because they are one idea: **the era ladder is the real archaeological
+periods, and every technology now says which period our own species arrived at
+it in**. Deliberately before M8.2 rather than after — the Neolithic tier triples
+the node count, and dating seventeen new nodes as they are written costs nothing
+while dating forty-nine afterwards is an afternoon of archaeology.
+
+**One vocabulary, two questions.** `AGES` lists the eight periods once, and both
+halves of the pass read it: `ERAS` names the rung a *society* has climbed to,
+and `TechDef.age` names the period a *technology* belongs to. They are different
+questions, and the comment on `AGES` says so at length, because the third thing
+they are not is `requires` — the only thing that actually gates a discovery.
+`writing` is dated to the Bronze Age and rests on nothing but `marking` and
+`stoneworking`, so a lucky band can have it in the Mesolithic. That anachronism
+is the player's to earn, and `is history rather than a second gate` is a test
+whose job is to stop somebody "fixing" it.
+
+**stone → fire → hearth → tools → craft → building became Lower Palaeolithic →
+Middle → Upper → Mesolithic.** The evocative line each rung already had survives
+as its `description`, which is where it was always doing its work; the label is
+now `AGE_LABELS[id]`, written once rather than twice. Two departures from the
+table in `m8_plan_the_ages.md`, both recorded in the doc comment: a **Middle
+Palaeolithic** rung the plan did not have, because without it a band that has
+carried fire for three generations still reads as Lower Palaeolithic and the one
+rung a short run reliably climbs would have stopped existing; and the Mesolithic
+asks for `netting` where the plan asked for `preserving`, which is the one node
+of M8.1 that was deliberately held back.
+
+**The ladder stops at the Mesolithic, and that is the rule rather than an
+omission.** The Neolithic needs `farming`, `herding` and `masonry`, none of which
+exist yet, and a rung whose `needs` name a technology nobody can learn is a rung
+no world can reach — declared content that does nothing. It arrives in M8.2, in
+the commit that makes a field something you can sow.
+
+**The web rings by history instead of by wiring.** `TechWebLayout` seeded its
+radius from `depthOf`, the longest chain of prerequisites behind a node, which
+is a fact about how this table happens to be wired rather than about the world.
+It now seeds from the period. `bow` rests on three things and `fish_trap` on
+four, both are Mesolithic, and they now sit on the same ring. Rings are dense —
+`webRings()` counts only periods something in the table actually belongs to —
+because nothing is Chalcolithic and an absolute index would have seeded `writing`
+two empty rings out and left the relaxation to drag it back over a gap it never
+needed to cross. The picture grew 3-6% (851x860 → 873x908) and the closest pair
+of nodes is 92.0px in both, which is the separation `settleOverlaps` guarantees.
+
+**The one line in the tech web about the real world.** The detail pane now reads
+*Middle Palaeolithic · about 300,000 years ago* under a node's title, and it is
+most of what "as realistic as possible to human history" actually asks for: the
+player finds out that the needle is older than the pot and that iron is younger
+than writing. Below the `unknown` early return, deliberately — a node out of
+reach keeps its secrets, and a date is a strong hint about what it is.
+
+**Measured.** `sim:check` is bit-identical to the 4e baseline line for line, the
+throughput line and the era's own label aside — `era: Stone Age` became `era:
+Lower Palaeolithic`, which is the whole of the intended difference. All fourteen
+scenarios stand where they did, `crowded`'s `perf-budget` included, which has
+been failing since before M7. Five new tests, four of them mutation-verified
+against a deliberately broken build: dating `carpentry` to the Middle
+Palaeolithic and resting the Mesolithic rung on `writing` each fail the pair of
+new invariants, seeding the web from `depthOf` again fails both ring tests, and
+a rung that swaps one technology for two rather than adding fails the
+cumulative-needs test that used to compare lengths alone. 288 unit tests and 47
+e2e pass.
+
+---
+
 ## 2026-09-16 — M9.5 phase 4e: the tribe graph becomes a pyramid
 
 The last phase of M9.5, and the half of the owner's note the four phases before
