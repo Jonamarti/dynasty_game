@@ -280,9 +280,25 @@ test('a job can be assigned from the Work tab and changes what it says', async (
   await expect(page.locator('.hud-section', { hasText: 'Work' })).toBeVisible();
   await expect(page.locator('.hud-sub', { hasText: 'no settled work' })).toBeVisible();
 
-  // Assigning your own job is never refused, so the panel's own wording is
-  // the only thing that has to change here — the compliance roll shown for
-  // someone else's job lives in `standing over people`, tested elsewhere.
+  // M9.5 phase 4c: setting one person to one task became a technology, and
+  // nobody starts a new game knowing it. The button is still offered and the
+  // click still lands — an option that silently disappears is precisely what
+  // the "a refusal says why" rule exists to prevent — but nothing happens to
+  // the job, because the character has never had the idea.
+  await page.locator('[data-job="hunter"]').click();
+  await expect(page.locator('.hud-sub', { hasText: 'no settled work' })).toBeVisible();
+
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: { sim: { player: { knownTech: Set<string> } } };
+    }).__dynasty;
+    d.sim.player.knownTech.add('division_of_labour');
+  });
+
+  // Assigning your own job is never refused *once you have the idea*, so from
+  // here the panel's own wording is the only thing that has to change — the
+  // compliance roll shown for someone else's job lives in `standing over
+  // people`, tested elsewhere.
   await page.locator('[data-job="hunter"]').click();
   await expect(page.locator('.hud-sub', { hasText: 'Works as hunter' })).toBeVisible();
   await expect(page.locator('.hud-note', { hasText: 'hunting' })).toBeVisible();

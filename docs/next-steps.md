@@ -30,9 +30,12 @@ a 2,000 floor. Phase 6 left every one of those numbers bit-identical, as it had
 to: no scenario possesses a player, so nothing it added is reachable from the
 harness at all. The n/a count is high because M8.1 added checks for content a
 twelve-day run cannot reach; the scenario that covers each one is named in its
-skip line, and `npm run sim:check:all` is the number that matters — 13
-scenarios, **11 fully green** as of M9 phase 5, and the three failures are three
-different kinds of thing:
+skip line, and `npm run sim:check:all` is the number that matters — **14
+scenarios as of M9.5 phase 4c** (`labour` joined, so that `jobs-bias-work` has
+a world whose founders know `division_of_labour`), **13 fully green**, with
+`crowded`'s `perf-budget` the only failure left. The three kinds of failure
+below are kept because two of them are borderline checks that have now changed
+sides three times, which is a finding in itself — see `bugs.md`:
 
 - `crowded`'s **`perf-budget`** has been failing since before M7. M9 phase 4
   made it worse rather than better, by 17%, and `optimizations.md` and
@@ -84,7 +87,8 @@ different kinds of thing:
 | M9.5 phase 3 — a shorter year, and one clock instead of two | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 4a — `threaten`: coercion that needs no technology | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 4b — a chief holds a term, and a new chief is welcomed | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
-| **M9.5 phase 4c — `division_of_labour`, a real gate** | **next.** 4d-4e (chiefdom and the layered graph) follow. See [m9_5_plan.md](m9_5_plan.md) |
+| M9.5 phase 4c — `division_of_labour`, a real gate | shipped 2026-09-16. See [m9_5_plan.md](m9_5_plan.md) |
+| **M9.5 phase 4d — `chiefdom`, the second rung** | **next.** 4e (the layered graph) follows. See [m9_5_plan.md](m9_5_plan.md) |
 | M8.2 — the Neolithic | after M9.5. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |

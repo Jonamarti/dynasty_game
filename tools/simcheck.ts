@@ -266,6 +266,32 @@ export const SCENARIOS: Record<string, Scenario> = {
     },
     steps: 9000,
   },
+  labour: {
+    name: 'labour',
+    description:
+      'A band that already has the idea of setting one person to one task. ' +
+      'M9.5 phase 4c put `division_of_labour` in front of every job in the ' +
+      'game, and working it out from nothing takes a band the better part of ' +
+      'a year — so without a scenario that starts with it, `jobs-bias-work` ' +
+      'would report n/a everywhere and the one behaviour jobs exist to ' +
+      'produce would stop being measured at the moment it became gated. The ' +
+      'same trick `craft` and `scribes` use, for the same reason. Two large ' +
+      'bands, because `assignJobs` hands out one job per band per day and a ' +
+      'small band runs out of unemployed adults before the sample is worth ' +
+      'anything.',
+    config: {
+      seed: 'foreman',
+      population: {
+        bands: 2, peoplePerBand: 14,
+        // `spear` and `hafting` so that the hunter and the crafter have work
+        // that is actually worth doing: a job is a lean on the utility scorer
+        // and nothing more, so a band that cannot hunt or make anything would
+        // measure the bias of two jobs out of four.
+        startingTech: ['division_of_labour', 'hafting', 'spear'],
+      },
+    },
+    steps: 12000,
+  },
   culture: {
     name: 'culture',
     description:
@@ -1964,18 +1990,35 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   const stallState =
     new Map<number, { x: number; y: number; action: string; workedTicks: number; ticks: number }>();
 
+  /** Latches the first moment anybody in the world holds a job. See `JobWatch`. */
+  let jobsExist = false;
+
   const started = Date.now();
   for (let i = 1; i <= steps; i++) {
     sim.step();
     // Every step, not every sample: a behaviour that only ever runs for a few
     // ticks at a time is still the AI using it, and sparse sampling misses it.
-    for (const person of sim.livingPeople()) {
+    const living = sim.livingPeople();
+    // Cheap: a scan of the living once per step, and only until it latches.
+    if (!jobsExist && living.some(person => person.job !== null)) jobsExist = true;
+    for (const person of living) {
       actionTotals[person.action] = (actionTotals[person.action] ?? 0) + 1;
 
       // Every job, not just the one this person holds: the control group for
       // "does a forager forage more than a non-forager" is everyone who is
       // not a forager, which includes hunters, builders and the unemployed
       // alike.
+      //
+      // **Only from the first job in the world onward.** M9.5 phase 4c put
+      // `division_of_labour` in front of every job, so a run now opens with a
+      // stretch — a whole year on some seeds — in which nobody holds one and
+      // every tick of it lands in the control group. That is not a control
+      // group: it is the same world before the arrangement existed, and
+      // comparing a handful of late holders against it measures the calendar
+      // rather than the bias. On `craft` it inverted the reading outright,
+      // 12.1% against 12.9%, on a seed that read +4.9 points when jobs were
+      // handed out from day one. The measurement was wrong, not the world.
+      if (!jobsExist) continue;
       for (const id of JOB_IDS) {
         const onThatJobsWork = JOBS[id].actions.includes(person.action);
         if (person.job === id) {

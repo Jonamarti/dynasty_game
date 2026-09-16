@@ -50,6 +50,22 @@ export type Ingredient =
   | { kind: 'saw'; what: string }
   | { kind: 'season'; season: Season };
 
+/**
+ * Things `Person.noteSaw` records that are neither a deed from `Events.ts` nor
+ * a stopped piece of work from `STOP_REASONS`.
+ *
+ * `Notice.saw` is fed from two stores and its vocabulary comes from three
+ * places, and until M9.5 phase 4c the third was empty, so
+ * `spark-ingredients-are-real` could model the whole vocabulary as
+ * `EVENT_TYPES ∪ STOP_REASONS` and be right. It no longer can. Named here,
+ * exported, and used at the call site rather than spelled out there, because
+ * the failure this project has actually suffered is a spark naming a string
+ * nothing records — `tracking`'s `doing: wander` route, dead for the whole life
+ * of the project and passing every test in the suite.
+ */
+export const ORDER_REFUSED = 'order_refused';
+export const NOTED_OCCASIONS = [ORDER_REFUSED] as const;
+
 /** One route to an idea. */
 export interface Spark {
   needs: Ingredient[];
@@ -183,6 +199,9 @@ const SAW_WORDS: Record<string, string> = {
   trade: 'watched a trade', teach: 'watched somebody taught',
   theft: 'witnessed a theft', assault: 'witnessed a beating',
   murder: 'witnessed a killing',
+  // M9.5 phase 4a emitted `threaten` as a deed and never gave it words here,
+  // which was harmless only for as long as no spark named it. 4c names it.
+  threaten: 'watched somebody menaced into handing something over',
   // Reasons their own work stopped, from `ActionSystem`.
   hands_full: 'run out of hands', quarry_escaped: 'lost an animal in the chase',
   node_empty: 'worked a place until nothing was left',
@@ -192,6 +211,11 @@ const SAW_WORDS: Record<string, string> = {
   tree_bare: 'stripped a tree bare', under_attack: 'been set upon at work',
   store_empty: 'gone to the store and found it bare',
   store_full: 'had nowhere left to put a surplus',
+  // Not a stopped piece of work but the third thing that happens *to* you
+  // rather than by your choice: you asked somebody to do something and they
+  // said no, in public. Recorded on the leader by `Simulation.command` and
+  // `Simulation.assignJob`.
+  order_refused: 'been refused to your face',
 };
 
 // ---------------------------------------------------------------------------

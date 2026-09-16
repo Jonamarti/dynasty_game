@@ -23,6 +23,7 @@ import { RNG } from '../core/RNG.ts';
 import { BIOMES } from '../core/World.ts';
 import { SEASONS } from '../core/TimeManager.ts';
 import { EVENT_TYPES } from '../social/Events.ts';
+import { NOTED_OCCASIONS } from '../knowledge/Synthesis.ts';
 import { STOP_REASONS } from '../../render/Floaters.ts';
 import { ACTION_LABELS } from '../../render/Floaters.ts';
 
@@ -56,7 +57,13 @@ describe('the spark table', () => {
     // what makes this test necessary. A misspelt item id would be a technology
     // nobody could ever conceive of, passing every other assertion here.
     const actions = new Set(Object.keys(ACTION_LABELS));
-    const seen = new Set([...EVENT_TYPES, ...Object.keys(STOP_REASONS)]);
+    // Three sources, not two. `Notice.saw` is fed by deeds a person witnessed
+    // and by the reasons their own work stopped — and, since M9.5 phase 4c, by
+    // the short list of other things that happen *to* somebody and are worth
+    // an idea. See `NOTED_OCCASIONS`.
+    const seen = new Set([
+      ...EVENT_TYPES, ...Object.keys(STOP_REASONS), ...NOTED_OCCASIONS,
+    ]);
     for (const tech of TECHS) {
       for (const spark of TECH[tech].sparks) {
         for (const ingredient of spark.needs) {

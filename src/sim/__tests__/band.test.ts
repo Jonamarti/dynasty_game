@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { CHIEF_TERM_DAYS, chiefHoneymoon } from '../social/Leadership.ts';
+import { PROTOTYPE_AT, REFINEMENT_STEP } from '../knowledge/Synthesis.ts';
 
 const SMALL = {
   seed: 'rebellion',
@@ -95,6 +96,10 @@ describe('jobs', () => {
   it('assigns a job to yourself without a compliance roll', () => {
     const sim = new Simulation(SMALL);
     const person = sim.livingPeople()[0]!;
+    // M9.5 phase 4c: the self-exception is unchanged, but it now sits behind
+    // the idea. Deciding to spend your own days at one task is still the
+    // practice being used.
+    person.knownTech.add('division_of_labour');
     expect(sim.assignJob(person, person, 'forager')).toBe(true);
     expect(person.job).toBe('forager');
   });
@@ -102,6 +107,7 @@ describe('jobs', () => {
   it('says why a job assignment was refused', () => {
     const sim = new Simulation(SMALL);
     const [leader, subordinate] = sim.livingPeople();
+    leader!.knownTech.add('division_of_labour');
     // A stranger with no standing at all: `standingOver`'s floor is low
     // enough that this refuses on any RNG stream.
     subordinate!.traits.loyalty = 0;
@@ -110,6 +116,81 @@ describe('jobs', () => {
     if (!ok) {
       expect(sim.lastRefusal).not.toBeNull();
       expect(subordinate!.job).toBeNull();
+    }
+  });
+});
+
+/**
+ * M9.5 phase 4c. Every assertion here is written against the gate rather than
+ * against a world number, because the world number is what `sim:seeds` is for
+ * and because each of these fails outright on a build with the gate removed —
+ * which is the standard `AGENTS.md` sets before a check is worth trusting.
+ */
+describe('the idea of assigning work', () => {
+  it('refuses a job to anyone who has never had the idea, and says so', () => {
+    const sim = new Simulation(SMALL);
+    const [leader, subordinate] = sim.livingPeople();
+    expect(leader!.knownTech.has('division_of_labour')).toBe(false);
+
+    expect(sim.assignJob(leader!, subordinate!, 'hunter')).toBe(false);
+    expect(subordinate!.job).toBeNull();
+    // Never a silent no-op: the standing rule is that a refusal says why, and
+    // this is the one refusal in the game whose reason is that nobody has
+    // thought of the thing being asked for.
+    expect(sim.lastRefusal).toContain('setting one person to one task');
+  });
+
+  it('gates assigning your own job on the same idea', () => {
+    const sim = new Simulation(SMALL);
+    const person = sim.livingPeople()[0]!;
+    expect(sim.assignJob(person, person, 'forager')).toBe(false);
+    expect(person.job).toBeNull();
+    expect(sim.lastRefusal).not.toBeNull();
+  });
+
+  it('lets a half-formed idea be tried, which is what stops it deadlocking', () => {
+    // The `herbalism` and `taming` shape, and the reason `techPower` gives a
+    // researching practice half strength: the one act that counts as trying
+    // this practice out is assigning work, so a gate at full knowledge only
+    // would lock the practice behind having already finished practising it.
+    const sim = new Simulation(SMALL);
+    const person = sim.livingPeople()[0]!;
+    person.ideas.push({
+      tech: 'division_of_labour', stage: 'researching', insight: PROTOTYPE_AT,
+      story: 'was refused once too often', conceivedTick: 0, effort: 0,
+      discussedWith: [], trials: 0, proof: 0, failedTests: 0, tries: 0,
+    });
+    expect(sim.assignJob(person, person, 'builder')).toBe(true);
+    // And the attempt counts toward `TRIES_TO_TEST`, or it could never settle.
+    expect(person.lately.get('assign')).toBeGreaterThan(0);
+  });
+
+  it('makes a practised hand a little harder to argue with', () => {
+    // What `maxRefinement` means for a node whose other effect is a gate. Read
+    // off the chance rather than off an outcome, so no RNG stream is involved.
+    const sim = new Simulation(SMALL);
+    const [leader, subordinate] = sim.livingPeople();
+    const bare = sim.standing(leader!, subordinate!, 'job').chance;
+
+    leader!.knownTech.add('division_of_labour');
+    const known = bare + 0.1 * 1;
+    leader!.techLevel.set('division_of_labour', 2);
+    const refined = bare + 0.1 * (1 + 2 * REFINEMENT_STEP);
+    expect(refined).toBeGreaterThan(known);
+    // And it is small beside the terms it sits next to: headship alone is
+    // 0.55 in `standingOver`, and this must never rival it.
+    expect(refined - bare).toBeLessThan(0.2);
+  });
+
+  it('never lets a chief who has not had the idea hand a job out', () => {
+    const sim = new Simulation(SMALL);
+    const band = sim.bands[0]!;
+    chooseFirstChief(sim);
+    stepDays(sim, 6);
+    for (const person of sim.livingPeople()) {
+      if (person.bandId !== band.id) continue;
+      expect(person.job, person.name + ' was given a job nobody could have assigned')
+        .toBeNull();
     }
   });
 });

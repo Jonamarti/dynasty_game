@@ -69,6 +69,14 @@ export const TECHS = [
   // that are not about getting more out of the ground, and that is most of the
   // point of them: a picture, a tune, and somebody sitting with the sick.
   'ochre', 'flute', 'herbalism', 'taming',
+  // M9.5 phase 4c: the first technology in this game that is about *people*
+  // rather than about the land or what can be made out of it. Everything above
+  // makes somebody better at a task; this one is the idea that not everybody
+  // should be doing the same task. Coercion needed no technology — see
+  // `menaceOver` and `doThreaten`, shipped in 4a — and that is exactly the
+  // contrast: what gets discovered here is legitimate, cheap, repeatable
+  // authority, not authority as such.
+  'division_of_labour',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -84,6 +92,11 @@ export const DOMAINS = [
   // M8.1 adds a domain for the shore and the water it borders — fishing,
   // netting and the fish trap all belong here. `metal` follows in M8.3.
   'water',
+  // M9.5 phase 4c: the eighth, and the only one whose subject matter is other
+  // people. Appended rather than inserted because `TechWebLayout` gives each
+  // domain an angular sector in this order, and reordering the list would
+  // rearrange a web the player has learned the shape of.
+  'people',
 ] as const;
 export type Domain = (typeof DOMAINS)[number];
 
@@ -818,6 +831,61 @@ export const TECH: Record<Tech, TechDef> = {
       'An animal that comes back rather than runs. It begins with feeding ' +
       'something you could have eaten.',
   },
+  division_of_labour: {
+    id: 'division_of_labour', label: 'Division of labour', domain: 'people',
+    // A practice, and it could not be anything else: there is nothing to
+    // build. It is tried by doing it — `Simulation.assignJob` calls
+    // `noteDid('assign')` on every arrangement that sticks — which is the same
+    // road `herbalism` and `taming` take in, and for the same reason. The
+    // deadlock that would otherwise close here is real and worth naming:
+    // assigning work is gated on `techPower > 0`, and `techPower` gives a
+    // practice half strength from `PROTOTYPE_AT` onward precisely so that the
+    // one act which counts as trying a practice out is not locked behind
+    // having already finished trying it out.
+    kind: 'practice', practisedBy: ['assign'],
+    // Nothing. This is a thought anybody standing in a crowded camp can have,
+    // and it must be, because the four nodes that build on it in M9.5 phase 4d
+    // and beyond are the whole social ladder: putting a prerequisite here
+    // would make the ladder hang off whichever branch of the tree that
+    // prerequisite happened to sit on.
+    requires: [], difficulty: 0.45, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      // Crowding, felt rather than counted. There is no ingredient for "four
+      // people are doing your job beside you" and there does not need to be:
+      // a stripped patch is what several people on the same patch *produces*,
+      // and `node_empty` already lands in `noticed` when it happens to you.
+      { needs: [{ kind: 'saw', what: 'node_empty' }, { kind: 'feeling', need: 'hunger' }],
+        weight: 1.0, story: 'went hungry beside a patch that several of them had stripped between them' },
+      // The talk in a camp big enough to have the conversation in — `talk`
+      // needs somebody to talk to — paired with the same stripped patch,
+      // because the thought needs both halves: the crowding, and somebody to
+      // say it to.
+      //
+      // This route wanted `long_enough` first, and that would have been a dead
+      // route: it is emitted only by `MAX_WORK_STRETCH`, a 900-tick backstop
+      // that thirst beats by better than two to one, and it fires **zero**
+      // times in every scenario in the suite. Exactly the shape of
+      // `tracking`'s `doing: wander`, which sat dead in this table for the
+      // whole life of the project while passing every test in it. Measured
+      // before it shipped rather than after.
+      { needs: [{ kind: 'doing', action: 'talk' }, { kind: 'saw', what: 'node_empty' }],
+        weight: 0.7, story: 'worked a patch out and said as much to the next person to try it' },
+      // Friction. Being told no to your face is what makes anybody think about
+      // how the asking works — see `Simulation.command`, which records it.
+      { needs: [{ kind: 'saw', what: 'order_refused' }],
+        weight: 0.8, story: 'was refused once too often, and wondered what would make an order stick' },
+      // 4a's route in, and the one the plan is really about: menace works, and
+      // it is ruinously expensive in regard. A cheaper way to be obeyed is
+      // exactly what this node is.
+      { needs: [{ kind: 'saw', what: 'threaten' }, { kind: 'doing', action: 'talk' }],
+        weight: 0.5, story: 'saw what a threat bought, and thought there must be a cheaper way to be obeyed' },
+    ],
+    description:
+      'Not everybody should be doing the same thing. One person set to one ' +
+      'task, by arrangement rather than by menace, and the camp stops ' +
+      'stripping the same patch four times over.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -955,6 +1023,12 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   herbalism: {
     summary: 'Tending the hurt: they mend far faster than waiting would have managed.',
     site: 'ActionSystem.doTend, the only use the heal skill has ever had',
+  },
+  division_of_labour: {
+    summary:
+      'The idea of setting one person to one task. Jobs can be handed out at ' +
+      'all, and a leader who has the knack of it is argued with less.',
+    site: 'Simulation.assignJob, gate and compliance; BandSystem.assignJobs',
   },
   taming: {
     summary: 'An animal that follows you, and hunts better than you do alone.',

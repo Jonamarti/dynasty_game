@@ -6,6 +6,116 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-16 — M9.5 phase 4c: `division_of_labour`, the first social technology
+
+Nothing in the codebase connected knowledge to social organisation:
+`Authority.ts`, `Job.ts` and `BandSystem.ts` imported nothing from `Tech.ts`,
+and a band that had worked out no technology at all still handed jobs around
+from its first day. `division_of_labour` is now the idea of setting one person
+to one task, and it is in front of every job in the game.
+
+**A practice, in a new eighth domain.** `DOMAINS` gained `people` — appended
+rather than inserted, because `TechWebLayout` gives each domain an angular
+sector in list order and reordering would rearrange a web the player has
+learned the shape of — and `TechWebLayout.DOMAIN_COLORS` gained a hue for it
+that sits off every other in the table, so the social branch reads as somewhere
+else on the web at a glance. It requires nothing: the four social nodes planned
+above it are the whole social ladder, and a prerequisite here would hang that
+ladder off whichever branch the prerequisite happened to sit on.
+
+**The gate, and what is deliberately not gated.** `Simulation.assignJob`
+refuses outright when the person doing the arranging has never had the idea —
+including when they are assigning their own job — and says so in the words of
+the world: *"… has never had the idea of setting one person to one task"*. The
+test runs **before** the compliance draw, so a band without the idea spends no
+`commandRng` rather than burning a draw a day on a question that cannot be
+answered yes; `BandSystem.assignJobs` returns early for the same chief, which
+stops an NPC band overwriting `lastRefusal` daily while the player is reading
+their own. What is **not** gated is coercion: `doThreaten` from 4a still takes
+food off a neighbour by menace, still works on a stranger and still works
+across a band boundary, which a legitimate order never will. That contrast is
+the point of the node — what gets discovered is legitimate, cheap, repeatable
+authority, not authority as such.
+
+**Refinement means knowing how to ask.** A refinement ceiling above a node
+whose only effect is a gate would be declared-but-inert content, so `techPower`
+also scales a small bonus on the job order's compliance chance:
+`ORGANISED_ORDER_BONUS` runs 0.05 for a half-formed notion, 0.10 once known and
+0.14 fully refined — deliberately small beside `standingOver`'s 0.55 for
+headship, so a practised hand is smoother but a resented chief is still
+refused.
+
+**No deadlock, by the route `herbalism` and `taming` already take.** A practice
+is tried by doing it, and the only act that counts as trying this one out is
+assigning work — which the gate governs. `techPower` gives a researching
+practice half strength from `PROTOTYPE_AT` onward precisely so that the trial
+is not locked behind having already completed it, and `assignJob` calls
+`noteDid('assign')` on every arrangement that sticks.
+
+**A third source for `Notice.saw`, and a dead route caught before it shipped.**
+Being refused to your face is now recorded on the leader by both
+`Simulation.command` and `assignJob`, as `ORDER_REFUSED` — the first thing
+`noteSaw` records that is neither a deed from `Events.ts` nor a stopped piece
+of work from `STOP_REASONS`, so `NOTED_OCCASIONS` names it and
+`spark-ingredients-are-real` reads all three sources instead of two. 4a's
+`threaten` had been emitted as a deed since it shipped without ever being given
+words in `SAW_WORDS`; it has them now, because a spark names it.
+
+The node's second route originally wanted `saw: long_enough`, and measurement
+before shipping showed that would have been a dead route: `long_enough` is
+emitted only by `MAX_WORK_STRETCH`, a 900-tick backstop that thirst beats by
+better than two to one, and it fires **zero** times in every scenario in the
+suite — the exact shape of `tracking`'s `doing: wander`, which sat dead in that
+table for the whole life of the project while passing every test in it. It was
+replaced with `talk` beside a worked-out patch. Across eight `century` seeds
+all four routes now fire — 2, 5, 4 and 3 conceptions respectively, 14 in all,
+of which 10 were proven, 433 taught and 89 picked up by watching. It is a web,
+not a tree.
+
+**`jobs-bias-work` was measuring the calendar, and that was a real defect.**
+The gate opens a run with a stretch — most of a year on some seeds — in which
+nobody holds a job, and every tick of it landed in the check's control group.
+That is not a control group; it is the same world before the arrangement
+existed. On `craft` it inverted the reading outright, 12.1% against 12.9%, on a
+seed that read +4.9 when jobs were handed out from day one. The sampler now
+counts from the first moment anybody in the world holds a job, and `craft`
+reads +2.0, `century` +2.6. The measurement was wrong, not the world.
+
+**A fourteenth scenario, `labour`**, whose founders know the node — the trick
+`craft` and `scribes` already use, and for the same reason: working it out from
+nothing takes a band the better part of a year, so without it the one behaviour
+jobs exist to produce would have stopped being measured at the moment it became
+gated. Two bands of fourteen, because `assignJobs` hands out one job per band
+per day. It reports the widest margin in the suite, **14.5% against 9.4%**.
+
+**The player is told.** `onAssignJob` in `main.ts` threw its answer away, so a
+refused job assignment was a button that did nothing — a silent no-op of
+exactly the kind `AGENTS.md`'s standing rule forbids, and one the new gate
+would have made far more common. Both outcomes now reach a floater, with the
+reason attached.
+
+**Measured across twenty `century` seeds, before and after.** Mean survival
+100.0% → 99.9%, no world collapsing either side; 851 births → 836; 11.8 → 12.1
+technologies known at the end and 10.8 → 10.4 conceived past the root nodes;
+673.7 → 692.6 passed on. Every movement is inside the resolution this project
+documents for a twenty-seed cohort, and the rise in technologies known is the
+new node itself being reached.
+
+Five new deterministic tests, each **verified failing on a build with the gate
+removed** before it was trusted: the refusal and its wording, the self-assign
+case, the half-formed idea being triable, the refinement bonus read off the
+chance rather than an outcome, and a chief who has not had the idea handing
+nothing out over six days. Typecheck clean, 265 unit tests pass, and all 46
+Playwright cases pass — one of which encoded the old premise that assigning
+your own job never fails, and now tests both sides of the gate instead. The
+scenario matrix is down to **one** failure, `crowded`'s known headless
+`perf-budget`; `century`'s marginal care check and `millers`' marginal station
+chain both landed green this time, which is the world moving under two
+borderline checks rather than either being fixed.
+
+No RNG fork was added, no stream reordered, and nothing was appended to
+`spawnResources`' `plan` array.
+
 ## 2026-09-15 — Mobile layout and touch map controls
 
 The deployed game assumed a desktop mouse and a viewport wide enough to reserve

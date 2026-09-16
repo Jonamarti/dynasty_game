@@ -1,7 +1,45 @@
 # Known bugs and rough edges
 
-As of 2026-09-15. Everything here is real and reproducible; nothing here is
+As of 2026-09-16. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found during M9.5 phase 4c, 2026-09-16
+
+### `carpentry` has a spark route that cannot fire
+
+`carpentry`'s second route needs `saw: long_enough` beside `doing: chop`
+([Tech.ts:371](../src/sim/knowledge/Tech.ts#L371)). `long_enough` is emitted in
+exactly one place — `ActionSystem.interruption`'s hard ceiling at
+`MAX_WORK_STRETCH`, 900 ticks, nearly four in-game days of unbroken work — and
+thirst reaches its own limit in about four hundred. The counter
+`work_ended_long_enough` is **absent from the telemetry of every scenario in
+the suite**, including the three long ones. The route is dead, and has been
+since it was written.
+
+This is `tracking`'s `doing: wander` defect again: a perfectly spelled
+ingredient that nothing in the world ever produces, passing
+`spark-ingredients-are-real` and `every ingredient it names` alike, because
+both check that the id is *real* rather than that it is *reachable*.
+`division_of_labour` was about to ship with the same route and it was caught by
+measuring before shipping; `carpentry`'s was found the same way and left alone,
+because changing a root-tier node's routes moves the tech economy in every
+saved seed and that is a measured change, not a line in a phase about
+leadership. `carpentry` has two other routes and is reached in play, so nothing
+is currently unreachable.
+
+The generalisable fix is a check that every spark route has fired at least once
+across a seed cohort — the aggregate `sparks-are-various` already gestures at,
+but per route rather than per technology.
+
+### Two borderline checks changed sides under a behavioural change, again
+
+`century`'s `the-hurt-are-tended` and `millers`' `crafts-happen-at-stations`
+were both recorded here as failing by a margin of one or two events. Both now
+pass, and nothing in this phase went near tending or stations. This is the
+third time a phase has moved which borderline check is on which side of its
+line — see the two entries below from phases 2b and 3 — and it is the same
+finding each time: a check one or two events wide reports the seed, not the
+mechanism. Recorded rather than celebrated; neither check was fixed.
 
 ## Found during M9.5 phase 4b, 2026-09-15
 
@@ -472,6 +510,18 @@ not the scenario**: either measure it across seeds the way `sim:seeds` does, or
 state a margin it has to clear rather than a sign. Not done here because
 `jobs-bias-work` gates eleven other scenarios and rewriting it inside a content
 pass is how a gate gets quietly loosened.
+
+**Partly addressed in M9.5 phase 4c, and the rest still stands.** The sampler
+now counts only from the first moment anybody in the world holds a job, because
+`division_of_labour` opened every run with a jobless stretch that was landing in
+the check's control group — a second, larger defect in the same instrument,
+which on `craft` inverted the reading outright. That is a correction to *what*
+is compared, not to the margin. The original complaint is untouched: the effect
+is still about two points on most scenarios and the seed-to-seed spread is still
+wider than that, so the check will still go red on roughly one new scenario in
+five. The dedicated `labour` scenario reads +5.1 and is the one place the margin
+is comfortable. Stating a margin, or measuring across a cohort, remains the
+fix.
 
 ### `tiny` fails `food-work-continues`, and did before any of this
 

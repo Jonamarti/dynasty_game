@@ -250,12 +250,20 @@ export class BandSystem {
    * competence, so there is no reason to match a candidate's existing skill:
    * that would only concentrate work further, which `Brain`'s own bias
    * already does once someone has the job.
+   *
+   * **M9.5 phase 4c:** a chief who has never had the idea of setting one
+   * person to one task hands nothing out. `Simulation.assignJob` refuses this
+   * for itself and says why, so the test here is not what enforces the rule —
+   * it is what stops a band from asking the same impossible question once a
+   * day for years, overwriting `lastRefusal` with an NPC chief's disappointment
+   * while the player is reading their own.
    */
   private assignJobs(band: Band, members: Person[], ctx: BandContext): void {
     const chiefId = this.chiefByBand.get(band.id);
     if (chiefId === undefined) return;
     const chief = members.find(m => m.id === chiefId);
     if (!chief) return;
+    if (techPower(chief, 'division_of_labour') <= 0) return;
 
     const unassigned = members.filter(m => !m.isChild && m.job === null && m.id !== chief.id);
     if (unassigned.length === 0) return;

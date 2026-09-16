@@ -273,4 +273,8 @@ export const DOMAIN_COLORS: Record<Domain, string> = {
   timber: '#c8a45c',
   beasts: '#e0705c',
   water: '#4a90d0',
+  // M9.5 phase 4c. Off every other hue in the table on purpose: the social
+  // branch is the one cluster whose subject is not a material, and it should
+  // read as somewhere else on the web at a glance.
+  people: '#d8b84a',
 };

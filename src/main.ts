@@ -35,6 +35,7 @@ import { TECH, techPower, type Tech } from './sim/knowledge/Tech.ts';
 import type { Person } from './sim/entities/Person.ts';
 import type { Building, BuildingDef } from './sim/entities/Building.ts';
 import { ITEMS } from './sim/entities/Item.ts';
+import { JOBS } from './sim/entities/Job.ts';
 import type { ItemPile } from './sim/entities/ItemPile.ts';
 import { describeEvent } from './sim/social/Events.ts';
 import {
@@ -267,7 +268,22 @@ const hud = new Hud(hudRoot, {
     // Down the same path a chief's own order would use, so a job handed out
     // from the panel is subject to the same compliance roll as one given in
     // the field.
-    if (sim.player) sim.assignJob(sim.player, person, job);
+    if (!sim.player) return;
+    const ok = sim.assignJob(sim.player, person, job);
+    const why = sim.lastRefusal;
+    sim.lastRefusal = null;
+    // Both outcomes reach the player. Until M9.5 phase 4c this call threw its
+    // answer away, so a refused job assignment — and, from 4c, one refused
+    // because nobody has yet had the idea of assigning work at all — was a
+    // button that did nothing. That is precisely the silent no-op the standing
+    // rule in `AGENTS.md` exists to forbid.
+    renderer.floaters.push(person.x, person.y,
+      ok
+        ? (job === null
+          ? person.name + ' is released from their work'
+          : person.name + ' takes up work as a ' + JOBS[job].label.toLowerCase())
+        : person.name + ' does not' + (why ? ': ' + why : ''),
+      { color: ok ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
   },
   onOpenMenu: () => { if (!menuOpen()) openMenu(); },
   onToggleBuild: () => setBuildMode(!buildMode),

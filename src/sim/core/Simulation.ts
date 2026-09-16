@@ -51,7 +51,7 @@ import { linkFamily } from '../social/SocialSystem.ts';
 import { BandSystem } from '../systems/BandSystem.ts';
 import { foundBand, type FoundingContext } from '../systems/Founding.ts';
 import { KnowledgeSystem, countHolders } from '../systems/KnowledgeSystem.ts';
-import type { Notice } from '../knowledge/Synthesis.ts';
+import { ORDER_REFUSED, type Notice } from '../knowledge/Synthesis.ts';
 import {
   eraFor, nutritionFactor, techPower, ERA_ORDER, TECHS, type EraDef, type Tech,
 } from '../knowledge/Tech.ts';
@@ -111,6 +111,21 @@ const RESUMABLE_STOPS = new Set(['thirsty', 'hungry', 'cold']);
  * that the spatial query it costs does not show up beside the rest of the step.
  */
 const ALONGSIDE_EVERY = 40;
+
+/**
+ * What knowing how to organise work adds to the chance a job order sticks.
+ *
+ * Scaled by `techPower`, so it runs 0.05 for somebody who has only thought the
+ * practice through, 0.10 once it is known and 0.14 fully refined. Deliberately
+ * small against the terms in `standingOver`, where headship alone is 0.55: the
+ * technology is what makes arranging work *possible*, and refining it makes a
+ * leader smoother at it, but neither buys compliance a resented chief has not
+ * earned. It exists so that `maxRefinement` on `division_of_labour` means
+ * something — a refinement ceiling above a node whose only effect is a gate
+ * would be declared-but-inert content of exactly the kind this project keeps
+ * finding.
+ */
+const ORGANISED_ORDER_BONUS = 0.1;
 
 /** Ticks an interrupted order waits to be resumed before it is forgotten. */
 const RESUME_WINDOW = 2000;
@@ -759,6 +774,10 @@ export class Simulation {
     const standing = this.standing(leader, subordinate, action);
     if (this.commandRng.next() >= standing.chance) {
       telemetry.count('order_refused');
+      // Recorded on the leader as well as counted: see `assignJob` below, and
+      // `division_of_labour`'s friction spark, which this is the heaviest
+      // source of.
+      leader.noteSaw(ORDER_REFUSED);
       // Why they refused, in the words `standingOver` already wrote for exactly
       // this purpose. It was being computed one line above and thrown away, so
       // a social refusal reached the player as a bare "X refuses" — while the
@@ -818,20 +837,60 @@ export class Simulation {
    * asking someone else to spend their days differently goes through the same
    * compliance roll `command` does, with its own entry in `ORDER_COST`.
    * Assigning your own job always succeeds, the same exception `command`
-   * makes for yourself.
+   * makes for yourself — *once somebody has had the idea at all.*
+   *
+   * **M9.5 phase 4c: the idea is a technology, and it is the gate.** Before
+   * `division_of_labour` there is no such thing as setting one person to one
+   * task, for the player or for a chief, and the attempt is refused in the
+   * words of the world rather than quietly doing nothing. What is gated is
+   * *legitimate* authority, not authority: `doThreaten` from 4a still takes
+   * food off a neighbour by menace, and it still works on a stranger and
+   * across a band boundary, which this never will. That contrast is the whole
+   * point of the node.
+   *
+   * The gate is tested **before the compliance draw**, so a band that has not
+   * had the idea spends no `commandRng` at all rather than burning one draw a
+   * day per band on a question that cannot be answered yes.
    */
   assignJob(leader: Person, subordinate: Person, job: JobId | null): boolean {
     if (!leader.alive || !subordinate.alive) return false;
+
+    // Held by the individual doing the arranging, like every other technology
+    // in this game — there is no global unlock and no band-wide one either.
+    // `techPower` is half strength for a practice that has been thought
+    // through but not yet made a habit of, which is what lets the practice be
+    // tried at all; see this node's entry in `Tech.ts`.
+    const organising = techPower(leader, 'division_of_labour');
+    if (organising <= 0) {
+      telemetry.count('job_unimagined');
+      this.lastRefusal =
+        leader.name + ' has never had the idea of setting one person to one task';
+      return false;
+    }
+
     if (leader.id === subordinate.id) {
       subordinate.job = job;
       telemetry.count('job_assigned');
+      // Deciding to spend your own days one way is still the practice being
+      // put to use, and it is the only route a person with nobody to arrange
+      // has. `noteDid` is what moves a practice toward `TRIES_TO_TEST`.
+      leader.noteDid('assign');
       return true;
     }
 
     const standing = this.standing(leader, subordinate, 'job');
-    if (this.commandRng.next() >= standing.chance) {
+    // What refinement means for a node whose other effect is a gate: knowing
+    // how to ask. A half-formed notion buys a little, a practised hand buys
+    // more, and none of it is large enough to make a resented leader obeyed —
+    // the terms in `standingOver` still dominate.
+    const chance = Math.min(0.98, standing.chance + ORGANISED_ORDER_BONUS * organising);
+    if (this.commandRng.next() >= chance) {
       telemetry.count('job_refused');
       this.lastRefusal = standing.because;
+      // Being told no is one of the senses an idea is built out of, and it is
+      // the *leader* it happens to. `division_of_labour`'s friction spark is
+      // this line; see `SAW_WORDS.order_refused`.
+      leader.noteSaw(ORDER_REFUSED);
       subordinate.chronicle.push({
         tick: this.time.tick,
         ageDays: subordinate.age,
@@ -844,6 +903,7 @@ export class Simulation {
 
     subordinate.job = job;
     telemetry.count('job_assigned');
+    leader.noteDid('assign');
     subordinate.chronicle.push({
       tick: this.time.tick,
       ageDays: subordinate.age,
