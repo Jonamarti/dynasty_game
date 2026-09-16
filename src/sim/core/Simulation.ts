@@ -57,6 +57,9 @@ import {
 } from '../knowledge/Tech.ts';
 import { RECIPES, type RecipeDef } from '../entities/Recipe.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
+import {
+  bandHasShape, bandOf, rankIn, type BandRank, type RankContext,
+} from '../social/Rank.ts';
 import { JOBS, type JobId } from '../entities/Job.ts';
 import {
   Inscription, INSCRIPTIONS, resetInscriptionIds, type InscriptionForm,
@@ -753,6 +756,39 @@ export class Simulation {
   /** What `leader` could make `subordinate` do, and how likely they are to. */
   standing(leader: Person, subordinate: Person, action: string) {
     return standingOver(leader, subordinate, action, this.authorityContext());
+  }
+
+  private rankContext(): RankContext {
+    return {
+      householdsById: this.householdsById,
+      chiefByBand: this.bandSystem.chiefByBand,
+      peopleById: this.peopleById,
+      bands: this.bands,
+    };
+  }
+
+  /**
+   * Where each of `ids` stands in `subject`'s band, or null when that band has
+   * no shape to speak of.
+   *
+   * M9.5 phase 4e, and the tribe graph's only route to the pyramid it draws.
+   * The panel hands in the people it is about to draw and gets back a rung
+   * apiece; it never works a rank out for itself, because a rank is a claim
+   * about who would be obeyed and `Rank.ts` derives that from the very terms
+   * `standingOver` adds up. Null means "draw the flat sociogram", which is
+   * what a band whose chief has never had the idea of `division_of_labour`
+   * gets — see `Rank.bandHasShape`.
+   */
+  ranksAround(subject: Person, ids: Iterable<number>): Map<number, BandRank> | null {
+    const ctx = this.rankContext();
+    const bandId = bandOf(subject, ctx);
+    if (!bandHasShape(bandId, ctx)) return null;
+    const ranks = new Map<number, BandRank>();
+    for (const id of ids) {
+      const person = this.peopleById.get(id);
+      if (person) ranks.set(id, rankIn(person, bandId, ctx));
+    }
+    return ranks;
   }
 
   /**

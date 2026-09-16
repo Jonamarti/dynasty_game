@@ -248,8 +248,18 @@ export function standingOver(
  * across a band line still carries their birth band — the same gap
  * `kin-outrank-strangers` records in `simcheck`. The house is where the rank
  * lives, so the house is what is asked.
+ *
+ * Exported for `Rank.ts`, which draws the middle row of the tribe graph's
+ * pyramid and has to ask precisely the question this one does — a rank on
+ * screen that no order would respect is content that only looks like it does
+ * something. Its context is narrowed to the one map it reads, so the rank
+ * model need not assemble a whole `AuthorityContext` to ask.
  */
-function headsAHouseIn(person: Person, bandId: number, ctx: AuthorityContext): boolean {
+export function headsAHouseIn(
+  person: Person,
+  bandId: number,
+  ctx: { householdsById: ReadonlyMap<number, Household> }
+): boolean {
   if (person.householdId === null) return false;
   const household = ctx.householdsById.get(person.householdId);
   return household !== undefined &&

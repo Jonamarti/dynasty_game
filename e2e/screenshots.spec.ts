@@ -284,6 +284,60 @@ test('the four seasons', async ({ page }) => {
   }
 });
 
+test('the tribe graph, flat and in ranks', async ({ page }) => {
+  // M9.5 phase 4e. The two pictures side by side is the whole point of the
+  // phase: the same ties, drawn flat before the band has the idea of dividing
+  // its labour and in rungs afterwards. The world is doctored to get there —
+  // the alternative is running a tour long enough for a band to invent
+  // `division_of_labour` and `chiefdom` on its own, which is a scenario, not a
+  // screenshot.
+  await page.goto('/?seed=tour&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
+  await page.locator('.hud-speed').fill('120');
+  await page.waitForTimeout(9000);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  await page.waitForTimeout(200);
+
+  await page.keyboard.press('t');
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: DIR + '/14-tribe-flat.png' });
+  await page.keyboard.press('Escape');
+
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: {
+        sim: {
+          player: { id: number; bandId: number; householdId: number | null;
+            knownTech: Set<string> };
+          peopleById: Map<number, { id: number; alive: boolean; knownTech: Set<string> }>;
+          householdsById: Map<number, { bandId: number; headId: number }>;
+          bandSystem: { chiefByBand: Map<number, number> };
+        };
+      };
+    }).__dynasty;
+    const player = d.sim.player;
+    player.knownTech.add('division_of_labour');
+    d.sim.bandSystem.chiefByBand.set(player.bandId, player.id);
+    const household = player.householdId === null
+      ? null
+      : d.sim.householdsById.get(player.householdId);
+    const band = household ? household.bandId : player.bandId;
+    d.sim.bandSystem.chiefByBand.set(band, player.id);
+    // Heads of the other houses in the band, so the middle rung has somebody
+    // standing on it and the shot shows a pyramid rather than two rows.
+    for (const house of d.sim.householdsById.values()) {
+      if (house.bandId !== band) continue;
+      const head = d.sim.peopleById.get(house.headId);
+      if (head && head.alive) head.knownTech.add('chiefdom');
+    }
+  });
+
+  await page.keyboard.press('t');
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: DIR + '/15-tribe-ranks.png' });
+  await page.keyboard.press('Escape');
+});
+
 test('the menu and the settings screen', async ({ page }) => {
   await page.goto('/?seed=tour&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });

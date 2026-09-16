@@ -901,6 +901,59 @@ test('the tribe graph opens on T and is empty rather than broken for a friendles
   expect(errors).toEqual([]);
 });
 
+test('the tribe graph draws in ranks once the band divides its labour', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  // Paused before anything is arranged: `chooseChief` runs on a day boundary
+  // and would put a chief of its own choosing in place halfway through the
+  // spec, which is a world running its course rather than a flake to chase.
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  // M9.5 phase 4e. Nobody starts a game having had the idea of setting one
+  // person to one task, so the graph opens as the flat sociogram it has always
+  // been — no rows, no rungs, nothing said about who outranks whom.
+  await page.keyboard.press('t');
+  await expect(page.locator('.tribegraph-card')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.tribegraph-row')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: {
+        sim: {
+          player: { id: number; bandId: number; householdId: number | null;
+            knownTech: Set<string> };
+          householdsById: Map<number, { bandId: number }>;
+          bandSystem: { chiefByBand: Map<number, number> };
+        };
+      };
+    }).__dynasty;
+    const player = d.sim.player;
+    player.knownTech.add('division_of_labour');
+    // Both, because a person's own `bandId` and their house's can differ once
+    // somebody marries across a band line, and the rank model reads the house.
+    d.sim.bandSystem.chiefByBand.set(player.bandId, player.id);
+    const household = player.householdId === null
+      ? null
+      : d.sim.householdsById.get(player.householdId);
+    if (household) d.sim.bandSystem.chiefByBand.set(household.bandId, player.id);
+  });
+
+  await page.keyboard.press('t');
+  await expect(page.locator('.tribegraph-card')).toBeVisible({ timeout: 10_000 });
+  // Rows, the chief's own rung named, and the player drawn on it — plus the
+  // line that says what changed, because a view that changes shape without
+  // saying why reads as a bug.
+  await expect(page.locator('.tribegraph-row').first()).toBeVisible();
+  await expect(page.locator('.tribegraph-row.is-chief')).toHaveCount(1);
+  await expect(page.locator('.tribegraph-node.is-subject.is-chief')).toHaveCount(1);
+  await expect(page.locator('.tribegraph-why')).toContainText('divides its labour');
+
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});
+
 test('the family tree and tribe graph are gated the same as the tech web', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);

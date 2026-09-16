@@ -3,6 +3,31 @@
 As of 2026-09-16. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found during M9.5 phase 4e, 2026-09-16
+
+### The three graphs relax their whole layout every frame, open or idle
+
+`main.ts` calls `tribeGraph.update(sim)` from the frame loop, and `update`
+calls `render`, which runs `layOutTribe` in full — 220 relaxation passes over
+an O(n^2) repulsion term, plus the overlap pass — before comparing the digest
+that decides whether to touch the DOM. At the cap of 25 people that is roughly
+70,000 pair operations sixty times a second to discover that nothing has
+changed. `FamilyTree` and `TechWeb` are built the same way; the tech web is the
+largest graph of the three.
+
+Nothing about it is visible today: the frame budget absorbs it, `perf-budget`
+measures the simulation rather than the panel, and the digest still does its
+real job of keeping the DOM stable so hovering works. Phase 4e added a rank
+lookup per node to the same path, which is small beside the relaxation but is
+on the wrong side of it.
+
+The fix is to move the digest *before* the layout — it is computed from
+simulation state and node positions, so it would need splitting into the part
+that depends on the world and the part that depends on the picture — and to
+cache the arrangement between frames. Left alone because it is a change to all
+three panels and belongs with somebody profiling the frame, not inside a phase
+about social rank.
+
 ## Found during M9.5 phase 4d, 2026-09-16
 
 ### A head keeps asking, is refused four times in five, and pays for it every time

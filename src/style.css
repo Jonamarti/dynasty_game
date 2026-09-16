@@ -1341,6 +1341,44 @@ html, body, #app {
 .tribegraph-node.is-neg { border-color: #e0705c; }
 .tribegraph-node.is-dead { opacity: 0.55; border-style: dashed; }
 
+/* The pyramid, M9.5 phase 4e. Rows are backdrop only: they are emitted before
+   the nodes and take no pointer events at all, because a label that swallowed
+   a click would take a person's node away from the cursor — the same hover
+   rule the digest above exists for. The tint alternates by rung rather than by
+   position so the same rank always looks the same, even when an empty rung
+   above it has been closed up. */
+.tribegraph-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.tribegraph-row.is-chief { border-top: none; }
+.tribegraph-row.is-head,
+.tribegraph-row.is-child { background: rgba(255, 255, 255, 0.022); }
+.tribegraph-row.is-outsider,
+.tribegraph-row.is-outcast { background: rgba(0, 0, 0, 0.18); }
+.tribegraph-rowlabel {
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
+/* Rank on the node itself, so a chief is recognisable when the row labels are
+   off the side of a narrow screen. Deliberately a ring rather than a fill: the
+   border already carries warmth (`is-pos`/`is-neg`) and overwriting that would
+   cost the graph the thing it was built to show. */
+.tribegraph-node.is-chief { box-shadow: 0 0 0 2px rgba(224, 196, 122, 0.8); }
+.tribegraph-node.is-head { box-shadow: 0 0 0 1px rgba(224, 196, 122, 0.45); }
+.tribegraph-node.is-outcast { opacity: 0.7; border-style: dotted; }
+.tribegraph-why { font-style: italic; }
+
 /* --- pause menu and settings --------------------------------------------- */
 
 /* The z-index ladder, extended: radial 20, picker 21, the three graphs 30,

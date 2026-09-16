@@ -6,6 +6,15 @@
  * glance — who is central, who is off to one side, and which two people the
  * subject knows cannot stand each other.
  *
+ * **M9.5 phase 4e: it becomes a pyramid once the band has a shape.** When the
+ * subject's band has the idea of `division_of_labour` the same sociogram is
+ * drawn in rows — chief, heads of houses, the band, the children, and below
+ * them anyone from elsewhere or cast out — with the rows named down the side
+ * so the picture states what it is claiming. Until then it draws exactly as
+ * it always did. Neither the rows nor the row a person is in is decided here:
+ * `Simulation.ranksAround` answers both, off the same terms that decide
+ * whether an order is obeyed.
+ *
  * Gated on `knowsTies`, the same threshold `Hud.tabTies` uses for its own
  * "who they know" section — a plainer bar than the family tree's, because
  * unlike a family this can name people the subject actively dislikes, which
@@ -14,7 +23,10 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { knowledgeOfPerson } from '../sim/social/Knowledge.ts';
-import { layOutTribe, type TribeLayout, type TribeNode } from './TribeGraphLayout.ts';
+import { RANK_LABEL, RANK_ROW, type BandRank } from '../sim/social/Rank.ts';
+import {
+  layOutTribe, tribeMembers, type TribeLayout, type TribeNode,
+} from './TribeGraphLayout.ts';
 
 export class TribeGraphOverlay {
   private root: HTMLElement;
@@ -105,7 +117,8 @@ export class TribeGraphOverlay {
     }
 
     const box = this.boxSize();
-    const layout = layOutTribe(subject.id, sim.relationships, box.width, box.height);
+    const ranks = sim.ranksAround(subject, tribeMembers(subject.id, sim.relationships));
+    const layout = layOutTribe(subject.id, sim.relationships, box.width, box.height, ranks);
 
     const digest = this.digest(layout, observer);
     if (digest === this.signature && this.root.childElementCount > 0) return;
@@ -124,6 +137,7 @@ export class TribeGraphOverlay {
     }).join('');
 
     const nodes = layout.nodes.map(node => this.nodeHtml(node, sim, observer)).join('');
+    const rows = rowsHtml(layout);
 
     const shown = layout.nodes.length - 1;
     const total = sim.relationships.knownBy(subject.id).length;
@@ -136,12 +150,20 @@ export class TribeGraphOverlay {
             ? 'the ' + shown + ' strongest of ' + total + ' they know'
             : shown + (shown === 1 ? ' person they know' : ' people they know')) +
         '</span>' +
+        // Why the picture is suddenly in rows. A view that changes shape
+        // without saying what changed it reads as a bug, and the cause here is
+        // something the player can act on: somebody in the band had an idea.
+        (layout.ranked
+          ? '<span class="tribegraph-sub tribegraph-why">in ranks: this band ' +
+            'divides its labour</span>'
+          : '') +
         '<button class="tribegraph-close" data-close="1">close</button>' +
       '</div>' +
       '<div class="tribegraph-canvas" style="width:' + layout.width +
         'px;height:' + layout.height + 'px">' +
         '<svg class="tribegraph-edges" width="' + layout.width + '" height="' +
           layout.height + '">' + edges + '</svg>' +
+        rows +
         nodes +
       '</div>' +
       '</div>';
@@ -158,7 +180,8 @@ export class TribeGraphOverlay {
 
     return '<div class="tribegraph-node' +
       (node.isSubject ? ' is-subject' : positive ? ' is-pos' : ' is-neg') +
-      (!person.alive ? ' is-dead' : '') + '"' +
+      (!person.alive ? ' is-dead' : '') +
+      (node.rank ? ' is-' + node.rank : '') + '"' +
       ' style="left:' + node.x.toFixed(1) + 'px;top:' + node.y.toFixed(1) + 'px">' +
       '<span class="tribegraph-name">' + escapeHtml(label) + '</span>' +
       '</div>';
@@ -175,16 +198,24 @@ export class TribeGraphOverlay {
       const known = person && observer
         ? knowledgeOfPerson(observer, person, sim.relationships)
         : null;
+      // The rank belongs in the digest even though `y` is already here,
+      // because the rank is drawn as well as positioned: it names the row and
+      // rings the chief's node. A chief deposed the same day a head is raised
+      // leaves the row *count* unchanged and every `y` where it was, and
+      // without this the panel would go on calling the wrong person chief.
+      // `layout.ranked` is in the digest below for the same reason.
       parts.push(
         node.personId + ':' + node.x.toFixed(0) + ',' + node.y.toFixed(0) +
         ':' + (person?.alive ? '1' : '0') +
         ':' + Math.round(node.subjectOpinion) +
+        ':' + (node.rank ?? '-') +
         ':' + (known ? known.displayName : '')
       );
     }
     for (const edge of layout.edges) {
       parts.push('e' + edge.from + '-' + edge.to + ':' + Math.round(edge.opinion));
     }
+    parts.push(layout.ranked ? 'ranked' : 'flat');
     return parts.join('|');
   }
 
@@ -196,6 +227,43 @@ export class TribeGraphOverlay {
       Math.round((window.innerHeight - 160) / step) * step));
     return { width, height };
   }
+}
+
+/**
+ * The named bands the pyramid is drawn on, one per rung that has anybody on it.
+ *
+ * Drawn from the laid-out positions rather than from `RANK_ROW` directly: the
+ * layout closes up empty rungs, so the only honest source for where a row
+ * *is* on screen is where its people ended up. Every node in a row shares a
+ * `y` exactly — `lockY` pins it and `fitInto` scales both axes by one
+ * factor — so one node's position answers for the row.
+ *
+ * Emitted before the nodes so the nodes paint over it; a label the cursor
+ * could catch instead of a person would break the hover rule in `AGENTS.md`,
+ * which is why these are `pointer-events: none` in the stylesheet.
+ */
+function rowsHtml(layout: TribeLayout): string {
+  if (!layout.ranked) return '';
+
+  const rowY = new Map<BandRank, number>();
+  for (const node of layout.nodes) {
+    if (node.rank && !rowY.has(node.rank)) rowY.set(node.rank, node.y);
+  }
+  const rows = [...rowY.entries()].sort((a, b) => RANK_ROW[a[0]] - RANK_ROW[b[0]]);
+  if (rows.length === 0) return '';
+
+  // One row means no gap to measure, so fall back to the whole canvas.
+  const gap = rows.length > 1 ? Math.abs(rows[1]![1] - rows[0]![1]) : layout.height;
+
+  return rows.map(([rank, y], index) => {
+    const top = index === 0 ? 0 : y - gap / 2;
+    const bottom = index === rows.length - 1 ? layout.height : y + gap / 2;
+    return '<div class="tribegraph-row is-' + rank + '"' +
+      ' style="top:' + top.toFixed(1) + 'px;height:' +
+      Math.max(0, bottom - top).toFixed(1) + 'px">' +
+      '<span class="tribegraph-rowlabel">' + escapeHtml(RANK_LABEL[rank]) + '</span>' +
+      '</div>';
+  }).join('');
 }
 
 function escapeHtml(value: string): string {

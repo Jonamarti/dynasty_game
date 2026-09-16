@@ -6,6 +6,70 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-16 — M9.5 phase 4e: the tribe graph becomes a pyramid
+
+The last phase of M9.5, and the half of the owner's note the four phases before
+it were the groundwork for: *the tribe graph should be a layered pyramid,
+unlocked by a primitive "giving orders" technology.*
+
+**The rows are the simulation's answer, not the panel's.** New
+`sim/social/Rank.ts` names six rungs — chief, heads of houses, the band,
+children, other bands, cast out — and derives each one from exactly the terms
+`standingOver` already adds up. A head is drawn on the middle rung if and only
+if `headsAHouseIn` and `techPower(head, 'chiefdom')` both hold, which is the
+same pair of conditions that add `RANK_AUTHORITY` to an order; `headsAHouseIn`
+was exported rather than reimplemented, so the picture and the compliance roll
+cannot drift apart. A rank drawn for authority nobody would honour is
+declared-but-inert content with a border around it.
+
+**Flat until somebody has the idea.** `Rank.bandHasShape` asks the **chief's**
+copy of `division_of_labour` — the same gate `BandSystem.assignJobs` tests
+before it parcels out a day's work — so a band whose chief has never had the
+idea gets precisely the sociogram it has always had, and goes back to it the
+day it elects a chief who has not. The panel is told which it is by
+`Simulation.ranksAround` returning `null`, and the head line says *in ranks:
+this band divides its labour* when it is not, because a view that changes shape
+without saying what changed it reads as a bug.
+
+**One layout engine, not two.** `layOutTribe` gained a ranked mode that pins
+`y` with `lockY` exactly as `FamilyTreeLayout` pins a generation row; the
+springs, the repulsion and the overlap pass are the same lines in both modes.
+Empty rungs are closed up, so a band whose chief is not among the people the
+subject knows is not drawn with a gap where a chief would be — that reads as
+"the chief is hidden", a claim about knowledge this graph is not making.
+
+**The bug inside the phase, and the test that hid it.** The first draft seeded
+each row in id order and left the springs to arrange it, on the theory that
+"x stays force-directed on opinion". It does not: with `y` pinned a row is a
+one-dimensional problem and repulsion between neighbours is a wall — two people
+who ought to stand together cannot relax *past* the three people between them,
+however hard their spring pulls. Every row came out in id order, evenly spaced
+by the overlap pass. Rows are now seeded by the subject's opinion, best
+regarded beside them and worst at the ends, alternating sides so the row stays
+balanced, with the springs left to set distances within that order.
+
+Worse, the first test for this **passed on a build with the springs switched
+off entirely** — the ids in the fixture happened to run in the same order as
+the opinions, so an id-ordered seed satisfied it too. It now runs the ids
+deliberately against the warmth, and fails on the id-order build, which is what
+`AGENTS.md` means by verifying a test against a build with the thing removed.
+
+**Measured and checked.** `sim:check` is bit-identical to the 4d baseline line
+for line, the throughput line aside: nothing here is reachable from the
+harness, because no scenario possesses a player and the rank model is only ever
+asked by the panel. Nine new layout tests and four new tests of the shape of a
+band; the compaction test and the row-ordering test were both verified failing
+against builds with each piece removed. A new e2e spec opens the graph flat,
+makes the player a chief who has had the idea, and reopens it to find rows; the
+screenshot tour gained the same pair of pictures, `14-tribe-flat.png` and
+`15-tribe-ranks.png`.
+
+**M9.5 is closed.** Next is M8.2, the Neolithic, with soil folded into
+`farming` — see [m8_plan_the_ages.md](m8_plan_the_ages.md) and the soil section
+of [m9_5_plan.md](m9_5_plan.md).
+
+---
+
 ## 2026-09-16 — M9.5 phase 4d: `chiefdom`, and a band with a shape
 
 Until now a band had exactly two ranks: the chief, and everybody else.

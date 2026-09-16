@@ -378,3 +378,96 @@ describe('the middle rank', () => {
     }
   });
 });
+
+/**
+ * M9.5 phase 4e. The shape the tribe graph draws, asked of the simulation
+ * rather than of the picture: `ranksAround` is the panel's only route to a
+ * rung, so everything the pyramid claims is asserted here, once, without a
+ * canvas.
+ */
+describe('the shape of a band', () => {
+  /** Every person the graph would be drawn for, which is all of them here. */
+  function everyone(sim: Simulation): number[] {
+    return sim.livingPeople().map(person => person.id);
+  }
+
+  it('has no shape until the chief has the idea of dividing labour', () => {
+    const sim = new Simulation(SMALL);
+    const chiefId = chooseFirstChief(sim);
+    const chief = sim.peopleById.get(chiefId)!;
+    const subject = sim.livingPeople().find(person => person.id !== chiefId)!;
+
+    // Flat, and the panel is told so in the one way it can act on: null.
+    expect(sim.ranksAround(subject, everyone(sim))).toBeNull();
+
+    // Knowing it yourself is not enough — it is the chief's band and the
+    // chief's idea, the same gate `BandSystem.assignJobs` tests before it
+    // parcels out a day's work.
+    subject.knownTech.add('division_of_labour');
+    expect(sim.ranksAround(subject, everyone(sim))).toBeNull();
+
+    chief.knownTech.add('division_of_labour');
+    const ranks = sim.ranksAround(subject, everyone(sim));
+    expect(ranks).not.toBeNull();
+    expect(ranks!.get(chiefId)).toBe('chief');
+  });
+
+  it('raises a head to the middle rung exactly where `chiefdom` does', () => {
+    const sim = new Simulation(SMALL);
+    const chiefId = chooseFirstChief(sim);
+    sim.peopleById.get(chiefId)!.knownTech.add('division_of_labour');
+
+    const head = [...sim.householdsById.values()]
+      .map(household => sim.peopleById.get(household.headId))
+      .find((person): person is Person =>
+        !!person && person.alive && person.id !== chiefId)!;
+    expect(head, 'no head other than the chief in this world').toBeDefined();
+
+    // A head of a house whose band has never heard of `chiefdom` stands with
+    // everybody else, because that is what their orders are worth: the rank
+    // term in `standingOver` is off too. A row drawn for authority nobody
+    // would honour is the inert content this project keeps having to delete.
+    expect(sim.ranksAround(head, everyone(sim))!.get(head.id)).toBe('member');
+
+    head.knownTech.add('chiefdom');
+    expect(sim.ranksAround(head, everyone(sim))!.get(head.id)).toBe('head');
+  });
+
+  it('puts children on their own rung and the next band below them', () => {
+    const sim = new Simulation({ ...SMALL, population: { bands: 2, peoplePerBand: 10 } });
+    const chiefId = chooseFirstChief(sim);
+    const chief = sim.peopleById.get(chiefId)!;
+    chief.knownTech.add('division_of_labour');
+
+    const ranks = sim.ranksAround(chief, everyone(sim))!;
+    const child = sim.livingPeople().find(person =>
+      person.isChild && person.bandId === chief.bandId);
+    if (child) expect(ranks.get(child.id)).toBe('child');
+
+    const stranger = sim.livingPeople().find(person => person.bandId !== chief.bandId)!;
+    expect(stranger, 'no second band in this world').toBeDefined();
+    expect(ranks.get(stranger.id)).toBe('outsider');
+  });
+
+  it('puts the cast out below everyone, house or no house', () => {
+    const sim = new Simulation(SMALL);
+    const chiefId = chooseFirstChief(sim);
+    const chief = sim.peopleById.get(chiefId)!;
+    chief.knownTech.add('division_of_labour');
+    const cast = sim.livingPeople().find(person =>
+      person.id !== chiefId && person.householdId !== null)!;
+
+    // What `Simulation.removeBandMembership` does, and all it does: exile
+    // moves the person and leaves their house where it stands. Reproduced
+    // here rather than reached through `considerRebellion`, which is a daily
+    // roll and would make this a test of the weather.
+    const outcasts = {
+      id: 9001, name: 'the outcast', homeX: 0, homeY: 0,
+      norms: sim.bands[0]!.norms, chiefId: null, chiefSince: null, outcast: true,
+    };
+    sim.bands.push(outcasts);
+    cast.bandId = outcasts.id;
+
+    expect(sim.ranksAround(chief, everyone(sim))!.get(cast.id)).toBe('outcast');
+  });
+});

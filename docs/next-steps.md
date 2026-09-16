@@ -24,11 +24,14 @@ nothing was scheduled. It has been rewritten rather than amended again.
 
 ## Where things actually stand
 
-`npm run sim:check` on the default twelve-day scenario, re-run 2026-09-12 after
-M9 phase 5: **40 of 40 applicable checks pass**, 27 n/a, ~3,100 steps/s against
-a 2,000 floor. Phase 6 left every one of those numbers bit-identical, as it had
-to: no scenario possesses a player, so nothing it added is reachable from the
-harness at all. The n/a count is high because M8.1 added checks for content a
+`npm run sim:check` on the default twelve-day scenario, re-run 2026-09-16 at
+the close of M9.5: **39 of 39 applicable checks pass**, 29 n/a, ~2,600 steps/s
+against a 2,000 floor. The applicable count moved rather than fell — phases 4c
+and 4d added checks for content a twelve-day run cannot reach, which is the
+same reason the n/a count is high. M9 phase 6 and M9.5 phase 4e both left every
+one of those numbers bit-identical, as they had to: no scenario possesses a
+player, so neither the character's autonomy nor the panel's rank model is
+reachable from the harness at all. The n/a count is high because M8.1 added checks for content a
 twelve-day run cannot reach; the scenario that covers each one is named in its
 skip line, and `npm run sim:check:all` is the number that matters — **14
 scenarios as of M9.5 phase 4c** (`labour` joined, so that `jobs-bias-work` has
@@ -89,8 +92,8 @@ sides three times, which is a finding in itself — see `bugs.md`:
 | M9.5 phase 4b — a chief holds a term, and a new chief is welcomed | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 4c — `division_of_labour`, a real gate | shipped 2026-09-16. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 4d — `chiefdom`, the second rung | shipped 2026-09-16. See [m9_5_plan.md](m9_5_plan.md) |
-| **M9.5 phase 4e — the layered view** | **next**, and the last of M9.5. See [m9_5_plan.md](m9_5_plan.md) |
-| M8.2 — the Neolithic | after M9.5. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
+| M9.5 phase 4e — the layered view | shipped 2026-09-16. **M9.5 is complete.** See [m9_5_plan.md](m9_5_plan.md) |
+| **M8.2 — the Neolithic** | **next**, with soil folded into `farming`. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
@@ -703,7 +706,7 @@ that document's summary.
 | 1 | Children smaller; bodies with limbs; carried tools and weapons; faces with eyes, eyebrows, mouth | M9.5 phase 1 — **shipped 2026-09-14** |
 | 3 | Seasons should look different — snow, flowers, leaf litter, browning | M9.5 phases 2a and 2b — **shipped 2026-09-15** |
 | 4 | Seasons should be shorter, so tech and buildings pass to the next generations | M9.5 phase 3 — **shipped 2026-09-15** |
-| 2 | The tribe graph should be a layered pyramid, unlocked by a primitive "giving orders" technology | M9.5 phase 4 |
+| 2 | The tribe graph should be a layered pyramid, unlocked by a primitive "giving orders" technology | M9.5 phase 4 — **shipped 2026-09-16**, 4a to 4e |
 | 7 | Ground fertility, exhaustion, compost, crop rotation, burying fish | M8.2, in the same pass as `farming` |
 | 5 | Buildings degrade after a number of uses and need repair | M10 phase 1 |
 | 6 | Fences that claim territory; a border-guard job | M10 phase 2 (with O4 and O5) |
