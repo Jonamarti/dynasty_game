@@ -18,6 +18,7 @@ import type { Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import type { RelationshipGraph } from './Relationships.ts';
 import { chiefHoneymoon } from './Leadership.ts';
+import { techPower } from '../knowledge/Tech.ts';
 
 export interface AuthorityContext {
   relationships: RelationshipGraph;
@@ -37,6 +38,17 @@ export interface Standing {
   isChief: boolean;
   /** True if they are kin at all. */
   isKin: boolean;
+  /**
+   * True if what carried this was `chiefdom`'s middle rank and nothing else —
+   * the leader heads a house in the subordinate's band, but is neither their
+   * own head nor the chief.
+   *
+   * Reported rather than inferred by the caller, because two places need the
+   * same answer and neither should recompute it: `Simulation.command` records
+   * `preside` on it, which is the only way `chiefdom` is ever practised, and
+   * the telemetry that measures whether rank is worth anything counts on it.
+   */
+  byRank: boolean;
   /** 0-1 chance the order is obeyed. */
   chance: number;
   /** Plain-language account of where the chance came from, for the UI. */
@@ -101,6 +113,17 @@ const ORDER_COST: Record<string, number> = {
   attack: 0.9,
 };
 
+/**
+ * What heading a house is worth outside it, once `chiefdom` is known.
+ *
+ * Between `isKin`'s 0.1 and a chief's 0.45, and well under the 0.55 a head
+ * carries under their own roof. A middle rank has to be visibly middling: set
+ * level with headship and the pyramid would be flat again with two apexes, and
+ * set at 0.05 it would be a line in a table that changed nothing anybody could
+ * see, which is the other way this project keeps shipping inert content.
+ */
+const RANK_AUTHORITY = 0.22;
+
 export function orderCost(action: string): number {
   return ORDER_COST[action] ?? 0.3;
 }
@@ -130,7 +153,7 @@ export function standingOver(
   const isKin = kinship > 0;
 
   if (leader.id === subordinate.id) {
-    return { isHead, isChief, isKin, chance: 1, because: 'yourself' };
+    return { isHead, isChief, isKin, byRank: false, chance: 1, because: 'yourself' };
   }
 
   // Standing is the floor the rest builds on. A stranger with no position has
@@ -164,6 +187,26 @@ export function standingOver(
     authority += 0.1;
     reasons.push('kin');
   }
+
+  // M9.5 phase 4d: the middle rung. Until `chiefdom` a band is flat — `isHead`
+  // above reaches only inside one roof, so the head of a house had no more
+  // standing over the family next door than a passing stranger did, and the
+  // only two ranks in the game were "chief" and "everybody else". Rank fills
+  // that in: a head of a house is heeded across the whole camp, at less than
+  // the 0.55 they carry under their own roof and less than a chief's 0.45,
+  // because it is a middle rank and should read as one.
+  //
+  // Held by the individual, like every other technology here. Scaled by
+  // `techPower`, so a head who has only half worked the idea out carries half
+  // the rank — which is also what lets the practice be tried at all.
+  const byRank = !isHead && !isChief &&
+    headsAHouseIn(leader, subordinate.bandId, ctx) &&
+    techPower(leader, 'chiefdom') > 0;
+  if (byRank) {
+    authority += RANK_AUTHORITY * techPower(leader, 'chiefdom');
+    reasons.push('head of a house in your band');
+  }
+
   if (reasons.length === 0) reasons.push('no standing over them');
 
   const regard = ctx.relationships.opinion(subordinate.id, leader.id) / 100;
@@ -191,9 +234,27 @@ export function standingOver(
     isHead,
     isChief,
     isKin,
+    byRank,
     chance,
     because: reasons.join(', '),
   };
+}
+
+/**
+ * Whether `person` is the head of a household that belongs to `bandId`.
+ *
+ * `Household.bandId` rather than the head's own `bandId`, because the two can
+ * differ: `bandId` is not reassigned on marriage, so somebody who married
+ * across a band line still carries their birth band — the same gap
+ * `kin-outrank-strangers` records in `simcheck`. The house is where the rank
+ * lives, so the house is what is asked.
+ */
+function headsAHouseIn(person: Person, bandId: number, ctx: AuthorityContext): boolean {
+  if (person.householdId === null) return false;
+  const household = ctx.householdsById.get(person.householdId);
+  return household !== undefined &&
+    household.headId === person.id &&
+    household.bandId === bandId;
 }
 
 /**
@@ -210,7 +271,7 @@ export function standingOver(
  */
 export function menaceOver(leader: Person, subordinate: Person, tick: number): Standing {
   if (leader.id === subordinate.id) {
-    return { isHead: false, isChief: false, isKin: false, chance: 1, because: 'yourself' };
+    return { isHead: false, isChief: false, isKin: false, byRank: false, chance: 1, because: 'yourself' };
   }
 
   const reasons: string[] = [];
@@ -237,5 +298,8 @@ export function menaceOver(leader: Person, subordinate: Person, tick: number): S
   chance = Math.max(0.02, Math.min(0.92, chance));
   if (reasons.length === 0) reasons.push('no fear of you');
 
-  return { isHead: false, isChief: false, isKin: false, chance, because: reasons.join(', ') };
+  return {
+    isHead: false, isChief: false, isKin: false, byRank: false,
+    chance, because: reasons.join(', '),
+  };
 }

@@ -6,6 +6,85 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-16 — M9.5 phase 4d: `chiefdom`, and a band with a shape
+
+Until now a band had exactly two ranks: the chief, and everybody else.
+`isHead`'s 0.55 in `standingOver` reached only inside one roof, so the head of
+a house had no more standing over the family next door than a passing stranger
+did. `chiefdom` — a practice, requiring `division_of_labour` — fills in the
+middle rung, and lets a chief hold the office long enough for it to be one.
+
+**Three effects, because the first one alone would have been inert.** The rank
+term is `RANK_AUTHORITY` 0.22, scaled by `techPower`, added in `standingOver`
+when the leader heads a house in the subordinate's band and is neither their
+own head nor the chief. It sits between kinship's 0.1 and a chief's 0.45 and
+well under the 0.55 a head carries under their own roof, because a middle rank
+has to be visibly middling. `Leadership.chiefTermDays` makes a chief who
+understands the idea hold office half as long again — twenty days becomes
+thirty — as a multiplier on `CHIEF_TERM_DAYS` rather than a second number, so
+that shortening the year again moves both together.
+
+**And the third, which the plan did not call for but its own logic demands.**
+Before this phase the chief was the **only** order-giver anywhere in the
+simulation — `BandSystem.directWork` was the single call site, and a chief is
+covered by `isChief` and never by rank. A rank term alone would therefore have
+been reachable by the player and by nobody else: a line in an authority table
+that no NPC could ever exercise, which is declared-but-inert content wearing a
+different hat. So a head of a house who understands `chiefdom` now directs work
+too — one person a day to the chief's two, with a band ceiling of four, and
+always after the chief has had their pick, because the shape is a pyramid and
+not a committee. `directTo` was extracted rather than copied, so the four
+conditions that keep an order from being a death sentence exist once.
+
+**A regression found and fixed inside the phase.** Sending the heads to the
+chief's site put `walkers-do-not-grind` on `labour` at **10.0** stuck ticks per
+thousand against a threshold of 5 — six people converging on one half-built hut
+jostle at the door, which reads on screen as being stuck and is exactly what
+that check was written to catch. Heads now take the *other* site where the band
+has one (`MAX_SITES` is 2), which is both truer to the rank — a head running
+their own project, not fetching for the chief's — and measures **0.0** per
+thousand, better than the pre-change baseline. It was concentration, not
+volume: `jobs-bias-work` on `labour` recovered from +1.8 to +3.0 at the same
+order counts.
+
+**Practised by presiding.** The only way `chiefdom` is ever tried out is an
+order that lands on somebody who is neither your kin nor under your roof, and
+lands *because* of the rank. `Standing` gained `byRank` so that
+`Simulation.command` can record `preside` on exactly that case rather than
+inferring it, and the same flag feeds the `order_obeyed_by_rank` /
+`order_refused_by_rank` counters. The usual half-strength trial route through
+`techPower` keeps the practice from locking itself out.
+
+**Measured.** The tenure effect isolates cleanly: with the term bonus switched
+off the `century` seed changes chief **15** times, which is exactly the figure
+phase 4b recorded for it, and with the bonus on **12** — a further 20% off the
+churn that 4b cut by 63%. The node is reached from nothing on `century`
+(conceived 5, proven 3, taught 53, with rank orders both obeyed and refused),
+so it is not scenario-only content. Across twenty `century` seeds against the
+4c cohort: mean survival 99.9% → 100.0%, no world collapsing either side, 836 →
+827 births, 12.1 → 13.2 technologies known at the end, 10.4 → 11.9 conceived
+past the roots, 692.6 → 720.2 passed on. Adult starvation moved 8 → 11 across
+roughly 830 people, which is inside the resolution this project documents for a
+cohort this size.
+
+The `labour` scenario now carries both social technologies, so the ladder is
+measured where it is reachable, and a new `heads-direct-work` check demands
+both halves separately — that an order landed on rank at all, and that one was
+obeyed — because "no head ever reached the second pass" and "rank is too small
+to carry an order" are different failures. Four new deterministic tests read
+the rank off `standing().chance` rather than off an outcome, so none of them
+touches an RNG stream: the rank and its ceiling, the band boundary it must not
+cross, the lengthened term at full and half strength, and the one assertion
+that needs a world — that somebody other than the chief actually gives an
+order. All five, the scenario check included, were **verified failing on builds
+with each piece removed**, including a targeted mutation for the band-boundary
+case.
+
+Typecheck clean, 269 unit tests pass, 46 Playwright cases pass. The scenario
+matrix is 14 scenarios with **one** failure, `crowded`'s known headless
+`perf-budget`; `century` is 60/60. No RNG fork was added, no stream reordered,
+and nothing was appended to `spawnResources`' `plan` array.
+
 ## 2026-09-16 — M9.5 phase 4c: `division_of_labour`, the first social technology
 
 Nothing in the codebase connected knowledge to social organisation:

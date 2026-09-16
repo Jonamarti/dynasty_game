@@ -774,6 +774,7 @@ export class Simulation {
     const standing = this.standing(leader, subordinate, action);
     if (this.commandRng.next() >= standing.chance) {
       telemetry.count('order_refused');
+      if (standing.byRank) telemetry.count('order_refused_by_rank');
       // Recorded on the leader as well as counted: see `assignJob` below, and
       // `division_of_labour`'s friction spark, which this is the heaviest
       // source of.
@@ -797,6 +798,14 @@ export class Simulation {
     }
 
     telemetry.count('order_obeyed');
+    if (standing.byRank) {
+      telemetry.count('order_obeyed_by_rank');
+      // The only way `chiefdom` is ever practised: an order that landed on
+      // somebody who is neither your kin nor under your roof, and landed
+      // because of the rank rather than in spite of having none. `noteDid` is
+      // what carries a practice toward `TRIES_TO_TEST`.
+      leader.noteDid('preside');
+    }
     return this.order(subordinate, action, target);
   }
 
@@ -2092,6 +2101,7 @@ export class Simulation {
         assignJob: (leader, subordinate, job) => this.assignJob(leader, subordinate, job),
         leaveBand: person => this.removeBandMembership(person),
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
+        householdsById: this.householdsById,
       });
 
       this.knowledgeSystem.daily(this.people, {

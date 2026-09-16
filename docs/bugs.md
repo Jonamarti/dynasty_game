@@ -3,6 +3,30 @@
 As of 2026-09-16. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found during M9.5 phase 4d, 2026-09-16
+
+### A head keeps asking, is refused four times in five, and pays for it every time
+
+On `labour`, heads gave 215 orders on rank and had 174 of them refused — an
+obedience rate of about 19% — and `Simulation.command` debits the leader three
+points of regard for every refusal. Nothing in `directWork` remembers having
+been refused, so a head who is disliked asks again tomorrow, is refused again,
+and is liked slightly less for it. The loop is real and it compounds.
+
+It is **not** currently doing harm: the same run ends with 888 warm
+relationships against 115 hostile, nobody outcast and nobody exiled, and every
+social check passes. It is also not new — the chief has had exactly this
+property since orders existed, at `order_refused` 49 on the `century` seed —
+and phase 4d has scaled it up rather than introduced it.
+
+Left alone because the remedy is a judgement call that belongs with the person
+tuning authority, not inside a content phase: either a leader should back off
+somebody who has refused them recently (a per-pair cooldown, which is new
+per-edge state and the thing phase 4b deliberately avoided), or `directTo`
+should pick the most biddable idle member rather than the first in list order,
+which is a one-line change with a measurable effect on who ends up doing the
+band's work and therefore a measured change, not a tidy-up.
+
 ## Found during M9.5 phase 4c, 2026-09-16
 
 ### `carpentry` has a spark route that cannot fire

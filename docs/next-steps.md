@@ -88,7 +88,8 @@ sides three times, which is a finding in itself — see `bugs.md`:
 | M9.5 phase 4a — `threaten`: coercion that needs no technology | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 4b — a chief holds a term, and a new chief is welcomed | shipped 2026-09-15. See [m9_5_plan.md](m9_5_plan.md) |
 | M9.5 phase 4c — `division_of_labour`, a real gate | shipped 2026-09-16. See [m9_5_plan.md](m9_5_plan.md) |
-| **M9.5 phase 4d — `chiefdom`, the second rung** | **next.** 4e (the layered graph) follows. See [m9_5_plan.md](m9_5_plan.md) |
+| M9.5 phase 4d — `chiefdom`, the second rung | shipped 2026-09-16. See [m9_5_plan.md](m9_5_plan.md) |
+| **M9.5 phase 4e — the layered view** | **next**, and the last of M9.5. See [m9_5_plan.md](m9_5_plan.md) |
 | M8.2 — the Neolithic | after M9.5. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |

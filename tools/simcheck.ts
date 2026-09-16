@@ -269,16 +269,19 @@ export const SCENARIOS: Record<string, Scenario> = {
   labour: {
     name: 'labour',
     description:
-      'A band that already has the idea of setting one person to one task. ' +
-      'M9.5 phase 4c put `division_of_labour` in front of every job in the ' +
-      'game, and working it out from nothing takes a band the better part of ' +
-      'a year — so without a scenario that starts with it, `jobs-bias-work` ' +
-      'would report n/a everywhere and the one behaviour jobs exist to ' +
-      'produce would stop being measured at the moment it became gated. The ' +
-      'same trick `craft` and `scribes` use, for the same reason. Two large ' +
-      'bands, because `assignJobs` hands out one job per band per day and a ' +
-      'small band runs out of unemployed adults before the sample is worth ' +
-      'anything.',
+      'A band that already has both social technologies: the idea of setting ' +
+      'one person to one task, and the idea of a band with a shape. M9.5 ' +
+      'phase 4c put `division_of_labour` in front of every job in the game ' +
+      'and 4d put `chiefdom` in front of rank, and working either out from ' +
+      'nothing takes a band the better part of a year — so without a scenario ' +
+      'that starts with them, `jobs-bias-work` would report n/a everywhere ' +
+      'and `heads-direct-work` would never fire, and the two behaviours the ' +
+      'social ladder exists to produce would stop being measured at the ' +
+      'moment they became gated. The same trick `craft` and `scribes` use, ' +
+      'for the same reason. Two large bands, because `assignJobs` hands out ' +
+      'one job per band per day and a small band runs out of unemployed ' +
+      'adults before the sample is worth anything — and because rank is about ' +
+      'the house next door, which a band with one house does not have.',
     config: {
       seed: 'foreman',
       population: {
@@ -287,7 +290,7 @@ export const SCENARIOS: Record<string, Scenario> = {
         // that is actually worth doing: a job is a lean on the utility scorer
         // and nothing more, so a band that cannot hunt or make anything would
         // measure the bias of two jobs out of four.
-        startingTech: ['division_of_labour', 'hafting', 'spear'],
+        startingTech: ['division_of_labour', 'chiefdom', 'hafting', 'spear'],
       },
     },
     steps: 12000,
@@ -1595,6 +1598,28 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('animals-are-tamed',
       fed > 0 && tamed > 0,
       fed + ' meals offered to wild animals, ' + tamed + ' of them came round');
+  }
+
+  // --- The middle rank: M9.5 phase 4d ---------------------------------------
+  //
+  // `techs-have-effects` will call `chiefdom` wired the moment `standingOver`
+  // reads it, and be right about the code and wrong about the world. The term
+  // is only worth anything if somebody who is not the chief ever exercises it,
+  // and until 4d nobody could: the chief was the single order-giver anywhere
+  // in the simulation and a chief is covered by `isChief`, never by rank. This
+  // is the check that a head of a house actually presides.
+  if (!sim.knownTech.has('chiefdom')) {
+    skip('heads-direct-work', 'nobody here has the idea of a band with a shape');
+  } else {
+    const obeyed = tel.order_obeyed_by_rank ?? 0;
+    const refused = tel.order_refused_by_rank ?? 0;
+    // Both halves demanded, and separately, because they are different
+    // failures: no orders at all means no head ever reached `directWork`'s
+    // second pass, and orders that are never obeyed means the rank term is
+    // too small to carry one.
+    add('heads-direct-work',
+      obeyed + refused > 0 && obeyed > 0,
+      obeyed + ' orders landed on rank alone, ' + refused + ' refused');
   }
 
   // --- The bone tier: M8.1 --------------------------------------------------

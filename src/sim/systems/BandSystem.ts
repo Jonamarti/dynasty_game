@@ -17,6 +17,7 @@
  *    not, without either outcome being written as a rule.
  */
 import type { Person } from '../entities/Person.ts';
+import type { Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import type { Building, BuildingDef } from '../entities/Building.ts';
 import { BUILDINGS, isTrap, isStation } from '../entities/Building.ts';
@@ -26,7 +27,7 @@ import { JOB_IDS, type JobId } from '../entities/Job.ts';
 import type { RelationshipGraph } from './../social/Relationships.ts';
 import type { RNG } from '../core/RNG.ts';
 import { telemetry } from '../core/Telemetry.ts';
-import { CHIEF_TERM_DAYS, chiefHoneymoon } from '../social/Leadership.ts';
+import { chiefHoneymoon, chiefTermDays } from '../social/Leadership.ts';
 
 /** Average opinion below which a band casts someone out. */
 const EXILE_THRESHOLD = -28;
@@ -92,6 +93,21 @@ const PLANNING_INTERVAL = 3;
 /** Sites a band will have underway at once. */
 const MAX_SITES = 2;
 
+/**
+ * How many people one leader puts on a site in a day, and how many the band
+ * manages between them.
+ *
+ * The chief's two is what `directWork` always did and is left alone, so that
+ * the phase-4d measurement moves one thing. A head gets one, and the band
+ * ceiling of four means a camp of four houses does not put its entire adult
+ * population under order every morning: being led should read as direction,
+ * which is this function's own standing note, and four of a dozen adults is
+ * direction where twelve of twelve is possession.
+ */
+const CHIEF_DIRECTS = 2;
+const HEAD_DIRECTS = 1;
+const BAND_DIRECTS_PER_DAY = 4;
+
 export interface BandContext {
   relationships: RelationshipGraph;
   rng: RNG;
@@ -113,6 +129,8 @@ export interface BandContext {
   leaveBand: (person: Person) => void;
   /** A story beat worth a floater, gated on line of sight like any other. */
   onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') => void;
+  /** Households by id, so `directWork` can tell who heads a house. */
+  householdsById: Map<number, Household>;
 }
 
 export class BandSystem {
@@ -168,14 +186,20 @@ export class BandSystem {
    */
   private chooseChief(band: Band, members: Person[], ctx: BandContext): void {
     const incumbentId = this.chiefByBand.get(band.id);
-    const incumbentIsHere = incumbentId !== undefined &&
-      members.some(member => member.id === incumbentId);
+    const incumbent = incumbentId === undefined
+      ? undefined
+      : members.find(member => member.id === incumbentId);
 
     // Regard moves every day, but leadership should not move with every small
     // fluctuation in it. Death and departure bypass the term because there is
     // nobody left to hold office; a successful challenge does so below.
-    if (incumbentIsHere && band.chiefSince !== null &&
-        ctx.day - band.chiefSince < CHIEF_TERM_DAYS) return;
+    //
+    // The term is the incumbent's own, not the band's: M9.5 phase 4d makes a
+    // chief who understands `chiefdom` hold the office half as long again, and
+    // a band that replaces them with somebody who does not goes back to the
+    // short term. See `chiefTermDays`.
+    if (incumbent && band.chiefSince !== null &&
+        ctx.day - band.chiefSince < chiefTermDays(incumbent)) return;
 
     let best: Person | null = null;
     let bestScore = -Infinity;
@@ -668,13 +692,24 @@ export class BandSystem {
   }
 
   /**
-   * The chief puts people on the unfinished work.
+   * The chief puts people on the unfinished work — and, once the band has a
+   * shape, so do the heads of its houses.
    *
    * This is where authority stops being a number in a panel. A chief who is
    * liked gets a hut built; one who is merely tolerated is refused to their
-   * face and has to do it themselves. Only a couple of people a day, and only
-   * ones with nothing pressing, so being led feels like direction rather than
-   * possession.
+   * face and has to do it themselves. Only a couple of people a day each, and
+   * only ones with nothing pressing, so being led feels like direction rather
+   * than possession.
+   *
+   * **M9.5 phase 4d: the middle rank has to have somewhere to happen.** The
+   * rank term in `standingOver` would otherwise be reachable only by the
+   * player: the chief was the one and only order-giver anywhere in the
+   * simulation, and a chief is covered by `isChief`, never by rank. A term in
+   * an authority table that no NPC can ever exercise is declared-but-inert
+   * content wearing a different hat. So a head of a house who understands
+   * `chiefdom` directs work too — fewer people than the chief, and always
+   * after the chief has had their pick, because the shape is a pyramid and not
+   * a committee.
    */
   private directWork(band: Band, members: Person[], ctx: BandContext): void {
     const chiefId = this.chiefByBand.get(band.id);
@@ -682,22 +717,60 @@ export class BandSystem {
     const chief = members.find(m => m.id === chiefId);
     if (!chief) return;
 
-    const site = ctx.buildings.find(b => b.ownerBandId === band.id && !b.complete);
-    if (!site) return;
+    const sites = ctx.buildings.filter(b => b.ownerBandId === band.id && !b.complete);
+    if (sites.length === 0) return;
 
+    let directed = this.directTo(chief, sites[0]!, members, ctx, CHIEF_DIRECTS);
+
+    // Heads take the *other* site where there is one, and only fall back to
+    // the chief's when there is not. Measured, not guessed: sending everybody
+    // to one site put `walkers-do-not-grind` on `labour` at 10.0 stuck ticks
+    // per thousand against a threshold of 5 — six people converging on one
+    // half-built hut jostle each other at the door, which reads on screen as
+    // being stuck and is precisely what that check was written to catch.
+    // `MAX_SITES` is 2, so a band with work to spare has somewhere else to
+    // send them, and a head running their own project is truer to the rank
+    // than a head fetching for the chief's.
+    let next = sites.length > 1 ? 1 : 0;
+    for (const member of members) {
+      if (directed >= BAND_DIRECTS_PER_DAY) break;
+      if (member.id === chief.id || member.isChild) continue;
+      if (techPower(member, 'chiefdom') <= 0) continue;
+      const household = member.householdId === null
+        ? undefined
+        : ctx.householdsById.get(member.householdId);
+      if (!household || household.headId !== member.id || household.bandId !== band.id) continue;
+      directed += this.directTo(member, sites[next]!, members, ctx, HEAD_DIRECTS);
+      next = (next + 1) % sites.length;
+    }
+  }
+
+  /**
+   * One person putting up to `limit` idle bandmates on a site. Returns how
+   * many orders stuck.
+   *
+   * Extracted from `directWork` when phase 4d gave it a second caller, rather
+   * than copied: the four conditions below are the ones that keep an order
+   * from being a death sentence, and two copies of them would have drifted the
+   * first time one was adjusted.
+   */
+  private directTo(
+    leader: Person, site: Building, members: Person[], ctx: BandContext, limit: number
+  ): number {
     let directed = 0;
     for (const member of members) {
-      if (directed >= 2) break;
-      if (member.id === chief.id || member.isChild) continue;
+      if (directed >= limit) break;
+      if (member.id === leader.id || member.isChild) continue;
       if (member.order !== null) continue;
       // Nobody is sent to work while they are hungry, thirsty or cold; an order
       // that would kill the person obeying it is not authority, it is a bug.
       if (member.needs.hunger > 45 || member.needs.thirst > 40 || member.needs.cold > 45) continue;
-      if (chief.distanceTo(member) > 24) continue;
+      if (leader.distanceTo(member) > 24) continue;
 
       const action = site.materialsReady ? 'build' : 'haul';
-      if (ctx.command(chief, member, action, { buildingId: site.id })) directed++;
+      if (ctx.command(leader, member, action, { buildingId: site.id })) directed++;
     }
+    return directed;
   }
 
   // -------------------------------------------------------------------------

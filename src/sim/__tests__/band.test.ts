@@ -11,8 +11,10 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
-import { CHIEF_TERM_DAYS, chiefHoneymoon } from '../social/Leadership.ts';
-import { PROTOTYPE_AT, REFINEMENT_STEP } from '../knowledge/Synthesis.ts';
+import { CHIEF_TERM_DAYS, chiefHoneymoon, chiefTermDays } from '../social/Leadership.ts';
+import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from '../knowledge/Synthesis.ts';
+import { telemetry } from '../core/Telemetry.ts';
+import type { Person } from '../entities/Person.ts';
 
 const SMALL = {
   seed: 'rebellion',
@@ -256,5 +258,123 @@ describe('rebellion', () => {
 
     expect(fired).toBe(true);
     expect(sim.bandSystem.chiefByBand.get(band.id)).toBeDefined();
+  });
+});
+
+/**
+ * M9.5 phase 4d. The rank term is read off `standing().chance` rather than off
+ * an outcome, so none of this touches an RNG stream and none of it can flake;
+ * the one assertion that needs a world — that a head other than the chief ever
+ * actually gives an order — runs a band and counts.
+ */
+describe('the middle rank', () => {
+  /** A head of one household, and an unrelated adult of the same band. */
+  function headAndOutsider(sim: Simulation): [Person, Person] | null {
+    for (const household of sim.householdsById.values()) {
+      const head = sim.peopleById.get(household.headId);
+      if (!head || !head.alive) continue;
+      const other = sim.livingPeople().find(person =>
+        person.bandId === head.bandId &&
+        person.householdId !== head.householdId &&
+        !person.isChild &&
+        sim.relationships.kinship(person.id, head.id) === 0);
+      if (other) return [head, other];
+    }
+    return null;
+  }
+
+  it('gives a head standing over the house next door, but less than under their own roof', () => {
+    const sim = new Simulation(SMALL);
+    const pair = headAndOutsider(sim);
+    expect(pair, 'no head with an unrelated bandmate in this world').not.toBeNull();
+    const [head, outsider] = pair!;
+
+    const flat = sim.standing(head, outsider, 'haul');
+    expect(flat.byRank).toBe(false);
+
+    head.knownTech.add('chiefdom');
+    const ranked = sim.standing(head, outsider, 'haul');
+    expect(ranked.byRank).toBe(true);
+    expect(ranked.chance).toBeGreaterThan(flat.chance);
+    // Why the rank is stated in words as well as in a number: the panel shows
+    // this sentence, and a rank the player cannot see is a rank they will
+    // think is a bug.
+    expect(ranked.because).toContain('head of a house in your band');
+
+    // A middle rank, and visibly middling. Somebody under this head's own roof
+    // must still be the more biddable of the two.
+    const ownHousehold = sim.livingPeople().find(person =>
+      person.householdId === head.householdId && person.id !== head.id && !person.isChild);
+    if (ownHousehold) {
+      const inside = sim.standing(head, ownHousehold, 'haul');
+      expect(inside.byRank).toBe(false);
+      expect(inside.chance).toBeGreaterThan(ranked.chance);
+    }
+  });
+
+  it('does not reach across a band boundary', () => {
+    // The contrast that makes rank *legitimate* authority rather than menace:
+    // `menaceOver` from 4a works on a stranger and this never will.
+    const sim = new Simulation({ ...SMALL, population: { bands: 2, peoplePerBand: 10 } });
+    const head = [...sim.householdsById.values()]
+      .map(household => sim.peopleById.get(household.headId))
+      .find((person): person is Person => !!person && person.alive);
+    expect(head).toBeDefined();
+    head!.knownTech.add('chiefdom');
+
+    const stranger = sim.livingPeople().find(person => person.bandId !== head!.bandId);
+    expect(stranger, 'no second band in this world').toBeDefined();
+    expect(sim.standing(head!, stranger!, 'haul').byRank).toBe(false);
+  });
+
+  it('lengthens the term of a chief who understands it, and only theirs', () => {
+    const sim = new Simulation(SMALL);
+    const plain = sim.livingPeople()[0]!;
+    const versed = sim.livingPeople()[1]!;
+
+    expect(chiefTermDays(plain)).toBe(CHIEF_TERM_DAYS);
+    expect(chiefTermDays(null)).toBe(CHIEF_TERM_DAYS);
+
+    // A half-worked-out idea buys half the extra tenure, like every other
+    // graded effect in this milestone.
+    versed.ideas.push({
+      tech: 'chiefdom', stage: 'researching', insight: PROTOTYPE_AT,
+      story: 'saw a theft nobody could settle', conceivedTick: 0, effort: 0,
+      discussedWith: [], trials: 0, proof: 0, failedTests: 0, tries: 0,
+    });
+    expect(chiefTermDays(versed)).toBeCloseTo(CHIEF_TERM_DAYS * (1 + 0.5 * PROTOTYPE_POWER));
+
+    versed.ideas = [];
+    versed.knownTech.add('chiefdom');
+    expect(chiefTermDays(versed)).toBeCloseTo(CHIEF_TERM_DAYS * 1.5);
+    expect(chiefTermDays(versed)).toBeGreaterThan(chiefTermDays(plain));
+  });
+
+  it('is actually exercised by somebody who is not the chief', () => {
+    // The assertion the whole phase turns on. Before 4d the chief was the only
+    // order-giver anywhere in the simulation, and a chief is covered by
+    // `isChief` and never by rank — so a rank term alone would have been a
+    // line in an authority table that no NPC could ever reach. This fails on a
+    // build where `directWork` stops at the chief.
+    const wasEnabled = telemetry.isEnabled();
+    telemetry.enable();
+    telemetry.reset();
+    try {
+      const sim = new Simulation({
+        ...SMALL,
+        seed: 'presiding',
+        population: {
+          bands: 1, peoplePerBand: 14,
+          startingTech: ['division_of_labour', 'chiefdom'],
+        },
+      });
+      stepDays(sim, 40);
+      const obeyed = telemetry.get('order_obeyed_by_rank');
+      const refused = telemetry.get('order_refused_by_rank');
+      expect(obeyed + refused, 'no head ever gave an order on rank').toBeGreaterThan(0);
+    } finally {
+      if (!wasEnabled) telemetry.disable();
+      telemetry.reset();
+    }
   });
 });

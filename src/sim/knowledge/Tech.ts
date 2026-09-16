@@ -77,6 +77,10 @@ export const TECHS = [
   // contrast: what gets discovered here is legitimate, cheap, repeatable
   // authority, not authority as such.
   'division_of_labour',
+  // M9.5 phase 4d: the second rung, and the first time a band has a shape
+  // rather than a leader. Household heads carry standing outside their own
+  // roof, and a chief holds office long enough for it to be an office.
+  'chiefdom',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -886,6 +890,41 @@ export const TECH: Record<Tech, TechDef> = {
       'task, by arrangement rather than by menace, and the camp stops ' +
       'stripping the same patch four times over.',
   },
+  chiefdom: {
+    id: 'chiefdom', label: 'Chiefdom', domain: 'people',
+    // Practised by presiding: giving an order to somebody who is neither your
+    // kin nor under your roof, and being obeyed because of the rank rather
+    // than in spite of the lack of one. `Simulation.command` records that as
+    // `preside`, and only when the rank term was what carried it — see
+    // `Standing.byRank`. The same half-strength trial route `techPower` gives
+    // every practice keeps this from locking itself out.
+    kind: 'practice', practisedBy: ['preside'],
+    requires: ['division_of_labour'], difficulty: 0.55, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      // The commonest deed in the game that nobody has the standing to settle.
+      // 155 thefts on the `century` seed against 47 beatings, which is why
+      // this is the heavy route and the beating is the lighter one.
+      { needs: [{ kind: 'saw', what: 'theft' }, { kind: 'doing', action: 'talk' }],
+        weight: 1.0, story: 'watched a theft that everybody saw and nobody had the standing to settle' },
+      { needs: [{ kind: 'saw', what: 'assault' }],
+        weight: 0.8, story: 'saw two of them come to blows with nobody set above either to stop it' },
+      // The lesson `division_of_labour` teaches by failing: parcelling out the
+      // work is not the same as being obeyed, and the gap between them is what
+      // rank is for.
+      { needs: [{ kind: 'knows', tech: 'division_of_labour' },
+                { kind: 'saw', what: 'order_refused' }],
+        weight: 0.7, story: 'found that parcelling out the work was not the same as being obeyed' },
+      // And 4a again, one rung up: menace was settling what standing ought to
+      // have settled.
+      { needs: [{ kind: 'saw', what: 'threaten' }, { kind: 'doing', action: 'talk' }],
+        weight: 0.6, story: 'saw menace settle a thing that ought to have been settled by standing' },
+    ],
+    description:
+      'A band with a shape. The heads of houses answer to the chief and are ' +
+      'answered to by everyone else, and the chief holds the office long ' +
+      'enough for it to be one.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1023,6 +1062,14 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   herbalism: {
     summary: 'Tending the hurt: they mend far faster than waiting would have managed.',
     site: 'ActionSystem.doTend, the only use the heal skill has ever had',
+  },
+  chiefdom: {
+    summary:
+      'Rank. The head of a house is heeded across the whole camp, and a chief ' +
+      'holds office half as long again.',
+    site:
+      'Authority.standingOver, the rank term; Leadership.chiefTermDays; ' +
+      'BandSystem.directWork, where heads put people to work',
   },
   division_of_labour: {
     summary:
