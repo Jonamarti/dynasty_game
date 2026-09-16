@@ -1,7 +1,38 @@
 # Known bugs and rough edges
 
-As of 2026-09-16. Everything here is real and reproducible; nothing here is
+As of 2026-09-17. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found during M8.2's first half, 2026-09-17
+
+### `millers` grinds grain now, and has stopped picking acorns entirely
+
+The scenario exists to prove a crafting station gets used, and it did that with
+two meals of acorn in three years — eleven acorns picked in the whole run, the
+first grind at step 23,938. Adding `farming` to `TECHS` moves every knowledge
+draw in every world, and on this seed the acorn harvest moved to zero: four
+years, not one acorn.
+
+The check is in better health than it has ever been, because the same band
+grinds **twenty-six** lots of wild grain instead, and the run was lengthened to
+a fourth year for `jobs-bias-work` rather than for the quern. But the thing that
+stopped happening is worth recording plainly: **the acorn chain is now
+unmeasured**. It needs somebody to notice a deficit, walk to an oak, gather
+three acorns and carry them to a stone inside a ten-day autumn, and since M9.5
+phase 3 halved the seasons no scenario in the suite has shown it happening
+twice. Left alone because the honest fix is a scenario built for autumn rather
+than a coefficient, and because `grinding` is demonstrably reachable and useful
+by another route.
+
+### Grain is inedible until it is ground, and nothing tells a band that
+
+A band that works out `farming` without a standing quern can raise a plot, sow
+it, reap forty-five grain and eat none of it. That is true to life and it is the
+point of the technology, but the only place the game says so is the item's
+nutrition of zero. `farming` requires `grinding`, so every farmer knows what to
+do, and the planner builds stations before it breaks ground — so in practice it
+does not happen. If it ever does, the fix is a refusal on `eat` that names the
+quern, not a nutrition number.
 
 ## Found during the era rename, 2026-09-16
 

@@ -56,6 +56,24 @@ export const ITEMS: Record<string, ItemDef> = {
   // anybody holding enough to grind had eaten them by the time they reached the
   // stone. Nothing competes for an acorn.
   acorn:    { id: 'acorn',    label: 'Acorns',     nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
+  // M8.2, and **nutrition 0 for the same reason the acorn is**: raw grain is
+  // not food, which is precisely why every people who lived on it ground it
+  // first. Worth 6 was tried and measured doing real damage. The forage scorer
+  // took the nearest edible thing, so wild grain at 6 pulled foragers off
+  // fourteen-point berries and twenty-two-point hazelnuts: on `millers`, ninety
+  // four grain were gathered, foraging rose 42% in ticks, crafting fell to a
+  // third, and the scenario that exists to exercise a crafting station made
+  // nothing at one all run. A food nobody should want is not made harmless by
+  // making it cheap; it has to be worth nothing until somebody knows what to do
+  // with it.
+  //
+  // That leaves the question this number has to answer: where does the first
+  // seed corn come from, if nobody will gather a worthless thing? From the
+  // quern. `RECIPES.groats` is gated on `grinding` — which is also `farming`'s
+  // own prerequisite — so anybody who could ever discover farming already has a
+  // reason to gather wild cereal, and `Brain.nodeWorth` values it the way
+  // `fruitWorth` has valued acorns since M8.1. No deadlock, and no bait.
+  grain:    { id: 'grain',    label: 'Grain',      nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   meal:     { id: 'meal',     label: 'Meal',       nutrition: 34, spoilTicks: 0,    baseValue: 4 },
   meat:     { id: 'meat',     label: 'Raw meat',   nutrition: 30, spoilTicks: 1200, baseValue: 3 },
   fish:     { id: 'fish',     label: 'Fish',       nutrition: 18, spoilTicks: 800,  baseValue: 2 },

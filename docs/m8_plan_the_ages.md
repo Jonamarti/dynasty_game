@@ -294,7 +294,7 @@ Seventeen nodes. The pass where a band stops moving to the food.
 | `ground_stone` | stone | stoneworking, hafting | polished axe and adze: felling, and a term in `buildFactor` |
 | `spinning` | cloth | cordage | `thread`, and a spindle recipe |
 | `weaving` | cloth | spinning, basketry | a `loom` station and a `cloth` item: warmth, and the first thing worth trading |
-| `farming` | plants | plant_lore, grinding | **fields.** A `Field` entity, `till`/`sow`/`reap`, a `grain` item, seasonal growth. Returns `farming` to `TECHS` and closes the oldest open entry in `next-steps.md` |
+| `farming` | plants | plant_lore, grinding | **fields. Shipped 2026-09-17.** A `field` design carrying a `Crop`, `sow` and `reap` (tilling folded into sowing), a `grain` item, wild cereal to take it from, and the three soil layers of `core/Soil.ts` under all of it. Returns `farming` to `TECHS` and closes the oldest open entry in `next-steps.md`. See `changelog.md` for the two designs that were measured and rejected on the way |
 | `sickle` | plants | farming, hafting | reaping speed |
 | `bread` | fire | grinding, farming, firemaking | an `oven` station; `bread`, high nutrition and long keeping |
 | `brewing` | fire | pottery, farming | `beer`: relieves `company`, raises opinion at a feast. Neolithic, and social |

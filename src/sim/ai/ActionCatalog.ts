@@ -16,6 +16,7 @@ import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
 import { BUILDINGS, isStation } from '../entities/Building.ts';
+import { SOW_SEED } from '../entities/Field.ts';
 import type { Tree } from '../entities/Tree.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES, hasIngredients, missingIngredients, type RecipeDef } from '../entities/Recipe.ts';
@@ -564,6 +565,36 @@ function buildingActions(
         icon: '\u{1F4E4}',
         enabled: building.store.total > 0,
         reason: building.store.total === 0 ? 'The store is empty' : undefined,
+      });
+    }
+    // M8.2. Both verbs are offered on a finished plot, and which one is enabled
+    // is the state of the crop: a ripe field asks to be cut and a bare one asks
+    // for seed. The `reason` on each is the whole point — the standing
+    // instruction on this project is that a refusal has to say why, and the
+    // menu is the one place a player can be told *before* walking across the
+    // camp rather than after.
+    if (building.crop) {
+      const crop = building.crop;
+      const seed = actor.inventory.count('grain');
+      const knows = techPower(actor, 'farming') > 0;
+      options.push({
+        id: 'sow',
+        label: 'Sow the field',
+        icon: '\u{1F331}',
+        enabled: knows && crop.isFallow && seed >= SOW_SEED,
+        reason: !knows ? 'Nobody here has the idea of putting seed back in the ground'
+          : !crop.isFallow ? 'Something is growing here already'
+          : seed < SOW_SEED ? 'You need ' + SOW_SEED + ' grain to sow this'
+          : undefined,
+      });
+      options.push({
+        id: 'reap',
+        label: 'Bring in the harvest',
+        icon: '\u{1F33E}',
+        enabled: crop.isRipe,
+        reason: crop.isRipe ? undefined
+          : crop.isFallow ? 'Nothing is growing here'
+          : 'It is not ready yet',
       });
     }
     if (building.def.shelter > 0) {

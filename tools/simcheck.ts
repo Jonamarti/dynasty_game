@@ -206,7 +206,18 @@ export const SCENARIOS: Record<string, Scenario> = {
     // Extended rather than re-seeded, so the run still says what it always
     // said: given enough of the calendar this scenario's age, the chain does
     // fire. See "the quern's window narrowed" in bugs.md.
-    steps: 26000,
+    //
+    // **Extended again at M8.2, to 36,000 — a fourth year**, and this time not
+    // for the quern's sake. Adding `farming` to `TECHS` moves every knowledge
+    // draw in every world, and this seed's acorn harvest moved with it: it now
+    // picks none at all. What it does instead is grind *wild grain*, which
+    // M8.2 put on the grass and which this band knows how to use — seventeen
+    // ground by step 26,000 against the two meals of acorn the scenario used to
+    // manage, so the station chain it exists to measure is in far better health
+    // than it was. The fourth year is for `jobs-bias-work`, which needs the
+    // band to have worked out `division_of_labour` and then lived with it long
+    // enough to be measured, and which sits just under its threshold at three.
+    steps: 36000,
   },
   hunters: {
     name: 'hunters',
@@ -265,6 +276,32 @@ export const SCENARIOS: Record<string, Scenario> = {
       },
     },
     steps: 9000,
+  },
+  farmers: {
+    name: 'farmers',
+    description:
+      'A band that already knows how to farm, on a run long enough to hold ' +
+      'several harvests. `farming` sits behind `plant_lore` and `grinding` ' +
+      'and is the hardest node in the game to work out from nothing, so ' +
+      'without this scenario every check about fields, grain and soil would ' +
+      'report n/a for ever - the same trick `craft`, `scribes` and `labour` ' +
+      'already use, for the same reason. Long, because a field is the one ' +
+      'thing in this game that takes most of a season to do anything at all: ' +
+      'a run that ends before the first crop is in ear says nothing about ' +
+      'whether farming works, and a run that ends before the third harvest ' +
+      'says nothing about whether the ground wears out.',
+    config: {
+      seed: 'furrow',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        // `grinding` as well as `farming`, and not for the prerequisite: the
+        // quern is what makes a harvest worth three times what it weighs, and a
+        // band that farms without one is a band eating the poorest food in the
+        // game on purpose.
+        startingTech: ['farming', 'plant_lore', 'grinding', 'division_of_labour'],
+      },
+    },
+    steps: 24000,
   },
   labour: {
     name: 'labour',
@@ -1823,6 +1860,57 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       trapsPlanned > 0,
       trapsPlanned + ' planned by bands, ' + trapsBuilt.length + ' standing; ' +
         (tel.band_could_not_site_fish_trap ?? 0) + ' could not be sited');
+  }
+
+  // M8.2. Three ways farming can be inert, and they need three checks because
+  // the first two are invisible from the third: no band ever breaks ground, the
+  // ground is broken and never sown, or everything works and the soil is a
+  // decoration nothing spends.
+  const fields = sim.buildings.filter(b => b.crop !== null);
+  const standing = fields.filter(b => b.complete);
+  if (fields.length === 0 && (tel.band_planned_field ?? 0) === 0) {
+    skip('fields-are-sown-and-reaped', 'nobody in this world knows how to farm');
+  } else {
+    // Reaped, not merely sown. A sowing that nobody comes back for is the
+    // failure mode this whole mechanism is most exposed to — a field is worked
+    // twice a season and forgotten in between, and `Brain` scores the walk to
+    // it against foraging on proximity, which is how the fish traps ended up
+    // standing full for fifty trap-days.
+    add('fields-are-sown-and-reaped',
+      (tel.field_reaped ?? 0) > 0 && (tel.grain_harvested ?? 0) > 0,
+      (tel.band_planned_field ?? 0) + ' planned, ' + standing.length + ' standing, ' +
+        (tel.field_sown ?? 0) + ' sown, ' + (tel.field_reaped ?? 0) + ' reaped for ' +
+        (tel.grain_harvested ?? 0) + ' grain; ' + (tel.harvest_lost ?? 0) +
+        ' left standing too long, ' + (tel.harvest_empty ?? 0) + ' gave nothing');
+  }
+
+  // The soil itself. Worked ground has to be measurably poorer than the same
+  // ground untouched, or `Soil.ts` is arithmetic nothing spends and `farming`
+  // is back to being the node that gated an era and changed nothing.
+  //
+  // Measured against each plot's own resting state rather than against a fixed
+  // number, because a field on thin ground and a field that has been worked to
+  // death read identically from the absolute figure — which is exactly the
+  // mistake `soilReport` exists to stop the panel making too.
+  if (standing.length === 0 || (tel.field_reaped ?? 0) === 0) {
+    skip('soil-is-drawn-down', 'no harvest was taken off any ground in this run');
+  } else {
+    let worked = 0;
+    let resting = 0;
+    let poorest = 1;
+    for (const field of standing) {
+      const soil = sim.soilReport(field);
+      worked += soil.effective;
+      resting += soil.resting;
+      poorest = Math.min(poorest, soil.effective / Math.max(0.001, soil.resting));
+    }
+    const ratio = worked / Math.max(0.001, resting);
+    add('soil-is-drawn-down',
+      ratio < 0.985,
+      'worked ground stands at ' + (ratio * 100).toFixed(1) +
+        '% of what the same ground carries untouched (poorest plot ' +
+        (poorest * 100).toFixed(1) + '%); ' +
+        thousands(tel.soil_tiles_recovering ?? 0) + ' tile-days recovering');
   }
 
   const caught = (tel.trap_caught_meat ?? 0) + (tel.trap_caught_fish ?? 0);

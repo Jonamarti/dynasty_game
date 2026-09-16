@@ -288,6 +288,39 @@ export const RECIPES: Record<string, RecipeDef> = {
     station: 'quern',
     keep: 3,
   },
+  // M8.2, and the reason a farmer wants the quern they already had to have to
+  // think of farming at all. Raw grain is poor food — 6 against a berry's 14 —
+  // and ground it is 34 that never spoils, so the same harvest is worth roughly
+  // three times as much to a band that grinds it. The ratio is the acorn's, and
+  // deliberately: both are a seed that has to be broken open, and two different
+  // exchange rates for the same idea would be two numbers to balance instead of
+  // one.
+  //
+  // A second recipe at the same station rather than a second ingredient on
+  // `meal`, because `RecipeDef.ingredients` is an all-of and grain and acorns
+  // are two different harvests in two different seasons. It is also the first
+  // time anything in this game can be made two ways, which is what a technology
+  // tree is supposed to feel like.
+  groats: {
+    id: 'groats',
+    label: 'Ground grain',
+    icon: '\u{1F35A}',
+    // `grinding`, not `farming`, and the choice is load-bearing. Wild cereal
+    // stands on the grass before anybody has thought of sowing it, and raw
+    // grain is worth nothing — so if the only way to make it worth gathering
+    // were the technology that needs it to have been gathered first, `farming`
+    // would be unreachable in play while passing every static test in the
+    // suite. That is the `leatherwork` deadlock, and this is where it was
+    // avoided: a band with a quern gathers grain, and gathering grain is what
+    // puts the idea of sowing it into somebody's head.
+    tech: 'grinding',
+    skill: 'cook',
+    workTicks: 90,
+    ingredients: { grain: 3 },
+    output: { meal: 1 },
+    station: 'quern',
+    keep: 3,
+  },
   pot: {
     id: 'pot',
     label: 'Pot',
@@ -335,11 +368,23 @@ export function recipeFor(itemId: string): RecipeDef | null {
  * answer runs through what it can be turned into and by whom.
  */
 export function recipeUsing(itemId: string): RecipeDef | null {
-  for (const recipe of Object.values(RECIPES)) {
-    if (recipe.ingredients[itemId] !== undefined) return recipe;
+  // Indexed on first use rather than scanned every time. `Brain.nodeWorth` asks
+  // this of every resource node it considers, on every think tick, for every
+  // person — and `RECIPES` is a table that only grows. The scan version cost
+  // measurable throughput on the default scenario the moment M8.2 put a second
+  // caller on this path; the table is static, so an index is free and correct.
+  if (recipeByIngredient === null) {
+    recipeByIngredient = new Map();
+    for (const recipe of Object.values(RECIPES)) {
+      for (const itemId of Object.keys(recipe.ingredients)) {
+        if (!recipeByIngredient.has(itemId)) recipeByIngredient.set(itemId, recipe);
+      }
+    }
   }
-  return null;
+  return recipeByIngredient.get(itemId) ?? null;
 }
+
+let recipeByIngredient: Map<string, RecipeDef> | null = null;
 
 /**
  * Nutrition this recipe yields per unit of `itemId` put into it.

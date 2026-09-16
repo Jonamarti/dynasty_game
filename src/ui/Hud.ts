@@ -1465,6 +1465,55 @@ export class Hud {
           : escapeHtml(trap.reason)) +
         '</div>');
     }
+    // M8.2. What is standing on the plot, and what the ground under it has left
+    // — the one row a farmer actually needs, and the reason `Simulation`
+    // computes it rather than this panel: a HUD with its own idea of how tired
+    // the ground is is a HUD that will eventually disagree with the sowing that
+    // gets refused.
+    //
+    // In words rather than in numbers, and gated on knowing how to farm. A band
+    // that has never had the idea sees that the ground is tired; a farmer sees
+    // how tired, against what the same ground would carry untouched. That is the
+    // same line `sim/social/Knowledge.ts` draws everywhere else, applied to the
+    // ground instead of to a person.
+    if (building.crop) {
+      const crop = building.crop;
+      const soil = sim.soilReport(building);
+      const farmer = techPower(observer, 'farming') > 0;
+      rows.push('<div class="hud-section">The crop</div>');
+      rows.push('<div class="hud-sub">' +
+        (crop.isFallow
+          ? 'Bare ground, waiting for seed.'
+          : crop.isRipe
+            ? 'Ripe, and it will not stand for ever.'
+            : 'Coming on.') + '</div>');
+      if (!crop.isFallow) rows.push(bar('ripeness', crop.ripeness * 100, '#d9b44a'));
+      if (crop.harvests > 0 || crop.lost > 0) {
+        rows.push('<div class="hud-sub">' + crop.harvests +
+          (crop.harvests === 1 ? ' harvest' : ' harvests') + ' taken' +
+          (crop.lastYield > 0 ? ', the last of ' + crop.lastYield + ' grain' : '') +
+          (crop.lost > 0 ? '; ' + crop.lost + ' left standing too long' : '') +
+          '.</div>');
+      }
+
+      rows.push('<div class="hud-section">The ground</div>');
+      const share = soil.effective / Math.max(0.001, soil.resting);
+      const worn = share > 0.97 ? 'as good as it ever was'
+        : share > 0.85 ? 'still in good heart'
+        : share > 0.7 ? 'tiring'
+        : share > 0.5 ? 'tired'
+        : 'worked out';
+      if (farmer) {
+        rows.push(bar('in heart', Math.min(100, share * 100), soil.spent ? '#d98032' : '#7ddc96'));
+        rows.push('<div class="hud-sub">The ground here is ' + worn + ': ' +
+          (share * 100).toFixed(0) + '% of what it would carry untouched.' +
+          (soil.spent ? ' Nothing sown here will come to anything.' : '') +
+          '</div>');
+      } else {
+        rows.push(veil('The ground here is ' + worn +
+          ', though nobody here could say why.'));
+      }
+    }
     if (building.def.shelter > 0) {
       rows.push('<div class="hud-sub">Shelter ' +
         (building.def.shelter * 100).toFixed(0) + '% — people inside stay warm.</div>');
@@ -1498,6 +1547,7 @@ const NODE_LABELS: Record<ResourceKind, string> = {
   sticks: 'Fallen wood',
   reeds: 'Reed bed',
   clay: 'Clay bank',
+  wild_grain: 'Wild grain',
   fish: 'Fishing spot',
 };
 

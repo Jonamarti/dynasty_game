@@ -19,8 +19,10 @@
 import type { Person } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
-import type { Building, BuildingDef } from '../entities/Building.ts';
-import { BUILDINGS, isTrap, isStation } from '../entities/Building.ts';
+import {
+  BUILDINGS, isTrap, isStation, isField, type Building, type BuildingDef,
+} from '../entities/Building.ts';
+import { SOW_SEED } from '../entities/Field.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { techPower, type Tech } from '../knowledge/Tech.ts';
 import { JOB_IDS, type JobId } from '../entities/Job.ts';
@@ -86,6 +88,14 @@ const MEMBERS_PER_STRUCTURE = 4;
  * instead of a band that eats better.
  */
 const TRAPS_PER_BAND = 3;
+
+/**
+ * Plots one band will break. See the field branch in `planBuildings` for why
+ * this is a small fixed number rather than one scaled by how many mouths there
+ * are: sowing and reaping are two walks a season, and the work is what runs
+ * out, not the ground.
+ */
+const FIELDS_PER_BAND = 2;
 
 /** Days between a band considering new construction. */
 const PLANNING_INTERVAL = 3;
@@ -292,12 +302,28 @@ export class BandSystem {
     const unassigned = members.filter(m => !m.isChild && m.job === null && m.id !== chief.id);
     if (unassigned.length === 0) return;
 
-    const counts: Record<JobId, number> = { forager: 0, hunter: 0, builder: 0, crafter: 0 };
+    // Built from `JOB_IDS` rather than written out. The hand-written version
+    // had to be edited in step with that list, and M8.2's farmer is exactly the
+    // edit it would have been forgotten on: a fifth job counted as `undefined`
+    // would have compared `undefined < fewest` as false for ever and the new
+    // job would never once have been handed out.
+    const counts = Object.fromEntries(JOB_IDS.map(id => [id, 0])) as Record<JobId, number>;
     for (const member of members) if (member.job) counts[member.job]++;
 
-    let wanted: JobId = JOB_IDS[0]!;
+    // A job nobody in this band can act on is a third of a band standing idle,
+    // and the farmer is the first job in the table that can be in that
+    // position: `sow` and `reap` both need a finished plot, and a band with no
+    // ground broken has nothing for a farmer to do. Filtered here rather than
+    // in `Brain`, because the scorer's answer to "there is no field" is
+    // correctly *nothing*, and a person whose job's verbs all score zero is
+    // simply a person who has been damped on every other kind of work.
+    const offered = JOB_IDS.filter(id =>
+      id !== 'farmer' ||
+      ctx.buildings.some(b => b.crop !== null && b.complete && b.ownerBandId === band.id));
+
+    let wanted: JobId = offered[0] ?? JOB_IDS[0]!;
     let fewest = Infinity;
-    for (const id of JOB_IDS) {
+    for (const id of offered) {
       if (counts[id] < fewest) {
         fewest = counts[id];
         wanted = id;
@@ -467,7 +493,8 @@ export class BandSystem {
     // a band ever raising another hut. It is also how `bands-dont-overbuild`
     // would have started failing for a band that was doing exactly the right
     // thing.
-    const built = live.filter(b => b.complete && !isTrap(b.def) && !isStation(b.def)).length;
+    const built = live.filter(b =>
+      b.complete && !isTrap(b.def) && !isStation(b.def) && !isField(b.def)).length;
     if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
 
     // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
@@ -589,6 +616,36 @@ export class BandSystem {
       wanted = this.cheapest(missing)?.id ?? null;
     }
 
+    // --- Fields, the fifth thing a band can want ----------------------------
+    //
+    // Ahead of traps and behind everything else, on the same argument the trap
+    // branch makes and one more of its own. A plot pays nothing for most of a
+    // season and then pays a great deal, so it is the most speculative thing in
+    // this list — a band that breaks ground instead of digging a pit eats
+    // nothing in the meantime — and it belongs behind survival for that reason
+    // alone. Ahead of traps because a harvest is several times a snare line and
+    // because grain is the only food in the game that does not spoil, which is
+    // what a winter is actually about.
+    //
+    // Two plots at most. A field is worked twice a season and left alone in
+    // between, so a third is a third walk for a band that is already carrying
+    // the first two through a winter — and `FIELDS_PER_BAND` is deliberately
+    // the same shape as `TRAPS_PER_BAND` rather than scaled by membership,
+    // because it is the *work* that is the scarce thing and not the ground.
+    if (!wanted && underway === 0 && stores.length > 0) {
+      const fields = live.filter(b => isField(b.def));
+      if (fields.length < FIELDS_PER_BAND) {
+        // Somebody has to be holding seed, or this is a band breaking ground it
+        // has nothing to put in. Asked of the band rather than of the world for
+        // the reason `buildable` gives: a granary is what *this* band can build.
+        const hasSeed = members.some(m => m.inventory.count('grain') >= SOW_SEED);
+        if (hasSeed) {
+          wanted = buildable.find(def => isField(def) &&
+            !fields.some(existing => existing.def.id === def.id && !existing.complete))?.id ?? null;
+        }
+      }
+    }
+
     if (!wanted && underway === 0 && stores.length > 0) {
       const traps = live.filter(b => isTrap(b.def));
       if (traps.length < TRAPS_PER_BAND) {
@@ -617,10 +674,18 @@ export class BandSystem {
     // trap-days a run with people going hungry beside them, which is the
     // "starving next to a full pit" failure this project has already shipped
     // once.
-    const shore = BUILDINGS[wanted]?.placement === 'shore';
-    const tries = shore ? 80 : 30;
+    // A design that has to stand somewhere particular needs a wider search: the
+    // shore for a fish trap, and open ground with something left in it for a
+    // plot. Both widen in rings rather than scattering, and for a field that is
+    // the difference between a mechanism and a decoration for the same reason
+    // the paragraph above gives about traps — nothing walks to a field on its
+    // own, `Brain` scores reaping against foraging, and proximity dominates
+    // that scorer. A plot eight tiles from the fire gets reaped; a plot twenty
+    // tiles away ripens, stands its week and is lost.
+    const placement = BUILDINGS[wanted]?.placement;
+    const tries = placement ? 80 : 30;
     for (let attempt = 0; attempt < tries; attempt++) {
-      const reach = shore ? 5 + Math.floor(attempt / 16) * 4 : 8;
+      const reach = placement ? 5 + Math.floor(attempt / 16) * 4 : 8;
       const x = Math.round(band.homeX + ctx.rng.range(-reach, reach));
       const y = Math.round(band.homeY + ctx.rng.range(-reach, reach));
       const placed = ctx.place(wanted, x, y, band.id);

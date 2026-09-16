@@ -7,6 +7,7 @@
  * memcpy rather than a rewrite.
  */
 import { SimplexNoise } from './Noise.ts';
+import { Soil } from './Soil.ts';
 import type { RNG } from './RNG.ts';
 import type { WorldConfig } from './Config.ts';
 
@@ -28,6 +29,16 @@ export class World {
   readonly elevation: Float32Array;
   readonly moisture: Float32Array;
   readonly fertility: Float32Array;
+  /**
+   * The ground as something that can be used up — M8.2.
+   *
+   * Separate from `fertility`, which stays exactly what it was: innate, never
+   * written, and the thing berry bushes have grown out of since M2. Pointing
+   * that array at a live value would have moved every bush in every saved seed,
+   * and `determinism.test.ts` compares two runs of the *same* build, so nothing
+   * would have caught it. See `Soil.ts`.
+   */
+  soil!: Soil;
   readonly biome: Uint8Array;
   readonly walkable: Uint8Array;
 
@@ -158,6 +169,18 @@ export class World {
     }
   }
 
+  /**
+   * Innate ground, humus and nutrient together: what a crop has to grow in.
+   *
+   * The one function fields, the planner and the panel all ask, so that "how
+   * good is this ground" has a single answer. Out of bounds is zero, the same
+   * way `fertilityAt` answers it.
+   */
+  effectiveFertilityAt(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return 0;
+    return this.soil.effectiveFertility(this.index(x, y));
+  }
+
   private generate(rng: RNG): void {
     // Separate noise fields get separate forks so that changing the number of
     // draws in one does not shift the others.
@@ -198,6 +221,20 @@ export class World {
               : 0;
       }
     }
+
+    // Texture comes off the moisture field at a shifted offset rather than from
+    // a noise object of its own. Two reasons, and the second is the one that
+    // matters: sampling an existing `SimplexNoise` costs **no `RNG` draws at
+    // all**, so adding soil to this world cannot move a single herd, person or
+    // bush in any saved seed — where `new SimplexNoise(rng.fork())` here would
+    // have consumed the fork `seedInitialForest` expects and replanted every
+    // forest in the game. The offset is large enough that texture and moisture
+    // are not visibly the same map, and the correlation that remains is true
+    // anyway: wet hollows silt up and hold loam.
+    this.soil = new Soil(
+      this.width, this.fertility,
+      (x, y) => moistureNoise.fbm(x + 811, y - 457, 3, 2, 0.5, 0.05)
+    );
   }
 
   private classify(elev: number, moist: number): Biome {

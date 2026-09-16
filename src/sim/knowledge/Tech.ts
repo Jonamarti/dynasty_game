@@ -77,6 +77,12 @@ export const TECHS = [
   // contrast: what gets discovered here is legitimate, cheap, repeatable
   // authority, not authority as such.
   'division_of_labour',
+  // M8.2: the oldest open entry in `next-steps.md`, closed. `farming` was
+  // *removed* from this list once already, because it gated a whole era while
+  // changing nothing on the ground; the rule since has been that it may not
+  // come back without fields, and it comes back here with `entities/Field.ts`,
+  // `core/Soil.ts` and two verbs in the same commit.
+  'farming',
   // M9.5 phase 4d: the second rung, and the first time a band has a shape
   // rather than a leader. Household heads carry standing outside their own
   // roof, and a chief holds office long enough for it to be an office.
@@ -988,6 +994,41 @@ export const TECH: Record<Tech, TechDef> = {
       'task, by arrangement rather than by menace, and the camp stops ' +
       'stripping the same patch four times over.',
   },
+  farming: {
+    id: 'farming', label: 'Farming', domain: 'plants',
+    age: 'neolithic', firstKnown: 'about 9500 BC',
+    // A device, by this file's own test of one: it gates a building. The
+    // prototype is the first deliberate sowing — a handful of seed put in the
+    // ground to see what happens, which is exactly what `doPrototype` models and
+    // exactly how it really went.
+    kind: 'device',
+    requires: ['plant_lore', 'grinding'], difficulty: 0.62, skill: 'farm',
+    prototype: { grain: 5 }, maxRefinement: 3,
+    sparks: [
+      // The observation itself, and it is the one every account of early
+      // agriculture puts first: the ground by the camp where last year's spilt
+      // seed came up thicker than anything on the hillside.
+      { needs: [{ kind: 'holding', item: 'grain' }, { kind: 'doing', action: 'forage' },
+                { kind: 'season', season: 'autumn' }],
+        weight: 1.0, story: 'saw where last year’s spilt seed had come up thickest' },
+      { needs: [{ kind: 'knows', tech: 'plant_lore' }, { kind: 'holding', item: 'grain' },
+                { kind: 'doing', action: 'store' }],
+        weight: 0.7, story: 'found seed sprouting in the pit and understood what it had been asking for' },
+      // Hunger on open grass with seed in hand. The route that needs nobody to
+      // have noticed anything — every other spark here wants a coincidence, and
+      // a node all of whose routes want one is unreachable in play while passing
+      // every static test in the suite.
+      { needs: [{ kind: 'holding', item: 'grain' }, { kind: 'place', biome: 'grass' },
+                { kind: 'feeling', need: 'hunger' }],
+        weight: 0.8, story: 'stood hungry on a hillside of grass that was nearly food' },
+      { needs: [{ kind: 'knows', tech: 'grinding' }, { kind: 'holding', item: 'grain' },
+                { kind: 'saw', what: 'node_empty' }],
+        weight: 0.6, story: 'gathered the last stand of wild grain bare and wondered where next year’s would come from' },
+    ],
+    description:
+      'Seed saved from one harvest and put back in the ground for the next. ' +
+      'The band stops walking to the food and starts waiting for it.',
+  },
   chiefdom: {
     id: 'chiefdom', label: 'Chiefdom', domain: 'people',
     age: 'neolithic', firstKnown: 'about 7,000 years ago',
@@ -1135,8 +1176,12 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'Simulation.workTraps, via BUILDINGS.fish_trap.yields',
   },
   grinding: {
-    summary: 'Acorns become food. The oak stops being timber and starts being a harvest.',
-    site: 'BUILDINGS.quern, and RECIPES.meal through RecipeDef.station',
+    summary: 'Acorns and wild grain become food. The oak stops being timber and starts being a harvest.',
+    site: 'BUILDINGS.quern, and RECIPES.meal and RECIPES.groats through RecipeDef.station',
+  },
+  farming: {
+    summary: 'Ground broken and sown: a harvest where you left it, and grain that keeps.',
+    site: 'BUILDINGS.field, and ActionSystem.doSow and doReap',
   },
   bone_working: {
     summary: 'Bone and sinew off every kill, and a point that throws further than flint.',

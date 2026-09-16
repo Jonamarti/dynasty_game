@@ -15,6 +15,7 @@ import { RNG } from './RNG.ts';
 import { World } from './World.ts';
 import { TimeManager } from './TimeManager.ts';
 import { advanceSnowDepth, isBuried } from './Snow.ts';
+import { SPENT_BELOW, isGroundSpent } from './Soil.ts';
 import { SpatialHash } from './SpatialHash.ts';
 import { telemetry } from './Telemetry.ts';
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
@@ -401,11 +402,17 @@ export class Simulation {
     // in their own pass after people, so the pre-change world is bit-identical
     // except for the fish.
     const fishRng = this.rng.fork();
+    // M8.2, appended after the fish for exactly the reason the paragraph above
+    // gives. Wild grain is spawned in its own pass after everything else, so a
+    // world built before farming existed is bit-identical to one built after it
+    // except for the stands of cereal themselves.
+    const grainRng = this.rng.fork();
 
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
     this.spawnPeople(spawnRng);
     this.spawnFish(fishRng);
+    this.spawnWildGrain(grainRng);
     this.rebuildHashes();
   }
 
@@ -463,6 +470,31 @@ export class Simulation {
   }
 
   /**
+   * Stands of wild cereal on open grass, on their own stream and in their own
+   * pass — the same treatment fishing spots got, for the same reason.
+   *
+   * This is where farming starts, and it has to exist before `farming` does: a
+   * band cannot sow what it has never gathered. See the note on `grain` in
+   * `Item.ts` for why raw grain is worth eating at all.
+   */
+  private spawnWildGrain(rng: RNG): void {
+    const count = this.config.world.wildGrainPatches;
+    let placed = 0;
+    let attempts = 0;
+    const maxAttempts = count * 60;
+    while (placed < count && attempts < maxAttempts) {
+      attempts++;
+      const spot = this.world.randomWalkable(rng, 1);
+      if (!spot) continue;
+      if (!this.suitsBiome('wild_grain', spot.x, spot.y)) continue;
+      const node = new ResourceNode('wild_grain', spot.x, spot.y, rng);
+      this.nodes.push(node);
+      this.nodesById.set(node.id, node);
+      placed++;
+    }
+  }
+
+  /**
    * Scatters herds across the grass and the woods.
    *
    * Herds rather than individuals: a herd is the unit that gets spooked and the
@@ -512,6 +544,12 @@ export class Simulation {
       case 'reeds': return biome === 'beach' && this.world.isShore(x, y);
       case 'clay': return (biome === 'beach' || biome === 'grass') && this.world.isShore(x, y);
       case 'fish': return biome === 'beach' && this.world.isShore(x, y);
+      // Open ground only. Wild cereal is a grass and it wants sun, so a stand
+      // under the canopy would be a stand nobody would ever find — and the
+      // fertility floor is higher than the berry bush's because thin ground
+      // carries scrub, not a crop worth gathering.
+      case 'wild_grain':
+        return biome === 'grass' && this.world.fertilityAt(x, y) > 0.42;
     }
   }
 
@@ -1771,6 +1809,49 @@ export class Simulation {
     if (def.placement === 'shore' && !this.touchesShore(def, x, y)) {
       return 'a ' + def.label.toLowerCase() + ' has to sit at the water\u2019s edge';
     }
+    // M8.2. A field is the second design with somewhere it has to be, and the
+    // first whose requirement is about the ground rather than the map: open
+    // ground, and ground with something left in it. The two refusals are
+    // separate sentences because they are separate problems — one is answered by
+    // walking to the meadow, the other by walking to a different meadow — and
+    // "cannot build there" for both is the defect `placementRefusal` exists to
+    // fix. The threshold is `SPENT_BELOW`, the same one `doSow` refuses on, so a
+    // band cannot site a plot on ground its own sowing would then refuse.
+    if (def.placement === 'arable') {
+      const barren = this.arableRefusal(def, x, y);
+      if (barren) return barren;
+    }
+    return null;
+  }
+
+  /**
+   * Why a plot cannot be broken here, or null.
+   *
+   * Averaged over the whole footprint rather than tested tile by tile: a field
+   * with one poor corner is a real field, and demanding sixteen good tiles is
+   * how a design becomes unplaceable everywhere on the island without anybody
+   * being able to say why.
+   */
+  private arableRefusal(def: BuildingDef, x: number, y: number): string | null {
+    let total = 0;
+    let tiles = 0;
+    for (let dy = 0; dy < def.height; dy++) {
+      for (let dx = 0; dx < def.width; dx++) {
+        const biome = this.world.biomeAt(x + dx, y + dy);
+        if (biome !== 'grass' && biome !== 'forest' && biome !== 'beach') {
+          return 'a ' + def.label.toLowerCase() + ' wants open ground';
+        }
+        total += this.world.effectiveFertilityAt(x + dx, y + dy);
+        tiles++;
+      }
+    }
+    // The absolute floor only. Ground nobody has broken is at its own resting
+    // state, so the relative half of `isGroundSpent` can never fire here — and
+    // a plot *is* allowed to be sited on ground that a previous field wore out,
+    // because that is a decision a player is entitled to make badly.
+    if (tiles === 0 || total / tiles < SPENT_BELOW) {
+      return 'the ground there is too poor to break';
+    }
     return null;
   }
 
@@ -1782,6 +1863,50 @@ export class Simulation {
       }
     }
     return false;
+  }
+
+  /**
+   * The state of the ground under one plot, in one place.
+   *
+   * One implementation, three readers: the panel that tells a player their
+   * field is tired, the health report that checks the ground is actually being
+   * drawn down, and the insight a farmer gets when a plot crosses into
+   * exhaustion. The plan for this pass names that explicitly, and for the usual
+   * reason — a panel computing its own version of "how tired is this ground"
+   * is a panel that will eventually disagree with the simulation refusing to
+   * sow.
+   *
+   * `resting` is what the same ground would carry untouched, and it is what
+   * makes the rest of the numbers mean anything: thin ground and exhausted
+   * ground read identically without it.
+   */
+  soilReport(field: Building): {
+    effective: number; resting: number; organic: number; nutrient: number;
+    texture: number; spent: boolean;
+  } {
+    let effective = 0;
+    let resting = 0;
+    let organic = 0;
+    let nutrient = 0;
+    let texture = 0;
+    let tiles = 0;
+    for (let dy = 0; dy < field.def.height; dy++) {
+      for (let dx = 0; dx < field.def.width; dx++) {
+        const i = this.world.index(field.x + dx, field.y + dy);
+        effective += this.world.soil.effectiveFertility(i);
+        resting += this.world.soil.restingFertility(i);
+        organic += this.world.soil.organic[i]!;
+        nutrient += this.world.soil.nutrient[i]!;
+        texture += this.world.soil.texture[i]!;
+        tiles++;
+      }
+    }
+    const mean = (total: number): number => (tiles === 0 ? 0 : total / tiles);
+    return {
+      effective: mean(effective), resting: mean(resting), organic: mean(organic),
+      nutrient: mean(nutrient), texture: mean(texture),
+      spent: isGroundSpent(mean(effective), mean(resting)),
+    };
   }
 
   /** Places a site. Returns the new building, or null if it will not fit. */
@@ -1924,6 +2049,38 @@ export class Simulation {
    * a decision somebody has to take, and it is the difference between a trap and
    * a food faucet.
    */
+  /**
+   * A day of weather on every standing crop, and a day of recovery in the
+   * ground under them.
+   *
+   * Two sweeps rather than one, because they are over different things and only
+   * one of them is small: crops are a handful of plots, and the soil sweep walks
+   * only the tiles somebody has actually disturbed. A world where nobody farms
+   * pays for one `length` check and one `size` check a day, which is the same
+   * bargain `workTraps` and `spoilFood` already strike.
+   *
+   * No `RNG` anywhere in either. Growth is arithmetic over the season, the
+   * harvest is arithmetic over the ground, and the recovery set is walked in
+   * insertion order.
+   */
+  private growCrops(): void {
+    const growth = this.time.growth;
+    for (const building of this.buildings) {
+      const crop = building.crop;
+      if (!crop || !building.complete) continue;
+      if (crop.advance(this.time.day, growth)) {
+        // A harvest nobody came for. Loud on purpose: it is the clearest way
+        // the game can say that a field is a commitment rather than a store,
+        // and a band that keeps losing them is a band that has planted more
+        // than it can reap.
+        telemetry.count('harvest_lost');
+      }
+    }
+
+    const looked = this.world.soil.recover(1);
+    if (looked > 0) telemetry.count('soil_tiles_recovering', looked);
+  }
+
   private workTraps(): void {
     // Best grasp of each trap technology, per band. Computed once rather than
     // per trap: `techPower` is cheap but this is a daily sweep over every
@@ -2174,6 +2331,7 @@ export class Simulation {
       this.refreshEra();
 
       this.workTraps();
+      this.growCrops();
 
       this.lifeSystem.daily(this.people, {
         rng: this.lifeRng,
@@ -2224,6 +2382,8 @@ export class Simulation {
       tick: this.time.tick,
       sightRadius: this.config.sightRadius,
       isNight: this.time.isNight,
+      day: this.time.day,
+      seasonGrowth: this.time.growth,
       needs: this.config.needs,
       dropAt: (x: number, y: number, itemId: string, count: number) =>
         this.dropAt(x, y, itemId, count),

@@ -166,6 +166,8 @@ export const ACTION_LABELS: Record<string, string> = {
   threaten: 'making a demand',
   attack: 'fighting',
   build: 'building',
+  sow: 'sowing a field',
+  reap: 'bringing in the harvest',
   haul: 'hauling materials',
   pickup: 'fetching what is on the ground',
   store: 'storing goods',
@@ -268,6 +270,18 @@ export const STOP_REASONS: Record<string, string> = {
   nothing_to_demand: 'there was nothing worth demanding',
   refused_demand: 'they refused to hand it over',
   dont_know_how: 'they do not know how',
+  // M8.2. Six ways a field can turn somebody away, and they are six different
+  // problems with six different answers: gather more seed, walk to a different
+  // meadow, wait for spring, come back when it is ripe, or nothing at all
+  // because somebody else got there first. A single "cannot sow" would be the
+  // refusal-without-a-reason defect the owner has already reported once.
+  no_field: 'the field was gone',
+  no_seed: 'they had no seed to sow',
+  already_sown: 'it was sown already',
+  wrong_season: 'nothing would come up in this cold',
+  ground_spent: 'the ground there is tired',
+  not_ripe: 'the crop was not ready',
+  nothing_to_reap: 'the field gave nothing back',
   lack_materials: 'they lacked the materials',
   no_recipe: 'they had nothing in mind to make',
   // M8.1's three verbs. Each is a way one of them can turn out to be

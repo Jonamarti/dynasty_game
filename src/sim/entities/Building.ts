@@ -18,6 +18,7 @@
  * keeps them out of the build menu until M4 makes discovery real.
  */
 import { Inventory } from './Item.ts';
+import { Crop } from './Field.ts';
 
 export interface BuildingDef {
   id: string;
@@ -61,7 +62,7 @@ export interface BuildingDef {
    * to be in the water's edge, and a design whose whole point is the shore is
    * worse than useless in the middle of a field.
    */
-  placement?: 'shore';
+  placement?: 'shore' | 'arable';
   /**
    * True if this is somewhere work is done rather than somewhere anybody lives.
    *
@@ -75,6 +76,19 @@ export interface BuildingDef {
    * does-not-exist defect, one table along.
    */
   station?: boolean;
+  /**
+   * True if this is ground that is worked rather than a structure that stands.
+   *
+   * M8.2. A field is a building because everything *around* a field — siting,
+   * placement refusals, the walk to it, ownership, the renderer — is what
+   * `Building` already is; see the header of `Field.ts`. The flag is what keeps
+   * the four systems that must treat it differently honest: the planner must
+   * not count a plot against the roof ceiling, `doStore` must not fill it, the
+   * scorer must not read it as shelter, and the health report counts fields on
+   * their own. A predicate rather than four hand-written `def.id === 'field'`
+   * tests, for the same reason `isTrap` is one.
+   */
+  field?: boolean;
   /**
    * How much longer food keeps in here. 1 is no better than a pack.
    *
@@ -114,6 +128,11 @@ export function isTrap(def: BuildingDef): boolean {
  */
 export function isStation(def: BuildingDef): boolean {
   return def.station === true;
+}
+
+/** True if a design is worked ground rather than a structure. See `field`. */
+export function isField(def: BuildingDef): boolean {
+  return def.field === true;
 }
 
 export const BUILDINGS: Record<string, BuildingDef> = {
@@ -256,6 +275,40 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       'and seed become food the body can actually use.',
   },
 
+  // --- M8.2: the field ------------------------------------------------------
+  //
+  // The first design in the game that neither produces on its own nor produces
+  // while somebody stands at it: it has to be sown, left alone for most of a
+  // season, and reaped inside the week it is ripe. That shape is the point of
+  // farming — it is the technology that makes a band stay put.
+  //
+  // No materials and a long build, which is the ground being broken for the
+  // first time. 4x4 rather than 3x3: a plot is the one design whose *area* is
+  // its output, sixteen tiles of soil against nine is most of a second harvest
+  // for the same walk, and `reachBuilding`'s containment test is comfortably
+  // satisfiable at that size.
+  //
+  // No storage, deliberately, and for the reason the quern's comment gives: a
+  // field with a store would be picked up by `Brain`'s larder scorer and by
+  // `doStore`, and a band carefully filling its wheat field with fish is not
+  // the mechanism.
+  field: {
+    id: 'field',
+    label: 'Field',
+    icon: '\u{1F33E}',
+    width: 4, height: 4,
+    materials: {},
+    workTicks: 300,
+    shelter: 0,
+    storage: 0,
+    field: true,
+    placement: 'arable',
+    requiresTech: 'farming',
+    description:
+      'Broken ground, cleared and worked. Sow it in spring and it feeds a ' +
+      'family; sow it every spring and it stops.',
+  },
+
   // --- Gated behind knowledge that does not exist yet (M4) -----------------
   granary: {
     id: 'granary',
@@ -337,6 +390,18 @@ export class Building {
    */
   yieldCarry = 0;
 
+  /**
+   * What is growing here, for a field, and null for everything else.
+   *
+   * The trap's `yieldCarry` sets the precedent: state that belongs to one kind
+   * of design lives on the instance, because the alternative is a parallel map
+   * keyed by building id that nothing keeps in step with the buildings
+   * themselves. Constructed with the plot rather than on first sowing, so every
+   * reader can ask `building.crop?.stage` without a null dance and a half-built
+   * field reads as `fallow` rather than as undefined.
+   */
+  readonly crop: Crop | null;
+
   constructor(def: BuildingDef, x: number, y: number, ownerBandId: number) {
     this.id = nextBuildingId++;
     this.def = def;
@@ -346,6 +411,7 @@ export class Building {
     // A stockpile is a decision, not a construction: it is finished the moment
     // it is drawn.
     this.complete = def.workTicks === 0 && Object.keys(def.materials).length === 0;
+    this.crop = isField(def) ? new Crop() : null;
   }
 
   /** Centre of the footprint, which is where people walk to. */

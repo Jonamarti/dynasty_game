@@ -18,6 +18,8 @@ import { companionBonus } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
 import { isTrap, type Building } from '../entities/Building.ts';
+import { SOW_SEED, harvestYield } from '../entities/Field.ts';
+import { isGroundSpent } from '../core/Soil.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
@@ -62,6 +64,10 @@ export interface ActionContext {
   sightRadius: number;
   /** Whether it is dark out. Sleep ends at dawn; nothing else reads it yet. */
   isNight: boolean;
+  /** The day, for anything that has to remember when it happened. Sowing does. */
+  day: number;
+  /** The season as a growing rate, 0 in deep winter. Sowing refuses at 0. */
+  seasonGrowth: number;
   /** Need rates, so an interruption can look one work cycle ahead. */
   needs: NeedsConfig;
   /** Puts goods on the ground, for yields nobody has room to carry. */
@@ -433,6 +439,19 @@ const PLAY_RELIEF = 0.35;
  */
 const TEND_RATE = 0.6;
 
+/**
+ * M8.2's two verbs, in ticks.
+ *
+ * Both sit under the roughly-140 ceiling `AGENTS.md` sets for a single
+ * uninterrupted pull - a novice picks up thirty-five points of thirst in about
+ * four hundred ticks - so neither needs its progress banked on the plot. That
+ * ceiling is the reason a sowing is ninety ticks rather than a morning's work:
+ * a longer one would be stopped for a drink, restarted from nothing and never
+ * finished, which is what happened to the first version of `inscribe`.
+ */
+const SOW_TICKS = 90;
+const REAP_TICKS = 110;
+
 export class ActionSystem {
   execute(person: Person, ctx: ActionContext): void {
     if (!person.alive) return;
@@ -475,6 +494,8 @@ export class ActionSystem {
       case 'play': this.doPlay(person, ctx); break;
       case 'tend': this.doTend(person, ctx); break;
       case 'tame': this.doTame(person, ctx); break;
+      case 'sow': this.doSow(person, ctx); break;
+      case 'reap': this.doReap(person, ctx); break;
       case 'goto':
         // A walk order. Identical to wandering except that arriving ends it,
         // so the person stands where they were sent.
@@ -1534,6 +1555,205 @@ export class ActionSystem {
       });
     }
     this.finish(person);
+  }
+
+  /**
+   * Putting seed in the ground - M8.2, and half of what `farming` is.
+   *
+   * Every refusal here reaches the player, and they are all different problems:
+   * no seed is answered by gathering, tired ground by walking somewhere else,
+   * and deep winter by waiting. A single "cannot sow" would be the defect the
+   * owner has already had to report once.
+   *
+   * `SOW_TICKS` sits well under the roughly-140 ceiling `AGENTS.md` sets for one
+   * uninterrupted pull, so there is nothing to bank: a person pulled off a
+   * sowing by thirst starts it again rather than losing a season's work, and the
+   * seed is not spent until the work is done.
+   */
+  private doSow(person: Person, ctx: ActionContext): void {
+    const field = this.reachBuilding(person, ctx, {
+      ok: b => b.crop !== null && b.complete,
+      reason: 'no_field',
+    });
+    if (!field || !field.crop) return;
+
+    if (techPower(person, 'farming') <= 0) {
+      this.abandon(person, 'dont_know_how', ctx);
+      return;
+    }
+    if (!field.crop.isFallow) {
+      this.abandon(person, 'already_sown', ctx);
+      return;
+    }
+    if (person.inventory.count('grain') < SOW_SEED) {
+      this.abandon(person, 'no_seed', ctx);
+      return;
+    }
+    // Nothing germinates in frozen ground. A crop already in the ground sits the
+    // winter out - see `Crop.advance` - but starting one now is throwing seed
+    // away, and the seed is the scarce thing.
+    if (ctx.seasonGrowth <= 0) {
+      this.abandon(person, 'wrong_season', ctx);
+      return;
+    }
+    if (this.groundSpent(field, ctx)) {
+      this.abandon(person, 'ground_spent', ctx);
+      return;
+    }
+
+    const stop = this.interruption(person, ctx);
+    if (stop) {
+      this.stop(person, stop, ctx);
+      return;
+    }
+
+    person.workedTicks++;
+    person.practice('farm', 0.5);
+    if (person.workedTicks < SOW_TICKS) return;
+
+    person.inventory.remove('grain', SOW_SEED);
+    field.crop.sow(ctx.day);
+    // The tilling, paid here rather than in a verb of its own - see the header
+    // of `Field.ts`. Every tile of the plot, because the whole plot was broken.
+    this.tillPlot(field, ctx);
+    telemetry.count('field_sown');
+    person.chronicle.push({
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: 'sowed a field',
+      kind: 'did',
+    });
+    this.finish(person);
+  }
+
+  /**
+   * Taking the harvest off - the other half, and the only place grain comes
+   * from in any quantity.
+   *
+   * The yield is deterministic: the ground, the hand and the grasp of the
+   * technology, with no draw anywhere. A random harvest would make soil
+   * exhaustion unreadable, and being able to *read* it - this field gave
+   * twenty-six last year and eighteen this year - is the whole of the mechanism
+   * the owner asked for.
+   */
+  private doReap(person: Person, ctx: ActionContext): void {
+    const field = this.reachBuilding(person, ctx, {
+      ok: b => b.crop !== null && b.complete,
+      reason: 'no_field',
+    });
+    if (!field || !field.crop) return;
+
+    if (!field.crop.isRipe) {
+      this.abandon(person, 'not_ripe', ctx);
+      return;
+    }
+
+    const stop = this.interruption(person, ctx);
+    if (stop) {
+      this.stop(person, stop, ctx);
+      return;
+    }
+
+    person.workedTicks++;
+    person.practice('farm', 0.6);
+    if (person.workedTicks < REAP_TICKS) return;
+
+    // Knowing how to farm makes a harvest better; it is not what makes one
+    // possible. Anybody can pull the ears off a ripe crop, and a band whose only
+    // farmer died between sowing and harvest should still get the harvest in.
+    // The floor rather than a gate is the same call `fishing` made about a
+    // spear.
+    const grasp = Math.max(0.5, techPower(person, 'farming'));
+    const yielded = harvestYield(
+      this.plotFertility(field, ctx), person.skillFactor('farm'), grasp
+    );
+    field.crop.reaped(yielded);
+    this.reapPlot(field, ctx);
+
+    if (yielded <= 0) {
+      // A field that gives nothing is the strongest thing in the game telling a
+      // player their ground is finished, and it must not pass in silence.
+      telemetry.count('harvest_empty');
+      ctx.onInsight(person, 'the field gave nothing back', 'setback');
+      this.abandon(person, 'nothing_to_reap', ctx);
+      return;
+    }
+
+    const room = Math.max(0, person.carryCapacity - person.inventory.total);
+    const carried = Math.min(room, yielded);
+    if (carried > 0) person.inventory.add('grain', carried);
+    // A harvest is bigger than a pack. What will not fit stays where it was cut,
+    // which is what a heap of sheaves is, and `Brain`'s `pickup` scorer already
+    // sends people back for goods on the ground.
+    if (yielded > carried) {
+      ctx.dropAt(field.centerX, field.centerY, 'grain', yielded - carried);
+    }
+
+    telemetry.count('field_reaped');
+    telemetry.count('grain_harvested', yielded);
+    person.chronicle.push({
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: 'took in a harvest of ' + yielded + ' grain',
+      kind: 'did',
+    });
+    this.finish(person);
+  }
+
+  /** Mean effective fertility under a plot: what the crop actually had. */
+  private plotFertility(field: Building, ctx: ActionContext): number {
+    let total = 0;
+    let tiles = 0;
+    for (let dy = 0; dy < field.def.height; dy++) {
+      for (let dx = 0; dx < field.def.width; dx++) {
+        total += ctx.world.effectiveFertilityAt(field.x + dx, field.y + dy);
+        tiles++;
+      }
+    }
+    return tiles === 0 ? 0 : total / tiles;
+  }
+
+  /**
+   * True once the ground under a plot will not carry a crop worth the seed.
+   *
+   * Judged against what this ground would carry untouched rather than against a
+   * bare number, through the same predicate the panel and the planner use: on
+   * rich parent material a plot with nothing left in either pool still reads
+   * 0.24, so an absolute threshold alone would have made this refusal
+   * unreachable exactly where farming is worth doing.
+   */
+  private groundSpent(field: Building, ctx: ActionContext): boolean {
+    let worked = 0;
+    let resting = 0;
+    let tiles = 0;
+    for (let dy = 0; dy < field.def.height; dy++) {
+      for (let dx = 0; dx < field.def.width; dx++) {
+        const i = ctx.world.index(field.x + dx, field.y + dy);
+        worked += ctx.world.soil.effectiveFertility(i);
+        resting += ctx.world.soil.restingFertility(i);
+        tiles++;
+      }
+    }
+    if (tiles === 0) return true;
+    return isGroundSpent(worked / tiles, resting / tiles);
+  }
+
+  /** Breaking the ground burns humus, over every tile of the plot. */
+  private tillPlot(field: Building, ctx: ActionContext): void {
+    for (let dy = 0; dy < field.def.height; dy++) {
+      for (let dx = 0; dx < field.def.width; dx++) {
+        ctx.world.soil.till(ctx.world.index(field.x + dx, field.y + dy));
+      }
+    }
+  }
+
+  /** Taking a crop off eats the fast pool, over every tile of the plot. */
+  private reapPlot(field: Building, ctx: ActionContext): void {
+    for (let dy = 0; dy < field.def.height; dy++) {
+      for (let dx = 0; dx < field.def.width; dx++) {
+        ctx.world.soil.reap(ctx.world.index(field.x + dx, field.y + dy));
+      }
+    }
   }
 
   /**

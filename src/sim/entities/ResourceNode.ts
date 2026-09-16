@@ -13,7 +13,14 @@
 import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from './Item.ts';
 
-export const RESOURCE_KINDS = ['berries', 'flint', 'sticks', 'reeds', 'clay', 'fish'] as const;
+// `wild_grain` is appended rather than inserted, and it is spawned in a pass of
+// its own on a stream of its own — see `Simulation.spawnWildGrain`. Adding it to
+// `spawnResources`' plan array would have moved every herd and every person in
+// every saved seed without the determinism test noticing, which is the trap
+// `AGENTS.md` describes and `fish` already had to dodge.
+export const RESOURCE_KINDS = [
+  'berries', 'flint', 'sticks', 'reeds', 'clay', 'fish', 'wild_grain',
+] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 
 export interface ResourceDef {
@@ -56,6 +63,20 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
   // plan made for the fish channel: it reuses `doHarvest` wholesale rather than
   // needing a swimming entity and a second notion of passable ground.
   fish:    { kind: 'fish',    itemId: 'fish',    maxAmount: 10, regrowPerTick: 0.006,  harvestTicks: 11, skill: 'hunt', winterFloor: 0.4 },
+  // M8.2: the wild ancestor of the field. A stand of grass whose seed is worth
+  // taking — poor food, gathered like any other, and the only place the first
+  // handful of seed corn can come from. Thin on purpose: `maxAmount` 8 against
+  // berries' 14, so a patch is a morning's work rather than a larder, and it is
+  // the *domesticated* version on a tended field that is worth the labour.
+  //
+  // `groundLevel` is deliberately absent. Standing cereal is the one small thing
+  // on open ground that snow does not simply hide — the ears stand above it, and
+  // a winter stand of grain going to waste in the open is the picture M9.5 phase
+  // 2b's burial rule would have taken away.
+  wild_grain: {
+    kind: 'wild_grain', itemId: 'grain', maxAmount: 8, regrowPerTick: 0.0032,
+    harvestTicks: 10, skill: 'forage',
+  },
 };
 
 let nextNodeId = 1;

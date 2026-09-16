@@ -18,7 +18,6 @@
  */
 import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
-import { isFoodKind } from '../entities/ResourceNode.ts';
 import { isBuried } from '../core/Snow.ts';
 import type { World } from '../core/World.ts';
 import type { TimeManager } from '../core/TimeManager.ts';
@@ -28,6 +27,7 @@ import type { Relationship, RelationshipGraph } from '../social/Relationships.ts
 import { telemetry } from '../core/Telemetry.ts';
 import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
 import { isTrap } from '../entities/Building.ts';
+import { SOW_SEED } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -116,6 +116,8 @@ interface FoundTargets {
   recipe: string | null;
   /** The station a `craft` is to be done at, for the recipes that need one. */
   craftStation: Building | null;
+  /** The plot a `sow` or a `reap` is aimed at. One field, two different verbs. */
+  fieldTarget: Building | null;
   /** The record a chosen `read` is aimed at. */
   record: Inscription | null;
   /** A half-cut record a chosen `inscribe` should go and finish. */
@@ -288,6 +290,7 @@ function urgencyCurve(value: number): number {
 }
 
 export class Brain {
+
   /**
    * Chooses and sets up an action. Returns the chosen action id.
    *
@@ -376,8 +379,20 @@ export class Brain {
 
     // --- Forage / hunt -----------------------------------------------------
     // Data-driven rather than `n.kind === 'berries'`, so fish count as food
-    // too — see `isFoodKind` and m8_plan_the_ages.md, mechanism 2.
-    const foodNode = this.findNode(person, ctx, n => isFoodKind(n) && !n.depleted);
+    // too — see `nodeWorth` below and m8_plan_the_ages.md, mechanism 2.
+    //
+    // **Food is what this person can make food out of**, which is not the same
+    // question as what is edible where it stands — see `nodeWorth`. That is the
+    // only thing M8.2 changed here, and the alternative was measured and
+    // rejected: a version that chose the *best* food in sight rather than the
+    // nearest one looked obviously smarter and killed the whole processing
+    // branch of the game, because a forager who walks past poor food never
+    // gathers anything a quern could ever be used on. On `millers` it took the
+    // things made at a station from 26 to nothing. Foraging is opportunistic,
+    // and the technologies that turn what is underfoot into food depend on it
+    // being so.
+    const foodNode = this.findNode(person, ctx,
+      n => !n.depleted && this.nodeWorth(person, n) > 0);
     if (foodNode) {
       // Hunger drives foraging only to the extent it is not already answered by
       // what you carry — but the reserve is generous. A first attempt cut the
@@ -875,6 +890,55 @@ export class Brain {
       }
     }
 
+    // --- Sow and reap ------------------------------------------------------
+    //
+    // M8.2. Two verbs over one target, and the target is chosen by what is
+    // standing on it: a ripe field wants reaping and a bare one wants sowing,
+    // and no plot is ever both. Both are scored the way `store` and `take` are,
+    // on proximity against the band's own ground, because **proximity dominates
+    // this scorer** — a field sited across the valley is the fish trap that
+    // filled up and was never emptied again, and the planner sites plots near
+    // the fire for exactly that reason.
+    let fieldTarget: Building | null = null;
+    const plots = ctx.buildings.filter(b =>
+      b.crop !== null && b.complete && b.ownerBandId === person.bandId);
+    if (plots.length > 0) {
+      const nearestPlot = (want: (b: Building) => boolean): Building | null =>
+        this.pickBest(plots.filter(want),
+          b => -person.distanceTo({ x: b.centerX, y: b.centerY }));
+
+      // Reaping first, and it wins ties with sowing by being worth more: a ripe
+      // crop is food standing in a field with a week to live, and a bare plot
+      // will still be bare tomorrow. Hunger raises it the way it raises
+      // foraging, and `greed` carries the rest — bringing in a harvest is the
+      // most stockpiling act in the game.
+      const ripe = nearestPlot(b => b.crop!.isRipe);
+      if (ripe) {
+        add('reap',
+          (0.9 + hunger * 1.4 + person.traits.greed * 0.4) *
+            this.proximityBonus(person, { x: ripe.centerX, y: ripe.centerY }, ctx.sightRadius));
+        fieldTarget = ripe;
+      }
+
+      // Sowing, which pays nothing today. It is gated on everything `doSow`
+      // refuses on — the knowledge, the seed in hand, the season — because a
+      // scorer that sends somebody across the camp to be turned away is how a
+      // band spends a spring walking to a field and back. The ground itself is
+      // *not* tested here: `groundSpent` is sixteen tile reads and this runs on
+      // every think tick, so a plot worked out is caught by the refusal, which
+      // then tells the player something they need to hear.
+      if (!ripe && ctx.time.growth > 0 && techPower(person, 'farming') > 0 &&
+          person.inventory.count('grain') >= SOW_SEED) {
+        const bare = nearestPlot(b => b.crop!.isFallow);
+        if (bare) {
+          add('sow',
+            (0.55 + person.traits.industriousness * 0.35) *
+              this.proximityBonus(person, { x: bare.centerX, y: bare.centerY }, ctx.sightRadius));
+          fieldTarget = bare;
+        }
+      }
+    }
+
     // --- Store and withdraw ------------------------------------------------
     // The two halves of surviving a winter. Storing is a comfortable-weather
     // job; withdrawing is what you do when you are hungry and the bushes are
@@ -1345,7 +1409,7 @@ export class Brain {
         victim, beneficiary, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
-        recipe: craftRecipe, craftStation, record, unfinished,
+        recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
         patient, strayAnimal,
       },
     };
@@ -1469,6 +1533,48 @@ export class Brain {
       tile => ctx.world.sameRegion(person.x, person.y, tile.x, tile.y));
   }
 
+  /**
+   * The food node worth the walk, rather than the nearest one.
+   *
+   * Nutrition per harvest against distance, over the same candidates
+   * `findNode` would have considered. The falloff is gentle — a bush twice as
+   * far away has to be about twice as nourishing — because proximity dominates
+   * this scorer for good reasons elsewhere and the point here is only to stop a
+   * poor food that happens to be underfoot from beating a good one a few tiles
+   * off.
+   *
+   * Two searches rather than one pass over everything: `findNearest` walks the
+   * spatial hash in rings and stops, and rebuilding that into a scan of every
+   * node within sight would be paid on every think tick by every person in the
+   * world. Instead the nearest is found first, and then a second search asks
+   * whether anything meaningfully better is within reach of it.
+   */
+  /**
+   * What one harvest off a node is worth to *this* person, in nutrition.
+   *
+   * The node-side twin of `fruitWorth`, and it exists for the same reason one
+   * tier later: M8.1 hung an inedible fruit on the commonest tree in the game
+   * and M8.2 puts an inedible harvest on the grass. A stand of wild grain is
+   * worth nothing to somebody who cannot grind it and a good deal to somebody
+   * who can, and a scorer that reads `ITEMS[...].nutrition` alone sends the
+   * hungry to stand in a wheat field chewing husks.
+   *
+   * Discounted by the same 0.6 the fruit version uses, for the same reason:
+   * grain is not food until it has been carried to a stone, and something that
+   * is food now should win the tie.
+   */
+  private nodeWorth(person: Person, node: ResourceNode): number {
+    const direct = ITEMS[node.def.itemId]?.nutrition ?? 0;
+    if (direct > 0) return direct;
+    // Everything below is the inedible case — flint, sticks, clay and wild
+    // grain — and only the last of them has a recipe that turns it into food.
+    // Cheap enough now that `recipeUsing` is indexed, but the early return
+    // above is what keeps the ordinary case to one property read.
+    const recipe = recipeUsing(node.def.itemId);
+    if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
+    return nutritionPerUnit(recipe, node.def.itemId) * 0.6;
+  }
+
   private findNode(
     person: Person,
     ctx: BrainContext,
@@ -1518,12 +1624,15 @@ export class Brain {
       case 'take':
       case 'build':
       case 'haul':
+      case 'sow':
+      case 'reap':
       case 'sleep':
       case 'shelter': {
         const building =
           action === 'shelter' || action === 'sleep' ? found.shelter :
           action === 'take' ? found.larderTarget :
           action === 'store' ? found.storeTarget :
+          action === 'sow' || action === 'reap' ? found.fieldTarget :
           found.site;
         if (building) {
           person.targetBuildingId = building.id;

@@ -6,6 +6,104 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-17 — M8.2, first half: the ground, and the first field
+
+`farming` is back in `TECHS`. It was taken out because it gated an entire era
+while changing nothing on the ground, and the rule since has been that it may
+not return without fields; it returns here with `core/Soil.ts`,
+`entities/Field.ts`, two verbs, a crop, a wild ancestor to domesticate and the
+soil it all draws on, in one commit. This is the oldest open entry in
+`next-steps.md`, closed.
+
+**Three layers of ground, because the remedies are four different things.**
+`World.fertility` is untouched — it is innate, it is what berry bushes have
+grown out of since M2, and repointing it at a live value would have moved every
+bush in every saved seed with nothing to catch it. Above it sit `texture`
+(sand ↔ loam, immutable until `marling`), `organic` (humus, the slow pool) and
+`nutrient` (what a crop eats, the fast pool). **Tilling burns organic; reaping
+eats nutrient**, which is why compost, manure, fallow and rotation can be four
+mechanisms rather than four skins on one number. Nothing is swept per tick:
+drawdown is written by the sowing and the harvest, and recovery walks only the
+tiles somebody has actually disturbed, dropping each as it settles.
+
+**The rates were measured, not chosen, and the first pair was wrong.** At a
+fortnight's recovery per sowing the `farmers` scenario came out at 97.3% of
+resting ground after nine harvests — a soil model that costs nothing and
+therefore says nothing. Humus is built over decades; at 0.0004 a day the ground
+gives back about a sixth of a sowing a year, and the same scenario now ends at
+**81.1% of resting, with its poorest plot at 75.3%** and its harvests falling
+from 378 grain to 280 as the ground gives less. Fallow is a brake on
+exhaustion, not a cure for it. **The cure is `composting`, which is the next
+commit and not this one** — the plan asks for decline and its remedy in one
+change, and what ships here has fallow and moving the plot, which is shifting
+cultivation and is what people actually did first.
+
+**A field is a building, and the crop rides on it.** Siting, placement
+refusals, the walk, ownership and the renderer are all things `Building`
+already does; a second entity would have been four pairs of implementations of
+the same idea. What a building does not have — a stage, a growth fraction, the
+day it was sown — is `Building.crop`, the way `yieldCarry` hangs off a trap.
+Two verbs shipped where the plan named three: **tilling is folded into sowing**,
+because three verbs the AI has to perform in order is three chances to leave a
+plot half made, and this project has already watched fish traps stand full for
+fifty trap-days for exactly that reason. The soil cost of tilling is real and is
+paid on every tile at every sowing; it is simply not a verb anybody can forget.
+
+**Where the first seed comes from, and the deadlock that nearly shipped.** Wild
+cereal now stands on the open grass, spawned in its own pass on its own stream —
+appended after the fish, so a world built before farming existed is otherwise
+identical. Raw grain is `nutrition: 0`, exactly as an acorn is, and the reason is
+measured: at 6 it was poor food that was still food, the forage scorer took the
+nearest edible thing, and on `millers` the band gathered ninety-four grain,
+foraging rose 42% in ticks, crafting fell to a third and **the scenario that
+exists to exercise a crafting station made nothing at one all run**. But a thing
+worth nothing is a thing nobody gathers, and a technology whose only route in
+needs something only that technology produces is the `leatherwork` deadlock. The
+way out is the quern: `RECIPES.groats` is gated on **`grinding`**, which is also
+`farming`'s own prerequisite, so anybody who could ever discover farming already
+has a reason to gather wild cereal. `Brain.nodeWorth` values a resource node the
+way `fruitWorth` has valued acorns since M8.1 — what it is worth to *this*
+person, given what they know — and that one predicate is the whole change to the
+scorer.
+
+**A smarter scorer was written, measured and thrown away.** Between those two
+states there was a version that chose the *best* food in sight rather than the
+nearest. It is obviously better and it is wrong: a forager who walks past poor
+food never gathers anything a quern could be used on, and on `millers` it took
+the things made at a station from 26 to **nothing**. Foraging is opportunistic,
+and every technology that turns what is underfoot into food depends on it being
+so. It also cost 45% of the frame — 2,600 steps/s to 1,411, a `perf-budget`
+failure outright — which is how `recipeUsing` came to be indexed rather than
+scanned.
+
+**The player is told, six ways.** No seed, ground too tired, wrong season, the
+plot already sown, the crop not ready, and a harvest that gave nothing — six
+refusals with six different answers, each one a floater and a line in the menu
+*before* the walk across camp. The panel reads `Simulation.soilReport`, the one
+implementation the refusal and the health report also read, and it says the
+ground is tired in words to anybody and in numbers only to a farmer. A plot is
+drawn as ground rather than as a structure: bare earth that greens as the crop
+comes on and goes gold when it is ready to cut, with no sheaf of wheat on a
+field that has nothing in it.
+
+**Measured.** The default twelve-day report is **bit-identical** to the previous
+commit, line for line, apart from the two new checks reporting n/a and the
+throughput line — the pre-Neolithic world is untouched, because wild grain is
+invisible to anybody who cannot grind it and nobody works out `grinding` in
+twelve days. Across the canonical twenty seeds: **survival 100.0%, 827 born,
+13.2 technologies known, 720.2 lessons passed on — every figure identical to the
+baseline**. All fifteen scenarios stand, `crowded`'s `perf-budget` aside, which
+has been failing since before M7. The new `farmers` scenario runs four years
+with two bands who start knowing how: 3 plots, 10 sowings, 9 harvests, 378 grain
+and not one crop lost standing. Sixteen new unit tests, each verified failing on
+a build with the thing it tests removed, and two new health checks, both
+verified failing on a build whose soil never draws down.
+
+**Found and not fixed**: `millers` needed a fourth year, and what it grinds is no
+longer acorns. See `bugs.md`.
+
+---
+
 ## 2026-09-16 — The ages get their real names
 
 The two bullets `next-steps.md` §4 has carried since M8 was planned, done in one

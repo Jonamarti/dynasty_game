@@ -22,6 +22,13 @@ export interface WorldConfig {
   /** Fishing spots, placed on shore tiles like reed beds and clay banks. */
   fishingSpots: number;
   /**
+   * Stands of wild cereal on open grass — M8.2, and where farming starts.
+   *
+   * Fewer than berry bushes and worth much less each, because the point of them
+   * is not the calories: a band that has found one has found seed corn.
+   */
+  wildGrainPatches: number;
+  /**
    * Fraction of tiles considered for a starting tree. Suitability by biome
    * thins this out a great deal; forest carries most of them.
    */
@@ -220,6 +227,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     reedBeds: 90,
     clayBanks: 60,
     fishingSpots: 50,
+    wildGrainPatches: 35,
     treeDensity: 0.55,
     regrowthRate: 1,
     snowBuries: true,

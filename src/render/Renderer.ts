@@ -96,6 +96,9 @@ const RESOURCE_COLORS: Record<ResourceKind, string> = {
   reeds:   '#b3b76a',
   clay:    '#a97b5d',
   fish:    '#4a90a4',
+  // Ripe cereal. Warmer and paler than the grass it stands in, so a stand of it
+  // reads as a stand of something from across the valley.
+  wild_grain: '#d8c169',
 };
 
 /** [canopy, shadow side] per species; fruit is drawn over the top. This is
@@ -753,6 +756,40 @@ export class Renderer {
       ctx.fillRect(px + w * 0.1, py + h - 8, barW, 5);
       ctx.fillStyle = building.materialsReady ? '#7ddc96' : '#e0b055';
       ctx.fillRect(px + w * 0.1, py + h - 8, barW * building.completion, 5);
+    } else if (building.crop) {
+      // A field is ground, not a structure, and it has to read as ground: bare
+      // earth that greens as the crop comes on and goes gold when it is ready
+      // to cut. Drawn here in the entity pass rather than repainted into the
+      // terrain canvas, which is the rule M9.5 phase 2a set for the seasons —
+      // the terrain is baked once and a crop changes every day.
+      const crop = building.crop;
+      const ripeness = crop.ripeness;
+      ctx.fillStyle = crop.isFallow ? '#6b5335'
+        : crop.isRipe ? '#d9b44a'
+        : '#6f8f45';
+      ctx.fillRect(px, py, w, h);
+      // Furrows, so worked ground is legible as worked at a glance and at a
+      // distance. Four lines whatever the zoom: a per-tile pattern would be a
+      // grey smear at the scales this game is usually played at.
+      ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 4; i++) {
+        const fy = py + (h * i) / 4;
+        ctx.beginPath();
+        ctx.moveTo(px, fy);
+        ctx.lineTo(px + w, fy);
+        ctx.stroke();
+      }
+      if (!crop.isFallow && !crop.isRipe) {
+        // How far along, as a band of colour growing up the plot rather than a
+        // progress bar. A field is the one thing in this game whose progress is
+        // the picture itself.
+        ctx.fillStyle = 'rgba(216, 193, 105, 0.5)';
+        ctx.fillRect(px, py + h * (1 - ripeness), w, h * ripeness * 0.25);
+      }
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px, py, w, h);
     } else {
       ctx.fillStyle = building.def.shelter > 0 ? '#7a5c3e' : '#5c5343';
       ctx.fillRect(px, py, w, h);
@@ -775,7 +812,13 @@ export class Renderer {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.globalAlpha = building.complete ? 0.95 : 0.5;
-      ctx.fillText(building.def.icon, px + w / 2, py + h / 2);
+      // A bare plot does not wear a sheaf of wheat. The icon says what is
+      // standing there, and on a fallow field nothing is — which is precisely
+      // the thing a player needs to notice, because it is the thing somebody
+      // has to go and put right.
+      if (!building.crop || !building.crop.isFallow) {
+        ctx.fillText(building.def.icon, px + w / 2, py + h / 2);
+      }
       ctx.restore();
     }
   }
