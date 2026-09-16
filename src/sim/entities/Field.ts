@@ -52,6 +52,17 @@ export type CropStage =
 export const SOW_SEED = 4;
 
 /**
+ * Compost one spreading puts into a plot.
+ *
+ * Four, against a heap that makes about one load a day: keeping a field in
+ * heart is a few days of somebody's year, which is the right price for undoing
+ * a decade of taking. Here rather than in `ActionSystem` because the scorer
+ * needs it too — a person who cannot carry a spreading's worth should not be
+ * walking to a field to discover it.
+ */
+export const SPREAD_LOAD = 4;
+
+/**
  * How much of a crop's growth a midsummer day delivers.
  *
  * Measured against the actual season curve rather than reasoned about, and the

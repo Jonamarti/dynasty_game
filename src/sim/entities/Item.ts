@@ -75,6 +75,10 @@ export const ITEMS: Record<string, ItemDef> = {
   // `fruitWorth` has valued acorns since M8.1. No deadlock, and no bait.
   grain:    { id: 'grain',    label: 'Grain',      nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   meal:     { id: 'meal',     label: 'Meal',       nutrition: 34, spoilTicks: 0,    baseValue: 4 },
+  // M8.2. The only item in the game whose whole purpose is to be put back into
+  // the ground. Worth nothing to eat and nearly nothing to trade, and a band
+  // that has some is a band whose fields have another twenty years in them.
+  compost:  { id: 'compost',  label: 'Compost',    nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   meat:     { id: 'meat',     label: 'Raw meat',   nutrition: 30, spoilTicks: 1200, baseValue: 3 },
   fish:     { id: 'fish',     label: 'Fish',       nutrition: 18, spoilTicks: 800,  baseValue: 2 },
   // A kill yields a hide as well as meat, and a hide in cold hands is the

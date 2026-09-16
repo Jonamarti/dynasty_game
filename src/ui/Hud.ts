@@ -1514,6 +1514,22 @@ export class Hud {
           ', though nobody here could say why.'));
       }
     }
+    // A heap that has stopped rotting down looks exactly like one that is
+    // working, which is the same silent failure the trap line above exists for:
+    // the band's last composter dies, or the thing is simply full.
+    if (building.def.matures) {
+      const ripe = building.store.count(building.def.matures.item);
+      const keeper = sim.livingPeople().some(p =>
+        p.bandId === building.ownerBandId && techPower(p, 'composting') > 0);
+      rows.push('<div class="hud-sub">' +
+        (!keeper
+          ? 'Nobody here remembers how to keep a heap turning.'
+          : building.storageFree <= 0
+            ? 'Full, and rotting no further until somebody carries it out.'
+            : 'Rotting down: about ' + building.def.matures.perDay.toFixed(1) +
+              ' a day.') +
+        ' ' + ripe + ' ready.</div>');
+    }
     if (building.def.shelter > 0) {
       rows.push('<div class="hud-sub">Shelter ' +
         (building.def.shelter * 100).toFixed(0) + '% — people inside stay warm.</div>');

@@ -41,7 +41,7 @@ export const WORK_ACTIONS = new Set([
   // first: `SocialSystem.workingAlongside` is what lets two people sowing the
   // same field learn from each other and come to like each other, and a verb
   // missing from this list is a verb people do side by side in silence.
-  'sow', 'reap',
+  'sow', 'reap', 'spread',
 ]);
 
 export const JOB_IDS = ['forager', 'hunter', 'builder', 'crafter', 'farmer'] as const;
@@ -94,7 +94,7 @@ export const JOBS: Record<JobId, JobDef> = {
     id: 'farmer',
     label: 'Farmer',
     icon: '\u{1F33E}',
-    actions: ['sow', 'reap'],
+    actions: ['sow', 'reap', 'spread'],
     skill: 'farm',
   },
 };

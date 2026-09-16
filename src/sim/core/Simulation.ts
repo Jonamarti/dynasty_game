@@ -2081,6 +2081,56 @@ export class Simulation {
     if (looked > 0) telemetry.count('soil_tiles_recovering', looked);
   }
 
+  /**
+   * A day of rotting down, in every heap somebody still knows how to keep.
+   *
+   * Deliberately the same shape as `workTraps`, including the part that matters
+   * most: the rate is scaled by the band's best grasp of the technology, so a
+   * heap whose keeper died is a pile of wet straw rather than a supply. It also
+   * uses the same `accrueUnits` carry, so a heap that makes nine tenths of a
+   * load a day makes a load every day and a bit rather than nothing at all.
+   *
+   * Not folded into `workTraps` despite the resemblance. A trap takes something
+   * out of the world and a heap turns something already in it into something
+   * else; `isTrap` is read by four systems that would all be wrong about a
+   * heap, and the comment on `BuildingDef.matures` says which.
+   */
+  private workHeaps(): void {
+    let best = 0;
+    const grasp = new Map<number, number>();
+    for (const person of this.people) {
+      if (!person.alive) continue;
+      const power = techPower(person, 'composting');
+      if (power > (grasp.get(person.bandId) ?? 0)) grasp.set(person.bandId, power);
+      if (power > best) best = power;
+    }
+    if (best <= 0) return;
+
+    for (const building of this.buildings) {
+      const matures = building.def.matures;
+      if (!matures || !building.complete) continue;
+      const power = grasp.get(building.ownerBandId) ?? 0;
+      if (power <= 0) {
+        // Nobody left who knows how to turn it. The half-rotted load goes with
+        // them, for the reason a trap forgets its part-caught hare.
+        building.yieldCarry = 0;
+        telemetry.count('heap_unworked');
+        continue;
+      }
+      if (building.storageFree <= 0) {
+        telemetry.count('heap_full');
+        continue;
+      }
+      const step = accrueUnits(building.yieldCarry, matures.perDay * power);
+      building.yieldCarry = step.carry;
+      const made = Math.min(step.units, building.storageFree);
+      if (made > 0) {
+        building.store.add(matures.item, made);
+        telemetry.count('compost_matured', made);
+      }
+    }
+  }
+
   private workTraps(): void {
     // Best grasp of each trap technology, per band. Computed once rather than
     // per trap: `techPower` is cheap but this is a daily sweep over every
@@ -2332,6 +2382,7 @@ export class Simulation {
 
       this.workTraps();
       this.growCrops();
+      this.workHeaps();
 
       this.lifeSystem.daily(this.people, {
         rng: this.lifeRng,
@@ -2362,6 +2413,14 @@ export class Simulation {
       needs: this.config.needs,
       chiefByBand: this.bandSystem.chiefByBand,
       snowDepth: this.snowDepth,
+      // The one number the scorer needs about the ground, from the one
+      // implementation that computes it. A `spread` aimed at a plot the panel
+      // calls healthy would be the simulation and the interface disagreeing in
+      // front of the player.
+      soilWear: (field: Building) => {
+        const soil = this.soilReport(field);
+        return soil.effective / Math.max(0.001, soil.resting);
+      },
       snowBuries: this.config.world.snowBuries,
     };
     const actionCtx = {

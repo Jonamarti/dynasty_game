@@ -20,7 +20,7 @@ import type { Person } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import {
-  BUILDINGS, isTrap, isStation, isField, type Building, type BuildingDef,
+  BUILDINGS, isTrap, isStation, isField, isHeap, type Building, type BuildingDef,
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -494,7 +494,8 @@ export class BandSystem {
     // would have started failing for a band that was doing exactly the right
     // thing.
     const built = live.filter(b =>
-      b.complete && !isTrap(b.def) && !isStation(b.def) && !isField(b.def)).length;
+      b.complete && !isTrap(b.def) && !isStation(b.def) && !isField(b.def) &&
+      !isHeap(b.def)).length;
     if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
 
     // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
@@ -614,6 +615,22 @@ export class BandSystem {
           members.some(m => techPower(m, recipe.tech) > 0)));
       // Cheapest first: a band's first workshop should be the one it can finish.
       wanted = this.cheapest(missing)?.id ?? null;
+    }
+
+    // --- A heap, which is the sixth and only exists for the fifth -----------
+    //
+    // Ahead of a second field and behind the first, because a band with one
+    // plot and a heap keeps that plot for ever while a band with two plots and
+    // no heap wears out both. Planned only where there is ground to spread it
+    // on: a compost heap in a band that does not farm is the clearest possible
+    // case of declared content doing nothing, and it would sit in the build
+    // queue ahead of something that mattered.
+    if (!wanted && underway === 0 && stores.length > 0) {
+      const plots = live.filter(b => isField(b.def));
+      const heaps = live.filter(b => isHeap(b.def));
+      if (plots.length > 0 && heaps.length === 0) {
+        wanted = buildable.find(def => isHeap(def))?.id ?? null;
+      }
     }
 
     // --- Fields, the fifth thing a band can want ----------------------------

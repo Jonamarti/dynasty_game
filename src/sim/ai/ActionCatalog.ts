@@ -587,6 +587,20 @@ function buildingActions(
           : seed < SOW_SEED ? 'You need ' + SOW_SEED + ' grain to sow this'
           : undefined,
       });
+      const knowsCompost = techPower(actor, 'composting') > 0;
+      if (knowsCompost) {
+        // Offered only to somebody who could do it, the way `tame` is: a menu
+        // full of greyed-out verbs hands the player the shape of the tech web
+        // for free. The heap itself is not required to be nearby — `doSpread`
+        // walks to one — so the only thing that can stop this is there being no
+        // compost anywhere in the band.
+        options.push({
+          id: 'spread',
+          label: 'Spread compost here',
+          icon: '\u{1F343}',
+          enabled: true,
+        });
+      }
       options.push({
         id: 'reap',
         label: 'Bring in the harvest',

@@ -6,6 +6,80 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-17 — M8.2, second half: composting, and the ground can be given back to
+
+The remedy the previous commit owed. Soil that only ever gets poorer is a
+strictly worse world with no counterplay, which is precisely what happened to
+spoilage — built, measured, and shipped switched off — and the plan for this
+pass says so in as many words.
+
+**A heap, not a trap, and the difference is four systems wide.** `compost_heap`
+costs eight thatch and four mud — the brown and the green of it, paid at
+construction rather than by a feeding verb, because each extra step in a chain
+is where this project's chains have historically broken. After that it ripens
+on its own through `Simulation.workHeaps`, at a rate scaled by the band's best
+grasp of the technology, so a heap whose keeper died is a pile of wet straw.
+That is `workTraps`' shape and deliberately not `workTraps` itself:
+`BuildingDef.matures` is a separate field from `yields` because the planner,
+the larder scorer, `doStore` and the health report would all have been wrong
+about a heap that called itself a trap.
+
+**`spread` puts humus back, and the two pools answer differently.** A spreading
+is four loads over every tile of a plot, at `COMPOST_ORGANIC` 0.075 against a
+sowing's 0.035 cost — so a field dressed once a year gains and one dressed every
+other year holds. `Soil.enrich` also credits the fast pool at 60% of the
+dressing, because muck feeds this year's crop as well as the next twenty, and a
+model where compost only paid off two decades later would be right about the
+humus and quite wrong about the harvest.
+
+**Three things were built, measured failing in a whole world, and rebuilt.**
+Each is worth recording, because each looked obviously correct:
+
+1. **The fetch was handed off to `take`**, on `doBuild`'s pattern. `doBuild`
+   gets away with it because `haul` is a verb the scorer also aims for itself;
+   nothing aims a `take` at a compost heap, so the next think tick re-pointed it
+   at the larder. `stewards` spent ninety-nine thousand ticks taking food out of
+   storage pits while two heaps stood full for a hundred and sixteen days and
+   **not one load was ever spread**. Both legs now live inside `doSpread`, where
+   nothing can re-aim them.
+2. **The errand had no commitment.** `Simulation` re-plans anybody whose
+   `actionTimer` has run out, and a two-legged errand is re-planned the moment
+   the first leg ends — people fetched compost and were re-aimed while standing
+   at the heap. `doSpread` now refreshes a six-tick commitment every tick, so it
+   lasts exactly as long as the errand.
+3. **And then the interruption check, moved to the top to compensate, ran on
+   every tick of both walks.** `interruption` answers "hungry" long before
+   anybody is starving: a merely peckish band abandoned the errand about fifteen
+   hundred times in three years and spread one load. The check now runs at the
+   two waypoints — arriving at the heap, and starting the work — which is the
+   same bargain `doHarvest` strikes with its cycle.
+
+**And one fix that came out of watching where the muck went.** `doStore` empties
+a whole pack into the larder, so compost spends much of its life in the storage
+pit rather than on the heap that made it. Both the scorer and the action now
+look for a band's compost wherever it has ended up, rather than only in heaps —
+before that, the scorer offered an errand the action refused, which is the two
+halves disagreeing in front of the player.
+
+**Measured.** On the same seed and the same ground as `farmers`, the new
+`stewards` scenario — the same two bands with one more idea in their heads —
+ends with its worked ground at **95.4% of what that ground carries untouched,
+against 81.1% for farming alone**. The check that says so is verified failing on
+a build whose `Soil.enrich` does nothing. The default twelve-day report is
+unchanged, and the twenty-seed cohort is identical to the baseline again — 100.0%
+survival, 827 born, 13.2 technologies, 720.2 lessons passed on — because nobody
+works out composting in twelve days. Six new unit tests, all sixteen scenarios
+green but `crowded`'s `perf-budget`, 310 unit tests and 47 e2e.
+
+**One instrument fixed, and it is not this milestone's.** `heads-direct-work`
+had no minimum sample: `stewards` worked `chiefdom` out late, one head asked one
+person one thing and was refused, and a check built to measure a *rate* called
+that a failure of the mechanism. It now skips under five orders, the way
+`hunts-succeed-and-fail` already does, and `labour` — the scenario that exists to
+answer that question — still reports 41 obeyed against 174 refused.
+
+---
+
 ## 2026-09-17 — M8.2, first half: the ground, and the first field
 
 `farming` is back in `TECHS`. It was taken out because it gated an entire era

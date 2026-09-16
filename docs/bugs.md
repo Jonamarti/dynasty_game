@@ -3,6 +3,34 @@
 As of 2026-09-17. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found during M8.2's second half, 2026-09-17
+
+### Compost is fetched twice as often as it is spread
+
+`stewards` fetches twenty-nine loads across three years and spreads twelve of
+them. The rest is carried around and eventually tipped into a storage pit by
+`doStore`, which empties a whole pack without asking what is in it. Nothing is
+lost — both the scorer and `doSpread` now look for compost wherever the band
+keeps it, so it is fetched again later — but a band that spends a day carrying
+muck to the larder and back is not a band anybody would write down.
+
+The fix is a `doStore` that knows the difference between a surplus and a tool,
+which is a change to a verb six other things use, and it belongs with whoever
+next has reason to touch it. Left alone because the mechanism works and the
+waste is legible: `compost_fetched` against `compost_spread` in the report is
+exactly this, and it will show up the moment somebody makes it worse.
+
+### Three spreadings a year is thin, and it is the scorer rather than the verb
+
+Even with the errand committed and the interruption check at the waypoints, a
+band with two heaps and four plots spreads about once a season. The option is
+offered around a hundred and seventy thousand times a run and taken three times,
+because it competes with foraging on a scorer where hunger dominates and almost
+everybody is a little hungry most of the time. The mechanism is measurable and
+the check passes; whether it is *enough* is a balance question for the pass that
+adds `manuring` and `middening`, when there will be three sources of the same
+material and the comparison will mean something.
+
 ## Found during M8.2's first half, 2026-09-17
 
 ### `millers` grinds grain now, and has stopped picking acorns entirely

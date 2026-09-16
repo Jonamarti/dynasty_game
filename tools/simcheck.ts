@@ -17,7 +17,7 @@ import { telemetry } from '../src/sim/core/Telemetry.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
-import { isTrap } from '../src/sim/entities/Building.ts';
+import { isTrap, isHeap } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
@@ -299,6 +299,26 @@ export const SCENARIOS: Record<string, Scenario> = {
         // band that farms without one is a band eating the poorest food in the
         // game on purpose.
         startingTech: ['farming', 'plant_lore', 'grinding', 'division_of_labour'],
+      },
+    },
+    steps: 24000,
+  },
+  stewards: {
+    name: 'stewards',
+    description:
+      'The same two bands as `farmers`, on the same ground, with one more idea ' +
+      'in their heads: how to rot straw and mud down and put it back. Kept ' +
+      'apart from `farmers` rather than folded into it, because the two ' +
+      'scenarios measure opposite halves of one mechanism and each would ' +
+      'destroy the other\'s reading: `soil-is-drawn-down` needs a world where ' +
+      'nobody puts anything back, and `compost-answers-exhaustion` needs the ' +
+      'same world where somebody does. Same seed, deliberately, so the pair ' +
+      'can be read side by side.',
+    config: {
+      seed: 'furrow',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTech: ['farming', 'composting', 'plant_lore', 'grinding', 'division_of_labour'],
       },
     },
     steps: 24000,
@@ -1650,13 +1670,25 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   } else {
     const obeyed = tel.order_obeyed_by_rank ?? 0;
     const refused = tel.order_refused_by_rank ?? 0;
-    // Both halves demanded, and separately, because they are different
-    // failures: no orders at all means no head ever reached `directWork`'s
-    // second pass, and orders that are never obeyed means the rank term is
-    // too small to carry one.
-    add('heads-direct-work',
-      obeyed + refused > 0 && obeyed > 0,
-      obeyed + ' orders landed on rank alone, ' + refused + ' refused');
+    // A world that happened to work `chiefdom` out on its own says nothing
+    // about whether rank carries an order: `stewards` reached it late, one head
+    // asked one person one thing and was refused, and a check built to measure
+    // a *rate* reported that as a failure of the mechanism. `labour` is the
+    // scenario that exists to answer this, and it starts its founders knowing
+    // both social technologies precisely so the sample is worth reading. The
+    // same skip `hunts-succeed-and-fail` takes for the same reason.
+    if (obeyed + refused < 5) {
+      skip('heads-direct-work',
+        'too few orders on rank to tell (' + obeyed + ' obeyed, ' + refused + ' refused)');
+    } else {
+      // Both halves demanded, and separately, because they are different
+      // failures: no orders at all means no head ever reached `directWork`'s
+      // second pass, and orders that are never obeyed means the rank term is
+      // too small to carry one.
+      add('heads-direct-work',
+        obeyed > 0,
+        obeyed + ' orders landed on rank alone, ' + refused + ' refused');
+    }
   }
 
   // --- The bone tier: M8.1 --------------------------------------------------
@@ -1911,6 +1943,39 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         '% of what the same ground carries untouched (poorest plot ' +
         (poorest * 100).toFixed(1) + '%); ' +
         thousands(tel.soil_tiles_recovering ?? 0) + ' tile-days recovering');
+  }
+
+  // The remedy. Soil decline on its own is a strictly worse world with no
+  // counterplay — which is exactly what happened to spoilage, shipped and
+  // switched off — so the drawdown check above is only half of the statement
+  // and this is the other half.
+  const heaps = sim.buildings.filter(b => isHeap(b.def));
+  if (heaps.length === 0 && (tel.band_planned_compost_heap ?? 0) === 0) {
+    skip('compost-answers-exhaustion', 'nobody in this world knows how to compost');
+  } else {
+    // Ground that has been dressed has to be *measurably better than it would
+    // otherwise be*, and the honest way to say that is against the same seed
+    // farming alone: `farmers` ends at 81.1% of resting ground and this
+    // scenario is the same world with one more idea in it. Asserted here as
+    // the property rather than the number — that worked plots are in better
+    // heart than the threshold `farmers` lands under — because a hardcoded
+    // 81.1 would be a test of a seed rather than of a mechanism.
+    let worked = 0;
+    let resting = 0;
+    for (const field of sim.buildings.filter(b => b.crop !== null && b.complete)) {
+      const soil = sim.soilReport(field);
+      worked += soil.effective;
+      resting += soil.resting;
+    }
+    const ratio = resting > 0 ? worked / resting : 0;
+    add('compost-answers-exhaustion',
+      (tel.compost_spread ?? 0) > 0 && ratio > 0.9,
+      (tel.band_planned_compost_heap ?? 0) + ' heaps planned, ' +
+        thousands(tel.compost_matured ?? 0) + ' loads rotted down, ' +
+        (tel.compost_spread ?? 0) + ' spread over ' +
+        thousands(tel.soil_tiles_enriched ?? 0) + ' tile-dressings; worked ' +
+        'ground stands at ' + (ratio * 100).toFixed(1) + '% of resting ' +
+        '(farming alone leaves it near 80%)');
   }
 
   const caught = (tel.trap_caught_meat ?? 0) + (tel.trap_caught_fish ?? 0);

@@ -26,8 +26,8 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
-import { isTrap } from '../entities/Building.ts';
-import { SOW_SEED } from '../entities/Field.ts';
+import { isTrap, isHeap } from '../entities/Building.ts';
+import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -58,6 +58,16 @@ export interface BrainContext {
   inscriptionHash: SpatialHash<Inscription>;
   /** Everything written down anywhere, so nobody cuts the same word twice. */
   recorded: ReadonlySet<string>;
+  /**
+   * How much of its resting fertility a plot still has, 0 to 1.
+   *
+   * A callback into `Simulation.soilReport` rather than sixteen tile reads in
+   * the scorer: this is asked on every think tick and the simulation already
+   * computes it for the panel and the health report. One implementation of
+   * "how tired is this ground" was the point of `soilReport` in the first
+   * place.
+   */
+  soilWear: (field: Building) => number;
   sightRadius: number;
   /**
    * Need rates and the base work limits.
@@ -281,6 +291,16 @@ const IDLE_ACTIONS = new Set(['rest', 'wander']);
  * distribution intact — a forager who is starving still eats first, and a
  * hunter still helps build in a hard winter.
  */
+/**
+ * How worn a plot has to be before anybody thinks of spreading compost on it.
+ *
+ * As a share of what the same ground carries untouched — the same statistic the
+ * panel shows and `isGroundSpent` judges on, so "in good heart" means one thing
+ * in this game and not three. At 0.97 a plot is worth dressing as soon as it
+ * has given one harvest, which is what a farmer would actually do.
+ */
+const COMPOST_WANTED = 0.97;
+
 const JOB_BIAS_UP = 1.3;
 const JOB_BIAS_DOWN = 0.85;
 
@@ -890,7 +910,7 @@ export class Brain {
       }
     }
 
-    // --- Sow and reap ------------------------------------------------------
+    // --- Sow, spread and reap ----------------------------------------------
     //
     // M8.2. Two verbs over one target, and the target is chosen by what is
     // standing on it: a ripe field wants reaping and a bare one wants sowing,
@@ -918,6 +938,37 @@ export class Brain {
           (0.9 + hunger * 1.4 + person.traits.greed * 0.4) *
             this.proximityBonus(person, { x: ripe.centerX, y: ripe.centerY }, ctx.sightRadius));
         fieldTarget = ripe;
+      }
+
+      // Spreading, which pays nothing this year either, and is the only thing
+      // anybody ever does for the sake of a field their grandchildren will
+      // reap. Scored on how worn the ground actually is, so a band with a heap
+      // and a plot in good heart leaves it alone — `doSpread` refuses on the
+      // same test, and a scorer that sent people to spread compost on ground
+      // that wants none is a band walking back and forth all season.
+      //
+      // Above sowing and below reaping: a tired plot is worth putting right
+      // before it is worth sowing again, and a ripe crop is worth more than
+      // either because it is food with a week to live.
+      if (techPower(person, 'composting') > 0 &&
+          (person.inventory.count('compost') >= SPREAD_LOAD || this.hasCompost(person, ctx))) {
+        const worn = this.pickBest(
+          plots.filter(b => ctx.soilWear(b) < COMPOST_WANTED),
+          b => -person.distanceTo({ x: b.centerX, y: b.centerY }));
+        if (worn) {
+          // Weighted like a harvest rather than like a chore, and it is the
+          // scarcity of compost that makes that safe: a heap makes about one
+          // load a day and a spreading costs four, so a band can do this once
+          // every few days however much it wants to. Measured first at half
+          // this, where `stewards` rotted down twenty-one loads over three
+          // years, left its heaps standing full for a hundred and twenty-four
+          // days and spread **nothing** — the option was on the table and
+          // never once beat being slightly hungry.
+          add('spread',
+            (2.2 + (1 - ctx.soilWear(worn)) * 2.0) *
+              this.proximityBonus(person, { x: worn.centerX, y: worn.centerY }, ctx.sightRadius));
+          fieldTarget = worn;
+        }
       }
 
       // Sowing, which pays nothing today. It is gated on everything `doSow`
@@ -1550,6 +1601,22 @@ export class Brain {
    * whether anything meaningfully better is within reach of it.
    */
   /**
+   * True if this person's band has compost anywhere it can be fetched from.
+   *
+   * Heaps and stores alike, and the same reasoning `ActionSystem.nearestHeap`
+   * records: `doStore` empties a whole pack into the larder, so a band's muck
+   * spends a good deal of its life in the storage pit rather than on the heap
+   * that made it. A scorer that only looked at heaps offered the errand while
+   * the action refused it, which is the two halves disagreeing in front of the
+   * player.
+   */
+  private hasCompost(person: Person, ctx: BrainContext): boolean {
+    return ctx.buildings.some(b =>
+      b.complete && b.ownerBandId === person.bandId &&
+      (isHeap(b.def) || b.def.storage > 0) && b.store.count('compost') > 0);
+  }
+
+  /**
    * What one harvest off a node is worth to *this* person, in nutrition.
    *
    * The node-side twin of `fruitWorth`, and it exists for the same reason one
@@ -1626,13 +1693,15 @@ export class Brain {
       case 'haul':
       case 'sow':
       case 'reap':
+      case 'spread':
       case 'sleep':
       case 'shelter': {
         const building =
           action === 'shelter' || action === 'sleep' ? found.shelter :
           action === 'take' ? found.larderTarget :
           action === 'store' ? found.storeTarget :
-          action === 'sow' || action === 'reap' ? found.fieldTarget :
+          action === 'sow' || action === 'reap' || action === 'spread'
+            ? found.fieldTarget :
           found.site;
         if (building) {
           person.targetBuildingId = building.id;

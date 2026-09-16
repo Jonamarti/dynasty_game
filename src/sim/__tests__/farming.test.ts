@@ -17,10 +17,13 @@ import { Simulation } from '../core/Simulation.ts';
 import {
   Soil, TILL_ORGANIC_COST, REAP_NUTRIENT_COST, isGroundSpent,
 } from '../core/Soil.ts';
-import { Crop, harvestYield, SOW_SEED, RIPE_WINDOW_DAYS } from '../entities/Field.ts';
-import { isField, BUILDINGS } from '../entities/Building.ts';
+import {
+  Crop, harvestYield, SOW_SEED, SPREAD_LOAD, RIPE_WINDOW_DAYS,
+} from '../entities/Field.ts';
+import { isField, isHeap, BUILDINGS } from '../entities/Building.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
+import { lastScores } from '../ai/Brain.ts';
 
 const SMALL = {
   seed: 'farming-test',
@@ -62,6 +65,33 @@ function fieldNear(sim: Simulation, person: Person, away = 3): Building {
   // whether anybody can be bothered to break the ground.
   placed!.complete = true;
   return placed!;
+}
+
+/** A finished heap near somebody, with `ripe` loads already in it. */
+function heapNear(sim: Simulation, person: Person, ripe: number): Building {
+  let placed: Building | null = null;
+  for (let ring = 2; ring <= 12 && !placed; ring++) {
+    for (const [dx, dy] of [[0, ring], [ring, ring], [-ring, -ring], [ring, -ring]]) {
+      placed = sim.place('compost_heap',
+        Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+      if (placed) break;
+    }
+  }
+  expect(placed, 'nowhere to site a compost heap for the test').not.toBeNull();
+  placed!.complete = true;
+  placed!.store.add('compost', ripe);
+  return placed!;
+}
+
+/** Wears a plot down to roughly `share` of what the ground would carry. */
+function wearOut(sim: Simulation, field: Building, share: number): void {
+  for (let dy = 0; dy < field.def.height; dy++) {
+    for (let dx = 0; dx < field.def.width; dx++) {
+      const i = sim.world.index(field.x + dx, field.y + dy);
+      sim.world.soil.organic[i] = sim.world.soil.organic[i]! * share;
+      sim.world.soil.nutrient[i] = sim.world.soil.nutrient[i]! * share;
+    }
+  }
 }
 
 /** Somebody with nothing pressing, so a test measures what it means to. */
@@ -349,5 +379,121 @@ describe('a field in a world', () => {
     // And the ground says so in the one place the panel and the report read.
     const soil = sim.soilReport(field);
     expect(soil.effective).toBeLessThan(soil.resting);
+  });
+});
+
+describe('composting', () => {
+  const KEEN = {
+    ...SMALL,
+    population: {
+      bands: 1, peoplePerBand: 6,
+      startingTech: ['plant_lore', 'grinding', 'farming', 'composting'],
+    },
+  };
+
+  it('is a heap rather than a trap, and the table knows the difference', () => {
+    // Four systems read `isTrap` and every one of them would be wrong about a
+    // heap: the planner, the larder scorer, `doStore` and the health report.
+    expect(isHeap(BUILDINGS.compost_heap!)).toBe(true);
+    for (const def of Object.values(BUILDINGS)) {
+      if (def.id !== 'compost_heap') expect(isHeap(def), def.id).toBe(false);
+      if (isHeap(def)) expect(def.yields, def.id).toBeUndefined();
+    }
+  });
+
+  it('rots down on its own, and stops when nobody remembers how', () => {
+    const sim = new Simulation(KEEN);
+    aDayIn(sim);
+    const person = sim.livingPeople()[0]!;
+    const heap = heapNear(sim, person, 0);
+
+    for (let i = 0; i < sim.config.time.ticksPerDay * 3; i++) sim.step();
+    const made = heap.store.count('compost');
+    expect(made).toBeGreaterThan(0);
+
+    // The same honesty `workTraps` applies to a snare line whose setter died.
+    for (const member of sim.people) member.knownTech.delete('composting');
+    for (let i = 0; i < sim.config.time.ticksPerDay * 3; i++) sim.step();
+    expect(heap.store.count('compost')).toBe(made);
+  });
+
+  it('puts humus back, and more than a sowing takes out', () => {
+    const sim = new Simulation(KEEN);
+    aDayIn(sim);
+    const person = sim.livingPeople()[0]!;
+    const field = fieldNear(sim, person);
+    heapNear(sim, person, 8);
+    wearOut(sim, field, 0.6);
+
+    person.inventory.add('compost', SPREAD_LOAD);
+    const before = sim.soilReport(field);
+    expect(sim.order(person, 'spread', { buildingId: field.id })).toBe(true);
+    carryOut(sim, person);
+
+    const after = sim.soilReport(field);
+    expect(after.organic).toBeGreaterThan(before.organic);
+    expect(after.effective).toBeGreaterThan(before.effective);
+    expect(person.inventory.count('compost')).toBe(0);
+  });
+
+  it('fetches from the heap itself rather than handing the trip to another verb', () => {
+    // The whole reason both legs live in one verb. The first version handed the
+    // fetch off to `take`, on `doBuild`'s pattern — and `doBuild` gets away with
+    // it because `haul` is a verb the scorer also aims for itself. Nothing aims
+    // a `take` at a compost heap, so the next think tick re-pointed it at the
+    // larder: `stewards` spent ninety-nine thousand ticks taking food out of
+    // storage pits while two heaps stood full for a hundred and sixteen days and
+    // not one load was ever spread. Break it back and this test fails on the
+    // same symptom.
+    const sim = new Simulation(KEEN);
+    aDayIn(sim);
+    const person = sim.livingPeople()[0]!;
+    const field = fieldNear(sim, person);
+    const heap = heapNear(sim, person, 8);
+    wearOut(sim, field, 0.6);
+    const before = sim.soilReport(field);
+
+    sim.order(person, 'spread', { buildingId: field.id });
+    carryOut(sim, person, 3000);
+
+    expect(heap.store.count('compost')).toBeLessThan(8);
+    expect(sim.soilReport(field).organic).toBeGreaterThan(before.organic);
+  });
+
+  it('says so when there is no compost anywhere', () => {
+    const sim = new Simulation(KEEN);
+    aDayIn(sim);
+    const person = sim.livingPeople()[0]!;
+    const field = fieldNear(sim, person);
+    sim.order(person, 'spread', { buildingId: field.id });
+    carryOut(sim, person);
+    expect(refusal(sim, person)).toBe('no_compost');
+  });
+
+  it('is something a farmer thinks of doing, once the ground is tired', () => {
+    // The scorer, not the verb. Whether a *world* ever gets round to spreading
+    // depends on how hungry it is and how far the plot is — which is why
+    // `stewards` keeps the world-scale question — but whether the option is on
+    // the table at all is a property of `Brain` and has one right answer.
+    const sim = new Simulation(KEEN);
+    aDayIn(sim);
+    const person = sim.livingPeople()[0]!;
+    const field = fieldNear(sim, person, 2);
+    heapNear(sim, person, 8);
+
+    const offered = (): number => {
+      lastScores.delete(person.id);
+      for (let i = 0; i < 200 && !lastScores.has(person.id); i++) {
+        settle(person);
+        sim.step();
+      }
+      return lastScores.get(person.id)?.find(s => s.id === 'spread')?.score ?? 0;
+    };
+
+    // Ground in good heart wants nothing, and a scorer that sent people out to
+    // dress it would have a band walking back and forth all season.
+    expect(offered()).toBe(0);
+    wearOut(sim, field, 0.55);
+    expect(offered()).toBeGreaterThan(0);
   });
 });

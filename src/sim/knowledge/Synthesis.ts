@@ -177,6 +177,7 @@ const DOING_WORDS: Record<string, string> = {
   give: 'giving things away', steal: 'stealing', attack: 'fighting',
   court: 'courting', ponder: 'thinking', discuss: 'arguing things out',
   reflect: 'sitting and thinking',
+  sow: 'sowing', reap: 'bringing in a harvest', spread: 'spreading compost',
   prototype: 'building the first one', flee: 'running away', goto: 'walking',
   play: 'playing a tune', tend: 'tending the hurt', tame: 'coaxing an animal',
 };
@@ -216,6 +217,12 @@ const SAW_WORDS: Record<string, string> = {
   // said no, in public. Recorded on the leader by `Simulation.command` and
   // `Simulation.assignJob`.
   order_refused: 'been refused to your face',
+  // M8.2. Both are ways a field can disappoint somebody, and both are the
+  // sparks `composting` is built out of — which is the whole reason they have
+  // to read as sentences: the tech web shows a player what would suggest an
+  // idea, and "having seen ground_spent" is the raw id leaking through.
+  ground_spent: 'tried to sow ground with nothing left in it',
+  nothing_to_reap: 'brought in a harvest that came to nothing',
 };
 
 // ---------------------------------------------------------------------------

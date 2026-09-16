@@ -17,9 +17,9 @@ import { Arrival, type MovementSystem } from './MovementSystem.ts';
 import { companionBonus } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
-import { isTrap, type Building } from '../entities/Building.ts';
-import { SOW_SEED, harvestYield } from '../entities/Field.ts';
-import { isGroundSpent } from '../core/Soil.ts';
+import { isTrap, isHeap, type Building } from '../entities/Building.ts';
+import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
+import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
@@ -451,6 +451,16 @@ const TEND_RATE = 0.6;
  */
 const SOW_TICKS = 90;
 const REAP_TICKS = 110;
+const SPREAD_TICKS = 70;
+
+/**
+ * How long a spreading holds against being re-planned, refreshed every tick.
+ *
+ * Small on purpose: it is a commitment, not a trance. If anything stops
+ * refreshing it — the field goes, the heap empties, the person is interrupted —
+ * the brain has them back within a handful of ticks.
+ */
+const SPREAD_COMMIT = 6;
 
 export class ActionSystem {
   execute(person: Person, ctx: ActionContext): void {
@@ -496,6 +506,7 @@ export class ActionSystem {
       case 'tame': this.doTame(person, ctx); break;
       case 'sow': this.doSow(person, ctx); break;
       case 'reap': this.doReap(person, ctx); break;
+      case 'spread': this.doSpread(person, ctx); break;
       case 'goto':
         // A walk order. Identical to wandering except that arriving ends it,
         // so the person stands where they were sent.
@@ -1698,6 +1709,160 @@ export class ActionSystem {
       kind: 'did',
     });
     this.finish(person);
+  }
+
+  /**
+   * Putting it back - M8.2's other half, and the only thing in the game that
+   * makes ground better than it was yesterday.
+   *
+   * Two legs in one verb, and the hand-off is `doBuild`'s: somebody who means
+   * to spread and has nothing to spread goes to fetch instead of standing in a
+   * field looking at it. That is the same shape as a builder who arrives at a
+   * site with empty hands and turns into a hauler, and it is what keeps the
+   * chain - ripen, fetch, carry, spread - from being three separate things the
+   * scorer has to choose in the right order.
+   */
+  private doSpread(person: Person, ctx: ActionContext): void {
+    const field = person.targetBuildingId === null
+      ? null
+      : ctx.buildingsById.get(person.targetBuildingId);
+    if (!field || field.crop === null || !field.complete) {
+      this.abandon(person, 'no_field', ctx);
+      return;
+    }
+    if (techPower(person, 'composting') <= 0) {
+      this.abandon(person, 'dont_know_how', ctx);
+      return;
+    }
+
+    // Committed, and it has to be. `Simulation` re-plans anybody whose
+    // `actionTimer` has run out, and a two-legged errand with no commitment is
+    // re-planned the moment the first leg ends — which is exactly what was
+    // measured: people fetched compost, were re-aimed at something nearer while
+    // standing at the heap, and `stewards` spread **nothing** across three
+    // years with its heaps standing full. Refreshed every tick rather than set
+    // once, so the commitment lasts exactly as long as the errand does and the
+    // check above is always the way out of it.
+    person.actionTimer = SPREAD_COMMIT;
+
+    // The fetch, done inside this verb rather than by handing off to `take`.
+    //
+    // The hand-off was written first, on `doBuild`'s pattern, and **it did not
+    // work**: `doBuild` hands off to `haul`, which is a verb the scorer also
+    // chooses and aims for itself, so a re-plan lands somewhere sensible. There
+    // is no such thing for compost. What happened instead is that `Brain.setup`
+    // re-aimed the handed-off `take` at the larder on its next think tick, and
+    // `stewards` spent ninety-nine thousand ticks taking food out of storage
+    // pits while two compost heaps stood full for a hundred and sixteen days
+    // and not one load was ever spread. Two legs in one verb cannot be
+    // re-aimed by anything.
+    if (person.inventory.count('compost') < SPREAD_LOAD) {
+      const heap = this.nearestHeap(person, ctx);
+      if (!heap) {
+        this.abandon(person, 'no_compost', ctx);
+        return;
+      }
+      if (!heap.contains(person.x, person.y)) {
+        person.targetX = heap.centerX;
+        person.targetY = heap.centerY;
+        this.travel(person, ctx);
+        return;
+      }
+      // Arrived at the heap, which is the first of the errand's two waypoints
+      // and therefore one of the two places a need is allowed to break it off.
+      //
+      // **Not every tick**, and that is a measured decision rather than a
+      // convenience. The check was first written at the top of this method,
+      // where it ran on every tick of both walks: `interruption` answers
+      // "hungry" well before anybody is starving, so a band that was merely
+      // peckish abandoned the errand roughly fifteen hundred times across three
+      // years and spread one load. A walk of a dozen tiles with a check at each
+      // end is the same bargain `doHarvest` strikes with its cycle.
+      const pause = this.interruption(person, ctx);
+      if (pause) {
+        this.stop(person, pause, ctx);
+        return;
+      }
+      const room = Math.max(0, person.carryCapacity - person.inventory.total);
+      const load = Math.min(SPREAD_LOAD * 2, heap.store.count('compost'), room);
+      if (load <= 0) {
+        this.abandon(person, room <= 0 ? 'hands_full' : 'no_compost', ctx);
+        return;
+      }
+      heap.store.remove('compost', load);
+      person.inventory.add('compost', load);
+      telemetry.count('compost_fetched', load);
+      return;
+    }
+
+    if (!field.contains(person.x, person.y)) {
+      person.targetX = field.centerX;
+      person.targetY = field.centerY;
+      this.travel(person, ctx);
+      return;
+    }
+
+    // The second waypoint, and the working stretch this file checks everywhere
+    // else. Once past it, seventy ticks is well under the ceiling `AGENTS.md`
+    // sets for one uninterrupted pull.
+    if (person.workedTicks === 0) {
+      const stop = this.interruption(person, ctx);
+      if (stop) {
+        this.stop(person, stop, ctx);
+        return;
+      }
+    }
+
+    person.workedTicks++;
+    person.practice('farm', 0.4);
+    if (person.workedTicks < SPREAD_TICKS) return;
+
+    person.inventory.remove('compost', SPREAD_LOAD);
+    const power = techPower(person, 'composting');
+    let enriched = 0;
+    for (let dy = 0; dy < field.def.height; dy++) {
+      for (let dx = 0; dx < field.def.width; dx++) {
+        ctx.world.soil.enrich(
+          ctx.world.index(field.x + dx, field.y + dy), COMPOST_ORGANIC * power);
+        enriched++;
+      }
+    }
+    telemetry.count('compost_spread');
+    telemetry.count('soil_tiles_enriched', enriched);
+    person.chronicle.push({
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: 'spread compost on a field',
+      kind: 'did',
+    });
+    this.finish(person);
+  }
+
+  /**
+   * The nearest place this person's band keeps compost — heap or store.
+   *
+   * Not only heaps, and the reason is a measured one: `doStore` empties a whole
+   * pack into the larder, so somebody who fetched eight loads and was pulled
+   * away for a drink puts the muck in the storage pit on their way past. Asking
+   * only the heaps left twenty-four loads fetched and one ever spread, with the
+   * rest sitting in a pit nobody would look in. A band's compost is a band's
+   * compost wherever it has ended up.
+   */
+  private nearestHeap(person: Person, ctx: ActionContext): Building | null {
+    let best: Building | null = null;
+    let bestAway = Infinity;
+    for (const building of ctx.buildingsById.values()) {
+      if (!building.complete) continue;
+      if (!isHeap(building.def) && building.def.storage <= 0) continue;
+      if (building.ownerBandId !== person.bandId) continue;
+      if (building.store.count('compost') <= 0) continue;
+      const away = person.distanceTo({ x: building.centerX, y: building.centerY });
+      if (away < bestAway) {
+        bestAway = away;
+        best = building;
+      }
+    }
+    return best;
   }
 
   /** Mean effective fertility under a plot: what the crop actually had. */

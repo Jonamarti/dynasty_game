@@ -83,6 +83,10 @@ export const TECHS = [
   // come back without fields, and it comes back here with `entities/Field.ts`,
   // `core/Soil.ts` and two verbs in the same commit.
   'farming',
+  // M8.2, and the other half of the owner's note about the ground: a field that
+  // only ever gets poorer is a strictly worse world with no counterplay, which
+  // is exactly what happened to spoilage. This is the counterplay.
+  'composting',
   // M9.5 phase 4d: the second rung, and the first time a band has a shape
   // rather than a leader. Household heads carry standing outside their own
   // roof, and a chief holds office long enough for it to be an office.
@@ -1029,6 +1033,35 @@ export const TECH: Record<Tech, TechDef> = {
       'Seed saved from one harvest and put back in the ground for the next. ' +
       'The band stops walking to the food and starts waiting for it.',
   },
+  composting: {
+    id: 'composting', label: 'Composting', domain: 'plants',
+    age: 'neolithic', firstKnown: 'about 4000 BC',
+    kind: 'device',
+    requires: ['farming'], difficulty: 0.5, skill: 'farm',
+    prototype: { thatch: 4, mud: 2 }, maxRefinement: 3,
+    sparks: [
+      // The two routes that matter both come out of the failure itself. A
+      // harvest that gave nothing and ground that refused the seed are both
+      // things `noteSaw` already records, which is what makes them real
+      // ingredients rather than plausible ones.
+      { needs: [{ kind: 'saw', what: 'ground_spent' }, { kind: 'knows', tech: 'farming' }],
+        weight: 1.0, story: 'stood on ground that would not take seed and thought about what had been taken out of it' },
+      { needs: [{ kind: 'saw', what: 'nothing_to_reap' }, { kind: 'doing', action: 'reflect' }],
+        weight: 0.8, story: 'sat with a harvest that came to nothing and worked out where it had gone' },
+      // And the one that needs no failure at all: the midden by the camp is
+      // always the greenest ground anybody has, and somebody was always going
+      // to notice.
+      { needs: [{ kind: 'holding', item: 'thatch' }, { kind: 'doing', action: 'store' },
+                { kind: 'knows', tech: 'farming' }],
+        weight: 0.7, story: 'noticed that nothing grew greener than the rubbish heap behind the camp' },
+      { needs: [{ kind: 'doing', action: 'sow' }, { kind: 'season', season: 'autumn' }],
+        weight: 0.5, story: 'turned the last of the straw back into the furrow to be rid of it' },
+    ],
+    description:
+      'Straw, scraps and mud rotted down and turned back into the furrow. ' +
+      'The first idea anybody had that the ground can be given to as well as ' +
+      'taken from.',
+  },
   chiefdom: {
     id: 'chiefdom', label: 'Chiefdom', domain: 'people',
     age: 'neolithic', firstKnown: 'about 7,000 years ago',
@@ -1182,6 +1215,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   farming: {
     summary: 'Ground broken and sown: a harvest where you left it, and grain that keeps.',
     site: 'BUILDINGS.field, and ActionSystem.doSow and doReap',
+  },
+  composting: {
+    summary: 'The ground can be given back to. A field that lasts beyond the farmer.',
+    site: 'BUILDINGS.compost_heap, Simulation.workHeaps, and ActionSystem.doSpread',
   },
   bone_working: {
     summary: 'Bone and sinew off every kill, and a point that throws further than flint.',

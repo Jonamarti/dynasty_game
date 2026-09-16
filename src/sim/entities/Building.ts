@@ -55,6 +55,19 @@ export interface BuildingDef {
    */
   yields?: { item: string; perDay: number };
   /**
+   * What this slowly turns into something, and how fast — M8.2.
+   *
+   * The same shape as `yields` and deliberately **not** the same field. A trap
+   * takes something out of the world and a heap turns something already in it
+   * into something else, and four systems tell them apart for four different
+   * reasons: the planner wants a heap only where there is a field to spread it
+   * on, `Brain` must not read a heap as a larder, the health report counts
+   * traps as a food supply, and `doStore` refuses to fill a trap. One flag
+   * reused for both would have made every one of those answers wrong in a way
+   * that reads as a bug months later.
+   */
+  matures?: { item: string; perDay: number };
+  /**
    * Where it may stand, beyond "on land, and not on top of something else".
    *
    * `canPlace` had no per-design predicate at all, because until the fish trap
@@ -133,6 +146,11 @@ export function isStation(def: BuildingDef): boolean {
 /** True if a design is worked ground rather than a structure. See `field`. */
 export function isField(def: BuildingDef): boolean {
   return def.field === true;
+}
+
+/** True if a design ripens its contents rather than catching anything. */
+export function isHeap(def: BuildingDef): boolean {
+  return def.matures !== undefined;
 }
 
 export const BUILDINGS: Record<string, BuildingDef> = {
@@ -307,6 +325,36 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     description:
       'Broken ground, cleared and worked. Sow it in spring and it feeds a ' +
       'family; sow it every spring and it stops.',
+  },
+
+  // --- M8.2: the answer to a field that is giving less every year -----------
+  //
+  // The heap is built out of exactly what a field needs back: dry stalks and
+  // river mud, which is the brown and the green of it. The cost is paid once,
+  // at construction, rather than by feeding it — a verb for putting scraps on a
+  // heap would be a fourth thing the AI has to do in order between sowing and
+  // reaping, and the field's own history in this project is that each extra
+  // step in a chain is where the chain breaks.
+  //
+  // What it does after that is ripen: `Simulation.workHeaps` turns time into
+  // compost in its own store, at a rate set by how well the band still knows
+  // how — the same honesty `workTraps` applies to a snare line whose setter
+  // died. A heap is not a store for anything else, which is why its capacity is
+  // small and `doStore` will not fill it.
+  compost_heap: {
+    id: 'compost_heap',
+    label: 'Compost heap',
+    icon: '\u{1F343}',
+    width: 2, height: 2,
+    materials: { thatch: 8, mud: 4 },
+    workTicks: 150,
+    shelter: 0,
+    storage: 18,
+    matures: { item: 'compost', perDay: 0.9 },
+    requiresTech: 'composting',
+    description:
+      'Stalks, scraps and mud, turned and left to rot down. What the ground ' +
+      'gave up over ten harvests, handed back in a season.',
   },
 
   // --- Gated behind knowledge that does not exist yet (M4) -----------------

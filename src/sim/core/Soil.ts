@@ -78,6 +78,21 @@ export const TILL_ORGANIC_COST = 0.035;
 export const REAP_NUTRIENT_COST = 0.22;
 
 /**
+ * Humus one spreading puts into each tile of a plot, at a perfect grasp.
+ *
+ * Read against `TILL_ORGANIC_COST` rather than chosen: one spreading puts back
+ * a little over two sowings' worth of humus, so a field spread once a year is
+ * gaining ground and a field spread every second year is roughly holding. That
+ * is the difference between shifting cultivation and a farm that outlives the
+ * farmer, which is the whole of what `composting` is for.
+ *
+ * It also deliberately overshoots a tile's own ceiling, which is what makes the
+ * leaching term in `recover` something a player can feel: compost spread on
+ * sand washes out, and compost spread on loam stays.
+ */
+export const COMPOST_ORGANIC = 0.075;
+
+/**
  * How fast humus rebuilds toward what the climate will carry, per day.
  *
  * Very slow, and it has to be. The first version ran at 0.0035 — a fortnight to
@@ -279,6 +294,11 @@ export class Soil {
    */
   enrich(i: number, organic: number): void {
     this.organic[i] = clamp01(this.organic[i]! + organic);
+    // The fast pool answers immediately as well as through the slow one. Muck
+    // spread on a field feeds this year's crop *and* builds humus for the next
+    // twenty, and a model where compost only ever paid off two decades later
+    // would be true about the humus and quite wrong about the harvest.
+    this.nutrient[i] = clamp01(this.nutrient[i]! + organic * 0.6);
     this.active.add(i);
   }
 
