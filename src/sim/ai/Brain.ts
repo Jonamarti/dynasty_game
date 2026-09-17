@@ -44,6 +44,7 @@ import type { NeedsConfig } from '../core/Config.ts';
 import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
+import { fightingPower } from '../social/Vulnerability.ts';
 
 export interface BrainContext {
   world: World;
@@ -841,8 +842,12 @@ export class Brain {
         // victim from being murdered by a stronger neighbour, and makes a crowd
         // genuinely protective: allies standing nearby are counted, so
         // hostility in a full camp stays verbal.
-        const myPower = person.skillFactor('fight') * (person.health / 100);
-        const theirPower = enemy.skillFactor('fight') * (enemy.health / 100);
+        // `fightingPower` is this exact expression, moved to
+        // `social/Vulnerability.ts` so that `steal` can ask the same question
+        // rather than growing a second answer to it. Unchanged here, on
+        // purpose: the commit that extracted it was bit-identical.
+        const myPower = fightingPower(person);
+        const theirPower = fightingPower(enemy);
         const theirFriends = neighbours.filter(other =>
           other.id !== enemy.id &&
           ctx.relationships.opinion(other.id, enemy.id) > 15
