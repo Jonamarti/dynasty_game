@@ -6,6 +6,125 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-17 — M11 phases 1b to 3a: why nobody fought, and two defects found on the way
+
+The owner's headline complaint was that **no character has any reason to fight
+another**, and they guessed either too much food or not yet knowing how. The
+answer turned out to be neither, exactly: the verbs exist and work, and what
+was missing was that nothing in the scorer ever *pointed* them anywhere.
+
+**Phase 1b — the softened choice on at 0.12, and two old failures go green.**
+The twenty-seed cohort could not pick the value, which is the first result:
+`century` at 0, 0.08, 0.12 and 0.20 is indistinguishable on everything
+`sim:seeds` reports — mean survival 100.0 / 99.9 / 99.9 / 100.0, no collapses,
+technologies known 11.4 / 11.8 / 11.3 / 11.9. Softening the choice is free. The
+value came from what the change is *for*: distinct actions observed, 31/30/33/32
+on `century` and 29/27/31/31 on `lean`, where 0.12 is widest on both and 0.08 is
+*narrower* than argmax on both — a reminder that neighbouring values are not
+resolvable from single chaotic runs, and that only the shape is.
+
+Two checks with open `bugs.md` entries went green on it. `century`'s
+**`the-hurt-are-tended`** went from 0 ticks to 114, having failed since M9 phase
+5 under the title "a world that reaches herbalism never tends anybody with it" —
+and the diagnosis it gives is that the mechanism was never broken. **`tend`
+simply never won an argmax.** An argmax gives a verb that is second-best every
+single time exactly nothing. `hunters`' `kills-are-butchered-for-bone` went
+green the same way.
+
+**Phase 2a-2b — a thief finally looks at who they are robbing.** `steal` was the
+one predatory verb in the game that read *nothing at all* about its victim: a
+laden elder and a laden warrior were the same opportunity, separated only by who
+was nearer. `attack` and `threaten` had both always weighed the odds, in two
+different expressions; `social/Vulnerability.ts` now holds one. It is an addend
+rather than a multiplier, so hunger can still drive a desperate person to rob
+somebody who would win the fight, and the strongest person in a band does not
+become untouchable.
+
+**Phase 2c — the grudge and the person hit were two different people.** Found
+while preparing the predation route. `FoundTargets.victim` was read by `steal`,
+`threaten` and `attack` alike; `steal` writes it unconditionally and `attack`
+wrote it only `if (!victim)`. So somebody with both a laden neighbour and a
+hated enemy in sight scored `attack` against the enemy — grudge, odds, allies,
+all of it — and then walked over and hit the neighbour. It matters more than its
+rarity suggests, because an unprovoked beating is a deed every onlooker
+witnesses, and this changelog already records how fast that compounds. `attack`
+has `found.foe` of its own now. Across 20 seeds it improved every line.
+
+**Phase 2c — a second road to violence.** `attack` had one route, gated on
+`grudge > 0.5`, opinion below -50, and **nothing reaches it**: on the commit that
+introduced `lean` — a world running at 23% hostile relationships against the
+default's 5% — `attack` did not appear in the action table at all. A world three
+times more bitter than normal produced no violence, because bitterness is not
+what that gate measures.
+
+Two calibration failures on the way, both invisible from the code. **Nobody in
+this world has any fight skill**, because `fight` is trained by exactly one
+thing, landing a blow — so real fighting power runs 0.11 to 0.35 against a
+formula range of 0.1 to 1.2, and `DECISIVE_GAP` had been set at 0.6 from reading
+the formula, wider than the widest gap the world can produce. And **six
+multiplied suppressors are a veto, not a brake**: the first version scored near
+0.0003, two orders of magnitude below `wander`, and never fired once.
+
+The coefficient was swept and the window is narrow — murders per run, alive
+against peak:
+
+| value | `lean` | `century` |
+|---|---|---|
+| none | 43/46, 0 | 64/64, 2 |
+| 0.7 | — | 59/59, 7 |
+| 0.9 | 43/46, 0 | 59/59, 7 |
+| 1.3 | 41/45, 0 | 50/50, 14 |
+| 1.8 | 33/48, 5 | 25/35, 23 |
+| 3 | 27/43, 25 | — |
+| 10 | 4/37, 42 | — |
+
+Above about 1.3 the feedback loop takes over: a killing gives every onlooker a
+grudge and the grudges feed the *revenge* route, which needs no defenceless
+target at all. **0.7 rather than 0.9** because they buy identical violence at
+very different prices — 0.9 costs 1.7 points of mean survival and a tenth of all
+teaching in the world; 0.7 costs neither.
+
+**An emergent property worth keeping**, which was not designed: `lean` sees no
+murders at all until 1.8 while the comfortable `century` sees seven at 0.7.
+Predation is leisure, not desperation — a hungry person forages, because
+`hunger` outscores it by a wide margin. **Scarcity in this world produces theft;
+it is ease that produces predators.**
+
+**Phase 3a — a wrong done in an empty clearing is worth going to tell someone.**
+The owner's rule is that nothing is known until it is seen or told, and the
+machinery was already right: `emit` tells the victim and whoever was in sight
+and nobody else, a victim's memory floors so a grievance never fades, and
+`converse` passes on the best untold story. What was missing was the wanting to.
+A robbed man kept his grievance for life and mentioned it only if loneliness
+happened to send him to somebody. Two terms — one on the choice of listener, one
+on `talk`'s own score — and no new verb, because a second path to "tell somebody"
+is a second thing to keep in step with the first. Stories passed on went 959 to
+1,134 on `lean` while conversations rose only 1,821 to 1,973: people are not
+talking much more, they are talking to better-chosen listeners.
+
+**And it flushed out the oldest defect in the pass. People were the one kind of
+candidate in the scorer that nobody ever checked you could reach.**
+`World.sameRegion` is applied to trees, buildings, animals, resource nodes and
+shore tiles in eight places, and never once to a person. On an island map
+somebody across a narrow channel sits comfortably inside `sightRadius` and
+cannot be walked to at all, so every social verb could be scored, chosen, set up
+and then refused by the router.
+
+The mechanism by which it hid is worth remembering: **a stranger you have never
+spoken to is, by definition, somebody who has not heard your news** — so a term
+pulling toward an uninformed listener pulls hardest toward the unreachable one.
+`stewards` went from 0 stuck walking ticks in 252,542 to 3,267 in 225,107, with
+`abandoned_cannot_reach` going 0 to 76 and 298 recovery attempts, none of which
+found a route. One filter on `neighbours`, not seven in the scorers.
+
+**The matrix ends the pass at 17 scenarios and 14 fully green**, against four
+failures at sixteen scenarios when it began. What is left is `crowded`'s
+`perf-budget`, failing since before M7, and `millers`' and `hunters`' two checks
+that `bugs.md` records as one event wide. `stewards` reaches its best state
+ever, 65 of 65, with composting finally spreading — 16 tile-dressings and ground
+at 95.2% of resting against `farmers`' 81% — and six records cut where before
+nobody in that world could write.
+
 ## 2026-09-17 — M11 phase 0 and 1a: the ground the conflict milestone is measured on
 
 The owner asked for a design pass blending The Sims' social control, RimWorld's
