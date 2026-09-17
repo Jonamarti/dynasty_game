@@ -195,6 +195,27 @@ export interface PopulationConfig {
   startingTech: string[];
 }
 
+/**
+ * How the utility scorer turns a table of scores into one decision.
+ *
+ * Its own section rather than a bare field beside `thinkInterval` because the
+ * settings screen groups by section, and "how decisive is everybody" is a
+ * different question from "how far can they see".
+ */
+export interface AiConfig {
+  /**
+   * How far below the best score an action may fall and still be chosen, as a
+   * fraction of the best score. 0 is strict argmax.
+   *
+   * See `core/Choice.ts` for why this is a band relative to the leader rather
+   * than a softmax temperature. It ships at a real value, but the machinery
+   * landed at 0 first so that "the code exists" and "the code changed the
+   * world" could be two separate measurements — the same discipline spoilage
+   * and the mood channels both use.
+   */
+  choiceSpread: number;
+}
+
 export interface SimConfig {
   seed: number | string;
   world: WorldConfig;
@@ -203,6 +224,7 @@ export interface SimConfig {
   population: PopulationConfig;
   knowledge: KnowledgeConfig;
   learning: LearningConfig;
+  ai: AiConfig;
   /** Tiles a person can see; the radius of witness and target queries. */
   sightRadius: number;
   /** A person re-scores their action every this many ticks (staggered by id). */
@@ -305,6 +327,12 @@ export const DEFAULT_CONFIG: SimConfig = {
     observationChance: 0.02,
     childObservationChance: 0.055,
   },
+  ai: {
+    // 0 on purpose for the commit that introduces it: `chooseAmongBest` takes
+    // no draw at all at this value, so the world is bit-identical and the
+    // stream is untouched. Turned on in its own measured commit.
+    choiceSpread: 0,
+  },
   sightRadius: 12,
   thinkInterval: 5,
 };
@@ -329,6 +357,7 @@ export function makeConfig(overrides: DeepPartial<SimConfig> = {}): SimConfig {
     population: { ...DEFAULT_CONFIG.population, ...overrides.population },
     knowledge: { ...DEFAULT_CONFIG.knowledge, ...overrides.knowledge },
     learning: { ...DEFAULT_CONFIG.learning, ...overrides.learning },
+    ai: { ...DEFAULT_CONFIG.ai, ...overrides.ai },
   } as SimConfig;
 }
 

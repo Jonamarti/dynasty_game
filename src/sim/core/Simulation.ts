@@ -328,6 +328,17 @@ export class Simulation {
   private readonly aiRng: RNG;
   private readonly actionRng: RNG;
   private readonly commandRng: RNG;
+  /**
+   * The stream `Brain.think` draws from when it has a real choice to make.
+   *
+   * Its own stream, and not `aiRng`, because `aiRng` is already drawn from
+   * inside `score` — the jitter on `wander` and two draws in `setup`. Sharing
+   * it would interleave "which of these did they pick" with "where exactly did
+   * they wander to", and the whole reason `config.ai.choiceSpread` can be set
+   * back to 0 and land on the old world exactly is that this stream is untouched
+   * at that value.
+   */
+  private readonly choiceRng: RNG;
 
   constructor(overrides: DeepPartial<SimConfig> = {}) {
     this.config = makeConfig(overrides);
@@ -414,6 +425,12 @@ export class Simulation {
     // world built before farming existed is bit-identical to one built after it
     // except for the stands of cereal themselves.
     const grainRng = this.rng.fork();
+    // M11 phase 1a, and appended HERE rather than beside the other named
+    // streams for the reason `AGENTS.md`'s table now spells out: the named
+    // block ends eleven forks in, and three more are taken below it. This is
+    // the genuine end of the fork order. Anything appended above this line
+    // consumes a draw the forest, the fish or the grain expects.
+    this.choiceRng = this.rng.fork();
 
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
@@ -2409,6 +2426,8 @@ export class Simulation {
       world: this.world,
       time: this.time,
       rng: this.aiRng,
+      choiceRng: this.choiceRng,
+      choiceSpread: this.config.ai.choiceSpread,
       nodeHash: this.nodeHash,
       peopleHash: this.peopleHash,
       shoreHash: this.shoreHash,

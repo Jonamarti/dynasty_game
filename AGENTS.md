@@ -33,20 +33,26 @@ streams at the end. The fork order is the seed contract; inserting one silently
 invalidates every saved seed and every pinned test world.
 
 > **"The end" is not where the comment says it is.** The named fork block ends
-> at `recordRng` — the **eleventh** of fourteen — with a comment inviting you to
-> append after it. Three forks sit below that invitation:
+> at `recordRng` — the **eleventh** of fifteen — with a comment inviting you to
+> append after it. Four more forks sit below that invitation:
 >
 > | # | fork | line |
 > |---|---|---|
-> | 12 | anonymous, handed to `seedInitialForest` | `Simulation.ts:390` |
-> | 13 | `fishRng` | `Simulation.ts:404` |
-> | 14 | `grainRng` | `Simulation.ts:409` |
+> | 12 | anonymous, handed to `seedInitialForest` | `Simulation.ts:408` |
+> | 13 | `fishRng` | `Simulation.ts:422` |
+> | 14 | `grainRng` | `Simulation.ts:427` |
+> | 15 | `choiceRng` | `Simulation.ts:433` |
 >
-> **The genuine append point is the line after `grainRng`**, immediately before
-> the `spawnResources` block. Appending where the comment invites you consumes
-> the draw the forest fork expects and silently replants every forest in every
-> saved seed; appending between the fish and the grain does the same to the
-> cereal.
+> **The genuine append point is the line after the last row of that table**,
+> immediately before the `spawnResources` block. Appending where the comment
+> invites you consumes the draw the forest fork expects and silently replants
+> every wood in every saved seed; appending between the fish and the grain does
+> the same to the cereal.
+>
+> A fork appended genuinely last cannot shift anything, and the reason is worth
+> knowing: `this.rng` is drawn from **only** by these fifteen `fork()` calls —
+> nothing else in the constructor takes a number from it — so a sixteenth at the
+> bottom leaves all fifteen exactly where they were.
 >
 > This paragraph has been wrong before, which is the reason for the table. It
 > used to call the forest fork "the fourteenth" and describe it as the last one

@@ -43,11 +43,23 @@ import { pressedByNeed } from '../systems/ActionSystem.ts';
 import type { NeedsConfig } from '../core/Config.ts';
 import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
+import { chooseAmongBest } from '../core/Choice.ts';
 
 export interface BrainContext {
   world: World;
   time: TimeManager;
   rng: RNG;
+  /**
+   * The stream the final choice is drawn from, kept apart from `rng`.
+   *
+   * `rng` is drawn from inside `score` — `wander`'s jitter, and twice in
+   * `setup` — and `score` runs for the player on every rendered frame. Keeping
+   * the choice on its own stream is what makes "turn the softening off and land
+   * back on the old world exactly" true rather than nearly true.
+   */
+  choiceRng: RNG;
+  /** `Config.ai.choiceSpread`. See `core/Choice.ts`. */
+  choiceSpread: number;
   nodeHash: SpatialHash<ResourceNode>;
   peopleHash: SpatialHash<Person>;
   shoreHash: SpatialHash<{ x: number; y: number }>;
@@ -324,11 +336,21 @@ export class Brain {
    */
   think(person: Person, ctx: BrainContext, allowed?: ReadonlySet<string>): string | null {
     const { scores, found } = this.score(person, ctx);
-    // `score` sorts descending and only keeps positive scores, so the first
-    // match is the best one this person is actually inclined to do.
-    const chosen = allowed
-      ? scores.find(s => allowed.has(s.id))?.id ?? null
-      : scores[0]?.id ?? 'wander';
+    // `score` sorts descending and only keeps positive scores, so the best
+    // thing this person is inclined to do is at the front of whichever list
+    // survives the filter — and the filtered list is still sorted, which is
+    // what `chooseAmongBest` needs.
+    //
+    // The filter allocates, so it only runs when there is one: an unrestricted
+    // think is by far the common case and walks the original array.
+    const pool = allowed ? scores.filter(s => allowed.has(s.id)) : scores;
+    // At `choiceSpread: 0` this is `pool[0]` and takes no draw, which is why
+    // the commit that introduced it was bit-identical. Above 0 it picks among
+    // the options within a band of the best — see `core/Choice.ts` for why a
+    // band and not a temperature, and for why the draw is here in `think`
+    // rather than in `score`.
+    const chosen = chooseAmongBest(pool, ctx.choiceRng, ctx.choiceSpread)?.id
+      ?? (allowed ? null : 'wander');
     if (chosen === null) return null;
     this.setup(person, chosen, ctx, found);
     return chosen;
