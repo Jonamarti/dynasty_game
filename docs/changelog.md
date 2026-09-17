@@ -6,6 +6,146 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-17 — M11 phase 0 and 1a: the ground the conflict milestone is measured on
+
+The owner asked for a design pass blending The Sims' social control, RimWorld's
+survival and Evolve's technology breadth, and named the thing that was missing:
+**no character has any reason to fight another**. They guessed either too much
+food or not yet knowing how. Both, and a third reason neither of us had. This is
+the foundation tier of that milestone — four commits of instruments and repairs
+before a single mechanism is built.
+
+**Phase 0a — `AGENTS.md` was pointing new RNG streams at a trap.** It said the
+named fork block ends at `recordRng` and that there is "a fourteenth, anonymous
+fork twenty-five lines further down", the one handed to `seedInitialForest`.
+Both halves had gone false, and gone false silently: that fork is the *twelfth*
+of fifteen, and two more sit below it — `fishRng` (M8.1) and `grainRng` (M8.2),
+each appended correctly and neither recorded here. So the instruction pointed at
+a spot with three forks beneath it, and appending there replants every wood in
+every saved seed. Replaced with a numbered table of everything below the named
+block, the genuine append point, the reason a fork appended genuinely last
+cannot shift anything (`this.rng` is drawn from by nothing but those fork
+calls), and an instruction to add a row when you append. `Simulation.ts` gets a
+DO NOT APPEND HERE block at the place somebody would actually append.
+
+**Phase 0b — the opening diagnosis was tested, and a third of it was wrong.**
+`kin-outrank-strangers` reports mean regard for an outsider at **+15.9** on
+`century`, which reads as "there is no out-group". A theory said the number was
+an artifact: `setKinship` creates its edge through `edge()`, which starts at
+`bias: 0`, and `introduce` refuses to stamp an impression on an edge that
+already exists — so a cross-band blood relative would never receive
+`OUT_GROUP_BIAS` and would sit in the outsider bucket at +40 to +60.
+
+**Refuted.** A fourth figure, `outsider-unrelated`, filters that bucket to
+`kinship === 0`, and across five scenarios it is identical to `outsider` to one
+decimal every time. There is no contamination, because the check already
+excludes household-mates and a cross-band marriage puts both spouses and their
+children into one household.
+
+What it found instead is worth more than what it was built to test:
+
+| scenario | steps | outsider |
+|---|---|---|
+| `crowded` | 3,000 | **-5.2** |
+| `band` | 3,000 | **-1.3** |
+| `culture` | 9,000 | **+1.5** |
+| `millers` | 36,000 | **+15.1** |
+| `century` | 40,000 | **+15.9** |
+
+Regard for a stranger is a clean monotonic function of how long the world has
+been running. That is a mechanism rather than noise. `OUT_GROUP_BIAS` is a
+constant -6, set once when the edge is created and never decayed — deliberately,
+so that "a stranger stays a stranger until their deeds say otherwise" — while
+every other term in `opinion` grows with contact: `familiarity` accumulates on
+every meeting and enters at x0.35, and `deeds` accumulates positively through
+`share_food`, `teach` and `help`. Over enough years the constant is swamped.
+
+**So the world does have an out-group, and it dissolves.** That is backwards
+from the arc this milestone is aimed at, and it is the argument for standing
+between bands being a value that can *grow* hostile rather than a constant that
+cannot. The figure is reported and deliberately kept out of the assertion: it is
+an instrument, not a gate.
+
+A planned repair — having `setKinship` stamp a first impression — was **dropped
+on this measurement**. With no contamination to fix, its only effect would have
+been to penalise a cousin for living in another band, and kin is kin.
+
+**Phase 0d — a `lean` scenario, because the default world has no pressure left
+in it.** `century` ends with mean hunger at 13.1 of 100, mean health at 100.0,
+and a population that peaks at 65 and never falls. Nobody there is desperate
+enough to steal or resented enough to be cast out, so every check this milestone
+adds would report n/a however well its mechanism was built — and `AGENTS.md` is
+explicit that n/a is not a pass. It is deliberately not `crowded`, which is thin
+forage over 3,000 steps: a grudge takes years to accumulate and a dynasty takes
+generations, so scarcity has to be paired with length.
+
+It took four attempts, because the food economy is far more robust than
+expected — M7's routing and M8.1's four supply channels have between them made
+this island genuinely hard to starve:
+
+| world | result |
+|---|---|
+| bushes 150, herds 14, 3x14, 24k steps | hunger 16.0, health 100.0, 42 to 75, no deaths |
+| + regrowth 0.45, 3x16 | hunger 17.1, health 99.8, 48 to 83, 2 deaths |
+| + bushes 90, herds 8, trees 0.3, regrowth 0.25, 3x12 | hunger 14.1, health **94.7**, 54 to **42**, **18 starved** |
+
+Cutting node *counts* mostly adds walking; **`regrowthRate` is what moves the
+island's carrying capacity**, and it is the knob that made the difference. The
+third row is what shipped: a world that peaks and then loses a third of its
+people, well clear of `population-persists`' floor of 19, because a world that
+dies measures nothing either. 58 of 58 applicable checks green, and every other
+scenario in the matrix untouched.
+
+Two things it already shows, before one mechanism is built: hostile
+relationships are **598 of 2,573 (23%)** against `century`'s 187 of 3,710 (5%),
+so scarcity does produce ill-feeling — and **`attack` does not appear in the
+action distribution at all**. Together those are the case for the conflict
+phase. The ill-feeling is there and never becomes violence, because `Brain`'s
+only route to `attack` is gated on `grudge > 0.5`, opinion below -50, and a
+world three times more hostile than the default still never reaches it. That is
+a structural gate rather than a coefficient, which is why raising the aggression
+weights was never going to be the answer.
+
+**Phase 1a — the choice becomes a draw among the best, shipped switched off.**
+`Brain.think` took `scores[0]`. It now routes through `chooseAmongBest` in the
+new `core/Choice.ts`, at a spread of 0 — which is argmax, takes no draw, and
+leaves the world bit-identical.
+
+It goes first because of what this changelog already records about `threaten`:
+correctly gated, correctly weighted, and it "never once won the argmax against
+`steal` for the same target", so it did not appear in a full century of a
+156-person world until it was retuned against that single comparison. Under
+argmax, adding a verb is not adding an option — it is entering a
+winner-takes-all contest against every verb already calibrated, and the only way
+through is to raise the newcomer until it beats an incumbent outright. This
+milestone adds about eight verbs. Every later phase would otherwise be measured
+against a scorer still moving underneath it.
+
+**A band, not a temperature.** A softmax over `exp(score / t)` is the obvious
+implementation and the wrong one here: these scores are not commensurate —
+`wander` is about 0.02 and `hunt` about 9 — and the coefficients producing them
+are calibrated against each other rather than against a scale, so any fixed
+temperature is either cold enough to be argmax or warm enough to let a wander
+beat a hunt. The rule is relative to the leader instead: keep every candidate
+within `spread` of the best score, then draw in proportion to score. Scale-free,
+bounded so nothing outside the band can ever win, and degenerate at 0. Capped at
+four candidates, because a comfortable person late in the day has a dozen
+near-ties and drawing uniformly across twelve of them is not variety, it is
+somebody who cannot make up their mind.
+
+**The draw is in `think`, never in `score`.** `Simulation` calls `Brain.score`
+for the player's character on every rendered frame, to show what they are
+inclined to do; a draw inside `score` would make what the world does depend on
+how often it was looked at, which is the purity rule `techPower` already
+carries. The new stream is `choiceRng`, deliberately not `aiRng` — that one is
+already drawn from inside `score`, for `wander`'s jitter and twice in `setup` —
+appended genuinely last, with its row added to `AGENTS.md`'s new table.
+
+Eight unit tests, asserting the two things that would be invisible in play if
+they broke: that spread 0 is argmax **and consumes no randomness**, and that
+nothing below the band can ever be returned however unlucky the draw. `century`
+reproduces every figure exactly, including all 31 action counters.
+
 ## 2026-09-17 — M9.6 phases 0-3: the speed, the fruit, the graph, and what a picked-over bush looks like
 
 Four of the owner's six notes of 2026-09-17, planned in
