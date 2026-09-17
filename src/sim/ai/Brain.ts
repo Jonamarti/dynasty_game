@@ -326,6 +326,74 @@ const IDLE_ACTIONS = new Set(['rest', 'wander']);
  */
 const COMPOST_WANTED = 0.97;
 
+/**
+ * The ceiling on preying upon somebody weaker, and it is low on purpose.
+ *
+ * Revenge is scored from `grudge * grudge * boldness * (0.5 + aggression *
+ * 2.5)`, which reaches roughly 3 for a furious, well-matched aggressor.
+ * Predation's own terms already cost it an order of magnitude before this is
+ * applied — squared helplessness, a nerve term half the population fails, and
+ * a privacy divisor — and this holds what is left well under a hungry person's
+ * reasons to go and find food instead.
+ *
+ * The number to watch when changing it is not how often anybody fights. It is
+ * the age distribution of the dead: this route aims itself at children and
+ * elders by construction, so a value that is too high shows up first as a world
+ * that has stopped having old people in it.
+ *
+ * **Swept, because the window turned out to be narrow.** Murders over one run,
+ * and people alive at the end against the peak:
+ *
+ *     value   lean                century
+ *     none    43/46,  0 murders   64/64,  2 murders
+ *     0.55    35/46,  0           -
+ *     0.9     43/46,  0           59/59,  7
+ *     1.3     41/45,  0           50/50, 14
+ *     1.8     33/48,  5           25/35, 23
+ *     3       27/43, 25           -
+ *     10       4/37, 42           -
+ *
+ * Between "never fires once" and "the band consumes itself" there is less than
+ * a factor of four, which is the same cliff the revenge route's own comment
+ * describes from the other side. Above about 1.3 the feedback loop takes over:
+ * a killing gives every onlooker a grudge, the grudges feed the *revenge*
+ * route, and the revenge route needs no defenceless target at all.
+ *
+ * One property worth keeping, because it was not designed and is better than
+ * what was: **`lean` sees no murders at all until 1.8, while the comfortable
+ * `century` sees seven at 0.9.** Predation is leisure, not desperation — a
+ * hungry person goes and forages, because `hunger` outscores this by a wide
+ * margin. Scarcity in this world produces theft; it is *ease* that produces
+ * predators.
+ *
+ * **0.7 rather than 0.9, and the twenty-seed cohort is why.** The two buy the
+ * same violence — seven murders on `century` and 59 alive of a peak of 59,
+ * identically — but one of them is nearly free and the other is not:
+ *
+ *                        none     0.7      0.9
+ *     mean survival     100.0%   99.9%    98.3%
+ *     technologies       11.8    11.8     11.4
+ *     past the roots     11.1    10.4      9.7
+ *     taught            674.6   671.0    608.3
+ *
+ * A tenth of all teaching in the world is not a price worth paying for
+ * violence that 0.7 already supplies. Anyone raising this should check the
+ * transmission column before the death count: it moves first, and it moves
+ * because teaching needs somebody with years to be taught.
+ */
+const PREDATION = 0.7;
+
+/**
+ * How defenceless somebody has to look before predation is considered at all.
+ *
+ * A hard floor rather than a smooth falloff, because the thing being modelled
+ * is a decision a person makes about somebody in front of them — "they could
+ * not stop me" — and a smooth curve turns that into a faint, permanent
+ * inclination to hurt everybody slightly weaker, which is a different and much
+ * worse world.
+ */
+const PREY_AT = 0.45;
+
 const JOB_BIAS_UP = 1.3;
 const JOB_BIAS_DOWN = 0.85;
 
@@ -859,6 +927,7 @@ export class Brain {
     // Scored outside the social cooldown: a fight is a rapid exchange of blows,
     // and someone who has just handed over a gift must still be able to defend
     // themselves.
+    let attackScore = 0;
     const enemy = neighbours.length === 0 ? null : this.pickBest(neighbours, other =>
       -ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other)
     );
@@ -886,12 +955,105 @@ export class Brain {
         ).length;
         const boldness = Math.max(0, myPower - theirPower * 0.8) / (1 + theirFriends);
 
-        add('attack', grudge * grudge * boldness *
+        // Stashed rather than added, because predation below competes for the
+        // same verb and the winner has to set `foe` as well as the score. Two
+        // `add('attack', ...)` calls would put two rows with one id into a
+        // table the HUD and `npm run why` both read as a list of distinct
+        // options, and mutating the row after the fact would bypass the
+        // appetite and hysteresis multipliers `add` applies.
+        attackScore = grudge * grudge * boldness *
           (0.5 + person.traits.aggression * 2.5)
-          * this.proximityBonus(person, enemy, ctx.sightRadius));
+          * this.proximityBonus(person, enemy, ctx.sightRadius);
         foe = enemy;
       }
     }
+
+    // --- Predation ---------------------------------------------------------
+    // The second half of the owner's note: someone aggressive, facing someone
+    // defenceless, does not need a grudge first.
+    //
+    // The revenge route above is the only way to `attack` there has ever been,
+    // and it is gated on `grudge > 0.5` — opinion below -50. **Nothing reaches
+    // it.** The `lean` scenario exists precisely to put the world under
+    // pressure, it runs at 23% hostile relationships against the default
+    // world's 5%, and on the build where that scenario was introduced `attack`
+    // did not appear in its action table at all. A world three times more
+    // bitter than normal produced no violence whatsoever, because bitterness is
+    // not what that gate measures. So this is not a coefficient that wants
+    // raising; it is a route that does not exist.
+    //
+    // Everything about this one is built to keep it rare and keep it ugly:
+    //
+    //  - **It picks the weakest neighbour, not the most hated.** A different
+    //    question needs a different candidate, and pointing predation at the
+    //    enemy the revenge route already found would just be revenge with a
+    //    lower bar.
+    //  - **`helpless` is squared.** A slight edge is worth almost nothing; this
+    //    only speaks up for somebody who is genuinely defenceless.
+    //  - **`aggression` is thresholded at the midpoint, not scaled from zero.**
+    //    Traits are drawn around 0.5, so roughly half of everyone alive can
+    //    never take this route at all, however convenient the target. That is
+    //    the difference between a world with predators in it and a world where
+    //    everyone is one.
+    //  - **Never against kin.** Blood is the one line this does not cross,
+    //    checked on `kinship` rather than on household so it holds for a
+    //    brother in another band.
+    //  - **Their allies stop it**, exactly as in revenge, and being seen makes
+    //    it worse rather than better — `privacy` is borrowed from `steal`,
+    //    because this is the same fear a thief has and not the fear a brawler
+    //    has. A man avenging an insult wants witnesses; a man beating a
+    //    cripple for their pack does not.
+    //
+    // It is scored as a candidate against the revenge route rather than added
+    // beside it, because two `add('attack', ...)` calls would put two rows with
+    // one id into a table the HUD and `npm run why` both read as a list of
+    // distinct options.
+    const prey = neighbours.length === 0 ? null : this.pickBest(neighbours, other =>
+      vulnerabilityOf(other, person) * 12 - person.distanceTo(other)
+    );
+    if (prey && ctx.relationships.kinship(person.id, prey.id) === 0) {
+      const nerve = Math.max(0, person.traits.aggression - 0.5) * 2;
+      if (nerve > 0) {
+        const helpless = vulnerabilityOf(prey, person);
+        const theirFriends = neighbours.filter(other =>
+          other.id !== prey.id &&
+          ctx.relationships.opinion(other.id, prey.id) > 15
+        ).length;
+        const onlookers = ctx.peopleHash
+          .queryRadius(prey.x, prey.y, ctx.sightRadius)
+          .filter(o => o.alive && o.id !== person.id && o.id !== prey.id).length;
+        const unseen = 1 / (1 + onlookers * 0.45);
+        // A threshold rather than a square, and a soft divisor rather than a
+        // hard one. The first version of this multiplied six suppressors
+        // together — helplessness squared, nerve, privacy, loyalty, and a
+        // division by every ally the target had — and produced scores around
+        // 0.0003, two orders of magnitude below `wander`. It never fired once
+        // in either instrumented world. That is the failure `AGENTS.md` names:
+        // "if a new action never fires, the reason is almost always that
+        // something else is nearer", and `hunt` scoring nothing until its
+        // coefficient reached nine is the precedent.
+        //
+        // The fix is the shape, not the constant. `helpless` gates instead of
+        // squaring, so a genuinely defenceless target is worth its full value
+        // rather than a quarter of it; and allies divide softly, because in a
+        // band where everyone regards everyone at +6 and rising, `theirFriends`
+        // is most of the camp and a hard divisor is a flat veto.
+        const score = helpless < PREY_AT ? 0 : helpless * nerve * unseen *
+          (1 - person.traits.loyalty * 0.8) / (1 + theirFriends * 0.3) *
+          PREDATION * this.proximityBonus(person, prey, ctx.sightRadius);
+        // Only if it beats what revenge already offered, and only then does the
+        // blow change hands — so the score and the target never come apart, the
+        // way they did before `foe` existed.
+        if (score > attackScore) {
+          attackScore = score;
+          foe = prey;
+        }
+      }
+    }
+
+    // One row, whichever reason won it, with `foe` naming the person that
+    // reason was about.
+    if (attackScore > 0) add('attack', attackScore);
 
     // --- Building ----------------------------------------------------------
     // Unfinished work in camp draws comfortable people. Deliberately scored
