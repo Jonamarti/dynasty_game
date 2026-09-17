@@ -3,6 +3,88 @@
 As of 2026-09-17. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 2, 2026-09-17
+
+### Nobody in this world has any fight skill, and that blocks more than it looks
+
+`fight` is trained by **exactly one thing**: landing a blow. `doAttack` calls
+`person.practice('fight', 1.2)` on the striker and `0.4` on the struck, and no
+other action in the game touches the skill. `SKILLS` has twelve entries and this
+is the only one whose sole trainer is the rare, gated, mutually-destructive act
+it governs.
+
+The consequence is a population pinned to the floor. `skillFactor` is
+`(0.35 + skills/100 * 0.85) * vigour`, so with the skill at zero it is
+`0.35 * vigour` for practically everybody, and the only things that separate two
+people's fighting power are **age and injury**:
+
+    healthy adult, untrained      0.35
+    adult at half health          0.18
+    elder, untrained              0.12 - 0.20
+    child, untrained              0.11 - 0.28
+
+The formula's range is about 0.1 to 1.2. The range the world actually produces
+is about 0.11 to 0.35, and the top of that is "an ordinary adult who is not
+hurt". This cost M11 phase 2c a calibration pass: `DECISIVE_GAP` was set at 0.6
+from reading the formula, which is wider than the widest gap that can occur, so
+the predation route it gated never fired once in two instrumented worlds.
+
+**Why it matters beyond that phase.** There can be no warriors. Not "no warrior
+job" — no warriors of any kind, because there is no mechanism by which anyone
+becomes better at fighting than the person next to them without first fighting
+them. That removes:
+
+- **a household that is feared**, which is half of what standing between
+  families would otherwise mean;
+- **a specialist**, so `division_of_labour` and `chiefdom` have nothing martial
+  to divide;
+- **the border guard of M10 phase 2**, who would be exactly as good at stopping
+  a raider as any farmer;
+- and **any reason for a raid to be risky**, since attacker and defender are
+  interchangeable.
+
+Not fixed here, because the fix is a design decision rather than a repair, and
+it belongs with the pass that needs it. The honest options, in the order they
+look cheapest:
+
+1. **Hunting trains it a little.** Defensible — a spear is a spear — and it is
+   one line in `doHunt`. It also quietly makes hunters the dangerous people in a
+   band, which is historically not wrong.
+2. **A `spar` verb**: practice between willing partners, socially positive,
+   trains both. This is how the skill would actually be got, and it gives the
+   player something to *do* about being weak.
+3. **Weapons carry more of it**, so a spear in untrained hands beats bare hands
+   decisively. `weaponOf` already runs through `techPower`; this moves the
+   differentiation from the person to the kit, which is a different game and
+   worth choosing deliberately rather than by default.
+
+### Two more borderline checks changed sides, and the list is getting long
+
+`stewards`' **`compost-answers-exhaustion`** went from passing to "5 loads
+rotted down, 0 spread over 0 tile-dressings" under M11 phase 2c. This document
+already carries "three spreadings a year is thin, and it is the scorer rather
+than the verb" from M8.2's second half. Three a year going to zero under a
+behavioural change is that thinness, not a new defect in composting: `spread`
+still accumulated 410 ticks in the same run, so people were trying.
+
+`farmers`' **`the-hurt-are-tended`** flipped back to failing, having flipped to
+passing one commit earlier. It is the check M11 phase 1 already recorded as one
+event wide at eighteen ticks.
+
+That now makes **five** checks in this suite documented as one or two events
+wide: `the-hurt-are-tended` on three scenarios, `kills-are-butchered-for-bone`
+on `hunters`, `compost-answers-exhaustion` on `stewards`, and `jobs-bias-work`,
+whose effect is smaller than its own seed-to-seed spread. They are not all the
+same bug, but they have the same shape, and the shape is worth naming: **a check
+written against a mechanism that fires a handful of times per run is a tripwire
+on whether it fired, not a measurement of whether the world does it.**
+
+The cost is real and it is paid every pass: a milestone that moves the world at
+all spends time deciding which of its red lines are findings and which are
+weather. Worth a pass of its own some day — either giving each of them a floor
+that means something, or moving them to `sim:seeds` where a mean across twenty
+worlds would resolve what one world cannot.
+
 ## Found shipping M11 phase 1, 2026-09-17
 
 ### `the-hurt-are-tended` is one event wide on `farmers` and `stewards`
