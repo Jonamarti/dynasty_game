@@ -381,6 +381,30 @@ const COMPOST_WANTED = 0.97;
  * transmission column before the death count: it moves first, and it moves
  * because teaching needs somebody with years to be taught.
  */
+/**
+ * How far somebody will go out of their way toward a listener who has not heard
+ * their news, in the same units as `opinion`.
+ *
+ * `bond` is 12 and buys about a dozen tiles of walking toward one's own chief.
+ * This is under half of that at full salience, which is the intended ordering:
+ * news redirects a conversation that was going to happen, it does not
+ * manufacture one across the camp. That is the same argument the `bond` comment
+ * below already makes for why belonging is absent from `talk`'s own score.
+ */
+const NEWS_PULL = 5;
+
+/**
+ * What having something untold is worth on `talk`'s own score.
+ *
+ * Sits beside the 0.09 floor rather than scaling the loneliness term, and is of
+ * the same order as it: a fresh grievance roughly doubles a comfortable
+ * person's baseline inclination to go and find somebody. Bigger than this and
+ * `ai-uses-many-actions` starts reporting a world that does nothing but talk,
+ * which is the failure the floor's own comment already warns about from the
+ * other direction.
+ */
+const NEWS_URGE = 0.1;
+
 const PREDATION = 0.7;
 
 /**
@@ -599,6 +623,14 @@ export class Brain {
     // social verb — talk, teach, ask, give, steal, threaten, attack — could be
     // scored, chosen and set up against a target the router will then refuse.
     //
+    // It surfaced when `untold` landed, and the mechanism is worth recording
+    // because it is exactly the kind that hides: **a stranger you have never
+    // spoken to is, by definition, someone who has not heard your news**, so a
+    // term that pulls toward an uninformed listener pulls hardest toward the
+    // unreachable one. `stewards` went from 0 stuck walking ticks in 252,542 to
+    // 3,267 in 225,107, with `walk_blocked` and `abandoned_cannot_reach` going
+    // 0 -> 76 and recovery attempts 0 -> 298, none of which found a route.
+    //
     // Filtered here rather than in seven scorers, for the reason the house
     // style gives: seven copies of a predicate is how seven answers drift.
     const neighbours = ctx.peopleHash
@@ -639,6 +671,25 @@ export class Brain {
       // Somebody you have not just spoken to. Without this cooldown two people
       // standing together re-open the same conversation forever and never do
       // anything else.
+      // What this person is carrying that somebody nearby might not have heard.
+      //
+      // The owner's rule is that nothing is known until it is seen or told, and
+      // the machinery for it was already right: `emit` tells the victim and
+      // whoever was in sight and nobody else, a victim's memory floors at
+      // `VICTIM_FLOOR` so it never fades, and `converse` passes the best untold
+      // story on. The half that was missing is the *wanting to*. A robbed man
+      // would keep his grievance for the rest of his life and mention it only
+      // if loneliness happened to send him to somebody, which is why a theft in
+      // an empty clearing could stay unknown for a season with the victim
+      // walking past the whole band every day.
+      //
+      // Read once per think tick rather than per candidate — see
+      // `Memory.bestStory` for why that matters here.
+      const myNews = person.memory.bestStory();
+      const newsWeight = myNews === null ? 0 : myNews.salience;
+      const untold = (other: Person) =>
+        myNews !== null && !other.memory.has(myNews.eventId) ? newsWeight : 0;
+
       const freshCompany = neighbours.filter(other => {
         const rel = ctx.relationships.peek(person.id, other.id);
         if (!rel) return true;
@@ -650,6 +701,12 @@ export class Brain {
         // and a couple toward anybody else in it. In opinion's units because
         // everything else in this comparison is.
         + this.bond(person, other, ctx) * 12
+        // And toward somebody who has not heard it yet. Weaker than `bond`, on
+        // purpose: news decides *which* of two equally close friends you go to,
+        // it does not send you across the camp to a stranger. The person who
+        // has already heard it is still perfectly good company — they are just
+        // not who you would pick if you had a choice.
+        + untold(other) * NEWS_PULL
       );
       if (companion) {
         const regard = ctx.relationships.opinion(person.id, companion.id) / 100;
@@ -680,7 +737,15 @@ export class Brain {
         // cooldown that rations conversation rations arguing a design out, and
         // talk won more of it. The pull toward one's own people costs nothing
         // if it only redirects a conversation that was going to happen anyway.
-        add('talk', (loneliness * 1.8 * worth + 0.09) * (1 + regard * 0.5)
+        // Having something to say is a reason to say it, and it is added to
+        // the floor rather than multiplied into the loneliness term: somebody
+        // who has just been robbed wants to tell people *whether or not* they
+        // are lonely, and a multiplier would have given the news nothing to
+        // work with in exactly the case it matters most — a comfortable,
+        // well-companioned person who has just been wronged.
+        const news = untold(companion);
+        add('talk', (loneliness * 1.8 * worth + 0.09 + news * NEWS_URGE)
+          * (1 + regard * 0.5)
           * this.proximityBonus(person, companion, ctx.sightRadius));
       }
 

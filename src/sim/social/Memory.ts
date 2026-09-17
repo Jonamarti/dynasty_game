@@ -115,6 +115,29 @@ export class Memory {
    * Gossip is biased toward the salient, which is why scandal travels and
    * pleasantries do not.
    */
+  /**
+   * The most vivid thing this person is carrying, whoever they are talking to.
+   *
+   * The listener-blind half of `bestGossipFor`, and it exists for cost rather
+   * than for taste. `Brain` wants to ask "is there anybody near me who has not
+   * heard my news", which is one question about the teller and then an O(1) set
+   * lookup per candidate — where calling `bestGossipFor` per candidate would
+   * walk all forty-eight memories per neighbour per think tick, on a scorer
+   * that is already the most expensive thing in the loop and in a project where
+   * one scenario fails `perf-budget` today.
+   *
+   * Not filtered by the 0.15 floor `bestGossipFor` applies, because the caller
+   * weights by salience anyway and a floor in two places is two places to
+   * change it.
+   */
+  bestStory(): MemoryEntry | null {
+    let best: MemoryEntry | null = null;
+    for (const entry of this.entries) {
+      if (!best || entry.salience > best.salience) best = entry;
+    }
+    return best;
+  }
+
   bestGossipFor(listener: Memory): MemoryEntry | null {
     let best: MemoryEntry | null = null;
     for (const entry of this.entries) {
