@@ -2321,7 +2321,9 @@ export class Simulation {
         world: this.world,
         rng: this.forestRng,
         season: this.time.season,
-        growth: this.time.growth,
+        // The day's growth, not midnight's — the daily block runs at midnight
+        // and `dailyGrowth`'s header explains what that was doing to the wood.
+        growth: this.time.dailyGrowth,
         treeHash: this.treeHash,
       });
       if (forest.died.length > 0 || forest.born.length > 0) {
@@ -2696,6 +2698,13 @@ export class Simulation {
       // reader thinks it means is worse than no number.
       fruitOnTrees: Math.round(this.trees.reduce(
         (sum, t) => sum + ((ITEMS[t.def.fruitItem ?? '']?.nutrition ?? 0) > 0 ? t.fruit : 0), 0)),
+      // M9.6 phase 1c's two instruments. Every kind of fruit counts in both,
+      // acorns included: unlike the column above, these are not about how much
+      // food is standing about but about whether the calendar is being obeyed,
+      // and an oak in February is exactly as wrong as an apple tree.
+      fruitOutOfSeason: Math.round(this.trees.reduce(
+        (sum, t) => sum + (t.def.fruitSeasons.includes(this.time.season) ? 0 : t.fruit), 0)),
+      windfall: Math.round(this.trees.reduce((sum, t) => sum + t.windfall, 0)),
       buildings: this.buildings.length,
       buildingsComplete: this.buildings.filter(b => b.complete).length,
       stored: this.buildings.reduce((sum, b) => sum + b.store.total, 0),

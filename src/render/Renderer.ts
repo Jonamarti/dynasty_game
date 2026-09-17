@@ -101,6 +101,83 @@ const RESOURCE_COLORS: Record<ResourceKind, string> = {
   wild_grain: '#d8c169',
 };
 
+/**
+ * How worked-out a node is, in the three steps a player can actually read.
+ *
+ * A continuous size was the old answer and it could not be read at all: at a
+ * glance nothing distinguishes a bush at 40% from one at 60%, and judging it
+ * meant comparing two bushes standing in different places. Three states, one
+ * question — is it worth walking over there.
+ */
+export type NodeState = 'full' | 'picked' | 'spent';
+
+/** Where the thresholds sit. `spent` matches `ResourceNode.depleted` exactly. */
+export function nodeStateOf(node: ResourceNode): NodeState {
+  if (node.amount < 1) return 'spent';
+  return node.amount / node.def.maxAmount < 0.45 ? 'picked' : 'full';
+}
+
+/**
+ * The drawn width of a node per state, in tiles, and the single source
+ * `hitRadiusOf` reads so the click target matches the paint.
+ */
+const NODE_SIZES: Record<NodeState, number> = {
+  full: 0.4,
+  picked: 0.32,
+  spent: 0.3,
+};
+
+/**
+ * Kinds whose spent state is nothing whatsoever.
+ *
+ * `sticks` is a few fallen branches: pick them up and the ground is bare, which
+ * is the owner's note verbatim. Everything else leaves something behind — a
+ * bush, stubble, a pit, a scar, a ripple — and drawing that is the whole point
+ * of the phase, so this set should stay very small.
+ */
+const SPENT_SHOWS_NOTHING: ReadonlySet<ResourceKind> = new Set<ResourceKind>(['sticks']);
+
+/**
+ * Whether a node is in the world but not on the screen — and therefore must not
+ * be clickable either.
+ *
+ * One predicate for both reasons this can happen, and both call sites (this
+ * renderer's node loop and `main.ts`'s picker) read it. They were already one
+ * rule apart for snow; letting the spent-sticks rule become a second, separately
+ * written condition is how a player ends up selecting bare grass and being
+ * shown a stick pile that is not there.
+ */
+export function nodeIsHidden(node: ResourceNode, buried: (x: number, y: number) => boolean): boolean {
+  if (node.def.groundLevel && buried(node.x, node.y)) return true;
+  return node.amount < 1 && SPENT_SHOWS_NOTHING.has(node.kind);
+}
+
+/**
+ * Foliage, so that a berry bush has a bush for its berries to be missing from.
+ * Only `berries` needs one: every other kind is the thing itself.
+ */
+const BUSH_LEAF = '#41613a';
+
+/**
+ * What is left of a node once it has been worked: the frame the crop grew on,
+ * the hole the clay came out of, the scar the flint was struck from.
+ *
+ * M9.6 phase 3. These are not shades of `RESOURCE_COLORS` — the point of the
+ * owner's note is that a spent thing should not read as a small full one, and
+ * a smaller, paler version of the same colour is exactly what "the same picture
+ * made smaller" means.
+ */
+const SPENT_COLORS = {
+  /** Leafless bramble. Grey-brown, so a stripped bush reads as bare wood. */
+  twig: '#6b6152',
+  /** The inside of a dug pit; darker than any ground it sits on. */
+  pit: '#4a3a2e',
+  /** Knapped-out chalk, the ghost of an outcrop. */
+  scar: '#9aa0a6',
+  /** Cut stubble and empty water alike: what is left, not what was taken. */
+  stub: '#8a8f5c',
+} as const;
+
 /** [canopy, shadow side] per species; fruit is drawn over the top. This is
  * also spring and summer's palette — see `drawTree`. */
 const TREE_COLORS: Record<TreeSpecies, [string, string]> = {
@@ -128,6 +205,15 @@ const FRUIT_COLORS: Record<string, string> = {
   // the branch should not read as something worth eating.
   acorn: '#8a6a34',
 };
+
+/**
+ * Fallen fruit, whatever it fell from.
+ *
+ * One colour rather than a rotten shade per species on purpose: a heap of
+ * anything gone over is brown, and six subtly different browns on the ground
+ * would be the same mistake `RESOURCE_COLORS` made before the shapes went in.
+ */
+const ROTTEN_FRUIT = '#5c4526';
 
 /**
  * What is currently selected, by id.
@@ -371,10 +457,12 @@ export class Renderer {
     // --- Resource nodes ----------------------------------------------------
     for (const node of sim.nodes) {
       if (node.x < view.minX || node.x > view.maxX || node.y < view.minY || node.y > view.maxY) continue;
-      // Buried under enough snow: not drawn, not clickable — see
-      // `Simulation.isBuried`. A cosmetic burial the AI could still reach
-      // through would be a lie the player could catch just by watching.
-      if (node.def.groundLevel && sim.isBuried(node.x, node.y)) continue;
+      // Buried under enough snow, or picked clean of the one thing it is —
+      // not drawn, not clickable, one predicate for both. A cosmetic burial
+      // the AI could still reach through would be a lie the player could catch
+      // just by watching; an invisible stick pile that still takes clicks is
+      // the same lie from the other end.
+      if (nodeIsHidden(node, (x, y) => sim.isBuried(x, y))) continue;
       this.drawNode(node, highlight?.nodeId === node.id);
     }
 
@@ -540,44 +628,70 @@ export class Renderer {
   }
 
   /**
-   * A resource node, shaped by kind rather than one square recoloured.
+   * A resource node, shaped by kind rather than one square recoloured, and by
+   * *state* rather than by size.
    *
-   * Every kind used to be the same square scaled by `fullness`, distinguished
-   * only by fill colour — and `sticks` and `clay` are the two closest browns in
-   * `RESOURCE_COLORS`, with dropped-item piles adding a third right next to
-   * them. Shape is legible where colour alone was not. Every point below stays
-   * within `size / 2` of the centre, matching the square it replaces, so
-   * `hitRadiusOf`'s `'node'` case — sized from the same `fullness` formula —
-   * still covers what is actually drawn.
+   * Two passes made this what it is. The first gave every kind its own outline,
+   * because `sticks` and `clay` are the two closest browns in `RESOURCE_COLORS`
+   * with dropped-item piles adding a third, and shape is legible where colour
+   * alone was not. The second is M9.6 phase 3, and it is the owner's note: a
+   * stripped bush was the same five berries drawn smaller, so the only way to
+   * tell a full bush from an empty one was to judge its size against a bush
+   * standing somewhere else on the screen. Depletion is now a different
+   * *picture* — bare twigs, cut stubble, a dug pit, a knapped scar — and for
+   * `sticks`, which is a few fallen branches and nothing else, it is no picture
+   * at all: `nodeIsHidden` takes an empty one out of the frame *and* out of the
+   * picker, so there is never an invisible thing in the grass to click on.
+   *
+   * Three states rather than a slider, because the question a player is asking
+   * is "is it worth walking over there", and that has three answers.
+   *
+   * Every point below stays within `size / 2` of the centre, and `size` is one
+   * of the three constants in `NODE_SIZES` that `hitRadiusOf`'s `'node'` case
+   * reads, so what is painted and what is clickable cannot drift apart.
    */
   private drawNode(node: ResourceNode, selected: boolean): void {
     const { ctx, camera } = this;
     const scale = camera.scale;
     const px = camera.worldToScreenX(node.x);
     const py = camera.worldToScreenY(node.y);
-    const fullness = node.amount / node.def.maxAmount;
-    if (fullness <= 0) {
-      ctx.fillStyle = 'rgba(0,0,0,0.18)';
-      ctx.fillRect(px - scale * 0.12, py - scale * 0.12, scale * 0.24, scale * 0.24);
-      return;
-    }
-    const size = scale * (0.18 + fullness * 0.22);
+    const state = nodeStateOf(node);
+    const spent = state === 'spent';
+    const size = scale * NODE_SIZES[state];
     ctx.fillStyle = RESOURCE_COLORS[node.kind];
 
     switch (node.kind) {
       case 'sticks':
-        // Two crossed branches: reads as wood at a glance, not a mound.
+        // Two crossed branches, and one once it has been picked over. An empty
+        // one never reaches here at all — see `nodeIsHidden`.
         ctx.strokeStyle = RESOURCE_COLORS.sticks;
         ctx.lineWidth = Math.max(1.5, size * 0.16);
         ctx.beginPath();
         ctx.moveTo(px - size * 0.45, py - size * 0.32);
         ctx.lineTo(px + size * 0.45, py + size * 0.32);
-        ctx.moveTo(px - size * 0.45, py + size * 0.32);
-        ctx.lineTo(px + size * 0.45, py - size * 0.32);
+        if (state === 'full') {
+          ctx.moveTo(px - size * 0.45, py + size * 0.32);
+          ctx.lineTo(px + size * 0.45, py - size * 0.32);
+        }
         ctx.stroke();
         break;
       case 'flint': {
         // An angular shard: flint is the one resource that should look sharp.
+        // Spent, it is the only *permanent* emptiness in this game — flint has
+        // `regrowPerTick: 0` — so it becomes a scar and stays one. That is
+        // `ResourceNode`'s own argument for depleting rather than vanishing: a
+        // band should be able to see the ground it has used up.
+        if (spent) {
+          ctx.fillStyle = SPENT_COLORS.scar;
+          ctx.beginPath();
+          ctx.ellipse(px, py, size * 0.42, size * 0.24, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(0,0,0,0.22)';
+          for (let i = -1; i <= 1; i++) {
+            ctx.fillRect(px + i * size * 0.22 - 1, py - size * 0.06, 2, size * 0.12);
+          }
+          break;
+        }
         ctx.beginPath();
         ctx.moveTo(px, py - size * 0.5);
         ctx.lineTo(px + size * 0.45, py - size * 0.05);
@@ -589,35 +703,103 @@ export class Renderer {
         break;
       }
       case 'clay':
-        // A low, rounded mound — the one node that is not angular at all.
+        // A low, rounded mound — the one node that is not angular at all — and
+        // a hole in the ground once it has been dug out, with the spoil still
+        // heaped on the near lip.
+        if (spent) {
+          ctx.fillStyle = SPENT_COLORS.pit;
+          ctx.beginPath();
+          ctx.ellipse(px, py, size * 0.44, size * 0.3, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = RESOURCE_COLORS.clay;
+          ctx.beginPath();
+          ctx.ellipse(px, py + size * 0.3, size * 0.4, size * 0.12, 0, 0, Math.PI);
+          ctx.fill();
+          break;
+        }
         ctx.beginPath();
         ctx.ellipse(px, py + size * 0.08, size * 0.48, size * 0.36, 0, 0, Math.PI * 2);
         ctx.fill();
         break;
-      case 'reeds':
-        // Upright blades: reeds stand, they do not sit like the others.
-        ctx.strokeStyle = RESOURCE_COLORS.reeds;
+      case 'reeds': {
+        // Upright blades: reeds stand, they do not sit like the others. Cut,
+        // what is left is stubble — the same three blades, a hand tall.
+        ctx.strokeStyle = spent ? SPENT_COLORS.stub : RESOURCE_COLORS.reeds;
         ctx.lineWidth = Math.max(1, size * 0.1);
+        const top = spent ? size * 0.2 : size * 0.48;
         for (let i = -1; i <= 1; i++) {
           ctx.beginPath();
           ctx.moveTo(px + i * size * 0.24, py + size * 0.45);
-          ctx.lineTo(px + i * size * 0.32, py - size * 0.48);
+          ctx.lineTo(px + i * size * 0.32, py - top);
           ctx.stroke();
         }
         break;
-      case 'berries':
-        // A cluster of dots — the one node that is visibly plural, matching
-        // what a bush actually is.
-        for (let i = 0; i < 5; i++) {
+      }
+      case 'berries': {
+        // The bush is drawn first and always, and the fruit is drawn on it.
+        // That is the owner's note in one shape: what a stripped bush loses is
+        // its berries, not its size.
+        if (spent) {
+          // Bare bramble: three canes out of a common root and no mass at all.
+          ctx.strokeStyle = SPENT_COLORS.twig;
+          ctx.lineWidth = Math.max(1, size * 0.08);
+          for (let i = -1; i <= 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo(px, py + size * 0.42);
+            ctx.quadraticCurveTo(px + i * size * 0.3, py, px + i * size * 0.44, py - size * 0.42);
+            ctx.stroke();
+          }
+          break;
+        }
+        ctx.fillStyle = BUSH_LEAF;
+        ctx.beginPath();
+        ctx.ellipse(px, py, size * 0.46, size * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = RESOURCE_COLORS.berries;
+        const berries = state === 'full' ? 5 : 2;
+        for (let i = 0; i < berries; i++) {
           const a = (i / 5) * Math.PI * 2;
           ctx.beginPath();
           ctx.arc(px + Math.cos(a) * size * 0.3, py + Math.sin(a) * size * 0.3, size * 0.15, 0, Math.PI * 2);
           ctx.fill();
         }
         break;
+      }
+      case 'wild_grain': {
+        // Standing cereal — and until this phase it was drawn as *nothing*.
+        // M8.2 gave the kind a colour and never gave it a case in this switch,
+        // so a stand of wild grain was a two-pixel shadow bar lying in the
+        // grass. Ears on stalks, taller than reeds and heavy at the top, which
+        // is what tells cereal from every other upright thing on this map.
+        ctx.strokeStyle = spent ? SPENT_COLORS.stub : RESOURCE_COLORS.wild_grain;
+        ctx.lineWidth = Math.max(1, size * 0.09);
+        const height = spent ? size * 0.18 : size * 0.5;
+        for (let i = -1; i <= 1; i++) {
+          const topX = px + i * size * 0.3;
+          ctx.beginPath();
+          ctx.moveTo(px + i * size * 0.16, py + size * 0.45);
+          ctx.lineTo(topX, py - height);
+          ctx.stroke();
+          if (spent) continue;
+          ctx.fillStyle = RESOURCE_COLORS.wild_grain;
+          ctx.beginPath();
+          ctx.ellipse(topX, py - height, size * 0.09, size * 0.16, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
       case 'fish':
         // A wedge with a tail-flick: the only node that reads as an animal
-        // rather than a plant or a mineral.
+        // rather than a plant or a mineral. A fished-out shoal leaves the one
+        // mark water can hold, which is a ring on the surface.
+        if (spent) {
+          ctx.strokeStyle = SPENT_COLORS.stub;
+          ctx.lineWidth = Math.max(1, size * 0.07);
+          ctx.beginPath();
+          ctx.ellipse(px, py, size * 0.4, size * 0.16, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          break;
+        }
         ctx.beginPath();
         ctx.moveTo(px - size * 0.45, py);
         ctx.lineTo(px + size * 0.2, py - size * 0.28);
@@ -633,7 +815,9 @@ export class Renderer {
         break;
     }
 
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    // The ground shadow is what tells the eye a thing stands on the map rather
+    // than floating over it, so a spent node keeps a fainter one.
+    ctx.fillStyle = spent ? 'rgba(0,0,0,0.14)' : 'rgba(0,0,0,0.25)';
     ctx.fillRect(px - size / 2, py + size / 2 - 2, size, 2);
     if (selected) {
       ctx.strokeStyle = '#7fd4ff';
@@ -719,6 +903,28 @@ export class Renderer {
         const size = Math.max(1.5, radius * 0.17);
         ctx.beginPath();
         ctx.arc(px + Math.cos(a) * r - radius * 0.15, py + Math.sin(a) * r - radius * 0.3, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Windfall: what came down when the season turned, lying on the ground and
+    // going over. Drawn *after* the canopy so it reads as underneath the tree,
+    // in the fruit's own colour darkened most of the way to brown — rotten, and
+    // recognisably what used to be up there. See `Tree.windfall`.
+    if (tree.windfall >= 1 && tree.def.fruitItem) {
+      ctx.fillStyle = ROTTEN_FRUIT;
+      const lying = Math.min(7, Math.ceil(tree.windfall / 3));
+      for (let i = 0; i < lying; i++) {
+        // Scattered by tree id and index rather than by the RNG: the simulation
+        // owns every draw in this game, and a renderer that rolled its own
+        // would also make the ground under one tree shimmer every frame.
+        const a = (i / lying) * Math.PI * 2 + tree.id * 1.7;
+        const r = radius * (0.35 + ((i * 7 + tree.id) % 5) * 0.1);
+        ctx.beginPath();
+        ctx.ellipse(
+          px + Math.cos(a) * r, py + radius * 0.45 + Math.sin(a) * radius * 0.16,
+          Math.max(1.2, radius * 0.12), Math.max(1, radius * 0.08), 0, 0, Math.PI * 2
+        );
         ctx.fill();
       }
     }
@@ -1106,15 +1312,12 @@ export function hitRadiusOf(target: HitTarget): number {
     // beside them — the "what is drawn and what is clickable are a third of
     // a tile apart" bug this file already warns about, one paragraph up.
     case 'person': return 0.45 * bodyScaleOf(target.person);
-    // A stripped bush is small. Fullness is what the renderer scales it by, so
-    // the click target shrinks as the thing itself does.
-    case 'node': {
-      const def = target.node.def;
-      const fullness = def.maxAmount > 0
-        ? Math.max(0, Math.min(1, target.node.amount / def.maxAmount))
-        : 0;
-      return Math.max(0.3, 0.18 + fullness * 0.22);
-    }
+    // Three states, three sizes, read from the table `drawNode` paints from.
+    // It used to be a fullness curve down to 0.18 of a tile with a 0.3 floor
+    // under it, which meant the floor was doing all the work for every node
+    // below half — the click target and the painted size had already parted
+    // company before M9.6 phase 3 gave them one table to share.
+    case 'node': return NODE_SIZES[nodeStateOf(target.node)];
     // `drawTree` paints a canopy of `tree.radius * 0.55`; a seedling is ~0.2.
     case 'tree': return Math.max(0.2, target.tree.radius * 0.55);
     case 'pile': return 0.3;

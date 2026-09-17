@@ -3,6 +3,123 @@
 As of 2026-09-17. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M9.6 phases 0-3, 2026-09-17
+
+### `hunters`' coat chain is one event wide, and a sixfold fruit harvest tipped it
+
+`kills-are-butchered-for-bone` fails on `hunters` since M9.6 phase 1: 2 kills
+gave 10 of bone and sinew and 3 tools, and no coat. At `HEAD` the same scenario
+made **3** kills and exactly **one** coat, which is the whole margin the check
+has ever had — and the scenario's own comment already calls the coat chain
+fragile by design and pins `startDay` to the only position in the year from
+which it completes at all.
+
+Three of the chain's four links demonstrably still work. What is not knowable
+from this run is whether the missing kill is noise or a real effect: fruit
+picked in that world went from 108 to 686, and fruit is what hunting competes
+with on `Brain`'s scorer, so displacement is a live hypothesis — at two kills
+against three there is no way to tell, and `hunts-succeed-and-fail` is already
+n/a on this scenario at "too few strikes to tell".
+
+**Deliberately not fixed, and deliberately not tuned.** Lengthening the run
+until it goes green would hide exactly the question worth answering. Whoever
+takes it should give `hunters` enough herds or enough steps to make a dozen
+kills — so the check measures a rate rather than an event — and then ask the
+displacement question with an instrument that can answer it.
+
+### The sleep sampler could report a rate off two observations
+
+`sleep-restores` watches for sleepers on sampled ticks only, and only counts a
+restoring tick when it catches the *same* person asleep on two samples running.
+On `traps` that meant 0 observed sleeps at `HEAD` (n/a) and 2 after M9.6 phase 1
+(FAIL, no falls seen) — a check changing sides without anything about sleep
+changing. Fixed here by giving it a minimum sample of five, on
+`heads-direct-work`'s precedent from M8.2. `millers` reports 372 sleeps and
+3,335 restoring ticks in the same matrix, which is what the check looks like
+when it has something to measure.
+
+## Found triaging the owner's notes of 2026-09-17
+
+### `millers` reaches herbalism now, and nobody there tends anybody either
+
+Found while measuring M9.6 phase 1. With the autumn harvest repaired, `millers`
+climbs far enough to work out `herbalism`, which makes `the-hurt-are-tended`
+*applicable* on that scenario for the first time — and it fails, reporting zero
+ticks spent sitting with the hurt, exactly as `century` has since M9 phase 5.
+
+This is the open entry "A world that reaches herbalism never tends anybody with
+it" appearing on a second scenario, not a new defect and not something phase 1
+broke: n/a is not a pass, and a check that has stopped being n/a because the
+world got further is the instrument working. Not tuned green. The tending bug
+itself is still open below.
+
+### ~~The autumn harvest is a rounding error, because a day is sampled at midnight~~
+
+This is the missing half of "A season-gated harvest is a much narrower window
+now that a season is half as long", below, and it is worse than that entry
+supposed.
+
+The daily block runs at `tick % ticksPerDay === 0` — midnight. At midnight
+`daylight` is 0, so `TimeManager.temperature` takes its full diurnal penalty of
+`-0.3`, and `growth` is `temperature * 0.9 + 0.35`. In mid-autumn the seasonal
+term is about zero, so the growth handed to `ForestSystem.daily` is about
+**0.08** — below the `max(0.2, growth)` floor inside `Tree.advanceDay`, every
+autumn day of every year. Summer is unaffected: its seasonal term carries
+midnight to about 0.71, which is why plums and pears look healthy and why
+nobody noticed.
+
+At that floor, with the swell at `fruitYield / 18` a day and a season now ten
+days long, an apple tree sets about **1.6 of its 14 apples**, an oak about
+**4 of its 40 acorns**, a hazel about 1 of 9. The out-of-season decay tail —
+`fruitYield / 10` a day, during which the fruit is still on the branch and still
+pickable — is currently carrying a real share of what little gets picked, which
+is why the owner's note that fruit should not hang out of season **cannot be
+implemented on its own**: it would take away most of what an autumn tree still
+gives. The fix, and the order to do it in, is M9.6 phase 1 in
+[m9_6_plan.md](m9_6_plan.md).
+
+This also explains the `millers` entry below: the acorn chain did not become
+unlucky, it became arithmetically near-impossible inside a ten-day autumn.
+
+**Fixed 2026-09-17, M9.6 phases 1a and 1b**: `TimeManager.dailyGrowth` gives the
+daily block the season's growth with the hour of the day taken out, and the
+swell is now a fraction of the tree's own fruiting window rather than eighteen
+absolute days. On `millers`, acorns picked went from **0 to 86** in four years
+and meals ground at the quern from **0 to 28**. `growCrops` deliberately still
+reads the midnight `growth`, because M8.2 fitted `GROWTH_PER_DAY` to that sample
+— see `dailyGrowth`'s header. **The balance question this opens is live and is
+recorded in the changelog, not here**: a tree now delivers the `fruitYield` its
+own table always claimed, which is several times what the world has actually had
+since M9.5 phase 3.
+
+### ~~The tribe graph reshuffles itself continuously, and none of it is random~~
+
+The owner's note. `layOutTribe` is rebuilt from scratch every frame and is a
+continuous function of current opinion in four places at once: `knownBy` sorts
+by `Math.abs(opinion)` and sets the ring angle from the index; `seedRows` takes
+the row order from that same sort, alternating out from the middle, so one swap
+moves two nodes several slots apart; `restLength` is `150 - opinion * 0.9`, so
+220 relaxation passes land somewhere slightly different even with no swap at
+all; and `TribeGraph.digest` hashes positions to the pixel, so any of it
+rebuilds the DOM. `familiarity` is re-earned by proximity every tick and decays
+6% a day, so the input never stops moving.
+
+**Fixed 2026-09-17, M9.6 phase 2**, by carrying the arrangement between frames
+(the layout is seeded from where it was and eases with 30 passes instead of
+re-deriving itself with 220), by handing out a row slot only to somebody who has
+not got one, by letting four people already on the graph stay on it past the cap,
+and by quantising the redraw digest to four pixels and five points of opinion.
+Three unit tests, each verified failing on the build without it.
+
+**The M9.5 phase 4e entry below is now two thirds closed, and one third of it
+was already wrong.** `TechWeb` does *not* relax every frame — `render` does
+`this.layout ??= layOutWeb()`, so the tech web is laid out once and cached, and
+has been. `FamilyTree` genuinely does re-run its 200 passes every frame, and is
+the one left: harmless to watch, because a family tree's input changes only at a
+birth or a death and the picture is therefore stable, but still work done sixty
+times a second to reach the same answer. Left for whoever profiles the frame,
+which is what that entry said in the first place.
+
 ## Found during M8.2's second half, 2026-09-17
 
 ### Compost is fetched twice as often as it is spread

@@ -245,6 +245,10 @@ export const STOP_REASONS: Record<string, string> = {
   no_water: 'there was no water within reach',
   no_food: 'they had nothing to eat',
   no_fruit: 'there was nothing to pick',
+  // The season turned. Distinct from `no_fruit` because the tree visibly had
+  // fruit a moment ago and there is rotten fruit lying under it — without the
+  // difference, an autumn that ends mid-errand looks like the game losing track.
+  fruit_fallen: 'the fruit had fallen and gone over',
   nothing_to_haul: 'they carried nothing the site needed',
   site_needs_materials: 'the site still wants materials',
   already_built: 'it was already finished',

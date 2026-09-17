@@ -57,14 +57,49 @@ export interface TribeLayout {
   height: number;
   /** True when rows were pinned — the band has a shape and this is a pyramid. */
   ranked: boolean;
+  /**
+   * Where the relaxation left everybody, *before* `fitInto` scaled it into the
+   * box — the seed for the next frame. See `layOutTribe`'s note on easing.
+   *
+   * Pre-fit on purpose: feeding fitted coordinates back in would re-fit an
+   * already-fitted picture every frame, and the scale factor would creep.
+   */
+  settled: Map<number, { x: number; y: number }>;
 }
 
 /** Beyond this the graph is a smear of faint acquaintances rather than a tribe. */
 const MAX_PEOPLE = 24;
 
+/**
+ * How many people already on the graph may stay on it past the cap.
+ *
+ * M9.6 phase 2b. `knownBy` sorts by the strength of feeling, and familiarity is
+ * re-earned by standing near somebody and decays six per cent a day, so the
+ * people at the bottom of that list trade places constantly. Without slack, the
+ * twenty-fourth and twenty-fifth acquaintance flicker on and off the picture
+ * every few seconds — and each arrival is a *new* node, seeded from scratch,
+ * which shoves everybody else aside on its way in.
+ */
+const STICKY_SLACK = 4;
+
+/**
+ * Relaxation passes when the picture is being opened, and when it is merely
+ * being kept up to date.
+ *
+ * The second number is the owner's note. A full 220-pass relaxation from a
+ * fresh seed, every frame, is a *re-derivation*: rest lengths are continuous in
+ * opinion (`restLength`), opinions move every tick, and so the whole arrangement
+ * lands somewhere slightly different sixty times a second — which reads as the
+ * graph shuffling itself for no reason. Seeded from where it was, a handful of
+ * passes lets the picture *ease* toward the new truth instead, and costs about
+ * a seventh as much: `bugs.md` has the entry about all three graphs relaxing
+ * themselves in full whether anything changed or not.
+ */
+const ITERATIONS_OPENING = 220;
+const ITERATIONS_EASING = 30;
+
 export const NODE_RADIUS = 34;
 
-const ITERATIONS = 220;
 const REPULSION = 8000;
 const CENTRING = 0.0014;
 
@@ -113,12 +148,16 @@ const RANKED_MIN_GAP = 88;
  */
 export function tribeMembers(
   subjectId: number,
-  relationships: RelationshipGraph
+  relationships: RelationshipGraph,
+  sticky?: ReadonlySet<number> | null
 ): number[] {
-  return [
-    subjectId,
-    ...relationships.knownBy(subjectId).slice(0, MAX_PEOPLE).map(tie => tie.subjectId),
-  ];
+  const chosen: number[] = [];
+  const spare: number[] = [];
+  for (const tie of relationships.knownBy(subjectId)) {
+    if (chosen.length < MAX_PEOPLE) chosen.push(tie.subjectId);
+    else if (sticky?.has(tie.subjectId) && spare.length < STICKY_SLACK) spare.push(tie.subjectId);
+  }
+  return [subjectId, ...chosen, ...spare];
 }
 
 /** How far a spoke relaxes toward, from love (close) to hatred (far). */
@@ -150,15 +189,23 @@ export function layOutTribe(
   relationships: RelationshipGraph,
   width: number,
   height: number,
-  ranks?: ReadonlyMap<number, BandRank> | null
+  ranks?: ReadonlyMap<number, BandRank> | null,
+  previous?: ReadonlyMap<number, { x: number; y: number }> | null
 ): TribeLayout {
-  const known = relationships.knownBy(subjectId).slice(0, MAX_PEOPLE);
+  const members = tribeMembers(subjectId, relationships,
+    previous ? new Set(previous.keys()) : null).slice(1);
+  const known = members.map(id => ({
+    subjectId: id,
+    opinion: relationships.opinion(subjectId, id),
+  }));
   const ranked = !!ranks && ranks.size > 0;
+  const easing = !!previous && previous.size > 0;
 
   const nodes: TribeNode[] = [{
     id: String(subjectId), personId: subjectId, isSubject: true, subjectOpinion: 0,
     rank: ranked ? ranks!.get(subjectId) ?? 'outsider' : null,
-    x: 0, y: 0,
+    x: previous?.get(subjectId)?.x ?? 0,
+    y: previous?.get(subjectId)?.y ?? 0,
   }];
 
   const count = known.length;
@@ -166,18 +213,22 @@ export function layOutTribe(
     const angle = count === 0 ? 0 : (index / count) * Math.PI * 2 - Math.PI / 2;
     // Closer to the centre the more strongly the subject feels, either way.
     const radius = 60 + (1 - Math.min(1, Math.abs(tie.opinion) / 100)) * 220;
+    // Where they were a frame ago, if they were anywhere. A node that has a
+    // position keeps it and is moved by the springs like everything else; only
+    // somebody genuinely new to the graph is seeded from the ring.
+    const prior = previous?.get(tie.subjectId);
     nodes.push({
       id: String(tie.subjectId),
       personId: tie.subjectId,
       isSubject: false,
       subjectOpinion: tie.opinion,
       rank: ranked ? ranks!.get(tie.subjectId) ?? 'outsider' : null,
-      x: Math.cos(angle) * radius,
-      y: Math.sin(angle) * radius,
+      x: prior ? prior.x : Math.cos(angle) * radius,
+      y: prior ? prior.y : Math.sin(angle) * radius,
     });
   });
 
-  if (ranked) seedRows(nodes);
+  if (ranked) seedRows(nodes, previous ?? null);
 
   const edges: TribeEdgeInfo[] = [];
   const seen = new Set<string>();
@@ -220,10 +271,21 @@ export function layOutTribe(
     };
   });
 
-  relax(nodes, springs, { iterations: ITERATIONS, repulsion: REPULSION, centring: CENTRING });
+  relax(nodes, springs, {
+    iterations: easing ? ITERATIONS_EASING : ITERATIONS_OPENING,
+    repulsion: REPULSION,
+    centring: CENTRING,
+  });
   settleOverlaps(nodes, ranked ? RANKED_MIN_GAP : NODE_RADIUS * 2);
 
-  return { nodes: fitInto(nodes, width, height, NODE_RADIUS, 1.4), edges, width, height, ranked };
+  // Snapshot before `fitInto`, which scales the whole arrangement into the box.
+  const settled = new Map<number, { x: number; y: number }>();
+  for (const node of nodes) settled.set(node.personId, { x: node.x, y: node.y });
+
+  return {
+    nodes: fitInto(nodes, width, height, NODE_RADIUS, 1.4),
+    edges, width, height, ranked, settled,
+  };
 }
 
 /**
@@ -247,7 +309,10 @@ export function layOutTribe(
  * the same world, and `GraphLayout`'s header rules out breaking the tie with
  * a random draw.
  */
-function seedRows(nodes: TribeNode[]): void {
+function seedRows(
+  nodes: TribeNode[],
+  previous: ReadonlyMap<number, { x: number; y: number }> | null
+): void {
   const byRank = new Map<BandRank, TribeNode[]>();
   for (const node of nodes) {
     const rank = node.rank ?? 'outsider';
@@ -264,10 +329,22 @@ function seedRows(nodes: TribeNode[]): void {
       return a.personId - b.personId;
     });
     people.forEach((node, index) => {
-      // 0, +1, -1, +2, -2 … out from the middle of the row.
-      node.x = Math.ceil(index / 2) * SEED_GAP * (index % 2 === 1 ? 1 : -1);
+      // The row itself is always pinned: a rung is a claim about the world and
+      // it is re-read every frame, so somebody raised to head of a house rises
+      // the moment they are.
       node.y = row * ROW_GAP;
       node.lockY = true;
+      // The *slot within* the row is only ever handed out to somebody who has
+      // not got one. M9.6 phase 2b: this sort is by `subjectOpinion`, which
+      // moves every tick, and re-seeding from it every frame was the loudest
+      // half of the graph's churn — two people whose regard crossed by a
+      // fraction of a point swapped sides of the row, and with `y` pinned the
+      // springs could not walk them back past the people in between. Whoever is
+      // already somewhere stays there and is moved by the springs like anybody
+      // else.
+      if (previous?.has(node.personId)) return;
+      // 0, +1, -1, +2, -2 … out from the middle of the row.
+      node.x = Math.ceil(index / 2) * SEED_GAP * (index % 2 === 1 ? 1 : -1);
     });
   });
 }

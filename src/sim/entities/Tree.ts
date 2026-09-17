@@ -98,6 +98,15 @@ export const TREES: Record<TreeSpecies, TreeDef> = {
   },
 };
 
+/**
+ * How fast fallen fruit rots away, in units a day.
+ *
+ * Four days for an orchard tree's crop and rather longer for an oak's mast,
+ * which is roughly right: the point is that the ground under a fruit tree looks
+ * different for a while after the season turns, and then does not.
+ */
+const WINDFALL_ROT_PER_DAY = 3.5;
+
 let nextTreeId = 1;
 
 export function resetTreeIds(): void {
@@ -116,6 +125,25 @@ export class Tree {
   standing = true;
   /** Fruit currently on the branches. */
   fruit = 0;
+  /**
+   * Fruit lying under the tree, gone over.
+   *
+   * M9.6 phase 1c, and the owner's note: a tree should not be carrying apples
+   * in February, and the apples it was carrying should end up on the ground.
+   * Out of season the whole crop comes down at once and rots here over a few
+   * days — nobody picks it, because it is rotten. It is worth nothing, and it
+   * is drawn, which is the entire point: a picked-over orchard in late autumn
+   * should look like one.
+   *
+   * **Not compost, deliberately.** The obvious next thought is to feed
+   * `Soil.enrich` under the canopy, and it was tried on paper and dropped:
+   * untouched ground already sits at `organicCeiling`, so the credit would do
+   * nothing except push every tile under every fruiting tree into `Soil.active`
+   * — a daily sweep that exists to be small — for a benefit of zero. Windfall
+   * being *scenery with a lifetime* is the whole of it until somebody has a
+   * reason for it to be more.
+   */
+  windfall = 0;
   /**
    * Ticks of felling work already done on this trunk.
    *
@@ -191,13 +219,49 @@ export class Tree {
 
     if (this.def.fruitItem !== null && this.isMature) {
       if (this.def.fruitSeasons.includes(season)) {
-        // Fruit swells through its season rather than appearing at once.
-        const perDay = this.def.fruitYield / 18;
-        this.fruit = Math.min(this.def.fruitYield, this.fruit + perDay * Math.max(0.2, growth));
+        // Fruit swells through its season rather than appearing at once, and
+        // it swells **on the calendar the world is actually running**.
+        //
+        // This used to be `fruitYield / 18` — eighteen absolute days, written
+        // when a season was twenty of them. M9.5 phase 3 halved the year and
+        // deliberately left every per-day rate alone, which was right for rates
+        // that run all year and wrong for this one: a crop that needs eighteen
+        // days in a ten-day autumn can only ever half-set, and `bugs.md` has
+        // the entry saying so. It is the same implicit constant that phase
+        // spent its budget removing from `DAYS_PER_YEAR`, one file further on.
+        //
+        // A tree now fills its crop over four fifths of its own fruiting
+        // window, so a pear with two seasons takes twice as long as a plum with
+        // one and both are ripe before the season turns, whatever the calendar
+        // is set to.
+        const windowDays = this.def.fruitSeasons.length * (this.daysPerYear / 4);
+        const perDay = this.def.fruitYield / (windowDays * 0.8);
+        // Weather moves the pace by about a third either way and never stops
+        // it. A hard year is a thin crop rather than no crop — and the old
+        // `max(0.2, growth)` floor was doing this job by accident, badly: it
+        // was a floor everything autumn spent its whole season sitting on.
+        const weather = 0.6 + 0.8 * growth;
+        this.fruit = Math.min(this.def.fruitYield, this.fruit + perDay * weather);
       } else if (this.fruit > 0) {
-        // Out of season it drops and rots.
-        this.fruit = Math.max(0, this.fruit - this.def.fruitYield / 10);
+        // The season turns and the crop comes down — all of it, on the day.
+        //
+        // It used to stay on the branches and fade at a tenth of the yield a
+        // day, which meant a tree carried pickable apples for ten days of
+        // winter and then, quietly, had never had any. Ten days is a whole
+        // season on this calendar. Fruit that is out of season is on the
+        // ground, and fruit on the ground is rotten: nobody picks `windfall`,
+        // and the scorer's `t.fruit >= 1` test means nobody walks to the tree
+        // for it either.
+        this.windfall += this.fruit;
+        this.fruit = 0;
       }
+    }
+
+    if (this.windfall > 0) {
+      // Gone in about four days, whatever fell. Rot is not proportional to the
+      // heap — a big crop under an oak does not take a fortnight longer to go
+      // over than three plums do — so this is an absolute rate.
+      this.windfall = Math.max(0, this.windfall - WINDFALL_ROT_PER_DAY);
     }
 
     if (this.years > this.def.maxAgeYears) {

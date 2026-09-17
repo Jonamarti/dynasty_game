@@ -10,7 +10,7 @@
 import './style.css';
 import { Simulation } from './sim/core/Simulation.ts';
 import { Camera } from './render/Camera.ts';
-import { Renderer, hitRadiusOf, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
+import { Renderer, hitRadiusOf, nodeIsHidden, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
 import { actionLabel, stopReasonLabel } from './render/Floaters.ts';
 import { Hud, type Selection } from './ui/Hud.ts';
 import { RadialMenu } from './ui/RadialMenu.ts';
@@ -762,9 +762,11 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
   }
 
   for (const node of sim.nodeHash.queryRadius(worldX, worldY, PICK_RANGE)) {
-    // Buried under enough snow: not offered, same as a stripped bush that
-    // regrew nothing yet — see `Simulation.isBuried`.
-    if (node.def.groundLevel && sim.isBuried(node.x, node.y)) continue;
+    // Not on the screen, so not in the list: buried under snow, or a stick
+    // pile that has been picked clean and is drawn as nothing at all. The
+    // renderer owns that rule — see `nodeIsHidden` — precisely so that the
+    // picker cannot offer something the player cannot see.
+    if (nodeIsHidden(node, (x, y) => sim.isBuried(x, y))) continue;
     consider({ kind: 'node', x: node.x, y: node.y, node },
       { kind: 'node', node }, node.x, node.y);
   }

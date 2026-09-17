@@ -409,6 +409,11 @@ export interface Sample {
   matureTrees: number;
   seedlings: number;
   fruitOnTrees: number;
+  /** Fruit still on branches whose season has passed — M9.6 phase 1c's instrument. */
+  fruitOutOfSeason: number;
+  /** Fruit lying under the trees, rotting. */
+  windfall: number;
+  season: string;
   children: number;
   elders: number;
   married: number;
@@ -567,6 +572,9 @@ function sample(sim: Simulation): Sample {
     matureTrees: stats.matureTrees,
     seedlings: stats.seedlings,
     fruitOnTrees: stats.fruitOnTrees,
+    fruitOutOfSeason: stats.fruitOutOfSeason,
+    windfall: stats.windfall,
+    season: sim.time.season,
     children: stats.children,
     elders: stats.elders,
     married: stats.married,
@@ -1100,6 +1108,37 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     fellings + ' trees felled, ' + (tel.wood_cut ?? 0) + ' timber cut, ' +
       picked + ' fruit picked'
   );
+
+  // M9.6 phase 1c. Two claims in one check, because they are the same claim:
+  // fruit belongs to its season, and what the season leaves behind is on the
+  // ground rather than still on the branch.
+  //
+  // Gated on the run having *seen* a season turn with fruit about, not on
+  // windfall having appeared — gating it on the windfall would make the check
+  // skip itself on precisely the build it exists to catch, which is the trap
+  // `AGENTS.md` describes two ways round: a check that looks reassuring and
+  // detects nothing. Verified failing on the build without the drop: before it,
+  // a crop faded on the branch over ten days, which on this calendar is a whole
+  // season of apples hanging in the snow.
+  const seasonsSeen = new Set(samples.map(s => s.season));
+  const everBore = samples.some(s => s.fruitOnTrees >= 1 || s.windfall >= 1);
+  const worstOutOfSeason = Math.max(...samples.map(s => s.fruitOutOfSeason));
+  if (!everBore || seasonsSeen.size < 2) {
+    skip(
+      'fruit-comes-and-goes-with-the-season',
+      !everBore
+        ? 'no tree in this run ever carried fruit'
+        : 'run covers one season; nothing to cross'
+    );
+  } else {
+    add(
+      'fruit-comes-and-goes-with-the-season',
+      worstOutOfSeason === 0,
+      'worst sample had ' + worstOutOfSeason + ' fruit hanging out of season; ' +
+        'most windfall seen at once was ' + Math.max(...samples.map(s => s.windfall)) +
+        ' across ' + seasonsSeen.size + ' seasons'
+    );
+  }
 
   add(
     'forest-persists',
@@ -2044,8 +2083,23 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     multi > 0 && kinEdges > 0,
     multi + ' households of more than one; ' + kinEdges + ' people with family');
 
-  if (base.wildlife.sleepStarts === 0) {
-    skip('sleep-restores', 'nobody had a roof to sleep under in this run');
+  // A minimum sample, on `heads-direct-work`'s precedent (M8.2) and for the
+  // same reason: this measures a *rate*, and a rate needs more than a couple of
+  // observations. The watcher only sees a sleeper on a sampled tick, and it
+  // only counts a restoring tick when it catches the same person asleep on two
+  // samples running — so a world that barely sleeps produces a handful of
+  // starts, no observed falls, and a red check that says nothing.
+  //
+  // M9.6 phase 1 is what exposed it. `traps` reported 0 observed starts before
+  // and 2 after, which is n/a turning into FAIL without anybody's sleep
+  // changing; `millers` in the same run reports 372 starts and 3,335 restoring
+  // ticks, which is what this check looks like when it has something to measure.
+  const SLEEP_SAMPLE = 5;
+  if (base.wildlife.sleepStarts < SLEEP_SAMPLE) {
+    skip('sleep-restores', base.wildlife.sleepStarts === 0
+      ? 'nobody had a roof to sleep under in this run'
+      : 'only ' + base.wildlife.sleepStarts + ' sleeps were caught by the sampler; ' +
+        'too few to say whether sleep restores anybody');
   } else {
     add('sleep-restores',
       base.wildlife.sleepFatigueFalls > 0,

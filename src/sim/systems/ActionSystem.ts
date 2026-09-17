@@ -837,7 +837,13 @@ export class ActionSystem {
   private doPickFruit(person: Person, ctx: ActionContext): void {
     const tree = person.targetTreeId === null ? null : ctx.treesById.get(person.targetTreeId);
     if (!tree || !tree.standing || tree.fruit < 1) {
-      this.abandon(person, 'no_fruit', ctx);
+      // Two different disappointments, and the player is owed the difference.
+      // A tree that never had any is `no_fruit`; a tree whose crop is lying
+      // rotten underneath it is a season having turned while somebody walked,
+      // which reads as a bug unless the game says so. Since M9.6 phase 1c the
+      // second is the common one in late autumn.
+      const fallen = !!tree && tree.standing && tree.windfall > 0;
+      this.abandon(person, fallen ? 'fruit_fallen' : 'no_fruit', ctx);
       return;
     }
 

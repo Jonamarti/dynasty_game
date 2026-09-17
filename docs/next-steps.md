@@ -40,6 +40,19 @@ a world whose founders know `division_of_labour`), **13 fully green**, with
 below are kept because two of them are borderline checks that have now changed
 sides three times, which is a finding in itself — see `bugs.md`:
 
+**Updated 2026-09-17 by M9.6 phases 0-3.** The matrix is now **16 scenarios,
+12 fully green**, with four failures: `crowded`'s `perf-budget` below, plus
+`the-hurt-are-tended` on both `century` *and* `millers` — newly applicable on
+both, because M9.6 phase 1's repaired harvest carries those worlds as far as
+`herbalism` — and `kills-are-butchered-for-bone` on `hunters`, which is a
+one-event-wide check in a scenario that was already documented as fragile. All
+three of those scenarios are green at the commit before, all three were measured
+against it rather than assumed, and all three are written up in
+[bugs.md](bugs.md) and [changelog.md](changelog.md). The open balance question
+M9.6 phase 1 raises — a fruit tree now yields what its table always claimed,
+which is several times what the world has had since M9.5 phase 3 — is in the
+changelog and is the owner's to answer.
+
 - `crowded`'s **`perf-budget`** has been failing since before M7. M9 phase 4
   made it worse rather than better, by 17%, and `optimizations.md` and
   `bugs.md` between them name the cause: a relationship graph that grew denser
@@ -96,7 +109,12 @@ sides three times, which is a finding in itself — see `bugs.md`:
 | The ages get their real names | shipped 2026-09-16. §4's two remaining bullets, deliberately before M8.2 |
 | M8.2 — the ground, and the first field | shipped 2026-09-17. `farming`, soil, wild grain, `sow` and `reap` |
 | M8.2 — `composting` | shipped 2026-09-17. The heap, `spread`, and the answer to exhaustion |
-| **M8.2 — the other fifteen Neolithic nodes** | **next.** See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
+| M9.6 phase 0 — game speed stops being a difficulty override | shipped 2026-09-17. See [m9_6_plan.md](m9_6_plan.md) |
+| M9.6 phase 1 — the autumn harvest repaired, and fruit that falls | shipped 2026-09-17. 1a the midnight sample, 1b the swell, 1c the windfall |
+| M9.6 phase 2 — a tribe graph that holds still | shipped 2026-09-17 |
+| M9.6 phase 3 — a depleted thing looks depleted | shipped 2026-09-17 |
+| **M8.2 — the other fifteen Neolithic nodes** | **next**, after M9.6's cheap half. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
+| M9.6 phases 4–5 — happiness, and sleeping rough | planned; runs after M8.2 and before M10, so M10's fences have something to pay off in |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
@@ -755,6 +773,48 @@ coercion needs no technology — legitimate authority is what gets discovered.
 `§4`'s era-rename note (real archaeological period names for `TechDef.age`)
 stays where it is, and is still the cheaper thing to do before M8.2 triples
 the node count.
+
+## 7f. The owner's notes of 2026-09-17
+
+Six notes, given directly rather than through `notes.txt`, which is committed
+empty and stayed empty. The full triage, with the diagnosis for each one
+verified against the code, is [m9_6_plan.md](m9_6_plan.md); the table below is
+that document's summary.
+
+| # | note | destination |
+|---|---|---|
+| 5 | Default speed 5 | **M9.6 phase 0** — and the config already says 5; see below |
+| 1 | Fruit trees should not carry fruit out of season; it should fall as rotten | M9.6 phase 1, with the autumn-harvest repair it forces |
+| 2 | The tribe graph changes shape very fast | M9.6 phase 2 |
+| 6 | A depleted node should not be the same picture made smaller — nothing for sticks, a stripped bush for berries | M9.6 phase 3 |
+| 3 | Happiness: a bed, a roof, talking to family and kin | M9.6 phase 4 |
+| 4 | Sleeping rough is penalised unless there are guards and a perimeter | M9.6 phase 5; the guards-and-fences half stays in M10 phase 2 |
+
+Three findings came out of the triage rather than out of the notes, and all
+three are in [bugs.md](bugs.md):
+
+- **The autumn harvest is a rounding error, and has been since M9.5 phase 3.**
+  The daily block runs at midnight, where `temperature` takes its full diurnal
+  penalty, so `Tree.advanceDay` spends every autumn day pinned to its
+  `max(0.2, growth)` floor: an apple tree sets about 1.6 of its 14 apples and an
+  oak about 4 of its 40 acorns in a ten-day autumn. This is the missing half of
+  the phase-3 entry about season-gated harvests, and the reason `millers`
+  stopped picking acorns. **Note 1 must not ship without it**, because taking
+  the out-of-season tail away is taking away most of what an autumn tree
+  currently gives.
+- **The tribe graph churns because its seed order is the opinion order**, and
+  familiarity moves every tick. Nothing about it is random; it is four
+  continuous functions of a number that never stops changing, hashed by a digest
+  precise to the pixel.
+- **`time.tickRate` is already 5**, and has been since M6c, so note 5 is about
+  something else — most likely a stored override on the settings screen, which
+  is kept for ever and outranks the default in every new world. Phase 0 asks
+  before it writes.
+
+Two of the notes have entries in `bugs.md` written from the other side — the
+graphs relaxing every frame, and the shortened season's effect on a gated
+harvest — both previously left alone as "not worth a phase". The owner has now
+met both from inside the game, which settles that.
 
 ## 8. Wildlife, second pass
 

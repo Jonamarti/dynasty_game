@@ -211,8 +211,9 @@ export const TUNABLES: Tunable[] = [
   // gets its winter pressure from `coldRate` and `regrowthRate` instead.
   { path: 'time.tickRate', label: 'Game speed', group: 'clock', scaled: false, restart: false,
     min: 1, max: 120, step: 1, places: 0,
-    hint: 'Steps per second the game opens at — the same number as the speed ' +
-      'slider on the top bar.' },
+    hint: 'Steps per second, the same number as the speed slider on the top ' +
+      'bar. The one setting here that is not remembered: every world opens at ' +
+      'five and this changes the one you are in.' },
   { path: 'time.ticksPerDay', label: 'Day length', group: 'clock', scaled: false, restart: true,
     min: 60, max: 960, step: 10, places: 0,
     hint: 'Steps in one in-game day. A new world only: the date is derived from ' +

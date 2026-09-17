@@ -36,6 +36,29 @@ const KEY = 'dynasty.settings';
  */
 const AUTONOMY_KEY = 'dynasty.autonomy';
 
+/**
+ * The one tunable that is deliberately *not* remembered between sessions.
+ *
+ * M9.6 phase 0, and the owner's note was two words: "default speed 5". The
+ * default already *was* 5 — `DEFAULT_CONFIG.time.tickRate`, read by the loop
+ * and by the HUD slider alike — but game speed is a row on the difficulty
+ * screen, and every row on that screen is written into `overrides` and kept for
+ * ever. So a single drag of that slider, once, silently became the speed every
+ * world opened at from then on, and the only way back to 5 was "Reset
+ * everything to Normal", which throws away every other tuning the player has
+ * made with it.
+ *
+ * Pacing is taste rather than difficulty — the comment above the clock group in
+ * `Difficulty.ts` says so, and it is the same argument `AUTONOMY_KEY` above is
+ * made of. A speed is also the one setting a player changes for the next two
+ * minutes rather than for the next world: watching a birth, skipping a winter.
+ * So it applies live from both controls and is stored by neither, and a world
+ * always opens at the default. It is stripped on the way out *and* ignored on
+ * the way in, so a value written by an older build stops mattering the first
+ * time this build saves.
+ */
+const UNSAVED_PATHS = ['time.tickRate'];
+
 export function loadAutonomy(): Autonomy {
   let raw: string | null = null;
   try {
@@ -94,6 +117,7 @@ export function loadSettings(): Settings {
     for (const [path, value] of Object.entries(parsed.overrides ?? {})) {
       const tunable = TUNABLES.find(t => t.path === path);
       if (!tunable) continue;
+      if (UNSAVED_PATHS.includes(path)) continue;
       if (typeof value !== 'number' || !Number.isFinite(value)) continue;
       overrides[path] = Math.min(tunable.max, Math.max(tunable.min, value));
     }
@@ -104,8 +128,13 @@ export function loadSettings(): Settings {
 }
 
 export function saveSettings(settings: Settings): void {
+  // The overrides the *screen* is holding are correct — the slider has to stay
+  // where the player put it while they are looking at it — so the stripping
+  // happens here, on the way to storage, rather than by refusing the edit.
+  const overrides = { ...settings.overrides };
+  for (const path of UNSAVED_PATHS) delete overrides[path];
   try {
-    localStorage.setItem(KEY, JSON.stringify(settings));
+    localStorage.setItem(KEY, JSON.stringify({ ...settings, overrides }));
   } catch {
     // Nothing to do: the settings simply do not persist.
   }

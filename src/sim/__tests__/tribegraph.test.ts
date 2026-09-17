@@ -208,4 +208,66 @@ describe('the tribe graph in ranks', () => {
     expect(members.slice().sort((a, b) => a - b))
       .toEqual(layout.nodes.map(node => node.personId).sort((a, b) => a - b));
   });
+  // --- M9.6 phase 2: the graph must hold still -----------------------------
+  //
+  // The owner's note was that the tribe graph changes shape very fast. It is
+  // not random and never was: the seed order is the opinion order, the spring
+  // rest lengths are continuous in opinion, and opinions move every tick — so
+  // a layout re-derived from scratch every frame lands somewhere slightly
+  // different every frame. These two are the guard on the fix, and both were
+  // checked against the build without it: the first reported moves of well
+  // over a hundred pixels, the second a swapped row order.
+
+  it('eases rather than jumps when an opinion drifts', () => {
+    const rel = new RelationshipGraph();
+    for (let id = 2; id <= 12; id++) rel.addDeed(1, id, id * 4 - 20, 0);
+    const first = layOutTribe(1, rel, 900, 600);
+
+    // A day of ordinary drift: everybody's regard moves a little, which is
+    // enough to reorder `knownBy` around the middle of the list.
+    for (let id = 2; id <= 12; id++) rel.addDeed(1, id, id % 3 === 0 ? 3 : -2, 60);
+
+    const fresh = layOutTribe(1, rel, 900, 600);
+    const eased = layOutTribe(1, rel, 900, 600, null, first.settled);
+    const moved = (layout: typeof fresh) => Math.max(...layout.nodes.map(node => {
+      const before = first.nodes.find(n => n.personId === node.personId)!;
+      return Math.hypot(node.x - before.x, node.y - before.y);
+    }));
+    expect(moved(eased)).toBeLessThan(moved(fresh));
+    expect(moved(eased)).toBeLessThan(40);
+  });
+
+  it('keeps a row in the order it was already in', () => {
+    const rel = new RelationshipGraph();
+    for (let id = 2; id <= 9; id++) rel.addDeed(1, id, id * 5, 0);
+    const ranks = new Map<number, BandRank>([[1, 'chief']]);
+    for (let id = 2; id <= 9; id++) ranks.set(id, 'member');
+    const first = layOutTribe(1, rel, 900, 600, ranks);
+    const orderOf = (layout: typeof first) => layout.nodes
+      .filter(node => !node.isSubject)
+      .sort((a, b) => a.x - b.x)
+      .map(node => node.personId);
+
+    // Two neighbours in the row trade places on the opinion scale by a couple
+    // of points. Seeded afresh they would swap ends of the row; carried over,
+    // the springs may move them but may not reorder them.
+    rel.addDeed(1, 5, 12, 60);
+    rel.addDeed(1, 6, -12, 60);
+    const eased = layOutTribe(1, rel, 900, 600, ranks, first.settled);
+    expect(orderOf(eased)).toEqual(orderOf(first));
+  });
+
+  it('keeps somebody already drawn when they slip just past the cap', () => {
+    const rel = new RelationshipGraph();
+    for (let id = 2; id <= 40; id++) rel.addDeed(1, id, 100 - id, 0);
+    const first = layOutTribe(1, rel, 900, 600);
+    const drawn = first.nodes.map(node => node.personId);
+    expect(drawn).toContain(25);
+
+    // 25 slips below the cap by a hair. Without the slack they would vanish
+    // from the picture and reappear the next time somebody walked past them.
+    rel.addDeed(1, 25, -6, 60);
+    const eased = layOutTribe(1, rel, 900, 600, null, first.settled);
+    expect(eased.nodes.map(node => node.personId)).toContain(25);
+  });
 });

@@ -28,11 +28,33 @@ import {
   layOutTribe, tribeMembers, type TribeLayout, type TribeNode,
 } from './TribeGraphLayout.ts';
 
+/**
+ * How coarsely the redraw digest reads a position and an opinion.
+ *
+ * Four pixels is under a tenth of a node's width, and five points is a
+ * twentieth of the opinion scale — both far below what anybody can see, and
+ * both far above the drift that made the panel rebuild itself every frame.
+ */
+const DIGEST_PIXELS = 4;
+const DIGEST_OPINION = 5;
+
+const quantise = (value: number, step: number): number => Math.round(value / step) * step;
+
 export class TribeGraphOverlay {
   private root: HTMLElement;
   private subject: Person | null = null;
   private sim: Simulation | null = null;
   private signature = '';
+  /**
+   * Where the layout left everybody last frame, so the next one can carry on
+   * from it rather than re-deriving the whole picture.
+   *
+   * M9.6 phase 2a, and the owner's note that the graph changes shape very fast.
+   * Cleared whenever the panel opens or the subject changes — a new subject is
+   * a different graph, and easing into it from somebody else's arrangement
+   * would be worse than starting clean.
+   */
+  private settled: Map<number, { x: number; y: number }> | null = null;
 
   constructor(container: HTMLElement) {
     this.root = document.createElement('div');
@@ -71,6 +93,7 @@ export class TribeGraphOverlay {
     this.sim = sim;
     this.subject = subject;
     this.signature = '';
+    this.settled = null;
     this.render();
     this.root.hidden = false;
   }
@@ -81,6 +104,7 @@ export class TribeGraphOverlay {
     this.subject = null;
     this.sim = null;
     this.signature = '';
+    this.settled = null;
   }
 
   update(sim: Simulation): void {
@@ -117,8 +141,15 @@ export class TribeGraphOverlay {
     }
 
     const box = this.boxSize();
-    const ranks = sim.ranksAround(subject, tribeMembers(subject.id, sim.relationships));
-    const layout = layOutTribe(subject.id, sim.relationships, box.width, box.height, ranks);
+    // The sticky set and the layout must be given the *same* membership, or the
+    // ranks handed in cover a different set of people from the ones drawn —
+    // `tribeMembers` exists for that reason and now takes who is already on
+    // screen, so the marginal acquaintance stops flickering in and out.
+    const sticky = this.settled ? new Set(this.settled.keys()) : null;
+    const ranks = sim.ranksAround(subject, tribeMembers(subject.id, sim.relationships, sticky));
+    const layout = layOutTribe(
+      subject.id, sim.relationships, box.width, box.height, ranks, this.settled);
+    this.settled = layout.settled;
 
     const digest = this.digest(layout, observer);
     if (digest === this.signature && this.root.childElementCount > 0) return;
@@ -204,16 +235,26 @@ export class TribeGraphOverlay {
       // leaves the row *count* unchanged and every `y` where it was, and
       // without this the panel would go on calling the wrong person chief.
       // `layout.ranked` is in the digest below for the same reason.
+      //
+      // Positions and opinions are both *quantised* here, and that is M9.6
+      // phase 2c rather than an optimisation. This digest decides whether to
+      // rebuild the DOM, and rebuilding it is what detaches whatever the cursor
+      // is hovering — the very problem it was written to prevent. At
+      // full precision it was rebuilding on a single pixel of drift and on a
+      // tenth of a point of familiarity, which is to say constantly. A node
+      // that has moved less than a few pixels has not moved as far as the
+      // player is concerned.
       parts.push(
-        node.personId + ':' + node.x.toFixed(0) + ',' + node.y.toFixed(0) +
+        node.personId + ':' + quantise(node.x, DIGEST_PIXELS) +
+        ',' + quantise(node.y, DIGEST_PIXELS) +
         ':' + (person?.alive ? '1' : '0') +
-        ':' + Math.round(node.subjectOpinion) +
+        ':' + quantise(node.subjectOpinion, DIGEST_OPINION) +
         ':' + (node.rank ?? '-') +
         ':' + (known ? known.displayName : '')
       );
     }
     for (const edge of layout.edges) {
-      parts.push('e' + edge.from + '-' + edge.to + ':' + Math.round(edge.opinion));
+      parts.push('e' + edge.from + '-' + edge.to + ':' + quantise(edge.opinion, DIGEST_OPINION));
     }
     parts.push(layout.ranked ? 'ranked' : 'flat');
     return parts.join('|');

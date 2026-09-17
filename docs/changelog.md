@@ -6,6 +6,192 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-17 — M9.6 phases 0-3: the speed, the fruit, the graph, and what a picked-over bush looks like
+
+Four of the owner's six notes of 2026-09-17, planned in
+[m9_6_plan.md](m9_6_plan.md). Three of them were an afternoon each. The fourth —
+"fruit trees should not have fruits outside their season" — turned out to be
+sitting on top of a defect that had quietly emptied the autumn.
+
+**Phase 0 — "default speed 5", and the default already was 5.**
+`DEFAULT_CONFIG.time.tickRate` has been 5 since M6c, and the loop and the HUD
+slider both read it. What was not 5 was the *stored* value: game speed is a row
+on the difficulty screen, every row on that screen is written into
+`Settings.overrides`, and overrides are kept for ever — so one drag of that
+slider, once, became the speed every world opened at from then on, with "Reset
+everything to Normal" the only way back and every other tuning lost with it.
+Pacing is taste rather than difficulty (the clock group's own comment says so),
+and a speed is something a player changes for the next two minutes rather than
+for the next world. It is now stripped on the way to storage *and* ignored on
+the way in, so an older build's value stops mattering the first time this build
+saves. Three unit tests, two of them verified failing on the build without the
+strip and one — an ordinary override round-tripping — passing on both, so that
+a broken `localStorage` stub could not make the other two pass for the wrong
+reason.
+
+**Phase 1a — a day was being sampled at midnight.** The daily block runs at
+`tick % ticksPerDay === 0`, which is midnight, where `daylight` is 0 and
+`temperature` therefore takes its full diurnal penalty of -0.3. Everything else
+that reads `growth` runs every tick and averages the hour away for free; the
+wood does not. In mid-autumn the seasonal term is about zero, so the growth
+handed to `ForestSystem.daily` was about **0.08** — under the `max(0.2, growth)`
+floor in `Tree.advanceDay` — every autumn day of every year. `TimeManager`
+now offers `dailyGrowth`, the same curve with the hour taken out, and the forest
+reads that. **`growCrops` deliberately still reads `growth`**: M8.2 fitted
+`GROWTH_PER_DAY` to the midnight sample — `Field.ts` quotes the peak as 0.71,
+which is that sample — so moving its input without re-deriving its constant
+would have retuned farming inside a pass about trees.
+
+**Phase 1b — the swell was written for a calendar that no longer exists.**
+`fruitYield / 18`: eighteen absolute days, from when a season was twenty of
+them. M9.5 phase 3 halved the year and left every per-day rate alone, which was
+right for rates that run all year and wrong for one gated on a season — as
+`bugs.md` said at the time, and left for whoever next had reason to touch it.
+A crop now fills over four fifths of its own fruiting window, whatever the
+calendar says, with weather moving the pace by about a third either way and
+never stopping it.
+
+Together those two are the difference between a table that describes the world
+and a table that does not. **On `millers`, four years: acorns picked went from 0
+to 86 and meals ground at the quern from 0 to 28**, against a `bugs.md` entry
+that recorded the acorn chain as unmeasurable because no scenario had shown it
+happening twice since the seasons halved. Fruit picked went 474 → 901 → 2,128
+across baseline, 1a and 1b.
+
+**Phase 1c — and now it falls.** Out of season the whole crop leaves the
+branches on the day, into `Tree.windfall`, which rots away over a few days and
+is drawn as dark specks under the canopy. It used to fade *on the branch* over
+ten days at a tenth of the yield a day — ten days being a whole season on this
+calendar, so a tree carried pickable apples through the snow and then, quietly,
+had never had any. Nobody picks windfall, because it is rotten.
+
+Two things were considered and deliberately left out. Windfall is not a
+carryable `rotten_fruit`, and it does not feed the compost heap: `Building.ts`
+already records why the heap is paid for at construction rather than by a
+feeding verb. And it does not call `Soil.enrich` under the canopy, which was the
+plan's own idea and is wrong — untouched ground already sits at its
+`organicCeiling`, so the credit would buy nothing and would push every tile
+under every fruiting tree into `Soil.active`, a daily sweep whose whole value is
+being small.
+
+`doPickFruit` now refuses with `fruit_fallen` rather than `no_fruit` when the
+crop is on the ground, because "there was nothing to pick" about a tree that
+visibly had apples an hour ago reads as the game losing track. `millers` reports
+35 of those in four years. New check `fruit-comes-and-goes-with-the-season`,
+gated on the run having crossed a season with fruit about — *not* on windfall
+having been seen, which would have made it skip itself on precisely the build it
+exists to catch — and verified failing on that build, where it reports 12,961
+fruit hanging out of season.
+
+**Phase 2 — the tribe graph holds still.** The owner's note was that it changes
+shape very fast; none of it was random. `layOutTribe` was re-derived from
+nothing every frame, and it is a continuous function of current opinion in four
+places at once: `knownBy` sorts by the strength of feeling and the index sets
+the ring angle; `seedRows` takes the row order from that same sort, alternating
+out from the middle, so one crossing moves two nodes several slots apart;
+`restLength` is `150 - opinion * 0.9`, so 220 relaxation passes land somewhere
+slightly different even when nobody swaps; and the digest hashed positions to
+the pixel, so any of it rebuilt the DOM. Familiarity is re-earned by standing
+near somebody and decays 6% a day, so the input never stops moving.
+
+The arrangement is now carried between frames and eased with 30 passes instead
+of re-derived with 220; a row slot is only handed to somebody who has not got
+one; four people already on the graph may stay on it past the 24-person cap, so
+the marginal acquaintance stops flickering; and the digest is quantised to four
+pixels and five points of opinion. Three unit tests, all three verified failing
+on the build without it.
+
+That closes two thirds of the standing entry about all three graphs relaxing
+every frame — and the remaining third was already wrong: `TechWeb` does
+`this.layout ??= layOutWeb()` and has been caching all along. `FamilyTree` still
+re-runs its 200 passes every frame, which is real waste but not visible churn,
+since a family tree's input only changes at a birth or a death.
+
+**Phase 3 — a depleted thing looks depleted.** Every node was one glyph scaled
+by fullness, and at zero every kind became the same grey square, so telling a
+full bush from an empty one meant judging its size against a bush somewhere else
+on the screen. Depletion is a *picture* now, in three discrete states: a stripped
+bramble with no berries on it, cut stubble, a dug pit with the spoil on the near
+lip, a knapped scar — permanent, because flint never regrows and a band should
+be able to see the ground it has used up — a ring on the water where a shoal
+was, and for `sticks`, exactly what the owner asked for: nothing at all.
+
+"Nothing at all" needed one rule rather than two. An empty stick pile that is
+drawn as nothing but still answers clicks is the same lie as a snow-buried node
+the AI can reach through, so `nodeIsHidden` now answers both questions and both
+the renderer's node loop and `main.ts`'s picker read it. `hitRadiusOf` reads the
+same three-entry size table the painter does; it used to carry a fullness curve
+with a floor under it, which meant the floor was doing all the work below half
+and the click target had already parted company with the paint.
+
+**And `wild_grain` was being drawn as nothing.** M8.2 gave the kind a colour and
+never gave it a case in the switch, so a stand of wild cereal was a two-pixel
+shadow bar lying in the grass. It has ears on stalks now.
+
+**Measured, and the aggregate disagrees with the mechanism.** Twenty seeds on
+`century`, against the baseline this repository has been quoting since M8.2
+(100.0% survival, 827 born, 13.2 technologies, 720.2 lessons passed on):
+
+| | baseline | 1a | 1b | whole of phase 1 |
+|---|---|---|---|---|
+| mean survival | 100.0% | 99.9% | 100.0% | **100.0%** |
+| born | 827 | 828 | 838 | **841** |
+| starved | 18 | 28 | 30 | **21** |
+| technologies known | 13.2 | 12.9 | 11.3 | **11.4** |
+| lessons passed on | 720.2 | 710.5 | 635.9 | **663.5** |
+
+Survival has no headroom on this cohort — it is pinned at 100% — so the figure
+that moved is technologies known, by about two. **That is worth stating plainly
+and worth not over-reading.** It is also the figure `bugs.md` already records as
+drifting under behavioural change and not coming back (M9 phase 4, 11.0 → 10.1),
+and one instrumented `century` run before and after says the *mechanism* runs
+the other way: with the same code, the new build ponders **134,470** ticks
+against 118,477, has **485** breakthroughs against 440, and conceives **110**
+ideas against 97. More food is buying more time to think, not less; which
+particular technologies a given seed lands on is where the two points went.
+Nothing was tuned in response.
+
+**What phase 1 really changes is abundance.** The default twelve-day run picks
+253 fruit where it picked 58; `hunters` picks 686 where it picked 108. A tree
+now delivers the `fruitYield` its own table has always declared, which is
+several times what any world has actually had since M9.5 phase 3 halved the
+seasons — and the food economy was tuned, in M8.1 and M8.2, against the broken
+number. **That is a live balance question for the owner**, not something to
+settle inside a defect fix: the fix is to make the table true, and if the table
+is too generous the answer is a smaller `fruitYield`, in a pass that measures it.
+
+**Three scenarios acquired a failure, and all three were run against `HEAD` to
+find out whether they were new.** `traps`, `hunters` and `century` are all green
+at `HEAD`.
+
+- **`traps` — `sleep-restores`.** An instrument defect, fixed here. The check
+  went from n/a (the sampler caught 0 sleeps) to FAIL (it caught 2, and saw
+  fatigue fall on neither), with nothing about sleeping having changed;
+  `millers` in the same matrix reports 372 sleeps and 3,335 restoring ticks. It
+  now needs five observations before it asserts anything, which is exactly what
+  `heads-direct-work` was given in M8.2 and for the same reason.
+- **`century` and `millers` — `the-hurt-are-tended`.** Newly *applicable*, not
+  newly broken: both worlds now climb far enough to reach `herbalism`, and the
+  open defect "a world that reaches herbalism never tends anybody with it" then
+  shows. Not tuned. n/a is not a pass, and a check that stops being n/a because
+  the world got further is the instrument doing its job.
+- **`hunters` — `kills-are-butchered-for-bone`.** Left failing, deliberately.
+  The chain's first three links still work — 2 kills gave 10 of bone and sinew
+  and 3 tools — and what is missing is the coat, because the run made 2 kills
+  where it made 3. This check is one event wide in a scenario whose own comment
+  already calls the coat chain fragile by design, and lengthening the run until
+  it passes would be tuning the instrument to hide the question. The question
+  being: fruit in that world went up sixfold and hunting is what it competes
+  with on the scorer. At two kills against three there is no way to tell
+  displacement from noise, and pretending otherwise is how a false explanation
+  gets shipped with a comment attached.
+
+Verified: `npm run typecheck`, **316 unit tests** (nine new, eight of them
+verified failing on the build without their fix), **16 scenarios** with the four
+failures above accounted for, **47 e2e**, and `npm run shots`.
+
+---
+
 ## 2026-09-17 — M8.2, second half: composting, and the ground can be given back to
 
 The remedy the previous commit owed. Soil that only ever gets poorer is a
