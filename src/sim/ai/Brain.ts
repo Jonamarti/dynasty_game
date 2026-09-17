@@ -44,7 +44,7 @@ import type { NeedsConfig } from '../core/Config.ts';
 import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
-import { fightingPower } from '../social/Vulnerability.ts';
+import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
 
 export interface BrainContext {
   world: World;
@@ -798,8 +798,27 @@ export class Brain {
         // will risk a crowd for something worth having.
         const privacy = 1 / (1 + onlookers * 0.45);
         const dislike = Math.max(0, -ctx.relationships.opinion(person.id, carrier.id)) / 100;
+        // Who the target is, and not only what they are carrying.
+        //
+        // Until this term existed `steal` was the one predatory verb in the
+        // game that read nothing at all about its victim: a laden elder and a
+        // laden warrior scored identically, and proximity decided between
+        // them. `attack` and `threaten` had both always weighed the odds.
+        //
+        // It is an **addend, not a multiplier**, and that is the whole design.
+        // A multiplier would make robbing an equal impossible rather than
+        // merely less attractive, which is wrong twice over: hunger should
+        // still drive a desperate person to rob somebody who can fight back,
+        // and a `steal` that can only ever be aimed downward would make the
+        // strongest person in a band untouchable. So weakness is one more
+        // reason among the existing three, not a gate on any of them.
+        //
+        // Weighted below `hunger` on purpose. Need is still the main engine of
+        // theft in this world; opportunism is a thumb on the scale.
+        const easyMark = vulnerabilityOf(carrier, person);
         add('steal',
-          (hunger * 0.8 + person.traits.greed * 0.35 + dislike * 0.4) *
+          (hunger * 0.8 + person.traits.greed * 0.35 + dislike * 0.4 +
+            easyMark * person.traits.greed * 0.5) *
           (1 - person.traits.loyalty * 0.6) * privacy *
           this.proximityBonus(person, carrier, ctx.sightRadius));
         victim = carrier;
