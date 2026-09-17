@@ -328,10 +328,27 @@ export const DEFAULT_CONFIG: SimConfig = {
     childObservationChance: 0.055,
   },
   ai: {
-    // 0 on purpose for the commit that introduces it: `chooseAmongBest` takes
-    // no draw at all at this value, so the world is bit-identical and the
-    // stream is untouched. Turned on in its own measured commit.
-    choiceSpread: 0,
+    // 0.12, chosen by measurement rather than by taste, and not by the
+    // measurement that was supposed to choose it.
+    //
+    // Twenty seeds of `century` at 0, 0.08, 0.12 and 0.20 are
+    // indistinguishable on every number `sim:seeds` reports: mean survival
+    // 100.0 / 99.9 / 99.9 / 100.0, no collapse anywhere, technologies known
+    // 11.4 / 11.8 / 11.3 / 11.9. Softening the choice is *free*, and that
+    // cohort therefore cannot pick a value between them.
+    //
+    // What picks it is the thing the change is for — whether a verb that never
+    // quite won an argmax gets a turn:
+    //
+    //   distinct actions, century   31 / 30 / 33 / 32
+    //   distinct actions, lean      29 / 27 / 31 / 31
+    //
+    // 0.12 is the widest on both. Note that 0.08 is *narrower* than argmax on
+    // both, which is the reminder that these are single chaotic runs and the
+    // ordering between two neighbouring values is not resolvable from them. The
+    // shape is: a band of about an eighth is where the tail of the table starts
+    // getting a turn without the head losing one.
+    choiceSpread: 0.12,
   },
   sightRadius: 12,
   thinkInterval: 5,
