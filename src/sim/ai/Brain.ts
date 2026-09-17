@@ -589,9 +589,22 @@ export class Brain {
     }
 
     // --- Social ------------------------------------------------------------
+    // Everyone near enough to see **and reach**.
+    //
+    // The region test is the same one `findNode`, the fruit picker, the shelter
+    // search, the animal search and the shore search all apply, and people were
+    // the one kind of candidate in the whole scorer that never got it. On an
+    // island map that is not academic: somebody across a narrow channel is
+    // comfortably inside `sightRadius` and cannot be walked to at all, so every
+    // social verb — talk, teach, ask, give, steal, threaten, attack — could be
+    // scored, chosen and set up against a target the router will then refuse.
+    //
+    // Filtered here rather than in seven scorers, for the reason the house
+    // style gives: seven copies of a predicate is how seven answers drift.
     const neighbours = ctx.peopleHash
       .queryRadius(person.x, person.y, ctx.sightRadius)
-      .filter(other => other.alive && other.id !== person.id);
+      .filter(other => other.alive && other.id !== person.id &&
+        ctx.world.sameRegion(person.x, person.y, other.x, other.y));
 
 
     const loneliness = urgencyCurve(person.needs.company);
