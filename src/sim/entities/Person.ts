@@ -316,6 +316,14 @@ export class Person {
   targetItemId: string | null = null;
   targetItemCount: number | null = null;
   /**
+   * Whether this building-use action has already become a social deed.
+   *
+   * Sleeping and crafting last for many ticks. Without one bit on the action,
+   * trespassing would be announced every tick and one night under a foreign
+   * roof would fill every witness's memory forty-eight times over.
+   */
+  propertyUseNoted = false;
+  /**
    * Which technology a player-ordered `ponder` or `discuss` is about.
    *
    * Null lets the action pick for itself, which is what every AI-planned
@@ -772,6 +780,7 @@ export class Person {
     this.talkMode = null;
     this.targetItemId = null;
     this.targetItemCount = null;
+    this.propertyUseNoted = false;
     this.actionTimer = 0;
     // A route and the aim it was computed for have to be forgotten together —
     // this is the one place that forgets where somebody was going, and a

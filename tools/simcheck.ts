@@ -1997,7 +1997,13 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // number, because a field on thin ground and a field that has been worked to
   // death read identically from the absolute figure — which is exactly the
   // mistake `soilReport` exists to stop the panel making too.
-  if (standing.length === 0 || (tel.field_reaped ?? 0) === 0) {
+  if ((tel.compost_spread ?? 0) > 0) {
+    // `stewards` exists to measure the opposite half of this mechanism. Once
+    // somebody has put fertility back, demanding that the same soil still sit
+    // below its resting state punishes compost for succeeding; its own check
+    // immediately below compares that dressed ground with farming alone.
+    skip('soil-is-drawn-down', 'compost was spread on the worked ground');
+  } else if (standing.length === 0 || (tel.field_reaped ?? 0) === 0) {
     skip('soil-is-drawn-down', 'no harvest was taken off any ground in this run');
   } else {
     let worked = 0;

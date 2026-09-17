@@ -6,6 +6,48 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-17 — M11 phase 4: property is protected by attention
+
+`Building.ownerBandId` used to mean two incompatible things. The autonomous
+scorer treated foreign stores, fields, compost and workshops as if they did not
+exist, while player-issued building orders reached `ActionSystem` with no
+ownership check at all. A rival therefore could not decide to take from an
+empty camp, but the player could order the same thing in front of its owners.
+
+**One pure predicate now owns the answer.** `social/Property.ts` asks the
+people spatial hash whether a living member of the owning band is within sight
+of the structure. Own-band use is always allowed; foreign use is allowed when
+unwatched; an owner in sight can stop it. `Brain`, the action catalogue, the
+executor, crafting-station lookup and the inventory-panel shortcut all ask that
+same rule. The menu names the person watching, and a guard who arrives while
+somebody is walking can still stop the action through the ordinary visible
+refusal channel.
+
+**Foreign use is a deed, not a permissions error.** Taking from a foreign
+store or harvest emits `theft`; using its roof, field, heap or workshop emits
+the new lesser `trespass` deed. Long actions carry one bit so a night under a
+foreign roof becomes one story rather than one story per tick. The `lean`
+scenario exercises the mechanism: 41 unseen uses, one stopped use, 42
+trespasses and 164 theft deeds. A twenty-seed `century` cohort remained at
+100.0% mean survival with no collapses (826 births, 11.4 technologies known),
+so opening the larder path did not destabilise the food economy at the scale
+this project can resolve.
+
+Two defects surfaced in verification. Once foreign buildings became candidates,
+stores and fields across water could win the scorer; the old same-band filter
+had accidentally guaranteed reachability. The shared scorer-side building
+test now also asks `World.sameRegion`, taking `farmers` from 1,994 stuck walking
+ticks and 41 abandoned routes to 2 and 0. And `soil-is-drawn-down` was still
+asserting depletion in `stewards` after compost had deliberately restored the
+ground, despite the scenario description saying those two checks require
+opposite worlds. It now skips after a dressing and leaves that world to
+`compost-answers-exhaustion`.
+
+Verification: typecheck; 330 unit and determinism tests; all seventeen scenario
+mechanisms green except the documented `crowded` performance check and the
+one-event-wide tending checks in `millers` and `farmers`; 20-seed cohort as
+above. No RNG stream or fork order changed.
+
 ## 2026-09-17 — M11 phase 3b: an unseen deed is a thing your character knows it is
 
 The owner's rule is that nobody learns anything they did not see or were not

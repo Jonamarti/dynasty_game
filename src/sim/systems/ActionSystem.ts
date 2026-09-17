@@ -42,6 +42,8 @@ import {
   techPower, weaponOf, armourOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
+import { mayUse } from '../social/Property.ts';
+import type { EventType } from '../social/Events.ts';
 
 export interface ActionContext {
   world: World;
@@ -977,7 +979,8 @@ export class ActionSystem {
   private reachBuilding(
     person: Person,
     ctx: ActionContext,
-    requirement?: { ok: (building: Building) => boolean; reason: string }
+    requirement?: { ok: (building: Building) => boolean; reason: string },
+    propertyEvent?: Extract<EventType, 'theft' | 'trespass'>
   ): Building | null {
     const building = person.targetBuildingId === null
       ? null
@@ -990,7 +993,10 @@ export class ActionSystem {
       this.abandon(person, requirement.reason, ctx);
       return null;
     }
-    if (building.contains(person.x, person.y)) return building;
+    if (building.contains(person.x, person.y)) {
+      if (propertyEvent && !this.useProperty(person, building, propertyEvent, ctx)) return null;
+      return building;
+    }
 
     person.targetX = building.centerX;
     person.targetY = building.centerY;
@@ -1000,6 +1006,37 @@ export class ActionSystem {
     // this person on the spot forever.
     this.travel(person, ctx);
     return null;
+  }
+
+  /**
+   * Turns foreign use into a witnessed deed and lets an owner in sight stop it.
+   *
+   * The scorer asks the same pure `mayUse` question before setting out, but a
+   * person can walk into view while the actor is crossing the camp. Authority
+   * is therefore checked again here, at the building, where the deed actually
+   * happens. Long uses are announced once; a newly arrived owner still catches
+   * an already-noted trespass because the refusal ends the action immediately.
+   */
+  private useProperty(
+    person: Person,
+    building: Building,
+    event: Extract<EventType, 'theft' | 'trespass'>,
+    ctx: ActionContext
+  ): boolean {
+    const access = mayUse(person, building, ctx);
+    if (access.ours) return true;
+    if (!access.allowed) {
+      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      telemetry.count('property_use_stopped');
+      this.abandon(person, 'property_guarded', ctx);
+      return false;
+    }
+    if (!person.propertyUseNoted) {
+      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      telemetry.count('property_used_unseen');
+      person.propertyUseNoted = true;
+    }
+    return true;
   }
 
   /** Delivers carried materials to a construction site. */
@@ -1077,7 +1114,7 @@ export class ActionSystem {
   }
 
   private doStore(person: Person, ctx: ActionContext): void {
-    const store = this.reachBuilding(person, ctx);
+    const store = this.reachBuilding(person, ctx, undefined, 'trespass');
     if (!store) return;
 
     // A trap is a place food comes from, not a place to put it: filling one
@@ -1130,7 +1167,7 @@ export class ActionSystem {
   }
 
   private doTake(person: Person, ctx: ActionContext): void {
-    const store = this.reachBuilding(person, ctx);
+    const store = this.reachBuilding(person, ctx, undefined, 'theft');
     if (!store) return;
 
     // A player order that named a specific item takes precedence — M9 phase 2.
@@ -1224,7 +1261,7 @@ export class ActionSystem {
 
   /** Waits out the cold indoors, and leaves once there is no longer a reason. */
   private doShelter(person: Person, ctx: ActionContext): void {
-    const building = this.reachBuilding(person, ctx);
+    const building = this.reachBuilding(person, ctx, undefined, 'trespass');
     if (!building) return;
     telemetry.count('sheltering');
     // Being indoors is restful, so waiting out a cold night is not wasted time.
@@ -1591,7 +1628,7 @@ export class ActionSystem {
     const field = this.reachBuilding(person, ctx, {
       ok: b => b.crop !== null && b.complete,
       reason: 'no_field',
-    });
+    }, 'trespass');
     if (!field || !field.crop) return;
 
     if (techPower(person, 'farming') <= 0) {
@@ -1657,7 +1694,7 @@ export class ActionSystem {
     const field = this.reachBuilding(person, ctx, {
       ok: b => b.crop !== null && b.complete,
       reason: 'no_field',
-    });
+    }, 'theft');
     if (!field || !field.crop) return;
 
     if (!field.crop.isRipe) {
@@ -1774,6 +1811,7 @@ export class ActionSystem {
         this.travel(person, ctx);
         return;
       }
+      if (!this.useProperty(person, heap, 'theft', ctx)) return;
       // Arrived at the heap, which is the first of the errand's two waypoints
       // and therefore one of the two places a need is allowed to break it off.
       //
@@ -1807,6 +1845,7 @@ export class ActionSystem {
       this.travel(person, ctx);
       return;
     }
+    if (!this.useProperty(person, field, 'trespass', ctx)) return;
 
     // The second waypoint, and the working stretch this file checks everywhere
     // else. Once past it, seventy ticks is well under the ceiling `AGENTS.md`
@@ -1860,7 +1899,7 @@ export class ActionSystem {
     for (const building of ctx.buildingsById.values()) {
       if (!building.complete) continue;
       if (!isHeap(building.def) && building.def.storage <= 0) continue;
-      if (building.ownerBandId !== person.bandId) continue;
+      if (!mayUse(person, building, ctx).allowed) continue;
       if (building.store.count('compost') <= 0) continue;
       const away = person.distanceTo({ x: building.centerX, y: building.centerY });
       if (away < bestAway) {
@@ -1937,7 +1976,7 @@ export class ActionSystem {
    * are lying, not because sleeping is warm.
    */
   private doSleep(person: Person, ctx: ActionContext): void {
-    const building = this.reachBuilding(person, ctx);
+    const building = this.reachBuilding(person, ctx, undefined, 'trespass');
     if (!building) return;
 
     telemetry.count('sleeping');
@@ -2278,7 +2317,7 @@ export class ActionSystem {
       const station = this.reachBuilding(person, ctx, {
         ok: building => building.complete && building.def.id === stationId,
         reason: 'no_station_' + stationId,
-      });
+      }, 'trespass');
       if (!station) return;
     }
 

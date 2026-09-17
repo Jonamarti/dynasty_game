@@ -45,6 +45,7 @@ import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
 import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
+import { mayUse } from '../social/Property.ts';
 
 export interface BrainContext {
   world: World;
@@ -1220,7 +1221,7 @@ export class Brain {
     // the fire for exactly that reason.
     let fieldTarget: Building | null = null;
     const plots = ctx.buildings.filter(b =>
-      b.crop !== null && b.complete && b.ownerBandId === person.bandId);
+      b.crop !== null && b.complete && this.canUse(person, b, ctx));
     if (plots.length > 0) {
       const nearestPlot = (want: (b: Building) => boolean): Building | null =>
         this.pickBest(plots.filter(want),
@@ -1302,7 +1303,7 @@ export class Brain {
         // be a person carefully stopping their own snare line from catching
         // anything, because a full trap stops accruing.
         const store = this.pickBest(
-          stores.filter(b => b.storageFree > 0 && b.ownerBandId === person.bandId &&
+          stores.filter(b => b.storageFree > 0 && this.canUse(person, b, ctx) &&
             !isTrap(b.def)),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })
         );
@@ -1345,7 +1346,7 @@ export class Brain {
       //    below rather than by bending this one.
       if (carried < person.needs.hunger && person.needs.hunger > 25) {
         const larder = this.pickBest(
-          stores.filter(b => b.ownerBandId === person.bandId && b.store.bestFood() !== null),
+          stores.filter(b => this.canUse(person, b, ctx) && b.store.bestFood() !== null),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })
         );
         // Weighted well above foraging, and scaled by how well stocked it is. A
@@ -1371,7 +1372,7 @@ export class Brain {
       //    parched or exhausted has better things to do than walk the treeline.
       if (comfortNow > 0.4) {
         const round = this.pickBest(
-          stores.filter(b => isTrap(b.def) && b.ownerBandId === person.bandId &&
+          stores.filter(b => isTrap(b.def) && this.canUse(person, b, ctx) &&
             b.store.bestFood() !== null && this.stocked(b) >= TRAP_WORTH_A_ROUND),
           b => this.stocked(b) * nearness(b)
         );
@@ -1431,7 +1432,8 @@ export class Brain {
     // where anyone tired enough goes to bed, so both are scored off one search.
     if (person.needs.cold > 25 || (ctx.time.isNight && person.needs.fatigue > 20)) {
       shelter = this.pickBest(
-        ctx.buildings.filter(b => b.complete && b.def.shelter > 0.2),
+        ctx.buildings.filter(b =>
+          b.complete && b.def.shelter > 0.2 && this.canUse(person, b, ctx)),
         b => b.def.shelter * 40 - person.distanceTo({ x: b.centerX, y: b.centerY })
       );
       if (shelter) {
@@ -1575,19 +1577,17 @@ export class Brain {
       // is underfoot — which, since proximity dominates this scorer, means never
       // firing at all.
       //
-      // Somebody else's quern is not offered, matching the rule the store
-      // scorer already applies: `Building.ownerBandId` is honoured in exactly
-      // one place today and this is the second. Deciding access by the standing
-      // between two bands instead is the owner's O4, and it belongs in one place
-      // for both when it lands.
+      // A foreign workshop is physically usable when nobody from its band is
+      // there to stop you. The same predicate governs stores, fields, shelters
+      // and execution; this scorer must not promise work the action system will
+      // refuse on arrival under a different ownership rule.
       let station: Building | null = null;
       let nearness = 1;
       if (recipe.station !== undefined) {
         const stationId = recipe.station;
         station = this.pickBest(
           ctx.buildings.filter(b =>
-            b.complete && b.def.id === stationId && b.ownerBandId === person.bandId &&
-            ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY)),
+            b.complete && b.def.id === stationId && this.canUse(person, b, ctx)),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })
         );
         if (!station) continue;
@@ -1911,8 +1911,22 @@ export class Brain {
    */
   private hasCompost(person: Person, ctx: BrainContext): boolean {
     return ctx.buildings.some(b =>
-      b.complete && b.ownerBandId === person.bandId &&
+      b.complete && this.canUse(person, b, ctx) &&
       (isHeap(b.def) || b.def.storage > 0) && b.store.count('compost') > 0);
+  }
+
+  /**
+   * A building the scorer may honestly promise this person can use.
+   *
+   * Ownership used to imply reachability because each band's structures sit
+   * around its own fire. Once an unwatched foreign building became a real
+   * candidate, stores and fields across a narrow channel started winning on
+   * distance and produced forty-one impossible walks in `farmers`. Property
+   * and path regions are separate facts, but every scorer needs both.
+   */
+  private canUse(person: Person, building: Building, ctx: BrainContext): boolean {
+    return mayUse(person, building, ctx).allowed &&
+      ctx.world.sameRegion(person.x, person.y, building.centerX, building.centerY);
   }
 
   /**

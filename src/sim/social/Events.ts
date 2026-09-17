@@ -12,7 +12,7 @@
 
 export const EVENT_TYPES = [
   'gift', 'share_food', 'help', 'talk', 'trade', 'teach',
-  'theft', 'assault', 'murder', 'threaten',
+  'theft', 'trespass', 'assault', 'murder', 'threaten',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -54,6 +54,10 @@ export const DEED_WEIGHT: Record<EventType, number> = {
   trade: 2,
   teach: 7,
   theft: -14,
+  // Using another band's structure is an offence, but a lesser one than
+  // taking what is inside it. The distinction lets a culture remember the
+  // intruder without pretending that sleeping under a roof emptied a store.
+  trespass: -8,
   assault: -20,
   murder: -45,
   // Between theft and assault: no blow is struck, but the menace is not
@@ -75,6 +79,7 @@ export const DEED_SALIENCE: Record<EventType, number> = {
   trade: 0.2,
   teach: 0.45,
   theft: 0.7,
+  trespass: 0.55,
   assault: 0.85,
   murder: 1,
   threaten: 0.8,
@@ -92,7 +97,7 @@ export type Norms = Record<EventType, number>;
 
 export const DEFAULT_NORMS: Norms = {
   gift: 1, share_food: 1, help: 1, talk: 1, trade: 1, teach: 1,
-  theft: 1, assault: 1, murder: 1, threaten: 1,
+  theft: 1, trespass: 1, assault: 1, murder: 1, threaten: 1,
 };
 
 /**
@@ -125,7 +130,10 @@ export function describeEvent(
     case 'talk': return actorName + ' talked with ' + target;
     case 'trade': return actorName + ' traded with ' + target;
     case 'teach': return actorName + ' taught ' + target;
-    case 'theft': return actorName + ' stole from ' + target;
+    case 'theft': return targetName
+      ? actorName + ' stole from ' + target
+      : actorName + ' stole from a store';
+    case 'trespass': return actorName + ' used what was not theirs';
     case 'assault': return actorName + ' attacked ' + target;
     case 'murder': return actorName + ' killed ' + target;
     case 'threaten': return actorName + ' threatened ' + target;

@@ -27,6 +27,7 @@ import type { ItemPile } from '../entities/ItemPile.ts';
 import type { Inscription } from '../entities/Inscription.ts';
 import type { Animal } from '../entities/Animal.ts';
 import type { RelationshipGraph } from '../social/Relationships.ts';
+import type { PropertyUse } from '../social/Property.ts';
 import {
   CONVERSATION_MODES, MODE_LADDER, modeAllowed, whyNotYet, type ConversationMode,
 } from '../social/Conversation.ts';
@@ -122,6 +123,12 @@ export interface CatalogContext {
    * keep compiling; a context without it simply offers no station recipes.
    */
   stationFor?: (stationId: string) => Building | null;
+  /**
+   * Whether the actor can use a structure without an owner stopping them.
+   * Optional for hand-built test contexts; the live catalogue always supplies
+   * it so the menu and the executor answer ownership with the same rule.
+   */
+  propertyUse?: (building: Building) => PropertyUse;
   /**
    * Set when the player is commanding someone else rather than acting
    * themselves. The verbs are the same; only who carries them out changes, and
@@ -551,20 +558,23 @@ function buildingActions(
       reason: building.wants(actor.inventory) ? undefined : 'You carry nothing it needs',
     });
   } else {
+    const property = ctx.propertyUse?.(building);
+    const canUse = property?.allowed ?? true;
+    const guarded = canUse ? undefined : property?.because;
     if (building.def.storage > 0) {
       options.push({
         id: 'store',
         label: 'Store what you carry',
         icon: '\u{1F4E5}',
-        enabled: actor.inventory.total > 0,
-        reason: actor.inventory.total === 0 ? 'You carry nothing' : undefined,
+        enabled: canUse && actor.inventory.total > 0,
+        reason: guarded ?? (actor.inventory.total === 0 ? 'You carry nothing' : undefined),
       });
       options.push({
         id: 'take',
         label: 'Take from store',
         icon: '\u{1F4E4}',
-        enabled: building.store.total > 0,
-        reason: building.store.total === 0 ? 'The store is empty' : undefined,
+        enabled: canUse && building.store.total > 0,
+        reason: guarded ?? (building.store.total === 0 ? 'The store is empty' : undefined),
       });
     }
     // M8.2. Both verbs are offered on a finished plot, and which one is enabled
@@ -581,11 +591,12 @@ function buildingActions(
         id: 'sow',
         label: 'Sow the field',
         icon: '\u{1F331}',
-        enabled: knows && crop.isFallow && seed >= SOW_SEED,
-        reason: !knows ? 'Nobody here has the idea of putting seed back in the ground'
+        enabled: canUse && knows && crop.isFallow && seed >= SOW_SEED,
+        reason: guarded
+          ?? (!knows ? 'Nobody here has the idea of putting seed back in the ground'
           : !crop.isFallow ? 'Something is growing here already'
           : seed < SOW_SEED ? 'You need ' + SOW_SEED + ' grain to sow this'
-          : undefined,
+          : undefined),
       });
       const knowsCompost = techPower(actor, 'composting') > 0;
       if (knowsCompost) {
@@ -598,17 +609,18 @@ function buildingActions(
           id: 'spread',
           label: 'Spread compost here',
           icon: '\u{1F343}',
-          enabled: true,
+          enabled: canUse,
+          reason: guarded,
         });
       }
       options.push({
         id: 'reap',
         label: 'Bring in the harvest',
         icon: '\u{1F33E}',
-        enabled: crop.isRipe,
-        reason: crop.isRipe ? undefined
+        enabled: canUse && crop.isRipe,
+        reason: guarded ?? (crop.isRipe ? undefined
           : crop.isFallow ? 'Nothing is growing here'
-          : 'It is not ready yet',
+          : 'It is not ready yet'),
       });
     }
     if (building.def.shelter > 0) {
@@ -619,13 +631,15 @@ function buildingActions(
         id: 'sleep',
         label: 'Sleep here',
         icon: '\u{1F6CC}',
-        enabled: true,
+        enabled: canUse,
+        reason: guarded,
       });
       options.push({
         id: 'shelter',
         label: 'Shelter here',
         icon: '\u{1F3E0}',
-        enabled: true,
+        enabled: canUse,
+        reason: guarded,
       });
     }
     // M8.1, mechanism 4: what this station is *for*, offered on the station
@@ -636,7 +650,8 @@ function buildingActions(
       for (const recipe of Object.values(RECIPES)) {
         if (recipe.station !== building.def.id) continue;
         if (techPower(actor, recipe.tech) <= 0) continue;
-        crafts.push(craftOption(actor, recipe, ctx, building));
+        const option = craftOption(actor, recipe, ctx, building);
+        crafts.push(canUse ? option : { ...option, enabled: false, reason: guarded });
       }
       options.push(...grouped(crafts, 'Make…', '\u{1F528}',
         'You know nothing that is made here'));

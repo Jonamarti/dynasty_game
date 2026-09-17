@@ -139,6 +139,16 @@ stranger's private state hands the player exactly the god's-eye view the
 simulation is built to withhold, and a map of somebody's *mind* is the easiest
 possible way to do it.
 
+**Property is attention, not an invisible wall.** `social/Property.ts` is the
+single answer to whether somebody may use a building: their own band always
+may; a rival may while no living owner is within sight of it; an owner who can
+see can stop them. The scorer, catalogue, executor and direct inventory action
+all ask it. Foreign use emits a social deed (`theft` for taking,
+`trespass` for other use), because ownership that nobody can witness or tell a
+story about is only a hidden permission flag. Scorer-side candidates also need
+`World.sameRegion`: same-band ownership used to guarantee that accidentally,
+and allowing foreign buildings exposed impossible walks across water.
+
 > Overlays live on `document.body`, never inside `#hud`, which rebuilds its
 > subtree every frame. The z-index ladder is radial 20, picker 21, techweb 30,
 > newgame/succession 40. Each needs `[hidden] { display: none; }` — see

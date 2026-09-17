@@ -58,6 +58,7 @@ import {
 } from '../knowledge/Tech.ts';
 import { RECIPES, type RecipeDef } from '../entities/Recipe.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
+import { mayUse, type PropertyUse } from '../social/Property.ts';
 import {
   bandHasShape, bandOf, rankIn, type BandRank, type RankContext,
 } from '../social/Rank.ts';
@@ -1231,6 +1232,20 @@ export class Simulation {
    * less, in M9 phase 2, not this method.
    */
   storeItem(person: Person, store: Building, itemId: string, count = person.inventory.count(itemId)): number {
+    const access = this.mayUseBuilding(person, store);
+    if (!access.ours) {
+      // The inventory-panel shortcut does not run through ActionSystem, so it
+      // must cross the same property boundary here or clicking an item would
+      // bypass the rule obeyed by walking to the store.
+      this.social.emit('trespass', person, null, 0.5, this.time.tick,
+        this.peopleHash, this.config.sightRadius);
+      if (!access.allowed) {
+        this.lastRefusal = access.because;
+        telemetry.count('property_use_stopped');
+        return 0;
+      }
+      telemetry.count('property_used_unseen');
+    }
     const moved = store.accept(person.inventory, itemId, count);
     if (moved === 0) return 0;
     telemetry.count('stored', moved);
@@ -1241,9 +1256,17 @@ export class Simulation {
   storeWithinReach(person: Person) {
     return this.buildings.find(b =>
       b.complete && b.def.storage > 0 &&
-      b.ownerBandId === person.bandId &&
+      this.mayUseBuilding(person, b).allowed &&
       b.contains(person.x, person.y, 2)
     ) ?? null;
+  }
+
+  /** The one ownership answer shared by direct UI actions and simulation work. */
+  mayUseBuilding(person: Person, building: Building): PropertyUse {
+    return mayUse(person, building, {
+      peopleHash: this.peopleHash,
+      sightRadius: this.config.sightRadius,
+    });
   }
 
   /** The pile under a point, if any. */

@@ -1,0 +1,55 @@
+/** Property is protected by attention, not by an invisible permission wall. */
+import { describe, expect, it } from 'vitest';
+import { SpatialHash } from '../core/SpatialHash.ts';
+import { RNG } from '../core/RNG.ts';
+import { BUILDINGS, Building } from '../entities/Building.ts';
+import { Person } from '../entities/Person.ts';
+import { mayUse } from '../social/Property.ts';
+
+const SIGHT = 12;
+
+function person(name: string, x: number, y: number, bandId: number): Person {
+  return new Person(name, x, y, bandId, new RNG('property-' + name));
+}
+
+function access(actor: Person, building: Building, people: Person[]) {
+  const peopleHash = new SpatialHash<Person>(8);
+  peopleHash.rebuild(people);
+  return mayUse(actor, building, { peopleHash, sightRadius: SIGHT });
+}
+
+describe('observable property', () => {
+  it('always lets a band use its own structure', () => {
+    const actor = person('Ari', 5, 5, 0);
+    const store = new Building(BUILDINGS.stockpile!, 5, 5, 0);
+
+    expect(access(actor, store, [actor])).toEqual({
+      ours: true,
+      allowed: true,
+      seen: null,
+      because: 'it belongs to their band',
+    });
+  });
+
+  it('lets an outsider use an unwatched structure', () => {
+    const actor = person('Ari', 5, 5, 0);
+    const owner = person('Bo', 40, 40, 1);
+    const store = new Building(BUILDINGS.stockpile!, 5, 5, 1);
+
+    expect(access(actor, store, [actor, owner]).allowed).toBe(true);
+  });
+
+  it('names an owner close enough to intervene', () => {
+    const actor = person('Ari', 5, 5, 0);
+    const owner = person('Bo', 7, 5, 1);
+    const stranger = person('Cai', 6, 5, 2);
+    const store = new Building(BUILDINGS.stockpile!, 5, 5, 1);
+
+    const result = access(actor, store, [actor, owner, stranger]);
+    expect(result.allowed).toBe(false);
+    expect(result.seen).toBe(owner);
+    // A third-party witness can spread the story, but cannot enforce another
+    // band's claim merely by standing nearby.
+    expect(result.seen).not.toBe(stranger);
+  });
+});

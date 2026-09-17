@@ -118,13 +118,14 @@ changelog and is the owner's to answer.
 | M11 phase 2 — theft and violence read the target, and predation exists | shipped 2026-09-17 |
 | M11 phase 3a — the urge to go and tell somebody | shipped 2026-09-17, and it flushed out the reachability defect |
 | M11 phase 3b — the secret is a thing you can see | shipped 2026-09-17. An unseen deed involving your character says so over their head |
-| **M11 phases 3c-11** | **next.** Property gated on being seen, plots and exile, inequality, band standing, macronutrients, the oral tree |
+| M11 phase 4 — property is protected by attention | shipped 2026-09-17. Unwatched foreign use is possible; an owner in sight can stop it |
+| **M11 phases 3c, 5-11** | **next.** Observable slander/plots, exile, inequality, band standing, macronutrients, the oral tree |
 | **M8.2 — the other fifteen Neolithic nodes** | **next**, after M9.6's cheap half. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M9.6 phases 4–5 — happiness, and sleeping rough | planned; runs after M8.2 and before M10, so M10's fences have something to pay off in |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
-| Owner's list O1–O5 | **O1, O2 and O3 shipped in M9 phase 4.** O4-O5 scheduled into M10. O6 and O7 shipped in pass A |
+| Owner's list O1–O5 | **O1-O3 shipped in M9 phase 4; O4 in M11 phase 4.** O5 remains with M10. O6 and O7 shipped in pass A |
 
 **Thirty-four technologies**, fourteen recipes, twelve buildings, thirty-one items,
 thirty-seven actions (`sow`, `reap` and `spread` are new), twelve skills (`heal`, `cook` and
@@ -437,8 +438,9 @@ reachable.
 
 Eight things asked for by the project owner on 2026-09-06. **O6 (continuous
 movement) and O7 (clicking a single entity still offers the ground) shipped in
-pass A.** **O1, O2 and O3 shipped in M9 phase 4 on 2026-09-11** — see
-`changelog.md` — and **O4 and O5 are scheduled inside M10**, after M8.2.
+pass A.** **O1, O2 and O3 shipped in M9 phase 4 on 2026-09-11**, and **O4
+shipped in M11 phase 4 on 2026-09-17** — see `changelog.md`. O5 remains inside
+M10, after M8.2.
 
 **Correction, 2026-09-10.** This section previously said the decision for O4
 "lives" in `normsByBand` and the standing machinery in `social/Authority.ts`.
@@ -520,15 +522,16 @@ expertise.
 **This is also a candidate answer to M8.0**, since it is a transmission channel
 and transmission is what gates the tree.
 
-### O4. Buildings belong to a tribe, and rivals may be refused the use of them — scheduled as M10
+### O4. Buildings belong to a tribe, and rivals may be refused the use of them — shipped in M11 phase 4
 
-`Building.ownerBandId` exists and is honoured in exactly one place: `Brain` only
-sends somebody to a store belonging to their own band. What is wanted is access
-decided by **the relationship between two tribes**, not a hard same-band test —
-and no such relationship exists yet to decide it (see the correction above).
-M10 has to build inter-band standing before this can read it, and refusal must
-reach the player through `lastRefusal` once it does — a store that silently is
-not offered is exactly what that standing rule exists to prevent.
+`Building.ownerBandId` is now read through `social/Property.ts`, not through
+copied same-band gates. A rival may use an unwatched store, roof, field, heap or
+workshop; a living member of the owning band within sight can stop them, and
+the reason reaches the player. Taking emits `theft`, while other foreign use
+emits `trespass`, so what happened is known only by witnesses and later gossip.
+Band-to-band standing still does not exist — M11 phase 7 builds that separate
+question, which will decide how two groups feel about one another rather than
+whether matter becomes physically unusable at a border.
 
 ### O5. Sabotage, so war between tribes is more than beating people up — scheduled as M10
 

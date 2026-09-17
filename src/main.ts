@@ -1251,6 +1251,7 @@ function nearestStation(who: Person, stationId: string): Building | null {
   let bestDistance = Infinity;
   for (const building of sim.buildings) {
     if (!building.complete || building.def.id !== stationId) continue;
+    if (!sim.mayUseBuilding(who, building).allowed) continue;
     if (!sim.world.sameRegion(who.x, who.y, building.centerX, building.centerY)) continue;
     const distance = who.distanceTo({ x: building.centerX, y: building.centerY });
     if (distance < bestDistance) {
@@ -1287,6 +1288,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
   const options = availableActions(subject, target, {
     world: sim.world, nearWater, commanding,
     stationFor: stationId => nearestStation(subject, stationId),
+    propertyUse: building => sim.mayUseBuilding(subject, building),
     // The player's own view of whoever was clicked, so the conversation rungs
     // offered are the ones the two of them could actually have. Deliberately
     // left out when commanding somebody else: which conversations *they* could
