@@ -3,6 +3,51 @@
 As of 2026-09-17. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 1, 2026-09-17
+
+### `the-hurt-are-tended` is one event wide on `farmers` and `stewards`
+
+Softening `Brain`'s choice from argmax to a draw among the best (M11 phase 1b)
+flipped this check on two scenarios, and the flip is a fact about the check.
+
+At `choiceSpread: 0` both worlds report **18 ticks** spent sitting with the hurt
+and pass. At 0.12 both report **0** and fail. Eighteen ticks is one person
+kneeling beside another for a few seconds, once, in a whole run — so the check is
+not measuring whether a world tends its injured, it is measuring whether one
+particular encounter happened to occur. Any behavioural change at all will move
+it, in either direction, and it will keep changing sides.
+
+This is the third entry of this exact shape in this document. The other two are
+"two health checks are one or two events wide" (M9 phase 4) and "`hunters`' coat
+chain is one event wide, and a sixfold fruit harvest tipped it" (M9.6). The
+pattern is now established well enough to be worth stating as a rule: **a check
+whose detail line reports a number in the tens is a tripwire on one event, and
+should either be given a floor that means something or be read as a tripwire
+rather than as a measurement.**
+
+Not fixed here, deliberately. Fixing it means deciding what "a world tends its
+injured" should actually require, and that decision belongs with the pass that
+makes tending worth doing — not with the pass that happened to move it.
+
+**The same commit made the same check go from 0 ticks to 114 and pass on
+`century`**, where it had been failing since M9 phase 5 under the entry "a world
+that reaches herbalism never tends anybody with it". That entry can now be
+answered: the mechanism was never broken. `tend` simply never won an argmax
+against whatever else that person could have been doing, and an argmax gives a
+verb that is second-best every single time exactly nothing. `millers` still
+reports 0 and still fails.
+
+### `jobs-bias-work` changed sides again, on a tenth of a point
+
+`craft` reports holders spending **8.1%** of their time on their own job's work
+against everyone else's **8.2%** — so the check fails by one tenth of one point.
+
+This document already records that this check "has an effect smaller than its own
+seed-to-seed spread", found while building M8.1. Nothing has changed about that.
+It is listed here only so that the M11 phase 1b matrix has an explanation for
+every line that moved, rather than one unexplained failure that a later reader
+has to re-derive.
+
 ## Found shipping M9.6 phases 0-3, 2026-09-17
 
 ### `hunters`' coat chain is one event wide, and a sixfold fruit harvest tipped it
