@@ -380,6 +380,40 @@ export const SCENARIOS: Record<string, Scenario> = {
     },
     steps: 9000,
   },
+  lean: {
+    name: 'lean',
+    description:
+      'A long run on an island that does not quite carry everyone. The ' +
+      'scenario the social layer is measured in, and it exists because the ' +
+      'default world has no pressure left in it at all: `century` ends with ' +
+      'mean hunger at 13 of 100, mean health at 100.0, and a population that ' +
+      'peaks and never falls. Nobody steals when nothing is scarce, nobody ' +
+      'hates anybody, and a band will not cast anyone out — so every check ' +
+      'about theft, grudges, factions or exile reports n/a no matter how the ' +
+      'mechanism behind it is built. A mechanism measured only where it ' +
+      'cannot fire is a mechanism that gets tuned upward until it fires for ' +
+      'the wrong reason, which is the failure `hunt` and `threaten` both ' +
+      'already have entries in the changelog for. ' +
+      'This is the same affordance `harsh-winter` uses when it shortens a ' +
+      'season and `craft` uses when it hands its founders three ' +
+      'technologies: move the starting conditions until a run can reach the ' +
+      'thing under test, rather than weakening the test until it passes. ' +
+      'It is deliberately NOT `crowded`, which is thin forage over 3,000 ' +
+      'steps: a grudge needs years to accumulate and a dynasty needs ' +
+      'generations, so scarcity has to be paired with length or the social ' +
+      'layer never matures enough to be worth measuring. And it is ' +
+      'deliberately short of a collapse, because a world that dies measures ' +
+      'nothing either.',
+    config: {
+      seed: 'lean',
+      world: {
+        berryBushes: 90, gameHerds: 8, deadwood: 70, fishingSpots: 12,
+        treeDensity: 0.3, regrowthRate: 0.25,
+      },
+      population: { bands: 3, peoplePerBand: 12 },
+    },
+    steps: 24000,
+  },
 };
 
 // ---------------------------------------------------------------------------
