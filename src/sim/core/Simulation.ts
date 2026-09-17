@@ -359,6 +359,13 @@ export class Simulation {
     // Appended after `wildlifeRng`, for the same reason. Records decay on their
     // own stream so that adding one does not move the wildlife.
     this.recordRng = this.rng.fork();
+    // *** DO NOT APPEND A NEW STREAM HERE. *** This is the end of the *named*
+    // block, not the end of the fork order: three more forks are taken below —
+    // `seedInitialForest`'s anonymous one, then `fishRng`, then `grainRng` —
+    // and a stream slotted in here consumes the draw the forest expects and
+    // silently replants every wood in every saved seed. The genuine append
+    // point is the line after `grainRng`. See `AGENTS.md`, which carries the
+    // numbered table and the instruction to add a row to it when you append.
 
     resetPersonIds();
     resetResourceIds();

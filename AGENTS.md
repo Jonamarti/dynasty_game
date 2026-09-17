@@ -33,12 +33,26 @@ streams at the end. The fork order is the seed contract; inserting one silently
 invalidates every saved seed and every pinned test world.
 
 > **"The end" is not where the comment says it is.** The named fork block ends
-> at `recordRng` with a comment inviting you to append after it — but there is a
-> **fourteenth, anonymous fork twenty-five lines further down**, the
-> `this.rng.fork()` handed to `seedInitialForest`. Appending where the comment
-> invites you to consumes the draw that fork expects and silently replants every
-> forest in every saved seed. Hoist that fork into the named block first, as its
-> own commit, or append genuinely last.
+> at `recordRng` — the **eleventh** of fourteen — with a comment inviting you to
+> append after it. Three forks sit below that invitation:
+>
+> | # | fork | line |
+> |---|---|---|
+> | 12 | anonymous, handed to `seedInitialForest` | `Simulation.ts:390` |
+> | 13 | `fishRng` | `Simulation.ts:404` |
+> | 14 | `grainRng` | `Simulation.ts:409` |
+>
+> **The genuine append point is the line after `grainRng`**, immediately before
+> the `spawnResources` block. Appending where the comment invites you consumes
+> the draw the forest fork expects and silently replants every forest in every
+> saved seed; appending between the fish and the grain does the same to the
+> cereal.
+>
+> This paragraph has been wrong before, which is the reason for the table. It
+> used to call the forest fork "the fourteenth" and describe it as the last one
+> — true when it was written, and false from the moment M8.1 appended `fishRng`
+> and M8.2 appended `grainRng` behind it. **If you append a stream, add its row
+> here in the same commit**, or the next person inherits the same trap.
 
 **And forks are not the only way to shift a stream.** `spawnResources`,
 `spawnHerds` and `spawnPeople` all draw from **one shared `spawnRng`**, so adding
