@@ -10,8 +10,12 @@ The owner's notes of 2026-09-17, triaged and planned.
 > the claim in phase 2 that `TechWeb` relaxes every frame was false, as it has
 > always cached its layout; and phase 1 needed a third commit nobody planned,
 > because the out-of-season tail was propping up an autumn that a second defect
-> had already emptied. **Phases 4 and 5 — happiness, and sleeping rough — are
-> still to do**, and still run after M8.2.
+> had already emptied. **Phase 4a — the field itself — shipped 2026-09-17 too,
+> bundled into M11 phase 5a** (see `m11_plan.md`) rather than waiting its turn,
+> because both migrate `TRAITS` and paying that RNG-shift cost twice would have
+> been wasteful. **The rest of phase 4 — happiness reading and acting on the
+> field — and phase 5, sleeping rough, are still to do**, and still run after
+> M8.2.
 
 ## Context
 
@@ -348,11 +352,15 @@ what makes this affordable:
 Ship the machinery inert first, exactly as spoilage and M10's building wear both
 do, so "the field exists" and "the field changed the world" stay separable:
 
-- **4a** — the `Person` field, the four channels, the decay, the trait, the
-  inheritance, the character-creation row, the inspector panel, and dry-run
-  counters. **No behaviour reads it.** Bit-identical except for the trait
-  migration, which moves the RNG and must therefore be its own commit with its
-  own before-and-after.
+- **4a — SHIPPED 2026-09-17, bundled with M11 phase 5a.** The `Person` field,
+  the four channels, the decay, the trait (`malice`, M11 note 8's own axis —
+  the two migrations shared one commit rather than paying the RNG-shift cost
+  twice), the inheritance, the character-creation row, the inspector panel,
+  and telemetry counters in place of a scenario gate (see `m11_plan.md`'s
+  changelog entry for the reasoning and the before/after cohort). **No
+  behaviour reads it.** Not bit-identical: the trait migration moves the RNG,
+  measured against a twenty-seed `century` cohort and `sim:check:all`, both
+  recorded in `changelog.md` and `bugs.md`.
 - **4b** — `expressionOf` reads it, so the face finally has the backing its
   header wishes for. Renderer-visible, still no behavioural effect.
 - **4c** — `Brain` reads it: low spirits bias toward company, rest, `play` and

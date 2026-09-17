@@ -29,6 +29,7 @@ import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
 import { NEEDS, SKILLS, TRAITS } from '../sim/entities/Person.ts';
+import { MOOD_CHANNELS } from '../sim/core/Mood.ts';
 import { lastScores } from '../sim/ai/Brain.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
 import { actionLabel } from '../render/Floaters.ts';
@@ -955,6 +956,17 @@ export class Hud {
     }
     rows.push('<div class="hud-note">Temperament weights every choice they make. ' +
       'A greedy, disloyal person genuinely prefers taking to asking.</div>');
+
+    // Mood: four channels on a -100..100 scale, shown at rest around the middle
+    // of the bar rather than the bottom. Nothing reads these yet (M9.6 phase
+    // 4a is inert scaffolding), but the inspector is where the migration's own
+    // discipline says the field has to show up the moment it exists.
+    rows.push('<div class="hud-section">Mood</div>');
+    for (const channel of MOOD_CHANNELS) {
+      rows.push(bar(channel, (person.mood[channel] + 100) / 2, '#8ac8a0'));
+    }
+    rows.push('<div class="hud-note">How their spirits are riding, resting toward a ' +
+      'point their temperament sets.</div>');
 
     // What they are working on now, before what they already know. An idea in
     // progress is the more interesting half: it has a story attached, it can

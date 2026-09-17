@@ -292,12 +292,17 @@ eso `Household.store` se borra en vez de leerse (fase 6a).
 
 ## Fase 5 — Complots, calumnia y destierro (notas 4 y 8)
 
-**5a — el rasgo.** La nota 8 pide un rasgo tipo *malévolo* o *conspirador*.
-`TRAITS` lo recorren la fundación, la herencia, el envejecimiento y el presupuesto
-de creación de personaje, así que **la migración es su propio commit**. Y
-[m9_6_plan.md](docs/m9_6_plan.md) fase 4a ya tiene reservada la siguiente
-migración de `TRAITS` para el temperamento del ánimo: **hay que hacer las dos a la
-vez, una sola vez**, o se paga el mismo peaje dos veces.
+**5a — el rasgo. HECHO 2026-09-17.** La nota 8 pedía un rasgo tipo *malévolo* o
+*conspirador*: `malice`, octavo eje, sin lector todavía. Se hizo a la vez que
+[m9_6_plan.md](docs/m9_6_plan.md) fase 4a — `Person.mood`, cuatro canales,
+decadencia hacia un punto que fija el temperamento, fila del inspector — porque
+las dos migran `TRAITS`/fundación/herencia/envejecimiento/resumen de personaje
+y pagar el peaje del RNG dos veces habría sido tonto. Medido: cohorte de veinte
+semillas antes/después en `changelog.md`, mundo sano en todas las cifras que esa
+cohorte puede resolver. Tres líneas de `sim:check:all` cambiaron de lado — todas
+ya documentadas en `bugs.md` como filos de cuchillo (`kills-are-butchered-for-
+bone`, `pictures-are-painted`, `the-hurt-are-tended`) o como una población de
+`century` genuinamente mayor (`perf-budget`) — y ninguna se tocó.
 
 **5b — la tabla de hechos, honestamente.** `EVENT_TYPES` declara `gift`, `help`,
 `talk` y `trade` y **nada los emite**. Pero no hay que emitirlos todos:

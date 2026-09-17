@@ -11,6 +11,7 @@ import { carryFactor, TECH } from '../knowledge/Tech.ts';
 import type { Idea } from '../knowledge/Synthesis.ts';
 import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { JobId } from './Job.ts';
+import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -47,7 +48,7 @@ export const SKILL_INDEX: Record<Skill, number> =
 const ALONGSIDE_LEARN = 0.5;
 
 /**
- * Seven heritable personality axes, each in [0, 1]. They weight the utility
+ * Eight heritable personality axes, each in [0, 1]. They weight the utility
  * scorer, so a greedy, low-loyalty person genuinely prefers stealing to asking.
  *
  * `intelligence` is how quickly someone works an idea out, teaches it, and
@@ -58,13 +59,24 @@ const ALONGSIDE_LEARN = 0.5;
  * run, and a trait that quietly moved them would be invisible until a
  * population collapsed.
  *
+ * `malice` is a readiness to scheme against somebody with no grudge behind it —
+ * the owner's note 8, "a personality trait like malevolent or conspirator".
+ * It is unlike `aggression`, which drives an on-the-spot blow: `malice` is what
+ * a plot needs instead of a wrong done to you, and it belongs to the same
+ * conspiracies-and-slander pass (M11 phase 5) that will read it. Declared here
+ * on its own, ahead of that reader, on the precedent already set for `farm` and
+ * `smith` in `SKILLS` below — `TRAITS` is iterated by founding, inheritance,
+ * ageing and the character-creation summary the moment a new entry exists, so
+ * the migration has to be its own commit or the RNG shift it causes cannot be
+ * told apart from whatever comes to use it.
+ *
  * Rebelliousness is *not* here. It is derived from `loyalty` and standing grief
  * in `social/Authority.ts`, because two knobs for one behaviour is how a scorer
  * becomes untunable.
  */
 export const TRAITS = [
   'aggression', 'greed', 'loyalty', 'curiosity', 'tradition',
-  'intelligence', 'industriousness',
+  'intelligence', 'industriousness', 'malice',
 ] as const;
 export type Trait = (typeof TRAITS)[number];
 
@@ -209,6 +221,8 @@ export class Person {
   needs: Record<Need, number> = { hunger: 0, thirst: 0, fatigue: 0, cold: 0, company: 0 };
   skills: Record<Skill, number>;
   traits: Record<Trait, number>;
+  /** Four channels of spirits, resting toward a point set by temperament. See `core/Mood.ts`. */
+  mood: Mood;
   inventory = new Inventory();
 
   /** What this person has seen and been told. See `social/Memory.ts`. */
@@ -571,6 +585,11 @@ export class Person {
 
     this.traits = {} as Record<Trait, number>;
     for (const trait of TRAITS) this.traits[trait] = Math.max(0, Math.min(1, rng.gaussian(0.5, 0.18)));
+
+    // Starts at rest rather than at zero: a person with a settled temperament
+    // is not born jarred against it.
+    this.mood = new Mood();
+    for (const channel of MOOD_CHANNELS) this.mood[channel] = moodBaseline(this.traits, channel);
   }
 
   get years(): number {

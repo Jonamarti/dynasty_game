@@ -6,6 +6,64 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-17 — M11 phase 5a and M9.6 phase 4a, bundled: a trait for scheming, and a mood that finally exists
+
+Two migrations that both touch `TRAITS`, founding, inheritance, ageing and the
+character-creation summary, shipped as one commit rather than two so the RNG
+shift either would cause is paid once — `m11_plan.md`'s own argument for why
+5a has to carry 4a along with it.
+
+**`malice`, an eighth personality axis.** The owner's note 8 asked for "a
+personality trait like malevolent or conspirator" to gate who can start a
+plot without a personal grudge behind it. Declared now, read by nobody yet —
+the same precedent `farm` and `smith` already set in `SKILLS`, and for the
+same reason: the trait has to exist before M11 phase 5's conspiracies can
+read it, and bundling the declaration with that later pass would make the
+RNG drift from adding it indistinguishable from the drift the plotting
+mechanism itself causes.
+
+**`Person.mood`, four decaying channels.** `core/Mood.ts`'s own header has
+said since M9.5 phase 1 that a persistent, heritable mood was the obvious
+next step and named exactly this migration cost as the reason it wasn't
+built then. It now exists: `comfort`, `belonging`, `security` and `purpose`,
+each resting toward a point set by one temperament axis apiece (tradition,
+loyalty, aggression inverted, and industriousness), closing 8% of the gap to
+that point once a day alongside relationship and memory decay. `Mood.add`
+is the one entry point, keeping the last four reasons beside the number —
+`lastRefusal`'s pattern applied to a channel instead of a refusal — but
+nothing calls it yet. The inspector's Self tab grew a Mood section beside
+Temperament so the field is visible the moment it exists, and new
+`mood.test.ts` holds the baseline formula and the decay rate to brute force.
+**Inert**: `expressionOf` does not read a channel yet (M9.6 phase 4b), and
+nothing in `Brain` does either (4c). No behaviour changed because of mood
+itself.
+
+**The trait migration moves the RNG, exactly as documented, and it was
+measured rather than assumed.** Adding an eighth `rng.gaussian` draw to
+founding's trait loop (and inheritance's) shifts every draw downstream of it,
+for every scenario, on every seed — `sim:check:all` before and after this
+commit differ on three lines, all of them already-catalogued knife-edge
+checks rather than new defects: `century` gains a `perf-budget` failure
+(confirmed by bisection to be a genuinely larger population on that seed —
+76 peak against 66 before — not a slower per-tick cost; the codebase's own
+systems scale with population, and `AGENTS.md` already names `century` as
+chaotic under any RNG-affecting change), and `hunters`/`kills-are-butchered-
+for-bone` and `fishers`/`pictures-are-painted` trade sides — both already on
+record in `bugs.md` as one-event-wide checks that flip under any change at
+all. `farmers`/`the-hurt-are-tended` flips the other way, from failing to
+passing. A twenty-seed `century` cohort before this commit read 100.0% mean
+survival, 826 born, 20 total starved (7 infants, 1 child, 12 adults), 11.4
+technologies known; after, 99.9% mean survival, 860 born, 3 total starved (1
+infant, 0 children, 2 adults), 12.3 technologies known — a healthy world by
+every figure this project trusts a twenty-seed cohort to resolve, and inside
+the noise `AGENTS.md` already says a cohort this size cannot separate from a
+coefficient.
+
+Verification: typecheck; 338 unit and determinism tests (8 new, for `Mood`);
+`sim:check:all` as above; 20-seed cohort as above; all 47 e2e, including the
+character-tabs and character-creation tests that now render the new trait and
+section without needing any changes of their own.
+
 ## 2026-09-17 — M11 phase 4: property is protected by attention
 
 `Building.ownerBandId` used to mean two incompatible things. The autonomous

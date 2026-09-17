@@ -37,6 +37,7 @@ import {
   Building, BUILDINGS, isTrap, resetBuildingIds, type BuildingDef,
 } from '../entities/Building.ts';
 import { accrueUnits } from './Progress.ts';
+import { decayMood } from './Mood.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -2364,6 +2365,9 @@ export class Simulation {
       this.snowDepth = advanceSnowDepth(this.snowDepth, this.time.temperature);
       this.social.dailyUpkeep(this.people);
       this.shareTheHearth();
+      for (const person of this.people) {
+        if (person.alive) decayMood(person);
+      }
       const forest = this.forestSystem.daily(this.trees, {
         world: this.world,
         rng: this.forestRng,

@@ -3,6 +3,53 @@
 As of 2026-09-17. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 5a / M9.6 phase 4a, 2026-09-17
+
+### The `malice` migration flips three already-catalogued knife-edge checks, and grows `century`'s population enough to fail `perf-budget`
+
+Adding an eighth trait to `TRAITS` means an eighth `rng.gaussian` draw in
+founding's trait loop and in `inheritTraits`, which — exactly as `AGENTS.md`
+and this document have recorded for every past change to world-generation-time
+RNG — shifts every subsequent draw, for every scenario, on every seed. Three
+lines of `sim:check:all` changed, and all three were checked against the
+pre-migration build before being written down here, per this project's own
+rule against declaring a check "fixed" or "broken" without that comparison.
+
+`century` gains a `perf-budget` failure it did not have before: 1,700-1,950
+steps/s against a 2,000 floor, down from a stable 2,300-ish. Bisected rather
+than assumed: disabling the new decay loop in `Simulation`'s daily block and
+disabling the new trait in turn, one at a time, showed the slowdown tracks the
+trait, not the loop — and the reason is a genuinely bigger world. Peak
+population on this seed is 76 with the trait against 66 without it, and this
+project's systems are not free per person; a 15% larger population costing 15%
+of the throughput is the simulation doing more work, not doing the same work
+slower. `century` is already named in `AGENTS.md` as the scenario least able
+to absorb a world-generation-time RNG shift, and M9.5 phase 4a's entry below
+already recorded the identical shape (a `VARIABLE_NORMS` addition moving one
+extra draw per band, `crafts-happen-at-stations` failing on `millers` as a
+result) — this is that finding recurring on `century` and on `perf-budget`
+rather than a new phenomenon.
+
+`hunters`/`kills-are-butchered-for-bone` and `fishers`/`pictures-are-painted`
+trade from passing to failing, and `farmers`/`the-hurt-are-tended` trades the
+other way, from failing to passing. All three are already on record in this
+document as one- or two-event-wide checks — `kills-are-butchered-for-bone` on
+`hunters` under "`hunters`' coat chain is one event wide", `pictures-are-
+painted` under the M9.5 phase 2b and 3 entries on checks that "trade places
+under enough downstream RNG drift", and `the-hurt-are-tended` under three
+separate entries above — so this is each of them doing exactly what this
+document already said they would do under any behavioural change at all, not
+three new defects.
+
+Not fixed, and not tuned: a twenty-seed cohort (see the changelog entry for
+this pass) shows a healthy world on every figure that cohort size can resolve
+— survival, starvation and technologies known all move in a good direction —
+so there is nothing here to chase beyond what is already written down. If
+`perf-budget` on `century` is ever worth hardening against this kind of
+legitimate population growth, the fix is a floor that scales with population
+rather than a fixed steps-per-second number, which is a change to the
+instrument and belongs with whoever next tunes it, not with this migration.
+
 ## Found shipping M11 phase 2, 2026-09-17
 
 ### Nobody in this world has any fight skill, and that blocks more than it looks
