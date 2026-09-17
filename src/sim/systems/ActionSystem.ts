@@ -1508,6 +1508,18 @@ export class ActionSystem {
     person.targetY = patient.y;
     if (!this.travel(person, ctx)) return;
 
+    // Once, on the tick tending actually begins, not once per tick of a bout
+    // that can run for a while — the same discipline `propertyUseNoted` and
+    // `useProperty` follow for a long action's one deed. `EVENT_TYPES` has
+    // declared `help` since before this file existed; this is the first thing
+    // that ever emits it. Magnitude is how badly hurt the patient was, the
+    // same reading `theft`'s "how much was taken" gets.
+    if (person.workedTicks === 0) {
+      ctx.social.emit(
+        'help', person, patient, 1 - patient.health / 100, ctx.tick, ctx.peopleHash, ctx.sightRadius
+      );
+    }
+
     person.workedTicks++;
     const mended = TEND_RATE * techPower(person, 'herbalism')
       * (0.4 + person.skillFactor('heal'));

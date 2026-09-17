@@ -10,8 +10,29 @@
  * tolerated.
  */
 
+/**
+ * `talk` and `trade` used to be here, and neither had a reader worth the
+ * name. `settle` already pays every ordinary conversation in `familiarity`,
+ * which enters `opinion` at ×0.35, so a `talk` deed on top of that would have
+ * counted the same conversation twice; its salience of 0.08 also sat below
+ * `bestGossipFor`'s floor of 0.15 — memory that could never become gossip,
+ * only take up a slot in a memory capped at 48 — and `emit` runs a spatial
+ * query, so paying that cost at every greeting bought nothing at all. `trade`
+ * had no verb behind it at all. M11 phase 5b removed both, on the rule this
+ * project already holds SKILLS and TECH_EFFECTS to: a table entry earns its
+ * place by having something read it, not by naming something planned. `trade`
+ * is declared again, alongside the verb that finally reads it, in M11 phase
+ * 7; `gift` stays declared through phase 6 for a narrower reason — the `give`
+ * verb it names already exists and works, it is only the deed side that is
+ * still missing, one phase away, the same short-lived gap M11 phase 5a's
+ * `malice` trait sits in ahead of phase 5d. `slander` and `praise` are the
+ * newest entries here for exactly that reason: M11 phase 5c gives them a verb
+ * next, and `slander`'s culture-varying tolerance is declared alongside it in
+ * `VARIABLE_NORMS` below, because a band that shrugs at gossip and one that
+ * does not is the cultural variation that table exists for.
+ */
 export const EVENT_TYPES = [
-  'gift', 'share_food', 'help', 'talk', 'trade', 'teach',
+  'gift', 'share_food', 'help', 'teach', 'slander', 'praise',
   'theft', 'trespass', 'assault', 'murder', 'threaten',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -50,9 +71,12 @@ export const DEED_WEIGHT: Record<EventType, number> = {
   gift: 8,
   share_food: 6,
   help: 5,
-  talk: 0.6,
-  trade: 2,
   teach: 7,
+  praise: 4,
+  // A lie told to your face and a lie told behind your back are the same
+  // words at different volumes; between trespass and theft because it costs
+  // you nothing material, only what people think.
+  slander: -10,
   theft: -14,
   // Using another band's structure is an offence, but a lesser one than
   // taking what is inside it. The distinction lets a culture remember the
@@ -75,9 +99,9 @@ export const DEED_SALIENCE: Record<EventType, number> = {
   gift: 0.4,
   share_food: 0.35,
   help: 0.35,
-  talk: 0.08,
-  trade: 0.2,
   teach: 0.45,
+  praise: 0.3,
+  slander: 0.5,
   theft: 0.7,
   trespass: 0.55,
   assault: 0.85,
@@ -96,7 +120,7 @@ export const VICTIM_MULTIPLIER = 3;
 export type Norms = Record<EventType, number>;
 
 export const DEFAULT_NORMS: Norms = {
-  gift: 1, share_food: 1, help: 1, talk: 1, trade: 1, teach: 1,
+  gift: 1, share_food: 1, help: 1, teach: 1, slander: 1, praise: 1,
   theft: 1, trespass: 1, assault: 1, murder: 1, threaten: 1,
 };
 
@@ -114,6 +138,9 @@ export const VARIABLE_NORMS: { type: EventType; min: number; max: number }[] = [
   // Coercion needs no technology, but a culture still has an opinion of it —
   // a tolerant band shrugs at a threat and a peaceable one remembers it.
   { type: 'threaten', min: 0.4, max: 1.6 },
+  // Same reasoning, for gossip: a band that shrugs off a lie and one that
+  // treats a good name as sacred are both real cultures.
+  { type: 'slander', min: 0.4, max: 1.6 },
 ];
 
 /** A short phrase for the UI: "saw you steal from Korak". */
@@ -127,9 +154,9 @@ export function describeEvent(
     case 'gift': return actorName + ' gave ' + target + ' a gift';
     case 'share_food': return actorName + ' shared food with ' + target;
     case 'help': return actorName + ' helped ' + target;
-    case 'talk': return actorName + ' talked with ' + target;
-    case 'trade': return actorName + ' traded with ' + target;
     case 'teach': return actorName + ' taught ' + target;
+    case 'praise': return actorName + ' spoke well of ' + target;
+    case 'slander': return actorName + ' spoke against ' + target;
     case 'theft': return targetName
       ? actorName + ' stole from ' + target
       : actorName + ' stole from a store';

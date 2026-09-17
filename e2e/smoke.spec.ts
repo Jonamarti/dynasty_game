@@ -159,6 +159,19 @@ async function clickAndChoose(
  * Animals are the reason it also wants margin: they wander while the test is
  * doing its round trips, so a tile that was clear when it was chosen can have a
  * deer on it by the time the click lands.
+ *
+ * The radius cap widened once already: on the pinned `e2e-fixture` seed, M11
+ * phase 5b's `slander` entry in `VARIABLE_NORMS` moved one more RNG draw
+ * ahead of band placement, same as every past addition to that table, and
+ * the nearest clear tile from the player's new spawn point moved from
+ * comfortably inside the old cap of 10 to radius 11 — one ring past it, in a
+ * start camp this dense with resource nodes. That alone chased a screen point
+ * under the top bar and, past it, off the bottom of the viewport entirely: a
+ * wider radius is not the same thing as a point still reachable by a click.
+ * The search now confirms each candidate with `elementFromPoint` — the same
+ * question a real click asks, on-screen or off, under any chrome or none —
+ * rather than naming `.hud-bar`, `.hud-panel` and `.hud-help` by hand and
+ * hoping nothing else is ever laid over the canvas.
  */
 async function emptyGround(page: Page): Promise<{ x: number; y: number }> {
   const point = await page.evaluate(() => {
@@ -188,13 +201,17 @@ async function emptyGround(page: Page): Promise<{ x: number; y: number }> {
       // Wider, because these move between choosing the tile and clicking it.
       d.sim.animals.every(a => !a.alive || Math.hypot(a.x - x, a.y - y) > 6);
 
-    for (let radius = 3; radius <= 10; radius++) {
+    const canvas = document.getElementById('view');
+
+    for (let radius = 3; radius <= 16; radius++) {
       for (let angle = 0; angle < 16; angle++) {
         const x = Math.round(d.sim.player.x + Math.cos(angle) * radius);
         const y = Math.round(d.sim.player.y + Math.sin(angle) * radius);
-        if (clear(x, y)) {
-          return { x: d.camera.worldToScreenX(x), y: d.camera.worldToScreenY(y) };
-        }
+        if (!clear(x, y)) continue;
+        const sx = d.camera.worldToScreenX(x);
+        const sy = d.camera.worldToScreenY(y);
+        if (document.elementFromPoint(sx, sy) !== canvas) continue;
+        return { x: sx, y: sy };
       }
     }
     return null;

@@ -6,6 +6,77 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-17 — M11 phase 5b: the event table stops declaring what nobody does
+
+`EVENT_TYPES` named `gift`, `help`, `talk` and `trade`, and nothing in the
+codebase emitted any of the four. Two of them were dead weight rather than
+work waiting to happen, and this pass tells them apart.
+
+**`talk` and `trade` are gone.** `talk` never had a reader worth the name:
+`settle` already pays every ordinary conversation in `familiarity`, which
+enters `opinion` at ×0.35, so a `talk` deed on top of that would have counted
+the same conversation twice; its salience of 0.08 also sat below
+`bestGossipFor`'s floor of 0.15, so it was memory that could never become
+gossip, only take up a slot in a memory capped at 48 — and `emit` runs a
+spatial query, so paying that cost at every greeting bought nothing at all.
+`trade` had no verb behind it at all. Both are removed from `EVENT_TYPES`,
+`DEED_WEIGHT`, `DEED_SALIENCE`, `DEFAULT_NORMS` and `describeEvent` — the
+rule this project already holds `SKILLS` and `TECH_EFFECTS` to, applied to
+this table for the first time. `trade` is declared again, alongside the verb
+that finally reads it, in M11 phase 7.
+
+**`help` is connected**, emitted once from `doTend` — on the tick tending
+actually begins, not once per tick of a bout that can run for a while, the
+same discipline `useProperty` already follows for a long action's one deed —
+with magnitude read from how badly hurt the patient was. `EVENT_TYPES` has
+declared `help` since before this file existed; this is the first thing that
+has ever emitted it. Honest caveat carried over from M9 phase 5:
+`the-hurt-are-tended` still reports very few ticks on most scenarios (it is a
+one-event-wide check, catalogued in `bugs.md`), so this channel will read
+thin until that gets its own pass.
+
+**`slander` and `praise` are declared, ahead of the verb that reads them.**
+M11 phase 5c gives them one next; declaring the table entry first is the same
+short-lived gap M11 phase 5a's `malice` trait sits in ahead of phase 5d, and
+`gift` has sat in ahead of phase 6. `slander` also enters `VARIABLE_NORMS` —
+a band that shrugs off a lie and one that treats a good name as sacred are
+both real cultures, the same reasoning `threaten` was given its own range for.
+
+**The RNG moves again, measured the same way as 5a.** `VARIABLE_NORMS`
+gaining an entry means one more `rng.range` draw per band before anybody is
+placed, so every scenario's world shifts. `sim:check:all` differs on five
+lines from the post-5a build, and every one of them is either already
+catalogued in `bugs.md` as a knife-edge check or is explained by the failing
+check's own source comment: `crowded`/`perf-budget` is the long-standing
+documented failure; `traps`/`jobs-bias-work`, `stewards`/`the-hurt-are-tended`
+and `stewards`/`compost-answers-exhaustion` are all checks this document
+already names as thinner than their own seed-to-seed spread; and
+`century`/`heads-direct-work` is new to `century` specifically but not new in
+kind — its own comment in `tools/simcheck.ts` already warns that a scenario
+not built for this measurement (`labour` is) can read "0 obeyed" on one
+unlucky run, which is exactly what happened (0 orders landed on rank alone,
+12 refused). `millers`/`the-hurt-are-tended`, `hunters`/`kills-are-butchered-
+for-bone` stayed exactly as they were after 5a. A twenty-seed `century`
+cohort reads 99.9% mean survival, 858 born, 5 total starved, 11.7 technologies
+known — indistinguishable from 5a's own cohort within the noise this project
+already treats twenty seeds as unable to resolve.
+
+**One e2e fixture broke, and was fixed as an instrument, not the world.** The
+pinned `e2e-fixture` seed's nearest clear tile to the player's new spawn point
+moved from comfortably inside `emptyGround`'s old ten-tile search cap to
+radius eleven — one ring past it, in a start camp dense with resource nodes —
+which is exactly the kind of drift this pass's own reasoning predicts. Fixing
+it by only widening the cap chased the point under the top bar and, one step
+further, off the bottom of the viewport: a wider radius is not the same thing
+as a point a real click can still reach. `emptyGround` now confirms each
+candidate with `document.elementFromPoint`, the same question a click asks,
+instead of naming `.hud-bar`/`.hud-panel`/`.hud-help` by hand — which also
+means the helper no longer needs updating the next time the chrome changes
+shape. All 47 e2e specs pass again.
+
+Verification: typecheck; 338 unit and determinism tests; `sim:check:all` as
+above; 20-seed cohort as above; all 47 e2e.
+
 ## 2026-09-17 — M11 phase 5a and M9.6 phase 4a, bundled: a trait for scheming, and a mood that finally exists
 
 Two migrations that both touch `TRAITS`, founding, inheritance, ageing and the

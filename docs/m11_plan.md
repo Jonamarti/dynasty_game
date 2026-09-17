@@ -304,24 +304,45 @@ ya documentadas en `bugs.md` como filos de cuchillo (`kills-are-butchered-for-
 bone`, `pictures-are-painted`, `the-hurt-are-tended`) o como una población de
 `century` genuinamente mayor (`perf-budget`) — y ninguna se tocó.
 
-**5b — la tabla de hechos, honestamente.** `EVENT_TYPES` declara `gift`, `help`,
-`talk` y `trade` y **nada los emite**. Pero no hay que emitirlos todos:
+**5b — la tabla de hechos, honestamente. HECHO 2026-09-17.** `EVENT_TYPES`
+declaraba `gift`, `help`, `talk` y `trade` y **nada los emitía**. No hacía
+falta emitirlos todos:
 
-- **`talk` se borra.** `settle` ya paga la conversación en familiaridad, que
-  entra en `opinion` a ×0.35 — un hecho encima lo cuenta dos veces. Y su saliencia
-  0.08 está **por debajo del suelo de 0.15** de `bestGossipFor`: es memoria que
-  nunca puede ser noticia, sólo ocupar hueco en un almacén de 48. Además `emit`
-  hace una consulta espacial, y hacerla en cada saludo es coste por paso a cambio
-  de nada.
-- **`trade` espera a la fase 7**, donde tiene un verbo detrás.
-- **`gift` se conecta en la fase 6** — regalar cosas es cómo un gran hombre
-  convierte riqueza en prestigio.
-- **`help` se conecta aquí**, emitido desde `doTend`, que hoy no emite nada.
-  (Aviso honesto: `the-hurt-are-tended` falla hoy con 0 ticks, así que el canal
-  leerá n/a hasta que se arregle ese bug. Decirlo en el commit.)
-- **`slander` y `praise` se añaden**, y `slander` entra en `VARIABLE_NORMS`: una
-  banda a la que le da igual el chismorreo y otra a la que no es exactamente la
-  variación cultural para la que existe esa tabla.
+- **`talk` se borró.** `settle` ya paga la conversación en familiaridad, que
+  entra en `opinion` a ×0.35 — un hecho encima lo habría contado dos veces. Y su
+  saliencia 0.08 estaba **por debajo del suelo de 0.15** de `bestGossipFor`: era
+  memoria que nunca podía ser noticia, sólo ocupar hueco en un almacén de 48.
+  Además `emit` hace una consulta espacial, y hacerla en cada saludo era coste
+  por paso a cambio de nada.
+- **`trade` se borró también** (no sólo aplazado): sin verbo detrás no tenía
+  ni lector ni escritor. Vuelve declarado, junto con el verbo que por fin lo
+  lea, en la fase 7.
+- **`gift` se queda declarado** hasta la fase 6 — regalar cosas es cómo un
+  gran hombre convierte riqueza en prestigio, y su verbo (`give`) ya existe y
+  funciona; sólo falta el lado del hecho, el mismo hueco corto en el que vive
+  `malice` de la fase 5a hasta la 5d.
+- **`help` se conectó**, emitido desde `doTend` una sola vez por tanda de
+  cuidado, no por tick — la misma disciplina de `useProperty` para un hecho de
+  una acción larga. Magnitud: cuánto de mal estaba el paciente.
+  (Aviso honesto, cumplido: `the-hurt-are-tended` sigue reportando pocos ticks
+  en la mayoría de escenarios — es el check de un solo evento que `bugs.md` ya
+  documenta — así que el canal lee delgado hasta que ese bug tenga su propia
+  pasada.)
+- **`slander` y `praise` se añadieron**, declarados por delante de su verbo
+  (fase 5c), y `slander` entró en `VARIABLE_NORMS`: una banda a la que le da
+  igual el chismorreo y otra a la que no es exactamente la variación cultural
+  para la que existe esa tabla.
+
+Medido: cohorte de veinte semillas, mundo sano (99.9% supervivencia media, 858
+nacidos, 11.7 tecnologías). Cinco líneas de `sim:check:all` cambiaron de lado
+por el nuevo draw de `VARIABLE_NORMS` — todas ya documentadas en `bugs.md`
+como filos de cuchillo, salvo `century`/`heads-direct-work`, nueva en ese
+escenario pero explicada por el propio comentario del check en
+`tools/simcheck.ts`. Efecto colateral encontrado y arreglado: la semilla fija
+de e2e `e2e-fixture` movió el punto vacío más cercano al jugador justo un
+anillo más allá del tope de búsqueda de `emptyGround`; el arreglo cambió el
+tope por una comprobación con `elementFromPoint`, que es la pregunta que un
+click de verdad hace.
 
 **5c — cotilleo con intención.** Verbos `slander` y `praise`, con un tercer
 objetivo (`targetSubjectId` en `Person`, limpiado en `finish` junto a

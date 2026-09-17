@@ -3,6 +3,47 @@
 As of 2026-09-17. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 5b, 2026-09-17
+
+### `century` reads "0 obeyed" on `heads-direct-work`, exactly as that check's own comment warns it can
+
+Adding `slander` to `VARIABLE_NORMS` cost one more `rng.range` draw per band
+before anybody is placed — the same mechanism the phase 5a entry below
+documents for `malice` — and `century` now fails `heads-direct-work`: "0
+orders landed on rank alone, 12 refused". Twelve is past the check's own
+floor of five samples, so it is not skipped, and zero of them landed.
+
+Not a new failure mode. `tools/simcheck.ts`'s comment on this exact check
+already says why `century` is the wrong scenario to read it from: *"a world
+that happened to work `chiefdom` out on its own says nothing about whether
+rank carries an order"* — `century` reaches that technology late and
+incidentally, on whatever seed it happens to fall on, rather than starting
+with it the way the dedicated scenario does. `labour` exists precisely to
+give this check a sample worth reading, starts its founders already knowing
+both social technologies, and passed cleanly in the same run (52/52). This
+is the `stewards`/"one head asked one person one thing and was refused"
+case the comment already names, recurring on a second scenario under a
+second RNG-shifting change, not a defect in the rank mechanism.
+
+Not fixed and not tuned: `labour`'s own result is the one that speaks to
+whether rank carries an order, and it says yes.
+
+### Four more checks moved sides under the same `slander`/`VARIABLE_NORMS` shift, all already on record
+
+`sim:check:all` differs from the post-5a build on `crowded`/`perf-budget`
+(the long-standing documented failure below), `traps`/`jobs-bias-work`
+("has an effect smaller than its own seed-to-seed spread", above),
+`stewards`/`the-hurt-are-tended` and `stewards`/`compost-answers-exhaustion`
+(both already named above as thinner than one behavioural change can
+survive). `millers`/`the-hurt-are-tended` and `hunters`/`kills-are-butchered-
+for-bone`, both flagged in the 5a entry below, are unchanged by this pass.
+Recorded together rather than as five separate entries because they are the
+same finding five times: a check whose margin is already known to be
+seed-sensitive moved again, under a change that moves every seed. A
+twenty-seed `century` cohort (see `changelog.md`) reads 99.9% mean survival
+and 11.7 technologies known, indistinguishable from 5a's own cohort — the
+world is healthy; these five lines are instrument noise, not damage.
+
 ## Found shipping M11 phase 5a / M9.6 phase 4a, 2026-09-17
 
 ### The `malice` migration flips three already-catalogued knife-edge checks, and grows `century`'s population enough to fail `perf-budget`
