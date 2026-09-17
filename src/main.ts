@@ -1661,6 +1661,10 @@ const EVENT_COLORS: Record<string, string> = {
   share_food: '#7ddc96',
   gift: '#7ddc96',
 };
+// M11 phase 3b: the deeds whose *secretness* is the story. A gift nobody saw is
+// nobody's business, and that is all there is to it; an unseen theft is the
+// difference between getting away with it and bringing the band down on you.
+const CRIMES = new Set(['theft', 'assault', 'murder', 'threaten']);
 
 /**
  * Says why an order stopped.
@@ -1759,6 +1763,13 @@ function updateFloaters(): void {
   // theft on the island would hand the player the omniscience the whole design
   // is built to withhold — and it is also how you get told about a murder
   // committed by someone you have never met, in a place you have never been.
+  //
+  // The one exception is a deed the player's own character did or suffered. The
+  // actor always knows what they did, wherever they have walked since, so those
+  // events are not filtered by the bystander's line of sight. And when nobody
+  // saw it, that is the information the owner's rule exists to hand over: an
+  // unseen robbery reaches the band only if somebody is told — which is exactly
+  // why phase 3a made the victim want to go and tell.
   const observer = sim.player;
   for (const event of sim.social.recent) {
     if (event.id <= lastEventId) continue;
@@ -1766,9 +1777,12 @@ function updateFloaters(): void {
     if (!NOTABLE.has(event.type)) continue;
     if (!observer || !observer.alive) continue;
 
-    const dx = event.x - observer.x;
-    const dy = event.y - observer.y;
-    if (Math.sqrt(dx * dx + dy * dy) > sim.config.sightRadius) continue;
+    const involved = event.actorId === observer.id || event.targetId === observer.id;
+    if (!involved) {
+      const dx = event.x - observer.x;
+      const dy = event.y - observer.y;
+      if (Math.sqrt(dx * dx + dy * dy) > sim.config.sightRadius) continue;
+    }
 
     const actor = sim.peopleById.get(event.actorId);
     const victim = event.targetId === null ? null : sim.peopleById.get(event.targetId);
@@ -1778,6 +1792,20 @@ function updateFloaters(): void {
     const victimName = victim
       ? knowledgeOfPerson(observer, victim, sim.relationships).displayName
       : null;
+
+    if (involved && event.witnesses === 0 && CRIMES.has(event.type)) {
+      // The character was there and knows precisely who was looking. At this
+      // moment the only people who know are the two actors in it, so "no one
+      // else knows yet" is true for a victim — a few frames before any
+      // conversation could have spread a word of it.
+      const note = event.actorId === observer.id
+        ? 'No one saw you do it.'
+        : 'No one else knows yet.';
+      renderer.floaters.push(observer.x, observer.y,
+        describeEvent(event.type, actorName, victimName) + ' ' + note,
+        { color: '#bfa0ff', boxed: true, ttl: 4 });
+      continue;
+    }
     renderer.floaters.push(event.x, event.y,
       describeEvent(event.type, actorName, victimName),
       { color: EVENT_COLORS[event.type] ?? '#f0ede8', ttl: 3.4 });

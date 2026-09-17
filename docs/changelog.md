@@ -6,6 +6,45 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-17 — M11 phase 3b: an unseen deed is a thing your character knows it is
+
+The owner's rule is that nobody learns anything they did not see or were not
+told, and phase 3a gave the *victim* the urge to go and tell somebody. This
+half makes the *secret* visible to the player: `unwitnessed` was a telemetry
+counter and nothing else, so a theft in an empty clearing and a theft in a
+crowd played identically on screen, and the decision the owner wants — *did
+anyone see that, or did I get away with it?* — could not be made because the
+answer was nowhere on the screen.
+
+**A deed now carries how many saw it.** `SocialEvent.witnesses` is the count
+of living bystanders inside `sightRadius` at the moment of `emit`, with the
+actor and the victim themselves always left out — a deed between a couple by
+the fire is still a secret from everyone else. Wiring it up is pure data: the
+count was already being computed for the `witnessed`/`unwitnessed` telemetry,
+so nothing reads it, no draw was added, and the world is unchanged at every
+level (the determinism test, all seventeen scenarios green but the three
+pre-existing failures, and all 47 e2e).
+
+**And the two people in the deed are told what no bystander can see.** The
+floater loop used to announce every notable deed within the player's sight,
+gated exactly like every witness — which silently excluded the player's own
+unseen deeds in the same clearing they left. A deed the player's character did
+or suffered is now exempt from that line-of-sight gate (the actor always knows
+what they did, wherever they have walked since), and when it was unwitnessed
+it gets a violet banner over the character's head: *"No one saw you do it."*
+to the thief who got away, *"No one else knows yet."* to the victim whose only
+road to justice is their own tongue — the action 3a built and the player now
+has a reason to understand.
+
+Three unit tests hold the invariant the banner lives or dies on: that the
+count is brute-force correct (0 alone, 1 for the one bystander in sight), and
+that the actor and victim never count as witnesses. The memory split is
+asserted beside the count — the victim remembers, nobody else does — so the
+UI's claim "no one else knows" is checked against the very state the NPC
+social model already trusts.
+
+---
+
 ## 2026-09-17 — M11 phases 1b to 3a: why nobody fought, and two defects found on the way
 
 The owner's headline complaint was that **no character has any reason to fight

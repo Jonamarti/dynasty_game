@@ -28,6 +28,16 @@ export interface SocialEvent {
   tick: number;
   /** 0-1 scale of the deed: how much was taken, how hard the blow landed. */
   magnitude: number;
+  /**
+   * How many bystanders saw it, at the moment it happened.
+   *
+   * M11 phase 3b: `unwitnessed` used to be a telemetry counter and nothing
+   * else. This is the same count, kept on the event so the UI can tell the
+   * player that a deed of their own character's was unseen — which is the whole
+   * secret. Nobody else knowing is decided here, at emit time, before any
+   * hearsay can spread it; who knows *later* is a question for the gossips.
+   */
+  witnesses: number;
 }
 
 /**

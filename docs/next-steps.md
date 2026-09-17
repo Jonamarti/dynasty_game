@@ -117,7 +117,8 @@ changelog and is the owner's to answer.
 | M11 phase 1 — the choice stops being argmax | shipped 2026-09-17. Free across 20 seeds, and it took two old failures green |
 | M11 phase 2 — theft and violence read the target, and predation exists | shipped 2026-09-17 |
 | M11 phase 3a — the urge to go and tell somebody | shipped 2026-09-17, and it flushed out the reachability defect |
-| **M11 phases 3b-11** | **next.** Property gated on being seen, plots and exile, inequality, band standing, macronutrients, the oral tree |
+| M11 phase 3b — the secret is a thing you can see | shipped 2026-09-17. An unseen deed involving your character says so over their head |
+| **M11 phases 3c-11** | **next.** Property gated on being seen, plots and exile, inequality, band standing, macronutrients, the oral tree |
 | **M8.2 — the other fifteen Neolithic nodes** | **next**, after M9.6's cheap half. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M9.6 phases 4–5 — happiness, and sleeping rough | planned; runs after M8.2 and before M10, so M10's fences have something to pay off in |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |

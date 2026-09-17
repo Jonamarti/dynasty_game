@@ -207,6 +207,7 @@ export class SocialSystem {
       y: actor.y,
       tick,
       magnitude: Math.max(0, Math.min(1, magnitude)),
+      witnesses: 0,
     };
 
     telemetry.count('event_' + type);
@@ -229,6 +230,9 @@ export class SocialSystem {
     }
     if (witnesses > 0) telemetry.count('witnessed', witnesses);
     else telemetry.count('unwitnessed');
+    // M11 phase 3b: the count lives on the event too, so the UI can say "no
+    // one saw that" about a deed of the player's own character.
+    event.witnesses = witnesses;
 
     this.recent.push(event);
     if (this.recent.length > this.recentCap) this.recent.shift();
@@ -517,6 +521,11 @@ export class SocialSystem {
       y: teller.y,
       tick: story.tick,
       magnitude: 1,
+      // A retelling through `absorb`, never an event `recent` will surface:
+      // nobody *saw* this happen, they only heard it, and the count belongs to
+      // the original deed. Leaving it 0 keeps the "no witnesses" statement
+      // true for a story told after the fact.
+      witnesses: 0,
     };
 
     const before = listener.memory.size;
