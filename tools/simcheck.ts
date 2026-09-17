@@ -2151,8 +2151,39 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // regard and fail a check about a design property that had not changed.
   const outsider = opinionOf((a, b) =>
     a.p.bandId !== b.p.bandId && a.p.householdId !== b.p.householdId);
+  // The same bucket with blood and marriage taken out of it, and it is
+  // reported rather than asserted because it measures something the check
+  // above does not claim.
+  //
+  // `outsider` is not "what people think of strangers". `RelationshipGraph`
+  // creates an edge on first *use*, and `setKinship` is a use: it calls
+  // `edge()`, which returns a relationship with `bias: 0`, and `introduce`
+  // then refuses to stamp an impression on an edge that already exists
+  // (`if (this.peek(...)) return false`). `linkFamily` runs at every birth and
+  // at founding, before anybody has met anybody. So a blood relative in
+  // another band **never receives `OUT_GROUP_BIAS` at all**: their edge is
+  // born carrying `KIN_PARENT` 60 or `KIN_SIBLING` 40 against a bias of zero.
+  //
+  // The comment above already records that `bandId` is not reassigned on
+  // marriage. Put the two together and the `outsider` mean is every real
+  // stranger plus every cross-band in-law at +40 to +60 whom nobody has ever
+  // laid eyes on — which on a world with any cross-band marriage at all is
+  // enough to drag it positive and make it read as "strangers are liked".
+  //
+  // This figure is what somebody tuning the out-group must calibrate against.
+  // Tuning against `outsider` would over-correct a world that is not in fact
+  // friendly to strangers into one that is permanently xenophobic.
+  const unrelated = opinionOf((a, b) =>
+    a.p.bandId !== b.p.bandId && a.p.householdId !== b.p.householdId &&
+    sim.relationships.kinship(a.p.id, b.p.id) === 0);
   const detail =
-    'household=' + fmt(kin) + ' band=' + fmt(band) + ' outsider=' + fmt(outsider);
+    'household=' + fmt(kin) + ' band=' + fmt(band) + ' outsider=' + fmt(outsider) +
+    ' outsider-unrelated=' + fmt(unrelated);
+  // `unrelated` is deliberately absent from both the skip condition and the
+  // assertion. It is an instrument, not a gate: folding a fourth bucket into
+  // either one would make this commit a behavioural change to a check that
+  // passes today, and the whole point of adding it is to measure before
+  // changing anything.
   if (Number.isNaN(kin) || Number.isNaN(band) || Number.isNaN(outsider)) {
     skip('kin-outrank-strangers',
       'not all three kinds of tie have ' + MIN_TIE_PAIRS + '+ pairs here: ' + detail);
