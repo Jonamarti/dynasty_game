@@ -132,7 +132,19 @@ interface FoundTargets {
   /** Whoever an `ask` would be addressed to: the teacher, not the pupil. */
   mentor: Person | null;
   colleague: Person | null;
+  /**
+   * Whoever a `steal` or a `threaten` is aimed at: the one carrying something.
+   *
+   * Separate from `foe` since M11 phase 2c, and it had to be. Both were read
+   * off this one field, and `steal` writes it unconditionally while the old
+   * `attack` line wrote it only `if (!victim)` — so somebody who had both a
+   * laden neighbour and a hated one in sight scored `attack` against the enemy
+   * and then swung at the neighbour. The grudge that justified the blow and the
+   * person who received it were two different people.
+   */
   victim: Person | null;
+  /** Whoever an `attack` is aimed at. Never merged with `victim`; see above. */
+  foe: Person | null;
   beneficiary: Person | null;
   fleeFrom: Person | null;
   /** Which entry of `RECIPES` a chosen `craft` would make. */
@@ -517,6 +529,7 @@ export class Brain {
     const loneliness = urgencyCurve(person.needs.company);
     let companion: Person | null = null;
     let victim: Person | null = null;
+    let foe: Person | null = null;
     let beneficiary: Person | null = null;
     let fleeFrom: Person | null = null;
     let site: Building | null = null;
@@ -876,7 +889,7 @@ export class Brain {
         add('attack', grudge * grudge * boldness *
           (0.5 + person.traits.aggression * 2.5)
           * this.proximityBonus(person, enemy, ctx.sightRadius));
-        if (!victim) victim = enemy;
+        foe = enemy;
       }
     }
 
@@ -1503,7 +1516,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, student, childPupil, mentor, colleague,
-        victim, beneficiary, fleeFrom,
+        victim, foe, beneficiary, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -1879,6 +1892,7 @@ export class Brain {
           action === 'discuss' ? found.colleague :
           action === 'court' ? found.suitor :
           action === 'feed' || action === 'give' ? found.beneficiary :
+          action === 'attack' ? found.foe :
           found.victim;
         if (other) {
           person.targetX = other.x;
