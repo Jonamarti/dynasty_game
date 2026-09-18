@@ -265,6 +265,7 @@ export function describeNorms(band: Band): string {
     gift: 'generosity',
     share_food: 'sharing food',
     threaten: 'menace',
+    slander: 'a bad word said behind someone\'s back',
   };
 
   for (const [type, label] of Object.entries(named)) {

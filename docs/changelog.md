@@ -6,6 +6,89 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-18 — M11 phases 3c and 5c: gossip that has to be grounded, and a subject who does not hear about it by magic
+
+`slander` and `praise` have been declared in `EVENT_TYPES` since phase 5b,
+with nothing reading either. This pass gives them a verb, and folds in phase
+3c — "a conversation is observable too" — because the two turned out to be
+the same mechanism: telling somebody what you think of a third party is
+exactly the kind of deed the owner's rule already covers, and it needed the
+rule's other half, not a new one.
+
+**The content is never invented.** `Memory.bestSignedStory()` finds the most
+vivid bad memory and the most vivid good one a person is carrying, in one
+pass. It replaces reusing `bestStory()` (built for 3a's news-sharing) for
+this, on purpose: `DEED_SALIENCE` weighs a wrong far above a kindness and a
+victim's own memory of it never decays, so the single most-vivid thing almost
+anybody carries is a grievance, and the first version built on `bestStory()`
+shipped with `praise` structurally unreachable — a hundred-checks run showed
+13,442 `slander` ticks and exactly zero `praise` ones. `bestSignedStory`
+tracks both signs at once, at the same one-pass cost. `Memory.bestStoryAbout`
+narrows that to one subject and one sign at the moment the walk ends, the
+sibling of `bestGossipFor` with the same 0.15 salience floor — so a story
+that decayed or got told by somebody else during the walk over is honestly
+refused, the same principle `talkModeOf` already follows for `talk`.
+
+**The subject does not learn they were talked about by magic.** `SocialSystem
+.emit` gains a `notifyTarget` parameter, default `true` and unused by every
+existing caller — bit-identical for theft, assault, every deed this game had
+before today, all of which have a victim standing right there. `slander` and
+`praise` pass `false`: the subject is very often nowhere near, and the
+owner's rule that nothing is known unless it is seen or told applies to them
+exactly as it applies to a stolen store. They learn only if they happen to be
+a real witness within `sightRadius` — and then it lands with the same
+`VICTIM_MULTIPLIER` catching your own name spoken behind your back already
+carries for everyone else.
+
+**Two things happen when the words land, and they are different questions.**
+`SocialSystem.tellStory` (extracted from the guts of the existing private
+`gossip`, which now calls it) passes the underlying fact on as hearsay,
+exactly as an ordinary conversation already would — so telling Mira that
+Boran stole from you makes her know Boran stole, not merely that you said
+something about him. `emit`, separately, records the act of saying it as its
+own judged deed, with its own `DEED_WEIGHT`.
+
+**The backlash.** `absorb` gains a term, live only for `slander`/`praise`:
+each listener's opinion of the *teller* shifts by their own opinion of the
+*subject*, signed by whether the story was kind or unkind. Slander a man
+before his friend and the friend resents you for it; slander him before his
+enemy and they do not — they may like you a little more for saying what they
+already believed. One proportional term, and it is what turns gossip into
+alliances and rivalries without any code anywhere that knows what a faction
+is.
+
+**Privacy, for `slander` only.** Scored on the model `steal` already uses:
+onlookers around the teller divide down the desirability of the action,
+`1 / (1 + onlookers * 0.45)`. `praise` gets no such term — DEED_WEIGHT.praise
+is positive, so a witnessed compliment costs nothing and a private one buys
+nothing extra either.
+
+**`Person.targetSubjectId`**, new, alongside the existing `targetPersonId`:
+gossip has two other people in it where every earlier social verb had one —
+who it is told *to* and who it is *about*. Cleared in `clearTarget` beside
+its sibling.
+
+Measured: 20-seed `century` cohort — 99.9% mean survival (0/20 collapsed),
+870 born, 10 starved (4 infants, 3 older children, 3 adults, against 5b's own
+5), 11.6 technologies known at the end (5b: 11.7), 645.8 passed on —
+indistinguishable from 5b's own cohort within the noise twenty seeds cannot
+resolve. `sim:check:all`: two lines moved sides from the pre-5c build,
+`fishers`/`pots-reach-a-granary` and `millers`/`the-hurt-are-tended`, both
+explained in `bugs.md` as the same whole-stream RNG cascade every new
+scoreable action has caused since 1b — adding a candidate to `chooseAmongBest`'s
+pool changes how many draws `choiceRng` takes from that tick on. All 338
+unit tests, all 47 e2e specs.
+
+**Deliberately not done.** No radial-menu entry for `slander`/`praise` this
+pass — the same choice already made for `court` and `teach_child`, both full
+scored-and-executed verbs a player cannot order directly. The mechanism is
+real and consequential without one; wiring a "gossip about…" submenu through
+`ActionCatalog`, `Simulation.command` and `main.ts` is a UI-layer pass of its
+own, and `Memory.tellableSubjectIds` already exists to support it whenever
+that pass happens.
+
+---
+
 ## 2026-09-17 — M11 phase 5b: the event table stops declaring what nobody does
 
 `EVENT_TYPES` named `gift`, `help`, `talk` and `trade`, and nothing in the

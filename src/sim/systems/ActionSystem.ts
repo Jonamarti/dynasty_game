@@ -389,6 +389,10 @@ const STEAL_TICKS = 30;
  */
 const THREATEN_TICKS = 18;
 
+/** Ticks to tell somebody what you think of a third party. As short as `give`: a
+ * remark, not a negotiation. */
+const GOSSIP_TICKS = 14;
+
 /** Ticks before a person will deliberately approach anyone again. */
 const SOCIAL_COOLDOWN = 220;
 
@@ -500,6 +504,8 @@ export class ActionSystem {
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
+      case 'slander': this.doSlander(person, ctx); break;
+      case 'praise': this.doPraise(person, ctx); break;
       // M8.1's three new verbs. All three answer something the world could not
       // answer before: loneliness for more than two people at once, being hurt
       // beyond waiting it out, and an animal that is neither food nor a threat.
@@ -3102,6 +3108,72 @@ export class ActionSystem {
     person.inventory.add(itemId, taken);
     telemetry.count('threaten_succeeded');
     this.finishSocial(person, ctx.tick);
+  }
+
+  /**
+   * Telling somebody what you think of a third party — `slander` when the
+   * story is bad, `praise` when it is good. Both share this body; only the
+   * `sign` handed to `Memory.bestStoryAbout` differs.
+   *
+   * M11 phases 3c and 5c together. Two things happen, and they are different
+   * questions: `tellStory` passes the underlying fact on as hearsay, exactly
+   * as an ordinary conversation's gossip would, and `emit` records the act of
+   * saying it as its own judged deed. The subject is *not* told automatically
+   * — `emit`'s `notifyTarget: false` is the point of this whole pass: nobody
+   * learns they were talked about unless they happen to be standing close
+   * enough to overhear it, the same rule that already governs everything
+   * else in this game.
+   *
+   * The story is re-fetched here rather than trusted from when the scorer
+   * chose it, on the same principle `talkModeOf` already follows: the walk
+   * over takes time, and by the time it ends the listener may have heard it
+   * from somebody else, or it may have decayed below the telling floor.
+   */
+  private doGossipAbout(person: Person, ctx: ActionContext, sign: 'bad' | 'good'): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = GOSSIP_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx, 'gossiped_');
+      return;
+    }
+
+    const subjectId = person.targetSubjectId;
+    const subject = subjectId === null ? null : ctx.peopleById.get(subjectId);
+    if (!subject || !subject.alive) {
+      this.abandon(person, 'subject_gone', ctx);
+      return;
+    }
+    const story = person.memory.bestStoryAbout(subjectId!, other.memory, sign);
+    if (!story) {
+      this.abandon(person, 'nothing_to_tell', ctx);
+      return;
+    }
+
+    ctx.social.tellStory(person, other, story, ctx.peopleById);
+    ctx.social.emit(
+      sign === 'bad' ? 'slander' : 'praise', person, subject,
+      Math.min(1, story.salience),
+      ctx.tick, ctx.peopleHash, ctx.sightRadius,
+      false
+    );
+    telemetry.count(sign === 'bad' ? 'slander_told' : 'praise_told');
+    other.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
+    this.finishSocial(person, ctx.tick);
+  }
+
+  private doSlander(person: Person, ctx: ActionContext): void {
+    this.doGossipAbout(person, ctx, 'bad');
+  }
+
+  private doPraise(person: Person, ctx: ActionContext): void {
+    this.doGossipAbout(person, ctx, 'good');
   }
 
   private doAttack(person: Person, ctx: ActionContext): void {

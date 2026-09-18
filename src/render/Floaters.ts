@@ -165,6 +165,8 @@ export const ACTION_LABELS: Record<string, string> = {
   steal: 'stealing',
   threaten: 'making a demand',
   attack: 'fighting',
+  slander: 'speaking ill of someone',
+  praise: 'speaking well of someone',
   build: 'building',
   sow: 'sowing a field',
   spread: 'spreading compost',
@@ -275,6 +277,11 @@ export const STOP_REASONS: Record<string, string> = {
   nothing_to_steal: 'there was nothing to take',
   nothing_to_demand: 'there was nothing worth demanding',
   refused_demand: 'they refused to hand it over',
+  // M11 phase 5c: `slander` and `praise` need somebody to talk *about*, not
+  // only somebody to talk to, and the walk over gives both of those a chance
+  // to stop being true.
+  subject_gone: 'the person they meant to talk about was gone',
+  nothing_to_tell: 'they had nothing left worth telling',
   dont_know_how: 'they do not know how',
   // M8.2. Six ways a field can turn somebody away, and they are six different
   // problems with six different answers: gather more seed, walk to a different

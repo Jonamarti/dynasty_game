@@ -1,7 +1,25 @@
 # Known bugs and rough edges
 
-As of 2026-09-17. Everything here is real and reproducible; nothing here is
+As of 2026-09-18. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found shipping M11 phases 3c and 5c, 2026-09-18
+
+### Two more checks moved sides under the new `slander`/`praise` scorer, both already on record
+
+Adding two new scoreable actions changes which candidates fall inside
+`chooseAmongBest`'s spread band on any given think, which changes how many
+draws `choiceRng` takes from that tick on — the same kind of whole-stream
+cascade M11 phase 5a's `malice` migration and phase 5b's `VARIABLE_NORMS`
+entry both already caused and documented below. `sim:check:all` differs from
+the pre-5c build on `fishers`/`pots-reach-a-granary` (a granary got marked
+out this time where none did before, in a 37-day scenario where that is a
+single event either falling inside the window or not) and `millers`/`the-
+hurt-are-tended`, which is already named above as a one-event-wide check.
+`crowded`/`perf-budget` and `hunters`/`kills-are-butchered-for-bone`, both
+long-standing, are unchanged. A twenty-seed `century` cohort (see
+`changelog.md`) reads as healthy as 5b's own cohort — these are instrument
+noise from a shifted RNG stream, not damage to the world.
 
 ## Found shipping M11 phase 5b, 2026-09-17
 

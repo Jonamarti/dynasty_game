@@ -290,6 +290,16 @@ export class Person {
   action = 'idle';
   /** Who the current action is aimed at, for social actions. */
   targetPersonId: number | null = null;
+  /**
+   * Who a `slander` or a `praise` is *about*, as distinct from who it is said
+   * *to* — `targetPersonId` is the listener.
+   *
+   * M11 phase 5c. Gossip needs a third party the other two social verbs never
+   * did: `give` and `steal` each have exactly one other person involved, but
+   * "tell Mira what Boran did" has two, and the one the story is about is not
+   * necessarily anywhere nearby.
+   */
+  targetSubjectId: number | null = null;
   /** Which structure the current action is aimed at, for building and storage. */
   targetBuildingId: number | null = null;
   /** Which tree the current action is aimed at, for felling and picking. */
@@ -789,6 +799,7 @@ export class Person {
     this.targetY = null;
     this.targetNodeId = null;
     this.targetPersonId = null;
+    this.targetSubjectId = null;
     this.targetBuildingId = null;
     this.targetTreeId = null;
     this.targetAnimalId = null;

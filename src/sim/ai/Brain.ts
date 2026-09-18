@@ -161,6 +161,15 @@ interface FoundTargets {
   /** Who a `tend` is aimed at, and which beast a `tame` is coaxing. */
   patient: Person | null;
   strayAnimal: Animal | null;
+  /**
+   * Who a `slander` or a `praise` is *about*. The listener is `companion`,
+   * the same person `talk` would have gone to — see the scorer for why
+   * sharing that pick is deliberate rather than a shortcut. Two fields
+   * because both can be scored in the same tick — a person can have grounds
+   * for both at once, about two different people.
+   */
+  slanderSubjectId: number | null;
+  praiseSubjectId: number | null;
 }
 
 /**
@@ -661,6 +670,8 @@ export class Brain {
     let mentor: Person | null = null;
     let patient: Person | null = null;
     let strayAnimal: Animal | null = null;
+    let slanderSubjectId: number | null = null;
+    let praiseSubjectId: number | null = null;
 
 
     // Deliberate social approaches are rationed; violence and flight are not.
@@ -748,6 +759,51 @@ export class Brain {
         add('talk', (loneliness * 1.8 * worth + 0.09 + news * NEWS_URGE)
           * (1 + regard * 0.5)
           * this.proximityBonus(person, companion, ctx.sightRadius));
+
+        // Slander and praise: the sharpest bad story and the sharpest good
+        // one this person is carrying, told to the same listener `talk`
+        // would go to and framed as a judgement of whoever they are about.
+        // Notes 6 and 8 — nobody invents a story, and `malice` is what makes
+        // somebody want to tell the bad one unkindly rather than merely
+        // mention it.
+        //
+        // Deliberately *not* `myNews` above: `DEED_SALIENCE` weighs a wrong
+        // far above a kindness and a victim's memory of it never fades, so
+        // the single most-vivid thing almost anybody is carrying is a
+        // grievance. Scoring gossip from `myNews` alone left `praise`
+        // unreachable for anyone who had ever witnessed anything bad — which
+        // by the second season is everybody. See `Memory.bestSignedStory`.
+        const signedNews = person.memory.bestSignedStory();
+        const badNews = signedNews.bad;
+        // The 0.15 floor matches `bestStoryAbout`'s own — scoring this from a
+        // fainter memory would send somebody on a walk `doSlander` can only
+        // refuse at the other end.
+        if (badNews && badNews.salience >= 0.15 &&
+            badNews.actorId !== person.id && badNews.actorId !== companion.id &&
+            !companion.memory.has(badNews.eventId)) {
+          // Privacy, on the model `steal` already uses below: what a gossip
+          // actually risks is being overheard running somebody down, not the
+          // walk over. A crowd does not kill the urge, it just makes
+          // somebody wait for a thinner one — note 6/3c, the half of
+          // "nothing is known unless seen or told" that applies to a
+          // conversation as much as to a theft.
+          const listenerId = companion.id;
+          const onlookers = ctx.peopleHash
+            .queryRadius(person.x, person.y, ctx.sightRadius)
+            .filter(o => o.alive && o.id !== person.id && o.id !== listenerId).length;
+          const privacy = 1 / (1 + onlookers * 0.45);
+          add('slander', badNews.salience * (0.4 + person.traits.malice * 1.4) * privacy
+            * this.proximityBonus(person, companion, ctx.sightRadius));
+          slanderSubjectId = badNews.actorId;
+        }
+        const goodNews = signedNews.good;
+        if (goodNews && goodNews.salience >= 0.15 &&
+            goodNews.actorId !== person.id && goodNews.actorId !== companion.id &&
+            !companion.memory.has(goodNews.eventId)) {
+          add('praise', goodNews.salience * (0.25 + person.traits.loyalty * 0.5)
+            * this.proximityBonus(person, companion, ctx.sightRadius));
+          praiseSubjectId = goodNews.actorId;
+        }
       }
 
       // Court: unmarried adults, not close kin, who already think well of each
@@ -1760,7 +1816,7 @@ export class Brain {
         quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
-        patient, strayAnimal,
+        patient, strayAnimal, slanderSubjectId, praiseSubjectId,
       },
     };
   }
@@ -2132,7 +2188,9 @@ export class Brain {
       case 'give':
       case 'steal':
       case 'threaten':
-      case 'attack': {
+      case 'attack':
+      case 'slander':
+      case 'praise': {
         // `feed` is ordinary giving aimed at one's own hungry child; the action
         // system does not need to know the difference, only the scorer does.
         // Same arrangement as `gather_for_site`.
@@ -2147,11 +2205,18 @@ export class Brain {
           action === 'court' ? found.suitor :
           action === 'feed' || action === 'give' ? found.beneficiary :
           action === 'attack' ? found.foe :
+          action === 'slander' || action === 'praise' ? found.companion :
           found.victim;
         if (other) {
           person.targetX = other.x;
           person.targetY = other.y;
           person.targetPersonId = other.id;
+          // Who a `slander` or `praise` is *about* — the listener above is
+          // who it is *told to*. See `Person.targetSubjectId`.
+          if (action === 'slander' || action === 'praise') {
+            person.targetSubjectId = action === 'slander'
+              ? found.slanderSubjectId : found.praiseSubjectId;
+          }
           // Whether the person somebody crossed the camp for was the one
           // leading their band. Counted because `bond` is otherwise a term in
           // a scorer with no visible consequence: `AGENTS.md` says to chase the

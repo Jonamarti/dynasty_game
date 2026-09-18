@@ -21,6 +21,7 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { RelationshipGraph } from './Relationships.ts';
 import type { EventType, Norms, SocialEvent } from './Events.ts';
 import { DEED_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
+import type { MemoryEntry } from './Memory.ts';
 import type { ConversationMode } from './Conversation.ts';
 import { CONVERSATION_MODES, crossBand } from './Conversation.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
@@ -113,6 +114,21 @@ const RUMOR_DECAY = 0.75;
 const HEARSAY_WEIGHT = 0.45;
 
 /**
+ * How much a listener's own opinion of the subject of a `slander` or `praise`
+ * spills onto their opinion of whoever did the telling.
+ *
+ * Note 8's backlash, and the reason this pass is worth more than a flat
+ * penalty for gossiping: slander a man before his friend and the friend
+ * resents you for it; slander him before his enemy and they think no less of
+ * you — they may even like you a little more for saying what they already
+ * believed. Proportional to `opinion(listener, subject) / 100` rather than a
+ * fixed cost, and the same formula serves `praise` with the sign flipped,
+ * which is what turns idle gossip into alliances and rivalries without any
+ * code that knows what a faction is.
+ */
+const GOSSIP_BACKLASH = 8;
+
+/**
  * The standing regard one person owes another before any deed.
  *
  * Household first: a household is a family, and someone married into yours is
@@ -188,6 +204,14 @@ export class SocialSystem {
    *
    * `peopleById` is needed because witnesses judge the actor, and the victim
    * must be judged as a victim rather than as a bystander.
+   *
+   * `notifyTarget` defaults to true, which is every deed this game had before
+   * M11 phase 5c: a theft or a blow is done *to* the target, who is standing
+   * right there and always knows. Gossip is different — `slander` and
+   * `praise` name a subject who is very often nowhere near, and the owner's
+   * rule that nothing is known unless it is seen or told applies to them too.
+   * Pass `false` and the subject learns only by being an actual witness
+   * within `sightRadius`, exactly like anybody else.
    */
   emit(
     type: EventType,
@@ -196,7 +220,8 @@ export class SocialSystem {
     magnitude: number,
     tick: number,
     peopleHash: SpatialHash<Person>,
-    sightRadius: number
+    sightRadius: number,
+    notifyTarget = true
   ): SocialEvent {
     const event: SocialEvent = {
       id: nextEventId++,
@@ -218,13 +243,23 @@ export class SocialSystem {
       target.chronicle.push({ tick, ageDays: target.age, text: description, kind: 'suffered' });
     }
 
-    // The victim always knows, however dark it was and whoever else was looking.
-    if (target) this.absorb(target, event, actor, true, 1, null);
+    // The victim always knows, however dark it was and whoever else was
+    // looking — unless the caller said otherwise, because there was no
+    // victim standing there to know it. See `notifyTarget` above.
+    if (target && notifyTarget) this.absorb(target, event, actor, true, 1, null);
 
     let witnesses = 0;
     for (const bystander of peopleHash.queryRadius(actor.x, actor.y, sightRadius)) {
       if (!bystander.alive) continue;
-      if (bystander.id === actor.id || bystander.id === target?.id) continue;
+      if (bystander.id === actor.id) continue;
+      if (bystander.id === target?.id) {
+        // Already absorbed above as the victim; do not count them twice. But
+        // when the target was *not* notified directly, they get exactly the
+        // same chance as anyone else to have overheard this one — which is
+        // how a subject who happens to be standing within earshot catches
+        // their own name being talked about.
+        if (notifyTarget) continue;
+      }
       this.absorb(bystander, event, actor, true, 1, null);
       witnesses++;
     }
@@ -269,6 +304,17 @@ export class SocialSystem {
       confidence;
 
     this.relationships.addDeed(observer.id, actor.id, delta, event.tick);
+
+    // The backlash: gossip is judged twice, once for the act of gossiping
+    // (the `delta` above, same for everyone) and once for *who it was about*,
+    // which is personal to each listener. `event.targetId` is the subject
+    // being talked about here, not a victim standing in front of anyone.
+    if ((event.type === 'slander' || event.type === 'praise') && event.targetId !== null) {
+      const towardSubject = this.relationships.opinion(observer.id, event.targetId) / 100;
+      const sign = event.type === 'praise' ? 1 : -1;
+      const backlash = towardSubject * sign * GOSSIP_BACKLASH * hearsayFactor * confidence;
+      if (backlash !== 0) this.relationships.addDeed(observer.id, actor.id, backlash, event.tick);
+    }
   }
 
   /**
@@ -505,7 +551,23 @@ export class SocialSystem {
   private gossip(teller: Person, listener: Person, peopleById: Map<number, Person>): void {
     const story = teller.memory.bestGossipFor(listener.memory);
     if (!story) return;
+    this.tellStory(teller, listener, story, peopleById);
+  }
 
+  /**
+   * Retells one particular story, already chosen by the caller, rather than
+   * whichever one `bestGossipFor` would have picked.
+   *
+   * Shared by ordinary gossip during a conversation and by a directed
+   * `slander` or `praise`, M11 phase 5c: the two need the same machinery — a
+   * story arrives less certain than sight, and degrades further with each
+   * retelling — but a directed telling already knows which story and who it
+   * is for, and re-deriving that through `bestGossipFor` would risk landing
+   * on a different one than the speaker meant to tell.
+   */
+  tellStory(
+    teller: Person, listener: Person, story: MemoryEntry, peopleById: Map<number, Person>
+  ): void {
     const actor = peopleById.get(story.actorId);
     if (!actor) return;
 

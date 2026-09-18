@@ -12,7 +12,7 @@
  * who started them.
  */
 import type { EventType, SocialEvent } from './Events.ts';
-import { DEED_SALIENCE } from './Events.ts';
+import { DEED_SALIENCE, DEED_WEIGHT } from './Events.ts';
 
 export interface MemoryEntry {
   eventId: number;
@@ -138,6 +138,32 @@ export class Memory {
     return best;
   }
 
+  /**
+   * The most vivid bad memory and the most vivid good one, found in a single
+   * pass over the same entries `bestStory` walks.
+   *
+   * `bestStory` alone cannot serve `slander`/`praise`: `DEED_SALIENCE` weighs
+   * a wrong far above a kindness (0.5-1 against 0.3-0.45) and a victim's own
+   * memory of it is floored so it never fades, so the single most-vivid thing
+   * almost anybody is carrying is a grievance. Reusing it for both verbs would
+   * leave `praise` unreachable for anyone who has ever witnessed anything bad
+   * — which in a hundred-person band by the second season is everybody. Kept
+   * as one pass rather than two calls filtered by sign, on the same
+   * cost-not-taste reasoning `bestStory`'s own comment gives.
+   */
+  bestSignedStory(): { bad: MemoryEntry | null; good: MemoryEntry | null } {
+    let bad: MemoryEntry | null = null;
+    let good: MemoryEntry | null = null;
+    for (const entry of this.entries) {
+      if (DEED_WEIGHT[entry.type] < 0) {
+        if (!bad || entry.salience > bad.salience) bad = entry;
+      } else {
+        if (!good || entry.salience > good.salience) good = entry;
+      }
+    }
+    return { bad, good };
+  }
+
   bestGossipFor(listener: Memory): MemoryEntry | null {
     let best: MemoryEntry | null = null;
     for (const entry of this.entries) {
@@ -153,5 +179,54 @@ export class Memory {
     return this.entries
       .filter(e => e.actorId === personId || e.targetId === personId)
       .sort((a, b) => b.salience - a.salience);
+  }
+
+  /**
+   * The best thing this person could say about `subjectId` right now — the
+   * sibling of `bestGossipFor`, filtered to one person and one moral sign
+   * rather than to whoever the listener has not heard from at all.
+   *
+   * M11 phase 5c: slander and praise draw their content from here rather than
+   * inventing it. `subjectId` is always the *actor* of the remembered deed —
+   * gossip is about what somebody *did* — so a person can only be slandered
+   * for their own wrongs, never for what was done to them.
+   */
+  bestStoryAbout(subjectId: number, listener: Memory, sign: 'good' | 'bad'): MemoryEntry | null {
+    let best: MemoryEntry | null = null;
+    for (const entry of this.entries) {
+      if (entry.actorId !== subjectId) continue;
+      if (listener.has(entry.eventId)) continue;
+      if (entry.salience < 0.15) continue;
+      const bad = DEED_WEIGHT[entry.type] < 0;
+      if (sign === 'bad' ? !bad : bad) continue;
+      if (!best || entry.salience > best.salience) best = entry;
+    }
+    return best;
+  }
+
+  /**
+   * Every person this memory could currently slander or praise to `listener`
+   * — one entry per subject, whichever of their deeds is most salient.
+   *
+   * For the radial menu's "gossip about…" submenu, which has to offer a list
+   * of *people*, not a list of deeds. `bestStoryAbout` answers "is there
+   * still something to say about this one particular person" at the moment
+   * the player actually commits to the order; this only has to be honest
+   * enough to populate a menu.
+   */
+  tellableSubjectIds(listener: Memory): { subjectId: number; sign: 'good' | 'bad' }[] {
+    const bestPerSubject = new Map<number, MemoryEntry>();
+    for (const entry of this.entries) {
+      if (listener.has(entry.eventId)) continue;
+      if (entry.salience < 0.15) continue;
+      const current = bestPerSubject.get(entry.actorId);
+      if (!current || entry.salience > current.salience) {
+        bestPerSubject.set(entry.actorId, entry);
+      }
+    }
+    return [...bestPerSubject.entries()].map(([subjectId, entry]) => ({
+      subjectId,
+      sign: DEED_WEIGHT[entry.type] < 0 ? 'bad' as const : 'good' as const,
+    }));
   }
 }
