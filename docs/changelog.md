@@ -6,6 +6,43 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 7a: how two peoples stand with each other, sent inert
+
+**Block IV opens.** `next-steps.md` §5's correction has said since 2026-09-10
+that no state between bands exists anywhere in the codebase; `BandRelations`
+is that state, and it is deliberately **symmetric**, unlike
+`RelationshipGraph` — the header explains why: every engine that will ever
+write to it (phase 7b) moves both bands' standing with each other at once,
+the way a wedding or a raid does, so a directed edge would need two
+histories moving in lockstep for no mechanism that ever writes only one of
+them. Keyed on `min(a,b):max(a,b)` so a pair cannot end up with two entries,
+and it decays at 0.998 per day — slower than `renown`'s 0.997, which is
+slower than an ordinary opinion's 0.985: a grudge or an alliance between two
+peoples has to outlive the individuals who were there when it started.
+
+**`firstImpression` reads it for the out-group case.** `OUT_GROUP_BIAS`
+(-6) becomes `outGroupBias(standing)` — exactly -6 at `standing === 0`, which
+is every pair the moment this ships and any pair phase 7b's engines have not
+yet touched, so **the commit is bit-identical**. At the extremes a close
+ally (100) reads a stranger as warmly as `IN_GROUP_BIAS` already reads a
+bandmate; a bitter rival (-100) reads one more coldly than `HOUSEHOLD_BIAS`
+reads a member of your own family warmly.
+
+Sent with its report column: `kin-outrank-strangers`' detail line gains
+`band-pairs`/`friendliest`/`hostile` from `BandRelations.stats()`, reporting
+0 pairs on every scenario today, the same "measure before changing anything"
+discipline `outsider-unrelated` already set as precedent. `bands-take-sides`,
+the check that will actually gate on this, is phase 7c's, once there is
+something for it to measure.
+
+**Not done in this commit**: a player-facing panel. Deferred on the same
+precedent `slander`/`praise` shipped under — no menu entry yet either — and
+noted so it does not get forgotten.
+
+`sim:check:all` reproduces the phase 6e commit's matrix line for line. All
+341 unit tests (two fixture constructors updated for the new
+`SocialSystem` parameter), typecheck clean.
+
 ## 2026-09-20 — M11 phase 6e: the big man reaches the chiefdom, and Block III closes
 
 `BandSystem.standingScore` — shared by `chooseChief` and

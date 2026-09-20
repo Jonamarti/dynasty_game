@@ -14,6 +14,7 @@ import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
 import { SocialSystem } from '../social/SocialSystem.ts';
+import { BandRelations } from '../social/BandRelations.ts';
 
 const SIGHT = 12;
 
@@ -30,7 +31,7 @@ function world(list: Person[]): {
   social: SocialSystem;
   hash: SpatialHash<Person>;
 } {
-  const social = new SocialSystem(new RelationshipGraph(), new Map());
+  const social = new SocialSystem(new RelationshipGraph(), new Map(), new BandRelations());
   const hash = new SpatialHash<Person>(8);
   hash.rebuild(list);
   return { social, hash };

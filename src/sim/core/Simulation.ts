@@ -31,6 +31,7 @@ import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
+import { BandRelations } from '../social/BandRelations.ts';
 import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
 import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType } from '../social/Events.ts';
 import {
@@ -302,6 +303,8 @@ export class Simulation {
   succession: { died: Person; heir: Person | null } | null = null;
 
   readonly relationships = new RelationshipGraph();
+  /** How each pair of bands stands with the other. M11 phase 7a. */
+  readonly bandRelations = new BandRelations();
   readonly social: SocialSystem;
   private readonly normsByBand = new Map<number, Norms>();
 
@@ -367,7 +370,7 @@ export class Simulation {
     this.needsSystem = new NeedsSystem(this.config.needs);
     this.pathfinder = new Pathfinder(this.world);
     this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder);
-    this.social = new SocialSystem(this.relationships, this.normsByBand);
+    this.social = new SocialSystem(this.relationships, this.normsByBand, this.bandRelations);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
     this.social.onDeed = (actor, type, magnitude) => this.accrueRenown(actor, type, magnitude);
     this.actionRng = this.rng.fork();
@@ -2465,6 +2468,10 @@ export class Simulation {
       // recollection. Kept here rather than folded into `dailyUpkeep`,
       // because `SocialSystem` knows people and feelings, not households.
       for (const household of this.households) household.renown *= RENOWN_DECAY_PER_DAY;
+      // A grudge or an alliance between two peoples outlives the individuals
+      // who were there when it started, so it decays slower still than
+      // renown — see `BandRelations`'s own header.
+      this.bandRelations.decay();
       for (const person of this.people) {
         if (person.alive) decayMood(person);
       }

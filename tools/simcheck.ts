@@ -2216,9 +2216,18 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const unrelated = opinionOf((a, b) =>
     a.p.bandId !== b.p.bandId && a.p.householdId !== b.p.householdId &&
     sim.relationships.kinship(a.p.id, b.p.id) === 0);
+  // M11 phase 7a: `BandRelations` shipped inert, so this reads 0 pairs on
+  // every scenario today — an instrument for the engines phase 7b adds, on
+  // the same "measure before changing anything" reasoning `unrelated` above
+  // already gives. `bands-take-sides` (phase 7c) is the check that will
+  // finally gate on it.
+  const bandStanding = sim.bandRelations.stats();
   const detail =
     'household=' + fmt(kin) + ' band=' + fmt(band) + ' outsider=' + fmt(outsider) +
-    ' outsider-unrelated=' + fmt(unrelated);
+    ' outsider-unrelated=' + fmt(unrelated) +
+    ' · band-pairs=' + bandStanding.pairs +
+    ' friendliest=' + bandStanding.friendliest.toFixed(1) +
+    ' hostile=' + bandStanding.hostile.toFixed(1);
   // `unrelated` is deliberately absent from both the skip condition and the
   // assertion. It is an instrument, not a gate: folding a fourth bucket into
   // either one would make this commit a behavioural change to a check that

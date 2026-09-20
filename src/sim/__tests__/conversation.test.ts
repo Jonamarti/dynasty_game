@@ -13,6 +13,7 @@ import {
 } from '../social/Conversation.ts';
 import { SocialSystem } from '../social/SocialSystem.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
+import { BandRelations } from '../social/BandRelations.ts';
 import { Person, SKILL_INDEX } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 
@@ -70,7 +71,7 @@ describe('choosing a conversation', () => {
 describe('what a conversation settles', () => {
   function pair() {
     const relationships = new RelationshipGraph();
-    const social = new SocialSystem(relationships, new Map());
+    const social = new SocialSystem(relationships, new Map(), new BandRelations());
     const a = new Person('Ana', 4, 4, 0, new RNG('conv-a'));
     const b = new Person('Bo', 5, 4, 0, new RNG('conv-b'));
     a.needs.company = 100;
@@ -143,7 +144,7 @@ describe('what a shared problem is worth as company', () => {
 describe('a night under one roof', () => {
   function roomFor(count: number) {
     const relationships = new RelationshipGraph();
-    const social = new SocialSystem(relationships, new Map());
+    const social = new SocialSystem(relationships, new Map(), new BandRelations());
     const sleepers = Array.from({ length: count }, (_, i) =>
       new Person('Sleeper' + i, 4, 4, 0, new RNG('hearth-' + i)));
     for (const person of sleepers) person.needs.company = 100;

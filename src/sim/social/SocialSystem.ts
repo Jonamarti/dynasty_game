@@ -24,6 +24,7 @@ import { DEED_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
 import type { MemoryEntry } from './Memory.ts';
 import type { ConversationMode } from './Conversation.ts';
 import { CONVERSATION_MODES, crossBand } from './Conversation.ts';
+import type { BandRelations } from './BandRelations.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
@@ -59,6 +60,26 @@ export const KIN_SIBLING = 40;
 const HOUSEHOLD_BIAS = 18;
 const IN_GROUP_BIAS = 6;
 const OUT_GROUP_BIAS = -6;
+
+/**
+ * How far one point of `BandRelations.standing` moves an out-group first
+ * impression, M11 phase 7a.
+ *
+ * At `standing === 0` — every pair the moment this shipped, and any pair
+ * phase 7b's engines have not yet touched — `outGroupBias` returns exactly
+ * `OUT_GROUP_BIAS`, which is what makes introducing `BandRelations` bit-
+ * identical. At the extremes, close allies (100) read a stranger as warmly
+ * as `IN_GROUP_BIAS` already reads a bandmate, and bitter rivals (-100) read
+ * one more coldly than `HOUSEHOLD_BIAS` reads a member of your own family
+ * warmly — a first meeting between two peoples at open war should cost more
+ * than ordinary wariness of any stranger.
+ */
+const OUT_GROUP_STANDING_SCALE = 0.12;
+
+/** `OUT_GROUP_BIAS`, adjusted by how the two bands involved currently stand. */
+export function outGroupBias(standing: number): number {
+  return OUT_GROUP_BIAS + standing * OUT_GROUP_STANDING_SCALE;
+}
 
 /**
  * What a night under one roof is worth, and how many people it can be worth it
@@ -134,11 +155,12 @@ const GOSSIP_BACKLASH = 8;
  * Household first: a household is a family, and someone married into yours is
  * closer than a neighbour from the same camp whatever the blood says.
  */
-export function firstImpression(observer: Person, subject: Person): number {
+export function firstImpression(observer: Person, subject: Person, bandRelations: BandRelations): number {
   if (observer.householdId !== null && observer.householdId === subject.householdId) {
     return HOUSEHOLD_BIAS;
   }
-  return observer.bandId === subject.bandId ? IN_GROUP_BIAS : OUT_GROUP_BIAS;
+  if (observer.bandId === subject.bandId) return IN_GROUP_BIAS;
+  return outGroupBias(bandRelations.standing(observer.bandId, subject.bandId));
 }
 
 /**
@@ -200,7 +222,8 @@ export class SocialSystem {
 
   constructor(
     private readonly relationships: RelationshipGraph,
-    private readonly normsByBand: Map<number, Norms>
+    private readonly normsByBand: Map<number, Norms>,
+    private readonly bandRelations: BandRelations
   ) {}
 
   private normsFor(person: Person): Norms | null {
@@ -553,7 +576,8 @@ export class SocialSystem {
 
   /** Stamps a first impression the first time one person notices another. */
   introduce(observer: Person, subject: Person): void {
-    this.relationships.introduce(observer.id, subject.id, firstImpression(observer, subject));
+    this.relationships.introduce(
+      observer.id, subject.id, firstImpression(observer, subject, this.bandRelations));
   }
 
   /** `teller` passes their best story to `listener`. */
