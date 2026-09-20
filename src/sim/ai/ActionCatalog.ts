@@ -429,6 +429,20 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       reason: carriedFood === null ? 'You are carrying no food' : undefined,
     },
     {
+      // M11 phase 7b's third `BandRelations` engine: both sides hand
+      // something over, unlike `give`, which is why it needs food on both
+      // sides rather than one.
+      id: 'trade',
+      label: 'Trade with ' + other.name,
+      icon: '\u{1F91D}',
+      enabled: carriedFood !== null && other.inventory.bestFood() !== null,
+      reason: carriedFood === null
+        ? 'You are carrying no food'
+        : other.inventory.bestFood() === null
+          ? 'They are carrying no food'
+          : undefined,
+    },
+    {
       id: 'steal',
       label: 'Steal from ' + other.name,
       icon: '\u{1F576}',

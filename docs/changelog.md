@@ -6,6 +6,49 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 7b (4): trade, and `BandRelations`' last inert engine
+
+`trade` is declared in `EVENT_TYPES` again — `DEED_WEIGHT: 7`,
+`DEED_SALIENCE: 0.4`, between `share_food` and `gift` — alongside the verb
+that finally reads it: `ActionSystem.doTrade`. Both sides hand something
+over, unlike `give`; `Brain` only ever scores it toward somebody whose own
+carried nutrition shows genuine spare, read directly off their inventory
+rather than guessed at, so nobody is scored toward a partner with nothing to
+trade back. A new `tradePartner` field on `FoundTargets`, kept separate from
+`beneficiary` rather than reused — `give` and `trade` can both be scored in
+the same think, toward two different people, the same shape
+`slanderSubjectId`/`praiseSubjectId` already keep apart for the identical
+reason.
+
+**No fifth `BandRelations` engine was needed.** A positive `DEED_WEIGHT`
+plus a target from another band is all phase 7b's first engine — the
+cross-band deed nudge in `emit`, shipped two commits ago — needs to turn a
+completed trade into two peoples thinking slightly better of each other.
+This is `next-steps.md`'s note on `trade`'s return made concrete: the event
+type earns its place by having a verb behind it, not by naming a new
+mechanic.
+
+Also new: a `trade` entry in the player's radial menu (enabled when both
+sides carry food) and an `ORDER_COST` of 0.3, cheaper than `give`'s 0.4 —
+both sides gain something, so it asks less of whoever is ordered to do it.
+
+**This closes Block IV's engine phase.** All four of `BandRelations`'
+writers — cross-band deeds, marriage, territory, trade — are live. Phase
+7c's readers are next.
+
+**Measured, 20-seed cohorts against the phase 7b (3) numbers**: `lean` 87.1%
+→ 89.0% survival, 0/20 collapsed, no seed below 62% this run — the
+territory-engine dip did not compound. `century` 99.9% → 99.6%, 854 born,
+11.8 known — noise. A single `lean` run shows `trade` scored 746 times and
+completed 17 (`event_trade`/`trade_made`), far rarer than `give`'s 21,678,
+because it needs two people from different bands each with surplus — the
+mechanism engages without dominating the action table.
+`sim:check:all`: `millers` picked up `jobs-bias-work` alongside its existing
+`the-hurt-are-tended`, the check `bugs.md` already names as having "an effect
+smaller than its own seed-to-seed spread" — the sixth documented member of
+the one-or-two-event-wide family, not a new kind of failure. All 341 unit
+tests, all 47 e2e specs, typecheck clean.
+
 ## 2026-09-20 — M11 phase 7b (3): territory, and the TODO it closes
 
 `BandRelations`' fourth engine, and the one the plan names as closing the

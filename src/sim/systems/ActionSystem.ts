@@ -146,6 +146,9 @@ function talkModeOf(person: Person, rel: Relationship | null, tick: number): Con
 /** Ticks to hand something over and be thanked for it. */
 const GIVE_TICKS = 15;
 
+/** Ticks to haggle out a trade. Longer than a plain gift; both sides bargain. */
+const TRADE_TICKS = 25;
+
 /** Ticks a courtship visit takes. Longer than a conversation; it is one. */
 const COURT_TICKS = 60;
 
@@ -501,6 +504,7 @@ export class ActionSystem {
       case 'discuss': this.doDiscuss(person, ctx); break;
       case 'prototype': this.doPrototype(person, ctx); break;
       case 'give': this.doGive(person, ctx); break;
+      case 'trade': this.doTrade(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
@@ -2983,6 +2987,62 @@ export class ActionSystem {
       ctx.tick, ctx.peopleHash, ctx.sightRadius
     );
     telemetry.count('gift_given');
+    this.finishSocial(person, ctx.tick);
+  }
+
+  /**
+   * A mutual exchange of surplus food, M11 phase 7b's third engine.
+   *
+   * `EVENT_TYPES` declared `trade` for exactly this since phase 5b removed
+   * the version nothing read; this is where it earns its place. Unlike
+   * `give`, both sides hand something over — `Brain` only ever scores this
+   * toward someone whose own carried nutrition shows spare, so nobody is
+   * asked to trade away a meal they need. The point is not the goods
+   * changing hands, which are token amounts either way: it is that `emit`'s
+   * cross-band nudge already turns a positive `DEED_WEIGHT['trade']` into
+   * two peoples thinking slightly better of each other, with no second
+   * mechanism required.
+   */
+  private doTrade(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = TRADE_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) return;
+
+    const myFood = person.inventory.bestFood();
+    const theirFood = other.inventory.bestFood();
+    if (!myFood || !theirFood) {
+      this.abandon(person, 'nothing_to_trade', ctx);
+      return;
+    }
+    const myUnits = Math.max(1, Math.min(2, Math.floor(person.inventory.count(myFood) / 3)));
+    const theirUnits = Math.max(1, Math.min(2, Math.floor(other.inventory.count(theirFood) / 3)));
+    const givenByMe = person.inventory.remove(myFood, myUnits);
+    const givenByThem = other.inventory.remove(theirFood, theirUnits);
+    if (givenByMe === 0 || givenByThem === 0) {
+      // Put back whatever the failing side already gave, so a trade that
+      // cannot complete on both legs leaves neither party out of pocket.
+      if (givenByMe > 0) person.inventory.add(myFood, givenByMe);
+      if (givenByThem > 0) other.inventory.add(theirFood, givenByThem);
+      this.abandon(person, 'nothing_to_trade', ctx);
+      return;
+    }
+    other.inventory.add(myFood, givenByMe);
+    person.inventory.add(theirFood, givenByThem);
+
+    const value =
+      (ITEMS[myFood]?.nutrition ?? 0) * givenByMe + (ITEMS[theirFood]?.nutrition ?? 0) * givenByThem;
+    ctx.social.emit(
+      'trade', person, other,
+      Math.min(1, value / 100),
+      ctx.tick, ctx.peopleHash, ctx.sightRadius
+    );
+    telemetry.count('trade_made');
     this.finishSocial(person, ctx.tick);
   }
 

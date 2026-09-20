@@ -108,6 +108,9 @@ const ORDER_COST: Record<string, number> = {
   // Long, and it can get you killed.
   hunt: 0.35,
   give: 0.4,
+  // Cheaper than `give`: both sides walk away with something, so it asks
+  // less of whoever is told to do it than handing goods over for nothing.
+  trade: 0.3,
   court: 0.6,
   steal: 0.75,
   // Below `attack`: nobody comes home hurt, but being sent to menace a

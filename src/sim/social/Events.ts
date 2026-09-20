@@ -20,19 +20,20 @@
  * query, so paying that cost at every greeting bought nothing at all. `trade`
  * had no verb behind it at all. M11 phase 5b removed both, on the rule this
  * project already holds SKILLS and TECH_EFFECTS to: a table entry earns its
- * place by having something read it, not by naming something planned. `trade`
- * is declared again, alongside the verb that finally reads it, in M11 phase
- * 7; `gift` stays declared through phase 6 for a narrower reason — the `give`
- * verb it names already exists and works, it is only the deed side that is
- * still missing, one phase away, the same short-lived gap M11 phase 5a's
- * `malice` trait sits in ahead of phase 5d. `slander` and `praise` are the
- * newest entries here for exactly that reason: M11 phase 5c gives them a verb
- * next, and `slander`'s culture-varying tolerance is declared alongside it in
- * `VARIABLE_NORMS` below, because a band that shrugs at gossip and one that
- * does not is the cultural variation that table exists for.
+ * place by having something read it, not by naming something planned.
+ *
+ * `trade` is back, declared alongside the verb that finally reads it —
+ * `ActionSystem.doTrade`, M11 phase 7b's third `BandRelations` engine. A
+ * positive `DEED_WEIGHT` here is what turns a completed trade into
+ * `SocialSystem.emit`'s existing cross-band nudge, with no second mechanism
+ * needed: two people from different bands trading is already a deed with a
+ * cross-band target the moment it exists to emit. `gift` stays declared
+ * without a verb of its own for a narrower reason — the `give` verb it
+ * names already exists and works, it is only the deed side that is still
+ * missing.
  */
 export const EVENT_TYPES = [
-  'gift', 'share_food', 'help', 'teach', 'slander', 'praise',
+  'gift', 'share_food', 'help', 'teach', 'slander', 'praise', 'trade',
   'theft', 'trespass', 'assault', 'murder', 'threaten',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -73,6 +74,10 @@ export const DEED_WEIGHT: Record<EventType, number> = {
   help: 5,
   teach: 7,
   praise: 4,
+  // Between `share_food` and `gift`: both sides walked away with something,
+  // which is worth a little more than a one-way kindness, and it is worth
+  // knowing about across a band line — that is the whole point of it.
+  trade: 7,
   // A lie told to your face and a lie told behind your back are the same
   // words at different volumes; between trespass and theft because it costs
   // you nothing material, only what people think.
@@ -101,6 +106,9 @@ export const DEED_SALIENCE: Record<EventType, number> = {
   help: 0.35,
   teach: 0.45,
   praise: 0.3,
+  // Slightly above an ordinary gift: a trade with a stranger from another
+  // band is a little more worth mentioning than sharing food with your own.
+  trade: 0.4,
   slander: 0.5,
   theft: 0.7,
   trespass: 0.55,
@@ -120,7 +128,7 @@ export const VICTIM_MULTIPLIER = 3;
 export type Norms = Record<EventType, number>;
 
 export const DEFAULT_NORMS: Norms = {
-  gift: 1, share_food: 1, help: 1, teach: 1, slander: 1, praise: 1,
+  gift: 1, share_food: 1, help: 1, teach: 1, slander: 1, praise: 1, trade: 1,
   theft: 1, trespass: 1, assault: 1, murder: 1, threaten: 1,
 };
 
@@ -153,6 +161,7 @@ export function describeEvent(
   switch (type) {
     case 'gift': return actorName + ' gave ' + target + ' a gift';
     case 'share_food': return actorName + ' shared food with ' + target;
+    case 'trade': return actorName + ' traded with ' + target;
     case 'help': return actorName + ' helped ' + target;
     case 'teach': return actorName + ' taught ' + target;
     case 'praise': return actorName + ' spoke well of ' + target;

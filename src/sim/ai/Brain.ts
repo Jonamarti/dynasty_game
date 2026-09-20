@@ -150,6 +150,13 @@ interface FoundTargets {
   /** Whoever an `attack` is aimed at. Never merged with `victim`; see above. */
   foe: Person | null;
   beneficiary: Person | null;
+  /**
+   * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
+   * `trade` can both be scored in the same tick, toward different people —
+   * one need-driven, one not — and `setup` must send `trade` to the partner
+   * it was actually scored against.
+   */
+  tradePartner: Person | null;
   fleeFrom: Person | null;
   /** Which entry of `RECIPES` a chosen `craft` would make. */
   recipe: string | null;
@@ -673,6 +680,7 @@ export class Brain {
     let victim: Person | null = null;
     let foe: Person | null = null;
     let beneficiary: Person | null = null;
+    let tradePartner: Person | null = null;
     let fleeFrom: Person | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
@@ -1016,6 +1024,29 @@ export class Brain {
               + this.bond(person, beneficiary, ctx) * 0.6) *
             (1 - person.traits.greed * 0.7) * (0.3 + person.traits.loyalty)
             * this.proximityBonus(person, beneficiary, ctx.sightRadius));
+        }
+      }
+
+      // Trade: a mutual exchange of surplus with somebody from *another*
+      // band, M11 phase 7b's third `BandRelations` engine. Deliberately not
+      // an `else if` beside `give` above — a person can have both a hungry
+      // neighbour to feed and a spare basket to trade away in the same
+      // think, toward two different people, the same shape `slanderSubjectId`
+      // /`praiseSubjectId` already keep separate. Gated on the *other*
+      // person's own surplus too, read directly off their carried food
+      // rather than guessed at, so nobody is scored toward a partner with
+      // nothing to trade back.
+      if (spareFood > 0) {
+        const foreigners = neighbours.filter(other => other.bandId !== person.bandId);
+        tradePartner = this.pickBest(foreigners, other => {
+          const theirSpare = this.carriedNutrition(other) - other.needs.hunger - GIVING_RESERVE;
+          if (theirSpare <= 0) return -Infinity;
+          return theirSpare - person.distanceTo(other) * 2;
+        });
+        if (tradePartner) {
+          const regard = Math.max(0, ctx.relationships.opinion(person.id, tradePartner.id)) / 100;
+          add('trade', (0.25 + regard * 0.5) * (1 - person.traits.greed * 0.4)
+            * this.proximityBonus(person, tradePartner, ctx.sightRadius));
         }
       }
 
@@ -1839,7 +1870,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, student, childPupil, mentor, colleague,
-        victim, foe, beneficiary, fleeFrom,
+        victim, foe, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2213,6 +2244,7 @@ export class Brain {
       case 'court':
       case 'feed':
       case 'give':
+      case 'trade':
       case 'steal':
       case 'threaten':
       case 'attack':
@@ -2231,6 +2263,7 @@ export class Brain {
           action === 'discuss' ? found.colleague :
           action === 'court' ? found.suitor :
           action === 'feed' || action === 'give' ? found.beneficiary :
+          action === 'trade' ? found.tradePartner :
           action === 'attack' ? found.foe :
           action === 'slander' || action === 'praise' ? found.companion :
           found.victim;
