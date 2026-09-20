@@ -123,7 +123,8 @@ changelog and is the owner's to answer.
 | M11 phase 5b — the event table stops declaring what nobody does | shipped 2026-09-17. `talk`/`trade` removed, `help` connected, `slander`/`praise` declared ahead of their verb |
 | M11 phases 3c and 5c — gossip is grounded, and a subject does not hear about it by magic | shipped 2026-09-18. `slander`/`praise` read `Memory.bestSignedStory`; the subject learns only by witnessing it; no player menu entry yet, same as `court` |
 | M11 phases 5d-5f — factions, exile that reaches, and the door back | shipped 2026-09-20. `Factions.conspiracyAgainst` replaces exile's dead average-opinion gate; `considerAdoption` mirrors it for a wandering outcast |
-| **M11 phase 6-11** | **next.** Inequality (`Household.renown`, `Household.store`), band standing, macronutrients, the oral tree, the widened Neolithic, war |
+| M11 phases 6a-6e — inequality | shipped 2026-09-20. `Household.homeBuildingId` replaces the unreachable `store`; a greedy household hoards there; `renown` gets a writer (`onDeed`) and two readers (`standingOver`, `chooseChief`), both relative to the band's own average. **A five-commit downward drift in `lean`'s mean survival (91.2% → 88.1%) is flagged for the owner in `changelog.md`'s 6e entry rather than decided here** |
+| **M11 phase 7-11** | **next, pending the owner's read on the drift above.** Band standing, macronutrients, the oral tree, the widened Neolithic, war |
 | **M8.2 — the other fifteen Neolithic nodes** | **next**, after M9.6's cheap half. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M9.6 phases 4b–5 — happiness reads, and sleeping rough | planned; 4a (the field) shipped with M11 phase 5a; runs after M8.2 and before M10, so M10's fences have something to pay off in |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |

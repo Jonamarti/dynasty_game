@@ -14,7 +14,7 @@
  * with its own event, not an error path.
  */
 import type { Person } from '../entities/Person.ts';
-import type { Household } from '../entities/Household.ts';
+import { averageRenown, type Household } from '../entities/Household.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Band } from '../core/Simulation.ts';
 import type { RelationshipGraph } from './Relationships.ts';
@@ -177,12 +177,10 @@ function inequalityTerm(leader: Person, bandId: number, ctx: AuthorityContext): 
   if (!household) return 0;
 
   let totalWealth = 0;
-  let totalRenown = 0;
   let count = 0;
   for (const other of ctx.householdsById.values()) {
     if (other.bandId !== bandId || other.extinct) continue;
     totalWealth += wealthOf(other, ctx);
-    totalRenown += other.renown;
     count++;
   }
   // A lone household, or a band this function was asked about before any of
@@ -190,7 +188,7 @@ function inequalityTerm(leader: Person, bandId: number, ctx: AuthorityContext): 
   if (count < 2) return 0;
 
   const wealthGap = Math.max(0, wealthOf(household, ctx) - totalWealth / count) / WEALTH_SPAN;
-  const renownGap = Math.max(0, household.renown - totalRenown / count) / RENOWN_SPAN;
+  const renownGap = Math.max(0, household.renown - averageRenown(bandId, ctx.householdsById)) / RENOWN_SPAN;
 
   return Math.min(INEQUALITY_AUTHORITY, (wealthGap + renownGap) * INEQUALITY_AUTHORITY);
 }

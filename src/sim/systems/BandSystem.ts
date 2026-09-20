@@ -17,7 +17,7 @@
  *    not, without either outcome being written as a rule.
  */
 import type { Person } from '../entities/Person.ts';
-import type { Household } from '../entities/Household.ts';
+import { averageRenown, type Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import {
   BUILDINGS, isTrap, isStation, isField, isHeap, type Building, type BuildingDef,
@@ -71,6 +71,20 @@ const REBELLION_THRESHOLD = -8;
 
 /** At least this many people must hold an opinion of the chief for it to count. */
 const REBELLION_QUORUM = 3;
+
+/**
+ * How much one point of renown above a household's own band average is
+ * worth in `standingScore`, M11 phase 6e — the "big man" route to the
+ * chiefdom, on top of the "well-liked" one `regard` already measures.
+ *
+ * Deliberately modest against `regard`, which sums an opinion as wide as
+ * -100..100 from every other adult in the band: 0.5 means a household 40
+ * renown above average — roughly one deed nobody will forget, `Authority
+ * .ts`'s own `RENOWN_SPAN` — buys as much as being liked twenty points more
+ * by a single bandmate, enough to tip a close election, not enough to buy
+ * one outright against a widely resented candidate.
+ */
+const RENOWN_CHIEF_WEIGHT = 0.5;
 
 /**
  * How full a band's stores must be before another is worth digging.
@@ -289,7 +303,21 @@ export class BandSystem {
     const welcome = candidate.id === band.chiefId
       ? chiefHoneymoon(band, ctx.day) * 40
       : 0;
-    return regard + candidate.years * 1.5 + candidate.skills.persuade * 0.8 + welcome;
+
+    // M11 phase 6e: the "big man" route to leadership, on top of the
+    // "well-liked" one `regard` already measures. Only the household's edge
+    // *above* its own band's average counts, the same shape `Authority.ts`'s
+    // `inequalityTerm` uses for standing over an order, and for the same
+    // reason — an egalitarian band, where every household is regarded about
+    // the same, gets nothing from this term for anybody.
+    const household = candidate.householdId === null
+      ? null
+      : ctx.householdsById.get(candidate.householdId) ?? null;
+    const renownEdge = household
+      ? Math.max(0, household.renown - averageRenown(band.id, ctx.householdsById)) * RENOWN_CHIEF_WEIGHT
+      : 0;
+
+    return regard + candidate.years * 1.5 + candidate.skills.persuade * 0.8 + welcome + renownEdge;
   }
 
   // -------------------------------------------------------------------------

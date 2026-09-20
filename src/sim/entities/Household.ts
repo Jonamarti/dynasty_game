@@ -69,3 +69,23 @@ export class Household {
     if (index >= 0) this.memberIds.splice(index, 1);
   }
 }
+
+/**
+ * A band's own average `renown` across its households — the reference every
+ * reader of renown compares one household against, rather than any fixed
+ * number, so that a band where every household is equally regarded produces
+ * a term of exactly zero for all of them. Shared between `Authority.ts`'s
+ * `inequalityTerm` and `BandSystem.ts`'s `standingScore` because both ask
+ * this same question and a second copy is how the two would quietly drift
+ * apart the first time either one changed what counts as a household's band.
+ */
+export function averageRenown(bandId: number, householdsById: ReadonlyMap<number, Household>): number {
+  let total = 0;
+  let count = 0;
+  for (const household of householdsById.values()) {
+    if (household.bandId !== bandId || household.extinct) continue;
+    total += household.renown;
+    count++;
+  }
+  return count > 0 ? total / count : 0;
+}

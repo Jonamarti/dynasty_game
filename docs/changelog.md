@@ -6,6 +6,61 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 6e: the big man reaches the chiefdom, and Block III closes
+
+`BandSystem.standingScore` — shared by `chooseChief` and
+`considerRebellion`'s challenge outcome, so both read the same answer — gains
+a renown term: `Math.max(0, household.renown - averageRenown(band, ...)) *
+RENOWN_CHIEF_WEIGHT` (0.5), the household's edge above its own band's
+average, and nothing at all for a household at or below it. `averageRenown`
+moved into `Household.ts` as a small shared helper, used by this and by
+phase 6d's `inequalityTerm`, on the house rule against two independent
+implementations of "a band's own average renown" drifting apart the first
+time either is retuned.
+
+0.5 is deliberately modest next to `regard`, which sums an opinion as wide
+as -100..100 from every other adult in the band: a household 40 renown
+above average — roughly `Authority.ts`'s own `RENOWN_SPAN`, one deed nobody
+will forget — buys as much standing as being liked twenty points more by a
+single bandmate. Enough to tip a close election toward a family with a
+genuine record; not enough to install a hoarder the band actively resents.
+
+**This closes Block III of `m11_plan.md`** — phases 6a through 6e — the
+inequality half of the milestone. `Household.store`, once a black hole, is
+now a real building a rival can rob; a greedy household hoards there instead
+of the nearest band store; `renown` finally has a writer and two readers;
+and the arc from egalitarian to stratified is emergent from both, gated
+behind no technology at all.
+
+**Measured, 20-seed cohorts against the phase 6d numbers**: `lean` 89.4% →
+88.1% survival, 0/20 collapsed. `century` 100.0% → 99.7%, 0/20 collapsed —
+essentially unmoved, as every commit in this block has left it, because
+`century` never grows enough inequality for any of these terms to matter.
+`sim:check:all`: `farmers`/`soil-is-drawn-down` moved back onto the passing
+side from the 6d matrix; every other line is the same already-documented
+fragile-check family. All 341 unit tests, typecheck clean.
+
+**Flagged for the project owner rather than decided here.** `lean`'s mean
+survival has now moved in the same direction across every one of the five
+commits measured in this pass — 91.2% → 90.6% → 90.1% → 89.4% → 88.1%, a
+cumulative 3.1 points — while `century` has stayed flat throughout. Read one
+way, this is the milestone working exactly as designed: `lean` is the
+scenario built specifically to carry scarcity and social friction, and a
+project whose stated arc is "egalitarian bands stratify and come into
+conflict" should show *some* cost there as inequality, hoarding and exile
+all start to bite, while a comfortable world is correctly untouched. Read
+the other way, five small steps the same direction is what a real,
+compounding effect looks like before any single one of them is individually
+provable — and `AGENTS.md` is explicit that a coefficient should never be
+picked because one twenty-seed run liked it, and that a change touching the
+food economy should have its acceptable cost written down *before* the
+measurement, which nothing in this pass did. Blocks IV, VII and the war
+milestone all add more scarcity and more friction on top of this one, so the
+drift will not resolve itself by stopping to look at it once. Worth a
+deliberate answer before phase 7 begins: is this the intended cost of the
+arc, and if so, what is the floor past which it stops being that and starts
+being a world that no longer works?
+
 ## 2026-09-20 — M11 phase 6d: wealth and renown buy a little unelected standing
 
 `standingOver` gains `inequalityTerm` (`Authority.ts`): a household visibly
