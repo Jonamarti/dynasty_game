@@ -82,6 +82,30 @@ export function outGroupBias(standing: number): number {
 }
 
 /**
+ * How much of a cross-band deed's `DEED_WEIGHT` reaches `BandRelations`, M11
+ * phase 7b.
+ *
+ * `BandRelations` decays at 0.998/day against an opinion's 0.985, so even a
+ * small per-event nudge compounds over a long game — this is what keeps a
+ * single theft from reading as the opening act of a war while still letting
+ * a pattern of them eventually mean one.
+ */
+const CROSS_BAND_DEED_SCALE = 0.02;
+
+/**
+ * What a marriage across a band line is worth to how those two bands stand
+ * with each other, M11 phase 7b's second engine.
+ *
+ * The strongest peace mechanism in the historical record, by the owner's own
+ * framing, and the cheapest to write: one number, added once, the moment
+ * `wed` is called on two people already known to belong to different bands.
+ * Far larger than any single `CROSS_BAND_DEED_SCALE`-scaled deed, because a
+ * marriage is not an event two peoples merely witnessed happening to each
+ * other, it is the two families choosing to become kin.
+ */
+const CROSS_BAND_MARRIAGE = 15;
+
+/**
  * What a night under one roof is worth, and how many people it can be worth it
  * with.
  *
@@ -303,6 +327,19 @@ export class SocialSystem {
     this.recent.push(event);
     if (this.recent.length > this.recentCap) this.recent.shift();
     this.onDeed?.(actor, type, event.magnitude);
+
+    // M11 phase 7b, first engine: a deed with a target from another band
+    // moves how those two *peoples* stand with each other, not only how the
+    // two people involved feel. Small on purpose — `CROSS_BAND_DEED_SCALE`
+    // is the reason a single theft does not start a war — and read off the
+    // deed itself rather than off each witness's `absorb`, so a crowd
+    // watching one theft cannot multiply its effect on band standing the way
+    // it correctly does multiply how many personal enemies the thief makes.
+    if (target && target.bandId !== actor.bandId) {
+      this.bandRelations.add(
+        actor.bandId, target.bandId,
+        DEED_WEIGHT[type] * (0.5 + event.magnitude * 0.5) * CROSS_BAND_DEED_SCALE);
+    }
     return event;
   }
 
@@ -570,6 +607,8 @@ export class SocialSystem {
     const text = a.name + ' and ' + b.name + ' were married';
     a.chronicle.push({ tick, ageDays: a.age, text, kind: 'milestone' });
     b.chronicle.push({ tick, ageDays: b.age, text, kind: 'milestone' });
+
+    if (a.bandId !== b.bandId) this.bandRelations.add(a.bandId, b.bandId, CROSS_BAND_MARRIAGE);
 
     this.onMarriage?.(a, b);
   }

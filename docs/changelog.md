@@ -6,6 +6,38 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 7b (1-2): the first two engines, deeds and marriage
+
+`BandRelations` gets its first two writers, the two the plan names as
+easiest to measure.
+
+**Cross-band deeds.** `SocialSystem.emit` now nudges `bandRelations` whenever
+a deed has a target from a different band, by `DEED_WEIGHT[type] * (0.5 +
+magnitude * 0.5) * CROSS_BAND_DEED_SCALE` (0.02) — small on purpose, which is
+what stops one theft from reading as the opening act of a war while still
+letting a pattern of them eventually mean one, given how slowly
+`BandRelations` decays. Read off the deed itself rather than off each
+witness's `absorb`, so a crowd watching one theft cannot multiply its effect
+on band standing the way it correctly multiplies how many personal enemies
+the thief makes.
+
+**Marriage.** `wed` adds a flat `CROSS_BAND_MARRIAGE` (15) whenever the two
+people it joins already belonged to different bands — the strongest peace
+mechanism in the historical record, by the owner's own framing, and the
+cheapest engine in the phase to write.
+
+**Measured, 20-seed `lean` cohort**: 88.1% → 89.2% survival, 0/20 collapsed
+either cohort — the drift from the 6a-6e entries did not continue, if
+anything it eased, though one cohort is not enough to call that a reversal
+rather than noise. `sim:check:all`: `century` joined `crowded` on
+`perf-budget` in the full-matrix run, but an isolated single run of `century`
+passes clean at 2,039 steps/s against the 2,000 floor — the two commits
+touch nothing on any hot path (`emit` and `wed` are both once-per-event, not
+once-per-tick), so this reads as the same machine-load noise `century` has
+sat close enough to the floor to show before, not a regression; worth
+re-checking on a quiet machine rather than chased further here. Every other
+line matches the phase 7a matrix. All 341 unit tests, typecheck clean.
+
 ## 2026-09-20 — M11 phase 7a: how two peoples stand with each other, sent inert
 
 **Block IV opens.** `next-steps.md` §5's correction has said since 2026-09-10
