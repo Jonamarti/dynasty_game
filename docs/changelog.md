@@ -6,6 +6,40 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 7b (3): territory, and the TODO it closes
+
+`BandRelations`' fourth engine, and the one the plan names as closing the
+long-standing `// later, claim territory` comment beside `Band.homeX/homeY`
+without any new mechanic: `considerTerritory` counts living foreign faces
+within `TERRITORY_RADIUS` (40) of a band's camp, once a day, and costs that
+band's standing with whichever band each intruder belongs to — but only in
+proportion to `pantryPressureOf`, the same fill-fraction `planBuildings`
+already reads to decide whether another granary is worth digging, now
+extracted into its own method so the two questions cannot quietly answer
+differently. A band with empty granaries pays nothing for a stranger's camp
+nearby; a band running out of storage pays the full `TERRITORY_SCALE` (0.3)
+per foreign face, per day — "a well-fed band shrugs off an intrusion, a
+hungry one does not," in one multiplication rather than a second mechanic.
+
+**Measured, 20-seed cohorts against the phase 7b (1-2) numbers**: `lean`
+89.2% → 87.1% survival, 0/20 collapsed (though `tau` fell to 35% and
+`sigma` to 53%, the two lowest single seeds since the phase 6d entry's
+`tau` at 27%). `century` 100.0% → 99.9%, 869 born, 11.5 known — unmoved, as
+every `BandRelations` engine has left it so far, because bands in that
+scenario rarely camp close enough to trigger the radius query at all.
+Consistent with the owner's read on the 6a-6e drift (`next-steps.md`): this
+is scarcity-scenario friction working as intended, and `century` staying
+flat is the check that it is not leaking into a world with no pressure to
+carry it.
+
+`sim:check:all`: `century` itself picked up `the-hurt-are-tended`, joining
+the roster of scenarios that check has flipped on before; `scribes` and
+`millers` dropped `spatial-hash-spreads`/`the-hurt-are-tended` this run;
+`stewards` picked up `the-hurt-are-tended` alongside its existing
+`compost-answers-exhaustion`. All within the already-documented
+one-or-two-event-wide family, no new kind of failure. All 341 unit tests,
+typecheck clean.
+
 ## 2026-09-20 — M11 phase 7b (1-2): the first two engines, deeds and marriage
 
 `BandRelations` gets its first two writers, the two the plan names as

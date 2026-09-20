@@ -149,7 +149,10 @@ const RENOWN_DECAY_PER_DAY = 0.997;
 export interface Band {
   id: number;
   name: string;
-  /** Camp centre; people spawn around it and, later, claim territory from it. */
+  /**
+   * Camp centre; people spawn around it, and `BandSystem.considerTerritory`
+   * reads a foreign face's distance from it (M11 phase 7b).
+   */
   homeX: number;
   homeY: number;
   /**
@@ -2504,6 +2507,7 @@ export class Simulation {
         onExile: (person, band, factionSize) => this.exile(person, band, factionSize),
         onAdopt: (person, band) => this.adopt(person, band),
         peopleHash: this.peopleHash,
+        bandRelations: this.bandRelations,
         abandonSite: site => this.removeBuilding(site),
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),

@@ -32,6 +32,7 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { chiefHoneymoon, chiefTermDays } from '../social/Leadership.ts';
 import { conspiracyAgainst } from '../social/Factions.ts';
+import type { BandRelations } from '../social/BandRelations.ts';
 
 /**
  * How large a faction against somebody has to be before the band acts on it.
@@ -50,6 +51,29 @@ const ADOPTION_RADIUS = 30;
 
 /** An outcast is refused if any member's opinion of them sits below this. */
 const ADOPTION_THRESHOLD = -10;
+
+/**
+ * How far from a band's camp a foreign face counts as an intrusion, M11
+ * phase 7b's territory engine.
+ *
+ * Wider than `ADOPTION_RADIUS`: welcoming a wandering outcast is a
+ * doorstep-sized question, but a band should notice strangers camped
+ * anywhere within sight of home, not only underfoot.
+ */
+const TERRITORY_RADIUS = 40;
+
+/**
+ * How much one foreign person, seen once, at maximum pantry pressure, costs
+ * a band's standing with whichever band that person belongs to.
+ *
+ * Deliberately smaller than `CROSS_BAND_MARRIAGE` and comparable to a single
+ * `CROSS_BAND_DEED_SCALE`-scaled theft: an intrusion is read daily and
+ * `BandRelations` decays slowly, so a strangers'-camp-next-door situation
+ * that persists compounds into real hostility, while a single passer-by
+ * barely registers — which is the property `AGENTS.md` asks any new spawn or
+ * scoring pass to earn on its own measurement, not on a first guess.
+ */
+const TERRITORY_SCALE = 0.3;
 
 /**
  * The most aggrieved member's opinion of the chief, below which they are
@@ -158,8 +182,10 @@ export interface BandContext {
   onExile: (person: Person, band: Band, factionSize: number) => void;
   /** Called when a band takes in a wandering outcast. */
   onAdopt: (person: Person, band: Band) => void;
-  /** For `considerAdoption`'s proximity query — never scan the population for it. */
+  /** For `considerAdoption`'s and `considerTerritory`'s proximity queries — never scan the population for it. */
   peopleHash: SpatialHash<Person>;
+  /** For `considerTerritory`'s reading of how two bands currently stand. */
+  bandRelations: BandRelations;
   /** Removes an abandoned site from the world. */
   abandonSite: (building: Building) => void;
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
@@ -214,6 +240,7 @@ export class BandSystem {
       this.considerExile(band, members, ctx);
       this.considerRebellion(band, members, ctx);
       if (!band.outcast && outcasts.length > 0) this.considerAdoption(band, members, outcasts, ctx);
+      if (!band.outcast) this.considerTerritory(band, ctx, outcastBand?.id);
       if (ctx.day % PLANNING_INTERVAL === 0) this.planBuildings(band, members, ctx);
       this.directWork(band, members, ctx);
     }
@@ -518,6 +545,22 @@ export class BandSystem {
   // -------------------------------------------------------------------------
 
   /**
+   * How full a band's granaries are, 0-1, from a list already filtered to
+   * one band's completed stores.
+   *
+   * Shared between `planBuildings`, which asks whether another is worth
+   * digging, and `considerTerritory`'s reading of how much an intrusion
+   * should sting — the same formula rather than two, so the two questions
+   * cannot quietly answer differently the day either one is retuned.
+   */
+  private pantryPressureOf(stores: Building[]): number {
+    const capacity = stores.reduce((sum, b) => sum + b.def.storage, 0);
+    if (capacity === 0) return 0;
+    const used = stores.reduce((sum, b) => sum + b.store.total, 0);
+    return used / capacity;
+  }
+
+  /**
    * Marks out what the band is short of.
    *
    * Shelter first — cold is what actually kills people here — then somewhere to
@@ -556,8 +599,6 @@ export class BandSystem {
       .reduce((sum, b) => sum + b.def.width * b.def.height, 0);
 
     const stores = live.filter(b => b.complete && b.def.storage >= 100);
-    const capacity = stores.reduce((sum, b) => sum + b.def.storage, 0);
-    const used = stores.reduce((sum, b) => sum + b.store.total, 0);
     const plannedStores = live.filter(b => !b.complete && b.def.storage >= 100).length;
 
     // What this band could actually raise.
@@ -610,7 +651,7 @@ export class BandSystem {
         // The first store is the cheap one, always. Being told to keep a season
         // of food in a pit you have not dug yet is worse than the pit.
         wanted = this.cheapest(granaries)?.id ?? null;
-      } else if (capacity > 0 && used / capacity > STORE_PRESSURE) {
+      } else if (this.pantryPressureOf(stores) > STORE_PRESSURE) {
         // Already storing, and running out of room: now the big one is worth
         // the season it costs.
         //
@@ -984,6 +1025,37 @@ export class BandSystem {
       ctx.onAdopt(candidate, band);
       ctx.onInsight(candidate, 'was welcomed into the ' + band.name, 'gain');
       return; // One at a time, the same discipline `considerExile` keeps.
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Territory
+  // -------------------------------------------------------------------------
+
+  /**
+   * Foreign faces near camp cost a band's opinion of that other band —
+   * scaled by how hungry this band is. M11 phase 7b's fourth engine, and the
+   * one the plan names as closing the old `// later, claim territory` TODO
+   * without any new mechanic: `pantryPressureOf` already answers "how
+   * pinched is this band for food", and multiplying an intrusion by it is
+   * the whole of "a well-fed band shrugs off an intrusion; a hungry one does
+   * not."
+   */
+  private considerTerritory(
+    band: Band, ctx: BandContext, outcastBandId: number | undefined
+  ): void {
+    const pressure = this.pantryPressureOf(
+      ctx.buildings.filter(b => b.ownerBandId === band.id && b.complete && b.def.storage >= 100));
+    if (pressure <= 0) return;
+
+    const byBand = new Map<number, number>();
+    for (const person of ctx.peopleHash.queryRadius(band.homeX, band.homeY, TERRITORY_RADIUS)) {
+      if (!person.alive || person.bandId === band.id || person.bandId === outcastBandId) continue;
+      byBand.set(person.bandId, (byBand.get(person.bandId) ?? 0) + 1);
+    }
+
+    for (const [otherBandId, count] of byBand) {
+      ctx.bandRelations.add(band.id, otherBandId, -count * pressure * TERRITORY_SCALE);
     }
   }
 }
