@@ -6,6 +6,41 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 6b: a reason to hoard
+
+Phase 6a gave a household's goods a real building to live in but nothing
+that preferred keeping them there: every store in reach was interchangeable,
+so wealth came out identically distributed across every household in a band
+and the phase was, in the project's own terms, declared content doing
+nothing.
+
+**`Brain`'s `store` scorer gains one term.** Choosing which building to walk
+a surplus to already ran on pure distance; it now adds `greed * HOARD_PULL`
+(8 tiles) when the candidate is the actor's own household's home, found
+through the new `BrainContext.householdsById`. A fully greedy person will
+now carry food eight tiles further to keep it inside their own family's
+walls rather than hand it to the nearest band store; someone with no greed at
+all is exactly as indifferent between stores as before this commit — the same
+shape the existing `0.35 * (1 - greed * 0.5)` term already gives the
+willingness to store *anything* at all, pulling in the direction the trait's
+name promises rather than a second, unrelated one.
+
+**Measured, 20-seed cohorts against the phase 5d-5f entry's own numbers**
+(6a itself changes no AI decision, so that entry is the correct baseline for
+isolating 6b's effect): `lean` 90.6% → 90.1% survival, 561 → 552 born, 7.2 →
+6.8 known, 269.0 → 278.4 passed on, 0/20 collapsed in either cohort —
+indistinguishable within the noise `AGENTS.md` documents. `century` 99.8% →
+100.0% survival, 868 → 868 born, 11.6 → 10.8 known — the scenario stays too
+comfortable to make greed matter, exactly as `lean`'s own description in
+`tools/simcheck.ts` predicts. `sim:check:all`: identical failure set to the
+phase 6a commit (`crowded`/`perf-budget`, `millers`/`the-hurt-are-tended`,
+`hunters`/`kills-are-butchered-for-bone`, `lean`/`the-hurt-are-tended`),
+nothing new. All 341 unit tests, typecheck clean.
+
+**Not done in this commit**: `Household.renown` is still unwritten and
+unread — phase 6c — so hoarding changes *where* goods sit but not yet
+anybody's standing for having them.
+
 ## 2026-09-20 — M11 phase 6a: a household's goods get a place to be
 
 `Household.store` was, in its own words, a black hole: an `Inventory` hanging

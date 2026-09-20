@@ -29,6 +29,7 @@ import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
 import { isTrap, isHeap } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
+import type { Household } from '../entities/Household.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import { ITEMS } from '../entities/Item.ts';
@@ -104,6 +105,8 @@ export interface BrainContext {
    * anything — see `Snow.ts` and `Simulation.isBuried`. */
   snowDepth: number;
   snowBuries: boolean;
+  /** For `store`'s hoarding term: which building a person's own household calls home. */
+  householdsById: ReadonlyMap<number, Household>;
 }
 
 export interface ScoredAction {
@@ -280,6 +283,22 @@ const TRAP_ROUND = 1.1;
 
 /** Nutrition a person keeps for themselves before giving any away. */
 const GIVING_RESERVE = 90;
+
+/**
+ * How many tiles of extra walk a fully greedy person will accept to store at
+ * their own household's home rather than the nearest band store.
+ *
+ * M11 phase 6b: the commit that makes `Household.homeBuildingId` matter
+ * rather than merely exist. Without this term every store is interchangeable
+ * and wealth comes out identically distributed across every household in the
+ * band, which is a phase about inequality shipping with nothing that produces
+ * any. Scaled by `greed` the same way the willingness to store at all already
+ * is, so the two pull in the direction the trait's name promises: a greedy
+ * person is not just reluctant to give food to the band, they would rather
+ * carry it a little further and keep it where only their own family can draw
+ * on it.
+ */
+const HOARD_PULL = 8;
 
 /**
  * The same, for one's own small children. Far lower, deliberately.
@@ -1355,13 +1374,21 @@ export class Brain {
       const carried = this.carriedNutrition(person);
       const surplus = carried - person.needs.hunger - GIVING_RESERVE;
       if (surplus > 0 && comfortNow > 0.4) {
+        // Which building this person's own household calls home, so a greedy
+        // person can be pulled toward it below. Null for anyone whose
+        // household has never slept under a roof yet.
+        const home = person.householdId === null
+          ? null
+          : ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
+
         // A trap is somewhere food comes *from*. Filling one with berries would
         // be a person carefully stopping their own snare line from catching
         // anything, because a full trap stops accruing.
         const store = this.pickBest(
           stores.filter(b => b.storageFree > 0 && this.canUse(person, b, ctx) &&
             !isTrap(b.def)),
-          b => -person.distanceTo({ x: b.centerX, y: b.centerY })
+          b => -person.distanceTo({ x: b.centerX, y: b.centerY }) +
+            (home !== null && b.id === home ? person.traits.greed * HOARD_PULL : 0)
         );
         if (store) {
           add('store', 0.35 * (1 - person.traits.greed * 0.5)

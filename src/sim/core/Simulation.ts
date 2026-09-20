@@ -2535,6 +2535,7 @@ export class Simulation {
         return soil.effective / Math.max(0.001, soil.resting);
       },
       snowBuries: this.config.world.snowBuries,
+      householdsById: this.householdsById,
     };
     const actionCtx = {
       world: this.world,
