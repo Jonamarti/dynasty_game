@@ -3,6 +3,21 @@
 As of 2026-09-20. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 6d, 2026-09-20
+
+### `lean`'s mean survival has drifted down four small steps in a row
+
+91.2% (clean baseline) → 90.6% (phases 5d-5f) → 90.1% (6a-6b) → 89.4% (6d),
+across four separately-measured 20-seed cohorts. Every individual step is
+inside the ~10-point floor `AGENTS.md` says a 20-seed cohort cannot resolve,
+and 0/20 collapsed in any of the four — but four steps the same direction is
+also the shape a real, small effect looks like before any one of them is
+provable alone. Not treated as a regression to fix, because there is nothing
+to point at yet: it is recorded here so that phase 6e's own measurement
+reads it as a trend to watch rather than starting from a clean slate. One
+seed in the 6d cohort (`tau`) fell to 27% survival, the lowest of any single
+seed measured so far across this milestone.
+
 ## Found shipping M11 phase 6a, 2026-09-20
 
 ### `lean` moved onto the wrong side of `the-hurt-are-tended`

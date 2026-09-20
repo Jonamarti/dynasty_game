@@ -15,6 +15,7 @@
  */
 import type { Person } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
+import type { Building } from '../entities/Building.ts';
 import type { Band } from '../core/Simulation.ts';
 import type { RelationshipGraph } from './Relationships.ts';
 import { chiefHoneymoon } from './Leadership.ts';
@@ -23,6 +24,8 @@ import { techPower } from '../knowledge/Tech.ts';
 export interface AuthorityContext {
   relationships: RelationshipGraph;
   householdsById: Map<number, Household>;
+  /** For `inequalityTerm`'s reading of a household's stored wealth. */
+  buildingsById: ReadonlyMap<number, Building>;
   /** Band chiefs, by band id. */
   chiefByBand: Map<number, number>;
   /** Bands carry the one timestamp from which a chief's welcome is derived. */
@@ -124,6 +127,74 @@ const ORDER_COST: Record<string, number> = {
  */
 const RANK_AUTHORITY = 0.22;
 
+/**
+ * The ceiling on what being visibly wealthier and more renowned than your
+ * own band's average can buy you, M11 phase 6d.
+ *
+ * Kept below `RANK_AUTHORITY`, deliberately: a legitimate rank granted by
+ * `chiefdom` must still outweigh mere riches, or a household with a full
+ * store would out-order a head nobody elected. And it is *emergent* rather
+ * than gated behind any technology — see `inequalityTerm` below — so an
+ * egalitarian band where every household holds about the same wealth and
+ * renown gets nothing from this term at all, by construction, not by a
+ * switch anybody has to flip.
+ */
+const INEQUALITY_AUTHORITY = 0.18;
+
+/**
+ * A plausible store's worth of goods, and a single strong deed's worth of
+ * renown — the scales `inequalityTerm` divides its two gaps by.
+ *
+ * Not a hard limit on either quantity, just the size of gap that counts as
+ * "a full extra store" or "a deed nobody will forget", so the term is stable
+ * near a band average of zero (a brand new household with nothing yet) and
+ * does not swing wildly on the very first deed anyone in a band commits.
+ */
+const WEALTH_SPAN = 60;
+const RENOWN_SPAN = 40;
+
+/** The goods sitting at a household's home, or zero if it has none yet. */
+function wealthOf(household: Household, ctx: AuthorityContext): number {
+  if (household.homeBuildingId === null) return 0;
+  return ctx.buildingsById.get(household.homeBuildingId)?.store.total ?? 0;
+}
+
+/**
+ * How much more authority `leader`'s household commands than an ordinary
+ * one in `bandId`, purely from being visibly richer and more renowned than
+ * the band's own average.
+ *
+ * This is what lets the egalitarian-to-stratified arc the project is built
+ * toward emerge from play rather than unlock behind a node: nothing here
+ * reads a technology. A band where every household hoards and gives in equal
+ * measure produces an average every household sits on, and the term is zero
+ * for all of them; a band where one family has pulled ahead produces a
+ * nonzero average gap only that family benefits from.
+ */
+function inequalityTerm(leader: Person, bandId: number, ctx: AuthorityContext): number {
+  if (leader.householdId === null) return 0;
+  const household = ctx.householdsById.get(leader.householdId);
+  if (!household) return 0;
+
+  let totalWealth = 0;
+  let totalRenown = 0;
+  let count = 0;
+  for (const other of ctx.householdsById.values()) {
+    if (other.bandId !== bandId || other.extinct) continue;
+    totalWealth += wealthOf(other, ctx);
+    totalRenown += other.renown;
+    count++;
+  }
+  // A lone household, or a band this function was asked about before any of
+  // its households existed, has no average to sit above.
+  if (count < 2) return 0;
+
+  const wealthGap = Math.max(0, wealthOf(household, ctx) - totalWealth / count) / WEALTH_SPAN;
+  const renownGap = Math.max(0, household.renown - totalRenown / count) / RENOWN_SPAN;
+
+  return Math.min(INEQUALITY_AUTHORITY, (wealthGap + renownGap) * INEQUALITY_AUTHORITY);
+}
+
 export function orderCost(action: string): number {
   return ORDER_COST[action] ?? 0.3;
 }
@@ -206,6 +277,14 @@ export function standingOver(
     authority += RANK_AUTHORITY * techPower(leader, 'chiefdom');
     reasons.push('head of a house in your band');
   }
+
+  // M11 phase 6d: a household visibly richer and more renowned than its
+  // band's own average buys a little standing nobody elected it to, the
+  // emergent half of the egalitarian-to-stratified arc — see
+  // `inequalityTerm`'s own comment for why it reads no technology at all.
+  const inequality = inequalityTerm(leader, subordinate.bandId, ctx);
+  authority += inequality;
+  if (inequality > 0.03) reasons.push('a person of some standing');
 
   if (reasons.length === 0) reasons.push('no standing over them');
 

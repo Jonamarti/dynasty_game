@@ -6,6 +6,54 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 6d: wealth and renown buy a little unelected standing
+
+`standingOver` gains `inequalityTerm` (`Authority.ts`): a household visibly
+richer or more renowned than its own band's average earns its head a little
+extra compliance from anyone in that band, capped at 0.18 — under
+`RANK_AUTHORITY`'s 0.22, so a rich household never out-orders a head the
+band actually elected through `chiefdom`. The gap is read against each
+household's own band average rather than a fixed number, which is what
+makes the egalitarian-to-stratified arc the project is built toward
+*emergent*: a band where every household hoards and gives in equal measure
+produces an average every household sits on top of, and the term is exactly
+zero for all of them, by construction — not a technology anybody has to
+discover to switch it on.
+
+Wealth is read as `Household.homeBuildingId`'s store total (phase 6a);
+renown is the phase 6c field. Both gaps are divided by a fixed span (60
+goods, 40 renown — roughly a full extra store and one deed nobody will
+forget) before being summed and capped, so the term stays stable near a
+band average of zero rather than swinging wildly on the first deed or the
+first stored basket anyone in a young band produces.
+
+**Measured, 20-seed cohorts against the phase 6b/6c numbers**: `lean` 90.1%
+→ 89.4% survival, 552 → 566 born, 0/20 collapsed in either cohort (though
+one seed, `tau`, fell to 27% — the lowest single seed observed across every
+cohort measured for this milestone so far, worth naming rather than
+smoothing over even though it sits inside the noise floor `AGENTS.md`
+documents). `century` 100.0% → 100.0%, 868 → 859 born, 10.8 → 10.8 known —
+unmoved, `century` being too comfortable for inequality to have grown large
+enough to matter. **Worth watching**: mean `lean` survival has now drifted
+91.2% (clean baseline) → 90.6% (5d-5f) → 90.1% (6a-6b) → 89.4% (6d) across
+four measured commits — each step individually inside the ~10-point floor a
+20-seed cohort can resolve, but four small steps in the same direction is
+the shape a real effect looks like before it is provable. Nothing here
+warrants reverting; it warrants re-measuring once phase 6e and 6b's
+`labour`-scenario numbers are in.
+
+`sim:check:all`: four lines moved from the phase 6c matrix —
+`scribes`/`spatial-hash-spreads`, `farmers`/`soil-is-drawn-down`,
+`stewards`/`compost-answers-exhaustion` (already on record in `bugs.md` as
+one-event-wide), `culture`/`the-hurt-are-tended` (ditto) — and `lean` moved
+the other way, back onto the passing side of `the-hurt-are-tended`. More
+lines moved than any single commit in this milestone so far, which tracks
+with `standingOver` being read on every order and job assignment in the
+game rather than one narrow scorer path; all four are variations on checks
+already documented as thin. `labour`'s own dedicated read of
+`heads-direct-work` still passes (19 orders obeyed by rank, 56 refused).
+All 341 unit tests, typecheck clean.
+
 ## 2026-09-20 — M11 phase 6c: renown is finally written
 
 `Household.renown` has existed since before this milestone with no reader

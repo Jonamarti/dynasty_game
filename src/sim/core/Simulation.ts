@@ -870,6 +870,7 @@ export class Simulation {
     return {
       relationships: this.relationships,
       householdsById: this.householdsById,
+      buildingsById: this.buildingsById,
       chiefByBand: this.bandSystem.chiefByBand,
       bands: this.bands,
       day: this.time.day,
