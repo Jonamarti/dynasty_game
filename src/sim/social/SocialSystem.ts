@@ -190,6 +190,14 @@ export class SocialSystem {
    */
   onMarriage: ((a: Person, b: Person) => void) | null = null;
 
+  /**
+   * Called whenever a deed is emitted, so the simulation can let a
+   * household's renown hear about what one of its own did. The same pattern
+   * `onMarriage` uses and for the same reason: a household is the
+   * simulation's business, not this module's — see `Simulation.accrueRenown`.
+   */
+  onDeed: ((actor: Person, type: EventType, magnitude: number) => void) | null = null;
+
   constructor(
     private readonly relationships: RelationshipGraph,
     private readonly normsByBand: Map<number, Norms>
@@ -271,6 +279,7 @@ export class SocialSystem {
 
     this.recent.push(event);
     if (this.recent.length > this.recentCap) this.recent.shift();
+    this.onDeed?.(actor, type, event.magnitude);
     return event;
   }
 

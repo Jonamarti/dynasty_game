@@ -32,7 +32,7 @@ import {
 } from '../ai/Autonomy.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
 import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
-import { DEFAULT_NORMS, VARIABLE_NORMS, type Norms } from '../social/Events.ts';
+import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType } from '../social/Events.ts';
 import {
   Building, BUILDINGS, isTrap, resetBuildingIds, type BuildingDef,
 } from '../entities/Building.ts';
@@ -135,6 +135,15 @@ const ORGANISED_ORDER_BONUS = 0.1;
 
 /** Ticks an interrupted order waits to be resumed before it is forgotten. */
 const RESUME_WINDOW = 2000;
+
+/**
+ * Renown retained per in-game day, M11 phase 6c. Slower than the 0.985
+ * `RelationshipGraph` uses for its `deeds` component, deliberately: an
+ * opinion is one person's fading recollection, renown is a household's own
+ * record of itself and has to still mean something after the person who
+ * earned it has died.
+ */
+const RENOWN_DECAY_PER_DAY = 0.997;
 
 export interface Band {
   id: number;
@@ -360,6 +369,7 @@ export class Simulation {
     this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder);
     this.social = new SocialSystem(this.relationships, this.normsByBand);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
+    this.social.onDeed = (actor, type, magnitude) => this.accrueRenown(actor, type, magnitude);
     this.actionRng = this.rng.fork();
     this.lifeRng = this.rng.fork();
     this.forestRng = this.rng.fork();
@@ -823,6 +833,33 @@ export class Simulation {
       source.endedTick = this.time.tick;
     }
     younger.surname = target.name;
+  }
+
+  /**
+   * A deed moves the standing of the household behind it, not only the
+   * opinions of whoever saw it.
+   *
+   * **M11 phase 6c.** `SocialSystem.onDeed` is the same pattern `onMarriage`
+   * already uses, for the same reason: a household is this class's business,
+   * not the social layer's, which only knows people and what they feel about
+   * each other. Unlike `RelationshipGraph.addDeed`, this is not filtered
+   * through any one observer's culture or hearsay — renown is the family's
+   * own record of what it has done, read the same way by everyone, which is
+   * exactly what makes it something a stranger can respect before they have
+   * ever met you.
+   */
+  private accrueRenown(actor: Person, type: EventType, magnitude: number): void {
+    if (actor.householdId === null) return;
+    const household = this.householdsById.get(actor.householdId);
+    if (!household) return;
+    // Unclamped, deliberately, unlike `Relationship.deeds`: that component
+    // feeds directly into a -100..100 opinion scale and has to fit inside
+    // it, but every reader of `renown` (`standingOver`, `chooseChief`) asks
+    // for it only *relative to the band's own average* — see phase 6d. A hard
+    // ceiling here would let enough ordinary generosity saturate every
+    // long-lived household at the same value, erasing exactly the gap the
+    // rest of this phase exists to let open.
+    household.renown += DEED_WEIGHT[type] * (0.5 + magnitude * 0.5);
   }
 
   // -------------------------------------------------------------------------
@@ -2421,6 +2458,12 @@ export class Simulation {
       this.snowDepth = advanceSnowDepth(this.snowDepth, this.time.temperature);
       this.social.dailyUpkeep(this.people);
       this.shareTheHearth();
+      // Renown decays far more slowly than an ordinary opinion's `deeds`
+      // component (0.997 against 0.985): it is the family's memory of itself
+      // and has to compose across generations, not fade with one person's
+      // recollection. Kept here rather than folded into `dailyUpkeep`,
+      // because `SocialSystem` knows people and feelings, not households.
+      for (const household of this.households) household.renown *= RENOWN_DECAY_PER_DAY;
       for (const person of this.people) {
         if (person.alive) decayMood(person);
       }

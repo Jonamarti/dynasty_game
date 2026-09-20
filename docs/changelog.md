@@ -6,6 +6,36 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 6c: renown is finally written
+
+`Household.renown` has existed since before this milestone with no reader
+and no writer anywhere in `src/` — declared-and-inert content this project
+has a standing rule against.
+
+**`SocialSystem` gains `onDeed`**, the same hook pattern `onMarriage` already
+uses and for the same reason: a household is `Simulation`'s business, not
+the social layer's, which knows only people and what they feel about each
+other. `emit` calls it once per deed, unfiltered by any observer's culture
+or hearsay — renown is a household's own record of what it did, read the
+same way by everyone, which is exactly what lets a stranger respect (or
+distrust) a family they have never personally dealt with, unlike an opinion,
+which always belongs to one particular viewer.
+
+**`Simulation.accrueRenown`** adds `DEED_WEIGHT[type] * (0.5 + magnitude *
+0.5)` to the acting household's `renown` — unclamped, on purpose, unlike the
+`-100..100` an opinion's `deeds` component has to fit inside: every future
+reader of this number (`standingOver` in phase 6d, `chooseChief` in 6e) asks
+for it only relative to the band's own average, so a hard ceiling would let
+ordinary generosity saturate every long-lived household at the same value
+and erase the very gap this phase exists to let open. It decays at 0.997 per
+day against the 0.985 an ordinary opinion's `deeds` uses — a family's memory
+of itself has to still mean something after the person who earned it has
+died, which is the whole point of a household outliving its members.
+
+**Bit-identical**, as intended: nothing reads `renown` yet, so no decision
+anywhere in the simulation changes. `sim:check:all` reproduces the phase 6b
+commit's matrix line for line. All 341 unit tests, typecheck clean.
+
 ## 2026-09-20 — M11 phase 6b: a reason to hoard
 
 Phase 6a gave a household's goods a real building to live in but nothing
