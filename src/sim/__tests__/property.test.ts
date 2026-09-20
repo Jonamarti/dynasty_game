@@ -5,6 +5,7 @@ import { RNG } from '../core/RNG.ts';
 import { BUILDINGS, Building } from '../entities/Building.ts';
 import { Person } from '../entities/Person.ts';
 import { mayUse } from '../social/Property.ts';
+import { BandRelations } from '../social/BandRelations.ts';
 
 const SIGHT = 12;
 
@@ -12,10 +13,12 @@ function person(name: string, x: number, y: number, bandId: number): Person {
   return new Person(name, x, y, bandId, new RNG('property-' + name));
 }
 
-function access(actor: Person, building: Building, people: Person[]) {
+function access(
+  actor: Person, building: Building, people: Person[], bandRelations = new BandRelations()
+) {
   const peopleHash = new SpatialHash<Person>(8);
   peopleHash.rebuild(people);
-  return mayUse(actor, building, { peopleHash, sightRadius: SIGHT });
+  return mayUse(actor, building, { peopleHash, sightRadius: SIGHT, bandRelations });
 }
 
 describe('observable property', () => {
@@ -51,5 +54,21 @@ describe('observable property', () => {
     // A third-party witness can spread the story, but cannot enforce another
     // band's claim merely by standing nearby.
     expect(result.seen).not.toBe(stranger);
+  });
+
+  // M11 phase 7c.
+  it('treats a close ally as if it were their own band, watched or not', () => {
+    const actor = person('Ari', 5, 5, 0);
+    const owner = person('Bo', 7, 5, 1);
+    const store = new Building(BUILDINGS.stockpile!, 5, 5, 1);
+
+    // Same layout as the watched case above, which refuses without an alliance.
+    expect(access(actor, store, [actor, owner]).allowed).toBe(false);
+
+    const allies = new BandRelations();
+    allies.add(0, 1, 100);
+    const result = access(actor, store, [actor, owner], allies);
+    expect(result.allowed).toBe(true);
+    expect(result.ours).toBe(true);
   });
 });

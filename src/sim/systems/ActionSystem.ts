@@ -25,6 +25,7 @@ import type { Animal } from '../entities/Animal.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import type { KnowledgeSystem } from './KnowledgeSystem.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
+import type { BandRelations } from '../social/BandRelations.ts';
 import { menaceOver } from '../social/Authority.ts';
 import {
   CONVERSATION_MODES, chooseMode, meetingOfMinds, modeAllowed, type ConversationMode,
@@ -60,6 +61,8 @@ export interface ActionContext {
   onTreeFelled: (tree: Tree, feller: Person) => void;
   peopleById: Map<number, Person>;
   peopleHash: SpatialHash<Person>;
+  /** For `mayUse`'s reading of how the two bands involved currently stand. */
+  bandRelations: BandRelations;
   social: SocialSystem;
   rng: RNG;
   tick: number;

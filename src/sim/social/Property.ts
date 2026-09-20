@@ -13,11 +13,23 @@
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
+import type { BandRelations } from './BandRelations.ts';
 
 export interface PropertyContext {
   peopleHash: SpatialHash<Person>;
   sightRadius: number;
+  bandRelations: BandRelations;
 }
+
+/**
+ * Standing at or above which two bands are close enough allies that a
+ * member of one may as well be a member of the other for this question, M11
+ * phase 7c. Marriage alone (`CROSS_BAND_MARRIAGE`, 15) does not reach it;
+ * marriage plus a real pattern of trade, or several marriages, does — an
+ * alliance this complete should be rare and earned, not the state two bands
+ * fall into after one wedding.
+ */
+const ALLY_STANDING = 55;
 
 export interface PropertyUse {
   /** True when no property offence exists in the first place. */
@@ -36,6 +48,16 @@ export function mayUse(
 ): PropertyUse {
   if (building.ownerBandId === person.bandId) {
     return { ours: true, allowed: true, seen: null, because: 'it belongs to their band' };
+  }
+
+  // M11 phase 7c: a band this close to your own is effectively your own for
+  // this question. Property is protected by attention rather than
+  // permission precisely so that a rival stays a rival until their own
+  // deeds say otherwise (phase 4's whole point) — and an alliance this deep
+  // is exactly such a deed, built from real marriages and real trade, not a
+  // permission anybody switched on.
+  if (ctx.bandRelations.standing(person.bandId, building.ownerBandId) >= ALLY_STANDING) {
+    return { ours: true, allowed: true, seen: null, because: 'their band and yours are close allies' };
   }
 
   const seen = ctx.peopleHash.findNearest(

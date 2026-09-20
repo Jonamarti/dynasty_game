@@ -6,6 +6,33 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 7c (1): `mayUse` reads how two bands stand
+
+The first of `BandRelations`' three readers. `mayUse` (`Property.ts`) now
+treats a band standing at or above `ALLY_STANDING` (55) with the building's
+owning band as if it were the actor's own — `ours: true`, allowed whether or
+not anyone is watching. 55 is deliberately out of reach of marriage alone
+(`CROSS_BAND_MARRIAGE` is 15): an alliance this complete should be rare and
+earned from a real pattern of marriages and trade, not the state two bands
+fall into after one wedding. This does not weaken phase 4's own point — a
+rival stays a rival until their own deeds say otherwise — it extends it: an
+allied band's deeds have said otherwise.
+
+`PropertyContext` gained `bandRelations`, threaded through `BrainContext`
+and `ActionContext` (both already structurally satisfy `PropertyContext`,
+so both needed the field) and `Simulation.mayUseBuilding`'s own inline
+context. One new deterministic test in `property.test.ts`: the same watched
+layout that refuses an ordinary neighbour now allows a band standing at 100.
+
+**Measured, 20-seed cohorts**: identical, seed for seed, to the phase 7b (4)
+numbers on both `lean` and `century` — `ALLY_STANDING` is not reached within
+either scenario's run length yet, given how small each individual engine's
+nudge is and how slowly `BandRelations` moves. Not a concern: the mechanism
+exists and is tested directly; a cohort long enough or eventful enough to
+trigger it naturally is a `sim:seeds`-scale question for later, not a reason
+to lower the threshold now. `sim:check:all` reproduces the phase 7b (4)
+matrix line for line. All 342 unit tests, typecheck clean.
+
 ## 2026-09-20 — M11 phase 7b (4): trade, and `BandRelations`' last inert engine
 
 `trade` is declared in `EVENT_TYPES` again — `DEED_WEIGHT: 7`,

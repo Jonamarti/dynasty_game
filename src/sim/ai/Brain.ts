@@ -30,6 +30,7 @@ import { isTrap, isHeap } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Household } from '../entities/Household.ts';
+import type { BandRelations } from '../social/BandRelations.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import { ITEMS } from '../entities/Item.ts';
@@ -107,6 +108,8 @@ export interface BrainContext {
   snowBuries: boolean;
   /** For `store`'s hoarding term: which building a person's own household calls home. */
   householdsById: ReadonlyMap<number, Household>;
+  /** For `mayUse`'s reading of how two bands currently stand. */
+  bandRelations: BandRelations;
 }
 
 export interface ScoredAction {

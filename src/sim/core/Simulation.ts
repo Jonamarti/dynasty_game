@@ -1359,6 +1359,7 @@ export class Simulation {
     return mayUse(person, building, {
       peopleHash: this.peopleHash,
       sightRadius: this.config.sightRadius,
+      bandRelations: this.bandRelations,
     });
   }
 
@@ -2591,6 +2592,7 @@ export class Simulation {
       },
       snowBuries: this.config.world.snowBuries,
       householdsById: this.householdsById,
+      bandRelations: this.bandRelations,
     };
     const actionCtx = {
       world: this.world,
@@ -2605,6 +2607,7 @@ export class Simulation {
       onTreeFelled: (tree: Tree) => this.removeTree(tree),
       peopleById: this.peopleById,
       peopleHash: this.peopleHash,
+      bandRelations: this.bandRelations,
       social: this.social,
       rng: this.actionRng,
       tick: this.time.tick,
