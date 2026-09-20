@@ -449,9 +449,10 @@ export class SocialSystem {
     this.introduce(b, a);
 
     // Familiarity grows more slowly across a band boundary: it takes longer to
-    // warm to a stranger than to someone you grew up beside.
+    // warm to a stranger than to someone you grew up beside — and M11 phase
+    // 7c reads *how much* more slowly off how the two bands themselves stand.
     const sameBand = a.bandId === b.bandId;
-    const gained = crossBand(warmth, sameBand);
+    const gained = crossBand(warmth, sameBand, this.bandRelations.standing(a.bandId, b.bandId));
     this.relationships.addFamiliarity(a.id, b.id, gained, tick);
     this.relationships.addFamiliarity(b.id, a.id, gained, tick);
 

@@ -6,6 +6,35 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 7c (2): a conversation warms faster between allies
+
+`Conversation.crossBand`'s flat ×0.43 cross-band penalty becomes standing-
+aware: `CROSS_BAND + standing * CROSS_BAND_STANDING_SCALE` (0.004), clamped
+between `CROSS_BAND_FLOOR` (0.05) and 1. At neutral standing — every pair
+`BandRelations` has not yet touched — the factor is exactly the old 0.43, so
+a fresh pair of strangers warms exactly as before. At 100 (close allies) it
+reaches 0.83, most of the way to the in-band rate; at -100 (open hostility)
+it is floored at 0.05 rather than reaching zero, because two people from
+warring peoples can still, slowly, come to know each other as individuals
+rather than as their bands' reputations.
+
+`SocialSystem.settle` reads `this.bandRelations.standing(a.bandId, b.bandId)`
+and passes it through; `crossBand` takes it as an optional third parameter
+defaulting to 0, so every existing call in tests still means what it always
+meant. Two new deterministic tests in `conversation.test.ts`.
+
+**Measured, 20-seed cohorts**: `lean` 89.0% → 91.1% survival, 0/20
+collapsed, no seed below 74% — the healthiest `lean` cohort measured for
+this entire milestone, essentially back at the pre-M11-5d clean baseline of
+91.2%. `century` 99.6% → 100.0%, 866 born, 11.5 known. Read together with
+the friction the territory engine added two commits ago, this is the
+cooperative half of the same mechanism finally landing: allies now warm to
+each other faster, which is what `mayUse`'s alliance exception and this
+reader both exist to make worth having. `sim:check:all` reproduces the
+phase 7c (1) matrix (the previous run's `jobs-bias-work` did not recur —
+consistent with `bugs.md`'s own description of that check's effect being
+smaller than its seed-to-seed spread). All 343 unit tests, typecheck clean.
+
 ## 2026-09-20 — M11 phase 7c (1): `mayUse` reads how two bands stand
 
 The first of `BandRelations`' three readers. `mayUse` (`Property.ts`) now

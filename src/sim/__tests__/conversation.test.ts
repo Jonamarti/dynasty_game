@@ -66,6 +66,17 @@ describe('choosing a conversation', () => {
     expect(crossBand(10, false)).toBeLessThan(crossBand(10, true));
     expect(crossBand(10, true)).toBe(10);
   });
+
+  // M11 phase 7c.
+  it('warms faster across a boundary between allies and slower between rivals', () => {
+    const neutral = crossBand(10, false);
+    expect(crossBand(10, false, 80)).toBeGreaterThan(neutral);
+    expect(crossBand(10, false, -80)).toBeLessThan(neutral);
+    // Same band ignores standing entirely — there is no boundary to cross.
+    expect(crossBand(10, true, -100)).toBe(10);
+    // However hostile, warming to a stranger never quite reaches zero.
+    expect(crossBand(10, false, -1000)).toBeGreaterThan(0);
+  });
 });
 
 describe('what a conversation settles', () => {
