@@ -6,6 +6,82 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phases 5d-5f: factions, and the exile they finally reach
+
+`considerExile` gated on the band's *average* opinion of a suspect at -28, a
+threshold `next-steps.md`'s longer-standing-gaps section already flagged as
+never having fired once: kinship and household bias hold the average
+comfortably above hostile even when a handful of people genuinely loathe
+someone, exactly the finding `REBELLION_THRESHOLD`'s own comment records for
+why `considerRebellion` reads the worst opinion of the chief instead of the
+average. Exile had the same defect and nobody had gone back to fix it.
+
+**`src/sim/social/Factions.ts` is new**: `conspiracyAgainst(subjectId,
+members, rels)`, derived fresh every call and stored nowhere, on the same
+principle `standingScore` already follows for "how well is this person
+regarded". It walks the band once for grudge-holders (opinion of the subject
+below -20), then only that handful for who trusts whom (mutual opinion above
++15) — `O(members) + O(grudges²)`, not every pair in the band. Per the
+owner's note 8, an instigator needs no grudge of their own if their loyalty is
+low or their `malice` is high; everyone else needs the grudge before they can
+bring a faction together.
+
+`considerExile` now casts someone out when the largest such faction reaches
+`EXILE_QUORUM` (4), instigator included, rather than when the band average
+crosses a threshold. `considerAdoption` is new and is the door back the
+project's longer-standing-gaps section already promised: a band may take in
+an outcast found wandering within `ADOPTION_RADIUS` of its camp, refused only
+by a member who still, personally, holds a grudge below `ADOPTION_THRESHOLD`
+against them — reputation here is read straight off `Memory` and
+`RelationshipGraph`, so a band that never witnessed the exile's crime, or
+whose own norms do not condemn it, has nothing held against the newcomer.
+Adoption founds the newcomer a fresh one-person household under the adopting
+band, deliberately: the household they left behind stays with their old band,
+which is also why exile itself never had to touch it — `Household.bandId`
+already stops `headsAHouseIn` counting a household whose band no longer
+matches the person's own.
+
+Neither `considerExile` nor `considerAdoption` draws from any RNG stream, so
+this needed no new fork. `BandContext` gained `peopleHash` (for adoption's
+proximity query — never a scan, per `AGENTS.md`) and `onAdopt`, both wired in
+`Simulation.ts` beside the existing `onExile`.
+
+**Measured, 20-seed `lean` cohort** (the scenario built in M11 phase 0d
+specifically because the default world has no pressure for this mechanism to
+answer to), baseline captured by stashing this change and re-running the same
+cohort: mean survival 91.2% → 90.6%, 569 → 561 born, 7.3 → 7.2 technologies
+known, 261.4 → 269.0 passed on — indistinguishable within the noise 20 seeds
+cannot resolve, well under the ~10-point floor `AGENTS.md` documents. One
+seed (`century`, within the `lean` cohort) swung from 66% to 100% survival
+between the two runs; that is the same `chooseAmongBest` RNG-cascade effect
+recorded in the M11 5c entry above, not a defect — once exile fires at all,
+the exiled person's action resets to idle, which changes how many candidates
+`choiceRng` weighs from that tick on and diverges every later draw on that
+seed. The `century` *scenario* cohort (not to confuse with the seed of the
+same name) was also re-measured for safety and landed at 99.8% survival, 868
+born, 11.6 known — indistinguishable from the M11 5c entry's own 99.9%/870/11.6,
+confirming the mechanism stays silent in a world with no scarcity to trigger
+it. `sim:check:all`: same three pre-existing failures as the prior commit
+(`crowded`/`perf-budget`, `millers`/`the-hurt-are-tended`,
+`hunters`/`kills-are-butchered-for-bone`), nothing new. All 341 unit tests
+(three new, covering the faction gate and adoption deterministically — the
+same reason `rebellion`'s tests are unit tests rather than a `simcheck` check:
+a quorum this specific is not reliably reachable inside any one scenario's
+window), all 47 e2e specs.
+
+**Not done in this pass**: `5d`'s conspiracy is read only by exile and
+adoption so far, not by anything a player can see or act on — `bugs.md` notes
+it. The plan's own gate paragraph asks for four new `simcheck` checks
+(`exile-is-reachable`, `factions-form`, `gossip-is-aimed`,
+`the-cast-out-find-a-home`); they were not added, on the same reasoning
+`band.test.ts`'s header already gives for `rebellion-is-rare-but-happens` —
+a quorum-gated faction is not guaranteed inside any one scenario's step
+budget, and a check that flakes between PASS and n/a by seed is the
+"looks reassuring, detects nothing" failure `AGENTS.md` already names two
+deleted checks for. Worth revisiting once `lean`'s own telemetry (`exiled`,
+`adopted`) has been watched across enough seeds to know whether it is
+reliable enough to gate on.
+
 ## 2026-09-18 — M11 phases 3c and 5c: gossip that has to be grounded, and a subject who does not hear about it by magic
 
 `slander` and `praise` have been declared in `EVENT_TYPES` since phase 5b,

@@ -122,7 +122,8 @@ changelog and is the owner's to answer.
 | M11 phase 5a, bundled with M9.6 phase 4a — `malice`, and a mood that exists | shipped 2026-09-17. The trait and the four channels are inert; nobody reads either yet |
 | M11 phase 5b — the event table stops declaring what nobody does | shipped 2026-09-17. `talk`/`trade` removed, `help` connected, `slander`/`praise` declared ahead of their verb |
 | M11 phases 3c and 5c — gossip is grounded, and a subject does not hear about it by magic | shipped 2026-09-18. `slander`/`praise` read `Memory.bestSignedStory`; the subject learns only by witnessing it; no player menu entry yet, same as `court` |
-| **M11 phase 5d-11** | **next.** Factions reading `malice` and conspiracies, exile, adoption, inequality, band standing, macronutrients, the oral tree |
+| M11 phases 5d-5f — factions, exile that reaches, and the door back | shipped 2026-09-20. `Factions.conspiracyAgainst` replaces exile's dead average-opinion gate; `considerAdoption` mirrors it for a wandering outcast |
+| **M11 phase 6-11** | **next.** Inequality (`Household.renown`, `Household.store`), band standing, macronutrients, the oral tree, the widened Neolithic, war |
 | **M8.2 — the other fifteen Neolithic nodes** | **next**, after M9.6's cheap half. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
 | M9.6 phases 4b–5 — happiness reads, and sleeping rough | planned; 4a (the field) shipped with M11 phase 5a; runs after M8.2 and before M10, so M10's fences have something to pay off in |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
@@ -850,7 +851,10 @@ most of this section now has a home. What remains outside M8:
   something from the neighbours. See O5.
 - ~~**Farming is declared but inert.**~~ It is not in `TECHS` at all, for exactly
   the right reason, and **it returns in M8.2** with fields, `sow` and `reap`.
-- **Exile is a one-way door**, and currently never fires at all.
+- ~~**Exile is a one-way door**, and currently never fires at all.~~ Fixed in
+  M11 phase 5e: `considerExile` now gates on `Factions.conspiracyAgainst`
+  rather than a band-average opinion the average never actually crossed, and
+  phase 5f's `considerAdoption` opens the door back for a wandering outcast.
 - **No simulation LOD.** Everyone is simulated in full detail.
 - **Nobody plants a tree.** Bands fell timber when a site needs it, but no one
   has a reason to leave a stand standing for their grandchildren. All of the

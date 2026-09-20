@@ -28,14 +28,28 @@ import { techPower, type Tech } from '../knowledge/Tech.ts';
 import { JOB_IDS, type JobId } from '../entities/Job.ts';
 import type { RelationshipGraph } from './../social/Relationships.ts';
 import type { RNG } from '../core/RNG.ts';
+import type { SpatialHash } from '../core/SpatialHash.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { chiefHoneymoon, chiefTermDays } from '../social/Leadership.ts';
+import { conspiracyAgainst } from '../social/Factions.ts';
 
-/** Average opinion below which a band casts someone out. */
-const EXILE_THRESHOLD = -28;
-
-/** At least this many people must hold that opinion for it to count. */
+/**
+ * How large a faction against somebody has to be before the band acts on it.
+ *
+ * M11 phase 5e replaced the *average* opinion this used to gate on with
+ * `conspiracyAgainst`'s faction — the same finding `REBELLION_THRESHOLD`'s
+ * comment records for the chief applies here too: a band's average opinion of
+ * a member rarely goes anywhere near hostile, because kinship and household
+ * bias hold it up, while a handful of people who genuinely detest someone and
+ * trust each other is common and is what actually gets somebody cast out.
+ */
 const EXILE_QUORUM = 4;
+
+/** How far a wandering outcast may be from a band's home and still be taken in. */
+const ADOPTION_RADIUS = 30;
+
+/** An outcast is refused if any member's opinion of them sits below this. */
+const ADOPTION_THRESHOLD = -10;
 
 /**
  * The most aggrieved member's opinion of the chief, below which they are
@@ -127,7 +141,11 @@ export interface BandContext {
   /** Places a site; returns null if it will not fit. */
   place: (defId: string, x: number, y: number, bandId: number) => Building | null;
   /** Called when someone is cast out, so the world can resettle them. */
-  onExile: (person: Person, band: Band, averageOpinion: number) => void;
+  onExile: (person: Person, band: Band, factionSize: number) => void;
+  /** Called when a band takes in a wandering outcast. */
+  onAdopt: (person: Person, band: Band) => void;
+  /** For `considerAdoption`'s proximity query — never scan the population for it. */
+  peopleHash: SpatialHash<Person>;
   /** Removes an abandoned site from the world. */
   abandonSite: (building: Building) => void;
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
@@ -165,6 +183,9 @@ export class BandSystem {
       else byBand.set(person.bandId, [person]);
     }
 
+    const outcastBand = bands.find(b => b.outcast);
+    const outcasts = outcastBand ? byBand.get(outcastBand.id) ?? [] : [];
+
     for (const band of bands) {
       const members = byBand.get(band.id) ?? [];
       if (members.length === 0) {
@@ -178,6 +199,7 @@ export class BandSystem {
       this.assignJobs(band, members, ctx);
       this.considerExile(band, members, ctx);
       this.considerRebellion(band, members, ctx);
+      if (!band.outcast && outcasts.length > 0) this.considerAdoption(band, members, outcasts, ctx);
       if (ctx.day % PLANNING_INTERVAL === 0) this.planBuildings(band, members, ctx);
       this.directWork(band, members, ctx);
     }
@@ -860,13 +882,17 @@ export class BandSystem {
   // -------------------------------------------------------------------------
 
   /**
-   * Casts out anyone the band as a whole has turned against.
+   * Casts out anyone a faction of the band has turned against.
    *
-   * The threshold is on the *average* opinion across people who actually have
-   * one, with a quorum, so a single furious enemy cannot banish a rival. What
-   * makes this interesting is that it runs off the same norms that decide how
-   * a theft is judged: the same deed exiles a man from a strict band and costs
-   * him nothing among tolerant neighbours.
+   * **M11 phase 5e** replaced an average-opinion threshold with
+   * `conspiracyAgainst`, because the average never got there: kinship and
+   * household bias hold a band's collective regard for any one member
+   * comfortably above hostile even when a few people loathe them, exactly the
+   * finding `REBELLION_THRESHOLD`'s comment records for the chief. What makes
+   * this interesting is unchanged — it still runs off the same opinions a
+   * theft or a slander moves, so the same deed exiles a man from a band whose
+   * norms condemn it and costs him nothing among neighbours whose norms do
+   * not.
    */
   private considerExile(band: Band, members: Person[], ctx: BandContext): void {
     if (members.length < EXILE_QUORUM + 1) return;
@@ -876,18 +902,8 @@ export class BandSystem {
       if (suspect.id === chiefId) continue;
       if (suspect.isChild) continue;
 
-      let total = 0;
-      let voices = 0;
-      for (const other of members) {
-        if (other.id === suspect.id) continue;
-        if (!ctx.relationships.peek(other.id, suspect.id)) continue;
-        total += ctx.relationships.opinion(other.id, suspect.id);
-        voices++;
-      }
-      if (voices < EXILE_QUORUM) continue;
-
-      const average = total / voices;
-      if (average > EXILE_THRESHOLD) continue;
+      const faction = conspiracyAgainst(suspect.id, members, ctx.relationships);
+      if (!faction || faction.memberIds.length < EXILE_QUORUM) continue;
 
       telemetry.count('exiled');
       suspect.chronicle.push({
@@ -896,8 +912,50 @@ export class BandSystem {
         text: 'was cast out of the ' + band.name,
         kind: 'suffered',
       });
-      ctx.onExile(suspect, band, average);
+      ctx.onExile(suspect, band, faction.memberIds.length);
       return; // One at a time; a purge is a different mechanic.
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Adoption
+  // -------------------------------------------------------------------------
+
+  /**
+   * A band may take in an outcast found wandering near its camp.
+   *
+   * The mirror of `considerExile`, and the door back that its comment
+   * promises: a person cast out for a deed nobody here witnessed, or judged by
+   * norms this band does not share, arrives with a clean slate, because
+   * reputation here is derived straight from `Memory` and `RelationshipGraph`
+   * rather than from a global criminal record. What actually refuses somebody
+   * is a member who genuinely knows and dislikes them — the same grudge
+   * `conspiracyAgainst` would use to exile them again the moment they joined.
+   */
+  private considerAdoption(
+    band: Band, members: Person[], outcasts: Person[], ctx: BandContext
+  ): void {
+    const nearby = ctx.peopleHash.queryRadius(band.homeX, band.homeY, ADOPTION_RADIUS)
+      .filter(person => outcasts.includes(person) && !person.isChild);
+    if (nearby.length === 0) return;
+
+    for (const candidate of nearby) {
+      const refused = members.some(member => {
+        const rel = ctx.relationships.peek(member.id, candidate.id);
+        return rel !== null && ctx.relationships.opinion(member.id, candidate.id) < ADOPTION_THRESHOLD;
+      });
+      if (refused) continue;
+
+      telemetry.count('adopted');
+      candidate.chronicle.push({
+        tick: ctx.tick,
+        ageDays: candidate.age,
+        text: 'was taken in by the ' + band.name,
+        kind: 'milestone',
+      });
+      ctx.onAdopt(candidate, band);
+      ctx.onInsight(candidate, 'was welcomed into the ' + band.name, 'gain');
+      return; // One at a time, the same discipline `considerExile` keeps.
     }
   }
 }

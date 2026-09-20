@@ -921,10 +921,40 @@ export class Simulation {
    * standing regard of a band and the roof over a camp, which in a hard winter
    * is most of what a band is for.
    */
-  private exile(person: Person, band: Band, averageOpinion: number): void {
+  private exile(person: Person, band: Band, factionSize: number): void {
     this.removeBandMembership(person);
-    void averageOpinion;
+    void factionSize;
     void band;
+  }
+
+  /**
+   * Takes in a wandering outcast. The mirror of `exile`, and the two dangers
+   * its own header flags apply here too: `Household.bandId` is what
+   * `headsAHouseIn` reads, and the household the outcast left behind was
+   * deliberately not touched when they were cast out, so it still names their
+   * old band. Founding a fresh one-person household under the adopting band is
+   * therefore not a convenience, it is what lets them be counted as belonging
+   * here at all.
+   */
+  private adopt(person: Person, band: Band): void {
+    const previous = person.householdId === null
+      ? null
+      : this.householdsById.get(person.householdId);
+    if (previous) {
+      previous.remove(person.id);
+      if (previous.extinct) previous.endedTick = this.time.tick;
+    }
+
+    const household = new Household(person.surname, person.id, band.id, this.time.tick);
+    this.households.push(household);
+    this.householdsById.set(household.id, household);
+    household.add(person.id);
+    person.householdId = household.id;
+
+    person.bandId = band.id;
+    person.clearTarget();
+    person.forgetPlans();
+    person.action = 'idle';
   }
 
   /**
@@ -2394,7 +2424,9 @@ export class Simulation {
         tick: this.time.tick,
         buildings: this.buildings,
         place: (defId, x, y, bandId) => this.place(defId, x, y, bandId),
-        onExile: (person, band, average) => this.exile(person, band, average),
+        onExile: (person, band, factionSize) => this.exile(person, band, factionSize),
+        onAdopt: (person, band) => this.adopt(person, band),
+        peopleHash: this.peopleHash,
         abandonSite: site => this.removeBuilding(site),
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),

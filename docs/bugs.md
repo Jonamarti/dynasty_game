@@ -1,7 +1,35 @@
 # Known bugs and rough edges
 
-As of 2026-09-18. Everything here is real and reproducible; nothing here is
+As of 2026-09-20. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found shipping M11 phases 5d-5f, 2026-09-20
+
+### `conspiracyAgainst` has no reader but exile and adoption
+
+`Factions.ts` answers "who is scheming against this person right now" as a
+general question, but `considerExile` and `considerAdoption` are the only two
+callers today. The plan's own §5d is written as the general mechanism a
+conspiracy against the chief, or a plot to have someone falsely accused,
+would also read — neither exists yet. Not a defect, but worth knowing before
+anyone reaches for a second conspiracy mechanism and writes a second copy of
+this instead of a second caller of it.
+
+### The plan's four new `simcheck` checks were not added
+
+`m11_plan.md`'s gate for this block asks for `exile-is-reachable`,
+`factions-form`, `gossip-is-aimed` and `the-cast-out-find-a-home`, each
+verified failing against the prior build before being trusted. None were
+written. The reason is the one `band.test.ts`'s own header already gives for
+why `rebellion-is-rare-but-happens` is a unit test rather than a `simcheck`
+check: `EXILE_QUORUM` needs four people who both hold a grudge and trust each
+other, which is not guaranteed inside any one scenario's step budget — a
+check that flakes between PASS and n/a by seed is exactly the "looks
+reassuring, detects nothing" failure this project has already deleted two
+checks for. The mechanism is instead asserted deterministically, by
+engineering the grievance directly, in `band.test.ts`'s "exile and adoption"
+block. Worth revisiting if `lean`'s own `exiled`/`adopted` telemetry turns
+out to fire reliably enough across a seed cohort to gate on.
 
 ## Found shipping M11 phases 3c and 5c, 2026-09-18
 

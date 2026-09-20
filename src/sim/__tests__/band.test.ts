@@ -10,7 +10,7 @@
  * one person to despise the chief past all doubt and confirm something gives.
  */
 import { describe, it, expect } from 'vitest';
-import { Simulation } from '../core/Simulation.ts';
+import { Simulation, type Band } from '../core/Simulation.ts';
 import { CHIEF_TERM_DAYS, chiefHoneymoon, chiefTermDays } from '../social/Leadership.ts';
 import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from '../knowledge/Synthesis.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -376,6 +376,122 @@ describe('the middle rank', () => {
       if (!wasEnabled) telemetry.disable();
       telemetry.reset();
     }
+  });
+});
+
+/**
+ * M11 phase 5d-5f. `considerExile` used to gate on the band's *average*
+ * opinion of a suspect; phase 5e replaced that with `conspiracyAgainst`'s
+ * faction, on the same finding `REBELLION_THRESHOLD`'s comment records for
+ * the chief — kinship and household bias hold the average up, so what
+ * actually happens is a handful of people who loathe someone and trust each
+ * other, not the whole band turning against them. Rare and stochastic in the
+ * ordinary run of things, so — the same discipline the rebellion tests above
+ * follow — asserted here by engineering the grievance directly rather than
+ * hunting for one in a `simcheck` scenario.
+ */
+describe('exile and adoption', () => {
+  it('casts someone out once a faction of the band holds a grudge and trusts each other', () => {
+    const sim = new Simulation({
+      ...SMALL,
+      seed: 'faction',
+      population: { bands: 1, peoplePerBand: 14 },
+    });
+    const band = sim.bands[0]!;
+    const chiefId = chooseFirstChief(sim);
+
+    const candidates = sim.livingPeople().filter(person =>
+      person.bandId === band.id && !person.isChild && person.id !== chiefId);
+    const suspect = candidates[0]!;
+    // Unrelated to the suspect, so the grudge is not swamped by kinship, the
+    // same care `headAndOutsider` above takes.
+    const conspirators = candidates
+      .slice(1)
+      .filter(person => sim.relationships.kinship(person.id, suspect.id) === 0)
+      .slice(0, 4);
+    expect(conspirators.length, 'not enough unrelated adults to form a faction').toBe(4);
+
+    const instigator = conspirators[0]!;
+    instigator.traits.loyalty = 0;
+    for (const member of conspirators) {
+      sim.relationships.addDeed(member.id, suspect.id, -100, sim.time.tick);
+      if (member.id !== instigator.id) {
+        sim.relationships.addDeed(instigator.id, member.id, 100, sim.time.tick);
+        sim.relationships.addDeed(member.id, instigator.id, 100, sim.time.tick);
+      }
+    }
+
+    let exiled = false;
+    for (let day = 0; day < 5 && !exiled; day++) {
+      for (let i = 0; i < 240; i++) sim.step();
+      exiled = suspect.bandId !== band.id;
+    }
+
+    expect(exiled).toBe(true);
+    expect(sim.bands.find(b => b.outcast)).toBeDefined();
+    expect(suspect.chronicle.some(entry => entry.text.includes('cast out'))).toBe(true);
+  });
+
+  it('does not re-admit someone the same faction still despises', () => {
+    // The door 5f opens is not a blanket welcome: a band that still holds the
+    // grudge that got somebody exiled refuses them again the moment they
+    // wander back into range, exactly the property `considerAdoption`'s own
+    // comment claims.
+    const sim = new Simulation({
+      ...SMALL,
+      seed: 'no-forgiveness',
+      population: { bands: 1, peoplePerBand: 10 },
+    });
+    const band = sim.bands[0]!;
+    const [member, target] = sim.livingPeople().filter(p => p.bandId === band.id && !p.isChild);
+    sim.relationships.addDeed(member!.id, target!.id, -100, sim.time.tick);
+
+    const outcasts = {
+      id: 9001, name: 'the outcast', homeX: 0, homeY: 0,
+      norms: band.norms, chiefId: null, chiefSince: null, outcast: true,
+    };
+    sim.bands.push(outcasts);
+    target!.bandId = outcasts.id;
+    target!.x = band.homeX;
+    target!.y = band.homeY;
+
+    for (let i = 0; i < 240; i++) sim.step();
+    expect(target!.bandId).toBe(outcasts.id);
+  });
+
+  it('adopts a wandering outcast nobody here has anything against', () => {
+    const sim = new Simulation({
+      ...SMALL,
+      seed: 'welcome',
+      population: { bands: 2, peoplePerBand: 10 },
+    });
+    const [home, refuge] = sim.bands as [Band, Band];
+    const candidate = sim.livingPeople().find(person =>
+      person.bandId === home.id && !person.isChild)!;
+
+    const outcasts = {
+      id: 9002, name: 'the outcast', homeX: 0, homeY: 0,
+      norms: home.norms, chiefId: null, chiefSince: null, outcast: true,
+    };
+    sim.bands.push(outcasts);
+    candidate.bandId = outcasts.id;
+    // Wandered right up to the second band's camp, which nobody there has any
+    // reason to refuse: a fresh world has no cross-band relationships at all.
+    candidate.x = refuge.homeX;
+    candidate.y = refuge.homeY;
+    const oldHouseholdId = candidate.householdId;
+
+    let adopted = false;
+    for (let i = 0; i < 480 && !adopted; i++) {
+      sim.step();
+      adopted = candidate.bandId === refuge.id;
+    }
+
+    expect(adopted).toBe(true);
+    expect(candidate.householdId).not.toBe(oldHouseholdId);
+    const household = sim.householdsById.get(candidate.householdId!);
+    expect(household?.headId).toBe(candidate.id);
+    expect(household?.bandId).toBe(refuge.id);
   });
 });
 
