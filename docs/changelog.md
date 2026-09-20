@@ -6,6 +6,43 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 6a: a household's goods get a place to be
+
+`Household.store` was, in its own words, a black hole: an `Inventory` hanging
+off a household with no position of its own, written only when somebody died
+with no heir and read by nothing anywhere — `bugs.md` has called it that
+since M9.6. Worse for this milestone specifically: phase 4's `mayUse` lets a
+rival use or steal from a building nobody is watching, and a household's
+wealth living somewhere with no position at all was simply not a thing a
+rival could ever reach.
+
+**`Household.homeBuildingId` replaces it.** `Simulation.shareTheHearth`
+already samples, every midnight, which building each person is actually
+sleeping under to pair them for a hearth conversation; it now doubles as the
+cheapest honest reading of where a household lives, and stamps that building
+onto every present member's household. `LifeSystem.settleEstate` deposits a
+dead person's unheired goods into that building's store, or drops them as an
+`ItemPile` at the deceased's own feet if the household has no home yet — the
+same fallback `dropAt` already gives the timber from a tree felled by
+somebody whose hands were full. `mergeHouseholds` becomes a transfer between
+two buildings, or a no-op if the newlyweds' target household has no home of
+its own to receive into (the goods just stay where they already sit).
+`spoilFood`'s household sweep is deleted outright: those goods live in a
+building now, which the existing per-building sweep already covers.
+
+Not measured against a 20-seed cohort: nothing in `Brain`'s scorer reads
+`homeBuildingId` yet, so no AI decision changes — this is where a family's
+goods physically are, not what anybody does about it. `sim:check:all`:
+`lean` moved onto the wrong side of `the-hurt-are-tended`, the known
+one-event-wide check, the same RNG-cascade noise the M11 5a/5b/5c entries
+below already document — see `bugs.md`. `crowded`/`perf-budget`,
+`millers`/`the-hurt-are-tended` and `hunters`/`kills-are-butchered-for-bone`
+unchanged. All 341 unit tests, typecheck clean.
+
+**The motive to hoard is phase 6b, not this commit.** A household with a real
+home is not yet a household anyone tries to enrich — nothing in `Brain` scores
+leaving goods at your own home over a band store.
+
 ## 2026-09-20 — M11 phases 5d-5f: factions, and the exile they finally reach
 
 `considerExile` gated on the band's *average* opinion of a suspect at -28, a

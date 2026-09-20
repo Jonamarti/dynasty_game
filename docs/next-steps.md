@@ -860,6 +860,7 @@ most of this section now has a home. What remains outside M8:
   has a reason to leave a stand standing for their grandchildren. All of the
   entity machinery for it already exists in `Tree` and `ForestSystem`; what is
   missing is a `plant` action and a reason.
-- **`household.store` is written and never read.** `LifeSystem` puts a dead
-  person's goods there and nothing anywhere takes them out again. Recorded in
-  [bugs.md](bugs.md).
+- ~~**`household.store` is written and never read.**~~ Fixed in M11 phase 6a:
+  `Household.store` is gone, replaced by `Household.homeBuildingId` — a real
+  building a dead member's unheired goods, and now a rival, can actually
+  reach.

@@ -3,6 +3,22 @@
 As of 2026-09-20. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 6a, 2026-09-20
+
+### `lean` moved onto the wrong side of `the-hurt-are-tended`
+
+Same mechanism as the phase 5a/5b/5c entries below: giving a household's
+goods a real position (`Household.homeBuildingId`) instead of an unreachable
+`Inventory` changes what `dropAt` does for goods with nowhere else to go,
+which changes candidate counts somewhere in `chooseAmongBest`'s pool on that
+tick, which cascades every later `choiceRng` draw for the rest of the run.
+`the-hurt-are-tended` is already on record as a one-event-wide check —
+`bugs.md`'s own M9.6 phase 1 entry names it — so a single scenario flipping
+sides on an RNG-cascading change is exactly the kind of noise this project
+has learned not to chase. `crowded`/`perf-budget`,
+`millers`/`the-hurt-are-tended` and `hunters`/`kills-are-butchered-for-bone`
+are unchanged.
+
 ## Found shipping M11 phases 5d-5f, 2026-09-20
 
 ### `conspiracyAgainst` has no reader but exile and adoption

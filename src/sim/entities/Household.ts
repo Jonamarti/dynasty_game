@@ -2,16 +2,14 @@
  * A household: the unit a dynasty is actually made of.
  *
  * Bands are a place and a culture; households are a family with a head, a
- * shared store and a line of succession. The distinction matters because the
- * design pillar is that *the head concentrates most of the power* — an order
- * from the head of your household carries weight that the same words from a
+ * home and a line of succession. The distinction matters because the design
+ * pillar is that *the head concentrates most of the power* — an order from
+ * the head of your household carries weight that the same words from a
  * neighbour do not, and inheritance follows the household rather than the band.
  *
  * Households outlive their members. When a head dies the household does not
  * dissolve; it passes, which is the whole point.
  */
-import { Inventory } from './Item.ts';
-
 let nextHouseholdId = 1;
 
 export function resetHouseholdIds(): void {
@@ -26,8 +24,18 @@ export class Household {
   memberIds: number[] = [];
   bandId: number;
 
-  /** Goods held in common, distinct from what anyone carries. */
-  readonly store = new Inventory();
+  /**
+   * The building where this family's goods live — wherever `shareTheHearth`
+   * last found a member of it asleep under a roof. Null until somebody in it
+   * has slept anywhere but the open ground.
+   *
+   * **M11 phase 6a** replaced a `store` of its own here: an `Inventory`
+   * hanging off a `Household` has no position, so nobody could ever walk to
+   * it — which meant nothing could be stolen from it either, exactly the
+   * property phase 4's `mayUse` needs. A family's goods now live in a real
+   * building, which is somewhere a rival can actually go.
+   */
+  homeBuildingId: number | null = null;
 
   /**
    * Deeds worth remembering, accumulated across every member and every

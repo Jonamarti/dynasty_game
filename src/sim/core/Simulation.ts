@@ -723,8 +723,11 @@ export class Simulation {
     const household = person.householdId === null
       ? null
       : this.householdsById.get(person.householdId) ?? null;
+    const home = household?.homeBuildingId == null
+      ? null
+      : this.buildingsById.get(household.homeBuildingId) ?? null;
 
-    settleEstate(person, heir, household);
+    settleEstate(person, heir, home, (x, y, itemId, count) => this.dropAt(x, y, itemId, count));
 
     if (household) {
       household.remove(person.id);
@@ -799,8 +802,23 @@ export class Simulation {
         const member = this.peopleById.get(memberId);
         if (member) this.joinHousehold(member, target);
       }
-      for (const [itemId, count] of source.store.entries()) {
-        target.store.add(itemId, source.store.remove(itemId, count));
+      // What used to be `source.store` moving to `target.store` is now
+      // either a transfer between the two households' home buildings, or
+      // nothing to do at all: if the target has no home of its own yet, the
+      // couple's goods simply stay wherever the source's already sit and the
+      // household keeping them is now named for the target.
+      if (source.homeBuildingId !== null) {
+        if (target.homeBuildingId === null) {
+          target.homeBuildingId = source.homeBuildingId;
+        } else if (target.homeBuildingId !== source.homeBuildingId) {
+          const from = this.buildingsById.get(source.homeBuildingId);
+          const to = this.buildingsById.get(target.homeBuildingId);
+          if (from && to) {
+            for (const [itemId, count] of from.store.entries()) {
+              to.store.add(itemId, from.store.remove(itemId, count));
+            }
+          }
+        }
       }
       source.endedTick = this.time.tick;
     }
@@ -1460,6 +1478,14 @@ export class Simulation {
       const under = byRoof.get(roof.id);
       if (under) under.push(person);
       else byRoof.set(roof.id, [person]);
+
+      // M11 phase 6a: the same midnight sample that pairs people for a
+      // hearth conversation is the cheapest honest reading of where a
+      // household actually lives, so it doubles as that.
+      if (person.householdId !== null) {
+        const household = this.householdsById.get(person.householdId);
+        if (household) household.homeBuildingId = roof.id;
+      }
     }
     for (const under of byRoof.values()) this.social.hearth(under, this.time.tick);
   }
@@ -2049,10 +2075,11 @@ export class Simulation {
    * order — the same property `workTraps` has, and it is a design advantage
    * rather than an accident.
    *
-   * Four collections, and one of them is a black hole: `household.store` is
-   * written by `LifeSystem` when somebody dies and **read by nothing anywhere**.
-   * Spoiling it is correct and must not be counted as the feature working. See
-   * `bugs.md`.
+   * Three collections. A fourth, `household.store`, existed until M11 phase
+   * 6a and was a black hole — written by `LifeSystem` when somebody died and
+   * read by nothing anywhere. A household's goods now live in a real
+   * building (`Household.homeBuildingId`), so they are already swept by the
+   * building loop below and need no collection of their own.
    */
   private spoilFood(): void {
     const rate = this.config.needs.spoilRate;
@@ -2101,9 +2128,8 @@ export class Simulation {
       // no-op and is here so that the one day something does, it behaves.
       sweep(building.delivered, keeps);
     }
-    // Dropped goods and a dead person's effects keep no better than a pack.
+    // Dropped goods keep no better than a pack.
     for (const pile of this.piles) sweep(pile.contents, 1);
-    for (const household of this.households.values()) sweep(household.store, 1);
   }
 
   /**

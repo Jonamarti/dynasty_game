@@ -17,6 +17,7 @@
 import type { Person } from '../entities/Person.ts';
 import { ELDER_YEARS, SKILLS, TRAITS } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
+import type { Building } from '../entities/Building.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { PopulationConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -242,11 +243,20 @@ export function findHeir(person: Person, peopleById: Map<number, Person>): Perso
   return null;
 }
 
-/** Moves a dead person's goods to their heir, and reports what changed hands. */
+/**
+ * Moves a dead person's goods to their heir, and reports what changed hands.
+ *
+ * With no heir, goods go to the household's home — the building
+ * `Simulation.shareTheHearth` last saw a member of it sleeping under — or
+ * land on the ground at the deceased's own feet if the household has no home
+ * yet. Never a `Household` field of its own: see `Household.homeBuildingId`'s
+ * comment for why that used to be a store nobody could reach.
+ */
 export function settleEstate(
   deceased: Person,
   heir: Person | null,
-  household: Household | null
+  home: Building | null,
+  dropAt: (x: number, y: number, itemId: string, count: number) => void
 ): number {
   const goods = deceased.inventory.entries();
   let moved = 0;
@@ -254,7 +264,8 @@ export function settleEstate(
   for (const [itemId, count] of goods) {
     const taken = deceased.inventory.remove(itemId, count);
     if (heir) heir.inventory.add(itemId, taken);
-    else if (household) household.store.add(itemId, taken);
+    else if (home) home.store.add(itemId, taken);
+    else dropAt(deceased.x, deceased.y, itemId, taken);
     moved += taken;
   }
 
