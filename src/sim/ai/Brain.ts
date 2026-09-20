@@ -1085,9 +1085,18 @@ export class Brain {
         // Weighted below `hunger` on purpose. Need is still the main engine of
         // theft in this world; opportunism is a thumb on the scale.
         const easyMark = vulnerabilityOf(carrier, person);
+        // M11 phase 7c, Brain's one reader of `BandRelations`, and the last
+        // of the three — see this method's own note on why it is alone in
+        // its commit. 0 at neutral or friendly standing, so it never props
+        // up a score that used to stand on its own; up to 1 at open
+        // hostility, where it is worth about as much as `dislike` already
+        // is. Deliberately one-sided: a good relationship between two bands
+        // does not make stealing from a stranger *more* appealing than it
+        // already reads as, only a bad one makes it appeal more.
+        const bandHostility = this.bandHostility(person, carrier, ctx);
         add('steal',
           (hunger * 0.8 + person.traits.greed * 0.35 + dislike * 0.4 +
-            easyMark * person.traits.greed * 0.5) *
+            easyMark * person.traits.greed * 0.5 + bandHostility * 0.3) *
           (1 - person.traits.loyalty * 0.6) * privacy *
           this.proximityBonus(person, carrier, ctx.sightRadius));
         victim = carrier;
@@ -1102,7 +1111,7 @@ export class Brain {
         const edge = person.skillFactor('fight') - carrier.skillFactor('fight');
         if (edge > 0.05) {
           add('threaten',
-            (hunger * 0.7 + person.traits.greed * 0.3 + dislike * 0.35) *
+            (hunger * 0.7 + person.traits.greed * 0.3 + dislike * 0.35 + bandHostility * 0.25) *
             (0.4 + person.traits.aggression * 1.2) * (1 - person.traits.loyalty * 0.55) *
             Math.min(1.3, 0.3 + edge * 2.5) *
             this.proximityBonus(person, carrier, ctx.sightRadius));
@@ -1149,8 +1158,15 @@ export class Brain {
         // table the HUD and `npm run why` both read as a list of distinct
         // options, and mutating the row after the fact would bypass the
         // appetite and hysteresis multipliers `add` applies.
+        //
+        // M11 phase 7c: a multiplier, not a second addend beside `grudge`,
+        // and deliberately after the `grudge > 0.5` gate rather than folded
+        // into it — the gate stays a question about this one enemy, and
+        // `bandHostility` only ever amplifies a blow already justified by
+        // personal grievance, up to 1.5x at open war between the two bands.
         attackScore = grudge * grudge * boldness *
-          (0.5 + person.traits.aggression * 2.5)
+          (0.5 + person.traits.aggression * 2.5) *
+          (1 + this.bandHostility(person, enemy, ctx) * 0.5)
           * this.proximityBonus(person, enemy, ctx.sightRadius);
         foe = enemy;
       }
@@ -1226,9 +1242,13 @@ export class Brain {
         // rather than a quarter of it; and allies divide softly, because in a
         // band where everyone regards everyone at +6 and rising, `theirFriends`
         // is most of the camp and a hard divisor is a flat veto.
+        // The same `bandHostility` multiplier the revenge route above uses,
+        // for the same reason: it amplifies an appetite the rest of the
+        // expression already justifies rather than creating one of its own.
         const score = helpless < PREY_AT ? 0 : helpless * nerve * unseen *
           (1 - person.traits.loyalty * 0.8) / (1 + theirFriends * 0.3) *
-          PREDATION * this.proximityBonus(person, prey, ctx.sightRadius);
+          PREDATION * (1 + this.bandHostility(person, prey, ctx) * 0.5) *
+          this.proximityBonus(person, prey, ctx.sightRadius);
         // Only if it beats what revenge already offered, and only then does the
         // blow change hands — so the score and the target never come apart, the
         // way they did before `foe` existed.
@@ -1984,6 +2004,23 @@ export class Brain {
     const grievance = Math.max(0, -ctx.relationships.opinion(person.id, other.id)) / 100;
     const defiance = grievance * (1 - person.traits.loyalty);
     return base * (0.3 + person.traits.loyalty) * (1 - defiance);
+  }
+
+  /**
+   * How much worse `person`'s band stands with `target`'s band than
+   * neutral, 0 to 1. Zero within a band and zero at neutral or friendly
+   * standing — this only ever speaks up for open hostility, never against
+   * it, on the same reasoning `bond` above keeps belonging one-sided.
+   *
+   * M11 phase 7c: `steal`, `threaten` and both routes to `attack` each read
+   * this once, and it is the only place in `Brain` that reads
+   * `BandRelations` at all — deliberately the last of the three readers and
+   * alone in its own commit, so a change to `bands-take-sides` measures one
+   * thing rather than three at once.
+   */
+  private bandHostility(person: Person, target: Person, ctx: BrainContext): number {
+    if (target.bandId === person.bandId) return 0;
+    return Math.max(0, -ctx.bandRelations.standing(person.bandId, target.bandId)) / 100;
   }
 
   /** Closer targets are worth more, but distance never zeroes a desperate need. */

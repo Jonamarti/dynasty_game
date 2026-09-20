@@ -2216,11 +2216,10 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const unrelated = opinionOf((a, b) =>
     a.p.bandId !== b.p.bandId && a.p.householdId !== b.p.householdId &&
     sim.relationships.kinship(a.p.id, b.p.id) === 0);
-  // M11 phase 7a: `BandRelations` shipped inert, so this reads 0 pairs on
-  // every scenario today — an instrument for the engines phase 7b adds, on
-  // the same "measure before changing anything" reasoning `unrelated` above
-  // already gives. `bands-take-sides` (phase 7c) is the check that will
-  // finally gate on it.
+  // M11 phase 7a shipped this reading 0 pairs on every scenario, an
+  // instrument for the engines phase 7b would add, on the same "measure
+  // before changing anything" reasoning `unrelated` above already gives.
+  // `bands-take-sides` below is the check phase 7c finally gates on it.
   const bandStanding = sim.bandRelations.stats();
   const detail =
     'household=' + fmt(kin) + ' band=' + fmt(band) + ' outsider=' + fmt(outsider) +
@@ -2238,6 +2237,38 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       'not all three kinds of tie have ' + MIN_TIE_PAIRS + '+ pairs here: ' + detail);
   } else {
     add('kin-outrank-strangers', kin > band && band > outsider, detail);
+  }
+
+  // M11 phase 7c. `BandRelations` shipped inert in phase 7a and it would be
+  // the "looks reassuring, detects nothing" failure `AGENTS.md` warns about
+  // to assert a spread against a build where every pair was known to read 0
+  // by construction — so this checks the *spread* between the friendliest
+  // and most hostile pair, not merely that pairs exist.
+  //
+  // And it needs the length `lean`'s own description already argues a
+  // grudge needs: on every short scenario measured while writing this check
+  // — `band`, `crowded`, `harsh-winter`, `coast`, `traps`, `hunters`, 12 to
+  // 40 days each — pairs had already touched (0.2 to 15.9 apart) but had not
+  // had time to separate widely; `lean` at 100 days reached the -100 floor.
+  // Asserting the 20-point bar below on a run that short would be exactly
+  // the fragile, seed-flaked check `AGENTS.md` already names five of in
+  // `bugs.md`, so this skips rather than fails under `BAND_STANDING_DAYS`.
+  // Between `lean` (100 days, spread 100) and the longest short scenario
+  // measured above (`harsh-winter`, 40 days, spread 15.9).
+  const BAND_STANDING_DAYS = 60;
+  const spreadDays = last.day - first.day;
+  if (bandStanding.pairs === 0) {
+    skip('bands-take-sides', 'no two bands have touched each other in this run');
+  } else if (spreadDays < BAND_STANDING_DAYS) {
+    skip('bands-take-sides',
+      'run covers only ' + spreadDays + ' days; too short for standing to have spread ' +
+      '(' + bandStanding.pairs + ' pairs, spread so far ' +
+      (bandStanding.friendliest - bandStanding.hostile).toFixed(1) + ')');
+  } else {
+    const spread = bandStanding.friendliest - bandStanding.hostile;
+    add('bands-take-sides', spread > 20,
+      bandStanding.pairs + ' pairs, friendliest=' + bandStanding.friendliest.toFixed(1) +
+      ' hostile=' + bandStanding.hostile.toFixed(1) + ' (spread ' + spread.toFixed(1) + ')');
   }
 
   add(

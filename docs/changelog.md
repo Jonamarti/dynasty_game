@@ -6,6 +6,55 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-20 — M11 phase 7c (3): `Brain` reads how hostile the two bands are, and `bands-take-sides` finally gates on it
+
+The last of `BandRelations`' three readers, and the only one in `Brain` —
+deliberately alone in its own commit, so a change to `bands-take-sides`
+measures one thing rather than three at once. `bandHostility(person,
+target, ctx)` is 0 within a band and at neutral-or-friendly standing, and up
+to 1 at open hostility (-100 standing); `steal`, `threaten`, and both routes
+to `attack` (revenge and predation) each read it once, as a modest addend
+(`steal`/`threaten`) or a ×1.5-at-most multiplier on a score the rest of the
+expression already justified (both `attack` routes) — never a second
+justification of its own. The revenge route's `grudge > 0.5` gate is
+untouched, on purpose: `AGENTS.md` and this changelog both record what
+happens when a band's self-consuming feedback loop is fed from two places
+in the same commit.
+
+**`bands-take-sides` is a real check now**, not an instrument: it asserts
+the spread between the friendliest and most hostile band pair is over 20,
+skipping on a run with no cross-band contact at all. It needed a length
+floor `BAND_STANDING_DAYS` (60) that the instrument phase didn't: every
+short scenario measured while writing it — `band`, `crowded`,
+`harsh-winter`, `coast`, `traps`, `hunters`, 12 to 40 days each — showed real
+but small spreads (0.2 to 15.9), not zero, so asserting the 20-point bar on
+them would have been exactly the seed-flaked failure `bugs.md` already
+names five checks for. `lean` (100 days) and `century` reach the -100
+hostility floor and pass comfortably; the six short scenarios skip rather
+than fail.
+
+**Measured, 20-seed cohorts against the phase 7c (2) numbers**: `lean` 91.1%
+→ 87.9% survival, 0/20 collapsed (lowest seed 60%). `century` 100.0% →
+99.0%, 0/20 collapsed. The largest single-commit movement in this
+milestone's `BandRelations` work, which tracks with this being the one
+reader that can actually kill somebody — a hostile band's members become
+more worth robbing and more worth striking, and `century`'s own `-100.0`
+hostile pair (measured while building the check above) confirms the term
+has real teeth to bite with, not a coefficient sitting near zero. Read
+against the owner's standing direction on the milestone's cumulative drift:
+this is the sharpest edge of the egalitarian-to-stratified-and-in-conflict
+arc landing, and it lands without a single collapse across either cohort.
+`sim:check:all`: same known fragile-check family
+(`crowded`/`perf-budget`, `hunters`/`kills-are-butchered-for-bone`,
+`stewards`/`compost-answers-exhaustion`), plus `bands-take-sides` passing on
+`century`/`lean` and skipping everywhere else as designed. All 343 unit
+tests, typecheck clean.
+
+**This closes M11 phase 7.** All three engines-then-readers passes are
+done: `BandRelations` exists, four engines move it, three readers act on
+it. O4 is unaffected (mayUse's ownership predicate is untouched; only the
+new ally exception is new). Phase 8 (macronutrients) is next.
+
 ## 2026-09-20 — M11 phase 7c (2): a conversation warms faster between allies
 
 `Conversation.crossBand`'s flat ×0.43 cross-band penalty becomes standing-
