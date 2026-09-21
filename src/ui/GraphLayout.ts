@@ -45,6 +45,38 @@ export interface GraphEdge {
   k: number;
 }
 
+/**
+ * The furthest one pair of nodes may shove each other in a single pass.
+ *
+ * Repulsion is `repulsion / distance^2`, which is unbounded as the distance
+ * goes to zero: at the tribe graph's constants two nodes five pixels apart
+ * throw each other three hundred and twenty pixels in one pass, and two pixels
+ * apart, two thousand. That is not a strong force, it is an explosion, and it
+ * is what made the ranked tribe graph detonate — with `lockY` pinning a row,
+ * a pair cannot escape past each other diagonally, so they stayed close and
+ * kept kicking until the row was forty thousand pixels wide. `fitInto` then
+ * crushed that back into the panel, so the damage showed up not as nodes
+ * flying off screen but as the whole picture changing shape every frame.
+ *
+ * Eight pixels only bites below about thirty-two, and every caller's overlap
+ * pass already forbids anything that close — so this changes nothing about a
+ * healthy arrangement and only refuses to make an unhealthy one worse.
+ * Separating nodes that genuinely overlap is `settleOverlaps`'s job, and it
+ * does it by measuring the overlap rather than by guessing at a force.
+ */
+const MAX_PUSH = 8;
+
+/**
+ * A pass that moves nothing further than this has converged, and the rest of
+ * the budget is wasted work.
+ *
+ * A twentieth of a pixel: far below anything that can be drawn, and far below
+ * the four-pixel quantisation the tribe graph's redraw digest uses. The early
+ * exit is what makes a settled graph *free* — a panel left open on a paused
+ * world runs one pass, finds everybody already where they belong, and stops.
+ */
+const AT_REST = 0.05;
+
 export interface RelaxOptions {
   iterations: number;
   /** How hard nodes push each other apart. */
@@ -55,23 +87,58 @@ export interface RelaxOptions {
 
 /**
  * Runs the whole simulation in place: repulsion between every pair, springs
- * along every edge, a centring pull, for `iterations` passes.
+ * along every edge, a centring pull, for up to `iterations` passes.
  *
  * O(n^2) per pass from the repulsion term, same as the tech web always was.
  * Nothing this project draws is within two orders of magnitude of where that
  * would matter — the largest graph today is a tribe capped at a few dozen
  * people — and `techweb.test.ts`'s determinism check is the tripwire if a
  * future graph ever gets there first.
+ *
+ * ## Every force is summed before any node moves
+ *
+ * M9.6 phase 2d, and the fix for a bug that was invisible to every test this
+ * file had. The loop used to write each node's new position the moment it
+ * computed it, so the second node of a pair was already reading the first
+ * one's *updated* position. That asymmetry is not physics — it is an artefact
+ * of the order the array happens to be in — and it injects a small consistent
+ * tangential bias into every pair.
+ *
+ * The visible result was that a settled flat sociogram **rotated**, rigidly,
+ * for ever: measured at a steady two degrees per ten frames, with the centroid
+ * fixed and every node's distance from it unchanged to within a rounding
+ * error. Nothing was wrong with the *shape*, so "never puts one person on top
+ * of another" and "is byte-identical between two runs" both passed happily
+ * while the panel span like a wheel in front of the player.
+ *
+ * Summing into `fx`/`fy` and applying once per pass makes every pair
+ * symmetric, and the rotation measures as exactly zero.
+ *
+ * ## And the passes cool
+ *
+ * A fixed step size is what let the arrangement overshoot its own equilibrium
+ * and oscillate about it instead of arriving. `heat` ramps from 1 down to
+ * 0.05 across the budget, the standard cooling schedule a force-directed
+ * layout needs and this one never had, so a call *lands* somewhere rather
+ * than ending wherever it happened to be mid-swing.
  */
 export function relax<T extends GraphNode>(
   nodes: T[],
   edges: GraphEdge[],
   options: RelaxOptions
 ): void {
-  const index = new Map<string, T>();
-  for (const node of nodes) index.set(node.id, node);
+  const fx = new Float64Array(nodes.length);
+  const fy = new Float64Array(nodes.length);
+  const slot = new Map<string, number>();
+  nodes.forEach((node, i) => slot.set(node.id, i));
 
   for (let pass = 0; pass < options.iterations; pass++) {
+    // Cooling: full steps early to cross the distance, small ones late to
+    // arrive without overshooting. See the header.
+    const heat = 1 - (pass / options.iterations) * 0.95;
+    fx.fill(0);
+    fy.fill(0);
+
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const a = nodes[i]!;
@@ -86,36 +153,46 @@ export function relax<T extends GraphNode>(
           dy = 0.01;
           distance = Math.sqrt(dx * dx + dy * dy);
         }
-        const push = options.repulsion / (distance * distance);
+        const push = Math.min(MAX_PUSH, options.repulsion / (distance * distance));
         const nx = (dx / distance) * push;
         const ny = (dy / distance) * push;
-        if (!a.lockX) a.x -= nx;
-        if (!a.lockY) a.y -= ny;
-        if (!b.lockX) b.x += nx;
-        if (!b.lockY) b.y += ny;
+        fx[i] -= nx; fy[i] -= ny;
+        fx[j] += nx; fy[j] += ny;
       }
     }
 
     for (const edge of edges) {
-      const a = index.get(edge.from);
-      const b = index.get(edge.to);
-      if (!a || !b) continue;
+      const i = slot.get(edge.from);
+      const j = slot.get(edge.to);
+      if (i === undefined || j === undefined) continue;
+      const a = nodes[i]!;
+      const b = nodes[j]!;
       const dx = b.x - a.x;
       const dy = b.y - a.y;
       const distance = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
       const pull = (distance - edge.rest) * edge.k;
       const nx = (dx / distance) * pull;
       const ny = (dy / distance) * pull;
-      if (!a.lockX) a.x += nx;
-      if (!a.lockY) a.y += ny;
-      if (!b.lockX) b.x -= nx;
-      if (!b.lockY) b.y -= ny;
+      fx[i] += nx; fy[i] += ny;
+      fx[j] -= nx; fy[j] -= ny;
     }
 
-    for (const node of nodes) {
-      if (!node.lockX) node.x -= node.x * options.centring;
-      if (!node.lockY) node.y -= node.y * options.centring;
+    // The one place a node actually moves. A locked axis contributes nothing
+    // to `worst` either, so a ranked graph — every `y` pinned — is judged at
+    // rest on the strength of the only axis it is allowed to relax.
+    let worst = 0;
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i]!;
+      fx[i] -= node.x * options.centring;
+      fy[i] -= node.y * options.centring;
+      const dx = node.lockX ? 0 : fx[i]! * heat;
+      const dy = node.lockY ? 0 : fy[i]! * heat;
+      node.x += dx;
+      node.y += dy;
+      const step = dx * dx + dy * dy;
+      if (step > worst) worst = step;
     }
+    if (worst < AT_REST * AT_REST) break;
   }
 }
 

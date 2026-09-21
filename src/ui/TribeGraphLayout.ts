@@ -86,16 +86,26 @@ const STICKY_SLACK = 4;
  * Relaxation passes when the picture is being opened, and when it is merely
  * being kept up to date.
  *
- * The second number is the owner's note. A full 220-pass relaxation from a
- * fresh seed, every frame, is a *re-derivation*: rest lengths are continuous in
- * opinion (`restLength`), opinions move every tick, and so the whole arrangement
- * lands somewhere slightly different sixty times a second — which reads as the
- * graph shuffling itself for no reason. Seeded from where it was, a handful of
- * passes lets the picture *ease* toward the new truth instead, and costs about
- * a seventh as much: `bugs.md` has the entry about all three graphs relaxing
- * themselves in full whether anything changed or not.
+ * The second number is the owner's note. A full relaxation from a fresh seed,
+ * every frame, is a *re-derivation*: rest lengths are continuous in opinion
+ * (`restLength`), opinions move every tick, and so the whole arrangement lands
+ * somewhere slightly different sixty times a second — which reads as the graph
+ * shuffling itself for no reason. Seeded from where it was, a handful of
+ * passes lets the picture *ease* toward the new truth instead.
+ *
+ * **Both are budgets now, not counts.** `relax` stops early once a pass moves
+ * nothing, so the opening number is free to be generous: the point of raising
+ * it from 220 to 1200 is that the arrangement should reach its resting place
+ * in the one call that opens the panel, rather than arriving over the next
+ * half-second of easing frames while the player watches it crawl. A graph that
+ * is already settled exits after a single pass, so this costs nothing on any
+ * frame after the first.
+ *
+ * The easing number stays small on purpose. It is what makes a change *ease*:
+ * given a budget big enough to converge, a shifted opinion would snap to its
+ * new arrangement in one frame, which is the jump easing exists to avoid.
  */
-const ITERATIONS_OPENING = 220;
+const ITERATIONS_OPENING = 1200;
 const ITERATIONS_EASING = 30;
 
 export const NODE_RADIUS = 34;
@@ -120,12 +130,31 @@ const ROW_GAP = 116;
 const SEED_GAP = 120;
 
 /**
- * Springs pull sideways only in ranked mode, so they may pull harder without
- * dragging the picture out of its rows: with `y` pinned, all a rest length can
- * buy is distance along the row, and it cannot pull anybody past anybody.
+ * Springs pull sideways only in ranked mode — and they pull *weakly*.
+ *
+ * This is the opposite of what the first draft reasoned, and the reason is
+ * worth keeping. The argument used to be that with `y` pinned a spring cannot
+ * drag the picture out of its rows or pull anybody past anybody, so it may as
+ * well pull harder than the flat graph's. Both halves of that are true and the
+ * conclusion was still wrong, because it ignored what a row *cannot* do.
+ *
+ * Sixteen people in the member row need `RANKED_MIN_GAP` between each of them:
+ * the row is fourteen hundred pixels wide whether anybody likes it or not. But
+ * every one of those sixteen has a spoke to the subject with a rest length
+ * between 88 and 240, so every one of them is pulled hard toward the subject's
+ * column while `settleOverlaps` shoves it back out. Neither side can win, and
+ * the two of them traded the whole row back and forth every frame for as long
+ * as the panel stayed open — on the `labour`, `crowded` and `stewards`
+ * scenarios, with the world *paused*, every node moved about six hundred
+ * pixels per frame across a nine-hundred-pixel canvas.
+ *
+ * At a sixth of the old strength the minimum gap sets the spacing, which is
+ * the honest answer for a queue, and the springs do the only thing a pinned
+ * row leaves them: lean allies together within the order `seedRows` chose.
+ * Measured across the same three scenarios, paused motion goes to nought.
  */
-const RANKED_SPOKE_K = 0.03;
-const RANKED_PEER_K = 0.016;
+const RANKED_SPOKE_K = 0.005;
+const RANKED_PEER_K = 0.0025;
 
 /**
  * How far apart two people in the same row must end up.
@@ -160,9 +189,19 @@ export function tribeMembers(
   return [subjectId, ...chosen, ...spare];
 }
 
-/** How far a spoke relaxes toward, from love (close) to hatred (far). */
-function restLength(opinion: number): number {
-  return 150 - opinion * 0.9;
+/**
+ * How far a spoke relaxes toward, from love (close) to hatred (far) — but
+ * never nearer than the overlap pass will allow.
+ *
+ * Without the clamp the two halves of the layout disagree: somebody the
+ * subject adores gets a rest length of sixty, `settleOverlaps` refuses to seat
+ * anybody closer than sixty-eight (eighty-eight in a row), and the pair spend
+ * every frame being pulled together and shoved apart again. A spring must
+ * never ask for a distance the overlap pass is going to refuse, or the two of
+ * them oscillate for as long as the panel is open.
+ */
+function restLength(opinion: number, minGap: number): number {
+  return Math.max(minGap, 150 - opinion * 0.9);
 }
 
 /**
@@ -264,7 +303,7 @@ export function layOutTribe(
     return {
       from: String(edge.from),
       to: String(edge.to),
-      rest: restLength(edge.opinion),
+      rest: restLength(edge.opinion, ranked ? RANKED_MIN_GAP : NODE_RADIUS * 2),
       k: ranked
         ? (spoke ? RANKED_SPOKE_K : RANKED_PEER_K)
         : (spoke ? SPOKE_K : PEER_K),

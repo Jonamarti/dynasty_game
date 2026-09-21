@@ -21,6 +21,7 @@ import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { knowledgeOfPerson } from '../sim/social/Knowledge.ts';
 import { layOutFamily, type FamilyLayout, type FamilyNode } from './FamilyTreeLayout.ts';
+import { panelBox } from './PanelBox.ts';
 
 export class FamilyTreeOverlay {
   private root: HTMLElement;
@@ -190,13 +191,9 @@ export class FamilyTreeOverlay {
     return parts.join('|');
   }
 
+  /** See `PanelBox.ts` — shared, because all three of these panels had it wrong. */
   private boxSize(): { width: number; height: number } {
-    const step = 80;
-    const width = Math.max(480, Math.min(1000,
-      Math.round((window.innerWidth - 240) / step) * step));
-    const height = Math.max(380, Math.min(760,
-      Math.round((window.innerHeight - 160) / step) * step));
-    return { width, height };
+    return panelBox(240, 1000, 760);
   }
 }
 

@@ -3,6 +3,36 @@
 As of 2026-09-21. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M9.6 phase 2d, 2026-09-21
+
+### The tech web's arrangement shifted when the relaxation was fixed, and nothing pins it
+
+Making `relax` symmetric and cooled changed the *output* of every graph that
+uses it, not only the tribe graph it was fixed for. The tech web's natural
+size went from 1069x966 to 984x897 — a more compact arrangement, with no
+overlaps and the same determinism, so both of `techweb.test.ts`'s structural
+checks pass exactly as before. Nothing is wrong with the new picture and the
+old one was not preferred; it is simply that neither is pinned. If somebody
+later tunes `MAX_PUSH`, `heat` or `AT_REST` for one graph, the other two move
+underneath them silently, and the only tripwire is a human noticing the web
+looks different. A snapshot of a few known node positions would catch it,
+though it would also need rewriting on every deliberate change — which is why
+one was not added here rather than added and immediately tuned green.
+
+### `FamilyTree` never got the mobile zoom treatment the tech web did
+
+`PanelBox` fixes the box all three panels ask for, so the family tree no
+longer requests a 480px canvas inside a 378px card. But `FamilyTreeLayout`
+uses `fitInto`, which scales an arrangement to whatever box it is handed, so
+on a phone a large family is scaled down until its names are as unreadable as
+the tech web's nodes were — there is no `.is-far` threshold to make the
+failure obvious, which is probably why it was not reported. The tech web's
+answer was to stop fitting and let the player pan and pinch instead; the
+family tree and the tribe graph would both need the same pan-and-zoom
+viewport to match. Not done here: the owner reported the tech web and the
+tribe graph's motion, and retrofitting a viewport onto two more panels is a
+larger change than either ask.
+
 ## Found shipping M11 phase 10, sixth commit, 2026-09-21
 
 ### `herders`/`bands-take-sides` fails: two small bands do not diverge enough in ~83 days
@@ -553,6 +583,20 @@ because it is a visible change to a number the player watches, and because
 a bug three weeks later.
 
 ## Found during M9.5 phase 4e, 2026-09-16
+
+### ~~The three graphs relax their whole layout every frame, open or idle~~
+
+**Mostly fixed in M9.6 phase 2d, from the other end.** `relax` now exits as
+soon as a pass moves less than `AT_REST`, so a settled arrangement costs one
+pass rather than the full budget — the tribe graph on a paused world does the
+O(n^2) sweep once, finds everybody already where they belong, and stops. That
+is not the caching this entry proposed and it gets most of the same result
+without splitting the digest in two. `FamilyTree` still calls `layOutFamily`
+from scratch every frame and does not seed from the previous arrangement the
+way `layOutTribe` does, so it pays a full relaxation whenever anything in its
+digest moves; it is the smallest of the three graphs and nothing about it is
+visible, but it is the part of this entry that is still true. Original report
+follows.
 
 ### The three graphs relax their whole layout every frame, open or idle
 

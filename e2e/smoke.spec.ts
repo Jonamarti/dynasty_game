@@ -2037,3 +2037,89 @@ test('a phone viewport keeps the HUD reachable and touch pans the map', async ({
   expect(errors).toEqual([]);
   await context.close();
 });
+
+/**
+ * M9.6 phase 2d — the owner's two reports about the graph panels on a phone
+ * and in ranks, asserted through a real browser rather than through arithmetic.
+ */
+test('the tech web opens with readable names on a phone', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.locator('.hud-mobile-tool', { hasText: 'Tech' }).click();
+  await expect(page.locator('.techweb')).toBeVisible();
+
+  // The report was "only the circles but no names". `.is-far` is the class
+  // that strips every label, and the panel used to open below its threshold on
+  // any phone because `boxSize` asked for a 520px viewport inside a 378px card.
+  await expect(page.locator('.techweb-canvas')).not.toHaveClass(/is-far/);
+
+  // Something the player can actually read. A node the subject knows carries
+  // its label; on the broken build every one of these is an empty circle.
+  const named = page.locator('.techweb-node .techweb-name').filter({ hasText: /\S/ });
+  expect(await named.count()).toBeGreaterThan(0);
+
+  // And the viewport must fit the card rather than overflowing it.
+  const viewport = await page.locator('.techweb-viewport').boundingBox();
+  expect(viewport).not.toBeNull();
+  expect(viewport!.x).toBeGreaterThanOrEqual(-1);
+  expect(viewport!.x + viewport!.width).toBeLessThanOrEqual(390 + 1);
+
+  // Opening zoomed in is only acceptable because the rest is reachable. One
+  // finger has to pan the web — before this the panel had no touch handlers at
+  // all and the view could not be moved on a phone by any means.
+  const transformBefore = await page.locator('.techweb-canvas')
+    .evaluate(el => (el as HTMLElement).style.transform);
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart', touchPoints: [{ x: 195, y: 300 }],
+  });
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove', touchPoints: [{ x: 285, y: 360 }],
+  });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const transformAfter = await page.locator('.techweb-canvas')
+    .evaluate(el => (el as HTMLElement).style.transform);
+  expect(transformAfter).not.toBe(transformBefore);
+
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
+test('the tribe graph stands still while the game is paused', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  // Paused *before* the panel goes up: a graph counts as a menu, and while a
+  // menu is open the game stops listening to Space. Nothing in the world can
+  // move anybody from here, so whatever the panel does it is doing to itself.
+  await page.keyboard.press(' ');
+  await page.keyboard.press('t');
+  await expect(page.locator('.tribegraph')).toBeVisible();
+  await expect(page.locator('.tribegraph-node').first()).toBeVisible();
+
+  const positions = async () => page.locator('.tribegraph-node').evaluateAll(
+    els => els.map(el => (el as HTMLElement).style.left + ',' + (el as HTMLElement).style.top));
+
+  // Let any opening ease finish, then watch.
+  await page.waitForTimeout(700);
+  const settled = await positions();
+  expect(settled.length).toBeGreaterThan(1);
+  for (let look = 0; look < 4; look++) {
+    await page.waitForTimeout(180);
+    // A band this young has not had the idea of dividing its labour, so this is
+    // the flat sociogram — the half of the report that drifted slowly, by a
+    // rigid rotation of about two degrees every ten frames. The ranked half,
+    // which threw every node some six hundred pixels per frame, needs a band
+    // with a shape and is covered in `tribegraph.test.ts` instead.
+    expect(await positions()).toEqual(settled);
+  }
+
+  expect(errors).toEqual([]);
+});

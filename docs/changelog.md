@@ -6,6 +6,114 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M9.6 phase 2d: the graph panels hold still, and are readable on a phone
+
+Two owner reports, and four bugs behind them. Both are in the UI only; no
+simulation file is touched, and `sim:check:all` is byte-for-byte identical
+before and after.
+
+### "On mobile the tech nodes aren't visible, only the circles but no names"
+
+Exactly right, and the cause was a box the panel never actually had.
+`TechWeb.boxSize`, `FamilyTree.boxSize` and `TribeGraph.boxSize` were three
+copies of the same arithmetic — the window, less room for the pane beside the
+canvas, but never narrower than about five hundred pixels. That floor predates
+anybody opening the game on a phone, and it is *wider than one*. On a 390px
+screen the tech web asked for a 520px viewport inside a card the stylesheet had
+already capped at `100vw - 12px`, and everything downstream believed the lie:
+`fitToView` divided 520 by the web's natural width and opened at a zoom of
+0.53, under the 0.55 at which `.is-far` strips every node's label. The player
+got a perfectly correct picture of fifty anonymous dots.
+
+Three fixes, since one alone would only have moved the problem:
+
+- **`src/ui/PanelBox.ts`**, new, replacing all three copies. `AGENTS.md` asks
+  for a shared helper over a second implementation and this was the third; a
+  fix made in one would have stayed broken in the other two. Below the
+  stylesheet's own 700px breakpoint it returns the room that is actually
+  there, with no floor at all, because a floor is what caused this.
+- **A zoom the panel refuses to open below** (`READABLE_ZOOM`, a hair above
+  `CHIP_ZOOM`). Fitting the whole web is not worth having if nothing on it can
+  be read. Below that, the panel opens *zoomed in* on the middle of what the
+  subject knows and could next know — their frontier, which is what a player
+  opened the panel to ask about — rather than shrinking the web to illegibility.
+  Desktop is unaffected: measured at 1440x900 and 1920x1080 the opening zoom is
+  0.80 before and after, and the whole-web framing is the same code path.
+- **Touch handlers**, which the panel had none of. One finger pans, two pinch,
+  both through the same `zoomAt` the wheel uses. Opening zoomed in is only
+  defensible because the rest is now reachable; before this the view could not
+  be moved on a phone by any means. `.techweb-viewport` gets `touch-action:
+  none` or the browser claims the gesture first and scrolls the card instead.
+
+### "The tribe graph moves, and when it gets layers it behaves very chaotic"
+
+Also exactly right, and measurably worse than it sounded. With the world
+**paused** — nothing in the simulation changing at all — the ranked graph moved
+every node about six hundred pixels per frame across a nine-hundred-pixel
+canvas, on `labour`, `crowded` and `stewards` alike. M9.6 phases 2a-2c had
+stopped the panel re-deriving itself and stopped it rebuilding its DOM on a
+pixel of drift; neither touched why the *layout* would not sit down. Four
+separate faults, each found by measuring rather than by reading:
+
+- **Repulsion was unbounded.** `repulsion / distance^2` with no ceiling: two
+  nodes five pixels apart threw each other 320px in a single pass, two pixels
+  apart, 2000px. In the flat graph a pair escapes diagonally and the moment
+  passes. In a ranked one `lockY` pins the row, so they cannot get away from
+  each other and kept kicking until the row was **forty thousand pixels wide**.
+  `fitInto` then crushed that back into the panel, which is precisely why this
+  went unseen for two phases — the damage arrived looking panel-sized. Capped
+  at `MAX_PUSH`, which only bites below ~32px, where every caller's overlap
+  pass already forbids anything to be.
+- **The relaxation rotated.** `relax` wrote each node's new position the moment
+  it computed it, so the second node of a pair read the first one's *updated*
+  position. That asymmetry is an artefact of array order, not physics, and it
+  injected a consistent tangential bias: a settled flat sociogram turned
+  rigidly, measured at two degrees per ten frames, centroid fixed, every radius
+  unchanged. Nothing was wrong with the shape, so "nobody overlaps" and "the
+  same input gives the same output" both passed happily while the panel span
+  like a wheel. Forces are now summed into `fx`/`fy` and applied once per pass;
+  the rotation measures as exactly zero.
+- **There was no cooling.** A fixed step size let the arrangement overshoot its
+  own equilibrium and oscillate about it instead of arriving. `heat` now ramps
+  1 → 0.05 across the budget — the standard schedule a force-directed layout
+  needs and this one never had — and `relax` exits early once a pass moves less
+  than `AT_REST`. That early exit is what makes a settled graph free: a panel
+  left open on a paused world runs one pass, finds everybody where they belong,
+  and stops. `ITERATIONS_OPENING` rises 220 → 1200 *because* of it, so the
+  arrangement lands in the call that opens the panel instead of crawling into
+  place over the next half-second.
+- **Springs asked for distances the overlap pass refuses.** `restLength` gave
+  somebody adored a rest of 60 while `settleOverlaps` would not seat anybody
+  nearer than 68 (88 in a row), so the pair were pulled together and shoved
+  apart every frame for as long as the panel was open. Now clamped to the gap.
+  The same mistake at scale is why `RANKED_SPOKE_K`/`RANKED_PEER_K` drop to a
+  sixth: sixteen people in a row need 1400px between them whether or not every
+  one of them is also being pulled toward the subject's column. The old comment
+  argued that a pinned row *lets* springs pull harder, which is true and was
+  still the wrong conclusion — it ignored what a row cannot do. The minimum gap
+  sets the spacing, which is the honest answer for a queue; the springs lean
+  allies together within the order `seedRows` chose.
+
+Measured across the three ranked scenarios, paused motion goes from ~600px per
+frame to nought; running-world motion from ~600px to a 1-4px mean, which is now
+only the picture tracking opinions that genuinely moved.
+
+### Checks
+
+Six new, and every one verified to fail on the build without the fix, as
+`AGENTS.md` requires — a check that detects nothing is worse than no check.
+In `tribegraph.test.ts`: flat and ranked both come to a complete stop over a
+frozen world (measured 2.8px and 883px per frame on the broken build), the
+settled graph does not rotate (10 degrees), and the pre-fit span does not blow
+out (8555px). In `smoke.spec.ts`: the tech web opens on a 390x844 phone without
+`.is-far` and with labels the player can read, and one finger pans it; and the
+tribe graph's drawn positions are identical across four samples with the game
+paused. All four failed on the broken build with the reported symptom —
+`"techweb-canvas is-far"` and drifting positions — and all 49 e2e, 380 unit and
+19 scenario runs pass with it.
+
+---
+
 ## 2026-09-21 — M11 phase 11, first commit: `fight` gets a second and third trainer, opening the war phase
 
 M11 phase 10 closed the widened Neolithic; this is the first commit of phase
