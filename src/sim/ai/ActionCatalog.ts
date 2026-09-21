@@ -22,7 +22,7 @@ import { ITEMS } from '../entities/Item.ts';
 import { RECIPES, hasIngredients, missingIngredients, type RecipeDef } from '../entities/Recipe.ts';
 import { INSCRIPTIONS } from '../entities/Inscription.ts';
 import { TECH, techPower, prerequisitesMet, type Tech } from '../knowledge/Tech.ts';
-import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
+import { MAX_IDEAS, PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import type { Inscription } from '../entities/Inscription.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -282,10 +282,16 @@ function recordActions(actor: Person, record: Inscription): ActionOption[] {
     }];
   }
 
+  // A `reminder` record only ever lands an idea, so the same two extra guards
+  // `ActionSystem.doRead` applies apply here too — otherwise the button reads
+  // "enabled" for a painting that can no longer do anything for this person,
+  // and clicking it walks them over to be turned away.
   const useful = record.techs.some(tech =>
     TECH[tech as Tech] !== undefined &&
     !actor.knownTech.has(tech) &&
-    prerequisitesMet(tech as Tech, actor.knownTech));
+    prerequisitesMet(tech as Tech, actor.knownTech) &&
+    (record.def.fidelity === 'instruction' ||
+      (!actor.ideaFor(tech) && actor.ideas.length < MAX_IDEAS)));
   return [{
     id: 'read',
     label: 'Read it',

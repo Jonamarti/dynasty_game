@@ -43,7 +43,7 @@ import {
 import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
 import { pressedByNeed } from '../systems/ActionSystem.ts';
 import type { NeedsConfig } from '../core/Config.ts';
-import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
+import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
 import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
@@ -1857,12 +1857,25 @@ export class Brain {
       }
 
       // Reading: a record within reach with something on it you could take in.
+      //
+      // A `reminder` record needs the same two extra guards `ActionSystem.
+      // doRead` applies before it will call the tech useful: no second idea
+      // about a thing already conceived, and no idea at all with both slots
+      // full. Without them the scorer kept finding a painting "readable"
+      // forever — the tech never leaves `knownTech`, because a reminder was
+      // never going to put it there — so people walked over, got turned away
+      // with `nothing_new_on_it`, and immediately scored the same walk again.
+      // Measured on `craft`: population visibly balled up around painted rock
+      // and `perf-budget`/`spatial-hash-spreads` both failed from the
+      // clustering, on a scenario that passed clean before this file changed.
       const nearest = ctx.inscriptionHash.findNearest(
         person.x, person.y, ctx.sightRadius * 2,
         candidate => candidate.techs.some(t =>
           !person.knownTech.has(t) &&
           TECH[t as Tech] !== undefined &&
-          prerequisitesMet(t as Tech, person.knownTech)) &&
+          prerequisitesMet(t as Tech, person.knownTech) &&
+          (candidate.def.fidelity === 'instruction' ||
+            (!person.ideaFor(t) && person.ideas.length < MAX_IDEAS))) &&
           ctx.world.sameRegion(person.x, person.y, candidate.x, candidate.y)
       );
       if (nearest) {

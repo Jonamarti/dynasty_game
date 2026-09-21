@@ -6,6 +6,65 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 9a: a painting is a spark, not a transcript
+
+`InscriptionDef` gains `fidelity: 'reminder' | 'instruction'` — data, the same
+move `literacy` made in M8.1 for the same reason. `stone` and `clay` are
+`instruction`; `ochre` is `reminder`, and the two now give a reader different
+things. `ActionSystem.doRead` still hands an `instruction` record's reader the
+finished design via `receiveFromRecord`, exactly as before. A `reminder`
+record instead calls the new `KnowledgeSystem.remindFromRecord`, which lands
+a `conceived` `Idea`, insight zero — the same shape `tryConceive` produces
+from a lucky notice — so the reader still has to think it through, prototype
+it and find out whether it works. A painting shows that a thing was done, not
+how; treating it as a free `knownTech` transfer made the cheapest, least
+durable record in the game just as good as writing, which was backwards.
+
+`Simulation.recordedTech` splits accordingly into `recordedTech` (`instruction`
+only — what a society could strictly *get back*) and the new
+`rememberedTech` (what a `reminder` record could spark). `architecture.md`'s
+claim about `recordedTech` needed a footnote rather than a rewrite: it was
+already describing `instruction` behaviour, just without naming the split.
+
+**A gap found while building this, not by measuring it**: the `read` scorer
+in both `Brain` (AI planning) and `ActionCatalog` (the player's context menu)
+judged a record "has something useful on it" by `!knownTech.has(tech)` alone,
+which for a `reminder` stays true forever — a painting never moves anything
+into `knownTech`. Without the same two guards `doRead` now applies (no second
+idea about a tech already conceived, no idea at all with both slots full),
+the scorer kept finding an already-read painting worth walking to, sent
+people over, `doRead` turned them away with `nothing_new_on_it`, and the
+scorer immediately proposed the same walk again. First surfaces of this were
+not a crash but a world: `craft`'s population visibly balled up around
+painted rock, and `spatial-hash-spreads`/`perf-budget` both failed on a
+scenario that had been clean before this file changed. Both scorers now carry
+the same guard `doRead` does.
+
+`tools/simcheck.ts`'s `records-are-cut` also needed a fix, not a green light
+tuned in: it summed `recorded_*` telemetry, which still fires for `ochre`,
+against `recordedTech.size`, which no longer counts it — so any paint-only
+band (no `writing` at all) tripped the check's `else` branch and failed a
+check about *writing* for having painted instead. It now sums
+`inscribed_stone`/`inscribed_clay` specifically; `pictures-are-painted`
+already owns the painting half.
+
+**Measured**: `npm run sim:check:all` reproduces the phase 8e matrix exactly
+— same scenarios, same failures (`crowded`/`perf-budget`,
+`century`/`hunts-succeed-and-fail`, `hunters`/`kills-are-butchered-for-bone`,
+`farmers`/`the-hurt-are-tended`, `stewards`/`soil-is-drawn-down` +
+`compost-answers-exhaustion`, all pre-existing and documented in `bugs.md`) —
+once the scorer fix above landed; before it, `craft` alone lost
+`spatial-hash-spreads` and `perf-budget` (2,752 → ~1,935 steps/s,
+deterministic and reproducible, not noise) purely from the clustering. A new
+unit test in `transmission.test.ts` pins the behaviour directly: reading an
+`ochre` painting leaves a `conceived` idea and neither `knownTech` nor
+`recordedTech`, and counts in `rememberedTech` instead. All 344 unit tests,
+typecheck clean, all 47 e2e specs pass.
+
+**Next**: 9b (the oral channel — hearth teaching, `storytelling`,
+`tradition`), then 9c (`writing`'s re-gating behind `marking`, `stoneworking`
+and `farming`, which this phase deliberately went first to avoid).
+
 ## 2026-09-21 — M11 phase 8e: the diet is on the panel
 
 The "Now" tab's Condition section, already the home of health and the five

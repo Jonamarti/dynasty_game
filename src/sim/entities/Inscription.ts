@@ -85,6 +85,20 @@ export interface InscriptionDef {
    * copies of one predicate is how the five answers drift apart.
    */
   literacy: Tech;
+  /**
+   * What reading one gives back.
+   *
+   * `instruction` hands the reader the finished design, exactly as
+   * `KnowledgeSystem.receiveFromRecord` always has. `reminder` does not: it
+   * seeds an `Idea` in `conceived` state, insight zero, the same shape
+   * `tryConceive` produces from a spark. Still has to be thought about,
+   * prototyped and proven — the picture is what put it in their head, not a
+   * transcript of how to do it. `ochre` is the only `reminder` today, and the
+   * distinction is the whole reason M9's `note 4` calls it a spark rather than
+   * a library: a painted hand does not carry a method, only the fact that
+   * somebody, once, did the thing.
+   */
+  fidelity: 'reminder' | 'instruction';
   description: string;
 }
 
@@ -100,6 +114,7 @@ export const INSCRIPTIONS: Record<InscriptionForm, InscriptionDef> = {
     capacity: 1,
     decayPerDay: 0,
     literacy: 'writing',
+    fidelity: 'instruction',
     description: 'One thing, cut into rock. It will be here long after everyone who can read it.',
   },
   clay: {
@@ -114,6 +129,7 @@ export const INSCRIPTIONS: Record<InscriptionForm, InscriptionDef> = {
     // eyeblink for a record that is supposed to outlast one.
     decayPerDay: 0.007,
     literacy: 'clay_tablet',
+    fidelity: 'instruction',
     description: 'Quicker to write and holds more, and it will not see out a century.',
   },
   // M8.1. The cheapest record in the game and the only one that is not writing.
@@ -141,6 +157,7 @@ export const INSCRIPTIONS: Record<InscriptionForm, InscriptionDef> = {
     // which is the trade for its being the one anybody can make.
     decayPerDay: 0.02,
     literacy: 'ochre',
+    fidelity: 'reminder',
     description:
       'Earth burnt red and laid on rock. Anybody who knows what the picture ' +
       'is of can read it, which is more than can be said for a script.',

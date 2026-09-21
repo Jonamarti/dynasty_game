@@ -202,8 +202,26 @@ export class Simulation {
    * apart exactly when a band loses its last holder of something and still has
    * the stone — which is the dark age this milestone exists to make possible,
    * and it is only recoverable by somebody who can read.
+   *
+   * **Strictly `instruction` records — stone and clay.** M9's `ochre` used to
+   * count here too, before `InscriptionDef.fidelity` split what reading one
+   * gives back. A painting is not something a society can *get back*: reading
+   * it only sparks an idea that still has to be worked out from nothing, same
+   * as anybody who noticed it unaided, so counting it here overstated what a
+   * band actually holds in reserve. See `rememberedTech` for that half.
    */
   readonly recordedTech = new Set<string>();
+
+  /**
+   * Knowledge some `reminder` record could spark, whether or not anybody
+   * alive has had that idea yet.
+   *
+   * `ochre`'s half of what `recordedTech` used to conflate with it. Nothing
+   * here is recoverable the way `recordedTech` is — reading one of these
+   * lands a `conceived` idea, not a finished design — so the two sets answer
+   * different questions and neither substitutes for the other.
+   */
+  readonly rememberedTech = new Set<string>();
 
   /**
    * What is written down **or being written down right now**.
@@ -1850,10 +1868,12 @@ export class Simulation {
     }
 
     this.recordedTech.clear();
+    this.rememberedTech.clear();
     this.recordsInHand.clear();
     for (const record of this.inscriptions) {
+      const legible = record.def.fidelity === 'instruction' ? this.recordedTech : this.rememberedTech;
       for (const tech of record.techs) {
-        this.recordedTech.add(tech);
+        legible.add(tech);
         this.recordsInHand.add(tech);
       }
       if (record.pending !== null) this.recordsInHand.add(record.pending);

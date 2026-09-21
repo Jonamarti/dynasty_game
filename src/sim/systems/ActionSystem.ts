@@ -42,7 +42,7 @@ import {
   TECH, buildFactor, forageYieldFactor, nutritionFactor, prerequisitesMet, tallyFactor,
   techPower, weaponOf, armourOf, type Tech,
 } from '../knowledge/Tech.ts';
-import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
+import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse } from '../social/Property.ts';
 import type { EventType } from '../social/Events.ts';
 
@@ -2597,6 +2597,12 @@ export class ActionSystem {
    * on a library holding the answer to its own dark age and starve beside it.
    * That is what makes writing an exception bought on purpose rather than a
    * free second copy of `knownTech`.
+   *
+   * **What it grants once read is not the same for every form.** An
+   * `instruction` record — stone, clay — hands over the finished design, same
+   * as being taught. A `reminder` — `ochre` — only sparks an idea: the painting
+   * shows that a thing was done, not how, so the reader still has to work it
+   * out. See `InscriptionDef.fidelity`.
    */
   private doRead(person: Person, ctx: ActionContext): void {
     const record = person.targetInscriptionId === null
@@ -2618,10 +2624,17 @@ export class ActionSystem {
     // What is on it that they could take in. Checked before the work rather
     // than after, so nobody spends half a day staring at something they already
     // know — and `requires` gates a record exactly as it gates a lesson.
+    //
+    // A `reminder` record needs two more guards a lesson does not: it lands as
+    // an idea rather than a finished design (see `remindFromRecord`), so it is
+    // pointless to walk over and stare at a painting about something already
+    // being thought through, or when both idea slots are already spoken for.
     const useful = record.techs.filter(tech =>
       !person.knownTech.has(tech) &&
       TECH[tech as Tech] !== undefined &&
-      prerequisitesMet(tech as Tech, person.knownTech));
+      prerequisitesMet(tech as Tech, person.knownTech) &&
+      (record.def.fidelity === 'instruction' ||
+        (!person.ideaFor(tech) && person.ideas.length < MAX_IDEAS)));
     if (useful.length === 0) {
       this.abandon(person, 'nothing_new_on_it', ctx);
       return;
@@ -2639,19 +2652,34 @@ export class ActionSystem {
       return;
     }
 
-    const tech = useful[0]!;
-    ctx.knowledge.receiveFromRecord(person, tech as Tech);
+    const tech = useful[0]! as Tech;
     person.practice('teach', 1);
     telemetry.count('read_' + tech);
-    const label = TECH[tech as Tech].label.toLowerCase();
-    person.chronicle.push({
-      tick: ctx.tick,
-      ageDays: person.age,
-      text: 'read ' + label + ' off ' + record.def.label.toLowerCase() +
-        ' cut by ' + record.authorName,
-      kind: 'milestone',
-    });
-    ctx.onInsight(person, 'read ' + label + ' off a stone', 'gain');
+    const label = TECH[tech].label.toLowerCase();
+    if (record.def.fidelity === 'instruction') {
+      ctx.knowledge.receiveFromRecord(person, tech);
+      person.chronicle.push({
+        tick: ctx.tick,
+        ageDays: person.age,
+        text: 'read ' + label + ' off ' + record.def.label.toLowerCase() +
+          ' cut by ' + record.authorName,
+        kind: 'milestone',
+      });
+      ctx.onInsight(person, 'read ' + label + ' off a stone', 'gain');
+    } else {
+      // A `reminder` gives a spark, not an answer: `remindFromRecord` only ever
+      // fails when the guards above already ruled it out, so the boolean is not
+      // branched on here.
+      ctx.knowledge.remindFromRecord(person, tech, ctx.tick);
+      person.chronicle.push({
+        tick: ctx.tick,
+        ageDays: person.age,
+        text: 'saw ' + record.authorName + '\'s ' + record.def.label.toLowerCase() +
+          ' and thought about ' + label,
+        kind: 'milestone',
+      });
+      ctx.onInsight(person, 'an idea about ' + label + ', from a painting', 'idea');
+    }
     this.finish(person);
   }
 

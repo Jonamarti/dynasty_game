@@ -1543,16 +1543,24 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // The fourth channel, and the only one that crosses a death. Writing sits
   // behind marking and stoneworking, which nothing in the suite reaches from
   // nothing, so the `scribes` scenario starts its founders literate.
-  const cut = sum('recorded_');
+  //
+  // Counted by form, not by `recorded_` — M9's phase 9a split what a record
+  // gives back, and `recordedTech` now counts only `instruction` forms (stone,
+  // clay). `sum('recorded_')` still fires for `ochre`, so before this split a
+  // paint-only band (no `writing` at all) tripped the `else` branch with
+  // `cut > 0` and `recordedTech.size === 0` and failed a check about writing
+  // for having painted instead. That band's paintings are `pictures-are-
+  // painted`'s to measure, not this one's.
+  const instructionCut = (tel.inscribed_stone ?? 0) + (tel.inscribed_clay ?? 0);
   const read = sum('read_');
-  if (!sim.knownTech.has('writing') && cut === 0) {
+  if (!sim.knownTech.has('writing') && instructionCut === 0) {
     skip('records-are-cut', 'nobody in this world can write');
   } else {
     add('records-are-cut',
-      cut > 0 && sim.recordedTech.size > 0,
-      cut + ' things cut into ' + sim.inscriptions.length + ' records; ' +
+      instructionCut > 0 && sim.recordedTech.size > 0,
+      instructionCut + ' things cut into stone or clay; ' +
         sim.recordedTech.size + ' technologies are written down somewhere, ' +
-        read + ' read back off a stone');
+        read + ' read back off a record');
   }
 
   // Reading is deliberately *not* asserted here, and that is a finding rather

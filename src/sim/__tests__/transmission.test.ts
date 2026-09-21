@@ -338,4 +338,49 @@ describe('a record', () => {
     const refusals = sim.interruptions.filter(n => n.personId === scribeOnly.id);
     expect(refusals.map(n => n.reason)).toContain('cannot_read');
   });
+
+  /**
+   * M9's phase 9a: an `ochre` painting is a spark, not a transcript.
+   *
+   * Before this it read exactly like a stone — one tick over the finish line
+   * and `receiveFromRecord` handed over the finished design. That made the
+   * cheapest, least-durable record in the game just as good as writing, which
+   * is backwards: a painting shows that something was done, not how.
+   */
+  it('gives a reader of a painting an idea to work out, not the finished design', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 20; i++) sim.step();
+
+    const painter = sim.livingPeople()[0]!;
+    painter.knownTech.add('ochre');
+    painter.knownTech.add('cordage');
+    painter.inventory.add('mud', 24);
+    driveInscribe(sim, painter, 'cordage');
+    const painting = sim.inscriptions.find(r => r.techs.includes('cordage'))!;
+    expect(painting.def.fidelity).toBe('reminder');
+
+    // Wiped from everybody, not just the reader — otherwise 600 ticks standing
+    // next to somebody who still knows cordage risks picking it up by
+    // `tryObserve` instead, which would test the wrong channel.
+    for (const someone of sim.livingPeople()) someone.knownTech.delete('cordage');
+
+    const reader = sim.livingPeople().find(p => p.id !== painter.id && !p.isChild)!;
+    reader.knownTech.add('ochre');
+    reader.ideas = [];
+    reader.x = painting.x;
+    reader.y = painting.y;
+
+    sim.order(reader, 'read', { inscriptionId: painting.id });
+    for (let i = 0; i < 600 && reader.order !== null; i++) sim.step();
+
+    expect(reader.knownTech.has('cordage'), 'a painting taught the finished design').toBe(false);
+    const idea = reader.ideaFor('cordage');
+    expect(idea, 'reading the painting left no idea behind').not.toBeNull();
+    expect(idea!.stage).toBe('conceived');
+    expect(idea!.insight).toBe(0);
+    // And it counts differently from a stone: `rememberedTech` is what a
+    // painting could spark, not what the world could recover.
+    expect(sim.recordedTech.has('cordage')).toBe(false);
+    expect(sim.rememberedTech.has('cordage')).toBe(true);
+  });
 });

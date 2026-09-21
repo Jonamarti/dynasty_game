@@ -75,6 +75,14 @@ read**, which is what makes literacy the thing worth having and the death of the
 last reader worse than the death of the last potter. See
 `entities/Inscription.ts`.
 
+> Not every record gives the same thing back. `InscriptionDef.fidelity` splits
+> `instruction` forms — stone, clay — which hand a reader the finished design,
+> from `reminder` — `ochre` — which only sparks a `conceived` idea, insight
+> zero: the picture shows that something was done, not how. `recordedTech`
+> counts strictly `instruction` records, because a spark is not something a
+> society can be said to hold in reserve; `Simulation.rememberedTech` is the
+> other half.
+
 > Every effect a technology has goes through `techPower(person, tech)` in
 > `knowledge/Tech.ts` rather than through `knownTech.has(...)` at the point of
 > use. There were six such call sites and each would have had to learn

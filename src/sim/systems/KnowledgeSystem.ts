@@ -642,6 +642,37 @@ export class KnowledgeSystem {
   }
 
   /**
+   * Somebody takes a `reminder` record's spark, not its answer.
+   *
+   * `ochre`'s whole point: a painting is legible to anybody who can recognise
+   * what it shows, but what it shows is that a thing was done, not how. This
+   * lands in exactly the state `tryConceive` would leave a lucky notice in —
+   * `conceived`, insight zero — so the reader still has to think it through,
+   * build a prototype and find out whether it works, the same as anybody who
+   * arrived at the idea on their own. `person.ideaFor` and the length check
+   * mirror `conceivable`'s own guards: no second idea about a thing already
+   * being worked on, and no idea at all once both slots are full.
+   */
+  remindFromRecord(person: Person, tech: Tech, tick: number): boolean {
+    if (person.ideaFor(tech) || person.ideas.length >= MAX_IDEAS) return false;
+    person.ideas.push({
+      tech,
+      stage: 'conceived',
+      insight: 0,
+      story: 'a painting of it, left by somebody long gone',
+      conceivedTick: tick,
+      effort: 0,
+      discussedWith: [],
+      trials: 0,
+      proof: 0,
+      failedTests: 0,
+      tries: 0,
+    });
+    telemetry.count('reminded_' + tech);
+    return true;
+  }
+
+  /**
    * One person deliberately teaching another. Called by the action system.
    *
    * Returns what was taught, or null if there was nothing to pass on. Success
