@@ -26,7 +26,7 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
-import { isTrap, isHeap, isHerd } from '../entities/Building.ts';
+import { isTrap, isHeap, isHerd, isWell } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Household } from '../entities/Household.ts';
@@ -2056,8 +2056,27 @@ export class Brain {
     // Thirst searches much further than sight — people know where the river is
     // even when they cannot see it — but only on their own landmass. Walking at
     // water you cannot reach is how a band starves in sight of a lake.
-    return ctx.shoreHash.findNearest(person.x, person.y, ctx.sightRadius * 6,
+    const shore = ctx.shoreHash.findNearest(person.x, person.y, ctx.sightRadius * 6,
       tile => ctx.world.sameRegion(person.x, person.y, tile.x, tile.y));
+
+    // `well`: open to anyone the way natural water is — see
+    // `ActionSystem.waterWithinReach` — so this asks only whether one exists
+    // and is finished, not `canUse`. Buildings are a plain array rather than a
+    // spatial hash, on the same call every station lookup already makes: a
+    // well is rare enough that scanning it costs nothing a hash would save.
+    let well: { x: number; y: number } | null = null;
+    let wellDist = Infinity;
+    for (const building of ctx.buildings) {
+      if (!building.complete || !isWell(building.def)) continue;
+      const d = person.distanceTo({ x: building.centerX, y: building.centerY });
+      if (d < wellDist) {
+        wellDist = d;
+        well = { x: building.centerX, y: building.centerY };
+      }
+    }
+    if (!well) return shore;
+    if (!shore) return well;
+    return wellDist < person.distanceTo(shore) ? well : shore;
   }
 
   /**

@@ -131,6 +131,17 @@ export interface BuildingDef {
    * argument `isTrap` already makes: this is somewhere food comes *from*.
    */
   herd?: { item: string; seed: number; growthPerDay: number };
+  /**
+   * True if this stands in for natural water — M11 phase 10's `well`, and the
+   * first technology in the game to touch thirst at all.
+   *
+   * `ActionSystem.waterWithinReach` accepts a nearby complete one exactly as
+   * it accepts a water tile, and `Brain.findWater` picks whichever of the two
+   * is closer, so a well is a real second source rather than a decoration a
+   * band happens to also own — the same standard `isTrap` and `isHerd` hold
+   * their own mechanisms to.
+   */
+  providesWater?: boolean;
   description: string;
 }
 
@@ -174,6 +185,11 @@ export function isHeap(def: BuildingDef): boolean {
 /** True if a design is a pen: a larder that breeds what it holds. See `herd`. */
 export function isHerd(def: BuildingDef): boolean {
   return def.herd !== undefined;
+}
+
+/** True if a design is a source of water in its own right. See `providesWater`. */
+export function isWell(def: BuildingDef): boolean {
+  return def.providesWater === true;
 }
 
 export const BUILDINGS: Record<string, BuildingDef> = {
@@ -497,6 +513,24 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     description:
       'A stone firing chamber that holds a heat no open hearth can. Pottery ' +
       'fired here wastes less clay than pottery fired in embers.',
+  },
+  // `well`, the first technology to touch thirst at all. 2x2 for the same
+  // containment reason every trap and pen already gives, though a well is
+  // read by distance rather than by `reachBuilding` — see `providesWater`.
+  well: {
+    id: 'well',
+    label: 'Well',
+    icon: '\u{1FAA3}',
+    width: 2, height: 2,
+    materials: { flint: 10, wood: 2 },
+    workTicks: 260,
+    shelter: 0,
+    storage: 0,
+    providesWater: true,
+    requiresTech: 'well',
+    description:
+      'Stone-lined and sunk to the water table. Drink stands wherever the ' +
+      'band does, whether or not the shore is close.',
   },
 
   // --- Gated behind knowledge that does not exist yet (M4) -----------------

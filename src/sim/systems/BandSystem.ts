@@ -20,7 +20,7 @@ import type { Person } from '../entities/Person.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import {
-  BUILDINGS, isTrap, isStation, isField, isHeap, isHerd, type Building, type BuildingDef,
+  BUILDINGS, isTrap, isStation, isField, isHeap, isHerd, isWell, type Building, type BuildingDef,
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -156,6 +156,16 @@ const FIELDS_PER_BAND = 2;
  * — the plan's table gives herding one building, not a line of them.
  */
 const PENS_PER_BAND = 1;
+
+/**
+ * Wells one band will sink. One: it answers "is the shore close?" and a
+ * second does not answer it any harder — `Brain.findWater` already picks
+ * whichever of the well and the natural shore is nearer, so once a band has
+ * one, a second only matters if the band's camp drifts far enough from the
+ * first that it stops being the nearer choice, which this project leaves for
+ * a band to notice on its own rather than planning for in advance.
+ */
+const WELLS_PER_BAND = 1;
 
 /** Days between a band considering new construction. */
 const PLANNING_INTERVAL = 3;
@@ -596,7 +606,7 @@ export class BandSystem {
     // thing.
     const built = live.filter(b =>
       b.complete && !isTrap(b.def) && !isStation(b.def) && !isField(b.def) &&
-      !isHeap(b.def) && !isHerd(b.def)).length;
+      !isHeap(b.def) && !isHerd(b.def) && !isWell(b.def)).length;
     if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
 
     // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
@@ -785,6 +795,22 @@ export class BandSystem {
       if (pens.length < PENS_PER_BAND) {
         wanted = buildable.find(def => isHerd(def) &&
           !pens.some(existing => existing.def.id === def.id && !existing.complete))?.id ?? null;
+      }
+    }
+
+    // --- A well, the eighth and last thing a band can want ------------------
+    //
+    // Last, because it is the least urgent of all of them: `spawnPeople`
+    // already sites every band with water in reach, so a well most often
+    // shortens a walk a band could already make rather than opening one it
+    // could not. Still worth having — `Brain.findWater` picks whichever of a
+    // well and the shore is nearer, so a camp that has grown away from the
+    // water it was founded on gets a real answer instead of a longer one.
+    if (!wanted && underway === 0 && stores.length > 0) {
+      const wells = live.filter(b => isWell(b.def));
+      if (wells.length < WELLS_PER_BAND) {
+        wanted = buildable.find(def => isWell(def) &&
+          !wells.some(existing => existing.def.id === def.id && !existing.complete))?.id ?? null;
       }
     }
     if (!wanted) return;

@@ -116,6 +116,9 @@ export const TECHS = [
   // `RECIPES.kiln_pot` for why its effect is a second recipe rather than a
   // retrofit onto `pot`.
   'kiln',
+  // M11 phase 10, fifth commit: the first technology in the game to touch
+  // thirst at all. See `BuildingDef.providesWater`.
+  'well',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1416,6 +1419,28 @@ export const TECH: Record<Tech, TechDef> = {
       'held heat wastes less clay than an open fire, and it is the same heat ' +
       'a furnace will one day want.',
   },
+
+  // M11 phase 10, fifth commit.
+  well: {
+    id: 'well', label: 'Well', domain: 'stone',
+    age: 'neolithic', firstKnown: 'about 6,500 BC',
+    kind: 'device',
+    requires: ['masonry'], difficulty: 0.5, skill: 'build',
+    prototype: { flint: 5, wood: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'doing', action: 'drink' }],
+        weight: 1.0, story: 'walked the same dry stretch down to the river every morning and thought about bringing the river closer instead' },
+      { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'doing', action: 'build' }],
+        weight: 0.6, story: 'dug a footing for a wall and struck water before striking stone' },
+      { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'season', season: 'summer' },
+                { kind: 'feeling', need: 'thirst' }],
+        weight: 0.5, story: 'watched a dry summer shrink the shallows and thought of water that did not shrink with it' },
+    ],
+    description:
+      'Stone-lined and sunk to the water table. Drink stands wherever the ' +
+      'band does, whether or not the shore is close, and a dry summer cannot ' +
+      'take it away.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1627,6 +1652,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   kiln: {
     summary: 'A held heat that wastes less clay than an open fire: pottery for less.',
     site: 'BUILDINGS.kiln and RECIPES.kiln_pot',
+  },
+  well: {
+    summary: 'Water away from the shore: a band is no longer tied to the water’s edge.',
+    site: 'BUILDINGS.well, via BuildingDef.providesWater; ActionSystem.waterWithinReach and Brain.findWater',
   },
 };
 

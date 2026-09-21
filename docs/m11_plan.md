@@ -639,8 +639,19 @@ modesto, y no cero. `century` sale bit-idéntico, igual que cada nodo desde
 `ground_stone`: `kiln` pide `pottery` y `masonry` juntos en la misma
 persona, una combinación que este cohorte no alcanza.
 
-**Cuatro nodos quedan**: `dairying`, `wool`, `brewing`, `well`.
-`wool`/`dairying` dependen de `herding`, ya enviado. Ver `changelog.md`.
+**Quinto commit HECHO 2026-09-21**: `well`, la primera tecnología que toca la
+sed. Sin verbo nuevo: `ActionSystem.waterWithinReach` acepta un pozo cercano
+igual que acepta una casilla de agua, `Brain.findWater` elige el más cercano
+de los dos, y ninguno comprueba la banda dueña — un pozo es tan abierto como
+el agua natural. Un pozo por banda, la última prioridad de
+`BandSystem.planBuildings`. **Verificado antes de dar el diseño por bueno**:
+un contador nuevo `drink_at_well`, porque un camino más corto no es algo que
+el informe de salud cuente por sí solo — un script desechable mostró a las
+dos bandas construyéndolo por su cuenta y una de cada cinco bebidas cayendo
+en él. `century` bit-idéntico.
+
+**Tres nodos quedan**: `dairying`, `wool`, `brewing`. `wool`/`dairying`
+dependen de `herding`, ya enviado. Ver `changelog.md`.
 
 **Densidad tipo Evolve.** La regla de "nada inerte" (`TECH_EFFECTS` +
 `tech.test.ts`) **no se toca** — es lo que ha mantenido sano este árbol. Lo que se

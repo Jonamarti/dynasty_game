@@ -6,6 +6,46 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 10, fifth commit: `well`, the first technology to touch thirst
+
+A well stands in for natural water rather than gaining a new verb: `drink`
+is not a building action anywhere else, so `ActionSystem.waterWithinReach`
+now accepts a nearby complete well exactly as it accepts a water tile, and
+`Brain.findWater` picks whichever of a well and the shore is nearer. Open to
+anyone the way natural water is — a spring has no owner, and neither does a
+well dug over one — so there is no `canUse`/band-ownership check on either
+side, unlike every other building this milestone has added.
+
+`BandSystem.planBuildings` gains an eighth and last branch, one well per
+band, lowest priority of all of them: `spawnPeople` already sites every band
+with water in reach, so a well most often shortens a walk a band could
+already make rather than opening one it could not.
+
+**Verified empirically before committing to the design**: a well's benefit
+is a shrunk travel distance, which nothing in the health report counts
+directly, so a new `drink_at_well` counter was added specifically to answer
+"does this ever actually happen" rather than assuming it from the code
+reading correctly — the same discipline `kiln`'s commit just applied to a
+different structural risk. A throwaway script (two bands of twelve,
+`masonry`+`well` known from the start, 40,000 ticks, not committed) showed
+both bands autonomously planning and completing a well, and **4,281 of
+21,389 drinks — one in five — taken at one** rather than at the shore. New
+`wells-are-drawn-from` check and `well.test.ts`, the latter finding an
+inland spot by scanning the generated world rather than asserting one
+exists, so the suite skips honestly rather than passing vacuously on a map
+small enough to have none.
+
+**Measured**, `sim:seeds -- --seeds 20` on `century`: bit-identical to the
+previous commit in every reported figure, same as every node since
+`ground_stone` — `well` needs `masonry`, itself rarely reached in this
+cohort. `sim:check:all` unchanged; `wells-are-drawn-from` correctly reports
+n/a everywhere in the suite, since no scenario starts knowing `masonry` and
+`well` together, the same honest skip `herds-breed-and-are-culled` reports
+for scenarios without `herding`. All 365 unit tests (5 new), typecheck, and
+all 47 e2e specs pass.
+
+**Three nodes remain**: `dairying`, `wool`, `brewing`.
+
 ## 2026-09-21 — M11 phase 10, fourth commit: `kiln`, and a scoring trap caught before it shipped
 
 Mechanism 4's fifth station. `BUILDINGS.kiln` and a new recipe, `kiln_pot`,

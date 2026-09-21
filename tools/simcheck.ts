@@ -17,7 +17,7 @@ import { telemetry } from '../src/sim/core/Telemetry.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
-import { isTrap, isHeap, isHerd } from '../src/sim/entities/Building.ts';
+import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
@@ -2133,6 +2133,21 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         (tel.herd_bred ?? 0) + ' bred, ' + (tel.herd_culled ?? 0) + ' culled, ' +
         (tel.herd_at_capacity ?? 0) + ' days at capacity, ' +
         (tel.herd_unworked ?? 0) + ' days nobody could keep one');
+  }
+
+  // M11 phase 10, fifth commit. A well's whole claim is that it gets *drawn
+  // from* — a well nobody ever drinks at is a hole in the ground with a roof
+  // over it, indistinguishable from decoration by every other check in this
+  // suite, since it declares no yield and holds no store to inspect.
+  // `drink_at_well` is the one signal that tells the two apart.
+  const wellsBuilt = sim.buildings.filter(b => b.complete && isWell(b.def));
+  if (wellsBuilt.length === 0 && (tel.band_planned_well ?? 0) === 0) {
+    skip('wells-are-drawn-from', 'nobody in this world knows how to sink a well');
+  } else {
+    add('wells-are-drawn-from',
+      (tel.drink_at_well ?? 0) > 0,
+      (tel.band_planned_well ?? 0) + ' planned, ' + wellsBuilt.length + ' standing; ' +
+        (tel.drink_at_well ?? 0) + ' drinks taken at one');
   }
 
   // There is deliberately no `traps-are-emptied` check here, and the reason is

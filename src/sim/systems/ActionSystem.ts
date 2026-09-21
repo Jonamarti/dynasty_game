@@ -17,7 +17,7 @@ import { Arrival, type MovementSystem } from './MovementSystem.ts';
 import { companionBonus } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
-import { isTrap, isHeap, isHerd, type Building } from '../entities/Building.ts';
+import { isTrap, isHeap, isHerd, isWell, type Building } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import type { Tree } from '../entities/Tree.ts';
@@ -694,6 +694,18 @@ export class ActionSystem {
     for (let dy = -2; dy <= 2; dy++) {
       for (let dx = -2; dx <= 2; dx++) {
         if (ctx.world.isWater(cx + dx, cy + dy)) return true;
+      }
+    }
+    // `well`: a real second source rather than a decoration, and open to
+    // anyone the way natural water is — a spring has no owner, and neither
+    // does a well dug over one. The margin matches the water check's own
+    // leniency, for the same reason it exists there.
+    for (const building of ctx.buildingsById.values()) {
+      if (building.complete && isWell(building.def) && building.contains(x, y, 2)) {
+        // The only way to tell a well is answering thirst at all, rather than
+        // standing built and unused while everybody still walks to the shore.
+        telemetry.count('drink_at_well');
+        return true;
       }
     }
     return false;
