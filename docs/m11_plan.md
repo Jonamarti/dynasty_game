@@ -604,9 +604,26 @@ la tabla queda fuera, anotado: este juego no tiene penalización de carga que
 un carro pueda responder), `bread` (la cuarta estación del mecanismo 4).
 Medido: supervivencia 99.6%→99.7%, tecnologías 13.2→13.4 — esencialmente
 plano, como se espera de cinco nodos más profundos que los cuatro del primer
-commit. **Seis nodos quedan**: `herding`, `dairying`, `wool`, `brewing`,
-`well`, `kiln`. `herding` es el único que pide un mecanismo de verdad —
-ganado apriscado que cría—, y `wool`/`dairying` dependen de él; `well`/`kiln`
+commit.
+
+**Tercer commit HECHO 2026-09-21**: `herding`, el único nodo de esta capa que
+pedía un mecanismo de verdad. Un `pen` reutiliza `Building.store` y `doTake`
+entero en vez de inventar un verbo: `Simulation.workHerds` hace crecer el
+rebaño proporcionalmente a lo que ya contiene, no a una tasa fija, así que un
+corral vaciado del todo se queda vacío para siempre — un fallo real y
+permanente por sobreexplotar. **Encontrado y arreglado antes de medir, no
+después**: la primera versión crio 27 de carne en un corral en el escenario
+`farmers` y no sacrificó ninguna, llena 43 de los días del run — el mismo
+fallo que ya se envió una vez con las trampas, porque la ruta de hambre
+ordinaria de `Brain` sólo mira el almacén *más cercano* con comida, y un
+granero más cerca tapaba el corral. Arreglado dándole a los corrales la
+misma bonificación de "ronda" por llenura y cercanía que ya tienen las
+trampas. `farmers` gana `taming`+`herding` en su tecnología inicial para
+ejercitarlo (100.0%→99.6% supervivencia, dentro del ruido documentado). En
+el mismo commit, el peldaño Neolítico de `ERAS`, que esperaba exactamente
+estas tres tecnologías (`farming`, `herding`, `masonry`) y ya las tiene
+todas. **Cinco nodos quedan**: `dairying`, `wool`, `brewing`, `well`,
+`kiln`. `wool`/`dairying` dependen de `herding`, ya enviado; `well`/`kiln`
 dependen de `masonry`, ya enviado. Ver `changelog.md`.
 
 **Densidad tipo Evolve.** La regla de "nada inerte" (`TECH_EFFECTS` +

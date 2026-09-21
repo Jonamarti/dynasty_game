@@ -6,6 +6,81 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 10, third commit: `herding`, and the mistake it caught in the trap round
+
+The one node in this tier that needed a real mechanism rather than a numeric
+term. A pen (`BUILDINGS.pen`) deliberately reuses `Building.store` and
+`doTake` wholesale rather than inventing a verb: `Simulation.workHerds`
+grows `store.count('meat')` by a fraction of itself each day — proportional
+to what is already there, which is what makes it breeding rather than a
+slower trap, and which means a pen culled down to nothing stays at nothing
+for ever, a real and permanent failure state. `doBuild`'s completion hook
+stocks a founding pair the moment a pen is finished, since growth from zero
+is zero whatever the fraction. `doStore` and `Brain`'s deposit branch both
+refuse a pen the same way they already refuse a trap.
+
+**Caught by the new `herds-breed-and-are-culled` check, not by inspection**:
+the first version bred 27 meat into a pen on the `farmers` scenario and
+culled none of it, standing at capacity for 43 of the run's days. The cause
+was the exact failure this project already shipped once for traps: the
+ordinary hungry-larder route in `Brain` picks the *nearest* store with food
+in it, and a general granary sitting closer than the pen made the pen
+invisible regardless of what was inside it. The fix is the one traps already
+have — the fullness-and-nearness "round" bonus — extended to pens
+(`isTrap(b.def) || isHerd(b.def)`). After the fix, the same scenario bred 37
+and culled 30, standing at capacity for zero days.
+
+`farmers`'s starting technologies gain `tracking`, `taming` and `herding`,
+per `m8_plan_the_ages.md`'s own description of that scenario as "a herd
+run" — without it, `herds-breed-and-are-culled` would report n/a for ever,
+the same trick `traps`, `craft` and `scribes` already use for their own
+tiers. New unit tests in `herding.test.ts`, mirroring `traps.test.ts`: a pen
+grows what it holds given a founding stock, never grows from nothing, keeps
+its stock (but stops growing) for a band that forgets the technology, caps
+at storage, refuses deposits, is worth a walk once stocked, and is founded
+with a stock only on completion.
+
+**Measured**, `sim:seeds -- --seeds 20`:
+
+- `century` (which never reaches `herding` — it sits behind `taming`, itself
+  rarely reached in this cohort): **bit-identical** to the previous commit,
+  99.7% survival, 856 born, 13.4 known, 11.7 past the root nodes, 712.3
+  taught, to every decimal. Confirms the mechanism's cost is confined to
+  worlds that actually reach it.
+- `farmers`, before this commit's changes (no `taming`/`herding` in its
+  starting technologies) against after: survival 100.0% → 99.6%, 407 → 394
+  born, technologies known 10.4 → 13.1 (three of that from the new starting
+  technologies themselves), conceived past the root nodes 7.0 → 8.3, taught
+  228.6 → 277.7. Starvation unchanged (1 infant, 5 adults, across a cohort of
+  ~400 person-runs either way). The small drops in survival and births are
+  well inside the noise this project's own ten-seed floor already documents.
+
+`sim:check:all`: `farmers` goes from 59 to 64 applicable checks, all
+passing — `herds-breed-and-are-culled` newly applicable and green, plus
+`animals-are-tamed` newly applicable now that `taming` is a starting
+technology. No other scenario's failures change: the same two
+already-catalogued knife-edges (`crowded`/`perf-budget`,
+`hunters`/`kills-are-butchered-for-bone`). All 360 unit tests (9 new),
+typecheck, and all 47 e2e specs pass.
+
+**Also added, in the same commit**: the Neolithic rung of `ERAS`, which was
+waiting on exactly these three technologies (`farming`, `herding`, `masonry`)
+and now has all of them. Cumulative on the Mesolithic's needs plus those
+three and `pottery`, at the same `heldBy: 0.3` the plan's table gives it —
+not raised for having four more technologies in the list, since a longer
+list at an unchanged fraction is already a harder bar. Not demonstrated
+reached by any scenario in this cohort — `century` still tops out at Middle
+Palaeolithic, the same as before this commit — but neither is the Mesolithic
+rung shipped ahead of it, and that was already accepted on the same
+argument: a rung is not declared-and-inert content merely for asking more of
+a world than the scenarios in the suite happen to produce; the same
+`eras-name-only-real-technologies` test that would refuse a rung naming an
+unreachable *technology* passed on every one of these four.
+
+**Five nodes remain**: `dairying`, `wool`, `brewing`, `well`, `kiln`. `wool`
+and `dairying` can now proceed — both depend on `herding`, now shipped —
+and `well`/`kiln` depend on `masonry`, already shipped.
+
 ## 2026-09-21 — M11 phase 10, second commit: five more widened-Neolithic nodes
 
 Five more of the eleven left after the first commit: `masonry`, `wattle_daub`,

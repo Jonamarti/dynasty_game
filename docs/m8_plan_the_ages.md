@@ -141,12 +141,13 @@ this one is left open and does not block M8.1.
 > alone, because without it a band that has carried fire for three generations
 > still reads as Lower Palaeolithic and the one rung a short run reliably climbs
 > would not exist; and `netting` in the Mesolithic where the table says
-> `preserving`, which is the M8.1 node held back with spoilage. **The rungs from
-> the Neolithic down this table are not in the code**, because their `needs`
-> name technologies nobody can learn yet, and a rung no world can reach is
-> declared content that does nothing. **Adding the Neolithic rung is part of
-> M8.2**, in the same commit as the field — and `eras-name-only-real-
-> technologies` fails on the spot if it arrives early.
+> `preserving`, which is the M8.1 node held back with spoilage. **The Neolithic
+> rung shipped 2026-09-21**, in M11 phase 10's third commit, the one that
+> finally gave it all three of `farming`, `herding` and `masonry` — held back
+> until then because a rung whose `needs` name a technology nobody can learn is
+> declared content that does nothing, which `eras-name-only-real-technologies`
+> exists to catch. The rungs above it are still not in the code, for the same
+> reason.
 >
 > The `age` and `firstKnown` axes below also shipped in that pass, on all
 > thirty-two existing nodes. **Every node this document adds needs both**, and
@@ -298,7 +299,7 @@ Seventeen nodes. The pass where a band stops moving to the food.
 | `sickle` | plants | farming, hafting | reaping speed. **Shipped 2026-09-21** (M11 phase 10), via a `Tech.reapFactor` term on `REAP_TICKS` |
 | `bread` | fire | grinding, farming, firemaking | an `oven` station; `bread`, high nutrition and long keeping. **Shipped 2026-09-21** (M11 phase 10) |
 | `brewing` | fire | pottery, farming | `beer`: relieves `company`, raises opinion at a feast. Neolithic, and social |
-| `herding` | beasts | taming | a `pen` building and penned livestock that breed. Renewable meat |
+| `herding` | beasts | taming | a `pen` building and penned livestock that breed. Renewable meat. **Shipped 2026-09-21** (M11 phase 10, third commit) — the one node in this tier needing a real mechanism, reusing `Building.store`/`doTake` rather than a new verb, with growth proportional to what a pen already holds. Also closes the Neolithic rung of `ERAS`, its last dependency |
 | `dairying` | beasts | herding, pottery | `milk`, and `cheese` once `preserving` is known |
 | `wool` | cloth | herding, spinning | warmer cloth than flax |
 | `wattle_daub` | timber | carpentry, cordage | a cheaper, warmer hut than the mud hut. **Shipped 2026-09-21** (M11 phase 10), as `wattle_hut` — no wood in its materials at all, which is the honest version of "cheaper" |

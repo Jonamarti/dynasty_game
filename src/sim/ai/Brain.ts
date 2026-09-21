@@ -26,7 +26,7 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
-import { isTrap, isHeap } from '../entities/Building.ts';
+import { isTrap, isHeap, isHerd } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Household } from '../entities/Household.ts';
@@ -1437,10 +1437,11 @@ export class Brain {
 
         // A trap is somewhere food comes *from*. Filling one with berries would
         // be a person carefully stopping their own snare line from catching
-        // anything, because a full trap stops accruing.
+        // anything, because a full trap stops accruing. A pen is the same
+        // argument — see `BuildingDef.herd`.
         const store = this.pickBest(
           stores.filter(b => b.storageFree > 0 && this.canUse(person, b, ctx) &&
-            !isTrap(b.def)),
+            !isTrap(b.def) && !isHerd(b.def)),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY }) +
             (home !== null && b.id === home ? person.traits.greed * HOARD_PULL : 0)
         );
@@ -1504,12 +1505,21 @@ export class Brain {
       //    treeline. A full trap has also stopped catching, so the food that is
       //    in it is costing more food.
       //
+      //    A pen gets the same route, for the same reason, measured the same
+      //    way: `farmers` bred 27 meat into a pen and culled none of it before
+      //    this, sitting at capacity for 43 of the run's days, because the
+      //    ordinary hungry-larder route below picks the *nearest* store with
+      //    food in it and a general granary sitting closer than the pen made
+      //    the pen invisible regardless of what was in it — exactly the trap
+      //    failure, one building along.
+      //
       //    Behind the same comfort gate as storing, and it is the same idea: a
-      //    round of the traps is a fair-weather job, and somebody who is cold,
-      //    parched or exhausted has better things to do than walk the treeline.
+      //    round of the traps and pens is a fair-weather job, and somebody who
+      //    is cold, parched or exhausted has better things to do than walk out
+      //    to the treeline or the fence.
       if (comfortNow > 0.4) {
         const round = this.pickBest(
-          stores.filter(b => isTrap(b.def) && this.canUse(person, b, ctx) &&
+          stores.filter(b => (isTrap(b.def) || isHerd(b.def)) && this.canUse(person, b, ctx) &&
             b.store.bestFood() !== null && this.stocked(b) >= TRAP_WORTH_A_ROUND),
           b => this.stocked(b) * nearness(b)
         );

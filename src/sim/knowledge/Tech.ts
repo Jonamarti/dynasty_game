@@ -108,6 +108,10 @@ export const TECHS = [
   // already is; `the_wheel` is a fourth term on `carryFactor`, beside cordage
   // and the basket; `bread` is mechanism 4's fourth station. Six remain.
   'masonry', 'wattle_daub', 'calendar', 'the_wheel', 'bread',
+  // M11 phase 10, third commit: the one node in this tier that needed a real
+  // mechanism rather than a numeric term — see `BuildingDef.herd`. `wool` and
+  // `dairying` both depend on it and are still to come.
+  'herding',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1361,6 +1365,30 @@ export const TECH: Record<Tech, TechDef> = {
       'Meal wetted, worked and baked at the fire. More nourishing than the ' +
       'meal it is made from, and it keeps just as well.',
   },
+
+  // --- M11 phase 10, third commit: the one node in this tier with a real
+  // mechanism behind it. See `BuildingDef.herd` and `Simulation.workHerds`.
+  herding: {
+    id: 'herding', label: 'Herding', domain: 'beasts',
+    age: 'neolithic', firstKnown: 'about 8,500 BC',
+    kind: 'device',
+    requires: ['taming'], difficulty: 0.5, skill: 'track',
+    prototype: { sticks: 4, thatch: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'doing', action: 'tame' }],
+        weight: 1.0, story: 'kept the same doe coming back to camp until keeping her felt no different from feeding her' },
+      { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'holding', item: 'meat' },
+                { kind: 'feeling', need: 'hunger' }],
+        weight: 0.6, story: 'ate the last of a hunt and wondered why the next one had to start from nothing' },
+      { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'doing', action: 'forage' },
+                { kind: 'place', biome: 'grass' }],
+        weight: 0.5, story: 'watched a tamed animal graze without wandering off and thought of a fence around the idea' },
+    ],
+    description:
+      'A tamed animal, kept rather than followed, and a fence to keep the next ' +
+      'one from wandering. Meat that does not have to be found again, up to ' +
+      'the day it is culled faster than it breeds.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1564,6 +1592,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   bread: {
     summary: 'Meal baked into bread: more nourishing than the meal it is made from, and it keeps as well.',
     site: 'BUILDINGS.oven and RECIPES.bread',
+  },
+  herding: {
+    summary: 'A fenced herd: meat that breeds on its own, culled instead of hunted.',
+    site: 'BUILDINGS.pen, via BuildingDef.herd; Simulation.workHerds',
   },
 };
 
@@ -1842,16 +1874,17 @@ export function warmthFrom(person: Person): number {
  * The rungs are now the same vocabulary as `TechDef.age`, so the period the HUD
  * names and the ring the tech web draws a node on are the same word.
  *
- * ## The ladder stops at the Mesolithic, and that is not an oversight
+ * ## The Neolithic rung, and why it waited
  *
- * The Neolithic and everything above it are planned in
- * `docs/m8_plan_the_ages.md` and need `farming`, `herding` and `masonry`, none
- * of which exist yet. A rung whose `needs` name a technology nobody can learn
- * is a rung no world can ever reach — declared content that does nothing, which
- * is the defect this project checks for in `techs-have-effects` — so the
- * Neolithic arrives in M8.2, in the commit that makes a field something you can
- * sow. `eras-name-only-real-technologies` fails the moment somebody adds one
- * early.
+ * A rung whose `needs` name a technology nobody can learn is a rung no world
+ * can ever reach — declared content that does nothing, which is the defect
+ * this project checks for in `techs-have-effects` — so the Neolithic rung
+ * waited for `farming`, `herding` and `masonry`, the last of which landed in
+ * M11 phase 10's third commit. `eras-name-only-real-technologies` is what
+ * would have caught it arriving early.
+ *
+ * Everything above the Neolithic is still planned rather than built — see
+ * `docs/m8_plan_the_ages.md` — and stays off this ladder for the same reason.
  *
  * ## Two deliberate departures from the table in the plan
  *
@@ -1901,6 +1934,24 @@ const ERA_LADDER: Omit<EraDef, 'label'>[] = [
     description:
       'The bow, the net and the snare — food you go and take rather than food ' +
       'you find.',
+  },
+  {
+    id: 'neolithic',
+    needs: [
+      'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
+      'farming', 'herding', 'pottery', 'masonry',
+    ],
+    // The same 0.3 as the Mesolithic, per the plan's own table — not raised
+    // for having four more technologies in the list. `heldBy` asks what
+    // fraction of adults hold *every* listed technology, so a longer list is
+    // already harder to satisfy at an unchanged fraction; compounding that
+    // with a higher bar as well would make the Neolithic much harder to enter
+    // than the rung below it for reasons that have nothing to do with how
+    // widely spread the knowledge needs to be.
+    heldBy: 0.3,
+    description:
+      'Seed saved from one year to sow the next, and a herd that comes back ' +
+      'on its own legs. The band stops moving to the food.',
   },
 ];
 

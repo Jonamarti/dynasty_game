@@ -20,7 +20,7 @@ import type { Person } from '../entities/Person.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import {
-  BUILDINGS, isTrap, isStation, isField, isHeap, type Building, type BuildingDef,
+  BUILDINGS, isTrap, isStation, isField, isHeap, isHerd, type Building, type BuildingDef,
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -148,6 +148,14 @@ const TRAPS_PER_BAND = 3;
  * out, not the ground.
  */
 const FIELDS_PER_BAND = 2;
+
+/**
+ * Pens one band will raise. One, deliberately, unlike traps and fields: a pen
+ * is a single herd that grows on its own, and a second pen is a second herd to
+ * split a fixed grazing pressure between rather than a second helping of food
+ * — the plan's table gives herding one building, not a line of them.
+ */
+const PENS_PER_BAND = 1;
 
 /** Days between a band considering new construction. */
 const PLANNING_INTERVAL = 3;
@@ -588,7 +596,7 @@ export class BandSystem {
     // thing.
     const built = live.filter(b =>
       b.complete && !isTrap(b.def) && !isStation(b.def) && !isField(b.def) &&
-      !isHeap(b.def)).length;
+      !isHeap(b.def) && !isHerd(b.def)).length;
     if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
 
     // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
@@ -763,6 +771,20 @@ export class BandSystem {
         // draw in it — the planner runs inside the daily pass and a tie broken
         // by an `RNG` here would shift every draw in the world.
         wanted = this.bestBy(settable, def => def.yields?.perDay ?? 0)?.id ?? null;
+      }
+    }
+
+    // --- A pen, the seventh thing a band can want ---------------------------
+    //
+    // Behind traps, on the same argument the trap branch already makes: a pen
+    // is surplus, not survival. One at most (`PENS_PER_BAND`), because unlike
+    // a trap a pen is a single herd that grows on its own — a second pen
+    // splits one grazing pressure into two rather than adding a second supply.
+    if (!wanted && underway === 0 && stores.length > 0) {
+      const pens = live.filter(b => isHerd(b.def));
+      if (pens.length < PENS_PER_BAND) {
+        wanted = buildable.find(def => isHerd(def) &&
+          !pens.some(existing => existing.def.id === def.id && !existing.complete))?.id ?? null;
       }
     }
     if (!wanted) return;

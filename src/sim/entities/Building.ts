@@ -113,6 +113,24 @@ export interface BuildingDef {
    * nothing.
    */
   preserves?: number;
+  /**
+   * A pen: what it holds, how much it starts with, and how fast it breeds —
+   * M11 phase 10.
+   *
+   * Deliberately reuses `store` and `doTake` rather than inventing a verb. A
+   * pen is, mechanically, a larder that fills itself — proportionally to what
+   * is already in it, which is what makes it breeding rather than a slower
+   * trap: `Simulation.workHerds` grows `store.count(item)` by a fraction of
+   * itself each day, so a pen culled down to nothing stays at nothing for
+   * ever, and a pen left alone grows toward `storage`. `seed` is what a
+   * newly-finished pen is stocked with, since growth from zero is zero
+   * whatever the fraction — a pen with nothing in it is not founding a herd,
+   * it is an empty pen.
+   *
+   * Excluded from `doStore` and from `Brain`'s deposit branch on the same
+   * argument `isTrap` already makes: this is somewhere food comes *from*.
+   */
+  herd?: { item: string; seed: number; growthPerDay: number };
   description: string;
 }
 
@@ -151,6 +169,11 @@ export function isField(def: BuildingDef): boolean {
 /** True if a design ripens its contents rather than catching anything. */
 export function isHeap(def: BuildingDef): boolean {
   return def.matures !== undefined;
+}
+
+/** True if a design is a pen: a larder that breeds what it holds. See `herd`. */
+export function isHerd(def: BuildingDef): boolean {
+  return def.herd !== undefined;
 }
 
 export const BUILDINGS: Record<string, BuildingDef> = {
@@ -299,6 +322,29 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     description:
       'A woven funnel staked in the shallows. The shore keeps working through ' +
       'the night, and through the winter.',
+  },
+
+  // --- M11 phase 10: herding, a larder that breeds what it holds -------------
+  //
+  // A pen reuses `store` and `doTake` wholesale rather than a new verb: see the
+  // header comment on `BuildingDef.herd`. 2x2 for the same containment reason
+  // every trap gives.
+  pen: {
+    id: 'pen',
+    label: 'Pen',
+    icon: '\u{1F411}',
+    width: 2, height: 2,
+    materials: { sticks: 8, thatch: 4 },
+    workTicks: 160,
+    shelter: 0,
+    storage: 30,
+    // Three animals to start, growing at 6% of the current stock a day at full
+    // knowledge — slow at first, and it compounds. See `Simulation.workHerds`.
+    herd: { item: 'meat', seed: 3, growthPerDay: 0.06 },
+    requiresTech: 'herding',
+    description:
+      'A fenced yard, kept for meat that does not have to be hunted. Culled ' +
+      'faster than it breeds, it is empty for good; left alone, it grows.',
   },
 
   // --- M8.1, mechanism 4: the first crafting station -------------------------

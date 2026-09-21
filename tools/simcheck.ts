@@ -17,7 +17,7 @@ import { telemetry } from '../src/sim/core/Telemetry.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
-import { isTrap, isHeap } from '../src/sim/entities/Building.ts';
+import { isTrap, isHeap, isHerd } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
@@ -310,7 +310,11 @@ export const SCENARIOS: Record<string, Scenario> = {
       'thing in this game that takes most of a season to do anything at all: ' +
       'a run that ends before the first crop is in ear says nothing about ' +
       'whether farming works, and a run that ends before the third harvest ' +
-      'says nothing about whether the ground wears out.',
+      'says nothing about whether the ground wears out. Since M11 phase 10 ' +
+      'it also carries `taming` and `herding`, per `m8_plan_the_ages.md`\'s ' +
+      'own description of this scenario as "a herd run" — a long run is what ' +
+      'a herd needs too, since breeding is proportional growth from a small ' +
+      'founding stock and it takes real time to reach anything worth culling.',
     config: {
       seed: 'furrow',
       population: {
@@ -318,8 +322,12 @@ export const SCENARIOS: Record<string, Scenario> = {
         // `grinding` as well as `farming`, and not for the prerequisite: the
         // quern is what makes a harvest worth three times what it weighs, and a
         // band that farms without one is a band eating the poorest food in the
-        // game on purpose.
-        startingTech: ['farming', 'plant_lore', 'grinding', 'division_of_labour'],
+        // game on purpose. `tracking` and `taming` are `herding`'s own
+        // prerequisites, named for the same reason.
+        startingTech: [
+          'farming', 'plant_lore', 'grinding', 'division_of_labour',
+          'tracking', 'taming', 'herding',
+        ],
       },
     },
     steps: 24000,
@@ -2108,6 +2116,23 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         ' collected, ' + ((tel.trap_full_snare ?? 0) + (tel.trap_full_fish_trap ?? 0)) +
         ' days spent full, ' + (tel.trap_unworked_snare ?? 0) +
         ' days nobody could work one');
+  }
+
+  // M11 phase 10. A pen has two ways to be inert that a trap does not: nobody
+  // ever builds one, or one stands full for ever because breeding is not the
+  // same claim as catching and this project has shipped that exact failure
+  // once already, as fifty trap-days of standing full. `herd_bred` is the
+  // first half and `herd_culled` is the second.
+  const pensBuilt = sim.buildings.filter(b => b.complete && isHerd(b.def));
+  if (pensBuilt.length === 0 && (tel.band_planned_pen ?? 0) === 0) {
+    skip('herds-breed-and-are-culled', 'nobody in this world knows how to keep a pen');
+  } else {
+    add('herds-breed-and-are-culled',
+      (tel.herd_bred ?? 0) > 0 && (tel.herd_culled ?? 0) > 0,
+      (tel.band_planned_pen ?? 0) + ' planned, ' + pensBuilt.length + ' standing; ' +
+        (tel.herd_bred ?? 0) + ' bred, ' + (tel.herd_culled ?? 0) + ' culled, ' +
+        (tel.herd_at_capacity ?? 0) + ' days at capacity, ' +
+        (tel.herd_unworked ?? 0) + ' days nobody could keep one');
   }
 
   // There is deliberately no `traps-are-emptied` check here, and the reason is

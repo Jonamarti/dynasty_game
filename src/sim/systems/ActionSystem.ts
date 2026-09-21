@@ -17,7 +17,7 @@ import { Arrival, type MovementSystem } from './MovementSystem.ts';
 import { companionBonus } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
-import { isTrap, isHeap, type Building } from '../entities/Building.ts';
+import { isTrap, isHeap, isHerd, type Building } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import type { Tree } from '../entities/Tree.ts';
@@ -1122,6 +1122,10 @@ export class ActionSystem {
       // a question about whether a gated design is reachable, and an aggregate
       // cannot answer it.
       telemetry.count('completed_' + site.def.id);
+      // A pen stocked with nothing is not a founded herd, it is an empty pen —
+      // and growth in `Simulation.workHerds` is proportional to what is
+      // already there, so it would stay empty for ever without this.
+      if (site.def.herd) site.store.add(site.def.herd.item, site.def.herd.seed);
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
@@ -1137,10 +1141,11 @@ export class ActionSystem {
     if (!store) return;
 
     // A trap is a place food comes from, not a place to put it: filling one
-    // stops it catching, since a full trap accrues nothing. The player can
+    // stops it catching, since a full trap accrues nothing. A pen is the same
+    // refusal for the same reason — see `BuildingDef.herd`. The player can
     // still order it, and gets told why it did not happen — which is the whole
     // reason this refuses out loud rather than quietly dropping the order.
-    if (!store.complete || store.def.storage === 0 || isTrap(store.def)) {
+    if (!store.complete || store.def.storage === 0 || isTrap(store.def) || isHerd(store.def)) {
       this.abandon(person, 'not_a_store', ctx);
       return;
     }
@@ -1211,6 +1216,10 @@ export class ActionSystem {
     // signal that the other half of the mechanism — somebody walking out to it —
     // is actually happening.
     if (isTrap(store.def)) telemetry.count('trap_emptied', taken);
+    // The same signal, for the same reason, on a pen: `herd_bred` says a herd
+    // is growing, and this is the only way to tell whether anybody is actually
+    // culling it rather than letting it sit at capacity for ever.
+    if (isHerd(store.def)) telemetry.count('herd_culled', taken);
     this.finish(person);
   }
 

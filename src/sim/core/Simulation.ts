@@ -35,7 +35,7 @@ import { BandRelations } from '../social/BandRelations.ts';
 import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
 import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType } from '../social/Events.ts';
 import {
-  Building, BUILDINGS, isTrap, resetBuildingIds, type BuildingDef,
+  Building, BUILDINGS, isTrap, isHerd, resetBuildingIds, type BuildingDef,
 } from '../entities/Building.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
@@ -2377,6 +2377,56 @@ export class Simulation {
   }
 
   /**
+   * A day of grazing, in every pen somebody still knows how to keep — M11
+   * phase 10. The same shape as `workTraps`, deliberately, with one real
+   * difference: growth is proportional to what a pen already holds rather
+   * than a flat rate, which is what makes this breeding rather than a slower
+   * trap. A pen culled down to nothing grows nothing the next day either,
+   * because `stock * rate` is zero at zero — over-culling a herd to
+   * extinction is a real, permanent failure state here, the same honesty
+   * `workTraps` already applies to a snare line whose setter died.
+   */
+  private workHerds(): void {
+    const grasp = new Map<string, number>();
+    for (const person of this.people) {
+      if (!person.alive) continue;
+      for (const def of Object.values(BUILDINGS)) {
+        if (!isHerd(def) || def.requiresTech === null) continue;
+        const key = person.bandId + ':' + def.id;
+        const power = techPower(person, def.requiresTech as Tech);
+        if (power > (grasp.get(key) ?? 0)) grasp.set(key, power);
+      }
+    }
+
+    for (const building of this.buildings) {
+      const herd = building.def.herd;
+      if (!herd || !building.complete) continue;
+
+      const power = grasp.get(building.ownerBandId + ':' + building.def.id) ?? 0;
+      if (power <= 0) {
+        // Nobody left who knows how to keep it. Unlike a trap's part-caught
+        // hare, nothing here is lost by forgetting the carry — the herd
+        // itself is still in the pen, and simply stops growing.
+        telemetry.count('herd_unworked');
+        continue;
+      }
+      if (building.storageFree <= 0) {
+        telemetry.count('herd_at_capacity');
+        continue;
+      }
+
+      const stock = building.store.count(herd.item);
+      const accrued = accrueUnits(building.yieldCarry, stock * herd.growthPerDay * power);
+      building.yieldCarry = accrued.carry;
+      if (accrued.units <= 0) continue;
+
+      const grown = Math.min(accrued.units, building.storageFree);
+      building.store.add(herd.item, grown);
+      telemetry.count('herd_bred', grown);
+    }
+  }
+
+  /**
    * What one trap catches a day as things stand, and why, for the HUD.
    *
    * The panel could compute this itself, but then the number the player reads
@@ -2606,6 +2656,7 @@ export class Simulation {
       this.workTraps();
       this.growCrops();
       this.workHeaps();
+      this.workHerds();
 
       this.lifeSystem.daily(this.people, {
         rng: this.lifeRng,
