@@ -133,11 +133,12 @@ export type Domain = (typeof DOMAINS)[number];
  *
  * Neither of them is `requires`, which is the only thing that actually gates a
  * discovery. `writing` sits in the Bronze Age because that is when writing
- * happened, while it rests on nothing but `marking` and `stoneworking` — so a
- * lucky band can work it out in the Mesolithic, and that anachronism is the
- * player's to earn. Do not "fix" it by gating on the age; the same distinction
- * the project already draws between `requires` and `sparks` is being drawn
- * again here.
+ * happened, while it rests on `marking`, `stoneworking` and, since M11 phase
+ * 9c, `farming` — all three Neolithic or older — so a lucky band can work it
+ * out as early as the Neolithic, and that anachronism is the player's to
+ * earn. Do not "fix" it by gating on the age; the same distinction the
+ * project already draws between `requires` and `sparks` is being drawn again
+ * here.
  *
  * All eight periods are listed even though the table stops in the Neolithic,
  * because the list is a historical fact rather than a content manifest — but
@@ -539,7 +540,15 @@ export const TECH: Record<Tech, TechDef> = {
     id: 'writing', label: 'Writing', domain: 'stone',
     age: 'bronze', firstKnown: 'about 3200 BC',
     kind: 'device',
-    requires: ['marking', 'stoneworking'], difficulty: 0.75, skill: 'knap',
+    // M11 phase 9c adds `farming` to what used to be just `marking` and
+    // `stoneworking`. The historical case for script is that it arrives
+    // behind a surplus — a tally is not the same pressure as an account that
+    // has to outlast a harvest and a season of trade — and the mechanical
+    // case is 9a: with `ochre` nerfed to a spark rather than a transcript,
+    // `writing` sitting one step from the game's root nodes made it the
+    // dominant record channel by default, exactly backwards from what a
+    // painted-first, written-later oral tree is supposed to look like.
+    requires: ['marking', 'stoneworking', 'farming'], difficulty: 0.75, skill: 'knap',
     prototype: { flint: 2 }, maxRefinement: 2,
     sparks: [
       { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'doing', action: 'teach' }],
@@ -550,6 +559,13 @@ export const TECH: Record<Tech, TechDef> = {
       { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'saw', what: 'teach' },
                 { kind: 'season', season: 'winter' }],
         weight: 0.5, story: 'watched what an old woman knew go into the ground with her' },
+      // The route the new prerequisite is actually about: a tally answers
+      // "how many", and a harvest large enough to outlast anybody's memory of
+      // it needs something a tally cannot give — whose it was, when it was
+      // taken in, what was owed against it.
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'holding', item: 'grain' },
+                { kind: 'doing', action: 'store' }],
+        weight: 0.8, story: 'kept account of a harvest too large for anybody to just remember' },
     ],
     description: 'Marks that say more than how many. What one person knew, a stone can hold.',
   },

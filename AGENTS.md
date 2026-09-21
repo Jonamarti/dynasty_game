@@ -141,8 +141,8 @@ npm run sim:check -- --scenario craft     # the only run in which anything is
 npm run sim:check -- --scenario scribes   # the only run in which anything is
                                           # written down. Same trick, for the
                                           # same reason: writing sits behind
-                                          # marking and stoneworking and no run
-                                          # reaches it from nothing
+                                          # marking, stoneworking and farming,
+                                          # and no run reaches it from nothing
 npm run sim:seeds                         # the same scenario across 10 seeds:
                                           # mean survival, collapses, who starved
 npm run why -- --person 0 --from 1700 --to 1760   # one person's score table,

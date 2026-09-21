@@ -258,9 +258,10 @@ describe('when each thing was really worked out', () => {
   it('is history rather than a second gate', () => {
     // The anachronism is the point, and this test is here so that nobody
     // "fixes" it: writing is a Bronze Age technology resting on two
-    // Palaeolithic ones, so a lucky band can have it long before the Bronze
-    // Age. If this ever fails because somebody made `age` a prerequisite
-    // check, that is the regression, not this expectation.
+    // Palaeolithic ones and, since M11 phase 9c, one Neolithic one
+    // (`farming`), so a lucky band can have it long before the Bronze Age.
+    // If this ever fails because somebody made `age` a prerequisite check,
+    // that is the regression, not this expectation.
     expect(TECH.writing.age).toBe('bronze');
     for (const required of TECH.writing.requires) {
       expect(ageIndex(TECH[required].age)).toBeLessThan(ageIndex('bronze'));

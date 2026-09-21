@@ -6,6 +6,57 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 9c: writing goes behind the surplus
+
+`writing.requires` gains `farming`, alongside the `marking` and `stoneworking`
+it already had. The historical case: script is what a surplus needs that a
+tally does not — an account that has to outlast a harvest and a season of
+trade, not just say how many. The mechanical case is 9a's own: with `ochre`
+nerfed from a transcript to a spark, `writing` sitting one step off the
+game's root nodes made it the dominant record channel by default, exactly
+backwards from the painted-first, written-later tree the milestone is
+building toward. A fourth spark route grounds the new prerequisite in the
+same story — `knows: farming, holding: grain, doing: store` — rather than
+leaving all three routes talk about marking alone.
+
+Two things that had to move in the same commit, per this project's own rule
+against a comment asserting what has not been confirmed:
+
+- **The `tech.test.ts` comment calling `writing` "a Bronze Age technology
+  resting on two Palaeolithic ones"** is now false — it rests on two
+  Palaeolithic prerequisites and one Neolithic one — and is rewritten. The
+  test's assertion itself needed no change: it loops `TECH.writing.requires`
+  generically.
+- **The `scribes` scenario broke in silence.** Its founders received
+  `writing` with an unmet prerequisite, and `teach`, `tryObserve` and
+  `doRead` all filter on `requires`, so the one scenario that exists to
+  exercise reading and writing could do neither. `startingTech` gains
+  `plant_lore`, `grinding` and `farming` — `farming` has to be held
+  directly, not merely reachable, because `prerequisitesMet` asks what a
+  person *knows*.
+
+**Measured, and deliberately not yet fixed**: `records-are-cut` on `scribes`
+still reports **zero reads** after this commit (`16 things cut... 8
+technologies are written down somewhere, 0 read back off a record`) — the
+re-gating did not cause that and cannot fix it either, since every adult in
+both bands starts knowing the identical set and there is nothing on any
+stone that anybody lacks. That is the next commit, deliberately kept
+separate so this one measures only what it changed. `sim:check:all`:
+`scribes` clean at 54/54 (up from 51/51 — `sparks-are-various` now correctly
+skips it, at eight handed-out technologies past `TREE_GIVEN_AWAY`, the same
+way it already skips `traps`), `century` clean at 60/60, the same two
+pre-existing knife's-edges (`crowded`/`perf-budget`,
+`hunters`/`kills-are-butchered-for-bone`) carried over from before this
+phase and unrelated to it. 10-seed `century` cohort: 99.7% survival, 447
+born, 12.6 technologies known at the end — unchanged from phase 9b's own
+cohort, because nothing in a 40-year run with no starting literacy was
+reaching `writing` either before or after this change. All 344 unit tests
+and typecheck clean.
+
+**Next**: the separate commit — asymmetric starting knowledge between
+`scribes`'s two bands — that actually makes `records-are-cut` measure a
+read.
+
 ## 2026-09-21 — M11 phase 9b: the oral channel gets three things of its own
 
 Three additions, all aimed at the same complaint 9a's own header names: nerfing

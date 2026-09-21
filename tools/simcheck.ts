@@ -101,19 +101,31 @@ export const SCENARIOS: Record<string, Scenario> = {
     name: 'scribes',
     description:
       'A band that can already write. The only run in which anything is cut ' +
-      'into stone or read off it: writing sits behind marking and ' +
-      'stoneworking, which no run in the suite reaches from nothing, so ' +
-      'without this every check about records would report n/a for ever.',
+      'into stone or read off it: writing sits behind marking, ' +
+      'stoneworking and, since M11 phase 9c, farming, none of which any run ' +
+      'in the suite reaches from nothing, so without this every check about ' +
+      'records would report n/a for ever.',
     config: {
       seed: 'scribes',
       population: {
         bands: 2, peoplePerBand: 12,
-        startingTech: ['cordage', 'hafting', 'stoneworking', 'marking', 'writing'],
+        // `plant_lore` and `grinding` are `farming`'s own prerequisites —
+        // `farming` itself has to be held directly, not merely reachable,
+        // because `prerequisitesMet` asks what a person *knows*, not what
+        // they could work out. Added in the same commit as `writing.requires`
+        // gaining `farming`: without it this scenario's founders hold a
+        // technology with an unmet prerequisite, and `teach`, `tryObserve`
+        // and `doRead` all filter on `requires`, so writing could be neither
+        // taught nor read in the one scenario that exists to exercise either.
+        startingTech: [
+          'cordage', 'hafting', 'stoneworking', 'marking',
+          'plant_lore', 'grinding', 'farming', 'writing',
+        ],
       },
     },
     // Long enough for somebody to work something *new* out, cut it, and for
     // somebody else to walk over and read it. A shorter run has every literate
-    // adult holding the same five technologies, so there is nothing on any
+    // adult holding the same eight technologies, so there is nothing on any
     // stone that anybody lacks and the reading half never fires at all.
     steps: 14000,
   },
@@ -1386,8 +1398,11 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // both traps exist at all, and what is conceived after that is decided by the
   // scenario rather than by the web: it read "3 routes into 1 technologies" and
   // failed, which is the check being asked a question this world cannot answer
-  // rather than the web having collapsed to one path. `craft` (four) and
-  // `scribes` (five) sit below the line and still answer it honestly.
+  // rather than the web having collapsed to one path. `craft` (four) sits below
+  // the line and still answers it honestly. `scribes` used to as well, at five,
+  // until M11 phase 9c's `writing.requires` change pushed its `startingTech` to
+  // eight to stay literate at all — it is now skipped here for the same reason
+  // `traps` is, which is the threshold doing its job rather than a loss.
   const handedOut = sim.config.population.startingTech?.length ?? 0;
   const TREE_GIVEN_AWAY = 6;
 
