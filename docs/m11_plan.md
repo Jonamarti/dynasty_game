@@ -622,9 +622,25 @@ trampas. `farmers` gana `taming`+`herding` en su tecnología inicial para
 ejercitarlo (100.0%→99.6% supervivencia, dentro del ruido documentado). En
 el mismo commit, el peldaño Neolítico de `ERAS`, que esperaba exactamente
 estas tres tecnologías (`farming`, `herding`, `masonry`) y ya las tiene
-todas. **Cinco nodos quedan**: `dairying`, `wool`, `brewing`, `well`,
-`kiln`. `wool`/`dairying` dependen de `herding`, ya enviado; `well`/`kiln`
-dependen de `masonry`, ya enviado. Ver `changelog.md`.
+todas.
+
+**Cuarto commit HECHO 2026-09-21**: `kiln`, la quinta estación del mecanismo
+4. **Encontrado diseñando, no midiendo**: una segunda receta de `pottery` al
+mismo coste que `RECIPES.pot` nunca habría podido ganarle, porque el scorer
+de `Brain` no tiene término para "más barato" ni "más rápido" — sólo
+`forSite`/`forSelf`, habilidad y cercanía — y una receta con estación nunca
+tiene más cercanía que una sin ella. `groats` parecía el precedente y no lo
+es: `groats` y `meal` nunca compiten porque uno pide bellotas y el otro
+grano. Arreglado con una diferencia real en los ingredientes en vez de en la
+puntuación: `kiln_pot` gasta un barro donde `pot` gasta dos. **Verificado
+con un script desechable antes de enviarlo** (no forma parte del repo):
+`crafted_kiln_pot: 5` contra `crafted_pot: 80` en 20.000 ticks — real,
+modesto, y no cero. `century` sale bit-idéntico, igual que cada nodo desde
+`ground_stone`: `kiln` pide `pottery` y `masonry` juntos en la misma
+persona, una combinación que este cohorte no alcanza.
+
+**Cuatro nodos quedan**: `dairying`, `wool`, `brewing`, `well`.
+`wool`/`dairying` dependen de `herding`, ya enviado. Ver `changelog.md`.
 
 **Densidad tipo Evolve.** La regla de "nada inerte" (`TECH_EFFECTS` +
 `tech.test.ts`) **no se toca** — es lo que ha mantenido sano este árbol. Lo que se

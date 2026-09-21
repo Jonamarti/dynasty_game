@@ -334,6 +334,40 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { pottery: 1 },
     keep: 0,
   },
+  // `kiln`, mechanism 4's fifth station, and a second recipe for an output
+  // `pot` already makes — the same shape `groats` already sets beside `meal`,
+  // with one difference worth stating because it very nearly went wrong: the
+  // two `meal` recipes never compete, because one wants acorns and the other
+  // wants grain and `Brain` only ever holds one at a time. `pot` and
+  // `kiln_pot` would have wanted the *same* mud and sticks, and `Brain`'s
+  // craft scorer has no term for "cheaper" or "faster" at all — only
+  // `forSite`/`forSelf`, skill, and `nearness`, and `nearness` is 1 for a
+  // stationless recipe and never more than that for a station one. A
+  // same-cost `kiln_pot` could therefore never outscore plain `pot` and would
+  // have been declared, gated, correctly wired to a real building, and
+  // unreachable in play — the exact defect `TECH_EFFECTS` exists to catch,
+  // wearing a coat static tests cannot see through. The real difference is in
+  // the ingredients instead: less mud, because an even, held heat wastes less
+  // clay than firing in embers does. That gives it a genuine niche `Brain`
+  // does not have to be taught about — a band short of mud can still make
+  // pottery once it has a kiln — rather than a numeric edge the scorer would
+  // never read.
+  //
+  // Deliberately **not** a `station: 'kiln'` retrofit onto `pot` itself
+  // either: that would make the granary unbuildable again without a kiln,
+  // which is the trap `Recipe.ts`'s own header already warns against.
+  kiln_pot: {
+    id: 'kiln_pot',
+    label: 'Fired pot',
+    icon: '\u{1F3FA}',
+    tech: 'kiln',
+    skill: 'build',
+    workTicks: 100,
+    ingredients: { mud: 1, sticks: 1 },
+    output: { pottery: 1 },
+    station: 'kiln',
+    keep: 0,
+  },
 
   // --- M11 phase 10, the widened Neolithic: see m8_plan_the_ages.md ----------
   //

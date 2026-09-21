@@ -481,6 +481,23 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       'A domed firing chamber, walled in mud. Meal wetted, worked and baked ' +
       'goes further and keeps longer than the meal it was made from.',
   },
+  // `kiln`, mechanism 4's fifth station. See `RECIPES.kiln_pot` for why it is
+  // a second recipe rather than a retrofit onto `pot`.
+  kiln: {
+    id: 'kiln',
+    label: 'Kiln',
+    icon: '\u{1F525}',
+    width: 3, height: 3,
+    materials: { flint: 8, mud: 6 },
+    workTicks: 240,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'kiln',
+    description:
+      'A stone firing chamber that holds a heat no open hearth can. Pottery ' +
+      'fired here wastes less clay than pottery fired in embers.',
+  },
 
   // --- Gated behind knowledge that does not exist yet (M4) -----------------
   granary: {

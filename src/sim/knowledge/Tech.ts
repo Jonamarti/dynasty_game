@@ -112,6 +112,10 @@ export const TECHS = [
   // mechanism rather than a numeric term — see `BuildingDef.herd`. `wool` and
   // `dairying` both depend on it and are still to come.
   'herding',
+  // M11 phase 10, fourth commit: mechanism 4's fifth station. See
+  // `RECIPES.kiln_pot` for why its effect is a second recipe rather than a
+  // retrofit onto `pot`.
+  'kiln',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1389,6 +1393,29 @@ export const TECH: Record<Tech, TechDef> = {
       'one from wandering. Meat that does not have to be found again, up to ' +
       'the day it is culled faster than it breeds.',
   },
+
+  // M11 phase 10, fourth commit.
+  kiln: {
+    id: 'kiln', label: 'Kiln', domain: 'fire',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device',
+    requires: ['pottery', 'masonry'], difficulty: 0.5, skill: 'build',
+    prototype: { flint: 4, mud: 3 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'knows', tech: 'masonry' },
+                { kind: 'doing', action: 'build' }],
+        weight: 1.0, story: 'walled a fire in stone until the heat had nowhere else to go' },
+      { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.6, story: 'noticed how much harder a stone left in the hearth came out than one left in the open air' },
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'banked a fire in stone to hold the heat through the night, and saw what it did to the clay beside it' },
+    ],
+    description:
+      'A firing chamber built of stone rather than dug in embers. An even, ' +
+      'held heat wastes less clay than an open fire, and it is the same heat ' +
+      'a furnace will one day want.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1596,6 +1623,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   herding: {
     summary: 'A fenced herd: meat that breeds on its own, culled instead of hunted.',
     site: 'BUILDINGS.pen, via BuildingDef.herd; Simulation.workHerds',
+  },
+  kiln: {
+    summary: 'A held heat that wastes less clay than an open fire: pottery for less.',
+    site: 'BUILDINGS.kiln and RECIPES.kiln_pot',
   },
 };
 

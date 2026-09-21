@@ -6,6 +6,42 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 10, fourth commit: `kiln`, and a scoring trap caught before it shipped
+
+Mechanism 4's fifth station. `BUILDINGS.kiln` and a new recipe, `kiln_pot`,
+producing the same `pottery` item `RECIPES.pot` already does.
+
+**Found while designing it, not while measuring it**: `pot` and a same-cost
+`kiln_pot` would never have competed fairly. `Brain`'s craft scorer has no
+term for "cheaper" or "faster" — only `forSite`/`forSelf`, skill, and
+`nearness` — and `nearness` is exactly 1 for a stationless recipe and never
+more than that for a station one, so an identical-cost `kiln_pot` could
+never outscore plain `pot` and would have been declared, gated, correctly
+wired to a real building, and unreachable in play regardless: the exact
+defect `TECH_EFFECTS` exists to catch, wearing a coat static tests cannot
+see through, because both recipes pass every one of them. `groats` looked
+like the precedent and is not one — it and `meal` never compete, because one
+wants acorns and the other wants grain. Fixed by making the real difference
+the ingredients rather than the score: `kiln_pot` costs one mud where `pot`
+costs two, which is a genuine niche (a band short of clay can still make
+pottery once it has a kiln) rather than a numeric edge the scorer would
+never read.
+
+**Verified empirically, not assumed**: a throwaway script (two bands of
+twelve, `pottery`+`masonry`+`kiln` known from the start, 20,000 ticks, not
+committed) showed `crafted_kiln_pot: 5` against `crafted_pot: 80` — a real,
+if modest, non-zero share, and confirmation that the cheaper-ingredients
+niche actually fires in play rather than only on paper.
+
+**Measured**, `sim:seeds -- --seeds 20` on `century`: bit-identical to the
+previous commit in every reported figure, same as `ground_stone` through
+`herding` before it — `kiln` needs both `pottery` and `masonry` known by the
+same person, a combination this cohort never reaches. `sim:check:all`:
+unchanged, the same two already-catalogued knife-edges. All 360 unit tests,
+typecheck, and all 47 e2e specs pass.
+
+**Four nodes remain**: `dairying`, `wool`, `brewing`, `well`.
+
 ## 2026-09-21 — M11 phase 10, third commit: `herding`, and the mistake it caught in the trap round
 
 The one node in this tier that needed a real mechanism rather than a numeric
