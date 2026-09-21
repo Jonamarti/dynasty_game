@@ -222,6 +222,17 @@ export const ITEMS: Record<string, ItemDef> = {
   // tree should be able to tell the player it found a better material rather
   // than silently swap the old one out.
   wool_cloth: { id: 'wool_cloth', label: 'Wool cloth', nutrition: 0, spoilTicks: 0, baseValue: 15 },
+  // `brewing`. Low nutrition on purpose — a jug of beer is not a meal, and a
+  // number competitive with bread or meat would have made `bestFood` pick it
+  // over both, distorting the whole food economy for a technology whose real
+  // claim is social. That low number is also why it is drunk through its own
+  // verb, `toast`, rather than through `doEat`: `bestFood` picking the single
+  // most nutritious thing carried would otherwise make beer invisible next to
+  // anything better, the same failure milk was measured hitting in a pen.
+  beer: {
+    id: 'beer', label: 'Beer', nutrition: 6, spoilTicks: 1200, baseValue: 5,
+    macros: { fat: 0.02, protein: 0.08, carb: 0.90 },
+  },
 };
 
 export class Inventory {

@@ -385,6 +385,25 @@ export const RECIPES: Record<string, RecipeDef> = {
     station: 'loom',
     keep: 1,
   },
+  // `brewing`. Grain, the same seed corn a field gives up, fermented rather
+  // than ground — a second, later thing to do with a harvest, on the same
+  // terms `bread` already sets for `meal`. No station: a jar and time in a
+  // warm corner is all fermenting ever needed, and inventing one station's
+  // worth of scenery for one recipe is exactly the "declared and unused"
+  // failure this file's own header warns about.
+  beer: {
+    id: 'beer',
+    label: 'Beer',
+    icon: '\u{1F37A}',
+    tech: 'brewing',
+    skill: 'cook',
+    workTicks: 120,
+    ingredients: { grain: 4 },
+    output: { beer: 1 },
+    // Food, on the same terms `meal` and `bread` already set: worth a few
+    // days of it on hand.
+    keep: 3,
+  },
 
   // --- M11 phase 10, the widened Neolithic: see m8_plan_the_ages.md ----------
   //

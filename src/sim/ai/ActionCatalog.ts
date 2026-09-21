@@ -728,6 +728,19 @@ function groundActions(
     });
   }
 
+  // `brewing`'s verb, on the same terms as `play`: no destination, everybody
+  // in earshot gets some of it.
+  if (techPower(actor, 'brewing') > 0) {
+    const hasBeer = actor.inventory.has('beer');
+    options.push({
+      id: 'toast',
+      label: 'Share a drink',
+      icon: '\u{1F37A}',
+      enabled: hasBeer,
+      reason: hasBeer ? undefined : 'You are not carrying any beer',
+    });
+  }
+
   // Thinking, and building the first one. Both are aimed at nothing, so they
   // belong with the other verbs that happen where you stand.
   //

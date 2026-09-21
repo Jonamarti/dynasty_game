@@ -363,6 +363,39 @@ export const SCENARIOS: Record<string, Scenario> = {
     },
     steps: 20000,
   },
+  feasts: {
+    name: 'feasts',
+    description:
+      '`brewing`\'s own scenario, kept apart from `farmers` and `herders` ' +
+      'rather than added to either — this milestone has twice measured what ' +
+      'a technology grafted onto an unrelated scenario\'s starting knowledge ' +
+      'can do to that scenario\'s own cascade, and `toast` needs nothing ' +
+      'from the pastoral chain to exercise at all. `pottery` and `farming` ' +
+      'are `brewing`\'s own prerequisites; nothing else is granted. The same ' +
+      'population shape as `farmers` — a single small band planned no field ' +
+      'at all in 24,000 ticks, because nobody happened across enough wild ' +
+      'grain to sow one; two bands of twelve give the same wild grain more ' +
+      'eyes looking for it, on no more evidence than that being what already ' +
+      'works for `farmers`. `grinding` is granted rather than `farming` ' +
+      'itself, and deliberately: wild grain is worth 0 nutrition raw, so ' +
+      'with no `grinding` known nobody has a reason to pick it up at all — ' +
+      'measured, a first attempt granting `farming` alone never planted a ' +
+      'single field in 24,000 ticks, for want of the seed to sow one.' +
+      ' `farming` was tried next, and measured colliding with `brewing` for ' +
+      'the same wild grain: a field got planned but never sown, because ' +
+      'brewing was spending the grain a sowing needs faster than foraging ' +
+      'could replace it. `brewing` needs only `pottery` to run — `farming` ' +
+      'is its own prerequisite in name, not in what `RECIPES.beer` reads — ' +
+      'so it is left out, and wild grain answers the recipe on its own.',
+    config: {
+      seed: 'cup',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTech: ['pottery', 'plant_lore', 'grinding', 'brewing'],
+      },
+    },
+    steps: 24000,
+  },
   stewards: {
     name: 'stewards',
     description:
@@ -1778,6 +1811,22 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('music-answers-loneliness',
       played > 0 && heard > 0,
       played + ' tunes played, heard by somebody else on ' + heard + ' ticks');
+  }
+
+  // M11 phase 10, seventh and last commit of the tier. Same shape as
+  // `music-answers-loneliness`, one node along: knowing `brewing` is not
+  // having a beer, and having one only matters once somebody else is there
+  // to be poured one — `toast_listeners` is what tells the two apart.
+  if (!sim.knownTech.has('brewing')) {
+    skip('beer-answers-loneliness', 'nobody here knows how to brew');
+  } else if ((tel.crafted_beer ?? 0) === 0) {
+    skip('beer-answers-loneliness', 'the knowledge is here and no beer was ever brewed');
+  } else {
+    const toasted = tel.toasted ?? 0;
+    const heard = tel.toast_listeners ?? 0;
+    add('beer-answers-loneliness',
+      toasted > 0 && heard > 0,
+      toasted + ' toasts made, heard by somebody else ' + heard + ' times');
   }
 
   if (!sim.knownTech.has('herbalism')) {

@@ -290,6 +290,11 @@ mechanisms 4 (crafting stations) and 1 (spoilage, last and alone).
 
 Seventeen nodes. The pass where a band stops moving to the food.
 
+> **All seventeen nodes shipped.** `farming` and `composting` on
+> 2026-09-17; the other fifteen on 2026-09-21, in M11 phase 10's seven
+> commits — see `changelog.md` for each one's own measurement. The
+> Neolithic rung of `ERAS` is live.
+
 | node | domain | requires | what it does |
 |---|---|---|---|
 | `ground_stone` | stone | stoneworking, hafting | polished axe and adze: felling, and a term in `buildFactor`. **Shipped 2026-09-21** (M11 phase 10), and it repaired the long-standing `handaxe`-bypasses-`techPower` bug this document's "three repairs" section names, via a new `Tech.axeFactor` |
@@ -298,7 +303,7 @@ Seventeen nodes. The pass where a band stops moving to the food.
 | `farming` | plants | plant_lore, grinding | **fields. Shipped 2026-09-17.** A `field` design carrying a `Crop`, `sow` and `reap` (tilling folded into sowing), a `grain` item, wild cereal to take it from, and the three soil layers of `core/Soil.ts` under all of it. Returns `farming` to `TECHS` and closes the oldest open entry in `next-steps.md`. See `changelog.md` for the two designs that were measured and rejected on the way |
 | `sickle` | plants | farming, hafting | reaping speed. **Shipped 2026-09-21** (M11 phase 10), via a `Tech.reapFactor` term on `REAP_TICKS` |
 | `bread` | fire | grinding, farming, firemaking | an `oven` station; `bread`, high nutrition and long keeping. **Shipped 2026-09-21** (M11 phase 10) |
-| `brewing` | fire | pottery, farming | `beer`: relieves `company`, raises opinion at a feast. Neolithic, and social |
+| `brewing` | fire | pottery, farming | `beer`: relieves `company`, raises opinion at a feast. Neolithic, and social. **Shipped 2026-09-21** (M11 phase 10, seventh and last commit), as `RECIPES.beer` and a new verb, `toast` — routed around `doEat` because beer's nutrition is deliberately too low to ever win `bestFood`'s comparison. The opinion-at-a-feast half is not built: no feast mechanic exists, and this ships the buildable half of the claim honestly rather than inventing one, the same call `the_wheel` made about "speed" |
 | `herding` | beasts | taming | a `pen` building and penned livestock that breed. Renewable meat. **Shipped 2026-09-21** (M11 phase 10, third commit) — the one node in this tier needing a real mechanism, reusing `Building.store`/`doTake` rather than a new verb, with growth proportional to what a pen already holds. Also closes the Neolithic rung of `ERAS`, its last dependency |
 | `dairying` | beasts | herding, pottery | `milk`, and `cheese` once `preserving` is known. **Shipped 2026-09-21** (M11 phase 10, sixth commit) as a `BuildingDef.herd.byproducts` entry on the pen — no cheese yet, since `preserving` is still switched off |
 | `wool` | cloth | herding, spinning | warmer cloth than flax. **Shipped 2026-09-21** (M11 phase 10, sixth commit) as a second byproduct plus `RECIPES.wool_cloth` at the loom |

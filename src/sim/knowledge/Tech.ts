@@ -123,6 +123,9 @@ export const TECHS = [
   // culled for it. Both read `BuildingDef.herd.byproducts`, alongside
   // `herding`'s own growth, in `Simulation.workHerds`.
   'dairying', 'wool',
+  // M11 phase 10, seventh and last commit of the tier: the only node whose
+  // effect is a new verb, `toast` — see `ActionSystem.doToast`.
+  'brewing',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1493,6 +1496,28 @@ export const TECH: Record<Tech, TechDef> = {
       'Fleece sheared rather than flax retted. Spun and woven the same way, ' +
       'and warmer for the same fire.',
   },
+
+  // M11 phase 10, seventh and last commit of the tier.
+  brewing: {
+    id: 'brewing', label: 'Brewing', domain: 'fire',
+    age: 'neolithic', firstKnown: 'about 5,000 BC',
+    kind: 'device',
+    requires: ['pottery', 'farming'], difficulty: 0.45, skill: 'cook',
+    prototype: { mud: 2, sticks: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'knows', tech: 'farming' },
+                { kind: 'holding', item: 'grain' }, { kind: 'doing', action: 'store' }],
+        weight: 1.0, story: 'found a forgotten pot of wetted grain gone sharp and fizzing, and drank it anyway' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'feeling', need: 'company' }],
+        weight: 0.6, story: 'wanted the harvest to mean more than a meal eaten alone' },
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'doing', action: 'forage' },
+                { kind: 'season', season: 'autumn' }],
+        weight: 0.5, story: 'watched windfall fruit turn into something that made the head swim, and thought of doing the same to grain' },
+    ],
+    description:
+      'Grain wetted, left to work, and drunk rather than baked. Answers ' +
+      'nobody’s hunger much, and everybody’s loneliness a little.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1716,6 +1741,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   wool: {
     summary: 'Fleece sheared rather than flax retted: cloth warmer for the same fire.',
     site: 'BUILDINGS.pen, via BuildingDef.herd.byproducts; RECIPES.wool_cloth; Tech.warmthFrom',
+  },
+  brewing: {
+    summary: 'Beer: it answers loneliness for whoever drinks it, and for the band around them.',
+    site: 'RECIPES.beer; ActionSystem.doToast',
   },
 };
 

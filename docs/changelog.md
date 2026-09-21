@@ -6,6 +6,62 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 10, seventh and last commit: `brewing`, closing the widened Neolithic
+
+The last of the fifteen nodes `m8_plan_the_ages.md`'s M8.2 table left
+pending. `beer` (`RECIPES.beer`, `grain: 4`, no station — a jar and time in
+a warm corner needed no scenery worth inventing for one recipe) and a new
+verb, `toast` (`ActionSystem.doToast`), rather than routing through `doEat`:
+beer's nutrition is deliberately low — a jug of beer is not a meal — and a
+number competitive with bread or meat would have let `bestFood` pick it
+over both, distorting the food economy for a technology whose real claim is
+social. A low number also means `bestFood` would simply never choose it, so
+it needed its own verb regardless. `toast` mirrors `doPlay` closely: gated
+on `techPower('brewing') > 0` and carrying a beer, relief lands on everyone
+within `EARSHOT` including the drinker, and the plan's "raises opinion at a
+feast" half is left out, on the same record `the_wheel`'s haul-speed claim
+already was — no feast/opinion mechanic exists to hook into, and this ships
+the buildable, honest half of the claim rather than inventing one.
+
+New `beer-answers-loneliness` check, verified failing before `toast`
+existed and passing after — 21 toasts made, heard by somebody else 106
+times, in the new scenario below. New `brewing.test.ts`, the one file in
+this whole tier with no existing verb's tests to lean on: there was no test
+file for `play` either, so this is new coverage for a shape of mechanic the
+suite had never directly tested before.
+
+**A third scenario, `feasts`, apart from both `farmers` and `herders`** —
+this milestone has now twice measured what a technology grafted onto an
+unrelated scenario's starting knowledge can do to that scenario's own
+cascade (`herders` exists for exactly this reason), and `toast` needs
+nothing from either the farming or the pastoral chain. Two findings while
+building it, both from measuring rather than assuming: granting `farming`
+alone never planted a single field in 24,000 ticks, because wild grain is
+worth 0 nutrition raw and nobody has a reason to pick it up without
+`grinding` also known; granting `farming` *and* `grinding` together got a
+field planted but never sown, because `brewing` was spending the same wild
+grain a sowing needs faster than foraging could replace it. `brewing`'s
+recipe reads only `pottery` in practice — `farming` is a prerequisite in
+name, not something `RECIPES.beer` touches — so it is left out entirely,
+and wild grain answers the recipe on its own.
+
+**Measured**, `sim:seeds -- --seeds 20`: `century` bit-identical to the
+previous commit in every reported figure — the same story every node in
+this tier has told since `ground_stone`, since reaching `brewing` needs
+`pottery` and `farming` together, a combination this cohort never reaches.
+`feasts` (new): 99.9% mean survival, 0/20 collapsed, no starvation pattern
+beyond ordinary noise. `sim:check:all`: `feasts` fully green (59/59); no
+other scenario's failures change. All 373 unit tests (3 new), typecheck,
+and all 47 e2e specs pass.
+
+**This closes M11 phase 10.** All fifteen of `m8_plan_the_ages.md`'s M8.2
+Neolithic nodes are now shipped: `ground_stone`, `spinning`, `weaving`,
+`sickle`, `masonry`, `wattle_daub`, `calendar`, `the_wheel`, `bread`,
+`herding`, `kiln`, `well`, `dairying`, `wool`, `brewing`. Two new scenarios
+(`herders`, `feasts`) join the suite alongside `farmers`, restored to its
+own baseline; the Neolithic rung of `ERAS` is live. M11 phase 11 — war — is
+next.
+
 ## 2026-09-21 — M11 phase 10, sixth commit: `dairying` and `wool`, and two real defects they exposed
 
 `BuildingDef.herd` gains `byproducts`: what a live herd gives up without

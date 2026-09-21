@@ -670,7 +670,27 @@ revertido, y un escenario nuevo, `herders`, lleva la cadena pastoril aparte
 de la agricultura. `herders` a 20 semillas: 99.9% de supervivencia.
 `century` bit-idéntico.
 
-**Un nodo queda**: `brewing`. Ver `changelog.md`.
+**Séptimo y último commit HECHO 2026-09-21**: `brewing`, que cierra la fase.
+`beer` y un verbo nuevo, `toast`, en vez de pasar por `doEat` — la nutrición
+de la cerveza es deliberadamente baja, así que `bestFood` nunca la habría
+elegido frente a comida de verdad, y necesitaba su propio verbo de todos
+modos. La mitad de "sube la opinión en una fiesta" del plan queda fuera, en
+el mismo registro que la mitad de "velocidad" de `the_wheel`: no existe
+ningún mecanismo de fiesta, y se envía la mitad construible en vez de
+inventar uno. Un tercer escenario, `feasts`, aparte de `farmers` y
+`herders` — esta fase ya ha medido dos veces lo que una tecnología
+injertada en el conocimiento inicial de un escenario ajeno le hace a la
+cascada de esa semilla. Dos hallazgos midiendo `feasts`: conceder sólo
+`farming` nunca plantó un campo en 24.000 ticks (el grano silvestre vale 0
+sin `grinding`), y conceder `farming` y `grinding` juntos plantó un campo
+que nunca se sembró (`brewing` gastaba el mismo grano silvestre que una
+siembra necesita). `brewing` sólo lee `pottery` en la práctica, así que
+`farming` queda fuera del todo. `century` bit-idéntico; `feasts` a 20
+semillas: 99.9% de supervivencia.
+
+**Las quince tecnologías del Neolítico de M8.2 están enviadas.** El
+peldaño Neolítico de `ERAS` está en pie. Sigue la fase 11: la guerra. Ver
+`changelog.md`.
 
 **Densidad tipo Evolve.** La regla de "nada inerte" (`TECH_EFFECTS` +
 `tech.test.ts`) **no se toca** — es lo que ha mantenido sano este árbol. Lo que se

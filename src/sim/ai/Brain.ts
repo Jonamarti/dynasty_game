@@ -1769,6 +1769,16 @@ export class Brain {
         add('play', urgencyCurve(lonelyNear) * 1.5 + 0.05);
       }
 
+      // Toast: `brewing`'s answer to the same question, on the same terms —
+      // worth doing for the people around you, not only for yourself. Scored
+      // a little below `play`, since a cup is spent in one round where a
+      // flute goes on giving for as long as somebody keeps playing it.
+      if (person.inventory.has('beer') && techPower(person, 'brewing') > 0) {
+        const lonelyNear = neighbours.reduce(
+          (worst, other) => Math.max(worst, other.needs.company), person.needs.company);
+        add('toast', urgencyCurve(lonelyNear) * 1.3 + 0.05);
+      }
+
       // Tend: somebody hurt, in your own band, who is not you. Weighted by how
       // badly and by kinship, because sitting with the sick for four hundred
       // ticks is something people do for their own before they do it for
@@ -2269,6 +2279,9 @@ export class Brain {
         break;
       case 'play':
         // Played where they stand. A tune has no destination.
+        break;
+      case 'toast':
+        // Drunk where they stand, on the same terms as `play`.
         break;
       case 'craft':
         // The only target a craft has is what is being made. Without this the

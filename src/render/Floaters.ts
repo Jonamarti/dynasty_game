@@ -179,6 +179,7 @@ export const ACTION_LABELS: Record<string, string> = {
   sleep: 'asleep',
   hunt: 'hunting',
   play: 'playing a tune',
+  toast: 'sharing a drink',
   tend: 'tending the hurt',
   tame: 'coaxing an animal',
 };
@@ -302,6 +303,7 @@ export const STOP_REASONS: Record<string, string> = {
   // M8.1's three verbs. Each is a way one of them can turn out to be
   // impossible, and a verb whose failures are invisible is not finished.
   nothing_to_play: 'they have no flute to play',
+  nothing_to_toast: 'they have no beer to share',
   nobody_to_tend: 'there is nobody here to look after',
   nothing_to_treat: 'they are not hurt any more',
   nothing_to_offer: 'they had no food to offer it',

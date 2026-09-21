@@ -442,6 +442,15 @@ const EARSHOT = 16;
 const PLAY_RELIEF = 0.35;
 
 /**
+ * `brewing`'s verb, and shorter than a tune on purpose: raising a cup is a
+ * moment, not a performance, so `TOAST_RELIEF` lands once, at the end,
+ * rather than accruing tick by tick the way `PLAY_RELIEF` does. Shares
+ * `EARSHOT` with `play` — a shared drink carries about as far as a tune.
+ */
+const TOAST_TICKS = 30;
+const TOAST_RELIEF = 12;
+
+/**
  * Health mended per tick of being tended, before skill and refinement.
  *
  * Against `needs.recoveryRate` of 0.02 this is about thirty times as fast, and
@@ -517,6 +526,7 @@ export class ActionSystem {
       // answer before: loneliness for more than two people at once, being hurt
       // beyond waiting it out, and an animal that is neither food nor a threat.
       case 'play': this.doPlay(person, ctx); break;
+      case 'toast': this.doToast(person, ctx); break;
       case 'tend': this.doTend(person, ctx); break;
       case 'tame': this.doTame(person, ctx); break;
       case 'sow': this.doSow(person, ctx); break;
@@ -1548,6 +1558,54 @@ export class ActionSystem {
       return;
     }
     telemetry.count('flute_played');
+    this.finish(person);
+  }
+
+  /**
+   * `brewing`'s verb. A shared drink rather than a solitary one — see the
+   * item comment on `beer` for why this exists at all rather than routing
+   * through `doEat`: beer's nutrition is deliberately too low to ever win
+   * `bestFood`'s comparison against real food, which is what makes it worth
+   * carrying for the relief rather than the calories.
+   *
+   * One beer, one toast, relief in one lump at the end rather than accrued
+   * tick by tick the way `doPlay`'s tune is — raising a cup is a moment, and
+   * `TOAST_TICKS` is short enough that splitting the relief would round most
+   * listeners down to nothing.
+   */
+  private doToast(person: Person, ctx: ActionContext): void {
+    if (techPower(person, 'brewing') <= 0 || !person.inventory.has('beer')) {
+      this.abandon(person, 'nothing_to_toast', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = TOAST_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    person.workedTicks++;
+
+    if (person.actionTimer > 0) {
+      // `ignoreLaden` for the same reason `doPlay` passes it: nothing else
+      // goes into or comes out of the pack until the cup itself is spent.
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx);
+      return;
+    }
+
+    person.inventory.remove('beer', 1);
+    const power = techPower(person, 'brewing');
+    const heard = ctx.peopleHash.queryRadius(person.x, person.y, EARSHOT);
+    let listeners = 0;
+    for (const other of heard) {
+      if (!other.alive) continue;
+      const before = other.needs.company;
+      other.needs.company = Math.max(0, before - TOAST_RELIEF * power);
+      if (other.id !== person.id && before > 0) listeners++;
+    }
+    telemetry.count('toast_listeners', listeners);
+    telemetry.count('toasted');
     this.finish(person);
   }
 
