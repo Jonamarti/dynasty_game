@@ -191,6 +191,18 @@ export const ITEMS: Record<string, ItemDef> = {
   // every other carried tool in this file: knowing the technology is not
   // enough, and carrying one is not enough either.
   sickle: { id: 'sickle', label: 'Sickle', nutrition: 0, spoilTicks: 0, baseValue: 8 },
+  // --- M11 phase 10, second commit -------------------------------------------
+  // `the_wheel`'s cart. Not a weapon or a wearable, on the same double-gated
+  // terms as everything else in this block.
+  cart: { id: 'cart', label: 'Cart', nutrition: 0, spoilTicks: 0, baseValue: 14 },
+  // `bread`. `spoilTicks: 0`, like `meal` — it is baked meal, and keeping is
+  // the whole point of baking it, per the plan's own table. Higher nutrition
+  // than `meal` is the other half of the same claim, and mostly `carb` for the
+  // same reason `meal` is.
+  bread: {
+    id: 'bread', label: 'Bread', nutrition: 42, spoilTicks: 0, baseValue: 5,
+    macros: { fat: 0.05, protein: 0.15, carb: 0.80 },
+  },
 };
 
 export class Inventory {

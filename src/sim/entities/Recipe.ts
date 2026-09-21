@@ -407,6 +407,34 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { sickle: 1 },
     keep: 1,
   },
+  // --- M11 phase 10, second commit -------------------------------------------
+  cart: {
+    id: 'cart',
+    label: 'Cart',
+    icon: '\u{1F6D2}',
+    tech: 'the_wheel',
+    skill: 'build',
+    workTicks: 150,
+    ingredients: { wood: 6, sticks: 4 },
+    output: { cart: 1 },
+    keep: 1,
+  },
+  // `bread`, mechanism 4's fourth station. Meal in, bread out, one for one —
+  // unlike `meal` and `groats` this is the only recipe that turns one made
+  // good into a better one rather than a raw harvest into a first food.
+  bread: {
+    id: 'bread',
+    label: 'Bread',
+    icon: '\u{1F35E}',
+    tech: 'bread',
+    skill: 'cook',
+    workTicks: 120,
+    ingredients: { meal: 2 },
+    output: { bread: 1 },
+    station: 'oven',
+    // Food, on the same terms as `meal`: worth a few days of it on hand.
+    keep: 3,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

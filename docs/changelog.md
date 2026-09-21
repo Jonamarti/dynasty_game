@@ -6,6 +6,57 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 10, second commit: five more widened-Neolithic nodes
+
+Five more of the eleven left after the first commit: `masonry`, `wattle_daub`,
+`calendar`, `the_wheel`, `bread`. Same discipline — every effect is a numeric
+term on a function that already exists, or a building the band planner and
+the scorer already pick up generically.
+
+- **`masonry`** and **`wattle_daub`** are two more shelters, `stone_house` and
+  `wattle_hut`, needing no change to `BandSystem.planBuildings`: it already
+  picks whichever known, affordable design shelters best by reading
+  `BuildingDef.shelter`, not a hardcoded id. `wattle_hut` costs no wood at
+  all — a woven wall answers what the mud hut's timber frame answers without
+  felling a tree for it — which is the "cheaper" half of the plan's claim;
+  `stone_house` is the better shelter, at a matching cost in flint.
+- **`calendar`** is a practice, tried by `sow` (the same road `herbalism` and
+  `taming` take), and a new `Tech.calendarFactor` multiplies the *grasp* term
+  in `ActionSystem.doReap` rather than the 0.5 floor a farmer-less band still
+  gets — knowing when to sow is not knowledge that a harvest is possible at
+  all.
+- **`the_wheel`** adds `cart` as a fourth term on `carryFactor`, beside
+  cordage and the basket. The plan's table also credits it with speed on
+  `doHaul`; that half is left out, on record, because nothing in this game
+  slows a laden walker down in the first place — there is no ladenness
+  penalty for a cart to answer, and claiming one would have been a comment
+  asserting a mechanism that does not exist.
+- **`bread`** is mechanism 4's fourth station (`BUILDINGS.oven`), a straight
+  meal-to-bread recipe read the same way `groats` already is.
+
+**Measured**, `sim:seeds -- --seeds 20` on `century` against the previous
+commit: mean survival 99.6% → 99.7%, 846 → 856 born (small cohort drift, not
+a new fork — none of these five nodes touch `spawnRng` or any other stream),
+technologies known 13.2 → 13.4, conceived past the root nodes 11.6 → 11.7,
+taught 710.2 → 712.3 — essentially flat, which is expected: all five sit
+deeper in the tree than the first commit's four and are correspondingly
+rarer to reach in one run. Starvation is unchanged within noise (2 adults
+against 0, 5 infants both times, across a cohort of ~850 person-runs).
+
+`sim:check:all`: only `crowded`/`perf-budget` and `hunters`/`kills-are-
+butchered-for-bone` fail, both already catalogued in `bugs.md` as
+knife-edges — and `scribes`, which flipped two checks in the previous
+commit's run, is back to 53/53 clean, which is the same downstream-RNG-drift
+story running the other way rather than a fix to anything. All 351 unit
+tests (three new, covering `calendarFactor`'s refinement floor and the
+cart's double gate), typecheck, and all 47 e2e specs pass.
+
+**Six nodes remain**: `herding`, `dairying`, `wool`, `brewing`, `well`,
+`kiln`. `herding` is the one that needs a real new mechanism — penned,
+breeding livestock — and `wool` and `dairying` both depend on it; `well` and
+`kiln` both depend on `masonry`, which this commit just shipped. The
+Neolithic era rung still waits on `herding` specifically.
+
 ## 2026-09-21 — M11 phase 10, first commit: four of the fifteen widened-Neolithic nodes
 
 Resumes `m8_plan_the_ages.md`'s M8.2 table, left at fifteen pending nodes once

@@ -296,17 +296,17 @@ Seventeen nodes. The pass where a band stops moving to the food.
 | `weaving` | cloth | spinning, basketry | a `loom` station and a `cloth` item: warmth, and the first thing worth trading. **Shipped 2026-09-21** |
 | `farming` | plants | plant_lore, grinding | **fields. Shipped 2026-09-17.** A `field` design carrying a `Crop`, `sow` and `reap` (tilling folded into sowing), a `grain` item, wild cereal to take it from, and the three soil layers of `core/Soil.ts` under all of it. Returns `farming` to `TECHS` and closes the oldest open entry in `next-steps.md`. See `changelog.md` for the two designs that were measured and rejected on the way |
 | `sickle` | plants | farming, hafting | reaping speed. **Shipped 2026-09-21** (M11 phase 10), via a `Tech.reapFactor` term on `REAP_TICKS` |
-| `bread` | fire | grinding, farming, firemaking | an `oven` station; `bread`, high nutrition and long keeping |
+| `bread` | fire | grinding, farming, firemaking | an `oven` station; `bread`, high nutrition and long keeping. **Shipped 2026-09-21** (M11 phase 10) |
 | `brewing` | fire | pottery, farming | `beer`: relieves `company`, raises opinion at a feast. Neolithic, and social |
 | `herding` | beasts | taming | a `pen` building and penned livestock that breed. Renewable meat |
 | `dairying` | beasts | herding, pottery | `milk`, and `cheese` once `preserving` is known |
 | `wool` | cloth | herding, spinning | warmer cloth than flax |
-| `wattle_daub` | timber | carpentry, cordage | a cheaper, warmer hut than the mud hut |
-| `masonry` | stone | stoneworking, carpentry | a `stone_house` with the best shelter in the game — and the worked stone M7's walls will want |
+| `wattle_daub` | timber | carpentry, cordage | a cheaper, warmer hut than the mud hut. **Shipped 2026-09-21** (M11 phase 10), as `wattle_hut` — no wood in its materials at all, which is the honest version of "cheaper" |
+| `masonry` | stone | stoneworking, carpentry | a `stone_house` with the best shelter in the game — and the worked stone M7's walls will want. **Shipped 2026-09-21** (M11 phase 10); the worked-stone-for-M7 half is still to come |
 | `kiln` | fire | pottery, masonry | the **first crafting station** (mechanism 4); better pots, and the temperature that leads to metal. The pivot node of the whole ladder |
 | `well` | stone | masonry | water away from the shore. **The first technology to touch thirst at all** |
-| `calendar` | plants | marking, farming | sowing in the right season: a yield term, and a hint from the elders |
-| `the_wheel` | timber | carpentry, ground_stone | a cart: capacity and speed on `haul`, a real action with a real scorer |
+| `calendar` | plants | marking, farming | sowing in the right season: a yield term, and a hint from the elders. **Shipped 2026-09-21** (M11 phase 10), via `Tech.calendarFactor` on `doReap`'s grasp term; no hint from the elders yet |
+| `the_wheel` | timber | carpentry, ground_stone | a cart: capacity and speed on `haul`, a real action with a real scorer. **Shipped 2026-09-21** (M11 phase 10) as a `carryFactor` term — capacity only. The "speed" half is deliberately not built: this game has no ladenness penalty for a cart to answer, and inventing one to make the claim true was out of scope for a numeric-term commit |
 | `trade` | cloth | marking | a `barter` action between bands reading `ItemDef.baseValue` — **which today only `doSteal` reads.** Pairs with the owner's O4 |
 
 ## M8.3 — Chalcolithic and Bronze

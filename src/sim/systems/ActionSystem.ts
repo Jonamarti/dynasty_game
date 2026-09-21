@@ -39,8 +39,8 @@ import {
 import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import {
-  TECH, axeFactor, buildFactor, forageYieldFactor, nutritionFactor, prerequisitesMet, reapFactor,
-  tallyFactor, techPower, weaponOf, armourOf, type Tech,
+  TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor, nutritionFactor,
+  prerequisitesMet, reapFactor, tallyFactor, techPower, weaponOf, armourOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse } from '../social/Property.ts';
@@ -1752,7 +1752,11 @@ export class ActionSystem {
     // farmer died between sowing and harvest should still get the harvest in.
     // The floor rather than a gate is the same call `fishing` made about a
     // spear.
-    const grasp = Math.max(0.5, techPower(person, 'farming'));
+    // `calendar` multiplies the grasp term rather than the floor: it is
+    // knowledge about *when* to sow, not about whether a harvest is possible
+    // at all, so it has no business raising the 0.5 floor a farmer-less band
+    // still gets.
+    const grasp = Math.max(0.5, techPower(person, 'farming')) * calendarFactor(person);
     const yielded = harvestYield(
       this.plotFertility(field, ctx), person.skillFactor('farm'), grasp
     );

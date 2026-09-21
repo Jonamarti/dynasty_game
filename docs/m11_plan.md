@@ -587,14 +587,27 @@ Se retoma [m8_plan_the_ages.md](docs/m8_plan_the_ages.md): **15 nodos neolítico
 pendientes**. Son los que crean el excedente que hace que la guerra signifique
 algo.
 
-**Primer commit HECHO 2026-09-17→21** — en realidad 2026-09-21: `ground_stone`,
-`spinning`, `weaving` y `sickle`, los cuatro elegidos por no pedir ningún
-mecanismo nuevo, sólo un término en una función que `techPower` ya alimenta.
-De paso, `ground_stone` repara el bug de `handaxe` sin pasar por `techPower`
-que este mismo documento ya listaba como conocido. Medido en `century` a 20
-semillas: supervivencia 99.7%→99.6% (ruido), tecnologías conocidas 12.3→13.2,
-conceptos pasados de la raíz 9.9→11.6. **Once nodos quedan.** Ver
-`changelog.md`.
+**Primer commit HECHO 2026-09-21**: `ground_stone`, `spinning`, `weaving` y
+`sickle`, los cuatro elegidos por no pedir ningún mecanismo nuevo, sólo un
+término en una función que `techPower` ya alimenta. De paso, `ground_stone`
+repara el bug de `handaxe` sin pasar por `techPower` que este mismo documento
+ya listaba como conocido. Medido en `century` a 20 semillas: supervivencia
+99.7%→99.6% (ruido), tecnologías conocidas 12.3→13.2, conceptos pasados de la
+raíz 9.9→11.6.
+
+**Segundo commit HECHO 2026-09-21**: `masonry` y `wattle_daub` (dos refugios
+más, que `BandSystem.planBuildings` ya elige sin cambio de código porque lee
+`shelter` genéricamente), `calendar` (una práctica, ejercida por `sow`, que
+multiplica el término de aprovechamiento de `doReap` en vez de su suelo),
+`the_wheel` (un cuarto término en `carryFactor`; la mitad de "velocidad" de
+la tabla queda fuera, anotado: este juego no tiene penalización de carga que
+un carro pueda responder), `bread` (la cuarta estación del mecanismo 4).
+Medido: supervivencia 99.6%→99.7%, tecnologías 13.2→13.4 — esencialmente
+plano, como se espera de cinco nodos más profundos que los cuatro del primer
+commit. **Seis nodos quedan**: `herding`, `dairying`, `wool`, `brewing`,
+`well`, `kiln`. `herding` es el único que pide un mecanismo de verdad —
+ganado apriscado que cría—, y `wool`/`dairying` dependen de él; `well`/`kiln`
+dependen de `masonry`, ya enviado. Ver `changelog.md`.
 
 **Densidad tipo Evolve.** La regla de "nada inerte" (`TECH_EFFECTS` +
 `tech.test.ts`) **no se toca** — es lo que ha mantenido sano este árbol. Lo que se

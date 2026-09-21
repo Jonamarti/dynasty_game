@@ -215,6 +215,47 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       'winter in, and the first thing worth cutting a tree for.',
   },
 
+  // --- M11 phase 10, second commit: two more shelters -----------------------
+  //
+  // `wattle_daub` and `masonry` each answer the mud hut differently: a woven
+  // wall skips the felled-timber frame entirely, and a stone one out-shelters
+  // everything short of the longhouse. `BandSystem.planBuildings` picks
+  // whichever known, affordable design shelters best on its own — no changes
+  // needed there, since it already reads `BuildingDef.shelter` rather than a
+  // hardcoded id.
+  wattle_hut: {
+    id: 'wattle_hut',
+    label: 'Wattle hut',
+    icon: '\u{1F6D6}',
+    width: 3, height: 3,
+    // No wood at all — the whole point of a woven wall is that it answers
+    // what the mud hut's timber frame answers without felling a tree for it.
+    materials: { sticks: 10, thatch: 12, mud: 10 },
+    workTicks: 400,
+    shelter: 0.88,
+    storage: 40,
+    preserves: 1.2,
+    requiresTech: 'wattle_daub',
+    description:
+      'Withies woven between posts and daubed over. Raised faster than a mud ' +
+      'hut, and it keeps the wind out better for the weave underneath.',
+  },
+  stone_house: {
+    id: 'stone_house',
+    label: 'Stone house',
+    icon: '\u{1F3E0}',
+    width: 3, height: 3,
+    materials: { flint: 20, wood: 6, mud: 10 },
+    workTicks: 750,
+    shelter: 0.92,
+    storage: 50,
+    preserves: 1.3,
+    requiresTech: 'masonry',
+    description:
+      'Coursed stone walls under a timber roof. The best shelter a family can ' +
+      'raise without a longhouse’s whole household behind it.',
+  },
+
   // --- M8.1, mechanism 3: the traps -----------------------------------------
   //
   // Both are 2x2 and neither may be 1x1, which is not a style choice. A 1x1
@@ -377,6 +418,22 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     description:
       'A frame strung taut, worked back and forth. Thread by the length ' +
       'becomes cloth by the yard.',
+  },
+  // `bread`, mechanism 4's fourth station.
+  oven: {
+    id: 'oven',
+    label: 'Oven',
+    icon: '\u{1F956}',
+    width: 3, height: 3,
+    materials: { mud: 8, sticks: 4 },
+    workTicks: 190,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'bread',
+    description:
+      'A domed firing chamber, walled in mud. Meal wetted, worked and baked ' +
+      'goes further and keeps longer than the meal it was made from.',
   },
 
   // --- Gated behind knowledge that does not exist yet (M4) -----------------

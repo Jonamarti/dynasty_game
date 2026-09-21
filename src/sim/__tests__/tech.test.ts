@@ -15,7 +15,7 @@ import { describe, it, expect } from 'vitest';
 import {
   TECH, TECHS, TECH_EFFECTS, ERAS, ERA_ORDER, AGES, ageIndex, eraFor, reachableFrom,
   techPower, carryFactor, forageYieldFactor, nutritionFactor, warmthFrom,
-  axeFactor, buildFactor, reapFactor,
+  axeFactor, buildFactor, reapFactor, calendarFactor,
   type Tech,
 } from '../knowledge/Tech.ts';
 import { BUILDINGS, isStation } from '../entities/Building.ts';
@@ -389,6 +389,37 @@ describe('M11 phase 10: axe, sickle and adze', () => {
     expect(buildFactor(knowerOnly)).toBe(buildFactor(bare));
     expect(buildFactor(carrierOnly)).toBe(buildFactor(bare));
     expect(buildFactor(equipped)).toBeGreaterThan(buildFactor(bare));
+  });
+});
+
+describe('M11 phase 10, second commit: calendar and the cart', () => {
+  it('raises a harvest for whoever knows the calendar, with no item to carry', () => {
+    const bare = someone();
+    const keeper = someone();
+    keeper.knownTech.add('calendar');
+    expect(calendarFactor(keeper)).toBeGreaterThan(calendarFactor(bare));
+    expect(calendarFactor(bare)).toBe(1);
+  });
+
+  it('never drives the calendar term to zero or below, at any refinement', () => {
+    const keeper = someone();
+    keeper.knownTech.add('calendar');
+    for (let step = 0; step <= TECH.calendar.maxRefinement; step++) {
+      keeper.techLevel.set('calendar', step);
+      expect(calendarFactor(keeper), 'calendarFactor at refinement ' + step).toBeGreaterThan(0);
+    }
+  });
+
+  it('carries more with a cart than with a basket alone, and never without knowing the_wheel', () => {
+    const bare = someone();
+    const carrierOnly = someone();
+    carrierOnly.inventory.add('cart', 1);
+    const equipped = someone();
+    equipped.knownTech.add('the_wheel');
+    equipped.inventory.add('cart', 1);
+
+    expect(carryFactor(carrierOnly)).toBe(carryFactor(bare));
+    expect(carryFactor(equipped)).toBeGreaterThan(carryFactor(bare));
   });
 });
 

@@ -102,6 +102,12 @@ export const TECHS = [
   // function that already exists, which is what lets the tree widen without the
   // engine widening with it. Eleven remain — see `next-steps.md`.
   'ground_stone', 'spinning', 'weaving', 'sickle',
+  // M11 phase 10, second commit: five more of the same tier. `masonry` and
+  // `wattle_daub` are each a second building, on the terms the mud hut already
+  // set; `calendar` is a yield term read the same way `techPower('farming')`
+  // already is; `the_wheel` is a fourth term on `carryFactor`, beside cordage
+  // and the basket; `bread` is mechanism 4's fourth station. Six remain.
+  'masonry', 'wattle_daub', 'calendar', 'the_wheel', 'bread',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1247,6 +1253,114 @@ export const TECH: Record<Tech, TechDef> = {
       'A curved blade set in a haft. A field stripped in an afternoon instead ' +
       'of a day, and less of the harvest shattered onto the ground getting there.',
   },
+
+  // --- M11 phase 10, second commit -------------------------------------------
+  masonry: {
+    id: 'masonry', label: 'Masonry', domain: 'stone',
+    age: 'neolithic', firstKnown: 'about 9,000 years ago',
+    kind: 'device',
+    requires: ['stoneworking', 'carpentry'], difficulty: 0.55, skill: 'build',
+    prototype: { flint: 6, mud: 4 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'knows', tech: 'carpentry' },
+                { kind: 'doing', action: 'build' }],
+        weight: 1.0, story: 'set one stone flat on another while a wall waited for its daub' },
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.7, story: 'sheltered against an outcrop that shrugged off a wind no daubed wall had held back' },
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'doing', action: 'gather' },
+                { kind: 'place', biome: 'hills' }],
+        weight: 0.5, story: 'stacked cleared stone into a wall rather than a heap, to see if it would stand' },
+    ],
+    description:
+      'Stone laid and coursed rather than piled. Walls a timber frame does not ' +
+      'need, and a roof that answers a winter no hut of mud and sticks can.',
+  },
+  wattle_daub: {
+    id: 'wattle_daub', label: 'Wattle and daub', domain: 'timber',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device',
+    requires: ['carpentry', 'cordage'], difficulty: 0.45, skill: 'build',
+    prototype: { sticks: 6, mud: 4 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'knows', tech: 'cordage' },
+                { kind: 'doing', action: 'build' }],
+        weight: 1.0, story: 'wove a panel of withies between two posts before reaching for the mud at all' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.7, story: 'felt a plain mud wall let the wind through where a woven one might not' },
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'doing', action: 'gather' },
+                { kind: 'place', biome: 'forest' }],
+        weight: 0.5, story: 'bent a green branch double and thought of a wall that bent instead of cracking' },
+    ],
+    description:
+      'A woven panel of withies, daubed over rather than packed solid. Faster ' +
+      'to raise than a mud hut, and it keeps the warmth in better for it.',
+  },
+  calendar: {
+    id: 'calendar', label: 'Calendar', domain: 'plants',
+    age: 'neolithic', firstKnown: 'about 5,000 BC',
+    // A practice: nothing is built, and the trial is the act it improves —
+    // sowing at the right time rather than by guesswork. The same road
+    // `herbalism` and `taming` take, for the same reason `techPower` gives a
+    // practice half strength from `PROTOTYPE_AT` onward: the one act that
+    // counts as trying it out cannot be locked behind having already proven it.
+    kind: 'practice', practisedBy: ['sow'],
+    requires: ['marking', 'farming'], difficulty: 0.5, skill: 'farm',
+    prototype: {}, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'knows', tech: 'farming' },
+                { kind: 'doing', action: 'sow' }],
+        weight: 1.0, story: 'kept a tally of the seasons and noticed the crop sown on the same notch always did best' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'saw', what: 'nothing_to_reap' }],
+        weight: 0.7, story: 'lost a crop to a frost and started counting the days until the ground could be trusted again' },
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'doing', action: 'discuss' }],
+        weight: 0.5, story: 'argued about which day was the right one to sow, and started marking it down to settle it' },
+    ],
+    description:
+      'Sowing timed to a tally of the seasons rather than to guesswork. The ' +
+      'same field, worked the same, gives more back for going in on the right day.',
+  },
+  the_wheel: {
+    id: 'the_wheel', label: 'The wheel', domain: 'timber',
+    age: 'neolithic', firstKnown: 'about 3500 BC',
+    kind: 'device',
+    requires: ['carpentry', 'ground_stone'], difficulty: 0.55, skill: 'build',
+    prototype: { wood: 5, sticks: 3 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'knows', tech: 'ground_stone' },
+                { kind: 'doing', action: 'haul' }],
+        weight: 1.0, story: 'dragged a sledge of logs down the same track twice and wondered about a wheel under it' },
+      { needs: [{ kind: 'knows', tech: 'ground_stone' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'rolled a round offcut across the ground and noticed how far it ran before it stopped' },
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'saw', what: 'hands_full' }],
+        weight: 0.5, story: 'carried a third trip home in two loads and wanted a fourth hand that was not a hand at all' },
+    ],
+    description:
+      'A disc that turns on an axle, under a frame. What a strap and a basket ' +
+      'carry, and then a cartload more on top of it.',
+  },
+  bread: {
+    id: 'bread', label: 'Bread', domain: 'fire',
+    age: 'neolithic', firstKnown: 'about 8,000 BC',
+    kind: 'device',
+    requires: ['grinding', 'farming', 'firemaking'], difficulty: 0.4, skill: 'cook',
+    prototype: { mud: 4, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'grinding' }, { kind: 'knows', tech: 'firemaking' },
+                { kind: 'holding', item: 'meal' }],
+        weight: 1.0, story: 'left a paste of meal and water too near the coals and it came out solid' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'doing', action: 'eat' },
+                { kind: 'feeling', need: 'hunger' }],
+        weight: 0.6, story: 'chewed dry meal by the fire and thought of trying it wet, and baked, instead' },
+      { needs: [{ kind: 'knows', tech: 'grinding' }, { kind: 'knows', tech: 'farming' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'watched a pot of grain paste stiffen at the fire’s edge and thought of eating it that way' },
+    ],
+    description:
+      'Meal wetted, worked and baked at the fire. More nourishing than the ' +
+      'meal it is made from, and it keeps just as well.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1431,6 +1545,26 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'A hafted blade instead of bare hands: a field stripped in less of a day.',
     site: 'Tech.reapFactor, read by ActionSystem.doReap',
   },
+  masonry: {
+    summary: 'Coursed stone walls: the best roof anybody can raise with hand tools.',
+    site: 'BUILDINGS.stone_house',
+  },
+  wattle_daub: {
+    summary: 'A woven wall daubed over: faster to raise than a mud hut, and warmer for it.',
+    site: 'BUILDINGS.wattle_hut',
+  },
+  calendar: {
+    summary: 'Sowing timed to a tally instead of to guesswork: more off the same ground.',
+    site: 'Tech.calendarFactor, read by ActionSystem.doReap',
+  },
+  the_wheel: {
+    summary: 'A cart: what a strap and a basket carry, and a cartload more on top.',
+    site: 'Person.carryCapacity, via carryFactor, when a cart is in the pack',
+  },
+  bread: {
+    summary: 'Meal baked into bread: more nourishing than the meal it is made from, and it keeps as well.',
+    site: 'BUILDINGS.oven and RECIPES.bread',
+  },
 };
 
 /**
@@ -1569,7 +1703,14 @@ export function forageYieldFactor(person: Person, nodeKind: string): number {
  */
 export function carryFactor(person: Person): number {
   const basket = person.inventory.has('basket') ? scaled(person, 'basketry', 1.3) : 1;
-  return scaled(person, 'cordage', 1.25) * basket;
+  // M11 phase 10: `the_wheel`'s cart, on the same double gate as the basket
+  // and the net. The plan's table also credits it with speed on `doHaul`, but
+  // nothing in this game slows a laden walker down in the first place — there
+  // is no ladenness penalty for a cart to answer — so claiming one here would
+  // be a comment asserting a mechanism that does not exist. Capacity alone is
+  // the honest half of the historical claim.
+  const cart = person.inventory.has('cart') ? scaled(person, 'the_wheel', 1.5) : 1;
+  return scaled(person, 'cordage', 1.25) * basket * cart;
 }
 
 /** Multiplier on the nutrition of anything eaten. */
@@ -1617,6 +1758,15 @@ export function axeFactor(person: Person): number {
  */
 export function reapFactor(person: Person): number {
   return person.inventory.has('sickle') ? scaled(person, 'sickle', 0.6) : 1;
+}
+
+/**
+ * Multiplier on what a harvest yields, read by `ActionSystem.doReap` beside
+ * `techPower('farming')`. `calendar` is a practice — there is nothing to
+ * carry, unlike `sickle` — so this has no item gate.
+ */
+export function calendarFactor(person: Person): number {
+  return scaled(person, 'calendar', 1.2);
 }
 
 /**
