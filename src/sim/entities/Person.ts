@@ -12,6 +12,7 @@ import type { Idea } from '../knowledge/Synthesis.ts';
 import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { JobId } from './Job.ts';
 import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
+import { MacroBalance } from '../core/Macros.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -223,6 +224,19 @@ export class Person {
   traits: Record<Trait, number>;
   /** Four channels of spirits, resting toward a point set by temperament. See `core/Mood.ts`. */
   mood: Mood;
+  /**
+   * M11 phase 8b. A slow-moving diet, three fractions summing to 1, fed by
+   * every meal and decayed toward what was actually eaten once a day. See
+   * `core/Macros.ts`. Inert until phase 8d.
+   */
+  macroBalance = new MacroBalance();
+  /**
+   * Nutrition-weighted grams of each macro eaten since the last daily tick,
+   * filled by `ActionSystem.doEat` and folded into `macroBalance` (and
+   * cleared) by `decayMacroBalance`. Not itself read by anything — it is the
+   * day's raw ledger, not the diet.
+   */
+  macroIntakeToday = { fat: 0, protein: 0, carb: 0 };
   inventory = new Inventory();
 
   /** What this person has seen and been told. See `social/Memory.ts`. */

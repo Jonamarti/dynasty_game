@@ -39,6 +39,7 @@ import {
 } from '../entities/Building.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
+import { decayMacroBalance } from './Macros.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -2477,7 +2478,10 @@ export class Simulation {
       // renown — see `BandRelations`'s own header.
       this.bandRelations.decay();
       for (const person of this.people) {
-        if (person.alive) decayMood(person);
+        if (person.alive) {
+          decayMood(person);
+          decayMacroBalance(person);
+        }
       }
       const forest = this.forestSystem.daily(this.trees, {
         world: this.world,

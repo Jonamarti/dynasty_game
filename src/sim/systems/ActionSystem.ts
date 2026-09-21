@@ -714,10 +714,17 @@ export class ActionSystem {
     // forage than one that does not, and can therefore support more people on
     // the same ground.
     const cooked = nutritionFactor(person);
-    person.needs.hunger = Math.max(
-      0,
-      person.needs.hunger - (ITEMS[foodId]?.nutrition ?? 0) * cooked
-    );
+    const eaten = (ITEMS[foodId]?.nutrition ?? 0) * cooked;
+    person.needs.hunger = Math.max(0, person.needs.hunger - eaten);
+    // M11 phase 8b: fold what was actually eaten into today's ledger, in the
+    // same units `decayMacroBalance` will normalise into fractions. Cooking's
+    // bonus counts here too — a band that cooks eats more of whatever it ate.
+    const macros = ITEMS[foodId]?.macros;
+    if (macros) {
+      person.macroIntakeToday.fat += eaten * macros.fat;
+      person.macroIntakeToday.protein += eaten * macros.protein;
+      person.macroIntakeToday.carb += eaten * macros.carb;
+    }
     telemetry.count('eat');
     if (person.needs.hunger <= 0) this.finish(person);
   }

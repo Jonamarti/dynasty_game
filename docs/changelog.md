@@ -6,6 +6,31 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 8b: a rolling diet, fed and decayed, still read by nobody
+
+`Person.macroBalance` (new `core/Macros.ts`, `MacroBalance`: `fat`, `protein`,
+`carb`, starting equal thirds) is the same shape `Mood.ts` used for spirits:
+a slow-moving average rather than a per-meal tally, because a single
+lopsided day is not malnutrition any more than a single bad night is a
+grudge. `ActionSystem.doEat` now folds every mouthful's macro grams (via
+8a's `ITEMS[id].macros`) into `Person.macroIntakeToday`, a same-day ledger;
+once a day, alongside `decayMood` in `Simulation`'s midnight block,
+`decayMacroBalance` normalises that ledger into fractions and moves
+`macroBalance` 35% of the way toward it — well above `MOOD_DECAY_PER_DAY`
+(8%) and `RelationshipGraph`'s familiarity term (6%), because a diet is
+what was actually eaten, not a relationship that should resist one bad
+exchange. A day nobody ate leaves the balance exactly where it was rather
+than dragging it toward zero.
+
+**Inert, and verified converging rather than just compiling**: a `century`
+run's `macro_*_sum` telemetry settles around carb 0.66 / protein 0.18 / fat
+0.16 — the berry-and-fruit-heavy diet this world's food economy actually
+produces, read back correctly. Nothing outside this bookkeeping reads
+`macroBalance` yet, so the world itself is unaffected: `sim:check:all`
+reproduces the 8a matrix line for line, all 343 unit tests, typecheck
+clean. 8c gives the target itself an activity scale; 8d is where a
+sustained imbalance first costs health.
+
 ## 2026-09-21 — M11 phase 8a: macros, declared and read by nobody
 
 `ItemDef` gains an optional `macros: { fat, protein, carb }`, fractions of
