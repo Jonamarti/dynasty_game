@@ -11,6 +11,8 @@ import { carryFactor, TECH } from '../knowledge/Tech.ts';
 import type { Idea } from '../knowledge/Synthesis.ts';
 import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { JobId } from './Job.ts';
+import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
+import { MacroBalance, macroTargetFor } from '../core/Macros.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -47,7 +49,7 @@ export const SKILL_INDEX: Record<Skill, number> =
 const ALONGSIDE_LEARN = 0.5;
 
 /**
- * Seven heritable personality axes, each in [0, 1]. They weight the utility
+ * Eight heritable personality axes, each in [0, 1]. They weight the utility
  * scorer, so a greedy, low-loyalty person genuinely prefers stealing to asking.
  *
  * `intelligence` is how quickly someone works an idea out, teaches it, and
@@ -58,13 +60,24 @@ const ALONGSIDE_LEARN = 0.5;
  * run, and a trait that quietly moved them would be invisible until a
  * population collapsed.
  *
+ * `malice` is a readiness to scheme against somebody with no grudge behind it —
+ * the owner's note 8, "a personality trait like malevolent or conspirator".
+ * It is unlike `aggression`, which drives an on-the-spot blow: `malice` is what
+ * a plot needs instead of a wrong done to you, and it belongs to the same
+ * conspiracies-and-slander pass (M11 phase 5) that will read it. Declared here
+ * on its own, ahead of that reader, on the precedent already set for `farm` and
+ * `smith` in `SKILLS` below — `TRAITS` is iterated by founding, inheritance,
+ * ageing and the character-creation summary the moment a new entry exists, so
+ * the migration has to be its own commit or the RNG shift it causes cannot be
+ * told apart from whatever comes to use it.
+ *
  * Rebelliousness is *not* here. It is derived from `loyalty` and standing grief
  * in `social/Authority.ts`, because two knobs for one behaviour is how a scorer
  * becomes untunable.
  */
 export const TRAITS = [
   'aggression', 'greed', 'loyalty', 'curiosity', 'tradition',
-  'intelligence', 'industriousness',
+  'intelligence', 'industriousness', 'malice',
 ] as const;
 export type Trait = (typeof TRAITS)[number];
 
@@ -209,6 +222,31 @@ export class Person {
   needs: Record<Need, number> = { hunger: 0, thirst: 0, fatigue: 0, cold: 0, company: 0 };
   skills: Record<Skill, number>;
   traits: Record<Trait, number>;
+  /** Four channels of spirits, resting toward a point set by temperament. See `core/Mood.ts`. */
+  mood: Mood;
+  /**
+   * M11 phase 8b. A slow-moving diet, three fractions summing to 1, fed by
+   * every meal and decayed toward what was actually eaten once a day. See
+   * `core/Macros.ts`. Inert until phase 8d.
+   */
+  macroBalance = new MacroBalance();
+  /**
+   * Nutrition-weighted grams of each macro eaten since the last daily tick,
+   * filled by `ActionSystem.doEat` and folded into `macroBalance` (and
+   * cleared) by `decayMacroBalance`. Not itself read by anything — it is the
+   * day's raw ledger, not the diet.
+   */
+  macroIntakeToday = { fat: 0, protein: 0, carb: 0 };
+  /**
+   * M11 phase 8c. What `macroBalance` is judged against, shifted by how hard
+   * this person has lately been working — see `core/Macros.ts`. Inert until
+   * phase 8d.
+   */
+  macroTarget = new MacroBalance();
+  /** How hard this person has lately been working, `NeedsSystem.exertionOf`'s scale (0.4 asleep, 1.5 felling). */
+  recentExertion = 1;
+  /** Today's exertion ledger, filled by `NeedsSystem` and folded into `recentExertion` daily. */
+  exertionToday = { total: 0, ticks: 0 };
   inventory = new Inventory();
 
   /** What this person has seen and been told. See `social/Memory.ts`. */
@@ -276,6 +314,16 @@ export class Person {
   action = 'idle';
   /** Who the current action is aimed at, for social actions. */
   targetPersonId: number | null = null;
+  /**
+   * Who a `slander` or a `praise` is *about*, as distinct from who it is said
+   * *to* — `targetPersonId` is the listener.
+   *
+   * M11 phase 5c. Gossip needs a third party the other two social verbs never
+   * did: `give` and `steal` each have exactly one other person involved, but
+   * "tell Mira what Boran did" has two, and the one the story is about is not
+   * necessarily anywhere nearby.
+   */
+  targetSubjectId: number | null = null;
   /** Which structure the current action is aimed at, for building and storage. */
   targetBuildingId: number | null = null;
   /** Which tree the current action is aimed at, for felling and picking. */
@@ -315,6 +363,14 @@ export class Person {
    */
   targetItemId: string | null = null;
   targetItemCount: number | null = null;
+  /**
+   * Whether this building-use action has already become a social deed.
+   *
+   * Sleeping and crafting last for many ticks. Without one bit on the action,
+   * trespassing would be announced every tick and one night under a foreign
+   * roof would fill every witness's memory forty-eight times over.
+   */
+  propertyUseNoted = false;
   /**
    * Which technology a player-ordered `ponder` or `discuss` is about.
    *
@@ -563,6 +619,16 @@ export class Person {
 
     this.traits = {} as Record<Trait, number>;
     for (const trait of TRAITS) this.traits[trait] = Math.max(0, Math.min(1, rng.gaussian(0.5, 0.18)));
+
+    // Starts at rest rather than at zero: a person with a settled temperament
+    // is not born jarred against it.
+    this.mood = new Mood();
+    for (const channel of MOOD_CHANNELS) this.mood[channel] = moodBaseline(this.traits, channel);
+    this.macroTarget = macroTargetFor(this.recentExertion);
+    // Start on target, not at equal thirds: a person is assumed to have been
+    // eating reasonably before the sim's first tick, so 8d's malnutrition
+    // reading does not open with a false deficit nobody caused.
+    this.macroBalance = { ...this.macroTarget };
   }
 
   get years(): number {
@@ -762,6 +828,7 @@ export class Person {
     this.targetY = null;
     this.targetNodeId = null;
     this.targetPersonId = null;
+    this.targetSubjectId = null;
     this.targetBuildingId = null;
     this.targetTreeId = null;
     this.targetAnimalId = null;
@@ -772,6 +839,7 @@ export class Person {
     this.talkMode = null;
     this.targetItemId = null;
     this.targetItemCount = null;
+    this.propertyUseNoted = false;
     this.actionTimer = 0;
     // A route and the aim it was computed for have to be forgotten together —
     // this is the one place that forgets where somebody was going, and a

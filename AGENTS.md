@@ -33,12 +33,34 @@ streams at the end. The fork order is the seed contract; inserting one silently
 invalidates every saved seed and every pinned test world.
 
 > **"The end" is not where the comment says it is.** The named fork block ends
-> at `recordRng` with a comment inviting you to append after it — but there is a
-> **fourteenth, anonymous fork twenty-five lines further down**, the
-> `this.rng.fork()` handed to `seedInitialForest`. Appending where the comment
-> invites you to consumes the draw that fork expects and silently replants every
-> forest in every saved seed. Hoist that fork into the named block first, as its
-> own commit, or append genuinely last.
+> at `recordRng` — the **eleventh** of sixteen — with a comment inviting you to
+> append after it. Five more forks sit below that invitation:
+>
+> | # | fork | line |
+> |---|---|---|
+> | 12 | anonymous, handed to `seedInitialForest` | `Simulation.ts:456` |
+> | 13 | `fishRng` | `Simulation.ts:470` |
+> | 14 | `grainRng` | `Simulation.ts:475` |
+> | 15 | `choiceRng` | `Simulation.ts:481` |
+> | 16 | `hearthRng` | `Simulation.ts:486` |
+>
+> **The genuine append point is the line after the last row of that table**,
+> immediately before the `spawnResources` block. Appending where the comment
+> invites you consumes the draw the forest fork expects and silently replants
+> every wood in every saved seed; appending between the fish and the grain does
+> the same to the cereal.
+>
+> A fork appended genuinely last cannot shift anything, and the reason is worth
+> knowing: `this.rng` is drawn from **only** by these sixteen `fork()` calls —
+> nothing else in the constructor takes a number from it — so a seventeenth at
+> the bottom leaves all sixteen exactly where they were.
+>
+> This paragraph has been wrong before, which is the reason for the table. It
+> used to call the forest fork "the fourteenth" and describe it as the last one
+> — true when it was written, and false from the moment M8.1 appended `fishRng`
+> and M8.2 appended `grainRng` behind it, and again once M11 phase 1a appended
+> `choiceRng` and this pass appended `hearthRng`. **If you append a stream, add
+> its row here in the same commit**, or the next person inherits the same trap.
 
 **And forks are not the only way to shift a stream.** `spawnResources`,
 `spawnHerds` and `spawnPeople` all draw from **one shared `spawnRng`**, so adding
@@ -119,8 +141,8 @@ npm run sim:check -- --scenario craft     # the only run in which anything is
 npm run sim:check -- --scenario scribes   # the only run in which anything is
                                           # written down. Same trick, for the
                                           # same reason: writing sits behind
-                                          # marking and stoneworking and no run
-                                          # reaches it from nothing
+                                          # marking, stoneworking and farming,
+                                          # and no run reaches it from nothing
 npm run sim:seeds                         # the same scenario across 10 seeds:
                                           # mean survival, collapses, who starved
 npm run why -- --person 0 --from 1700 --to 1760   # one person's score table,

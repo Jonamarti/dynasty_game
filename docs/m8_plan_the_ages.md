@@ -141,12 +141,13 @@ this one is left open and does not block M8.1.
 > alone, because without it a band that has carried fire for three generations
 > still reads as Lower Palaeolithic and the one rung a short run reliably climbs
 > would not exist; and `netting` in the Mesolithic where the table says
-> `preserving`, which is the M8.1 node held back with spoilage. **The rungs from
-> the Neolithic down this table are not in the code**, because their `needs`
-> name technologies nobody can learn yet, and a rung no world can reach is
-> declared content that does nothing. **Adding the Neolithic rung is part of
-> M8.2**, in the same commit as the field — and `eras-name-only-real-
-> technologies` fails on the spot if it arrives early.
+> `preserving`, which is the M8.1 node held back with spoilage. **The Neolithic
+> rung shipped 2026-09-21**, in M11 phase 10's third commit, the one that
+> finally gave it all three of `farming`, `herding` and `masonry` — held back
+> until then because a rung whose `needs` name a technology nobody can learn is
+> declared content that does nothing, which `eras-name-only-real-technologies`
+> exists to catch. The rungs above it are still not in the code, for the same
+> reason.
 >
 > The `age` and `firstKnown` axes below also shipped in that pass, on all
 > thirty-two existing nodes. **Every node this document adds needs both**, and
@@ -289,24 +290,29 @@ mechanisms 4 (crafting stations) and 1 (spoilage, last and alone).
 
 Seventeen nodes. The pass where a band stops moving to the food.
 
+> **All seventeen nodes shipped.** `farming` and `composting` on
+> 2026-09-17; the other fifteen on 2026-09-21, in M11 phase 10's seven
+> commits — see `changelog.md` for each one's own measurement. The
+> Neolithic rung of `ERAS` is live.
+
 | node | domain | requires | what it does |
 |---|---|---|---|
-| `ground_stone` | stone | stoneworking, hafting | polished axe and adze: felling, and a term in `buildFactor` |
-| `spinning` | cloth | cordage | `thread`, and a spindle recipe |
-| `weaving` | cloth | spinning, basketry | a `loom` station and a `cloth` item: warmth, and the first thing worth trading |
+| `ground_stone` | stone | stoneworking, hafting | polished axe and adze: felling, and a term in `buildFactor`. **Shipped 2026-09-21** (M11 phase 10), and it repaired the long-standing `handaxe`-bypasses-`techPower` bug this document's "three repairs" section names, via a new `Tech.axeFactor` |
+| `spinning` | cloth | cordage | `thread`. **Shipped 2026-09-21** (M11 phase 10), in the same commit as `weaving` — thread has no reason to exist without the loom |
+| `weaving` | cloth | spinning, basketry | a `loom` station and a `cloth` item: warmth, and the first thing worth trading. **Shipped 2026-09-21** |
 | `farming` | plants | plant_lore, grinding | **fields. Shipped 2026-09-17.** A `field` design carrying a `Crop`, `sow` and `reap` (tilling folded into sowing), a `grain` item, wild cereal to take it from, and the three soil layers of `core/Soil.ts` under all of it. Returns `farming` to `TECHS` and closes the oldest open entry in `next-steps.md`. See `changelog.md` for the two designs that were measured and rejected on the way |
-| `sickle` | plants | farming, hafting | reaping speed |
-| `bread` | fire | grinding, farming, firemaking | an `oven` station; `bread`, high nutrition and long keeping |
-| `brewing` | fire | pottery, farming | `beer`: relieves `company`, raises opinion at a feast. Neolithic, and social |
-| `herding` | beasts | taming | a `pen` building and penned livestock that breed. Renewable meat |
-| `dairying` | beasts | herding, pottery | `milk`, and `cheese` once `preserving` is known |
-| `wool` | cloth | herding, spinning | warmer cloth than flax |
-| `wattle_daub` | timber | carpentry, cordage | a cheaper, warmer hut than the mud hut |
-| `masonry` | stone | stoneworking, carpentry | a `stone_house` with the best shelter in the game — and the worked stone M7's walls will want |
-| `kiln` | fire | pottery, masonry | the **first crafting station** (mechanism 4); better pots, and the temperature that leads to metal. The pivot node of the whole ladder |
-| `well` | stone | masonry | water away from the shore. **The first technology to touch thirst at all** |
-| `calendar` | plants | marking, farming | sowing in the right season: a yield term, and a hint from the elders |
-| `the_wheel` | timber | carpentry, ground_stone | a cart: capacity and speed on `haul`, a real action with a real scorer |
+| `sickle` | plants | farming, hafting | reaping speed. **Shipped 2026-09-21** (M11 phase 10), via a `Tech.reapFactor` term on `REAP_TICKS` |
+| `bread` | fire | grinding, farming, firemaking | an `oven` station; `bread`, high nutrition and long keeping. **Shipped 2026-09-21** (M11 phase 10) |
+| `brewing` | fire | pottery, farming | `beer`: relieves `company`, raises opinion at a feast. Neolithic, and social. **Shipped 2026-09-21** (M11 phase 10, seventh and last commit), as `RECIPES.beer` and a new verb, `toast` — routed around `doEat` because beer's nutrition is deliberately too low to ever win `bestFood`'s comparison. The opinion-at-a-feast half is not built: no feast mechanic exists, and this ships the buildable half of the claim honestly rather than inventing one, the same call `the_wheel` made about "speed" |
+| `herding` | beasts | taming | a `pen` building and penned livestock that breed. Renewable meat. **Shipped 2026-09-21** (M11 phase 10, third commit) — the one node in this tier needing a real mechanism, reusing `Building.store`/`doTake` rather than a new verb, with growth proportional to what a pen already holds. Also closes the Neolithic rung of `ERAS`, its last dependency |
+| `dairying` | beasts | herding, pottery | `milk`, and `cheese` once `preserving` is known. **Shipped 2026-09-21** (M11 phase 10, sixth commit) as a `BuildingDef.herd.byproducts` entry on the pen — no cheese yet, since `preserving` is still switched off |
+| `wool` | cloth | herding, spinning | warmer cloth than flax. **Shipped 2026-09-21** (M11 phase 10, sixth commit) as a second byproduct plus `RECIPES.wool_cloth` at the loom |
+| `wattle_daub` | timber | carpentry, cordage | a cheaper, warmer hut than the mud hut. **Shipped 2026-09-21** (M11 phase 10), as `wattle_hut` — no wood in its materials at all, which is the honest version of "cheaper" |
+| `masonry` | stone | stoneworking, carpentry | a `stone_house` with the best shelter in the game — and the worked stone M7's walls will want. **Shipped 2026-09-21** (M11 phase 10); the worked-stone-for-M7 half is still to come |
+| `kiln` | fire | pottery, masonry | the **first crafting station** (mechanism 4); better pots, and the temperature that leads to metal. The pivot node of the whole ladder. **Shipped 2026-09-21** (M11 phase 10, fourth commit) as `RECIPES.kiln_pot` — a second, cheaper-in-mud recipe for `pottery` rather than a `station: 'kiln'` retrofit onto `pot`, because the two would otherwise have competed on identical terms and `Brain`'s craft scorer has nothing that would ever let the station one win. The metal half of "the pivot node" is M8.3's to build |
+| `well` | stone | masonry | water away from the shore. **The first technology to touch thirst at all. Shipped 2026-09-21** (M11 phase 10, fifth commit). No new verb: `ActionSystem.waterWithinReach` and `Brain.findWater` both accept a well the way they already accept a water tile, and neither checks band ownership |
+| `calendar` | plants | marking, farming | sowing in the right season: a yield term, and a hint from the elders. **Shipped 2026-09-21** (M11 phase 10), via `Tech.calendarFactor` on `doReap`'s grasp term; no hint from the elders yet |
+| `the_wheel` | timber | carpentry, ground_stone | a cart: capacity and speed on `haul`, a real action with a real scorer. **Shipped 2026-09-21** (M11 phase 10) as a `carryFactor` term — capacity only. The "speed" half is deliberately not built: this game has no ladenness penalty for a cart to answer, and inventing one to make the claim true was out of scope for a numeric-term commit |
 | `trade` | cloth | marking | a `barter` action between bands reading `ItemDef.baseValue` — **which today only `doSteal` reads.** Pairs with the owner's O4 |
 
 ## M8.3 — Chalcolithic and Bronze

@@ -113,12 +113,36 @@ changelog and is the owner's to answer.
 | M9.6 phase 1 — the autumn harvest repaired, and fruit that falls | shipped 2026-09-17. 1a the midnight sample, 1b the swell, 1c the windfall |
 | M9.6 phase 2 — a tribe graph that holds still | shipped 2026-09-17 |
 | M9.6 phase 3 — a depleted thing looks depleted | shipped 2026-09-17 |
-| **M8.2 — the other fifteen Neolithic nodes** | **next**, after M9.6's cheap half. See [m8_plan_the_ages.md](m8_plan_the_ages.md) |
-| M9.6 phases 4–5 — happiness, and sleeping rough | planned; runs after M8.2 and before M10, so M10's fences have something to pay off in |
+| M11 phase 0 — the fork table, the stranger instrument, and a world with pressure | shipped 2026-09-17. `lean` is the seventeenth scenario |
+| M11 phase 1 — the choice stops being argmax | shipped 2026-09-17. Free across 20 seeds, and it took two old failures green |
+| M11 phase 2 — theft and violence read the target, and predation exists | shipped 2026-09-17 |
+| M11 phase 3a — the urge to go and tell somebody | shipped 2026-09-17, and it flushed out the reachability defect |
+| M11 phase 3b — the secret is a thing you can see | shipped 2026-09-17. An unseen deed involving your character says so over their head |
+| M11 phase 4 — property is protected by attention | shipped 2026-09-17. Unwatched foreign use is possible; an owner in sight can stop it |
+| M11 phase 5a, bundled with M9.6 phase 4a — `malice`, and a mood that exists | shipped 2026-09-17. The trait and the four channels are inert; nobody reads either yet |
+| M11 phase 5b — the event table stops declaring what nobody does | shipped 2026-09-17. `talk`/`trade` removed, `help` connected, `slander`/`praise` declared ahead of their verb |
+| M11 phases 3c and 5c — gossip is grounded, and a subject does not hear about it by magic | shipped 2026-09-18. `slander`/`praise` read `Memory.bestSignedStory`; the subject learns only by witnessing it; no player menu entry yet, same as `court` |
+| M11 phases 5d-5f — factions, exile that reaches, and the door back | shipped 2026-09-20. `Factions.conspiracyAgainst` replaces exile's dead average-opinion gate; `considerAdoption` mirrors it for a wandering outcast |
+| M11 phases 6a-6e — inequality | shipped 2026-09-20. `Household.homeBuildingId` replaces the unreachable `store`; a greedy household hoards there; `renown` gets a writer (`onDeed`) and two readers (`standingOver`, `chooseChief`), both relative to the band's own average. A five-commit downward drift in `lean`'s mean survival (91.2% → 88.1%) was flagged for the owner, who read it as the intended cost of the arc — continue without a hard floor |
+| M11 phase 7 — `BandRelations`, its four engines, its three readers | shipped 2026-09-20. `firstImpression`, cross-band deeds, marriage, territory, trade, `mayUse`'s ally exception, `Conversation.crossBand`, and `Brain`'s `bandHostility` in `steal`/`threaten`/`attack`; `bands-take-sides` gates on the spread, length-floored at 60 days |
+| M11 phase 8 — macronutrients | shipped 2026-09-21. `ItemDef.macros`, `Person.macroBalance`/`macroTarget` (the latter shifted by `NeedsSystem.exertionOf`, reused rather than duplicated), `Macros.malnutrition` capping and slowing health recovery — never a direct drain, `LETHAL_NEEDS` untouched — and a Diet section on the Now tab. Declared budget of 5 points of mean survival was not spent: `lean` 88.1% → 88.1%, `century` 99.0% → 99.5%, both within documented noise |
+| M11 phase 9a — a painting is a spark, not a transcript | shipped 2026-09-21. `InscriptionDef.fidelity` splits `instruction` (stone, clay — hands over the finished design) from `reminder` (`ochre` — seeds a `conceived` idea instead); `recordedTech` narrows to `instruction` and the new `rememberedTech` takes the other half. Found and fixed along the way: `Brain` and `ActionCatalog`'s `read` scorers judged a record solely by `!knownTech.has`, which a `reminder` never satisfies, so people kept walking to an already-sparked painting and being turned away — visible as `craft` losing `spatial-hash-spreads` and `perf-budget` to clustering before the scorers got the same guard `doRead` has |
+| M11 phase 9b — the oral channel | shipped 2026-09-21. A new practice `storytelling` (tried by `talk`, no prerequisite) scales `KnowledgeSystem.teach`'s chance and buys an extra story at the `deep` conversation rung; `tradition` enters that same chance formula for the first time (it already weighted `Brain`'s teach scorers); `KnowledgeSystem.hearthLesson`, a new `hearthRng`-gated nightly roll on the same midnight sample `shareTheHearth` already takes, lets a household's wisest adult teach a child under the same roof with no travelling or asking. 10-seed cohorts: `century` 99.7% (447 born, 12.6 technologies known at the end against phase 0's 5.4 baseline), `lean` 86.7% (within documented ten-seed noise of phase 8e's 88.1%) |
+| M11 phase 9c — writing goes behind the surplus | shipped 2026-09-21, closing phase 9. `writing.requires` gains `farming`, historically (script answers a surplus) and mechanically (9a's nerf to `ochre` had made `writing` the dominant record channel by sitting one step off the root nodes). `scribes`'s founders needed `plant_lore`/`grinding`/`farming` to stay literate at all, and a new `PopulationConfig.startingTechByBand` gives its two bands different extra technologies (`basketry`/`clothing`) so there is finally something on a stone that somebody lacks — `records-are-cut` went from reporting 0 reads to 5, in a deliberately separate second commit from the re-gating that could not have fixed it alone |
+| M11 phase 10, first commit — four widened-Neolithic nodes | shipped 2026-09-21. `ground_stone` (two tools, and the `axeFactor`/`buildFactor` repair to the long-standing `handaxe`-bypasses-`techPower` bug), `spinning`+`weaving` (thread, cloth, and the loom as mechanism 4's third station), `sickle` (a `reapFactor` term shortening `REAP_TICKS`). 20-seed `century` cohort: survival 99.7% → 99.6% (noise), technologies known 12.3 → 13.2, conceived past the root nodes 9.9 → 11.6. Eleven Neolithic nodes remain |
+| M11 phase 10, second commit — five more widened-Neolithic nodes | shipped 2026-09-21. `masonry`+`wattle_daub` (`stone_house` and `wattle_hut`, two more shelters `BandSystem.planBuildings` picks up with no code change), `calendar` (a practice, tried by `sow`, multiplying `doReap`'s grasp term rather than its floor), `the_wheel` (a `cart` term on `carryFactor` — the plan's haul-speed claim is left out, on record, since nothing in this game slows a laden walker to begin with), `bread` (mechanism 4's fourth station, `BUILDINGS.oven`). 20-seed `century` cohort essentially flat against the first commit: survival 99.6% → 99.7%, technologies known 13.2 → 13.4. Six nodes remain |
+| M11 phase 10, third commit — `herding`, and the Neolithic era rung | shipped 2026-09-21. The one node in this tier needing a real mechanism: a `pen` reuses `Building.store` and `doTake` wholesale, breeding proportionally to what it already holds (`Simulation.workHerds`) rather than at a flat rate, so a pen culled to nothing stays at nothing. Caught and fixed before landing: the ordinary hungry-larder route in `Brain` never walked to a stocked pen because a closer granary hid it, the exact failure traps already solved — fixed by giving pens the same fullness-and-nearness "round" bonus. `farmers` gained `taming`+`herding` in its starting technologies to exercise it (100.0%→99.6% survival, within documented noise) and the Neolithic rung of `ERAS` was added in the same commit, its last dependency (`masonry`) having just shipped. Five nodes remain |
+| M11 phase 10, fourth commit — `kiln` | shipped 2026-09-21. Mechanism 4's fifth station, and a scoring trap caught while designing it rather than while measuring it: a same-cost second recipe for `pottery` could never have outscored the stationless `RECIPES.pot`, since `Brain`'s craft scorer has no term for "cheaper" or "faster", only proximity — so `kiln_pot` costs less mud instead, a real niche the scorer does not need to know about. Verified empirically with a throwaway script before shipping: `crafted_kiln_pot: 5` against `crafted_pot: 80` over 20,000 ticks. `century` bit-identical, same as every node since `ground_stone` — `kiln` needs `pottery` and `masonry` together, a combination this cohort never reaches. Four nodes remain |
+| M11 phase 10, fifth commit — `well` | shipped 2026-09-21. The first technology to touch thirst. No new verb: `ActionSystem.waterWithinReach` accepts a nearby well exactly as it accepts a water tile, `Brain.findWater` picks whichever is nearer, and neither checks band ownership — a well is open the way natural water is. One per band, lowest priority in `BandSystem.planBuildings`. Verified empirically before committing to the design (a new `drink_at_well` counter, since a shrunk travel distance is not something the health report counts on its own): a throwaway script showed both of two bands autonomously building one and one in five drinks landing at it. `century` bit-identical. Three nodes remain |
+| M11 phase 10, sixth commit — `dairying` and `wool` | shipped 2026-09-21. Both accrue into a pen's own `store` via a new `BuildingDef.herd.byproducts`, `dairying` a practice (`take` is the closest thing to a milking verb) and `wool` a device gating `RECIPES.wool_cloth` at the loom. Two real defects found by measurement: milk bred but was never eaten (`bestFood` always preferred meat's higher nutrition — fixed by having `doTake` share everything a pen holds rather than choosing one stack) and, even after that fix, wool bred but was never woven (the fix had shared only edible stacks, and wool answers no need at all — fixed by dropping the edibility filter). A third finding: adding this pair directly to `farmers`'s starting technologies moved that seed's cascade far enough to stop any field being sown for the whole run, so a new dedicated scenario, `herders`, carries the pastoral chain apart from farming instead, on the same argument that keeps `stewards` apart from `farmers`. `herders`, 20-seed cohort: 99.9% survival. `century` bit-identical. One node remains |
+| M11 phase 10, seventh and last commit — `brewing`, closing the tier | shipped 2026-09-21. `beer` and a new verb, `toast`, mirroring `doPlay` rather than routing through `doEat` — beer's nutrition is deliberately too low to ever win `bestFood`'s comparison, on purpose, so it needed its own verb regardless. A third scenario, `feasts`, apart from both `farmers` and `herders`, after measuring the same class of collision twice already: `farming` alone never got a field planted (wild grain is worthless without `grinding`), and `farming` with `grinding` got one planted but never sown (`brewing` was spending the same wild grain a sowing needs). `brewing`'s recipe reads only `pottery` in practice, so `farming` is left out of the scenario entirely. **All fifteen of M8.2's Neolithic nodes are now shipped.** `century` bit-identical throughout; `feasts` 20-seed cohort: 99.9% survival |
+| M11 phase 11a — two trainers for `fight` | shipped 2026-09-21. `docs/bugs.md`'s "no warriors" gap (`fight` trained only by landing a blow) blocked the rest of the phase, so it went first. `doHunt`'s kill trains a small trickle; a new verb, `spar`, is deliberate, mutual, same-band training between willing people — nobody is hurt, both sides gain skill and a little company. 20-seed `century`: 99.6% survival, in line with recent baselines; `sim:check:all`'s only side-changes fall on checks `bugs.md` already documents as one/two-event-wide tripwires |
+| **M11 phase 11b-e** | **next.** `Building.durability` and `sabotage`, a raiding-party organiser in `BandSystem.daily`, captivity as a `Person` state, and the UI readers. See `m11_plan.md`'s "Fase 11" for the breakdown |
+| M9.6 phases 4b–5 — happiness reads, and sleeping rough | planned; 4a (the field) shipped with M11 phase 5a; runs after M8.2 and before M10, so M10's fences have something to pay off in |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
-| Owner's list O1–O5 | **O1, O2 and O3 shipped in M9 phase 4.** O4-O5 scheduled into M10. O6 and O7 shipped in pass A |
+| Owner's list O1–O5 | **O1-O3 shipped in M9 phase 4; O4 in M11 phase 4.** O5 remains with M10. O6 and O7 shipped in pass A |
 
 **Thirty-four technologies**, fourteen recipes, twelve buildings, thirty-one items,
 thirty-seven actions (`sow`, `reap` and `spread` are new), twelve skills (`heal`, `cook` and
@@ -211,8 +235,11 @@ documents are not comparable with post-M7 ones; each milestone's entry in
    plan is explicit that decline without an answer is a strictly worse world: a
    heap that ripens what is put into it, a `spread` verb that fetches and
    carries as one errand, and a `stewards` scenario that ends with its ground at
-   95.4% of resting against `farmers`' 81.1% on the same seed. Fifteen Neolithic
-   nodes remain. See `changelog.md`.
+   95.4% of resting against `farmers`' 81.1% on the same seed. **The other
+   fifteen Neolithic nodes shipped 2026-09-21 as M11 phase 10, in seven
+   commits — see `changelog.md` and the M11 phase 10 rows below.** All
+   seventeen of M8.2's nodes are now live, and the Neolithic rung of `ERAS`
+   with them.
 
    Three things carried forward into it from M8.1:
 
@@ -431,8 +458,9 @@ reachable.
 
 Eight things asked for by the project owner on 2026-09-06. **O6 (continuous
 movement) and O7 (clicking a single entity still offers the ground) shipped in
-pass A.** **O1, O2 and O3 shipped in M9 phase 4 on 2026-09-11** — see
-`changelog.md` — and **O4 and O5 are scheduled inside M10**, after M8.2.
+pass A.** **O1, O2 and O3 shipped in M9 phase 4 on 2026-09-11**, and **O4
+shipped in M11 phase 4 on 2026-09-17** — see `changelog.md`. O5 remains inside
+M10, after M8.2.
 
 **Correction, 2026-09-10.** This section previously said the decision for O4
 "lives" in `normsByBand` and the standing machinery in `social/Authority.ts`.
@@ -446,6 +474,12 @@ carries nothing beyond `id`, `name`, `homeX/homeY`, `norms`, `chiefId` and
 `outcast`. O4 and O5 are therefore redesigned in M9's closing section against a
 mechanism that has to be built first, not retrofitted onto one that already
 exists, and that whole mechanism is what M10 is.
+
+**Second correction, 2026-09-20.** That state now exists: `BandRelations`
+shipped in M11 phase 7a, symmetric and decaying toward 0 at 0.998/day. It
+shipped inert — every pair starts and, until phase 7b's engines land, stays
+at 0 — so the paragraph above is still true of the *default* world today,
+but no longer true of the codebase.
 
 **O4 and O5 are worth more after M8.2.** A band that owns fields, a herd and a
 kiln has property worth refusing a rival and property worth burning; today it
@@ -514,15 +548,16 @@ expertise.
 **This is also a candidate answer to M8.0**, since it is a transmission channel
 and transmission is what gates the tree.
 
-### O4. Buildings belong to a tribe, and rivals may be refused the use of them — scheduled as M10
+### O4. Buildings belong to a tribe, and rivals may be refused the use of them — shipped in M11 phase 4
 
-`Building.ownerBandId` exists and is honoured in exactly one place: `Brain` only
-sends somebody to a store belonging to their own band. What is wanted is access
-decided by **the relationship between two tribes**, not a hard same-band test —
-and no such relationship exists yet to decide it (see the correction above).
-M10 has to build inter-band standing before this can read it, and refusal must
-reach the player through `lastRefusal` once it does — a store that silently is
-not offered is exactly what that standing rule exists to prevent.
+`Building.ownerBandId` is now read through `social/Property.ts`, not through
+copied same-band gates. A rival may use an unwatched store, roof, field, heap or
+workshop; a living member of the owning band within sight can stop them, and
+the reason reaches the player. Taking emits `theft`, while other foreign use
+emits `trespass`, so what happened is known only by witnesses and later gossip.
+Band-to-band standing still does not exist — M11 phase 7 builds that separate
+question, which will decide how two groups feel about one another rather than
+whether matter becomes physically unusable at a border.
 
 ### O5. Sabotage, so war between tribes is more than beating people up — scheduled as M10
 
@@ -838,12 +873,16 @@ most of this section now has a home. What remains outside M8:
   something from the neighbours. See O5.
 - ~~**Farming is declared but inert.**~~ It is not in `TECHS` at all, for exactly
   the right reason, and **it returns in M8.2** with fields, `sow` and `reap`.
-- **Exile is a one-way door**, and currently never fires at all.
+- ~~**Exile is a one-way door**, and currently never fires at all.~~ Fixed in
+  M11 phase 5e: `considerExile` now gates on `Factions.conspiracyAgainst`
+  rather than a band-average opinion the average never actually crossed, and
+  phase 5f's `considerAdoption` opens the door back for a wandering outcast.
 - **No simulation LOD.** Everyone is simulated in full detail.
 - **Nobody plants a tree.** Bands fell timber when a site needs it, but no one
   has a reason to leave a stand standing for their grandchildren. All of the
   entity machinery for it already exists in `Tree` and `ForestSystem`; what is
   missing is a `plant` action and a reason.
-- **`household.store` is written and never read.** `LifeSystem` puts a dead
-  person's goods there and nothing anywhere takes them out again. Recorded in
-  [bugs.md](bugs.md).
+- ~~**`household.store` is written and never read.**~~ Fixed in M11 phase 6a:
+  `Household.store` is gone, replaced by `Household.homeBuildingId` — a real
+  building a dead member's unheired goods, and now a rival, can actually
+  reach.

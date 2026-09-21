@@ -271,3 +271,126 @@ describe('the tribe graph in ranks', () => {
     expect(eased.nodes.map(node => node.personId)).toContain(25);
   });
 });
+
+/**
+ * M9.6 phase 2d — the graph must come to a *stop*.
+ *
+ * Phase 2b and 2c stopped the graph re-deriving itself from scratch and stopped
+ * it rebuilding its DOM on a pixel of drift, and the owner reported it moving
+ * anyway: "it moves, and when it gets layers it behaves very chaotic, changing
+ * shapes dozens if not hundreds of times per second even if paused." Both
+ * halves of that were real, and they were two different bugs.
+ *
+ * These are the guards. The numbers below are what the *broken* build measured
+ * on the same inputs, which is the only reason to trust them:
+ *
+ * | check                        | before      | after |
+ * |------------------------------|-------------|-------|
+ * | ranked, world frozen         | ~600 px/fr  | 0     |
+ * | flat, world frozen, rotation | 2°/10 fr    | 0     |
+ *
+ * "Even if paused" is the load-bearing word. Nothing about the world changes
+ * between these frames, so any movement at all is the layout arguing with
+ * itself rather than tracking anything the player did.
+ */
+describe('the tribe graph holds still', () => {
+  /** A crowded circle: enough people for a row to be a real queue. */
+  function crowd(): RelationshipGraph {
+    const rel = new RelationshipGraph();
+    for (let id = 2; id <= 26; id++) {
+      rel.addDeed(1, id, (id % 2 ? -1 : 1) * ((id * 7) % 90), 0);
+    }
+    for (let a = 2; a <= 20; a++) {
+      for (let b = a + 1; b <= 26; b++) {
+        if ((a * b) % 5 === 0) rel.addDeed(a, b, (a * b) % 71 - 35, 0);
+      }
+    }
+    return rel;
+  }
+
+  /** Runs `frames` easing passes over an unchanging world, newest drawn last. */
+  function frames(rel: RelationshipGraph, ranks: Map<number, BandRank> | null, count: number) {
+    let layout = layOutTribe(1, rel, 900, 600, ranks);
+    const drawn: Map<number, { x: number; y: number }>[] = [];
+    for (let frame = 0; frame < count; frame++) {
+      layout = layOutTribe(1, rel, 900, 600, ranks, layout.settled);
+      drawn.push(new Map(layout.nodes.map(node => [node.personId, { x: node.x, y: node.y }])));
+    }
+    return drawn;
+  }
+
+  /** The furthest any one person moved between two drawn frames. */
+  function moved(
+    a: Map<number, { x: number; y: number }>,
+    b: Map<number, { x: number; y: number }>
+  ): number {
+    let worst = 0;
+    for (const [id, to] of b) {
+      const from = a.get(id);
+      if (from) worst = Math.max(worst, Math.hypot(to.x - from.x, to.y - from.y));
+    }
+    return worst;
+  }
+
+  const rungs = (): Map<number, BandRank> => {
+    const ranks = new Map<number, BandRank>([[1, 'member']]);
+    for (let id = 2; id <= 26; id++) {
+      ranks.set(id, id === 2 ? 'chief' : id < 6 ? 'head' : id < 22 ? 'member' : 'child');
+    }
+    return ranks;
+  };
+
+  it('stops moving entirely once a flat graph has settled', () => {
+    const drawn = frames(crowd(), null, 90);
+    // The last twenty frames of a world in which nothing whatever happened.
+    for (let frame = 71; frame < 90; frame++) {
+      expect(moved(drawn[frame - 1]!, drawn[frame]!)).toBeLessThan(0.01);
+    }
+  });
+
+  it('stops moving entirely once a ranked graph has settled', () => {
+    // The owner's "when it gets layers". On the build without the fix this is
+    // the violent one: a row of sixteen fought its own minimum spacing and
+    // threw every node the width of the panel and back, every frame, for ever.
+    const drawn = frames(crowd(), rungs(), 90);
+    for (let frame = 71; frame < 90; frame++) {
+      expect(moved(drawn[frame - 1]!, drawn[frame]!)).toBeLessThan(0.01);
+    }
+  });
+
+  it('does not slowly rotate once it has settled', () => {
+    // The quiet half of the bug, and the one no other check here could see.
+    // The shape was right and stayed right — the whole wheel simply turned,
+    // about two degrees every ten frames, so "nobody overlaps" and "the same
+    // input gives the same output" both passed while the panel span.
+    const drawn = frames(crowd(), null, 90);
+    const first = drawn[70]!;
+    const last = drawn[89]!;
+    const centre = (at: Map<number, { x: number; y: number }>) => {
+      let x = 0, y = 0;
+      for (const point of at.values()) { x += point.x; y += point.y; }
+      return { x: x / at.size, y: y / at.size };
+    };
+    const from = centre(first);
+    const to = centre(last);
+    for (const [id, after] of last) {
+      const before = first.get(id)!;
+      let turned = Math.atan2(after.y - to.y, after.x - to.x) -
+        Math.atan2(before.y - from.y, before.x - from.x);
+      while (turned > Math.PI) turned -= Math.PI * 2;
+      while (turned < -Math.PI) turned += Math.PI * 2;
+      expect(Math.abs(turned) * 180 / Math.PI).toBeLessThan(0.05);
+    }
+  });
+
+  it('never lets one pair of nodes throw each other across the panel', () => {
+    // The mechanism behind the ranked explosion, measured directly rather than
+    // through the picture. `fitInto` scales whatever it is given back into the
+    // box, so an arrangement that had blown out to forty thousand pixels still
+    // *arrived* looking panel-sized — which is exactly why this went unnoticed.
+    // The pre-fit span is the honest reading.
+    const layout = layOutTribe(1, crowd(), 900, 600, rungs());
+    const xs = [...layout.settled.values()].map(point => point.x);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(4000);
+  });
+});

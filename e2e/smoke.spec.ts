@@ -159,6 +159,19 @@ async function clickAndChoose(
  * Animals are the reason it also wants margin: they wander while the test is
  * doing its round trips, so a tile that was clear when it was chosen can have a
  * deer on it by the time the click lands.
+ *
+ * The radius cap widened once already: on the pinned `e2e-fixture` seed, M11
+ * phase 5b's `slander` entry in `VARIABLE_NORMS` moved one more RNG draw
+ * ahead of band placement, same as every past addition to that table, and
+ * the nearest clear tile from the player's new spawn point moved from
+ * comfortably inside the old cap of 10 to radius 11 — one ring past it, in a
+ * start camp this dense with resource nodes. That alone chased a screen point
+ * under the top bar and, past it, off the bottom of the viewport entirely: a
+ * wider radius is not the same thing as a point still reachable by a click.
+ * The search now confirms each candidate with `elementFromPoint` — the same
+ * question a real click asks, on-screen or off, under any chrome or none —
+ * rather than naming `.hud-bar`, `.hud-panel` and `.hud-help` by hand and
+ * hoping nothing else is ever laid over the canvas.
  */
 async function emptyGround(page: Page): Promise<{ x: number; y: number }> {
   const point = await page.evaluate(() => {
@@ -188,13 +201,17 @@ async function emptyGround(page: Page): Promise<{ x: number; y: number }> {
       // Wider, because these move between choosing the tile and clicking it.
       d.sim.animals.every(a => !a.alive || Math.hypot(a.x - x, a.y - y) > 6);
 
-    for (let radius = 3; radius <= 10; radius++) {
+    const canvas = document.getElementById('view');
+
+    for (let radius = 3; radius <= 16; radius++) {
       for (let angle = 0; angle < 16; angle++) {
         const x = Math.round(d.sim.player.x + Math.cos(angle) * radius);
         const y = Math.round(d.sim.player.y + Math.sin(angle) * radius);
-        if (clear(x, y)) {
-          return { x: d.camera.worldToScreenX(x), y: d.camera.worldToScreenY(y) };
-        }
+        if (!clear(x, y)) continue;
+        const sx = d.camera.worldToScreenX(x);
+        const sy = d.camera.worldToScreenY(y);
+        if (document.elementFromPoint(sx, sy) !== canvas) continue;
+        return { x: sx, y: sy };
       }
     }
     return null;
@@ -2019,4 +2036,90 @@ test('a phone viewport keeps the HUD reachable and touch pans the map', async ({
 
   expect(errors).toEqual([]);
   await context.close();
+});
+
+/**
+ * M9.6 phase 2d — the owner's two reports about the graph panels on a phone
+ * and in ranks, asserted through a real browser rather than through arithmetic.
+ */
+test('the tech web opens with readable names on a phone', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  const errors = guardErrors(page);
+  await ready(page);
+
+  await page.locator('.hud-mobile-tool', { hasText: 'Tech' }).click();
+  await expect(page.locator('.techweb')).toBeVisible();
+
+  // The report was "only the circles but no names". `.is-far` is the class
+  // that strips every label, and the panel used to open below its threshold on
+  // any phone because `boxSize` asked for a 520px viewport inside a 378px card.
+  await expect(page.locator('.techweb-canvas')).not.toHaveClass(/is-far/);
+
+  // Something the player can actually read. A node the subject knows carries
+  // its label; on the broken build every one of these is an empty circle.
+  const named = page.locator('.techweb-node .techweb-name').filter({ hasText: /\S/ });
+  expect(await named.count()).toBeGreaterThan(0);
+
+  // And the viewport must fit the card rather than overflowing it.
+  const viewport = await page.locator('.techweb-viewport').boundingBox();
+  expect(viewport).not.toBeNull();
+  expect(viewport!.x).toBeGreaterThanOrEqual(-1);
+  expect(viewport!.x + viewport!.width).toBeLessThanOrEqual(390 + 1);
+
+  // Opening zoomed in is only acceptable because the rest is reachable. One
+  // finger has to pan the web — before this the panel had no touch handlers at
+  // all and the view could not be moved on a phone by any means.
+  const transformBefore = await page.locator('.techweb-canvas')
+    .evaluate(el => (el as HTMLElement).style.transform);
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart', touchPoints: [{ x: 195, y: 300 }],
+  });
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove', touchPoints: [{ x: 285, y: 360 }],
+  });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const transformAfter = await page.locator('.techweb-canvas')
+    .evaluate(el => (el as HTMLElement).style.transform);
+  expect(transformAfter).not.toBe(transformBefore);
+
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
+test('the tribe graph stands still while the game is paused', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+
+  // Paused *before* the panel goes up: a graph counts as a menu, and while a
+  // menu is open the game stops listening to Space. Nothing in the world can
+  // move anybody from here, so whatever the panel does it is doing to itself.
+  await page.keyboard.press(' ');
+  await page.keyboard.press('t');
+  await expect(page.locator('.tribegraph')).toBeVisible();
+  await expect(page.locator('.tribegraph-node').first()).toBeVisible();
+
+  const positions = async () => page.locator('.tribegraph-node').evaluateAll(
+    els => els.map(el => (el as HTMLElement).style.left + ',' + (el as HTMLElement).style.top));
+
+  // Let any opening ease finish, then watch.
+  await page.waitForTimeout(700);
+  const settled = await positions();
+  expect(settled.length).toBeGreaterThan(1);
+  for (let look = 0; look < 4; look++) {
+    await page.waitForTimeout(180);
+    // A band this young has not had the idea of dividing its labour, so this is
+    // the flat sociogram — the half of the report that drifted slowly, by a
+    // rigid rotation of about two degrees every ten frames. The ranked half,
+    // which threw every node some six hundred pixels per frame, needs a band
+    // with a shape and is covered in `tribegraph.test.ts` instead.
+    expect(await positions()).toEqual(settled);
+  }
+
+  expect(errors).toEqual([]);
 });

@@ -17,7 +17,9 @@ import { Arrival, type MovementSystem } from './MovementSystem.ts';
 import { companionBonus } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
-import { isTrap, isHeap, type Building } from '../entities/Building.ts';
+import {
+  isTrap, isHeap, isHerd, isWell, isStructure, type Building,
+} from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import type { Tree } from '../entities/Tree.ts';
@@ -25,6 +27,7 @@ import type { Animal } from '../entities/Animal.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import type { KnowledgeSystem } from './KnowledgeSystem.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
+import type { BandRelations } from '../social/BandRelations.ts';
 import { menaceOver } from '../social/Authority.ts';
 import {
   CONVERSATION_MODES, chooseMode, meetingOfMinds, modeAllowed, type ConversationMode,
@@ -38,10 +41,12 @@ import {
 import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import {
-  TECH, buildFactor, forageYieldFactor, nutritionFactor, prerequisitesMet, tallyFactor,
-  techPower, weaponOf, armourOf, type Tech,
+  TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor, nutritionFactor,
+  prerequisitesMet, reapFactor, tallyFactor, techPower, weaponOf, armourOf, type Tech,
 } from '../knowledge/Tech.ts';
-import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
+import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
+import { mayUse } from '../social/Property.ts';
+import type { EventType } from '../social/Events.ts';
 
 export interface ActionContext {
   world: World;
@@ -58,6 +63,8 @@ export interface ActionContext {
   onTreeFelled: (tree: Tree, feller: Person) => void;
   peopleById: Map<number, Person>;
   peopleHash: SpatialHash<Person>;
+  /** For `mayUse`'s reading of how the two bands involved currently stand. */
+  bandRelations: BandRelations;
   social: SocialSystem;
   rng: RNG;
   tick: number;
@@ -144,11 +151,36 @@ function talkModeOf(person: Person, rel: Relationship | null, tick: number): Con
 /** Ticks to hand something over and be thanked for it. */
 const GIVE_TICKS = 15;
 
+/** Ticks to haggle out a trade. Longer than a plain gift; both sides bargain. */
+const TRADE_TICKS = 25;
+
 /** Ticks a courtship visit takes. Longer than a conversation; it is one. */
 const COURT_TICKS = 60;
 
 /** Ticks to show somebody how a thing is done. Longer than any conversation. */
 const TEACH_TICKS = 90;
+
+/**
+ * Ticks of a friendly training bout. Between a conversation and a lesson.
+ *
+ * The honest answer to the gap `docs/bugs.md` recorded shipping M11 phase 2:
+ * `fight` had exactly one trainer, landing a blow in earnest, so nobody could
+ * ever become a better fighter than the person standing next to them without
+ * first fighting them — no warriors, no feared household, no border guard
+ * worth the name. `spar` is the safe half of the owner's chosen fix: nobody
+ * is hurt, both people leave knowing a little more about defending
+ * themselves, and it reads as camaraderie rather than violence. The other
+ * half is a small trickle from a real hunt kill — see `doHunt`.
+ */
+const SPAR_TICKS = 50;
+/** Both parties gain this. A deliberate bout teaches more than one blow taken. */
+const SPAR_TRAIN = 0.6;
+/** A grudging opponent is not a training partner; see `doDiscuss`'s own gate. */
+const SPAR_MIN_REGARD = 0;
+const SPAR_WARMTH = 3;
+const SPAR_RELIEF = 0.25;
+/** A kill in earnest teaches a little of what a spar teaches on purpose. */
+const HUNT_FIGHT_TRAIN = 0.25;
 
 /**
  * Ticks of sitting and turning a problem over.
@@ -387,6 +419,10 @@ const STEAL_TICKS = 30;
  */
 const THREATEN_TICKS = 18;
 
+/** Ticks to tell somebody what you think of a third party. As short as `give`: a
+ * remark, not a negotiation. */
+const GOSSIP_TICKS = 14;
+
 /** Ticks before a person will deliberately approach anyone again. */
 const SOCIAL_COOLDOWN = 220;
 
@@ -428,6 +464,15 @@ const GRUDGE_DISCHARGE = 9;
 const PLAY_TICKS = 120;
 const EARSHOT = 16;
 const PLAY_RELIEF = 0.35;
+
+/**
+ * `brewing`'s verb, and shorter than a tune on purpose: raising a cup is a
+ * moment, not a performance, so `TOAST_RELIEF` lands once, at the end,
+ * rather than accruing tick by tick the way `PLAY_RELIEF` does. Shares
+ * `EARSHOT` with `play` — a shared drink carries about as far as a tune.
+ */
+const TOAST_TICKS = 30;
+const TOAST_RELIEF = 12;
 
 /**
  * Health mended per tick of being tended, before skill and refinement.
@@ -478,6 +523,7 @@ export class ActionSystem {
       case 'flee': this.doFlee(person, ctx); break;
       case 'haul': this.doHaul(person, ctx); break;
       case 'build': this.doBuild(person, ctx); break;
+      case 'sabotage': this.doSabotage(person, ctx); break;
       case 'store': this.doStore(person, ctx); break;
       case 'take': this.doTake(person, ctx); break;
       case 'pickup': this.doPickup(person, ctx); break;
@@ -486,6 +532,7 @@ export class ActionSystem {
       case 'talk': this.doTalk(person, ctx); break;
       case 'court': this.doCourt(person, ctx); break;
       case 'teach': this.doTeach(person, ctx); break;
+      case 'spar': this.doSpar(person, ctx); break;
       case 'ask': this.doAsk(person, ctx); break;
       case 'craft': this.doCraft(person, ctx); break;
       case 'inscribe': this.doInscribe(person, ctx); break;
@@ -495,13 +542,17 @@ export class ActionSystem {
       case 'discuss': this.doDiscuss(person, ctx); break;
       case 'prototype': this.doPrototype(person, ctx); break;
       case 'give': this.doGive(person, ctx); break;
+      case 'trade': this.doTrade(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
+      case 'slander': this.doSlander(person, ctx); break;
+      case 'praise': this.doPraise(person, ctx); break;
       // M8.1's three new verbs. All three answer something the world could not
       // answer before: loneliness for more than two people at once, being hurt
       // beyond waiting it out, and an animal that is neither food nor a threat.
       case 'play': this.doPlay(person, ctx); break;
+      case 'toast': this.doToast(person, ctx); break;
       case 'tend': this.doTend(person, ctx); break;
       case 'tame': this.doTame(person, ctx); break;
       case 'sow': this.doSow(person, ctx); break;
@@ -681,6 +732,20 @@ export class ActionSystem {
         if (ctx.world.isWater(cx + dx, cy + dy)) return true;
       }
     }
+    // `well`: a real second source rather than a decoration, and open to
+    // anyone the way natural water is — a spring has no owner, and neither
+    // does a well dug over one. The margin matches the water check's own
+    // leniency, for the same reason it exists there. `!building.ruined`,
+    // M11 phase 11b: a sabotaged well is a hole, not a source.
+    for (const building of ctx.buildingsById.values()) {
+      if (building.complete && !building.ruined &&
+        isWell(building.def) && building.contains(x, y, 2)) {
+        // The only way to tell a well is answering thirst at all, rather than
+        // standing built and unused while everybody still walks to the shore.
+        telemetry.count('drink_at_well');
+        return true;
+      }
+    }
     return false;
   }
 
@@ -699,11 +764,23 @@ export class ActionSystem {
     // forage than one that does not, and can therefore support more people on
     // the same ground.
     const cooked = nutritionFactor(person);
-    person.needs.hunger = Math.max(
-      0,
-      person.needs.hunger - (ITEMS[foodId]?.nutrition ?? 0) * cooked
-    );
+    const eaten = (ITEMS[foodId]?.nutrition ?? 0) * cooked;
+    person.needs.hunger = Math.max(0, person.needs.hunger - eaten);
+    // M11 phase 8b: fold what was actually eaten into today's ledger, in the
+    // same units `decayMacroBalance` will normalise into fractions. Cooking's
+    // bonus counts here too — a band that cooks eats more of whatever it ate.
+    const macros = ITEMS[foodId]?.macros;
+    if (macros) {
+      person.macroIntakeToday.fat += eaten * macros.fat;
+      person.macroIntakeToday.protein += eaten * macros.protein;
+      person.macroIntakeToday.carb += eaten * macros.carb;
+    }
     telemetry.count('eat');
+    // Per-item, on the same `completed_<id>`/`crafted_<id>` idiom the rest of
+    // the health report uses — added for `milk`, which has no other way to
+    // show that a byproduct nobody has ever needed to name before is actually
+    // being eaten rather than only accruing.
+    telemetry.count('eaten_' + foodId);
     if (person.needs.hunger <= 0) this.finish(person);
   }
 
@@ -902,8 +979,7 @@ export class ActionSystem {
     // people chopped steadily through to a hundred thirst and died holding the
     // axe. Progress on the trunk means the same work happens, but the person
     // is free to leave for a drink and come back to it.
-    const axe = person.inventory.has('handaxe') ? 0.5 : 1;
-    const required = tree.fellingTicks * axe;
+    const required = tree.fellingTicks * axeFactor(person);
     tree.chopProgress += person.skillFactor('build');
     person.workedTicks++;
     person.practice('build', 0.05);
@@ -977,7 +1053,8 @@ export class ActionSystem {
   private reachBuilding(
     person: Person,
     ctx: ActionContext,
-    requirement?: { ok: (building: Building) => boolean; reason: string }
+    requirement?: { ok: (building: Building) => boolean; reason: string },
+    propertyEvent?: Extract<EventType, 'theft' | 'trespass' | 'sabotage'>
   ): Building | null {
     const building = person.targetBuildingId === null
       ? null
@@ -990,7 +1067,10 @@ export class ActionSystem {
       this.abandon(person, requirement.reason, ctx);
       return null;
     }
-    if (building.contains(person.x, person.y)) return building;
+    if (building.contains(person.x, person.y)) {
+      if (propertyEvent && !this.useProperty(person, building, propertyEvent, ctx)) return null;
+      return building;
+    }
 
     person.targetX = building.centerX;
     person.targetY = building.centerY;
@@ -1000,6 +1080,37 @@ export class ActionSystem {
     // this person on the spot forever.
     this.travel(person, ctx);
     return null;
+  }
+
+  /**
+   * Turns foreign use into a witnessed deed and lets an owner in sight stop it.
+   *
+   * The scorer asks the same pure `mayUse` question before setting out, but a
+   * person can walk into view while the actor is crossing the camp. Authority
+   * is therefore checked again here, at the building, where the deed actually
+   * happens. Long uses are announced once; a newly arrived owner still catches
+   * an already-noted trespass because the refusal ends the action immediately.
+   */
+  private useProperty(
+    person: Person,
+    building: Building,
+    event: Extract<EventType, 'theft' | 'trespass' | 'sabotage'>,
+    ctx: ActionContext
+  ): boolean {
+    const access = mayUse(person, building, ctx);
+    if (access.ours) return true;
+    if (!access.allowed) {
+      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      telemetry.count('property_use_stopped');
+      this.abandon(person, 'property_guarded', ctx);
+      return false;
+    }
+    if (!person.propertyUseNoted) {
+      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      telemetry.count('property_used_unseen');
+      person.propertyUseNoted = true;
+    }
+    return true;
   }
 
   /** Delivers carried materials to a construction site. */
@@ -1034,6 +1145,33 @@ export class ActionSystem {
     if (!site) return;
 
     if (site.complete) {
+      // A damaged structure answers `build` too — repair, M11 phase 11b, and
+      // deliberately not a separate verb. `already_built` is the right refusal
+      // for a building with nothing left to do; a durability below full is
+      // exactly a job still to do, and the same person who already reaches
+      // for `build` on a half-raised frame should reach for it on a half-wrecked
+      // wall. See `Building.repair` for why it asks for no fresh materials.
+      if (site.durability !== null && site.durability < site.def.workTicks) {
+        const stop = this.interruption(person, ctx);
+        if (stop) {
+          this.stop(person, stop, ctx);
+          return;
+        }
+        const mend = person.skillFactor('build') * buildFactor(person);
+        person.workedTicks++;
+        person.practice('build', 0.2);
+        if (site.repair(mend)) {
+          telemetry.count('building_repaired');
+          person.chronicle.push({
+            tick: ctx.tick,
+            ageDays: person.age,
+            text: 'repaired a ' + site.def.label.toLowerCase(),
+            kind: 'did',
+          });
+          this.finish(person);
+        }
+        return;
+      }
       this.abandon(person, 'already_built', ctx);
       return;
     }
@@ -1066,6 +1204,10 @@ export class ActionSystem {
       // a question about whether a gated design is reachable, and an aggregate
       // cannot answer it.
       telemetry.count('completed_' + site.def.id);
+      // A pen stocked with nothing is not a founded herd, it is an empty pen —
+      // and growth in `Simulation.workHerds` is proportional to what is
+      // already there, so it would stay empty for ever without this.
+      if (site.def.herd) site.store.add(site.def.herd.item, site.def.herd.seed);
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
@@ -1076,15 +1218,88 @@ export class ActionSystem {
     }
   }
 
+  /**
+   * Wrecking a foreign building — M11 phase 11b, and the reason
+   * `Building.durability` exists at all.
+   *
+   * The same shape `doBuild` already has, on purpose: an interruption check
+   * and progress banked on the building itself, because tearing down anything
+   * bigger than a windbreak takes far more than one uninterrupted pull —
+   * `AGENTS.md`'s 140-tick ceiling, applied to demolition instead of
+   * construction. A saboteur driven off by hunger, or a second saboteur
+   * entirely, picks the job back up exactly where it was left, the same way a
+   * half-raised hut waits for whoever next carries a load to the site.
+   *
+   * The property check is the one place this cannot reuse `useProperty`
+   * wholesale. `mayUse`'s `ours` branch means "no offence, proceed" — correct
+   * for storing your own goods in your own hut, and wrong here, since there is
+   * no legitimate reading of "sabotaging your own band's building" for it to
+   * excuse. That branch is refused explicitly, before the witnessed/unseen
+   * question `useProperty` still answers unchanged once a target is confirmed
+   * foreign.
+   */
+  private doSabotage(person: Person, ctx: ActionContext): void {
+    const site = this.reachBuilding(person, ctx, {
+      // `b.crop === null`: a field is `isStructure` too — clearing and
+      // tilling it costs real `workTicks` — but ruining it would currently be
+      // inert. `doSow` and `doReap` read nothing about `durability`, so a
+      // trampled field would sow and reap exactly as an untouched one does,
+      // and the project's own standing rule is that a table entry, or here a
+      // whole target category, does not earn its place until something reads
+      // it. Left for whoever gives a raided field a real consequence; see
+      // `docs/bugs.md`.
+      ok: b => b.complete && isStructure(b.def) && b.crop === null && !b.ruined,
+      reason: 'nothing_to_sabotage',
+    }, 'sabotage');
+    if (!site) return;
+
+    // Checked again here, after `reachBuilding`'s own property gate: a target
+    // that is `ours` (own band, or an ally close enough to count as one) was
+    // let through as *unopposed access*, which is the wrong answer for a
+    // deliberately hostile act. See the method's own note above.
+    if (mayUse(person, site, ctx).ours) {
+      this.abandon(person, 'not_foreign_property', ctx);
+      return;
+    }
+
+    const stop = this.interruption(person, ctx);
+    if (stop) {
+      this.stop(person, stop, ctx);
+      return;
+    }
+
+    const wreck = person.skillFactor('build') * buildFactor(person);
+    person.workedTicks++;
+    person.practice('build', 0.15);
+    if (site.damage(wreck)) {
+      telemetry.count('building_sabotaged');
+      telemetry.count('sabotaged_' + site.def.id);
+      // No second `ctx.social.emit` here. `reachBuilding`'s `useProperty` call
+      // already registered the one deed this session — the same precedent
+      // `doTake` sets for lifting goods from a foreign store: one property
+      // event per approach, at arrival, not a second one on completion. A job
+      // long enough to be interrupted and resumed earns a fresh deed each time
+      // it is taken up again, exactly as a multi-visit theft would.
+      person.chronicle.push({
+        tick: ctx.tick,
+        ageDays: person.age,
+        text: 'wrecked a ' + site.def.label.toLowerCase(),
+        kind: 'did',
+      });
+      this.finish(person);
+    }
+  }
+
   private doStore(person: Person, ctx: ActionContext): void {
-    const store = this.reachBuilding(person, ctx);
+    const store = this.reachBuilding(person, ctx, undefined, 'trespass');
     if (!store) return;
 
     // A trap is a place food comes from, not a place to put it: filling one
-    // stops it catching, since a full trap accrues nothing. The player can
+    // stops it catching, since a full trap accrues nothing. A pen is the same
+    // refusal for the same reason — see `BuildingDef.herd`. The player can
     // still order it, and gets told why it did not happen — which is the whole
     // reason this refuses out loud rather than quietly dropping the order.
-    if (!store.complete || store.def.storage === 0 || isTrap(store.def)) {
+    if (!store.complete || store.def.storage === 0 || isTrap(store.def) || isHerd(store.def)) {
       this.abandon(person, 'not_a_store', ctx);
       return;
     }
@@ -1130,13 +1345,46 @@ export class ActionSystem {
   }
 
   private doTake(person: Person, ctx: ActionContext): void {
-    const store = this.reachBuilding(person, ctx);
+    const store = this.reachBuilding(person, ctx, undefined, 'theft');
     if (!store) return;
 
     // A player order that named a specific item takes precedence — M9 phase 2.
     // Everyone else, including every AI-planned trip to the larder, still falls
     // back to food first: taking from the store is nearly always about eating.
     const requested = person.targetItemId;
+
+    // A pen holds more than one kind of thing at once — meat that breeds,
+    // milk that never stops accruing alongside it, wool the same — and
+    // `bestFood` always preferring the single most nutritious stack left
+    // milk piling up unbounded and never once eaten, because meat's 30
+    // always outranks milk's 20: measured on `farmers`, 15 milk bred and 0
+    // eaten across the whole run. Everything in the pen is shared rather
+    // than one thing chosen, wool included even though it answers no need
+    // at all — nothing sends anyone to a pen *for* wool specifically (there
+    // is no "go and fetch material" scorer route the way foraging or
+    // hauling get one), so a visit already under way for food is the only
+    // opportunity wool has to leave the pen. Measured without this half:
+    // wool bred but never woven, sitting in the pen the whole run, because
+    // the first version of this fix filtered to edible stacks only.
+    if (isHerd(store.def) && requested === null) {
+      let shared = 0;
+      for (const [itemId, count] of store.store.entries()) {
+        const got = store.store.remove(itemId, Math.min(6, count));
+        if (got > 0) {
+          person.inventory.add(itemId, got);
+          shared += got;
+        }
+      }
+      if (shared === 0) {
+        this.abandon(person, 'store_empty', ctx);
+        return;
+      }
+      telemetry.count('withdrawn', shared);
+      telemetry.count('herd_culled', shared);
+      this.finish(person);
+      return;
+    }
+
     const itemId = requested ?? store.store.bestFood() ?? store.store.entries()[0]?.[0];
     if (!itemId || store.store.count(itemId) === 0) {
       this.abandon(person, requested !== null ? 'take_item_gone' : 'store_empty', ctx);
@@ -1155,6 +1403,10 @@ export class ActionSystem {
     // signal that the other half of the mechanism — somebody walking out to it —
     // is actually happening.
     if (isTrap(store.def)) telemetry.count('trap_emptied', taken);
+    // The same signal, for the same reason, on a pen: `herd_bred` says a herd
+    // is growing, and this is the only way to tell whether anybody is actually
+    // culling it rather than letting it sit at capacity for ever.
+    if (isHerd(store.def)) telemetry.count('herd_culled', taken);
     this.finish(person);
   }
 
@@ -1224,7 +1476,7 @@ export class ActionSystem {
 
   /** Waits out the cold indoors, and leaves once there is no longer a reason. */
   private doShelter(person: Person, ctx: ActionContext): void {
-    const building = this.reachBuilding(person, ctx);
+    const building = this.reachBuilding(person, ctx, undefined, 'trespass');
     if (!building) return;
     telemetry.count('sheltering');
     // Being indoors is restful, so waiting out a cold night is not wasted time.
@@ -1334,6 +1586,11 @@ export class ActionSystem {
     animal.health = 0;
     animal.alive = false;
     ctx.onAnimalKilled(animal, person);
+    // A spear is a spear. Far smaller than a blow landed on a person
+    // (`doAttack`'s 1.2) or a deliberate bout (`SPAR_TRAIN`'s 0.6) — this is a
+    // trickle, not a substitute for either — but it means a band that hunts
+    // and never spars is not permanently defenceless either.
+    person.practice('fight', HUNT_FIGHT_TRAIN);
 
     const yielded = Math.max(1, Math.round(animal.def.meat * person.skillFactor('hunt')));
     const room = person.carryCapacity - person.carrying;
@@ -1437,6 +1694,54 @@ export class ActionSystem {
   }
 
   /**
+   * `brewing`'s verb. A shared drink rather than a solitary one — see the
+   * item comment on `beer` for why this exists at all rather than routing
+   * through `doEat`: beer's nutrition is deliberately too low to ever win
+   * `bestFood`'s comparison against real food, which is what makes it worth
+   * carrying for the relief rather than the calories.
+   *
+   * One beer, one toast, relief in one lump at the end rather than accrued
+   * tick by tick the way `doPlay`'s tune is — raising a cup is a moment, and
+   * `TOAST_TICKS` is short enough that splitting the relief would round most
+   * listeners down to nothing.
+   */
+  private doToast(person: Person, ctx: ActionContext): void {
+    if (techPower(person, 'brewing') <= 0 || !person.inventory.has('beer')) {
+      this.abandon(person, 'nothing_to_toast', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = TOAST_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    person.workedTicks++;
+
+    if (person.actionTimer > 0) {
+      // `ignoreLaden` for the same reason `doPlay` passes it: nothing else
+      // goes into or comes out of the pack until the cup itself is spent.
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx);
+      return;
+    }
+
+    person.inventory.remove('beer', 1);
+    const power = techPower(person, 'brewing');
+    const heard = ctx.peopleHash.queryRadius(person.x, person.y, EARSHOT);
+    let listeners = 0;
+    for (const other of heard) {
+      if (!other.alive) continue;
+      const before = other.needs.company;
+      other.needs.company = Math.max(0, before - TOAST_RELIEF * power);
+      if (other.id !== person.id && before > 0) listeners++;
+    }
+    telemetry.count('toast_listeners', listeners);
+    telemetry.count('toasted');
+    this.finish(person);
+  }
+
+  /**
    * Sitting with somebody who is hurt.
    *
    * **The first use the `heal` skill has ever had.** It has been in `SKILLS`
@@ -1470,6 +1775,18 @@ export class ActionSystem {
     person.targetX = patient.x;
     person.targetY = patient.y;
     if (!this.travel(person, ctx)) return;
+
+    // Once, on the tick tending actually begins, not once per tick of a bout
+    // that can run for a while — the same discipline `propertyUseNoted` and
+    // `useProperty` follow for a long action's one deed. `EVENT_TYPES` has
+    // declared `help` since before this file existed; this is the first thing
+    // that ever emits it. Magnitude is how badly hurt the patient was, the
+    // same reading `theft`'s "how much was taken" gets.
+    if (person.workedTicks === 0) {
+      ctx.social.emit(
+        'help', person, patient, 1 - patient.health / 100, ctx.tick, ctx.peopleHash, ctx.sightRadius
+      );
+    }
 
     person.workedTicks++;
     const mended = TEND_RATE * techPower(person, 'herbalism')
@@ -1591,7 +1908,7 @@ export class ActionSystem {
     const field = this.reachBuilding(person, ctx, {
       ok: b => b.crop !== null && b.complete,
       reason: 'no_field',
-    });
+    }, 'trespass');
     if (!field || !field.crop) return;
 
     if (techPower(person, 'farming') <= 0) {
@@ -1657,7 +1974,7 @@ export class ActionSystem {
     const field = this.reachBuilding(person, ctx, {
       ok: b => b.crop !== null && b.complete,
       reason: 'no_field',
-    });
+    }, 'theft');
     if (!field || !field.crop) return;
 
     if (!field.crop.isRipe) {
@@ -1673,14 +1990,22 @@ export class ActionSystem {
 
     person.workedTicks++;
     person.practice('farm', 0.6);
-    if (person.workedTicks < REAP_TICKS) return;
+    // `sickle`: a blade in hand shortens the countdown itself rather than the
+    // yield at the end of it, which is the honest version of "a field
+    // stripped in an afternoon instead of a day" — the yield still comes from
+    // `harvestYield` below, unaffected by how it was cut.
+    if (person.workedTicks < REAP_TICKS * reapFactor(person)) return;
 
     // Knowing how to farm makes a harvest better; it is not what makes one
     // possible. Anybody can pull the ears off a ripe crop, and a band whose only
     // farmer died between sowing and harvest should still get the harvest in.
     // The floor rather than a gate is the same call `fishing` made about a
     // spear.
-    const grasp = Math.max(0.5, techPower(person, 'farming'));
+    // `calendar` multiplies the grasp term rather than the floor: it is
+    // knowledge about *when* to sow, not about whether a harvest is possible
+    // at all, so it has no business raising the 0.5 floor a farmer-less band
+    // still gets.
+    const grasp = Math.max(0.5, techPower(person, 'farming')) * calendarFactor(person);
     const yielded = harvestYield(
       this.plotFertility(field, ctx), person.skillFactor('farm'), grasp
     );
@@ -1774,6 +2099,7 @@ export class ActionSystem {
         this.travel(person, ctx);
         return;
       }
+      if (!this.useProperty(person, heap, 'theft', ctx)) return;
       // Arrived at the heap, which is the first of the errand's two waypoints
       // and therefore one of the two places a need is allowed to break it off.
       //
@@ -1807,6 +2133,7 @@ export class ActionSystem {
       this.travel(person, ctx);
       return;
     }
+    if (!this.useProperty(person, field, 'trespass', ctx)) return;
 
     // The second waypoint, and the working stretch this file checks everywhere
     // else. Once past it, seventy ticks is well under the ceiling `AGENTS.md`
@@ -1860,7 +2187,7 @@ export class ActionSystem {
     for (const building of ctx.buildingsById.values()) {
       if (!building.complete) continue;
       if (!isHeap(building.def) && building.def.storage <= 0) continue;
-      if (building.ownerBandId !== person.bandId) continue;
+      if (!mayUse(person, building, ctx).allowed) continue;
       if (building.store.count('compost') <= 0) continue;
       const away = person.distanceTo({ x: building.centerX, y: building.centerY });
       if (away < bestAway) {
@@ -1937,7 +2264,7 @@ export class ActionSystem {
    * are lying, not because sleeping is warm.
    */
   private doSleep(person: Person, ctx: ActionContext): void {
-    const building = this.reachBuilding(person, ctx);
+    const building = this.reachBuilding(person, ctx, undefined, 'trespass');
     if (!building) return;
 
     telemetry.count('sleeping');
@@ -2105,6 +2432,42 @@ export class ActionSystem {
     const charm = 3 + person.skillFactor('persuade') * 6;
     ctx.social.courtship(person, other, charm, ctx.tick);
     person.practice('persuade', 0.4);
+    other.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
+    this.finishSocial(person, ctx.tick);
+  }
+
+  /**
+   * A friendly training bout. See `SPAR_TICKS` for why this exists at all.
+   *
+   * Gated on the partner's own regard the same way `doDiscuss` gates an
+   * argument: a grudging opponent is not a training partner, and the fix for
+   * "nobody can become a better fighter than the person next to them" must
+   * not itself be a way to hurt somebody you dislike under cover of practice.
+   * Both people are practised, both are warmed by it, and nobody's health
+   * moves — the whole point is that this is the safe half of the fix, and
+   * `doHunt`'s small trickle is the other.
+   */
+  private doSpar(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+
+    const regard = ctx.relationships.opinion(other.id, person.id) / 100;
+    if (regard < SPAR_MIN_REGARD) {
+      this.abandon(person, 'partner_unwilling', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = SPAR_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) return;
+
+    person.practice('fight', SPAR_TRAIN);
+    other.practice('fight', SPAR_TRAIN);
+    telemetry.count('sparred');
+    this.settleOverWork(person, other, ctx, SPAR_WARMTH, SPAR_RELIEF);
     other.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
     this.finishSocial(person, ctx.tick);
   }
@@ -2278,7 +2641,7 @@ export class ActionSystem {
       const station = this.reachBuilding(person, ctx, {
         ok: building => building.complete && building.def.id === stationId,
         reason: 'no_station_' + stationId,
-      });
+      }, 'trespass');
       if (!station) return;
     }
 
@@ -2526,6 +2889,12 @@ export class ActionSystem {
    * on a library holding the answer to its own dark age and starve beside it.
    * That is what makes writing an exception bought on purpose rather than a
    * free second copy of `knownTech`.
+   *
+   * **What it grants once read is not the same for every form.** An
+   * `instruction` record — stone, clay — hands over the finished design, same
+   * as being taught. A `reminder` — `ochre` — only sparks an idea: the painting
+   * shows that a thing was done, not how, so the reader still has to work it
+   * out. See `InscriptionDef.fidelity`.
    */
   private doRead(person: Person, ctx: ActionContext): void {
     const record = person.targetInscriptionId === null
@@ -2547,10 +2916,17 @@ export class ActionSystem {
     // What is on it that they could take in. Checked before the work rather
     // than after, so nobody spends half a day staring at something they already
     // know — and `requires` gates a record exactly as it gates a lesson.
+    //
+    // A `reminder` record needs two more guards a lesson does not: it lands as
+    // an idea rather than a finished design (see `remindFromRecord`), so it is
+    // pointless to walk over and stare at a painting about something already
+    // being thought through, or when both idea slots are already spoken for.
     const useful = record.techs.filter(tech =>
       !person.knownTech.has(tech) &&
       TECH[tech as Tech] !== undefined &&
-      prerequisitesMet(tech as Tech, person.knownTech));
+      prerequisitesMet(tech as Tech, person.knownTech) &&
+      (record.def.fidelity === 'instruction' ||
+        (!person.ideaFor(tech) && person.ideas.length < MAX_IDEAS)));
     if (useful.length === 0) {
       this.abandon(person, 'nothing_new_on_it', ctx);
       return;
@@ -2568,19 +2944,34 @@ export class ActionSystem {
       return;
     }
 
-    const tech = useful[0]!;
-    ctx.knowledge.receiveFromRecord(person, tech as Tech);
+    const tech = useful[0]! as Tech;
     person.practice('teach', 1);
     telemetry.count('read_' + tech);
-    const label = TECH[tech as Tech].label.toLowerCase();
-    person.chronicle.push({
-      tick: ctx.tick,
-      ageDays: person.age,
-      text: 'read ' + label + ' off ' + record.def.label.toLowerCase() +
-        ' cut by ' + record.authorName,
-      kind: 'milestone',
-    });
-    ctx.onInsight(person, 'read ' + label + ' off a stone', 'gain');
+    const label = TECH[tech].label.toLowerCase();
+    if (record.def.fidelity === 'instruction') {
+      ctx.knowledge.receiveFromRecord(person, tech);
+      person.chronicle.push({
+        tick: ctx.tick,
+        ageDays: person.age,
+        text: 'read ' + label + ' off ' + record.def.label.toLowerCase() +
+          ' cut by ' + record.authorName,
+        kind: 'milestone',
+      });
+      ctx.onInsight(person, 'read ' + label + ' off a stone', 'gain');
+    } else {
+      // A `reminder` gives a spark, not an answer: `remindFromRecord` only ever
+      // fails when the guards above already ruled it out, so the boolean is not
+      // branched on here.
+      ctx.knowledge.remindFromRecord(person, tech, ctx.tick);
+      person.chronicle.push({
+        tick: ctx.tick,
+        ageDays: person.age,
+        text: 'saw ' + record.authorName + '\'s ' + record.def.label.toLowerCase() +
+          ' and thought about ' + label,
+        kind: 'milestone',
+      });
+      ctx.onInsight(person, 'an idea about ' + label + ', from a painting', 'idea');
+    }
     this.finish(person);
   }
 
@@ -2929,6 +3320,62 @@ export class ActionSystem {
     this.finishSocial(person, ctx.tick);
   }
 
+  /**
+   * A mutual exchange of surplus food, M11 phase 7b's third engine.
+   *
+   * `EVENT_TYPES` declared `trade` for exactly this since phase 5b removed
+   * the version nothing read; this is where it earns its place. Unlike
+   * `give`, both sides hand something over — `Brain` only ever scores this
+   * toward someone whose own carried nutrition shows spare, so nobody is
+   * asked to trade away a meal they need. The point is not the goods
+   * changing hands, which are token amounts either way: it is that `emit`'s
+   * cross-band nudge already turns a positive `DEED_WEIGHT['trade']` into
+   * two peoples thinking slightly better of each other, with no second
+   * mechanism required.
+   */
+  private doTrade(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = TRADE_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) return;
+
+    const myFood = person.inventory.bestFood();
+    const theirFood = other.inventory.bestFood();
+    if (!myFood || !theirFood) {
+      this.abandon(person, 'nothing_to_trade', ctx);
+      return;
+    }
+    const myUnits = Math.max(1, Math.min(2, Math.floor(person.inventory.count(myFood) / 3)));
+    const theirUnits = Math.max(1, Math.min(2, Math.floor(other.inventory.count(theirFood) / 3)));
+    const givenByMe = person.inventory.remove(myFood, myUnits);
+    const givenByThem = other.inventory.remove(theirFood, theirUnits);
+    if (givenByMe === 0 || givenByThem === 0) {
+      // Put back whatever the failing side already gave, so a trade that
+      // cannot complete on both legs leaves neither party out of pocket.
+      if (givenByMe > 0) person.inventory.add(myFood, givenByMe);
+      if (givenByThem > 0) other.inventory.add(theirFood, givenByThem);
+      this.abandon(person, 'nothing_to_trade', ctx);
+      return;
+    }
+    other.inventory.add(myFood, givenByMe);
+    person.inventory.add(theirFood, givenByThem);
+
+    const value =
+      (ITEMS[myFood]?.nutrition ?? 0) * givenByMe + (ITEMS[theirFood]?.nutrition ?? 0) * givenByThem;
+    ctx.social.emit(
+      'trade', person, other,
+      Math.min(1, value / 100),
+      ctx.tick, ctx.peopleHash, ctx.sightRadius
+    );
+    telemetry.count('trade_made');
+    this.finishSocial(person, ctx.tick);
+  }
+
   private doSteal(person: Person, ctx: ActionContext): void {
     const other = this.approach(person, ctx);
     if (!other) return;
@@ -3051,6 +3498,72 @@ export class ActionSystem {
     person.inventory.add(itemId, taken);
     telemetry.count('threaten_succeeded');
     this.finishSocial(person, ctx.tick);
+  }
+
+  /**
+   * Telling somebody what you think of a third party — `slander` when the
+   * story is bad, `praise` when it is good. Both share this body; only the
+   * `sign` handed to `Memory.bestStoryAbout` differs.
+   *
+   * M11 phases 3c and 5c together. Two things happen, and they are different
+   * questions: `tellStory` passes the underlying fact on as hearsay, exactly
+   * as an ordinary conversation's gossip would, and `emit` records the act of
+   * saying it as its own judged deed. The subject is *not* told automatically
+   * — `emit`'s `notifyTarget: false` is the point of this whole pass: nobody
+   * learns they were talked about unless they happen to be standing close
+   * enough to overhear it, the same rule that already governs everything
+   * else in this game.
+   *
+   * The story is re-fetched here rather than trusted from when the scorer
+   * chose it, on the same principle `talkModeOf` already follows: the walk
+   * over takes time, and by the time it ends the listener may have heard it
+   * from somebody else, or it may have decayed below the telling floor.
+   */
+  private doGossipAbout(person: Person, ctx: ActionContext, sign: 'bad' | 'good'): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = GOSSIP_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx, 'gossiped_');
+      return;
+    }
+
+    const subjectId = person.targetSubjectId;
+    const subject = subjectId === null ? null : ctx.peopleById.get(subjectId);
+    if (!subject || !subject.alive) {
+      this.abandon(person, 'subject_gone', ctx);
+      return;
+    }
+    const story = person.memory.bestStoryAbout(subjectId!, other.memory, sign);
+    if (!story) {
+      this.abandon(person, 'nothing_to_tell', ctx);
+      return;
+    }
+
+    ctx.social.tellStory(person, other, story, ctx.peopleById);
+    ctx.social.emit(
+      sign === 'bad' ? 'slander' : 'praise', person, subject,
+      Math.min(1, story.salience),
+      ctx.tick, ctx.peopleHash, ctx.sightRadius,
+      false
+    );
+    telemetry.count(sign === 'bad' ? 'slander_told' : 'praise_told');
+    other.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
+    this.finishSocial(person, ctx.tick);
+  }
+
+  private doSlander(person: Person, ctx: ActionContext): void {
+    this.doGossipAbout(person, ctx, 'bad');
+  }
+
+  private doPraise(person: Person, ctx: ActionContext): void {
+    this.doGossipAbout(person, ctx, 'good');
   }
 
   private doAttack(person: Person, ctx: ActionContext): void {

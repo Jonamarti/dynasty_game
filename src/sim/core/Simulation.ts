@@ -31,12 +31,15 @@ import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
+import { BandRelations } from '../social/BandRelations.ts';
 import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
-import { DEFAULT_NORMS, VARIABLE_NORMS, type Norms } from '../social/Events.ts';
+import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType } from '../social/Events.ts';
 import {
-  Building, BUILDINGS, isTrap, resetBuildingIds, type BuildingDef,
+  Building, BUILDINGS, isTrap, isHerd, isStructure, resetBuildingIds, type BuildingDef,
 } from '../entities/Building.ts';
 import { accrueUnits } from './Progress.ts';
+import { decayMood } from './Mood.ts';
+import { decayMacroBalance, decayMacroTarget } from './Macros.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -58,6 +61,7 @@ import {
 } from '../knowledge/Tech.ts';
 import { RECIPES, type RecipeDef } from '../entities/Recipe.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
+import { mayUse, type PropertyUse } from '../social/Property.ts';
 import {
   bandHasShape, bandOf, rankIn, type BandRank, type RankContext,
 } from '../social/Rank.ts';
@@ -134,10 +138,22 @@ const ORGANISED_ORDER_BONUS = 0.1;
 /** Ticks an interrupted order waits to be resumed before it is forgotten. */
 const RESUME_WINDOW = 2000;
 
+/**
+ * Renown retained per in-game day, M11 phase 6c. Slower than the 0.985
+ * `RelationshipGraph` uses for its `deeds` component, deliberately: an
+ * opinion is one person's fading recollection, renown is a household's own
+ * record of itself and has to still mean something after the person who
+ * earned it has died.
+ */
+const RENOWN_DECAY_PER_DAY = 0.997;
+
 export interface Band {
   id: number;
   name: string;
-  /** Camp centre; people spawn around it and, later, claim territory from it. */
+  /**
+   * Camp centre; people spawn around it, and `BandSystem.considerTerritory`
+   * reads a foreign face's distance from it (M11 phase 7b).
+   */
   homeX: number;
   homeY: number;
   /**
@@ -186,8 +202,26 @@ export class Simulation {
    * apart exactly when a band loses its last holder of something and still has
    * the stone — which is the dark age this milestone exists to make possible,
    * and it is only recoverable by somebody who can read.
+   *
+   * **Strictly `instruction` records — stone and clay.** M9's `ochre` used to
+   * count here too, before `InscriptionDef.fidelity` split what reading one
+   * gives back. A painting is not something a society can *get back*: reading
+   * it only sparks an idea that still has to be worked out from nothing, same
+   * as anybody who noticed it unaided, so counting it here overstated what a
+   * band actually holds in reserve. See `rememberedTech` for that half.
    */
   readonly recordedTech = new Set<string>();
+
+  /**
+   * Knowledge some `reminder` record could spark, whether or not anybody
+   * alive has had that idea yet.
+   *
+   * `ochre`'s half of what `recordedTech` used to conflate with it. Nothing
+   * here is recoverable the way `recordedTech` is — reading one of these
+   * lands a `conceived` idea, not a finished design — so the two sets answer
+   * different questions and neither substitutes for the other.
+   */
+  readonly rememberedTech = new Set<string>();
 
   /**
    * What is written down **or being written down right now**.
@@ -244,6 +278,15 @@ export class Simulation {
   snowDepth = 0;
 
   /**
+   * `sabotageCandidatesByBand`'s own comment explains what this holds and
+   * why it is cached at all. Refreshed once a day, in the same daily block
+   * `snowDepth` and `bandRelations.decay()` update in; empty until the first
+   * day turns over, which is fine — nobody has anything to sabotage on the
+   * day the world is founded either.
+   */
+  private sabotageCache: Map<number, Building[]> = new Map();
+
+  /**
    * How much of itself the player's character looks after. See `steerPlayer`.
    *
    * Lives on the simulation rather than in the UI because `step` is what reads
@@ -291,6 +334,8 @@ export class Simulation {
   succession: { died: Person; heir: Person | null } | null = null;
 
   readonly relationships = new RelationshipGraph();
+  /** How each pair of bands stands with the other. M11 phase 7a. */
+  readonly bandRelations = new BandRelations();
   readonly social: SocialSystem;
   private readonly normsByBand = new Map<number, Norms>();
 
@@ -328,6 +373,28 @@ export class Simulation {
   private readonly aiRng: RNG;
   private readonly actionRng: RNG;
   private readonly commandRng: RNG;
+  /**
+   * The stream `Brain.think` draws from when it has a real choice to make.
+   *
+   * Its own stream, and not `aiRng`, because `aiRng` is already drawn from
+   * inside `score` — the jitter on `wander` and two draws in `setup`. Sharing
+   * it would interleave "which of these did they pick" with "where exactly did
+   * they wander to", and the whole reason `config.ai.choiceSpread` can be set
+   * back to 0 and land on the old world exactly is that this stream is untouched
+   * at that value.
+   */
+  private readonly choiceRng: RNG;
+  /**
+   * `shareTheHearth`'s own stream, M11 phase 9b.
+   *
+   * A household's nightly chance of a lesson passing under its own roof is a
+   * draw per roof per night, and it needed a stream that is not shared with
+   * anything else for the same reason `choiceRng` did: it is forked genuinely
+   * last, after `choiceRng`, so that a world built before this phase existed
+   * is bit-identical to one built after it except for what actually gets
+   * taught at a hearth.
+   */
+  private readonly hearthRng: RNG;
 
   constructor(overrides: DeepPartial<SimConfig> = {}) {
     this.config = makeConfig(overrides);
@@ -345,8 +412,9 @@ export class Simulation {
     this.needsSystem = new NeedsSystem(this.config.needs);
     this.pathfinder = new Pathfinder(this.world);
     this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder);
-    this.social = new SocialSystem(this.relationships, this.normsByBand);
+    this.social = new SocialSystem(this.relationships, this.normsByBand, this.bandRelations);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
+    this.social.onDeed = (actor, type, magnitude) => this.accrueRenown(actor, type, magnitude);
     this.actionRng = this.rng.fork();
     this.lifeRng = this.rng.fork();
     this.forestRng = this.rng.fork();
@@ -359,6 +427,13 @@ export class Simulation {
     // Appended after `wildlifeRng`, for the same reason. Records decay on their
     // own stream so that adding one does not move the wildlife.
     this.recordRng = this.rng.fork();
+    // *** DO NOT APPEND A NEW STREAM HERE. *** This is the end of the *named*
+    // block, not the end of the fork order: three more forks are taken below —
+    // `seedInitialForest`'s anonymous one, then `fishRng`, then `grainRng` —
+    // and a stream slotted in here consumes the draw the forest expects and
+    // silently replants every wood in every saved seed. The genuine append
+    // point is the line after `grainRng`. See `AGENTS.md`, which carries the
+    // numbered table and the instruction to add a row to it when you append.
 
     resetPersonIds();
     resetResourceIds();
@@ -407,6 +482,17 @@ export class Simulation {
     // world built before farming existed is bit-identical to one built after it
     // except for the stands of cereal themselves.
     const grainRng = this.rng.fork();
+    // M11 phase 1a, and appended HERE rather than beside the other named
+    // streams for the reason `AGENTS.md`'s table now spells out: the named
+    // block ends eleven forks in, and three more are taken below it. This is
+    // the genuine end of the fork order. Anything appended above this line
+    // consumes a draw the forest, the fish or the grain expects.
+    this.choiceRng = this.rng.fork();
+    // M11 phase 9b, appended after `choiceRng` for the identical reason:
+    // `AGENTS.md`'s table exists precisely so the next stream lands here
+    // rather than back at the comment three forks up that looks like an
+    // invitation.
+    this.hearthRng = this.rng.fork();
 
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
@@ -603,8 +689,14 @@ export class Simulation {
         // a child holding a technology would be able to teach it, and children
         // are excluded from the knowledge system on purpose. Empty for every
         // world a player starts — see `PopulationConfig.startingTech`.
+        //
+        // `startingTechByBand`, when the scenario sets it, replaces this per
+        // band rather than handing every band the same list — see its own
+        // comment for why `scribes` needs that.
         if (!person.isChild) {
-          for (const tech of this.config.population.startingTech) {
+          const granted = this.config.population.startingTechByBand?.[b]
+            ?? this.config.population.startingTech;
+          for (const tech of granted) {
             person.knownTech.add(tech as Tech);
           }
         }
@@ -697,8 +789,11 @@ export class Simulation {
     const household = person.householdId === null
       ? null
       : this.householdsById.get(person.householdId) ?? null;
+    const home = household?.homeBuildingId == null
+      ? null
+      : this.buildingsById.get(household.homeBuildingId) ?? null;
 
-    settleEstate(person, heir, household);
+    settleEstate(person, heir, home, (x, y, itemId, count) => this.dropAt(x, y, itemId, count));
 
     if (household) {
       household.remove(person.id);
@@ -773,12 +868,54 @@ export class Simulation {
         const member = this.peopleById.get(memberId);
         if (member) this.joinHousehold(member, target);
       }
-      for (const [itemId, count] of source.store.entries()) {
-        target.store.add(itemId, source.store.remove(itemId, count));
+      // What used to be `source.store` moving to `target.store` is now
+      // either a transfer between the two households' home buildings, or
+      // nothing to do at all: if the target has no home of its own yet, the
+      // couple's goods simply stay wherever the source's already sit and the
+      // household keeping them is now named for the target.
+      if (source.homeBuildingId !== null) {
+        if (target.homeBuildingId === null) {
+          target.homeBuildingId = source.homeBuildingId;
+        } else if (target.homeBuildingId !== source.homeBuildingId) {
+          const from = this.buildingsById.get(source.homeBuildingId);
+          const to = this.buildingsById.get(target.homeBuildingId);
+          if (from && to) {
+            for (const [itemId, count] of from.store.entries()) {
+              to.store.add(itemId, from.store.remove(itemId, count));
+            }
+          }
+        }
       }
       source.endedTick = this.time.tick;
     }
     younger.surname = target.name;
+  }
+
+  /**
+   * A deed moves the standing of the household behind it, not only the
+   * opinions of whoever saw it.
+   *
+   * **M11 phase 6c.** `SocialSystem.onDeed` is the same pattern `onMarriage`
+   * already uses, for the same reason: a household is this class's business,
+   * not the social layer's, which only knows people and what they feel about
+   * each other. Unlike `RelationshipGraph.addDeed`, this is not filtered
+   * through any one observer's culture or hearsay — renown is the family's
+   * own record of what it has done, read the same way by everyone, which is
+   * exactly what makes it something a stranger can respect before they have
+   * ever met you.
+   */
+  private accrueRenown(actor: Person, type: EventType, magnitude: number): void {
+    if (actor.householdId === null) return;
+    const household = this.householdsById.get(actor.householdId);
+    if (!household) return;
+    // Unclamped, deliberately, unlike `Relationship.deeds`: that component
+    // feeds directly into a -100..100 opinion scale and has to fit inside
+    // it, but every reader of `renown` (`standingOver`, `chooseChief`) asks
+    // for it only *relative to the band's own average* — see phase 6d. A hard
+    // ceiling here would let enough ordinary generosity saturate every
+    // long-lived household at the same value, erasing exactly the gap the
+    // rest of this phase exists to let open.
+    household.renown += DEED_WEIGHT[type] * (0.5 + magnitude * 0.5);
   }
 
   // -------------------------------------------------------------------------
@@ -789,6 +926,7 @@ export class Simulation {
     return {
       relationships: this.relationships,
       householdsById: this.householdsById,
+      buildingsById: this.buildingsById,
       chiefByBand: this.bandSystem.chiefByBand,
       bands: this.bands,
       day: this.time.day,
@@ -895,10 +1033,40 @@ export class Simulation {
    * standing regard of a band and the roof over a camp, which in a hard winter
    * is most of what a band is for.
    */
-  private exile(person: Person, band: Band, averageOpinion: number): void {
+  private exile(person: Person, band: Band, factionSize: number): void {
     this.removeBandMembership(person);
-    void averageOpinion;
+    void factionSize;
     void band;
+  }
+
+  /**
+   * Takes in a wandering outcast. The mirror of `exile`, and the two dangers
+   * its own header flags apply here too: `Household.bandId` is what
+   * `headsAHouseIn` reads, and the household the outcast left behind was
+   * deliberately not touched when they were cast out, so it still names their
+   * old band. Founding a fresh one-person household under the adopting band is
+   * therefore not a convenience, it is what lets them be counted as belonging
+   * here at all.
+   */
+  private adopt(person: Person, band: Band): void {
+    const previous = person.householdId === null
+      ? null
+      : this.householdsById.get(person.householdId);
+    if (previous) {
+      previous.remove(person.id);
+      if (previous.extinct) previous.endedTick = this.time.tick;
+    }
+
+    const household = new Household(person.surname, person.id, band.id, this.time.tick);
+    this.households.push(household);
+    this.householdsById.set(household.id, household);
+    household.add(person.id);
+    person.householdId = household.id;
+
+    person.bandId = band.id;
+    person.clearTarget();
+    person.forgetPlans();
+    person.action = 'idle';
   }
 
   /**
@@ -1207,6 +1375,20 @@ export class Simulation {
    * less, in M9 phase 2, not this method.
    */
   storeItem(person: Person, store: Building, itemId: string, count = person.inventory.count(itemId)): number {
+    const access = this.mayUseBuilding(person, store);
+    if (!access.ours) {
+      // The inventory-panel shortcut does not run through ActionSystem, so it
+      // must cross the same property boundary here or clicking an item would
+      // bypass the rule obeyed by walking to the store.
+      this.social.emit('trespass', person, null, 0.5, this.time.tick,
+        this.peopleHash, this.config.sightRadius);
+      if (!access.allowed) {
+        this.lastRefusal = access.because;
+        telemetry.count('property_use_stopped');
+        return 0;
+      }
+      telemetry.count('property_used_unseen');
+    }
     const moved = store.accept(person.inventory, itemId, count);
     if (moved === 0) return 0;
     telemetry.count('stored', moved);
@@ -1217,9 +1399,63 @@ export class Simulation {
   storeWithinReach(person: Person) {
     return this.buildings.find(b =>
       b.complete && b.def.storage > 0 &&
-      b.ownerBandId === person.bandId &&
+      this.mayUseBuilding(person, b).allowed &&
       b.contains(person.x, person.y, 2)
     ) ?? null;
+  }
+
+  /** The one ownership answer shared by direct UI actions and simulation work. */
+  mayUseBuilding(person: Person, building: Building): PropertyUse {
+    return mayUse(person, building, {
+      peopleHash: this.peopleHash,
+      sightRadius: this.config.sightRadius,
+      bandRelations: this.bandRelations,
+    });
+  }
+
+  /**
+   * Every complete, unruined, non-field structure, grouped by who owns it —
+   * M11 phase 11b, cached on `sabotageCache` and refreshed once a day rather
+   * than recomputed for every person's `think`, or even every tick.
+   *
+   * `Brain`'s `sabotage` scoring needs to ask, for each person thinking, "does
+   * any band mine is hostile with own a building worth wrecking?" What is
+   * true about a building — complete, standing, worth knocking down — does
+   * not depend on who is asking, only `mayUse`'s witness question does.
+   * Filtering and grouping it here, once, and handing every person's `think`
+   * the same map turns what would otherwise be an O(people × buildings) scan
+   * on every tick into one O(buildings) pass a day, each person then only
+   * ever touching the few entries that belong to a band they are actually
+   * hostile with — almost always none at all, and never more than a handful
+   * of bands.
+   *
+   * Both halves of the saving were measured, not guessed. Sharing the scan
+   * across people but still rebuilding it fresh every tick — the first thing
+   * tried — closed most of the gap and not all of it: `lean`'s large, long
+   * running population went from roughly 1,700 steps/s back up to roughly
+   * 1,870, still short of the 2,000 floor `perf-budget` holds it to, a floor
+   * this scenario cleared by only about 150 steps/s before this feature
+   * existed. Moving the refresh from every tick to once a day — the same
+   * cadence `bandRelations.decay()` and `snowDepth` already update on — is
+   * what closed the rest: nothing about which buildings exist and stand
+   * changes fast enough to need checking sixty times over between one sunrise
+   * and the next. A building that finishes being wrecked or repaired between
+   * two refreshes is still checked for real the moment anybody actually walks
+   * up to it, in `ActionSystem.doSabotage` itself, so a stale entry here costs
+   * at most a wasted walk for the AI, never a wrong outcome — and never
+   * anything at all for a player's own explicit order, which never consults
+   * this cache in the first place.
+   */
+  private sabotageCandidatesByBand(): Map<number, Building[]> {
+    const byBand = new Map<number, Building[]>();
+    for (const building of this.buildings) {
+      if (!building.complete || building.ruined) continue;
+      if (!isStructure(building.def) || building.crop !== null) continue;
+      const list = byBand.get(building.ownerBandId);
+      if (list) list.push(building);
+      else byBand.set(building.ownerBandId, [building]);
+    }
+    return byBand;
   }
 
   /** The pile under a point, if any. */
@@ -1382,8 +1618,25 @@ export class Simulation {
       const under = byRoof.get(roof.id);
       if (under) under.push(person);
       else byRoof.set(roof.id, [person]);
+
+      // M11 phase 6a: the same midnight sample that pairs people for a
+      // hearth conversation is the cheapest honest reading of where a
+      // household actually lives, so it doubles as that.
+      if (person.householdId !== null) {
+        const household = this.householdsById.get(person.householdId);
+        if (household) household.homeBuildingId = roof.id;
+      }
     }
-    for (const under of byRoof.values()) this.social.hearth(under, this.time.tick);
+    for (const under of byRoof.values()) {
+      this.social.hearth(under, this.time.tick);
+      // M11 phase 9b: the same sample, spent a second way. `SocialSystem.
+      // hearth` is what a night under one roof does to a relationship;
+      // `hearthRng` is its own stream so that whether a lesson is attempted
+      // tonight never shifts which pairs warm to each other, or vice versa.
+      this.knowledgeSystem.hearthLesson(
+        under, this.hearthRng, this.time.tick,
+        (person, text, kind) => this.noteInsight(person, text, kind));
+    }
   }
 
   /** Takes a killed animal out of the world and its index. */
@@ -1700,10 +1953,12 @@ export class Simulation {
     }
 
     this.recordedTech.clear();
+    this.rememberedTech.clear();
     this.recordsInHand.clear();
     for (const record of this.inscriptions) {
+      const legible = record.def.fidelity === 'instruction' ? this.recordedTech : this.rememberedTech;
       for (const tech of record.techs) {
-        this.recordedTech.add(tech);
+        legible.add(tech);
         this.recordsInHand.add(tech);
       }
       if (record.pending !== null) this.recordsInHand.add(record.pending);
@@ -1971,10 +2226,11 @@ export class Simulation {
    * order — the same property `workTraps` has, and it is a design advantage
    * rather than an accident.
    *
-   * Four collections, and one of them is a black hole: `household.store` is
-   * written by `LifeSystem` when somebody dies and **read by nothing anywhere**.
-   * Spoiling it is correct and must not be counted as the feature working. See
-   * `bugs.md`.
+   * Three collections. A fourth, `household.store`, existed until M11 phase
+   * 6a and was a black hole — written by `LifeSystem` when somebody died and
+   * read by nothing anywhere. A household's goods now live in a real
+   * building (`Household.homeBuildingId`), so they are already swept by the
+   * building loop below and need no collection of their own.
    */
   private spoilFood(): void {
     const rate = this.config.needs.spoilRate;
@@ -2023,9 +2279,8 @@ export class Simulation {
       // no-op and is here so that the one day something does, it behaves.
       sweep(building.delivered, keeps);
     }
-    // Dropped goods and a dead person's effects keep no better than a pack.
+    // Dropped goods keep no better than a pack.
     for (const pile of this.piles) sweep(pile.contents, 1);
-    for (const household of this.households.values()) sweep(household.store, 1);
   }
 
   /**
@@ -2176,6 +2431,82 @@ export class Simulation {
   }
 
   /**
+   * A day of grazing, in every pen somebody still knows how to keep — M11
+   * phase 10. The same shape as `workTraps`, deliberately, with one real
+   * difference: growth is proportional to what a pen already holds rather
+   * than a flat rate, which is what makes this breeding rather than a slower
+   * trap. A pen culled down to nothing grows nothing the next day either,
+   * because `stock * rate` is zero at zero — over-culling a herd to
+   * extinction is a real, permanent failure state here, the same honesty
+   * `workTraps` already applies to a snare line whose setter died.
+   */
+  private workHerds(): void {
+    const grasp = new Map<string, number>();
+    // `dairying` and `wool` are read the same way, per band rather than per
+    // building — a byproduct's tech names itself rather than a `pen`, so this
+    // loop asks every technology any herd building declares a byproduct for,
+    // not only `requiresTech`.
+    const byproductGrasp = new Map<string, number>();
+    for (const person of this.people) {
+      if (!person.alive) continue;
+      for (const def of Object.values(BUILDINGS)) {
+        if (!isHerd(def)) continue;
+        if (def.requiresTech !== null) {
+          const key = person.bandId + ':' + def.id;
+          const power = techPower(person, def.requiresTech as Tech);
+          if (power > (grasp.get(key) ?? 0)) grasp.set(key, power);
+        }
+        for (const byproduct of def.herd?.byproducts ?? []) {
+          const key = person.bandId + ':' + byproduct.tech;
+          const power = techPower(person, byproduct.tech);
+          if (power > (byproductGrasp.get(key) ?? 0)) byproductGrasp.set(key, power);
+        }
+      }
+    }
+
+    for (const building of this.buildings) {
+      const herd = building.def.herd;
+      if (!herd || !building.complete) continue;
+
+      const power = grasp.get(building.ownerBandId + ':' + building.def.id) ?? 0;
+      if (power <= 0) {
+        // Nobody left who knows how to keep it. Unlike a trap's part-caught
+        // hare, nothing here is lost by forgetting the carry — the herd
+        // itself is still in the pen, and simply stops growing.
+        telemetry.count('herd_unworked');
+      } else if (building.storageFree <= 0) {
+        telemetry.count('herd_at_capacity');
+      } else {
+        const stock = building.store.count(herd.item);
+        const accrued = accrueUnits(building.yieldCarry, stock * herd.growthPerDay * power);
+        building.yieldCarry = accrued.carry;
+        if (accrued.units > 0) {
+          const grown = Math.min(accrued.units, building.storageFree);
+          building.store.add(herd.item, grown);
+          telemetry.count('herd_bred', grown);
+        }
+      }
+
+      // Byproducts read the *main* item's stock — milk comes from the herd
+      // that is there, not from itself — and, unlike breeding, are not
+      // gated on `herding` at all: a band that has forgotten how to keep a
+      // pen but still knows how to milk one can go on doing so.
+      const liveStock = building.store.count(herd.item);
+      for (const byproduct of herd.byproducts ?? []) {
+        const byproductPower = byproductGrasp.get(building.ownerBandId + ':' + byproduct.tech) ?? 0;
+        if (byproductPower <= 0 || building.storageFree <= 0) continue;
+        const carry = building.byproductCarry.get(byproduct.item) ?? 0;
+        const accrued = accrueUnits(carry, liveStock * byproduct.perDay * byproductPower);
+        building.byproductCarry.set(byproduct.item, accrued.carry);
+        if (accrued.units <= 0) continue;
+        const grown = Math.min(accrued.units, building.storageFree);
+        building.store.add(byproduct.item, grown);
+        telemetry.count(byproduct.item + '_bred', grown);
+      }
+    }
+  }
+
+  /**
    * What one trap catches a day as things stand, and why, for the HUD.
    *
    * The panel could compute this itself, but then the number the player reads
@@ -2317,6 +2648,23 @@ export class Simulation {
       this.snowDepth = advanceSnowDepth(this.snowDepth, this.time.temperature);
       this.social.dailyUpkeep(this.people);
       this.shareTheHearth();
+      // Renown decays far more slowly than an ordinary opinion's `deeds`
+      // component (0.997 against 0.985): it is the family's memory of itself
+      // and has to compose across generations, not fade with one person's
+      // recollection. Kept here rather than folded into `dailyUpkeep`,
+      // because `SocialSystem` knows people and feelings, not households.
+      for (const household of this.households) household.renown *= RENOWN_DECAY_PER_DAY;
+      // A grudge or an alliance between two peoples outlives the individuals
+      // who were there when it started, so it decays slower still than
+      // renown — see `BandRelations`'s own header.
+      this.bandRelations.decay();
+      for (const person of this.people) {
+        if (person.alive) {
+          decayMood(person);
+          decayMacroBalance(person);
+          decayMacroTarget(person);
+        }
+      }
       const forest = this.forestSystem.daily(this.trees, {
         world: this.world,
         rng: this.forestRng,
@@ -2343,7 +2691,10 @@ export class Simulation {
         tick: this.time.tick,
         buildings: this.buildings,
         place: (defId, x, y, bandId) => this.place(defId, x, y, bandId),
-        onExile: (person, band, average) => this.exile(person, band, average),
+        onExile: (person, band, factionSize) => this.exile(person, band, factionSize),
+        onAdopt: (person, band) => this.adopt(person, band),
+        peopleHash: this.peopleHash,
+        bandRelations: this.bandRelations,
         abandonSite: site => this.removeBuilding(site),
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),
@@ -2385,6 +2736,10 @@ export class Simulation {
       this.workTraps();
       this.growCrops();
       this.workHeaps();
+      this.workHerds();
+      // See `sabotageCandidatesByBand`'s own comment for why this is cached
+      // at all and why once a day is the right cadence for it.
+      this.sabotageCache = this.sabotageCandidatesByBand();
 
       this.lifeSystem.daily(this.people, {
         rng: this.lifeRng,
@@ -2402,6 +2757,8 @@ export class Simulation {
       world: this.world,
       time: this.time,
       rng: this.aiRng,
+      choiceRng: this.choiceRng,
+      choiceSpread: this.config.ai.choiceSpread,
       nodeHash: this.nodeHash,
       peopleHash: this.peopleHash,
       shoreHash: this.shoreHash,
@@ -2424,6 +2781,9 @@ export class Simulation {
         return soil.effective / Math.max(0.001, soil.resting);
       },
       snowBuries: this.config.world.snowBuries,
+      householdsById: this.householdsById,
+      bandRelations: this.bandRelations,
+      sabotageCandidatesByBand: this.sabotageCache,
     };
     const actionCtx = {
       world: this.world,
@@ -2438,6 +2798,7 @@ export class Simulation {
       onTreeFelled: (tree: Tree) => this.removeTree(tree),
       peopleById: this.peopleById,
       peopleHash: this.peopleHash,
+      bandRelations: this.bandRelations,
       social: this.social,
       rng: this.actionRng,
       tick: this.time.tick,

@@ -15,18 +15,19 @@ import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
-import { BUILDINGS, isStation } from '../entities/Building.ts';
+import { BUILDINGS, isStation, isStructure } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import type { Tree } from '../entities/Tree.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES, hasIngredients, missingIngredients, type RecipeDef } from '../entities/Recipe.ts';
 import { INSCRIPTIONS } from '../entities/Inscription.ts';
 import { TECH, techPower, prerequisitesMet, type Tech } from '../knowledge/Tech.ts';
-import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
+import { MAX_IDEAS, PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import type { Inscription } from '../entities/Inscription.ts';
 import type { Animal } from '../entities/Animal.ts';
 import type { RelationshipGraph } from '../social/Relationships.ts';
+import type { PropertyUse } from '../social/Property.ts';
 import {
   CONVERSATION_MODES, MODE_LADDER, modeAllowed, whyNotYet, type ConversationMode,
 } from '../social/Conversation.ts';
@@ -122,6 +123,12 @@ export interface CatalogContext {
    * keep compiling; a context without it simply offers no station recipes.
    */
   stationFor?: (stationId: string) => Building | null;
+  /**
+   * Whether the actor can use a structure without an owner stopping them.
+   * Optional for hand-built test contexts; the live catalogue always supplies
+   * it so the menu and the executor answer ownership with the same rule.
+   */
+  propertyUse?: (building: Building) => PropertyUse;
   /**
    * Set when the player is commanding someone else rather than acting
    * themselves. The verbs are the same; only who carries them out changes, and
@@ -275,10 +282,16 @@ function recordActions(actor: Person, record: Inscription): ActionOption[] {
     }];
   }
 
+  // A `reminder` record only ever lands an idea, so the same two extra guards
+  // `ActionSystem.doRead` applies apply here too — otherwise the button reads
+  // "enabled" for a painting that can no longer do anything for this person,
+  // and clicking it walks them over to be turned away.
   const useful = record.techs.some(tech =>
     TECH[tech as Tech] !== undefined &&
     !actor.knownTech.has(tech) &&
-    prerequisitesMet(tech as Tech, actor.knownTech));
+    prerequisitesMet(tech as Tech, actor.knownTech) &&
+    (record.def.fidelity === 'instruction' ||
+      (!actor.ideaFor(tech) && actor.ideas.length < MAX_IDEAS)));
   return [{
     id: 'read',
     label: 'Read it',
@@ -391,6 +404,19 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       enabled: !other.isChild,
       reason: other.isChild ? 'They are too young to show anybody anything' : undefined,
     },
+    {
+      // M11 phase 11: the safe half of the fix for "nobody can become a
+      // better fighter than the person next to them" (docs/bugs.md). Nobody
+      // is hurt; `doSpar` is where the gate on their willingness actually
+      // lives, this menu only rules out what could never be offered at all.
+      id: 'spar',
+      label: 'Spar with ' + other.name,
+      icon: '\u{1F94A}',
+      enabled: !actor.isChild && !other.isChild,
+      reason: actor.isChild || other.isChild
+        ? 'Too young to spar safely'
+        : undefined,
+    },
     // M9 phase 4, note 5. One entry per rung of `Conversation.ts` rather than
     // the single "Talk to X" that stood for all four: the simulation now has
     // four conversations at four prices, and a menu offering one of them is
@@ -420,6 +446,20 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       icon: '\u{1F381}',
       enabled: carriedFood !== null,
       reason: carriedFood === null ? 'You are carrying no food' : undefined,
+    },
+    {
+      // M11 phase 7b's third `BandRelations` engine: both sides hand
+      // something over, unlike `give`, which is why it needs food on both
+      // sides rather than one.
+      id: 'trade',
+      label: 'Trade with ' + other.name,
+      icon: '\u{1F91D}',
+      enabled: carriedFood !== null && other.inventory.bestFood() !== null,
+      reason: carriedFood === null
+        ? 'You are carrying no food'
+        : other.inventory.bestFood() === null
+          ? 'They are carrying no food'
+          : undefined,
     },
     {
       id: 'steal',
@@ -551,20 +591,53 @@ function buildingActions(
       reason: building.wants(actor.inventory) ? undefined : 'You carry nothing it needs',
     });
   } else {
+    const property = ctx.propertyUse?.(building);
+    const canUse = property?.allowed ?? true;
+    const guarded = canUse ? undefined : property?.because;
+    // M11 phase 11b. Repair reuses `build` rather than getting a verb of its
+    // own — see `ActionSystem.doBuild`'s own note on why — so the one thing
+    // this menu has to add is the *option*: nothing else here offers `build`
+    // on a finished site, and without this a damaged hut had no way back.
+    if (building.durability !== null && building.durability < building.def.workTicks) {
+      options.push({
+        id: 'build',
+        label: 'Repair the ' + building.def.label,
+        icon: '\u{1F528}',
+        enabled: canUse,
+        reason: guarded,
+      });
+    }
+    // Offered only on a foreign building nobody here has any claim to —
+    // `property.ours` is true for the actor's own band and for a close
+    // enough ally, and sabotaging either is not a choice this menu offers,
+    // the same way `steal` is never offered on one's own store. `canUse`
+    // still gates it: a watched target refuses with the same `because` every
+    // other property verb already gives.
+    if (property && !property.ours && isStructure(building.def) &&
+      !building.crop && !building.ruined) {
+      options.push({
+        id: 'sabotage',
+        label: 'Damage the ' + building.def.label,
+        icon: '\u{1F525}',
+        enabled: canUse,
+        reason: guarded,
+        hostile: true,
+      });
+    }
     if (building.def.storage > 0) {
       options.push({
         id: 'store',
         label: 'Store what you carry',
         icon: '\u{1F4E5}',
-        enabled: actor.inventory.total > 0,
-        reason: actor.inventory.total === 0 ? 'You carry nothing' : undefined,
+        enabled: canUse && actor.inventory.total > 0,
+        reason: guarded ?? (actor.inventory.total === 0 ? 'You carry nothing' : undefined),
       });
       options.push({
         id: 'take',
         label: 'Take from store',
         icon: '\u{1F4E4}',
-        enabled: building.store.total > 0,
-        reason: building.store.total === 0 ? 'The store is empty' : undefined,
+        enabled: canUse && building.store.total > 0,
+        reason: guarded ?? (building.store.total === 0 ? 'The store is empty' : undefined),
       });
     }
     // M8.2. Both verbs are offered on a finished plot, and which one is enabled
@@ -581,11 +654,12 @@ function buildingActions(
         id: 'sow',
         label: 'Sow the field',
         icon: '\u{1F331}',
-        enabled: knows && crop.isFallow && seed >= SOW_SEED,
-        reason: !knows ? 'Nobody here has the idea of putting seed back in the ground'
+        enabled: canUse && knows && crop.isFallow && seed >= SOW_SEED,
+        reason: guarded
+          ?? (!knows ? 'Nobody here has the idea of putting seed back in the ground'
           : !crop.isFallow ? 'Something is growing here already'
           : seed < SOW_SEED ? 'You need ' + SOW_SEED + ' grain to sow this'
-          : undefined,
+          : undefined),
       });
       const knowsCompost = techPower(actor, 'composting') > 0;
       if (knowsCompost) {
@@ -598,17 +672,18 @@ function buildingActions(
           id: 'spread',
           label: 'Spread compost here',
           icon: '\u{1F343}',
-          enabled: true,
+          enabled: canUse,
+          reason: guarded,
         });
       }
       options.push({
         id: 'reap',
         label: 'Bring in the harvest',
         icon: '\u{1F33E}',
-        enabled: crop.isRipe,
-        reason: crop.isRipe ? undefined
+        enabled: canUse && crop.isRipe,
+        reason: guarded ?? (crop.isRipe ? undefined
           : crop.isFallow ? 'Nothing is growing here'
-          : 'It is not ready yet',
+          : 'It is not ready yet'),
       });
     }
     if (building.def.shelter > 0) {
@@ -619,13 +694,15 @@ function buildingActions(
         id: 'sleep',
         label: 'Sleep here',
         icon: '\u{1F6CC}',
-        enabled: true,
+        enabled: canUse,
+        reason: guarded,
       });
       options.push({
         id: 'shelter',
         label: 'Shelter here',
         icon: '\u{1F3E0}',
-        enabled: true,
+        enabled: canUse,
+        reason: guarded,
       });
     }
     // M8.1, mechanism 4: what this station is *for*, offered on the station
@@ -636,7 +713,8 @@ function buildingActions(
       for (const recipe of Object.values(RECIPES)) {
         if (recipe.station !== building.def.id) continue;
         if (techPower(actor, recipe.tech) <= 0) continue;
-        crafts.push(craftOption(actor, recipe, ctx, building));
+        const option = craftOption(actor, recipe, ctx, building);
+        crafts.push(canUse ? option : { ...option, enabled: false, reason: guarded });
       }
       options.push(...grouped(crafts, 'Make…', '\u{1F528}',
         'You know nothing that is made here'));
@@ -690,6 +768,19 @@ function groundActions(
       icon: '\u{1F3B5}',
       enabled: hasFlute,
       reason: hasFlute ? undefined : 'You are not carrying a flute',
+    });
+  }
+
+  // `brewing`'s verb, on the same terms as `play`: no destination, everybody
+  // in earshot gets some of it.
+  if (techPower(actor, 'brewing') > 0) {
+    const hasBeer = actor.inventory.has('beer');
+    options.push({
+      id: 'toast',
+      label: 'Share a drink',
+      icon: '\u{1F37A}',
+      enabled: hasBeer,
+      reason: hasBeer ? undefined : 'You are not carrying any beer',
     });
   }
 

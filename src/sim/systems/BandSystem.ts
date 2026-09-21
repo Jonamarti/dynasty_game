@@ -17,10 +17,10 @@
  *    not, without either outcome being written as a rule.
  */
 import type { Person } from '../entities/Person.ts';
-import type { Household } from '../entities/Household.ts';
+import { averageRenown, type Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import {
-  BUILDINGS, isTrap, isStation, isField, isHeap, type Building, type BuildingDef,
+  BUILDINGS, isTrap, isStation, isField, isHeap, isHerd, isWell, type Building, type BuildingDef,
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -28,14 +28,52 @@ import { techPower, type Tech } from '../knowledge/Tech.ts';
 import { JOB_IDS, type JobId } from '../entities/Job.ts';
 import type { RelationshipGraph } from './../social/Relationships.ts';
 import type { RNG } from '../core/RNG.ts';
+import type { SpatialHash } from '../core/SpatialHash.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { chiefHoneymoon, chiefTermDays } from '../social/Leadership.ts';
+import { conspiracyAgainst } from '../social/Factions.ts';
+import type { BandRelations } from '../social/BandRelations.ts';
 
-/** Average opinion below which a band casts someone out. */
-const EXILE_THRESHOLD = -28;
-
-/** At least this many people must hold that opinion for it to count. */
+/**
+ * How large a faction against somebody has to be before the band acts on it.
+ *
+ * M11 phase 5e replaced the *average* opinion this used to gate on with
+ * `conspiracyAgainst`'s faction — the same finding `REBELLION_THRESHOLD`'s
+ * comment records for the chief applies here too: a band's average opinion of
+ * a member rarely goes anywhere near hostile, because kinship and household
+ * bias hold it up, while a handful of people who genuinely detest someone and
+ * trust each other is common and is what actually gets somebody cast out.
+ */
 const EXILE_QUORUM = 4;
+
+/** How far a wandering outcast may be from a band's home and still be taken in. */
+const ADOPTION_RADIUS = 30;
+
+/** An outcast is refused if any member's opinion of them sits below this. */
+const ADOPTION_THRESHOLD = -10;
+
+/**
+ * How far from a band's camp a foreign face counts as an intrusion, M11
+ * phase 7b's territory engine.
+ *
+ * Wider than `ADOPTION_RADIUS`: welcoming a wandering outcast is a
+ * doorstep-sized question, but a band should notice strangers camped
+ * anywhere within sight of home, not only underfoot.
+ */
+const TERRITORY_RADIUS = 40;
+
+/**
+ * How much one foreign person, seen once, at maximum pantry pressure, costs
+ * a band's standing with whichever band that person belongs to.
+ *
+ * Deliberately smaller than `CROSS_BAND_MARRIAGE` and comparable to a single
+ * `CROSS_BAND_DEED_SCALE`-scaled theft: an intrusion is read daily and
+ * `BandRelations` decays slowly, so a strangers'-camp-next-door situation
+ * that persists compounds into real hostility, while a single passer-by
+ * barely registers — which is the property `AGENTS.md` asks any new spawn or
+ * scoring pass to earn on its own measurement, not on a first guess.
+ */
+const TERRITORY_SCALE = 0.3;
 
 /**
  * The most aggrieved member's opinion of the chief, below which they are
@@ -57,6 +95,20 @@ const REBELLION_THRESHOLD = -8;
 
 /** At least this many people must hold an opinion of the chief for it to count. */
 const REBELLION_QUORUM = 3;
+
+/**
+ * How much one point of renown above a household's own band average is
+ * worth in `standingScore`, M11 phase 6e — the "big man" route to the
+ * chiefdom, on top of the "well-liked" one `regard` already measures.
+ *
+ * Deliberately modest against `regard`, which sums an opinion as wide as
+ * -100..100 from every other adult in the band: 0.5 means a household 40
+ * renown above average — roughly one deed nobody will forget, `Authority
+ * .ts`'s own `RENOWN_SPAN` — buys as much as being liked twenty points more
+ * by a single bandmate, enough to tip a close election, not enough to buy
+ * one outright against a widely resented candidate.
+ */
+const RENOWN_CHIEF_WEIGHT = 0.5;
 
 /**
  * How full a band's stores must be before another is worth digging.
@@ -97,6 +149,24 @@ const TRAPS_PER_BAND = 3;
  */
 const FIELDS_PER_BAND = 2;
 
+/**
+ * Pens one band will raise. One, deliberately, unlike traps and fields: a pen
+ * is a single herd that grows on its own, and a second pen is a second herd to
+ * split a fixed grazing pressure between rather than a second helping of food
+ * — the plan's table gives herding one building, not a line of them.
+ */
+const PENS_PER_BAND = 1;
+
+/**
+ * Wells one band will sink. One: it answers "is the shore close?" and a
+ * second does not answer it any harder — `Brain.findWater` already picks
+ * whichever of the well and the natural shore is nearer, so once a band has
+ * one, a second only matters if the band's camp drifts far enough from the
+ * first that it stops being the nearer choice, which this project leaves for
+ * a band to notice on its own rather than planning for in advance.
+ */
+const WELLS_PER_BAND = 1;
+
 /** Days between a band considering new construction. */
 const PLANNING_INTERVAL = 3;
 
@@ -127,7 +197,13 @@ export interface BandContext {
   /** Places a site; returns null if it will not fit. */
   place: (defId: string, x: number, y: number, bandId: number) => Building | null;
   /** Called when someone is cast out, so the world can resettle them. */
-  onExile: (person: Person, band: Band, averageOpinion: number) => void;
+  onExile: (person: Person, band: Band, factionSize: number) => void;
+  /** Called when a band takes in a wandering outcast. */
+  onAdopt: (person: Person, band: Band) => void;
+  /** For `considerAdoption`'s and `considerTerritory`'s proximity queries — never scan the population for it. */
+  peopleHash: SpatialHash<Person>;
+  /** For `considerTerritory`'s reading of how two bands currently stand. */
+  bandRelations: BandRelations;
   /** Removes an abandoned site from the world. */
   abandonSite: (building: Building) => void;
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
@@ -165,6 +241,9 @@ export class BandSystem {
       else byBand.set(person.bandId, [person]);
     }
 
+    const outcastBand = bands.find(b => b.outcast);
+    const outcasts = outcastBand ? byBand.get(outcastBand.id) ?? [] : [];
+
     for (const band of bands) {
       const members = byBand.get(band.id) ?? [];
       if (members.length === 0) {
@@ -178,6 +257,8 @@ export class BandSystem {
       this.assignJobs(band, members, ctx);
       this.considerExile(band, members, ctx);
       this.considerRebellion(band, members, ctx);
+      if (!band.outcast && outcasts.length > 0) this.considerAdoption(band, members, outcasts, ctx);
+      if (!band.outcast) this.considerTerritory(band, ctx, outcastBand?.id);
       if (ctx.day % PLANNING_INTERVAL === 0) this.planBuildings(band, members, ctx);
       this.directWork(band, members, ctx);
     }
@@ -267,7 +348,21 @@ export class BandSystem {
     const welcome = candidate.id === band.chiefId
       ? chiefHoneymoon(band, ctx.day) * 40
       : 0;
-    return regard + candidate.years * 1.5 + candidate.skills.persuade * 0.8 + welcome;
+
+    // M11 phase 6e: the "big man" route to leadership, on top of the
+    // "well-liked" one `regard` already measures. Only the household's edge
+    // *above* its own band's average counts, the same shape `Authority.ts`'s
+    // `inequalityTerm` uses for standing over an order, and for the same
+    // reason — an egalitarian band, where every household is regarded about
+    // the same, gets nothing from this term for anybody.
+    const household = candidate.householdId === null
+      ? null
+      : ctx.householdsById.get(candidate.householdId) ?? null;
+    const renownEdge = household
+      ? Math.max(0, household.renown - averageRenown(band.id, ctx.householdsById)) * RENOWN_CHIEF_WEIGHT
+      : 0;
+
+    return regard + candidate.years * 1.5 + candidate.skills.persuade * 0.8 + welcome + renownEdge;
   }
 
   // -------------------------------------------------------------------------
@@ -468,6 +563,22 @@ export class BandSystem {
   // -------------------------------------------------------------------------
 
   /**
+   * How full a band's granaries are, 0-1, from a list already filtered to
+   * one band's completed stores.
+   *
+   * Shared between `planBuildings`, which asks whether another is worth
+   * digging, and `considerTerritory`'s reading of how much an intrusion
+   * should sting — the same formula rather than two, so the two questions
+   * cannot quietly answer differently the day either one is retuned.
+   */
+  private pantryPressureOf(stores: Building[]): number {
+    const capacity = stores.reduce((sum, b) => sum + b.def.storage, 0);
+    if (capacity === 0) return 0;
+    const used = stores.reduce((sum, b) => sum + b.store.total, 0);
+    return used / capacity;
+  }
+
+  /**
    * Marks out what the band is short of.
    *
    * Shelter first — cold is what actually kills people here — then somewhere to
@@ -495,19 +606,22 @@ export class BandSystem {
     // thing.
     const built = live.filter(b =>
       b.complete && !isTrap(b.def) && !isStation(b.def) && !isField(b.def) &&
-      !isHeap(b.def)).length;
+      !isHeap(b.def) && !isHerd(b.def) && !isWell(b.def)).length;
     if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
 
     // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
     // windbreak are not the same amount of shelter, and counting them as one
     // each is how a band with two windbreaks decided it had housed ten people.
+    // `!b.ruined`, M11 phase 11b: a sabotaged hut's footprint is still there,
+    // but `NeedsSystem.shelterAt` gives it no credit, and this count must not
+    // disagree — a band standing in a burned-out camp that still reads
+    // "enough roof" on the strength of ash would never plan a repair or a
+    // replacement, which is the one thing a raid is supposed to cost it.
     const roofArea = live
-      .filter(b => b.def.shelter > 0.3)
+      .filter(b => b.def.shelter > 0.3 && !b.ruined)
       .reduce((sum, b) => sum + b.def.width * b.def.height, 0);
 
     const stores = live.filter(b => b.complete && b.def.storage >= 100);
-    const capacity = stores.reduce((sum, b) => sum + b.def.storage, 0);
-    const used = stores.reduce((sum, b) => sum + b.store.total, 0);
     const plannedStores = live.filter(b => !b.complete && b.def.storage >= 100).length;
 
     // What this band could actually raise.
@@ -560,7 +674,7 @@ export class BandSystem {
         // The first store is the cheap one, always. Being told to keep a season
         // of food in a pit you have not dug yet is worse than the pit.
         wanted = this.cheapest(granaries)?.id ?? null;
-      } else if (capacity > 0 && used / capacity > STORE_PRESSURE) {
+      } else if (this.pantryPressureOf(stores) > STORE_PRESSURE) {
         // Already storing, and running out of room: now the big one is worth
         // the season it costs.
         //
@@ -672,6 +786,36 @@ export class BandSystem {
         // draw in it — the planner runs inside the daily pass and a tie broken
         // by an `RNG` here would shift every draw in the world.
         wanted = this.bestBy(settable, def => def.yields?.perDay ?? 0)?.id ?? null;
+      }
+    }
+
+    // --- A pen, the seventh thing a band can want ---------------------------
+    //
+    // Behind traps, on the same argument the trap branch already makes: a pen
+    // is surplus, not survival. One at most (`PENS_PER_BAND`), because unlike
+    // a trap a pen is a single herd that grows on its own — a second pen
+    // splits one grazing pressure into two rather than adding a second supply.
+    if (!wanted && underway === 0 && stores.length > 0) {
+      const pens = live.filter(b => isHerd(b.def));
+      if (pens.length < PENS_PER_BAND) {
+        wanted = buildable.find(def => isHerd(def) &&
+          !pens.some(existing => existing.def.id === def.id && !existing.complete))?.id ?? null;
+      }
+    }
+
+    // --- A well, the eighth and last thing a band can want ------------------
+    //
+    // Last, because it is the least urgent of all of them: `spawnPeople`
+    // already sites every band with water in reach, so a well most often
+    // shortens a walk a band could already make rather than opening one it
+    // could not. Still worth having — `Brain.findWater` picks whichever of a
+    // well and the shore is nearer, so a camp that has grown away from the
+    // water it was founded on gets a real answer instead of a longer one.
+    if (!wanted && underway === 0 && stores.length > 0) {
+      const wells = live.filter(b => isWell(b.def));
+      if (wells.length < WELLS_PER_BAND) {
+        wanted = buildable.find(def => isWell(def) &&
+          !wells.some(existing => existing.def.id === def.id && !existing.complete))?.id ?? null;
       }
     }
     if (!wanted) return;
@@ -860,13 +1004,17 @@ export class BandSystem {
   // -------------------------------------------------------------------------
 
   /**
-   * Casts out anyone the band as a whole has turned against.
+   * Casts out anyone a faction of the band has turned against.
    *
-   * The threshold is on the *average* opinion across people who actually have
-   * one, with a quorum, so a single furious enemy cannot banish a rival. What
-   * makes this interesting is that it runs off the same norms that decide how
-   * a theft is judged: the same deed exiles a man from a strict band and costs
-   * him nothing among tolerant neighbours.
+   * **M11 phase 5e** replaced an average-opinion threshold with
+   * `conspiracyAgainst`, because the average never got there: kinship and
+   * household bias hold a band's collective regard for any one member
+   * comfortably above hostile even when a few people loathe them, exactly the
+   * finding `REBELLION_THRESHOLD`'s comment records for the chief. What makes
+   * this interesting is unchanged — it still runs off the same opinions a
+   * theft or a slander moves, so the same deed exiles a man from a band whose
+   * norms condemn it and costs him nothing among neighbours whose norms do
+   * not.
    */
   private considerExile(band: Band, members: Person[], ctx: BandContext): void {
     if (members.length < EXILE_QUORUM + 1) return;
@@ -876,18 +1024,8 @@ export class BandSystem {
       if (suspect.id === chiefId) continue;
       if (suspect.isChild) continue;
 
-      let total = 0;
-      let voices = 0;
-      for (const other of members) {
-        if (other.id === suspect.id) continue;
-        if (!ctx.relationships.peek(other.id, suspect.id)) continue;
-        total += ctx.relationships.opinion(other.id, suspect.id);
-        voices++;
-      }
-      if (voices < EXILE_QUORUM) continue;
-
-      const average = total / voices;
-      if (average > EXILE_THRESHOLD) continue;
+      const faction = conspiracyAgainst(suspect.id, members, ctx.relationships);
+      if (!faction || faction.memberIds.length < EXILE_QUORUM) continue;
 
       telemetry.count('exiled');
       suspect.chronicle.push({
@@ -896,8 +1034,81 @@ export class BandSystem {
         text: 'was cast out of the ' + band.name,
         kind: 'suffered',
       });
-      ctx.onExile(suspect, band, average);
+      ctx.onExile(suspect, band, faction.memberIds.length);
       return; // One at a time; a purge is a different mechanic.
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Adoption
+  // -------------------------------------------------------------------------
+
+  /**
+   * A band may take in an outcast found wandering near its camp.
+   *
+   * The mirror of `considerExile`, and the door back that its comment
+   * promises: a person cast out for a deed nobody here witnessed, or judged by
+   * norms this band does not share, arrives with a clean slate, because
+   * reputation here is derived straight from `Memory` and `RelationshipGraph`
+   * rather than from a global criminal record. What actually refuses somebody
+   * is a member who genuinely knows and dislikes them — the same grudge
+   * `conspiracyAgainst` would use to exile them again the moment they joined.
+   */
+  private considerAdoption(
+    band: Band, members: Person[], outcasts: Person[], ctx: BandContext
+  ): void {
+    const nearby = ctx.peopleHash.queryRadius(band.homeX, band.homeY, ADOPTION_RADIUS)
+      .filter(person => outcasts.includes(person) && !person.isChild);
+    if (nearby.length === 0) return;
+
+    for (const candidate of nearby) {
+      const refused = members.some(member => {
+        const rel = ctx.relationships.peek(member.id, candidate.id);
+        return rel !== null && ctx.relationships.opinion(member.id, candidate.id) < ADOPTION_THRESHOLD;
+      });
+      if (refused) continue;
+
+      telemetry.count('adopted');
+      candidate.chronicle.push({
+        tick: ctx.tick,
+        ageDays: candidate.age,
+        text: 'was taken in by the ' + band.name,
+        kind: 'milestone',
+      });
+      ctx.onAdopt(candidate, band);
+      ctx.onInsight(candidate, 'was welcomed into the ' + band.name, 'gain');
+      return; // One at a time, the same discipline `considerExile` keeps.
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Territory
+  // -------------------------------------------------------------------------
+
+  /**
+   * Foreign faces near camp cost a band's opinion of that other band —
+   * scaled by how hungry this band is. M11 phase 7b's fourth engine, and the
+   * one the plan names as closing the old `// later, claim territory` TODO
+   * without any new mechanic: `pantryPressureOf` already answers "how
+   * pinched is this band for food", and multiplying an intrusion by it is
+   * the whole of "a well-fed band shrugs off an intrusion; a hungry one does
+   * not."
+   */
+  private considerTerritory(
+    band: Band, ctx: BandContext, outcastBandId: number | undefined
+  ): void {
+    const pressure = this.pantryPressureOf(
+      ctx.buildings.filter(b => b.ownerBandId === band.id && b.complete && b.def.storage >= 100));
+    if (pressure <= 0) return;
+
+    const byBand = new Map<number, number>();
+    for (const person of ctx.peopleHash.queryRadius(band.homeX, band.homeY, TERRITORY_RADIUS)) {
+      if (!person.alive || person.bandId === band.id || person.bandId === outcastBandId) continue;
+      byBand.set(person.bandId, (byBand.get(person.bandId) ?? 0) + 1);
+    }
+
+    for (const [otherBandId, count] of byBand) {
+      ctx.bandRelations.add(band.id, otherBandId, -count * pressure * TERRITORY_SCALE);
     }
   }
 }

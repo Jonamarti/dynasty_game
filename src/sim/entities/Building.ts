@@ -19,6 +19,7 @@
  */
 import { Inventory } from './Item.ts';
 import { Crop } from './Field.ts';
+import type { Tech } from '../knowledge/Tech.ts';
 
 export interface BuildingDef {
   id: string;
@@ -113,6 +114,47 @@ export interface BuildingDef {
    * nothing.
    */
   preserves?: number;
+  /**
+   * A pen: what it holds, how much it starts with, and how fast it breeds —
+   * M11 phase 10.
+   *
+   * Deliberately reuses `store` and `doTake` rather than inventing a verb. A
+   * pen is, mechanically, a larder that fills itself — proportionally to what
+   * is already in it, which is what makes it breeding rather than a slower
+   * trap: `Simulation.workHerds` grows `store.count(item)` by a fraction of
+   * itself each day, so a pen culled down to nothing stays at nothing for
+   * ever, and a pen left alone grows toward `storage`. `seed` is what a
+   * newly-finished pen is stocked with, since growth from zero is zero
+   * whatever the fraction — a pen with nothing in it is not founding a herd,
+   * it is an empty pen.
+   *
+   * Excluded from `doStore` and from `Brain`'s deposit branch on the same
+   * argument `isTrap` already makes: this is somewhere food comes *from*.
+   */
+  herd?: {
+    item: string; seed: number; growthPerDay: number;
+    /**
+     * `dairying` and `wool`: what a live herd gives up without being culled
+     * for it, gated on its own technology and accruing the same way the
+     * main `item` does — `stock * perDay * techPower(tech)` — but never
+     * depleting the herd itself, because milking and shearing do not kill
+     * anything. Added to the same `store`, which is why `pen`'s `storage`
+     * is sized for three items rather than one: a cap that only ever had to
+     * hold meat would starve breeding the moment milk or wool filled it.
+     */
+    byproducts?: { tech: Tech; item: string; perDay: number }[];
+  };
+  /**
+   * True if this stands in for natural water — M11 phase 10's `well`, and the
+   * first technology in the game to touch thirst at all.
+   *
+   * `ActionSystem.waterWithinReach` accepts a nearby complete one exactly as
+   * it accepts a water tile, and `Brain.findWater` picks whichever of the two
+   * is closer, so a well is a real second source rather than a decoration a
+   * band happens to also own — the same standard `isTrap` and `isHerd` hold
+   * their own mechanisms to.
+   */
+  providesWater?: boolean;
   description: string;
 }
 
@@ -151,6 +193,32 @@ export function isField(def: BuildingDef): boolean {
 /** True if a design ripens its contents rather than catching anything. */
 export function isHeap(def: BuildingDef): boolean {
   return def.matures !== undefined;
+}
+
+/** True if a design is a pen: a larder that breeds what it holds. See `herd`. */
+export function isHerd(def: BuildingDef): boolean {
+  return def.herd !== undefined;
+}
+
+/** True if a design is a source of water in its own right. See `providesWater`. */
+export function isWell(def: BuildingDef): boolean {
+  return def.providesWater === true;
+}
+
+/**
+ * True if a design has actual fabric to knock down, rather than being bare
+ * ground set aside — M11 phase 11b.
+ *
+ * The same test `Building.addWork` already uses to decide whether anything
+ * was ever built here (`workTicks === 0` is finished the instant it is
+ * placed, per the constructor), reused as its own predicate for the same
+ * reason `isTrap` and `isField` are: `sabotage`, `Building.repair` and the
+ * two catalogues that offer them all need to agree on which buildings have a
+ * `durability` worth reading, and three copies of `def.workTicks > 0` is how
+ * that agreement drifts.
+ */
+export function isStructure(def: BuildingDef): boolean {
+  return def.workTicks > 0;
 }
 
 export const BUILDINGS: Record<string, BuildingDef> = {
@@ -215,6 +283,47 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       'winter in, and the first thing worth cutting a tree for.',
   },
 
+  // --- M11 phase 10, second commit: two more shelters -----------------------
+  //
+  // `wattle_daub` and `masonry` each answer the mud hut differently: a woven
+  // wall skips the felled-timber frame entirely, and a stone one out-shelters
+  // everything short of the longhouse. `BandSystem.planBuildings` picks
+  // whichever known, affordable design shelters best on its own — no changes
+  // needed there, since it already reads `BuildingDef.shelter` rather than a
+  // hardcoded id.
+  wattle_hut: {
+    id: 'wattle_hut',
+    label: 'Wattle hut',
+    icon: '\u{1F6D6}',
+    width: 3, height: 3,
+    // No wood at all — the whole point of a woven wall is that it answers
+    // what the mud hut's timber frame answers without felling a tree for it.
+    materials: { sticks: 10, thatch: 12, mud: 10 },
+    workTicks: 400,
+    shelter: 0.88,
+    storage: 40,
+    preserves: 1.2,
+    requiresTech: 'wattle_daub',
+    description:
+      'Withies woven between posts and daubed over. Raised faster than a mud ' +
+      'hut, and it keeps the wind out better for the weave underneath.',
+  },
+  stone_house: {
+    id: 'stone_house',
+    label: 'Stone house',
+    icon: '\u{1F3E0}',
+    width: 3, height: 3,
+    materials: { flint: 20, wood: 6, mud: 10 },
+    workTicks: 750,
+    shelter: 0.92,
+    storage: 50,
+    preserves: 1.3,
+    requiresTech: 'masonry',
+    description:
+      'Coursed stone walls under a timber roof. The best shelter a family can ' +
+      'raise without a longhouse’s whole household behind it.',
+  },
+
   // --- M8.1, mechanism 3: the traps -----------------------------------------
   //
   // Both are 2x2 and neither may be 1x1, which is not a style choice. A 1x1
@@ -258,6 +367,40 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     description:
       'A woven funnel staked in the shallows. The shore keeps working through ' +
       'the night, and through the winter.',
+  },
+
+  // --- M11 phase 10: herding, a larder that breeds what it holds -------------
+  //
+  // A pen reuses `store` and `doTake` wholesale rather than a new verb: see the
+  // header comment on `BuildingDef.herd`. 2x2 for the same containment reason
+  // every trap gives.
+  pen: {
+    id: 'pen',
+    label: 'Pen',
+    icon: '\u{1F411}',
+    width: 2, height: 2,
+    materials: { sticks: 8, thatch: 4 },
+    workTicks: 160,
+    shelter: 0,
+    // M11 phase 10, sixth commit: raised from 30. `dairying` and `wool` add
+    // two more items to the same store, and a cap sized for one would let
+    // milk or wool fill it and starve the breeding this whole mechanism is
+    // built on — `workHerds` refuses to grow anything once `storageFree` is
+    // zero, meat included.
+    storage: 60,
+    // Three animals to start, growing at 6% of the current stock a day at full
+    // knowledge — slow at first, and it compounds. See `Simulation.workHerds`.
+    herd: {
+      item: 'meat', seed: 3, growthPerDay: 0.06,
+      byproducts: [
+        { tech: 'dairying', item: 'milk', perDay: 0.1 },
+        { tech: 'wool', item: 'wool', perDay: 0.05 },
+      ],
+    },
+    requiresTech: 'herding',
+    description:
+      'A fenced yard, kept for meat that does not have to be hunted. Culled ' +
+      'faster than it breeds, it is empty for good; left alone, it grows.',
   },
 
   // --- M8.1, mechanism 4: the first crafting station -------------------------
@@ -357,6 +500,79 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       'gave up over ten harvests, handed back in a season.',
   },
 
+  // --- M11 phase 10: mechanism 4's third station -----------------------------
+  //
+  // A loom is worked at rather than stood on, on the same terms as the quern:
+  // no storage, or `Brain`'s larder scorer and `doStore` would both pick it up
+  // as a place to leave food. 3x3 for the same containment reason every
+  // station and every trap gives — see the quern's own comment.
+  loom: {
+    id: 'loom',
+    label: 'Loom',
+    icon: '\u{1F9F6}',
+    width: 3, height: 3,
+    materials: { wood: 6, sticks: 6 },
+    workTicks: 220,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'weaving',
+    description:
+      'A frame strung taut, worked back and forth. Thread by the length ' +
+      'becomes cloth by the yard.',
+  },
+  // `bread`, mechanism 4's fourth station.
+  oven: {
+    id: 'oven',
+    label: 'Oven',
+    icon: '\u{1F956}',
+    width: 3, height: 3,
+    materials: { mud: 8, sticks: 4 },
+    workTicks: 190,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'bread',
+    description:
+      'A domed firing chamber, walled in mud. Meal wetted, worked and baked ' +
+      'goes further and keeps longer than the meal it was made from.',
+  },
+  // `kiln`, mechanism 4's fifth station. See `RECIPES.kiln_pot` for why it is
+  // a second recipe rather than a retrofit onto `pot`.
+  kiln: {
+    id: 'kiln',
+    label: 'Kiln',
+    icon: '\u{1F525}',
+    width: 3, height: 3,
+    materials: { flint: 8, mud: 6 },
+    workTicks: 240,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'kiln',
+    description:
+      'A stone firing chamber that holds a heat no open hearth can. Pottery ' +
+      'fired here wastes less clay than pottery fired in embers.',
+  },
+  // `well`, the first technology to touch thirst at all. 2x2 for the same
+  // containment reason every trap and pen already gives, though a well is
+  // read by distance rather than by `reachBuilding` — see `providesWater`.
+  well: {
+    id: 'well',
+    label: 'Well',
+    icon: '\u{1FAA3}',
+    width: 2, height: 2,
+    materials: { flint: 10, wood: 2 },
+    workTicks: 260,
+    shelter: 0,
+    storage: 0,
+    providesWater: true,
+    requiresTech: 'well',
+    description:
+      'Stone-lined and sunk to the water table. Drink stands wherever the ' +
+      'band does, whether or not the shore is close.',
+  },
+
   // --- Gated behind knowledge that does not exist yet (M4) -----------------
   granary: {
     id: 'granary',
@@ -427,6 +643,43 @@ export class Building {
   complete: boolean;
 
   /**
+   * How much of the building is still standing, once there is a building to
+   * stand — M11 phase 11b.
+   *
+   * `progress` measures how much has been *built*; this measures how much is
+   * still *up*, and the plan that ordered this field was explicit that the two
+   * must not be the same number, or a sabotaged hut would read as a hut that
+   * was never finished and a half-built site would read as one under attack.
+   * Null until `addWork` completes the building — there is nothing yet to
+   * sabotage — and forever null on anything `isStructure` says is bare ground,
+   * so `ruined` can never be true of a stockpile square that never had walls.
+   *
+   * Deliberately the same units `progress` uses, `def.workTicks`, rather than
+   * a 0-1 fraction: tearing a design down costs the same *kind* of effort
+   * raising it did, which is what lets `damage` and `repair` share
+   * `addWork`'s exact arithmetic — `skillFactor('build') * buildFactor` —
+   * instead of a second constant nobody would remember to keep in step with
+   * the first. A granary that took longer to build takes longer to burn down,
+   * for the same underlying reason, with no extra tuning anywhere.
+   */
+  durability: number | null = null;
+
+  /** True once sabotage (or, in principle, neglect) has brought it to nothing. */
+  get ruined(): boolean {
+    return this.durability !== null && this.durability <= 0;
+  }
+
+  /**
+   * 0-1, for the condition bar. 1 for anything that has never taken damage —
+   * including a design with nothing to damage, so a stockpile or an unfinished
+   * site never reads as "half wrecked" for having no `durability` at all.
+   */
+  get soundness(): number {
+    if (this.durability === null || this.def.workTicks === 0) return 1;
+    return Math.max(0, Math.min(1, this.durability / this.def.workTicks));
+  }
+
+  /**
    * The fraction of a catch a trap has accrued but not yet turned into an item.
    *
    * Lives on the building rather than in the sweep because the sweep is
@@ -437,6 +690,18 @@ export class Building {
    * rather than banking a decade of half-hares.
    */
   yieldCarry = 0;
+
+  /**
+   * The same carry as `yieldCarry`, one per item, for a pen's byproducts.
+   *
+   * `dairying` and `wool` both accrue into the same `store` a pen's main
+   * `herd.item` does, at their own rate, and mixing three streams through
+   * one float would corrupt all of them — `accrueUnits` assumes a single
+   * continuous rate, not three added together. `yieldCarry` stays what it
+   * always was, for the herd's own growth, so a pen with neither technology
+   * known is unaffected down to the byte.
+   */
+  readonly byproductCarry = new Map<string, number>();
 
   /**
    * What is growing here, for a field, and null for everything else.
@@ -512,7 +777,22 @@ export class Building {
     return Math.min(1, this.progress / this.def.workTicks);
   }
 
+  /**
+   * Zero on a ruin, whatever `def.storage` says — M11 phase 11b.
+   *
+   * The single gate every producing system already shares. `workTraps`,
+   * `workHerds` and `workHeaps` all stop accruing the instant `storageFree`
+   * reaches zero — that is how a full trap already stops catching — so
+   * routing ruin through the same number means a burned-out snare line or a
+   * broken-fenced pen stops producing with no separate check anywhere, and
+   * resumes on its own the moment `repair` lifts `durability` above zero.
+   * `doStore` and `accept` refuse the same way a full store already does, so
+   * nobody can tip fresh goods into a roofless pit either. What was already
+   * inside is untouched — sabotage wrecks the structure, not its contents;
+   * emptying it is `steal`'s job, not this one's.
+   */
   get storageFree(): number {
+    if (this.ruined) return 0;
     return Math.max(0, this.def.storage - this.store.total);
   }
 
@@ -538,8 +818,44 @@ export class Building {
     this.progress += amount;
     if (this.progress >= this.def.workTicks) {
       this.complete = true;
+      // Full marks the day it is raised. `isStructure` gates every caller
+      // that reads `durability`, but this line is the one place that has to
+      // agree with it — a stockpile's `workTicks` is 0, so this sets
+      // `durability` to 0 too, which would read as "ruined" the instant it
+      // was placed. The `def.workTicks === 0` guard is what keeps a stockpile
+      // at `durability: null` forever, exactly like an unfinished site.
+      if (this.def.workTicks > 0) this.durability = this.def.workTicks;
       return true;
     }
     return false;
+  }
+
+  /**
+   * Wears the building down by `amount`, the same units `addWork` uses.
+   * Returns true the instant this reduces it to a ruin — the moment
+   * `sabotage` should stop and report success, not every tick after.
+   */
+  damage(amount: number): boolean {
+    if (this.durability === null) return false;
+    const wasRuined = this.ruined;
+    this.durability = Math.max(0, this.durability - amount);
+    return !wasRuined && this.ruined;
+  }
+
+  /**
+   * Patches the building back up by `amount`. Returns true the instant it is
+   * fully sound again.
+   *
+   * Deliberately effort alone, with no fresh materials asked for — unlike
+   * `addWork`, which cannot proceed without `materialsReady`. Raising a wall
+   * from nothing and pressing a collapsed one back into shape are different
+   * jobs, and treating repair as "construction over again" would mean hauling
+   * a second granary's worth of thatch to fix a graze in the first one's roof.
+   * `ActionSystem.doBuild` is what decides when this runs instead of `addWork`.
+   */
+  repair(amount: number): boolean {
+    if (this.durability === null || this.def.workTicks === 0) return false;
+    this.durability = Math.min(this.def.workTicks, this.durability + amount);
+    return this.durability >= this.def.workTicks;
   }
 }

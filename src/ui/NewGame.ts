@@ -265,6 +265,7 @@ export function describeNorms(band: Band): string {
     gift: 'generosity',
     share_food: 'sharing food',
     threaten: 'menace',
+    slander: 'a bad word said behind someone\'s back',
   };
 
   for (const [type, label] of Object.entries(named)) {
@@ -297,6 +298,8 @@ function temperament(person: Person): string {
     [1 - traits.intelligence, 'slow to see it'],
     [traits.industriousness, 'never still'],
     [1 - traits.industriousness, 'takes their ease'],
+    [traits.malice, 'conniving'],
+    [1 - traits.malice, 'guileless'],
   ];
   const strongest = notes
     .filter(([weight]) => weight > 0.62)

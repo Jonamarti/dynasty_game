@@ -6,6 +6,2114 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-22 — M11 phase 11b: `Building.durability` and `sabotage`
+
+Territory and captivity (11c/11d) are still ahead; this is the piece the plan
+put first, because `mayUse` (phase 4) and `BandRelations` (phase 7) had to
+exist before a border guard could be given the right rule instead of a
+membership test. A raider can now cost a rival band something that outlasts
+the raid.
+
+**`Building.durability`**, in the same units as `progress` — `def.workTicks`
+— on purpose: wrecking a design costs the same *kind* of effort raising it
+did, so `damage`/`repair` share `addWork`'s exact arithmetic
+(`skillFactor('build') * buildFactor`) rather than a second constant. Null
+until `addWork` finishes the building, and forever null on anything
+`isStructure` says has no fabric to knock down (`workTicks === 0` — a
+stockpile), so a bare square of ground can never read as "in ruins." `ruined`
+(durability ≤ 0) and `soundness` (0-1, for the bar) are the two readers
+everything else in this pass hangs off.
+
+**`sabotage`**, a new verb, the same shape `doBuild` already is: an
+interruption check and progress banked on the building itself, because
+tearing down anything bigger than a windbreak takes far more than one
+uninterrupted pull. Refuses a target `mayUse` calls `ours` explicitly — the
+one place that answer has to differ from every other property verb, since
+there is no legitimate reading of "sabotaging your own band's hut." A field
+is excluded on purpose: `doSow`/`doReap` do not read `ruined` yet, so
+letting anyone target one would be exactly the declared-but-inert defect
+`AGENTS.md` warns about; `docs/bugs.md` leaves the real extension for
+whoever needs it.
+
+**Repair reuses `build`** rather than a verb of its own. `doBuild` now
+patches a complete, damaged site back up when it is ordered onto one, asking
+for no fresh materials — `Building.repair`'s own comment explains why
+treating a repair as "construction over again" would be the wrong shape for
+the job. `ActionCatalog`'s building menu offers "Repair the …" only when
+there is damage to repair.
+
+**A ruin is inert in every way its `def` claims it is not**, all through one
+choke point rather than four scattered checks: `storageFree` returns 0 on a
+ruin, and `workTraps`/`workHerds`/`workHeaps` were already gated on
+`storageFree <= 0` for a full store, so a burned-out snare line or a
+broken-fenced pen stops producing — and resumes on its own once repaired —
+with no separate flag anywhere. `NeedsSystem.shelterAt` and the well lookups
+in `ActionSystem`/`Brain` are gated on `!ruined` directly, since neither
+routes through storage. `BandSystem.planBuildings`'s `roofArea` now excludes
+a ruin's floor area too — without it a raided band would read its own ash as
+"enough roof" and never plan a repair or a replacement, which is the one
+thing a raid is supposed to cost it.
+
+**Scored in `Brain`** the same one-sided way `bandHostility` already reads
+for `attack`'s cross-band term: zero at neutral or friendly standing, never
+negative, so `sabotage` never fires between bands with no quarrel and only
+ever amplifies a hostility that already exists. No `hunger` term — this is a
+band's standing grudge acting on a building, not a need answering itself,
+and mixing the two would have a well-fed pacifist band start burning huts
+the moment its granary ran low.
+
+**The performance chase was the real work of this pass.** The first version
+scanned `ctx.buildings` fresh inside every person's `think`, exactly the
+shape `shelter`'s existing block already has — and adding a second such scan
+measurably cost `lean`'s large population enough steps per second to fail
+its own `perf-budget` check outright, a scenario whose margin over the floor
+was already thin. Fixed in two real steps, both measured rather than
+guessed: `Simulation.sabotageCandidatesByBand` computes the filtered,
+owner-grouped list once and shares it across every person's `think` that
+tick (O(people × buildings) down to O(buildings) once, plus O(bands) per
+person); moving its refresh from every tick to once a day — the same cadence
+`bandRelations.decay()` and `snowDepth` already update on — closed the rest
+of the gap. `lean` passes clean again. A stale entry between two daily
+refreshes costs at most a wasted walk for the AI, checked for real the
+moment anybody actually arrives, in `ActionSystem.doSabotage` itself; a
+player's own explicit order never consults the cache at all.
+
+**Verification.** `typecheck`, all 395 unit tests (fifteen new, in
+`sabotage.test.ts`, each checked to fail on the build without the fix, per
+`AGENTS.md`), all 49 e2e specs, and `sim:check:all` clean except three: the
+pre-existing `crowded`/`perf-budget` (unrelated, present on a clean tree
+too), and two single-seed checks — `traps`/`animals-are-tamed` and
+`farmers`/`heads-direct-work` — that flip from a clean PASS to a hard 0 with
+this commit. Chased rather than shrugged off: both are the exact single-seed
+shape `AGENTS.md` names as chaos-prone (a rare event either crosses a low
+threshold in one seeded run or does not), the divergence is the expected
+cost of adding any new scoreable action to `Brain` — it shifts
+`choiceRng`'s draw sequence and, from there, the whole world's trajectory —
+and the mechanism each check measures still works cleanly elsewhere:
+`labour`, the scenario built expressly to exercise rank-directed labour,
+passes `heads-direct-work` outright with this same code. Recorded rather
+than tuned away, on the standing rule that a check is not to be chased green
+without knowing which side of it — the world or the check — was wrong.
+
+## 2026-09-21 — M9.6 phase 2d: the graph panels hold still, and are readable on a phone
+
+Two owner reports, and four bugs behind them. Both are in the UI only; no
+simulation file is touched, and `sim:check:all` is byte-for-byte identical
+before and after.
+
+### "On mobile the tech nodes aren't visible, only the circles but no names"
+
+Exactly right, and the cause was a box the panel never actually had.
+`TechWeb.boxSize`, `FamilyTree.boxSize` and `TribeGraph.boxSize` were three
+copies of the same arithmetic — the window, less room for the pane beside the
+canvas, but never narrower than about five hundred pixels. That floor predates
+anybody opening the game on a phone, and it is *wider than one*. On a 390px
+screen the tech web asked for a 520px viewport inside a card the stylesheet had
+already capped at `100vw - 12px`, and everything downstream believed the lie:
+`fitToView` divided 520 by the web's natural width and opened at a zoom of
+0.53, under the 0.55 at which `.is-far` strips every node's label. The player
+got a perfectly correct picture of fifty anonymous dots.
+
+Three fixes, since one alone would only have moved the problem:
+
+- **`src/ui/PanelBox.ts`**, new, replacing all three copies. `AGENTS.md` asks
+  for a shared helper over a second implementation and this was the third; a
+  fix made in one would have stayed broken in the other two. Below the
+  stylesheet's own 700px breakpoint it returns the room that is actually
+  there, with no floor at all, because a floor is what caused this.
+- **A zoom the panel refuses to open below** (`READABLE_ZOOM`, a hair above
+  `CHIP_ZOOM`). Fitting the whole web is not worth having if nothing on it can
+  be read. Below that, the panel opens *zoomed in* on the middle of what the
+  subject knows and could next know — their frontier, which is what a player
+  opened the panel to ask about — rather than shrinking the web to illegibility.
+  Desktop is unaffected: measured at 1440x900 and 1920x1080 the opening zoom is
+  0.80 before and after, and the whole-web framing is the same code path.
+- **Touch handlers**, which the panel had none of. One finger pans, two pinch,
+  both through the same `zoomAt` the wheel uses. Opening zoomed in is only
+  defensible because the rest is now reachable; before this the view could not
+  be moved on a phone by any means. `.techweb-viewport` gets `touch-action:
+  none` or the browser claims the gesture first and scrolls the card instead.
+
+### "The tribe graph moves, and when it gets layers it behaves very chaotic"
+
+Also exactly right, and measurably worse than it sounded. With the world
+**paused** — nothing in the simulation changing at all — the ranked graph moved
+every node about six hundred pixels per frame across a nine-hundred-pixel
+canvas, on `labour`, `crowded` and `stewards` alike. M9.6 phases 2a-2c had
+stopped the panel re-deriving itself and stopped it rebuilding its DOM on a
+pixel of drift; neither touched why the *layout* would not sit down. Four
+separate faults, each found by measuring rather than by reading:
+
+- **Repulsion was unbounded.** `repulsion / distance^2` with no ceiling: two
+  nodes five pixels apart threw each other 320px in a single pass, two pixels
+  apart, 2000px. In the flat graph a pair escapes diagonally and the moment
+  passes. In a ranked one `lockY` pins the row, so they cannot get away from
+  each other and kept kicking until the row was **forty thousand pixels wide**.
+  `fitInto` then crushed that back into the panel, which is precisely why this
+  went unseen for two phases — the damage arrived looking panel-sized. Capped
+  at `MAX_PUSH`, which only bites below ~32px, where every caller's overlap
+  pass already forbids anything to be.
+- **The relaxation rotated.** `relax` wrote each node's new position the moment
+  it computed it, so the second node of a pair read the first one's *updated*
+  position. That asymmetry is an artefact of array order, not physics, and it
+  injected a consistent tangential bias: a settled flat sociogram turned
+  rigidly, measured at two degrees per ten frames, centroid fixed, every radius
+  unchanged. Nothing was wrong with the shape, so "nobody overlaps" and "the
+  same input gives the same output" both passed happily while the panel span
+  like a wheel. Forces are now summed into `fx`/`fy` and applied once per pass;
+  the rotation measures as exactly zero.
+- **There was no cooling.** A fixed step size let the arrangement overshoot its
+  own equilibrium and oscillate about it instead of arriving. `heat` now ramps
+  1 → 0.05 across the budget — the standard schedule a force-directed layout
+  needs and this one never had — and `relax` exits early once a pass moves less
+  than `AT_REST`. That early exit is what makes a settled graph free: a panel
+  left open on a paused world runs one pass, finds everybody where they belong,
+  and stops. `ITERATIONS_OPENING` rises 220 → 1200 *because* of it, so the
+  arrangement lands in the call that opens the panel instead of crawling into
+  place over the next half-second.
+- **Springs asked for distances the overlap pass refuses.** `restLength` gave
+  somebody adored a rest of 60 while `settleOverlaps` would not seat anybody
+  nearer than 68 (88 in a row), so the pair were pulled together and shoved
+  apart every frame for as long as the panel was open. Now clamped to the gap.
+  The same mistake at scale is why `RANKED_SPOKE_K`/`RANKED_PEER_K` drop to a
+  sixth: sixteen people in a row need 1400px between them whether or not every
+  one of them is also being pulled toward the subject's column. The old comment
+  argued that a pinned row *lets* springs pull harder, which is true and was
+  still the wrong conclusion — it ignored what a row cannot do. The minimum gap
+  sets the spacing, which is the honest answer for a queue; the springs lean
+  allies together within the order `seedRows` chose.
+
+Measured across the three ranked scenarios, paused motion goes from ~600px per
+frame to nought; running-world motion from ~600px to a 1-4px mean, which is now
+only the picture tracking opinions that genuinely moved.
+
+### Checks
+
+Six new, and every one verified to fail on the build without the fix, as
+`AGENTS.md` requires — a check that detects nothing is worse than no check.
+In `tribegraph.test.ts`: flat and ranked both come to a complete stop over a
+frozen world (measured 2.8px and 883px per frame on the broken build), the
+settled graph does not rotate (10 degrees), and the pre-fit span does not blow
+out (8555px). In `smoke.spec.ts`: the tech web opens on a 390x844 phone without
+`.is-far` and with labels the player can read, and one finger pans it; and the
+tribe graph's drawn positions are identical across four samples with the game
+paused. All four failed on the broken build with the reported symptom —
+`"techweb-canvas is-far"` and drifting positions — and all 49 e2e, 380 unit and
+19 scenario runs pass with it.
+
+---
+
+## 2026-09-21 — M11 phase 11, first commit: `fight` gets a second and third trainer, opening the war phase
+
+M11 phase 10 closed the widened Neolithic; this is the first commit of phase
+11 — war — and it fixes a blocker found reading the code before designing the
+rest, not while measuring it. `docs/bugs.md`, recorded shipping M11 phase 2:
+`fight` is trained by exactly one thing, landing a blow in `doAttack`
+(striker `practice('fight', 1.2)`, struck `0.4`), and nothing else in the
+game touches it. `skillFactor('fight')` is `(0.35 + skill/100*0.85) *
+vigour`, so with the skill at its floor for practically everyone the whole
+population sits in a narrow 0.11-0.35 band. That entry named the
+consequence directly: **there can be no warriors** — no household a rival
+fears, no specialist for `division_of_labour`/`chiefdom` to divide, no
+border guard better at stopping a raider than any farmer, and no risk in a
+raid, since attacker and defender are interchangeable. Everything else phase
+11 wants to build — a raiding party, a border guard, captivity worth
+avoiding — needs fighting power to actually vary between people first.
+
+`docs/bugs.md` listed three honest fixes and left the choice to whoever
+built this phase, calling it a design decision rather than a repair. Put to
+the owner directly; they chose to combine the two most defensible ones
+rather than pick one:
+
+- **`doHunt` trains a trickle.** `person.practice('fight', 0.25)` (a new
+  `HUNT_FIGHT_TRAIN`) fires once, on the kill itself
+  (`ActionSystem.ts`, after `ctx.onAnimalKilled`), never on a miss — a spear
+  is a spear, and a band that hunts and never spars is not permanently
+  defenceless.
+- **A new verb, `spar`.** Deliberate, mutual, same-band training between two
+  willing people: nobody is hurt, both sides gain `fight` skill and a little
+  company, and it reads as camaraderie rather than violence — the safe half
+  of the fix, on purpose, since the point was never to make people more
+  willing to hurt each other. Gated on the partner's own regard the same way
+  `doDiscuss` gates an argument (`opinion < 0` refuses with
+  `partner_unwilling`, a reason the UI already knows how to show — reused,
+  not invented). Fifty ticks, no interruption check, the same precedent
+  `doCourt` (60 ticks) and `doTeach` (90) already set for a bout this short.
+  Both parties practice `fight` at 0.6 and `settleOverWork` runs, so it also
+  answers a little company — the same shape `doTeach` already has for a
+  lesson that lands. No public `Deed` is emitted, on the same precedent
+  `doTalk` already set: a conversation is not news.
+
+Scored in `Brain` by two independent pulls — `aggression`, a trait that
+otherwise only ever points toward hurting somebody, and feeling outmatched
+(`max(0, 0.5 - skillFactor('fight'))`, which reads near zero today and only
+grows meaningful once this verb and the hunting trickle have actually spread
+the skill out) — against a same-band candidate who is not disliked. Deliberately
+tuned below `talk`/`teach`'s usual range (0.1-0.9 before proximity, against
+their 0-2.9 and 0-1.5) so it is one more thing to do, not the thing that wins
+the score table.
+
+**Not touched in this commit**: `DECISIVE_GAP` (`social/Vulnerability.ts`,
+currently `0.3`), which was calibrated against the narrow floor-dominated
+spread that existed before this shipped. `bugs.md`'s own comment there
+flags this as worth re-measuring once `fight` actually varies, rather than
+assumed to still hold — left for whichever later phase-11 commit first
+depends on `attack`/`threaten`'s gap math (the border guard and the raiding
+party both will).
+
+New `spar.test.ts` (three tests: the `partner_unwilling` refusal, both
+parties' `fight` skill rising with nobody's health moving, and both parties'
+cooldown being set rather than only the one who asked).
+
+**Measured**: `typecheck`, all 376 unit tests, and `sim:check:all` clean. In
+`century`, `spar` fires 46,480 times over 40,000 ticks and completes 587
+bouts — a middling verb, well behind `forage`/`talk`/`ask`/`give` and ahead
+of `teach`/`chop`/`build`, not crowding out survival work. The scenario-level
+`sim:check:all` failures that changed sides against the pre-commit baseline
+— `hunters`/`kills-are-butchered-for-bone` clearing, `millers` and
+`farmers`/`the-hurt-are-tended` and `herders`/`bands-take-sides` and
+`the-tree-is-climbed` swapping which one fails — are all checks
+`docs/bugs.md` already documents by name as one- or two-event-wide
+tripwires that flip under any behavioural change; both the pre- and
+post-commit runs show exactly three scenario-level failures. 20-seed
+`century` cohort: 99.6% mean survival, 0/20 collapsed, in line with the
+99.0-99.9% recent baselines this tier has reported throughout.
+
+**Rest of the phase**, written up in full in `m11_plan.md`'s "Fase 11":
+`Building.durability` and a `sabotage` verb, a raiding-party organiser in
+`BandSystem.daily`, captivity as a state on `Person`, and the UI readers
+(refusal reasons, a durability panel, a captivity notice).
+
+## 2026-09-21 — M11 phase 10, seventh and last commit: `brewing`, closing the widened Neolithic
+
+The last of the fifteen nodes `m8_plan_the_ages.md`'s M8.2 table left
+pending. `beer` (`RECIPES.beer`, `grain: 4`, no station — a jar and time in
+a warm corner needed no scenery worth inventing for one recipe) and a new
+verb, `toast` (`ActionSystem.doToast`), rather than routing through `doEat`:
+beer's nutrition is deliberately low — a jug of beer is not a meal — and a
+number competitive with bread or meat would have let `bestFood` pick it
+over both, distorting the food economy for a technology whose real claim is
+social. A low number also means `bestFood` would simply never choose it, so
+it needed its own verb regardless. `toast` mirrors `doPlay` closely: gated
+on `techPower('brewing') > 0` and carrying a beer, relief lands on everyone
+within `EARSHOT` including the drinker, and the plan's "raises opinion at a
+feast" half is left out, on the same record `the_wheel`'s haul-speed claim
+already was — no feast/opinion mechanic exists to hook into, and this ships
+the buildable, honest half of the claim rather than inventing one.
+
+New `beer-answers-loneliness` check, verified failing before `toast`
+existed and passing after — 21 toasts made, heard by somebody else 106
+times, in the new scenario below. New `brewing.test.ts`, the one file in
+this whole tier with no existing verb's tests to lean on: there was no test
+file for `play` either, so this is new coverage for a shape of mechanic the
+suite had never directly tested before.
+
+**A third scenario, `feasts`, apart from both `farmers` and `herders`** —
+this milestone has now twice measured what a technology grafted onto an
+unrelated scenario's starting knowledge can do to that scenario's own
+cascade (`herders` exists for exactly this reason), and `toast` needs
+nothing from either the farming or the pastoral chain. Two findings while
+building it, both from measuring rather than assuming: granting `farming`
+alone never planted a single field in 24,000 ticks, because wild grain is
+worth 0 nutrition raw and nobody has a reason to pick it up without
+`grinding` also known; granting `farming` *and* `grinding` together got a
+field planted but never sown, because `brewing` was spending the same wild
+grain a sowing needs faster than foraging could replace it. `brewing`'s
+recipe reads only `pottery` in practice — `farming` is a prerequisite in
+name, not something `RECIPES.beer` touches — so it is left out entirely,
+and wild grain answers the recipe on its own.
+
+**Measured**, `sim:seeds -- --seeds 20`: `century` bit-identical to the
+previous commit in every reported figure — the same story every node in
+this tier has told since `ground_stone`, since reaching `brewing` needs
+`pottery` and `farming` together, a combination this cohort never reaches.
+`feasts` (new): 99.9% mean survival, 0/20 collapsed, no starvation pattern
+beyond ordinary noise. `sim:check:all`: `feasts` fully green (59/59); no
+other scenario's failures change. All 373 unit tests (3 new), typecheck,
+and all 47 e2e specs pass.
+
+**This closes M11 phase 10.** All fifteen of `m8_plan_the_ages.md`'s M8.2
+Neolithic nodes are now shipped: `ground_stone`, `spinning`, `weaving`,
+`sickle`, `masonry`, `wattle_daub`, `calendar`, `the_wheel`, `bread`,
+`herding`, `kiln`, `well`, `dairying`, `wool`, `brewing`. Two new scenarios
+(`herders`, `feasts`) join the suite alongside `farmers`, restored to its
+own baseline; the Neolithic rung of `ERAS` is live. M11 phase 11 — war — is
+next.
+
+## 2026-09-21 — M11 phase 10, sixth commit: `dairying` and `wool`, and two real defects they exposed
+
+`BuildingDef.herd` gains `byproducts`: what a live herd gives up without
+being culled for it, each gated on its own technology and accruing into the
+same `store` the way the main item does — `stock * perDay * techPower(tech)`
+— but tracked through a new `Building.byproductCarry` map rather than the
+existing `yieldCarry`, because mixing three accrual streams through one
+float would corrupt all of them. `pen.storage` rises from 30 to 60: a cap
+sized for meat alone would let milk or wool fill it and starve breeding
+itself, since `workHerds` stops growing anything once `storageFree` is
+zero. `dairying` is a practice (nothing is built; `take` is the closest
+thing the game has to a milking verb, since milk is drawn off exactly the
+way meat is); `wool` is a device, gating a new recipe, `wool_cloth`, at the
+loom — a different output item from `cloth` rather than a second ingredient
+on it, so the two never compete for one craft slot the way `kiln_pot`
+almost did. `Tech.warmthFrom` gains a sixth term for it, warmer than plain
+cloth, per the plan's own claim.
+
+**Two real defects, both caught by measurement rather than by inspection,
+in the same pattern this commit's neighbours already found:**
+
+1. **Milk bred and was never once eaten.** `doTake`'s default item choice —
+   `store.bestFood()`, the single most nutritious stack — always preferred
+   meat's 30 over milk's 20, so as long as any meat sat in the pen, milk was
+   invisible to every route that walks somebody to food. Measured on
+   `farmers`: 15 milk bred, 0 eaten across a full run. Fixed by giving a pen
+   its own branch in `doTake`: an AI-planned visit with no specific item
+   requested shares *everything* the pen holds rather than choosing one
+   stack, which nothing else in the game needs because nothing else keeps
+   two foods in the same place indefinitely.
+2. **Wool bred and was never once woven**, even after the first fix — because
+   the fix above first shared only *edible* stacks, and wool answers no need
+   at all. Nothing in `Brain` sends anyone to a pen *for* wool the way
+   foraging or hauling have their own fetch routes; a visit already under
+   way for food was wool's only way out, so excluding it from that visit
+   left it sitting in the pen for the whole run regardless. Fixed by
+   dropping the edibility filter — a pen shares everything, full stop.
+
+**A third, smaller finding**: the first attempt measured both fixes on
+`farmers`, extended with `dairying`, `wool`, `spinning` and `weaving` in its
+starting technologies. That extension moved the seed's cascade far enough
+that no field was sown for the whole run — `fields-are-sown-and-reaped`,
+`soil-is-drawn-down` and `compost-answers-exhaustion` all fell to n/a,
+losing the coverage `farmers` exists for. Reverted; a new scenario,
+`herders`, carries the pastoral chain apart from farming entirely, on the
+same argument that keeps `stewards` apart from `farmers` itself. `herders`
+found one further, unrelated, honestly-documented limitation of its own —
+see `bugs.md`: two bands of ten do not develop enough standing spread in
+its run for `bands-take-sides` to pass, which nothing in this commit
+touches.
+
+New `milk-is-drawn-and-drunk` and `wool-is-sheared-and-woven` checks, both
+verified failing before the `doTake` fix and passing after. New tests in
+`herding.test.ts` and `tech.test.ts`.
+
+**Measured**, `sim:seeds -- --seeds 20`: `century` bit-identical to the
+previous commit in every reported figure — the same story every node in
+this tier has told since `ground_stone`. `herders` (new): 99.9% mean
+survival, 0/20 collapsed, no starvation beyond one adult in one seed.
+`sim:check:all`: `farmers` back to its own baseline (63/63, one fewer
+applicable check than with the reverted extension); `herders` 61/62, the
+one documented failure above. All 370 unit tests, typecheck, and all 47
+e2e specs pass.
+
+**One node remains**: `brewing`.
+
+## 2026-09-21 — M11 phase 10, fifth commit: `well`, the first technology to touch thirst
+
+A well stands in for natural water rather than gaining a new verb: `drink`
+is not a building action anywhere else, so `ActionSystem.waterWithinReach`
+now accepts a nearby complete well exactly as it accepts a water tile, and
+`Brain.findWater` picks whichever of a well and the shore is nearer. Open to
+anyone the way natural water is — a spring has no owner, and neither does a
+well dug over one — so there is no `canUse`/band-ownership check on either
+side, unlike every other building this milestone has added.
+
+`BandSystem.planBuildings` gains an eighth and last branch, one well per
+band, lowest priority of all of them: `spawnPeople` already sites every band
+with water in reach, so a well most often shortens a walk a band could
+already make rather than opening one it could not.
+
+**Verified empirically before committing to the design**: a well's benefit
+is a shrunk travel distance, which nothing in the health report counts
+directly, so a new `drink_at_well` counter was added specifically to answer
+"does this ever actually happen" rather than assuming it from the code
+reading correctly — the same discipline `kiln`'s commit just applied to a
+different structural risk. A throwaway script (two bands of twelve,
+`masonry`+`well` known from the start, 40,000 ticks, not committed) showed
+both bands autonomously planning and completing a well, and **4,281 of
+21,389 drinks — one in five — taken at one** rather than at the shore. New
+`wells-are-drawn-from` check and `well.test.ts`, the latter finding an
+inland spot by scanning the generated world rather than asserting one
+exists, so the suite skips honestly rather than passing vacuously on a map
+small enough to have none.
+
+**Measured**, `sim:seeds -- --seeds 20` on `century`: bit-identical to the
+previous commit in every reported figure, same as every node since
+`ground_stone` — `well` needs `masonry`, itself rarely reached in this
+cohort. `sim:check:all` unchanged; `wells-are-drawn-from` correctly reports
+n/a everywhere in the suite, since no scenario starts knowing `masonry` and
+`well` together, the same honest skip `herds-breed-and-are-culled` reports
+for scenarios without `herding`. All 365 unit tests (5 new), typecheck, and
+all 47 e2e specs pass.
+
+**Three nodes remain**: `dairying`, `wool`, `brewing`.
+
+## 2026-09-21 — M11 phase 10, fourth commit: `kiln`, and a scoring trap caught before it shipped
+
+Mechanism 4's fifth station. `BUILDINGS.kiln` and a new recipe, `kiln_pot`,
+producing the same `pottery` item `RECIPES.pot` already does.
+
+**Found while designing it, not while measuring it**: `pot` and a same-cost
+`kiln_pot` would never have competed fairly. `Brain`'s craft scorer has no
+term for "cheaper" or "faster" — only `forSite`/`forSelf`, skill, and
+`nearness` — and `nearness` is exactly 1 for a stationless recipe and never
+more than that for a station one, so an identical-cost `kiln_pot` could
+never outscore plain `pot` and would have been declared, gated, correctly
+wired to a real building, and unreachable in play regardless: the exact
+defect `TECH_EFFECTS` exists to catch, wearing a coat static tests cannot
+see through, because both recipes pass every one of them. `groats` looked
+like the precedent and is not one — it and `meal` never compete, because one
+wants acorns and the other wants grain. Fixed by making the real difference
+the ingredients rather than the score: `kiln_pot` costs one mud where `pot`
+costs two, which is a genuine niche (a band short of clay can still make
+pottery once it has a kiln) rather than a numeric edge the scorer would
+never read.
+
+**Verified empirically, not assumed**: a throwaway script (two bands of
+twelve, `pottery`+`masonry`+`kiln` known from the start, 20,000 ticks, not
+committed) showed `crafted_kiln_pot: 5` against `crafted_pot: 80` — a real,
+if modest, non-zero share, and confirmation that the cheaper-ingredients
+niche actually fires in play rather than only on paper.
+
+**Measured**, `sim:seeds -- --seeds 20` on `century`: bit-identical to the
+previous commit in every reported figure, same as `ground_stone` through
+`herding` before it — `kiln` needs both `pottery` and `masonry` known by the
+same person, a combination this cohort never reaches. `sim:check:all`:
+unchanged, the same two already-catalogued knife-edges. All 360 unit tests,
+typecheck, and all 47 e2e specs pass.
+
+**Four nodes remain**: `dairying`, `wool`, `brewing`, `well`.
+
+## 2026-09-21 — M11 phase 10, third commit: `herding`, and the mistake it caught in the trap round
+
+The one node in this tier that needed a real mechanism rather than a numeric
+term. A pen (`BUILDINGS.pen`) deliberately reuses `Building.store` and
+`doTake` wholesale rather than inventing a verb: `Simulation.workHerds`
+grows `store.count('meat')` by a fraction of itself each day — proportional
+to what is already there, which is what makes it breeding rather than a
+slower trap, and which means a pen culled down to nothing stays at nothing
+for ever, a real and permanent failure state. `doBuild`'s completion hook
+stocks a founding pair the moment a pen is finished, since growth from zero
+is zero whatever the fraction. `doStore` and `Brain`'s deposit branch both
+refuse a pen the same way they already refuse a trap.
+
+**Caught by the new `herds-breed-and-are-culled` check, not by inspection**:
+the first version bred 27 meat into a pen on the `farmers` scenario and
+culled none of it, standing at capacity for 43 of the run's days. The cause
+was the exact failure this project already shipped once for traps: the
+ordinary hungry-larder route in `Brain` picks the *nearest* store with food
+in it, and a general granary sitting closer than the pen made the pen
+invisible regardless of what was inside it. The fix is the one traps already
+have — the fullness-and-nearness "round" bonus — extended to pens
+(`isTrap(b.def) || isHerd(b.def)`). After the fix, the same scenario bred 37
+and culled 30, standing at capacity for zero days.
+
+`farmers`'s starting technologies gain `tracking`, `taming` and `herding`,
+per `m8_plan_the_ages.md`'s own description of that scenario as "a herd
+run" — without it, `herds-breed-and-are-culled` would report n/a for ever,
+the same trick `traps`, `craft` and `scribes` already use for their own
+tiers. New unit tests in `herding.test.ts`, mirroring `traps.test.ts`: a pen
+grows what it holds given a founding stock, never grows from nothing, keeps
+its stock (but stops growing) for a band that forgets the technology, caps
+at storage, refuses deposits, is worth a walk once stocked, and is founded
+with a stock only on completion.
+
+**Measured**, `sim:seeds -- --seeds 20`:
+
+- `century` (which never reaches `herding` — it sits behind `taming`, itself
+  rarely reached in this cohort): **bit-identical** to the previous commit,
+  99.7% survival, 856 born, 13.4 known, 11.7 past the root nodes, 712.3
+  taught, to every decimal. Confirms the mechanism's cost is confined to
+  worlds that actually reach it.
+- `farmers`, before this commit's changes (no `taming`/`herding` in its
+  starting technologies) against after: survival 100.0% → 99.6%, 407 → 394
+  born, technologies known 10.4 → 13.1 (three of that from the new starting
+  technologies themselves), conceived past the root nodes 7.0 → 8.3, taught
+  228.6 → 277.7. Starvation unchanged (1 infant, 5 adults, across a cohort of
+  ~400 person-runs either way). The small drops in survival and births are
+  well inside the noise this project's own ten-seed floor already documents.
+
+`sim:check:all`: `farmers` goes from 59 to 64 applicable checks, all
+passing — `herds-breed-and-are-culled` newly applicable and green, plus
+`animals-are-tamed` newly applicable now that `taming` is a starting
+technology. No other scenario's failures change: the same two
+already-catalogued knife-edges (`crowded`/`perf-budget`,
+`hunters`/`kills-are-butchered-for-bone`). All 360 unit tests (9 new),
+typecheck, and all 47 e2e specs pass.
+
+**Also added, in the same commit**: the Neolithic rung of `ERAS`, which was
+waiting on exactly these three technologies (`farming`, `herding`, `masonry`)
+and now has all of them. Cumulative on the Mesolithic's needs plus those
+three and `pottery`, at the same `heldBy: 0.3` the plan's table gives it —
+not raised for having four more technologies in the list, since a longer
+list at an unchanged fraction is already a harder bar. Not demonstrated
+reached by any scenario in this cohort — `century` still tops out at Middle
+Palaeolithic, the same as before this commit — but neither is the Mesolithic
+rung shipped ahead of it, and that was already accepted on the same
+argument: a rung is not declared-and-inert content merely for asking more of
+a world than the scenarios in the suite happen to produce; the same
+`eras-name-only-real-technologies` test that would refuse a rung naming an
+unreachable *technology* passed on every one of these four.
+
+**Five nodes remain**: `dairying`, `wool`, `brewing`, `well`, `kiln`. `wool`
+and `dairying` can now proceed — both depend on `herding`, now shipped —
+and `well`/`kiln` depend on `masonry`, already shipped.
+
+## 2026-09-21 — M11 phase 10, second commit: five more widened-Neolithic nodes
+
+Five more of the eleven left after the first commit: `masonry`, `wattle_daub`,
+`calendar`, `the_wheel`, `bread`. Same discipline — every effect is a numeric
+term on a function that already exists, or a building the band planner and
+the scorer already pick up generically.
+
+- **`masonry`** and **`wattle_daub`** are two more shelters, `stone_house` and
+  `wattle_hut`, needing no change to `BandSystem.planBuildings`: it already
+  picks whichever known, affordable design shelters best by reading
+  `BuildingDef.shelter`, not a hardcoded id. `wattle_hut` costs no wood at
+  all — a woven wall answers what the mud hut's timber frame answers without
+  felling a tree for it — which is the "cheaper" half of the plan's claim;
+  `stone_house` is the better shelter, at a matching cost in flint.
+- **`calendar`** is a practice, tried by `sow` (the same road `herbalism` and
+  `taming` take), and a new `Tech.calendarFactor` multiplies the *grasp* term
+  in `ActionSystem.doReap` rather than the 0.5 floor a farmer-less band still
+  gets — knowing when to sow is not knowledge that a harvest is possible at
+  all.
+- **`the_wheel`** adds `cart` as a fourth term on `carryFactor`, beside
+  cordage and the basket. The plan's table also credits it with speed on
+  `doHaul`; that half is left out, on record, because nothing in this game
+  slows a laden walker down in the first place — there is no ladenness
+  penalty for a cart to answer, and claiming one would have been a comment
+  asserting a mechanism that does not exist.
+- **`bread`** is mechanism 4's fourth station (`BUILDINGS.oven`), a straight
+  meal-to-bread recipe read the same way `groats` already is.
+
+**Measured**, `sim:seeds -- --seeds 20` on `century` against the previous
+commit: mean survival 99.6% → 99.7%, 846 → 856 born (small cohort drift, not
+a new fork — none of these five nodes touch `spawnRng` or any other stream),
+technologies known 13.2 → 13.4, conceived past the root nodes 11.6 → 11.7,
+taught 710.2 → 712.3 — essentially flat, which is expected: all five sit
+deeper in the tree than the first commit's four and are correspondingly
+rarer to reach in one run. Starvation is unchanged within noise (2 adults
+against 0, 5 infants both times, across a cohort of ~850 person-runs).
+
+`sim:check:all`: only `crowded`/`perf-budget` and `hunters`/`kills-are-
+butchered-for-bone` fail, both already catalogued in `bugs.md` as
+knife-edges — and `scribes`, which flipped two checks in the previous
+commit's run, is back to 53/53 clean, which is the same downstream-RNG-drift
+story running the other way rather than a fix to anything. All 351 unit
+tests (three new, covering `calendarFactor`'s refinement floor and the
+cart's double gate), typecheck, and all 47 e2e specs pass.
+
+**Six nodes remain**: `herding`, `dairying`, `wool`, `brewing`, `well`,
+`kiln`. `herding` is the one that needs a real new mechanism — penned,
+breeding livestock — and `wool` and `dairying` both depend on it; `well` and
+`kiln` both depend on `masonry`, which this commit just shipped. The
+Neolithic era rung still waits on `herding` specifically.
+
+## 2026-09-21 — M11 phase 10, first commit: four of the fifteen widened-Neolithic nodes
+
+Resumes `m8_plan_the_ages.md`'s M8.2 table, left at fifteen pending nodes once
+`farming` and `composting` shipped. Four land in this commit — `ground_stone`,
+`spinning`, `weaving`, `sickle` — chosen because none needs a new mechanism:
+every effect is a numeric term read by a function `techPower`'s other callers
+already use, which is the Evolve-style density the plan asks the tier to be
+built at.
+
+- **`ground_stone`** (stoneworking, hafting) gives two tools, `stone_axe` and
+  `adze`, and repairs the bug `m8_plan_the_ages.md` named under "three repairs
+  to make while passing": `doChop` tested `inventory.has('handaxe')` directly,
+  unscaled by `techPower`, so a hand axe did exactly as much for a novice as
+  for somebody who had spent years refining `hafting`. The fix is a new
+  `Tech.axeFactor`, read by both `ActionSystem.doChop` and
+  `Progress.workProgressOf` (which has to mirror it or the felling bar lies to
+  whoever is holding the axe), taking the better of a hand axe and a polished
+  one rather than stacking them. `Tech.buildFactor` gets the adze's own term,
+  double-gated on carrying one the same way the basket and the net already
+  are. **Caught before it shipped**: `ground_stone`'s first draft used
+  `maxRefinement: 3`, which pushes `axeFactor`'s floor negative at full
+  refinement (`1 + (0.35 - 1) * 1.6 = -0.04`) and would have felled a tree in
+  zero ticks — `scaled()` had never been asked for a reduction before, so
+  nothing had exercised this failure mode. Fixed by lowering the ceiling to 2,
+  and a new test in `tech.test.ts` walks every refinement step of every
+  reduction-style factor and asserts it never reaches zero, so the next one
+  is caught the same way rather than in play.
+- **`spinning`** and **`weaving`** ship together, because `thread` has no
+  reason to exist without the `cloth` it turns into — the same rule that kept
+  `needle` and `fur_coat` in one commit. `weaving` is mechanism 4's third
+  station (`BUILDINGS.loom`), needing no changes to the band planner or the
+  scorer: both already read `isStation`/`RecipeDef.station` generically.
+  `warmthFrom` gets a fourth term, `woven`, double-gated on carrying `cloth`
+  — named apart from the function's existing `cloth` local (the `clothing`
+  technology's own multiplier), which it would otherwise have shadowed.
+  **Found while wiring the recipe**: `RECIPES.thread` first shipped with
+  `keep: 1`, on the same reasoning as `needle`. It does not fit here —
+  `cloth` consumes three thread at once and a batch of spinning makes two, so
+  `Brain`'s `forSelf` test (`count(output) < keep`) would stop a spinner at
+  two thread and never reach three. `keep: 3` instead, before this ever ran
+  against a build to prove it.
+- **`sickle`** (farming, hafting) shortens `REAP_TICKS` itself rather than the
+  yield at the end of it, through a new `Tech.reapFactor` — the honest version
+  of "a field stripped in an afternoon instead of a day": the harvest still
+  comes from `harvestYield`, unaffected by how it was cut.
+
+**Measured**, `sim:seeds -- --seeds 20` on `century`, this commit against the
+previous one: mean survival 99.7% → 99.6% (noise, and ten seeds cannot
+resolve a tenth of a point regardless), 846 born both times (`spawnRng` is
+untouched — no new fork, and none needed), technologies known at the end 12.3
+→ 13.2, conceived past the root nodes 9.9 → 11.6, things taught 683.9 →
+710.2. Adult starvation across the cohort fell from 3 to 0; five seeds'
+infant starvation is unchanged. The tree widening is the point of the pass,
+and it is visibly wider without visibly costing anything.
+
+`sim:check:all`: the same four checks flip that `bugs.md` already catalogues
+as knife-edge — `crowded`/`perf-budget`, `hunters`/`kills-are-butchered-for-
+bone`, and `scribes`/`jobs-bias-work` and `scribes`/`the-hurt-are-tended`,
+both un-skipped by downstream RNG drift rather than newly broken (`scribes`
+went from 53 applicable checks to 56, gaining coverage rather than losing
+it). All 348 unit tests (four new, guarding the refinement-floor bug above),
+typecheck, and all 47 e2e specs pass.
+
+**Eleven nodes remain**: `bread`, `brewing`, `herding`, `dairying`, `wool`,
+`wattle_daub`, `masonry`, `kiln`, `well`, `calendar`, `the_wheel`. Several of
+those need a real mechanism rather than a numeric term — `herding` is
+penned, breeding livestock; `well` is the first technology to touch thirst at
+all — and the Neolithic era rung itself still waits on `herding` and
+`masonry` before it can be declared, per the ladder's own comment in
+`Tech.ts`.
+
+## 2026-09-21 — M11 phase 9c, second commit: two bands that know different things
+
+`PopulationConfig` gains `startingTechByBand?: string[][]`, which replaces
+`startingTech` entirely for a given band's founders when present; absent, or
+past the end of the array, a band falls back to `startingTech` exactly as
+before — every scenario that has never set it, which is every scenario but
+one, is bit-identical. `Simulation.spawnPeople` reads it keyed by the band
+index it already has in hand.
+
+`scribes` is the one scenario that sets it: both bands keep the shared
+literate core from the previous commit, and each gains one more technology
+— `basketry` for one band, `clothing` for the other, both needing nothing
+beyond the core's own `cordage` — that the other does not have. Diagnosed
+at the end of the previous commit: every adult in both bands started
+knowing the identical set, so there was nothing on any stone that anybody,
+bandmate or stranger, could not already tell you, and `records-are-cut`
+reported zero reads for exactly that reason. The re-gating did not cause
+that and could not fix it; this is the fix.
+
+**Measured**: `scribes` telemetry now shows `read_basketry: 3` and
+`read_clothing: 2` — five reads, all of them a technology crossing the band
+boundary that put it out of native reach — and `records-are-cut` reports
+"5 read back off a record" instead of zero. `sim:check:all`: `scribes`
+53/53 (`sparks-are-various` now correctly skips it at nine technologies
+handed to the wider band, past `TREE_GIVEN_AWAY`); `century` and every
+other scenario unchanged from the previous commit, since nothing here
+touches anything `scribes` does not itself configure. All 344 unit tests,
+typecheck, and all 47 e2e specs pass.
+
+**This closes phase 9** (9a: `ochre`'s fidelity split; 9b: the oral channel;
+9c: `writing` behind the surplus, in the two commits above).
+
+## 2026-09-21 — M11 phase 9c: writing goes behind the surplus
+
+`writing.requires` gains `farming`, alongside the `marking` and `stoneworking`
+it already had. The historical case: script is what a surplus needs that a
+tally does not — an account that has to outlast a harvest and a season of
+trade, not just say how many. The mechanical case is 9a's own: with `ochre`
+nerfed from a transcript to a spark, `writing` sitting one step off the
+game's root nodes made it the dominant record channel by default, exactly
+backwards from the painted-first, written-later tree the milestone is
+building toward. A fourth spark route grounds the new prerequisite in the
+same story — `knows: farming, holding: grain, doing: store` — rather than
+leaving all three routes talk about marking alone.
+
+Two things that had to move in the same commit, per this project's own rule
+against a comment asserting what has not been confirmed:
+
+- **The `tech.test.ts` comment calling `writing` "a Bronze Age technology
+  resting on two Palaeolithic ones"** is now false — it rests on two
+  Palaeolithic prerequisites and one Neolithic one — and is rewritten. The
+  test's assertion itself needed no change: it loops `TECH.writing.requires`
+  generically.
+- **The `scribes` scenario broke in silence.** Its founders received
+  `writing` with an unmet prerequisite, and `teach`, `tryObserve` and
+  `doRead` all filter on `requires`, so the one scenario that exists to
+  exercise reading and writing could do neither. `startingTech` gains
+  `plant_lore`, `grinding` and `farming` — `farming` has to be held
+  directly, not merely reachable, because `prerequisitesMet` asks what a
+  person *knows*.
+
+**Measured, and deliberately not yet fixed**: `records-are-cut` on `scribes`
+still reports **zero reads** after this commit (`16 things cut... 8
+technologies are written down somewhere, 0 read back off a record`) — the
+re-gating did not cause that and cannot fix it either, since every adult in
+both bands starts knowing the identical set and there is nothing on any
+stone that anybody lacks. That is the next commit, deliberately kept
+separate so this one measures only what it changed. `sim:check:all`:
+`scribes` clean at 54/54 (up from 51/51 — `sparks-are-various` now correctly
+skips it, at eight handed-out technologies past `TREE_GIVEN_AWAY`, the same
+way it already skips `traps`), `century` clean at 60/60, the same two
+pre-existing knife's-edges (`crowded`/`perf-budget`,
+`hunters`/`kills-are-butchered-for-bone`) carried over from before this
+phase and unrelated to it. 10-seed `century` cohort: 99.7% survival, 447
+born, 12.6 technologies known at the end — unchanged from phase 9b's own
+cohort, because nothing in a 40-year run with no starting literacy was
+reaching `writing` either before or after this change. All 344 unit tests
+and typecheck clean.
+
+**Next**: the separate commit — asymmetric starting knowledge between
+`scribes`'s two bands — that actually makes `records-are-cut` measure a
+read.
+
+## 2026-09-21 — M11 phase 9b: the oral channel gets three things of its own
+
+Three additions, all aimed at the same complaint 9a's own header names: nerfing
+`ochre` removes a channel, and the tree stays limited by transmission unless
+something replaces it.
+
+**A new practice, `storytelling`** (`domain: 'people'`, no prerequisite — the
+whole point is that it must not depend on having worked anything else out
+first). Tried by `talk`, same as `division_of_labour` is tried by `assign`:
+nothing to build, `Person.noteDid` is the hook a finished `talk` already
+fires. It does two things once techPower is behind it, both through the
+existing `scaled` helper — exported from `Tech.ts` rather than copied,
+since a second "no effect unlearned, `full` at a proven design, more with
+refinement" formula is exactly the kind of drift `AGENTS.md`'s house style
+warns about:
+
+- `KnowledgeSystem.teach`'s success chance is scaled by
+  `scaled(teacher, 'storytelling', 1.4)` — up to 40% more likely to land at a
+  proven design. The same line also reads `teacher.traits.tradition` for the
+  first time in the actual mechanism: the trait already weighted `Brain`'s
+  `teach`/`teach_child` scorers (long before this milestone, not new here —
+  the plan's premise that `tradition` "only ever reads into `standingOver`"
+  was checked against the code and found false, the same way 0b's premise
+  about the outsider figure was), but never touched whether a teacher who
+  decided to try actually succeeds.
+- `SocialSystem.converse` gives one extra story, and only at the `deep` rung —
+  a greeting has no room for one at all — when either party has any
+  `techPower` in `storytelling`.
+
+**The hearth teaches.** `Simulation.shareTheHearth` already samples, at
+midnight, who slept under which roof (M11 phase 6a's reading of a household's
+own home). `KnowledgeSystem.hearthLesson` spends that same sample a second
+way: once a night, per roof with both an adult and a child under it, the
+single adult who knows the most tries — unprompted, unwalked-to — to pass
+something to whichever child could take it in, through the same shared
+`teach`. A flat, generous regard (0.6) stands in for a relationship opinion
+neither caller has reason to thread through, on the reasoning that a
+household is already the warmest tie in the graph. A new `hearthRng`, forked
+genuinely last — after `choiceRng`, per `AGENTS.md`'s own table, which is
+updated in this commit with the new sixteenth row so the next person to
+append does not fall into the trap the table exists to prevent.
+
+**Found and fixed rather than shipped broken:** `storytelling`'s first draft
+had a third spark reading `knows: division_of_labour` without listing it in
+`requires`, which `spark-ingredients-are-real`'s sibling test
+(`never lets a spark fire before its prerequisites are met`) caught
+immediately — replaced with a route off `saw: 'teach'` instead, since the
+node's whole purpose is to need nothing else in hand.
+
+**Measured**: `sim:check:all` — `century` clears every check with no
+failures (`hunts-succeed-and-fail`, `the-hurt-are-tended`, and both `stewards`
+soil checks, all previously flagged in `bugs.md` as downstream-RNG-drift
+knife's-edges, happened to land on the passing side of theirs this pass;
+`crowded`/`perf-budget` and `hunters`/`kills-are-butchered-for-bone` are the
+same two pre-existing flips carried over unrelated to this phase).
+`century`'s own telemetry: `storytelling` conceived, proven and refined
+within the run; 51 `taught_storytelling`, 14 `observed_storytelling`, 91
+`storytelling_extra_tale`, 3 `hearth_taught` — a small number for the hearth
+specifically, and an honest one: `HEARTH_LESSON_CHANCE` (0.15/night/roof) is
+a first guess, not tuned against a cohort, and is named as such in its own
+comment. 10-seed cohorts: `century` 99.7% mean survival (447 born, 2 total
+starved, 12.6 technologies known at the end against phase 0's documented
+baseline of 5.4) and `lean` 86.7% (down 1.4 from phase 8e's 88.1%, inside
+the noise `AGENTS.md` documents for ten seeds). All 344 unit tests (one
+tightened — the reminder-vs-instruction test from 9a needed the same
+needs-reset discipline `driveInscribe` already uses, once a different roll
+elsewhere in the world started tipping it into an interruption), typecheck,
+and all 47 e2e specs pass.
+
+**Deliberately not touched**: `learning.observationChance`, per the plan —
+it is the documented lever for transmission at the scale of the whole food
+economy, and moving it here would have made every number above meaningless.
+
+**Next**: 9c, `writing`'s re-gating behind `marking`, `stoneworking` and
+`farming`, and the `scribes` scenario's `startingTech` fix that re-gating
+requires in the same commit.
+
+## 2026-09-21 — M11 phase 9a: a painting is a spark, not a transcript
+
+`InscriptionDef` gains `fidelity: 'reminder' | 'instruction'` — data, the same
+move `literacy` made in M8.1 for the same reason. `stone` and `clay` are
+`instruction`; `ochre` is `reminder`, and the two now give a reader different
+things. `ActionSystem.doRead` still hands an `instruction` record's reader the
+finished design via `receiveFromRecord`, exactly as before. A `reminder`
+record instead calls the new `KnowledgeSystem.remindFromRecord`, which lands
+a `conceived` `Idea`, insight zero — the same shape `tryConceive` produces
+from a lucky notice — so the reader still has to think it through, prototype
+it and find out whether it works. A painting shows that a thing was done, not
+how; treating it as a free `knownTech` transfer made the cheapest, least
+durable record in the game just as good as writing, which was backwards.
+
+`Simulation.recordedTech` splits accordingly into `recordedTech` (`instruction`
+only — what a society could strictly *get back*) and the new
+`rememberedTech` (what a `reminder` record could spark). `architecture.md`'s
+claim about `recordedTech` needed a footnote rather than a rewrite: it was
+already describing `instruction` behaviour, just without naming the split.
+
+**A gap found while building this, not by measuring it**: the `read` scorer
+in both `Brain` (AI planning) and `ActionCatalog` (the player's context menu)
+judged a record "has something useful on it" by `!knownTech.has(tech)` alone,
+which for a `reminder` stays true forever — a painting never moves anything
+into `knownTech`. Without the same two guards `doRead` now applies (no second
+idea about a tech already conceived, no idea at all with both slots full),
+the scorer kept finding an already-read painting worth walking to, sent
+people over, `doRead` turned them away with `nothing_new_on_it`, and the
+scorer immediately proposed the same walk again. First surfaces of this were
+not a crash but a world: `craft`'s population visibly balled up around
+painted rock, and `spatial-hash-spreads`/`perf-budget` both failed on a
+scenario that had been clean before this file changed. Both scorers now carry
+the same guard `doRead` does.
+
+`tools/simcheck.ts`'s `records-are-cut` also needed a fix, not a green light
+tuned in: it summed `recorded_*` telemetry, which still fires for `ochre`,
+against `recordedTech.size`, which no longer counts it — so any paint-only
+band (no `writing` at all) tripped the check's `else` branch and failed a
+check about *writing* for having painted instead. It now sums
+`inscribed_stone`/`inscribed_clay` specifically; `pictures-are-painted`
+already owns the painting half.
+
+**Measured**: `npm run sim:check:all` reproduces the phase 8e matrix exactly
+— same scenarios, same failures (`crowded`/`perf-budget`,
+`century`/`hunts-succeed-and-fail`, `hunters`/`kills-are-butchered-for-bone`,
+`farmers`/`the-hurt-are-tended`, `stewards`/`soil-is-drawn-down` +
+`compost-answers-exhaustion`, all pre-existing and documented in `bugs.md`) —
+once the scorer fix above landed; before it, `craft` alone lost
+`spatial-hash-spreads` and `perf-budget` (2,752 → ~1,935 steps/s,
+deterministic and reproducible, not noise) purely from the clustering. A new
+unit test in `transmission.test.ts` pins the behaviour directly: reading an
+`ochre` painting leaves a `conceived` idea and neither `knownTech` nor
+`recordedTech`, and counts in `rememberedTech` instead. All 344 unit tests,
+typecheck clean, all 47 e2e specs pass.
+
+**Next**: 9b (the oral channel — hearth teaching, `storytelling`,
+`tradition`), then 9c (`writing`'s re-gating behind `marking`, `stoneworking`
+and `farming`, which this phase deliberately went first to avoid).
+
+## 2026-09-21 — M11 phase 8e: the diet is on the panel
+
+The "Now" tab's Condition section, already the home of health and the five
+needs bars, gains a Diet section directly beneath them: three bars
+(`macroBalance.fat/protein/carb`, 8b) and a sentence from a new
+`describeDiet`, gated behind `known.knowsCondition` exactly like everything
+else there. The sentence reads only `macroBalance` and `macroTarget` — the
+same two fields the bars already show, so it can never claim something the
+panel does not display — and names whichever macro has the largest gap
+below target, in four tiers from "eating a decent balance" to "badly
+malnourished." This is the same standing instruction `interruption`/
+`abandon`'s refusal reasons already serve: 8d made a health mechanism that
+was, until this commit, completely invisible from inside the game, which
+`AGENTS.md` calls the worst kind of difficulty.
+
+**Read-only, so no sim measurement applies**: pure display of state 8b-8d
+already write, gated by machinery already in place. `sim:check:all`
+reproduces the 8d matrix line for line (confirming the panel touches
+nothing the simulation reads), all 47 e2e specs and 343 unit tests pass,
+typecheck clean.
+
+**This closes phase 8.** Phase 9 (the oral tree and `writing`'s re-gating
+behind `farming`) is next.
+
+## 2026-09-21 — M11 phase 8d: malnutrition finally bites
+
+**Declared cost, ahead of measuring, per `AGENTS.md`'s rule: up to 5 points
+of mean survival on `lean`/`century` 20-seed cohorts in exchange for a
+population curve that visibly responds to diet variety** — the same order
+of magnitude the plan's own Risks section cites for the earlier
+food-*quantity* cut this is explicitly meant not to repeat, but landing
+from variety pressure instead of less food on the ground.
+
+`NeedsSystem`'s health-recovery branch now reads `Macros.malnutrition(person)`
+— total variation distance between `macroBalance` (8b) and `macroTarget`
+(8c), 0 matched to 1 fully disjoint — and uses it two ways: it caps how high
+recovery can climb (`100 - severity * 20`) and slows the climb getting there
+(recovery scaled down by up to 60% at `severity === 1`). Neither ever drags
+health down directly: someone already above the ceiling when imbalance
+arrives is left alone. `LETHAL_NEEDS` stays hunger, thirst and cold,
+untouched — malnutrition is degradation, exactly as the plan specifies, not
+a fourth way to die. A `Person` now starts life with `macroBalance` equal to
+its own `macroTarget` rather than equal thirds, so day one does not open
+with a false deficit nobody caused.
+
+**Measured, 20-seed cohorts, and the budget was not spent**: `lean` 88.1% →
+88.1% (identical to the phase 6d baseline in `next-steps.md`), 1/20
+collapsed (`tau`, already the cohort's weakest seed at 27% pre-8d, now at
+4% — see `bugs.md`). `century` 99.0% → 99.5%, 0/20 collapsed, both within
+this scenario's documented seed-to-seed noise. `century`'s own
+`malnutrition_sum`/`malnutrition_samples` telemetry averages severity 0.27
+across the run — real, measurable pressure from a berry-heavy diet sitting
+short of its protein-and-fat target, landing without moving the aggregate
+survival number at all. `sim:check:all` reproduces the 8c matrix except two
+new borderline flips (`century`/`hunts-succeed-and-fail`,
+`stewards`/`soil-is-drawn-down`), both recorded in `bugs.md` as the same
+downstream-RNG-drift shape already named for a dozen other checks in this
+milestone. All 343 unit tests, typecheck clean.
+
+**This closes phase 8's mechanism.** 8e (surfacing the balance in the UI)
+is next, then phase 9 (the oral tree and `writing`'s re-gating).
+
+## 2026-09-21 — M11 phase 8c: the target itself scales with effort, still read by nobody
+
+`NeedsSystem.exertionOf` — already scaling thirst from 0.4 asleep to 1.5
+felling — is exported and reused rather than duplicated: `NeedsSystem.update`
+folds the same per-tick reading it already takes for thirst into
+`Person.exertionToday`, a same-day ledger identical in shape to 8b's
+`macroIntakeToday`. Once a day, `core/Macros.ts`'s new `decayMacroTarget`
+averages that ledger, blends it 35%/day into `Person.recentExertion`
+(mirroring `decayMacroBalance`'s own rate), and recomputes
+`Person.macroTarget` — the mix `macroBalance` will be judged against once
+8d exists — by interpolating between a rest target (carb-heavy: 0.55/
+0.17/0.28) and a hard-labour one (protein rises to 0.28, carbohydrate gives
+up the most ground, fat holds roughly steady) between `exertionOf`'s own
+floor and ceiling. Both targets are ordinary dietary guidance, not this
+game's invention.
+
+**Inert, and verified converging**: `century`'s `macro_exertion_sum`
+telemetry averages 0.94 — a shade under the ordinary-effort baseline of 1,
+which tracks with how much of a day this population spends asleep or
+resting. Nothing outside this bookkeeping reads `macroTarget` or
+`recentExertion` yet. `sim:check:all` reproduces the 8b matrix line for
+line, all 343 unit tests, typecheck clean. 8d is where a sustained gap
+between `macroBalance` and this target first costs health.
+
+## 2026-09-21 — M11 phase 8b: a rolling diet, fed and decayed, still read by nobody
+
+`Person.macroBalance` (new `core/Macros.ts`, `MacroBalance`: `fat`, `protein`,
+`carb`, starting equal thirds) is the same shape `Mood.ts` used for spirits:
+a slow-moving average rather than a per-meal tally, because a single
+lopsided day is not malnutrition any more than a single bad night is a
+grudge. `ActionSystem.doEat` now folds every mouthful's macro grams (via
+8a's `ITEMS[id].macros`) into `Person.macroIntakeToday`, a same-day ledger;
+once a day, alongside `decayMood` in `Simulation`'s midnight block,
+`decayMacroBalance` normalises that ledger into fractions and moves
+`macroBalance` 35% of the way toward it — well above `MOOD_DECAY_PER_DAY`
+(8%) and `RelationshipGraph`'s familiarity term (6%), because a diet is
+what was actually eaten, not a relationship that should resist one bad
+exchange. A day nobody ate leaves the balance exactly where it was rather
+than dragging it toward zero.
+
+**Inert, and verified converging rather than just compiling**: a `century`
+run's `macro_*_sum` telemetry settles around carb 0.66 / protein 0.18 / fat
+0.16 — the berry-and-fruit-heavy diet this world's food economy actually
+produces, read back correctly. Nothing outside this bookkeeping reads
+`macroBalance` yet, so the world itself is unaffected: `sim:check:all`
+reproduces the 8a matrix line for line, all 343 unit tests, typecheck
+clean. 8c gives the target itself an activity scale; 8d is where a
+sustained imbalance first costs health.
+
+## 2026-09-21 — M11 phase 8a: macros, declared and read by nobody
+
+`ItemDef` gains an optional `macros: { fat, protein, carb }`, fractions of
+`nutrition` summing to 1, on the eight items that have any (`berries`,
+`apple`, `pear`, `plum`, `hazelnut`, `meal`, `meat`, `fish`). Values are real
+ratios, not placeholders: meat and fish lean protein-and-fat with no carb at
+all, hazelnuts lean fat hard enough to keep them from reading as a fourth
+kind of fruit, and everything else — berries, apples, pears, plums, ground
+grain — is carb-dominant. Every non-food item (tools, materials, weapons)
+gets none, on purpose: a fraction of zero nourishment is not a
+macronutrient.
+
+**Bit-identical, as designed.** Nothing reads the field yet — `bestFood`,
+`doEat`, `nutritionFactor` and every scorer still only ever look at
+`nutrition`. `sim:check:all` reproduces the phase 7c (3) matrix line for
+line (`crowded`/`perf-budget`, `hunters`/`kills-are-butchered-for-bone`,
+`stewards`/`compost-answers-exhaustion`, none of it new); all 343 unit
+tests, typecheck clean. 8b gives a person a rolling balance to read these
+into, still inert; 8c and 8d are the commits where an unbalanced diet
+starts to cost something.
+
+## 2026-09-20 — M11 phase 7c (3): `Brain` reads how hostile the two bands are, and `bands-take-sides` finally gates on it
+
+The last of `BandRelations`' three readers, and the only one in `Brain` —
+deliberately alone in its own commit, so a change to `bands-take-sides`
+measures one thing rather than three at once. `bandHostility(person,
+target, ctx)` is 0 within a band and at neutral-or-friendly standing, and up
+to 1 at open hostility (-100 standing); `steal`, `threaten`, and both routes
+to `attack` (revenge and predation) each read it once, as a modest addend
+(`steal`/`threaten`) or a ×1.5-at-most multiplier on a score the rest of the
+expression already justified (both `attack` routes) — never a second
+justification of its own. The revenge route's `grudge > 0.5` gate is
+untouched, on purpose: `AGENTS.md` and this changelog both record what
+happens when a band's self-consuming feedback loop is fed from two places
+in the same commit.
+
+**`bands-take-sides` is a real check now**, not an instrument: it asserts
+the spread between the friendliest and most hostile band pair is over 20,
+skipping on a run with no cross-band contact at all. It needed a length
+floor `BAND_STANDING_DAYS` (60) that the instrument phase didn't: every
+short scenario measured while writing it — `band`, `crowded`,
+`harsh-winter`, `coast`, `traps`, `hunters`, 12 to 40 days each — showed real
+but small spreads (0.2 to 15.9), not zero, so asserting the 20-point bar on
+them would have been exactly the seed-flaked failure `bugs.md` already
+names five checks for. `lean` (100 days) and `century` reach the -100
+hostility floor and pass comfortably; the six short scenarios skip rather
+than fail.
+
+**Measured, 20-seed cohorts against the phase 7c (2) numbers**: `lean` 91.1%
+→ 87.9% survival, 0/20 collapsed (lowest seed 60%). `century` 100.0% →
+99.0%, 0/20 collapsed. The largest single-commit movement in this
+milestone's `BandRelations` work, which tracks with this being the one
+reader that can actually kill somebody — a hostile band's members become
+more worth robbing and more worth striking, and `century`'s own `-100.0`
+hostile pair (measured while building the check above) confirms the term
+has real teeth to bite with, not a coefficient sitting near zero. Read
+against the owner's standing direction on the milestone's cumulative drift:
+this is the sharpest edge of the egalitarian-to-stratified-and-in-conflict
+arc landing, and it lands without a single collapse across either cohort.
+`sim:check:all`: same known fragile-check family
+(`crowded`/`perf-budget`, `hunters`/`kills-are-butchered-for-bone`,
+`stewards`/`compost-answers-exhaustion`), plus `bands-take-sides` passing on
+`century`/`lean` and skipping everywhere else as designed. All 343 unit
+tests, typecheck clean.
+
+**This closes M11 phase 7.** All three engines-then-readers passes are
+done: `BandRelations` exists, four engines move it, three readers act on
+it. O4 is unaffected (mayUse's ownership predicate is untouched; only the
+new ally exception is new). Phase 8 (macronutrients) is next.
+
+## 2026-09-20 — M11 phase 7c (2): a conversation warms faster between allies
+
+`Conversation.crossBand`'s flat ×0.43 cross-band penalty becomes standing-
+aware: `CROSS_BAND + standing * CROSS_BAND_STANDING_SCALE` (0.004), clamped
+between `CROSS_BAND_FLOOR` (0.05) and 1. At neutral standing — every pair
+`BandRelations` has not yet touched — the factor is exactly the old 0.43, so
+a fresh pair of strangers warms exactly as before. At 100 (close allies) it
+reaches 0.83, most of the way to the in-band rate; at -100 (open hostility)
+it is floored at 0.05 rather than reaching zero, because two people from
+warring peoples can still, slowly, come to know each other as individuals
+rather than as their bands' reputations.
+
+`SocialSystem.settle` reads `this.bandRelations.standing(a.bandId, b.bandId)`
+and passes it through; `crossBand` takes it as an optional third parameter
+defaulting to 0, so every existing call in tests still means what it always
+meant. Two new deterministic tests in `conversation.test.ts`.
+
+**Measured, 20-seed cohorts**: `lean` 89.0% → 91.1% survival, 0/20
+collapsed, no seed below 74% — the healthiest `lean` cohort measured for
+this entire milestone, essentially back at the pre-M11-5d clean baseline of
+91.2%. `century` 99.6% → 100.0%, 866 born, 11.5 known. Read together with
+the friction the territory engine added two commits ago, this is the
+cooperative half of the same mechanism finally landing: allies now warm to
+each other faster, which is what `mayUse`'s alliance exception and this
+reader both exist to make worth having. `sim:check:all` reproduces the
+phase 7c (1) matrix (the previous run's `jobs-bias-work` did not recur —
+consistent with `bugs.md`'s own description of that check's effect being
+smaller than its seed-to-seed spread). All 343 unit tests, typecheck clean.
+
+## 2026-09-20 — M11 phase 7c (1): `mayUse` reads how two bands stand
+
+The first of `BandRelations`' three readers. `mayUse` (`Property.ts`) now
+treats a band standing at or above `ALLY_STANDING` (55) with the building's
+owning band as if it were the actor's own — `ours: true`, allowed whether or
+not anyone is watching. 55 is deliberately out of reach of marriage alone
+(`CROSS_BAND_MARRIAGE` is 15): an alliance this complete should be rare and
+earned from a real pattern of marriages and trade, not the state two bands
+fall into after one wedding. This does not weaken phase 4's own point — a
+rival stays a rival until their own deeds say otherwise — it extends it: an
+allied band's deeds have said otherwise.
+
+`PropertyContext` gained `bandRelations`, threaded through `BrainContext`
+and `ActionContext` (both already structurally satisfy `PropertyContext`,
+so both needed the field) and `Simulation.mayUseBuilding`'s own inline
+context. One new deterministic test in `property.test.ts`: the same watched
+layout that refuses an ordinary neighbour now allows a band standing at 100.
+
+**Measured, 20-seed cohorts**: identical, seed for seed, to the phase 7b (4)
+numbers on both `lean` and `century` — `ALLY_STANDING` is not reached within
+either scenario's run length yet, given how small each individual engine's
+nudge is and how slowly `BandRelations` moves. Not a concern: the mechanism
+exists and is tested directly; a cohort long enough or eventful enough to
+trigger it naturally is a `sim:seeds`-scale question for later, not a reason
+to lower the threshold now. `sim:check:all` reproduces the phase 7b (4)
+matrix line for line. All 342 unit tests, typecheck clean.
+
+## 2026-09-20 — M11 phase 7b (4): trade, and `BandRelations`' last inert engine
+
+`trade` is declared in `EVENT_TYPES` again — `DEED_WEIGHT: 7`,
+`DEED_SALIENCE: 0.4`, between `share_food` and `gift` — alongside the verb
+that finally reads it: `ActionSystem.doTrade`. Both sides hand something
+over, unlike `give`; `Brain` only ever scores it toward somebody whose own
+carried nutrition shows genuine spare, read directly off their inventory
+rather than guessed at, so nobody is scored toward a partner with nothing to
+trade back. A new `tradePartner` field on `FoundTargets`, kept separate from
+`beneficiary` rather than reused — `give` and `trade` can both be scored in
+the same think, toward two different people, the same shape
+`slanderSubjectId`/`praiseSubjectId` already keep apart for the identical
+reason.
+
+**No fifth `BandRelations` engine was needed.** A positive `DEED_WEIGHT`
+plus a target from another band is all phase 7b's first engine — the
+cross-band deed nudge in `emit`, shipped two commits ago — needs to turn a
+completed trade into two peoples thinking slightly better of each other.
+This is `next-steps.md`'s note on `trade`'s return made concrete: the event
+type earns its place by having a verb behind it, not by naming a new
+mechanic.
+
+Also new: a `trade` entry in the player's radial menu (enabled when both
+sides carry food) and an `ORDER_COST` of 0.3, cheaper than `give`'s 0.4 —
+both sides gain something, so it asks less of whoever is ordered to do it.
+
+**This closes Block IV's engine phase.** All four of `BandRelations`'
+writers — cross-band deeds, marriage, territory, trade — are live. Phase
+7c's readers are next.
+
+**Measured, 20-seed cohorts against the phase 7b (3) numbers**: `lean` 87.1%
+→ 89.0% survival, 0/20 collapsed, no seed below 62% this run — the
+territory-engine dip did not compound. `century` 99.9% → 99.6%, 854 born,
+11.8 known — noise. A single `lean` run shows `trade` scored 746 times and
+completed 17 (`event_trade`/`trade_made`), far rarer than `give`'s 21,678,
+because it needs two people from different bands each with surplus — the
+mechanism engages without dominating the action table.
+`sim:check:all`: `millers` picked up `jobs-bias-work` alongside its existing
+`the-hurt-are-tended`, the check `bugs.md` already names as having "an effect
+smaller than its own seed-to-seed spread" — the sixth documented member of
+the one-or-two-event-wide family, not a new kind of failure. All 341 unit
+tests, all 47 e2e specs, typecheck clean.
+
+## 2026-09-20 — M11 phase 7b (3): territory, and the TODO it closes
+
+`BandRelations`' fourth engine, and the one the plan names as closing the
+long-standing `// later, claim territory` comment beside `Band.homeX/homeY`
+without any new mechanic: `considerTerritory` counts living foreign faces
+within `TERRITORY_RADIUS` (40) of a band's camp, once a day, and costs that
+band's standing with whichever band each intruder belongs to — but only in
+proportion to `pantryPressureOf`, the same fill-fraction `planBuildings`
+already reads to decide whether another granary is worth digging, now
+extracted into its own method so the two questions cannot quietly answer
+differently. A band with empty granaries pays nothing for a stranger's camp
+nearby; a band running out of storage pays the full `TERRITORY_SCALE` (0.3)
+per foreign face, per day — "a well-fed band shrugs off an intrusion, a
+hungry one does not," in one multiplication rather than a second mechanic.
+
+**Measured, 20-seed cohorts against the phase 7b (1-2) numbers**: `lean`
+89.2% → 87.1% survival, 0/20 collapsed (though `tau` fell to 35% and
+`sigma` to 53%, the two lowest single seeds since the phase 6d entry's
+`tau` at 27%). `century` 100.0% → 99.9%, 869 born, 11.5 known — unmoved, as
+every `BandRelations` engine has left it so far, because bands in that
+scenario rarely camp close enough to trigger the radius query at all.
+Consistent with the owner's read on the 6a-6e drift (`next-steps.md`): this
+is scarcity-scenario friction working as intended, and `century` staying
+flat is the check that it is not leaking into a world with no pressure to
+carry it.
+
+`sim:check:all`: `century` itself picked up `the-hurt-are-tended`, joining
+the roster of scenarios that check has flipped on before; `scribes` and
+`millers` dropped `spatial-hash-spreads`/`the-hurt-are-tended` this run;
+`stewards` picked up `the-hurt-are-tended` alongside its existing
+`compost-answers-exhaustion`. All within the already-documented
+one-or-two-event-wide family, no new kind of failure. All 341 unit tests,
+typecheck clean.
+
+## 2026-09-20 — M11 phase 7b (1-2): the first two engines, deeds and marriage
+
+`BandRelations` gets its first two writers, the two the plan names as
+easiest to measure.
+
+**Cross-band deeds.** `SocialSystem.emit` now nudges `bandRelations` whenever
+a deed has a target from a different band, by `DEED_WEIGHT[type] * (0.5 +
+magnitude * 0.5) * CROSS_BAND_DEED_SCALE` (0.02) — small on purpose, which is
+what stops one theft from reading as the opening act of a war while still
+letting a pattern of them eventually mean one, given how slowly
+`BandRelations` decays. Read off the deed itself rather than off each
+witness's `absorb`, so a crowd watching one theft cannot multiply its effect
+on band standing the way it correctly multiplies how many personal enemies
+the thief makes.
+
+**Marriage.** `wed` adds a flat `CROSS_BAND_MARRIAGE` (15) whenever the two
+people it joins already belonged to different bands — the strongest peace
+mechanism in the historical record, by the owner's own framing, and the
+cheapest engine in the phase to write.
+
+**Measured, 20-seed `lean` cohort**: 88.1% → 89.2% survival, 0/20 collapsed
+either cohort — the drift from the 6a-6e entries did not continue, if
+anything it eased, though one cohort is not enough to call that a reversal
+rather than noise. `sim:check:all`: `century` joined `crowded` on
+`perf-budget` in the full-matrix run, but an isolated single run of `century`
+passes clean at 2,039 steps/s against the 2,000 floor — the two commits
+touch nothing on any hot path (`emit` and `wed` are both once-per-event, not
+once-per-tick), so this reads as the same machine-load noise `century` has
+sat close enough to the floor to show before, not a regression; worth
+re-checking on a quiet machine rather than chased further here. Every other
+line matches the phase 7a matrix. All 341 unit tests, typecheck clean.
+
+## 2026-09-20 — M11 phase 7a: how two peoples stand with each other, sent inert
+
+**Block IV opens.** `next-steps.md` §5's correction has said since 2026-09-10
+that no state between bands exists anywhere in the codebase; `BandRelations`
+is that state, and it is deliberately **symmetric**, unlike
+`RelationshipGraph` — the header explains why: every engine that will ever
+write to it (phase 7b) moves both bands' standing with each other at once,
+the way a wedding or a raid does, so a directed edge would need two
+histories moving in lockstep for no mechanism that ever writes only one of
+them. Keyed on `min(a,b):max(a,b)` so a pair cannot end up with two entries,
+and it decays at 0.998 per day — slower than `renown`'s 0.997, which is
+slower than an ordinary opinion's 0.985: a grudge or an alliance between two
+peoples has to outlive the individuals who were there when it started.
+
+**`firstImpression` reads it for the out-group case.** `OUT_GROUP_BIAS`
+(-6) becomes `outGroupBias(standing)` — exactly -6 at `standing === 0`, which
+is every pair the moment this ships and any pair phase 7b's engines have not
+yet touched, so **the commit is bit-identical**. At the extremes a close
+ally (100) reads a stranger as warmly as `IN_GROUP_BIAS` already reads a
+bandmate; a bitter rival (-100) reads one more coldly than `HOUSEHOLD_BIAS`
+reads a member of your own family warmly.
+
+Sent with its report column: `kin-outrank-strangers`' detail line gains
+`band-pairs`/`friendliest`/`hostile` from `BandRelations.stats()`, reporting
+0 pairs on every scenario today, the same "measure before changing anything"
+discipline `outsider-unrelated` already set as precedent. `bands-take-sides`,
+the check that will actually gate on this, is phase 7c's, once there is
+something for it to measure.
+
+**Not done in this commit**: a player-facing panel. Deferred on the same
+precedent `slander`/`praise` shipped under — no menu entry yet either — and
+noted so it does not get forgotten.
+
+`sim:check:all` reproduces the phase 6e commit's matrix line for line. All
+341 unit tests (two fixture constructors updated for the new
+`SocialSystem` parameter), typecheck clean.
+
+## 2026-09-20 — M11 phase 6e: the big man reaches the chiefdom, and Block III closes
+
+`BandSystem.standingScore` — shared by `chooseChief` and
+`considerRebellion`'s challenge outcome, so both read the same answer — gains
+a renown term: `Math.max(0, household.renown - averageRenown(band, ...)) *
+RENOWN_CHIEF_WEIGHT` (0.5), the household's edge above its own band's
+average, and nothing at all for a household at or below it. `averageRenown`
+moved into `Household.ts` as a small shared helper, used by this and by
+phase 6d's `inequalityTerm`, on the house rule against two independent
+implementations of "a band's own average renown" drifting apart the first
+time either is retuned.
+
+0.5 is deliberately modest next to `regard`, which sums an opinion as wide
+as -100..100 from every other adult in the band: a household 40 renown
+above average — roughly `Authority.ts`'s own `RENOWN_SPAN`, one deed nobody
+will forget — buys as much standing as being liked twenty points more by a
+single bandmate. Enough to tip a close election toward a family with a
+genuine record; not enough to install a hoarder the band actively resents.
+
+**This closes Block III of `m11_plan.md`** — phases 6a through 6e — the
+inequality half of the milestone. `Household.store`, once a black hole, is
+now a real building a rival can rob; a greedy household hoards there instead
+of the nearest band store; `renown` finally has a writer and two readers;
+and the arc from egalitarian to stratified is emergent from both, gated
+behind no technology at all.
+
+**Measured, 20-seed cohorts against the phase 6d numbers**: `lean` 89.4% →
+88.1% survival, 0/20 collapsed. `century` 100.0% → 99.7%, 0/20 collapsed —
+essentially unmoved, as every commit in this block has left it, because
+`century` never grows enough inequality for any of these terms to matter.
+`sim:check:all`: `farmers`/`soil-is-drawn-down` moved back onto the passing
+side from the 6d matrix; every other line is the same already-documented
+fragile-check family. All 341 unit tests, typecheck clean.
+
+**Flagged for the project owner rather than decided here.** `lean`'s mean
+survival has now moved in the same direction across every one of the five
+commits measured in this pass — 91.2% → 90.6% → 90.1% → 89.4% → 88.1%, a
+cumulative 3.1 points — while `century` has stayed flat throughout. Read one
+way, this is the milestone working exactly as designed: `lean` is the
+scenario built specifically to carry scarcity and social friction, and a
+project whose stated arc is "egalitarian bands stratify and come into
+conflict" should show *some* cost there as inequality, hoarding and exile
+all start to bite, while a comfortable world is correctly untouched. Read
+the other way, five small steps the same direction is what a real,
+compounding effect looks like before any single one of them is individually
+provable — and `AGENTS.md` is explicit that a coefficient should never be
+picked because one twenty-seed run liked it, and that a change touching the
+food economy should have its acceptable cost written down *before* the
+measurement, which nothing in this pass did. Blocks IV, VII and the war
+milestone all add more scarcity and more friction on top of this one, so the
+drift will not resolve itself by stopping to look at it once. Worth a
+deliberate answer before phase 7 begins: is this the intended cost of the
+arc, and if so, what is the floor past which it stops being that and starts
+being a world that no longer works?
+
+## 2026-09-20 — M11 phase 6d: wealth and renown buy a little unelected standing
+
+`standingOver` gains `inequalityTerm` (`Authority.ts`): a household visibly
+richer or more renowned than its own band's average earns its head a little
+extra compliance from anyone in that band, capped at 0.18 — under
+`RANK_AUTHORITY`'s 0.22, so a rich household never out-orders a head the
+band actually elected through `chiefdom`. The gap is read against each
+household's own band average rather than a fixed number, which is what
+makes the egalitarian-to-stratified arc the project is built toward
+*emergent*: a band where every household hoards and gives in equal measure
+produces an average every household sits on top of, and the term is exactly
+zero for all of them, by construction — not a technology anybody has to
+discover to switch it on.
+
+Wealth is read as `Household.homeBuildingId`'s store total (phase 6a);
+renown is the phase 6c field. Both gaps are divided by a fixed span (60
+goods, 40 renown — roughly a full extra store and one deed nobody will
+forget) before being summed and capped, so the term stays stable near a
+band average of zero rather than swinging wildly on the first deed or the
+first stored basket anyone in a young band produces.
+
+**Measured, 20-seed cohorts against the phase 6b/6c numbers**: `lean` 90.1%
+→ 89.4% survival, 552 → 566 born, 0/20 collapsed in either cohort (though
+one seed, `tau`, fell to 27% — the lowest single seed observed across every
+cohort measured for this milestone so far, worth naming rather than
+smoothing over even though it sits inside the noise floor `AGENTS.md`
+documents). `century` 100.0% → 100.0%, 868 → 859 born, 10.8 → 10.8 known —
+unmoved, `century` being too comfortable for inequality to have grown large
+enough to matter. **Worth watching**: mean `lean` survival has now drifted
+91.2% (clean baseline) → 90.6% (5d-5f) → 90.1% (6a-6b) → 89.4% (6d) across
+four measured commits — each step individually inside the ~10-point floor a
+20-seed cohort can resolve, but four small steps in the same direction is
+the shape a real effect looks like before it is provable. Nothing here
+warrants reverting; it warrants re-measuring once phase 6e and 6b's
+`labour`-scenario numbers are in.
+
+`sim:check:all`: four lines moved from the phase 6c matrix —
+`scribes`/`spatial-hash-spreads`, `farmers`/`soil-is-drawn-down`,
+`stewards`/`compost-answers-exhaustion` (already on record in `bugs.md` as
+one-event-wide), `culture`/`the-hurt-are-tended` (ditto) — and `lean` moved
+the other way, back onto the passing side of `the-hurt-are-tended`. More
+lines moved than any single commit in this milestone so far, which tracks
+with `standingOver` being read on every order and job assignment in the
+game rather than one narrow scorer path; all four are variations on checks
+already documented as thin. `labour`'s own dedicated read of
+`heads-direct-work` still passes (19 orders obeyed by rank, 56 refused).
+All 341 unit tests, typecheck clean.
+
+## 2026-09-20 — M11 phase 6c: renown is finally written
+
+`Household.renown` has existed since before this milestone with no reader
+and no writer anywhere in `src/` — declared-and-inert content this project
+has a standing rule against.
+
+**`SocialSystem` gains `onDeed`**, the same hook pattern `onMarriage` already
+uses and for the same reason: a household is `Simulation`'s business, not
+the social layer's, which knows only people and what they feel about each
+other. `emit` calls it once per deed, unfiltered by any observer's culture
+or hearsay — renown is a household's own record of what it did, read the
+same way by everyone, which is exactly what lets a stranger respect (or
+distrust) a family they have never personally dealt with, unlike an opinion,
+which always belongs to one particular viewer.
+
+**`Simulation.accrueRenown`** adds `DEED_WEIGHT[type] * (0.5 + magnitude *
+0.5)` to the acting household's `renown` — unclamped, on purpose, unlike the
+`-100..100` an opinion's `deeds` component has to fit inside: every future
+reader of this number (`standingOver` in phase 6d, `chooseChief` in 6e) asks
+for it only relative to the band's own average, so a hard ceiling would let
+ordinary generosity saturate every long-lived household at the same value
+and erase the very gap this phase exists to let open. It decays at 0.997 per
+day against the 0.985 an ordinary opinion's `deeds` uses — a family's memory
+of itself has to still mean something after the person who earned it has
+died, which is the whole point of a household outliving its members.
+
+**Bit-identical**, as intended: nothing reads `renown` yet, so no decision
+anywhere in the simulation changes. `sim:check:all` reproduces the phase 6b
+commit's matrix line for line. All 341 unit tests, typecheck clean.
+
+## 2026-09-20 — M11 phase 6b: a reason to hoard
+
+Phase 6a gave a household's goods a real building to live in but nothing
+that preferred keeping them there: every store in reach was interchangeable,
+so wealth came out identically distributed across every household in a band
+and the phase was, in the project's own terms, declared content doing
+nothing.
+
+**`Brain`'s `store` scorer gains one term.** Choosing which building to walk
+a surplus to already ran on pure distance; it now adds `greed * HOARD_PULL`
+(8 tiles) when the candidate is the actor's own household's home, found
+through the new `BrainContext.householdsById`. A fully greedy person will
+now carry food eight tiles further to keep it inside their own family's
+walls rather than hand it to the nearest band store; someone with no greed at
+all is exactly as indifferent between stores as before this commit — the same
+shape the existing `0.35 * (1 - greed * 0.5)` term already gives the
+willingness to store *anything* at all, pulling in the direction the trait's
+name promises rather than a second, unrelated one.
+
+**Measured, 20-seed cohorts against the phase 5d-5f entry's own numbers**
+(6a itself changes no AI decision, so that entry is the correct baseline for
+isolating 6b's effect): `lean` 90.6% → 90.1% survival, 561 → 552 born, 7.2 →
+6.8 known, 269.0 → 278.4 passed on, 0/20 collapsed in either cohort —
+indistinguishable within the noise `AGENTS.md` documents. `century` 99.8% →
+100.0% survival, 868 → 868 born, 11.6 → 10.8 known — the scenario stays too
+comfortable to make greed matter, exactly as `lean`'s own description in
+`tools/simcheck.ts` predicts. `sim:check:all`: identical failure set to the
+phase 6a commit (`crowded`/`perf-budget`, `millers`/`the-hurt-are-tended`,
+`hunters`/`kills-are-butchered-for-bone`, `lean`/`the-hurt-are-tended`),
+nothing new. All 341 unit tests, typecheck clean.
+
+**Not done in this commit**: `Household.renown` is still unwritten and
+unread — phase 6c — so hoarding changes *where* goods sit but not yet
+anybody's standing for having them.
+
+## 2026-09-20 — M11 phase 6a: a household's goods get a place to be
+
+`Household.store` was, in its own words, a black hole: an `Inventory` hanging
+off a household with no position of its own, written only when somebody died
+with no heir and read by nothing anywhere — `bugs.md` has called it that
+since M9.6. Worse for this milestone specifically: phase 4's `mayUse` lets a
+rival use or steal from a building nobody is watching, and a household's
+wealth living somewhere with no position at all was simply not a thing a
+rival could ever reach.
+
+**`Household.homeBuildingId` replaces it.** `Simulation.shareTheHearth`
+already samples, every midnight, which building each person is actually
+sleeping under to pair them for a hearth conversation; it now doubles as the
+cheapest honest reading of where a household lives, and stamps that building
+onto every present member's household. `LifeSystem.settleEstate` deposits a
+dead person's unheired goods into that building's store, or drops them as an
+`ItemPile` at the deceased's own feet if the household has no home yet — the
+same fallback `dropAt` already gives the timber from a tree felled by
+somebody whose hands were full. `mergeHouseholds` becomes a transfer between
+two buildings, or a no-op if the newlyweds' target household has no home of
+its own to receive into (the goods just stay where they already sit).
+`spoilFood`'s household sweep is deleted outright: those goods live in a
+building now, which the existing per-building sweep already covers.
+
+Not measured against a 20-seed cohort: nothing in `Brain`'s scorer reads
+`homeBuildingId` yet, so no AI decision changes — this is where a family's
+goods physically are, not what anybody does about it. `sim:check:all`:
+`lean` moved onto the wrong side of `the-hurt-are-tended`, the known
+one-event-wide check, the same RNG-cascade noise the M11 5a/5b/5c entries
+below already document — see `bugs.md`. `crowded`/`perf-budget`,
+`millers`/`the-hurt-are-tended` and `hunters`/`kills-are-butchered-for-bone`
+unchanged. All 341 unit tests, typecheck clean.
+
+**The motive to hoard is phase 6b, not this commit.** A household with a real
+home is not yet a household anyone tries to enrich — nothing in `Brain` scores
+leaving goods at your own home over a band store.
+
+## 2026-09-20 — M11 phases 5d-5f: factions, and the exile they finally reach
+
+`considerExile` gated on the band's *average* opinion of a suspect at -28, a
+threshold `next-steps.md`'s longer-standing-gaps section already flagged as
+never having fired once: kinship and household bias hold the average
+comfortably above hostile even when a handful of people genuinely loathe
+someone, exactly the finding `REBELLION_THRESHOLD`'s own comment records for
+why `considerRebellion` reads the worst opinion of the chief instead of the
+average. Exile had the same defect and nobody had gone back to fix it.
+
+**`src/sim/social/Factions.ts` is new**: `conspiracyAgainst(subjectId,
+members, rels)`, derived fresh every call and stored nowhere, on the same
+principle `standingScore` already follows for "how well is this person
+regarded". It walks the band once for grudge-holders (opinion of the subject
+below -20), then only that handful for who trusts whom (mutual opinion above
++15) — `O(members) + O(grudges²)`, not every pair in the band. Per the
+owner's note 8, an instigator needs no grudge of their own if their loyalty is
+low or their `malice` is high; everyone else needs the grudge before they can
+bring a faction together.
+
+`considerExile` now casts someone out when the largest such faction reaches
+`EXILE_QUORUM` (4), instigator included, rather than when the band average
+crosses a threshold. `considerAdoption` is new and is the door back the
+project's longer-standing-gaps section already promised: a band may take in
+an outcast found wandering within `ADOPTION_RADIUS` of its camp, refused only
+by a member who still, personally, holds a grudge below `ADOPTION_THRESHOLD`
+against them — reputation here is read straight off `Memory` and
+`RelationshipGraph`, so a band that never witnessed the exile's crime, or
+whose own norms do not condemn it, has nothing held against the newcomer.
+Adoption founds the newcomer a fresh one-person household under the adopting
+band, deliberately: the household they left behind stays with their old band,
+which is also why exile itself never had to touch it — `Household.bandId`
+already stops `headsAHouseIn` counting a household whose band no longer
+matches the person's own.
+
+Neither `considerExile` nor `considerAdoption` draws from any RNG stream, so
+this needed no new fork. `BandContext` gained `peopleHash` (for adoption's
+proximity query — never a scan, per `AGENTS.md`) and `onAdopt`, both wired in
+`Simulation.ts` beside the existing `onExile`.
+
+**Measured, 20-seed `lean` cohort** (the scenario built in M11 phase 0d
+specifically because the default world has no pressure for this mechanism to
+answer to), baseline captured by stashing this change and re-running the same
+cohort: mean survival 91.2% → 90.6%, 569 → 561 born, 7.3 → 7.2 technologies
+known, 261.4 → 269.0 passed on — indistinguishable within the noise 20 seeds
+cannot resolve, well under the ~10-point floor `AGENTS.md` documents. One
+seed (`century`, within the `lean` cohort) swung from 66% to 100% survival
+between the two runs; that is the same `chooseAmongBest` RNG-cascade effect
+recorded in the M11 5c entry above, not a defect — once exile fires at all,
+the exiled person's action resets to idle, which changes how many candidates
+`choiceRng` weighs from that tick on and diverges every later draw on that
+seed. The `century` *scenario* cohort (not to confuse with the seed of the
+same name) was also re-measured for safety and landed at 99.8% survival, 868
+born, 11.6 known — indistinguishable from the M11 5c entry's own 99.9%/870/11.6,
+confirming the mechanism stays silent in a world with no scarcity to trigger
+it. `sim:check:all`: same three pre-existing failures as the prior commit
+(`crowded`/`perf-budget`, `millers`/`the-hurt-are-tended`,
+`hunters`/`kills-are-butchered-for-bone`), nothing new. All 341 unit tests
+(three new, covering the faction gate and adoption deterministically — the
+same reason `rebellion`'s tests are unit tests rather than a `simcheck` check:
+a quorum this specific is not reliably reachable inside any one scenario's
+window), all 47 e2e specs.
+
+**Not done in this pass**: `5d`'s conspiracy is read only by exile and
+adoption so far, not by anything a player can see or act on — `bugs.md` notes
+it. The plan's own gate paragraph asks for four new `simcheck` checks
+(`exile-is-reachable`, `factions-form`, `gossip-is-aimed`,
+`the-cast-out-find-a-home`); they were not added, on the same reasoning
+`band.test.ts`'s header already gives for `rebellion-is-rare-but-happens` —
+a quorum-gated faction is not guaranteed inside any one scenario's step
+budget, and a check that flakes between PASS and n/a by seed is the
+"looks reassuring, detects nothing" failure `AGENTS.md` already names two
+deleted checks for. Worth revisiting once `lean`'s own telemetry (`exiled`,
+`adopted`) has been watched across enough seeds to know whether it is
+reliable enough to gate on.
+
+## 2026-09-18 — M11 phases 3c and 5c: gossip that has to be grounded, and a subject who does not hear about it by magic
+
+`slander` and `praise` have been declared in `EVENT_TYPES` since phase 5b,
+with nothing reading either. This pass gives them a verb, and folds in phase
+3c — "a conversation is observable too" — because the two turned out to be
+the same mechanism: telling somebody what you think of a third party is
+exactly the kind of deed the owner's rule already covers, and it needed the
+rule's other half, not a new one.
+
+**The content is never invented.** `Memory.bestSignedStory()` finds the most
+vivid bad memory and the most vivid good one a person is carrying, in one
+pass. It replaces reusing `bestStory()` (built for 3a's news-sharing) for
+this, on purpose: `DEED_SALIENCE` weighs a wrong far above a kindness and a
+victim's own memory of it never decays, so the single most-vivid thing almost
+anybody carries is a grievance, and the first version built on `bestStory()`
+shipped with `praise` structurally unreachable — a hundred-checks run showed
+13,442 `slander` ticks and exactly zero `praise` ones. `bestSignedStory`
+tracks both signs at once, at the same one-pass cost. `Memory.bestStoryAbout`
+narrows that to one subject and one sign at the moment the walk ends, the
+sibling of `bestGossipFor` with the same 0.15 salience floor — so a story
+that decayed or got told by somebody else during the walk over is honestly
+refused, the same principle `talkModeOf` already follows for `talk`.
+
+**The subject does not learn they were talked about by magic.** `SocialSystem
+.emit` gains a `notifyTarget` parameter, default `true` and unused by every
+existing caller — bit-identical for theft, assault, every deed this game had
+before today, all of which have a victim standing right there. `slander` and
+`praise` pass `false`: the subject is very often nowhere near, and the
+owner's rule that nothing is known unless it is seen or told applies to them
+exactly as it applies to a stolen store. They learn only if they happen to be
+a real witness within `sightRadius` — and then it lands with the same
+`VICTIM_MULTIPLIER` catching your own name spoken behind your back already
+carries for everyone else.
+
+**Two things happen when the words land, and they are different questions.**
+`SocialSystem.tellStory` (extracted from the guts of the existing private
+`gossip`, which now calls it) passes the underlying fact on as hearsay,
+exactly as an ordinary conversation already would — so telling Mira that
+Boran stole from you makes her know Boran stole, not merely that you said
+something about him. `emit`, separately, records the act of saying it as its
+own judged deed, with its own `DEED_WEIGHT`.
+
+**The backlash.** `absorb` gains a term, live only for `slander`/`praise`:
+each listener's opinion of the *teller* shifts by their own opinion of the
+*subject*, signed by whether the story was kind or unkind. Slander a man
+before his friend and the friend resents you for it; slander him before his
+enemy and they do not — they may like you a little more for saying what they
+already believed. One proportional term, and it is what turns gossip into
+alliances and rivalries without any code anywhere that knows what a faction
+is.
+
+**Privacy, for `slander` only.** Scored on the model `steal` already uses:
+onlookers around the teller divide down the desirability of the action,
+`1 / (1 + onlookers * 0.45)`. `praise` gets no such term — DEED_WEIGHT.praise
+is positive, so a witnessed compliment costs nothing and a private one buys
+nothing extra either.
+
+**`Person.targetSubjectId`**, new, alongside the existing `targetPersonId`:
+gossip has two other people in it where every earlier social verb had one —
+who it is told *to* and who it is *about*. Cleared in `clearTarget` beside
+its sibling.
+
+Measured: 20-seed `century` cohort — 99.9% mean survival (0/20 collapsed),
+870 born, 10 starved (4 infants, 3 older children, 3 adults, against 5b's own
+5), 11.6 technologies known at the end (5b: 11.7), 645.8 passed on —
+indistinguishable from 5b's own cohort within the noise twenty seeds cannot
+resolve. `sim:check:all`: two lines moved sides from the pre-5c build,
+`fishers`/`pots-reach-a-granary` and `millers`/`the-hurt-are-tended`, both
+explained in `bugs.md` as the same whole-stream RNG cascade every new
+scoreable action has caused since 1b — adding a candidate to `chooseAmongBest`'s
+pool changes how many draws `choiceRng` takes from that tick on. All 338
+unit tests, all 47 e2e specs.
+
+**Deliberately not done.** No radial-menu entry for `slander`/`praise` this
+pass — the same choice already made for `court` and `teach_child`, both full
+scored-and-executed verbs a player cannot order directly. The mechanism is
+real and consequential without one; wiring a "gossip about…" submenu through
+`ActionCatalog`, `Simulation.command` and `main.ts` is a UI-layer pass of its
+own, and `Memory.tellableSubjectIds` already exists to support it whenever
+that pass happens.
+
+---
+
+## 2026-09-17 — M11 phase 5b: the event table stops declaring what nobody does
+
+`EVENT_TYPES` named `gift`, `help`, `talk` and `trade`, and nothing in the
+codebase emitted any of the four. Two of them were dead weight rather than
+work waiting to happen, and this pass tells them apart.
+
+**`talk` and `trade` are gone.** `talk` never had a reader worth the name:
+`settle` already pays every ordinary conversation in `familiarity`, which
+enters `opinion` at ×0.35, so a `talk` deed on top of that would have counted
+the same conversation twice; its salience of 0.08 also sat below
+`bestGossipFor`'s floor of 0.15, so it was memory that could never become
+gossip, only take up a slot in a memory capped at 48 — and `emit` runs a
+spatial query, so paying that cost at every greeting bought nothing at all.
+`trade` had no verb behind it at all. Both are removed from `EVENT_TYPES`,
+`DEED_WEIGHT`, `DEED_SALIENCE`, `DEFAULT_NORMS` and `describeEvent` — the
+rule this project already holds `SKILLS` and `TECH_EFFECTS` to, applied to
+this table for the first time. `trade` is declared again, alongside the verb
+that finally reads it, in M11 phase 7.
+
+**`help` is connected**, emitted once from `doTend` — on the tick tending
+actually begins, not once per tick of a bout that can run for a while, the
+same discipline `useProperty` already follows for a long action's one deed —
+with magnitude read from how badly hurt the patient was. `EVENT_TYPES` has
+declared `help` since before this file existed; this is the first thing that
+has ever emitted it. Honest caveat carried over from M9 phase 5:
+`the-hurt-are-tended` still reports very few ticks on most scenarios (it is a
+one-event-wide check, catalogued in `bugs.md`), so this channel will read
+thin until that gets its own pass.
+
+**`slander` and `praise` are declared, ahead of the verb that reads them.**
+M11 phase 5c gives them one next; declaring the table entry first is the same
+short-lived gap M11 phase 5a's `malice` trait sits in ahead of phase 5d, and
+`gift` has sat in ahead of phase 6. `slander` also enters `VARIABLE_NORMS` —
+a band that shrugs off a lie and one that treats a good name as sacred are
+both real cultures, the same reasoning `threaten` was given its own range for.
+
+**The RNG moves again, measured the same way as 5a.** `VARIABLE_NORMS`
+gaining an entry means one more `rng.range` draw per band before anybody is
+placed, so every scenario's world shifts. `sim:check:all` differs on five
+lines from the post-5a build, and every one of them is either already
+catalogued in `bugs.md` as a knife-edge check or is explained by the failing
+check's own source comment: `crowded`/`perf-budget` is the long-standing
+documented failure; `traps`/`jobs-bias-work`, `stewards`/`the-hurt-are-tended`
+and `stewards`/`compost-answers-exhaustion` are all checks this document
+already names as thinner than their own seed-to-seed spread; and
+`century`/`heads-direct-work` is new to `century` specifically but not new in
+kind — its own comment in `tools/simcheck.ts` already warns that a scenario
+not built for this measurement (`labour` is) can read "0 obeyed" on one
+unlucky run, which is exactly what happened (0 orders landed on rank alone,
+12 refused). `millers`/`the-hurt-are-tended`, `hunters`/`kills-are-butchered-
+for-bone` stayed exactly as they were after 5a. A twenty-seed `century`
+cohort reads 99.9% mean survival, 858 born, 5 total starved, 11.7 technologies
+known — indistinguishable from 5a's own cohort within the noise this project
+already treats twenty seeds as unable to resolve.
+
+**One e2e fixture broke, and was fixed as an instrument, not the world.** The
+pinned `e2e-fixture` seed's nearest clear tile to the player's new spawn point
+moved from comfortably inside `emptyGround`'s old ten-tile search cap to
+radius eleven — one ring past it, in a start camp dense with resource nodes —
+which is exactly the kind of drift this pass's own reasoning predicts. Fixing
+it by only widening the cap chased the point under the top bar and, one step
+further, off the bottom of the viewport: a wider radius is not the same thing
+as a point a real click can still reach. `emptyGround` now confirms each
+candidate with `document.elementFromPoint`, the same question a click asks,
+instead of naming `.hud-bar`/`.hud-panel`/`.hud-help` by hand — which also
+means the helper no longer needs updating the next time the chrome changes
+shape. All 47 e2e specs pass again.
+
+Verification: typecheck; 338 unit and determinism tests; `sim:check:all` as
+above; 20-seed cohort as above; all 47 e2e.
+
+## 2026-09-17 — M11 phase 5a and M9.6 phase 4a, bundled: a trait for scheming, and a mood that finally exists
+
+Two migrations that both touch `TRAITS`, founding, inheritance, ageing and the
+character-creation summary, shipped as one commit rather than two so the RNG
+shift either would cause is paid once — `m11_plan.md`'s own argument for why
+5a has to carry 4a along with it.
+
+**`malice`, an eighth personality axis.** The owner's note 8 asked for "a
+personality trait like malevolent or conspirator" to gate who can start a
+plot without a personal grudge behind it. Declared now, read by nobody yet —
+the same precedent `farm` and `smith` already set in `SKILLS`, and for the
+same reason: the trait has to exist before M11 phase 5's conspiracies can
+read it, and bundling the declaration with that later pass would make the
+RNG drift from adding it indistinguishable from the drift the plotting
+mechanism itself causes.
+
+**`Person.mood`, four decaying channels.** `core/Mood.ts`'s own header has
+said since M9.5 phase 1 that a persistent, heritable mood was the obvious
+next step and named exactly this migration cost as the reason it wasn't
+built then. It now exists: `comfort`, `belonging`, `security` and `purpose`,
+each resting toward a point set by one temperament axis apiece (tradition,
+loyalty, aggression inverted, and industriousness), closing 8% of the gap to
+that point once a day alongside relationship and memory decay. `Mood.add`
+is the one entry point, keeping the last four reasons beside the number —
+`lastRefusal`'s pattern applied to a channel instead of a refusal — but
+nothing calls it yet. The inspector's Self tab grew a Mood section beside
+Temperament so the field is visible the moment it exists, and new
+`mood.test.ts` holds the baseline formula and the decay rate to brute force.
+**Inert**: `expressionOf` does not read a channel yet (M9.6 phase 4b), and
+nothing in `Brain` does either (4c). No behaviour changed because of mood
+itself.
+
+**The trait migration moves the RNG, exactly as documented, and it was
+measured rather than assumed.** Adding an eighth `rng.gaussian` draw to
+founding's trait loop (and inheritance's) shifts every draw downstream of it,
+for every scenario, on every seed — `sim:check:all` before and after this
+commit differ on three lines, all of them already-catalogued knife-edge
+checks rather than new defects: `century` gains a `perf-budget` failure
+(confirmed by bisection to be a genuinely larger population on that seed —
+76 peak against 66 before — not a slower per-tick cost; the codebase's own
+systems scale with population, and `AGENTS.md` already names `century` as
+chaotic under any RNG-affecting change), and `hunters`/`kills-are-butchered-
+for-bone` and `fishers`/`pictures-are-painted` trade sides — both already on
+record in `bugs.md` as one-event-wide checks that flip under any change at
+all. `farmers`/`the-hurt-are-tended` flips the other way, from failing to
+passing. A twenty-seed `century` cohort before this commit read 100.0% mean
+survival, 826 born, 20 total starved (7 infants, 1 child, 12 adults), 11.4
+technologies known; after, 99.9% mean survival, 860 born, 3 total starved (1
+infant, 0 children, 2 adults), 12.3 technologies known — a healthy world by
+every figure this project trusts a twenty-seed cohort to resolve, and inside
+the noise `AGENTS.md` already says a cohort this size cannot separate from a
+coefficient.
+
+Verification: typecheck; 338 unit and determinism tests (8 new, for `Mood`);
+`sim:check:all` as above; 20-seed cohort as above; all 47 e2e, including the
+character-tabs and character-creation tests that now render the new trait and
+section without needing any changes of their own.
+
+## 2026-09-17 — M11 phase 4: property is protected by attention
+
+`Building.ownerBandId` used to mean two incompatible things. The autonomous
+scorer treated foreign stores, fields, compost and workshops as if they did not
+exist, while player-issued building orders reached `ActionSystem` with no
+ownership check at all. A rival therefore could not decide to take from an
+empty camp, but the player could order the same thing in front of its owners.
+
+**One pure predicate now owns the answer.** `social/Property.ts` asks the
+people spatial hash whether a living member of the owning band is within sight
+of the structure. Own-band use is always allowed; foreign use is allowed when
+unwatched; an owner in sight can stop it. `Brain`, the action catalogue, the
+executor, crafting-station lookup and the inventory-panel shortcut all ask that
+same rule. The menu names the person watching, and a guard who arrives while
+somebody is walking can still stop the action through the ordinary visible
+refusal channel.
+
+**Foreign use is a deed, not a permissions error.** Taking from a foreign
+store or harvest emits `theft`; using its roof, field, heap or workshop emits
+the new lesser `trespass` deed. Long actions carry one bit so a night under a
+foreign roof becomes one story rather than one story per tick. The `lean`
+scenario exercises the mechanism: 41 unseen uses, one stopped use, 42
+trespasses and 164 theft deeds. A twenty-seed `century` cohort remained at
+100.0% mean survival with no collapses (826 births, 11.4 technologies known),
+so opening the larder path did not destabilise the food economy at the scale
+this project can resolve.
+
+Two defects surfaced in verification. Once foreign buildings became candidates,
+stores and fields across water could win the scorer; the old same-band filter
+had accidentally guaranteed reachability. The shared scorer-side building
+test now also asks `World.sameRegion`, taking `farmers` from 1,994 stuck walking
+ticks and 41 abandoned routes to 2 and 0. And `soil-is-drawn-down` was still
+asserting depletion in `stewards` after compost had deliberately restored the
+ground, despite the scenario description saying those two checks require
+opposite worlds. It now skips after a dressing and leaves that world to
+`compost-answers-exhaustion`.
+
+Verification: typecheck; 330 unit and determinism tests; all seventeen scenario
+mechanisms green except the documented `crowded` performance check and the
+one-event-wide tending checks in `millers` and `farmers`; 20-seed cohort as
+above. No RNG stream or fork order changed.
+
+## 2026-09-17 — M11 phase 3b: an unseen deed is a thing your character knows it is
+
+The owner's rule is that nobody learns anything they did not see or were not
+told, and phase 3a gave the *victim* the urge to go and tell somebody. This
+half makes the *secret* visible to the player: `unwitnessed` was a telemetry
+counter and nothing else, so a theft in an empty clearing and a theft in a
+crowd played identically on screen, and the decision the owner wants — *did
+anyone see that, or did I get away with it?* — could not be made because the
+answer was nowhere on the screen.
+
+**A deed now carries how many saw it.** `SocialEvent.witnesses` is the count
+of living bystanders inside `sightRadius` at the moment of `emit`, with the
+actor and the victim themselves always left out — a deed between a couple by
+the fire is still a secret from everyone else. Wiring it up is pure data: the
+count was already being computed for the `witnessed`/`unwitnessed` telemetry,
+so nothing reads it, no draw was added, and the world is unchanged at every
+level (the determinism test, all seventeen scenarios green but the three
+pre-existing failures, and all 47 e2e).
+
+**And the two people in the deed are told what no bystander can see.** The
+floater loop used to announce every notable deed within the player's sight,
+gated exactly like every witness — which silently excluded the player's own
+unseen deeds in the same clearing they left. A deed the player's character did
+or suffered is now exempt from that line-of-sight gate (the actor always knows
+what they did, wherever they have walked since), and when it was unwitnessed
+it gets a violet banner over the character's head: *"No one saw you do it."*
+to the thief who got away, *"No one else knows yet."* to the victim whose only
+road to justice is their own tongue — the action 3a built and the player now
+has a reason to understand.
+
+Three unit tests hold the invariant the banner lives or dies on: that the
+count is brute-force correct (0 alone, 1 for the one bystander in sight), and
+that the actor and victim never count as witnesses. The memory split is
+asserted beside the count — the victim remembers, nobody else does — so the
+UI's claim "no one else knows" is checked against the very state the NPC
+social model already trusts.
+
+---
+
+## 2026-09-17 — M11 phases 1b to 3a: why nobody fought, and two defects found on the way
+
+The owner's headline complaint was that **no character has any reason to fight
+another**, and they guessed either too much food or not yet knowing how. The
+answer turned out to be neither, exactly: the verbs exist and work, and what
+was missing was that nothing in the scorer ever *pointed* them anywhere.
+
+**Phase 1b — the softened choice on at 0.12, and two old failures go green.**
+The twenty-seed cohort could not pick the value, which is the first result:
+`century` at 0, 0.08, 0.12 and 0.20 is indistinguishable on everything
+`sim:seeds` reports — mean survival 100.0 / 99.9 / 99.9 / 100.0, no collapses,
+technologies known 11.4 / 11.8 / 11.3 / 11.9. Softening the choice is free. The
+value came from what the change is *for*: distinct actions observed, 31/30/33/32
+on `century` and 29/27/31/31 on `lean`, where 0.12 is widest on both and 0.08 is
+*narrower* than argmax on both — a reminder that neighbouring values are not
+resolvable from single chaotic runs, and that only the shape is.
+
+Two checks with open `bugs.md` entries went green on it. `century`'s
+**`the-hurt-are-tended`** went from 0 ticks to 114, having failed since M9 phase
+5 under the title "a world that reaches herbalism never tends anybody with it" —
+and the diagnosis it gives is that the mechanism was never broken. **`tend`
+simply never won an argmax.** An argmax gives a verb that is second-best every
+single time exactly nothing. `hunters`' `kills-are-butchered-for-bone` went
+green the same way.
+
+**Phase 2a-2b — a thief finally looks at who they are robbing.** `steal` was the
+one predatory verb in the game that read *nothing at all* about its victim: a
+laden elder and a laden warrior were the same opportunity, separated only by who
+was nearer. `attack` and `threaten` had both always weighed the odds, in two
+different expressions; `social/Vulnerability.ts` now holds one. It is an addend
+rather than a multiplier, so hunger can still drive a desperate person to rob
+somebody who would win the fight, and the strongest person in a band does not
+become untouchable.
+
+**Phase 2c — the grudge and the person hit were two different people.** Found
+while preparing the predation route. `FoundTargets.victim` was read by `steal`,
+`threaten` and `attack` alike; `steal` writes it unconditionally and `attack`
+wrote it only `if (!victim)`. So somebody with both a laden neighbour and a
+hated enemy in sight scored `attack` against the enemy — grudge, odds, allies,
+all of it — and then walked over and hit the neighbour. It matters more than its
+rarity suggests, because an unprovoked beating is a deed every onlooker
+witnesses, and this changelog already records how fast that compounds. `attack`
+has `found.foe` of its own now. Across 20 seeds it improved every line.
+
+**Phase 2c — a second road to violence.** `attack` had one route, gated on
+`grudge > 0.5`, opinion below -50, and **nothing reaches it**: on the commit that
+introduced `lean` — a world running at 23% hostile relationships against the
+default's 5% — `attack` did not appear in the action table at all. A world three
+times more bitter than normal produced no violence, because bitterness is not
+what that gate measures.
+
+Two calibration failures on the way, both invisible from the code. **Nobody in
+this world has any fight skill**, because `fight` is trained by exactly one
+thing, landing a blow — so real fighting power runs 0.11 to 0.35 against a
+formula range of 0.1 to 1.2, and `DECISIVE_GAP` had been set at 0.6 from reading
+the formula, wider than the widest gap the world can produce. And **six
+multiplied suppressors are a veto, not a brake**: the first version scored near
+0.0003, two orders of magnitude below `wander`, and never fired once.
+
+The coefficient was swept and the window is narrow — murders per run, alive
+against peak:
+
+| value | `lean` | `century` |
+|---|---|---|
+| none | 43/46, 0 | 64/64, 2 |
+| 0.7 | — | 59/59, 7 |
+| 0.9 | 43/46, 0 | 59/59, 7 |
+| 1.3 | 41/45, 0 | 50/50, 14 |
+| 1.8 | 33/48, 5 | 25/35, 23 |
+| 3 | 27/43, 25 | — |
+| 10 | 4/37, 42 | — |
+
+Above about 1.3 the feedback loop takes over: a killing gives every onlooker a
+grudge and the grudges feed the *revenge* route, which needs no defenceless
+target at all. **0.7 rather than 0.9** because they buy identical violence at
+very different prices — 0.9 costs 1.7 points of mean survival and a tenth of all
+teaching in the world; 0.7 costs neither.
+
+**An emergent property worth keeping**, which was not designed: `lean` sees no
+murders at all until 1.8 while the comfortable `century` sees seven at 0.7.
+Predation is leisure, not desperation — a hungry person forages, because
+`hunger` outscores it by a wide margin. **Scarcity in this world produces theft;
+it is ease that produces predators.**
+
+**Phase 3a — a wrong done in an empty clearing is worth going to tell someone.**
+The owner's rule is that nothing is known until it is seen or told, and the
+machinery was already right: `emit` tells the victim and whoever was in sight
+and nobody else, a victim's memory floors so a grievance never fades, and
+`converse` passes on the best untold story. What was missing was the wanting to.
+A robbed man kept his grievance for life and mentioned it only if loneliness
+happened to send him to somebody. Two terms — one on the choice of listener, one
+on `talk`'s own score — and no new verb, because a second path to "tell somebody"
+is a second thing to keep in step with the first. Stories passed on went 959 to
+1,134 on `lean` while conversations rose only 1,821 to 1,973: people are not
+talking much more, they are talking to better-chosen listeners.
+
+**And it flushed out the oldest defect in the pass. People were the one kind of
+candidate in the scorer that nobody ever checked you could reach.**
+`World.sameRegion` is applied to trees, buildings, animals, resource nodes and
+shore tiles in eight places, and never once to a person. On an island map
+somebody across a narrow channel sits comfortably inside `sightRadius` and
+cannot be walked to at all, so every social verb could be scored, chosen, set up
+and then refused by the router.
+
+The mechanism by which it hid is worth remembering: **a stranger you have never
+spoken to is, by definition, somebody who has not heard your news** — so a term
+pulling toward an uninformed listener pulls hardest toward the unreachable one.
+`stewards` went from 0 stuck walking ticks in 252,542 to 3,267 in 225,107, with
+`abandoned_cannot_reach` going 0 to 76 and 298 recovery attempts, none of which
+found a route. One filter on `neighbours`, not seven in the scorers.
+
+**The matrix ends the pass at 17 scenarios and 14 fully green**, against four
+failures at sixteen scenarios when it began. What is left is `crowded`'s
+`perf-budget`, failing since before M7, and `millers`' and `hunters`' two checks
+that `bugs.md` records as one event wide. `stewards` reaches its best state
+ever, 65 of 65, with composting finally spreading — 16 tile-dressings and ground
+at 95.2% of resting against `farmers`' 81% — and six records cut where before
+nobody in that world could write.
+
+## 2026-09-17 — M11 phase 0 and 1a: the ground the conflict milestone is measured on
+
+The owner asked for a design pass blending The Sims' social control, RimWorld's
+survival and Evolve's technology breadth, and named the thing that was missing:
+**no character has any reason to fight another**. They guessed either too much
+food or not yet knowing how. Both, and a third reason neither of us had. This is
+the foundation tier of that milestone — four commits of instruments and repairs
+before a single mechanism is built.
+
+**Phase 0a — `AGENTS.md` was pointing new RNG streams at a trap.** It said the
+named fork block ends at `recordRng` and that there is "a fourteenth, anonymous
+fork twenty-five lines further down", the one handed to `seedInitialForest`.
+Both halves had gone false, and gone false silently: that fork is the *twelfth*
+of fifteen, and two more sit below it — `fishRng` (M8.1) and `grainRng` (M8.2),
+each appended correctly and neither recorded here. So the instruction pointed at
+a spot with three forks beneath it, and appending there replants every wood in
+every saved seed. Replaced with a numbered table of everything below the named
+block, the genuine append point, the reason a fork appended genuinely last
+cannot shift anything (`this.rng` is drawn from by nothing but those fork
+calls), and an instruction to add a row when you append. `Simulation.ts` gets a
+DO NOT APPEND HERE block at the place somebody would actually append.
+
+**Phase 0b — the opening diagnosis was tested, and a third of it was wrong.**
+`kin-outrank-strangers` reports mean regard for an outsider at **+15.9** on
+`century`, which reads as "there is no out-group". A theory said the number was
+an artifact: `setKinship` creates its edge through `edge()`, which starts at
+`bias: 0`, and `introduce` refuses to stamp an impression on an edge that
+already exists — so a cross-band blood relative would never receive
+`OUT_GROUP_BIAS` and would sit in the outsider bucket at +40 to +60.
+
+**Refuted.** A fourth figure, `outsider-unrelated`, filters that bucket to
+`kinship === 0`, and across five scenarios it is identical to `outsider` to one
+decimal every time. There is no contamination, because the check already
+excludes household-mates and a cross-band marriage puts both spouses and their
+children into one household.
+
+What it found instead is worth more than what it was built to test:
+
+| scenario | steps | outsider |
+|---|---|---|
+| `crowded` | 3,000 | **-5.2** |
+| `band` | 3,000 | **-1.3** |
+| `culture` | 9,000 | **+1.5** |
+| `millers` | 36,000 | **+15.1** |
+| `century` | 40,000 | **+15.9** |
+
+Regard for a stranger is a clean monotonic function of how long the world has
+been running. That is a mechanism rather than noise. `OUT_GROUP_BIAS` is a
+constant -6, set once when the edge is created and never decayed — deliberately,
+so that "a stranger stays a stranger until their deeds say otherwise" — while
+every other term in `opinion` grows with contact: `familiarity` accumulates on
+every meeting and enters at x0.35, and `deeds` accumulates positively through
+`share_food`, `teach` and `help`. Over enough years the constant is swamped.
+
+**So the world does have an out-group, and it dissolves.** That is backwards
+from the arc this milestone is aimed at, and it is the argument for standing
+between bands being a value that can *grow* hostile rather than a constant that
+cannot. The figure is reported and deliberately kept out of the assertion: it is
+an instrument, not a gate.
+
+A planned repair — having `setKinship` stamp a first impression — was **dropped
+on this measurement**. With no contamination to fix, its only effect would have
+been to penalise a cousin for living in another band, and kin is kin.
+
+**Phase 0d — a `lean` scenario, because the default world has no pressure left
+in it.** `century` ends with mean hunger at 13.1 of 100, mean health at 100.0,
+and a population that peaks at 65 and never falls. Nobody there is desperate
+enough to steal or resented enough to be cast out, so every check this milestone
+adds would report n/a however well its mechanism was built — and `AGENTS.md` is
+explicit that n/a is not a pass. It is deliberately not `crowded`, which is thin
+forage over 3,000 steps: a grudge takes years to accumulate and a dynasty takes
+generations, so scarcity has to be paired with length.
+
+It took four attempts, because the food economy is far more robust than
+expected — M7's routing and M8.1's four supply channels have between them made
+this island genuinely hard to starve:
+
+| world | result |
+|---|---|
+| bushes 150, herds 14, 3x14, 24k steps | hunger 16.0, health 100.0, 42 to 75, no deaths |
+| + regrowth 0.45, 3x16 | hunger 17.1, health 99.8, 48 to 83, 2 deaths |
+| + bushes 90, herds 8, trees 0.3, regrowth 0.25, 3x12 | hunger 14.1, health **94.7**, 54 to **42**, **18 starved** |
+
+Cutting node *counts* mostly adds walking; **`regrowthRate` is what moves the
+island's carrying capacity**, and it is the knob that made the difference. The
+third row is what shipped: a world that peaks and then loses a third of its
+people, well clear of `population-persists`' floor of 19, because a world that
+dies measures nothing either. 58 of 58 applicable checks green, and every other
+scenario in the matrix untouched.
+
+Two things it already shows, before one mechanism is built: hostile
+relationships are **598 of 2,573 (23%)** against `century`'s 187 of 3,710 (5%),
+so scarcity does produce ill-feeling — and **`attack` does not appear in the
+action distribution at all**. Together those are the case for the conflict
+phase. The ill-feeling is there and never becomes violence, because `Brain`'s
+only route to `attack` is gated on `grudge > 0.5`, opinion below -50, and a
+world three times more hostile than the default still never reaches it. That is
+a structural gate rather than a coefficient, which is why raising the aggression
+weights was never going to be the answer.
+
+**Phase 1a — the choice becomes a draw among the best, shipped switched off.**
+`Brain.think` took `scores[0]`. It now routes through `chooseAmongBest` in the
+new `core/Choice.ts`, at a spread of 0 — which is argmax, takes no draw, and
+leaves the world bit-identical.
+
+It goes first because of what this changelog already records about `threaten`:
+correctly gated, correctly weighted, and it "never once won the argmax against
+`steal` for the same target", so it did not appear in a full century of a
+156-person world until it was retuned against that single comparison. Under
+argmax, adding a verb is not adding an option — it is entering a
+winner-takes-all contest against every verb already calibrated, and the only way
+through is to raise the newcomer until it beats an incumbent outright. This
+milestone adds about eight verbs. Every later phase would otherwise be measured
+against a scorer still moving underneath it.
+
+**A band, not a temperature.** A softmax over `exp(score / t)` is the obvious
+implementation and the wrong one here: these scores are not commensurate —
+`wander` is about 0.02 and `hunt` about 9 — and the coefficients producing them
+are calibrated against each other rather than against a scale, so any fixed
+temperature is either cold enough to be argmax or warm enough to let a wander
+beat a hunt. The rule is relative to the leader instead: keep every candidate
+within `spread` of the best score, then draw in proportion to score. Scale-free,
+bounded so nothing outside the band can ever win, and degenerate at 0. Capped at
+four candidates, because a comfortable person late in the day has a dozen
+near-ties and drawing uniformly across twelve of them is not variety, it is
+somebody who cannot make up their mind.
+
+**The draw is in `think`, never in `score`.** `Simulation` calls `Brain.score`
+for the player's character on every rendered frame, to show what they are
+inclined to do; a draw inside `score` would make what the world does depend on
+how often it was looked at, which is the purity rule `techPower` already
+carries. The new stream is `choiceRng`, deliberately not `aiRng` — that one is
+already drawn from inside `score`, for `wander`'s jitter and twice in `setup` —
+appended genuinely last, with its row added to `AGENTS.md`'s new table.
+
+Eight unit tests, asserting the two things that would be invisible in play if
+they broke: that spread 0 is argmax **and consumes no randomness**, and that
+nothing below the band can ever be returned however unlucky the draw. `century`
+reproduces every figure exactly, including all 31 action counters.
+
 ## 2026-09-17 — M9.6 phases 0-3: the speed, the fruit, the graph, and what a picked-over bush looks like
 
 Four of the owner's six notes of 2026-09-17, planned in

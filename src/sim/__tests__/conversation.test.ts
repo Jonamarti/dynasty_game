@@ -13,6 +13,7 @@ import {
 } from '../social/Conversation.ts';
 import { SocialSystem } from '../social/SocialSystem.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
+import { BandRelations } from '../social/BandRelations.ts';
 import { Person, SKILL_INDEX } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 
@@ -65,12 +66,23 @@ describe('choosing a conversation', () => {
     expect(crossBand(10, false)).toBeLessThan(crossBand(10, true));
     expect(crossBand(10, true)).toBe(10);
   });
+
+  // M11 phase 7c.
+  it('warms faster across a boundary between allies and slower between rivals', () => {
+    const neutral = crossBand(10, false);
+    expect(crossBand(10, false, 80)).toBeGreaterThan(neutral);
+    expect(crossBand(10, false, -80)).toBeLessThan(neutral);
+    // Same band ignores standing entirely — there is no boundary to cross.
+    expect(crossBand(10, true, -100)).toBe(10);
+    // However hostile, warming to a stranger never quite reaches zero.
+    expect(crossBand(10, false, -1000)).toBeGreaterThan(0);
+  });
 });
 
 describe('what a conversation settles', () => {
   function pair() {
     const relationships = new RelationshipGraph();
-    const social = new SocialSystem(relationships, new Map());
+    const social = new SocialSystem(relationships, new Map(), new BandRelations());
     const a = new Person('Ana', 4, 4, 0, new RNG('conv-a'));
     const b = new Person('Bo', 5, 4, 0, new RNG('conv-b'));
     a.needs.company = 100;
@@ -143,7 +155,7 @@ describe('what a shared problem is worth as company', () => {
 describe('a night under one roof', () => {
   function roomFor(count: number) {
     const relationships = new RelationshipGraph();
-    const social = new SocialSystem(relationships, new Map());
+    const social = new SocialSystem(relationships, new Map(), new BandRelations());
     const sleepers = Array.from({ length: count }, (_, i) =>
       new Person('Sleeper' + i, 4, 4, 0, new RNG('hearth-' + i)));
     for (const person of sleepers) person.needs.company = 100;

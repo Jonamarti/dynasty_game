@@ -26,9 +26,11 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { Relationship, RelationshipGraph } from '../social/Relationships.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
-import { isTrap, isHeap } from '../entities/Building.ts';
+import { isTrap, isHeap, isHerd, isWell } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
+import type { Household } from '../entities/Household.ts';
+import type { BandRelations } from '../social/BandRelations.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import { ITEMS } from '../entities/Item.ts';
@@ -41,13 +43,27 @@ import {
 import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
 import { pressedByNeed } from '../systems/ActionSystem.ts';
 import type { NeedsConfig } from '../core/Config.ts';
-import { PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
+import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
+import { chooseAmongBest } from '../core/Choice.ts';
+import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
+import { mayUse } from '../social/Property.ts';
 
 export interface BrainContext {
   world: World;
   time: TimeManager;
   rng: RNG;
+  /**
+   * The stream the final choice is drawn from, kept apart from `rng`.
+   *
+   * `rng` is drawn from inside `score` — `wander`'s jitter, and twice in
+   * `setup` — and `score` runs for the player on every rendered frame. Keeping
+   * the choice on its own stream is what makes "turn the softening off and land
+   * back on the old world exactly" true rather than nearly true.
+   */
+  choiceRng: RNG;
+  /** `Config.ai.choiceSpread`. See `core/Choice.ts`. */
+  choiceSpread: number;
   nodeHash: SpatialHash<ResourceNode>;
   peopleHash: SpatialHash<Person>;
   shoreHash: SpatialHash<{ x: number; y: number }>;
@@ -90,6 +106,16 @@ export interface BrainContext {
    * anything — see `Snow.ts` and `Simulation.isBuried`. */
   snowDepth: number;
   snowBuries: boolean;
+  /** For `store`'s hoarding term: which building a person's own household calls home. */
+  householdsById: ReadonlyMap<number, Household>;
+  /** For `mayUse`'s reading of how two bands currently stand. */
+  bandRelations: BandRelations;
+  /**
+   * `sabotage`'s candidates, already filtered and grouped by owner —
+   * `Simulation.sabotageCandidatesByBand`'s own comment explains why this is
+   * computed once per tick rather than once per person.
+   */
+  sabotageCandidatesByBand: ReadonlyMap<number, Building[]>;
 }
 
 export interface ScoredAction {
@@ -111,16 +137,39 @@ interface FoundTargets {
   fellTree: Tree | null;
   storeTarget: Building | null;
   larderTarget: Building | null;
+  /** Whose building a `sabotage` is aimed at — M11 phase 11b. */
+  sabotageTarget: Building | null;
   companion: Person | null;
   suitor: Person | null;
+  /** A willing training partner for `spar`. See the scorer for why it is same-band only. */
+  sparPartner: Person | null;
   student: Person | null;
   /** The child a `teach_child` is aimed at. See the scorer for why it is separate. */
   childPupil: Person | null;
   /** Whoever an `ask` would be addressed to: the teacher, not the pupil. */
   mentor: Person | null;
   colleague: Person | null;
+  /**
+   * Whoever a `steal` or a `threaten` is aimed at: the one carrying something.
+   *
+   * Separate from `foe` since M11 phase 2c, and it had to be. Both were read
+   * off this one field, and `steal` writes it unconditionally while the old
+   * `attack` line wrote it only `if (!victim)` — so somebody who had both a
+   * laden neighbour and a hated one in sight scored `attack` against the enemy
+   * and then swung at the neighbour. The grudge that justified the blow and the
+   * person who received it were two different people.
+   */
   victim: Person | null;
+  /** Whoever an `attack` is aimed at. Never merged with `victim`; see above. */
+  foe: Person | null;
   beneficiary: Person | null;
+  /**
+   * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
+   * `trade` can both be scored in the same tick, toward different people —
+   * one need-driven, one not — and `setup` must send `trade` to the partner
+   * it was actually scored against.
+   */
+  tradePartner: Person | null;
   fleeFrom: Person | null;
   /** Which entry of `RECIPES` a chosen `craft` would make. */
   recipe: string | null;
@@ -135,6 +184,15 @@ interface FoundTargets {
   /** Who a `tend` is aimed at, and which beast a `tame` is coaxing. */
   patient: Person | null;
   strayAnimal: Animal | null;
+  /**
+   * Who a `slander` or a `praise` is *about*. The listener is `companion`,
+   * the same person `talk` would have gone to — see the scorer for why
+   * sharing that pick is deliberate rather than a shortcut. Two fields
+   * because both can be scored in the same tick — a person can have grounds
+   * for both at once, about two different people.
+   */
+  slanderSubjectId: number | null;
+  praiseSubjectId: number | null;
 }
 
 /**
@@ -247,6 +305,22 @@ const TRAP_ROUND = 1.1;
 const GIVING_RESERVE = 90;
 
 /**
+ * How many tiles of extra walk a fully greedy person will accept to store at
+ * their own household's home rather than the nearest band store.
+ *
+ * M11 phase 6b: the commit that makes `Household.homeBuildingId` matter
+ * rather than merely exist. Without this term every store is interchangeable
+ * and wealth comes out identically distributed across every household in the
+ * band, which is a phase about inequality shipping with nothing that produces
+ * any. Scaled by `greed` the same way the willingness to store at all already
+ * is, so the two pull in the direction the trait's name promises: a greedy
+ * person is not just reluctant to give food to the band, they would rather
+ * carry it a little further and keep it where only their own family can draw
+ * on it.
+ */
+const HOARD_PULL = 8;
+
+/**
  * The same, for one's own small children. Far lower, deliberately.
  *
  * A day's food held back before being generous with a neighbour is prudence.
@@ -301,6 +375,98 @@ const IDLE_ACTIONS = new Set(['rest', 'wander']);
  */
 const COMPOST_WANTED = 0.97;
 
+/**
+ * The ceiling on preying upon somebody weaker, and it is low on purpose.
+ *
+ * Revenge is scored from `grudge * grudge * boldness * (0.5 + aggression *
+ * 2.5)`, which reaches roughly 3 for a furious, well-matched aggressor.
+ * Predation's own terms already cost it an order of magnitude before this is
+ * applied — squared helplessness, a nerve term half the population fails, and
+ * a privacy divisor — and this holds what is left well under a hungry person's
+ * reasons to go and find food instead.
+ *
+ * The number to watch when changing it is not how often anybody fights. It is
+ * the age distribution of the dead: this route aims itself at children and
+ * elders by construction, so a value that is too high shows up first as a world
+ * that has stopped having old people in it.
+ *
+ * **Swept, because the window turned out to be narrow.** Murders over one run,
+ * and people alive at the end against the peak:
+ *
+ *     value   lean                century
+ *     none    43/46,  0 murders   64/64,  2 murders
+ *     0.55    35/46,  0           -
+ *     0.9     43/46,  0           59/59,  7
+ *     1.3     41/45,  0           50/50, 14
+ *     1.8     33/48,  5           25/35, 23
+ *     3       27/43, 25           -
+ *     10       4/37, 42           -
+ *
+ * Between "never fires once" and "the band consumes itself" there is less than
+ * a factor of four, which is the same cliff the revenge route's own comment
+ * describes from the other side. Above about 1.3 the feedback loop takes over:
+ * a killing gives every onlooker a grudge, the grudges feed the *revenge*
+ * route, and the revenge route needs no defenceless target at all.
+ *
+ * One property worth keeping, because it was not designed and is better than
+ * what was: **`lean` sees no murders at all until 1.8, while the comfortable
+ * `century` sees seven at 0.9.** Predation is leisure, not desperation — a
+ * hungry person goes and forages, because `hunger` outscores this by a wide
+ * margin. Scarcity in this world produces theft; it is *ease* that produces
+ * predators.
+ *
+ * **0.7 rather than 0.9, and the twenty-seed cohort is why.** The two buy the
+ * same violence — seven murders on `century` and 59 alive of a peak of 59,
+ * identically — but one of them is nearly free and the other is not:
+ *
+ *                        none     0.7      0.9
+ *     mean survival     100.0%   99.9%    98.3%
+ *     technologies       11.8    11.8     11.4
+ *     past the roots     11.1    10.4      9.7
+ *     taught            674.6   671.0    608.3
+ *
+ * A tenth of all teaching in the world is not a price worth paying for
+ * violence that 0.7 already supplies. Anyone raising this should check the
+ * transmission column before the death count: it moves first, and it moves
+ * because teaching needs somebody with years to be taught.
+ */
+/**
+ * How far somebody will go out of their way toward a listener who has not heard
+ * their news, in the same units as `opinion`.
+ *
+ * `bond` is 12 and buys about a dozen tiles of walking toward one's own chief.
+ * This is under half of that at full salience, which is the intended ordering:
+ * news redirects a conversation that was going to happen, it does not
+ * manufacture one across the camp. That is the same argument the `bond` comment
+ * below already makes for why belonging is absent from `talk`'s own score.
+ */
+const NEWS_PULL = 5;
+
+/**
+ * What having something untold is worth on `talk`'s own score.
+ *
+ * Sits beside the 0.09 floor rather than scaling the loneliness term, and is of
+ * the same order as it: a fresh grievance roughly doubles a comfortable
+ * person's baseline inclination to go and find somebody. Bigger than this and
+ * `ai-uses-many-actions` starts reporting a world that does nothing but talk,
+ * which is the failure the floor's own comment already warns about from the
+ * other direction.
+ */
+const NEWS_URGE = 0.1;
+
+const PREDATION = 0.7;
+
+/**
+ * How defenceless somebody has to look before predation is considered at all.
+ *
+ * A hard floor rather than a smooth falloff, because the thing being modelled
+ * is a decision a person makes about somebody in front of them — "they could
+ * not stop me" — and a smooth curve turns that into a faint, permanent
+ * inclination to hurt everybody slightly weaker, which is a different and much
+ * worse world.
+ */
+const PREY_AT = 0.45;
+
 const JOB_BIAS_UP = 1.3;
 const JOB_BIAS_DOWN = 0.85;
 
@@ -324,11 +490,21 @@ export class Brain {
    */
   think(person: Person, ctx: BrainContext, allowed?: ReadonlySet<string>): string | null {
     const { scores, found } = this.score(person, ctx);
-    // `score` sorts descending and only keeps positive scores, so the first
-    // match is the best one this person is actually inclined to do.
-    const chosen = allowed
-      ? scores.find(s => allowed.has(s.id))?.id ?? null
-      : scores[0]?.id ?? 'wander';
+    // `score` sorts descending and only keeps positive scores, so the best
+    // thing this person is inclined to do is at the front of whichever list
+    // survives the filter — and the filtered list is still sorted, which is
+    // what `chooseAmongBest` needs.
+    //
+    // The filter allocates, so it only runs when there is one: an unrestricted
+    // think is by far the common case and walks the original array.
+    const pool = allowed ? scores.filter(s => allowed.has(s.id)) : scores;
+    // At `choiceSpread: 0` this is `pool[0]` and takes no draw, which is why
+    // the commit that introduced it was bit-identical. Above 0 it picks among
+    // the options within a band of the best — see `core/Choice.ts` for why a
+    // band and not a temperature, and for why the draw is here in `think`
+    // rather than in `score`.
+    const chosen = chooseAmongBest(pool, ctx.choiceRng, ctx.choiceSpread)?.id
+      ?? (allowed ? null : 'wander');
     if (chosen === null) return null;
     this.setup(person, chosen, ctx, found);
     return chosen;
@@ -486,15 +662,38 @@ export class Brain {
     }
 
     // --- Social ------------------------------------------------------------
+    // Everyone near enough to see **and reach**.
+    //
+    // The region test is the same one `findNode`, the fruit picker, the shelter
+    // search, the animal search and the shore search all apply, and people were
+    // the one kind of candidate in the whole scorer that never got it. On an
+    // island map that is not academic: somebody across a narrow channel is
+    // comfortably inside `sightRadius` and cannot be walked to at all, so every
+    // social verb — talk, teach, ask, give, steal, threaten, attack — could be
+    // scored, chosen and set up against a target the router will then refuse.
+    //
+    // It surfaced when `untold` landed, and the mechanism is worth recording
+    // because it is exactly the kind that hides: **a stranger you have never
+    // spoken to is, by definition, someone who has not heard your news**, so a
+    // term that pulls toward an uninformed listener pulls hardest toward the
+    // unreachable one. `stewards` went from 0 stuck walking ticks in 252,542 to
+    // 3,267 in 225,107, with `walk_blocked` and `abandoned_cannot_reach` going
+    // 0 -> 76 and recovery attempts 0 -> 298, none of which found a route.
+    //
+    // Filtered here rather than in seven scorers, for the reason the house
+    // style gives: seven copies of a predicate is how seven answers drift.
     const neighbours = ctx.peopleHash
       .queryRadius(person.x, person.y, ctx.sightRadius)
-      .filter(other => other.alive && other.id !== person.id);
+      .filter(other => other.alive && other.id !== person.id &&
+        ctx.world.sameRegion(person.x, person.y, other.x, other.y));
 
 
     const loneliness = urgencyCurve(person.needs.company);
     let companion: Person | null = null;
     let victim: Person | null = null;
+    let foe: Person | null = null;
     let beneficiary: Person | null = null;
+    let tradePartner: Person | null = null;
     let fleeFrom: Person | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
@@ -505,12 +704,16 @@ export class Brain {
     let shelter: Building | null = null;
     let storeTarget: Building | null = null;
     let larderTarget: Building | null = null;
+    let sabotageTarget: Building | null = null;
     let suitor: Person | null = null;
+    let sparPartner: Person | null = null;
     let student: Person | null = null;
     let childPupil: Person | null = null;
     let mentor: Person | null = null;
     let patient: Person | null = null;
     let strayAnimal: Animal | null = null;
+    let slanderSubjectId: number | null = null;
+    let praiseSubjectId: number | null = null;
 
 
     // Deliberate social approaches are rationed; violence and flight are not.
@@ -522,6 +725,25 @@ export class Brain {
       // Somebody you have not just spoken to. Without this cooldown two people
       // standing together re-open the same conversation forever and never do
       // anything else.
+      // What this person is carrying that somebody nearby might not have heard.
+      //
+      // The owner's rule is that nothing is known until it is seen or told, and
+      // the machinery for it was already right: `emit` tells the victim and
+      // whoever was in sight and nobody else, a victim's memory floors at
+      // `VICTIM_FLOOR` so it never fades, and `converse` passes the best untold
+      // story on. The half that was missing is the *wanting to*. A robbed man
+      // would keep his grievance for the rest of his life and mention it only
+      // if loneliness happened to send him to somebody, which is why a theft in
+      // an empty clearing could stay unknown for a season with the victim
+      // walking past the whole band every day.
+      //
+      // Read once per think tick rather than per candidate — see
+      // `Memory.bestStory` for why that matters here.
+      const myNews = person.memory.bestStory();
+      const newsWeight = myNews === null ? 0 : myNews.salience;
+      const untold = (other: Person) =>
+        myNews !== null && !other.memory.has(myNews.eventId) ? newsWeight : 0;
+
       const freshCompany = neighbours.filter(other => {
         const rel = ctx.relationships.peek(person.id, other.id);
         if (!rel) return true;
@@ -533,6 +755,12 @@ export class Brain {
         // and a couple toward anybody else in it. In opinion's units because
         // everything else in this comparison is.
         + this.bond(person, other, ctx) * 12
+        // And toward somebody who has not heard it yet. Weaker than `bond`, on
+        // purpose: news decides *which* of two equally close friends you go to,
+        // it does not send you across the camp to a stranger. The person who
+        // has already heard it is still perfectly good company — they are just
+        // not who you would pick if you had a choice.
+        + untold(other) * NEWS_PULL
       );
       if (companion) {
         const regard = ctx.relationships.opinion(person.id, companion.id) / 100;
@@ -563,8 +791,61 @@ export class Brain {
         // cooldown that rations conversation rations arguing a design out, and
         // talk won more of it. The pull toward one's own people costs nothing
         // if it only redirects a conversation that was going to happen anyway.
-        add('talk', (loneliness * 1.8 * worth + 0.09) * (1 + regard * 0.5)
+        // Having something to say is a reason to say it, and it is added to
+        // the floor rather than multiplied into the loneliness term: somebody
+        // who has just been robbed wants to tell people *whether or not* they
+        // are lonely, and a multiplier would have given the news nothing to
+        // work with in exactly the case it matters most — a comfortable,
+        // well-companioned person who has just been wronged.
+        const news = untold(companion);
+        add('talk', (loneliness * 1.8 * worth + 0.09 + news * NEWS_URGE)
+          * (1 + regard * 0.5)
           * this.proximityBonus(person, companion, ctx.sightRadius));
+
+        // Slander and praise: the sharpest bad story and the sharpest good
+        // one this person is carrying, told to the same listener `talk`
+        // would go to and framed as a judgement of whoever they are about.
+        // Notes 6 and 8 — nobody invents a story, and `malice` is what makes
+        // somebody want to tell the bad one unkindly rather than merely
+        // mention it.
+        //
+        // Deliberately *not* `myNews` above: `DEED_SALIENCE` weighs a wrong
+        // far above a kindness and a victim's memory of it never fades, so
+        // the single most-vivid thing almost anybody is carrying is a
+        // grievance. Scoring gossip from `myNews` alone left `praise`
+        // unreachable for anyone who had ever witnessed anything bad — which
+        // by the second season is everybody. See `Memory.bestSignedStory`.
+        const signedNews = person.memory.bestSignedStory();
+        const badNews = signedNews.bad;
+        // The 0.15 floor matches `bestStoryAbout`'s own — scoring this from a
+        // fainter memory would send somebody on a walk `doSlander` can only
+        // refuse at the other end.
+        if (badNews && badNews.salience >= 0.15 &&
+            badNews.actorId !== person.id && badNews.actorId !== companion.id &&
+            !companion.memory.has(badNews.eventId)) {
+          // Privacy, on the model `steal` already uses below: what a gossip
+          // actually risks is being overheard running somebody down, not the
+          // walk over. A crowd does not kill the urge, it just makes
+          // somebody wait for a thinner one — note 6/3c, the half of
+          // "nothing is known unless seen or told" that applies to a
+          // conversation as much as to a theft.
+          const listenerId = companion.id;
+          const onlookers = ctx.peopleHash
+            .queryRadius(person.x, person.y, ctx.sightRadius)
+            .filter(o => o.alive && o.id !== person.id && o.id !== listenerId).length;
+          const privacy = 1 / (1 + onlookers * 0.45);
+          add('slander', badNews.salience * (0.4 + person.traits.malice * 1.4) * privacy
+            * this.proximityBonus(person, companion, ctx.sightRadius));
+          slanderSubjectId = badNews.actorId;
+        }
+        const goodNews = signedNews.good;
+        if (goodNews && goodNews.salience >= 0.15 &&
+            goodNews.actorId !== person.id && goodNews.actorId !== companion.id &&
+            !companion.memory.has(goodNews.eventId)) {
+          add('praise', goodNews.salience * (0.25 + person.traits.loyalty * 0.5)
+            * this.proximityBonus(person, companion, ctx.sightRadius));
+          praiseSubjectId = goodNews.actorId;
+        }
       }
 
       // Court: unmarried adults, not close kin, who already think well of each
@@ -590,6 +871,32 @@ export class Brain {
           add('court', (0.25 + regard * 0.7 + ardour * 0.9)
             * this.proximityBonus(person, match, ctx.sightRadius));
           suitor = match;
+        }
+      }
+
+      // Spar: a willing bandmate to train against. Note 5's "no warriors"
+      // problem (docs/bugs.md, M11 phase 2) had two honest fixes, and the
+      // owner chose both — this is the deliberate half. Same-band only,
+      // because the point is internal training, not a proxy for the real
+      // thing `attack` already covers between rivals.
+      //
+      // Two independent reasons to want it: aggression, a trait that
+      // otherwise only ever points toward hurting somebody, and being
+      // outmatched — `skillFactor('fight')` sits at its floor of 0.35 for
+      // almost everyone today, so `outmatched` will read near zero for a
+      // while and grow meaningful only once this verb and `doHunt`'s trickle
+      // have actually spread the skill out.
+      if (!person.isChild) {
+        const willing = neighbours.filter(other =>
+          !other.isChild && other.bandId === person.bandId &&
+          ctx.relationships.opinion(person.id, other.id) >= 0);
+        const partner = this.pickBest(willing, other =>
+          ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other) * 2);
+        if (partner) {
+          const outmatched = Math.max(0, 0.5 - person.skillFactor('fight'));
+          add('spar', (0.1 + person.traits.aggression * 0.5 + outmatched * 0.6)
+            * this.proximityBonus(person, partner, ctx.sightRadius));
+          sparPartner = partner;
         }
       }
 
@@ -761,6 +1068,29 @@ export class Brain {
         }
       }
 
+      // Trade: a mutual exchange of surplus with somebody from *another*
+      // band, M11 phase 7b's third `BandRelations` engine. Deliberately not
+      // an `else if` beside `give` above — a person can have both a hungry
+      // neighbour to feed and a spare basket to trade away in the same
+      // think, toward two different people, the same shape `slanderSubjectId`
+      // /`praiseSubjectId` already keep separate. Gated on the *other*
+      // person's own surplus too, read directly off their carried food
+      // rather than guessed at, so nobody is scored toward a partner with
+      // nothing to trade back.
+      if (spareFood > 0) {
+        const foreigners = neighbours.filter(other => other.bandId !== person.bandId);
+        tradePartner = this.pickBest(foreigners, other => {
+          const theirSpare = this.carriedNutrition(other) - other.needs.hunger - GIVING_RESERVE;
+          if (theirSpare <= 0) return -Infinity;
+          return theirSpare - person.distanceTo(other) * 2;
+        });
+        if (tradePartner) {
+          const regard = Math.max(0, ctx.relationships.opinion(person.id, tradePartner.id)) / 100;
+          add('trade', (0.25 + regard * 0.5) * (1 - person.traits.greed * 0.4)
+            * this.proximityBonus(person, tradePartner, ctx.sightRadius));
+        }
+      }
+
       // Steal: wanting what someone else has, weighed against being seen.
       // The privacy term is the interesting one — it makes thieves wait for an
       // empty clearing, and it means a crowded camp polices itself.
@@ -775,8 +1105,36 @@ export class Brain {
         // will risk a crowd for something worth having.
         const privacy = 1 / (1 + onlookers * 0.45);
         const dislike = Math.max(0, -ctx.relationships.opinion(person.id, carrier.id)) / 100;
+        // Who the target is, and not only what they are carrying.
+        //
+        // Until this term existed `steal` was the one predatory verb in the
+        // game that read nothing at all about its victim: a laden elder and a
+        // laden warrior scored identically, and proximity decided between
+        // them. `attack` and `threaten` had both always weighed the odds.
+        //
+        // It is an **addend, not a multiplier**, and that is the whole design.
+        // A multiplier would make robbing an equal impossible rather than
+        // merely less attractive, which is wrong twice over: hunger should
+        // still drive a desperate person to rob somebody who can fight back,
+        // and a `steal` that can only ever be aimed downward would make the
+        // strongest person in a band untouchable. So weakness is one more
+        // reason among the existing three, not a gate on any of them.
+        //
+        // Weighted below `hunger` on purpose. Need is still the main engine of
+        // theft in this world; opportunism is a thumb on the scale.
+        const easyMark = vulnerabilityOf(carrier, person);
+        // M11 phase 7c, Brain's one reader of `BandRelations`, and the last
+        // of the three — see this method's own note on why it is alone in
+        // its commit. 0 at neutral or friendly standing, so it never props
+        // up a score that used to stand on its own; up to 1 at open
+        // hostility, where it is worth about as much as `dislike` already
+        // is. Deliberately one-sided: a good relationship between two bands
+        // does not make stealing from a stranger *more* appealing than it
+        // already reads as, only a bad one makes it appeal more.
+        const bandHostility = this.bandHostility(person, carrier.bandId, ctx);
         add('steal',
-          (hunger * 0.8 + person.traits.greed * 0.35 + dislike * 0.4) *
+          (hunger * 0.8 + person.traits.greed * 0.35 + dislike * 0.4 +
+            easyMark * person.traits.greed * 0.5 + bandHostility * 0.3) *
           (1 - person.traits.loyalty * 0.6) * privacy *
           this.proximityBonus(person, carrier, ctx.sightRadius));
         victim = carrier;
@@ -791,7 +1149,7 @@ export class Brain {
         const edge = person.skillFactor('fight') - carrier.skillFactor('fight');
         if (edge > 0.05) {
           add('threaten',
-            (hunger * 0.7 + person.traits.greed * 0.3 + dislike * 0.35) *
+            (hunger * 0.7 + person.traits.greed * 0.3 + dislike * 0.35 + bandHostility * 0.25) *
             (0.4 + person.traits.aggression * 1.2) * (1 - person.traits.loyalty * 0.55) *
             Math.min(1.3, 0.3 + edge * 2.5) *
             this.proximityBonus(person, carrier, ctx.sightRadius));
@@ -800,10 +1158,58 @@ export class Brain {
 
     }
 
+    // --- Sabotage ------------------------------------------------------------
+    // The building-shaped half of predation, M11 phase 11b: wrecking what a
+    // rival band leans on rather than what one member of it happens to be
+    // carrying. `bandHostility` gates the whole thing at the door — it is
+    // zero at neutral or friendly standing by design, so this never fires
+    // between bands with no quarrel, only ever amplifying a hostility that
+    // already exists, the same one-sided rule `attack`'s cross-band term
+    // already follows. No `hunger` term: `steal` is need answering itself,
+    // this is a band's standing grudge acting on a building instead of a
+    // person, and mixing the two would make a well-fed pacifist band start
+    // burning huts the moment its granary ran low.
+    //
+    // Walks `sabotageCandidatesByBand` rather than `ctx.buildings` directly —
+    // see `Simulation.sabotageCandidatesByBand`'s own comment. That map is
+    // already grouped by owner and already excludes anything not worth
+    // considering regardless of who is asking, so the only work left here is
+    // per *band*, not per *building*: skip this person's own band and any
+    // band it has no quarrel with — one `Map` lookup each, `bandHostility`'s
+    // whole cost — before ever touching that band's buildings, and only then
+    // pay for `sameRegion` and `mayUse`'s spatial query on the few that remain.
+    {
+      let sabotageCandidate: Building | null = null;
+      let sabotageDistance = Infinity;
+      for (const [ownerBandId, owned] of ctx.sabotageCandidatesByBand) {
+        if (ownerBandId === person.bandId) continue;
+        if (this.bandHostility(person, ownerBandId, ctx) <= 0) continue;
+        for (const b of owned) {
+          if (!ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY)) continue;
+          const access = mayUse(person, b, ctx);
+          if (!access.allowed || access.ours) continue;
+          const d = person.distanceTo({ x: b.centerX, y: b.centerY });
+          if (d < sabotageDistance) {
+            sabotageDistance = d;
+            sabotageCandidate = b;
+          }
+        }
+      }
+      if (sabotageCandidate) {
+        const hostility = this.bandHostility(person, sabotageCandidate.ownerBandId, ctx);
+        add('sabotage',
+          hostility * (0.3 + person.traits.aggression * 1.3) *
+          (1 - person.traits.loyalty * 0.5) *
+          this.proximityBonus(person, sabotageCandidate, ctx.sightRadius));
+        sabotageTarget = sabotageCandidate;
+      }
+    }
+
     // --- Violence ----------------------------------------------------------
     // Scored outside the social cooldown: a fight is a rapid exchange of blows,
     // and someone who has just handed over a gift must still be able to defend
     // themselves.
+    let attackScore = 0;
     const enemy = neighbours.length === 0 ? null : this.pickBest(neighbours, other =>
       -ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other)
     );
@@ -819,20 +1225,128 @@ export class Brain {
         // victim from being murdered by a stronger neighbour, and makes a crowd
         // genuinely protective: allies standing nearby are counted, so
         // hostility in a full camp stays verbal.
-        const myPower = person.skillFactor('fight') * (person.health / 100);
-        const theirPower = enemy.skillFactor('fight') * (enemy.health / 100);
+        // `fightingPower` is this exact expression, moved to
+        // `social/Vulnerability.ts` so that `steal` can ask the same question
+        // rather than growing a second answer to it. Unchanged here, on
+        // purpose: the commit that extracted it was bit-identical.
+        const myPower = fightingPower(person);
+        const theirPower = fightingPower(enemy);
         const theirFriends = neighbours.filter(other =>
           other.id !== enemy.id &&
           ctx.relationships.opinion(other.id, enemy.id) > 15
         ).length;
         const boldness = Math.max(0, myPower - theirPower * 0.8) / (1 + theirFriends);
 
-        add('attack', grudge * grudge * boldness *
-          (0.5 + person.traits.aggression * 2.5)
-          * this.proximityBonus(person, enemy, ctx.sightRadius));
-        if (!victim) victim = enemy;
+        // Stashed rather than added, because predation below competes for the
+        // same verb and the winner has to set `foe` as well as the score. Two
+        // `add('attack', ...)` calls would put two rows with one id into a
+        // table the HUD and `npm run why` both read as a list of distinct
+        // options, and mutating the row after the fact would bypass the
+        // appetite and hysteresis multipliers `add` applies.
+        //
+        // M11 phase 7c: a multiplier, not a second addend beside `grudge`,
+        // and deliberately after the `grudge > 0.5` gate rather than folded
+        // into it — the gate stays a question about this one enemy, and
+        // `bandHostility` only ever amplifies a blow already justified by
+        // personal grievance, up to 1.5x at open war between the two bands.
+        attackScore = grudge * grudge * boldness *
+          (0.5 + person.traits.aggression * 2.5) *
+          (1 + this.bandHostility(person, enemy.bandId, ctx) * 0.5)
+          * this.proximityBonus(person, enemy, ctx.sightRadius);
+        foe = enemy;
       }
     }
+
+    // --- Predation ---------------------------------------------------------
+    // The second half of the owner's note: someone aggressive, facing someone
+    // defenceless, does not need a grudge first.
+    //
+    // The revenge route above is the only way to `attack` there has ever been,
+    // and it is gated on `grudge > 0.5` — opinion below -50. **Nothing reaches
+    // it.** The `lean` scenario exists precisely to put the world under
+    // pressure, it runs at 23% hostile relationships against the default
+    // world's 5%, and on the build where that scenario was introduced `attack`
+    // did not appear in its action table at all. A world three times more
+    // bitter than normal produced no violence whatsoever, because bitterness is
+    // not what that gate measures. So this is not a coefficient that wants
+    // raising; it is a route that does not exist.
+    //
+    // Everything about this one is built to keep it rare and keep it ugly:
+    //
+    //  - **It picks the weakest neighbour, not the most hated.** A different
+    //    question needs a different candidate, and pointing predation at the
+    //    enemy the revenge route already found would just be revenge with a
+    //    lower bar.
+    //  - **`helpless` is squared.** A slight edge is worth almost nothing; this
+    //    only speaks up for somebody who is genuinely defenceless.
+    //  - **`aggression` is thresholded at the midpoint, not scaled from zero.**
+    //    Traits are drawn around 0.5, so roughly half of everyone alive can
+    //    never take this route at all, however convenient the target. That is
+    //    the difference between a world with predators in it and a world where
+    //    everyone is one.
+    //  - **Never against kin.** Blood is the one line this does not cross,
+    //    checked on `kinship` rather than on household so it holds for a
+    //    brother in another band.
+    //  - **Their allies stop it**, exactly as in revenge, and being seen makes
+    //    it worse rather than better — `privacy` is borrowed from `steal`,
+    //    because this is the same fear a thief has and not the fear a brawler
+    //    has. A man avenging an insult wants witnesses; a man beating a
+    //    cripple for their pack does not.
+    //
+    // It is scored as a candidate against the revenge route rather than added
+    // beside it, because two `add('attack', ...)` calls would put two rows with
+    // one id into a table the HUD and `npm run why` both read as a list of
+    // distinct options.
+    const prey = neighbours.length === 0 ? null : this.pickBest(neighbours, other =>
+      vulnerabilityOf(other, person) * 12 - person.distanceTo(other)
+    );
+    if (prey && ctx.relationships.kinship(person.id, prey.id) === 0) {
+      const nerve = Math.max(0, person.traits.aggression - 0.5) * 2;
+      if (nerve > 0) {
+        const helpless = vulnerabilityOf(prey, person);
+        const theirFriends = neighbours.filter(other =>
+          other.id !== prey.id &&
+          ctx.relationships.opinion(other.id, prey.id) > 15
+        ).length;
+        const onlookers = ctx.peopleHash
+          .queryRadius(prey.x, prey.y, ctx.sightRadius)
+          .filter(o => o.alive && o.id !== person.id && o.id !== prey.id).length;
+        const unseen = 1 / (1 + onlookers * 0.45);
+        // A threshold rather than a square, and a soft divisor rather than a
+        // hard one. The first version of this multiplied six suppressors
+        // together — helplessness squared, nerve, privacy, loyalty, and a
+        // division by every ally the target had — and produced scores around
+        // 0.0003, two orders of magnitude below `wander`. It never fired once
+        // in either instrumented world. That is the failure `AGENTS.md` names:
+        // "if a new action never fires, the reason is almost always that
+        // something else is nearer", and `hunt` scoring nothing until its
+        // coefficient reached nine is the precedent.
+        //
+        // The fix is the shape, not the constant. `helpless` gates instead of
+        // squaring, so a genuinely defenceless target is worth its full value
+        // rather than a quarter of it; and allies divide softly, because in a
+        // band where everyone regards everyone at +6 and rising, `theirFriends`
+        // is most of the camp and a hard divisor is a flat veto.
+        // The same `bandHostility` multiplier the revenge route above uses,
+        // for the same reason: it amplifies an appetite the rest of the
+        // expression already justifies rather than creating one of its own.
+        const score = helpless < PREY_AT ? 0 : helpless * nerve * unseen *
+          (1 - person.traits.loyalty * 0.8) / (1 + theirFriends * 0.3) *
+          PREDATION * (1 + this.bandHostility(person, prey.bandId, ctx) * 0.5) *
+          this.proximityBonus(person, prey, ctx.sightRadius);
+        // Only if it beats what revenge already offered, and only then does the
+        // blow change hands — so the score and the target never come apart, the
+        // way they did before `foe` existed.
+        if (score > attackScore) {
+          attackScore = score;
+          foe = prey;
+        }
+      }
+    }
+
+    // One row, whichever reason won it, with `foe` naming the person that
+    // reason was about.
+    if (attackScore > 0) add('attack', attackScore);
 
     // --- Building ----------------------------------------------------------
     // Unfinished work in camp draws comfortable people. Deliberately scored
@@ -843,7 +1357,19 @@ export class Brain {
     ) / 100;
     if (comfortNow > 0.45) {
       site = this.pickBest(
-        ctx.buildings.filter(b => !b.complete),
+        ctx.buildings.filter(b =>
+          !b.complete ||
+          // M11 phase 11b: a sabotaged building of one's own band draws the
+          // same builder a fresh frame would, at the same skill and the same
+          // comfort gate — a hut does not know the difference between never
+          // having walls and having lost them, and `materialsReady` is
+          // trivially true on anything already once delivered, so this falls
+          // straight into the `ready` branch below and needs no branch of its
+          // own. Not a foreign building: `Building.repair` asks nobody's
+          // permission, but nothing here should send someone across a band
+          // line to volunteer for it either.
+          (b.durability !== null && b.durability < b.def.workTicks &&
+            b.ownerBandId === person.bandId)),
         b => -person.distanceTo({ x: b.centerX, y: b.centerY })
       );
       if (site) {
@@ -921,7 +1447,7 @@ export class Brain {
     // the fire for exactly that reason.
     let fieldTarget: Building | null = null;
     const plots = ctx.buildings.filter(b =>
-      b.crop !== null && b.complete && b.ownerBandId === person.bandId);
+      b.crop !== null && b.complete && this.canUse(person, b, ctx));
     if (plots.length > 0) {
       const nearestPlot = (want: (b: Building) => boolean): Building | null =>
         this.pickBest(plots.filter(want),
@@ -999,13 +1525,22 @@ export class Brain {
       const carried = this.carriedNutrition(person);
       const surplus = carried - person.needs.hunger - GIVING_RESERVE;
       if (surplus > 0 && comfortNow > 0.4) {
+        // Which building this person's own household calls home, so a greedy
+        // person can be pulled toward it below. Null for anyone whose
+        // household has never slept under a roof yet.
+        const home = person.householdId === null
+          ? null
+          : ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
+
         // A trap is somewhere food comes *from*. Filling one with berries would
         // be a person carefully stopping their own snare line from catching
-        // anything, because a full trap stops accruing.
+        // anything, because a full trap stops accruing. A pen is the same
+        // argument — see `BuildingDef.herd`.
         const store = this.pickBest(
-          stores.filter(b => b.storageFree > 0 && b.ownerBandId === person.bandId &&
-            !isTrap(b.def)),
-          b => -person.distanceTo({ x: b.centerX, y: b.centerY })
+          stores.filter(b => b.storageFree > 0 && this.canUse(person, b, ctx) &&
+            !isTrap(b.def) && !isHerd(b.def)),
+          b => -person.distanceTo({ x: b.centerX, y: b.centerY }) +
+            (home !== null && b.id === home ? person.traits.greed * HOARD_PULL : 0)
         );
         if (store) {
           add('store', 0.35 * (1 - person.traits.greed * 0.5)
@@ -1046,7 +1581,7 @@ export class Brain {
       //    below rather than by bending this one.
       if (carried < person.needs.hunger && person.needs.hunger > 25) {
         const larder = this.pickBest(
-          stores.filter(b => b.ownerBandId === person.bandId && b.store.bestFood() !== null),
+          stores.filter(b => this.canUse(person, b, ctx) && b.store.bestFood() !== null),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })
         );
         // Weighted well above foraging, and scaled by how well stocked it is. A
@@ -1067,12 +1602,21 @@ export class Brain {
       //    treeline. A full trap has also stopped catching, so the food that is
       //    in it is costing more food.
       //
+      //    A pen gets the same route, for the same reason, measured the same
+      //    way: `farmers` bred 27 meat into a pen and culled none of it before
+      //    this, sitting at capacity for 43 of the run's days, because the
+      //    ordinary hungry-larder route below picks the *nearest* store with
+      //    food in it and a general granary sitting closer than the pen made
+      //    the pen invisible regardless of what was in it — exactly the trap
+      //    failure, one building along.
+      //
       //    Behind the same comfort gate as storing, and it is the same idea: a
-      //    round of the traps is a fair-weather job, and somebody who is cold,
-      //    parched or exhausted has better things to do than walk the treeline.
+      //    round of the traps and pens is a fair-weather job, and somebody who
+      //    is cold, parched or exhausted has better things to do than walk out
+      //    to the treeline or the fence.
       if (comfortNow > 0.4) {
         const round = this.pickBest(
-          stores.filter(b => isTrap(b.def) && b.ownerBandId === person.bandId &&
+          stores.filter(b => (isTrap(b.def) || isHerd(b.def)) && this.canUse(person, b, ctx) &&
             b.store.bestFood() !== null && this.stocked(b) >= TRAP_WORTH_A_ROUND),
           b => this.stocked(b) * nearness(b)
         );
@@ -1132,7 +1676,11 @@ export class Brain {
     // where anyone tired enough goes to bed, so both are scored off one search.
     if (person.needs.cold > 25 || (ctx.time.isNight && person.needs.fatigue > 20)) {
       shelter = this.pickBest(
-        ctx.buildings.filter(b => b.complete && b.def.shelter > 0.2),
+        // `!b.ruined`, M11 phase 11b: sent to a sabotaged roof, the scorer's
+        // own promise — warmer the moment they arrive — would simply be false,
+        // the same wasted-trip failure a ruined well's exclusion above avoids.
+        ctx.buildings.filter(b =>
+          b.complete && !b.ruined && b.def.shelter > 0.2 && this.canUse(person, b, ctx)),
         b => b.def.shelter * 40 - person.distanceTo({ x: b.centerX, y: b.centerY })
       );
       if (shelter) {
@@ -1276,19 +1824,17 @@ export class Brain {
       // is underfoot — which, since proximity dominates this scorer, means never
       // firing at all.
       //
-      // Somebody else's quern is not offered, matching the rule the store
-      // scorer already applies: `Building.ownerBandId` is honoured in exactly
-      // one place today and this is the second. Deciding access by the standing
-      // between two bands instead is the owner's O4, and it belongs in one place
-      // for both when it lands.
+      // A foreign workshop is physically usable when nobody from its band is
+      // there to stop you. The same predicate governs stores, fields, shelters
+      // and execution; this scorer must not promise work the action system will
+      // refuse on arrival under a different ownership rule.
       let station: Building | null = null;
       let nearness = 1;
       if (recipe.station !== undefined) {
         const stationId = recipe.station;
         station = this.pickBest(
           ctx.buildings.filter(b =>
-            b.complete && b.def.id === stationId && b.ownerBandId === person.bandId &&
-            ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY)),
+            b.complete && b.def.id === stationId && this.canUse(person, b, ctx)),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY })
         );
         if (!station) continue;
@@ -1321,6 +1867,16 @@ export class Brain {
         const lonelyNear = neighbours.reduce(
           (worst, other) => Math.max(worst, other.needs.company), person.needs.company);
         add('play', urgencyCurve(lonelyNear) * 1.5 + 0.05);
+      }
+
+      // Toast: `brewing`'s answer to the same question, on the same terms —
+      // worth doing for the people around you, not only for yourself. Scored
+      // a little below `play`, since a cup is spent in one round where a
+      // flute goes on giving for as long as somebody keeps playing it.
+      if (person.inventory.has('beer') && techPower(person, 'brewing') > 0) {
+        const lonelyNear = neighbours.reduce(
+          (worst, other) => Math.max(worst, other.needs.company), person.needs.company);
+        add('toast', urgencyCurve(lonelyNear) * 1.3 + 0.05);
       }
 
       // Tend: somebody hurt, in your own band, who is not you. Weighted by how
@@ -1421,12 +1977,25 @@ export class Brain {
       }
 
       // Reading: a record within reach with something on it you could take in.
+      //
+      // A `reminder` record needs the same two extra guards `ActionSystem.
+      // doRead` applies before it will call the tech useful: no second idea
+      // about a thing already conceived, and no idea at all with both slots
+      // full. Without them the scorer kept finding a painting "readable"
+      // forever — the tech never leaves `knownTech`, because a reminder was
+      // never going to put it there — so people walked over, got turned away
+      // with `nothing_new_on_it`, and immediately scored the same walk again.
+      // Measured on `craft`: population visibly balled up around painted rock
+      // and `perf-budget`/`spatial-hash-spreads` both failed from the
+      // clustering, on a scenario that passed clean before this file changed.
       const nearest = ctx.inscriptionHash.findNearest(
         person.x, person.y, ctx.sightRadius * 2,
         candidate => candidate.techs.some(t =>
           !person.knownTech.has(t) &&
           TECH[t as Tech] !== undefined &&
-          prerequisitesMet(t as Tech, person.knownTech)) &&
+          prerequisitesMet(t as Tech, person.knownTech) &&
+          (candidate.def.fidelity === 'instruction' ||
+            (!person.ideaFor(t) && person.ideas.length < MAX_IDEAS))) &&
           ctx.world.sameRegion(person.x, person.y, candidate.x, candidate.y)
       );
       if (nearest) {
@@ -1456,12 +2025,12 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodNode, matNode, companion, suitor, student, childPupil, mentor, colleague,
-        victim, beneficiary, fleeFrom,
+        water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        victim, foe, beneficiary, tradePartner, fleeFrom,
         quarry,
-        site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
+        site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
-        patient, strayAnimal,
+        patient, strayAnimal, slanderSubjectId, praiseSubjectId,
       },
     };
   }
@@ -1570,6 +2139,29 @@ export class Brain {
     return base * (0.3 + person.traits.loyalty) * (1 - defiance);
   }
 
+  /**
+   * How much worse `person`'s band stands with `target`'s band than
+   * neutral, 0 to 1. Zero within a band and zero at neutral or friendly
+   * standing — this only ever speaks up for open hostility, never against
+   * it, on the same reasoning `bond` above keeps belonging one-sided.
+   *
+   * M11 phase 7c: `steal`, `threaten` and both routes to `attack` each read
+   * this once, and it is the only place in `Brain` that reads
+   * `BandRelations` at all — deliberately the last of the three readers and
+   * alone in its own commit, so a change to `bands-take-sides` measures one
+   * thing rather than three at once.
+   *
+   * Takes a band id rather than a `Person`, since M11 phase 11b's `sabotage`
+   * has no person on the other end of it — only a building's `ownerBandId` —
+   * and a second copy of this arithmetic for buildings is exactly the drift
+   * `AGENTS.md` warns about. Every call site already had a `Person` or a
+   * `Building` in hand; passing `.bandId` costs nothing at any of them.
+   */
+  private bandHostility(person: Person, targetBandId: number, ctx: BrainContext): number {
+    if (targetBandId === person.bandId) return 0;
+    return Math.max(0, -ctx.bandRelations.standing(person.bandId, targetBandId)) / 100;
+  }
+
   /** Closer targets are worth more, but distance never zeroes a desperate need. */
   private proximityBonus(person: Person, target: { x: number; y: number }, sight: number): number {
     const d = person.distanceTo(target);
@@ -1580,8 +2172,31 @@ export class Brain {
     // Thirst searches much further than sight — people know where the river is
     // even when they cannot see it — but only on their own landmass. Walking at
     // water you cannot reach is how a band starves in sight of a lake.
-    return ctx.shoreHash.findNearest(person.x, person.y, ctx.sightRadius * 6,
+    const shore = ctx.shoreHash.findNearest(person.x, person.y, ctx.sightRadius * 6,
       tile => ctx.world.sameRegion(person.x, person.y, tile.x, tile.y));
+
+    // `well`: open to anyone the way natural water is — see
+    // `ActionSystem.waterWithinReach` — so this asks only whether one exists
+    // and is finished, not `canUse`. Buildings are a plain array rather than a
+    // spatial hash, on the same call every station lookup already makes: a
+    // well is rare enough that scanning it costs nothing a hash would save.
+    let well: { x: number; y: number } | null = null;
+    let wellDist = Infinity;
+    for (const building of ctx.buildings) {
+      // `!building.ruined`, M11 phase 11b: a scorer that sent people to a
+      // sabotaged well would have them walk there, find nothing, and stand
+      // confused — the exact impossible-walk failure `canUse`'s own header
+      // warns about, one mechanism further on.
+      if (!building.complete || building.ruined || !isWell(building.def)) continue;
+      const d = person.distanceTo({ x: building.centerX, y: building.centerY });
+      if (d < wellDist) {
+        wellDist = d;
+        well = { x: building.centerX, y: building.centerY };
+      }
+    }
+    if (!well) return shore;
+    if (!shore) return well;
+    return wellDist < person.distanceTo(shore) ? well : shore;
   }
 
   /**
@@ -1612,8 +2227,22 @@ export class Brain {
    */
   private hasCompost(person: Person, ctx: BrainContext): boolean {
     return ctx.buildings.some(b =>
-      b.complete && b.ownerBandId === person.bandId &&
+      b.complete && this.canUse(person, b, ctx) &&
       (isHeap(b.def) || b.def.storage > 0) && b.store.count('compost') > 0);
+  }
+
+  /**
+   * A building the scorer may honestly promise this person can use.
+   *
+   * Ownership used to imply reachability because each band's structures sit
+   * around its own fire. Once an unwatched foreign building became a real
+   * candidate, stores and fields across a narrow channel started winning on
+   * distance and produced forty-one impossible walks in `farmers`. Property
+   * and path regions are separate facts, but every scorer needs both.
+   */
+  private canUse(person: Person, building: Building, ctx: BrainContext): boolean {
+    return mayUse(person, building, ctx).allowed &&
+      ctx.world.sameRegion(person.x, person.y, building.centerX, building.centerY);
   }
 
   /**
@@ -1690,6 +2319,7 @@ export class Brain {
       case 'store':
       case 'take':
       case 'build':
+      case 'sabotage':
       case 'haul':
       case 'sow':
       case 'reap':
@@ -1700,6 +2330,7 @@ export class Brain {
           action === 'shelter' || action === 'sleep' ? found.shelter :
           action === 'take' ? found.larderTarget :
           action === 'store' ? found.storeTarget :
+          action === 'sabotage' ? found.sabotageTarget :
           action === 'sow' || action === 'reap' || action === 'spread'
             ? found.fieldTarget :
           found.site;
@@ -1761,6 +2392,9 @@ export class Brain {
       case 'play':
         // Played where they stand. A tune has no destination.
         break;
+      case 'toast':
+        // Drunk where they stand, on the same terms as `play`.
+        break;
       case 'craft':
         // The only target a craft has is what is being made. Without this the
         // action would find `targetRecipe` null — `clearTarget` at the top of
@@ -1815,11 +2449,15 @@ export class Brain {
       case 'ask':
       case 'discuss':
       case 'court':
+      case 'spar':
       case 'feed':
       case 'give':
+      case 'trade':
       case 'steal':
       case 'threaten':
-      case 'attack': {
+      case 'attack':
+      case 'slander':
+      case 'praise': {
         // `feed` is ordinary giving aimed at one's own hungry child; the action
         // system does not need to know the difference, only the scorer does.
         // Same arrangement as `gather_for_site`.
@@ -1832,12 +2470,22 @@ export class Brain {
           action === 'ask' ? found.mentor :
           action === 'discuss' ? found.colleague :
           action === 'court' ? found.suitor :
+          action === 'spar' ? found.sparPartner :
           action === 'feed' || action === 'give' ? found.beneficiary :
+          action === 'trade' ? found.tradePartner :
+          action === 'attack' ? found.foe :
+          action === 'slander' || action === 'praise' ? found.companion :
           found.victim;
         if (other) {
           person.targetX = other.x;
           person.targetY = other.y;
           person.targetPersonId = other.id;
+          // Who a `slander` or `praise` is *about* — the listener above is
+          // who it is *told to*. See `Person.targetSubjectId`.
+          if (action === 'slander' || action === 'praise') {
+            person.targetSubjectId = action === 'slander'
+              ? found.slanderSubjectId : found.praiseSubjectId;
+          }
           // Whether the person somebody crossed the camp for was the one
           // leading their band. Counted because `bond` is otherwise a term in
           // a scorer with no visible consequence: `AGENTS.md` says to chase the

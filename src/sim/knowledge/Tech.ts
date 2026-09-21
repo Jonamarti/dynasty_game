@@ -91,6 +91,41 @@ export const TECHS = [
   // rather than a leader. Household heads carry standing outside their own
   // roof, and a chief holds office long enough for it to be an office.
   'chiefdom',
+  // M11 phase 9b: the oral channel gets a practice of its own, so nerfing
+  // `ochre` in 9a is not the last word on how knowledge outlives a bad winter
+  // without being cut into anything. The knack of telling something so it is
+  // remembered, not the memory itself — see `TECH_EFFECTS.storytelling`.
+  'storytelling',
+  // M11 phase 10: four of the fifteen Neolithic nodes `m8_plan_the_ages.md`
+  // left pending after `farming` and `composting` shipped. Evolve-style density
+  // rather than a new mechanism each: every effect below is a numeric term on a
+  // function that already exists, which is what lets the tree widen without the
+  // engine widening with it. Eleven remain — see `next-steps.md`.
+  'ground_stone', 'spinning', 'weaving', 'sickle',
+  // M11 phase 10, second commit: five more of the same tier. `masonry` and
+  // `wattle_daub` are each a second building, on the terms the mud hut already
+  // set; `calendar` is a yield term read the same way `techPower('farming')`
+  // already is; `the_wheel` is a fourth term on `carryFactor`, beside cordage
+  // and the basket; `bread` is mechanism 4's fourth station. Six remain.
+  'masonry', 'wattle_daub', 'calendar', 'the_wheel', 'bread',
+  // M11 phase 10, third commit: the one node in this tier that needed a real
+  // mechanism rather than a numeric term — see `BuildingDef.herd`. `wool` and
+  // `dairying` both depend on it and are still to come.
+  'herding',
+  // M11 phase 10, fourth commit: mechanism 4's fifth station. See
+  // `RECIPES.kiln_pot` for why its effect is a second recipe rather than a
+  // retrofit onto `pot`.
+  'kiln',
+  // M11 phase 10, fifth commit: the first technology in the game to touch
+  // thirst at all. See `BuildingDef.providesWater`.
+  'well',
+  // M11 phase 10, sixth commit: what a live herd gives up without being
+  // culled for it. Both read `BuildingDef.herd.byproducts`, alongside
+  // `herding`'s own growth, in `Simulation.workHerds`.
+  'dairying', 'wool',
+  // M11 phase 10, seventh and last commit of the tier: the only node whose
+  // effect is a new verb, `toast` — see `ActionSystem.doToast`.
+  'brewing',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -128,11 +163,12 @@ export type Domain = (typeof DOMAINS)[number];
  *
  * Neither of them is `requires`, which is the only thing that actually gates a
  * discovery. `writing` sits in the Bronze Age because that is when writing
- * happened, while it rests on nothing but `marking` and `stoneworking` — so a
- * lucky band can work it out in the Mesolithic, and that anachronism is the
- * player's to earn. Do not "fix" it by gating on the age; the same distinction
- * the project already draws between `requires` and `sparks` is being drawn
- * again here.
+ * happened, while it rests on `marking`, `stoneworking` and, since M11 phase
+ * 9c, `farming` — all three Neolithic or older — so a lucky band can work it
+ * out as early as the Neolithic, and that anachronism is the player's to
+ * earn. Do not "fix" it by gating on the age; the same distinction the
+ * project already draws between `requires` and `sparks` is being drawn again
+ * here.
  *
  * All eight periods are listed even though the table stops in the Neolithic,
  * because the list is a historical fact rather than a content manifest — but
@@ -534,7 +570,15 @@ export const TECH: Record<Tech, TechDef> = {
     id: 'writing', label: 'Writing', domain: 'stone',
     age: 'bronze', firstKnown: 'about 3200 BC',
     kind: 'device',
-    requires: ['marking', 'stoneworking'], difficulty: 0.75, skill: 'knap',
+    // M11 phase 9c adds `farming` to what used to be just `marking` and
+    // `stoneworking`. The historical case for script is that it arrives
+    // behind a surplus — a tally is not the same pressure as an account that
+    // has to outlast a harvest and a season of trade — and the mechanical
+    // case is 9a: with `ochre` nerfed to a spark rather than a transcript,
+    // `writing` sitting one step from the game's root nodes made it the
+    // dominant record channel by default, exactly backwards from what a
+    // painted-first, written-later oral tree is supposed to look like.
+    requires: ['marking', 'stoneworking', 'farming'], difficulty: 0.75, skill: 'knap',
     prototype: { flint: 2 }, maxRefinement: 2,
     sparks: [
       { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'doing', action: 'teach' }],
@@ -545,6 +589,13 @@ export const TECH: Record<Tech, TechDef> = {
       { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'saw', what: 'teach' },
                 { kind: 'season', season: 'winter' }],
         weight: 0.5, story: 'watched what an old woman knew go into the ground with her' },
+      // The route the new prerequisite is actually about: a tally answers
+      // "how many", and a harvest large enough to outlast anybody's memory of
+      // it needs something a tally cannot give — whose it was, when it was
+      // taken in, what was owed against it.
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'holding', item: 'grain' },
+                { kind: 'doing', action: 'store' }],
+        weight: 0.8, story: 'kept account of a harvest too large for anybody to just remember' },
     ],
     description: 'Marks that say more than how many. What one person knew, a stone can hold.',
   },
@@ -1098,6 +1149,375 @@ export const TECH: Record<Tech, TechDef> = {
       'answered to by everyone else, and the chief holds the office long ' +
       'enough for it to be one.',
   },
+  storytelling: {
+    id: 'storytelling', label: 'Storytelling', domain: 'people',
+    age: 'upper_palaeolithic', firstKnown: 'about 40,000 years ago',
+    // A practice, on `division_of_labour`'s own test: there is nothing to
+    // build. Tried by doing it — `ActionSystem.finish` already calls
+    // `Person.noteDid(person.action)` on every completed action, so `talk`
+    // finishing is the trial with no new hook required.
+    kind: 'practice', practisedBy: ['talk'],
+    // No prerequisite, deliberately, for the same reason `division_of_labour`
+    // has none: it is a thought anybody who talks to anybody can have, and
+    // gating the oral channel behind some other node would make the fallback
+    // that is supposed to survive a band with nothing else depend on having
+    // something else first.
+    requires: [], difficulty: 0.5, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'doing', action: 'talk' }, { kind: 'feeling', need: 'company' }],
+        weight: 1.0, story: 'found a good story was the cheapest company there was' },
+      { needs: [{ kind: 'doing', action: 'talk' }, { kind: 'season', season: 'winter' }],
+        weight: 0.8, story: 'kept the whole hearth listening through a long winter night' },
+      // No `knows` ingredient, and deliberately: a spark that named a
+      // prerequisite here would have to be in `requires` too — see
+      // `spark-ingredients-are-real` — and this node's whole point is to be
+      // reachable with nothing else in hand.
+      { needs: [{ kind: 'saw', what: 'teach' }, { kind: 'doing', action: 'talk' }],
+        weight: 0.5, story: 'watched a lesson land and noticed how much of it was in the telling' },
+    ],
+    description:
+      'The knack of telling a thing so it is remembered — not what is known, ' +
+      'but how it travels. A lesson lands more often for the telling, and a ' +
+      'long evening carries an extra story further than it otherwise would.',
+  },
+
+  // --- M11 phase 10: the widened Neolithic -----------------------------------
+  //
+  // `m8_plan_the_ages.md`'s M8.2 table, resumed after `farming` and
+  // `composting`. This tier is deliberately cheap: no node here needs a new
+  // system, only a term on a function `techPower`'s callers already read —
+  // `buildFactor`, `warmthFrom`, and the felling and reaping arithmetic in
+  // `ActionSystem`. That is the Evolve-style density the plan asks for.
+  ground_stone: {
+    id: 'ground_stone', label: 'Ground stone', domain: 'stone',
+    age: 'neolithic', firstKnown: 'about 8,000 years ago',
+    kind: 'device',
+    requires: ['stoneworking', 'hafting'], difficulty: 0.5, skill: 'knap',
+    // `maxRefinement: 2`, not 3 — `axeFactor` reads this through `scaled` with a
+    // `full` under 1, and a `full` of 0.35 at three refinement steps would push
+    // the multiplier negative (`1 + (0.35 - 1) * 1.6 = -0.04`), which would make
+    // `required` in `doChop` negative and fell a tree in zero ticks. Two steps
+    // keeps the floor at a positive 0.09.
+    prototype: { flint: 3, sticks: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'knows', tech: 'hafting' },
+                { kind: 'doing', action: 'chop' }],
+        weight: 1.0, story: 'noticed how much cleaner a rubbed edge cut than a struck one' },
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'kept working a flake smooth after it was already sharp' },
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'doing', action: 'build' }],
+        weight: 0.5, story: 'wanted a blade that would not chip the moment it hit a knot' },
+    ],
+    description:
+      'A struck edge ground smooth against another stone. Twice the axe, and ' +
+      'twice the adze — the same idea `stoneworking` had, taken further.',
+  },
+  spinning: {
+    id: 'spinning', label: 'Spinning', domain: 'cloth',
+    age: 'neolithic', firstKnown: 'about 7,000 BC',
+    kind: 'device',
+    requires: ['cordage'], difficulty: 0.4, skill: 'build',
+    prototype: { sticks: 2, thatch: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'doing', action: 'gather' },
+                { kind: 'place', biome: 'grass' }],
+        weight: 1.0, story: 'twisted a strand of fibre between finger and thumb until it held straight' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'season', season: 'winter' },
+                { kind: 'feeling', need: 'cold' }],
+        weight: 0.7, story: 'sat through a cold evening twisting cord finer than any strap needed' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'noticed a spun cord held straighter than a plaited one' },
+    ],
+    description:
+      'Fibre drawn out and twisted into a length of thread. Cordage was rope; ' +
+      'this is fine enough to sew or to weave.',
+  },
+  weaving: {
+    id: 'weaving', label: 'Weaving', domain: 'cloth',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device',
+    requires: ['spinning', 'basketry'], difficulty: 0.55, skill: 'build',
+    prototype: { wood: 3, sticks: 2 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'spinning' }, { kind: 'knows', tech: 'basketry' }],
+        weight: 1.0, story: 'ran a thread over and under a row of withies the way a basket already goes' },
+      { needs: [{ kind: 'knows', tech: 'spinning' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.7, story: 'strung a frame with thread to keep the draught off, and it held together' },
+      { needs: [{ kind: 'knows', tech: 'basketry' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'saw the same over-and-under in a basket wall and a bird’s nest both' },
+    ],
+    description:
+      'Thread crossed over and under itself on a frame. A length of cloth: ' +
+      'warmer than a bare hide, and the first thing a band makes worth ' +
+      'trading for its own sake.',
+  },
+  sickle: {
+    id: 'sickle', label: 'Sickle', domain: 'plants',
+    age: 'neolithic', firstKnown: 'about 9,000 BC',
+    kind: 'device',
+    requires: ['farming', 'hafting'], difficulty: 0.4, skill: 'knap',
+    prototype: { flint: 2, sticks: 1 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'doing', action: 'reap' }],
+        weight: 1.0, story: 'tore at a ripe stand with bare hands and thought of a blade instead' },
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'saw', what: 'nothing_to_reap' }],
+        weight: 0.6, story: 'lost a stand to the weather waiting to strip it by hand and swore not to again' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'doing', action: 'chop' }],
+        weight: 0.5, story: 'felt how much faster a hafted edge went through a stalk than a fist did' },
+    ],
+    description:
+      'A curved blade set in a haft. A field stripped in an afternoon instead ' +
+      'of a day, and less of the harvest shattered onto the ground getting there.',
+  },
+
+  // --- M11 phase 10, second commit -------------------------------------------
+  masonry: {
+    id: 'masonry', label: 'Masonry', domain: 'stone',
+    age: 'neolithic', firstKnown: 'about 9,000 years ago',
+    kind: 'device',
+    requires: ['stoneworking', 'carpentry'], difficulty: 0.55, skill: 'build',
+    prototype: { flint: 6, mud: 4 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'knows', tech: 'carpentry' },
+                { kind: 'doing', action: 'build' }],
+        weight: 1.0, story: 'set one stone flat on another while a wall waited for its daub' },
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.7, story: 'sheltered against an outcrop that shrugged off a wind no daubed wall had held back' },
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'doing', action: 'gather' },
+                { kind: 'place', biome: 'hills' }],
+        weight: 0.5, story: 'stacked cleared stone into a wall rather than a heap, to see if it would stand' },
+    ],
+    description:
+      'Stone laid and coursed rather than piled. Walls a timber frame does not ' +
+      'need, and a roof that answers a winter no hut of mud and sticks can.',
+  },
+  wattle_daub: {
+    id: 'wattle_daub', label: 'Wattle and daub', domain: 'timber',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device',
+    requires: ['carpentry', 'cordage'], difficulty: 0.45, skill: 'build',
+    prototype: { sticks: 6, mud: 4 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'knows', tech: 'cordage' },
+                { kind: 'doing', action: 'build' }],
+        weight: 1.0, story: 'wove a panel of withies between two posts before reaching for the mud at all' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.7, story: 'felt a plain mud wall let the wind through where a woven one might not' },
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'doing', action: 'gather' },
+                { kind: 'place', biome: 'forest' }],
+        weight: 0.5, story: 'bent a green branch double and thought of a wall that bent instead of cracking' },
+    ],
+    description:
+      'A woven panel of withies, daubed over rather than packed solid. Faster ' +
+      'to raise than a mud hut, and it keeps the warmth in better for it.',
+  },
+  calendar: {
+    id: 'calendar', label: 'Calendar', domain: 'plants',
+    age: 'neolithic', firstKnown: 'about 5,000 BC',
+    // A practice: nothing is built, and the trial is the act it improves —
+    // sowing at the right time rather than by guesswork. The same road
+    // `herbalism` and `taming` take, for the same reason `techPower` gives a
+    // practice half strength from `PROTOTYPE_AT` onward: the one act that
+    // counts as trying it out cannot be locked behind having already proven it.
+    kind: 'practice', practisedBy: ['sow'],
+    requires: ['marking', 'farming'], difficulty: 0.5, skill: 'farm',
+    prototype: {}, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'knows', tech: 'farming' },
+                { kind: 'doing', action: 'sow' }],
+        weight: 1.0, story: 'kept a tally of the seasons and noticed the crop sown on the same notch always did best' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'saw', what: 'nothing_to_reap' }],
+        weight: 0.7, story: 'lost a crop to a frost and started counting the days until the ground could be trusted again' },
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'doing', action: 'discuss' }],
+        weight: 0.5, story: 'argued about which day was the right one to sow, and started marking it down to settle it' },
+    ],
+    description:
+      'Sowing timed to a tally of the seasons rather than to guesswork. The ' +
+      'same field, worked the same, gives more back for going in on the right day.',
+  },
+  the_wheel: {
+    id: 'the_wheel', label: 'The wheel', domain: 'timber',
+    age: 'neolithic', firstKnown: 'about 3500 BC',
+    kind: 'device',
+    requires: ['carpentry', 'ground_stone'], difficulty: 0.55, skill: 'build',
+    prototype: { wood: 5, sticks: 3 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'knows', tech: 'ground_stone' },
+                { kind: 'doing', action: 'haul' }],
+        weight: 1.0, story: 'dragged a sledge of logs down the same track twice and wondered about a wheel under it' },
+      { needs: [{ kind: 'knows', tech: 'ground_stone' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'rolled a round offcut across the ground and noticed how far it ran before it stopped' },
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'saw', what: 'hands_full' }],
+        weight: 0.5, story: 'carried a third trip home in two loads and wanted a fourth hand that was not a hand at all' },
+    ],
+    description:
+      'A disc that turns on an axle, under a frame. What a strap and a basket ' +
+      'carry, and then a cartload more on top of it.',
+  },
+  bread: {
+    id: 'bread', label: 'Bread', domain: 'fire',
+    age: 'neolithic', firstKnown: 'about 8,000 BC',
+    kind: 'device',
+    requires: ['grinding', 'farming', 'firemaking'], difficulty: 0.4, skill: 'cook',
+    prototype: { mud: 4, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'grinding' }, { kind: 'knows', tech: 'firemaking' },
+                { kind: 'holding', item: 'meal' }],
+        weight: 1.0, story: 'left a paste of meal and water too near the coals and it came out solid' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'doing', action: 'eat' },
+                { kind: 'feeling', need: 'hunger' }],
+        weight: 0.6, story: 'chewed dry meal by the fire and thought of trying it wet, and baked, instead' },
+      { needs: [{ kind: 'knows', tech: 'grinding' }, { kind: 'knows', tech: 'farming' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'watched a pot of grain paste stiffen at the fire’s edge and thought of eating it that way' },
+    ],
+    description:
+      'Meal wetted, worked and baked at the fire. More nourishing than the ' +
+      'meal it is made from, and it keeps just as well.',
+  },
+
+  // --- M11 phase 10, third commit: the one node in this tier with a real
+  // mechanism behind it. See `BuildingDef.herd` and `Simulation.workHerds`.
+  herding: {
+    id: 'herding', label: 'Herding', domain: 'beasts',
+    age: 'neolithic', firstKnown: 'about 8,500 BC',
+    kind: 'device',
+    requires: ['taming'], difficulty: 0.5, skill: 'track',
+    prototype: { sticks: 4, thatch: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'doing', action: 'tame' }],
+        weight: 1.0, story: 'kept the same doe coming back to camp until keeping her felt no different from feeding her' },
+      { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'holding', item: 'meat' },
+                { kind: 'feeling', need: 'hunger' }],
+        weight: 0.6, story: 'ate the last of a hunt and wondered why the next one had to start from nothing' },
+      { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'doing', action: 'forage' },
+                { kind: 'place', biome: 'grass' }],
+        weight: 0.5, story: 'watched a tamed animal graze without wandering off and thought of a fence around the idea' },
+    ],
+    description:
+      'A tamed animal, kept rather than followed, and a fence to keep the next ' +
+      'one from wandering. Meat that does not have to be found again, up to ' +
+      'the day it is culled faster than it breeds.',
+  },
+
+  // M11 phase 10, fourth commit.
+  kiln: {
+    id: 'kiln', label: 'Kiln', domain: 'fire',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device',
+    requires: ['pottery', 'masonry'], difficulty: 0.5, skill: 'build',
+    prototype: { flint: 4, mud: 3 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'knows', tech: 'masonry' },
+                { kind: 'doing', action: 'build' }],
+        weight: 1.0, story: 'walled a fire in stone until the heat had nowhere else to go' },
+      { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.6, story: 'noticed how much harder a stone left in the hearth came out than one left in the open air' },
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'banked a fire in stone to hold the heat through the night, and saw what it did to the clay beside it' },
+    ],
+    description:
+      'A firing chamber built of stone rather than dug in embers. An even, ' +
+      'held heat wastes less clay than an open fire, and it is the same heat ' +
+      'a furnace will one day want.',
+  },
+
+  // M11 phase 10, fifth commit.
+  well: {
+    id: 'well', label: 'Well', domain: 'stone',
+    age: 'neolithic', firstKnown: 'about 6,500 BC',
+    kind: 'device',
+    requires: ['masonry'], difficulty: 0.5, skill: 'build',
+    prototype: { flint: 5, wood: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'doing', action: 'drink' }],
+        weight: 1.0, story: 'walked the same dry stretch down to the river every morning and thought about bringing the river closer instead' },
+      { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'doing', action: 'build' }],
+        weight: 0.6, story: 'dug a footing for a wall and struck water before striking stone' },
+      { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'season', season: 'summer' },
+                { kind: 'feeling', need: 'thirst' }],
+        weight: 0.5, story: 'watched a dry summer shrink the shallows and thought of water that did not shrink with it' },
+    ],
+    description:
+      'Stone-lined and sunk to the water table. Drink stands wherever the ' +
+      'band does, whether or not the shore is close, and a dry summer cannot ' +
+      'take it away.',
+  },
+
+  // M11 phase 10, sixth commit. Both read `BuildingDef.herd.byproducts`
+  // rather than gating a recipe of their own — see `Simulation.workHerds`.
+  dairying: {
+    id: 'dairying', label: 'Dairying', domain: 'beasts',
+    age: 'neolithic', firstKnown: 'about 7,000 BC',
+    // A practice, not a device: nothing is built, and milking is not a
+    // second thing to build, it is a better way to use a pen that already
+    // exists. There is no dedicated verb for it — `take` is the closest
+    // thing the game has, since milk is drawn off exactly the way meat is,
+    // through the pen's own store — so that is what counts as trying it.
+    kind: 'practice', practisedBy: ['take'],
+    requires: ['herding', 'pottery'], difficulty: 0.5, skill: 'track',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'herding' }, { kind: 'knows', tech: 'pottery' },
+                { kind: 'doing', action: 'take' }],
+        weight: 1.0, story: 'held a pot under a ewe out of curiosity, and did not spill it' },
+      { needs: [{ kind: 'knows', tech: 'herding' }, { kind: 'feeling', need: 'hunger' }],
+        weight: 0.6, story: 'went hungry within reach of a full pen and wondered why only the meat counted as food' },
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'doing', action: 'forage' },
+                { kind: 'place', biome: 'grass' }],
+        weight: 0.5, story: 'watched a lamb feed and thought of a pot instead of a mouth' },
+    ],
+    description:
+      'Milk drawn off a penned animal rather than meat cut from one. The ' +
+      'same herd, fed twice over, and never once culled for it.',
+  },
+  wool: {
+    id: 'wool', label: 'Wool', domain: 'cloth',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device',
+    requires: ['herding', 'spinning'], difficulty: 0.5, skill: 'build',
+    prototype: { flint: 1, sticks: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'herding' }, { kind: 'knows', tech: 'spinning' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 1.0, story: 'pulled a handful of loose fleece off a fence rail and turned it in their fingers' },
+      { needs: [{ kind: 'knows', tech: 'spinning' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.7, story: 'felt a fleece keep the cold off a shoulder longer than a length of flax ever had' },
+      { needs: [{ kind: 'knows', tech: 'herding' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'noticed a shed tuft of wool caught on a fence post, halfway to thread already' },
+    ],
+    description:
+      'Fleece sheared rather than flax retted. Spun and woven the same way, ' +
+      'and warmer for the same fire.',
+  },
+
+  // M11 phase 10, seventh and last commit of the tier.
+  brewing: {
+    id: 'brewing', label: 'Brewing', domain: 'fire',
+    age: 'neolithic', firstKnown: 'about 5,000 BC',
+    kind: 'device',
+    requires: ['pottery', 'farming'], difficulty: 0.45, skill: 'cook',
+    prototype: { mud: 2, sticks: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'knows', tech: 'farming' },
+                { kind: 'holding', item: 'grain' }, { kind: 'doing', action: 'store' }],
+        weight: 1.0, story: 'found a forgotten pot of wetted grain gone sharp and fizzing, and drank it anyway' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'feeling', need: 'company' }],
+        weight: 0.6, story: 'wanted the harvest to mean more than a meal eaten alone' },
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'doing', action: 'forage' },
+                { kind: 'season', season: 'autumn' }],
+        weight: 0.5, story: 'watched windfall fruit turn into something that made the head swim, and thought of doing the same to grain' },
+    ],
+    description:
+      'Grain wetted, left to work, and drunk rather than baked. Answers ' +
+      'nobody’s hunger much, and everybody’s loneliness a little.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1262,6 +1682,70 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'An animal that follows you, and hunts better than you do alone.',
     site: 'ActionSystem.doTame, Animal.tamedBy, and WildlifeSystem.noticeRadius',
   },
+  storytelling: {
+    summary: 'A lesson lands more often, and a long evening carries an extra story.',
+    site: 'KnowledgeSystem.teach, scaling the chance; SocialSystem.converse, the deep-talk bonus',
+  },
+  ground_stone: {
+    summary: 'A polished axe and adze: a tree felled and a roof raised in a fraction of the swings.',
+    site: 'Tech.axeFactor, read by ActionSystem.doChop and Progress.workProgressOf; Tech.buildFactor, when an adze is in the pack',
+  },
+  spinning: {
+    summary: 'Fibre spun into thread — the material weaving turns into cloth.',
+    site: 'RECIPES.thread, the ingredient RECIPES.cloth consumes',
+  },
+  weaving: {
+    summary: 'Woven cloth: warmer than a bare hide, and the first thing worth trading for its own sake.',
+    site: 'BUILDINGS.loom and RECIPES.cloth; NeedsSystem, via warmthFrom, when cloth is in the pack',
+  },
+  sickle: {
+    summary: 'A hafted blade instead of bare hands: a field stripped in less of a day.',
+    site: 'Tech.reapFactor, read by ActionSystem.doReap',
+  },
+  masonry: {
+    summary: 'Coursed stone walls: the best roof anybody can raise with hand tools.',
+    site: 'BUILDINGS.stone_house',
+  },
+  wattle_daub: {
+    summary: 'A woven wall daubed over: faster to raise than a mud hut, and warmer for it.',
+    site: 'BUILDINGS.wattle_hut',
+  },
+  calendar: {
+    summary: 'Sowing timed to a tally instead of to guesswork: more off the same ground.',
+    site: 'Tech.calendarFactor, read by ActionSystem.doReap',
+  },
+  the_wheel: {
+    summary: 'A cart: what a strap and a basket carry, and a cartload more on top.',
+    site: 'Person.carryCapacity, via carryFactor, when a cart is in the pack',
+  },
+  bread: {
+    summary: 'Meal baked into bread: more nourishing than the meal it is made from, and it keeps as well.',
+    site: 'BUILDINGS.oven and RECIPES.bread',
+  },
+  herding: {
+    summary: 'A fenced herd: meat that breeds on its own, culled instead of hunted.',
+    site: 'BUILDINGS.pen, via BuildingDef.herd; Simulation.workHerds',
+  },
+  kiln: {
+    summary: 'A held heat that wastes less clay than an open fire: pottery for less.',
+    site: 'BUILDINGS.kiln and RECIPES.kiln_pot',
+  },
+  well: {
+    summary: 'Water away from the shore: a band is no longer tied to the water’s edge.',
+    site: 'BUILDINGS.well, via BuildingDef.providesWater; ActionSystem.waterWithinReach and Brain.findWater',
+  },
+  dairying: {
+    summary: 'Milk drawn from a living herd, never once culled for it.',
+    site: 'BUILDINGS.pen, via BuildingDef.herd.byproducts; Simulation.workHerds',
+  },
+  wool: {
+    summary: 'Fleece sheared rather than flax retted: cloth warmer for the same fire.',
+    site: 'BUILDINGS.pen, via BuildingDef.herd.byproducts; RECIPES.wool_cloth; Tech.warmthFrom',
+  },
+  brewing: {
+    summary: 'Beer: it answers loneliness for whoever drinks it, and for the band around them.',
+    site: 'RECIPES.beer; ActionSystem.doToast',
+  },
 };
 
 /**
@@ -1358,8 +1842,16 @@ export function techPower(person: Person, tech: Tech): number {
   return 0;
 }
 
-/** Scales a bonus by how well its holder knows the technology behind it. */
-function scaled(person: Person, tech: Tech, full: number): number {
+/**
+ * Scales a bonus by how well its holder knows the technology behind it.
+ *
+ * Exported rather than kept private to this file once `KnowledgeSystem.teach`
+ * needed the same "no effect at 0, `full` at a proven design, more past it
+ * with refinement" curve for `storytelling`. Reusing it there is the point:
+ * a second copy of `1 + (full - 1) * techPower` is how the two would drift
+ * out of step with what "half-learned" means everywhere else in the game.
+ */
+export function scaled(person: Person, tech: Tech, full: number): number {
   return 1 + (full - 1) * techPower(person, tech);
 }
 
@@ -1392,7 +1884,14 @@ export function forageYieldFactor(person: Person, nodeKind: string): number {
  */
 export function carryFactor(person: Person): number {
   const basket = person.inventory.has('basket') ? scaled(person, 'basketry', 1.3) : 1;
-  return scaled(person, 'cordage', 1.25) * basket;
+  // M11 phase 10: `the_wheel`'s cart, on the same double gate as the basket
+  // and the net. The plan's table also credits it with speed on `doHaul`, but
+  // nothing in this game slows a laden walker down in the first place — there
+  // is no ladenness penalty for a cart to answer — so claiming one here would
+  // be a comment asserting a mechanism that does not exist. Capacity alone is
+  // the honest half of the historical claim.
+  const cart = person.inventory.has('cart') ? scaled(person, 'the_wheel', 1.5) : 1;
+  return scaled(person, 'cordage', 1.25) * basket * cart;
 }
 
 /** Multiplier on the nutrition of anything eaten. */
@@ -1402,7 +1901,53 @@ export function nutritionFactor(person: Person): number {
 
 /** Multiplier on how fast building work goes. */
 export function buildFactor(person: Person): number {
-  return scaled(person, 'carpentry', 1.3);
+  // M11 phase 10: `ground_stone`'s second tool, double-gated on carrying an
+  // adze the same way the basket and the net already are — knowing how to
+  // grind one is not enough, and an adze in the hands of somebody who could
+  // not have made it is the `handaxe` bug one node along.
+  const adze = person.inventory.has('adze') ? scaled(person, 'ground_stone', 1.2) : 1;
+  return scaled(person, 'carpentry', 1.3) * adze;
+}
+
+/**
+ * Multiplier on the work required to fell a tree, read by `ActionSystem.doChop`
+ * and mirrored in `Progress.workProgressOf` so the progress bar never lies to
+ * whoever is holding the axe.
+ *
+ * `hafting` used to be tested by `inventory.has('handaxe')` alone, unscaled by
+ * `techPower` — the exact defect `m8_plan_the_ages.md` names under "three
+ * repairs to make while passing", left until `ground_stone` gave the bug a
+ * second axe to double it. A person picks the better of the two they are
+ * carrying rather than stacking them, because two axes do not fell a tree
+ * twice as fast — only one is swinging.
+ */
+export function axeFactor(person: Person): number {
+  let best = 1;
+  if (person.inventory.has('handaxe')) {
+    best = Math.min(best, scaled(person, 'hafting', 0.5));
+  }
+  if (person.inventory.has('stone_axe')) {
+    best = Math.min(best, scaled(person, 'ground_stone', 0.35));
+  }
+  return best;
+}
+
+/**
+ * Multiplier on the work required to bring in a ripe field, read by
+ * `ActionSystem.doReap`. The same double gate as `axeFactor`: `sickle` alone
+ * teaches nothing about stripping a field by hand.
+ */
+export function reapFactor(person: Person): number {
+  return person.inventory.has('sickle') ? scaled(person, 'sickle', 0.6) : 1;
+}
+
+/**
+ * Multiplier on what a harvest yields, read by `ActionSystem.doReap` beside
+ * `techPower('farming')`. `calendar` is a practice — there is nothing to
+ * carry, unlike `sickle` — so this has no item gate.
+ */
+export function calendarFactor(person: Person): number {
+  return scaled(person, 'calendar', 1.2);
 }
 
 /**
@@ -1448,7 +1993,21 @@ export function warmthFrom(person: Person): number {
   const furs = person.inventory.has('fur_coat')
     ? 0.4 * techPower(person, 'tailoring')
     : 0;
-  return 1 - (1 - fire) * (1 - cloth) * (1 - furs);
+  // M11 phase 10's fourth term. Named `woven` rather than `cloth`, which this
+  // function already uses for the `clothing` technology's own multiplier —
+  // reusing the name would have shadowed one silently.
+  const woven = person.inventory.has('cloth')
+    ? 0.25 * techPower(person, 'weaving')
+    : 0;
+  // M11 phase 10's sixth term, and warmer than `woven` for the reason the
+  // plan states it as `wool`'s whole claim: a fleece keeps the cold out
+  // better than flax does. Reads `wool_cloth`, the recipe's own item, never
+  // plain `cloth` — the two are unrelated garments once woven, and only one
+  // of them needed a sheep.
+  const woollen = person.inventory.has('wool_cloth')
+    ? 0.32 * techPower(person, 'wool')
+    : 0;
+  return 1 - (1 - fire) * (1 - cloth) * (1 - furs) * (1 - woven) * (1 - woollen);
 }
 
 // ---------------------------------------------------------------------------
@@ -1472,16 +2031,17 @@ export function warmthFrom(person: Person): number {
  * The rungs are now the same vocabulary as `TechDef.age`, so the period the HUD
  * names and the ring the tech web draws a node on are the same word.
  *
- * ## The ladder stops at the Mesolithic, and that is not an oversight
+ * ## The Neolithic rung, and why it waited
  *
- * The Neolithic and everything above it are planned in
- * `docs/m8_plan_the_ages.md` and need `farming`, `herding` and `masonry`, none
- * of which exist yet. A rung whose `needs` name a technology nobody can learn
- * is a rung no world can ever reach — declared content that does nothing, which
- * is the defect this project checks for in `techs-have-effects` — so the
- * Neolithic arrives in M8.2, in the commit that makes a field something you can
- * sow. `eras-name-only-real-technologies` fails the moment somebody adds one
- * early.
+ * A rung whose `needs` name a technology nobody can learn is a rung no world
+ * can ever reach — declared content that does nothing, which is the defect
+ * this project checks for in `techs-have-effects` — so the Neolithic rung
+ * waited for `farming`, `herding` and `masonry`, the last of which landed in
+ * M11 phase 10's third commit. `eras-name-only-real-technologies` is what
+ * would have caught it arriving early.
+ *
+ * Everything above the Neolithic is still planned rather than built — see
+ * `docs/m8_plan_the_ages.md` — and stays off this ladder for the same reason.
  *
  * ## Two deliberate departures from the table in the plan
  *
@@ -1531,6 +2091,24 @@ const ERA_LADDER: Omit<EraDef, 'label'>[] = [
     description:
       'The bow, the net and the snare — food you go and take rather than food ' +
       'you find.',
+  },
+  {
+    id: 'neolithic',
+    needs: [
+      'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
+      'farming', 'herding', 'pottery', 'masonry',
+    ],
+    // The same 0.3 as the Mesolithic, per the plan's own table — not raised
+    // for having four more technologies in the list. `heldBy` asks what
+    // fraction of adults hold *every* listed technology, so a longer list is
+    // already harder to satisfy at an unchanged fraction; compounding that
+    // with a higher bar as well would make the Neolithic much harder to enter
+    // than the rung below it for reasons that have nothing to do with how
+    // widely spread the knowledge needs to be.
+    heldBy: 0.3,
+    description:
+      'Seed saved from one year to sow the next, and a herd that comes back ' +
+      'on its own legs. The band stops moving to the food.',
   },
 ];
 

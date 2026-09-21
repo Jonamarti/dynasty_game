@@ -997,13 +997,37 @@ export class Renderer {
       ctx.lineWidth = 2;
       ctx.strokeRect(px, py, w, h);
     } else {
-      ctx.fillStyle = building.def.shelter > 0 ? '#7a5c3e' : '#5c5343';
-      ctx.fillRect(px, py, w, h);
-      ctx.fillStyle = 'rgba(255,255,255,0.09)';
-      ctx.fillRect(px, py, w, h * 0.35);
-      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(px, py, w, h);
+      // M11 phase 11b: a ruin reads as scorched ground under a broken outline,
+      // rather than the same solid fill an untouched building gets — the same
+      // "clearly not what it should be" language the unfinished-site branch
+      // above already speaks, borrowed for the opposite direction of damage.
+      // A merely damaged one keeps its ordinary fill and gets the same red bar
+      // a sabotage-in-progress would leave behind, so a glance across camp
+      // shows which roofs need a builder without opening anybody's panel.
+      if (building.ruined) {
+        ctx.fillStyle = 'rgba(60, 40, 34, 0.55)';
+        ctx.fillRect(px, py, w, h);
+        ctx.setLineDash([4, 3]);
+        ctx.strokeStyle = 'rgba(217, 112, 90, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px, py, w, h);
+        ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = building.def.shelter > 0 ? '#7a5c3e' : '#5c5343';
+        ctx.fillRect(px, py, w, h);
+        ctx.fillStyle = 'rgba(255,255,255,0.09)';
+        ctx.fillRect(px, py, w, h * 0.35);
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px, py, w, h);
+      }
+      if (building.soundness < 1) {
+        const barW = w * 0.8;
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(px + w * 0.1, py + h - 8, barW, 5);
+        ctx.fillStyle = '#d9705a';
+        ctx.fillRect(px + w * 0.1, py + h - 8, barW * building.soundness, 5);
+      }
     }
 
     if (selected) {

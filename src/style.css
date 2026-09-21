@@ -990,6 +990,12 @@ html, body, #app {
   flex: none;
   overflow: hidden;
   cursor: grab;
+  /* The panel handles every touch gesture inside the viewport itself — one
+     finger pans the web, two pinch it. Without this the browser claims both
+     first: a drag scrolls `.techweb-body` (which is `overflow-y: auto` on a
+     narrow window) and a pinch zooms the whole game, and neither reaches the
+     handlers in `TechWeb.ts`. */
+  touch-action: none;
 }
 .techweb-viewport.is-panning { cursor: grabbing; }
 
@@ -1744,6 +1750,10 @@ html, body, #app {
     max-height: calc(100dvh - 12px);
   }
   .techweb-body { flex-direction: column; overflow-y: auto; }
+  /* The viewport is sized in pixels by `panelBox`, and on a narrow window that
+     number is already the whole width of the card. `flex: none` would let a
+     stacked column shrink it; this pins it to what it was told. */
+  .techweb-viewport { flex: 0 0 auto; max-width: 100%; }
   .techweb-detail {
     width: 100%;
     max-height: 34dvh;

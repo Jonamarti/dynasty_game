@@ -21,8 +21,11 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { RelationshipGraph } from './Relationships.ts';
 import type { EventType, Norms, SocialEvent } from './Events.ts';
 import { DEED_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
+import type { MemoryEntry } from './Memory.ts';
 import type { ConversationMode } from './Conversation.ts';
 import { CONVERSATION_MODES, crossBand } from './Conversation.ts';
+import { techPower } from '../knowledge/Tech.ts';
+import type { BandRelations } from './BandRelations.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
@@ -58,6 +61,50 @@ export const KIN_SIBLING = 40;
 const HOUSEHOLD_BIAS = 18;
 const IN_GROUP_BIAS = 6;
 const OUT_GROUP_BIAS = -6;
+
+/**
+ * How far one point of `BandRelations.standing` moves an out-group first
+ * impression, M11 phase 7a.
+ *
+ * At `standing === 0` — every pair the moment this shipped, and any pair
+ * phase 7b's engines have not yet touched — `outGroupBias` returns exactly
+ * `OUT_GROUP_BIAS`, which is what makes introducing `BandRelations` bit-
+ * identical. At the extremes, close allies (100) read a stranger as warmly
+ * as `IN_GROUP_BIAS` already reads a bandmate, and bitter rivals (-100) read
+ * one more coldly than `HOUSEHOLD_BIAS` reads a member of your own family
+ * warmly — a first meeting between two peoples at open war should cost more
+ * than ordinary wariness of any stranger.
+ */
+const OUT_GROUP_STANDING_SCALE = 0.12;
+
+/** `OUT_GROUP_BIAS`, adjusted by how the two bands involved currently stand. */
+export function outGroupBias(standing: number): number {
+  return OUT_GROUP_BIAS + standing * OUT_GROUP_STANDING_SCALE;
+}
+
+/**
+ * How much of a cross-band deed's `DEED_WEIGHT` reaches `BandRelations`, M11
+ * phase 7b.
+ *
+ * `BandRelations` decays at 0.998/day against an opinion's 0.985, so even a
+ * small per-event nudge compounds over a long game — this is what keeps a
+ * single theft from reading as the opening act of a war while still letting
+ * a pattern of them eventually mean one.
+ */
+const CROSS_BAND_DEED_SCALE = 0.02;
+
+/**
+ * What a marriage across a band line is worth to how those two bands stand
+ * with each other, M11 phase 7b's second engine.
+ *
+ * The strongest peace mechanism in the historical record, by the owner's own
+ * framing, and the cheapest to write: one number, added once, the moment
+ * `wed` is called on two people already known to belong to different bands.
+ * Far larger than any single `CROSS_BAND_DEED_SCALE`-scaled deed, because a
+ * marriage is not an event two peoples merely witnessed happening to each
+ * other, it is the two families choosing to become kin.
+ */
+const CROSS_BAND_MARRIAGE = 15;
 
 /**
  * What a night under one roof is worth, and how many people it can be worth it
@@ -113,16 +160,32 @@ const RUMOR_DECAY = 0.75;
 const HEARSAY_WEIGHT = 0.45;
 
 /**
+ * How much a listener's own opinion of the subject of a `slander` or `praise`
+ * spills onto their opinion of whoever did the telling.
+ *
+ * Note 8's backlash, and the reason this pass is worth more than a flat
+ * penalty for gossiping: slander a man before his friend and the friend
+ * resents you for it; slander him before his enemy and they think no less of
+ * you — they may even like you a little more for saying what they already
+ * believed. Proportional to `opinion(listener, subject) / 100` rather than a
+ * fixed cost, and the same formula serves `praise` with the sign flipped,
+ * which is what turns idle gossip into alliances and rivalries without any
+ * code that knows what a faction is.
+ */
+const GOSSIP_BACKLASH = 8;
+
+/**
  * The standing regard one person owes another before any deed.
  *
  * Household first: a household is a family, and someone married into yours is
  * closer than a neighbour from the same camp whatever the blood says.
  */
-export function firstImpression(observer: Person, subject: Person): number {
+export function firstImpression(observer: Person, subject: Person, bandRelations: BandRelations): number {
   if (observer.householdId !== null && observer.householdId === subject.householdId) {
     return HOUSEHOLD_BIAS;
   }
-  return observer.bandId === subject.bandId ? IN_GROUP_BIAS : OUT_GROUP_BIAS;
+  if (observer.bandId === subject.bandId) return IN_GROUP_BIAS;
+  return outGroupBias(bandRelations.standing(observer.bandId, subject.bandId));
 }
 
 /**
@@ -174,9 +237,18 @@ export class SocialSystem {
    */
   onMarriage: ((a: Person, b: Person) => void) | null = null;
 
+  /**
+   * Called whenever a deed is emitted, so the simulation can let a
+   * household's renown hear about what one of its own did. The same pattern
+   * `onMarriage` uses and for the same reason: a household is the
+   * simulation's business, not this module's — see `Simulation.accrueRenown`.
+   */
+  onDeed: ((actor: Person, type: EventType, magnitude: number) => void) | null = null;
+
   constructor(
     private readonly relationships: RelationshipGraph,
-    private readonly normsByBand: Map<number, Norms>
+    private readonly normsByBand: Map<number, Norms>,
+    private readonly bandRelations: BandRelations
   ) {}
 
   private normsFor(person: Person): Norms | null {
@@ -188,6 +260,14 @@ export class SocialSystem {
    *
    * `peopleById` is needed because witnesses judge the actor, and the victim
    * must be judged as a victim rather than as a bystander.
+   *
+   * `notifyTarget` defaults to true, which is every deed this game had before
+   * M11 phase 5c: a theft or a blow is done *to* the target, who is standing
+   * right there and always knows. Gossip is different — `slander` and
+   * `praise` name a subject who is very often nowhere near, and the owner's
+   * rule that nothing is known unless it is seen or told applies to them too.
+   * Pass `false` and the subject learns only by being an actual witness
+   * within `sightRadius`, exactly like anybody else.
    */
   emit(
     type: EventType,
@@ -196,7 +276,8 @@ export class SocialSystem {
     magnitude: number,
     tick: number,
     peopleHash: SpatialHash<Person>,
-    sightRadius: number
+    sightRadius: number,
+    notifyTarget = true
   ): SocialEvent {
     const event: SocialEvent = {
       id: nextEventId++,
@@ -207,6 +288,7 @@ export class SocialSystem {
       y: actor.y,
       tick,
       magnitude: Math.max(0, Math.min(1, magnitude)),
+      witnesses: 0,
     };
 
     telemetry.count('event_' + type);
@@ -217,21 +299,48 @@ export class SocialSystem {
       target.chronicle.push({ tick, ageDays: target.age, text: description, kind: 'suffered' });
     }
 
-    // The victim always knows, however dark it was and whoever else was looking.
-    if (target) this.absorb(target, event, actor, true, 1, null);
+    // The victim always knows, however dark it was and whoever else was
+    // looking — unless the caller said otherwise, because there was no
+    // victim standing there to know it. See `notifyTarget` above.
+    if (target && notifyTarget) this.absorb(target, event, actor, true, 1, null);
 
     let witnesses = 0;
     for (const bystander of peopleHash.queryRadius(actor.x, actor.y, sightRadius)) {
       if (!bystander.alive) continue;
-      if (bystander.id === actor.id || bystander.id === target?.id) continue;
+      if (bystander.id === actor.id) continue;
+      if (bystander.id === target?.id) {
+        // Already absorbed above as the victim; do not count them twice. But
+        // when the target was *not* notified directly, they get exactly the
+        // same chance as anyone else to have overheard this one — which is
+        // how a subject who happens to be standing within earshot catches
+        // their own name being talked about.
+        if (notifyTarget) continue;
+      }
       this.absorb(bystander, event, actor, true, 1, null);
       witnesses++;
     }
     if (witnesses > 0) telemetry.count('witnessed', witnesses);
     else telemetry.count('unwitnessed');
+    // M11 phase 3b: the count lives on the event too, so the UI can say "no
+    // one saw that" about a deed of the player's own character.
+    event.witnesses = witnesses;
 
     this.recent.push(event);
     if (this.recent.length > this.recentCap) this.recent.shift();
+    this.onDeed?.(actor, type, event.magnitude);
+
+    // M11 phase 7b, first engine: a deed with a target from another band
+    // moves how those two *peoples* stand with each other, not only how the
+    // two people involved feel. Small on purpose — `CROSS_BAND_DEED_SCALE`
+    // is the reason a single theft does not start a war — and read off the
+    // deed itself rather than off each witness's `absorb`, so a crowd
+    // watching one theft cannot multiply its effect on band standing the way
+    // it correctly does multiply how many personal enemies the thief makes.
+    if (target && target.bandId !== actor.bandId) {
+      this.bandRelations.add(
+        actor.bandId, target.bandId,
+        DEED_WEIGHT[type] * (0.5 + event.magnitude * 0.5) * CROSS_BAND_DEED_SCALE);
+    }
     return event;
   }
 
@@ -265,6 +374,17 @@ export class SocialSystem {
       confidence;
 
     this.relationships.addDeed(observer.id, actor.id, delta, event.tick);
+
+    // The backlash: gossip is judged twice, once for the act of gossiping
+    // (the `delta` above, same for everyone) and once for *who it was about*,
+    // which is personal to each listener. `event.targetId` is the subject
+    // being talked about here, not a victim standing in front of anyone.
+    if ((event.type === 'slander' || event.type === 'praise') && event.targetId !== null) {
+      const towardSubject = this.relationships.opinion(observer.id, event.targetId) / 100;
+      const sign = event.type === 'praise' ? 1 : -1;
+      const backlash = towardSubject * sign * GOSSIP_BACKLASH * hearsayFactor * confidence;
+      if (backlash !== 0) this.relationships.addDeed(observer.id, actor.id, backlash, event.tick);
+    }
   }
 
   /**
@@ -298,7 +418,20 @@ export class SocialSystem {
     // all, which is the mechanical difference that makes the dear rungs worth
     // their price: gossip is the only channel a deed reaches anyone who did
     // not see it, and `next-steps.md` §0 names transmission as the bottleneck.
-    for (let i = 0; i < def.stories; i++) {
+    //
+    // M11 phase 9b: `storytelling` buys one more, and only at `deep` — a
+    // greeting has no room in it for a story at all, so the practice's whole
+    // benefit would be invisible below the rung it is actually about. Either
+    // side having it is enough, the same as either side's `curiosity` firing
+    // a spark: the story is a joint performance and it does not matter which
+    // of the two is carrying it.
+    let stories = def.stories;
+    if (mode === 'deep' &&
+        (techPower(a, 'storytelling') > 0 || techPower(b, 'storytelling') > 0)) {
+      stories += 1;
+      telemetry.count('storytelling_extra_tale');
+    }
+    for (let i = 0; i < stories; i++) {
       this.gossip(a, b, peopleById);
       this.gossip(b, a, peopleById);
     }
@@ -330,9 +463,10 @@ export class SocialSystem {
     this.introduce(b, a);
 
     // Familiarity grows more slowly across a band boundary: it takes longer to
-    // warm to a stranger than to someone you grew up beside.
+    // warm to a stranger than to someone you grew up beside — and M11 phase
+    // 7c reads *how much* more slowly off how the two bands themselves stand.
     const sameBand = a.bandId === b.bandId;
-    const gained = crossBand(warmth, sameBand);
+    const gained = crossBand(warmth, sameBand, this.bandRelations.standing(a.bandId, b.bandId));
     this.relationships.addFamiliarity(a.id, b.id, gained, tick);
     this.relationships.addFamiliarity(b.id, a.id, gained, tick);
 
@@ -489,19 +623,38 @@ export class SocialSystem {
     a.chronicle.push({ tick, ageDays: a.age, text, kind: 'milestone' });
     b.chronicle.push({ tick, ageDays: b.age, text, kind: 'milestone' });
 
+    if (a.bandId !== b.bandId) this.bandRelations.add(a.bandId, b.bandId, CROSS_BAND_MARRIAGE);
+
     this.onMarriage?.(a, b);
   }
 
   /** Stamps a first impression the first time one person notices another. */
   introduce(observer: Person, subject: Person): void {
-    this.relationships.introduce(observer.id, subject.id, firstImpression(observer, subject));
+    this.relationships.introduce(
+      observer.id, subject.id, firstImpression(observer, subject, this.bandRelations));
   }
 
   /** `teller` passes their best story to `listener`. */
   private gossip(teller: Person, listener: Person, peopleById: Map<number, Person>): void {
     const story = teller.memory.bestGossipFor(listener.memory);
     if (!story) return;
+    this.tellStory(teller, listener, story, peopleById);
+  }
 
+  /**
+   * Retells one particular story, already chosen by the caller, rather than
+   * whichever one `bestGossipFor` would have picked.
+   *
+   * Shared by ordinary gossip during a conversation and by a directed
+   * `slander` or `praise`, M11 phase 5c: the two need the same machinery — a
+   * story arrives less certain than sight, and degrades further with each
+   * retelling — but a directed telling already knows which story and who it
+   * is for, and re-deriving that through `bestGossipFor` would risk landing
+   * on a different one than the speaker meant to tell.
+   */
+  tellStory(
+    teller: Person, listener: Person, story: MemoryEntry, peopleById: Map<number, Person>
+  ): void {
     const actor = peopleById.get(story.actorId);
     if (!actor) return;
 
@@ -517,6 +670,11 @@ export class SocialSystem {
       y: teller.y,
       tick: story.tick,
       magnitude: 1,
+      // A retelling through `absorb`, never an event `recent` will surface:
+      // nobody *saw* this happen, they only heard it, and the count belongs to
+      // the original deed. Leaving it 0 keeps the "no witnesses" statement
+      // true for a story told after the fact.
+      witnesses: 0,
     };
 
     const before = listener.memory.size;

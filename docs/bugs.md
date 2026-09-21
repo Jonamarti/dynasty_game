@@ -1,7 +1,430 @@
 # Known bugs and rough edges
 
-As of 2026-09-17. Everything here is real and reproducible; nothing here is
+As of 2026-09-22. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found shipping M11 phase 11b, 2026-09-22
+
+### A field cannot be sabotaged, because ruining one would currently do nothing
+
+`sabotage` refuses any building with `crop !== null`, deliberately — a field
+is `isStructure` too (clearing and tilling it costs real `workTicks`), and
+letting it through would set `durability` and let it fall to `ruined` like
+any other structure, but nothing would happen. `doSow` and `doReap` read
+nothing about a field's `durability`; a trampled field would sow and reap
+exactly as an untouched one does. That is the declared-but-inert defect this
+project holds every table to, applied to a whole target category rather than
+one entry, and it is why the category was left out rather than half-wired
+in. Whoever picks this up needs to decide what a ruined field actually means
+— does standing growth die, does sowing refuse until it is repaired, is the
+ground itself worse for a season — and gate `doSow`/`doReap` on `!ruined`
+once that is decided. `Brain`'s sabotage scoring and `ActionCatalog`'s menu
+both carry the same exclusion and both need it lifted together.
+
+### Two single-seed checks flip when `sabotage` is added to `Brain`'s candidates
+
+`traps`/`animals-are-tamed` and `farmers`/`heads-direct-work` go from a clean
+PASS to a hard 0 with this commit — `0 meals offered to wild animals` and `0
+orders landed on rank alone, 9 refused`, not a near-miss on a threshold.
+Chased before being written off, as `AGENTS.md` asks: neither check's subject
+touches a building, a band relation, or anything else this pass changed, and
+both are the single-seed shape the project already documents as fragile —
+`animals-are-tamed` needs the scorer to have picked `tame` at all in one
+seeded run, `heads-direct-work` needs five-plus rank orders to land the right
+way in one. Adding any new scoreable action to `Brain.think` shifts how many
+candidates exist when `choiceRng` makes its pick, which shifts that draw,
+which shifts the entire world's trajectory downstream of it — the same
+mechanism `century`'s own chaos entry describes, reached here by a much
+smaller cause. The check itself is not broken and the mechanism it measures
+is not broken either: `labour`, the scenario built specifically to give
+`heads-direct-work` a real sample, passes it outright on this same code.
+Left unresolved because there is nothing to resolve — re-seeding either
+scenario to dodge this one unlucky draw would only be tuning the check green
+without learning anything, which `AGENTS.md` says not to do.
+
+## Found shipping M9.6 phase 2d, 2026-09-21
+
+### The tech web's arrangement shifted when the relaxation was fixed, and nothing pins it
+
+Making `relax` symmetric and cooled changed the *output* of every graph that
+uses it, not only the tribe graph it was fixed for. The tech web's natural
+size went from 1069x966 to 984x897 — a more compact arrangement, with no
+overlaps and the same determinism, so both of `techweb.test.ts`'s structural
+checks pass exactly as before. Nothing is wrong with the new picture and the
+old one was not preferred; it is simply that neither is pinned. If somebody
+later tunes `MAX_PUSH`, `heat` or `AT_REST` for one graph, the other two move
+underneath them silently, and the only tripwire is a human noticing the web
+looks different. A snapshot of a few known node positions would catch it,
+though it would also need rewriting on every deliberate change — which is why
+one was not added here rather than added and immediately tuned green.
+
+### `FamilyTree` never got the mobile zoom treatment the tech web did
+
+`PanelBox` fixes the box all three panels ask for, so the family tree no
+longer requests a 480px canvas inside a 378px card. But `FamilyTreeLayout`
+uses `fitInto`, which scales an arrangement to whatever box it is handed, so
+on a phone a large family is scaled down until its names are as unreadable as
+the tech web's nodes were — there is no `.is-far` threshold to make the
+failure obvious, which is probably why it was not reported. The tech web's
+answer was to stop fitting and let the player pan and pinch instead; the
+family tree and the tribe graph would both need the same pan-and-zoom
+viewport to match. Not done here: the owner reported the tech web and the
+tribe graph's motion, and retrofitting a viewport onto two more panels is a
+larger change than either ask.
+
+## Found shipping M11 phase 10, sixth commit, 2026-09-21
+
+### `herders`/`bands-take-sides` fails: two small bands do not diverge enough in ~83 days
+
+The new scenario's two bands of ten read a standing spread of 10.6 against
+the check's threshold of 20, after the run clears the 60-day floor that
+would otherwise skip it. Not chased: `herders` exists to exercise `dairying`
+and `wool`'s byproduct accrual, which it does — `milk-is-drawn-and-drunk`
+and `wool-is-sheared-and-woven` both pass — and nothing in this pass touches
+`BandRelations` or the territory/marriage/trade engines that check reads.
+Two bands of ten most likely just do not cross paths often enough in this
+particular seed's geography for standing to spread past the threshold in
+the time the run covers; a bigger population, more bands, or a longer run
+would probably clear it, but none of those serve this scenario's own
+purpose and were not added speculatively. Worth a look if `herders` is ever
+reused for something that needs inter-band contact.
+
+## Found shipping M11 phase 8d, 2026-09-21
+
+### `lean`'s already-weakest seed, `tau`, newly collapses
+
+The phase 6d entry below flagged `tau` as the lowest single seed measured
+anywhere in this milestone's `lean` cohorts, at 27% survival — above the
+20-seed collapse line (25%) but the worst seed by a wide margin even then.
+Phase 8d's cohort puts the same seed at **4%**, now on the wrong side of
+that line (1/20 collapsed, where the pre-8d cohort had 0/20). Every other
+seed in the cohort moved within ordinary noise, and the cohort mean is
+unchanged at 88.1% — so this reads as an already-marginal seed being pushed
+over an edge it was already standing on, not a new failure mode. Not
+chased further, on the same principle `AGENTS.md` states for single-seed
+movement: a 20-seed cohort's signal is in the mean, and the mean did not
+move. Worth a second look if a future phase's cohort shows `tau` still
+collapsed, or a second seed joins it.
+
+### `century`/`hunts-succeed-and-fail` and `stewards`/`soil-is-drawn-down` flip under phase 8d
+
+Both are the same shape as the checks already named repeatedly below —
+`sim:check:all` reports each as failing for the first time in this
+milestone, and both are borderline by construction: `soil-is-drawn-down`
+failed at 98.9% against a 98.5% threshold (a 0.4-point margin), and
+`hunts-succeed-and-fail` failed on an 11-kills/0-misses run, the exact
+"strikes cluster on one side" shape `bugs.md` already records for this
+check on `band`. Nothing in phase 8d touches hunting, farming or soil;
+capping health recovery changes who lives, works and is where on any given
+tick, which is enough downstream RNG drift to flip a check already sitting
+on its own threshold. `crowded`/`perf-budget`,
+`hunters`/`kills-are-butchered-for-bone` and
+`stewards`/`compost-answers-exhaustion` are unchanged.
+
+## Found shipping M11 phase 6d, 2026-09-20
+
+### `lean`'s mean survival has drifted down four small steps in a row
+
+91.2% (clean baseline) → 90.6% (phases 5d-5f) → 90.1% (6a-6b) → 89.4% (6d),
+across four separately-measured 20-seed cohorts. Every individual step is
+inside the ~10-point floor `AGENTS.md` says a 20-seed cohort cannot resolve,
+and 0/20 collapsed in any of the four — but four steps the same direction is
+also the shape a real, small effect looks like before any one of them is
+provable alone. Not treated as a regression to fix, because there is nothing
+to point at yet: it is recorded here so that phase 6e's own measurement
+reads it as a trend to watch rather than starting from a clean slate. One
+seed in the 6d cohort (`tau`) fell to 27% survival, the lowest of any single
+seed measured so far across this milestone.
+
+## Found shipping M11 phase 6a, 2026-09-20
+
+### `lean` moved onto the wrong side of `the-hurt-are-tended`
+
+Same mechanism as the phase 5a/5b/5c entries below: giving a household's
+goods a real position (`Household.homeBuildingId`) instead of an unreachable
+`Inventory` changes what `dropAt` does for goods with nowhere else to go,
+which changes candidate counts somewhere in `chooseAmongBest`'s pool on that
+tick, which cascades every later `choiceRng` draw for the rest of the run.
+`the-hurt-are-tended` is already on record as a one-event-wide check —
+`bugs.md`'s own M9.6 phase 1 entry names it — so a single scenario flipping
+sides on an RNG-cascading change is exactly the kind of noise this project
+has learned not to chase. `crowded`/`perf-budget`,
+`millers`/`the-hurt-are-tended` and `hunters`/`kills-are-butchered-for-bone`
+are unchanged.
+
+## Found shipping M11 phases 5d-5f, 2026-09-20
+
+### `conspiracyAgainst` has no reader but exile and adoption
+
+`Factions.ts` answers "who is scheming against this person right now" as a
+general question, but `considerExile` and `considerAdoption` are the only two
+callers today. The plan's own §5d is written as the general mechanism a
+conspiracy against the chief, or a plot to have someone falsely accused,
+would also read — neither exists yet. Not a defect, but worth knowing before
+anyone reaches for a second conspiracy mechanism and writes a second copy of
+this instead of a second caller of it.
+
+### The plan's four new `simcheck` checks were not added
+
+`m11_plan.md`'s gate for this block asks for `exile-is-reachable`,
+`factions-form`, `gossip-is-aimed` and `the-cast-out-find-a-home`, each
+verified failing against the prior build before being trusted. None were
+written. The reason is the one `band.test.ts`'s own header already gives for
+why `rebellion-is-rare-but-happens` is a unit test rather than a `simcheck`
+check: `EXILE_QUORUM` needs four people who both hold a grudge and trust each
+other, which is not guaranteed inside any one scenario's step budget — a
+check that flakes between PASS and n/a by seed is exactly the "looks
+reassuring, detects nothing" failure this project has already deleted two
+checks for. The mechanism is instead asserted deterministically, by
+engineering the grievance directly, in `band.test.ts`'s "exile and adoption"
+block. Worth revisiting if `lean`'s own `exiled`/`adopted` telemetry turns
+out to fire reliably enough across a seed cohort to gate on.
+
+## Found shipping M11 phases 3c and 5c, 2026-09-18
+
+### Two more checks moved sides under the new `slander`/`praise` scorer, both already on record
+
+Adding two new scoreable actions changes which candidates fall inside
+`chooseAmongBest`'s spread band on any given think, which changes how many
+draws `choiceRng` takes from that tick on — the same kind of whole-stream
+cascade M11 phase 5a's `malice` migration and phase 5b's `VARIABLE_NORMS`
+entry both already caused and documented below. `sim:check:all` differs from
+the pre-5c build on `fishers`/`pots-reach-a-granary` (a granary got marked
+out this time where none did before, in a 37-day scenario where that is a
+single event either falling inside the window or not) and `millers`/`the-
+hurt-are-tended`, which is already named above as a one-event-wide check.
+`crowded`/`perf-budget` and `hunters`/`kills-are-butchered-for-bone`, both
+long-standing, are unchanged. A twenty-seed `century` cohort (see
+`changelog.md`) reads as healthy as 5b's own cohort — these are instrument
+noise from a shifted RNG stream, not damage to the world.
+
+## Found shipping M11 phase 5b, 2026-09-17
+
+### `century` reads "0 obeyed" on `heads-direct-work`, exactly as that check's own comment warns it can
+
+Adding `slander` to `VARIABLE_NORMS` cost one more `rng.range` draw per band
+before anybody is placed — the same mechanism the phase 5a entry below
+documents for `malice` — and `century` now fails `heads-direct-work`: "0
+orders landed on rank alone, 12 refused". Twelve is past the check's own
+floor of five samples, so it is not skipped, and zero of them landed.
+
+Not a new failure mode. `tools/simcheck.ts`'s comment on this exact check
+already says why `century` is the wrong scenario to read it from: *"a world
+that happened to work `chiefdom` out on its own says nothing about whether
+rank carries an order"* — `century` reaches that technology late and
+incidentally, on whatever seed it happens to fall on, rather than starting
+with it the way the dedicated scenario does. `labour` exists precisely to
+give this check a sample worth reading, starts its founders already knowing
+both social technologies, and passed cleanly in the same run (52/52). This
+is the `stewards`/"one head asked one person one thing and was refused"
+case the comment already names, recurring on a second scenario under a
+second RNG-shifting change, not a defect in the rank mechanism.
+
+Not fixed and not tuned: `labour`'s own result is the one that speaks to
+whether rank carries an order, and it says yes.
+
+### Four more checks moved sides under the same `slander`/`VARIABLE_NORMS` shift, all already on record
+
+`sim:check:all` differs from the post-5a build on `crowded`/`perf-budget`
+(the long-standing documented failure below), `traps`/`jobs-bias-work`
+("has an effect smaller than its own seed-to-seed spread", above),
+`stewards`/`the-hurt-are-tended` and `stewards`/`compost-answers-exhaustion`
+(both already named above as thinner than one behavioural change can
+survive). `millers`/`the-hurt-are-tended` and `hunters`/`kills-are-butchered-
+for-bone`, both flagged in the 5a entry below, are unchanged by this pass.
+Recorded together rather than as five separate entries because they are the
+same finding five times: a check whose margin is already known to be
+seed-sensitive moved again, under a change that moves every seed. A
+twenty-seed `century` cohort (see `changelog.md`) reads 99.9% mean survival
+and 11.7 technologies known, indistinguishable from 5a's own cohort — the
+world is healthy; these five lines are instrument noise, not damage.
+
+## Found shipping M11 phase 5a / M9.6 phase 4a, 2026-09-17
+
+### The `malice` migration flips three already-catalogued knife-edge checks, and grows `century`'s population enough to fail `perf-budget`
+
+Adding an eighth trait to `TRAITS` means an eighth `rng.gaussian` draw in
+founding's trait loop and in `inheritTraits`, which — exactly as `AGENTS.md`
+and this document have recorded for every past change to world-generation-time
+RNG — shifts every subsequent draw, for every scenario, on every seed. Three
+lines of `sim:check:all` changed, and all three were checked against the
+pre-migration build before being written down here, per this project's own
+rule against declaring a check "fixed" or "broken" without that comparison.
+
+`century` gains a `perf-budget` failure it did not have before: 1,700-1,950
+steps/s against a 2,000 floor, down from a stable 2,300-ish. Bisected rather
+than assumed: disabling the new decay loop in `Simulation`'s daily block and
+disabling the new trait in turn, one at a time, showed the slowdown tracks the
+trait, not the loop — and the reason is a genuinely bigger world. Peak
+population on this seed is 76 with the trait against 66 without it, and this
+project's systems are not free per person; a 15% larger population costing 15%
+of the throughput is the simulation doing more work, not doing the same work
+slower. `century` is already named in `AGENTS.md` as the scenario least able
+to absorb a world-generation-time RNG shift, and M9.5 phase 4a's entry below
+already recorded the identical shape (a `VARIABLE_NORMS` addition moving one
+extra draw per band, `crafts-happen-at-stations` failing on `millers` as a
+result) — this is that finding recurring on `century` and on `perf-budget`
+rather than a new phenomenon.
+
+`hunters`/`kills-are-butchered-for-bone` and `fishers`/`pictures-are-painted`
+trade from passing to failing, and `farmers`/`the-hurt-are-tended` trades the
+other way, from failing to passing. All three are already on record in this
+document as one- or two-event-wide checks — `kills-are-butchered-for-bone` on
+`hunters` under "`hunters`' coat chain is one event wide", `pictures-are-
+painted` under the M9.5 phase 2b and 3 entries on checks that "trade places
+under enough downstream RNG drift", and `the-hurt-are-tended` under three
+separate entries above — so this is each of them doing exactly what this
+document already said they would do under any behavioural change at all, not
+three new defects.
+
+Not fixed, and not tuned: a twenty-seed cohort (see the changelog entry for
+this pass) shows a healthy world on every figure that cohort size can resolve
+— survival, starvation and technologies known all move in a good direction —
+so there is nothing here to chase beyond what is already written down. If
+`perf-budget` on `century` is ever worth hardening against this kind of
+legitimate population growth, the fix is a floor that scales with population
+rather than a fixed steps-per-second number, which is a change to the
+instrument and belongs with whoever next tunes it, not with this migration.
+
+## Found shipping M11 phase 2, 2026-09-17
+
+### Nobody in this world has any fight skill, and that blocks more than it looks
+
+**Fixed in M11 phase 11a, 2026-09-21** — see `changelog.md`. The owner chose
+to combine two of the three options below: `doHunt` now trains a small
+trickle on a kill, and a new verb, `spar`, is deliberate mutual training
+between willing same-band people. **Left open by that fix, and worth
+watching rather than assumed away**: `DECISIVE_GAP` (`social/Vulnerability.ts`,
+currently `0.3`) was calibrated against the narrow, floor-dominated spread
+this entry describes below. Once `fight` skill actually varies across a
+population, that calibration is stale by construction — it was tuned against
+a range that no longer holds — and whichever later phase-11 commit first
+leans on `attack`/`threaten`'s gap math (the border guard, the raiding party)
+should re-measure it rather than trust the number inherited from before this
+fix.
+
+`fight` is trained by **exactly one thing**: landing a blow. `doAttack` calls
+`person.practice('fight', 1.2)` on the striker and `0.4` on the struck, and no
+other action in the game touches the skill. `SKILLS` has twelve entries and this
+is the only one whose sole trainer is the rare, gated, mutually-destructive act
+it governs.
+
+The consequence is a population pinned to the floor. `skillFactor` is
+`(0.35 + skills/100 * 0.85) * vigour`, so with the skill at zero it is
+`0.35 * vigour` for practically everybody, and the only things that separate two
+people's fighting power are **age and injury**:
+
+    healthy adult, untrained      0.35
+    adult at half health          0.18
+    elder, untrained              0.12 - 0.20
+    child, untrained              0.11 - 0.28
+
+The formula's range is about 0.1 to 1.2. The range the world actually produces
+is about 0.11 to 0.35, and the top of that is "an ordinary adult who is not
+hurt". This cost M11 phase 2c a calibration pass: `DECISIVE_GAP` was set at 0.6
+from reading the formula, which is wider than the widest gap that can occur, so
+the predation route it gated never fired once in two instrumented worlds.
+
+**Why it matters beyond that phase.** There can be no warriors. Not "no warrior
+job" — no warriors of any kind, because there is no mechanism by which anyone
+becomes better at fighting than the person next to them without first fighting
+them. That removes:
+
+- **a household that is feared**, which is half of what standing between
+  families would otherwise mean;
+- **a specialist**, so `division_of_labour` and `chiefdom` have nothing martial
+  to divide;
+- **the border guard of M10 phase 2**, who would be exactly as good at stopping
+  a raider as any farmer;
+- and **any reason for a raid to be risky**, since attacker and defender are
+  interchangeable.
+
+Not fixed here, because the fix is a design decision rather than a repair, and
+it belongs with the pass that needs it. The honest options, in the order they
+look cheapest:
+
+1. **Hunting trains it a little.** Defensible — a spear is a spear — and it is
+   one line in `doHunt`. It also quietly makes hunters the dangerous people in a
+   band, which is historically not wrong.
+2. **A `spar` verb**: practice between willing partners, socially positive,
+   trains both. This is how the skill would actually be got, and it gives the
+   player something to *do* about being weak.
+3. **Weapons carry more of it**, so a spear in untrained hands beats bare hands
+   decisively. `weaponOf` already runs through `techPower`; this moves the
+   differentiation from the person to the kit, which is a different game and
+   worth choosing deliberately rather than by default.
+
+### Two more borderline checks changed sides, and the list is getting long
+
+`stewards`' **`compost-answers-exhaustion`** went from passing to "5 loads
+rotted down, 0 spread over 0 tile-dressings" under M11 phase 2c. This document
+already carries "three spreadings a year is thin, and it is the scorer rather
+than the verb" from M8.2's second half. Three a year going to zero under a
+behavioural change is that thinness, not a new defect in composting: `spread`
+still accumulated 410 ticks in the same run, so people were trying.
+
+`farmers`' **`the-hurt-are-tended`** flipped back to failing, having flipped to
+passing one commit earlier. It is the check M11 phase 1 already recorded as one
+event wide at eighteen ticks.
+
+That now makes **five** checks in this suite documented as one or two events
+wide: `the-hurt-are-tended` on three scenarios, `kills-are-butchered-for-bone`
+on `hunters`, `compost-answers-exhaustion` on `stewards`, and `jobs-bias-work`,
+whose effect is smaller than its own seed-to-seed spread. They are not all the
+same bug, but they have the same shape, and the shape is worth naming: **a check
+written against a mechanism that fires a handful of times per run is a tripwire
+on whether it fired, not a measurement of whether the world does it.**
+
+The cost is real and it is paid every pass: a milestone that moves the world at
+all spends time deciding which of its red lines are findings and which are
+weather. Worth a pass of its own some day — either giving each of them a floor
+that means something, or moving them to `sim:seeds` where a mean across twenty
+worlds would resolve what one world cannot.
+
+## Found shipping M11 phase 1, 2026-09-17
+
+### `the-hurt-are-tended` is one event wide on `farmers` and `stewards`
+
+Softening `Brain`'s choice from argmax to a draw among the best (M11 phase 1b)
+flipped this check on two scenarios, and the flip is a fact about the check.
+
+At `choiceSpread: 0` both worlds report **18 ticks** spent sitting with the hurt
+and pass. At 0.12 both report **0** and fail. Eighteen ticks is one person
+kneeling beside another for a few seconds, once, in a whole run — so the check is
+not measuring whether a world tends its injured, it is measuring whether one
+particular encounter happened to occur. Any behavioural change at all will move
+it, in either direction, and it will keep changing sides.
+
+This is the third entry of this exact shape in this document. The other two are
+"two health checks are one or two events wide" (M9 phase 4) and "`hunters`' coat
+chain is one event wide, and a sixfold fruit harvest tipped it" (M9.6). The
+pattern is now established well enough to be worth stating as a rule: **a check
+whose detail line reports a number in the tens is a tripwire on one event, and
+should either be given a floor that means something or be read as a tripwire
+rather than as a measurement.**
+
+Not fixed here, deliberately. Fixing it means deciding what "a world tends its
+injured" should actually require, and that decision belongs with the pass that
+makes tending worth doing — not with the pass that happened to move it.
+
+**The same commit made the same check go from 0 ticks to 114 and pass on
+`century`**, where it had been failing since M9 phase 5 under the entry "a world
+that reaches herbalism never tends anybody with it". That entry can now be
+answered: the mechanism was never broken. `tend` simply never won an argmax
+against whatever else that person could have been doing, and an argmax gives a
+verb that is second-best every single time exactly nothing. `millers` still
+reports 0 and still fails.
+
+### `jobs-bias-work` changed sides again, on a tenth of a point
+
+`craft` reports holders spending **8.1%** of their time on their own job's work
+against everyone else's **8.2%** — so the check fails by one tenth of one point.
+
+This document already records that this check "has an effect smaller than its own
+seed-to-seed spread", found while building M8.1. Nothing has changed about that.
+It is listed here only so that the M11 phase 1b matrix has an explanation for
+every line that moved, rather than one unexplained failure that a later reader
+has to re-derive.
 
 ## Found shipping M9.6 phases 0-3, 2026-09-17
 
@@ -199,6 +622,20 @@ because it is a visible change to a number the player watches, and because
 a bug three weeks later.
 
 ## Found during M9.5 phase 4e, 2026-09-16
+
+### ~~The three graphs relax their whole layout every frame, open or idle~~
+
+**Mostly fixed in M9.6 phase 2d, from the other end.** `relax` now exits as
+soon as a pass moves less than `AT_REST`, so a settled arrangement costs one
+pass rather than the full budget — the tribe graph on a paused world does the
+O(n^2) sweep once, finds everybody already where they belong, and stops. That
+is not the caching this entry proposed and it gets most of the same result
+without splitting the digest in two. `FamilyTree` still calls `layOutFamily`
+from scratch every frame and does not seed from the previous arrangement the
+way `layOutTribe` does, so it pays a full relaxation whenever anything in its
+digest moves; it is the smallest of the three graphs and nothing about it is
+visible, but it is the part of this entry that is still true. Original report
+follows.
 
 ### The three graphs relax their whole layout every frame, open or idle
 

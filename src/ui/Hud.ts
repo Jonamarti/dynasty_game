@@ -23,12 +23,14 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import type { ResourceKind, ResourceNode } from '../sim/entities/ResourceNode.ts';
-import type { Building, BuildingDef } from '../sim/entities/Building.ts';
+import { isStructure, type Building, type BuildingDef } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
 import { NEEDS, SKILLS, TRAITS } from '../sim/entities/Person.ts';
+import { MOOD_CHANNELS } from '../sim/core/Mood.ts';
+import { MACROS, malnutrition, type Macro } from '../sim/core/Macros.ts';
 import { lastScores } from '../sim/ai/Brain.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
 import { actionLabel } from '../render/Floaters.ts';
@@ -119,6 +121,12 @@ const NEED_COLORS: Record<string, string> = {
   fatigue: '#9a7fd8',
   cold: '#7fd4ff',
   company: '#d87fa8',
+};
+
+const MACRO_COLORS: Record<Macro, string> = {
+  fat: '#d8b35c',
+  protein: '#c86a5c',
+  carb: '#8ac86a',
 };
 
 export class Hud {
@@ -828,6 +836,16 @@ export class Hud {
       rows.push(bar(need, person.needs[need], NEED_COLORS[need] ?? '#888', need));
     }
 
+    // M11 phase 8e. Malnutrition (8d) caps health recovery invisibly unless
+    // something says so here — the standing rule this project already keeps
+    // for `interruption`/`abandon` refusals applies just as much to a health
+    // mechanism nobody asked for and nobody can see.
+    rows.push('<div class="hud-section">Diet</div>');
+    for (const macro of MACROS) {
+      rows.push(bar(macro, person.macroBalance[macro] * 100, MACRO_COLORS[macro]));
+    }
+    rows.push('<div class="hud-note">' + escapeHtml(describeDiet(person)) + '</div>');
+
     const carried = person.inventory.entries();
     rows.push('<div class="hud-section">Carrying</div>');
     rows.push('<div class="hud-sub">' +
@@ -955,6 +973,17 @@ export class Hud {
     }
     rows.push('<div class="hud-note">Temperament weights every choice they make. ' +
       'A greedy, disloyal person genuinely prefers taking to asking.</div>');
+
+    // Mood: four channels on a -100..100 scale, shown at rest around the middle
+    // of the bar rather than the bottom. Nothing reads these yet (M9.6 phase
+    // 4a is inert scaffolding), but the inspector is where the migration's own
+    // discipline says the field has to show up the moment it exists.
+    rows.push('<div class="hud-section">Mood</div>');
+    for (const channel of MOOD_CHANNELS) {
+      rows.push(bar(channel, (person.mood[channel] + 100) / 2, '#8ac8a0'));
+    }
+    rows.push('<div class="hud-note">How their spirits are riding, resting toward a ' +
+      'point their temperament sets.</div>');
 
     // What they are working on now, before what they already know. An idea in
     // progress is the more interesting half: it has a story attached, it can
@@ -1451,6 +1480,25 @@ export class Hud {
     }
 
     rows.push('<div class="hud-section">Finished</div>');
+    // Condition, M11 phase 11b. Not gated on `known.knowsContents` the way the
+    // store's contents are below: unlike what is inside, that a wall is
+    // cracked or a roof is charred is visible to anyone who can see the
+    // building at all, and the standing rule this project holds panels to —
+    // if the simulation refuses or stops something, the UI has to say why —
+    // applies just as much to *why a building stopped working* as to why a
+    // person's order did. `isStructure` excludes a stockpile, which has no
+    // durability to report and would otherwise show a bar permanently full
+    // for a reason nobody could act on.
+    if (isStructure(building.def) && building.durability !== null) {
+      if (building.ruined) {
+        rows.push('<div class="hud-sub" style="color:#d9705a">Wrecked. It shelters ' +
+          'nobody and holds nothing new until somebody repairs it.</div>');
+      } else if (building.soundness < 1) {
+        rows.push(bar('condition', building.soundness * 100, '#d98032'));
+        rows.push('<div class="hud-sub">Damaged. Working at ' +
+          (building.soundness * 100).toFixed(0) + '% until it is repaired.</div>');
+      }
+    }
     // A trap that has stopped catching looks exactly like a trap that is
     // working, from outside, and the standing instruction on this project is
     // that anything the simulation refuses or abandons has to say so in the UI.
@@ -1648,6 +1696,38 @@ function describeHealth(health: number): string {
   if (health > 60) return 'They are carrying an injury.';
   if (health > 30) return 'They look badly hurt.';
   return 'They can barely stand.';
+}
+
+/** What each macro mostly comes from, for `describeDiet`'s sentence. */
+const MACRO_FOOD: Record<Macro, string> = {
+  fat: 'fat',
+  protein: 'meat or fish',
+  carb: 'fruit or grain',
+};
+
+/**
+ * M11 phase 8e. `Macros.malnutrition` caps health recovery from 8d onward,
+ * and a health mechanism nobody can see is the worst kind of difficulty —
+ * see this file's header on why every refusal already gets a reason. Read
+ * off `macroBalance` and `macroTarget` alone, the same two fields the bars
+ * above already show, so this sentence can never claim something the panel
+ * does not.
+ */
+function describeDiet(person: Person): string {
+  const severity = malnutrition(person);
+  if (severity < 0.08) return 'Eating a decent balance of food.';
+  let short: Macro = 'carb';
+  let shortBy = -Infinity;
+  for (const macro of MACROS) {
+    const gap = person.macroTarget[macro] - person.macroBalance[macro];
+    if (gap > shortBy) {
+      shortBy = gap;
+      short = macro;
+    }
+  }
+  if (severity < 0.2) return 'Diet is a little short on ' + MACRO_FOOD[short] + '.';
+  if (severity < 0.35) return 'Has gone without enough ' + MACRO_FOOD[short] + ' for a while now.';
+  return 'Badly malnourished — needs ' + MACRO_FOOD[short] + ' urgently.';
 }
 
 /**

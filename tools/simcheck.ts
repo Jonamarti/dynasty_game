@@ -17,7 +17,7 @@ import { telemetry } from '../src/sim/core/Telemetry.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
-import { isTrap, isHeap } from '../src/sim/entities/Building.ts';
+import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
@@ -101,20 +101,41 @@ export const SCENARIOS: Record<string, Scenario> = {
     name: 'scribes',
     description:
       'A band that can already write. The only run in which anything is cut ' +
-      'into stone or read off it: writing sits behind marking and ' +
-      'stoneworking, which no run in the suite reaches from nothing, so ' +
-      'without this every check about records would report n/a for ever.',
+      'into stone or read off it: writing sits behind marking, ' +
+      'stoneworking and, since M11 phase 9c, farming, none of which any run ' +
+      'in the suite reaches from nothing, so without this every check about ' +
+      'records would report n/a for ever. Its two bands are given different ' +
+      'starting knowledge for the same reason — see `startingTechByBand`.',
     config: {
       seed: 'scribes',
       population: {
         bands: 2, peoplePerBand: 12,
-        startingTech: ['cordage', 'hafting', 'stoneworking', 'marking', 'writing'],
+        // One thing each band's founders hold that the other's do not, on
+        // top of a shared literate core, both needing nothing beyond the
+        // core's own `cordage`. Without the split every adult in the world
+        // starts knowing the identical set, so there is nothing on any stone
+        // that anybody — bandmate or stranger — could not already tell you,
+        // and `records-are-cut` reported zero reads for exactly that reason;
+        // `writing`'s re-gating did not cause the problem and could not have
+        // fixed it either. The core itself: `plant_lore` and `grinding` are
+        // `farming`'s own prerequisites — `farming` has to be held directly,
+        // not merely reachable, because `prerequisitesMet` asks what a
+        // person *knows*, not what they could work out — needed since
+        // `writing.requires` gained `farming`, or these founders hold a
+        // technology with an unmet prerequisite and `teach`, `tryObserve`
+        // and `doRead`, which all filter on `requires`, could neither teach
+        // nor read it in the one scenario that exists to exercise either.
+        startingTechByBand: [
+          ['cordage', 'hafting', 'stoneworking', 'marking',
+            'plant_lore', 'grinding', 'farming', 'writing', 'basketry'],
+          ['cordage', 'hafting', 'stoneworking', 'marking',
+            'plant_lore', 'grinding', 'farming', 'writing', 'clothing'],
+        ],
       },
     },
     // Long enough for somebody to work something *new* out, cut it, and for
-    // somebody else to walk over and read it. A shorter run has every literate
-    // adult holding the same five technologies, so there is nothing on any
-    // stone that anybody lacks and the reading half never fires at all.
+    // somebody else to walk over and read it — including, now, walking far
+    // enough to reach the other band's stones at all.
     steps: 14000,
   },
   'harsh-winter': {
@@ -289,7 +310,18 @@ export const SCENARIOS: Record<string, Scenario> = {
       'thing in this game that takes most of a season to do anything at all: ' +
       'a run that ends before the first crop is in ear says nothing about ' +
       'whether farming works, and a run that ends before the third harvest ' +
-      'says nothing about whether the ground wears out.',
+      'says nothing about whether the ground wears out. Since M11 phase 10 ' +
+      'it also carries `taming` and `herding`, per `m8_plan_the_ages.md`\'s ' +
+      'own description of this scenario as "a herd run" — a long run is what ' +
+      'a herd needs too, since breeding is proportional growth from a small ' +
+      'founding stock and it takes real time to reach anything worth culling. ' +
+      '`dairying` and `wool` did **not** follow onto this list, on purpose: a ' +
+      'first attempt at adding them (with `spinning` and `weaving` besides) ' +
+      'moved this seed\'s cascade far enough that fields stopped being sown ' +
+      'at all for the whole run — `fields-are-sown-and-reaped`, `soil-is-' +
+      'drawn-down` and `compost-answers-exhaustion` all fell to n/a, losing ' +
+      'the coverage this scenario exists for. `herders` carries the pastoral ' +
+      'chain instead, apart from farming entirely.',
     config: {
       seed: 'furrow',
       population: {
@@ -297,8 +329,69 @@ export const SCENARIOS: Record<string, Scenario> = {
         // `grinding` as well as `farming`, and not for the prerequisite: the
         // quern is what makes a harvest worth three times what it weighs, and a
         // band that farms without one is a band eating the poorest food in the
-        // game on purpose.
-        startingTech: ['farming', 'plant_lore', 'grinding', 'division_of_labour'],
+        // game on purpose. `tracking` and `taming` are `herding`'s own
+        // prerequisites, named for the same reason.
+        startingTech: [
+          'farming', 'plant_lore', 'grinding', 'division_of_labour',
+          'tracking', 'taming', 'herding',
+        ],
+      },
+    },
+    steps: 24000,
+  },
+  herders: {
+    name: 'herders',
+    description:
+      'A band that already knows how to keep a herd, apart from `farming` ' +
+      'entirely — `dairying` and `wool` were tried on `farmers` first and ' +
+      'measured moving that seed\'s cascade far enough to stop any field ' +
+      'ever being sown, which is exactly the kind of collision a dedicated ' +
+      'scenario avoids by not asking one seed to carry two things that were ' +
+      'never each other\'s dependency. Long, on the same argument `farmers` ' +
+      'makes for itself: breeding is proportional growth from a small ' +
+      'founding stock, and it takes real time to reach anything worth ' +
+      'culling, milking or shearing.',
+    config: {
+      seed: 'fold',
+      population: {
+        bands: 2, peoplePerBand: 10,
+        startingTech: [
+          'tracking', 'taming', 'herding', 'dairying', 'wool', 'spinning',
+          'weaving', 'division_of_labour',
+        ],
+      },
+    },
+    steps: 20000,
+  },
+  feasts: {
+    name: 'feasts',
+    description:
+      '`brewing`\'s own scenario, kept apart from `farmers` and `herders` ' +
+      'rather than added to either — this milestone has twice measured what ' +
+      'a technology grafted onto an unrelated scenario\'s starting knowledge ' +
+      'can do to that scenario\'s own cascade, and `toast` needs nothing ' +
+      'from the pastoral chain to exercise at all. `pottery` and `farming` ' +
+      'are `brewing`\'s own prerequisites; nothing else is granted. The same ' +
+      'population shape as `farmers` — a single small band planned no field ' +
+      'at all in 24,000 ticks, because nobody happened across enough wild ' +
+      'grain to sow one; two bands of twelve give the same wild grain more ' +
+      'eyes looking for it, on no more evidence than that being what already ' +
+      'works for `farmers`. `grinding` is granted rather than `farming` ' +
+      'itself, and deliberately: wild grain is worth 0 nutrition raw, so ' +
+      'with no `grinding` known nobody has a reason to pick it up at all — ' +
+      'measured, a first attempt granting `farming` alone never planted a ' +
+      'single field in 24,000 ticks, for want of the seed to sow one.' +
+      ' `farming` was tried next, and measured colliding with `brewing` for ' +
+      'the same wild grain: a field got planned but never sown, because ' +
+      'brewing was spending the grain a sowing needs faster than foraging ' +
+      'could replace it. `brewing` needs only `pottery` to run — `farming` ' +
+      'is its own prerequisite in name, not in what `RECIPES.beer` reads — ' +
+      'so it is left out, and wild grain answers the recipe on its own.',
+    config: {
+      seed: 'cup',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTech: ['pottery', 'plant_lore', 'grinding', 'brewing'],
       },
     },
     steps: 24000,
@@ -379,6 +472,40 @@ export const SCENARIOS: Record<string, Scenario> = {
       },
     },
     steps: 9000,
+  },
+  lean: {
+    name: 'lean',
+    description:
+      'A long run on an island that does not quite carry everyone. The ' +
+      'scenario the social layer is measured in, and it exists because the ' +
+      'default world has no pressure left in it at all: `century` ends with ' +
+      'mean hunger at 13 of 100, mean health at 100.0, and a population that ' +
+      'peaks and never falls. Nobody steals when nothing is scarce, nobody ' +
+      'hates anybody, and a band will not cast anyone out — so every check ' +
+      'about theft, grudges, factions or exile reports n/a no matter how the ' +
+      'mechanism behind it is built. A mechanism measured only where it ' +
+      'cannot fire is a mechanism that gets tuned upward until it fires for ' +
+      'the wrong reason, which is the failure `hunt` and `threaten` both ' +
+      'already have entries in the changelog for. ' +
+      'This is the same affordance `harsh-winter` uses when it shortens a ' +
+      'season and `craft` uses when it hands its founders three ' +
+      'technologies: move the starting conditions until a run can reach the ' +
+      'thing under test, rather than weakening the test until it passes. ' +
+      'It is deliberately NOT `crowded`, which is thin forage over 3,000 ' +
+      'steps: a grudge needs years to accumulate and a dynasty needs ' +
+      'generations, so scarcity has to be paired with length or the social ' +
+      'layer never matures enough to be worth measuring. And it is ' +
+      'deliberately short of a collapse, because a world that dies measures ' +
+      'nothing either.',
+    config: {
+      seed: 'lean',
+      world: {
+        berryBushes: 90, gameHerds: 8, deadwood: 70, fishingSpots: 12,
+        treeDensity: 0.3, regrowthRate: 0.25,
+      },
+      population: { bands: 3, peoplePerBand: 12 },
+    },
+    steps: 24000,
   },
 };
 
@@ -1352,9 +1479,20 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // both traps exist at all, and what is conceived after that is decided by the
   // scenario rather than by the web: it read "3 routes into 1 technologies" and
   // failed, which is the check being asked a question this world cannot answer
-  // rather than the web having collapsed to one path. `craft` (four) and
-  // `scribes` (five) sit below the line and still answer it honestly.
-  const handedOut = sim.config.population.startingTech?.length ?? 0;
+  // rather than the web having collapsed to one path. `craft` (four) sits below
+  // the line and still answers it honestly. `scribes` used to as well, at five,
+  // until M11 phase 9c's `writing.requires` change pushed each band's
+  // `startingTechByBand` entry to nine to stay literate at all — it is now
+  // skipped here for the same reason `traps` is, which is the threshold doing
+  // its job rather than a loss.
+  //
+  // `startingTechByBand` replaces `startingTech` per band rather than sitting
+  // alongside it, so the widest band's count is what answers "how much was
+  // this world handed", not the (unused once a scenario sets the by-band
+  // form) flat list.
+  const handedOut = Math.max(
+    sim.config.population.startingTech?.length ?? 0,
+    ...(sim.config.population.startingTechByBand?.map(list => list.length) ?? [0]));
   const TREE_GIVEN_AWAY = 6;
 
   if ((last.day - first.day) >= 30 && handedOut >= TREE_GIVEN_AWAY) {
@@ -1509,16 +1647,24 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // The fourth channel, and the only one that crosses a death. Writing sits
   // behind marking and stoneworking, which nothing in the suite reaches from
   // nothing, so the `scribes` scenario starts its founders literate.
-  const cut = sum('recorded_');
+  //
+  // Counted by form, not by `recorded_` — M9's phase 9a split what a record
+  // gives back, and `recordedTech` now counts only `instruction` forms (stone,
+  // clay). `sum('recorded_')` still fires for `ochre`, so before this split a
+  // paint-only band (no `writing` at all) tripped the `else` branch with
+  // `cut > 0` and `recordedTech.size === 0` and failed a check about writing
+  // for having painted instead. That band's paintings are `pictures-are-
+  // painted`'s to measure, not this one's.
+  const instructionCut = (tel.inscribed_stone ?? 0) + (tel.inscribed_clay ?? 0);
   const read = sum('read_');
-  if (!sim.knownTech.has('writing') && cut === 0) {
+  if (!sim.knownTech.has('writing') && instructionCut === 0) {
     skip('records-are-cut', 'nobody in this world can write');
   } else {
     add('records-are-cut',
-      cut > 0 && sim.recordedTech.size > 0,
-      cut + ' things cut into ' + sim.inscriptions.length + ' records; ' +
+      instructionCut > 0 && sim.recordedTech.size > 0,
+      instructionCut + ' things cut into stone or clay; ' +
         sim.recordedTech.size + ' technologies are written down somewhere, ' +
-        read + ' read back off a stone');
+        read + ' read back off a record');
   }
 
   // Reading is deliberately *not* asserted here, and that is a finding rather
@@ -1665,6 +1811,22 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('music-answers-loneliness',
       played > 0 && heard > 0,
       played + ' tunes played, heard by somebody else on ' + heard + ' ticks');
+  }
+
+  // M11 phase 10, seventh and last commit of the tier. Same shape as
+  // `music-answers-loneliness`, one node along: knowing `brewing` is not
+  // having a beer, and having one only matters once somebody else is there
+  // to be poured one — `toast_listeners` is what tells the two apart.
+  if (!sim.knownTech.has('brewing')) {
+    skip('beer-answers-loneliness', 'nobody here knows how to brew');
+  } else if ((tel.crafted_beer ?? 0) === 0) {
+    skip('beer-answers-loneliness', 'the knowledge is here and no beer was ever brewed');
+  } else {
+    const toasted = tel.toasted ?? 0;
+    const heard = tel.toast_listeners ?? 0;
+    add('beer-answers-loneliness',
+      toasted > 0 && heard > 0,
+      toasted + ' toasts made, heard by somebody else ' + heard + ' times');
   }
 
   if (!sim.knownTech.has('herbalism')) {
@@ -1963,7 +2125,13 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // number, because a field on thin ground and a field that has been worked to
   // death read identically from the absolute figure — which is exactly the
   // mistake `soilReport` exists to stop the panel making too.
-  if (standing.length === 0 || (tel.field_reaped ?? 0) === 0) {
+  if ((tel.compost_spread ?? 0) > 0) {
+    // `stewards` exists to measure the opposite half of this mechanism. Once
+    // somebody has put fertility back, demanding that the same soil still sit
+    // below its resting state punishes compost for succeeding; its own check
+    // immediately below compares that dressed ground with farming alone.
+    skip('soil-is-drawn-down', 'compost was spread on the worked ground');
+  } else if (standing.length === 0 || (tel.field_reaped ?? 0) === 0) {
     skip('soil-is-drawn-down', 'no harvest was taken off any ground in this run');
   } else {
     let worked = 0;
@@ -2028,6 +2196,63 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         ' collected, ' + ((tel.trap_full_snare ?? 0) + (tel.trap_full_fish_trap ?? 0)) +
         ' days spent full, ' + (tel.trap_unworked_snare ?? 0) +
         ' days nobody could work one');
+  }
+
+  // M11 phase 10. A pen has two ways to be inert that a trap does not: nobody
+  // ever builds one, or one stands full for ever because breeding is not the
+  // same claim as catching and this project has shipped that exact failure
+  // once already, as fifty trap-days of standing full. `herd_bred` is the
+  // first half and `herd_culled` is the second.
+  const pensBuilt = sim.buildings.filter(b => b.complete && isHerd(b.def));
+  if (pensBuilt.length === 0 && (tel.band_planned_pen ?? 0) === 0) {
+    skip('herds-breed-and-are-culled', 'nobody in this world knows how to keep a pen');
+  } else {
+    add('herds-breed-and-are-culled',
+      (tel.herd_bred ?? 0) > 0 && (tel.herd_culled ?? 0) > 0,
+      (tel.band_planned_pen ?? 0) + ' planned, ' + pensBuilt.length + ' standing; ' +
+        (tel.herd_bred ?? 0) + ' bred, ' + (tel.herd_culled ?? 0) + ' culled, ' +
+        (tel.herd_at_capacity ?? 0) + ' days at capacity, ' +
+        (tel.herd_unworked ?? 0) + ' days nobody could keep one');
+  }
+
+  // M11 phase 10, fifth commit. A well's whole claim is that it gets *drawn
+  // from* — a well nobody ever drinks at is a hole in the ground with a roof
+  // over it, indistinguishable from decoration by every other check in this
+  // suite, since it declares no yield and holds no store to inspect.
+  // `drink_at_well` is the one signal that tells the two apart.
+  const wellsBuilt = sim.buildings.filter(b => b.complete && isWell(b.def));
+  if (wellsBuilt.length === 0 && (tel.band_planned_well ?? 0) === 0) {
+    skip('wells-are-drawn-from', 'nobody in this world knows how to sink a well');
+  } else {
+    add('wells-are-drawn-from',
+      (tel.drink_at_well ?? 0) > 0,
+      (tel.band_planned_well ?? 0) + ' planned, ' + wellsBuilt.length + ' standing; ' +
+        (tel.drink_at_well ?? 0) + ' drinks taken at one');
+  }
+
+  // M11 phase 10, sixth commit. `dairying` and `wool` both accrue into the
+  // same pen `herding` already builds, so the risk they add is narrower than
+  // the pen's own: not "does anything grow", but "does anything grown get
+  // used" — a milk that only ever piles up unused is exactly the trap-days-
+  // standing-full failure one level along, and `eaten_milk`/`crafted_
+  // wool_cloth` are what tell a used byproduct from an ignored one. Skips
+  // per byproduct rather than together, since a world can know one and not
+  // the other.
+  const milkBred = tel.milk_bred ?? 0;
+  if (milkBred === 0) {
+    skip('milk-is-drawn-and-drunk', 'no milk was ever bred in this run');
+  } else {
+    add('milk-is-drawn-and-drunk',
+      (tel.eaten_milk ?? 0) > 0,
+      milkBred + ' milk bred, ' + (tel.eaten_milk ?? 0) + ' eaten');
+  }
+  const woolBred = tel.wool_bred ?? 0;
+  if (woolBred === 0) {
+    skip('wool-is-sheared-and-woven', 'no wool was ever bred in this run');
+  } else {
+    add('wool-is-sheared-and-woven',
+      (tel.crafted_wool_cloth ?? 0) > 0,
+      woolBred + ' wool bred, ' + (tel.crafted_wool_cloth ?? 0) + ' woven into cloth');
   }
 
   // There is deliberately no `traps-are-emptied` check here, and the reason is
@@ -2151,13 +2376,84 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // regard and fail a check about a design property that had not changed.
   const outsider = opinionOf((a, b) =>
     a.p.bandId !== b.p.bandId && a.p.householdId !== b.p.householdId);
+  // The same bucket with blood and marriage taken out of it, and it is
+  // reported rather than asserted because it measures something the check
+  // above does not claim.
+  //
+  // `outsider` is not "what people think of strangers". `RelationshipGraph`
+  // creates an edge on first *use*, and `setKinship` is a use: it calls
+  // `edge()`, which returns a relationship with `bias: 0`, and `introduce`
+  // then refuses to stamp an impression on an edge that already exists
+  // (`if (this.peek(...)) return false`). `linkFamily` runs at every birth and
+  // at founding, before anybody has met anybody. So a blood relative in
+  // another band **never receives `OUT_GROUP_BIAS` at all**: their edge is
+  // born carrying `KIN_PARENT` 60 or `KIN_SIBLING` 40 against a bias of zero.
+  //
+  // The comment above already records that `bandId` is not reassigned on
+  // marriage. Put the two together and the `outsider` mean is every real
+  // stranger plus every cross-band in-law at +40 to +60 whom nobody has ever
+  // laid eyes on — which on a world with any cross-band marriage at all is
+  // enough to drag it positive and make it read as "strangers are liked".
+  //
+  // This figure is what somebody tuning the out-group must calibrate against.
+  // Tuning against `outsider` would over-correct a world that is not in fact
+  // friendly to strangers into one that is permanently xenophobic.
+  const unrelated = opinionOf((a, b) =>
+    a.p.bandId !== b.p.bandId && a.p.householdId !== b.p.householdId &&
+    sim.relationships.kinship(a.p.id, b.p.id) === 0);
+  // M11 phase 7a shipped this reading 0 pairs on every scenario, an
+  // instrument for the engines phase 7b would add, on the same "measure
+  // before changing anything" reasoning `unrelated` above already gives.
+  // `bands-take-sides` below is the check phase 7c finally gates on it.
+  const bandStanding = sim.bandRelations.stats();
   const detail =
-    'household=' + fmt(kin) + ' band=' + fmt(band) + ' outsider=' + fmt(outsider);
+    'household=' + fmt(kin) + ' band=' + fmt(band) + ' outsider=' + fmt(outsider) +
+    ' outsider-unrelated=' + fmt(unrelated) +
+    ' · band-pairs=' + bandStanding.pairs +
+    ' friendliest=' + bandStanding.friendliest.toFixed(1) +
+    ' hostile=' + bandStanding.hostile.toFixed(1);
+  // `unrelated` is deliberately absent from both the skip condition and the
+  // assertion. It is an instrument, not a gate: folding a fourth bucket into
+  // either one would make this commit a behavioural change to a check that
+  // passes today, and the whole point of adding it is to measure before
+  // changing anything.
   if (Number.isNaN(kin) || Number.isNaN(band) || Number.isNaN(outsider)) {
     skip('kin-outrank-strangers',
       'not all three kinds of tie have ' + MIN_TIE_PAIRS + '+ pairs here: ' + detail);
   } else {
     add('kin-outrank-strangers', kin > band && band > outsider, detail);
+  }
+
+  // M11 phase 7c. `BandRelations` shipped inert in phase 7a and it would be
+  // the "looks reassuring, detects nothing" failure `AGENTS.md` warns about
+  // to assert a spread against a build where every pair was known to read 0
+  // by construction — so this checks the *spread* between the friendliest
+  // and most hostile pair, not merely that pairs exist.
+  //
+  // And it needs the length `lean`'s own description already argues a
+  // grudge needs: on every short scenario measured while writing this check
+  // — `band`, `crowded`, `harsh-winter`, `coast`, `traps`, `hunters`, 12 to
+  // 40 days each — pairs had already touched (0.2 to 15.9 apart) but had not
+  // had time to separate widely; `lean` at 100 days reached the -100 floor.
+  // Asserting the 20-point bar below on a run that short would be exactly
+  // the fragile, seed-flaked check `AGENTS.md` already names five of in
+  // `bugs.md`, so this skips rather than fails under `BAND_STANDING_DAYS`.
+  // Between `lean` (100 days, spread 100) and the longest short scenario
+  // measured above (`harsh-winter`, 40 days, spread 15.9).
+  const BAND_STANDING_DAYS = 60;
+  const spreadDays = last.day - first.day;
+  if (bandStanding.pairs === 0) {
+    skip('bands-take-sides', 'no two bands have touched each other in this run');
+  } else if (spreadDays < BAND_STANDING_DAYS) {
+    skip('bands-take-sides',
+      'run covers only ' + spreadDays + ' days; too short for standing to have spread ' +
+      '(' + bandStanding.pairs + ' pairs, spread so far ' +
+      (bandStanding.friendliest - bandStanding.hostile).toFixed(1) + ')');
+  } else {
+    const spread = bandStanding.friendliest - bandStanding.hostile;
+    add('bands-take-sides', spread > 20,
+      bandStanding.pairs + ' pairs, friendliest=' + bandStanding.friendliest.toFixed(1) +
+      ' hostile=' + bandStanding.hostile.toFixed(1) + ' (spread ' + spread.toFixed(1) + ')');
   }
 
   add(

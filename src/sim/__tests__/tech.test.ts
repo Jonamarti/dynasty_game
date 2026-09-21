@@ -15,6 +15,7 @@ import { describe, it, expect } from 'vitest';
 import {
   TECH, TECHS, TECH_EFFECTS, ERAS, ERA_ORDER, AGES, ageIndex, eraFor, reachableFrom,
   techPower, carryFactor, forageYieldFactor, nutritionFactor, warmthFrom,
+  axeFactor, buildFactor, reapFactor, calendarFactor,
   type Tech,
 } from '../knowledge/Tech.ts';
 import { BUILDINGS, isStation } from '../entities/Building.ts';
@@ -108,6 +109,27 @@ describe('the tech table', () => {
     everything.inventory.add('fur_coat', 1);
     expect(warmthFrom(everything)).toBeGreaterThan(warmthFrom(clad));
     expect(warmthFrom(everything)).toBeLessThan(1);
+  });
+
+  it('makes wool cloth warmer than plain cloth, on the same double gate', () => {
+    const woven = someone();
+    woven.knownTech.add('weaving');
+    woven.inventory.add('cloth', 1);
+    const woollen = someone();
+    woollen.knownTech.add('wool');
+    woollen.inventory.add('wool_cloth', 1);
+    const bare = someone();
+
+    expect(warmthFrom(woven)).toBeGreaterThan(warmthFrom(bare));
+    expect(warmthFrom(woollen)).toBeGreaterThan(warmthFrom(woven));
+    // Knowing `wool` without a length of it, or carrying one without knowing
+    // how it was made, does nothing — the `handaxe` rule again.
+    const knowerOnly = someone();
+    knowerOnly.knownTech.add('wool');
+    const carrierOnly = someone();
+    carrierOnly.inventory.add('wool_cloth', 1);
+    expect(warmthFrom(knowerOnly)).toBe(warmthFrom(bare));
+    expect(warmthFrom(carrierOnly)).toBe(warmthFrom(bare));
   });
 
   it('sends station recipes to buildings that exist and are stations', () => {
@@ -258,9 +280,10 @@ describe('when each thing was really worked out', () => {
   it('is history rather than a second gate', () => {
     // The anachronism is the point, and this test is here so that nobody
     // "fixes" it: writing is a Bronze Age technology resting on two
-    // Palaeolithic ones, so a lucky band can have it long before the Bronze
-    // Age. If this ever fails because somebody made `age` a prerequisite
-    // check, that is the regression, not this expectation.
+    // Palaeolithic ones and, since M11 phase 9c, one Neolithic one
+    // (`farming`), so a lucky band can have it long before the Bronze Age.
+    // If this ever fails because somebody made `age` a prerequisite check,
+    // that is the regression, not this expectation.
     expect(TECH.writing.age).toBe('bronze');
     for (const required of TECH.writing.requires) {
       expect(ageIndex(TECH[required].age)).toBeLessThan(ageIndex('bronze'));
@@ -313,6 +336,111 @@ describe('technology in one person’s hands', () => {
     equipped.age = bare.age;
     equipped.knownTech.add('cordage');
     expect(equipped.carryCapacity).toBeGreaterThan(bare.carryCapacity);
+  });
+});
+
+describe('M11 phase 10: axe, sickle and adze', () => {
+  it('fells nothing faster without an axe in hand', () => {
+    const knower = someone();
+    knower.knownTech.add('hafting');
+    knower.knownTech.add('ground_stone');
+    expect(axeFactor(knower)).toBe(1);
+  });
+
+  it('halves the work with a hand axe and more with a polished one, and never breaks the double gate', () => {
+    const handaxeOnly = someone();
+    handaxeOnly.knownTech.add('hafting');
+    handaxeOnly.inventory.add('handaxe', 1);
+    expect(axeFactor(handaxeOnly)).toBeCloseTo(0.5);
+
+    // The `handaxe` bug, checked directly: a hand axe in the hands of somebody
+    // who could not have made it does nothing.
+    const carrierOnly = someone();
+    carrierOnly.inventory.add('handaxe', 1);
+    expect(axeFactor(carrierOnly)).toBe(1);
+
+    // `stone_axe` betters `handaxe`, and holding both takes the better one
+    // rather than stacking — only one axe is swinging.
+    const both = someone();
+    both.knownTech.add('hafting');
+    both.knownTech.add('ground_stone');
+    both.inventory.add('handaxe', 1);
+    both.inventory.add('stone_axe', 1);
+    expect(axeFactor(both)).toBeLessThan(0.5);
+  });
+
+  it('never drives the felling or reaping multiplier to zero or below, at any refinement', () => {
+    // The bug this guards: `axeFactor` and `reapFactor` read `scaled` with a
+    // `full` under 1, so a technology's own `maxRefinement` has to be chosen so
+    // the floor stays positive — `ground_stone` shipped with `maxRefinement: 3`
+    // and a floor of -0.04 until this was caught, which would have felled a
+    // tree in zero ticks. Walking every refinement step up to the ceiling is
+    // cheaper than trusting the arithmetic by eye a second time.
+    const axeCarrier = someone();
+    axeCarrier.knownTech.add('hafting');
+    axeCarrier.knownTech.add('ground_stone');
+    axeCarrier.inventory.add('handaxe', 1);
+    axeCarrier.inventory.add('stone_axe', 1);
+    const maxAxeRefinement = Math.max(TECH.hafting.maxRefinement, TECH.ground_stone.maxRefinement);
+    for (let step = 0; step <= maxAxeRefinement; step++) {
+      axeCarrier.techLevel.set('hafting', step);
+      axeCarrier.techLevel.set('ground_stone', step);
+      expect(axeFactor(axeCarrier), 'axeFactor at refinement ' + step).toBeGreaterThan(0);
+    }
+
+    const reaper = someone();
+    reaper.knownTech.add('sickle');
+    reaper.inventory.add('sickle', 1);
+    for (let step = 0; step <= TECH.sickle.maxRefinement; step++) {
+      reaper.techLevel.set('sickle', step);
+      expect(reapFactor(reaper), 'reapFactor at refinement ' + step).toBeGreaterThan(0);
+    }
+  });
+
+  it('speeds building only for whoever both knows ground_stone and carries an adze', () => {
+    const bare = someone();
+    const knowerOnly = someone();
+    knowerOnly.knownTech.add('ground_stone');
+    const carrierOnly = someone();
+    carrierOnly.inventory.add('adze', 1);
+    const equipped = someone();
+    equipped.knownTech.add('ground_stone');
+    equipped.inventory.add('adze', 1);
+
+    expect(buildFactor(knowerOnly)).toBe(buildFactor(bare));
+    expect(buildFactor(carrierOnly)).toBe(buildFactor(bare));
+    expect(buildFactor(equipped)).toBeGreaterThan(buildFactor(bare));
+  });
+});
+
+describe('M11 phase 10, second commit: calendar and the cart', () => {
+  it('raises a harvest for whoever knows the calendar, with no item to carry', () => {
+    const bare = someone();
+    const keeper = someone();
+    keeper.knownTech.add('calendar');
+    expect(calendarFactor(keeper)).toBeGreaterThan(calendarFactor(bare));
+    expect(calendarFactor(bare)).toBe(1);
+  });
+
+  it('never drives the calendar term to zero or below, at any refinement', () => {
+    const keeper = someone();
+    keeper.knownTech.add('calendar');
+    for (let step = 0; step <= TECH.calendar.maxRefinement; step++) {
+      keeper.techLevel.set('calendar', step);
+      expect(calendarFactor(keeper), 'calendarFactor at refinement ' + step).toBeGreaterThan(0);
+    }
+  });
+
+  it('carries more with a cart than with a basket alone, and never without knowing the_wheel', () => {
+    const bare = someone();
+    const carrierOnly = someone();
+    carrierOnly.inventory.add('cart', 1);
+    const equipped = someone();
+    equipped.knownTech.add('the_wheel');
+    equipped.inventory.add('cart', 1);
+
+    expect(carryFactor(carrierOnly)).toBe(carryFactor(bare));
+    expect(carryFactor(equipped)).toBeGreaterThan(carryFactor(bare));
   });
 });
 

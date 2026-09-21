@@ -114,13 +114,30 @@ export const CONVERSATION_MODES: Record<ConversationMode, ConversationModeDef> =
 export const MODE_LADDER: ConversationMode[] = ['greet', 'chat', 'interests', 'deep'];
 
 /**
- * Familiarity gained across a band boundary, as a share of the ordinary gain.
+ * Familiarity gained across a band boundary at neutral standing, as a share
+ * of the ordinary gain.
  *
- * The ratio the single conversation already used — 1.5 against 3.5 — kept as a
- * multiplier so that it means the same thing on every rung. It takes longer to
- * warm to somebody you did not grow up beside.
+ * The ratio the single conversation already used — 1.5 against 3.5 — kept as
+ * a multiplier so that it means the same thing on every rung. It takes
+ * longer to warm to somebody you did not grow up beside — at neutral
+ * standing. `CROSS_BAND_STANDING_SCALE` is M11 phase 7c: two peoples on good
+ * terms warm to each other closer to the in-band rate, and two peoples at
+ * open hostility warm to each other closer to not at all.
  */
 const CROSS_BAND = 1.5 / 3.5;
+
+/**
+ * How far one point of `BandRelations.standing` moves the cross-band
+ * familiarity factor. At `standing === 100` (close allies) the factor
+ * reaches 0.83, most of the way to talking to one's own band; at `-100`
+ * (open hostility) it is clamped at `CROSS_BAND_FLOOR` rather than reaching
+ * zero — strangers who despise each other's peoples can still, slowly, come
+ * to know one person as a person.
+ */
+const CROSS_BAND_STANDING_SCALE = 0.004;
+
+/** However hostile the standing, warming to a stranger is never quite impossible. */
+const CROSS_BAND_FLOOR = 0.05;
 
 /**
  * How long two people have to go without anything passing between them before
@@ -164,8 +181,11 @@ export function chooseMode(rel: Relationship | null, tick: number): Conversation
  * argument over a design as well as a conversation: whatever the two were
  * doing, warming to somebody from another band takes longer.
  */
-export function crossBand(warmth: number, sameBand: boolean): number {
-  return sameBand ? warmth : warmth * CROSS_BAND;
+export function crossBand(warmth: number, sameBand: boolean, standing = 0): number {
+  if (sameBand) return warmth;
+  const factor = Math.max(
+    CROSS_BAND_FLOOR, Math.min(1, CROSS_BAND + standing * CROSS_BAND_STANDING_SCALE));
+  return warmth * factor;
 }
 
 /**

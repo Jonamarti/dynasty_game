@@ -12,6 +12,15 @@ export interface ItemDef {
   label: string;
   /** Hunger points restored by eating one unit. 0 means inedible. */
   nutrition: number;
+  /**
+   * M11 phase 8a. Fat, protein and carbohydrate as fractions of `nutrition`
+   * that sum to 1. Present only on items with `nutrition > 0` — a fraction of
+   * zero nourishment is not a macronutrient, it is a unit test waiting to
+   * fail. Nothing reads this yet; it exists so 8b can compute a rolling
+   * balance and 8c/8d can make imbalance cost something, without either of
+   * those commits also having to invent the numbers.
+   */
+  macros?: { fat: number; protein: number; carb: number };
   /** Ticks before one unit spoils. 0 means it keeps indefinitely. */
   spoilTicks: number;
   /** Rough scarcity weight used as the base of subjective barter value. */
@@ -35,11 +44,14 @@ export interface ItemDef {
 }
 
 export const ITEMS: Record<string, ItemDef> = {
-  berries:  { id: 'berries',  label: 'Berries',    nutrition: 14, spoilTicks: 2400, baseValue: 1 },
-  apple:    { id: 'apple',    label: 'Apples',     nutrition: 16, spoilTicks: 6000, baseValue: 1 },
-  pear:     { id: 'pear',     label: 'Pears',      nutrition: 15, spoilTicks: 4800, baseValue: 1 },
-  plum:     { id: 'plum',     label: 'Plums',      nutrition: 13, spoilTicks: 3000, baseValue: 1 },
-  hazelnut: { id: 'hazelnut', label: 'Hazelnuts',  nutrition: 22, spoilTicks: 0,    baseValue: 2 },
+  berries:  { id: 'berries',  label: 'Berries',    nutrition: 14, spoilTicks: 2400, baseValue: 1, macros: { fat: 0.05, protein: 0.05, carb: 0.90 } },
+  apple:    { id: 'apple',    label: 'Apples',     nutrition: 16, spoilTicks: 6000, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 } },
+  pear:     { id: 'pear',     label: 'Pears',      nutrition: 15, spoilTicks: 4800, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 } },
+  plum:     { id: 'plum',     label: 'Plums',      nutrition: 13, spoilTicks: 3000, baseValue: 1, macros: { fat: 0.04, protein: 0.04, carb: 0.92 } },
+  // A nut is a fat, not a fruit: it is what keeps `carb` from being every
+  // forageable's dominant macro, which would make the whole system read as a
+  // single lever wearing three names.
+  hazelnut: { id: 'hazelnut', label: 'Hazelnuts',  nutrition: 22, spoilTicks: 0,    baseValue: 2, macros: { fat: 0.75, protein: 0.15, carb: 0.10 } },
   // M8.1, mechanism 4. The first inedible food in the game, and the point of
   // the quern.
   //
@@ -74,13 +86,13 @@ export const ITEMS: Record<string, ItemDef> = {
   // reason to gather wild cereal, and `Brain.nodeWorth` values it the way
   // `fruitWorth` has valued acorns since M8.1. No deadlock, and no bait.
   grain:    { id: 'grain',    label: 'Grain',      nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
-  meal:     { id: 'meal',     label: 'Meal',       nutrition: 34, spoilTicks: 0,    baseValue: 4 },
+  meal:     { id: 'meal',     label: 'Meal',       nutrition: 34, spoilTicks: 0,    baseValue: 4, macros: { fat: 0.02, protein: 0.13, carb: 0.85 } },
   // M8.2. The only item in the game whose whole purpose is to be put back into
   // the ground. Worth nothing to eat and nearly nothing to trade, and a band
   // that has some is a band whose fields have another twenty years in them.
   compost:  { id: 'compost',  label: 'Compost',    nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
-  meat:     { id: 'meat',     label: 'Raw meat',   nutrition: 30, spoilTicks: 1200, baseValue: 3 },
-  fish:     { id: 'fish',     label: 'Fish',       nutrition: 18, spoilTicks: 800,  baseValue: 2 },
+  meat:     { id: 'meat',     label: 'Raw meat',   nutrition: 30, spoilTicks: 1200, baseValue: 3, macros: { fat: 0.45, protein: 0.55, carb: 0 } },
+  fish:     { id: 'fish',     label: 'Fish',       nutrition: 18, spoilTicks: 800,  baseValue: 2, macros: { fat: 0.35, protein: 0.65, carb: 0 } },
   // A kill yields a hide as well as meat, and a hide in cold hands is the
   // heaviest spark clothing has. Without it that route could never fire.
   hide:     { id: 'hide',     label: 'Hide',       nutrition: 0,  spoilTicks: 0,    baseValue: 3 },
@@ -158,6 +170,69 @@ export const ITEMS: Record<string, ItemDef> = {
   thatch:   { id: 'thatch',   label: 'Thatch',     nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   mud:      { id: 'mud',      label: 'Daub',       nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   pottery:  { id: 'pottery',  label: 'Pot',        nutrition: 0,  spoilTicks: 0,    baseValue: 6 },
+  // --- M11 phase 10, the widened Neolithic: see m8_plan_the_ages.md ----------
+  //
+  // `ground_stone`'s two tools. Neither is a weapon, on the same call `basket`
+  // and `net` already make: what they change is read through `techPower`
+  // rather than through a fight, so giving either a `weapon` block would be
+  // the `handaxe` bug wearing a polish.
+  stone_axe: { id: 'stone_axe', label: 'Polished axe', nutrition: 0, spoilTicks: 0, baseValue: 10 },
+  adze:      { id: 'adze',      label: 'Adze',         nutrition: 0, spoilTicks: 0, baseValue: 9 },
+  // `spinning` and `weaving`, shipped in one commit because thread has no
+  // reason to exist without the loom that consumes it — the same rule that
+  // kept `needle` and `fur_coat` together.
+  thread: { id: 'thread', label: 'Thread', nutrition: 0, spoilTicks: 0, baseValue: 3 },
+  // The highest `baseValue` of anything a band can make at this point in the
+  // tree, on purpose: `next-steps.md`'s note on `trade` reading `baseValue` is
+  // what makes this "the first thing worth trading" rather than a description
+  // nobody can act on.
+  cloth: { id: 'cloth', label: 'Cloth', nutrition: 0, spoilTicks: 0, baseValue: 12 },
+  // `sickle`'s tool. A blade set in a haft, read the same double-gated way as
+  // every other carried tool in this file: knowing the technology is not
+  // enough, and carrying one is not enough either.
+  sickle: { id: 'sickle', label: 'Sickle', nutrition: 0, spoilTicks: 0, baseValue: 8 },
+  // --- M11 phase 10, second commit -------------------------------------------
+  // `the_wheel`'s cart. Not a weapon or a wearable, on the same double-gated
+  // terms as everything else in this block.
+  cart: { id: 'cart', label: 'Cart', nutrition: 0, spoilTicks: 0, baseValue: 14 },
+  // `bread`. `spoilTicks: 0`, like `meal` — it is baked meal, and keeping is
+  // the whole point of baking it, per the plan's own table. Higher nutrition
+  // than `meal` is the other half of the same claim, and mostly `carb` for the
+  // same reason `meal` is.
+  bread: {
+    id: 'bread', label: 'Bread', nutrition: 42, spoilTicks: 0, baseValue: 5,
+    macros: { fat: 0.05, protein: 0.15, carb: 0.80 },
+  },
+  // `dairying`'s byproduct. Real spoil ticks, unlike most of this file's
+  // pastoral entries — milk goes off fast, which is honest data even while
+  // `spoilRate` sits at 0 by default and nothing yet reads it for this item.
+  milk: {
+    id: 'milk', label: 'Milk', nutrition: 20, spoilTicks: 400, baseValue: 3,
+    macros: { fat: 0.5, protein: 0.35, carb: 0.15 },
+  },
+  // `wool`'s byproduct, and the material `wool_cloth` is made from. Sheared
+  // rather than culled, so — unlike `hide` — it comes off a living animal and
+  // has no place in `synthesis.test.ts`'s rare-ingredient set: a pen with
+  // `wool` known produces it every day, not once per kill.
+  wool: { id: 'wool', label: 'Wool', nutrition: 0, spoilTicks: 0, baseValue: 4 },
+  // `wool`'s recipe output. Warmer than `cloth` — see `Tech.warmthFrom` — and
+  // a second item rather than a second ingredient on `cloth` itself, for the
+  // same reason `groats` is a second recipe rather than a second ingredient
+  // on `meal`: flax and fleece are two different harvests, and a technology
+  // tree should be able to tell the player it found a better material rather
+  // than silently swap the old one out.
+  wool_cloth: { id: 'wool_cloth', label: 'Wool cloth', nutrition: 0, spoilTicks: 0, baseValue: 15 },
+  // `brewing`. Low nutrition on purpose — a jug of beer is not a meal, and a
+  // number competitive with bread or meat would have made `bestFood` pick it
+  // over both, distorting the whole food economy for a technology whose real
+  // claim is social. That low number is also why it is drunk through its own
+  // verb, `toast`, rather than through `doEat`: `bestFood` picking the single
+  // most nutritious thing carried would otherwise make beer invisible next to
+  // anything better, the same failure milk was measured hitting in a pen.
+  beer: {
+    id: 'beer', label: 'Beer', nutrition: 6, spoilTicks: 1200, baseValue: 5,
+    macros: { fat: 0.02, protein: 0.08, carb: 0.90 },
+  },
 };
 
 export class Inventory {

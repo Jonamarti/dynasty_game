@@ -165,7 +165,10 @@ export const ACTION_LABELS: Record<string, string> = {
   steal: 'stealing',
   threaten: 'making a demand',
   attack: 'fighting',
+  slander: 'speaking ill of someone',
+  praise: 'speaking well of someone',
   build: 'building',
+  sabotage: 'wrecking what is not theirs',
   sow: 'sowing a field',
   spread: 'spreading compost',
   reap: 'bringing in the harvest',
@@ -177,6 +180,7 @@ export const ACTION_LABELS: Record<string, string> = {
   sleep: 'asleep',
   hunt: 'hunting',
   play: 'playing a tune',
+  toast: 'sharing a drink',
   tend: 'tending the hurt',
   tame: 'coaxing an animal',
 };
@@ -253,8 +257,17 @@ export const STOP_REASONS: Record<string, string> = {
   site_needs_materials: 'the site still wants materials',
   already_built: 'it was already finished',
   not_a_store: 'it is not a store',
+  // M11 phase 11b: `sabotage`'s own gate on `reachBuilding`, bundling every
+  // way a target can fail to be a legitimate one — unfinished, bare ground
+  // with nothing to knock down, or already a ruin — the same way `no_field`
+  // bundles several unrelated causes into one sentence below.
+  nothing_to_sabotage: 'there was nothing standing there worth attacking',
+  // The refusal `mayUse`'s `ours` branch stands in for: sabotaging one's own
+  // band's building, or a close ally's, was never on offer to begin with.
+  not_foreign_property: 'it belonged to their own people',
   store_full: 'the store was full',
   store_empty: 'the store was empty',
+  property_guarded: 'someone from its band saw them',
   // What was actually asked for was gone by the time they got there — someone
   // else emptied that stack between the order and the walk. Kept apart from
   // `store_empty`, which means the whole store was bare: this store may still
@@ -274,6 +287,11 @@ export const STOP_REASONS: Record<string, string> = {
   nothing_to_steal: 'there was nothing to take',
   nothing_to_demand: 'there was nothing worth demanding',
   refused_demand: 'they refused to hand it over',
+  // M11 phase 5c: `slander` and `praise` need somebody to talk *about*, not
+  // only somebody to talk to, and the walk over gives both of those a chance
+  // to stop being true.
+  subject_gone: 'the person they meant to talk about was gone',
+  nothing_to_tell: 'they had nothing left worth telling',
   dont_know_how: 'they do not know how',
   // M8.2. Six ways a field can turn somebody away, and they are six different
   // problems with six different answers: gather more seed, walk to a different
@@ -294,6 +312,7 @@ export const STOP_REASONS: Record<string, string> = {
   // M8.1's three verbs. Each is a way one of them can turn out to be
   // impossible, and a verb whose failures are invisible is not finished.
   nothing_to_play: 'they have no flute to play',
+  nothing_to_toast: 'they have no beer to share',
   nobody_to_tend: 'there is nobody here to look after',
   nothing_to_treat: 'they are not hurt any more',
   nothing_to_offer: 'they had no food to offer it',

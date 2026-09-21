@@ -10,6 +10,7 @@ import type { Building } from '../entities/Building.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { warmthFrom } from '../knowledge/Tech.ts';
+import { malnutrition, MALNUTRITION_HEALTH_CEILING_DROP, MALNUTRITION_RECOVERY_PENALTY } from '../core/Macros.ts';
 
 /**
  * How hard each action works somebody, as a multiplier on thirst.
@@ -54,8 +55,14 @@ const EXERTION: Record<string, number> = {
   sleep: 0.4,
 };
 
-/** The multiplier for an action, defaulting to ordinary effort. */
-function exertionOf(action: string): number {
+/**
+ * The multiplier for an action, defaulting to ordinary effort.
+ *
+ * Exported for `core/Macros.ts` (M11 phase 8c), which folds the same reading
+ * into a person's macro target instead of writing a second table that would
+ * inevitably drift from this one.
+ */
+export function exertionOf(action: string): number {
   return EXERTION[action] ?? 1;
 }
 
@@ -72,7 +79,10 @@ export class NeedsSystem {
   private shelterAt(person: Person, buildings: Building[]): number {
     let best = 0;
     for (const building of buildings) {
-      if (!building.complete || building.def.shelter <= best) continue;
+      // M11 phase 11b: a ruin keeps neither wind nor cold out. `ruined` is
+      // false for anything `Building.durability` was never set on, so an
+      // ordinary hut with no sabotage in its history is unaffected.
+      if (!building.complete || building.ruined || building.def.shelter <= best) continue;
       // Warmth spills past the walls; see Building.SHELTER_MARGIN.
       if (building.contains(person.x, person.y, 1.5)) best = building.def.shelter;
     }
@@ -104,10 +114,14 @@ export class NeedsSystem {
       // Hunger is deliberately left flat. This world's food economy is its most
       // fragile part and only drinking was reported; giving hunger the same
       // treatment would have put a second, larger change in the same measurement.
-      const thirstRate = cfg.thirstRate *
-        exertionOf(person.action) *
-        (1 + heat * (cfg.heatThirst - 1));
+      const exertion = exertionOf(person.action);
+      const thirstRate = cfg.thirstRate * exertion * (1 + heat * (cfg.heatThirst - 1));
       person.needs.thirst = Math.min(100, person.needs.thirst + thirstRate);
+
+      // M11 phase 8c: the same reading, folded into today's ledger for
+      // `decayMacroTarget` to average — see `core/Macros.ts`.
+      person.exertionToday.total += exertion;
+      person.exertionToday.ticks++;
 
       // Resting and sleeping are handled by the action system, which restores
       // fatigue directly; everything else tires you.
@@ -164,8 +178,21 @@ export class NeedsSystem {
           person.die(cause);
           telemetry.count(`death_${cause}`);
         }
-      } else if (person.health < 100) {
-        person.health = Math.min(100, person.health + cfg.recoveryRate);
+      } else {
+        // M11 phase 8d. Malnutrition is degradation, not a fourth lethal
+        // need — it never drags health down on its own, only caps how high
+        // recovery can climb and slows the climb getting there. Someone
+        // already above the ceiling (imbalance arrived after good health, not
+        // before it) is left alone rather than pulled down, on the same
+        // principle: this is a ceiling, not a drain.
+        const severity = malnutrition(person);
+        const ceiling = 100 - severity * MALNUTRITION_HEALTH_CEILING_DROP;
+        if (person.health < ceiling) {
+          const recovery = cfg.recoveryRate * (1 - severity * MALNUTRITION_RECOVERY_PENALTY);
+          person.health = Math.min(ceiling, person.health + recovery);
+        }
+        telemetry.count('malnutrition_sum', severity);
+        telemetry.count('malnutrition_samples');
       }
     }
   }

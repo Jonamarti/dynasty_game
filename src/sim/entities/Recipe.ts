@@ -334,6 +334,177 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { pottery: 1 },
     keep: 0,
   },
+  // `kiln`, mechanism 4's fifth station, and a second recipe for an output
+  // `pot` already makes — the same shape `groats` already sets beside `meal`,
+  // with one difference worth stating because it very nearly went wrong: the
+  // two `meal` recipes never compete, because one wants acorns and the other
+  // wants grain and `Brain` only ever holds one at a time. `pot` and
+  // `kiln_pot` would have wanted the *same* mud and sticks, and `Brain`'s
+  // craft scorer has no term for "cheaper" or "faster" at all — only
+  // `forSite`/`forSelf`, skill, and `nearness`, and `nearness` is 1 for a
+  // stationless recipe and never more than that for a station one. A
+  // same-cost `kiln_pot` could therefore never outscore plain `pot` and would
+  // have been declared, gated, correctly wired to a real building, and
+  // unreachable in play — the exact defect `TECH_EFFECTS` exists to catch,
+  // wearing a coat static tests cannot see through. The real difference is in
+  // the ingredients instead: less mud, because an even, held heat wastes less
+  // clay than firing in embers does. That gives it a genuine niche `Brain`
+  // does not have to be taught about — a band short of mud can still make
+  // pottery once it has a kiln — rather than a numeric edge the scorer would
+  // never read.
+  //
+  // Deliberately **not** a `station: 'kiln'` retrofit onto `pot` itself
+  // either: that would make the granary unbuildable again without a kiln,
+  // which is the trap `Recipe.ts`'s own header already warns against.
+  kiln_pot: {
+    id: 'kiln_pot',
+    label: 'Fired pot',
+    icon: '\u{1F3FA}',
+    tech: 'kiln',
+    skill: 'build',
+    workTicks: 100,
+    ingredients: { mud: 1, sticks: 1 },
+    output: { pottery: 1 },
+    station: 'kiln',
+    keep: 0,
+  },
+  // `wool`, at the loom beside `cloth`. A different output rather than a
+  // second ingredient on `cloth` itself — see `ITEMS.wool_cloth` — so there
+  // is no `kiln_pot`-style scoring competition: the two recipes' `forSelf`
+  // checks read different items and never have to be compared against each
+  // other at all.
+  wool_cloth: {
+    id: 'wool_cloth',
+    label: 'Wool cloth',
+    icon: '\u{1F9F6}',
+    tech: 'wool',
+    skill: 'build',
+    workTicks: 140,
+    ingredients: { wool: 3 },
+    output: { wool_cloth: 1 },
+    station: 'loom',
+    keep: 1,
+  },
+  // `brewing`. Grain, the same seed corn a field gives up, fermented rather
+  // than ground — a second, later thing to do with a harvest, on the same
+  // terms `bread` already sets for `meal`. No station: a jar and time in a
+  // warm corner is all fermenting ever needed, and inventing one station's
+  // worth of scenery for one recipe is exactly the "declared and unused"
+  // failure this file's own header warns about.
+  beer: {
+    id: 'beer',
+    label: 'Beer',
+    icon: '\u{1F37A}',
+    tech: 'brewing',
+    skill: 'cook',
+    workTicks: 120,
+    ingredients: { grain: 4 },
+    output: { beer: 1 },
+    // Food, on the same terms `meal` and `bread` already set: worth a few
+    // days of it on hand.
+    keep: 3,
+  },
+
+  // --- M11 phase 10, the widened Neolithic: see m8_plan_the_ages.md ----------
+  //
+  // `ground_stone`'s two tools. Both `keep: 1` — an axe that fells trees faster
+  // and an adze that raises buildings faster are each worth carrying the
+  // moment either is made, the same call `spear` and `bow` already make.
+  stone_axe: {
+    id: 'stone_axe',
+    label: 'Polished axe',
+    icon: '\u{1FA93}',
+    tech: 'ground_stone',
+    skill: 'knap',
+    workTicks: 130,
+    ingredients: { flint: 2, sticks: 1 },
+    output: { stone_axe: 1 },
+    keep: 1,
+  },
+  adze: {
+    id: 'adze',
+    label: 'Adze',
+    icon: '\u{1FA93}',
+    tech: 'ground_stone',
+    skill: 'build',
+    workTicks: 130,
+    ingredients: { flint: 2, sticks: 1 },
+    output: { adze: 1 },
+    keep: 1,
+  },
+  // `spinning`. `keep: 3`, not 1 — `cloth` below consumes three at once, and a
+  // batch of thread makes two. `Brain`'s `forSelf` test stops wanting more the
+  // moment `count(output) >= keep`, so `keep: 1` would leave a spinner stopping
+  // at two thread, one short of what `cloth` needs, for ever. `needle` gets
+  // away with `keep: 1` because it is made and spent one at a time; thread is
+  // not.
+  thread: {
+    id: 'thread',
+    label: 'Thread',
+    icon: '\u{1F9F5}',
+    tech: 'spinning',
+    skill: 'build',
+    workTicks: 90,
+    ingredients: { thatch: 3 },
+    output: { thread: 2 },
+    keep: 3,
+  },
+  // `weaving`, mechanism 4's third station. The loom is a place to work, on the
+  // same terms as the quern: several lengths of thread go in over an afternoon,
+  // one length of cloth comes out.
+  cloth: {
+    id: 'cloth',
+    label: 'Cloth',
+    icon: '\u{1F9F5}',
+    tech: 'weaving',
+    skill: 'build',
+    workTicks: 140,
+    ingredients: { thread: 3 },
+    output: { cloth: 1 },
+    station: 'loom',
+    keep: 1,
+  },
+  // `sickle`. A hafted blade rather than a fired or ground one, so it costs the
+  // same as a spear-length of flint and sticks.
+  sickle: {
+    id: 'sickle',
+    label: 'Sickle',
+    icon: '\u{1F5E1}',
+    tech: 'sickle',
+    skill: 'knap',
+    workTicks: 100,
+    ingredients: { flint: 2, sticks: 1 },
+    output: { sickle: 1 },
+    keep: 1,
+  },
+  // --- M11 phase 10, second commit -------------------------------------------
+  cart: {
+    id: 'cart',
+    label: 'Cart',
+    icon: '\u{1F6D2}',
+    tech: 'the_wheel',
+    skill: 'build',
+    workTicks: 150,
+    ingredients: { wood: 6, sticks: 4 },
+    output: { cart: 1 },
+    keep: 1,
+  },
+  // `bread`, mechanism 4's fourth station. Meal in, bread out, one for one —
+  // unlike `meal` and `groats` this is the only recipe that turns one made
+  // good into a better one rather than a raw harvest into a first food.
+  bread: {
+    id: 'bread',
+    label: 'Bread',
+    icon: '\u{1F35E}',
+    tech: 'bread',
+    skill: 'cook',
+    workTicks: 120,
+    ingredients: { meal: 2 },
+    output: { bread: 1 },
+    station: 'oven',
+    // Food, on the same terms as `meal`: worth a few days of it on hand.
+    keep: 3,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

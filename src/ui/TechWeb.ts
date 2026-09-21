@@ -43,6 +43,7 @@ import {
 import { ITEMS } from '../sim/entities/Item.ts';
 import { knowledgeOfPerson } from '../sim/social/Knowledge.ts';
 import { layOutWeb, DOMAIN_COLORS, type WebLayout } from './TechWebLayout.ts';
+import { panelBox } from './PanelBox.ts';
 
 /** How a node stands with respect to the person whose web this is. */
 type NodeState = 'proven' | 'working' | 'conceivable' | 'understood' | 'unknown';
@@ -61,6 +62,21 @@ const MIN_ZOOM = 0.15;
 const MAX_ZOOM = 2.5;
 /** Below this, nodes collapse to unlabelled chips — see the `.is-far` CSS. */
 const CHIP_ZOOM = 0.55;
+/**
+ * The zoom the panel refuses to *open* below, however little room it has.
+ *
+ * A hair above `CHIP_ZOOM`, and the fix for the owner's report that on mobile
+ * the web is circles with no names on them. `fitToView` used to take whatever
+ * zoom made the whole web fit, and on a phone that is about 0.49 — under the
+ * threshold at which every node drops its label. The player got a perfectly
+ * correct picture of fifty anonymous dots.
+ *
+ * Fitting the whole web is not worth having if nothing in it can be read, so
+ * below this the panel opens *zoomed in* on the part of the web that concerns
+ * this person instead, and lets them drag to the rest. Seeing a legible corner
+ * and being able to move beats seeing all of an unreadable whole.
+ */
+const READABLE_ZOOM = 0.58;
 /** Pixels of mouse movement before a press counts as a pan rather than a click. */
 const DRAG_THRESHOLD = 4;
 
@@ -94,6 +110,16 @@ export class TechWebOverlay {
   private panStartY = 0;
   private viewportEl: HTMLElement | null = null;
   private canvasEl: HTMLElement | null = null;
+  /**
+   * Touch panning and pinching, which the panel had none of.
+   *
+   * The mouse handlers below do not fire on a phone, so before this the view
+   * could not be moved at all — survivable while the whole web was framed on
+   * open, and not survivable now that a narrow window deliberately opens
+   * zoomed in on one corner of it. One finger drags, two pinch, and `zoomAt`
+   * does the arithmetic for both mouse and touch so the two cannot drift.
+   */
+  private pinchGap = 0;
 
   /**
    * A digest of everything currently on screen, so a redraw only happens when
@@ -173,6 +199,62 @@ export class TechWebOverlay {
       this.viewportEl?.classList.remove('is-panning');
     });
 
+    // Touch. `passive: false` throughout because every one of these has to be
+    // able to call `preventDefault` — otherwise the browser pans the page, or
+    // pinches the whole game, instead of the web inside the panel.
+    this.root.addEventListener('touchstart', event => {
+      if (!this.viewportEl?.contains(event.target as Node)) return;
+      if (event.touches.length === 1) {
+        const touch = event.touches[0]!;
+        this.dragging = true;
+        this.dragMoved = false;
+        this.dragStartX = touch.clientX;
+        this.dragStartY = touch.clientY;
+        this.panStartX = this.panX;
+        this.panStartY = this.panY;
+      } else if (event.touches.length === 2) {
+        // A second finger down ends the pan and begins a pinch. `dragMoved`
+        // stays set so the `click` this eventually synthesises is swallowed
+        // rather than being read as a tap on whatever is under the fingers.
+        this.dragging = false;
+        this.dragMoved = true;
+        this.pinchGap = touchGap(event.touches);
+      }
+    }, { passive: false });
+
+    this.root.addEventListener('touchmove', event => {
+      if (!this.viewportEl?.contains(event.target as Node)) return;
+      if (event.touches.length === 1 && this.dragging) {
+        event.preventDefault();
+        const touch = event.touches[0]!;
+        const dx = touch.clientX - this.dragStartX;
+        const dy = touch.clientY - this.dragStartY;
+        if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+          this.dragMoved = true;
+        }
+        this.panX = this.panStartX + dx;
+        this.panY = this.panStartY + dy;
+        this.applyTransform();
+      } else if (event.touches.length === 2) {
+        event.preventDefault();
+        const gap = touchGap(event.touches);
+        if (this.pinchGap > 0 && gap > 0) {
+          const a = event.touches[0]!;
+          const b = event.touches[1]!;
+          this.zoomAt((a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2,
+            gap / this.pinchGap);
+        }
+        this.pinchGap = gap;
+      }
+    }, { passive: false });
+
+    const endTouch = (event: TouchEvent) => {
+      if (event.touches.length < 2) this.pinchGap = 0;
+      if (event.touches.length === 0) this.dragging = false;
+    };
+    this.root.addEventListener('touchend', endTouch);
+    this.root.addEventListener('touchcancel', endTouch);
+
     // Zooming: the wheel, centred on the cursor so the technology under it
     // stays under it rather than the view recentring on the middle of the box.
     this.root.addEventListener('wheel', event => {
@@ -244,12 +326,58 @@ export class TechWebOverlay {
     this.render();
   }
 
-  /** Sets the view so the whole web fits in the box, centred. Runs once per open. */
-  private fitToView(layout: WebLayout, box: { width: number; height: number }): void {
-    this.zoom = Math.max(MIN_ZOOM, Math.min(1.1, box.width / layout.width, box.height / layout.height));
-    this.panX = (box.width - layout.width * this.zoom) / 2;
-    this.panY = (box.height - layout.height * this.zoom) / 2;
+  /**
+   * Sets the opening view. Runs once per open.
+   *
+   * Two outcomes. Where the whole web fits at a zoom its labels survive — any
+   * ordinary desktop window — it is framed whole and centred, which is what
+   * this always did. Where it does not, the panel opens at `READABLE_ZOOM`
+   * centred on what this person can actually do something about, rather than
+   * shrinking the web until nothing on it can be read.
+   */
+  private fitToView(
+    layout: WebLayout,
+    box: { width: number; height: number },
+    subject: Person,
+    notice: Notice
+  ): void {
     this.fitted = true;
+    const whole = Math.min(1.1, box.width / layout.width, box.height / layout.height);
+    if (whole >= READABLE_ZOOM) {
+      this.zoom = Math.max(MIN_ZOOM, whole);
+      this.panX = (box.width - layout.width * this.zoom) / 2;
+      this.panY = (box.height - layout.height * this.zoom) / 2;
+      return;
+    }
+
+    this.zoom = READABLE_ZOOM;
+    const focus = this.frontier(layout, subject, notice);
+    this.panX = box.width / 2 - focus.x * this.zoom;
+    this.panY = box.height / 2 - focus.y * this.zoom;
+  }
+
+  /**
+   * The middle of what this person knows and could next know.
+   *
+   * Where to point a view too small to hold the whole web. The centre of the
+   * *layout* would be an arbitrary spot in the tech table; the centre of the
+   * lit part of it is where their own story is, and the nodes immediately
+   * within reach — the ones a player opened this panel to ask about — cluster
+   * around it. Somebody who knows nothing yet gets the middle of the web,
+   * which for an age-seeded layout is the beginning of history and the right
+   * answer anyway.
+   */
+  private frontier(
+    layout: WebLayout, subject: Person, notice: Notice
+  ): { x: number; y: number } {
+    let x = 0, y = 0, count = 0;
+    for (const node of layout.nodes) {
+      const state = this.stateOf(subject, node.tech, notice);
+      if (state === 'unknown' || state === 'understood') continue;
+      x += node.x; y += node.y; count++;
+    }
+    if (count === 0) return { x: layout.width / 2, y: layout.height / 2 };
+    return { x: x / count, y: y / count };
   }
 
   /** Zooms about a screen point, keeping whatever is under it in place. */
@@ -353,7 +481,7 @@ export class TechWebOverlay {
     const digest = this.digest(subject, notice);
     const rebuild = digest !== this.signature || this.root.childElementCount === 0;
     this.signature = digest;
-    if (!this.fitted) this.fitToView(layout, box);
+    if (!this.fitted) this.fitToView(layout, box, subject, notice);
     if (!rebuild) {
       // Still worth doing on an otherwise-quiet frame: the window can be
       // resized while the panel is open, and the viewport box needs to track
@@ -636,14 +764,18 @@ export class TechWebOverlay {
    * arrangement on every pixel — and so that the whole picture does not
    * rearrange itself under the player's cursor while they are reading it.
    */
+  /** See `PanelBox.ts` — shared, because all three of these panels had it wrong. */
   private boxSize(): { width: number; height: number } {
-    const step = 80;
-    const width = Math.max(520, Math.min(1080,
-      Math.round((window.innerWidth - 420) / step) * step));
-    const height = Math.max(380, Math.min(720,
-      Math.round((window.innerHeight - 160) / step) * step));
-    return { width, height };
+    return panelBox(420, 1080, 720, 520);
   }
+}
+
+/** Distance between the first two fingers, for the pinch. */
+function touchGap(touches: TouchList): number {
+  const a = touches[0];
+  const b = touches[1];
+  if (!a || !b) return 0;
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 }
 
 function escapeHtml(value: string): string {

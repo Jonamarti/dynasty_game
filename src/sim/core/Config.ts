@@ -193,6 +193,43 @@ export interface PopulationConfig {
    * rather than weaken the test until it passes.
    */
   startingTech: string[];
+  /**
+   * `startingTech`, but per band rather than the same list for everyone.
+   *
+   * `startingTechByBand[b]` replaces `startingTech` entirely for band `b`'s
+   * founders when present; a band past the end of the array, or every band
+   * when this is absent, falls back to `startingTech` — so every scenario
+   * that has never set this is bit-identical to before it existed.
+   *
+   * M11 phase 9c. `scribes` was giving every founder in both bands the exact
+   * same five technologies, which is a world in which literally nobody has
+   * anything on a stone that anybody else lacks — `records-are-cut` reported
+   * zero reads for exactly that reason, and no amount of re-gating `writing`
+   * could fix a problem the re-gating did not cause. Two bands that start
+   * knowing different things is what gives reading something to do.
+   */
+  startingTechByBand?: string[][];
+}
+
+/**
+ * How the utility scorer turns a table of scores into one decision.
+ *
+ * Its own section rather than a bare field beside `thinkInterval` because the
+ * settings screen groups by section, and "how decisive is everybody" is a
+ * different question from "how far can they see".
+ */
+export interface AiConfig {
+  /**
+   * How far below the best score an action may fall and still be chosen, as a
+   * fraction of the best score. 0 is strict argmax.
+   *
+   * See `core/Choice.ts` for why this is a band relative to the leader rather
+   * than a softmax temperature. It ships at a real value, but the machinery
+   * landed at 0 first so that "the code exists" and "the code changed the
+   * world" could be two separate measurements — the same discipline spoilage
+   * and the mood channels both use.
+   */
+  choiceSpread: number;
 }
 
 export interface SimConfig {
@@ -203,6 +240,7 @@ export interface SimConfig {
   population: PopulationConfig;
   knowledge: KnowledgeConfig;
   learning: LearningConfig;
+  ai: AiConfig;
   /** Tiles a person can see; the radius of witness and target queries. */
   sightRadius: number;
   /** A person re-scores their action every this many ticks (staggered by id). */
@@ -305,6 +343,29 @@ export const DEFAULT_CONFIG: SimConfig = {
     observationChance: 0.02,
     childObservationChance: 0.055,
   },
+  ai: {
+    // 0.12, chosen by measurement rather than by taste, and not by the
+    // measurement that was supposed to choose it.
+    //
+    // Twenty seeds of `century` at 0, 0.08, 0.12 and 0.20 are
+    // indistinguishable on every number `sim:seeds` reports: mean survival
+    // 100.0 / 99.9 / 99.9 / 100.0, no collapse anywhere, technologies known
+    // 11.4 / 11.8 / 11.3 / 11.9. Softening the choice is *free*, and that
+    // cohort therefore cannot pick a value between them.
+    //
+    // What picks it is the thing the change is for — whether a verb that never
+    // quite won an argmax gets a turn:
+    //
+    //   distinct actions, century   31 / 30 / 33 / 32
+    //   distinct actions, lean      29 / 27 / 31 / 31
+    //
+    // 0.12 is the widest on both. Note that 0.08 is *narrower* than argmax on
+    // both, which is the reminder that these are single chaotic runs and the
+    // ordering between two neighbouring values is not resolvable from them. The
+    // shape is: a band of about an eighth is where the tail of the table starts
+    // getting a turn without the head losing one.
+    choiceSpread: 0.12,
+  },
   sightRadius: 12,
   thinkInterval: 5,
 };
@@ -329,6 +390,7 @@ export function makeConfig(overrides: DeepPartial<SimConfig> = {}): SimConfig {
     population: { ...DEFAULT_CONFIG.population, ...overrides.population },
     knowledge: { ...DEFAULT_CONFIG.knowledge, ...overrides.knowledge },
     learning: { ...DEFAULT_CONFIG.learning, ...overrides.learning },
+    ai: { ...DEFAULT_CONFIG.ai, ...overrides.ai },
   } as SimConfig;
 }
 

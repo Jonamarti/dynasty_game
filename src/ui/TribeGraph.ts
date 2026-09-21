@@ -27,6 +27,7 @@ import { RANK_LABEL, RANK_ROW, type BandRank } from '../sim/social/Rank.ts';
 import {
   layOutTribe, tribeMembers, type TribeLayout, type TribeNode,
 } from './TribeGraphLayout.ts';
+import { panelBox } from './PanelBox.ts';
 
 /**
  * How coarsely the redraw digest reads a position and an opinion.
@@ -260,13 +261,9 @@ export class TribeGraphOverlay {
     return parts.join('|');
   }
 
+  /** See `PanelBox.ts` — shared, because all three of these panels had it wrong. */
   private boxSize(): { width: number; height: number } {
-    const step = 80;
-    const width = Math.max(480, Math.min(1000,
-      Math.round((window.innerWidth - 240) / step) * step));
-    const height = Math.max(380, Math.min(760,
-      Math.round((window.innerHeight - 160) / step) * step));
-    return { width, height };
+    return panelBox(240, 1000, 760);
   }
 }
 
