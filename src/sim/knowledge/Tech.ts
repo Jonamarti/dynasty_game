@@ -91,6 +91,11 @@ export const TECHS = [
   // rather than a leader. Household heads carry standing outside their own
   // roof, and a chief holds office long enough for it to be an office.
   'chiefdom',
+  // M11 phase 9b: the oral channel gets a practice of its own, so nerfing
+  // `ochre` in 9a is not the last word on how knowledge outlives a bad winter
+  // without being cut into anything. The knack of telling something so it is
+  // remembered, not the memory itself — see `TECH_EFFECTS.storytelling`.
+  'storytelling',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1098,6 +1103,38 @@ export const TECH: Record<Tech, TechDef> = {
       'answered to by everyone else, and the chief holds the office long ' +
       'enough for it to be one.',
   },
+  storytelling: {
+    id: 'storytelling', label: 'Storytelling', domain: 'people',
+    age: 'upper_palaeolithic', firstKnown: 'about 40,000 years ago',
+    // A practice, on `division_of_labour`'s own test: there is nothing to
+    // build. Tried by doing it — `ActionSystem.finish` already calls
+    // `Person.noteDid(person.action)` on every completed action, so `talk`
+    // finishing is the trial with no new hook required.
+    kind: 'practice', practisedBy: ['talk'],
+    // No prerequisite, deliberately, for the same reason `division_of_labour`
+    // has none: it is a thought anybody who talks to anybody can have, and
+    // gating the oral channel behind some other node would make the fallback
+    // that is supposed to survive a band with nothing else depend on having
+    // something else first.
+    requires: [], difficulty: 0.5, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'doing', action: 'talk' }, { kind: 'feeling', need: 'company' }],
+        weight: 1.0, story: 'found a good story was the cheapest company there was' },
+      { needs: [{ kind: 'doing', action: 'talk' }, { kind: 'season', season: 'winter' }],
+        weight: 0.8, story: 'kept the whole hearth listening through a long winter night' },
+      // No `knows` ingredient, and deliberately: a spark that named a
+      // prerequisite here would have to be in `requires` too — see
+      // `spark-ingredients-are-real` — and this node's whole point is to be
+      // reachable with nothing else in hand.
+      { needs: [{ kind: 'saw', what: 'teach' }, { kind: 'doing', action: 'talk' }],
+        weight: 0.5, story: 'watched a lesson land and noticed how much of it was in the telling' },
+    ],
+    description:
+      'The knack of telling a thing so it is remembered — not what is known, ' +
+      'but how it travels. A lesson lands more often for the telling, and a ' +
+      'long evening carries an extra story further than it otherwise would.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1262,6 +1299,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'An animal that follows you, and hunts better than you do alone.',
     site: 'ActionSystem.doTame, Animal.tamedBy, and WildlifeSystem.noticeRadius',
   },
+  storytelling: {
+    summary: 'A lesson lands more often, and a long evening carries an extra story.',
+    site: 'KnowledgeSystem.teach, scaling the chance; SocialSystem.converse, the deep-talk bonus',
+  },
 };
 
 /**
@@ -1358,8 +1399,16 @@ export function techPower(person: Person, tech: Tech): number {
   return 0;
 }
 
-/** Scales a bonus by how well its holder knows the technology behind it. */
-function scaled(person: Person, tech: Tech, full: number): number {
+/**
+ * Scales a bonus by how well its holder knows the technology behind it.
+ *
+ * Exported rather than kept private to this file once `KnowledgeSystem.teach`
+ * needed the same "no effect at 0, `full` at a proven design, more past it
+ * with refinement" curve for `storytelling`. Reusing it there is the point:
+ * a second copy of `1 + (full - 1) * techPower` is how the two would drift
+ * out of step with what "half-learned" means everywhere else in the game.
+ */
+export function scaled(person: Person, tech: Tech, full: number): number {
   return 1 + (full - 1) * techPower(person, tech);
 }
 

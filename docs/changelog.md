@@ -6,6 +6,83 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 9b: the oral channel gets three things of its own
+
+Three additions, all aimed at the same complaint 9a's own header names: nerfing
+`ochre` removes a channel, and the tree stays limited by transmission unless
+something replaces it.
+
+**A new practice, `storytelling`** (`domain: 'people'`, no prerequisite — the
+whole point is that it must not depend on having worked anything else out
+first). Tried by `talk`, same as `division_of_labour` is tried by `assign`:
+nothing to build, `Person.noteDid` is the hook a finished `talk` already
+fires. It does two things once techPower is behind it, both through the
+existing `scaled` helper — exported from `Tech.ts` rather than copied,
+since a second "no effect unlearned, `full` at a proven design, more with
+refinement" formula is exactly the kind of drift `AGENTS.md`'s house style
+warns about:
+
+- `KnowledgeSystem.teach`'s success chance is scaled by
+  `scaled(teacher, 'storytelling', 1.4)` — up to 40% more likely to land at a
+  proven design. The same line also reads `teacher.traits.tradition` for the
+  first time in the actual mechanism: the trait already weighted `Brain`'s
+  `teach`/`teach_child` scorers (long before this milestone, not new here —
+  the plan's premise that `tradition` "only ever reads into `standingOver`"
+  was checked against the code and found false, the same way 0b's premise
+  about the outsider figure was), but never touched whether a teacher who
+  decided to try actually succeeds.
+- `SocialSystem.converse` gives one extra story, and only at the `deep` rung —
+  a greeting has no room for one at all — when either party has any
+  `techPower` in `storytelling`.
+
+**The hearth teaches.** `Simulation.shareTheHearth` already samples, at
+midnight, who slept under which roof (M11 phase 6a's reading of a household's
+own home). `KnowledgeSystem.hearthLesson` spends that same sample a second
+way: once a night, per roof with both an adult and a child under it, the
+single adult who knows the most tries — unprompted, unwalked-to — to pass
+something to whichever child could take it in, through the same shared
+`teach`. A flat, generous regard (0.6) stands in for a relationship opinion
+neither caller has reason to thread through, on the reasoning that a
+household is already the warmest tie in the graph. A new `hearthRng`, forked
+genuinely last — after `choiceRng`, per `AGENTS.md`'s own table, which is
+updated in this commit with the new sixteenth row so the next person to
+append does not fall into the trap the table exists to prevent.
+
+**Found and fixed rather than shipped broken:** `storytelling`'s first draft
+had a third spark reading `knows: division_of_labour` without listing it in
+`requires`, which `spark-ingredients-are-real`'s sibling test
+(`never lets a spark fire before its prerequisites are met`) caught
+immediately — replaced with a route off `saw: 'teach'` instead, since the
+node's whole purpose is to need nothing else in hand.
+
+**Measured**: `sim:check:all` — `century` clears every check with no
+failures (`hunts-succeed-and-fail`, `the-hurt-are-tended`, and both `stewards`
+soil checks, all previously flagged in `bugs.md` as downstream-RNG-drift
+knife's-edges, happened to land on the passing side of theirs this pass;
+`crowded`/`perf-budget` and `hunters`/`kills-are-butchered-for-bone` are the
+same two pre-existing flips carried over unrelated to this phase).
+`century`'s own telemetry: `storytelling` conceived, proven and refined
+within the run; 51 `taught_storytelling`, 14 `observed_storytelling`, 91
+`storytelling_extra_tale`, 3 `hearth_taught` — a small number for the hearth
+specifically, and an honest one: `HEARTH_LESSON_CHANCE` (0.15/night/roof) is
+a first guess, not tuned against a cohort, and is named as such in its own
+comment. 10-seed cohorts: `century` 99.7% mean survival (447 born, 2 total
+starved, 12.6 technologies known at the end against phase 0's documented
+baseline of 5.4) and `lean` 86.7% (down 1.4 from phase 8e's 88.1%, inside
+the noise `AGENTS.md` documents for ten seeds). All 344 unit tests (one
+tightened — the reminder-vs-instruction test from 9a needed the same
+needs-reset discipline `driveInscribe` already uses, once a different roll
+elsewhere in the world started tipping it into an interruption), typecheck,
+and all 47 e2e specs pass.
+
+**Deliberately not touched**: `learning.observationChance`, per the plan —
+it is the documented lever for transmission at the scale of the whole food
+economy, and moving it here would have made every number above meaningless.
+
+**Next**: 9c, `writing`'s re-gating behind `marking`, `stoneworking` and
+`farming`, and the `scribes` scenario's `startingTech` fix that re-gating
+requires in the same commit.
+
 ## 2026-09-21 — M11 phase 9a: a painting is a spark, not a transcript
 
 `InscriptionDef` gains `fidelity: 'reminder' | 'instruction'` — data, the same

@@ -34,7 +34,7 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { World, Biome } from '../core/World.ts';
 import type { Season } from '../core/TimeManager.ts';
 import type { KnowledgeConfig, LearningConfig } from '../core/Config.ts';
-import { TECH, TECH_EFFECTS, TECHS, prerequisitesMet, type Tech } from '../knowledge/Tech.ts';
+import { TECH, TECH_EFFECTS, TECHS, prerequisitesMet, scaled, type Tech } from '../knowledge/Tech.ts';
 import { BUILDINGS } from '../entities/Building.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import {
@@ -151,6 +151,20 @@ function unlockedBy(tech: Tech): string | null {
  * about cordage, and it sometimes decides no.
  */
 const STALE_DAYS = 90;
+
+/**
+ * Nightly chance, per roof with both an adult and a child under it, that a
+ * lesson is even attempted at the hearth.
+ *
+ * M11 phase 9b. Deliberately a second gate in front of `teach`'s own success
+ * roll rather than a replacement for it: some nights nobody under the roof
+ * has it in them to explain anything, and `teach` still decides whether the
+ * explanation, once offered, actually lands. Set high enough that a roof
+ * shared for a season sees several lessons — this is meant to be the
+ * cheapest channel in the game, not a rare one — and tuned against
+ * `knowledge-is-passed-on`/`children-are-taught` rather than chosen by feel.
+ */
+const HEARTH_LESSON_CHANCE = 0.15;
 
 export interface KnowledgeContext {
   rng: RNG;
@@ -700,9 +714,21 @@ export class KnowledgeSystem {
     const tech = teachable[rng.int(0, teachable.length - 1)]!;
     // The pupil's wits count as much as the teacher's skill here: an
     // explanation only lands if somebody on the other end can follow it.
+    //
+    // Two more factors, both M11 phase 9b: `tradition` was already what
+    // decided whether an elder *chose* to teach (`Brain`'s `teach` and
+    // `teach_child` scorers have weighted it since long before this
+    // milestone) but never touched whether the lesson actually landed, which
+    // is what this reads it for. `storytelling` is new outright — the oral
+    // channel's whole reason for existing — and `scaled` gives it the usual
+    // "no effect unlearned, up to 40% more at a proven design, further with
+    // refinement" curve rather than a flat bonus that ignores how well the
+    // teacher actually has the practice.
     const chance = Math.min(0.95,
-      0.25 + teacher.skillFactor('teach') * 0.5 + Math.max(0, regard) * 0.3
-      + (pupil.traits.intelligence - 0.5) * 0.3);
+      (0.25 + teacher.skillFactor('teach') * 0.5 + Math.max(0, regard) * 0.3
+        + (pupil.traits.intelligence - 0.5) * 0.3
+        + (teacher.traits.tradition - 0.5) * 0.15)
+      * scaled(teacher, 'storytelling', 1.4));
     if (!rng.chance(chance)) {
       telemetry.count('teaching_failed');
       return null;
@@ -728,6 +754,66 @@ export class KnowledgeSystem {
     teacher.chronicle.push({ tick, ageDays: teacher.age, text, kind: 'did' });
     pupil.chronicle.push({ tick, ageDays: pupil.age, text, kind: 'milestone' });
     return tech;
+  }
+
+  /**
+   * A lesson nobody asked for: the ordinary closeness of growing up under
+   * one roof, doing for knowledge what `SocialSystem.hearth` already does
+   * for a relationship.
+   *
+   * M11 phase 9b. Called once a night, per roof, from `Simulation.
+   * shareTheHearth` on exactly the sample it already takes of who slept
+   * where — the cheapest and highest-yield half of the oral channel this
+   * phase adds, because it needs nobody to walk anywhere, ask, or be asked.
+   * Deliberately the wisest adult present rather than a random one: a
+   * household's knowledge really does concentrate in whoever has lived
+   * longest and learned most, and a child under that roof is far likelier
+   * to be taught by them than by whichever adult happened to be drawn.
+   * `teach` — unchanged, shared, and the reason two lessons never drift
+   * apart — decides both whether there is anything to pass on and whether
+   * it lands; this only decides whether the attempt happens tonight and who
+   * makes it.
+   */
+  hearthLesson(
+    sleepers: readonly Person[],
+    rng: RNG,
+    tick: number,
+    onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') => void
+  ): void {
+    const adults = sleepers.filter(p => !p.isChild);
+    const children = sleepers.filter(p => p.isChild);
+    if (adults.length === 0 || children.length === 0) return;
+    if (!rng.chance(HEARTH_LESSON_CHANCE)) return;
+
+    const canLearn = (teacher: Person, pupil: Person) =>
+      [...teacher.knownTech].some(t =>
+        TECH[t as Tech] !== undefined &&
+        !pupil.knownTech.has(t) &&
+        prerequisitesMet(t as Tech, pupil.knownTech));
+
+    // The single wisest adult present with anything a child under the same
+    // roof could take in — not every adult in turn. One attempt a night,
+    // same as the note describes it: the roof's deepest holder of knowledge
+    // tries, once, and either it lands or tonight was not the night.
+    let teacher: Person | null = null;
+    let pupil: Person | null = null;
+    for (const candidate of [...adults].sort((a, b) => b.knownTech.size - a.knownTech.size)) {
+      const match = children.find(child => canLearn(candidate, child));
+      if (match) { teacher = candidate; pupil = match; break; }
+    }
+    if (!teacher || !pupil) return;
+
+    // A household is already the warmest relationship in the game — see
+    // `Household.renown` and `kin-outrank-strangers` — so a flat, generous
+    // regard stands in for `ctx.relationships.opinion` rather than a
+    // parameter neither caller of this method has any business threading
+    // through from `Simulation`. This is a lesson from growing up beside
+    // somebody, not an afternoon deliberately spent on one.
+    const taught = this.teach(teacher, pupil, 0.6, tick, rng);
+    if (taught === null) return;
+    telemetry.count('hearth_taught');
+    onInsight(pupil, 'was shown ' + TECH[taught].label.toLowerCase() +
+      ' at the hearth by ' + teacher.name, 'gain');
   }
 }
 

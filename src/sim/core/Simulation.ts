@@ -375,6 +375,17 @@ export class Simulation {
    * at that value.
    */
   private readonly choiceRng: RNG;
+  /**
+   * `shareTheHearth`'s own stream, M11 phase 9b.
+   *
+   * A household's nightly chance of a lesson passing under its own roof is a
+   * draw per roof per night, and it needed a stream that is not shared with
+   * anything else for the same reason `choiceRng` did: it is forked genuinely
+   * last, after `choiceRng`, so that a world built before this phase existed
+   * is bit-identical to one built after it except for what actually gets
+   * taught at a hearth.
+   */
+  private readonly hearthRng: RNG;
 
   constructor(overrides: DeepPartial<SimConfig> = {}) {
     this.config = makeConfig(overrides);
@@ -468,6 +479,11 @@ export class Simulation {
     // the genuine end of the fork order. Anything appended above this line
     // consumes a draw the forest, the fish or the grain expects.
     this.choiceRng = this.rng.fork();
+    // M11 phase 9b, appended after `choiceRng` for the identical reason:
+    // `AGENTS.md`'s table exists precisely so the next stream lands here
+    // rather than back at the comment three forks up that looks like an
+    // invitation.
+    this.hearthRng = this.rng.fork();
 
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
@@ -1551,7 +1567,16 @@ export class Simulation {
         if (household) household.homeBuildingId = roof.id;
       }
     }
-    for (const under of byRoof.values()) this.social.hearth(under, this.time.tick);
+    for (const under of byRoof.values()) {
+      this.social.hearth(under, this.time.tick);
+      // M11 phase 9b: the same sample, spent a second way. `SocialSystem.
+      // hearth` is what a night under one roof does to a relationship;
+      // `hearthRng` is its own stream so that whether a lesson is attempted
+      // tonight never shifts which pairs warm to each other, or vice versa.
+      this.knowledgeSystem.hearthLesson(
+        under, this.hearthRng, this.time.tick,
+        (person, text, kind) => this.noteInsight(person, text, kind));
+    }
   }
 
   /** Takes a killed animal out of the world and its index. */

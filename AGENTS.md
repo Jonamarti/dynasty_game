@@ -33,15 +33,16 @@ streams at the end. The fork order is the seed contract; inserting one silently
 invalidates every saved seed and every pinned test world.
 
 > **"The end" is not where the comment says it is.** The named fork block ends
-> at `recordRng` — the **eleventh** of fifteen — with a comment inviting you to
-> append after it. Four more forks sit below that invitation:
+> at `recordRng` — the **eleventh** of sixteen — with a comment inviting you to
+> append after it. Five more forks sit below that invitation:
 >
 > | # | fork | line |
 > |---|---|---|
-> | 12 | anonymous, handed to `seedInitialForest` | `Simulation.ts:408` |
-> | 13 | `fishRng` | `Simulation.ts:422` |
-> | 14 | `grainRng` | `Simulation.ts:427` |
-> | 15 | `choiceRng` | `Simulation.ts:433` |
+> | 12 | anonymous, handed to `seedInitialForest` | `Simulation.ts:456` |
+> | 13 | `fishRng` | `Simulation.ts:470` |
+> | 14 | `grainRng` | `Simulation.ts:475` |
+> | 15 | `choiceRng` | `Simulation.ts:481` |
+> | 16 | `hearthRng` | `Simulation.ts:486` |
 >
 > **The genuine append point is the line after the last row of that table**,
 > immediately before the `spawnResources` block. Appending where the comment
@@ -50,15 +51,16 @@ invalidates every saved seed and every pinned test world.
 > the same to the cereal.
 >
 > A fork appended genuinely last cannot shift anything, and the reason is worth
-> knowing: `this.rng` is drawn from **only** by these fifteen `fork()` calls —
-> nothing else in the constructor takes a number from it — so a sixteenth at the
-> bottom leaves all fifteen exactly where they were.
+> knowing: `this.rng` is drawn from **only** by these sixteen `fork()` calls —
+> nothing else in the constructor takes a number from it — so a seventeenth at
+> the bottom leaves all sixteen exactly where they were.
 >
 > This paragraph has been wrong before, which is the reason for the table. It
 > used to call the forest fork "the fourteenth" and describe it as the last one
 > — true when it was written, and false from the moment M8.1 appended `fishRng`
-> and M8.2 appended `grainRng` behind it. **If you append a stream, add its row
-> here in the same commit**, or the next person inherits the same trap.
+> and M8.2 appended `grainRng` behind it, and again once M11 phase 1a appended
+> `choiceRng` and this pass appended `hearthRng`. **If you append a stream, add
+> its row here in the same commit**, or the next person inherits the same trap.
 
 **And forks are not the only way to shift a stream.** `spawnResources`,
 `spawnHerds` and `spawnPeople` all draw from **one shared `spawnRng`**, so adding

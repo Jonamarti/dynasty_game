@@ -24,6 +24,7 @@ import { DEED_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
 import type { MemoryEntry } from './Memory.ts';
 import type { ConversationMode } from './Conversation.ts';
 import { CONVERSATION_MODES, crossBand } from './Conversation.ts';
+import { techPower } from '../knowledge/Tech.ts';
 import type { BandRelations } from './BandRelations.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -417,7 +418,20 @@ export class SocialSystem {
     // all, which is the mechanical difference that makes the dear rungs worth
     // their price: gossip is the only channel a deed reaches anyone who did
     // not see it, and `next-steps.md` §0 names transmission as the bottleneck.
-    for (let i = 0; i < def.stories; i++) {
+    //
+    // M11 phase 9b: `storytelling` buys one more, and only at `deep` — a
+    // greeting has no room in it for a story at all, so the practice's whole
+    // benefit would be invisible below the rung it is actually about. Either
+    // side having it is enough, the same as either side's `curiosity` firing
+    // a spark: the story is a joint performance and it does not matter which
+    // of the two is carrying it.
+    let stories = def.stories;
+    if (mode === 'deep' &&
+        (techPower(a, 'storytelling') > 0 || techPower(b, 'storytelling') > 0)) {
+      stories += 1;
+      telemetry.count('storytelling_extra_tale');
+    }
+    for (let i = 0; i < stories; i++) {
       this.gossip(a, b, peopleById);
       this.gossip(b, a, peopleById);
     }

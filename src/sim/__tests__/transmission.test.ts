@@ -371,7 +371,15 @@ describe('a record', () => {
     reader.y = painting.y;
 
     sim.order(reader, 'read', { inscriptionId: painting.id });
-    for (let i = 0; i < 600 && reader.order !== null; i++) sim.step();
+    for (let i = 0; i < 600 && reader.order !== null; i++) {
+      // Kept comfortable, the same discipline `driveInscribe` uses above: the
+      // point under test is what reading a `reminder` leaves behind, not
+      // whether the reader's own needs let the action run to completion.
+      reader.needs.thirst = 0;
+      reader.needs.hunger = 0;
+      reader.needs.cold = 0;
+      sim.step();
+    }
 
     expect(reader.knownTech.has('cordage'), 'a painting taught the finished design').toBe(false);
     const idea = reader.ideaFor('cordage');
