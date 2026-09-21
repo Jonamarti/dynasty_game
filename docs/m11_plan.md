@@ -707,9 +707,66 @@ Ya diseñada en el cierre de
 [m9_plan_words_and_hands.md](docs/m9_plan_words_and_hands.md): territorio,
 `Building.durability` y sabotaje (O5), organizador de partida en
 `BandSystem.daily`, cautiverio como estado en `Person`. Este plan le quita dos
-cosas de encima: **la fase 7 ya le habrá dado el standing** y **la fase 4 ya le
-habrá dado la propiedad observable**, así que el guardia fronterizo nace con la
-regla correcta —tiene que ver el crimen— en vez de con un test de pertenencia.
+cosas de encima: **la fase 7 ya le habrá dado el standing** (`BandRelations`,
+fase 7) y **la fase 4 ya le habrá dado la propiedad observable** (`mayUse`),
+así que el guardia fronterizo nace con la regla correcta —tiene que ver el
+crimen— en vez de con un test de pertenencia.
+
+**Un bloqueo encontrado leyendo el código antes de diseñar el resto**, y
+documentado en `docs/bugs.md` al enviar la fase 2: `fight` tiene **un solo
+entrenador**, encajar un golpe en `doAttack` (striker 1.2, golpeado 0.4), así
+que `skillFactor('fight')` vive en su suelo de 0.35×vigor para casi todo el
+mundo — no puede haber guerreros, ni una casa temida, ni un guardia fronterizo
+mejor que cualquier granjero, ni ningún riesgo real en asaltar, porque atacante
+y defensor son intercambiables. `docs/bugs.md` lo dejó explícitamente como
+"una decisión de diseño... que pertenece a la pasada que la necesite" — ésta
+es esa pasada, y por eso va primero: todo lo demás de la fase 11 depende de que
+la fuerza de combate varíe de verdad entre personas.
+
+**11a — dos entrenadores para `fight`. HECHO 2026-09-21.** El propietario
+eligió combinar las dos opciones honestas de `bugs.md`: caza (un goteo
+pequeño, pasivo, para que una banda pacífica no quede indefensa para
+siempre) y un verbo nuevo, `spar` (entrenamiento deliberado, dirigible por
+el jugador). `doHunt` practica `fight` en 0.25 sólo en el golpe que mata,
+nunca en un intento fallido. `spar` es dos personas de la misma banda,
+dispuestas —con la misma puerta dura de `doDiscuss`, `regard < 0`
+abandona con `partner_unwilling`—, cincuenta ticks sin comprobación de
+interrupción (mismo precedente que `doCourt`/`doTeach` a 60-90 ticks),
+0.6 de práctica para cada parte, y `settleOverWork` para que además sea
+compañía, no sólo entrenamiento: es la mitad segura del arreglo, nadie sale
+herido, y lee como camaradería y no como violencia. Puntuado en `Brain` por
+`aggression` del actor y por lo superado que se siente (`0.5 -
+skillFactor('fight')`), contra un candidato de la propia banda no
+antipático — magnitud 0.1-0.9 antes de proximidad, por debajo de `talk`/
+`teach` a propósito: es una actividad más, no la que domina la mesa de
+puntuación. Sin hecho público (`SocialSystem.emit`) — el mismo precedente
+que `doTalk`, que tampoco emite uno. Verificado: `typecheck`, 373 tests
+unitarios y `sim:check:all` limpios; los únicos cambios de lado en
+`sim:check:all` caen todos en cheques ya documentados como estrechos de
+uno o dos eventos (`the-hurt-are-tended`, `kills-are-butchered-for-bone`,
+`bands-take-sides`, y ahora `the-tree-is-climbed` en el mismo lote) —
+exactamente el ruido de semilla único que `AGENTS.md` avisa no perseguir.
+
+**Sigue:**
+
+- **11b — `Building.durability` y `sabotage`.** Campo nuevo en `Building`
+  (separado de `progress`: uno mide cuánto se ha construido, el otro cuánto
+  queda en pie), un verbo largo con comprobación de interrupción y progreso
+  bancado en el propio edificio, igual que `addWork`. Decisión pendiente de
+  tomar al diseñar el commit: si se repara reutilizando `build` sobre un
+  edificio dañado o con un verbo propio.
+- **11c — el organizador de partida, `BandSystem.daily`.** Un jefe reúne
+  a varios miembros dispuestos y con `fight` de verdad (fruto de 11a) para
+  viajar juntos y sabotear o robar en el territorio de otra banda. Quórum y
+  quienes se conocen entre sí, el mismo freno que ya usan las facciones de
+  la fase 5d — `Brain.ts:812` documenta lo que pasa sin él.
+- **11d — cautiverio como estado en `Person`.** El desenlace de un asalto
+  que no mata: `captiveOf`, trabajo forzado en la casa del captor, fuga
+  puntuada por si hay testigos —el espejo exacto de `mayUse`—, y la puerta
+  de vuelta que la fase 5f ya construyó para el destierro.
+- **11e — lectores y UI.** `lastRefusal` para cada camino de rechazo nuevo
+  (regla permanente de `AGENTS.md`), panel de durabilidad, y aviso de
+  cautiverio.
 
 ---
 

@@ -133,6 +133,8 @@ interface FoundTargets {
   larderTarget: Building | null;
   companion: Person | null;
   suitor: Person | null;
+  /** A willing training partner for `spar`. See the scorer for why it is same-band only. */
+  sparPartner: Person | null;
   student: Person | null;
   /** The child a `teach_child` is aimed at. See the scorer for why it is separate. */
   childPupil: Person | null;
@@ -695,6 +697,7 @@ export class Brain {
     let storeTarget: Building | null = null;
     let larderTarget: Building | null = null;
     let suitor: Person | null = null;
+    let sparPartner: Person | null = null;
     let student: Person | null = null;
     let childPupil: Person | null = null;
     let mentor: Person | null = null;
@@ -859,6 +862,32 @@ export class Brain {
           add('court', (0.25 + regard * 0.7 + ardour * 0.9)
             * this.proximityBonus(person, match, ctx.sightRadius));
           suitor = match;
+        }
+      }
+
+      // Spar: a willing bandmate to train against. Note 5's "no warriors"
+      // problem (docs/bugs.md, M11 phase 2) had two honest fixes, and the
+      // owner chose both — this is the deliberate half. Same-band only,
+      // because the point is internal training, not a proxy for the real
+      // thing `attack` already covers between rivals.
+      //
+      // Two independent reasons to want it: aggression, a trait that
+      // otherwise only ever points toward hurting somebody, and being
+      // outmatched — `skillFactor('fight')` sits at its floor of 0.35 for
+      // almost everyone today, so `outmatched` will read near zero for a
+      // while and grow meaningful only once this verb and `doHunt`'s trickle
+      // have actually spread the skill out.
+      if (!person.isChild) {
+        const willing = neighbours.filter(other =>
+          !other.isChild && other.bandId === person.bandId &&
+          ctx.relationships.opinion(person.id, other.id) >= 0);
+        const partner = this.pickBest(willing, other =>
+          ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other) * 2);
+        if (partner) {
+          const outmatched = Math.max(0, 0.5 - person.skillFactor('fight'));
+          add('spar', (0.1 + person.traits.aggression * 0.5 + outmatched * 0.6)
+            * this.proximityBonus(person, partner, ctx.sightRadius));
+          sparPartner = partner;
         }
       }
 
@@ -1925,7 +1954,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodNode, matNode, companion, suitor, student, childPupil, mentor, colleague,
+        water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
@@ -2337,6 +2366,7 @@ export class Brain {
       case 'ask':
       case 'discuss':
       case 'court':
+      case 'spar':
       case 'feed':
       case 'give':
       case 'trade':
@@ -2357,6 +2387,7 @@ export class Brain {
           action === 'ask' ? found.mentor :
           action === 'discuss' ? found.colleague :
           action === 'court' ? found.suitor :
+          action === 'spar' ? found.sparPartner :
           action === 'feed' || action === 'give' ? found.beneficiary :
           action === 'trade' ? found.tradePartner :
           action === 'attack' ? found.foe :

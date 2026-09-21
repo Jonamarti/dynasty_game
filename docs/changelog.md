@@ -6,6 +6,87 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 11, first commit: `fight` gets a second and third trainer, opening the war phase
+
+M11 phase 10 closed the widened Neolithic; this is the first commit of phase
+11 — war — and it fixes a blocker found reading the code before designing the
+rest, not while measuring it. `docs/bugs.md`, recorded shipping M11 phase 2:
+`fight` is trained by exactly one thing, landing a blow in `doAttack`
+(striker `practice('fight', 1.2)`, struck `0.4`), and nothing else in the
+game touches it. `skillFactor('fight')` is `(0.35 + skill/100*0.85) *
+vigour`, so with the skill at its floor for practically everyone the whole
+population sits in a narrow 0.11-0.35 band. That entry named the
+consequence directly: **there can be no warriors** — no household a rival
+fears, no specialist for `division_of_labour`/`chiefdom` to divide, no
+border guard better at stopping a raider than any farmer, and no risk in a
+raid, since attacker and defender are interchangeable. Everything else phase
+11 wants to build — a raiding party, a border guard, captivity worth
+avoiding — needs fighting power to actually vary between people first.
+
+`docs/bugs.md` listed three honest fixes and left the choice to whoever
+built this phase, calling it a design decision rather than a repair. Put to
+the owner directly; they chose to combine the two most defensible ones
+rather than pick one:
+
+- **`doHunt` trains a trickle.** `person.practice('fight', 0.25)` (a new
+  `HUNT_FIGHT_TRAIN`) fires once, on the kill itself
+  (`ActionSystem.ts`, after `ctx.onAnimalKilled`), never on a miss — a spear
+  is a spear, and a band that hunts and never spars is not permanently
+  defenceless.
+- **A new verb, `spar`.** Deliberate, mutual, same-band training between two
+  willing people: nobody is hurt, both sides gain `fight` skill and a little
+  company, and it reads as camaraderie rather than violence — the safe half
+  of the fix, on purpose, since the point was never to make people more
+  willing to hurt each other. Gated on the partner's own regard the same way
+  `doDiscuss` gates an argument (`opinion < 0` refuses with
+  `partner_unwilling`, a reason the UI already knows how to show — reused,
+  not invented). Fifty ticks, no interruption check, the same precedent
+  `doCourt` (60 ticks) and `doTeach` (90) already set for a bout this short.
+  Both parties practice `fight` at 0.6 and `settleOverWork` runs, so it also
+  answers a little company — the same shape `doTeach` already has for a
+  lesson that lands. No public `Deed` is emitted, on the same precedent
+  `doTalk` already set: a conversation is not news.
+
+Scored in `Brain` by two independent pulls — `aggression`, a trait that
+otherwise only ever points toward hurting somebody, and feeling outmatched
+(`max(0, 0.5 - skillFactor('fight'))`, which reads near zero today and only
+grows meaningful once this verb and the hunting trickle have actually spread
+the skill out) — against a same-band candidate who is not disliked. Deliberately
+tuned below `talk`/`teach`'s usual range (0.1-0.9 before proximity, against
+their 0-2.9 and 0-1.5) so it is one more thing to do, not the thing that wins
+the score table.
+
+**Not touched in this commit**: `DECISIVE_GAP` (`social/Vulnerability.ts`,
+currently `0.3`), which was calibrated against the narrow floor-dominated
+spread that existed before this shipped. `bugs.md`'s own comment there
+flags this as worth re-measuring once `fight` actually varies, rather than
+assumed to still hold — left for whichever later phase-11 commit first
+depends on `attack`/`threaten`'s gap math (the border guard and the raiding
+party both will).
+
+New `spar.test.ts` (three tests: the `partner_unwilling` refusal, both
+parties' `fight` skill rising with nobody's health moving, and both parties'
+cooldown being set rather than only the one who asked).
+
+**Measured**: `typecheck`, all 376 unit tests, and `sim:check:all` clean. In
+`century`, `spar` fires 46,480 times over 40,000 ticks and completes 587
+bouts — a middling verb, well behind `forage`/`talk`/`ask`/`give` and ahead
+of `teach`/`chop`/`build`, not crowding out survival work. The scenario-level
+`sim:check:all` failures that changed sides against the pre-commit baseline
+— `hunters`/`kills-are-butchered-for-bone` clearing, `millers` and
+`farmers`/`the-hurt-are-tended` and `herders`/`bands-take-sides` and
+`the-tree-is-climbed` swapping which one fails — are all checks
+`docs/bugs.md` already documents by name as one- or two-event-wide
+tripwires that flip under any behavioural change; both the pre- and
+post-commit runs show exactly three scenario-level failures. 20-seed
+`century` cohort: 99.6% mean survival, 0/20 collapsed, in line with the
+99.0-99.9% recent baselines this tier has reported throughout.
+
+**Rest of the phase**, written up in full in `m11_plan.md`'s "Fase 11":
+`Building.durability` and a `sabotage` verb, a raiding-party organiser in
+`BandSystem.daily`, captivity as a state on `Person`, and the UI readers
+(refusal reasons, a durability panel, a captivity notice).
+
 ## 2026-09-21 — M11 phase 10, seventh and last commit: `brewing`, closing the widened Neolithic
 
 The last of the fifteen nodes `m8_plan_the_ages.md`'s M8.2 table left

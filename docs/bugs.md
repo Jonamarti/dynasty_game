@@ -221,6 +221,19 @@ instrument and belongs with whoever next tunes it, not with this migration.
 
 ### Nobody in this world has any fight skill, and that blocks more than it looks
 
+**Fixed in M11 phase 11a, 2026-09-21** — see `changelog.md`. The owner chose
+to combine two of the three options below: `doHunt` now trains a small
+trickle on a kill, and a new verb, `spar`, is deliberate mutual training
+between willing same-band people. **Left open by that fix, and worth
+watching rather than assumed away**: `DECISIVE_GAP` (`social/Vulnerability.ts`,
+currently `0.3`) was calibrated against the narrow, floor-dominated spread
+this entry describes below. Once `fight` skill actually varies across a
+population, that calibration is stale by construction — it was tuned against
+a range that no longer holds — and whichever later phase-11 commit first
+leans on `attack`/`threaten`'s gap math (the border guard, the raiding party)
+should re-measure it rather than trust the number inherited from before this
+fix.
+
 `fight` is trained by **exactly one thing**: landing a blow. `doAttack` calls
 `person.practice('fight', 1.2)` on the striker and `0.4` on the struck, and no
 other action in the game touches the skill. `SKILLS` has twelve entries and this

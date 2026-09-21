@@ -159,6 +159,28 @@ const COURT_TICKS = 60;
 const TEACH_TICKS = 90;
 
 /**
+ * Ticks of a friendly training bout. Between a conversation and a lesson.
+ *
+ * The honest answer to the gap `docs/bugs.md` recorded shipping M11 phase 2:
+ * `fight` had exactly one trainer, landing a blow in earnest, so nobody could
+ * ever become a better fighter than the person standing next to them without
+ * first fighting them — no warriors, no feared household, no border guard
+ * worth the name. `spar` is the safe half of the owner's chosen fix: nobody
+ * is hurt, both people leave knowing a little more about defending
+ * themselves, and it reads as camaraderie rather than violence. The other
+ * half is a small trickle from a real hunt kill — see `doHunt`.
+ */
+const SPAR_TICKS = 50;
+/** Both parties gain this. A deliberate bout teaches more than one blow taken. */
+const SPAR_TRAIN = 0.6;
+/** A grudging opponent is not a training partner; see `doDiscuss`'s own gate. */
+const SPAR_MIN_REGARD = 0;
+const SPAR_WARMTH = 3;
+const SPAR_RELIEF = 0.25;
+/** A kill in earnest teaches a little of what a spar teaches on purpose. */
+const HUNT_FIGHT_TRAIN = 0.25;
+
+/**
  * Ticks of sitting and turning a problem over.
  *
  * Long, because thinking should cost a visible part of a day and compete with
@@ -507,6 +529,7 @@ export class ActionSystem {
       case 'talk': this.doTalk(person, ctx); break;
       case 'court': this.doCourt(person, ctx); break;
       case 'teach': this.doTeach(person, ctx); break;
+      case 'spar': this.doSpar(person, ctx); break;
       case 'ask': this.doAsk(person, ctx); break;
       case 'craft': this.doCraft(person, ctx); break;
       case 'inscribe': this.doInscribe(person, ctx); break;
@@ -1459,6 +1482,11 @@ export class ActionSystem {
     animal.health = 0;
     animal.alive = false;
     ctx.onAnimalKilled(animal, person);
+    // A spear is a spear. Far smaller than a blow landed on a person
+    // (`doAttack`'s 1.2) or a deliberate bout (`SPAR_TRAIN`'s 0.6) — this is a
+    // trickle, not a substitute for either — but it means a band that hunts
+    // and never spars is not permanently defenceless either.
+    person.practice('fight', HUNT_FIGHT_TRAIN);
 
     const yielded = Math.max(1, Math.round(animal.def.meat * person.skillFactor('hunt')));
     const room = person.carryCapacity - person.carrying;
@@ -2300,6 +2328,42 @@ export class ActionSystem {
     const charm = 3 + person.skillFactor('persuade') * 6;
     ctx.social.courtship(person, other, charm, ctx.tick);
     person.practice('persuade', 0.4);
+    other.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
+    this.finishSocial(person, ctx.tick);
+  }
+
+  /**
+   * A friendly training bout. See `SPAR_TICKS` for why this exists at all.
+   *
+   * Gated on the partner's own regard the same way `doDiscuss` gates an
+   * argument: a grudging opponent is not a training partner, and the fix for
+   * "nobody can become a better fighter than the person next to them" must
+   * not itself be a way to hurt somebody you dislike under cover of practice.
+   * Both people are practised, both are warmed by it, and nobody's health
+   * moves — the whole point is that this is the safe half of the fix, and
+   * `doHunt`'s small trickle is the other.
+   */
+  private doSpar(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+
+    const regard = ctx.relationships.opinion(other.id, person.id) / 100;
+    if (regard < SPAR_MIN_REGARD) {
+      this.abandon(person, 'partner_unwilling', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = SPAR_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) return;
+
+    person.practice('fight', SPAR_TRAIN);
+    other.practice('fight', SPAR_TRAIN);
+    telemetry.count('sparred');
+    this.settleOverWork(person, other, ctx, SPAR_WARMTH, SPAR_RELIEF);
     other.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
     this.finishSocial(person, ctx.tick);
   }

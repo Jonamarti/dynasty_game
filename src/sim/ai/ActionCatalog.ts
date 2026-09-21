@@ -404,6 +404,19 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       enabled: !other.isChild,
       reason: other.isChild ? 'They are too young to show anybody anything' : undefined,
     },
+    {
+      // M11 phase 11: the safe half of the fix for "nobody can become a
+      // better fighter than the person next to them" (docs/bugs.md). Nobody
+      // is hurt; `doSpar` is where the gate on their willingness actually
+      // lives, this menu only rules out what could never be offered at all.
+      id: 'spar',
+      label: 'Spar with ' + other.name,
+      icon: '\u{1F94A}',
+      enabled: !actor.isChild && !other.isChild,
+      reason: actor.isChild || other.isChild
+        ? 'Too young to spar safely'
+        : undefined,
+    },
     // M9 phase 4, note 5. One entry per rung of `Conversation.ts` rather than
     // the single "Talk to X" that stood for all four: the simulation now has
     // four conversations at four prices, and a menu offering one of them is
