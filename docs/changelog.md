@@ -6,6 +6,27 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 8a: macros, declared and read by nobody
+
+`ItemDef` gains an optional `macros: { fat, protein, carb }`, fractions of
+`nutrition` summing to 1, on the eight items that have any (`berries`,
+`apple`, `pear`, `plum`, `hazelnut`, `meal`, `meat`, `fish`). Values are real
+ratios, not placeholders: meat and fish lean protein-and-fat with no carb at
+all, hazelnuts lean fat hard enough to keep them from reading as a fourth
+kind of fruit, and everything else — berries, apples, pears, plums, ground
+grain — is carb-dominant. Every non-food item (tools, materials, weapons)
+gets none, on purpose: a fraction of zero nourishment is not a
+macronutrient.
+
+**Bit-identical, as designed.** Nothing reads the field yet — `bestFood`,
+`doEat`, `nutritionFactor` and every scorer still only ever look at
+`nutrition`. `sim:check:all` reproduces the phase 7c (3) matrix line for
+line (`crowded`/`perf-budget`, `hunters`/`kills-are-butchered-for-bone`,
+`stewards`/`compost-answers-exhaustion`, none of it new); all 343 unit
+tests, typecheck clean. 8b gives a person a rolling balance to read these
+into, still inert; 8c and 8d are the commits where an unbalanced diet
+starts to cost something.
+
 ## 2026-09-20 — M11 phase 7c (3): `Brain` reads how hostile the two bands are, and `bands-take-sides` finally gates on it
 
 The last of `BandRelations`' three readers, and the only one in `Brain` —

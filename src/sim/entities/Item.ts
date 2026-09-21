@@ -12,6 +12,15 @@ export interface ItemDef {
   label: string;
   /** Hunger points restored by eating one unit. 0 means inedible. */
   nutrition: number;
+  /**
+   * M11 phase 8a. Fat, protein and carbohydrate as fractions of `nutrition`
+   * that sum to 1. Present only on items with `nutrition > 0` — a fraction of
+   * zero nourishment is not a macronutrient, it is a unit test waiting to
+   * fail. Nothing reads this yet; it exists so 8b can compute a rolling
+   * balance and 8c/8d can make imbalance cost something, without either of
+   * those commits also having to invent the numbers.
+   */
+  macros?: { fat: number; protein: number; carb: number };
   /** Ticks before one unit spoils. 0 means it keeps indefinitely. */
   spoilTicks: number;
   /** Rough scarcity weight used as the base of subjective barter value. */
@@ -35,11 +44,14 @@ export interface ItemDef {
 }
 
 export const ITEMS: Record<string, ItemDef> = {
-  berries:  { id: 'berries',  label: 'Berries',    nutrition: 14, spoilTicks: 2400, baseValue: 1 },
-  apple:    { id: 'apple',    label: 'Apples',     nutrition: 16, spoilTicks: 6000, baseValue: 1 },
-  pear:     { id: 'pear',     label: 'Pears',      nutrition: 15, spoilTicks: 4800, baseValue: 1 },
-  plum:     { id: 'plum',     label: 'Plums',      nutrition: 13, spoilTicks: 3000, baseValue: 1 },
-  hazelnut: { id: 'hazelnut', label: 'Hazelnuts',  nutrition: 22, spoilTicks: 0,    baseValue: 2 },
+  berries:  { id: 'berries',  label: 'Berries',    nutrition: 14, spoilTicks: 2400, baseValue: 1, macros: { fat: 0.05, protein: 0.05, carb: 0.90 } },
+  apple:    { id: 'apple',    label: 'Apples',     nutrition: 16, spoilTicks: 6000, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 } },
+  pear:     { id: 'pear',     label: 'Pears',      nutrition: 15, spoilTicks: 4800, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 } },
+  plum:     { id: 'plum',     label: 'Plums',      nutrition: 13, spoilTicks: 3000, baseValue: 1, macros: { fat: 0.04, protein: 0.04, carb: 0.92 } },
+  // A nut is a fat, not a fruit: it is what keeps `carb` from being every
+  // forageable's dominant macro, which would make the whole system read as a
+  // single lever wearing three names.
+  hazelnut: { id: 'hazelnut', label: 'Hazelnuts',  nutrition: 22, spoilTicks: 0,    baseValue: 2, macros: { fat: 0.75, protein: 0.15, carb: 0.10 } },
   // M8.1, mechanism 4. The first inedible food in the game, and the point of
   // the quern.
   //
@@ -74,13 +86,13 @@ export const ITEMS: Record<string, ItemDef> = {
   // reason to gather wild cereal, and `Brain.nodeWorth` values it the way
   // `fruitWorth` has valued acorns since M8.1. No deadlock, and no bait.
   grain:    { id: 'grain',    label: 'Grain',      nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
-  meal:     { id: 'meal',     label: 'Meal',       nutrition: 34, spoilTicks: 0,    baseValue: 4 },
+  meal:     { id: 'meal',     label: 'Meal',       nutrition: 34, spoilTicks: 0,    baseValue: 4, macros: { fat: 0.02, protein: 0.13, carb: 0.85 } },
   // M8.2. The only item in the game whose whole purpose is to be put back into
   // the ground. Worth nothing to eat and nearly nothing to trade, and a band
   // that has some is a band whose fields have another twenty years in them.
   compost:  { id: 'compost',  label: 'Compost',    nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
-  meat:     { id: 'meat',     label: 'Raw meat',   nutrition: 30, spoilTicks: 1200, baseValue: 3 },
-  fish:     { id: 'fish',     label: 'Fish',       nutrition: 18, spoilTicks: 800,  baseValue: 2 },
+  meat:     { id: 'meat',     label: 'Raw meat',   nutrition: 30, spoilTicks: 1200, baseValue: 3, macros: { fat: 0.45, protein: 0.55, carb: 0 } },
+  fish:     { id: 'fish',     label: 'Fish',       nutrition: 18, spoilTicks: 800,  baseValue: 2, macros: { fat: 0.35, protein: 0.65, carb: 0 } },
   // A kill yields a hide as well as meat, and a hide in cold hands is the
   // heaviest spark clothing has. Without it that route could never fire.
   hide:     { id: 'hide',     label: 'Hide',       nutrition: 0,  spoilTicks: 0,    baseValue: 3 },
