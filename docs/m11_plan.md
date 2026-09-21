@@ -587,6 +587,15 @@ Se retoma [m8_plan_the_ages.md](docs/m8_plan_the_ages.md): **15 nodos neolítico
 pendientes**. Son los que crean el excedente que hace que la guerra signifique
 algo.
 
+**Primer commit HECHO 2026-09-17→21** — en realidad 2026-09-21: `ground_stone`,
+`spinning`, `weaving` y `sickle`, los cuatro elegidos por no pedir ningún
+mecanismo nuevo, sólo un término en una función que `techPower` ya alimenta.
+De paso, `ground_stone` repara el bug de `handaxe` sin pasar por `techPower`
+que este mismo documento ya listaba como conocido. Medido en `century` a 20
+semillas: supervivencia 99.7%→99.6% (ruido), tecnologías conocidas 12.3→13.2,
+conceptos pasados de la raíz 9.9→11.6. **Once nodos quedan.** Ver
+`changelog.md`.
+
 **Densidad tipo Evolve.** La regla de "nada inerte" (`TECH_EFFECTS` +
 `tech.test.ts`) **no se toca** — es lo que ha mantenido sano este árbol. Lo que se
 acepta explícitamente es que **el efecto de un nodo pueda ser un término numérico

@@ -39,8 +39,8 @@ import {
 import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import {
-  TECH, buildFactor, forageYieldFactor, nutritionFactor, prerequisitesMet, tallyFactor,
-  techPower, weaponOf, armourOf, type Tech,
+  TECH, axeFactor, buildFactor, forageYieldFactor, nutritionFactor, prerequisitesMet, reapFactor,
+  tallyFactor, techPower, weaponOf, armourOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse } from '../social/Property.ts';
@@ -924,8 +924,7 @@ export class ActionSystem {
     // people chopped steadily through to a hundred thirst and died holding the
     // axe. Progress on the trunk means the same work happens, but the person
     // is free to leave for a drink and come back to it.
-    const axe = person.inventory.has('handaxe') ? 0.5 : 1;
-    const required = tree.fellingTicks * axe;
+    const required = tree.fellingTicks * axeFactor(person);
     tree.chopProgress += person.skillFactor('build');
     person.workedTicks++;
     person.practice('build', 0.05);
@@ -1742,7 +1741,11 @@ export class ActionSystem {
 
     person.workedTicks++;
     person.practice('farm', 0.6);
-    if (person.workedTicks < REAP_TICKS) return;
+    // `sickle`: a blade in hand shortens the countdown itself rather than the
+    // yield at the end of it, which is the honest version of "a field
+    // stripped in an afternoon instead of a day" — the yield still comes from
+    // `harvestYield` below, unaffected by how it was cut.
+    if (person.workedTicks < REAP_TICKS * reapFactor(person)) return;
 
     // Knowing how to farm makes a harvest better; it is not what makes one
     // possible. Anybody can pull the ears off a ripe crop, and a band whose only

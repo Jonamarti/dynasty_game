@@ -15,6 +15,7 @@ import { describe, it, expect } from 'vitest';
 import {
   TECH, TECHS, TECH_EFFECTS, ERAS, ERA_ORDER, AGES, ageIndex, eraFor, reachableFrom,
   techPower, carryFactor, forageYieldFactor, nutritionFactor, warmthFrom,
+  axeFactor, buildFactor, reapFactor,
   type Tech,
 } from '../knowledge/Tech.ts';
 import { BUILDINGS, isStation } from '../entities/Building.ts';
@@ -314,6 +315,80 @@ describe('technology in one person’s hands', () => {
     equipped.age = bare.age;
     equipped.knownTech.add('cordage');
     expect(equipped.carryCapacity).toBeGreaterThan(bare.carryCapacity);
+  });
+});
+
+describe('M11 phase 10: axe, sickle and adze', () => {
+  it('fells nothing faster without an axe in hand', () => {
+    const knower = someone();
+    knower.knownTech.add('hafting');
+    knower.knownTech.add('ground_stone');
+    expect(axeFactor(knower)).toBe(1);
+  });
+
+  it('halves the work with a hand axe and more with a polished one, and never breaks the double gate', () => {
+    const handaxeOnly = someone();
+    handaxeOnly.knownTech.add('hafting');
+    handaxeOnly.inventory.add('handaxe', 1);
+    expect(axeFactor(handaxeOnly)).toBeCloseTo(0.5);
+
+    // The `handaxe` bug, checked directly: a hand axe in the hands of somebody
+    // who could not have made it does nothing.
+    const carrierOnly = someone();
+    carrierOnly.inventory.add('handaxe', 1);
+    expect(axeFactor(carrierOnly)).toBe(1);
+
+    // `stone_axe` betters `handaxe`, and holding both takes the better one
+    // rather than stacking — only one axe is swinging.
+    const both = someone();
+    both.knownTech.add('hafting');
+    both.knownTech.add('ground_stone');
+    both.inventory.add('handaxe', 1);
+    both.inventory.add('stone_axe', 1);
+    expect(axeFactor(both)).toBeLessThan(0.5);
+  });
+
+  it('never drives the felling or reaping multiplier to zero or below, at any refinement', () => {
+    // The bug this guards: `axeFactor` and `reapFactor` read `scaled` with a
+    // `full` under 1, so a technology's own `maxRefinement` has to be chosen so
+    // the floor stays positive — `ground_stone` shipped with `maxRefinement: 3`
+    // and a floor of -0.04 until this was caught, which would have felled a
+    // tree in zero ticks. Walking every refinement step up to the ceiling is
+    // cheaper than trusting the arithmetic by eye a second time.
+    const axeCarrier = someone();
+    axeCarrier.knownTech.add('hafting');
+    axeCarrier.knownTech.add('ground_stone');
+    axeCarrier.inventory.add('handaxe', 1);
+    axeCarrier.inventory.add('stone_axe', 1);
+    const maxAxeRefinement = Math.max(TECH.hafting.maxRefinement, TECH.ground_stone.maxRefinement);
+    for (let step = 0; step <= maxAxeRefinement; step++) {
+      axeCarrier.techLevel.set('hafting', step);
+      axeCarrier.techLevel.set('ground_stone', step);
+      expect(axeFactor(axeCarrier), 'axeFactor at refinement ' + step).toBeGreaterThan(0);
+    }
+
+    const reaper = someone();
+    reaper.knownTech.add('sickle');
+    reaper.inventory.add('sickle', 1);
+    for (let step = 0; step <= TECH.sickle.maxRefinement; step++) {
+      reaper.techLevel.set('sickle', step);
+      expect(reapFactor(reaper), 'reapFactor at refinement ' + step).toBeGreaterThan(0);
+    }
+  });
+
+  it('speeds building only for whoever both knows ground_stone and carries an adze', () => {
+    const bare = someone();
+    const knowerOnly = someone();
+    knowerOnly.knownTech.add('ground_stone');
+    const carrierOnly = someone();
+    carrierOnly.inventory.add('adze', 1);
+    const equipped = someone();
+    equipped.knownTech.add('ground_stone');
+    equipped.inventory.add('adze', 1);
+
+    expect(buildFactor(knowerOnly)).toBe(buildFactor(bare));
+    expect(buildFactor(carrierOnly)).toBe(buildFactor(bare));
+    expect(buildFactor(equipped)).toBeGreaterThan(buildFactor(bare));
   });
 });
 

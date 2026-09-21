@@ -6,6 +6,77 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 10, first commit: four of the fifteen widened-Neolithic nodes
+
+Resumes `m8_plan_the_ages.md`'s M8.2 table, left at fifteen pending nodes once
+`farming` and `composting` shipped. Four land in this commit — `ground_stone`,
+`spinning`, `weaving`, `sickle` — chosen because none needs a new mechanism:
+every effect is a numeric term read by a function `techPower`'s other callers
+already use, which is the Evolve-style density the plan asks the tier to be
+built at.
+
+- **`ground_stone`** (stoneworking, hafting) gives two tools, `stone_axe` and
+  `adze`, and repairs the bug `m8_plan_the_ages.md` named under "three repairs
+  to make while passing": `doChop` tested `inventory.has('handaxe')` directly,
+  unscaled by `techPower`, so a hand axe did exactly as much for a novice as
+  for somebody who had spent years refining `hafting`. The fix is a new
+  `Tech.axeFactor`, read by both `ActionSystem.doChop` and
+  `Progress.workProgressOf` (which has to mirror it or the felling bar lies to
+  whoever is holding the axe), taking the better of a hand axe and a polished
+  one rather than stacking them. `Tech.buildFactor` gets the adze's own term,
+  double-gated on carrying one the same way the basket and the net already
+  are. **Caught before it shipped**: `ground_stone`'s first draft used
+  `maxRefinement: 3`, which pushes `axeFactor`'s floor negative at full
+  refinement (`1 + (0.35 - 1) * 1.6 = -0.04`) and would have felled a tree in
+  zero ticks — `scaled()` had never been asked for a reduction before, so
+  nothing had exercised this failure mode. Fixed by lowering the ceiling to 2,
+  and a new test in `tech.test.ts` walks every refinement step of every
+  reduction-style factor and asserts it never reaches zero, so the next one
+  is caught the same way rather than in play.
+- **`spinning`** and **`weaving`** ship together, because `thread` has no
+  reason to exist without the `cloth` it turns into — the same rule that kept
+  `needle` and `fur_coat` in one commit. `weaving` is mechanism 4's third
+  station (`BUILDINGS.loom`), needing no changes to the band planner or the
+  scorer: both already read `isStation`/`RecipeDef.station` generically.
+  `warmthFrom` gets a fourth term, `woven`, double-gated on carrying `cloth`
+  — named apart from the function's existing `cloth` local (the `clothing`
+  technology's own multiplier), which it would otherwise have shadowed.
+  **Found while wiring the recipe**: `RECIPES.thread` first shipped with
+  `keep: 1`, on the same reasoning as `needle`. It does not fit here —
+  `cloth` consumes three thread at once and a batch of spinning makes two, so
+  `Brain`'s `forSelf` test (`count(output) < keep`) would stop a spinner at
+  two thread and never reach three. `keep: 3` instead, before this ever ran
+  against a build to prove it.
+- **`sickle`** (farming, hafting) shortens `REAP_TICKS` itself rather than the
+  yield at the end of it, through a new `Tech.reapFactor` — the honest version
+  of "a field stripped in an afternoon instead of a day": the harvest still
+  comes from `harvestYield`, unaffected by how it was cut.
+
+**Measured**, `sim:seeds -- --seeds 20` on `century`, this commit against the
+previous one: mean survival 99.7% → 99.6% (noise, and ten seeds cannot
+resolve a tenth of a point regardless), 846 born both times (`spawnRng` is
+untouched — no new fork, and none needed), technologies known at the end 12.3
+→ 13.2, conceived past the root nodes 9.9 → 11.6, things taught 683.9 →
+710.2. Adult starvation across the cohort fell from 3 to 0; five seeds'
+infant starvation is unchanged. The tree widening is the point of the pass,
+and it is visibly wider without visibly costing anything.
+
+`sim:check:all`: the same four checks flip that `bugs.md` already catalogues
+as knife-edge — `crowded`/`perf-budget`, `hunters`/`kills-are-butchered-for-
+bone`, and `scribes`/`jobs-bias-work` and `scribes`/`the-hurt-are-tended`,
+both un-skipped by downstream RNG drift rather than newly broken (`scribes`
+went from 53 applicable checks to 56, gaining coverage rather than losing
+it). All 348 unit tests (four new, guarding the refinement-floor bug above),
+typecheck, and all 47 e2e specs pass.
+
+**Eleven nodes remain**: `bread`, `brewing`, `herding`, `dairying`, `wool`,
+`wattle_daub`, `masonry`, `kiln`, `well`, `calendar`, `the_wheel`. Several of
+those need a real mechanism rather than a numeric term — `herding` is
+penned, breeding livestock; `well` is the first technology to touch thirst at
+all — and the Neolithic era rung itself still waits on `herding` and
+`masonry` before it can be declared, per the ladder's own comment in
+`Tech.ts`.
+
 ## 2026-09-21 — M11 phase 9c, second commit: two bands that know different things
 
 `PopulationConfig` gains `startingTechByBand?: string[][]`, which replaces

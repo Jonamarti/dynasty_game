@@ -357,6 +357,28 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       'gave up over ten harvests, handed back in a season.',
   },
 
+  // --- M11 phase 10: mechanism 4's third station -----------------------------
+  //
+  // A loom is worked at rather than stood on, on the same terms as the quern:
+  // no storage, or `Brain`'s larder scorer and `doStore` would both pick it up
+  // as a place to leave food. 3x3 for the same containment reason every
+  // station and every trap gives — see the quern's own comment.
+  loom: {
+    id: 'loom',
+    label: 'Loom',
+    icon: '\u{1F9F6}',
+    width: 3, height: 3,
+    materials: { wood: 6, sticks: 6 },
+    workTicks: 220,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'weaving',
+    description:
+      'A frame strung taut, worked back and forth. Thread by the length ' +
+      'becomes cloth by the yard.',
+  },
+
   // --- Gated behind knowledge that does not exist yet (M4) -----------------
   granary: {
     id: 'granary',

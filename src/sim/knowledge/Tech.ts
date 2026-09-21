@@ -96,6 +96,12 @@ export const TECHS = [
   // without being cut into anything. The knack of telling something so it is
   // remembered, not the memory itself — see `TECH_EFFECTS.storytelling`.
   'storytelling',
+  // M11 phase 10: four of the fifteen Neolithic nodes `m8_plan_the_ages.md`
+  // left pending after `farming` and `composting` shipped. Evolve-style density
+  // rather than a new mechanism each: every effect below is a numeric term on a
+  // function that already exists, which is what lets the tree widen without the
+  // engine widening with it. Eleven remain — see `next-steps.md`.
+  'ground_stone', 'spinning', 'weaving', 'sickle',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1151,6 +1157,96 @@ export const TECH: Record<Tech, TechDef> = {
       'but how it travels. A lesson lands more often for the telling, and a ' +
       'long evening carries an extra story further than it otherwise would.',
   },
+
+  // --- M11 phase 10: the widened Neolithic -----------------------------------
+  //
+  // `m8_plan_the_ages.md`'s M8.2 table, resumed after `farming` and
+  // `composting`. This tier is deliberately cheap: no node here needs a new
+  // system, only a term on a function `techPower`'s callers already read —
+  // `buildFactor`, `warmthFrom`, and the felling and reaping arithmetic in
+  // `ActionSystem`. That is the Evolve-style density the plan asks for.
+  ground_stone: {
+    id: 'ground_stone', label: 'Ground stone', domain: 'stone',
+    age: 'neolithic', firstKnown: 'about 8,000 years ago',
+    kind: 'device',
+    requires: ['stoneworking', 'hafting'], difficulty: 0.5, skill: 'knap',
+    // `maxRefinement: 2`, not 3 — `axeFactor` reads this through `scaled` with a
+    // `full` under 1, and a `full` of 0.35 at three refinement steps would push
+    // the multiplier negative (`1 + (0.35 - 1) * 1.6 = -0.04`), which would make
+    // `required` in `doChop` negative and fell a tree in zero ticks. Two steps
+    // keeps the floor at a positive 0.09.
+    prototype: { flint: 3, sticks: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'knows', tech: 'hafting' },
+                { kind: 'doing', action: 'chop' }],
+        weight: 1.0, story: 'noticed how much cleaner a rubbed edge cut than a struck one' },
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'kept working a flake smooth after it was already sharp' },
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'doing', action: 'build' }],
+        weight: 0.5, story: 'wanted a blade that would not chip the moment it hit a knot' },
+    ],
+    description:
+      'A struck edge ground smooth against another stone. Twice the axe, and ' +
+      'twice the adze — the same idea `stoneworking` had, taken further.',
+  },
+  spinning: {
+    id: 'spinning', label: 'Spinning', domain: 'cloth',
+    age: 'neolithic', firstKnown: 'about 7,000 BC',
+    kind: 'device',
+    requires: ['cordage'], difficulty: 0.4, skill: 'build',
+    prototype: { sticks: 2, thatch: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'doing', action: 'gather' },
+                { kind: 'place', biome: 'grass' }],
+        weight: 1.0, story: 'twisted a strand of fibre between finger and thumb until it held straight' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'season', season: 'winter' },
+                { kind: 'feeling', need: 'cold' }],
+        weight: 0.7, story: 'sat through a cold evening twisting cord finer than any strap needed' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'noticed a spun cord held straighter than a plaited one' },
+    ],
+    description:
+      'Fibre drawn out and twisted into a length of thread. Cordage was rope; ' +
+      'this is fine enough to sew or to weave.',
+  },
+  weaving: {
+    id: 'weaving', label: 'Weaving', domain: 'cloth',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device',
+    requires: ['spinning', 'basketry'], difficulty: 0.55, skill: 'build',
+    prototype: { wood: 3, sticks: 2 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'spinning' }, { kind: 'knows', tech: 'basketry' }],
+        weight: 1.0, story: 'ran a thread over and under a row of withies the way a basket already goes' },
+      { needs: [{ kind: 'knows', tech: 'spinning' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.7, story: 'strung a frame with thread to keep the draught off, and it held together' },
+      { needs: [{ kind: 'knows', tech: 'basketry' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'saw the same over-and-under in a basket wall and a bird’s nest both' },
+    ],
+    description:
+      'Thread crossed over and under itself on a frame. A length of cloth: ' +
+      'warmer than a bare hide, and the first thing a band makes worth ' +
+      'trading for its own sake.',
+  },
+  sickle: {
+    id: 'sickle', label: 'Sickle', domain: 'plants',
+    age: 'neolithic', firstKnown: 'about 9,000 BC',
+    kind: 'device',
+    requires: ['farming', 'hafting'], difficulty: 0.4, skill: 'knap',
+    prototype: { flint: 2, sticks: 1 }, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'doing', action: 'reap' }],
+        weight: 1.0, story: 'tore at a ripe stand with bare hands and thought of a blade instead' },
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'saw', what: 'nothing_to_reap' }],
+        weight: 0.6, story: 'lost a stand to the weather waiting to strip it by hand and swore not to again' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'doing', action: 'chop' }],
+        weight: 0.5, story: 'felt how much faster a hafted edge went through a stalk than a fist did' },
+    ],
+    description:
+      'A curved blade set in a haft. A field stripped in an afternoon instead ' +
+      'of a day, and less of the harvest shattered onto the ground getting there.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1319,6 +1415,22 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'A lesson lands more often, and a long evening carries an extra story.',
     site: 'KnowledgeSystem.teach, scaling the chance; SocialSystem.converse, the deep-talk bonus',
   },
+  ground_stone: {
+    summary: 'A polished axe and adze: a tree felled and a roof raised in a fraction of the swings.',
+    site: 'Tech.axeFactor, read by ActionSystem.doChop and Progress.workProgressOf; Tech.buildFactor, when an adze is in the pack',
+  },
+  spinning: {
+    summary: 'Fibre spun into thread — the material weaving turns into cloth.',
+    site: 'RECIPES.thread, the ingredient RECIPES.cloth consumes',
+  },
+  weaving: {
+    summary: 'Woven cloth: warmer than a bare hide, and the first thing worth trading for its own sake.',
+    site: 'BUILDINGS.loom and RECIPES.cloth; NeedsSystem, via warmthFrom, when cloth is in the pack',
+  },
+  sickle: {
+    summary: 'A hafted blade instead of bare hands: a field stripped in less of a day.',
+    site: 'Tech.reapFactor, read by ActionSystem.doReap',
+  },
 };
 
 /**
@@ -1467,7 +1579,44 @@ export function nutritionFactor(person: Person): number {
 
 /** Multiplier on how fast building work goes. */
 export function buildFactor(person: Person): number {
-  return scaled(person, 'carpentry', 1.3);
+  // M11 phase 10: `ground_stone`'s second tool, double-gated on carrying an
+  // adze the same way the basket and the net already are — knowing how to
+  // grind one is not enough, and an adze in the hands of somebody who could
+  // not have made it is the `handaxe` bug one node along.
+  const adze = person.inventory.has('adze') ? scaled(person, 'ground_stone', 1.2) : 1;
+  return scaled(person, 'carpentry', 1.3) * adze;
+}
+
+/**
+ * Multiplier on the work required to fell a tree, read by `ActionSystem.doChop`
+ * and mirrored in `Progress.workProgressOf` so the progress bar never lies to
+ * whoever is holding the axe.
+ *
+ * `hafting` used to be tested by `inventory.has('handaxe')` alone, unscaled by
+ * `techPower` — the exact defect `m8_plan_the_ages.md` names under "three
+ * repairs to make while passing", left until `ground_stone` gave the bug a
+ * second axe to double it. A person picks the better of the two they are
+ * carrying rather than stacking them, because two axes do not fell a tree
+ * twice as fast — only one is swinging.
+ */
+export function axeFactor(person: Person): number {
+  let best = 1;
+  if (person.inventory.has('handaxe')) {
+    best = Math.min(best, scaled(person, 'hafting', 0.5));
+  }
+  if (person.inventory.has('stone_axe')) {
+    best = Math.min(best, scaled(person, 'ground_stone', 0.35));
+  }
+  return best;
+}
+
+/**
+ * Multiplier on the work required to bring in a ripe field, read by
+ * `ActionSystem.doReap`. The same double gate as `axeFactor`: `sickle` alone
+ * teaches nothing about stripping a field by hand.
+ */
+export function reapFactor(person: Person): number {
+  return person.inventory.has('sickle') ? scaled(person, 'sickle', 0.6) : 1;
 }
 
 /**
@@ -1513,7 +1662,13 @@ export function warmthFrom(person: Person): number {
   const furs = person.inventory.has('fur_coat')
     ? 0.4 * techPower(person, 'tailoring')
     : 0;
-  return 1 - (1 - fire) * (1 - cloth) * (1 - furs);
+  // M11 phase 10's fourth term. Named `woven` rather than `cloth`, which this
+  // function already uses for the `clothing` technology's own multiplier —
+  // reusing the name would have shadowed one silently.
+  const woven = person.inventory.has('cloth')
+    ? 0.25 * techPower(person, 'weaving')
+    : 0;
+  return 1 - (1 - fire) * (1 - cloth) * (1 - furs) * (1 - woven);
 }
 
 // ---------------------------------------------------------------------------

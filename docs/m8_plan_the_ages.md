@@ -291,11 +291,11 @@ Seventeen nodes. The pass where a band stops moving to the food.
 
 | node | domain | requires | what it does |
 |---|---|---|---|
-| `ground_stone` | stone | stoneworking, hafting | polished axe and adze: felling, and a term in `buildFactor` |
-| `spinning` | cloth | cordage | `thread`, and a spindle recipe |
-| `weaving` | cloth | spinning, basketry | a `loom` station and a `cloth` item: warmth, and the first thing worth trading |
+| `ground_stone` | stone | stoneworking, hafting | polished axe and adze: felling, and a term in `buildFactor`. **Shipped 2026-09-21** (M11 phase 10), and it repaired the long-standing `handaxe`-bypasses-`techPower` bug this document's "three repairs" section names, via a new `Tech.axeFactor` |
+| `spinning` | cloth | cordage | `thread`. **Shipped 2026-09-21** (M11 phase 10), in the same commit as `weaving` — thread has no reason to exist without the loom |
+| `weaving` | cloth | spinning, basketry | a `loom` station and a `cloth` item: warmth, and the first thing worth trading. **Shipped 2026-09-21** |
 | `farming` | plants | plant_lore, grinding | **fields. Shipped 2026-09-17.** A `field` design carrying a `Crop`, `sow` and `reap` (tilling folded into sowing), a `grain` item, wild cereal to take it from, and the three soil layers of `core/Soil.ts` under all of it. Returns `farming` to `TECHS` and closes the oldest open entry in `next-steps.md`. See `changelog.md` for the two designs that were measured and rejected on the way |
-| `sickle` | plants | farming, hafting | reaping speed |
+| `sickle` | plants | farming, hafting | reaping speed. **Shipped 2026-09-21** (M11 phase 10), via a `Tech.reapFactor` term on `REAP_TICKS` |
 | `bread` | fire | grinding, farming, firemaking | an `oven` station; `bread`, high nutrition and long keeping |
 | `brewing` | fire | pottery, farming | `beer`: relieves `company`, raises opinion at a feast. Neolithic, and social |
 | `herding` | beasts | taming | a `pen` building and penned livestock that breed. Renewable meat |

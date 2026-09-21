@@ -170,6 +170,27 @@ export const ITEMS: Record<string, ItemDef> = {
   thatch:   { id: 'thatch',   label: 'Thatch',     nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   mud:      { id: 'mud',      label: 'Daub',       nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
   pottery:  { id: 'pottery',  label: 'Pot',        nutrition: 0,  spoilTicks: 0,    baseValue: 6 },
+  // --- M11 phase 10, the widened Neolithic: see m8_plan_the_ages.md ----------
+  //
+  // `ground_stone`'s two tools. Neither is a weapon, on the same call `basket`
+  // and `net` already make: what they change is read through `techPower`
+  // rather than through a fight, so giving either a `weapon` block would be
+  // the `handaxe` bug wearing a polish.
+  stone_axe: { id: 'stone_axe', label: 'Polished axe', nutrition: 0, spoilTicks: 0, baseValue: 10 },
+  adze:      { id: 'adze',      label: 'Adze',         nutrition: 0, spoilTicks: 0, baseValue: 9 },
+  // `spinning` and `weaving`, shipped in one commit because thread has no
+  // reason to exist without the loom that consumes it — the same rule that
+  // kept `needle` and `fur_coat` together.
+  thread: { id: 'thread', label: 'Thread', nutrition: 0, spoilTicks: 0, baseValue: 3 },
+  // The highest `baseValue` of anything a band can make at this point in the
+  // tree, on purpose: `next-steps.md`'s note on `trade` reading `baseValue` is
+  // what makes this "the first thing worth trading" rather than a description
+  // nobody can act on.
+  cloth: { id: 'cloth', label: 'Cloth', nutrition: 0, spoilTicks: 0, baseValue: 12 },
+  // `sickle`'s tool. A blade set in a haft, read the same double-gated way as
+  // every other carried tool in this file: knowing the technology is not
+  // enough, and carrying one is not enough either.
+  sickle: { id: 'sickle', label: 'Sickle', nutrition: 0, spoilTicks: 0, baseValue: 8 },
 };
 
 export class Inventory {

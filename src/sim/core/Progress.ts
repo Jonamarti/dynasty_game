@@ -19,6 +19,7 @@
 import type { Person } from '../entities/Person.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Building } from '../entities/Building.ts';
+import { axeFactor } from '../knowledge/Tech.ts';
 
 /** Just enough of the world to answer the question. */
 export interface ProgressView {
@@ -34,9 +35,9 @@ export function workProgressOf(person: Person, world: ProgressView): number | nu
   if (person.action === 'chop' && person.targetTreeId !== null) {
     const tree = world.treesById.get(person.targetTreeId);
     if (tree && tree.fellingTicks > 0) {
-      // Mirrors `doChop`: a hand axe halves the work, so it must halve the
+      // Mirrors `doChop`: an axe shortens the work, so it must shorten the
       // denominator too or the bar lies to whoever is holding one.
-      const required = tree.fellingTicks * (person.inventory.has('handaxe') ? 0.5 : 1);
+      const required = tree.fellingTicks * axeFactor(person);
       return Math.max(0, Math.min(1, tree.chopProgress / required));
     }
   }

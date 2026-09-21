@@ -334,6 +334,79 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { pottery: 1 },
     keep: 0,
   },
+
+  // --- M11 phase 10, the widened Neolithic: see m8_plan_the_ages.md ----------
+  //
+  // `ground_stone`'s two tools. Both `keep: 1` — an axe that fells trees faster
+  // and an adze that raises buildings faster are each worth carrying the
+  // moment either is made, the same call `spear` and `bow` already make.
+  stone_axe: {
+    id: 'stone_axe',
+    label: 'Polished axe',
+    icon: '\u{1FA93}',
+    tech: 'ground_stone',
+    skill: 'knap',
+    workTicks: 130,
+    ingredients: { flint: 2, sticks: 1 },
+    output: { stone_axe: 1 },
+    keep: 1,
+  },
+  adze: {
+    id: 'adze',
+    label: 'Adze',
+    icon: '\u{1FA93}',
+    tech: 'ground_stone',
+    skill: 'build',
+    workTicks: 130,
+    ingredients: { flint: 2, sticks: 1 },
+    output: { adze: 1 },
+    keep: 1,
+  },
+  // `spinning`. `keep: 3`, not 1 — `cloth` below consumes three at once, and a
+  // batch of thread makes two. `Brain`'s `forSelf` test stops wanting more the
+  // moment `count(output) >= keep`, so `keep: 1` would leave a spinner stopping
+  // at two thread, one short of what `cloth` needs, for ever. `needle` gets
+  // away with `keep: 1` because it is made and spent one at a time; thread is
+  // not.
+  thread: {
+    id: 'thread',
+    label: 'Thread',
+    icon: '\u{1F9F5}',
+    tech: 'spinning',
+    skill: 'build',
+    workTicks: 90,
+    ingredients: { thatch: 3 },
+    output: { thread: 2 },
+    keep: 3,
+  },
+  // `weaving`, mechanism 4's third station. The loom is a place to work, on the
+  // same terms as the quern: several lengths of thread go in over an afternoon,
+  // one length of cloth comes out.
+  cloth: {
+    id: 'cloth',
+    label: 'Cloth',
+    icon: '\u{1F9F5}',
+    tech: 'weaving',
+    skill: 'build',
+    workTicks: 140,
+    ingredients: { thread: 3 },
+    output: { cloth: 1 },
+    station: 'loom',
+    keep: 1,
+  },
+  // `sickle`. A hafted blade rather than a fired or ground one, so it costs the
+  // same as a spear-length of flint and sticks.
+  sickle: {
+    id: 'sickle',
+    label: 'Sickle',
+    icon: '\u{1F5E1}',
+    tech: 'sickle',
+    skill: 'knap',
+    workTicks: 100,
+    ingredients: { flint: 2, sticks: 1 },
+    output: { sickle: 1 },
+    keep: 1,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */
