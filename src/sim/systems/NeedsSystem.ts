@@ -54,8 +54,14 @@ const EXERTION: Record<string, number> = {
   sleep: 0.4,
 };
 
-/** The multiplier for an action, defaulting to ordinary effort. */
-function exertionOf(action: string): number {
+/**
+ * The multiplier for an action, defaulting to ordinary effort.
+ *
+ * Exported for `core/Macros.ts` (M11 phase 8c), which folds the same reading
+ * into a person's macro target instead of writing a second table that would
+ * inevitably drift from this one.
+ */
+export function exertionOf(action: string): number {
   return EXERTION[action] ?? 1;
 }
 
@@ -104,10 +110,14 @@ export class NeedsSystem {
       // Hunger is deliberately left flat. This world's food economy is its most
       // fragile part and only drinking was reported; giving hunger the same
       // treatment would have put a second, larger change in the same measurement.
-      const thirstRate = cfg.thirstRate *
-        exertionOf(person.action) *
-        (1 + heat * (cfg.heatThirst - 1));
+      const exertion = exertionOf(person.action);
+      const thirstRate = cfg.thirstRate * exertion * (1 + heat * (cfg.heatThirst - 1));
       person.needs.thirst = Math.min(100, person.needs.thirst + thirstRate);
+
+      // M11 phase 8c: the same reading, folded into today's ledger for
+      // `decayMacroTarget` to average — see `core/Macros.ts`.
+      person.exertionToday.total += exertion;
+      person.exertionToday.ticks++;
 
       // Resting and sleeping are handled by the action system, which restores
       // fatigue directly; everything else tires you.

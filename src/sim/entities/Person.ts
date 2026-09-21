@@ -12,7 +12,7 @@ import type { Idea } from '../knowledge/Synthesis.ts';
 import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { JobId } from './Job.ts';
 import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
-import { MacroBalance } from '../core/Macros.ts';
+import { MacroBalance, macroTargetFor } from '../core/Macros.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -237,6 +237,16 @@ export class Person {
    * day's raw ledger, not the diet.
    */
   macroIntakeToday = { fat: 0, protein: 0, carb: 0 };
+  /**
+   * M11 phase 8c. What `macroBalance` is judged against, shifted by how hard
+   * this person has lately been working — see `core/Macros.ts`. Inert until
+   * phase 8d.
+   */
+  macroTarget = new MacroBalance();
+  /** How hard this person has lately been working, `NeedsSystem.exertionOf`'s scale (0.4 asleep, 1.5 felling). */
+  recentExertion = 1;
+  /** Today's exertion ledger, filled by `NeedsSystem` and folded into `recentExertion` daily. */
+  exertionToday = { total: 0, ticks: 0 };
   inventory = new Inventory();
 
   /** What this person has seen and been told. See `social/Memory.ts`. */
@@ -614,6 +624,7 @@ export class Person {
     // is not born jarred against it.
     this.mood = new Mood();
     for (const channel of MOOD_CHANNELS) this.mood[channel] = moodBaseline(this.traits, channel);
+    this.macroTarget = macroTargetFor(this.recentExertion);
   }
 
   get years(): number {

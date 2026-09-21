@@ -6,6 +6,30 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 8c: the target itself scales with effort, still read by nobody
+
+`NeedsSystem.exertionOf` — already scaling thirst from 0.4 asleep to 1.5
+felling — is exported and reused rather than duplicated: `NeedsSystem.update`
+folds the same per-tick reading it already takes for thirst into
+`Person.exertionToday`, a same-day ledger identical in shape to 8b's
+`macroIntakeToday`. Once a day, `core/Macros.ts`'s new `decayMacroTarget`
+averages that ledger, blends it 35%/day into `Person.recentExertion`
+(mirroring `decayMacroBalance`'s own rate), and recomputes
+`Person.macroTarget` — the mix `macroBalance` will be judged against once
+8d exists — by interpolating between a rest target (carb-heavy: 0.55/
+0.17/0.28) and a hard-labour one (protein rises to 0.28, carbohydrate gives
+up the most ground, fat holds roughly steady) between `exertionOf`'s own
+floor and ceiling. Both targets are ordinary dietary guidance, not this
+game's invention.
+
+**Inert, and verified converging**: `century`'s `macro_exertion_sum`
+telemetry averages 0.94 — a shade under the ordinary-effort baseline of 1,
+which tracks with how much of a day this population spends asleep or
+resting. Nothing outside this bookkeeping reads `macroTarget` or
+`recentExertion` yet. `sim:check:all` reproduces the 8b matrix line for
+line, all 343 unit tests, typecheck clean. 8d is where a sustained gap
+between `macroBalance` and this target first costs health.
+
 ## 2026-09-21 — M11 phase 8b: a rolling diet, fed and decayed, still read by nobody
 
 `Person.macroBalance` (new `core/Macros.ts`, `MacroBalance`: `fat`, `protein`,

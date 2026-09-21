@@ -61,3 +61,61 @@ export function decayMacroBalance(person: Person): void {
   telemetry.count('macro_carb_sum', person.macroBalance.carb);
   telemetry.count('macro_samples');
 }
+
+/**
+ * The mix a rested person's body wants, at `recentExertion === EXERTION_REST`
+ * (`NeedsSystem`'s `sleep`, the gentlest entry in its table).
+ *
+ * Ordinary human dietary guidance, not this game's invention: roughly half
+ * energy from carbohydrate at rest, with protein and fat splitting the rest.
+ */
+const REST_TARGET: MacroBalance = { fat: 0.28, protein: 0.17, carb: 0.55 };
+
+/**
+ * The mix hard, sustained physical labour wants, at `recentExertion ===
+ * EXERTION_HARD` (`chop`/`attack`'s 1.5, the top of `NeedsSystem`'s table).
+ *
+ * Protein rises the most — muscle broken down by real work has to be rebuilt
+ * — carbohydrate gives up the most ground, and fat holds roughly steady:
+ * fat is stored energy the body draws on either way, not a lever exertion
+ * pulls directly.
+ */
+const WORK_TARGET: MacroBalance = { fat: 0.27, protein: 0.28, carb: 0.45 };
+
+/** `NeedsSystem.EXERTION`'s own floor and ceiling — `sleep` and `chop`/`attack`. */
+const EXERTION_REST = 0.4;
+const EXERTION_HARD = 1.5;
+
+/** How much of the gap to today's average exertion closes in one day. */
+const EXERTION_DECAY_PER_DAY = 0.35;
+
+/** Interpolates the rest and work targets by where `exertion` falls between them. */
+export function macroTargetFor(exertion: number): MacroBalance {
+  const t = Math.max(0, Math.min(1, (exertion - EXERTION_REST) / (EXERTION_HARD - EXERTION_REST)));
+  return {
+    fat: REST_TARGET.fat + (WORK_TARGET.fat - REST_TARGET.fat) * t,
+    protein: REST_TARGET.protein + (WORK_TARGET.protein - REST_TARGET.protein) * t,
+    carb: REST_TARGET.carb + (WORK_TARGET.carb - REST_TARGET.carb) * t,
+  };
+}
+
+/**
+ * Ages one person's `recentExertion` and `macroTarget` by a day, called
+ * alongside `decayMacroBalance`. Reads and clears `person.exertionToday`,
+ * the per-tick ledger `NeedsSystem.update` fills with the same `exertionOf`
+ * reading that already scales thirst — no second table.
+ *
+ * A day with no ticks recorded (nobody is ever not simulated, but a fresh
+ * arrival mid-day might see `ticks === 0`) leaves `recentExertion` alone.
+ */
+export function decayMacroTarget(person: Person): void {
+  const ledger = person.exertionToday;
+  if (ledger.ticks > 0) {
+    const today = ledger.total / ledger.ticks;
+    person.recentExertion += (today - person.recentExertion) * EXERTION_DECAY_PER_DAY;
+    ledger.total = 0;
+    ledger.ticks = 0;
+  }
+  person.macroTarget = macroTargetFor(person.recentExertion);
+  telemetry.count('macro_exertion_sum', person.recentExertion);
+}

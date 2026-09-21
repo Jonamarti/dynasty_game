@@ -39,7 +39,7 @@ import {
 } from '../entities/Building.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
-import { decayMacroBalance } from './Macros.ts';
+import { decayMacroBalance, decayMacroTarget } from './Macros.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -2481,6 +2481,7 @@ export class Simulation {
         if (person.alive) {
           decayMood(person);
           decayMacroBalance(person);
+          decayMacroTarget(person);
         }
       }
       const forest = this.forestSystem.daily(this.trees, {
