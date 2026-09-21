@@ -6,6 +6,38 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 9c, second commit: two bands that know different things
+
+`PopulationConfig` gains `startingTechByBand?: string[][]`, which replaces
+`startingTech` entirely for a given band's founders when present; absent, or
+past the end of the array, a band falls back to `startingTech` exactly as
+before — every scenario that has never set it, which is every scenario but
+one, is bit-identical. `Simulation.spawnPeople` reads it keyed by the band
+index it already has in hand.
+
+`scribes` is the one scenario that sets it: both bands keep the shared
+literate core from the previous commit, and each gains one more technology
+— `basketry` for one band, `clothing` for the other, both needing nothing
+beyond the core's own `cordage` — that the other does not have. Diagnosed
+at the end of the previous commit: every adult in both bands started
+knowing the identical set, so there was nothing on any stone that anybody,
+bandmate or stranger, could not already tell you, and `records-are-cut`
+reported zero reads for exactly that reason. The re-gating did not cause
+that and could not fix it; this is the fix.
+
+**Measured**: `scribes` telemetry now shows `read_basketry: 3` and
+`read_clothing: 2` — five reads, all of them a technology crossing the band
+boundary that put it out of native reach — and `records-are-cut` reports
+"5 read back off a record" instead of zero. `sim:check:all`: `scribes`
+53/53 (`sparks-are-various` now correctly skips it at nine technologies
+handed to the wider band, past `TREE_GIVEN_AWAY`); `century` and every
+other scenario unchanged from the previous commit, since nothing here
+touches anything `scribes` does not itself configure. All 344 unit tests,
+typecheck, and all 47 e2e specs pass.
+
+**This closes phase 9** (9a: `ochre`'s fidelity split; 9b: the oral channel;
+9c: `writing` behind the surplus, in the two commits above).
+
 ## 2026-09-21 — M11 phase 9c: writing goes behind the surplus
 
 `writing.requires` gains `farming`, alongside the `marking` and `stoneworking`

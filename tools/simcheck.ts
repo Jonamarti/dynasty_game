@@ -104,29 +104,38 @@ export const SCENARIOS: Record<string, Scenario> = {
       'into stone or read off it: writing sits behind marking, ' +
       'stoneworking and, since M11 phase 9c, farming, none of which any run ' +
       'in the suite reaches from nothing, so without this every check about ' +
-      'records would report n/a for ever.',
+      'records would report n/a for ever. Its two bands are given different ' +
+      'starting knowledge for the same reason — see `startingTechByBand`.',
     config: {
       seed: 'scribes',
       population: {
         bands: 2, peoplePerBand: 12,
-        // `plant_lore` and `grinding` are `farming`'s own prerequisites —
-        // `farming` itself has to be held directly, not merely reachable,
-        // because `prerequisitesMet` asks what a person *knows*, not what
-        // they could work out. Added in the same commit as `writing.requires`
-        // gaining `farming`: without it this scenario's founders hold a
-        // technology with an unmet prerequisite, and `teach`, `tryObserve`
-        // and `doRead` all filter on `requires`, so writing could be neither
-        // taught nor read in the one scenario that exists to exercise either.
-        startingTech: [
-          'cordage', 'hafting', 'stoneworking', 'marking',
-          'plant_lore', 'grinding', 'farming', 'writing',
+        // One thing each band's founders hold that the other's do not, on
+        // top of a shared literate core, both needing nothing beyond the
+        // core's own `cordage`. Without the split every adult in the world
+        // starts knowing the identical set, so there is nothing on any stone
+        // that anybody — bandmate or stranger — could not already tell you,
+        // and `records-are-cut` reported zero reads for exactly that reason;
+        // `writing`'s re-gating did not cause the problem and could not have
+        // fixed it either. The core itself: `plant_lore` and `grinding` are
+        // `farming`'s own prerequisites — `farming` has to be held directly,
+        // not merely reachable, because `prerequisitesMet` asks what a
+        // person *knows*, not what they could work out — needed since
+        // `writing.requires` gained `farming`, or these founders hold a
+        // technology with an unmet prerequisite and `teach`, `tryObserve`
+        // and `doRead`, which all filter on `requires`, could neither teach
+        // nor read it in the one scenario that exists to exercise either.
+        startingTechByBand: [
+          ['cordage', 'hafting', 'stoneworking', 'marking',
+            'plant_lore', 'grinding', 'farming', 'writing', 'basketry'],
+          ['cordage', 'hafting', 'stoneworking', 'marking',
+            'plant_lore', 'grinding', 'farming', 'writing', 'clothing'],
         ],
       },
     },
     // Long enough for somebody to work something *new* out, cut it, and for
-    // somebody else to walk over and read it. A shorter run has every literate
-    // adult holding the same eight technologies, so there is nothing on any
-    // stone that anybody lacks and the reading half never fires at all.
+    // somebody else to walk over and read it — including, now, walking far
+    // enough to reach the other band's stones at all.
     steps: 14000,
   },
   'harsh-winter': {
@@ -1400,10 +1409,18 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // failed, which is the check being asked a question this world cannot answer
   // rather than the web having collapsed to one path. `craft` (four) sits below
   // the line and still answers it honestly. `scribes` used to as well, at five,
-  // until M11 phase 9c's `writing.requires` change pushed its `startingTech` to
-  // eight to stay literate at all — it is now skipped here for the same reason
-  // `traps` is, which is the threshold doing its job rather than a loss.
-  const handedOut = sim.config.population.startingTech?.length ?? 0;
+  // until M11 phase 9c's `writing.requires` change pushed each band's
+  // `startingTechByBand` entry to nine to stay literate at all — it is now
+  // skipped here for the same reason `traps` is, which is the threshold doing
+  // its job rather than a loss.
+  //
+  // `startingTechByBand` replaces `startingTech` per band rather than sitting
+  // alongside it, so the widest band's count is what answers "how much was
+  // this world handed", not the (unused once a scenario sets the by-band
+  // form) flat list.
+  const handedOut = Math.max(
+    sim.config.population.startingTech?.length ?? 0,
+    ...(sim.config.population.startingTechByBand?.map(list => list.length) ?? [0]));
   const TREE_GIVEN_AWAY = 6;
 
   if ((last.day - first.day) >= 30 && handedOut >= TREE_GIVEN_AWAY) {

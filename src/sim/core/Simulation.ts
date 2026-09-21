@@ -680,8 +680,14 @@ export class Simulation {
         // a child holding a technology would be able to teach it, and children
         // are excluded from the knowledge system on purpose. Empty for every
         // world a player starts — see `PopulationConfig.startingTech`.
+        //
+        // `startingTechByBand`, when the scenario sets it, replaces this per
+        // band rather than handing every band the same list — see its own
+        // comment for why `scribes` needs that.
         if (!person.isChild) {
-          for (const tech of this.config.population.startingTech) {
+          const granted = this.config.population.startingTechByBand?.[b]
+            ?? this.config.population.startingTech;
+          for (const tech of granted) {
             person.knownTech.add(tech as Tech);
           }
         }

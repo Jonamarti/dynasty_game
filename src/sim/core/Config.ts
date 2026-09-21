@@ -193,6 +193,22 @@ export interface PopulationConfig {
    * rather than weaken the test until it passes.
    */
   startingTech: string[];
+  /**
+   * `startingTech`, but per band rather than the same list for everyone.
+   *
+   * `startingTechByBand[b]` replaces `startingTech` entirely for band `b`'s
+   * founders when present; a band past the end of the array, or every band
+   * when this is absent, falls back to `startingTech` — so every scenario
+   * that has never set this is bit-identical to before it existed.
+   *
+   * M11 phase 9c. `scribes` was giving every founder in both bands the exact
+   * same five technologies, which is a world in which literally nobody has
+   * anything on a stone that anybody else lacks — `records-are-cut` reported
+   * zero reads for exactly that reason, and no amount of re-gating `writing`
+   * could fix a problem the re-gating did not cause. Two bands that start
+   * knowing different things is what gives reading something to do.
+   */
+  startingTechByBand?: string[][];
 }
 
 /**
