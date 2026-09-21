@@ -1,7 +1,39 @@
 # Known bugs and rough edges
 
-As of 2026-09-20. Everything here is real and reproducible; nothing here is
+As of 2026-09-21. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found shipping M11 phase 8d, 2026-09-21
+
+### `lean`'s already-weakest seed, `tau`, newly collapses
+
+The phase 6d entry below flagged `tau` as the lowest single seed measured
+anywhere in this milestone's `lean` cohorts, at 27% survival — above the
+20-seed collapse line (25%) but the worst seed by a wide margin even then.
+Phase 8d's cohort puts the same seed at **4%**, now on the wrong side of
+that line (1/20 collapsed, where the pre-8d cohort had 0/20). Every other
+seed in the cohort moved within ordinary noise, and the cohort mean is
+unchanged at 88.1% — so this reads as an already-marginal seed being pushed
+over an edge it was already standing on, not a new failure mode. Not
+chased further, on the same principle `AGENTS.md` states for single-seed
+movement: a 20-seed cohort's signal is in the mean, and the mean did not
+move. Worth a second look if a future phase's cohort shows `tau` still
+collapsed, or a second seed joins it.
+
+### `century`/`hunts-succeed-and-fail` and `stewards`/`soil-is-drawn-down` flip under phase 8d
+
+Both are the same shape as the checks already named repeatedly below —
+`sim:check:all` reports each as failing for the first time in this
+milestone, and both are borderline by construction: `soil-is-drawn-down`
+failed at 98.9% against a 98.5% threshold (a 0.4-point margin), and
+`hunts-succeed-and-fail` failed on an 11-kills/0-misses run, the exact
+"strikes cluster on one side" shape `bugs.md` already records for this
+check on `band`. Nothing in phase 8d touches hunting, farming or soil;
+capping health recovery changes who lives, works and is where on any given
+tick, which is enough downstream RNG drift to flip a check already sitting
+on its own threshold. `crowded`/`perf-budget`,
+`hunters`/`kills-are-butchered-for-bone` and
+`stewards`/`compost-answers-exhaustion` are unchanged.
 
 ## Found shipping M11 phase 6d, 2026-09-20
 

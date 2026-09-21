@@ -625,6 +625,10 @@ export class Person {
     this.mood = new Mood();
     for (const channel of MOOD_CHANNELS) this.mood[channel] = moodBaseline(this.traits, channel);
     this.macroTarget = macroTargetFor(this.recentExertion);
+    // Start on target, not at equal thirds: a person is assumed to have been
+    // eating reasonably before the sim's first tick, so 8d's malnutrition
+    // reading does not open with a false deficit nobody caused.
+    this.macroBalance = { ...this.macroTarget };
   }
 
   get years(): number {

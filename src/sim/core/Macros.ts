@@ -1,15 +1,16 @@
 /**
- * M11 phase 8b. A person's diet, read as a slow-moving balance rather than a
- * per-meal tally — the same argument `Mood.ts` makes for spirits over a raw
- * event log: a single lopsided day is not malnutrition any more than a single
- * bad night is a grudge, and something has to smooth the noise out before 8d
- * can charge for an imbalance without charging for bad luck.
+ * M11 phase 8, macronutrients. A person's diet, read as a slow-moving balance
+ * rather than a per-meal tally — the same argument `Mood.ts` makes for
+ * spirits over a raw event log: a single lopsided day is not malnutrition any
+ * more than a single bad night is a grudge.
  *
- * This phase is deliberately inert, exactly like `Mood.ts` when it shipped:
- * `Person.macroBalance` exists, is fed by every meal, and decays toward what
- * was actually eaten — but nothing outside this file and its dry-run
- * telemetry reads it yet. 8c scales the target by activity and 8d is where an
- * imbalance first costs something.
+ * `Person.macroBalance` is fed by every meal and decays toward what was
+ * actually eaten (8b); `Person.macroTarget` decays toward a mix set by how
+ * hard the person has lately been working, reusing `NeedsSystem.exertionOf`
+ * (8c); `malnutrition` reads the gap between the two and `NeedsSystem` caps
+ * health recovery by it (8d) — degradation, never a fourth lethal need:
+ * `LETHAL_NEEDS` stays hunger, thirst and cold, on purpose, and this file
+ * never touches it.
  */
 import type { Person } from '../entities/Person.ts';
 import { telemetry } from './Telemetry.ts';
@@ -119,3 +120,29 @@ export function decayMacroTarget(person: Person): void {
   person.macroTarget = macroTargetFor(person.recentExertion);
   telemetry.count('macro_exertion_sum', person.recentExertion);
 }
+
+/**
+ * How far `macroBalance` sits from `macroTarget`, 0 (matched) to 1 (fully
+ * disjoint — everything eaten is the one macro the target wants none of).
+ * Total variation distance between the two fraction sets: sum of the
+ * absolute gaps, halved so the range lands on 0-1 instead of 0-2.
+ *
+ * No smoothing here on top of `macroBalance`'s own — that average is already
+ * a multi-day trend by construction (35%/day toward what was eaten), so a
+ * second smoothing pass would only blur what 8b already bought.
+ */
+export function malnutrition(person: Person): number {
+  let gap = 0;
+  for (const macro of MACROS) gap += Math.abs(person.macroBalance[macro] - person.macroTarget[macro]);
+  return gap / 2;
+}
+
+/**
+ * How many points below 100 the health ceiling falls at `malnutrition === 1`.
+ * Interpolated linearly from 0. Modest on purpose — see `NeedsSystem`'s use
+ * of this for the declared cost this was measured against.
+ */
+export const MALNUTRITION_HEALTH_CEILING_DROP = 20;
+
+/** How much of `recoveryRate` is lost at `malnutrition === 1`. */
+export const MALNUTRITION_RECOVERY_PENALTY = 0.6;

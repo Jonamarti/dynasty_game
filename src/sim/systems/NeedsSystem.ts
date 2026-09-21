@@ -10,6 +10,7 @@ import type { Building } from '../entities/Building.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { warmthFrom } from '../knowledge/Tech.ts';
+import { malnutrition, MALNUTRITION_HEALTH_CEILING_DROP, MALNUTRITION_RECOVERY_PENALTY } from '../core/Macros.ts';
 
 /**
  * How hard each action works somebody, as a multiplier on thirst.
@@ -174,8 +175,21 @@ export class NeedsSystem {
           person.die(cause);
           telemetry.count(`death_${cause}`);
         }
-      } else if (person.health < 100) {
-        person.health = Math.min(100, person.health + cfg.recoveryRate);
+      } else {
+        // M11 phase 8d. Malnutrition is degradation, not a fourth lethal
+        // need — it never drags health down on its own, only caps how high
+        // recovery can climb and slows the climb getting there. Someone
+        // already above the ceiling (imbalance arrived after good health, not
+        // before it) is left alone rather than pulled down, on the same
+        // principle: this is a ceiling, not a drain.
+        const severity = malnutrition(person);
+        const ceiling = 100 - severity * MALNUTRITION_HEALTH_CEILING_DROP;
+        if (person.health < ceiling) {
+          const recovery = cfg.recoveryRate * (1 - severity * MALNUTRITION_RECOVERY_PENALTY);
+          person.health = Math.min(ceiling, person.health + recovery);
+        }
+        telemetry.count('malnutrition_sum', severity);
+        telemetry.count('malnutrition_samples');
       }
     }
   }

@@ -6,6 +6,44 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 8d: malnutrition finally bites
+
+**Declared cost, ahead of measuring, per `AGENTS.md`'s rule: up to 5 points
+of mean survival on `lean`/`century` 20-seed cohorts in exchange for a
+population curve that visibly responds to diet variety** — the same order
+of magnitude the plan's own Risks section cites for the earlier
+food-*quantity* cut this is explicitly meant not to repeat, but landing
+from variety pressure instead of less food on the ground.
+
+`NeedsSystem`'s health-recovery branch now reads `Macros.malnutrition(person)`
+— total variation distance between `macroBalance` (8b) and `macroTarget`
+(8c), 0 matched to 1 fully disjoint — and uses it two ways: it caps how high
+recovery can climb (`100 - severity * 20`) and slows the climb getting there
+(recovery scaled down by up to 60% at `severity === 1`). Neither ever drags
+health down directly: someone already above the ceiling when imbalance
+arrives is left alone. `LETHAL_NEEDS` stays hunger, thirst and cold,
+untouched — malnutrition is degradation, exactly as the plan specifies, not
+a fourth way to die. A `Person` now starts life with `macroBalance` equal to
+its own `macroTarget` rather than equal thirds, so day one does not open
+with a false deficit nobody caused.
+
+**Measured, 20-seed cohorts, and the budget was not spent**: `lean` 88.1% →
+88.1% (identical to the phase 6d baseline in `next-steps.md`), 1/20
+collapsed (`tau`, already the cohort's weakest seed at 27% pre-8d, now at
+4% — see `bugs.md`). `century` 99.0% → 99.5%, 0/20 collapsed, both within
+this scenario's documented seed-to-seed noise. `century`'s own
+`malnutrition_sum`/`malnutrition_samples` telemetry averages severity 0.27
+across the run — real, measurable pressure from a berry-heavy diet sitting
+short of its protein-and-fat target, landing without moving the aggregate
+survival number at all. `sim:check:all` reproduces the 8c matrix except two
+new borderline flips (`century`/`hunts-succeed-and-fail`,
+`stewards`/`soil-is-drawn-down`), both recorded in `bugs.md` as the same
+downstream-RNG-drift shape already named for a dozen other checks in this
+milestone. All 343 unit tests, typecheck clean.
+
+**This closes phase 8's mechanism.** 8e (surfacing the balance in the UI)
+is next, then phase 9 (the oral tree and `writing`'s re-gating).
+
 ## 2026-09-21 — M11 phase 8c: the target itself scales with effort, still read by nobody
 
 `NeedsSystem.exertionOf` — already scaling thirst from 0.4 asleep to 1.5
