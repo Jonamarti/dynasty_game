@@ -15,7 +15,7 @@ import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
-import { BUILDINGS, isStation } from '../entities/Building.ts';
+import { BUILDINGS, isStation, isStructure } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import type { Tree } from '../entities/Tree.ts';
 import { ITEMS } from '../entities/Item.ts';
@@ -594,6 +594,36 @@ function buildingActions(
     const property = ctx.propertyUse?.(building);
     const canUse = property?.allowed ?? true;
     const guarded = canUse ? undefined : property?.because;
+    // M11 phase 11b. Repair reuses `build` rather than getting a verb of its
+    // own — see `ActionSystem.doBuild`'s own note on why — so the one thing
+    // this menu has to add is the *option*: nothing else here offers `build`
+    // on a finished site, and without this a damaged hut had no way back.
+    if (building.durability !== null && building.durability < building.def.workTicks) {
+      options.push({
+        id: 'build',
+        label: 'Repair the ' + building.def.label,
+        icon: '\u{1F528}',
+        enabled: canUse,
+        reason: guarded,
+      });
+    }
+    // Offered only on a foreign building nobody here has any claim to —
+    // `property.ours` is true for the actor's own band and for a close
+    // enough ally, and sabotaging either is not a choice this menu offers,
+    // the same way `steal` is never offered on one's own store. `canUse`
+    // still gates it: a watched target refuses with the same `because` every
+    // other property verb already gives.
+    if (property && !property.ours && isStructure(building.def) &&
+      !building.crop && !building.ruined) {
+      options.push({
+        id: 'sabotage',
+        label: 'Damage the ' + building.def.label,
+        icon: '\u{1F525}',
+        enabled: canUse,
+        reason: guarded,
+        hostile: true,
+      });
+    }
     if (building.def.storage > 0) {
       options.push({
         id: 'store',

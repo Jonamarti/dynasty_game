@@ -612,8 +612,13 @@ export class BandSystem {
     // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
     // windbreak are not the same amount of shelter, and counting them as one
     // each is how a band with two windbreaks decided it had housed ten people.
+    // `!b.ruined`, M11 phase 11b: a sabotaged hut's footprint is still there,
+    // but `NeedsSystem.shelterAt` gives it no credit, and this count must not
+    // disagree — a band standing in a burned-out camp that still reads
+    // "enough roof" on the strength of ash would never plan a repair or a
+    // replacement, which is the one thing a raid is supposed to cost it.
     const roofArea = live
-      .filter(b => b.def.shelter > 0.3)
+      .filter(b => b.def.shelter > 0.3 && !b.ruined)
       .reduce((sum, b) => sum + b.def.width * b.def.height, 0);
 
     const stores = live.filter(b => b.complete && b.def.storage >= 100);

@@ -205,6 +205,22 @@ export function isWell(def: BuildingDef): boolean {
   return def.providesWater === true;
 }
 
+/**
+ * True if a design has actual fabric to knock down, rather than being bare
+ * ground set aside — M11 phase 11b.
+ *
+ * The same test `Building.addWork` already uses to decide whether anything
+ * was ever built here (`workTicks === 0` is finished the instant it is
+ * placed, per the constructor), reused as its own predicate for the same
+ * reason `isTrap` and `isField` are: `sabotage`, `Building.repair` and the
+ * two catalogues that offer them all need to agree on which buildings have a
+ * `durability` worth reading, and three copies of `def.workTicks > 0` is how
+ * that agreement drifts.
+ */
+export function isStructure(def: BuildingDef): boolean {
+  return def.workTicks > 0;
+}
+
 export const BUILDINGS: Record<string, BuildingDef> = {
   stockpile: {
     id: 'stockpile',
@@ -627,6 +643,43 @@ export class Building {
   complete: boolean;
 
   /**
+   * How much of the building is still standing, once there is a building to
+   * stand — M11 phase 11b.
+   *
+   * `progress` measures how much has been *built*; this measures how much is
+   * still *up*, and the plan that ordered this field was explicit that the two
+   * must not be the same number, or a sabotaged hut would read as a hut that
+   * was never finished and a half-built site would read as one under attack.
+   * Null until `addWork` completes the building — there is nothing yet to
+   * sabotage — and forever null on anything `isStructure` says is bare ground,
+   * so `ruined` can never be true of a stockpile square that never had walls.
+   *
+   * Deliberately the same units `progress` uses, `def.workTicks`, rather than
+   * a 0-1 fraction: tearing a design down costs the same *kind* of effort
+   * raising it did, which is what lets `damage` and `repair` share
+   * `addWork`'s exact arithmetic — `skillFactor('build') * buildFactor` —
+   * instead of a second constant nobody would remember to keep in step with
+   * the first. A granary that took longer to build takes longer to burn down,
+   * for the same underlying reason, with no extra tuning anywhere.
+   */
+  durability: number | null = null;
+
+  /** True once sabotage (or, in principle, neglect) has brought it to nothing. */
+  get ruined(): boolean {
+    return this.durability !== null && this.durability <= 0;
+  }
+
+  /**
+   * 0-1, for the condition bar. 1 for anything that has never taken damage —
+   * including a design with nothing to damage, so a stockpile or an unfinished
+   * site never reads as "half wrecked" for having no `durability` at all.
+   */
+  get soundness(): number {
+    if (this.durability === null || this.def.workTicks === 0) return 1;
+    return Math.max(0, Math.min(1, this.durability / this.def.workTicks));
+  }
+
+  /**
    * The fraction of a catch a trap has accrued but not yet turned into an item.
    *
    * Lives on the building rather than in the sweep because the sweep is
@@ -724,7 +777,22 @@ export class Building {
     return Math.min(1, this.progress / this.def.workTicks);
   }
 
+  /**
+   * Zero on a ruin, whatever `def.storage` says — M11 phase 11b.
+   *
+   * The single gate every producing system already shares. `workTraps`,
+   * `workHerds` and `workHeaps` all stop accruing the instant `storageFree`
+   * reaches zero — that is how a full trap already stops catching — so
+   * routing ruin through the same number means a burned-out snare line or a
+   * broken-fenced pen stops producing with no separate check anywhere, and
+   * resumes on its own the moment `repair` lifts `durability` above zero.
+   * `doStore` and `accept` refuse the same way a full store already does, so
+   * nobody can tip fresh goods into a roofless pit either. What was already
+   * inside is untouched — sabotage wrecks the structure, not its contents;
+   * emptying it is `steal`'s job, not this one's.
+   */
   get storageFree(): number {
+    if (this.ruined) return 0;
     return Math.max(0, this.def.storage - this.store.total);
   }
 
@@ -750,8 +818,44 @@ export class Building {
     this.progress += amount;
     if (this.progress >= this.def.workTicks) {
       this.complete = true;
+      // Full marks the day it is raised. `isStructure` gates every caller
+      // that reads `durability`, but this line is the one place that has to
+      // agree with it — a stockpile's `workTicks` is 0, so this sets
+      // `durability` to 0 too, which would read as "ruined" the instant it
+      // was placed. The `def.workTicks === 0` guard is what keeps a stockpile
+      // at `durability: null` forever, exactly like an unfinished site.
+      if (this.def.workTicks > 0) this.durability = this.def.workTicks;
       return true;
     }
     return false;
+  }
+
+  /**
+   * Wears the building down by `amount`, the same units `addWork` uses.
+   * Returns true the instant this reduces it to a ruin — the moment
+   * `sabotage` should stop and report success, not every tick after.
+   */
+  damage(amount: number): boolean {
+    if (this.durability === null) return false;
+    const wasRuined = this.ruined;
+    this.durability = Math.max(0, this.durability - amount);
+    return !wasRuined && this.ruined;
+  }
+
+  /**
+   * Patches the building back up by `amount`. Returns true the instant it is
+   * fully sound again.
+   *
+   * Deliberately effort alone, with no fresh materials asked for — unlike
+   * `addWork`, which cannot proceed without `materialsReady`. Raising a wall
+   * from nothing and pressing a collapsed one back into shape are different
+   * jobs, and treating repair as "construction over again" would mean hauling
+   * a second granary's worth of thatch to fix a graze in the first one's roof.
+   * `ActionSystem.doBuild` is what decides when this runs instead of `addWork`.
+   */
+  repair(amount: number): boolean {
+    if (this.durability === null || this.def.workTicks === 0) return false;
+    this.durability = Math.min(this.def.workTicks, this.durability + amount);
+    return this.durability >= this.def.workTicks;
   }
 }

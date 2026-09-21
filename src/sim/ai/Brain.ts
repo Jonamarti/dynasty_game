@@ -110,6 +110,12 @@ export interface BrainContext {
   householdsById: ReadonlyMap<number, Household>;
   /** For `mayUse`'s reading of how two bands currently stand. */
   bandRelations: BandRelations;
+  /**
+   * `sabotage`'s candidates, already filtered and grouped by owner —
+   * `Simulation.sabotageCandidatesByBand`'s own comment explains why this is
+   * computed once per tick rather than once per person.
+   */
+  sabotageCandidatesByBand: ReadonlyMap<number, Building[]>;
 }
 
 export interface ScoredAction {
@@ -131,6 +137,8 @@ interface FoundTargets {
   fellTree: Tree | null;
   storeTarget: Building | null;
   larderTarget: Building | null;
+  /** Whose building a `sabotage` is aimed at — M11 phase 11b. */
+  sabotageTarget: Building | null;
   companion: Person | null;
   suitor: Person | null;
   /** A willing training partner for `spar`. See the scorer for why it is same-band only. */
@@ -696,6 +704,7 @@ export class Brain {
     let shelter: Building | null = null;
     let storeTarget: Building | null = null;
     let larderTarget: Building | null = null;
+    let sabotageTarget: Building | null = null;
     let suitor: Person | null = null;
     let sparPartner: Person | null = null;
     let student: Person | null = null;
@@ -1122,7 +1131,7 @@ export class Brain {
         // is. Deliberately one-sided: a good relationship between two bands
         // does not make stealing from a stranger *more* appealing than it
         // already reads as, only a bad one makes it appeal more.
-        const bandHostility = this.bandHostility(person, carrier, ctx);
+        const bandHostility = this.bandHostility(person, carrier.bandId, ctx);
         add('steal',
           (hunger * 0.8 + person.traits.greed * 0.35 + dislike * 0.4 +
             easyMark * person.traits.greed * 0.5 + bandHostility * 0.3) *
@@ -1147,6 +1156,53 @@ export class Brain {
         }
       }
 
+    }
+
+    // --- Sabotage ------------------------------------------------------------
+    // The building-shaped half of predation, M11 phase 11b: wrecking what a
+    // rival band leans on rather than what one member of it happens to be
+    // carrying. `bandHostility` gates the whole thing at the door — it is
+    // zero at neutral or friendly standing by design, so this never fires
+    // between bands with no quarrel, only ever amplifying a hostility that
+    // already exists, the same one-sided rule `attack`'s cross-band term
+    // already follows. No `hunger` term: `steal` is need answering itself,
+    // this is a band's standing grudge acting on a building instead of a
+    // person, and mixing the two would make a well-fed pacifist band start
+    // burning huts the moment its granary ran low.
+    //
+    // Walks `sabotageCandidatesByBand` rather than `ctx.buildings` directly —
+    // see `Simulation.sabotageCandidatesByBand`'s own comment. That map is
+    // already grouped by owner and already excludes anything not worth
+    // considering regardless of who is asking, so the only work left here is
+    // per *band*, not per *building*: skip this person's own band and any
+    // band it has no quarrel with — one `Map` lookup each, `bandHostility`'s
+    // whole cost — before ever touching that band's buildings, and only then
+    // pay for `sameRegion` and `mayUse`'s spatial query on the few that remain.
+    {
+      let sabotageCandidate: Building | null = null;
+      let sabotageDistance = Infinity;
+      for (const [ownerBandId, owned] of ctx.sabotageCandidatesByBand) {
+        if (ownerBandId === person.bandId) continue;
+        if (this.bandHostility(person, ownerBandId, ctx) <= 0) continue;
+        for (const b of owned) {
+          if (!ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY)) continue;
+          const access = mayUse(person, b, ctx);
+          if (!access.allowed || access.ours) continue;
+          const d = person.distanceTo({ x: b.centerX, y: b.centerY });
+          if (d < sabotageDistance) {
+            sabotageDistance = d;
+            sabotageCandidate = b;
+          }
+        }
+      }
+      if (sabotageCandidate) {
+        const hostility = this.bandHostility(person, sabotageCandidate.ownerBandId, ctx);
+        add('sabotage',
+          hostility * (0.3 + person.traits.aggression * 1.3) *
+          (1 - person.traits.loyalty * 0.5) *
+          this.proximityBonus(person, sabotageCandidate, ctx.sightRadius));
+        sabotageTarget = sabotageCandidate;
+      }
     }
 
     // --- Violence ----------------------------------------------------------
@@ -1195,7 +1251,7 @@ export class Brain {
         // personal grievance, up to 1.5x at open war between the two bands.
         attackScore = grudge * grudge * boldness *
           (0.5 + person.traits.aggression * 2.5) *
-          (1 + this.bandHostility(person, enemy, ctx) * 0.5)
+          (1 + this.bandHostility(person, enemy.bandId, ctx) * 0.5)
           * this.proximityBonus(person, enemy, ctx.sightRadius);
         foe = enemy;
       }
@@ -1276,7 +1332,7 @@ export class Brain {
         // expression already justifies rather than creating one of its own.
         const score = helpless < PREY_AT ? 0 : helpless * nerve * unseen *
           (1 - person.traits.loyalty * 0.8) / (1 + theirFriends * 0.3) *
-          PREDATION * (1 + this.bandHostility(person, prey, ctx) * 0.5) *
+          PREDATION * (1 + this.bandHostility(person, prey.bandId, ctx) * 0.5) *
           this.proximityBonus(person, prey, ctx.sightRadius);
         // Only if it beats what revenge already offered, and only then does the
         // blow change hands — so the score and the target never come apart, the
@@ -1301,7 +1357,19 @@ export class Brain {
     ) / 100;
     if (comfortNow > 0.45) {
       site = this.pickBest(
-        ctx.buildings.filter(b => !b.complete),
+        ctx.buildings.filter(b =>
+          !b.complete ||
+          // M11 phase 11b: a sabotaged building of one's own band draws the
+          // same builder a fresh frame would, at the same skill and the same
+          // comfort gate — a hut does not know the difference between never
+          // having walls and having lost them, and `materialsReady` is
+          // trivially true on anything already once delivered, so this falls
+          // straight into the `ready` branch below and needs no branch of its
+          // own. Not a foreign building: `Building.repair` asks nobody's
+          // permission, but nothing here should send someone across a band
+          // line to volunteer for it either.
+          (b.durability !== null && b.durability < b.def.workTicks &&
+            b.ownerBandId === person.bandId)),
         b => -person.distanceTo({ x: b.centerX, y: b.centerY })
       );
       if (site) {
@@ -1608,8 +1676,11 @@ export class Brain {
     // where anyone tired enough goes to bed, so both are scored off one search.
     if (person.needs.cold > 25 || (ctx.time.isNight && person.needs.fatigue > 20)) {
       shelter = this.pickBest(
+        // `!b.ruined`, M11 phase 11b: sent to a sabotaged roof, the scorer's
+        // own promise — warmer the moment they arrive — would simply be false,
+        // the same wasted-trip failure a ruined well's exclusion above avoids.
         ctx.buildings.filter(b =>
-          b.complete && b.def.shelter > 0.2 && this.canUse(person, b, ctx)),
+          b.complete && !b.ruined && b.def.shelter > 0.2 && this.canUse(person, b, ctx)),
         b => b.def.shelter * 40 - person.distanceTo({ x: b.centerX, y: b.centerY })
       );
       if (shelter) {
@@ -1957,7 +2028,7 @@ export class Brain {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, beneficiary, tradePartner, fleeFrom,
         quarry,
-        site, shelter, storeTarget, larderTarget, fruitTree, fellTree,
+        site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
         patient, strayAnimal, slanderSubjectId, praiseSubjectId,
       },
@@ -2079,10 +2150,16 @@ export class Brain {
    * `BandRelations` at all — deliberately the last of the three readers and
    * alone in its own commit, so a change to `bands-take-sides` measures one
    * thing rather than three at once.
+   *
+   * Takes a band id rather than a `Person`, since M11 phase 11b's `sabotage`
+   * has no person on the other end of it — only a building's `ownerBandId` —
+   * and a second copy of this arithmetic for buildings is exactly the drift
+   * `AGENTS.md` warns about. Every call site already had a `Person` or a
+   * `Building` in hand; passing `.bandId` costs nothing at any of them.
    */
-  private bandHostility(person: Person, target: Person, ctx: BrainContext): number {
-    if (target.bandId === person.bandId) return 0;
-    return Math.max(0, -ctx.bandRelations.standing(person.bandId, target.bandId)) / 100;
+  private bandHostility(person: Person, targetBandId: number, ctx: BrainContext): number {
+    if (targetBandId === person.bandId) return 0;
+    return Math.max(0, -ctx.bandRelations.standing(person.bandId, targetBandId)) / 100;
   }
 
   /** Closer targets are worth more, but distance never zeroes a desperate need. */
@@ -2106,7 +2183,11 @@ export class Brain {
     let well: { x: number; y: number } | null = null;
     let wellDist = Infinity;
     for (const building of ctx.buildings) {
-      if (!building.complete || !isWell(building.def)) continue;
+      // `!building.ruined`, M11 phase 11b: a scorer that sent people to a
+      // sabotaged well would have them walk there, find nothing, and stand
+      // confused — the exact impossible-walk failure `canUse`'s own header
+      // warns about, one mechanism further on.
+      if (!building.complete || building.ruined || !isWell(building.def)) continue;
       const d = person.distanceTo({ x: building.centerX, y: building.centerY });
       if (d < wellDist) {
         wellDist = d;
@@ -2238,6 +2319,7 @@ export class Brain {
       case 'store':
       case 'take':
       case 'build':
+      case 'sabotage':
       case 'haul':
       case 'sow':
       case 'reap':
@@ -2248,6 +2330,7 @@ export class Brain {
           action === 'shelter' || action === 'sleep' ? found.shelter :
           action === 'take' ? found.larderTarget :
           action === 'store' ? found.storeTarget :
+          action === 'sabotage' ? found.sabotageTarget :
           action === 'sow' || action === 'reap' || action === 'spread'
             ? found.fieldTarget :
           found.site;

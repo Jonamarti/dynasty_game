@@ -79,7 +79,10 @@ export class NeedsSystem {
   private shelterAt(person: Person, buildings: Building[]): number {
     let best = 0;
     for (const building of buildings) {
-      if (!building.complete || building.def.shelter <= best) continue;
+      // M11 phase 11b: a ruin keeps neither wind nor cold out. `ruined` is
+      // false for anything `Building.durability` was never set on, so an
+      // ordinary hut with no sabotage in its history is unaffected.
+      if (!building.complete || building.ruined || building.def.shelter <= best) continue;
       // Warmth spills past the walls; see Building.SHELTER_MARGIN.
       if (building.contains(person.x, person.y, 1.5)) best = building.def.shelter;
     }

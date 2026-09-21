@@ -6,6 +6,95 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-22 — M11 phase 11b: `Building.durability` and `sabotage`
+
+Territory and captivity (11c/11d) are still ahead; this is the piece the plan
+put first, because `mayUse` (phase 4) and `BandRelations` (phase 7) had to
+exist before a border guard could be given the right rule instead of a
+membership test. A raider can now cost a rival band something that outlasts
+the raid.
+
+**`Building.durability`**, in the same units as `progress` — `def.workTicks`
+— on purpose: wrecking a design costs the same *kind* of effort raising it
+did, so `damage`/`repair` share `addWork`'s exact arithmetic
+(`skillFactor('build') * buildFactor`) rather than a second constant. Null
+until `addWork` finishes the building, and forever null on anything
+`isStructure` says has no fabric to knock down (`workTicks === 0` — a
+stockpile), so a bare square of ground can never read as "in ruins." `ruined`
+(durability ≤ 0) and `soundness` (0-1, for the bar) are the two readers
+everything else in this pass hangs off.
+
+**`sabotage`**, a new verb, the same shape `doBuild` already is: an
+interruption check and progress banked on the building itself, because
+tearing down anything bigger than a windbreak takes far more than one
+uninterrupted pull. Refuses a target `mayUse` calls `ours` explicitly — the
+one place that answer has to differ from every other property verb, since
+there is no legitimate reading of "sabotaging your own band's hut." A field
+is excluded on purpose: `doSow`/`doReap` do not read `ruined` yet, so
+letting anyone target one would be exactly the declared-but-inert defect
+`AGENTS.md` warns about; `docs/bugs.md` leaves the real extension for
+whoever needs it.
+
+**Repair reuses `build`** rather than a verb of its own. `doBuild` now
+patches a complete, damaged site back up when it is ordered onto one, asking
+for no fresh materials — `Building.repair`'s own comment explains why
+treating a repair as "construction over again" would be the wrong shape for
+the job. `ActionCatalog`'s building menu offers "Repair the …" only when
+there is damage to repair.
+
+**A ruin is inert in every way its `def` claims it is not**, all through one
+choke point rather than four scattered checks: `storageFree` returns 0 on a
+ruin, and `workTraps`/`workHerds`/`workHeaps` were already gated on
+`storageFree <= 0` for a full store, so a burned-out snare line or a
+broken-fenced pen stops producing — and resumes on its own once repaired —
+with no separate flag anywhere. `NeedsSystem.shelterAt` and the well lookups
+in `ActionSystem`/`Brain` are gated on `!ruined` directly, since neither
+routes through storage. `BandSystem.planBuildings`'s `roofArea` now excludes
+a ruin's floor area too — without it a raided band would read its own ash as
+"enough roof" and never plan a repair or a replacement, which is the one
+thing a raid is supposed to cost it.
+
+**Scored in `Brain`** the same one-sided way `bandHostility` already reads
+for `attack`'s cross-band term: zero at neutral or friendly standing, never
+negative, so `sabotage` never fires between bands with no quarrel and only
+ever amplifies a hostility that already exists. No `hunger` term — this is a
+band's standing grudge acting on a building, not a need answering itself,
+and mixing the two would have a well-fed pacifist band start burning huts
+the moment its granary ran low.
+
+**The performance chase was the real work of this pass.** The first version
+scanned `ctx.buildings` fresh inside every person's `think`, exactly the
+shape `shelter`'s existing block already has — and adding a second such scan
+measurably cost `lean`'s large population enough steps per second to fail
+its own `perf-budget` check outright, a scenario whose margin over the floor
+was already thin. Fixed in two real steps, both measured rather than
+guessed: `Simulation.sabotageCandidatesByBand` computes the filtered,
+owner-grouped list once and shares it across every person's `think` that
+tick (O(people × buildings) down to O(buildings) once, plus O(bands) per
+person); moving its refresh from every tick to once a day — the same cadence
+`bandRelations.decay()` and `snowDepth` already update on — closed the rest
+of the gap. `lean` passes clean again. A stale entry between two daily
+refreshes costs at most a wasted walk for the AI, checked for real the
+moment anybody actually arrives, in `ActionSystem.doSabotage` itself; a
+player's own explicit order never consults the cache at all.
+
+**Verification.** `typecheck`, all 395 unit tests (fifteen new, in
+`sabotage.test.ts`, each checked to fail on the build without the fix, per
+`AGENTS.md`), all 49 e2e specs, and `sim:check:all` clean except three: the
+pre-existing `crowded`/`perf-budget` (unrelated, present on a clean tree
+too), and two single-seed checks — `traps`/`animals-are-tamed` and
+`farmers`/`heads-direct-work` — that flip from a clean PASS to a hard 0 with
+this commit. Chased rather than shrugged off: both are the exact single-seed
+shape `AGENTS.md` names as chaos-prone (a rare event either crosses a low
+threshold in one seeded run or does not), the divergence is the expected
+cost of adding any new scoreable action to `Brain` — it shifts
+`choiceRng`'s draw sequence and, from there, the whole world's trajectory —
+and the mechanism each check measures still works cleanly elsewhere:
+`labour`, the scenario built expressly to exercise rank-directed labour,
+passes `heads-direct-work` outright with this same code. Recorded rather
+than tuned away, on the standing rule that a check is not to be chased green
+without knowing which side of it — the world or the check — was wrong.
+
 ## 2026-09-21 — M9.6 phase 2d: the graph panels hold still, and are readable on a phone
 
 Two owner reports, and four bugs behind them. Both are in the UI only; no

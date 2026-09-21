@@ -168,6 +168,7 @@ export const ACTION_LABELS: Record<string, string> = {
   slander: 'speaking ill of someone',
   praise: 'speaking well of someone',
   build: 'building',
+  sabotage: 'wrecking what is not theirs',
   sow: 'sowing a field',
   spread: 'spreading compost',
   reap: 'bringing in the harvest',
@@ -256,6 +257,14 @@ export const STOP_REASONS: Record<string, string> = {
   site_needs_materials: 'the site still wants materials',
   already_built: 'it was already finished',
   not_a_store: 'it is not a store',
+  // M11 phase 11b: `sabotage`'s own gate on `reachBuilding`, bundling every
+  // way a target can fail to be a legitimate one — unfinished, bare ground
+  // with nothing to knock down, or already a ruin — the same way `no_field`
+  // bundles several unrelated causes into one sentence below.
+  nothing_to_sabotage: 'there was nothing standing there worth attacking',
+  // The refusal `mayUse`'s `ours` branch stands in for: sabotaging one's own
+  // band's building, or a close ally's, was never on offer to begin with.
+  not_foreign_property: 'it belonged to their own people',
   store_full: 'the store was full',
   store_empty: 'the store was empty',
   property_guarded: 'someone from its band saw them',

@@ -17,7 +17,9 @@ import { Arrival, type MovementSystem } from './MovementSystem.ts';
 import { companionBonus } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
-import { isTrap, isHeap, isHerd, isWell, type Building } from '../entities/Building.ts';
+import {
+  isTrap, isHeap, isHerd, isWell, isStructure, type Building,
+} from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import type { Tree } from '../entities/Tree.ts';
@@ -521,6 +523,7 @@ export class ActionSystem {
       case 'flee': this.doFlee(person, ctx); break;
       case 'haul': this.doHaul(person, ctx); break;
       case 'build': this.doBuild(person, ctx); break;
+      case 'sabotage': this.doSabotage(person, ctx); break;
       case 'store': this.doStore(person, ctx); break;
       case 'take': this.doTake(person, ctx); break;
       case 'pickup': this.doPickup(person, ctx); break;
@@ -732,9 +735,11 @@ export class ActionSystem {
     // `well`: a real second source rather than a decoration, and open to
     // anyone the way natural water is — a spring has no owner, and neither
     // does a well dug over one. The margin matches the water check's own
-    // leniency, for the same reason it exists there.
+    // leniency, for the same reason it exists there. `!building.ruined`,
+    // M11 phase 11b: a sabotaged well is a hole, not a source.
     for (const building of ctx.buildingsById.values()) {
-      if (building.complete && isWell(building.def) && building.contains(x, y, 2)) {
+      if (building.complete && !building.ruined &&
+        isWell(building.def) && building.contains(x, y, 2)) {
         // The only way to tell a well is answering thirst at all, rather than
         // standing built and unused while everybody still walks to the shore.
         telemetry.count('drink_at_well');
@@ -1049,7 +1054,7 @@ export class ActionSystem {
     person: Person,
     ctx: ActionContext,
     requirement?: { ok: (building: Building) => boolean; reason: string },
-    propertyEvent?: Extract<EventType, 'theft' | 'trespass'>
+    propertyEvent?: Extract<EventType, 'theft' | 'trespass' | 'sabotage'>
   ): Building | null {
     const building = person.targetBuildingId === null
       ? null
@@ -1089,7 +1094,7 @@ export class ActionSystem {
   private useProperty(
     person: Person,
     building: Building,
-    event: Extract<EventType, 'theft' | 'trespass'>,
+    event: Extract<EventType, 'theft' | 'trespass' | 'sabotage'>,
     ctx: ActionContext
   ): boolean {
     const access = mayUse(person, building, ctx);
@@ -1140,6 +1145,33 @@ export class ActionSystem {
     if (!site) return;
 
     if (site.complete) {
+      // A damaged structure answers `build` too — repair, M11 phase 11b, and
+      // deliberately not a separate verb. `already_built` is the right refusal
+      // for a building with nothing left to do; a durability below full is
+      // exactly a job still to do, and the same person who already reaches
+      // for `build` on a half-raised frame should reach for it on a half-wrecked
+      // wall. See `Building.repair` for why it asks for no fresh materials.
+      if (site.durability !== null && site.durability < site.def.workTicks) {
+        const stop = this.interruption(person, ctx);
+        if (stop) {
+          this.stop(person, stop, ctx);
+          return;
+        }
+        const mend = person.skillFactor('build') * buildFactor(person);
+        person.workedTicks++;
+        person.practice('build', 0.2);
+        if (site.repair(mend)) {
+          telemetry.count('building_repaired');
+          person.chronicle.push({
+            tick: ctx.tick,
+            ageDays: person.age,
+            text: 'repaired a ' + site.def.label.toLowerCase(),
+            kind: 'did',
+          });
+          this.finish(person);
+        }
+        return;
+      }
       this.abandon(person, 'already_built', ctx);
       return;
     }
@@ -1180,6 +1212,78 @@ export class ActionSystem {
         tick: ctx.tick,
         ageDays: person.age,
         text: 'finished building a ' + site.def.label.toLowerCase(),
+        kind: 'did',
+      });
+      this.finish(person);
+    }
+  }
+
+  /**
+   * Wrecking a foreign building — M11 phase 11b, and the reason
+   * `Building.durability` exists at all.
+   *
+   * The same shape `doBuild` already has, on purpose: an interruption check
+   * and progress banked on the building itself, because tearing down anything
+   * bigger than a windbreak takes far more than one uninterrupted pull —
+   * `AGENTS.md`'s 140-tick ceiling, applied to demolition instead of
+   * construction. A saboteur driven off by hunger, or a second saboteur
+   * entirely, picks the job back up exactly where it was left, the same way a
+   * half-raised hut waits for whoever next carries a load to the site.
+   *
+   * The property check is the one place this cannot reuse `useProperty`
+   * wholesale. `mayUse`'s `ours` branch means "no offence, proceed" — correct
+   * for storing your own goods in your own hut, and wrong here, since there is
+   * no legitimate reading of "sabotaging your own band's building" for it to
+   * excuse. That branch is refused explicitly, before the witnessed/unseen
+   * question `useProperty` still answers unchanged once a target is confirmed
+   * foreign.
+   */
+  private doSabotage(person: Person, ctx: ActionContext): void {
+    const site = this.reachBuilding(person, ctx, {
+      // `b.crop === null`: a field is `isStructure` too — clearing and
+      // tilling it costs real `workTicks` — but ruining it would currently be
+      // inert. `doSow` and `doReap` read nothing about `durability`, so a
+      // trampled field would sow and reap exactly as an untouched one does,
+      // and the project's own standing rule is that a table entry, or here a
+      // whole target category, does not earn its place until something reads
+      // it. Left for whoever gives a raided field a real consequence; see
+      // `docs/bugs.md`.
+      ok: b => b.complete && isStructure(b.def) && b.crop === null && !b.ruined,
+      reason: 'nothing_to_sabotage',
+    }, 'sabotage');
+    if (!site) return;
+
+    // Checked again here, after `reachBuilding`'s own property gate: a target
+    // that is `ours` (own band, or an ally close enough to count as one) was
+    // let through as *unopposed access*, which is the wrong answer for a
+    // deliberately hostile act. See the method's own note above.
+    if (mayUse(person, site, ctx).ours) {
+      this.abandon(person, 'not_foreign_property', ctx);
+      return;
+    }
+
+    const stop = this.interruption(person, ctx);
+    if (stop) {
+      this.stop(person, stop, ctx);
+      return;
+    }
+
+    const wreck = person.skillFactor('build') * buildFactor(person);
+    person.workedTicks++;
+    person.practice('build', 0.15);
+    if (site.damage(wreck)) {
+      telemetry.count('building_sabotaged');
+      telemetry.count('sabotaged_' + site.def.id);
+      // No second `ctx.social.emit` here. `reachBuilding`'s `useProperty` call
+      // already registered the one deed this session — the same precedent
+      // `doTake` sets for lifting goods from a foreign store: one property
+      // event per approach, at arrival, not a second one on completion. A job
+      // long enough to be interrupted and resumed earns a fresh deed each time
+      // it is taken up again, exactly as a multi-visit theft would.
+      person.chronicle.push({
+        tick: ctx.tick,
+        ageDays: person.age,
+        text: 'wrecked a ' + site.def.label.toLowerCase(),
         kind: 'did',
       });
       this.finish(person);

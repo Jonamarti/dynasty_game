@@ -152,10 +152,26 @@ single answer to whether somebody may use a building: their own band always
 may; a rival may while no living owner is within sight of it; an owner who can
 see can stop them. The scorer, catalogue, executor and direct inventory action
 all ask it. Foreign use emits a social deed (`theft` for taking,
-`trespass` for other use), because ownership that nobody can witness or tell a
-story about is only a hidden permission flag. Scorer-side candidates also need
-`World.sameRegion`: same-band ownership used to guarantee that accidentally,
-and allowing foreign buildings exposed impossible walks across water.
+`trespass` for other use, `sabotage` for wrecking — M11 phase 11b), because
+ownership that nobody can witness or tell a story about is only a hidden
+permission flag. `sabotage` is the one verb that must refuse a target
+`mayUse` calls `ours`: every other property verb reads `ours` as "no offence,
+proceed", which is exactly wrong for a deliberately hostile act, so the
+refusal is checked explicitly rather than left to the shared helper. Scorer-
+side candidates also need `World.sameRegion`: same-band ownership used to
+guarantee that accidentally, and allowing foreign buildings exposed
+impossible walks across water.
+
+**A building's `durability`** is the structural half of the same idea —
+`progress` measures how much has been built, `durability` how much is still
+standing, and the two are deliberately never the same number. Null until
+`addWork` completes the building and forever null on anything with no fabric
+to knock down (`Building.isStructure`), so `sabotage`'s target check and the
+UI's condition bar can both tell "not yet built" apart from "wrecked" without
+a separate flag. A ruin is inert everywhere its `def` claims it is not — no
+shelter, no water, no fresh storage — routed through one choke point,
+`storageFree`, rather than scattered `!ruined` checks; repair answers `build`
+on an already-complete site rather than getting a verb of its own.
 
 > Overlays live on `document.body`, never inside `#hud`, which rebuilds its
 > subtree every frame. The z-index ladder is radial 20, picker 21, techweb 30,

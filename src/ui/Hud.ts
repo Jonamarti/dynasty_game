@@ -23,7 +23,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import type { ResourceKind, ResourceNode } from '../sim/entities/ResourceNode.ts';
-import type { Building, BuildingDef } from '../sim/entities/Building.ts';
+import { isStructure, type Building, type BuildingDef } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
@@ -1480,6 +1480,25 @@ export class Hud {
     }
 
     rows.push('<div class="hud-section">Finished</div>');
+    // Condition, M11 phase 11b. Not gated on `known.knowsContents` the way the
+    // store's contents are below: unlike what is inside, that a wall is
+    // cracked or a roof is charred is visible to anyone who can see the
+    // building at all, and the standing rule this project holds panels to —
+    // if the simulation refuses or stops something, the UI has to say why —
+    // applies just as much to *why a building stopped working* as to why a
+    // person's order did. `isStructure` excludes a stockpile, which has no
+    // durability to report and would otherwise show a bar permanently full
+    // for a reason nobody could act on.
+    if (isStructure(building.def) && building.durability !== null) {
+      if (building.ruined) {
+        rows.push('<div class="hud-sub" style="color:#d9705a">Wrecked. It shelters ' +
+          'nobody and holds nothing new until somebody repairs it.</div>');
+      } else if (building.soundness < 1) {
+        rows.push(bar('condition', building.soundness * 100, '#d98032'));
+        rows.push('<div class="hud-sub">Damaged. Working at ' +
+          (building.soundness * 100).toFixed(0) + '% until it is repaired.</div>');
+      }
+    }
     // A trap that has stopped catching looks exactly like a trap that is
     // working, from outside, and the standing instruction on this project is
     // that anything the simulation refuses or abandons has to say so in the UI.

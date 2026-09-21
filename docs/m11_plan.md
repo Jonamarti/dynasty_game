@@ -747,14 +747,53 @@ uno o dos eventos (`the-hurt-are-tended`, `kills-are-butchered-for-bone`,
 `bands-take-sides`, y ahora `the-tree-is-climbed` en el mismo lote) —
 exactamente el ruido de semilla único que `AGENTS.md` avisa no perseguir.
 
+**11b — `Building.durability` y `sabotage`. HECHO 2026-09-22.** Campo nuevo
+en `Building` (`durability`, en las mismas unidades que `progress` —
+`def.workTicks` — deliberadamente: derribar cuesta el mismo tipo de esfuerzo
+que levantar, así que `damage`/`repair` reutilizan la aritmética de
+`addWork` sin una segunda constante). Nulo hasta que `addWork` termina el
+edificio y para siempre en un diseño sin fábrica (`isStructure`,
+`workTicks === 0`), así que un almacén a cielo abierto nunca puede leerse
+como "en ruinas". La reparación reutiliza `build` sobre un sitio ya completo
+en vez de un verbo propio — decisión tomada al escribir el commit: pedir
+materiales frescos para remendar un muro sería tratar la reparación como
+"construir otra vez", y `Building.repair` lo deja explícito en su propio
+comentario. `sabotage` es un verbo largo del mismo molde que `doBuild`
+(comprobación de interrupción, progreso bancado en `durability`, no en
+quien lo hace, para que un segundo saboteur — o el primero, interrumpido y
+reanudado — continúe donde quedó el daño), con su propio refusal cuando el
+objetivo es `mayUse`-`ours` (nunca hay lectura legítima de "sabotear el
+edificio de la propia banda"). Un edificio en ruinas deja de dar cobijo
+(`NeedsSystem.shelterAt`), agua (`well`) o producir (`workTraps`/
+`workHerds`/`workHeaps`, los tres a través de un único punto —
+`storageFree` devuelve 0 en una ruina), y `BandSystem.planBuildings` deja de
+contar su superficie como techo real, para que una banda saqueada
+efectivamente vuelva a construir o reparar en vez de darse por satisfecha
+con la ceniza. Un campo (`isStructure` también, por `workTicks`) queda
+excluido deliberadamente de `sabotage`: `doSow`/`doReap` no leen `ruined`
+todavía, así que arruinarlo sería una categoría declarada e inerte —
+`docs/bugs.md` deja la extensión real para quien la necesite. Puntuado en
+`Brain` con el mismo gesto de una sola vía que ya usa `bandHostility` (cero
+en trato neutral o amistoso, nunca lo contrario), y sin término de hambre:
+esto es el rencor de una banda actuando sobre un edificio, no una necesidad
+resuelta. El coste de la búsqueda se midió, no se adivinó: escanear
+`ctx.buildings` sin agrupar costó a `lean` bajar de su propio suelo de
+`perf-budget`; `Simulation.sabotageCandidatesByBand`, agrupado por dueño y
+refrescado una vez al día en vez de una vez por tick — el mismo ritmo que ya
+usan `bandRelations.decay()` y `snowDepth` —, lo devolvió por encima del
+suelo. Quince pruebas nuevas en `sabotage.test.ts`, verificadas contra un
+build sin la lógica de `damage`/`repair`/ruina antes de aceptarlas (la regla
+de `AGENTS.md`). Efectos secundarios documentados y no perseguidos en
+`docs/bugs.md`: dos checks de un solo seed (`animals-are-tamed` en `traps`,
+`heads-direct-work` en `farmers`) cambian de PASS a FAIL con este commit —
+divergencia esperada de añadir una acción puntuable más a `Brain`, no un
+defecto: ambas son de la clase de muestra única que `AGENTS.md` ya avisa no
+perseguir, y el mecanismo que cada una mide sigue funcionando limpio en el
+escenario construido a propósito para probarlo (`labour` para
+`heads-direct-work`).
+
 **Sigue:**
 
-- **11b — `Building.durability` y `sabotage`.** Campo nuevo en `Building`
-  (separado de `progress`: uno mide cuánto se ha construido, el otro cuánto
-  queda en pie), un verbo largo con comprobación de interrupción y progreso
-  bancado en el propio edificio, igual que `addWork`. Decisión pendiente de
-  tomar al diseñar el commit: si se repara reutilizando `build` sobre un
-  edificio dañado o con un verbo propio.
 - **11c — el organizador de partida, `BandSystem.daily`.** Un jefe reúne
   a varios miembros dispuestos y con `fight` de verdad (fruto de 11a) para
   viajar juntos y sabotear o robar en el territorio de otra banda. Quórum y

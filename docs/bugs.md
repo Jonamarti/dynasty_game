@@ -1,7 +1,46 @@
 # Known bugs and rough edges
 
-As of 2026-09-21. Everything here is real and reproducible; nothing here is
+As of 2026-09-22. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found shipping M11 phase 11b, 2026-09-22
+
+### A field cannot be sabotaged, because ruining one would currently do nothing
+
+`sabotage` refuses any building with `crop !== null`, deliberately — a field
+is `isStructure` too (clearing and tilling it costs real `workTicks`), and
+letting it through would set `durability` and let it fall to `ruined` like
+any other structure, but nothing would happen. `doSow` and `doReap` read
+nothing about a field's `durability`; a trampled field would sow and reap
+exactly as an untouched one does. That is the declared-but-inert defect this
+project holds every table to, applied to a whole target category rather than
+one entry, and it is why the category was left out rather than half-wired
+in. Whoever picks this up needs to decide what a ruined field actually means
+— does standing growth die, does sowing refuse until it is repaired, is the
+ground itself worse for a season — and gate `doSow`/`doReap` on `!ruined`
+once that is decided. `Brain`'s sabotage scoring and `ActionCatalog`'s menu
+both carry the same exclusion and both need it lifted together.
+
+### Two single-seed checks flip when `sabotage` is added to `Brain`'s candidates
+
+`traps`/`animals-are-tamed` and `farmers`/`heads-direct-work` go from a clean
+PASS to a hard 0 with this commit — `0 meals offered to wild animals` and `0
+orders landed on rank alone, 9 refused`, not a near-miss on a threshold.
+Chased before being written off, as `AGENTS.md` asks: neither check's subject
+touches a building, a band relation, or anything else this pass changed, and
+both are the single-seed shape the project already documents as fragile —
+`animals-are-tamed` needs the scorer to have picked `tame` at all in one
+seeded run, `heads-direct-work` needs five-plus rank orders to land the right
+way in one. Adding any new scoreable action to `Brain.think` shifts how many
+candidates exist when `choiceRng` makes its pick, which shifts that draw,
+which shifts the entire world's trajectory downstream of it — the same
+mechanism `century`'s own chaos entry describes, reached here by a much
+smaller cause. The check itself is not broken and the mechanism it measures
+is not broken either: `labour`, the scenario built specifically to give
+`heads-direct-work` a real sample, passes it outright on this same code.
+Left unresolved because there is nothing to resolve — re-seeding either
+scenario to dodge this one unlucky draw would only be tuning the check green
+without learning anything, which `AGENTS.md` says not to do.
 
 ## Found shipping M9.6 phase 2d, 2026-09-21
 

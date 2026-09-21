@@ -35,7 +35,7 @@ import { BandRelations } from '../social/BandRelations.ts';
 import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
 import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType } from '../social/Events.ts';
 import {
-  Building, BUILDINGS, isTrap, isHerd, resetBuildingIds, type BuildingDef,
+  Building, BUILDINGS, isTrap, isHerd, isStructure, resetBuildingIds, type BuildingDef,
 } from '../entities/Building.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
@@ -276,6 +276,15 @@ export class Simulation {
    * `Snow.ts`'s header for why this is a scalar rather than a tile array.
    */
   snowDepth = 0;
+
+  /**
+   * `sabotageCandidatesByBand`'s own comment explains what this holds and
+   * why it is cached at all. Refreshed once a day, in the same daily block
+   * `snowDepth` and `bandRelations.decay()` update in; empty until the first
+   * day turns over, which is fine — nobody has anything to sabotage on the
+   * day the world is founded either.
+   */
+  private sabotageCache: Map<number, Building[]> = new Map();
 
   /**
    * How much of itself the player's character looks after. See `steerPlayer`.
@@ -1402,6 +1411,51 @@ export class Simulation {
       sightRadius: this.config.sightRadius,
       bandRelations: this.bandRelations,
     });
+  }
+
+  /**
+   * Every complete, unruined, non-field structure, grouped by who owns it —
+   * M11 phase 11b, cached on `sabotageCache` and refreshed once a day rather
+   * than recomputed for every person's `think`, or even every tick.
+   *
+   * `Brain`'s `sabotage` scoring needs to ask, for each person thinking, "does
+   * any band mine is hostile with own a building worth wrecking?" What is
+   * true about a building — complete, standing, worth knocking down — does
+   * not depend on who is asking, only `mayUse`'s witness question does.
+   * Filtering and grouping it here, once, and handing every person's `think`
+   * the same map turns what would otherwise be an O(people × buildings) scan
+   * on every tick into one O(buildings) pass a day, each person then only
+   * ever touching the few entries that belong to a band they are actually
+   * hostile with — almost always none at all, and never more than a handful
+   * of bands.
+   *
+   * Both halves of the saving were measured, not guessed. Sharing the scan
+   * across people but still rebuilding it fresh every tick — the first thing
+   * tried — closed most of the gap and not all of it: `lean`'s large, long
+   * running population went from roughly 1,700 steps/s back up to roughly
+   * 1,870, still short of the 2,000 floor `perf-budget` holds it to, a floor
+   * this scenario cleared by only about 150 steps/s before this feature
+   * existed. Moving the refresh from every tick to once a day — the same
+   * cadence `bandRelations.decay()` and `snowDepth` already update on — is
+   * what closed the rest: nothing about which buildings exist and stand
+   * changes fast enough to need checking sixty times over between one sunrise
+   * and the next. A building that finishes being wrecked or repaired between
+   * two refreshes is still checked for real the moment anybody actually walks
+   * up to it, in `ActionSystem.doSabotage` itself, so a stale entry here costs
+   * at most a wasted walk for the AI, never a wrong outcome — and never
+   * anything at all for a player's own explicit order, which never consults
+   * this cache in the first place.
+   */
+  private sabotageCandidatesByBand(): Map<number, Building[]> {
+    const byBand = new Map<number, Building[]>();
+    for (const building of this.buildings) {
+      if (!building.complete || building.ruined) continue;
+      if (!isStructure(building.def) || building.crop !== null) continue;
+      const list = byBand.get(building.ownerBandId);
+      if (list) list.push(building);
+      else byBand.set(building.ownerBandId, [building]);
+    }
+    return byBand;
   }
 
   /** The pile under a point, if any. */
@@ -2683,6 +2737,9 @@ export class Simulation {
       this.growCrops();
       this.workHeaps();
       this.workHerds();
+      // See `sabotageCandidatesByBand`'s own comment for why this is cached
+      // at all and why once a day is the right cadence for it.
+      this.sabotageCache = this.sabotageCandidatesByBand();
 
       this.lifeSystem.daily(this.people, {
         rng: this.lifeRng,
@@ -2726,6 +2783,7 @@ export class Simulation {
       snowBuries: this.config.world.snowBuries,
       householdsById: this.householdsById,
       bandRelations: this.bandRelations,
+      sabotageCandidatesByBand: this.sabotageCache,
     };
     const actionCtx = {
       world: this.world,
