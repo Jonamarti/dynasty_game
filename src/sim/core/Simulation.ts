@@ -2388,13 +2388,25 @@ export class Simulation {
    */
   private workHerds(): void {
     const grasp = new Map<string, number>();
+    // `dairying` and `wool` are read the same way, per band rather than per
+    // building — a byproduct's tech names itself rather than a `pen`, so this
+    // loop asks every technology any herd building declares a byproduct for,
+    // not only `requiresTech`.
+    const byproductGrasp = new Map<string, number>();
     for (const person of this.people) {
       if (!person.alive) continue;
       for (const def of Object.values(BUILDINGS)) {
-        if (!isHerd(def) || def.requiresTech === null) continue;
-        const key = person.bandId + ':' + def.id;
-        const power = techPower(person, def.requiresTech as Tech);
-        if (power > (grasp.get(key) ?? 0)) grasp.set(key, power);
+        if (!isHerd(def)) continue;
+        if (def.requiresTech !== null) {
+          const key = person.bandId + ':' + def.id;
+          const power = techPower(person, def.requiresTech as Tech);
+          if (power > (grasp.get(key) ?? 0)) grasp.set(key, power);
+        }
+        for (const byproduct of def.herd?.byproducts ?? []) {
+          const key = person.bandId + ':' + byproduct.tech;
+          const power = techPower(person, byproduct.tech);
+          if (power > (byproductGrasp.get(key) ?? 0)) byproductGrasp.set(key, power);
+        }
       }
     }
 
@@ -2408,21 +2420,35 @@ export class Simulation {
         // hare, nothing here is lost by forgetting the carry — the herd
         // itself is still in the pen, and simply stops growing.
         telemetry.count('herd_unworked');
-        continue;
-      }
-      if (building.storageFree <= 0) {
+      } else if (building.storageFree <= 0) {
         telemetry.count('herd_at_capacity');
-        continue;
+      } else {
+        const stock = building.store.count(herd.item);
+        const accrued = accrueUnits(building.yieldCarry, stock * herd.growthPerDay * power);
+        building.yieldCarry = accrued.carry;
+        if (accrued.units > 0) {
+          const grown = Math.min(accrued.units, building.storageFree);
+          building.store.add(herd.item, grown);
+          telemetry.count('herd_bred', grown);
+        }
       }
 
-      const stock = building.store.count(herd.item);
-      const accrued = accrueUnits(building.yieldCarry, stock * herd.growthPerDay * power);
-      building.yieldCarry = accrued.carry;
-      if (accrued.units <= 0) continue;
-
-      const grown = Math.min(accrued.units, building.storageFree);
-      building.store.add(herd.item, grown);
-      telemetry.count('herd_bred', grown);
+      // Byproducts read the *main* item's stock — milk comes from the herd
+      // that is there, not from itself — and, unlike breeding, are not
+      // gated on `herding` at all: a band that has forgotten how to keep a
+      // pen but still knows how to milk one can go on doing so.
+      const liveStock = building.store.count(herd.item);
+      for (const byproduct of herd.byproducts ?? []) {
+        const byproductPower = byproductGrasp.get(building.ownerBandId + ':' + byproduct.tech) ?? 0;
+        if (byproductPower <= 0 || building.storageFree <= 0) continue;
+        const carry = building.byproductCarry.get(byproduct.item) ?? 0;
+        const accrued = accrueUnits(carry, liveStock * byproduct.perDay * byproductPower);
+        building.byproductCarry.set(byproduct.item, accrued.carry);
+        if (accrued.units <= 0) continue;
+        const grown = Math.min(accrued.units, building.storageFree);
+        building.store.add(byproduct.item, grown);
+        telemetry.count(byproduct.item + '_bred', grown);
+      }
     }
   }
 

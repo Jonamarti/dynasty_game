@@ -203,6 +203,25 @@ export const ITEMS: Record<string, ItemDef> = {
     id: 'bread', label: 'Bread', nutrition: 42, spoilTicks: 0, baseValue: 5,
     macros: { fat: 0.05, protein: 0.15, carb: 0.80 },
   },
+  // `dairying`'s byproduct. Real spoil ticks, unlike most of this file's
+  // pastoral entries — milk goes off fast, which is honest data even while
+  // `spoilRate` sits at 0 by default and nothing yet reads it for this item.
+  milk: {
+    id: 'milk', label: 'Milk', nutrition: 20, spoilTicks: 400, baseValue: 3,
+    macros: { fat: 0.5, protein: 0.35, carb: 0.15 },
+  },
+  // `wool`'s byproduct, and the material `wool_cloth` is made from. Sheared
+  // rather than culled, so — unlike `hide` — it comes off a living animal and
+  // has no place in `synthesis.test.ts`'s rare-ingredient set: a pen with
+  // `wool` known produces it every day, not once per kill.
+  wool: { id: 'wool', label: 'Wool', nutrition: 0, spoilTicks: 0, baseValue: 4 },
+  // `wool`'s recipe output. Warmer than `cloth` — see `Tech.warmthFrom` — and
+  // a second item rather than a second ingredient on `cloth` itself, for the
+  // same reason `groats` is a second recipe rather than a second ingredient
+  // on `meal`: flax and fleece are two different harvests, and a technology
+  // tree should be able to tell the player it found a better material rather
+  // than silently swap the old one out.
+  wool_cloth: { id: 'wool_cloth', label: 'Wool cloth', nutrition: 0, spoilTicks: 0, baseValue: 15 },
 };
 
 export class Inventory {

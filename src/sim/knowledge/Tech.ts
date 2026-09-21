@@ -119,6 +119,10 @@ export const TECHS = [
   // M11 phase 10, fifth commit: the first technology in the game to touch
   // thirst at all. See `BuildingDef.providesWater`.
   'well',
+  // M11 phase 10, sixth commit: what a live herd gives up without being
+  // culled for it. Both read `BuildingDef.herd.byproducts`, alongside
+  // `herding`'s own growth, in `Simulation.workHerds`.
+  'dairying', 'wool',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1441,6 +1445,54 @@ export const TECH: Record<Tech, TechDef> = {
       'band does, whether or not the shore is close, and a dry summer cannot ' +
       'take it away.',
   },
+
+  // M11 phase 10, sixth commit. Both read `BuildingDef.herd.byproducts`
+  // rather than gating a recipe of their own — see `Simulation.workHerds`.
+  dairying: {
+    id: 'dairying', label: 'Dairying', domain: 'beasts',
+    age: 'neolithic', firstKnown: 'about 7,000 BC',
+    // A practice, not a device: nothing is built, and milking is not a
+    // second thing to build, it is a better way to use a pen that already
+    // exists. There is no dedicated verb for it — `take` is the closest
+    // thing the game has, since milk is drawn off exactly the way meat is,
+    // through the pen's own store — so that is what counts as trying it.
+    kind: 'practice', practisedBy: ['take'],
+    requires: ['herding', 'pottery'], difficulty: 0.5, skill: 'track',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'herding' }, { kind: 'knows', tech: 'pottery' },
+                { kind: 'doing', action: 'take' }],
+        weight: 1.0, story: 'held a pot under a ewe out of curiosity, and did not spill it' },
+      { needs: [{ kind: 'knows', tech: 'herding' }, { kind: 'feeling', need: 'hunger' }],
+        weight: 0.6, story: 'went hungry within reach of a full pen and wondered why only the meat counted as food' },
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'doing', action: 'forage' },
+                { kind: 'place', biome: 'grass' }],
+        weight: 0.5, story: 'watched a lamb feed and thought of a pot instead of a mouth' },
+    ],
+    description:
+      'Milk drawn off a penned animal rather than meat cut from one. The ' +
+      'same herd, fed twice over, and never once culled for it.',
+  },
+  wool: {
+    id: 'wool', label: 'Wool', domain: 'cloth',
+    age: 'neolithic', firstKnown: 'about 6,000 BC',
+    kind: 'device',
+    requires: ['herding', 'spinning'], difficulty: 0.5, skill: 'build',
+    prototype: { flint: 1, sticks: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'herding' }, { kind: 'knows', tech: 'spinning' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 1.0, story: 'pulled a handful of loose fleece off a fence rail and turned it in their fingers' },
+      { needs: [{ kind: 'knows', tech: 'spinning' }, { kind: 'feeling', need: 'cold' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.7, story: 'felt a fleece keep the cold off a shoulder longer than a length of flax ever had' },
+      { needs: [{ kind: 'knows', tech: 'herding' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'noticed a shed tuft of wool caught on a fence post, halfway to thread already' },
+    ],
+    description:
+      'Fleece sheared rather than flax retted. Spun and woven the same way, ' +
+      'and warmer for the same fire.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1656,6 +1708,14 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   well: {
     summary: 'Water away from the shore: a band is no longer tied to the water’s edge.',
     site: 'BUILDINGS.well, via BuildingDef.providesWater; ActionSystem.waterWithinReach and Brain.findWater',
+  },
+  dairying: {
+    summary: 'Milk drawn from a living herd, never once culled for it.',
+    site: 'BUILDINGS.pen, via BuildingDef.herd.byproducts; Simulation.workHerds',
+  },
+  wool: {
+    summary: 'Fleece sheared rather than flax retted: cloth warmer for the same fire.',
+    site: 'BUILDINGS.pen, via BuildingDef.herd.byproducts; RECIPES.wool_cloth; Tech.warmthFrom',
   },
 };
 
@@ -1910,7 +1970,15 @@ export function warmthFrom(person: Person): number {
   const woven = person.inventory.has('cloth')
     ? 0.25 * techPower(person, 'weaving')
     : 0;
-  return 1 - (1 - fire) * (1 - cloth) * (1 - furs) * (1 - woven);
+  // M11 phase 10's sixth term, and warmer than `woven` for the reason the
+  // plan states it as `wool`'s whole claim: a fleece keeps the cold out
+  // better than flax does. Reads `wool_cloth`, the recipe's own item, never
+  // plain `cloth` — the two are unrelated garments once woven, and only one
+  // of them needed a sheep.
+  const woollen = person.inventory.has('wool_cloth')
+    ? 0.32 * techPower(person, 'wool')
+    : 0;
+  return 1 - (1 - fire) * (1 - cloth) * (1 - furs) * (1 - woven) * (1 - woollen);
 }
 
 // ---------------------------------------------------------------------------

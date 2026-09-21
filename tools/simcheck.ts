@@ -314,7 +314,14 @@ export const SCENARIOS: Record<string, Scenario> = {
       'it also carries `taming` and `herding`, per `m8_plan_the_ages.md`\'s ' +
       'own description of this scenario as "a herd run" — a long run is what ' +
       'a herd needs too, since breeding is proportional growth from a small ' +
-      'founding stock and it takes real time to reach anything worth culling.',
+      'founding stock and it takes real time to reach anything worth culling. ' +
+      '`dairying` and `wool` did **not** follow onto this list, on purpose: a ' +
+      'first attempt at adding them (with `spinning` and `weaving` besides) ' +
+      'moved this seed\'s cascade far enough that fields stopped being sown ' +
+      'at all for the whole run — `fields-are-sown-and-reaped`, `soil-is-' +
+      'drawn-down` and `compost-answers-exhaustion` all fell to n/a, losing ' +
+      'the coverage this scenario exists for. `herders` carries the pastoral ' +
+      'chain instead, apart from farming entirely.',
     config: {
       seed: 'furrow',
       population: {
@@ -331,6 +338,30 @@ export const SCENARIOS: Record<string, Scenario> = {
       },
     },
     steps: 24000,
+  },
+  herders: {
+    name: 'herders',
+    description:
+      'A band that already knows how to keep a herd, apart from `farming` ' +
+      'entirely — `dairying` and `wool` were tried on `farmers` first and ' +
+      'measured moving that seed\'s cascade far enough to stop any field ' +
+      'ever being sown, which is exactly the kind of collision a dedicated ' +
+      'scenario avoids by not asking one seed to carry two things that were ' +
+      'never each other\'s dependency. Long, on the same argument `farmers` ' +
+      'makes for itself: breeding is proportional growth from a small ' +
+      'founding stock, and it takes real time to reach anything worth ' +
+      'culling, milking or shearing.',
+    config: {
+      seed: 'fold',
+      population: {
+        bands: 2, peoplePerBand: 10,
+        startingTech: [
+          'tracking', 'taming', 'herding', 'dairying', 'wool', 'spinning',
+          'weaving', 'division_of_labour',
+        ],
+      },
+    },
+    steps: 20000,
   },
   stewards: {
     name: 'stewards',
@@ -2148,6 +2179,31 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       (tel.drink_at_well ?? 0) > 0,
       (tel.band_planned_well ?? 0) + ' planned, ' + wellsBuilt.length + ' standing; ' +
         (tel.drink_at_well ?? 0) + ' drinks taken at one');
+  }
+
+  // M11 phase 10, sixth commit. `dairying` and `wool` both accrue into the
+  // same pen `herding` already builds, so the risk they add is narrower than
+  // the pen's own: not "does anything grow", but "does anything grown get
+  // used" — a milk that only ever piles up unused is exactly the trap-days-
+  // standing-full failure one level along, and `eaten_milk`/`crafted_
+  // wool_cloth` are what tell a used byproduct from an ignored one. Skips
+  // per byproduct rather than together, since a world can know one and not
+  // the other.
+  const milkBred = tel.milk_bred ?? 0;
+  if (milkBred === 0) {
+    skip('milk-is-drawn-and-drunk', 'no milk was ever bred in this run');
+  } else {
+    add('milk-is-drawn-and-drunk',
+      (tel.eaten_milk ?? 0) > 0,
+      milkBred + ' milk bred, ' + (tel.eaten_milk ?? 0) + ' eaten');
+  }
+  const woolBred = tel.wool_bred ?? 0;
+  if (woolBred === 0) {
+    skip('wool-is-sheared-and-woven', 'no wool was ever bred in this run');
+  } else {
+    add('wool-is-sheared-and-woven',
+      (tel.crafted_wool_cloth ?? 0) > 0,
+      woolBred + ' wool bred, ' + (tel.crafted_wool_cloth ?? 0) + ' woven into cloth');
   }
 
   // There is deliberately no `traps-are-emptied` check here, and the reason is

@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { lastScores } from '../ai/Brain.ts';
+import { telemetry } from '../core/Telemetry.ts';
 import { BUILDINGS, isHerd } from '../entities/Building.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
@@ -208,5 +209,75 @@ describe('pen designs', () => {
       expect(def.storage, def.id + ' has nowhere to put a herd').toBeGreaterThan(def.herd!.seed);
       expect(def.requiresTech, def.id + ' is a pen anybody can build').not.toBeNull();
     }
+  });
+});
+
+describe('M11 phase 10, sixth commit: dairying and wool', () => {
+  it('gives milk and wool from the same herd, gated on their own technologies', () => {
+    // Measures accrual through telemetry rather than through the pen's final
+    // stock, and deliberately: once `doTake`'s pen branch shares every
+    // edible stack rather than only the most nutritious one (see its own
+    // comment — milk used to accrue forever and never get eaten), a live
+    // population eats milk about as fast as it grows, and asserting on the
+    // stock left behind would be testing how hungry this seed's people
+    // happened to be rather than testing that the byproduct exists at all.
+    telemetry.enable();
+    const sim = new Simulation(SMALL);
+    aDayIn(sim);
+    const person = sim.livingPeople()[0]!;
+    const pen = penNear(sim, person, 4);
+    pen.store.add(pen.def.herd!.item, pen.def.herd!.seed);
+    person.knownTech.add('dairying');
+    person.knownTech.add('wool');
+
+    for (let i = 0; i < sim.config.time.ticksPerDay * 30; i++) sim.step();
+    expect(telemetry.get('milk_bred')).toBeGreaterThan(0);
+    expect(telemetry.get('wool_bred')).toBeGreaterThan(0);
+    telemetry.disable();
+  });
+
+  it('gives neither without the technology, though the herd itself still breeds', () => {
+    const sim = new Simulation(SMALL);
+    aDayIn(sim);
+    const person = sim.livingPeople()[0]!;
+    const pen = penNear(sim, person, 4);
+    pen.store.add(pen.def.herd!.item, pen.def.herd!.seed);
+
+    for (let i = 0; i < sim.config.time.ticksPerDay * 20; i++) sim.step();
+    expect(pen.store.count('milk')).toBe(0);
+    expect(pen.store.count('wool')).toBe(0);
+    expect(pen.store.count(pen.def.herd!.item)).toBeGreaterThan(pen.def.herd!.seed);
+  });
+
+  it('goes on milking a herd whose keeper forgot herding, as long as dairying survives', () => {
+    // The deliberate asymmetry the header comment on `workHerds` states:
+    // breeding needs `herding`, but a byproduct is gated on its own
+    // technology alone, because knowledge in this game is held by
+    // individuals and a band can easily hold one without the other.
+    const sim = new Simulation(SMALL);
+    aDayIn(sim);
+    const person = sim.livingPeople()[0]!;
+    const pen = penNear(sim, person, 4);
+    pen.store.add(pen.def.herd!.item, pen.def.herd!.seed);
+    person.knownTech.add('dairying');
+    for (const member of sim.people) member.knownTech.delete('herding');
+
+    for (let i = 0; i < sim.config.time.ticksPerDay * 20; i++) sim.step();
+    expect(pen.store.count('milk')).toBeGreaterThan(0);
+    // Breeding itself did stop — the herd is exactly what it was seeded with.
+    expect(pen.store.count(pen.def.herd!.item)).toBe(pen.def.herd!.seed);
+  });
+
+  it('stops adding byproducts once the pen is at capacity, and never overfills it', () => {
+    const sim = new Simulation(SMALL);
+    aDayIn(sim);
+    const person = sim.livingPeople()[0]!;
+    const pen = penNear(sim, person, 6);
+    pen.store.add(pen.def.herd!.item, pen.def.storage);
+    person.knownTech.add('dairying');
+    person.knownTech.add('wool');
+
+    for (let i = 0; i < sim.config.time.ticksPerDay + 2; i++) sim.step();
+    expect(pen.store.total).toBeLessThanOrEqual(pen.def.storage);
   });
 });

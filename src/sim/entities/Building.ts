@@ -19,6 +19,7 @@
  */
 import { Inventory } from './Item.ts';
 import { Crop } from './Field.ts';
+import type { Tech } from '../knowledge/Tech.ts';
 
 export interface BuildingDef {
   id: string;
@@ -130,7 +131,19 @@ export interface BuildingDef {
    * Excluded from `doStore` and from `Brain`'s deposit branch on the same
    * argument `isTrap` already makes: this is somewhere food comes *from*.
    */
-  herd?: { item: string; seed: number; growthPerDay: number };
+  herd?: {
+    item: string; seed: number; growthPerDay: number;
+    /**
+     * `dairying` and `wool`: what a live herd gives up without being culled
+     * for it, gated on its own technology and accruing the same way the
+     * main `item` does — `stock * perDay * techPower(tech)` — but never
+     * depleting the herd itself, because milking and shearing do not kill
+     * anything. Added to the same `store`, which is why `pen`'s `storage`
+     * is sized for three items rather than one: a cap that only ever had to
+     * hold meat would starve breeding the moment milk or wool filled it.
+     */
+    byproducts?: { tech: Tech; item: string; perDay: number }[];
+  };
   /**
    * True if this stands in for natural water — M11 phase 10's `well`, and the
    * first technology in the game to touch thirst at all.
@@ -353,10 +366,21 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     materials: { sticks: 8, thatch: 4 },
     workTicks: 160,
     shelter: 0,
-    storage: 30,
+    // M11 phase 10, sixth commit: raised from 30. `dairying` and `wool` add
+    // two more items to the same store, and a cap sized for one would let
+    // milk or wool fill it and starve the breeding this whole mechanism is
+    // built on — `workHerds` refuses to grow anything once `storageFree` is
+    // zero, meat included.
+    storage: 60,
     // Three animals to start, growing at 6% of the current stock a day at full
     // knowledge — slow at first, and it compounds. See `Simulation.workHerds`.
-    herd: { item: 'meat', seed: 3, growthPerDay: 0.06 },
+    herd: {
+      item: 'meat', seed: 3, growthPerDay: 0.06,
+      byproducts: [
+        { tech: 'dairying', item: 'milk', perDay: 0.1 },
+        { tech: 'wool', item: 'wool', perDay: 0.05 },
+      ],
+    },
     requiresTech: 'herding',
     description:
       'A fenced yard, kept for meat that does not have to be hunted. Culled ' +
@@ -613,6 +637,18 @@ export class Building {
    * rather than banking a decade of half-hares.
    */
   yieldCarry = 0;
+
+  /**
+   * The same carry as `yieldCarry`, one per item, for a pen's byproducts.
+   *
+   * `dairying` and `wool` both accrue into the same `store` a pen's main
+   * `herd.item` does, at their own rate, and mixing three streams through
+   * one float would corrupt all of them — `accrueUnits` assumes a single
+   * continuous rate, not three added together. `yieldCarry` stays what it
+   * always was, for the herd's own growth, so a pen with neither technology
+   * known is unaffected down to the byte.
+   */
+  readonly byproductCarry = new Map<string, number>();
 
   /**
    * What is growing here, for a field, and null for everything else.

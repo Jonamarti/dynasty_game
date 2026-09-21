@@ -3,6 +3,23 @@
 As of 2026-09-21. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 10, sixth commit, 2026-09-21
+
+### `herders`/`bands-take-sides` fails: two small bands do not diverge enough in ~83 days
+
+The new scenario's two bands of ten read a standing spread of 10.6 against
+the check's threshold of 20, after the run clears the 60-day floor that
+would otherwise skip it. Not chased: `herders` exists to exercise `dairying`
+and `wool`'s byproduct accrual, which it does — `milk-is-drawn-and-drunk`
+and `wool-is-sheared-and-woven` both pass — and nothing in this pass touches
+`BandRelations` or the territory/marriage/trade engines that check reads.
+Two bands of ten most likely just do not cross paths often enough in this
+particular seed's geography for standing to spread past the threshold in
+the time the run covers; a bigger population, more bands, or a longer run
+would probably clear it, but none of those serve this scenario's own
+purpose and were not added speculatively. Worth a look if `herders` is ever
+reused for something that needs inter-band contact.
+
 ## Found shipping M11 phase 8d, 2026-09-21
 
 ### `lean`'s already-weakest seed, `tau`, newly collapses

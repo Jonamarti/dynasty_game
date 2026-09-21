@@ -6,6 +6,72 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 10, sixth commit: `dairying` and `wool`, and two real defects they exposed
+
+`BuildingDef.herd` gains `byproducts`: what a live herd gives up without
+being culled for it, each gated on its own technology and accruing into the
+same `store` the way the main item does — `stock * perDay * techPower(tech)`
+— but tracked through a new `Building.byproductCarry` map rather than the
+existing `yieldCarry`, because mixing three accrual streams through one
+float would corrupt all of them. `pen.storage` rises from 30 to 60: a cap
+sized for meat alone would let milk or wool fill it and starve breeding
+itself, since `workHerds` stops growing anything once `storageFree` is
+zero. `dairying` is a practice (nothing is built; `take` is the closest
+thing the game has to a milking verb, since milk is drawn off exactly the
+way meat is); `wool` is a device, gating a new recipe, `wool_cloth`, at the
+loom — a different output item from `cloth` rather than a second ingredient
+on it, so the two never compete for one craft slot the way `kiln_pot`
+almost did. `Tech.warmthFrom` gains a sixth term for it, warmer than plain
+cloth, per the plan's own claim.
+
+**Two real defects, both caught by measurement rather than by inspection,
+in the same pattern this commit's neighbours already found:**
+
+1. **Milk bred and was never once eaten.** `doTake`'s default item choice —
+   `store.bestFood()`, the single most nutritious stack — always preferred
+   meat's 30 over milk's 20, so as long as any meat sat in the pen, milk was
+   invisible to every route that walks somebody to food. Measured on
+   `farmers`: 15 milk bred, 0 eaten across a full run. Fixed by giving a pen
+   its own branch in `doTake`: an AI-planned visit with no specific item
+   requested shares *everything* the pen holds rather than choosing one
+   stack, which nothing else in the game needs because nothing else keeps
+   two foods in the same place indefinitely.
+2. **Wool bred and was never once woven**, even after the first fix — because
+   the fix above first shared only *edible* stacks, and wool answers no need
+   at all. Nothing in `Brain` sends anyone to a pen *for* wool the way
+   foraging or hauling have their own fetch routes; a visit already under
+   way for food was wool's only way out, so excluding it from that visit
+   left it sitting in the pen for the whole run regardless. Fixed by
+   dropping the edibility filter — a pen shares everything, full stop.
+
+**A third, smaller finding**: the first attempt measured both fixes on
+`farmers`, extended with `dairying`, `wool`, `spinning` and `weaving` in its
+starting technologies. That extension moved the seed's cascade far enough
+that no field was sown for the whole run — `fields-are-sown-and-reaped`,
+`soil-is-drawn-down` and `compost-answers-exhaustion` all fell to n/a,
+losing the coverage `farmers` exists for. Reverted; a new scenario,
+`herders`, carries the pastoral chain apart from farming entirely, on the
+same argument that keeps `stewards` apart from `farmers` itself. `herders`
+found one further, unrelated, honestly-documented limitation of its own —
+see `bugs.md`: two bands of ten do not develop enough standing spread in
+its run for `bands-take-sides` to pass, which nothing in this commit
+touches.
+
+New `milk-is-drawn-and-drunk` and `wool-is-sheared-and-woven` checks, both
+verified failing before the `doTake` fix and passing after. New tests in
+`herding.test.ts` and `tech.test.ts`.
+
+**Measured**, `sim:seeds -- --seeds 20`: `century` bit-identical to the
+previous commit in every reported figure — the same story every node in
+this tier has told since `ground_stone`. `herders` (new): 99.9% mean
+survival, 0/20 collapsed, no starvation beyond one adult in one seed.
+`sim:check:all`: `farmers` back to its own baseline (63/63, one fewer
+applicable check than with the reverted extension); `herders` 61/62, the
+one documented failure above. All 370 unit tests, typecheck, and all 47
+e2e specs pass.
+
+**One node remains**: `brewing`.
+
 ## 2026-09-21 — M11 phase 10, fifth commit: `well`, the first technology to touch thirst
 
 A well stands in for natural water rather than gaining a new verb: `drink`

@@ -368,6 +368,23 @@ export const RECIPES: Record<string, RecipeDef> = {
     station: 'kiln',
     keep: 0,
   },
+  // `wool`, at the loom beside `cloth`. A different output rather than a
+  // second ingredient on `cloth` itself — see `ITEMS.wool_cloth` — so there
+  // is no `kiln_pot`-style scoring competition: the two recipes' `forSelf`
+  // checks read different items and never have to be compared against each
+  // other at all.
+  wool_cloth: {
+    id: 'wool_cloth',
+    label: 'Wool cloth',
+    icon: '\u{1F9F6}',
+    tech: 'wool',
+    skill: 'build',
+    workTicks: 140,
+    ingredients: { wool: 3 },
+    output: { wool_cloth: 1 },
+    station: 'loom',
+    keep: 1,
+  },
 
   // --- M11 phase 10, the widened Neolithic: see m8_plan_the_ages.md ----------
   //

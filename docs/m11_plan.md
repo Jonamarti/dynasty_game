@@ -650,8 +650,27 @@ el informe de salud cuente por sí solo — un script desechable mostró a las
 dos bandas construyéndolo por su cuenta y una de cada cinco bebidas cayendo
 en él. `century` bit-idéntico.
 
-**Tres nodos quedan**: `dairying`, `wool`, `brewing`. `wool`/`dairying`
-dependen de `herding`, ya enviado. Ver `changelog.md`.
+**Sexto commit HECHO 2026-09-21**: `dairying` y `wool`, y dos fallos reales
+que la medición encontró y no la lectura del código. `BuildingDef.herd`
+gana `byproducts`: lo que un rebaño vivo da sin ser sacrificado por ello,
+cada uno con su propia tecnología, acumulando en el mismo `store` que la
+cría principal. Encontrado en `farmers`: **la leche se criaba y nunca se
+comía** — `bestFood` siempre prefería la carne (30) sobre la leche (20), así
+que mientras hubiera carne en el corral la leche era invisible para
+cualquier ruta que lleva a alguien a comer. Arreglado dando a un corral su
+propia rama en `doTake`: una visita sin ítem pedido reparte todo lo que el
+corral contiene en vez de elegir uno. Segundo hallazgo, tras el primer
+arreglo: **la lana se criaba y nunca se tejía**, porque ese primer arreglo
+sólo repartía lo comestible y la lana no responde a ninguna necesidad —
+nada en `Brain` manda a nadie al corral *por* lana. Arreglado quitando el
+filtro de comestibilidad del todo. Un tercer hallazgo: añadir estas dos
+tecnologías directamente a `farmers` movió la cascada de esa semilla lo
+bastante como para que no se sembrara ningún campo en toda la partida —
+revertido, y un escenario nuevo, `herders`, lleva la cadena pastoril aparte
+de la agricultura. `herders` a 20 semillas: 99.9% de supervivencia.
+`century` bit-idéntico.
+
+**Un nodo queda**: `brewing`. Ver `changelog.md`.
 
 **Densidad tipo Evolve.** La regla de "nada inerte" (`TECH_EFFECTS` +
 `tech.test.ts`) **no se toca** — es lo que ha mantenido sano este árbol. Lo que se

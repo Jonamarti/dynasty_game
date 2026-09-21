@@ -111,6 +111,27 @@ describe('the tech table', () => {
     expect(warmthFrom(everything)).toBeLessThan(1);
   });
 
+  it('makes wool cloth warmer than plain cloth, on the same double gate', () => {
+    const woven = someone();
+    woven.knownTech.add('weaving');
+    woven.inventory.add('cloth', 1);
+    const woollen = someone();
+    woollen.knownTech.add('wool');
+    woollen.inventory.add('wool_cloth', 1);
+    const bare = someone();
+
+    expect(warmthFrom(woven)).toBeGreaterThan(warmthFrom(bare));
+    expect(warmthFrom(woollen)).toBeGreaterThan(warmthFrom(woven));
+    // Knowing `wool` without a length of it, or carrying one without knowing
+    // how it was made, does nothing — the `handaxe` rule again.
+    const knowerOnly = someone();
+    knowerOnly.knownTech.add('wool');
+    const carrierOnly = someone();
+    carrierOnly.inventory.add('wool_cloth', 1);
+    expect(warmthFrom(knowerOnly)).toBe(warmthFrom(bare));
+    expect(warmthFrom(carrierOnly)).toBe(warmthFrom(bare));
+  });
+
   it('sends station recipes to buildings that exist and are stations', () => {
     // M8.1, mechanism 4, and the same shape of check as the one above it. A
     // `station: 'kiln'` with no kiln in `BUILDINGS` is the longhouse defect one

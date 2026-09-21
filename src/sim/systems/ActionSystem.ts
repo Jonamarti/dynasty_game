@@ -738,6 +738,11 @@ export class ActionSystem {
       person.macroIntakeToday.carb += eaten * macros.carb;
     }
     telemetry.count('eat');
+    // Per-item, on the same `completed_<id>`/`crafted_<id>` idiom the rest of
+    // the health report uses — added for `milk`, which has no other way to
+    // show that a byproduct nobody has ever needed to name before is actually
+    // being eaten rather than only accruing.
+    telemetry.count('eaten_' + foodId);
     if (person.needs.hunger <= 0) this.finish(person);
   }
 
@@ -1210,6 +1215,39 @@ export class ActionSystem {
     // Everyone else, including every AI-planned trip to the larder, still falls
     // back to food first: taking from the store is nearly always about eating.
     const requested = person.targetItemId;
+
+    // A pen holds more than one kind of thing at once — meat that breeds,
+    // milk that never stops accruing alongside it, wool the same — and
+    // `bestFood` always preferring the single most nutritious stack left
+    // milk piling up unbounded and never once eaten, because meat's 30
+    // always outranks milk's 20: measured on `farmers`, 15 milk bred and 0
+    // eaten across the whole run. Everything in the pen is shared rather
+    // than one thing chosen, wool included even though it answers no need
+    // at all — nothing sends anyone to a pen *for* wool specifically (there
+    // is no "go and fetch material" scorer route the way foraging or
+    // hauling get one), so a visit already under way for food is the only
+    // opportunity wool has to leave the pen. Measured without this half:
+    // wool bred but never woven, sitting in the pen the whole run, because
+    // the first version of this fix filtered to edible stacks only.
+    if (isHerd(store.def) && requested === null) {
+      let shared = 0;
+      for (const [itemId, count] of store.store.entries()) {
+        const got = store.store.remove(itemId, Math.min(6, count));
+        if (got > 0) {
+          person.inventory.add(itemId, got);
+          shared += got;
+        }
+      }
+      if (shared === 0) {
+        this.abandon(person, 'store_empty', ctx);
+        return;
+      }
+      telemetry.count('withdrawn', shared);
+      telemetry.count('herd_culled', shared);
+      this.finish(person);
+      return;
+    }
+
     const itemId = requested ?? store.store.bestFood() ?? store.store.entries()[0]?.[0];
     if (!itemId || store.store.count(itemId) === 0) {
       this.abandon(person, requested !== null ? 'take_item_gone' : 'store_empty', ctx);
