@@ -30,6 +30,7 @@ import type { Animal } from '../sim/entities/Animal.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
 import { NEEDS, SKILLS, TRAITS } from '../sim/entities/Person.ts';
 import { MOOD_CHANNELS } from '../sim/core/Mood.ts';
+import { MACROS, malnutrition, type Macro } from '../sim/core/Macros.ts';
 import { lastScores } from '../sim/ai/Brain.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
 import { actionLabel } from '../render/Floaters.ts';
@@ -120,6 +121,12 @@ const NEED_COLORS: Record<string, string> = {
   fatigue: '#9a7fd8',
   cold: '#7fd4ff',
   company: '#d87fa8',
+};
+
+const MACRO_COLORS: Record<Macro, string> = {
+  fat: '#d8b35c',
+  protein: '#c86a5c',
+  carb: '#8ac86a',
 };
 
 export class Hud {
@@ -828,6 +835,16 @@ export class Hud {
     for (const need of NEEDS) {
       rows.push(bar(need, person.needs[need], NEED_COLORS[need] ?? '#888', need));
     }
+
+    // M11 phase 8e. Malnutrition (8d) caps health recovery invisibly unless
+    // something says so here — the standing rule this project already keeps
+    // for `interruption`/`abandon` refusals applies just as much to a health
+    // mechanism nobody asked for and nobody can see.
+    rows.push('<div class="hud-section">Diet</div>');
+    for (const macro of MACROS) {
+      rows.push(bar(macro, person.macroBalance[macro] * 100, MACRO_COLORS[macro]));
+    }
+    rows.push('<div class="hud-note">' + escapeHtml(describeDiet(person)) + '</div>');
 
     const carried = person.inventory.entries();
     rows.push('<div class="hud-section">Carrying</div>');
@@ -1660,6 +1677,38 @@ function describeHealth(health: number): string {
   if (health > 60) return 'They are carrying an injury.';
   if (health > 30) return 'They look badly hurt.';
   return 'They can barely stand.';
+}
+
+/** What each macro mostly comes from, for `describeDiet`'s sentence. */
+const MACRO_FOOD: Record<Macro, string> = {
+  fat: 'fat',
+  protein: 'meat or fish',
+  carb: 'fruit or grain',
+};
+
+/**
+ * M11 phase 8e. `Macros.malnutrition` caps health recovery from 8d onward,
+ * and a health mechanism nobody can see is the worst kind of difficulty —
+ * see this file's header on why every refusal already gets a reason. Read
+ * off `macroBalance` and `macroTarget` alone, the same two fields the bars
+ * above already show, so this sentence can never claim something the panel
+ * does not.
+ */
+function describeDiet(person: Person): string {
+  const severity = malnutrition(person);
+  if (severity < 0.08) return 'Eating a decent balance of food.';
+  let short: Macro = 'carb';
+  let shortBy = -Infinity;
+  for (const macro of MACROS) {
+    const gap = person.macroTarget[macro] - person.macroBalance[macro];
+    if (gap > shortBy) {
+      shortBy = gap;
+      short = macro;
+    }
+  }
+  if (severity < 0.2) return 'Diet is a little short on ' + MACRO_FOOD[short] + '.';
+  if (severity < 0.35) return 'Has gone without enough ' + MACRO_FOOD[short] + ' for a while now.';
+  return 'Badly malnourished — needs ' + MACRO_FOOD[short] + ' urgently.';
 }
 
 /**

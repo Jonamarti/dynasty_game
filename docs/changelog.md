@@ -6,6 +6,30 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-21 — M11 phase 8e: the diet is on the panel
+
+The "Now" tab's Condition section, already the home of health and the five
+needs bars, gains a Diet section directly beneath them: three bars
+(`macroBalance.fat/protein/carb`, 8b) and a sentence from a new
+`describeDiet`, gated behind `known.knowsCondition` exactly like everything
+else there. The sentence reads only `macroBalance` and `macroTarget` — the
+same two fields the bars already show, so it can never claim something the
+panel does not display — and names whichever macro has the largest gap
+below target, in four tiers from "eating a decent balance" to "badly
+malnourished." This is the same standing instruction `interruption`/
+`abandon`'s refusal reasons already serve: 8d made a health mechanism that
+was, until this commit, completely invisible from inside the game, which
+`AGENTS.md` calls the worst kind of difficulty.
+
+**Read-only, so no sim measurement applies**: pure display of state 8b-8d
+already write, gated by machinery already in place. `sim:check:all`
+reproduces the 8d matrix line for line (confirming the panel touches
+nothing the simulation reads), all 47 e2e specs and 343 unit tests pass,
+typecheck clean.
+
+**This closes phase 8.** Phase 9 (the oral tree and `writing`'s re-gating
+behind `farming`) is next.
+
 ## 2026-09-21 — M11 phase 8d: malnutrition finally bites
 
 **Declared cost, ahead of measuring, per `AGENTS.md`'s rule: up to 5 points
