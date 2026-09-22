@@ -116,8 +116,34 @@ const ORDER_COST: Record<string, number> = {
   // Below `attack`: nobody comes home hurt, but being sent to menace a
   // neighbour is a heavier ask than being sent to rob one quietly.
   threaten: 0.8,
+  // M11 phase 11c. Level with `threaten` and above `steal`: wrecking a
+  // structure takes long enough that there is no quiet version of it, and it
+  // is done standing in somebody else's camp rather than brushing past them
+  // in a crowd. Missing until now, which meant the verb phase 11b added fell
+  // through to the 0.3 default — a chief, or the player, could have somebody
+  // sent to knock a rival's hut down for less than the price of telling them
+  // to fell a tree.
+  sabotage: 0.8,
   attack: 0.9,
 };
+
+/**
+ * The floor under any order aimed at another band's property, M11 phase 11c.
+ *
+ * `ORDER_COST` is keyed on the verb, and for every entry above that is
+ * enough, because the verb is the whole of what is being asked. `take` is
+ * the exception that proves it is not always: fetching six berries from your
+ * own band's pit and lifting the same six out of a rival's granary are the
+ * same verb, the same walk and the same arithmetic, and only one of them is
+ * a crime that a whole band may come out of their huts about. What makes it
+ * heavy is who owns the thing, so that is what this reads.
+ *
+ * Level with `steal`, which is this same crime with a person on the other
+ * end of it instead of a wall. Applied as a floor rather than an addition so
+ * that `sabotage`, already dearer, is not made dearer again for being aimed
+ * at exactly the property it is only ever aimed at.
+ */
+const FOREIGN_PROPERTY_COST = 0.75;
 
 /**
  * What heading a house is worth outside it, once `chiefdom` is known.
@@ -196,8 +222,15 @@ function inequalityTerm(leader: Person, bandId: number, ctx: AuthorityContext): 
   return Math.min(INEQUALITY_AUTHORITY, (wealthGap + renownGap) * INEQUALITY_AUTHORITY);
 }
 
-export function orderCost(action: string): number {
-  return ORDER_COST[action] ?? 0.3;
+/**
+ * What an order asks of the person receiving it.
+ *
+ * `foreign` says the order is aimed at a structure belonging to some band
+ * other than the subordinate's own — see `FOREIGN_PROPERTY_COST`.
+ */
+export function orderCost(action: string, foreign = false): number {
+  const base = ORDER_COST[action] ?? 0.3;
+  return foreign ? Math.max(base, FOREIGN_PROPERTY_COST) : base;
 }
 
 /**
@@ -211,7 +244,8 @@ export function standingOver(
   leader: Person,
   subordinate: Person,
   action: string,
-  ctx: AuthorityContext
+  ctx: AuthorityContext,
+  foreign = false
 ): Standing {
   const household = subordinate.householdId === null
     ? null
@@ -307,7 +341,8 @@ export function standingOver(
     reasons.push('you are the stronger');
   }
 
-  const cost = orderCost(action);
+  const cost = orderCost(action, foreign);
+  if (foreign) reasons.push('you are asking them to cross another band');
   const chance = Math.max(0, Math.min(0.98, authority - cost * 0.6));
 
   return {

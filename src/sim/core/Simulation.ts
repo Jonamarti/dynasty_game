@@ -933,9 +933,31 @@ export class Simulation {
     };
   }
 
-  /** What `leader` could make `subordinate` do, and how likely they are to. */
-  standing(leader: Person, subordinate: Person, action: string) {
-    return standingOver(leader, subordinate, action, this.authorityContext());
+  /**
+   * What `leader` could make `subordinate` do, and how likely they are to.
+   *
+   * `foreign` is M11 phase 11c: an order aimed at a structure belonging to
+   * some band other than the subordinate's own costs what a crime costs, not
+   * what the verb costs. See `Authority.FOREIGN_PROPERTY_COST`. Every caller
+   * that asks about a verb with no structure behind it — a job, a fight, the
+   * Ties panel — leaves it alone and gets exactly the answer it always did.
+   */
+  standing(leader: Person, subordinate: Person, action: string, foreign = false) {
+    return standingOver(leader, subordinate, action, this.authorityContext(), foreign);
+  }
+
+  /**
+   * Whether an order's target is a structure belonging to somebody else's
+   * band, the one question `standing`'s `foreign` flag answers.
+   *
+   * Read off the *subordinate's* band rather than the leader's, because the
+   * imposition being priced is theirs: it is the person walking into the
+   * rival camp who risks being caught in it.
+   */
+  private ordersForeignProperty(subordinate: Person, buildingId: number | undefined): boolean {
+    if (buildingId === undefined) return false;
+    const building = this.buildingsById.get(buildingId);
+    return building !== undefined && building.ownerBandId !== subordinate.bandId;
   }
 
   private rankContext(): RankContext {
@@ -987,7 +1009,8 @@ export class Simulation {
     if (!leader.alive || !subordinate.alive) return false;
     if (leader.id === subordinate.id) return this.order(leader, action, target);
 
-    const standing = this.standing(leader, subordinate, action);
+    const standing = this.standing(leader, subordinate, action,
+      this.ordersForeignProperty(subordinate, target.buildingId));
     if (this.commandRng.next() >= standing.chance) {
       telemetry.count('order_refused');
       if (standing.byRank) telemetry.count('order_refused_by_rank');
