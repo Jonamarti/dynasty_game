@@ -3,6 +3,88 @@
 As of 2026-09-22. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 11c, 2026-09-22
+
+### `perf-budget` is a wall-clock check and it flakes hard under matrix load
+
+The same build, the same scenario, the same machine: `lean` reports **2,071
+steps/s** run on its own with `npm run sim:check -- --scenario lean` and
+**1,626 steps/s** inside the `npm run sim:check:all` matrix a minute later.
+That is a 21% swing with nothing changed but what else the machine was doing.
+`crowded` fails the 2,000 floor on **every build measured**, including
+`f72493b~1` from before phase 11b existed, and `century` and `craft` failed it
+in one matrix run and passed it comfortably in another.
+
+This matters because the check reads as a code regression and is usually not
+one. Anyone bisecting a `perf-budget` failure should re-measure the single
+scenario on its own, three times, before believing it — and should not tune
+anything on a matrix number.
+
+### Phase 11b did cost `lean` real steps/s, and the cause is the world, not the code
+
+Separately from the flake above, and measured in isolation three runs each:
+`lean` ran at 2,042-2,071 steps/s before phase 11b and 1,778-1,935 after. The
+obvious suspect was the scorer — `Brain`'s sabotage loop calls `mayUse`, which
+is a spatial query, once per candidate building per person thinking, and on
+`lean` all six band pairs reach open hostility so the cheap `bandHostility`
+gate stops nobody: around a hundred and fifty spatial queries a tick.
+
+**It is not that.** Hoisting the whole witness question out of the per-person
+loop and answering it once per building per tick in `Simulation` — the same
+answer, since in that loop `mayUse` has no dependence on who is asking — moved
+`lean` from about 1,870 to about 1,935, which is inside the noise band the
+entry above describes. The change was reverted rather than shipped, because
+shipping an optimisation whose benefit cannot be demonstrated, at the cost of
+diverging four scenarios, is the thing this project's docs argue against.
+
+What actually costs the time is the world phase 11b creates. Same scenario,
+before and after: `attack` **1,491 → 10,761** action ticks, `flee` **1,712 →
+12,113**, murders **3 → 22**. A witnessed `sabotage` is worth −17 and it
+drives whole bands hostile, so wrecking huts buys a great deal more fighting,
+fleeing and pathing. That is the design working — conflict is the destination
+— and it is simply not free. If the floor has to move for `lean`, it should
+move for that stated reason and not be papered over with a micro-optimisation.
+
+### `considerTerritory`'s comment says the opposite of what its code does
+
+`BandSystem.considerTerritory` scales an intrusion by `pantryPressureOf`, and
+its comment says that number answers "how pinched is this band for food",
+concluding "a well-fed band shrugs off an intrusion; a hungry one does not".
+`pantryPressureOf` returns `used / capacity` — how **full** the stores are.
+`planBuildings`, its other caller, reads it correctly ("already storing, and
+running out of room"). So the implemented rule is the reverse of the stated
+one: a band with full granaries resents intruders most, and a band with empty
+pits shrugs.
+
+The code is defensible on its own terms — having a lot to protect is a reason
+to mind who is walking past — and the implemented reading was left alone
+rather than silently flipped, because changing the sign changes the world and
+that is a measured decision, not a typo fix. But there is a real consequence
+worth knowing: `if (pressure <= 0) return;` means a band whose stores are
+empty never resents an intrusion **at all**, so the territory engine is
+silent in exactly the scarcity `lean` was built to produce. Whoever picks
+this up should decide which rule was wanted and measure the other across
+twenty seeds.
+
+### A raid that nobody from the victim's band sees does not move how the two peoples stand
+
+`SocialSystem.emit` moves `BandRelations` only when the deed has a **person**
+target from another band. A property crime — `sabotage`, or a `theft` lifted
+from a store — emits with `target: null`, so wrecking a rival's hut costs
+nothing at all between the two peoples, however many of them watched it
+happen. A raid therefore cannot deepen the feud that sent it, which is the
+mechanism the plan's deliberately-deferred multi-generational archenemy would
+have to be built on.
+
+The fix has to respect the standing rule that nothing is known unless it is
+seen or told, so it cannot simply be "a raid worsens standing" at the moment
+the chief gives the order — the victims do not know yet. The honest shape is
+that `emit` moves standing once (never once per witness, the multiplication
+its own comment already guards against) when a deed with no person target was
+witnessed by somebody of a band other than the actor's. Left out of 11c
+because it is a behavioural change to every property crime in the game, not
+only to raids, and it deserves its own commit and its own twenty seeds.
+
 ## Found shipping M11 phase 11b, 2026-09-22
 
 ### A field cannot be sabotaged, because ruining one would currently do nothing

@@ -1369,6 +1369,44 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         (tel.rebellion_challenge_lost ?? 0) + ' lost)');
   }
 
+  // M11 phase 11c. Bounded from above rather than pinned to a rate, on
+  // exactly the reasoning `rebellion-is-rare-but-happens` above sets out: a
+  // raid is meant to be the discharge of a long quarrel, so a band with a
+  // hundred and fifty days of chances should use a handful of them, and a run
+  // that saw none is a quiet world rather than a broken one. The mechanism
+  // itself is asserted deterministically in `band.test.ts`, on a world built
+  // with two bands primed to hate each other, which does not depend on a seed
+  // being unlucky enough to produce a feud.
+  //
+  // What this can genuinely catch is the two ways it could come off its
+  // hinges. `raid_called` running away would mean `RAID_HOSTILITY` or
+  // `RAID_INTERVAL` has stopped biting and the world has become a permanent
+  // war. And a run where a chief was willing every time and *never once*
+  // raised a party would mean the quorum, the trust test or the `fight` bar
+  // has been set somewhere nobody can reach — the failure `warParty`'s own
+  // comment records two discarded versions of.
+  const raidsCalled = tel.raid_called ?? 0;
+  const raidsUnraised = tel.raid_never_raised ?? 0;
+  const raidDetail =
+    raidsCalled + ' called (' + (tel.raid_for_plunder ?? 0) + ' for plunder, ' +
+    (tel.raid_for_damage ?? 0) + ' for damage), ' + (tel.raid_joined ?? 0) +
+    ' followed, ' + raidsUnraised + ' never raised a party, ' +
+    (tel.raid_nothing_in_reach ?? 0) + ' found nothing within a day of walking';
+  if (raidsCalled === 0 && raidsUnraised === 0) {
+    skip('raids-are-organised',
+      'no chief in this world ever stood badly enough with a neighbour to weigh one');
+  } else if (raidsCalled === 0) {
+    // Willing chiefs and no party, every single time. Reported rather than
+    // failed on its own, because a band of gentle people genuinely may not
+    // contain three fighters who trust each other — but it is the shape a
+    // broken gate makes, so it says so in words.
+    skip('raids-are-organised',
+      'weighed ' + raidsUnraised + ' times and never once raised a party; ' +
+      'no fighting party could be assembled in this world');
+  } else {
+    add('raids-are-organised', raidsCalled < 40, raidDetail);
+  }
+
   // Knowledge is the M4 spine. These say it is alive rather than declared:
   // things get worked out, they get handed on, and the world can be described
   // by what its people collectively know.

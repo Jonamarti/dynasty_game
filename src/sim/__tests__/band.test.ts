@@ -15,6 +15,7 @@ import { CHIEF_TERM_DAYS, chiefHoneymoon, chiefTermDays } from '../social/Leader
 import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from '../knowledge/Synthesis.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import type { Person } from '../entities/Person.ts';
+import type { Building } from '../entities/Building.ts';
 
 const SMALL = {
   seed: 'rebellion',
@@ -585,5 +586,174 @@ describe('the shape of a band', () => {
     cast.bandId = outcasts.id;
 
     expect(sim.ranksAround(chief, everyone(sim))!.get(cast.id)).toBe('outcast');
+  });
+});
+
+/**
+ * M11 phase 11c: a chief gathering a party and sending it into a rival's
+ * ground.
+ *
+ * Here rather than in `simcheck` for the reason `rebellion` above is: a raid
+ * needs two bands to have reached open hostility, which takes a season of
+ * grievance and happens in only some seeds of some scenarios. The health
+ * report's `raids-are-organised` bounds the rate where one does happen; these
+ * assert the mechanism on a world built to have one.
+ *
+ * Measured against a build with `considerRaid` unwired before being accepted,
+ * the rule `AGENTS.md` gives for checks. Three of the five fail on it. The
+ * other two — the band with no quarrel and the chief who is too thirsty —
+ * pass, because they assert that *nothing* happens, and they are kept as the
+ * controls for the first three rather than as detectors of their own: each
+ * differs from a raiding world in exactly one thing, so without them a raid
+ * fired by something other than the feud would look like a pass.
+ */
+describe('raids', () => {
+  /**
+   * Two bands, a feud between their peoples, and a chief with the nerve and
+   * the hand for it. Returns the raiding band, its chief and the victim.
+   *
+   * The `fight` skill is set rather than trained: `warParty` reads
+   * `skillFactor`, whose floor for somebody who has never thrown a punch sits
+   * below the bar, and sparring a band up to it would make this a test of
+   * phase 11a rather than of phase 11c.
+   */
+  function feud(seed: string, peoplePerBand = 8) {
+    const sim = new Simulation({
+      ...SMALL,
+      seed,
+      world: { ...SMALL.world, width: 64, height: 64 },
+      population: { bands: 2, peoplePerBand },
+    });
+    while (sim.bandSystem.chiefByBand.get(sim.bands[0]!.id) === undefined) sim.step();
+
+    const raiders = sim.bands[0]!;
+    const victim = sim.bands[1]!;
+    const chief = sim.peopleById.get(sim.bandSystem.chiefByBand.get(raiders.id)!)!;
+    chief.traits.aggression = 1;
+    chief.skills.fight = 100;
+
+    // Something of the victim's to aim at, standing where a party could reach
+    // it: `raidTarget` will not send anybody further than a day's walk.
+    const site = raise(sim, 'windbreak', raiders, victim.id);
+
+    return { sim, raiders, victim, chief, site };
+  }
+
+  /**
+   * A finished building of `ownerBandId`'s, near enough to `band`'s camp for a
+   * raid to reach it.
+   *
+   * The spiral is not fussiness: `Simulation.place` refuses water, rock and
+   * ground another footprint already occupies, and a fixed offset lands on one
+   * of those often enough that half these tests would depend on the seed.
+   */
+  function raise(sim: Simulation, defId: string, band: Band, ownerBandId: number): Building {
+    for (let radius = 6; radius < 24; radius += 2) {
+      for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1], [1, 0], [0, 1]]) {
+        const built = sim.place(defId,
+          Math.round(band.homeX) + dx! * radius, Math.round(band.homeY) + dy! * radius,
+          ownerBandId);
+        if (built) {
+          built.complete = true;
+          return built;
+        }
+      }
+    }
+    throw new Error('nowhere to put a ' + defId + ' near the camp');
+  }
+
+  /** Arms every adult of `bandId` other than the chief to ride. */
+  function armBand(sim: Simulation, chief: Person, bandId: number): Person[] {
+    const followers = sim.livingPeople().filter(person =>
+      person.bandId === bandId && !person.isChild && person.id !== chief.id);
+    for (const follower of followers) {
+      follower.traits.aggression = 1;
+      follower.skills.fight = 100;
+      sim.relationships.addDeed(chief.id, follower.id, 100, sim.time.tick);
+      sim.relationships.addDeed(follower.id, chief.id, 100, sim.time.tick);
+    }
+    return followers;
+  }
+
+  function raidsOver(sim: Simulation, days: number): number {
+    const before = telemetry.get('raid_called');
+    for (let day = 0; day < days; day++) for (let i = 0; i < 240; i++) sim.step();
+    return telemetry.get('raid_called') - before;
+  }
+
+  it('sends a party once two peoples stand badly enough and a chief can raise one', () => {
+    telemetry.enable();
+    const { sim, raiders, victim, chief } = feud('raid-goes');
+    armBand(sim, chief, raiders.id);
+    sim.bandRelations.add(raiders.id, victim.id, -100);
+
+    expect(raidsOver(sim, 4)).toBeGreaterThan(0);
+    expect(chief.chronicle.some(entry => entry.text.includes('raid'))).toBe(true);
+  });
+
+  it('will not send one against a band it has no quarrel with', () => {
+    // The gate is `RAID_HOSTILITY`, and nothing else in this world differs
+    // from the one above: same seed, same armed band, same reachable target.
+    telemetry.enable();
+    const { sim, raiders, chief } = feud('raid-goes');
+    armBand(sim, chief, raiders.id);
+
+    expect(raidsOver(sim, 4)).toBe(0);
+  });
+
+  it('will not send one a chief cannot raise a party for', () => {
+    // Same feud, same chief, and nobody armed or friendly to go with them.
+    // This is the quorum brake `Brain.ts` records the need for: a mechanism
+    // that fires on one angry person turns a band into a mincer.
+    telemetry.enable();
+    const { sim, raiders, victim } = feud('raid-alone');
+    sim.bandRelations.add(raiders.id, victim.id, -100);
+    const before = telemetry.get('raid_never_raised');
+
+    expect(raidsOver(sim, 4)).toBe(0);
+    expect(telemetry.get('raid_never_raised') - before,
+      'the chief never even weighed it').toBeGreaterThan(0);
+  });
+
+  it('robs a neighbour it dislikes and burns one it hates', () => {
+    // The one thing that chooses between the two verbs is how far the grudge
+    // runs — see `RAID_FURY`. Both worlds are otherwise identical, and both
+    // are given a granary to aim at, so a difference can only come from that.
+    function raidWith(standing: number, seed: string): string {
+      telemetry.enable();
+      const { sim, raiders, victim, chief } = feud(seed);
+      armBand(sim, chief, raiders.id);
+      raise(sim, 'storage_pit', raiders, victim.id);
+      sim.bandRelations.add(raiders.id, victim.id, standing);
+
+      const plunder = telemetry.get('raid_for_plunder');
+      const damage = telemetry.get('raid_for_damage');
+      raidsOver(sim, 4);
+      if (telemetry.get('raid_for_plunder') > plunder) return 'plunder';
+      if (telemetry.get('raid_for_damage') > damage) return 'damage';
+      return 'none';
+    }
+
+    expect(raidWith(-40, 'raid-rob')).toBe('plunder');
+    expect(raidWith(-100, 'raid-burn')).toBe('damage');
+  });
+
+  it('does not send a chief who is in no state to walk there', () => {
+    // `fitToTravel`, and the reason it is split out of `fitForOrders`: a
+    // chief is their own leader and standing where they are standing, so they
+    // skip every other condition in it and must not skip this one.
+    telemetry.enable();
+    const { sim, raiders, victim, chief } = feud('raid-thirsty');
+    armBand(sim, chief, raiders.id);
+    sim.bandRelations.add(raiders.id, victim.id, -100);
+
+    const before = telemetry.get('raid_called');
+    for (let day = 0; day < 4; day++) {
+      for (let i = 0; i < 240; i++) {
+        chief.needs.thirst = 100;
+        sim.step();
+      }
+    }
+    expect(telemetry.get('raid_called') - before).toBe(0);
   });
 });

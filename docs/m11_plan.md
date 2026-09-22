@@ -792,13 +792,43 @@ perseguir, y el mecanismo que cada una mide sigue funcionando limpio en el
 escenario construido a propósito para probarlo (`labour` para
 `heads-direct-work`).
 
-**Sigue:**
+**11c — el organizador de partida. HECHO 2026-09-22.** En dos commits. El
+primero, **bit-idéntico**, pone el precio antes que lo que lo paga:
+`sabotage` no tenía entrada en `ORDER_COST` —la 11b lo dejó cayendo al 0.3
+por defecto, más barato que talar un árbol— y `orderCost` aprende que una
+orden dirigida a la propiedad de otra banda cuesta lo que cuesta un delito
+(`FOREIGN_PROPERTY_COST`, al nivel de `steal`, leído sobre la banda del
+*subordinado*, que es quien entra en el campamento ajeno). El segundo,
+`Factions.warParty` junto a `conspiracyAgainst` y compartiendo su
+`trustEachOther` —un desconocido puntúa 0 en `opinion`, así que el "quienes
+se conocen entre sí" sale del grafo sin regla propia—, y
+`BandSystem.considerRaid`: quórum de 3 contando al jefe, medido sobre quien
+*podría* ser llamado y no sobre quien viene (precedente de `considerExile`),
+cada seguidor una tirada real de `command`, y el jefe va con ellos incluso
+si no fue nadie.
 
-- **11c — el organizador de partida, `BandSystem.daily`.** Un jefe reúne
-  a varios miembros dispuestos y con `fight` de verdad (fruto de 11a) para
-  viajar juntos y sabotear o robar en el territorio de otra banda. Quórum y
-  quienes se conocen entre sí, el mismo freno que ya usan las facciones de
-  la fase 5d — `Brain.ts:812` documenta lo que pasa sin él.
+**Tres reglas medidas y descartadas antes de que una funcionara**, todas por
+el mismo defecto —monedas que caían siempre del mismo lado, que es como este
+proyecto envía una rama inalcanzable: un alcance fijado por la sed (60
+casillas) descartó **todos** los objetivos de `lean`, donde el campamento
+está a 61-91 del enemigo (y la sed no era la restricción: `noteStop` aparta
+cualquier orden interrumpida por una necesidad, así que el que se queda seco
+bebe y la retoma); el saqueo condicionado al hambre de los asaltantes dio 47
+deliberaciones y cero saqueos, porque ningún escenario tiene una banda
+hambrienta a medianoche; y condicionado a que la víctima tuviera granero dio
+11 asaltos y cero destrucciones, porque todas las bandas tienen granero. Lo
+que decide es **cuán hondo va el rencor** (`RAID_FURY`): se roba al vecino
+que se desprecia y se quema al que se odia — el sentimiento propio, que un
+jefe conoce sin que nadie se lo cuente, donde lo que hay *dentro* del granero
+no lo ha visto nadie de esta banda.
+
+Medido a 20 semillas de `millers`, no a un run: supervivencia media 67.7% →
+64.0% con *menos* colapsos (5/20 → 4/20) y tecnologías idénticas. El fallo de
+una sola semilla en `millers`/`population-persists` es esa divergencia.
+`raids-are-organised` acota la tasa por arriba; cinco pruebas deterministas
+en `band.test.ts`, tres de las cuales fallan con `considerRaid` desconectado.
+
+**Sigue:**
 - **11d — cautiverio como estado en `Person`.** El desenlace de un asalto
   que no mata: `captiveOf`, trabajo forzado en la casa del captor, fuga
   puntuada por si hay testigos —el espejo exacto de `mayUse`—, y la puerta

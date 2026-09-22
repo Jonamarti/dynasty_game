@@ -2718,6 +2718,7 @@ export class Simulation {
         onAdopt: (person, band) => this.adopt(person, band),
         peopleHash: this.peopleHash,
         bandRelations: this.bandRelations,
+        sameRegion: (ax, ay, bx, by) => this.world.sameRegion(ax, ay, bx, by),
         abandonSite: site => this.removeBuilding(site),
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),

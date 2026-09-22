@@ -6,6 +6,106 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-22 — M11 phase 11c: the raid organiser
+
+The piece the rest of phase 11 was built toward, and it is notable for how
+little of it is new. Phase 11a made `fight` something people genuinely differ
+at, so a war party is not four farmers with sticks; 11b made `sabotage` a verb
+with its progress banked on the building; phase 7 made two peoples able to
+stand badly with each other; phase 4 made property something attention
+protects rather than permission. `BandSystem.considerRaid` only decides *who
+goes where*. Every consequence of their arrival was already written.
+
+**What an order against another band's property costs** (first commit, sent
+bit-identical — `lean` reported the same world to the digit). Two gaps in
+`Authority.ORDER_COST`. `sabotage` had no entry at all, so the verb 11b added
+fell through to the 0.3 default: a chief, or the player, could have a rival's
+hut knocked down for less than the price of telling somebody to fell a tree.
+It goes in at 0.8, level with `threaten`. And the table is keyed on the verb,
+which is right for every entry in it but one — `take` is the same verb, walk
+and arithmetic whether the store is your own band's pit or a rival's granary,
+and only one of those is a crime a whole band may come out of their huts
+about. `orderCost` now takes a `foreign` flag, floored at
+`FOREIGN_PROPERTY_COST` (0.75, level with `steal`, which is this same crime
+with a person on the other end of it instead of a wall).
+`Simulation.command` derives it from the target it already holds, off the
+*subordinate's* band rather than the leader's, since it is the person walking
+into the rival camp who bears it.
+
+**`Factions.warParty`**, beside `conspiracyAgainst` and sharing its
+`trustEachOther` test — extracted rather than copied, because a plot and a
+raid holding separate trust thresholds is precisely the drift `AGENTS.md`
+warns about. A stranger scores 0 on `RelationshipGraph.opinion`, below the
+threshold, so the "who knows whom" half of the brake falls straight out of
+the graph without a rule of its own. Nothing is stored; asking again tomorrow,
+after an evening of gossip, may honestly answer differently.
+
+**`BandSystem.considerRaid`.** A chief with the nerve and the hand for it
+picks the band their own people stand worst with, finds something of theirs
+within a day's march on the same landmass, and calls. The quorum is
+`RAID_QUORUM` (3, chief included) measured on who *could* be called rather
+than who comes — the precedent `considerExile` sets, and the brake
+`Brain.ts` already records the need for. Each follower is a real
+`ctx.command` roll at the new price; the chief goes with them and goes even
+when nobody answered, which is the cost of calling something your band will
+not follow you into.
+
+**Three rules were measured and thrown out before one stuck**, all for the
+same fault — they were coins that always landed the same way, which is how
+this project ships a branch nobody can reach:
+
+- A range set by the thirst budget (60 tiles) dropped **every** target in
+  `lean`, where a band's camp sits 61 to 91 tiles from the nearest thing its
+  worst enemy owns. Thirst was the wrong constraint anyway: a raider is under
+  an order, and `noteStop` sets aside any order broken off for a need, so
+  somebody who runs dry two thirds of the way there stops, drinks, and picks
+  the raid back up. `RAID_RANGE` is the *walk* — about a day's march.
+- Plunder gated on the raiders being hungry produced forty-seven
+  deliberations across `lean`, `feasts` and `labour` and not one plundering
+  raid: no scenario in the matrix has a band hungry at midnight, and
+  `pantryPressureOf` — the first thing tried — reads how full the granaries
+  are, which is a band's wealth, not its appetite.
+- Plunder gated on the victim owning a granary produced eleven raids and not
+  one wrecking, because every band owns a granary.
+
+What settles it instead is **how far the grudge runs**: you rob the
+neighbours you merely dislike and you burn the ones you hate (`RAID_FURY`).
+That is the raiders' own feeling, which a chief knows without being told —
+where what is *in* that granary is something nobody from this band has ever
+seen. The target is picked by what a chief could stand on a hill and see: a
+granary because it is a granary, and `doTake` finds out on arrival whether
+there was anything in it.
+
+**`fitToTravel`** split out of `directTo`'s conditions, which became
+`fitForOrders`. A chief sending themselves is the one caller that skips every
+other condition — they are their own leader, standing where they are standing
+— and must not skip this one. A chief who walks sixty tiles into a rival camp
+on an empty stomach is the same bug with a hat on.
+
+`BandRelations.touching` returns the bands one band has any standing with at
+all, in ascending id order, so the search walks only pairs that have actually
+met; ascending rather than insertion order because insertion order is a
+property of who happened to meet whom first and no seed controls it.
+
+Measured across twenty seeds of `millers`, not one run: mean survival 67.7% →
+64.0% with *fewer* collapses (5/20 → 4/20) and identical technology counts
+(8.3 known, 6.9 → 6.7 past the root nodes). The single-seed
+`millers`/`population-persists` failure this pass produces is that
+divergence, not a regression — the class `AGENTS.md` names outright. Raids are
+rare by design: 1 to 9 per long run, with `raid_never_raised` two to ten times
+higher, the quorum doing most of the refusing.
+
+`raids-are-organised` in the health report bounds the rate from above and
+names the two ways the gate could come off — a runaway count, or a world where
+a chief was willing every time and never once raised a party. Five
+deterministic tests in `band.test.ts` on a world built with two bands primed
+to hate each other; three fail on a build with `considerRaid` unwired, and the
+two that do not are kept as its controls rather than as detectors.
+
+Determinism: no new RNG stream. The raid draws nothing — the party is sorted
+by `fight` with ids breaking ties — and the only randomness involved is the
+`commandRng` roll `command` already makes for every order.
+
 ## 2026-09-22 — M11 phase 11b: `Building.durability` and `sabotage`
 
 Territory and captivity (11c/11d) are still ahead; this is the piece the plan
