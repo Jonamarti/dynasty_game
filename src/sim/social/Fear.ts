@@ -255,6 +255,16 @@ export function homeward(person: Person): number {
   return Math.min(DRIFT_MAX, (fear - DRIFT_ONSET) / (1 - DRIFT_ONSET) * DRIFT_MAX * 1.25);
 }
 
+/**
+ * Dread at which somebody's mere presence is a reason to get away from them,
+ * and how close they have to be. M11 phase 14b's fourth reader. At 35, two
+ * beatings from the same hand, or a killing seen by its survivor's family, is
+ * enough; one threat is not. Within half a sight radius: a person you dread
+ * across the meadow is someone to keep an eye on, not to run from.
+ */
+export const DREAD_FLEE_AT = 35;
+export const DREAD_FLEE_RANGE = 0.5;
+
 /** Where a band lives and how far its ground reaches, for the sighting pass. */
 export interface Territory {
   bandId: number;

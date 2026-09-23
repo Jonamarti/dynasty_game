@@ -48,7 +48,9 @@ import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
 import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
 import { mayUse } from '../social/Property.ts';
-import { homeRange, homeward, fearOf, STRANGER_AVERSION } from '../social/Fear.ts';
+import {
+  homeRange, homeward, fearOf, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
+} from '../social/Fear.ts';
 
 export interface BrainContext {
   world: World;
@@ -1722,6 +1724,31 @@ export class Brain {
       );
       add('flee', (hurt * 2.5 + outmatched * 2 + 0.4) * (1.4 - person.traits.aggression));
       fleeFrom = threat;
+    } else {
+      // M11 phase 14b: somebody you dread, close by, is reason enough to go,
+      // whether or not they have raised a hand today. The most dreaded one,
+      // weighed against how near they are. Below the fresh-harm case above,
+      // which is a person bleeding; this is a person remembering.
+      const reach = ctx.sightRadius * DREAD_FLEE_RANGE;
+      let dreaded: Person | null = null;
+      let worst = 0;
+      for (const other of neighbours) {
+        const dread = ctx.relationships.dread(person.id, other.id);
+        if (dread < DREAD_FLEE_AT) continue;
+        const distance = person.distanceTo(other);
+        if (distance > reach) continue;
+        const weight = dread * (1 - distance / (reach + 1));
+        if (weight > worst) {
+          worst = weight;
+          dreaded = other;
+        }
+      }
+      if (dreaded) {
+        const dread = ctx.relationships.dread(person.id, dreaded.id) / 100;
+        add('flee', (dread * 1.5 + 0.2) * (1.4 - person.traits.aggression));
+        fleeFrom = dreaded;
+        telemetry.count('fled_from_dread_considered');
+      }
     }
 
     // --- Research ----------------------------------------------------------
