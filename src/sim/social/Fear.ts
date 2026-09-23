@@ -224,6 +224,37 @@ export function homeRange(person: Person): number {
   return RANGE_WIDE + (RANGE_FLOOR - RANGE_WIDE) * t;
 }
 
+/**
+ * How much less a frightened person wants an outsider's company, in opinion's
+ * units at full fear. M11 phase 14b's third reader: the note's "with high fear
+ * they do not talk to strangers, and keep to their own".
+ *
+ * **A preference, never a refusal**, and that is a measurement. The first
+ * version also refused outsiders outright above 0.6 of fear, and across twenty
+ * `lean` seeds cross-band blows rose from 3,964 to 4,696 and murders from 462
+ * to 503 against the same commit without it: people who stop talking across a
+ * band line stop warming to each other, and grudges fill the gap. The soft
+ * half alone measured 4,330 and 459. Segregation is meant to follow from
+ * hatred here, not to manufacture it.
+ */
+export const STRANGER_AVERSION = 40;
+
+/**
+ * How far an idle walk is pulled back toward camp, 0-1 of the way, for a
+ * frightened person. Nothing until `DRIFT_ONSET` of fear; at full fear an
+ * aimless walk is centred four fifths of the way home, which is what "does not
+ * leave the territory" looks like for somebody with nothing in particular to
+ * do.
+ */
+export const DRIFT_ONSET = 0.4;
+export const DRIFT_MAX = 0.8;
+
+export function homeward(person: Person): number {
+  const fear = fearOf(person);
+  if (fear <= DRIFT_ONSET) return 0;
+  return Math.min(DRIFT_MAX, (fear - DRIFT_ONSET) / (1 - DRIFT_ONSET) * DRIFT_MAX * 1.25);
+}
+
 /** Where a band lives and how far its ground reaches, for the sighting pass. */
 export interface Territory {
   bandId: number;

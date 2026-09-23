@@ -48,7 +48,7 @@ import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
 import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
 import { mayUse } from '../social/Property.ts';
-import { homeRange } from '../social/Fear.ts';
+import { homeRange, homeward, fearOf, STRANGER_AVERSION } from '../social/Fear.ts';
 
 export interface BrainContext {
   world: World;
@@ -752,6 +752,9 @@ export class Brain {
       const untold = (other: Person) =>
         myNews !== null && !other.memory.has(myNews.eventId) ? newsWeight : 0;
 
+      // M11 phase 14b: a frightened person keeps to their own — as a
+      // preference over company, never a refusal. See `STRANGER_AVERSION`.
+      const fear = fearOf(person);
       const freshCompany = neighbours.filter(other => {
         const rel = ctx.relationships.peek(person.id, other.id);
         if (!rel) return true;
@@ -759,6 +762,7 @@ export class Brain {
       });
       companion = this.pickBest(freshCompany, other =>
         ctx.relationships.opinion(person.id, other.id) + 5 - person.distanceTo(other)
+        - (other.bandId === person.bandId ? 0 : fear * STRANGER_AVERSION)
         // Worth about a dozen tiles of walking toward whoever leads your band,
         // and a couple toward anybody else in it. In opinion's units because
         // everything else in this comparison is.
@@ -2426,9 +2430,16 @@ export class Brain {
         // A short hop rather than a cross-map trek, so wandering reads as
         // milling about camp instead of migration.
         const r = ctx.sightRadius;
+        // M11 phase 14b: centred part of the way home for somebody afraid,
+        // so an idle walk drifts back to camp rather than out of it. The same
+        // two draws per attempt either way; only where the box sits moves.
+        const home = ctx.homes?.get(person.bandId);
+        const pull = home ? homeward(person) : 0;
+        const cx = home ? person.x + (home.x - person.x) * pull : person.x;
+        const cy = home ? person.y + (home.y - person.y) * pull : person.y;
         for (let attempt = 0; attempt < 8; attempt++) {
-          const tx = Math.round(person.x + ctx.rng.range(-r, r));
-          const ty = Math.round(person.y + ctx.rng.range(-r, r));
+          const tx = Math.round(cx + ctx.rng.range(-r, r));
+          const ty = Math.round(cy + ctx.rng.range(-r, r));
           if (ctx.world.isWalkable(tx, ty)) {
             person.targetX = tx;
             person.targetY = ty;
