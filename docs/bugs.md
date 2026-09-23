@@ -36,14 +36,16 @@ only decides whether the use becomes a witnessed deed the witness can act on.
 impossible to use as it was under the membership test phase 4 replaced. The
 owner's note 6 asks for what the plan asked for. Phase 15a.
 
-### Your own chronicle names people you do not know
+### Two lines of your own chronicle still carry a name as written
 
-`SocialSystem.emit` writes `describeEvent(type, actor.name, target.name)` into
-the actor's and the victim's `chronicle`, with real names. Rob a stranger and
-your *Life* tab tells you what they are called. `rememberedAbout` already
-resolves names through `knowledgeOfPerson` for other people's histories; the
-player's own chronicle bypasses it because it is stored as finished text.
-Phase 13f, which stores ids and composes the text at display time.
+13f re-writes every line `emit` wrote from its ids, through `Knowledge`, when
+the *Life* tab shows it. Lines written elsewhere are still finished text, and
+two of them name a person: `Simulation.command`'s *"refused X over Y"* and
+`assignJob`'s *"refused to take up work for X"*. Both name the leader who gave
+the order, who is in practice always someone the refuser knows — a chief or a
+household head of their own band — so no stranger's name is known to leak
+this way; but nothing enforces it. Give them a `deed`-style id if a foreign
+leader can ever command.
 
 ### `considerTerritory` is a sensor
 

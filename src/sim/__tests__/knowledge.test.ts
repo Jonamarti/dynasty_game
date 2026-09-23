@@ -9,7 +9,8 @@ import { describe, it, expect } from 'vitest';
 import { Person } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
-import { regardFromThem } from '../social/Knowledge.ts';
+import { knowledgeOfPerson, regardFromThem, rememberedAbout } from '../social/Knowledge.ts';
+import { describeEvent } from '../social/Events.ts';
 
 function pair(): { me: Person; them: Person; graph: RelationshipGraph } {
   const me = new Person('Me', 4, 4, 0, new RNG('knowledge-me'));
@@ -50,5 +51,29 @@ describe("somebody else's regard for you", () => {
     const { me, them, graph } = pair();
     regardFromThem(me, them, graph);
     expect(graph.peek(me.id, them.id)).toBeNull();
+  });
+});
+
+describe('your own life', () => {
+  // M11 phase 13f. `emit` stores its sentence with real names; the *Life*
+  // tab must not hand you the name of somebody you robbed and never met.
+  it('names a stranger you wronged as a stranger', () => {
+    const { me, them, graph } = pair();
+    me.chronicle.push({
+      tick: 1, ageDays: 1, kind: 'did',
+      text: describeEvent('theft', me.name, them.name),
+      deed: { type: 'theft', actorId: me.id, targetId: them.id },
+    });
+    const people = new Map([[me.id, me], [them.id, them]]);
+    const nameOf = (id: number) => knowledgeOfPerson(me, people.get(id)!, graph).displayName;
+
+    const [line] = rememberedAbout(me, me, nameOf);
+    expect(line!.text).not.toContain('Them');
+    expect(line!.text).toContain('Me');
+    // The stored sentence is left alone.
+    expect(me.chronicle[0]!.text).toContain('Them');
+
+    graph.edge(me.id, them.id).familiarity = 20;
+    expect(rememberedAbout(me, me, nameOf)[0]!.text).toContain('Them');
   });
 });

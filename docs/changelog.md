@@ -6,6 +6,34 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 13f, third commit: your own life names people as you know them
+
+**The defect.** `SocialSystem.emit` writes `describeEvent(type, actor.name,
+target.name)` into both chronicles, with real names. Rob a stranger and your
+*Life* tab told you what they were called. Other people's histories already
+went through `knowledgeOfPerson`; your own bypassed it because it was stored
+as finished text.
+
+**The change.** `rememberedAbout`, the one function the *Life* tab reads,
+re-writes every line of your own chronicle that carries a `deed` (13e) from
+its ids, through the same `nameOf` other people's histories use — so a
+stranger you robbed is *"a young man"* until you learn better, and becomes
+their name the day you do.
+
+**Why the stored sentence stays.** The plan asked for the chronicle to hold
+ids and for its readers to be migrated. It already holds them (13e), and
+checking the readers found only two: *Life*, migrated here, and the
+succession screen, whose milestones are never deeds and whose *killed* line
+already names through `Knowledge`. No check or tool reads `chronicle[].text`.
+The sentence is kept beneath as a record rather than rewritten, because
+rewriting stored history to suit one reader is the thing 13d refused to do.
+Two non-deed lines still carry a name as written — see
+[bugs.md](bugs.md).
+
+Bit-identical in `sim:check:all --verbose`. A test in `knowledge.test.ts`.
+
+---
+
 ## 2026-09-23 — M11 phase 13f, second commit: a witness is named as the reader knows them
 
 **The defect.** `mayUse` wrote its own explanation, `seen.name + ' is close

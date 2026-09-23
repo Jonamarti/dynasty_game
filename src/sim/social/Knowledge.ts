@@ -223,7 +223,24 @@ export function rememberedAbout(
   subject: Person,
   nameOf: (id: number) => string
 ): LifeEvent[] {
-  if (observer.id === subject.id) return observer.chronicle;
+  // Your own life, with everybody in it named as you know them. M11 phase
+  // 13f: `emit` writes its line with real names — rob a stranger and the
+  // stored sentence calls them by a name you were never told — so a line
+  // that carries its deed (13e) is written afresh here from the ids, through
+  // the same `nameOf` other people's histories already go through. Lines
+  // with no deed (a birth, a marriage, a hut) name only people you know.
+  if (observer.id === subject.id) {
+    return observer.chronicle.map(entry => entry.deed
+      ? {
+        ...entry,
+        text: describeEvent(
+          entry.deed.type,
+          nameOf(entry.deed.actorId),
+          entry.deed.targetId === null ? null : nameOf(entry.deed.targetId)
+        ),
+      }
+      : entry);
+  }
 
   return observer.memory
     .about(subject.id)
