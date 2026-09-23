@@ -7,7 +7,7 @@ documento: dos copias del mismo plan divergen igual que dos copias del mismo
 código, y la divergencia sale meses después como una contradicción que nadie
 sabe cuál de las dos es la buena.
 
-**Las fases 12 a 16 están construidas; queda la 17.** La puerta de la 14
+**Las fases 12 a 17 están construidas: M11 está completo (2026-09-23).** La puerta de la 14
 queda cumplida sólo en parte, la de la 15 con un check menos de los tres que
 prometía, y la de la 16 con la cota superior («ni todos») leída en la cohorte
 y no por run: ver `bugs.md`. Cada referencia a código se
@@ -52,7 +52,7 @@ milestone, hasta el nivel de commit.
 | 14a-14f | enviadas (`d3c8f70`…`5b2a7d9`); 14b en cinco commits, cada uno a 20 semillas. **Puerta sólo en parte**: la violencia cerca de los campamentos sube del 31% al 43% en `lean`, por debajo del 50% del check |
 | 15a-15f | enviadas (`7e7df68`…`37f047a`); 15a en dos commits, 15b en cuatro, cada uno a 20 semillas. **Puerta**: `the-watched-intervene` y `captives-are-taken` verificados fallando contra la build anterior; **`guards-see` descartado**, no discriminaba nada (ver `changelog.md`). El asalto organizado como fuente de cautivos llegó con la puerta, no con 15d |
 | 16a-16e | enviadas (`ab09645`…`0a5652b`), 16a, 16b y 16e bit-idénticas. **Puerta**: `bodies-are-found` y `murders-are-solved`, fallando contra la build anterior; «ni todos» en la línea BODIES de `sim:seeds`. La puerta añadió que el asesino sin testigos esconda el cuerpo. El cuarto canal de 16d (los bienes del muerto) no se construyó: los objetos no tienen procedencia |
-| 17 | **pendiente — este documento** |
+| 17a-17e | enviadas (`48babb3`…). `gift` emitido y medido: mueve poco el renombre, porque nadie lleva excedente (17a); de los cuatro checks de la fase 5, `gossip-is-aimed` por run y los otros tres en la cohorte (17b); el campo pisoteado (17c); la política de medición (17d); los documentos (17e) |
 
 (`a627458`, titulado "m11 phase 11", es en realidad M9.6 fase 2d.)
 

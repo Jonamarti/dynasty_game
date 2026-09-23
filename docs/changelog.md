@@ -6,6 +6,46 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 17: the close of M11
+
+The debt the milestone owed without a phase, paid or written down.
+
+**17a — `gift`.** Declared since 5b and never emitted. The plan said to emit
+it for what is not food or retire it, deciding by whether renown (6c) moves.
+Emitted by the Kit's give (`giftWorth`, off `baseValue`) and by a new route,
+a spare made thing given to one of one's own who has none. **Measured to
+move renown little**: nobody carries a spare, because crafting stops at
+`keep` — one NPC gift in the whole matrix. Kept, because both writers are
+real; the big man turning wealth into standing needs a surplus the world
+does not yet produce.
+
+**17b — phase 5's four checks.** Measured against the build before 5c-5f
+(`6b6d476`) with its own tools. `gossip-is-aimed` is a per-run check (it
+fails on all seventeen scenarios there, not one slander or praise said) and
+skips runs under a month. Exile (0-1 a run), factions (five scenarios of
+nineteen) and adoption (0-2 a run) are one or two events a run and are read
+in `sim:seeds`'s BANDS line: `lean` 1 exile, factions in 7 seeds of 20, 23
+taken in of 159; `century` 3, 10, 16 of 94; 0 of each at `6b6d476`. None
+was dropped for failing to fail.
+
+**17c — a field can be trampled.** A ruined field loses what was standing
+(`Crop.trampled`) and is not sown until mended; the soil is not touched.
+The exclusions came off in the same commit. One field trampled in the whole
+matrix; the farming worlds are peaceful.
+
+**17d — the measurement policy.** `perf-budget` is scaled by population and
+judged only alone (it reports in the matrix); `the-hurt-are-tended` has a
+real floor of 30 person-days of hurt; `kills-are-butchered-for-bone`'s coat
+clause is read in a new TRIPWIRES line (`hunters`: coats in 4 of 10 seeds).
+The `lean` drift and the `tau` seed were reviewed against the world 14-16
+left: `lean` has sat near 50% since 11b-12b, `tau` is still among the
+weakest seeds, and nothing in 14-17 moved either beyond what twenty seeds
+resolve.
+
+**17e — the documents.** `next-steps.md`'s "Where things actually stand"
+rewritten for the close, M11's row, M12 named next, and a section of what
+M11 leaves out on purpose, each with its reason.
+
 ## 2026-09-23 — M11 phase 16: the body stays
 
 The owner's note 1. Until now a death took the person out of the world on

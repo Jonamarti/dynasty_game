@@ -1,7 +1,8 @@
 # Next steps
 
 Rewritten 2026-09-08, reordered 2026-09-10, brought up to date 2026-09-12 on
-the close of M9.
+the close of M9, and **2026-09-23 on the close of M11** — the "Where things
+actually stand" section below was rewritten then, not amended.
 Ordered, with the reason for the order.
 
 **2026-09-10: the owner moved the social and interface pass ahead of the
@@ -24,49 +25,44 @@ nothing was scheduled. It has been rewritten rather than amended again.
 
 ## Where things actually stand
 
-`npm run sim:check` on the default twelve-day scenario, re-run 2026-09-16 at
-the close of M9.5: **39 of 39 applicable checks pass**, 29 n/a, ~2,600 steps/s
-against a 2,000 floor. The applicable count moved rather than fell — phases 4c
-and 4d added checks for content a twelve-day run cannot reach, which is the
-same reason the n/a count is high. M9 phase 6 and M9.5 phase 4e both left every
-one of those numbers bit-identical, as they had to: no scenario possesses a
-player, so neither the character's autonomy nor the panel's rank model is
-reachable from the harness at all. The n/a count is high because M8.1 added checks for content a
-twelve-day run cannot reach; the scenario that covers each one is named in its
-skip line, and `npm run sim:check:all` is the number that matters — **14
-scenarios as of M9.5 phase 4c** (`labour` joined, so that `jobs-bias-work` has
-a world whose founders know `division_of_labour`), **13 fully green**, with
-`crowded`'s `perf-budget` the only failure left. The three kinds of failure
-below are kept because two of them are borderline checks that have now changed
-sides three times, which is a finding in itself — see `bugs.md`:
+**At the close of M11, 2026-09-23.** `npm run sim:check` on the default
+twelve-day scenario: **39 of 39 applicable checks pass**, 47 n/a — the n/a
+count is high because most of what M8-M11 added needs a world that knows
+more than a twelve-day band does; each skip line names the scenario that
+covers it.
 
-**Updated 2026-09-17 by M9.6 phases 0-3.** The matrix is now **16 scenarios,
-12 fully green**, with four failures: `crowded`'s `perf-budget` below, plus
-`the-hurt-are-tended` on both `century` *and* `millers` — newly applicable on
-both, because M9.6 phase 1's repaired harvest carries those worlds as far as
-`herbalism` — and `kills-are-butchered-for-bone` on `hunters`, which is a
-one-event-wide check in a scenario that was already documented as fragile. All
-three of those scenarios are green at the commit before, all three were measured
-against it rather than assumed, and all three are written up in
-[bugs.md](bugs.md) and [changelog.md](changelog.md). The open balance question
-M9.6 phase 1 raises — a fruit tree now yields what its table always claimed,
-which is several times what the world has had since M9.5 phase 3 — is in the
-changelog and is the owner's to answer.
+`npm run sim:check:all` is **19 scenarios**, and since M11 phase 17d it does
+not judge wall-clock time: nineteen worlds back to back in one process is a
+measure of the machine as much as of the world. `perf-budget` is judged when
+a scenario runs alone, against a floor scaled by population (100 µs a step
+plus 16 µs a person); `crowded`, `century` and `lean` pass it alone and
+**`labour` does not** (see `bugs.md`).
 
-- `crowded`'s **`perf-budget`** has been failing since before M7. M9 phase 4
-  made it worse rather than better, by 17%, and `optimizations.md` and
-  `bugs.md` between them name the cause: a relationship graph that grew denser
-  because people who work side by side now know each other, walked daily by a
-  `decay` that can never delete an edge. **This is the real one.**
-- `century`'s **`the-hurt-are-tended`** is newly *applicable* rather than newly
-  broken. Phase 5 pushed worlds far enough up the tree that `century` reaches
-  herbalism, making it the only scenario in the suite that exercises tending at
-  all — and on its first exposure nobody tends anybody. See `bugs.md`.
-- `millers`' **`spatial-hash-spreads`** is a mis-specified instrument: one
-  snapshot on the final tick of a nineteen-person world, against a bound that
-  `items * 0.5` pushes above the floor of 8 exactly where the floor was meant to
-  protect. `band` and `crowded` both got *less* clustered on the same change.
-  See `bugs.md`.
+What stays red in the matrix, every one written up in [bugs.md](bugs.md)
+with the reason it is not tuned green:
+- **`bands-take-sides`** on the well-fed worlds (`farmers`, `herders`,
+  `stewards`) since 14c: a well-fed people shrugs off a neighbour. A design
+  question for the owner — the project's arc is toward conflict.
+- **`violence-concentrates`** and **`peoples-drift-apart`**, phase 14's gate,
+  met only in part on single seeds (40-47% of blows near a camp at twenty
+  seeds against a floor of 50%).
+- **One- and two-event checks on single seeds** — `kin-outrank-strangers`,
+  `research-is-social`, `techs-are-refined`, `walkers-do-not-grind`,
+  `jobs-bias-work` — and **`millers`' seed**, which since phase 17a
+  collapses on its one run while the ten-seed cohort holds at 97.5%.
+
+**The cohort is where rare things are read.** `npm run sim:seeds` prints,
+besides survival and conflict, four pooled lines M11 added: DEFENCE (the
+witness's ladder and captivity, phase 15), BODIES (found, investigated,
+named rightly and wrongly, phase 16), BANDS (exile, factions, the way back
+in, phase 5 via 17b) and TRIPWIRES (the chains one event wide in a single
+run, 17d). A check that is one event a run belongs there, not in the matrix.
+
+**Mean survival, `lean` at twenty seeds, is about 50%** and has been since
+phases 11b-12b (sabotage, raids, and NPC blows no longer lost at nine
+tiles); the 88.1% of phase 8 is a different world. `century` sits at 77-81%.
+Both are inside what twenty seeds can resolve across the whole of phases
+15-17.
 
 | milestone | state |
 |---|---|
@@ -141,7 +137,8 @@ changelog and is the owner's to answer.
 | M11 phase 11c — the raid organiser | shipped 2026-09-22. `sabotage` priced as a crime in `ORDER_COST`; `Factions.warParty` and `BandSystem.considerRaid` send a party to plunder the despised neighbour and burn the hated one |
 | M11 phase 15 — defending what is yours, and captivity | shipped 2026-09-23. Owner's notes 6 and 9 and the old 11d: a watched use happens and is remembered (15a); the witness's ladder — warned off, held (`restrain`), a call for help (15b); rope and `bind` (15c); captives taken with a rope, held by attention, home by adoption (15d); the border guard (15e); `DECISIVE_GAP` as a ratio (15f). Gate: `the-watched-intervene` and `captives-are-taken`, both failing on the build before; `guards-see` not shipped (it discriminated nothing). Captivity is rare and never lasts — two design questions for the owner in `bugs.md` |
 | M11 phase 16 — the body stays | shipped 2026-09-23. Owner's note 1: every death leaves a body (16a); it decays, and can be cut up past knowing or dragged into water (16b); whoever sees it finds it, and a widow is widowed when she knows (16c); a killing is looked into through witnesses, motives and blood, and named — sometimes wrongly (16d); the player sees and can do all of it (16e). The gate added killers hiding a body nobody saw fall. Cohort: 78-87% of bodies found; 45-55% of investigations name the killer, 10-13% somebody else |
-| **M11 Block V — phase 17** | **next.** The closing debt of M11. Planned commit by commit in [m11_block_v_plan.md](m11_block_v_plan.md) |
+| M11 phase 17 — the close | shipped 2026-09-23. `gift` emitted by the Kit and by a spare tool given away, measured to move renown little (17a); phase 5's four checks — `gossip-is-aimed` per run, exile, factions and adoption in the cohort (17b); a field can be trampled (17c); the measurement policy — wall clocks alone and scaled, tripwires in the cohort (17d); these documents (17e). **M11 is complete** |
+| **M12 — the world beyond the island** | **next.** The Spore-like arc: a world map, migration, civilisations, caravans. Sketched in [m11_plan.md](m11_plan.md)'s "Para el futuro"; it gets its own document before any code |
 | M9.6 phases 4b–5 — happiness reads, and sleeping rough | planned; 4a (the field) shipped with M11 phase 5a. The `security` channel's writers and readers are taken over by M11 phase 14; `comfort`, `belonging` and `purpose` stay here |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | ~~M10 — standing, territory and raids between bands~~ | folded into M11: standing is phase 7, sabotage and raids are phase 11, territory and the border guard are Block V phases 14 and 15 |
@@ -175,6 +172,32 @@ documents are not comparable with post-M7 ones; each milestone's entry in
 [changelog.md](changelog.md) carries its own before-and-after pair.
 
 ---
+
+## What M11 leaves out on purpose
+
+Each was in reach and was not built, for a reason that is still true.
+
+- **Other readers of `conspiracyAgainst`.** Phase 5 built factions to cast
+  somebody out; a faction that plots the chief's fall, or a feud between two
+  families, would read the same function. Left because exile is the only
+  reader the cohort shows firing reliably (factions in 7-10 seeds of twenty),
+  and a second reader of a thing that rarely forms is a mechanism nobody sees.
+- **The party half of `brewing`.** `toast` answers loneliness; a feast that
+  gathers a band, and that a chief throws to buy standing, is the other half.
+  It wants the surplus `gift` also wants (17a: nobody carries a spare) — the
+  same missing economy, better built once.
+- **The speed of `the_wheel`.** The cart carries more; that it should also
+  move a hauler faster touches `MovementSystem` everywhere, for a node that
+  arrives late in any run.
+- **Pinning the tech web's layout.** The web moves when a node is added
+  (`bugs.md`); a pinned layout is a UI pass of its own.
+- **`FamilyTree`'s zoom on a phone.** The same pass.
+- **The mood channels `comfort`, `belonging` and `purpose`.** Phase 14 gave
+  `security` its writers and readers because fear needed them; the other
+  three stay in [m9_6_plan.md](m9_6_plan.md) phases 4b-4d.
+- **Two things phase 15-17 found and left for the owner** (`bugs.md`): whether
+  children may be taken captive, and whether captives should be kept — tied or
+  watched — rather than escaping at the first quiet moment.
 
 ## The order, and why it is this order
 

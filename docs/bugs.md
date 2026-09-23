@@ -3,6 +3,31 @@
 As of 2026-09-23. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found closing M11 (phase 17), 2026-09-23
+
+### `labour` is slow, alone, against the scaled floor
+
+1,156 steps/s at a peak of 37 people, against a floor of 1,445 — the only
+scenario that fails `perf-budget` run alone under 17d's policy. It is also
+the scenario where walkers grind (`walkers-do-not-grind`, 2,643 stuck ticks
+at one site on one build of phase 15): hauling under a chief's order to a
+site the path cannot reach well. The two are very likely one cause, not
+measured as such.
+
+### Nobody carries a spare, so `gift` barely fires
+
+Crafting stops at `RecipeDef.keep`, so the only spare anybody holds is an
+inheritance. The big man converting wealth into standing — the reason
+`gift` was kept (17a) — needs a surplus: crafting past `keep` for a
+purpose, or stores a household can draw gifts from.
+
+### `millers`' one seed collapses since 17a
+
+Its single run in the matrix dies out (14 deaths of exposure, 14 killings)
+and fails four checks with it, while its ten-seed cohort holds at 97.5%.
+Chaos on one seed, after a change that moved nothing in the cohort; not
+tuned.
+
 ## Found shipping M11 phase 16 (the body), 2026-09-23
 
 ### "Neither none nor all" is a cohort reading, not a check
