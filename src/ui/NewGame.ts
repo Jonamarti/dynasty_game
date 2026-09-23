@@ -23,6 +23,8 @@ import type { Simulation, Band } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { SKILLS, type Skill } from '../sim/entities/Person.ts';
 import { DEFAULT_NORMS, type EventType } from '../sim/social/Events.ts';
+import { TUNABLES } from '../sim/core/Difficulty.ts';
+import { sliderRow, type SliderRow } from './SliderRow.ts';
 
 /** Points to spend across the ten skills, and the ceiling on any one of them. */
 const POINT_BUDGET = 60;
@@ -32,6 +34,30 @@ const POINT_CAP = 40;
 const SHORTLIST = 3;
 
 type Step = 'tribe' | 'person' | 'skills';
+
+/**
+ * M11 phase 12c. The two settings that decide what the first step offers,
+ * lifted out of the settings screen's thirty-odd rows to where the choice they
+ * shape is made. Their bounds come from `TUNABLES`, so the two screens cannot
+ * disagree about what is allowed.
+ */
+const POPULATION_PATHS = ['population.bands', 'population.peoplePerBand'] as const;
+type PopulationPath = typeof POPULATION_PATHS[number];
+
+export interface PopulationHooks {
+  /** Record `value` for `path` and rebuild the island from it. */
+  change(path: PopulationPath, value: number): void;
+  /** The current difficulty's value for `path`, which is where ↺ goes back to. */
+  anchorOf(path: PopulationPath): number;
+}
+
+/**
+ * How long a drag rests before the island is rebuilt. Every value is a new
+ * world, and generating one per pixel of a drag across thirty would stall it.
+ */
+const REBUILD_DELAY_MS = 180;
+
+const COUNT_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
 
 export class NewGame {
   private root: HTMLElement;
@@ -43,10 +69,20 @@ export class NewGame {
   /** Rotates the shortlist without touching any simulation stream. */
   private shuffle = 0;
 
+  /** The two population rows, built once per visit: see `renderTribe`. */
+  private populationRows = new Map<PopulationPath, SliderRow>();
+  private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * `population` is how a population row asks for a different island. The
+   * caller records the setting and rebuilds the world, then hands it back
+   * through `setSim`; this screen never builds a `Simulation` itself.
+   */
   constructor(
     container: HTMLElement,
     private sim: Simulation,
-    private readonly onDone: (person: Person) => void
+    private readonly onDone: (person: Person) => void,
+    private readonly population?: PopulationHooks
   ) {
     this.root = document.createElement('div');
     this.root.className = 'newgame';
@@ -58,6 +94,7 @@ export class NewGame {
   /** Points character creation at a rebuilt world. See `Renderer.setSim`. */
   setSim(sim: Simulation): void {
     this.sim = sim;
+    if (this.isOpen && this.step === 'tribe') this.renderTribeOptions();
   }
 
   get isOpen(): boolean {
@@ -76,6 +113,9 @@ export class NewGame {
   private close(): void {
     this.root.hidden = true;
     this.root.innerHTML = '';
+    this.populationRows.clear();
+    if (this.rebuildTimer !== null) clearTimeout(this.rebuildTimer);
+    this.rebuildTimer = null;
   }
 
   // -------------------------------------------------------------------------
@@ -134,16 +174,91 @@ export class NewGame {
   // -------------------------------------------------------------------------
 
   private render(): void {
-    const body =
-      this.step === 'tribe' ? this.tribeStep() :
-      this.step === 'person' ? this.personStep() :
-      this.skillsStep();
-
+    this.populationRows.clear();
+    if (this.step === 'tribe') {
+      this.renderTribe();
+      return;
+    }
+    const body = this.step === 'person' ? this.personStep() : this.skillsStep();
     this.root.innerHTML = '<div class="newgame-card">' + body + '</div>';
   }
 
-  private tribeStep(): string {
-    const cards = this.sim.bands.filter(b => !b.outcast).map(band => {
+  /**
+   * The tribe step, built as nodes rather than one string because two of its
+   * rows are sliders: rebuilding a range while it is under the pointer kills
+   * the drag (see `SliderRow`), so a rebuilt island redraws only the title and
+   * the tribe cards, through `renderTribeOptions`, and never the rows.
+   */
+  private renderTribe(): void {
+    this.root.innerHTML =
+      '<div class="newgame-card">' +
+      '<div class="newgame-title"></div>' +
+      '<div class="newgame-lead">The world is already made and already inhabited. ' +
+      'Choose whose it is you were born among.</div>' +
+      '<div class="newgame-population"></div>' +
+      '<div class="newgame-options"></div>' +
+      '</div>';
+    const host = this.root.querySelector('.newgame-population') as HTMLElement;
+    if (this.population) {
+      for (const path of POPULATION_PATHS) host.appendChild(this.populationRow(path, this.population));
+    } else {
+      host.remove();
+    }
+    this.renderTribeOptions();
+  }
+
+  private populationRow(path: PopulationPath, hooks: PopulationHooks): HTMLElement {
+    const tunable = TUNABLES.find(t => t.path === path)!;
+    const request = (value: number): void => {
+      if (this.rebuildTimer !== null) clearTimeout(this.rebuildTimer);
+      this.rebuildTimer = setTimeout(() => {
+        this.rebuildTimer = null;
+        if (value !== this.populationOf(path)) hooks.change(path, value);
+      }, REBUILD_DELAY_MS);
+    };
+    const row = sliderRow(
+      {
+        label: tunable.label, hint: tunable.hint,
+        min: tunable.min, max: tunable.max, step: tunable.step, places: tunable.places,
+      },
+      this.populationOf(path),
+      request,
+      () => {
+        const anchor = hooks.anchorOf(path);
+        row.set(anchor, false);
+        request(anchor);
+      }
+    );
+    row.set(this.populationOf(path), this.populationOf(path) !== hooks.anchorOf(path));
+    this.populationRows.set(path, row);
+    return row.el;
+  }
+
+  /** What the island in front of the player was actually built with. */
+  private populationOf(path: PopulationPath): number {
+    return path === 'population.bands'
+      ? this.sim.config.population.bands
+      : this.sim.config.population.peoplePerBand;
+  }
+
+  private renderTribeOptions(): void {
+    const title = this.root.querySelector('.newgame-title');
+    const options = this.root.querySelector('.newgame-options');
+    if (!title || !options) return;
+    const tribes = this.sim.bands.filter(b => !b.outcast).length;
+    title.textContent = 'An island, and ' + (COUNT_WORDS[tribes] ?? String(tribes)) +
+      (tribes === 1 ? ' people' : ' peoples') + ' on it';
+    options.innerHTML = this.tribeCards();
+    // `set` never fires the change callback, so this cannot loop back into a
+    // rebuild; it only marks a row as moved off the difficulty's value.
+    for (const [path, row] of this.populationRows) {
+      const value = this.populationOf(path);
+      row.set(value, this.population !== undefined && value !== this.population.anchorOf(path));
+    }
+  }
+
+  private tribeCards(): string {
+    return this.sim.bands.filter(b => !b.outcast).map(band => {
       const members = this.sim.livingPeople().filter(p => p.bandId === band.id);
       const biome = this.sim.world.biomeAt(band.homeX, band.homeY);
       return (
@@ -155,13 +270,6 @@ export class NewGame {
         '</button>'
       );
     }).join('');
-
-    return (
-      '<div class="newgame-title">An island, and three peoples on it</div>' +
-      '<div class="newgame-lead">The world is already made and already inhabited. ' +
-      'Choose whose it is you were born among.</div>' +
-      '<div class="newgame-options">' + cards + '</div>'
-    );
   }
 
   private personStep(): string {

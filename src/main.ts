@@ -319,6 +319,18 @@ const newGame = new NewGame(document.body, sim, person => {
   camera.snapTo(person.x, person.y);
   paused = false;
   hud.setPaused(false);
+}, {
+  // M11 phase 12c: how many tribes and how many in each, asked where the
+  // tribe is chosen. Recorded exactly as the settings screen's own `edit`
+  // records a field — a value equal to the difficulty's is no override — and
+  // spent through the same pre-start rebuild its Begin button uses.
+  change: (path, value) => {
+    if (value === valuesFor(settings.preset)[path]) delete settings.overrides[path];
+    else settings.overrides[path] = value;
+    saveSettings(settings);
+    if (worldWouldDiffer()) rebuildBeforeStart();
+  },
+  anchorOf: path => valuesFor(settings.preset)[path] ?? 0,
 });
 
 /**

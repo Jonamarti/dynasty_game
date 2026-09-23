@@ -139,6 +139,14 @@ const ORGANISED_ORDER_BONUS = 0.1;
 const RESUME_WINDOW = 2000;
 
 /**
+ * Where the outcast band's id starts, clear of every founding band's. Named
+ * (M11 phase 12c) because the renderer has to tell the outcasts apart to give
+ * them their own neutral colour rather than whichever tribe's their id
+ * happened to fall on modulo the palette.
+ */
+export const OUTCAST_BAND_ID_BASE = 1000;
+
+/**
  * Renown retained per in-game day, M11 phase 6c. Slower than the 0.985
  * `RelationshipGraph` uses for its `deeds` component, deliberately: an
  * opinion is one person's fading recollection, renown is a household's own
@@ -1199,7 +1207,7 @@ export class Simulation {
     if (existing) return existing;
 
     const band: Band = {
-      id: this.bands.length + 1000,
+      id: this.bands.length + OUTCAST_BAND_ID_BASE,
       name: 'the outcast',
       homeX: this.world.width / 2,
       homeY: this.world.height / 2,

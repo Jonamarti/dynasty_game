@@ -29,7 +29,7 @@ import { knowsPersonCondition } from '../sim/social/Knowledge.ts';
 import { Camera, TILE } from './Camera.ts';
 import { Floaters } from './Floaters.ts';
 import {
-  SpriteAtlas, BAND_COLORS, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
+  SpriteAtlas, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
 } from './Sprites.ts';
 
 const BIOME_COLORS: Record<Biome, [string, string]> = {
@@ -1072,16 +1072,16 @@ export class Renderer {
     ctx.fill();
 
     const sizeClass = sizeClassOf(person);
-    const bandColorIndex = person.bandId % BAND_COLORS.length;
+    const colorIndex = bandColorIndex(person.bandId);
 
     if (scale < PERSON_LOD_BELOW) {
       // Too small on screen for a face or a tool to read. One `drawImage`,
       // matching the shape `if (scale > 20)` already gives building icons.
-      this.atlas.drawSilhouette(ctx, sizeClass, bandColorIndex, px, py, this.atlas.bodyDrawSize(sizeClass, w) * 1.15);
+      this.atlas.drawSilhouette(ctx, sizeClass, colorIndex, px, py, this.atlas.bodyDrawSize(sizeClass, w) * 1.15);
     } else {
       const bodySize = this.atlas.bodyDrawSize(sizeClass, w);
       this.atlas.drawPerson(ctx, {
-        sizeClass, bandColorIndex,
+        sizeClass, bandColorIndex: colorIndex,
         pose: this.walkPoseFor(person, at),
         hairVariant: hairVariantOf(person),
         hasBeard: hasBeardOf(person),

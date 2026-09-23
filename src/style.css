@@ -615,6 +615,10 @@ html, body, #app {
 
 .newgame-options { display: grid; gap: 8px; }
 
+/* M11 phase 12c: the two population sliders, reusing `.settings-row` whole. */
+.newgame-population { margin: -4px 0 12px; }
+.newgame-population .settings-row:last-child { border-bottom: none; }
+
 .newgame-option {
   display: block;
   width: 100%;

@@ -6,6 +6,38 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 12c: how many tribes, asked where the tribe is chosen
+
+**The note** (owner's note 4) asked for the number of tribes and of people per
+tribe on the new-game screen. Both settings already existed —
+`population.bands` (1-8) and `population.peoplePerBand` (2-30), each marked
+`restart` — but only among the settings screen's thirty-odd rows.
+
+**The change.**
+- `NewGame`'s tribe step gains two `sliderRow`s, with their bounds and hints
+  read from `TUNABLES` so the two screens cannot disagree. A change is recorded
+  in `main.ts` exactly as the settings screen's own `edit` records one (a value
+  equal to the difficulty's is no override), saved, and spent through
+  `rebuildBeforeStart` — the same pre-start rebuild Begin uses. `NewGame` never
+  builds a `Simulation` itself.
+- The step is now built as nodes: rebuilding a range under the pointer kills
+  the drag, so a rebuilt island redraws only the title and the tribe cards.
+  A drag rests 180 ms before the island is rebuilt, because every value is a
+  new world.
+- The title counts: *"An island, and five peoples on it"*, where it always said
+  *"three"*.
+- `BAND_COLORS` had six colours for up to eight tribes, and the outcast band
+  (id 1000 and up, now `OUTCAST_BAND_ID_BASE`) wore whichever tribe's colour
+  its id fell on modulo six. Now eight tribe colours and a neutral grey for the
+  outcasts, read through `bandColorIndex`. The sprite atlas pre-renders every
+  colour: it goes from 174 cells (1344×1248, about 6.7 MB of canvas) to 249
+  (1536×1536, about 9.4 MB).
+
+**Bit-identical** in `sim:check:all --verbose`. The character-creation e2e spec
+now moves the tribe count to five and checks the cards and the title follow.
+
+---
+
 ## 2026-09-23 — M11 phase 12b, second commit: NPCs stop losing the attacks they score from afar
 
 **The defect.** The same first-tick test the first commit removed from the

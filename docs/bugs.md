@@ -62,15 +62,6 @@ member of that band is there to see them — the ambient awareness the owner's
 standing rule forbids. Phase 14c, where the counts come from members'
 sightings instead.
 
-### The new-game screen says "three peoples" and there are six band colours for eight bands
-
-The title in `NewGame` is a fixed string, whatever `population.bands` says;
-and `population.bands` goes to 8 while `BAND_COLORS` has six entries, so the
-seventh and eighth tribes are drawn in the first and second tribes' colours.
-Phase 12c.
-
-## Found shipping M11 phase 11c, 2026-09-22
-
 ### `perf-budget` is a wall-clock check and it flakes hard under matrix load
 
 The same build, the same scenario, the same machine: `lean` reports **2,071

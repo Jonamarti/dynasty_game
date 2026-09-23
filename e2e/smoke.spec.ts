@@ -1339,6 +1339,16 @@ test('character creation picks a life inside a world that already exists', async
   // blurb, and the world behind them already generated.
   const tribes = page.locator('.newgame-option');
   await expect(tribes).toHaveCount(3, { timeout: 15_000 });
+  await expect(page.locator('.newgame-title')).toHaveText('An island, and three peoples on it');
+
+  // M11 phase 12c: how many tribes is asked here, where it is chosen, and a
+  // new number is a new island — with a title that no longer says "three".
+  const tribeCount = page.locator('.newgame-population .settings-number').first();
+  await tribeCount.fill('5');
+  await tribeCount.dispatchEvent('change');
+  await expect(tribes).toHaveCount(5, { timeout: 15_000 });
+  await expect(page.locator('.newgame-title')).toHaveText('An island, and five peoples on it');
+  await expect(tribeCount).toHaveValue('5');
   await tribes.first().click();
 
   // A shortlist of that tribe's adults, and a reshuffle that shows a different
