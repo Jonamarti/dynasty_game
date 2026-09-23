@@ -6,6 +6,54 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 14a: fear gets its writers, and nothing reads them yet
+
+The owner's note 7: little fear and people talk to strangers and range far;
+a lot, and they keep to their own ground, avoid outsiders, huddle with their
+own and may attack whoever comes in — with the hatred growing out of
+*concrete incidents*. `Person.mood.security` was built for this in M9.6 4a
+and had no writer. It has four now, all in the new `sim/social/Fear.ts`:
+
+| source | where | weight |
+|---|---|---|
+| suffering `assault`, `murder`, `threaten`, `theft` | `SocialSystem.absorb`, the victim | 25 × `FEARED[type]` |
+| seeing an outsider do it to one of your band | `absorb`, a witness | 10 × |
+| being told of it | `absorb`, hearsay | 4.5 × confidence × |
+| an outsider standing on your band's ground | `sightIntruders`, six passes a day | 0.15 each, 0.6 cap, ×0.3 beyond the inner third |
+
+All four sit behind `memory.record`, so only news frightens: a story already
+known frightens nobody twice. Bystanders are frightened only by an *outsider*
+harming one of *their* band — a brawl between neighbours is a quarrel, a
+stranger beating your cousin is a reason to stay near home. That needed the
+victim's band on `absorb`, now a parameter.
+
+**The second layer is `Relationship.dread`**, fear of one person, fed only by
+what they did to you (30 × at full weight), decaying at 0.993 a day — slower
+than `deeds`, because a grudge can be talked out of somebody and a flinch
+cannot. It is **not** in `opinion`: the bully is hated and feared, and those
+are separate questions for separate verbs. It keeps an edge from being pruned
+while it lasts, and does not touch `lastContact`.
+
+**Where the plan said "daily block" the pass runs six times a day.** The
+daily block runs at midnight, when everybody is under a roof and nobody is
+watching the meadow; a pass there would have measured who sleeps where. What
+it sees also goes into `Simulation.sightings` — which band saw which outsider
+on its ground, and when — for 14c, which is to read that instead of counting
+every foreigner in range of a camp whether anybody was looking.
+
+**The sighting weight was measured down by a factor of four before anything
+read it.** At the first value `craft`'s whole population averaged −72
+security from strangers merely being about — ambient fear, the opposite of
+the note's. Now the averages (`mood_security_sum / mood_samples`) are
+`crowded` −3.7, `lean` −13.6, `century` −16.9, `craft` −31.2: fear tracks how
+violent a world is, not how close its camps sit.
+
+**Bit-identical in the world**: `sim:check:all --verbose` diffs to zero once
+the new `security_*`/`dread_*` counters and `mood_security_sum` — which now
+has writers — are set aside. Nothing reads either layer until 14b.
+
+---
+
 ## 2026-09-23 — notes.txt: the game in Spanish, with a language switch in the menus
 
 The third of the owner's notes of 2026-09-23: *"translate the game to Spanish

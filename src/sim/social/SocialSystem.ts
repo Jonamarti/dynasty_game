@@ -29,6 +29,7 @@ import type { BandRelations } from './BandRelations.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { t } from '../../i18n/i18n.ts';
+import { frighten } from './Fear.ts';
 
 export interface LifeEvent {
   tick: number;
@@ -313,7 +314,8 @@ export class SocialSystem {
     // The victim always knows, however dark it was and whoever else was
     // looking — unless the caller said otherwise, because there was no
     // victim standing there to know it. See `notifyTarget` above.
-    if (target && notifyTarget) this.absorb(target, event, actor, true, 1, null);
+    const targetBandId = target?.bandId ?? null;
+    if (target && notifyTarget) this.absorb(target, event, actor, true, 1, null, targetBandId);
 
     let witnesses = 0;
     for (const bystander of peopleHash.queryRadius(actor.x, actor.y, sightRadius)) {
@@ -327,7 +329,7 @@ export class SocialSystem {
         // their own name being talked about.
         if (notifyTarget) continue;
       }
-      this.absorb(bystander, event, actor, true, 1, null);
+      this.absorb(bystander, event, actor, true, 1, null, targetBandId);
       witnesses++;
     }
     if (witnesses > 0) telemetry.count('witnessed', witnesses);
@@ -365,11 +367,15 @@ export class SocialSystem {
     actor: Person,
     firsthand: boolean,
     confidence: number,
-    sourceId: number | null
+    sourceId: number | null,
+    targetBandId: number | null
   ): void {
     if (!observer.memory.record(event, firsthand, confidence, sourceId)) return;
     if (observer.id === actor.id) return;
     this.introduce(observer, actor);
+    // M11 phase 14a. After `record`, so only news frightens anybody: a story
+    // already known, told again, is not a second reason to be afraid.
+    frighten(observer, event, actor, firsthand, confidence, targetBandId, this.relationships);
 
     const norms = this.normsFor(observer);
     const tolerance = norms ? norms[event.type] : 1;
@@ -689,7 +695,8 @@ export class SocialSystem {
     };
 
     const before = listener.memory.size;
-    this.absorb(listener, event, actor, false, confidence, teller.id);
+    this.absorb(listener, event, actor, false, confidence, teller.id,
+      story.targetId === null ? null : peopleById.get(story.targetId)?.bandId ?? null);
     if (listener.memory.size > before) telemetry.count('rumor_spread');
   }
 

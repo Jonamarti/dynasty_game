@@ -62,7 +62,7 @@ const ADOPTION_THRESHOLD = -10;
  * doorstep-sized question, but a band should notice strangers camped
  * anywhere within sight of home, not only underfoot.
  */
-const TERRITORY_RADIUS = 40;
+export const TERRITORY_RADIUS = 40;
 
 /**
  * How much one foreign person, seen once, at maximum pantry pressure, costs

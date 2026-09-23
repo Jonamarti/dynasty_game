@@ -31,14 +31,30 @@ export interface Relationship {
    * their deeds say otherwise.
    */
   bias: number;
+  /**
+   * Fear of this person, 0-100, M11 phase 14. Fed only by what they did to
+   * the viewer (`Fear.frighten`), never by what anybody was told.
+   *
+   * **Not part of `opinion`.** The person who beat you is hated *and* feared,
+   * and those are different questions: whether you would hurt them, and
+   * whether you want to be anywhere near them. Summing the two would make a
+   * victim's hatred and their fear cancel or double for no reason anyone
+   * could see in the Ties tab.
+   */
+  dread: number;
 }
 
 function empty(): Relationship {
-  return { kinship: 0, deeds: 0, familiarity: 0, romance: 0, lastContact: 0, bias: 0 };
+  return { kinship: 0, deeds: 0, familiarity: 0, romance: 0, lastContact: 0, bias: 0, dread: 0 };
 }
 
-/** Retained per in-game day. Familiarity is the volatile one. */
-const DECAY_PER_DAY = { deeds: 0.985, familiarity: 0.94, romance: 0.99 };
+/**
+ * Retained per in-game day. Familiarity is the volatile one. Dread is the
+ * stubborn one — slower than `deeds`, because a grudge can be talked out of
+ * somebody and a flinch cannot: about a hundred days to halve, against
+ * forty-five for a deed.
+ */
+const DECAY_PER_DAY = { deeds: 0.985, familiarity: 0.94, romance: 0.99, dread: 0.993 };
 
 export class RelationshipGraph {
   /** viewerId -> subjectId -> relationship. */
@@ -125,6 +141,20 @@ export class RelationshipGraph {
     rel.lastContact = tick;
   }
 
+  /**
+   * Adds to the dread component, M11 phase 14. Deliberately does not touch
+   * `lastContact`: being frightened by somebody is not having spent time with
+   * them, and `lastContact` is read by conversation as exactly that.
+   */
+  addDread(viewerId: number, subjectId: number, delta: number): void {
+    const rel = this.edge(viewerId, subjectId);
+    rel.dread = Math.max(0, Math.min(100, rel.dread + delta));
+  }
+
+  dread(viewerId: number, subjectId: number): number {
+    return this.peek(viewerId, subjectId)?.dread ?? 0;
+  }
+
   /** Blood and marriage. Set once and never decayed. */
   setKinship(viewerId: number, subjectId: number, value: number): void {
     this.edge(viewerId, subjectId).kinship = value;
@@ -151,11 +181,13 @@ export class RelationshipGraph {
         rel.deeds *= DECAY_PER_DAY.deeds;
         rel.familiarity *= DECAY_PER_DAY.familiarity;
         rel.romance *= DECAY_PER_DAY.romance;
+        rel.dread *= DECAY_PER_DAY.dread;
         // An edge with nothing left in it is just noise in a map that will hold
-        // centuries of acquaintances.
+        // centuries of acquaintances. Not while the viewer still fears them.
         if (
           Math.abs(rel.deeds) < 0.5 && rel.familiarity < 0.5 &&
-          Math.abs(rel.romance) < 0.5 && rel.kinship === 0 && rel.bias === 0
+          Math.abs(rel.romance) < 0.5 && rel.kinship === 0 && rel.bias === 0 &&
+          rel.dread < 0.5
         ) {
           row.delete(subjectId);
         }

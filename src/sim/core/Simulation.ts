@@ -53,7 +53,7 @@ import {
   LifeSystem, setChildFactory, findHeir, settleEstate,
 } from '../systems/LifeSystem.ts';
 import { linkFamily } from '../social/SocialSystem.ts';
-import { BandSystem } from '../systems/BandSystem.ts';
+import { BandSystem, TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import { foundBand, type FoundingContext } from '../systems/Founding.ts';
 import { KnowledgeSystem, countHolders } from '../systems/KnowledgeSystem.ts';
 import { ORDER_REFUSED, type Notice } from '../knowledge/Synthesis.ts';
@@ -72,6 +72,7 @@ import {
 } from '../entities/Inscription.ts';
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
+import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 
 /**
  * Something somebody worked out, waiting to be reported. See
@@ -1243,6 +1244,26 @@ export class Simulation {
       kind: 'milestone',
     });
     return true;
+  }
+
+  /**
+   * Outsiders seen standing on each band's ground, by whom it was seen and
+   * when — M11 phase 14a. Written only by `lookForIntruders`; read from 14c by
+   * the territory engine, which until then counted every foreigner within
+   * range of a camp whether or not anybody from the band was looking.
+   */
+  readonly sightings: Sightings = new Map();
+  private readonly sightingScratch: Person[] = [];
+
+  private lookForIntruders(): void {
+    const territories = new Map<number, Territory>();
+    for (const band of this.bands) {
+      if (band.outcast) continue;
+      territories.set(band.id, { bandId: band.id, homeX: band.homeX, homeY: band.homeY });
+    }
+    sightIntruders(
+      this.people, this.peopleHash, territories, TERRITORY_RADIUS, this.config.sightRadius,
+      this.time.tick, this.sightings, this.bands.find(b => b.outcast)?.id, this.sightingScratch);
   }
 
   /** The band of no band. Created the first time anyone is cast out. */
@@ -2698,6 +2719,10 @@ export class Simulation {
     if (this.time.tick % ALONGSIDE_EVERY === 0) {
       this.social.workingAlongside(this.people, this.peopleHash, this.time.tick);
     }
+
+    // M11 phase 14a: who is on whose ground, seen by whom. After
+    // `rebuildHashes` for the same reason as the pass above.
+    if (this.time.tick % SIGHTING_EVERY === 0) this.lookForIntruders();
 
     this.wildlifeSystem.update(this.animals, {
       world: this.world,
