@@ -30,7 +30,7 @@ describe('observable property', () => {
 
     expect(access(actor, store, [actor])).toEqual({
       ours: true,
-      allowed: true,
+      watched: false,
       seen: null,
       basis: 'own',
     });
@@ -41,7 +41,7 @@ describe('observable property', () => {
     const owner = person('Bo', 40, 40, 1);
     const store = new Building(BUILDINGS.stockpile!, 5, 5, 1);
 
-    expect(access(actor, store, [actor, owner]).allowed).toBe(true);
+    expect(access(actor, store, [actor, owner]).watched).toBe(false);
   });
 
   it('names an owner close enough to intervene', () => {
@@ -51,7 +51,7 @@ describe('observable property', () => {
     const store = new Building(BUILDINGS.stockpile!, 5, 5, 1);
 
     const result = access(actor, store, [actor, owner, stranger]);
-    expect(result.allowed).toBe(false);
+    expect(result.watched).toBe(true);
     expect(result.seen).toBe(owner);
     // A third-party witness can spread the story, but cannot enforce another
     // band's claim merely by standing nearby.
@@ -65,12 +65,12 @@ describe('observable property', () => {
     const store = new Building(BUILDINGS.stockpile!, 5, 5, 1);
 
     // Same layout as the watched case above, which refuses without an alliance.
-    expect(access(actor, store, [actor, owner]).allowed).toBe(false);
+    expect(access(actor, store, [actor, owner]).watched).toBe(true);
 
     const allies = new BandRelations();
     allies.add(0, 1, 100);
     const result = access(actor, store, [actor, owner], allies);
-    expect(result.allowed).toBe(true);
+    expect(result.watched).toBe(false);
     expect(result.ours).toBe(true);
   });
 });

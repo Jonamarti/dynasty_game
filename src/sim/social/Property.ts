@@ -8,7 +8,8 @@
  * standing close enough to see what is happening.
  *
  * Kept pure because the scorer asks this for many buildings on every think.
- * The deed, telemetry and refusal belong at the point where use is attempted.
+ * The deed, telemetry and any consequence belong at the point where use is
+ * attempted.
  */
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { Building } from '../entities/Building.ts';
@@ -34,7 +35,18 @@ const ALLY_STANDING = 55;
 export interface PropertyUse {
   /** True when no property offence exists in the first place. */
   ours: boolean;
-  allowed: boolean;
+  /**
+   * True when a member of the owning band is close enough to see the use.
+   *
+   * M11 phase 15a. This field used to be `allowed`, and being seen set it
+   * false — so a watched store was exactly as impossible to use as it had been
+   * under the membership test phase 4 replaced, which is the reverse of what
+   * phase 4's own plan asked for ("allowed anyway, but `seen` says whether an
+   * owner has line of sight… the witness may intervene"). Being seen is a fact
+   * about the deed, not a lock on the door, and it is now named as one: every
+   * reader decides for itself what being watched means to it.
+   */
+  watched: boolean;
   /** The nearest owner who can intervene, if there is one. */
   seen: Person | null;
   /**
@@ -55,7 +67,7 @@ export function mayUse(
   ctx: PropertyContext
 ): PropertyUse {
   if (building.ownerBandId === person.bandId) {
-    return { ours: true, allowed: true, seen: null, basis: 'own' };
+    return { ours: true, watched: false, seen: null, basis: 'own' };
   }
 
   // M11 phase 7c: a band this close to your own is effectively your own for
@@ -65,7 +77,7 @@ export function mayUse(
   // is exactly such a deed, built from real marriages and real trade, not a
   // permission anybody switched on.
   if (ctx.bandRelations.standing(person.bandId, building.ownerBandId) >= ALLY_STANDING) {
-    return { ours: true, allowed: true, seen: null, basis: 'ally' };
+    return { ours: true, watched: false, seen: null, basis: 'ally' };
   }
 
   const seen = ctx.peopleHash.findNearest(
@@ -76,14 +88,14 @@ export function mayUse(
   );
   if (seen) {
     return {
-      allowed: false,
+      watched: true,
       ours: false,
       seen,
       basis: 'seen',
     };
   }
   return {
-    allowed: true,
+    watched: false,
     ours: false,
     seen: null,
     basis: 'unseen',

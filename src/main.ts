@@ -1295,7 +1295,7 @@ function nearestStation(who: Person, stationId: string): Building | null {
   let bestDistance = Infinity;
   for (const building of sim.buildings) {
     if (!building.complete || building.def.id !== stationId) continue;
-    if (!sim.mayUseBuilding(who, building).allowed) continue;
+    if (sim.mayUseBuilding(who, building).watched) continue;
     if (!sim.world.sameRegion(who.x, who.y, building.centerX, building.centerY)) continue;
     const distance = who.distanceTo({ x: building.centerX, y: building.centerY });
     if (distance < bestDistance) {

@@ -1495,7 +1495,7 @@ export class Simulation {
       // bypass the rule obeyed by walking to the store.
       this.social.emit('trespass', person, null, 0.5, this.time.tick,
         this.peopleHash, this.config.sightRadius, true, store.ownerBandId);
-      if (!access.allowed) {
+      if (access.watched) {
         this.lastRefusal = explainPropertyUse(this.player ?? person, access, this.relationships);
         telemetry.count('property_use_stopped');
         return 0;
@@ -1512,7 +1512,7 @@ export class Simulation {
   storeWithinReach(person: Person) {
     return this.buildings.find(b =>
       b.complete && b.def.storage > 0 &&
-      this.mayUseBuilding(person, b).allowed &&
+      !this.mayUseBuilding(person, b).watched &&
       b.contains(person.x, person.y, 2)
     ) ?? null;
   }

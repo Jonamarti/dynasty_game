@@ -1092,7 +1092,7 @@ export class ActionSystem {
   ): boolean {
     const access = mayUse(person, building, ctx);
     if (access.ours) return true;
-    if (!access.allowed) {
+    if (access.watched) {
       ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius,
         true, building.ownerBandId);
       telemetry.count('property_use_stopped');
@@ -2183,7 +2183,7 @@ export class ActionSystem {
     for (const building of ctx.buildingsById.values()) {
       if (!building.complete) continue;
       if (!isHeap(building.def) && building.def.storage <= 0) continue;
-      if (!mayUse(person, building, ctx).allowed) continue;
+      if (mayUse(person, building, ctx).watched) continue;
       if (building.store.count('compost') <= 0) continue;
       const away = person.distanceTo({ x: building.centerX, y: building.centerY });
       if (away < bestAway) {

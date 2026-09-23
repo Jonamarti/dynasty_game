@@ -609,7 +609,7 @@ function buildingActions(
     });
   } else {
     const property = ctx.propertyUse?.(building);
-    const canUse = property?.allowed ?? true;
+    const canUse = !(property?.watched ?? false);
     const guarded = canUse || !property
       ? undefined
       : ctx.explainProperty?.(property) ?? t('someone from its band is watching');

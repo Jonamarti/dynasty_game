@@ -1211,7 +1211,7 @@ export class Brain {
         for (const b of owned) {
           if (!ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY)) continue;
           const access = mayUse(person, b, ctx);
-          if (!access.allowed || access.ours) continue;
+          if (access.watched || access.ours) continue;
           const d = person.distanceTo({ x: b.centerX, y: b.centerY });
           if (d < sabotageDistance) {
             sabotageDistance = d;
@@ -2336,7 +2336,7 @@ export class Brain {
    * and path regions are separate facts, but every scorer needs both.
    */
   private canUse(person: Person, building: Building, ctx: BrainContext): boolean {
-    return mayUse(person, building, ctx).allowed &&
+    return !mayUse(person, building, ctx).watched &&
       ctx.world.sameRegion(person.x, person.y, building.centerX, building.centerY);
   }
 
