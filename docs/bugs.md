@@ -3,6 +3,76 @@
 As of 2026-09-22. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found triaging the owner's notes of 2026-09-22
+
+All scheduled in [m11_block_v_plan.md](m11_block_v_plan.md); none fixed yet —
+the owner asked for the plan first.
+
+### Eating from the Kit tab never reaches the diet
+
+There are two implementations of eating. `ActionSystem.doEat` has written
+`macroIntakeToday` since M11 phase 8b; `Simulation.eatItem`, which the Kit
+tab's *Eat* button calls, predates it, says in its own comment that it must
+give "the same nourishment" as eating by order, and never learned the macros
+(nor the `eaten_<id>` counter). A player who only eats from the panel has a
+diet frozen at whatever it last was. Invisible to the harness, because no
+scenario possesses a player. Separately, and not a defect: the three *Diet*
+bars are shares of what was eaten and move only at midnight, so even the
+fixed path cannot make a bar rise on the click — the owner's note reads as
+expecting one to. And the bars do not refresh while the panel is open: they
+are drawn by `bar()` with no `data-need`, so `Hud.refreshPerson` never patches
+them and they change only when the panel is rebuilt. Phase 12a.
+
+### An attack ordered from more than nine tiles away ends silently on its first tick
+
+`doAttack` tests `PURSUIT_LIMIT` (9) before `approach`, so an attack on anyone
+further than that calls `finish` without moving. The limit is meant to catch a
+quarry pulling away and instead measures where the chase started; and `finish`
+is not `abandon`, so neither the player nor the telemetry hears why. NPCs that
+score an attack from that distance lose it the same way. Phase 12b.
+
+### M11 phase 4 shipped the reverse of its own plan
+
+The plan said a rival's building is "allowed all the same" and that `seen`
+only decides whether the use becomes a witnessed deed the witness can act on.
+`mayUse` returns `allowed: false` whenever an owner is in sight and
+`useProperty` abandons with `property_guarded`, so a watched store is as
+impossible to use as it was under the membership test phase 4 replaced. The
+owner's note 6 asks for what the plan asked for. Phase 15a.
+
+### A refusal line puts a stranger's name on screen
+
+`mayUse`'s `because` is `seen.name + ' is close enough to see them'`, and
+`Simulation.storeItem` copies it straight into `lastRefusal`. The watcher is
+usually from another band and usually a stranger, whose name the player is not
+meant to have. The same string also reaches the radial menu, as the reason
+a greyed-out option gives (`ActionCatalog.ts`, `guarded = property?.because`).
+Phase 13f.
+
+### Your own chronicle names people you do not know
+
+`SocialSystem.emit` writes `describeEvent(type, actor.name, target.name)` into
+the actor's and the victim's `chronicle`, with real names. Rob a stranger and
+your *Life* tab tells you what they are called. `rememberedAbout` already
+resolves names through `knowledgeOfPerson` for other people's histories; the
+player's own chronicle bypasses it because it is stored as finished text.
+Phase 13f, which stores ids and composes the text at display time.
+
+### `considerTerritory` is a sensor
+
+Besides the sign question recorded under phase 11c below, it counts every
+foreign person inside `TERRITORY_RADIUS` of a band's home whether or not any
+member of that band is there to see them — the ambient awareness the owner's
+standing rule forbids. Phase 14c, where the counts come from members'
+sightings instead.
+
+### The new-game screen says "three peoples" and there are six band colours for eight bands
+
+The title in `NewGame` is a fixed string, whatever `population.bands` says;
+and `population.bands` goes to 8 while `BAND_COLORS` has six entries, so the
+seventh and eighth tribes are drawn in the first and second tribes' colours.
+Phase 12c.
+
 ## Found shipping M11 phase 11c, 2026-09-22
 
 ### `perf-budget` is a wall-clock check and it flakes hard under matrix load
@@ -64,7 +134,7 @@ worth knowing: `if (pressure <= 0) return;` means a band whose stores are
 empty never resents an intrusion **at all**, so the territory engine is
 silent in exactly the scarcity `lean` was built to produce. Whoever picks
 this up should decide which rule was wanted and measure the other across
-twenty seeds.
+twenty seeds. **Scheduled as Block V phase 14c.**
 
 ### A raid that nobody from the victim's band sees does not move how the two peoples stand
 
@@ -84,6 +154,7 @@ its own comment already guards against) when a deed with no person target was
 witnessed by somebody of a band other than the actor's. Left out of 11c
 because it is a behavioural change to every property crime in the game, not
 only to raids, and it deserves its own commit and its own twenty seeds.
+**Scheduled as Block V phase 14e.**
 
 ## Found shipping M11 phase 11b, 2026-09-22
 
@@ -102,6 +173,7 @@ in. Whoever picks this up needs to decide what a ruined field actually means
 ground itself worse for a season — and gate `doSow`/`doReap` on `!ruined`
 once that is decided. `Brain`'s sabotage scoring and `ActionCatalog`'s menu
 both carry the same exclusion and both need it lifted together.
+**Scheduled as Block V phase 17c.**
 
 ### Two single-seed checks flip when `sabotage` is added to `Brain`'s candidates
 
@@ -247,6 +319,9 @@ anyone reaches for a second conspiracy mechanism and writes a second copy of
 this instead of a second caller of it.
 
 ### The plan's four new `simcheck` checks were not added
+
+**Scheduled as Block V phase 17b**, each verified failing on the build before
+5c-5f or dropped with the reason stated.
 
 `m11_plan.md`'s gate for this block asks for `exile-is-reachable`,
 `factions-form`, `gossip-is-aimed` and `the-cast-out-find-a-home`, each

@@ -6,6 +6,58 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 Block V triaged and planned: `notes.txt` emptied, no code touched
+
+The owner left sixteen notes in `notes.txt` on 2026-09-22, written playing the
+phase 11c build, and then asked for the whole of what M11 still owes planned
+commit by commit. **Nothing in `src/` or `tools/` changed**; the owner asked for
+the plan first, including for the two cheap defects it found.
+
+**Where it went.** A new document, [m11_block_v_plan.md](m11_block_v_plan.md),
+is now the single source for phases 12-17. `m11_plan.md` keeps an index table
+and a pointer rather than a second copy, because two copies of a plan drift
+exactly as two copies of code do. `next-steps.md` §7g indexes the notes, and its
+milestone table now shows 11b and 11c shipped, Block V next, and M10 folded into
+M11 — it had still said "11b-e next" and carried M10 as a separate milestone.
+
+**Why this order.** Repairs (12) and interface (13) first, because nearly all of
+both are bit-identical in the harness: no scenario possesses a player. Then
+**fear (14) before defending property (15)** — the owner's decision, and the
+reason is in the note itself: it complains about the early, scattered violence
+11b-11c produced (`lean`: murders 3 → 22), and a defence ladder tuned against
+that world would be mistuned the moment fear corrects it. The body (16) after
+both, because an investigation needs punishments that already exist. The
+closing debt (17) last, because its checks measure what 14-16 move.
+
+**The owner's second decision:** `cordage` makes rope from sticks or from
+thatch — two recipes with different ingredients, so whichever is to hand wins
+rather than one shadowing the other, shipped in the same commit as the `bind`
+verb that consumes it so the item is never declared and inert.
+
+**What the triage found rather than what the notes said**, all in
+[bugs.md](bugs.md):
+- eating from the Kit tab never reaches the diet, because `Simulation.eatItem`
+  is a second copy of `doEat` that predates macronutrients — and the diet bars
+  do not refresh while the panel is open;
+- an attack ordered from more than nine tiles ends on its first tick with
+  `finish` rather than `abandon`, so nothing says why, and NPCs lose every
+  attack they score between nine and twelve tiles the same way;
+- M11 phase 4 shipped the reverse of its own plan: being seen forbids using a
+  rival's building, where the plan said it is allowed and witnessed;
+- a stranger's name reaches the screen three ways — the property refusal, the
+  radial menu's reason, and the player's own chronicle;
+- `considerTerritory` counts intruders nobody saw;
+- the new-game title says "three peoples" whatever the setting, and there are
+  six band colours for up to eight bands;
+- `Person.mood` has no writer and no reader at all, because M9.6 4b-4d never
+  shipped; phase 14 takes over the `security` channel.
+
+**Debt that had no phase and now has one:** the `gift` deed still unemitted
+(17a), the four phase-5 checks never written (17b), fields that cannot be
+sabotaged (17c), `perf-budget` and the one-event checks (17d), `DECISIVE_GAP`
+never re-measured after 11a (15f), the border guard (15e), and a raid nobody
+from the victim's band sees not moving how the two peoples stand (14e).
+
 ## 2026-09-22 — M11 phase 11c: the raid organiser
 
 The piece the rest of phase 11 was built toward, and it is notable for how

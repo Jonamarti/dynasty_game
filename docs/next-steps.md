@@ -137,12 +137,14 @@ changelog and is the owner's to answer.
 | M11 phase 10, sixth commit — `dairying` and `wool` | shipped 2026-09-21. Both accrue into a pen's own `store` via a new `BuildingDef.herd.byproducts`, `dairying` a practice (`take` is the closest thing to a milking verb) and `wool` a device gating `RECIPES.wool_cloth` at the loom. Two real defects found by measurement: milk bred but was never eaten (`bestFood` always preferred meat's higher nutrition — fixed by having `doTake` share everything a pen holds rather than choosing one stack) and, even after that fix, wool bred but was never woven (the fix had shared only edible stacks, and wool answers no need at all — fixed by dropping the edibility filter). A third finding: adding this pair directly to `farmers`'s starting technologies moved that seed's cascade far enough to stop any field being sown for the whole run, so a new dedicated scenario, `herders`, carries the pastoral chain apart from farming instead, on the same argument that keeps `stewards` apart from `farmers`. `herders`, 20-seed cohort: 99.9% survival. `century` bit-identical. One node remains |
 | M11 phase 10, seventh and last commit — `brewing`, closing the tier | shipped 2026-09-21. `beer` and a new verb, `toast`, mirroring `doPlay` rather than routing through `doEat` — beer's nutrition is deliberately too low to ever win `bestFood`'s comparison, on purpose, so it needed its own verb regardless. A third scenario, `feasts`, apart from both `farmers` and `herders`, after measuring the same class of collision twice already: `farming` alone never got a field planted (wild grain is worthless without `grinding`), and `farming` with `grinding` got one planted but never sown (`brewing` was spending the same wild grain a sowing needs). `brewing`'s recipe reads only `pottery` in practice, so `farming` is left out of the scenario entirely. **All fifteen of M8.2's Neolithic nodes are now shipped.** `century` bit-identical throughout; `feasts` 20-seed cohort: 99.9% survival |
 | M11 phase 11a — two trainers for `fight` | shipped 2026-09-21. `docs/bugs.md`'s "no warriors" gap (`fight` trained only by landing a blow) blocked the rest of the phase, so it went first. `doHunt`'s kill trains a small trickle; a new verb, `spar`, is deliberate, mutual, same-band training between willing people — nobody is hurt, both sides gain skill and a little company. 20-seed `century`: 99.6% survival, in line with recent baselines; `sim:check:all`'s only side-changes fall on checks `bugs.md` already documents as one/two-event-wide tripwires |
-| **M11 phase 11b-e** | **next.** `Building.durability` and `sabotage`, a raiding-party organiser in `BandSystem.daily`, captivity as a `Person` state, and the UI readers. See `m11_plan.md`'s "Fase 11" for the breakdown |
-| M9.6 phases 4b–5 — happiness reads, and sleeping rough | planned; 4a (the field) shipped with M11 phase 5a; runs after M8.2 and before M10, so M10's fences have something to pay off in |
+| M11 phase 11b — `Building.durability` and `sabotage` | shipped 2026-09-22. Wear banked on the building, ruins stop giving shelter, water or produce, repair reuses `build` |
+| M11 phase 11c — the raid organiser | shipped 2026-09-22. `sabotage` priced as a crime in `ORDER_COST`; `Factions.warParty` and `BandSystem.considerRaid` send a party to plunder the despised neighbour and burn the hated one |
+| **M11 Block V — phases 12-17** | **next.** The owner's notes of 2026-09-22 (§7g) and everything else M11 still owes: repairs, the interface, fear, defending property with captivity (the old 11d), the body that stays, and the closing debt. Planned commit by commit in [m11_block_v_plan.md](m11_block_v_plan.md) |
+| M9.6 phases 4b–5 — happiness reads, and sleeping rough | planned; 4a (the field) shipped with M11 phase 5a. The `security` channel's writers and readers are taken over by M11 phase 14; `comfort`, `belonging` and `purpose` stay here |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
-| M10 — standing, territory and raids between bands | designed in M9's closing section; runs after M8.2 |
+| ~~M10 — standing, territory and raids between bands~~ | folded into M11: standing is phase 7, sabotage and raids are phase 11, territory and the border guard are Block V phases 14 and 15 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
-| Owner's list O1–O5 | **O1-O3 shipped in M9 phase 4; O4 in M11 phase 4.** O5 remains with M10. O6 and O7 shipped in pass A |
+| Owner's list O1–O5 | **O1-O3 shipped in M9 phase 4; O4 in M11 phase 4; O5's sabotage in M11 phase 11b**, and its border guard is Block V phase 15e. O6 and O7 shipped in pass A |
 
 **Thirty-four technologies**, fourteen recipes, twelve buildings, thirty-one items,
 thirty-seven actions (`sow`, `reap` and `spread` are new), twelve skills (`heal`, `cook` and
@@ -850,6 +852,47 @@ Two of the notes have entries in `bugs.md` written from the other side — the
 graphs relaxing every frame, and the shortened season's effect on a gated
 harvest — both previously left alone as "not worth a phase". The owner has now
 met both from inside the game, which settles that.
+
+## 7g. The owner's notes of 2026-09-22
+
+Sixteen notes, written while playing the M11 phase 11c build. All sixteen
+given a destination and `notes.txt` emptied. The full diagnosis, verified
+against the code, is Block V of [m11_plan.md](m11_plan.md); this is the
+index.
+
+| # | note | destination |
+|---|---|---|
+| 8 | Eating berries from the Kit tab does not raise the nutrition bar | M11 phase 12a — a real defect, see `bugs.md` |
+| 10 | Ordering a fight with someone far away does not move the character | M11 phase 12b — a real defect, see `bugs.md` |
+| 4 | Number of tribes and people per tribe on the new-game screen | M11 phase 12c — the settings already exist, buried in Settings |
+| 3 | Tribe-coloured outlines on buildings | M11 phase 13a |
+| 5 | See your relationship with someone when you click them | M11 phase 13b |
+| 14 | The dead folded away in Ties, and out of the tribe graph | M11 phase 13c |
+| 15 | Aggregate repeated lines in the Life tab | M11 phase 13d |
+| 2 | On death, say who they killed and what they built | M11 phase 13e |
+| 7 | Fear of outsiders and of those who hurt you; territory; segregation; raiding for what is missing | M11 phase 14 |
+| 6 | Use another tribe's building even when watched, at a cost with the witnesses | M11 phase 15a |
+| 9 | Defend property: threaten and strike an outsider, restrain your own, call for help, bind, take prisoner | M11 phases 15b-15d, which absorb the old 11d (captivity) |
+| 1 | A body does not vanish: disposal, discovery, investigation | M11 phase 16 |
+| 11, 12, 13 | World map and migration; civilisations with government, war, taxes and trade; caravans; a globe icon | M12, sketched in `m11_plan.md`'s "for the future" |
+| 16 | A Spore-like arc: from single humans to tribe, government and civilisations | The frame for M12 onwards |
+
+Five findings came out of the triage rather than out of the notes, all in
+[bugs.md](bugs.md): phase 4 of M11 shipped the reverse of its own plan (being
+seen *forbids* using a rival's building, where the plan said it should be
+allowed and witnessed); a refusal line leaks a stranger's name past
+`Knowledge.ts`; `considerTerritory` counts intruders nobody saw; the
+new-game title says "three peoples" whatever the setting; and `BAND_COLORS`
+has six colours for up to eight tribes. A sixth is not a defect but matters to
+phase 14: `Person.mood`'s four channels, including `security`, still have no
+writer and no reader, because M9.6 phases 4b-4d never shipped.
+
+**The owner's decisions, taken 2026-09-22:** fear (phase 14) goes before
+defending property (phase 15); `cordage` makes rope from sticks or from
+thatch, which is what binding a captive needs; and this pass is the plan only —
+nothing is fixed yet, not even the two cheap defects of phase 12. The full plan
+for phases 12-17, which also gathers every item M11 still owed without a phase,
+is [m11_block_v_plan.md](m11_block_v_plan.md).
 
 ## 8. Wildlife, second pass
 
