@@ -7,7 +7,8 @@ documento: dos copias del mismo plan divergen igual que dos copias del mismo
 código, y la divergencia sale meses después como una contradicción que nadie
 sabe cuál de las dos es la buena.
 
-**Las fases 12 y 13 están construidas; de la 14 en adelante, nada.** Cada referencia a código se
+**Las fases 12, 13 y 14 están construidas; de la 15 en adelante, nada.** La
+puerta de la 14 queda cumplida sólo en parte: ver `bugs.md`. Cada referencia a código se
 comprobó contra el árbol el día en que se escribió; las líneas se moverán.
 
 ---
@@ -46,7 +47,8 @@ milestone, hasta el nivel de commit.
 | 11e lectores y UI | **fundida en 13** |
 | 12a-12c | enviadas (`a1b7383`…`680f7ae`); 12b en dos commits, el segundo medido |
 | 13a-13f | enviadas (`cb9045b`…`200dfa2`), todas bit-idénticas; 13f en tres commits |
-| 14-17 | **pendientes — este documento** |
+| 14a-14f | enviadas (`d3c8f70`…`5b2a7d9`); 14b en cinco commits, cada uno a 20 semillas. **Puerta sólo en parte**: la violencia cerca de los campamentos sube del 31% al 43% en `lean`, por debajo del 50% del check |
+| 15-17 | **pendientes — este documento** |
 
 (`a627458`, titulado "m11 phase 11", es en realidad M9.6 fase 2d.)
 

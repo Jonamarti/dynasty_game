@@ -6,6 +6,97 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 14b-14f: fear is read — company, range, flight, defence, territory, raids, the face
+
+Phase 14a gave fear writers; these commits give it readers, one at a time,
+each measured at twenty seeds of `lean` and `century` (`sim:seeds --seeds
+20`, which since this phase also reports where cross-band blows land and
+whether the peoples drift apart after them). Survival / collapses below a
+quarter / murders / share of cross-band blows within twenty tiles of either
+camp:
+
+| commit | `lean` | `century` |
+|---|---|---|
+| before phase 14 | 50.4% · 6 · 457 · 31% | 37.2% · 8 · 716 · 38% |
+| 14b.1 conversation openness | 52.1% · 5 · 458 · 33% | 35.5% · 11 · 742 · 35% |
+| 14b.2 work near home | 55.5% · 4 · 424 · 33% | 32.1% · 12 · 749 · 33% |
+| 14b.3 keep to your own | 51.3% · 5 · 459 · 32% | 36.1% · 7 · 746 · 35% |
+| 14b.4 flee the dreaded | 49.6% · 4 · 411 · 28% | 38.1% · 6 · 740 · 29% |
+| 14b.5 defend the ground (Brain, alone) | 49.7% · 4 · 423 · 43% | 36.9% · 7 · 659 · 37% |
+| 14c territory reads sightings, resents hunger | 51.8% · 5 · 403 · 40% | **81.0% · 2 · 329 · 45%** |
+| 14d `BandMaps`, raid for what is lacking | 53.5% · 5 · 401 · 42% | 76.0% · 2 · 369 · 46% |
+| 14e property deeds seen move standing | 52.8% · 4 · 400 · 43% | 72.1% · 1 · 397 · 41% |
+| 14f the face | bit-identical | bit-identical |
+
+Ten seeds cannot resolve under ten points and twenty not much under five;
+every row but 14c is inside that.
+
+**14b, the readers** (`sim/social/Fear.ts` holds every constant, each with
+why):
+1. *Conversation.* `crossBand` gains the two parties' own ease: +0.3 × their
+   mean security over 50. At ease the cross-band warmth factor goes from 0.43
+   to about 0.52; frightened, toward 0.28.
+2. *Range.* `findNode` filters to nodes within `homeRange` of camp: no limit
+   below a quarter of fear, 48 tiles falling to 20. A filter, because
+   proximity dominates the scorer.
+3. *Keeping to your own.* An idle wander is centred part of the way home above
+   0.4 fear (same RNG draws), and an outsider costs up to 40 points as a choice
+   of company. **A hard refusal of outsiders was measured and dropped**: on
+   `lean` it raised cross-band blows 3,964 → 4,696 and murders 462 → 503
+   against the same commit without it. People who stop talking across a band
+   line stop warming to each other, and grudges fill the gap — segregation is
+   meant to follow from hatred here, not manufacture it.
+4. *Flight.* With nobody's blood fresh, the most dreaded neighbour within half
+   a sight radius (dread 35+) is reason to flee.
+5. *Defence*, the Brain commit, alone: a third route to `attack`, only at 0.5
+   fear, only against an outsider in the inner third of the band's ground whose
+   people are not on good terms, never kin — warned first with a new `warn`
+   verb (a `threaten` deed with no demand), struck only after 90 ticks if still
+   there, under its own ceiling. The share of blows landing near a camp jumps
+   from 28% to 43% on `lean`.
+
+**14c.** `considerTerritory` counted every foreigner within forty tiles
+through the people hash; it now reads the sightings 14a records, so a people
+resents the strangers it saw. And its sign was backwards: the comment said a
+*hungry* band resents intruders, the code multiplied by how *full* its stores
+were. The comment was the intent. Both rules were measured with the sensor
+fix: the fullness rule gives `century` 42.5%, 6 collapses, 632 murders; the
+hunger rule 81.0%, 2, 329. Well-fed `century` bands camped thirty to forty
+tiles apart had been resenting each other every day and going to war over it.
+`lean`, the scarce world, is as violent under either. This costs
+`bands-take-sides` on three well-fed scenarios — see [bugs.md](bugs.md).
+
+**14d.** `BandMaps` (`sim/social/BandMaps.ts`): the game's first memory of
+places, and the seed of M12's world map — per band, a coarse grid of the
+resource kinds its members have seen, written on the sighting cadence,
+draw-free (`BandSystem`'s `rng` is `forestRng`). `considerRaid` gains a
+second motive: a needed kind missing from the band's near ground and seen on
+the ground of a people it is not on good terms with, within a day's march; the
+party goes to take it where it grows, which is where a frightened band
+defends. "Missing" over the whole territory never fired once in the matrix;
+over the inner half it fires on `lean`.
+
+**14e.** `emit` takes the owning band of a building for deeds with no person
+target (store theft, trespass, sabotage), and moves `BandRelations` once per
+deed when somebody of that band saw it. Closes the `bugs.md` entry on unseen
+raids.
+
+**14f.** `expressionOf` reads `security`: at 0.4 fear a face looks afraid, or
+stern on a hot temper. The first mood channel a face reads. Bit-identical.
+
+**The gate, honestly.** The two checks written for it, verified failing on the
+build before any reader, still fail on the single `lean` seed; across twenty
+seeds violence near camp went 31% → 43% (`lean`) and 38% → 41% (`century`)
+against a 50% floor, and drifting apart is a coin toss in both. Not tuned to
+pass; recorded in [bugs.md](bugs.md) with where the remaining violence comes
+from. **The stranger table** (outsider regard, `kin-outrank-strangers`) moved
+from `crowded` −4.7 / `culture` −8.0 / `lean` −28.8 / `century` −11.1 to
+−7.0 / −7.1 / −13.4 / −17.9 (`millers` and `band` have too few pairs). It
+now falls with run length where it used to rise — out of accumulated deeds,
+which decay, rather than out of a constant, which is the door phase 7 closed.
+
+---
+
 ## 2026-09-23 — M11 phase 14a: fear gets its writers, and nothing reads them yet
 
 The owner's note 7: little fear and people talk to strangers and range far;

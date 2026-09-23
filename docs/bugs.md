@@ -3,6 +3,58 @@
 As of 2026-09-22. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 14 (fear), 2026-09-23
+
+### The phase gate is only partly met
+
+Measured at twenty seeds each, the build before phase 14 against the build
+after 14f (all numbers in [changelog.md](changelog.md)):
+
+| | `lean` before | after | `century` before | after |
+|---|---|---|---|---|
+| cross-band blows within 20 tiles of a camp | 31% | 43% | 38% | 41% |
+| seeds whose peoples drift apart after incidents | 7/20 | 11/20 | 11/20 | 10/20 |
+
+Violence has moved toward the camps, as the note asks, and fewer people die
+of it, but `violence-concentrates` sets its floor at 50% and neither
+scenario reaches it; `peoples-drift-apart` is a coin in `century` before and
+after. On the single `lean` seed both checks still fail. They were not tuned
+to pass (`AGENTS.md`). What still lands far from home is revenge and
+predation between people who meet while ranging, and the range filter
+(`homeRange`) only begins at a quarter of fear. Phase 15's escalation ladder
+is the next lever; measure these two again after it.
+
+### Well-fed peoples stopped taking sides, since 14c
+
+`bands-take-sides` (spread between the friendliest and most hostile pair
+over 20 points) now fails on `farmers`, `herders` and `stewards`. Those
+peoples used to resent each other daily because the territory engine counted
+every stranger within forty tiles, and it did so hardest when their granaries
+were fullest — the backwards sign 14c fixed. With the sign as its own
+comment always said, a well-fed people shrugs off a neighbour, and those
+three worlds are well fed. `lean`, the scarce one, still divides. Whether
+peace between full granaries is the right answer is a design question for the
+owner — the project's arc is toward conflict — and not something to recover
+by retuning the engine back.
+
+### A warning is started far more often than it is finished
+
+On `lean`, `warn` holds 1,323 person-ticks and completes 10 times. The
+intruder usually walks out of the inner third while the defender is still
+walking up, which is a warning working without being spoken, but it also
+means the grace-then-strike half of the route rarely comes round
+(`defend_territory_chosen` 44). Not tuned: phase 15b's ladder rewrites this.
+
+### The raid for what a band lacks is rare
+
+It needs a kind missing from a band's near ground *and* seen on the ground of
+a people it is not on good terms with within a day's march. Over the whole
+forty-tile territory that never happened once in the matrix; over the inner
+half it fires a handful of times on `lean` (6 in one run, mostly clay) and
+not at all on `century`. It is the one reader of `BandMaps`; a richer idea of
+"need" (what a band is short of, not what it lacks entirely) is the obvious
+next step and belongs with M12's use of the map.
+
 ## Found shipping the Spanish translation, 2026-09-23
 
 Rough edges of [the translation pass](changelog.md), left on purpose. None of
@@ -81,14 +133,6 @@ household head of their own band — so no stranger's name is known to leak
 this way; but nothing enforces it. Give them a `deed`-style id if a foreign
 leader can ever command.
 
-### `considerTerritory` is a sensor
-
-Besides the sign question recorded under phase 11c below, it counts every
-foreign person inside `TERRITORY_RADIUS` of a band's home whether or not any
-member of that band is there to see them — the ambient awareness the owner's
-standing rule forbids. Phase 14c, where the counts come from members'
-sightings instead.
-
 ### `perf-budget` is a wall-clock check and it flakes hard under matrix load
 
 The same build, the same scenario, the same machine: `lean` reports **2,071
@@ -128,47 +172,6 @@ drives whole bands hostile, so wrecking huts buys a great deal more fighting,
 fleeing and pathing. That is the design working — conflict is the destination
 — and it is simply not free. If the floor has to move for `lean`, it should
 move for that stated reason and not be papered over with a micro-optimisation.
-
-### `considerTerritory`'s comment says the opposite of what its code does
-
-`BandSystem.considerTerritory` scales an intrusion by `pantryPressureOf`, and
-its comment says that number answers "how pinched is this band for food",
-concluding "a well-fed band shrugs off an intrusion; a hungry one does not".
-`pantryPressureOf` returns `used / capacity` — how **full** the stores are.
-`planBuildings`, its other caller, reads it correctly ("already storing, and
-running out of room"). So the implemented rule is the reverse of the stated
-one: a band with full granaries resents intruders most, and a band with empty
-pits shrugs.
-
-The code is defensible on its own terms — having a lot to protect is a reason
-to mind who is walking past — and the implemented reading was left alone
-rather than silently flipped, because changing the sign changes the world and
-that is a measured decision, not a typo fix. But there is a real consequence
-worth knowing: `if (pressure <= 0) return;` means a band whose stores are
-empty never resents an intrusion **at all**, so the territory engine is
-silent in exactly the scarcity `lean` was built to produce. Whoever picks
-this up should decide which rule was wanted and measure the other across
-twenty seeds. **Scheduled as Block V phase 14c.**
-
-### A raid that nobody from the victim's band sees does not move how the two peoples stand
-
-`SocialSystem.emit` moves `BandRelations` only when the deed has a **person**
-target from another band. A property crime — `sabotage`, or a `theft` lifted
-from a store — emits with `target: null`, so wrecking a rival's hut costs
-nothing at all between the two peoples, however many of them watched it
-happen. A raid therefore cannot deepen the feud that sent it, which is the
-mechanism the plan's deliberately-deferred multi-generational archenemy would
-have to be built on.
-
-The fix has to respect the standing rule that nothing is known unless it is
-seen or told, so it cannot simply be "a raid worsens standing" at the moment
-the chief gives the order — the victims do not know yet. The honest shape is
-that `emit` moves standing once (never once per witness, the multiplication
-its own comment already guards against) when a deed with no person target was
-witnessed by somebody of a band other than the actor's. Left out of 11c
-because it is a behavioural change to every property crime in the game, not
-only to raids, and it deserves its own commit and its own twenty seeds.
-**Scheduled as Block V phase 14e.**
 
 ## Found shipping M11 phase 11b, 2026-09-22
 
