@@ -99,6 +99,8 @@ export const ES_ACTIONS: Record<string, string> = {
   "the body was gone": "el cuerpo ya no estaba",
   "there was nothing left to ask about": "no quedaba nada por lo que preguntar",
   "nobody they asked could say": "nadie a quien preguntó supo decirlo",
+  "the field was trampled, or gone": "el campo estaba pisoteado, o ya no estaba",
+  "It has been trampled, and needs mending first": "Lo han pisoteado, y hay que arreglarlo primero",
   "the person they meant to talk about was gone": "la persona de la que quería hablar ya no estaba",
   "they had nothing left worth telling": "no le quedaba nada que valiera la pena contar",
   "they do not know how": "no sabe cómo",

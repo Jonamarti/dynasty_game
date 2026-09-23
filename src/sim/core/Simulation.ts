@@ -1765,7 +1765,8 @@ export class Simulation {
     const byBand = new Map<number, Building[]>();
     for (const building of this.buildings) {
       if (!building.complete || building.ruined) continue;
-      if (!isStructure(building.def) || building.crop !== null) continue;
+      // Fields included since M11 phase 17c: see `ActionSystem.doSabotage`.
+      if (!isStructure(building.def)) continue;
       const list = byBand.get(building.ownerBandId);
       if (list) list.push(building);
       else byBand.set(building.ownerBandId, [building]);

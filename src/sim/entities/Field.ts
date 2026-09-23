@@ -166,6 +166,22 @@ export class Crop {
     return false;
   }
 
+  /**
+   * Trampled and torn up — M11 phase 17c, the field a raid ruins. Whatever
+   * was standing is lost, counted with the harvests lost to standing too
+   * long, and the plot is bare; `Building.ruined` is what keeps it from
+   * being sown again until somebody mends it. The soil is not touched: it
+   * already has its own way of wearing out (`soil-is-drawn-down`), and a
+   * raid is a season lost, not the ground ruined.
+   */
+  trampled(): void {
+    if (this.stage !== 'fallow') this.lost++;
+    this.stage = 'fallow';
+    this.growth = 0;
+    this.sownDay = -1;
+    this.ripeDay = -1;
+  }
+
   /** Taken off. The plot goes back to bare ground. */
   reaped(yielded: number): void {
     this.stage = 'fallow';

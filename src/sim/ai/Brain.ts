@@ -1873,7 +1873,7 @@ export class Brain {
     // the fire for exactly that reason.
     let fieldTarget: Building | null = null;
     const plots = ctx.buildings.filter(b =>
-      b.crop !== null && b.complete && this.canUse(person, b, ctx));
+      b.crop !== null && b.complete && !b.ruined && this.canUse(person, b, ctx));
     if (plots.length > 0) {
       const nearestPlot = (want: (b: Building) => boolean): Building | null =>
         this.pickBest(plots.filter(want),

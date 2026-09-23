@@ -417,3 +417,63 @@ describe('storing in a watched store', () => {
     expect(sim.watchedUses.some(n => n.personId === actor!.id && n.use.seen === owner)).toBe(true);
   });
 });
+
+// M11 phase 17c. A field was excluded from sabotage while ruining it would
+// have changed nothing; now it tramples what was sown and the plot is not
+// sown again until mended.
+describe('a trampled field', () => {
+  it('loses what was growing, and is not sown until it is mended', () => {
+    const sim = new Simulation(SMALL);
+    aDayIn(sim);
+    const [raider] = sim.livingPeople().filter(p => p.bandId === 0 && !p.isChild);
+    const [farmer] = sim.livingPeople().filter(p => p.bandId === 1 && !p.isChild);
+    settle(raider!);
+    settle(farmer!);
+    for (const owner of sim.livingPeople().filter(p => p.bandId === 1)) owner.knownTech.add('farming');
+    // `place` reads the world's recount, which runs once a day.
+    sim.knownTech.add('farming');
+    // Wherever the ground takes a plot — `farming.test.ts`'s own search.
+    let placed: Building | null = null;
+    for (let ring = 3; ring <= 20 && !placed; ring++) {
+      for (const [dx, dy] of [[ring, 0], [-ring, 0], [0, ring], [0, -ring], [ring, ring]]) {
+        placed = sim.place('field', Math.round(farmer!.x) + dx!, Math.round(farmer!.y) + dy!, 1);
+        if (placed) break;
+      }
+    }
+    expect(placed, 'no ground for a field').not.toBeNull();
+    const field = placed!;
+    for (const [itemId, needed] of Object.entries(field.def.materials)) field.delivered.add(itemId, needed);
+    field.addWork(field.def.workTicks + 1);
+    expect(field.crop).not.toBeNull();
+    field.crop!.sow(sim.time.day);
+    // Owners well out of sight, so the raid is not interrupted by the ladder.
+    for (const owner of sim.livingPeople().filter(p => p.bandId === 1)) {
+      owner.x = field.centerX + 40;
+      owner.y = field.centerY + 40;
+    }
+    raider!.x = field.centerX;
+    raider!.y = field.centerY;
+    field.durability = 1;
+
+    expect(sim.order(raider!, 'sabotage', { buildingId: field.id })).toBe(true);
+    for (let i = 0; i < 100 && raider!.order !== null; i++) {
+      settle(raider!);
+      sim.step();
+    }
+    expect(field.ruined).toBe(true);
+    expect(field.crop!.isFallow).toBe(true);
+    expect(field.crop!.lost).toBe(1);
+
+    // The farmer cannot sow it back.
+    farmer!.inventory.add('grain', 10);
+    farmer!.x = field.centerX;
+    farmer!.y = field.centerY;
+    expect(sim.order(farmer!, 'sow', { buildingId: field.id })).toBe(true);
+    for (let i = 0; i < 20 && farmer!.order !== null; i++) {
+      settle(farmer!);
+      sim.step();
+    }
+    expect(field.crop!.isFallow).toBe(true);
+    expect(sim.interruptions.some(n => n.personId === farmer!.id && n.reason === 'field_ruined_or_gone')).toBe(true);
+  });
+});

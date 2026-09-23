@@ -693,7 +693,7 @@ function buildingActions(
     // the same way `steal` is never offered on one's own store. A watched
     // target carries the same warning every other property verb does.
     if (property && !property.ours && isStructure(building.def) &&
-      !building.crop && !building.ruined) {
+      !building.ruined) {
       options.push({
         id: 'sabotage',
         label: t('Damage {site}', { site: theSite(building.def.label) }),
@@ -735,8 +735,9 @@ function buildingActions(
         id: 'sow',
         label: t('Sow the field'),
         icon: '\u{1F331}',
-        enabled: knows && crop.isFallow && seed >= SOW_SEED,
-        reason: !knows ? t('Nobody here has the idea of putting seed back in the ground')
+        enabled: knows && crop.isFallow && seed >= SOW_SEED && !building.ruined,
+        reason: building.ruined ? t('It has been trampled, and needs mending first')
+          : !knows ? t('Nobody here has the idea of putting seed back in the ground')
           : !crop.isFallow ? t('Something is growing here already')
           : seed < SOW_SEED ? t('You need {n} grain to sow this', { n: SOW_SEED })
           : undefined,

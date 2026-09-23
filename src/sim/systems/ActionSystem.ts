@@ -1296,15 +1296,12 @@ export class ActionSystem {
    */
   private doSabotage(person: Person, ctx: ActionContext): void {
     const site = this.reachBuilding(person, ctx, {
-      // `b.crop === null`: a field is `isStructure` too — clearing and
-      // tilling it costs real `workTicks` — but ruining it would currently be
-      // inert. `doSow` and `doReap` read nothing about `durability`, so a
-      // trampled field would sow and reap exactly as an untouched one does,
-      // and the project's own standing rule is that a table entry, or here a
-      // whole target category, does not earn its place until something reads
-      // it. Left for whoever gives a raided field a real consequence; see
-      // `docs/bugs.md`.
-      ok: b => b.complete && isStructure(b.def) && b.crop === null && !b.ruined,
+      // A field is a target since M11 phase 17c: ruining one tramples what
+      // was sown (`Crop.trampled`), and `doSow` will not sow it again until
+      // it is mended. It was excluded while that was not so — a trampled
+      // field sowed and reaped like any other, and a whole target category
+      // that changes nothing does not earn its place.
+      ok: b => b.complete && isStructure(b.def) && !b.ruined,
       reason: 'nothing_to_sabotage',
     }, 'sabotage');
     if (!site) return;
@@ -1329,6 +1326,10 @@ export class ActionSystem {
     person.practice('build', 0.15);
     if (site.damage(wreck)) {
       telemetry.count('building_sabotaged');
+      if (site.crop) {
+        site.crop.trampled();
+        telemetry.count('field_trampled');
+      }
       telemetry.count('sabotaged_' + site.def.id);
       // No second `ctx.social.emit` here. `reachBuilding`'s `useProperty` call
       // already registered the one deed this session — the same precedent
@@ -1962,8 +1963,9 @@ export class ActionSystem {
    */
   private doSow(person: Person, ctx: ActionContext): void {
     const field = this.reachBuilding(person, ctx, {
-      ok: b => b.crop !== null && b.complete,
-      reason: 'no_field',
+      // M11 phase 17c: a ruined field is not sown until it is mended.
+      ok: b => b.crop !== null && b.complete && !b.ruined,
+      reason: 'field_ruined_or_gone',
     }, 'trespass');
     if (!field || !field.crop) return;
 

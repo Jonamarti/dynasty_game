@@ -331,6 +331,8 @@ export const STOP_REASONS: Record<string, string> = {
   // M11 phase 16d.
   nothing_to_ask: 'there was nothing left to ask about',
   no_one_named: 'nobody they asked could say',
+  // M11 phase 17c.
+  field_ruined_or_gone: 'the field was trampled, or gone',
   // M11 phase 5c: `slander` and `praise` need somebody to talk *about*, not
   // only somebody to talk to, and the walk over gives both of those a chance
   // to stop being true.

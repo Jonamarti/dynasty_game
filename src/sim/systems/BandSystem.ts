@@ -1475,9 +1475,9 @@ export class BandSystem {
       if (!building.complete || building.ruined) continue;
       // The same category `sabotage` itself accepts, so that a party is never
       // sent at something the verb will refuse on arrival: a standing
-      // structure, and not a field, which `doSabotage` excludes because
-      // nothing downstream of `Field` reads `ruined` yet.
-      if (!isStructure(building.def) || building.crop !== null) continue;
+      // structure, fields included since M11 phase 17c.
+      // Fields included since M11 phase 17c: ruining one tramples the crop.
+      if (!isStructure(building.def)) continue;
       const dx = building.centerX - band.homeX;
       const dy = building.centerY - band.homeY;
       if (Math.sqrt(dx * dx + dy * dy) > RAID_RANGE) continue;
