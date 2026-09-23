@@ -39,7 +39,7 @@ import { JOBS } from './sim/entities/Job.ts';
 import type { ItemPile } from './sim/entities/ItemPile.ts';
 import { describeEvent } from './sim/social/Events.ts';
 import {
-  knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree, knowledgeOfBuilding,
+  knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree, knowledgeOfBuilding, explainPropertyUse,
 } from './sim/social/Knowledge.ts';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement;
@@ -1301,6 +1301,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     world: sim.world, nearWater, commanding,
     stationFor: stationId => nearestStation(subject, stationId),
     propertyUse: building => sim.mayUseBuilding(subject, building),
+    explainProperty: use => explainPropertyUse(actor, use, sim.relationships),
     // The player's own view of whoever was clicked, so the conversation rungs
     // offered are the ones the two of them could actually have. Deliberately
     // left out when commanding somebody else: which conversations *they* could

@@ -36,15 +36,6 @@ only decides whether the use becomes a witnessed deed the witness can act on.
 impossible to use as it was under the membership test phase 4 replaced. The
 owner's note 6 asks for what the plan asked for. Phase 15a.
 
-### A refusal line puts a stranger's name on screen
-
-`mayUse`'s `because` is `seen.name + ' is close enough to see them'`, and
-`Simulation.storeItem` copies it straight into `lastRefusal`. The watcher is
-usually from another band and usually a stranger, whose name the player is not
-meant to have. The same string also reaches the radial menu, as the reason
-a greyed-out option gives (`ActionCatalog.ts`, `guarded = property?.because`).
-Phase 13f.
-
 ### Your own chronicle names people you do not know
 
 `SocialSystem.emit` writes `describeEvent(type, actor.name, target.name)` into

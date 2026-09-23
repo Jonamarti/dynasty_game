@@ -6,6 +6,30 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 13f, second commit: a witness is named as the reader knows them
+
+**The defect.** `mayUse` wrote its own explanation, `seen.name + ' is close
+enough to see them'`, and that sentence reached the screen twice — the
+refusal `Simulation.storeItem` puts in `lastRefusal`, and the reason a
+greyed-out option in the radial menu gives. The watcher is usually from
+another band and usually a stranger, whose name the player's character was
+never told.
+
+**The change.** `mayUse` is pure and cannot know who is reading, so it stops
+writing words: `PropertyUse.because` becomes `basis` — `own`, `ally`, `seen`
+or `unseen` — and the witness it already returned stays on `seen`. A new
+`Knowledge.explainPropertyUse(observer, use, relationships)` writes the
+sentence for a named reader, naming the witness through `knowledgeOfPerson`:
+*"A young man is close enough to see them"* until the reader knows better.
+`storeItem` explains for the player; the catalogue gains an optional
+`explainProperty` that `main.ts` supplies for the actor. Two tests in
+`property.test.ts`.
+
+Bit-identical in `sim:check:all --verbose` — nothing in the simulation read
+`because`.
+
+---
+
 ## 2026-09-23 — M11 phase 13f, first commit: the refusals 11b-11c left unexplained
 
 The plan asked for every path of `sabotage` and the organised raid that ends

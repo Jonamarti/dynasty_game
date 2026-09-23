@@ -21,6 +21,7 @@ import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { RelationshipGraph } from './Relationships.ts';
+import type { PropertyUse } from './Property.ts';
 import type { LifeEvent } from './SocialSystem.ts';
 import { describeEvent } from './Events.ts';
 
@@ -75,6 +76,29 @@ export function regardFromThem(
     opinion > -40 ? 'They seem to dislike you.' :
     'They seem to hate you.';
   return { words, opinion: level === 'close' ? opinion : null };
+}
+
+/**
+ * Why a structure can or cannot be used, in words, for `observer` to read —
+ * M11 phase 13f. The witness is named only as the observer knows them: a
+ * stranger watching a rival's store is "A young man", not a name the
+ * player's character never learned.
+ */
+export function explainPropertyUse(
+  observer: Person,
+  use: PropertyUse,
+  relationships: RelationshipGraph
+): string {
+  switch (use.basis) {
+    case 'own': return 'it belongs to their band';
+    case 'ally': return 'their band and yours are close allies';
+    case 'unseen': return 'nobody from the owning band is watching';
+    case 'seen': {
+      if (!use.seen) return 'someone from its band is close enough to see them';
+      const name = knowledgeOfPerson(observer, use.seen, relationships).displayName;
+      return name.charAt(0).toUpperCase() + name.slice(1) + ' is close enough to see them';
+    }
+  }
 }
 
 /** Familiarity at which someone stops being a face and becomes an acquaintance. */

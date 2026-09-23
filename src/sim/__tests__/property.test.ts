@@ -5,6 +5,8 @@ import { RNG } from '../core/RNG.ts';
 import { BUILDINGS, Building } from '../entities/Building.ts';
 import { Person } from '../entities/Person.ts';
 import { mayUse } from '../social/Property.ts';
+import { explainPropertyUse } from '../social/Knowledge.ts';
+import { RelationshipGraph } from '../social/Relationships.ts';
 import { BandRelations } from '../social/BandRelations.ts';
 
 const SIGHT = 12;
@@ -30,7 +32,7 @@ describe('observable property', () => {
       ours: true,
       allowed: true,
       seen: null,
-      because: 'it belongs to their band',
+      basis: 'own',
     });
   });
 
@@ -70,5 +72,29 @@ describe('observable property', () => {
     const result = access(actor, store, [actor, owner], allies);
     expect(result.allowed).toBe(true);
     expect(result.ours).toBe(true);
+  });
+});
+
+describe('a witness, in words', () => {
+  // M11 phase 13f. `mayUse` used to write `seen.name + ' is close enough to
+  // see them'`, and that sentence reached the screen twice with the real name
+  // of somebody the player's character had never met.
+  it('is a description, not a name, when the reader has never met them', () => {
+    const actor = person('Ari', 5, 5, 0);
+    const owner = person('Bo', 7, 5, 1);
+    const store = new Building(BUILDINGS.stockpile!, 5, 5, 1);
+    const said = explainPropertyUse(actor, access(actor, store, [actor, owner]), new RelationshipGraph());
+    expect(said).not.toContain('Bo');
+    expect(said).toMatch(/^A .* is close enough to see them$/);
+  });
+
+  it('is a name once the reader knows it', () => {
+    const actor = person('Ari', 5, 5, 0);
+    const owner = person('Bo', 7, 5, 1);
+    const store = new Building(BUILDINGS.stockpile!, 5, 5, 1);
+    const graph = new RelationshipGraph();
+    graph.edge(actor.id, owner.id).familiarity = 20;
+    expect(explainPropertyUse(actor, access(actor, store, [actor, owner]), graph))
+      .toBe('Bo is close enough to see them');
   });
 });

@@ -130,6 +130,12 @@ export interface CatalogContext {
    */
   propertyUse?: (building: Building) => PropertyUse;
   /**
+   * M11 phase 13f. Puts a refused `PropertyUse` into words for whoever is
+   * reading the menu. Separate from `propertyUse` because the catalogue does
+   * not know who that is, and the witness has to be named as *they* know them.
+   */
+  explainProperty?: (use: PropertyUse) => string;
+  /**
    * Set when the player is commanding someone else rather than acting
    * themselves. The verbs are the same; only who carries them out changes, and
    * whether they agree to.
@@ -593,7 +599,9 @@ function buildingActions(
   } else {
     const property = ctx.propertyUse?.(building);
     const canUse = property?.allowed ?? true;
-    const guarded = canUse ? undefined : property?.because;
+    const guarded = canUse || !property
+      ? undefined
+      : ctx.explainProperty?.(property) ?? 'someone from its band is watching';
     // M11 phase 11b. Repair reuses `build` rather than getting a verb of its
     // own — see `ActionSystem.doBuild`'s own note on why — so the one thing
     // this menu has to add is the *option*: nothing else here offers `build`

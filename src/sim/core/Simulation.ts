@@ -40,7 +40,7 @@ import {
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
 import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
-import { knowledgeOfPerson } from '../social/Knowledge.ts';
+import { explainPropertyUse, knowledgeOfPerson } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -1427,7 +1427,7 @@ export class Simulation {
       this.social.emit('trespass', person, null, 0.5, this.time.tick,
         this.peopleHash, this.config.sightRadius);
       if (!access.allowed) {
-        this.lastRefusal = access.because;
+        this.lastRefusal = explainPropertyUse(this.player ?? person, access, this.relationships);
         telemetry.count('property_use_stopped');
         return 0;
       }
