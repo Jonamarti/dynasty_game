@@ -426,6 +426,14 @@ export class Person {
   warnedOffId: number | null = null;
   warnedOffTick = -9999;
   /**
+   * The last person this one saw take, use or wreck what belongs to their
+   * people, and when — M11 phase 15b. Written only by `emit`'s witness loop,
+   * through `Defence.noteCaught`; read through `caughtOffender`, which forgets
+   * it after `CAUGHT_MEMORY`. See `Defence.ts`.
+   */
+  caughtId: number | null = null;
+  caughtTick = -9999;
+  /**
    * Earliest tick at which this person will start another deliberate social
    * act. Approaching someone, saying your piece and parting again takes a
    * while, and without this every social action degenerates into a per-tick

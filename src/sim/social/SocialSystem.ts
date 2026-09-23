@@ -27,6 +27,7 @@ import { CONVERSATION_MODES, crossBand } from './Conversation.ts';
 import { techPower } from '../knowledge/Tech.ts';
 import type { BandRelations } from './BandRelations.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
+import { noteCaught } from './Defence.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { t } from '../../i18n/i18n.ts';
 import { frighten, opennessOf } from './Fear.ts';
@@ -325,6 +326,8 @@ export class SocialSystem {
     // victim standing there to know it. See `notifyTarget` above.
     const targetBandId = target?.bandId ?? null;
     if (target && notifyTarget) this.absorb(target, event, actor, true, 1, null, targetBandId);
+    // M11 phase 15b: the victim of a theft saw who did it, whoever else did.
+    if (target && notifyTarget) noteCaught(target, actor, type, tick);
 
     let witnesses = 0;
     let ownerSaw = false;
@@ -342,6 +345,14 @@ export class SocialSystem {
       }
       this.absorb(bystander, event, actor, true, 1, null, targetBandId);
       witnesses++;
+      // M11 phase 15b. A witness steps in only for what belongs to their own
+      // people: a building of their band, or goods on one of their band.
+      // Somebody watching their own kin rob a stranger's store has seen a
+      // deed, and judges it above, but has nothing of theirs to defend.
+      if ((ownerBandId !== undefined && bystander.bandId === ownerBandId) ||
+        (target !== null && target.bandId === bystander.bandId)) {
+        noteCaught(bystander, actor, type, tick);
+      }
     }
     if (witnesses > 0) telemetry.count('witnessed', witnesses);
     else telemetry.count('unwitnessed');
