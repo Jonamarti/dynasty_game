@@ -1685,7 +1685,8 @@ export class Simulation {
     // standing idle, when there was no order to stop — because from then on
     // their keys do nothing, and a character that will not move needs a
     // reason on screen.
-    if (person.order === null && !(person.isPlayer && reason === 'restrained')) return;
+    if (person.order === null &&
+      !(person.isPlayer && (reason === 'restrained' || reason === 'bound'))) return;
     this.interruptions.push({
       personId: person.id, action, reason, recipe: person.targetRecipe,
     });

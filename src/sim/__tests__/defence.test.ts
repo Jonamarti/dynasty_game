@@ -270,3 +270,53 @@ describe('calling for help', () => {
       m.type === 'theft' && m.actorId === offender!.id && !m.firsthand)).toBe(true);
   });
 });
+
+describe('tying somebody up', () => {
+  // M11 phase 15c.
+  function aHold(): { sim: Simulation; holder: Person; held: Person; binder: Person } {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const [holder, held, binder] = sim.livingPeople().filter(p => p.bandId === 0 && !p.isChild);
+    settled(holder!);
+    settled(binder!);
+    held!.x = holder!.x + 1;
+    held!.y = holder!.y;
+    binder!.x = holder!.x;
+    binder!.y = holder!.y + 1;
+    binder!.knownTech.add('cordage');
+    binder!.inventory.add('rope', 1);
+    // Held as `doRestrain` holds, without the roll.
+    held!.heldBy = holder!.id;
+    held!.heldUntil = sim.time.tick + 200;
+    return { sim, holder: holder!, held: held!, binder: binder! };
+  }
+
+  it('spends a rope, and outlasts the hold', () => {
+    const { sim, held, binder } = aHold();
+    expect(sim.order(binder, 'bind', { personId: held.id })).toBe(true);
+    for (let i = 0; i < 30 && binder.order !== null; i++) {
+      settled(binder);
+      sim.step();
+    }
+    expect(held.boundBy).toBe(binder.id);
+    expect(binder.inventory.count('rope')).toBe(0);
+
+    // The holder lets go; the rope does not.
+    held.heldBy = null;
+    held.heldUntil = -9999;
+    const x = held.x;
+    for (let i = 0; i < 50; i++) sim.step();
+    expect(held.x).toBe(x);
+    expect(held.boundUntil).toBeGreaterThan(sim.time.tick);
+  });
+
+  it('refuses somebody nobody is holding, and says why', () => {
+    const { sim, held, binder } = aHold();
+    held.heldBy = null;
+    held.heldUntil = -9999;
+    expect(sim.order(binder, 'bind', { personId: held.id })).toBe(true);
+    for (let i = 0; i < 30 && binder.order !== null; i++) sim.step();
+    expect(sim.interruptions.some(n => n.personId === binder.id && n.reason === 'not_held')).toBe(true);
+    expect(binder.inventory.count('rope')).toBe(1);
+  });
+});

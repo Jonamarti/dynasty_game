@@ -48,8 +48,8 @@ import {
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
 import {
-  caughtOffender, usingPropertyOf, isHeld, noteCall, INTERVENABLE,
-  RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, CALL_TICKS,
+  caughtOffender, usingPropertyOf, isHeld, isBound, noteCall, INTERVENABLE,
+  RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, HOLD_FOR_ROPE, CALL_TICKS, BIND_TICKS, BOUND_TICKS,
 } from '../social/Defence.ts';
 import { fightingPower } from '../social/Vulnerability.ts';
 import type { EventType } from '../social/Events.ts';
@@ -582,6 +582,7 @@ export class ActionSystem {
       case 'threaten': this.doThreaten(person, ctx); break;
       case 'warn': this.doWarn(person, ctx); break;
       case 'restrain': this.doRestrain(person, ctx); break;
+      case 'bind': this.doBind(person, ctx); break;
       case 'call_for_help': this.doCallForHelp(person, ctx); break;
       case 'answer_call': this.doAnswerCall(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
@@ -3532,16 +3533,36 @@ export class ActionSystem {
     const other = this.approach(person, ctx);
     if (!other) return;
 
-    // Holding.
+    // Holding — unless somebody has tied them up meanwhile, and then there is
+    // nothing left to hold.
+    if (person.workedTicks > 0 && isBound(other, ctx.tick)) {
+      this.release(person, other);
+      this.finish(person);
+      return;
+    }
     if (person.workedTicks > 0) {
       const stopped = this.interruption(person, ctx, { ignoreLaden: true });
-      if (stopped || person.workedTicks >= HOLD_TICKS) {
+      // Held for as long as somebody is on their way with a rope, up to
+      // `HOLD_FOR_ROPE` — "hold him while I get the rope". **Measured**: with
+      // the plain `HOLD_TICKS`, every tying-up in the matrix failed with
+      // `not_held`, because whoever carried a rope was seldom close enough
+      // to cross the camp inside a quarter of an hour.
+      const ropeComing = person.workedTicks < HOLD_FOR_ROPE &&
+        ctx.peopleHash.queryRadius(other.x, other.y, ctx.sightRadius).some(binder =>
+          binder.alive && binder.action === 'bind' && binder.targetPersonId === other.id);
+      if (stopped || (person.workedTicks >= HOLD_TICKS && !ropeComing)) {
         this.release(person, other);
         if (stopped) this.stop(person, stopped, ctx, 'restrain_');
         else this.finish(person);
         return;
       }
       person.workedTicks++;
+      // Committed, so the brain leaves them to it. `Simulation.step` re-plans
+      // anybody with no timer and no order, and a hold has neither: without
+      // this every hold lasted until the holder's next think, not
+      // `HOLD_TICKS` — found when every tying-up in the matrix failed with
+      // `not_held`, the holder already off foraging a tick earlier.
+      person.actionTimer = 1;
       if (other.heldBy === null || !isHeld(other, ctx.tick)) other.heldBy = person.id;
       other.heldUntil = Math.max(other.heldUntil, ctx.tick + HOLD_RENEW);
       return;
@@ -3584,6 +3605,7 @@ export class ActionSystem {
     if (!isHeld(other, ctx.tick)) other.heldBy = person.id;
     other.heldUntil = Math.max(other.heldUntil, ctx.tick + HOLD_RENEW);
     person.workedTicks = 1;
+    person.actionTimer = 1;
     if (other.action !== 'idle') this.abandon(other, 'restrained', ctx);
     else ctx.onStopped(other, 'idle', 'restrained');
   }
@@ -3643,6 +3665,52 @@ export class ActionSystem {
     }
     person.helpCallerId = null;
     telemetry.count('help_answered');
+    this.finish(person);
+  }
+
+  /**
+   * Tying up somebody who is being held, M11 phase 15c (owner's note 9, and
+   * the owner's decision that `cordage` makes rope). Needs the technology and
+   * a rope in the pack, and spends the rope. Only somebody already held: a
+   * rope is not a way to bring anybody down, the struggle is.
+   *
+   * Tied up is `BOUND_TICKS` of the held state with nobody needed to keep it
+   * up. The one tied is told who did it.
+   */
+  private doBind(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+    if (techPower(person, 'cordage') <= 0) {
+      this.abandon(person, 'dont_know_how', ctx);
+      return;
+    }
+    if (person.inventory.count('rope') <= 0) {
+      this.abandon(person, 'no_rope', ctx);
+      return;
+    }
+    if (isBound(other, ctx.tick)) {
+      this.finish(person);
+      return;
+    }
+    if (!isHeld(other, ctx.tick)) {
+      this.abandon(person, 'not_held', ctx);
+      return;
+    }
+    if (person.actionTimer <= 0) {
+      person.actionTimer = BIND_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'bind_');
+      return;
+    }
+    person.inventory.remove('rope', 1);
+    other.boundBy = person.id;
+    other.boundUntil = ctx.tick + BOUND_TICKS;
+    telemetry.count('bound');
+    ctx.onStopped(other, other.action, 'bound');
     this.finish(person);
   }
 

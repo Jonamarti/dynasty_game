@@ -182,6 +182,10 @@ export const ITEMS: Record<string, ItemDef> = {
   // reason to exist without the loom that consumes it — the same rule that
   // kept `needle` and `fur_coat` together.
   thread: { id: 'thread', label: 'Thread', nutrition: 0, spoilTicks: 0, baseValue: 3 },
+  // M11 phase 15c. `cordage`'s first thing in the hand, and here in the same
+  // commit as the one verb that spends it — `bind` — because a rope nothing
+  // used would be content declared and inert.
+  rope: { id: 'rope', label: 'Rope', nutrition: 0, spoilTicks: 0, baseValue: 2 },
   // The highest `baseValue` of anything a band can make at this point in the
   // tree, on purpose: `next-steps.md`'s note on `trade` reading `baseValue` is
   // what makes this "the first thing worth trading" rather than a description

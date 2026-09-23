@@ -11,6 +11,7 @@
  * greyed-out option, because "why can't I do that?" deserves an answer in the
  * menu rather than a shrug.
  */
+import { isHeld } from '../social/Defence.ts';
 import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
@@ -506,6 +507,19 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       enabled: true,
       hostile: true,
     },
+    // M11 phase 15c. Offered only to somebody who knows `cordage`, on the
+    // same terms `tame` is: a greyed-out verb nobody here could have thought
+    // of hands the player the shape of the tech web for free.
+    ...(techPower(actor, 'cordage') > 0 ? [{
+      id: 'bind',
+      label: t('Tie {name} up', { name: other.name }),
+      icon: '\u{1FAA2}',
+      enabled: actor.inventory.count('rope') > 0 && isHeld(other, tick),
+      reason: actor.inventory.count('rope') <= 0 ? t('You have no rope')
+        : !isHeld(other, tick) ? t('Somebody has to be holding them down first')
+        : undefined,
+      hostile: true,
+    }] : []),
     {
       id: 'attack',
       label: t('Attack {name}', { name: other.name }),

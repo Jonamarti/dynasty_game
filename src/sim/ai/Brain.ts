@@ -54,7 +54,7 @@ import {
 } from '../social/Fear.ts';
 import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import {
-  caughtOffender, usingPropertyOf, isHeld, helpCaller,
+  caughtOffender, usingPropertyOf, isHeld, isBound, helpCaller, BIND_HELD,
   CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE, CALL_MEMORY, CALL_FOR_HELP, ANSWER_CALL,
 } from '../social/Defence.ts';
 
@@ -189,6 +189,8 @@ interface FoundTargets {
   restrainee: Person | null;
   /** Whoever an `answer_call` goes to, M11 phase 15b.4. */
   helpCallerTarget: Person | null;
+  /** Somebody held by one of this person's own, for a `bind`, M11 phase 15c. */
+  bindTarget: Person | null;
   beneficiary: Person | null;
   /**
    * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
@@ -725,6 +727,7 @@ export class Brain {
     let intruder: Person | null = null;
     let restrainee: Person | null = null;
     let helpCallerTarget: Person | null = null;
+    let bindTarget: Person | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
     let craftStation: Building | null = null;
@@ -1528,6 +1531,27 @@ export class Brain {
     }
     if (warnScore > 0) add('warn', warnScore);
 
+    // --- Tying up -------------------------------------------------------------
+    // M11 phase 15c. Somebody who knows `cordage` and carries a rope ties up
+    // a person one of their own is holding. Never their own kin — tying a
+    // brother is a step past holding him back — and only a person held by
+    // this band, so a rope is never how anybody joins somebody else's fight.
+    if (!person.isChild && person.inventory.count('rope') > 0 && techPower(person, 'cordage') > 0 &&
+      !pressedByNeed(person, ctx.needs.workLimits)) {
+      const tick = ctx.time.tick;
+      const held = this.pickBest(neighbours.filter(other => {
+        if (!isHeld(other, tick) || isBound(other, tick) || other.heldBy === null) return false;
+        if (ctx.relationships.kinship(person.id, other.id) > 0) return false;
+        const holder = neighbours.find(h => h.id === other.heldBy);
+        return holder !== undefined && holder.bandId === person.bandId;
+      }), other => -person.distanceTo(other));
+      if (held) {
+        add('bind', BIND_HELD * this.proximityBonus(person, held, ctx.sightRadius));
+        bindTarget = held;
+        telemetry.count('bind_offered');
+      }
+    }
+
     // --- Answering a call ----------------------------------------------------
     // M11 phase 15b.4. Somebody heard a shout for help. Only from one of their
     // own people, kin, or a friend: a stranger's shout is a stranger's
@@ -2257,7 +2281,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, intruder, restrainee, helpCallerTarget, beneficiary, tradePartner, fleeFrom,
+        victim, foe, intruder, restrainee, helpCallerTarget, bindTarget, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2701,6 +2725,7 @@ export class Brain {
       case 'threaten':
       case 'warn':
       case 'restrain':
+      case 'bind':
       case 'answer_call':
       case 'attack':
       case 'slander':
@@ -2723,6 +2748,7 @@ export class Brain {
           action === 'attack' ? found.foe :
           action === 'warn' ? found.intruder :
           action === 'restrain' ? found.restrainee :
+          action === 'bind' ? found.bindTarget :
           action === 'answer_call' ? found.helpCallerTarget :
           action === 'slander' || action === 'praise' ? found.companion :
           found.victim;

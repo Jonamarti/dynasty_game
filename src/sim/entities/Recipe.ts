@@ -322,6 +322,40 @@ export const RECIPES: Record<string, RecipeDef> = {
     station: 'quern',
     keep: 3,
   },
+  // M11 phase 15c: rope, two ways, both under `cordage` — the owner's
+  // decision of 2026-09-22. Middle Palaeolithic cordage, the node's own
+  // "about 50,000 years ago", was twisted from both: bast and fine withies,
+  // and grass and reed. Two recipes for one output compete only when their
+  // ingredients differ, because the scorer has no "cheaper" term (the
+  // `kiln_pot` trap); these differ, so whichever is in the pack wins — the
+  // `groats` beside `meal` precedent.
+  //
+  // `keep: 1`, and it has to be: `tech.test.ts` wants every recipe either
+  // worth carrying or wanted by a building, and nothing builds with rope. The
+  // consequence, measured in the commit, is that everybody who knows
+  // `cordage` carries one. Short enough to need no banking.
+  rope: {
+    id: 'rope',
+    label: 'Rope',
+    icon: '\u{1FAA2}',
+    tech: 'cordage',
+    skill: 'forage',
+    workTicks: 60,
+    ingredients: { sticks: 2 },
+    output: { rope: 1 },
+    keep: 1,
+  },
+  rope_thatch: {
+    id: 'rope_thatch',
+    label: 'Rope of grass',
+    icon: '\u{1FAA2}',
+    tech: 'cordage',
+    skill: 'forage',
+    workTicks: 50,
+    ingredients: { thatch: 2 },
+    output: { rope: 1 },
+    keep: 1,
+  },
   pot: {
     id: 'pot',
     label: 'Pot',

@@ -442,6 +442,13 @@ export class Person {
   heldBy: number | null = null;
   heldUntil = -9999;
   /**
+   * Who tied this person up, and until when — M11 phase 15c. Separate from
+   * `heldBy` because a rope needs nobody to keep it up: the hold lapses when
+   * the holder lets go, the rope does not. See `Defence.isBound`.
+   */
+  boundBy: number | null = null;
+  boundUntil = -9999;
+  /**
    * When this person last tried to hold somebody and lost the struggle. The
    * ladder does not try the same rung twice on the same offence: the next
    * thing to do is call for help.

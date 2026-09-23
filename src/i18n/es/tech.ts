@@ -313,7 +313,7 @@ export const ES_TECH: Record<string, string> = {
   "Meat from an animal that would have outrun you.": "Carne de un animal que te habría dejado atrás.",
   "Worked hide that turns a blow.": "Piel trabajada que desvía un golpe.",
   "Warmth you carry with you, wherever you are standing.": "Un calor que llevas contigo, estés donde estés.",
-  "A net and a carrying strap: more in one trip.": "Una red y una correa de carga: más en un solo viaje.",
+  "A net and a carrying strap: more in one trip. And rope, to tie up somebody held down.": "Una red y una correa de carga: más en un solo viaje. Y cuerda, para atar a quien esté sujetado.",
   "More from every bush and every fruiting tree.": "Más de cada arbusto y de cada árbol frutal.",
   "Game found further off, and slower to notice you.": "Caza encontrada más lejos, y que tarda más en notarte.",
   "Cooked food goes further.": "La comida cocinada cunde más.",

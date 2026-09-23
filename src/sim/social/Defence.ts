@@ -26,6 +26,11 @@
  * 15b.4 is the last rung: `call_for_help`, for the witness who cannot hold
  * the offender alone, and `answer_call` for whoever hears it.
  *
+ * Phase 15c is what comes after a hold: `bind`, by somebody who knows
+ * `cordage` and carries a rope, which it spends. Tied up is a state of its
+ * own beside held — it does not need anybody to keep it up, and it outlasts
+ * the hold by a long way.
+ *
  * Nothing here draws a random number.
  */
 import type { Person } from '../entities/Person.ts';
@@ -127,6 +132,14 @@ export const HOLD_TICKS = 60;
 export const HOLD_RENEW = 2;
 
 /**
+ * The longest a holder keeps it up while somebody is coming with a rope
+ * (phase 15c): three times the ordinary hold, well under the ceiling
+ * `AGENTS.md` sets for an uninterrupted pull, and the interruption check
+ * still runs every tick of it.
+ */
+export const HOLD_FOR_ROPE = HOLD_TICKS * 3;
+
+/**
  * How strongly having caught one of their own at it moves a witness to hold
  * them back. The same order as `CAUGHT_WARN`, for the same reason — whoever
  * has just seen it drops what they are doing — with loyalty in place of
@@ -144,10 +157,43 @@ export const CAUGHT_RESTRAIN = 1.5;
  */
 export const RESTRAIN_NERVE = 0.8;
 
-/** Whether somebody is being held right now. */
+/**
+ * Whether somebody is being held or is tied up right now. Both stop a person
+ * thinking and acting; `isBound` tells the second apart.
+ */
 export function isHeld(person: Person, tick: number): boolean {
-  return person.heldBy !== null && person.heldUntil >= tick;
+  return (person.heldBy !== null && person.heldUntil >= tick) || isBound(person, tick);
 }
+
+/** Whether somebody is tied up right now — M11 phase 15c. */
+export function isBound(person: Person, tick: number): boolean {
+  return person.boundBy !== null && person.boundUntil >= tick;
+}
+
+/**
+ * Tying somebody up, in ticks, once they are held. Short, and checked for
+ * interruption every tick like any wind-up.
+ */
+export const BIND_TICKS = 12;
+
+/**
+ * How long a rope holds somebody, in ticks: a day. They work free of it on
+ * their own after that — nobody has to come and untie them, which is a
+ * mechanism this phase does not need. Phase 15d is what gives a day tied up a
+ * consequence beyond itself: taking them home.
+ *
+ * A day is about twenty points of thirst for a novice, so a person tied up
+ * with water in them comes to no harm from the rope alone, and one tied up
+ * already parched is in real danger — which is how it should read.
+ */
+export const BOUND_TICKS = 240;
+
+/**
+ * How strongly somebody with a rope is moved to tie up a person one of their
+ * own is holding. Below `CAUGHT_RESTRAIN`: the hold is what matters, and
+ * tying comes after it.
+ */
+export const BIND_HELD = 1.2;
 
 /**
  * A shout, in ticks — long enough for the interruption check to run.

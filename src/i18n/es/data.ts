@@ -26,6 +26,8 @@ export const ES_DATA: Record<string, string> = {
   "Sticks": "Palos",
   "Timber": "Madera",
   "Hand axe": "Hacha de mano",
+  "Rope": "Cuerda",
+  "Rope of grass": "Cuerda de hierba",
   "Thatch": "Paja",
   "Daub": "Barro",
   "Pot": "Vasija",

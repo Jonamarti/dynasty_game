@@ -1741,9 +1741,16 @@ function reportInterruptions(): void {
     // whether or not there was anything to stop.
     const holder = notice.reason === 'restrained' && person.heldBy !== null
       ? sim.peopleById.get(person.heldBy) : undefined;
+    // M11 phase 15c: the same for being tied up.
+    const binder = notice.reason === 'bound' && person.boundBy !== null
+      ? sim.peopleById.get(person.boundBy) : undefined;
     const text = holder && sim.player
       ? t('Held back by {name}', {
         name: knowledgeOfPerson(sim.player, holder, sim.relationships).displayName,
+      })
+      : binder && sim.player
+      ? t('Tied up by {name}', {
+        name: knowledgeOfPerson(sim.player, binder, sim.relationships).displayName,
       })
       : t('{action} stopped — {reason}', {
         action: actionLabel(notice.action, notice.recipe), reason: stopReasonLabel(notice.reason),

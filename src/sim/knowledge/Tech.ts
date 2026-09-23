@@ -1557,8 +1557,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'NeedsSystem.update, via warmthFrom',
   },
   cordage: {
-    summary: 'A net and a carrying strap: more in one trip.',
-    site: 'Person.carryCapacity, via carryFactor',
+    summary: 'A net and a carrying strap: more in one trip. And rope, to tie up somebody held down.',
+    site: 'Person.carryCapacity, via carryFactor; RECIPES.rope and rope_thatch; ActionSystem.doBind',
   },
   plant_lore: {
     summary: 'More from every bush and every fruiting tree.',

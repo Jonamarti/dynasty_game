@@ -193,6 +193,7 @@ export const ACTION_LABELS: Record<string, string> = {
   // M11 phase 15b.
   restrain: 'holding someone back',
   call_for_help: 'calling for help',
+  bind: 'tying someone up',
   answer_call: 'answering a call for help',
 };
 
@@ -310,6 +311,11 @@ export const STOP_REASONS: Record<string, string> = {
   // names the holder when it can. `broke_free` is what the holder is told.
   restrained: 'someone held them back',
   broke_free: 'they broke free',
+  // M11 phase 15c. `bound` is what the tied-up person is told; main.ts names
+  // whoever tied them when it can. The other two are the binder's.
+  bound: 'someone tied them up',
+  no_rope: 'they had no rope',
+  not_held: 'nobody was holding them down',
   // M11 phase 5c: `slander` and `praise` need somebody to talk *about*, not
   // only somebody to talk to, and the walk over gives both of those a chance
   // to stop being true.
