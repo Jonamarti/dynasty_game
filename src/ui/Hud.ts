@@ -39,6 +39,7 @@ import {
   rememberedAbout, regardFromThem,
 } from '../sim/social/Knowledge.ts';
 import type { Relationship, RelationshipGraph } from '../sim/social/Relationships.ts';
+import { foldRepeats } from './LifeLog.ts';
 import { TECH, TECH_EFFECTS, techPower, type Tech } from '../sim/knowledge/Tech.ts';
 import {
   STAGE_LABELS, PRACTICE_STAGE_LABELS, PROTOTYPE_AT, TRIES_TO_TEST,
@@ -1329,17 +1330,30 @@ export class Hud {
       return rows;
     }
 
-    for (const entry of [...entries].slice(-40).reverse()) {
-      const daysAgo = Math.floor((sim.time.tick - entry.tick) / sim.config.time.ticksPerDay);
+    // Folded before the cut, so the forty are forty *stories* and one busy
+    // afternoon at a rival's store cannot push a whole life off the panel.
+    // See `LifeLog.ts` for why this happens here and not in the chronicle.
+    const daysAgoOf = (tick: number) =>
+      Math.floor((sim.time.tick - tick) / sim.config.time.ticksPerDay);
+    const ago = (days: number) => days <= 0 ? 'today' : days + 'd';
+    for (const run of foldRepeats(entries).slice(-40).reverse()) {
+      const entry = run.last;
+      const daysAgo = daysAgoOf(entry.tick);
+      const firstAgo = daysAgoOf(run.first.tick);
       const when = own
         ? Math.floor(entry.ageDays / 80) + 'y'
-        : (daysAgo <= 0 ? 'today' : daysAgo + 'd');
+        : ago(daysAgo);
+      // The span of a run, when it covers more than one day: "5d–today".
+      const span = firstAgo !== daysAgo ? ago(firstAgo) + '–' + ago(daysAgo) : null;
       rows.push(
         '<div class="hud-life hud-life-' + entry.kind + '">' +
         '<span class="hud-life-age">' + escapeHtml(when) + '</span>' +
-        '<span class="hud-life-text">' + escapeHtml(entry.text) + '</span>' +
+        '<span class="hud-life-text">' + escapeHtml(entry.text) +
+          (run.count > 1 ? ' <b class="hud-life-count">×' + run.count + '</b>' : '') + '</span>' +
         '<span class="hud-life-when">' +
-          (own ? (daysAgo <= 0 ? 'today' : daysAgo + 'd ago') : '') + '</span>' +
+          (own
+            ? (span ?? (daysAgo <= 0 ? 'today' : daysAgo + 'd ago'))
+            : (span && run.count > 1 ? span : '')) + '</span>' +
         '</div>'
       );
     }

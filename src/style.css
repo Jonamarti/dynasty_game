@@ -455,6 +455,8 @@ html, body, #app {
 
 .hud-life-age { color: var(--accent); font-variant-numeric: tabular-nums; }
 .hud-life-when { color: var(--text-dim); font-size: 11px; }
+/* M11 phase 13d: how many times in a row. */
+.hud-life-count { color: var(--text-dim); font-weight: 600; }
 .hud-life-suffered .hud-life-text { color: #e8a9a0; }
 .hud-life-milestone .hud-life-text { color: var(--accent); }
 

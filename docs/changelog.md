@@ -6,6 +6,27 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 13d: the *Life* panel folds a run of the same deed
+
+**The note** (owner's note 15): twenty clicks at a rival's store wrote twenty
+*"used what wasn't theirs"* into *Life* and pushed everything else off it.
+`storeItem` emits `trespass` on each click, and every `emit` writes a line.
+
+**The change.** Consecutive entries with the same text and kind fold into one
+line, *"Used what wasn't theirs ×20"*, with the span of days they cover
+(*"3d–1d"*). Only consecutive ones: a theft, a meal and another theft is a
+story with a middle. The fold is done before the panel's cut of forty, so the
+forty are forty stories.
+
+**In the presentation, not the chronicle**, and deliberately: the succession
+screen and the health checks read `chronicle[]`, and twenty deeds are a
+different fact from one. `foldRepeats` lives in a small `src/ui/LifeLog.ts` so
+`lifelog.test.ts` can pin it without a DOM.
+
+UI only.
+
+---
+
 ## 2026-09-23 — M11 phase 13c: the dead, apart
 
 **The note** (owner's note 14): the dead crowd the living out of every list of
