@@ -201,6 +201,29 @@ export function opennessOf(a: Person, b: Person): number {
   return Math.max(-1, Math.min(1, (a.mood.security + b.mood.security) / 2 / OPENNESS_SPAN));
 }
 
+/**
+ * How far from home a frightened person will go to work, M11 phase 14b's
+ * second reader. No limit below `RANGE_ONSET` of fear; from there the reach
+ * falls from `RANGE_WIDE` tiles to `RANGE_FLOOR` at full fear.
+ *
+ * A filter, not a coefficient, and that is the plan's point: proximity
+ * dominates the scorer, and a gentle pull toward home would lose to the
+ * nearest bush every time. The floor is the risk the plan names — a band
+ * afraid of everything that can reach nothing starves at home — so it sits at
+ * a little over a sight radius and a half, enough ground around any camp to
+ * feed it in a season that feeds anybody.
+ */
+export const RANGE_ONSET = 0.25;
+export const RANGE_WIDE = 48;
+export const RANGE_FLOOR = 20;
+
+export function homeRange(person: Person): number {
+  const fear = fearOf(person);
+  if (fear < RANGE_ONSET) return Infinity;
+  const t = (fear - RANGE_ONSET) / (1 - RANGE_ONSET);
+  return RANGE_WIDE + (RANGE_FLOOR - RANGE_WIDE) * t;
+}
+
 /** Where a band lives and how far its ground reaches, for the sighting pass. */
 export interface Territory {
   bandId: number;

@@ -1255,6 +1255,15 @@ export class Simulation {
   readonly sightings: Sightings = new Map();
   private readonly sightingScratch: Person[] = [];
 
+  /** Every founding band's camp, for the brain's readers of fear. */
+  private bandHomes(): Map<number, { x: number; y: number }> {
+    const homes = new Map<number, { x: number; y: number }>();
+    for (const band of this.bands) {
+      if (!band.outcast) homes.set(band.id, { x: band.homeX, y: band.homeY });
+    }
+    return homes;
+  }
+
   private lookForIntruders(): void {
     const territories = new Map<number, Territory>();
     for (const band of this.bands) {
@@ -2878,6 +2887,7 @@ export class Simulation {
       householdsById: this.householdsById,
       bandRelations: this.bandRelations,
       sabotageCandidatesByBand: this.sabotageCache,
+      homes: this.bandHomes(),
     };
     const actionCtx = {
       world: this.world,

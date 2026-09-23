@@ -48,6 +48,7 @@ import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
 import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
 import { mayUse } from '../social/Property.ts';
+import { homeRange } from '../social/Fear.ts';
 
 export interface BrainContext {
   world: World;
@@ -116,6 +117,13 @@ export interface BrainContext {
    * computed once per tick rather than once per person.
    */
   sabotageCandidatesByBand: ReadonlyMap<number, Building[]>;
+  /**
+   * Each founding band's camp, for M11 phase 14's readers of fear: how far a
+   * frightened person will range from it, and which way they drift back.
+   * Optional so that a test building a context by hand need not invent a
+   * camp; absent, fear has nowhere to pull anybody toward.
+   */
+  homes?: ReadonlyMap<number, { x: number; y: number }>;
 }
 
 export interface ScoredAction {
@@ -2276,9 +2284,14 @@ export class Brain {
     ctx: BrainContext,
     filter: (n: ResourceNode) => boolean
   ): ResourceNode | null {
+    // M11 phase 14b: a frightened person works near home. See `homeRange`.
+    const home = ctx.homes?.get(person.bandId);
+    const range = home ? homeRange(person) : Infinity;
+    const rangeSq = range * range;
     return ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
       n => filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y) &&
-        !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)));
+        !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
+        (range === Infinity || (n.x - home!.x) ** 2 + (n.y - home!.y) ** 2 <= rangeSq));
   }
 
   private setup(
