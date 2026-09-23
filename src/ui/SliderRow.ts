@@ -1,3 +1,4 @@
+import { t } from '../i18n/i18n.ts';
 /**
  * One labelled setting: a drag, a number box, and a way back to the default.
  *
@@ -83,7 +84,7 @@ export function sliderRow(
   reset.className = 'settings-row-reset';
   reset.type = 'button';
   reset.textContent = '↺';
-  reset.title = 'Back to this difficulty’s value';
+  reset.title = t('Back to this difficulty’s value');
 
   row.append(labelCell, range, box, reset);
 

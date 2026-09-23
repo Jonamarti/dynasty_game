@@ -48,6 +48,7 @@ import {
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse } from '../social/Property.ts';
 import type { EventType } from '../social/Events.ts';
+import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 
 export interface ActionContext {
   world: World;
@@ -995,7 +996,9 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'felled ' + (tree.isMature ? 'a grown ' : 'a young ') + tree.def.label.toLowerCase(),
+      text: t(tree.isMature ? 'felled a grown {tree}' : 'felled a young {tree}', {
+        tree: t(tree.def.label).toLowerCase(), g: genderOfNoun(tree.def.label),
+      }),
       kind: 'did',
     });
     ctx.onTreeFelled(tree, person);
@@ -1151,7 +1154,7 @@ export class ActionSystem {
           person.chronicle.push({
             tick: ctx.tick,
             ageDays: person.age,
-            text: 'repaired a ' + site.def.label.toLowerCase(),
+            text: t('repaired {thing}', { thing: aNoun(site.def.label.toLowerCase()) }),
             kind: 'did',
           });
           this.finish(person);
@@ -1197,7 +1200,7 @@ export class ActionSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'finished building a ' + site.def.label.toLowerCase(),
+        text: t('finished building {thing}', { thing: aNoun(site.def.label.toLowerCase()) }),
         kind: 'did',
         built: site.def.id,
       });
@@ -1270,7 +1273,7 @@ export class ActionSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'wrecked a ' + site.def.label.toLowerCase(),
+        text: t('wrecked {thing}', { thing: aNoun(site.def.label.toLowerCase()) }),
         kind: 'did',
       });
       this.finish(person);
@@ -1618,7 +1621,7 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'brought down a ' + animal.def.label.toLowerCase(),
+      text: t('brought down {thing}', { thing: aNoun(animal.def.label.toLowerCase()) }),
       kind: 'did',
     });
     this.finish(person);
@@ -1787,7 +1790,7 @@ export class ActionSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'nursed ' + patient.name + ' back to health',
+        text: t('nursed {name} back to health', { name: patient.name }),
         kind: 'did',
       });
       this.finish(person);
@@ -1871,7 +1874,7 @@ export class ActionSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'tamed a ' + animal.def.label.toLowerCase(),
+        text: t('tamed {thing}', { thing: aNoun(animal.def.label.toLowerCase()) }),
         kind: 'milestone',
       });
     }
@@ -1941,7 +1944,7 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'sowed a field',
+      text: t('sowed a field'),
       kind: 'did',
     });
     this.finish(person);
@@ -2003,7 +2006,7 @@ export class ActionSystem {
       // A field that gives nothing is the strongest thing in the game telling a
       // player their ground is finished, and it must not pass in silence.
       telemetry.count('harvest_empty');
-      ctx.onInsight(person, 'the field gave nothing back', 'setback');
+      ctx.onInsight(person, t('the field gave nothing back'), 'setback');
       this.abandon(person, 'nothing_to_reap', ctx);
       return;
     }
@@ -2023,7 +2026,7 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'took in a harvest of ' + yielded + ' grain',
+      text: t('took in a harvest of {n} grain', { n: yielded }),
       kind: 'did',
     });
     this.finish(person);
@@ -2152,7 +2155,7 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'spread compost on a field',
+      text: t('spread compost on a field'),
       kind: 'did',
     });
     this.finish(person);
@@ -2575,7 +2578,7 @@ export class ActionSystem {
     // same way or asking would quietly be worth less socially than being
     // offered.
     ctx.social.emit('teach', teacher, person, 0.6, ctx.tick, ctx.peopleHash, ctx.sightRadius);
-    ctx.onInsight(person, 'was shown how by ' + teacher.name, 'gain');
+    ctx.onInsight(person, t('was shown how by {name}', { name: teacher.name }), 'gain');
     this.finishSocial(person, ctx.tick);
   }
 
@@ -2678,7 +2681,7 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'made a ' + recipe.label.toLowerCase(),
+      text: t('made {thing}', { thing: aNoun(recipe.label.toLowerCase()) }),
       kind: 'did',
     });
     this.finish(person);
@@ -2857,14 +2860,14 @@ export class ActionSystem {
     // the game that is not writing, and "did anybody paint anything?" cannot be
     // answered from a count of what was written down.
     telemetry.count('inscribed_' + target.def.id);
-    const label = TECH[done as Tech].label.toLowerCase();
+    const label = t(TECH[done as Tech].label).toLowerCase();
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'cut ' + label + ' into ' + target.def.label.toLowerCase(),
+      text: t('cut {tech} into {record}', { tech: label, record: t(target.def.label).toLowerCase() }),
       kind: 'milestone',
     });
-    ctx.onInsight(person, 'wrote down ' + label, 'gain');
+    ctx.onInsight(person, t('wrote down {tech}', { tech: label }), 'gain');
     this.finish(person);
   }
 
@@ -2934,17 +2937,18 @@ export class ActionSystem {
     const tech = useful[0]! as Tech;
     person.practice('teach', 1);
     telemetry.count('read_' + tech);
-    const label = TECH[tech].label.toLowerCase();
+    const label = t(TECH[tech].label).toLowerCase();
     if (record.def.fidelity === 'instruction') {
       ctx.knowledge.receiveFromRecord(person, tech);
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'read ' + label + ' off ' + record.def.label.toLowerCase() +
-          ' cut by ' + record.authorName,
+        text: t('read {tech} off {record} cut by {name}', {
+          tech: label, record: t(record.def.label).toLowerCase(), name: record.authorName,
+        }),
         kind: 'milestone',
       });
-      ctx.onInsight(person, 'read ' + label + ' off a stone', 'gain');
+      ctx.onInsight(person, t('read {tech} off a stone', { tech: label }), 'gain');
     } else {
       // A `reminder` gives a spark, not an answer: `remindFromRecord` only ever
       // fails when the guards above already ruled it out, so the boolean is not
@@ -2953,11 +2957,12 @@ export class ActionSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'saw ' + record.authorName + '\'s ' + record.def.label.toLowerCase() +
-          ' and thought about ' + label,
+        text: t("saw {name}'s {record} and thought about {tech}", {
+          name: record.authorName, record: t(record.def.label).toLowerCase(), tech: label,
+        }),
         kind: 'milestone',
       });
-      ctx.onInsight(person, 'an idea about ' + label + ', from a painting', 'idea');
+      ctx.onInsight(person, t('an idea about {tech}, from a painting', { tech: label }), 'idea');
     }
     this.finish(person);
   }
@@ -3197,10 +3202,10 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'saw further into ' + def.label.toLowerCase(),
+      text: t('saw further into {tech}', { tech: t(def.label).toLowerCase() }),
       kind: 'did',
     });
-    ctx.onInsight(person, 'a breakthrough on ' + def.label.toLowerCase(), 'gain');
+    ctx.onInsight(person, t('a breakthrough on {tech}', { tech: t(def.label).toLowerCase() }), 'gain');
   }
 
   /**
@@ -3266,10 +3271,10 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'built the first ' + def.label.toLowerCase() + ' anyone had ever built',
+      text: t('built the first {tech} anyone had ever built', { tech: t(def.label).toLowerCase() }),
       kind: 'did',
     });
-    ctx.onInsight(person, 'built a ' + def.label.toLowerCase() + ' to try', 'idea');
+    ctx.onInsight(person, t('built a {tech} to try', { tech: t(def.label).toLowerCase() }), 'idea');
     this.finish(person);
   }
 

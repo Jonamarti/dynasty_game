@@ -22,6 +22,7 @@
  */
 import type { NeedsConfig } from '../core/Config.ts';
 import { LETHAL_NEEDS, type Person } from '../entities/Person.ts';
+import { t } from '../../i18n/i18n.ts';
 
 export type Autonomy = 'manual' | 'urgent' | 'auto';
 
@@ -133,8 +134,8 @@ export function survivalActions(needs: readonly UrgentNeed[]): ReadonlySet<strin
 
 export function stallReason(need: UrgentNeed): string {
   switch (need) {
-    case 'thirst': return 'thirsty, and no water in sight';
-    case 'hunger': return 'hungry, and nothing within reach to eat';
-    case 'cold': return 'freezing, and no shelter nearby';
+    case 'thirst': return t('thirsty, and no water in sight');
+    case 'hunger': return t('hungry, and nothing within reach to eat');
+    case 'cold': return t('freezing, and no shelter nearby');
   }
 }

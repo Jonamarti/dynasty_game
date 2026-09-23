@@ -1723,6 +1723,37 @@ html, body, #app {
 .settings.is-start .settings-start-act { display: inline-block; }
 .settings.is-start .settings-back { display: none; }
 
+/* --- the language switch --------------------------------------------------- */
+
+/* Shared by the start screen, the pause menu and the settings header; see
+   `LanguageSwitch.ts`. Small and out of the way, because it is chosen once. */
+.langswitch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: rgba(20, 23, 31, 0.9);
+  align-self: flex-start;
+}
+.langswitch-option {
+  padding: 2px 9px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.langswitch-option:hover { color: var(--text); }
+.langswitch-option.is-on {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.pausemenu-card .langswitch { margin: 10px 0 2px; }
+.newgame-card .langswitch { float: right; }
+
 /* --- narrow and touch screens ------------------------------------------- */
 
 @media (max-width: 700px) {

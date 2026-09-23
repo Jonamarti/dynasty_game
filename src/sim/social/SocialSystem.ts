@@ -28,6 +28,7 @@ import { techPower } from '../knowledge/Tech.ts';
 import type { BandRelations } from './BandRelations.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { t } from '../../i18n/i18n.ts';
 
 export interface LifeEvent {
   tick: number;
@@ -629,7 +630,7 @@ export class SocialSystem {
     this.relationships.setKinship(b.id, a.id, KIN_SPOUSE);
     telemetry.count('marriage');
 
-    const text = a.name + ' and ' + b.name + ' were married';
+    const text = t('{a} and {b} were married', { a: a.name, b: b.name });
     a.chronicle.push({ tick, ageDays: a.age, text, kind: 'milestone' });
     b.chronicle.push({ tick, ageDays: b.age, text, kind: 'milestone' });
 

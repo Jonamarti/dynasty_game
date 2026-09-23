@@ -27,6 +27,7 @@
  */
 import type { Person } from '../entities/Person.ts';
 import type { Relationship } from './Relationships.ts';
+import { t } from '../../i18n/i18n.ts';
 
 export type ConversationMode = 'greet' | 'chat' | 'interests' | 'deep';
 
@@ -210,8 +211,8 @@ export function modeAllowed(
 /** Why a rung is out of reach, in words a player can act on. */
 export function whyNotYet(mode: ConversationMode): string {
   return mode === 'deep'
-    ? 'They do not know them well enough to talk at length'
-    : 'They do not know them well enough for that yet';
+    ? t('They do not know them well enough to talk at length')
+    : t('They do not know them well enough for that yet');
 }
 
 /**

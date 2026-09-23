@@ -24,6 +24,7 @@ import type { RelationshipGraph } from './Relationships.ts';
 import type { PropertyUse } from './Property.ts';
 import type { LifeEvent } from './SocialSystem.ts';
 import { describeEvent } from './Events.ts';
+import { t, genderOf } from '../../i18n/i18n.ts';
 
 /** How well the observer knows the subject. */
 export type Acquaintance = 'self' | 'close' | 'known' | 'seen' | 'stranger';
@@ -88,11 +89,11 @@ export function regardFromThem(
   }
   const opinion = relationships.opinion(subject.id, observer.id);
   const words =
-    opinion >= 40 ? 'They seem fond of you.' :
-    opinion >= REGARD_NEUTRAL ? 'They seem to like you.' :
-    opinion > -REGARD_NEUTRAL ? 'They seem to have no strong feeling about you.' :
-    opinion > -40 ? 'They seem to dislike you.' :
-    'They seem to hate you.';
+    opinion >= 40 ? t('They seem fond of you.') :
+    opinion >= REGARD_NEUTRAL ? t('They seem to like you.') :
+    opinion > -REGARD_NEUTRAL ? t('They seem to have no strong feeling about you.') :
+    opinion > -40 ? t('They seem to dislike you.') :
+    t('They seem to hate you.');
   return { words, opinion: level === 'close' ? opinion : null };
 }
 
@@ -108,13 +109,15 @@ export function explainPropertyUse(
   relationships: RelationshipGraph
 ): string {
   switch (use.basis) {
-    case 'own': return 'it belongs to their band';
-    case 'ally': return 'their band and yours are close allies';
-    case 'unseen': return 'nobody from the owning band is watching';
+    case 'own': return t('it belongs to their band');
+    case 'ally': return t('their band and yours are close allies');
+    case 'unseen': return t('nobody from the owning band is watching');
     case 'seen': {
-      if (!use.seen) return 'someone from its band is close enough to see them';
+      if (!use.seen) return t('someone from its band is close enough to see them');
       const name = knowledgeOfPerson(observer, use.seen, relationships).displayName;
-      return name.charAt(0).toUpperCase() + name.slice(1) + ' is close enough to see them';
+      return t('{name} is close enough to see them', {
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+      });
     }
   }
 }
@@ -124,12 +127,20 @@ const KNOWN_AT = 12;
 /** Familiarity at which you can fairly claim to know what they are like. */
 const CLOSE_AT = 35;
 
-function ageBracket(person: Person): string {
+/**
+ * What a stranger is called: "a young man". Whole phrases rather than a noun
+ * glued to an article, because Spanish needs the article and the noun to agree
+ * with the person ("una joven", "un niño") and English wants neither to move.
+ */
+function strangerName(person: Person): string {
   const years = person.years;
-  if (years < 14) return 'child';
-  if (years < 25) return 'young ' + (person.sex === 'female' ? 'woman' : 'man');
-  if (years < 45) return person.sex === 'female' ? 'woman' : 'man';
-  return 'older ' + (person.sex === 'female' ? 'woman' : 'man');
+  const female = person.sex === 'female';
+  if (years < 14) return t('a child', { g: genderOf(person) });
+  if (years < 25) return female ? t('a young woman') : t('a young man');
+  if (years < 45) return female ? t('a woman') : t('a man');
+  // "a older", as it has always read: the translation pass leaves English
+  // output exactly as it was, and fixing the article is a change of its own.
+  return female ? t('a older woman') : t('a older man');
 }
 
 export function knowledgeOfPerson(
@@ -145,7 +156,7 @@ export function knowledgeOfPerson(
       knowsCondition: true,
       knowsCharacter: true,
       knowsTies: true,
-      because: 'yourself',
+      because: t('yourself'),
     };
   }
 
@@ -157,12 +168,12 @@ export function knowledgeOfPerson(
   if (!rel && remembered === 0) {
     return {
       level: 'stranger',
-      displayName: 'a ' + ageBracket(subject),
+      displayName: strangerName(subject),
       knowsName: false,
       knowsCondition: false,
       knowsCharacter: false,
       knowsTies: false,
-      because: 'you have never met',
+      because: t('you have never met'),
     };
   }
 
@@ -177,7 +188,7 @@ export function knowledgeOfPerson(
       knowsCondition: true,
       knowsCharacter: true,
       knowsTies: true,
-      because: kin !== 0 ? 'family' : 'you know them well',
+      because: kin !== 0 ? t('family') : t('you know them well'),
     };
   }
 
@@ -189,7 +200,7 @@ export function knowledgeOfPerson(
       knowsCondition: true,
       knowsCharacter: false,
       knowsTies: false,
-      because: 'you have spoken more than once',
+      because: t('you have spoken more than once'),
     };
   }
 
@@ -201,8 +212,8 @@ export function knowledgeOfPerson(
     knowsCharacter: false,
     knowsTies: false,
     because: remembered > 0
-      ? 'you know of them'
-      : 'you have crossed paths',
+      ? t('you know of them')
+      : t('you have crossed paths'),
   };
 }
 
@@ -269,7 +280,7 @@ export function rememberedAbout(
         entry.type,
         nameOf(entry.actorId),
         entry.targetId === null ? null : nameOf(entry.targetId)
-      ) + (entry.firsthand ? '' : ' (you heard)'),
+      ) + (entry.firsthand ? '' : ' ' + t('(you heard)')),
       kind: (entry.targetId === subject.id ? 'suffered' : 'did') as LifeEvent['kind'],
     }));
 }
@@ -294,10 +305,10 @@ const EXPERT_AT = 40;
 export function knowledgeOfNode(observer: Person, node: ResourceNode): NodeKnowledge {
   const fullness = node.def.maxAmount === 0 ? 0 : node.amount / node.def.maxAmount;
   const estimate =
-    fullness <= 0 ? 'stripped bare' :
-    fullness < 0.25 ? 'picked over' :
-    fullness < 0.6 ? 'worth stopping for' :
-    'laden';
+    fullness <= 0 ? t('stripped bare') :
+    fullness < 0.25 ? t('picked over') :
+    fullness < 0.6 ? t('worth stopping for') :
+    t('laden');
 
   const close = observer.distanceTo(node) <= ARMS_LENGTH;
   const expert = observer.skills[node.def.skill] >= EXPERT_AT;
@@ -306,13 +317,13 @@ export function knowledgeOfNode(observer: Person, node: ResourceNode): NodeKnowl
     return {
       amount: Math.floor(node.amount),
       estimate,
-      because: close ? 'close enough to count' : 'you know your trade',
+      because: close ? t('close enough to count') : t('you know your trade'),
     };
   }
   return {
     amount: null,
     estimate,
-    because: 'too far to judge exactly',
+    because: t('too far to judge exactly'),
   };
 }
 
@@ -336,10 +347,10 @@ export interface TreeKnowledge {
  */
 export function knowledgeOfTree(observer: Person, tree: Tree): TreeKnowledge {
   const estimate =
-    tree.isSeedling ? 'a seedling' :
-    !tree.isMature ? 'still growing' :
-    tree.years > tree.def.maxAgeYears * 0.8 ? 'old, and past its best' :
-    'full grown';
+    tree.isSeedling ? t('a seedling') :
+    !tree.isMature ? t('still growing') :
+    tree.years > tree.def.maxAgeYears * 0.8 ? t('old, and past its best') :
+    t('full grown');
 
   const close = observer.distanceTo(tree) <= ARMS_LENGTH;
   const woodsman = observer.skills.build >= 30;
@@ -350,7 +361,7 @@ export function knowledgeOfTree(observer: Person, tree: Tree): TreeKnowledge {
       woodYield: tree.woodYield,
       fruit: Math.floor(tree.fruit),
       estimate,
-      because: woodsman ? 'you can read a tree' : 'close enough to judge',
+      because: woodsman ? t('you can read a tree') : t('close enough to judge'),
     };
   }
   return {
@@ -358,7 +369,7 @@ export function knowledgeOfTree(observer: Person, tree: Tree): TreeKnowledge {
     woodYield: null,
     fruit: Math.floor(tree.fruit),
     estimate,
-    because: 'you would have to look closer',
+    because: t('you would have to look closer'),
   };
 }
 
@@ -372,6 +383,6 @@ export function knowledgeOfBuilding(observer: Person, building: Building): Build
   const ours = building.ownerBandId === observer.bandId;
   return {
     knowsContents: ours,
-    because: ours ? 'your band built it' : 'you have not looked inside',
+    because: ours ? t('your band built it') : t('you have not looked inside'),
   };
 }

@@ -33,6 +33,7 @@ import type { Person } from '../sim/entities/Person.ts';
 import { knowledgeOfPerson, opinionTone } from '../sim/social/Knowledge.ts';
 import { layOutFamily, type FamilyLayout, type FamilyNode } from './FamilyTreeLayout.ts';
 import { panelBox } from './PanelBox.ts';
+import { t, onLanguageChange } from '../i18n/i18n.ts';
 
 export class FamilyTreeOverlay {
   private root: HTMLElement;
@@ -53,6 +54,13 @@ export class FamilyTreeOverlay {
         return;
       }
       if (target === this.root) this.close();
+    });
+
+    // The digest says nothing about language, so a switch would leave the old
+    // words up until something else changed.
+    onLanguageChange(() => {
+      this.signature = '';
+      this.root.innerHTML = '';
     });
 
     window.addEventListener('keydown', event => {
@@ -118,9 +126,9 @@ export class FamilyTreeOverlay {
       this.root.innerHTML =
         '<div class="familytree-card">' +
         '<div class="familytree-head"><b>' + escapeHtml(name) + '</b>' +
-        '<button class="familytree-close" data-close="1">close</button></div>' +
-        '<div class="familytree-veil">You do not know their family until you know ' +
-        'them. Spend time with them first.</div>' +
+        '<button class="familytree-close" data-close="1">' + t('close') + '</button></div>' +
+        '<div class="familytree-veil">' +
+        t('You do not know their family until you know them. Spend time with them first.') + '</div>' +
         '</div>';
       return;
     }
@@ -148,9 +156,10 @@ export class FamilyTreeOverlay {
       '<div class="familytree-card">' +
       '<div class="familytree-head">' +
         '<b>' + escapeHtml(name) + '</b>' +
-        '<span class="familytree-sub">' + layout.nodes.length +
-          (layout.nodes.length === 1 ? ' person' : ' people') + ' on the tree</span>' +
-        '<button class="familytree-close" data-close="1">close</button>' +
+        '<span class="familytree-sub">' + (layout.nodes.length === 1
+          ? t('{n} person on the tree', { n: 1 })
+          : t('{n} people on the tree', { n: layout.nodes.length })) + '</span>' +
+        '<button class="familytree-close" data-close="1">' + t('close') + '</button>' +
       '</div>' +
       '<div class="familytree-canvas" style="width:' + layout.width +
         'px;height:' + layout.height + 'px">' +

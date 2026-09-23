@@ -34,6 +34,7 @@ import { telemetry } from '../core/Telemetry.ts';
 import { chiefHoneymoon, chiefTermDays } from '../social/Leadership.ts';
 import { conspiracyAgainst, warParty } from '../social/Factions.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
+import { t } from '../../i18n/i18n.ts';
 
 /**
  * How large a faction against somebody has to be before the band acts on it.
@@ -443,10 +444,10 @@ export class BandSystem {
     best.chronicle.push({
       tick: ctx.tick,
       ageDays: best.age,
-      text: 'became chief of the ' + band.name,
+      text: t('became chief of the {band}', { band: band.name }),
       kind: 'milestone',
     });
-    ctx.onInsight(best, 'was welcomed as chief of the ' + band.name, 'gain');
+    ctx.onInsight(best, t('was welcomed as chief of the {band}', { band: band.name }), 'gain');
   }
 
   /**
@@ -612,13 +613,13 @@ export class BandSystem {
     rebel.chronicle.push({
       tick: ctx.tick,
       ageDays: rebel.age,
-      text: 'openly refused to answer to ' + chief.name + ' any longer',
+      text: t('openly refused to answer to {name} any longer', { name: chief.name }),
       kind: 'did',
     });
     // Louder than an ordinary refused order: this is a stand taken in front of
     // the whole band, not one request declined in private.
     ctx.relationships.addDeed(rebel.id, chief.id, -6, ctx.tick);
-    ctx.onInsight(rebel, 'defied ' + chief.name + ' openly', 'setback');
+    ctx.onInsight(rebel, t('defied {name} openly', { name: chief.name }), 'setback');
   }
 
   /** Rather than go on answering to a chief they cannot stand, they leave. */
@@ -627,11 +628,11 @@ export class BandSystem {
     rebel.chronicle.push({
       tick: ctx.tick,
       ageDays: rebel.age,
-      text: 'left the ' + band.name + ' rather than answer to ' + chief.name,
+      text: t('left the {band} rather than answer to {name}', { band: band.name, name: chief.name }),
       kind: 'did',
     });
     ctx.leaveBand(rebel);
-    ctx.onInsight(rebel, 'left rather than answer to ' + chief.name, 'setback');
+    ctx.onInsight(rebel, t('left rather than answer to {name}', { name: chief.name }), 'setback');
   }
 
   /**
@@ -657,26 +658,26 @@ export class BandSystem {
       telemetry.count('rebellion_challenge_won');
       rebel.chronicle.push({
         tick: ctx.tick, ageDays: rebel.age,
-        text: 'challenged ' + chief.name + ' for the chiefdom and won',
+        text: t('challenged {name} for the chiefdom and won', { name: chief.name }),
         kind: 'milestone',
       });
       chief.chronicle.push({
         tick: ctx.tick, ageDays: chief.age,
-        text: 'was deposed by ' + rebel.name,
+        text: t('was deposed by {name}', { name: rebel.name }),
         kind: 'suffered',
       });
-      ctx.onInsight(rebel, 'became chief in ' + chief.name + '\'s place', 'gain');
+      ctx.onInsight(rebel, t("became chief in {name}'s place", { name: chief.name }), 'gain');
     } else {
       telemetry.count('rebellion_challenge_lost');
       rebel.chronicle.push({
         tick: ctx.tick, ageDays: rebel.age,
-        text: 'challenged ' + chief.name + ' for the chiefdom and lost',
+        text: t('challenged {name} for the chiefdom and lost', { name: chief.name }),
         kind: 'did',
       });
       // Losing a public bid for leadership costs standing beyond an ordinary
       // refusal: everyone just watched it happen.
       ctx.relationships.addDeed(rebel.id, chief.id, -8, ctx.tick);
-      ctx.onInsight(rebel, 'lost a bid to replace ' + chief.name, 'setback');
+      ctx.onInsight(rebel, t('lost a bid to replace {name}', { name: chief.name }), 'setback');
     }
   }
 
@@ -1182,7 +1183,7 @@ export class BandSystem {
       suspect.chronicle.push({
         tick: ctx.tick,
         ageDays: suspect.age,
-        text: 'was cast out of the ' + band.name,
+        text: t('was cast out of the {band}', { band: band.name }),
         kind: 'suffered',
       });
       ctx.onExile(suspect, band, faction.memberIds.length);
@@ -1223,11 +1224,11 @@ export class BandSystem {
       candidate.chronicle.push({
         tick: ctx.tick,
         ageDays: candidate.age,
-        text: 'was taken in by the ' + band.name,
+        text: t('was taken in by the {band}', { band: band.name }),
         kind: 'milestone',
       });
       ctx.onAdopt(candidate, band);
-      ctx.onInsight(candidate, 'was welcomed into the ' + band.name, 'gain');
+      ctx.onInsight(candidate, t('was welcomed into the {band}', { band: band.name }), 'gain');
       return; // One at a time, the same discipline `considerExile` keeps.
     }
   }
@@ -1325,14 +1326,20 @@ export class BandSystem {
     ctx.command(chief, chief, verb, { buildingId: target.id });
 
     const victim = this.bandName(victimId);
-    const what = plunder ? 'led a raid on the stores of the ' : 'led a raid against the ';
+    const behind = joined === 1
+      ? t('one man behind him')
+      : t('{n} men behind him', { n: joined });
     chief.chronicle.push({
       tick: ctx.tick,
       ageDays: chief.age,
-      text: what + victim + ', ' + (joined === 1 ? 'one man' : joined + ' men') + ' behind him',
+      text: plunder
+        ? t('led a raid on the stores of the {band}, {behind}', { band: victim, behind })
+        : t('led a raid against the {band}, {behind}', { band: victim, behind }),
       kind: 'did',
     });
-    ctx.onInsight(chief, what.replace('led', 'leads') + victim, 'setback');
+    ctx.onInsight(chief, plunder
+      ? t('leads a raid on the stores of the {band}', { band: victim })
+      : t('leads a raid against the {band}', { band: victim }), 'setback');
   }
 
   /**

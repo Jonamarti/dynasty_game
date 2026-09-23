@@ -31,6 +31,8 @@ import type { PropertyUse } from '../social/Property.ts';
 import {
   CONVERSATION_MODES, MODE_LADDER, modeAllowed, whyNotYet, type ConversationMode,
 } from '../social/Conversation.ts';
+import { t, aNoun, theNoun, language, joinAnd } from '../../i18n/i18n.ts';
+import { capitalise } from '../../i18n/i18n.ts';
 
 export type TargetKind =
   'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription';
@@ -163,6 +165,8 @@ const NODE_VERBS: Record<string, { label: string; icon: string; action: string }
   reeds: { label: 'Cut reeds', icon: '\u{1F33E}', action: 'gather' },
   clay: { label: 'Dig clay', icon: '\u{1FAA8}', action: 'gather' },
   flint: { label: 'Gather flint', icon: '\u{1FAA8}', action: 'gather' },
+  // Translated where it is shown, below; `NODE_VERB_LABELS` lets the i18n test
+  // see these.
 };
 
 /**
@@ -192,32 +196,34 @@ export function itemActions(
   return [
     {
       id: 'eat_item',
-      label: 'Eat',
+      label: t('Eat'),
       icon: '\u{1F356}',
       enabled: edible,
-      reason: edible ? undefined : 'Not food',
+      reason: edible ? undefined : t('Not food'),
     },
     {
       id: 'give_item',
       label: nearbyCount === 0
-        ? 'Give'
+        ? t('Give')
         : nearbyCount === 1
-          ? 'Give to ' + soleRecipientName
-          : 'Give to...',
+          ? t('Give to {name}', { name: soleRecipientName })
+          : t('Give to...'),
       icon: '\u{1F381}',
       enabled: nearbyCount > 0,
-      reason: nearbyCount > 0 ? undefined : 'Nobody within reach',
+      reason: nearbyCount > 0 ? undefined : t('Nobody within reach'),
     },
     {
       id: 'store_item',
-      label: nearbyStore ? 'Put in the ' + nearbyStore.def.label.toLowerCase() : 'Store',
+      label: nearbyStore
+        ? t('Put in {store}', { store: theNoun(nearbyStore.def.label.toLowerCase()) })
+        : t('Store'),
       icon: '\u{1F4E5}',
       enabled: nearbyStore !== null,
-      reason: nearbyStore ? undefined : 'No store within reach',
+      reason: nearbyStore ? undefined : t('No store within reach'),
     },
     {
       id: 'drop_item',
-      label: 'Drop',
+      label: t('Drop'),
       icon: '\u{1F53B}',
       enabled: true,
     },
@@ -249,11 +255,11 @@ export function availableActions(
       const room = actor.carrying < actor.carryCapacity;
       return [{
         id: 'pickup',
-        label: 'Pick up',
+        label: t('Pick up'),
         icon: '\u{1F91A}',
         enabled: room,
         reason: room ? undefined
-          : ctx.commanding ? 'Their hands are full' : 'Your hands are full',
+          : ctx.commanding ? t('Their hands are full') : t('Your hands are full'),
       }];
     }
     case 'animal': return animalActions(actor, target.animal!);
@@ -280,11 +286,11 @@ function recordActions(actor: Person, record: Inscription): ActionOption[] {
   if (record.unfinished) {
     return [{
       id: 'inscribe',
-      label: 'Finish cutting it',
+      label: t('Finish cutting it'),
       icon: '\u{1FAA8}',
       enabled: literate,
       reason: literate ? undefined
-        : 'You do not know how to make a ' + record.def.label.toLowerCase(),
+        : t('You do not know how to make {thing}', { thing: aNoun(record.def.label.toLowerCase()) }),
     }];
   }
 
@@ -300,16 +306,16 @@ function recordActions(actor: Person, record: Inscription): ActionOption[] {
       (!actor.ideaFor(tech) && actor.ideas.length < MAX_IDEAS)));
   return [{
     id: 'read',
-    label: 'Read it',
+    label: t('Read it'),
     icon: '\u{1F4D6}',
     enabled: literate && useful,
     reason: !literate
-      ? 'You cannot read a ' + record.def.label.toLowerCase()
+      ? t('You cannot read {thing}', { thing: aNoun(record.def.label.toLowerCase()) })
       : useful
         ? undefined
         : record.techs.length === 0
-          ? 'There is nothing on it yet'
-          : 'Nothing on it that you could follow',
+          ? t('There is nothing on it yet')
+          : t('Nothing on it that you could follow'),
   }];
 }
 
@@ -359,10 +365,10 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       return {
         id: 'discuss',
         techId: candidate.tech,
-        label: 'Discuss ' + def.label.toLowerCase() + ' with ' + other.name,
+        label: t('Discuss {tech} with {name}', { tech: t(def.label).toLowerCase(), name: other.name }),
         icon: '\u{1F914}',
         enabled: informed,
-        reason: informed ? undefined : 'They know nothing about it',
+        reason: informed ? undefined : t('They know nothing about it'),
       };
     });
 
@@ -374,25 +380,25 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
   return [
     ...(techPower(actor, 'herbalism') > 0 ? [{
       id: 'tend',
-      label: 'Tend ' + other.name,
+      label: t('Tend {name}', { name: other.name }),
       icon: '\u{1FAF6}',
       enabled: hurt,
-      reason: hurt ? undefined : 'They are not hurt',
+      reason: hurt ? undefined : t('They are not hurt'),
     }] : []),
-    ...grouped(discussions, 'Discuss with ' + other.name + '…', '\u{1F914}',
-      'They know nothing about what is on your mind'),
+    ...grouped(discussions, t('Discuss with {name}…', { name: other.name }), '\u{1F914}',
+      t('They know nothing about what is on your mind')),
     {
       id: 'teach',
-      label: 'Teach ' + other.name,
+      label: t('Teach {name}', { name: other.name }),
       icon: '\u{1F393}',
       enabled: teachable,
       reason: teachable
         ? undefined
         : actor.knownTech.size === 0
-          ? 'You know nothing worth passing on'
+          ? t('You know nothing worth passing on')
           : onlyGroundwork
-            ? 'They lack the groundwork for anything you could show them'
-            : 'They already know everything you do',
+            ? t('They lack the groundwork for anything you could show them')
+            : t('They already know everything you do'),
     },
     {
       // M9 phase 3, note 11: the mirror of `teach`, started by the pupil.
@@ -405,10 +411,10 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       // have. Asking is free and the answer is the interesting part, so the
       // refusals live in `doAsk` where they can be spoken.
       id: 'ask',
-      label: 'Ask ' + other.name + ' to show you how',
+      label: t('Ask {name} to show you how', { name: other.name }),
       icon: '\u{1F64B}',
       enabled: !other.isChild,
-      reason: other.isChild ? 'They are too young to show anybody anything' : undefined,
+      reason: other.isChild ? t('They are too young to show anybody anything') : undefined,
     },
     {
       // M11 phase 11: the safe half of the fix for "nobody can become a
@@ -416,11 +422,11 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       // is hurt; `doSpar` is where the gate on their willingness actually
       // lives, this menu only rules out what could never be offered at all.
       id: 'spar',
-      label: 'Spar with ' + other.name,
+      label: t('Spar with {name}', { name: other.name }),
       icon: '\u{1F94A}',
       enabled: !actor.isChild && !other.isChild,
       reason: actor.isChild || other.isChild
-        ? 'Too young to spar safely'
+        ? t('Too young to spar safely')
         : undefined,
     },
     // M9 phase 4, note 5. One entry per rung of `Conversation.ts` rather than
@@ -439,62 +445,62 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       return {
         id: 'talk',
         mode,
-        label: CONVERSATION_MODES[mode].verb,
+        label: t(CONVERSATION_MODES[mode].verb),
         icon: '\u{1F4AC}',
         enabled: allowed,
         reason: allowed ? undefined : whyNotYet(mode),
       };
-    }), 'Talk to ' + other.name + '…', '\u{1F4AC}',
-      'They do not know them well enough to say anything'),
+    }), t('Talk to {name}…', { name: other.name }), '\u{1F4AC}',
+      t('They do not know them well enough to say anything')),
     {
       id: 'give',
-      label: 'Give food',
+      label: t('Give food'),
       icon: '\u{1F381}',
       enabled: carriedFood !== null,
-      reason: carriedFood === null ? 'You are carrying no food' : undefined,
+      reason: carriedFood === null ? t('You are carrying no food') : undefined,
     },
     {
       // M11 phase 7b's third `BandRelations` engine: both sides hand
       // something over, unlike `give`, which is why it needs food on both
       // sides rather than one.
       id: 'trade',
-      label: 'Trade with ' + other.name,
+      label: t('Trade with {name}', { name: other.name }),
       icon: '\u{1F91D}',
       enabled: carriedFood !== null && other.inventory.bestFood() !== null,
       reason: carriedFood === null
-        ? 'You are carrying no food'
+        ? t('You are carrying no food')
         : other.inventory.bestFood() === null
-          ? 'They are carrying no food'
+          ? t('They are carrying no food')
           : undefined,
     },
     {
       id: 'steal',
-      label: 'Steal from ' + other.name,
+      label: t('Steal from {name}', { name: other.name }),
       icon: '\u{1F576}',
       enabled: other.inventory.total > 0,
-      reason: other.inventory.total === 0 ? 'They carry nothing' : undefined,
+      reason: other.inventory.total === 0 ? t('They carry nothing') : undefined,
       hostile: true,
     },
     {
       // Coercion that needs no technology: a demand made openly, unlike
       // `steal`, so it costs standing whether or not it is met.
       id: 'threaten',
-      label: 'Threaten ' + other.name,
+      label: t('Threaten {name}', { name: other.name }),
       icon: '\u{270A}',
       enabled: other.inventory.total > 0,
-      reason: other.inventory.total === 0 ? 'They carry nothing' : undefined,
+      reason: other.inventory.total === 0 ? t('They carry nothing') : undefined,
       hostile: true,
     },
     {
       id: 'attack',
-      label: 'Attack ' + other.name,
+      label: t('Attack {name}', { name: other.name }),
       icon: '⚔',
       enabled: true,
       hostile: true,
     },
     {
       id: 'possess',
-      label: 'Play as ' + other.name,
+      label: t('Play as {name}', { name: other.name }),
       icon: '\u{1F464}',
       enabled: true,
     },
@@ -503,14 +509,14 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
 
 function animalActions(actor: Person, animal: Animal): ActionOption[] {
   const laden = actor.carrying >= actor.carryCapacity;
-  const beast = animal.def.label.toLowerCase();
+  const beast = theNoun(animal.def.label.toLowerCase());
   const options: ActionOption[] = [
     {
       id: 'hunt',
-      label: 'Hunt the ' + beast,
+      label: t('Hunt {beast}', { beast }),
       icon: '\u{1F3F9}',
       enabled: !laden,
-      reason: laden ? 'Your hands are full' : undefined,
+      reason: laden ? t('Your hands are full') : undefined,
     },
   ];
   // M8.1. Offered only to somebody who could actually do it, for the reason the
@@ -522,13 +528,13 @@ function animalActions(actor: Person, animal: Animal): ActionOption[] {
     options.push({
       id: 'tame',
       label: already && animal.tamedBy === actor.id
-        ? 'The ' + beast + ' follows you'
-        : 'Offer the ' + beast + ' food',
+        ? capitalise(t('{beast} follows you', { beast }))
+        : t('Offer {beast} food', { beast }),
       icon: '\u{1F36F}',
       enabled: !already && food !== null,
       reason: already
-        ? 'It already follows somebody'
-        : food === null ? 'You are carrying no food to offer' : undefined,
+        ? t('It already follows somebody')
+        : food === null ? t('You are carrying no food to offer') : undefined,
     });
   }
   return options;
@@ -539,10 +545,10 @@ function nodeActions(node: ResourceNode): ActionOption[] {
   return [
     {
       id: verb.action,
-      label: verb.label,
+      label: t(verb.label),
       icon: verb.icon,
       enabled: !node.depleted,
-      reason: node.depleted ? 'Nothing left here' : undefined,
+      reason: node.depleted ? t('Nothing left here') : undefined,
     },
   ];
 }
@@ -553,24 +559,29 @@ function treeActions(tree: Tree): ActionOption[] {
   if (tree.def.fruitItem) {
     options.push({
       id: 'pick',
-      label: 'Pick ' + tree.def.fruitItem + 's',
+      // English has always pluralised the id; a translation takes the label.
+      label: t('Pick {fruit}', {
+        fruit: language() === 'en'
+          ? tree.def.fruitItem + 's'
+          : t(ITEMS[tree.def.fruitItem]?.label ?? tree.def.fruitItem).toLowerCase(),
+      }),
       icon: '\u{1F34E}',
       enabled: tree.fruit >= 1,
       reason: tree.fruit >= 1
         ? undefined
-        : tree.isMature ? 'Nothing on it this season' : 'Too young to bear',
+        : tree.isMature ? t('Nothing on it this season') : t('Too young to bear'),
     });
   }
 
   options.push({
     id: 'chop',
-    label: 'Fell the ' + tree.def.label.toLowerCase(),
+    label: t('Fell {tree}', { tree: theNoun(tree.def.label.toLowerCase()) }),
     icon: '\u{1FA93}',
     enabled: true,
     // Felling is flagged the way theft and violence are. It is permanent, and
     // the only new trees anywhere come from the ones still standing.
     hostile: tree.isMature,
-    reason: tree.isMature ? undefined : 'A sapling yields almost nothing',
+    reason: tree.isMature ? undefined : t('A sapling yields almost nothing'),
   });
 
   return options;
@@ -585,23 +596,23 @@ function buildingActions(
   if (!building.complete) {
     options.push({
       id: 'build',
-      label: 'Work on the ' + building.def.label,
+      label: t('Work on {site}', { site: theSite(building.def.label) }),
       icon: '\u{1F528}',
       enabled: true,
     });
     options.push({
       id: 'haul',
-      label: 'Deliver materials',
+      label: t('Deliver materials'),
       icon: '\u{1F4E6}',
       enabled: building.wants(actor.inventory),
-      reason: building.wants(actor.inventory) ? undefined : 'You carry nothing it needs',
+      reason: building.wants(actor.inventory) ? undefined : t('You carry nothing it needs'),
     });
   } else {
     const property = ctx.propertyUse?.(building);
     const canUse = property?.allowed ?? true;
     const guarded = canUse || !property
       ? undefined
-      : ctx.explainProperty?.(property) ?? 'someone from its band is watching';
+      : ctx.explainProperty?.(property) ?? t('someone from its band is watching');
     // M11 phase 11b. Repair reuses `build` rather than getting a verb of its
     // own — see `ActionSystem.doBuild`'s own note on why — so the one thing
     // this menu has to add is the *option*: nothing else here offers `build`
@@ -609,7 +620,7 @@ function buildingActions(
     if (building.durability !== null && building.durability < building.def.workTicks) {
       options.push({
         id: 'build',
-        label: 'Repair the ' + building.def.label,
+        label: t('Repair {site}', { site: theSite(building.def.label) }),
         icon: '\u{1F528}',
         enabled: canUse,
         reason: guarded,
@@ -625,7 +636,7 @@ function buildingActions(
       !building.crop && !building.ruined) {
       options.push({
         id: 'sabotage',
-        label: 'Damage the ' + building.def.label,
+        label: t('Damage {site}', { site: theSite(building.def.label) }),
         icon: '\u{1F525}',
         enabled: canUse,
         reason: guarded,
@@ -635,17 +646,17 @@ function buildingActions(
     if (building.def.storage > 0) {
       options.push({
         id: 'store',
-        label: 'Store what you carry',
+        label: t('Store what you carry'),
         icon: '\u{1F4E5}',
         enabled: canUse && actor.inventory.total > 0,
-        reason: guarded ?? (actor.inventory.total === 0 ? 'You carry nothing' : undefined),
+        reason: guarded ?? (actor.inventory.total === 0 ? t('You carry nothing') : undefined),
       });
       options.push({
         id: 'take',
-        label: 'Take from store',
+        label: t('Take from store'),
         icon: '\u{1F4E4}',
         enabled: canUse && building.store.total > 0,
-        reason: guarded ?? (building.store.total === 0 ? 'The store is empty' : undefined),
+        reason: guarded ?? (building.store.total === 0 ? t('The store is empty') : undefined),
       });
     }
     // M8.2. Both verbs are offered on a finished plot, and which one is enabled
@@ -660,13 +671,13 @@ function buildingActions(
       const knows = techPower(actor, 'farming') > 0;
       options.push({
         id: 'sow',
-        label: 'Sow the field',
+        label: t('Sow the field'),
         icon: '\u{1F331}',
         enabled: canUse && knows && crop.isFallow && seed >= SOW_SEED,
         reason: guarded
-          ?? (!knows ? 'Nobody here has the idea of putting seed back in the ground'
-          : !crop.isFallow ? 'Something is growing here already'
-          : seed < SOW_SEED ? 'You need ' + SOW_SEED + ' grain to sow this'
+          ?? (!knows ? t('Nobody here has the idea of putting seed back in the ground')
+          : !crop.isFallow ? t('Something is growing here already')
+          : seed < SOW_SEED ? t('You need {n} grain to sow this', { n: SOW_SEED })
           : undefined),
       });
       const knowsCompost = techPower(actor, 'composting') > 0;
@@ -678,7 +689,7 @@ function buildingActions(
         // compost anywhere in the band.
         options.push({
           id: 'spread',
-          label: 'Spread compost here',
+          label: t('Spread compost here'),
           icon: '\u{1F343}',
           enabled: canUse,
           reason: guarded,
@@ -686,12 +697,12 @@ function buildingActions(
       }
       options.push({
         id: 'reap',
-        label: 'Bring in the harvest',
+        label: t('Bring in the harvest'),
         icon: '\u{1F33E}',
         enabled: canUse && crop.isRipe,
         reason: guarded ?? (crop.isRipe ? undefined
-          : crop.isFallow ? 'Nothing is growing here'
-          : 'It is not ready yet'),
+          : crop.isFallow ? t('Nothing is growing here')
+          : t('It is not ready yet')),
       });
     }
     if (building.def.shelter > 0) {
@@ -700,14 +711,14 @@ function buildingActions(
       // offering only one of them made "go to bed" impossible to order.
       options.push({
         id: 'sleep',
-        label: 'Sleep here',
+        label: t('Sleep here'),
         icon: '\u{1F6CC}',
         enabled: canUse,
         reason: guarded,
       });
       options.push({
         id: 'shelter',
-        label: 'Shelter here',
+        label: t('Shelter here'),
         icon: '\u{1F3E0}',
         enabled: canUse,
         reason: guarded,
@@ -724,8 +735,8 @@ function buildingActions(
         const option = craftOption(actor, recipe, ctx, building);
         crafts.push(canUse ? option : { ...option, enabled: false, reason: guarded });
       }
-      options.push(...grouped(crafts, 'Make…', '\u{1F528}',
-        'You know nothing that is made here'));
+      options.push(...grouped(crafts, t('Make…'), '\u{1F528}',
+        t('You know nothing that is made here')));
     }
   }
   return options;
@@ -740,30 +751,30 @@ function groundActions(
   const options: ActionOption[] = [
     {
       id: 'goto',
-      label: 'Walk here',
+      label: t('Walk here'),
       icon: '\u{1F45F}',
       enabled: walkable,
-      reason: walkable ? undefined : 'You cannot walk there',
+      reason: walkable ? undefined : t('You cannot walk there'),
     },
     {
       id: 'rest',
-      label: 'Rest',
+      label: t('Rest'),
       icon: '\u{1F634}',
       enabled: true,
     },
     {
       id: 'eat',
-      label: 'Eat',
+      label: t('Eat'),
       icon: '\u{1F356}',
       enabled: actor.inventory.bestFood() !== null,
-      reason: actor.inventory.bestFood() === null ? 'You are carrying no food' : undefined,
+      reason: actor.inventory.bestFood() === null ? t('You are carrying no food') : undefined,
     },
   ];
   // Offered whenever there is water within reach of the click, including when
   // the click landed *on* the water: the order routes to the nearest bank, so
   // clicking a lake and being told to go and drink is exactly right.
   if (ctx.nearWater) {
-    options.push({ id: 'drink', label: 'Drink', icon: '\u{1F4A7}', enabled: true });
+    options.push({ id: 'drink', label: t('Drink'), icon: '\u{1F4A7}', enabled: true });
   }
 
   // Playing, where you stand: a tune has no destination, and everybody in
@@ -772,10 +783,10 @@ function groundActions(
     const hasFlute = actor.inventory.has('flute');
     options.push({
       id: 'play',
-      label: 'Play a tune',
+      label: t('Play a tune'),
       icon: '\u{1F3B5}',
       enabled: hasFlute,
-      reason: hasFlute ? undefined : 'You are not carrying a flute',
+      reason: hasFlute ? undefined : t('You are not carrying a flute'),
     });
   }
 
@@ -785,10 +796,10 @@ function groundActions(
     const hasBeer = actor.inventory.has('beer');
     options.push({
       id: 'toast',
-      label: 'Share a drink',
+      label: t('Share a drink'),
       icon: '\u{1F37A}',
       enabled: hasBeer,
-      reason: hasBeer ? undefined : 'You are not carrying any beer',
+      reason: hasBeer ? undefined : t('You are not carrying any beer'),
     });
   }
 
@@ -805,7 +816,7 @@ function groundActions(
     .map(candidate => ({
       id: 'ponder',
       techId: candidate.tech,
-      label: 'Think about ' + TECH[candidate.tech].label.toLowerCase(),
+      label: t('Think about {tech}', { tech: t(TECH[candidate.tech].label).toLowerCase() }),
       icon: '\u{1F4AD}',
       enabled: true,
     }));
@@ -817,12 +828,12 @@ function groundActions(
     // idea, so the answer to "why can I not think?" stopped being a refusal.
     options.push({
       id: 'reflect',
-      label: 'Sit and think',
+      label: t('Sit and think'),
       icon: '\u{1F4AD}',
       enabled: true,
     });
   } else {
-    options.push(...grouped(thinkable, 'Think about…', '\u{1F4AD}', ''));
+    options.push(...grouped(thinkable, t('Think about…'), '\u{1F4AD}', ''));
   }
 
   // Devices only: "Build the first plant lore" is not a thing anybody can do,
@@ -841,12 +852,13 @@ function groundActions(
       .every(([itemId, count]) => actor.inventory.count(itemId) >= count);
     options.push({
       id: 'prototype',
-      label: 'Build the first ' + def.label.toLowerCase(),
+      label: t('Build the first {tech}', { tech: t(def.label).toLowerCase() }),
       icon: '\u{1F528}',
       enabled: ready,
-      reason: ready ? undefined : 'You need ' + Object.entries(def.prototype)
-        .map(([itemId, count]) => count + ' ' + (ITEMS[itemId]?.label.toLowerCase() ?? itemId))
-        .join(' and '),
+      reason: ready ? undefined : t('You need {list}', {
+        list: joinWith(Object.entries(def.prototype)
+          .map(([itemId, count]) => count + ' ' + t(ITEMS[itemId]?.label ?? itemId).toLowerCase())),
+      }),
     });
   }
 
@@ -861,15 +873,14 @@ function groundActions(
     // something down" is the wrong verb for a painter and there is no reason to
     // make the player guess which of the three they are about to make.
     const best = usable[0] ?? forms[0]!;
-    const wants = Object.keys(best.materials)
-      .map(itemId => ITEMS[itemId]?.label.toLowerCase() ?? itemId)
-      .join(' and ');
+    const wants = joinWith(Object.keys(best.materials)
+      .map(itemId => t(ITEMS[itemId]?.label ?? itemId).toLowerCase()));
     options.push({
       id: 'inscribe',
-      label: best.id === 'ochre' ? 'Paint something on the rock' : 'Write something down',
+      label: best.id === 'ochre' ? t('Paint something on the rock') : t('Write something down'),
       icon: best.icon,
       enabled: usable.length > 0,
-      reason: usable.length > 0 ? undefined : 'You need ' + wants,
+      reason: usable.length > 0 ? undefined : t('You need {list}', { list: wants }),
     });
   }
 
@@ -883,10 +894,29 @@ function groundActions(
     if (techPower(actor, recipe.tech) <= 0) continue;
     crafts.push(craftOption(actor, recipe, ctx));
   }
-  options.push(...grouped(crafts, 'Make…', '\u{1F528}',
-    'You do not know how to make anything yet'));
+  options.push(...grouped(crafts, t('Make…'), '\u{1F528}',
+    t('You do not know how to make anything yet')));
   return options;
 }
+
+/**
+ * "the Mud hut", as English has always written a building's label into a verb
+ * — capitalised, unlike every other noun on this menu — and "la choza de
+ * barro" in Spanish, where the article has to agree.
+ */
+function theSite(label: string): string {
+  return language() === 'en' ? 'the ' + label : theNoun(label.toLowerCase());
+}
+
+/** " and " in English, exactly as these lists always joined; "a, b y c" otherwise. */
+function joinWith(parts: string[]): string {
+  return language() === 'en' ? parts.join(' and ') : joinAnd(parts);
+}
+
+/** For the i18n coverage test: the node verbs are translated where shown. */
+export const NODE_VERB_LABELS: string[] = [
+  ...Object.values(NODE_VERBS).map(verb => verb.label), 'Harvest',
+];
 
 /**
  * Folds a run of related options into one entry, once there are enough of them
@@ -942,8 +972,9 @@ function craftOption(
   const station = recipe.station === undefined
     ? null
     : at ?? ctx.stationFor?.(recipe.station) ?? null;
-  const label = 'Make ' + (recipe.station === undefined ? 'a ' : '') +
-    recipe.label.toLowerCase();
+  const label = recipe.station === undefined
+    ? t('Make {thing}', { thing: aNoun(recipe.label.toLowerCase()) })
+    : t('Make {thing}', { thing: t(recipe.label).toLowerCase() });
   if (recipe.station !== undefined && !station) {
     // The station is missing, and saying which one is the whole point: a greyed
     // entry reading "you cannot do that" is the refusal channel failing at the
@@ -951,8 +982,9 @@ function craftOption(
     return {
       id: 'craft', recipeId: recipe.id, label, icon: recipe.icon,
       enabled: false,
-      reason: 'You need a ' +
-        (BUILDINGS[recipe.station]?.label.toLowerCase() ?? recipe.station) + ' to work at',
+      reason: t('You need {station} to work at', {
+        station: aNoun((BUILDINGS[recipe.station]?.label ?? recipe.station).toLowerCase()),
+      }),
     };
   }
   const ready = hasIngredients(actor.inventory, recipe);

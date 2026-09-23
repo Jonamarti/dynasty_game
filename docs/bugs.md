@@ -3,6 +3,40 @@
 As of 2026-09-22. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping the Spanish translation, 2026-09-23
+
+Rough edges of [the translation pass](changelog.md), left on purpose. None of
+them is a Spanish-only defect that English does not also have.
+
+### A line written before a language switch stays in its language
+
+The simulation writes some sentences as they happen — a line in somebody's
+life, an insight, a refusal — and writes them in the language set at that
+moment (see the header of `src/i18n/i18n.ts` for why). Switch language
+mid-game and the *Life* tab is bilingual. So are band names: a world generated
+in Spanish has "banda Korak", and switching to English does not rename it.
+Starting the next world in the new language is the whole cure. Lines that are
+re-derived on reading — your own deeds (13f), memories of other people — do
+follow the switch.
+
+### English output keeps three small grammar slips, so that it stays byte-identical
+
+The pass changed no English. So "a older man" (a stranger's description),
+"built a apple…"-style articles from `'a ' + label`, and "Pick acorns" built
+by pluralising an item id are all still there in English, while Spanish, which
+has its own templates, reads correctly. Likewise English floaters say "ate
+raw_meat" and a heap of one kind of goods is labelled by its id; Spanish shows
+the label. Each is a one-line fix that moves English output, and belongs in a
+commit that says so.
+
+### Spanish uses the masculine for "them" where the subject's sex is not to hand
+
+Sentences built around the player's view of a stranger ("Tendrías que
+conocerle mejor…") and the ones written with no person in reach take the
+grammatical masculine. Where the sentence has a person — temperament, family,
+the stranger's own description, spark stories — it agrees with them through
+`{g:o|a}`.
+
 ## Found triaging the owner's notes of 2026-09-22
 
 All scheduled in [m11_block_v_plan.md](m11_block_v_plan.md). Each entry leaves

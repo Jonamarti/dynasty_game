@@ -28,6 +28,7 @@ import {
   layOutTribe, tribeMembers, type TribeLayout, type TribeNode,
 } from './TribeGraphLayout.ts';
 import { panelBox } from './PanelBox.ts';
+import { t, onLanguageChange } from '../i18n/i18n.ts';
 
 /**
  * How coarsely the redraw digest reads a position and an opinion.
@@ -92,6 +93,13 @@ export class TribeGraphOverlay {
       if (target === this.root) this.close();
     });
 
+    // The digest says nothing about language, so a switch would leave the old
+    // words up until something else changed.
+    onLanguageChange(() => {
+      this.signature = '';
+      this.root.innerHTML = '';
+    });
+
     window.addEventListener('keydown', event => {
       if (!this.isOpen) return;
       if (event.key === 'Escape') {
@@ -154,9 +162,10 @@ export class TribeGraphOverlay {
       this.root.innerHTML =
         '<div class="tribegraph-card">' +
         '<div class="tribegraph-head"><b>' + escapeHtml(name) + '</b>' +
-        '<button class="tribegraph-close" data-close="1">close</button></div>' +
-        '<div class="tribegraph-veil">You would have to know them better to say ' +
-        'who they answer to, or who they cannot stand.</div>' +
+        '<button class="tribegraph-close" data-close="1">' + t('close') + '</button></div>' +
+        '<div class="tribegraph-veil">' +
+        t('You would have to know them better to say who they answer to, or who they cannot stand.') +
+        '</div>' +
         '</div>';
       return;
     }
@@ -200,22 +209,24 @@ export class TribeGraphOverlay {
         '<b>' + escapeHtml(name) + '</b>' +
         '<span class="tribegraph-sub">' +
           (total > shown
-            ? 'the ' + shown + ' strongest of ' + total + ' they know'
-            : shown + (shown === 1 ? ' person they know' : ' people they know')) +
-          (dead > 0 ? ', and ' + dead + ' dead' : '') +
-          (elsewhere > 0 ? ' · ' + elsewhere + ' from other bands hidden' : '') +
+            ? t('the {n} strongest of {total} they know', { n: shown, total })
+            : shown === 1
+              ? t('{n} person they know', { n: 1 })
+              : t('{n} people they know', { n: shown })) +
+          (dead > 0 ? t(', and {n} dead', { n: dead }) : '') +
+          (elsewhere > 0 ? ' · ' + t('{n} from other bands hidden', { n: elsewhere }) : '') +
         '</span>' +
         // Why the picture is suddenly in rows. A view that changes shape
         // without saying what changed it reads as a bug, and the cause here is
         // something the player can act on: somebody in the band had an idea.
         (layout.ranked
-          ? '<span class="tribegraph-sub tribegraph-why">in ranks: this band ' +
-            'divides its labour</span>'
+          ? '<span class="tribegraph-sub tribegraph-why">' +
+            t('in ranks: this band divides its labour') + '</span>'
           : '') +
         '<button class="tribegraph-toggle' + (this.showOthers ? ' is-on' : '') +
-          '" data-others="1">' + (this.showOthers ? 'own band only' : 'other bands too') +
+          '" data-others="1">' + (this.showOthers ? t('own band only') : t('other bands too')) +
           '</button>' +
-        '<button class="tribegraph-close" data-close="1">close</button>' +
+        '<button class="tribegraph-close" data-close="1">' + t('close') + '</button>' +
       '</div>' +
       '<div class="tribegraph-canvas" style="width:' + layout.width +
         'px;height:' + layout.height + 'px">' +
@@ -366,7 +377,7 @@ function rowsHtml(layout: TribeLayout): string {
     return '<div class="tribegraph-row is-' + rank + '"' +
       ' style="top:' + top.toFixed(1) + 'px;height:' +
       Math.max(0, bottom - top).toFixed(1) + 'px">' +
-      '<span class="tribegraph-rowlabel">' + escapeHtml(RANK_LABEL[rank]) + '</span>' +
+      '<span class="tribegraph-rowlabel">' + escapeHtml(t(RANK_LABEL[rank])) + '</span>' +
       '</div>';
   }).join('');
 }

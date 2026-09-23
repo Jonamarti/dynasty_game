@@ -98,6 +98,17 @@ character went back to "thinking". `Simulation.lastRefusal` is the pattern to
 extend, not to reinvent. An action whose failure paths are invisible is not
 finished. See M6c in `docs/m6_plan_households_sleep.md`.
 
+**Every word a player can read goes through `t()`.** The game is in English
+and Spanish (`src/i18n/`). The English sentence is the key — `t('{name} obeys',
+{ name })` — and the Spanish goes in `src/i18n/es/`. `i18n.test.ts` fails on
+any literal key without Spanish and on any data-table label it cannot see;
+`npm run i18n:soak` runs a world in Spanish and flags sentences the simulation
+built without `t` at all. Never build a sentence by gluing English fragments
+together (`a.name + ' and ' + b.name`): Spanish needs the whole template to
+move the words and agree the genders. Keys are read by a regex, so pass `t` a
+single literal, never `'…' + '…'`. With the language at English `t` returns
+the English unchanged, which is why `sim:check:all` stays bit-identical.
+
 **Never let the UI read a stranger's private state.** Names, skills, condition
 and history all route through `sim/social/Knowledge.ts`. This includes the
 entity picker and any new panel.

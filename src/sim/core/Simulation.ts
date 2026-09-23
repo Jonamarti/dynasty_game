@@ -71,6 +71,7 @@ import {
   Inscription, INSCRIPTIONS, resetInscriptionIds, type InscriptionForm,
 } from '../entities/Inscription.ts';
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
+import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 
 /**
  * Something somebody worked out, waiting to be reported. See
@@ -144,7 +145,7 @@ const RESUME_WINDOW = 2000;
  * the verbs a chief or a household head actually hands out; anything else
  * falls back to its id.
  */
-const ORDER_WORDS: Record<string, string> = {
+export const ORDER_WORDS: Record<string, string> = {
   sabotage: 'wreck a rival building',
   take: 'take from a rival store',
   build: 'work on a building',
@@ -685,7 +686,9 @@ export class Simulation {
 
       const band: Band = {
         id: b,
-        name: rng.pick(NAME_ONSETS) + rng.pick(NAME_CODAS) + ' band',
+        // Two draws, then the words: `t` takes nothing from `rng`, so the
+        // language a world is generated in cannot move the draws after it.
+        name: t('{name} band', { name: rng.pick(NAME_ONSETS) + rng.pick(NAME_CODAS) }),
         homeX: home.x,
         homeY: home.y,
         norms,
@@ -785,12 +788,12 @@ export class Simulation {
 
     linkFamily(child, [mother, father], this.relationships);
 
-    const text = mother.name + ' bore ' + child.name;
+    const text = t('{mother} bore {child}', { mother: mother.name, child: child.name });
     mother.chronicle.push({
       tick: this.time.tick, ageDays: mother.age, text, kind: 'milestone',
     });
     child.chronicle.push({
-      tick: this.time.tick, ageDays: 0, text: 'was born', kind: 'milestone',
+      tick: this.time.tick, ageDays: 0, text: t('was born'), kind: 'milestone',
     });
     telemetry.count('birth');
   }
@@ -833,7 +836,7 @@ export class Simulation {
           successor.chronicle.push({
             tick: this.time.tick,
             ageDays: successor.age,
-            text: 'became head of the ' + household.name + ' household',
+            text: t('became head of the {name} household', { name: household.name }),
             kind: 'milestone',
           });
           telemetry.count('succession');
@@ -1060,7 +1063,12 @@ export class Simulation {
       subordinate.chronicle.push({
         tick: this.time.tick,
         ageDays: subordinate.age,
-        text: 'refused ' + leader.name + ' over ' + action,
+        // English has always written the action id here ("over haul"); a
+        // translation says what was asked, where it has the words for it.
+        text: t('refused {name} over {action}', {
+          name: leader.name,
+          action: language() !== 'en' && ORDER_WORDS[action] ? t(ORDER_WORDS[action]!) : action,
+        }),
         kind: 'did',
       });
       // Being refused stings, and it is the refuser who thinks less of you for
@@ -1077,7 +1085,9 @@ export class Simulation {
     // who had sent them, or why they had stopped answering to the player.
     if (subordinate.isPlayer) {
       const who = knowledgeOfPerson(subordinate, leader, this.relationships).displayName;
-      this.noteInsight(subordinate, who + ' sent you to ' + (ORDER_WORDS[action] ?? action), 'setback');
+      this.noteInsight(subordinate, t('{who} sent you to {order}', {
+        who, order: ORDER_WORDS[action] ? t(ORDER_WORDS[action]!) : action,
+      }), 'setback');
     }
     if (standing.byRank) {
       telemetry.count('order_obeyed_by_rank');
@@ -1184,7 +1194,7 @@ export class Simulation {
     if (organising <= 0) {
       telemetry.count('job_unimagined');
       this.lastRefusal =
-        leader.name + ' has never had the idea of setting one person to one task';
+        t('{name} has never had the idea of setting one person to one task', { name: leader.name });
       return false;
     }
 
@@ -1214,7 +1224,7 @@ export class Simulation {
       subordinate.chronicle.push({
         tick: this.time.tick,
         ageDays: subordinate.age,
-        text: 'refused to take up work for ' + leader.name,
+        text: t('refused to take up work for {name}', { name: leader.name }),
         kind: 'did',
       });
       this.relationships.addDeed(subordinate.id, leader.id, -3, this.time.tick);
@@ -1228,8 +1238,8 @@ export class Simulation {
       tick: this.time.tick,
       ageDays: subordinate.age,
       text: job !== null
-        ? 'was put to work as a ' + JOBS[job].label.toLowerCase()
-        : 'was released from their work',
+        ? t('was put to work as a {job}', { job: t(JOBS[job].label).toLowerCase() })
+        : t('was released from their work'),
       kind: 'milestone',
     });
     return true;
@@ -1242,7 +1252,7 @@ export class Simulation {
 
     const band: Band = {
       id: this.bands.length + OUTCAST_BAND_ID_BASE,
-      name: 'the outcast',
+      name: t('the outcast'),
       homeX: this.world.width / 2,
       homeY: this.world.height / 2,
       norms: { ...DEFAULT_NORMS },
@@ -1407,7 +1417,7 @@ export class Simulation {
   handOver(giver: Person, receiver: Person, itemId: string, count = giver.inventory.count(itemId)): number {
     const room = receiver.carryCapacity - receiver.carrying;
     if (room <= 0) {
-      this.lastRefusal = receiver.name + ' cannot carry any more';
+      this.lastRefusal = t('{name} cannot carry any more', { name: receiver.name });
       return 0;
     }
     const moved = giver.inventory.remove(itemId, Math.min(room, count, giver.inventory.count(itemId)));
@@ -1811,14 +1821,16 @@ export class Simulation {
           : this.buildingsById.get(target.buildingId);
         const label = BUILDINGS[stationId]?.label.toLowerCase() ?? stationId;
         if (!named || !named.complete || named.def.id !== stationId) {
-          return this.cancelOrder(person, 'that has to be made at a ' + label);
+          return this.cancelOrder(person, t('that has to be made at {station}', {
+            station: aNoun(label),
+          }));
         }
       }
     }
 
     if (target.inscriptionId !== undefined) {
       const record = this.inscriptionsById.get(target.inscriptionId);
-      if (!record) return this.cancelOrder(person, 'that record is gone');
+      if (!record) return this.cancelOrder(person, t('that record is gone'));
       person.targetInscriptionId = record.id;
       person.targetX = record.x;
       person.targetY = record.y;
@@ -1827,8 +1839,8 @@ export class Simulation {
 
     if (target.pileId !== undefined) {
       const pile = this.pilesById.get(target.pileId);
-      if (!pile || pile.empty) return this.cancelOrder(person, 'those goods are gone');
-      if (this.isBuried(pile.x, pile.y)) return this.cancelOrder(person, 'it is under the snow');
+      if (!pile || pile.empty) return this.cancelOrder(person, t('those goods are gone'));
+      if (this.isBuried(pile.x, pile.y)) return this.cancelOrder(person, t('it is under the snow'));
       person.targetPileId = pile.id;
       person.targetX = pile.x;
       person.targetY = pile.y;
@@ -1837,7 +1849,7 @@ export class Simulation {
 
     if (target.personId !== undefined) {
       const other = this.peopleById.get(target.personId);
-      if (!other || !other.alive) return this.cancelOrder(person, 'they are gone');
+      if (!other || !other.alive) return this.cancelOrder(person, t('they are gone'));
       person.targetPersonId = other.id;
       person.targetX = other.x;
       person.targetY = other.y;
@@ -1845,7 +1857,7 @@ export class Simulation {
     }
     if (target.animalId !== undefined) {
       const animal = this.animalsById.get(target.animalId);
-      if (!animal || !animal.alive) return this.cancelOrder(person, 'it is gone');
+      if (!animal || !animal.alive) return this.cancelOrder(person, t('it is gone'));
       person.targetAnimalId = animal.id;
       person.targetX = animal.x;
       person.targetY = animal.y;
@@ -1853,7 +1865,7 @@ export class Simulation {
     }
     if (target.treeId !== undefined) {
       const tree = this.treesById.get(target.treeId);
-      if (!tree || !tree.standing) return this.cancelOrder(person, 'that tree is gone');
+      if (!tree || !tree.standing) return this.cancelOrder(person, t('that tree is gone'));
       person.targetTreeId = tree.id;
       person.targetX = tree.x;
       person.targetY = tree.y;
@@ -1861,7 +1873,7 @@ export class Simulation {
     }
     if (target.buildingId !== undefined) {
       const building = this.buildingsById.get(target.buildingId);
-      if (!building) return this.cancelOrder(person, 'that building is gone');
+      if (!building) return this.cancelOrder(person, t('that building is gone'));
       person.targetBuildingId = building.id;
       person.targetX = building.centerX;
       person.targetY = building.centerY;
@@ -1869,9 +1881,9 @@ export class Simulation {
     }
     if (target.nodeId !== undefined) {
       const node = this.nodesById.get(target.nodeId);
-      if (!node || node.depleted) return this.cancelOrder(person, 'there is nothing left there');
+      if (!node || node.depleted) return this.cancelOrder(person, t('there is nothing left there'));
       if (node.def.groundLevel && this.isBuried(node.x, node.y)) {
-        return this.cancelOrder(person, 'it is under the snow');
+        return this.cancelOrder(person, t('it is under the snow'));
       }
       person.targetNodeId = node.id;
       person.targetX = node.x;
@@ -1886,16 +1898,16 @@ export class Simulation {
       if (action === 'drink') {
         const bank = this.shoreHash.findNearest(target.x, target.y, 24,
           tile => this.world.sameRegion(person.x, person.y, tile.x, tile.y));
-        if (!bank) return this.cancelOrder(person, 'no bank they can reach from here');
+        if (!bank) return this.cancelOrder(person, t('no bank they can reach from here'));
         person.targetX = bank.x;
         person.targetY = bank.y;
         return true;
       }
       if (!this.world.isWalkable(target.x, target.y)) {
-        return this.cancelOrder(person, 'they cannot walk there');
+        return this.cancelOrder(person, t('they cannot walk there'));
       }
       if (!this.world.sameRegion(person.x, person.y, target.x, target.y)) {
-        return this.cancelOrder(person, 'there is no way across');
+        return this.cancelOrder(person, t('there is no way across'));
       }
       person.targetX = target.x;
       person.targetY = target.y;
@@ -1913,7 +1925,7 @@ export class Simulation {
    * tell you — especially for drinking, where the real answer was that the
    * water itself is not somewhere you can stand.
    */
-  private cancelOrder(person: Person, reason = 'that cannot be done'): boolean {
+  private cancelOrder(person: Person, reason = t('that cannot be done')): boolean {
     person.clearTarget();
     person.forgetPlans();
     person.action = 'idle';
@@ -2106,7 +2118,7 @@ export class Simulation {
     for (let dy = 0; dy < def.height; dy++) {
       for (let dx = 0; dx < def.width; dx++) {
         if (!this.world.isWalkable(x + dx, y + dy)) {
-          return 'the ground there will not take it';
+          return t('the ground there will not take it');
         }
       }
     }
@@ -2114,11 +2126,11 @@ export class Simulation {
       const overlapsX = x < existing.x + existing.def.width && x + def.width > existing.x;
       const overlapsY = y < existing.y + existing.def.height && y + def.height > existing.y;
       if (overlapsX && overlapsY) {
-        return 'the ' + existing.def.label.toLowerCase() + ' is already there';
+        return t('{thing} is already there', { thing: theNoun(existing.def.label.toLowerCase()) });
       }
     }
     if (def.placement === 'shore' && !this.touchesShore(def, x, y)) {
-      return 'a ' + def.label.toLowerCase() + ' has to sit at the water\u2019s edge';
+      return t('{thing} has to sit at the water\u2019s edge', { thing: aNoun(def.label.toLowerCase()) });
     }
     // M8.2. A field is the second design with somewhere it has to be, and the
     // first whose requirement is about the ground rather than the map: open
@@ -2150,7 +2162,7 @@ export class Simulation {
       for (let dx = 0; dx < def.width; dx++) {
         const biome = this.world.biomeAt(x + dx, y + dy);
         if (biome !== 'grass' && biome !== 'forest' && biome !== 'beach') {
-          return 'a ' + def.label.toLowerCase() + ' wants open ground';
+          return t('{thing} wants open ground', { thing: aNoun(def.label.toLowerCase()) });
         }
         total += this.world.effectiveFertilityAt(x + dx, y + dy);
         tiles++;
@@ -2161,7 +2173,7 @@ export class Simulation {
     // a plot *is* allowed to be sited on ground that a previous field wore out,
     // because that is a decision a player is entitled to make badly.
     if (tiles === 0 || total / tiles < SPENT_BELOW) {
-      return 'the ground there is too poor to break';
+      return t('the ground there is too poor to break');
     }
     return null;
   }
@@ -2573,7 +2585,7 @@ export class Simulation {
   trapYield(building: Building): { perDay: number; reason: string } | null {
     const yielded = building.def.yields;
     if (!yielded) return null;
-    if (!building.complete) return { perDay: 0, reason: 'not finished yet' };
+    if (!building.complete) return { perDay: 0, reason: t('not finished yet') };
 
     let power = 0;
     for (const person of this.people) {
@@ -2582,14 +2594,14 @@ export class Simulation {
       power = Math.max(power, techPower(person, building.def.requiresTech as Tech));
     }
     if (power <= 0) {
-      return { perDay: 0, reason: 'nobody here remembers how to work it' };
+      return { perDay: 0, reason: t('nobody here remembers how to work it') };
     }
     if (building.storageFree <= 0) {
-      return { perDay: 0, reason: 'full, and catching nothing until it is emptied' };
+      return { perDay: 0, reason: t('full, and catching nothing until it is emptied') };
     }
     return {
       perDay: yielded.perDay * power,
-      reason: 'catching on its own, and nobody has to stand here',
+      reason: t('catching on its own, and nobody has to stand here'),
     };
   }
 

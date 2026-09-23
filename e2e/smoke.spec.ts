@@ -2243,3 +2243,58 @@ test('the tribe graph stands still while the game is paused', async ({ page }) =
 
   expect(errors).toEqual([]);
 });
+
+// ---------------------------------------------------------------------------
+// Languages. Owner's note of 2026-09-23: the game in Spanish, with a button to
+// change language in the main menu.
+// ---------------------------------------------------------------------------
+
+test('the start screen switches to Spanish and back, and the choice sticks', async ({ page }) => {
+  const errors = guardErrors(page);
+  await page.goto('/?seed=e2e-start');
+  const settings = page.locator('.settings');
+  await expect(settings).toBeVisible({ timeout: 15_000 });
+  await expect(settings).toContainText('Before you begin');
+
+  await settings.locator('.langswitch-option[data-lang="es"]').click();
+  await expect(settings).toContainText('Antes de empezar');
+  await expect(settings.locator('.langswitch-option[data-lang="es"]')).toHaveClass(/is-on/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+  // The HUD behind it was rebuilt as well, not only the screen in front.
+  await expect(page.locator('.hud-bar')).toContainText('Construir');
+
+  // Remembered: a reload opens in Spanish without being asked again.
+  await page.reload();
+  await expect(page.locator('.settings')).toContainText('Antes de empezar', { timeout: 15_000 });
+
+  await page.locator('.settings .langswitch-option[data-lang="en"]').click();
+  await expect(page.locator('.settings')).toContainText('Before you begin');
+  expect(errors).toEqual([]);
+});
+
+test('a Spanish game is Spanish in the HUD, the menus and the panels', async ({ page }) => {
+  const errors = guardErrors(page);
+  await page.goto('/?seed=e2e-fixture&skipIntro=1&lang=es');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await expect(page.locator('.hud-clock')).toHaveText(/^A\d+ (primavera|verano|otoño|invierno) d\d+/);
+  await expect(page.locator('.hud-bar')).toContainText('Fabricar');
+  await expect(page.locator('.hud-tab[data-tab="now"]')).toHaveText('Ahora');
+
+  // The pause menu has the switch too, and switching there relabels it in place.
+  await page.keyboard.press('Escape');
+  const menu = page.locator('.pausemenu');
+  await expect(menu).toContainText('Continuar');
+  await menu.locator('.langswitch-option[data-lang="en"]').click();
+  await expect(menu).toContainText('Resume');
+  await expect(page.locator('.hud-tab[data-tab="now"]')).toHaveText('Now');
+  await page.keyboard.press('Escape');
+
+  // And the three graphs, which redraw only when their digest changes.
+  await page.keyboard.press('Escape');
+  await menu.locator('.langswitch-option[data-lang="es"]').click();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('g');
+  await expect(page.locator('.techweb-close')).toHaveText('cerrar', { timeout: 10_000 });
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});

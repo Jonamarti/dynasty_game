@@ -44,11 +44,12 @@ import { ITEMS } from '../sim/entities/Item.ts';
 import { knowledgeOfPerson } from '../sim/social/Knowledge.ts';
 import { layOutWeb, DOMAIN_COLORS, type WebLayout } from './TechWebLayout.ts';
 import { panelBox } from './PanelBox.ts';
+import { t, genderOf, onLanguageChange } from '../i18n/i18n.ts';
 
 /** How a node stands with respect to the person whose web this is. */
 type NodeState = 'proven' | 'working' | 'conceivable' | 'understood' | 'unknown';
 
-const STATE_NOTE: Record<NodeState, string> = {
+export const STATE_NOTE: Record<NodeState, string> = {
   proven: 'Known, and theirs to teach.',
   working: 'An idea they are working on.',
   conceivable: 'Could occur to them right now.',
@@ -270,6 +271,12 @@ export class TechWebOverlay {
         this.close();
       }
     });
+    // The digest below says nothing about language, so a switch would leave
+    // the old words on screen until something else changed.
+    onLanguageChange(() => {
+      this.signature = '';
+      this.root.innerHTML = '';
+    });
   }
 
   get isOpen(): boolean {
@@ -466,9 +473,10 @@ export class TechWebOverlay {
       this.root.innerHTML =
         '<div class="techweb-card">' +
         '<div class="techweb-head"><b>' + escapeHtml(name) + '</b>' +
-        '<button class="techweb-close" data-close="1">close</button></div>' +
-        '<div class="techweb-veil">What somebody has worked out for themselves, ' +
-        'you learn by knowing them. Spend time with them first.</div>' +
+        '<button class="techweb-close" data-close="1">' + t('close') + '</button></div>' +
+        '<div class="techweb-veil">' +
+        t('What somebody has worked out for themselves, you learn by knowing them. Spend time with them first.') +
+        '</div>' +
         '</div>';
       return;
     }
@@ -513,7 +521,7 @@ export class TechWebOverlay {
       // A technology out of reach shows as an unlabelled dark node, so the
       // *shape* of what is unknown is visible without its content being given
       // away. Naming everything would turn the web into a walkthrough.
-      const label = state === 'unknown' ? '' : escapeHtml(def.label);
+      const label = state === 'unknown' ? '' : escapeHtml(t(def.label));
       const pips = state === 'proven' && def.maxRefinement > 0
         ? '<i class="techweb-pips">' + '●'.repeat(level) +
           '○'.repeat(Math.max(0, def.maxRefinement - level)) + '</i>'
@@ -529,7 +537,7 @@ export class TechWebOverlay {
       // *recover*: a ghosted node with a scroll on it is a technology nobody
       // here understands and somebody, once, cut into a stone.
       const written = !subject.knownTech.has(node.tech) && sim.recordedTech.has(node.tech)
-        ? '<i class="techweb-scroll" title="written down somewhere">\u{1FAA8}</i>'
+        ? '<i class="techweb-scroll" title="' + t('written down somewhere') + '">\u{1FAA8}</i>'
         : '';
 
       // Drawn differently, which the owner asked for and which the web needs
@@ -560,11 +568,11 @@ export class TechWebOverlay {
       '<div class="techweb-card">' +
       '<div class="techweb-head">' +
         '<b>' + escapeHtml(name) + '</b>' +
-        '<span class="techweb-sub">' + counts.proven + ' known &middot; ' +
-          counts.working + ' in hand &middot; ' + counts.conceivable +
-          ' within reach &middot; ' + counts.unknown + ' out of sight' +
-          ' &middot; drag to pan, wheel to zoom</span>' +
-        '<button class="techweb-close" data-close="1">close</button>' +
+        '<span class="techweb-sub">' +
+          t('{known} known &middot; {working} in hand &middot; {reach} within reach &middot; {unknown} out of sight &middot; drag to pan, wheel to zoom', {
+            known: counts.proven, working: counts.working, reach: counts.conceivable, unknown: counts.unknown,
+          }) + '</span>' +
+        '<button class="techweb-close" data-close="1">' + t('close') + '</button>' +
       '</div>' +
       '<div class="techweb-body">' +
         '<div class="techweb-viewport" style="width:' + box.width +
@@ -605,11 +613,9 @@ export class TechWebOverlay {
    */
   private detail(subject: Person, notice: Notice): string {
     if (!this.focused) {
-      return '<div class="techweb-hint">Hover a node. Lit is known, ringed is ' +
-        'being worked on, outlined could occur to them today, faint is ' +
-        'understandable but unsuggested, and dark is out of reach. ' +
-        'Rounded nodes are ways of doing things and are learned by doing them; ' +
-        'square ones are things you build.</div>';
+      return '<div class="techweb-hint">' +
+        t('Hover a node. Lit is known, ringed is being worked on, outlined could occur to them today, faint is understandable but unsuggested, and dark is out of reach. Rounded nodes are ways of doing things and are learned by doing them; square ones are things you build.') +
+        '</div>';
     }
 
     const tech = this.focused;
@@ -621,34 +627,35 @@ export class TechWebOverlay {
     // what it is waiting for.
     if (state === 'unknown') {
       const missing = def.requires.filter(required => !subject.knownTech.has(required));
-      return '<div class="techweb-title">Something out of reach</div>' +
-        '<div class="techweb-note">It rests on ' +
-        missing.map(required =>
-          subject.knownTech.has(required)
-            ? escapeHtml(TECH[required].label)
-            : (prerequisitesMet(required, subject.knownTech)
-                ? escapeHtml(TECH[required].label.toLowerCase())
-                : 'something else again')
-        ).join(' and ') + ', which they do not have.</div>';
+      return '<div class="techweb-title">' + t('Something out of reach') + '</div>' +
+        '<div class="techweb-note">' + t('It rests on {list}, which they do not have.', {
+          list: missing.map(required =>
+            subject.knownTech.has(required)
+              ? escapeHtml(t(TECH[required].label))
+              : (prerequisitesMet(required, subject.knownTech)
+                  ? escapeHtml(t(TECH[required].label).toLowerCase())
+                  : t('something else again'))
+          ).join(t(' and ')),
+        }) + '</div>';
     }
 
     const rows: string[] = [];
-    rows.push('<div class="techweb-title">' + escapeHtml(def.label) + '</div>');
+    rows.push('<div class="techweb-title">' + escapeHtml(t(def.label)) + '</div>');
     rows.push('<div class="techweb-kind">' + (def.kind === 'practice'
-      ? 'A way of doing something — there is nothing to build'
-      : 'Something you make') + '</div>');
+      ? t('A way of doing something — there is nothing to build')
+      : t('Something you make')) + '</div>');
     // When our own species got there, which is not when this band will. It is
     // the reason the ring exists and the one line in this panel that is about
     // the real world rather than about the person being looked at — the player
     // finds out that the needle is older than the pot. Deliberately below the
     // `unknown` early return above: a node out of reach keeps its secrets, and
     // a date is a strong hint about what the node is.
-    rows.push('<div class="techweb-when">' + escapeHtml(AGE_LABELS[def.age]) +
-      ' &middot; ' + escapeHtml(def.firstKnown) + '</div>');
-    rows.push('<div class="techweb-note">' + escapeHtml(def.description) + '</div>');
+    rows.push('<div class="techweb-when">' + escapeHtml(t(AGE_LABELS[def.age])) +
+      ' &middot; ' + escapeHtml(t(def.firstKnown)) + '</div>');
+    rows.push('<div class="techweb-note">' + escapeHtml(t(def.description)) + '</div>');
     rows.push('<div class="techweb-effect">' +
-      escapeHtml(TECH_EFFECTS[tech].summary) + '</div>');
-    rows.push('<div class="techweb-state">' + STATE_NOTE[state] + '</div>');
+      escapeHtml(t(TECH_EFFECTS[tech].summary)) + '</div>');
+    rows.push('<div class="techweb-state">' + t(STATE_NOTE[state]) + '</div>');
 
     // An idea survives being proven — it stays on the person to be refined, and
     // only retires at its ceiling — so everything below has to ask what stage it
@@ -661,10 +668,11 @@ export class TechWebOverlay {
     // to", and the failed-trial count was history presented as news.
     if (idea && idea.stage !== 'proven') {
       const stages = def.kind === 'practice' ? PRACTICE_STAGE_LABELS : STAGE_LABELS;
-      rows.push('<div class="techweb-section">Where it has got to</div>');
+      rows.push('<div class="techweb-section">' + t('Where it has got to') + '</div>');
       rows.push('<div class="techweb-note">' +
-        escapeHtml(stages[idea.stage]) + '</div>');
-      rows.push('<div class="techweb-note"><i>' + escapeHtml(idea.story) + '</i></div>');
+        escapeHtml(t(stages[idea.stage])) + '</div>');
+      rows.push('<div class="techweb-note"><i>' +
+        escapeHtml(t(idea.story, { g: genderOf(subject) })) + '</i></div>');
 
       if (idea.stage === 'prototyped') {
         // On the bench and being tried. Insight is no longer what stands between
@@ -674,11 +682,13 @@ export class TechWebOverlay {
           Math.round(idea.proof * 100) + '%"></i></div>');
         rows.push('<div class="techweb-note">' +
           (def.kind === 'practice'
-            ? 'They go about it this way now. '
-            : 'One has been built. ') +
+            ? t('They go about it this way now. ')
+            : t('One has been built. ')) +
           (idea.trials === 0
-            ? 'It has not been put to the test yet.'
-            : idea.trials + (idea.trials === 1 ? ' try' : ' tries') + ' so far.') +
+            ? t('It has not been put to the test yet.')
+            : idea.trials === 1
+              ? t('{n} try so far.', { n: 1 })
+              : t('{n} tries so far.', { n: idea.trials })) +
           '</div>');
       } else {
         rows.push('<div class="techweb-bar"><i style="width:' +
@@ -691,26 +701,26 @@ export class TechWebOverlay {
         if (def.kind === 'practice') {
           const trying = idea.insight >= PROTOTYPE_AT;
           rows.push('<div class="techweb-note">' + (trying
-            ? 'Nothing to build: it is tried by doing it. ' +
-              Math.min(idea.tries, TRIES_TO_TEST) + ' of ' + TRIES_TO_TEST +
-              ' times so far.'
-            : 'Nothing to build — once there is enough of an idea, it is tried ' +
-              'by doing it.') + '</div>');
+            ? t('Nothing to build: it is tried by doing it. {n} of {max} times so far.', {
+                n: Math.min(idea.tries, TRIES_TO_TEST), max: TRIES_TO_TEST,
+              })
+            : t('Nothing to build — once there is enough of an idea, it is tried by doing it.')) + '</div>');
         } else {
           const short = Object.entries(def.prototype)
             .filter(([itemId, count]) => subject.inventory.count(itemId) < count);
-          rows.push('<div class="techweb-note">Needs ' +
-            Object.entries(def.prototype).map(([itemId, count]) =>
-              count + ' ' + escapeHtml((ITEMS[itemId]?.label ?? itemId).toLowerCase())
-            ).join(', ') + ' to build one' +
-            (short.length === 0 ? ', and they have them.' : '.') + '</div>');
+          const needs = Object.entries(def.prototype).map(([itemId, count]) =>
+            count + ' ' + escapeHtml(t(ITEMS[itemId]?.label ?? itemId).toLowerCase())
+          ).join(', ');
+          rows.push('<div class="techweb-note">' + (short.length === 0
+            ? t('Needs {list} to build one, and they have them.', { list: needs })
+            : t('Needs {list} to build one.', { list: needs })) + '</div>');
         }
       }
 
       if (idea.failedTests > 0) {
-        rows.push('<div class="techweb-note">' + idea.failedTests +
-          (idea.failedTests === 1 ? ' try' : ' tries') +
-          ' that did not work</div>');
+        rows.push('<div class="techweb-note">' + (idea.failedTests === 1
+          ? t('{n} try that did not work', { n: 1 })
+          : t('{n} tries that did not work', { n: idea.failedTests })) + '</div>');
       }
     } else if (idea) {
       // Proven, and still being turned over. The block above deliberately says
@@ -720,13 +730,13 @@ export class TechWebOverlay {
       // improving something looking idle. Refinement is the only thing that
       // raises `techPower` above 1, so it is worth watching.
       const level = subject.techLevel.get(tech) ?? 0;
-      rows.push('<div class="techweb-section">Making it better</div>');
+      rows.push('<div class="techweb-section">' + t('Making it better') + '</div>');
       rows.push('<div class="techweb-note">' +
-        (level === 0 ? 'As first worked out.' :
-          'Improved ' + level + (level === 1 ? ' time' : ' times') + '.') +
+        (level === 0 ? t('As first worked out.') :
+          level === 1 ? t('Improved {n} time.', { n: 1 }) : t('Improved {n} times.', { n: level })) +
         (level >= def.maxRefinement
-          ? ' As good as they will get it.'
-          : ' They are still turning it over.') +
+          ? ' ' + t('As good as they will get it.')
+          : ' ' + t('They are still turning it over.')) +
         '</div>');
       if (level < def.maxRefinement) {
         rows.push('<div class="techweb-bar"><i style="width:' +
@@ -735,7 +745,7 @@ export class TechWebOverlay {
     }
 
     if (state !== 'proven') {
-      rows.push('<div class="techweb-section">What would suggest it</div>');
+      rows.push('<div class="techweb-section">' + t('What would suggest it') + '</div>');
       for (const spark of def.sparks) rows.push(this.sparkRow(spark, notice));
     }
 
@@ -746,7 +756,7 @@ export class TechWebOverlay {
   private sparkRow(spark: Spark, notice: Notice): string {
     const status = sparkStatus(spark, notice);
     const label = (kind: 'tech' | 'item', id: string) =>
-      kind === 'tech' ? TECH[id as Tech].label : (ITEMS[id]?.label ?? id);
+      kind === 'tech' ? t(TECH[id as Tech].label) : t(ITEMS[id]?.label ?? id);
     const parts = spark.needs.map(ingredient => {
       const met = !status.missing.includes(ingredient);
       return '<span class="techweb-ing' + (met ? ' is-met' : '') + '">' +

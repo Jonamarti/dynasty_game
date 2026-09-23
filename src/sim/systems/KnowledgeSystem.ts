@@ -41,6 +41,7 @@ import {
   MAX_IDEAS, TRIES_TO_TEST, sparkFires, type Idea, type Notice, type Spark,
 } from '../knowledge/Synthesis.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { t, aNoun, genderOf } from '../../i18n/i18n.ts';
 
 // `CONCEPTION_BASE`, `TEST_CHANCE`, the number of trials a design needs and what
 // a failed one is worth all live in `Config.knowledge` now rather than here.
@@ -130,15 +131,20 @@ const FAILED_TRIAL_CEILING = 0.9;
  * technology arrives is the moment to say what it is *for*, and for the ones
  * that unlock neither a building nor a recipe there is still `TECH_EFFECTS`.
  */
+/** A technology's name inside a sentence: lower case, in the player's language. */
+function techWord(def: { label: string }): string {
+  return t(def.label).toLowerCase();
+}
+
 function unlockedBy(tech: Tech): string | null {
   const parts: string[] = [];
   for (const def of Object.values(BUILDINGS)) {
-    if (def.requiresTech === tech) parts.push('build a ' + def.label.toLowerCase());
+    if (def.requiresTech === tech) parts.push(t('build {thing}', { thing: aNoun(def.label.toLowerCase()) }));
   }
   for (const recipe of Object.values(RECIPES)) {
-    if (recipe.tech === tech) parts.push('make a ' + recipe.label.toLowerCase());
+    if (recipe.tech === tech) parts.push(t('make {thing}', { thing: aNoun(recipe.label.toLowerCase()) }));
   }
-  return parts.length > 0 ? parts.join(', and ') : null;
+  return parts.length > 0 ? parts.join(t(', and ')) : null;
 }
 
 /**
@@ -329,15 +335,13 @@ export class KnowledgeSystem {
         tick: ctx.tick,
         ageDays: person.age,
         text: tried
-          ? 'had been going about ' + def.label.toLowerCase() +
-            ' their own way long enough to believe in it'
-          : 'had thought ' + def.label.toLowerCase() +
-            ' through as far as thinking would take it',
+          ? t('had been going about {tech} their own way long enough to believe in it', { tech: techWord(def) })
+          : t('had thought {tech} through as far as thinking would take it', { tech: techWord(def) }),
         kind: 'did',
       });
       ctx.onInsight(person, tried
-        ? 'has made a habit of ' + def.label.toLowerCase()
-        : 'has ' + def.label.toLowerCase() + ' worked out, in theory', 'idea');
+        ? t('has made a habit of {tech}', { tech: techWord(def) })
+        : t('has {tech} worked out, in theory', { tech: techWord(def) }), 'idea');
     }
   }
 
@@ -365,11 +369,11 @@ export class KnowledgeSystem {
         // turned up, and a practice was never tried because they never got
         // round to doing the thing it was about.
         text: def.kind === 'practice'
-          ? 'gave up on ' + def.label.toLowerCase() + ', never having put it to use'
-          : 'gave up on ' + def.label.toLowerCase() + ' for want of the materials',
+          ? t('gave up on {tech}, never having put it to use', { tech: techWord(def) })
+          : t('gave up on {tech} for want of the materials', { tech: techWord(def) }),
         kind: 'did',
       });
-      ctx.onInsight(person, 'gave up on ' + def.label.toLowerCase(), 'setback');
+      ctx.onInsight(person, t('gave up on {tech}', { tech: techWord(def) }), 'setback');
     }
   }
 
@@ -454,10 +458,12 @@ export class KnowledgeSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'had an idea about ' + def.label.toLowerCase() + ': ' + chosen.spark.story,
+      text: t('had an idea about {tech}: {story}', {
+        tech: techWord(def), story: t(chosen.spark.story, { g: genderOf(person) }),
+      }),
       kind: 'milestone',
     });
-    ctx.onInsight(person, 'an idea about ' + def.label.toLowerCase(), 'idea');
+    ctx.onInsight(person, t('an idea about {tech}', { tech: techWord(def) }), 'idea');
   }
 
   /**
@@ -500,10 +506,10 @@ export class KnowledgeSystem {
         person.chronicle.push({
           tick: ctx.tick,
           ageDays: person.age,
-          text: 'tried out a ' + def.label.toLowerCase() + ' and it did not work',
+          text: t('tried out a {tech} and it did not work', { tech: techWord(def) }),
           kind: 'did',
         });
-        ctx.onInsight(person, def.label.toLowerCase() + ' did not work', 'setback');
+        ctx.onInsight(person, t('{tech} did not work', { tech: techWord(def) }), 'setback');
         continue;
       }
 
@@ -516,7 +522,7 @@ export class KnowledgeSystem {
       // A trial that went well without settling it. Said out loud because the
       // whole complaint about the old model was that the days between the
       // prototype and the proof were silent.
-      ctx.onInsight(person, def.label.toLowerCase() + ' is beginning to work', 'gain');
+      ctx.onInsight(person, t('{tech} is beginning to work', { tech: techWord(def) }), 'gain');
     }
   }
 
@@ -534,11 +540,11 @@ export class KnowledgeSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'worked out ' + def.label.toLowerCase() +
-        (idea.failedTests > 0
-          ? ', after ' + idea.failedTests + ' ' +
-            (idea.failedTests === 1 ? 'try' : 'tries') + ' that failed'
-          : ''),
+      text: idea.failedTests === 0
+        ? t('worked out {tech}', { tech: techWord(def) })
+        : idea.failedTests === 1
+          ? t('worked out {tech}, after {n} try that failed', { tech: techWord(def), n: 1 })
+          : t('worked out {tech}, after {n} tries that failed', { tech: techWord(def), n: idea.failedTests }),
       kind: 'milestone',
     });
     // Say what it is *for*, not only that it happened. A technology that unlocks
@@ -547,10 +553,12 @@ export class KnowledgeSystem {
     const unlocked = unlockedBy(idea.tech);
     ctx.onInsight(
       person,
-      'worked out ' + def.label.toLowerCase() +
-        (unlocked !== null
-          ? ' — can now ' + unlocked
-          : ' — ' + TECH_EFFECTS[idea.tech].summary.toLowerCase().replace(/.$/, '')),
+      unlocked !== null
+        ? t('worked out {tech} — can now {what}', { tech: techWord(def), what: unlocked })
+        : t('worked out {tech} — {what}', {
+          tech: techWord(def),
+          what: t(TECH_EFFECTS[idea.tech].summary).toLowerCase().replace(/.$/, ''),
+        }),
       'gain');
   }
 
@@ -585,7 +593,7 @@ export class KnowledgeSystem {
       person.chronicle.push({
         tick,
         ageDays: person.age,
-        text: 'improved their ' + def.label.toLowerCase(),
+        text: t('improved their {tech}', { tech: techWord(def) }),
         kind: 'did',
       });
       // At the ceiling there is nothing left to fix, and the idea retires —
@@ -596,7 +604,7 @@ export class KnowledgeSystem {
         person.ideas = person.ideas.filter(other => other !== idea);
         telemetry.count('mastered_' + idea.tech);
       }
-      return 'improved their ' + def.label.toLowerCase();
+      return t('improved their {tech}', { tech: techWord(def) });
     }
     return null;
   }
@@ -750,7 +758,9 @@ export class KnowledgeSystem {
       const parent = pupil.motherId === teacher.id || pupil.fatherId === teacher.id;
       if (parent) telemetry.count('child_taught_by_parent');
     }
-    const text = teacher.name + ' taught ' + pupil.name + ' ' + TECH[tech].label.toLowerCase();
+    const text = t('{teacher} taught {pupil} {tech}', {
+      teacher: teacher.name, pupil: pupil.name, tech: techWord(TECH[tech]),
+    });
     teacher.chronicle.push({ tick, ageDays: teacher.age, text, kind: 'did' });
     pupil.chronicle.push({ tick, ageDays: pupil.age, text, kind: 'milestone' });
     return tech;
@@ -812,8 +822,9 @@ export class KnowledgeSystem {
     const taught = this.teach(teacher, pupil, 0.6, tick, rng);
     if (taught === null) return;
     telemetry.count('hearth_taught');
-    onInsight(pupil, 'was shown ' + TECH[taught].label.toLowerCase() +
-      ' at the hearth by ' + teacher.name, 'gain');
+    onInsight(pupil, t('was shown {tech} at the hearth by {name}', {
+      tech: techWord(TECH[taught]), name: teacher.name,
+    }), 'gain');
   }
 }
 

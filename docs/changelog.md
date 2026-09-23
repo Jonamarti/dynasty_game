@@ -6,6 +6,70 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — notes.txt: the game in Spanish, with a language switch in the menus
+
+The third of the owner's notes of 2026-09-23: *"translate the game to Spanish
+and add a button to change languages in the main menu."* The owner asked for
+all of it — interface and everything the simulation writes — rather than the
+chrome alone.
+
+**The mechanism** (`src/i18n/`). The English sentence is the key:
+`t('{name} obeys', { name })`, with the Spanish in `src/i18n/es/*.ts`. Opaque
+keys (`refusal.generic`) would have meant rewriting every sentence into a
+table before translating one, and would have hidden, in code whose comments
+are about the words a player sees, what those words are. Three pieces of
+Spanish grammar English does not need are built in: inline gender agreement
+(`codicios{g:o|a}`), articles that agree with the noun (`aNoun`, `theNoun`,
+with a list of feminine nouns and labels that carry their own article), and
+contexts for one English word that is two Spanish ones (`tc('skill',
+'forage')`). About 1,500 entries.
+
+**English is byte-identical, and that is the tripwire.** With the language at
+English, `t` returns exactly what the code built before. `sim:check:all
+--verbose` diffs to zero against the build before the pass, every existing
+test passes unchanged, and so do all fifty-two existing browser specs.
+
+**Where the words are translated.** Data tables — techs, items, buildings, the
+settings rows — stay English, because the simulation and the tests read them as
+identifiers; they are translated where shown, `t(def.label)`. Sentences the
+simulation composes — a line in somebody's life, an insight, a refusal, a
+band's name — are translated when composed, because by the time the UI sees
+"Fenva taught Arun cordage" the grammar cannot be redone. `t` is pure (no DOM,
+no storage, no RNG), so the simulation calling it breaks no rule in
+`AGENTS.md`; a new determinism test runs one seed in English and in Spanish for
+1,500 steps and requires the same world. `causeOfDeath` stays English in the
+simulation because `tools/seeds.ts` counts the starved by comparing it, and is
+translated on the succession screen.
+
+**The switch.** *English / Español*, each named in itself, on the start
+screen, on the settings screen and in the pause menu — the game has no single
+"main menu", and a player who cannot read English needs it on the very first
+screen. Remembered in `localStorage` apart from the difficulty document, so
+"Reset everything to Normal" does not also switch a reader's language; the
+first visit follows the browser's own language; `?lang=es` overrides both, the
+way `?seed=` does. Panels built once (settings, pause menu, HUD chrome)
+rebuild on a switch; the three graphs drop their redraw digest.
+
+**Keeping it complete.** `i18n.test.ts` scans the source for every literal
+`t('…')` key and walks every data table the UI shows, and fails on anything
+without Spanish, on a Spanish template that loses or invents a placeholder,
+and on a key defined twice. It cannot see a sentence built without `t`, so
+`npm run i18n:soak` runs a world in Spanish for 30,000 steps and flags every
+line it wrote that looks English; it found three such holes in this pass (a
+marriage line glued with `' and '`, a refusal that printed an action id, and
+two actions — `spar`, `trade` — with no label at all, which English had been
+printing as raw ids). `AGENTS.md` now says every readable word goes through
+`t()`.
+
+**Left as found**, and in [bugs.md](bugs.md): lines written before a switch
+stay in their language; three English grammar slips kept so English stays
+byte-identical; Spanish takes the masculine where no person is to hand.
+
+Bit-identical in `sim:check:all --verbose`. Two new e2e specs, a new unit test
+file, a new determinism test.
+
+---
+
 ## 2026-09-23 — notes.txt: the family tree's lines take colour, and the tribe graph keeps to the tribe
 
 Two of the three notes the owner left on 2026-09-23. The third, the Spanish

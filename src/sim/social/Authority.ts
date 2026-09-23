@@ -20,6 +20,7 @@ import type { Band } from '../core/Simulation.ts';
 import type { RelationshipGraph } from './Relationships.ts';
 import { chiefHoneymoon } from './Leadership.ts';
 import { techPower } from '../knowledge/Tech.ts';
+import { t } from '../../i18n/i18n.ts';
 
 export interface AuthorityContext {
   relationships: RelationshipGraph;
@@ -259,7 +260,7 @@ export function standingOver(
   const isKin = kinship > 0;
 
   if (leader.id === subordinate.id) {
-    return { isHead, isChief, isKin, byRank: false, chance: 1, because: 'yourself' };
+    return { isHead, isChief, isKin, byRank: false, chance: 1, because: t('yourself') };
   }
 
   // Standing is the floor the rest builds on. A stranger with no position has
@@ -273,11 +274,11 @@ export function standingOver(
   const reasons: string[] = [];
   if (isHead) {
     authority += 0.55;
-    reasons.push('head of their household');
+    reasons.push(t('head of their household'));
   }
   if (isChief) {
     authority += 0.45;
-    reasons.push('chief of their band');
+    reasons.push(t('chief of their band'));
 
     // A new chief gets a brief chance to lead before ordinary relationship
     // noise has caught up. This is band state, not a deed painted onto every
@@ -286,12 +287,12 @@ export function standingOver(
     if (band) {
       const welcome = chiefHoneymoon(band, ctx.day);
       authority += welcome * 0.18;
-      if (welcome > 0.25) reasons.push('newly welcomed as chief');
+      if (welcome > 0.25) reasons.push(t('newly welcomed as chief'));
     }
   }
   if (isKin && !isHead) {
     authority += 0.1;
-    reasons.push('kin');
+    reasons.push(t('kin'));
   }
 
   // M9.5 phase 4d: the middle rung. Until `chiefdom` a band is flat — `isHead`
@@ -310,7 +311,7 @@ export function standingOver(
     techPower(leader, 'chiefdom') > 0;
   if (byRank) {
     authority += RANK_AUTHORITY * techPower(leader, 'chiefdom');
-    reasons.push('head of a house in your band');
+    reasons.push(t('head of a house in your band'));
   }
 
   // M11 phase 6d: a household visibly richer and more renowned than its
@@ -319,14 +320,14 @@ export function standingOver(
   // `inequalityTerm`'s own comment for why it reads no technology at all.
   const inequality = inequalityTerm(leader, subordinate.bandId, ctx);
   authority += inequality;
-  if (inequality > 0.03) reasons.push('a person of some standing');
+  if (inequality > 0.03) reasons.push(t('a person of some standing'));
 
-  if (reasons.length === 0) reasons.push('no standing over them');
+  if (reasons.length === 0) reasons.push(t('no standing over them'));
 
   const regard = ctx.relationships.opinion(subordinate.id, leader.id) / 100;
   authority += regard * 0.4;
-  if (regard > 0.25) reasons.push('thinks well of you');
-  else if (regard < -0.15) reasons.push('resents you');
+  if (regard > 0.25) reasons.push(t('thinks well of you'));
+  else if (regard < -0.15) reasons.push(t('resents you'));
 
   // Biddability. A loyal person does as they are told; a headstrong one argues.
   authority += (subordinate.traits.loyalty - 0.5) * 0.4;
@@ -338,11 +339,11 @@ export function standingOver(
   const menace = leader.skillFactor('fight') - subordinate.skillFactor('fight');
   if (menace > 0.15) {
     authority += Math.min(0.25, menace * 0.4);
-    reasons.push('you are the stronger');
+    reasons.push(t('you are the stronger'));
   }
 
   const cost = orderCost(action, foreign);
-  if (foreign) reasons.push('you are asking them to cross another band');
+  if (foreign) reasons.push(t('you are asking them to cross another band'));
   const chance = Math.max(0, Math.min(0.98, authority - cost * 0.6));
 
   return {
@@ -396,7 +397,7 @@ export function headsAHouseIn(
  */
 export function menaceOver(leader: Person, subordinate: Person, tick: number): Standing {
   if (leader.id === subordinate.id) {
-    return { isHead: false, isChief: false, isKin: false, byRank: false, chance: 1, because: 'yourself' };
+    return { isHead: false, isChief: false, isKin: false, byRank: false, chance: 1, because: t('yourself') };
   }
 
   const reasons: string[] = [];
@@ -405,7 +406,7 @@ export function menaceOver(leader: Person, subordinate: Person, tick: number): S
   const menace = leader.skillFactor('fight') - subordinate.skillFactor('fight');
   if (menace > 0) {
     chance += Math.min(0.45, menace * 0.6);
-    reasons.push('you are the stronger');
+    reasons.push(t('you are the stronger'));
   }
 
   // A biddable person gives way; an aggressive one is more likely to call the
@@ -417,11 +418,11 @@ export function menaceOver(leader: Person, subordinate: Person, tick: number): S
   // matter, short enough that an old fight is not a standing threat.
   if (subordinate.lastHarmedBy === leader.id && tick - subordinate.lastHarmedTick < 300) {
     chance += 0.35;
-    reasons.push('still afraid of you');
+    reasons.push(t('still afraid of you'));
   }
 
   chance = Math.max(0.02, Math.min(0.92, chance));
-  if (reasons.length === 0) reasons.push('no fear of you');
+  if (reasons.length === 0) reasons.push(t('no fear of you'));
 
   return {
     isHead: false, isChief: false, isKin: false, byRank: false,

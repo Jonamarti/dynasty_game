@@ -15,6 +15,8 @@
  * the precedence chain. See the note at the top of `Settings.ts`.
  */
 import type { Simulation } from '../sim/core/Simulation.ts';
+import { t, tc, onLanguageChange } from '../i18n/i18n.ts';
+import { languageSwitchHtml, handleLanguageClick } from './LanguageSwitch.ts';
 
 export interface PauseMenuCallbacks {
   onResume: () => void;
@@ -22,7 +24,7 @@ export interface PauseMenuCallbacks {
 }
 
 /** Mirrors the handler in `main.ts`. Update both together. */
-const KEYS: [string, string][] = [
+export const KEYS: [string, string][] = [
   ['W A S D', 'walk'],
   ['drag', 'pan the camera'],
   ['F', 're-centre on whoever you are'],
@@ -54,20 +56,34 @@ export class PauseMenu {
 
     this.root.addEventListener('click', event => {
       const target = event.target as HTMLElement;
+      if (handleLanguageClick(target)) return;
       const act = target.closest<HTMLElement>('[data-act]')?.dataset.act;
       if (act === 'resume') this.callbacks.onResume();
       else if (act === 'settings') this.callbacks.onSettings();
       else if (target === this.root) this.callbacks.onResume();
     });
+
+    // Built once, so a new language has to throw the card away. The subtitle
+    // is part of it, and `open` is the only thing that knows what goes there.
+    onLanguageChange(() => {
+      if (!this.built) return;
+      this.root.innerHTML = '';
+      this.built = false;
+      if (this.isOpen && this.lastSim) this.open(this.lastSim);
+    });
   }
+
+  private lastSim: Simulation | null = null;
 
   get isOpen(): boolean {
     return !this.root.hidden;
   }
 
   open(sim: Simulation): void {
+    this.lastSim = sim;
     if (!this.built) this.build();
-    this.subtitle.textContent = sim.time.label() + ' · seed ' + String(sim.config.seed);
+    this.subtitle.textContent = sim.time.label() + ' · ' +
+      t('seed {seed}', { seed: String(sim.config.seed) });
     this.root.hidden = false;
   }
 
@@ -79,16 +95,17 @@ export class PauseMenu {
     const card = document.createElement('div');
     card.className = 'pausemenu-card';
     card.innerHTML =
-      '<b class="pausemenu-title">Dynasty</b>' +
+      '<b class="pausemenu-title">' + t('Dynasty') + '</b>' +
       '<div class="pausemenu-sub"></div>' +
       '<div class="pausemenu-acts">' +
-      '<button class="hud-button is-primary" type="button" data-act="resume">Resume</button>' +
-      '<button class="hud-button" type="button" data-act="settings">Settings</button>' +
+      '<button class="hud-button is-primary" type="button" data-act="resume">' + t('Resume') + '</button>' +
+      '<button class="hud-button" type="button" data-act="settings">' + t('Settings') + '</button>' +
       '</div>' +
-      '<div class="pausemenu-keys-head">Keys</div>' +
+      languageSwitchHtml() +
+      '<div class="pausemenu-keys-head">' + t('Keys') + '</div>' +
       '<div class="pausemenu-keys">' +
       KEYS.map(([key, what]) =>
-        '<span class="pausemenu-key"><b>' + key + '</b> ' + what + '</span>').join('') +
+        '<span class="pausemenu-key"><b>' + tc('key', key) + '</b> ' + t(what) + '</span>').join('') +
       '</div>';
     this.subtitle = card.querySelector('.pausemenu-sub') as HTMLElement;
     this.root.appendChild(card);

@@ -30,6 +30,7 @@
 import type { Skill } from './Person.ts';
 import type { Tech } from '../knowledge/Tech.ts';
 import { ITEMS, type Inventory } from './Item.ts';
+import { t, language, joinAnd } from '../../i18n/i18n.ts';
 
 export interface RecipeDef {
   id: string;
@@ -587,8 +588,9 @@ export function missingIngredients(inventory: Inventory, recipe: RecipeDef): str
   const short = Object.entries(recipe.ingredients)
     .filter(([itemId, count]) => inventory.count(itemId) < count)
     .map(([itemId, count]) => {
-      const label = ITEMS[itemId]?.label.toLowerCase() ?? itemId;
+      const label = t(ITEMS[itemId]?.label ?? itemId).toLowerCase();
       return count > 1 ? count + ' ' + label : label;
     });
-  return short.length === 0 ? '' : 'You need ' + short.join(' and ');
+  if (short.length === 0) return '';
+  return t('You need {list}', { list: language() === 'en' ? short.join(' and ') : joinAnd(short) });
 }
