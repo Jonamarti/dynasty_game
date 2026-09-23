@@ -21,6 +21,7 @@ import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts'
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
+import { TERRITORY_RADIUS } from '../src/sim/systems/BandSystem.ts';
 
 // ---------------------------------------------------------------------------
 // Scenarios
@@ -621,6 +622,25 @@ export interface JobWatch {
   otherMatchTicks: Record<JobId, number>;
 }
 
+/**
+ * Where violence between peoples happens, and whether the peoples move apart
+ * after it — M11 phase 14's gate, the owner's note 7 in numbers.
+ *
+ * The note describes blows landing "all over the map" and asks for hatred that
+ * grows out of incidents and turns into segregation. Both are properties of
+ * the run as it happens: where a blow landed, and how far apart the bands
+ * stood in the days after it, are gone from the final state.
+ */
+export interface ConflictWatch {
+  /** Cross-band assaults and killings, and how many landed near either camp. */
+  blows: number;
+  blowsNearHome: number;
+  /** Cross-band assaults, killings, threats and thefts, counted as they happen. */
+  incidents: number;
+  /** Once a day: mean distance between members of different bands, and the incident count then. */
+  apart: { distance: number; incidents: number }[];
+}
+
 export interface Report {
   scenario: string;
   seed: string;
@@ -639,6 +659,7 @@ export interface Report {
   wildlife: WildlifeWatch;
   jobs: JobWatch;
   stall: StallWatch;
+  conflict: ConflictWatch;
   /** The one number `Telemetry.max` tracks rather than sums; see its own note. */
   travel: { worstExpanded: number };
   checks: Check[];
@@ -2494,6 +2515,34 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ' hostile=' + bandStanding.hostile.toFixed(1) + ' (spread ' + spread.toFixed(1) + ')');
   }
 
+  // M11 phase 14's gate (owner's note 7). Both were run against the build
+  // before any fear reader existed, and both fail there on `lean`, the
+  // scenario the phase is measured in: 18% of cross-band blows landed near
+  // either camp, and the peoples stood *closer* together once half the
+  // incidents had happened than before (71 tiles to 59). `century` already
+  // passes the second on that build, for reasons that are its own chaos
+  // rather than fear — so neither check is evidence alone; `lean` is the one
+  // that was shown to discriminate.
+  const conflict = base.conflict;
+  if (conflict.blows < 20) {
+    skip('violence-concentrates',
+      'only ' + conflict.blows + ' blows between peoples here; too few to say where they land');
+  } else {
+    const share = conflict.blowsNearHome / conflict.blows;
+    add('violence-concentrates', share >= 0.5,
+      (share * 100).toFixed(0) + '% of ' + conflict.blows + ' blows between peoples landed within ' +
+      NEAR_HOME + ' tiles of either camp (floor 50%)');
+  }
+  const { before, after } = apartAroundIncidents(conflict);
+  if (conflict.incidents < 20 || Number.isNaN(before) || Number.isNaN(after)) {
+    skip('peoples-drift-apart',
+      conflict.incidents + ' incidents between peoples; too few to split the run around');
+  } else {
+    add('peoples-drift-apart', after > before,
+      'peoples stood ' + before.toFixed(1) + ' tiles apart before half the ' + conflict.incidents +
+      ' incidents, ' + after.toFixed(1) + ' after');
+  }
+
   add(
     'world-has-land',
     (base.biomes.grass ?? 0) + (base.biomes.forest ?? 0) > sim.world.width * sim.world.height * 0.08,
@@ -2558,6 +2607,10 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
 
   /** Latches the first moment anybody in the world holds a job. See `JobWatch`. */
   let jobsExist = false;
+
+  // See `ConflictWatch`. `recent` is bounded, so it is read every step.
+  const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [] };
+  let lastEventId = 0;
 
   const started = Date.now();
   for (let i = 1; i <= steps; i++) {
@@ -2639,6 +2692,12 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
       }
     }
 
+    watchConflict(sim, conflict, lastEventId);
+    lastEventId = sim.social.recent.length > 0
+      ? Math.max(lastEventId, sim.social.recent[sim.social.recent.length - 1]!.id)
+      : lastEventId;
+    if (i % sim.config.time.ticksPerDay === 0) conflict.apart.push(peoplesApart(sim, conflict.incidents));
+
     if (i % WATCH_EVERY === 0) {
       for (const animal of sim.animals) {
         if (!animal.alive) continue;
@@ -2702,6 +2761,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     wildlife: watch,
     jobs,
     stall,
+    conflict,
     relationships: sim.relationships.stats(),
     buildings: {
       total: sim.buildings.length,
@@ -2717,6 +2777,68 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
 
   telemetry.disable();
   return { ...base, checks: buildChecks(sim, samples, base) };
+}
+
+/**
+ * Where a blow between two peoples counts as landing "at home": within half a
+ * territory of either side's camp. Half, because the full `TERRITORY_RADIUS`
+ * covers most of an island with three camps on it — measured on the build
+ * before phase 14, 77% of `century`'s cross-band blows fell within forty tiles
+ * of somebody's camp, which says where the camps are rather than where the
+ * fighting is.
+ */
+const NEAR_HOME = TERRITORY_RADIUS / 2;
+
+/**
+ * Mean distance between peoples before half the run's incidents had happened,
+ * and after. Shared by `peoples-drift-apart` and `sim:seeds`, so a seed cohort
+ * and a single run cannot mean two different things by "drifted apart".
+ */
+export function apartAroundIncidents(conflict: ConflictWatch): { before: number; after: number } {
+  const half = conflict.incidents / 2;
+  const meanOf = (rows: ConflictWatch['apart']) => {
+    const kept = rows.filter(row => !Number.isNaN(row.distance));
+    return kept.length === 0 ? NaN : kept.reduce((sum, row) => sum + row.distance, 0) / kept.length;
+  };
+  return {
+    before: meanOf(conflict.apart.filter(row => row.incidents < half)),
+    after: meanOf(conflict.apart.filter(row => row.incidents >= half)),
+  };
+}
+
+export function watchConflict(sim: Simulation, conflict: ConflictWatch, lastEventId: number): void {
+  for (const event of sim.social.recent) {
+    if (event.id <= lastEventId || event.targetId === null) continue;
+    if (event.type !== 'assault' && event.type !== 'murder' &&
+        event.type !== 'threaten' && event.type !== 'theft') continue;
+    const actor = sim.peopleById.get(event.actorId);
+    const target = sim.peopleById.get(event.targetId);
+    if (!actor || !target || actor.bandId === target.bandId) continue;
+    conflict.incidents++;
+    if (event.type !== 'assault' && event.type !== 'murder') continue;
+    conflict.blows++;
+    const near = [actor.bandId, target.bandId].some(bandId => {
+      const band = sim.bands.find(b => b.id === bandId && !b.outcast);
+      return band !== undefined && Math.hypot(event.x - band.homeX, event.y - band.homeY) <= NEAR_HOME;
+    });
+    if (near) conflict.blowsNearHome++;
+  }
+}
+
+/** Mean distance between every pair of living people in different founding bands. */
+export function peoplesApart(sim: Simulation, incidents: number): { distance: number; incidents: number } {
+  const outcast = sim.bands.find(b => b.outcast)?.id;
+  const living = sim.livingPeople().filter(person => person.bandId !== outcast);
+  let sum = 0;
+  let pairs = 0;
+  for (let a = 0; a < living.length; a++) {
+    for (let b = a + 1; b < living.length; b++) {
+      if (living[a]!.bandId === living[b]!.bandId) continue;
+      sum += Math.hypot(living[a]!.x - living[b]!.x, living[a]!.y - living[b]!.y);
+      pairs++;
+    }
+  }
+  return { distance: pairs === 0 ? NaN : sum / pairs, incidents };
 }
 
 // ---------------------------------------------------------------------------

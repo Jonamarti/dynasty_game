@@ -27,7 +27,9 @@
 import { Simulation } from '../src/sim/core/Simulation.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
-import { SCENARIOS, thousands } from './simcheck.ts';
+import {
+  SCENARIOS, thousands, watchConflict, peoplesApart, apartAroundIncidents, type ConflictWatch,
+} from './simcheck.ts';
 
 interface SeedResult {
   seed: string;
@@ -43,6 +45,9 @@ interface SeedResult {
   pastRoots: number;
   /** Lessons taught and things picked up by watching, over the whole run. */
   transmitted: number;
+  /** M11 phase 14's measures; see `ConflictWatch`. */
+  conflict: ConflictWatch;
+  murders: number;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -62,9 +67,15 @@ function runSeed(scenarioName: string, seed: string, steps: number): SeedResult 
   let born = 0;
   const startingIds = new Set(sim.people.map(p => p.id));
 
-  for (let i = 0; i < steps; i++) {
+  const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [] };
+  let lastEventId = 0;
+  for (let i = 1; i <= steps; i++) {
     sim.step();
     peak = Math.max(peak, sim.livingPeople().length);
+    watchConflict(sim, conflict, lastEventId);
+    const recent = sim.social.recent;
+    if (recent.length > 0) lastEventId = Math.max(lastEventId, recent[recent.length - 1]!.id);
+    if (i % sim.config.time.ticksPerDay === 0) conflict.apart.push(peoplesApart(sim, conflict.incidents));
   }
 
   let starvedInfants = 0;
@@ -108,6 +119,8 @@ function runSeed(scenarioName: string, seed: string, steps: number): SeedResult 
     known: sim.knownTech.size,
     pastRoots,
     transmitted,
+    conflict,
+    murders: counts.event_murder ?? 0,
   };
 }
 
@@ -190,6 +203,24 @@ function main(): void {
     mean(r => r.pastRoots) + ' conceived past the root nodes, ' +
     mean(r => r.transmitted) + ' passed on   ·  ' +
     stuck + '/' + results.length + ' never got past a root node'
+  );
+
+  // M11 phase 14: where the blows between peoples land, and whether the
+  // peoples move apart after them. Pooled rather than averaged per seed, so a
+  // seed with three blows cannot weigh the same as one with three hundred.
+  const blows = sum(r => r.conflict.blows);
+  const near = sum(r => r.conflict.blowsNearHome);
+  const drifts = results
+    .map(r => apartAroundIncidents(r.conflict))
+    .filter(d => !Number.isNaN(d.before) && !Number.isNaN(d.after));
+  const drifted = drifts.filter(d => d.after > d.before).length;
+  const meanDrift = drifts.length === 0 ? NaN
+    : drifts.reduce((n, d) => n + (d.after - d.before), 0) / drifts.length;
+  console.log(
+    '  CONFLICT ' + blows + ' blows between peoples, ' +
+    (blows === 0 ? 'n/a' : ((near / blows) * 100).toFixed(0) + '%') + ' near either camp · ' +
+    sum(r => r.murders) + ' murders · peoples drifted apart after incidents in ' + drifted + '/' +
+    drifts.length + ' seeds (mean ' + (Number.isNaN(meanDrift) ? 'n/a' : meanDrift.toFixed(1)) + ' tiles)'
   );
   console.log('  ' + ((Date.now() - started) / 1000).toFixed(1) + 's');
   console.log('');
