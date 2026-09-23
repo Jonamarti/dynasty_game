@@ -41,6 +41,7 @@ import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
 import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
 import { isHeld } from '../social/Defence.ts';
+import { wouldInvestigate, noticeBloodied, INVESTIGATION_DAYS } from '../social/Investigation.ts';
 import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
@@ -1226,6 +1227,20 @@ export class Simulation {
         }
         corpse.foundEventId = this.social.findBody(
           finder, corpse.person, corpse.foundEventId, corpse.x, corpse.y, this.time.tick);
+        // M11 phase 16d: wounds on a body somebody cares about start an
+        // investigation. See `Investigation.ts` for who cares.
+        if (corpse.wounded && finder.investigation === null &&
+          wouldInvestigate(finder, corpse.person, this.relationships, this.normsByBand.get(finder.bandId))) {
+          finder.investigation = {
+            deadId: corpse.person.id,
+            x: corpse.x,
+            y: corpse.y,
+            diedTick: corpse.diedTick,
+            untilTick: this.time.tick + INVESTIGATION_DAYS * perDay,
+            asked: new Set(),
+          };
+          telemetry.count('investigation_opened');
+        }
       }
     }
   }
@@ -1423,6 +1438,8 @@ export class Simulation {
     sightIntruders(
       this.people, this.peopleHash, territories, TERRITORY_RADIUS, this.config.sightRadius,
       this.time.tick, this.sightings, outcast, this.sightingScratch);
+    // M11 phase 16d: the same looking-around sees who has blood on them.
+    noticeBloodied(this.people, this.peopleHash, this.config.sightRadius, this.time.tick);
     // The same looking-around writes what each band knows of the land.
     for (const person of this.people) {
       if (!person.alive || person.bandId === outcast) continue;

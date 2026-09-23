@@ -52,6 +52,7 @@ import {
   homeRange, homeward, fearOf, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
   DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
 } from '../social/Fear.ts';
+import { INVESTIGATE } from '../social/Investigation.ts';
 import {
   isCaptive, isEscapee, captorWatching, ESCAPE, ESCAPE_HOME, HOME_REACHED, CAPTURE_OVER_PREDATION,
   RAID_CAPTURE,
@@ -198,6 +199,8 @@ interface FoundTargets {
   bindTarget: Person | null;
   /** Where on the band's ground a guard's `patrol` goes next, M11 phase 15e. */
   patrolPoint: { x: number; y: number } | null;
+  /** Where the body was found, for an `investigate`, M11 phase 16d. */
+  investigatePoint: { x: number; y: number } | null;
   beneficiary: Person | null;
   /**
    * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
@@ -736,6 +739,7 @@ export class Brain {
     let helpCallerTarget: Person | null = null;
     let bindTarget: Person | null = null;
     let patrolPoint: { x: number; y: number } | null = null;
+    let investigatePoint: { x: number; y: number } | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
     let craftStation: Building | null = null;
@@ -1623,6 +1627,22 @@ export class Brain {
       }
     }
 
+    // --- Investigating a killing ---------------------------------------------------
+    // M11 phase 16d. An open investigation draws its investigator back to
+    // where the body was found until it is solved or given up. See
+    // `Investigation.ts`.
+    if (person.investigation) {
+      const open = person.investigation;
+      if (ctx.time.tick > open.untilTick) {
+        person.investigation = null;
+        telemetry.count('murder_unsolved');
+      } else if (!person.isChild && !pressedByNeed(person, ctx.needs.workLimits) &&
+        ctx.world.sameRegion(person.x, person.y, open.x, open.y)) {
+        add('investigate', INVESTIGATE);
+        investigatePoint = { x: open.x, y: open.y };
+      }
+    }
+
     // --- Escape ------------------------------------------------------------------
     // M11 phase 15d. A captive with nobody of the captor band in sight slips
     // away — the mirror of `mayUse`, attention and not permission — and a
@@ -2392,7 +2412,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, intruder, restrainee, helpCallerTarget, bindTarget, patrolPoint, beneficiary, tradePartner, fleeFrom,
+        victim, foe, intruder, restrainee, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2710,6 +2730,12 @@ export class Brain {
     person.action = action;
 
     switch (action) {
+      case 'investigate':
+        if (found.investigatePoint) {
+          person.targetX = found.investigatePoint.x;
+          person.targetY = found.investigatePoint.y;
+        }
+        break;
       case 'patrol':
         if (found.patrolPoint) {
           person.targetX = found.patrolPoint.x;

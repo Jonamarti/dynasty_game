@@ -198,6 +198,7 @@ export const ACTION_LABELS: Record<string, string> = {
   patrol: 'walking the band\'s ground',
   dismember: 'cutting up a body',
   drag: 'dragging a body',
+  investigate: 'asking who did it',
   answer_call: 'answering a call for help',
 };
 
@@ -326,6 +327,8 @@ export const STOP_REASONS: Record<string, string> = {
   no_home: 'there was no camp to go back to',
   // M11 phase 16b.
   body_gone: 'the body was gone',
+  // M11 phase 16d.
+  nothing_to_ask: 'there was nothing left to ask about',
   // M11 phase 5c: `slander` and `praise` need somebody to talk *about*, not
   // only somebody to talk to, and the walk over gives both of those a chance
   // to stop being true.

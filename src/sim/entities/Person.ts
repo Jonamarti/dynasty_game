@@ -3,6 +3,7 @@
  * the player has, an NPC has too. That symmetry is a design pillar, not an
  * accident: it is what makes the world feel inhabited rather than staged.
  */
+import type { OpenInvestigation } from '../social/Investigation.ts';
 import type { RNG } from '../core/RNG.ts';
 import { Inventory } from './Item.ts';
 import { Memory } from '../social/Memory.ts';
@@ -466,6 +467,14 @@ export class Person {
    */
   raidingBandId: number | null = null;
   raidingUntil = -9999;
+  /**
+   * M11 phase 16d. A killer is marked for a day (`bloodiedUntil`); anybody
+   * who sees them in that time remembers it (`seenBloodied`, who and when);
+   * and somebody looking into a killing holds it here. See `Investigation.ts`.
+   */
+  bloodiedUntil = -9999;
+  readonly seenBloodied = new Map<number, number>();
+  investigation: OpenInvestigation | null = null;
   /**
    * When this person last tried to hold somebody and lost the struggle. The
    * ladder does not try the same rung twice on the same offence: the next

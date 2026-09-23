@@ -402,6 +402,35 @@ export class SocialSystem {
   }
 
   /**
+   * The end of an investigation: `accuser` has come to believe `suspect`
+   * killed `dead`, `confidence` sure — M11 phase 16d. It enters their memory
+   * as a killing heard of rather than seen (firsthand false, the confidence
+   * the evidence earned), so it moves their opinion as hearsay does and is
+   * told on as any story is; and when the suspect is of another people, it
+   * costs the two peoples' standing once, the way a killing across a band
+   * line does. Right or wrong: nothing here knows which.
+   */
+  accuse(accuser: Person, suspect: Person, dead: Person, confidence: number, tick: number): void {
+    const event: SocialEvent = {
+      id: nextEventId++,
+      type: 'murder',
+      actorId: suspect.id,
+      targetId: dead.id,
+      x: accuser.x,
+      y: accuser.y,
+      tick,
+      magnitude: 1,
+      witnesses: 0,
+    };
+    this.absorb(accuser, event, suspect, false, confidence, null, dead.bandId);
+    if (suspect.bandId !== dead.bandId) {
+      this.bandRelations.add(dead.bandId, suspect.bandId,
+        DEED_WEIGHT.murder * CROSS_BAND_DEED_SCALE * confidence);
+    }
+    telemetry.count('murder_suspected');
+  }
+
+  /**
    * `finder` comes upon the body of `dead` — M11 phase 16c. One event per body
    * (`eventId`, created on the first finding and handed back to be kept on
    * the corpse), so a second finder and somebody told by the first hold the

@@ -97,6 +97,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "one of their captors was watching": "uno de sus captores estaba mirando",
   "there was no camp to go back to": "no había campamento al que volver",
   "the body was gone": "el cuerpo ya no estaba",
+  "there was nothing left to ask about": "no quedaba nada por lo que preguntar",
   "the person they meant to talk about was gone": "la persona de la que quería hablar ya no estaba",
   "they had nothing left worth telling": "no le quedaba nada que valiera la pena contar",
   "they do not know how": "no sabe cómo",
@@ -258,5 +259,6 @@ export const ES_ACTIONS: Record<string, string> = {
   "slipping away": "escabulléndose",
   "cutting up a body": "troceando un cuerpo",
   "dragging a body": "arrastrando un cuerpo",
+  "asking who did it": "preguntando quién lo hizo",
   "walking the band's ground": "recorriendo las tierras de la banda",
 };

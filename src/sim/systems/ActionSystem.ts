@@ -52,6 +52,9 @@ import {
   RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, HOLD_FOR_ROPE, CALL_TICKS, BIND_TICKS, BOUND_TICKS,
   PATROL_LINGER, GUARD_REASSURES,
 } from '../social/Defence.ts';
+import {
+  weighEvidence, concludeFrom, BLOODIED_TICKS, ASK_TICKS, ASK_RADIUS,
+} from '../social/Investigation.ts';
 import { DISMEMBER_WORK, type Corpse } from '../entities/Corpse.ts';
 import { isCaptive, captorWatching, HOME_REACHED } from '../social/Captivity.ts';
 import { fightingPower } from '../social/Vulnerability.ts';
@@ -607,6 +610,7 @@ export class ActionSystem {
       case 'patrol': this.doPatrol(person, ctx); break;
       case 'dismember': this.doDismember(person, ctx); break;
       case 'drag': this.doDrag(person, ctx); break;
+      case 'investigate': this.doInvestigate(person, ctx); break;
       case 'call_for_help': this.doCallForHelp(person, ctx); break;
       case 'answer_call': this.doAnswerCall(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
@@ -3868,6 +3872,67 @@ export class ActionSystem {
   }
 
   /**
+   * Looking into a killing, M11 phase 16d: go to where the body was found,
+   * stand there `ASK_TICKS` (an interruption check every tick), and ask
+   * everybody within `ASK_RADIUS` who has not been asked yet. A witness
+   * tells what they saw; everybody says what they know of grudges and of who
+   * they saw bloodied. Enough evidence names somebody (`SocialSystem.accuse`)
+   * and closes it; not enough leaves it open for another round, until
+   * `untilTick` gives it up. See `Investigation.ts`.
+   */
+  private doInvestigate(person: Person, ctx: ActionContext): void {
+    const open = person.investigation;
+    const dead = open ? ctx.peopleById.get(open.deadId) : undefined;
+    if (!open || !dead) {
+      this.abandon(person, 'nothing_to_ask', ctx);
+      return;
+    }
+    person.targetX = open.x;
+    person.targetY = open.y;
+    if (!this.travel(person, ctx)) return;
+    const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+    if (stopped) {
+      this.stop(person, stopped, ctx, 'investigate_');
+      return;
+    }
+    person.workedTicks++;
+    if (person.workedTicks < ASK_TICKS) return;
+
+    const scores = new Map<number, number>();
+    weighEvidence(person, dead, open.diedTick, false, person.id, scores);
+    for (const other of ctx.peopleHash.queryRadius(person.x, person.y, ASK_RADIUS)) {
+      if (!other.alive || other.id === person.id || other.isChild || open.asked.has(other.id)) continue;
+      open.asked.add(other.id);
+      telemetry.count('investigation_asked');
+      for (const memory of other.memory.all()) {
+        if (memory.type === 'murder' && memory.targetId === dead.id && memory.firsthand &&
+          memory.actorId !== other.id) {
+          ctx.social.tellStory(other, person, memory, ctx.peopleById);
+        }
+      }
+      weighEvidence(other, dead, open.diedTick, true, person.id, scores);
+    }
+    telemetry.count('investigation_rounds');
+    const verdict = concludeFrom(scores);
+    if (verdict) {
+      const suspect = ctx.peopleById.get(verdict.suspectId);
+      if (suspect) {
+        // Already knows it for a killing — seen it, or been told by a witness
+        // just now: nothing new to conclude, and a second story of the same
+        // killing would count it twice.
+        const known = person.memory.all().some(m =>
+          m.type === 'murder' && m.targetId === dead.id && m.actorId === suspect.id);
+        if (!known) ctx.social.accuse(person, suspect, dead, verdict.confidence, ctx.tick);
+        // Whether they were right — read for the harness's count and nowhere
+        // else. The investigator never sees it.
+        telemetry.count(dead.lastHarmedBy === suspect.id ? 'murder_named_rightly' : 'murder_named_wrongly');
+        person.investigation = null;
+      }
+    }
+    this.finish(person);
+  }
+
+  /**
    * Slipping away from captivity, and the walk home after — M11 phase 15d.
    *
    * The first tick asks the one question captivity turns on: is anybody of
@@ -4122,6 +4187,8 @@ export class ActionSystem {
     if (other.health <= 0) {
       other.die('killed by ' + person.name);
       telemetry.count('death_murder');
+      // M11 phase 16d: a killer carries the marks of it for a day.
+      person.bloodiedUntil = ctx.tick + BLOODIED_TICKS;
       ctx.social.emit('murder', person, other, 1, ctx.tick, ctx.peopleHash, ctx.sightRadius);
       this.finish(person);
       return;
