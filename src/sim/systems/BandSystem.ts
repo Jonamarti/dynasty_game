@@ -35,6 +35,7 @@ import { chiefHoneymoon, chiefTermDays } from '../social/Leadership.ts';
 import { conspiracyAgainst, warParty } from '../social/Factions.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
 import { t } from '../../i18n/i18n.ts';
+import type { Sightings } from '../social/Fear.ts';
 
 /**
  * How large a faction against somebody has to be before the band acts on it.
@@ -324,6 +325,12 @@ export interface BandContext {
   onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') => void;
   /** Households by id, so `directWork` can tell who heads a house. */
   householdsById: Map<number, Household>;
+  /**
+   * Outsiders somebody from each band actually saw on its ground, M11 phase
+   * 14a. The territory engine reads this rather than the people hash — a
+   * band resents the strangers it saw, not the ones who were there.
+   */
+  sightings: Sightings;
 }
 
 export class BandSystem {
@@ -1405,25 +1412,42 @@ export class BandSystem {
   // -------------------------------------------------------------------------
 
   /**
-   * Foreign faces near camp cost a band's opinion of that other band —
-   * scaled by how hungry this band is. M11 phase 7b's fourth engine, and the
-   * one the plan names as closing the old `// later, claim territory` TODO
-   * without any new mechanic: `pantryPressureOf` already answers "how
-   * pinched is this band for food", and multiplying an intrusion by it is
-   * the whole of "a well-fed band shrugs off an intrusion; a hungry one does
-   * not."
+   * Foreign faces on a band's ground cost its opinion of their band — scaled
+   * by how hungry this band is. M11 phase 7b's fourth engine: "a well-fed
+   * band shrugs off an intrusion; a hungry one does not."
+   *
+   * **M11 phase 14c fixed two defects in it.**
+   *
+   * - **It was a sensor.** It counted every foreigner within
+   *   `TERRITORY_RADIUS` of camp through the people hash, whether or not
+   *   anybody from the band was there to see them — against the owner's rule
+   *   that nothing is known that was not seen or told. It now reads
+   *   `ctx.sightings`, which only a member's own eyes write (`sightIntruders`).
+   * - **Its sign was backwards.** The comment above has always said a
+   *   *hungry* band resents intruders, and the code multiplied by
+   *   `pantryPressureOf`, which is how *full* the stores are: a band with
+   *   empty granaries resented nothing, which is exactly the scarcity `lean`
+   *   exists to create. The comment was the intent — it is the one the M11
+   *   plan quotes — so the code now reads how empty the stores are. The other
+   *   rule was measured too; see the changelog.
+   *
+   * A band with no granary at all still shrugs: there is no pantry to read, and
+   * guessing hunger from somewhere else would be a second answer to a
+   * question `pantryPressureOf` already owns.
    */
   private considerTerritory(
     band: Band, ctx: BandContext, outcastBandId: number | undefined
   ): void {
-    const pressure = this.pantryPressureOf(
-      ctx.buildings.filter(b => b.ownerBandId === band.id && b.complete && b.def.storage >= 100));
+    const stores = ctx.buildings.filter(
+      b => b.ownerBandId === band.id && b.complete && b.def.storage >= 100);
+    if (stores.length === 0) return;
+    const pressure = 1 - this.pantryPressureOf(stores);
     if (pressure <= 0) return;
 
     const byBand = new Map<number, number>();
-    for (const person of ctx.peopleHash.queryRadius(band.homeX, band.homeY, TERRITORY_RADIUS)) {
-      if (!person.alive || person.bandId === band.id || person.bandId === outcastBandId) continue;
-      byBand.set(person.bandId, (byBand.get(person.bandId) ?? 0) + 1);
+    for (const seen of ctx.sightings.get(band.id)?.values() ?? []) {
+      if (seen.bandId === band.id || seen.bandId === outcastBandId) continue;
+      byBand.set(seen.bandId, (byBand.get(seen.bandId) ?? 0) + 1);
     }
 
     for (const [otherBandId, count] of byBand) {

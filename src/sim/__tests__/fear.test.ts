@@ -99,7 +99,7 @@ describe('strangers on your ground', () => {
 
     expect(looker.mood.security).toBeLessThan(0);
     expect(looker.mood.security).toBeGreaterThanOrEqual(-FEAR_PER_PASS_CAP);
-    expect(sightings.get(0)?.get(intruder.id)).toBe(100);
+    expect(sightings.get(0)?.get(intruder.id)).toEqual({ tick: 100, bandId: 1 });
     // The intruder is on somebody else's ground, not their own: they are not
     // frightened by the person whose land they are standing on.
     expect(intruder.mood.security).toBe(0);

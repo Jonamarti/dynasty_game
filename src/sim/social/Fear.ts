@@ -299,12 +299,16 @@ export interface Territory {
 }
 
 /**
- * Who has been seen on whose ground: band id → outsider id → the tick they
- * were last seen there. Kept by `Simulation`, written only by `sightIntruders`
- * and read, from 14c, by the territory engine in place of its old omniscient
- * count of every foreigner within range of camp.
+ * Who has been seen on whose ground: band id → outsider id → when they were
+ * last seen there and which band they belong to. Kept by `Simulation`,
+ * written only by `sightIntruders` and read by the territory engine (14c) in
+ * place of its old omniscient count of every foreigner within range of camp.
  */
-export type Sightings = Map<number, Map<number, number>>;
+export interface Sighting {
+  tick: number;
+  bandId: number;
+}
+export type Sightings = Map<number, Map<number, Sighting>>;
 
 /**
  * One sighting pass: everybody looks around, and an outsider standing inside
@@ -353,7 +357,7 @@ export function sightIntruders(
         seenByBand = new Map();
         sightings.set(looker.bandId, seenByBand);
       }
-      seenByBand.set(other.id, tick);
+      seenByBand.set(other.id, { tick, bandId: other.bandId });
     }
     if (seen === 0) continue;
     const lost = Math.min(FEAR_PER_PASS_CAP, seen * FEAR_PER_INTRUDER);
@@ -362,8 +366,8 @@ export function sightIntruders(
   }
   // Forget what is stale, so the map holds a day's worth and no more.
   for (const seenByBand of sightings.values()) {
-    for (const [id, when] of seenByBand) {
-      if (tick - when > SIGHTING_MEMORY_TICKS) seenByBand.delete(id);
+    for (const [id, seen] of seenByBand) {
+      if (tick - seen.tick > SIGHTING_MEMORY_TICKS) seenByBand.delete(id);
     }
   }
 }

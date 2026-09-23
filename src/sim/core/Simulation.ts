@@ -2805,6 +2805,7 @@ export class Simulation {
         leaveBand: person => this.removeBandMembership(person),
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
         householdsById: this.householdsById,
+        sightings: this.sightings,
       });
 
       this.knowledgeSystem.daily(this.people, {
