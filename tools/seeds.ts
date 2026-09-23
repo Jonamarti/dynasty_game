@@ -53,6 +53,9 @@ interface SeedResult {
   cameHome: number;
   intervened: number;
   seenByOwner: number;
+  coats: number;
+  tended: number;
+  tamed: number;
   exiled: number;
   adopted: number;
   factionDays: number;
@@ -142,6 +145,10 @@ function runSeed(scenarioName: string, seed: string, steps: number): SeedResult 
     cameHome: counts.captive_came_home ?? 0,
     intervened: counts.intervened ?? 0,
     seenByOwner: counts.property_deed_seen_by_owner ?? 0,
+    // M11 phase 17d: tripwires one event wide in a single run.
+    coats: counts.crafted_fur_coat ?? 0,
+    tended: counts.tended_ticks ?? 0,
+    tamed: counts.animal_tamed ?? 0,
     // M11 phase 17b: phase 5's three rare mechanisms.
     exiled: counts.exiled ?? 0,
     adopted: counts.adopted ?? 0,
@@ -264,6 +271,13 @@ function main(): void {
     ' property deeds an owner saw · ' + sum(r => r.captives) + ' taken captive in ' +
     withCaptives + '/' + results.length + ' seeds, ' + sum(r => r.escaped) + ' escaped, ' +
     sum(r => r.cameHome) + ' came home'
+  );
+  // M11 phase 17d: the checks one event wide in a single run, read where they
+  // can be — how many seeds of the cohort saw each happen at all.
+  console.log(
+    '  TRIPWIRES coats sewn in ' + results.filter(r => r.coats > 0).length + '/' + results.length +
+    ' seeds · the hurt tended in ' + results.filter(r => r.tended > 0).length +
+    ' · animals tamed in ' + results.filter(r => r.tamed > 0).length
   );
   // M11 phase 17b: exile, factions and the way back in — phase 5's promised
   // checks that are one or two events a run and can only be read here.

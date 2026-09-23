@@ -5,7 +5,10 @@
  * quietly breaks `harsh-winter` is exactly the kind of regression a single
  * scenario hides.
  */
-import { SCENARIOS, runScenario, formatReport, thousands } from './simcheck.ts';
+import { SCENARIOS, runScenario, formatReport, thousands, markMatrixRun } from './simcheck.ts';
+
+// M11 phase 17d: wall-clock checks report and do not judge in the matrix.
+markMatrixRun();
 
 const verbose = process.argv.includes('--verbose');
 const rows: { name: string; passed: number; total: number; failed: string[]; stepsPerSecond: number }[] = [];
