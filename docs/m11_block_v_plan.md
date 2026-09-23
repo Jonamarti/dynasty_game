@@ -7,7 +7,7 @@ documento: dos copias del mismo plan divergen igual que dos copias del mismo
 código, y la divergencia sale meses después como una contradicción que nadie
 sabe cuál de las dos es la buena.
 
-**Nada de este documento está construido todavía.** Cada referencia a código se
+**Las fases 12 y 13 están construidas; de la 14 en adelante, nada.** Cada referencia a código se
 comprobó contra el árbol el día en que se escribió; las líneas se moverán.
 
 ---
@@ -44,7 +44,9 @@ milestone, hasta el nivel de commit.
 | 11a-11c | enviadas (`43fa7ac`, `f72493b`, `a196f10`, `7b6c4ae`) |
 | 11d cautiverio | **fundida en 15d** |
 | 11e lectores y UI | **fundida en 13** |
-| 12-17 | **pendientes — este documento** |
+| 12a-12c | enviadas (`a1b7383`…`680f7ae`); 12b en dos commits, el segundo medido |
+| 13a-13f | enviadas (`cb9045b`…`200dfa2`), todas bit-idénticas; 13f en tres commits |
+| 14-17 | **pendientes — este documento** |
 
 (`a627458`, titulado "m11 phase 11", es en realidad M9.6 fase 2d.)
 
