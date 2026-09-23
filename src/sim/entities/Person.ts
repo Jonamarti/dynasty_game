@@ -322,6 +322,12 @@ export class Person {
   /** Who the current action is aimed at, for social actions. */
   targetPersonId: number | null = null;
   /**
+   * M11 phase 12b. How far away `targetPersonId` was when an `attack` began,
+   * so that giving up the chase measures the gap *opening* rather than where
+   * the chase happened to start. Cleared with the rest of the target.
+   */
+  pursuitFrom: number | null = null;
+  /**
    * Who a `slander` or a `praise` is *about*, as distinct from who it is said
    * *to* — `targetPersonId` is the listener.
    *
@@ -847,6 +853,7 @@ export class Person {
     this.targetItemId = null;
     this.targetItemCount = null;
     this.propertyUseNoted = false;
+    this.pursuitFrom = null;
     this.actionTimer = 0;
     // A route and the aim it was computed for have to be forgotten together —
     // this is the one place that forgets where somebody was going, and a

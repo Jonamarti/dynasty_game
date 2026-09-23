@@ -442,6 +442,17 @@ const ATTACK_WINDUP = 12;
 const PURSUIT_LIMIT = 9;
 
 /**
+ * M11 phase 12b. How much further than it started a chase may stretch before
+ * the quarry counts as having got away. `PURSUIT_LIMIT` alone was tested on
+ * the first tick, before a single step, so an attack begun from ten tiles
+ * ended where it stood: the limit meant "the quarry is escaping" and measured
+ * "where the chase began". The chase now gives up at whichever is further,
+ * the old limit or the start plus this — so a chase begun inside six tiles
+ * ends exactly where it always did.
+ */
+const PURSUIT_SLACK = 3;
+
+/**
  * Opinion the attacker recovers toward their victim with each blow landed.
  *
  * Violence has to *discharge* the grudge that motivated it, or every quarrel
@@ -3548,7 +3559,18 @@ export class ActionSystem {
     // Give up the chase. A victim who runs must be able to get away, or fleeing
     // is theatre: attacker and quarry move at the same speed, so a pursuit that
     // never ends is a death sentence with extra steps.
-    if (quarry && person.distanceTo(quarry) > PURSUIT_LIMIT) {
+    if (quarry && person.order === 'attack') {
+      // The player's order. Measured against where the chase began, and
+      // stopped through `abandon` so the floater says the quarry got away —
+      // this used to `finish` on the first tick from ten tiles, silently.
+      const distance = person.distanceTo(quarry);
+      if (person.pursuitFrom === null) person.pursuitFrom = distance;
+      if (distance > Math.max(PURSUIT_LIMIT, person.pursuitFrom + PURSUIT_SLACK)) {
+        telemetry.count('pursuit_abandoned');
+        this.abandon(person, 'target_escaped', ctx);
+        return;
+      }
+    } else if (quarry && person.distanceTo(quarry) > PURSUIT_LIMIT) {
       telemetry.count('pursuit_abandoned');
       this.finish(person);
       return;

@@ -8,13 +8,16 @@ speculative. Fixed defects are in [changelog.md](changelog.md).
 All scheduled in [m11_block_v_plan.md](m11_block_v_plan.md). Each entry leaves
 this list, for [changelog.md](changelog.md), in the commit that fixes it.
 
-### An attack ordered from more than nine tiles away ends silently on its first tick
+### An NPC's attack scored from more than nine tiles away ends on its first tick
 
 `doAttack` tests `PURSUIT_LIMIT` (9) before `approach`, so an attack on anyone
 further than that calls `finish` without moving. The limit is meant to catch a
-quarry pulling away and instead measures where the chase started; and `finish`
-is not `abandon`, so neither the player nor the telemetry hears why. NPCs that
-score an attack from that distance lose it the same way. Phase 12b.
+quarry pulling away and instead measures where the chase started. `Brain`
+picks victims inside `sightRadius` (12), so every aggression it scores between
+nine and twelve tiles is lost this way. The player's own order was fixed in
+12b's first commit (see the changelog); the NPC route still takes the old path
+on purpose, because fixing it moves the world and is measured separately.
+Phase 12b, second commit.
 
 ### M11 phase 4 shipped the reverse of its own plan
 

@@ -6,6 +6,31 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 12b, first commit: an ordered attack sets off after somebody ten tiles away
+
+**The defect** (owner's note 10). `doAttack` tested `PURSUIT_LIMIT` (9) on its
+first tick, before `approach`, and called `finish`. An attack ordered on anyone
+ten tiles off ended where the attacker stood, and because `finish` is not
+`abandon`, no floater said why and no `abandoned_*` counter moved. The limit
+was written to mean "the quarry is getting away" and measured "where the
+chase happened to start".
+
+**The change**, for the player's order only (`person.order === 'attack'`):
+the distance at the start of the chase is kept on `Person.pursuitFrom`
+(cleared with the rest of the target), and the chase gives up at whichever is
+further — the old nine tiles, or the start plus `PURSUIT_SLACK` (3). A chase
+begun inside six tiles therefore ends exactly where it always did. Giving up
+is now `abandon(person, 'target_escaped')`, with its own sentence in
+`STOP_REASONS` — *"they got away"* — because `quarry_escaped` says *"the
+animal outran them"*.
+
+**Bit-identical**, because only the player gives attack orders (chiefs only
+command building and sabotage). The NPC route keeps the old test until the
+second commit, which moves the world and is measured on its own.
+`pursuit.test.ts` pins both halves, and fails both on the previous build.
+
+---
+
 ## 2026-09-23 — M11 phase 12a: one way to eat
 
 **The defect.** Eating had two implementations. `ActionSystem.doEat` had
