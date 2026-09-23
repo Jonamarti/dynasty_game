@@ -28,6 +28,7 @@ export const ES_DATA: Record<string, string> = {
   "Hand axe": "Hacha de mano",
   "Rope": "Cuerda",
   "Rope of grass": "Cuerda de hierba",
+  "Guard": "Guardia",
   "Thatch": "Paja",
   "Daub": "Barro",
   "Pot": "Vasija",

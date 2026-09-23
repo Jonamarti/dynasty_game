@@ -57,7 +57,8 @@ import {
 } from '../social/Captivity.ts';
 import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import {
-  caughtOffender, usingPropertyOf, isHeld, isBound, helpCaller, BIND_HELD,
+  caughtOffender, usingPropertyOf, isHeld, isBound, helpCaller, BIND_HELD, PATROL, PATROL_REACH,
+  PATROL_LINGER,
   CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE, CALL_MEMORY, CALL_FOR_HELP, ANSWER_CALL,
 } from '../social/Defence.ts';
 
@@ -194,6 +195,8 @@ interface FoundTargets {
   helpCallerTarget: Person | null;
   /** Somebody held by one of this person's own, for a `bind`, M11 phase 15c. */
   bindTarget: Person | null;
+  /** Where on the band's ground a guard's `patrol` goes next, M11 phase 15e. */
+  patrolPoint: { x: number; y: number } | null;
   beneficiary: Person | null;
   /**
    * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
@@ -731,6 +734,7 @@ export class Brain {
     let restrainee: Person | null = null;
     let helpCallerTarget: Person | null = null;
     let bindTarget: Person | null = null;
+    let patrolPoint: { x: number; y: number } | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
     let craftStation: Building | null = null;
@@ -1546,6 +1550,29 @@ export class Brain {
     }
     if (restrainScore > 0) add('restrain', restrainScore);
 
+    // --- Patrol ------------------------------------------------------------------
+    // M11 phase 15e. A guard walks the band's ground. The round is a fixed
+    // walk, not a search: the point is chosen from the day and the guard's own
+    // id by the golden angle, so successive rounds spread around the camp and
+    // two guards walk different arcs — no draw, because nothing about a patrol
+    // is chance, and a draw here would move every stream after `actionRng`.
+    if (person.job === 'guard' && !person.isChild && person.captiveOf === null &&
+      !pressedByNeed(person, ctx.needs.workLimits)) {
+      const home = ctx.homes?.get(person.bandId);
+      if (home) {
+        const round = Math.floor(ctx.time.tick / PATROL_LINGER) + person.id * 7;
+        for (let k = 0; k < 6 && !patrolPoint; k++) {
+          const angle = (round + k) * 2.399963;
+          const x = home.x + Math.cos(angle) * TERRITORY_RADIUS * PATROL_REACH;
+          const y = home.y + Math.sin(angle) * TERRITORY_RADIUS * PATROL_REACH;
+          if (ctx.world.isWalkable(x, y) && ctx.world.sameRegion(person.x, person.y, x, y)) {
+            patrolPoint = { x, y };
+          }
+        }
+        if (patrolPoint) add('patrol', PATROL);
+      }
+    }
+
     // --- Escape ------------------------------------------------------------------
     // M11 phase 15d. A captive with nobody of the captor band in sight slips
     // away — the mirror of `mayUse`, attention and not permission — and a
@@ -2315,7 +2342,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, intruder, restrainee, helpCallerTarget, bindTarget, beneficiary, tradePartner, fleeFrom,
+        victim, foe, intruder, restrainee, helpCallerTarget, bindTarget, patrolPoint, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2633,6 +2660,12 @@ export class Brain {
     person.action = action;
 
     switch (action) {
+      case 'patrol':
+        if (found.patrolPoint) {
+          person.targetX = found.patrolPoint.x;
+          person.targetY = found.patrolPoint.y;
+        }
+        break;
       case 'drink':
         if (found.water) {
           person.targetX = found.water.x;

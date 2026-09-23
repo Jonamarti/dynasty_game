@@ -42,9 +42,12 @@ export const WORK_ACTIONS = new Set([
   // same field learn from each other and come to like each other, and a verb
   // missing from this list is a verb people do side by side in silence.
   'sow', 'reap', 'spread',
+  // M11 phase 15e. Walking the band's ground is the guard's work, and two
+  // guards walking it together are working alongside each other.
+  'patrol',
 ]);
 
-export const JOB_IDS = ['forager', 'hunter', 'builder', 'crafter', 'farmer'] as const;
+export const JOB_IDS = ['forager', 'hunter', 'builder', 'crafter', 'farmer', 'guard'] as const;
 export type JobId = (typeof JOB_IDS)[number];
 
 export interface JobDef {
@@ -96,5 +99,20 @@ export const JOBS: Record<JobId, JobDef> = {
     icon: '\u{1F33E}',
     actions: ['sow', 'reap', 'spread'],
     skill: 'farm',
+  },
+  // M11 phase 15e — the border guard, O5 of M10's plan, which never had a
+  // phase until this one. **Not a sensor**: a guard sees what is in front of
+  // them, with the same eyes everybody has, and everything they see reaches
+  // the band by the channels that already exist — the sighting pass, `emit`'s
+  // witnesses, the defence of the ground (14b) and the witness's ladder (15b).
+  // What the job adds is where they are standing: out on the band's ground,
+  // walking it (`patrol`), instead of wherever the day's work took them. And
+  // it leans them toward the two rungs a guard is for.
+  guard: {
+    id: 'guard',
+    label: 'Guard',
+    icon: '\u{1F6E1}',
+    actions: ['patrol', 'warn', 'restrain'],
+    skill: 'fight',
   },
 };

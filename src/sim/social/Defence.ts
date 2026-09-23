@@ -24,7 +24,8 @@
  * phase 15c's binding needs — "several of them bringing one down" — which is
  * why it is a state on the held person and not only an outcome.
  * 15b.4 is the last rung: `call_for_help`, for the witness who cannot hold
- * the offender alone, and `answer_call` for whoever hears it.
+ * the offender alone, and `answer_call` for whoever hears it. Phase 15e gives
+ * the ladder somebody standing where offences happen: the guard.
  *
  * Phase 15c is what comes after a hold: `bind`, by somebody who knows
  * `cordage` and carries a rope, which it spends. Tied up is a state of its
@@ -238,3 +239,34 @@ export function helpCaller(person: Person, tick: number): number | null {
   if (person.helpCallerId === null) return null;
   return tick - person.helpCallTick <= CALL_MEMORY ? person.helpCallerId : null;
 }
+
+/**
+ * How strongly a guard is moved to walk the band's ground, before the job's
+ * own lean (`JOB_BIAS_UP`) — the same order as a day's ordinary work, so a
+ * guard patrols most of the day and still drinks, eats and talks. Only a
+ * guard scores it at all: nobody else has been asked to.
+ */
+export const PATROL = 0.6;
+
+/**
+ * How far out from camp a guard walks, as a share of `TERRITORY_RADIUS`:
+ * past the inner third where the defence of the ground (14b) is at full
+ * weight, and well inside the edge, so what a guard sees is what the band
+ * would call its own.
+ */
+export const PATROL_REACH = 0.5;
+
+/** Ticks a guard stands and looks at each point of the round. */
+export const PATROL_LINGER = 40;
+
+/**
+ * Security a guard's warning gives back to each of their own people who see
+ * it — "their threat raises the security of their own", M11 phase 15e. A
+ * third of what seeing an outsider hurt one of your own takes away
+ * (`FEAR_AS_WITNESS`): watching somebody see off a stranger is reassuring,
+ * and less so than the harm it answers is frightening.
+ */
+export const GUARD_REASSURES = 3;
+
+/** One guard for every this many members, at most. */
+export const MEMBERS_PER_GUARD = 8;

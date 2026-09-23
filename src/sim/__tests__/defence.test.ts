@@ -320,3 +320,40 @@ describe('tying somebody up', () => {
     expect(binder.inventory.count('rope')).toBe(1);
   });
 });
+
+describe('the guard', () => {
+  // M11 phase 15e.
+  it('walks the band’s ground', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const [guard] = sim.livingPeople().filter(p => p.bandId === 0 && !p.isChild);
+    guard!.job = 'guard';
+    let patrolled = false;
+    for (let i = 0; i < 80 && !patrolled; i++) {
+      settled(guard!);
+      sim.step();
+      patrolled = guard!.action === 'patrol';
+    }
+    expect(patrolled).toBe(true);
+  });
+
+  it('reassures those of their own who see them warn a stranger off', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const [guard, onlooker] = sim.livingPeople().filter(p => p.bandId === 0 && !p.isChild);
+    const [stranger] = sim.livingPeople().filter(p => p.bandId === 1 && !p.isChild);
+    guard!.job = 'guard';
+    onlooker!.x = guard!.x + 2;
+    onlooker!.y = guard!.y;
+    stranger!.x = guard!.x + 1;
+    stranger!.y = guard!.y;
+    expect(sim.order(guard!, 'warn', { personId: stranger!.id })).toBe(true);
+    for (let i = 0; i < 20 && guard!.order !== null; i++) {
+      settled(guard!);
+      stranger!.x = guard!.x + 1;
+      stranger!.y = guard!.y;
+      sim.step();
+    }
+    expect(onlooker!.mood.recent.some(e => e.reason === 'guarded' && e.amount > 0)).toBe(true);
+  });
+});

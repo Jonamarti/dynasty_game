@@ -50,6 +50,7 @@ import { mayUse, type PropertyUse } from '../social/Property.ts';
 import {
   caughtOffender, usingPropertyOf, isHeld, isBound, noteCall, INTERVENABLE,
   RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, HOLD_FOR_ROPE, CALL_TICKS, BIND_TICKS, BOUND_TICKS,
+  PATROL_LINGER, GUARD_REASSURES,
 } from '../social/Defence.ts';
 import { isCaptive, captorWatching, HOME_REACHED } from '../social/Captivity.ts';
 import { fightingPower } from '../social/Vulnerability.ts';
@@ -594,6 +595,7 @@ export class ActionSystem {
       case 'restrain': this.doRestrain(person, ctx); break;
       case 'bind': this.doBind(person, ctx); break;
       case 'escape': this.doEscape(person, ctx); break;
+      case 'patrol': this.doPatrol(person, ctx); break;
       case 'call_for_help': this.doCallForHelp(person, ctx); break;
       case 'answer_call': this.doAnswerCall(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
@@ -3511,6 +3513,16 @@ export class ActionSystem {
     person.warnedOffId = other.id;
     person.warnedOffTick = ctx.tick;
     telemetry.count('warned_off');
+    // M11 phase 15e: a guard seeing somebody off is a thing their own people
+    // are glad to have watched. Only those who saw it — the owner's rule.
+    if (person.job === 'guard') {
+      for (const onlooker of ctx.peopleHash.queryRadius(person.x, person.y, ctx.sightRadius)) {
+        if (!onlooker.alive || onlooker.id === person.id || onlooker.isChild) continue;
+        if (onlooker.bandId !== person.bandId) continue;
+        onlooker.mood.add('security', GUARD_REASSURES, 'guarded', ctx.tick);
+      }
+      telemetry.count('guard_warned_off');
+    }
     if (answering && usingPropertyOf(other, person.bandId, id => ctx.buildingsById.get(id))) {
       if (ctx.rng.chance(menaceOver(person, other, ctx.tick).chance)) {
         telemetry.count('caught_gave_way');
@@ -3744,6 +3756,26 @@ export class ActionSystem {
     telemetry.count('bound');
     ctx.onStopped(other, other.action, 'bound');
     ctx.onBound(other, person);
+  }
+
+  /**
+   * A guard walking the band's ground, M11 phase 15e: to the point `Brain`
+   * chose on the round, then standing there `PATROL_LINGER` ticks, looking.
+   * Nothing is detected here — the guard sees what anybody standing there
+   * would, through the channels everybody's eyes already feed. The walk has
+   * `travel`'s own abandon, the standing an interruption check every tick.
+   */
+  private doPatrol(person: Person, ctx: ActionContext): void {
+    if (!this.travel(person, ctx)) return;
+    const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+    if (stopped) {
+      this.stop(person, stopped, ctx, 'patrol_');
+      return;
+    }
+    person.workedTicks++;
+    if (person.workedTicks < PATROL_LINGER) return;
+    telemetry.count('patrol_rounds');
+    this.finish(person);
   }
 
   /**

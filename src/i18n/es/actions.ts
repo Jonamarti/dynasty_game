@@ -252,4 +252,5 @@ export const ES_ACTIONS: Record<string, string> = {
   "answering a call for help": "acudiendo a una llamada de ayuda",
   "tying someone up": "atando a alguien",
   "slipping away": "escabulléndose",
+  "walking the band's ground": "recorriendo las tierras de la banda",
 };

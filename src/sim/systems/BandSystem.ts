@@ -16,6 +16,7 @@
  *    band gets you driven into the wilderness, and theft in a tolerant one does
  *    not, without either outcome being written as a rule.
  */
+import { MEMBERS_PER_GUARD } from '../social/Defence.ts';
 import type { Person } from '../entities/Person.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
@@ -605,8 +606,16 @@ export class BandSystem {
     // correctly *nothing*, and a person whose job's verbs all score zero is
     // simply a person who has been damped on every other kind of work.
     const offered = JOB_IDS.filter(id =>
-      id !== 'farmer' ||
-      ctx.buildings.some(b => b.crop !== null && b.complete && b.ownerBandId === band.id));
+      (id !== 'farmer' ||
+        ctx.buildings.some(b => b.crop !== null && b.complete && b.ownerBandId === band.id)) &&
+      // M11 phase 15e: a guard only for a band that has seen strangers on its
+      // ground (`ctx.sightings`, written by members' own eyes), and no more
+      // than one for every `MEMBERS_PER_GUARD`. A band nobody visits has
+      // nothing for one to do, and one with a guard in every household is
+      // one that has stopped working.
+      (id !== 'guard' || (
+        counts.guard < Math.ceil(members.length / MEMBERS_PER_GUARD) &&
+        [...(ctx.sightings.get(band.id)?.values() ?? [])].some(seen => seen.bandId !== band.id))));
 
     let wanted: JobId = offered[0] ?? JOB_IDS[0]!;
     let fewest = Infinity;

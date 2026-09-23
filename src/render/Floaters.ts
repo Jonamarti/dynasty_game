@@ -195,6 +195,7 @@ export const ACTION_LABELS: Record<string, string> = {
   call_for_help: 'calling for help',
   bind: 'tying someone up',
   escape: 'slipping away',
+  patrol: 'walking the band\'s ground',
   answer_call: 'answering a call for help',
 };
 
