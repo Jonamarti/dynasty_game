@@ -13,6 +13,8 @@
  * never touches it.
  */
 import type { Person } from '../entities/Person.ts';
+import { ITEMS } from '../entities/Item.ts';
+import { nutritionFactor } from '../knowledge/Tech.ts';
 import { telemetry } from './Telemetry.ts';
 
 export type Macro = 'fat' | 'protein' | 'carb';
@@ -36,10 +38,50 @@ export class MacroBalance {
 const MACRO_DECAY_PER_DAY = 0.35;
 
 /**
+ * Eats one unit of `itemId` from `person`'s pack. Returns whether anything
+ * was eaten.
+ *
+ * M11 phase 12a. The only way anybody eats. There used to be two: the AI's
+ * `ActionSystem.doEat` and the Kit's *Eat* button, `Simulation.eatItem`, whose
+ * own comment promised it gave "the same nourishment" as eating by order.
+ * It did, until 8b taught `doEat` to write `macroIntakeToday` and nobody
+ * taught the button — a player who only ever ate from the panel had a diet
+ * frozen at whatever it was the day they stopped eating by order. The
+ * `moveToward` argument: two copies of one idea drift.
+ */
+export function consumeFood(person: Person, itemId: string): boolean {
+  const def = ITEMS[itemId];
+  if (!def || def.nutrition <= 0) return false;
+  if (person.inventory.remove(itemId, 1) === 0) return false;
+  // Cooking makes food go further. It is the plainest possible payoff for
+  // knowing something, and it compounds: a band that cooks needs a third less
+  // forage than one that does not, and can therefore support more people on
+  // the same ground.
+  const eaten = def.nutrition * nutritionFactor(person);
+  person.needs.hunger = Math.max(0, person.needs.hunger - eaten);
+  // M11 phase 8b: fold what was actually eaten into today's ledger, in the
+  // same units `decayMacroBalance` will normalise into fractions. Cooking's
+  // bonus counts here too — a band that cooks eats more of whatever it ate.
+  if (def.macros) {
+    person.macroIntakeToday.fat += eaten * def.macros.fat;
+    person.macroIntakeToday.protein += eaten * def.macros.protein;
+    person.macroIntakeToday.carb += eaten * def.macros.carb;
+  }
+  person.eatenToday.set(itemId, (person.eatenToday.get(itemId) ?? 0) + 1);
+  telemetry.count('eat');
+  // Per-item, on the same `completed_<id>`/`crafted_<id>` idiom the rest of
+  // the health report uses — added for `milk`, which has no other way to
+  // show that a byproduct nobody has ever needed to name before is actually
+  // being eaten rather than only accruing.
+  telemetry.count('eaten_' + itemId);
+  return true;
+}
+
+/**
  * Ages one person's macro balance by a day, called from `Simulation`'s daily
  * block beside `decayMood`. Reads and clears `person.macroIntakeToday`, the
- * accumulator `ActionSystem.doEat` fills as nutrition-weighted grams of each
- * macro consumed since the last daily tick.
+ * accumulator `consumeFood` fills as nutrition-weighted grams of each
+ * macro consumed since the last daily tick. Clears `eatenToday` with it.
  *
  * A day nobody ate anything leaves the balance exactly where it was rather
  * than dragging it toward zero — going hungry is `needs.hunger`'s story to
@@ -57,6 +99,7 @@ export function decayMacroBalance(person: Person): void {
     intake.protein = 0;
     intake.carb = 0;
   }
+  person.eatenToday.clear();
   telemetry.count('macro_fat_sum', person.macroBalance.fat);
   telemetry.count('macro_protein_sum', person.macroBalance.protein);
   telemetry.count('macro_carb_sum', person.macroBalance.carb);

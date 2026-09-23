@@ -713,13 +713,18 @@ export class Hud {
       const need = (row as HTMLElement).dataset.need as string;
       const raw = need === 'health'
         ? person.health
-        : (person.needs as Record<string, number>)[need] ?? 0;
+        : need.startsWith('macro_')
+          ? person.macroBalance[need.slice(6) as Macro] * 100
+          : (person.needs as Record<string, number>)[need] ?? 0;
       const clamped = Math.max(0, Math.min(100, raw));
       const fill = row.querySelector('i') as HTMLElement | null;
       const readout = row.querySelector('.hud-need-value');
       if (fill) fill.style.width = clamped.toFixed(0) + '%';
       if (readout) readout.textContent = clamped.toFixed(0);
     }
+
+    const today = this.panelBodyEl.querySelector('.hud-diet-today');
+    if (today) today.textContent = describeEatenToday(person);
 
     // The work bar is patched rather than rebuilt: it moves every tick, and
     // rebuilding the panel that often would fight every click landing in it.
@@ -840,10 +845,19 @@ export class Hud {
     // something says so here — the standing rule this project already keeps
     // for `interruption`/`abandon` refusals applies just as much to a health
     // mechanism nobody asked for and nobody can see.
-    rows.push('<div class="hud-section">Diet</div>');
+    //
+    // M11 phase 12a. The bars are *shares* of what has lately been eaten, and
+    // move only at midnight (`decayMacroBalance`), so a meal never visibly
+    // fills them — the owner's note read them as stores that eating should
+    // top up. The header says what they are, and the "today" line underneath
+    // is the thing that does answer a meal. Both carry a `data-need` key so
+    // `refreshPerson` patches them; before this they changed only when the
+    // whole panel happened to be rebuilt.
+    rows.push('<div class="hud-section">Diet · share of recent meals</div>');
     for (const macro of MACROS) {
-      rows.push(bar(macro, person.macroBalance[macro] * 100, MACRO_COLORS[macro]));
+      rows.push(bar(macro, person.macroBalance[macro] * 100, MACRO_COLORS[macro], 'macro_' + macro));
     }
+    rows.push('<div class="hud-note hud-diet-today">' + escapeHtml(describeEatenToday(person)) + '</div>');
     rows.push('<div class="hud-note">' + escapeHtml(describeDiet(person)) + '</div>');
 
     const carried = person.inventory.entries();
@@ -1728,6 +1742,19 @@ function describeDiet(person: Person): string {
   if (severity < 0.2) return 'Diet is a little short on ' + MACRO_FOOD[short] + '.';
   if (severity < 0.35) return 'Has gone without enough ' + MACRO_FOOD[short] + ' for a while now.';
   return 'Badly malnourished — needs ' + MACRO_FOOD[short] + ' urgently.';
+}
+
+/**
+ * M11 phase 12a. What has been eaten since the last daily tick, in units —
+ * the only line in *Diet* that moves the moment somebody eats.
+ */
+function describeEatenToday(person: Person): string {
+  if (person.eatenToday.size === 0) return 'Nothing eaten yet today.';
+  const parts: string[] = [];
+  for (const [id, n] of person.eatenToday) {
+    parts.push(n + ' ' + (ITEMS[id]?.label ?? id).toLowerCase());
+  }
+  return 'Today: ' + parts.join(', ') + '.';
 }
 
 /**

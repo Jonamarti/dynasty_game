@@ -39,7 +39,7 @@ import {
 } from '../entities/Building.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
-import { decayMacroBalance, decayMacroTarget } from './Macros.ts';
+import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -57,7 +57,7 @@ import { foundBand, type FoundingContext } from '../systems/Founding.ts';
 import { KnowledgeSystem, countHolders } from '../systems/KnowledgeSystem.ts';
 import { ORDER_REFUSED, type Notice } from '../knowledge/Synthesis.ts';
 import {
-  eraFor, nutritionFactor, techPower, ERA_ORDER, ERAS, TECHS, type EraDef, type Tech,
+  eraFor, techPower, ERA_ORDER, ERAS, TECHS, type EraDef, type Tech,
 } from '../knowledge/Tech.ts';
 import { RECIPES, type RecipeDef } from '../entities/Recipe.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
@@ -1343,21 +1343,12 @@ export class Simulation {
   }
 
   /**
-   * Eats one unit from the pack. Returns whether anything was eaten.
-   *
-   * Shares the cooking bonus with the action system by going through the same
-   * arithmetic — a player who eats from the inventory panel and one who eats by
-   * order must get the same nourishment.
+   * Eats one unit from the pack — the Kit's *Eat* button. Returns whether
+   * anything was eaten. Goes through `consumeFood`, the same function eating
+   * by order does, so the two can never again disagree about what a meal is.
    */
   eatItem(person: Person, itemId: string): boolean {
-    const def = ITEMS[itemId];
-    if (!def || def.nutrition <= 0) return false;
-    if (person.inventory.remove(itemId, 1) === 0) return false;
-
-    const cooked = nutritionFactor(person);
-    person.needs.hunger = Math.max(0, person.needs.hunger - def.nutrition * cooked);
-    telemetry.count('eat');
-    return true;
+    return consumeFood(person, itemId);
   }
 
   /**

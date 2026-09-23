@@ -5,23 +5,8 @@ speculative. Fixed defects are in [changelog.md](changelog.md).
 
 ## Found triaging the owner's notes of 2026-09-22
 
-All scheduled in [m11_block_v_plan.md](m11_block_v_plan.md); none fixed yet —
-the owner asked for the plan first.
-
-### Eating from the Kit tab never reaches the diet
-
-There are two implementations of eating. `ActionSystem.doEat` has written
-`macroIntakeToday` since M11 phase 8b; `Simulation.eatItem`, which the Kit
-tab's *Eat* button calls, predates it, says in its own comment that it must
-give "the same nourishment" as eating by order, and never learned the macros
-(nor the `eaten_<id>` counter). A player who only eats from the panel has a
-diet frozen at whatever it last was. Invisible to the harness, because no
-scenario possesses a player. Separately, and not a defect: the three *Diet*
-bars are shares of what was eaten and move only at midnight, so even the
-fixed path cannot make a bar rise on the click — the owner's note reads as
-expecting one to. And the bars do not refresh while the panel is open: they
-are drawn by `bar()` with no `data-need`, so `Hud.refreshPerson` never patches
-them and they change only when the panel is rebuilt. Phase 12a.
+All scheduled in [m11_block_v_plan.md](m11_block_v_plan.md). Each entry leaves
+this list, for [changelog.md](changelog.md), in the commit that fixes it.
 
 ### An attack ordered from more than nine tiles away ends silently on its first tick
 

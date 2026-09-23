@@ -232,11 +232,18 @@ export class Person {
   macroBalance = new MacroBalance();
   /**
    * Nutrition-weighted grams of each macro eaten since the last daily tick,
-   * filled by `ActionSystem.doEat` and folded into `macroBalance` (and
+   * filled by `consumeFood` and folded into `macroBalance` (and
    * cleared) by `decayMacroBalance`. Not itself read by anything — it is the
    * day's raw ledger, not the diet.
    */
   macroIntakeToday = { fat: 0, protein: 0, carb: 0 };
+  /**
+   * M11 phase 12a. Units of each food eaten since the last daily tick, for the
+   * *Diet* panel's "today" line only: the bars above it are fractions that
+   * move once a day, so without this nothing on screen answers a meal. Cleared
+   * with `macroIntakeToday`; nothing in the simulation reads it.
+   */
+  eatenToday = new Map<string, number>();
   /**
    * M11 phase 8c. What `macroBalance` is judged against, shifted by how hard
    * this person has lately been working — see `core/Macros.ts`. Inert until

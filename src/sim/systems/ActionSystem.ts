@@ -40,8 +40,9 @@ import {
 } from '../entities/Inscription.ts';
 import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { consumeFood } from '../core/Macros.ts';
 import {
-  TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor, nutritionFactor,
+  TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
   prerequisitesMet, reapFactor, tallyFactor, techPower, weaponOf, armourOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
@@ -751,36 +752,10 @@ export class ActionSystem {
 
   private doEat(person: Person, ctx: ActionContext): void {
     const foodId = person.inventory.bestFood();
-    if (!foodId) {
+    if (!foodId || !consumeFood(person, foodId)) {
       this.abandon(person, 'no_food', ctx);
       return;
     }
-    if (person.inventory.remove(foodId, 1) === 0) {
-      this.abandon(person, 'no_food', ctx);
-      return;
-    }
-    // Cooking makes food go further. It is the plainest possible payoff for
-    // knowing something, and it compounds: a band that cooks needs a third less
-    // forage than one that does not, and can therefore support more people on
-    // the same ground.
-    const cooked = nutritionFactor(person);
-    const eaten = (ITEMS[foodId]?.nutrition ?? 0) * cooked;
-    person.needs.hunger = Math.max(0, person.needs.hunger - eaten);
-    // M11 phase 8b: fold what was actually eaten into today's ledger, in the
-    // same units `decayMacroBalance` will normalise into fractions. Cooking's
-    // bonus counts here too — a band that cooks eats more of whatever it ate.
-    const macros = ITEMS[foodId]?.macros;
-    if (macros) {
-      person.macroIntakeToday.fat += eaten * macros.fat;
-      person.macroIntakeToday.protein += eaten * macros.protein;
-      person.macroIntakeToday.carb += eaten * macros.carb;
-    }
-    telemetry.count('eat');
-    // Per-item, on the same `completed_<id>`/`crafted_<id>` idiom the rest of
-    // the health report uses — added for `milk`, which has no other way to
-    // show that a byproduct nobody has ever needed to name before is actually
-    // being eaten rather than only accruing.
-    telemetry.count('eaten_' + foodId);
     if (person.needs.hunger <= 0) this.finish(person);
   }
 

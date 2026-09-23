@@ -1570,7 +1570,7 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   cooking: {
     summary: 'Cooked food goes further.',
-    site: 'ActionSystem.doEat and Simulation.eatItem, via nutritionFactor',
+    site: 'Macros.consumeFood, via nutritionFactor',
   },
   hafting: {
     summary: 'A hand axe, which halves the work of felling.',

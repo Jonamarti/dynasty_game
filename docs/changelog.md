@@ -6,6 +6,40 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 12a: one way to eat
+
+**The defect.** Eating had two implementations. `ActionSystem.doEat` had
+written the day's diet ledger (`macroIntakeToday`) and the `eaten_<id>`
+counter since phase 8b; `Simulation.eatItem`, behind the Kit tab's *Eat*
+button, predated both and learned neither, although its own comment promised
+it gave "the same nourishment" as eating by order. A player who only ate from
+the panel had a diet frozen where it last stood.
+
+**The change.** `Macros.consumeFood(person, itemId)` is now the only way
+anybody eats: it removes the unit, applies `nutritionFactor`, lowers hunger,
+writes the ledger and counts. `doEat` and `eatItem` both call it — the
+`moveToward` argument, two copies of one idea drift. `TECH_EFFECTS.cooking`'s
+declared site now names it.
+
+**What the note actually saw**, fixed in the same commit because the defect
+alone would not have made anything move on screen:
+- the three *Diet* bars are shares of recent meals that move only at midnight,
+  so no meal can make one rise. The header now says *"share of recent meals"*,
+  and a new line under the bars — *"Today: 3 berries, 1 meat."* — answers each
+  meal the moment it is eaten. It reads `Person.eatenToday`, a new per-food
+  tally that `consumeFood` fills and `decayMacroBalance` clears; nothing in the
+  simulation reads it;
+- the bars had no `data-need`, so `Hud.refreshPerson` never patched them and
+  they changed only when the panel happened to be rebuilt. They carry
+  `macro_<name>` now and `refreshPerson` reads it, along with the today line.
+
+**Bit-identical**: the verbose `sim:check:all` report matches HEAD on every
+line but the wall-clock ones (no scenario possesses a player, and `doEat`'s
+arithmetic is unchanged). `eating.test.ts` pins that the two routes leave a
+person in the same state.
+
+---
+
 ## 2026-09-23 — M11 Block V triaged and planned: `notes.txt` emptied, no code touched
 
 The owner left sixteen notes in `notes.txt` on 2026-09-22, written playing the
