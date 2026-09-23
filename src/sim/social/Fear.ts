@@ -21,9 +21,9 @@
  *   feared, and "do I want to hurt them" and "do I want to be near them" are
  *   different questions that different verbs ask.
  *
- * **Phase 14a is inert.** This file writes both, and nothing reads either
- * yet; the readers arrive one commit at a time in 14b so that each one's
- * effect on the world can be measured alone.
+ * **Phase 14a was inert.** It wrote both and nothing read either; the
+ * readers arrive one commit at a time in 14b so that each one's effect on the
+ * world can be measured alone. Each says which reader it is where it reads.
  *
  * Nothing here draws a random number. The sighting pass is a pure function of
  * where people stand, which is why it may run on `Simulation`'s own cadence
@@ -167,6 +167,38 @@ export function frighten(
     observer.mood.add('security', -FEAR_BY_HEARSAY * scale * confidence, event.type, event.tick);
     telemetry.count('security_by_hearsay');
   }
+}
+
+// ---------------------------------------------------------------------------
+// Readers (14b)
+// ---------------------------------------------------------------------------
+
+/**
+ * How afraid somebody is, 0-1, off `mood.security`: nothing at or above zero,
+ * all of it at `FEAR_FULL` below. The one reading every behaviour below takes,
+ * so "afraid" means the same thing to the scorer, the conversation and the
+ * face.
+ *
+ * Zero rather than the temperament baseline as the floor of fear: a quick
+ * temper settles a little below zero (`moodBaseline`), and that resting
+ * wariness is meant to show — a hot-headed band is a little more closed to
+ * strangers than a placid one before anything has happened to either.
+ */
+export const FEAR_FULL = 60;
+
+export function fearOf(person: Person): number {
+  return Math.max(0, Math.min(1, -person.mood.security / FEAR_FULL));
+}
+
+/**
+ * How open two people from different bands are to each other, -1 to 1: the
+ * mean of their two securities over `OPENNESS_SPAN`. Positive when both are at
+ * ease, negative when either is frightened enough to drag the pair down.
+ */
+export const OPENNESS_SPAN = 50;
+
+export function opennessOf(a: Person, b: Person): number {
+  return Math.max(-1, Math.min(1, (a.mood.security + b.mood.security) / 2 / OPENNESS_SPAN));
 }
 
 /** Where a band lives and how far its ground reaches, for the sighting pass. */

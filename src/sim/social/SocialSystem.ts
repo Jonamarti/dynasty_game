@@ -29,7 +29,7 @@ import type { BandRelations } from './BandRelations.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { t } from '../../i18n/i18n.ts';
-import { frighten } from './Fear.ts';
+import { frighten, opennessOf } from './Fear.ts';
 
 export interface LifeEvent {
   tick: number;
@@ -483,7 +483,10 @@ export class SocialSystem {
     // warm to a stranger than to someone you grew up beside — and M11 phase
     // 7c reads *how much* more slowly off how the two bands themselves stand.
     const sameBand = a.bandId === b.bandId;
-    const gained = crossBand(warmth, sameBand, this.bandRelations.standing(a.bandId, b.bandId));
+    // M11 phase 14b: and how at ease the two of them are, which is theirs
+    // rather than their peoples'. See `CROSS_BAND_OPENNESS`.
+    const gained = crossBand(warmth, sameBand, this.bandRelations.standing(a.bandId, b.bandId),
+      sameBand ? 0 : opennessOf(a, b));
     this.relationships.addFamiliarity(a.id, b.id, gained, tick);
     this.relationships.addFamiliarity(b.id, a.id, gained, tick);
 

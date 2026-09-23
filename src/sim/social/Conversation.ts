@@ -137,6 +137,16 @@ const CROSS_BAND = 1.5 / 3.5;
  */
 const CROSS_BAND_STANDING_SCALE = 0.004;
 
+/**
+ * How far two people's own ease or fear moves the cross-band factor, at full
+ * `opennessOf` — M11 phase 14b, the first reader of fear. The owner's note:
+ * with little fear people talk to strangers, with a lot they will not. At
+ * ease on both sides (security +15, a placid pair's resting point) the factor
+ * rises from 0.43 to 0.52; with both of them frightened (−30) it falls to
+ * 0.28, and never below the floor.
+ */
+const CROSS_BAND_OPENNESS = 0.3;
+
 /** However hostile the standing, warming to a stranger is never quite impossible. */
 const CROSS_BAND_FLOOR = 0.05;
 
@@ -182,10 +192,11 @@ export function chooseMode(rel: Relationship | null, tick: number): Conversation
  * argument over a design as well as a conversation: whatever the two were
  * doing, warming to somebody from another band takes longer.
  */
-export function crossBand(warmth: number, sameBand: boolean, standing = 0): number {
+export function crossBand(warmth: number, sameBand: boolean, standing = 0, openness = 0): number {
   if (sameBand) return warmth;
   const factor = Math.max(
-    CROSS_BAND_FLOOR, Math.min(1, CROSS_BAND + standing * CROSS_BAND_STANDING_SCALE));
+    CROSS_BAND_FLOOR,
+    Math.min(1, CROSS_BAND + standing * CROSS_BAND_STANDING_SCALE + openness * CROSS_BAND_OPENNESS));
   return warmth * factor;
 }
 
