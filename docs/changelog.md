@@ -6,6 +6,30 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 13b: *Between you*
+
+**The note** (owner's note 5): clicking somebody showed their family, their
+ties and how far they would obey you, but not what you think of them. That
+lived only in your own list, which stops at the fourteen strongest feelings.
+
+**The change.** A *Between you* section opens the *Ties* tab of anybody who is
+not you:
+- **You of them**: your opinion, with the same bar and the same breakdown
+  (band, deeds, familiarity, kin) as the list, read with
+  `RelationshipGraph.peek` so that looking never creates an acquaintance.
+- **They of you**: their private state, so it comes through a new
+  `Knowledge.regardFromThem` — nothing for a stranger or a face you have only
+  crossed paths with, a sentence for an acquaintance ("They seem to dislike
+  you."), the number for somebody close.
+
+The list's breakdown and its bar are now `tieParts` and `tieMeter`, shared with
+the new section, so the two can never explain one edge in different words.
+`knowledge.test.ts` pins the four levels and that asking creates no edge.
+
+UI and a pure read; bit-identical by construction.
+
+---
+
 ## 2026-09-23 — M11 phase 13a: a building says whose it is
 
 **The note** (owner's note 3): nothing on the map said which tribe a hut, a

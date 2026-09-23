@@ -400,6 +400,10 @@ html, body, #app {
 .hud-tie-neg > i { display: block; height: 7px; background: #e0705c; }
 .hud-tie-pos > i { display: block; height: 7px; background: #5cc98a; }
 
+/* M11 phase 13b: *Between you* has no name link and no camera button. */
+.hud-between { grid-template-columns: 1fr 74px 34px; }
+.hud-between-who { color: var(--text-dim); }
+
 .hud-tie-value { text-align: right; font-variant-numeric: tabular-nums; }
 .hud-tie-value.is-pos { color: #5cc98a; }
 .hud-tie-value.is-neg { color: #e0705c; }

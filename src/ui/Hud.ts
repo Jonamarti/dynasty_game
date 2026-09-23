@@ -36,8 +36,9 @@ import { ITEMS } from '../sim/entities/Item.ts';
 import { actionLabel } from '../render/Floaters.ts';
 import {
   knowledgeOfPerson, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree,
-  rememberedAbout,
+  rememberedAbout, regardFromThem,
 } from '../sim/social/Knowledge.ts';
+import type { Relationship } from '../sim/social/Relationships.ts';
 import { TECH, TECH_EFFECTS, techPower, type Tech } from '../sim/knowledge/Tech.ts';
 import {
   STAGE_LABELS, PRACTICE_STAGE_LABELS, PROTOTYPE_AT, TRIES_TO_TEST,
@@ -1151,6 +1152,12 @@ export class Hud {
       return label + (who.alive ? '' : ' †');
     };
 
+    // M11 phase 13b (owner's note 5): what the two of you think of each
+    // other, first. Clicking somebody used to show their family, their ties
+    // and how far they would obey you, but not what *you* think of *them* --
+    // that lived only in your own list, which cuts at fourteen.
+    if (person.id !== observer.id) rows.push(...this.betweenYou(observer, person, sim));
+
     // What you could actually make them do. The pillar, stated plainly.
     if (person.id !== observer.id) {
       const standing = sim.standing(observer, person, 'build');
@@ -1220,16 +1227,8 @@ export class Hud {
       // an enemy does not tell you who the enemy is.
       const theirName = knowledgeOfPerson(observer, other, sim.relationships).displayName;
       const rel = tie.relationship;
-      const positive = tie.opinion >= 0;
-      const width = Math.min(50, Math.abs(tie.opinion) / 2);
 
-      const parts: string[] = [];
-      if (rel.bias !== 0) parts.push(rel.bias > 0 ? 'same band' : 'outsider');
-      if (Math.abs(rel.deeds) >= 1) {
-        parts.push((rel.deeds > 0 ? 'deeds +' : 'deeds ') + rel.deeds.toFixed(0));
-      }
-      if (rel.familiarity >= 1) parts.push('familiar ' + rel.familiarity.toFixed(0));
-      if (rel.kinship !== 0) parts.push('kin ' + rel.kinship.toFixed(0));
+      const parts = tieParts(rel);
 
       rows.push(
         '<div class="hud-tie">' +
@@ -1243,17 +1242,47 @@ export class Hud {
           ? '<button class="hud-goto" data-focus="' + other.id +
             '" title="Look at ' + escapeHtml(theirName) + '">◎</button>'
           : '<span class="hud-goto is-gone">·</span>') +
-        '<div class="hud-tie-meter">' +
-          '<span class="hud-tie-neg">' +
-            (positive ? '' : '<i style="width:' + width.toFixed(0) + '%;"></i>') + '</span>' +
-          '<span class="hud-tie-pos">' +
-            (positive ? '<i style="width:' + width.toFixed(0) + '%;"></i>' : '') + '</span>' +
-        '</div>' +
-        '<span class="hud-tie-value ' + (positive ? 'is-pos' : 'is-neg') + '">' +
-          (positive ? '+' : '') + tie.opinion.toFixed(0) + '</span>' +
+        tieMeter(tie.opinion) +
         '<div class="hud-tie-why">' + escapeHtml(parts.join(' · ') || 'barely acquainted') +
         '</div></div>'
       );
+    }
+    return rows;
+  }
+
+  /**
+   * Your own opinion of `person`, broken down in the same terms as the list
+   * below — read with `peek`, so looking never creates an acquaintance — and
+   * what you can tell of theirs of you, which is their private state and so
+   * comes through `regardFromThem`.
+   */
+  private betweenYou(observer: Person, person: Person, sim: Simulation): string[] {
+    const rows: string[] = ['<div class="hud-section">Between you</div>'];
+    const mine = sim.relationships.peek(observer.id, person.id);
+    if (!mine) {
+      rows.push('<div class="hud-sub">You have no opinion of them yet.</div>');
+    } else {
+      const opinion = sim.relationships.opinion(observer.id, person.id);
+      rows.push(
+        '<div class="hud-tie hud-between">' +
+        '<span class="hud-between-who">You of them</span>' +
+        tieMeter(opinion) +
+        '<div class="hud-tie-why">' + escapeHtml(tieParts(mine).join(' · ') || 'barely acquainted') +
+        '</div></div>'
+      );
+    }
+    const theirs = regardFromThem(observer, person, sim.relationships);
+    if (theirs.opinion !== null) {
+      rows.push(
+        '<div class="hud-tie hud-between">' +
+        '<span class="hud-between-who">They of you</span>' +
+        tieMeter(theirs.opinion) +
+        '<div class="hud-tie-why">' + escapeHtml(theirs.words ?? '') + '</div></div>'
+      );
+    } else if (theirs.words !== null) {
+      rows.push('<div class="hud-sub">' + escapeHtml(theirs.words) + '</div>');
+    } else {
+      rows.push('<div class="hud-sub">You cannot tell what they think of you.</div>');
     }
     return rows;
   }
@@ -1742,6 +1771,38 @@ function describeDiet(person: Person): string {
   if (severity < 0.2) return 'Diet is a little short on ' + MACRO_FOOD[short] + '.';
   if (severity < 0.35) return 'Has gone without enough ' + MACRO_FOOD[short] + ' for a while now.';
   return 'Badly malnourished — needs ' + MACRO_FOOD[short] + ' urgently.';
+}
+
+/**
+ * Why one person feels as they do about another, in the Ties list's terms.
+ * Shared by the list and by *Between you* (13b), so the two can never explain
+ * the same edge in different words.
+ */
+function tieParts(rel: Relationship): string[] {
+  const parts: string[] = [];
+  if (rel.bias !== 0) parts.push(rel.bias > 0 ? 'same band' : 'outsider');
+  if (Math.abs(rel.deeds) >= 1) {
+    parts.push((rel.deeds > 0 ? 'deeds +' : 'deeds ') + rel.deeds.toFixed(0));
+  }
+  if (rel.familiarity >= 1) parts.push('familiar ' + rel.familiarity.toFixed(0));
+  if (rel.kinship !== 0) parts.push('kin ' + rel.kinship.toFixed(0));
+  return parts;
+}
+
+/** The two-sided bar and signed number every opinion in *Ties* is drawn with. */
+function tieMeter(opinion: number): string {
+  const positive = opinion >= 0;
+  const width = Math.min(50, Math.abs(opinion) / 2);
+  return (
+    '<div class="hud-tie-meter">' +
+      '<span class="hud-tie-neg">' +
+        (positive ? '' : '<i style="width:' + width.toFixed(0) + '%;"></i>') + '</span>' +
+      '<span class="hud-tie-pos">' +
+        (positive ? '<i style="width:' + width.toFixed(0) + '%;"></i>' : '') + '</span>' +
+    '</div>' +
+    '<span class="hud-tie-value ' + (positive ? 'is-pos' : 'is-neg') + '">' +
+      (positive ? '+' : '') + opinion.toFixed(0) + '</span>'
+  );
 }
 
 /**

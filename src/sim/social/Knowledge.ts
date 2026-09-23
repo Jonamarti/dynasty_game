@@ -42,6 +42,41 @@ export interface PersonKnowledge {
   because: string;
 }
 
+/**
+ * What the observer can tell of how `subject` regards *them* — M11 phase 13b.
+ *
+ * Someone else's opinion is their private state, and it is read here rather
+ * than in the panel for the same reason everything else about them is. A face
+ * or a passing acquaintance (`stranger`, `seen`) tells you nothing; somebody
+ * you have spoken with more than once (`known`) you can read in broad
+ * strokes; somebody close you can put a number on.
+ */
+export interface RegardKnowledge {
+  /** A sentence, or null when nothing can be told at all. */
+  words: string | null;
+  /** The opinion itself, only for somebody close. */
+  opinion: number | null;
+}
+
+export function regardFromThem(
+  observer: Person,
+  subject: Person,
+  relationships: RelationshipGraph
+): RegardKnowledge {
+  const level = knowledgeOfPerson(observer, subject, relationships).level;
+  if (level === 'self' || level === 'stranger' || level === 'seen') {
+    return { words: null, opinion: null };
+  }
+  const opinion = relationships.opinion(subject.id, observer.id);
+  const words =
+    opinion >= 40 ? 'They seem fond of you.' :
+    opinion >= 10 ? 'They seem to like you.' :
+    opinion > -10 ? 'They seem to have no strong feeling about you.' :
+    opinion > -40 ? 'They seem to dislike you.' :
+    'They seem to hate you.';
+  return { words, opinion: level === 'close' ? opinion : null };
+}
+
 /** Familiarity at which someone stops being a face and becomes an acquaintance. */
 const KNOWN_AT = 12;
 /** Familiarity at which you can fairly claim to know what they are like. */
