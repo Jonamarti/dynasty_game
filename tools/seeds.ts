@@ -53,6 +53,10 @@ interface SeedResult {
   cameHome: number;
   intervened: number;
   seenByOwner: number;
+  exiled: number;
+  adopted: number;
+  factionDays: number;
+  leftInAHuff: number;
   deaths: number;
   bodiesFound: number;
   investigations: number;
@@ -138,6 +142,11 @@ function runSeed(scenarioName: string, seed: string, steps: number): SeedResult 
     cameHome: counts.captive_came_home ?? 0,
     intervened: counts.intervened ?? 0,
     seenByOwner: counts.property_deed_seen_by_owner ?? 0,
+    // M11 phase 17b: phase 5's three rare mechanisms.
+    exiled: counts.exiled ?? 0,
+    adopted: counts.adopted ?? 0,
+    factionDays: counts.faction_days ?? 0,
+    leftInAHuff: counts.rebellion_left ?? 0,
     // M11 phase 16.
     deaths: counts.death_settled ?? 0,
     bodiesFound: counts.corpse_first_found ?? 0,
@@ -255,6 +264,14 @@ function main(): void {
     ' property deeds an owner saw · ' + sum(r => r.captives) + ' taken captive in ' +
     withCaptives + '/' + results.length + ' seeds, ' + sum(r => r.escaped) + ' escaped, ' +
     sum(r => r.cameHome) + ' came home'
+  );
+  // M11 phase 17b: exile, factions and the way back in — phase 5's promised
+  // checks that are one or two events a run and can only be read here.
+  console.log(
+    '  BANDS ' + sum(r => r.exiled) + ' cast out in ' + results.filter(r => r.exiled > 0).length +
+    ' seeds · factions in ' + results.filter(r => r.factionDays > 0).length + ' seeds · ' +
+    sum(r => r.adopted) + ' taken in, of ' + (sum(r => r.exiled) + sum(r => r.leftInAHuff)) +
+    ' who left or were cast out'
   );
   // M11 phase 16's gate, pooled the same way.
   console.log(

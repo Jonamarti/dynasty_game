@@ -1266,6 +1266,9 @@ export class BandSystem {
       if (suspect.captiveOf !== null) continue;
 
       const faction = conspiracyAgainst(suspect.id, members, ctx.relationships);
+      // M11 phase 17b, for `factions-form`: a faction exists against somebody
+      // today, whether or not it is yet big enough to cast them out.
+      if (faction && faction.memberIds.length >= 2) telemetry.count('faction_days');
       if (!faction || faction.memberIds.length < EXILE_QUORUM) continue;
 
       telemetry.count('exiled');

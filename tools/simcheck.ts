@@ -1147,6 +1147,34 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     'conversations=' + (tel.conversation ?? 0)
   );
 
+  // M11 phase 17b, the first of the four checks phase 5 promised and never
+  // wrote. Gossip told *about* somebody to somebody else — slander and
+  // praise, 5c — in a world where people talk at all. Run against the build
+  // before 5c-5f (`6b6d476`): it fails on every scenario there, with
+  // `people-talk` passing on all seventeen and not one slander or praise
+  // between them. The other three — `exile-is-reachable`, `factions-form`,
+  // `the-cast-out-find-a-home` — are one or two events a run at most
+  // (0-1 exiles, 0-2 adoptions; factions in five scenarios of nineteen), the
+  // kind phase 17d moves out of single runs; they are read in `sim:seeds`'s
+  // BANDS line instead.
+  //
+  // Needs a month: aimed gossip needs a story worth telling, and stories take
+  // time to gather — measured, `band` (12 days, 87 conversations) and
+  // `harsh-winter` (21 days) had talked plenty and had nothing yet to say
+  // about anybody.
+  const conversations = tel.conversation ?? 0;
+  const aimed = (tel.event_slander ?? 0) + (tel.event_praise ?? 0);
+  const talkDays = last.day - first.day;
+  if (conversations < 50 || talkDays < 30) {
+    skip('gossip-is-aimed', talkDays < 30
+      ? 'run covers only ' + talkDays + ' days; too short for a story worth telling'
+      : 'only ' + conversations + ' conversations; too few to say');
+  } else {
+    add('gossip-is-aimed', aimed > 0,
+      (tel.event_slander ?? 0) + ' slanders and ' + (tel.event_praise ?? 0) +
+      ' praises over ' + conversations + ' conversations');
+  }
+
   // A deed known to one person reaching someone who never saw it. This is the
   // whole rumor mechanism in a single number.
   // Below a handful of deeds the run genuinely cannot tell "gossip is broken"
