@@ -35,6 +35,15 @@ export interface LifeEvent {
   ageDays: number;
   text: string;
   kind: 'did' | 'suffered' | 'milestone';
+  /**
+   * M11 phase 13e. The deed behind a line `emit` wrote, so a reader can
+   * count murders or name a victim without parsing the sentence — and name
+   * them as the *reader* knows them, which the sentence cannot do. Absent on
+   * lines that are not deeds (a birth, a marriage, a building).
+   */
+  deed?: { type: EventType; actorId: number; targetId: number | null };
+  /** M11 phase 13e. The design a "finished building" line is about. */
+  built?: string;
 }
 
 /** Romance at which both parties are ready to marry. */
@@ -294,9 +303,10 @@ export class SocialSystem {
     telemetry.count('event_' + type);
 
     const description = describeEvent(type, actor.name, target?.name ?? null);
-    actor.chronicle.push({ tick, ageDays: actor.age, text: description, kind: 'did' });
+    const deed = { type, actorId: actor.id, targetId: target?.id ?? null };
+    actor.chronicle.push({ tick, ageDays: actor.age, text: description, kind: 'did', deed });
     if (target) {
-      target.chronicle.push({ tick, ageDays: target.age, text: description, kind: 'suffered' });
+      target.chronicle.push({ tick, ageDays: target.age, text: description, kind: 'suffered', deed });
     }
 
     // The victim always knows, however dark it was and whoever else was

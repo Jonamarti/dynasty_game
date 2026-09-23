@@ -557,17 +557,31 @@ test('death hands the game to an heir instead of ending it', async ({ page }) =>
 
   // Kill the player outright. The succession machinery runs off the same path
   // whatever the cause, so a direct kill exercises exactly what old age does.
-  await page.evaluate(() => {
-    const d = (window as never as {
-      __dynasty: { sim: { player: { die: (cause: string) => void } | null } };
-    }).__dynasty;
-    d.sim.player?.die('a test');
+  //
+  // M11 phase 13e: first give them a killing and a hut to be remembered for,
+  // written the way `emit` and a finished build write them.
+  const victim = await page.evaluate(() => {
+    const d = (window as never as { __dynasty: { sim: {
+      player: { id: number; age: number; chronicle: unknown[]; die: (cause: string) => void };
+      relationships: { knownBy(id: number): { subjectId: number }[] };
+      peopleById: Map<number, { id: number; name: string }>;
+    } } }).__dynasty;
+    const player = d.sim.player;
+    const other = d.sim.peopleById.get(d.sim.relationships.knownBy(player.id)[0]!.subjectId)!;
+    player.chronicle.push({ tick: 0, ageDays: player.age, text: 'killed', kind: 'did',
+      deed: { type: 'murder', actorId: player.id, targetId: other.id } });
+    player.chronicle.push({ tick: 0, ageDays: player.age, text: 'finished building a windbreak',
+      kind: 'did', built: 'windbreak' });
+    player.die('a test');
+    return other.name;
   });
 
   const card = page.locator('.succession-card');
   await expect(card).toBeVisible({ timeout: 15_000 });
   await expect(card).toContainText('has died');
   await expect(card).toContainText('a test');
+  await expect(card.locator('.succession-reckoning', { hasText: 'killed' })).toContainText(victim);
+  await expect(card.locator('.succession-reckoning', { hasText: 'raised' })).toContainText('windbreak');
 
   await page.locator('.succession-go').click();
   await expect(card).toBeHidden();

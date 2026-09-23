@@ -12,6 +12,8 @@
  */
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
+import { knowledgeOfPerson } from '../sim/social/Knowledge.ts';
+import { BUILDINGS } from '../sim/entities/Building.ts';
 
 export class SuccessionOverlay {
   private root: HTMLElement;
@@ -50,6 +52,7 @@ export class SuccessionOverlay {
       .filter(entry => entry.kind === 'milestone')
       .slice(-6);
     const deeds = died.chronicle.length;
+    const reckoning = reckon(sim, died);
 
     const relation = !heir ? '' :
       died.childIds.includes(heir.id) ? (heir.sex === 'female' ? 'their daughter' : 'their son') :
@@ -69,6 +72,10 @@ export class SuccessionOverlay {
             Math.floor(entry.ageDays / 80) + 'y</span>' +
             escapeHtml(entry.text) + '</div>').join('')
         : '<div class="succession-quiet">A quiet life, and no record of it.</div>') +
+
+      reckoning.map(line =>
+        '<div class="succession-entry succession-reckoning"><span>' + escapeHtml(line.label) +
+        '</span>' + escapeHtml(line.text) + '</div>').join('') +
 
       '<div class="succession-tally">' + deeds +
         (deeds === 1 ? ' thing' : ' things') + ' remembered' +
@@ -103,6 +110,41 @@ export class SuccessionOverlay {
     this.root.hidden = true;
     this.root.innerHTML = '';
   }
+}
+
+/**
+ * M11 phase 13e (owner's note 2): who they killed and what they raised.
+ *
+ * Neither is a milestone, so the six milestones above never showed either,
+ * and a life that took three others or put up half the camp read the same as
+ * one that did neither. Both are counted off the chronicle, from the fields
+ * `emit` and a finished build stamp on their lines, with no new state. The
+ * victims are named as the dead person knew them — through `Knowledge`,
+ * because a stranger killed in the dark is still a stranger.
+ */
+function reckon(sim: Simulation, died: Person): { label: string; text: string }[] {
+  const lines: { label: string; text: string }[] = [];
+
+  const killed: string[] = [];
+  for (const entry of died.chronicle) {
+    if (entry.kind !== 'did' || entry.deed?.type !== 'murder' || entry.deed.targetId === null) continue;
+    const victim = sim.peopleById.get(entry.deed.targetId);
+    killed.push(victim ? knowledgeOfPerson(died, victim, sim.relationships).displayName : 'someone');
+  }
+  if (killed.length > 0) lines.push({ label: 'killed', text: killed.join(', ') });
+
+  const raised = new Map<string, number>();
+  for (const entry of died.chronicle) {
+    if (entry.built) raised.set(entry.built, (raised.get(entry.built) ?? 0) + 1);
+  }
+  if (raised.size > 0) {
+    lines.push({
+      label: 'raised',
+      text: [...raised].map(([id, n]) =>
+        (BUILDINGS[id]?.label ?? id).toLowerCase() + (n > 1 ? ' ×' + n : '')).join(', '),
+    });
+  }
+  return lines;
 }
 
 function escapeHtml(value: string): string {

@@ -6,6 +6,33 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 13e: a death says who they killed and what they raised
+
+**The note** (owner's note 2): the succession screen showed the last six
+milestones, and neither a killing nor a building is one, so a life that took
+three others or put up half the camp read the same as one that did neither.
+
+**The change.** Two lines under the milestones, counted off the chronicle:
+*killed* — every murder the dead person did, each victim named as *they*
+knew them, through `knowledgeOfPerson` — and *raised*, every design they
+finished, with a count (*"windbreak ×2, granary"*).
+
+**What that needed.** The chronicle held only sentences. Counting murders by
+parsing *"X killed Y"* would break the moment 13f changed the wording, and
+the sentence carries the victim's real name, which the reader may not know.
+So two optional fields, both written alongside the text rather than instead
+of it: `LifeEvent.deed` (the event type and the ids of the two people), set
+by `SocialSystem.emit` on every line it writes, and `LifeEvent.built` (the
+design id), set when a build completes. The plan had said "no new state";
+these are fields on lines that were already written, and 13f is the second
+reader of `deed`.
+
+**Bit-identical** in `sim:check:all --verbose`: nothing in the simulation reads
+either field. The succession e2e spec now gives the player a killing and a hut
+before they die and checks both lines.
+
+---
+
 ## 2026-09-23 — M11 phase 13d: the *Life* panel folds a run of the same deed
 
 **The note** (owner's note 15): twenty clicks at a rival's store wrote twenty

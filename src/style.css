@@ -872,6 +872,10 @@ html, body, #app {
   font-variant-numeric: tabular-nums;
 }
 
+/* M11 phase 13e: who they killed and what they raised, under the milestones. */
+.succession-reckoning { grid-template-columns: 52px 1fr; margin-top: 4px; }
+.succession-reckoning > span { color: var(--text-dim); }
+
 .succession-quiet { color: var(--text-dim); font-style: italic; }
 .succession-tally { margin-top: 10px; color: var(--text-dim); font-size: 12px; }
 .succession-heir { font-size: 17px; font-weight: 600; color: var(--accent); }

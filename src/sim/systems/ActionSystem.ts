@@ -1199,6 +1199,7 @@ export class ActionSystem {
         ageDays: person.age,
         text: 'finished building a ' + site.def.label.toLowerCase(),
         kind: 'did',
+        built: site.def.id,
       });
       this.finish(person);
     }
