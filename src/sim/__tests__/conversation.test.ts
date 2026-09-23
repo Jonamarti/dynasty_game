@@ -18,7 +18,7 @@ import { Person, SKILL_INDEX } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 
 function edge(familiarity: number, lastContact: number) {
-  return { kinship: 0, deeds: 0, familiarity, romance: 0, lastContact, bias: 0 };
+  return { kinship: 0, deeds: 0, familiarity, romance: 0, lastContact, bias: 0, dread: 0 };
 }
 
 describe('choosing a conversation', () => {

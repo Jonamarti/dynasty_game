@@ -14,6 +14,7 @@ import type { Camera } from './Camera.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { BUILDINGS } from '../sim/entities/Building.ts';
 import { CONVERSATION_MODES, type ConversationMode } from '../sim/social/Conversation.ts';
+import { t, aNoun } from '../i18n/i18n.ts';
 
 export interface Floater {
   x: number;
@@ -183,6 +184,12 @@ export const ACTION_LABELS: Record<string, string> = {
   toast: 'sharing a drink',
   tend: 'tending the hurt',
   tame: 'coaxing an animal',
+  // The two verbs M11 added without words here, so the score table printed
+  // their raw ids — found by the Spanish pass, where an id is plainly English.
+  spar: 'sparring',
+  trade: 'trading',
+  // M11 phase 14b: an outsider warned off the band's ground.
+  warn: 'warning them off',
 };
 
 /**
@@ -198,16 +205,16 @@ export function actionLabel(
 ): string {
   if (action === 'craft') {
     const def = recipe ? RECIPES[recipe] : null;
-    if (def) return 'making a ' + def.label.toLowerCase();
+    if (def) return t('making {thing}', { thing: aNoun(def.label.toLowerCase()) });
   }
   // Same story as `craft`, and for the same reason: since M9 phase 4 there are
   // four conversations behind the one verb, and "talking" for all of them
   // hides the difference between nodding at somebody in passing and sitting
   // with them for a quarter of the day.
   if (action === 'talk' && mode && mode in CONVERSATION_MODES) {
-    return CONVERSATION_MODES[mode as ConversationMode].doing;
+    return t(CONVERSATION_MODES[mode as ConversationMode].doing);
   }
-  return ACTION_LABELS[action] ?? action;
+  return t(ACTION_LABELS[action] ?? action);
 }
 
 /**
@@ -244,6 +251,9 @@ export const STOP_REASONS: Record<string, string> = {
   target_gone: 'they were gone',
   quarry_gone: 'the animal was gone',
   quarry_escaped: 'the animal outran them',
+  // M11 phase 12b. `quarry_escaped` speaks of an animal; a person who gets
+  // away from an attack needed their own sentence.
+  target_escaped: 'they got away',
 
   // They could not do it after all.
   no_water: 'there was no water within reach',
@@ -284,6 +294,9 @@ export const STOP_REASONS: Record<string, string> = {
   // they reached the store.
   store_item_gone: 'they no longer had it to store',
   nothing_to_give: 'they had nothing to give',
+  // M11 phase 13f: the one reason `abandon` used that had no words, so a
+  // trade that fell through said "nothing to trade" in the code's own voice.
+  nothing_to_trade: 'one of them had no food to swap',
   nothing_to_steal: 'there was nothing to take',
   nothing_to_demand: 'there was nothing worth demanding',
   refused_demand: 'they refused to hand it over',
@@ -358,7 +371,7 @@ export const STOP_REASONS: Record<string, string> = {
 
 export function stopReasonLabel(reason: string): string {
   const known = STOP_REASONS[reason];
-  if (known !== undefined) return known;
+  if (known !== undefined) return t(known);
   // M8.1, mechanism 4. Station reasons are per-station — `no_station_quern`,
   // and `no_station_kiln` when the kiln lands — because an aggregate cannot
   // answer "which station is everybody walking to and not finding?". That makes
@@ -366,7 +379,7 @@ export function stopReasonLabel(reason: string): string {
   // written out one by one and forgotten one by one.
   if (reason.startsWith('no_station_')) {
     const id = reason.slice('no_station_'.length);
-    return 'there was no ' + (BUILDINGS[id]?.label.toLowerCase() ?? id) + ' to work at';
+    return t('there was no {station} to work at', { station: t(BUILDINGS[id]?.label ?? id).toLowerCase() });
   }
   return reason.replace(/_/g, ' ');
 }

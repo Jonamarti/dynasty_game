@@ -28,6 +28,8 @@ import { techPower } from '../knowledge/Tech.ts';
 import type { BandRelations } from './BandRelations.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { t } from '../../i18n/i18n.ts';
+import { frighten, opennessOf } from './Fear.ts';
 
 export interface LifeEvent {
   tick: number;
@@ -35,6 +37,15 @@ export interface LifeEvent {
   ageDays: number;
   text: string;
   kind: 'did' | 'suffered' | 'milestone';
+  /**
+   * M11 phase 13e. The deed behind a line `emit` wrote, so a reader can
+   * count murders or name a victim without parsing the sentence — and name
+   * them as the *reader* knows them, which the sentence cannot do. Absent on
+   * lines that are not deeds (a birth, a marriage, a building).
+   */
+  deed?: { type: EventType; actorId: number; targetId: number | null };
+  /** M11 phase 13e. The design a "finished building" line is about. */
+  built?: string;
 }
 
 /** Romance at which both parties are ready to marry. */
@@ -268,6 +279,14 @@ export class SocialSystem {
    * rule that nothing is known unless it is seen or told applies to them too.
    * Pass `false` and the subject learns only by being an actual witness
    * within `sightRadius`, exactly like anybody else.
+   *
+   * `ownerBandId`, M11 phase 14e, is the band a building belongs to, for a
+   * deed against property rather than a person — a theft from a store, a
+   * trespass, a sabotage. Those have no target, so the cross-band nudge below
+   * never saw them: wrecking a neighbour's hut cost nothing between the two
+   * peoples, whoever watched. Now it does, but only when somebody of the
+   * owning band saw it — the owner's rule — and once per deed, never once per
+   * witness.
    */
   emit(
     type: EventType,
@@ -277,7 +296,8 @@ export class SocialSystem {
     tick: number,
     peopleHash: SpatialHash<Person>,
     sightRadius: number,
-    notifyTarget = true
+    notifyTarget = true,
+    ownerBandId?: number
   ): SocialEvent {
     const event: SocialEvent = {
       id: nextEventId++,
@@ -294,19 +314,23 @@ export class SocialSystem {
     telemetry.count('event_' + type);
 
     const description = describeEvent(type, actor.name, target?.name ?? null);
-    actor.chronicle.push({ tick, ageDays: actor.age, text: description, kind: 'did' });
+    const deed = { type, actorId: actor.id, targetId: target?.id ?? null };
+    actor.chronicle.push({ tick, ageDays: actor.age, text: description, kind: 'did', deed });
     if (target) {
-      target.chronicle.push({ tick, ageDays: target.age, text: description, kind: 'suffered' });
+      target.chronicle.push({ tick, ageDays: target.age, text: description, kind: 'suffered', deed });
     }
 
     // The victim always knows, however dark it was and whoever else was
     // looking — unless the caller said otherwise, because there was no
     // victim standing there to know it. See `notifyTarget` above.
-    if (target && notifyTarget) this.absorb(target, event, actor, true, 1, null);
+    const targetBandId = target?.bandId ?? null;
+    if (target && notifyTarget) this.absorb(target, event, actor, true, 1, null, targetBandId);
 
     let witnesses = 0;
+    let ownerSaw = false;
     for (const bystander of peopleHash.queryRadius(actor.x, actor.y, sightRadius)) {
       if (!bystander.alive) continue;
+      if (bystander.bandId === ownerBandId && bystander.id !== actor.id) ownerSaw = true;
       if (bystander.id === actor.id) continue;
       if (bystander.id === target?.id) {
         // Already absorbed above as the victim; do not count them twice. But
@@ -316,7 +340,7 @@ export class SocialSystem {
         // their own name being talked about.
         if (notifyTarget) continue;
       }
-      this.absorb(bystander, event, actor, true, 1, null);
+      this.absorb(bystander, event, actor, true, 1, null, targetBandId);
       witnesses++;
     }
     if (witnesses > 0) telemetry.count('witnessed', witnesses);
@@ -340,6 +364,14 @@ export class SocialSystem {
       this.bandRelations.add(
         actor.bandId, target.bandId,
         DEED_WEIGHT[type] * (0.5 + event.magnitude * 0.5) * CROSS_BAND_DEED_SCALE);
+    } else if (!target && ownerSaw && ownerBandId !== undefined && ownerBandId !== actor.bandId) {
+      // M11 phase 14e: see `ownerBandId` above. The same formula as a deed
+      // against a person, so a wrecked hut and a beating weigh on the two
+      // peoples in the proportions `DEED_WEIGHT` already sets between them.
+      this.bandRelations.add(
+        actor.bandId, ownerBandId,
+        DEED_WEIGHT[type] * (0.5 + event.magnitude * 0.5) * CROSS_BAND_DEED_SCALE);
+      telemetry.count('property_deed_seen_by_owner');
     }
     return event;
   }
@@ -354,11 +386,15 @@ export class SocialSystem {
     actor: Person,
     firsthand: boolean,
     confidence: number,
-    sourceId: number | null
+    sourceId: number | null,
+    targetBandId: number | null
   ): void {
     if (!observer.memory.record(event, firsthand, confidence, sourceId)) return;
     if (observer.id === actor.id) return;
     this.introduce(observer, actor);
+    // M11 phase 14a. After `record`, so only news frightens anybody: a story
+    // already known, told again, is not a second reason to be afraid.
+    frighten(observer, event, actor, firsthand, confidence, targetBandId, this.relationships);
 
     const norms = this.normsFor(observer);
     const tolerance = norms ? norms[event.type] : 1;
@@ -466,7 +502,10 @@ export class SocialSystem {
     // warm to a stranger than to someone you grew up beside — and M11 phase
     // 7c reads *how much* more slowly off how the two bands themselves stand.
     const sameBand = a.bandId === b.bandId;
-    const gained = crossBand(warmth, sameBand, this.bandRelations.standing(a.bandId, b.bandId));
+    // M11 phase 14b: and how at ease the two of them are, which is theirs
+    // rather than their peoples'. See `CROSS_BAND_OPENNESS`.
+    const gained = crossBand(warmth, sameBand, this.bandRelations.standing(a.bandId, b.bandId),
+      sameBand ? 0 : opennessOf(a, b));
     this.relationships.addFamiliarity(a.id, b.id, gained, tick);
     this.relationships.addFamiliarity(b.id, a.id, gained, tick);
 
@@ -619,7 +658,7 @@ export class SocialSystem {
     this.relationships.setKinship(b.id, a.id, KIN_SPOUSE);
     telemetry.count('marriage');
 
-    const text = a.name + ' and ' + b.name + ' were married';
+    const text = t('{a} and {b} were married', { a: a.name, b: b.name });
     a.chronicle.push({ tick, ageDays: a.age, text, kind: 'milestone' });
     b.chronicle.push({ tick, ageDays: b.age, text, kind: 'milestone' });
 
@@ -678,7 +717,8 @@ export class SocialSystem {
     };
 
     const before = listener.memory.size;
-    this.absorb(listener, event, actor, false, confidence, teller.id);
+    this.absorb(listener, event, actor, false, confidence, teller.id,
+      story.targetId === null ? null : peopleById.get(story.targetId)?.bandId ?? null);
     if (listener.memory.size > before) telemetry.count('rumor_spread');
   }
 

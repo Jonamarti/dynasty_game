@@ -37,8 +37,16 @@ export interface PropertyUse {
   allowed: boolean;
   /** The nearest owner who can intervene, if there is one. */
   seen: Person | null;
-  /** Player-facing explanation; callers still use a stable code for telemetry. */
-  because: string;
+  /**
+   * Which of the four answers this is. M11 phase 13f: this used to be a
+   * finished sentence, `seen.name + ' is close enough to see them'`, and
+   * that sentence reached the screen twice — the store refusal and the radial
+   * menu's greyed-out reason — carrying the real name of a stranger the
+   * player had never met. This function is pure and cannot know who is
+   * reading, so it no longer writes words at all; `explainPropertyUse` in
+   * `Knowledge.ts` writes them for a named reader.
+   */
+  basis: 'own' | 'ally' | 'seen' | 'unseen';
 }
 
 export function mayUse(
@@ -47,7 +55,7 @@ export function mayUse(
   ctx: PropertyContext
 ): PropertyUse {
   if (building.ownerBandId === person.bandId) {
-    return { ours: true, allowed: true, seen: null, because: 'it belongs to their band' };
+    return { ours: true, allowed: true, seen: null, basis: 'own' };
   }
 
   // M11 phase 7c: a band this close to your own is effectively your own for
@@ -57,7 +65,7 @@ export function mayUse(
   // is exactly such a deed, built from real marriages and real trade, not a
   // permission anybody switched on.
   if (ctx.bandRelations.standing(person.bandId, building.ownerBandId) >= ALLY_STANDING) {
-    return { ours: true, allowed: true, seen: null, because: 'their band and yours are close allies' };
+    return { ours: true, allowed: true, seen: null, basis: 'ally' };
   }
 
   const seen = ctx.peopleHash.findNearest(
@@ -71,13 +79,13 @@ export function mayUse(
       allowed: false,
       ours: false,
       seen,
-      because: seen.name + ' is close enough to see them',
+      basis: 'seen',
     };
   }
   return {
     allowed: true,
     ours: false,
     seen: null,
-    because: 'nobody from the owning band is watching',
+    basis: 'unseen',
   };
 }

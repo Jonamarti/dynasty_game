@@ -557,17 +557,31 @@ test('death hands the game to an heir instead of ending it', async ({ page }) =>
 
   // Kill the player outright. The succession machinery runs off the same path
   // whatever the cause, so a direct kill exercises exactly what old age does.
-  await page.evaluate(() => {
-    const d = (window as never as {
-      __dynasty: { sim: { player: { die: (cause: string) => void } | null } };
-    }).__dynasty;
-    d.sim.player?.die('a test');
+  //
+  // M11 phase 13e: first give them a killing and a hut to be remembered for,
+  // written the way `emit` and a finished build write them.
+  const victim = await page.evaluate(() => {
+    const d = (window as never as { __dynasty: { sim: {
+      player: { id: number; age: number; chronicle: unknown[]; die: (cause: string) => void };
+      relationships: { knownBy(id: number): { subjectId: number }[] };
+      peopleById: Map<number, { id: number; name: string }>;
+    } } }).__dynasty;
+    const player = d.sim.player;
+    const other = d.sim.peopleById.get(d.sim.relationships.knownBy(player.id)[0]!.subjectId)!;
+    player.chronicle.push({ tick: 0, ageDays: player.age, text: 'killed', kind: 'did',
+      deed: { type: 'murder', actorId: player.id, targetId: other.id } });
+    player.chronicle.push({ tick: 0, ageDays: player.age, text: 'finished building a windbreak',
+      kind: 'did', built: 'windbreak' });
+    player.die('a test');
+    return other.name;
   });
 
   const card = page.locator('.succession-card');
   await expect(card).toBeVisible({ timeout: 15_000 });
   await expect(card).toContainText('has died');
   await expect(card).toContainText('a test');
+  await expect(card.locator('.succession-reckoning', { hasText: 'killed' })).toContainText(victim);
+  await expect(card.locator('.succession-reckoning', { hasText: 'raised' })).toContainText('windbreak');
 
   await page.locator('.succession-go').click();
   await expect(card).toBeHidden();
@@ -907,6 +921,68 @@ test('the family tree opens on K and reads top to bottom', async ({ page }) => {
   await expect(page.locator('.familytree-card')).toHaveCount(0);
   await expect(page.locator('.familytree')).toHaveCSS('display', 'none');
 
+  expect(errors).toEqual([]);
+});
+
+test('the tribe graph hides other bands until asked, and says how many it hid', async ({ page }) => {
+  // Owner's note of 2026-09-23: members of other tribes were drawn in the
+  // tribe graph. The player is introduced to one of their own band and one
+  // from another; only the first is drawn until the switch is pressed.
+  const errors = guardErrors(page);
+  await ready(page);
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { id: number };
+        bandIdOf: (p: unknown) => number;
+        livingPeople: () => { id: number; bandId: number }[];
+        relationships: {
+          introduce: (a: number, b: number, bias: number) => boolean;
+          addDeed: (a: number, b: number, d: number, t: number) => void;
+        };
+      };
+    };
+  };
+  const ok = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const people = d.sim.livingPeople();
+    const self = people.find(p => p.id === d.sim.player.id)!;
+    const home = d.sim.bandIdOf(self);
+    const kin = people.find(p => p.id !== self.id && d.sim.bandIdOf(p) === home);
+    const other = people.find(p => d.sim.bandIdOf(p) !== home);
+    if (!kin || !other) return false;
+    for (const id of [kin.id, other.id]) {
+      d.sim.relationships.introduce(self.id, id, 0);
+      d.sim.relationships.addDeed(self.id, id, 40, 0);
+    }
+    return true;
+  });
+  expect(ok).toBe(true);
+
+  await page.keyboard.press('t');
+  await expect(page.locator('.tribegraph-card')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.tribegraph-sub').first()).toContainText('from other bands hidden');
+  const before = await page.locator('.tribegraph-node').count();
+
+  await page.locator('.tribegraph-toggle').click();
+  await expect(page.locator('.tribegraph-toggle')).toHaveClass(/is-on/);
+  await expect.poll(() => page.locator('.tribegraph-node').count()).toBeGreaterThan(before);
+  await expect(page.locator('.tribegraph-sub').first()).not.toContainText('hidden');
+
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});
+
+test('the family tree colours a line by what its two ends think of each other', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.keyboard.press('k');
+  await expect(page.locator('.familytree-card')).toBeVisible({ timeout: 10_000 });
+  // A founder's family is introduced at birth or marriage, and the player can
+  // read their own ties, so every line touching the player carries a tone.
+  const toned = page.locator('.familytree-edge.is-pos, .familytree-edge.is-mid, .familytree-edge.is-neg');
+  await expect.poll(() => toned.count()).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
 });
 
@@ -1339,6 +1415,16 @@ test('character creation picks a life inside a world that already exists', async
   // blurb, and the world behind them already generated.
   const tribes = page.locator('.newgame-option');
   await expect(tribes).toHaveCount(3, { timeout: 15_000 });
+  await expect(page.locator('.newgame-title')).toHaveText('An island, and three peoples on it');
+
+  // M11 phase 12c: how many tribes is asked here, where it is chosen, and a
+  // new number is a new island — with a title that no longer says "three".
+  const tribeCount = page.locator('.newgame-population .settings-number').first();
+  await tribeCount.fill('5');
+  await tribeCount.dispatchEvent('change');
+  await expect(tribes).toHaveCount(5, { timeout: 15_000 });
+  await expect(page.locator('.newgame-title')).toHaveText('An island, and five peoples on it');
+  await expect(tribeCount).toHaveValue('5');
   await tribes.first().click();
 
   // A shortlist of that tribe's adults, and a reshuffle that shows a different
@@ -1359,6 +1445,40 @@ test('character creation picks a life inside a world that already exists', async
   await expect(page.locator('.newgame')).toBeHidden();
   await expect(page.locator('.hud-tag')).toHaveText('you');
   await expect(page.locator('.hud-clock')).not.toBeEmpty();
+
+  expect(errors).toEqual([]);
+});
+
+test('the dead are folded away under the living, and the fold stays open', async ({ page }) => {
+  // M11 phase 13c. The dead used to be ranked in with the living and push
+  // them out of the fourteen; now they sit in a closed `<details>`. The panel
+  // is patched every frame, not rebuilt, so an opened fold must stay open —
+  // the overlay-that-redraws trap `AGENTS.md` warns about.
+  const errors = guardErrors(page);
+  await ready(page);
+  const name = await page.evaluate(() => {
+    const sim = (window as never as { __dynasty: { sim: {
+      player: { id: number };
+      relationships: { knownBy(id: number): { subjectId: number }[] };
+      peopleById: Map<number, { alive: boolean; name: string; die(cause: string): void }>;
+    } } }).__dynasty.sim;
+    const tie = sim.relationships.knownBy(sim.player.id)
+      .find(t => sim.peopleById.get(t.subjectId)?.alive);
+    const who = sim.peopleById.get(tie!.subjectId)!;
+    who.die('the test');
+    return who.name;
+  });
+
+  await page.locator('.hud-tab', { hasText: 'Ties' }).click();
+  const fold = page.locator('.hud-dead');
+  await expect(fold).toHaveCount(1);
+  await expect(fold).not.toHaveAttribute('open', '');
+  await expect(fold.locator('summary')).toHaveText('1 dead they remember');
+
+  await fold.locator('summary').click();
+  await page.waitForTimeout(600);
+  await expect(fold).toHaveAttribute('open', '');
+  await expect(fold).toContainText(name);
 
   expect(errors).toEqual([]);
 });
@@ -2121,5 +2241,60 @@ test('the tribe graph stands still while the game is paused', async ({ page }) =
     expect(await positions()).toEqual(settled);
   }
 
+  expect(errors).toEqual([]);
+});
+
+// ---------------------------------------------------------------------------
+// Languages. Owner's note of 2026-09-23: the game in Spanish, with a button to
+// change language in the main menu.
+// ---------------------------------------------------------------------------
+
+test('the start screen switches to Spanish and back, and the choice sticks', async ({ page }) => {
+  const errors = guardErrors(page);
+  await page.goto('/?seed=e2e-start');
+  const settings = page.locator('.settings');
+  await expect(settings).toBeVisible({ timeout: 15_000 });
+  await expect(settings).toContainText('Before you begin');
+
+  await settings.locator('.langswitch-option[data-lang="es"]').click();
+  await expect(settings).toContainText('Antes de empezar');
+  await expect(settings.locator('.langswitch-option[data-lang="es"]')).toHaveClass(/is-on/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+  // The HUD behind it was rebuilt as well, not only the screen in front.
+  await expect(page.locator('.hud-bar')).toContainText('Construir');
+
+  // Remembered: a reload opens in Spanish without being asked again.
+  await page.reload();
+  await expect(page.locator('.settings')).toContainText('Antes de empezar', { timeout: 15_000 });
+
+  await page.locator('.settings .langswitch-option[data-lang="en"]').click();
+  await expect(page.locator('.settings')).toContainText('Before you begin');
+  expect(errors).toEqual([]);
+});
+
+test('a Spanish game is Spanish in the HUD, the menus and the panels', async ({ page }) => {
+  const errors = guardErrors(page);
+  await page.goto('/?seed=e2e-fixture&skipIntro=1&lang=es');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await expect(page.locator('.hud-clock')).toHaveText(/^A\d+ (primavera|verano|otoño|invierno) d\d+/);
+  await expect(page.locator('.hud-bar')).toContainText('Fabricar');
+  await expect(page.locator('.hud-tab[data-tab="now"]')).toHaveText('Ahora');
+
+  // The pause menu has the switch too, and switching there relabels it in place.
+  await page.keyboard.press('Escape');
+  const menu = page.locator('.pausemenu');
+  await expect(menu).toContainText('Continuar');
+  await menu.locator('.langswitch-option[data-lang="en"]').click();
+  await expect(menu).toContainText('Resume');
+  await expect(page.locator('.hud-tab[data-tab="now"]')).toHaveText('Now');
+  await page.keyboard.press('Escape');
+
+  // And the three graphs, which redraw only when their digest changes.
+  await page.keyboard.press('Escape');
+  await menu.locator('.langswitch-option[data-lang="es"]').click();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('g');
+  await expect(page.locator('.techweb-close')).toHaveText('cerrar', { timeout: 10_000 });
+  await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
 });

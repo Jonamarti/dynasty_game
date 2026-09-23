@@ -20,7 +20,8 @@ import type { Person } from '../entities/Person.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import {
-  BUILDINGS, isTrap, isStation, isField, isHeap, isHerd, isWell, type Building, type BuildingDef,
+  BUILDINGS, isTrap, isStation, isField, isHeap, isHerd, isWell, isStructure,
+  type Building, type BuildingDef,
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -31,8 +32,13 @@ import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { chiefHoneymoon, chiefTermDays } from '../social/Leadership.ts';
-import { conspiracyAgainst } from '../social/Factions.ts';
+import { conspiracyAgainst, warParty } from '../social/Factions.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
+import { t } from '../../i18n/i18n.ts';
+import type { Sightings } from '../social/Fear.ts';
+import type { BandMaps } from '../social/BandMaps.ts';
+import type { ResourceNode, ResourceKind } from '../entities/ResourceNode.ts';
+import { ITEMS } from '../entities/Item.ts';
 
 /**
  * How large a faction against somebody has to be before the band acts on it.
@@ -60,7 +66,7 @@ const ADOPTION_THRESHOLD = -10;
  * doorstep-sized question, but a band should notice strangers camped
  * anywhere within sight of home, not only underfoot.
  */
-const TERRITORY_RADIUS = 40;
+export const TERRITORY_RADIUS = 40;
 
 /**
  * How much one foreign person, seen once, at maximum pantry pressure, costs
@@ -74,6 +80,133 @@ const TERRITORY_RADIUS = 40;
  * scoring pass to earn on its own measurement, not on a first guess.
  */
 const TERRITORY_SCALE = 0.3;
+
+/**
+ * How badly two peoples must stand before a chief will organise a party
+ * against the other, M11 phase 11c.
+ *
+ * `BandRelations` runs -100 to 100 and decays at 0.998 a day, so a figure
+ * this far down is not one bad afternoon: it is a season of intrusions on a
+ * pinched camp, or a run of cross-band thefts and beatings, that nothing has
+ * since undone. That is the point. A raid is the most consequential thing one
+ * band does to another in this simulation, and it should read as the end of a
+ * long quarrel rather than as a mood.
+ */
+const RAID_HOSTILITY = -30;
+
+/**
+ * How many people it takes for a raid to be a raid — the chief included.
+ *
+ * The same brake `EXILE_QUORUM` is, applied to the same failure. `Brain.ts`
+ * records what a band looks like without one: a mechanism that fires on a
+ * single angry person turns the band into a mincer. Counted on who *could*
+ * plausibly be called, not on who actually comes, which is the precedent
+ * `considerExile` sets — whether each of them obeys is a separate roll and a
+ * separate story.
+ */
+const RAID_QUORUM = 3;
+
+/** The most a chief will take, so that calling a raid does not empty the camp. */
+const RAID_PARTY_MAX = 4;
+
+/**
+ * Days between one band's raids.
+ *
+ * Counted from the day a raid was *considered* rather than the day one
+ * happened, so a warlike chief with nobody to call on broods for a week like
+ * everybody else instead of trying and failing every single morning.
+ */
+const RAID_INTERVAL = 8;
+
+/**
+ * How far a party will travel, in tiles.
+ *
+ * Wider than `TERRITORY_RADIUS`, since a raid by definition goes further than
+ * the ground a band counts as its own, and set by the walk rather than by
+ * taste: **about a day's march**. At the base walking speed of 0.32 tiles a
+ * tick, the 240 ticks in a day carry somebody roughly 77 tiles, so this is
+ * the furthest a party can be sent and still be said to have gone and come
+ * back rather than emigrated.
+ *
+ * The number was checked against the worlds it has to work in before it was
+ * chosen, not after. In `lean` a band's camp sits between 61 and 91 tiles
+ * from the nearest thing its worst enemy owns, and in `century` between 30
+ * and 40 — so a range set by the thirst budget instead, which came out
+ * around 60, admitted a target in `century` and **not one in `lean`**: three
+ * hundred deliberations, a hundred and twenty of them with a real enemy
+ * chosen, and every single one dropped here. A gate nobody ever passes is
+ * indistinguishable from a feature that was never written.
+ *
+ * Thirst is not what bounds this, which is why the first attempt was wrong.
+ * A raider is under an order, and `Simulation.noteStop` sets aside any order
+ * broken off for a need: somebody who runs dry two thirds of the way there
+ * stops, drinks, and picks the raid back up inside `RESUME_WINDOW`. The walk
+ * is the constraint, not the flask.
+ */
+const RAID_RANGE = 75;
+
+/**
+ * The storage a design must hold before a raid counts it as somebody's
+ * granary rather than somebody's roof.
+ *
+ * The same figure `planBuildings` uses to tell a real store from the
+ * stockpile, which is bare ground and costs nothing to place.
+ */
+const RAID_GRANARY = 100;
+
+/**
+ * How far past `RAID_HOSTILITY` a grudge has to run before a party goes to
+ * burn rather than to rob.
+ *
+ * You rob the neighbours you merely dislike, and you burn the ones you hate.
+ * This is the only thing that decides between the two verbs, and it is
+ * deliberately the *raiders' own feeling* rather than anything about the
+ * victim: a chief knows how their people feel about the band over the hill
+ * without anybody having to tell them, where they emphatically do not know
+ * what is in that band's storage pit.
+ *
+ * Two earlier rules were measured and thrown away, both for the same fault —
+ * they were coins that always landed the same way. Gating plunder on the
+ * raiders being hungry produced forty-seven deliberations and not one
+ * plundering raid, because no scenario in the matrix ever has a band hungry
+ * at midnight; gating it on the victim owning a granary produced eleven
+ * raids and not one wrecking, because every band owns a granary. A branch
+ * that cannot be reached is not a design, it is an unshipped intention.
+ */
+const RAID_FURY = -70;
+
+/**
+ * Below this standing a band will go onto another's ground for what it lacks,
+ * M11 phase 14d. Zero: not a grudge, only the absence of good terms. Two
+ * peoples who like each other trade (7b); two who do not, take.
+ */
+const NEED_RAID_STANDING = 0;
+
+/**
+ * What a band counts as "at home" when asking whether it has something: the
+ * inner half of its ground. The whole `TERRITORY_RADIUS` was measured first
+ * and never fired once across the matrix — forty tiles in every direction
+ * holds nearly everything on these islands — and the half is also where a
+ * frightened band actually works (`RANGE_FLOOR`, phase 14b). Flint a day's
+ * round trip away is flint a band does not have.
+ */
+const NEAR_GROUND = TERRITORY_RADIUS / 2;
+
+/** How far from a remembered cell's centre its patch may be found. */
+const MAP_CELL_REACH = 6;
+
+/**
+ * What a band cannot do without, and has to have on hand: sticks and flint
+ * always, clay for walls, and grain once somebody knows what to do with seed
+ * or meal. "Pedernal, barro, madera, grano" — the plan's list.
+ */
+function neededKinds(members: Person[]): ResourceKind[] {
+  const kinds: ResourceKind[] = ['sticks', 'flint', 'clay'];
+  if (members.some(m => techPower(m, 'farming') > 0 || techPower(m, 'grinding') > 0)) {
+    kinds.push('wild_grain');
+  }
+  return kinds;
+}
 
 /**
  * The most aggrieved member's opinion of the chief, below which they are
@@ -202,13 +335,24 @@ export interface BandContext {
   onAdopt: (person: Person, band: Band) => void;
   /** For `considerAdoption`'s and `considerTerritory`'s proximity queries — never scan the population for it. */
   peopleHash: SpatialHash<Person>;
-  /** For `considerTerritory`'s reading of how two bands currently stand. */
+  /** For `considerTerritory`'s and `considerRaid`'s reading of how two bands currently stand. */
   bandRelations: BandRelations;
+  /**
+   * Whether two points are on the same landmass.
+   *
+   * `considerRaid`'s only reason to ask anything of the world: an order aimed
+   * at a building never checks walkability — `Simulation.order`'s building
+   * branch returns the moment it has a target — so a party sent across water
+   * would walk to the shore and abandon with `cannot_reach`, once each, every
+   * time. The scorer asks `World.sameRegion` before every long walk it plans
+   * for the same reason.
+   */
+  sameRegion: (ax: number, ay: number, bx: number, by: number) => boolean;
   /** Removes an abandoned site from the world. */
   abandonSite: (building: Building) => void;
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
   command: (leader: Person, subordinate: Person, action: string,
-    target: { buildingId?: number }) => boolean;
+    target: { buildingId?: number; nodeId?: number }) => boolean;
   /** Assigns a job, subject to the same roll `command` uses. */
   assignJob: (leader: Person, subordinate: Person, job: JobId | null) => boolean;
   /** Moves someone out of their band of their own accord, not by exile. */
@@ -217,6 +361,20 @@ export interface BandContext {
   onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') => void;
   /** Households by id, so `directWork` can tell who heads a house. */
   householdsById: Map<number, Household>;
+  /**
+   * Outsiders somebody from each band actually saw on its ground, M11 phase
+   * 14a. The territory engine reads this rather than the people hash — a
+   * band resents the strangers it saw, not the ones who were there.
+   */
+  sightings: Sightings;
+  /** What each band has seen of the land, M11 phase 14d. See `BandMaps`. */
+  bandMaps: BandMaps;
+  /**
+   * To find the patch a band remembers when it sends people to it. Only ever
+   * asked about a cell the band already knows holds that kind — the map says
+   * *that* it is there, the hash says which bush.
+   */
+  nodeHash: SpatialHash<ResourceNode>;
 }
 
 export class BandSystem {
@@ -232,6 +390,20 @@ export class BandSystem {
    */
   private readonly siteProgress = new Map<number, { mark: number; day: number }>();
 
+  /**
+   * The last day each band's chief seriously weighed a raid, by band id.
+   *
+   * Here rather than on `Band` for the reason `siteProgress` is: it is the
+   * band's own deliberation about itself, not a fact about the world, and
+   * nothing outside this file has any business reading it.
+   */
+  private readonly raidConsidered = new Map<number, number>();
+
+  /** Band names by id, refreshed at the top of `daily`, for chronicle lines. */
+  private readonly bandNames = new Map<number, string>();
+  /** Each band's camp, refreshed with the names; for the raid-for-need motive. */
+  private readonly bandHomes = new Map<number, { x: number; y: number }>();
+
   daily(bands: Band[], people: Person[], ctx: BandContext): void {
     const byBand = new Map<number, Person[]>();
     for (const person of people) {
@@ -239,6 +411,13 @@ export class BandSystem {
       const list = byBand.get(person.bandId);
       if (list) list.push(person);
       else byBand.set(person.bandId, [person]);
+    }
+
+    this.bandNames.clear();
+    this.bandHomes.clear();
+    for (const band of bands) {
+      this.bandNames.set(band.id, band.name);
+      if (!band.outcast) this.bandHomes.set(band.id, { x: band.homeX, y: band.homeY });
     }
 
     const outcastBand = bands.find(b => b.outcast);
@@ -259,6 +438,7 @@ export class BandSystem {
       this.considerRebellion(band, members, ctx);
       if (!band.outcast && outcasts.length > 0) this.considerAdoption(band, members, outcasts, ctx);
       if (!band.outcast) this.considerTerritory(band, ctx, outcastBand?.id);
+      if (!band.outcast) this.considerRaid(band, members, ctx, outcastBand?.id);
       if (ctx.day % PLANNING_INTERVAL === 0) this.planBuildings(band, members, ctx);
       this.directWork(band, members, ctx);
     }
@@ -321,10 +501,10 @@ export class BandSystem {
     best.chronicle.push({
       tick: ctx.tick,
       ageDays: best.age,
-      text: 'became chief of the ' + band.name,
+      text: t('became chief of the {band}', { band: band.name }),
       kind: 'milestone',
     });
-    ctx.onInsight(best, 'was welcomed as chief of the ' + band.name, 'gain');
+    ctx.onInsight(best, t('was welcomed as chief of the {band}', { band: band.name }), 'gain');
   }
 
   /**
@@ -490,13 +670,13 @@ export class BandSystem {
     rebel.chronicle.push({
       tick: ctx.tick,
       ageDays: rebel.age,
-      text: 'openly refused to answer to ' + chief.name + ' any longer',
+      text: t('openly refused to answer to {name} any longer', { name: chief.name }),
       kind: 'did',
     });
     // Louder than an ordinary refused order: this is a stand taken in front of
     // the whole band, not one request declined in private.
     ctx.relationships.addDeed(rebel.id, chief.id, -6, ctx.tick);
-    ctx.onInsight(rebel, 'defied ' + chief.name + ' openly', 'setback');
+    ctx.onInsight(rebel, t('defied {name} openly', { name: chief.name }), 'setback');
   }
 
   /** Rather than go on answering to a chief they cannot stand, they leave. */
@@ -505,11 +685,11 @@ export class BandSystem {
     rebel.chronicle.push({
       tick: ctx.tick,
       ageDays: rebel.age,
-      text: 'left the ' + band.name + ' rather than answer to ' + chief.name,
+      text: t('left the {band} rather than answer to {name}', { band: band.name, name: chief.name }),
       kind: 'did',
     });
     ctx.leaveBand(rebel);
-    ctx.onInsight(rebel, 'left rather than answer to ' + chief.name, 'setback');
+    ctx.onInsight(rebel, t('left rather than answer to {name}', { name: chief.name }), 'setback');
   }
 
   /**
@@ -535,26 +715,26 @@ export class BandSystem {
       telemetry.count('rebellion_challenge_won');
       rebel.chronicle.push({
         tick: ctx.tick, ageDays: rebel.age,
-        text: 'challenged ' + chief.name + ' for the chiefdom and won',
+        text: t('challenged {name} for the chiefdom and won', { name: chief.name }),
         kind: 'milestone',
       });
       chief.chronicle.push({
         tick: ctx.tick, ageDays: chief.age,
-        text: 'was deposed by ' + rebel.name,
+        text: t('was deposed by {name}', { name: rebel.name }),
         kind: 'suffered',
       });
-      ctx.onInsight(rebel, 'became chief in ' + chief.name + '\'s place', 'gain');
+      ctx.onInsight(rebel, t("became chief in {name}'s place", { name: chief.name }), 'gain');
     } else {
       telemetry.count('rebellion_challenge_lost');
       rebel.chronicle.push({
         tick: ctx.tick, ageDays: rebel.age,
-        text: 'challenged ' + chief.name + ' for the chiefdom and lost',
+        text: t('challenged {name} for the chiefdom and lost', { name: chief.name }),
         kind: 'did',
       });
       // Losing a public bid for leadership costs standing beyond an ordinary
       // refusal: everyone just watched it happen.
       ctx.relationships.addDeed(rebel.id, chief.id, -8, ctx.tick);
-      ctx.onInsight(rebel, 'lost a bid to replace ' + chief.name, 'setback');
+      ctx.onInsight(rebel, t('lost a bid to replace {name}', { name: chief.name }), 'setback');
     }
   }
 
@@ -986,17 +1166,46 @@ export class BandSystem {
     let directed = 0;
     for (const member of members) {
       if (directed >= limit) break;
-      if (member.id === leader.id || member.isChild) continue;
-      if (member.order !== null) continue;
-      // Nobody is sent to work while they are hungry, thirsty or cold; an order
-      // that would kill the person obeying it is not authority, it is a bug.
-      if (member.needs.hunger > 45 || member.needs.thirst > 40 || member.needs.cold > 45) continue;
-      if (leader.distanceTo(member) > 24) continue;
+      if (!this.fitForOrders(leader, member)) continue;
 
       const action = site.materialsReady ? 'build' : 'haul';
       if (ctx.command(leader, member, action, { buildingId: site.id })) directed++;
     }
     return directed;
+  }
+
+  /**
+   * Whether somebody is in a state to be given an order at all, before any
+   * question of whether they would obey it.
+   *
+   * These are the conditions that keep an order from being a death sentence,
+   * and they were `directTo`'s until `considerRaid` needed exactly the same
+   * four. Extracted rather than copied for the reason `AGENTS.md` gives:
+   * needing to be within earshot, not already under orders, not a child and
+   * not already in trouble are one idea, and two copies of it would drift the
+   * first time one was adjusted — which, for a raid, would mean a chief
+   * sending a thirsty man sixty tiles into a rival camp because somebody
+   * retuned the building numbers and not these.
+   */
+  private fitForOrders(leader: Person, member: Person): boolean {
+    if (member.id === leader.id || member.isChild) return false;
+    if (member.order !== null) return false;
+    if (!this.fitToTravel(member)) return false;
+    return leader.distanceTo(member) <= 24;
+  }
+
+  /**
+   * Nobody is sent anywhere while they are hungry, thirsty or cold; an order
+   * that would kill the person obeying it is not authority, it is a bug.
+   *
+   * Split out of `fitForOrders` because a chief sending themselves is the one
+   * caller that has to skip every *other* condition in it — they are their own
+   * leader, they are standing where they are standing — and must not skip this
+   * one. A chief who walks sixty tiles into a rival camp on an empty stomach
+   * is the same bug with a hat on.
+   */
+  private fitToTravel(person: Person): boolean {
+    return person.needs.hunger <= 45 && person.needs.thirst <= 40 && person.needs.cold <= 45;
   }
 
   // -------------------------------------------------------------------------
@@ -1031,7 +1240,7 @@ export class BandSystem {
       suspect.chronicle.push({
         tick: ctx.tick,
         ageDays: suspect.age,
-        text: 'was cast out of the ' + band.name,
+        text: t('was cast out of the {band}', { band: band.name }),
         kind: 'suffered',
       });
       ctx.onExile(suspect, band, faction.memberIds.length);
@@ -1072,13 +1281,259 @@ export class BandSystem {
       candidate.chronicle.push({
         tick: ctx.tick,
         ageDays: candidate.age,
-        text: 'was taken in by the ' + band.name,
+        text: t('was taken in by the {band}', { band: band.name }),
         kind: 'milestone',
       });
       ctx.onAdopt(candidate, band);
-      ctx.onInsight(candidate, 'was welcomed into the ' + band.name, 'gain');
+      ctx.onInsight(candidate, t('was welcomed into the {band}', { band: band.name }), 'gain');
       return; // One at a time, the same discipline `considerExile` keeps.
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Raids
+  // -------------------------------------------------------------------------
+
+  /**
+   * A chief gathers a party and sends it into a rival band's ground.
+   *
+   * M11 phase 11c, and the piece the whole of phase 11 was built toward. Note
+   * how little of it is new: phase 11a made `fight` something people actually
+   * differ at, so a war party is not four farmers; phase 11b made `sabotage` a
+   * verb with progress banked on the building; phase 7 made two peoples able
+   * to stand badly with each other; phase 4 made property something attention
+   * protects rather than permission. This only decides *who goes where*, and
+   * every consequence of their arrival is already written.
+   *
+   * Two things it deliberately does not do. It does not make the raid
+   * succeed — a party that walks into a camp with people awake in it is
+   * turned back at the wall by `ActionSystem.useProperty`, having committed a
+   * witnessed offence for its trouble, which is the property rule working and
+   * not a bug to route around. And it does not tell the victims anything: a
+   * band learns it has been raided by somebody seeing it happen, exactly as
+   * everything else in this simulation is learned, so a raid nobody witnesses
+   * is a hut that fell down in the night.
+   */
+  private considerRaid(
+    band: Band, members: Person[], ctx: BandContext, outcastBandId: number | undefined
+  ): void {
+    const last = this.raidConsidered.get(band.id);
+    if (last !== undefined && ctx.day - last < RAID_INTERVAL) return;
+
+    const chiefId = this.chiefByBand.get(band.id);
+    if (chiefId === undefined) return;
+    const chief = members.find(member => member.id === chiefId);
+    if (!chief || chief.order !== null || !this.fitToTravel(chief)) return;
+
+    // Who does this band hate most, of the bands it could actually reach?
+    // Worst standing wins outright rather than nearest or richest: a raid is
+    // the discharge of a particular grudge, and picking by opportunity would
+    // make it a foraging trip with extra steps.
+    let victimId: number | null = null;
+    let worst = RAID_HOSTILITY;
+    for (const other of ctx.bandRelations.touching(band.id)) {
+      if (other === band.id || other === outcastBandId) continue;
+      const standing = ctx.bandRelations.standing(band.id, other);
+      if (standing < worst) {
+        worst = standing;
+        victimId = other;
+      }
+    }
+    if (victimId === null) {
+      this.considerNeedRaid(band, members, chief, ctx, outcastBandId);
+      return;
+    }
+    const target = this.raidTarget(band, victimId, worst > RAID_FURY, ctx);
+    if (!target) {
+      telemetry.count('raid_nothing_in_reach');
+      return;
+    }
+
+    // From here on the chief has genuinely weighed it, so the brooding clock
+    // starts whether or not anybody ends up going. See `RAID_INTERVAL`.
+    this.raidConsidered.set(band.id, ctx.day);
+
+    const party = warParty(chief, members, ctx.relationships, RAID_PARTY_MAX);
+    if (party.length + 1 < RAID_QUORUM) {
+      telemetry.count('raid_never_raised');
+      return;
+    }
+
+    // Rob or burn — see `RAID_FURY`. Plunder needs somewhere to plunder, so a
+    // victim whose only buildings are huts is wrecked whatever anybody feels
+    // about them. What is *in* the granary is not consulted and must not be:
+    // it is a granary from the outside, and `doTake` finds out on arrival,
+    // abandoning with `store_empty` if the answer is nothing.
+    const plunder = worst > RAID_FURY && target.def.storage >= RAID_GRANARY;
+    const verb = plunder ? 'take' : 'sabotage';
+    telemetry.count('raid_called');
+    telemetry.count(plunder ? 'raid_for_plunder' : 'raid_for_damage');
+
+    let joined = 0;
+    for (const member of party) {
+      if (!this.fitForOrders(chief, member)) continue;
+      if (ctx.command(chief, member, verb, { buildingId: target.id })) joined++;
+    }
+    telemetry.count('raid_joined', joined);
+    if (joined === 0) telemetry.count('raid_refused_outright');
+
+    // The chief goes with them, and goes even when nobody answered. Being
+    // left to walk into a rival camp alone is the price of calling something
+    // your band would not follow you into, and it is the one that makes a
+    // chief's standing worth having — `command` has already cost them three
+    // regard from every person who said no.
+    ctx.command(chief, chief, verb, { buildingId: target.id });
+
+    const victim = this.bandName(victimId);
+    const behind = joined === 1
+      ? t('one man behind him')
+      : t('{n} men behind him', { n: joined });
+    chief.chronicle.push({
+      tick: ctx.tick,
+      ageDays: chief.age,
+      text: plunder
+        ? t('led a raid on the stores of the {band}, {behind}', { band: victim, behind })
+        : t('led a raid against the {band}, {behind}', { band: victim, behind }),
+      kind: 'did',
+    });
+    ctx.onInsight(chief, plunder
+      ? t('leads a raid on the stores of the {band}', { band: victim })
+      : t('leads a raid against the {band}', { band: victim }), 'setback');
+  }
+
+  /**
+   * What the party is aimed at, or null if the victim has nothing worth the
+   * walk on this side of the water.
+   *
+   * Picked by what a chief could stand on a hill and see: a granary if the
+   * victim has one and `rob` says this raid is after goods, and otherwise the
+   * dearest thing they own, measured in the `workTicks` that went into it,
+   * because what a raid costs its victim is the season they have to spend
+   * putting it back up.
+   *
+   * Nothing here reads a store's contents, and that is the point rather than
+   * an economy. A band knows what it has been told and what it has seen, and
+   * nobody from this band has been inside that pit — so the party sets out
+   * for the barn because it is a barn, and finds out on arrival whether
+   * there was anything in it.
+   */
+  private raidTarget(
+    band: Band, victimId: number, rob: boolean, ctx: BandContext
+  ): Building | null {
+    let plunder: Building | null = null;
+    let plunderWorth = 0;
+    let damage: Building | null = null;
+    let damageWorth = 0;
+
+    for (const building of ctx.buildings) {
+      if (building.ownerBandId !== victimId) continue;
+      if (!building.complete || building.ruined) continue;
+      // The same category `sabotage` itself accepts, so that a party is never
+      // sent at something the verb will refuse on arrival: a standing
+      // structure, and not a field, which `doSabotage` excludes because
+      // nothing downstream of `Field` reads `ruined` yet.
+      if (!isStructure(building.def) || building.crop !== null) continue;
+      const dx = building.centerX - band.homeX;
+      const dy = building.centerY - band.homeY;
+      if (Math.sqrt(dx * dx + dy * dy) > RAID_RANGE) continue;
+      if (!ctx.sameRegion(band.homeX, band.homeY, building.centerX, building.centerY)) continue;
+
+      // Biggest granary, by what it could hold rather than by what it does:
+      // capacity is a fact about the building, which anybody can see, and
+      // contents are a fact about the band that owns it, which nobody here
+      // has been told.
+      if (rob && building.def.storage >= RAID_GRANARY && building.def.storage > plunderWorth) {
+        plunderWorth = building.def.storage;
+        plunder = building;
+      }
+      if (building.def.workTicks > damageWorth) {
+        damageWorth = building.def.workTicks;
+        damage = building;
+      }
+    }
+    return plunder ?? damage;
+  }
+
+  /**
+   * The second reason to raid, M11 phase 14d (owner's note 7): something the
+   * band needs and does not have on its own ground, which it has *seen* on a
+   * neighbour's. Asked only when no grudge is bad enough for the first reason,
+   * so a band at war raids for the war and a band merely short of flint goes
+   * and takes some.
+   *
+   * Not a raid on stores: what is in a rival's pit is unknown and unknowable
+   * from outside, and flint does not sit in a granary. The party is sent onto
+   * the other band's ground to take the thing itself from where it grows —
+   * which is exactly where a frightened band defends (phase 14b's territorial
+   * route), so the need is what brings the two peoples face to face.
+   *
+   * The same brooding clock, quorum and party as a grudge raid, and never
+   * against a band this one is on good terms with (`NEED_RAID_STANDING`).
+   * Deterministic: which patch is chosen is the nearest known one, by a fixed
+   * scan of the map.
+   */
+  private considerNeedRaid(
+    band: Band, members: Person[], chief: Person, ctx: BandContext, outcastBandId: number | undefined
+  ): void {
+    const needed = neededKinds(members);
+    const missing = needed.filter(kind =>
+      ctx.bandMaps.known(band.id, kind, band.homeX, band.homeY, NEAR_GROUND).length === 0);
+    if (missing.length === 0) return;
+
+    let best: { node: ResourceNode; victimId: number; distance: number } | null = null;
+    for (const other of ctx.bandRelations.touching(band.id)) {
+      if (other === band.id || other === outcastBandId) continue;
+      if (ctx.bandRelations.standing(band.id, other) >= NEED_RAID_STANDING) continue;
+      const theirs = this.bandHomes.get(other);
+      if (!theirs) continue;
+      for (const kind of missing) {
+        for (const cell of ctx.bandMaps.known(band.id, kind, theirs.x, theirs.y, TERRITORY_RADIUS)) {
+          const distance = Math.hypot(cell.x - band.homeX, cell.y - band.homeY);
+          if (distance > RAID_RANGE || (best && distance >= best.distance)) continue;
+          if (!ctx.sameRegion(band.homeX, band.homeY, cell.x, cell.y)) continue;
+          const node = ctx.nodeHash.findNearest(cell.x, cell.y, MAP_CELL_REACH,
+            n => n.kind === kind && !n.depleted);
+          if (node) best = { node, victimId: other, distance };
+        }
+      }
+    }
+    if (!best) {
+      telemetry.count('raid_for_need_nowhere');
+      return;
+    }
+
+    this.raidConsidered.set(band.id, ctx.day);
+    const party = warParty(chief, members, ctx.relationships, RAID_PARTY_MAX);
+    if (party.length + 1 < RAID_QUORUM) {
+      telemetry.count('raid_never_raised');
+      return;
+    }
+    telemetry.count('raid_called');
+    telemetry.count('raid_for_need');
+    telemetry.count('raid_for_need_' + best.node.kind);
+    let joined = 0;
+    for (const member of party) {
+      if (!this.fitForOrders(chief, member)) continue;
+      if (ctx.command(chief, member, 'gather', { nodeId: best.node.id })) joined++;
+    }
+    telemetry.count('raid_joined', joined);
+    ctx.command(chief, chief, 'gather', { nodeId: best.node.id });
+
+    const what = t(ITEMS[best.node.def.itemId]?.label ?? best.node.def.itemId).toLowerCase();
+    const victim = this.bandName(best.victimId);
+    chief.chronicle.push({
+      tick: ctx.tick,
+      ageDays: chief.age,
+      text: t("led a party onto the {band}'s ground for {what}", { band: victim, what }),
+      kind: 'did',
+    });
+    ctx.onInsight(chief, t("leads a party onto the {band}'s ground for {what}", { band: victim, what }),
+      'setback');
+  }
+
+  /** A band's name, for a chronicle line. 'strangers' for a band that has gone. */
+  private bandName(bandId: number): string {
+    return this.bandNames.get(bandId) ?? 'strangers';
   }
 
   // -------------------------------------------------------------------------
@@ -1086,25 +1541,42 @@ export class BandSystem {
   // -------------------------------------------------------------------------
 
   /**
-   * Foreign faces near camp cost a band's opinion of that other band —
-   * scaled by how hungry this band is. M11 phase 7b's fourth engine, and the
-   * one the plan names as closing the old `// later, claim territory` TODO
-   * without any new mechanic: `pantryPressureOf` already answers "how
-   * pinched is this band for food", and multiplying an intrusion by it is
-   * the whole of "a well-fed band shrugs off an intrusion; a hungry one does
-   * not."
+   * Foreign faces on a band's ground cost its opinion of their band — scaled
+   * by how hungry this band is. M11 phase 7b's fourth engine: "a well-fed
+   * band shrugs off an intrusion; a hungry one does not."
+   *
+   * **M11 phase 14c fixed two defects in it.**
+   *
+   * - **It was a sensor.** It counted every foreigner within
+   *   `TERRITORY_RADIUS` of camp through the people hash, whether or not
+   *   anybody from the band was there to see them — against the owner's rule
+   *   that nothing is known that was not seen or told. It now reads
+   *   `ctx.sightings`, which only a member's own eyes write (`sightIntruders`).
+   * - **Its sign was backwards.** The comment above has always said a
+   *   *hungry* band resents intruders, and the code multiplied by
+   *   `pantryPressureOf`, which is how *full* the stores are: a band with
+   *   empty granaries resented nothing, which is exactly the scarcity `lean`
+   *   exists to create. The comment was the intent — it is the one the M11
+   *   plan quotes — so the code now reads how empty the stores are. The other
+   *   rule was measured too; see the changelog.
+   *
+   * A band with no granary at all still shrugs: there is no pantry to read, and
+   * guessing hunger from somewhere else would be a second answer to a
+   * question `pantryPressureOf` already owns.
    */
   private considerTerritory(
     band: Band, ctx: BandContext, outcastBandId: number | undefined
   ): void {
-    const pressure = this.pantryPressureOf(
-      ctx.buildings.filter(b => b.ownerBandId === band.id && b.complete && b.def.storage >= 100));
+    const stores = ctx.buildings.filter(
+      b => b.ownerBandId === band.id && b.complete && b.def.storage >= 100);
+    if (stores.length === 0) return;
+    const pressure = 1 - this.pantryPressureOf(stores);
     if (pressure <= 0) return;
 
     const byBand = new Map<number, number>();
-    for (const person of ctx.peopleHash.queryRadius(band.homeX, band.homeY, TERRITORY_RADIUS)) {
-      if (!person.alive || person.bandId === band.id || person.bandId === outcastBandId) continue;
-      byBand.set(person.bandId, (byBand.get(person.bandId) ?? 0) + 1);
+    for (const seen of ctx.sightings.get(band.id)?.values() ?? []) {
+      if (seen.bandId === band.id || seen.bandId === outcastBandId) continue;
+      byBand.set(seen.bandId, (byBand.get(seen.bandId) ?? 0) + 1);
     }
 
     for (const [otherBandId, count] of byBand) {

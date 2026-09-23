@@ -23,13 +23,33 @@
 import type { Person } from '../sim/entities/Person.ts';
 import { ADULT_YEARS, ELDER_YEARS } from '../sim/entities/Person.ts';
 import { EXPRESSIONS, type Expression } from '../sim/core/Mood.ts';
+import { OUTCAST_BAND_ID_BASE } from '../sim/core/Simulation.ts';
 
 /** One cell in the atlas, square, at a resolution above the zoom ceiling
  * (`main.ts`'s wheel handler clamps to 80 px/tile) so nothing is ever drawn
  * larger than it was baked. */
 const CELL = 96;
 
-export const BAND_COLORS = ['#3b6ea8', '#a83b52', '#7a4ea8', '#a8843b', '#3ba88a', '#a83b8f'];
+/**
+ * One colour per tribe, for as many tribes as `population.bands` allows (8),
+ * and a neutral grey last for the outcasts.
+ *
+ * M11 phase 12c. There were six for up to eight tribes, so the seventh and
+ * eighth wore the first two's colours, and the outcast band (id 1000 and up)
+ * took whichever its id landed on modulo six — a cast-out man dressed as the
+ * tribe that threw him out. Read through `bandColorIndex`, never by `%`.
+ */
+export const BAND_COLORS = [
+  '#3b6ea8', '#a83b52', '#7a4ea8', '#a8843b', '#3ba88a', '#a83b8f', '#6f9a3b', '#a8603b',
+  '#7d7d7d',
+];
+
+const OUTCAST_COLOR_INDEX = BAND_COLORS.length - 1;
+
+/** Which `BAND_COLORS` entry a band wears. */
+export function bandColorIndex(bandId: number): number {
+  return bandId >= OUTCAST_BAND_ID_BASE ? OUTCAST_COLOR_INDEX : bandId % OUTCAST_COLOR_INDEX;
+}
 
 export type SizeClass = 'infant' | 'child' | 'adolescent' | 'adult' | 'elder';
 const SIZE_CLASSES: readonly SizeClass[] = ['infant', 'child', 'adolescent', 'adult', 'elder'];

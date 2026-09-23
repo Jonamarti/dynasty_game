@@ -3,6 +3,176 @@
 As of 2026-09-22. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 14 (fear), 2026-09-23
+
+### The phase gate is only partly met
+
+Measured at twenty seeds each, the build before phase 14 against the build
+after 14f (all numbers in [changelog.md](changelog.md)):
+
+| | `lean` before | after | `century` before | after |
+|---|---|---|---|---|
+| cross-band blows within 20 tiles of a camp | 31% | 43% | 38% | 41% |
+| seeds whose peoples drift apart after incidents | 7/20 | 11/20 | 11/20 | 10/20 |
+
+Violence has moved toward the camps, as the note asks, and fewer people die
+of it, but `violence-concentrates` sets its floor at 50% and neither
+scenario reaches it; `peoples-drift-apart` is a coin in `century` before and
+after. On the single `lean` seed both checks still fail. They were not tuned
+to pass (`AGENTS.md`). What still lands far from home is revenge and
+predation between people who meet while ranging, and the range filter
+(`homeRange`) only begins at a quarter of fear. Phase 15's escalation ladder
+is the next lever; measure these two again after it.
+
+### Well-fed peoples stopped taking sides, since 14c
+
+`bands-take-sides` (spread between the friendliest and most hostile pair
+over 20 points) now fails on `farmers`, `herders` and `stewards`. Those
+peoples used to resent each other daily because the territory engine counted
+every stranger within forty tiles, and it did so hardest when their granaries
+were fullest — the backwards sign 14c fixed. With the sign as its own
+comment always said, a well-fed people shrugs off a neighbour, and those
+three worlds are well fed. `lean`, the scarce one, still divides. Whether
+peace between full granaries is the right answer is a design question for the
+owner — the project's arc is toward conflict — and not something to recover
+by retuning the engine back.
+
+### A warning is started far more often than it is finished
+
+On `lean`, `warn` holds 1,323 person-ticks and completes 10 times. The
+intruder usually walks out of the inner third while the defender is still
+walking up, which is a warning working without being spoken, but it also
+means the grace-then-strike half of the route rarely comes round
+(`defend_territory_chosen` 44). Not tuned: phase 15b's ladder rewrites this.
+
+### The raid for what a band lacks is rare
+
+It needs a kind missing from a band's near ground *and* seen on the ground of
+a people it is not on good terms with within a day's march. Over the whole
+forty-tile territory that never happened once in the matrix; over the inner
+half it fires a handful of times on `lean` (6 in one run, mostly clay) and
+not at all on `century`. It is the one reader of `BandMaps`; a richer idea of
+"need" (what a band is short of, not what it lacks entirely) is the obvious
+next step and belongs with M12's use of the map.
+
+## Found shipping the Spanish translation, 2026-09-23
+
+Rough edges of [the translation pass](changelog.md), left on purpose. None of
+them is a Spanish-only defect that English does not also have.
+
+### A line written before a language switch stays in its language
+
+The simulation writes some sentences as they happen — a line in somebody's
+life, an insight, a refusal — and writes them in the language set at that
+moment (see the header of `src/i18n/i18n.ts` for why). Switch language
+mid-game and the *Life* tab is bilingual. So are band names: a world generated
+in Spanish has "banda Korak", and switching to English does not rename it.
+Starting the next world in the new language is the whole cure. Lines that are
+re-derived on reading — your own deeds (13f), memories of other people — do
+follow the switch.
+
+### English output keeps three small grammar slips, so that it stays byte-identical
+
+The pass changed no English. So "a older man" (a stranger's description),
+"built a apple…"-style articles from `'a ' + label`, and "Pick acorns" built
+by pluralising an item id are all still there in English, while Spanish, which
+has its own templates, reads correctly. Likewise English floaters say "ate
+raw_meat" and a heap of one kind of goods is labelled by its id; Spanish shows
+the label. Each is a one-line fix that moves English output, and belongs in a
+commit that says so.
+
+### Spanish uses the masculine for "them" where the subject's sex is not to hand
+
+Sentences built around the player's view of a stranger ("Tendrías que
+conocerle mejor…") and the ones written with no person in reach take the
+grammatical masculine. Where the sentence has a person — temperament, family,
+the stranger's own description, spark stories — it agrees with them through
+`{g:o|a}`.
+
+## Found triaging the owner's notes of 2026-09-22
+
+All scheduled in [m11_block_v_plan.md](m11_block_v_plan.md). Each entry leaves
+this list, for [changelog.md](changelog.md), in the commit that fixes it.
+
+### Two checks went red when NPC attacks stopped being lost (12b)
+
+When 12b's second commit stopped NPCs losing every attack they scored between
+nine and twelve tiles, two single-run checks turned red. Neither is chased
+here, on the plan's instruction that the answer to more violence is phase 14
+rather than a lower ceiling in `doAttack`.
+
+- **`feasts` / `kin-outrank-strangers`**: household 19.3, band −26.4,
+  outsider −24.5 — people now think worse of their own band than of
+  strangers. In the same run blows landed went from 114 to 192, `attack` ticks
+  from 5,215 to 8,844 and murders from 4 to 7. That the extra blows are what
+  soured the band is likely but **not confirmed**: nothing yet splits
+  assaults by whether the two were of one band.
+- **`craft` / `pictures-are-painted`**: one painting in the previous build,
+  none now. A one-event check of the kind 17d is to deal with.
+
+Also: `lean`'s `perf-budget` read 1,993 steps/s against its floor of 2,000 in
+the same matrix — wall clock, 17d.
+
+### M11 phase 4 shipped the reverse of its own plan
+
+The plan said a rival's building is "allowed all the same" and that `seen`
+only decides whether the use becomes a witnessed deed the witness can act on.
+`mayUse` returns `allowed: false` whenever an owner is in sight and
+`useProperty` abandons with `property_guarded`, so a watched store is as
+impossible to use as it was under the membership test phase 4 replaced. The
+owner's note 6 asks for what the plan asked for. Phase 15a.
+
+### Two lines of your own chronicle still carry a name as written
+
+13f re-writes every line `emit` wrote from its ids, through `Knowledge`, when
+the *Life* tab shows it. Lines written elsewhere are still finished text, and
+two of them name a person: `Simulation.command`'s *"refused X over Y"* and
+`assignJob`'s *"refused to take up work for X"*. Both name the leader who gave
+the order, who is in practice always someone the refuser knows — a chief or a
+household head of their own band — so no stranger's name is known to leak
+this way; but nothing enforces it. Give them a `deed`-style id if a foreign
+leader can ever command.
+
+### `perf-budget` is a wall-clock check and it flakes hard under matrix load
+
+The same build, the same scenario, the same machine: `lean` reports **2,071
+steps/s** run on its own with `npm run sim:check -- --scenario lean` and
+**1,626 steps/s** inside the `npm run sim:check:all` matrix a minute later.
+That is a 21% swing with nothing changed but what else the machine was doing.
+`crowded` fails the 2,000 floor on **every build measured**, including
+`f72493b~1` from before phase 11b existed, and `century` and `craft` failed it
+in one matrix run and passed it comfortably in another.
+
+This matters because the check reads as a code regression and is usually not
+one. Anyone bisecting a `perf-budget` failure should re-measure the single
+scenario on its own, three times, before believing it — and should not tune
+anything on a matrix number.
+
+### Phase 11b did cost `lean` real steps/s, and the cause is the world, not the code
+
+Separately from the flake above, and measured in isolation three runs each:
+`lean` ran at 2,042-2,071 steps/s before phase 11b and 1,778-1,935 after. The
+obvious suspect was the scorer — `Brain`'s sabotage loop calls `mayUse`, which
+is a spatial query, once per candidate building per person thinking, and on
+`lean` all six band pairs reach open hostility so the cheap `bandHostility`
+gate stops nobody: around a hundred and fifty spatial queries a tick.
+
+**It is not that.** Hoisting the whole witness question out of the per-person
+loop and answering it once per building per tick in `Simulation` — the same
+answer, since in that loop `mayUse` has no dependence on who is asking — moved
+`lean` from about 1,870 to about 1,935, which is inside the noise band the
+entry above describes. The change was reverted rather than shipped, because
+shipping an optimisation whose benefit cannot be demonstrated, at the cost of
+diverging four scenarios, is the thing this project's docs argue against.
+
+What actually costs the time is the world phase 11b creates. Same scenario,
+before and after: `attack` **1,491 → 10,761** action ticks, `flee` **1,712 →
+12,113**, murders **3 → 22**. A witnessed `sabotage` is worth −17 and it
+drives whole bands hostile, so wrecking huts buys a great deal more fighting,
+fleeing and pathing. That is the design working — conflict is the destination
+— and it is simply not free. If the floor has to move for `lean`, it should
+move for that stated reason and not be papered over with a micro-optimisation.
+
 ## Found shipping M11 phase 11b, 2026-09-22
 
 ### A field cannot be sabotaged, because ruining one would currently do nothing
@@ -20,6 +190,7 @@ in. Whoever picks this up needs to decide what a ruined field actually means
 ground itself worse for a season — and gate `doSow`/`doReap` on `!ruined`
 once that is decided. `Brain`'s sabotage scoring and `ActionCatalog`'s menu
 both carry the same exclusion and both need it lifted together.
+**Scheduled as Block V phase 17c.**
 
 ### Two single-seed checks flip when `sabotage` is added to `Brain`'s candidates
 
@@ -165,6 +336,9 @@ anyone reaches for a second conspiracy mechanism and writes a second copy of
 this instead of a second caller of it.
 
 ### The plan's four new `simcheck` checks were not added
+
+**Scheduled as Block V phase 17b**, each verified failing on the build before
+5c-5f or dropped with the reason stated.
 
 `m11_plan.md`'s gate for this block asks for `exile-is-reachable`,
 `factions-form`, `gossip-is-aimed` and `the-cast-out-find-a-home`, each

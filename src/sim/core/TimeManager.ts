@@ -7,6 +7,7 @@
  * that a cold winter forces.
  */
 import type { TimeConfig } from './Config.ts';
+import { t, tc } from '../../i18n/i18n.ts';
 
 export const SEASONS = ['spring', 'summer', 'autumn', 'winter'] as const;
 export type Season = (typeof SEASONS)[number];
@@ -121,7 +122,11 @@ export class TimeManager {
   label(): string {
     const hour = Math.floor(this.dayFraction * 24);
     const minute = Math.floor((this.dayFraction * 24 - hour) * 60);
-    return `Y${this.year} ${this.season} d${this.day % this.daysPerYear} ` +
-      `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    return t('Y{year} {season} d{day} {time}', {
+      year: this.year,
+      season: tc('season', this.season),
+      day: this.day % this.daysPerYear,
+      time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+    });
   }
 }

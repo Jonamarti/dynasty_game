@@ -12,6 +12,9 @@
  */
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
+import { knowledgeOfPerson } from '../sim/social/Knowledge.ts';
+import { BUILDINGS } from '../sim/entities/Building.ts';
+import { t, genderOf } from '../i18n/i18n.ts';
 
 export class SuccessionOverlay {
   private root: HTMLElement;
@@ -50,42 +53,50 @@ export class SuccessionOverlay {
       .filter(entry => entry.kind === 'milestone')
       .slice(-6);
     const deeds = died.chronicle.length;
+    const reckoning = reckon(sim, died);
 
     const relation = !heir ? '' :
-      died.childIds.includes(heir.id) ? (heir.sex === 'female' ? 'their daughter' : 'their son') :
-      heir.id === died.spouseId ? 'their widow' :
-      'their kin';
+      died.childIds.includes(heir.id) ? (heir.sex === 'female' ? t('their daughter') : t('their son')) :
+      heir.id === died.spouseId ? t('their widow', { g: genderOf(heir) }) :
+      t('their kin');
+    const g = { g: genderOf(died) };
 
     this.root.innerHTML =
       '<div class="succession-card">' +
-      '<div class="succession-death">' + escapeHtml(died.fullName) + ' has died</div>' +
-      '<div class="succession-cause">' + escapeHtml(died.causeOfDeath ?? 'unknown causes') +
-        ', aged ' + died.years + '</div>' +
+      '<div class="succession-death">' + escapeHtml(t('{name} has died', { name: died.fullName, ...g })) + '</div>' +
+      '<div class="succession-cause">' + escapeHtml(t('{cause}, aged {n}', {
+        cause: causeInWords(died.causeOfDeath), n: died.years,
+      })) + '</div>' +
 
       (milestones.length > 0
-        ? '<div class="succession-section">Their life</div>' +
+        ? '<div class="succession-section">' + t('Their life') + '</div>' +
           milestones.map(entry =>
             '<div class="succession-entry"><span>' +
-            Math.floor(entry.ageDays / 80) + 'y</span>' +
+            t('{n}y', { n: Math.floor(entry.ageDays / 80) }) + '</span>' +
             escapeHtml(entry.text) + '</div>').join('')
-        : '<div class="succession-quiet">A quiet life, and no record of it.</div>') +
+        : '<div class="succession-quiet">' + t('A quiet life, and no record of it.') + '</div>') +
 
-      '<div class="succession-tally">' + deeds +
-        (deeds === 1 ? ' thing' : ' things') + ' remembered' +
-        (household ? ' · ' + escapeHtml(household.name) + ' household' : '') +
+      reckoning.map(line =>
+        '<div class="succession-entry succession-reckoning"><span>' + escapeHtml(line.label) +
+        '</span>' + escapeHtml(line.text) + '</div>').join('') +
+
+      '<div class="succession-tally">' + (deeds === 1
+        ? t('{n} thing remembered', { n: 1 })
+        : t('{n} things remembered', { n: deeds })) +
+        (household ? ' · ' + escapeHtml(t('{name} household', { name: household.name })) : '') +
       '</div>' +
 
       (heir
-        ? '<div class="succession-section">The line continues</div>' +
+        ? '<div class="succession-section">' + t('The line continues') + '</div>' +
           '<div class="succession-heir">' + escapeHtml(heir.fullName) + '</div>' +
-          '<div class="succession-cause">' + escapeHtml(relation) + ', aged ' + heir.years +
+          '<div class="succession-cause">' + escapeHtml(t('{cause}, aged {n}', { cause: relation, n: heir.years })) +
             '</div>' +
-          '<button class="hud-button succession-go">Continue as ' +
-            escapeHtml(heir.name) + '</button>'
-        : '<div class="succession-section">No heir</div>' +
-          '<div class="succession-quiet">They left nobody behind. You will carry on ' +
-          'as someone else of their band.</div>' +
-          '<button class="hud-button succession-go">Carry on</button>') +
+          '<button class="hud-button succession-go">' +
+            escapeHtml(t('Continue as {name}', { name: heir.name })) + '</button>'
+        : '<div class="succession-section">' + t('No heir') + '</div>' +
+          '<div class="succession-quiet">' +
+          t('They left nobody behind. You will carry on as someone else of their band.') + '</div>' +
+          '<button class="hud-button succession-go">' + t('Carry on') + '</button>') +
       '</div>';
 
     this.root.hidden = false;
@@ -103,6 +114,55 @@ export class SuccessionOverlay {
     this.root.hidden = true;
     this.root.innerHTML = '';
   }
+}
+
+/**
+ * M11 phase 13e (owner's note 2): who they killed and what they raised.
+ *
+ * Neither is a milestone, so the six milestones above never showed either,
+ * and a life that took three others or put up half the camp read the same as
+ * one that did neither. Both are counted off the chronicle, from the fields
+ * `emit` and a finished build stamp on their lines, with no new state. The
+ * victims are named as the dead person knew them — through `Knowledge`,
+ * because a stranger killed in the dark is still a stranger.
+ */
+function reckon(sim: Simulation, died: Person): { label: string; text: string }[] {
+  const lines: { label: string; text: string }[] = [];
+
+  const killed: string[] = [];
+  for (const entry of died.chronicle) {
+    if (entry.kind !== 'did' || entry.deed?.type !== 'murder' || entry.deed.targetId === null) continue;
+    const victim = sim.peopleById.get(entry.deed.targetId);
+    killed.push(victim ? knowledgeOfPerson(died, victim, sim.relationships).displayName : t('someone'));
+  }
+  if (killed.length > 0) lines.push({ label: t('killed'), text: killed.join(', ') });
+
+  const raised = new Map<string, number>();
+  for (const entry of died.chronicle) {
+    if (entry.built) raised.set(entry.built, (raised.get(entry.built) ?? 0) + 1);
+  }
+  if (raised.size > 0) {
+    lines.push({
+      label: t('raised'),
+      text: [...raised].map(([id, n]) =>
+        t(BUILDINGS[id]?.label ?? id).toLowerCase() + (n > 1 ? ' ×' + n : '')).join(', '),
+    });
+  }
+  return lines;
+}
+
+/**
+ * The cause of death, in the player's language.
+ *
+ * `causeOfDeath` stays English in the simulation — `tools/seeds.ts` counts the
+ * starved by comparing it with `'starvation'` — so it is translated here, where
+ * it is shown. The one composed cause is a killing, which carries a name.
+ */
+function causeInWords(cause: string | null): string {
+  if (cause === null) return t('unknown causes');
+  const killer = /^killed by (.*)$/.exec(cause);
+  if (killer) return t('killed by {name}', { name: killer[1]! });
+  return t(cause);
 }
 
 function escapeHtml(value: string): string {

@@ -9,6 +9,7 @@
  * opposite conclusions, and an outlaw can find somewhere their deeds are
  * tolerated.
  */
+import { t } from '../../i18n/i18n.ts';
 
 /**
  * `talk` and `trade` used to be here, and neither had a reader worth the
@@ -174,22 +175,23 @@ export function describeEvent(
   actorName: string,
   targetName: string | null
 ): string {
-  const target = targetName ?? 'someone';
+  const target = targetName ?? t('someone');
+  const who = { actor: actorName, target };
   switch (type) {
-    case 'gift': return actorName + ' gave ' + target + ' a gift';
-    case 'share_food': return actorName + ' shared food with ' + target;
-    case 'trade': return actorName + ' traded with ' + target;
-    case 'help': return actorName + ' helped ' + target;
-    case 'teach': return actorName + ' taught ' + target;
-    case 'praise': return actorName + ' spoke well of ' + target;
-    case 'slander': return actorName + ' spoke against ' + target;
+    case 'gift': return t('{actor} gave {target} a gift', who);
+    case 'share_food': return t('{actor} shared food with {target}', who);
+    case 'trade': return t('{actor} traded with {target}', who);
+    case 'help': return t('{actor} helped {target}', who);
+    case 'teach': return t('{actor} taught {target}', who);
+    case 'praise': return t('{actor} spoke well of {target}', who);
+    case 'slander': return t('{actor} spoke against {target}', who);
     case 'theft': return targetName
-      ? actorName + ' stole from ' + target
-      : actorName + ' stole from a store';
-    case 'trespass': return actorName + ' used what was not theirs';
-    case 'sabotage': return actorName + ' wrecked what was not theirs';
-    case 'assault': return actorName + ' attacked ' + target;
-    case 'murder': return actorName + ' killed ' + target;
-    case 'threaten': return actorName + ' threatened ' + target;
+      ? t('{actor} stole from {target}', who)
+      : t('{actor} stole from a store', who);
+    case 'trespass': return t('{actor} used what was not theirs', who);
+    case 'sabotage': return t('{actor} wrecked what was not theirs', who);
+    case 'assault': return t('{actor} attacked {target}', who);
+    case 'murder': return t('{actor} killed {target}', who);
+    case 'threaten': return t('{actor} threatened {target}', who);
   }
 }

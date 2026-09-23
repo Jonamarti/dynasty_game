@@ -32,6 +32,8 @@ import {
 } from '../sim/core/Difficulty.ts';
 import { sliderRow, type SliderRow } from './SliderRow.ts';
 import { defaultSettings, saveSettings, type Settings } from './SettingsStore.ts';
+import { t, onLanguageChange } from '../i18n/i18n.ts';
+import { languageSwitchHtml, handleLanguageClick } from './LanguageSwitch.ts';
 
 /**
  * Where the screen was opened from, which changes what leaving it means.
@@ -86,12 +88,24 @@ export class SettingsOverlay {
 
     this.root.addEventListener('click', event => {
       const target = event.target as HTMLElement;
+      if (handleLanguageClick(target)) return;
       const act = target.closest<HTMLElement>('[data-act]')?.dataset.act;
       if (act) this.onAction(act);
       // A click on the backdrop leaves, but only where leaving is a thing that
       // can happen: on the start screen there is no game behind it to fall back
       // into, so a stray click must not skip past the settings.
       else if (target === this.root && this.mode === 'menu') this.callbacks.onBack();
+    });
+
+    // Every label on this screen is written once, in `build`. A new language
+    // throws the markup away; the next `open` builds it again, and a screen
+    // that is open right now is rebuilt in place.
+    onLanguageChange(() => {
+      if (!this.built) return;
+      this.built = false;
+      this.rows.clear();
+      this.root.innerHTML = '';
+      if (this.isOpen && this.sim) this.open(this.sim, this.settings, this.mode);
     });
   }
 
@@ -109,10 +123,10 @@ export class SettingsOverlay {
     this.mode = mode;
     this.settings = { ...settings, overrides: { ...settings.overrides } };
     if (!this.built) this.build();
-    this.titleEl.textContent = mode === 'start' ? 'Before you begin' : 'Settings';
+    this.titleEl.textContent = mode === 'start' ? t('Before you begin') : t('Settings');
     this.subtitle.textContent = mode === 'start'
-      ? 'seed ' + String(sim.config.seed)
-      : 'seed ' + String(sim.config.seed) + ' · ' + sim.time.label();
+      ? t('seed {seed}', { seed: String(sim.config.seed) })
+      : t('seed {seed}', { seed: String(sim.config.seed) }) + ' · ' + sim.time.label();
     this.root.classList.toggle('is-start', mode === 'start');
     this.newWorldPane.hidden = true;
     this.undoStrip.hidden = true;
@@ -140,9 +154,10 @@ export class SettingsOverlay {
 
     const head = div('settings-head');
     head.innerHTML =
-      '<b class="settings-title">Settings</b>' +
+      '<b class="settings-title">' + t('Settings') + '</b>' +
       '<span class="settings-sub"></span>' +
-      '<button class="hud-button settings-back" type="button" data-act="back">back</button>';
+      languageSwitchHtml() +
+      '<button class="hud-button settings-back" type="button" data-act="back">' + t('back') + '</button>';
     this.titleEl = head.querySelector('.settings-title') as HTMLElement;
     this.subtitle = head.querySelector('.settings-sub') as HTMLElement;
     card.appendChild(head);
@@ -150,7 +165,7 @@ export class SettingsOverlay {
     // --- the difficulty slider ---------------------------------------------
     const box = div('settings-difficulty');
     const label = div('settings-difficulty-label');
-    label.textContent = 'Difficulty';
+    label.textContent = t('Difficulty');
     box.appendChild(label);
 
     this.difficulty = document.createElement('input');
@@ -177,7 +192,7 @@ export class SettingsOverlay {
       const span = document.createElement('span');
       span.className = 'settings-anchor';
       span.dataset.anchor = id;
-      span.textContent = DIFFICULTY_LABELS[id];
+      span.textContent = t(DIFFICULTY_LABELS[id]);
       this.anchorRow.appendChild(span);
     }
     box.appendChild(this.anchorRow);
@@ -201,7 +216,7 @@ export class SettingsOverlay {
       if (members.length === 0) continue;
       const section = div('settings-group');
       const heading = div('settings-group-head');
-      heading.innerHTML = '<b>' + GROUP_LABELS[group] + '</b>';
+      heading.innerHTML = '<b>' + t(GROUP_LABELS[group]) + '</b>';
       section.appendChild(heading);
 
       // The four work-limit fields are the sharpest edge on this screen — a need
@@ -214,7 +229,7 @@ export class SettingsOverlay {
         const details = document.createElement('details');
         details.className = 'settings-advanced';
         const summary = document.createElement('summary');
-        summary.textContent = 'Advanced — where work stops';
+        summary.textContent = t('Advanced — where work stops');
         details.appendChild(summary);
         for (const tunable of advanced) details.appendChild(this.makeRow(tunable));
         section.appendChild(details);
@@ -231,13 +246,13 @@ export class SettingsOverlay {
     this.newWorldPane = div('settings-newworld');
     this.newWorldPane.hidden = true;
     this.newWorldPane.innerHTML =
-      '<div class="settings-newworld-warn">This world is not saved anywhere. ' +
-      'Starting another one ends it.</div>' +
-      '<label class="settings-newworld-seed">Seed ' +
+      '<div class="settings-newworld-warn">' +
+      t('This world is not saved anywhere. Starting another one ends it.') + '</div>' +
+      '<label class="settings-newworld-seed">' + t('Seed') + ' ' +
       '<input type="text" class="settings-seed" /></label>' +
       '<div class="settings-newworld-acts">' +
-      '<button class="hud-button is-primary" type="button" data-act="newworld-go">Start</button>' +
-      '<button class="hud-button" type="button" data-act="newworld-cancel">Cancel</button>' +
+      '<button class="hud-button is-primary" type="button" data-act="newworld-go">' + t('Start') + '</button>' +
+      '<button class="hud-button" type="button" data-act="newworld-cancel">' + t('Cancel') + '</button>' +
       '</div>';
     this.seedBox = this.newWorldPane.querySelector('.settings-seed') as HTMLInputElement;
     card.appendChild(this.newWorldPane);
@@ -247,11 +262,11 @@ export class SettingsOverlay {
     // has been shown yet, and "Back" has nowhere to go.
     const actions = div('settings-actions');
     actions.innerHTML =
-      '<button class="hud-button settings-menu-act" type="button" data-act="reset">Reset everything to Normal</button>' +
-      '<button class="hud-button is-primary settings-menu-act" type="button" data-act="newworld">New world with these settings</button>' +
-      '<button class="hud-button settings-menu-act" type="button" data-act="back">Back</button>' +
-      '<button class="hud-button settings-start-act" type="button" data-act="reset">Reset to Normal</button>' +
-      '<button class="hud-button is-primary settings-start-act" type="button" data-act="begin">Begin</button>';
+      '<button class="hud-button settings-menu-act" type="button" data-act="reset">' + t('Reset everything to Normal') + '</button>' +
+      '<button class="hud-button is-primary settings-menu-act" type="button" data-act="newworld">' + t('New world with these settings') + '</button>' +
+      '<button class="hud-button settings-menu-act" type="button" data-act="back">' + t('Back') + '</button>' +
+      '<button class="hud-button settings-start-act" type="button" data-act="reset">' + t('Reset to Normal') + '</button>' +
+      '<button class="hud-button is-primary settings-start-act" type="button" data-act="begin">' + t('Begin') + '</button>';
     card.appendChild(actions);
 
     this.root.appendChild(card);
@@ -261,15 +276,15 @@ export class SettingsOverlay {
   private makeRow(tunable: Tunable): HTMLElement {
     const row = sliderRow(
       {
-        label: tunable.label,
-        hint: tunable.hint,
+        label: t(tunable.label),
+        hint: t(tunable.hint),
         min: tunable.min,
         max: tunable.max,
         step: tunable.step,
         places: tunable.places,
-        tag: tunable.restart ? 'new world' : undefined,
+        tag: tunable.restart ? t('new world') : undefined,
         tagTitle: tunable.restart
-          ? 'Spent when the world is generated — this only takes effect in a new one.'
+          ? t('Spent when the world is generated — this only takes effect in a new one.')
           : undefined,
       },
       // From the settings themselves, not from `sim.config`. On the start
@@ -332,9 +347,10 @@ export class SettingsOverlay {
     if (this.discarded) {
       this.undoStrip.hidden = false;
       this.undoStrip.innerHTML =
-        '<span>Replaced ' + had + (had === 1 ? ' setting' : ' settings') +
-        ' you had changed.</span>' +
-        '<button class="hud-button" type="button" data-act="undo">Undo</button>';
+        '<span>' + (had === 1
+          ? t('Replaced {n} setting you had changed.', { n: had })
+          : t('Replaced {n} settings you had changed.', { n: had })) + '</span>' +
+        '<button class="hud-button" type="button" data-act="undo">' + t('Undo') + '</button>';
     }
   }
 
@@ -420,13 +436,14 @@ export class SettingsOverlay {
 
   private refreshNotes(): void {
     const changed = Object.keys(this.settings.overrides).length;
-    const label = DIFFICULTY_LABELS[this.settings.preset];
+    const label = t(DIFFICULTY_LABELS[this.settings.preset]);
     this.presetNote.classList.toggle('is-custom', changed > 0);
     this.difficulty.classList.toggle('is-custom', changed > 0);
     this.presetNote.textContent = changed === 0
-      ? label + ' — ' + DIFFICULTY_NOTES[this.settings.preset]
-      : 'Custom — from ' + label + ', with ' + changed +
-        (changed === 1 ? ' setting changed.' : ' settings changed.');
+      ? label + ' — ' + t(DIFFICULTY_NOTES[this.settings.preset])
+      : changed === 1
+        ? t('Custom — from {label}, with {n} setting changed.', { label, n: changed })
+        : t('Custom — from {label}, with {n} settings changed.', { label, n: changed });
 
     // The player must be told which of their edits the world in front of them
     // cannot honour. A screen that accepts a number and quietly ignores it is
@@ -440,15 +457,15 @@ export class SettingsOverlay {
     }
     const anchors = valuesFor(this.settings.preset);
     const values = { ...anchors, ...this.settings.overrides };
-    const pending = TUNABLES.filter(t =>
-      t.restart && this.sim !== null &&
-      values[t.path] !== readPath(this.sim.config, t.path));
+    const pending = TUNABLES.filter(tunable =>
+      tunable.restart && this.sim !== null &&
+      values[tunable.path] !== readPath(this.sim.config, tunable.path));
     this.restartNote.hidden = pending.length === 0;
     if (pending.length > 0) {
-      this.restartNote.textContent =
-        pending.length + (pending.length === 1 ? ' setting' : ' settings') +
-        ' below (' + pending.map(t => t.label.toLowerCase()).join(', ') +
-        ') only take effect in a new world.';
+      const names = pending.map(tunable => t(tunable.label).toLowerCase()).join(', ');
+      this.restartNote.textContent = pending.length === 1
+        ? t('{n} setting below ({names}) only take effect in a new world.', { n: 1, names })
+        : t('{n} settings below ({names}) only take effect in a new world.', { n: pending.length, names });
     }
   }
 

@@ -24,9 +24,10 @@ import { TribeGraphOverlay } from './ui/TribeGraph.ts';
 import { PauseMenu } from './ui/PauseMenu.ts';
 import { SettingsOverlay } from './ui/Settings.ts';
 import {
-  configFrom, defaultSettings, loadAutonomy, loadSettings, saveAutonomy, saveSettings,
+  configFrom, defaultSettings, loadAutonomy, loadLanguage, loadSettings, saveAutonomy, saveSettings,
 } from './ui/SettingsStore.ts';
 import { AUTONOMY_LABELS, nextAutonomy, type Autonomy } from './sim/ai/Autonomy.ts';
+import { t, tc, setLanguage, language, onLanguageChange } from './i18n/i18n.ts';
 import { TUNABLES, readPath, valuesFor } from './sim/core/Difficulty.ts';
 import {
   availableActions, type ActionOption, type ActionTarget,
@@ -39,7 +40,7 @@ import { JOBS } from './sim/entities/Job.ts';
 import type { ItemPile } from './sim/entities/ItemPile.ts';
 import { describeEvent } from './sim/social/Events.ts';
 import {
-  knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree, knowledgeOfBuilding,
+  knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree, knowledgeOfBuilding, explainPropertyUse,
 } from './sim/social/Knowledge.ts';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement;
@@ -55,6 +56,18 @@ const hudRoot = document.getElementById('hud') as HTMLElement;
  * be standing.
  */
 const params = new URLSearchParams(location.search);
+
+// The language, before anything is built. The simulation writes some of its
+// own sentences as they happen — the first line of every founder's life is
+// written in the constructor below — so it has to be set before the world is.
+// `?lang=` overrides the stored choice, the way `?seed=` does, so a bug report
+// or a browser test can name the language it was seen in.
+setLanguage(params.get('lang') === 'es' || params.get('lang') === 'en'
+  ? params.get('lang') as 'es' | 'en'
+  : loadLanguage());
+document.documentElement.lang = language();
+onLanguageChange(next => { document.documentElement.lang = next; });
+
 const seedParam = params.get('seed');
 const seed: string | number = seedParam ?? Math.floor(Math.random() * 1e9);
 
@@ -110,7 +123,7 @@ const maxStepsPerFrame = sim.config.time.maxTicksPerFrame;
  */
 function worldWouldDiffer(): boolean {
   const values = { ...valuesFor(settings.preset), ...settings.overrides };
-  return TUNABLES.some(t => t.restart && values[t.path] !== readPath(sim.config, t.path));
+  return TUNABLES.some(tunable => tunable.restart && values[tunable.path] !== readPath(sim.config, tunable.path));
 }
 
 /**
@@ -235,7 +248,7 @@ const succession = new SuccessionOverlay(document.body, heir => {
   if (!heir) return;
   selected = { kind: 'person', person: heir };
   camera.recentre(heir.x, heir.y);
-  renderer.floaters.push(heir.x, heir.y, 'you are now ' + heir.name, {
+  renderer.floaters.push(heir.x, heir.y, t('you are now {name}', { name: heir.name }), {
     color: '#ffd35c', boxed: true, ttl: 4,
   });
 });
@@ -280,9 +293,11 @@ const hud = new Hud(hudRoot, {
     renderer.floaters.push(person.x, person.y,
       ok
         ? (job === null
-          ? person.name + ' is released from their work'
-          : person.name + ' takes up work as a ' + JOBS[job].label.toLowerCase())
-        : person.name + ' does not' + (why ? ': ' + why : ''),
+          ? t('{name} is released from their work', { name: person.name })
+          : t('{name} takes up work as a {job}', { name: person.name, job: t(JOBS[job].label).toLowerCase() }))
+        : (why
+          ? t('{name} does not: {why}', { name: person.name, why })
+          : t('{name} does not', { name: person.name })),
       { color: ok ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
   },
   onOpenMenu: () => { if (!menuOpen()) openMenu(); },
@@ -299,7 +314,7 @@ const hud = new Hud(hudRoot, {
     commanding = commanding?.id === person?.id ? null : person;
     if (commanding) {
       renderer.floaters.push(commanding.x, commanding.y,
-        'commanding ' + commanding.name, { color: '#7fd4ff', boxed: true });
+        t('commanding {name}', { name: commanding.name }), { color: '#7fd4ff', boxed: true });
     }
   },
   onAutonomy: mode => setAutonomy(mode),
@@ -319,6 +334,18 @@ const newGame = new NewGame(document.body, sim, person => {
   camera.snapTo(person.x, person.y);
   paused = false;
   hud.setPaused(false);
+}, {
+  // M11 phase 12c: how many tribes and how many in each, asked where the
+  // tribe is chosen. Recorded exactly as the settings screen's own `edit`
+  // records a field — a value equal to the difficulty's is no override — and
+  // spent through the same pre-start rebuild its Begin button uses.
+  change: (path, value) => {
+    if (value === valuesFor(settings.preset)[path]) delete settings.overrides[path];
+    else settings.overrides[path] = value;
+    saveSettings(settings);
+    if (worldWouldDiffer()) rebuildBeforeStart();
+  },
+  anchorOf: path => valuesFor(settings.preset)[path] ?? 0,
 });
 
 /**
@@ -429,19 +456,23 @@ function handleItemAction(
   const say = (text: string, good: boolean) =>
     renderer.floaters.push(person.x, person.y, text,
       { color: good ? '#7ddc96' : '#e66464', boxed: true });
-  const label = ITEMS[itemId]?.label ?? itemId;
+  const label = t(ITEMS[itemId]?.label ?? itemId);
+  // What the floaters call the item. English has always printed the id here,
+  // which for every item but raw meat is the label in lower case; a
+  // translation has no id to fall back on, so it takes the label.
+  const named = language() === 'en' ? itemId : label.toLowerCase();
 
   switch (verb) {
     case 'eat_item': {
       const eaten = sim.eatItem(person, itemId);
-      say(eaten ? 'ate ' + itemId : 'cannot eat that', eaten);
+      say(eaten ? t('ate {item}', { item: named }) : t('cannot eat that'), eaten);
       break;
     }
     case 'drop_item': {
-      quantityPicker.show(screenX, screenY, 'Drop ' + label.toLowerCase(),
+      quantityPicker.show(screenX, screenY, t('Drop {item}', { item: label.toLowerCase() }),
         person.inventory.count(itemId), count => {
           const dropped = sim.drop(person, itemId, count);
-          say(dropped ? 'dropped ' + itemId : 'nothing to drop', dropped !== null);
+          say(dropped ? t('dropped {item}', { item: named }) : t('nothing to drop'), dropped !== null);
         });
       break;
     }
@@ -452,12 +483,12 @@ function handleItemAction(
       const recipients = sim.peopleHash.queryRadius(person.x, person.y, 2.2)
         .filter(p => p.alive && p.id !== person.id);
       if (recipients.length === 0) {
-        say('nobody within reach to give it to', false);
+        say(t('nobody within reach to give it to'), false);
         break;
       }
 
       const giveTo = (other: Person) => {
-        quantityPicker.show(screenX, screenY, 'Give ' + label.toLowerCase(),
+        quantityPicker.show(screenX, screenY, t('Give {item}', { item: label.toLowerCase() }),
           person.inventory.count(itemId), count => {
             const given = sim.handOver(person, other, itemId, count);
             // A refusal says why — `handOver` sets `lastRefusal` when the
@@ -467,7 +498,9 @@ function handleItemAction(
             // triage found and this closes it.
             const reason = sim.lastRefusal;
             sim.lastRefusal = null;
-            say(given > 0 ? 'gave ' + given + ' to ' + other.name : (reason ?? 'could not give it'),
+            say(given > 0
+              ? t('gave {n} to {name}', { n: given, name: other.name })
+              : (reason ?? t('could not give it')),
               given > 0);
           });
       };
@@ -489,13 +522,13 @@ function handleItemAction(
     case 'store_item': {
       const store = sim.storeWithinReach(person);
       if (!store) {
-        say('no store within reach', false);
+        say(t('no store within reach'), false);
         break;
       }
-      quantityPicker.show(screenX, screenY, 'Store ' + label.toLowerCase(),
+      quantityPicker.show(screenX, screenY, t('Store {item}', { item: label.toLowerCase() }),
         person.inventory.count(itemId), count => {
           const stored = sim.storeItem(person, store, itemId, count);
-          say(stored > 0 ? 'stored ' + stored : 'no room in the store', stored > 0);
+          say(stored > 0 ? t('stored {n}', { n: stored }) : t('no room in the store'), stored > 0);
         });
       break;
     }
@@ -505,7 +538,7 @@ function handleItemAction(
 function possess(person: Person): void {
   sim.possess(person);
   selected = { kind: 'person', person };
-  renderer.floaters.push(person.x, person.y, 'you are now ' + person.name, {
+  renderer.floaters.push(person.x, person.y, t('you are now {name}', { name: person.name }), {
     color: '#ffd35c', boxed: true, ttl: 3,
   });
 }
@@ -531,9 +564,18 @@ function setAutonomy(mode: Autonomy, announce = true): void {
   hud.setAutonomy(mode);
   if (announce && sim.player) {
     renderer.floaters.push(sim.player.x, sim.player.y,
-      AUTONOMY_LABELS[mode].toLowerCase(), { color: '#9fd8a0', boxed: true, ttl: 2.4 });
+      t(AUTONOMY_LABELS[mode]).toLowerCase(), { color: '#9fd8a0', boxed: true, ttl: 2.4 });
   }
 }
+
+// A new language rebuilds the HUD's chrome; the overlays listen for themselves.
+// The bars are re-rendered here because only this file knows which is open.
+onLanguageChange(() => {
+  hud.relabel(paused, stepsPerSecond, sim.autonomy);
+  hud.renderBuildBar(sim, buildMode);
+  hud.renderCraftBar(sim, sim.player, craftMode);
+  hud.setCommanding(commanding);
+});
 
 // The stored preference, applied once the HUD exists to show it. Silently: the
 // player has not just chosen anything, and a floater on the first frame of every
@@ -869,12 +911,12 @@ function describeCandidate(observer: Person, target: ActionTarget): string {
     case 'person':
       return knowledgeOfPerson(observer, target.person!, sim.relationships).displayName;
     case 'node':
-      return target.node!.kind + ' — ' + knowledgeOfNode(observer, target.node!).estimate;
+      return tc('node', target.node!.kind) + ' — ' + knowledgeOfNode(observer, target.node!).estimate;
     case 'tree':
-      return target.tree!.def.label + ' — ' + knowledgeOfTree(observer, target.tree!).estimate;
+      return t(target.tree!.def.label) + ' — ' + knowledgeOfTree(observer, target.tree!).estimate;
     case 'animal':
       // No knowledge gating: a deer is a deer to anyone who has seen one.
-      return target.animal!.label + (target.animal!.alarmed ? ' — alarmed' : '');
+      return t(target.animal!.label) + (target.animal!.alarmed ? ' — ' + t('alarmed') : '');
     case 'pile':
       // `ItemPile.label` already exists and used to go unread here — the
       // picker said "dropped goods" for a stack of six flints and a fish.
@@ -885,18 +927,18 @@ function describeCandidate(observer: Person, target: ActionTarget): string {
       const record = target.inscription!;
       const literate = techPower(observer, 'writing') > 0;
       const marks = record.unfinished
-        ? 'half cut'
+        ? t('half cut')
         : record.techs.length === 0
-          ? 'blank'
+          ? t('blank')
           : literate
-            ? record.techs.map(t => TECH[t as Tech]?.label ?? t).join(', ').toLowerCase()
-            : record.techs.length + ' marks';
-      return record.def.label.toLowerCase() + ' — ' + marks;
+            ? record.techs.map(id => t(TECH[id as Tech]?.label ?? id)).join(', ').toLowerCase()
+            : t('{n} marks', { n: record.techs.length });
+      return t(record.def.label).toLowerCase() + ' — ' + marks;
     }
     case 'building':
-      return target.building!.def.label;
+      return t(target.building!.def.label);
     case 'ground':
-      return 'the ground here';
+      return t('the ground here');
   }
 }
 
@@ -1130,7 +1172,9 @@ canvas.addEventListener('pointerdown', event => {
     const placed = sim.place(activeDesign.id, x, y, sim.player?.bandId ?? 0);
     if (placed) {
       renderer.floaters.push(placed.centerX, placed.centerY,
-        placed.complete ? placed.def.label + ' marked out' : placed.def.label + ' planned',
+        placed.complete
+          ? t('{building} marked out', { building: t(placed.def.label) })
+          : t('{building} planned', { building: t(placed.def.label) }),
         { color: '#7ddc96', boxed: true });
     } else {
       // "Cannot build there" is the least useful thing a game can say. The
@@ -1138,7 +1182,7 @@ canvas.addEventListener('pointerdown', event => {
       // trap there is now a design that can be refused somewhere a hut would
       // have stood happily.
       const why = sim.placementRefusal(activeDesign, x, y)
-        ?? 'that cannot be built there';
+        ?? t('that cannot be built there');
       renderer.floaters.push(x, y, why, { color: '#e66464', boxed: true });
     }
     return;
@@ -1289,6 +1333,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     world: sim.world, nearWater, commanding,
     stationFor: stationId => nearestStation(subject, stationId),
     propertyUse: building => sim.mayUseBuilding(subject, building),
+    explainProperty: use => explainPropertyUse(actor, use, sim.relationships),
     // The player's own view of whoever was clicked, so the conversation rungs
     // offered are the ones the two of them could actually have. Deliberately
     // left out when commanding somebody else: which conversations *they* could
@@ -1303,17 +1348,19 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
   const title =
     target.kind === 'person'
       ? knowledgeOfPerson(actor, target.person!, sim.relationships).displayName :
-    target.kind === 'node' ? target.node!.kind :
-    target.kind === 'building' ? target.building!.def.label :
-    target.kind === 'tree' ? target.tree!.def.label :
-    target.kind === 'animal' ? target.animal!.label :
-    target.kind === 'inscription' ? target.inscription!.def.label :
-    target.kind === 'pile' ? 'Dropped goods' :
-    'Ground';
+    target.kind === 'node' ? tc('node', target.node!.kind) :
+    target.kind === 'building' ? t(target.building!.def.label) :
+    target.kind === 'tree' ? t(target.tree!.def.label) :
+    target.kind === 'animal' ? t(target.animal!.label) :
+    target.kind === 'inscription' ? t(target.inscription!.def.label) :
+    target.kind === 'pile' ? t('Dropped goods') :
+    t('Ground');
 
   radial.show(
     screenX, screenY,
-    commanding && commanding.alive ? title + ' — ordering ' + commanding.name : title,
+    commanding && commanding.alive
+      ? t('{title} — ordering {name}', { title, name: commanding.name })
+      : title,
     options,
     option => issue(actor, option, target, screenX, screenY)
   );
@@ -1389,8 +1436,10 @@ function issue(
     const why = sim.lastRefusal;
     sim.lastRefusal = null;
     renderer.floaters.push(subordinate.x, subordinate.y,
-      obeyed ? subordinate.name + ' obeys'
-        : subordinate.name + ' refuses' + (why ? ': ' + why : ''),
+      obeyed ? t('{name} obeys', { name: subordinate.name })
+        : why
+          ? t('{name} refuses: {why}', { name: subordinate.name, why })
+          : t('{name} refuses', { name: subordinate.name }),
       { color: obeyed ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
     return;
   }
@@ -1401,7 +1450,7 @@ function issue(
   const reason = sim.lastRefusal;
   sim.lastRefusal = null;
   renderer.floaters.push(actor.x, actor.y,
-    ok ? actionLabel(actionId, option.recipeId, option.mode) : (reason ?? 'cannot do that'),
+    ok ? actionLabel(actionId, option.recipeId, option.mode) : (reason ?? t('cannot do that')),
     { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
 }
 
@@ -1413,7 +1462,7 @@ function orderTake(
   const reason = sim.lastRefusal;
   sim.lastRefusal = null;
   renderer.floaters.push(actor.x, actor.y,
-    ok ? actionLabel('take') : (reason ?? 'cannot do that'),
+    ok ? actionLabel('take') : (reason ?? t('cannot do that')),
     { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
 }
 
@@ -1439,7 +1488,7 @@ function orderTake(
 function issueTake(actor: Person, store: Building, screenX: number, screenY: number): void {
   const askAmount = (itemId: string) => {
     const max = store.store.count(itemId);
-    quantityPicker.show(screenX, screenY, 'Take ' + (ITEMS[itemId]?.label ?? itemId).toLowerCase(),
+    quantityPicker.show(screenX, screenY, t('Take {item}', { item: t(ITEMS[itemId]?.label ?? itemId).toLowerCase() }),
       max, count => orderTake(actor, store, itemId, count), Math.min(6, max));
   };
 
@@ -1462,7 +1511,7 @@ function issueTake(actor: Person, store: Building, screenX: number, screenY: num
   const entries: PickerEntry<string>[] = contents.map(([id, n]) => ({
     target: id,
     icon: '\u{1F4E6}',
-    label: (ITEMS[id]?.label ?? id) + ' ×' + n,
+    label: t(ITEMS[id]?.label ?? id) + ' ×' + n,
   }));
   itemPicker.show(screenX, screenY, entries, askAmount, () => {});
 }
@@ -1475,7 +1524,7 @@ function orderThreaten(
   const reason = sim.lastRefusal;
   sim.lastRefusal = null;
   renderer.floaters.push(actor.x, actor.y,
-    ok ? actionLabel('threaten') : (reason ?? 'cannot do that'),
+    ok ? actionLabel('threaten') : (reason ?? t('cannot do that')),
     { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
 }
 
@@ -1491,7 +1540,7 @@ function orderThreaten(
 function issueThreaten(actor: Person, target: Person, screenX: number, screenY: number): void {
   const askAmount = (itemId: string) => {
     const max = target.inventory.count(itemId);
-    quantityPicker.show(screenX, screenY, 'Demand ' + (ITEMS[itemId]?.label ?? itemId).toLowerCase(),
+    quantityPicker.show(screenX, screenY, t('Demand {item}', { item: t(ITEMS[itemId]?.label ?? itemId).toLowerCase() }),
       max, count => orderThreaten(actor, target, itemId, count), Math.min(3, max));
   };
 
@@ -1508,7 +1557,7 @@ function issueThreaten(actor: Person, target: Person, screenX: number, screenY: 
   const entries: PickerEntry<string>[] = carried.map(([id, n]) => ({
     target: id,
     icon: '\u{1F4E6}',
-    label: (ITEMS[id]?.label ?? id) + ' ×' + n,
+    label: t(ITEMS[id]?.label ?? id) + ' ×' + n,
   }));
   itemPicker.show(screenX, screenY, entries, askAmount, () => {});
 }
@@ -1521,7 +1570,7 @@ function orderStore(
   const reason = sim.lastRefusal;
   sim.lastRefusal = null;
   renderer.floaters.push(actor.x, actor.y,
-    ok ? actionLabel('store') : (reason ?? 'cannot do that'),
+    ok ? actionLabel('store') : (reason ?? t('cannot do that')),
     { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
 }
 
@@ -1548,7 +1597,7 @@ function issueStore(actor: Person, store: Building, screenX: number, screenY: nu
 
   const askAmount = (itemId: string) => {
     const max = actor.inventory.count(itemId);
-    quantityPicker.show(screenX, screenY, 'Store ' + (ITEMS[itemId]?.label ?? itemId).toLowerCase(),
+    quantityPicker.show(screenX, screenY, t('Store {item}', { item: t(ITEMS[itemId]?.label ?? itemId).toLowerCase() }),
       max, count => orderStore(actor, store, itemId, count));
   };
 
@@ -1560,7 +1609,7 @@ function issueStore(actor: Person, store: Building, screenX: number, screenY: nu
   const entries: PickerEntry<string>[] = contents.map(([id, n]) => ({
     target: id,
     icon: '\u{1F4E6}',
-    label: (ITEMS[id]?.label ?? id) + ' ×' + n,
+    label: t(ITEMS[id]?.label ?? id) + ' ×' + n,
   }));
   itemPicker.show(screenX, screenY, entries, askAmount, () => {});
 }
@@ -1587,8 +1636,10 @@ function orderPickup(
     const why = sim.lastRefusal;
     sim.lastRefusal = null;
     renderer.floaters.push(subordinate.x, subordinate.y,
-      obeyed ? subordinate.name + ' obeys'
-        : subordinate.name + ' refuses' + (why ? ': ' + why : ''),
+      obeyed ? t('{name} obeys', { name: subordinate.name })
+        : why
+          ? t('{name} refuses: {why}', { name: subordinate.name, why })
+          : t('{name} refuses', { name: subordinate.name }),
       { color: obeyed ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
     return;
   }
@@ -1597,7 +1648,7 @@ function orderPickup(
   const reason = sim.lastRefusal;
   sim.lastRefusal = null;
   renderer.floaters.push(subject.x, subject.y,
-    ok ? actionLabel('pickup') : (reason ?? 'cannot do that'),
+    ok ? actionLabel('pickup') : (reason ?? t('cannot do that')),
     { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: ok ? 2.6 : 3.6 });
 }
 
@@ -1616,14 +1667,14 @@ function issuePickup(
   leader: Person, subject: Person, pile: ItemPile, screenX: number, screenY: number
 ): void {
   if (subject.carrying >= subject.carryCapacity) {
-    renderer.floaters.push(subject.x, subject.y, 'hands full',
+    renderer.floaters.push(subject.x, subject.y, t('hands full'),
       { color: '#e66464', boxed: true });
     return;
   }
 
   const askAmount = (itemId: string) => {
     const max = Math.min(pile.contents.count(itemId), subject.carryCapacity - subject.carrying);
-    quantityPicker.show(screenX, screenY, 'Pick up ' + (ITEMS[itemId]?.label ?? itemId).toLowerCase(),
+    quantityPicker.show(screenX, screenY, t('Pick up {item}', { item: t(ITEMS[itemId]?.label ?? itemId).toLowerCase() }),
       max, count => orderPickup(leader, subject, pile, itemId, count));
   };
 
@@ -1642,7 +1693,7 @@ function issuePickup(
   const entries: PickerEntry<string>[] = contents.map(([id, n]) => ({
     target: id,
     icon: '\u{1F4E6}',
-    label: (ITEMS[id]?.label ?? id) + ' ×' + n,
+    label: t(ITEMS[id]?.label ?? id) + ' ×' + n,
   }));
   itemPicker.show(screenX, screenY, entries, askAmount, () => {});
 }
@@ -1684,8 +1735,9 @@ function reportInterruptions(): void {
     const mine = person.isPlayer || person.id === commanding?.id;
     if (!mine) continue;
 
-    const text = actionLabel(notice.action, notice.recipe) +
-      ' stopped — ' + stopReasonLabel(notice.reason);
+    const text = t('{action} stopped — {reason}', {
+      action: actionLabel(notice.action, notice.recipe), reason: stopReasonLabel(notice.reason),
+    });
     renderer.floaters.push(person.x, person.y, text,
       { color: '#e0b055', boxed: true, ttl: 3.4 });
     hud.noteStop(person.id, stopReasonLabel(notice.reason));
@@ -1801,8 +1853,8 @@ function updateFloaters(): void {
       // else knows yet" is true for a victim — a few frames before any
       // conversation could have spread a word of it.
       const note = event.actorId === observer.id
-        ? 'No one saw you do it.'
-        : 'No one else knows yet.';
+        ? t('No one saw you do it.')
+        : t('No one else knows yet.');
       renderer.floaters.push(observer.x, observer.y,
         describeEvent(event.type, actorName, victimName) + ' ' + note,
         { color: '#bfa0ff', boxed: true, ttl: 4 });

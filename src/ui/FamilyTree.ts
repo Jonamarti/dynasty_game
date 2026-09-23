@@ -16,12 +16,24 @@
  * a grandchild the player has never laid eyes on, and each one of those is
  * still routed through `knowledgeOfPerson` individually. A stranger on your
  * own family tree shows up as "a young man", not by name.
+ *
+ * ## The colour of a line
+ *
+ * Since the owner's note of 2026-09-23 every kinship line is also drawn in the
+ * colour of what the two people at its ends think of each other — green,
+ * yellow or red, by `opinionTone`, the same rule the tribe graph uses — so a
+ * son who cannot stand his father is visible on the tree. Only where the
+ * player could have learned it: a line is coloured when the player knows the
+ * ties of somebody at either end (`knowsTies`, the tribe graph's own gate), and
+ * stays the plain grey of an unknown otherwise. Being your relative is not the
+ * same as being somebody whose feelings you can read.
  */
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
-import { knowledgeOfPerson } from '../sim/social/Knowledge.ts';
+import { knowledgeOfPerson, opinionTone } from '../sim/social/Knowledge.ts';
 import { layOutFamily, type FamilyLayout, type FamilyNode } from './FamilyTreeLayout.ts';
 import { panelBox } from './PanelBox.ts';
+import { t, onLanguageChange } from '../i18n/i18n.ts';
 
 export class FamilyTreeOverlay {
   private root: HTMLElement;
@@ -42,6 +54,13 @@ export class FamilyTreeOverlay {
         return;
       }
       if (target === this.root) this.close();
+    });
+
+    // The digest says nothing about language, so a switch would leave the old
+    // words up until something else changed.
+    onLanguageChange(() => {
+      this.signature = '';
+      this.root.innerHTML = '';
     });
 
     window.addEventListener('keydown', event => {
@@ -107,9 +126,9 @@ export class FamilyTreeOverlay {
       this.root.innerHTML =
         '<div class="familytree-card">' +
         '<div class="familytree-head"><b>' + escapeHtml(name) + '</b>' +
-        '<button class="familytree-close" data-close="1">close</button></div>' +
-        '<div class="familytree-veil">You do not know their family until you know ' +
-        'them. Spend time with them first.</div>' +
+        '<button class="familytree-close" data-close="1">' + t('close') + '</button></div>' +
+        '<div class="familytree-veil">' +
+        t('You do not know their family until you know them. Spend time with them first.') + '</div>' +
         '</div>';
       return;
     }
@@ -125,9 +144,10 @@ export class FamilyTreeOverlay {
       const from = layout.nodes.find(n => n.personId === edge.from);
       const to = layout.nodes.find(n => n.personId === edge.to);
       if (!from || !to) return '';
+      const tone = this.edgeTone(edge.from, edge.to, observer);
       return '<line x1="' + from.x.toFixed(1) + '" y1="' + from.y.toFixed(1) +
         '" x2="' + to.x.toFixed(1) + '" y2="' + to.y.toFixed(1) +
-        '" class="familytree-edge is-' + edge.kind + '" />';
+        '" class="familytree-edge is-' + edge.kind + (tone ? ' is-' + tone : '') + '" />';
     }).join('');
 
     const nodes = layout.nodes.map(node => this.nodeHtml(node, sim, observer)).join('');
@@ -136,9 +156,10 @@ export class FamilyTreeOverlay {
       '<div class="familytree-card">' +
       '<div class="familytree-head">' +
         '<b>' + escapeHtml(name) + '</b>' +
-        '<span class="familytree-sub">' + layout.nodes.length +
-          (layout.nodes.length === 1 ? ' person' : ' people') + ' on the tree</span>' +
-        '<button class="familytree-close" data-close="1">close</button>' +
+        '<span class="familytree-sub">' + (layout.nodes.length === 1
+          ? t('{n} person on the tree', { n: 1 })
+          : t('{n} people on the tree', { n: layout.nodes.length })) + '</span>' +
+        '<button class="familytree-close" data-close="1">' + t('close') + '</button>' +
       '</div>' +
       '<div class="familytree-canvas" style="width:' + layout.width +
         'px;height:' + layout.height + 'px">' +
@@ -147,6 +168,24 @@ export class FamilyTreeOverlay {
         nodes +
       '</div>' +
       '</div>';
+  }
+
+  /**
+   * The colour of the line between two relatives, or null to leave it grey:
+   * nobody at either end whose ties the player knows, or two people with no
+   * opinion of each other at all (a grandchild born after a death).
+   */
+  private edgeTone(a: number, b: number, observer: Person | null): string | null {
+    const sim = this.sim!;
+    if (observer) {
+      const readable = (id: number): boolean => {
+        const person = sim.peopleById.get(id);
+        return !!person && knowledgeOfPerson(observer, person, sim.relationships).knowsTies;
+      };
+      if (!readable(a) && !readable(b)) return null;
+    }
+    const opinion = sim.relationships.mutualOpinion(a, b);
+    return opinion === null ? null : opinionTone(opinion);
   }
 
   private nodeHtml(node: FamilyNode, sim: Simulation, observer: Person | null): string {
@@ -177,6 +216,12 @@ export class FamilyTreeOverlay {
   private digest(subject: Person, layout: FamilyLayout, observer: Person | null): string {
     const sim = this.sim!;
     const parts = [String(subject.id)];
+    // The colour of every line, since the lines are drawn in what the two ends
+    // think of each other and that can change with nobody moving at all.
+    for (const edge of layout.edges) {
+      parts.push('e' + edge.from + '-' + edge.to + ':' +
+        (this.edgeTone(edge.from, edge.to, observer) ?? '-'));
+    }
     for (const node of layout.nodes) {
       const person = sim.peopleById.get(node.personId);
       const known = person && observer

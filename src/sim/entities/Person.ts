@@ -232,11 +232,18 @@ export class Person {
   macroBalance = new MacroBalance();
   /**
    * Nutrition-weighted grams of each macro eaten since the last daily tick,
-   * filled by `ActionSystem.doEat` and folded into `macroBalance` (and
+   * filled by `consumeFood` and folded into `macroBalance` (and
    * cleared) by `decayMacroBalance`. Not itself read by anything — it is the
    * day's raw ledger, not the diet.
    */
   macroIntakeToday = { fat: 0, protein: 0, carb: 0 };
+  /**
+   * M11 phase 12a. Units of each food eaten since the last daily tick, for the
+   * *Diet* panel's "today" line only: the bars above it are fractions that
+   * move once a day, so without this nothing on screen answers a meal. Cleared
+   * with `macroIntakeToday`; nothing in the simulation reads it.
+   */
+  eatenToday = new Map<string, number>();
   /**
    * M11 phase 8c. What `macroBalance` is judged against, shifted by how hard
    * this person has lately been working — see `core/Macros.ts`. Inert until
@@ -314,6 +321,12 @@ export class Person {
   action = 'idle';
   /** Who the current action is aimed at, for social actions. */
   targetPersonId: number | null = null;
+  /**
+   * M11 phase 12b. How far away `targetPersonId` was when an `attack` began,
+   * so that giving up the chase measures the gap *opening* rather than where
+   * the chase happened to start. Cleared with the rest of the target.
+   */
+  pursuitFrom: number | null = null;
   /**
    * Who a `slander` or a `praise` is *about*, as distinct from who it is said
    * *to* — `targetPersonId` is the listener.
@@ -401,6 +414,13 @@ export class Person {
    */
   lastHarmedBy: number | null = null;
   lastHarmedTick = -9999;
+  /**
+   * The last outsider this person warned off their band's ground, and when —
+   * M11 phase 14b's territorial route. A warning comes before a blow, and
+   * `Brain` reads this to know which one it is time for.
+   */
+  warnedOffId: number | null = null;
+  warnedOffTick = -9999;
   /**
    * Earliest tick at which this person will start another deliberate social
    * act. Approaching someone, saying your piece and parting again takes a
@@ -840,6 +860,7 @@ export class Person {
     this.targetItemId = null;
     this.targetItemCount = null;
     this.propertyUseNoted = false;
+    this.pursuitFrom = null;
     this.actionTimer = 0;
     // A route and the aim it was computed for have to be forgotten together —
     // this is the one place that forgets where somebody was going, and a

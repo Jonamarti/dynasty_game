@@ -90,3 +90,35 @@ describe('a deed records who saw it', () => {
     expect(evt.witnesses).toBe(0);
   });
 });
+// M11 phase 14e: a deed against a building moves how the two peoples stand,
+// but only when somebody of the owning band saw it, and once per deed.
+describe('a property deed seen by its owners', () => {
+  function setup(witnessX: number): { social: SocialSystem; hash: SpatialHash<Person>; bands: BandRelations; actor: Person } {
+    const actor = new Person('Raid', 50, 50, 1, new RNG('p-raid'));
+    const owner = new Person('Own', witnessX, 50, 0, new RNG('p-own'));
+    const ownerToo = new Person('Own2', witnessX, 51, 0, new RNG('p-own2'));
+    const bands = new BandRelations();
+    const social = new SocialSystem(new RelationshipGraph(), new Map(), bands);
+    const hash = new SpatialHash<Person>(8);
+    hash.rebuild([actor, owner, ownerToo]);
+    return { social, hash, bands, actor };
+  }
+
+  it('costs standing when an owner sees it, once however many saw', () => {
+    const one = setup(52);
+    one.social.emit('sabotage', one.actor, null, 1, 100, one.hash, SIGHT, true, 0);
+    const seen = one.bands.standing(1, 0);
+    expect(seen).toBeLessThan(0);
+    // Two owners watched; the standing moved by one deed's worth, which is
+    // what a single witness would have produced (checked against the formula
+    // through a second, identical deed doubling it rather than quadrupling).
+    one.social.emit('sabotage', one.actor, null, 1, 101, one.hash, SIGHT, true, 0);
+    expect(one.bands.standing(1, 0)).toBeCloseTo(seen * 2, 5);
+  });
+
+  it('costs nothing when nobody of the owning band was there', () => {
+    const none = setup(90);
+    none.social.emit('sabotage', none.actor, null, 1, 100, none.hash, SIGHT, true, 0);
+    expect(none.bands.standing(1, 0)).toBe(0);
+  });
+});

@@ -20,6 +20,7 @@ import type { Band } from '../core/Simulation.ts';
 import type { RelationshipGraph } from './Relationships.ts';
 import { chiefHoneymoon } from './Leadership.ts';
 import { techPower } from '../knowledge/Tech.ts';
+import { t } from '../../i18n/i18n.ts';
 
 export interface AuthorityContext {
   relationships: RelationshipGraph;
@@ -116,8 +117,34 @@ const ORDER_COST: Record<string, number> = {
   // Below `attack`: nobody comes home hurt, but being sent to menace a
   // neighbour is a heavier ask than being sent to rob one quietly.
   threaten: 0.8,
+  // M11 phase 11c. Level with `threaten` and above `steal`: wrecking a
+  // structure takes long enough that there is no quiet version of it, and it
+  // is done standing in somebody else's camp rather than brushing past them
+  // in a crowd. Missing until now, which meant the verb phase 11b added fell
+  // through to the 0.3 default — a chief, or the player, could have somebody
+  // sent to knock a rival's hut down for less than the price of telling them
+  // to fell a tree.
+  sabotage: 0.8,
   attack: 0.9,
 };
+
+/**
+ * The floor under any order aimed at another band's property, M11 phase 11c.
+ *
+ * `ORDER_COST` is keyed on the verb, and for every entry above that is
+ * enough, because the verb is the whole of what is being asked. `take` is
+ * the exception that proves it is not always: fetching six berries from your
+ * own band's pit and lifting the same six out of a rival's granary are the
+ * same verb, the same walk and the same arithmetic, and only one of them is
+ * a crime that a whole band may come out of their huts about. What makes it
+ * heavy is who owns the thing, so that is what this reads.
+ *
+ * Level with `steal`, which is this same crime with a person on the other
+ * end of it instead of a wall. Applied as a floor rather than an addition so
+ * that `sabotage`, already dearer, is not made dearer again for being aimed
+ * at exactly the property it is only ever aimed at.
+ */
+const FOREIGN_PROPERTY_COST = 0.75;
 
 /**
  * What heading a house is worth outside it, once `chiefdom` is known.
@@ -196,8 +223,15 @@ function inequalityTerm(leader: Person, bandId: number, ctx: AuthorityContext): 
   return Math.min(INEQUALITY_AUTHORITY, (wealthGap + renownGap) * INEQUALITY_AUTHORITY);
 }
 
-export function orderCost(action: string): number {
-  return ORDER_COST[action] ?? 0.3;
+/**
+ * What an order asks of the person receiving it.
+ *
+ * `foreign` says the order is aimed at a structure belonging to some band
+ * other than the subordinate's own — see `FOREIGN_PROPERTY_COST`.
+ */
+export function orderCost(action: string, foreign = false): number {
+  const base = ORDER_COST[action] ?? 0.3;
+  return foreign ? Math.max(base, FOREIGN_PROPERTY_COST) : base;
 }
 
 /**
@@ -211,7 +245,8 @@ export function standingOver(
   leader: Person,
   subordinate: Person,
   action: string,
-  ctx: AuthorityContext
+  ctx: AuthorityContext,
+  foreign = false
 ): Standing {
   const household = subordinate.householdId === null
     ? null
@@ -225,7 +260,7 @@ export function standingOver(
   const isKin = kinship > 0;
 
   if (leader.id === subordinate.id) {
-    return { isHead, isChief, isKin, byRank: false, chance: 1, because: 'yourself' };
+    return { isHead, isChief, isKin, byRank: false, chance: 1, because: t('yourself') };
   }
 
   // Standing is the floor the rest builds on. A stranger with no position has
@@ -239,11 +274,11 @@ export function standingOver(
   const reasons: string[] = [];
   if (isHead) {
     authority += 0.55;
-    reasons.push('head of their household');
+    reasons.push(t('head of their household'));
   }
   if (isChief) {
     authority += 0.45;
-    reasons.push('chief of their band');
+    reasons.push(t('chief of their band'));
 
     // A new chief gets a brief chance to lead before ordinary relationship
     // noise has caught up. This is band state, not a deed painted onto every
@@ -252,12 +287,12 @@ export function standingOver(
     if (band) {
       const welcome = chiefHoneymoon(band, ctx.day);
       authority += welcome * 0.18;
-      if (welcome > 0.25) reasons.push('newly welcomed as chief');
+      if (welcome > 0.25) reasons.push(t('newly welcomed as chief'));
     }
   }
   if (isKin && !isHead) {
     authority += 0.1;
-    reasons.push('kin');
+    reasons.push(t('kin'));
   }
 
   // M9.5 phase 4d: the middle rung. Until `chiefdom` a band is flat — `isHead`
@@ -276,7 +311,7 @@ export function standingOver(
     techPower(leader, 'chiefdom') > 0;
   if (byRank) {
     authority += RANK_AUTHORITY * techPower(leader, 'chiefdom');
-    reasons.push('head of a house in your band');
+    reasons.push(t('head of a house in your band'));
   }
 
   // M11 phase 6d: a household visibly richer and more renowned than its
@@ -285,14 +320,14 @@ export function standingOver(
   // `inequalityTerm`'s own comment for why it reads no technology at all.
   const inequality = inequalityTerm(leader, subordinate.bandId, ctx);
   authority += inequality;
-  if (inequality > 0.03) reasons.push('a person of some standing');
+  if (inequality > 0.03) reasons.push(t('a person of some standing'));
 
-  if (reasons.length === 0) reasons.push('no standing over them');
+  if (reasons.length === 0) reasons.push(t('no standing over them'));
 
   const regard = ctx.relationships.opinion(subordinate.id, leader.id) / 100;
   authority += regard * 0.4;
-  if (regard > 0.25) reasons.push('thinks well of you');
-  else if (regard < -0.15) reasons.push('resents you');
+  if (regard > 0.25) reasons.push(t('thinks well of you'));
+  else if (regard < -0.15) reasons.push(t('resents you'));
 
   // Biddability. A loyal person does as they are told; a headstrong one argues.
   authority += (subordinate.traits.loyalty - 0.5) * 0.4;
@@ -304,10 +339,11 @@ export function standingOver(
   const menace = leader.skillFactor('fight') - subordinate.skillFactor('fight');
   if (menace > 0.15) {
     authority += Math.min(0.25, menace * 0.4);
-    reasons.push('you are the stronger');
+    reasons.push(t('you are the stronger'));
   }
 
-  const cost = orderCost(action);
+  const cost = orderCost(action, foreign);
+  if (foreign) reasons.push(t('you are asking them to cross another band'));
   const chance = Math.max(0, Math.min(0.98, authority - cost * 0.6));
 
   return {
@@ -361,7 +397,7 @@ export function headsAHouseIn(
  */
 export function menaceOver(leader: Person, subordinate: Person, tick: number): Standing {
   if (leader.id === subordinate.id) {
-    return { isHead: false, isChief: false, isKin: false, byRank: false, chance: 1, because: 'yourself' };
+    return { isHead: false, isChief: false, isKin: false, byRank: false, chance: 1, because: t('yourself') };
   }
 
   const reasons: string[] = [];
@@ -370,7 +406,7 @@ export function menaceOver(leader: Person, subordinate: Person, tick: number): S
   const menace = leader.skillFactor('fight') - subordinate.skillFactor('fight');
   if (menace > 0) {
     chance += Math.min(0.45, menace * 0.6);
-    reasons.push('you are the stronger');
+    reasons.push(t('you are the stronger'));
   }
 
   // A biddable person gives way; an aggressive one is more likely to call the
@@ -382,11 +418,11 @@ export function menaceOver(leader: Person, subordinate: Person, tick: number): S
   // matter, short enough that an old fight is not a standing threat.
   if (subordinate.lastHarmedBy === leader.id && tick - subordinate.lastHarmedTick < 300) {
     chance += 0.35;
-    reasons.push('still afraid of you');
+    reasons.push(t('still afraid of you'));
   }
 
   chance = Math.max(0.02, Math.min(0.92, chance));
-  if (reasons.length === 0) reasons.push('no fear of you');
+  if (reasons.length === 0) reasons.push(t('no fear of you'));
 
   return {
     isHead: false, isChief: false, isKin: false, byRank: false,

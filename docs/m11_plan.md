@@ -792,20 +792,92 @@ perseguir, y el mecanismo que cada una mide sigue funcionando limpio en el
 escenario construido a propósito para probarlo (`labour` para
 `heads-direct-work`).
 
-**Sigue:**
+**11c — el organizador de partida. HECHO 2026-09-22.** En dos commits. El
+primero, **bit-idéntico**, pone el precio antes que lo que lo paga:
+`sabotage` no tenía entrada en `ORDER_COST` —la 11b lo dejó cayendo al 0.3
+por defecto, más barato que talar un árbol— y `orderCost` aprende que una
+orden dirigida a la propiedad de otra banda cuesta lo que cuesta un delito
+(`FOREIGN_PROPERTY_COST`, al nivel de `steal`, leído sobre la banda del
+*subordinado*, que es quien entra en el campamento ajeno). El segundo,
+`Factions.warParty` junto a `conspiracyAgainst` y compartiendo su
+`trustEachOther` —un desconocido puntúa 0 en `opinion`, así que el "quienes
+se conocen entre sí" sale del grafo sin regla propia—, y
+`BandSystem.considerRaid`: quórum de 3 contando al jefe, medido sobre quien
+*podría* ser llamado y no sobre quien viene (precedente de `considerExile`),
+cada seguidor una tirada real de `command`, y el jefe va con ellos incluso
+si no fue nadie.
 
-- **11c — el organizador de partida, `BandSystem.daily`.** Un jefe reúne
-  a varios miembros dispuestos y con `fight` de verdad (fruto de 11a) para
-  viajar juntos y sabotear o robar en el territorio de otra banda. Quórum y
-  quienes se conocen entre sí, el mismo freno que ya usan las facciones de
-  la fase 5d — `Brain.ts:812` documenta lo que pasa sin él.
-- **11d — cautiverio como estado en `Person`.** El desenlace de un asalto
-  que no mata: `captiveOf`, trabajo forzado en la casa del captor, fuga
-  puntuada por si hay testigos —el espejo exacto de `mayUse`—, y la puerta
-  de vuelta que la fase 5f ya construyó para el destierro.
-- **11e — lectores y UI.** `lastRefusal` para cada camino de rechazo nuevo
-  (regla permanente de `AGENTS.md`), panel de durabilidad, y aviso de
-  cautiverio.
+**Tres reglas medidas y descartadas antes de que una funcionara**, todas por
+el mismo defecto —monedas que caían siempre del mismo lado, que es como este
+proyecto envía una rama inalcanzable: un alcance fijado por la sed (60
+casillas) descartó **todos** los objetivos de `lean`, donde el campamento
+está a 61-91 del enemigo (y la sed no era la restricción: `noteStop` aparta
+cualquier orden interrumpida por una necesidad, así que el que se queda seco
+bebe y la retoma); el saqueo condicionado al hambre de los asaltantes dio 47
+deliberaciones y cero saqueos, porque ningún escenario tiene una banda
+hambrienta a medianoche; y condicionado a que la víctima tuviera granero dio
+11 asaltos y cero destrucciones, porque todas las bandas tienen granero. Lo
+que decide es **cuán hondo va el rencor** (`RAID_FURY`): se roba al vecino
+que se desprecia y se quema al que se odia — el sentimiento propio, que un
+jefe conoce sin que nadie se lo cuente, donde lo que hay *dentro* del granero
+no lo ha visto nadie de esta banda.
+
+Medido a 20 semillas de `millers`, no a un run: supervivencia media 67.7% →
+64.0% con *menos* colapsos (5/20 → 4/20) y tecnologías idénticas. El fallo de
+una sola semilla en `millers`/`population-persists` es esa divergencia.
+`raids-are-organised` acota la tasa por arriba; cinco pruebas deterministas
+en `band.test.ts`, tres de las cuales fallan con `considerRaid` desconectado.
+
+**Sigue** — reordenado el 2026-09-22 por las notas del propietario de ese
+día (Bloque V, abajo; el detalle en
+[m11_block_v_plan.md](m11_block_v_plan.md)):
+- ~~**11d — cautiverio como estado en `Person`.**~~ **Se funde con la fase
+  15.** La nota 9 le da al cautiverio una segunda fuente —el que es pillado
+  destrozando y reducido con cuerda— y diseñar `captiveOf` para una sola de
+  las dos lo obligaría a rehacerse en la siguiente.
+- ~~**11e — lectores y UI.**~~ **Se funde con la fase 13**, que junta seis
+  notas de interfaz con el panel de durabilidad y los `lastRefusal`
+  pendientes.
+
+---
+
+# Bloque V — Las notas del propietario del 2026-09-22
+
+Dieciséis notas de `notes.txt`, escritas jugando sobre la build de 11c. Cada
+una verificada contra el código antes de darle destino; `notes.txt` queda
+vacío. La tabla es el índice; el diagnóstico y el plan de cada fase están en
+[m11_block_v_plan.md](m11_block_v_plan.md).
+
+| # | nota | destino |
+|---|---|---|
+| 8 | Comer bayas desde el Kit no sube la barra de nutrición | **Fase 12a** — defecto real |
+| 10 | Ordenar pelear con alguien lejano no mueve al protagonista | **Fase 12b** — defecto real |
+| 4 | Número de tribus y de miembros por tribu en el menú de partida nueva | **Fase 12c** — la opción ya existe, escondida en Ajustes |
+| 3 | Contorno de color por tribu en los edificios | Fase 13a |
+| 5 | Ver la relación con alguien al pulsar sobre él | Fase 13b |
+| 14 | Muertos plegados por defecto en Ties; fuera del grafo de tribu | Fase 13c |
+| 15 | Agregar los mensajes repetidos del panel Life | Fase 13d |
+| 2 | Al morir, contar a quién mató y qué construyó | Fase 13e |
+| 7 | Miedo: a los forasteros y a quien te hizo daño; territorio; segregación; asaltar por lo que falta | **Fase 14** |
+| 6 | Usar un edificio ajeno aunque te vean, con penalización ante los testigos | Fase 15a — **la fase 4 se implementó al revés de su propio plan** |
+| 9 | Defender la propiedad: amenazar y golpear al forastero, sujetar al propio, pedir ayuda, atar con cuerda, prisionero | Fase 15b-15d (absorbe 11d) |
+| 1 | El cuerpo no desaparece: deshacerse de él, descubrimiento, investigación | **Fase 16** |
+| 11 | Migrar por un mapa del mundo; civilizaciones: gobierno, guerra, impuestos, comercio | Para el futuro: M12 |
+| 12 | Comercio por caravanas entre casillas del mapa | Para el futuro: M12 |
+| 13 | Icono de globo abajo a la izquierda para el mapa del mundo | Para el futuro: M12 |
+| 16 | Un elemento tipo Spore: de humanos sueltos a tribu, gobierno y civilizaciones | Para el futuro: el arco de M12 en adelante |
+
+**El orden, decidido por el propietario el 2026-09-22:** reparaciones (12) →
+interfaz (13) → **el miedo (14) antes que la defensa de la propiedad (15)** →
+el cuerpo (16) → el cierre de M11 (17). Y `cordage` fabrica cuerda con palos o
+con paja, que es lo que la fase 15c necesitaba para atar.
+
+**El detalle de las fases 12-17 —commit a commit, con su diagnóstico, sus
+ficheros, su gate y lo que debe salir bit-idéntico— vive en
+[m11_block_v_plan.md](m11_block_v_plan.md)**, junto con la deuda de M11 que no
+tenía fase (el hecho `gift`, los cuatro checks de la fase 5, el sabotaje de
+campos, `DECISIVE_GAP`, el guardia fronterizo, la política de `perf-budget`).
+No se repite aquí a propósito: dos copias del mismo plan divergen.
 
 ---
 
@@ -815,6 +887,37 @@ escenario construido a propósito para probarlo (`labour` para
 pequeña: que el rencor se **herede**. Un campo `feud` en `Household` que
 `linkFamily` propague convertiría "la casa que desterró a mi abuelo" en una
 relación de siglos. Barato una vez existe lo anterior, carísimo antes.
+
+**M12 — el mundo más allá de la isla (notas 11, 12, 13 y 16).** El
+propietario lo plantea como un arco **tipo Spore**: se empieza manejando
+humanos sueltos, luego se descubre la política de la tribu, se dan órdenes,
+se establecen gobiernos, se trata con otras civilizaciones. M11 cubre los
+dos primeros escalones. Lo que pide para los siguientes:
+
+- **Civilización** = una tribu con gobierno, que puede **declarar la
+  guerra**, **cobrar impuestos** (aunque sean 0 y aunque no quiera) y
+  **comerciar** con otras. Exige un buen puñado de tecnologías —mínimo
+  agricultura, escritura, división del trabajo, gobierno, impuestos,
+  soldados— tomadas de lo que hicieron las primeras civilizaciones reales.
+  Hoy el árbol llega a `chiefdom`, `division_of_labour`, `farming` y
+  `writing`; faltan los nodos de Estado. Candidatos con base histórica
+  (Uruk, Egipto temprano): templo y redistribución, tributo, contabilidad
+  escrita, especialistas a tiempo completo, ley escrita, ejército
+  permanente, murallas.
+- **Mapa del mundo** por casillas, abierto desde un **icono de globo abajo
+  a la izquierda**; la isla de hoy es una casilla. **Migrar** es mover la
+  banda: al principio una casilla, más con tecnología —animales de carga
+  (asno, ~4000 a. C.), caballo, carro (`the_wheel` ya está), barca, vela—,
+  que suben tanto el alcance como lo que se puede llevar.
+- **Comercio por caravanas** entre casillas; más tarde barcos, y así hacia
+  delante.
+
+**Dos prerrequisitos que conviene nombrar ya:** el hueco que
+`next-steps.md` lleva años arrastrando —**no hay LOD de simulación**, todo el
+mundo se simula en detalle— es condición para que existan otras casillas
+habitadas; y todo el proyecto asume **una `Simulation` = una isla**. M12
+merece su propio documento de plan cuando cierre M11, no un apéndice de
+éste.
 
 ---
 
@@ -858,6 +961,11 @@ npm run why -- --person 0 --from 1700 --to 1760
 dos añadidos después de `grainRng`** ([Simulation.ts:409](src/sim/core/Simulation.ts#L409)),
 nunca después de `recordRng`. La fase 7 no necesita ninguno. Decirlo en cada
 mensaje de commit.
+
+**Bloque V:** el libro de commits y las reglas de determinismo de las fases
+12-17 están en [m11_block_v_plan.md](m11_block_v_plan.md). Lo esencial: ningún
+fork nuevo previsto, ninguna tirada nueva en `BandSystem` (su `rng` es
+`forestRng`), y cualquier stream que haga falta va después de `hearthRng`.
 
 ---
 

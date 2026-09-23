@@ -13,6 +13,7 @@
  * confirm click cannot be swallowed by its own cleanup.
  */
 import { sliderRow } from './SliderRow.ts';
+import { t } from '../i18n/i18n.ts';
 
 export class QuantityPicker {
   private root: HTMLElement;
@@ -72,7 +73,7 @@ export class QuantityPicker {
     // exactly, so it is left wired up rather than hidden: there is a real
     // default, it is just wherever this popup started.
     const row = sliderRow(
-      { label: 'How many', min: 1, max, step: 1, places: 0 },
+      { label: t('How many'), min: 1, max, step: 1, places: 0 },
       start,
       v => { value = Math.round(v); },
       () => { value = start; row.set(start, false); }
@@ -84,12 +85,12 @@ export class QuantityPicker {
     const cancel = document.createElement('button');
     cancel.type = 'button';
     cancel.className = 'quantity-picker-cancel';
-    cancel.textContent = 'Cancel';
+    cancel.textContent = t('Cancel');
     cancel.onclick = () => this.close();
     const confirm = document.createElement('button');
     confirm.type = 'button';
     confirm.className = 'quantity-picker-confirm';
-    confirm.textContent = 'Confirm';
+    confirm.textContent = t('Confirm');
     confirm.onclick = () => {
       const go = this.onConfirm;
       this.close();

@@ -21,8 +21,10 @@ import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { RelationshipGraph } from './Relationships.ts';
+import type { PropertyUse } from './Property.ts';
 import type { LifeEvent } from './SocialSystem.ts';
 import { describeEvent } from './Events.ts';
+import { t, genderOf } from '../../i18n/i18n.ts';
 
 /** How well the observer knows the subject. */
 export type Acquaintance = 'self' | 'close' | 'known' | 'seen' | 'stranger';
@@ -42,17 +44,103 @@ export interface PersonKnowledge {
   because: string;
 }
 
+/**
+ * What the observer can tell of how `subject` regards *them* — M11 phase 13b.
+ *
+ * Someone else's opinion is their private state, and it is read here rather
+ * than in the panel for the same reason everything else about them is. A face
+ * or a passing acquaintance (`stranger`, `seen`) tells you nothing; somebody
+ * you have spoken with more than once (`known`) you can read in broad
+ * strokes; somebody close you can put a number on.
+ */
+export interface RegardKnowledge {
+  /** A sentence, or null when nothing can be told at all. */
+  words: string | null;
+  /** The opinion itself, only for somebody close. */
+  opinion: number | null;
+}
+
+/**
+ * How far either side of zero an opinion still reads as "no strong feeling".
+ *
+ * One number for the words below and for the colour every panel draws a tie
+ * in, so a line the family tree paints yellow is exactly a tie the Ties tab
+ * would describe as indifferent — two thresholds would drift apart, and the
+ * player would see a green line between two people who "seem to have no
+ * strong feeling" about each other.
+ */
+export const REGARD_NEUTRAL = 10;
+
+/** Warm, lukewarm or hostile: the three colours a drawn tie can be. */
+export type OpinionTone = 'pos' | 'mid' | 'neg';
+
+export function opinionTone(opinion: number): OpinionTone {
+  return opinion >= REGARD_NEUTRAL ? 'pos' : opinion > -REGARD_NEUTRAL ? 'mid' : 'neg';
+}
+
+export function regardFromThem(
+  observer: Person,
+  subject: Person,
+  relationships: RelationshipGraph
+): RegardKnowledge {
+  const level = knowledgeOfPerson(observer, subject, relationships).level;
+  if (level === 'self' || level === 'stranger' || level === 'seen') {
+    return { words: null, opinion: null };
+  }
+  const opinion = relationships.opinion(subject.id, observer.id);
+  const words =
+    opinion >= 40 ? t('They seem fond of you.') :
+    opinion >= REGARD_NEUTRAL ? t('They seem to like you.') :
+    opinion > -REGARD_NEUTRAL ? t('They seem to have no strong feeling about you.') :
+    opinion > -40 ? t('They seem to dislike you.') :
+    t('They seem to hate you.');
+  return { words, opinion: level === 'close' ? opinion : null };
+}
+
+/**
+ * Why a structure can or cannot be used, in words, for `observer` to read —
+ * M11 phase 13f. The witness is named only as the observer knows them: a
+ * stranger watching a rival's store is "A young man", not a name the
+ * player's character never learned.
+ */
+export function explainPropertyUse(
+  observer: Person,
+  use: PropertyUse,
+  relationships: RelationshipGraph
+): string {
+  switch (use.basis) {
+    case 'own': return t('it belongs to their band');
+    case 'ally': return t('their band and yours are close allies');
+    case 'unseen': return t('nobody from the owning band is watching');
+    case 'seen': {
+      if (!use.seen) return t('someone from its band is close enough to see them');
+      const name = knowledgeOfPerson(observer, use.seen, relationships).displayName;
+      return t('{name} is close enough to see them', {
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+      });
+    }
+  }
+}
+
 /** Familiarity at which someone stops being a face and becomes an acquaintance. */
 const KNOWN_AT = 12;
 /** Familiarity at which you can fairly claim to know what they are like. */
 const CLOSE_AT = 35;
 
-function ageBracket(person: Person): string {
+/**
+ * What a stranger is called: "a young man". Whole phrases rather than a noun
+ * glued to an article, because Spanish needs the article and the noun to agree
+ * with the person ("una joven", "un niño") and English wants neither to move.
+ */
+function strangerName(person: Person): string {
   const years = person.years;
-  if (years < 14) return 'child';
-  if (years < 25) return 'young ' + (person.sex === 'female' ? 'woman' : 'man');
-  if (years < 45) return person.sex === 'female' ? 'woman' : 'man';
-  return 'older ' + (person.sex === 'female' ? 'woman' : 'man');
+  const female = person.sex === 'female';
+  if (years < 14) return t('a child', { g: genderOf(person) });
+  if (years < 25) return female ? t('a young woman') : t('a young man');
+  if (years < 45) return female ? t('a woman') : t('a man');
+  // "a older", as it has always read: the translation pass leaves English
+  // output exactly as it was, and fixing the article is a change of its own.
+  return female ? t('a older woman') : t('a older man');
 }
 
 export function knowledgeOfPerson(
@@ -68,7 +156,7 @@ export function knowledgeOfPerson(
       knowsCondition: true,
       knowsCharacter: true,
       knowsTies: true,
-      because: 'yourself',
+      because: t('yourself'),
     };
   }
 
@@ -80,12 +168,12 @@ export function knowledgeOfPerson(
   if (!rel && remembered === 0) {
     return {
       level: 'stranger',
-      displayName: 'a ' + ageBracket(subject),
+      displayName: strangerName(subject),
       knowsName: false,
       knowsCondition: false,
       knowsCharacter: false,
       knowsTies: false,
-      because: 'you have never met',
+      because: t('you have never met'),
     };
   }
 
@@ -100,7 +188,7 @@ export function knowledgeOfPerson(
       knowsCondition: true,
       knowsCharacter: true,
       knowsTies: true,
-      because: kin !== 0 ? 'family' : 'you know them well',
+      because: kin !== 0 ? t('family') : t('you know them well'),
     };
   }
 
@@ -112,7 +200,7 @@ export function knowledgeOfPerson(
       knowsCondition: true,
       knowsCharacter: false,
       knowsTies: false,
-      because: 'you have spoken more than once',
+      because: t('you have spoken more than once'),
     };
   }
 
@@ -124,8 +212,8 @@ export function knowledgeOfPerson(
     knowsCharacter: false,
     knowsTies: false,
     because: remembered > 0
-      ? 'you know of them'
-      : 'you have crossed paths',
+      ? t('you know of them')
+      : t('you have crossed paths'),
   };
 }
 
@@ -164,7 +252,24 @@ export function rememberedAbout(
   subject: Person,
   nameOf: (id: number) => string
 ): LifeEvent[] {
-  if (observer.id === subject.id) return observer.chronicle;
+  // Your own life, with everybody in it named as you know them. M11 phase
+  // 13f: `emit` writes its line with real names — rob a stranger and the
+  // stored sentence calls them by a name you were never told — so a line
+  // that carries its deed (13e) is written afresh here from the ids, through
+  // the same `nameOf` other people's histories already go through. Lines
+  // with no deed (a birth, a marriage, a hut) name only people you know.
+  if (observer.id === subject.id) {
+    return observer.chronicle.map(entry => entry.deed
+      ? {
+        ...entry,
+        text: describeEvent(
+          entry.deed.type,
+          nameOf(entry.deed.actorId),
+          entry.deed.targetId === null ? null : nameOf(entry.deed.targetId)
+        ),
+      }
+      : entry);
+  }
 
   return observer.memory
     .about(subject.id)
@@ -175,7 +280,7 @@ export function rememberedAbout(
         entry.type,
         nameOf(entry.actorId),
         entry.targetId === null ? null : nameOf(entry.targetId)
-      ) + (entry.firsthand ? '' : ' (you heard)'),
+      ) + (entry.firsthand ? '' : ' ' + t('(you heard)')),
       kind: (entry.targetId === subject.id ? 'suffered' : 'did') as LifeEvent['kind'],
     }));
 }
@@ -200,10 +305,10 @@ const EXPERT_AT = 40;
 export function knowledgeOfNode(observer: Person, node: ResourceNode): NodeKnowledge {
   const fullness = node.def.maxAmount === 0 ? 0 : node.amount / node.def.maxAmount;
   const estimate =
-    fullness <= 0 ? 'stripped bare' :
-    fullness < 0.25 ? 'picked over' :
-    fullness < 0.6 ? 'worth stopping for' :
-    'laden';
+    fullness <= 0 ? t('stripped bare') :
+    fullness < 0.25 ? t('picked over') :
+    fullness < 0.6 ? t('worth stopping for') :
+    t('laden');
 
   const close = observer.distanceTo(node) <= ARMS_LENGTH;
   const expert = observer.skills[node.def.skill] >= EXPERT_AT;
@@ -212,13 +317,13 @@ export function knowledgeOfNode(observer: Person, node: ResourceNode): NodeKnowl
     return {
       amount: Math.floor(node.amount),
       estimate,
-      because: close ? 'close enough to count' : 'you know your trade',
+      because: close ? t('close enough to count') : t('you know your trade'),
     };
   }
   return {
     amount: null,
     estimate,
-    because: 'too far to judge exactly',
+    because: t('too far to judge exactly'),
   };
 }
 
@@ -242,10 +347,10 @@ export interface TreeKnowledge {
  */
 export function knowledgeOfTree(observer: Person, tree: Tree): TreeKnowledge {
   const estimate =
-    tree.isSeedling ? 'a seedling' :
-    !tree.isMature ? 'still growing' :
-    tree.years > tree.def.maxAgeYears * 0.8 ? 'old, and past its best' :
-    'full grown';
+    tree.isSeedling ? t('a seedling') :
+    !tree.isMature ? t('still growing') :
+    tree.years > tree.def.maxAgeYears * 0.8 ? t('old, and past its best') :
+    t('full grown');
 
   const close = observer.distanceTo(tree) <= ARMS_LENGTH;
   const woodsman = observer.skills.build >= 30;
@@ -256,7 +361,7 @@ export function knowledgeOfTree(observer: Person, tree: Tree): TreeKnowledge {
       woodYield: tree.woodYield,
       fruit: Math.floor(tree.fruit),
       estimate,
-      because: woodsman ? 'you can read a tree' : 'close enough to judge',
+      because: woodsman ? t('you can read a tree') : t('close enough to judge'),
     };
   }
   return {
@@ -264,7 +369,7 @@ export function knowledgeOfTree(observer: Person, tree: Tree): TreeKnowledge {
     woodYield: null,
     fruit: Math.floor(tree.fruit),
     estimate,
-    because: 'you would have to look closer',
+    because: t('you would have to look closer'),
   };
 }
 
@@ -278,6 +383,6 @@ export function knowledgeOfBuilding(observer: Person, building: Building): Build
   const ours = building.ownerBandId === observer.bandId;
   return {
     knowsContents: ours,
-    because: ours ? 'your band built it' : 'you have not looked inside',
+    because: ours ? t('your band built it') : t('you have not looked inside'),
   };
 }

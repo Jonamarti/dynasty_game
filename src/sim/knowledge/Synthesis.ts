@@ -31,6 +31,7 @@ import type { Tech } from './Tech.ts';
 import type { Need } from '../entities/Person.ts';
 import type { Biome } from '../core/World.ts';
 import type { Season } from '../core/TimeManager.ts';
+import { t, tc } from '../../i18n/i18n.ts';
 
 /**
  * Something that can be true of a person at a moment.
@@ -150,13 +151,17 @@ export function describeIngredient(
   labelFor: (kind: 'tech' | 'item', id: string) => string
 ): string {
   switch (ingredient.kind) {
-    case 'knows': return 'knowing ' + labelFor('tech', ingredient.tech).toLowerCase();
-    case 'holding': return 'holding ' + labelFor('item', ingredient.item).toLowerCase();
-    case 'doing': return 'having been ' + DOING_WORDS[ingredient.action];
-    case 'feeling': return FEELING_WORDS[ingredient.need] ?? ingredient.need;
-    case 'place': return PLACE_WORDS[ingredient.biome] ?? ('on ' + ingredient.biome);
-    case 'saw': return 'having ' + (SAW_WORDS[ingredient.what] ?? 'seen ' + ingredient.what);
-    case 'season': return 'in ' + ingredient.season;
+    case 'knows': return t('knowing {tech}', { tech: labelFor('tech', ingredient.tech).toLowerCase() });
+    case 'holding': return t('holding {item}', { item: labelFor('item', ingredient.item).toLowerCase() });
+    case 'doing': return t('having been {doing}', { doing: t(DOING_WORDS[ingredient.action] ?? ingredient.action) });
+    case 'feeling': return t(FEELING_WORDS[ingredient.need] ?? ingredient.need);
+    case 'place': return PLACE_WORDS[ingredient.biome]
+      ? t(PLACE_WORDS[ingredient.biome]!)
+      : t('on {biome}', { biome: tc('biome', ingredient.biome) });
+    case 'saw': return SAW_WORDS[ingredient.what]
+      ? t('having {saw}', { saw: t(SAW_WORDS[ingredient.what]!) })
+      : t('having seen {what}', { what: ingredient.what });
+    case 'season': return t('in {season}', { season: tc('season', ingredient.season) });
   }
 }
 
@@ -168,7 +173,7 @@ export function describeIngredient(
  * `synthesis.test.ts` asserts every action a spark actually names has one, so
  * the fallback is for verbs no spark uses.
  */
-const DOING_WORDS: Record<string, string> = {
+export const DOING_WORDS: Record<string, string> = {
   forage: 'foraging', gather: 'gathering', pick: 'picking fruit', chop: 'felling trees',
   hunt: 'hunting', build: 'building', haul: 'hauling materials', store: 'storing goods',
   craft: 'making things', wander: 'walking the country', talk: 'talking',
@@ -182,18 +187,18 @@ const DOING_WORDS: Record<string, string> = {
   play: 'playing a tune', tend: 'tending the hurt', tame: 'coaxing an animal',
 };
 
-const FEELING_WORDS: Record<string, string> = {
+export const FEELING_WORDS: Record<string, string> = {
   cold: 'being cold', hunger: 'being hungry', thirst: 'being thirsty',
   fatigue: 'being worn out', company: 'being lonely',
 };
 
-const PLACE_WORDS: Record<string, string> = {
+export const PLACE_WORDS: Record<string, string> = {
   forest: 'standing in woodland', grass: 'standing on open grass',
   hills: 'standing in the hills', beach: 'standing on the shore',
   rock: 'standing on bare rock', water: 'standing at the water',
 };
 
-const SAW_WORDS: Record<string, string> = {
+export const SAW_WORDS: Record<string, string> = {
   // Deeds, from `social/Events.ts`.
   gift: 'watched a gift given', share_food: 'watched food shared',
   help: 'watched somebody helped', talk: 'listened to people talking',

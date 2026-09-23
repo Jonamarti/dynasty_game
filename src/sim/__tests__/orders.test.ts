@@ -17,7 +17,7 @@ import { workProgressOf } from '../core/Progress.ts';
 import { PATIENCE } from '../systems/MovementSystem.ts';
 import { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
-import { menaceOver } from '../social/Authority.ts';
+import { menaceOver, orderCost } from '../social/Authority.ts';
 
 const SMALL = {
   seed: 'orders',
@@ -803,5 +803,91 @@ describe('reflect', () => {
     // spends the cooldown too, or being pulled away by hunger lets somebody sit
     // straight back down the moment they have eaten.
     expect(until).toBeGreaterThan(sim.time.tick);
+  });
+});
+
+/**
+ * M11 phase 11c. `ORDER_COST` is keyed on the verb, which is right for every
+ * entry in it but one: `take` is the same verb, the same walk and the same
+ * arithmetic whether the store is your own band's or a rival's, and only one
+ * of those is a crime. These assert the price, not the roll — `orderCost` is
+ * pure, so there is no world and no seed involved.
+ */
+describe('the price of an order aimed at somebody else\'s property', () => {
+  it('charges a trip to a rival store what a theft costs, not what a fetch costs', () => {
+    expect(orderCost('take', true)).toBeGreaterThan(orderCost('take', false));
+    // Level with `steal`, which is this same crime with a person on the other
+    // end of it. Asserted against `steal` rather than against a number so that
+    // retuning one moves the other.
+    expect(orderCost('take', true)).toBe(orderCost('steal'));
+  });
+
+  it('leaves an order aimed at nothing in particular exactly where it was', () => {
+    // The flag defaults to false at every call site that has no structure
+    // behind it, and those are almost all of them.
+    for (const verb of ['goto', 'job', 'build', 'haul', 'attack', 'court']) {
+      expect(orderCost(verb), verb + ' moved').toBe(orderCost(verb, false));
+    }
+  });
+
+  it('does not make sabotage dearer for being aimed at what it is only ever aimed at', () => {
+    // A floor rather than an addition. `sabotage` already costs more than the
+    // foreign-property floor, and there is no such thing as sabotaging your
+    // own band's hut for the unflagged reading to describe.
+    expect(orderCost('sabotage', true)).toBe(orderCost('sabotage'));
+    expect(orderCost('sabotage')).toBeGreaterThan(orderCost('take', true));
+  });
+
+  it('prices wrecking a hut above stealing from a person and below a killing', () => {
+    // The gap phase 11b left: with no entry of its own the verb fell through
+    // to the 0.3 default, so a chief could have a rival's hut knocked down
+    // for less than the price of telling somebody to fell a tree.
+    expect(orderCost('sabotage')).toBeGreaterThan(orderCost('chop'));
+    expect(orderCost('sabotage')).toBeGreaterThan(orderCost('steal'));
+    expect(orderCost('sabotage')).toBeLessThan(orderCost('attack'));
+  });
+
+  it('is what a chief actually pays: a foreign target lowers the odds of being obeyed', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const people = sim.livingPeople();
+    const leader = people[0]!;
+    const subordinate = people.find(p => p.id !== leader.id)!;
+
+    const athome = sim.standing(leader, subordinate, 'take', false);
+    const abroad = sim.standing(leader, subordinate, 'take', true);
+    expect(abroad.chance).toBeLessThan(athome.chance);
+    // And it says so, because a refusal that cannot explain itself is the
+    // thing `AGENTS.md` has a standing rule about.
+    expect(abroad.because).toContain('another band');
+  });
+});
+
+describe("an order that reaches the player's character", () => {
+  it('says who sent them, and where', () => {
+    // M11 phase 13f. A chief's order is obeyed or refused by the player's
+    // character exactly as by anybody's — but an obeyed one used to set them
+    // walking in silence.
+    const sim = new Simulation(SMALL);
+    const player = sim.possessFirst()!;
+    const leader = sim.livingPeople().find(p => p.id !== player.id && !p.isChild)!;
+    let obeyed = false;
+    for (let i = 0; i < 200 && !obeyed; i++) {
+      player.clearOrder();
+      obeyed = sim.command(leader, player, 'goto', { x: Math.round(player.x), y: Math.round(player.y) });
+    }
+    expect(obeyed).toBe(true);
+    const notice = sim.insights.find(n => n.personId === player.id);
+    expect(notice?.text).toMatch(/ sent you to /);
+  });
+
+  it('is not announced when it lands on anybody else', () => {
+    const sim = new Simulation(SMALL);
+    const [leader, member] = sim.livingPeople().filter(p => !p.isChild);
+    for (let i = 0; i < 200; i++) {
+      member!.clearOrder();
+      if (sim.command(leader!, member!, 'goto', { x: Math.round(member!.x), y: Math.round(member!.y) })) break;
+    }
+    expect(sim.insights.some(n => n.text.includes('sent you to'))).toBe(false);
   });
 });

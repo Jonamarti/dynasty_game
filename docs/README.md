@@ -18,6 +18,8 @@ it, what to do next, and why each change was made.
 | [m8_plan_the_ages.md](m8_plan_the_ages.md) | M8 — the technology ladder from flint to iron, and the mechanisms it needs |
 | [m9_plan_words_and_hands.md](m9_plan_words_and_hands.md) | M9 — the social and interface pass: talking, teaching, choosing, and seeing what is on the ground |
 | [m7_mov_m9_3_quant_plan.md](m7_mov_m9_3_quant_plan.md) | M7 — routing, and the quantity prompts that shipped alongside it |
+| [m11_plan.md](m11_plan.md) | M11 — predation, knowledge by witness, property, inequality, standing between bands, macros, the widened Neolithic and war (phases 0-11, shipped) |
+| [m11_block_v_plan.md](m11_block_v_plan.md) | M11 Block V — the owner's notes of 2026-09-22 and everything M11 still owes, commit by commit (phases 12-17) |
 
 If you are an AI agent picking this project up, read
 [../AGENTS.md](../AGENTS.md) first — it is shorter and tells you what will

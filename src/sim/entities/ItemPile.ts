@@ -11,6 +11,8 @@
  * a camp does not silently accumulate thousands of one-berry heaps.
  */
 import { Inventory } from './Item.ts';
+import { t, language } from '../../i18n/i18n.ts';
+import { ITEMS } from './Item.ts';
 
 let nextPileId = 1;
 
@@ -43,8 +45,12 @@ export class ItemPile {
   /** A short label for the map and the inspector. */
   get label(): string {
     const stacks = this.contents.entries();
-    if (stacks.length === 0) return 'nothing';
-    if (stacks.length === 1) return stacks[0]![0];
-    return stacks.length + ' kinds of goods';
+    if (stacks.length === 0) return t('nothing');
+    // English has always shown the id here; a translation has only the label.
+    if (stacks.length === 1) {
+      const id = stacks[0]![0];
+      return language() === 'en' ? id : t(ITEMS[id]?.label ?? id).toLowerCase();
+    }
+    return t('{n} kinds of goods', { n: stacks.length });
   }
 }

@@ -17,6 +17,7 @@ import {
 } from '../sim/core/Difficulty.ts';
 import type { DeepPartial, SimConfig } from '../sim/core/Config.ts';
 import { AUTONOMY_ORDER, type Autonomy } from '../sim/ai/Autonomy.ts';
+import { LANGUAGES, type Language } from '../i18n/i18n.ts';
 
 const KEY = 'dynasty.settings';
 
@@ -69,6 +70,38 @@ export function loadAutonomy(): Autonomy {
   // Anything unrecognised — an older build's spelling, a hand-edited value —
   // degrades to the mode the game has always had rather than throwing on boot.
   return AUTONOMY_ORDER.includes(raw as Autonomy) ? (raw as Autonomy) : 'manual';
+}
+
+/**
+ * The language the game is shown in. Kept apart from the difficulty document
+ * for the reason `AUTONOMY_KEY` is: "Reset everything to Normal" throws the
+ * overrides away, and it must not also switch a Spanish reader into English.
+ */
+const LANGUAGE_KEY = 'dynasty.language';
+
+/**
+ * The stored choice, or — the first time the game is opened — the browser's
+ * own language if the game has it, so a Spanish browser opens in Spanish
+ * without anybody having to find a button in a language they cannot read.
+ */
+export function loadLanguage(): Language {
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(LANGUAGE_KEY);
+  } catch {
+    raw = null;
+  }
+  if (LANGUAGES.some(l => l.id === raw)) return raw as Language;
+  const browser = typeof navigator !== 'undefined' ? navigator.language.slice(0, 2) : 'en';
+  return LANGUAGES.some(l => l.id === browser) ? (browser as Language) : 'en';
+}
+
+export function saveLanguage(value: Language): void {
+  try {
+    localStorage.setItem(LANGUAGE_KEY, value);
+  } catch {
+    // Nothing to do: the preference simply does not persist.
+  }
 }
 
 export function saveAutonomy(value: Autonomy): void {

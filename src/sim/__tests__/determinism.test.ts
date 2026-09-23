@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { RNG } from '../core/RNG.ts';
 import { Simulation } from '../core/Simulation.ts';
+import { setLanguage } from '../../i18n/i18n.ts';
 
 const SMALL = {
   seed: 'determinism',
@@ -84,6 +85,28 @@ describe('Simulation determinism', () => {
       b.step();
     }
     expect(fingerprint(a)).toBe(fingerprint(b));
+  });
+
+  // The simulation writes some of its own sentences — a line in somebody's
+  // life, a refusal, a band's name — through `t`, in whatever language is set.
+  // Words must never feed back into the world: a Spanish player and an English
+  // one on the same seed have to be living on the same island.
+  it('runs the same world in Spanish as in English', () => {
+    const config = { ...SMALL, population: { bands: 2, peoplePerBand: 6 } };
+    const english = new Simulation(config);
+    for (let i = 0; i < 1500; i++) english.step();
+
+    setLanguage('es');
+    try {
+      const spanish = new Simulation(config);
+      for (let i = 0; i < 1500; i++) spanish.step();
+      expect(fingerprint(spanish)).toBe(fingerprint(english));
+      // And it really was written in Spanish, or the test proves nothing.
+      expect(spanish.bands[0]!.name.startsWith('banda ')).toBe(true);
+      expect(english.bands[0]!.name.endsWith(' band')).toBe(true);
+    } finally {
+      setLanguage('en');
+    }
   });
 
   it('generates the same terrain for the same seed', () => {

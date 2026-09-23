@@ -48,6 +48,11 @@ import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
 import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
 import { mayUse } from '../social/Property.ts';
+import {
+  homeRange, homeward, fearOf, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
+  DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
+} from '../social/Fear.ts';
+import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 
 export interface BrainContext {
   world: World;
@@ -116,6 +121,13 @@ export interface BrainContext {
    * computed once per tick rather than once per person.
    */
   sabotageCandidatesByBand: ReadonlyMap<number, Building[]>;
+  /**
+   * Each founding band's camp, for M11 phase 14's readers of fear: how far a
+   * frightened person will range from it, and which way they drift back.
+   * Optional so that a test building a context by hand need not invent a
+   * camp; absent, fear has nowhere to pull anybody toward.
+   */
+  homes?: ReadonlyMap<number, { x: number; y: number }>;
 }
 
 export interface ScoredAction {
@@ -162,6 +174,13 @@ interface FoundTargets {
   victim: Person | null;
   /** Whoever an `attack` is aimed at. Never merged with `victim`; see above. */
   foe: Person | null;
+  /**
+   * The outsider a `warn` is aimed at, M11 phase 14b. Its own field rather
+   * than `foe`, because the revenge and predation routes overwrite `foe`
+   * after the territorial one has chosen, and a warning must go to the person
+   * it was scored against.
+   */
+  intruder: Person | null;
   beneficiary: Person | null;
   /**
    * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
@@ -695,6 +714,7 @@ export class Brain {
     let beneficiary: Person | null = null;
     let tradePartner: Person | null = null;
     let fleeFrom: Person | null = null;
+    let intruder: Person | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
     let craftStation: Building | null = null;
@@ -744,6 +764,9 @@ export class Brain {
       const untold = (other: Person) =>
         myNews !== null && !other.memory.has(myNews.eventId) ? newsWeight : 0;
 
+      // M11 phase 14b: a frightened person keeps to their own — as a
+      // preference over company, never a refusal. See `STRANGER_AVERSION`.
+      const fear = fearOf(person);
       const freshCompany = neighbours.filter(other => {
         const rel = ctx.relationships.peek(person.id, other.id);
         if (!rel) return true;
@@ -751,6 +774,7 @@ export class Brain {
       });
       companion = this.pickBest(freshCompany, other =>
         ctx.relationships.opinion(person.id, other.id) + 5 - person.distanceTo(other)
+        - (other.bandId === person.bandId ? 0 : fear * STRANGER_AVERSION)
         // Worth about a dozen tiles of walking toward whoever leads your band,
         // and a couple toward anybody else in it. In opinion's units because
         // everything else in this comparison is.
@@ -1344,6 +1368,52 @@ export class Brain {
       }
     }
 
+    // --- Territory -----------------------------------------------------------
+    // M11 phase 14b, the third route to `attack` and the last reader of fear:
+    // a frightened person defends the band's ground. See `DEFEND_AT` in
+    // `Fear.ts` for the order — warned first, struck only if they stay.
+    {
+      const home = ctx.homes?.get(person.bandId);
+      const fear = fearOf(person);
+      if (home && fear >= DEFEND_AT && !person.isChild) {
+        const innerSq = (TERRITORY_RADIUS * INNER_SHARE) ** 2;
+        const trespasser = this.pickBest(neighbours.filter(other =>
+          other.bandId !== person.bandId && !other.isChild &&
+          ctx.homes!.has(other.bandId) &&
+          (other.x - home.x) ** 2 + (other.y - home.y) ** 2 <= innerSq &&
+          ctx.bandRelations.standing(person.bandId, other.bandId) < DEFEND_BELOW_STANDING &&
+          ctx.relationships.kinship(person.id, other.id) === 0
+        ), other => -person.distanceTo(other));
+        if (trespasser) {
+          const since = ctx.time.tick - person.warnedOffTick;
+          const warned = person.warnedOffId === trespasser.id && since < WARN_MEMORY;
+          if (!warned) {
+            add('warn', (0.3 + fear) * (0.5 + person.traits.aggression) *
+              this.proximityBonus(person, trespasser, ctx.sightRadius));
+            intruder = trespasser;
+          } else if (since >= WARN_GRACE) {
+            // Nobody picks a fight they expect to lose, here as in revenge.
+            // Their allies count against it; the defender's own band standing
+            // round them is what makes a camp dangerous to walk into.
+            const myPower = fightingPower(person);
+            const theirPower = fightingPower(trespasser);
+            const mine = neighbours.filter(other =>
+              other.bandId === person.bandId && other.id !== person.id && !other.isChild).length;
+            const theirs = neighbours.filter(other =>
+              other.bandId === trespasser.bandId && other.id !== trespasser.id && !other.isChild).length;
+            const boldness = Math.max(0, myPower * (1 + mine * 0.25) - theirPower * 0.8) / (1 + theirs);
+            const score = Math.min(DEFEND_CEILING, fear * boldness * (0.5 + person.traits.aggression * 2)) *
+              this.proximityBonus(person, trespasser, ctx.sightRadius);
+            if (score > attackScore) {
+              attackScore = score;
+              foe = trespasser;
+              telemetry.count('defend_territory_chosen');
+            }
+          }
+        }
+      }
+    }
+
     // One row, whichever reason won it, with `foe` naming the person that
     // reason was about.
     if (attackScore > 0) add('attack', attackScore);
@@ -1710,6 +1780,31 @@ export class Brain {
       );
       add('flee', (hurt * 2.5 + outmatched * 2 + 0.4) * (1.4 - person.traits.aggression));
       fleeFrom = threat;
+    } else {
+      // M11 phase 14b: somebody you dread, close by, is reason enough to go,
+      // whether or not they have raised a hand today. The most dreaded one,
+      // weighed against how near they are. Below the fresh-harm case above,
+      // which is a person bleeding; this is a person remembering.
+      const reach = ctx.sightRadius * DREAD_FLEE_RANGE;
+      let dreaded: Person | null = null;
+      let worst = 0;
+      for (const other of neighbours) {
+        const dread = ctx.relationships.dread(person.id, other.id);
+        if (dread < DREAD_FLEE_AT) continue;
+        const distance = person.distanceTo(other);
+        if (distance > reach) continue;
+        const weight = dread * (1 - distance / (reach + 1));
+        if (weight > worst) {
+          worst = weight;
+          dreaded = other;
+        }
+      }
+      if (dreaded) {
+        const dread = ctx.relationships.dread(person.id, dreaded.id) / 100;
+        add('flee', (dread * 1.5 + 0.2) * (1.4 - person.traits.aggression));
+        fleeFrom = dreaded;
+        telemetry.count('fled_from_dread_considered');
+      }
     }
 
     // --- Research ----------------------------------------------------------
@@ -2026,7 +2121,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, beneficiary, tradePartner, fleeFrom,
+        victim, foe, intruder, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2276,9 +2371,14 @@ export class Brain {
     ctx: BrainContext,
     filter: (n: ResourceNode) => boolean
   ): ResourceNode | null {
+    // M11 phase 14b: a frightened person works near home. See `homeRange`.
+    const home = ctx.homes?.get(person.bandId);
+    const range = home ? homeRange(person) : Infinity;
+    const rangeSq = range * range;
     return ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
       n => filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y) &&
-        !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)));
+        !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
+        (range === Infinity || (n.x - home!.x) ** 2 + (n.y - home!.y) ** 2 <= rangeSq));
   }
 
   private setup(
@@ -2413,9 +2513,16 @@ export class Brain {
         // A short hop rather than a cross-map trek, so wandering reads as
         // milling about camp instead of migration.
         const r = ctx.sightRadius;
+        // M11 phase 14b: centred part of the way home for somebody afraid,
+        // so an idle walk drifts back to camp rather than out of it. The same
+        // two draws per attempt either way; only where the box sits moves.
+        const home = ctx.homes?.get(person.bandId);
+        const pull = home ? homeward(person) : 0;
+        const cx = home ? person.x + (home.x - person.x) * pull : person.x;
+        const cy = home ? person.y + (home.y - person.y) * pull : person.y;
         for (let attempt = 0; attempt < 8; attempt++) {
-          const tx = Math.round(person.x + ctx.rng.range(-r, r));
-          const ty = Math.round(person.y + ctx.rng.range(-r, r));
+          const tx = Math.round(cx + ctx.rng.range(-r, r));
+          const ty = Math.round(cy + ctx.rng.range(-r, r));
           if (ctx.world.isWalkable(tx, ty)) {
             person.targetX = tx;
             person.targetY = ty;
@@ -2455,6 +2562,7 @@ export class Brain {
       case 'trade':
       case 'steal':
       case 'threaten':
+      case 'warn':
       case 'attack':
       case 'slander':
       case 'praise': {
@@ -2474,6 +2582,7 @@ export class Brain {
           action === 'feed' || action === 'give' ? found.beneficiary :
           action === 'trade' ? found.tradePartner :
           action === 'attack' ? found.foe :
+          action === 'warn' ? found.intruder :
           action === 'slander' || action === 'praise' ? found.companion :
           found.victim;
         if (other) {

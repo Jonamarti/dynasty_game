@@ -36,8 +36,10 @@ import { ITEMS } from '../sim/entities/Item.ts';
 import { actionLabel } from '../render/Floaters.ts';
 import {
   knowledgeOfPerson, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree,
-  rememberedAbout,
+  rememberedAbout, regardFromThem,
 } from '../sim/social/Knowledge.ts';
+import type { Relationship, RelationshipGraph } from '../sim/social/Relationships.ts';
+import { foldRepeats } from './LifeLog.ts';
 import { TECH, TECH_EFFECTS, techPower, type Tech } from '../sim/knowledge/Tech.ts';
 import {
   STAGE_LABELS, PRACTICE_STAGE_LABELS, PROTOTYPE_AT, TRIES_TO_TEST,
@@ -51,6 +53,7 @@ import { JOBS, type JobId } from '../sim/entities/Job.ts';
 import {
   AUTONOMY_LABELS, AUTONOMY_NOTES, AUTONOMY_ORDER, type Autonomy,
 } from '../sim/ai/Autonomy.ts';
+import { t, tc, genderOf } from '../i18n/i18n.ts';
 
 export type PanelTab = 'now' | 'self' | 'kit' | 'work' | 'ties' | 'life';
 
@@ -226,6 +229,25 @@ export class Hud {
     }
   }
 
+  /**
+   * Builds the chrome again in the current language.
+   *
+   * The top bar, the help line and the panel frame are written once, in
+   * `build`, so a language switch has to throw them away. What they were
+   * showing — the pause state, the speed, the autonomy mode — is handed back
+   * in by the caller, which is the one that owns it.
+   */
+  relabel(paused: boolean, speed: number, autonomy: Autonomy): void {
+    this.build();
+    this.delegate();
+    this.applyChrome();
+    this.setPaused(paused);
+    this.setSpeed(speed);
+    this.setAutonomy(autonomy);
+    this.builtFor = null;
+    this.craftBarKey = '';
+  }
+
   /** Records why somebody's order stopped, for the panel's action line. */
   noteStop(personId: number, text: string): void {
     this.lastStop = { personId, text, at: performance.now() };
@@ -252,7 +274,7 @@ export class Hud {
 
     this.pauseButton = document.createElement('button');
     this.pauseButton.className = 'hud-button';
-    this.pauseButton.textContent = 'Pause';
+    this.pauseButton.textContent = t('Pause');
     this.pauseButton.onclick = () => this.callbacks.onTogglePause();
 
     const speed = document.createElement('input');
@@ -278,21 +300,21 @@ export class Hud {
     const buildButton = document.createElement('button');
     this.buildButton = buildButton;
     buildButton.className = 'hud-button';
-    buildButton.textContent = 'Build';
-    buildButton.title = 'Place a structure (B)';
+    buildButton.textContent = t('Build');
+    buildButton.title = t('Place a structure (B)');
     buildButton.onclick = () => this.callbacks.onToggleBuild();
 
     const craftButton = document.createElement('button');
     this.craftButton = craftButton;
     craftButton.className = 'hud-button';
-    craftButton.textContent = 'Make';
-    craftButton.title = 'Craft something by hand (M)';
+    craftButton.textContent = t('Make');
+    craftButton.title = t('Craft something by hand (M)');
     craftButton.onclick = () => this.callbacks.onToggleCraft();
 
     const menuButton = document.createElement('button');
     menuButton.className = 'hud-button';
     menuButton.textContent = '⚙';
-    menuButton.title = 'Menu and settings (Esc)';
+    menuButton.title = t('Menu and settings (Esc)');
     menuButton.onclick = () => this.callbacks.onOpenMenu();
 
     // How much the character does for itself, as a segmented control. In the
@@ -301,13 +323,13 @@ export class Hud {
     // again before doing anything deliberate — and a preference buried two
     // screens deep would be found once and then forgotten.
     this.autonomyBar = el('div', 'hud-seg');
-    this.autonomyBar.title = 'How much your character does for itself (R)';
+    this.autonomyBar.title = t('How much your character does for itself (R)');
     for (const mode of AUTONOMY_ORDER) {
       const button = document.createElement('button');
       button.className = 'hud-seg-button';
       button.dataset.autonomy = mode;
-      button.textContent = AUTONOMY_LABELS[mode];
-      button.title = AUTONOMY_NOTES[mode];
+      button.textContent = t(AUTONOMY_LABELS[mode]);
+      button.title = t(AUTONOMY_NOTES[mode]);
       button.onclick = () => this.callbacks.onAutonomy(mode);
       this.autonomyBar.appendChild(button);
     }
@@ -326,10 +348,10 @@ export class Hud {
       return button;
     };
     mobileTools.append(
-      mobileTool('⌾ Centre', 'Re-centre on your character', () => this.callbacks.onRecentre()),
-      mobileTool('Tech', 'Technology web', () => this.callbacks.onOpenTech()),
-      mobileTool('Family', 'Family tree', () => this.callbacks.onOpenFamily()),
-      mobileTool('Tribe', 'Tribe graph', () => this.callbacks.onOpenTribe()),
+      mobileTool('⌾ ' + t('Centre'), t('Re-centre on your character'), () => this.callbacks.onRecentre()),
+      mobileTool(t('Tech'), t('Technology web'), () => this.callbacks.onOpenTech()),
+      mobileTool(t('Family'), t('Family tree'), () => this.callbacks.onOpenFamily()),
+      mobileTool(t('Tribe'), t('Tribe graph'), () => this.callbacks.onOpenTribe()),
     );
 
     topBar.append(
@@ -342,11 +364,11 @@ export class Hud {
     this.panelEl = el('div', 'hud-panel');
     this.panelHeaderEl = el('div', 'hud-panel-head');
     this.panelTitleEl = el('span', 'hud-panel-title');
-    this.panelTitleEl.textContent = 'Nothing selected';
+    this.panelTitleEl.textContent = t('Nothing selected');
     this.collapseButton = document.createElement('button');
     this.collapseButton.className = 'hud-collapse';
     this.collapseButton.textContent = '▾';
-    this.collapseButton.title = 'Fold the panel away (P)';
+    this.collapseButton.title = t('Fold the panel away (P)');
     this.collapseButton.onclick = () => this.toggleCollapsed();
     this.panelHeaderEl.append(this.panelTitleEl, this.collapseButton);
     this.panelBodyEl = el('div', 'hud-panel-body');
@@ -368,15 +390,20 @@ export class Hud {
 
     const help = el('div', 'hud-help');
     help.innerHTML =
-      '<span class="hud-help-desktop"><b>WASD</b> walk &middot; <b>drag</b> pan &middot; <b>F</b> re-centre &middot; ' +
-      '<b>click</b> inspect &middot; <b>right-click</b> actions &middot; ' +
-      '<b>B</b> build &middot; <b>M</b> make &middot; <b>C</b> command &middot; ' +
-      '<b>G</b> tech web &middot; <b>K</b> family tree &middot; <b>T</b> tribe graph &middot; ' +
-      '<b>R</b> who steers &middot; ' +
-      '<b>P</b> fold panel &middot; <b>H</b> hide overlay &middot; <b>space</b> pause &middot; ' +
-      '<b>Esc</b> menu</span>' +
-      '<span class="hud-help-touch"><b>Tap</b> inspect &middot; <b>hold</b> actions &middot; ' +
-      '<b>drag</b> pan</span>';
+      // One key per phrase, so the translation of one binding cannot drift
+      // out of step with its key letter.
+      '<span class="hud-help-desktop">' + [
+        ['WASD', t('walk')], [t('drag'), t('pan')], ['F', t('re-centre')],
+        [t('click'), t('inspect')], [t('right-click'), t('actions')],
+        ['B', t('build')], ['M', t('make')], ['C', t('command')],
+        ['G', t('tech web')], ['K', t('family tree')], ['T', t('tribe graph')],
+        ['R', t('who steers')],
+        ['P', t('fold panel')], ['H', t('hide overlay')], [t('space'), t('pause')],
+        ['Esc', t('menu')],
+      ].map(([key, what]) => '<b>' + key + '</b> ' + what).join(' &middot; ') + '</span>' +
+      '<span class="hud-help-touch">' + [
+        [t('Tap'), t('inspect')], [t('hold'), t('actions')], [t('drag'), t('pan')],
+      ].map(([key, what]) => '<b>' + key + '</b> ' + what).join(' &middot; ') + '</span>';
 
     this.root.append(
       topBar, this.panelEl, this.buildBarEl, this.craftBarEl, this.commandBarEl, help);
@@ -452,12 +479,12 @@ export class Hud {
     }
     this.commandBarEl.hidden = false;
     this.commandBarEl.innerHTML =
-      '<b>Ordering ' + escapeHtml(person.name) + '</b> \u2014 right-click a target. ' +
-      'Esc or C to stop.';
+      '<b>' + escapeHtml(t('Ordering {name}', { name: person.name })) + '</b> \u2014 ' +
+      t('right-click a target. Esc or C to stop.');
   }
 
   setPaused(paused: boolean): void {
-    this.pauseButton.textContent = paused ? 'Resume' : 'Pause';
+    this.pauseButton.textContent = paused ? t('Resume') : t('Pause');
   }
 
   setTab(tab: PanelTab): void {
@@ -481,7 +508,7 @@ export class Hud {
     this.buildButton.classList.remove('has-new');
 
     const title = el('div', 'hud-buildbar-title');
-    title.textContent = 'Place a structure — click the map, Esc to cancel';
+    title.textContent = t('Place a structure — click the map, Esc to cancel');
     this.buildBarEl.appendChild(title);
 
     const row = el('div', 'hud-buildbar-row');
@@ -489,13 +516,13 @@ export class Hud {
       const button = document.createElement('button');
       button.className = 'hud-design' + (this.activeDesign?.id === def.id ? ' is-active' : '');
       const cost = Object.entries(def.materials)
-        .map(([id, n]) => n + ' ' + (ITEMS[id]?.label ?? id).toLowerCase())
-        .join(', ') || 'no materials';
+        .map(([id, n]) => n + ' ' + t(ITEMS[id]?.label ?? id).toLowerCase())
+        .join(', ') || t('no materials');
       button.innerHTML =
         '<span class="hud-design-icon">' + def.icon + '</span>' +
-        '<span class="hud-design-name">' + escapeHtml(def.label) + '</span>' +
+        '<span class="hud-design-name">' + escapeHtml(t(def.label)) + '</span>' +
         '<span class="hud-design-cost">' + escapeHtml(cost) + '</span>';
-      button.title = def.description;
+      button.title = t(def.description);
       button.onclick = () => {
         this.activeDesign = this.activeDesign?.id === def.id ? null : def;
         this.callbacks.onPickDesign(this.activeDesign);
@@ -511,11 +538,12 @@ export class Hud {
       // `TECH[...].label`, not the raw id: this line read "Granary (needs
       // pottery)" only because the ids happen to be English words, and would
       // have read "(needs clay_tablet)" the moment one of them was not.
-      note.textContent = 'Not yet known: ' +
-        lockedDefs.map(d => d.label + ' (needs ' +
-          (d.requiresTech !== null
-            ? TECH[d.requiresTech as Tech].label
-            : 'nothing') + ')').join(', ');
+      note.textContent = t('Not yet known: {list}', {
+        list: lockedDefs.map(d => t('{thing} (needs {tech})', {
+          thing: t(d.label),
+          tech: d.requiresTech !== null ? t(TECH[d.requiresTech as Tech].label) : t('nothing'),
+        })).join(', '),
+      });
       this.buildBarEl.appendChild(note);
     }
   }
@@ -585,7 +613,7 @@ export class Hud {
     this.craftButton.classList.remove('has-new');
 
     const title = el('div', 'hud-buildbar-title');
-    title.textContent = 'Make something — Esc to cancel';
+    title.textContent = t('Make something — Esc to cancel');
     this.craftBarEl.appendChild(title);
 
     const row = el('div', 'hud-buildbar-row');
@@ -598,9 +626,8 @@ export class Hud {
       // do something, the interface says why.
       const waiting = sim.lockedRecipes(person);
       none.textContent = waiting.length === 0
-        ? 'There is nothing to make in this world.'
-        : 'They have not worked out how to make anything yet. Every recipe ' +
-          'below is waiting on a discovery.';
+        ? t('There is nothing to make in this world.')
+        : t('They have not worked out how to make anything yet. Every recipe below is waiting on a discovery.');
       this.craftBarEl.appendChild(none);
     }
     for (const recipe of known) {
@@ -608,14 +635,14 @@ export class Hud {
       const short = missingIngredients(person.inventory, recipe);
       button.className = 'hud-design' + (short === '' ? '' : ' is-disabled');
       const cost = Object.entries(recipe.ingredients)
-        .map(([id, n]) => n + ' ' + (ITEMS[id]?.label ?? id).toLowerCase())
-        .join(', ') || 'nothing';
+        .map(([id, n]) => n + ' ' + t(ITEMS[id]?.label ?? id).toLowerCase())
+        .join(', ') || t('nothing');
       button.innerHTML =
         '<span class="hud-design-icon">' + recipe.icon + '</span>' +
-        '<span class="hud-design-name">' + escapeHtml(recipe.label) + '</span>' +
+        '<span class="hud-design-name">' + escapeHtml(t(recipe.label)) + '</span>' +
         '<span class="hud-design-cost">' + escapeHtml(cost) + '</span>';
       // The standing rule: if it cannot be done, the interface says why.
-      button.title = short === '' ? recipe.label : short;
+      button.title = short === '' ? t(recipe.label) : short;
       if (short === '') button.onclick = () => this.callbacks.onCraft(recipe.id);
       row.appendChild(button);
     }
@@ -627,8 +654,11 @@ export class Hud {
     const locked = sim.lockedRecipes(person);
     if (locked.length > 0) {
       const note = el('div', 'hud-buildbar-locked');
-      note.textContent = 'Not yet known: ' +
-        locked.map(r => r.label + ' (needs ' + TECH[r.tech].label + ')').join(', ');
+      note.textContent = t('Not yet known: {list}', {
+        list: locked.map(r => t('{thing} (needs {tech})', {
+          thing: t(r.label), tech: t(TECH[r.tech].label),
+        })).join(', '),
+      });
       this.craftBarEl.appendChild(note);
     }
   }
@@ -640,17 +670,18 @@ export class Hud {
   update(sim: Simulation, selection: Selection | null): void {
     const stats = sim.stats();
     this.clockEl.textContent = sim.time.label();
-    this.statsEl.textContent =
-      stats.era + ' · ' + stats.population + ' alive · ' +
-      stats.buildingsComplete + '/' + stats.buildings + ' built · step ' + stats.tick;
+    this.statsEl.textContent = t('{era} · {alive} alive · {built}/{buildings} built · step {tick}', {
+      era: t(stats.era), alive: stats.population,
+      built: stats.buildingsComplete, buildings: stats.buildings, tick: stats.tick,
+    });
 
     this.currentSim = sim;
     this.currentSelection = selection;
 
     const observer = sim.player;
     if (!selection || !observer) {
-      this.panelBodyEl.innerHTML = '<div class="hud-empty">Nothing selected.</div>';
-      this.panelTitleEl.textContent = 'Nothing selected';
+      this.panelBodyEl.innerHTML = '<div class="hud-empty">' + t('Nothing selected.') + '</div>';
+      this.panelTitleEl.textContent = t('Nothing selected');
       this.builtFor = null;
       return;
     }
@@ -713,13 +744,18 @@ export class Hud {
       const need = (row as HTMLElement).dataset.need as string;
       const raw = need === 'health'
         ? person.health
-        : (person.needs as Record<string, number>)[need] ?? 0;
+        : need.startsWith('macro_')
+          ? person.macroBalance[need.slice(6) as Macro] * 100
+          : (person.needs as Record<string, number>)[need] ?? 0;
       const clamped = Math.max(0, Math.min(100, raw));
       const fill = row.querySelector('i') as HTMLElement | null;
       const readout = row.querySelector('.hud-need-value');
       if (fill) fill.style.width = clamped.toFixed(0) + '%';
       if (readout) readout.textContent = clamped.toFixed(0);
     }
+
+    const today = this.panelBodyEl.querySelector('.hud-diet-today');
+    if (today) today.textContent = describeEatenToday(person);
 
     // The work bar is patched rather than rebuilt: it moves every tick, and
     // rebuilding the panel that often would fight every click landing in it.
@@ -749,25 +785,27 @@ export class Hud {
     rows.push(
       '<div class="hud-name">' +
       escapeHtml(known.knowsName ? person.fullName : known.displayName) +
-      (person.isPlayer ? ' <span class="hud-tag">you</span>' : '') + '</div>'
+      (person.isPlayer ? ' <span class="hud-tag">' + t('you') + '</span>' : '') + '</div>'
     );
 
     // A stranger's band is only obvious if it is your own; otherwise all you can
     // say is that they are not one of yours.
     const bandText = known.level === 'stranger'
-      ? (sameBand ? escapeHtml(band?.name ?? '') : 'not of your band')
-      : escapeHtml(band?.name ?? 'no band');
+      ? (sameBand ? escapeHtml(band?.name ?? '') : t('not of your band'))
+      : escapeHtml(band?.name ?? t('no band'));
     rows.push(
-      '<div class="hud-sub">' + person.sex + ', ' +
-      (known.knowsName ? person.years + ' years' : 'about ' + roughAge(person)) +
+      '<div class="hud-sub">' + tc('sex', person.sex) + ', ' +
+      (known.knowsName
+        ? t('{n} years', { n: person.years })
+        : person.years < 14 ? t('about a child') : t('about {age}', { age: roughAge(person) })) +
       ' · ' + bandText + '</div>'
     );
     rows.push('<div class="hud-known">' + escapeHtml(known.because) + '</div>');
     rows.push('<div class="hud-doing">' + this.doingLine(person, sim) + '</div>');
 
     const tabs: [PanelTab, string][] = [
-      ['now', 'Now'], ['self', 'Self'], ['kit', 'Kit'], ['work', 'Work'],
-      ['ties', 'Ties'], ['life', 'Life'],
+      ['now', tc('tab', 'Now')], ['self', tc('tab', 'Self')], ['kit', tc('tab', 'Kit')],
+      ['work', tc('tab', 'Work')], ['ties', tc('tab', 'Ties')], ['life', tc('tab', 'Life')],
     ];
     rows.push(
       '<div class="hud-tabs">' +
@@ -788,8 +826,8 @@ export class Hud {
     }
 
     if (!person.isPlayer) {
-      rows.push('<button class="hud-button hud-possess" data-possess="1">Play as ' +
-        escapeHtml(known.displayName) + '</button>');
+      rows.push('<button class="hud-button hud-possess" data-possess="1">' +
+        escapeHtml(t('Play as {name}', { name: known.displayName })) + '</button>');
     }
     return rows;
   }
@@ -812,46 +850,55 @@ export class Hud {
     const alone = person.isPlayer && person.order === null && sim.autonomy !== 'manual';
     const stall = person.isPlayer ? sim.autonomyStall : null;
     return escapeHtml(actionLabel(person.action, person.targetRecipe, person.talkMode)) +
-      (person.order ? ' <span class="hud-ordered">ordered</span>' : '') +
+      (person.order ? ' <span class="hud-ordered">' + t('ordered') + '</span>' : '') +
       (alone ? ' <span class="hud-alone">' +
-        escapeHtml(AUTONOMY_LABELS[sim.autonomy].toLowerCase()) + '</span>' : '') +
+        escapeHtml(t(AUTONOMY_LABELS[sim.autonomy]).toLowerCase()) + '</span>' : '') +
       (stall ? '<div class="hud-stopped">' + escapeHtml(stall) + '</div>' : '') +
       (fresh ? '<div class="hud-stopped">' + escapeHtml(stop!.text) + '</div>' : '');
   }
 
   private tabNow(person: Person, known: ReturnType<typeof knowledgeOfPerson>): string[] {
     const rows: string[] = [];
-    rows.push('<div class="hud-section">Condition</div>');
+    rows.push('<div class="hud-section">' + t('Condition') + '</div>');
 
     // Injury is visible on anyone — you can see that someone is hurt. The rest
     // of a person's condition is not written on their face.
     if (!known.knowsCondition) {
       rows.push('<div class="hud-sub">' + describeHealth(person.health) + '</div>');
-      rows.push(veil('You would have to know them better to read how they are faring.'));
+      rows.push(veil(t('You would have to know them better to read how they are faring.')));
       return rows;
     }
 
-    rows.push(bar('health', person.health, '#5cc98a', 'health'));
+    rows.push(bar(tc('bar', 'health'), person.health, '#5cc98a', 'health'));
     for (const need of NEEDS) {
-      rows.push(bar(need, person.needs[need], NEED_COLORS[need] ?? '#888', need));
+      rows.push(bar(tc('bar', need), person.needs[need], NEED_COLORS[need] ?? '#888', need));
     }
 
     // M11 phase 8e. Malnutrition (8d) caps health recovery invisibly unless
     // something says so here — the standing rule this project already keeps
     // for `interruption`/`abandon` refusals applies just as much to a health
     // mechanism nobody asked for and nobody can see.
-    rows.push('<div class="hud-section">Diet</div>');
+    //
+    // M11 phase 12a. The bars are *shares* of what has lately been eaten, and
+    // move only at midnight (`decayMacroBalance`), so a meal never visibly
+    // fills them — the owner's note read them as stores that eating should
+    // top up. The header says what they are, and the "today" line underneath
+    // is the thing that does answer a meal. Both carry a `data-need` key so
+    // `refreshPerson` patches them; before this they changed only when the
+    // whole panel happened to be rebuilt.
+    rows.push('<div class="hud-section">' + t('Diet · share of recent meals') + '</div>');
     for (const macro of MACROS) {
-      rows.push(bar(macro, person.macroBalance[macro] * 100, MACRO_COLORS[macro]));
+      rows.push(bar(tc('bar', macro), person.macroBalance[macro] * 100, MACRO_COLORS[macro], 'macro_' + macro));
     }
+    rows.push('<div class="hud-note hud-diet-today">' + escapeHtml(describeEatenToday(person)) + '</div>');
     rows.push('<div class="hud-note">' + escapeHtml(describeDiet(person)) + '</div>');
 
     const carried = person.inventory.entries();
-    rows.push('<div class="hud-section">Carrying</div>');
+    rows.push('<div class="hud-section">' + t('Carrying') + '</div>');
     rows.push('<div class="hud-sub">' +
       (carried.length === 0
-        ? 'nothing'
-        : carried.map(([id, n]) => escapeHtml(ITEMS[id]?.label ?? id) + ' &times;' + n).join(', ')) +
+        ? t('nothing')
+        : carried.map(([id, n]) => escapeHtml(t(ITEMS[id]?.label ?? id)) + ' &times;' + n).join(', ')) +
       '</div>');
 
     // The same bar the renderer floats over the actor's head, in the panel that
@@ -862,18 +909,18 @@ export class Hud {
     // ninety seconds it takes to fell a tree by hand.
     const progress = this.currentSim ? workProgressOf(person, this.currentSim) : null;
     if (progress !== null) {
-      rows.push('<div class="hud-section">Working</div>');
-      rows.push(bar('progress', progress * 100, '#7fd4ff', undefined, 'hud-work'));
+      rows.push('<div class="hud-section">' + t('Working') + '</div>');
+      rows.push(bar(tc('bar', 'progress'), progress * 100, '#7fd4ff', undefined, 'hud-work'));
     }
 
-    rows.push('<div class="hud-section">Wants to</div>');
+    rows.push('<div class="hud-section">' + t('Wants to') + '</div>');
     rows.push('<div class="hud-scores">' + this.scoreRows(person).join('') + '</div>');
     return rows;
   }
 
   private scoreRows(person: Person): string[] {
     const scores = lastScores.get(person.id) ?? [];
-    if (scores.length === 0) return ['<div class="hud-sub">nothing in particular</div>'];
+    if (scores.length === 0) return ['<div class="hud-sub">' + t('nothing in particular') + '</div>'];
     const top = scores[0]!.score;
     return scores.map(entry => {
       const width = Math.max(2, (entry.score / top) * 100);
@@ -900,22 +947,23 @@ export class Hud {
 
     if (!own && !known.knowsCondition) {
       return [
-        '<div class="hud-section">Carrying</div>',
-        veil('You cannot see what a stranger has in their pack.'),
+        '<div class="hud-section">' + t('Carrying') + '</div>',
+        veil(t('You cannot see what a stranger has in their pack.')),
       ];
     }
 
     const carried = person.inventory.entries();
-    rows.push('<div class="hud-section">Carrying</div>');
+    rows.push('<div class="hud-section">' + t('Carrying') + '</div>');
     // Labelled as a percentage because that is what the bar's readout shows;
     // "load 45" beside a heading saying 18/40 just reads as a contradiction.
-    rows.push(bar('% full', (person.carrying / person.carryCapacity) * 100,
+    rows.push(bar(tc('bar', '% full'), (person.carrying / person.carryCapacity) * 100,
       person.isLaden ? '#e0705c' : '#8ab4d8'));
-    rows.push('<div class="hud-sub">' + person.carrying + ' of ' +
-      person.carryCapacity + (person.isLaden ? ' — hands full' : '') + '</div>');
+    rows.push('<div class="hud-sub">' +
+      t('{n} of {max}', { n: person.carrying, max: person.carryCapacity }) +
+      (person.isLaden ? ' — ' + t('hands full') : '') + '</div>');
 
     if (carried.length === 0) {
-      rows.push('<div class="hud-sub">Nothing at all.</div>');
+      rows.push('<div class="hud-sub">' + t('Nothing at all.') + '</div>');
       return rows;
     }
 
@@ -931,10 +979,10 @@ export class Hud {
     for (const [itemId, count] of carried) {
       const def = ITEMS[itemId];
       rows.push('<div class="hud-item">' +
-        '<span class="hud-item-name">' + escapeHtml(def?.label ?? itemId) +
+        '<span class="hud-item-name">' + escapeHtml(t(def?.label ?? itemId)) +
         ' <b>&times;' + count + '</b></span>' +
         (def && def.nutrition > 0
-          ? '<span class="hud-item-note">' + def.nutrition + ' food</span>'
+          ? '<span class="hud-item-note">' + t('{n} food', { n: def.nutrition }) + '</span>'
           : '<span class="hud-item-note"></span>') +
         '</div>');
 
@@ -956,65 +1004,67 @@ export class Hud {
   private tabSelf(person: Person, known: ReturnType<typeof knowledgeOfPerson>): string[] {
     if (!known.knowsCharacter) {
       return [
-        '<div class="hud-section">Character</div>',
-        veil('What someone is good at, and what they are like, you learn by ' +
-          'spending time with them. Talk to them.'),
+        '<div class="hud-section">' + t('Character') + '</div>',
+        veil(t('What someone is good at, and what they are like, you learn by spending time with them. Talk to them.')),
       ];
     }
 
     const rows: string[] = [];
-    rows.push('<div class="hud-section">Skills</div>');
+    rows.push('<div class="hud-section">' + t('Skills') + '</div>');
     for (const skill of [...SKILLS].sort((a, b) => person.skills[b] - person.skills[a])) {
-      rows.push(bar(skill, person.skills[skill], '#8ab4d8'));
+      rows.push(bar(tc('skill', skill), person.skills[skill], '#8ab4d8'));
     }
-    rows.push('<div class="hud-section">Temperament</div>');
+    rows.push('<div class="hud-section">' + t('Temperament') + '</div>');
     for (const trait of TRAITS) {
-      rows.push(bar(trait, person.traits[trait] * 100, '#c8a45c'));
+      rows.push(bar(tc('trait', trait), person.traits[trait] * 100, '#c8a45c'));
     }
-    rows.push('<div class="hud-note">Temperament weights every choice they make. ' +
-      'A greedy, disloyal person genuinely prefers taking to asking.</div>');
+    rows.push('<div class="hud-note">' +
+      t('Temperament weights every choice they make. A greedy, disloyal person genuinely prefers taking to asking.') +
+      '</div>');
 
     // Mood: four channels on a -100..100 scale, shown at rest around the middle
     // of the bar rather than the bottom. Nothing reads these yet (M9.6 phase
     // 4a is inert scaffolding), but the inspector is where the migration's own
     // discipline says the field has to show up the moment it exists.
-    rows.push('<div class="hud-section">Mood</div>');
+    rows.push('<div class="hud-section">' + t('Mood') + '</div>');
     for (const channel of MOOD_CHANNELS) {
-      rows.push(bar(channel, (person.mood[channel] + 100) / 2, '#8ac8a0'));
+      rows.push(bar(tc('mood', channel), (person.mood[channel] + 100) / 2, '#8ac8a0'));
     }
-    rows.push('<div class="hud-note">How their spirits are riding, resting toward a ' +
-      'point their temperament sets.</div>');
+    rows.push('<div class="hud-note">' +
+      t('How their spirits are riding, resting toward a point their temperament sets.') + '</div>');
 
     // What they are working on now, before what they already know. An idea in
     // progress is the more interesting half: it has a story attached, it can
     // fail, and until this section existed the whole research lifecycle was
     // invisible from inside the game.
-    rows.push('<div class="hud-section">Working on</div>');
+    rows.push('<div class="hud-section">' + t('Working on') + '</div>');
     if (person.ideas.length === 0) {
-      rows.push('<div class="hud-sub">nothing has occurred to them lately</div>');
+      rows.push('<div class="hud-sub">' + t('nothing has occurred to them lately') + '</div>');
     } else {
       for (const idea of person.ideas) {
         const def = TECH[idea.tech];
         if (!def) continue;
         const stages = def.kind === 'practice' ? PRACTICE_STAGE_LABELS : STAGE_LABELS;
         rows.push('<div class="hud-know">' +
-          '<b>' + escapeHtml(def.label) + ' \u2014 ' + stages[idea.stage] + '</b>' +
-          '<span>' + escapeHtml(idea.story) + '</span>' +
+          '<b>' + escapeHtml(t(def.label)) + ' \u2014 ' + t(stages[idea.stage]) + '</b>' +
+          '<span>' + escapeHtml(t(idea.story, { g: genderOf(person) })) + '</span>' +
           '</div>');
         // Which bar depends on what is actually standing between them and
         // knowing it. While a design is on the bench that is the trials, not the
         // insight — insight barely moves then, so showing it would park a bar
         // for days while something was happening every morning.
         if (idea.stage === 'prototyped') {
-          rows.push(bar('proving', idea.proof * 100, '#7ddc96'));
+          rows.push(bar(tc('bar', 'proving'), idea.proof * 100, '#7ddc96'));
           rows.push('<div class="hud-sub">' +
-            (def.kind === 'practice' ? 'in use; ' : 'one built; ') +
+            (def.kind === 'practice' ? t('in use; ') : t('one built; ')) +
             (idea.trials === 0
-              ? 'not tried yet'
-              : idea.trials + (idea.trials === 1 ? ' try' : ' tries') + ' so far') +
+              ? t('not tried yet')
+              : idea.trials === 1
+                ? t('{n} try so far', { n: 1 })
+                : t('{n} tries so far', { n: idea.trials })) +
             '</div>');
         } else {
-          rows.push(bar(idea.stage === 'proven' ? 'refining' : 'insight',
+          rows.push(bar(idea.stage === 'proven' ? tc('bar', 'refining') : tc('bar', 'insight'),
             idea.insight * 100, idea.stage === 'proven' ? '#7ddc96' : '#c88ad8'));
           // A practice past the point of being worth trying is already being
           // tried, and this is the only place that says so. Without it the
@@ -1022,23 +1072,26 @@ export class Hud {
           // measures had stopped being what stands in the way.
           if (def.kind === 'practice' && idea.stage === 'researching' &&
               idea.insight >= PROTOTYPE_AT) {
-            rows.push('<div class="hud-sub">trying it out: ' +
-              Math.min(idea.tries, TRIES_TO_TEST) + ' of ' + TRIES_TO_TEST +
-              ' times so far</div>');
+            rows.push('<div class="hud-sub">' +
+              t('trying it out: {n} of {max} times so far', {
+                n: Math.min(idea.tries, TRIES_TO_TEST), max: TRIES_TO_TEST,
+              }) + '</div>');
           }
         }
         if (idea.failedTests > 0) {
-          rows.push('<div class="hud-sub">' + idea.failedTests +
-            (idea.failedTests === 1 ? ' try' : ' tries') + ' that did not work</div>');
+          rows.push('<div class="hud-sub">' + (idea.failedTests === 1
+            ? t('{n} try that did not work', { n: 1 })
+            : t('{n} tries that did not work', { n: idea.failedTests })) + '</div>');
         }
       }
-      rows.push('<div class="hud-note">An idea has to be thought about, argued ' +
-        'over, built and tried before it is knowledge. Any of those can fail.</div>');
+      rows.push('<div class="hud-note">' +
+        t('An idea has to be thought about, argued over, built and tried before it is knowledge. Any of those can fail.') +
+        '</div>');
     }
 
-    rows.push('<div class="hud-section">Knows how to</div>');
+    rows.push('<div class="hud-section">' + t('Knows how to') + '</div>');
     if (person.knownTech.size === 0) {
-      rows.push('<div class="hud-sub">nothing anyone has had to work out yet</div>');
+      rows.push('<div class="hud-sub">' + t('nothing anyone has had to work out yet') + '</div>');
     } else {
       // What it is *for*, not just its name. A list of nouns told the player
       // nothing about why a dead potter mattered.
@@ -1055,12 +1108,12 @@ export class Hud {
             '</i>'
           : '';
         rows.push('<div class="hud-know">' +
-          '<b>' + escapeHtml(def.label) + pips + '</b>' +
-          '<span>' + escapeHtml(TECH_EFFECTS[def.id].summary) + '</span>' +
+          '<b>' + escapeHtml(t(def.label)) + pips + '</b>' +
+          '<span>' + escapeHtml(t(TECH_EFFECTS[def.id].summary)) + '</span>' +
           '</div>');
       }
-      rows.push('<div class="hud-note">Knowledge lives in people. Anything nobody ' +
-        'alive knows is simply gone.</div>');
+      rows.push('<div class="hud-note">' +
+        t('Knowledge lives in people. Anything nobody alive knows is simply gone.') + '</div>');
     }
     return rows;
   }
@@ -1079,43 +1132,41 @@ export class Hud {
   ): string[] {
     if (!known.knowsCharacter) {
       return [
-        '<div class="hud-section">Work</div>',
-        veil('What someone spends their days doing, you learn by spending time ' +
-          'with them. Talk to them.'),
+        '<div class="hud-section">' + t('Work') + '</div>',
+        veil(t('What someone spends their days doing, you learn by spending time with them. Talk to them.')),
       ];
     }
 
     const rows: string[] = [];
     const current = person.job ? JOBS[person.job] : null;
-    rows.push('<div class="hud-section">Work</div>');
+    rows.push('<div class="hud-section">' + t('Work') + '</div>');
     rows.push('<div class="hud-sub">' + (current
-      ? 'Works as ' + current.label.toLowerCase() + '.'
-      : 'Has no settled work — follows their own judgement.') + '</div>');
+      ? t('Works as {job}.', { job: t(current.label).toLowerCase() })
+      : t('Has no settled work — follows their own judgement.')) + '</div>');
 
     if (observer.id !== person.id) {
       const standing = sim.standing(observer, person, 'job');
-      rows.push(bar('would take work from you', standing.chance * 100,
+      rows.push(bar(t('would take work from you'), standing.chance * 100,
         standing.chance > 0.5 ? '#5cc98a' : standing.chance > 0.25 ? '#e0b055' : '#e0705c'));
       rows.push('<div class="hud-sub">' + escapeHtml(standing.because) + '</div>');
     }
 
-    rows.push('<div class="hud-section">Assign</div>');
+    rows.push('<div class="hud-section">' + t('Assign') + '</div>');
     rows.push('<div class="hud-buildbar-row">' +
       Object.values(JOBS).map(job =>
         '<button class="hud-design' + (person.job === job.id ? ' is-active' : '') +
         '" data-job="' + job.id + '">' +
         '<span class="hud-design-icon">' + job.icon + '</span>' +
-        '<span class="hud-design-name">' + escapeHtml(job.label) + '</span>' +
+        '<span class="hud-design-name">' + escapeHtml(t(job.label)) + '</span>' +
         '</button>'
       ).join('') +
       '<button class="hud-design' + (person.job === null ? ' is-active' : '') + '" data-job="none">' +
-      '<span class="hud-design-icon">—</span><span class="hud-design-name">None</span>' +
+      '<span class="hud-design-icon">—</span><span class="hud-design-name">' + t('None') + '</span>' +
       '</button></div>');
 
     rows.push('<div class="hud-note">' + escapeHtml(current
-      ? 'Leans them toward ' + current.actions.map(a => actionLabel(a)).join(', ') + '.'
-      : 'A settled job leans someone toward its own work and a little away ' +
-        'from everything else — it is a preference, not a command.') + '</div>');
+      ? t('Leans them toward {list}.', { list: current.actions.map(a => actionLabel(a)).join(', ') })
+      : t('A settled job leans someone toward its own work and a little away from everything else — it is a preference, not a command.')) + '</div>');
     return rows;
   }
 
@@ -1137,30 +1188,35 @@ export class Hud {
       return label + (who.alive ? '' : ' †');
     };
 
+    // M11 phase 13b (owner's note 5): what the two of you think of each
+    // other, first. Clicking somebody used to show their family, their ties
+    // and how far they would obey you, but not what *you* think of *them* --
+    // that lived only in your own list, which cuts at fourteen.
+    if (person.id !== observer.id) rows.push(...this.betweenYou(observer, person, sim));
+
     // What you could actually make them do. The pillar, stated plainly.
     if (person.id !== observer.id) {
       const standing = sim.standing(observer, person, 'build');
-      rows.push('<div class="hud-section">Your standing</div>');
-      rows.push(bar('would obey', standing.chance * 100,
+      rows.push('<div class="hud-section">' + t('Your standing') + '</div>');
+      rows.push(bar(t('would obey'), standing.chance * 100,
         standing.chance > 0.5 ? '#5cc98a' : standing.chance > 0.25 ? '#e0b055' : '#e0705c'));
       rows.push('<div class="hud-sub">' + escapeHtml(standing.because) + '</div>');
-      rows.push('<button class="hud-button hud-commandbtn" data-command="1">Command ' +
-        escapeHtml(person.name) + '</button>');
+      rows.push('<button class="hud-button hud-commandbtn" data-command="1">' +
+        escapeHtml(t('Command {name}', { name: person.name })) + '</button>');
     }
 
     // Family is gated: you do not know a stranger's children. Standing above is
     // not, because it is a fact about you rather than about them — you find out
     // whether somebody will do as you say by asking them.
     if (known.level === 'stranger') {
-      rows.push(veil('You do not know their family, who they answer to, or who ' +
-        'they cannot stand.'));
+      rows.push(veil(t('You do not know their family, who they answer to, or who they cannot stand.')));
       return rows;
     }
 
-    rows.push('<div class="hud-section">Family</div>');
+    rows.push('<div class="hud-section">' + t('Family') + '</div>');
     if (household) {
-      rows.push('<div class="hud-sub">' + escapeHtml(household.name) + ' household' +
-        (household.headId === person.id ? ' · <b>head</b>' : '') + '</div>');
+      rows.push('<div class="hud-sub">' + escapeHtml(t('{name} household', { name: household.name })) +
+        (household.headId === person.id ? ' · <b>' + t('head') + '</b>' : '') + '</div>');
     }
     const spouse = nameOf(person.spouseId);
     const mother = nameOf(person.motherId);
@@ -1169,36 +1225,62 @@ export class Hud {
       .map(id => nameOf(id))
       .filter((n): n is string => n !== null);
 
+    const g = { g: genderOf(person) };
     rows.push('<div class="hud-sub">' +
-      (spouse ? 'married to ' + escapeHtml(spouse) : 'unmarried') +
-      (person.pregnant ? ' · expecting' : '') + '</div>');
+      (spouse ? escapeHtml(t('married to {name}', { name: spouse, ...g })) : t('unmarried', g)) +
+      (person.pregnant ? ' · ' + t('expecting') : '') + '</div>');
     if (mother || father) {
-      rows.push('<div class="hud-sub">born to ' +
-        escapeHtml([mother, father].filter(Boolean).join(' and ')) + '</div>');
+      rows.push('<div class="hud-sub">' + escapeHtml(t('born to {parents}', {
+        parents: [mother, father].filter(Boolean).join(t(' and ')), ...g,
+      })) + '</div>');
     }
     rows.push('<div class="hud-sub">' +
       (children.length === 0
-        ? 'no children'
-        : children.length + (children.length === 1 ? ' child: ' : ' children: ') +
-          escapeHtml(children.join(', '))) +
+        ? t('no children')
+        : escapeHtml(children.length === 1
+          ? t('{n} child: {names}', { n: 1, names: children.join(', ') })
+          : t('{n} children: {names}', { n: children.length, names: children.join(', ') }))) +
       '</div>');
 
     if (!known.knowsTies) {
-      rows.push(veil('You would have to know them better to say who they answer ' +
-        'to, or who they cannot stand.'));
+      rows.push(veil(t('You would have to know them better to say who they answer to, or who they cannot stand.')));
       return rows;
     }
 
-    const ties = sim.relationships.knownBy(person.id).slice(0, 14);
-    if (ties.length === 0) {
-      rows.push('<div class="hud-section">Ties</div>' +
-        '<div class="hud-sub">Knows nobody yet.</div>');
+    // M11 phase 13c (owner's note 14): the living first, the dead folded
+    // away underneath. `knownBy` ranks by strength of feeling and never asked
+    // who was alive, so a dead parent at +80 pushed a living neighbour out of
+    // the fourteen. The fold survives the panel being refreshed: a person's
+    // panel is rebuilt only when the selection or the tab changes (everything
+    // else is `refreshPerson`), so an opened list stays open.
+    const everyone = sim.relationships.knownBy(person.id);
+    const living = everyone.filter(t => sim.peopleById.get(t.subjectId)?.alive).slice(0, 14);
+    const dead = everyone.filter(t => !sim.peopleById.get(t.subjectId)?.alive).slice(0, 14);
+    if (living.length === 0 && dead.length === 0) {
+      rows.push('<div class="hud-section">' + t('Ties') + '</div>' +
+        '<div class="hud-sub">' + t('Knows nobody yet.') + '</div>');
       return rows;
     }
 
-    rows.push('<div class="hud-section">' + ties.length +
-      (ties.length === 1 ? ' person' : ' people') + ' they know</div>');
+    rows.push('<div class="hud-section">' + (living.length === 1
+      ? t('{n} person they know', { n: 1 })
+      : t('{n} people they know', { n: living.length })) + '</div>');
+    rows.push(...this.tieRows(observer, living, sim));
+    if (dead.length > 0) {
+      rows.push('<details class="hud-dead"><summary>' +
+        t('{n} dead they remember', { n: dead.length }) +
+        '</summary>' + this.tieRows(observer, dead, sim).join('') + '</details>');
+    }
+    return rows;
+  }
 
+  /** One row per tie, for the living list and the folded list of the dead. */
+  private tieRows(
+    observer: Person,
+    ties: ReturnType<RelationshipGraph['knownBy']>,
+    sim: Simulation
+  ): string[] {
+    const rows: string[] = [];
     for (const tie of ties) {
       const other = sim.peopleById.get(tie.subjectId);
       if (!other) continue;
@@ -1206,16 +1288,8 @@ export class Hud {
       // an enemy does not tell you who the enemy is.
       const theirName = knowledgeOfPerson(observer, other, sim.relationships).displayName;
       const rel = tie.relationship;
-      const positive = tie.opinion >= 0;
-      const width = Math.min(50, Math.abs(tie.opinion) / 2);
 
-      const parts: string[] = [];
-      if (rel.bias !== 0) parts.push(rel.bias > 0 ? 'same band' : 'outsider');
-      if (Math.abs(rel.deeds) >= 1) {
-        parts.push((rel.deeds > 0 ? 'deeds +' : 'deeds ') + rel.deeds.toFixed(0));
-      }
-      if (rel.familiarity >= 1) parts.push('familiar ' + rel.familiarity.toFixed(0));
-      if (rel.kinship !== 0) parts.push('kin ' + rel.kinship.toFixed(0));
+      const parts = tieParts(rel);
 
       rows.push(
         '<div class="hud-tie">' +
@@ -1227,19 +1301,49 @@ export class Hud {
         // touches — and the player can already pan anywhere on the island.
         (other.alive
           ? '<button class="hud-goto" data-focus="' + other.id +
-            '" title="Look at ' + escapeHtml(theirName) + '">◎</button>'
+            '" title="' + escapeHtml(t('Look at {name}', { name: theirName })) + '">◎</button>'
           : '<span class="hud-goto is-gone">·</span>') +
-        '<div class="hud-tie-meter">' +
-          '<span class="hud-tie-neg">' +
-            (positive ? '' : '<i style="width:' + width.toFixed(0) + '%;"></i>') + '</span>' +
-          '<span class="hud-tie-pos">' +
-            (positive ? '<i style="width:' + width.toFixed(0) + '%;"></i>' : '') + '</span>' +
-        '</div>' +
-        '<span class="hud-tie-value ' + (positive ? 'is-pos' : 'is-neg') + '">' +
-          (positive ? '+' : '') + tie.opinion.toFixed(0) + '</span>' +
-        '<div class="hud-tie-why">' + escapeHtml(parts.join(' · ') || 'barely acquainted') +
+        tieMeter(tie.opinion) +
+        '<div class="hud-tie-why">' + escapeHtml(parts.join(' · ') || t('barely acquainted')) +
         '</div></div>'
       );
+    }
+    return rows;
+  }
+
+  /**
+   * Your own opinion of `person`, broken down in the same terms as the list
+   * below — read with `peek`, so looking never creates an acquaintance — and
+   * what you can tell of theirs of you, which is their private state and so
+   * comes through `regardFromThem`.
+   */
+  private betweenYou(observer: Person, person: Person, sim: Simulation): string[] {
+    const rows: string[] = ['<div class="hud-section">' + t('Between you') + '</div>'];
+    const mine = sim.relationships.peek(observer.id, person.id);
+    if (!mine) {
+      rows.push('<div class="hud-sub">' + t('You have no opinion of them yet.') + '</div>');
+    } else {
+      const opinion = sim.relationships.opinion(observer.id, person.id);
+      rows.push(
+        '<div class="hud-tie hud-between">' +
+        '<span class="hud-between-who">' + t('You of them') + '</span>' +
+        tieMeter(opinion) +
+        '<div class="hud-tie-why">' + escapeHtml(tieParts(mine).join(' · ') || t('barely acquainted')) +
+        '</div></div>'
+      );
+    }
+    const theirs = regardFromThem(observer, person, sim.relationships);
+    if (theirs.opinion !== null) {
+      rows.push(
+        '<div class="hud-tie hud-between">' +
+        '<span class="hud-between-who">' + t('They of you') + '</span>' +
+        tieMeter(theirs.opinion) +
+        '<div class="hud-tie-why">' + escapeHtml(theirs.words ?? '') + '</div></div>'
+      );
+    } else if (theirs.words !== null) {
+      rows.push('<div class="hud-sub">' + escapeHtml(theirs.words) + '</div>');
+    } else {
+      rows.push('<div class="hud-sub">' + t('You cannot tell what they think of you.') + '</div>');
     }
     return rows;
   }
@@ -1249,32 +1353,45 @@ export class Hud {
     const own = observer.id === person.id;
     const nameOf = (id: number) => {
       const who = sim.peopleById.get(id);
-      if (!who) return 'someone';
+      if (!who) return t('someone');
       return knowledgeOfPerson(observer, who, sim.relationships).displayName;
     };
     const entries = rememberedAbout(observer, person, nameOf);
 
     rows.push('<div class="hud-section">' +
-      (own ? 'Life so far' : 'What you know of them') + '</div>');
+      (own ? t('Life so far') : t('What you know of them')) + '</div>');
 
     if (entries.length === 0) {
       rows.push(veil(own
-        ? 'Nothing has happened to you yet.'
-        : 'You have never seen them do anything, and nobody has told you a thing.'));
+        ? t('Nothing has happened to you yet.')
+        : t('You have never seen them do anything, and nobody has told you a thing.')));
       return rows;
     }
 
-    for (const entry of [...entries].slice(-40).reverse()) {
-      const daysAgo = Math.floor((sim.time.tick - entry.tick) / sim.config.time.ticksPerDay);
+    // Folded before the cut, so the forty are forty *stories* and one busy
+    // afternoon at a rival's store cannot push a whole life off the panel.
+    // See `LifeLog.ts` for why this happens here and not in the chronicle.
+    const daysAgoOf = (tick: number) =>
+      Math.floor((sim.time.tick - tick) / sim.config.time.ticksPerDay);
+    const ago = (days: number) => days <= 0 ? t('today') : t('{n}d', { n: days });
+    for (const run of foldRepeats(entries).slice(-40).reverse()) {
+      const entry = run.last;
+      const daysAgo = daysAgoOf(entry.tick);
+      const firstAgo = daysAgoOf(run.first.tick);
       const when = own
-        ? Math.floor(entry.ageDays / 80) + 'y'
-        : (daysAgo <= 0 ? 'today' : daysAgo + 'd');
+        ? t('{n}y', { n: Math.floor(entry.ageDays / 80) })
+        : ago(daysAgo);
+      // The span of a run, when it covers more than one day: "5d–today".
+      const span = firstAgo !== daysAgo ? ago(firstAgo) + '–' + ago(daysAgo) : null;
       rows.push(
         '<div class="hud-life hud-life-' + entry.kind + '">' +
         '<span class="hud-life-age">' + escapeHtml(when) + '</span>' +
-        '<span class="hud-life-text">' + escapeHtml(entry.text) + '</span>' +
+        '<span class="hud-life-text">' + escapeHtml(entry.text) +
+          (run.count > 1 ? ' <b class="hud-life-count">×' + run.count + '</b>' : '') + '</span>' +
         '<span class="hud-life-when">' +
-          (own ? (daysAgo <= 0 ? 'today' : daysAgo + 'd ago') : '') + '</span>' +
+          (own
+            ? (span ?? (daysAgo <= 0 ? t('today') : t('{n}d ago', { n: daysAgo })))
+            : (span && run.count > 1 ? span : '')) + '</span>' +
         '</div>'
       );
     }
@@ -1290,26 +1407,27 @@ export class Hud {
     const rows: string[] = [];
 
     rows.push('<div class="hud-name">' +
-      escapeHtml(NODE_LABELS[node.kind]) + '</div>');
-    rows.push('<div class="hud-sub">' + escapeHtml(sim.world.biomeAt(node.x, node.y)) +
+      escapeHtml(t(NODE_LABELS[node.kind])) + '</div>');
+    rows.push('<div class="hud-sub">' + escapeHtml(tc('biome', sim.world.biomeAt(node.x, node.y))) +
       ' · ' + node.x + ',' + node.y + '</div>');
     rows.push('<div class="hud-known">' + escapeHtml(known.because) + '</div>');
 
-    rows.push('<div class="hud-section">Yield</div>');
+    rows.push('<div class="hud-section">' + t('Yield') + '</div>');
     rows.push('<div class="hud-doing">' + escapeHtml(known.estimate) + '</div>');
     if (known.amount !== null) {
-      rows.push(bar('remaining', (node.amount / node.def.maxAmount) * 100, '#7ddc96'));
-      rows.push('<div class="hud-sub">' + known.amount + ' of ' + node.def.maxAmount +
-        ' · gives ' + escapeHtml(ITEMS[node.def.itemId]?.label ?? node.def.itemId) + '</div>');
+      rows.push(bar(tc('bar', 'remaining'), (node.amount / node.def.maxAmount) * 100, '#7ddc96'));
+      rows.push('<div class="hud-sub">' + escapeHtml(t('{n} of {max} · gives {item}', {
+        n: known.amount, max: node.def.maxAmount, item: t(ITEMS[node.def.itemId]?.label ?? node.def.itemId),
+      })) + '</div>');
     } else {
-      rows.push(veil('Get closer, or learn the trade, to judge how much is left.'));
+      rows.push(veil(t('Get closer, or learn the trade, to judge how much is left.')));
     }
 
-    rows.push('<div class="hud-section">Regrowth</div>');
+    rows.push('<div class="hud-section">' + t('Regrowth') + '</div>');
     rows.push('<div class="hud-sub">' +
       (node.def.regrowPerTick === 0
-        ? 'Does not come back. Once it is gone, it is gone.'
-        : 'Recovers with the seasons — barely at all in winter.') + '</div>');
+        ? t('Does not come back. Once it is gone, it is gone.')
+        : t('Recovers with the seasons — barely at all in winter.')) + '</div>');
     return rows;
   }
 
@@ -1327,21 +1445,22 @@ export class Hud {
     const distance = observer.distanceTo(animal);
     const notice = noticeRadius(animal, observer);
 
-    rows.push('<div class="hud-name">' + escapeHtml(animal.label) + '</div>');
+    rows.push('<div class="hud-name">' + escapeHtml(t(animal.label)) + '</div>');
     rows.push('<div class="hud-sub">' +
-      distance.toFixed(1) + ' tiles away · notices you at ' + notice.toFixed(1) +
+      t('{d} tiles away · notices you at {n}', { d: distance.toFixed(1), n: notice.toFixed(1) }) +
       '</div>');
     rows.push('<div class="hud-doing">' +
-      (animal.alarmed ? 'bolting' : distance <= notice ? 'has seen you' : 'grazing') +
+      (animal.alarmed ? t('bolting') : distance <= notice ? t('has seen you') : t('grazing')) +
       '</div>');
 
-    rows.push('<div class="hud-section">The hunt</div>');
+    rows.push('<div class="hud-section">' + t('The hunt') + '</div>');
     const odds = Math.max(0.05, Math.min(0.9,
       observer.skillFactor('hunt') * (1 - animal.def.evasion) + 0.15
     ));
-    rows.push(bar('your odds', odds * 100, odds > 0.5 ? '#7ddc96' : '#e0b055'));
-    rows.push('<div class="hud-sub">' + animal.def.meat + ' meat if it goes well. ' +
-      'Tracking is what closes the distance before it runs.</div>');
+    rows.push(bar(t('your odds'), odds * 100, odds > 0.5 ? '#7ddc96' : '#e0b055'));
+    rows.push('<div class="hud-sub">' +
+      t('{n} meat if it goes well. Tracking is what closes the distance before it runs.', { n: animal.def.meat }) +
+      '</div>');
     return rows;
   }
 
@@ -1349,40 +1468,42 @@ export class Hud {
     const known = knowledgeOfTree(observer, tree);
     const rows: string[] = [];
 
-    rows.push('<div class="hud-name">' + escapeHtml(tree.def.label) + '</div>');
+    rows.push('<div class="hud-name">' + escapeHtml(t(tree.def.label)) + '</div>');
     rows.push('<div class="hud-sub">' + escapeHtml(known.estimate) +
       ' &middot; ' + tree.x + ',' + tree.y + '</div>');
     rows.push('<div class="hud-known">' + escapeHtml(known.because) + '</div>');
 
-    rows.push('<div class="hud-section">Growth</div>');
-    rows.push(bar('grown', tree.maturity * 100, '#5cc98a'));
+    rows.push('<div class="hud-section">' + t('Growth') + '</div>');
+    rows.push(bar(tc('bar', 'grown'), tree.maturity * 100, '#5cc98a'));
     if (known.years !== null) {
-      rows.push('<div class="hud-sub">' + known.years + ' years old &middot; bears at ' +
-        tree.def.maturityYears + ' &middot; dies around ' + tree.def.maxAgeYears + '</div>');
+      rows.push('<div class="hud-sub">' + t('{n} years old &middot; bears at {bears} &middot; dies around {dies}', {
+        n: known.years, bears: tree.def.maturityYears, dies: tree.def.maxAgeYears,
+      }) + '</div>');
     } else {
-      rows.push(veil('Age and timber are a woodsman judgement. Get closer, or learn to build.'));
+      rows.push(veil(t('Age and timber are a woodsman judgement. Get closer, or learn to build.')));
     }
 
     if (tree.def.fruitItem) {
-      rows.push('<div class="hud-section">Fruit</div>');
-      const label = (ITEMS[tree.def.fruitItem]?.label ?? '').toLowerCase();
+      rows.push('<div class="hud-section">' + t('Fruit') + '</div>');
+      const label = t(ITEMS[tree.def.fruitItem]?.label ?? '').toLowerCase();
       rows.push('<div class="hud-sub">' +
-        (known.fruit >= 1 ? known.fruit + ' ' + escapeHtml(label) : 'bare') +
-        ' &middot; bears in ' + escapeHtml(tree.def.fruitSeasons.join(' and ')) + '</div>');
+        (known.fruit >= 1 ? known.fruit + ' ' + escapeHtml(label) : t('bare')) +
+        ' &middot; ' + escapeHtml(t('bears in {seasons}', {
+          seasons: tree.def.fruitSeasons.map(s => tc('season', s)).join(t(' and ')),
+        })) + '</div>');
     }
 
     if (known.woodYield !== null) {
-      rows.push('<div class="hud-section">Timber</div>');
-      rows.push('<div class="hud-sub">' + known.woodYield + ' if felled now' +
-        (tree.isMature ? '' : ' \u2014 worth far more grown') + '</div>');
+      rows.push('<div class="hud-section">' + t('Timber') + '</div>');
+      rows.push('<div class="hud-sub">' + t('{n} if felled now', { n: known.woodYield }) +
+        (tree.isMature ? '' : ' \u2014 ' + t('worth far more grown')) + '</div>');
       if (tree.chopProgress > 0) {
-        rows.push(bar('cut',
+        rows.push(bar(tc('bar', 'cut'),
           Math.min(100, (tree.chopProgress / tree.fellingTicks) * 100), '#d98032'));
       }
     }
 
-    rows.push(veil('Felled trees do not come back. New ones only ever grow from seed ' +
-      'cast by trees still standing.'));
+    rows.push(veil(t('Felled trees do not come back. New ones only ever grow from seed cast by trees still standing.')));
     return rows;
   }
 
@@ -1399,32 +1520,33 @@ export class Hud {
     const literate = techPower(observer, 'writing') > 0;
     const daysAgo = Math.floor((sim.time.tick - record.madeTick) / sim.config.time.ticksPerDay);
 
-    rows.push('<div class="hud-name">' + escapeHtml(record.def.label) + '</div>');
+    rows.push('<div class="hud-name">' + escapeHtml(t(record.def.label)) + '</div>');
     rows.push('<div class="hud-sub">' + record.x + ',' + record.y +
-      ' · cut by ' + escapeHtml(record.authorName) +
-      (daysAgo > 0 ? ' · ' + daysAgo + 'd ago' : ' · today') + '</div>');
+      ' · ' + escapeHtml(t('cut by {name}', { name: record.authorName })) +
+      (daysAgo > 0 ? ' · ' + t('{n}d ago', { n: daysAgo }) : ' · ' + t('today')) + '</div>');
 
     if (record.unfinished) {
-      rows.push('<div class="hud-section">Half cut</div>');
-      rows.push(bar('cut', record.cutProgress * 100, '#c9b06a'));
+      rows.push('<div class="hud-section">' + t('Half cut') + '</div>');
+      rows.push(bar(tc('bar', 'cut'), record.cutProgress * 100, '#c9b06a'));
     }
 
-    rows.push('<div class="hud-section">What it says</div>');
+    rows.push('<div class="hud-section">' + t('What it says') + '</div>');
     if (record.techs.length === 0) {
-      rows.push('<div class="hud-sub">nothing yet</div>');
+      rows.push('<div class="hud-sub">' + t('nothing yet') + '</div>');
     } else if (!literate) {
-      rows.push('<div class="hud-sub">' + record.techs.length +
-        (record.techs.length === 1 ? ' mark you cannot read' : ' marks you cannot read') +
+      rows.push('<div class="hud-sub">' + (record.techs.length === 1
+        ? t('{n} mark you cannot read', { n: 1 })
+        : t('{n} marks you cannot read', { n: record.techs.length })) +
         '</div>');
-      rows.push(veil('A record is worth nothing to somebody who never learned to read it.'));
+      rows.push(veil(t('A record is worth nothing to somebody who never learned to read it.')));
     } else {
       rows.push('<div class="hud-sub">' + record.techs
-        .map(t => escapeHtml(TECH[t as Tech]?.label ?? t))
+        .map(id => escapeHtml(t(TECH[id as Tech]?.label ?? id)))
         .join(', ') + '</div>');
     }
 
     if (record.def.decayPerDay > 0) {
-      rows.push(veil('Clay does not last. What is only here is not safe here.'));
+      rows.push(veil(t('Clay does not last. What is only here is not safe here.')));
     }
     return rows;
   }
@@ -1434,21 +1556,21 @@ export class Hud {
     const owner = pile.ownerId === null ? null : sim.peopleById.get(pile.ownerId);
     const daysAgo = Math.floor((sim.time.tick - pile.droppedTick) / sim.config.time.ticksPerDay);
 
-    rows.push('<div class="hud-name">Dropped goods</div>');
+    rows.push('<div class="hud-name">' + t('Dropped goods') + '</div>');
     rows.push('<div class="hud-sub">' + pile.x + ',' + pile.y +
-      (owner ? ' · left by ' + escapeHtml(owner.name) : '') +
-      (daysAgo > 0 ? ' · ' + daysAgo + 'd ago' : ' · today') + '</div>');
+      (owner ? ' · ' + escapeHtml(t('left by {name}', { name: owner.name })) : '') +
+      (daysAgo > 0 ? ' · ' + t('{n}d ago', { n: daysAgo }) : ' · ' + t('today')) + '</div>');
 
-    rows.push('<div class="hud-section">Contents</div>');
+    rows.push('<div class="hud-section">' + t('Contents') + '</div>');
     const stacks = pile.contents.entries();
     if (stacks.length === 0) {
-      rows.push('<div class="hud-sub">empty</div>');
+      rows.push('<div class="hud-sub">' + t('empty') + '</div>');
     } else {
       rows.push('<div class="hud-sub">' + stacks
-        .map(([id, n]) => escapeHtml(ITEMS[id]?.label ?? id) + ' &times;' + n)
+        .map(([id, n]) => escapeHtml(t(ITEMS[id]?.label ?? id)) + ' &times;' + n)
         .join(', ') + '</div>');
     }
-    rows.push(veil('Right-click it to pick it up. Anyone can.'));
+    rows.push(veil(t('Right-click it to pick it up. Anyone can.')));
     return rows;
   }
 
@@ -1457,19 +1579,19 @@ export class Hud {
     const rows: string[] = [];
 
     rows.push('<div class="hud-name">' + building.def.icon + ' ' +
-      escapeHtml(building.def.label) + '</div>');
-    rows.push('<div class="hud-sub">' + escapeHtml(building.def.description) + '</div>');
+      escapeHtml(t(building.def.label)) + '</div>');
+    rows.push('<div class="hud-sub">' + escapeHtml(t(building.def.description)) + '</div>');
     rows.push('<div class="hud-known">' + escapeHtml(known.because) + '</div>');
 
     if (!building.complete) {
-      rows.push('<div class="hud-section">Under construction</div>');
-      rows.push(bar('progress', building.completion * 100, '#e0b055'));
-      rows.push('<div class="hud-section">Materials</div>');
+      rows.push('<div class="hud-section">' + t('Under construction') + '</div>');
+      rows.push(bar(tc('bar', 'progress'), building.completion * 100, '#e0b055'));
+      rows.push('<div class="hud-section">' + t('Materials') + '</div>');
       for (const [itemId, needed] of Object.entries(building.def.materials)) {
         const have = building.delivered.count(itemId);
         rows.push(
           '<div class="hud-need"><span>' +
-          escapeHtml(ITEMS[itemId]?.label ?? itemId) + '</span>' +
+          escapeHtml(t(ITEMS[itemId]?.label ?? itemId)) + '</span>' +
           '<span class="hud-need-track"><i style="width:' +
           Math.min(100, (have / needed) * 100).toFixed(0) +
           '%;background:' + (have >= needed ? '#5cc98a' : '#d98032') + '"></i></span>' +
@@ -1479,7 +1601,7 @@ export class Hud {
       return rows;
     }
 
-    rows.push('<div class="hud-section">Finished</div>');
+    rows.push('<div class="hud-section">' + t('Finished') + '</div>');
     // Condition, M11 phase 11b. Not gated on `known.knowsContents` the way the
     // store's contents are below: unlike what is inside, that a wall is
     // cracked or a roof is charred is visible to anyone who can see the
@@ -1491,12 +1613,13 @@ export class Hud {
     // for a reason nobody could act on.
     if (isStructure(building.def) && building.durability !== null) {
       if (building.ruined) {
-        rows.push('<div class="hud-sub" style="color:#d9705a">Wrecked. It shelters ' +
-          'nobody and holds nothing new until somebody repairs it.</div>');
+        rows.push('<div class="hud-sub" style="color:#d9705a">' +
+          t('Wrecked. It shelters nobody and holds nothing new until somebody repairs it.') + '</div>');
       } else if (building.soundness < 1) {
-        rows.push(bar('condition', building.soundness * 100, '#d98032'));
-        rows.push('<div class="hud-sub">Damaged. Working at ' +
-          (building.soundness * 100).toFixed(0) + '% until it is repaired.</div>');
+        rows.push(bar(tc('bar', 'condition'), building.soundness * 100, '#d98032'));
+        rows.push('<div class="hud-sub">' + t('Damaged. Working at {pct}% until it is repaired.', {
+          pct: (building.soundness * 100).toFixed(0),
+        }) + '</div>');
       }
     }
     // A trap that has stopped catching looks exactly like a trap that is
@@ -1508,8 +1631,10 @@ export class Hud {
     if (trap) {
       rows.push('<div class="hud-sub">' +
         (trap.perDay > 0
-          ? escapeHtml(ITEMS[building.def.yields!.item]?.label ?? building.def.yields!.item) +
-            ' about ' + trap.perDay.toFixed(1) + ' a day &mdash; ' + escapeHtml(trap.reason)
+          ? escapeHtml(t('{item} about {n} a day', {
+              item: t(ITEMS[building.def.yields!.item]?.label ?? building.def.yields!.item),
+              n: trap.perDay.toFixed(1),
+            })) + ' &mdash; ' + escapeHtml(trap.reason)
           : escapeHtml(trap.reason)) +
         '</div>');
     }
@@ -1528,38 +1653,41 @@ export class Hud {
       const crop = building.crop;
       const soil = sim.soilReport(building);
       const farmer = techPower(observer, 'farming') > 0;
-      rows.push('<div class="hud-section">The crop</div>');
+      rows.push('<div class="hud-section">' + t('The crop') + '</div>');
       rows.push('<div class="hud-sub">' +
         (crop.isFallow
-          ? 'Bare ground, waiting for seed.'
+          ? t('Bare ground, waiting for seed.')
           : crop.isRipe
-            ? 'Ripe, and it will not stand for ever.'
-            : 'Coming on.') + '</div>');
-      if (!crop.isFallow) rows.push(bar('ripeness', crop.ripeness * 100, '#d9b44a'));
+            ? t('Ripe, and it will not stand for ever.')
+            : t('Coming on.')) + '</div>');
+      if (!crop.isFallow) rows.push(bar(tc('bar', 'ripeness'), crop.ripeness * 100, '#d9b44a'));
       if (crop.harvests > 0 || crop.lost > 0) {
-        rows.push('<div class="hud-sub">' + crop.harvests +
-          (crop.harvests === 1 ? ' harvest' : ' harvests') + ' taken' +
-          (crop.lastYield > 0 ? ', the last of ' + crop.lastYield + ' grain' : '') +
-          (crop.lost > 0 ? '; ' + crop.lost + ' left standing too long' : '') +
+        rows.push('<div class="hud-sub">' +
+          (crop.harvests === 1
+            ? t('{n} harvest taken', { n: 1 })
+            : t('{n} harvests taken', { n: crop.harvests })) +
+          (crop.lastYield > 0 ? t(', the last of {n} grain', { n: crop.lastYield }) : '') +
+          (crop.lost > 0 ? t('; {n} left standing too long', { n: crop.lost }) : '') +
           '.</div>');
       }
 
-      rows.push('<div class="hud-section">The ground</div>');
+      rows.push('<div class="hud-section">' + t('The ground') + '</div>');
       const share = soil.effective / Math.max(0.001, soil.resting);
-      const worn = share > 0.97 ? 'as good as it ever was'
-        : share > 0.85 ? 'still in good heart'
-        : share > 0.7 ? 'tiring'
-        : share > 0.5 ? 'tired'
-        : 'worked out';
+      const worn = share > 0.97 ? t('as good as it ever was')
+        : share > 0.85 ? t('still in good heart')
+        : share > 0.7 ? t('tiring')
+        : share > 0.5 ? t('tired')
+        : t('worked out');
       if (farmer) {
-        rows.push(bar('in heart', Math.min(100, share * 100), soil.spent ? '#d98032' : '#7ddc96'));
-        rows.push('<div class="hud-sub">The ground here is ' + worn + ': ' +
-          (share * 100).toFixed(0) + '% of what it would carry untouched.' +
-          (soil.spent ? ' Nothing sown here will come to anything.' : '') +
+        rows.push(bar(tc('bar', 'in heart'), Math.min(100, share * 100), soil.spent ? '#d98032' : '#7ddc96'));
+        rows.push('<div class="hud-sub">' +
+          t('The ground here is {worn}: {pct}% of what it would carry untouched.', {
+            worn, pct: (share * 100).toFixed(0),
+          }) +
+          (soil.spent ? ' ' + t('Nothing sown here will come to anything.') : '') +
           '</div>');
       } else {
-        rows.push(veil('The ground here is ' + worn +
-          ', though nobody here could say why.'));
+        rows.push(veil(t('The ground here is {worn}, though nobody here could say why.', { worn })));
       }
     }
     // A heap that has stopped rotting down looks exactly like one that is
@@ -1571,29 +1699,29 @@ export class Hud {
         p.bandId === building.ownerBandId && techPower(p, 'composting') > 0);
       rows.push('<div class="hud-sub">' +
         (!keeper
-          ? 'Nobody here remembers how to keep a heap turning.'
+          ? t('Nobody here remembers how to keep a heap turning.')
           : building.storageFree <= 0
-            ? 'Full, and rotting no further until somebody carries it out.'
-            : 'Rotting down: about ' + building.def.matures.perDay.toFixed(1) +
-              ' a day.') +
-        ' ' + ripe + ' ready.</div>');
+            ? t('Full, and rotting no further until somebody carries it out.')
+            : t('Rotting down: about {n} a day.', { n: building.def.matures.perDay.toFixed(1) })) +
+        ' ' + t('{n} ready.', { n: ripe }) + '</div>');
     }
     if (building.def.shelter > 0) {
-      rows.push('<div class="hud-sub">Shelter ' +
-        (building.def.shelter * 100).toFixed(0) + '% — people inside stay warm.</div>');
+      rows.push('<div class="hud-sub">' + t('Shelter {pct}% — people inside stay warm.', {
+        pct: (building.def.shelter * 100).toFixed(0),
+      }) + '</div>');
     }
     if (building.def.storage > 0) {
-      rows.push('<div class="hud-section">Store</div>');
+      rows.push('<div class="hud-section">' + tc('section', 'Store') + '</div>');
       if (!known.knowsContents) {
-        rows.push(veil('You have not looked inside.'));
+        rows.push(veil(t('You have not looked inside.')));
       } else {
         const stored = building.store.entries();
-        rows.push(bar('used', (building.store.total / building.def.storage) * 100, '#8ab4d8'));
+        rows.push(bar(tc('bar', 'used'), (building.store.total / building.def.storage) * 100, '#8ab4d8'));
         rows.push('<div class="hud-sub">' +
           (stored.length === 0
-            ? 'empty'
+            ? t('empty')
             : stored.map(([id, n]) =>
-                escapeHtml(ITEMS[id]?.label ?? id) + ' &times;' + n).join(', ')) +
+                escapeHtml(t(ITEMS[id]?.label ?? id)) + ' &times;' + n).join(', ')) +
           '</div>');
       }
     }
@@ -1605,7 +1733,7 @@ export class Hud {
 // resource kind now fails the build here the same way it already fails
 // `RESOURCE_COLORS` in Renderer.ts, rather than silently printing its raw id.
 // This table's `wood` never matched `sticks` for exactly that reason.
-const NODE_LABELS: Record<ResourceKind, string> = {
+export const NODE_LABELS: Record<ResourceKind, string> = {
   berries: 'Berry bush',
   flint: 'Flint outcrop',
   sticks: 'Fallen wood',
@@ -1648,12 +1776,12 @@ function panelTitle(observer: Person, selection: Selection, sim: Simulation): st
       const known = knowledgeOfPerson(observer, selection.person, sim.relationships);
       return known.knowsName ? selection.person.fullName : known.displayName;
     }
-    case 'node': return selection.node.kind;
-    case 'building': return selection.building.def.label;
-    case 'tree': return selection.tree.def.label;
-    case 'pile': return 'Dropped goods';
-    case 'inscription': return selection.inscription.def.label;
-    case 'animal': return selection.animal.label;
+    case 'node': return tc('node', selection.node.kind);
+    case 'building': return t(selection.building.def.label);
+    case 'tree': return t(selection.tree.def.label);
+    case 'pile': return t('Dropped goods');
+    case 'inscription': return t(selection.inscription.def.label);
+    case 'animal': return t(selection.animal.label);
   }
 }
 
@@ -1686,16 +1814,16 @@ export function selectionKey(selection: Selection): string {
 function roughAge(person: Person): string {
   const years = person.years;
   if (years < 14) return 'a child';
-  if (years < 25) return 'twenty';
-  if (years < 45) return 'thirty';
-  return 'fifty';
+  if (years < 25) return t('twenty');
+  if (years < 45) return t('thirty');
+  return t('fifty');
 }
 
 function describeHealth(health: number): string {
-  if (health > 90) return 'They look well enough.';
-  if (health > 60) return 'They are carrying an injury.';
-  if (health > 30) return 'They look badly hurt.';
-  return 'They can barely stand.';
+  if (health > 90) return t('They look well enough.');
+  if (health > 60) return t('They are carrying an injury.');
+  if (health > 30) return t('They look badly hurt.');
+  return t('They can barely stand.');
 }
 
 /** What each macro mostly comes from, for `describeDiet`'s sentence. */
@@ -1704,6 +1832,7 @@ const MACRO_FOOD: Record<Macro, string> = {
   protein: 'meat or fish',
   carb: 'fruit or grain',
 };
+export const MACRO_FOOD_WORDS = Object.values(MACRO_FOOD);
 
 /**
  * M11 phase 8e. `Macros.malnutrition` caps health recovery from 8d onward,
@@ -1715,7 +1844,7 @@ const MACRO_FOOD: Record<Macro, string> = {
  */
 function describeDiet(person: Person): string {
   const severity = malnutrition(person);
-  if (severity < 0.08) return 'Eating a decent balance of food.';
+  if (severity < 0.08) return t('Eating a decent balance of food.');
   let short: Macro = 'carb';
   let shortBy = -Infinity;
   for (const macro of MACROS) {
@@ -1725,9 +1854,55 @@ function describeDiet(person: Person): string {
       short = macro;
     }
   }
-  if (severity < 0.2) return 'Diet is a little short on ' + MACRO_FOOD[short] + '.';
-  if (severity < 0.35) return 'Has gone without enough ' + MACRO_FOOD[short] + ' for a while now.';
-  return 'Badly malnourished — needs ' + MACRO_FOOD[short] + ' urgently.';
+  const food = t(MACRO_FOOD[short]);
+  if (severity < 0.2) return t('Diet is a little short on {food}.', { food });
+  if (severity < 0.35) return t('Has gone without enough {food} for a while now.', { food });
+  return t('Badly malnourished — needs {food} urgently.', { food });
+}
+
+/**
+ * Why one person feels as they do about another, in the Ties list's terms.
+ * Shared by the list and by *Between you* (13b), so the two can never explain
+ * the same edge in different words.
+ */
+function tieParts(rel: Relationship): string[] {
+  const parts: string[] = [];
+  if (rel.bias !== 0) parts.push(rel.bias > 0 ? t('same band') : t('outsider'));
+  if (Math.abs(rel.deeds) >= 1) {
+    parts.push(t('deeds {n}', { n: (rel.deeds > 0 ? '+' : '') + rel.deeds.toFixed(0) }));
+  }
+  if (rel.familiarity >= 1) parts.push(t('familiar {n}', { n: rel.familiarity.toFixed(0) }));
+  if (rel.kinship !== 0) parts.push(t('kin {n}', { n: rel.kinship.toFixed(0) }));
+  return parts;
+}
+
+/** The two-sided bar and signed number every opinion in *Ties* is drawn with. */
+function tieMeter(opinion: number): string {
+  const positive = opinion >= 0;
+  const width = Math.min(50, Math.abs(opinion) / 2);
+  return (
+    '<div class="hud-tie-meter">' +
+      '<span class="hud-tie-neg">' +
+        (positive ? '' : '<i style="width:' + width.toFixed(0) + '%;"></i>') + '</span>' +
+      '<span class="hud-tie-pos">' +
+        (positive ? '<i style="width:' + width.toFixed(0) + '%;"></i>' : '') + '</span>' +
+    '</div>' +
+    '<span class="hud-tie-value ' + (positive ? 'is-pos' : 'is-neg') + '">' +
+      (positive ? '+' : '') + opinion.toFixed(0) + '</span>'
+  );
+}
+
+/**
+ * M11 phase 12a. What has been eaten since the last daily tick, in units —
+ * the only line in *Diet* that moves the moment somebody eats.
+ */
+function describeEatenToday(person: Person): string {
+  if (person.eatenToday.size === 0) return t('Nothing eaten yet today.');
+  const parts: string[] = [];
+  for (const [id, n] of person.eatenToday) {
+    parts.push(n + ' ' + t(ITEMS[id]?.label ?? id).toLowerCase());
+  }
+  return t('Today: {list}.', { list: parts.join(', ') });
 }
 
 /**

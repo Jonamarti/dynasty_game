@@ -40,13 +40,15 @@ import {
 } from '../entities/Inscription.ts';
 import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { consumeFood } from '../core/Macros.ts';
 import {
-  TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor, nutritionFactor,
+  TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
   prerequisitesMet, reapFactor, tallyFactor, techPower, weaponOf, armourOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse } from '../social/Property.ts';
 import type { EventType } from '../social/Events.ts';
+import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 
 export interface ActionContext {
   world: World;
@@ -419,6 +421,9 @@ const STEAL_TICKS = 30;
  */
 const THREATEN_TICKS = 18;
 
+/** A warning is said and done quicker than a demand is argued out. */
+const WARN_TICKS = 8;
+
 /** Ticks to tell somebody what you think of a third party. As short as `give`: a
  * remark, not a negotiation. */
 const GOSSIP_TICKS = 14;
@@ -439,6 +444,17 @@ const ATTACK_WINDUP = 12;
 
 /** Beyond this the attacker gives up the chase. */
 const PURSUIT_LIMIT = 9;
+
+/**
+ * M11 phase 12b. How much further than it started a chase may stretch before
+ * the quarry counts as having got away. `PURSUIT_LIMIT` alone was tested on
+ * the first tick, before a single step, so an attack begun from ten tiles
+ * ended where it stood: the limit meant "the quarry is escaping" and measured
+ * "where the chase began". The chase now gives up at whichever is further,
+ * the old limit or the start plus this — so a chase begun inside six tiles
+ * ends exactly where it always did.
+ */
+const PURSUIT_SLACK = 3;
 
 /**
  * Opinion the attacker recovers toward their victim with each blow landed.
@@ -545,6 +561,7 @@ export class ActionSystem {
       case 'trade': this.doTrade(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
+      case 'warn': this.doWarn(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
       case 'slander': this.doSlander(person, ctx); break;
       case 'praise': this.doPraise(person, ctx); break;
@@ -751,36 +768,10 @@ export class ActionSystem {
 
   private doEat(person: Person, ctx: ActionContext): void {
     const foodId = person.inventory.bestFood();
-    if (!foodId) {
+    if (!foodId || !consumeFood(person, foodId)) {
       this.abandon(person, 'no_food', ctx);
       return;
     }
-    if (person.inventory.remove(foodId, 1) === 0) {
-      this.abandon(person, 'no_food', ctx);
-      return;
-    }
-    // Cooking makes food go further. It is the plainest possible payoff for
-    // knowing something, and it compounds: a band that cooks needs a third less
-    // forage than one that does not, and can therefore support more people on
-    // the same ground.
-    const cooked = nutritionFactor(person);
-    const eaten = (ITEMS[foodId]?.nutrition ?? 0) * cooked;
-    person.needs.hunger = Math.max(0, person.needs.hunger - eaten);
-    // M11 phase 8b: fold what was actually eaten into today's ledger, in the
-    // same units `decayMacroBalance` will normalise into fractions. Cooking's
-    // bonus counts here too — a band that cooks eats more of whatever it ate.
-    const macros = ITEMS[foodId]?.macros;
-    if (macros) {
-      person.macroIntakeToday.fat += eaten * macros.fat;
-      person.macroIntakeToday.protein += eaten * macros.protein;
-      person.macroIntakeToday.carb += eaten * macros.carb;
-    }
-    telemetry.count('eat');
-    // Per-item, on the same `completed_<id>`/`crafted_<id>` idiom the rest of
-    // the health report uses — added for `milk`, which has no other way to
-    // show that a byproduct nobody has ever needed to name before is actually
-    // being eaten rather than only accruing.
-    telemetry.count('eaten_' + foodId);
     if (person.needs.hunger <= 0) this.finish(person);
   }
 
@@ -1009,7 +1000,9 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'felled ' + (tree.isMature ? 'a grown ' : 'a young ') + tree.def.label.toLowerCase(),
+      text: t(tree.isMature ? 'felled a grown {tree}' : 'felled a young {tree}', {
+        tree: t(tree.def.label).toLowerCase(), g: genderOfNoun(tree.def.label),
+      }),
       kind: 'did',
     });
     ctx.onTreeFelled(tree, person);
@@ -1100,13 +1093,15 @@ export class ActionSystem {
     const access = mayUse(person, building, ctx);
     if (access.ours) return true;
     if (!access.allowed) {
-      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius,
+        true, building.ownerBandId);
       telemetry.count('property_use_stopped');
       this.abandon(person, 'property_guarded', ctx);
       return false;
     }
     if (!person.propertyUseNoted) {
-      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius,
+        true, building.ownerBandId);
       telemetry.count('property_used_unseen');
       person.propertyUseNoted = true;
     }
@@ -1165,7 +1160,7 @@ export class ActionSystem {
           person.chronicle.push({
             tick: ctx.tick,
             ageDays: person.age,
-            text: 'repaired a ' + site.def.label.toLowerCase(),
+            text: t('repaired {thing}', { thing: aNoun(site.def.label.toLowerCase()) }),
             kind: 'did',
           });
           this.finish(person);
@@ -1211,8 +1206,9 @@ export class ActionSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'finished building a ' + site.def.label.toLowerCase(),
+        text: t('finished building {thing}', { thing: aNoun(site.def.label.toLowerCase()) }),
         kind: 'did',
+        built: site.def.id,
       });
       this.finish(person);
     }
@@ -1283,7 +1279,7 @@ export class ActionSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'wrecked a ' + site.def.label.toLowerCase(),
+        text: t('wrecked {thing}', { thing: aNoun(site.def.label.toLowerCase()) }),
         kind: 'did',
       });
       this.finish(person);
@@ -1631,7 +1627,7 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'brought down a ' + animal.def.label.toLowerCase(),
+      text: t('brought down {thing}', { thing: aNoun(animal.def.label.toLowerCase()) }),
       kind: 'did',
     });
     this.finish(person);
@@ -1800,7 +1796,7 @@ export class ActionSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'nursed ' + patient.name + ' back to health',
+        text: t('nursed {name} back to health', { name: patient.name }),
         kind: 'did',
       });
       this.finish(person);
@@ -1884,7 +1880,7 @@ export class ActionSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'tamed a ' + animal.def.label.toLowerCase(),
+        text: t('tamed {thing}', { thing: aNoun(animal.def.label.toLowerCase()) }),
         kind: 'milestone',
       });
     }
@@ -1954,7 +1950,7 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'sowed a field',
+      text: t('sowed a field'),
       kind: 'did',
     });
     this.finish(person);
@@ -2016,7 +2012,7 @@ export class ActionSystem {
       // A field that gives nothing is the strongest thing in the game telling a
       // player their ground is finished, and it must not pass in silence.
       telemetry.count('harvest_empty');
-      ctx.onInsight(person, 'the field gave nothing back', 'setback');
+      ctx.onInsight(person, t('the field gave nothing back'), 'setback');
       this.abandon(person, 'nothing_to_reap', ctx);
       return;
     }
@@ -2036,7 +2032,7 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'took in a harvest of ' + yielded + ' grain',
+      text: t('took in a harvest of {n} grain', { n: yielded }),
       kind: 'did',
     });
     this.finish(person);
@@ -2165,7 +2161,7 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'spread compost on a field',
+      text: t('spread compost on a field'),
       kind: 'did',
     });
     this.finish(person);
@@ -2588,7 +2584,7 @@ export class ActionSystem {
     // same way or asking would quietly be worth less socially than being
     // offered.
     ctx.social.emit('teach', teacher, person, 0.6, ctx.tick, ctx.peopleHash, ctx.sightRadius);
-    ctx.onInsight(person, 'was shown how by ' + teacher.name, 'gain');
+    ctx.onInsight(person, t('was shown how by {name}', { name: teacher.name }), 'gain');
     this.finishSocial(person, ctx.tick);
   }
 
@@ -2691,7 +2687,7 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'made a ' + recipe.label.toLowerCase(),
+      text: t('made {thing}', { thing: aNoun(recipe.label.toLowerCase()) }),
       kind: 'did',
     });
     this.finish(person);
@@ -2870,14 +2866,14 @@ export class ActionSystem {
     // the game that is not writing, and "did anybody paint anything?" cannot be
     // answered from a count of what was written down.
     telemetry.count('inscribed_' + target.def.id);
-    const label = TECH[done as Tech].label.toLowerCase();
+    const label = t(TECH[done as Tech].label).toLowerCase();
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'cut ' + label + ' into ' + target.def.label.toLowerCase(),
+      text: t('cut {tech} into {record}', { tech: label, record: t(target.def.label).toLowerCase() }),
       kind: 'milestone',
     });
-    ctx.onInsight(person, 'wrote down ' + label, 'gain');
+    ctx.onInsight(person, t('wrote down {tech}', { tech: label }), 'gain');
     this.finish(person);
   }
 
@@ -2947,17 +2943,18 @@ export class ActionSystem {
     const tech = useful[0]! as Tech;
     person.practice('teach', 1);
     telemetry.count('read_' + tech);
-    const label = TECH[tech].label.toLowerCase();
+    const label = t(TECH[tech].label).toLowerCase();
     if (record.def.fidelity === 'instruction') {
       ctx.knowledge.receiveFromRecord(person, tech);
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'read ' + label + ' off ' + record.def.label.toLowerCase() +
-          ' cut by ' + record.authorName,
+        text: t('read {tech} off {record} cut by {name}', {
+          tech: label, record: t(record.def.label).toLowerCase(), name: record.authorName,
+        }),
         kind: 'milestone',
       });
-      ctx.onInsight(person, 'read ' + label + ' off a stone', 'gain');
+      ctx.onInsight(person, t('read {tech} off a stone', { tech: label }), 'gain');
     } else {
       // A `reminder` gives a spark, not an answer: `remindFromRecord` only ever
       // fails when the guards above already ruled it out, so the boolean is not
@@ -2966,11 +2963,12 @@ export class ActionSystem {
       person.chronicle.push({
         tick: ctx.tick,
         ageDays: person.age,
-        text: 'saw ' + record.authorName + '\'s ' + record.def.label.toLowerCase() +
-          ' and thought about ' + label,
+        text: t("saw {name}'s {record} and thought about {tech}", {
+          name: record.authorName, record: t(record.def.label).toLowerCase(), tech: label,
+        }),
         kind: 'milestone',
       });
-      ctx.onInsight(person, 'an idea about ' + label + ', from a painting', 'idea');
+      ctx.onInsight(person, t('an idea about {tech}, from a painting', { tech: label }), 'idea');
     }
     this.finish(person);
   }
@@ -3210,10 +3208,10 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'saw further into ' + def.label.toLowerCase(),
+      text: t('saw further into {tech}', { tech: t(def.label).toLowerCase() }),
       kind: 'did',
     });
-    ctx.onInsight(person, 'a breakthrough on ' + def.label.toLowerCase(), 'gain');
+    ctx.onInsight(person, t('a breakthrough on {tech}', { tech: t(def.label).toLowerCase() }), 'gain');
   }
 
   /**
@@ -3279,10 +3277,10 @@ export class ActionSystem {
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,
-      text: 'built the first ' + def.label.toLowerCase() + ' anyone had ever built',
+      text: t('built the first {tech} anyone had ever built', { tech: t(def.label).toLowerCase() }),
       kind: 'did',
     });
-    ctx.onInsight(person, 'built a ' + def.label.toLowerCase() + ' to try', 'idea');
+    ctx.onInsight(person, t('built a {tech} to try', { tech: t(def.label).toLowerCase() }), 'idea');
     this.finish(person);
   }
 
@@ -3433,6 +3431,38 @@ export class ActionSystem {
    * shameful act — a demand refused to your face was still made, and
    * witnesses judge it through their own band's norms either way.
    */
+  /**
+   * Warning an outsider off the band's ground, M11 phase 14b.
+   *
+   * A `threaten` with no demand in it: the same short wind-up, the same deed
+   * emitted — so the intruder is frightened and comes to dread whoever warned
+   * them, witnesses of their band see one of theirs menaced, and the two
+   * peoples' standing takes the knock a threat always costs — and then it is
+   * over. Nothing is taken. Whether a blow follows is `Brain`'s question, asked
+   * again after `WARN_GRACE`; this only records that the warning was given.
+   */
+  private doWarn(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = WARN_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'warned_');
+      return;
+    }
+
+    ctx.social.emit('threaten', person, other, 1, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+    person.warnedOffId = other.id;
+    person.warnedOffTick = ctx.tick;
+    telemetry.count('warned_off');
+    this.finish(person);
+  }
+
   private doThreaten(person: Person, ctx: ActionContext): void {
     const other = this.approach(person, ctx);
     if (!other) return;
@@ -3573,10 +3603,23 @@ export class ActionSystem {
     // Give up the chase. A victim who runs must be able to get away, or fleeing
     // is theatre: attacker and quarry move at the same speed, so a pursuit that
     // never ends is a death sentence with extra steps.
-    if (quarry && person.distanceTo(quarry) > PURSUIT_LIMIT) {
-      telemetry.count('pursuit_abandoned');
-      this.finish(person);
-      return;
+    //
+    // Measured against where the chase began, and stopped through `abandon`
+    // so the floater says the quarry got away. M11 phase 12b: this used to
+    // test the bare limit on the first tick and `finish`, silently — for the
+    // player an order on anyone ten tiles off ended where they stood, and for
+    // everybody else `Brain`, which picks victims inside `sightRadius` (12),
+    // lost every attack it scored between nine and twelve tiles and scored it
+    // again the next tick. In `lean` that was about six lost attacks for
+    // every blow landed.
+    if (quarry) {
+      const distance = person.distanceTo(quarry);
+      if (person.pursuitFrom === null) person.pursuitFrom = distance;
+      if (distance > Math.max(PURSUIT_LIMIT, person.pursuitFrom + PURSUIT_SLACK)) {
+        telemetry.count('pursuit_abandoned');
+        this.abandon(person, 'target_escaped', ctx);
+        return;
+      }
     }
 
     const other = this.approach(person, ctx);

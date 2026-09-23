@@ -29,7 +29,7 @@ import { knowsPersonCondition } from '../sim/social/Knowledge.ts';
 import { Camera, TILE } from './Camera.ts';
 import { Floaters } from './Floaters.ts';
 import {
-  SpriteAtlas, BAND_COLORS, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
+  SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
 } from './Sprites.ts';
 
 const BIOME_COLORS: Record<Biome, [string, string]> = {
@@ -1030,6 +1030,20 @@ export class Renderer {
       }
     }
 
+    // M11 phase 13a (owner's note 3): whose it is. The same colour its
+    // band's people wear, as a ring *inside* the edge rather than on it — the
+    // edge already carries what state the thing is in (the dashed plan of a
+    // site, the broken red of a ruin), and that has to keep winning: a ruin
+    // must read as a ruin first and as somebody's second. Skipped when too
+    // small for two rings to be told apart.
+    if (w > 14 && h > 14) {
+      ctx.strokeStyle = BAND_COLORS[bandColorIndex(building.ownerBandId)]!;
+      ctx.globalAlpha = building.ruined || !building.complete ? 0.6 : 0.9;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px + 4, py + 4, w - 8, h - 8);
+      ctx.globalAlpha = 1;
+    }
+
     if (selected) {
       ctx.strokeStyle = '#7fd4ff';
       ctx.lineWidth = 2;
@@ -1072,16 +1086,16 @@ export class Renderer {
     ctx.fill();
 
     const sizeClass = sizeClassOf(person);
-    const bandColorIndex = person.bandId % BAND_COLORS.length;
+    const colorIndex = bandColorIndex(person.bandId);
 
     if (scale < PERSON_LOD_BELOW) {
       // Too small on screen for a face or a tool to read. One `drawImage`,
       // matching the shape `if (scale > 20)` already gives building icons.
-      this.atlas.drawSilhouette(ctx, sizeClass, bandColorIndex, px, py, this.atlas.bodyDrawSize(sizeClass, w) * 1.15);
+      this.atlas.drawSilhouette(ctx, sizeClass, colorIndex, px, py, this.atlas.bodyDrawSize(sizeClass, w) * 1.15);
     } else {
       const bodySize = this.atlas.bodyDrawSize(sizeClass, w);
       this.atlas.drawPerson(ctx, {
-        sizeClass, bandColorIndex,
+        sizeClass, bandColorIndex: colorIndex,
         pose: this.walkPoseFor(person, at),
         hairVariant: hairVariantOf(person),
         hasBeard: hasBeardOf(person),

@@ -39,7 +39,8 @@ import {
 } from '../entities/Building.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
-import { decayMacroBalance, decayMacroTarget } from './Macros.ts';
+import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
+import { explainPropertyUse, knowledgeOfPerson } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -52,12 +53,12 @@ import {
   LifeSystem, setChildFactory, findHeir, settleEstate,
 } from '../systems/LifeSystem.ts';
 import { linkFamily } from '../social/SocialSystem.ts';
-import { BandSystem } from '../systems/BandSystem.ts';
+import { BandSystem, TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import { foundBand, type FoundingContext } from '../systems/Founding.ts';
 import { KnowledgeSystem, countHolders } from '../systems/KnowledgeSystem.ts';
 import { ORDER_REFUSED, type Notice } from '../knowledge/Synthesis.ts';
 import {
-  eraFor, nutritionFactor, techPower, ERA_ORDER, ERAS, TECHS, type EraDef, type Tech,
+  eraFor, techPower, ERA_ORDER, ERAS, TECHS, type EraDef, type Tech,
 } from '../knowledge/Tech.ts';
 import { RECIPES, type RecipeDef } from '../entities/Recipe.ts';
 import { standingOver, type AuthorityContext } from '../social/Authority.ts';
@@ -70,6 +71,9 @@ import {
   Inscription, INSCRIPTIONS, resetInscriptionIds, type InscriptionForm,
 } from '../entities/Inscription.ts';
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
+import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
+import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
+import { BandMaps } from '../social/BandMaps.ts';
 
 /**
  * Something somebody worked out, waiting to be reported. See
@@ -137,6 +141,26 @@ const ORGANISED_ORDER_BONUS = 0.1;
 
 /** Ticks an interrupted order waits to be resumed before it is forgotten. */
 const RESUME_WINDOW = 2000;
+
+/**
+ * How an order from somebody else is put to the player — M11 phase 13f. Only
+ * the verbs a chief or a household head actually hands out; anything else
+ * falls back to its id.
+ */
+export const ORDER_WORDS: Record<string, string> = {
+  sabotage: 'wreck a rival building',
+  take: 'take from a rival store',
+  build: 'work on a building',
+  haul: 'carry materials to a site',
+};
+
+/**
+ * Where the outcast band's id starts, clear of every founding band's. Named
+ * (M11 phase 12c) because the renderer has to tell the outcasts apart to give
+ * them their own neutral colour rather than whichever tribe's their id
+ * happened to fall on modulo the palette.
+ */
+export const OUTCAST_BAND_ID_BASE = 1000;
 
 /**
  * Renown retained per in-game day, M11 phase 6c. Slower than the 0.985
@@ -664,7 +688,9 @@ export class Simulation {
 
       const band: Band = {
         id: b,
-        name: rng.pick(NAME_ONSETS) + rng.pick(NAME_CODAS) + ' band',
+        // Two draws, then the words: `t` takes nothing from `rng`, so the
+        // language a world is generated in cannot move the draws after it.
+        name: t('{name} band', { name: rng.pick(NAME_ONSETS) + rng.pick(NAME_CODAS) }),
         homeX: home.x,
         homeY: home.y,
         norms,
@@ -764,12 +790,12 @@ export class Simulation {
 
     linkFamily(child, [mother, father], this.relationships);
 
-    const text = mother.name + ' bore ' + child.name;
+    const text = t('{mother} bore {child}', { mother: mother.name, child: child.name });
     mother.chronicle.push({
       tick: this.time.tick, ageDays: mother.age, text, kind: 'milestone',
     });
     child.chronicle.push({
-      tick: this.time.tick, ageDays: 0, text: 'was born', kind: 'milestone',
+      tick: this.time.tick, ageDays: 0, text: t('was born'), kind: 'milestone',
     });
     telemetry.count('birth');
   }
@@ -812,7 +838,7 @@ export class Simulation {
           successor.chronicle.push({
             tick: this.time.tick,
             ageDays: successor.age,
-            text: 'became head of the ' + household.name + ' household',
+            text: t('became head of the {name} household', { name: household.name }),
             kind: 'milestone',
           });
           telemetry.count('succession');
@@ -933,9 +959,31 @@ export class Simulation {
     };
   }
 
-  /** What `leader` could make `subordinate` do, and how likely they are to. */
-  standing(leader: Person, subordinate: Person, action: string) {
-    return standingOver(leader, subordinate, action, this.authorityContext());
+  /**
+   * What `leader` could make `subordinate` do, and how likely they are to.
+   *
+   * `foreign` is M11 phase 11c: an order aimed at a structure belonging to
+   * some band other than the subordinate's own costs what a crime costs, not
+   * what the verb costs. See `Authority.FOREIGN_PROPERTY_COST`. Every caller
+   * that asks about a verb with no structure behind it — a job, a fight, the
+   * Ties panel — leaves it alone and gets exactly the answer it always did.
+   */
+  standing(leader: Person, subordinate: Person, action: string, foreign = false) {
+    return standingOver(leader, subordinate, action, this.authorityContext(), foreign);
+  }
+
+  /**
+   * Whether an order's target is a structure belonging to somebody else's
+   * band, the one question `standing`'s `foreign` flag answers.
+   *
+   * Read off the *subordinate's* band rather than the leader's, because the
+   * imposition being priced is theirs: it is the person walking into the
+   * rival camp who risks being caught in it.
+   */
+  private ordersForeignProperty(subordinate: Person, buildingId: number | undefined): boolean {
+    if (buildingId === undefined) return false;
+    const building = this.buildingsById.get(buildingId);
+    return building !== undefined && building.ownerBandId !== subordinate.bandId;
   }
 
   private rankContext(): RankContext {
@@ -945,6 +993,18 @@ export class Simulation {
       peopleById: this.peopleById,
       bands: this.bands,
     };
+  }
+
+  /**
+   * The band somebody actually lives in, by the same rule the ranks use.
+   *
+   * Not `person.bandId` alone: somebody who married into a household of
+   * another band belongs where the household is (`Rank.bandOf`). The tribe
+   * graph's "own band only" filter asks this rather than comparing ids, so it
+   * can never disagree with the "other bands" row it is hiding.
+   */
+  bandIdOf(person: Person): number {
+    return bandOf(person, this.rankContext());
   }
 
   /**
@@ -987,7 +1047,8 @@ export class Simulation {
     if (!leader.alive || !subordinate.alive) return false;
     if (leader.id === subordinate.id) return this.order(leader, action, target);
 
-    const standing = this.standing(leader, subordinate, action);
+    const standing = this.standing(leader, subordinate, action,
+      this.ordersForeignProperty(subordinate, target.buildingId));
     if (this.commandRng.next() >= standing.chance) {
       telemetry.count('order_refused');
       if (standing.byRank) telemetry.count('order_refused_by_rank');
@@ -1004,7 +1065,12 @@ export class Simulation {
       subordinate.chronicle.push({
         tick: this.time.tick,
         ageDays: subordinate.age,
-        text: 'refused ' + leader.name + ' over ' + action,
+        // English has always written the action id here ("over haul"); a
+        // translation says what was asked, where it has the words for it.
+        text: t('refused {name} over {action}', {
+          name: leader.name,
+          action: language() !== 'en' && ORDER_WORDS[action] ? t(ORDER_WORDS[action]!) : action,
+        }),
         kind: 'did',
       });
       // Being refused stings, and it is the refuser who thinks less of you for
@@ -1014,6 +1080,17 @@ export class Simulation {
     }
 
     telemetry.count('order_obeyed');
+    // M11 phase 13f. A chief's order reaches the player's character exactly
+    // as it reaches anybody else's — that is the pillar — but it used to do so
+    // in silence: a chief calling a raid, or directing work, would set an
+    // idle player walking toward a rival's granary and nothing on screen said
+    // who had sent them, or why they had stopped answering to the player.
+    if (subordinate.isPlayer) {
+      const who = knowledgeOfPerson(subordinate, leader, this.relationships).displayName;
+      this.noteInsight(subordinate, t('{who} sent you to {order}', {
+        who, order: ORDER_WORDS[action] ? t(ORDER_WORDS[action]!) : action,
+      }), 'setback');
+    }
     if (standing.byRank) {
       telemetry.count('order_obeyed_by_rank');
       // The only way `chiefdom` is ever practised: an order that landed on
@@ -1119,7 +1196,7 @@ export class Simulation {
     if (organising <= 0) {
       telemetry.count('job_unimagined');
       this.lastRefusal =
-        leader.name + ' has never had the idea of setting one person to one task';
+        t('{name} has never had the idea of setting one person to one task', { name: leader.name });
       return false;
     }
 
@@ -1149,7 +1226,7 @@ export class Simulation {
       subordinate.chronicle.push({
         tick: this.time.tick,
         ageDays: subordinate.age,
-        text: 'refused to take up work for ' + leader.name,
+        text: t('refused to take up work for {name}', { name: leader.name }),
         kind: 'did',
       });
       this.relationships.addDeed(subordinate.id, leader.id, -3, this.time.tick);
@@ -1163,11 +1240,56 @@ export class Simulation {
       tick: this.time.tick,
       ageDays: subordinate.age,
       text: job !== null
-        ? 'was put to work as a ' + JOBS[job].label.toLowerCase()
-        : 'was released from their work',
+        ? t('was put to work as a {job}', { job: t(JOBS[job].label).toLowerCase() })
+        : t('was released from their work'),
       kind: 'milestone',
     });
     return true;
+  }
+
+  /**
+   * Outsiders seen standing on each band's ground, by whom it was seen and
+   * when — M11 phase 14a. Written only by `lookForIntruders`; read from 14c by
+   * the territory engine, which until then counted every foreigner within
+   * range of a camp whether or not anybody from the band was looking.
+   */
+  readonly sightings: Sightings = new Map();
+  /**
+   * What each band has seen of the land, M11 phase 14d — the first memory of
+   * places in the game, and the seed of M12's world map. See `BandMaps`.
+   * Created on first use, from the world's size.
+   */
+  private bandMapsStore: BandMaps | null = null;
+  get bandMaps(): BandMaps {
+    this.bandMapsStore ??= new BandMaps(this.world.width, this.world.height);
+    return this.bandMapsStore;
+  }
+  private readonly sightingScratch: Person[] = [];
+
+  /** Every founding band's camp, for the brain's readers of fear. */
+  private bandHomes(): Map<number, { x: number; y: number }> {
+    const homes = new Map<number, { x: number; y: number }>();
+    for (const band of this.bands) {
+      if (!band.outcast) homes.set(band.id, { x: band.homeX, y: band.homeY });
+    }
+    return homes;
+  }
+
+  private lookForIntruders(): void {
+    const territories = new Map<number, Territory>();
+    for (const band of this.bands) {
+      if (band.outcast) continue;
+      territories.set(band.id, { bandId: band.id, homeX: band.homeX, homeY: band.homeY });
+    }
+    const outcast = this.bands.find(b => b.outcast)?.id;
+    sightIntruders(
+      this.people, this.peopleHash, territories, TERRITORY_RADIUS, this.config.sightRadius,
+      this.time.tick, this.sightings, outcast, this.sightingScratch);
+    // The same looking-around writes what each band knows of the land.
+    for (const person of this.people) {
+      if (!person.alive || person.bandId === outcast) continue;
+      this.bandMaps.observe(person.bandId, person.x, person.y, this.config.sightRadius, this.nodeHash);
+    }
   }
 
   /** The band of no band. Created the first time anyone is cast out. */
@@ -1176,8 +1298,8 @@ export class Simulation {
     if (existing) return existing;
 
     const band: Band = {
-      id: this.bands.length + 1000,
-      name: 'the outcast',
+      id: this.bands.length + OUTCAST_BAND_ID_BASE,
+      name: t('the outcast'),
       homeX: this.world.width / 2,
       homeY: this.world.height / 2,
       norms: { ...DEFAULT_NORMS },
@@ -1320,21 +1442,12 @@ export class Simulation {
   }
 
   /**
-   * Eats one unit from the pack. Returns whether anything was eaten.
-   *
-   * Shares the cooking bonus with the action system by going through the same
-   * arithmetic — a player who eats from the inventory panel and one who eats by
-   * order must get the same nourishment.
+   * Eats one unit from the pack — the Kit's *Eat* button. Returns whether
+   * anything was eaten. Goes through `consumeFood`, the same function eating
+   * by order does, so the two can never again disagree about what a meal is.
    */
   eatItem(person: Person, itemId: string): boolean {
-    const def = ITEMS[itemId];
-    if (!def || def.nutrition <= 0) return false;
-    if (person.inventory.remove(itemId, 1) === 0) return false;
-
-    const cooked = nutritionFactor(person);
-    person.needs.hunger = Math.max(0, person.needs.hunger - def.nutrition * cooked);
-    telemetry.count('eat');
-    return true;
+    return consumeFood(person, itemId);
   }
 
   /**
@@ -1351,7 +1464,7 @@ export class Simulation {
   handOver(giver: Person, receiver: Person, itemId: string, count = giver.inventory.count(itemId)): number {
     const room = receiver.carryCapacity - receiver.carrying;
     if (room <= 0) {
-      this.lastRefusal = receiver.name + ' cannot carry any more';
+      this.lastRefusal = t('{name} cannot carry any more', { name: receiver.name });
       return 0;
     }
     const moved = giver.inventory.remove(itemId, Math.min(room, count, giver.inventory.count(itemId)));
@@ -1381,9 +1494,9 @@ export class Simulation {
       // must cross the same property boundary here or clicking an item would
       // bypass the rule obeyed by walking to the store.
       this.social.emit('trespass', person, null, 0.5, this.time.tick,
-        this.peopleHash, this.config.sightRadius);
+        this.peopleHash, this.config.sightRadius, true, store.ownerBandId);
       if (!access.allowed) {
-        this.lastRefusal = access.because;
+        this.lastRefusal = explainPropertyUse(this.player ?? person, access, this.relationships);
         telemetry.count('property_use_stopped');
         return 0;
       }
@@ -1755,14 +1868,16 @@ export class Simulation {
           : this.buildingsById.get(target.buildingId);
         const label = BUILDINGS[stationId]?.label.toLowerCase() ?? stationId;
         if (!named || !named.complete || named.def.id !== stationId) {
-          return this.cancelOrder(person, 'that has to be made at a ' + label);
+          return this.cancelOrder(person, t('that has to be made at {station}', {
+            station: aNoun(label),
+          }));
         }
       }
     }
 
     if (target.inscriptionId !== undefined) {
       const record = this.inscriptionsById.get(target.inscriptionId);
-      if (!record) return this.cancelOrder(person, 'that record is gone');
+      if (!record) return this.cancelOrder(person, t('that record is gone'));
       person.targetInscriptionId = record.id;
       person.targetX = record.x;
       person.targetY = record.y;
@@ -1771,8 +1886,8 @@ export class Simulation {
 
     if (target.pileId !== undefined) {
       const pile = this.pilesById.get(target.pileId);
-      if (!pile || pile.empty) return this.cancelOrder(person, 'those goods are gone');
-      if (this.isBuried(pile.x, pile.y)) return this.cancelOrder(person, 'it is under the snow');
+      if (!pile || pile.empty) return this.cancelOrder(person, t('those goods are gone'));
+      if (this.isBuried(pile.x, pile.y)) return this.cancelOrder(person, t('it is under the snow'));
       person.targetPileId = pile.id;
       person.targetX = pile.x;
       person.targetY = pile.y;
@@ -1781,7 +1896,7 @@ export class Simulation {
 
     if (target.personId !== undefined) {
       const other = this.peopleById.get(target.personId);
-      if (!other || !other.alive) return this.cancelOrder(person, 'they are gone');
+      if (!other || !other.alive) return this.cancelOrder(person, t('they are gone'));
       person.targetPersonId = other.id;
       person.targetX = other.x;
       person.targetY = other.y;
@@ -1789,7 +1904,7 @@ export class Simulation {
     }
     if (target.animalId !== undefined) {
       const animal = this.animalsById.get(target.animalId);
-      if (!animal || !animal.alive) return this.cancelOrder(person, 'it is gone');
+      if (!animal || !animal.alive) return this.cancelOrder(person, t('it is gone'));
       person.targetAnimalId = animal.id;
       person.targetX = animal.x;
       person.targetY = animal.y;
@@ -1797,7 +1912,7 @@ export class Simulation {
     }
     if (target.treeId !== undefined) {
       const tree = this.treesById.get(target.treeId);
-      if (!tree || !tree.standing) return this.cancelOrder(person, 'that tree is gone');
+      if (!tree || !tree.standing) return this.cancelOrder(person, t('that tree is gone'));
       person.targetTreeId = tree.id;
       person.targetX = tree.x;
       person.targetY = tree.y;
@@ -1805,7 +1920,7 @@ export class Simulation {
     }
     if (target.buildingId !== undefined) {
       const building = this.buildingsById.get(target.buildingId);
-      if (!building) return this.cancelOrder(person, 'that building is gone');
+      if (!building) return this.cancelOrder(person, t('that building is gone'));
       person.targetBuildingId = building.id;
       person.targetX = building.centerX;
       person.targetY = building.centerY;
@@ -1813,9 +1928,9 @@ export class Simulation {
     }
     if (target.nodeId !== undefined) {
       const node = this.nodesById.get(target.nodeId);
-      if (!node || node.depleted) return this.cancelOrder(person, 'there is nothing left there');
+      if (!node || node.depleted) return this.cancelOrder(person, t('there is nothing left there'));
       if (node.def.groundLevel && this.isBuried(node.x, node.y)) {
-        return this.cancelOrder(person, 'it is under the snow');
+        return this.cancelOrder(person, t('it is under the snow'));
       }
       person.targetNodeId = node.id;
       person.targetX = node.x;
@@ -1830,16 +1945,16 @@ export class Simulation {
       if (action === 'drink') {
         const bank = this.shoreHash.findNearest(target.x, target.y, 24,
           tile => this.world.sameRegion(person.x, person.y, tile.x, tile.y));
-        if (!bank) return this.cancelOrder(person, 'no bank they can reach from here');
+        if (!bank) return this.cancelOrder(person, t('no bank they can reach from here'));
         person.targetX = bank.x;
         person.targetY = bank.y;
         return true;
       }
       if (!this.world.isWalkable(target.x, target.y)) {
-        return this.cancelOrder(person, 'they cannot walk there');
+        return this.cancelOrder(person, t('they cannot walk there'));
       }
       if (!this.world.sameRegion(person.x, person.y, target.x, target.y)) {
-        return this.cancelOrder(person, 'there is no way across');
+        return this.cancelOrder(person, t('there is no way across'));
       }
       person.targetX = target.x;
       person.targetY = target.y;
@@ -1857,7 +1972,7 @@ export class Simulation {
    * tell you — especially for drinking, where the real answer was that the
    * water itself is not somewhere you can stand.
    */
-  private cancelOrder(person: Person, reason = 'that cannot be done'): boolean {
+  private cancelOrder(person: Person, reason = t('that cannot be done')): boolean {
     person.clearTarget();
     person.forgetPlans();
     person.action = 'idle';
@@ -2050,7 +2165,7 @@ export class Simulation {
     for (let dy = 0; dy < def.height; dy++) {
       for (let dx = 0; dx < def.width; dx++) {
         if (!this.world.isWalkable(x + dx, y + dy)) {
-          return 'the ground there will not take it';
+          return t('the ground there will not take it');
         }
       }
     }
@@ -2058,11 +2173,11 @@ export class Simulation {
       const overlapsX = x < existing.x + existing.def.width && x + def.width > existing.x;
       const overlapsY = y < existing.y + existing.def.height && y + def.height > existing.y;
       if (overlapsX && overlapsY) {
-        return 'the ' + existing.def.label.toLowerCase() + ' is already there';
+        return t('{thing} is already there', { thing: theNoun(existing.def.label.toLowerCase()) });
       }
     }
     if (def.placement === 'shore' && !this.touchesShore(def, x, y)) {
-      return 'a ' + def.label.toLowerCase() + ' has to sit at the water\u2019s edge';
+      return t('{thing} has to sit at the water\u2019s edge', { thing: aNoun(def.label.toLowerCase()) });
     }
     // M8.2. A field is the second design with somewhere it has to be, and the
     // first whose requirement is about the ground rather than the map: open
@@ -2094,7 +2209,7 @@ export class Simulation {
       for (let dx = 0; dx < def.width; dx++) {
         const biome = this.world.biomeAt(x + dx, y + dy);
         if (biome !== 'grass' && biome !== 'forest' && biome !== 'beach') {
-          return 'a ' + def.label.toLowerCase() + ' wants open ground';
+          return t('{thing} wants open ground', { thing: aNoun(def.label.toLowerCase()) });
         }
         total += this.world.effectiveFertilityAt(x + dx, y + dy);
         tiles++;
@@ -2105,7 +2220,7 @@ export class Simulation {
     // a plot *is* allowed to be sited on ground that a previous field wore out,
     // because that is a decision a player is entitled to make badly.
     if (tiles === 0 || total / tiles < SPENT_BELOW) {
-      return 'the ground there is too poor to break';
+      return t('the ground there is too poor to break');
     }
     return null;
   }
@@ -2517,7 +2632,7 @@ export class Simulation {
   trapYield(building: Building): { perDay: number; reason: string } | null {
     const yielded = building.def.yields;
     if (!yielded) return null;
-    if (!building.complete) return { perDay: 0, reason: 'not finished yet' };
+    if (!building.complete) return { perDay: 0, reason: t('not finished yet') };
 
     let power = 0;
     for (const person of this.people) {
@@ -2526,14 +2641,14 @@ export class Simulation {
       power = Math.max(power, techPower(person, building.def.requiresTech as Tech));
     }
     if (power <= 0) {
-      return { perDay: 0, reason: 'nobody here remembers how to work it' };
+      return { perDay: 0, reason: t('nobody here remembers how to work it') };
     }
     if (building.storageFree <= 0) {
-      return { perDay: 0, reason: 'full, and catching nothing until it is emptied' };
+      return { perDay: 0, reason: t('full, and catching nothing until it is emptied') };
     }
     return {
       perDay: yielded.perDay * power,
-      reason: 'catching on its own, and nobody has to stand here',
+      reason: t('catching on its own, and nobody has to stand here'),
     };
   }
 
@@ -2631,6 +2746,10 @@ export class Simulation {
       this.social.workingAlongside(this.people, this.peopleHash, this.time.tick);
     }
 
+    // M11 phase 14a: who is on whose ground, seen by whom. After
+    // `rebuildHashes` for the same reason as the pass above.
+    if (this.time.tick % SIGHTING_EVERY === 0) this.lookForIntruders();
+
     this.wildlifeSystem.update(this.animals, {
       world: this.world,
       rng: this.wildlifeRng,
@@ -2695,6 +2814,7 @@ export class Simulation {
         onAdopt: (person, band) => this.adopt(person, band),
         peopleHash: this.peopleHash,
         bandRelations: this.bandRelations,
+        sameRegion: (ax, ay, bx, by) => this.world.sameRegion(ax, ay, bx, by),
         abandonSite: site => this.removeBuilding(site),
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),
@@ -2702,6 +2822,9 @@ export class Simulation {
         leaveBand: person => this.removeBandMembership(person),
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
         householdsById: this.householdsById,
+        sightings: this.sightings,
+        bandMaps: this.bandMaps,
+        nodeHash: this.nodeHash,
       });
 
       this.knowledgeSystem.daily(this.people, {
@@ -2784,6 +2907,7 @@ export class Simulation {
       householdsById: this.householdsById,
       bandRelations: this.bandRelations,
       sabotageCandidatesByBand: this.sabotageCache,
+      homes: this.bandHomes(),
     };
     const actionCtx = {
       world: this.world,

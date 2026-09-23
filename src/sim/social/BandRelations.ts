@@ -43,6 +43,28 @@ export class BandRelations {
     return this.edges.get(this.key(a, b)) ?? 0;
   }
 
+  /**
+   * Every band `a` has any standing with at all, in ascending id order.
+   *
+   * The keys rather than the values, so that a caller asking "whom do we hate
+   * enough to march on" walks only the pairs that have actually touched
+   * instead of every band in the world crossed with every other. Ascending
+   * rather than in insertion order because insertion order is a property of
+   * who happened to meet whom first, and a caller that broke a tie on it
+   * would make the world depend on something no seed controls.
+   */
+  touching(a: number): number[] {
+    const others: number[] = [];
+    for (const key of this.edges.keys()) {
+      const colon = key.indexOf(':');
+      const low = Number(key.slice(0, colon));
+      const high = Number(key.slice(colon + 1));
+      if (low === a) others.push(high);
+      else if (high === a) others.push(low);
+    }
+    return others.sort((x, y) => x - y);
+  }
+
   /** Moves the standing between two bands. A no-op for a band and itself. */
   add(a: number, b: number, delta: number): void {
     if (a === b) return;

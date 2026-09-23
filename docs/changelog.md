@@ -6,6 +6,726 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 14b-14f: fear is read — company, range, flight, defence, territory, raids, the face
+
+Phase 14a gave fear writers; these commits give it readers, one at a time,
+each measured at twenty seeds of `lean` and `century` (`sim:seeds --seeds
+20`, which since this phase also reports where cross-band blows land and
+whether the peoples drift apart after them). Survival / collapses below a
+quarter / murders / share of cross-band blows within twenty tiles of either
+camp:
+
+| commit | `lean` | `century` |
+|---|---|---|
+| before phase 14 | 50.4% · 6 · 457 · 31% | 37.2% · 8 · 716 · 38% |
+| 14b.1 conversation openness | 52.1% · 5 · 458 · 33% | 35.5% · 11 · 742 · 35% |
+| 14b.2 work near home | 55.5% · 4 · 424 · 33% | 32.1% · 12 · 749 · 33% |
+| 14b.3 keep to your own | 51.3% · 5 · 459 · 32% | 36.1% · 7 · 746 · 35% |
+| 14b.4 flee the dreaded | 49.6% · 4 · 411 · 28% | 38.1% · 6 · 740 · 29% |
+| 14b.5 defend the ground (Brain, alone) | 49.7% · 4 · 423 · 43% | 36.9% · 7 · 659 · 37% |
+| 14c territory reads sightings, resents hunger | 51.8% · 5 · 403 · 40% | **81.0% · 2 · 329 · 45%** |
+| 14d `BandMaps`, raid for what is lacking | 53.5% · 5 · 401 · 42% | 76.0% · 2 · 369 · 46% |
+| 14e property deeds seen move standing | 52.8% · 4 · 400 · 43% | 72.1% · 1 · 397 · 41% |
+| 14f the face | bit-identical | bit-identical |
+
+Ten seeds cannot resolve under ten points and twenty not much under five;
+every row but 14c is inside that.
+
+**14b, the readers** (`sim/social/Fear.ts` holds every constant, each with
+why):
+1. *Conversation.* `crossBand` gains the two parties' own ease: +0.3 × their
+   mean security over 50. At ease the cross-band warmth factor goes from 0.43
+   to about 0.52; frightened, toward 0.28.
+2. *Range.* `findNode` filters to nodes within `homeRange` of camp: no limit
+   below a quarter of fear, 48 tiles falling to 20. A filter, because
+   proximity dominates the scorer.
+3. *Keeping to your own.* An idle wander is centred part of the way home above
+   0.4 fear (same RNG draws), and an outsider costs up to 40 points as a choice
+   of company. **A hard refusal of outsiders was measured and dropped**: on
+   `lean` it raised cross-band blows 3,964 → 4,696 and murders 462 → 503
+   against the same commit without it. People who stop talking across a band
+   line stop warming to each other, and grudges fill the gap — segregation is
+   meant to follow from hatred here, not manufacture it.
+4. *Flight.* With nobody's blood fresh, the most dreaded neighbour within half
+   a sight radius (dread 35+) is reason to flee.
+5. *Defence*, the Brain commit, alone: a third route to `attack`, only at 0.5
+   fear, only against an outsider in the inner third of the band's ground whose
+   people are not on good terms, never kin — warned first with a new `warn`
+   verb (a `threaten` deed with no demand), struck only after 90 ticks if still
+   there, under its own ceiling. The share of blows landing near a camp jumps
+   from 28% to 43% on `lean`.
+
+**14c.** `considerTerritory` counted every foreigner within forty tiles
+through the people hash; it now reads the sightings 14a records, so a people
+resents the strangers it saw. And its sign was backwards: the comment said a
+*hungry* band resents intruders, the code multiplied by how *full* its stores
+were. The comment was the intent. Both rules were measured with the sensor
+fix: the fullness rule gives `century` 42.5%, 6 collapses, 632 murders; the
+hunger rule 81.0%, 2, 329. Well-fed `century` bands camped thirty to forty
+tiles apart had been resenting each other every day and going to war over it.
+`lean`, the scarce world, is as violent under either. This costs
+`bands-take-sides` on three well-fed scenarios — see [bugs.md](bugs.md).
+
+**14d.** `BandMaps` (`sim/social/BandMaps.ts`): the game's first memory of
+places, and the seed of M12's world map — per band, a coarse grid of the
+resource kinds its members have seen, written on the sighting cadence,
+draw-free (`BandSystem`'s `rng` is `forestRng`). `considerRaid` gains a
+second motive: a needed kind missing from the band's near ground and seen on
+the ground of a people it is not on good terms with, within a day's march; the
+party goes to take it where it grows, which is where a frightened band
+defends. "Missing" over the whole territory never fired once in the matrix;
+over the inner half it fires on `lean`.
+
+**14e.** `emit` takes the owning band of a building for deeds with no person
+target (store theft, trespass, sabotage), and moves `BandRelations` once per
+deed when somebody of that band saw it. Closes the `bugs.md` entry on unseen
+raids.
+
+**14f.** `expressionOf` reads `security`: at 0.4 fear a face looks afraid, or
+stern on a hot temper. The first mood channel a face reads. Bit-identical.
+
+**The gate, honestly.** The two checks written for it, verified failing on the
+build before any reader, still fail on the single `lean` seed; across twenty
+seeds violence near camp went 31% → 43% (`lean`) and 38% → 41% (`century`)
+against a 50% floor, and drifting apart is a coin toss in both. Not tuned to
+pass; recorded in [bugs.md](bugs.md) with where the remaining violence comes
+from. **The stranger table** (outsider regard, `kin-outrank-strangers`) moved
+from `crowded` −4.7 / `culture` −8.0 / `lean` −28.8 / `century` −11.1 to
+−7.0 / −7.1 / −13.4 / −17.9 (`millers` and `band` have too few pairs). It
+now falls with run length where it used to rise — out of accumulated deeds,
+which decay, rather than out of a constant, which is the door phase 7 closed.
+
+---
+
+## 2026-09-23 — M11 phase 14a: fear gets its writers, and nothing reads them yet
+
+The owner's note 7: little fear and people talk to strangers and range far;
+a lot, and they keep to their own ground, avoid outsiders, huddle with their
+own and may attack whoever comes in — with the hatred growing out of
+*concrete incidents*. `Person.mood.security` was built for this in M9.6 4a
+and had no writer. It has four now, all in the new `sim/social/Fear.ts`:
+
+| source | where | weight |
+|---|---|---|
+| suffering `assault`, `murder`, `threaten`, `theft` | `SocialSystem.absorb`, the victim | 25 × `FEARED[type]` |
+| seeing an outsider do it to one of your band | `absorb`, a witness | 10 × |
+| being told of it | `absorb`, hearsay | 4.5 × confidence × |
+| an outsider standing on your band's ground | `sightIntruders`, six passes a day | 0.15 each, 0.6 cap, ×0.3 beyond the inner third |
+
+All four sit behind `memory.record`, so only news frightens: a story already
+known frightens nobody twice. Bystanders are frightened only by an *outsider*
+harming one of *their* band — a brawl between neighbours is a quarrel, a
+stranger beating your cousin is a reason to stay near home. That needed the
+victim's band on `absorb`, now a parameter.
+
+**The second layer is `Relationship.dread`**, fear of one person, fed only by
+what they did to you (30 × at full weight), decaying at 0.993 a day — slower
+than `deeds`, because a grudge can be talked out of somebody and a flinch
+cannot. It is **not** in `opinion`: the bully is hated and feared, and those
+are separate questions for separate verbs. It keeps an edge from being pruned
+while it lasts, and does not touch `lastContact`.
+
+**Where the plan said "daily block" the pass runs six times a day.** The
+daily block runs at midnight, when everybody is under a roof and nobody is
+watching the meadow; a pass there would have measured who sleeps where. What
+it sees also goes into `Simulation.sightings` — which band saw which outsider
+on its ground, and when — for 14c, which is to read that instead of counting
+every foreigner in range of a camp whether anybody was looking.
+
+**The sighting weight was measured down by a factor of four before anything
+read it.** At the first value `craft`'s whole population averaged −72
+security from strangers merely being about — ambient fear, the opposite of
+the note's. Now the averages (`mood_security_sum / mood_samples`) are
+`crowded` −3.7, `lean` −13.6, `century` −16.9, `craft` −31.2: fear tracks how
+violent a world is, not how close its camps sit.
+
+**Bit-identical in the world**: `sim:check:all --verbose` diffs to zero once
+the new `security_*`/`dread_*` counters and `mood_security_sum` — which now
+has writers — are set aside. Nothing reads either layer until 14b.
+
+---
+
+## 2026-09-23 — notes.txt: the game in Spanish, with a language switch in the menus
+
+The third of the owner's notes of 2026-09-23: *"translate the game to Spanish
+and add a button to change languages in the main menu."* The owner asked for
+all of it — interface and everything the simulation writes — rather than the
+chrome alone.
+
+**The mechanism** (`src/i18n/`). The English sentence is the key:
+`t('{name} obeys', { name })`, with the Spanish in `src/i18n/es/*.ts`. Opaque
+keys (`refusal.generic`) would have meant rewriting every sentence into a
+table before translating one, and would have hidden, in code whose comments
+are about the words a player sees, what those words are. Three pieces of
+Spanish grammar English does not need are built in: inline gender agreement
+(`codicios{g:o|a}`), articles that agree with the noun (`aNoun`, `theNoun`,
+with a list of feminine nouns and labels that carry their own article), and
+contexts for one English word that is two Spanish ones (`tc('skill',
+'forage')`). About 1,500 entries.
+
+**English is byte-identical, and that is the tripwire.** With the language at
+English, `t` returns exactly what the code built before. `sim:check:all
+--verbose` diffs to zero against the build before the pass, every existing
+test passes unchanged, and so do all fifty-two existing browser specs.
+
+**Where the words are translated.** Data tables — techs, items, buildings, the
+settings rows — stay English, because the simulation and the tests read them as
+identifiers; they are translated where shown, `t(def.label)`. Sentences the
+simulation composes — a line in somebody's life, an insight, a refusal, a
+band's name — are translated when composed, because by the time the UI sees
+"Fenva taught Arun cordage" the grammar cannot be redone. `t` is pure (no DOM,
+no storage, no RNG), so the simulation calling it breaks no rule in
+`AGENTS.md`; a new determinism test runs one seed in English and in Spanish for
+1,500 steps and requires the same world. `causeOfDeath` stays English in the
+simulation because `tools/seeds.ts` counts the starved by comparing it, and is
+translated on the succession screen.
+
+**The switch.** *English / Español*, each named in itself, on the start
+screen, on the settings screen and in the pause menu — the game has no single
+"main menu", and a player who cannot read English needs it on the very first
+screen. Remembered in `localStorage` apart from the difficulty document, so
+"Reset everything to Normal" does not also switch a reader's language; the
+first visit follows the browser's own language; `?lang=es` overrides both, the
+way `?seed=` does. Panels built once (settings, pause menu, HUD chrome)
+rebuild on a switch; the three graphs drop their redraw digest.
+
+**Keeping it complete.** `i18n.test.ts` scans the source for every literal
+`t('…')` key and walks every data table the UI shows, and fails on anything
+without Spanish, on a Spanish template that loses or invents a placeholder,
+and on a key defined twice. It cannot see a sentence built without `t`, so
+`npm run i18n:soak` runs a world in Spanish for 30,000 steps and flags every
+line it wrote that looks English; it found three such holes in this pass (a
+marriage line glued with `' and '`, a refusal that printed an action id, and
+two actions — `spar`, `trade` — with no label at all, which English had been
+printing as raw ids). `AGENTS.md` now says every readable word goes through
+`t()`.
+
+**Left as found**, and in [bugs.md](bugs.md): lines written before a switch
+stay in their language; three English grammar slips kept so English stays
+byte-identical; Spanish takes the masculine where no person is to hand.
+
+Bit-identical in `sim:check:all --verbose`. Two new e2e specs, a new unit test
+file, a new determinism test.
+
+---
+
+## 2026-09-23 — notes.txt: the family tree's lines take colour, and the tribe graph keeps to the tribe
+
+Two of the three notes the owner left on 2026-09-23. The third, the Spanish
+translation, is its own pass below.
+
+**"Show relationship with green / yellow / red coloured lines in the family
+visualizer too, as done in the tribe visualizer."** Every kinship line on the
+family tree is now drawn in the colour of what the two people at its ends think
+of each other. The tribe graph only ever had two colours — anything at or above
+zero was green — so the "yellow" the note remembers did not exist; it does now,
+in both panels, by one rule. `Knowledge.opinionTone` splits at
+`REGARD_NEUTRAL` (±10), which is the band `regardFromThem` already called *"no
+strong feeling"*, and `regardFromThem` now reads the constant rather than its
+own literals, so a yellow line is exactly a tie the words call indifferent.
+The two panels also share the arithmetic: the tribe graph's inline "mean of
+whichever directions exist" became `RelationshipGraph.mutualOpinion`, which the
+family tree calls too.
+
+A family line is coloured only where the player could have learned it — when
+they know the ties (`knowsTies`) of somebody at either end — and stays the old
+grey otherwise. Being your relative is not the same as being somebody whose
+feelings you can read.
+
+**"Members of other tribes are shown in the tribe visualizer."** They were: the
+graph draws everybody the subject has an opinion of, and the ranked view has an
+"other bands" row by design (M9.5 4e). The owner chose a switch. The graph now
+opens on the subject's own band — `Simulation.bandIdOf`, the same `Rank.bandOf`
+the rows are drawn from, so the filter cannot disagree with the row it hides —
+and a header button, *other bands too*, puts everybody back. The filter rides
+the predicate `tribeMembers` already applied to the dead (renamed from `alive`
+to `include`), so it is applied *before* the cap and a hidden neighbour never
+costs a band-mate their place. The head line says how many it hid; a graph
+that silently drops half of somebody's friends reads as the friends having
+gone.
+
+Bit-identical in `sim:check:all --verbose`. Two e2e specs.
+
+---
+
+## 2026-09-23 — M11 phase 13f, third commit: your own life names people as you know them
+
+**The defect.** `SocialSystem.emit` writes `describeEvent(type, actor.name,
+target.name)` into both chronicles, with real names. Rob a stranger and your
+*Life* tab told you what they were called. Other people's histories already
+went through `knowledgeOfPerson`; your own bypassed it because it was stored
+as finished text.
+
+**The change.** `rememberedAbout`, the one function the *Life* tab reads,
+re-writes every line of your own chronicle that carries a `deed` (13e) from
+its ids, through the same `nameOf` other people's histories use — so a
+stranger you robbed is *"a young man"* until you learn better, and becomes
+their name the day you do.
+
+**Why the stored sentence stays.** The plan asked for the chronicle to hold
+ids and for its readers to be migrated. It already holds them (13e), and
+checking the readers found only two: *Life*, migrated here, and the
+succession screen, whose milestones are never deeds and whose *killed* line
+already names through `Knowledge`. No check or tool reads `chronicle[].text`.
+The sentence is kept beneath as a record rather than rewritten, because
+rewriting stored history to suit one reader is the thing 13d refused to do.
+Two non-deed lines still carry a name as written — see
+[bugs.md](bugs.md).
+
+Bit-identical in `sim:check:all --verbose`. A test in `knowledge.test.ts`.
+
+---
+
+## 2026-09-23 — M11 phase 13f, second commit: a witness is named as the reader knows them
+
+**The defect.** `mayUse` wrote its own explanation, `seen.name + ' is close
+enough to see them'`, and that sentence reached the screen twice — the
+refusal `Simulation.storeItem` puts in `lastRefusal`, and the reason a
+greyed-out option in the radial menu gives. The watcher is usually from
+another band and usually a stranger, whose name the player's character was
+never told.
+
+**The change.** `mayUse` is pure and cannot know who is reading, so it stops
+writing words: `PropertyUse.because` becomes `basis` — `own`, `ally`, `seen`
+or `unseen` — and the witness it already returned stays on `seen`. A new
+`Knowledge.explainPropertyUse(observer, use, relationships)` writes the
+sentence for a named reader, naming the witness through `knowledgeOfPerson`:
+*"A young man is close enough to see them"* until the reader knows better.
+`storeItem` explains for the player; the catalogue gains an optional
+`explainProperty` that `main.ts` supplies for the actor. Two tests in
+`property.test.ts`.
+
+Bit-identical in `sim:check:all --verbose` — nothing in the simulation read
+`because`.
+
+---
+
+## 2026-09-23 — M11 phase 13f, first commit: the refusals 11b-11c left unexplained
+
+The plan asked for every path of `sabotage` and the organised raid that ends
+in `finish` where it should `abandon`, or in an `abandon` with no words in
+`STOP_REASONS`. Checked against the source rather than by eye:
+
+- **`doSabotage`** `finish`es only on success; every failure goes through
+  `abandon` or `stop` with a reason that has words. Nothing to change.
+- **One reason had no words at all**: `nothing_to_trade`, from `doTrade`, which
+  the floater printed as the identifier with its underscores replaced. It now
+  reads *"one of them had no food to swap"*. A new `stopreasons.test.ts` reads
+  every `abandon` reason and every `interruption()` return out of
+  `ActionSystem.ts` and fails if any lacks a line; it failed on this one
+  before the fix.
+- **The raid organiser found a silent order.** `fitForOrders` asks only that a
+  member be idle, near and fit — the player's character is a member like any
+  other, which is the pillar — so a chief calling a raid, or directing work
+  on a site, could set an idle player walking to a rival's granary with
+  nothing on screen to say who had sent them. `Simulation.command` now posts an
+  insight when the order it has just had obeyed lands on the player: *"Oren
+  sent you to wreck a rival building"*, with the leader named through
+  `Knowledge`. Two tests in `orders.test.ts`.
+
+Bit-identical in `sim:check:all --verbose`: no scenario has a player.
+
+---
+
+## 2026-09-23 — M11 phase 13e: a death says who they killed and what they raised
+
+**The note** (owner's note 2): the succession screen showed the last six
+milestones, and neither a killing nor a building is one, so a life that took
+three others or put up half the camp read the same as one that did neither.
+
+**The change.** Two lines under the milestones, counted off the chronicle:
+*killed* — every murder the dead person did, each victim named as *they*
+knew them, through `knowledgeOfPerson` — and *raised*, every design they
+finished, with a count (*"windbreak ×2, granary"*).
+
+**What that needed.** The chronicle held only sentences. Counting murders by
+parsing *"X killed Y"* would break the moment 13f changed the wording, and
+the sentence carries the victim's real name, which the reader may not know.
+So two optional fields, both written alongside the text rather than instead
+of it: `LifeEvent.deed` (the event type and the ids of the two people), set
+by `SocialSystem.emit` on every line it writes, and `LifeEvent.built` (the
+design id), set when a build completes. The plan had said "no new state";
+these are fields on lines that were already written, and 13f is the second
+reader of `deed`.
+
+**Bit-identical** in `sim:check:all --verbose`: nothing in the simulation reads
+either field. The succession e2e spec now gives the player a killing and a hut
+before they die and checks both lines.
+
+---
+
+## 2026-09-23 — M11 phase 13d: the *Life* panel folds a run of the same deed
+
+**The note** (owner's note 15): twenty clicks at a rival's store wrote twenty
+*"used what wasn't theirs"* into *Life* and pushed everything else off it.
+`storeItem` emits `trespass` on each click, and every `emit` writes a line.
+
+**The change.** Consecutive entries with the same text and kind fold into one
+line, *"Used what wasn't theirs ×20"*, with the span of days they cover
+(*"3d–1d"*). Only consecutive ones: a theft, a meal and another theft is a
+story with a middle. The fold is done before the panel's cut of forty, so the
+forty are forty stories.
+
+**In the presentation, not the chronicle**, and deliberately: the succession
+screen and the health checks read `chronicle[]`, and twenty deeds are a
+different fact from one. `foldRepeats` lives in a small `src/ui/LifeLog.ts` so
+`lifelog.test.ts` can pin it without a DOM.
+
+UI only.
+
+---
+
+## 2026-09-23 — M11 phase 13c: the dead, apart
+
+**The note** (owner's note 14): the dead crowd the living out of every list of
+who somebody knows.
+
+**Why.** `RelationshipGraph.knownBy` ranks by strength of feeling and never
+asked who was alive, and the strongest feelings are often for the dead — a
+dead father at +80 took one of the fourteen places in *Ties*, and one of the
+twenty-four in the tribe graph, that a living neighbour should have had.
+
+**The change.**
+- ***Ties***: the living fill the list; the dead go into a `<details>` under it,
+  closed by default (*"3 dead they remember"*). A person's panel is rebuilt
+  only when the selection or the tab changes — everything else is
+  `refreshPerson` — so an opened fold stays open. A new e2e spec kills an
+  acquaintance, opens the fold and checks it is still open a few dozen frames
+  later.
+- **Tribe graph**: `tribeMembers` and `layOutTribe` take an optional `alive`
+  predicate, and the dead are dropped **before** the cap. The head line adds
+  *"and N dead"*, and the digest carries both counts, since a death can change
+  that line without changing anything else on screen. `tribegraph.test.ts`
+  pins that no dead person is drawn and the cap is still filled.
+
+UI only.
+
+---
+
+## 2026-09-23 — M11 phase 13b: *Between you*
+
+**The note** (owner's note 5): clicking somebody showed their family, their
+ties and how far they would obey you, but not what you think of them. That
+lived only in your own list, which stops at the fourteen strongest feelings.
+
+**The change.** A *Between you* section opens the *Ties* tab of anybody who is
+not you:
+- **You of them**: your opinion, with the same bar and the same breakdown
+  (band, deeds, familiarity, kin) as the list, read with
+  `RelationshipGraph.peek` so that looking never creates an acquaintance.
+- **They of you**: their private state, so it comes through a new
+  `Knowledge.regardFromThem` — nothing for a stranger or a face you have only
+  crossed paths with, a sentence for an acquaintance ("They seem to dislike
+  you."), the number for somebody close.
+
+The list's breakdown and its bar are now `tieParts` and `tieMeter`, shared with
+the new section, so the two can never explain one edge in different words.
+`knowledge.test.ts` pins the four levels and that asking creates no edge.
+
+UI and a pure read; bit-identical by construction.
+
+---
+
+## 2026-09-23 — M11 phase 13a: a building says whose it is
+
+**The note** (owner's note 3): nothing on the map said which tribe a hut, a
+site or a field belonged to, so a ruin could not be read as *somebody's* ruin.
+This is what 11e had called the "durability panel": the durability itself was
+already drawn by 11b; its owner was not.
+
+**The change.** `Renderer.drawBuilding` rings every site, field and building in
+the colour its owning band's people wear (`bandColorIndex(ownerBandId)`). The
+ring sits four pixels *inside* the edge rather than on it, because the edge
+already says what state the thing is in — the dashed plan of a site, the
+broken red of a ruin — and that has to keep winning. Checked on screen with a
+finished hut, a ruin, a site and a half-wrecked hut side by side: the ruin
+still reads as a ruin first. Dimmer on sites and ruins, and skipped below
+fourteen pixels, where two rings can no longer be told apart.
+
+Renderer only; the harness never imports it.
+
+---
+
+## 2026-09-23 — M11 phase 12c: how many tribes, asked where the tribe is chosen
+
+**The note** (owner's note 4) asked for the number of tribes and of people per
+tribe on the new-game screen. Both settings already existed —
+`population.bands` (1-8) and `population.peoplePerBand` (2-30), each marked
+`restart` — but only among the settings screen's thirty-odd rows.
+
+**The change.**
+- `NewGame`'s tribe step gains two `sliderRow`s, with their bounds and hints
+  read from `TUNABLES` so the two screens cannot disagree. A change is recorded
+  in `main.ts` exactly as the settings screen's own `edit` records one (a value
+  equal to the difficulty's is no override), saved, and spent through
+  `rebuildBeforeStart` — the same pre-start rebuild Begin uses. `NewGame` never
+  builds a `Simulation` itself.
+- The step is now built as nodes: rebuilding a range under the pointer kills
+  the drag, so a rebuilt island redraws only the title and the tribe cards.
+  A drag rests 180 ms before the island is rebuilt, because every value is a
+  new world.
+- The title counts: *"An island, and five peoples on it"*, where it always said
+  *"three"*.
+- `BAND_COLORS` had six colours for up to eight tribes, and the outcast band
+  (id 1000 and up, now `OUTCAST_BAND_ID_BASE`) wore whichever tribe's colour
+  its id fell on modulo six. Now eight tribe colours and a neutral grey for the
+  outcasts, read through `bandColorIndex`. The sprite atlas pre-renders every
+  colour: it goes from 174 cells (1344×1248, about 6.7 MB of canvas) to 249
+  (1536×1536, about 9.4 MB).
+
+**Bit-identical** in `sim:check:all --verbose`. The character-creation e2e spec
+now moves the tribe count to five and checks the cards and the title follow.
+
+---
+
+## 2026-09-23 — M11 phase 12b, second commit: NPCs stop losing the attacks they score from afar
+
+**The defect.** The same first-tick test the first commit removed from the
+player's order was still on every NPC's attack. `Brain` picks victims inside
+`sightRadius` (12), so every aggression it scored between nine and twelve
+tiles was `finish`ed where the attacker stood and scored again the next tick.
+It was not marginal: across twenty `lean` seeds, **40,081** attacks were lost
+this way against 6,888 blows landed — about six for every blow.
+
+**The change.** The first commit's rule for everybody: give up at the further
+of nine tiles or the start of the chase plus three, through
+`abandon('target_escaped')`. Afterwards `pursuit_abandoned` is 6 across the
+same twenty seeds.
+
+**Measured, 20 seeds** (a scratch harness counting deaths by cause, not
+committed):
+
+| | survival | collapsed | murders | blows | starved |
+|---|---|---|---|---|---|
+| `lean` before | 60.1% | 5/20 | 433 | 6,888 | 109 |
+| `lean` after | 50.4% | 6/20 | 457 | 7,129 | 159 |
+| `century` before | 32.8% | 10/20 | 745 | 9,929 | — |
+| `century` after | 37.2% | 8/20 | 716 | 9,609 | — |
+
+Across seeds, violence barely moves: most of the lost attacks were evidently
+re-scored and landed once the two came closer anyway. Survival moves ten
+points down in `lean` and four up in `century`, with per-seed swings in both
+directions of up to thirty — at or below what twenty seeds can resolve. The
+plan anticipated a fall in `lean` and ruled that the answer is phase 14, not a
+lower ceiling here; it has not been chased.
+
+In single runs the mechanism does show: `feasts` went from 114 blows to 192 and
+turned `kin-outrank-strangers` red, and `craft`'s one painting became none.
+Both are in [bugs.md](bugs.md). `millers` went from two failures to none.
+
+---
+
+## 2026-09-23 — M11 phase 12b, first commit: an ordered attack sets off after somebody ten tiles away
+
+**The defect** (owner's note 10). `doAttack` tested `PURSUIT_LIMIT` (9) on its
+first tick, before `approach`, and called `finish`. An attack ordered on anyone
+ten tiles off ended where the attacker stood, and because `finish` is not
+`abandon`, no floater said why and no `abandoned_*` counter moved. The limit
+was written to mean "the quarry is getting away" and measured "where the
+chase happened to start".
+
+**The change**, for the player's order only (`person.order === 'attack'`):
+the distance at the start of the chase is kept on `Person.pursuitFrom`
+(cleared with the rest of the target), and the chase gives up at whichever is
+further — the old nine tiles, or the start plus `PURSUIT_SLACK` (3). A chase
+begun inside six tiles therefore ends exactly where it always did. Giving up
+is now `abandon(person, 'target_escaped')`, with its own sentence in
+`STOP_REASONS` — *"they got away"* — because `quarry_escaped` says *"the
+animal outran them"*.
+
+**Bit-identical**, because only the player gives attack orders (chiefs only
+command building and sabotage). The NPC route keeps the old test until the
+second commit, which moves the world and is measured on its own.
+`pursuit.test.ts` pins both halves, and fails both on the previous build.
+
+---
+
+## 2026-09-23 — M11 phase 12a: one way to eat
+
+**The defect.** Eating had two implementations. `ActionSystem.doEat` had
+written the day's diet ledger (`macroIntakeToday`) and the `eaten_<id>`
+counter since phase 8b; `Simulation.eatItem`, behind the Kit tab's *Eat*
+button, predated both and learned neither, although its own comment promised
+it gave "the same nourishment" as eating by order. A player who only ate from
+the panel had a diet frozen where it last stood.
+
+**The change.** `Macros.consumeFood(person, itemId)` is now the only way
+anybody eats: it removes the unit, applies `nutritionFactor`, lowers hunger,
+writes the ledger and counts. `doEat` and `eatItem` both call it — the
+`moveToward` argument, two copies of one idea drift. `TECH_EFFECTS.cooking`'s
+declared site now names it.
+
+**What the note actually saw**, fixed in the same commit because the defect
+alone would not have made anything move on screen:
+- the three *Diet* bars are shares of recent meals that move only at midnight,
+  so no meal can make one rise. The header now says *"share of recent meals"*,
+  and a new line under the bars — *"Today: 3 berries, 1 meat."* — answers each
+  meal the moment it is eaten. It reads `Person.eatenToday`, a new per-food
+  tally that `consumeFood` fills and `decayMacroBalance` clears; nothing in the
+  simulation reads it;
+- the bars had no `data-need`, so `Hud.refreshPerson` never patched them and
+  they changed only when the panel happened to be rebuilt. They carry
+  `macro_<name>` now and `refreshPerson` reads it, along with the today line.
+
+**Bit-identical**: the verbose `sim:check:all` report matches HEAD on every
+line but the wall-clock ones (no scenario possesses a player, and `doEat`'s
+arithmetic is unchanged). `eating.test.ts` pins that the two routes leave a
+person in the same state.
+
+---
+
+## 2026-09-23 — M11 Block V triaged and planned: `notes.txt` emptied, no code touched
+
+The owner left sixteen notes in `notes.txt` on 2026-09-22, written playing the
+phase 11c build, and then asked for the whole of what M11 still owes planned
+commit by commit. **Nothing in `src/` or `tools/` changed**; the owner asked for
+the plan first, including for the two cheap defects it found.
+
+**Where it went.** A new document, [m11_block_v_plan.md](m11_block_v_plan.md),
+is now the single source for phases 12-17. `m11_plan.md` keeps an index table
+and a pointer rather than a second copy, because two copies of a plan drift
+exactly as two copies of code do. `next-steps.md` §7g indexes the notes, and its
+milestone table now shows 11b and 11c shipped, Block V next, and M10 folded into
+M11 — it had still said "11b-e next" and carried M10 as a separate milestone.
+
+**Why this order.** Repairs (12) and interface (13) first, because nearly all of
+both are bit-identical in the harness: no scenario possesses a player. Then
+**fear (14) before defending property (15)** — the owner's decision, and the
+reason is in the note itself: it complains about the early, scattered violence
+11b-11c produced (`lean`: murders 3 → 22), and a defence ladder tuned against
+that world would be mistuned the moment fear corrects it. The body (16) after
+both, because an investigation needs punishments that already exist. The
+closing debt (17) last, because its checks measure what 14-16 move.
+
+**The owner's second decision:** `cordage` makes rope from sticks or from
+thatch — two recipes with different ingredients, so whichever is to hand wins
+rather than one shadowing the other, shipped in the same commit as the `bind`
+verb that consumes it so the item is never declared and inert.
+
+**What the triage found rather than what the notes said**, all in
+[bugs.md](bugs.md):
+- eating from the Kit tab never reaches the diet, because `Simulation.eatItem`
+  is a second copy of `doEat` that predates macronutrients — and the diet bars
+  do not refresh while the panel is open;
+- an attack ordered from more than nine tiles ends on its first tick with
+  `finish` rather than `abandon`, so nothing says why, and NPCs lose every
+  attack they score between nine and twelve tiles the same way;
+- M11 phase 4 shipped the reverse of its own plan: being seen forbids using a
+  rival's building, where the plan said it is allowed and witnessed;
+- a stranger's name reaches the screen three ways — the property refusal, the
+  radial menu's reason, and the player's own chronicle;
+- `considerTerritory` counts intruders nobody saw;
+- the new-game title says "three peoples" whatever the setting, and there are
+  six band colours for up to eight bands;
+- `Person.mood` has no writer and no reader at all, because M9.6 4b-4d never
+  shipped; phase 14 takes over the `security` channel.
+
+**Debt that had no phase and now has one:** the `gift` deed still unemitted
+(17a), the four phase-5 checks never written (17b), fields that cannot be
+sabotaged (17c), `perf-budget` and the one-event checks (17d), `DECISIVE_GAP`
+never re-measured after 11a (15f), the border guard (15e), and a raid nobody
+from the victim's band sees not moving how the two peoples stand (14e).
+
+## 2026-09-22 — M11 phase 11c: the raid organiser
+
+The piece the rest of phase 11 was built toward, and it is notable for how
+little of it is new. Phase 11a made `fight` something people genuinely differ
+at, so a war party is not four farmers with sticks; 11b made `sabotage` a verb
+with its progress banked on the building; phase 7 made two peoples able to
+stand badly with each other; phase 4 made property something attention
+protects rather than permission. `BandSystem.considerRaid` only decides *who
+goes where*. Every consequence of their arrival was already written.
+
+**What an order against another band's property costs** (first commit, sent
+bit-identical — `lean` reported the same world to the digit). Two gaps in
+`Authority.ORDER_COST`. `sabotage` had no entry at all, so the verb 11b added
+fell through to the 0.3 default: a chief, or the player, could have a rival's
+hut knocked down for less than the price of telling somebody to fell a tree.
+It goes in at 0.8, level with `threaten`. And the table is keyed on the verb,
+which is right for every entry in it but one — `take` is the same verb, walk
+and arithmetic whether the store is your own band's pit or a rival's granary,
+and only one of those is a crime a whole band may come out of their huts
+about. `orderCost` now takes a `foreign` flag, floored at
+`FOREIGN_PROPERTY_COST` (0.75, level with `steal`, which is this same crime
+with a person on the other end of it instead of a wall).
+`Simulation.command` derives it from the target it already holds, off the
+*subordinate's* band rather than the leader's, since it is the person walking
+into the rival camp who bears it.
+
+**`Factions.warParty`**, beside `conspiracyAgainst` and sharing its
+`trustEachOther` test — extracted rather than copied, because a plot and a
+raid holding separate trust thresholds is precisely the drift `AGENTS.md`
+warns about. A stranger scores 0 on `RelationshipGraph.opinion`, below the
+threshold, so the "who knows whom" half of the brake falls straight out of
+the graph without a rule of its own. Nothing is stored; asking again tomorrow,
+after an evening of gossip, may honestly answer differently.
+
+**`BandSystem.considerRaid`.** A chief with the nerve and the hand for it
+picks the band their own people stand worst with, finds something of theirs
+within a day's march on the same landmass, and calls. The quorum is
+`RAID_QUORUM` (3, chief included) measured on who *could* be called rather
+than who comes — the precedent `considerExile` sets, and the brake
+`Brain.ts` already records the need for. Each follower is a real
+`ctx.command` roll at the new price; the chief goes with them and goes even
+when nobody answered, which is the cost of calling something your band will
+not follow you into.
+
+**Three rules were measured and thrown out before one stuck**, all for the
+same fault — they were coins that always landed the same way, which is how
+this project ships a branch nobody can reach:
+
+- A range set by the thirst budget (60 tiles) dropped **every** target in
+  `lean`, where a band's camp sits 61 to 91 tiles from the nearest thing its
+  worst enemy owns. Thirst was the wrong constraint anyway: a raider is under
+  an order, and `noteStop` sets aside any order broken off for a need, so
+  somebody who runs dry two thirds of the way there stops, drinks, and picks
+  the raid back up. `RAID_RANGE` is the *walk* — about a day's march.
+- Plunder gated on the raiders being hungry produced forty-seven
+  deliberations across `lean`, `feasts` and `labour` and not one plundering
+  raid: no scenario in the matrix has a band hungry at midnight, and
+  `pantryPressureOf` — the first thing tried — reads how full the granaries
+  are, which is a band's wealth, not its appetite.
+- Plunder gated on the victim owning a granary produced eleven raids and not
+  one wrecking, because every band owns a granary.
+
+What settles it instead is **how far the grudge runs**: you rob the
+neighbours you merely dislike and you burn the ones you hate (`RAID_FURY`).
+That is the raiders' own feeling, which a chief knows without being told —
+where what is *in* that granary is something nobody from this band has ever
+seen. The target is picked by what a chief could stand on a hill and see: a
+granary because it is a granary, and `doTake` finds out on arrival whether
+there was anything in it.
+
+**`fitToTravel`** split out of `directTo`'s conditions, which became
+`fitForOrders`. A chief sending themselves is the one caller that skips every
+other condition — they are their own leader, standing where they are standing
+— and must not skip this one. A chief who walks sixty tiles into a rival camp
+on an empty stomach is the same bug with a hat on.
+
+`BandRelations.touching` returns the bands one band has any standing with at
+all, in ascending id order, so the search walks only pairs that have actually
+met; ascending rather than insertion order because insertion order is a
+property of who happened to meet whom first and no seed controls it.
+
+Measured across twenty seeds of `millers`, not one run: mean survival 67.7% →
+64.0% with *fewer* collapses (5/20 → 4/20) and identical technology counts
+(8.3 known, 6.9 → 6.7 past the root nodes). The single-seed
+`millers`/`population-persists` failure this pass produces is that
+divergence, not a regression — the class `AGENTS.md` names outright. Raids are
+rare by design: 1 to 9 per long run, with `raid_never_raised` two to ten times
+higher, the quorum doing most of the refusing.
+
+`raids-are-organised` in the health report bounds the rate from above and
+names the two ways the gate could come off — a runaway count, or a world where
+a chief was willing every time and never once raised a party. Five
+deterministic tests in `band.test.ts` on a world built with two bands primed
+to hate each other; three fail on a build with `considerRaid` unwired, and the
+two that do not are kept as its controls rather than as detectors.
+
+Determinism: no new RNG stream. The raid draws nothing — the party is sorted
+by `fight` with ids breaking ties — and the only randomness involved is the
+`commandRng` roll `command` already makes for every order.
+
 ## 2026-09-22 — M11 phase 11b: `Building.durability` and `sabotage`
 
 Territory and captivity (11c/11d) are still ahead; this is the piece the plan
