@@ -3,6 +3,44 @@
 As of 2026-09-23. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M11 phase 16 (the body), 2026-09-23
+
+### "Neither none nor all" is a cohort reading, not a check
+
+The plan asked `bodies-are-found` and `murders-are-solved` for both bounds.
+Per run they assert only the lower one: at 4 to 27 events a run the upper
+flipped between builds on its own (see the changelog). The upper bound is
+in `sim:seeds`'s BODIES line, and nothing fails when it breaks — somebody has
+to read it. Phase 17d's measurement policy is where that belongs.
+
+### The dead's goods on somebody else are not evidence
+
+The plan's fourth channel. `ITEMS` carry no provenance, so a dead man's axe
+in another man's pack is an axe. It needs goods that remember whose they
+were — a pass of its own, and one that would also give theft an evidence
+trail.
+
+### An investigation asks whoever is there, not whoever knows
+
+The investigator stands where the body lay and asks everybody in earshot.
+A witness who has wandered off is never asked unless they come back while
+the investigation is open. Going to find the people who might know — the
+dead's companions, whoever was seen nearby — is the next step, and it wants
+a memory of who was where that the game does not keep.
+
+### A finding frightens nobody
+
+`body_found` is not in `FEARED`: coming upon a butchered neighbour moves
+nobody's `security`. It probably should, for a wounded body, at about a
+witness's weight — measured, and not done in this pass.
+
+### Killers hide a body only while still bloodied, only with nobody about
+
+Nobody hides one later, nobody gets rid of a body for somebody else, and a
+body already found is still hidden if the killer comes back to it — the
+killer does not know it was found. Each is a reasonable next rule; none is
+built.
+
 ## Found shipping M11 phase 15 (defence and captivity), 2026-09-23
 
 ### Captivity is rare, and never lasts

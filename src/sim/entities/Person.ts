@@ -473,6 +473,13 @@ export class Person {
    * and somebody looking into a killing holds it here. See `Investigation.ts`.
    */
   bloodiedUntil = -9999;
+  /**
+   * The last person this one killed, and whether anybody saw it — M11 phase
+   * 16's gate. The killer knows both without being told: they were there.
+   * `Brain` reads it to hide a body nobody saw fall.
+   */
+  lastKillId: number | null = null;
+  lastKillUnseen = false;
   readonly seenBloodied = new Map<number, number>();
   investigation: OpenInvestigation | null = null;
   /**

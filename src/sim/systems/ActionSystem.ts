@@ -3863,6 +3863,10 @@ export class ActionSystem {
       return;
     }
     person.workedTicks++;
+    // Committed for the walk, so the brain does not re-plan a dragger at
+    // every think and leave the body halfway — the hold's defect (15c), not
+    // repeated here.
+    person.actionTimer = 1;
     const arrived = this.travel(person, ctx);
     corpse.x = person.x;
     corpse.y = person.y;
@@ -4201,7 +4205,9 @@ export class ActionSystem {
       telemetry.count('death_murder');
       // M11 phase 16d: a killer carries the marks of it for a day.
       person.bloodiedUntil = ctx.tick + BLOODIED_TICKS;
-      ctx.social.emit('murder', person, other, 1, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      const killing = ctx.social.emit('murder', person, other, 1, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      person.lastKillId = other.id;
+      person.lastKillUnseen = killing.witnesses === 0;
       this.finish(person);
       return;
     }

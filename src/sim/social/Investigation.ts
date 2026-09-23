@@ -180,3 +180,16 @@ export interface OpenInvestigation {
   /** Who has been asked already, so nobody is asked twice. */
   asked: Set<number>;
 }
+
+/**
+ * How strongly a killer nobody saw is moved to hide the body, scaled by
+ * malice in `Brain`: above a day's work, because it is the thing on their
+ * mind, and a cruel one more so.
+ */
+export const CONCEAL = 1.4;
+
+/**
+ * How near water has to be for a body to go into it rather than be cut up,
+ * in tiles: a walk, not a journey with a corpse in tow.
+ */
+export const CONCEAL_WATER_REACH = 25;

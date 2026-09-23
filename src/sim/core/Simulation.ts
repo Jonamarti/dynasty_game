@@ -1217,6 +1217,8 @@ export class Simulation {
       const stage = stageOf(corpse, this.time.tick, perDay);
       for (const finder of this.peopleHash.queryRadius(corpse.x, corpse.y, this.config.sightRadius)) {
         if (!finder.alive || finder.isChild || corpse.foundBy.has(finder.id)) continue;
+        // For `bodies-are-found`: the first time anybody at all comes upon it.
+        if (corpse.foundBy.size === 0) telemetry.count('corpse_first_found');
         corpse.foundBy.add(finder.id);
         const knows = stage === 'fresh' && !corpse.dismembered
           ? true
@@ -3124,6 +3126,7 @@ export class Simulation {
       nodeHash: this.nodeHash,
       peopleHash: this.peopleHash,
       shoreHash: this.shoreHash,
+      corpseHash: this.corpseHash,
       relationships: this.relationships,
       buildings: this.buildings,
       treeHash: this.treeHash,

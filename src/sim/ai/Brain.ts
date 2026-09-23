@@ -52,7 +52,8 @@ import {
   homeRange, homeward, fearOf, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
   DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
 } from '../social/Fear.ts';
-import { INVESTIGATE } from '../social/Investigation.ts';
+import { INVESTIGATE, CONCEAL, CONCEAL_WATER_REACH } from '../social/Investigation.ts';
+import type { Corpse } from '../entities/Corpse.ts';
 import {
   isCaptive, isEscapee, captorWatching, ESCAPE, ESCAPE_HOME, HOME_REACHED, CAPTURE_OVER_PREDATION,
   RAID_CAPTURE,
@@ -82,6 +83,8 @@ export interface BrainContext {
   nodeHash: SpatialHash<ResourceNode>;
   peopleHash: SpatialHash<Person>;
   shoreHash: SpatialHash<{ x: number; y: number }>;
+  /** M11 phase 16: the bodies, for a killer hiding one. */
+  corpseHash?: SpatialHash<Corpse>;
   relationships: RelationshipGraph;
   buildings: Building[];
   treeHash: SpatialHash<Tree>;
@@ -201,6 +204,8 @@ interface FoundTargets {
   patrolPoint: { x: number; y: number } | null;
   /** Where the body was found, for an `investigate`, M11 phase 16d. */
   investigatePoint: { x: number; y: number } | null;
+  /** The body a killer means to hide, for a `drag` or a `dismember`. */
+  concealCorpse: Corpse | null;
   beneficiary: Person | null;
   /**
    * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
@@ -740,6 +745,7 @@ export class Brain {
     let bindTarget: Person | null = null;
     let patrolPoint: { x: number; y: number } | null = null;
     let investigatePoint: { x: number; y: number } | null = null;
+    let concealCorpse: Corpse | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
     let craftStation: Building | null = null;
@@ -1643,6 +1649,30 @@ export class Brain {
       }
     }
 
+    // --- Hiding a body -------------------------------------------------------------
+    // M11 phase 16's gate. A killer whose killing nobody saw, still marked by
+    // it, with nobody else about, hides the body: into the water if there is
+    // water within reach of it, cut up past knowing if not. **Measured, and
+    // the reason it exists**: without it `bodies-are-found` found every body
+    // in `lean`, `craft` and `stewards` — a killing nobody saw could no longer
+    // be a perfect crime by construction, but it could not be one by effort
+    // either, which is the half of the owner's note the finding makes matter.
+    if (person.lastKillId !== null && person.lastKillUnseen && ctx.corpseHash &&
+      ctx.time.tick < person.bloodiedUntil && !person.isChild &&
+      !pressedByNeed(person, ctx.needs.workLimits) &&
+      !neighbours.some(other => !other.isChild)) {
+      const victim = person.lastKillId;
+      const body = ctx.corpseHash.queryRadius(person.x, person.y, ctx.sightRadius * 2)
+        .find(c => c.person.id === victim && !c.dismembered);
+      if (body) {
+        const water = ctx.shoreHash.findNearest(body.x, body.y, CONCEAL_WATER_REACH,
+          tile => ctx.world.sameRegion(body.x, body.y, tile.x, tile.y));
+        add(water ? 'drag' : 'dismember', CONCEAL * (0.5 + person.traits.malice));
+        concealCorpse = body;
+        telemetry.count(water ? 'conceal_drag_offered' : 'conceal_cut_offered');
+      }
+    }
+
     // --- Escape ------------------------------------------------------------------
     // M11 phase 15d. A captive with nobody of the captor band in sight slips
     // away — the mirror of `mayUse`, attention and not permission — and a
@@ -2412,7 +2442,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, intruder, restrainee, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, beneficiary, tradePartner, fleeFrom,
+        victim, foe, intruder, restrainee, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2730,6 +2760,14 @@ export class Brain {
     person.action = action;
 
     switch (action) {
+      case 'drag':
+      case 'dismember':
+        if (found.concealCorpse) {
+          person.targetCorpseId = found.concealCorpse.id;
+          person.targetX = found.concealCorpse.x;
+          person.targetY = found.concealCorpse.y;
+        }
+        break;
       case 'investigate':
         if (found.investigatePoint) {
           person.targetX = found.investigatePoint.x;

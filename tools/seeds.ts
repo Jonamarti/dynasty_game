@@ -53,6 +53,11 @@ interface SeedResult {
   cameHome: number;
   intervened: number;
   seenByOwner: number;
+  deaths: number;
+  bodiesFound: number;
+  investigations: number;
+  namedRightly: number;
+  namedWrongly: number;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -133,6 +138,12 @@ function runSeed(scenarioName: string, seed: string, steps: number): SeedResult 
     cameHome: counts.captive_came_home ?? 0,
     intervened: counts.intervened ?? 0,
     seenByOwner: counts.property_deed_seen_by_owner ?? 0,
+    // M11 phase 16.
+    deaths: counts.death_settled ?? 0,
+    bodiesFound: counts.corpse_first_found ?? 0,
+    investigations: counts.investigation_opened ?? 0,
+    namedRightly: counts.murder_named_rightly ?? 0,
+    namedWrongly: counts.murder_named_wrongly ?? 0,
   };
 }
 
@@ -244,6 +255,12 @@ function main(): void {
     ' property deeds an owner saw · ' + sum(r => r.captives) + ' taken captive in ' +
     withCaptives + '/' + results.length + ' seeds, ' + sum(r => r.escaped) + ' escaped, ' +
     sum(r => r.cameHome) + ' came home'
+  );
+  // M11 phase 16's gate, pooled the same way.
+  console.log(
+    '  BODIES ' + sum(r => r.bodiesFound) + ' of ' + sum(r => r.deaths) + ' found · ' +
+    sum(r => r.investigations) + ' investigations, ' + sum(r => r.namedRightly) + ' named the killer, ' +
+    sum(r => r.namedWrongly) + ' somebody else'
   );
   console.log('  ' + ((Date.now() - started) / 1000).toFixed(1) + 's');
   console.log('');

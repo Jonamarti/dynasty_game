@@ -2596,6 +2596,43 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ' blows between peoples');
   }
 
+  // M11 phase 16's gate (owner's note 1). Both run against the build before
+  // phase 16, where they fail: nothing there could find a body or solve
+  // anything. Denominators are counters that build already wrote — deaths
+  // and killings — so the checks apply to it.
+  //
+  // The plan asks for **neither none nor all**, and only the first half is
+  // asserted here. Measured: a single run holds 4 to 27 of each, and the
+  // upper bound flipped on its own — `century` found 27 bodies of 27 on one
+  // build and 24 of 28 on the next, `craft` solved 4 of 4 — the small-sample
+  // flake `AGENTS.md` and phase 17d are about. The second half is read in the
+  // cohort instead: `sim:seeds`'s BODIES line, pooled over twenty seeds.
+  //
+  // `bodies-are-found`: somebody comes upon the bodies left in the run.
+  const bodies = tel.death_settled ?? 0;
+  const firstFound = tel.corpse_first_found ?? 0;
+  if (bodies < 5) {
+    skip('bodies-are-found', 'only ' + bodies + ' deaths here; too few to say');
+  } else {
+    add('bodies-are-found', firstFound > 0,
+      firstFound + ' of ' + bodies + ' bodies found by somebody (' + (tel.body_found ?? 0) +
+      ' findings of somebody known, ' + (tel.remains_found ?? 0) + ' of remains past knowing)');
+  }
+
+  // `murders-are-solved`: of the investigations opened, some name the killer.
+  // (Some left unsolved or pinned on the wrong person: the cohort's to say.)
+  const killings = tel.death_murder ?? 0;
+  const opened = tel.investigation_opened ?? 0;
+  const rightly = tel.murder_named_rightly ?? 0;
+  if (killings < 5) {
+    skip('murders-are-solved', 'only ' + killings + ' killings here; too few to say');
+  } else {
+    add('murders-are-solved', rightly > 0,
+      rightly + ' of ' + opened + ' investigations named the killer, ' +
+      (tel.murder_named_wrongly ?? 0) + ' named somebody else, ' +
+      (tel.murder_unsolved ?? 0) + ' gave up — over ' + killings + ' killings');
+  }
+
   add(
     'world-has-land',
     (base.biomes.grass ?? 0) + (base.biomes.forest ?? 0) > sim.world.width * sim.world.height * 0.08,

@@ -6,6 +6,84 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 16: the body stays
+
+The owner's note 1. Until now a death took the person out of the world on
+the same tick: a killing nobody saw was a perfect crime by construction,
+because there was nothing to find, and a widow was widowed before anybody
+could have told her. Survival / collapses / murders / blows near a camp, at
+twenty seeds:
+
+| commit | `lean` | `century` |
+|---|---|---|
+| before phase 16 (15's gate) | 49.7% · 5 · 415 · 38% | 77.0% · 2 · 349 · 42% |
+| 16a the body | bit-identical | bit-identical |
+| 16b decay, `dismember`, `drag` | bit-identical | bit-identical |
+| 16c the finding, and the widow | 49.1% · 4 · 393 · 41% | 81.1% · 2 · 307 · 44% |
+| 16d the investigation | 48.8% · 5 · 414 · 40% | 80.6% · 2 · 306 · 41% |
+| 16e where the player sees it | bit-identical | bit-identical |
+| gate: killers hide bodies | 51.2% · 3 · 393 · 42% | 80.3% · 2 · 309 · 46% |
+
+**16a — the body** (`sim/entities/Corpse.ts`). Every death leaves one, the
+old man in his hut as much as the man in the clearing, modelled on
+`ItemPile`: its own hash, rebuilt only on change. The `Person` still leaves
+`people`, so no loop learns to skip the dead. A body shows what anybody can
+see — whether it bears wounds — and not who made them; the inspector names
+it only for somebody who knew them.
+
+**16b — time and a blade.** Fresh for three days, recognisable to anybody
+who knew them; gone over until the twelfth, to kin and those who knew them
+well; then bones, which name nobody; scattered after 120 days. `dismember`
+banks its work on the body (`AGENTS.md`'s long-action rule), and a body cut
+up names nobody; `drag` takes it to the nearest water, where it is gone. No
+scavenger is declared: nothing eats a body until something eats anything.
+
+**16c — the finding.** Once a day, whoever has a body in sight finds it,
+once each. A fresh body is somebody, and the finding is a story about them —
+`body_found`, a new entry in `EVENT_TYPES` weighing on nobody (`DEED_WEIGHT`
+0) and told as eagerly as a killing. Remains past knowing are found and
+about nobody. **And the widow**: `settleAffairs` cleared her marriage on the
+tick of the death; she is now widowed when she knows — by finding the body,
+being told it was found, or seeing the killing.
+
+**16d — the investigation** (`sim/social/Investigation.ts`). A wounded body
+found by somebody who cares — kin, household, a friend, the dead's own band,
+or somebody *just* (loyal, without malice, of a people that takes killing
+seriously; derived, not a new trait) — is looked into: back to where it lay,
+asking everybody in earshot. A witness tells what they saw (as hearsay); a
+motive is a memory of threats, beatings or thefts; a killer is bloodied for
+a day and whoever sees them remembers. Nobody informs on themselves. Enough
+evidence names somebody with a confidence below one, as a killing heard of,
+where grudges, factions and gossip read it — and wrongly, sometimes, as
+meant. **The plan's fourth channel is not built**: an item does not know
+whose it was, so a dead man's goods in another pack are just goods.
+
+**16e — what the player sees.** "Ask who did this" on a body opens the same
+investigation; the player's own is in the Life tab; a conclusion is said in
+the investigator's words; a finding is in the finder's chronicle; and the
+player is told of one they made or saw made — the only ways they could know,
+a body they hid included.
+
+**The gate.** `bodies-are-found` and `murders-are-solved` were run against
+the build before phase 16 (tools copied over) and fail on every scenario
+they apply to there — 0 bodies found of 5 to 29 deaths, 0 investigations
+over 5 to 21 killings. The plan asked for *neither none nor all*; only the
+first half is a per-run check, because the second flipped on its own at 4 to
+27 events a run (`century` 27 of 27 bodies found on one build, 24 of 28 on
+the next; `craft` 4 of 4 solved). The second half is read over the cohort,
+in `sim:seeds`'s new BODIES line: `lean` 551 of 635 bodies found, 367
+investigations naming the killer 167 times and somebody else 49; `century`
+319 of 410, 203 investigations, 111 and 21.
+
+**And one mechanism the gate added.** On the first run, `lean`, `craft` and
+`stewards` found every body: nobody in the world ever hid one, so a killing
+nobody saw had stopped being a perfect crime by construction and could not
+be one by effort. A killer whose killing nobody saw, still bloodied, with
+nobody about, now drags the body to water within 25 tiles or cuts it up.
+The drag commits its walker, so the brain does not re-plan a dragger at
+every think and leave the body halfway — the hold's defect from 15c, not
+repeated.
+
 ## 2026-09-23 — M11 phase 15: defending what is yours, and captivity
 
 The owner's notes 6 and 9, and the old phase 11d. Every commit measured at
