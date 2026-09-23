@@ -14,13 +14,16 @@
  * the owner's standing rule — and the one telling this module adds is the
  * caller of `call_for_help` passing on, to whoever answers, who it was.
  *
- * **Phase 15b.1 is inert.** It records who each witness caught and nothing
- * reads it; the rungs arrive one commit at a time so that each one's effect on
- * the world can be measured alone, the same discipline phase 14 followed.
+ * **The rungs arrive one commit at a time** so that each one's effect on the
+ * world can be measured alone, the same discipline phase 14 followed. 15b.1
+ * wrote who each witness caught and nothing read it; 15b.2 is the outsider's
+ * rung — warned off, then struck if they stay — in `Brain`, reusing the `warn`
+ * verb and the bookkeeping of phase 14b's defence of the ground.
  *
  * Nothing here draws a random number.
  */
 import type { Person } from '../entities/Person.ts';
+import type { Building } from '../entities/Building.ts';
 import type { EventType } from './Events.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
@@ -38,7 +41,21 @@ export const INTERVENABLE: ReadonlySet<EventType> = new Set<EventType>(['theft',
  * enough that a theft seen at dawn is not a reason to tackle the thief at dusk
  * — by then it is a grudge, and grudges already have `attack`'s revenge route.
  */
-export const CAUGHT_MEMORY = 240;
+export const CAUGHT_MEMORY = 120;
+
+/**
+ * How strongly having seen it moves a witness to warn the offender off.
+ *
+ * Scored as `CAUGHT_WARN × (1 + fear) × (0.5 + aggression)`, so a calm,
+ * mild witness offers about 1.5 near the offender — above a day's ordinary
+ * work, which is the point. **Measured, not guessed**: at 1.5 × (0.5 + fear),
+ * the shape first written, a calm witness offered 0.70 against 0.86 for the
+ * tree they were felling, and went on chopping wood three tiles from a
+ * stranger they had just watched rob their store. Whoever has just seen it
+ * drops what they are doing; how *hard* they then press it is fear's and
+ * temper's business, which is what the other two terms are for.
+ */
+export const CAUGHT_WARN = 1.5;
 
 /**
  * Records that `witness` saw `offender` commit a deed against their people.
@@ -61,4 +78,23 @@ export function noteCaught(witness: Person, offender: Person, type: EventType, t
 export function caughtOffender(person: Person, tick: number): number | null {
   if (person.caughtId === null) return null;
   return tick - person.caughtTick <= CAUGHT_MEMORY ? person.caughtId : null;
+}
+
+/**
+ * Whether `person` is, right now, in the middle of using something that
+ * belongs to `bandId` — the ladder's test for "still at it", asked by `Brain`
+ * before the strike and by `doWarn` before the offender gives way.
+ *
+ * `propertyUseNoted` is set only once a foreign use has become a deed and is
+ * cleared by `finish` with the rest of the action, so somebody still walking
+ * towards the store does not count. `buildingById` is how each caller looks a
+ * building up: the scorer has a list, the executor a map.
+ */
+export function usingPropertyOf(
+  person: Person,
+  bandId: number,
+  buildingById: (id: number) => Building | undefined
+): boolean {
+  if (person.propertyUseNoted === null || person.targetBuildingId === null) return false;
+  return buildingById(person.targetBuildingId)?.ownerBandId === bandId;
 }

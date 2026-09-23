@@ -53,6 +53,7 @@ import {
   DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
 } from '../social/Fear.ts';
 import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
+import { caughtOffender, usingPropertyOf, CAUGHT_WARN } from '../social/Defence.ts';
 
 export interface BrainContext {
   world: World;
@@ -1372,6 +1373,11 @@ export class Brain {
     // M11 phase 14b, the third route to `attack` and the last reader of fear:
     // a frightened person defends the band's ground. See `DEFEND_AT` in
     // `Fear.ts` for the order — warned first, struck only if they stay.
+    //
+    // `warn` is stashed rather than added for the same reason `attack` is:
+    // since phase 15b a second route offers it too, and two rows with one id
+    // would read in `npm run why` as two distinct options.
+    let warnScore = 0;
     {
       const home = ctx.homes?.get(person.bandId);
       const fear = fearOf(person);
@@ -1388,8 +1394,8 @@ export class Brain {
           const since = ctx.time.tick - person.warnedOffTick;
           const warned = person.warnedOffId === trespasser.id && since < WARN_MEMORY;
           if (!warned) {
-            add('warn', (0.3 + fear) * (0.5 + person.traits.aggression) *
-              this.proximityBonus(person, trespasser, ctx.sightRadius));
+            warnScore = (0.3 + fear) * (0.5 + person.traits.aggression) *
+              this.proximityBonus(person, trespasser, ctx.sightRadius);
             intruder = trespasser;
           } else if (since >= WARN_GRACE) {
             // Nobody picks a fight they expect to lose, here as in revenge.
@@ -1413,6 +1419,70 @@ export class Brain {
         }
       }
     }
+
+    // --- Caught in the act ---------------------------------------------------
+    // M11 phase 15b, the witness's ladder, outsider rung (owner's note 9).
+    // Somebody who saw an outsider take, use or wreck what belongs to their
+    // people (`Defence.noteCaught`) warns them off, and strikes if they are
+    // still there once `WARN_GRACE` has passed — the same two steps and the
+    // same bookkeeping as the defence of the ground above, because it is the
+    // same act with a different reason for it. What is different is the
+    // trigger: this needs no fear and no inner territory, only to have seen
+    // it. A thief caught at a store on the edge of the band's land is caught
+    // all the same.
+    //
+    // Only while the offender is in sight: a thief who has got away is a
+    // grievance, and grievances already have revenge.
+    {
+      const caughtId = caughtOffender(person, ctx.time.tick);
+      const offender = caughtId === null || person.isChild
+        ? undefined
+        : neighbours.find(other => other.id === caughtId);
+      if (offender && offender.bandId !== person.bandId &&
+        ctx.relationships.kinship(person.id, offender.id) === 0) {
+        const fear = fearOf(person);
+        const since = ctx.time.tick - person.warnedOffTick;
+        const warned = person.warnedOffId === offender.id && since < WARN_MEMORY;
+        if (!warned) {
+          const score = CAUGHT_WARN * (1 + fear) * (0.5 + person.traits.aggression) *
+            this.proximityBonus(person, offender, ctx.sightRadius);
+          if (score > warnScore) {
+            warnScore = score;
+            intruder = offender;
+            telemetry.count('caught_warn_offered');
+          }
+        } else if (since >= WARN_GRACE &&
+          usingPropertyOf(offender, person.bandId, id => ctx.buildings.find(b => b.id === id))) {
+          // The same sizing-up as the defence of the ground, with the stake
+          // of having seen it in place of the fear that route needs.
+          //
+          // Only against somebody still at it, warned and back at the store
+          // or the hut. **Measured**: the first version struck anybody
+          // caught and still in sight once the grace was up, and across
+          // twenty seeds of `century` it cost twelve points of survival,
+          // raised blows between peoples by a fifth and murders by nearly a
+          // third, and moved the violence *away* from the camps — a thief
+          // who had stopped and wandered off was beaten wherever the witness
+          // next saw them, and every such beating seeded a revenge.
+          const myPower = fightingPower(person);
+          const theirPower = fightingPower(offender);
+          const mine = neighbours.filter(other =>
+            other.bandId === person.bandId && other.id !== person.id && !other.isChild).length;
+          const theirs = neighbours.filter(other =>
+            other.bandId === offender.bandId && other.id !== offender.id && !other.isChild).length;
+          const boldness = Math.max(0, myPower * (1 + mine * 0.25) - theirPower * 0.8) / (1 + theirs);
+          const score = Math.min(DEFEND_CEILING,
+            (0.5 + fear * 0.5) * boldness * (0.5 + person.traits.aggression * 2)) *
+            this.proximityBonus(person, offender, ctx.sightRadius);
+          if (score > attackScore) {
+            attackScore = score;
+            foe = offender;
+            telemetry.count('caught_attack_offered');
+          }
+        }
+      }
+    }
+    if (warnScore > 0) add('warn', warnScore);
 
     // One row, whichever reason won it, with `foe` naming the person that
     // reason was about.
@@ -2325,6 +2395,7 @@ export class Brain {
       b.complete && this.canUse(person, b, ctx) &&
       (isHeap(b.def) || b.def.storage > 0) && b.store.count('compost') > 0);
   }
+
 
   /**
    * A building the scorer may honestly promise this person can use.

@@ -288,6 +288,14 @@ export class SocialSystem {
    * peoples, whoever watched. Now it does, but only when somebody of the
    * owning band saw it — the owner's rule — and once per deed, never once per
    * witness.
+   *
+   * `bandNudge`, M11 phase 15b, is false for a deed done *in answer* to one:
+   * an owner warning off a thief caught at their store. The theft has already
+   * moved the two peoples' standing (14e, or the nudge below); counting the
+   * warning against them as well made every caught offence cost the victims'
+   * people as much as the offenders', and — measured — closed a loop in
+   * which sabotage soured standing, sour standing raised `bandHostility`, and
+   * `bandHostility` is what scores sabotage.
    */
   emit(
     type: EventType,
@@ -298,7 +306,8 @@ export class SocialSystem {
     peopleHash: SpatialHash<Person>,
     sightRadius: number,
     notifyTarget = true,
-    ownerBandId?: number
+    ownerBandId?: number,
+    bandNudge = true
   ): SocialEvent {
     const event: SocialEvent = {
       id: nextEventId++,
@@ -371,7 +380,9 @@ export class SocialSystem {
     // deed itself rather than off each witness's `absorb`, so a crowd
     // watching one theft cannot multiply its effect on band standing the way
     // it correctly does multiply how many personal enemies the thief makes.
-    if (target && target.bandId !== actor.bandId) {
+    if (!bandNudge) {
+      // See `bandNudge` above.
+    } else if (target && target.bandId !== actor.bandId) {
       this.bandRelations.add(
         actor.bandId, target.bandId,
         DEED_WEIGHT[type] * (0.5 + event.magnitude * 0.5) * CROSS_BAND_DEED_SCALE);

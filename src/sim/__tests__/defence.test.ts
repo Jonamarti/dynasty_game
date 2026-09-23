@@ -90,3 +90,86 @@ describe('catching somebody in the act', () => {
     expect(caughtOffender(victim, 1000)).toBeNull();
   });
 });
+
+// M11 phase 15b.2, the outsider's rung, through the real scorer: `Brain`
+// decides, so this runs a small world and watches what the witness chooses.
+import { Simulation } from '../core/Simulation.ts';
+
+const SMALL = {
+  seed: 'defence-test',
+  world: { width: 64, height: 64, berryBushes: 40, flintOutcrops: 10, deadwood: 20, gameHerds: 4 },
+  population: { bands: 2, peoplePerBand: 4 },
+};
+
+function settled(person: Person): void {
+  person.needs.hunger = 0;
+  person.needs.thirst = 0;
+  person.needs.cold = 0;
+  person.needs.fatigue = 0;
+  person.needs.company = 0;
+  // Calm: the defence of the ground (phase 14b) needs fear, and this test is
+  // about the rung that does not.
+  person.mood.security = 100;
+}
+
+describe('the outsider’s rung', () => {
+  it('warns off an outsider caught in the act, with no fear needed', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const [owner] = sim.livingPeople().filter(p => p.bandId === 0 && !p.isChild);
+    const [thief] = sim.livingPeople().filter(p => p.bandId === 1 && !p.isChild);
+    thief!.x = owner!.x + 3;
+    thief!.y = owner!.y;
+    sim.peopleHash.rebuild(sim.people);
+    owner!.caughtId = thief!.id;
+    owner!.caughtTick = sim.time.tick;
+
+    let warned = false;
+    for (let i = 0; i < 40 && !warned; i++) {
+      settled(owner!);
+      thief!.x = owner!.x + 3;
+      thief!.y = owner!.y;
+      sim.step();
+      warned = owner!.action === 'warn' && owner!.targetPersonId === thief!.id;
+    }
+    expect(warned).toBe(true);
+  });
+
+  it('does nothing about one of their own caught — that is not this rung', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const [owner, kin] = sim.livingPeople().filter(p => p.bandId === 0 && !p.isChild);
+    kin!.x = owner!.x + 3;
+    kin!.y = owner!.y;
+    owner!.caughtId = kin!.id;
+    owner!.caughtTick = sim.time.tick;
+
+    for (let i = 0; i < 40; i++) {
+      settled(owner!);
+      sim.step();
+      expect(owner!.action === 'warn' && owner!.targetPersonId === kin!.id).toBe(false);
+    }
+  });
+});
+
+describe('a warning in answer to a deed', () => {
+  // M11 phase 15b.2. Measured: counting the owner's warning against the two
+  // peoples on top of the theft it answered closed a loop through
+  // `bandHostility`, which is what scores sabotage.
+  it('does not count against the two peoples a second time', () => {
+    const owner = adult('Ann', 50, 50, 0);
+    const thief = adult('Bo', 51, 50, 1);
+    const relations = new BandRelations();
+    const social = new SocialSystem(new RelationshipGraph(), new Map(), relations);
+    const hash = new SpatialHash<Person>(8);
+    hash.rebuild([owner, thief]);
+
+    social.emit('threaten', owner, thief, 1, 1000, hash, SIGHT, true, undefined, false);
+    expect(relations.standing(0, 1)).toBe(0);
+    // The warned still takes it personally: that is theirs to feel.
+    expect(thief.memory.all().some(m => m.type === 'threaten' && m.actorId === owner.id)).toBe(true);
+
+    social.emit('threaten', owner, thief, 1, 1001, hash, SIGHT);
+    expect(relations.standing(0, 1)).toBeLessThan(0);
+  });
+});

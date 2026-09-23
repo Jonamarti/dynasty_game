@@ -87,6 +87,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "there was nothing to take": "no había nada que llevarse",
   "there was nothing worth demanding": "no había nada que valiera la pena exigir",
   "they refused to hand it over": "se negó a entregarlo",
+  "someone whose it was told them to go": "alguien a quien pertenecía le dijo que se fuera",
   "the person they meant to talk about was gone": "la persona de la que quería hablar ya no estaba",
   "they had nothing left worth telling": "no le quedaba nada que valiera la pena contar",
   "they do not know how": "no sabe cómo",

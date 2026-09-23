@@ -47,6 +47,7 @@ import {
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
+import { caughtOffender, usingPropertyOf } from '../social/Defence.ts';
 import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 
@@ -3471,12 +3472,31 @@ export class ActionSystem {
       return;
     }
 
-    ctx.social.emit('threaten', person, other, 1, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+    // M11 phase 15b: a warning can also be the first rung of the witness's
+    // ladder — said to somebody seen taking, using or wrecking what belongs to
+    // this person's people. Then it is an answer to a deed rather than a
+    // threat out of nowhere: it does not count against the two peoples' standing
+    // a second time (see `emit`'s `bandNudge`), and it is meant to *stop*
+    // something. An offender still at it gives way or does not, on the same
+    // roll a demand made with menace gets; the one who does not is who the
+    // ladder's next rung is for.
+    const answering = caughtOffender(person, ctx.tick) === other.id;
+    ctx.social.emit('threaten', person, other, 1, ctx.tick, ctx.peopleHash, ctx.sightRadius,
+      true, undefined, !answering);
     person.warnedOffId = other.id;
     person.warnedOffTick = ctx.tick;
     telemetry.count('warned_off');
+    if (answering && usingPropertyOf(other, person.bandId, id => ctx.buildingsById.get(id))) {
+      if (ctx.rng.chance(menaceOver(person, other, ctx.tick).chance)) {
+        telemetry.count('caught_gave_way');
+        this.abandon(other, 'warned_off', ctx);
+      } else {
+        telemetry.count('caught_stood_ground');
+      }
+    }
     this.finish(person);
   }
+
 
   private doThreaten(person: Person, ctx: ActionContext): void {
     const other = this.approach(person, ctx);

@@ -299,6 +299,9 @@ export const STOP_REASONS: Record<string, string> = {
   nothing_to_steal: 'there was nothing to take',
   nothing_to_demand: 'there was nothing worth demanding',
   refused_demand: 'they refused to hand it over',
+  // M11 phase 15b: an owner caught them at it and told them to go, and they
+  // went.
+  warned_off: 'someone whose it was told them to go',
   // M11 phase 5c: `slander` and `praise` need somebody to talk *about*, not
   // only somebody to talk to, and the walk over gives both of those a chance
   // to stop being true.
