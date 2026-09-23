@@ -1745,6 +1745,32 @@ function reportInterruptions(): void {
 }
 
 /**
+ * Says that an owner saw one of the player's people use their band's
+ * structure — M11 phase 15a.
+ *
+ * Being watched used to refuse the use, and the refusal reached the player as
+ * a stop. It no longer refuses anything, so without this the only trace of
+ * having been seen would be a change in somebody else's memory the player
+ * cannot read. Same filter as `reportInterruptions`: the player's own
+ * character and whoever they are commanding. The witness is named only as the
+ * player knows them, through `explainPropertyUse`.
+ */
+function reportWatched(): void {
+  const notices = sim.watchedUses.splice(0, sim.watchedUses.length);
+  const observer = sim.player;
+  if (!observer) return;
+  for (const notice of notices) {
+    const person = sim.peopleById.get(notice.personId);
+    if (!person) continue;
+    const mine = person.isPlayer || person.id === commanding?.id;
+    if (!mine) continue;
+    renderer.floaters.push(person.x, person.y,
+      t('Seen: {why}', { why: explainPropertyUse(observer, notice.use, sim.relationships) }),
+      { color: '#e0b055', boxed: true, ttl: 3.4 });
+  }
+}
+
+/**
  * Says that somebody worked something out.
  *
  * Gated on line of sight from the player's own character, exactly the way
@@ -1951,6 +1977,7 @@ function frame(now: number): void {
   familyTree.update(sim);
   tribeGraph.update(sim);
   reportInterruptions();
+  reportWatched();
   reportAutonomyStall();
   reportInsights();
   watchUnlocks();

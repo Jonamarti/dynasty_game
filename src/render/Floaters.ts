@@ -277,7 +277,6 @@ export const STOP_REASONS: Record<string, string> = {
   not_foreign_property: 'it belonged to their own people',
   store_full: 'the store was full',
   store_empty: 'the store was empty',
-  property_guarded: 'someone from its band saw them',
   // What was actually asked for was gone by the time they got there — someone
   // else emptied that stack between the order and the walk. Kept apart from
   // `store_empty`, which means the whole store was bare: this store may still

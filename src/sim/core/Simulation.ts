@@ -40,7 +40,7 @@ import {
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
 import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
-import { explainPropertyUse, knowledgeOfPerson } from '../social/Knowledge.ts';
+import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -89,6 +89,15 @@ export interface InsightNotice {
   personId: number;
   text: string;
   kind: 'idea' | 'gain' | 'setback';
+}
+
+/**
+ * A use of another band's structure that one of its owners saw — M11 phase
+ * 15a. See `Simulation.watchedUses`.
+ */
+export interface WatchedNotice {
+  personId: number;
+  use: PropertyUse;
 }
 
 /** One ended action, waiting to be reported. See `Simulation.interruptions`. */
@@ -350,6 +359,20 @@ export class Simulation {
    */
   readonly interruptions: StopNotice[] = [];
   private readonly interruptionCap = 32;
+
+  /**
+   * Foreign structures used in sight of an owner, waiting to be told about —
+   * M11 phase 15a.
+   *
+   * Being watched used to stop the use outright, and the stop reached the
+   * player as `property_guarded` through `interruptions`. It no longer stops
+   * anything, so it needs its own channel: a player who has just emptied a
+   * rival's store in front of its owner must be told that somebody saw, or
+   * the cost the witness now carries in their memory is invisible from inside
+   * the game. Recorded on the same terms as `noteStop` — the player's direct
+   * actions and people under an order — and capped the same way.
+   */
+  readonly watchedUses: WatchedNotice[] = [];
 
   /** Ideas, breakthroughs and failed prototypes, waiting to be told about. */
   readonly insights: InsightNotice[] = [];
@@ -1493,14 +1516,15 @@ export class Simulation {
       // The inventory-panel shortcut does not run through ActionSystem, so it
       // must cross the same property boundary here or clicking an item would
       // bypass the rule obeyed by walking to the store.
+      //
+      // M11 phase 15a: and, like `ActionSystem.useProperty`, being watched no
+      // longer refuses. The deed is emitted either way, and the witnesses in
+      // sight of it take it into their memories; the player is told that they
+      // were seen rather than that they could not.
       this.social.emit('trespass', person, null, 0.5, this.time.tick,
         this.peopleHash, this.config.sightRadius, true, store.ownerBandId);
-      if (access.watched) {
-        this.lastRefusal = explainPropertyUse(this.player ?? person, access, this.relationships);
-        telemetry.count('property_use_stopped');
-        return 0;
-      }
-      telemetry.count('property_used_unseen');
+      telemetry.count(access.watched ? 'property_used_watched' : 'property_used_unseen');
+      if (access.watched) this.noteWatched(person, access, true);
     }
     const moved = store.accept(person.inventory, itemId, count);
     if (moved === 0) return 0;
@@ -1508,13 +1532,30 @@ export class Simulation {
     return moved;
   }
 
-  /** A finished store belonging to this person's band, close enough to use. */
+  /**
+   * The store within arm's reach that this person would sooner use: their own
+   * band's (or a close ally's) first, then one nobody is watching, and only
+   * then one an owner can see.
+   *
+   * M11 phase 15a: a watched store used to be left out entirely, the same
+   * veto `useProperty` applied. It is offered now because using it is
+   * possible, and `storeItem` tells the player who saw — but it is still the
+   * last choice, so standing between your own pit and a rival's does not
+   * quietly turn every click into a trespass.
+   */
   storeWithinReach(person: Person) {
-    return this.buildings.find(b =>
-      b.complete && b.def.storage > 0 &&
-      !this.mayUseBuilding(person, b).watched &&
-      b.contains(person.x, person.y, 2)
-    ) ?? null;
+    let best: Building | null = null;
+    let bestRank = Infinity;
+    for (const b of this.buildings) {
+      if (!b.complete || b.def.storage <= 0 || !b.contains(person.x, person.y, 2)) continue;
+      const use = this.mayUseBuilding(person, b);
+      const rank = use.ours ? 0 : use.watched ? 2 : 1;
+      if (rank < bestRank) {
+        bestRank = rank;
+        best = b;
+      }
+    }
+    return best;
   }
 
   /** The one ownership answer shared by direct UI actions and simulation work. */
@@ -1619,6 +1660,16 @@ export class Simulation {
   private noteInsight(person: Person, text: string, kind: 'idea' | 'gain' | 'setback'): void {
     this.insights.push({ personId: person.id, text, kind });
     if (this.insights.length > this.interruptionCap) this.insights.shift();
+  }
+
+  /**
+   * `direct` is for the UI's own shortcuts, `storeItem`, which only ever run
+   * because the player clicked something — whoever they were acting for.
+   */
+  private noteWatched(person: Person, use: PropertyUse, direct = false): void {
+    if (!direct && person.order === null && !person.isPlayer) return;
+    this.watchedUses.push({ personId: person.id, use });
+    if (this.watchedUses.length > this.interruptionCap) this.watchedUses.shift();
   }
 
   private noteStop(person: Person, action: string, reason: string): void {
@@ -2951,6 +3002,7 @@ export class Simulation {
         this.placeInscription(form, x, y, author),
       onStopped: (person: Person, action: string, reason: string) =>
         this.noteStop(person, action, reason),
+      onWatched: (person: Person, use: PropertyUse) => this.noteWatched(person, use),
       onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') =>
         this.noteInsight(person, text, kind),
     };

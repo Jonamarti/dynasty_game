@@ -46,7 +46,7 @@ import {
   prerequisitesMet, reapFactor, tallyFactor, techPower, weaponOf, armourOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
-import { mayUse } from '../social/Property.ts';
+import { mayUse, type PropertyUse } from '../social/Property.ts';
 import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 
@@ -126,6 +126,14 @@ export interface ActionContext {
    * not a moment.
    */
   onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') => void;
+  /**
+   * Somebody used another band's structure in sight of one of its owners —
+   * M11 phase 15a. Not a stop: the use goes ahead. It is reported because the
+   * standing rule that the UI says why a thing happened applies just as much
+   * to "you were seen" as to "you were refused", and a player who has just
+   * robbed a store in front of its owner needs to know that somebody saw.
+   */
+  onWatched: (person: Person, use: PropertyUse) => void;
 }
 
 /** How close two people must be to hand something over, or land a blow. */
@@ -1061,7 +1069,7 @@ export class ActionSystem {
       return null;
     }
     if (building.contains(person.x, person.y)) {
-      if (propertyEvent && !this.useProperty(person, building, propertyEvent, ctx)) return null;
+      if (propertyEvent) this.useProperty(person, building, propertyEvent, ctx);
       return building;
     }
 
@@ -1076,36 +1084,43 @@ export class ActionSystem {
   }
 
   /**
-   * Turns foreign use into a witnessed deed and lets an owner in sight stop it.
+   * Turns foreign use into a deed, witnessed by whoever is in sight of it.
    *
-   * The scorer asks the same pure `mayUse` question before setting out, but a
-   * person can walk into view while the actor is crossing the camp. Authority
-   * is therefore checked again here, at the building, where the deed actually
-   * happens. Long uses are announced once; a newly arrived owner still catches
-   * an already-noted trespass because the refusal ends the action immediately.
+   * M11 phase 15a. This used to end the action with `property_guarded` the
+   * moment an owner could see it, which made a watched store exactly as
+   * impossible to use as the membership test phase 4 replaced — the reverse of
+   * phase 4's own plan and of the owner's note 6. Being seen is now the cost
+   * of the deed rather than a lock on it: `emit` records it in every witness's
+   * memory and moves their opinion of the actor, which is the penalty the note
+   * asks for, and what a witness then *does* about it is theirs to decide.
+   *
+   * The scorer still asks the same pure `mayUse` question before setting out,
+   * and still will not plan a use somebody is watching: an NPC does not choose
+   * to steal in front of the owner. What changed is here, at the building, for
+   * a use already under way when somebody walks into view, and for the
+   * player, who may do what they like and answer for it.
+   *
+   * One deed per action, as before — `propertyUseNoted` is what stops one
+   * night under a foreign roof filling every memory forty-eight times over —
+   * with one exception: a use that began unseen is announced once more when an
+   * owner first comes into sight of it. Without that, an owner who walks in on
+   * a thief halfway through emptying their store would never learn of it.
    */
   private useProperty(
     person: Person,
     building: Building,
     event: Extract<EventType, 'theft' | 'trespass' | 'sabotage'>,
     ctx: ActionContext
-  ): boolean {
+  ): void {
     const access = mayUse(person, building, ctx);
-    if (access.ours) return true;
-    if (access.watched) {
-      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius,
-        true, building.ownerBandId);
-      telemetry.count('property_use_stopped');
-      this.abandon(person, 'property_guarded', ctx);
-      return false;
-    }
-    if (!person.propertyUseNoted) {
-      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius,
-        true, building.ownerBandId);
-      telemetry.count('property_used_unseen');
-      person.propertyUseNoted = true;
-    }
-    return true;
+    if (access.ours) return;
+    const noted = person.propertyUseNoted;
+    if (noted === 'watched' || (noted === 'unseen' && !access.watched)) return;
+    ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius,
+      true, building.ownerBandId);
+    telemetry.count(access.watched ? 'property_used_watched' : 'property_used_unseen');
+    person.propertyUseNoted = access.watched ? 'watched' : 'unseen';
+    if (access.watched) ctx.onWatched(person, access);
   }
 
   /** Delivers carried materials to a construction site. */
@@ -2095,7 +2110,7 @@ export class ActionSystem {
         this.travel(person, ctx);
         return;
       }
-      if (!this.useProperty(person, heap, 'theft', ctx)) return;
+      this.useProperty(person, heap, 'theft', ctx);
       // Arrived at the heap, which is the first of the errand's two waypoints
       // and therefore one of the two places a need is allowed to break it off.
       //
@@ -2129,7 +2144,7 @@ export class ActionSystem {
       this.travel(person, ctx);
       return;
     }
-    if (!this.useProperty(person, field, 'trespass', ctx)) return;
+    this.useProperty(person, field, 'trespass', ctx);
 
     // The second waypoint, and the working stretch this file checks everywhere
     // else. Once past it, seventy ticks is well under the ceiling `AGENTS.md`

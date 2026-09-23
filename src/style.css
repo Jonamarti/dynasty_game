@@ -570,6 +570,9 @@ html, body, #app {
 }
 
 .radial-item.is-hostile:hover { border-color: #e06a5a; }
+/* M11 phase 15a: allowed, but an owner will see it done. */
+.radial-item.is-watched { border-color: #e0b055; }
+.radial-watch { font-size: 11px; }
 
 /* A group opens a page rather than doing anything, so it stays clickable even
    when everything inside it is out of reach — the reason a recipe cannot be

@@ -78,7 +78,6 @@ export const ES_ACTIONS: Record<string, string> = {
   "it belonged to their own people": "pertenecía a su propia gente",
   "the store was full": "el almacén estaba lleno",
   "the store was empty": "el almacén estaba vacío",
-  "someone from its band saw them": "alguien de su banda le vio",
   "it was gone by the time they got there": "ya no estaba cuando llegó",
   "the goods were gone": "los bienes ya no estaban",
   "somebody else had taken it": "otra persona se lo había llevado",

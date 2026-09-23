@@ -382,8 +382,12 @@ export class Person {
    * Sleeping and crafting last for many ticks. Without one bit on the action,
    * trespassing would be announced every tick and one night under a foreign
    * roof would fill every witness's memory forty-eight times over.
+   *
+   * Which of the two it became, since M11 phase 15a: a use that began unseen
+   * is announced once more if an owner walks into sight of it, and never
+   * again after that. See `ActionSystem.useProperty`.
    */
-  propertyUseNoted = false;
+  propertyUseNoted: 'unseen' | 'watched' | null = null;
   /**
    * Which technology a player-ordered `ponder` or `discuss` is about.
    *
@@ -859,7 +863,7 @@ export class Person {
     this.talkMode = null;
     this.targetItemId = null;
     this.targetItemCount = null;
-    this.propertyUseNoted = false;
+    this.propertyUseNoted = null;
     this.pursuitFrom = null;
     this.actionTimer = 0;
     // A route and the aim it was computed for have to be forgotten together —

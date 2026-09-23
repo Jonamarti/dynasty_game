@@ -91,6 +91,12 @@ export interface ActionOption {
   enabled: boolean;
   /** Why it is disabled, for the tooltip. */
   reason?: string;
+  /**
+   * Something the player should know before choosing an *enabled* option —
+   * M11 phase 15a, for "the owner of this store can see you". Distinct from
+   * `reason`, which only ever explains why an option cannot be chosen.
+   */
+  warning?: string;
   /** True for deeds others will judge you for; the menu marks these. */
   hostile?: boolean;
   /**
@@ -609,10 +615,13 @@ function buildingActions(
     });
   } else {
     const property = ctx.propertyUse?.(building);
-    const canUse = !(property?.watched ?? false);
-    const guarded = canUse || !property
-      ? undefined
-      : ctx.explainProperty?.(property) ?? t('someone from its band is watching');
+    // M11 phase 15a. Being watched used to disable every verb on a foreign
+    // building, with the watcher's name as the greyed-out reason. It is a
+    // warning now, not a refusal: the verb is offered, and `watched` says
+    // before the player commits who will see it done.
+    const watched = property?.watched
+      ? ctx.explainProperty?.(property) ?? t('someone from its band is watching')
+      : undefined;
     // M11 phase 11b. Repair reuses `build` rather than getting a verb of its
     // own — see `ActionSystem.doBuild`'s own note on why — so the one thing
     // this menu has to add is the *option*: nothing else here offers `build`
@@ -622,24 +631,23 @@ function buildingActions(
         id: 'build',
         label: t('Repair {site}', { site: theSite(building.def.label) }),
         icon: '\u{1F528}',
-        enabled: canUse,
-        reason: guarded,
+        enabled: true,
+        warning: watched,
       });
     }
     // Offered only on a foreign building nobody here has any claim to —
     // `property.ours` is true for the actor's own band and for a close
     // enough ally, and sabotaging either is not a choice this menu offers,
-    // the same way `steal` is never offered on one's own store. `canUse`
-    // still gates it: a watched target refuses with the same `because` every
-    // other property verb already gives.
+    // the same way `steal` is never offered on one's own store. A watched
+    // target carries the same warning every other property verb does.
     if (property && !property.ours && isStructure(building.def) &&
       !building.crop && !building.ruined) {
       options.push({
         id: 'sabotage',
         label: t('Damage {site}', { site: theSite(building.def.label) }),
         icon: '\u{1F525}',
-        enabled: canUse,
-        reason: guarded,
+        enabled: true,
+        warning: watched,
         hostile: true,
       });
     }
@@ -648,15 +656,17 @@ function buildingActions(
         id: 'store',
         label: t('Store what you carry'),
         icon: '\u{1F4E5}',
-        enabled: canUse && actor.inventory.total > 0,
-        reason: guarded ?? (actor.inventory.total === 0 ? t('You carry nothing') : undefined),
+        enabled: actor.inventory.total > 0,
+        reason: actor.inventory.total === 0 ? t('You carry nothing') : undefined,
+        warning: watched,
       });
       options.push({
         id: 'take',
         label: t('Take from store'),
         icon: '\u{1F4E4}',
-        enabled: canUse && building.store.total > 0,
-        reason: guarded ?? (building.store.total === 0 ? t('The store is empty') : undefined),
+        enabled: building.store.total > 0,
+        reason: building.store.total === 0 ? t('The store is empty') : undefined,
+        warning: watched,
       });
     }
     // M8.2. Both verbs are offered on a finished plot, and which one is enabled
@@ -673,12 +683,12 @@ function buildingActions(
         id: 'sow',
         label: t('Sow the field'),
         icon: '\u{1F331}',
-        enabled: canUse && knows && crop.isFallow && seed >= SOW_SEED,
-        reason: guarded
-          ?? (!knows ? t('Nobody here has the idea of putting seed back in the ground')
+        enabled: knows && crop.isFallow && seed >= SOW_SEED,
+        reason: !knows ? t('Nobody here has the idea of putting seed back in the ground')
           : !crop.isFallow ? t('Something is growing here already')
           : seed < SOW_SEED ? t('You need {n} grain to sow this', { n: SOW_SEED })
-          : undefined),
+          : undefined,
+        warning: watched,
       });
       const knowsCompost = techPower(actor, 'composting') > 0;
       if (knowsCompost) {
@@ -691,18 +701,19 @@ function buildingActions(
           id: 'spread',
           label: t('Spread compost here'),
           icon: '\u{1F343}',
-          enabled: canUse,
-          reason: guarded,
+          enabled: true,
+          warning: watched,
         });
       }
       options.push({
         id: 'reap',
         label: t('Bring in the harvest'),
         icon: '\u{1F33E}',
-        enabled: canUse && crop.isRipe,
-        reason: guarded ?? (crop.isRipe ? undefined
+        enabled: crop.isRipe,
+        reason: crop.isRipe ? undefined
           : crop.isFallow ? t('Nothing is growing here')
-          : t('It is not ready yet')),
+          : t('It is not ready yet'),
+        warning: watched,
       });
     }
     if (building.def.shelter > 0) {
@@ -713,15 +724,15 @@ function buildingActions(
         id: 'sleep',
         label: t('Sleep here'),
         icon: '\u{1F6CC}',
-        enabled: canUse,
-        reason: guarded,
+        enabled: true,
+        warning: watched,
       });
       options.push({
         id: 'shelter',
         label: t('Shelter here'),
         icon: '\u{1F3E0}',
-        enabled: canUse,
-        reason: guarded,
+        enabled: true,
+        warning: watched,
       });
     }
     // M8.1, mechanism 4: what this station is *for*, offered on the station
@@ -733,7 +744,12 @@ function buildingActions(
         if (recipe.station !== building.def.id) continue;
         if (techPower(actor, recipe.tech) <= 0) continue;
         const option = craftOption(actor, recipe, ctx, building);
-        crafts.push(canUse ? option : { ...option, enabled: false, reason: guarded });
+        // Still a refusal, unlike every other verb on this building, and on
+        // purpose: `ActionSystem`'s station craft does not pass through
+        // `useProperty`, so it records no deed at all. Letting it run in front
+        // of the owners would make being watched cost nothing here — see
+        // `bugs.md`.
+        crafts.push(watched ? { ...option, enabled: false, reason: watched } : option);
       }
       options.push(...grouped(crafts, t('Make…'), '\u{1F528}',
         t('You know nothing that is made here')));

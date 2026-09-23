@@ -146,13 +146,22 @@ export class RadialMenu {
       const angle = startAngle + offset + step * index;
       const item = document.createElement('button');
       item.className = 'radial-item' + (option.enabled ? '' : ' is-disabled') +
-        (option.hostile ? ' is-hostile' : '');
+        (option.hostile ? ' is-hostile' : '') +
+        (option.enabled && option.warning ? ' is-watched' : '');
       item.style.left = (RADIUS * Math.cos(angle)).toFixed(1) + 'px';
       item.style.top = (RADIUS * Math.sin(angle)).toFixed(1) + 'px';
-      item.title = option.enabled ? option.label : (option.reason ?? option.label);
+      item.title = option.enabled
+        ? (option.warning ? option.label + ' — ' + option.warning : option.label)
+        : (option.reason ?? option.label);
+      // M11 phase 15a. A watched verb is enabled, so its warning cannot live
+      // only in the tooltip the way a refusal's reason does — there is no
+      // hover on a phone, and the player would otherwise learn who saw them
+      // only after the deed. The eye goes on the button itself.
       item.innerHTML =
         '<span class="radial-icon">' + option.icon + '</span>' +
-        '<span class="radial-label">' + escapeHtml(option.label) + '</span>';
+        '<span class="radial-label">' + escapeHtml(option.label) +
+        (option.enabled && option.warning ? ' <span class="radial-watch">\u{1F441}</span>' : '') +
+        '</span>';
 
       if (option.children && option.children.length > 0) {
         item.classList.add('has-children');

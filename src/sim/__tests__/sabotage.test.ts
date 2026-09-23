@@ -231,7 +231,12 @@ describe('sabotage', () => {
     expect(sim.interruptions.some(stop => stop.reason === 'nothing_to_sabotage')).toBe(true);
   });
 
-  it('is stopped by a member of the owning band close enough to see it', () => {
+  // M11 phase 15a. This used to be "is stopped by a member of the owning
+  // band close enough to see it", asserting the hut untouched and a
+  // `property_guarded` stop: phase 4 shipped being seen as a veto, the
+  // reverse of its own plan. Being seen is now the deed's cost — the owner
+  // remembers it, firsthand — and the player is told who saw.
+  it('goes ahead in front of an owner, who sees it done', () => {
     const sim = new Simulation(SMALL);
     aDayIn(sim);
     const [attacker] = sim.livingPeople().filter(p => p.bandId === 0);
@@ -245,8 +250,43 @@ describe('sabotage', () => {
 
     expect(sim.order(attacker!, 'sabotage', { buildingId: hut.id })).toBe(true);
     for (let i = 0; i < 100 && attacker!.order !== null; i++) sim.step();
-    expect(hut.durability).toBe(hut.def.workTicks); // Untouched.
-    expect(sim.interruptions.some(stop => stop.reason === 'property_guarded')).toBe(true);
+    expect(hut.durability!).toBeLessThan(hut.def.workTicks);
+    const seen = guard!.memory.all().find(m => m.type === 'sabotage' && m.actorId === attacker!.id);
+    expect(seen?.firsthand).toBe(true);
+    // Once for the whole action, however long it ran in front of them.
+    expect(guard!.memory.all().filter(m => m.type === 'sabotage').length).toBe(1);
+    expect(sim.watchedUses.some(n => n.personId === attacker!.id && n.use.seen === guard)).toBe(true);
+    expect(sim.interruptions.some(stop => stop.reason === 'property_guarded')).toBe(false);
+  });
+
+  it('announces a use begun unseen once more when an owner walks in on it', () => {
+    const sim = new Simulation(SMALL);
+    aDayIn(sim);
+    const [attacker] = sim.livingPeople().filter(p => p.bandId === 0);
+    const owners = sim.livingPeople().filter(p => p.bandId === 1);
+    settle(attacker!);
+    const hut = finishedBuilding(sim, 'mud_hut', attacker!.x, attacker!.y, 1);
+    attacker!.x = hut.centerX;
+    attacker!.y = hut.centerY;
+    // Every owner far out of sight to begin with.
+    for (const owner of owners) {
+      owner.x = hut.centerX + 40;
+      owner.y = hut.centerY + 40;
+    }
+    const guard = owners[0]!;
+
+    expect(sim.order(attacker!, 'sabotage', { buildingId: hut.id })).toBe(true);
+    for (let i = 0; i < 3; i++) sim.step();
+    expect(guard.memory.all().some(m => m.type === 'sabotage')).toBe(false);
+
+    guard.x = hut.centerX + 1;
+    guard.y = hut.centerY;
+    guard.targetX = guard.x;
+    guard.targetY = guard.y;
+    for (let i = 0; i < 100 && attacker!.order !== null; i++) sim.step();
+    const seen = guard.memory.all().filter(m => m.type === 'sabotage' && m.actorId === attacker!.id);
+    expect(seen.length).toBe(1);
+    expect(seen[0]!.firsthand).toBe(true);
   });
 
   it('is not offered against a close ally band’s building', () => {
@@ -349,5 +389,31 @@ describe('repair', () => {
     expect(sim.order(person, 'build', { buildingId: hut.id })).toBe(true);
     for (let i = 0; i < 50 && person.order !== null; i++) sim.step();
     expect(sim.interruptions.some(stop => stop.reason === 'already_built')).toBe(true);
+  });
+});
+
+// M11 phase 15a. Not sabotage, but it lives beside it because the helpers
+// that site a finished foreign building do: the inventory panel's shortcut to
+// a store is the second place being watched used to refuse outright.
+describe('storing in a watched store', () => {
+  it('goes ahead, is remembered by the owner, and tells the player who saw', () => {
+    const sim = new Simulation(SMALL);
+    aDayIn(sim);
+    const [actor] = sim.livingPeople().filter(p => p.bandId === 0);
+    const [owner] = sim.livingPeople().filter(p => p.bandId === 1);
+    settle(actor!);
+    const store = finishedBuilding(sim, 'storage_pit', actor!.x, actor!.y, 1);
+    actor!.x = store.centerX;
+    actor!.y = store.centerY;
+    owner!.x = store.centerX + 1;
+    owner!.y = store.centerY;
+    sim.peopleHash.rebuild(sim.people);
+    actor!.inventory.add('sticks', 3);
+
+    expect(sim.mayUseBuilding(actor!, store).watched).toBe(true);
+    expect(sim.storeItem(actor!, store, 'sticks')).toBe(3);
+    expect(store.store.count('sticks')).toBeGreaterThanOrEqual(3);
+    expect(owner!.memory.all().some(m => m.type === 'trespass' && m.actorId === actor!.id)).toBe(true);
+    expect(sim.watchedUses.some(n => n.personId === actor!.id && n.use.seen === owner)).toBe(true);
   });
 });
