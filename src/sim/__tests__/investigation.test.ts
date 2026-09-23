@@ -109,3 +109,18 @@ describe('an investigation', () => {
       m.type === 'murder' && m.targetId === dead!.id && m.actorId === killer!.id)).toBe(true);
   });
 });
+
+describe('asking about a body yourself', () => {
+  // M11 phase 16e: the player's way in is the same investigation, opened by
+  // asking for it rather than by finding the body.
+  it('opens an investigation on the body asked about', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const [dead, asker] = sim.livingPeople().filter(p => !p.isChild && !p.isPlayer);
+    dead!.die('killed by nobody we know');
+    sim.step();
+    const body = sim.corpses[0]!;
+    expect(sim.order(asker!, 'investigate', { corpseId: body.id })).toBe(true);
+    expect(asker!.investigation?.deadId).toBe(dead!.id);
+  });
+});

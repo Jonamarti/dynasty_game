@@ -1376,6 +1376,17 @@ export class Hud {
     };
     const entries = rememberedAbout(observer, person, nameOf);
 
+    // M11 phase 16e: a death being looked into — the player's own, because
+    // who somebody else suspects is theirs to keep.
+    if (own && person.investigation) {
+      const open = person.investigation;
+      const daysLeft = Math.max(0, Math.ceil((open.untilTick - sim.time.tick) / sim.config.time.ticksPerDay));
+      rows.push('<div class="hud-section">' + t('Looking into a death') + '</div>');
+      rows.push('<div class="hud-sub">' + escapeHtml(t('who killed {name}: {n} asked so far, {d}d left', {
+        name: nameOf(open.deadId), n: open.asked.size, d: daysLeft,
+      })) + '</div>');
+    }
+
     rows.push('<div class="hud-section">' +
       (own ? t('Life so far') : t('What you know of them')) + '</div>');
 

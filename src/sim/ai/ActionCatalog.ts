@@ -287,6 +287,14 @@ export function availableActions(
         hostile: true,
       },
       {
+        // M11 phase 16e. Offered on any body: whether there is anything to
+        // find out is what asking is for.
+        id: 'investigate',
+        label: t('Ask who did this'),
+        icon: '\u{1F50D}',
+        enabled: true,
+      },
+      {
         id: 'drag',
         label: t('Drag it to the water'),
         icon: '\u{1F30A}',

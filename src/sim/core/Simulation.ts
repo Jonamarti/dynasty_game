@@ -1227,6 +1227,27 @@ export class Simulation {
         }
         corpse.foundEventId = this.social.findBody(
           finder, corpse.person, corpse.foundEventId, corpse.x, corpse.y, this.time.tick);
+        // M11 phase 16e: in the finder's own life, named as they knew them.
+        finder.chronicle.push({
+          tick: this.time.tick, ageDays: finder.age, kind: 'milestone',
+          text: t('found the body of {name}', {
+            name: knowledgeOfPerson(finder, corpse.person, this.relationships).displayName,
+          }),
+        });
+        // And to the player, if they saw it happen or it was them: the only
+        // two ways they could know — including of a body they had hidden.
+        const player = this.player;
+        if (player && player.alive) {
+          const dead = knowledgeOfPerson(player, corpse.person, this.relationships).displayName;
+          if (finder.id === player.id) {
+            this.noteInsight(player, t('You found the body of {name}', { name: dead }), 'setback');
+          } else if (player.distanceTo(finder) <= this.config.sightRadius) {
+            const who = knowledgeOfPerson(player, finder, this.relationships).displayName;
+            this.noteInsight(player, t('{finder} has found the body of {name}', {
+              finder: who.charAt(0).toUpperCase() + who.slice(1), name: dead,
+            }), 'setback');
+          }
+        }
         // M11 phase 16d: wounds on a body somebody cares about start an
         // investigation. See `Investigation.ts` for who cares.
         if (corpse.wounded && finder.investigation === null &&
@@ -2077,6 +2098,19 @@ export class Simulation {
     if (target.corpseId !== undefined) {
       const corpse = this.corpsesById.get(target.corpseId);
       if (!corpse) return this.cancelOrder(person, t('the body is gone'));
+      // M11 phase 16e: the player looking into a death themselves. The same
+      // investigation an NPC opens on a finding, opened by asking for it.
+      if (action === 'investigate' &&
+        (person.investigation === null || person.investigation.deadId !== corpse.person.id)) {
+        person.investigation = {
+          deadId: corpse.person.id,
+          x: corpse.x,
+          y: corpse.y,
+          diedTick: corpse.diedTick,
+          untilTick: this.time.tick + INVESTIGATION_DAYS * this.config.time.ticksPerDay,
+          asked: new Set(),
+        };
+      }
       person.targetCorpseId = corpse.id;
       person.targetX = corpse.x;
       person.targetY = corpse.y;

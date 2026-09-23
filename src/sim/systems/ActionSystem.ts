@@ -52,6 +52,7 @@ import {
   RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, HOLD_FOR_ROPE, CALL_TICKS, BIND_TICKS, BOUND_TICKS,
   PATROL_LINGER, GUARD_REASSURES,
 } from '../social/Defence.ts';
+import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import {
   weighEvidence, concludeFrom, BLOODIED_TICKS, ASK_TICKS, ASK_RADIUS,
 } from '../social/Investigation.ts';
@@ -3914,6 +3915,12 @@ export class ActionSystem {
     }
     telemetry.count('investigation_rounds');
     const verdict = concludeFrom(scores);
+    // A round that names nobody ends a player's order with the reason; an
+    // NPC simply comes back to it another time.
+    if (!verdict && person.order !== null) {
+      this.abandon(person, 'no_one_named', ctx);
+      return;
+    }
     if (verdict) {
       const suspect = ctx.peopleById.get(verdict.suspectId);
       if (suspect) {
@@ -3923,6 +3930,11 @@ export class ActionSystem {
         const known = person.memory.all().some(m =>
           m.type === 'murder' && m.targetId === dead.id && m.actorId === suspect.id);
         if (!known) ctx.social.accuse(person, suspect, dead, verdict.confidence, ctx.tick);
+        // M11 phase 16e: what they came to believe, in their own words.
+        ctx.onInsight(person, t('comes to believe {suspect} killed {dead}', {
+          suspect: knowledgeOfPerson(person, suspect, ctx.relationships).displayName,
+          dead: knowledgeOfPerson(person, dead, ctx.relationships).displayName,
+        }), 'setback');
         // Whether they were right — read for the harness's count and nowhere
         // else. The investigator never sees it.
         telemetry.count(dead.lastHarmedBy === suspect.id ? 'murder_named_rightly' : 'murder_named_wrongly');

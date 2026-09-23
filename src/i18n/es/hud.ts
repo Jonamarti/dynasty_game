@@ -56,6 +56,8 @@ export const ES_HUD: Record<string, string> = {
   "Bones": "Huesos",
   "A body, too far gone to know": "Un cuerpo, demasiado descompuesto para reconocerlo",
   "Somebody has begun to cut it up.": "Alguien ha empezado a trocearlo.",
+  "Looking into a death": "Investigando una muerte",
+  "who killed {name}: {n} asked so far, {d}d left": "quién mató a {name}: {n} preguntados hasta ahora, quedan {d} d",
   "no band": "sin banda",
   "{n} years": "{n} años",
   "about {age}": "unos {age}",
