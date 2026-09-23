@@ -265,6 +265,32 @@ export function homeward(person: Person): number {
 export const DREAD_FLEE_AT = 35;
 export const DREAD_FLEE_RANGE = 0.5;
 
+/**
+ * The territorial route to violence, M11 phase 14b's last reader and the
+ * note's "may attack whoever comes in". Beside revenge and predation in
+ * `Brain`, with a ceiling of its own and a fixed order:
+ *
+ * - only somebody at `DEFEND_AT` of fear or more defends at all — the calm
+ *   let strangers pass, which is the whole difference fear is supposed to make;
+ * - only against an outsider standing in the inner third of the band's ground
+ *   (`INNER_SHARE`), whose people this band is not on good terms with
+ *   (`DEFEND_BELOW_STANDING`), and never against kin;
+ * - **warned first** (`warn`, a `threaten` deed with no demand in it), and
+ *   struck only once `WARN_GRACE` has passed with the intruder still there,
+ *   and only within `WARN_MEMORY` of the warning — an intruder warned a week
+ *   ago who comes back is warned again, not beaten on sight.
+ *
+ * `DEFEND_CEILING` caps the attack score this route may offer, so a frightened
+ * band defends its camp without every sighting becoming the fight a revenge
+ * or a predation would have been: the failure `Brain`'s own comment records as
+ * "a band would consume itself".
+ */
+export const DEFEND_AT = 0.5;
+export const DEFEND_BELOW_STANDING = 20;
+export const WARN_GRACE = 90;
+export const WARN_MEMORY = 480;
+export const DEFEND_CEILING = 1.2;
+
 /** Where a band lives and how far its ground reaches, for the sighting pass. */
 export interface Territory {
   bandId: number;

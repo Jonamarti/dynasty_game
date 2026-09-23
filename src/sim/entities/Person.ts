@@ -415,6 +415,13 @@ export class Person {
   lastHarmedBy: number | null = null;
   lastHarmedTick = -9999;
   /**
+   * The last outsider this person warned off their band's ground, and when —
+   * M11 phase 14b's territorial route. A warning comes before a blow, and
+   * `Brain` reads this to know which one it is time for.
+   */
+  warnedOffId: number | null = null;
+  warnedOffTick = -9999;
+  /**
    * Earliest tick at which this person will start another deliberate social
    * act. Approaching someone, saying your piece and parting again takes a
    * while, and without this every social action degenerates into a per-tick

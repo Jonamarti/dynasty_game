@@ -231,4 +231,5 @@ export const ES_ACTIONS: Record<string, string> = {
   "They do not know them well enough for that yet": "Todavía no se conocen lo bastante para eso",
   "sparring": "entrenando",
   "trading": "haciendo trueque",
+  "warning them off": "advirtiéndole que se vaya",
 };

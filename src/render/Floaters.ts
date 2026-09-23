@@ -188,6 +188,8 @@ export const ACTION_LABELS: Record<string, string> = {
   // their raw ids — found by the Spanish pass, where an id is plainly English.
   spar: 'sparring',
   trade: 'trading',
+  // M11 phase 14b: an outsider warned off the band's ground.
+  warn: 'warning them off',
 };
 
 /**

@@ -421,6 +421,9 @@ const STEAL_TICKS = 30;
  */
 const THREATEN_TICKS = 18;
 
+/** A warning is said and done quicker than a demand is argued out. */
+const WARN_TICKS = 8;
+
 /** Ticks to tell somebody what you think of a third party. As short as `give`: a
  * remark, not a negotiation. */
 const GOSSIP_TICKS = 14;
@@ -558,6 +561,7 @@ export class ActionSystem {
       case 'trade': this.doTrade(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
+      case 'warn': this.doWarn(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
       case 'slander': this.doSlander(person, ctx); break;
       case 'praise': this.doPraise(person, ctx); break;
@@ -3425,6 +3429,38 @@ export class ActionSystem {
    * shameful act — a demand refused to your face was still made, and
    * witnesses judge it through their own band's norms either way.
    */
+  /**
+   * Warning an outsider off the band's ground, M11 phase 14b.
+   *
+   * A `threaten` with no demand in it: the same short wind-up, the same deed
+   * emitted — so the intruder is frightened and comes to dread whoever warned
+   * them, witnesses of their band see one of theirs menaced, and the two
+   * peoples' standing takes the knock a threat always costs — and then it is
+   * over. Nothing is taken. Whether a blow follows is `Brain`'s question, asked
+   * again after `WARN_GRACE`; this only records that the warning was given.
+   */
+  private doWarn(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = WARN_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'warned_');
+      return;
+    }
+
+    ctx.social.emit('threaten', person, other, 1, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+    person.warnedOffId = other.id;
+    person.warnedOffTick = ctx.tick;
+    telemetry.count('warned_off');
+    this.finish(person);
+  }
+
   private doThreaten(person: Person, ctx: ActionContext): void {
     const other = this.approach(person, ctx);
     if (!other) return;

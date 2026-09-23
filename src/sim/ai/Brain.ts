@@ -50,7 +50,9 @@ import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
 import { mayUse } from '../social/Property.ts';
 import {
   homeRange, homeward, fearOf, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
+  DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
 } from '../social/Fear.ts';
+import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 
 export interface BrainContext {
   world: World;
@@ -172,6 +174,13 @@ interface FoundTargets {
   victim: Person | null;
   /** Whoever an `attack` is aimed at. Never merged with `victim`; see above. */
   foe: Person | null;
+  /**
+   * The outsider a `warn` is aimed at, M11 phase 14b. Its own field rather
+   * than `foe`, because the revenge and predation routes overwrite `foe`
+   * after the territorial one has chosen, and a warning must go to the person
+   * it was scored against.
+   */
+  intruder: Person | null;
   beneficiary: Person | null;
   /**
    * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
@@ -705,6 +714,7 @@ export class Brain {
     let beneficiary: Person | null = null;
     let tradePartner: Person | null = null;
     let fleeFrom: Person | null = null;
+    let intruder: Person | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
     let craftStation: Building | null = null;
@@ -1354,6 +1364,52 @@ export class Brain {
         if (score > attackScore) {
           attackScore = score;
           foe = prey;
+        }
+      }
+    }
+
+    // --- Territory -----------------------------------------------------------
+    // M11 phase 14b, the third route to `attack` and the last reader of fear:
+    // a frightened person defends the band's ground. See `DEFEND_AT` in
+    // `Fear.ts` for the order — warned first, struck only if they stay.
+    {
+      const home = ctx.homes?.get(person.bandId);
+      const fear = fearOf(person);
+      if (home && fear >= DEFEND_AT && !person.isChild) {
+        const innerSq = (TERRITORY_RADIUS * INNER_SHARE) ** 2;
+        const trespasser = this.pickBest(neighbours.filter(other =>
+          other.bandId !== person.bandId && !other.isChild &&
+          ctx.homes!.has(other.bandId) &&
+          (other.x - home.x) ** 2 + (other.y - home.y) ** 2 <= innerSq &&
+          ctx.bandRelations.standing(person.bandId, other.bandId) < DEFEND_BELOW_STANDING &&
+          ctx.relationships.kinship(person.id, other.id) === 0
+        ), other => -person.distanceTo(other));
+        if (trespasser) {
+          const since = ctx.time.tick - person.warnedOffTick;
+          const warned = person.warnedOffId === trespasser.id && since < WARN_MEMORY;
+          if (!warned) {
+            add('warn', (0.3 + fear) * (0.5 + person.traits.aggression) *
+              this.proximityBonus(person, trespasser, ctx.sightRadius));
+            intruder = trespasser;
+          } else if (since >= WARN_GRACE) {
+            // Nobody picks a fight they expect to lose, here as in revenge.
+            // Their allies count against it; the defender's own band standing
+            // round them is what makes a camp dangerous to walk into.
+            const myPower = fightingPower(person);
+            const theirPower = fightingPower(trespasser);
+            const mine = neighbours.filter(other =>
+              other.bandId === person.bandId && other.id !== person.id && !other.isChild).length;
+            const theirs = neighbours.filter(other =>
+              other.bandId === trespasser.bandId && other.id !== trespasser.id && !other.isChild).length;
+            const boldness = Math.max(0, myPower * (1 + mine * 0.25) - theirPower * 0.8) / (1 + theirs);
+            const score = Math.min(DEFEND_CEILING, fear * boldness * (0.5 + person.traits.aggression * 2)) *
+              this.proximityBonus(person, trespasser, ctx.sightRadius);
+            if (score > attackScore) {
+              attackScore = score;
+              foe = trespasser;
+              telemetry.count('defend_territory_chosen');
+            }
+          }
         }
       }
     }
@@ -2065,7 +2121,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, beneficiary, tradePartner, fleeFrom,
+        victim, foe, intruder, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2506,6 +2562,7 @@ export class Brain {
       case 'trade':
       case 'steal':
       case 'threaten':
+      case 'warn':
       case 'attack':
       case 'slander':
       case 'praise': {
@@ -2525,6 +2582,7 @@ export class Brain {
           action === 'feed' || action === 'give' ? found.beneficiary :
           action === 'trade' ? found.tradePartner :
           action === 'attack' ? found.foe :
+          action === 'warn' ? found.intruder :
           action === 'slander' || action === 'praise' ? found.companion :
           found.victim;
         if (other) {
