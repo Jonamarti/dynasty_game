@@ -17,14 +17,15 @@
  * comment predicted, which is why the migration landed as its own commit
  * (M9.6 phase 4a, bundled with M11 phase 5a's `malice` trait so the RNG shift
  * both cause is paid once). This phase ships the four channels, their decay,
- * and the inspector row — *inert*: nothing outside this file and the inspector
- * reads a channel yet. `expressionOf` starts reading it in phase 4b.
+ * and the inspector row. `expressionOf` reads `security` since M11 phase
+ * 14f; the other three channels still have no reader (M9.6 4b-4d).
  */
 import type { Person, Trait } from '../entities/Person.ts';
 import { LETHAL_NEEDS, LATELY_ENOUGH } from '../entities/Person.ts';
 import type { SpatialHash } from './SpatialHash.ts';
 import type { RelationshipGraph } from '../social/Relationships.ts';
 import { telemetry } from './Telemetry.ts';
+import { fearOf } from '../social/Fear.ts';
 
 /**
  * Four channels a person's spirits ride on, each aged and read separately —
@@ -158,6 +159,9 @@ export const EXPRESSIONS: readonly Expression[] =
  */
 const RECENTLY_HARMED_TICKS = 300;
 
+/** Fear at which it shows on the face; the same as `DRIFT_ONSET` in `Fear.ts`. */
+const AFRAID_FACE_AT = 0.4;
+
 /** Needs above this read as visible strain, not just an inner number. */
 const STRAIN_AT = 70;
 
@@ -177,6 +181,15 @@ export function expressionOf(person: Person, sim: MoodView): Expression {
 
   if (sim.time.tick - person.lastHarmedTick < RECENTLY_HARMED_TICKS) {
     return person.traits.aggression > 0.6 ? 'angry' : 'afraid';
+  }
+
+  // M11 phase 14f: the first channel of `mood` the face reads, and the one
+  // phase 14 gave writers to. Somebody frightened enough to be keeping near
+  // home (`homeward`'s onset) looks it, so the player can see which of a band
+  // is afraid — and a hot temper wears fear as a scowl, the same split the
+  // fresh-harm read above makes.
+  if (fearOf(person) >= AFRAID_FACE_AT) {
+    return person.traits.aggression > 0.6 ? 'stern' : 'afraid';
   }
 
   // Frustration: work that keeps being interrupted, not work chosen freely.
