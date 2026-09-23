@@ -862,3 +862,32 @@ describe('the price of an order aimed at somebody else\'s property', () => {
     expect(abroad.because).toContain('another band');
   });
 });
+
+describe("an order that reaches the player's character", () => {
+  it('says who sent them, and where', () => {
+    // M11 phase 13f. A chief's order is obeyed or refused by the player's
+    // character exactly as by anybody's — but an obeyed one used to set them
+    // walking in silence.
+    const sim = new Simulation(SMALL);
+    const player = sim.possessFirst()!;
+    const leader = sim.livingPeople().find(p => p.id !== player.id && !p.isChild)!;
+    let obeyed = false;
+    for (let i = 0; i < 200 && !obeyed; i++) {
+      player.clearOrder();
+      obeyed = sim.command(leader, player, 'goto', { x: Math.round(player.x), y: Math.round(player.y) });
+    }
+    expect(obeyed).toBe(true);
+    const notice = sim.insights.find(n => n.personId === player.id);
+    expect(notice?.text).toMatch(/ sent you to /);
+  });
+
+  it('is not announced when it lands on anybody else', () => {
+    const sim = new Simulation(SMALL);
+    const [leader, member] = sim.livingPeople().filter(p => !p.isChild);
+    for (let i = 0; i < 200; i++) {
+      member!.clearOrder();
+      if (sim.command(leader!, member!, 'goto', { x: Math.round(member!.x), y: Math.round(member!.y) })) break;
+    }
+    expect(sim.insights.some(n => n.text.includes('sent you to'))).toBe(false);
+  });
+});

@@ -6,6 +6,33 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 13f, first commit: the refusals 11b-11c left unexplained
+
+The plan asked for every path of `sabotage` and the organised raid that ends
+in `finish` where it should `abandon`, or in an `abandon` with no words in
+`STOP_REASONS`. Checked against the source rather than by eye:
+
+- **`doSabotage`** `finish`es only on success; every failure goes through
+  `abandon` or `stop` with a reason that has words. Nothing to change.
+- **One reason had no words at all**: `nothing_to_trade`, from `doTrade`, which
+  the floater printed as the identifier with its underscores replaced. It now
+  reads *"one of them had no food to swap"*. A new `stopreasons.test.ts` reads
+  every `abandon` reason and every `interruption()` return out of
+  `ActionSystem.ts` and fails if any lacks a line; it failed on this one
+  before the fix.
+- **The raid organiser found a silent order.** `fitForOrders` asks only that a
+  member be idle, near and fit — the player's character is a member like any
+  other, which is the pillar — so a chief calling a raid, or directing work
+  on a site, could set an idle player walking to a rival's granary with
+  nothing on screen to say who had sent them. `Simulation.command` now posts an
+  insight when the order it has just had obeyed lands on the player: *"Oren
+  sent you to wreck a rival building"*, with the leader named through
+  `Knowledge`. Two tests in `orders.test.ts`.
+
+Bit-identical in `sim:check:all --verbose`: no scenario has a player.
+
+---
+
 ## 2026-09-23 — M11 phase 13e: a death says who they killed and what they raised
 
 **The note** (owner's note 2): the succession screen showed the last six

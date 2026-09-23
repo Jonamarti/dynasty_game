@@ -40,6 +40,7 @@ import {
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
 import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
+import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -137,6 +138,18 @@ const ORGANISED_ORDER_BONUS = 0.1;
 
 /** Ticks an interrupted order waits to be resumed before it is forgotten. */
 const RESUME_WINDOW = 2000;
+
+/**
+ * How an order from somebody else is put to the player — M11 phase 13f. Only
+ * the verbs a chief or a household head actually hands out; anything else
+ * falls back to its id.
+ */
+const ORDER_WORDS: Record<string, string> = {
+  sabotage: 'wreck a rival building',
+  take: 'take from a rival store',
+  build: 'work on a building',
+  haul: 'carry materials to a site',
+};
 
 /**
  * Where the outcast band's id starts, clear of every founding band's. Named
@@ -1045,6 +1058,15 @@ export class Simulation {
     }
 
     telemetry.count('order_obeyed');
+    // M11 phase 13f. A chief's order reaches the player's character exactly
+    // as it reaches anybody else's — that is the pillar — but it used to do so
+    // in silence: a chief calling a raid, or directing work, would set an
+    // idle player walking toward a rival's granary and nothing on screen said
+    // who had sent them, or why they had stopped answering to the player.
+    if (subordinate.isPlayer) {
+      const who = knowledgeOfPerson(subordinate, leader, this.relationships).displayName;
+      this.noteInsight(subordinate, who + ' sent you to ' + (ORDER_WORDS[action] ?? action), 'setback');
+    }
     if (standing.byRank) {
       telemetry.count('order_obeyed_by_rank');
       // The only way `chiefdom` is ever practised: an order that landed on
