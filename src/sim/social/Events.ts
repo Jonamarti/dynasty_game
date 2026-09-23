@@ -9,6 +9,7 @@
  * opposite conclusions, and an outlaw can find somewhere their deeds are
  * tolerated.
  */
+import { ITEMS } from '../entities/Item.ts';
 import { t } from '../../i18n/i18n.ts';
 
 /**
@@ -207,4 +208,14 @@ export function describeEvent(
     case 'threaten': return t('{actor} threatened {target}', who);
     case 'body_found': return t('{actor} was found dead', who);
   }
+}
+
+/**
+ * How much a gift of `count` of `itemId` is worth as a deed, 0-1 — M11 phase
+ * 17a. Read off `baseValue`, the one measure of worth items carry, so that a
+ * cloak is a bigger gift than a handful of sticks: a spear (value 8 or so) is
+ * about half a full gift, and twenty's worth is a full one.
+ */
+export function giftWorth(itemId: string, count: number): number {
+  return Math.min(1, ((ITEMS[itemId]?.baseValue ?? 1) * count) / 20);
 }

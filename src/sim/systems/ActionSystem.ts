@@ -52,6 +52,7 @@ import {
   RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, HOLD_FOR_ROPE, CALL_TICKS, BIND_TICKS, BOUND_TICKS,
   PATROL_LINGER, GUARD_REASSURES,
 } from '../social/Defence.ts';
+import { giftWorth } from '../social/Events.ts';
 import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import {
   weighEvidence, concludeFrom, BLOODIED_TICKS, ASK_TICKS, ASK_RADIUS,
@@ -3353,6 +3354,24 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) return;
+
+    // M11 phase 17a: a gift of something that is not food — `Brain`'s `gift`,
+    // which names the thing. `gift` in `EVENT_TYPES` had been declared since
+    // phase 5b and never emitted; this is its first writer outside the Kit.
+    const chosen = person.targetItemId;
+    if (chosen !== null && (ITEMS[chosen]?.nutrition ?? 0) === 0) {
+      const handed = person.inventory.remove(chosen, 1);
+      if (handed === 0) {
+        this.abandon(person, 'nothing_to_give', ctx);
+        return;
+      }
+      other.inventory.add(chosen, handed);
+      ctx.social.emit('gift', person, other, giftWorth(chosen, handed),
+        ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      telemetry.count('gift_of_goods');
+      this.finishSocial(person, ctx.tick);
+      return;
+    }
 
     const foodId = person.inventory.bestFood();
     if (!foodId) {

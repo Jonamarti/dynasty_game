@@ -206,6 +206,9 @@ interface FoundTargets {
   investigatePoint: { x: number; y: number } | null;
   /** The body a killer means to hide, for a `drag` or a `dismember`. */
   concealCorpse: Corpse | null;
+  /** Who a `gift` goes to, and what, M11 phase 17a. */
+  giftee: Person | null;
+  giftItem: string | null;
   beneficiary: Person | null;
   /**
    * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
@@ -746,6 +749,8 @@ export class Brain {
     let patrolPoint: { x: number; y: number } | null = null;
     let investigatePoint: { x: number; y: number } | null = null;
     let concealCorpse: Corpse | null = null;
+    let giftee: Person | null = null;
+    let giftItem: string | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
     let craftStation: Building | null = null;
@@ -1649,6 +1654,36 @@ export class Brain {
       }
     }
 
+    // --- A gift -------------------------------------------------------------------
+    // M11 phase 17a: wealth into standing. Somebody carrying more of a made
+    // thing than they want for themselves (`RecipeDef.keep`) gives the spare
+    // to one of their own who has none — the big man's generosity, and a
+    // deed (`gift`) that raises their household's renown (6c) and warms
+    // whoever sees it. Weighed like giving food, by regard, bond, greed and
+    // loyalty; only ever to somebody without one, so nobody is loaded with a
+    // second axe they will only give away again.
+    if (!person.isChild && !pressedByNeed(person, ctx.needs.workLimits)) {
+      for (const recipe of Object.values(RECIPES)) {
+        if (recipe.keep <= 0) continue;
+        const itemId = Object.keys(recipe.output)[0]!;
+        if (person.inventory.count(itemId) <= recipe.keep) continue;
+        const to = this.pickBest(neighbours.filter(other =>
+          other.bandId === person.bandId && !other.isChild && other.inventory.count(itemId) === 0 &&
+          other.carrying < other.carryCapacity
+        ), other => ctx.relationships.opinion(person.id, other.id) + this.bond(person, other, ctx) * 12 -
+          person.distanceTo(other) * 2);
+        if (!to) continue;
+        const regard = Math.max(0, ctx.relationships.opinion(person.id, to.id)) / 100;
+        add('gift', (0.3 + regard * 0.8 + this.bond(person, to, ctx) * 0.6) *
+          (1 - person.traits.greed * 0.7) * (0.3 + person.traits.loyalty) *
+          this.proximityBonus(person, to, ctx.sightRadius));
+        giftee = to;
+        giftItem = itemId;
+        telemetry.count('gift_offered');
+        break;
+      }
+    }
+
     // --- Hiding a body -------------------------------------------------------------
     // M11 phase 16's gate. A killer whose killing nobody saw, still marked by
     // it, with nobody else about, hides the body: into the water if there is
@@ -2442,7 +2477,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, intruder, restrainee, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, beneficiary, tradePartner, fleeFrom,
+        victim, foe, intruder, restrainee, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2948,6 +2983,7 @@ export class Brain {
       case 'spar':
       case 'feed':
       case 'give':
+      case 'gift':
       case 'trade':
       case 'steal':
       case 'threaten':
@@ -2962,6 +2998,11 @@ export class Brain {
         // system does not need to know the difference, only the scorer does.
         // Same arrangement as `gather_for_site`.
         if (action === 'feed') person.action = 'give';
+        // M11 phase 17a: a gift is giving a named thing.
+        if (action === 'gift') {
+          person.action = 'give';
+          person.targetItemId = found.giftItem;
+        }
         if (action === 'teach_child') person.action = 'teach';
         const other =
           action === 'talk' ? found.companion :
@@ -2972,6 +3013,7 @@ export class Brain {
           action === 'court' ? found.suitor :
           action === 'spar' ? found.sparPartner :
           action === 'feed' || action === 'give' ? found.beneficiary :
+          action === 'gift' ? found.giftee :
           action === 'trade' ? found.tradePartner :
           action === 'attack' ? found.foe :
           action === 'warn' ? found.intruder :

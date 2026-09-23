@@ -199,6 +199,7 @@ export const ACTION_LABELS: Record<string, string> = {
   dismember: 'cutting up a body',
   drag: 'dragging a body',
   investigate: 'asking who did it',
+  gift: 'giving a gift',
   answer_call: 'answering a call for help',
 };
 

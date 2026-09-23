@@ -262,5 +262,6 @@ export const ES_ACTIONS: Record<string, string> = {
   "cutting up a body": "troceando un cuerpo",
   "dragging a body": "arrastrando un cuerpo",
   "asking who did it": "preguntando quién lo hizo",
+  "giving a gift": "haciendo un regalo",
   "walking the band's ground": "recorriendo las tierras de la banda",
 };

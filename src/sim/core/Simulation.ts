@@ -45,6 +45,7 @@ import { wouldInvestigate, noticeBloodied, INVESTIGATION_DAYS } from '../social/
 import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
+import { giftWorth } from '../social/Events.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
 import { Corpse, resetCorpseIds, stageOf, WOUNDS_SHOW_FOR, GONE_AFTER } from '../entities/Corpse.ts';
 import {
@@ -1652,6 +1653,11 @@ export class Simulation {
     const nutrition = (ITEMS[itemId]?.nutrition ?? 0) * moved;
     if (nutrition > 0) {
       this.social.emit('share_food', giver, receiver, Math.min(1, nutrition / 60),
+        this.time.tick, this.peopleHash, this.config.sightRadius);
+    } else {
+      // M11 phase 17a: anything else handed over is a gift, and a gift is a
+      // deed — see `giftWorth`.
+      this.social.emit('gift', giver, receiver, giftWorth(itemId, moved),
         this.time.tick, this.peopleHash, this.config.sightRadius);
     }
     telemetry.count('handed_over', moved);
