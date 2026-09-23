@@ -51,6 +51,7 @@ import {
   caughtOffender, usingPropertyOf, isHeld, isBound, noteCall, INTERVENABLE,
   RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, HOLD_FOR_ROPE, CALL_TICKS, BIND_TICKS, BOUND_TICKS,
 } from '../social/Defence.ts';
+import { isCaptive, captorWatching, HOME_REACHED } from '../social/Captivity.ts';
 import { fightingPower } from '../social/Vulnerability.ts';
 import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
@@ -145,6 +146,15 @@ export interface ActionContext {
    * learns of one.
    */
   onCalledForHelp: (person: Person) => void;
+  /**
+   * Somebody was tied up — M11 phase 15d. The simulation decides whether it
+   * makes them a captive (a binder of another band) and moves them if so.
+   */
+  onBound: (person: Person, binder: Person) => void;
+  /** A captive slipped away: out of the captor band, and on the way home. */
+  onEscape: (person: Person) => void;
+  /** Where a band's camp is, for an escapee walking back to it. */
+  homeOf: (bandId: number) => { x: number; y: number } | undefined;
 }
 
 /** How close two people must be to hand something over, or land a blow. */
@@ -583,6 +593,7 @@ export class ActionSystem {
       case 'warn': this.doWarn(person, ctx); break;
       case 'restrain': this.doRestrain(person, ctx); break;
       case 'bind': this.doBind(person, ctx); break;
+      case 'escape': this.doEscape(person, ctx); break;
       case 'call_for_help': this.doCallForHelp(person, ctx); break;
       case 'answer_call': this.doAnswerCall(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
@@ -3557,6 +3568,17 @@ export class ActionSystem {
         return;
       }
       person.workedTicks++;
+      // M11 phase 15d: a holder with a rope ties up an outsider they are
+      // holding once the struggle has settled — the in-the-act and the raid
+      // ways into captivity both end here. One of their own band they only
+      // hold; tying a bandmate is somebody else's decision (`Brain`'s bind).
+      if (other.bandId !== person.bandId && person.workedTicks >= BIND_TICKS &&
+        person.inventory.count('rope') > 0 && techPower(person, 'cordage') > 0) {
+        this.tie(person, other, ctx);
+        this.release(person, other);
+        this.finish(person);
+        return;
+      }
       // Committed, so the brain leaves them to it. `Simulation.step` re-plans
       // anybody with no timer and no order, and a hold has neither: without
       // this every hold lasted until the holder's next think, not
@@ -3706,12 +3728,72 @@ export class ActionSystem {
       if (stopped) this.stop(person, stopped, ctx, 'bind_');
       return;
     }
+    this.tie(person, other, ctx);
+    this.finish(person);
+  }
+
+  /**
+   * Spends a rope and ties `other` up — shared by `doBind` and by a holder
+   * who ties up the outsider they are holding. The simulation decides what a
+   * rope from somebody of another band means (`onBound`): captivity.
+   */
+  private tie(person: Person, other: Person, ctx: ActionContext): void {
     person.inventory.remove('rope', 1);
     other.boundBy = person.id;
     other.boundUntil = ctx.tick + BOUND_TICKS;
     telemetry.count('bound');
     ctx.onStopped(other, other.action, 'bound');
-    this.finish(person);
+    ctx.onBound(other, person);
+  }
+
+  /**
+   * Slipping away from captivity, and the walk home after — M11 phase 15d.
+   *
+   * The first tick asks the one question captivity turns on: is anybody of
+   * the captor band watching? The scorer asked it before choosing this, but
+   * somebody can walk into view between the choice and the step, and then
+   * the attempt is off (`escape_seen`) — the prisoner does not try in front
+   * of a guard. Unwatched, they leave the band there and then (`onEscape`),
+   * and walk toward the camp they were taken from until they are close
+   * enough for it to take them back.
+   *
+   * The walk is long, so it has an interruption check on every tick: an
+   * escapee stops to drink like anybody else, and the scorer puts them back
+   * on the road.
+   */
+  private doEscape(person: Person, ctx: ActionContext): void {
+    if (isCaptive(person)) {
+      const guard = captorWatching(person, ctx.peopleHash, ctx.sightRadius);
+      if (guard) {
+        telemetry.count('escape_seen');
+        this.abandon(person, 'escape_seen', ctx);
+        return;
+      }
+      telemetry.count('escaped');
+      ctx.onEscape(person);
+    }
+    if (person.captiveFrom === null) {
+      this.abandon(person, 'no_home', ctx);
+      return;
+    }
+    const home = ctx.homeOf(person.captiveFrom);
+    if (!home) {
+      this.abandon(person, 'no_home', ctx);
+      return;
+    }
+    if (Math.hypot(person.x - home.x, person.y - home.y) <= HOME_REACHED) {
+      telemetry.count('escape_home');
+      this.finish(person);
+      return;
+    }
+    const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+    if (stopped) {
+      this.stop(person, stopped, ctx, 'escape_');
+      return;
+    }
+    person.targetX = home.x;
+    person.targetY = home.y;
+    this.travel(person, ctx);
   }
 
   /** Lets go of somebody this person was holding, if nobody else still is. */

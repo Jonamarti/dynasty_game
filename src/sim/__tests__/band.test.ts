@@ -481,6 +481,15 @@ describe('exile and adoption', () => {
     candidate.x = refuge.homeX;
     candidate.y = refuge.homeY;
     const oldHouseholdId = candidate.householdId;
+    // And somebody back home who will not have them, so the band taking them
+    // in is the refuge and not the camp they came from. On this small map
+    // the two camps are inside one `ADOPTION_RADIUS` of each other, and until
+    // M11 phase 15d this test passed only because both bands adopted the
+    // candidate on the same day — the home band first, the refuge straight
+    // after, from a list of outcasts gathered before either had acted.
+    const grudger = sim.livingPeople().find(person =>
+      person.bandId === home.id && person.id !== candidate.id && !person.isChild)!;
+    sim.relationships.addDeed(grudger.id, candidate.id, -100, sim.time.tick);
 
     let adopted = false;
     for (let i = 0; i < 480 && !adopted; i++) {

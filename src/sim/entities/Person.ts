@@ -449,6 +449,14 @@ export class Person {
   boundBy: number | null = null;
   boundUntil = -9999;
   /**
+   * M11 phase 15d. The band holding this person captive, and the band they
+   * were taken from — see `Captivity.ts`. A captive's `bandId` is their
+   * captors'; `captiveFrom` outlives an escape, so an escapee walking home
+   * still knows where home is, and is cleared when home takes them back.
+   */
+  captiveOf: number | null = null;
+  captiveFrom: number | null = null;
+  /**
    * When this person last tried to hold somebody and lost the struggle. The
    * ladder does not try the same rung twice on the same offence: the next
    * thing to do is call for help.

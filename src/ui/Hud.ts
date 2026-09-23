@@ -20,6 +20,7 @@
  *  - **Life** — not their diary, but *what you remember about them*, which is a
  *    very different and usually much shorter list.
  */
+import { isHeld, isBound } from '../sim/social/Defence.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import type { ResourceKind, ResourceNode } from '../sim/entities/ResourceNode.ts';
@@ -790,7 +791,12 @@ export class Hud {
 
     // A stranger's band is only obvious if it is your own; otherwise all you can
     // say is that they are not one of yours.
-    const bandText = known.level === 'stranger'
+    // M11 phase 15d: a captive is of their captors' band and plainly not one
+    // of them — obvious to that band, and to anybody who knows them.
+    const captive = person.captiveOf !== null && (sameBand || known.level !== 'stranger');
+    const bandText = captive
+      ? escapeHtml(t('captive of the {band}', { band: band?.name ?? '' }))
+      : known.level === 'stranger'
       ? (sameBand ? escapeHtml(band?.name ?? '') : t('not of your band'))
       : escapeHtml(band?.name ?? t('no band'));
     rows.push(
@@ -849,6 +855,13 @@ export class Hud {
       performance.now() - stop.at < STOP_NOTICE_MS;
     const alone = person.isPlayer && person.order === null && sim.autonomy !== 'manual';
     const stall = person.isPlayer ? sim.autonomyStall : null;
+    // M11 phase 15b-c: held down or tied up is what somebody is doing, in so
+    // far as they are doing anything — visible on anyone, like an injury.
+    const tick = sim.time.tick;
+    const pinned = isBound(person, tick) ? t('tied up')
+      : isHeld(person, tick) ? t('held down') : null;
+    if (pinned) return escapeHtml(pinned) +
+      (fresh ? '<div class="hud-stopped">' + escapeHtml(stop!.text) + '</div>' : '');
     return escapeHtml(actionLabel(person.action, person.targetRecipe, person.talkMode)) +
       (person.order ? ' <span class="hud-ordered">' + t('ordered') + '</span>' : '') +
       (alone ? ' <span class="hud-alone">' +

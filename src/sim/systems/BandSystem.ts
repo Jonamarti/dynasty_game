@@ -436,7 +436,18 @@ export class BandSystem {
       this.assignJobs(band, members, ctx);
       this.considerExile(band, members, ctx);
       this.considerRebellion(band, members, ctx);
-      if (!band.outcast && outcasts.length > 0) this.considerAdoption(band, members, outcasts, ctx);
+      // Re-read per band: `outcasts` was gathered before this loop, and an
+      // outcast one band has just taken in is no longer anybody's to take.
+      // Before M11 phase 15d that was only latent — it needed a wanderer
+      // within `ADOPTION_RADIUS` of two camps on the same day — and then an
+      // escaped captive walking home past their captors' camp was adopted by
+      // both bands in one day, the second founding them a household of its own.
+      const stillOut = outcasts.filter(person => person.bandId === outcastBand!.id &&
+        // An escapee goes home, not to whoever is nearest — see `Captivity.ts`
+        // — unless nobody is left at home to take them.
+        (person.captiveFrom === null || person.captiveFrom === band.id ||
+          (byBand.get(person.captiveFrom)?.length ?? 0) === 0));
+      if (!band.outcast && stillOut.length > 0) this.considerAdoption(band, members, stillOut, ctx);
       if (!band.outcast) this.considerTerritory(band, ctx, outcastBand?.id);
       if (!band.outcast) this.considerRaid(band, members, ctx, outcastBand?.id);
       if (ctx.day % PLANNING_INTERVAL === 0) this.planBuildings(band, members, ctx);
@@ -476,7 +487,8 @@ export class BandSystem {
     let bestScore = -Infinity;
 
     for (const candidate of members) {
-      if (candidate.isChild) continue;
+      // M11 phase 15d: a captive is of the band, not one of its possible heads.
+      if (candidate.isChild || candidate.captiveOf !== null) continue;
       const score = this.standingScore(candidate, band, members, ctx);
       if (score > bestScore) {
         bestScore = score;
@@ -636,7 +648,9 @@ export class BandSystem {
     let worst: Person | null = null;
     let worstOpinion = Infinity;
     for (const member of members) {
-      if (member.id === chiefId || member.isChild) continue;
+      // M11 phase 15d: a captive's hatred of the chief who holds them is not
+      // a voice in the band's politics — it is what `escape` is for.
+      if (member.id === chiefId || member.isChild || member.captiveOf !== null) continue;
       const opinion = ctx.relationships.peek(member.id, chiefId)
         ? ctx.relationships.opinion(member.id, chiefId)
         : null;
@@ -1232,6 +1246,8 @@ export class BandSystem {
     for (const suspect of members) {
       if (suspect.id === chiefId) continue;
       if (suspect.isChild) continue;
+      // M11 phase 15d: casting a captive out would be setting them free.
+      if (suspect.captiveOf !== null) continue;
 
       const faction = conspiracyAgainst(suspect.id, members, ctx.relationships);
       if (!faction || faction.memberIds.length < EXILE_QUORUM) continue;
@@ -1306,10 +1322,11 @@ export class BandSystem {
    * every consequence of their arrival is already written.
    *
    * Two things it deliberately does not do. It does not make the raid
-   * succeed — a party that walks into a camp with people awake in it is
-   * turned back at the wall by `ActionSystem.useProperty`, having committed a
-   * witnessed offence for its trouble, which is the property rule working and
-   * not a bug to route around. And it does not tell the victims anything: a
+   * succeed — a party that walks into a camp with people awake in it commits
+   * a witnessed offence, and since M11 phase 15a what stops it is not
+   * `ActionSystem.useProperty` refusing at the wall but the owners who saw it
+   * (the witness's ladder, phase 15b: warned off, held, tied and taken). And
+   * it does not tell the victims anything: a
    * band learns it has been raided by somebody seeing it happen, exactly as
    * everything else in this simulation is learned, so a raid nobody witnesses
    * is a hut that fell down in the night.

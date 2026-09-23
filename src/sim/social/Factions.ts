@@ -142,6 +142,8 @@ export function warParty(
   const willing: Person[] = [];
   for (const member of members) {
     if (member.id === leader.id || member.isChild || !member.alive) continue;
+    // M11 phase 15d: nobody arms a captive and walks them to war.
+    if (member.captiveOf !== null) continue;
     if (member.traits.aggression < RAID_NERVE) continue;
     if (member.skillFactor('fight') < RAID_FIGHT) continue;
     if (!trustEachOther(leader.id, member.id, rels)) continue;

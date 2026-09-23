@@ -1744,6 +1744,9 @@ function reportInterruptions(): void {
     // M11 phase 15c: the same for being tied up.
     const binder = notice.reason === 'bound' && person.boundBy !== null
       ? sim.peopleById.get(person.boundBy) : undefined;
+    // M11 phase 15d: and for being taken, naming the people who took them.
+    const captors = notice.reason === 'taken_captive' && person.captiveOf !== null
+      ? sim.bands.find(b => b.id === person.captiveOf) : undefined;
     const text = holder && sim.player
       ? t('Held back by {name}', {
         name: knowledgeOfPerson(sim.player, holder, sim.relationships).displayName,
@@ -1752,6 +1755,8 @@ function reportInterruptions(): void {
       ? t('Tied up by {name}', {
         name: knowledgeOfPerson(sim.player, binder, sim.relationships).displayName,
       })
+      : captors
+      ? t('Taken captive by the {band}', { band: captors.name })
       : t('{action} stopped — {reason}', {
         action: actionLabel(notice.action, notice.recipe), reason: stopReasonLabel(notice.reason),
       });

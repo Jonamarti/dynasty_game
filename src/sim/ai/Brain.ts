@@ -52,6 +52,9 @@ import {
   homeRange, homeward, fearOf, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
   DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
 } from '../social/Fear.ts';
+import {
+  isCaptive, isEscapee, captorWatching, ESCAPE, ESCAPE_HOME, HOME_REACHED, CAPTURE_OVER_PREDATION,
+} from '../social/Captivity.ts';
 import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import {
   caughtOffender, usingPropertyOf, isHeld, isBound, helpCaller, BIND_HELD,
@@ -1337,47 +1340,14 @@ export class Brain {
     const prey = neighbours.length === 0 ? null : this.pickBest(neighbours, other =>
       vulnerabilityOf(other, person) * 12 - person.distanceTo(other)
     );
-    if (prey && ctx.relationships.kinship(person.id, prey.id) === 0) {
-      const nerve = Math.max(0, person.traits.aggression - 0.5) * 2;
-      if (nerve > 0) {
-        const helpless = vulnerabilityOf(prey, person);
-        const theirFriends = neighbours.filter(other =>
-          other.id !== prey.id &&
-          ctx.relationships.opinion(other.id, prey.id) > 15
-        ).length;
-        const onlookers = ctx.peopleHash
-          .queryRadius(prey.x, prey.y, ctx.sightRadius)
-          .filter(o => o.alive && o.id !== person.id && o.id !== prey.id).length;
-        const unseen = 1 / (1 + onlookers * 0.45);
-        // A threshold rather than a square, and a soft divisor rather than a
-        // hard one. The first version of this multiplied six suppressors
-        // together — helplessness squared, nerve, privacy, loyalty, and a
-        // division by every ally the target had — and produced scores around
-        // 0.0003, two orders of magnitude below `wander`. It never fired once
-        // in either instrumented world. That is the failure `AGENTS.md` names:
-        // "if a new action never fires, the reason is almost always that
-        // something else is nearer", and `hunt` scoring nothing until its
-        // coefficient reached nine is the precedent.
-        //
-        // The fix is the shape, not the constant. `helpless` gates instead of
-        // squaring, so a genuinely defenceless target is worth its full value
-        // rather than a quarter of it; and allies divide softly, because in a
-        // band where everyone regards everyone at +6 and rising, `theirFriends`
-        // is most of the camp and a hard divisor is a flat veto.
-        // The same `bandHostility` multiplier the revenge route above uses,
-        // for the same reason: it amplifies an appetite the rest of the
-        // expression already justifies rather than creating one of its own.
-        const score = helpless < PREY_AT ? 0 : helpless * nerve * unseen *
-          (1 - person.traits.loyalty * 0.8) / (1 + theirFriends * 0.3) *
-          PREDATION * (1 + this.bandHostility(person, prey.bandId, ctx) * 0.5) *
-          this.proximityBonus(person, prey, ctx.sightRadius);
-        // Only if it beats what revenge already offered, and only then does the
-        // blow change hands — so the score and the target never come apart, the
-        // way they did before `foe` existed.
-        if (score > attackScore) {
-          attackScore = score;
-          foe = prey;
-        }
+    if (prey) {
+      const score = this.predationAppeal(person, prey, neighbours, ctx);
+      // Only if it beats what revenge already offered, and only then does the
+      // blow change hands — so the score and the target never come apart, the
+      // way they did before `foe` existed.
+      if (score > attackScore) {
+        attackScore = score;
+        foe = prey;
       }
     }
 
@@ -1390,6 +1360,10 @@ export class Brain {
     // since phase 15b a second route offers it too, and two rows with one id
     // would read in `npm run why` as two distinct options.
     let warnScore = 0;
+    // `restrain` has three routes since phase 15d — one of your own caught at
+    // it, an outsider caught at it, and a captive to be taken — stashed for
+    // the same reason `warn` and `attack` are.
+    let restrainScore = 0;
     {
       const home = ctx.homes?.get(person.bandId);
       const fear = fearOf(person);
@@ -1471,8 +1445,8 @@ export class Brain {
             other.distanceTo(offender) <= 4).length;
           const mine = fightingPower(person) * (1 + standingBy * 0.5);
           if (mine >= fightingPower(offender) * RESTRAIN_NERVE) {
-            add('restrain', CAUGHT_RESTRAIN * (0.5 + person.traits.loyalty) *
-              this.proximityBonus(person, offender, ctx.sightRadius));
+            restrainScore = CAUGHT_RESTRAIN * (0.5 + person.traits.loyalty) *
+              this.proximityBonus(person, offender, ctx.sightRadius);
             restrainee = offender;
             telemetry.count('caught_restrain_offered');
           } else if (tick - person.calledForHelpTick > CALL_MEMORY) {
@@ -1517,6 +1491,21 @@ export class Brain {
             other.bandId === person.bandId && other.id !== person.id && !other.isChild).length;
           const theirs = neighbours.filter(other =>
             other.bandId === offender.bandId && other.id !== offender.id && !other.isChild).length;
+          // M11 phase 15d, capture in the act: with a rope in hand, a warned
+          // offender still at it is held and tied rather than struck — the
+          // holder ties them (`ActionSystem.doRestrain`) and the rope makes
+          // them this band's captive. Same nerve test as holding one's own.
+          if (person.inventory.count('rope') > 0 && techPower(person, 'cordage') > 0 &&
+            !isHeld(offender, ctx.time.tick) && !pressedByNeed(person, ctx.needs.workLimits) &&
+            myPower * (1 + mine * 0.5) >= theirPower * RESTRAIN_NERVE) {
+            const score = CAUGHT_RESTRAIN * (0.5 + person.traits.loyalty) *
+              this.proximityBonus(person, offender, ctx.sightRadius);
+            if (score > restrainScore) {
+              restrainScore = score;
+              restrainee = offender;
+              telemetry.count('caught_capture_offered');
+            }
+          }
           const boldness = Math.max(0, myPower * (1 + mine * 0.25) - theirPower * 0.8) / (1 + theirs);
           const score = Math.min(DEFEND_CEILING,
             (0.5 + fear * 0.5) * boldness * (0.5 + person.traits.aggression * 2)) *
@@ -1530,6 +1519,51 @@ export class Brain {
       }
     }
     if (warnScore > 0) add('warn', warnScore);
+
+    // --- Taking captives -------------------------------------------------------
+    // M11 phase 15d, the raid's way into captivity: somebody carrying a rope,
+    // among a people this one is at odds with, who finds one of them
+    // defenceless. The predation route's own appeal (`predationAppeal`), so
+    // the same victim is weighed the same way, raised by
+    // `CAPTURE_OVER_PREDATION` — with a rope in hand a captive is worth more
+    // than a beating, and the capture displacing the blow is what keeps this
+    // from adding to the killing. Held, then tied by the holder, then theirs.
+    if (!person.isChild && person.captiveOf === null && person.inventory.count('rope') > 0 &&
+      techPower(person, 'cordage') > 0 && !pressedByNeed(person, ctx.needs.workLimits)) {
+      const tick = ctx.time.tick;
+      const quarry = this.pickBest(neighbours.filter(other =>
+        other.bandId !== person.bandId && !other.isChild && !isHeld(other, tick) &&
+        this.bandHostility(person, other.bandId, ctx) > 0
+      ), other => vulnerabilityOf(other, person) * 12 - person.distanceTo(other));
+      if (quarry) {
+        const score = this.predationAppeal(person, quarry, neighbours, ctx) * CAPTURE_OVER_PREDATION;
+        if (score > restrainScore) {
+          restrainScore = score;
+          restrainee = quarry;
+          telemetry.count('capture_offered');
+        }
+      }
+    }
+    if (restrainScore > 0) add('restrain', restrainScore);
+
+    // --- Escape ------------------------------------------------------------------
+    // M11 phase 15d. A captive with nobody of the captor band in sight slips
+    // away — the mirror of `mayUse`, attention and not permission — and a
+    // cowed one is less likely to try. Once away, the same verb is the walk
+    // home, picked back up after every drink until the old camp is near.
+    if (!person.isChild && !pressedByNeed(person, ctx.needs.workLimits)) {
+      if (isCaptive(person)) {
+        if (!captorWatching(person, ctx.peopleHash, ctx.sightRadius)) {
+          add('escape', ESCAPE * (1 - fearOf(person) * 0.7));
+          telemetry.count('escape_offered');
+        }
+      } else if (isEscapee(person)) {
+        const home = ctx.homes?.get(person.captiveFrom!);
+        if (home && Math.hypot(person.x - home.x, person.y - home.y) > HOME_REACHED) {
+          add('escape', ESCAPE_HOME);
+        }
+      }
+    }
 
     // --- Tying up -------------------------------------------------------------
     // M11 phase 15c. Somebody who knows `cordage` and carries a rope ties up
@@ -2486,6 +2520,53 @@ export class Brain {
       (isHeap(b.def) || b.def.storage > 0) && b.store.count('compost') > 0);
   }
 
+
+  /**
+   * What beating `prey` for what they have is worth to `person` — the
+   * predation route's whole expression, and since M11 phase 15d the base of
+   * taking them captive too. One copy, because a capture that read the same
+   * victim differently from the beating it replaces would drift from it the
+   * first time either was tuned. Zero for kin and for anybody without the
+   * nerve.
+   */
+  private predationAppeal(
+    person: Person, prey: Person, neighbours: Person[], ctx: BrainContext
+  ): number {
+    if (ctx.relationships.kinship(person.id, prey.id) !== 0) return 0;
+    const nerve = Math.max(0, person.traits.aggression - 0.5) * 2;
+    if (nerve <= 0) return 0;
+    const helpless = vulnerabilityOf(prey, person);
+    const theirFriends = neighbours.filter(other =>
+      other.id !== prey.id &&
+      ctx.relationships.opinion(other.id, prey.id) > 15
+    ).length;
+    const onlookers = ctx.peopleHash
+      .queryRadius(prey.x, prey.y, ctx.sightRadius)
+      .filter(o => o.alive && o.id !== person.id && o.id !== prey.id).length;
+    const unseen = 1 / (1 + onlookers * 0.45);
+    // A threshold rather than a square, and a soft divisor rather than a
+    // hard one. The first version of this multiplied six suppressors
+    // together — helplessness squared, nerve, privacy, loyalty, and a
+    // division by every ally the target had — and produced scores around
+    // 0.0003, two orders of magnitude below `wander`. It never fired once
+    // in either instrumented world. That is the failure `AGENTS.md` names:
+    // "if a new action never fires, the reason is almost always that
+    // something else is nearer", and `hunt` scoring nothing until its
+    // coefficient reached nine is the precedent.
+    //
+    // The fix is the shape, not the constant. `helpless` gates instead of
+    // squaring, so a genuinely defenceless target is worth its full value
+    // rather than a quarter of it; and allies divide softly, because in a
+    // band where everyone regards everyone at +6 and rising, `theirFriends`
+    // is most of the camp and a hard divisor is a flat veto.
+    // The same `bandHostility` multiplier the revenge route uses, for the
+    // same reason: it amplifies an appetite the rest of the expression
+    // already justifies rather than creating one of its own.
+    return helpless < PREY_AT ? 0 : helpless * nerve * unseen *
+      (1 - person.traits.loyalty * 0.8) / (1 + theirFriends * 0.3) *
+      PREDATION * (1 + this.bandHostility(person, prey.bandId, ctx) * 0.5) *
+      this.proximityBonus(person, prey, ctx.sightRadius);
+  }
 
   /**
    * A building the scorer may honestly promise this person can use.

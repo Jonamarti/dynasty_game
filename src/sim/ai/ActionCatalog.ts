@@ -12,6 +12,7 @@
  * menu rather than a shrug.
  */
 import { isHeld } from '../social/Defence.ts';
+import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
@@ -795,6 +796,15 @@ function groundActions(
       enabled: walkable,
       reason: walkable ? undefined : t('You cannot walk there'),
     },
+    // M11 phase 15d: the way out, for a captive — and the road home, for one
+    // who has already slipped away. Offered without asking who is watching:
+    // the menu does not know, and `doEscape` says so if somebody is.
+    ...(isCaptive(actor) || isEscapee(actor) ? [{
+      id: 'escape',
+      label: isCaptive(actor) ? t('Slip away') : t('Go home'),
+      icon: '\u{1F3C3}',
+      enabled: true,
+    }] : []),
     {
       // M11 phase 15b.4. Everybody within earshot hears that you called, and
       // nothing more; whoever comes is told when they arrive.

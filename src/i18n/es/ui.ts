@@ -145,6 +145,7 @@ export const ES_UI: Record<string, string> = {
   "Seen: {why}": "Le han visto: {why}",
   "Held back by {name}": "Sujetado por {name}",
   "Tied up by {name}": "Atado por {name}",
+  "Taken captive by the {band}": "Tomado cautivo por la {band}",
   "You call for help": "Pides ayuda a gritos",
   "{name} calls for help!": "¡{name} pide ayuda a gritos!",
   "No one saw you do it.": "Nadie te vio hacerlo.",

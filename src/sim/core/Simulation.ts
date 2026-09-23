@@ -1160,6 +1160,20 @@ export class Simulation {
     const previous = person.householdId === null
       ? null
       : this.householdsById.get(person.householdId);
+    // M11 phase 15d: an escaped captive coming home. Their household was never
+    // touched when they were taken — that is what `captiveFrom` is for — so
+    // it still names this band, and they go back into it rather than
+    // founding a new one: the door home is the family they left.
+    if (previous && person.captiveFrom === band.id && previous.bandId === band.id) {
+      person.captiveFrom = null;
+      person.bandId = band.id;
+      person.clearTarget();
+      person.forgetPlans();
+      person.action = 'idle';
+      telemetry.count('captive_came_home');
+      return;
+    }
+    person.captiveFrom = null;
     if (previous) {
       previous.remove(person.id);
       if (previous.extinct) previous.endedTick = this.time.tick;
@@ -1175,6 +1189,53 @@ export class Simulation {
     person.clearTarget();
     person.forgetPlans();
     person.action = 'idle';
+  }
+
+  /**
+   * Makes somebody a captive of the band of whoever tied them up — M11 phase
+   * 15d. A rope from one of their own is only a rope. See `Captivity.ts` for
+   * what a captive is and why they are simply moved into the captor band.
+   */
+  private takeCaptive(person: Person, binder: Person): void {
+    if (binder.bandId === person.bandId) return;
+    const captors = this.bands.find(b => b.id === binder.bandId);
+    if (!captors || captors.outcast) return;
+    const from = this.bands.find(b => b.id === person.bandId);
+    // An outcast taken is taken from nowhere: there is no camp for them to
+    // walk back to, and the escapee's road home needs one.
+    person.captiveFrom = from && !from.outcast ? from.id : null;
+    person.captiveOf = captors.id;
+    person.bandId = captors.id;
+    person.job = null;
+    person.resume = null;
+    person.forgetPlans();
+    telemetry.count('taken_captive');
+    person.chronicle.push({
+      tick: this.time.tick, ageDays: person.age,
+      text: t('was taken captive by the {band}', { band: captors.name }), kind: 'suffered',
+    });
+    binder.chronicle.push({
+      tick: this.time.tick, ageDays: binder.age,
+      text: t('took {name} captive', { name: person.name }), kind: 'did',
+    });
+    this.noteStop(person, person.action, 'taken_captive');
+  }
+
+  /**
+   * A captive slips away — M11 phase 15d. Out of the captor band and into
+   * the outcasts, remembering `captiveFrom`, so the road home and the
+   * adoption at the end of it both know where they are going.
+   */
+  private escape(person: Person): void {
+    const captors = this.bands.find(b => b.id === person.captiveOf);
+    person.captiveOf = null;
+    const outcasts = this.outcastBand();
+    person.bandId = outcasts.id;
+    person.job = null;
+    person.chronicle.push({
+      tick: this.time.tick, ageDays: person.age,
+      text: t('escaped from the {band}', { band: captors?.name ?? '' }), kind: 'milestone',
+    });
   }
 
   /**
@@ -1686,7 +1747,7 @@ export class Simulation {
     // their keys do nothing, and a character that will not move needs a
     // reason on screen.
     if (person.order === null &&
-      !(person.isPlayer && (reason === 'restrained' || reason === 'bound'))) return;
+      !(person.isPlayer && (reason === 'restrained' || reason === 'bound' || reason === 'taken_captive'))) return;
     this.interruptions.push({
       personId: person.id, action, reason, recipe: person.targetRecipe,
     });
@@ -3016,6 +3077,12 @@ export class Simulation {
       onStopped: (person: Person, action: string, reason: string) =>
         this.noteStop(person, action, reason),
       onWatched: (person: Person, use: PropertyUse) => this.noteWatched(person, use),
+      onBound: (person: Person, binder: Person) => this.takeCaptive(person, binder),
+      onEscape: (person: Person) => this.escape(person),
+      homeOf: (bandId: number) => {
+        const band = this.bands.find(b => b.id === bandId);
+        return band && !band.outcast ? { x: band.homeX, y: band.homeY } : undefined;
+      },
       onCalledForHelp: (person: Person) => {
         this.helpCalls.push({ callerId: person.id, x: person.x, y: person.y });
         if (this.helpCalls.length > this.interruptionCap) this.helpCalls.shift();

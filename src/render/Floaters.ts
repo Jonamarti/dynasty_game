@@ -194,6 +194,7 @@ export const ACTION_LABELS: Record<string, string> = {
   restrain: 'holding someone back',
   call_for_help: 'calling for help',
   bind: 'tying someone up',
+  escape: 'slipping away',
   answer_call: 'answering a call for help',
 };
 
@@ -316,6 +317,10 @@ export const STOP_REASONS: Record<string, string> = {
   bound: 'someone tied them up',
   no_rope: 'they had no rope',
   not_held: 'nobody was holding them down',
+  // M11 phase 15d.
+  taken_captive: 'they were taken captive',
+  escape_seen: 'one of their captors was watching',
+  no_home: 'there was no camp to go back to',
   // M11 phase 5c: `slander` and `praise` need somebody to talk *about*, not
   // only somebody to talk to, and the walk over gives both of those a chance
   // to stop being true.
