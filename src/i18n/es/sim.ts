@@ -208,6 +208,7 @@ export const ES_SIM: Record<string, string> = {
   "was taken captive by the {band}": "fue tomado cautivo por la {band}",
   "took {name} captive": "tomó cautivo a {name}",
   "escaped from the {band}": "escapó de la {band}",
+  "the body is gone": "el cuerpo ya no está",
   "was welcomed into the {band}": "fue recibido en la {band}",
   "one man behind him": "con un hombre detrás",
   "{n} men behind him": "con {n} hombres detrás",

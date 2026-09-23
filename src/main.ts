@@ -38,6 +38,7 @@ import type { Building, BuildingDef } from './sim/entities/Building.ts';
 import { ITEMS } from './sim/entities/Item.ts';
 import { JOBS } from './sim/entities/Job.ts';
 import { EARSHOT } from './sim/systems/ActionSystem.ts';
+import { stageOf } from './sim/entities/Corpse.ts';
 import type { ItemPile } from './sim/entities/ItemPile.ts';
 import { describeEvent } from './sim/social/Events.ts';
 import {
@@ -931,7 +932,8 @@ function describeCandidate(observer: Person, target: ActionTarget): string {
       // picker said "dropped goods" for a stack of six flints and a fish.
       return target.pile!.label;
     case 'corpse':
-      return corpseTitle(observer, target.corpse!, sim.relationships);
+      return corpseTitle(observer, target.corpse!, sim.relationships,
+        stageOf(target.corpse!, sim.time.tick, sim.config.time.ticksPerDay));
     case 'inscription': {
       // Gated like everything else the picker says. Somebody who cannot read is
       // told there are marks, not what they are.
@@ -1368,7 +1370,8 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     target.kind === 'animal' ? t(target.animal!.label) :
     target.kind === 'inscription' ? t(target.inscription!.def.label) :
     target.kind === 'pile' ? t('Dropped goods') :
-    target.kind === 'corpse' ? corpseTitle(actor, target.corpse!, sim.relationships) :
+    target.kind === 'corpse' ? corpseTitle(actor, target.corpse!, sim.relationships,
+      stageOf(target.corpse!, sim.time.tick, sim.config.time.ticksPerDay)) :
     t('Ground');
 
   radial.show(
@@ -1433,6 +1436,7 @@ function issue(
     buildingId: option.buildingId ?? target.building?.id,
     treeId: target.tree?.id,
     animalId: target.animal?.id,
+    corpseId: target.corpse?.id,
     recipeId: option.recipeId,
     inscriptionId: target.inscription?.id,
     // Which idea a `ponder` or `discuss` is about. Carried on the option

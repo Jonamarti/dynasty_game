@@ -52,6 +52,7 @@ import {
   RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, HOLD_FOR_ROPE, CALL_TICKS, BIND_TICKS, BOUND_TICKS,
   PATROL_LINGER, GUARD_REASSURES,
 } from '../social/Defence.ts';
+import { DISMEMBER_WORK, type Corpse } from '../entities/Corpse.ts';
 import { isCaptive, captorWatching, HOME_REACHED } from '../social/Captivity.ts';
 import { fightingPower } from '../social/Vulnerability.ts';
 import type { EventType } from '../social/Events.ts';
@@ -156,6 +157,14 @@ export interface ActionContext {
   onEscape: (person: Person) => void;
   /** Where a band's camp is, for an escapee walking back to it. */
   homeOf: (bandId: number) => { x: number; y: number } | undefined;
+  /** M11 phase 16b: the bodies, for `dismember` and `drag`. */
+  corpsesById: ReadonlyMap<number, Corpse>;
+  /** A dragged body has moved: the corpse hash has to hear of it. */
+  onCorpseMoved: () => void;
+  /** A body sunk in water leaves the world. */
+  removeCorpse: (corpse: Corpse) => void;
+  /** The nearest water's edge reachable from a point, for `drag`. */
+  nearestShore: (x: number, y: number) => { x: number; y: number } | null;
 }
 
 /** How close two people must be to hand something over, or land a blow. */
@@ -596,6 +605,8 @@ export class ActionSystem {
       case 'bind': this.doBind(person, ctx); break;
       case 'escape': this.doEscape(person, ctx); break;
       case 'patrol': this.doPatrol(person, ctx); break;
+      case 'dismember': this.doDismember(person, ctx); break;
+      case 'drag': this.doDrag(person, ctx); break;
       case 'call_for_help': this.doCallForHelp(person, ctx); break;
       case 'answer_call': this.doAnswerCall(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
@@ -3780,6 +3791,79 @@ export class ActionSystem {
     person.workedTicks++;
     if (person.workedTicks < PATROL_LINGER) return;
     telemetry.count('patrol_rounds');
+    this.finish(person);
+  }
+
+  /**
+   * Cutting a body up past knowing, M11 phase 16b — the carcass's molde,
+   * made long and banked on the body (`Corpse.dismemberWork`), because
+   * `AGENTS.md` does not let a job this long live on the worker. Anybody who
+   * comes back to it, or anybody else, picks it up where it was left.
+   */
+  private doDismember(person: Person, ctx: ActionContext): void {
+    const corpse = person.targetCorpseId === null ? undefined : ctx.corpsesById.get(person.targetCorpseId);
+    if (!corpse) {
+      this.abandon(person, 'body_gone', ctx);
+      return;
+    }
+    if (corpse.dismembered) {
+      this.finish(person);
+      return;
+    }
+    person.targetX = corpse.x;
+    person.targetY = corpse.y;
+    if (!this.travel(person, ctx)) return;
+    const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+    if (stopped) {
+      this.stop(person, stopped, ctx, 'dismember_');
+      return;
+    }
+    corpse.dismemberWork += person.skillFactor('hunt');
+    if (corpse.dismemberWork < DISMEMBER_WORK) return;
+    corpse.dismembered = true;
+    telemetry.count('body_dismembered');
+    this.finish(person);
+  }
+
+  /**
+   * Dragging a body to the water, where it is gone — M11 phase 16b. Two
+   * legs: to the body, then with it to the nearest shore, the body following
+   * a step behind. Every tick of the second leg has an interruption check,
+   * and a drag broken off leaves the body wherever it had got to.
+   */
+  private doDrag(person: Person, ctx: ActionContext): void {
+    const corpse = person.targetCorpseId === null ? undefined : ctx.corpsesById.get(person.targetCorpseId);
+    if (!corpse) {
+      this.abandon(person, 'body_gone', ctx);
+      return;
+    }
+    if (person.workedTicks === 0) {
+      person.targetX = corpse.x;
+      person.targetY = corpse.y;
+      if (!this.travel(person, ctx)) return;
+      const shore = ctx.nearestShore(corpse.x, corpse.y);
+      if (!shore) {
+        this.abandon(person, 'no_water', ctx);
+        return;
+      }
+      person.targetX = shore.x;
+      person.targetY = shore.y;
+      person.workedTicks = 1;
+      return;
+    }
+    const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+    if (stopped) {
+      ctx.onCorpseMoved();
+      this.stop(person, stopped, ctx, 'drag_');
+      return;
+    }
+    person.workedTicks++;
+    const arrived = this.travel(person, ctx);
+    corpse.x = person.x;
+    corpse.y = person.y;
+    if (!arrived) return;
+    telemetry.count('body_sunk');
+    ctx.removeCorpse(corpse);
     this.finish(person);
   }
 

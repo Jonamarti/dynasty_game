@@ -9,7 +9,7 @@
  *
  * Everything here reads the simulation and never writes to it.
  */
-import type { Corpse } from '../sim/entities/Corpse.ts';
+import { stageOf, type Corpse } from '../sim/entities/Corpse.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
 import { Interpolator, type Placed } from './Interpolator.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
@@ -530,11 +530,27 @@ export class Renderer {
       const py = camera.worldToScreenY(corpse.y);
       const long = scale * 0.5;
       const wide = scale * 0.18;
+      // M11 phase 16b: what time and a blade have done to it.
+      const stage = stageOf(corpse, sim.time.tick, sim.config.time.ticksPerDay);
+      if (corpse.dismembered || stage === 'bones') {
+        ctx.fillStyle = stage === 'bones' ? '#ddd6c6' : '#7a5a50';
+        for (let k = 0; k < 5; k++) {
+          const ox = Math.cos(k * 2.4 + corpse.id) * long * 0.4;
+          const oy = Math.sin(k * 2.4 + corpse.id) * wide;
+          ctx.fillRect(px + ox - wide * 0.3, py + oy - wide * 0.2, wide * 0.6, wide * 0.4);
+        }
+        if (highlight?.corpseId === corpse.id) {
+          ctx.strokeStyle = '#7fd4ff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px - long / 2 - 3, py - wide - 3, long + 6, wide * 2 + 6);
+        }
+        continue;
+      }
       ctx.fillStyle = 'rgba(0,0,0,0.25)';
       ctx.fillRect(px - long / 2 + 1, py - wide / 2 + 2, long, wide);
-      ctx.fillStyle = '#8e8a84';
+      ctx.fillStyle = stage === 'fresh' ? '#8e8a84' : '#6f6a55';
       ctx.fillRect(px - long / 2, py - wide / 2, long, wide);
-      ctx.fillStyle = '#b3aea6';
+      ctx.fillStyle = stage === 'fresh' ? '#b3aea6' : '#8a8468';
       ctx.beginPath();
       ctx.arc(px + long / 2, py, wide * 0.6, 0, Math.PI * 2);
       ctx.fill();

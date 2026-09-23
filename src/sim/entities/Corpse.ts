@@ -31,14 +31,25 @@ export class Corpse {
   readonly id: number;
   /** Who this was. Dead; kept for their name, their kin and their band. */
   readonly person: Person;
-  readonly x: number;
-  readonly y: number;
+  /** Where it lies. Moves only while somebody drags it (16b). */
+  x: number;
+  y: number;
   readonly diedTick: number;
   /**
    * Whether the body bears wounds anybody would see: a death by violence, or
    * one that came soon after a beating. Not *who* — see the header.
    */
   readonly wounded: boolean;
+
+  /**
+   * Work put into cutting it up, banked here rather than on whoever is doing
+   * it — `AGENTS.md`'s rule for any job longer than one uninterrupted pull.
+   * Somebody called away for a drink comes back to where they left off, and
+   * so does anybody else who finds it half done. See `DISMEMBER_WORK`.
+   */
+  dismemberWork = 0;
+  /** Cut up past knowing: nobody can say whose it was. */
+  dismembered = false;
 
   constructor(person: Person, tick: number, wounded: boolean) {
     this.id = nextCorpseId++;
@@ -49,6 +60,36 @@ export class Corpse {
     this.wounded = wounded;
   }
 }
+
+/**
+ * What time has done to a body, M11 phase 16b. **Fresh** for `FRESH_DAYS`,
+ * recognisable to anybody who knew them; **gone over** until `BONES_AFTER`,
+ * recognisable only to those who knew them well; then **bones**, which say
+ * somebody died here and nothing about who. `GONE_AFTER` is when the bones
+ * are scattered and the body leaves the world — kept, so that a century of
+ * deaths is not a century of skeletons on the map.
+ *
+ * Nothing eats a body yet (`next-steps.md` §8: no carnivore eats anything),
+ * so leaving one to the animals is, for now, only this. **No scavenger is
+ * declared until one exists.**
+ */
+export type CorpseStage = 'fresh' | 'decayed' | 'bones';
+export const FRESH_DAYS = 3;
+export const BONES_AFTER = 12;
+export const GONE_AFTER = 120;
+
+export function stageOf(corpse: Corpse, tick: number, ticksPerDay: number): CorpseStage {
+  const days = (tick - corpse.diedTick) / ticksPerDay;
+  return days < FRESH_DAYS ? 'fresh' : days < BONES_AFTER ? 'decayed' : 'bones';
+}
+
+/**
+ * Work to cut a body up past knowing, in units of `skillFactor('hunt')` a
+ * tick: about two hundred and forty ticks for an ordinary hunter, three times
+ * that for a novice. Far past the one-pull ceiling, which is why it banks on
+ * the body.
+ */
+export const DISMEMBER_WORK = 240;
 
 /**
  * How recently a beating has to have landed for the body to still show it,

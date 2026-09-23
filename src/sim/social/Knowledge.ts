@@ -16,6 +16,7 @@
  * reading how much is left on it is a foraging skill, and a novice standing
  * far away gets "picked over" rather than "7".
  */
+import type { Corpse, CorpseStage } from '../entities/Corpse.ts';
 import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { Building } from '../entities/Building.ts';
@@ -385,4 +386,25 @@ export function knowledgeOfBuilding(observer: Person, building: Building): Build
     knowsContents: ours,
     because: ours ? t('your band built it') : t('you have not looked inside'),
   };
+}
+
+/**
+ * Whose body this is, as `observer` can tell — M11 phase 16b. A fresh body is
+ * as recognisable as the living person was; one gone over only to kin and
+ * to people who knew them well (`CLOSE_AT`); bones and a body cut up past
+ * knowing to nobody at all. The name comes back only when it is known.
+ */
+export function corpseIdentity(
+  observer: Person,
+  corpse: Corpse,
+  relationships: RelationshipGraph,
+  stage: CorpseStage
+): { identified: boolean; name: string } {
+  if (corpse.dismembered || stage === 'bones') return { identified: false, name: '' };
+  const known = knowledgeOfPerson(observer, corpse.person, relationships);
+  if (stage === 'fresh') return { identified: known.knowsName, name: known.displayName };
+  const rel = relationships.peek(observer.id, corpse.person.id);
+  const close = relationships.kinship(observer.id, corpse.person.id) > 0 ||
+    (rel !== null && rel.familiarity >= CLOSE_AT);
+  return close ? { identified: true, name: known.displayName } : { identified: false, name: '' };
 }

@@ -365,6 +365,8 @@ export class Person {
    * like every other.
    */
   targetPileId: number | null = null;
+  /** Which body a `dismember` or a `drag` is aimed at, M11 phase 16b. */
+  targetCorpseId: number | null = null;
   /**
    * Which item and how much a player-ordered `take` should withdraw.
    *
@@ -913,6 +915,7 @@ export class Person {
     this.targetRecipe = null;
     this.targetInscriptionId = null;
     this.targetPileId = null;
+    this.targetCorpseId = null;
     this.targetTech = null;
     this.talkMode = null;
     this.targetItemId = null;

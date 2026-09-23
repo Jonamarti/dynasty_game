@@ -45,7 +45,7 @@ import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
-import { Corpse, resetCorpseIds, WOUNDS_SHOW_FOR } from '../entities/Corpse.ts';
+import { Corpse, resetCorpseIds, WOUNDS_SHOW_FOR, GONE_AFTER } from '../entities/Corpse.ts';
 import {
   Animal, resetAnimalIds, SPECIES, SPECIES_DEFS, type Species,
 } from '../entities/Animal.ts';
@@ -1198,6 +1198,13 @@ export class Simulation {
     person.action = 'idle';
   }
 
+  /** Takes a body out of the world: sunk, or scattered by the years. */
+  private removeCorpse(corpse: Corpse): void {
+    if (!this.corpsesById.delete(corpse.id)) return;
+    this.corpses = this.corpses.filter(c => c.id !== corpse.id);
+    this.corpseHash.rebuild(this.corpses);
+  }
+
   /**
    * Makes somebody a captive of the band of whoever tied them up — M11 phase
    * 15d. A rope from one of their own is only a rope. See `Captivity.ts` for
@@ -1928,6 +1935,8 @@ export class Simulation {
       inscriptionId?: number;
       /** Which heap of dropped goods a `pickup` is aimed at. */
       pileId?: number;
+      /** Which body a `dismember` or a `drag` is aimed at, M11 phase 16b. */
+      corpseId?: number;
       /**
        * Which technology a `ponder` or a `discuss` is about.
        *
@@ -2013,6 +2022,15 @@ export class Simulation {
       person.targetInscriptionId = record.id;
       person.targetX = record.x;
       person.targetY = record.y;
+      return true;
+    }
+
+    if (target.corpseId !== undefined) {
+      const corpse = this.corpsesById.get(target.corpseId);
+      if (!corpse) return this.cancelOrder(person, t('the body is gone'));
+      person.targetCorpseId = corpse.id;
+      person.targetX = corpse.x;
+      person.targetY = corpse.y;
       return true;
     }
 
@@ -2995,6 +3013,11 @@ export class Simulation {
       // See `sabotageCandidatesByBand`'s own comment for why this is cached
       // at all and why once a day is the right cadence for it.
       this.sabotageCache = this.sabotageCandidatesByBand();
+      // M11 phase 16b: bones long enough on the ground are scattered, and the
+      // body leaves the world. See `GONE_AFTER`.
+      const gone = this.corpses.filter(c =>
+        this.time.tick - c.diedTick > GONE_AFTER * this.config.time.ticksPerDay);
+      for (const corpse of gone) this.removeCorpse(corpse);
 
       this.lifeSystem.daily(this.people, {
         rng: this.lifeRng,
@@ -3085,6 +3108,11 @@ export class Simulation {
         this.noteStop(person, action, reason),
       onWatched: (person: Person, use: PropertyUse) => this.noteWatched(person, use),
       onBound: (person: Person, binder: Person) => this.takeCaptive(person, binder),
+      corpsesById: this.corpsesById,
+      onCorpseMoved: () => this.corpseHash.rebuild(this.corpses),
+      removeCorpse: (corpse: Corpse) => this.removeCorpse(corpse),
+      nearestShore: (x: number, y: number) => this.shoreHash.findNearest(x, y, 60,
+        tile => this.world.sameRegion(x, y, tile.x, tile.y)),
       onEscape: (person: Person) => this.escape(person),
       homeOf: (bandId: number) => {
         const band = this.bands.find(b => b.id === bandId);

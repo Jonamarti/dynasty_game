@@ -20,7 +20,7 @@
  *  - **Life** — not their diary, but *what you remember about them*, which is a
  *    very different and usually much shorter list.
  */
-import type { Corpse } from '../sim/entities/Corpse.ts';
+import { stageOf, type Corpse, type CorpseStage } from '../sim/entities/Corpse.ts';
 import { isHeld, isBound } from '../sim/social/Defence.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
@@ -37,7 +37,7 @@ import { lastScores } from '../sim/ai/Brain.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
 import { actionLabel } from '../render/Floaters.ts';
 import {
-  knowledgeOfPerson, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree,
+  knowledgeOfPerson, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree, corpseIdentity,
   rememberedAbout, regardFromThem,
 } from '../sim/social/Knowledge.ts';
 import type { Relationship, RelationshipGraph } from '../sim/social/Relationships.ts';
@@ -1601,11 +1601,19 @@ export class Hud {
   private corpseRows(observer: Person, corpse: Corpse, sim: Simulation): string[] {
     const rows: string[] = [];
     const days = Math.floor((sim.time.tick - corpse.diedTick) / sim.config.time.ticksPerDay);
-    rows.push('<div class="hud-name">' + escapeHtml(corpseTitle(observer, corpse, sim.relationships)) + '</div>');
+    const stage = stageOf(corpse, sim.time.tick, sim.config.time.ticksPerDay);
+    rows.push('<div class="hud-name">' +
+      escapeHtml(corpseTitle(observer, corpse, sim.relationships, stage)) + '</div>');
     rows.push('<div class="hud-sub">' +
       (days > 0 ? t('lying here {n}d', { n: days }) : t('died today')) + '</div>');
-    rows.push('<div class="hud-sub">' +
-      (corpse.wounded ? t('The body bears wounds.') : t('No wound on the body.')) + '</div>');
+    // Wounds read on flesh, not on bones or on a body cut up past knowing.
+    if (stage !== 'bones' && !corpse.dismembered) {
+      rows.push('<div class="hud-sub">' +
+        (corpse.wounded ? t('The body bears wounds.') : t('No wound on the body.')) + '</div>');
+    }
+    if (!corpse.dismembered && corpse.dismemberWork > 0) {
+      rows.push('<div class="hud-sub">' + t('Somebody has begun to cut it up.') + '</div>');
+    }
     return rows;
   }
 
@@ -1815,7 +1823,8 @@ function panelTitle(observer: Person, selection: Selection, sim: Simulation): st
     case 'building': return t(selection.building.def.label);
     case 'tree': return t(selection.tree.def.label);
     case 'pile': return t('Dropped goods');
-    case 'corpse': return corpseTitle(observer, selection.corpse, sim.relationships);
+    case 'corpse': return corpseTitle(observer, selection.corpse, sim.relationships,
+      stageOf(selection.corpse, sim.time.tick, sim.config.time.ticksPerDay));
     case 'inscription': return t(selection.inscription.def.label);
     case 'animal': return t(selection.animal.label);
   }
@@ -1986,9 +1995,18 @@ function escapeHtml(value: string): string {
  * the way `knowledgeOfPerson` names the living.
  */
 export function corpseTitle(
-  observer: Person, corpse: Corpse, relationships: Simulation['relationships']
+  observer: Person, corpse: Corpse, relationships: Simulation['relationships'],
+  stage: CorpseStage
 ): string {
-  return t('The body of {name}', {
-    name: knowledgeOfPerson(observer, corpse.person, relationships).displayName,
-  });
+  if (corpse.dismembered) return t('What is left of somebody');
+  if (stage === 'bones') return t('Bones');
+  if (stage === 'fresh') {
+    return t('The body of {name}', {
+      name: knowledgeOfPerson(observer, corpse.person, relationships).displayName,
+    });
+  }
+  const who = corpseIdentity(observer, corpse, relationships, stage);
+  return who.identified
+    ? t('The body of {name}', { name: who.name })
+    : t('A body, too far gone to know');
 }

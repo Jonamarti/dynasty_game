@@ -276,9 +276,24 @@ export function availableActions(
     case 'building': return buildingActions(actor, target.building!, ctx);
     case 'inscription': return recordActions(actor, target.inscription!);
     case 'ground': return groundActions(actor, target, ctx);
-    // M11 phase 16a: a body is something to look at. What can be done to one
-    // arrives with 16b, in the same commit as the verbs that do it.
-    case 'corpse': return [];
+    // M11 phase 16b: what can be done to a body, besides looking at it.
+    case 'corpse': return [
+      {
+        id: 'dismember',
+        label: t('Cut up the body'),
+        icon: '\u{1FA93}',
+        enabled: !target.corpse!.dismembered,
+        reason: target.corpse!.dismembered ? t('There is nothing left to know it by') : undefined,
+        hostile: true,
+      },
+      {
+        id: 'drag',
+        label: t('Drag it to the water'),
+        icon: '\u{1F30A}',
+        enabled: true,
+        hostile: true,
+      },
+    ];
   }
 }
 
