@@ -1494,7 +1494,7 @@ export class Simulation {
       // must cross the same property boundary here or clicking an item would
       // bypass the rule obeyed by walking to the store.
       this.social.emit('trespass', person, null, 0.5, this.time.tick,
-        this.peopleHash, this.config.sightRadius);
+        this.peopleHash, this.config.sightRadius, true, store.ownerBandId);
       if (!access.allowed) {
         this.lastRefusal = explainPropertyUse(this.player ?? person, access, this.relationships);
         telemetry.count('property_use_stopped');

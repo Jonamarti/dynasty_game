@@ -279,6 +279,14 @@ export class SocialSystem {
    * rule that nothing is known unless it is seen or told applies to them too.
    * Pass `false` and the subject learns only by being an actual witness
    * within `sightRadius`, exactly like anybody else.
+   *
+   * `ownerBandId`, M11 phase 14e, is the band a building belongs to, for a
+   * deed against property rather than a person — a theft from a store, a
+   * trespass, a sabotage. Those have no target, so the cross-band nudge below
+   * never saw them: wrecking a neighbour's hut cost nothing between the two
+   * peoples, whoever watched. Now it does, but only when somebody of the
+   * owning band saw it — the owner's rule — and once per deed, never once per
+   * witness.
    */
   emit(
     type: EventType,
@@ -288,7 +296,8 @@ export class SocialSystem {
     tick: number,
     peopleHash: SpatialHash<Person>,
     sightRadius: number,
-    notifyTarget = true
+    notifyTarget = true,
+    ownerBandId?: number
   ): SocialEvent {
     const event: SocialEvent = {
       id: nextEventId++,
@@ -318,8 +327,10 @@ export class SocialSystem {
     if (target && notifyTarget) this.absorb(target, event, actor, true, 1, null, targetBandId);
 
     let witnesses = 0;
+    let ownerSaw = false;
     for (const bystander of peopleHash.queryRadius(actor.x, actor.y, sightRadius)) {
       if (!bystander.alive) continue;
+      if (bystander.bandId === ownerBandId && bystander.id !== actor.id) ownerSaw = true;
       if (bystander.id === actor.id) continue;
       if (bystander.id === target?.id) {
         // Already absorbed above as the victim; do not count them twice. But
@@ -353,6 +364,14 @@ export class SocialSystem {
       this.bandRelations.add(
         actor.bandId, target.bandId,
         DEED_WEIGHT[type] * (0.5 + event.magnitude * 0.5) * CROSS_BAND_DEED_SCALE);
+    } else if (!target && ownerSaw && ownerBandId !== undefined && ownerBandId !== actor.bandId) {
+      // M11 phase 14e: see `ownerBandId` above. The same formula as a deed
+      // against a person, so a wrecked hut and a beating weigh on the two
+      // peoples in the proportions `DEED_WEIGHT` already sets between them.
+      this.bandRelations.add(
+        actor.bandId, ownerBandId,
+        DEED_WEIGHT[type] * (0.5 + event.magnitude * 0.5) * CROSS_BAND_DEED_SCALE);
+      telemetry.count('property_deed_seen_by_owner');
     }
     return event;
   }

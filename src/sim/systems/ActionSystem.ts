@@ -1093,13 +1093,15 @@ export class ActionSystem {
     const access = mayUse(person, building, ctx);
     if (access.ours) return true;
     if (!access.allowed) {
-      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius,
+        true, building.ownerBandId);
       telemetry.count('property_use_stopped');
       this.abandon(person, 'property_guarded', ctx);
       return false;
     }
     if (!person.propertyUseNoted) {
-      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius);
+      ctx.social.emit(event, person, null, 0.5, ctx.tick, ctx.peopleHash, ctx.sightRadius,
+        true, building.ownerBandId);
       telemetry.count('property_used_unseen');
       person.propertyUseNoted = true;
     }
