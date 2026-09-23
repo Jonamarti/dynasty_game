@@ -50,6 +50,13 @@ export class Corpse {
   dismemberWork = 0;
   /** Cut up past knowing: nobody can say whose it was. */
   dismembered = false;
+  /**
+   * M11 phase 16c. Who has found this body, so each finds it once, and the
+   * one `body_found` event every finding of it shares — see
+   * `SocialSystem.findBody`.
+   */
+  readonly foundBy = new Set<number>();
+  foundEventId: number | null = null;
 
   constructor(person: Person, tick: number, wounded: boolean) {
     this.id = nextCorpseId++;

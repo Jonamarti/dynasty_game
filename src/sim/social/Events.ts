@@ -42,6 +42,11 @@ import { t } from '../../i18n/i18n.ts';
 export const EVENT_TYPES = [
   'gift', 'share_food', 'help', 'teach', 'slander', 'praise', 'trade',
   'theft', 'trespass', 'sabotage', 'assault', 'murder', 'threaten',
+  // M11 phase 16c. Not a deed — nobody did anything — but news, and news is
+  // what this table carries: somebody's body was found. Its actor is the
+  // dead, so that the story is *about* them; it moves nobody's opinion of
+  // anybody (`DEED_WEIGHT` 0) and it is told as eagerly as a killing.
+  'body_found',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -106,6 +111,8 @@ export const DEED_WEIGHT: Record<EventType, number> = {
   // hidden the way a theft is — a threat is made in the open, to the
   // victim's face, and everyone who sees it knows exactly what it was.
   threaten: -18,
+  // M11 phase 16c. Finding a body is not something anybody did to anybody.
+  body_found: 0,
 };
 
 /**
@@ -133,6 +140,10 @@ export const DEED_SALIENCE: Record<EventType, number> = {
   assault: 0.85,
   murder: 1,
   threaten: 0.8,
+  // As eagerly told as a killing: a body found is the first thing anybody
+  // says to the next person they meet, and it is how the rest of a band, a
+  // widow among them, comes to know somebody is dead at all.
+  body_found: 0.95,
 };
 
 /** Being on the receiving end matters far more than watching from the treeline. */
@@ -148,6 +159,7 @@ export type Norms = Record<EventType, number>;
 export const DEFAULT_NORMS: Norms = {
   gift: 1, share_food: 1, help: 1, teach: 1, slander: 1, praise: 1, trade: 1,
   theft: 1, trespass: 1, sabotage: 1, assault: 1, murder: 1, threaten: 1,
+  body_found: 1,
 };
 
 /**
@@ -193,5 +205,6 @@ export function describeEvent(
     case 'assault': return t('{actor} attacked {target}', who);
     case 'murder': return t('{actor} killed {target}', who);
     case 'threaten': return t('{actor} threatened {target}', who);
+    case 'body_found': return t('{actor} was found dead', who);
   }
 }

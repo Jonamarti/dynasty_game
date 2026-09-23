@@ -111,3 +111,67 @@ describe('what time and a blade do to a body', () => {
     expect(sim.corpsesById.has(body.id)).toBe(false);
   });
 });
+
+// M11 phase 16c.
+describe('finding a body', () => {
+  /** A married couple, one of whom is about to die far from the other. */
+  function aCouple(): { sim: Simulation; dead: import('../entities/Person.ts').Person;
+    widow: import('../entities/Person.ts').Person } {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const [a, b] = sim.livingPeople().filter(p => !p.isPlayer && !p.isChild && p.bandId === 0);
+    a!.spouseId = b!.id;
+    b!.spouseId = a!.id;
+    a!.x = 5; a!.y = 5;
+    b!.x = 55; b!.y = 55;
+    return { sim, dead: a!, widow: b! };
+  }
+
+  it('widows nobody until they know', () => {
+    const { sim, dead, widow } = aCouple();
+    dead.die('old age');
+    sim.step();
+    expect(widow.spouseId).toBe(dead.id);
+  });
+
+  it('widows the one who finds the body, and gives them the story', () => {
+    const { sim, dead, widow } = aCouple();
+    dead.die('old age');
+    sim.step();
+    const body = sim.corpses[0]!;
+    // Walk her over to it, and let the day turn.
+    widow.x = body.x + 2;
+    widow.y = body.y;
+    const toDay = sim.config.time.ticksPerDay - (sim.time.tick % sim.config.time.ticksPerDay) + 1;
+    for (let i = 0; i < toDay; i++) {
+      widow.x = body.x + 2;
+      widow.y = body.y;
+      widow.targetX = widow.x;
+      widow.targetY = widow.y;
+      sim.step();
+    }
+    expect(widow.spouseId).toBeNull();
+    expect(widow.memory.all().some(m => m.type === 'body_found' && m.actorId === dead.id)).toBe(true);
+  });
+
+  it('says nothing about whose it was when all that is left is remains', () => {
+    const { sim, dead, widow } = aCouple();
+    dead.die('old age');
+    sim.step();
+    const body = sim.corpses[0]!;
+    body.dismembered = true;
+    widow.x = body.x + 2;
+    widow.y = body.y;
+    const toDay = sim.config.time.ticksPerDay - (sim.time.tick % sim.config.time.ticksPerDay) + 1;
+    for (let i = 0; i < toDay; i++) {
+      widow.x = body.x + 2;
+      widow.y = body.y;
+      widow.targetX = widow.x;
+      widow.targetY = widow.y;
+      sim.step();
+    }
+    expect(body.foundBy.has(widow.id)).toBe(true);
+    expect(widow.spouseId).toBe(dead.id);
+    expect(widow.memory.all().some(m => m.type === 'body_found')).toBe(false);
+  });
+});

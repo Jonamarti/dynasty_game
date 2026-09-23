@@ -335,6 +335,9 @@ export class SocialSystem {
     // victim standing there to know it. See `notifyTarget` above.
     const targetBandId = target?.bandId ?? null;
     if (target && notifyTarget) this.absorb(target, event, actor, true, 1, null, targetBandId);
+    // M11 phase 16c: `absorb` skips the actor, so somebody who kills their
+    // own husband or wife knows it without being told.
+    if (type === 'murder' && target && actor.spouseId === target.id) actor.spouseId = null;
     // M11 phase 15b: the victim of a theft saw who did it, whoever else did.
     if (target && notifyTarget) noteCaught(target, actor, type, tick);
 
@@ -399,6 +402,27 @@ export class SocialSystem {
   }
 
   /**
+   * `finder` comes upon the body of `dead` — M11 phase 16c. One event per body
+   * (`eventId`, created on the first finding and handed back to be kept on
+   * the corpse), so a second finder and somebody told by the first hold the
+   * same story, and `Memory` never records it twice. Returns the event's id.
+   */
+  findBody(finder: Person, dead: Person, eventId: number | null, x: number, y: number, tick: number): number {
+    const event: SocialEvent = {
+      id: eventId ?? nextEventId++,
+      type: 'body_found',
+      actorId: dead.id,
+      targetId: null,
+      x, y, tick,
+      magnitude: 1,
+      witnesses: 0,
+    };
+    this.absorb(finder, event, dead, true, 1, null, null);
+    telemetry.count('body_found');
+    return event.id;
+  }
+
+  /**
    * One person takes a deed on board: remembers it, and revises their opinion
    * of whoever did it.
    */
@@ -412,6 +436,16 @@ export class SocialSystem {
     targetBandId: number | null
   ): void {
     if (!observer.memory.record(event, firsthand, confidence, sourceId)) return;
+    // M11 phase 16c: a husband or a wife is widowed when they come to know
+    // the other is dead — by finding the body, by being told it was found,
+    // or by seeing the killing — and not a tick before. Until then they are
+    // still married to somebody who is not coming back, and do not court.
+    if (observer.spouseId !== null &&
+      ((event.type === 'body_found' && event.actorId === observer.spouseId) ||
+        (event.type === 'murder' && event.targetId === observer.spouseId))) {
+      observer.spouseId = null;
+      telemetry.count(firsthand ? 'widowed_by_seeing' : 'widowed_by_word');
+    }
     if (observer.id === actor.id) return;
     this.introduce(observer, actor);
     // M11 phase 14a. After `record`, so only news frightens anybody: a story

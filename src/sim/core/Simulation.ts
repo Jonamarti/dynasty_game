@@ -41,11 +41,11 @@ import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
 import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
 import { isHeld } from '../social/Defence.ts';
-import { knowledgeOfPerson } from '../social/Knowledge.ts';
+import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
-import { Corpse, resetCorpseIds, WOUNDS_SHOW_FOR, GONE_AFTER } from '../entities/Corpse.ts';
+import { Corpse, resetCorpseIds, stageOf, WOUNDS_SHOW_FOR, GONE_AFTER } from '../entities/Corpse.ts';
 import {
   Animal, resetAnimalIds, SPECIES, SPECIES_DEFS, type Species,
 } from '../entities/Animal.ts';
@@ -887,10 +887,11 @@ export class Simulation {
       }
     }
 
-    if (person.spouseId !== null) {
-      const widow = this.peopleById.get(person.spouseId);
-      if (widow) widow.spouseId = null;
-    }
+    // M11 phase 16c: the widow is *not* told here. This cleared her
+    // `spouseId` on the tick of the death, so the wife of a man killed in a
+    // clearing nobody saw could be courted the next day without anybody
+    // having said a word to her. She is widowed when she knows: see
+    // `SocialSystem.absorb` and `findBodies`.
 
     if (person.isPlayer) {
       this.succession = { died: person, heir };
@@ -1196,6 +1197,37 @@ export class Simulation {
     person.clearTarget();
     person.forgetPlans();
     person.action = 'idle';
+  }
+
+  /**
+   * Once a day, whoever has a body in sight finds it — M11 phase 16c. Once
+   * each, and deterministic: it is a question of where people are standing.
+   *
+   * What they find depends on what they can tell. A fresh body is somebody,
+   * whether the finder knew them or not — the way a stranger seen stealing
+   * is remembered as that stranger — and the finding becomes a story about
+   * them (`body_found`) that the finder carries and tells. One gone over past
+   * the finder's knowing, bones, or a body cut up is only remains: found, and
+   * about nobody.
+   */
+  private findBodies(): void {
+    const perDay = this.config.time.ticksPerDay;
+    for (const corpse of this.corpses) {
+      const stage = stageOf(corpse, this.time.tick, perDay);
+      for (const finder of this.peopleHash.queryRadius(corpse.x, corpse.y, this.config.sightRadius)) {
+        if (!finder.alive || finder.isChild || corpse.foundBy.has(finder.id)) continue;
+        corpse.foundBy.add(finder.id);
+        const knows = stage === 'fresh' && !corpse.dismembered
+          ? true
+          : corpseIdentity(finder, corpse, this.relationships, stage).identified;
+        if (!knows) {
+          telemetry.count('remains_found');
+          continue;
+        }
+        corpse.foundEventId = this.social.findBody(
+          finder, corpse.person, corpse.foundEventId, corpse.x, corpse.y, this.time.tick);
+      }
+    }
   }
 
   /** Takes a body out of the world: sunk, or scattered by the years. */
@@ -3013,6 +3045,7 @@ export class Simulation {
       // See `sabotageCandidatesByBand`'s own comment for why this is cached
       // at all and why once a day is the right cadence for it.
       this.sabotageCache = this.sabotageCandidatesByBand();
+      this.findBodies();
       // M11 phase 16b: bones long enough on the ground are scattered, and the
       // body leaves the world. See `GONE_AFTER`.
       const gone = this.corpses.filter(c =>
