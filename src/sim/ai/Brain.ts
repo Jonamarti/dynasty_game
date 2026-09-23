@@ -54,6 +54,7 @@ import {
 } from '../social/Fear.ts';
 import {
   isCaptive, isEscapee, captorWatching, ESCAPE, ESCAPE_HOME, HOME_REACHED, CAPTURE_OVER_PREDATION,
+  RAID_CAPTURE,
 } from '../social/Captivity.ts';
 import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import {
@@ -1525,9 +1526,11 @@ export class Brain {
     if (warnScore > 0) add('warn', warnScore);
 
     // --- Taking captives -------------------------------------------------------
-    // M11 phase 15d, the raid's way into captivity: somebody carrying a rope,
-    // among a people this one is at odds with, who finds one of them
-    // defenceless. The predation route's own appeal (`predationAppeal`), so
+    // M11 phase 15d. Two routes; the third way in, capture in the act, is the
+    // witness's ladder above.
+    //
+    // The first: somebody carrying a rope, among a people this one is at odds
+    // with, who finds one of them defenceless. The predation route's own appeal (`predationAppeal`), so
     // the same victim is weighed the same way, raised by
     // `CAPTURE_OVER_PREDATION` — with a rope in hand a captive is worth more
     // than a beating, and the capture displacing the blow is what keeps this
@@ -1548,19 +1551,66 @@ export class Brain {
         }
       }
     }
+    // The second, the raid's: a raider on the people they came for takes
+    // whoever the party can overpower between them — see `RAID_CAPTURE`. The same nerve test as
+    // holding one's own, counting the raiders standing by. **No rope of
+    // their own needed**: whoever can, holds, and whichever of the party has
+    // a rope ties (the bind rung above). Measured: gated on the holder's own
+    // rope like the other two routes, `lean`'s twelve raids offered it not
+    // once.
+    if (!person.isChild && person.captiveOf === null && person.raidingBandId !== null &&
+      ctx.time.tick < person.raidingUntil && !pressedByNeed(person, ctx.needs.workLimits)) {
+      const tick = ctx.time.tick;
+      const raided = person.raidingBandId;
+      const target = this.pickBest(neighbours.filter(other =>
+        other.bandId === raided && !other.isChild && !isHeld(other, tick) &&
+        ctx.relationships.kinship(person.id, other.id) === 0
+      ), other => -person.distanceTo(other));
+      if (target) {
+        const raiders = neighbours.filter(other =>
+          other.raidingBandId === raided && tick < other.raidingUntil &&
+          other.distanceTo(target) <= 6).length;
+        if (fightingPower(person) * (1 + raiders * 0.5) >= fightingPower(target) * RESTRAIN_NERVE) {
+          const score = RAID_CAPTURE * this.proximityBonus(person, target, ctx.sightRadius);
+          if (score > restrainScore) {
+            restrainScore = score;
+            restrainee = target;
+            telemetry.count('raid_capture_offered');
+          }
+        }
+      }
+    }
     if (restrainScore > 0) add('restrain', restrainScore);
 
     // --- Patrol ------------------------------------------------------------------
-    // M11 phase 15e. A guard walks the band's ground. The round is a fixed
-    // walk, not a search: the point is chosen from the day and the guard's own
-    // id by the golden angle, so successive rounds spread around the camp and
-    // two guards walk different arcs — no draw, because nothing about a patrol
-    // is chance, and a draw here would move every stream after `actionRng`.
+    // M11 phase 15e. A guard walks the band's ground — past its own
+    // buildings, stores first, because that is where a thief or a saboteur
+    // comes. **Measured**: the first round was a ring at half the territory's
+    // radius, and `guards-see` failed on three of the four scenarios with
+    // guards in them — a guard out on the ring found strangers no more often
+    // than anybody working near camp, because strangers came *to* the camp.
+    //
+    // The round is a fixed walk, not a search: which building, or which point
+    // of the ring for a band with none, comes from the time and the guard's
+    // own id, so rounds spread and two guards walk different ones — no draw,
+    // because nothing about a patrol is chance and a draw here would move
+    // every stream after `actionRng`.
     if (person.job === 'guard' && !person.isChild && person.captiveOf === null &&
       !pressedByNeed(person, ctx.needs.workLimits)) {
       const home = ctx.homes?.get(person.bandId);
       if (home) {
         const round = Math.floor(ctx.time.tick / PATROL_LINGER) + person.id * 7;
+        const own = ctx.buildings.filter(b =>
+          b.ownerBandId === person.bandId && b.complete && !b.ruined &&
+          ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY));
+        if (own.length > 0) {
+          own.sort((a, b) => (b.def.storage > 0 ? 1 : 0) - (a.def.storage > 0 ? 1 : 0) || a.id - b.id);
+          const stores = own.filter(b => b.def.storage > 0).length;
+          // Every other round at a store, when there is one.
+          const pool = stores > 0 && round % 2 === 0 ? own.slice(0, stores) : own;
+          const at = pool[round % pool.length]!;
+          patrolPoint = { x: at.centerX, y: at.centerY };
+        }
         for (let k = 0; k < 6 && !patrolPoint; k++) {
           const angle = (round + k) * 2.399963;
           const x = home.x + Math.cos(angle) * TERRITORY_RADIUS * PATROL_REACH;

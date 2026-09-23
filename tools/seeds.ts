@@ -48,6 +48,11 @@ interface SeedResult {
   /** M11 phase 14's measures; see `ConflictWatch`. */
   conflict: ConflictWatch;
   murders: number;
+  captives: number;
+  escaped: number;
+  cameHome: number;
+  intervened: number;
+  seenByOwner: number;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -121,6 +126,13 @@ function runSeed(scenarioName: string, seed: string, steps: number): SeedResult 
     transmitted,
     conflict,
     murders: counts.event_murder ?? 0,
+    // M11 phase 15: captivity and the witness's ladder, read here rather than
+    // from one run because a capture is a handful of events a world at most.
+    captives: counts.taken_captive ?? 0,
+    escaped: counts.escaped ?? 0,
+    cameHome: counts.captive_came_home ?? 0,
+    intervened: counts.intervened ?? 0,
+    seenByOwner: counts.property_deed_seen_by_owner ?? 0,
   };
 }
 
@@ -221,6 +233,17 @@ function main(): void {
     (blows === 0 ? 'n/a' : ((near / blows) * 100).toFixed(0) + '%') + ' near either camp · ' +
     sum(r => r.murders) + ' murders · peoples drifted apart after incidents in ' + drifted + '/' +
     drifts.length + ' seeds (mean ' + (Number.isNaN(meanDrift) ? 'n/a' : meanDrift.toFixed(1)) + ' tiles)'
+  );
+  // M11 phase 15's gate, pooled for the reason above: `captives-are-taken`
+  // is a single event on a single run, and the cohort is where it can be
+  // read at all.
+  const withCaptives = results.filter(r => r.captives > 0).length;
+  const seen = sum(r => r.seenByOwner);
+  console.log(
+    '  DEFENCE ' + sum(r => r.intervened) + ' interventions against ' + seen +
+    ' property deeds an owner saw · ' + sum(r => r.captives) + ' taken captive in ' +
+    withCaptives + '/' + results.length + ' seeds, ' + sum(r => r.escaped) + ' escaped, ' +
+    sum(r => r.cameHome) + ' came home'
   );
   console.log('  ' + ((Date.now() - started) / 1000).toFixed(1) + 's');
   console.log('');

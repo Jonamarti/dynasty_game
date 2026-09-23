@@ -86,3 +86,18 @@ export const HOME_REACHED = 18;
  * route from adding to the killing.
  */
 export const CAPTURE_OVER_PREDATION = 1.3;
+
+/**
+ * How strongly a raider with a rope is moved to take somebody of the people
+ * they came to raid — the raid's own way into captivity, which does not wait
+ * for a defenceless victim the way `CAPTURE_OVER_PREDATION` does: a raider
+ * takes whoever the party can overpower between them. The same order as the
+ * witness's hold (`CAUGHT_RESTRAIN`), so on enemy ground it is the thing on a
+ * raider's mind.
+ *
+ * **Measured, and the reason it exists**: with captives coming only through
+ * predation, `captives-are-taken` failed on `lean`, `millers` and `feasts` —
+ * capture inherited predation's rarity by construction, and the organised
+ * raid the plan names as captivity's first source had no path to it at all.
+ */
+export const RAID_CAPTURE = 1.4;

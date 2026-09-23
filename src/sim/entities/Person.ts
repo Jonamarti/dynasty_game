@@ -457,6 +457,14 @@ export class Person {
   captiveOf: number | null = null;
   captiveFrom: number | null = null;
   /**
+   * The people this person went raiding against, and until when — M11 phase
+   * 15d's raid source of captives. Set by `BandSystem.considerRaid` on each
+   * member of a grudge raid's party who answered; while it holds, `Brain`
+   * reads anybody of that people they can overpower as somebody to take.
+   */
+  raidingBandId: number | null = null;
+  raidingUntil = -9999;
+  /**
    * When this person last tried to hold somebody and lost the struggle. The
    * ladder does not try the same rung twice on the same offence: the next
    * thing to do is call for help.

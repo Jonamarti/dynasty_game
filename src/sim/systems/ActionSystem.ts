@@ -3508,6 +3508,7 @@ export class ActionSystem {
     // roll a demand made with menace gets; the one who does not is who the
     // ladder's next rung is for.
     const answering = caughtOffender(person, ctx.tick) === other.id;
+    if (answering) telemetry.count('intervened');
     ctx.social.emit('threaten', person, other, 1, ctx.tick, ctx.peopleHash, ctx.sightRadius,
       true, undefined, !answering);
     person.warnedOffId = other.id;
@@ -3614,6 +3615,9 @@ export class ActionSystem {
       return;
     }
 
+    // The ladder's hold, as against a capture or an order: counted for
+    // `the-watched-intervene`.
+    if (caughtOffender(person, ctx.tick) === other.id) telemetry.count('intervened');
     let won = isHeld(other, ctx.tick);
     if (!won) {
       let mine = 0;
@@ -3673,6 +3677,7 @@ export class ActionSystem {
     }
     person.calledForHelpTick = ctx.tick;
     telemetry.count('help_called');
+    if (caughtOffender(person, ctx.tick) !== null) telemetry.count('intervened');
     telemetry.count('help_heard', heard);
     ctx.onCalledForHelp(person);
     this.finish(person);

@@ -6,6 +6,115 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 15: defending what is yours, and captivity
+
+The owner's notes 6 and 9, and the old phase 11d. Every commit measured at
+twenty seeds of `lean` and `century` (`sim:seeds --seeds 20`, which since the
+gate also prints a DEFENCE line). Survival / collapses below a quarter /
+murders / share of cross-band blows within twenty tiles of either camp:
+
+| commit | `lean` | `century` |
+|---|---|---|
+| before phase 15 (14f) | 52.8% · 4 · 400 · 43% | 72.1% · 1 · 397 · 41% |
+| 15a.1 `watched`, not `allowed` | bit-identical | bit-identical |
+| 15a.2 a watched use happens | 53.9% · 3 · 366 · 44% | 77.1% · 2 · 332 · 45% |
+| 15b.1 the caught pointer | bit-identical | bit-identical |
+| 15b.2 warned off, struck if still at it | 50.5% · 3 · 392 · 45% | 71.6% · 3 · 387 · 43% |
+| 15b.3 `restrain` | 51.4% · 4 · 411 · 40% | 70.2% · 3 · 387 · 42% |
+| 15b.4 call for help | 45.1% · 8 · 430 · 39% | 73.9% · 2 · 364 · 43% |
+| 15c rope and `bind` (and the hold that lasts) | 52.0% · 5 · 365 · 43% | 78.7% · 2 · 326 · 47% |
+| 15d captivity | 52.3% · 5 · 367 · 43% | 76.0% · 2 · 360 · 47% |
+| 15e the guard | 52.0% · 5 · 367 · 43% | 78.6% · 2 · 341 · 48% |
+| 15f `DECISIVE_GAP` as a ratio | 52.8% · 4 · 383 · 40% | 77.4% · 2 · 333 · 44% |
+| gate: raid captives, guard's round | 49.7% · 5 · 415 · 38% | 77.0% · 2 · 349 · 42% |
+
+15b.4's `lean` was taken again at forty seeds with both builds side by side
+(49.3% · 10 collapses before, 47.5% · 15 after); everything else is inside
+what twenty seeds can resolve.
+
+**15a — being seen stops being a veto** (note 6). Phase 4 shipped the
+reverse of its own plan: `mayUse` returned `allowed: false` whenever an owner
+could see, and `useProperty` ended the action with `property_guarded`, so a
+watched store was as impossible to use as under the membership test phase 4
+replaced. `PropertyUse` now says `watched`; `useProperty` and the Kit's
+`storeItem` let the use happen and emit the deed, which the witnesses take
+into memory — the cost the note asks for. A use begun unseen is announced once
+more when an owner walks in on it. The player is warned, not refused
+(`Simulation.watchedUses`, "Seen: …", the witness named only as the player
+knows them), and the radial menu offers a watched verb with an eye. The
+scorer still never *plans* a watched use, and station crafting still refuses
+when watched, because it records no deed at all (see `bugs.md`).
+
+**15b — the witness's ladder** (note 9), new module `sim/social/Defence.ts`.
+1. *Inert writer.* `emit`'s witness loop, and the victim, note who took,
+   used or wrecked what belongs to their own people (`caughtId`,
+   `CAUGHT_MEMORY` half a day).
+2. *The outsider.* Warned off with 14b's `warn`, no fear needed; struck if
+   still at it once the grace is up. Two shapes were measured and dropped:
+   striking anybody caught and still in sight (`century` 64.6%, 427 murders,
+   violence moving away from the camps), and counting the warning against the
+   two peoples' standing (`lean` 45.6%) — sabotage soured standing, standing
+   scores sabotage. A warning that answers a deed no longer nudges standing
+   (`emit`'s `bandNudge`), and an offender still at it gives way or not on
+   `menaceOver`'s roll.
+3. *One of your own.* `restrain`: a struggle on `actionRng`, everybody
+   grappling that person at once counting, and a hold nobody is hurt by, which
+   the holder keeps up tick by tick. Not while a need would break it off —
+   without that gate the scorer offered 581 holds for 21 won.
+4. *Call for help.* A shout within `EARSHOT`: the hearers learn that somebody
+   called, not why; whoever answers is told on arrival, as hearsay.
+
+**15c — rope, and `bind`.** `rope` from sticks or from thatch, both under
+`cordage` (the owner's decision), `keep: 1`; the verb that spends it in the
+same commit. Tied up is its own state that outlasts the hold. **A defect in
+15b.3 found here**: a holder had no timer and no order, so `Simulation.step`
+re-planned them at their next think and every hold lasted only until then;
+every tying-up in the matrix failed with `not_held`.
+
+**15d — captivity** (the old 11d), `sim/social/Captivity.ts`. A captive is
+moved into the captor band, which makes the forced labour cost nothing new;
+never chief, never at war, never a voice in rebellion, never cast out, and
+their household stays the one they were taken from. In through a rope from
+somebody of another band; out by slipping away with nobody of the captors in
+sight — `mayUse`'s mirror — and home by `considerAdoption`, back into their
+own household. **A latent defect**: `considerAdoption` read a list of
+outcasts gathered before the band loop, so two camps could adopt the same
+wanderer on one day; `band.test`'s adoption case passed only through it.
+
+**15e — the border guard** (O5). A sixth job, `guard`, walking a round of the
+band's own buildings, stores first (`patrol`), leaning to `warn` and
+`restrain`; not a sensor. A guard's warning reassures those of their own who
+see it.
+
+**15f — `DECISIVE_GAP`.** Adult fighting power no longer sits flat at 0.35
+(11a gave `fight` trainers): measured, the old absolute gap made 13.4% of
+pairs of adults in `century` read each other as prey. Now a ratio
+(`EVEN_MATCH` 1.3, `DECISIVE_SPAN` 1.4): 4.1%, all of them the old and the
+hurt.
+
+**The gate.** `the-watched-intervene` and `captives-are-taken` were run
+against the build before phase 15 (tools copied over, reading counters the
+old build never wrote). `the-watched-intervene` fails on every scenario it
+applies to there — `century`, `craft`, `scribes`, `millers`, `feasts`,
+`lean`, 0 interventions against 40 to 645 deeds an owner saw — and passes on
+all six after (5% floor; 14 to 79 interventions). `captives-are-taken` fails
+where it applies on the old build (`century`, `millers`: 0 captives over 349
+and 105 blows) and passes after on `century`, `millers` and `lean`. **`guards-see` was not shipped.** As "a
+guard's look finds a stranger half again as often" it discriminated nothing
+against a build with the job and no patrol (`herders` 1.74 without, 1.93
+with; `labour` 1.00 and 1.11); as "a guard is among the owners who see a
+property deed" it had nothing to read — the four worlds that hand out guards
+saw 0 to 5 such deeds a run. Two mechanisms were changed by the gate rather
+than the checks: the guard's round moved from a ring at half the territory's
+radius to the band's own buildings (the ring found strangers no more often
+than anybody working near camp), and the organised raid — the source of
+captives the plan names first — was wired in (`raidingBandId`,
+`RAID_CAPTURE`, and no rope needed by the one who holds): with captives only
+through predation, `captives-are-taken` failed on `lean`, `millers` and
+`feasts`. **Captivity is still rare and short** — the cohort: `lean` 2
+captives in 1 seed of 20, `century` 7 in 3 of 20, and every one of them
+escaped. See `bugs.md`.
+
 ## 2026-09-23 — M11 phase 14b-14f: fear is read — company, range, flight, defence, territory, raids, the face
 
 Phase 14a gave fear writers; these commits give it readers, one at a time,

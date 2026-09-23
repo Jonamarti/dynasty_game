@@ -53,6 +53,13 @@ import { ITEMS } from '../entities/Item.ts';
  */
 const EXILE_QUORUM = 4;
 
+/**
+ * How long a raid party goes on reading the victims as people to take, in
+ * ticks: a day, which is about how long it takes to walk there, do what it
+ * came for and start home. M11 phase 15d.
+ */
+const RAID_CAPTURE_WINDOW = 240;
+
 /** How far a wandering outcast may be from a band's home and still be taken in. */
 const ADOPTION_RADIUS = 30;
 
@@ -1398,8 +1405,17 @@ export class BandSystem {
     let joined = 0;
     for (const member of party) {
       if (!this.fitForOrders(chief, member)) continue;
-      if (ctx.command(chief, member, verb, { buildingId: target.id })) joined++;
+      if (ctx.command(chief, member, verb, { buildingId: target.id })) {
+        joined++;
+        // M11 phase 15d: a raid is where captives come from. For a day, the
+        // victims are people to take, not only a store to empty — see
+        // `Person.raidingBandId` and `Brain`'s "Taking captives".
+        member.raidingBandId = victimId;
+        member.raidingUntil = ctx.tick + RAID_CAPTURE_WINDOW;
+      }
     }
+    chief.raidingBandId = victimId;
+    chief.raidingUntil = ctx.tick + RAID_CAPTURE_WINDOW;
     telemetry.count('raid_joined', joined);
     if (joined === 0) telemetry.count('raid_refused_outright');
 

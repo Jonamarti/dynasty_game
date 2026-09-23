@@ -2543,6 +2543,59 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ' incidents, ' + after.toFixed(1) + ' after');
   }
 
+  // M11 phase 15's gate (owner's notes 6 and 9). Each was run against the
+  // build before phase 15 and fails there; see the changelog for the numbers.
+  //
+  // The plan named a third, `guards-see`, and it is **not here, on purpose**.
+  // Written as "a guard's look finds a stranger half again as often as
+  // anybody else's", it was run against a build with the job and no `patrol`
+  // and discriminated nothing: `herders` read 1.74 with no patrol and 1.93
+  // with it, `labour` 1.00 and 1.11. Rewritten as "a guard is among the
+  // owners who see a property deed", it had nothing to read: the four worlds
+  // that hand out guards (`farmers`, `herders`, `stewards`, `labour`) saw 0 to
+  // 5 such deeds a run, and the worlds with crime never have anybody with the
+  // idea of setting one person to one task. A check that detects nothing is
+  // worse than none (`AGENTS.md`); the guard is covered in `defence.test.ts`.
+  //
+  // `the-watched-intervene`: of property deeds an owner saw (a counter that
+  // has existed since 14e, so the check is applicable on the old build too),
+  // how many the witnesses answered — warned off, held, or called for help
+  // over. Before phase 15 a witness remembered and judged and did nothing
+  // else, which is exactly what this is here to catch coming back. The floor
+  // is low on purpose: most deeds are over before anybody could step in, and
+  // the witness also has to be free to — not thirsty, not frozen, not
+  // somebody the offender would flatten.
+  const seenByOwner = tel.property_deed_seen_by_owner ?? 0;
+  const intervened = tel.intervened ?? 0;
+  if (seenByOwner < 10) {
+    skip('the-watched-intervene',
+      'only ' + seenByOwner + ' property deeds were seen by their owners; too few to say');
+  } else {
+    add('the-watched-intervene', intervened >= Math.max(1, seenByOwner * 0.05),
+      intervened + ' interventions against ' + seenByOwner + ' property deeds seen by an owner ' +
+      '(floor 5%): ' + (tel.warned_off ?? 0) + ' warnings in all, ' + (tel.restrain_won ?? 0) +
+      ' holds won, ' + (tel.help_called ?? 0) + ' calls for help');
+  }
+
+  // `captives-are-taken`: in a world with a sustained quarrel between
+  // peoples and rope-makers in it, somebody ends up a captive. Applicable on
+  // the old build by the same two facts; it had no way to take anybody.
+  // **A single event is enough to pass and none fails**, which is the
+  // fragile kind of check `AGENTS.md` warns about, and it is here because the
+  // plan names it: capture inherits predation's rarity (`Captivity.ts`), and
+  // the cohort count in `sim:seeds` is the reading to trust.
+  const captives = tel.taken_captive ?? 0;
+  if (base.conflict.blows < 100 || !sim.knownTech.has('cordage')) {
+    skip('captives-are-taken', base.conflict.blows < 100
+      ? 'only ' + base.conflict.blows + ' blows between peoples; no quarrel long enough'
+      : 'nobody here can twist a rope');
+  } else {
+    add('captives-are-taken', captives > 0,
+      captives + ' taken captive, ' + (tel.escaped ?? 0) + ' escaped, ' +
+      (tel.captive_came_home ?? 0) + ' came home, over ' + base.conflict.blows +
+      ' blows between peoples');
+  }
+
   add(
     'world-has-land',
     (base.biomes.grass ?? 0) + (base.biomes.forest ?? 0) > sim.world.width * sim.world.height * 0.08,

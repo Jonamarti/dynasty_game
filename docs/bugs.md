@@ -1,7 +1,69 @@
 # Known bugs and rough edges
 
-As of 2026-09-22. Everything here is real and reproducible; nothing here is
+As of 2026-09-23. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found shipping M11 phase 15 (defence and captivity), 2026-09-23
+
+### Captivity is rare, and never lasts
+
+At twenty seeds after the gate: `lean` took 2 captives in 1 seed of 20,
+`century` 7 in 3 of 20 — and **every captive escaped**, most of them home.
+Two reasons, both measured, and both design questions for the owner rather
+than coefficients to push:
+
+- **Nobody guards a captive.** Escape needs only that nobody of the captor
+  band is in sight (`captorWatching`), and nothing makes anybody stay in
+  sight of a captive — the guard job walks the band's buildings, not its
+  prisoners. A captive slips away at the first quiet moment. The obvious next
+  mechanism is a captive kept tied (a rope renewed by the captors) or set to
+  work beside somebody; neither is built.
+- **Only adults are taken.** Every route excludes children. Historically
+  children were the captives most often taken and kept, and allowing it would
+  multiply captures — but it is exactly the kind of thing the owner should
+  decide, not a pass.
+
+The raid is now the main way in (`RAID_CAPTURE`); predation's capture route
+fires seldom by construction, and capture in the act needs a warned offender
+still at it with a rope at hand.
+
+### `guards-see` was planned and not shipped
+
+The plan's third gate check. As "a guard's look finds a stranger half again
+as often as anybody else's", it was run against a build with the job and no
+`patrol` and discriminated nothing (`herders` 1.74 without, 1.93 with;
+`labour` 1.00 and 1.11; `stewards` 0.18 and 1.18). As "a guard is among the
+owners who see a property deed", it had nothing to read: the four scenarios
+that hand out guards — `farmers`, `herders`, `stewards`, `labour` — see 0 to
+5 such deeds a run, and the scenarios with crime (`lean`, `millers`,
+`feasts`) never have a chief with the idea of setting one person to one
+task. The guard is covered by `defence.test.ts`. What the world lacks is a
+scenario with both division of labour and theft.
+
+### A warning that answers a deed is still a threat to the one warned
+
+`doWarn` emits `threaten` at full magnitude whether it is an owner seeing off
+a thief or a stranger menaced on sight. 15b.2 stopped it counting against
+the two peoples' standing, but the warned thief still takes it as a victim
+takes a threat (opinion ×3, dread, fear). Probably right — nobody enjoys
+being told off — but it is the half of the old feedback loop that remains.
+
+### Station crafting still refuses when watched
+
+15a made every other use of a foreign building happen in front of its
+owners. Crafting at a foreign station does not pass through `useProperty`
+and emits no deed at all, so letting it run watched would make being seen
+cost nothing there; the menu still refuses it with the watcher's name. The
+fix is to route station crafting through `useProperty` — which also makes
+unwatched use of a rival's quern a trespass for the first time, so it wants
+measuring.
+
+### `jobs-bias-work` flips on single seeds
+
+Seen failing on `lean` (2 jobs handed out in the whole run), `traps` and
+`labour` at different commits of this phase, and passing at the next. The
+samples are a handful of holders; it belongs with the one- and two-event
+checks phase 17d moves to `sim:seeds`.
 
 ## Found shipping M11 phase 14 (fear), 2026-09-23
 
@@ -22,7 +84,9 @@ after. On the single `lean` seed both checks still fail. They were not tuned
 to pass (`AGENTS.md`). What still lands far from home is revenge and
 predation between people who meet while ranging, and the range filter
 (`homeRange`) only begins at a quarter of fear. Phase 15's escalation ladder
-is the next lever; measure these two again after it.
+was the next lever. **Measured after it**: `lean` 40% near a camp at twenty
+seeds (38-45% across phase 15's commits), `century` 42-48% — the ladder
+moved it no further. The two checks still fail on the single `lean` seed.
 
 ### Well-fed peoples stopped taking sides, since 14c
 
