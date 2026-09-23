@@ -6,6 +6,43 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 12b, second commit: NPCs stop losing the attacks they score from afar
+
+**The defect.** The same first-tick test the first commit removed from the
+player's order was still on every NPC's attack. `Brain` picks victims inside
+`sightRadius` (12), so every aggression it scored between nine and twelve
+tiles was `finish`ed where the attacker stood and scored again the next tick.
+It was not marginal: across twenty `lean` seeds, **40,081** attacks were lost
+this way against 6,888 blows landed — about six for every blow.
+
+**The change.** The first commit's rule for everybody: give up at the further
+of nine tiles or the start of the chase plus three, through
+`abandon('target_escaped')`. Afterwards `pursuit_abandoned` is 6 across the
+same twenty seeds.
+
+**Measured, 20 seeds** (a scratch harness counting deaths by cause, not
+committed):
+
+| | survival | collapsed | murders | blows | starved |
+|---|---|---|---|---|---|
+| `lean` before | 60.1% | 5/20 | 433 | 6,888 | 109 |
+| `lean` after | 50.4% | 6/20 | 457 | 7,129 | 159 |
+| `century` before | 32.8% | 10/20 | 745 | 9,929 | — |
+| `century` after | 37.2% | 8/20 | 716 | 9,609 | — |
+
+Across seeds, violence barely moves: most of the lost attacks were evidently
+re-scored and landed once the two came closer anyway. Survival moves ten
+points down in `lean` and four up in `century`, with per-seed swings in both
+directions of up to thirty — at or below what twenty seeds can resolve. The
+plan anticipated a fall in `lean` and ruled that the answer is phase 14, not a
+lower ceiling here; it has not been chased.
+
+In single runs the mechanism does show: `feasts` went from 114 blows to 192 and
+turned `kin-outrank-strangers` red, and `craft`'s one painting became none.
+Both are in [bugs.md](bugs.md). `millers` went from two failures to none.
+
+---
+
 ## 2026-09-23 — M11 phase 12b, first commit: an ordered attack sets off after somebody ten tiles away
 
 **The defect** (owner's note 10). `doAttack` tested `PURSUIT_LIMIT` (9) on its

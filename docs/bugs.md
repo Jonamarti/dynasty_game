@@ -8,16 +8,24 @@ speculative. Fixed defects are in [changelog.md](changelog.md).
 All scheduled in [m11_block_v_plan.md](m11_block_v_plan.md). Each entry leaves
 this list, for [changelog.md](changelog.md), in the commit that fixes it.
 
-### An NPC's attack scored from more than nine tiles away ends on its first tick
+### Two checks went red when NPC attacks stopped being lost (12b)
 
-`doAttack` tests `PURSUIT_LIMIT` (9) before `approach`, so an attack on anyone
-further than that calls `finish` without moving. The limit is meant to catch a
-quarry pulling away and instead measures where the chase started. `Brain`
-picks victims inside `sightRadius` (12), so every aggression it scores between
-nine and twelve tiles is lost this way. The player's own order was fixed in
-12b's first commit (see the changelog); the NPC route still takes the old path
-on purpose, because fixing it moves the world and is measured separately.
-Phase 12b, second commit.
+When 12b's second commit stopped NPCs losing every attack they scored between
+nine and twelve tiles, two single-run checks turned red. Neither is chased
+here, on the plan's instruction that the answer to more violence is phase 14
+rather than a lower ceiling in `doAttack`.
+
+- **`feasts` / `kin-outrank-strangers`**: household 19.3, band −26.4,
+  outsider −24.5 — people now think worse of their own band than of
+  strangers. In the same run blows landed went from 114 to 192, `attack` ticks
+  from 5,215 to 8,844 and murders from 4 to 7. That the extra blows are what
+  soured the band is likely but **not confirmed**: nothing yet splits
+  assaults by whether the two were of one band.
+- **`craft` / `pictures-are-painted`**: one painting in the previous build,
+  none now. A one-event check of the kind 17d is to deal with.
+
+Also: `lean`'s `perf-budget` read 1,993 steps/s against its floor of 2,000 in
+the same matrix — wall clock, 17d.
 
 ### M11 phase 4 shipped the reverse of its own plan
 

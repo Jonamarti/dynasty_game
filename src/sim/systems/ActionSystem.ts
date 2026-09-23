@@ -3559,10 +3559,16 @@ export class ActionSystem {
     // Give up the chase. A victim who runs must be able to get away, or fleeing
     // is theatre: attacker and quarry move at the same speed, so a pursuit that
     // never ends is a death sentence with extra steps.
-    if (quarry && person.order === 'attack') {
-      // The player's order. Measured against where the chase began, and
-      // stopped through `abandon` so the floater says the quarry got away —
-      // this used to `finish` on the first tick from ten tiles, silently.
+    //
+    // Measured against where the chase began, and stopped through `abandon`
+    // so the floater says the quarry got away. M11 phase 12b: this used to
+    // test the bare limit on the first tick and `finish`, silently — for the
+    // player an order on anyone ten tiles off ended where they stood, and for
+    // everybody else `Brain`, which picks victims inside `sightRadius` (12),
+    // lost every attack it scored between nine and twelve tiles and scored it
+    // again the next tick. In `lean` that was about six lost attacks for
+    // every blow landed.
+    if (quarry) {
       const distance = person.distanceTo(quarry);
       if (person.pursuitFrom === null) person.pursuitFrom = distance;
       if (distance > Math.max(PURSUIT_LIMIT, person.pursuitFrom + PURSUIT_SLACK)) {
@@ -3570,10 +3576,6 @@ export class ActionSystem {
         this.abandon(person, 'target_escaped', ctx);
         return;
       }
-    } else if (quarry && person.distanceTo(quarry) > PURSUIT_LIMIT) {
-      telemetry.count('pursuit_abandoned');
-      this.finish(person);
-      return;
     }
 
     const other = this.approach(person, ctx);
