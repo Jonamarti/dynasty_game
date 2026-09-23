@@ -36,6 +36,9 @@ import { conspiracyAgainst, warParty } from '../social/Factions.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
 import { t } from '../../i18n/i18n.ts';
 import type { Sightings } from '../social/Fear.ts';
+import type { BandMaps } from '../social/BandMaps.ts';
+import type { ResourceNode, ResourceKind } from '../entities/ResourceNode.ts';
+import { ITEMS } from '../entities/Item.ts';
 
 /**
  * How large a faction against somebody has to be before the band acts on it.
@@ -171,6 +174,39 @@ const RAID_GRANARY = 100;
  * that cannot be reached is not a design, it is an unshipped intention.
  */
 const RAID_FURY = -70;
+
+/**
+ * Below this standing a band will go onto another's ground for what it lacks,
+ * M11 phase 14d. Zero: not a grudge, only the absence of good terms. Two
+ * peoples who like each other trade (7b); two who do not, take.
+ */
+const NEED_RAID_STANDING = 0;
+
+/**
+ * What a band counts as "at home" when asking whether it has something: the
+ * inner half of its ground. The whole `TERRITORY_RADIUS` was measured first
+ * and never fired once across the matrix — forty tiles in every direction
+ * holds nearly everything on these islands — and the half is also where a
+ * frightened band actually works (`RANGE_FLOOR`, phase 14b). Flint a day's
+ * round trip away is flint a band does not have.
+ */
+const NEAR_GROUND = TERRITORY_RADIUS / 2;
+
+/** How far from a remembered cell's centre its patch may be found. */
+const MAP_CELL_REACH = 6;
+
+/**
+ * What a band cannot do without, and has to have on hand: sticks and flint
+ * always, clay for walls, and grain once somebody knows what to do with seed
+ * or meal. "Pedernal, barro, madera, grano" — the plan's list.
+ */
+function neededKinds(members: Person[]): ResourceKind[] {
+  const kinds: ResourceKind[] = ['sticks', 'flint', 'clay'];
+  if (members.some(m => techPower(m, 'farming') > 0 || techPower(m, 'grinding') > 0)) {
+    kinds.push('wild_grain');
+  }
+  return kinds;
+}
 
 /**
  * The most aggrieved member's opinion of the chief, below which they are
@@ -316,7 +352,7 @@ export interface BandContext {
   abandonSite: (building: Building) => void;
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
   command: (leader: Person, subordinate: Person, action: string,
-    target: { buildingId?: number }) => boolean;
+    target: { buildingId?: number; nodeId?: number }) => boolean;
   /** Assigns a job, subject to the same roll `command` uses. */
   assignJob: (leader: Person, subordinate: Person, job: JobId | null) => boolean;
   /** Moves someone out of their band of their own accord, not by exile. */
@@ -331,6 +367,14 @@ export interface BandContext {
    * band resents the strangers it saw, not the ones who were there.
    */
   sightings: Sightings;
+  /** What each band has seen of the land, M11 phase 14d. See `BandMaps`. */
+  bandMaps: BandMaps;
+  /**
+   * To find the patch a band remembers when it sends people to it. Only ever
+   * asked about a cell the band already knows holds that kind — the map says
+   * *that* it is there, the hash says which bush.
+   */
+  nodeHash: SpatialHash<ResourceNode>;
 }
 
 export class BandSystem {
@@ -357,6 +401,8 @@ export class BandSystem {
 
   /** Band names by id, refreshed at the top of `daily`, for chronicle lines. */
   private readonly bandNames = new Map<number, string>();
+  /** Each band's camp, refreshed with the names; for the raid-for-need motive. */
+  private readonly bandHomes = new Map<number, { x: number; y: number }>();
 
   daily(bands: Band[], people: Person[], ctx: BandContext): void {
     const byBand = new Map<number, Person[]>();
@@ -368,7 +414,11 @@ export class BandSystem {
     }
 
     this.bandNames.clear();
-    for (const band of bands) this.bandNames.set(band.id, band.name);
+    this.bandHomes.clear();
+    for (const band of bands) {
+      this.bandNames.set(band.id, band.name);
+      if (!band.outcast) this.bandHomes.set(band.id, { x: band.homeX, y: band.homeY });
+    }
 
     const outcastBand = bands.find(b => b.outcast);
     const outcasts = outcastBand ? byBand.get(outcastBand.id) ?? [] : [];
@@ -1289,8 +1339,10 @@ export class BandSystem {
         victimId = other;
       }
     }
-    if (victimId === null) return;
-
+    if (victimId === null) {
+      this.considerNeedRaid(band, members, chief, ctx, outcastBandId);
+      return;
+    }
     const target = this.raidTarget(band, victimId, worst > RAID_FURY, ctx);
     if (!target) {
       telemetry.count('raid_nothing_in_reach');
@@ -1400,6 +1452,83 @@ export class BandSystem {
       }
     }
     return plunder ?? damage;
+  }
+
+  /**
+   * The second reason to raid, M11 phase 14d (owner's note 7): something the
+   * band needs and does not have on its own ground, which it has *seen* on a
+   * neighbour's. Asked only when no grudge is bad enough for the first reason,
+   * so a band at war raids for the war and a band merely short of flint goes
+   * and takes some.
+   *
+   * Not a raid on stores: what is in a rival's pit is unknown and unknowable
+   * from outside, and flint does not sit in a granary. The party is sent onto
+   * the other band's ground to take the thing itself from where it grows —
+   * which is exactly where a frightened band defends (phase 14b's territorial
+   * route), so the need is what brings the two peoples face to face.
+   *
+   * The same brooding clock, quorum and party as a grudge raid, and never
+   * against a band this one is on good terms with (`NEED_RAID_STANDING`).
+   * Deterministic: which patch is chosen is the nearest known one, by a fixed
+   * scan of the map.
+   */
+  private considerNeedRaid(
+    band: Band, members: Person[], chief: Person, ctx: BandContext, outcastBandId: number | undefined
+  ): void {
+    const needed = neededKinds(members);
+    const missing = needed.filter(kind =>
+      ctx.bandMaps.known(band.id, kind, band.homeX, band.homeY, NEAR_GROUND).length === 0);
+    if (missing.length === 0) return;
+
+    let best: { node: ResourceNode; victimId: number; distance: number } | null = null;
+    for (const other of ctx.bandRelations.touching(band.id)) {
+      if (other === band.id || other === outcastBandId) continue;
+      if (ctx.bandRelations.standing(band.id, other) >= NEED_RAID_STANDING) continue;
+      const theirs = this.bandHomes.get(other);
+      if (!theirs) continue;
+      for (const kind of missing) {
+        for (const cell of ctx.bandMaps.known(band.id, kind, theirs.x, theirs.y, TERRITORY_RADIUS)) {
+          const distance = Math.hypot(cell.x - band.homeX, cell.y - band.homeY);
+          if (distance > RAID_RANGE || (best && distance >= best.distance)) continue;
+          if (!ctx.sameRegion(band.homeX, band.homeY, cell.x, cell.y)) continue;
+          const node = ctx.nodeHash.findNearest(cell.x, cell.y, MAP_CELL_REACH,
+            n => n.kind === kind && !n.depleted);
+          if (node) best = { node, victimId: other, distance };
+        }
+      }
+    }
+    if (!best) {
+      telemetry.count('raid_for_need_nowhere');
+      return;
+    }
+
+    this.raidConsidered.set(band.id, ctx.day);
+    const party = warParty(chief, members, ctx.relationships, RAID_PARTY_MAX);
+    if (party.length + 1 < RAID_QUORUM) {
+      telemetry.count('raid_never_raised');
+      return;
+    }
+    telemetry.count('raid_called');
+    telemetry.count('raid_for_need');
+    telemetry.count('raid_for_need_' + best.node.kind);
+    let joined = 0;
+    for (const member of party) {
+      if (!this.fitForOrders(chief, member)) continue;
+      if (ctx.command(chief, member, 'gather', { nodeId: best.node.id })) joined++;
+    }
+    telemetry.count('raid_joined', joined);
+    ctx.command(chief, chief, 'gather', { nodeId: best.node.id });
+
+    const what = t(ITEMS[best.node.def.itemId]?.label ?? best.node.def.itemId).toLowerCase();
+    const victim = this.bandName(best.victimId);
+    chief.chronicle.push({
+      tick: ctx.tick,
+      ageDays: chief.age,
+      text: t("led a party onto the {band}'s ground for {what}", { band: victim, what }),
+      kind: 'did',
+    });
+    ctx.onInsight(chief, t("leads a party onto the {band}'s ground for {what}", { band: victim, what }),
+      'setback');
   }
 
   /** A band's name, for a chronicle line. 'strangers' for a band that has gone. */

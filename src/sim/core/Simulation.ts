@@ -73,6 +73,7 @@ import {
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
+import { BandMaps } from '../social/BandMaps.ts';
 
 /**
  * Something somebody worked out, waiting to be reported. See
@@ -1253,6 +1254,16 @@ export class Simulation {
    * range of a camp whether or not anybody from the band was looking.
    */
   readonly sightings: Sightings = new Map();
+  /**
+   * What each band has seen of the land, M11 phase 14d — the first memory of
+   * places in the game, and the seed of M12's world map. See `BandMaps`.
+   * Created on first use, from the world's size.
+   */
+  private bandMapsStore: BandMaps | null = null;
+  get bandMaps(): BandMaps {
+    this.bandMapsStore ??= new BandMaps(this.world.width, this.world.height);
+    return this.bandMapsStore;
+  }
   private readonly sightingScratch: Person[] = [];
 
   /** Every founding band's camp, for the brain's readers of fear. */
@@ -1270,9 +1281,15 @@ export class Simulation {
       if (band.outcast) continue;
       territories.set(band.id, { bandId: band.id, homeX: band.homeX, homeY: band.homeY });
     }
+    const outcast = this.bands.find(b => b.outcast)?.id;
     sightIntruders(
       this.people, this.peopleHash, territories, TERRITORY_RADIUS, this.config.sightRadius,
-      this.time.tick, this.sightings, this.bands.find(b => b.outcast)?.id, this.sightingScratch);
+      this.time.tick, this.sightings, outcast, this.sightingScratch);
+    // The same looking-around writes what each band knows of the land.
+    for (const person of this.people) {
+      if (!person.alive || person.bandId === outcast) continue;
+      this.bandMaps.observe(person.bandId, person.x, person.y, this.config.sightRadius, this.nodeHash);
+    }
   }
 
   /** The band of no band. Created the first time anyone is cast out. */
@@ -2806,6 +2823,8 @@ export class Simulation {
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
         householdsById: this.householdsById,
         sightings: this.sightings,
+        bandMaps: this.bandMaps,
+        nodeHash: this.nodeHash,
       });
 
       this.knowledgeSystem.daily(this.people, {

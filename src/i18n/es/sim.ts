@@ -237,4 +237,6 @@ export const ES_SIM: Record<string, string> = {
   "{a} and {b} were married": "{a} y {b} se casaron",
   "built a {tech} to try": "construyó un prototipo de {tech} para probarlo",
   "tried out a {tech} and it did not work": "probó un prototipo de {tech} y no funcionó",
+  "led a party onto the {band}'s ground for {what}": "encabezó una partida en tierras de la {band} en busca de {what}",
+  "leads a party onto the {band}'s ground for {what}": "encabeza una partida en tierras de la {band} en busca de {what}",
 };
