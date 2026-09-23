@@ -88,6 +88,8 @@ export const ES_ACTIONS: Record<string, string> = {
   "there was nothing worth demanding": "no había nada que valiera la pena exigir",
   "they refused to hand it over": "se negó a entregarlo",
   "someone whose it was told them to go": "alguien a quien pertenecía le dijo que se fuera",
+  "someone held them back": "alguien le sujetó",
+  "they broke free": "se soltó",
   "the person they meant to talk about was gone": "la persona de la que quería hablar ya no estaba",
   "they had nothing left worth telling": "no le quedaba nada que valiera la pena contar",
   "they do not know how": "no sabe cómo",
@@ -176,6 +178,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "They carry nothing": "No lleva nada",
   "Threaten {name}": "Amenazar a {name}",
   "Attack {name}": "Atacar a {name}",
+  "Hold {name} back": "Sujetar a {name}",
   "Hunt {beast}": "Cazar {beast}",
   "{beast} follows you": "{beast} te sigue",
   "Offer {beast} food": "Ofrecer comida a {beast}",
@@ -232,4 +235,5 @@ export const ES_ACTIONS: Record<string, string> = {
   "sparring": "entrenando",
   "trading": "haciendo trueque",
   "warning them off": "advirtiéndole que se vaya",
+  "holding someone back": "sujetando a alguien",
 };

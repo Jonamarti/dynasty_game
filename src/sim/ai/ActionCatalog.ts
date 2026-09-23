@@ -498,6 +498,15 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       hostile: true,
     },
     {
+      // M11 phase 15b: holding somebody back. Hurts nobody; whether it works
+      // is a struggle, and everybody else grappling them counts.
+      id: 'restrain',
+      label: t('Hold {name} back', { name: other.name }),
+      icon: '\u{1F932}',
+      enabled: true,
+      hostile: true,
+    },
+    {
       id: 'attack',
       label: t('Attack {name}', { name: other.name }),
       icon: '⚔',

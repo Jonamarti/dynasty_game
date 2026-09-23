@@ -1735,9 +1735,18 @@ function reportInterruptions(): void {
     const mine = person.isPlayer || person.id === commanding?.id;
     if (!mine) continue;
 
-    const text = t('{action} stopped — {reason}', {
-      action: actionLabel(notice.action, notice.recipe), reason: stopReasonLabel(notice.reason),
-    });
+    // M11 phase 15b: being held down names whoever is doing it — as the
+    // player knows them, never past `Knowledge.ts` — and reads the same
+    // whether or not there was anything to stop.
+    const holder = notice.reason === 'restrained' && person.heldBy !== null
+      ? sim.peopleById.get(person.heldBy) : undefined;
+    const text = holder && sim.player
+      ? t('Held back by {name}', {
+        name: knowledgeOfPerson(sim.player, holder, sim.relationships).displayName,
+      })
+      : t('{action} stopped — {reason}', {
+        action: actionLabel(notice.action, notice.recipe), reason: stopReasonLabel(notice.reason),
+      });
     renderer.floaters.push(person.x, person.y, text,
       { color: '#e0b055', boxed: true, ttl: 3.4 });
     hud.noteStop(person.id, stopReasonLabel(notice.reason));

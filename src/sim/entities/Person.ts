@@ -434,6 +434,20 @@ export class Person {
   caughtId: number | null = null;
   caughtTick = -9999;
   /**
+   * Who is holding this person down, and until when — M11 phase 15b's
+   * `restrain`. While `heldUntil` has not passed, this person neither thinks
+   * nor acts; the holder renews it every tick they keep holding (`HOLD_RENEW`),
+   * so it ends by itself when they let go. See `Defence.isHeld`.
+   */
+  heldBy: number | null = null;
+  heldUntil = -9999;
+  /**
+   * When this person last tried to hold somebody and lost the struggle. The
+   * ladder does not try the same rung twice on the same offence: the next
+   * thing to do is call for help.
+   */
+  restrainFailedTick = -9999;
+  /**
    * Earliest tick at which this person will start another deliberate social
    * act. Approaching someone, saying your piece and parting again takes a
    * while, and without this every social action degenerates into a per-tick

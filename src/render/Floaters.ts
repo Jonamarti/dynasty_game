@@ -190,6 +190,8 @@ export const ACTION_LABELS: Record<string, string> = {
   trade: 'trading',
   // M11 phase 14b: an outsider warned off the band's ground.
   warn: 'warning them off',
+  // M11 phase 15b.
+  restrain: 'holding someone back',
 };
 
 /**
@@ -302,6 +304,10 @@ export const STOP_REASONS: Record<string, string> = {
   // M11 phase 15b: an owner caught them at it and told them to go, and they
   // went.
   warned_off: 'someone whose it was told them to go',
+  // M11 phase 15b. `restrained` is what the held person is told; main.ts
+  // names the holder when it can. `broke_free` is what the holder is told.
+  restrained: 'someone held them back',
+  broke_free: 'they broke free',
   // M11 phase 5c: `slander` and `praise` need somebody to talk *about*, not
   // only somebody to talk to, and the walk over gives both of those a chance
   // to stop being true.

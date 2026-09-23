@@ -143,6 +143,7 @@ export const ES_UI: Record<string, string> = {
   "hands full": "manos llenas",
   "{action} stopped — {reason}": "{action}: interrumpido — {reason}",
   "Seen: {why}": "Le han visto: {why}",
+  "Held back by {name}": "Sujetado por {name}",
   "No one saw you do it.": "Nadie te vio hacerlo.",
   "No one else knows yet.": "Nadie más lo sabe todavía.",
   "You steer": "Tú diriges",

@@ -173,3 +173,62 @@ describe('a warning in answer to a deed', () => {
     expect(relations.standing(0, 1)).toBeLessThan(0);
   });
 });
+
+describe('holding somebody back', () => {
+  // M11 phase 15b.3. Made one-sided so the struggle's single roll cannot go
+  // the other way: a practised fighter against somebody barely standing.
+  function aStruggle(): { sim: Simulation; holder: Person; held: Person } {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const [holder, held] = sim.livingPeople().filter(p => p.bandId === 0 && !p.isChild);
+    settled(holder!);
+    holder!.skills.fight = 100;
+    held!.health = 5;
+    held!.x = holder!.x + 1;
+    held!.y = holder!.y;
+    return { sim, holder: holder!, held: held! };
+  }
+
+  it('holds them still for as long as the holder keeps it up, and no longer', () => {
+    const { sim, holder, held } = aStruggle();
+    expect(sim.order(holder, 'restrain', { personId: held.id })).toBe(true);
+    for (let i = 0; i < 30 && held.heldBy === null; i++) {
+      settled(holder);
+      sim.step();
+    }
+    expect(held.heldBy).toBe(holder.id);
+    const x = held.x;
+    const y = held.y;
+    for (let i = 0; i < 20; i++) {
+      settled(holder);
+      sim.step();
+    }
+    // Frozen: neither thinking nor walking.
+    expect(held.x).toBe(x);
+    expect(held.y).toBe(y);
+    expect(held.action).toBe('idle');
+
+    // The holder is called away: the hold lapses within `HOLD_RENEW` ticks.
+    holder.needs.thirst = 100;
+    for (let i = 0; i < 10; i++) sim.step();
+    expect(held.heldUntil).toBeLessThan(sim.time.tick);
+  });
+
+  it('is chosen by a witness who caught one of their own at it', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const [owner, kin] = sim.livingPeople().filter(p => p.bandId === 0 && !p.isChild);
+    kin!.health = 20; // Somebody the witness can hope to hold.
+    let chose = false;
+    for (let i = 0; i < 40 && !chose; i++) {
+      settled(owner!);
+      owner!.caughtId = kin!.id;
+      owner!.caughtTick = sim.time.tick;
+      kin!.x = owner!.x + 3;
+      kin!.y = owner!.y;
+      sim.step();
+      chose = owner!.action === 'restrain' && owner!.targetPersonId === kin!.id;
+    }
+    expect(chose).toBe(true);
+  });
+});

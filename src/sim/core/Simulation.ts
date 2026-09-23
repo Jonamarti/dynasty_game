@@ -40,6 +40,7 @@ import {
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
 import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
+import { isHeld } from '../social/Defence.ts';
 import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
@@ -1673,7 +1674,11 @@ export class Simulation {
   }
 
   private noteStop(person: Person, action: string, reason: string): void {
-    if (person.order === null) return;
+    // Being held down is news to the player whatever they were doing — even
+    // standing idle, when there was no order to stop — because from then on
+    // their keys do nothing, and a character that will not move needs a
+    // reason on screen.
+    if (person.order === null && !(person.isPlayer && reason === 'restrained')) return;
     this.interruptions.push({
       personId: person.id, action, reason, recipe: person.targetRecipe,
     });
@@ -3021,6 +3026,11 @@ export class Simulation {
       //    without this guard no harvest longer than the think interval could
       //    ever finish — people walked to a bush, started picking, and reset
       //    themselves forever.
+      // M11 phase 15b: somebody being held down neither thinks nor acts —
+      // not even the player, whose keys this skips too. The holder renews
+      // the hold every tick they keep it up, so it lapses by itself.
+      if (isHeld(person, this.time.tick)) continue;
+
       // The player's held keys override whatever they were doing.
       if (person.isPlayer && this.playerIntent) {
         person.action = 'walk';

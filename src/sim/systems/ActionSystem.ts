@@ -47,7 +47,10 @@ import {
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
-import { caughtOffender, usingPropertyOf } from '../social/Defence.ts';
+import {
+  caughtOffender, usingPropertyOf, isHeld, RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW,
+} from '../social/Defence.ts';
+import { fightingPower } from '../social/Vulnerability.ts';
 import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 
@@ -571,6 +574,7 @@ export class ActionSystem {
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
       case 'warn': this.doWarn(person, ctx); break;
+      case 'restrain': this.doRestrain(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
       case 'slander': this.doSlander(person, ctx); break;
       case 'praise': this.doPraise(person, ctx); break;
@@ -3497,6 +3501,90 @@ export class ActionSystem {
     this.finish(person);
   }
 
+
+  /**
+   * Holding somebody back, M11 phase 15b (owner's note 9).
+   *
+   * Three stages: close the distance; a short struggle; and, if it is won,
+   * the hold itself. The struggle is decided once, on `actionRng` (no stream
+   * of its own), between the fighting power of everybody grappling this same
+   * person at that moment — which is what makes a crowd able to bring down
+   * somebody none of them could hold alone — and the held person's, stiffened
+   * by their temper. Nobody is hurt either way: this is the ladder's rung for
+   * one's own people, and `restrain` does not wound (`m11_block_v_plan.md`,
+   * risks).
+   *
+   * A won struggle stops whatever the held person was doing, with a reason
+   * naming the holder, and freezes them for as long as the holder keeps it up.
+   * Somebody already held by another is simply joined: the struggle has been
+   * won.
+   */
+  private doRestrain(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+
+    // Holding.
+    if (person.workedTicks > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped || person.workedTicks >= HOLD_TICKS) {
+        this.release(person, other);
+        if (stopped) this.stop(person, stopped, ctx, 'restrain_');
+        else this.finish(person);
+        return;
+      }
+      person.workedTicks++;
+      if (other.heldBy === null || !isHeld(other, ctx.tick)) other.heldBy = person.id;
+      other.heldUntil = Math.max(other.heldUntil, ctx.tick + HOLD_RENEW);
+      return;
+    }
+
+    // The struggle.
+    if (person.actionTimer <= 0) {
+      person.actionTimer = RESTRAIN_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'restrain_');
+      return;
+    }
+
+    let won = isHeld(other, ctx.tick);
+    if (!won) {
+      let mine = 0;
+      for (const helper of ctx.peopleHash.queryRadius(other.x, other.y, 2.5)) {
+        if (!helper.alive || helper.action !== 'restrain' || helper.targetPersonId !== other.id) continue;
+        mine += fightingPower(helper);
+      }
+      const theirs = fightingPower(other) * (0.8 + other.traits.aggression * 0.4);
+      won = ctx.rng.chance(mine / Math.max(0.001, mine + theirs));
+    }
+    if (!won) {
+      telemetry.count('restrain_lost');
+      person.restrainFailedTick = ctx.tick;
+      this.stop(person, 'broke_free', ctx, 'restrain_');
+      return;
+    }
+
+    telemetry.count('restrain_won');
+    person.practice('fight', 0.3);
+    // Done with: a witness who has held the offender back is not moved to do
+    // it again the moment the hold ends.
+    if (person.caughtId === other.id) person.caughtId = null;
+    if (!isHeld(other, ctx.tick)) other.heldBy = person.id;
+    other.heldUntil = Math.max(other.heldUntil, ctx.tick + HOLD_RENEW);
+    person.workedTicks = 1;
+    if (other.action !== 'idle') this.abandon(other, 'restrained', ctx);
+    else ctx.onStopped(other, 'idle', 'restrained');
+  }
+
+  /** Lets go of somebody this person was holding, if nobody else still is. */
+  private release(person: Person, other: Person): void {
+    if (other.heldBy !== person.id) return;
+    other.heldBy = null;
+    other.heldUntil = -9999;
+  }
 
   private doThreaten(person: Person, ctx: ActionContext): void {
     const other = this.approach(person, ctx);

@@ -18,7 +18,11 @@
  * world can be measured alone, the same discipline phase 14 followed. 15b.1
  * wrote who each witness caught and nothing read it; 15b.2 is the outsider's
  * rung — warned off, then struck if they stay — in `Brain`, reusing the `warn`
- * verb and the bookkeeping of phase 14b's defence of the ground.
+ * verb and the bookkeeping of phase 14b's defence of the ground. 15b.3 is the
+ * rung for one of the witness's own people: `restrain`, a struggle that ends
+ * with the offender held rather than hurt. Holding somebody is also the state
+ * phase 15c's binding needs — "several of them bringing one down" — which is
+ * why it is a state on the held person and not only an outcome.
  *
  * Nothing here draws a random number.
  */
@@ -97,4 +101,48 @@ export function usingPropertyOf(
 ): boolean {
   if (person.propertyUseNoted === null || person.targetBuildingId === null) return false;
   return buildingById(person.targetBuildingId)?.ownerBandId === bandId;
+}
+
+/**
+ * The struggle before somebody is held, in ticks — a scuffle, not a fight.
+ * Well under the ceiling `AGENTS.md` sets for an uninterrupted pull, and
+ * checked for interruption every tick anyway, like every wind-up.
+ */
+export const RESTRAIN_TICKS = 8;
+
+/**
+ * How long a won struggle holds somebody, in ticks: a quarter of an hour of
+ * the day's two hundred and forty. Long enough to stop what they were doing
+ * and for anybody who knows how to bind them to do it (phase 15c); short
+ * enough that holding a bandmate is a rebuke, not an imprisonment.
+ *
+ * The hold is **kept up by the holder**, not set once: every tick of the
+ * holder's `restrain` renews it for `HOLD_RENEW` ticks, so a holder who is
+ * interrupted, or dies, or is dragged off by thirst lets go within two ticks.
+ * A hold that outlived the person doing the holding would be a spell.
+ */
+export const HOLD_TICKS = 60;
+export const HOLD_RENEW = 2;
+
+/**
+ * How strongly having caught one of their own at it moves a witness to hold
+ * them back. The same order as `CAUGHT_WARN`, for the same reason — whoever
+ * has just seen it drops what they are doing — with loyalty in place of
+ * temper: holding back a bandmate is an act on the band's behalf, and a
+ * disloyal witness shrugs.
+ */
+export const CAUGHT_RESTRAIN = 1.5;
+
+/**
+ * The share of the offender's fighting power a witness must be able to bring
+ * — themselves plus the bandmates standing by them — before they will try. A
+ * witness who cannot hope to hold the offender does not try (phase 15b.4 has
+ * them call for help instead); one roughly as strong goes in, because a
+ * struggle is not a blow and losing it costs nothing but the attempt.
+ */
+export const RESTRAIN_NERVE = 0.8;
+
+/** Whether somebody is being held right now. */
+export function isHeld(person: Person, tick: number): boolean {
+  return person.heldBy !== null && person.heldUntil >= tick;
 }

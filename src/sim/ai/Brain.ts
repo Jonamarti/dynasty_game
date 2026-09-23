@@ -53,7 +53,9 @@ import {
   DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
 } from '../social/Fear.ts';
 import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
-import { caughtOffender, usingPropertyOf, CAUGHT_WARN } from '../social/Defence.ts';
+import {
+  caughtOffender, usingPropertyOf, isHeld, CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE,
+} from '../social/Defence.ts';
 
 export interface BrainContext {
   world: World;
@@ -182,6 +184,8 @@ interface FoundTargets {
    * it was scored against.
    */
   intruder: Person | null;
+  /** One of this person's own people a `restrain` is aimed at, M11 phase 15b. */
+  restrainee: Person | null;
   beneficiary: Person | null;
   /**
    * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
@@ -716,6 +720,7 @@ export class Brain {
     let tradePartner: Person | null = null;
     let fleeFrom: Person | null = null;
     let intruder: Person | null = null;
+    let restrainee: Person | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
     let craftStation: Building | null = null;
@@ -1438,8 +1443,34 @@ export class Brain {
       const offender = caughtId === null || person.isChild
         ? undefined
         : neighbours.find(other => other.id === caughtId);
-      if (offender && offender.bandId !== person.bandId &&
-        ctx.relationships.kinship(person.id, offender.id) === 0) {
+      if (offender && offender.bandId === person.bandId) {
+        // M11 phase 15b.3, the rung for one of the witness's own people: hold
+        // them back rather than warn them off. Only somebody the witness can
+        // hope to hold, with the bandmates standing by them; the one who
+        // cannot — or who tried and lost — is 15b.4's, calling for help. Kin
+        // are not exempt, unlike every blow in this file: holding back your
+        // own brother is exactly what a brother does.
+        //
+        // Not while a need would break the struggle off. **Measured**: without
+        // this gate `century` offered the rung 581 times and won 21 holds,
+        // while 102 struggles stopped for thirst and 77 for cold on their
+        // first tick — the scorer kept choosing a hold the executor would not
+        // let them begin, the ping-pong `pressedByNeed` exists to prevent.
+        const tick = ctx.time.tick;
+        if (!isHeld(offender, tick) && tick - person.restrainFailedTick > CAUGHT_MEMORY &&
+          !pressedByNeed(person, ctx.needs.workLimits)) {
+          const standingBy = neighbours.filter(other =>
+            other.bandId === person.bandId && other.id !== offender.id && !other.isChild &&
+            other.distanceTo(offender) <= 4).length;
+          const mine = fightingPower(person) * (1 + standingBy * 0.5);
+          if (mine >= fightingPower(offender) * RESTRAIN_NERVE) {
+            add('restrain', CAUGHT_RESTRAIN * (0.5 + person.traits.loyalty) *
+              this.proximityBonus(person, offender, ctx.sightRadius));
+            restrainee = offender;
+            telemetry.count('caught_restrain_offered');
+          }
+        }
+      } else if (offender && ctx.relationships.kinship(person.id, offender.id) === 0) {
         const fear = fearOf(person);
         const since = ctx.time.tick - person.warnedOffTick;
         const warned = person.warnedOffId === offender.id && since < WARN_MEMORY;
@@ -2191,7 +2222,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, intruder, beneficiary, tradePartner, fleeFrom,
+        victim, foe, intruder, restrainee, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2634,6 +2665,7 @@ export class Brain {
       case 'steal':
       case 'threaten':
       case 'warn':
+      case 'restrain':
       case 'attack':
       case 'slander':
       case 'praise': {
@@ -2654,6 +2686,7 @@ export class Brain {
           action === 'trade' ? found.tradePartner :
           action === 'attack' ? found.foe :
           action === 'warn' ? found.intruder :
+          action === 'restrain' ? found.restrainee :
           action === 'slander' || action === 'praise' ? found.companion :
           found.victim;
         if (other) {
