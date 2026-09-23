@@ -232,3 +232,41 @@ describe('holding somebody back', () => {
     expect(chose).toBe(true);
   });
 });
+
+describe('calling for help', () => {
+  // M11 phase 15b.4. The owner's rule applied to sound: a shout carries the
+  // fact that somebody called, and the caller tells whoever comes what for.
+  it('is heard within earshot, and tells whoever comes who it was about', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 5; i++) sim.step();
+    const [caller, helper, offender] = sim.livingPeople().filter(p => p.bandId === 0 && !p.isChild);
+    settled(caller!);
+    settled(helper!);
+    helper!.x = caller!.x + 6;
+    helper!.y = caller!.y;
+    offender!.x = caller!.x + 30;
+    offender!.y = caller!.y + 30;
+    // The caller saw the theft; the helper did not.
+    const hash = sim.peopleHash;
+    hash.rebuild(sim.people);
+    sim.social.emit('theft', offender!, caller!, 0.5, sim.time.tick, hash, 1);
+    expect(caughtOffender(caller!, sim.time.tick)).toBe(offender!.id);
+    expect(caughtOffender(helper!, sim.time.tick)).toBeNull();
+
+    expect(sim.order(caller!, 'call_for_help', { x: caller!.x, y: caller!.y })).toBe(true);
+    for (let i = 0; i < 10 && caller!.order !== null; i++) sim.step();
+    expect(sim.helpCalls.some(c => c.callerId === caller!.id)).toBe(true);
+    expect(helper!.helpCallerId).toBe(caller!.id);
+    // Heard the shout, and nothing else yet.
+    expect(caughtOffender(helper!, sim.time.tick)).toBeNull();
+
+    expect(sim.order(helper!, 'answer_call', { personId: caller!.id })).toBe(true);
+    for (let i = 0; i < 60 && helper!.order !== null; i++) {
+      settled(helper!);
+      sim.step();
+    }
+    expect(caughtOffender(helper!, sim.time.tick)).toBe(offender!.id);
+    expect(helper!.memory.all().some(m =>
+      m.type === 'theft' && m.actorId === offender!.id && !m.firsthand)).toBe(true);
+  });
+});

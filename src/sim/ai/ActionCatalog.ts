@@ -782,6 +782,14 @@ function groundActions(
       reason: walkable ? undefined : t('You cannot walk there'),
     },
     {
+      // M11 phase 15b.4. Everybody within earshot hears that you called, and
+      // nothing more; whoever comes is told when they arrive.
+      id: 'call_for_help',
+      label: t('Call for help'),
+      icon: '\u{1F4E3}',
+      enabled: true,
+    },
+    {
       id: 'rest',
       label: t('Rest'),
       icon: '\u{1F634}',

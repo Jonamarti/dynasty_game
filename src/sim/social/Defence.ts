@@ -23,6 +23,8 @@
  * with the offender held rather than hurt. Holding somebody is also the state
  * phase 15c's binding needs — "several of them bringing one down" — which is
  * why it is a state on the held person and not only an outcome.
+ * 15b.4 is the last rung: `call_for_help`, for the witness who cannot hold
+ * the offender alone, and `answer_call` for whoever hears it.
  *
  * Nothing here draws a random number.
  */
@@ -145,4 +147,48 @@ export const RESTRAIN_NERVE = 0.8;
 /** Whether somebody is being held right now. */
 export function isHeld(person: Person, tick: number): boolean {
   return person.heldBy !== null && person.heldUntil >= tick;
+}
+
+/**
+ * A shout, in ticks — long enough for the interruption check to run.
+ */
+export const CALL_TICKS = 4;
+
+/**
+ * How long a call for help is worth answering, in ticks, and how long a
+ * caller waits before calling again. A quarter of an hour: a shout is not a
+ * summons that stands all afternoon.
+ */
+export const CALL_MEMORY = 60;
+
+/**
+ * How strongly a call moves the person who heard it: the same order as the
+ * witness's own rungs, with loyalty for the same reason `restrain` reads it.
+ * Scored with `proximityBonus`, so the nearest bandmate is the likeliest to
+ * come, which is what a shout in a camp is.
+ */
+export const ANSWER_CALL = 1.4;
+
+/**
+ * How strongly a witness who cannot hold one of their own calls for help.
+ * Just under `CAUGHT_RESTRAIN`: a witness who can hold them does that
+ * instead, and nothing here needs to compete with it.
+ */
+export const CALL_FOR_HELP = 1.3;
+
+/**
+ * Records that `hearer` heard `caller` call for help. **Not what for**: the
+ * owner's rule applied to sound — whoever comes finds out by being told when
+ * they arrive (`ActionSystem.doAnswerCall`), not from the shout.
+ */
+export function noteCall(hearer: Person, caller: Person, tick: number): void {
+  if (hearer.isChild || !hearer.alive || hearer.id === caller.id) return;
+  hearer.helpCallerId = caller.id;
+  hearer.helpCallTick = tick;
+}
+
+/** Who `person` heard calling for help and could still answer, if anyone. */
+export function helpCaller(person: Person, tick: number): number | null {
+  if (person.helpCallerId === null) return null;
+  return tick - person.helpCallTick <= CALL_MEMORY ? person.helpCallerId : null;
 }

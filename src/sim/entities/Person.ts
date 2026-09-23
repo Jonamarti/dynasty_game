@@ -448,6 +448,15 @@ export class Person {
    */
   restrainFailedTick = -9999;
   /**
+   * The last person this one heard calling for help, and when — M11 phase
+   * 15b.4. Only that somebody called: what for is told on arrival. See
+   * `Defence.noteCall`.
+   */
+  helpCallerId: number | null = null;
+  helpCallTick = -9999;
+  /** When this person last called for help, so they do not shout every think. */
+  calledForHelpTick = -9999;
+  /**
    * Earliest tick at which this person will start another deliberate social
    * act. Approaching someone, saying your piece and parting again takes a
    * while, and without this every social action degenerates into a per-tick

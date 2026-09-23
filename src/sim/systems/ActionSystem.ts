@@ -48,7 +48,8 @@ import {
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
 import {
-  caughtOffender, usingPropertyOf, isHeld, RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW,
+  caughtOffender, usingPropertyOf, isHeld, noteCall, INTERVENABLE,
+  RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, CALL_TICKS,
 } from '../social/Defence.ts';
 import { fightingPower } from '../social/Vulnerability.ts';
 import type { EventType } from '../social/Events.ts';
@@ -138,6 +139,12 @@ export interface ActionContext {
    * robbed a store in front of its owner needs to know that somebody saw.
    */
   onWatched: (person: Person, use: PropertyUse) => void;
+  /**
+   * Somebody called for help — M11 phase 15b.4. Reported so the player hears
+   * a shout within earshot of their character, which is the only way anybody
+   * learns of one.
+   */
+  onCalledForHelp: (person: Person) => void;
 }
 
 /** How close two people must be to hand something over, or land a blow. */
@@ -490,7 +497,7 @@ const GRUDGE_DISCHARGE = 9;
  * is the right shape: music is not a substitute for being spoken to.
  */
 const PLAY_TICKS = 120;
-const EARSHOT = 16;
+export const EARSHOT = 16;
 const PLAY_RELIEF = 0.35;
 
 /**
@@ -575,6 +582,8 @@ export class ActionSystem {
       case 'threaten': this.doThreaten(person, ctx); break;
       case 'warn': this.doWarn(person, ctx); break;
       case 'restrain': this.doRestrain(person, ctx); break;
+      case 'call_for_help': this.doCallForHelp(person, ctx); break;
+      case 'answer_call': this.doAnswerCall(person, ctx); break;
       case 'attack': this.doAttack(person, ctx); break;
       case 'slander': this.doSlander(person, ctx); break;
       case 'praise': this.doPraise(person, ctx); break;
@@ -3577,6 +3586,64 @@ export class ActionSystem {
     person.workedTicks = 1;
     if (other.action !== 'idle') this.abandon(other, 'restrained', ctx);
     else ctx.onStopped(other, 'idle', 'restrained');
+  }
+
+  /**
+   * A shout for help, M11 phase 15b.4 — the ladder's rung for a witness who
+   * cannot hold one of their own alone.
+   *
+   * Everybody within `EARSHOT` hears that somebody is calling, and nothing
+   * else: the owner's rule applied to sound. What it is about, they learn by
+   * coming (`doAnswerCall`). The caller stays where they are; with enough of
+   * their people standing by, the next thing their own ladder offers is the
+   * hold they could not manage alone.
+   */
+  private doCallForHelp(person: Person, ctx: ActionContext): void {
+    if (person.actionTimer <= 0) {
+      person.actionTimer = CALL_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'call_');
+      return;
+    }
+    let heard = 0;
+    for (const other of ctx.peopleHash.queryRadius(person.x, person.y, EARSHOT)) {
+      if (!other.alive || other.id === person.id || other.isChild) continue;
+      noteCall(other, person, ctx.tick);
+      heard++;
+    }
+    person.calledForHelpTick = ctx.tick;
+    telemetry.count('help_called');
+    telemetry.count('help_heard', heard);
+    ctx.onCalledForHelp(person);
+    this.finish(person);
+  }
+
+  /**
+   * Going to whoever called for help, and being told on arrival what it was
+   * about — the one telling phase 15b adds to the owner's rule. The caller
+   * passes on who they caught (so the helper's own ladder has an offender to
+   * act on) and the story of what that person did (so the helper knows it
+   * the way anybody told a story knows it: less surely than having seen it).
+   */
+  private doAnswerCall(person: Person, ctx: ActionContext): void {
+    const caller = this.approach(person, ctx);
+    if (!caller) return;
+    const offenderId = caughtOffender(caller, ctx.tick);
+    if (offenderId !== null && offenderId !== person.id) {
+      person.caughtId = offenderId;
+      person.caughtTick = ctx.tick;
+      const story = caller.memory.all().find(m =>
+        m.actorId === offenderId && m.firsthand && INTERVENABLE.has(m.type));
+      if (story) ctx.social.tellStory(caller, person, story, ctx.peopleById);
+      telemetry.count('help_told');
+    }
+    person.helpCallerId = null;
+    telemetry.count('help_answered');
+    this.finish(person);
   }
 
   /** Lets go of somebody this person was holding, if nobody else still is. */

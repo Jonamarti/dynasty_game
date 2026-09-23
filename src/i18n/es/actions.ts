@@ -179,6 +179,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "Threaten {name}": "Amenazar a {name}",
   "Attack {name}": "Atacar a {name}",
   "Hold {name} back": "Sujetar a {name}",
+  "Call for help": "Pedir ayuda a gritos",
   "Hunt {beast}": "Cazar {beast}",
   "{beast} follows you": "{beast} te sigue",
   "Offer {beast} food": "Ofrecer comida a {beast}",
@@ -236,4 +237,6 @@ export const ES_ACTIONS: Record<string, string> = {
   "trading": "haciendo trueque",
   "warning them off": "advirtiéndole que se vaya",
   "holding someone back": "sujetando a alguien",
+  "calling for help": "pidiendo ayuda a gritos",
+  "answering a call for help": "acudiendo a una llamada de ayuda",
 };

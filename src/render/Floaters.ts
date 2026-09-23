@@ -192,6 +192,8 @@ export const ACTION_LABELS: Record<string, string> = {
   warn: 'warning them off',
   // M11 phase 15b.
   restrain: 'holding someone back',
+  call_for_help: 'calling for help',
+  answer_call: 'answering a call for help',
 };
 
 /**

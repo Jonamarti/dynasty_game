@@ -41,7 +41,7 @@ import {
   RECIPES, hasIngredients, recipeFor, recipeUsing, nutritionPerUnit,
 } from '../entities/Recipe.ts';
 import { INSCRIPTIONS, type Inscription } from '../entities/Inscription.ts';
-import { pressedByNeed } from '../systems/ActionSystem.ts';
+import { pressedByNeed, EARSHOT } from '../systems/ActionSystem.ts';
 import type { NeedsConfig } from '../core/Config.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
@@ -54,7 +54,8 @@ import {
 } from '../social/Fear.ts';
 import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import {
-  caughtOffender, usingPropertyOf, isHeld, CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE,
+  caughtOffender, usingPropertyOf, isHeld, helpCaller,
+  CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE, CALL_MEMORY, CALL_FOR_HELP, ANSWER_CALL,
 } from '../social/Defence.ts';
 
 export interface BrainContext {
@@ -186,6 +187,8 @@ interface FoundTargets {
   intruder: Person | null;
   /** One of this person's own people a `restrain` is aimed at, M11 phase 15b. */
   restrainee: Person | null;
+  /** Whoever an `answer_call` goes to, M11 phase 15b.4. */
+  helpCallerTarget: Person | null;
   beneficiary: Person | null;
   /**
    * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
@@ -721,6 +724,7 @@ export class Brain {
     let fleeFrom: Person | null = null;
     let intruder: Person | null = null;
     let restrainee: Person | null = null;
+    let helpCallerTarget: Person | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
     let craftStation: Building | null = null;
@@ -1468,7 +1472,16 @@ export class Brain {
               this.proximityBonus(person, offender, ctx.sightRadius));
             restrainee = offender;
             telemetry.count('caught_restrain_offered');
+          } else if (tick - person.calledForHelpTick > CALL_MEMORY) {
+            // M11 phase 15b.4: too strong to hold alone — call for help.
+            add('call_for_help', CALL_FOR_HELP * (0.5 + person.traits.loyalty));
+            telemetry.count('caught_call_offered');
           }
+        } else if (!isHeld(offender, tick) && tick - person.calledForHelpTick > CALL_MEMORY &&
+          !pressedByNeed(person, ctx.needs.workLimits)) {
+          // Tried to hold them and lost: the next rung is the same shout.
+          add('call_for_help', CALL_FOR_HELP * (0.5 + person.traits.loyalty));
+          telemetry.count('caught_call_offered');
         }
       } else if (offender && ctx.relationships.kinship(person.id, offender.id) === 0) {
         const fear = fearOf(person);
@@ -1514,6 +1527,28 @@ export class Brain {
       }
     }
     if (warnScore > 0) add('warn', warnScore);
+
+    // --- Answering a call ----------------------------------------------------
+    // M11 phase 15b.4. Somebody heard a shout for help. Only from one of their
+    // own people, kin, or a friend: a stranger's shout is a stranger's
+    // business. They come not knowing what it is about; the caller tells them
+    // when they get there (`ActionSystem.doAnswerCall`).
+    {
+      const callerId = helpCaller(person, ctx.time.tick);
+      if (callerId !== null && !person.isChild && !pressedByNeed(person, ctx.needs.workLimits)) {
+        const caller = ctx.peopleHash
+          .queryRadius(person.x, person.y, EARSHOT * 1.5)
+          .find(other => other.id === callerId && other.alive);
+        if (caller && ctx.world.sameRegion(person.x, person.y, caller.x, caller.y) &&
+          (caller.bandId === person.bandId ||
+            ctx.relationships.kinship(person.id, caller.id) > 0 ||
+            ctx.relationships.opinion(person.id, caller.id) > 15)) {
+          add('answer_call', ANSWER_CALL * (0.5 + person.traits.loyalty) *
+            this.proximityBonus(person, caller, ctx.sightRadius));
+          helpCallerTarget = caller;
+        }
+      }
+    }
 
     // One row, whichever reason won it, with `foe` naming the person that
     // reason was about.
@@ -2222,7 +2257,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, intruder, restrainee, beneficiary, tradePartner, fleeFrom,
+        victim, foe, intruder, restrainee, helpCallerTarget, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2666,6 +2701,7 @@ export class Brain {
       case 'threaten':
       case 'warn':
       case 'restrain':
+      case 'answer_call':
       case 'attack':
       case 'slander':
       case 'praise': {
@@ -2687,6 +2723,7 @@ export class Brain {
           action === 'attack' ? found.foe :
           action === 'warn' ? found.intruder :
           action === 'restrain' ? found.restrainee :
+          action === 'answer_call' ? found.helpCallerTarget :
           action === 'slander' || action === 'praise' ? found.companion :
           found.victim;
         if (other) {

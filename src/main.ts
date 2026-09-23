@@ -37,6 +37,7 @@ import type { Person } from './sim/entities/Person.ts';
 import type { Building, BuildingDef } from './sim/entities/Building.ts';
 import { ITEMS } from './sim/entities/Item.ts';
 import { JOBS } from './sim/entities/Job.ts';
+import { EARSHOT } from './sim/systems/ActionSystem.ts';
 import type { ItemPile } from './sim/entities/ItemPile.ts';
 import { describeEvent } from './sim/social/Events.ts';
 import {
@@ -1754,6 +1755,30 @@ function reportInterruptions(): void {
 }
 
 /**
+ * Says that somebody called for help — M11 phase 15b.4 — if the player's
+ * character was close enough to hear it. Hearing it is the only way anybody
+ * learns of a call, and the player is nobody special. The caller is named as
+ * the player knows them.
+ */
+function reportHelpCalls(): void {
+  const calls = sim.helpCalls.splice(0, sim.helpCalls.length);
+  const listener = sim.player;
+  if (!listener || !listener.alive) return;
+  for (const call of calls) {
+    const caller = sim.peopleById.get(call.callerId);
+    if (!caller) continue;
+    if (caller.id !== listener.id &&
+      Math.hypot(listener.x - call.x, listener.y - call.y) > EARSHOT) continue;
+    const name = knowledgeOfPerson(listener, caller, sim.relationships).displayName;
+    renderer.floaters.push(call.x, call.y,
+      caller.id === listener.id
+        ? t('You call for help')
+        : t('{name} calls for help!', { name: name.charAt(0).toUpperCase() + name.slice(1) }),
+      { color: '#e0705c', boxed: true, ttl: 3.4 });
+  }
+}
+
+/**
  * Says that an owner saw one of the player's people use their band's
  * structure — M11 phase 15a.
  *
@@ -1987,6 +2012,7 @@ function frame(now: number): void {
   tribeGraph.update(sim);
   reportInterruptions();
   reportWatched();
+  reportHelpCalls();
   reportAutonomyStall();
   reportInsights();
   watchUnlocks();

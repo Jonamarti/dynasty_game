@@ -375,6 +375,13 @@ export class Simulation {
    */
   readonly watchedUses: WatchedNotice[] = [];
 
+  /**
+   * Calls for help, waiting to be told about — M11 phase 15b.4. Every call
+   * goes in; `main.ts` shows the ones the player's character was close enough
+   * to hear, because hearing it is the only way anybody knows.
+   */
+  readonly helpCalls: { callerId: number; x: number; y: number }[] = [];
+
   /** Ideas, breakthroughs and failed prototypes, waiting to be told about. */
   readonly insights: InsightNotice[] = [];
 
@@ -3008,6 +3015,10 @@ export class Simulation {
       onStopped: (person: Person, action: string, reason: string) =>
         this.noteStop(person, action, reason),
       onWatched: (person: Person, use: PropertyUse) => this.noteWatched(person, use),
+      onCalledForHelp: (person: Person) => {
+        this.helpCalls.push({ callerId: person.id, x: person.x, y: person.y });
+        if (this.helpCalls.length > this.interruptionCap) this.helpCalls.shift();
+      },
       onInsight: (person: Person, text: string, kind: 'idea' | 'gain' | 'setback') =>
         this.noteInsight(person, text, kind),
     };
