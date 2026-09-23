@@ -6,6 +6,26 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 13a: a building says whose it is
+
+**The note** (owner's note 3): nothing on the map said which tribe a hut, a
+site or a field belonged to, so a ruin could not be read as *somebody's* ruin.
+This is what 11e had called the "durability panel": the durability itself was
+already drawn by 11b; its owner was not.
+
+**The change.** `Renderer.drawBuilding` rings every site, field and building in
+the colour its owning band's people wear (`bandColorIndex(ownerBandId)`). The
+ring sits four pixels *inside* the edge rather than on it, because the edge
+already says what state the thing is in — the dashed plan of a site, the
+broken red of a ruin — and that has to keep winning. Checked on screen with a
+finished hut, a ruin, a site and a half-wrecked hut side by side: the ruin
+still reads as a ruin first. Dimmer on sites and ruins, and skipped below
+fourteen pixels, where two rings can no longer be told apart.
+
+Renderer only; the harness never imports it.
+
+---
+
 ## 2026-09-23 — M11 phase 12c: how many tribes, asked where the tribe is chosen
 
 **The note** (owner's note 4) asked for the number of tribes and of people per
