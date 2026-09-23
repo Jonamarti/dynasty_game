@@ -72,6 +72,23 @@ export class RelationshipGraph {
     return Math.max(-100, Math.min(100, raw));
   }
 
+  /**
+   * What two people think of each other, as one number: the mean of whichever
+   * directions exist, or null when neither has an opinion of the other.
+   *
+   * Shared by the tribe graph's peer lines and the family tree's, which both
+   * draw one line per pair and must colour a pair the same way in both panels.
+   * A one-sided tie is not averaged with a zero it does not have — somebody
+   * who hates a stranger who has never noticed them draws as hatred.
+   */
+  mutualOpinion(a: number, b: number): number | null {
+    const ab = this.peek(a, b);
+    const ba = this.peek(b, a);
+    if (!ab && !ba) return null;
+    return ((ab ? this.opinion(a, b) : 0) + (ba ? this.opinion(b, a) : 0)) /
+      ((ab ? 1 : 0) + (ba ? 1 : 0));
+  }
+
   /** Everyone this person has an opinion about, strongest feeling first. */
   knownBy(viewerId: number): { subjectId: number; relationship: Relationship; opinion: number }[] {
     const row = this.edges.get(viewerId);

@@ -6,6 +6,45 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — notes.txt: the family tree's lines take colour, and the tribe graph keeps to the tribe
+
+Two of the three notes the owner left on 2026-09-23. The third, the Spanish
+translation, is its own pass below.
+
+**"Show relationship with green / yellow / red coloured lines in the family
+visualizer too, as done in the tribe visualizer."** Every kinship line on the
+family tree is now drawn in the colour of what the two people at its ends think
+of each other. The tribe graph only ever had two colours — anything at or above
+zero was green — so the "yellow" the note remembers did not exist; it does now,
+in both panels, by one rule. `Knowledge.opinionTone` splits at
+`REGARD_NEUTRAL` (±10), which is the band `regardFromThem` already called *"no
+strong feeling"*, and `regardFromThem` now reads the constant rather than its
+own literals, so a yellow line is exactly a tie the words call indifferent.
+The two panels also share the arithmetic: the tribe graph's inline "mean of
+whichever directions exist" became `RelationshipGraph.mutualOpinion`, which the
+family tree calls too.
+
+A family line is coloured only where the player could have learned it — when
+they know the ties (`knowsTies`) of somebody at either end — and stays the old
+grey otherwise. Being your relative is not the same as being somebody whose
+feelings you can read.
+
+**"Members of other tribes are shown in the tribe visualizer."** They were: the
+graph draws everybody the subject has an opinion of, and the ranked view has an
+"other bands" row by design (M9.5 4e). The owner chose a switch. The graph now
+opens on the subject's own band — `Simulation.bandIdOf`, the same `Rank.bandOf`
+the rows are drawn from, so the filter cannot disagree with the row it hides —
+and a header button, *other bands too*, puts everybody back. The filter rides
+the predicate `tribeMembers` already applied to the dead (renamed from `alive`
+to `include`), so it is applied *before* the cap and a hidden neighbour never
+costs a band-mate their place. The head line says how many it hid; a graph
+that silently drops half of somebody's friends reads as the friends having
+gone.
+
+Bit-identical in `sim:check:all --verbose`. Two e2e specs.
+
+---
+
 ## 2026-09-23 — M11 phase 13f, third commit: your own life names people as you know them
 
 **The defect.** `SocialSystem.emit` writes `describeEvent(type, actor.name,

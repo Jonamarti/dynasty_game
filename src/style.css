@@ -1264,6 +1264,11 @@ html, body, #app {
    distinction `.techweb-edge` makes between scaffolding and a resemblance. */
 .familytree-edge { stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.6; }
 .familytree-edge.is-spouse { stroke: rgba(200, 138, 216, 0.4); stroke-dasharray: 3 4; }
+/* What the two ends think of each other, in the tribe graph's palette. Listed
+   after `.is-spouse` so the colour wins and the dash still says "married". */
+.familytree-edge.is-pos { stroke: rgba(92, 201, 138, 0.6); stroke-width: 2; }
+.familytree-edge.is-mid { stroke: rgba(224, 196, 92, 0.6); stroke-width: 2; }
+.familytree-edge.is-neg { stroke: rgba(224, 112, 92, 0.6); stroke-width: 2; }
 
 .familytree-node {
   position: absolute;
@@ -1336,6 +1341,22 @@ html, body, #app {
   cursor: pointer;
 }
 .tribegraph-close:hover { color: var(--text); border-color: var(--accent); }
+/* The "other bands too" switch. It takes the push to the right that the close
+   button would otherwise have, so the two sit together at the end of the row. */
+.tribegraph-toggle {
+  margin-left: auto;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(30, 34, 44, 0.9);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.tribegraph-toggle:hover { color: var(--text); border-color: var(--accent); }
+.tribegraph-toggle.is-on { color: var(--text); border-color: var(--accent); }
+.tribegraph-toggle + .tribegraph-close { margin-left: 0; }
 
 .tribegraph-veil {
   max-width: 380px;
@@ -1349,6 +1370,7 @@ html, body, #app {
 .tribegraph-edges { position: absolute; inset: 0; overflow: visible; }
 .tribegraph-edge.is-pos { stroke: rgba(92, 201, 138, 0.45); }
 .tribegraph-edge.is-neg { stroke: rgba(224, 112, 92, 0.45); }
+.tribegraph-edge.is-mid { stroke: rgba(224, 196, 92, 0.45); }
 
 .tribegraph-node {
   position: absolute;
@@ -1373,6 +1395,7 @@ html, body, #app {
 }
 .tribegraph-node.is-pos { border-color: #5cc98a; }
 .tribegraph-node.is-neg { border-color: #e0705c; }
+.tribegraph-node.is-mid { border-color: #e0c45c; }
 .tribegraph-node.is-dead { opacity: 0.55; border-style: dashed; }
 
 /* The pyramid, M9.5 phase 4e. Rows are backdrop only: they are emitted before

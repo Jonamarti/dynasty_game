@@ -22,7 +22,7 @@
  */
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
-import { knowledgeOfPerson } from '../sim/social/Knowledge.ts';
+import { knowledgeOfPerson, opinionTone } from '../sim/social/Knowledge.ts';
 import { RANK_LABEL, RANK_ROW, type BandRank } from '../sim/social/Rank.ts';
 import {
   layOutTribe, tribeMembers, type TribeLayout, type TribeNode,
@@ -56,6 +56,17 @@ export class TribeGraphOverlay {
    * would be worse than starting clean.
    */
   private settled: Map<number, { x: number; y: number }> | null = null;
+  /**
+   * Whether people from other bands are drawn as well as the subject's own.
+   *
+   * Off by default since the owner's note of 2026-09-23 — *"members of other
+   * tribes are shown in the tribe visualizer"* — because a panel called the
+   * tribe graph that opens on a crowd of neighbours reads as the wrong picture.
+   * Kept as a switch rather than removed: who in the band has friends or
+   * enemies across the border is exactly what the coming conflict turns on.
+   * Survives closing the panel, so a player who wants them on says so once.
+   */
+  private showOthers = false;
 
   constructor(container: HTMLElement) {
     this.root = document.createElement('div');
@@ -67,6 +78,15 @@ export class TribeGraphOverlay {
       const target = event.target as HTMLElement;
       if (target.closest('[data-close]')) {
         this.close();
+        return;
+      }
+      if (target.closest('[data-others]')) {
+        this.showOthers = !this.showOthers;
+        // A different membership is a different graph; easing into it from
+        // the old arrangement would drag the survivors across the screen.
+        this.settled = null;
+        this.signature = '';
+        this.render();
         return;
       }
       if (target === this.root) this.close();
@@ -147,11 +167,11 @@ export class TribeGraphOverlay {
     // `tribeMembers` exists for that reason and now takes who is already on
     // screen, so the marginal acquaintance stops flickering in and out.
     const sticky = this.settled ? new Set(this.settled.keys()) : null;
-    const alive = (id: number): boolean => sim.peopleById.get(id)?.alive ?? false;
+    const include = this.includer(subject);
     const ranks = sim.ranksAround(subject,
-      tribeMembers(subject.id, sim.relationships, sticky, alive));
+      tribeMembers(subject.id, sim.relationships, sticky, include));
     const layout = layOutTribe(
-      subject.id, sim.relationships, box.width, box.height, ranks, this.settled, alive);
+      subject.id, sim.relationships, box.width, box.height, ranks, this.settled, include);
     this.settled = layout.settled;
 
     const digest = this.digest(layout, observer);
@@ -162,11 +182,10 @@ export class TribeGraphOverlay {
       const from = layout.nodes.find(n => n.personId === edge.from);
       const to = layout.nodes.find(n => n.personId === edge.to);
       if (!from || !to) return '';
-      const positive = edge.opinion >= 0;
       const width = Math.min(3.4, 0.6 + Math.abs(edge.opinion) / 30);
       return '<line x1="' + from.x.toFixed(1) + '" y1="' + from.y.toFixed(1) +
         '" x2="' + to.x.toFixed(1) + '" y2="' + to.y.toFixed(1) +
-        '" class="tribegraph-edge ' + (positive ? 'is-pos' : 'is-neg') +
+        '" class="tribegraph-edge is-' + opinionTone(edge.opinion) +
         '" stroke-width="' + width.toFixed(1) + '" />';
     }).join('');
 
@@ -174,7 +193,7 @@ export class TribeGraphOverlay {
     const rows = rowsHtml(layout);
 
     const shown = layout.nodes.length - 1;
-    const { living: total, dead } = this.countKnown(subject.id);
+    const { living: total, dead, elsewhere } = this.countKnown(subject);
     this.root.innerHTML =
       '<div class="tribegraph-card">' +
       '<div class="tribegraph-head">' +
@@ -184,6 +203,7 @@ export class TribeGraphOverlay {
             ? 'the ' + shown + ' strongest of ' + total + ' they know'
             : shown + (shown === 1 ? ' person they know' : ' people they know')) +
           (dead > 0 ? ', and ' + dead + ' dead' : '') +
+          (elsewhere > 0 ? ' · ' + elsewhere + ' from other bands hidden' : '') +
         '</span>' +
         // Why the picture is suddenly in rows. A view that changes shape
         // without saying what changed it reads as a bug, and the cause here is
@@ -192,6 +212,9 @@ export class TribeGraphOverlay {
           ? '<span class="tribegraph-sub tribegraph-why">in ranks: this band ' +
             'divides its labour</span>'
           : '') +
+        '<button class="tribegraph-toggle' + (this.showOthers ? ' is-on' : '') +
+          '" data-others="1">' + (this.showOthers ? 'own band only' : 'other bands too') +
+          '</button>' +
         '<button class="tribegraph-close" data-close="1">close</button>' +
       '</div>' +
       '<div class="tribegraph-canvas" style="width:' + layout.width +
@@ -204,16 +227,40 @@ export class TribeGraphOverlay {
       '</div>';
   }
 
-  /** Everybody the subject has feelings about, split by who is still alive. */
-  private countKnown(subjectId: number): { living: number; dead: number } {
+  /**
+   * Who the graph may draw: the living, and — unless the switch is on — only
+   * those who live in the subject's own band.
+   */
+  private includer(subject: Person): (id: number) => boolean {
     const sim = this.sim!;
+    const home = sim.bandIdOf(subject);
+    return id => {
+      const person = sim.peopleById.get(id);
+      if (!person?.alive) return false;
+      return this.showOthers || sim.bandIdOf(person) === home;
+    };
+  }
+
+  /**
+   * Everybody the subject has feelings about, split three ways: the living the
+   * graph may draw, the dead, and the living it is hiding because they belong
+   * to another band. The last is said in the head line so the switch is never
+   * a mystery — a graph that silently drops half somebody's friends reads as
+   * the friends having gone.
+   */
+  private countKnown(subject: Person): { living: number; dead: number; elsewhere: number } {
+    const sim = this.sim!;
+    const include = this.includer(subject);
     let living = 0;
     let dead = 0;
-    for (const tie of sim.relationships.knownBy(subjectId)) {
-      if (sim.peopleById.get(tie.subjectId)?.alive) living++;
-      else dead++;
+    let elsewhere = 0;
+    for (const tie of sim.relationships.knownBy(subject.id)) {
+      const person = sim.peopleById.get(tie.subjectId);
+      if (!person?.alive) dead++;
+      else if (include(tie.subjectId)) living++;
+      else elsewhere++;
     }
-    return { living, dead };
+    return { living, dead, elsewhere };
   }
 
   private nodeHtml(node: TribeNode, sim: Simulation, observer: Person | null): string {
@@ -223,10 +270,8 @@ export class TribeGraphOverlay {
       ? knowledgeOfPerson(observer, person, sim.relationships)
       : { displayName: person.name };
     const label = known.displayName + (person.alive ? '' : ' †');
-    const positive = node.subjectOpinion >= 0;
-
     return '<div class="tribegraph-node' +
-      (node.isSubject ? ' is-subject' : positive ? ' is-pos' : ' is-neg') +
+      (node.isSubject ? ' is-subject' : ' is-' + opinionTone(node.subjectOpinion)) +
       (!person.alive ? ' is-dead' : '') +
       (node.rank ? ' is-' + node.rank : '') + '"' +
       ' style="left:' + node.x.toFixed(1) + 'px;top:' + node.y.toFixed(1) + 'px">' +
@@ -241,8 +286,12 @@ export class TribeGraphOverlay {
     // without any of the capped set changing.
     // Both counts, since 13c: somebody dying changes the head line's "and N
     // dead" without necessarily changing anything else on screen.
-    const counts = this.countKnown(layout.nodes[0]!.personId);
-    const parts: string[] = [counts.living + '/' + counts.dead];
+    const subject = sim.peopleById.get(layout.nodes[0]!.personId)!;
+    const counts = this.countKnown(subject);
+    const parts: string[] = [
+      counts.living + '/' + counts.dead + '/' + counts.elsewhere,
+      this.showOthers ? 'all' : 'own',
+    ];
     for (const node of layout.nodes) {
       const person = sim.peopleById.get(node.personId);
       const known = person && observer

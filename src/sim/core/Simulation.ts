@@ -991,6 +991,18 @@ export class Simulation {
   }
 
   /**
+   * The band somebody actually lives in, by the same rule the ranks use.
+   *
+   * Not `person.bandId` alone: somebody who married into a household of
+   * another band belongs where the household is (`Rank.bandOf`). The tribe
+   * graph's "own band only" filter asks this rather than comparing ids, so it
+   * can never disagree with the "other bands" row it is hiding.
+   */
+  bandIdOf(person: Person): number {
+    return bandOf(person, this.rankContext());
+  }
+
+  /**
    * Where each of `ids` stands in `subject`'s band, or null when that band has
    * no shape to speak of.
    *

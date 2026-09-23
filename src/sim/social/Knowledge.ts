@@ -59,6 +59,24 @@ export interface RegardKnowledge {
   opinion: number | null;
 }
 
+/**
+ * How far either side of zero an opinion still reads as "no strong feeling".
+ *
+ * One number for the words below and for the colour every panel draws a tie
+ * in, so a line the family tree paints yellow is exactly a tie the Ties tab
+ * would describe as indifferent — two thresholds would drift apart, and the
+ * player would see a green line between two people who "seem to have no
+ * strong feeling" about each other.
+ */
+export const REGARD_NEUTRAL = 10;
+
+/** Warm, lukewarm or hostile: the three colours a drawn tie can be. */
+export type OpinionTone = 'pos' | 'mid' | 'neg';
+
+export function opinionTone(opinion: number): OpinionTone {
+  return opinion >= REGARD_NEUTRAL ? 'pos' : opinion > -REGARD_NEUTRAL ? 'mid' : 'neg';
+}
+
 export function regardFromThem(
   observer: Person,
   subject: Person,
@@ -71,8 +89,8 @@ export function regardFromThem(
   const opinion = relationships.opinion(subject.id, observer.id);
   const words =
     opinion >= 40 ? 'They seem fond of you.' :
-    opinion >= 10 ? 'They seem to like you.' :
-    opinion > -10 ? 'They seem to have no strong feeling about you.' :
+    opinion >= REGARD_NEUTRAL ? 'They seem to like you.' :
+    opinion > -REGARD_NEUTRAL ? 'They seem to have no strong feeling about you.' :
     opinion > -40 ? 'They seem to dislike you.' :
     'They seem to hate you.';
   return { words, opinion: level === 'close' ? opinion : null };

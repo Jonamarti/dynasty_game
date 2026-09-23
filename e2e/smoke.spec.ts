@@ -924,6 +924,68 @@ test('the family tree opens on K and reads top to bottom', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('the tribe graph hides other bands until asked, and says how many it hid', async ({ page }) => {
+  // Owner's note of 2026-09-23: members of other tribes were drawn in the
+  // tribe graph. The player is introduced to one of their own band and one
+  // from another; only the first is drawn until the switch is pressed.
+  const errors = guardErrors(page);
+  await ready(page);
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { id: number };
+        bandIdOf: (p: unknown) => number;
+        livingPeople: () => { id: number; bandId: number }[];
+        relationships: {
+          introduce: (a: number, b: number, bias: number) => boolean;
+          addDeed: (a: number, b: number, d: number, t: number) => void;
+        };
+      };
+    };
+  };
+  const ok = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const people = d.sim.livingPeople();
+    const self = people.find(p => p.id === d.sim.player.id)!;
+    const home = d.sim.bandIdOf(self);
+    const kin = people.find(p => p.id !== self.id && d.sim.bandIdOf(p) === home);
+    const other = people.find(p => d.sim.bandIdOf(p) !== home);
+    if (!kin || !other) return false;
+    for (const id of [kin.id, other.id]) {
+      d.sim.relationships.introduce(self.id, id, 0);
+      d.sim.relationships.addDeed(self.id, id, 40, 0);
+    }
+    return true;
+  });
+  expect(ok).toBe(true);
+
+  await page.keyboard.press('t');
+  await expect(page.locator('.tribegraph-card')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.tribegraph-sub').first()).toContainText('from other bands hidden');
+  const before = await page.locator('.tribegraph-node').count();
+
+  await page.locator('.tribegraph-toggle').click();
+  await expect(page.locator('.tribegraph-toggle')).toHaveClass(/is-on/);
+  await expect.poll(() => page.locator('.tribegraph-node').count()).toBeGreaterThan(before);
+  await expect(page.locator('.tribegraph-sub').first()).not.toContainText('hidden');
+
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});
+
+test('the family tree colours a line by what its two ends think of each other', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.keyboard.press('k');
+  await expect(page.locator('.familytree-card')).toBeVisible({ timeout: 10_000 });
+  // A founder's family is introduced at birth or marriage, and the player can
+  // read their own ties, so every line touching the player carries a tone.
+  const toned = page.locator('.familytree-edge.is-pos, .familytree-edge.is-mid, .familytree-edge.is-neg');
+  await expect.poll(() => toned.count()).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});
+
 test('the tribe graph opens on T and is empty rather than broken for a friendless founder', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);
