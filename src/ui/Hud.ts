@@ -38,7 +38,7 @@ import {
   knowledgeOfPerson, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree,
   rememberedAbout, regardFromThem,
 } from '../sim/social/Knowledge.ts';
-import type { Relationship } from '../sim/social/Relationships.ts';
+import type { Relationship, RelationshipGraph } from '../sim/social/Relationships.ts';
 import { TECH, TECH_EFFECTS, techPower, type Tech } from '../sim/knowledge/Tech.ts';
 import {
   STAGE_LABELS, PRACTICE_STAGE_LABELS, PROTOTYPE_AT, TRIES_TO_TEST,
@@ -1210,16 +1210,38 @@ export class Hud {
       return rows;
     }
 
-    const ties = sim.relationships.knownBy(person.id).slice(0, 14);
-    if (ties.length === 0) {
+    // M11 phase 13c (owner's note 14): the living first, the dead folded
+    // away underneath. `knownBy` ranks by strength of feeling and never asked
+    // who was alive, so a dead parent at +80 pushed a living neighbour out of
+    // the fourteen. The fold survives the panel being refreshed: a person's
+    // panel is rebuilt only when the selection or the tab changes (everything
+    // else is `refreshPerson`), so an opened list stays open.
+    const everyone = sim.relationships.knownBy(person.id);
+    const living = everyone.filter(t => sim.peopleById.get(t.subjectId)?.alive).slice(0, 14);
+    const dead = everyone.filter(t => !sim.peopleById.get(t.subjectId)?.alive).slice(0, 14);
+    if (living.length === 0 && dead.length === 0) {
       rows.push('<div class="hud-section">Ties</div>' +
         '<div class="hud-sub">Knows nobody yet.</div>');
       return rows;
     }
 
-    rows.push('<div class="hud-section">' + ties.length +
-      (ties.length === 1 ? ' person' : ' people') + ' they know</div>');
+    rows.push('<div class="hud-section">' + living.length +
+      (living.length === 1 ? ' person' : ' people') + ' they know</div>');
+    rows.push(...this.tieRows(observer, living, sim));
+    if (dead.length > 0) {
+      rows.push('<details class="hud-dead"><summary>' + dead.length +
+        ' dead they remember</summary>' + this.tieRows(observer, dead, sim).join('') + '</details>');
+    }
+    return rows;
+  }
 
+  /** One row per tie, for the living list and the folded list of the dead. */
+  private tieRows(
+    observer: Person,
+    ties: ReturnType<RelationshipGraph['knownBy']>,
+    sim: Simulation
+  ): string[] {
+    const rows: string[] = [];
     for (const tie of ties) {
       const other = sim.peopleById.get(tie.subjectId);
       if (!other) continue;

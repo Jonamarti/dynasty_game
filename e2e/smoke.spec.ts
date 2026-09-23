@@ -1373,6 +1373,40 @@ test('character creation picks a life inside a world that already exists', async
   expect(errors).toEqual([]);
 });
 
+test('the dead are folded away under the living, and the fold stays open', async ({ page }) => {
+  // M11 phase 13c. The dead used to be ranked in with the living and push
+  // them out of the fourteen; now they sit in a closed `<details>`. The panel
+  // is patched every frame, not rebuilt, so an opened fold must stay open —
+  // the overlay-that-redraws trap `AGENTS.md` warns about.
+  const errors = guardErrors(page);
+  await ready(page);
+  const name = await page.evaluate(() => {
+    const sim = (window as never as { __dynasty: { sim: {
+      player: { id: number };
+      relationships: { knownBy(id: number): { subjectId: number }[] };
+      peopleById: Map<number, { alive: boolean; name: string; die(cause: string): void }>;
+    } } }).__dynasty.sim;
+    const tie = sim.relationships.knownBy(sim.player.id)
+      .find(t => sim.peopleById.get(t.subjectId)?.alive);
+    const who = sim.peopleById.get(tie!.subjectId)!;
+    who.die('the test');
+    return who.name;
+  });
+
+  await page.locator('.hud-tab', { hasText: 'Ties' }).click();
+  const fold = page.locator('.hud-dead');
+  await expect(fold).toHaveCount(1);
+  await expect(fold).not.toHaveAttribute('open', '');
+  await expect(fold.locator('summary')).toHaveText('1 dead they remember');
+
+  await fold.locator('summary').click();
+  await page.waitForTimeout(600);
+  await expect(fold).toHaveAttribute('open', '');
+  await expect(fold).toContainText(name);
+
+  expect(errors).toEqual([]);
+});
+
 test('the ties tab can send the camera to somebody', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);

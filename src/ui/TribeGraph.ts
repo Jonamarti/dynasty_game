@@ -147,9 +147,11 @@ export class TribeGraphOverlay {
     // `tribeMembers` exists for that reason and now takes who is already on
     // screen, so the marginal acquaintance stops flickering in and out.
     const sticky = this.settled ? new Set(this.settled.keys()) : null;
-    const ranks = sim.ranksAround(subject, tribeMembers(subject.id, sim.relationships, sticky));
+    const alive = (id: number): boolean => sim.peopleById.get(id)?.alive ?? false;
+    const ranks = sim.ranksAround(subject,
+      tribeMembers(subject.id, sim.relationships, sticky, alive));
     const layout = layOutTribe(
-      subject.id, sim.relationships, box.width, box.height, ranks, this.settled);
+      subject.id, sim.relationships, box.width, box.height, ranks, this.settled, alive);
     this.settled = layout.settled;
 
     const digest = this.digest(layout, observer);
@@ -172,7 +174,7 @@ export class TribeGraphOverlay {
     const rows = rowsHtml(layout);
 
     const shown = layout.nodes.length - 1;
-    const total = sim.relationships.knownBy(subject.id).length;
+    const { living: total, dead } = this.countKnown(subject.id);
     this.root.innerHTML =
       '<div class="tribegraph-card">' +
       '<div class="tribegraph-head">' +
@@ -181,6 +183,7 @@ export class TribeGraphOverlay {
           (total > shown
             ? 'the ' + shown + ' strongest of ' + total + ' they know'
             : shown + (shown === 1 ? ' person they know' : ' people they know')) +
+          (dead > 0 ? ', and ' + dead + ' dead' : '') +
         '</span>' +
         // Why the picture is suddenly in rows. A view that changes shape
         // without saying what changed it reads as a bug, and the cause here is
@@ -199,6 +202,18 @@ export class TribeGraphOverlay {
         nodes +
       '</div>' +
       '</div>';
+  }
+
+  /** Everybody the subject has feelings about, split by who is still alive. */
+  private countKnown(subjectId: number): { living: number; dead: number } {
+    const sim = this.sim!;
+    let living = 0;
+    let dead = 0;
+    for (const tie of sim.relationships.knownBy(subjectId)) {
+      if (sim.peopleById.get(tie.subjectId)?.alive) living++;
+      else dead++;
+    }
+    return { living, dead };
   }
 
   private nodeHtml(node: TribeNode, sim: Simulation, observer: Person | null): string {
@@ -224,7 +239,10 @@ export class TribeGraphOverlay {
     // Not just the shown nodes: the head line reports the *total* the subject
     // knows against the capped count on screen, and that total can grow
     // without any of the capped set changing.
-    const parts: string[] = [String(sim.relationships.knownBy(layout.nodes[0]!.personId).length)];
+    // Both counts, since 13c: somebody dying changes the head line's "and N
+    // dead" without necessarily changing anything else on screen.
+    const counts = this.countKnown(layout.nodes[0]!.personId);
+    const parts: string[] = [counts.living + '/' + counts.dead];
     for (const node of layout.nodes) {
       const person = sim.peopleById.get(node.personId);
       const known = person && observer

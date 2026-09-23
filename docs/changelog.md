@@ -6,6 +6,33 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-23 — M11 phase 13c: the dead, apart
+
+**The note** (owner's note 14): the dead crowd the living out of every list of
+who somebody knows.
+
+**Why.** `RelationshipGraph.knownBy` ranks by strength of feeling and never
+asked who was alive, and the strongest feelings are often for the dead — a
+dead father at +80 took one of the fourteen places in *Ties*, and one of the
+twenty-four in the tribe graph, that a living neighbour should have had.
+
+**The change.**
+- ***Ties***: the living fill the list; the dead go into a `<details>` under it,
+  closed by default (*"3 dead they remember"*). A person's panel is rebuilt
+  only when the selection or the tab changes — everything else is
+  `refreshPerson` — so an opened fold stays open. A new e2e spec kills an
+  acquaintance, opens the fold and checks it is still open a few dozen frames
+  later.
+- **Tribe graph**: `tribeMembers` and `layOutTribe` take an optional `alive`
+  predicate, and the dead are dropped **before** the cap. The head line adds
+  *"and N dead"*, and the digest carries both counts, since a death can change
+  that line without changing anything else on screen. `tribegraph.test.ts`
+  pins that no dead person is drawn and the cap is still filled.
+
+UI only.
+
+---
+
 ## 2026-09-23 — M11 phase 13b: *Between you*
 
 **The note** (owner's note 5): clicking somebody showed their family, their

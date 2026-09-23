@@ -178,11 +178,17 @@ const RANKED_MIN_GAP = 88;
 export function tribeMembers(
   subjectId: number,
   relationships: RelationshipGraph,
-  sticky?: ReadonlySet<number> | null
+  sticky?: ReadonlySet<number> | null,
+  alive?: (personId: number) => boolean
 ): number[] {
   const chosen: number[] = [];
   const spare: number[] = [];
   for (const tie of relationships.knownBy(subjectId)) {
+    // M11 phase 13c (owner's note 14): the dead are filtered out *before* the
+    // cut, not after. `knownBy` ranks by strength of feeling and never asked
+    // who was still alive, so a dead father at +80 took a place a living
+    // neighbour should have had. The panel's head line counts them instead.
+    if (alive && !alive(tie.subjectId)) continue;
     if (chosen.length < MAX_PEOPLE) chosen.push(tie.subjectId);
     else if (sticky?.has(tie.subjectId) && spare.length < STICKY_SLACK) spare.push(tie.subjectId);
   }
@@ -229,10 +235,11 @@ export function layOutTribe(
   width: number,
   height: number,
   ranks?: ReadonlyMap<number, BandRank> | null,
-  previous?: ReadonlyMap<number, { x: number; y: number }> | null
+  previous?: ReadonlyMap<number, { x: number; y: number }> | null,
+  alive?: (personId: number) => boolean
 ): TribeLayout {
   const members = tribeMembers(subjectId, relationships,
-    previous ? new Set(previous.keys()) : null).slice(1);
+    previous ? new Set(previous.keys()) : null, alive).slice(1);
   const known = members.map(id => ({
     subjectId: id,
     opinion: relationships.opinion(subjectId, id),

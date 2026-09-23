@@ -195,6 +195,21 @@ describe('the tribe graph in ranks', () => {
     }
   });
 
+  it('leaves the dead out before the cap, not after', () => {
+    // M11 phase 13c. The strongest feelings are often for the dead — a
+    // parent, a spouse — and ranking them in with the living let them take
+    // the places of people the subject still lives among.
+    const rel = new RelationshipGraph();
+    for (let id = 2; id <= 60; id++) rel.addDeed(1, id, id, 0);
+    const dead = new Set([60, 59, 58, 57, 56]);
+    const alive = (id: number) => !dead.has(id);
+    const members = tribeMembers(1, rel, null, alive);
+    expect(members.some(id => dead.has(id))).toBe(false);
+    expect(members.length).toBe(tribeMembers(1, rel).length);
+    const layout = layOutTribe(1, rel, 900, 600, null, null, alive);
+    expect(layout.nodes.some(node => dead.has(node.personId))).toBe(false);
+  });
+
   it('names the people it is about to draw, subject first and capped alike', () => {
     // The panel asks the simulation for ranks *before* the layout runs, so
     // this list and the drawn nodes have to be the same set: a rank worked out
