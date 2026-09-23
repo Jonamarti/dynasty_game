@@ -9,6 +9,7 @@
  *
  * Everything here reads the simulation and never writes to it.
  */
+import type { Corpse } from '../sim/entities/Corpse.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
 import { Interpolator, type Placed } from './Interpolator.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
@@ -230,6 +231,7 @@ export interface Highlight {
   pileId?: number;
   inscriptionId?: number;
   animalId?: number;
+  corpseId?: number;
 }
 
 export class Renderer {
@@ -513,6 +515,37 @@ export class Renderer {
         ctx.strokeText(pile.label, px, py + size * 0.28 + 12);
         ctx.fillStyle = 'rgba(240, 237, 232, 0.9)';
         ctx.fillText(pile.label, px, py + size * 0.28 + 12);
+      }
+    }
+
+    // --- Bodies --------------------------------------------------------------
+    // M11 phase 16a. A body lies where somebody died, drawn low and grey on
+    // the ground below the living. Nothing on the map says whose it is:
+    // that is for the inspector to say, and only to somebody who knew them.
+    for (const corpse of sim.corpses) {
+      if (corpse.x < view.minX || corpse.x > view.maxX) continue;
+      if (corpse.y < view.minY || corpse.y > view.maxY) continue;
+      if (sim.isBuried(corpse.x, corpse.y)) continue;
+      const px = camera.worldToScreenX(corpse.x);
+      const py = camera.worldToScreenY(corpse.y);
+      const long = scale * 0.5;
+      const wide = scale * 0.18;
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.fillRect(px - long / 2 + 1, py - wide / 2 + 2, long, wide);
+      ctx.fillStyle = '#8e8a84';
+      ctx.fillRect(px - long / 2, py - wide / 2, long, wide);
+      ctx.fillStyle = '#b3aea6';
+      ctx.beginPath();
+      ctx.arc(px + long / 2, py, wide * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+      if (corpse.wounded) {
+        ctx.fillStyle = '#8a2c24';
+        ctx.fillRect(px - wide * 0.4, py - wide * 0.3, wide * 0.8, wide * 0.6);
+      }
+      if (highlight?.corpseId === corpse.id) {
+        ctx.strokeStyle = '#7fd4ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px - long / 2 - 3, py - wide / 2 - 3, long + wide + 6, wide + 6);
       }
     }
 
@@ -1359,6 +1392,8 @@ export function hitRadiusOf(target: HitTarget): number {
     // `drawTree` paints a canopy of `tree.radius * 0.55`; a seedling is ~0.2.
     case 'tree': return Math.max(0.2, target.tree.radius * 0.55);
     case 'pile': return 0.3;
+    // Matches the body painted above: half a tile long.
+    case 'corpse': return 0.35;
     // Matches the upright stone painted above: small, and easy to miss under
     // somebody standing on it, which is what the picker is for.
     case 'inscription': return 0.32;
@@ -1373,5 +1408,6 @@ export type HitTarget =
   | { kind: 'node'; node: ResourceNode }
   | { kind: 'tree'; tree: Tree }
   | { kind: 'pile'; pile: ItemPile }
+  | { kind: 'corpse'; corpse: Corpse }
   | { kind: 'inscription'; inscription: Inscription }
   | { kind: 'animal'; animal: Animal };

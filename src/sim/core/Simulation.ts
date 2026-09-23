@@ -45,6 +45,7 @@ import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
+import { Corpse, resetCorpseIds, WOUNDS_SHOW_FOR } from '../entities/Corpse.ts';
 import {
   Animal, resetAnimalIds, SPECIES, SPECIES_DEFS, type Species,
 } from '../entities/Animal.ts';
@@ -214,6 +215,8 @@ export class Simulation {
   buildings: Building[] = [];
   trees: Tree[] = [];
   piles: ItemPile[] = [];
+  /** Every body lying where somebody died — M11 phase 16a. See `Corpse.ts`. */
+  corpses: Corpse[] = [];
   animals: Animal[] = [];
   households: Household[] = [];
   bands: Band[] = [];
@@ -298,6 +301,9 @@ export class Simulation {
   readonly treeHash = new SpatialHash<Tree>(8);
   readonly pileHash = new SpatialHash<ItemPile>(8);
   readonly pilesById = new Map<number, ItemPile>();
+  /** Rebuilt only when a body is added or taken away, like `pileHash`. */
+  readonly corpseHash = new SpatialHash<Corpse>(8);
+  readonly corpsesById = new Map<number, Corpse>();
   readonly animalHash = new SpatialHash<Animal>(8);
   readonly animalsById = new Map<number, Animal>();
 
@@ -497,6 +503,7 @@ export class Simulation {
     resetHouseholdIds();
     resetTreeIds();
     resetPileIds();
+    resetCorpseIds();
     resetInscriptionIds();
     resetAnimalIds();
 
@@ -3224,11 +3231,24 @@ export class Simulation {
    */
   private cleanupDead(): void {
     let anyDead = false;
+    let anyBody = false;
     for (const person of this.people) {
       if (person.alive) continue;
       anyDead = true;
-      if (!person.affairsSettled) this.settleAffairs(person);
+      if (!person.affairsSettled) {
+        this.settleAffairs(person);
+        // M11 phase 16a: every death leaves a body where it happened — the
+        // old man in his hut as much as the man in the clearing.
+        const wounded = (person.causeOfDeath ?? '').startsWith('killed') ||
+          this.time.tick - person.lastHarmedTick < WOUNDS_SHOW_FOR;
+        const corpse = new Corpse(person, this.time.tick, wounded);
+        this.corpses.push(corpse);
+        this.corpsesById.set(corpse.id, corpse);
+        anyBody = true;
+        telemetry.count('corpse_left');
+      }
     }
+    if (anyBody) this.corpseHash.rebuild(this.corpses);
     // The player's body stays in the array so the UI can show what happened
     // until the succession is taken up.
     if (anyDead) this.people = this.people.filter(p => p.alive || p.isPlayer);

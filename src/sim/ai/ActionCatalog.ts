@@ -11,6 +11,7 @@
  * greyed-out option, because "why can't I do that?" deserves an answer in the
  * menu rather than a shrug.
  */
+import type { Corpse } from '../entities/Corpse.ts';
 import { isHeld } from '../social/Defence.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import type { Person } from '../entities/Person.ts';
@@ -37,7 +38,7 @@ import { t, aNoun, theNoun, language, joinAnd } from '../../i18n/i18n.ts';
 import { capitalise } from '../../i18n/i18n.ts';
 
 export type TargetKind =
-  'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription';
+  'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription' | 'corpse';
 
 export interface ActionTarget {
   kind: TargetKind;
@@ -50,6 +51,7 @@ export interface ActionTarget {
   pile?: ItemPile;
   animal?: Animal;
   inscription?: Inscription;
+  corpse?: Corpse;
 }
 
 export interface ActionOption {
@@ -274,6 +276,9 @@ export function availableActions(
     case 'building': return buildingActions(actor, target.building!, ctx);
     case 'inscription': return recordActions(actor, target.inscription!);
     case 'ground': return groundActions(actor, target, ctx);
+    // M11 phase 16a: a body is something to look at. What can be done to one
+    // arrives with 16b, in the same commit as the verbs that do it.
+    case 'corpse': return [];
   }
 }
 

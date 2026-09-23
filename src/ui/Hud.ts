@@ -20,6 +20,7 @@
  *  - **Life** — not their diary, but *what you remember about them*, which is a
  *    very different and usually much shorter list.
  */
+import type { Corpse } from '../sim/entities/Corpse.ts';
 import { isHeld, isBound } from '../sim/social/Defence.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
@@ -64,6 +65,7 @@ export type Selection =
   | { kind: 'building'; building: Building }
   | { kind: 'tree'; tree: Tree }
   | { kind: 'pile'; pile: ItemPile }
+  | { kind: 'corpse'; corpse: Corpse }
   | { kind: 'inscription'; inscription: Inscription }
   | { kind: 'animal'; animal: Animal };
 
@@ -721,6 +723,9 @@ export class Hud {
         break;
       case 'pile':
         this.panelBodyEl.innerHTML = this.pileRows(selection.pile, sim).join('');
+        break;
+      case 'corpse':
+        this.panelBodyEl.innerHTML = this.corpseRows(observer, selection.corpse, sim).join('');
         break;
       case 'inscription':
         this.panelBodyEl.innerHTML =
@@ -1587,6 +1592,23 @@ export class Hud {
     return rows;
   }
 
+  /**
+   * A body — M11 phase 16a. Named only for somebody who knew them
+   * (`corpseTitle`); how long it has lain there and whether it bears wounds
+   * are on it for anybody to see. The cause is not: a wound says violence,
+   * not whose.
+   */
+  private corpseRows(observer: Person, corpse: Corpse, sim: Simulation): string[] {
+    const rows: string[] = [];
+    const days = Math.floor((sim.time.tick - corpse.diedTick) / sim.config.time.ticksPerDay);
+    rows.push('<div class="hud-name">' + escapeHtml(corpseTitle(observer, corpse, sim.relationships)) + '</div>');
+    rows.push('<div class="hud-sub">' +
+      (days > 0 ? t('lying here {n}d', { n: days }) : t('died today')) + '</div>');
+    rows.push('<div class="hud-sub">' +
+      (corpse.wounded ? t('The body bears wounds.') : t('No wound on the body.')) + '</div>');
+    return rows;
+  }
+
   private buildingRows(observer: Person, building: Building, sim: Simulation): string[] {
     const known = knowledgeOfBuilding(observer, building);
     const rows: string[] = [];
@@ -1793,6 +1815,7 @@ function panelTitle(observer: Person, selection: Selection, sim: Simulation): st
     case 'building': return t(selection.building.def.label);
     case 'tree': return t(selection.tree.def.label);
     case 'pile': return t('Dropped goods');
+    case 'corpse': return corpseTitle(observer, selection.corpse, sim.relationships);
     case 'inscription': return t(selection.inscription.def.label);
     case 'animal': return t(selection.animal.label);
   }
@@ -1815,6 +1838,7 @@ export function selectionKey(selection: Selection): string {
     case 'building': return 'b' + selection.building.id;
     case 'tree': return 't' + selection.tree.id;
     case 'pile': return 'i' + selection.pile.id;
+    case 'corpse': return 'c' + selection.corpse.id;
     // The marks on it change as it is cut, and the reading of it changes with
     // who is looking, so both go in the key.
     case 'inscription': return 'r' + selection.inscription.id +
@@ -1954,4 +1978,17 @@ function escapeHtml(value: string): string {
     ch === '>' ? '&gt;' :
     ch === '"' ? '&quot;' : '&#39;'
   );
+}
+
+/**
+ * What a body is called, for `observer` — M11 phase 16a. "The body of Ana"
+ * for somebody who knew Ana; "the body of a young woman" for a stranger,
+ * the way `knowledgeOfPerson` names the living.
+ */
+export function corpseTitle(
+  observer: Person, corpse: Corpse, relationships: Simulation['relationships']
+): string {
+  return t('The body of {name}', {
+    name: knowledgeOfPerson(observer, corpse.person, relationships).displayName,
+  });
 }

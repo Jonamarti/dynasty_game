@@ -12,7 +12,7 @@ import { Simulation } from './sim/core/Simulation.ts';
 import { Camera } from './render/Camera.ts';
 import { Renderer, hitRadiusOf, nodeIsHidden, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
 import { actionLabel, stopReasonLabel } from './render/Floaters.ts';
-import { Hud, type Selection } from './ui/Hud.ts';
+import { Hud, corpseTitle, type Selection } from './ui/Hud.ts';
 import { RadialMenu } from './ui/RadialMenu.ts';
 import { EntityPicker, type PickerEntry } from './ui/EntityPicker.ts';
 import { QuantityPicker } from './ui/QuantityPicker.ts';
@@ -833,6 +833,13 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
       { kind: 'pile', pile }, pile.x, pile.y);
   }
 
+  // M11 phase 16a. Below the living, above the ground.
+  for (const corpse of sim.corpseHash.queryRadius(worldX, worldY, PICK_RANGE)) {
+    if (sim.isBuried(corpse.x, corpse.y)) continue;
+    consider({ kind: 'corpse', x: corpse.x, y: corpse.y, corpse },
+      { kind: 'corpse', corpse }, corpse.x, corpse.y);
+  }
+
   for (const animal of sim.animalHash.queryRadius(worldX, worldY, PICK_RANGE)) {
     if (!animal.alive) continue;
     consider({ kind: 'animal', x: animal.x, y: animal.y, animal },
@@ -894,6 +901,7 @@ const PICKER_ICONS: Record<string, string> = {
   node: '\u{1F33F}',
   tree: '\u{1F333}',
   pile: '\u{1F4E6}',
+  corpse: '\u{1FAA6}',
   inscription: '\u{1FAA8}',
   animal: '\u{1F98C}',
   building: '\u{1F3E0}',
@@ -922,6 +930,8 @@ function describeCandidate(observer: Person, target: ActionTarget): string {
       // `ItemPile.label` already exists and used to go unread here — the
       // picker said "dropped goods" for a stack of six flints and a fish.
       return target.pile!.label;
+    case 'corpse':
+      return corpseTitle(observer, target.corpse!, sim.relationships);
     case 'inscription': {
       // Gated like everything else the picker says. Somebody who cannot read is
       // told there are marks, not what they are.
@@ -969,6 +979,8 @@ function ringFor(target: ActionTarget): { x: number; y: number; radius: number }
         radius: hitRadiusOf({ kind: 'animal', animal: target.animal! }) + pad };
     case 'pile':
       return { x: target.x, y: target.y, radius: 0.6 };
+    case 'corpse':
+      return { x: target.x, y: target.y, radius: 0.6 };
     case 'inscription':
       return { x: target.x, y: target.y, radius: 0.6 };
     case 'building':
@@ -986,6 +998,7 @@ function selectTarget(target: ActionTarget): void {
     target.kind === 'node' && target.node ? { kind: 'node', node: target.node } :
     target.kind === 'tree' && target.tree ? { kind: 'tree', tree: target.tree } :
     target.kind === 'pile' && target.pile ? { kind: 'pile', pile: target.pile } :
+    target.kind === 'corpse' && target.corpse ? { kind: 'corpse', corpse: target.corpse } :
     target.kind === 'inscription' && target.inscription
       ? { kind: 'inscription', inscription: target.inscription } :
     target.kind === 'animal' && target.animal ? { kind: 'animal', animal: target.animal } :
@@ -1355,6 +1368,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     target.kind === 'animal' ? t(target.animal!.label) :
     target.kind === 'inscription' ? t(target.inscription!.def.label) :
     target.kind === 'pile' ? t('Dropped goods') :
+    target.kind === 'corpse' ? corpseTitle(actor, target.corpse!, sim.relationships) :
     t('Ground');
 
   radial.show(
@@ -2036,6 +2050,7 @@ function frame(now: number): void {
     selected.kind === 'node' ? { nodeId: selected.node.id } :
     selected.kind === 'tree' ? { treeId: selected.tree.id } :
     selected.kind === 'pile' ? { pileId: selected.pile.id } :
+    selected.kind === 'corpse' ? { corpseId: selected.corpse.id } :
     selected.kind === 'animal' ? { animalId: selected.animal.id } :
     selected.kind === 'inscription' ? { inscriptionId: selected.inscription.id } :
     { buildingId: selected.building.id }
