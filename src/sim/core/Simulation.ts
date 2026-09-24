@@ -238,6 +238,8 @@ export class Simulation {
   bands: Band[] = [];
   /** Visitor band -> owner band permission, expiring at an absolute day. */
   private readonly territoryPermissions = new Map<string, number>();
+  /** Social events already folded into household feuds. */
+  private readonly feudEvents = new Set<number>();
 
   /**
    * Knowledge the world has, counted from the adults alive right now.
@@ -1394,6 +1396,38 @@ export class Simulation {
       tick: this.time.tick, ageDays: person.age,
       text: t('escaped from the {band}', { band: captors?.name ?? '' }), kind: 'milestone',
     });
+  }
+
+  /**
+   * Turns a cross-band wrong into a family memory. The event is processed once
+   * per daily pass: personal memories still handle the immediate reaction, but
+   * the feud survives the death of both witnesses because its value belongs to
+   * the two households rather than to either person.
+   */
+  private settleFeuds(): void {
+    for (const event of this.social.recent) {
+      if (this.feudEvents.has(event.id) || event.targetId === null) continue;
+      const actor = this.peopleById.get(event.actorId);
+      const target = this.peopleById.get(event.targetId);
+      if (!actor || !target || actor.bandId === target.bandId ||
+        actor.householdId === null || target.householdId === null ||
+        DEED_WEIGHT[event.type] >= 0) continue;
+      const aggressor = this.householdsById.get(actor.householdId);
+      const victim = this.householdsById.get(target.householdId);
+      if (!aggressor || !victim || aggressor.id === victim.id) continue;
+      const weight = Math.min(100, Math.abs(DEED_WEIGHT[event.type]) *
+        (0.5 + event.magnitude * 0.5));
+      aggressor.feud.set(victim.id, Math.min(100, (aggressor.feud.get(victim.id) ?? 0) + weight));
+      victim.feud.set(aggressor.id, Math.min(100, (victim.feud.get(aggressor.id) ?? 0) + weight));
+      for (const memberId of aggressor.memberIds) {
+        for (const victimId of victim.memberIds) {
+          this.relationships.addDeed(memberId, victimId, -Math.min(18, weight * 0.25), this.time.tick);
+          this.relationships.addDeed(victimId, memberId, -Math.min(18, weight * 0.25), this.time.tick);
+        }
+      }
+      telemetry.count('household_feud_started');
+      this.feudEvents.add(event.id);
+    }
   }
 
   /**
@@ -3440,6 +3474,7 @@ export class Simulation {
       // who were there when it started, so it decays slower still than
       // renown — see `BandRelations`'s own header.
       this.bandRelations.decay();
+      this.settleFeuds();
       this.settleCaptives();
       for (const person of this.people) {
         if (person.alive) {

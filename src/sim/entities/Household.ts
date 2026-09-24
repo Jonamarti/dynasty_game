@@ -44,6 +44,9 @@ export class Household {
    */
   renown = 0;
 
+  /** Persistent hostility toward other houses, keyed by household id. */
+  readonly feud = new Map<number, number>();
+
   /** Ticks at which the household was founded and (if ever) died out. */
   readonly foundedTick: number;
   endedTick: number | null = null;

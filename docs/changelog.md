@@ -25,6 +25,13 @@ reclamada por el vecino que se va a cruzar. El grupo marcha al lugar donde
 conoce que falta comida o material, manteniendo separada la necesidad de una
 venganza personal.
 
+## 2026-09-24 — M12 phase 6a: enemistad entre hogares
+
+Los agravios graves entre bandas se incorporan una vez al día a
+`Household.feud` en ambas casas y se aplican a sus miembros actuales. La
+enemistad deja de depender de que siga viva la persona que vio el golpe: el
+hogar conserva el vínculo hostil y sus siguientes generaciones lo reciben.
+
 ## 2026-09-24 — M12 phase 5a: casillas de territorio
 
 Una banda que conoce `marking` deja de tener únicamente un radio defensivo:

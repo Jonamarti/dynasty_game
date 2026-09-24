@@ -230,10 +230,10 @@ correlación, medida en la cohorte `lean`.
 La otra vía del propietario: no por recursos, sino porque «uno de otra tribu
 me ha atacado», se comenta y la relación va bajando.
 
-- **6a. La enemistad se hereda.** El `feud` de `m11_plan.md`: un campo en
-  `Household` que `linkFamily` propaga, de forma que «la casa que mató a mi
-  abuelo» sea una relación de generaciones. Es la semilla del archienemigo
-  multigeneracional que el propietario quiere a largo plazo.
+- **6a. La enemistad se hereda. Construida** (2026-09-24, detalle en
+  `changelog.md`). Cada agravio grave entre bandas alimenta `Household.feud`
+  en ambas casas y baja la relación entre sus miembros. Como el campo vive en
+  el hogar, pasa a los hijos y sobrevive a la muerte de los testigos.
 - **6b. La venganza se organiza.** Un agravio grave contra un miembro de la
   familia lleva a los parientes a buscar al culpable (con `investigate`, que ya
   existe), no a golpear al primer extranjero que pasa.
