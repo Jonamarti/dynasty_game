@@ -253,7 +253,9 @@ distintos por la división del trabajo». Los mimbres existen (renombre de
 hogar, jefes, `division_of_labour`, trabajos). Falta:
 
 - Riqueza heredada que se acumula por hogar y compra posición (regalos,
-  compensaciones, dote).
+  compensaciones, dote). **Construida** (2026-09-24): `Household.wealth`
+  conserva la riqueza almacenada y se suma al fusionar dos casas; la autoridad
+  compara ese patrimonio persistente además del contenido visible actual.
 - Especialistas que viven de su oficio y *intercambian* dentro de la banda
   (hoy nadie tiene excedente, `bugs.md`).
 - Una élite (el hogar del jefe y sus aliados) con acceso preferente al

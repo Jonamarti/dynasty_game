@@ -23,6 +23,13 @@ regalo grande eliminan el `feud` en ambos hogares y recuperan parte de la
 opinión entre sus miembros. La enemistad conserva una salida social en lugar de
 ser un contador que sólo puede crecer.
 
+## 2026-09-24 — M12 phase 7a: riqueza heredada
+
+Los hogares tienen ahora `wealth`, una memoria de la riqueza que han acumulado
+en sus almacenes. La posición de autoridad usa el máximo entre ese patrimonio
+y lo que se ve actualmente; cuando dos casas se unen por matrimonio, la riqueza
+de ambas pasa a la casa resultante.
+
 ## 2026-09-24 — M12 phase 5c: permiso y tributo de paso
 
 El menú social permite pedir permiso a un vecino extranjero para recolectar en

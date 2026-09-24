@@ -186,7 +186,8 @@ const RENOWN_SPAN = 40;
 /** The goods sitting at a household's home, or zero if it has none yet. */
 function wealthOf(household: Household, ctx: AuthorityContext): number {
   if (household.homeBuildingId === null) return 0;
-  return ctx.buildingsById.get(household.homeBuildingId)?.store.total ?? 0;
+  return Math.max(household.wealth,
+    ctx.buildingsById.get(household.homeBuildingId)?.store.total ?? 0);
 }
 
 /**

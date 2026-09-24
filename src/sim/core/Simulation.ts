@@ -985,6 +985,7 @@ export class Simulation {
       ? null
       : this.householdsById.get(younger.householdId);
     if (source && source.id !== target.id) this.closeFeud(source, target);
+    if (source && source.id !== target.id) target.wealth += source.wealth;
     if (source && source.id !== target.id) {
       for (const memberId of [...source.memberIds]) {
         const member = this.peopleById.get(memberId);
@@ -3492,6 +3493,11 @@ export class Simulation {
       // recollection. Kept here rather than folded into `dailyUpkeep`,
       // because `SocialSystem` knows people and feelings, not households.
       for (const household of this.households) household.renown *= RENOWN_DECAY_PER_DAY;
+      for (const household of this.households) {
+        if (household.homeBuildingId === null) continue;
+        const home = this.buildingsById.get(household.homeBuildingId);
+        if (home) household.wealth = Math.max(household.wealth, home.store.total);
+      }
       // M12 phase 2a: a debt to the dead, or one nobody has come for in a
       // year, is not owed any more.
       for (const person of this.people) {

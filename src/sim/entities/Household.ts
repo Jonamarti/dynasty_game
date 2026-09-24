@@ -43,6 +43,8 @@ export class Household {
    * one number that genuinely belongs to the family rather than the person.
    */
   renown = 0;
+  /** Stored wealth remembered by the household, including inherited position. */
+  wealth = 0;
 
   /** Persistent hostility toward other houses, keyed by household id. */
   readonly feud = new Map<number, number>();
