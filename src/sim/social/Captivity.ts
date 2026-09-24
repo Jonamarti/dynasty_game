@@ -37,6 +37,13 @@ export function isCaptive(person: Person): boolean {
   return person.captiveOf !== null && person.bandId === person.captiveOf;
 }
 
+/** A child who survives a month in captivity can be absorbed by the captors. */
+export const CAPTIVE_ADOPTION_DAYS = 30;
+
+/** The mood cost is deliberately small per day: captivity is a lasting weight,
+ * not a second lethal need that makes every prisoner die before rescue matters. */
+export const CAPTIVE_DAILY_MOOD_LOSS = 1.5;
+
 /**
  * Whether somebody is an escaped captive still on the way home — an outcast
  * who remembers where they were taken from.

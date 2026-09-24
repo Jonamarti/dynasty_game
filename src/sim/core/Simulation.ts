@@ -83,6 +83,7 @@ import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { BandMaps } from '../social/BandMaps.ts';
+import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
 
 /**
  * Something somebody worked out, waiting to be reported. See
@@ -1133,6 +1134,17 @@ export class Simulation {
     if (!leader.alive || !subordinate.alive) return false;
     if (leader.id === subordinate.id) return this.order(leader, action, target);
 
+    // M12 phase 4c: a captive has no standing to refuse a direct order from
+    // the people holding them. Keeping this exception here, at the same seam
+    // as every other order, means the player and the AI get the same forced
+    // labour rule instead of one of them quietly bypassing it.
+    if (isCaptive(subordinate) && subordinate.captiveOf === leader.bandId &&
+      leader.captiveOf === null) {
+      telemetry.count('captive_order_obeyed');
+      subordinate.mood.add('purpose', -2, 'forced labour', this.time.tick);
+      return this.order(subordinate, action, target);
+    }
+
     const standing = this.standing(leader, subordinate, action,
       this.ordersForeignProperty(subordinate, target.buildingId));
     if (this.commandRng.next() >= standing.chance) {
@@ -1335,6 +1347,7 @@ export class Simulation {
     // walk back to, and the escapee's road home needs one.
     person.captiveFrom = from && !from.outcast ? from.id : null;
     person.captiveOf = captors.id;
+    person.captiveSince = this.time.tick;
     // A child taken away is not only a state change. It is the kind of public
     // wrong a whole people carries, so witnesses must see the event while the
     // victim still belongs to their old band; changing bandId first would make
@@ -1368,6 +1381,7 @@ export class Simulation {
   private escape(person: Person): void {
     const captors = this.bands.find(b => b.id === person.captiveOf);
     person.captiveOf = null;
+    person.captiveSince = null;
     const outcasts = this.outcastBand();
     person.bandId = outcasts.id;
     person.job = null;
@@ -1375,6 +1389,80 @@ export class Simulation {
       tick: this.time.tick, ageDays: person.age,
       text: t('escaped from the {band}', { band: captors?.name ?? '' }), kind: 'milestone',
     });
+  }
+
+  /**
+   * Pays a captor to release somebody. The payer must belong to the captive's
+   * old band and stand at the captor's camp; goods go to the captor directly,
+   * so this is a real exchange rather than a menu-only pardon.
+   */
+  ransomCaptive(payer: Person, captive: Person, itemId: string, count: number): boolean {
+    if (!payer.alive || !captive.alive || !isCaptive(captive) || count <= 0) return false;
+    if (payer.bandId !== captive.captiveFrom || payer.distanceTo(captive) > 6) return false;
+    if (!payer.inventory.has(itemId, count)) return false;
+    const captor = this.people.find(person =>
+      person.alive && person.bandId === captive.captiveOf && !person.isChild);
+    if (!captor) return false;
+    payer.inventory.remove(itemId, count);
+    captor.inventory.add(itemId, count);
+    const oldBand = captive.captiveFrom;
+    captive.captiveOf = null;
+    captive.captiveSince = null;
+    captive.boundBy = null;
+    captive.boundUntil = -9999;
+    captive.bandId = this.outcastBand().id;
+    captive.captiveFrom = oldBand;
+    captive.clearTarget();
+    captive.forgetPlans();
+    captive.action = 'idle';
+    telemetry.count('captive_ransomed');
+    captive.chronicle.push({
+      tick: this.time.tick, ageDays: captive.age,
+      text: t('was released for a ransom'), kind: 'milestone',
+    });
+    payer.chronicle.push({
+      tick: this.time.tick, ageDays: payer.age,
+      text: t('paid a ransom for {name}', { name: captive.name }), kind: 'did',
+    });
+    return true;
+  }
+
+  /** Once per day, children who have lived long enough among their captors are
+   * adopted into a captor household. Adults remain forced labourers until
+   * escape, rescue or a later social rule gives them another way out. */
+  private settleCaptives(): void {
+    const adoptionTicks = CAPTIVE_ADOPTION_DAYS * this.config.time.ticksPerDay;
+    for (const captive of this.people) {
+      if (!captive.alive || !isCaptive(captive)) continue;
+      captive.mood.add('belonging', -CAPTIVE_DAILY_MOOD_LOSS, 'captivity', this.time.tick);
+      captive.mood.add('security', -CAPTIVE_DAILY_MOOD_LOSS, 'captivity', this.time.tick);
+      if (!captive.isChild || captive.captiveSince === null ||
+        this.time.tick - captive.captiveSince < adoptionTicks) continue;
+      const band = this.bands.find(candidate => candidate.id === captive.captiveOf);
+      const chief = band?.chiefId === null || band?.chiefId === undefined
+        ? null : this.peopleById.get(band.chiefId);
+      const household = chief?.householdId === null || chief?.householdId === undefined
+        ? null : this.householdsById.get(chief.householdId);
+      if (!band || !household) continue;
+      const previous = captive.householdId === null ? null : this.householdsById.get(captive.householdId);
+      if (previous) {
+        previous.remove(captive.id);
+        if (previous.extinct) previous.endedTick = this.time.tick;
+      }
+      captive.householdId = household.id;
+      captive.surname = household.name;
+      household.add(captive.id);
+      captive.captiveOf = null;
+      captive.captiveFrom = null;
+      captive.captiveSince = null;
+      captive.boundBy = null;
+      captive.boundUntil = -9999;
+      telemetry.count('captive_adopted');
+      captive.chronicle.push({
+        tick: this.time.tick, ageDays: captive.age,
+        text: t('was adopted by the {household}', { household: household.name }), kind: 'milestone',
+      });
+    }
   }
 
   /**
@@ -3296,6 +3384,7 @@ export class Simulation {
       // who were there when it started, so it decays slower still than
       // renown — see `BandRelations`'s own header.
       this.bandRelations.decay();
+      this.settleCaptives();
       for (const person of this.people) {
         if (person.alive) {
           decayMood(person);

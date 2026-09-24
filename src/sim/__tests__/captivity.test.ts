@@ -133,4 +133,25 @@ describe('rescue from a rope', () => {
     }
     expect(isBound(captive, sim.time.tick)).toBe(false);
   });
+
+  it('lets a family ransom a captive with goods', () => {
+    const { sim, captor, captive } = aCapture();
+    const payer = sim.livingPeople().find(person =>
+      person.bandId === 1 && !person.isChild && person.id !== captive.id)!;
+    payer.inventory.add('flint', 2);
+    payer.x = captive.x;
+    payer.y = captive.y;
+
+    expect(sim.ransomCaptive(payer, captive, 'flint', 2)).toBe(true);
+    expect(isCaptive(captive)).toBe(false);
+    expect(isEscapee(captive)).toBe(true);
+    expect(payer.inventory.count('flint')).toBe(0);
+    expect(captor.inventory.count('flint')).toBeGreaterThanOrEqual(2);
+  });
+
+  it('makes a captor order obeyed even when the captive has no standing', () => {
+    const { sim, captor, captive } = aCapture();
+    expect(sim.command(captor, captive, 'rest')).toBe(true);
+    expect(captive.order).toBe('rest');
+  });
 });

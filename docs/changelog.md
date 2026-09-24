@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-24 — M12 phase 4c: trabajo forzado, rescate y adopción
+
+La cautividad ya no es sólo una bandera que cambia de pueblo. Un captor puede
+dar órdenes directas que el cautivo debe obedecer, con una penalización visible
+en su ánimo. La familia del cautivo puede pagar bienes en persona mediante
+`ransomCaptive`; el cautivo queda libre y conserva el camino de vuelta a su
+pueblo. Un menor retenido durante treinta días se integra en el hogar del jefe
+captor; los adultos siguen retenidos hasta que escapen o sean rescatados.
+
 Every change, with the date it was made and the reason it was made. Newest
 first. Reasons matter more than descriptions here: a later reader can see *what*
 changed from the diff, but not *why*.

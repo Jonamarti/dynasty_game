@@ -180,10 +180,12 @@ rare, and never lasts») ya están tomadas en las notas 8 y 9:
   sólo otra persona puede desatarlo (`untie`, un verbo nuevo para rescatadores
   de su pueblo o para un captor que lo suelta). La regla del propietario se
   mantiene: el rescate funciona si nadie de la banda captora lo ve.
-- **4c. Qué se hace con un cautivo.** Trabajo forzado (el cautivo obedece
-  órdenes de su captor con una penalización de ánimo), rescate a cambio de
-  bienes, o adopción al cabo del tiempo. Aquí empieza la estratificación por la
-  vía que la historia siguió: el primer grupo sin derechos dentro de una banda.
+- **4c. Qué se hace con un cautivo. Construida** (2026-09-24, detalle en
+  `changelog.md`). El cautivo obedece las órdenes directas de sus captores y
+  pierde ánimo mientras permanece retenido. La familia de origen puede pagar
+  bienes a cambio de liberarlo; los menores que sobreviven treinta días son
+  adoptados por el hogar del jefe captor, mientras los adultos siguen siendo
+  mano de obra forzada hasta escapar o ser rescatados.
 
 **Puerta:** `captives-are-kept` (un cautivo sigue siéndolo tras N días en la
 cohorte), `children-are-taken-and-missed` (cada rapto de niño deja rencor en

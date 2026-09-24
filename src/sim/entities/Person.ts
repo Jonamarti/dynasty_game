@@ -513,6 +513,8 @@ export class Person {
    */
   captiveOf: number | null = null;
   captiveFrom: number | null = null;
+  /** Tick at which the present captivity began; used by the adoption clock. */
+  captiveSince: number | null = null;
   /**
    * The people this person went raiding against, and until when — M11 phase
    * 15d's raid source of captives. Set by `BandSystem.considerRaid` on each
