@@ -21,6 +21,20 @@ restante de ambos; los controles se desactivan cuando no cabe nada más.
 - El botón sólo aparece para el personaje del jugador y el panel sólo abre al
   alcance del depósito; acercarse sigue siendo una acción explícita del juego.
 
+**Corrección:** el panel de edificios se reconstruía cada frame y sustituía el
+botón antes de que el navegador pudiera entregarle el clic. Ahora se conserva
+estable y sólo se redibuja cuando cambia el estado relevante del edificio.
+Se añadieron regresiones para el traspaso con la carga llena y para recuperar
+materiales al cancelar una obra.
+
+## 2026-09-24 — M12 phase 3b: cancelar una obra
+
+Una obra incompleta de la propia banda puede cancelarse desde su ficha. Se
+elimina el sitio y todo lo entregado cae en un montón en su ubicación, para que
+la decisión no destruya materiales ni los convierta en un coste irrecuperable.
+La simulación valida propiedad, estado y existencia, y comunica el resultado al
+jugador.
+
 ## 2026-09-24 — M12 phase 3c: why they like you, and the island's size
 
 **Why they like or dislike you** (owner's note 7). `Knowledge.regardReasons`

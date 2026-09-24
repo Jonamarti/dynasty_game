@@ -93,6 +93,8 @@ export interface HudCallbacks {
   onAssignJob: (person: Person, job: JobId | null) => void;
   /** Open the partial-stack transfer window for a nearby store. */
   onTransfer: (building: Building) => void;
+  /** Cancel an unfinished player-owned construction. */
+  onCancelConstruction: (building: Building) => void;
   /**
    * The three modes the top bar can now reach.
    *
@@ -186,6 +188,8 @@ export class Hud {
 
   /** What the panel was last built for, so it is rebuilt only when it changes. */
   private builtFor: string | null = null;
+  /** A building panel must stay attached long enough for its buttons to be clicked. */
+  private panelStateKey = '';
   private currentSim: Simulation | null = null;
   private currentSelection: Selection | null = null;
 
@@ -425,7 +429,7 @@ export class Hud {
     this.panelEl.addEventListener('click', event => {
       const found = (event.target as HTMLElement)
         .closest('[data-tab], [data-person], [data-focus], [data-possess], ' +
-        '[data-command], [data-verb], [data-job], [data-transfer]');
+        '[data-command], [data-verb], [data-job], [data-transfer], [data-cancel-construction]');
       if (!found) return;
       const node = found as HTMLElement;
 
@@ -460,6 +464,10 @@ export class Hud {
       }
       if (node.dataset.transfer && this.currentSelection?.kind === 'building') {
         this.callbacks.onTransfer(this.currentSelection.building);
+        return;
+      }
+      if (node.dataset.cancelConstruction && this.currentSelection?.kind === 'building') {
+        this.callbacks.onCancelConstruction(this.currentSelection.building);
         return;
       }
       if (node.dataset.verb && node.dataset.item && this.currentSelection?.kind === 'person') {
@@ -696,16 +704,27 @@ export class Hud {
     }
 
     const key = selectionKey(selection) + ':' + this.tab;
-    if (this.builtFor !== key) {
+    const stateKey = key + (selection.kind === 'building'
+      ? ':' + this.buildingStateKey(selection.building)
+      : '');
+    if (this.builtFor !== key || this.panelStateKey !== stateKey) {
       this.builtFor = key;
+      this.panelStateKey = stateKey;
       this.renderPanel(observer, selection, sim);
     } else if (selection.kind === 'person') {
       this.refreshPerson(observer, selection.person, sim);
-    } else {
-      // Nodes and buildings change slowly and have no clickable innards, so a
-      // straight redraw is simpler than patching values in place.
+    } else if (selection.kind !== 'building') {
+      // Piles, nodes and trees can change without their inspector having a
+      // clickable control; keep their existing live redraw behaviour. A
+      // building is the exception: rebuilding it every frame detaches the
+      // transfer/cancel button before a click can land on it.
       this.renderPanel(observer, selection, sim);
     }
+  }
+
+  private buildingStateKey(building: Building): string {
+    return [building.complete, building.ruined, building.store.version,
+      building.delivered.version, Math.floor(building.completion * 20)].join(':');
   }
 
   private renderPanel(observer: Person, selection: Selection, sim: Simulation): void {
@@ -1677,6 +1696,10 @@ export class Hud {
           '%;background:' + (have >= needed ? '#5cc98a' : '#d98032') + '"></i></span>' +
           '<span class="hud-need-value">' + have + '/' + needed + '</span></div>'
         );
+      }
+      if (building.ownerBandId === observer.bandId && observer.id === sim.player?.id) {
+        rows.push('<button class="hud-button hud-cancel-build" data-cancel-construction="1">' +
+          escapeHtml(t('Cancel construction')) + '</button>');
       }
       return rows;
     }

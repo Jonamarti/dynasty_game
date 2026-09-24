@@ -2774,6 +2774,29 @@ export class Simulation {
   }
 
   /**
+   * Cancels a player-owned site and returns its delivered materials to the
+   * ground. A site is not a completed building, so demolishing it would be a
+   * different action and would incorrectly make this a property shortcut.
+   */
+  cancelConstruction(person: Person, building: Building): boolean {
+    if (building.ownerBandId !== person.bandId) {
+      this.lastRefusal = t('that construction belongs to another band');
+      return false;
+    }
+    if (building.complete) {
+      this.lastRefusal = t('that building is already finished');
+      return false;
+    }
+    if (!this.buildingsById.has(building.id)) {
+      this.lastRefusal = t('that construction is gone');
+      return false;
+    }
+    this.removeBuilding(building);
+    telemetry.count('construction_cancelled');
+    return true;
+  }
+
+  /**
    * A day of rot, everywhere food is kept. M8.1, mechanism 1.
    *
    * **It ships switched off, and that was a decision taken on measurements

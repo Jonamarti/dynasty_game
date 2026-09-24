@@ -304,6 +304,20 @@ const hud = new Hud(hudRoot, {
     }
     transferPanel.show(sim, actor, building);
   },
+  onCancelConstruction: building => {
+    const actor = sim.player;
+    if (!actor) return;
+    const ok = sim.cancelConstruction(actor, building);
+    const reason = sim.lastRefusal;
+    sim.lastRefusal = null;
+    renderer.floaters.push(actor.x, actor.y,
+      ok ? t('construction cancelled; materials are on the ground')
+        : (reason ?? t('cannot do that')),
+      { color: ok ? '#ffd35c' : '#e66464', boxed: true, ttl: 3.6 });
+    if (ok && selected?.kind === 'building' && selected.building.id === building.id) {
+      selected = null;
+    }
+  },
   onAssignJob: (person, job) => {
     // Down the same path a chief's own order would use, so a job handed out
     // from the panel is subject to the same compliance roll as one given in

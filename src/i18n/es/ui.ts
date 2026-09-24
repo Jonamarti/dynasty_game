@@ -19,6 +19,8 @@ export const ES_UI: Record<string, string> = {
   "Open transfer": "Abrir traspaso",
   "You carry {used}/{max} · Store {stored}/{capacity}": "Llevas {used}/{max} · Depósito {stored}/{capacity}",
   "Come closer to inspect the store": "Acércate para mirar el depósito",
+  "Cancel construction": "Cancelar construcción",
+  "construction cancelled; materials are on the ground": "construcción cancelada; los materiales están en el suelo",
   "Reset everything to Normal": "Devolverlo todo a Normal",
   "New world with these settings": "Mundo nuevo con estos ajustes",
   "Back": "Volver",

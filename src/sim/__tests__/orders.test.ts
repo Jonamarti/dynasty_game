@@ -107,6 +107,48 @@ describe('sleep', () => {
   });
 });
 
+describe('stores and construction controls', () => {
+  it('opens the transfer path even when either side is full', () => {
+    const sim = new Simulation(SMALL);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    let store: Building | null = null;
+    for (const [dx, dy] of [[4, 0], [-4, 0], [0, 4], [0, -4]]) {
+      store = sim.place('storage_pit', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+      if (store) break;
+    }
+    expect(store).not.toBeNull();
+    store!.complete = true;
+    store!.store.add('berries', store!.def.storage);
+    person.inventory.add('sticks', person.carryCapacity);
+
+    // The direct transfer authority still allows the window to exist: the
+    // caller may empty one side before putting something in the other.
+    expect(sim.takeItem(person, store!, 'berries', 1)).toBe(0);
+    person.inventory.remove('sticks', person.carryCapacity);
+    expect(sim.takeItem(person, store!, 'berries', 1)).toBe(1);
+    person.inventory.add('sticks', 1);
+    expect(sim.storeItem(person, store!, 'sticks', 1)).toBe(1);
+  });
+
+  it('cancelling a site drops delivered materials instead of deleting them', () => {
+    const sim = new Simulation(SMALL);
+    const person = sim.livingPeople()[0]!;
+    let site: Building | null = null;
+    for (const [dx, dy] of [[4, 0], [-4, 0], [0, 4], [0, -4]]) {
+      site = sim.place('windbreak', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+      if (site) break;
+    }
+    expect(site).not.toBeNull();
+    site!.delivered.add('sticks', 3);
+    const before = sim.piles.length;
+    expect(sim.cancelConstruction(person, site!)).toBe(true);
+    expect(sim.buildings.some(building => building.id === site!.id)).toBe(false);
+    expect(sim.piles.length).toBeGreaterThan(before);
+    expect(sim.piles.at(-1)!.contents.count('sticks')).toBe(3);
+  });
+});
+
 describe('felling', () => {
   /**
    * The reported bug: with a full pack the chop aborted on tick one through
