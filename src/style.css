@@ -946,6 +946,35 @@ html, body, #app {
 .succession-heir { font-size: 17px; font-weight: 600; color: var(--accent); }
 .succession-go { width: 100%; margin-top: 16px; padding: 8px; font-size: 14px; }
 
+/* --- player-chief verdict ----------------------------------------------- */
+
+.verdict-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 10, 15, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.verdict-overlay[hidden] { display: none; }
+
+.verdict-card {
+  width: min(430px, calc(100% - 40px));
+  padding: 22px 24px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+}
+
+.verdict-title { font-size: 20px; font-weight: 600; }
+.verdict-summary { margin-top: 12px; font-size: 15px; }
+.verdict-kind { margin-top: 5px; color: var(--text-dim); }
+.verdict-actions { display: grid; gap: 7px; margin-top: 18px; }
+.verdict-button { width: 100%; padding: 8px; text-align: left; }
+
 /* Command mode: the household-authority button on the Ties tab. */
 .hud-commandbtn { width: 100%; margin: 8px 0 4px; }
 
