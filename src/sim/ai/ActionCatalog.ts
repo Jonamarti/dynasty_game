@@ -12,7 +12,7 @@
  * menu rather than a shrug.
  */
 import type { Corpse } from '../entities/Corpse.ts';
-import { isHeld } from '../social/Defence.ts';
+import { isHeld, isBound } from '../social/Defence.ts';
 import { debtTo, offerFor, OFFER_AT_LEAST } from '../social/Amends.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import type { Person } from '../entities/Person.ts';
@@ -568,6 +568,14 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
         : undefined,
       hostile: true,
     }] : []),
+    {
+      id: 'untie',
+      label: t('Untie {name}', { name: other.name }),
+      icon: '\u{1FAA2}',
+      enabled: !actor.isChild && isBound(other, tick),
+      reason: actor.isChild ? t('Too young to untie somebody safely')
+        : !isBound(other, tick) ? t('They are not tied up') : undefined,
+    },
     {
       id: 'attack',
       label: t('Attack {name}', { name: other.name }),

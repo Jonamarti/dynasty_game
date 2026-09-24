@@ -2,6 +2,8 @@
 export const ES_ACTIONS: Record<string, string> = {
   "this store is not yours": "este depósito no es tuyo",
   "this is not a working store": "este no es un depósito utilizable",
+  "they are not tied up": "no está atado",
+  "they are too young to do that": "es demasiado joven para hacerlo",
   "that construction belongs to another band": "esa construcción pertenece a otra tribu",
   "that building is already finished": "ese edificio ya está terminado",
   "that construction is gone": "esa construcción ya no existe",

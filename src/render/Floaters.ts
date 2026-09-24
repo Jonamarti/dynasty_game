@@ -348,6 +348,8 @@ export const STOP_REASONS: Record<string, string> = {
   // M11 phase 15c. `bound` is what the tied-up person is told; main.ts names
   // whoever tied them when it can. The other two are the binder's.
   bound: 'someone tied them up',
+  not_bound: 'they are not tied up',
+  too_young: 'they are too young to do that',
   no_rope: 'they had no rope',
   not_held: 'nobody was holding them down',
   // M11 phase 15d.

@@ -187,7 +187,10 @@ export const BIND_TICKS = 12;
  * with water in them comes to no harm from the rope alone, and one tied up
  * already parched is in real danger — which is how it should read.
  */
-export const BOUND_TICKS = 240;
+// A rope is not a timed hold. Once tied, a captive stays tied until somebody
+// else cuts them loose; using a finite timer made "bound" merely a delayed
+// escape and made rescue impossible to distinguish from waiting.
+export const BOUND_TICKS = Number.MAX_SAFE_INTEGER;
 
 /**
  * How strongly somebody with a rope is moved to tie up a person one of their

@@ -658,6 +658,7 @@ export class ActionSystem {
       case 'parley': this.doParley(person, ctx); break;
       case 'restrain': this.doRestrain(person, ctx); break;
       case 'bind': this.doBind(person, ctx); break;
+      case 'untie': this.doUntie(person, ctx); break;
       case 'escape': this.doEscape(person, ctx); break;
       case 'patrol': this.doPatrol(person, ctx); break;
       case 'dismember': this.doDismember(person, ctx); break;
@@ -4047,6 +4048,24 @@ export class ActionSystem {
     this.finish(person);
   }
 
+  /** A rescuer cuts a rope; unlike a hold, this has no timer or expiry roll. */
+  private doUntie(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+    if (person.isChild) {
+      this.abandon(person, 'too_young', ctx);
+      return;
+    }
+    if (!isBound(other, ctx.tick)) {
+      this.abandon(person, 'not_bound', ctx);
+      return;
+    }
+    other.boundBy = null;
+    other.boundUntil = -9999;
+    telemetry.count('untied');
+    this.finish(person);
+  }
+
   /**
    * Spends a rope and ties `other` up — shared by `doBind` and by a holder
    * who ties up the outsider they are holding. The simulation decides what a
@@ -4246,6 +4265,10 @@ export class ActionSystem {
    * on the road.
    */
   private doEscape(person: Person, ctx: ActionContext): void {
+    if (isBound(person, ctx.tick)) {
+      this.abandon(person, 'bound', ctx);
+      return;
+    }
     if (isCaptive(person)) {
       const guard = captorWatching(person, ctx.peopleHash, ctx.sightRadius);
       if (guard) {

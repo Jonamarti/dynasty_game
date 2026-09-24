@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import type { Person } from '../entities/Person.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
+import { isBound } from '../social/Defence.ts';
 
 const SMALL = {
   seed: 'captivity-test',
@@ -107,5 +108,29 @@ describe('escaping', () => {
     expect(captive.bandId).toBe(1);
     expect(captive.captiveFrom).toBeNull();
     expect(captive.householdId).toBe(householdId);
+  });
+});
+
+describe('rescue from a rope', () => {
+  it('does not let a bound captive escape by waiting, but another person can untie them', () => {
+    const { sim, captive } = aCapture();
+    const rescuer = sim.livingPeople().find(person =>
+      person.bandId === 1 && !person.isChild)!;
+    expect(isBound(captive, sim.time.tick)).toBe(true);
+
+    for (let i = 0; i < 300; i++) {
+      settled(captive);
+      sim.step();
+    }
+    expect(isBound(captive, sim.time.tick)).toBe(true);
+
+    rescuer.x = captive.x;
+    rescuer.y = captive.y;
+    expect(sim.order(rescuer, 'untie', { personId: captive.id })).toBe(true);
+    for (let i = 0; i < 30 && rescuer.order !== null; i++) {
+      settled(rescuer);
+      sim.step();
+    }
+    expect(isBound(captive, sim.time.tick)).toBe(false);
   });
 });

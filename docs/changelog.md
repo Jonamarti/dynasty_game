@@ -6,6 +6,14 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-24 — M12 phase 4b: cautivos atados hasta el rescate
+
+Atar a alguien deja de ser un temporizador disfrazado: un cautivo atado no
+puede escapar por esperar. Se añadió `untie`, disponible para otro personaje,
+que corta la atadura y deja al cautivo libre para intentar volver a casa.
+También se añadieron razones visibles para los intentos de escape bloqueados y
+una prueba que cubre la espera y el rescate.
+
 ## 2026-09-24 — M12 phase 4a: rapto de menores
 
 La ruta existente de sujetar y atar cautivos ahora también puede elegir a un

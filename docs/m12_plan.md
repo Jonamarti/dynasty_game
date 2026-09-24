@@ -173,7 +173,8 @@ rare, and never lasts») ya están tomadas en las notas 8 y 9:
   se lo cuenten) sube su hostilidad hacia el captor y hacia su banda. Es un
   motor de enemistad entre pueblos más fuerte que el robo, y el primer paso
   hacia la adopción forzosa y la esclavitud que el arco pide.
-- **4b. Atado a un árbol o a un edificio.** `bind` gana un destino: el captor
+- **4b. Atado a un árbol o a un edificio.** **Construida** (2026-09-24,
+  detalle en `changelog.md`). `bind` gana un destino: el captor
   arrastra (`drag` ya existe para cadáveres) al cautivo hasta un árbol o un
   edificio de su banda y lo amarra. Un cautivo amarrado **no puede escapar**;
   sólo otra persona puede desatarlo (`untie`, un verbo nuevo para rescatadores
