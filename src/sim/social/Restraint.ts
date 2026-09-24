@@ -44,8 +44,9 @@
  * stream.
  */
 import type { Person } from '../entities/Person.ts';
-import type { EventType, SocialEvent } from './Events.ts';
+import type { EventType, Norms, SocialEvent } from './Events.ts';
 import { DEED_WEIGHT } from './Events.ts';
+import { telemetry } from '../core/Telemetry.ts';
 
 /**
  * Where on the bell curve somebody becomes willing to harm their own people
@@ -104,9 +105,29 @@ export function ownPeopleLicence(person: Person, trait: number, hunger: number):
 export const CORRECTION_STEP = 0.6;
 export const CONSCIENCE_HOLD = 0.95;
 
-/** Multiplier on anything predatory: 1 for somebody never corrected. */
-export function conscienceBrake(person: Person): number {
-  return 1 - Math.min(1, person.conscience) * CONSCIENCE_HOLD;
+/**
+ * Multiplier on anything predatory: 1 for somebody never corrected.
+ *
+ * M12 phase 2d: two consciences, not one — what a child was corrected for
+ * doing to their own people, and what to strangers. `abroad` picks which a
+ * deed answers to. See "Culture" below for why they had to come apart.
+ */
+export function conscienceBrake(person: Person, abroad = false): number {
+  return 1 - Math.min(1, abroad ? person.conscienceAbroad : person.conscience) * CONSCIENCE_HOLD;
+}
+
+/**
+ * How hard an adult's upbringing holds them back from preying on strangers,
+ * M12 phase 2d. Far less than `CONSCIENCE_HOLD`: against another people the
+ * owner's note puts need and mutual hatred first, and a well-raised man who is
+ * starving still takes from a stranger's pack. What upbringing changes is the
+ * rest — the idle theft, the hut wrecked for a grudge.
+ */
+export const ABROAD_HOLD = 0.6;
+
+/** Multiplier on an adult's predatory verbs against another people. */
+export function strangerBrake(person: Person): number {
+  return 1 - Math.min(1, person.conscienceAbroad) * ABROAD_HOLD;
 }
 
 /**
@@ -126,16 +147,110 @@ export const CORRECT = 1.4;
 /** How long an adult remembers a child's misdeed as something to deal with. */
 export const MISCHIEF_MEMORY = 240;
 
+// ---------------------------------------------------------------------------
+// Culture — M12 phase 2d
+// ---------------------------------------------------------------------------
+
 /**
- * `witness` saw `child` do `type`: if the child is one of their own people and
- * the deed was a wrong, it is theirs to deal with. The owner's rule holds —
- * only somebody who saw it, or was the one wronged, ever learns of it here.
+ * **Regard for strangers**: how much a people minds a wrong done by one of its
+ * own to somebody of another people, 0 to 1. Drawn per band at founding
+ * (`Simulation.spawnCulture`, on its own stream), a bell curve like every
+ * other trait in this game.
+ *
+ * The plan's 2d: "a band tolerant of theft from strangers does not correct a
+ * child for robbing strangers — so two cultures raise different adults, the
+ * germ of the cultural difference the world map will need". Before this every
+ * band corrected every child for every wrong against anybody, identically,
+ * and judged its own for wronging a stranger by one constant
+ * (`OUR_OWN_AGAINST_OUTSIDERS`). Measured on `century` before phase 2d:
+ * **no** theft or blow inside a band at all, and about 1,600 sabotages and
+ * 340 trespasses of other peoples' buildings *by children* in three runs —
+ * the whole of what a band's correcting of its children now meets is
+ * conduct toward strangers, and that is exactly where cultures differ.
+ *
+ * One axis, read in three places: how an adult is judged for it
+ * (`partiality`), whether a child is corrected for it (`noteMischief`), and
+ * so what kind of adult the child grows into (`conscienceAbroad`,
+ * `strangerBrake`).
  */
-export function noteMischief(witness: Person, child: Person, type: EventType, tick: number): void {
+export const STRANGER_REGARD_MEAN = 0.5;
+export const STRANGER_REGARD_SPREAD = 0.2;
+
+/**
+ * How gravely a band takes a wrong of `type` against a victim of
+ * `victimBandId`, before anybody's temperament: its norm for the deed, times
+ * its regard for strangers when the victim was one. The deeds outside
+ * `VARIABLE_NORMS` — sabotage, trespass — sit at 1 like everybody's.
+ */
+export function wrongWeight(
+  bandId: number, norms: Norms | undefined, strangerRegard: number,
+  type: EventType, victimBandId: number | null
+): number {
+  const norm = norms ? norms[type] : 1;
+  return victimBandId !== null && victimBandId !== bandId ? norm * strangerRegard : norm;
+}
+
+/**
+ * How gravely a witness must take a child's wrong against a stranger, all
+ * told, to go and correct them — the band's weight (`wrongWeight`) times how
+ * much this witness holds to the ways of their people, `0.5 + tradition`.
+ *
+ * At the middle of the curve on purpose, so that the share of such wrongs a
+ * people minds moves the whole way along its regard for strangers: about
+ * half its adults at 0.5, nearly all at 0.7, almost none below 0.4. **First
+ * set at 0.3, and measured to do nothing**: every people above 0.3 minded
+ * nearly every wrong, `craft`'s band at 0.37 minded 212 of 215 and its band
+ * at 0.71 all 115, and cultures a third of the curve apart raised the same
+ * children.
+ *
+ * Wrongs against one's own people are not weighed here at all — see
+ * `noteMischief`.
+ */
+export const MINDS_AT = 0.5;
+
+/** A band's culture as `noteMischief` reads it. */
+export interface Culture {
+  norms: Norms | undefined;
+  strangerRegard: number;
+}
+
+/**
+ * `witness` saw `child` do `type`: if the child is one of their own people,
+ * the deed was a wrong, and their people's ways say it was one worth
+ * correcting, it is theirs to deal with. The owner's rule holds — only
+ * somebody who saw it, or was the one wronged, ever learns of it here.
+ *
+ * `victimBandId` is whose the harm was (`SocialEvent.victimBandId`); it is
+ * also which conscience the correction will teach — see `ActionSystem.doCorrect`.
+ * `culture` null is the old rule, every wrong minded — kept for callers with
+ * no band to read, and for the tests that pin the rule down.
+ */
+export function noteMischief(
+  witness: Person, child: Person, type: EventType, tick: number,
+  culture: Culture | null = null, victimBandId: number | null = null
+): void {
   if (!child.isChild || witness.isChild || !witness.alive || witness.id === child.id) return;
   if (witness.bandId !== child.bandId || DEED_WEIGHT[type] >= 0) return;
+  const abroad = victimBandId !== null && victimBandId !== witness.bandId;
+  // Only a wrong against another people is a question of culture. Against
+  // one's own it is always minded — the owner's note of 2026-09-24, "the
+  // members of the tribe correct them" — and a people that shrugs at theft
+  // still does not leave a child robbing its neighbours uncorrected.
+  if (abroad) {
+    const minded = culture === null ||
+      wrongWeight(witness.bandId, culture.norms, culture.strangerRegard, type, victimBandId) *
+        (0.5 + witness.traits.tradition) >= MINDS_AT;
+    // Per band, so `upbringing-follows-culture` can set each people's share
+    // of wrongs minded against its regard for strangers. Counted whether or
+    // not a culture was read, so a build that stops reading it shows every
+    // people minding everything — and fails the check — rather than n/a.
+    telemetry.count('mischief_abroad_seen_b' + witness.bandId);
+    if (minded) telemetry.count('mischief_abroad_minded_b' + witness.bandId);
+    if (!minded) return;
+  }
   witness.mischiefId = child.id;
   witness.mischiefTick = tick;
+  witness.mischiefAbroad = abroad;
 }
 
 /** The child `person` means to correct, if they still remember why. */
@@ -176,7 +291,8 @@ const WRONGS: ReadonlySet<EventType> = new Set<EventType>([
  * owner's for a deed against a building. Null when nobody's.
  */
 export function partiality(
-  observer: Person, actor: Person, event: SocialEvent
+  observer: Person, actor: Person, event: SocialEvent,
+  strangerRegard = STRANGER_REGARD_MEAN
 ): number {
   if (DEED_WEIGHT[event.type] >= 0) return 1;
   // Whoever it was done to always feels it in full; the victim's own view is
@@ -195,7 +311,10 @@ export function partiality(
     // band should think less of somebody for going after a stranger who was
     // wrecking the band's buildings, attacking its people or robbing them.
     if (event.targetId !== null && hadItComing(observer, event.targetId)) return 0;
-    weight *= OUR_OWN_AGAINST_OUTSIDERS;
+    // M12 phase 2d: a quarter at the middle of the curve, as before; more
+    // among a people who think a stranger is owed what a neighbour is, less
+    // among one that thinks a stranger is owed nothing.
+    weight *= Math.min(1, OUR_OWN_AGAINST_OUTSIDERS * strangerRegard / STRANGER_REGARD_MEAN);
   }
   return weight;
 }

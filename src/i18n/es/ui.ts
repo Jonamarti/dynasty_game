@@ -84,6 +84,8 @@ export const ES_UI: Record<string, string> = {
   "hold {what} very gravely": "consideran muy grave {what}",
   "care little about {what}": "les importa poco {what}",
   "They judge much as anyone does.": "Juzgan más o menos como cualquiera.",
+  "think a stranger fair game": "tienen al extraño por presa lícita",
+  "wrong a stranger no more lightly than a neighbour": "no agravian a un extraño más a la ligera que a un vecino",
   "They {phrases}.": "{phrases}.",
   ", and ": ", y ",
   "quick to anger": "irascible",

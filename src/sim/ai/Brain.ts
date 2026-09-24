@@ -65,7 +65,7 @@ import {
   CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE, CALL_MEMORY, CALL_FOR_HELP, ANSWER_CALL,
 } from '../social/Defence.ts';
 import {
-  ownPeopleLicence, tailLicence, conscienceBrake, mischiefChild, CORRECT,
+  ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
 
 export interface BrainContext {
@@ -1215,10 +1215,15 @@ export class Brain {
       );
       if (carrier && carrier.inventory.total > 0) {
         const ownPeople = carrier.bandId === person.bandId;
-        // A child who has been corrected holds back from anybody's pack; an
-        // adult's upbringing speaks only about their own people, and is
-        // already inside `robOwn`.
-        const restraint = (ownPeople ? robOwn : 1) * (person.isChild ? conscienceBrake(person) : 1);
+        // A child who has been corrected holds back — from their own people's
+        // packs by one conscience, from a stranger's by the other, which only
+        // a people that minds such things teaches (M12 phase 2d). An adult's
+        // upbringing about their own is already inside `robOwn`; about
+        // strangers it is `strangerBrake`, and weaker, because need comes
+        // first against another people.
+        const restraint = ownPeople
+          ? robOwn * (person.isChild ? conscienceBrake(person) : 1)
+          : person.isChild ? conscienceBrake(person, true) : strangerBrake(person);
         const onlookers = ctx.peopleHash
           .queryRadius(carrier.x, carrier.y, ctx.sightRadius)
           .filter(o => o.alive && o.id !== person.id && o.id !== carrier.id).length;
@@ -1271,7 +1276,7 @@ export class Brain {
         // Menacing one's own is the tail of aggression, not of greed.
         const menace = ownPeople
           ? ownPeopleLicence(person, person.traits.aggression, person.needs.hunger / 100)
-          : 1;
+          : strangerBrake(person);
         if (edge > 0.05 && menace > 0 && !person.isChild) {
           add('threaten',
             (hunger * 0.7 + person.traits.greed * 0.3 + dislike * 0.35 + bandHostility * 0.25) *
@@ -1325,7 +1330,8 @@ export class Brain {
         add('sabotage',
           hostility * (0.3 + person.traits.aggression * 1.3) *
           (1 - person.traits.loyalty * 0.5) *
-          (person.isChild ? conscienceBrake(person) : 1) *
+          // Always another people's building: the conscience about strangers.
+          (person.isChild ? conscienceBrake(person, true) : strangerBrake(person)) *
           this.proximityBonus(person, sabotageCandidate, ctx.sightRadius));
         sabotageTarget = sabotageCandidate;
       }
@@ -1469,7 +1475,7 @@ export class Brain {
     );
     if (prey) {
       const score = this.predationAppeal(person, prey, neighbours, ctx) *
-        (prey.bandId === person.bandId ? preyLicence : 1);
+        (prey.bandId === person.bandId ? preyLicence : strangerBrake(person));
       // Only if it beats what revenge already offered, and only then does the
       // blow change hands — so the score and the target never come apart, the
       // way they did before `foe` existed.

@@ -33,16 +33,17 @@ streams at the end. The fork order is the seed contract; inserting one silently
 invalidates every saved seed and every pinned test world.
 
 > **"The end" is not where the comment says it is.** The named fork block ends
-> at `recordRng` — the **eleventh** of sixteen — with a comment inviting you to
-> append after it. Five more forks sit below that invitation:
+> at `recordRng` — the **eleventh** of seventeen — with a comment inviting you to
+> append after it. Six more forks sit below that invitation:
 >
 > | # | fork | line |
 > |---|---|---|
-> | 12 | anonymous, handed to `seedInitialForest` | `Simulation.ts:456` |
-> | 13 | `fishRng` | `Simulation.ts:470` |
-> | 14 | `grainRng` | `Simulation.ts:475` |
-> | 15 | `choiceRng` | `Simulation.ts:481` |
-> | 16 | `hearthRng` | `Simulation.ts:486` |
+> | 12 | anonymous, handed to `seedInitialForest` | `Simulation.ts:539` |
+> | 13 | `fishRng` | `Simulation.ts:553` |
+> | 14 | `grainRng` | `Simulation.ts:558` |
+> | 15 | `choiceRng` | `Simulation.ts:564` |
+> | 16 | `hearthRng` | `Simulation.ts:569` |
+> | 17 | `cultureRng` (M12 phase 2d, each band's regard for strangers) | `Simulation.ts:574` |
 >
 > **The genuine append point is the line after the last row of that table**,
 > immediately before the `spawnResources` block. Appending where the comment
@@ -51,15 +52,17 @@ invalidates every saved seed and every pinned test world.
 > the same to the cereal.
 >
 > A fork appended genuinely last cannot shift anything, and the reason is worth
-> knowing: `this.rng` is drawn from **only** by these sixteen `fork()` calls —
-> nothing else in the constructor takes a number from it — so a seventeenth at
-> the bottom leaves all sixteen exactly where they were.
+> knowing: `this.rng` is drawn from **only** by these seventeen `fork()` calls —
+> nothing else in the constructor takes a number from it — so an eighteenth at
+> the bottom leaves all seventeen exactly where they were.
 >
 > This paragraph has been wrong before, which is the reason for the table. It
 > used to call the forest fork "the fourteenth" and describe it as the last one
 > — true when it was written, and false from the moment M8.1 appended `fishRng`
 > and M8.2 appended `grainRng` behind it, and again once M11 phase 1a appended
-> `choiceRng` and this pass appended `hearthRng`. **If you append a stream, add
+> `choiceRng`, M11 phase 9b appended `hearthRng` and M12 phase 2d appended
+> `cultureRng`. The line numbers drift with every edit above them, so trust
+> the order and search for the name. **If you append a stream, add
 > its row here in the same commit**, or the next person inherits the same trap.
 
 **And forks are not the only way to shift a stream.** `spawnResources`,

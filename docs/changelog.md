@@ -6,6 +6,60 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-24 — M12 phase 2d: what a people teaches its children about strangers
+
+The plan's 2d: "a band tolerant of theft from strangers does not correct a
+child for robbing strangers — so two cultures raise different adults".
+
+**What there was to correct.** Measured first, three `century` runs: **no**
+theft or blow inside a band at all after phase 1, 139 slanders inside one
+(109 by children), and against other peoples about 1,600 sabotages and 340
+trespasses *by children*. So what a band corrects its children for is now
+almost entirely how they treat strangers — which is exactly where cultures
+differ, and where every band was identical: each corrected every wrong
+against anybody, and judged its adults for wronging a stranger by one
+constant (`OUR_OWN_AGAINST_OUTSIDERS`, a quarter).
+
+**One new axis of culture**, `Band.strangerRegard`: how much a people minds
+a wrong done by one of its own to somebody of another people, a bell curve
+around 0.5 (`Restraint.STRANGER_REGARD_*`). Drawn on its own stream,
+`cultureRng`, forked genuinely last (seventeenth; `AGENTS.md`'s table has
+its row, and every row's line number, stale since phase 1, is corrected).
+Read in three places:
+
+- **Judging** (`partiality`): the quarter becomes this people's own figure,
+  the same at the middle of the curve.
+- **Correcting** (`noteMischief`): a wrong by a child against a stranger is
+  minded if the band's norm for it × its regard × `0.5 + tradition` of the
+  witness reaches `MINDS_AT`. Against the band's own people it is minded
+  always — the owner's rule, whatever the band thinks of theft. **`MINDS_AT`
+  was first 0.3, and measured to do nothing**: every people above 0.3 minded
+  nearly everything (`craft`: 212 of 215 at 0.37, 115 of 115 at 0.71). At
+  0.5 it is the middle of the curve and the share minded moves the whole way
+  along it: 141 of 141 at 0.71 against 3 of 212 at 0.37.
+- **Upbringing**: two consciences. `conscience` (own people) as before;
+  `conscienceAbroad`, raised only by a correction for a wrong against
+  strangers — and half of it carried over to `conscience`, since whoever is
+  told not to rob a stranger has been told something about neighbours too.
+  A child's wrongs abroad answer to it fully; an adult's thefts, threats,
+  sabotage and predation against strangers are braked by `strangerBrake`
+  (at most 60%: against another people need comes first).
+
+The new-game screen names the extremes: "think a stranger fair game", or
+"wrong a stranger no more lightly than a neighbour".
+
+**Measured.** New check `upbringing-follows-culture`: of the two peoples
+furthest apart in regard, the more regardful minds at least ten points more
+of its children's wrongs abroad. With the culture read switched off, it
+fails in both worlds that can say (115/115 against 225/225, 292/292 against
+52/52); on, `craft` 141/141 against 3/212, `millers` 93/137 against 7/496,
+`lean` 18/19 against 4/276. The last two numbers are the effect itself:
+`millers`' band at 0.43 saw its children do 496 wrongs abroad with its
+culture read and 52 with everything corrected. `century`, twenty seeds,
+against phase 2c: property deeds an owner saw 2,504 → **5,165**, thefts
+from a person 1,243 → 1,467, blows 1,452 → 1,314, murders 24 → 38,
+survival 99.9% → 99.8%; still 0 inside a band and 0 on a child.
+
 ## 2026-09-24 — M12 phase 2c: the struck run or hit back
 
 The owner's note 4: "some NPCs neither defend themselves nor run when

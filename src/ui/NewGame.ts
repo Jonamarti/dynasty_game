@@ -378,6 +378,12 @@ export class NewGame {
  */
 export function describeNorms(band: Band): string {
   const phrases: string[] = [];
+  // M12 phase 2d, first because it is the one that most decides what kind of
+  // neighbours they will be: what they teach their children about strangers.
+  // Past about 0.18 either side of the middle — roughly one people in five at
+  // each end of `STRANGER_REGARD_SPREAD`'s curve.
+  if (band.strangerRegard <= 0.32) phrases.push(t('think a stranger fair game'));
+  else if (band.strangerRegard >= 0.68) phrases.push(t('wrong a stranger no more lightly than a neighbour'));
   const named: Record<string, string> = {
     theft: t('theft'),
     assault: t('a beating'),

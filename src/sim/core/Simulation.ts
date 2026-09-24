@@ -34,6 +34,7 @@ import { RelationshipGraph } from '../social/Relationships.ts';
 import { BandRelations } from '../social/BandRelations.ts';
 import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
 import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType } from '../social/Events.ts';
+import { STRANGER_REGARD_MEAN, STRANGER_REGARD_SPREAD } from '../social/Restraint.ts';
 import {
   Building, BUILDINGS, isTrap, isHerd, isStructure, resetBuildingIds, type BuildingDef,
 } from '../entities/Building.ts';
@@ -198,6 +199,12 @@ export interface Band {
    * lets an outlaw find somewhere their reputation does not follow them.
    */
   norms: Norms;
+  /**
+   * How much this people minds a wrong done by one of its own to a stranger,
+   * 0 to 1 — M12 phase 2d, `Restraint.STRANGER_REGARD_MEAN`. What it corrects
+   * its children for, and so the kind of adults it raises.
+   */
+  strangerRegard: number;
   /** Whoever the band currently holds in the highest regard. Null if empty. */
   chiefId: number | null;
   /** Absolute day the present chief took office. Null while there is none. */
@@ -401,6 +408,8 @@ export class Simulation {
   readonly bandRelations = new BandRelations();
   readonly social: SocialSystem;
   private readonly normsByBand = new Map<number, Norms>();
+  /** Each band's `strangerRegard`, for `SocialSystem` — the same arrangement as `normsByBand`. */
+  private readonly strangerRegardByBand = new Map<number, number>();
 
   private readonly needsSystem: NeedsSystem;
   /**
@@ -475,7 +484,8 @@ export class Simulation {
     this.needsSystem = new NeedsSystem(this.config.needs);
     this.pathfinder = new Pathfinder(this.world);
     this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder);
-    this.social = new SocialSystem(this.relationships, this.normsByBand, this.bandRelations);
+    this.social = new SocialSystem(
+      this.relationships, this.normsByBand, this.bandRelations, this.strangerRegardByBand);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
     this.social.onDeed = (actor, type, magnitude) => this.accrueRenown(actor, type, magnitude);
     this.actionRng = this.rng.fork();
@@ -557,12 +567,18 @@ export class Simulation {
     // rather than back at the comment three forks up that looks like an
     // invitation.
     this.hearthRng = this.rng.fork();
+    // M12 phase 2d, appended after `hearthRng` for the same reason again, and
+    // drawn in its own pass after every band exists: a people's regard for
+    // strangers. Drawn from `spawnRng` beside the norms it belongs with, it
+    // would have moved every herd and person after the first band.
+    const cultureRng = this.rng.fork();
 
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
     this.spawnPeople(spawnRng);
     this.spawnFish(fishRng);
     this.spawnWildGrain(grainRng);
+    this.spawnCulture(cultureRng);
     this.rebuildHashes();
   }
 
@@ -703,6 +719,19 @@ export class Simulation {
     }
   }
 
+  /**
+   * Each people's regard for strangers — M12 phase 2d. A bell curve, like
+   * every trait here; see `Restraint.STRANGER_REGARD_MEAN` for what it moves.
+   */
+  private spawnCulture(rng: RNG): void {
+    for (const band of this.bands) {
+      if (band.outcast) continue;
+      band.strangerRegard = Math.max(0.02, Math.min(0.98,
+        rng.gaussian(STRANGER_REGARD_MEAN, STRANGER_REGARD_SPREAD)));
+      this.strangerRegardByBand.set(band.id, band.strangerRegard);
+    }
+  }
+
   private spawnPeople(rng: RNG): void {
     const { bands, peoplePerBand } = this.config.population;
 
@@ -734,6 +763,8 @@ export class Simulation {
         homeX: home.x,
         homeY: home.y,
         norms,
+        // Drawn in `spawnCulture`, on its own stream, once every band exists.
+        strangerRegard: STRANGER_REGARD_MEAN,
         chiefId: null,
         chiefSince: null,
       };
@@ -1482,12 +1513,14 @@ export class Simulation {
       homeX: this.world.width / 2,
       homeY: this.world.height / 2,
       norms: { ...DEFAULT_NORMS },
+      strangerRegard: STRANGER_REGARD_MEAN,
       chiefId: null,
       chiefSince: null,
       outcast: true,
     };
     this.bands.push(band);
     this.normsByBand.set(band.id, band.norms);
+    this.strangerRegardByBand.set(band.id, band.strangerRegard);
     return band;
   }
 

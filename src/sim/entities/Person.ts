@@ -452,13 +452,23 @@ export class Person {
    */
   mischiefId: number | null = null;
   mischiefTick = -9999;
+  /** Whether that misdeed was against another people — which conscience it teaches. M12 phase 2d. */
+  mischiefAbroad = false;
   /**
-   * How much being corrected as a child has taught this person, 0 to 1. Raised
-   * by `ActionSystem.doCorrect`, never lowered, and kept into adulthood: it
-   * brakes every predatory verb against this person's own people, and while
-   * they are a child it brakes them against anybody. See `Restraint.ts`.
+   * How much being corrected as a child has taught this person about their
+   * own people, 0 to 1. Raised by `ActionSystem.doCorrect`, never lowered,
+   * and kept into adulthood: it brakes every predatory verb against this
+   * person's own people. See `Restraint.ts`.
    */
   conscience = 0;
+  /**
+   * The same, about strangers — M12 phase 2d. Raised only by a correction for
+   * a wrong against another people, which only a band that minds such wrongs
+   * gives (`Restraint.noteMischief`); so it is where a people's regard for
+   * strangers passes into the adults it raises. Brakes a child's wrongs
+   * against strangers fully and an adult's in part (`strangerBrake`).
+   */
+  conscienceAbroad = 0;
   /**
    * Who is holding this person down, and until when — M11 phase 15b's
    * `restrain`. While `heldUntil` has not passed, this person neither thinks

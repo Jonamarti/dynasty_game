@@ -15,7 +15,9 @@ import { SocialSystem } from '../social/SocialSystem.ts';
 import { BandRelations } from '../social/BandRelations.ts';
 import {
   tailLicence, ownPeopleLicence, conscienceBrake, mischiefChild, IN_GROUP_TAIL, CORRECTION_STEP,
+  strangerBrake,
 } from '../social/Restraint.ts';
+import { DEFAULT_NORMS, type Norms } from '../social/Events.ts';
 
 const SIGHT = 12;
 
@@ -102,5 +104,79 @@ describe('the tail of the curve', () => {
     p.conscience = CORRECTION_STEP * 2;
     expect(ownPeopleLicence(p, p.traits.greed, 1)).toBeCloseTo(conscienceBrake(p));
     expect(conscienceBrake(p)).toBeLessThan(0.1);
+  });
+});
+
+describe('what a people teaches its children about strangers — M12 phase 2d', () => {
+  function cultured(regard: number, norms: Norms = { ...DEFAULT_NORMS }, list: Person[] = []) {
+    const relationships = new RelationshipGraph();
+    const social = new SocialSystem(relationships, new Map([[0, norms], [1, norms]]), new BandRelations(),
+      new Map([[0, regard], [1, 0.5]]));
+    const hash = new SpatialHash<Person>(8);
+    hash.rebuild(list);
+    return { social, hash, relationships };
+  }
+
+  function scene(regard: number, tradition = 0.5) {
+    const child = person('Ann', 50, 0, 8);
+    const stranger = person('Bo', 51, 1);
+    const watcher = person('Cai', 53, 0);
+    watcher.traits.tradition = tradition;
+    const w = cultured(regard, undefined, [child, stranger, watcher]);
+    return { child, stranger, watcher, ...w };
+  }
+
+  it('is corrected for robbing a stranger among a people that minds it', () => {
+    const { child, stranger, watcher, social, hash } = scene(0.75);
+    social.emit('theft', child, stranger, 1, 1000, hash, SIGHT);
+    expect(mischiefChild(watcher, 1001)).toBe(child.id);
+    expect(watcher.mischiefAbroad).toBe(true);
+  });
+
+  it('is let be for it among a people that thinks a stranger fair game', () => {
+    const { child, stranger, watcher, social, hash } = scene(0.2);
+    social.emit('theft', child, stranger, 1, 1000, hash, SIGHT);
+    expect(mischiefChild(watcher, 1001)).toBeNull();
+  });
+
+  it('is corrected for it even there by the most traditional', () => {
+    const { child, stranger, watcher, social, hash } = scene(0.35, 1);
+    social.emit('theft', child, stranger, 1, 1000, hash, SIGHT);
+    expect(mischiefChild(watcher, 1001)).toBe(child.id);
+  });
+
+  it('is always corrected for robbing one of their own, however the people think', () => {
+    const child = person('Ann', 50, 0, 8);
+    const victim = person('Bo', 51, 0);
+    const watcher = person('Cai', 53, 0);
+    watcher.traits.tradition = 0;
+    const lax: Norms = { ...DEFAULT_NORMS, theft: 0.3 };
+    const { social, hash } = cultured(0.05, lax, [child, victim, watcher]);
+    social.emit('theft', child, victim, 1, 1000, hash, SIGHT);
+    expect(mischiefChild(watcher, 1001)).toBe(child.id);
+    expect(watcher.mischiefAbroad).toBe(false);
+  });
+
+  it('judges a grown bandmate for wronging a stranger as its regard says', () => {
+    const judged = (regard: number) => {
+      const ours = person('Ann', 50, 0);
+      const theirs = person('Bo', 51, 1);
+      const watcher = person('Cai', 53, 0);
+      const { social, hash, relationships } = cultured(regard, undefined, [ours, theirs, watcher]);
+      social.emit('theft', ours, theirs, 1, 1000, hash, SIGHT);
+      return relationships.peek(watcher.id, ours.id)!.deeds;
+    };
+    expect(judged(0.8)).toBeLessThan(judged(0.2));
+  });
+
+  it('raises adults who prey less on strangers, and a child who holds back from anybody', () => {
+    const raised = person('Ann', 50, 0);
+    expect(strangerBrake(raised)).toBe(1);
+    raised.conscienceAbroad = 1;
+    expect(strangerBrake(raised)).toBeCloseTo(0.4);
+    // The child's brake against strangers is the whole one.
+    expect(conscienceBrake(raised, true)).toBeLessThan(0.1);
+    // And their own people's is untouched by it: that is the other conscience.
+    expect(conscienceBrake(raised)).toBe(1);
   });
 });

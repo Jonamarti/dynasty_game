@@ -31,7 +31,7 @@ import { noteCaught } from './Defence.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { t } from '../../i18n/i18n.ts';
 import { frighten, opennessOf } from './Fear.ts';
-import { noteMischief, partiality } from './Restraint.ts';
+import { noteMischief, partiality, STRANGER_REGARD_MEAN, type Culture } from './Restraint.ts';
 
 export interface LifeEvent {
   tick: number;
@@ -261,11 +261,27 @@ export class SocialSystem {
   constructor(
     private readonly relationships: RelationshipGraph,
     private readonly normsByBand: Map<number, Norms>,
-    private readonly bandRelations: BandRelations
+    private readonly bandRelations: BandRelations,
+    /**
+     * Each band's regard for strangers, M12 phase 2d — see
+     * `Restraint.STRANGER_REGARD_MEAN`. Handed in by reference, like
+     * `normsByBand`, and filled once the bands exist; a band missing from it
+     * reads as the middle of the curve, which is what every band was before.
+     */
+    private readonly strangerRegardByBand: Map<number, number> = new Map()
   ) {}
 
   private normsFor(person: Person): Norms | null {
     return this.normsByBand.get(person.bandId) ?? null;
+  }
+
+  private regardFor(person: Person): number {
+    return this.strangerRegardByBand.get(person.bandId) ?? STRANGER_REGARD_MEAN;
+  }
+
+  /** What `noteMischief` weighs a child's wrong by, for a witness of this band. */
+  private cultureOf(person: Person): Culture {
+    return { norms: this.normsByBand.get(person.bandId), strangerRegard: this.regardFor(person) };
   }
 
   /**
@@ -349,7 +365,9 @@ export class SocialSystem {
     if (type === 'murder' && target && actor.spouseId === target.id) actor.spouseId = null;
     // M11 phase 15b: the victim of a theft saw who did it, whoever else did.
     if (target && notifyTarget) noteCaught(target, actor, type, tick);
-    if (target && notifyTarget) noteMischief(target, actor, type, tick);
+    if (target && notifyTarget) {
+      noteMischief(target, actor, type, tick, this.cultureOf(target), event.victimBandId);
+    }
 
     let witnesses = 0;
     let ownerSaw = false;
@@ -375,7 +393,7 @@ export class SocialSystem {
         (target !== null && target.bandId === bystander.bandId)) {
         noteCaught(bystander, actor, type, tick);
       }
-      noteMischief(bystander, actor, type, tick);
+      noteMischief(bystander, actor, type, tick, this.cultureOf(bystander), event.victimBandId);
     }
     if (witnesses > 0) telemetry.count('witnessed', witnesses);
     else telemetry.count('unwitnessed');
@@ -503,7 +521,7 @@ export class SocialSystem {
       DEED_WEIGHT[event.type] *
       // The owner's note of 2026-09-24: a band judges its own, and its
       // children, by what they did and to whom. See `Restraint.ts`.
-      partiality(observer, actor, event) *
+      partiality(observer, actor, event, this.regardFor(observer)) *
       tolerance *
       (0.5 + event.magnitude * 0.5) *
       victimFactor *

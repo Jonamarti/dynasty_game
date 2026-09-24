@@ -2644,6 +2644,33 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       'hitting back (ceiling 35%)');
   }
 
+  // M12 phase 2d: a people corrects its children for wronging strangers as
+  // far as its own ways say it should. Of the bands whose regard for
+  // strangers lies furthest apart, the more regardful must mind a clearly
+  // larger share of what its children were seen doing to other peoples. On
+  // the build before, every band minded every wrong (100% against 100%) and
+  // this fails; it is n/a where the two bands are too alike to tell apart,
+  // or saw too little.
+  {
+    const cultures = sim.bands.filter(b => !b.outcast).map(b => ({
+      regard: b.strangerRegard,
+      seen: tel['mischief_abroad_seen_b' + b.id] ?? 0,
+      minded: tel['mischief_abroad_minded_b' + b.id] ?? 0,
+    })).filter(c => c.seen >= 15).sort((a, b) => a.regard - b.regard);
+    const low = cultures[0];
+    const high = cultures[cultures.length - 1];
+    if (!low || !high || low === high || high.regard - low.regard < 0.15) {
+      skip('upbringing-follows-culture',
+        'fewer than two peoples saw 15 wrongs by their children abroad, with regard for strangers 0.15 apart');
+    } else {
+      const share = (c: { seen: number; minded: number }) => c.minded / c.seen;
+      add('upbringing-follows-culture', share(high) - share(low) >= 0.1,
+        'the people with regard ' + high.regard.toFixed(2) + ' minded ' + high.minded + ' of ' + high.seen +
+        ' wrongs by its children against strangers; the one with ' + low.regard.toFixed(2) + ', ' +
+        low.minded + ' of ' + low.seen + ' (the first must be 10 points higher)');
+    }
+  }
+
   // M11 phase 15's gate (owner's notes 6 and 9). Each was run against the
   // build before phase 15 and fails there; see the changelog for the numbers.
   //

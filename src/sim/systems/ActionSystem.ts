@@ -3635,7 +3635,17 @@ export class ActionSystem {
       return;
     }
 
-    child.conscience = Math.min(1, child.conscience + CORRECTION_STEP);
+    // M12 phase 2d: which conscience the telling-off teaches is which people
+    // the wrong was done to. One learned about strangers carries half over to
+    // one's own people — somebody told not to rob a stranger has been told
+    // something about robbing a neighbour too — and not the other way.
+    if (person.mischiefAbroad) {
+      child.conscienceAbroad = Math.min(1, child.conscienceAbroad + CORRECTION_STEP);
+      child.conscience = Math.min(1, child.conscience + CORRECTION_STEP / 2);
+      telemetry.count('corrected_abroad');
+    } else {
+      child.conscience = Math.min(1, child.conscience + CORRECTION_STEP);
+    }
     if (person.mischiefId === child.id) person.mischiefId = null;
     const who = { actor: person.name, target: child.name };
     person.chronicle.push({

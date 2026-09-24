@@ -3,6 +3,26 @@
 As of 2026-09-24. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M12 phase 2d (norms that are learned), 2026-09-24
+
+### A people's culture never changes
+
+`Band.strangerRegard` is drawn at founding and fixed for ever, like the rest
+of `Norms`. What moves is the people: children raised by a band that minds
+wrongs to strangers carry `conscienceAbroad` for life, and take it with them
+if they marry out or are cast out. But the band itself neither hardens after
+a raid nor softens after a marriage, and nothing a chief does moves it. The
+plan's "two cultures raise different adults" holds; "a culture that changes
+with its history" is a later phase's.
+
+### Parochial peoples' children run wild abroad
+
+Intended, and large: in `millers` the band at regard 0.43 saw 496 wrongs by
+its children against other peoples with its culture read, and 52 with every
+wrong corrected. Those are sabotages and trespasses of the neighbours'
+buildings, and they are what `bandHostility` feeds on. Worth watching as
+phase 5 (territory) and 6 (feuds) build on standing between peoples.
+
 ## Found shipping M12 phase 2c (the struck respond), 2026-09-24
 
 ### Eight timed verbs still ignore thirst, hunger and cold

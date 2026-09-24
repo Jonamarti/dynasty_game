@@ -87,11 +87,25 @@ intermedio que las sociedades reales ponen entre el rencor y la violencia**:
   `talk`/`warn` con sed: 12.173 de 14.589 conversaciones cortadas al tick
   siguiente. Check `the-struck-respond`: 1 de 91 golpes sin respuesta, frente
   a más del 80% antes.
-- **2d. Normas que se aprenden.** `conscience` es hoy un número; que lo que se
-  corrige dependa de las normas de la banda (`Norms`): una banda tolerante con
-  el robo a extraños no corrige a un niño por robar a extraños. Así dos
-  culturas crían adultos distintos, que es el germen de la diferenciación
-  cultural que el mapa necesitará.
+- **2d. Normas que se aprenden.** **Construida** (2026-09-24, detalle en
+  `changelog.md`). Un eje cultural nuevo por banda, el **respeto al
+  extraño** (`Band.strangerRegard`, en su propio stream `cultureRng`): cuánto
+  le importa a un pueblo el daño que uno de los suyos hace a un extraño. Lo
+  leen el juicio de los adultos (`partiality`), la corrección de los niños
+  (`noteMischief`, sólo para daños a extraños; contra los propios se corrige
+  siempre) y dos conciencias en vez de una (`conscience`,
+  `conscienceAbroad`). Un pueblo que tiene al extraño por presa lícita cría
+  saqueadores. Check `upbringing-follows-culture`.
+
+> **Aviso sobre 2a y 2b (2026-09-24).** Las dos partían de que dentro de una
+> banda hay robos y golpes que compensar o juzgar. La fase 1 los acabó:
+> medido en tres `century`, **ningún** robo ni golpe dentro de una banda; lo
+> único que queda dentro es la calumnia (139, 109 de ellas de niños). Tal como
+> están escritas, las dos serían casi inertes. Lo que sí abunda es el daño
+> *entre* pueblos (1.041 amenazas, 211 palizas, 3.004 sabotajes de adultos en
+> esos tres mundos), que es donde la compensación histórica (el *wergild*)
+> tenía su sentido. Pendiente de decisión del propietario: ver
+> `changelog.md`, fase 2d.
 
 **Puerta:** `peace-within-bands` sigue en verde con la compensación activa; la
 media de renombre por hogar diverge (estratificación) sin que suba la
