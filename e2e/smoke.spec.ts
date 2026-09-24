@@ -12,6 +12,7 @@ import { test, expect, type Page } from '@playwright/test';
 // milestone added a technology, which is a test asserting a number rather than
 // a fact. The fact is "every technology is on the web".
 import { TECHS } from '../src/sim/knowledge/Tech.ts';
+import type { Simulation } from '../src/sim/core/Simulation.ts';
 
 /** Fails the test on any uncaught error or console error, not just assertions. */
 function guardErrors(page: Page): string[] {
@@ -219,6 +220,49 @@ async function emptyGround(page: Page): Promise<{ x: number; y: number }> {
   expect(point, 'no empty ground near the player on this seed').not.toBeNull();
   return point!;
 }
+
+test('the verdict overlay skips expired cases and closes when the chief loses office', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.evaluate(() => {
+    const { sim } = (window as unknown as { __dynasty: { sim: Simulation } }).__dynasty;
+    const chief = sim.player!;
+    sim.bandSystem.chiefByBand.set(chief.bandId, chief.id);
+    const [plaintiff, accused] = sim.livingPeople().filter(p =>
+      p.bandId === chief.bandId && p.id !== chief.id);
+    const told = {
+      plaintiffId: plaintiff!.id, plaintiffBandId: chief.bandId,
+      accusedId: accused!.id, accusedBandId: chief.bandId,
+      kind: 'theft' as const, tick: sim.time.tick,
+    };
+    // Missing people have the same queue lifecycle as dead people. No death
+    // simulation is needed to check whether the overlay can reach the next case.
+    sim.pendingVerdicts.push({ ...told, accusedId: -1 }, told);
+  });
+  const card = page.locator('.verdict-card');
+  await expect(card).toBeVisible();
+  await card.locator('[data-verdict="dismiss"]').click();
+  await expect(card).toBeHidden();
+  await page.evaluate(() => {
+    const { sim } = (window as unknown as { __dynasty: { sim: Simulation } }).__dynasty;
+    const chief = sim.player!;
+    const [plaintiff, accused] = sim.livingPeople().filter(p =>
+      p.bandId === chief.bandId && p.id !== chief.id);
+    sim.pendingVerdicts.push({
+      plaintiffId: plaintiff!.id, plaintiffBandId: chief.bandId,
+      accusedId: accused!.id, accusedBandId: chief.bandId,
+      kind: 'theft', tick: sim.time.tick,
+    });
+  });
+  await expect(card).toBeVisible();
+  await page.evaluate(() => {
+    const { sim } = (window as unknown as { __dynasty: { sim: Simulation } }).__dynasty;
+    const chief = sim.player!;
+    sim.bandSystem.chiefByBand.set(chief.bandId, sim.pendingVerdicts[0]!.plaintiffId);
+  });
+  await expect(page.locator('.verdict-overlay')).toBeHidden();
+  expect(errors).toEqual([]);
+});
 
 test('boots, paints and advances the clock', async ({ page }) => {
   const errors = guardErrors(page);

@@ -20,7 +20,7 @@ export class VerdictOverlay {
 
   update(sim: Simulation): void {
     const chief = sim.player;
-    const told = sim.pendingVerdicts[0];
+    const told = chief ? sim.pendingVerdictFor(chief) : null;
     if (!chief || !told || !chief.alive || chief.bandId !== told.plaintiffBandId ||
       told.accusedBandId !== chief.bandId) {
       if (!this.root.hidden) this.close();
@@ -60,6 +60,9 @@ export class VerdictOverlay {
         if (sim.resolveVerdict(chief, told, verdict)) {
           this.shownKey = null;
           this.close();
+        } else {
+          const summary = this.root.querySelector('.verdict-summary');
+          if (summary) summary.textContent = sim.lastRefusal;
         }
       };
     }

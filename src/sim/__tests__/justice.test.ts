@@ -107,3 +107,48 @@ describe('a wrong, told and carried', () => {
     expect(envoy!.carriedDemand?.accusedId).toBe(accused!.id);
   });
 });
+
+describe('pending player verdicts', () => {
+  function pendingCase() {
+    const sim = new Simulation({
+      seed: 'justice-test',
+      world: { width: 64, height: 64, berryBushes: 40, flintOutcrops: 10, deadwood: 20, gameHerds: 4 },
+      population: { bands: 2, peoplePerBand: 5 },
+    });
+    const [chief, plaintiff, accused] = sim.livingPeople().filter(p => p.bandId === 0);
+    chief!.isPlayer = true;
+    sim.bandSystem.chiefByBand.set(0, chief!.id);
+    const told = {
+      plaintiffId: plaintiff!.id, plaintiffBandId: 0,
+      accusedId: accused!.id, accusedBandId: 0,
+      kind: 'theft' as const, tick: sim.time.tick,
+    };
+    sim.pendingVerdicts.push(told);
+    return { sim, chief: chief!, plaintiff: plaintiff!, accused: accused!, told };
+  }
+
+  it.each(['accused', 'plaintiff'] as const)('rejects a verdict after the %s changes bands', role => {
+    const setup = pendingCase();
+    setup[role].bandId = 1;
+    expect(setup.sim.resolveVerdict(setup.chief, setup.told, 'shame')).toBe(false);
+    expect(setup.sim.lastRefusal).toBeTruthy();
+  });
+
+  it('removes a dead party from the queue and exposes the next case', () => {
+    const { sim, chief, accused, told } = pendingCase();
+    const replacement = sim.livingPeople().find(p => p.bandId === 0 &&
+      p.id !== chief.id && p.id !== told.plaintiffId && p.id !== accused.id)!;
+    const next = { ...told, accusedId: replacement.id };
+    sim.pendingVerdicts.push(next);
+    accused.alive = false;
+    expect(sim.pendingVerdictFor(chief)).toBe(next);
+    expect(sim.pendingVerdicts).toEqual([next]);
+    expect(sim.insights.some(note => note.personId === chief.id)).toBe(true);
+  });
+
+  it('does not offer judgments after the player loses office', () => {
+    const { sim, chief, plaintiff } = pendingCase();
+    sim.bandSystem.chiefByBand.set(chief.bandId, plaintiff.id);
+    expect(sim.pendingVerdictFor(chief)).toBeNull();
+  });
+});

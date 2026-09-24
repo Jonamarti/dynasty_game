@@ -1453,6 +1453,19 @@ export class Simulation {
     b.feud.delete(a.id);
     a.feudSuspects.delete(b.id);
     b.feudSuspects.delete(a.id);
+    // Brain reads the person's target, not the household ledger. Leaving that
+    // cached culprit behind kept the revenge gate open after peace was made.
+    // Preserve a target from another open feud, or fall back to its culprit.
+    for (const household of [a, b]) {
+      const suspects = [...household.feudSuspects.entries()]
+        .filter(([id]) => household.feud.has(id)).map(([, id]) => id);
+      for (const memberId of household.memberIds) {
+        const member = this.peopleById.get(memberId);
+        if (member && (member.feudTargetId === null || !suspects.includes(member.feudTargetId))) {
+          member.feudTargetId = suspects[0] ?? null;
+        }
+      }
+    }
     for (const aId of a.memberIds) {
       for (const bId of b.memberIds) {
         this.relationships.addDeed(aId, bId, 12, this.time.tick);
@@ -3003,13 +3016,50 @@ export class Simulation {
     return building;
   }
 
+  /** A queued local case can outlive either party or their membership. */
+  private verdictCaseAvailable(told: Case): boolean {
+    const accused = this.peopleById.get(told.accusedId);
+    const plaintiff = this.peopleById.get(told.plaintiffId);
+    return !!accused?.alive && !!plaintiff?.alive &&
+      told.accusedBandId === told.plaintiffBandId &&
+      accused.bandId === told.accusedBandId && plaintiff.bandId === told.plaintiffBandId;
+  }
+
+  /**
+   * The overlay must not get stuck on a dead party, or offer powers to a
+   * deposed chief. Validate here as well as on click: a case may change while
+   * the player reads it. Other bands' cases stay available for their chief.
+   */
+  pendingVerdictFor(chief: Person): Case | null {
+    if (!chief.isPlayer || !chief.alive ||
+      this.bandSystem.chiefByBand.get(chief.bandId) !== chief.id) return null;
+    for (let i = 0; i < this.pendingVerdicts.length;) {
+      const told = this.pendingVerdicts[i]!;
+      if (!this.verdictCaseAvailable(told)) {
+        this.pendingVerdicts.splice(i, 1);
+        if (told.plaintiffBandId === chief.bandId) {
+          this.noteInsight(chief, t('The case was closed: a party died or left the band'), 'setback');
+        }
+      } else i++;
+    }
+    return this.pendingVerdicts.find(told => told.plaintiffBandId === chief.bandId) ?? null;
+  }
+
   /** Resolves a local case explicitly chosen by the player-chief. */
   resolveVerdict(chief: Person, told: Case, verdict: 'order' | 'shame' | 'dismiss' | 'exile'): boolean {
     if (!chief.isPlayer || !chief.alive || this.bandSystem.chiefByBand.get(chief.bandId) !== chief.id ||
-      told.plaintiffBandId !== chief.bandId || told.accusedBandId !== chief.bandId) return false;
+      told.plaintiffBandId !== chief.bandId || told.accusedBandId !== chief.bandId) {
+      this.lastRefusal = t('Only the current chief can judge this case');
+      return false;
+    }
     const index = this.pendingVerdicts.findIndex(caseFile =>
-      caseFile.accusedId === told.accusedId && caseFile.plaintiffId === told.plaintiffId);
-    if (index < 0) return false;
+      caseFile.accusedId === told.accusedId && caseFile.plaintiffId === told.plaintiffId &&
+      caseFile.tick === told.tick && caseFile.kind === told.kind &&
+      caseFile.plaintiffBandId === told.plaintiffBandId && caseFile.accusedBandId === told.accusedBandId);
+    if (index < 0 || !this.verdictCaseAvailable(this.pendingVerdicts[index]!)) {
+      this.lastRefusal = t('This case is no longer available for judgment');
+      return false;
+    }
     const accused = this.peopleById.get(told.accusedId);
     const plaintiff = this.peopleById.get(told.plaintiffId);
     if (!accused || !plaintiff || !accused.alive || !plaintiff.alive) return false;
