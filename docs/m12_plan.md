@@ -208,10 +208,11 @@ territorio no tengo comida y en el tuyo sí, voy al tuyo y te lo quito».
   `changelog.md`). Recolectar, cazar o talar en una casilla reclamada por otra
   banda registra `trespass` al llegar al recurso. La acción no se cancela, pero
   el agravio sólo se transmite si alguien de la banda dueña lo ve.
-- **5c. Pedir permiso, pagar por paso.** El vecino puede *pedir* recolectar en
-  tu tierra (un `ask` entre bandas), y la respuesta depende de la relación y
-  de la abundancia. La alternativa pacífica a la incursión, y el origen del
-  tributo.
+- **5c. Pedir permiso, pagar por paso. Construida** (2026-09-24, detalle en
+  `changelog.md`). El menú social ofrece pedir al vecino permiso para
+  recolectar; la respuesta usa relación y abundancia. Si la tierra está escasa
+  o la relación es mala, se paga un alimento como tributo y se obtiene un pase
+  de un día. Las acciones en una casilla con pase no generan trespass.
 - **5d. La incursión por necesidad.** La incursión por lo que falta (M11 fase
   14) se reescribe sobre el territorio: se elige *dónde* está lo que falta, no a
   quién se odia.

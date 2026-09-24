@@ -48,4 +48,23 @@ describe('marked territory', () => {
     expect(sim.social.recent.some(event => event.type === 'trespass' &&
       event.actorId === intruder.id && event.victimBandId === owner.bandId)).toBe(true);
   });
+
+  it('grants a one-day pass in exchange for food when the neighbour is short', () => {
+    const sim = new Simulation({
+      seed: 'territory-permission',
+      world: { width: 64, height: 64, berryBushes: 30, flintOutcrops: 8, deadwood: 12, gameHerds: 3 },
+      population: { bands: 2, peoplePerBand: 4 },
+    });
+    const visitor = sim.livingPeople().find(person => person.bandId === 0 && !person.isChild)!;
+    const owner = sim.livingPeople().find(person => person.bandId === 1 && !person.isChild)!;
+    visitor.x = owner.x;
+    visitor.y = owner.y;
+    sim.bands[1]!.claimedCells = new Set([
+      `${Math.floor(visitor.x / MAP_CELL)},${Math.floor(visitor.y / MAP_CELL)}`,
+    ]);
+    visitor.inventory.add('berries', 1);
+    expect(sim.requestTerritoryPermission(visitor, owner)).toBe(true);
+    expect(sim.hasTerritoryPermission(visitor, owner.bandId)).toBe(true);
+    expect(visitor.inventory.count('berries')).toBe(0);
+  });
 });

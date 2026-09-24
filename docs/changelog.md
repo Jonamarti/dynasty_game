@@ -9,6 +9,14 @@ en su ánimo. La familia del cautivo puede pagar bienes en persona mediante
 pueblo. Un menor retenido durante treinta días se integra en el hogar del jefe
 captor; los adultos siguen retenidos hasta que escapen o sean rescatados.
 
+## 2026-09-24 — M12 phase 5c: permiso y tributo de paso
+
+El menú social permite pedir permiso a un vecino extranjero para recolectar en
+su territorio. La decisión combina la relación entre pueblos y la abundancia
+de sus almacenes; cuando hace falta, el visitante entrega un alimento como
+tributo. El permiso dura un día y evita el `trespass`, dejando una alternativa
+pacífica y medible a la incursión.
+
 ## 2026-09-24 — M12 phase 5a: casillas de territorio
 
 Una banda que conoce `marking` deja de tener únicamente un radio defensivo:

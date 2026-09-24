@@ -503,6 +503,14 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
     }), t('Talk to {name}…', { name: other.name }), '\u{1F4AC}',
       t('They do not know them well enough to say anything')),
     {
+      id: 'ask_permission',
+      label: t('Ask {name} for permission to gather here', { name: other.name }),
+      icon: '\u{1F91D}',
+      enabled: other.bandId !== actor.bandId && !other.isChild,
+      reason: other.bandId !== actor.bandId && !other.isChild
+        ? undefined : t('They are not a neighbouring people'),
+    },
+    {
       id: 'give',
       label: t('Give food'),
       icon: '\u{1F381}',

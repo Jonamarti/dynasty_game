@@ -124,6 +124,8 @@ export interface ActionContext {
   territoryOwnerAt: (x: number, y: number) => number | null;
   /** Records a witnessed use of another band's marked ground. */
   onTerritoryUse: (person: Person, ownerBandId: number) => void;
+  /** Asks a foreign neighbour for a one-day pass through marked ground. */
+  requestTerritoryPermission: (person: Person, owner: Person) => boolean;
   /** Notes that a technology is now being written down somewhere. */
   claimRecord: (tech: string) => void;
   /** Cuts a new record. Returns null if the ground will not take one. */
@@ -644,6 +646,7 @@ export class ActionSystem {
       case 'teach': this.doTeach(person, ctx); break;
       case 'spar': this.doSpar(person, ctx); break;
       case 'ask': this.doAsk(person, ctx); break;
+      case 'ask_permission': this.doAskPermission(person, ctx); break;
       case 'craft': this.doCraft(person, ctx); break;
       case 'inscribe': this.doInscribe(person, ctx); break;
       case 'read': this.doRead(person, ctx); break;
@@ -2563,6 +2566,22 @@ export class ActionSystem {
     ctx.social.courtship(person, other, charm, ctx.tick);
     person.practice('persuade', 0.4);
     other.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
+    this.finishSocial(person, ctx.tick);
+  }
+
+  /** A peaceful request to use a neighbour's marked ground for one day. */
+  private doAskPermission(person: Person, ctx: ActionContext): void {
+    const neighbour = this.approach(person, ctx);
+    if (!neighbour) return;
+    if (neighbour.bandId === person.bandId || neighbour.isChild) {
+      this.abandon(person, 'not_a_foreign_neighbour', ctx);
+      return;
+    }
+    if (!ctx.requestTerritoryPermission(person, neighbour)) {
+      this.stop(person, 'permission_refused', ctx, 'asked_');
+      return;
+    }
+    telemetry.count('territory_permission_asked');
     this.finishSocial(person, ctx.tick);
   }
 

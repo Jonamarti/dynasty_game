@@ -236,6 +236,8 @@ export class Simulation {
   animals: Animal[] = [];
   households: Household[] = [];
   bands: Band[] = [];
+  /** Visitor band -> owner band permission, expiring at an absolute day. */
+  private readonly territoryPermissions = new Map<string, number>();
 
   /**
    * Knowledge the world has, counted from the adults alive right now.
@@ -1848,6 +1850,47 @@ export class Simulation {
       if (!band.outcast && band.claimedCells?.has(key)) return band.id;
     }
     return null;
+  }
+
+  hasTerritoryPermission(person: Person, ownerBandId: number): boolean {
+    return (this.territoryPermissions.get(`${person.id}:${ownerBandId}`) ?? -1) >= this.time.day;
+  }
+
+  /**
+   * A neighbour asks the owner for a one-day pass. Good relations make a free
+   * answer possible; a strained relationship is still negotiable while the
+   * owner's stores are comfortable, which is the peaceful alternative to
+   * treating every foreign gatherer as a thief.
+   */
+  requestTerritoryPermission(visitor: Person, owner: Person): boolean {
+    if (!visitor.alive || !owner.alive || visitor.bandId === owner.bandId ||
+      owner.isChild || visitor.distanceTo(owner) > this.config.sightRadius) return false;
+    const band = this.bands.find(candidate => candidate.id === owner.bandId);
+    if (!band || band.outcast || !band.claimedCells ||
+      this.territoryOwnerAt(visitor.x, visitor.y) !== band.id) return false;
+    const stores = this.buildings.filter(building =>
+      building.ownerBandId === band.id && building.complete && building.def.storage >= 100);
+    const abundance = stores.length === 0 ? 0 : stores.reduce((sum, store) =>
+      sum + (store.def.storage - store.storageFree) / store.def.storage, 0) / stores.length;
+    const regard = this.bandRelations.standing(visitor.bandId, band.id);
+    const needsTribute = regard < 0 || abundance < 0.35;
+    const tribute = visitor.inventory.bestFood();
+    if (needsTribute && tribute === null) {
+      telemetry.count('territory_permission_refused');
+      return false;
+    }
+    if (needsTribute) {
+      visitor.inventory.remove(tribute!, 1);
+      owner.inventory.add(tribute!, 1);
+      telemetry.count('territory_tribute_paid');
+    }
+    this.territoryPermissions.set(`${visitor.id}:${band.id}`, this.time.day + 1);
+    telemetry.count('territory_permission_granted');
+    visitor.chronicle.push({
+      tick: this.time.tick, ageDays: visitor.age,
+      text: t('was allowed to gather by the {band}', { band: band.name }), kind: 'did',
+    });
+    return true;
   }
 
   /**
@@ -3577,12 +3620,15 @@ export class Simulation {
       inLibrary: (x: number, y: number) => this.inLibrary(x, y),
       territoryOwnerAt: (x: number, y: number) => this.territoryOwnerAt(x, y),
       onTerritoryUse: (person: Person, ownerBandId: number) => {
-        if (person.territoryUseNoted === ownerBandId) return;
+        if (person.territoryUseNoted === ownerBandId ||
+          this.hasTerritoryPermission(person, ownerBandId)) return;
         this.social.emit('trespass', person, null, 0.5, this.time.tick,
           this.peopleHash, this.config.sightRadius, true, ownerBandId);
         person.territoryUseNoted = ownerBandId;
         telemetry.count('territory_trespass');
       },
+      requestTerritoryPermission: (person: Person, owner: Person) =>
+        this.requestTerritoryPermission(person, owner),
       inscribe: (form: InscriptionForm, x: number, y: number, author: Person) =>
         this.placeInscription(form, x, y, author),
       onStopped: (person: Person, action: string, reason: string) =>
