@@ -401,6 +401,8 @@ export class Person {
    * again after that. See `ActionSystem.useProperty`.
    */
   propertyUseNoted: 'unseen' | 'watched' | null = null;
+  /** Band whose marked ground this action has already trespassed on. */
+  territoryUseNoted: number | null = null;
   /**
    * Which technology a player-ordered `ponder` or `discuss` is about.
    *
@@ -993,6 +995,7 @@ export class Person {
     this.targetItemId = null;
     this.targetItemCount = null;
     this.propertyUseNoted = null;
+    this.territoryUseNoted = null;
     this.pursuitFrom = null;
     this.actionTimer = 0;
     // A route and the aim it was computed for have to be forgotten together —

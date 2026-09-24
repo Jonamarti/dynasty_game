@@ -23,4 +23,29 @@ describe('marked territory', () => {
     expect(band.claimedCells?.has(key)).toBe(true);
     expect(band.claimedCells?.size).toBeGreaterThan(0);
   });
+
+  it('records a trespass when a foreign gatherer is seen on a claimed cell', () => {
+    const sim = new Simulation({
+      seed: 'territory-trespass',
+      world: { width: 64, height: 64, berryBushes: 30, flintOutcrops: 8, deadwood: 12, gameHerds: 3 },
+      population: { bands: 2, peoplePerBand: 4 },
+    });
+    const intruder = sim.livingPeople().find(person => person.bandId === 0 && !person.isChild)!;
+    const owner = sim.livingPeople().find(person => person.bandId === 1 && !person.isChild)!;
+    const node = sim.nodes.find(candidate => !candidate.depleted)!;
+    node.x = intruder.x + 0.5;
+    node.y = intruder.y;
+    owner.x = node.x;
+    owner.y = node.y;
+    sim.bands[1]!.claimedCells = new Set([
+      `${Math.floor(node.x / MAP_CELL)},${Math.floor(node.y / MAP_CELL)}`,
+    ]);
+    intruder.needs.hunger = 0;
+    intruder.needs.thirst = 0;
+    intruder.needs.cold = 0;
+    expect(sim.order(intruder, 'gather', { nodeId: node.id })).toBe(true);
+    sim.step();
+    expect(sim.social.recent.some(event => event.type === 'trespass' &&
+      event.actorId === intruder.id && event.victimBandId === owner.bandId)).toBe(true);
+  });
 });

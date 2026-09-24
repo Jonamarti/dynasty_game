@@ -82,7 +82,7 @@ import {
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
-import { BandMaps } from '../social/BandMaps.ts';
+import { BandMaps, MAP_CELL } from '../social/BandMaps.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
 
 /**
@@ -1841,6 +1841,15 @@ export class Simulation {
     return moved;
   }
 
+  /** The marked band owning a coarse cell, or null on unclaimed ground. */
+  territoryOwnerAt(x: number, y: number): number | null {
+    const key = `${Math.floor(x / MAP_CELL)},${Math.floor(y / MAP_CELL)}`;
+    for (const band of this.bands) {
+      if (!band.outcast && band.claimedCells?.has(key)) return band.id;
+    }
+    return null;
+  }
+
   /**
    * Withdraws a named stack from a store for the direct transfer panel.
    *
@@ -3566,6 +3575,14 @@ export class Simulation {
         this.inscriptionAt(x, y, 1.6, record => record.unfinished),
       claimRecord: (tech: string) => this.recordsInHand.add(tech),
       inLibrary: (x: number, y: number) => this.inLibrary(x, y),
+      territoryOwnerAt: (x: number, y: number) => this.territoryOwnerAt(x, y),
+      onTerritoryUse: (person: Person, ownerBandId: number) => {
+        if (person.territoryUseNoted === ownerBandId) return;
+        this.social.emit('trespass', person, null, 0.5, this.time.tick,
+          this.peopleHash, this.config.sightRadius, true, ownerBandId);
+        person.territoryUseNoted = ownerBandId;
+        telemetry.count('territory_trespass');
+      },
       inscribe: (form: InscriptionForm, x: number, y: number, author: Person) =>
         this.placeInscription(form, x, y, author),
       onStopped: (person: Person, action: string, reason: string) =>

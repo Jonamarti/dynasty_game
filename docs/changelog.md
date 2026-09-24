@@ -17,6 +17,14 @@ sus adultos. El reclamo vive en `Band.claimedCells`, se actualiza una vez al dí
 y no consume azar, por lo que 5b–5d pueden preguntar por la propiedad de la
 tierra sin convertir la heurística de intrusos en un segundo mapa omnisciente.
 
+## 2026-09-24 — M12 phase 5b: intrusión en tierra ajena
+
+Recolectar, talar o cazar en una casilla reclamada por otra banda registra un
+`trespass` cuando el personaje llega al recurso. La actividad no se bloquea:
+una necesidad puede justificar el riesgo. El evento usa el mismo filtro de
+testigos que los edificios, así que sólo mueve agravios entre pueblos cuando
+alguien del pueblo dueño estaba allí para verlo.
+
 Every change, with the date it was made and the reason it was made. Newest
 first. Reasons matter more than descriptions here: a later reader can see *what*
 changed from the diff, but not *why*.

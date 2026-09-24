@@ -120,6 +120,10 @@ export interface ActionContext {
   unfinishedAt: (x: number, y: number) => Inscription | null;
   /** Whether a point is under a finished library's roof. */
   inLibrary: (x: number, y: number) => boolean;
+  /** Returns the marked owner of a cell, if any. */
+  territoryOwnerAt: (x: number, y: number) => number | null;
+  /** Records a witnessed use of another band's marked ground. */
+  onTerritoryUse: (person: Person, ownerBandId: number) => void;
   /** Notes that a technology is now being written down somewhere. */
   claimRecord: (tech: string) => void;
   /** Cuts a new record. Returns null if the ground will not take one. */
@@ -973,6 +977,8 @@ export class ActionSystem {
     }
 
     if (!this.travel(person, ctx)) return;
+    const owner = ctx.territoryOwnerAt(node.x, node.y);
+    if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
 
     // Work phase: a pull takes time, scaled by the relevant skill.
     if (person.actionTimer <= 0) {
@@ -1030,6 +1036,8 @@ export class ActionSystem {
     person.targetX = tree.x;
     person.targetY = tree.y;
     if (!this.travel(person, ctx)) return;
+    const owner = ctx.territoryOwnerAt(tree.x, tree.y);
+    if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
 
     if (person.actionTimer <= 0) {
       person.actionTimer = Math.ceil(9 / person.skillFactor('forage'));
@@ -1075,6 +1083,9 @@ export class ActionSystem {
     person.targetX = tree.x;
     person.targetY = tree.y;
     if (!this.travel(person, ctx)) return;
+
+    const owner = ctx.territoryOwnerAt(tree.x, tree.y);
+    if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
 
     // Felling accumulates on the trunk instead of running down a single
     // uninterruptible timer. The timer version committed the woodcutter for
@@ -1666,6 +1677,8 @@ export class ActionSystem {
       this.travel(person, ctx);
       return;
     }
+    const owner = ctx.territoryOwnerAt(animal.x, animal.y);
+    if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
 
     // Within reach: strike. Skill against the animal's evasion, so a novice
     // after a hare mostly goes hungry and an expert after a boar mostly does

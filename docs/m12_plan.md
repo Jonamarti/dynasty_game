@@ -204,9 +204,10 @@ territorio no tengo comida y en el tuyo sí, voy al tuyo y te lo quito».
   torno al campamento y las amplía en los lugares donde sus adultos trabajan o
   vigilan. El reclamo queda en `Band.claimedCells`, preparado para que las
   fases siguientes distingan tierra propia, vecina y paso autorizado.
-- **5b. Entrar sin permiso.** Recolectar, cazar o talar en tierra ajena es un
-  `trespass` de tierra, no sólo de edificio, sujeto a la misma regla: sólo
-  cuenta si alguien de la banda dueña lo ve.
+- **5b. Entrar sin permiso. Construida** (2026-09-24, detalle en
+  `changelog.md`). Recolectar, cazar o talar en una casilla reclamada por otra
+  banda registra `trespass` al llegar al recurso. La acción no se cancela, pero
+  el agravio sólo se transmite si alguien de la banda dueña lo ve.
 - **5c. Pedir permiso, pagar por paso.** El vecino puede *pedir* recolectar en
   tu tierra (un `ask` entre bandas), y la respuesta depende de la relación y
   de la abundancia. La alternativa pacífica a la incursión, y el origen del
