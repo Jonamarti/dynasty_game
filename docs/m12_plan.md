@@ -199,10 +199,11 @@ El propietario: «según vayan descubriendo tecnologías, establecen que este
 terreno es mío … y eso da lugar a enfrentamientos por los recursos: si en mi
 territorio no tengo comida y en el tuyo sí, voy al tuyo y te lo quito».
 
-- **5a. Territorio con límites.** Hoy una banda tiene un centro y un radio
-  (`TERRITORY_RADIUS`). Con una tecnología de marcado (mojones, `marking` ya
-  existe) la banda reclama casillas concretas; el territorio crece donde
-  trabaja y se ve en el mapa.
+- **5a. Territorio con límites. Construida** (2026-09-24, detalle en
+  `changelog.md`). Una banda que conoce `marking` reclama casillas gruesas en
+  torno al campamento y las amplía en los lugares donde sus adultos trabajan o
+  vigilan. El reclamo queda en `Band.claimedCells`, preparado para que las
+  fases siguientes distingan tierra propia, vecina y paso autorizado.
 - **5b. Entrar sin permiso.** Recolectar, cazar o talar en tierra ajena es un
   `trespass` de tierra, no sólo de edificio, sujeto a la misma regla: sólo
   cuenta si alguien de la banda dueña lo ve.

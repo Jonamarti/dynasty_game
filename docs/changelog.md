@@ -9,6 +9,14 @@ en su ánimo. La familia del cautivo puede pagar bienes en persona mediante
 pueblo. Un menor retenido durante treinta días se integra en el hogar del jefe
 captor; los adultos siguen retenidos hasta que escapen o sean rescatados.
 
+## 2026-09-24 — M12 phase 5a: casillas de territorio
+
+Una banda que conoce `marking` deja de tener únicamente un radio defensivo:
+reclama celdas gruesas alrededor del campamento y las amplía con la posición de
+sus adultos. El reclamo vive en `Band.claimedCells`, se actualiza una vez al día
+y no consume azar, por lo que 5b–5d pueden preguntar por la propiedad de la
+tierra sin convertir la heurística de intrusos en un segundo mapa omnisciente.
+
 Every change, with the date it was made and the reason it was made. Newest
 first. Reasons matter more than descriptions here: a later reader can see *what*
 changed from the diff, but not *why*.

@@ -214,6 +214,8 @@ export interface Band {
   chiefId: number | null;
   /** Absolute day the present chief took office. Null while there is none. */
   chiefSince: number | null;
+  /** Coarse cells this band has formally marked as its ground (M12 phase 5a). */
+  claimedCells?: Set<string>;
   /** True for the standing-place of the exiled: no camp, no chief, no norms. */
   outcast?: boolean;
 }
@@ -782,6 +784,7 @@ export class Simulation {
         strangerRegard: STRANGER_REGARD_MEAN,
         chiefId: null,
         chiefSince: null,
+        claimedCells: new Set(),
       };
       this.bands.push(band);
       this.normsByBand.set(band.id, norms);
@@ -1627,6 +1630,7 @@ export class Simulation {
       strangerRegard: STRANGER_REGARD_MEAN,
       chiefId: null,
       chiefSince: null,
+      claimedCells: new Set(),
       outcast: true,
     };
     this.bands.push(band);

@@ -38,6 +38,7 @@ import type { BandRelations } from '../social/BandRelations.ts';
 import { t } from '../../i18n/i18n.ts';
 import type { Sightings } from '../social/Fear.ts';
 import type { BandMaps } from '../social/BandMaps.ts';
+import { MAP_CELL } from '../social/BandMaps.ts';
 import type { ResourceNode, ResourceKind } from '../entities/ResourceNode.ts';
 import { ITEMS } from '../entities/Item.ts';
 
@@ -456,6 +457,7 @@ export class BandSystem {
         (person.captiveFrom === null || person.captiveFrom === band.id ||
           (byBand.get(person.captiveFrom)?.length ?? 0) === 0));
       if (!band.outcast && stillOut.length > 0) this.considerAdoption(band, members, stillOut, ctx);
+      if (!band.outcast) this.markTerritory(band, members);
       if (!band.outcast) this.considerTerritory(band, ctx, outcastBand?.id);
       if (!band.outcast) this.considerRaid(band, members, ctx, outcastBand?.id);
       if (ctx.day % PLANNING_INTERVAL === 0) this.planBuildings(band, members, ctx);
@@ -1584,6 +1586,32 @@ export class BandSystem {
   // -------------------------------------------------------------------------
   // Territory
   // -------------------------------------------------------------------------
+
+  /**
+   * Mark the cells a people can actually see and work from their camp. The
+   * old radius was only a threat heuristic; `marking` turns it into a claim
+   * that later trespass and permission checks can name. A cell is added once,
+   * in member order, so the claim is deterministic and does not consume the
+   * shared planning RNG.
+   */
+  private markTerritory(band: Band, members: Person[]): void {
+    if (!members.some(member => !member.isChild && member.captiveOf === null &&
+      member.knownTech.has('marking'))) return;
+    const claimed = band.claimedCells ??= new Set<string>();
+    const points = [{ x: band.homeX, y: band.homeY }, ...members
+      .filter(member => !member.isChild && member.captiveOf === null)
+      .map(member => ({ x: member.x, y: member.y }))];
+    const radiusSq = TERRITORY_RADIUS * TERRITORY_RADIUS;
+    for (const point of points) {
+      if ((point.x - band.homeX) ** 2 + (point.y - band.homeY) ** 2 > radiusSq) continue;
+      const cx = Math.floor(point.x / MAP_CELL);
+      const cy = Math.floor(point.y / MAP_CELL);
+      const key = `${cx},${cy}`;
+      if (claimed.has(key)) continue;
+      claimed.add(key);
+      telemetry.count('territory_cell_claimed');
+    }
+  }
 
   /**
    * Foreign faces on a band's ground cost its opinion of their band — scaled
