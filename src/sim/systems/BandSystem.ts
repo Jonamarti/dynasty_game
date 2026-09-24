@@ -357,6 +357,8 @@ export interface BandContext {
    * for the same reason.
    */
   sameRegion: (ax: number, ay: number, bx: number, by: number) => boolean;
+  /** The marked band owning a resource cell, if any. */
+  territoryOwnerAt: (x: number, y: number) => number | null;
   /** Removes an abandoned site from the world. */
   abandonSite: (building: Building) => void;
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
@@ -1540,7 +1542,9 @@ export class BandSystem {
           if (!ctx.sameRegion(band.homeX, band.homeY, cell.x, cell.y)) continue;
           const node = ctx.nodeHash.findNearest(cell.x, cell.y, MAP_CELL_REACH,
             n => n.kind === kind && !n.depleted);
-          if (node) best = { node, victimId: other, distance };
+          if (node && ctx.territoryOwnerAt(node.x, node.y) === other) {
+            best = { node, victimId: other, distance };
+          }
         }
       }
     }

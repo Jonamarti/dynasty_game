@@ -3479,6 +3479,7 @@ export class Simulation {
         peopleHash: this.peopleHash,
         bandRelations: this.bandRelations,
         sameRegion: (ax, ay, bx, by) => this.world.sameRegion(ax, ay, bx, by),
+        territoryOwnerAt: (x, y) => this.territoryOwnerAt(x, y),
         abandonSite: site => this.removeBuilding(site),
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),

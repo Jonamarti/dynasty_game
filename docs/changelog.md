@@ -17,6 +17,14 @@ de sus almacenes; cuando hace falta, el visitante entrega un alimento como
 tributo. El permiso dura un día y evita el `trespass`, dejando una alternativa
 pacífica y medible a la incursión.
 
+## 2026-09-24 — M12 phase 5d: incursión por necesidad territorial
+
+La ruta de incursión por necesidad deja de considerar suficiente que una banda
+haya oído hablar de un recurso: el nodo elegido debe estar en una casilla
+reclamada por el vecino que se va a cruzar. El grupo marcha al lugar donde
+conoce que falta comida o material, manteniendo separada la necesidad de una
+venganza personal.
+
 ## 2026-09-24 — M12 phase 5a: casillas de territorio
 
 Una banda que conoce `marking` deja de tener únicamente un radio defensivo:

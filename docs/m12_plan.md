@@ -213,9 +213,11 @@ territorio no tengo comida y en el tuyo sí, voy al tuyo y te lo quito».
   recolectar; la respuesta usa relación y abundancia. Si la tierra está escasa
   o la relación es mala, se paga un alimento como tributo y se obtiene un pase
   de un día. Las acciones en una casilla con pase no generan trespass.
-- **5d. La incursión por necesidad.** La incursión por lo que falta (M11 fase
-  14) se reescribe sobre el territorio: se elige *dónde* está lo que falta, no a
-  quién se odia.
+- **5d. La incursión por necesidad. Construida** (2026-09-24, detalle en
+  `changelog.md`). La incursión por lo que falta usa el mapa de recursos
+  conocido, pero sólo acepta un nodo que esté dentro de las casillas reclamadas
+  por el vecino elegido. Se ataca el lugar donde está lo que falta, no a una
+  persona escogida por odio.
 
 **Puerta:** la violencia entre pueblos sube cuando la comida escasea en un
 territorio y la del vecino no, y baja cuando se comercia o se da permiso — la
