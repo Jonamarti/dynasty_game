@@ -3,6 +3,16 @@
 As of 2026-09-24. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Follow-ups from notes3, 2026-09-24
+
+Two requested interface behaviours remain pending M12 work:
+
+- NPC dialogue has no explicit **make peace** option. A future social action
+  should raise regard more strongly for family than for another member of the
+  same band, rather than being another flavour of ordinary talk.
+- The action line says only **fleeing**. It does not yet expose whether the
+  NPC is fleeing an animal, a person, or a named threat the observer knows.
+
 ## Found shipping M12 phase 2b (the chief as judge), 2026-09-24
 
 ### A player who is chief does not choose the verdict

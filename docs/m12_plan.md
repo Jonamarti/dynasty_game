@@ -129,14 +129,19 @@ violencia interna.
 
 Tres notas de interfaz que no tocan la simulación y pueden ir en paralelo:
 
-- **3a. Ventana de traspaso con un depósito** (nota 1). Caminar al depósito,
+- **3a. Ventana de traspaso con un depósito**. **Construida** (2026-09-24,
+  detalle en `changelog.md`). La ficha de un depósito terminado abre, al estar
+  al alcance, una ventana con los dos inventarios en paralelo, sliders por pila
+  y capacidad restante; la simulación bloquea cualquier movimiento que supere
+  la carga o el espacio disponible. Caminar al depósito,
   *mirar dentro* (hasta entonces su contenido es desconocido: se guarda en la
   memoria del personaje lo último que vio, regla de `Knowledge.ts`), y abrir un
   panel con los dos inventarios lado a lado. Cada objeto con un slider; junto a
   cada uno, la capacidad restante del depósito y la de carga del personaje,
   que se ponen en rojo y bloquean el traspaso si se superan. `QuantityPicker`
   ya existe y es la pieza de partida.
-- **3b. Cancelar una construcción** (nota 2b). Botón en la ficha de una obra
+- **3b. Cancelar una construcción**. **Construida** (2026-09-24, detalle en
+  `changelog.md`). Botón en la ficha de una obra
   sin terminar: la obra se borra y lo entregado (`Building.delivered`) cae al
   suelo como montón (`ItemPile`) en el sitio, de donde cualquiera puede
   recogerlo. Sólo la banda dueña; si lo hace la IA, `abandon` con motivo.
