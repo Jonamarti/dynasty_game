@@ -65,6 +65,7 @@ import {
   CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE, CALL_MEMORY, CALL_FOR_HELP, ANSWER_CALL,
 } from '../social/Defence.ts';
 import { offerFor, OFFER_AT_LEAST, REFUSAL_COOLDOWN, AMENDS } from '../social/Amends.ts';
+import { COMPLAIN, COMPLAIN_AFTER, PARLEY } from '../social/Justice.ts';
 import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
@@ -206,6 +207,9 @@ interface FoundTargets {
   correctee: Person | null;
   /** Whoever a `make_amends` goes to, M12 phase 2a. See `Amends.ts`. */
   amendsTo: Person | null;
+  /** The chief a `complain` goes to, and whoever a `parley` is put to — M12 phase 2b. */
+  complainTo: Person | null;
+  parleyWith: Person | null;
   /** Whoever an `answer_call` goes to, M11 phase 15b.4. */
   helpCallerTarget: Person | null;
   /** Somebody held by one of this person's own, for a `bind`, M11 phase 15c. */
@@ -531,7 +535,7 @@ const ESCAPE_TURNS = [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.1, -2.1];
 const ESCAPE_DISTANCES = [14, 10, 7, 4];
 
 const CUT_OFF_AT_ONCE: ReadonlySet<string> = new Set([
-  'talk', 'warn', 'threaten', 'slander', 'praise', 'correct', 'make_amends',
+  'talk', 'warn', 'threaten', 'slander', 'praise', 'correct', 'make_amends', 'complain', 'parley',
 ]);
 
 /**
@@ -796,6 +800,8 @@ export class Brain {
     let restrainee: Person | null = null;
     let correctee: Person | null = null;
     let amendsTo: Person | null = null;
+    let complainTo: Person | null = null;
+    let parleyWith: Person | null = null;
     let helpCallerTarget: Person | null = null;
     let bindTarget: Person | null = null;
     let patrolPoint: { x: number; y: number } | null = null;
@@ -1715,6 +1721,51 @@ export class Brain {
       if (best > 0) {
         add('make_amends', best);
         telemetry.count('amends_offered');
+      }
+    }
+
+    // --- Going to the chief ------------------------------------------------------
+    // M12 phase 2b. A wrong left unpaid past `COMPLAIN_AFTER`, or a demand
+    // another people's chief put to this person, is taken to their own chief
+    // when the chief is at hand. How much it still rankles is read off this
+    // person's own opinion of whoever did it; how readily they go to the chief
+    // rather than nursing it is `tradition` — the ones who hold to the ways of
+    // their people are the ones who bring their troubles to its head. A
+    // carried demand is a duty, weighed by loyalty.
+    if (!person.isChild && !pressedByNeed(person, ctx.needs.workLimits)) {
+      const chiefId = ctx.chiefByBand.get(person.bandId);
+      const chief = chiefId === undefined || chiefId === person.id
+        ? undefined : neighbours.find(other => other.id === chiefId);
+      if (chief) {
+        let urge = person.carriedDemand ? 0.6 + person.traits.loyalty * 0.6 : 0;
+        for (const grievance of person.grievances) {
+          if (grievance.lodged || ctx.time.tick - grievance.tick < COMPLAIN_AFTER) continue;
+          const rankle = Math.min(1, Math.max(0,
+            -ctx.relationships.opinion(person.id, grievance.againstId) / 50));
+          urge = Math.max(urge, rankle * (0.4 + person.traits.tradition));
+        }
+        if (urge > 0) {
+          add('complain', COMPLAIN * urge * this.proximityBonus(person, chief, ctx.sightRadius));
+          complainTo = chief;
+          telemetry.count('complain_offered');
+        }
+      }
+    }
+
+    // --- Putting a wrong to another people ------------------------------------------
+    // M12 phase 2b. A chief with a case against another people puts it to
+    // whoever of them is at hand — their chief by preference, since anybody
+    // else has to carry it home.
+    if (person.docket.length > 0 && !person.isChild && !pressedByNeed(person, ctx.needs.workLimits)) {
+      const accused = new Set(person.docket.map(c => c.accusedBandId));
+      const envoy = this.pickBest(neighbours.filter(other =>
+        accused.has(other.bandId) && !other.isChild && other.captiveOf === null
+      ), other => (ctx.chiefByBand.get(other.bandId) === other.id ? 20 : 0) - person.distanceTo(other));
+      if (envoy) {
+        add('parley', PARLEY * (0.4 + person.traits.tradition) *
+          this.proximityBonus(person, envoy, ctx.sightRadius));
+        parleyWith = envoy;
+        telemetry.count('parley_offered');
       }
     }
 
@@ -2704,7 +2755,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, attackRoute, intruder, restrainee, correctee, amendsTo, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, tradePartner, fleeFrom, fleePoint,
+        victim, foe, attackRoute, intruder, restrainee, correctee, amendsTo, complainTo, parleyWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -3234,6 +3285,8 @@ export class Brain {
       case 'restrain':
       case 'correct':
       case 'make_amends':
+      case 'complain':
+      case 'parley':
       case 'bind':
       case 'answer_call':
       case 'attack':
@@ -3265,6 +3318,8 @@ export class Brain {
           action === 'restrain' ? found.restrainee :
           action === 'correct' ? found.correctee :
           action === 'make_amends' ? found.amendsTo :
+          action === 'complain' ? found.complainTo :
+          action === 'parley' ? found.parleyWith :
           action === 'bind' ? found.bindTarget :
           action === 'answer_call' ? found.helpCallerTarget :
           action === 'slander' || action === 'praise' ? found.companion :

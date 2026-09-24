@@ -167,6 +167,12 @@ export interface CatalogContext {
    */
   relationships?: RelationshipGraph;
   tick?: number;
+  /**
+   * Who leads a band, for "take a grievance to…" — M12 phase 2b. Who the
+   * chief is, is known to everybody; it is the one thing about another person
+   * the whole band can see.
+   */
+  chiefOf?: (bandId: number) => number | undefined;
 }
 
 const NODE_VERBS: Record<string, { label: string; icon: string; action: string }> = {
@@ -520,7 +526,7 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
     // M12 phase 2a. Only when the player's character owes this person — they
     // know their own debts, and nobody else's — so the ring does not carry
     // an entry that is almost never there to use.
-    ...amendsOption(actor, other),
+    ...(ctx.commanding ? [] : [...amendsOption(actor, other), ...justiceOptions(actor, other, ctx)]),
     ...grouped([
     {
       id: 'steal',
@@ -1076,6 +1082,44 @@ function amendsOption(actor: Person, other: Person): ActionOption[] {
     enabled: enough,
     reason: enough ? undefined : t('You have nothing worth offering them'),
   }];
+}
+
+/**
+ * Going to the chief, and putting a wrong to another people — M12 phase 2b.
+ * Offered only when there is something to say: a grievance not yet taken to
+ * one's own chief, a demand carried from another people, or a case against
+ * the clicked person's people on the actor's own docket. All three are the
+ * actor's own knowledge, which is why none of this is offered while
+ * commanding somebody else.
+ */
+function justiceOptions(actor: Person, other: Person, ctx: CatalogContext): ActionOption[] {
+  const options: ActionOption[] = [];
+  if (ctx.chiefOf?.(actor.bandId) === other.id && other.id !== actor.id) {
+    if (actor.carriedDemand) {
+      options.push({
+        id: 'complain',
+        label: t('Pass on a demand to {name}', { name: other.name }),
+        icon: '\u{1F4DC}',
+        enabled: true,
+      });
+    } else if (actor.grievances.some(g => !g.lodged)) {
+      options.push({
+        id: 'complain',
+        label: t('Take a grievance to {name}', { name: other.name }),
+        icon: '\u{2696}',
+        enabled: true,
+      });
+    }
+  }
+  if (actor.docket.some(c => c.accusedBandId === other.bandId) && !other.isChild) {
+    options.push({
+      id: 'parley',
+      label: t('Demand redress from {name}', { name: other.name }),
+      icon: '\u{2696}',
+      enabled: true,
+    });
+  }
+  return options;
 }
 
 /**

@@ -6,6 +6,51 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-24 — M12 phase 2b: the chief as judge
+
+The plan's 2b, widened like 2a by the owner's choice to both sides of a band
+line. `social/Justice.ts`, new; the verdicts are carried out in
+`Simulation.hearComplaint`. **Every step is somebody telling somebody**: no
+chief learns of a wrong any other way.
+
+- **Grievances.** Every debt (2a) now has its other side on the one wronged
+  (`Person.grievances`), cleared when it is paid.
+- **`complain`**, a verb: a wrong left unpaid for half a day is taken to one's
+  own chief when the chief is at hand — weighed by how much it still rankles
+  and by `tradition`. The story passes to the chief as hearsay.
+- **Against one of the chief's own** (`judgeOwn`): amends ordered through the
+  ordinary compliance roll if the accused can pay; **shamed** if they cannot,
+  or defy the order — the chief tells the wrong to everybody of the band in
+  sight and the household loses `SHAME_RENOWN`; **dismissed** if the chief
+  favours the accused by `PARTIAL_AT`, and the plaintiff resents the chief.
+- **Against a stranger**: nothing the chief can order. It goes on their
+  `docket`, and they put it (`parley`) to whoever of that people they meet —
+  their chief if possible. Anybody else **carries it home**
+  (`carriedDemand`) and passes it on with `complain` when their own chief is
+  at hand. That chief answers (`answerDemand`) by their people's regard for
+  strangers (phase 2d), how the two peoples stand, their tradition, and how
+  far past the ordinary they favour the accused: amends ordered, the accused
+  shamed, or **refused** — which costs the two peoples `REFUSED_STANDING`.
+  **Measured and fixed**: the first `answerWeight` read a chief's ordinary
+  warmth for any bandmate (in-band opinion averages ~43) as protectiveness,
+  and nine demands in ten were refused; only regard past `ORDINARY_REGARD`
+  counts now.
+- **The player** can take a grievance or pass on a demand to their chief, and
+  as chief demand redress from anybody of an accused people — none of it
+  offered while commanding somebody else, whose grievances are theirs. As
+  the accused, they are told of an order to pay, not moved by it. As chief,
+  they do not yet choose the verdict (`bugs.md`).
+
+**Measured.** New check `wrongs-reach-the-chief` (complaints heard ≥ 2% of
+debts run up; 0 on the build before): `century` 14 of 117, `lean` 4 of 62,
+`millers` 4 of 89. Nine runs of three scenarios: 6 demands ordered paid, 2
+shamed, 23 refused — the peoples asking are mostly already at odds. `century`,
+twenty seeds, against phase 2d: survival 99.8% → 99.6%, blows 1,314 → 1,199,
+murders 38 → 31, technologies passed on 447 → 448; 0 blows inside a band,
+0 on a child, 3 of 1,447 thefts inside one (the far tail). Matrix: 12
+failures across 19, all single-run flippers on record. `i18n:soak`: 1,462
+lines, none English.
+
 ## 2026-09-24 — M12 phase 2a: a debt, and making amends
 
 The plan's compensation, widened by the owner's choice after phase 1 had

@@ -97,10 +97,16 @@ intermedio que las sociedades reales ponen entre el rencor y la violencia**:
   `conscienceAbroad`). Un pueblo que tiene al extraño por presa lícita cría
   saqueadores. Check `upbringing-follows-culture`.
 
-> **2a construida** (2026-09-24, detalle en `changelog.md`): deudas y
-> `make_amends`, dentro de la banda y entre pueblos, por decisión del
-> propietario («las dos cosas»). 2b sigue: la queja al jefe, su juicio, y el
-> trato entre jefes.
+> **2a y 2b construidas** (2026-09-24, detalle en `changelog.md`), dentro de
+> la banda y entre pueblos, por decisión del propietario («las dos cosas»).
+> 2a: deudas y `make_amends`. 2b: la víctima lleva el agravio a su jefe
+> (`complain`); contra uno de los suyos el jefe ordena resarcir, avergüenza
+> o desestima; contra un extraño lo lleva al otro pueblo (`parley`), la
+> exigencia viaja de boca en boca hasta su jefe, y éste ordena pagar,
+> avergüenza o rechaza (y la relación entre pueblos lo paga). Check
+> `wrongs-reach-the-chief`. Pendiente: que el jugador elija el veredicto
+> cuando es jefe (fase 3), el destierro como veredicto, y la puerta del
+> renombre (ver `bugs.md`).
 >
 > **Aviso sobre 2a y 2b (2026-09-24).** Las dos partían de que dentro de una
 > banda hay robos y golpes que compensar o juzgar. La fase 1 los acabó:

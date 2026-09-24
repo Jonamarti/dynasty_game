@@ -3,6 +3,52 @@
 As of 2026-09-24. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M12 phase 2b (the chief as judge), 2026-09-24
+
+### A player who is chief does not choose the verdict
+
+When somebody brings a grievance to the player's character, or a demand is
+carried home to them, the verdict is reckoned for them (`judgeOwn`,
+`answerDemand`) and they are only told. The Sims-like control the owner
+values says the player should choose — order amends, shame, dismiss, pay or
+refuse — from a prompt. It needs a small overlay (the `[hidden]` rule in
+`AGENTS.md` applies), and belongs with phase 3's interface work.
+
+### An order to make amends binds an NPC, not the player
+
+`Simulation.orderAmends` commands an NPC through the ordinary compliance
+roll, and a refusal is shamed on the spot. The player's character is only
+told they were ordered; nothing follows if they ignore it. The natural
+consequence is the shaming a day later, which needs the chief to remember
+the order — a docket entry of its own kind.
+
+### Nothing judges inside a band in the cohort
+
+`judgeOwn`'s three verdicts are pinned by `justice.test.ts` and have never
+fired in a `century` run: phase 1 left no theft or blow inside a band to
+complain of. Shaming does happen, through the other door — a chief answering
+another people's demand against one of their own who cannot pay (`lean`: 2
+in a run). And a chief with a grievance against one of their own has nobody
+to take it to; `keepDockets` only files their grievances against strangers.
+
+### Most demands are refused
+
+Across nine runs of three scenarios, 6 demands ordered paid, 2 shamed, 23
+refused. Not tuned toward "fair": by then the peoples asking are usually at
+odds (`BandRelations.standing` well below zero after years of raiding), and
+a people with a low regard for strangers (phase 2d) is supposed to laugh the
+demand off. Each refusal costs `REFUSED_STANDING`, so this is a feud engine
+as much as a peace one — which is what the arc wants, but worth watching
+once phase 6 builds feuds on top of it.
+
+### Exile is not a verdict
+
+The plan listed exile among the chief's choices. Exile still comes only from
+a faction (`BandSystem.considerExile`); a chief cannot pronounce it. With no
+wrongs inside a band there would be nothing for it to answer, and a chief
+who can cast out whom they like is a power the rebellion rules were not
+written for.
+
 ## Found shipping M12 phase 2a (debts and amends), 2026-09-24
 
 ### A child's wrongs are owed by nobody

@@ -2644,6 +2644,23 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       'hitting back (ceiling 35%)');
   }
 
+  // M12 phase 2b: wrongs reach the chief. Of debts run up (a theft, a menace
+  // or a blow done to somebody's face, phase 2a), how many the one wronged
+  // took to their chief. Low on purpose — most are paid, forgotten, or the
+  // chief never comes within sight — but never nothing: on the build before
+  // phase 2b there was no way to tell a chief anything, and this read 0.
+  // Measured after: `century` seeds 19/296, 5/115; `lean` 9/179, 22/263.
+  const debts = (tel.debt_incurred_theft ?? 0) + (tel.debt_incurred_threaten ?? 0) +
+    (tel.debt_incurred_assault ?? 0);
+  const heard = tel.complaint_heard ?? 0;
+  if (debts < 40) {
+    skip('wrongs-reach-the-chief', 'only ' + debts + ' debts run up; too few to say');
+  } else {
+    add('wrongs-reach-the-chief', heard / debts >= 0.02,
+      heard + ' complaints heard of ' + debts + ' debts run up (floor 2%); ' +
+      (tel.parley_held ?? 0) + ' put to another people, ' + (tel.amends_made ?? 0) + ' amends made');
+  }
+
   // M12 phase 2d: a people corrects its children for wronging strangers as
   // far as its own ways say it should. Of the bands whose regard for
   // strangers lies furthest apart, the more regardful must mind a clearly

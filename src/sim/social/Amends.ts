@@ -44,6 +44,21 @@ export interface Debt {
 }
 
 /**
+ * The same wrong from the other side: what somebody was done and by whom, and
+ * whether they have taken it to their chief yet — M12 phase 2b. Written
+ * beside the debt (`incur`) and cleared with it (`settleDebt`), because the
+ * two people who know of a debt are exactly the two who hold these.
+ */
+export interface Grievance {
+  againstId: number;
+  againstBandId: number;
+  kind: Debt['kind'];
+  tick: number;
+  /** Told to the chief already; not taken there twice. */
+  lodged: boolean;
+}
+
+/**
  * What a threat and a blow are worth in goods, per unit of the deed's
  * magnitude. A beating is worth a couple of tools; a menace that took
  * nothing, a handful of food. Theft is its own measure — what was taken.
@@ -84,6 +99,16 @@ export function incur(
   debt.worth += worth;
   debt.tick = tick;
   if (SEVERITY[kind] > SEVERITY[debt.kind]) debt.kind = kind;
+  let grievance = target.grievances.find(g => g.againstId === actor.id);
+  if (!grievance) {
+    grievance = { againstId: actor.id, againstBandId: actor.bandId, kind, tick, lodged: false };
+    target.grievances.push(grievance);
+    if (target.grievances.length > MAX_DEBTS) target.grievances.shift();
+  }
+  grievance.tick = tick;
+  // A fresh wrong is a fresh complaint, whatever became of the last one.
+  grievance.lodged = false;
+  if (SEVERITY[kind] > SEVERITY[grievance.kind]) grievance.kind = kind;
   if (goods && goods.count > 0) {
     const held = debt.goods.find(g => g.itemId === goods.itemId);
     if (held) held.count += goods.count;
@@ -98,16 +123,20 @@ export function debtTo(actor: Person, toId: number): Debt | null {
   return actor.debts.find(d => d.toId === toId) ?? null;
 }
 
-/** Forgets one debt, paid. */
-export function settleDebt(actor: Person, toId: number): void {
-  actor.debts = actor.debts.filter(d => d.toId !== toId);
+/** Forgets one debt, paid — on both sides. */
+export function settleDebt(actor: Person, owed: Person): void {
+  actor.debts = actor.debts.filter(d => d.toId !== owed.id);
+  owed.grievances = owed.grievances.filter(g => g.againstId !== actor.id);
 }
 
-/** Forgets debts to the dead and debts too old to matter. Called daily. */
+/** Forgets debts and grievances between the living and the dead, and any too old to matter. Daily. */
 export function pruneDebts(person: Person, tick: number, ticksPerDay: number,
   alive: (id: number) => boolean): void {
-  if (person.debts.length === 0) return;
-  person.debts = person.debts.filter(d => alive(d.toId) && tick - d.tick <= DEBT_DAYS * ticksPerDay);
+  const fresh = (at: number) => tick - at <= DEBT_DAYS * ticksPerDay;
+  if (person.debts.length > 0) person.debts = person.debts.filter(d => alive(d.toId) && fresh(d.tick));
+  if (person.grievances.length > 0) {
+    person.grievances = person.grievances.filter(g => alive(g.againstId) && fresh(g.tick));
+  }
 }
 
 /**

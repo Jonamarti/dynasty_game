@@ -195,6 +195,9 @@ export const ACTION_LABELS: Record<string, string> = {
   correct: 'correcting a child',
   // M12 phase 2a.
   make_amends: 'making amends',
+  // M12 phase 2b.
+  complain: 'taking a grievance to the chief',
+  parley: 'demanding redress',
   // M11 phase 15b.
   restrain: 'holding someone back',
   call_for_help: 'calling for help',
@@ -319,6 +322,20 @@ export const STOP_REASONS: Record<string, string> = {
   amends_refused: 'what they offered was refused',
   amends_too_little: 'they had nothing worth offering',
   owe_them_nothing: 'they owed nothing there',
+  // M12 phase 2b: what came of going to the chief, and of a demand put to
+  // another people. Not failures, most of them — the verdict is the answer.
+  not_the_chief: 'that is not their chief',
+  nothing_to_complain_of: 'there was nothing to complain of',
+  case_gone: 'the one it was about is gone',
+  case_settled: 'it had been put right already',
+  chief_takes_it_up: 'the chief will take it up with the other people',
+  chief_ordered_amends: 'the chief ordered amends made',
+  chief_shamed_them: 'the chief shamed the one who did it',
+  chief_dismissed: 'the chief would not hear it',
+  demand_refused: 'the demand was refused',
+  demand_answered: 'their chief heard the demand',
+  demand_carried: 'they will take it to their chief',
+  no_case_against_them: 'there is nothing to demand of their people',
   // M11 phase 15b: an owner caught them at it and told them to go, and they
   // went.
   warned_off: 'someone whose it was told them to go',

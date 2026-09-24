@@ -121,7 +121,7 @@ describe('making amends', () => {
     const other = sim.livingPeople().find(p => p.bandId === 1 && !p.isChild)!;
     other.x = payer.x + 1;
     other.y = payer.y;
-    settleDebt(payer, other.id);
+    settleDebt(payer, other);
     sim.order(payer, 'make_amends', { personId: other.id });
     sim.step();
     expect(payer.action).not.toBe('make_amends');

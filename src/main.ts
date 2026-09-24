@@ -1380,6 +1380,8 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     ...(commanding && commanding.alive
       ? {}
       : { relationships: sim.relationships, tick: sim.time.tick }),
+    // M12 phase 2b: who leads a band is the one thing everybody knows.
+    chiefOf: bandId => sim.bandSystem.chiefByBand.get(bandId),
   });
 
   const title =

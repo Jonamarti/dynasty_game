@@ -35,7 +35,10 @@ import { BandRelations } from '../social/BandRelations.ts';
 import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
 import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType } from '../social/Events.ts';
 import { STRANGER_REGARD_MEAN, STRANGER_REGARD_SPREAD } from '../social/Restraint.ts';
-import { pruneDebts } from '../social/Amends.ts';
+import { pruneDebts, debtTo, offerFor, OFFER_AT_LEAST, DEBT_DAYS } from '../social/Amends.ts';
+import {
+  judgeOwn, answerDemand, DISMISSED_GRUDGE, SHAME_RENOWN, REFUSED_STANDING, type Case,
+} from '../social/Justice.ts';
 import {
   Building, BUILDINGS, isTrap, isHerd, isStructure, resetBuildingIds, type BuildingDef,
 } from '../entities/Building.ts';
@@ -1868,6 +1871,168 @@ export class Simulation {
     if (this.watchedUses.length > this.interruptionCap) this.watchedUses.shift();
   }
 
+  // -------------------------------------------------------------------------
+  // Justice — M12 phase 2b, `social/Justice.ts`
+  // -------------------------------------------------------------------------
+
+  /**
+   * `teller` has put `told` to `chief`, who judges it. Returns what came of it,
+   * as the stop reason the teller is shown.
+   *
+   * Three cases, by who the accused belongs to. One of the chief's own
+   * people wronged one of theirs: `judgeOwn`. One of the chief's own wronged
+   * a stranger, and the stranger's chief sent word: `answerDemand`. Somebody
+   * of another people wronged one of the chief's: nothing the chief can order
+   * — it goes on their docket, to be put to that people (`parley`).
+   */
+  private hearComplaint(teller: Person, chief: Person, told: Case): string {
+    const accused = this.peopleById.get(told.accusedId);
+    const plaintiff = this.peopleById.get(told.plaintiffId);
+    if (!accused || !accused.alive || !plaintiff || !plaintiff.alive) return 'case_gone';
+    // Heard, not seen: the story of it passes to the chief the way any story
+    // does, so what the chief thinks of the accused moves as hearsay moves it.
+    this.tellTheWrong(teller, chief, accused, plaintiff);
+
+    if (accused.bandId !== chief.bandId) {
+      if (!chief.docket.some(c => c.accusedId === told.accusedId && c.plaintiffId === told.plaintiffId)) {
+        chief.docket.push(told);
+      }
+      telemetry.count('case_taken_up');
+      return 'chief_takes_it_up';
+    }
+
+    const debt = debtTo(accused, plaintiff.id);
+    if (!debt) return 'case_settled';
+    const canPay = offerFor(accused, debt).value >= debt.worth * OFFER_AT_LEAST;
+    const foreign = plaintiff.bandId !== chief.bandId;
+    if (foreign) {
+      const band = this.bands.find(b => b.id === chief.bandId);
+      const verdict = answerDemand(chief, accused, band?.strangerRegard ?? 0.5,
+        this.bandRelations.standing(chief.bandId, plaintiff.bandId), this.relationships, canPay);
+      telemetry.count('demand_' + verdict);
+      if (verdict === 'refuse') {
+        this.bandRelations.add(chief.bandId, plaintiff.bandId, -REFUSED_STANDING);
+        const text = t('{chief} refused what another people asked for {name}', { chief: chief.name, name: plaintiff.name });
+        chief.chronicle.push({ tick: this.time.tick, ageDays: chief.age, text, kind: 'did' });
+        return 'demand_refused';
+      }
+      return verdict === 'order' ? this.orderAmends(chief, accused, plaintiff) : this.shame(chief, accused, plaintiff);
+    }
+
+    const verdict = judgeOwn(chief, plaintiff, accused, this.relationships, canPay);
+    telemetry.count('verdict_' + verdict);
+    if (verdict === 'dismiss') {
+      this.relationships.addDeed(plaintiff.id, chief.id, -DISMISSED_GRUDGE, this.time.tick);
+      const text = t('{chief} would not hear {name} against {accused}',
+        { chief: chief.name, name: plaintiff.name, accused: accused.name });
+      plaintiff.chronicle.push({ tick: this.time.tick, ageDays: plaintiff.age, text, kind: 'suffered' });
+      return 'chief_dismissed';
+    }
+    return verdict === 'order' ? this.orderAmends(chief, accused, plaintiff) : this.shame(chief, accused, plaintiff);
+  }
+
+  /**
+   * A chief puts a case to `envoy`, one of the accused's people. Their chief
+   * answers on the spot; anybody else carries it home, and it waits on their
+   * telling (`complain`) — the owner's rule, and why a demand made to a
+   * herdsman at the edge of the woods may never reach anybody.
+   */
+  private putToEnvoy(chief: Person, envoy: Person, told: Case): string {
+    const accused = this.peopleById.get(told.accusedId);
+    const plaintiff = this.peopleById.get(told.plaintiffId);
+    if (!accused || !accused.alive || !plaintiff || !plaintiff.alive) return 'case_gone';
+    this.tellTheWrong(chief, envoy, accused, plaintiff);
+    if (this.bandSystem.chiefByBand.get(envoy.bandId) === envoy.id) {
+      telemetry.count('parley_with_chief');
+      const outcome = this.hearComplaint(chief, envoy, told);
+      return outcome === 'demand_refused' ? 'demand_refused' : 'demand_answered';
+    }
+    envoy.carriedDemand = told;
+    telemetry.count('demand_carried');
+    return 'demand_carried';
+  }
+
+  /** The chief orders amends made. Refused, it is shamed instead. */
+  private orderAmends(chief: Person, accused: Person, plaintiff: Person): string {
+    // The player is told, not moved: an order from a chief is the player's to
+    // obey or not, and `command` would take their character out of their hands.
+    if (accused.isPlayer) {
+      const text = t('{chief} ordered {name} to make amends to {other}',
+        { chief: chief.name, name: accused.name, other: plaintiff.name });
+      accused.chronicle.push({ tick: this.time.tick, ageDays: accused.age, text, kind: 'suffered' });
+      this.noteInsight(accused, text, 'setback');
+      telemetry.count('amends_ordered');
+      return 'chief_ordered_amends';
+    }
+    if (this.command(chief, accused, 'make_amends', { personId: plaintiff.id })) {
+      const text = t('{chief} ordered {name} to make amends to {other}',
+        { chief: chief.name, name: accused.name, other: plaintiff.name });
+      accused.chronicle.push({ tick: this.time.tick, ageDays: accused.age, text, kind: 'suffered' });
+      telemetry.count('amends_ordered');
+      return 'chief_ordered_amends';
+    }
+    telemetry.count('amends_order_defied');
+    return this.shame(chief, accused, plaintiff);
+  }
+
+  /**
+   * A public shaming: the chief tells the wrong to everybody of the band in
+   * sight — hearsay, so it moves each of them as a story does — and the
+   * accused's household loses renown for it. No blow, no goods: what is taken
+   * is standing, which is what a household in a stratifying band has to lose.
+   */
+  private shame(chief: Person, accused: Person, plaintiff: Person): string {
+    for (const listener of this.peopleHash.queryRadius(chief.x, chief.y, this.config.sightRadius)) {
+      if (!listener.alive || listener.id === chief.id || listener.bandId !== chief.bandId) continue;
+      this.tellTheWrong(chief, listener, accused, plaintiff);
+    }
+    const household = accused.householdId === null ? null : this.householdsById.get(accused.householdId);
+    if (household) household.renown -= SHAME_RENOWN;
+    this.relationships.addDeed(accused.id, chief.id, -DISMISSED_GRUDGE / 2, this.time.tick);
+    const text = t('{chief} shamed {name} before the band', { chief: chief.name, name: accused.name });
+    accused.chronicle.push({ tick: this.time.tick, ageDays: accused.age, text, kind: 'suffered' });
+    chief.chronicle.push({ tick: this.time.tick, ageDays: chief.age, text, kind: 'did' });
+    telemetry.count('shamed');
+    return 'chief_shamed_them';
+  }
+
+  /** Passes on `teller`'s own memory of what `accused` did to `plaintiff`, if they still have it. */
+  private tellTheWrong(teller: Person, listener: Person, accused: Person, plaintiff: Person): void {
+    let story = null;
+    for (const memory of teller.memory.all()) {
+      if (memory.actorId !== accused.id || memory.targetId !== plaintiff.id) continue;
+      if (DEED_WEIGHT[memory.type] >= 0) continue;
+      if (!story || memory.salience > story.salience) story = memory;
+    }
+    if (story) this.social.tellStory(teller, listener, story, this.peopleById);
+  }
+
+  /**
+   * Daily, M12 phase 2b: a chief's own grievance against a stranger goes on
+   * their own docket with no walk to anybody — they are who it would be
+   * taken to — and cases nobody has put to the other people in a year go.
+   */
+  private keepDockets(): void {
+    const stale = DEBT_DAYS * this.config.time.ticksPerDay;
+    for (const [bandId, chiefId] of this.bandSystem.chiefByBand) {
+      const chief = this.peopleById.get(chiefId);
+      if (!chief || !chief.alive) continue;
+      for (const grievance of chief.grievances) {
+        if (grievance.lodged || grievance.againstBandId === bandId) continue;
+        grievance.lodged = true;
+        chief.docket.push({
+          plaintiffId: chief.id, plaintiffBandId: bandId,
+          accusedId: grievance.againstId, accusedBandId: grievance.againstBandId,
+          kind: grievance.kind, tick: grievance.tick,
+        });
+      }
+    }
+    for (const person of this.people) {
+      if (person.docket.length > 0) person.docket = person.docket.filter(c => this.time.tick - c.tick <= stale);
+      if (person.carriedDemand && this.time.tick - person.carriedDemand.tick > stale) person.carriedDemand = null;
+    }
+  }
+
   private noteStop(person: Person, action: string, reason: string): void {
     // Being held down is news to the player whatever they were doing — even
     // standing idle, when there was no order to stop — because from then on
@@ -3055,6 +3220,7 @@ export class Simulation {
         if (person.alive) pruneDebts(person, this.time.tick, this.config.time.ticksPerDay,
           id => this.peopleById.get(id)?.alive ?? false);
       }
+      this.keepDockets();
       // A grudge or an alliance between two peoples outlives the individuals
       // who were there when it started, so it decays slower still than
       // renown — see `BandRelations`'s own header.
@@ -3240,6 +3406,9 @@ export class Simulation {
         this.placeInscription(form, x, y, author),
       onStopped: (person: Person, action: string, reason: string) =>
         this.noteStop(person, action, reason),
+      chiefByBand: this.bandSystem.chiefByBand,
+      onComplaint: (teller: Person, chief: Person, told: Case) => this.hearComplaint(teller, chief, told),
+      onParley: (chief: Person, envoy: Person, told: Case) => this.putToEnvoy(chief, envoy, told),
       onWatched: (person: Person, use: PropertyUse) => this.noteWatched(person, use),
       onBound: (person: Person, binder: Person) => this.takeCaptive(person, binder),
       corpsesById: this.corpsesById,

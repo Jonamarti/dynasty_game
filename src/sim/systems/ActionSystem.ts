@@ -63,8 +63,9 @@ import { fightingPower } from '../social/Vulnerability.ts';
 import { CORRECT_TICKS, CORRECTION_STEP, hadItComing } from '../social/Restraint.ts';
 import {
   incur, debtTo, settleDebt, offerFor, acceptance, OFFER_AT_LEAST, THREAT_WORTH, ASSAULT_WORTH,
-  AMENDS_TICKS,
+  AMENDS_TICKS, type Grievance,
 } from '../social/Amends.ts';
+import { COMPLAIN_TICKS, PARLEY_TICKS, type Case } from '../social/Justice.ts';
 import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 
@@ -135,6 +136,20 @@ export interface ActionContext {
    * refused you and does not say is worse than one that does not know.
    */
   onStopped: (person: Person, action: string, reason: string) => void;
+  /** Who leads each band — `BandSystem.chiefByBand`. For `complain`, M12 phase 2b. */
+  chiefByBand: ReadonlyMap<number, number>;
+  /**
+   * `teller` has put `told` to `chief` — a grievance of their own, or a
+   * demand carried from another people. The simulation judges it and says
+   * what came of it, as a stop reason the teller is shown. M12 phase 2b.
+   */
+  onComplaint: (teller: Person, chief: Person, told: Case) => string;
+  /**
+   * A chief has put a case to somebody of the accused's people. The
+   * simulation hands it on — answered on the spot if that was their chief,
+   * carried home if not — and says which. M12 phase 2b.
+   */
+  onParley: (chief: Person, envoy: Person, told: Case) => string;
   /**
    * Announces a breakthrough, a prototype built, or a design improved.
    *
@@ -639,6 +654,8 @@ export class ActionSystem {
       case 'warn': this.doWarn(person, ctx); break;
       case 'correct': this.doCorrect(person, ctx); break;
       case 'make_amends': this.doMakeAmends(person, ctx); break;
+      case 'complain': this.doComplain(person, ctx); break;
+      case 'parley': this.doParley(person, ctx); break;
       case 'restrain': this.doRestrain(person, ctx); break;
       case 'bind': this.doBind(person, ctx); break;
       case 'escape': this.doEscape(person, ctx); break;
@@ -3682,12 +3699,85 @@ export class ActionSystem {
       const handed = person.inventory.remove(itemId, count);
       if (handed > 0) owed.inventory.add(itemId, handed);
     }
-    settleDebt(person, owed.id);
+    settleDebt(person, owed);
     ctx.social.emit('amends', person, owed, Math.min(1, offer.value / Math.max(1, debt.worth)),
       ctx.tick, ctx.peopleHash, ctx.sightRadius);
     telemetry.count('amends_made');
     if (owed.bandId !== person.bandId) telemetry.count('amends_made_abroad');
     this.finishSocial(person, ctx.tick);
+  }
+
+  /**
+   * Taking something to the chief — M12 phase 2b. Either a wrong done to this
+   * person that nobody has put right, or a demand another people's chief put
+   * to them to carry home; the demand first, since it is not theirs to sit on.
+   * Walk up, say it, and hear what the chief makes of it — the verdict is
+   * `Simulation.hearComplaint`'s, and comes back as the reason this ended.
+   */
+  private doComplain(person: Person, ctx: ActionContext): void {
+    const chief = this.approach(person, ctx);
+    if (!chief) return;
+    if (ctx.chiefByBand.get(person.bandId) !== chief.id) {
+      this.abandon(person, 'not_the_chief', ctx);
+      return;
+    }
+    const told = person.carriedDemand ?? caseOf(person, worstGrievance(person));
+    if (!told) {
+      this.abandon(person, 'nothing_to_complain_of', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = COMPLAIN_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'complaint_');
+      return;
+    }
+
+    if (person.carriedDemand) {
+      person.carriedDemand = null;
+    } else {
+      const grievance = person.grievances.find(g => g.againstId === told.accusedId);
+      if (grievance) grievance.lodged = true;
+    }
+    const outcome = ctx.onComplaint(person, chief, told);
+    telemetry.count('complaint_heard');
+    this.stop(person, outcome, ctx, 'complaint_');
+  }
+
+  /**
+   * A chief putting a wrong done to their people to somebody of the people
+   * who did it — M12 phase 2b. Whoever of them is at hand: their chief if
+   * possible, and anybody else to carry it home if not.
+   */
+  private doParley(person: Person, ctx: ActionContext): void {
+    const envoy = this.approach(person, ctx);
+    if (!envoy) return;
+    const index = person.docket.findIndex(c => c.accusedBandId === envoy.bandId);
+    if (index < 0) {
+      this.abandon(person, 'no_case_against_them', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = PARLEY_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'parley_');
+      return;
+    }
+
+    const [told] = person.docket.splice(index, 1);
+    const outcome = ctx.onParley(person, envoy, told!);
+    telemetry.count('parley_held');
+    this.stop(person, outcome, ctx, 'parley_');
   }
 
   /**
@@ -4435,4 +4525,30 @@ export class ActionSystem {
     if (person.order === 'attack') person.actionTimer = 0;
     else this.finish(person);
   }
+}
+
+/**
+ * The grievance somebody most wants put right, M12 phase 2b: not yet taken to
+ * the chief, the worst kind of wrong first and the latest of those.
+ */
+export function worstGrievance(person: Person): Grievance | null {
+  const rank: Record<Grievance['kind'], number> = { theft: 1, threaten: 2, assault: 3 };
+  let best: Grievance | null = null;
+  for (const g of person.grievances) {
+    if (g.lodged) continue;
+    if (!best || rank[g.kind] > rank[best.kind] || (rank[g.kind] === rank[best.kind] && g.tick > best.tick)) {
+      best = g;
+    }
+  }
+  return best;
+}
+
+/** A grievance as a case put to a chief. */
+function caseOf(person: Person, grievance: Grievance | null): Case | null {
+  if (!grievance) return null;
+  return {
+    plaintiffId: person.id, plaintiffBandId: person.bandId,
+    accusedId: grievance.againstId, accusedBandId: grievance.againstBandId,
+    kind: grievance.kind, tick: grievance.tick,
+  };
 }

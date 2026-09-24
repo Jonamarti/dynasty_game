@@ -4,7 +4,8 @@
  * accident: it is what makes the world feel inhabited rather than staged.
  */
 import type { OpenInvestigation } from '../social/Investigation.ts';
-import type { Debt } from '../social/Amends.ts';
+import type { Debt, Grievance } from '../social/Amends.ts';
+import type { Case } from '../social/Justice.ts';
 import type { RNG } from '../core/RNG.ts';
 import { Inventory } from './Item.ts';
 import { Memory } from '../social/Memory.ts';
@@ -476,6 +477,19 @@ export class Person {
    * them, and cleared by `make_amends`. See `social/Amends.ts`.
    */
   debts: Debt[] = [];
+  /** The other side of somebody else's debt: what was done to this person. M12 phase 2b. */
+  grievances: Grievance[] = [];
+  /**
+   * Wrongs done to this chief's people by another people, taken up and not
+   * yet put to them — M12 phase 2b, `social/Justice.ts`. Kept by the person,
+   * like everything anybody knows: a chief who loses the office still knows.
+   */
+  docket: Case[] = [];
+  /**
+   * A demand another people's chief put to this person, to be taken to their
+   * own chief — M12 phase 2b. Word of mouth is the only way it gets there.
+   */
+  carriedDemand: Case | null = null;
   /**
    * Who is holding this person down, and until when — M11 phase 15b's
    * `restrain`. While `heldUntil` has not passed, this person neither thinks
