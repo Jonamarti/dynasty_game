@@ -23,6 +23,7 @@
  *
  *   npm run sim:seeds
  *   npm run sim:seeds -- --scenario harsh-winter --seeds 20
+ *   npm run sim:seeds -- --size 192     (a bigger island, same food per tile)
  */
 import { Simulation } from '../src/sim/core/Simulation.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
@@ -76,7 +77,7 @@ interface SeedResult {
 /** Ages at or below this are wholly dependent: they are fed or they die. */
 const INFANT_YEARS = 5;
 
-function runSeed(scenarioName: string, seed: string, steps: number): SeedResult {
+function runSeed(scenarioName: string, seed: string, steps: number, size: number | null): SeedResult {
   const scenario = SCENARIOS[scenarioName];
   if (!scenario) throw new Error('unknown scenario: ' + scenarioName);
 
@@ -85,7 +86,18 @@ function runSeed(scenarioName: string, seed: string, steps: number): SeedResult 
   telemetry.reset();
   telemetry.enable();
 
-  const sim = new Simulation({ ...scenario.config, seed });
+  // `--size`: the island's side, with every resource count scaled by the
+  // area the way the settings screen scales them (`configFor`), so a bigger
+  // island measures room rather than scarcity. Only on scenarios that do not
+  // pin their own dimensions — `tiny` quotes its counts for 64 tiles.
+  const world = scenario.config.world ?? {};
+  const sized = size === null ? {} : {
+    world: {
+      ...world, width: size, height: size,
+      resourceScale: (size * size) / ((world.width ?? 128) * (world.height ?? 128)),
+    },
+  };
+  const sim = new Simulation({ ...scenario.config, ...sized, seed });
   let peak = 0;
   let born = 0;
   const startingIds = new Set(sim.people.map(p => p.id));
@@ -191,6 +203,7 @@ function main(): void {
     return;
   }
   const steps = Number(flag('steps') ?? scenario.steps);
+  const size = flag('size') === undefined ? null : Number(flag('size'));
 
   // Named rather than numbered: adjacent numeric seeds are the case the RNG is
   // most likely to correlate on, and these are the seeds the docs quote.
@@ -204,14 +217,14 @@ function main(): void {
 
   console.log('');
   console.log('SEED COHORT  -  scenario "' + scenarioName + '", ' + seeds.length +
-    ' seeds, ' + thousands(steps) + ' steps each');
+    ' seeds, ' + thousands(steps) + ' steps each' + (size === null ? '' : ', island ' + size));
   console.log('='.repeat(78));
   console.log('  seed      peak   end    survived   born   starved: inf chi adu   known past taught');
 
   const results: SeedResult[] = [];
   const started = Date.now();
   for (const seed of seeds) {
-    const r = runSeed(scenarioName, seed, steps);
+    const r = runSeed(scenarioName, seed, steps, size);
     results.push(r);
     const pct = r.peak === 0 ? 0 : Math.round((r.end / r.peak) * 100);
     console.log(

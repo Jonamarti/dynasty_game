@@ -1433,6 +1433,16 @@ test('character creation picks a life inside a world that already exists', async
   await expect(tribes).toHaveCount(5, { timeout: 15_000 });
   await expect(page.locator('.newgame-title')).toHaveText('An island, and five peoples on it');
   await expect(tribeCount).toHaveValue('5');
+
+  // M12: and how big the island is, beside them. A new size is a new island
+  // too, and the tribes on it are kept.
+  const islandSize = page.locator('.newgame-population .settings-number').nth(2);
+  await islandSize.fill('192');
+  await islandSize.dispatchEvent('change');
+  await expect.poll(() => page.evaluate(() =>
+    (window as never as { __dynasty: { sim: { world: { width: number; height: number } } } })
+      .__dynasty.sim.world.width), { timeout: 15_000 }).toBe(192);
+  await expect(tribes).toHaveCount(5, { timeout: 15_000 });
   await tribes.first().click();
 
   // A shortlist of that tribe's adults, and a reshuffle that shows a different

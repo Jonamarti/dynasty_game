@@ -23,7 +23,7 @@ import type { Simulation, Band } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { SKILLS, type Skill } from '../sim/entities/Person.ts';
 import { DEFAULT_NORMS, type EventType } from '../sim/social/Events.ts';
-import { TUNABLES } from '../sim/core/Difficulty.ts';
+import { TUNABLES, readPath } from '../sim/core/Difficulty.ts';
 import { sliderRow, type SliderRow } from './SliderRow.ts';
 import { t, tc, capitalise, genderOf, onLanguageChange } from '../i18n/i18n.ts';
 import { languageSwitchHtml, handleLanguageClick } from './LanguageSwitch.ts';
@@ -43,7 +43,12 @@ type Step = 'tribe' | 'person' | 'skills';
  * shape is made. Their bounds come from `TUNABLES`, so the two screens cannot
  * disagree about what is allowed.
  */
-const POPULATION_PATHS = ['population.bands', 'population.peoplePerBand'] as const;
+//
+// M12: and the island's size beside them, on the owner's suspicion that the
+// fighting within a few years is partly bands with nowhere to go — a choice
+// made at the same moment and for the same reason, since how many peoples an
+// island holds only means something against how big it is.
+const POPULATION_PATHS = ['population.bands', 'population.peoplePerBand', 'world.width'] as const;
 type PopulationPath = typeof POPULATION_PATHS[number];
 
 export interface PopulationHooks {
@@ -71,7 +76,7 @@ export class NewGame {
   /** Rotates the shortlist without touching any simulation stream. */
   private shuffle = 0;
 
-  /** The two population rows, built once per visit: see `renderTribe`. */
+  /** The world rows (size, tribes, people), built once per visit: see `renderTribe`. */
   private populationRows = new Map<PopulationPath, SliderRow>();
   private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -192,7 +197,7 @@ export class NewGame {
   }
 
   /**
-   * The tribe step, built as nodes rather than one string because two of its
+   * The tribe step, built as nodes rather than one string because three of its
    * rows are sliders: rebuilding a range while it is under the pointer kills
    * the drag (see `SliderRow`), so a rebuilt island redraws only the title and
    * the tribe cards, through `renderTribeOptions`, and never the rows.
@@ -246,9 +251,7 @@ export class NewGame {
 
   /** What the island in front of the player was actually built with. */
   private populationOf(path: PopulationPath): number {
-    return path === 'population.bands'
-      ? this.sim.config.population.bands
-      : this.sim.config.population.peoplePerBand;
+    return readPath(this.sim.config, path);
   }
 
   private renderTribeOptions(): void {

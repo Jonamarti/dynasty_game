@@ -30,6 +30,13 @@ export interface MemoryEntry {
   sourceId: number | null;
   /** See `SocialEvent.victimBandId`. */
   victimBandId: number | null;
+  /**
+   * See `SocialEvent.magnitude`. Kept so the deed can be weighed again later
+   * exactly as it was weighed when it was learned — M12 phase 3c, where the
+   * person panel says which remembered deeds an opinion rests on and needs
+   * the same number `absorb` used, not a guess at it.
+   */
+  magnitude: number;
 }
 
 /** Beyond this, the least salient memories are dropped. */
@@ -81,6 +88,7 @@ export class Memory {
       confidence,
       sourceId,
       victimBandId: event.victimBandId,
+      magnitude: event.magnitude,
     });
     this.known.add(event.id);
     this.trim();

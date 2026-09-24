@@ -38,7 +38,7 @@ import { ITEMS } from '../sim/entities/Item.ts';
 import { actionLabel } from '../render/Floaters.ts';
 import {
   knowledgeOfPerson, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree, corpseIdentity,
-  rememberedAbout, regardFromThem,
+  rememberedAbout, regardFromThem, regardReasons, type RegardContext, type RegardReason,
 } from '../sim/social/Knowledge.ts';
 import type { Relationship, RelationshipGraph } from '../sim/social/Relationships.ts';
 import { foldRepeats } from './LifeLog.ts';
@@ -55,7 +55,7 @@ import { JOBS, type JobId } from '../sim/entities/Job.ts';
 import {
   AUTONOMY_LABELS, AUTONOMY_NOTES, AUTONOMY_ORDER, type Autonomy,
 } from '../sim/ai/Autonomy.ts';
-import { t, tc, genderOf } from '../i18n/i18n.ts';
+import { t, tc, capitalise, genderOf } from '../i18n/i18n.ts';
 
 export type PanelTab = 'now' | 'self' | 'kit' | 'work' | 'ties' | 'life';
 
@@ -1337,6 +1337,20 @@ export class Hud {
    */
   private betweenYou(observer: Person, person: Person, sim: Simulation): string[] {
     const rows: string[] = ['<div class="hud-section">' + t('Between you') + '</div>'];
+    // M12 phase 3c (owner's note 7): not only how warm, but why. The reasons
+    // are filtered in `regardReasons`, which knows what of *their* opinion
+    // the player's character could have found out.
+    const ctx: RegardContext = {
+      relationships: sim.relationships,
+      nameOf: id => {
+        const who = sim.peopleById.get(id);
+        return who ? knowledgeOfPerson(observer, who, sim.relationships).displayName : t('someone');
+      },
+      weigh: (holder, actor, entry) =>
+        sim.social.deedDelta(holder, actor, entry, entry.firsthand, entry.confidence),
+      tick: sim.time.tick,
+      ticksPerDay: sim.config.time.ticksPerDay,
+    };
     const mine = sim.relationships.peek(observer.id, person.id);
     if (!mine) {
       rows.push('<div class="hud-sub">' + t('You have no opinion of them yet.') + '</div>');
@@ -1349,8 +1363,12 @@ export class Hud {
         '<div class="hud-tie-why">' + escapeHtml(tieParts(mine).join(' · ') || t('barely acquainted')) +
         '</div></div>'
       );
+      rows.push(reasonList(regardReasons(observer, observer, person, ctx)));
     }
     const theirs = regardFromThem(observer, person, sim.relationships);
+    // Only where `regardFromThem` lets the player read the opinion at all:
+    // a reason for a feeling you cannot see would give the feeling away.
+    const theirReasons = theirs.words === null ? [] : regardReasons(observer, person, observer, ctx);
     if (theirs.opinion !== null) {
       rows.push(
         '<div class="hud-tie hud-between">' +
@@ -1358,8 +1376,10 @@ export class Hud {
         tieMeter(theirs.opinion) +
         '<div class="hud-tie-why">' + escapeHtml(theirs.words ?? '') + '</div></div>'
       );
+      rows.push(reasonList(theirReasons));
     } else if (theirs.words !== null) {
       rows.push('<div class="hud-sub">' + escapeHtml(theirs.words) + '</div>');
+      rows.push(reasonList(theirReasons));
     } else {
       rows.push('<div class="hud-sub">' + t('You cannot tell what they think of you.') + '</div>');
     }
@@ -1931,6 +1951,19 @@ function tieParts(rel: Relationship): string[] {
   if (rel.familiarity >= 1) parts.push(t('familiar {n}', { n: rel.familiarity.toFixed(0) }));
   if (rel.kinship !== 0) parts.push(t('kin {n}', { n: rel.kinship.toFixed(0) }));
   return parts;
+}
+
+/**
+ * The reasons under one opinion in *Between you*, strongest first, each
+ * marked with the way it pulls. Empty when there is nothing to say, so an
+ * opinion made only of nudges no memory records draws no list at all.
+ */
+function reasonList(reasons: RegardReason[]): string {
+  if (reasons.length === 0) return '';
+  return '<ul class="hud-reasons">' + reasons.map(reason =>
+    '<li class="is-' + reason.tone + '">' +
+    '<span class="hud-reason-mark">' + (reason.tone === 'pos' ? '+' : '−') + '</span>' +
+    escapeHtml(capitalise(reason.text)) + '</li>').join('') + '</ul>';
 }
 
 /** The two-sided bar and signed number every opinion in *Ties* is drawn with. */

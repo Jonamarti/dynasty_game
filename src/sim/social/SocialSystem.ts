@@ -19,8 +19,8 @@
 import { SKILLS, type Person } from '../entities/Person.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { RelationshipGraph } from './Relationships.ts';
-import type { EventType, Norms, SocialEvent } from './Events.ts';
-import { DEED_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
+import type { DeedFacts, EventType, Norms, SocialEvent } from './Events.ts';
+import { DEED_WEIGHT, HEARSAY_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
 import type { MemoryEntry } from './Memory.ts';
 import type { ConversationMode } from './Conversation.ts';
 import { CONVERSATION_MODES, crossBand } from './Conversation.ts';
@@ -168,9 +168,6 @@ const ALONGSIDE_RELIEF = 0.03;
 
 /** Confidence lost each time a story is passed on. */
 const RUMOR_DECAY = 0.75;
-
-/** Opinion weight of a story you were merely told, relative to seeing it. */
-const HEARSAY_WEIGHT = 0.45;
 
 /**
  * How much a listener's own opinion of the subject of a `slander` or `praise`
@@ -512,22 +509,8 @@ export class SocialSystem {
     // already known, told again, is not a second reason to be afraid.
     frighten(observer, event, actor, firsthand, confidence, targetBandId, this.relationships);
 
-    const norms = this.normsFor(observer);
-    const tolerance = norms ? norms[event.type] : 1;
-    const victimFactor = event.targetId === observer.id ? VICTIM_MULTIPLIER : 1;
     const hearsayFactor = firsthand ? 1 : HEARSAY_WEIGHT;
-
-    const delta =
-      DEED_WEIGHT[event.type] *
-      // The owner's note of 2026-09-24: a band judges its own, and its
-      // children, by what they did and to whom. See `Restraint.ts`.
-      partiality(observer, actor, event, this.regardFor(observer)) *
-      tolerance *
-      (0.5 + event.magnitude * 0.5) *
-      victimFactor *
-      hearsayFactor *
-      confidence;
-
+    const delta = this.deedDelta(observer, actor, event, firsthand, confidence);
     this.relationships.addDeed(observer.id, actor.id, delta, event.tick);
 
     // The backlash: gossip is judged twice, once for the act of gossiping
@@ -540,6 +523,38 @@ export class SocialSystem {
       const backlash = towardSubject * sign * GOSSIP_BACKLASH * hearsayFactor * confidence;
       if (backlash !== 0) this.relationships.addDeed(observer.id, actor.id, backlash, event.tick);
     }
+  }
+
+  /**
+   * How far one deed moves `observer`'s opinion of `actor`, the moment it is
+   * learned.
+   *
+   * Lifted out of `absorb` for M12 phase 3c: the person panel names the
+   * remembered deeds an opinion rests on, and ranks them by this. Weighing
+   * them with a second formula would be exactly the drift `tieParts` exists
+   * to prevent — the panel naming a theft as the reason somebody hates you
+   * when the theft, judged by their people's own norms, barely moved them.
+   * Read afterwards it is the weight *today*, not then: `partiality` asks
+   * whether the victim "had it coming" of what the observer knows now.
+   */
+  deedDelta(
+    observer: Person, actor: Person, deed: DeedFacts, firsthand: boolean, confidence: number
+  ): number {
+    const norms = this.normsFor(observer);
+    const tolerance = norms ? norms[deed.type] : 1;
+    const victimFactor = deed.targetId === observer.id ? VICTIM_MULTIPLIER : 1;
+    const hearsayFactor = firsthand ? 1 : HEARSAY_WEIGHT;
+    return (
+      DEED_WEIGHT[deed.type] *
+      // The owner's note of 2026-09-24: a band judges its own, and its
+      // children, by what they did and to whom. See `Restraint.ts`.
+      partiality(observer, actor, deed, this.regardFor(observer)) *
+      tolerance *
+      (0.5 + deed.magnitude * 0.5) *
+      victimFactor *
+      hearsayFactor *
+      confidence
+    );
   }
 
   /**

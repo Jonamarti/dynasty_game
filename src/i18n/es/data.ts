@@ -212,6 +212,8 @@ export const ES_DATA: Record<string, string> = {
   "Tiles a person can see. Sets what they can find, and what they witness.": "Casillas que una persona alcanza a ver. Fija lo que puede encontrar y lo que presencia.",
   "Birth rate": "Natalidad",
   "Daily chance a fertile couple conceive, before hunger and health scale it down.": "Probabilidad diaria de que una pareja fértil conciba, antes de que el hambre y la salud la reduzcan.",
+  "Island size": "Tamaño de la isla",
+  "Tiles along each side. Food and materials scale with the area, so the counts below are for the standard island of 128; a bigger one mostly puts more room between the tribes.": "Casillas por lado. La comida y los materiales crecen con la superficie, así que las cantidades de abajo son para la isla estándar de 128; una más grande sobre todo deja más espacio entre las tribus.",
   "Tribes": "Tribus",
   "How many bands the island starts with. Not moved by difficulty — more tribes is both more rivalry and more people.": "Cuántas bandas tiene la isla al empezar. La dificultad no lo mueve: más tribus es a la vez más rivalidad y más gente.",
   "People per tribe": "Gente por tribu",

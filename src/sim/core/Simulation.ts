@@ -600,7 +600,8 @@ export class Simulation {
       ['clay', cfg.clayBanks],
     ];
 
-    for (const [kind, count] of plan) {
+    for (const [kind, quoted] of plan) {
+      const count = this.scaledCount(quoted);
       let placed = 0;
       let attempts = 0;
       const maxAttempts = count * 60;
@@ -623,7 +624,7 @@ export class Simulation {
    * the `fishRng` fork in the constructor.
    */
   private spawnFish(rng: RNG): void {
-    const count = this.config.world.fishingSpots;
+    const count = this.scaledCount(this.config.world.fishingSpots);
     let placed = 0;
     let attempts = 0;
     const maxAttempts = count * 60;
@@ -648,7 +649,7 @@ export class Simulation {
    * `Item.ts` for why raw grain is worth eating at all.
    */
   private spawnWildGrain(rng: RNG): void {
-    const count = this.config.world.wildGrainPatches;
+    const count = this.scaledCount(this.config.world.wildGrainPatches);
     let placed = 0;
     let attempts = 0;
     const maxAttempts = count * 60;
@@ -672,7 +673,7 @@ export class Simulation {
    * produces neither.
    */
   private spawnHerds(rng: RNG): void {
-    for (let h = 0; h < this.config.world.gameHerds; h++) {
+    for (let h = 0, herds = this.scaledCount(this.config.world.gameHerds); h < herds; h++) {
       const species: Species = rng.pick(SPECIES as unknown as Species[]);
       const def = SPECIES_DEFS[species];
 
@@ -696,6 +697,15 @@ export class Simulation {
         this.animalsById.set(animal.id, animal);
       }
     }
+  }
+
+  /**
+   * A resource count from the config, scaled to the island's size — see
+   * `WorldConfig.resourceScale`. At the default scale of 1 this is the count
+   * itself, so no existing world moves.
+   */
+  private scaledCount(count: number): number {
+    return Math.round(count * this.config.world.resourceScale);
   }
 
   /** Resources cluster where they belong, which is what gives regions character. */

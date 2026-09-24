@@ -76,6 +76,13 @@ export interface Tunable {
    * with something else — the reason is on each one below.
    */
   scaled: boolean;
+  /**
+   * Further paths written with the same value. For the island's size, which
+   * is one choice for the player and two fields for `World`: the landmass is
+   * a radial falloff over the *shorter* side, so a map wider than it is tall
+   * would only have added sea.
+   */
+  mirrors?: string[];
 }
 
 export const TUNABLES: Tunable[] = [
@@ -124,6 +131,18 @@ export const TUNABLES: Tunable[] = [
     hint: 'As above, for warmth.' },
 
   // --- land ---------------------------------------------------------------
+  // Pinned: a bigger island is more room between peoples and more ground to
+  // walk for the same meal, and which of those is "harder" is not a question
+  // with an answer. The resource counts below are quoted for the default
+  // island and scaled with its area — see `WorldConfig.resourceScale` — so
+  // moving this changes how far apart bands live, not how much food a tile
+  // carries. 256 is the ceiling because every per-tile array, the pathfinder
+  // and the terrain canvas grow with the square of it.
+  { path: 'world.width', mirrors: ['world.height'], label: 'Island size', group: 'land',
+    scaled: false, restart: true, min: 64, max: 256, step: 16, places: 0,
+    hint: 'Tiles along each side. Food and materials scale with the area, so ' +
+      'the counts below are for the standard island of 128; a bigger one ' +
+      'mostly puts more room between the tribes.' },
   { path: 'world.regrowthRate', label: 'Regrowth speed', group: 'land', scaled: true, restart: false,
     min: 0.1, max: 5, step: 0.05, places: 2,
     hint: 'How fast berries, sticks, reeds, clay and fish come back. Trees grow ' +
@@ -369,7 +388,13 @@ export function configFor(
   // for `writePath` to write into, then hand the whole thing over as the override.
   const built = structuredClone(DEFAULT_CONFIG);
   for (const [path, value] of Object.entries(values)) {
-    if (TUNABLES.some(tunable => tunable.path === path)) writePath(built, path, value);
+    const tunable = TUNABLES.find(tunable => tunable.path === path);
+    if (!tunable) continue;
+    writePath(built, path, value);
+    for (const mirror of tunable.mirrors ?? []) writePath(built, mirror, value);
   }
+  // Exactly 1 on the default island, so Normal still stamps `DEFAULT_CONFIG`.
+  built.world.resourceScale = (built.world.width * built.world.height) /
+    (DEFAULT_CONFIG.world.width * DEFAULT_CONFIG.world.height);
   return built as DeepPartial<SimConfig>;
 }

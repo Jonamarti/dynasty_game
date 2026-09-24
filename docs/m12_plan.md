@@ -25,7 +25,8 @@ La fase 1 ya está construida (este mismo pase). El resto es plan.
 | 4 | Algunos NPCs no se defienden ni huyen al ser atacados | **Arreglado en parte** en fase 1 (defensa propia); lo que quede, fase 2c |
 | 5 | Sin penalización con tu tribu por atacar a un extranjero que dañaba sus edificios, atacaba a su gente o les robaba | **Hecho** en fase 1 (`Restraint.partiality`, `hadItComing`) |
 | 6 | Relación 86 con un NPC y sólo deja saludar | **Arreglado** en fase 1 (la familia siempre puede hablar largo) |
-| 7 | Mostrar en la ficha del NPC *por qué* hay buena o mala relación | M12 fase 3c |
+| 7 | Mostrar en la ficha del NPC *por qué* hay buena o mala relación | **Hecho** (fase 3c) |
+| — | (hablado) Tamaño del mapa en los ajustes iniciales; sospecha de que los NPCs se matan en pocos años en parte por falta de espacio | **Hecho**: «Tamaño de la isla» en la creación de partida y en ajustes; medido en `changelog.md` |
 | 8 | Los niños pueden ser tomados cautivos, y eso enfurece a los de su tribu que lo vean | M12 fase 4a |
 | 9 | Los cautivos se atan a árboles o edificios y no escapan salvo que otro los desate | M12 fase 4b |
 | 10 | Los miembros de la tribu se pelean demasiado; a los niños se les corrige; atacar/robar a la propia tribu ~1 de cada 100; el miedo debería frenar ataques | **Hecho** en fase 1 |
@@ -144,6 +145,14 @@ Tres notas de interfaz que no tocan la simulación y pueden ir en paralelo:
   del *observador* sobre el sujeto (`Memory.about`), su parentesco y la
   familiaridad. Pasa por `Knowledge.ts`: nunca muestra lo que el personaje no
   vio ni le contaron.
+
+  > **Construida** (2026-09-24, detalle en `changelog.md`).
+  > `Knowledge.regardReasons`, en *Vínculos → Entre vosotros*, bajo cada una
+  > de las dos opiniones. La tuya de él o ella: todo, porque es tuya. La suya
+  > de ti: parentesco, pueblo, trato y lo que *le hiciste a él o ella*; lo que
+  > te vio hacer a otros o le contaron de ti pesa, pero se resume en una línea
+  > sin decir qué fue. Los hechos se pesan con `SocialSystem.deedDelta`, la
+  > misma fórmula que movió la opinión.
 
 ---
 

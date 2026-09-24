@@ -291,7 +291,7 @@ const WRONGS: ReadonlySet<EventType> = new Set<EventType>([
  * owner's for a deed against a building. Null when nobody's.
  */
 export function partiality(
-  observer: Person, actor: Person, event: SocialEvent,
+  observer: Person, actor: Person, event: Pick<SocialEvent, 'type' | 'targetId' | 'victimBandId'>,
   strangerRegard = STRANGER_REGARD_MEAN
 ): number {
   if (DEED_WEIGHT[event.type] >= 0) return 1;

@@ -52,6 +52,23 @@ export interface WorldConfig {
    * back off if a twenty-seed run showed it made for a strictly worse world.
    */
   snowBuries: boolean;
+  /**
+   * Multiplier on every resource count above (`berryBushes` through
+   * `wildGrainPatches`, and `gameHerds`) at world generation.
+   *
+   * The owner's note of 2026-09-24: the island's size became a setting, on
+   * the suspicion that bands at each other's throats within a few years were
+   * partly bands with nowhere to go. A count is a count, though — 280 bushes
+   * spread over four times the ground is a quarter of the food per step
+   * walked — so a bigger island with the same counts would have measured
+   * *scarcity*, not room. `configFor` sets this to the island's area over the
+   * default's, which keeps what a band finds per tile the same whatever the
+   * size. Here rather than folded into the counts themselves so the settings
+   * screen can go on comparing what the player typed with what the world was
+   * built from; and 1 by default, so every scenario and test world that names
+   * its own counts gets exactly those counts.
+   */
+  resourceScale: number;
 }
 
 export interface TimeConfig {
@@ -269,6 +286,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     treeDensity: 0.55,
     regrowthRate: 1,
     snowBuries: true,
+    resourceScale: 1,
   },
   time: {
     ticksPerDay: 240,

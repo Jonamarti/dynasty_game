@@ -6,6 +6,75 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-24 — M12 phase 3c: why they like you, and the island's size
+
+**Why they like or dislike you** (owner's note 7). `Knowledge.regardReasons`
+lists up to four reasons, strongest first, under each opinion in *Ties →
+Between you*.
+
+- **Your opinion of them** lists everything behind it, because it is yours:
+  kinship, household or people, time spent together, attraction, and each
+  deed you remember them doing, named as you know the people in it.
+- **Their opinion of you** is private to them, so under the owner's rule
+  (nothing is learned except by seeing it or being told) it names only what
+  your character could know without being told: kinship, whether you are of
+  one people, time together, and **what you did to them**, since you were
+  there. What they saw you do to somebody else, or heard about you, does
+  move their opinion, but you cannot know which of your deeds reached them.
+  It is summed into one line, "things they have seen or heard of you", with
+  no details. The list appears only when `regardFromThem` already lets you
+  read the opinion at all.
+- **Deeds are ranked by the formula that moved the opinion.** The weighting
+  in `SocialSystem.absorb` was moved out into `deedDelta` (culture norms,
+  partiality, victim, hearsay, confidence), and `MemoryEntry` now keeps the
+  deed's `magnitude` so that the weight can be recomputed. Each deed is then
+  aged at the rate `deeds` decays. A second formula would have named, say, a
+  theft that the viewer's own norms barely counted. `FAMILIARITY_WEIGHT` and
+  `HEARSAY_WEIGHT` are now shared constants for the same reason.
+- Not named: the few deed nudges that no memory records (an order refused, a
+  complaint the chief dismissed).
+
+**Island size** (spoken request: the owner suspects that people killing each
+other within a few years is partly a lack of room). A new tunable, `Island
+size` (`world.width`, mirrored to `world.height`, 64–256 in steps of 16,
+restart). It sits on the character-creation screen beside tribes and people
+per tribe, and on the settings screen. It is pinned rather than scaled by
+difficulty, because whether a larger island is "harder" has no single answer.
+
+- **Resource counts scale with area** (`WorldConfig.resourceScale`, set by
+  `configFor` to the island's area over 128²). Otherwise a bigger island
+  with the same 280 bushes would have measured scarcity rather than room.
+  The default is 1, so every scenario and test world that names its own
+  counts keeps exactly those counts.
+- `sim:seeds -- --size N` runs a cohort on a bigger island.
+- **Bit-identical at the default size**: the `century` report is identical
+  line for line before and after.
+
+**Measured**, `century`, ten seeds each (with ten seeds, differences under
+about ten points are noise, so the small counts below settle nothing):
+
+| island | survival | born | blows between peoples | murders | techs known | passed on |
+|---|---|---|---|---|---|---|
+| 128 | 99.7% | 436 | 549 | 6 | 11.1 | 567 |
+| 192 | 99.2% | 387 | 325 | 8 | 8.7 | 402 |
+| 256 | 99.8% | 380 | 124 | 4 | 9.2 | 404 |
+
+Blows between peoples fall steeply with room: 549 → 325 → 124. Thefts fall
+too (667 → 565 → 247). Property deeds an owner saw barely move until 256
+(1,315 → 1,382 → 355). Inside a band nothing changes, because phase 1 had already brought
+it to zero at every size. Murders are too few to read. **The cost is
+fewer meetings**: fewer births and slower technology on bigger islands,
+because learning by watching and marrying across bands both need people to
+be near each other.
+
+The owner's suspicion holds for violence *between* peoples. Inside the band,
+the violence that prompted it was phase 1's to fix, and it has been fixed.
+
+Checks: `typecheck`, `npm test` (513), `e2e` (54, including a new step that
+sets the island to 192 on the creation screen and sees the world rebuilt),
+`sim:check:all` (12 failures across 19 scenarios, the same known single-run
+flippers as phase 2b).
+
 ## 2026-09-24 — M12 phase 2b: the chief as judge
 
 The plan's 2b, widened like 2a by the owner's choice to both sides of a band

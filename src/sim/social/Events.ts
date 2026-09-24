@@ -170,6 +170,16 @@ export const DEED_SALIENCE: Record<EventType, number> = {
 /** Being on the receiving end matters far more than watching from the treeline. */
 export const VICTIM_MULTIPLIER = 3;
 
+/** Opinion weight of a story you were merely told, relative to seeing it. */
+export const HEARSAY_WEIGHT = 0.45;
+
+/**
+ * The facts about a deed that decide how much it moves a judge — enough of a
+ * `SocialEvent` that a remembered deed (`MemoryEntry`) carries them too, so
+ * the two can be weighed by one function. See `SocialSystem.deedDelta`.
+ */
+export type DeedFacts = Pick<SocialEvent, 'type' | 'targetId' | 'victimBandId' | 'magnitude'>;
+
 /**
  * A culture's tolerance for each kind of deed: a multiplier on `DEED_WEIGHT`.
  * 1 is the baseline, 0 is complete indifference, above 1 is a taboo held more
