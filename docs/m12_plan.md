@@ -234,9 +234,11 @@ me ha atacado», se comenta y la relación va bajando.
   `changelog.md`). Cada agravio grave entre bandas alimenta `Household.feud`
   en ambas casas y baja la relación entre sus miembros. Como el campo vive en
   el hogar, pasa a los hijos y sobrevive a la muerte de los testigos.
-- **6b. La venganza se organiza.** Un agravio grave contra un miembro de la
-  familia lleva a los parientes a buscar al culpable (con `investigate`, que ya
-  existe), no a golpear al primer extranjero que pasa.
+- **6b. La venganza se organiza. Construida** (2026-09-24, detalle en
+  `changelog.md`). El hogar conserva el último culpable conocido y sus
+  miembros lo priorizan cuando está a la vista; la ruta de venganza ya no puede
+  escoger al primer extranjero que pasa. Los hijos reciben el sospechoso del
+  hogar al nacer.
 - **6c. La paz también se hace.** Un matrimonio entre las dos casas, un regalo
   grande o una compensación entre jefes (fase 2a a escala de pueblo) cierran
   la enemistad. Sin salida, la enemistad sólo sabe crecer, que es el fallo que

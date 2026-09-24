@@ -1373,12 +1373,16 @@ export class Brain {
       ctx.time.tick - person.lastHarmedTick > SELF_DEFENCE_WINDOW
       ? undefined
       : adults.find(other => other.id === person.lastHarmedBy);
-    const enemy = assailant ?? (adults.length === 0 ? null : this.pickBest(adults, other =>
+    const feudSuspect = person.feudTargetId === null ? undefined :
+      adults.find(other => other.id === person.feudTargetId);
+    const enemy = assailant ?? feudSuspect ?? (adults.length === 0 ? null : this.pickBest(adults, other =>
       -ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other)
-    ));
+    )) ;
     if (enemy) {
       const selfDefence = enemy === assailant;
+      const familyFeud = enemy === feudSuspect;
       const grudge = Math.max(selfDefence ? SELF_DEFENCE_GRUDGE : 0,
+        familyFeud ? 0.6 : 0,
         -ctx.relationships.opinion(person.id, enemy.id) / 100);
       // The bar is high, and deliberately so. The first version let a single
       // witnessed theft justify violence, and a band would consume itself in a

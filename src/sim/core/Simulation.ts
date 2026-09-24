@@ -880,6 +880,7 @@ export class Simulation {
       ? null
       : this.householdsById.get(child.householdId);
     if (household) household.add(child.id);
+    if (household) child.feudTargetId = household.feudSuspects.values().next().value ?? null;
 
     linkFamily(child, [mother, father], this.relationships);
 
@@ -1419,6 +1420,11 @@ export class Simulation {
         (0.5 + event.magnitude * 0.5));
       aggressor.feud.set(victim.id, Math.min(100, (aggressor.feud.get(victim.id) ?? 0) + weight));
       victim.feud.set(aggressor.id, Math.min(100, (victim.feud.get(aggressor.id) ?? 0) + weight));
+      victim.feudSuspects.set(aggressor.id, actor.id);
+      for (const memberId of victim.memberIds) {
+        const member = this.peopleById.get(memberId);
+        if (member) member.feudTargetId = actor.id;
+      }
       for (const memberId of aggressor.memberIds) {
         for (const victimId of victim.memberIds) {
           this.relationships.addDeed(memberId, victimId, -Math.min(18, weight * 0.25), this.time.tick);

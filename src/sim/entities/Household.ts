@@ -46,6 +46,9 @@ export class Household {
 
   /** Persistent hostility toward other houses, keyed by household id. */
   readonly feud = new Map<number, number>();
+  /** The last known culprit for each feud, so revenge names a person rather
+   * than falling back to the first unrelated stranger nearby. */
+  readonly feudSuspects = new Map<number, number>();
 
   /** Ticks at which the household was founded and (if ever) died out. */
   readonly foundedTick: number;

@@ -9,6 +9,13 @@ en su ánimo. La familia del cautivo puede pagar bienes en persona mediante
 pueblo. Un menor retenido durante treinta días se integra en el hogar del jefe
 captor; los adultos siguen retenidos hasta que escapen o sean rescatados.
 
+## 2026-09-24 — M12 phase 6b: venganza organizada
+
+Cada enemistad guarda también el último culpable conocido. Los miembros del
+hogar lo priorizan al elegir una venganza cuando está presente, con una puerta
+de hostilidad propia, en lugar de descargar el agravio sobre cualquier
+extranjero cercano. Los nacidos en la casa reciben el sospechoso persistente.
+
 ## 2026-09-24 — M12 phase 5c: permiso y tributo de paso
 
 El menú social permite pedir permiso a un vecino extranjero para recolectar en

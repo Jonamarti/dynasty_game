@@ -432,6 +432,8 @@ export class Person {
    * continues until someone dies.
    */
   lastHarmedBy: number | null = null;
+  /** Culprit named by the person's household feud, if any. */
+  feudTargetId: number | null = null;
   lastHarmedTick = -9999;
   /**
    * The last outsider this person warned off their band's ground, and when —
