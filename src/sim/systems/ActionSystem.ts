@@ -60,7 +60,11 @@ import {
 import { DISMEMBER_WORK, type Corpse } from '../entities/Corpse.ts';
 import { isCaptive, captorWatching, HOME_REACHED } from '../social/Captivity.ts';
 import { fightingPower } from '../social/Vulnerability.ts';
-import { CORRECT_TICKS, CORRECTION_STEP } from '../social/Restraint.ts';
+import { CORRECT_TICKS, CORRECTION_STEP, hadItComing } from '../social/Restraint.ts';
+import {
+  incur, debtTo, settleDebt, offerFor, acceptance, OFFER_AT_LEAST, THREAT_WORTH, ASSAULT_WORTH,
+  AMENDS_TICKS,
+} from '../social/Amends.ts';
 import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 
@@ -634,6 +638,7 @@ export class ActionSystem {
       case 'threaten': this.doThreaten(person, ctx); break;
       case 'warn': this.doWarn(person, ctx); break;
       case 'correct': this.doCorrect(person, ctx); break;
+      case 'make_amends': this.doMakeAmends(person, ctx); break;
       case 'restrain': this.doRestrain(person, ctx); break;
       case 'bind': this.doBind(person, ctx); break;
       case 'escape': this.doEscape(person, ctx); break;
@@ -3532,6 +3537,7 @@ export class ActionSystem {
       Math.min(1, worth / 12),
       ctx.tick, ctx.peopleHash, ctx.sightRadius
     );
+    this.owe(person, other, 'theft', worth, ctx, { itemId: bestId, count: taken });
     telemetry.count('theft_succeeded');
     this.finishSocial(person, ctx.tick);
   }
@@ -3608,6 +3614,81 @@ export class ActionSystem {
     this.finish(person);
   }
 
+
+  /**
+   * A wrong done to somebody's face leaves a debt — M12 phase 2a, see
+   * `social/Amends.ts`. Not for answering one: whoever struck back at their
+   * assailant, beat the thief caught at their store, or robbed somebody who
+   * had robbed their people owes nothing for it — `Restraint.hadItComing`,
+   * off the doer's own memory, the same judgement phase 1 gave their people.
+   */
+  private owe(
+    person: Person, other: Person, kind: 'theft' | 'threaten' | 'assault', worth: number,
+    ctx: ActionContext, goods?: { itemId: string; count: number }
+  ): void {
+    if (hadItComing(person, other.id)) return;
+    incur(person, other, kind, worth, ctx.tick, goods);
+    telemetry.count('debt_incurred_' + kind);
+  }
+
+  /**
+   * Paying for a wrong — M12 phase 2a. Walk up, set the goods down, say it;
+   * the one owed takes them or does not.
+   *
+   * What is offered is `Amends.offerFor`: what was taken first, then the best
+   * of what is carried, up to what is owed. Whether it is taken is one roll on
+   * `Amends.acceptance` — the offer's adequacy and the temperament of whoever
+   * was wronged. Taken, the goods change hands, the debt is gone, and the
+   * payment is a deed (`amends`) that the one paid feels as a victim feels,
+   * that whoever stands by sees, that the payer's household is known for, and
+   * that between two peoples mends what the wrong cost them — all by `emit`'s
+   * ordinary machinery. Refused, nothing moves but the offer's cooldown, and
+   * the payer is told why.
+   */
+  private doMakeAmends(person: Person, ctx: ActionContext): void {
+    const owed = this.approach(person, ctx);
+    if (!owed) return;
+    const debt = debtTo(person, owed.id);
+    if (!debt) {
+      this.abandon(person, 'owe_them_nothing', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = AMENDS_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'amends_');
+      return;
+    }
+
+    const offer = offerFor(person, debt);
+    if (offer.value <= 0 || offer.value < debt.worth * OFFER_AT_LEAST) {
+      this.abandon(person, 'amends_too_little', ctx);
+      return;
+    }
+    const dread = ctx.relationships.dread(owed.id, person.id) / 100;
+    if (!ctx.rng.chance(acceptance(owed, person, offer.value, debt.worth, dread))) {
+      debt.refusedTick = ctx.tick;
+      telemetry.count('amends_refused');
+      this.abandon(person, 'amends_refused', ctx);
+      return;
+    }
+
+    for (const [itemId, count] of offer.items) {
+      const handed = person.inventory.remove(itemId, count);
+      if (handed > 0) owed.inventory.add(itemId, handed);
+    }
+    settleDebt(person, owed.id);
+    ctx.social.emit('amends', person, owed, Math.min(1, offer.value / Math.max(1, debt.worth)),
+      ctx.tick, ctx.peopleHash, ctx.sightRadius);
+    telemetry.count('amends_made');
+    if (owed.bandId !== person.bandId) telemetry.count('amends_made_abroad');
+    this.finishSocial(person, ctx.tick);
+  }
 
   /**
    * Correcting a child of the band, the owner's note of 2026-09-24: "the
@@ -4169,6 +4250,8 @@ export class ActionSystem {
     const compliance = menaceOver(person, other, ctx.tick);
     if (!ctx.rng.chance(compliance.chance)) {
       telemetry.count('threaten_refused');
+      // The menace was made whether or not it worked: owed, as an insult.
+      this.owe(person, other, 'threaten', THREAT_WORTH, ctx);
       this.stop(person, 'refused_demand', ctx, 'threatened_');
       return;
     }
@@ -4179,6 +4262,8 @@ export class ActionSystem {
       return;
     }
     person.inventory.add(itemId, taken);
+    this.owe(person, other, 'threaten',
+      THREAT_WORTH + (ITEMS[itemId]?.baseValue ?? 1) * taken, ctx, { itemId, count: taken });
     telemetry.count('threaten_succeeded');
     this.finishSocial(person, ctx.tick);
   }
@@ -4340,6 +4425,7 @@ export class ActionSystem {
       Math.min(1, damage / 40),
       ctx.tick, ctx.peopleHash, ctx.sightRadius
     );
+    this.owe(person, other, 'assault', ASSAULT_WORTH * (0.5 + Math.min(1, damage / 40) * 0.5), ctx);
 
     // Keep swinging. A fight is a sequence of blows; ending the action after
     // one meant an ordered attack stopped by itself after a couple of seconds

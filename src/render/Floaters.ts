@@ -193,6 +193,8 @@ export const ACTION_LABELS: Record<string, string> = {
   // The owner's note of 2026-09-24: a child of the band is corrected, not
   // beaten. See `social/Restraint.ts`.
   correct: 'correcting a child',
+  // M12 phase 2a.
+  make_amends: 'making amends',
   // M11 phase 15b.
   restrain: 'holding someone back',
   call_for_help: 'calling for help',
@@ -313,6 +315,10 @@ export const STOP_REASONS: Record<string, string> = {
   nothing_to_steal: 'there was nothing to take',
   nothing_to_demand: 'there was nothing worth demanding',
   refused_demand: 'they refused to hand it over',
+  // M12 phase 2a: making amends, and the three ways it falls through.
+  amends_refused: 'what they offered was refused',
+  amends_too_little: 'they had nothing worth offering',
+  owe_them_nothing: 'they owed nothing there',
   // M11 phase 15b: an owner caught them at it and told them to go, and they
   // went.
   warned_off: 'someone whose it was told them to go',

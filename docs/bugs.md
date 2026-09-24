@@ -3,6 +3,29 @@
 As of 2026-09-24. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M12 phase 2a (debts and amends), 2026-09-24
+
+### A child's wrongs are owed by nobody
+
+A child runs up no debt (`Amends.incur`): their own people correct them. But
+a stranger robbed by a child is owed something, and historically the child's
+family paid it. Nothing does yet; the natural place is phase 2b's chief,
+who could hold a household to account for its children.
+
+### Only wrongs done to somebody's face are owed
+
+A theft from a store, a trespass and a sabotage have no victim standing
+there (`SocialEvent.targetId` is null), so nobody is owed for them — even
+though they are now the bulk of the harm between peoples (phase 2d). A debt
+owed to a *people* rather than a person is the shape they need, and it
+belongs with phase 2b's chiefs.
+
+### Killings are owed nothing yet
+
+Wergild was above all the price of a life. `murder` incurs nothing here:
+the dead cannot be paid, and who can — the widow, the parents, the
+household — is a question for phase 2b's complaint and judgement.
+
 ## Found shipping M12 phase 2d (norms that are learned), 2026-09-24
 
 ### A people's culture never changes

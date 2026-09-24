@@ -13,6 +13,7 @@
  */
 import type { Corpse } from '../entities/Corpse.ts';
 import { isHeld } from '../social/Defence.ts';
+import { debtTo, offerFor, OFFER_AT_LEAST } from '../social/Amends.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
@@ -516,6 +517,10 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
           ? t('They are carrying no food')
           : undefined,
     },
+    // M12 phase 2a. Only when the player's character owes this person — they
+    // know their own debts, and nobody else's — so the ring does not carry
+    // an entry that is almost never there to use.
+    ...amendsOption(actor, other),
     ...grouped([
     {
       id: 'steal',
@@ -1054,6 +1059,24 @@ function grouped(
  * fifteen recipes on their own.
  */
 const GROUP_AT = 3;
+
+/**
+ * "Make amends to…", when there is something owed — M12 phase 2a. Greyed,
+ * with the reason, when what the actor carries would not make a real offer:
+ * the same line `Brain` holds NPCs to (`OFFER_AT_LEAST`).
+ */
+function amendsOption(actor: Person, other: Person): ActionOption[] {
+  const debt = debtTo(actor, other.id);
+  if (!debt) return [];
+  const enough = offerFor(actor, debt).value >= debt.worth * OFFER_AT_LEAST;
+  return [{
+    id: 'make_amends',
+    label: t('Make amends to {name}', { name: other.name }),
+    icon: '\u{1F932}',
+    enabled: enough,
+    reason: enough ? undefined : t('You have nothing worth offering them'),
+  }];
+}
 
 /**
  * The three families of verb aimed at a person (owner's note of 2026-09-24)

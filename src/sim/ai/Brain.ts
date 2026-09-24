@@ -64,6 +64,7 @@ import {
   PATROL_LINGER, assailantOf, RESPOND,
   CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE, CALL_MEMORY, CALL_FOR_HELP, ANSWER_CALL,
 } from '../social/Defence.ts';
+import { offerFor, OFFER_AT_LEAST, REFUSAL_COOLDOWN, AMENDS } from '../social/Amends.ts';
 import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
@@ -203,6 +204,8 @@ interface FoundTargets {
   restrainee: Person | null;
   /** A child of the band a `correct` is aimed at. See `Restraint.ts`. */
   correctee: Person | null;
+  /** Whoever a `make_amends` goes to, M12 phase 2a. See `Amends.ts`. */
+  amendsTo: Person | null;
   /** Whoever an `answer_call` goes to, M11 phase 15b.4. */
   helpCallerTarget: Person | null;
   /** Somebody held by one of this person's own, for a `bind`, M11 phase 15c. */
@@ -528,7 +531,7 @@ const ESCAPE_TURNS = [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.1, -2.1];
 const ESCAPE_DISTANCES = [14, 10, 7, 4];
 
 const CUT_OFF_AT_ONCE: ReadonlySet<string> = new Set([
-  'talk', 'warn', 'threaten', 'slander', 'praise', 'correct',
+  'talk', 'warn', 'threaten', 'slander', 'praise', 'correct', 'make_amends',
 ]);
 
 /**
@@ -792,6 +795,7 @@ export class Brain {
     let intruder: Person | null = null;
     let restrainee: Person | null = null;
     let correctee: Person | null = null;
+    let amendsTo: Person | null = null;
     let helpCallerTarget: Person | null = null;
     let bindTarget: Person | null = null;
     let patrolPoint: { x: number; y: number } | null = null;
@@ -1675,6 +1679,42 @@ export class Brain {
           this.proximityBonus(person, child, ctx.sightRadius));
         correctee = child;
         telemetry.count('correct_offered');
+      }
+    }
+
+    // --- Making amends ---------------------------------------------------------
+    // M12 phase 2a. A debt is paid when three things meet: the one owed is
+    // here and still minds it, there is enough in hand to make a real offer
+    // (`OFFER_AT_LEAST`), and something in this person wants it squared.
+    // Inside a band that is loyalty and upbringing; toward another people it
+    // is the upbringing their own people gave them about strangers (phase 2d)
+    // and fear of the one they wronged — wergild was always partly the price
+    // of not being paid back in kind. Greed holds on to the goods.
+    if (!person.isChild && person.debts.length > 0 && !pressedByNeed(person, ctx.needs.workLimits)) {
+      let best = 0;
+      for (const debt of person.debts) {
+        if (ctx.time.tick - debt.refusedTick < REFUSAL_COOLDOWN) continue;
+        const owed = neighbours.find(other => other.id === debt.toId);
+        if (!owed) continue;
+        // Nobody pays a debt nobody minds: read off the face of the one owed.
+        const resentment = Math.min(1, Math.max(0, -ctx.relationships.opinion(owed.id, person.id) / 50));
+        if (resentment <= 0) continue;
+        const offer = offerFor(person, debt);
+        if (offer.value < debt.worth * OFFER_AT_LEAST) continue;
+        const dread = ctx.relationships.dread(person.id, owed.id) / 100;
+        const duty = owed.bandId === person.bandId
+          ? (0.3 + person.traits.loyalty) * (0.5 + person.conscience)
+          : 0.2 + person.conscienceAbroad * 0.8 + dread * 0.8;
+        const score = AMENDS * duty * resentment * (1 - person.traits.greed * 0.6) *
+          this.proximityBonus(person, owed, ctx.sightRadius);
+        if (score > best) {
+          best = score;
+          amendsTo = owed;
+        }
+      }
+      if (best > 0) {
+        add('make_amends', best);
+        telemetry.count('amends_offered');
       }
     }
 
@@ -2664,7 +2704,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, attackRoute, intruder, restrainee, correctee, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, tradePartner, fleeFrom, fleePoint,
+        victim, foe, attackRoute, intruder, restrainee, correctee, amendsTo, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -3193,6 +3233,7 @@ export class Brain {
       case 'warn':
       case 'restrain':
       case 'correct':
+      case 'make_amends':
       case 'bind':
       case 'answer_call':
       case 'attack':
@@ -3223,6 +3264,7 @@ export class Brain {
           action === 'warn' ? found.intruder :
           action === 'restrain' ? found.restrainee :
           action === 'correct' ? found.correctee :
+          action === 'make_amends' ? found.amendsTo :
           action === 'bind' ? found.bindTarget :
           action === 'answer_call' ? found.helpCallerTarget :
           action === 'slander' || action === 'praise' ? found.companion :

@@ -4,6 +4,7 @@
  * accident: it is what makes the world feel inhabited rather than staged.
  */
 import type { OpenInvestigation } from '../social/Investigation.ts';
+import type { Debt } from '../social/Amends.ts';
 import type { RNG } from '../core/RNG.ts';
 import { Inventory } from './Item.ts';
 import { Memory } from '../social/Memory.ts';
@@ -469,6 +470,12 @@ export class Person {
    * against strangers fully and an adult's in part (`strangerBrake`).
    */
   conscienceAbroad = 0;
+  /**
+   * What this person owes, and to whom — M12 phase 2a. Written where a wrong
+   * is done to somebody's face (`Amends.incur`), known only to the two of
+   * them, and cleared by `make_amends`. See `social/Amends.ts`.
+   */
+  debts: Debt[] = [];
   /**
    * Who is holding this person down, and until when — M11 phase 15b's
    * `restrain`. While `heldUntil` has not passed, this person neither thinks

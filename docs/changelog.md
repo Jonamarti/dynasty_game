@@ -6,6 +6,43 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-24 — M12 phase 2a: a debt, and making amends
+
+The plan's compensation, widened by the owner's choice after phase 1 had
+ended theft and blows inside a band: **a debt is a debt, whoever it is owed
+to** — inside a band or across it. `social/Amends.ts`, new.
+
+- **A wrong done to somebody's face leaves a debt** on whoever did it
+  (`Person.debts`): a theft (the goods themselves, and their worth), a
+  menace (the goods if it worked, an insult's worth if not), a blow. Known
+  only to the two of them. Repeated wrongs to one person add to one debt. Not
+  for answering a wrong — striking back, beating the thief at your store,
+  robbing whoever robbed your people (`Restraint.hadItComing`) — and never
+  by a child, whose wrongs are their people's to correct. Forgotten when the
+  one owed dies, or after a year.
+- **`make_amends`**, a verb: walk up, set down what was taken and then the
+  best of what is carried, up to what is owed (`offerFor`), never less than
+  half (`OFFER_AT_LEAST`). The one owed takes it or not — one roll on the
+  offer's adequacy, their malice and temper, their fear of the payer, and a
+  little for being one of their own. Taken, it is a deed (`amends`, as
+  heavy as the theft it most often answers): the one paid feels it as a
+  victim does, onlookers see it, the payer's household is known for it, and
+  between two peoples it mends what the wrong cost them — all `emit`'s
+  existing machinery. Refused, the payer is told so and waits two days.
+- **Who pays unasked**: somebody with the goods, facing somebody who still
+  minds; moved by loyalty and upbringing among their own people, and among
+  strangers by the upbringing their people gave them (phase 2d) and fear of
+  whoever they wronged.
+- **The player** sees "Make amends to…" on anybody their character owes —
+  and on nobody else, since their own debts are all they can know — greyed
+  with the reason when they carry too little.
+
+**Measured, `century`, three seeds**: 300, 12 and 72 debts run up; 12, 1 and
+6 paid unasked, 8 and 2 offers refused. Paying a stranger with nobody
+making you is rare, as it was: the engine of compensation is the pressure
+of one's own people, which is phase 2b. Matrix: 13 failures across 19,
+the single-run flippers on record.
+
 ## 2026-09-24 — M12 phase 2d: what a people teaches its children about strangers
 
 The plan's 2d: "a band tolerant of theft from strangers does not correct a

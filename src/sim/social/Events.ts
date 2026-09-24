@@ -48,6 +48,9 @@ export const EVENT_TYPES = [
   // dead, so that the story is *about* them; it moves nobody's opinion of
   // anybody (`DEED_WEIGHT` 0) and it is told as eagerly as a killing.
   'body_found',
+  // M12 phase 2a. A wrong paid for — see `social/Amends.ts`. Emitted only when
+  // the one owed accepts; an offer refused is nobody's deed.
+  'amends',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -123,6 +126,11 @@ export const DEED_WEIGHT: Record<EventType, number> = {
   threaten: -18,
   // M11 phase 16c. Finding a body is not something anybody did to anybody.
   body_found: 0,
+  // As heavy as the theft it most often answers, so a thief who pays back
+  // what they took in full stands, with whoever saw both, about where they
+  // stood before. A beating (-20) is not quite bought off by the most anybody
+  // pays for one: something of it stays with the one who took the blows.
+  amends: 14,
 };
 
 /**
@@ -154,6 +162,9 @@ export const DEED_SALIENCE: Record<EventType, number> = {
   // says to the next person they meet, and it is how the rest of a band, a
   // widow among them, comes to know somebody is dead at all.
   body_found: 0.95,
+  // Worth telling — more than a gift, less than the wrong it answers — so the
+  // story of the payment can follow the story of the theft round the camp.
+  amends: 0.55,
 };
 
 /** Being on the receiving end matters far more than watching from the treeline. */
@@ -170,6 +181,7 @@ export const DEFAULT_NORMS: Norms = {
   gift: 1, share_food: 1, help: 1, teach: 1, slander: 1, praise: 1, trade: 1,
   theft: 1, trespass: 1, sabotage: 1, assault: 1, murder: 1, threaten: 1,
   body_found: 1,
+  amends: 1,
 };
 
 /**
@@ -216,6 +228,7 @@ export function describeEvent(
     case 'murder': return t('{actor} killed {target}', who);
     case 'threaten': return t('{actor} threatened {target}', who);
     case 'body_found': return t('{actor} was found dead', who);
+    case 'amends': return t('{actor} made amends to {target}', who);
   }
 }
 

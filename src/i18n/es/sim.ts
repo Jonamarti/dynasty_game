@@ -15,6 +15,7 @@ export const ES_SIM: Record<string, string> = {
   "{actor} killed {target}": "{actor} mató a {target}",
   "{actor} threatened {target}": "{actor} amenazó a {target}",
   "{actor} corrected {target}": "{actor} corrigió a {target}",
+  "{actor} made amends to {target}": "{actor} resarció a {target}",
   "They seem fond of you.": "Parece que te tiene cariño.",
   "They seem to like you.": "Parece que le caes bien.",
   "They seem to have no strong feeling about you.": "Parece que no siente nada especial por ti.",

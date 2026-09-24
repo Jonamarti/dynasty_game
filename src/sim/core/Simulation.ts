@@ -35,6 +35,7 @@ import { BandRelations } from '../social/BandRelations.ts';
 import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
 import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType } from '../social/Events.ts';
 import { STRANGER_REGARD_MEAN, STRANGER_REGARD_SPREAD } from '../social/Restraint.ts';
+import { pruneDebts } from '../social/Amends.ts';
 import {
   Building, BUILDINGS, isTrap, isHerd, isStructure, resetBuildingIds, type BuildingDef,
 } from '../entities/Building.ts';
@@ -3048,6 +3049,12 @@ export class Simulation {
       // recollection. Kept here rather than folded into `dailyUpkeep`,
       // because `SocialSystem` knows people and feelings, not households.
       for (const household of this.households) household.renown *= RENOWN_DECAY_PER_DAY;
+      // M12 phase 2a: a debt to the dead, or one nobody has come for in a
+      // year, is not owed any more.
+      for (const person of this.people) {
+        if (person.alive) pruneDebts(person, this.time.tick, this.config.time.ticksPerDay,
+          id => this.peopleById.get(id)?.alive ?? false);
+      }
       // A grudge or an alliance between two peoples outlives the individuals
       // who were there when it started, so it decays slower still than
       // renown — see `BandRelations`'s own header.

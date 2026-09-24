@@ -97,6 +97,11 @@ intermedio que las sociedades reales ponen entre el rencor y la violencia**:
   `conscienceAbroad`). Un pueblo que tiene al extraño por presa lícita cría
   saqueadores. Check `upbringing-follows-culture`.
 
+> **2a construida** (2026-09-24, detalle en `changelog.md`): deudas y
+> `make_amends`, dentro de la banda y entre pueblos, por decisión del
+> propietario («las dos cosas»). 2b sigue: la queja al jefe, su juicio, y el
+> trato entre jefes.
+>
 > **Aviso sobre 2a y 2b (2026-09-24).** Las dos partían de que dentro de una
 > banda hay robos y golpes que compensar o juzgar. La fase 1 los acabó:
 > medido en tres `century`, **ningún** robo ni golpe dentro de una banda; lo
