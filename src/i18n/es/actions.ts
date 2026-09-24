@@ -1,5 +1,7 @@
 /** Spanish for actions. Keys are the English templates; see `i18n.ts`. */
 export const ES_ACTIONS: Record<string, string> = {
+  "this store is not yours": "este depósito no es tuyo",
+  "this is not a working store": "este no es un depósito utilizable",
   "making {thing}": "haciendo {thing}",
   "there was no {station} to work at": "no había ningún {station} donde trabajar",
   "at a loose end": "sin nada que hacer",

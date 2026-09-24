@@ -16,6 +16,7 @@ import { Hud, corpseTitle, type Selection } from './ui/Hud.ts';
 import { RadialMenu } from './ui/RadialMenu.ts';
 import { EntityPicker, type PickerEntry } from './ui/EntityPicker.ts';
 import { QuantityPicker } from './ui/QuantityPicker.ts';
+import { TransferPanel } from './ui/TransferPanel.ts';
 import { NewGame } from './ui/NewGame.ts';
 import { SuccessionOverlay } from './ui/Succession.ts';
 import { TechWebOverlay } from './ui/TechWeb.ts';
@@ -193,6 +194,7 @@ const itemPicker = new EntityPicker<string>(document.body, 'itempicker');
 // A slider popup for how much of a stack to give, store or take. M9 phase 2's
 // answer to note 9: none of the three ever offered less than the whole stack.
 const quantityPicker = new QuantityPicker(document.body);
+const transferPanel = new TransferPanel(document.body);
 
 // The map of somebody's mind. On `document.body` rather than `#hud`, like every
 // other overlay here: the HUD rebuilds its subtree every frame and would throw
@@ -219,7 +221,7 @@ let escapeFoundSomething = false;
 window.addEventListener('keydown', event => {
   if (event.key !== 'Escape') return;
   escapeFoundSomething = radial.isOpen || picker.isOpen || itemPicker.isOpen ||
-    quantityPicker.isOpen || graphOpen();
+    quantityPicker.isOpen || transferPanel.isOpen || graphOpen();
 }, true);
 
 /** True while any of the three full-screen graphs is open. */
@@ -290,6 +292,18 @@ const hud = new Hud(hudRoot, {
   },
   onItemAction: (person, itemId, verb, screenX, screenY) =>
     handleItemAction(person, itemId, verb, screenX, screenY),
+  onTransfer: building => {
+    const actor = sim.player;
+    if (!actor) return;
+    const near = building.contains(actor.x, actor.y, 2);
+    if (!near) {
+      renderer.floaters.push(actor.x, actor.y, t('Come closer to inspect the store'), {
+        color: '#e0705c', boxed: true, ttl: 3.2,
+      });
+      return;
+    }
+    transferPanel.show(sim, actor, building);
+  },
   onAssignJob: (person, job) => {
     // Down the same path a chief's own order would use, so a job handed out
     // from the panel is subject to the same compliance roll as one given in

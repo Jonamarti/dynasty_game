@@ -6,6 +6,21 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-24 — M12 phase 3a: traspaso visible con depósitos
+
+La ficha de un depósito terminado ofrece ahora **Abrir traspaso** cuando el
+personaje está al alcance. La ventana pone la carga y el depósito lado a lado,
+permite elegir cuántas unidades mover con un slider y muestra la capacidad
+restante de ambos; los controles se desactivan cuando no cabe nada más.
+
+- La transferencia pasa por `Simulation.storeItem` y el nuevo `takeItem`, de
+  modo que propiedad, ruinas, capacidad, telemetría y mensajes de rechazo no
+  tienen una segunda implementación en la interfaz.
+- La ventana se mantiene fuera del HUD, se cierra con Escape y se actualiza
+  después de cada movimiento para que el límite visible no quede obsoleto.
+- El botón sólo aparece para el personaje del jugador y el panel sólo abre al
+  alcance del depósito; acercarse sigue siendo una acción explícita del juego.
+
 ## 2026-09-24 — M12 phase 3c: why they like you, and the island's size
 
 **Why they like or dislike you** (owner's note 7). `Knowledge.regardReasons`

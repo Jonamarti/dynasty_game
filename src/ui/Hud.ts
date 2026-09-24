@@ -91,6 +91,8 @@ export interface HudCallbacks {
   onCraft: (recipeId: string) => void;
   /** A job chosen from the Work tab, for the inspected person. Null clears it. */
   onAssignJob: (person: Person, job: JobId | null) => void;
+  /** Open the partial-stack transfer window for a nearby store. */
+  onTransfer: (building: Building) => void;
   /**
    * The three modes the top bar can now reach.
    *
@@ -423,7 +425,7 @@ export class Hud {
     this.panelEl.addEventListener('click', event => {
       const found = (event.target as HTMLElement)
         .closest('[data-tab], [data-person], [data-focus], [data-possess], ' +
-          '[data-command], [data-verb], [data-job]');
+        '[data-command], [data-verb], [data-job], [data-transfer]');
       if (!found) return;
       const node = found as HTMLElement;
 
@@ -454,6 +456,10 @@ export class Hud {
       }
       if (node.dataset.command && this.currentSelection?.kind === 'person') {
         this.callbacks.onCommand(this.currentSelection.person);
+        return;
+      }
+      if (node.dataset.transfer && this.currentSelection?.kind === 'building') {
+        this.callbacks.onTransfer(this.currentSelection.building);
         return;
       }
       if (node.dataset.verb && node.dataset.item && this.currentSelection?.kind === 'person') {
@@ -1797,6 +1803,11 @@ export class Hud {
             : stored.map(([id, n]) =>
                 escapeHtml(t(ITEMS[id]?.label ?? id)) + ' &times;' + n).join(', ')) +
           '</div>');
+      }
+      if (observer.id === sim.player?.id && building.ownerBandId === observer.bandId &&
+          building.complete && !building.ruined) {
+        rows.push('<button class="hud-button" data-transfer="1">' +
+          escapeHtml(t('Open transfer')) + '</button>');
       }
     }
     return rows;

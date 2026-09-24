@@ -1741,6 +1741,35 @@ export class Simulation {
   }
 
   /**
+   * Withdraws a named stack from a store for the direct transfer panel.
+   *
+   * The panel is deliberately not allowed to edit either inventory itself:
+   * capacity, ownership and telemetry must remain the same answers as the
+   * order/action path. Keeping the inverse here also prevents a UI shortcut
+   * from taking more than the carrier can actually hold.
+   */
+  takeItem(person: Person, store: Building, itemId: string, count: number): number {
+    const access = this.mayUseBuilding(person, store);
+    if (!access.ours) {
+      this.lastRefusal = t('this store is not yours');
+      return 0;
+    }
+    if (!store.complete || store.def.storage <= 0 || store.ruined) {
+      this.lastRefusal = t('this is not a working store');
+      return 0;
+    }
+    const room = Math.max(0, person.carryCapacity - person.carrying);
+    const moved = store.store.remove(itemId, Math.min(room, count, store.store.count(itemId)));
+    if (moved <= 0) {
+      this.lastRefusal = room <= 0 ? t('{name} cannot carry any more', { name: person.name }) : t('there was nothing to take');
+      return 0;
+    }
+    person.inventory.add(itemId, moved);
+    telemetry.count('withdrawn', moved);
+    return moved;
+  }
+
+  /**
    * The store within arm's reach that this person would sooner use: their own
    * band's (or a close ally's) first, then one nobody is watching, and only
    * then one an owner can see.

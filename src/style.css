@@ -816,6 +816,49 @@ html, body, #app {
 
 .quantity-picker-actions button:hover { border-color: var(--accent); }
 
+/* --- store transfer ------------------------------------------------------ */
+
+.transfer-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 31;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 10, 15, 0.72);
+}
+
+.transfer-panel[hidden] { display: none; }
+
+.transfer-card {
+  width: min(760px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  padding: 14px;
+  color: var(--text);
+  background: rgba(14, 17, 24, 0.98);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+}
+
+.transfer-head { display: flex; align-items: baseline; gap: 10px; }
+.transfer-head b { font-size: 17px; }
+.transfer-head span { color: var(--text-dim); font-size: 12px; }
+.transfer-close { margin-left: auto; padding: 2px 9px; font: inherit; color: var(--text-dim); background: transparent; border: 1px solid var(--panel-border); border-radius: 5px; cursor: pointer; }
+.transfer-capacities { margin: 10px 0; color: var(--text-dim); font-size: 12px; }
+.transfer-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.transfer-column { min-width: 0; }
+.transfer-column h3 { margin: 0 0 8px; font-size: 13px; color: var(--accent); }
+.transfer-empty { color: var(--text-dim); font-style: italic; }
+.transfer-row { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(70px, 1fr) 28px auto; gap: 6px; align-items: center; margin: 6px 0; font-size: 12px; }
+.transfer-row button { padding: 4px 7px; font: inherit; font-size: 11px; color: var(--text); background: rgba(255,255,255,.06); border: 1px solid var(--panel-border); border-radius: 4px; cursor: pointer; }
+.transfer-row button:hover:not(:disabled), .transfer-close:hover { border-color: var(--accent); }
+.transfer-row button:disabled { opacity: .35; cursor: not-allowed; }
+.transfer-amount { color: var(--accent); text-align: right; }
+
+@media (max-width: 620px) {
+  .transfer-columns { grid-template-columns: 1fr; }
+}
+
 /* --- knowledge gating ---------------------------------------------------- */
 
 /* How you know what you know: shown under every name, so the limits of your
