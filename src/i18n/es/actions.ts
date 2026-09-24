@@ -120,6 +120,8 @@ export const ES_ACTIONS: Record<string, string> = {
   "one of their captors was watching": "uno de sus captores estaba mirando",
   "the neighbour refused permission": "el vecino rechazó el permiso",
   "they are not a foreign neighbour": "no es un vecino extranjero",
+  "there was no quarrel to settle": "no había ninguna disputa que resolver",
+  "making peace": "haciendo las paces",
   "Ask {name} for permission to gather here": "Pedir permiso a {name} para recolectar aquí",
   "They are not a neighbouring people": "No son un pueblo vecino",
   "there was no camp to go back to": "no había campamento al que volver",

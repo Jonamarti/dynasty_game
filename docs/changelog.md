@@ -52,6 +52,13 @@ El nuevo verbo de pedir permiso ya tiene razones registradas en el catálogo de
 paradas y traducción española; un vecino que rechaza el paso no devuelve al
 personaje a pensar sin explicar qué ocurrió.
 
+## 2026-09-24 — M12 follow-ups: paz explícita y causa de la huida
+
+El menú de otro personaje ofrece `Make peace` cuando la relación es mala; el
+acercamiento mejora la opinión en 50 para familia, 30 dentro de la banda y 20
+entre pueblos. La línea de estado de un NPC que huye nombra a la persona que
+provocó la huida cuando el observador puede identificarla.
+
 ## 2026-09-24 — M12 phase 7b: especialistas que intercambian
 
 El comercio existente ya no busca sólo extranjeros: también ofrece a un

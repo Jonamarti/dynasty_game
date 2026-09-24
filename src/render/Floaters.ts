@@ -209,6 +209,7 @@ export const ACTION_LABELS: Record<string, string> = {
   investigate: 'asking who did it',
   gift: 'giving a gift',
   answer_call: 'answering a call for help',
+  make_peace: 'making peace',
 };
 
 /**
@@ -424,6 +425,7 @@ export const STOP_REASONS: Record<string, string> = {
   // is entered, so its refusal must be a named stop rather than a silent reset.
   permission_refused: 'the neighbour refused permission',
   not_a_foreign_neighbour: 'they are not a foreign neighbour',
+  no_quarrel: 'there was no quarrel to settle',
 
   // Records. The literacy gate is the one worth spelling out: a stone that
   // grants nothing to somebody who cannot read is the point of writing, and a

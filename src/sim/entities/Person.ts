@@ -434,6 +434,8 @@ export class Person {
   lastHarmedBy: number | null = null;
   /** Culprit named by the person's household feud, if any. */
   feudTargetId: number | null = null;
+  /** Immediate threat that caused the current flee order, if known. */
+  fleeFromId: number | null = null;
   lastHarmedTick = -9999;
   /**
    * The last outsider this person warned off their band's ground, and when —
@@ -998,6 +1000,7 @@ export class Person {
     this.targetItemCount = null;
     this.propertyUseNoted = null;
     this.territoryUseNoted = null;
+    this.fleeFromId = null;
     this.pursuitFrom = null;
     this.actionTimer = 0;
     // A route and the aim it was computed for have to be forgotten together —

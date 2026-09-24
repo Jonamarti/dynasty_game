@@ -892,7 +892,13 @@ export class Hud {
       : isHeld(person, tick) ? t('held down') : null;
     if (pinned) return escapeHtml(pinned) +
       (fresh ? '<div class="hud-stopped">' + escapeHtml(stop!.text) + '</div>' : '');
-    return escapeHtml(actionLabel(person.action, person.targetRecipe, person.talkMode)) +
+    const doing = person.action === 'flee' && person.fleeFromId !== null && sim.player
+      ? t('fleeing from {name}', {
+        name: knowledgeOfPerson(sim.player, sim.peopleById.get(person.fleeFromId) ?? sim.player,
+          sim.relationships).displayName,
+      })
+      : actionLabel(person.action, person.targetRecipe, person.talkMode);
+    return escapeHtml(doing) +
       (person.order ? ' <span class="hud-ordered">' + t('ordered') + '</span>' : '') +
       (alone ? ' <span class="hud-alone">' +
         escapeHtml(t(AUTONOMY_LABELS[sim.autonomy]).toLowerCase()) + '</span>' : '') +

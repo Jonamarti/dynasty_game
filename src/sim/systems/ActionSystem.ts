@@ -647,6 +647,7 @@ export class ActionSystem {
       case 'spar': this.doSpar(person, ctx); break;
       case 'ask': this.doAsk(person, ctx); break;
       case 'ask_permission': this.doAskPermission(person, ctx); break;
+      case 'make_peace': this.doMakePeace(person, ctx); break;
       case 'craft': this.doCraft(person, ctx); break;
       case 'inscribe': this.doInscribe(person, ctx); break;
       case 'read': this.doRead(person, ctx); break;
@@ -2582,6 +2583,23 @@ export class ActionSystem {
       return;
     }
     telemetry.count('territory_permission_asked');
+    this.finishSocial(person, ctx.tick);
+  }
+
+  /** A deliberate peace offering, stronger for family than for a neighbour. */
+  private doMakePeace(person: Person, ctx: ActionContext): void {
+    const other = this.approach(person, ctx);
+    if (!other) return;
+    const opinion = ctx.relationships.opinion(person.id, other.id);
+    if (opinion >= 0) {
+      this.abandon(person, 'no_quarrel', ctx);
+      return;
+    }
+    const amount = ctx.relationships.kinship(person.id, other.id) > 0
+      ? 50 : person.bandId === other.bandId ? 30 : 20;
+    ctx.relationships.addDeed(person.id, other.id, amount, ctx.tick);
+    ctx.relationships.addDeed(other.id, person.id, amount, ctx.tick);
+    telemetry.count('peace_offered');
     this.finishSocial(person, ctx.tick);
   }
 

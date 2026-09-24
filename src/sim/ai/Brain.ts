@@ -3286,6 +3286,7 @@ export class Brain {
           person.targetX = found.fleePoint.x;
           person.targetY = found.fleePoint.y;
         }
+        person.fleeFromId = found.fleeFrom?.id ?? null;
         break;
       case 'talk':
       case 'teach':

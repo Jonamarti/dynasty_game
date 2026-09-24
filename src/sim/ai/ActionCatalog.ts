@@ -511,6 +511,14 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
         ? undefined : t('They are not a neighbouring people'),
     },
     {
+      id: 'make_peace',
+      label: t('Make peace with {name}', { name: other.name }),
+      icon: '\u{1F54A}',
+      enabled: rel !== null && (ctx.relationships?.opinion(actor.id, other.id) ?? 0) < 0,
+      reason: rel === null || (ctx.relationships?.opinion(actor.id, other.id) ?? 0) >= 0
+        ? t('There is no quarrel to settle') : undefined,
+    },
+    {
       id: 'give',
       label: t('Give food'),
       icon: '\u{1F381}',

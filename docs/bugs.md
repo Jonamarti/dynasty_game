@@ -5,13 +5,12 @@ speculative. Fixed defects are in [changelog.md](changelog.md).
 
 ## Follow-ups from notes3, 2026-09-24
 
-Two requested interface behaviours remain pending M12 work:
+The two requested interface behaviours from notes3 are now implemented:
 
-- NPC dialogue has no explicit **make peace** option. A future social action
-  should raise regard more strongly for family than for another member of the
-  same band, rather than being another flavour of ordinary talk.
-- The action line says only **fleeing**. It does not yet expose whether the
-  NPC is fleeing an animal, a person, or a named threat the observer knows.
+- NPC dialogue has **make peace**, raising regard by 50 for kin, 30 for a
+  bandmate and 20 for another band member.
+- The action line names a known person when an NPC flees from one; unknown
+  threats still correctly remain unnamed.
 
 ## Found shipping M12 phase 2b (the chief as judge), 2026-09-24
 
