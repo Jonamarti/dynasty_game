@@ -14,14 +14,12 @@ The two requested interface behaviours from notes3 are now implemented:
 
 ## Found shipping M12 phase 2b (the chief as judge), 2026-09-24
 
-### A player who is chief does not choose the verdict
+### The player-chief verdict flow is now implemented
 
-When somebody brings a grievance to the player's character, or a demand is
-carried home to them, the verdict is reckoned for them (`judgeOwn`,
-`answerDemand`) and they are only told. The Sims-like control the owner
-values says the player should choose — order amends, shame, dismiss, pay or
-refuse — from a prompt. It needs a small overlay (the `[hidden]` rule in
-`AGENTS.md` applies), and belongs with phase 3's interface work.
+When a local grievance reaches the player's chief, it is held in
+`Simulation.pendingVerdicts` and `VerdictOverlay` offers order amends, public
+shame, dismissal or exile. `resolveVerdict` applies the selected outcome. A
+foreign demand still follows the automatic inter-band answer path.
 
 ### An order to make amends binds an NPC, not the player
 
@@ -50,13 +48,21 @@ demand off. Each refusal costs `REFUSED_STANDING`, so this is a feud engine
 as much as a peace one — which is what the arc wants, but worth watching
 once phase 6 builds feuds on top of it.
 
-### Exile is not a verdict
+### Exile is now an explicit verdict
 
-The plan listed exile among the chief's choices. Exile still comes only from
-a faction (`BandSystem.considerExile`); a chief cannot pronounce it. With no
-wrongs inside a band there would be nothing for it to answer, and a chief
-who can cast out whom they like is a power the rebellion rules were not
-written for.
+The player-chief can now pronounce exile from the same docket. The existing
+faction route remains separate, and the verdict checks that the accused and
+plaintiff belong to the chief's band before changing membership.
+
+## M12 health report after completion, 2026-09-24
+
+The full `sim:check:all` matrix still has scenario-sensitive failures in the
+crowded, century, craft, scribes, traps, millers, farmers, herders, feasts,
+stewards, labour and lean worlds. They include `violence-concentrates`,
+`peoples-drift-apart`, `wrongs-reach-the-chief` and several one-off ecology
+checks. No threshold was loosened to hide them: the next investigation should
+use `sim:seeds` and `why` to separate M12 effects from the documented chaotic
+century baseline.
 
 ## Found shipping M12 phase 2a (debts and amends), 2026-09-24
 

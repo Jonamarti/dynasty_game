@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-24 — M12: interfaz del veredicto del jefe jugador
+
+El caso que llega al jefe del jugador ya tiene una pantalla visible y traducida:
+los nombres pasan por `Knowledge.ts` y cuatro botones llaman a
+`Simulation.resolveVerdict`. El overlay incluye la regla `[hidden]` para no
+interceptar clics cuando no hay un caso pendiente.
+
 ## 2026-09-24 — M12 phase 4c: trabajo forzado, rescate y adopción
 
 La cautividad ya no es sólo una bandera que cambia de pueblo. Un captor puede

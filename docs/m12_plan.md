@@ -10,7 +10,7 @@ que se conocen** a **sociedades que se estratifican y chocan por la tierra y
 los recursos**, con un orden interno creíble antes de que el conflicto entre
 pueblos escale.
 
-La fase 1 ya está construida (este mismo pase). El resto es plan.
+Las fases 1–7 ya están construidas (2026-09-24). Este documento conserva el plan y sus puertas de medición; los fallos de salud que sigan dependiendo del escenario se anotan en `docs/bugs.md` en vez de maquillarse como verdes.
 
 ---
 
@@ -116,8 +116,9 @@ intermedio que las sociedades reales ponen entre el rencor y la violencia**:
 > están escritas, las dos serían casi inertes. Lo que sí abunda es el daño
 > *entre* pueblos (1.041 amenazas, 211 palizas, 3.004 sabotajes de adultos en
 > esos tres mundos), que es donde la compensación histórica (el *wergild*)
-> tenía su sentido. Pendiente de decisión del propietario: ver
-> `changelog.md`, fase 2d.
+> tenía su sentido. La interfaz del jefe jugador ya presenta el caso y permite
+> escoger el veredicto; la puerta de medición sigue siendo deliberadamente
+> independiente de esa interfaz.
 
 **Puerta:** `peace-within-bands` sigue en verde con la compensación activa; la
 media de renombre por hogar diverge (estratificación) sin que suba la
