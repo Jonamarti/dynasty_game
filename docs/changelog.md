@@ -30,6 +30,14 @@ en sus almacenes. La posición de autoridad usa el máximo entre ese patrimonio
 y lo que se ve actualmente; cuando dos casas se unen por matrimonio, la riqueza
 de ambas pasa a la casa resultante.
 
+## 2026-09-24 — M12 phase 7c: acceso preferente del hogar del jefe
+
+El hogar del jefe y sus aliados priorizan los almacenes al retirar comida:
+cuando hay varias opciones, la puntuación del granero recibe una preferencia
+visible. Combinada con `Household.wealth` y la autoridad por desigualdad, la
+élite tiene ahora una ventaja material institucional sin abrir una ruta nueva
+de RNG.
+
 ## 2026-09-24 — M12 phase 7b: especialistas que intercambian
 
 El comercio existente ya no busca sólo extranjeros: también ofrece a un

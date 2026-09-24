@@ -262,7 +262,9 @@ hogar, jefes, `division_of_labour`, trabajos). Falta:
   tienen oficios distintos y excedente.
 - Una élite (el hogar del jefe y sus aliados) con acceso preferente al
   granero: la primera desigualdad institucional, y la primera causa de rebelión
-  que no es personal.
+  que no es personal. **Construida** (2026-09-24): el hogar del jefe y sus
+  aliados priorizan el retiro de comida del granero, y la autoridad ya lee la
+  riqueza persistente del hogar.
 
 **Puerta:** el renombre y la riqueza por hogar dejan de ser planos (Gini por
 encima de un umbral en la cohorte `century` a 4 años), sin que la paz interna

@@ -131,6 +131,8 @@ export interface BrainContext {
   snowBuries: boolean;
   /** For `store`'s hoarding term: which building a person's own household calls home. */
   householdsById: ReadonlyMap<number, Household>;
+  /** Lets the scorer identify the chief when choosing a privileged larder. */
+  peopleById?: ReadonlyMap<number, Person>;
   /** For `mayUse`'s reading of how two bands currently stand. */
   bandRelations: BandRelations;
   /**
@@ -2244,15 +2246,23 @@ export class Brain {
       //    traps in them at all. Traps get walked to by the separate route
       //    below rather than by bending this one.
       if (carried < person.needs.hunger && person.needs.hunger > 25) {
+        const household = person.householdId === null
+          ? null : ctx.householdsById.get(person.householdId) ?? null;
+        const chiefId = ctx.chiefByBand.get(person.bandId);
+        const chief = chiefId === undefined ? null : ctx.peopleById?.get(chiefId) ?? null;
+        const elite = household !== null && chief !== null &&
+          (household.headId === chief.id ||
+            ctx.relationships.opinion(person.id, chief.id) >= 25);
         const larder = this.pickBest(
           stores.filter(b => this.canUse(person, b, ctx) && b.store.bestFood() !== null),
-          b => -person.distanceTo({ x: b.centerX, y: b.centerY })
+          b => -person.distanceTo({ x: b.centerX, y: b.centerY }) + (elite ? 12 : 0)
         );
         // Weighted well above foraging, and scaled by how well stocked it is. A
         // full pit is a certainty; a bush in February is a walk and a gamble.
         if (larder) {
           wantTake(larder,
             hunger * TAKE_APPETITE * (0.4 + 0.6 * this.stocked(larder)) * nearness(larder));
+          if (elite) telemetry.count('elite_larder_preferred');
         }
       }
 
