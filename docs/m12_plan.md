@@ -257,7 +257,9 @@ hogar, jefes, `division_of_labour`, trabajos). Falta:
   conserva la riqueza almacenada y se suma al fusionar dos casas; la autoridad
   compara ese patrimonio persistente además del contenido visible actual.
 - Especialistas que viven de su oficio y *intercambian* dentro de la banda
-  (hoy nadie tiene excedente, `bugs.md`).
+  (hoy nadie tiene excedente, `bugs.md`). **Construido** (2026-09-24): el
+  comercio existente también ofrece vecinos de la misma banda cuando ambos
+  tienen oficios distintos y excedente.
 - Una élite (el hogar del jefe y sus aliados) con acceso preferente al
   granero: la primera desigualdad institucional, y la primera causa de rebelión
   que no es personal.

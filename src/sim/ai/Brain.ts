@@ -1188,8 +1188,10 @@ export class Brain {
         }
       }
 
-      // Trade: a mutual exchange of surplus with somebody from *another*
-      // band, M11 phase 7b's third `BandRelations` engine. Deliberately not
+      // Trade: a mutual exchange of surplus with somebody from another band,
+      // or between distinct specialists in the same band. M12 phase 7b makes
+      // division of labour social position by letting unlike specialists
+      // exchange what their households produce. Deliberately not
       // an `else if` beside `give` above — a person can have both a hungry
       // neighbour to feed and a spare basket to trade away in the same
       // think, toward two different people, the same shape `slanderSubjectId`
@@ -1198,8 +1200,11 @@ export class Brain {
       // rather than guessed at, so nobody is scored toward a partner with
       // nothing to trade back.
       if (spareFood > 0) {
-        const foreigners = neighbours.filter(other => other.bandId !== person.bandId);
-        tradePartner = this.pickBest(foreigners, other => {
+        const partners = neighbours.filter(other =>
+          other.bandId !== person.bandId ||
+          (other.householdId !== person.householdId && person.job !== null &&
+            other.job !== null && other.job !== person.job));
+        tradePartner = this.pickBest(partners, other => {
           const theirSpare = this.carriedNutrition(other) - other.needs.hunger - GIVING_RESERVE;
           if (theirSpare <= 0) return -Infinity;
           return theirSpare - person.distanceTo(other) * 2;

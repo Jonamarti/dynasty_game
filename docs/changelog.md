@@ -30,6 +30,14 @@ en sus almacenes. La posición de autoridad usa el máximo entre ese patrimonio
 y lo que se ve actualmente; cuando dos casas se unen por matrimonio, la riqueza
 de ambas pasa a la casa resultante.
 
+## 2026-09-24 — M12 phase 7b: especialistas que intercambian
+
+El comercio existente ya no busca sólo extranjeros: también ofrece a un
+especialista de la misma banda cuando ambos pertenecen a hogares distintos,
+tienen oficios diferentes y llevan excedente alimentario. Se conserva el
+intercambio bilateral y el evento `trade`, así que la división del trabajo
+produce circulación real de bienes sin duplicar la economía.
+
 ## 2026-09-24 — M12 phase 5c: permiso y tributo de paso
 
 El menú social permite pedir permiso a un vecino extranjero para recolectar en
