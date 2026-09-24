@@ -105,9 +105,9 @@ intermedio que las sociedades reales ponen entre el rencor y la violencia**:
 > o desestima; contra un extraño lo lleva al otro pueblo (`parley`), la
 > exigencia viaja de boca en boca hasta su jefe, y éste ordena pagar,
 > avergüenza o rechaza (y la relación entre pueblos lo paga). Check
-> `wrongs-reach-the-chief`. Pendiente: que el jugador elija el veredicto
-> cuando es jefe (fase 3), el destierro como veredicto, y la puerta del
-> renombre (ver `bugs.md`).
+> `wrongs-reach-the-chief`. El jugador-jefe conserva ahora el caso en
+> `pendingVerdicts` y puede elegir resarcir, avergonzar, desestimar o desterrar
+> mediante `resolveVerdict`; el destierro ya no es un resultado implícito.
 >
 > **Aviso sobre 2a y 2b (2026-09-24).** Las dos partían de que dentro de una
 > banda hay robos y golpes que compensar o juzgar. La fase 1 los acabó:
@@ -246,11 +246,12 @@ me ha atacado», se comenta y la relación va bajando.
 
 ---
 
-## Fase 7 — Estratificación y oficios
+## Fase 7 — Estratificación y oficios (construida, 2026-09-24)
 
 El arco: «con el tiempo la sociedad se estratifica y aparecen trabajos
 distintos por la división del trabajo». Los mimbres existen (renombre de
-hogar, jefes, `division_of_labour`, trabajos). Falta:
+hogar, jefes, `division_of_labour`, trabajos). Las tres piezas de esta fase ya
+están construidas:
 
 - Riqueza heredada que se acumula por hogar y compra posición (regalos,
   compensaciones, dote). **Construida** (2026-09-24): `Household.wealth`

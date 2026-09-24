@@ -85,7 +85,7 @@ export function favour(judge: Person, accused: Person, plaintiff: Person, rels: 
   return toward(accused) - toward(plaintiff);
 }
 
-export type OwnVerdict = 'order' | 'shame' | 'dismiss';
+export type OwnVerdict = 'order' | 'shame' | 'dismiss' | 'exile';
 
 /**
  * A chief judging a wrong between two of their own people.

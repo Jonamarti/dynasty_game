@@ -240,6 +240,8 @@ export class Simulation {
   private readonly territoryPermissions = new Map<string, number>();
   /** Social events already folded into household feuds. */
   private readonly feudEvents = new Set<number>();
+  /** Cases waiting for the player-chief to choose a local verdict. */
+  readonly pendingVerdicts: Case[] = [];
 
   /**
    * Knowledge the world has, counted from the adults alive right now.
@@ -2175,6 +2177,17 @@ export class Simulation {
       return verdict === 'order' ? this.orderAmends(chief, accused, plaintiff) : this.shame(chief, accused, plaintiff);
     }
 
+    // The player's chief is the one judge the simulation must not replace.
+    // Keep the case after the testimony has reached the chief; the UI can now
+    // offer the four legal outcomes instead of silently choosing for the player.
+    if (chief.isPlayer) {
+      if (!this.pendingVerdicts.some(existing => existing.accusedId === told.accusedId &&
+        existing.plaintiffId === told.plaintiffId)) this.pendingVerdicts.push(told);
+      this.noteInsight(chief, t('A case awaits your verdict'), 'setback');
+      telemetry.count('verdict_waiting_for_player');
+      return 'verdict_waiting_for_player';
+    }
+
     const verdict = judgeOwn(chief, plaintiff, accused, this.relationships, canPay);
     telemetry.count('verdict_' + verdict);
     if (verdict === 'dismiss') {
@@ -2988,6 +3001,33 @@ export class Simulation {
     this.buildingsById.set(building.id, building);
     telemetry.count('site_placed');
     return building;
+  }
+
+  /** Resolves a local case explicitly chosen by the player-chief. */
+  resolveVerdict(chief: Person, told: Case, verdict: 'order' | 'shame' | 'dismiss' | 'exile'): boolean {
+    if (!chief.isPlayer || !chief.alive || this.bandSystem.chiefByBand.get(chief.bandId) !== chief.id ||
+      told.plaintiffBandId !== chief.bandId || told.accusedBandId !== chief.bandId) return false;
+    const index = this.pendingVerdicts.findIndex(caseFile =>
+      caseFile.accusedId === told.accusedId && caseFile.plaintiffId === told.plaintiffId);
+    if (index < 0) return false;
+    const accused = this.peopleById.get(told.accusedId);
+    const plaintiff = this.peopleById.get(told.plaintiffId);
+    if (!accused || !plaintiff || !accused.alive || !plaintiff.alive) return false;
+    this.pendingVerdicts.splice(index, 1);
+    if (verdict === 'order') this.orderAmends(chief, accused, plaintiff);
+    else if (verdict === 'shame') this.shame(chief, accused, plaintiff);
+    else if (verdict === 'exile') {
+      const band = this.bands.find(candidate => candidate.id === chief.bandId);
+      if (!band) return false;
+      const size = this.people.filter(person => person.alive && person.bandId === band.id).length;
+      this.exile(accused, band, size);
+      telemetry.count('verdict_exile');
+    } else {
+      this.relationships.addDeed(plaintiff.id, chief.id, -DISMISSED_GRUDGE, this.time.tick);
+      telemetry.count('verdict_dismiss');
+    }
+    telemetry.count('verdict_chosen_by_player');
+    return true;
   }
 
   /**

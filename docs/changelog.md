@@ -38,6 +38,14 @@ visible. Combinada con `Household.wealth` y la autoridad por desigualdad, la
 élite tiene ahora una ventaja material institucional sin abrir una ruta nueva
 de RNG.
 
+## 2026-09-24 — M12 justice follow-up: veredicto del jugador-jefe
+
+Un caso interno que llega al jefe del jugador ya no se resuelve
+automáticamente. Queda en `Simulation.pendingVerdicts` y
+`resolveVerdict` permite elegir resarcimiento, vergüenza, desestimación o
+destierro. Se conserva la transmisión por testimonio: el caso sólo aparece
+después de que la víctima lo haya llevado al jefe.
+
 ## 2026-09-24 — M12 phase 7b: especialistas que intercambian
 
 El comercio existente ya no busca sólo extranjeros: también ofrece a un

@@ -227,6 +227,7 @@ export const ES_SIM: Record<string, string> = {
   "paid a ransom for {name}": "pagó un rescate por {name}",
   "was adopted by the {household}": "fue adoptado por la casa {household}",
   "was allowed to gather by the {band}": "el pueblo {band} le permitió recolectar",
+  "A case awaits your verdict": "Un caso espera tu veredicto",
   "escaped from the {band}": "escapó de la {band}",
   "the body is gone": "el cuerpo ya no está",
   "{actor} was found dead": "{actor} fue hallado muerto",
