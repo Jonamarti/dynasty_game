@@ -46,6 +46,12 @@ automáticamente. Queda en `Simulation.pendingVerdicts` y
 destierro. Se conserva la transmisión por testimonio: el caso sólo aparece
 después de que la víctima lo haya llevado al jefe.
 
+## 2026-09-24 — M12 5c: razón visible al rechazar permiso
+
+El nuevo verbo de pedir permiso ya tiene razones registradas en el catálogo de
+paradas y traducción española; un vecino que rechaza el paso no devuelve al
+personaje a pensar sin explicar qué ocurrió.
+
 ## 2026-09-24 — M12 phase 7b: especialistas que intercambian
 
 El comercio existente ya no busca sólo extranjeros: también ofrece a un

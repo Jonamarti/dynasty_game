@@ -420,6 +420,10 @@ export const STOP_REASONS: Record<string, string> = {
   too_young_to_teach: 'they are too young to show anybody anything',
   would_not_teach: 'they would not show them',
   learned_nothing: 'they came away no wiser',
+  // M12 phase 5c: the social permission verb can be declined before any land
+  // is entered, so its refusal must be a named stop rather than a silent reset.
+  permission_refused: 'the neighbour refused permission',
+  not_a_foreign_neighbour: 'they are not a foreign neighbour',
 
   // Records. The literacy gate is the one worth spelling out: a stone that
   // grants nothing to somebody who cannot read is the point of writing, and a
