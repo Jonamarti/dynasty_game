@@ -15,7 +15,7 @@
  * most expensive thing in the simulation.
  */
 import type { Person } from '../entities/Person.ts';
-import { ELDER_YEARS, SKILLS, TRAITS } from '../entities/Person.ts';
+import { ELDER_YEARS, SKILLS, TRAITS, TRAIT_SPREAD } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
 import type { Building } from '../entities/Building.ts';
 import type { RNG } from '../core/RNG.ts';
@@ -187,6 +187,22 @@ export class LifeSystem {
  * play are built the same way — two copies of this would drift apart, and the
  * founding generation would quietly stop resembling its own children.
  */
+/**
+ * How far a child's temperament strays from the average of their parents'.
+ *
+ * Not a free parameter. Averaging two parents halves the variance of what a
+ * child starts from, so the drift has to put exactly that half back or every
+ * generation is more alike than the last: at the 0.09 this used to be, the
+ * spread settled at 0.127 instead of `TRAIT_SPREAD`'s 0.18, and the share of
+ * people past `Restraint.IN_GROUP_TAIL` fell from about one in seventy-five
+ * among the founders to under one in a thousand by their great-grandchildren.
+ * The owner's bell curve would have quietly become a spike. `TRAIT_SPREAD /
+ * √2` is the drift at which the curve a world starts with is the curve it
+ * keeps (a single parent passes on their own full variance, so for them this
+ * slightly widens it — rare, and harmless).
+ */
+const INHERITED_DRIFT = TRAIT_SPREAD / Math.SQRT2;
+
 export function inheritTraits(
   child: Person,
   mother: Person,
@@ -197,7 +213,7 @@ export function inheritTraits(
     const inherited = father
       ? (mother.traits[trait] + father.traits[trait]) / 2
       : mother.traits[trait];
-    child.traits[trait] = Math.max(0, Math.min(1, inherited + rng.gaussian(0, 0.09)));
+    child.traits[trait] = Math.max(0, Math.min(1, inherited + rng.gaussian(0, INHERITED_DRIFT)));
   }
 }
 

@@ -54,7 +54,14 @@ function empty(): Relationship {
  * somebody and a flinch cannot: about a hundred days to halve, against
  * forty-five for a deed.
  */
-const DECAY_PER_DAY = { deeds: 0.985, familiarity: 0.94, romance: 0.99, dread: 0.993 };
+export const DECAY_PER_DAY = { deeds: 0.985, familiarity: 0.94, romance: 0.99, dread: 0.993 };
+
+/**
+ * How much of `familiarity` counts toward `opinion`. Exported so the person
+ * panel's reasons (`Knowledge.regardReasons`) weigh time spent together as
+ * the opinion itself does.
+ */
+export const FAMILIARITY_WEIGHT = 0.35;
 
 export class RelationshipGraph {
   /** viewerId -> subjectId -> relationship. */
@@ -84,7 +91,7 @@ export class RelationshipGraph {
   opinion(viewerId: number, subjectId: number): number {
     const rel = this.peek(viewerId, subjectId);
     if (!rel) return 0;
-    const raw = rel.bias + rel.kinship + rel.deeds + rel.familiarity * 0.35 + rel.romance;
+    const raw = rel.bias + rel.kinship + rel.deeds + rel.familiarity * FAMILIARITY_WEIGHT + rel.romance;
     return Math.max(-100, Math.min(100, raw));
   }
 

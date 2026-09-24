@@ -4,6 +4,8 @@
  * accident: it is what makes the world feel inhabited rather than staged.
  */
 import type { OpenInvestigation } from '../social/Investigation.ts';
+import type { Debt, Grievance } from '../social/Amends.ts';
+import type { Case } from '../social/Justice.ts';
 import type { RNG } from '../core/RNG.ts';
 import { Inventory } from './Item.ts';
 import { Memory } from '../social/Memory.ts';
@@ -76,6 +78,14 @@ const ALONGSIDE_LEARN = 0.5;
  * in `social/Authority.ts`, because two knobs for one behaviour is how a scorer
  * becomes untunable.
  */
+/**
+ * The standard deviation of every trait across a population: a bell curve
+ * around 0.5, most people ordinary and a few far out either way — the
+ * owner's own description of how temperament is spread. Founders are drawn
+ * from it, and `inheritTraits` holds every later generation to it.
+ */
+export const TRAIT_SPREAD = 0.18;
+
 export const TRAITS = [
   'aggression', 'greed', 'loyalty', 'curiosity', 'tradition',
   'intelligence', 'industriousness', 'malice',
@@ -437,6 +447,50 @@ export class Person {
   caughtId: number | null = null;
   caughtTick = -9999;
   /**
+   * The last child of this person's own band they saw doing wrong, and when —
+   * the owner's note of 2026-09-24, "the members of the tribe correct them".
+   * Written by `emit`'s witness loop; read by `Brain`'s `correct`, which
+   * forgets it after `Restraint.MISCHIEF_MEMORY`.
+   */
+  mischiefId: number | null = null;
+  mischiefTick = -9999;
+  /** Whether that misdeed was against another people — which conscience it teaches. M12 phase 2d. */
+  mischiefAbroad = false;
+  /**
+   * How much being corrected as a child has taught this person about their
+   * own people, 0 to 1. Raised by `ActionSystem.doCorrect`, never lowered,
+   * and kept into adulthood: it brakes every predatory verb against this
+   * person's own people. See `Restraint.ts`.
+   */
+  conscience = 0;
+  /**
+   * The same, about strangers — M12 phase 2d. Raised only by a correction for
+   * a wrong against another people, which only a band that minds such wrongs
+   * gives (`Restraint.noteMischief`); so it is where a people's regard for
+   * strangers passes into the adults it raises. Brakes a child's wrongs
+   * against strangers fully and an adult's in part (`strangerBrake`).
+   */
+  conscienceAbroad = 0;
+  /**
+   * What this person owes, and to whom — M12 phase 2a. Written where a wrong
+   * is done to somebody's face (`Amends.incur`), known only to the two of
+   * them, and cleared by `make_amends`. See `social/Amends.ts`.
+   */
+  debts: Debt[] = [];
+  /** The other side of somebody else's debt: what was done to this person. M12 phase 2b. */
+  grievances: Grievance[] = [];
+  /**
+   * Wrongs done to this chief's people by another people, taken up and not
+   * yet put to them — M12 phase 2b, `social/Justice.ts`. Kept by the person,
+   * like everything anybody knows: a chief who loses the office still knows.
+   */
+  docket: Case[] = [];
+  /**
+   * A demand another people's chief put to this person, to be taken to their
+   * own chief — M12 phase 2b. Word of mouth is the only way it gets there.
+   */
+  carriedDemand: Case | null = null;
+  /**
    * Who is holding this person down, and until when — M11 phase 15b's
    * `restrain`. While `heldUntil` has not passed, this person neither thinks
    * nor acts; the holder renews it every tick they keep holding (`HOLD_RENEW`),
@@ -714,7 +768,7 @@ export class Person {
     for (const skill of SKILLS) this.skills[skill] = Math.max(0, rng.gaussian(8, 5));
 
     this.traits = {} as Record<Trait, number>;
-    for (const trait of TRAITS) this.traits[trait] = Math.max(0, Math.min(1, rng.gaussian(0.5, 0.18)));
+    for (const trait of TRAITS) this.traits[trait] = Math.max(0, Math.min(1, rng.gaussian(0.5, TRAIT_SPREAD)));
 
     // Starts at rest rather than at zero: a person with a settled temperament
     // is not born jarred against it.

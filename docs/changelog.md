@@ -6,6 +6,368 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-24 — M12 phase 3c: why they like you, and the island's size
+
+**Why they like or dislike you** (owner's note 7). `Knowledge.regardReasons`
+lists up to four reasons, strongest first, under each opinion in *Ties →
+Between you*.
+
+- **Your opinion of them** lists everything behind it, because it is yours:
+  kinship, household or people, time spent together, attraction, and each
+  deed you remember them doing, named as you know the people in it.
+- **Their opinion of you** is private to them, so under the owner's rule
+  (nothing is learned except by seeing it or being told) it names only what
+  your character could know without being told: kinship, whether you are of
+  one people, time together, and **what you did to them**, since you were
+  there. What they saw you do to somebody else, or heard about you, does
+  move their opinion, but you cannot know which of your deeds reached them.
+  It is summed into one line, "things they have seen or heard of you", with
+  no details. The list appears only when `regardFromThem` already lets you
+  read the opinion at all.
+- **Deeds are ranked by the formula that moved the opinion.** The weighting
+  in `SocialSystem.absorb` was moved out into `deedDelta` (culture norms,
+  partiality, victim, hearsay, confidence), and `MemoryEntry` now keeps the
+  deed's `magnitude` so that the weight can be recomputed. Each deed is then
+  aged at the rate `deeds` decays. A second formula would have named, say, a
+  theft that the viewer's own norms barely counted. `FAMILIARITY_WEIGHT` and
+  `HEARSAY_WEIGHT` are now shared constants for the same reason.
+- Not named: the few deed nudges that no memory records (an order refused, a
+  complaint the chief dismissed).
+
+**Island size** (spoken request: the owner suspects that people killing each
+other within a few years is partly a lack of room). A new tunable, `Island
+size` (`world.width`, mirrored to `world.height`, 64–256 in steps of 16,
+restart). It sits on the character-creation screen beside tribes and people
+per tribe, and on the settings screen. It is pinned rather than scaled by
+difficulty, because whether a larger island is "harder" has no single answer.
+
+- **Resource counts scale with area** (`WorldConfig.resourceScale`, set by
+  `configFor` to the island's area over 128²). Otherwise a bigger island
+  with the same 280 bushes would have measured scarcity rather than room.
+  The default is 1, so every scenario and test world that names its own
+  counts keeps exactly those counts.
+- `sim:seeds -- --size N` runs a cohort on a bigger island.
+- **Bit-identical at the default size**: the `century` report is identical
+  line for line before and after.
+
+**Measured**, `century`, ten seeds each (with ten seeds, differences under
+about ten points are noise, so the small counts below settle nothing):
+
+| island | survival | born | blows between peoples | murders | techs known | passed on |
+|---|---|---|---|---|---|---|
+| 128 | 99.7% | 436 | 549 | 6 | 11.1 | 567 |
+| 192 | 99.2% | 387 | 325 | 8 | 8.7 | 402 |
+| 256 | 99.8% | 380 | 124 | 4 | 9.2 | 404 |
+
+Blows between peoples fall steeply with room: 549 → 325 → 124. Thefts fall
+too (667 → 565 → 247). Property deeds an owner saw barely move until 256
+(1,315 → 1,382 → 355). Inside a band nothing changes, because phase 1 had already brought
+it to zero at every size. Murders are too few to read. **The cost is
+fewer meetings**: fewer births and slower technology on bigger islands,
+because learning by watching and marrying across bands both need people to
+be near each other.
+
+The owner's suspicion holds for violence *between* peoples. Inside the band,
+the violence that prompted it was phase 1's to fix, and it has been fixed.
+
+Checks: `typecheck`, `npm test` (513), `e2e` (54, including a new step that
+sets the island to 192 on the creation screen and sees the world rebuilt),
+`sim:check:all` (12 failures across 19 scenarios, the same known single-run
+flippers as phase 2b).
+
+## 2026-09-24 — M12 phase 2b: the chief as judge
+
+The plan's 2b, widened like 2a by the owner's choice to both sides of a band
+line. `social/Justice.ts`, new; the verdicts are carried out in
+`Simulation.hearComplaint`. **Every step is somebody telling somebody**: no
+chief learns of a wrong any other way.
+
+- **Grievances.** Every debt (2a) now has its other side on the one wronged
+  (`Person.grievances`), cleared when it is paid.
+- **`complain`**, a verb: a wrong left unpaid for half a day is taken to one's
+  own chief when the chief is at hand — weighed by how much it still rankles
+  and by `tradition`. The story passes to the chief as hearsay.
+- **Against one of the chief's own** (`judgeOwn`): amends ordered through the
+  ordinary compliance roll if the accused can pay; **shamed** if they cannot,
+  or defy the order — the chief tells the wrong to everybody of the band in
+  sight and the household loses `SHAME_RENOWN`; **dismissed** if the chief
+  favours the accused by `PARTIAL_AT`, and the plaintiff resents the chief.
+- **Against a stranger**: nothing the chief can order. It goes on their
+  `docket`, and they put it (`parley`) to whoever of that people they meet —
+  their chief if possible. Anybody else **carries it home**
+  (`carriedDemand`) and passes it on with `complain` when their own chief is
+  at hand. That chief answers (`answerDemand`) by their people's regard for
+  strangers (phase 2d), how the two peoples stand, their tradition, and how
+  far past the ordinary they favour the accused: amends ordered, the accused
+  shamed, or **refused** — which costs the two peoples `REFUSED_STANDING`.
+  **Measured and fixed**: the first `answerWeight` read a chief's ordinary
+  warmth for any bandmate (in-band opinion averages ~43) as protectiveness,
+  and nine demands in ten were refused; only regard past `ORDINARY_REGARD`
+  counts now.
+- **The player** can take a grievance or pass on a demand to their chief, and
+  as chief demand redress from anybody of an accused people — none of it
+  offered while commanding somebody else, whose grievances are theirs. As
+  the accused, they are told of an order to pay, not moved by it. As chief,
+  they do not yet choose the verdict (`bugs.md`).
+
+**Measured.** New check `wrongs-reach-the-chief` (complaints heard ≥ 2% of
+debts run up; 0 on the build before): `century` 14 of 117, `lean` 4 of 62,
+`millers` 4 of 89. Nine runs of three scenarios: 6 demands ordered paid, 2
+shamed, 23 refused — the peoples asking are mostly already at odds. `century`,
+twenty seeds, against phase 2d: survival 99.8% → 99.6%, blows 1,314 → 1,199,
+murders 38 → 31, technologies passed on 447 → 448; 0 blows inside a band,
+0 on a child, 3 of 1,447 thefts inside one (the far tail). Matrix: 12
+failures across 19, all single-run flippers on record. `i18n:soak`: 1,462
+lines, none English.
+
+## 2026-09-24 — M12 phase 2a: a debt, and making amends
+
+The plan's compensation, widened by the owner's choice after phase 1 had
+ended theft and blows inside a band: **a debt is a debt, whoever it is owed
+to** — inside a band or across it. `social/Amends.ts`, new.
+
+- **A wrong done to somebody's face leaves a debt** on whoever did it
+  (`Person.debts`): a theft (the goods themselves, and their worth), a
+  menace (the goods if it worked, an insult's worth if not), a blow. Known
+  only to the two of them. Repeated wrongs to one person add to one debt. Not
+  for answering a wrong — striking back, beating the thief at your store,
+  robbing whoever robbed your people (`Restraint.hadItComing`) — and never
+  by a child, whose wrongs are their people's to correct. Forgotten when the
+  one owed dies, or after a year.
+- **`make_amends`**, a verb: walk up, set down what was taken and then the
+  best of what is carried, up to what is owed (`offerFor`), never less than
+  half (`OFFER_AT_LEAST`). The one owed takes it or not — one roll on the
+  offer's adequacy, their malice and temper, their fear of the payer, and a
+  little for being one of their own. Taken, it is a deed (`amends`, as
+  heavy as the theft it most often answers): the one paid feels it as a
+  victim does, onlookers see it, the payer's household is known for it, and
+  between two peoples it mends what the wrong cost them — all `emit`'s
+  existing machinery. Refused, the payer is told so and waits two days.
+- **Who pays unasked**: somebody with the goods, facing somebody who still
+  minds; moved by loyalty and upbringing among their own people, and among
+  strangers by the upbringing their people gave them (phase 2d) and fear of
+  whoever they wronged.
+- **The player** sees "Make amends to…" on anybody their character owes —
+  and on nobody else, since their own debts are all they can know — greyed
+  with the reason when they carry too little.
+
+**Measured, `century`, three seeds**: 300, 12 and 72 debts run up; 12, 1 and
+6 paid unasked, 8 and 2 offers refused. Paying a stranger with nobody
+making you is rare, as it was: the engine of compensation is the pressure
+of one's own people, which is phase 2b. Matrix: 13 failures across 19,
+the single-run flippers on record.
+
+## 2026-09-24 — M12 phase 2d: what a people teaches its children about strangers
+
+The plan's 2d: "a band tolerant of theft from strangers does not correct a
+child for robbing strangers — so two cultures raise different adults".
+
+**What there was to correct.** Measured first, three `century` runs: **no**
+theft or blow inside a band at all after phase 1, 139 slanders inside one
+(109 by children), and against other peoples about 1,600 sabotages and 340
+trespasses *by children*. So what a band corrects its children for is now
+almost entirely how they treat strangers — which is exactly where cultures
+differ, and where every band was identical: each corrected every wrong
+against anybody, and judged its adults for wronging a stranger by one
+constant (`OUR_OWN_AGAINST_OUTSIDERS`, a quarter).
+
+**One new axis of culture**, `Band.strangerRegard`: how much a people minds
+a wrong done by one of its own to somebody of another people, a bell curve
+around 0.5 (`Restraint.STRANGER_REGARD_*`). Drawn on its own stream,
+`cultureRng`, forked genuinely last (seventeenth; `AGENTS.md`'s table has
+its row, and every row's line number, stale since phase 1, is corrected).
+Read in three places:
+
+- **Judging** (`partiality`): the quarter becomes this people's own figure,
+  the same at the middle of the curve.
+- **Correcting** (`noteMischief`): a wrong by a child against a stranger is
+  minded if the band's norm for it × its regard × `0.5 + tradition` of the
+  witness reaches `MINDS_AT`. Against the band's own people it is minded
+  always — the owner's rule, whatever the band thinks of theft. **`MINDS_AT`
+  was first 0.3, and measured to do nothing**: every people above 0.3 minded
+  nearly everything (`craft`: 212 of 215 at 0.37, 115 of 115 at 0.71). At
+  0.5 it is the middle of the curve and the share minded moves the whole way
+  along it: 141 of 141 at 0.71 against 3 of 212 at 0.37.
+- **Upbringing**: two consciences. `conscience` (own people) as before;
+  `conscienceAbroad`, raised only by a correction for a wrong against
+  strangers — and half of it carried over to `conscience`, since whoever is
+  told not to rob a stranger has been told something about neighbours too.
+  A child's wrongs abroad answer to it fully; an adult's thefts, threats,
+  sabotage and predation against strangers are braked by `strangerBrake`
+  (at most 60%: against another people need comes first).
+
+The new-game screen names the extremes: "think a stranger fair game", or
+"wrong a stranger no more lightly than a neighbour".
+
+**Measured.** New check `upbringing-follows-culture`: of the two peoples
+furthest apart in regard, the more regardful minds at least ten points more
+of its children's wrongs abroad. With the culture read switched off, it
+fails in both worlds that can say (115/115 against 225/225, 292/292 against
+52/52); on, `craft` 141/141 against 3/212, `millers` 93/137 against 7/496,
+`lean` 18/19 against 4/276. The last two numbers are the effect itself:
+`millers`' band at 0.43 saw its children do 496 wrongs abroad with its
+culture read and 52 with everything corrected. `century`, twenty seeds,
+against phase 2c: property deeds an owner saw 2,504 → **5,165**, thefts
+from a person 1,243 → 1,467, blows 1,452 → 1,314, murders 24 → 38,
+survival 99.9% → 99.8%; still 0 inside a band and 0 on a child.
+
+## 2026-09-24 — M12 phase 2c: the struck run or hit back
+
+The owner's note 4: "some NPCs neither defend themselves nor run when
+attacked". `npm run violence` now follows every adult struck for 60 ticks
+(`--cases` names them, and `npm run why` takes `--seed` and `--id` to follow
+one), and on `century` about one in six did neither. Three causes, all
+found with the score table:
+
+- **Two readings of "under attack".** `interruption` stopped any action for
+  forty ticks after any blow; `Brain` did not know, and chose the same thing
+  again. One man hit while warning off a stranger chose `warn` thirty times
+  in sixty ticks, each cut off on the tick after, while the stranger had
+  long since gone to spar with somebody else. Now one reading,
+  `Defence.assailantOf`: a blow in the last `FRESH_BLOW` ticks, or an
+  assailant still coming. Used by `interruption`, by `wakeReason` and by
+  `Brain`.
+- **Nothing reached a committed teacher.** Eight timed verbs (`teach`,
+  `ask`, `discuss`, `court`, `spar`, `give`, `trade`, `steal`) never call
+  `interruption` — the `AGENTS.md` rule, broken eight times. A man was
+  beaten from 89 to 46 in the middle of a lesson. `ActionSystem.execute` now
+  breaks off anything committed or ordered when somebody is attacking the
+  person, except running, fighting, sleep and escape, which have their own.
+  Only the blow: the needs are in `bugs.md`.
+- **Fleeing into the edge of the world.** `flee` tried only the line
+  straight away from the threat; against a coast or the map's edge that was
+  all water, so `flee` was chosen, given no destination, and chosen again —
+  a man in the north-east corner stood through three blows with it at the
+  top of his table. `Brain.escapeFrom` fans out, nearest to straight-away
+  first, and runs while scoring, so `flee` is only offered where there is
+  somewhere to go. Somebody with nowhere to go fights (`cornered`).
+
+And over all three, **a floor**: while somebody is set upon, the better of
+running and hitting back is lifted to `RESPOND` (3.4, above a starving
+person's meal). Which of the two is still their own reckoning of the odds.
+
+**The same loop, everywhere.** Measuring the first cause found it far
+wider than fights: on `century` seed 1, **12,173 of 14,589 conversations
+and 5,056 of 6,145 warnings** were chosen, cut off by thirst on the next
+tick, and chosen again — `talk`, `warn`, `threaten`, `slander`, `praise`
+and `correct` were never gated on `pressedByNeed` the way every work verb
+is. `Brain` now drops them (`CUT_OFF_AT_ONCE`) when a need is past the
+working line or the person is set upon.
+
+**Measured.** New check `the-struck-respond`: of second blows from the
+same hand, how many found the victim doing neither. On the build before,
+three seeds each of `century`, `lean` and `herders`: 44 of 54, 23 of 26, 23
+of 26, 32 of 37, 71 of 97, 32 of 34. After, the same twelve runs: 1 of 91.
+`century`, twenty seeds, against phase 1: survival 98.8% → **99.9%**,
+blows 1,793 → 1,452, murders 88 → **24**, technologies passed on 375 →
+**481** — the time freed from the loop went into conversations that
+finish (1,433 → 1,769 on seed 1). Inside a band and on children, still 0.
+The matrix: 15 failures across 19 scenarios, from 17; all the single-run
+flippers already on record.
+
+## 2026-09-24 — M12 phase 1: peace within the band, and the notes of 2026-09-24
+
+The owner's notes (`notes2.txt`, now emptied; triage in `m12_plan.md` §0)
+and a spoken brief: the world started well — bands cooperating, even
+building the same things — and then collapsed into everyone fighting
+everyone, inside their own band and against their own children. "That is not
+how it was."
+
+**The diagnosis, measured.** A new `attack_route_*` telemetry (which of
+`Brain`'s routes won `foe`) and `npm run violence`, which splits every blow
+and theft by band, child and kin. On `century`: of 1,018 blows chosen, **534
+were aimed at a child and 277 at the attacker's own band**; the predation
+route chose none at all — every blow was revenge. The grudges were real, and
+came from two places. A band judged its own members for what they did to
+*strangers* exactly as it judged strangers for doing it to them: one boy of
+ten stood at −91 with a bandmate for nine sabotages of a *rival's* huts, and
+a small child at −75 for fourteen trespasses under a rival's roof. And a
+child's misdeed was answered as an adult's is, by the revenge route.
+
+**What changed** — `social/Restraint.ts`, new, holds all of it:
+
+- **Partial judgement** (`partiality`, read by `SocialSystem.absorb`). A
+  harm one of ours does to one of theirs weighs a quarter with us, and
+  nothing if we know the stranger had wronged our people (`hadItComing`, off
+  the observer's own memory — the owner's note 5). A child's misdeed weighs
+  0.15 with their own band, 0.5 with another. The victim always feels it in
+  full. Needs the wronged band on the deed, so `SocialEvent` and
+  `MemoryEntry` gained `victimBandId`, carried into retellings.
+- **Children are corrected, never struck.** No route in `Brain` aims a blow
+  at a child or lets a child start one; a foreign child caught at a store is
+  warned, not struck. An adult of the band who sees one of its children do
+  wrong (`noteMischief`) goes and **corrects** them — a new verb `correct`,
+  `ActionSystem.doCorrect` — which raises the child's `conscience` (new
+  `Person` field, kept for life) and stops what they were doing, with a
+  reason. Conscience brakes a child's predatory verbs against anybody, and an
+  adult's against their own people.
+- **The far tail, not the middle.** Robbing, menacing or nursing a blow
+  against one's own band now needs the trait past `IN_GROUP_TAIL` (0.9,
+  about one person in seventy-five of the `gaussian(0.5, 0.18)` the owner
+  described) or hunger past 0.8. First written as a linear ramp from 0.9 to
+  1, which multiplied down to nothing; `TAIL_RAMP` makes anybody clearly in
+  the tail genuinely willing. **Checked with a forced tail** (`npm run
+  violence -- --tail 10`): with a tenth of founders at 0.97 they do rob,
+  menace and strike their own. In an ordinary world a band holds 0-1 such
+  people and they need an unwatched moment, so the cohort reads zero.
+- **The bell curve is kept.** `inheritTraits` drifted children by 0.09
+  around their parents' mean, which halves the variance each generation and
+  settles the spread at 0.127 rather than 0.18: the tail would have gone
+  from 1 in 75 to under 1 in 1,000 within a few generations.
+  `INHERITED_DRIFT = TRAIT_SPREAD / √2` holds it.
+- **Self-defence always, and dread brakes a grudge** (note 4, and "fear
+  should brake the attacks"). Whoever hit this person in the last 30 ticks
+  is the enemy considered first and is treated as past the revenge gate; a
+  grudge against somebody one dreads is worth up to 70% less.
+- **They knew each other.** Founders start at familiarity 20 with every
+  member of their band (`FOUNDING_ACQUAINTANCE`): names known, small talk.
+  **Measured at 40 first** — every founder then chose the longest
+  conversation with every other, `talk` in `traps` went from 8,612 ticks to
+  19,750 and `tiny`'s band built nothing in eight days.
+- **Wariness of strangers is never zero** (`Fear.wariness`): a floor under
+  fear, for choosing company and for how far from camp one works — softened
+  by good standing between the peoples, doubled by open hostility. It is not
+  a baseline on `mood.security`, which drives striking trespassers.
+  `homeRange` is `RANGE_WIDE` (48) at rest, where it was unbounded.
+
+**Measured, `century`, twenty seeds, before → after:** mean survival 79.5% →
+**98.8%**, collapses 2 → 0; blows 5,892 → 1,793; murders 312 → 88; blows
+inside a band 1,421 → **0**; by an adult on a child 2,896 → **0**; thefts
+from a person inside a band 1,511 → 0; technologies passed on 320 → 375.
+Exile went from 3 in 3 seeds to 0 (see `bugs.md`).
+
+**New checks**, both failing on the build before: `peace-within-bands`
+(`century` there: 92 of 298 blows inside a band) and `children-are-not-struck`
+(145 of 298). A `VIOLENCE` line in `sim:seeds`.
+
+**The matrix** was 18 failures across 19 scenarios on the commit before and
+is 17 after; nine went green (`millers` five of them, `craft` four) and the
+new ones are the single-run flippers already on record plus two thin
+samples — see `bugs.md`.
+
+**The rest of the notes, fixed in the same pass:**
+
+- **Relationship 86 and only a greeting** (note 6). Conversation rungs read
+  familiarity alone, which fades; family could be down to a greeting.
+  `modeAllowed` now lets anybody sit a relative down for any conversation.
+  Deliberately not `chooseMode`: putting it there made every NPC pick the
+  longest rung with every relative (the same measurement as above).
+- **No ghost when picking a building** (note 2a). The ghost was only drawn
+  on the next pointer move over the map, and never on a touch screen. It is
+  now placed at once, where the pointer last was or mid-view.
+- **The radial menu in three families** (note 3): "Talk to…" (as before),
+  "Teach and learn…" (teach, ask, discuss) and "Confront…" (steal, threaten,
+  hold back, tie up, attack), each opening its own ring, folded however few
+  they hold (`FAMILY_AT`) so "attack" is always in the same place. The e2e
+  teaching spec now opens the family first; the talk spec picks a stranger
+  who is not kin, since kin may now always talk at length.
+- **The Ties list reached under the help line.** Founders knowing their whole
+  band made the list long enough that the fold of the dead sat under
+  `.hud-help` on a narrow window, where no click reached it (found by the
+  e2e spec for that fold). `.hud-panel` now stops 60px above the bottom.
+- **No penalty with the tribe for going after a stranger who wronged it**
+  (note 5): `hadItComing`, above.
+
 ## 2026-09-23 — M11 phase 17: the close of M11
 
 The debt the milestone owed without a phase, paid or written down.

@@ -2601,6 +2601,93 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ' incidents, ' + after.toFixed(1) + ' after');
   }
 
+  // The owner's note of 2026-09-24: a band fell on its own, and on its own
+  // children. Measured on `century` before `social/Restraint.ts`: 92 of 298
+  // blows landed inside the striker's own band and 145 on a child — both
+  // checks below fail there, and read 0 of 130 after.
+  //
+  // `peace-within-bands` allows a little: the far tail of temperament
+  // (`IN_GROUP_TAIL`, about one person in a hundred) and a starving man may
+  // still strike one of their own, and self-defence always may.
+  // `children-are-not-struck` allows nothing chosen, and a floor of 2% is
+  // there only for a child caught in a fight that was about somebody else.
+  const allBlows = (tel.event_assault ?? 0) + (tel.event_murder ?? 0);
+  const ownBlows = (tel.harm_own_band_assault ?? 0) + (tel.harm_own_band_murder ?? 0);
+  const childBlows = (tel.harm_child_assault ?? 0) + (tel.harm_child_murder ?? 0);
+  if (allBlows < 20) {
+    skip('peace-within-bands', 'only ' + allBlows + ' blows here; too few to say where they land');
+    skip('children-are-not-struck', 'only ' + allBlows + ' blows here; too few to say');
+  } else {
+    add('peace-within-bands', ownBlows / allBlows <= 0.1,
+      ownBlows + ' of ' + allBlows + ' blows landed inside the striker\'s own band (ceiling 10%)');
+    add('children-are-not-struck', childBlows / allBlows <= 0.02,
+      childBlows + ' of ' + allBlows + ' blows by an adult landed on a child (ceiling 2%); ' +
+      (tel.corrected ?? 0) + ' children corrected instead');
+  }
+
+  // M12 phase 2c, the owner's note 4: "some NPCs neither defend themselves
+  // nor run". Of blows that landed on an adult the same hand had already hit
+  // within `UNDER_ATTACK_TICKS` — time enough to answer — how many found them
+  // doing neither. **Measured on the build before**, three seeds each:
+  // `century` 44 of 54 and 23 of 26, `lean` 23 of 26, 32 of 37 and 71 of 97,
+  // `herders` 32 of 34 — people caught in a loop of choosing a warning or a
+  // word that `interruption` cut off on the next tick, or fleeing into the
+  // edge of the map, or in the middle of a lesson nothing could interrupt.
+  // After, the same twelve runs: 1 of 91 in all.
+  const repeatBlows = tel.blow_repeat ?? 0;
+  const unanswered = tel.blow_repeat_unanswered ?? 0;
+  if (repeatBlows < 10) {
+    skip('the-struck-respond', 'only ' + repeatBlows + ' second blows here; too few to say');
+  } else {
+    add('the-struck-respond', unanswered / repeatBlows <= 0.35,
+      unanswered + ' of ' + repeatBlows + ' second blows found the victim neither running nor ' +
+      'hitting back (ceiling 35%)');
+  }
+
+  // M12 phase 2b: wrongs reach the chief. Of debts run up (a theft, a menace
+  // or a blow done to somebody's face, phase 2a), how many the one wronged
+  // took to their chief. Low on purpose — most are paid, forgotten, or the
+  // chief never comes within sight — but never nothing: on the build before
+  // phase 2b there was no way to tell a chief anything, and this read 0.
+  // Measured after: `century` seeds 19/296, 5/115; `lean` 9/179, 22/263.
+  const debts = (tel.debt_incurred_theft ?? 0) + (tel.debt_incurred_threaten ?? 0) +
+    (tel.debt_incurred_assault ?? 0);
+  const heard = tel.complaint_heard ?? 0;
+  if (debts < 40) {
+    skip('wrongs-reach-the-chief', 'only ' + debts + ' debts run up; too few to say');
+  } else {
+    add('wrongs-reach-the-chief', heard / debts >= 0.02,
+      heard + ' complaints heard of ' + debts + ' debts run up (floor 2%); ' +
+      (tel.parley_held ?? 0) + ' put to another people, ' + (tel.amends_made ?? 0) + ' amends made');
+  }
+
+  // M12 phase 2d: a people corrects its children for wronging strangers as
+  // far as its own ways say it should. Of the bands whose regard for
+  // strangers lies furthest apart, the more regardful must mind a clearly
+  // larger share of what its children were seen doing to other peoples. On
+  // the build before, every band minded every wrong (100% against 100%) and
+  // this fails; it is n/a where the two bands are too alike to tell apart,
+  // or saw too little.
+  {
+    const cultures = sim.bands.filter(b => !b.outcast).map(b => ({
+      regard: b.strangerRegard,
+      seen: tel['mischief_abroad_seen_b' + b.id] ?? 0,
+      minded: tel['mischief_abroad_minded_b' + b.id] ?? 0,
+    })).filter(c => c.seen >= 15).sort((a, b) => a.regard - b.regard);
+    const low = cultures[0];
+    const high = cultures[cultures.length - 1];
+    if (!low || !high || low === high || high.regard - low.regard < 0.15) {
+      skip('upbringing-follows-culture',
+        'fewer than two peoples saw 15 wrongs by their children abroad, with regard for strangers 0.15 apart');
+    } else {
+      const share = (c: { seen: number; minded: number }) => c.minded / c.seen;
+      add('upbringing-follows-culture', share(high) - share(low) >= 0.1,
+        'the people with regard ' + high.regard.toFixed(2) + ' minded ' + high.minded + ' of ' + high.seen +
+        ' wrongs by its children against strangers; the one with ' + low.regard.toFixed(2) + ', ' +
+        low.minded + ' of ' + low.seen + ' (the first must be 10 points higher)');
+    }
+  }
+
   // M11 phase 15's gate (owner's notes 6 and 9). Each was run against the
   // build before phase 15 and fails there; see the changelog for the numbers.
   //

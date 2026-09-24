@@ -3,6 +3,8 @@
 Rewritten 2026-09-08, reordered 2026-09-10, brought up to date 2026-09-12 on
 the close of M9, and **2026-09-23 on the close of M11** — the "Where things
 actually stand" section below was rewritten then, not amended.
+**2026-09-24: the owner's notes moved the world map to M13**; M12 is now
+the tribe before the map, [m12_plan.md](m12_plan.md). See §7h.
 Ordered, with the reason for the order.
 
 **2026-09-10: the owner moved the social and interface pass ahead of the
@@ -918,6 +920,25 @@ thatch, which is what binding a captive needs; and this pass is the plan only �
 nothing is fixed yet, not even the two cheap defects of phase 12. The full plan
 for phases 12-17, which also gathers every item M11 still owed without a phase,
 is [m11_block_v_plan.md](m11_block_v_plan.md).
+
+## 7h. The owner's notes of 2026-09-24, and M12
+
+Ten notes in `docs/notes2.txt`, plus a spoken brief whose main point was
+that the world collapsed into everyone fighting everyone, inside their own
+band and against their own children. All ten have a destination and the file
+has been emptied. **The world map moves to M13**; M12 is the tribe before the
+map, planned in [m12_plan.md](m12_plan.md), whose §0 is the full triage
+table.
+
+**Phase 1 of M12 shipped with the triage** (see `changelog.md`): peace within
+the band, children corrected rather than beaten, the bell curve kept across
+generations, founders who know each other, a wariness of strangers that is
+never zero, the radial menu in three families, the build ghost shown at
+once, and family always able to talk at length. Left for later phases: the
+depot transfer window, cancelling a build, why somebody likes you (phase 3);
+children as captives and captives tied up (phase 4); compensation and the
+chief as judge (phase 2); land, permission and raids for what is missing
+(phase 5); inherited feuds (phase 6); stratification (phase 7).
 
 ## 8. Wildlife, second pass
 

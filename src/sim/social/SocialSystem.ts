@@ -19,8 +19,8 @@
 import { SKILLS, type Person } from '../entities/Person.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { RelationshipGraph } from './Relationships.ts';
-import type { EventType, Norms, SocialEvent } from './Events.ts';
-import { DEED_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
+import type { DeedFacts, EventType, Norms, SocialEvent } from './Events.ts';
+import { DEED_WEIGHT, HEARSAY_WEIGHT, VICTIM_MULTIPLIER, describeEvent } from './Events.ts';
 import type { MemoryEntry } from './Memory.ts';
 import type { ConversationMode } from './Conversation.ts';
 import { CONVERSATION_MODES, crossBand } from './Conversation.ts';
@@ -31,6 +31,7 @@ import { noteCaught } from './Defence.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { t } from '../../i18n/i18n.ts';
 import { frighten, opennessOf } from './Fear.ts';
+import { noteMischief, partiality, STRANGER_REGARD_MEAN, type Culture } from './Restraint.ts';
 
 export interface LifeEvent {
   tick: number;
@@ -168,9 +169,6 @@ const ALONGSIDE_RELIEF = 0.03;
 /** Confidence lost each time a story is passed on. */
 const RUMOR_DECAY = 0.75;
 
-/** Opinion weight of a story you were merely told, relative to seeing it. */
-const HEARSAY_WEIGHT = 0.45;
-
 /**
  * How much a listener's own opinion of the subject of a `slander` or `praise`
  * spills onto their opinion of whoever did the telling.
@@ -260,11 +258,27 @@ export class SocialSystem {
   constructor(
     private readonly relationships: RelationshipGraph,
     private readonly normsByBand: Map<number, Norms>,
-    private readonly bandRelations: BandRelations
+    private readonly bandRelations: BandRelations,
+    /**
+     * Each band's regard for strangers, M12 phase 2d — see
+     * `Restraint.STRANGER_REGARD_MEAN`. Handed in by reference, like
+     * `normsByBand`, and filled once the bands exist; a band missing from it
+     * reads as the middle of the curve, which is what every band was before.
+     */
+    private readonly strangerRegardByBand: Map<number, number> = new Map()
   ) {}
 
   private normsFor(person: Person): Norms | null {
     return this.normsByBand.get(person.bandId) ?? null;
+  }
+
+  private regardFor(person: Person): number {
+    return this.strangerRegardByBand.get(person.bandId) ?? STRANGER_REGARD_MEAN;
+  }
+
+  /** What `noteMischief` weighs a child's wrong by, for a witness of this band. */
+  private cultureOf(person: Person): Culture {
+    return { norms: this.normsByBand.get(person.bandId), strangerRegard: this.regardFor(person) };
   }
 
   /**
@@ -319,9 +333,17 @@ export class SocialSystem {
       tick,
       magnitude: Math.max(0, Math.min(1, magnitude)),
       witnesses: 0,
+      victimBandId: target?.bandId ?? ownerBandId ?? null,
     };
 
     telemetry.count('event_' + type);
+    // Where a harm lands, for `sim:seeds`' VIOLENCE line and the checks that
+    // guard the owner's note of 2026-09-24: a band that beat its own children
+    // was invisible to every counter that only split deeds *between* peoples.
+    if (target && DEED_WEIGHT[type] < 0) {
+      if (target.bandId === actor.bandId) telemetry.count('harm_own_band_' + type);
+      if (target.isChild && !actor.isChild) telemetry.count('harm_child_' + type);
+    }
 
     const description = describeEvent(type, actor.name, target?.name ?? null);
     const deed = { type, actorId: actor.id, targetId: target?.id ?? null };
@@ -340,6 +362,9 @@ export class SocialSystem {
     if (type === 'murder' && target && actor.spouseId === target.id) actor.spouseId = null;
     // M11 phase 15b: the victim of a theft saw who did it, whoever else did.
     if (target && notifyTarget) noteCaught(target, actor, type, tick);
+    if (target && notifyTarget) {
+      noteMischief(target, actor, type, tick, this.cultureOf(target), event.victimBandId);
+    }
 
     let witnesses = 0;
     let ownerSaw = false;
@@ -365,6 +390,7 @@ export class SocialSystem {
         (target !== null && target.bandId === bystander.bandId)) {
         noteCaught(bystander, actor, type, tick);
       }
+      noteMischief(bystander, actor, type, tick, this.cultureOf(bystander), event.victimBandId);
     }
     if (witnesses > 0) telemetry.count('witnessed', witnesses);
     else telemetry.count('unwitnessed');
@@ -421,6 +447,7 @@ export class SocialSystem {
       tick,
       magnitude: 1,
       witnesses: 0,
+      victimBandId: dead.bandId,
     };
     this.absorb(accuser, event, suspect, false, confidence, null, dead.bandId);
     if (suspect.bandId !== dead.bandId) {
@@ -445,6 +472,7 @@ export class SocialSystem {
       x, y, tick,
       magnitude: 1,
       witnesses: 0,
+      victimBandId: null,
     };
     this.absorb(finder, event, dead, true, 1, null, null);
     telemetry.count('body_found');
@@ -481,19 +509,8 @@ export class SocialSystem {
     // already known, told again, is not a second reason to be afraid.
     frighten(observer, event, actor, firsthand, confidence, targetBandId, this.relationships);
 
-    const norms = this.normsFor(observer);
-    const tolerance = norms ? norms[event.type] : 1;
-    const victimFactor = event.targetId === observer.id ? VICTIM_MULTIPLIER : 1;
     const hearsayFactor = firsthand ? 1 : HEARSAY_WEIGHT;
-
-    const delta =
-      DEED_WEIGHT[event.type] *
-      tolerance *
-      (0.5 + event.magnitude * 0.5) *
-      victimFactor *
-      hearsayFactor *
-      confidence;
-
+    const delta = this.deedDelta(observer, actor, event, firsthand, confidence);
     this.relationships.addDeed(observer.id, actor.id, delta, event.tick);
 
     // The backlash: gossip is judged twice, once for the act of gossiping
@@ -506,6 +523,38 @@ export class SocialSystem {
       const backlash = towardSubject * sign * GOSSIP_BACKLASH * hearsayFactor * confidence;
       if (backlash !== 0) this.relationships.addDeed(observer.id, actor.id, backlash, event.tick);
     }
+  }
+
+  /**
+   * How far one deed moves `observer`'s opinion of `actor`, the moment it is
+   * learned.
+   *
+   * Lifted out of `absorb` for M12 phase 3c: the person panel names the
+   * remembered deeds an opinion rests on, and ranks them by this. Weighing
+   * them with a second formula would be exactly the drift `tieParts` exists
+   * to prevent — the panel naming a theft as the reason somebody hates you
+   * when the theft, judged by their people's own norms, barely moved them.
+   * Read afterwards it is the weight *today*, not then: `partiality` asks
+   * whether the victim "had it coming" of what the observer knows now.
+   */
+  deedDelta(
+    observer: Person, actor: Person, deed: DeedFacts, firsthand: boolean, confidence: number
+  ): number {
+    const norms = this.normsFor(observer);
+    const tolerance = norms ? norms[deed.type] : 1;
+    const victimFactor = deed.targetId === observer.id ? VICTIM_MULTIPLIER : 1;
+    const hearsayFactor = firsthand ? 1 : HEARSAY_WEIGHT;
+    return (
+      DEED_WEIGHT[deed.type] *
+      // The owner's note of 2026-09-24: a band judges its own, and its
+      // children, by what they did and to whom. See `Restraint.ts`.
+      partiality(observer, actor, deed, this.regardFor(observer)) *
+      tolerance *
+      (0.5 + deed.magnitude * 0.5) *
+      victimFactor *
+      hearsayFactor *
+      confidence
+    );
   }
 
   /**
@@ -799,6 +848,7 @@ export class SocialSystem {
       // the original deed. Leaving it 0 keeps the "no witnesses" statement
       // true for a story told after the fact.
       witnesses: 0,
+      victimBandId: story.victimBandId,
     };
 
     const before = listener.memory.size;

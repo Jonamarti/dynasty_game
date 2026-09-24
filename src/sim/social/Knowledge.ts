@@ -21,7 +21,8 @@ import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { Building } from '../entities/Building.ts';
 import type { Tree } from '../entities/Tree.ts';
-import type { RelationshipGraph } from './Relationships.ts';
+import { DECAY_PER_DAY, FAMILIARITY_WEIGHT, type RelationshipGraph } from './Relationships.ts';
+import type { MemoryEntry } from './Memory.ts';
 import type { PropertyUse } from './Property.ts';
 import type { LifeEvent } from './SocialSystem.ts';
 import { describeEvent } from './Events.ts';
@@ -96,6 +97,119 @@ export function regardFromThem(
     opinion > -40 ? t('They seem to dislike you.') :
     t('They seem to hate you.');
   return { words, opinion: level === 'close' ? opinion : null };
+}
+
+/** One reason behind an opinion, for the person panel. */
+export interface RegardReason {
+  text: string;
+  tone: OpinionTone;
+}
+
+/** What `regardReasons` needs from the world beyond the two people. */
+export interface RegardContext {
+  relationships: RelationshipGraph;
+  /** How `observer` names somebody — `knowledgeOfPerson`'s display name. */
+  nameOf: (id: number) => string;
+  /**
+   * How far a remembered deed moved `holder`'s opinion of its actor when
+   * they learned it: `SocialSystem.deedDelta`, so the panel ranks deeds by
+   * the very number that moved the opinion.
+   */
+  weigh: (holder: Person, actor: Person, entry: MemoryEntry) => number;
+  tick: number;
+  ticksPerDay: number;
+}
+
+/** Reasons shown under one opinion: enough to explain it, few enough to read. */
+const REASONS_SHOWN = 4;
+
+/** Below this many points of opinion a reason is not worth a line. */
+const REASON_FLOOR = 1;
+
+/**
+ * Why `holder` feels as they do about `about`, as `observer` can tell it —
+ * M12 phase 3c, the owner's note 7 ("show *why* the relationship is good or
+ * bad"). `observer` is always one of the two: it is either your own opinion
+ * of somebody (`holder` is you, and everything in it is yours to read) or
+ * theirs of you.
+ *
+ * Their opinion of you is their private state, and the owner's rule is that
+ * nobody learns anything but by seeing it or being told. So of their
+ * reasons this names only what you could know without being told: whether
+ * you are kin or of one people, the time you have spent together, and what
+ * you did *to them* — you were there. What they saw you do to somebody else,
+ * or heard of you, is real and moves their opinion, but you cannot know
+ * which of your deeds reached them; it is summed into one line that says
+ * there is something, and not what.
+ *
+ * Deeds are weighed with `ctx.weigh` and aged at the rate `deeds` decays,
+ * so the ranking follows what the opinion is actually made of today. The
+ * deeds component also carries a few nudges that no memory records (an
+ * order refused, a complaint the chief would not hear); those go unnamed
+ * rather than being guessed at.
+ */
+export function regardReasons(
+  observer: Person,
+  holder: Person,
+  about: Person,
+  ctx: RegardContext
+): RegardReason[] {
+  const rel = ctx.relationships.peek(holder.id, about.id);
+  if (!rel) return [];
+  const ownView = holder.id === observer.id;
+  const found: { text: string; weight: number }[] = [];
+
+  if (rel.kinship !== 0) {
+    const text =
+      holder.spouseId === about.id ? t('married') :
+      holder.motherId === about.id || holder.fatherId === about.id ||
+        holder.childIds.includes(about.id) ? t('parent and child') :
+      t('family');
+    found.push({ text, weight: rel.kinship });
+  }
+  if (rel.bias !== 0) {
+    const text =
+      holder.householdId !== null && holder.householdId === about.householdId
+        ? t('one household') :
+      rel.bias > 0 ? t('one people') : t('from another people');
+    found.push({ text, weight: rel.bias });
+  }
+  if (rel.familiarity * FAMILIARITY_WEIGHT >= REASON_FLOOR) {
+    found.push({ text: t('time spent together'), weight: rel.familiarity * FAMILIARITY_WEIGHT });
+  }
+  if (rel.romance >= REASON_FLOOR) found.push({ text: t('drawn to each other'), weight: rel.romance });
+
+  let unplaced = 0;
+  for (const entry of holder.memory.about(about.id)) {
+    if (entry.actorId !== about.id) continue;
+    const days = Math.max(0, (ctx.tick - entry.tick) / ctx.ticksPerDay);
+    const weight = ctx.weigh(holder, about, entry) * Math.pow(DECAY_PER_DAY.deeds, days);
+    if (!ownView && entry.targetId !== holder.id) {
+      unplaced += weight;
+      continue;
+    }
+    const deed = describeEvent(
+      entry.type, ctx.nameOf(entry.actorId),
+      entry.targetId === null ? null : ctx.nameOf(entry.targetId));
+    found.push({
+      text: entry.firsthand ? deed : deed + ' ' + t('(you heard)'),
+      weight,
+    });
+  }
+  if (Math.abs(unplaced) >= REASON_FLOOR) {
+    found.push({
+      text: unplaced > 0
+        ? t('good things they have seen or heard of you')
+        : t('things they have seen or heard of you'),
+      weight: unplaced,
+    });
+  }
+
+  return found
+    .filter(reason => Math.abs(reason.weight) >= REASON_FLOOR)
+    .sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight))
+    .slice(0, REASONS_SHOWN)
+    .map(reason => ({ text: reason.text, tone: reason.weight > 0 ? 'pos' : 'neg' }));
 }
 
 /**

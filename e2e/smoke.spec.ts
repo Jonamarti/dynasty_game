@@ -1194,7 +1194,12 @@ test('teaching appears in the menu only when you have something to teach', async
   // radial opens once the person has been chosen. `pick` is a bandmate whose
   // name the player knows, so match on that rather than on a veiled label.
   await clickAndChoose(page, other!.x, other!.y, new RegExp(other!.name), 'right');
-  const teach = page.locator('.radial-item', { hasText: 'Teach' }).first();
+  // Since 2026-09-24 teaching lives in its own ring with asking and
+  // discussing, one click in from the person's.
+  const family = page.locator('.radial-item', { hasText: 'Teach and learn' }).first();
+  await expect(family).toBeVisible({ timeout: 10_000 });
+  await family.click();
+  const teach = page.locator('.radial-item', { hasText: /^.*Teach (?!and)/ }).first();
   await expect(teach).toBeVisible({ timeout: 10_000 });
   await expect(teach).not.toHaveClass(/is-disabled/);
 
@@ -1218,7 +1223,7 @@ test('the talk menu nests, and offers a stranger only a greeting', async ({ page
         player: { id: number } | null;
         livingPeople: () => { id: number; x: number; y: number; name: string }[];
         relationships: {
-          edge: (a: number, b: number) => { familiarity: number; lastContact: number };
+          edge: (a: number, b: number) => { familiarity: number; lastContact: number; kinship: number };
         };
       };
       camera: {
@@ -1234,7 +1239,10 @@ test('the talk menu nests, and offers a stranger only a greeting', async ({ page
   const chosen = await page.evaluate(() => {
     const d = (window as never as Debug).__dynasty;
     const me = d.sim.player;
-    const pick = d.sim.livingPeople().find(p => p.id !== me?.id);
+    // Not family: since 2026-09-24 a relative may always be sat down for any
+    // conversation, and the first person in the list is usually the spouse.
+    const pick = d.sim.livingPeople().find(p => p.id !== me?.id &&
+      me !== null && d.sim.relationships.edge(me.id, p.id).kinship === 0);
     if (!me || !pick) return null;
     d.sim.relationships.edge(me.id, pick.id).familiarity = 0;
     d.sim.relationships.edge(pick.id, me.id).familiarity = 0;
@@ -1425,6 +1433,16 @@ test('character creation picks a life inside a world that already exists', async
   await expect(tribes).toHaveCount(5, { timeout: 15_000 });
   await expect(page.locator('.newgame-title')).toHaveText('An island, and five peoples on it');
   await expect(tribeCount).toHaveValue('5');
+
+  // M12: and how big the island is, beside them. A new size is a new island
+  // too, and the tribes on it are kept.
+  const islandSize = page.locator('.newgame-population .settings-number').nth(2);
+  await islandSize.fill('192');
+  await islandSize.dispatchEvent('change');
+  await expect.poll(() => page.evaluate(() =>
+    (window as never as { __dynasty: { sim: { world: { width: number; height: number } } } })
+      .__dynasty.sim.world.width), { timeout: 15_000 }).toBe(192);
+  await expect(tribes).toHaveCount(5, { timeout: 15_000 });
   await tribes.first().click();
 
   // A shortlist of that tribe's adults, and a reshuffle that shows a different

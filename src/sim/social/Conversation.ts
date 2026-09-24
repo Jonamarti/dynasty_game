@@ -216,6 +216,18 @@ export function crossBand(warmth: number, sameBand: boolean, standing = 0, openn
 export function modeAllowed(
   rel: Relationship | null, tick: number, mode: ConversationMode
 ): boolean {
+  // Family may always be sat down for any conversation, however long it has
+  // been — the rule `Knowledge.knowledgeOfPerson` already keeps for what the
+  // player is shown. Without it, the owner found a relationship of 86 that
+  // offered nothing but a greeting (notes of 2026-09-24): kinship carried the
+  // opinion, and familiarity, which fades unless it is kept up, had faded.
+  //
+  // Here and not in `chooseMode`, on purpose. **Measured**: putting it there
+  // made every NPC pick the longest rung with every relative, `talk` more than
+  // doubled in `traps` (8,612 ticks to 19,750), and `tiny`'s band built
+  // nothing at all in eight days. What a person *may* say to their brother is
+  // one question; what they choose to, left alone, is another.
+  if (rel !== null && rel.kinship !== 0) return true;
   return MODE_LADDER.indexOf(mode) <= MODE_LADDER.indexOf(chooseMode(rel, tick));
 }
 

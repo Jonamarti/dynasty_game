@@ -50,7 +50,7 @@ import { mayUse, type PropertyUse } from '../social/Property.ts';
 import {
   caughtOffender, usingPropertyOf, isHeld, isBound, noteCall, INTERVENABLE,
   RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, HOLD_FOR_ROPE, CALL_TICKS, BIND_TICKS, BOUND_TICKS,
-  PATROL_LINGER, GUARD_REASSURES,
+  PATROL_LINGER, GUARD_REASSURES, assailantOf, UNDER_ATTACK_TICKS,
 } from '../social/Defence.ts';
 import { giftWorth } from '../social/Events.ts';
 import { knowledgeOfPerson } from '../social/Knowledge.ts';
@@ -60,6 +60,12 @@ import {
 import { DISMEMBER_WORK, type Corpse } from '../entities/Corpse.ts';
 import { isCaptive, captorWatching, HOME_REACHED } from '../social/Captivity.ts';
 import { fightingPower } from '../social/Vulnerability.ts';
+import { CORRECT_TICKS, CORRECTION_STEP, hadItComing } from '../social/Restraint.ts';
+import {
+  incur, debtTo, settleDebt, offerFor, acceptance, OFFER_AT_LEAST, THREAT_WORTH, ASSAULT_WORTH,
+  AMENDS_TICKS, type Grievance,
+} from '../social/Amends.ts';
+import { COMPLAIN_TICKS, PARLEY_TICKS, type Case } from '../social/Justice.ts';
 import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 
@@ -130,6 +136,20 @@ export interface ActionContext {
    * refused you and does not say is worse than one that does not know.
    */
   onStopped: (person: Person, action: string, reason: string) => void;
+  /** Who leads each band — `BandSystem.chiefByBand`. For `complain`, M12 phase 2b. */
+  chiefByBand: ReadonlyMap<number, number>;
+  /**
+   * `teller` has put `told` to `chief` — a grievance of their own, or a
+   * demand carried from another people. The simulation judges it and says
+   * what came of it, as a stop reason the teller is shown. M12 phase 2b.
+   */
+  onComplaint: (teller: Person, chief: Person, told: Case) => string;
+  /**
+   * A chief has put a case to somebody of the accused's people. The
+   * simulation hands it on — answered on the spot if that was their chief,
+   * carried home if not — and says which. M12 phase 2b.
+   */
+  onParley: (chief: Person, envoy: Person, told: Case) => string;
   /**
    * Announces a breakthrough, a prototype built, or a design improved.
    *
@@ -468,6 +488,16 @@ const THREATEN_TICKS = 18;
 /** A warning is said and done quicker than a demand is argued out. */
 const WARN_TICKS = 8;
 
+/**
+ * What somebody being attacked may go on doing: running, fighting, and the
+ * two states with their own way of noticing a blow — sleep (`wakeReason`)
+ * and a captive's escape (`interruption`). See `execute`.
+ */
+const ANSWERS_A_BLOW: ReadonlySet<string> = new Set(['flee', 'attack', 'sleep', 'escape']);
+
+/** What a child is told to stop when corrected in the middle of it. */
+const MISCHIEF_ACTIONS: ReadonlySet<string> = new Set(['steal', 'sabotage', 'threaten', 'attack']);
+
 /** Ticks to tell somebody what you think of a third party. As short as `give`: a
  * remark, not a negotiation. */
 const GOSSIP_TICKS = 14;
@@ -571,6 +601,22 @@ export class ActionSystem {
   execute(person: Person, ctx: ActionContext): void {
     if (!person.alive) return;
 
+    // M12 phase 2c, the owner's note 4. Somebody committed to something — a
+    // timer running, or an order — does not re-plan, so this is the only way a
+    // blow can reach them, and eight timed verbs (`teach`, `ask`, `discuss`,
+    // `court`, `spar`, `give`, `trade`, `steal`) had no interruption check at
+    // all. Measured on `century`: a man beaten five times in the middle of a
+    // lesson, from 89 health to 46, and never once looked up. One check here
+    // rather than eight copies, for the reason `interruption` itself is one
+    // function: they would drift. Only the blow — each verb's own need
+    // thresholds are a larger question about how long a lesson may run
+    // thirsty, and are left to a pass that can measure it (`bugs.md`).
+    if ((person.actionTimer > 0 || person.order !== null) &&
+      !ANSWERS_A_BLOW.has(person.action) && this.underAttack(person, ctx)) {
+      this.stop(person, 'under_attack', ctx, 'set_upon_');
+      return;
+    }
+
     switch (person.action) {
       case 'drink': this.doDrink(person, ctx); break;
       case 'eat': this.doEat(person, ctx); break;
@@ -606,6 +652,10 @@ export class ActionSystem {
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
       case 'warn': this.doWarn(person, ctx); break;
+      case 'correct': this.doCorrect(person, ctx); break;
+      case 'make_amends': this.doMakeAmends(person, ctx); break;
+      case 'complain': this.doComplain(person, ctx); break;
+      case 'parley': this.doParley(person, ctx); break;
       case 'restrain': this.doRestrain(person, ctx); break;
       case 'bind': this.doBind(person, ctx); break;
       case 'escape': this.doEscape(person, ctx); break;
@@ -848,7 +898,10 @@ export class ActionSystem {
     // woodcutter used to abort on the very first swing. Sleeping had the same
     // problem, and answers it by not using this function at all.
     if (!opts.ignoreLaden && person.isLaden) return 'hands_full';
-    if (person.lastHarmedTick > ctx.tick - 40) return 'under_attack';
+    // M12 phase 2c: being attacked *now*, not having been hit at some point in
+    // the last forty ticks — see `Defence.assailantOf` for the loop the old
+    // reading made with `Brain`.
+    if (this.underAttack(person, ctx)) return 'under_attack';
 
     // The thresholds here are the whole difficulty of letting work continue.
     //
@@ -904,6 +957,11 @@ export class ActionSystem {
     // leave somebody locked in a job forever.
     if (person.workedTicks > MAX_WORK_STRETCH) return 'long_enough';
     return null;
+  }
+
+  /** Whether somebody is being set upon right now. One reading; see `Defence.assailantOf`. */
+  private underAttack(person: Person, ctx: ActionContext): boolean {
+    return assailantOf(person, id => ctx.peopleById.get(id), ctx.tick) !== null;
   }
 
   private doHarvest(person: Person, ctx: ActionContext): void {
@@ -2354,7 +2412,7 @@ export class ActionSystem {
    * need you would not even have broken off work for is not rest.
    */
   private wakeReason(person: Person, ctx: ActionContext): string | null {
-    if (person.lastHarmedTick > ctx.tick - 40) return 'under_attack';
+    if (this.underAttack(person, ctx)) return 'under_attack';
     if (person.needs.thirst > 45) return 'thirsty';
     if (person.needs.hunger > 50) return 'hungry';
     // Cold is deliberately absent. The roof overhead is the thing that fixes
@@ -3496,6 +3554,7 @@ export class ActionSystem {
       Math.min(1, worth / 12),
       ctx.tick, ctx.peopleHash, ctx.sightRadius
     );
+    this.owe(person, other, 'theft', worth, ctx, { itemId: bestId, count: taken });
     telemetry.count('theft_succeeded');
     this.finishSocial(person, ctx.tick);
   }
@@ -3572,6 +3631,208 @@ export class ActionSystem {
     this.finish(person);
   }
 
+
+  /**
+   * A wrong done to somebody's face leaves a debt — M12 phase 2a, see
+   * `social/Amends.ts`. Not for answering one: whoever struck back at their
+   * assailant, beat the thief caught at their store, or robbed somebody who
+   * had robbed their people owes nothing for it — `Restraint.hadItComing`,
+   * off the doer's own memory, the same judgement phase 1 gave their people.
+   */
+  private owe(
+    person: Person, other: Person, kind: 'theft' | 'threaten' | 'assault', worth: number,
+    ctx: ActionContext, goods?: { itemId: string; count: number }
+  ): void {
+    if (hadItComing(person, other.id)) return;
+    incur(person, other, kind, worth, ctx.tick, goods);
+    telemetry.count('debt_incurred_' + kind);
+  }
+
+  /**
+   * Paying for a wrong — M12 phase 2a. Walk up, set the goods down, say it;
+   * the one owed takes them or does not.
+   *
+   * What is offered is `Amends.offerFor`: what was taken first, then the best
+   * of what is carried, up to what is owed. Whether it is taken is one roll on
+   * `Amends.acceptance` — the offer's adequacy and the temperament of whoever
+   * was wronged. Taken, the goods change hands, the debt is gone, and the
+   * payment is a deed (`amends`) that the one paid feels as a victim feels,
+   * that whoever stands by sees, that the payer's household is known for, and
+   * that between two peoples mends what the wrong cost them — all by `emit`'s
+   * ordinary machinery. Refused, nothing moves but the offer's cooldown, and
+   * the payer is told why.
+   */
+  private doMakeAmends(person: Person, ctx: ActionContext): void {
+    const owed = this.approach(person, ctx);
+    if (!owed) return;
+    const debt = debtTo(person, owed.id);
+    if (!debt) {
+      this.abandon(person, 'owe_them_nothing', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = AMENDS_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'amends_');
+      return;
+    }
+
+    const offer = offerFor(person, debt);
+    if (offer.value <= 0 || offer.value < debt.worth * OFFER_AT_LEAST) {
+      this.abandon(person, 'amends_too_little', ctx);
+      return;
+    }
+    const dread = ctx.relationships.dread(owed.id, person.id) / 100;
+    if (!ctx.rng.chance(acceptance(owed, person, offer.value, debt.worth, dread))) {
+      debt.refusedTick = ctx.tick;
+      telemetry.count('amends_refused');
+      this.abandon(person, 'amends_refused', ctx);
+      return;
+    }
+
+    for (const [itemId, count] of offer.items) {
+      const handed = person.inventory.remove(itemId, count);
+      if (handed > 0) owed.inventory.add(itemId, handed);
+    }
+    settleDebt(person, owed);
+    ctx.social.emit('amends', person, owed, Math.min(1, offer.value / Math.max(1, debt.worth)),
+      ctx.tick, ctx.peopleHash, ctx.sightRadius);
+    telemetry.count('amends_made');
+    if (owed.bandId !== person.bandId) telemetry.count('amends_made_abroad');
+    this.finishSocial(person, ctx.tick);
+  }
+
+  /**
+   * Taking something to the chief — M12 phase 2b. Either a wrong done to this
+   * person that nobody has put right, or a demand another people's chief put
+   * to them to carry home; the demand first, since it is not theirs to sit on.
+   * Walk up, say it, and hear what the chief makes of it — the verdict is
+   * `Simulation.hearComplaint`'s, and comes back as the reason this ended.
+   */
+  private doComplain(person: Person, ctx: ActionContext): void {
+    const chief = this.approach(person, ctx);
+    if (!chief) return;
+    if (ctx.chiefByBand.get(person.bandId) !== chief.id) {
+      this.abandon(person, 'not_the_chief', ctx);
+      return;
+    }
+    const told = person.carriedDemand ?? caseOf(person, worstGrievance(person));
+    if (!told) {
+      this.abandon(person, 'nothing_to_complain_of', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = COMPLAIN_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'complaint_');
+      return;
+    }
+
+    if (person.carriedDemand) {
+      person.carriedDemand = null;
+    } else {
+      const grievance = person.grievances.find(g => g.againstId === told.accusedId);
+      if (grievance) grievance.lodged = true;
+    }
+    const outcome = ctx.onComplaint(person, chief, told);
+    telemetry.count('complaint_heard');
+    this.stop(person, outcome, ctx, 'complaint_');
+  }
+
+  /**
+   * A chief putting a wrong done to their people to somebody of the people
+   * who did it — M12 phase 2b. Whoever of them is at hand: their chief if
+   * possible, and anybody else to carry it home if not.
+   */
+  private doParley(person: Person, ctx: ActionContext): void {
+    const envoy = this.approach(person, ctx);
+    if (!envoy) return;
+    const index = person.docket.findIndex(c => c.accusedBandId === envoy.bandId);
+    if (index < 0) {
+      this.abandon(person, 'no_case_against_them', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = PARLEY_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'parley_');
+      return;
+    }
+
+    const [told] = person.docket.splice(index, 1);
+    const outcome = ctx.onParley(person, envoy, told!);
+    telemetry.count('parley_held');
+    this.stop(person, outcome, ctx, 'parley_');
+  }
+
+  /**
+   * Correcting a child of the band, the owner's note of 2026-09-24: "the
+   * members of the tribe correct them, and the child does not do it again."
+   *
+   * Walk up, a few words, done. The child's `conscience` rises by
+   * `CORRECTION_STEP` — kept for life, and what `Restraint.conscienceBrake`
+   * reads — and whatever they were doing wrong stops, with a reason the
+   * player is told if the child is theirs. No deed is emitted: nobody was
+   * wronged, and a telling-off that soured anybody's opinion of anybody would
+   * be the very spiral this exists to end.
+   */
+  private doCorrect(person: Person, ctx: ActionContext): void {
+    const child = this.approach(person, ctx);
+    if (!child) return;
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = CORRECT_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'correct_');
+      return;
+    }
+
+    // M12 phase 2d: which conscience the telling-off teaches is which people
+    // the wrong was done to. One learned about strangers carries half over to
+    // one's own people — somebody told not to rob a stranger has been told
+    // something about robbing a neighbour too — and not the other way.
+    if (person.mischiefAbroad) {
+      child.conscienceAbroad = Math.min(1, child.conscienceAbroad + CORRECTION_STEP);
+      child.conscience = Math.min(1, child.conscience + CORRECTION_STEP / 2);
+      telemetry.count('corrected_abroad');
+    } else {
+      child.conscience = Math.min(1, child.conscience + CORRECTION_STEP);
+    }
+    if (person.mischiefId === child.id) person.mischiefId = null;
+    const who = { actor: person.name, target: child.name };
+    person.chronicle.push({
+      tick: ctx.tick, ageDays: person.age, kind: 'did',
+      text: t('{actor} corrected {target}', who),
+    });
+    child.chronicle.push({
+      tick: ctx.tick, ageDays: child.age, kind: 'suffered',
+      text: t('{actor} corrected {target}', who),
+    });
+    telemetry.count('corrected');
+    if (child.propertyUseNoted !== null || MISCHIEF_ACTIONS.has(child.action)) {
+      this.abandon(child, 'corrected', ctx);
+    }
+    this.finish(person);
+  }
 
   /**
    * Holding somebody back, M11 phase 15b (owner's note 9).
@@ -4079,6 +4340,8 @@ export class ActionSystem {
     const compliance = menaceOver(person, other, ctx.tick);
     if (!ctx.rng.chance(compliance.chance)) {
       telemetry.count('threaten_refused');
+      // The menace was made whether or not it worked: owed, as an insult.
+      this.owe(person, other, 'threaten', THREAT_WORTH, ctx);
       this.stop(person, 'refused_demand', ctx, 'threatened_');
       return;
     }
@@ -4089,6 +4352,8 @@ export class ActionSystem {
       return;
     }
     person.inventory.add(itemId, taken);
+    this.owe(person, other, 'threaten',
+      THREAT_WORTH + (ITEMS[itemId]?.baseValue ?? 1) * taken, ctx, { itemId, count: taken });
     telemetry.count('threaten_succeeded');
     this.finishSocial(person, ctx.tick);
   }
@@ -4212,6 +4477,18 @@ export class ActionSystem {
       (1 - armourOf(other));
 
     other.health -= damage;
+    // M12 phase 2c, for `the-struck-respond`: a second blow from the same hand
+    // landing on an adult who had time since the first to run or hit back,
+    // and is doing neither. Somebody held, bound or kept cannot, and is not
+    // counted; nor is the first blow, which nobody sees coming.
+    if (!other.isChild && other.lastHarmedBy === person.id &&
+      ctx.tick - other.lastHarmedTick <= UNDER_ATTACK_TICKS &&
+      !isHeld(other, ctx.tick) && other.captiveOf === null) {
+      telemetry.count('blow_repeat');
+      const answering = other.action === 'flee' ||
+        (other.action === 'attack' && other.targetPersonId === person.id);
+      if (!answering) telemetry.count('blow_repeat_unanswered');
+    }
     other.lastHarmedBy = person.id;
     other.lastHarmedTick = ctx.tick;
     person.practice('fight', 1.2);
@@ -4238,6 +4515,7 @@ export class ActionSystem {
       Math.min(1, damage / 40),
       ctx.tick, ctx.peopleHash, ctx.sightRadius
     );
+    this.owe(person, other, 'assault', ASSAULT_WORTH * (0.5 + Math.min(1, damage / 40) * 0.5), ctx);
 
     // Keep swinging. A fight is a sequence of blows; ending the action after
     // one meant an ordered attack stopped by itself after a couple of seconds
@@ -4247,4 +4525,30 @@ export class ActionSystem {
     if (person.order === 'attack') person.actionTimer = 0;
     else this.finish(person);
   }
+}
+
+/**
+ * The grievance somebody most wants put right, M12 phase 2b: not yet taken to
+ * the chief, the worst kind of wrong first and the latest of those.
+ */
+export function worstGrievance(person: Person): Grievance | null {
+  const rank: Record<Grievance['kind'], number> = { theft: 1, threaten: 2, assault: 3 };
+  let best: Grievance | null = null;
+  for (const g of person.grievances) {
+    if (g.lodged) continue;
+    if (!best || rank[g.kind] > rank[best.kind] || (rank[g.kind] === rank[best.kind] && g.tick > best.tick)) {
+      best = g;
+    }
+  }
+  return best;
+}
+
+/** A grievance as a case put to a chief. */
+function caseOf(person: Person, grievance: Grievance | null): Case | null {
+  if (!grievance) return null;
+  return {
+    plaintiffId: person.id, plaintiffBandId: person.bandId,
+    accusedId: grievance.againstId, accusedBandId: grievance.againstBandId,
+    kind: grievance.kind, tick: grievance.tick,
+  };
 }

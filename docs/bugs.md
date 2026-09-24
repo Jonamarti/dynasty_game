@@ -1,7 +1,185 @@
 # Known bugs and rough edges
 
-As of 2026-09-23. Everything here is real and reproducible; nothing here is
+As of 2026-09-24. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found shipping M12 phase 2b (the chief as judge), 2026-09-24
+
+### A player who is chief does not choose the verdict
+
+When somebody brings a grievance to the player's character, or a demand is
+carried home to them, the verdict is reckoned for them (`judgeOwn`,
+`answerDemand`) and they are only told. The Sims-like control the owner
+values says the player should choose — order amends, shame, dismiss, pay or
+refuse — from a prompt. It needs a small overlay (the `[hidden]` rule in
+`AGENTS.md` applies), and belongs with phase 3's interface work.
+
+### An order to make amends binds an NPC, not the player
+
+`Simulation.orderAmends` commands an NPC through the ordinary compliance
+roll, and a refusal is shamed on the spot. The player's character is only
+told they were ordered; nothing follows if they ignore it. The natural
+consequence is the shaming a day later, which needs the chief to remember
+the order — a docket entry of its own kind.
+
+### Nothing judges inside a band in the cohort
+
+`judgeOwn`'s three verdicts are pinned by `justice.test.ts` and have never
+fired in a `century` run: phase 1 left no theft or blow inside a band to
+complain of. Shaming does happen, through the other door — a chief answering
+another people's demand against one of their own who cannot pay (`lean`: 2
+in a run). And a chief with a grievance against one of their own has nobody
+to take it to; `keepDockets` only files their grievances against strangers.
+
+### Most demands are refused
+
+Across nine runs of three scenarios, 6 demands ordered paid, 2 shamed, 23
+refused. Not tuned toward "fair": by then the peoples asking are usually at
+odds (`BandRelations.standing` well below zero after years of raiding), and
+a people with a low regard for strangers (phase 2d) is supposed to laugh the
+demand off. Each refusal costs `REFUSED_STANDING`, so this is a feud engine
+as much as a peace one — which is what the arc wants, but worth watching
+once phase 6 builds feuds on top of it.
+
+### Exile is not a verdict
+
+The plan listed exile among the chief's choices. Exile still comes only from
+a faction (`BandSystem.considerExile`); a chief cannot pronounce it. With no
+wrongs inside a band there would be nothing for it to answer, and a chief
+who can cast out whom they like is a power the rebellion rules were not
+written for.
+
+## Found shipping M12 phase 2a (debts and amends), 2026-09-24
+
+### A child's wrongs are owed by nobody
+
+A child runs up no debt (`Amends.incur`): their own people correct them. But
+a stranger robbed by a child is owed something, and historically the child's
+family paid it. Nothing does yet; the natural place is phase 2b's chief,
+who could hold a household to account for its children.
+
+### Only wrongs done to somebody's face are owed
+
+A theft from a store, a trespass and a sabotage have no victim standing
+there (`SocialEvent.targetId` is null), so nobody is owed for them — even
+though they are now the bulk of the harm between peoples (phase 2d). A debt
+owed to a *people* rather than a person is the shape they need, and it
+belongs with phase 2b's chiefs.
+
+### Killings are owed nothing yet
+
+Wergild was above all the price of a life. `murder` incurs nothing here:
+the dead cannot be paid, and who can — the widow, the parents, the
+household — is a question for phase 2b's complaint and judgement.
+
+## Found shipping M12 phase 2d (norms that are learned), 2026-09-24
+
+### A people's culture never changes
+
+`Band.strangerRegard` is drawn at founding and fixed for ever, like the rest
+of `Norms`. What moves is the people: children raised by a band that minds
+wrongs to strangers carry `conscienceAbroad` for life, and take it with them
+if they marry out or are cast out. But the band itself neither hardens after
+a raid nor softens after a marriage, and nothing a chief does moves it. The
+plan's "two cultures raise different adults" holds; "a culture that changes
+with its history" is a later phase's.
+
+### Parochial peoples' children run wild abroad
+
+Intended, and large: in `millers` the band at regard 0.43 saw 496 wrongs by
+its children against other peoples with its culture read, and 52 with every
+wrong corrected. Those are sabotages and trespasses of the neighbours'
+buildings, and they are what `bandHostility` feeds on. Worth watching as
+phase 5 (territory) and 6 (feuds) build on standing between peoples.
+
+## Found shipping M12 phase 2c (the struck respond), 2026-09-24
+
+### Eight timed verbs still ignore thirst, hunger and cold
+
+`teach`, `ask`, `discuss`, `court`, `spar`, `give`, `trade` and `steal` run
+a timer and never call `interruption`. Phase 2c made a blow reach them (one
+check in `ActionSystem.execute`), but a need still cannot: a lesson of
+ninety ticks runs to the end however thirsty the teacher gets. Left alone
+because giving them the working thresholds changes how long a lesson may
+run, and `technologies passed on` is the number that would move — a pass of
+its own, measured on twenty seeds, with each verb added to `Brain`'s
+`CUT_OFF_AT_ONCE` in the same commit or it will loop the way `talk` did.
+
+### Almost nobody hits back
+
+Of 161 blows on `century` seed 1, **every one** landed on the weaker of the
+two — an attacker picks fights they expect to win (`boldness`), and health
+falls with the first blow — so the struck nearly always run, which is the
+right answer. Hitting back happens when somebody is cornered
+(`attack_route_cornered`) or stronger, and neither is common. Not a defect;
+recorded so nobody reads the low `set_upon_attack` count as one.
+
+### A cornered child cowers
+
+A child set upon with nowhere to run is offered neither `flee` nor `attack`
+and does whatever else scored. Children are no longer struck by their own
+people or chosen as anybody's prey (phase 1), so this needs a blow from
+another people with the child against a coast — rare, and left.
+
+## Found shipping M12 phase 1 (peace within the band), 2026-09-24
+
+### A warning to a foreign child is still a `threaten`
+
+`warn` emits `threaten`, so an adult warning a child of another people off
+the band's store or hut is counted — and felt by that child's people — as a
+threat to a child: in one `century` run, 67 of 317 threats landed on a
+child, every one of them a warning. Nobody strikes a child any more; the
+warning itself is arguably right (it is how a child learns whose store it
+is), but it costs the two peoples' standing like any threat. Left until the
+M12 phase 4 work on children and captivity decides what a child of another
+people is owed.
+
+### Children still trespass, a lot
+
+The fourteen trespasses one child ran up in the diagnosis were mostly a
+child sheltering or sleeping under another band's roof with their family.
+Phase 1 made the child's own band stop minding (`partiality`), and the
+owning band now minds only half; but the child is still doing it, and
+`conscience` only brakes the predatory verbs (`steal`, `sabotage`), not
+where a child goes to sleep. The shelter scorer is where this lives.
+
+### The predation route never fires
+
+Instrumented for the first time in this pass (`attack_route_*` in
+telemetry): across a whole `century` run, before and after phase 1, the
+predation route of `Brain` chose **no** blow at all. Every blow is revenge,
+territory or a thief caught in the act. Not changed here — the owner's note
+was about too much violence, not too little — but a route that never fires
+is either dead code or a coefficient nobody has measured since M11 phase 2.
+
+### Exile has nothing left to fire on
+
+Exile and factions grew out of grudges inside a band, and phase 1 removed
+most of them: across twenty `century` seeds, 3 cast out in 3 seeds before
+and 0 after; factions in 10 seeds before, 4 after. The one-in-seventy-five
+who will still rob their own are exactly who exile should be for, but a band
+holds 0-1 of them. M12 phase 2 (compensation, the chief as judge) is the
+next reader of in-band wrongs, and should be measured against this.
+
+### The matrix's new red, 2026-09-24
+
+After phase 1, against the commit before it: `century` fails
+`captives-are-taken` (0 of 171 blows; the cohort takes captives in 6 seeds of
+20, up from 3) and `murders-are-solved` (one investigation over nine
+killings); `herders` `wool-is-sheared-and-woven` (13 wool bred, none woven;
+1 woven before); `stewards` `compost-answers-exhaustion` (was n/a — nobody
+knew how to compost on the commit before); `traps` `animals-are-tamed`;
+`lean` `violence-concentrates` (48% of **23** blows between peoples, where
+there used to be thousands); and `peoples-drift-apart`, `bands-take-sides`
+and `research-is-social` on the scenarios they already flipped on. All thin
+samples or single-run chaos; none tuned.
+
+### Self-defence rarely registers as such
+
+`attack_route_self_defence` is counted separately since this pass and reads
+close to zero in `century`: the struck are usually outmatched (boldness 0)
+and flee instead, or are committed to an action the blow did not interrupt.
+That is note 4's remaining half, scheduled as M12 phase 2c.
 
 ## Found closing M11 (phase 17), 2026-09-23
 

@@ -83,8 +83,37 @@ export function foundBand(
     households.push(family.household);
   }
 
+  acquaint(people, ctx);
   telemetry.count('founding_households', households.length);
   return { people, households };
+}
+
+/**
+ * Familiarity every founder starts with toward every other member of their
+ * band — the owner's note of 2026-09-24: "we do not start from somebody who
+ * knows only their own family; they knew each other beforehand". A band that
+ * has lived together is a band whose members know one another's names and
+ * faces, so it is set past `Knowledge`'s "acquaintance" rung (12), where the
+ * player sees their names, and short of "you know them well" (35). It fades as
+ * any familiarity does, unless they keep talking, which a band that lives
+ * together does.
+ *
+ * **Measured** at 40 first: every founder then chose the longest conversation
+ * with every other, `talk` in `traps` more than doubled, and `tiny`'s band
+ * built nothing in its eight days — the opposite of the owner's opening, in
+ * which a band gets its buildings up.
+ */
+export const FOUNDING_ACQUAINTANCE = 20;
+
+/** See `FOUNDING_ACQUAINTANCE`. Draws nothing; family ties are already set. */
+function acquaint(people: readonly Person[], ctx: FoundingContext): void {
+  for (const a of people) {
+    for (const b of people) {
+      if (a === b) continue;
+      ctx.social.introduce(a, b);
+      ctx.relationships.addFamiliarity(a.id, b.id, FOUNDING_ACQUAINTANCE, 0);
+    }
+  }
 }
 
 interface FoundedFamily {

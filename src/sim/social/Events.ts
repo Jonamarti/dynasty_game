@@ -48,6 +48,9 @@ export const EVENT_TYPES = [
   // dead, so that the story is *about* them; it moves nobody's opinion of
   // anybody (`DEED_WEIGHT` 0) and it is told as eagerly as a killing.
   'body_found',
+  // M12 phase 2a. A wrong paid for — see `social/Amends.ts`. Emitted only when
+  // the one owed accepts; an offer refused is nobody's deed.
+  'amends',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -73,6 +76,15 @@ export interface SocialEvent {
    * hearsay can spread it; who knows *later* is a question for the gossips.
    */
   witnesses: number;
+  /**
+   * The band the deed was done against: the target's, or the owning band's
+   * for a deed against a building. Null when it was done against nobody's.
+   * Kept on the event, and on every memory of it, because who the victim
+   * belonged to is what decides how a bystander judges it — see
+   * `Restraint.partiality` — and a story told a week later must be judged the
+   * way the deed was.
+   */
+  victimBandId: number | null;
 }
 
 /**
@@ -114,6 +126,11 @@ export const DEED_WEIGHT: Record<EventType, number> = {
   threaten: -18,
   // M11 phase 16c. Finding a body is not something anybody did to anybody.
   body_found: 0,
+  // As heavy as the theft it most often answers, so a thief who pays back
+  // what they took in full stands, with whoever saw both, about where they
+  // stood before. A beating (-20) is not quite bought off by the most anybody
+  // pays for one: something of it stays with the one who took the blows.
+  amends: 14,
 };
 
 /**
@@ -145,10 +162,23 @@ export const DEED_SALIENCE: Record<EventType, number> = {
   // says to the next person they meet, and it is how the rest of a band, a
   // widow among them, comes to know somebody is dead at all.
   body_found: 0.95,
+  // Worth telling — more than a gift, less than the wrong it answers — so the
+  // story of the payment can follow the story of the theft round the camp.
+  amends: 0.55,
 };
 
 /** Being on the receiving end matters far more than watching from the treeline. */
 export const VICTIM_MULTIPLIER = 3;
+
+/** Opinion weight of a story you were merely told, relative to seeing it. */
+export const HEARSAY_WEIGHT = 0.45;
+
+/**
+ * The facts about a deed that decide how much it moves a judge — enough of a
+ * `SocialEvent` that a remembered deed (`MemoryEntry`) carries them too, so
+ * the two can be weighed by one function. See `SocialSystem.deedDelta`.
+ */
+export type DeedFacts = Pick<SocialEvent, 'type' | 'targetId' | 'victimBandId' | 'magnitude'>;
 
 /**
  * A culture's tolerance for each kind of deed: a multiplier on `DEED_WEIGHT`.
@@ -161,6 +191,7 @@ export const DEFAULT_NORMS: Norms = {
   gift: 1, share_food: 1, help: 1, teach: 1, slander: 1, praise: 1, trade: 1,
   theft: 1, trespass: 1, sabotage: 1, assault: 1, murder: 1, threaten: 1,
   body_found: 1,
+  amends: 1,
 };
 
 /**
@@ -207,6 +238,7 @@ export function describeEvent(
     case 'murder': return t('{actor} killed {target}', who);
     case 'threaten': return t('{actor} threatened {target}', who);
     case 'body_found': return t('{actor} was found dead', who);
+    case 'amends': return t('{actor} made amends to {target}', who);
   }
 }
 

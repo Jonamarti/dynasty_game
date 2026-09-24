@@ -13,6 +13,7 @@
  */
 import type { Corpse } from '../entities/Corpse.ts';
 import { isHeld } from '../social/Defence.ts';
+import { debtTo, offerFor, OFFER_AT_LEAST } from '../social/Amends.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import type { Person } from '../entities/Person.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
@@ -166,6 +167,12 @@ export interface CatalogContext {
    */
   relationships?: RelationshipGraph;
   tick?: number;
+  /**
+   * Who leads a band, for "take a grievance to…" — M12 phase 2b. Who the
+   * chief is, is known to everybody; it is the one thing about another person
+   * the whole band can see.
+   */
+  chiefOf?: (bandId: number) => number | undefined;
 }
 
 const NODE_VERBS: Record<string, { label: string; icon: string; action: string }> = {
@@ -421,6 +428,12 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       enabled: hurt,
       reason: hurt ? undefined : t('They are not hurt'),
     }] : []),
+    // The owner's note of 2026-09-24: what one person can do to another is
+    // three families of verb — talking, knowledge, and confrontation — and a
+    // ring with all of them side by side had grown past reading. One entry
+    // per family, each opening onto its own ring; `grouped` leaves a family
+    // of fewer than three flat.
+    ...grouped([
     ...grouped(discussions, t('Discuss with {name}…', { name: other.name }), '\u{1F914}',
       t('They know nothing about what is on your mind')),
     {
@@ -452,6 +465,7 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       enabled: !other.isChild,
       reason: other.isChild ? t('They are too young to show anybody anything') : undefined,
     },
+    ], t('Teach and learn…'), '\u{1F393}', t('There is nothing to teach or learn here'), false, FAMILY_AT),
     {
       // M11 phase 11: the safe half of the fix for "nobody can become a
       // better fighter than the person next to them" (docs/bugs.md). Nobody
@@ -509,6 +523,11 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
           ? t('They are carrying no food')
           : undefined,
     },
+    // M12 phase 2a. Only when the player's character owes this person — they
+    // know their own debts, and nobody else's — so the ring does not carry
+    // an entry that is almost never there to use.
+    ...(ctx.commanding ? [] : [...amendsOption(actor, other), ...justiceOptions(actor, other, ctx)]),
+    ...grouped([
     {
       id: 'steal',
       label: t('Steal from {name}', { name: other.name }),
@@ -556,6 +575,7 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       enabled: true,
       hostile: true,
     },
+    ], t('Confront {name}…', { name: other.name }), '⚔', '', true, FAMILY_AT),
     {
       id: 'possess',
       label: t('Play as {name}', { name: other.name }),
@@ -1019,9 +1039,10 @@ export const NODE_VERB_LABELS: string[] = [
  * would be a refusal with its explanation locked inside it.
  */
 function grouped(
-  options: ActionOption[], label: string, icon: string, emptyReason: string
+  options: ActionOption[], label: string, icon: string, emptyReason: string, hostile = false,
+  at = GROUP_AT
 ): ActionOption[] {
-  if (options.length < GROUP_AT) return options;
+  if (options.length < at) return options;
   const any = options.some(option => option.enabled);
   return [{
     id: 'group',
@@ -1030,6 +1051,9 @@ function grouped(
     enabled: any,
     reason: any ? undefined : emptyReason,
     children: options,
+    // Drawn in the warning colour of the verbs inside it, so a ring of blows
+    // does not look like a ring of kindnesses.
+    ...(hostile ? { hostile: true } : {}),
   }];
 }
 
@@ -1041,6 +1065,70 @@ function grouped(
  * fifteen recipes on their own.
  */
 const GROUP_AT = 3;
+
+/**
+ * "Make amends to…", when there is something owed — M12 phase 2a. Greyed,
+ * with the reason, when what the actor carries would not make a real offer:
+ * the same line `Brain` holds NPCs to (`OFFER_AT_LEAST`).
+ */
+function amendsOption(actor: Person, other: Person): ActionOption[] {
+  const debt = debtTo(actor, other.id);
+  if (!debt) return [];
+  const enough = offerFor(actor, debt).value >= debt.worth * OFFER_AT_LEAST;
+  return [{
+    id: 'make_amends',
+    label: t('Make amends to {name}', { name: other.name }),
+    icon: '\u{1F932}',
+    enabled: enough,
+    reason: enough ? undefined : t('You have nothing worth offering them'),
+  }];
+}
+
+/**
+ * Going to the chief, and putting a wrong to another people — M12 phase 2b.
+ * Offered only when there is something to say: a grievance not yet taken to
+ * one's own chief, a demand carried from another people, or a case against
+ * the clicked person's people on the actor's own docket. All three are the
+ * actor's own knowledge, which is why none of this is offered while
+ * commanding somebody else.
+ */
+function justiceOptions(actor: Person, other: Person, ctx: CatalogContext): ActionOption[] {
+  const options: ActionOption[] = [];
+  if (ctx.chiefOf?.(actor.bandId) === other.id && other.id !== actor.id) {
+    if (actor.carriedDemand) {
+      options.push({
+        id: 'complain',
+        label: t('Pass on a demand to {name}', { name: other.name }),
+        icon: '\u{1F4DC}',
+        enabled: true,
+      });
+    } else if (actor.grievances.some(g => !g.lodged)) {
+      options.push({
+        id: 'complain',
+        label: t('Take a grievance to {name}', { name: other.name }),
+        icon: '\u{2696}',
+        enabled: true,
+      });
+    }
+  }
+  if (actor.docket.some(c => c.accusedBandId === other.bandId) && !other.isChild) {
+    options.push({
+      id: 'parley',
+      label: t('Demand redress from {name}', { name: other.name }),
+      icon: '\u{2696}',
+      enabled: true,
+    });
+  }
+  return options;
+}
+
+/**
+ * The three families of verb aimed at a person (owner's note of 2026-09-24)
+ * are folded however few they hold: the point is that "attack" is always one
+ * click into "Confront…", not on the top ring one day and a level down the
+ * next depending on what the player happens to carry.
+ */
+const FAMILY_AT = 1;
 
 /**
  * One craft entry, with the station question answered.

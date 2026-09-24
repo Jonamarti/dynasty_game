@@ -449,7 +449,7 @@ describe('exile and adoption', () => {
 
     const outcasts = {
       id: 9001, name: 'the outcast', homeX: 0, homeY: 0,
-      norms: band.norms, chiefId: null, chiefSince: null, outcast: true,
+      norms: band.norms, strangerRegard: 0.5, chiefId: null, chiefSince: null, outcast: true,
     };
     sim.bands.push(outcasts);
     target!.bandId = outcasts.id;
@@ -472,7 +472,7 @@ describe('exile and adoption', () => {
 
     const outcasts = {
       id: 9002, name: 'the outcast', homeX: 0, homeY: 0,
-      norms: home.norms, chiefId: null, chiefSince: null, outcast: true,
+      norms: home.norms, strangerRegard: 0.5, chiefId: null, chiefSince: null, outcast: true,
     };
     sim.bands.push(outcasts);
     candidate.bandId = outcasts.id;
@@ -589,7 +589,7 @@ describe('the shape of a band', () => {
     // roll and would make this a test of the weather.
     const outcasts = {
       id: 9001, name: 'the outcast', homeX: 0, homeY: 0,
-      norms: sim.bands[0]!.norms, chiefId: null, chiefSince: null, outcast: true,
+      norms: sim.bands[0]!.norms, strangerRegard: 0.5, chiefId: null, chiefSince: null, outcast: true,
     };
     sim.bands.push(outcasts);
     cast.bandId = outcasts.id;
