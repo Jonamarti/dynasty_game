@@ -1335,6 +1335,15 @@ export class Simulation {
     // walk back to, and the escapee's road home needs one.
     person.captiveFrom = from && !from.outcast ? from.id : null;
     person.captiveOf = captors.id;
+    // A child taken away is not only a state change. It is the kind of public
+    // wrong a whole people carries, so witnesses must see the event while the
+    // victim still belongs to their old band; changing bandId first would make
+    // the social event blame the captor's own people instead.
+    if (person.isChild) {
+      this.social.emit('abduction', binder, person, 1, this.time.tick,
+        this.peopleHash, this.config.sightRadius);
+      telemetry.count('child_abducted');
+    }
     person.bandId = captors.id;
     person.job = null;
     person.resume = null;

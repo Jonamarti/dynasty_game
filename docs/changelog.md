@@ -6,6 +6,18 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-24 — M12 phase 4a: rapto de menores
+
+La ruta existente de sujetar y atar cautivos ahora también puede elegir a un
+niño de otro pueblo. El rapto se registra como `abduction`, con máxima
+saliencia y un agravio superior al robo: los testigos de la banda del menor lo
+recuerdan y la opinión hacia el captor cae aunque el niño ya haya cambiado de
+banda.
+
+La emisión ocurre antes de transferir al menor a la banda captora; así el
+evento conserva correctamente quién era la víctima y qué pueblo perdió al
+niño. La prueba cubre captura, memoria del evento y hostilidad del testigo.
+
 ## 2026-09-24 — M12 phase 3a: traspaso visible con depósitos
 
 La ficha de un depósito terminado ofrece ahora **Abrir traspaso** cuando el

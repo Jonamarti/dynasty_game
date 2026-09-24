@@ -1783,7 +1783,7 @@ export class Brain {
       techPower(person, 'cordage') > 0 && !pressedByNeed(person, ctx.needs.workLimits)) {
       const tick = ctx.time.tick;
       const quarry = this.pickBest(neighbours.filter(other =>
-        other.bandId !== person.bandId && !other.isChild && !isHeld(other, tick) &&
+        other.bandId !== person.bandId && !isHeld(other, tick) &&
         this.bandHostility(person, other.bandId, ctx) > 0
       ), other => vulnerabilityOf(other, person) * 12 - person.distanceTo(other));
       if (quarry) {
@@ -1807,7 +1807,7 @@ export class Brain {
       const tick = ctx.time.tick;
       const raided = person.raidingBandId;
       const target = this.pickBest(neighbours.filter(other =>
-        other.bandId === raided && !other.isChild && !isHeld(other, tick) &&
+        other.bandId === raided && !isHeld(other, tick) &&
         ctx.relationships.kinship(person.id, other.id) === 0
       ), other => -person.distanceTo(other));
       if (target) {

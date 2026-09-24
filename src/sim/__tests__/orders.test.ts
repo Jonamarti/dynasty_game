@@ -149,6 +149,41 @@ describe('stores and construction controls', () => {
   });
 });
 
+describe('child abduction', () => {
+  it('takes a child through the existing hold-and-bind route and is remembered by witnesses', () => {
+    const sim = new Simulation({
+      ...SMALL,
+      population: { bands: 2, peoplePerBand: 6 },
+    });
+    const child = sim.livingPeople().find(person => person.isChild)!;
+    const captor = sim.livingPeople().find(person =>
+      !person.isChild && person.bandId !== child.bandId)!;
+    const witness = sim.livingPeople().find(person =>
+      !person.isChild && person.bandId === child.bandId && person.id !== child.id)!;
+    expect(child).toBeTruthy();
+    expect(captor).toBeTruthy();
+    expect(witness).toBeTruthy();
+
+    captor.x = child.x;
+    captor.y = child.y;
+    witness.x = child.x;
+    witness.y = child.y;
+    captor.skills.fight = 100;
+    child.skills.fight = 0;
+    captor.knownTech.add('cordage');
+    captor.inventory.add('rope', 1);
+    const before = sim.relationships.opinion(witness.id, captor.id);
+
+    expect(sim.order(captor, 'restrain', { personId: child.id })).toBe(true);
+    for (let i = 0; i < 120 && child.captiveOf === null; i++) sim.step();
+
+    expect(child.captiveOf).toBe(captor.bandId);
+    expect(sim.social.recent.some(event =>
+      event.type === 'abduction' && event.targetId === child.id)).toBe(true);
+    expect(sim.relationships.opinion(witness.id, captor.id)).toBeLessThan(before);
+  });
+});
+
 describe('felling', () => {
   /**
    * The reported bug: with a full pack the chop aborted on tick one through

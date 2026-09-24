@@ -42,7 +42,7 @@ import { t } from '../../i18n/i18n.ts';
  */
 export const EVENT_TYPES = [
   'gift', 'share_food', 'help', 'teach', 'slander', 'praise', 'trade',
-  'theft', 'trespass', 'sabotage', 'assault', 'murder', 'threaten',
+  'theft', 'trespass', 'sabotage', 'assault', 'murder', 'threaten', 'abduction',
   // M11 phase 16c. Not a deed — nobody did anything — but news, and news is
   // what this table carries: somebody's body was found. Its actor is the
   // dead, so that the story is *about* them; it moves nobody's opinion of
@@ -124,6 +124,10 @@ export const DEED_WEIGHT: Record<EventType, number> = {
   // hidden the way a theft is — a threat is made in the open, to the
   // victim's face, and everyone who sees it knows exactly what it was.
   threaten: -18,
+  // A child taken away is the sharpest ordinary wrong between peoples: it is
+  // personal, visible and leaves a family missing somebody rather than merely
+  // poorer. Its high weight is what makes the event a durable cause of feud.
+  abduction: -38,
   // M11 phase 16c. Finding a body is not something anybody did to anybody.
   body_found: 0,
   // As heavy as the theft it most often answers, so a thief who pays back
@@ -158,6 +162,7 @@ export const DEED_SALIENCE: Record<EventType, number> = {
   assault: 0.85,
   murder: 1,
   threaten: 0.8,
+  abduction: 1,
   // As eagerly told as a killing: a body found is the first thing anybody
   // says to the next person they meet, and it is how the rest of a band, a
   // widow among them, comes to know somebody is dead at all.
@@ -192,6 +197,7 @@ export const DEFAULT_NORMS: Norms = {
   theft: 1, trespass: 1, sabotage: 1, assault: 1, murder: 1, threaten: 1,
   body_found: 1,
   amends: 1,
+  abduction: 1,
 };
 
 /**
@@ -237,6 +243,7 @@ export function describeEvent(
     case 'assault': return t('{actor} attacked {target}', who);
     case 'murder': return t('{actor} killed {target}', who);
     case 'threaten': return t('{actor} threatened {target}', who);
+    case 'abduction': return t('{actor} abducted {target}', who);
     case 'body_found': return t('{actor} was found dead', who);
     case 'amends': return t('{actor} made amends to {target}', who);
   }

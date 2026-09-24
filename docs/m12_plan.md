@@ -166,7 +166,8 @@ Tres notas de interfaz que no tocan la simulación y pueden ir en paralelo:
 Las dos decisiones que M11 dejó al propietario (`bugs.md`, «Captivity is
 rare, and never lasts») ya están tomadas en las notas 8 y 9:
 
-- **4a. Los niños pueden ser tomados cautivos.** Es, históricamente, el caso
+- **4a. Los niños pueden ser tomados cautivos.** **Construida** (2026-09-24,
+  detalle en `changelog.md`). Es, históricamente, el caso
   más común. Un evento nuevo `abduction`, con peso de agravio muy alto y
   salience máxima: cualquier miembro de la tribu del niño que lo vea (o a quien
   se lo cuenten) sube su hostilidad hacia el captor y hacia su banda. Es un
