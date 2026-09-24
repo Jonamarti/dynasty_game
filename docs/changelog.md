@@ -6,6 +6,60 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-24 — M12 phase 2c: the struck run or hit back
+
+The owner's note 4: "some NPCs neither defend themselves nor run when
+attacked". `npm run violence` now follows every adult struck for 60 ticks
+(`--cases` names them, and `npm run why` takes `--seed` and `--id` to follow
+one), and on `century` about one in six did neither. Three causes, all
+found with the score table:
+
+- **Two readings of "under attack".** `interruption` stopped any action for
+  forty ticks after any blow; `Brain` did not know, and chose the same thing
+  again. One man hit while warning off a stranger chose `warn` thirty times
+  in sixty ticks, each cut off on the tick after, while the stranger had
+  long since gone to spar with somebody else. Now one reading,
+  `Defence.assailantOf`: a blow in the last `FRESH_BLOW` ticks, or an
+  assailant still coming. Used by `interruption`, by `wakeReason` and by
+  `Brain`.
+- **Nothing reached a committed teacher.** Eight timed verbs (`teach`,
+  `ask`, `discuss`, `court`, `spar`, `give`, `trade`, `steal`) never call
+  `interruption` — the `AGENTS.md` rule, broken eight times. A man was
+  beaten from 89 to 46 in the middle of a lesson. `ActionSystem.execute` now
+  breaks off anything committed or ordered when somebody is attacking the
+  person, except running, fighting, sleep and escape, which have their own.
+  Only the blow: the needs are in `bugs.md`.
+- **Fleeing into the edge of the world.** `flee` tried only the line
+  straight away from the threat; against a coast or the map's edge that was
+  all water, so `flee` was chosen, given no destination, and chosen again —
+  a man in the north-east corner stood through three blows with it at the
+  top of his table. `Brain.escapeFrom` fans out, nearest to straight-away
+  first, and runs while scoring, so `flee` is only offered where there is
+  somewhere to go. Somebody with nowhere to go fights (`cornered`).
+
+And over all three, **a floor**: while somebody is set upon, the better of
+running and hitting back is lifted to `RESPOND` (3.4, above a starving
+person's meal). Which of the two is still their own reckoning of the odds.
+
+**The same loop, everywhere.** Measuring the first cause found it far
+wider than fights: on `century` seed 1, **12,173 of 14,589 conversations
+and 5,056 of 6,145 warnings** were chosen, cut off by thirst on the next
+tick, and chosen again — `talk`, `warn`, `threaten`, `slander`, `praise`
+and `correct` were never gated on `pressedByNeed` the way every work verb
+is. `Brain` now drops them (`CUT_OFF_AT_ONCE`) when a need is past the
+working line or the person is set upon.
+
+**Measured.** New check `the-struck-respond`: of second blows from the
+same hand, how many found the victim doing neither. On the build before,
+three seeds each of `century`, `lean` and `herders`: 44 of 54, 23 of 26, 23
+of 26, 32 of 37, 71 of 97, 32 of 34. After, the same twelve runs: 1 of 91.
+`century`, twenty seeds, against phase 1: survival 98.8% → **99.9%**,
+blows 1,793 → 1,452, murders 88 → **24**, technologies passed on 375 →
+**481** — the time freed from the loop went into conversations that
+finish (1,433 → 1,769 on seed 1). Inside a band and on children, still 0.
+The matrix: 15 failures across 19 scenarios, from 17; all the single-run
+flippers already on record.
+
 ## 2026-09-24 — M12 phase 1: peace within the band, and the notes of 2026-09-24
 
 The owner's notes (`notes2.txt`, now emptied; triage in `m12_plan.md` §0)

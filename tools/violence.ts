@@ -71,7 +71,46 @@ sim.social.emit = ((...args: Parameters<typeof emit>) => {
   return emit(...args);
 }) as typeof emit;
 
-for (let i = 0; i < steps; i++) sim.step();
+// M12 phase 2c, the owner's note 4: "some NPCs neither defend themselves nor
+// run when attacked". Every blow that lands on an adult opens a window; within
+// `RESPONSE_WINDOW` ticks the victim either strikes back at whoever hit them,
+// runs, dies, or does none of those — and for the last, what they were doing
+// instead is the answer to why.
+const RESPONSE_WINDOW = 60;
+type Watch = { by: number; tick: number; actions: Set<string> };
+const watching = new Map<number, Watch>();
+const responses = new Map<string, number>();
+const inert = new Map<string, number>();
+const tally = (m: Map<string, number>, k: string): void => { m.set(k, (m.get(k) ?? 0) + 1); };
+const lastSeenHarm = new Map<number, number>();
+for (let i = 0; i < steps; i++) {
+  sim.step();
+  const tick = sim.time.tick;
+  for (const p of sim.people) {
+    if (p.lastHarmedBy !== null && p.lastHarmedTick !== (lastSeenHarm.get(p.id) ?? -9999)) {
+      lastSeenHarm.set(p.id, p.lastHarmedTick);
+      if (!p.isChild && !watching.has(p.id)) {
+        watching.set(p.id, { by: p.lastHarmedBy, tick: p.lastHarmedTick, actions: new Set([p.action]) });
+      }
+    }
+  }
+  for (const [id, w] of watching) {
+    const p = sim.peopleById.get(id)!;
+    const by = sim.peopleById.get(w.by);
+    if (!p.alive) { tally(responses, 'died'); watching.delete(id); continue; }
+    if (p.action === 'attack' && p.targetPersonId === w.by) { tally(responses, 'struck_back'); watching.delete(id); continue; }
+    if (p.action === 'flee') { tally(responses, 'fled'); watching.delete(id); continue; }
+    if (!by || !by.alive || p.distanceTo(by) > 12) { tally(responses, 'assailant_gone'); watching.delete(id); continue; }
+    w.actions.add(p.action + (p.order ? '(ordered)' : '') + (p.captiveOf !== null ? '(captive)' : '') +
+      (p.heldUntil > tick ? '(held)' : ''));
+    if (tick - w.tick > RESPONSE_WINDOW) {
+      tally(responses, 'neither');
+      tally(inert, [...w.actions].sort().join("+"));
+      if (process.argv.includes("--cases")) console.log("inert: person " + id + " struck by " + w.by + " at tick " + w.tick + " doing " + [...w.actions].join(","));
+      watching.delete(id);
+    }
+  }
+}
 
 console.log(scenario.name + ' seed ' + (config.seed ?? 'default') + ', ' + steps + ' steps');
 console.log('deed       total  ownBand  child  ownChild  kin');
@@ -80,6 +119,12 @@ for (const [k, r] of rows) {
     String(r.child).padStart(7) + String(r.ownChild).padStart(10) + String(r.kin).padStart(5));
 }
 console.log(samples.join('\n'));
+console.log('');
+console.log('struck adults, within ' + RESPONSE_WINDOW + ' ticks: ' +
+  [...responses].map(([k, v]) => k + ' ' + v).join(', '));
+for (const [k, v] of [...inert].sort((a, b) => b[1] - a[1]).slice(0, 12)) {
+  console.log('  neither, doing ' + k.padEnd(50) + v);
+}
 const counts = telemetry.snapshot();
 console.log('');
 for (const key of Object.keys(counts).sort()) {

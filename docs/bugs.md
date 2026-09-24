@@ -3,6 +3,35 @@
 As of 2026-09-24. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
+## Found shipping M12 phase 2c (the struck respond), 2026-09-24
+
+### Eight timed verbs still ignore thirst, hunger and cold
+
+`teach`, `ask`, `discuss`, `court`, `spar`, `give`, `trade` and `steal` run
+a timer and never call `interruption`. Phase 2c made a blow reach them (one
+check in `ActionSystem.execute`), but a need still cannot: a lesson of
+ninety ticks runs to the end however thirsty the teacher gets. Left alone
+because giving them the working thresholds changes how long a lesson may
+run, and `technologies passed on` is the number that would move — a pass of
+its own, measured on twenty seeds, with each verb added to `Brain`'s
+`CUT_OFF_AT_ONCE` in the same commit or it will loop the way `talk` did.
+
+### Almost nobody hits back
+
+Of 161 blows on `century` seed 1, **every one** landed on the weaker of the
+two — an attacker picks fights they expect to win (`boldness`), and health
+falls with the first blow — so the struck nearly always run, which is the
+right answer. Hitting back happens when somebody is cornered
+(`attack_route_cornered`) or stronger, and neither is common. Not a defect;
+recorded so nobody reads the low `set_upon_attack` count as one.
+
+### A cornered child cowers
+
+A child set upon with nowhere to run is offered neither `flee` nor `attack`
+and does whatever else scored. Children are no longer struck by their own
+people or chosen as anybody's prey (phase 1), so this needs a blow from
+another people with the child against a coast — rare, and left.
+
 ## Found shipping M12 phase 1 (peace within the band), 2026-09-24
 
 ### A warning to a foreign child is still a `threaten`

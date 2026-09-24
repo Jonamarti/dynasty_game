@@ -270,3 +270,58 @@ export const GUARD_REASSURES = 3;
 
 /** One guard for every this many members, at most. */
 export const MEMBERS_PER_GUARD = 8;
+
+// ---------------------------------------------------------------------------
+// Being set upon — M12 phase 2c, the owner's note 4
+// ---------------------------------------------------------------------------
+
+/**
+ * How long a blow keeps somebody "under attack" whatever the assailant does
+ * next, in ticks: one wind-up (`ActionSystem.ATTACK_WINDUP`, 12) and a little
+ * over, so the tick an attacker spends re-scoring between two blows does not
+ * read as the fight having ended.
+ */
+export const FRESH_BLOW = 16;
+
+/** The longest a blow can keep anybody under attack, however the fight goes. */
+export const UNDER_ATTACK_TICKS = 40;
+
+/**
+ * Whoever is attacking `person` right now, or null.
+ *
+ * The owner's note 4: "some NPCs neither defend themselves nor run". Measured
+ * on `century` (`npm run violence -- --cases`), the one in six struck adults
+ * who did neither were almost all caught in a loop between two readings of
+ * "under attack". `interruption` read it as *forty ticks since any blow*, and
+ * stopped every action begun in that time on the tick after it began; `Brain`
+ * did not know, and chose the same action again — `warn`, for one man, thirty
+ * times over, with the man who hit him long gone to spar with somebody else.
+ *
+ * So one reading, used by both: a blow in the last `FRESH_BLOW` ticks, or an
+ * assailant still coming at this person. Somebody who hit you and walked off
+ * is somebody you may hold a grudge against, but you are no longer being
+ * attacked, and whatever you do next should be allowed to run.
+ *
+ * `byId` looks a person up — `peopleById.get` in `ActionSystem`, a search of
+ * the neighbours in `Brain` — so that the question costs no query of its own.
+ */
+export function assailantOf(
+  person: Person, byId: (id: number) => Person | undefined, tick: number
+): Person | null {
+  if (person.lastHarmedBy === null) return null;
+  const since = tick - person.lastHarmedTick;
+  if (since > UNDER_ATTACK_TICKS) return null;
+  const assailant = byId(person.lastHarmedBy);
+  if (!assailant || !assailant.alive) return null;
+  if (since <= FRESH_BLOW) return assailant;
+  return assailant.action === 'attack' && assailant.targetPersonId === person.id ? assailant : null;
+}
+
+/**
+ * What the better of running and hitting back is lifted to while somebody is
+ * being attacked: above everything a need can shout for (`eat` tops out at
+ * 3.2), because a beating kills faster than thirst does. The owner's "huir o
+ * defenderse, siempre" — which of the two is still each person's own reckoning
+ * of the odds; only doing neither is taken off the table.
+ */
+export const RESPOND = 3.4;

@@ -80,10 +80,13 @@ intermedio que las sociedades reales ponen entre el rencor y la violencia**:
   compensación, vergüenza pública (un `shame` que baja el renombre del hogar) o
   destierro. Es el primer uso de la autoridad para algo que no sea mandar a
   trabajar, y la semilla de la ley escrita que M13 pide para civilización.
-- **2c. Huir o defenderse, siempre.** Auditar con `npm run why` los casos en
-  que la víctima de un golpe no hace ni una cosa ni otra (acción comprometida
-  sin `interruption`, `flee` puntuado por debajo de un trabajo largo). Check:
-  `the-struck-respond`.
+- **2c. Huir o defenderse, siempre.** **Construida** (2026-09-24, detalle en
+  `changelog.md`). Tres causas: dos lecturas de «bajo ataque» que hacían
+  bucle con `Brain`; ocho verbos con temporizador a los que ningún golpe
+  llegaba; y huir hacia el borde del mapa. De paso, el mismo bucle en
+  `talk`/`warn` con sed: 12.173 de 14.589 conversaciones cortadas al tick
+  siguiente. Check `the-struck-respond`: 1 de 91 golpes sin respuesta, frente
+  a más del 80% antes.
 - **2d. Normas que se aprenden.** `conscience` es hoy un número; que lo que se
   corrige dependa de las normas de la banda (`Norms`): una banda tolerante con
   el robo a extraños no corrige a un niño por robar a extraños. Así dos

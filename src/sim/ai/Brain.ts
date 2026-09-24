@@ -61,7 +61,7 @@ import {
 import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import {
   caughtOffender, usingPropertyOf, isHeld, isBound, helpCaller, BIND_HELD, PATROL, PATROL_REACH,
-  PATROL_LINGER,
+  PATROL_LINGER, assailantOf, RESPOND,
   CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE, CALL_MEMORY, CALL_FOR_HELP, ANSWER_CALL,
 } from '../social/Defence.ts';
 import {
@@ -225,6 +225,8 @@ interface FoundTargets {
    */
   tradePartner: Person | null;
   fleeFrom: Person | null;
+  /** Where a `flee` runs to, found while scoring — `escapeFrom`. */
+  fleePoint: { x: number; y: number } | null;
   /** Which entry of `RECIPES` a chosen `craft` would make. */
   recipe: string | null;
   /** The station a `craft` is to be done at, for the recipes that need one. */
@@ -511,6 +513,25 @@ const NEWS_URGE = 0.1;
 const PREDATION = 0.7;
 
 /**
+ * The verbs `ActionSystem.interruption` can end on the tick after they begin,
+ * for a need past the working line or a blow, and that answer no need of
+ * their own — so a scorer that offered them then would watch them stop and
+ * offer them again. Every work verb already asks `pressedByNeed` on its own
+ * route, with the need it answers exempted; these never did. M12 phase 2c.
+ */
+/**
+ * `escapeFrom`'s fan: straight away first, then ever wider either side, up to
+ * a right angle and a little past it — running *across* an attacker's path is
+ * still running, and running toward them is not.
+ */
+const ESCAPE_TURNS = [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.1, -2.1];
+const ESCAPE_DISTANCES = [14, 10, 7, 4];
+
+const CUT_OFF_AT_ONCE: ReadonlySet<string> = new Set([
+  'talk', 'warn', 'threaten', 'slander', 'praise', 'correct',
+]);
+
+/**
  * How recently somebody must have hit this person for hitting back to be
  * self-defence rather than revenge, in ticks — a few exchanges of blows
  * (`ATTACK_WINDUP` apart), not a day. And the grudge self-defence is treated
@@ -767,6 +788,7 @@ export class Brain {
     let beneficiary: Person | null = null;
     let tradePartner: Person | null = null;
     let fleeFrom: Person | null = null;
+    let fleePoint: { x: number; y: number } | null = null;
     let intruder: Person | null = null;
     let restrainee: Person | null = null;
     let correctee: Person | null = null;
@@ -2237,7 +2259,9 @@ export class Brain {
     const threat = person.lastHarmedBy === null
       ? null
       : neighbours.find(other => other.id === person.lastHarmedBy) ?? null;
-    if (recentlyHarmed && threat) {
+    // M12 phase 2c: only where there is somewhere to run. See `escapeFrom`.
+    const escapeFromThreat = recentlyHarmed && threat ? this.escapeFrom(person, threat, ctx) : null;
+    if (recentlyHarmed && threat && escapeFromThreat) {
       const hurt = 1 - person.health / 100;
       const outmatched = Math.max(
         0,
@@ -2246,7 +2270,8 @@ export class Brain {
       );
       add('flee', (hurt * 2.5 + outmatched * 2 + 0.4) * (1.4 - person.traits.aggression));
       fleeFrom = threat;
-    } else {
+      fleePoint = escapeFromThreat;
+    } else if (!(recentlyHarmed && threat)) {
       // M11 phase 14b: somebody you dread, close by, is reason enough to go,
       // whether or not they have raised a hand today. The most dreaded one,
       // weighed against how near they are. Below the fresh-harm case above,
@@ -2265,10 +2290,12 @@ export class Brain {
           dreaded = other;
         }
       }
-      if (dreaded) {
+      const away = dreaded ? this.escapeFrom(person, dreaded, ctx) : null;
+      if (dreaded && away) {
         const dread = ctx.relationships.dread(person.id, dreaded.id) / 100;
         add('flee', (dread * 1.5 + 0.2) * (1.4 - person.traits.aggression));
         fleeFrom = dreaded;
+        fleePoint = away;
         telemetry.count('fled_from_dread_considered');
       }
     }
@@ -2581,19 +2608,90 @@ export class Brain {
     // their needs climb.
     add('wander', 0.02 + ctx.rng.next() * 0.03);
 
+    // --- Words that would be cut off, and being set upon ---------------------
+    // M12 phase 2c. Here, after every route has had its say, because both
+    // questions are about the table as a whole rather than about any one row.
+    const setUpon = assailantOf(person, id => neighbours.find(other => other.id === id), ctx.time.tick);
+    // A word said, a warning, a telling-off: `ActionSystem.interruption` ends
+    // each of them on the tick after it begins if a need is past the working
+    // line or somebody is hitting this person, and the scorer used to offer
+    // them anyway. Measured on `century`: 12,173 of 14,589 conversations and
+    // 5,056 of 6,145 warnings were chosen, cut off, and chosen again, while
+    // the person stood there thirsty — the loop that looked, from outside,
+    // like somebody who would neither run nor fight.
+    if (setUpon || pressedByNeed(person, ctx.needs.workLimits)) {
+      let kept = 0;
+      for (const row of scores) if (!CUT_OFF_AT_ONCE.has(row.id)) scores[kept++] = row;
+      scores.length = kept;
+    }
+    // The owner's note 4: somebody being beaten runs or hits back. Which of the
+    // two is the scorer's own reckoning — `flee` weighs how badly they are
+    // hurt and outmatched, the self-defence route weighs the odds of winning —
+    // and only the winner is lifted, over everything else, to `RESPOND`.
+    // Written onto the row rather than through `add`, whose hysteresis and
+    // appetite this is deliberately above.
+    if (setUpon) {
+      const flee = fleeFrom === setUpon ? scores.find(row => row.id === 'flee') : undefined;
+      const strike = foe === setUpon ? scores.find(row => row.id === 'attack') : undefined;
+      const answer = strike && (!flee || strike.score > flee.score) ? strike : flee;
+      if (answer) {
+        answer.score = Math.max(answer.score, RESPOND);
+        telemetry.count('set_upon_' + answer.id);
+      } else if (!person.isChild) {
+        // Nowhere to run (`escapeFrom` found nothing, so `flee` was never
+        // offered) and the odds said not to fight: cornered, they fight
+        // anyway. A child cornered has neither, and cowers.
+        // One row per verb: an `attack` another route aimed at somebody else
+        // is re-aimed here rather than joined by a second.
+        const aimed = scores.find(row => row.id === 'attack');
+        if (aimed) aimed.score = Math.max(aimed.score, RESPOND);
+        else scores.push({ id: 'attack', score: RESPOND });
+        foe = setUpon;
+        attackRoute = 'cornered';
+        telemetry.count('set_upon_cornered');
+      }
+    }
+
     scores.sort((a, b) => b.score - a.score);
     lastScores.set(person.id, scores.slice(0, 6));
     return {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, attackRoute, intruder, restrainee, correctee, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, tradePartner, fleeFrom,
+        victim, foe, attackRoute, intruder, restrainee, correctee, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
         patient, strayAnimal, slanderSubjectId, praiseSubjectId,
       },
     };
+  }
+
+  /**
+   * Somewhere to run to from `from`, or null if there is nowhere.
+   *
+   * M12 phase 2c. This used to live in `setup` and try only the line straight
+   * away from the threat, at four distances. Against a coast or the edge of
+   * the map every one of those is under water or off the world, so `flee`
+   * was chosen, given no destination, ended where it stood, and was chosen
+   * again — measured on `century`, a man in the north-east corner stood
+   * `idle` through three blows with `flee` at the top of his table every
+   * tick. Now the fan widens, nearest to straight-away first, and a person
+   * with truly nowhere to go is not offered `flee` at all: the scorer's floor
+   * for somebody set upon then falls to hitting back, which is what a
+   * cornered animal does too.
+   */
+  private escapeFrom(person: Person, from: Person, ctx: BrainContext): { x: number; y: number } | null {
+    const away = Math.atan2(person.y - from.y, person.x - from.x);
+    for (const turn of ESCAPE_TURNS) {
+      const angle = away + turn;
+      for (const distance of ESCAPE_DISTANCES) {
+        const tx = Math.round(person.x + Math.cos(angle) * distance);
+        const ty = Math.round(person.y + Math.sin(angle) * distance);
+        if (ctx.world.isWalkable(tx, ty)) return { x: tx, y: ty };
+      }
+    }
+    return null;
   }
 
   /**
@@ -3065,25 +3163,14 @@ export class Brain {
         }
         break;
       }
-      case 'flee': {
-        // Run to a walkable tile directly away from whoever hurt you.
-        const from = found.fleeFrom;
-        if (from) {
-          const dx = person.x - from.x;
-          const dy = person.y - from.y;
-          const length = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
-          for (const distance of [14, 10, 7, 4]) {
-            const tx = Math.round(person.x + (dx / length) * distance);
-            const ty = Math.round(person.y + (dy / length) * distance);
-            if (ctx.world.isWalkable(tx, ty)) {
-              person.targetX = tx;
-              person.targetY = ty;
-              break;
-            }
-          }
+      case 'flee':
+        // Worked out while scoring, so that `flee` is only ever offered where
+        // there is somewhere to run to. See `escapeFrom`.
+        if (found.fleePoint) {
+          person.targetX = found.fleePoint.x;
+          person.targetY = found.fleePoint.y;
         }
         break;
-      }
       case 'talk':
       case 'teach':
       case 'teach_child':

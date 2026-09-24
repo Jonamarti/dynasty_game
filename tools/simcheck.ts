@@ -2625,6 +2625,25 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       (tel.corrected ?? 0) + ' children corrected instead');
   }
 
+  // M12 phase 2c, the owner's note 4: "some NPCs neither defend themselves
+  // nor run". Of blows that landed on an adult the same hand had already hit
+  // within `UNDER_ATTACK_TICKS` — time enough to answer — how many found them
+  // doing neither. **Measured on the build before**, three seeds each:
+  // `century` 44 of 54 and 23 of 26, `lean` 23 of 26, 32 of 37 and 71 of 97,
+  // `herders` 32 of 34 — people caught in a loop of choosing a warning or a
+  // word that `interruption` cut off on the next tick, or fleeing into the
+  // edge of the map, or in the middle of a lesson nothing could interrupt.
+  // After, the same twelve runs: 1 of 91 in all.
+  const repeatBlows = tel.blow_repeat ?? 0;
+  const unanswered = tel.blow_repeat_unanswered ?? 0;
+  if (repeatBlows < 10) {
+    skip('the-struck-respond', 'only ' + repeatBlows + ' second blows here; too few to say');
+  } else {
+    add('the-struck-respond', unanswered / repeatBlows <= 0.35,
+      unanswered + ' of ' + repeatBlows + ' second blows found the victim neither running nor ' +
+      'hitting back (ceiling 35%)');
+  }
+
   // M11 phase 15's gate (owner's notes 6 and 9). Each was run against the
   // build before phase 15 and fails there; see the changelog for the numbers.
   //

@@ -3,6 +3,7 @@
  *
  *   npm run why
  *   npm run why -- --scenario band --person 3 --from 1500 --to 1560
+ *   npm run why -- --scenario century --seed 1 --id 11 --from 2780 --to 2840
  *
  * The single most useful question in a simulation like this is "why did she do
  * that?", and the honest answer is the utility score table. This dumps it tick
@@ -29,9 +30,18 @@ const to = Number(arg('to', String(from + 60)));
 telemetry.reset();
 telemetry.enable();
 
-const sim = new Simulation(scenario.config);
-const subject = sim.people[personIndex];
-if (!subject) throw new Error('no person at index ' + personIndex);
+// --seed N runs the scenario on another seed, and --id picks by person id
+// rather than by founding index — so a case `npm run violence -- --cases`
+// names can be followed straight into its score table.
+const seedArg = process.argv.indexOf('--seed');
+const sim = new Simulation(seedArg >= 0
+  ? { ...scenario.config, seed: Number(process.argv[seedArg + 1]) }
+  : scenario.config);
+const idArg = process.argv.indexOf('--id');
+const subject = idArg >= 0
+  ? sim.people.find(p => p.id === Number(process.argv[idArg + 1]))
+  : sim.people[personIndex];
+if (!subject) throw new Error('no such person');
 
 console.log('Following ' + subject.name + ' (id ' + subject.id + ') from step ' + from + ' to ' + to);
 console.log('');

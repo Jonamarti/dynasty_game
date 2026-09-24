@@ -50,7 +50,7 @@ import { mayUse, type PropertyUse } from '../social/Property.ts';
 import {
   caughtOffender, usingPropertyOf, isHeld, isBound, noteCall, INTERVENABLE,
   RESTRAIN_TICKS, HOLD_TICKS, HOLD_RENEW, HOLD_FOR_ROPE, CALL_TICKS, BIND_TICKS, BOUND_TICKS,
-  PATROL_LINGER, GUARD_REASSURES,
+  PATROL_LINGER, GUARD_REASSURES, assailantOf, UNDER_ATTACK_TICKS,
 } from '../social/Defence.ts';
 import { giftWorth } from '../social/Events.ts';
 import { knowledgeOfPerson } from '../social/Knowledge.ts';
@@ -469,6 +469,13 @@ const THREATEN_TICKS = 18;
 /** A warning is said and done quicker than a demand is argued out. */
 const WARN_TICKS = 8;
 
+/**
+ * What somebody being attacked may go on doing: running, fighting, and the
+ * two states with their own way of noticing a blow — sleep (`wakeReason`)
+ * and a captive's escape (`interruption`). See `execute`.
+ */
+const ANSWERS_A_BLOW: ReadonlySet<string> = new Set(['flee', 'attack', 'sleep', 'escape']);
+
 /** What a child is told to stop when corrected in the middle of it. */
 const MISCHIEF_ACTIONS: ReadonlySet<string> = new Set(['steal', 'sabotage', 'threaten', 'attack']);
 
@@ -574,6 +581,22 @@ const SPREAD_COMMIT = 6;
 export class ActionSystem {
   execute(person: Person, ctx: ActionContext): void {
     if (!person.alive) return;
+
+    // M12 phase 2c, the owner's note 4. Somebody committed to something — a
+    // timer running, or an order — does not re-plan, so this is the only way a
+    // blow can reach them, and eight timed verbs (`teach`, `ask`, `discuss`,
+    // `court`, `spar`, `give`, `trade`, `steal`) had no interruption check at
+    // all. Measured on `century`: a man beaten five times in the middle of a
+    // lesson, from 89 health to 46, and never once looked up. One check here
+    // rather than eight copies, for the reason `interruption` itself is one
+    // function: they would drift. Only the blow — each verb's own need
+    // thresholds are a larger question about how long a lesson may run
+    // thirsty, and are left to a pass that can measure it (`bugs.md`).
+    if ((person.actionTimer > 0 || person.order !== null) &&
+      !ANSWERS_A_BLOW.has(person.action) && this.underAttack(person, ctx)) {
+      this.stop(person, 'under_attack', ctx, 'set_upon_');
+      return;
+    }
 
     switch (person.action) {
       case 'drink': this.doDrink(person, ctx); break;
@@ -853,7 +876,10 @@ export class ActionSystem {
     // woodcutter used to abort on the very first swing. Sleeping had the same
     // problem, and answers it by not using this function at all.
     if (!opts.ignoreLaden && person.isLaden) return 'hands_full';
-    if (person.lastHarmedTick > ctx.tick - 40) return 'under_attack';
+    // M12 phase 2c: being attacked *now*, not having been hit at some point in
+    // the last forty ticks — see `Defence.assailantOf` for the loop the old
+    // reading made with `Brain`.
+    if (this.underAttack(person, ctx)) return 'under_attack';
 
     // The thresholds here are the whole difficulty of letting work continue.
     //
@@ -909,6 +935,11 @@ export class ActionSystem {
     // leave somebody locked in a job forever.
     if (person.workedTicks > MAX_WORK_STRETCH) return 'long_enough';
     return null;
+  }
+
+  /** Whether somebody is being set upon right now. One reading; see `Defence.assailantOf`. */
+  private underAttack(person: Person, ctx: ActionContext): boolean {
+    return assailantOf(person, id => ctx.peopleById.get(id), ctx.tick) !== null;
   }
 
   private doHarvest(person: Person, ctx: ActionContext): void {
@@ -2359,7 +2390,7 @@ export class ActionSystem {
    * need you would not even have broken off work for is not rest.
    */
   private wakeReason(person: Person, ctx: ActionContext): string | null {
-    if (person.lastHarmedTick > ctx.tick - 40) return 'under_attack';
+    if (this.underAttack(person, ctx)) return 'under_attack';
     if (person.needs.thirst > 45) return 'thirsty';
     if (person.needs.hunger > 50) return 'hungry';
     // Cold is deliberately absent. The roof overhead is the thing that fixes
@@ -4261,6 +4292,18 @@ export class ActionSystem {
       (1 - armourOf(other));
 
     other.health -= damage;
+    // M12 phase 2c, for `the-struck-respond`: a second blow from the same hand
+    // landing on an adult who had time since the first to run or hit back,
+    // and is doing neither. Somebody held, bound or kept cannot, and is not
+    // counted; nor is the first blow, which nobody sees coming.
+    if (!other.isChild && other.lastHarmedBy === person.id &&
+      ctx.tick - other.lastHarmedTick <= UNDER_ATTACK_TICKS &&
+      !isHeld(other, ctx.tick) && other.captiveOf === null) {
+      telemetry.count('blow_repeat');
+      const answering = other.action === 'flee' ||
+        (other.action === 'attack' && other.targetPersonId === person.id);
+      if (!answering) telemetry.count('blow_repeat_unanswered');
+    }
     other.lastHarmedBy = person.id;
     other.lastHarmedTick = ctx.tick;
     person.practice('fight', 1.2);
