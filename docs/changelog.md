@@ -16,6 +16,13 @@ hogar lo priorizan al elegir una venganza cuando está presente, con una puerta
 de hostilidad propia, en lugar de descargar el agravio sobre cualquier
 extranjero cercano. Los nacidos en la casa reciben el sospechoso persistente.
 
+## 2026-09-24 — M12 phase 6c: cerrar una enemistad
+
+Un matrimonio entre casas, una compensación aceptada, un intercambio o un
+regalo grande eliminan el `feud` en ambos hogares y recuperan parte de la
+opinión entre sus miembros. La enemistad conserva una salida social en lugar de
+ser un contador que sólo puede crecer.
+
 ## 2026-09-24 — M12 phase 5c: permiso y tributo de paso
 
 El menú social permite pedir permiso a un vecino extranjero para recolectar en

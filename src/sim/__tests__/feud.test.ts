@@ -20,5 +20,11 @@ describe('household feuds', () => {
     const victim = sim.householdsById.get(target.householdId!)!;
     expect(aggressor.feud.get(victim.id)).toBeGreaterThan(0);
     expect(victim.feud.get(aggressor.id)).toBeGreaterThan(0);
+
+    sim.social.emit('gift', actor, target, 1, sim.time.tick,
+      sim.peopleHash, sim.config.sightRadius);
+    for (let i = 0; i < sim.config.time.ticksPerDay; i++) sim.step();
+    expect(aggressor.feud.has(victim.id)).toBe(false);
+    expect(victim.feud.has(aggressor.id)).toBe(false);
   });
 });

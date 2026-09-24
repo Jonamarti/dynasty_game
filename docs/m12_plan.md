@@ -239,10 +239,10 @@ me ha atacado», se comenta y la relación va bajando.
   miembros lo priorizan cuando está a la vista; la ruta de venganza ya no puede
   escoger al primer extranjero que pasa. Los hijos reciben el sospechoso del
   hogar al nacer.
-- **6c. La paz también se hace.** Un matrimonio entre las dos casas, un regalo
-  grande o una compensación entre jefes (fase 2a a escala de pueblo) cierran
-  la enemistad. Sin salida, la enemistad sólo sabe crecer, que es el fallo que
-  la fase 1 acaba de arreglar dentro de la banda.
+- **6c. La paz también se hace. Construida** (2026-09-24, detalle en
+  `changelog.md`). Un matrimonio entre las dos casas, un regalo grande, un
+  intercambio o una compensación aceptada cierran el `feud` de ambos hogares y
+  recuperan parte de la relación entre sus miembros.
 
 ---
 

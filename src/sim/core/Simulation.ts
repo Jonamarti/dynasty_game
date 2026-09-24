@@ -984,6 +984,7 @@ export class Simulation {
     const source = younger.householdId === null
       ? null
       : this.householdsById.get(younger.householdId);
+    if (source && source.id !== target.id) this.closeFeud(source, target);
     if (source && source.id !== target.id) {
       for (const memberId of [...source.memberIds]) {
         const member = this.peopleById.get(memberId);
@@ -1411,11 +1412,17 @@ export class Simulation {
       const actor = this.peopleById.get(event.actorId);
       const target = this.peopleById.get(event.targetId);
       if (!actor || !target || actor.bandId === target.bandId ||
-        actor.householdId === null || target.householdId === null ||
-        DEED_WEIGHT[event.type] >= 0) continue;
+        actor.householdId === null || target.householdId === null) continue;
       const aggressor = this.householdsById.get(actor.householdId);
       const victim = this.householdsById.get(target.householdId);
       if (!aggressor || !victim || aggressor.id === victim.id) continue;
+      if ((event.type === 'gift' || event.type === 'amends' || event.type === 'trade') &&
+        event.magnitude >= 0.5) {
+        this.closeFeud(aggressor, victim);
+        this.feudEvents.add(event.id);
+        continue;
+      }
+      if (DEED_WEIGHT[event.type] >= 0) continue;
       const weight = Math.min(100, Math.abs(DEED_WEIGHT[event.type]) *
         (0.5 + event.magnitude * 0.5));
       aggressor.feud.set(victim.id, Math.min(100, (aggressor.feud.get(victim.id) ?? 0) + weight));
@@ -1434,6 +1441,22 @@ export class Simulation {
       telemetry.count('household_feud_started');
       this.feudEvents.add(event.id);
     }
+  }
+
+  /** A marriage, accepted amends or a substantial gift closes both ledgers. */
+  private closeFeud(a: Household, b: Household): void {
+    if (!a.feud.has(b.id) && !b.feud.has(a.id)) return;
+    a.feud.delete(b.id);
+    b.feud.delete(a.id);
+    a.feudSuspects.delete(b.id);
+    b.feudSuspects.delete(a.id);
+    for (const aId of a.memberIds) {
+      for (const bId of b.memberIds) {
+        this.relationships.addDeed(aId, bId, 12, this.time.tick);
+        this.relationships.addDeed(bId, aId, 12, this.time.tick);
+      }
+    }
+    telemetry.count('household_feud_closed');
   }
 
   /**
