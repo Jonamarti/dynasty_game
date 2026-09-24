@@ -270,7 +270,18 @@ const hud = new Hud(hudRoot, {
       knowledgeOfPerson(sim.player ?? person, person, sim.relationships).displayName,
       { color: '#7fd4ff', boxed: true, ttl: 2 });
   },
-  onPickDesign: def => { activeDesign = def; },
+  onPickDesign: def => {
+    activeDesign = def;
+    // The owner's note of 2026-09-24: picking a design showed no ghost at all
+    // until the pointer next moved over the map — and on a touch screen,
+    // where nothing hovers, never. Put it down at once where the pointer last
+    // was, or in the middle of the view if it has not been over the map.
+    const at = lastMapPointer ?? {
+      x: camera.screenToWorldX(camera.viewWidth / 2),
+      y: camera.screenToWorldY(camera.viewHeight / 2),
+    };
+    showBuildGhost(at.x, at.y);
+  },
   onCraft: recipeId => {
     // Down the same path the radial menu's "Make a ..." already uses, so an
     // order to craft reaches the simulation one way rather than two.
@@ -1040,15 +1051,25 @@ canvas.addEventListener('pointermove', event => {
     return;
   }
   const point = worldPoint(event);
-  const x = Math.round(point.x);
-  const y = Math.round(point.y);
+  showBuildGhost(point.x, point.y);
+});
+
+/** Where the pointer was last seen over the map, in world units. */
+let lastMapPointer: { x: number; y: number } | null = null;
+canvas.addEventListener('pointermove', event => { lastMapPointer = worldPoint(event); });
+
+/** Draws the active design's ghost at a world point, green where it fits. */
+function showBuildGhost(worldX: number, worldY: number): void {
+  if (!buildMode || !activeDesign) return;
+  const x = Math.round(worldX);
+  const y = Math.round(worldY);
   renderer.buildGhost = {
     x, y,
     width: activeDesign.width,
     height: activeDesign.height,
     ok: sim.canPlace(activeDesign, x, y),
   };
-});
+}
 
 /**
  * Drag-to-pan.

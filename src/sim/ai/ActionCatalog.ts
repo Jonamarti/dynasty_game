@@ -421,6 +421,12 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       enabled: hurt,
       reason: hurt ? undefined : t('They are not hurt'),
     }] : []),
+    // The owner's note of 2026-09-24: what one person can do to another is
+    // three families of verb — talking, knowledge, and confrontation — and a
+    // ring with all of them side by side had grown past reading. One entry
+    // per family, each opening onto its own ring; `grouped` leaves a family
+    // of fewer than three flat.
+    ...grouped([
     ...grouped(discussions, t('Discuss with {name}…', { name: other.name }), '\u{1F914}',
       t('They know nothing about what is on your mind')),
     {
@@ -452,6 +458,7 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       enabled: !other.isChild,
       reason: other.isChild ? t('They are too young to show anybody anything') : undefined,
     },
+    ], t('Teach and learn…'), '\u{1F393}', t('There is nothing to teach or learn here'), false, FAMILY_AT),
     {
       // M11 phase 11: the safe half of the fix for "nobody can become a
       // better fighter than the person next to them" (docs/bugs.md). Nobody
@@ -509,6 +516,7 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
           ? t('They are carrying no food')
           : undefined,
     },
+    ...grouped([
     {
       id: 'steal',
       label: t('Steal from {name}', { name: other.name }),
@@ -556,6 +564,7 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       enabled: true,
       hostile: true,
     },
+    ], t('Confront {name}…', { name: other.name }), '⚔', '', true, FAMILY_AT),
     {
       id: 'possess',
       label: t('Play as {name}', { name: other.name }),
@@ -1019,9 +1028,10 @@ export const NODE_VERB_LABELS: string[] = [
  * would be a refusal with its explanation locked inside it.
  */
 function grouped(
-  options: ActionOption[], label: string, icon: string, emptyReason: string
+  options: ActionOption[], label: string, icon: string, emptyReason: string, hostile = false,
+  at = GROUP_AT
 ): ActionOption[] {
-  if (options.length < GROUP_AT) return options;
+  if (options.length < at) return options;
   const any = options.some(option => option.enabled);
   return [{
     id: 'group',
@@ -1030,6 +1040,9 @@ function grouped(
     enabled: any,
     reason: any ? undefined : emptyReason,
     children: options,
+    // Drawn in the warning colour of the verbs inside it, so a ring of blows
+    // does not look like a ring of kindnesses.
+    ...(hostile ? { hostile: true } : {}),
   }];
 }
 
@@ -1041,6 +1054,14 @@ function grouped(
  * fifteen recipes on their own.
  */
 const GROUP_AT = 3;
+
+/**
+ * The three families of verb aimed at a person (owner's note of 2026-09-24)
+ * are folded however few they hold: the point is that "attack" is always one
+ * click into "Confront…", not on the top ring one day and a level down the
+ * next depending on what the player happens to carry.
+ */
+const FAMILY_AT = 1;
 
 /**
  * One craft entry, with the station question answered.

@@ -73,6 +73,15 @@ export interface SocialEvent {
    * hearsay can spread it; who knows *later* is a question for the gossips.
    */
   witnesses: number;
+  /**
+   * The band the deed was done against: the target's, or the owning band's
+   * for a deed against a building. Null when it was done against nobody's.
+   * Kept on the event, and on every memory of it, because who the victim
+   * belonged to is what decides how a bystander judges it — see
+   * `Restraint.partiality` — and a story told a week later must be judged the
+   * way the deed was.
+   */
+  victimBandId: number | null;
 }
 
 /**

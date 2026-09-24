@@ -190,6 +190,9 @@ export const ACTION_LABELS: Record<string, string> = {
   trade: 'trading',
   // M11 phase 14b: an outsider warned off the band's ground.
   warn: 'warning them off',
+  // The owner's note of 2026-09-24: a child of the band is corrected, not
+  // beaten. See `social/Restraint.ts`.
+  correct: 'correcting a child',
   // M11 phase 15b.
   restrain: 'holding someone back',
   call_for_help: 'calling for help',
@@ -316,6 +319,8 @@ export const STOP_REASONS: Record<string, string> = {
   // M11 phase 15b. `restrained` is what the held person is told; main.ts
   // names the holder when it can. `broke_free` is what the holder is told.
   restrained: 'someone held them back',
+  // What a corrected child is told, when they were in the middle of it.
+  corrected: 'an elder of their people told them off',
   broke_free: 'they broke free',
   // M11 phase 15c. `bound` is what the tied-up person is told; main.ts names
   // whoever tied them when it can. The other two are the binder's.

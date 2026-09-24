@@ -76,6 +76,14 @@ const ALONGSIDE_LEARN = 0.5;
  * in `social/Authority.ts`, because two knobs for one behaviour is how a scorer
  * becomes untunable.
  */
+/**
+ * The standard deviation of every trait across a population: a bell curve
+ * around 0.5, most people ordinary and a few far out either way — the
+ * owner's own description of how temperament is spread. Founders are drawn
+ * from it, and `inheritTraits` holds every later generation to it.
+ */
+export const TRAIT_SPREAD = 0.18;
+
 export const TRAITS = [
   'aggression', 'greed', 'loyalty', 'curiosity', 'tradition',
   'intelligence', 'industriousness', 'malice',
@@ -437,6 +445,21 @@ export class Person {
   caughtId: number | null = null;
   caughtTick = -9999;
   /**
+   * The last child of this person's own band they saw doing wrong, and when —
+   * the owner's note of 2026-09-24, "the members of the tribe correct them".
+   * Written by `emit`'s witness loop; read by `Brain`'s `correct`, which
+   * forgets it after `Restraint.MISCHIEF_MEMORY`.
+   */
+  mischiefId: number | null = null;
+  mischiefTick = -9999;
+  /**
+   * How much being corrected as a child has taught this person, 0 to 1. Raised
+   * by `ActionSystem.doCorrect`, never lowered, and kept into adulthood: it
+   * brakes every predatory verb against this person's own people, and while
+   * they are a child it brakes them against anybody. See `Restraint.ts`.
+   */
+  conscience = 0;
+  /**
    * Who is holding this person down, and until when — M11 phase 15b's
    * `restrain`. While `heldUntil` has not passed, this person neither thinks
    * nor acts; the holder renews it every tick they keep holding (`HOLD_RENEW`),
@@ -714,7 +737,7 @@ export class Person {
     for (const skill of SKILLS) this.skills[skill] = Math.max(0, rng.gaussian(8, 5));
 
     this.traits = {} as Record<Trait, number>;
-    for (const trait of TRAITS) this.traits[trait] = Math.max(0, Math.min(1, rng.gaussian(0.5, 0.18)));
+    for (const trait of TRAITS) this.traits[trait] = Math.max(0, Math.min(1, rng.gaussian(0.5, TRAIT_SPREAD)));
 
     // Starts at rest rather than at zero: a person with a settled temperament
     // is not born jarred against it.

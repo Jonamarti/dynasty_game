@@ -2601,6 +2601,30 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ' incidents, ' + after.toFixed(1) + ' after');
   }
 
+  // The owner's note of 2026-09-24: a band fell on its own, and on its own
+  // children. Measured on `century` before `social/Restraint.ts`: 92 of 298
+  // blows landed inside the striker's own band and 145 on a child — both
+  // checks below fail there, and read 0 of 130 after.
+  //
+  // `peace-within-bands` allows a little: the far tail of temperament
+  // (`IN_GROUP_TAIL`, about one person in a hundred) and a starving man may
+  // still strike one of their own, and self-defence always may.
+  // `children-are-not-struck` allows nothing chosen, and a floor of 2% is
+  // there only for a child caught in a fight that was about somebody else.
+  const allBlows = (tel.event_assault ?? 0) + (tel.event_murder ?? 0);
+  const ownBlows = (tel.harm_own_band_assault ?? 0) + (tel.harm_own_band_murder ?? 0);
+  const childBlows = (tel.harm_child_assault ?? 0) + (tel.harm_child_murder ?? 0);
+  if (allBlows < 20) {
+    skip('peace-within-bands', 'only ' + allBlows + ' blows here; too few to say where they land');
+    skip('children-are-not-struck', 'only ' + allBlows + ' blows here; too few to say');
+  } else {
+    add('peace-within-bands', ownBlows / allBlows <= 0.1,
+      ownBlows + ' of ' + allBlows + ' blows landed inside the striker\'s own band (ceiling 10%)');
+    add('children-are-not-struck', childBlows / allBlows <= 0.02,
+      childBlows + ' of ' + allBlows + ' blows by an adult landed on a child (ceiling 2%); ' +
+      (tel.corrected ?? 0) + ' children corrected instead');
+  }
+
   // M11 phase 15's gate (owner's notes 6 and 9). Each was run against the
   // build before phase 15 and fails there; see the changelog for the numbers.
   //

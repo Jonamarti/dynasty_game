@@ -49,7 +49,7 @@ import { chooseAmongBest } from '../core/Choice.ts';
 import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
 import { mayUse } from '../social/Property.ts';
 import {
-  homeRange, homeward, fearOf, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
+  homeRange, homeward, fearOf, wariness, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
   DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
 } from '../social/Fear.ts';
 import { INVESTIGATE, CONCEAL, CONCEAL_WATER_REACH } from '../social/Investigation.ts';
@@ -64,6 +64,9 @@ import {
   PATROL_LINGER,
   CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE, CALL_MEMORY, CALL_FOR_HELP, ANSWER_CALL,
 } from '../social/Defence.ts';
+import {
+  ownPeopleLicence, tailLicence, conscienceBrake, mischiefChild, CORRECT,
+} from '../social/Restraint.ts';
 
 export interface BrainContext {
   world: World;
@@ -187,6 +190,8 @@ interface FoundTargets {
   victim: Person | null;
   /** Whoever an `attack` is aimed at. Never merged with `victim`; see above. */
   foe: Person | null;
+  /** Which route chose `foe` — revenge, predation, territory or caught. Telemetry only. */
+  attackRoute: string;
   /**
    * The outsider a `warn` is aimed at, M11 phase 14b. Its own field rather
    * than `foe`, because the revenge and predation routes overwrite `foe`
@@ -196,6 +201,8 @@ interface FoundTargets {
   intruder: Person | null;
   /** One of this person's own people a `restrain` is aimed at, M11 phase 15b. */
   restrainee: Person | null;
+  /** A child of the band a `correct` is aimed at. See `Restraint.ts`. */
+  correctee: Person | null;
   /** Whoever an `answer_call` goes to, M11 phase 15b.4. */
   helpCallerTarget: Person | null;
   /** Somebody held by one of this person's own, for a `bind`, M11 phase 15c. */
@@ -504,6 +511,24 @@ const NEWS_URGE = 0.1;
 const PREDATION = 0.7;
 
 /**
+ * How recently somebody must have hit this person for hitting back to be
+ * self-defence rather than revenge, in ticks — a few exchanges of blows
+ * (`ATTACK_WINDUP` apart), not a day. And the grudge self-defence is treated
+ * as carrying, whatever opinion says: just past the revenge gate, so the blow
+ * is weighed by boldness like any other but is never refused for want of a
+ * grievance. The owner's note of 2026-09-24.
+ */
+const SELF_DEFENCE_WINDOW = 30;
+const SELF_DEFENCE_GRUDGE = 0.7;
+
+/**
+ * How much dread of somebody holds back a blow nursed against them. At full
+ * dread a grudge is worth under a third of its weight: the man who broke your
+ * arm is the man you do not go looking for.
+ */
+const DREAD_BRAKE = 0.7;
+
+/**
  * How defenceless somebody has to look before predation is considered at all.
  *
  * A hard floor rather than a smooth falloff, because the thing being modelled
@@ -744,6 +769,7 @@ export class Brain {
     let fleeFrom: Person | null = null;
     let intruder: Person | null = null;
     let restrainee: Person | null = null;
+    let correctee: Person | null = null;
     let helpCallerTarget: Person | null = null;
     let bindTarget: Person | null = null;
     let patrolPoint: { x: number; y: number } | null = null;
@@ -802,7 +828,8 @@ export class Brain {
 
       // M11 phase 14b: a frightened person keeps to their own — as a
       // preference over company, never a refusal. See `STRANGER_AVERSION`.
-      const fear = fearOf(person);
+      // Since 2026-09-24 nobody is quite at ease with a stranger: see
+      // `Fear.wariness`.
       const freshCompany = neighbours.filter(other => {
         const rel = ctx.relationships.peek(person.id, other.id);
         if (!rel) return true;
@@ -810,7 +837,8 @@ export class Brain {
       });
       companion = this.pickBest(freshCompany, other =>
         ctx.relationships.opinion(person.id, other.id) + 5 - person.distanceTo(other)
-        - (other.bandId === person.bandId ? 0 : fear * STRANGER_AVERSION)
+        - (other.bandId === person.bandId ? 0 : wariness(person,
+          ctx.bandRelations.standing(person.bandId, other.bandId)) * STRANGER_AVERSION)
         // Worth about a dozen tiles of walking toward whoever leads your band,
         // and a couple toward anybody else in it. In opinion's units because
         // everything else in this comparison is.
@@ -1154,10 +1182,21 @@ export class Brain {
       // Steal: wanting what someone else has, weighed against being seen.
       // The privacy term is the interesting one — it makes thieves wait for an
       // empty clearing, and it means a crowded camp polices itself.
-      const carrier = this.pickBest(neighbours, other =>
-        other.inventory.total - person.distanceTo(other) * 2
+      // The owner's note of 2026-09-24: robbing one's own people is the far
+      // tail of greed, or desperation, and nothing else — so somebody without
+      // that licence does not so much as look at a bandmate's pack, and a
+      // laden stranger further off is still a candidate. See `Restraint.ts`.
+      const robOwn = ownPeopleLicence(person, person.traits.greed, person.needs.hunger / 100);
+      const carrier = this.pickBest(
+        robOwn > 0 ? neighbours : neighbours.filter(other => other.bandId !== person.bandId),
+        other => other.inventory.total - person.distanceTo(other) * 2
       );
       if (carrier && carrier.inventory.total > 0) {
+        const ownPeople = carrier.bandId === person.bandId;
+        // A child who has been corrected holds back from anybody's pack; an
+        // adult's upbringing speaks only about their own people, and is
+        // already inside `robOwn`.
+        const restraint = (ownPeople ? robOwn : 1) * (person.isChild ? conscienceBrake(person) : 1);
         const onlookers = ctx.peopleHash
           .queryRadius(carrier.x, carrier.y, ctx.sightRadius)
           .filter(o => o.alive && o.id !== person.id && o.id !== carrier.id).length;
@@ -1195,7 +1234,7 @@ export class Brain {
         add('steal',
           (hunger * 0.8 + person.traits.greed * 0.35 + dislike * 0.4 +
             easyMark * person.traits.greed * 0.5 + bandHostility * 0.3) *
-          (1 - person.traits.loyalty * 0.6) * privacy *
+          (1 - person.traits.loyalty * 0.6) * privacy * restraint *
           this.proximityBonus(person, carrier, ctx.sightRadius));
         victim = carrier;
 
@@ -1207,11 +1246,15 @@ export class Brain {
         // stealthy option is preferred. A loyal person still will not do it;
         // an aggressive one barely needs the excuse `dislike` provides.
         const edge = person.skillFactor('fight') - carrier.skillFactor('fight');
-        if (edge > 0.05) {
+        // Menacing one's own is the tail of aggression, not of greed.
+        const menace = ownPeople
+          ? ownPeopleLicence(person, person.traits.aggression, person.needs.hunger / 100)
+          : 1;
+        if (edge > 0.05 && menace > 0 && !person.isChild) {
           add('threaten',
             (hunger * 0.7 + person.traits.greed * 0.3 + dislike * 0.35 + bandHostility * 0.25) *
             (0.4 + person.traits.aggression * 1.2) * (1 - person.traits.loyalty * 0.55) *
-            Math.min(1.3, 0.3 + edge * 2.5) *
+            Math.min(1.3, 0.3 + edge * 2.5) * menace *
             this.proximityBonus(person, carrier, ctx.sightRadius));
         }
       }
@@ -1260,6 +1303,7 @@ export class Brain {
         add('sabotage',
           hostility * (0.3 + person.traits.aggression * 1.3) *
           (1 - person.traits.loyalty * 0.5) *
+          (person.isChild ? conscienceBrake(person) : 1) *
           this.proximityBonus(person, sabotageCandidate, ctx.sightRadius));
         sabotageTarget = sabotageCandidate;
       }
@@ -1270,11 +1314,34 @@ export class Brain {
     // and someone who has just handed over a gift must still be able to defend
     // themselves.
     let attackScore = 0;
-    const enemy = neighbours.length === 0 ? null : this.pickBest(neighbours, other =>
+    // Which of the four routes below won `foe`, counted only if `attack` is
+    // the action finally chosen — `npm run sim:check` reports it, and without
+    // it there is no telling a revenge killing from a predator's.
+    let attackRoute = '';
+    // The owner's note of 2026-09-24, measured: before this, 534 of 1018
+    // blows chosen in `century` were aimed at a child, and a child is
+    // corrected, never beaten (`correct` below). Nor does a child pick a
+    // fight: one who is hit runs, which `flee` already answers. Filtered
+    // before the pick rather than after it, so that a hated child in view
+    // cannot hide the hated adult behind them.
+    const adults = person.isChild ? [] : neighbours.filter(other => !other.isChild);
+    // Whoever is hitting this person right now comes first, whoever else is
+    // hated more: the owner's note that "some do not defend themselves". A
+    // blow that had not yet soured opinion past the revenge gate below left
+    // its victim standing there taking the next one. Striking back is not a
+    // question anybody's temperament or band gets a say in; whether they can
+    // win still is, and somebody outmatched runs instead (`flee`).
+    const assailant = person.lastHarmedBy === null ||
+      ctx.time.tick - person.lastHarmedTick > SELF_DEFENCE_WINDOW
+      ? undefined
+      : adults.find(other => other.id === person.lastHarmedBy);
+    const enemy = assailant ?? (adults.length === 0 ? null : this.pickBest(adults, other =>
       -ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other)
-    );
+    ));
     if (enemy) {
-      const grudge = Math.max(0, -ctx.relationships.opinion(person.id, enemy.id)) / 100;
+      const selfDefence = enemy === assailant;
+      const grudge = Math.max(selfDefence ? SELF_DEFENCE_GRUDGE : 0,
+        -ctx.relationships.opinion(person.id, enemy.id) / 100);
       // The bar is high, and deliberately so. The first version let a single
       // witnessed theft justify violence, and a band would consume itself in a
       // fortnight: one theft produced a revenge beating, the beating gave every
@@ -1309,11 +1376,25 @@ export class Brain {
         // into it — the gate stays a question about this one enemy, and
         // `bandHostility` only ever amplifies a blow already justified by
         // personal grievance, up to 1.5x at open war between the two bands.
+        // Inside a band, a grudge is answered with gossip, avoidance, a
+        // faction or exile — and with a blow only by the far tail of the
+        // temperament curve (`Restraint.IN_GROUP_TAIL`), about one person in
+        // a hundred. Across a band line the grudge stands as it always has.
+        const licence = selfDefence || enemy.bandId !== person.bandId
+          ? 1 : tailLicence(person.traits.aggression) * conscienceBrake(person);
+        // And fear of this particular person holds a hand back: somebody who
+        // has hurt you before is somebody you expect to hurt you again. The
+        // owner's "fear should brake the attacks too". Not when they are
+        // hurting you now — that is when fear turns into fighting back or
+        // running, and `flee` is scored below.
+        const dread = selfDefence ? 0 : ctx.relationships.dread(person.id, enemy.id) / 100;
         attackScore = grudge * grudge * boldness *
           (0.5 + person.traits.aggression * 2.5) *
-          (1 + this.bandHostility(person, enemy.bandId, ctx) * 0.5)
+          (1 + this.bandHostility(person, enemy.bandId, ctx) * 0.5) *
+          licence * (1 - dread * DREAD_BRAKE)
           * this.proximityBonus(person, enemy, ctx.sightRadius);
         foe = enemy;
+        attackRoute = selfDefence ? 'self_defence' : 'revenge';
       }
     }
 
@@ -1357,17 +1438,23 @@ export class Brain {
     // beside it, because two `add('attack', ...)` calls would put two rows with
     // one id into a table the HUD and `npm run why` both read as a list of
     // distinct options.
-    const prey = neighbours.length === 0 ? null : this.pickBest(neighbours, other =>
+    // Never a child, and one's own people only by the far tail — the same
+    // two lines the revenge route above now keeps.
+    const preyLicence = tailLicence(person.traits.aggression) * conscienceBrake(person);
+    const candidates = adults.filter(other => other.bandId !== person.bandId || preyLicence > 0);
+    const prey = candidates.length === 0 ? null : this.pickBest(candidates, other =>
       vulnerabilityOf(other, person) * 12 - person.distanceTo(other)
     );
     if (prey) {
-      const score = this.predationAppeal(person, prey, neighbours, ctx);
+      const score = this.predationAppeal(person, prey, neighbours, ctx) *
+        (prey.bandId === person.bandId ? preyLicence : 1);
       // Only if it beats what revenge already offered, and only then does the
       // blow change hands — so the score and the target never come apart, the
       // way they did before `foe` existed.
       if (score > attackScore) {
         attackScore = score;
         foe = prey;
+        attackRoute = 'predation';
       }
     }
 
@@ -1419,6 +1506,7 @@ export class Brain {
             if (score > attackScore) {
               attackScore = score;
               foe = trespasser;
+              attackRoute = 'territory';
               telemetry.count('defend_territory_chosen');
             }
           }
@@ -1444,7 +1532,9 @@ export class Brain {
       const offender = caughtId === null || person.isChild
         ? undefined
         : neighbours.find(other => other.id === caughtId);
-      if (offender && offender.bandId === person.bandId) {
+      // A child of the band is `correct`'s, below, and not held down; a
+      // child of another people is warned off and never struck.
+      if (offender && offender.bandId === person.bandId && !offender.isChild) {
         // M11 phase 15b.3, the rung for one of the witness's own people: hold
         // them back rather than warn them off. Only somebody the witness can
         // hope to hold, with the bandmates standing by them; the one who
@@ -1480,7 +1570,8 @@ export class Brain {
           add('call_for_help', CALL_FOR_HELP * (0.5 + person.traits.loyalty));
           telemetry.count('caught_call_offered');
         }
-      } else if (offender && ctx.relationships.kinship(person.id, offender.id) === 0) {
+      } else if (offender && offender.bandId !== person.bandId &&
+        ctx.relationships.kinship(person.id, offender.id) === 0) {
         const fear = fearOf(person);
         const since = ctx.time.tick - person.warnedOffTick;
         const warned = person.warnedOffId === offender.id && since < WARN_MEMORY;
@@ -1492,7 +1583,7 @@ export class Brain {
             intruder = offender;
             telemetry.count('caught_warn_offered');
           }
-        } else if (since >= WARN_GRACE &&
+        } else if (since >= WARN_GRACE && !offender.isChild &&
           usingPropertyOf(offender, person.bandId, id => ctx.buildings.find(b => b.id === id))) {
           // The same sizing-up as the defence of the ground, with the stake
           // of having seen it in place of the fear that route needs.
@@ -1533,12 +1624,31 @@ export class Brain {
           if (score > attackScore) {
             attackScore = score;
             foe = offender;
+            attackRoute = 'caught';
             telemetry.count('caught_attack_offered');
           }
         }
       }
     }
     if (warnScore > 0) add('warn', warnScore);
+
+    // --- Correcting a child --------------------------------------------------
+    // The owner's note of 2026-09-24: "if a child does something wrong — steals,
+    // say — the members of the tribe correct them, and the child does not do
+    // it again." Any adult of the band who saw it (`Restraint.noteMischief`),
+    // not only a parent: a band raises its children together. Not while a need
+    // would break it off, the gate every rung of the witness's ladder keeps.
+    {
+      const childId = person.isChild ? null : mischiefChild(person, ctx.time.tick);
+      const child = childId === null ? undefined : neighbours.find(other => other.id === childId);
+      if (child && child.isChild && child.bandId === person.bandId &&
+        !pressedByNeed(person, ctx.needs.workLimits)) {
+        add('correct', CORRECT * (0.5 + person.traits.loyalty) *
+          this.proximityBonus(person, child, ctx.sightRadius));
+        correctee = child;
+        telemetry.count('correct_offered');
+      }
+    }
 
     // --- Taking captives -------------------------------------------------------
     // M11 phase 15d. Two routes; the third way in, capture in the act, is the
@@ -2477,7 +2587,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, intruder, restrainee, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, tradePartner, fleeFrom,
+        victim, foe, attackRoute, intruder, restrainee, correctee, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, tradePartner, fleeFrom,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2989,6 +3099,7 @@ export class Brain {
       case 'threaten':
       case 'warn':
       case 'restrain':
+      case 'correct':
       case 'bind':
       case 'answer_call':
       case 'attack':
@@ -3018,11 +3129,17 @@ export class Brain {
           action === 'attack' ? found.foe :
           action === 'warn' ? found.intruder :
           action === 'restrain' ? found.restrainee :
+          action === 'correct' ? found.correctee :
           action === 'bind' ? found.bindTarget :
           action === 'answer_call' ? found.helpCallerTarget :
           action === 'slander' || action === 'praise' ? found.companion :
           found.victim;
         if (other) {
+          if (action === 'attack') {
+            telemetry.count('attack_route_' + found.attackRoute);
+            if (other.bandId === person.bandId) telemetry.count('attack_own_band_' + found.attackRoute);
+            if (other.isChild) telemetry.count('attack_child_' + found.attackRoute);
+          }
           person.targetX = other.x;
           person.targetY = other.y;
           person.targetPersonId = other.id;

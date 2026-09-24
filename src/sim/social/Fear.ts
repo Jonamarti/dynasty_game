@@ -203,8 +203,9 @@ export function opennessOf(a: Person, b: Person): number {
 
 /**
  * How far from home a frightened person will go to work, M11 phase 14b's
- * second reader. No limit below `RANGE_ONSET` of fear; from there the reach
- * falls from `RANGE_WIDE` tiles to `RANGE_FLOOR` at full fear.
+ * second reader. `RANGE_WIDE` below `RANGE_ONSET` of fear — since 2026-09-24,
+ * when it stopped being unlimited (see `WARY_OF_STRANGERS`); from there the
+ * reach falls from `RANGE_WIDE` tiles to `RANGE_FLOOR` at full fear.
  *
  * A filter, not a coefficient, and that is the plan's point: proximity
  * dominates the scorer, and a gentle pull toward home would lose to the
@@ -217,9 +218,38 @@ export const RANGE_ONSET = 0.25;
 export const RANGE_WIDE = 48;
 export const RANGE_FLOOR = 20;
 
+/**
+ * Wariness of strangers that nobody is ever without, 0-1 on `fearOf`'s scale:
+ * the owner's note of 2026-09-24. "Fear should never be zero, because you do
+ * not know the members of another tribe" — even one that has done you no harm.
+ * Enough that a band keeps to its own ground and its own company by default,
+ * which is where the owner wants the early game to sit, and exactly
+ * `RANGE_ONSET`, so the reach it buys (`RANGE_WIDE`) is continuous with the
+ * reach fear itself starts to narrow.
+ *
+ * It is a floor under fear for these two readers only — `homeRange` and the
+ * choice of company — and not a baseline on `mood.security`: that channel is
+ * what moves somebody to warn off and strike trespassers (`DEFEND_AT`), and a
+ * resting wariness that did that would be the opposite of the note's intent.
+ */
+export const WARY_OF_STRANGERS = RANGE_ONSET;
+
+/**
+ * How wary `person` is of somebody of another people, 0-1: their fear, or the
+ * resting wariness of strangers, whichever is more — softened by standing
+ * between the two peoples (close allies are hardly strangers at all) and
+ * sharpened by hostility, to double the resting figure at open war.
+ */
+export function wariness(person: Person, standing: number): number {
+  const resting = WARY_OF_STRANGERS * Math.max(0, Math.min(2, 1 - standing / 50));
+  return Math.max(fearOf(person), resting);
+}
+
 export function homeRange(person: Person): number {
   const fear = fearOf(person);
-  if (fear < RANGE_ONSET) return Infinity;
+  // Never unbounded: see `WARY_OF_STRANGERS`. A band with a camp works within
+  // a day's walk or so of it, however safe it feels.
+  if (fear < RANGE_ONSET) return RANGE_WIDE;
   const t = (fear - RANGE_ONSET) / (1 - RANGE_ONSET);
   return RANGE_WIDE + (RANGE_FLOOR - RANGE_WIDE) * t;
 }

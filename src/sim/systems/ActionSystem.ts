@@ -60,6 +60,7 @@ import {
 import { DISMEMBER_WORK, type Corpse } from '../entities/Corpse.ts';
 import { isCaptive, captorWatching, HOME_REACHED } from '../social/Captivity.ts';
 import { fightingPower } from '../social/Vulnerability.ts';
+import { CORRECT_TICKS, CORRECTION_STEP } from '../social/Restraint.ts';
 import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 
@@ -468,6 +469,9 @@ const THREATEN_TICKS = 18;
 /** A warning is said and done quicker than a demand is argued out. */
 const WARN_TICKS = 8;
 
+/** What a child is told to stop when corrected in the middle of it. */
+const MISCHIEF_ACTIONS: ReadonlySet<string> = new Set(['steal', 'sabotage', 'threaten', 'attack']);
+
 /** Ticks to tell somebody what you think of a third party. As short as `give`: a
  * remark, not a negotiation. */
 const GOSSIP_TICKS = 14;
@@ -606,6 +610,7 @@ export class ActionSystem {
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
       case 'warn': this.doWarn(person, ctx); break;
+      case 'correct': this.doCorrect(person, ctx); break;
       case 'restrain': this.doRestrain(person, ctx); break;
       case 'bind': this.doBind(person, ctx); break;
       case 'escape': this.doEscape(person, ctx); break;
@@ -3572,6 +3577,50 @@ export class ActionSystem {
     this.finish(person);
   }
 
+
+  /**
+   * Correcting a child of the band, the owner's note of 2026-09-24: "the
+   * members of the tribe correct them, and the child does not do it again."
+   *
+   * Walk up, a few words, done. The child's `conscience` rises by
+   * `CORRECTION_STEP` — kept for life, and what `Restraint.conscienceBrake`
+   * reads — and whatever they were doing wrong stops, with a reason the
+   * player is told if the child is theirs. No deed is emitted: nobody was
+   * wronged, and a telling-off that soured anybody's opinion of anybody would
+   * be the very spiral this exists to end.
+   */
+  private doCorrect(person: Person, ctx: ActionContext): void {
+    const child = this.approach(person, ctx);
+    if (!child) return;
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = CORRECT_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stopped) this.stop(person, stopped, ctx, 'correct_');
+      return;
+    }
+
+    child.conscience = Math.min(1, child.conscience + CORRECTION_STEP);
+    if (person.mischiefId === child.id) person.mischiefId = null;
+    const who = { actor: person.name, target: child.name };
+    person.chronicle.push({
+      tick: ctx.tick, ageDays: person.age, kind: 'did',
+      text: t('{actor} corrected {target}', who),
+    });
+    child.chronicle.push({
+      tick: ctx.tick, ageDays: child.age, kind: 'suffered',
+      text: t('{actor} corrected {target}', who),
+    });
+    telemetry.count('corrected');
+    if (child.propertyUseNoted !== null || MISCHIEF_ACTIONS.has(child.action)) {
+      this.abandon(child, 'corrected', ctx);
+    }
+    this.finish(person);
+  }
 
   /**
    * Holding somebody back, M11 phase 15b (owner's note 9).

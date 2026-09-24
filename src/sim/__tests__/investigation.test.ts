@@ -44,7 +44,7 @@ describe('the evidence', () => {
     const grudger = adult('Cai');
     asker.memory.record({
       id: 999_001, type: 'threaten', actorId: grudger.id, targetId: dead.id,
-      x: 0, y: 0, tick: 500, magnitude: 1, witnesses: 1,
+      x: 0, y: 0, tick: 500, magnitude: 1, witnesses: 1, victimBandId: null,
     }, true, 1, null);
     const scores = new Map<number, number>();
     weighEvidence(asker, dead, 1000, false, asker.id, scores);
@@ -57,7 +57,7 @@ describe('the evidence', () => {
     const dead = adult('Bo');
     killer.memory.record({
       id: 999_002, type: 'murder', actorId: killer.id, targetId: dead.id,
-      x: 0, y: 0, tick: 1000, magnitude: 1, witnesses: 0,
+      x: 0, y: 0, tick: 1000, magnitude: 1, witnesses: 0, victimBandId: null,
     }, true, 1, null);
     const scores = new Map<number, number>();
     weighEvidence(killer, dead, 1000, true, 12345, scores);

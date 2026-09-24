@@ -212,7 +212,11 @@ html, body, #app {
   top: 10px;
   right: 10px;
   width: 286px;
-  max-height: calc(100% - 20px);
+  /* Clear of `.hud-help` along the bottom edge. On a narrow window the help
+     line runs under the panel, and the last rows of a long Ties list — the
+     fold of the dead, since founders began knowing their whole band — sat
+     under it where no click could reach them. */
+  max-height: calc(100% - 60px);
   display: flex;
   flex-direction: column;
   background: var(--panel);

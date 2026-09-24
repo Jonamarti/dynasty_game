@@ -1,7 +1,67 @@
 # Known bugs and rough edges
 
-As of 2026-09-23. Everything here is real and reproducible; nothing here is
+As of 2026-09-24. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## Found shipping M12 phase 1 (peace within the band), 2026-09-24
+
+### A warning to a foreign child is still a `threaten`
+
+`warn` emits `threaten`, so an adult warning a child of another people off
+the band's store or hut is counted — and felt by that child's people — as a
+threat to a child: in one `century` run, 67 of 317 threats landed on a
+child, every one of them a warning. Nobody strikes a child any more; the
+warning itself is arguably right (it is how a child learns whose store it
+is), but it costs the two peoples' standing like any threat. Left until the
+M12 phase 4 work on children and captivity decides what a child of another
+people is owed.
+
+### Children still trespass, a lot
+
+The fourteen trespasses one child ran up in the diagnosis were mostly a
+child sheltering or sleeping under another band's roof with their family.
+Phase 1 made the child's own band stop minding (`partiality`), and the
+owning band now minds only half; but the child is still doing it, and
+`conscience` only brakes the predatory verbs (`steal`, `sabotage`), not
+where a child goes to sleep. The shelter scorer is where this lives.
+
+### The predation route never fires
+
+Instrumented for the first time in this pass (`attack_route_*` in
+telemetry): across a whole `century` run, before and after phase 1, the
+predation route of `Brain` chose **no** blow at all. Every blow is revenge,
+territory or a thief caught in the act. Not changed here — the owner's note
+was about too much violence, not too little — but a route that never fires
+is either dead code or a coefficient nobody has measured since M11 phase 2.
+
+### Exile has nothing left to fire on
+
+Exile and factions grew out of grudges inside a band, and phase 1 removed
+most of them: across twenty `century` seeds, 3 cast out in 3 seeds before
+and 0 after; factions in 10 seeds before, 4 after. The one-in-seventy-five
+who will still rob their own are exactly who exile should be for, but a band
+holds 0-1 of them. M12 phase 2 (compensation, the chief as judge) is the
+next reader of in-band wrongs, and should be measured against this.
+
+### The matrix's new red, 2026-09-24
+
+After phase 1, against the commit before it: `century` fails
+`captives-are-taken` (0 of 171 blows; the cohort takes captives in 6 seeds of
+20, up from 3) and `murders-are-solved` (one investigation over nine
+killings); `herders` `wool-is-sheared-and-woven` (13 wool bred, none woven;
+1 woven before); `stewards` `compost-answers-exhaustion` (was n/a — nobody
+knew how to compost on the commit before); `traps` `animals-are-tamed`;
+`lean` `violence-concentrates` (48% of **23** blows between peoples, where
+there used to be thousands); and `peoples-drift-apart`, `bands-take-sides`
+and `research-is-social` on the scenarios they already flipped on. All thin
+samples or single-run chaos; none tuned.
+
+### Self-defence rarely registers as such
+
+`attack_route_self_defence` is counted separately since this pass and reads
+close to zero in `century`: the struck are usually outmatched (boldness 0)
+and flee instead, or are committed to an action the blow did not interrupt.
+That is note 4's remaining half, scheduled as M12 phase 2c.
 
 ## Found closing M11 (phase 17), 2026-09-23
 

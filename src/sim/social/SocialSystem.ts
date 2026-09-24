@@ -31,6 +31,7 @@ import { noteCaught } from './Defence.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { t } from '../../i18n/i18n.ts';
 import { frighten, opennessOf } from './Fear.ts';
+import { noteMischief, partiality } from './Restraint.ts';
 
 export interface LifeEvent {
   tick: number;
@@ -319,9 +320,17 @@ export class SocialSystem {
       tick,
       magnitude: Math.max(0, Math.min(1, magnitude)),
       witnesses: 0,
+      victimBandId: target?.bandId ?? ownerBandId ?? null,
     };
 
     telemetry.count('event_' + type);
+    // Where a harm lands, for `sim:seeds`' VIOLENCE line and the checks that
+    // guard the owner's note of 2026-09-24: a band that beat its own children
+    // was invisible to every counter that only split deeds *between* peoples.
+    if (target && DEED_WEIGHT[type] < 0) {
+      if (target.bandId === actor.bandId) telemetry.count('harm_own_band_' + type);
+      if (target.isChild && !actor.isChild) telemetry.count('harm_child_' + type);
+    }
 
     const description = describeEvent(type, actor.name, target?.name ?? null);
     const deed = { type, actorId: actor.id, targetId: target?.id ?? null };
@@ -340,6 +349,7 @@ export class SocialSystem {
     if (type === 'murder' && target && actor.spouseId === target.id) actor.spouseId = null;
     // M11 phase 15b: the victim of a theft saw who did it, whoever else did.
     if (target && notifyTarget) noteCaught(target, actor, type, tick);
+    if (target && notifyTarget) noteMischief(target, actor, type, tick);
 
     let witnesses = 0;
     let ownerSaw = false;
@@ -365,6 +375,7 @@ export class SocialSystem {
         (target !== null && target.bandId === bystander.bandId)) {
         noteCaught(bystander, actor, type, tick);
       }
+      noteMischief(bystander, actor, type, tick);
     }
     if (witnesses > 0) telemetry.count('witnessed', witnesses);
     else telemetry.count('unwitnessed');
@@ -421,6 +432,7 @@ export class SocialSystem {
       tick,
       magnitude: 1,
       witnesses: 0,
+      victimBandId: dead.bandId,
     };
     this.absorb(accuser, event, suspect, false, confidence, null, dead.bandId);
     if (suspect.bandId !== dead.bandId) {
@@ -445,6 +457,7 @@ export class SocialSystem {
       x, y, tick,
       magnitude: 1,
       witnesses: 0,
+      victimBandId: null,
     };
     this.absorb(finder, event, dead, true, 1, null, null);
     telemetry.count('body_found');
@@ -488,6 +501,9 @@ export class SocialSystem {
 
     const delta =
       DEED_WEIGHT[event.type] *
+      // The owner's note of 2026-09-24: a band judges its own, and its
+      // children, by what they did and to whom. See `Restraint.ts`.
+      partiality(observer, actor, event) *
       tolerance *
       (0.5 + event.magnitude * 0.5) *
       victimFactor *
@@ -799,6 +815,7 @@ export class SocialSystem {
       // the original deed. Leaving it 0 keeps the "no witnesses" statement
       // true for a story told after the fact.
       witnesses: 0,
+      victimBandId: story.victimBandId,
     };
 
     const before = listener.memory.size;

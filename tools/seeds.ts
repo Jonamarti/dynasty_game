@@ -65,6 +65,12 @@ interface SeedResult {
   investigations: number;
   namedRightly: number;
   namedWrongly: number;
+  /** Blows and killings inside one band, and blows by adults on children. */
+  assaults: number;
+  ownBandBlows: number;
+  childBlows: number;
+  ownBandThefts: number;
+  thefts: number;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -160,6 +166,11 @@ function runSeed(scenarioName: string, seed: string, steps: number): SeedResult 
     investigations: counts.investigation_opened ?? 0,
     namedRightly: counts.murder_named_rightly ?? 0,
     namedWrongly: counts.murder_named_wrongly ?? 0,
+    assaults: (counts.event_assault ?? 0) + (counts.event_murder ?? 0),
+    ownBandBlows: (counts.harm_own_band_assault ?? 0) + (counts.harm_own_band_murder ?? 0),
+    childBlows: (counts.harm_child_assault ?? 0) + (counts.harm_child_murder ?? 0),
+    ownBandThefts: counts.harm_own_band_theft ?? 0,
+    thefts: counts.event_theft ?? 0,
   };
 }
 
@@ -292,6 +303,13 @@ function main(): void {
     '  BODIES ' + sum(r => r.bodiesFound) + ' of ' + sum(r => r.deaths) + ' found · ' +
     sum(r => r.investigations) + ' investigations, ' + sum(r => r.namedRightly) + ' named the killer, ' +
     sum(r => r.namedWrongly) + ' somebody else'
+  );
+  // The owner's note of 2026-09-24: tribes fell on their own, and on their
+  // own children. Pooled, for the reason `CONFLICT` is.
+  console.log(
+    '  VIOLENCE ' + sum(r => r.assaults) + ' blows in all, ' + sum(r => r.ownBandBlows) +
+    ' inside a band, ' + sum(r => r.childBlows) + ' by an adult on a child · ' +
+    sum(r => r.ownBandThefts) + ' of ' + sum(r => r.thefts) + ' thefts from a person inside a band'
   );
   console.log('  ' + ((Date.now() - started) / 1000).toFixed(1) + 's');
   console.log('');

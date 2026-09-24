@@ -28,6 +28,8 @@ export interface MemoryEntry {
   confidence: number;
   /** Who told them, for "I heard it from Velon". Null if witnessed. */
   sourceId: number | null;
+  /** See `SocialEvent.victimBandId`. */
+  victimBandId: number | null;
 }
 
 /** Beyond this, the least salient memories are dropped. */
@@ -78,6 +80,7 @@ export class Memory {
       firsthand,
       confidence,
       sourceId,
+      victimBandId: event.victimBandId,
     });
     this.known.add(event.id);
     this.trim();

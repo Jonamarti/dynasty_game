@@ -6,6 +6,109 @@ changed from the diff, but not *why*.
 
 ---
 
+## 2026-09-24 — M12 phase 1: peace within the band, and the notes of 2026-09-24
+
+The owner's notes (`notes2.txt`, now emptied; triage in `m12_plan.md` §0)
+and a spoken brief: the world started well — bands cooperating, even
+building the same things — and then collapsed into everyone fighting
+everyone, inside their own band and against their own children. "That is not
+how it was."
+
+**The diagnosis, measured.** A new `attack_route_*` telemetry (which of
+`Brain`'s routes won `foe`) and `npm run violence`, which splits every blow
+and theft by band, child and kin. On `century`: of 1,018 blows chosen, **534
+were aimed at a child and 277 at the attacker's own band**; the predation
+route chose none at all — every blow was revenge. The grudges were real, and
+came from two places. A band judged its own members for what they did to
+*strangers* exactly as it judged strangers for doing it to them: one boy of
+ten stood at −91 with a bandmate for nine sabotages of a *rival's* huts, and
+a small child at −75 for fourteen trespasses under a rival's roof. And a
+child's misdeed was answered as an adult's is, by the revenge route.
+
+**What changed** — `social/Restraint.ts`, new, holds all of it:
+
+- **Partial judgement** (`partiality`, read by `SocialSystem.absorb`). A
+  harm one of ours does to one of theirs weighs a quarter with us, and
+  nothing if we know the stranger had wronged our people (`hadItComing`, off
+  the observer's own memory — the owner's note 5). A child's misdeed weighs
+  0.15 with their own band, 0.5 with another. The victim always feels it in
+  full. Needs the wronged band on the deed, so `SocialEvent` and
+  `MemoryEntry` gained `victimBandId`, carried into retellings.
+- **Children are corrected, never struck.** No route in `Brain` aims a blow
+  at a child or lets a child start one; a foreign child caught at a store is
+  warned, not struck. An adult of the band who sees one of its children do
+  wrong (`noteMischief`) goes and **corrects** them — a new verb `correct`,
+  `ActionSystem.doCorrect` — which raises the child's `conscience` (new
+  `Person` field, kept for life) and stops what they were doing, with a
+  reason. Conscience brakes a child's predatory verbs against anybody, and an
+  adult's against their own people.
+- **The far tail, not the middle.** Robbing, menacing or nursing a blow
+  against one's own band now needs the trait past `IN_GROUP_TAIL` (0.9,
+  about one person in seventy-five of the `gaussian(0.5, 0.18)` the owner
+  described) or hunger past 0.8. First written as a linear ramp from 0.9 to
+  1, which multiplied down to nothing; `TAIL_RAMP` makes anybody clearly in
+  the tail genuinely willing. **Checked with a forced tail** (`npm run
+  violence -- --tail 10`): with a tenth of founders at 0.97 they do rob,
+  menace and strike their own. In an ordinary world a band holds 0-1 such
+  people and they need an unwatched moment, so the cohort reads zero.
+- **The bell curve is kept.** `inheritTraits` drifted children by 0.09
+  around their parents' mean, which halves the variance each generation and
+  settles the spread at 0.127 rather than 0.18: the tail would have gone
+  from 1 in 75 to under 1 in 1,000 within a few generations.
+  `INHERITED_DRIFT = TRAIT_SPREAD / √2` holds it.
+- **Self-defence always, and dread brakes a grudge** (note 4, and "fear
+  should brake the attacks"). Whoever hit this person in the last 30 ticks
+  is the enemy considered first and is treated as past the revenge gate; a
+  grudge against somebody one dreads is worth up to 70% less.
+- **They knew each other.** Founders start at familiarity 20 with every
+  member of their band (`FOUNDING_ACQUAINTANCE`): names known, small talk.
+  **Measured at 40 first** — every founder then chose the longest
+  conversation with every other, `talk` in `traps` went from 8,612 ticks to
+  19,750 and `tiny`'s band built nothing in eight days.
+- **Wariness of strangers is never zero** (`Fear.wariness`): a floor under
+  fear, for choosing company and for how far from camp one works — softened
+  by good standing between the peoples, doubled by open hostility. It is not
+  a baseline on `mood.security`, which drives striking trespassers.
+  `homeRange` is `RANGE_WIDE` (48) at rest, where it was unbounded.
+
+**Measured, `century`, twenty seeds, before → after:** mean survival 79.5% →
+**98.8%**, collapses 2 → 0; blows 5,892 → 1,793; murders 312 → 88; blows
+inside a band 1,421 → **0**; by an adult on a child 2,896 → **0**; thefts
+from a person inside a band 1,511 → 0; technologies passed on 320 → 375.
+Exile went from 3 in 3 seeds to 0 (see `bugs.md`).
+
+**New checks**, both failing on the build before: `peace-within-bands`
+(`century` there: 92 of 298 blows inside a band) and `children-are-not-struck`
+(145 of 298). A `VIOLENCE` line in `sim:seeds`.
+
+**The matrix** was 18 failures across 19 scenarios on the commit before and
+is 17 after; nine went green (`millers` five of them, `craft` four) and the
+new ones are the single-run flippers already on record plus two thin
+samples — see `bugs.md`.
+
+**The rest of the notes, fixed in the same pass:**
+
+- **Relationship 86 and only a greeting** (note 6). Conversation rungs read
+  familiarity alone, which fades; family could be down to a greeting.
+  `modeAllowed` now lets anybody sit a relative down for any conversation.
+  Deliberately not `chooseMode`: putting it there made every NPC pick the
+  longest rung with every relative (the same measurement as above).
+- **No ghost when picking a building** (note 2a). The ghost was only drawn
+  on the next pointer move over the map, and never on a touch screen. It is
+  now placed at once, where the pointer last was or mid-view.
+- **The radial menu in three families** (note 3): "Talk to…" (as before),
+  "Teach and learn…" (teach, ask, discuss) and "Confront…" (steal, threaten,
+  hold back, tie up, attack), each opening its own ring, folded however few
+  they hold (`FAMILY_AT`) so "attack" is always in the same place. The e2e
+  teaching spec now opens the family first; the talk spec picks a stranger
+  who is not kin, since kin may now always talk at length.
+- **The Ties list reached under the help line.** Founders knowing their whole
+  band made the list long enough that the fold of the dead sat under
+  `.hud-help` on a narrow window, where no click reached it (found by the
+  e2e spec for that fold). `.hud-panel` now stops 60px above the bottom.
+- **No penalty with the tribe for going after a stranger who wronged it**
+  (note 5): `hadItComing`, above.
+
 ## 2026-09-23 — M11 phase 17: the close of M11
 
 The debt the milestone owed without a phase, paid or written down.
