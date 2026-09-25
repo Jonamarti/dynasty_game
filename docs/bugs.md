@@ -25,15 +25,26 @@ Además, `children-keep-close` permanece bajo su umbral en varios escenarios.
 Fase 6 tiene almacén acotado de creencias, instinto de alimentos crudos,
 aprendizaje directo al comer, rendimiento nutricional por tick de recolección,
 pesca, fruta y caza, herencia atenuada y lectura de expectativas al seleccionar
-comida. El rendimiento aún no interviene en la elección de acciones; tampoco
-hay observación o transmisión social ni presentación al jugador. Evitar afirmar
-que las creencias de eficacia están completas.
+comida. La observación comparte una creencia sólo mientras el vecino ejecuta
+esa actividad. El rendimiento aún no interviene en la elección de acciones;
+tampoco hay transmisión mediante conversación ni presentación al jugador.
+Evitar afirmar que las creencias de eficacia están completas.
 
 La matriz `sim:check:all` de esta revisión (18 escenarios) deja `tiny` en verde;
 `cravings-steer-the-diet` y `nights-are-slept` fallan en los otros 17. La
 proximidad infantil falla en 14 escenarios, y el resto de fallos varía por
 escenario. Los checks `KIN` son n/a por escasez de ataques de niños y testigos;
 requieren una cohorte con incidentes para juzgar la defensa.
+La cohorte posterior a transmitir creencias observadas dio también 50,6% de
+supervivencia y 4/20 colapsos, igual al redondeo de la anterior; no se detecta
+una diferencia de supervivencia por el cambio social en esta muestra.
+
+Tras integrar la lectura inicial de fase 6, el `perf-budget` standalone del
+escenario corto `band` midió 1.435, 1.419 y 1.431 pasos/s frente al suelo de
+1.678 en tres ejecuciones consecutivas. No se ha hecho una comparación con el
+commit previo en la misma máquina; queda como posible regresión, no como causa
+confirmada. La documentación ya registra grandes oscilaciones de este check,
+así que medir una vez más antes de ajustar el cálculo.
 
 ## Casa del bebé y sueño nocturno, 2026-09-25
 

@@ -61,7 +61,7 @@ import {
 import { TERRITORY_RADIUS } from '../systems/BandSystem.ts';
 import {
   caughtOffender, usingPropertyOf, isHeld, isBound, helpCaller, BIND_HELD, PATROL, PATROL_REACH,
-  PATROL_LINGER, assailantOf, RESPOND,
+  PATROL_LINGER, assailantOf, UNDER_ATTACK_TICKS, RESPOND,
   CAUGHT_WARN, CAUGHT_MEMORY, CAUGHT_RESTRAIN, RESTRAIN_NERVE, CALL_MEMORY, CALL_FOR_HELP, ANSWER_CALL,
 } from '../social/Defence.ts';
 import { offerFor, OFFER_AT_LEAST, REFUSAL_COOLDOWN, AMENDS } from '../social/Amends.ts';
@@ -2048,7 +2048,8 @@ export class Brain {
       let protectedKind: 'child' | 'household' | 'band' = 'band';
       let rank = -1;
       for (const child of neighbours) {
-        if (!child.isChild) continue;
+        if (!child.isChild || child.lastHarmedBy === null ||
+          ctx.time.tick - child.lastHarmedTick > UNDER_ATTACK_TICKS) continue;
         const kind = person.childIds.includes(child.id) ? 'child'
           : person.householdId !== null && child.householdId === person.householdId ? 'household'
           : child.bandId === person.bandId ? 'band' : null;

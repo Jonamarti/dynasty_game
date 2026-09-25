@@ -866,12 +866,16 @@ persona, instinto para alimentos crudos, aprendizaje tras comer e herencia con
 confianza reducida. La expectativa influye en la elección de qué comer. También
 se registran rendimiento nutricional por tick de recolección, pesca, fruta y
 caza, incluida la caminata y los intentos sin fruto; tradición modula cuánto
-aprende cada cual. Faltan la comparación con instintos de rendimiento al
-escoger acciones, observación/transmisión social y mostrar evidencia al
-jugador; la fase sigue abierta.
+aprende cada cual. Quien ve a otro trabajando puede adquirir esa expectativa
+como `seen`, y quien presencia una comida puede aprender su expectativa de
+comida. Faltan la comparación con instintos de rendimiento al escoger acciones,
+la transmisión mediante conversación y mostrar evidencia al jugador; la fase
+sigue abierta.
 En la nueva cohorte `lean` de 20 semillas el resultado acumulado quedó en
 50,6% de supervivencia (4 colapsos), frente a 65,9% base; el coste supera el
-límite declarado y requiere revisión antes de calibrar la fase.
+límite declarado y requiere revisión antes de calibrar la fase. La cohorte con
+aprendizaje observado también dio 50,6% al redondeo, sin coste adicional de
+supervivencia detectable en esta lectura.
 
 ## Fase 5 — El antojo: variedad en la dieta
 

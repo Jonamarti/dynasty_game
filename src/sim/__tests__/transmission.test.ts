@@ -124,6 +124,24 @@ describe('teaching a child', () => {
 });
 
 describe('watching', () => {
+  it('learns the demonstrated food yield from a nearby worker', () => {
+    const knower = person('YieldWorker', 35);
+    const watcher = person('YieldWatcher', 35);
+    knower.action = 'forage';
+    knower.yieldKey = 'yield:forage';
+    knower.beliefs.learn('yield:forage', 42, 0.8, 'own', 900);
+    const hash = new SpatialHash<Person>(8);
+    hash.rebuild([knower, watcher]);
+    const knowledge = new KnowledgeSystem();
+    const ctx = { ...context('watch-yield'), peopleHash: hash };
+    for (let day = 0; day < 400 && !watcher.beliefs.get('yield:forage'); day++) {
+      knowledge.daily([watcher], { ...ctx, tick: 1000 + day * config.time.ticksPerDay });
+    }
+    expect(watcher.beliefs.get('yield:forage')).toMatchObject({
+      value: 42, source: 'seen',
+    });
+  });
+
   it('reaches a child, and reaches them more readily than an adult', () => {
     // Free and passive, and the reason childhood is worth simulating at all.
     // Measured as a rate over many days rather than asserted on one roll,

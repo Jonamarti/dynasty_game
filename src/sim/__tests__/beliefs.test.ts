@@ -8,6 +8,7 @@ describe('per-person beliefs', () => {
     const person = new Person('Believer', 0, 0, 0, new RNG('belief-instinct'));
     expect(expectedFood(person, 'berries')).toBe(14);
     expect(expectedFood(person, 'meal')).toBe(10);
+    expect(person.beliefs.expect('eat:meal')).toEqual({ value: 10, confidence: 0 });
     person.beliefs.learn('eat:meal', 25, 0.5, 'own', 12);
     expect(expectedFood(person, 'meal')).toBe(25);
   });

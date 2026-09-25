@@ -22,10 +22,24 @@ export class Beliefs {
     const learned = this.values.get(key);
     if (learned) return { value: learned.value, confidence: learned.confidence };
     if (key.startsWith('eat:')) {
-      const item = ITEMS[key.slice(4)];
+      const itemId = key.slice(4);
+      const item = ITEMS[itemId];
       if (item && (KNOWN_RAW_FOOD as readonly string[]).includes(item.id)) {
         return { value: item.nutrition, confidence: 0.5 };
       }
+      for (const recipe of Object.values(RECIPES)) {
+        if ((recipe.output[itemId] ?? 0) <= 0) continue;
+        let best = 0;
+        for (const [ingredient, amount] of Object.entries(recipe.ingredients)) {
+          if ((ITEMS[ingredient]?.nutrition ?? 0) <= 0) continue;
+          const learnedIngredient = this.values.get('eat:' + ingredient);
+          const instinct = ITEMS[ingredient]?.nutrition ?? 10;
+          best = Math.max(best, (learnedIngredient?.value ?? instinct) * amount /
+            Math.max(1, recipe.output[itemId]));
+        }
+        return { value: best > 0 ? best : 10, confidence: 0 };
+      }
+      return { value: 10, confidence: 0 };
     }
     return { value: 0, confidence: 0 };
   }

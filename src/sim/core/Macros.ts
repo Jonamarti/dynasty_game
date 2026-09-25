@@ -22,14 +22,30 @@ export type Macro = 'fat' | 'protein' | 'carb';
 export const MACROS: readonly Macro[] = ['fat', 'protein', 'carb'];
 export const VARIETY_WEIGHT = 0.6;
 export const CRAVE_SPAN = 0.12;
+const cravingCache = new WeakMap<Person, {
+  target: [number, number, number]; balance: [number, number, number]; value: Record<Macro, number>
+}>();
 
 /** Current shortfall by macro, scaled to the useful 0-1 range. */
 export function cravings(person: Person): Record<Macro, number> {
-  return {
+  const target = person.macroTarget;
+  const balance = person.macroBalance;
+  const previous = cravingCache.get(person);
+  if (previous && previous.target[0] === target.fat && previous.target[1] === target.protein &&
+    previous.target[2] === target.carb && previous.balance[0] === balance.fat &&
+    previous.balance[1] === balance.protein && previous.balance[2] === balance.carb) {
+    return previous.value;
+  }
+  const value = {
     fat: Math.max(0, Math.min(1, (person.macroTarget.fat - person.macroBalance.fat) / CRAVE_SPAN)),
     protein: Math.max(0, Math.min(1, (person.macroTarget.protein - person.macroBalance.protein) / CRAVE_SPAN)),
     carb: Math.max(0, Math.min(1, (person.macroTarget.carb - person.macroBalance.carb) / CRAVE_SPAN)),
   };
+  cravingCache.set(person, {
+    target: [target.fat, target.protein, target.carb],
+    balance: [balance.fat, balance.protein, balance.carb], value,
+  });
+  return value;
 }
 
 /** Nutrition adjusted for the nutrients this person has been missing. */

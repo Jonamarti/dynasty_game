@@ -1,5 +1,11 @@
 # Next steps
 
+**M13 fase 6, continuación:** `KnowledgeSystem.tryObserve` ya permite aprender
+una expectativa `seen` al observar a un NPC comer o recoger un recurso. Test
+focalizado pasa; la cohorte `lean` de 20 semillas posterior queda en 50,6% de
+supervivencia y 4/20 colapsos, igual al redondeo de la cohorte previa a la
+observación social. No aparece coste medible en supervivencia en esta lectura.
+
 Rewritten 2026-09-08, reordered 2026-09-10, brought up to date 2026-09-12 on
 the close of M9, and **2026-09-23 on the close of M11** — the "Where things
 actually stand" section below was rewritten then, not amended.

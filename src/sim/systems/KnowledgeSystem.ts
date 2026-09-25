@@ -624,6 +624,26 @@ export class KnowledgeSystem {
     const neighbours = ctx.peopleHash.queryRadius(person.x, person.y, WATCHING_RANGE);
     for (const other of neighbours) {
       if (!other.alive || other.id === person.id) continue;
+      // People also pick up practical expectations while watching somebody do
+      // the work that produced them. Restrict the transfer to the demonstrated
+      // activity: a remembered yield is not contagious just because two people
+      // happen to stand together.
+      let demonstrated = other.yieldKey;
+      if (demonstrated === null && other.action === 'eat') {
+        const itemId = other.eatenToday.keys().next().value as string | undefined;
+        if (itemId !== undefined) demonstrated = 'eat:' + itemId;
+      }
+      if (demonstrated !== null) {
+        const key = demonstrated;
+        const lesson = other.beliefs.get(key);
+        if (lesson) {
+          const own = person.beliefs.get(key);
+          if (!own || own.confidence < lesson.confidence) {
+            person.beliefs.learn(key, lesson.value, 0.1 * lesson.confidence, 'seen', ctx.tick);
+            telemetry.count('belief_seen_' + key.replace(':', '_'));
+          }
+        }
+      }
       for (const tech of other.knownTech) {
         if (person.knownTech.has(tech)) continue;
         if (!TECH[tech as Tech]) continue;
