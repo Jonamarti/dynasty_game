@@ -11,7 +11,8 @@
  * draw their own conclusions.
  */
 import type { Person } from '../entities/Person.ts';
-import { NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF } from '../ai/Nursing.ts';
+import { homeForMother, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF } from '../ai/Nursing.ts';
+import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import { Arrival, type MovementSystem } from './MovementSystem.ts';
@@ -84,6 +85,7 @@ export interface ActionContext {
   /** Called when a tree is felled, so the world can remove it. */
   onTreeFelled: (tree: Tree, feller: Person) => void;
   peopleById: Map<number, Person>;
+  householdsById: Map<number, Household>;
   /** Whether a walking child has fallen outside their carer's close-family radius. */
   childAwayFromCarer: (person: Person) => boolean;
   peopleHash: SpatialHash<Person>;
@@ -664,6 +666,7 @@ export class ActionSystem {
       case 'prototype': this.doPrototype(person, ctx); break;
       case 'give': this.doGive(person, ctx); break;
       case 'nurse': this.doNurse(person, ctx); break;
+      case 'carry_baby_home': this.doCarryBabyHome(person, ctx); break;
       case 'trade': this.doTrade(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
@@ -2431,11 +2434,13 @@ export class ActionSystem {
    * are lying, not because sleeping is warm.
    */
   private doSleep(person: Person, ctx: ActionContext): void {
-    const building = this.reachBuilding(person, ctx, undefined, 'trespass');
-    if (!building) return;
+    const building = person.targetBuildingId === null
+      ? null : this.reachBuilding(person, ctx, undefined, 'trespass');
+    if (person.targetBuildingId !== null && !building) return;
 
-    telemetry.count('sleeping');
-    person.needs.fatigue = Math.max(0, person.needs.fatigue - SLEEP_RECOVERY);
+    telemetry.count(building ? 'sleeping' : 'sleeping_open');
+    person.needs.fatigue = Math.max(0, person.needs.fatigue -
+      SLEEP_RECOVERY * (building ? 1 : 0.7));
 
     // Note what is *not* here: `person.workedTicks++`. Sleeping is not work, and
     // counting it toward `MAX_WORK_STRETCH` would eventually report that
@@ -3494,6 +3499,24 @@ export class ActionSystem {
       this.abandon(person, 'target_gone', ctx);
       return;
     }
+    const home = homeForMother(person, ctx.householdsById, ctx.buildingsById);
+    if (!home && baby.carriedBy === person.id) baby.carriedBy = null;
+    if (home && (baby.carriedBy === person.id || !home.contains(baby.x, baby.y))) {
+      if (baby.carriedBy !== person.id) {
+        if (!this.approach(person, ctx)) return;
+        baby.carriedBy = person.id;
+      }
+      person.targetX = home.centerX;
+      person.targetY = home.centerY;
+      if (!this.travel(person, ctx)) return;
+      baby.x = home.centerX;
+      baby.y = home.centerY;
+      baby.carriedBy = null;
+      // Arrival completes delivery; nursing starts from inside the house on
+      // the next tick, keeping the baby carried throughout the walk.
+      this.finish(person);
+      return;
+    }
     if (baby.needs.hunger < NURSING_HUNGER && baby.needs.thirst < NURSING_THIRST) {
       this.finish(person);
       return;
@@ -3514,6 +3537,31 @@ export class ActionSystem {
     telemetry.count('nursing_sessions');
     telemetry.count('nursing_hunger_relief', NURSING_HUNGER_RELIEF);
     telemetry.count('nursing_thirst_relief', NURSING_THIRST_RELIEF);
+    this.finish(person);
+  }
+
+  private doCarryBabyHome(person: Person, ctx: ActionContext): void {
+    const baby = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
+    const home = homeForMother(person, ctx.householdsById, ctx.buildingsById);
+    if (!home && baby?.carriedBy === person.id) baby.carriedBy = null;
+    if (!baby?.alive || !baby.isInfant || baby.motherId !== person.id || !home) {
+      this.abandon(person, 'target_gone', ctx);
+      return;
+    }
+    if (home.contains(baby.x, baby.y) && baby.carriedBy !== person.id) {
+      this.finish(person);
+      return;
+    }
+    if (baby.carriedBy !== person.id) {
+      if (!this.approach(person, ctx)) return;
+      baby.carriedBy = person.id;
+    }
+    person.targetX = home.centerX;
+    person.targetY = home.centerY;
+    if (!this.travel(person, ctx)) return;
+    baby.x = home.centerX;
+    baby.y = home.centerY;
+    baby.carriedBy = null;
     this.finish(person);
   }
 
@@ -3543,6 +3591,11 @@ export class ActionSystem {
         ctx.tick, ctx.peopleHash, ctx.sightRadius);
       telemetry.count('gift_of_goods');
       this.finishSocial(person, ctx.tick);
+      return;
+    }
+
+    if (other.isInfant && other.motherId !== person.id) {
+      this.abandon(person, 'not_the_mother', ctx);
       return;
     }
 
@@ -4168,6 +4221,7 @@ export class ActionSystem {
       this.abandon(person, 'too_young', ctx);
       return;
     }
+
     if (!isBound(other, ctx.tick)) {
       this.abandon(person, 'not_bound', ctx);
       return;

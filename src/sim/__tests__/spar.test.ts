@@ -60,7 +60,9 @@ describe('a spar', () => {
     const healthOther = other!.health;
 
     expect(sim.order(person!, 'spar', { personId: other!.id })).toBe(true);
-    for (let i = 0; i < 100 && person!.order !== null; i++) sim.step();
+    // Night sleep now routes the invited partner home, so allow time for the
+    // initial approach before measuring the training bout itself.
+    for (let i = 0; i < 500 && person!.order !== null; i++) sim.step();
 
     expect(person!.skills.fight).toBeGreaterThan(beforePerson);
     expect(other!.skills.fight).toBeGreaterThan(beforeOther);

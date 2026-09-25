@@ -1,5 +1,7 @@
 /** Spanish for sim. Keys are the English templates; see `i18n.ts`. */
 export const ES_SIM: Record<string, string> = {
+  "only their mother can feed this baby": "solo su madre puede alimentar a este bebÃ©",
+  "carrying the baby home": "llevando al bebÃ© a casa",
   "Hunger drive": "Motivo de hambre",
   "Thirst drive": "Motivo de sed",
   "Rest drive": "Motivo de descanso",

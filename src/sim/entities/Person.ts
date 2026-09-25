@@ -208,6 +208,8 @@ export class Person {
   surname = '';
   spouseId: number | null = null;
   motherId: number | null = null;
+  /** Carrier while under one year; the infant still has no autonomous movement. */
+  carriedBy: number | null = null;
   fatherId: number | null = null;
   childIds: number[] = [];
 

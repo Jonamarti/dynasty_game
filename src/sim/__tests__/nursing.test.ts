@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { NURSING_HUNGER, NURSING_THIRST } from '../ai/Nursing.ts';
+import { Building, BUILDINGS } from '../entities/Building.ts';
+import { Household } from '../entities/Household.ts';
 
 describe('urgent maternal nursing', () => {
   it('interrupts the mother and relieves a hungry, thirsty infant', () => {
@@ -52,5 +54,64 @@ describe('urgent maternal nursing', () => {
     expect(baby.needs.thirst).toBeLessThan(NURSING_THIRST);
     expect([baby.x, baby.y]).toEqual(restingPlace);
     expect(mother.action).not.toBe('chop');
+  });
+
+  it('carries an infant to the household shelter before nursing', () => {
+    const sim = new Simulation({ seed: 'nursing-home', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 4 } });
+    const mother = sim.people[0]!;
+    const baby = sim.people[1]!;
+    mother.age = 30 * mother.daysPerYear;
+    mother.childIds = [baby.id];
+    baby.age = 0;
+    baby.bandId = mother.bandId;
+    baby.motherId = mother.id;
+    baby.x = mother.x;
+    baby.y = mother.y;
+    const household = new Household('Family', mother.id, mother.bandId, sim.time.tick);
+    household.memberIds.push(mother.id, baby.id);
+    household.add(mother.id);
+    household.add(baby.id);
+    mother.householdId = baby.householdId = household.id;
+    const home = new Building(BUILDINGS.mud_hut!, Math.max(2, Math.min(40, Math.floor(baby.x) - 5)),
+      Math.max(2, Math.min(40, Math.floor(baby.y) - 5)), mother.bandId);
+    home.complete = true;
+    household.homeBuildingId = home.id;
+    sim.households.push(household);
+    sim.householdsById.set(household.id, household);
+    sim.buildings.push(home);
+    sim.buildingsById.set(home.id, home);
+    baby.needs.hunger = 100;
+    baby.needs.thirst = 100;
+
+    for (let i = 0; i < 500; i++) sim.step();
+
+    expect(home.contains(baby.x, baby.y)).toBe(true);
+    expect(baby.carriedBy).toBeNull();
+    expect(baby.needs.hunger).toBeLessThan(NURSING_HUNGER);
+    expect(baby.needs.thirst).toBeLessThan(NURSING_THIRST);
+  });
+
+  it('lets another adult greet the baby but refuses food from them', () => {
+    const sim = new Simulation({ seed: 'no-outsider-feeding', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 4 } });
+    const mother = sim.people[0]!;
+    const baby = sim.people[1]!;
+    const neighbour = sim.people[2]!;
+    mother.childIds = [baby.id];
+    baby.age = 0;
+    baby.motherId = mother.id;
+    baby.bandId = mother.bandId;
+    baby.needs.hunger = 10;
+    baby.x = neighbour.x;
+    baby.y = neighbour.y;
+    const foodBefore = baby.inventory.count('berries');
+    neighbour.inventory.add('berries', 4);
+    expect(sim.order(neighbour, 'give', { personId: baby.id })).toBe(true);
+
+    for (let i = 0; i < 40; i++) sim.step();
+
+    expect(baby.inventory.count('berries')).toBe(foodBefore);
+    expect(sim.interruptions.some(stop => stop.reason === 'not_the_mother')).toBe(true);
   });
 });

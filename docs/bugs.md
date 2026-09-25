@@ -1,5 +1,26 @@
 # Known bugs and rough edges
 
+## Casa del bebé y sueño nocturno, 2026-09-25
+
+La lactancia corresponde sólo a la madre. Con una casa terminada, no arruinada,
+con refugio y asignada al hogar, ésta carga al bebé hasta la casa y lo deja
+dentro; si no hay una disponible, lo deja en el suelo. Los demás pueden
+saludarlo, pero no seleccionarlo para compartir comida y la acción `give`
+rechaza ese destino. La prueba cubre lactancia y entrega en casa. Aún no se ha
+medido la supervivencia con el cambio de política de comida.
+
+Medición conjunta después de aplicar las reglas, 2026-09-25: `lean`, 20
+semillas, dio 46,4% de supervivencia y 5/20 colapsos, 19,5 puntos bajo la
+base de 65,9%. No permite aislar cuánto corresponde a la regla de comida y
+cuánto al sueño nocturno. El `century` registró 21,1% de adultos durmiendo o
+descansando en noche plena, por debajo del 55%; `children-keep-close` fue 70,7%
+en esa misma ejecución. Artefacto: `artifacts/m13-phase3-century.txt`.
+
+También está en curso M13 fase 3: sueño nocturno con presión base de 0,3,
+recuperación al raso del 70% y puntuación reducida al 80%. El check de sueño
+falla con 21,1% frente al 55%; el coste de supervivencia aún no puede atribuirse
+sin una cohorte de control con sólo una de las dos reglas nuevas.
+
 ## Crianza y supervivencia infantil, 2026-09-25
 
 Los menores de un año no eligen acciones ni se desplazan; se quedan en el lugar

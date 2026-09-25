@@ -28,7 +28,7 @@ import { Pathfinder } from './Pathfinder.ts';
 import { ActionSystem } from '../systems/ActionSystem.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
-import { infantNeedingNursing } from '../ai/Nursing.ts';
+import { infantNeedingNursing, infantOutsideHome } from '../ai/Nursing.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -3763,6 +3763,7 @@ export class Simulation {
       relationships: this.relationships,
       onTreeFelled: (tree: Tree) => this.removeTree(tree),
       peopleById: this.peopleById,
+      householdsById: this.householdsById,
       childAwayFromCarer: (person: Person) => {
         if (!person.isChild || person.action === 'go_home') return false;
         const carer = carerOf(person, { world: this.world, peopleById: this.peopleById,
@@ -3866,28 +3867,35 @@ export class Simulation {
       const underAttack = assailantOf(person, id => this.peopleById.get(id), this.time.tick) !== null;
       const urgentBaby = underAttack ? null : infantNeedingNursing(person, this.peopleById, this.world);
       const activeNursing = person.action === 'nurse';
+      const activeCarry = person.action === 'carry_baby_home';
       const currentBaby = activeNursing && person.targetPersonId !== null
         ? this.peopleById.get(person.targetPersonId) : null;
-      if (!underAttack && (urgentBaby || activeNursing)) {
-        const baby = urgentBaby ?? currentBaby;
-        if (baby && (person.action !== 'nurse' || person.targetPersonId !== baby.id)) {
+      const homeBaby = underAttack ? null : infantOutsideHome(
+        person, this.peopleById, this.householdsById, this.buildingsById);
+      const currentCarryBaby = activeCarry && person.targetPersonId !== null
+        ? this.peopleById.get(person.targetPersonId) : null;
+      if (!underAttack && (urgentBaby || activeNursing || homeBaby || activeCarry)) {
+        const shouldNurse = !!urgentBaby || activeNursing;
+        const baby = shouldNurse ? urgentBaby ?? currentBaby : homeBaby ?? currentCarryBaby;
+        const action = shouldNurse ? 'nurse' : 'carry_baby_home';
+        if (baby && (person.action !== action || person.targetPersonId !== baby.id)) {
           // A baby's cry interrupts any job or order, including the player's
           // current intent. The mother stops where she is and goes to the child.
           person.forgetPlans();
           person.clearTarget();
-          person.action = 'nurse';
-          person.order = 'nurse';
+          person.action = action;
+          person.order = action;
           person.targetPersonId = baby.id;
           person.workedTicks = 0;
         }
-        if (baby && person.action === 'nurse') {
+        if (baby && person.action === 'nurse' && baby.carriedBy !== person.id) {
           person.targetX = baby.x;
           person.targetY = baby.y;
         }
       }
 
       // The player's held keys override whatever they were doing.
-      if ((underAttack || (!urgentBaby && !activeNursing)) && person.isPlayer && this.playerIntent) {
+      if ((underAttack || (!urgentBaby && !activeNursing && !homeBaby && !activeCarry)) && person.isPlayer && this.playerIntent) {
         person.action = 'walk';
         person.clearTarget();
         this.movementSystem.nudge(person, this.playerIntent.dx, this.playerIntent.dy);
@@ -3915,6 +3923,19 @@ export class Simulation {
       }
 
       this.actionSystem.execute(person, actionCtx);
+    }
+
+    // Children are iterated like everyone else but take no turn. Sync after all
+    // adult actions so iteration order cannot leave a carried infant behind.
+    for (const baby of this.people) {
+      if (!baby.alive || baby.carriedBy === null) continue;
+      const carrier = this.peopleById.get(baby.carriedBy);
+      if (carrier?.alive) {
+        baby.x = carrier.x;
+        baby.y = carrier.y;
+      } else {
+        baby.carriedBy = null;
+      }
     }
 
     this.cleanupDead();

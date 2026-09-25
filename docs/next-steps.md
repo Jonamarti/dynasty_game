@@ -32,6 +32,14 @@ that check in fourteen scenarios. The pushed build's 20-seed `lean` run was
 gate. See [bugs.md](bugs.md). The other 20-seed comparisons and M14 carrying,
 cradle, wet-nurse and infant-specific rates remain open.
 
+**2026-09-25, following owner direction:** the mother carries her infant to the
+household's finished shelter and leaves it there; without one, nursing happens
+on the ground. Only the mother can nurse or give food to an infant. M13 phase 3
+has started: night sleepiness, ground sleeping near camp, and a `nights-are-slept`
+check are implemented. The 20-seed `lean` run with these rules is 46.4% survival
+(5/20 collapses), still 19.5 points below the 65.9% baseline. The century
+night-sleep gate and follow-up remain open.
+
 Ordered, with the reason for the order.
 
 **2026-09-10: the owner moved the social and interface pass ahead of the

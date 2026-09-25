@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-25 — La madre lleva al bebé a casa; empieza el sueño nocturno (M13)
+
+Sólo la madre puede amamantar. Cuando el hogar tiene una casa terminada,
+habitable y propia, lleva allí al bebé y lo deja dentro; sin una casa disponible,
+lo deja en el suelo. Otros adultos ya no eligen bebés para darles comida y la
+acción `give` aplica la misma restricción; las interacciones sociales siguen
+disponibles. Empezó la fase 3 de M13: el sueño gana presión de noche y, si no
+hay techo accesible, se puede dormir al raso dentro del radio del ancla, con
+recuperación reducida. La medición nocturna y la cohorte de supervivencia están
+`nights-are-slept` mide 21,1% en `century`, por debajo del 55%; `children-keep-close` queda en 70,7% en esa ejecuciÃ³n. La cohorte `lean` de 20 semillas promedia 46,4% de supervivencia (19,5 puntos por debajo de la base), con 5 colapsos. Las puertas nocturna e infantil siguen abiertas; vÃ©ase `bugs.md`.
+
 ## 2026-09-25 — Respuesta materna urgente al hambre y la sed del bebé
 
 Added `nurse` as the mother's overriding response when an infant reaches 30

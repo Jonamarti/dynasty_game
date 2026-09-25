@@ -667,7 +667,7 @@ El padre sólo si la madre ha muerto o no está en la banda. Es lo histórico
 
 ### 2h. Medición
 
-**Estado, 2026-09-25: la implementación se entrega por indicación del
+**Estado, 2026-09-25: implementación entregada por indicación del
 propietario, pese a que la fase no pasa la puerta de supervivencia.** Con la
 excepción de hambre/sed ya corregida, `lean` a 20 semillas da 45,9% de
 supervivencia frente a 65,9% en la base (-20,0 puntos), y 5/20 mundos colapsan
@@ -681,8 +681,10 @@ de inmovilizar a los bebés. En `39b3361`, `lean` dio 43,8% de supervivencia
 subió a 49,7% (`artifacts/m13-phase6-nursing-lean.txt`), todavía 16,2 puntos
 bajo la base y por encima del coste máximo. El contador solo agrupa muertes de
 menores de seis años; no permite medir por separado a menores de uno. No se
-ajustan más radios ni se avanza a otra fase hasta decidir cómo proceder con
-este resultado. Véanse `docs/bugs.md` y los artefactos de fase 2.
+ajustan más radios sin autorización; el propietario pidió explícitamente
+continuar con el plan. Por eso la fase 3 se desarrolla a continuación mientras
+se conservan y reportan las regresiones de supervivencia. Véanse `docs/bugs.md`
+y los artefactos de fase 2.
 
 Coste declarado: **supervivencia media ≤ 5 puntos por debajo** de la línea
 base en `century`, `lean` y `crowded` a 20 semillas. Lo esperable: menos
@@ -712,6 +714,14 @@ candidatos cuando `drive.home > 0,2`).
 ---
 
 ## Fase 3 — El día tiene noche
+
+**Avance, 2026-09-25:** implementados el suelo nocturno de sueño (3b), la
+recuperación reducida al raso y el fallback a dormir en el campamento cuando no
+hay techo accesible (3a). `sim:check` mide `nights-are-slept` contra el umbral
+de 55%; la primera lectura de `century` fue 21,1% (no pasa). `lean` a 20 semillas dio
+46,4% de supervivencia frente a 65,9% de base, aunque ese resultado mezcla el
+sueño con la política de comida infantil y no aísla sus efectos. `children-keep-close`
+marcó 70,7% en la misma ejecución de `century`, también por debajo de 75%.
 
 **Objetivo.** Que de noche la gente duerma, en casa, con techo o sin él. Hoy
 el 3-5% de las muestras nocturnas son alguien durmiendo. Recoge la fase 4a del

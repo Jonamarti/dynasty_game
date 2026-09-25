@@ -1166,6 +1166,7 @@ export class Brain {
       const carriedNut = this.carriedNutrition(person);
       const dependants = neighbours.filter(other =>
         other.isChild &&
+        (!other.isInfant || other.motherId === person.id) &&
         (person.childIds.includes(other.id) || other.householdId === person.householdId) &&
         other.needs.hunger > person.needs.hunger + 5
       );
@@ -1186,7 +1187,7 @@ export class Brain {
         // And only ever to someone hungrier than you. Generosity that flows
         // uphill is just an infinite loop with good manners.
         const hungrier = neighbours.filter(other =>
-          other.needs.hunger > person.needs.hunger + 15
+          !other.isInfant && other.needs.hunger > person.needs.hunger + 15
         );
         beneficiary = this.pickBest(hungrier, other => {
           const regard = ctx.relationships.opinion(person.id, other.id);
@@ -2369,7 +2370,7 @@ export class Brain {
     // Cold sends people indoors. This is the payoff for building anything at
     // all, and the reason a winter is now survivable. The same roof is also
     // where anyone tired enough goes to bed, so both are scored off one search.
-    if (person.needs.cold > 25 || (ctx.time.isNight && person.needs.fatigue > 20)) {
+    if (person.needs.cold > 25 || ctx.time.isNight) {
       shelter = this.pickBest(
         // `!b.ruined`, M11 phase 11b: sent to a sabotaged roof, the scorer's
         // own promise — warmer the moment they arrive — would simply be false,
@@ -2386,6 +2387,14 @@ export class Brain {
         // within reach after dark is where a tired person should be, and
         // sleeping through the afternoon is not.
         add('sleep', fatigue * (ctx.time.isNight ? 3.2 : 1.0) * nearness);
+      }
+      const roofInReach = shelter !== null &&
+        person.distanceTo({ x: shelter.centerX, y: shelter.centerY }) <= ctx.sightRadius;
+      const nightAnchorDistance = anchor ? Math.hypot(person.x - anchor.x, person.y - anchor.y) : Infinity;
+      if (ctx.time.isNight && !roofInReach && nightAnchorDistance <= ctx.motivation.nightRadius) {
+        // An open-ground bed is the fallback at camp, never an excuse to sleep
+        // out in the country instead of returning to the family first.
+        add('sleep', fatigue * 3.2 * 0.8);
       }
     }
 
@@ -3216,7 +3225,9 @@ export class Brain {
       case 'spread':
       case 'sleep':
       case 'shelter': {
-        const building =
+        const building = action === 'sleep' && found.shelter &&
+          person.distanceTo({ x: found.shelter.centerX, y: found.shelter.centerY }) > ctx.sightRadius
+          ? null :
           action === 'shelter' || action === 'sleep' ? found.shelter :
           action === 'take' ? found.larderTarget :
           action === 'store' ? found.storeTarget :

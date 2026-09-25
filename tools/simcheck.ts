@@ -658,7 +658,7 @@ export interface ConflictWatch {
   apart: { distance: number; incidents: number }[];
 }
 
-export interface HomeWatch { adultNightSamples: number; adultsNear: number; childSamples: number; childrenNear: number; childrenNearAnyParent: number; childActions: Record<string, number> }
+export interface HomeWatch { adultNightSamples: number; adultsNear: number; adultsSleeping: number; childSamples: number; childrenNear: number; childrenNearAnyParent: number; childActions: Record<string, number> }
 
 export interface Report {
   scenario: string;
@@ -812,6 +812,9 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const tel = base.telemetry;
 
   const home = base.home;
+  if (home.adultNightSamples < 200) skip('nights-are-slept', home.adultNightSamples + ' adult night samples (need 200)');
+  else add('nights-are-slept', home.adultsSleeping / home.adultNightSamples >= 0.55,
+    (100 * home.adultsSleeping / home.adultNightSamples).toFixed(1) + '% of ' + home.adultNightSamples + ' adult samples in full night sleeping or resting (need 55%)');
   if (home.adultNightSamples < 200) skip('nights-are-spent-at-home', home.adultNightSamples + ' adult night samples (need 200)');
   else add('nights-are-spent-at-home', home.adultsNear / home.adultNightSamples >= 0.70,
     (100 * home.adultsNear / home.adultNightSamples).toFixed(1) + '% of ' + home.adultNightSamples + ' adult night samples within 15 tiles of an anchor (need 70%)');
@@ -2879,7 +2882,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
 
   // See `ConflictWatch`. `recent` is bounded, so it is read every step.
   const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [] };
-  const home: HomeWatch = { adultNightSamples: 0, adultsNear: 0, childSamples: 0, childrenNear: 0, childrenNearAnyParent: 0, childActions: {} };
+  const home: HomeWatch = { adultNightSamples: 0, adultsNear: 0, adultsSleeping: 0, childSamples: 0, childrenNear: 0, childrenNearAnyParent: 0, childActions: {} };
   let lastEventId = 0;
 
   const started = Date.now();
@@ -2978,6 +2981,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
           const anchor = anchorOf(person, anchorCtx);
           if (anchor) {
             home.adultNightSamples++;
+            if (person.action === 'sleep' || person.action === 'rest') home.adultsSleeping++;
             if (Math.hypot(person.x - anchor.x, person.y - anchor.y) < 15) home.adultsNear++;
           }
         }
