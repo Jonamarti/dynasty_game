@@ -13,6 +13,7 @@
  * `tools/headless.ts` (one scenario) and `tools/scenarios.ts` (all of them).
  */
 import { Simulation } from '../src/sim/core/Simulation.ts';
+import { anchorOf, carerOf, childRadius } from '../src/sim/ai/Anchor.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
@@ -657,6 +658,8 @@ export interface ConflictWatch {
   apart: { distance: number; incidents: number }[];
 }
 
+export interface HomeWatch { adultNightSamples: number; adultsNear: number; childSamples: number; childrenNear: number; childrenNearAnyParent: number; childActions: Record<string, number> }
+
 export interface Report {
   scenario: string;
   seed: string;
@@ -676,6 +679,7 @@ export interface Report {
   jobs: JobWatch;
   stall: StallWatch;
   conflict: ConflictWatch;
+  home: HomeWatch;
   /** The one number `Telemetry.max` tracks rather than sums; see its own note. */
   travel: { worstExpanded: number };
   checks: Check[];
@@ -806,6 +810,17 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const first = samples[0]!;
   const last = samples[samples.length - 1]!;
   const tel = base.telemetry;
+
+  const home = base.home;
+  if (home.adultNightSamples < 200) skip('nights-are-spent-at-home', home.adultNightSamples + ' adult night samples (need 200)');
+  else add('nights-are-spent-at-home', home.adultsNear / home.adultNightSamples >= 0.70,
+    (100 * home.adultsNear / home.adultNightSamples).toFixed(1) + '% of ' + home.adultNightSamples + ' adult night samples within 15 tiles of an anchor (need 70%)');
+  if (home.childSamples < 200) skip('children-keep-close', home.childSamples + ' child/carer samples (need 200)');
+  else add('children-keep-close', home.childrenNearAnyParent / home.childSamples >= 0.75,
+    (100 * home.childrenNearAnyParent / home.childSamples).toFixed(1) + '% of ' + home.childSamples + ' child samples within radius + 3 of either living parent (need 75%; designated carer=' +
+      (100 * home.childrenNear / home.childSamples).toFixed(1) + '%; top actions: ' +
+      Object.entries(home.childActions).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([action, n]) => action + '=' + n).join(', ') +
+      ')');
 
   add(
     'no-nan',
@@ -2864,6 +2879,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
 
   // See `ConflictWatch`. `recent` is bounded, so it is read every step.
   const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [] };
+  const home: HomeWatch = { adultNightSamples: 0, adultsNear: 0, childSamples: 0, childrenNear: 0, childrenNearAnyParent: 0, childActions: {} };
   let lastEventId = 0;
 
   const started = Date.now();
@@ -2953,6 +2969,35 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     if (i % sim.config.time.ticksPerDay === 0) conflict.apart.push(peoplesApart(sim, conflict.incidents));
 
     if (i % WATCH_EVERY === 0) {
+      const anchorCtx = { world: sim.world, peopleById: sim.peopleById, buildingsById: sim.buildingsById,
+        householdsById: sim.householdsById,
+        homes: new Map(sim.bands.filter(b => !b.outcast).map(b => [b.id, { x: b.homeX, y: b.homeY }])),
+        motivation: sim.config.motivation };
+      for (const person of living) {
+        if (sim.time.isNight && !person.isChild) {
+          const anchor = anchorOf(person, anchorCtx);
+          if (anchor) {
+            home.adultNightSamples++;
+            if (Math.hypot(person.x - anchor.x, person.y - anchor.y) < 15) home.adultsNear++;
+          }
+        }
+        // Under-one babies rest where they were born and do not walk beside
+        // anyone. This gate measures the children who can actually follow.
+        if (person.isChild && person.age >= person.daysPerYear && person.age < 8 * person.daysPerYear) {
+          const carer = carerOf(person, anchorCtx);
+          if (carer) {
+            home.childSamples++;
+            home.childActions[person.action] = (home.childActions[person.action] ?? 0) + 1;
+            const radius = childRadius(person, sim.config.motivation) + 3;
+            if (Math.hypot(person.x - carer.x, person.y - carer.y) <= radius) home.childrenNear++;
+            const parents = [person.motherId, person.fatherId]
+              .map(id => id === null ? undefined : sim.peopleById.get(id))
+              .filter(parent => parent?.alive && parent.bandId === person.bandId && parent.captiveOf === null &&
+                sim.world.sameRegion(person.x, person.y, parent.x, parent.y));
+            if (parents.some(parent => Math.hypot(person.x - parent!.x, person.y - parent!.y) <= radius)) home.childrenNearAnyParent++;
+          }
+        }
+      }
       for (const animal of sim.animals) {
         if (!animal.alive) continue;
         const was = lastAnimalPos.get(animal.id);
@@ -3016,6 +3061,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     jobs,
     stall,
     conflict,
+    home,
     relationships: sim.relationships.stats(),
     buildings: {
       total: sim.buildings.length,

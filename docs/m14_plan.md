@@ -331,6 +331,14 @@ El núcleo de la nota y la fase más cara del bloque.
   cautivos atados) y el renderer lo dibuja en sus brazos. Quien lo lleva
   anda algo más despacio (0,9), y ese factor se multiplica con el del embarazo
   si ya espera otro.
+
+  **Avance parcial, 2026-09-25:** por indicación del propietario, mientras no
+  exista el transporte, los menores de un año descansan inmóviles en el suelo
+  donde nacieron: no puntúan acciones, no ejecutan órdenes y el movimiento
+  directo tampoco los desplaza. El renderer aún los dibuja como figuras pequeñas
+  de pie; queda pendiente una pose tumbada o el transporte visible en brazos.
+  La lactancia de 6b también sigue pendiente, así que este cambio no soluciona
+  por sí solo las necesidades de hambre y sed del bebé.
 - **6b. Mamar.** El bebé tiene hambre y sed propias a un ritmo propio. Un verbo
   `nurse`, corto (unos 15 ticks) y que se repite varias veces al día, lo
   alivia. La madre lo elige por puntuación cuando el hambre del bebé sube; el

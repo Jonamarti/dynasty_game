@@ -33,7 +33,7 @@ import type { Inscription } from '../sim/entities/Inscription.ts';
 import { NEEDS, SKILLS, TRAITS } from '../sim/entities/Person.ts';
 import { MOOD_CHANNELS } from '../sim/core/Mood.ts';
 import { MACROS, malnutrition, type Macro } from '../sim/core/Macros.ts';
-import { lastScores } from '../sim/ai/Brain.ts';
+import { lastScores, lastDrives } from '../sim/ai/Brain.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
 import { actionLabel } from '../render/Floaters.ts';
 import {
@@ -892,7 +892,9 @@ export class Hud {
       : isHeld(person, tick) ? t('held down') : null;
     if (pinned) return escapeHtml(pinned) +
       (fresh ? '<div class="hud-stopped">' + escapeHtml(stop!.text) + '</div>' : '');
-    const doing = person.action === 'flee' && person.fleeFromId !== null && sim.player
+    const doing = person.action === 'go_home' && person.isChild
+      ? t('keeping close to family')
+      : person.action === 'flee' && person.fleeFromId !== null && sim.player
       ? t('fleeing from {name}', {
         name: knowledgeOfPerson(sim.player, sim.peopleById.get(person.fleeFromId) ?? sim.player,
           sim.relationships).displayName,
@@ -921,6 +923,14 @@ export class Hud {
     rows.push(bar(tc('bar', 'health'), person.health, '#5cc98a', 'health'));
     for (const need of NEEDS) {
       rows.push(bar(tc('bar', need), person.needs[need], NEED_COLORS[need] ?? '#888', need));
+    }
+    const homePressure = lastDrives.get(person.id)?.home;
+    if (homePressure !== undefined) {
+      const reason = homePressure > 0.3
+        ? (person.isChild ? t('keeping close to family') : this.currentSim?.time.isNight ? t('it is getting dark') : t('far from home'))
+        : '';
+      rows.push('<div class="hud-sub">' + escapeHtml(t('Home drive')) + ': ' + homePressure.toFixed(2) +
+        (reason ? ' · ' + escapeHtml(reason) : '') + '</div>');
     }
 
     // M11 phase 8e. Malnutrition (8d) caps health recovery invisibly unless

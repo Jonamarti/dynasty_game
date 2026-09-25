@@ -83,6 +83,8 @@ export interface ActionContext {
   /** Called when a tree is felled, so the world can remove it. */
   onTreeFelled: (tree: Tree, feller: Person) => void;
   peopleById: Map<number, Person>;
+  /** Whether a walking child has fallen outside their carer's close-family radius. */
+  childAwayFromCarer: (person: Person) => boolean;
   peopleHash: SpatialHash<Person>;
   /** For `mayUse`'s reading of how the two bands involved currently stand. */
   bandRelations: BandRelations;
@@ -692,6 +694,19 @@ export class ActionSystem {
         // so the person stands where they were sent.
         if (this.travel(person, ctx)) this.finish(person);
         break;
+      case 'go_home': {
+        const carer = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
+        if (carer?.alive && carer.bandId === person.bandId && carer.captiveOf === null &&
+          ctx.world.sameRegion(person.x, person.y, carer.x, carer.y)) {
+          if (person.distanceTo(carer) <= 1) this.finish(person);
+          else { person.targetX = carer.x; person.targetY = carer.y; this.travel(person, ctx); }
+          break;
+        }
+        const arrival = ctx.movement.advance(person, ctx.tick);
+        if (arrival === Arrival.Blocked) this.abandon(person, 'cannot_reach_home', ctx);
+        else if (arrival === Arrival.Arrived) this.finish(person);
+        break;
+      }
       case 'wander':
       default:
         // Nobody ordered a wander, so there is nothing to abandon and no
@@ -961,6 +976,16 @@ export class ActionSystem {
     // overhead, so projecting it forward from a per-tick constant would be a
     // guess dressed up as arithmetic.
     if (person.needs.cold > workLimit(person, 'cold', limits, opts.answers)) return 'cold';
+
+    // A committed child's long action must yield to being reunited with their
+    // carer. Replanning them directly would erase progress without a reason;
+    // this check is the same interruption path used for needs and danger.
+    // Food- and water-answering actions are the survival exception: a hungry
+    // child may forage farther away until they have something to eat.
+    if (person.order === null && person.action !== 'go_home' && opts.answers !== 'hunger' &&
+      opts.answers !== 'thirst' && ctx.childAwayFromCarer(person)) {
+      return 'away_from_family';
+    }
 
     // A hard ceiling on any one stretch, so no combination of conditions can
     // leave somebody locked in a job forever.

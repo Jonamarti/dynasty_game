@@ -249,6 +249,22 @@ export interface AiConfig {
   choiceSpread: number;
 }
 
+/** Tuning for the pull toward family, home and camp. */
+export interface MotivationConfig {
+  comfortAdult: number;
+  nightRadius: number;
+  span: number;
+  spanNight: number;
+  homeWeight: number;
+  /** Extra pull for a child keeping up with a moving carer. */
+  childHomeMultiplier: number;
+  /** Minimum scored home urge once a child is beyond their close-family radius. */
+  childHomeMinimumPressure: number;
+  reachAdult: number;
+  parentReach: number;
+  childRadius: { under1: number; years1to3: number; years4to7: number; years8to11: number; years12to13: number };
+}
+
 export interface SimConfig {
   seed: number | string;
   world: WorldConfig;
@@ -258,6 +274,7 @@ export interface SimConfig {
   knowledge: KnowledgeConfig;
   learning: LearningConfig;
   ai: AiConfig;
+  motivation: MotivationConfig;
   /** Tiles a person can see; the radius of witness and target queries. */
   sightRadius: number;
   /** A person re-scores their action every this many ticks (staggered by id). */
@@ -384,6 +401,11 @@ export const DEFAULT_CONFIG: SimConfig = {
     // getting a turn without the head losing one.
     choiceSpread: 0.12,
   },
+  motivation: {
+    comfortAdult: 24, nightRadius: 8, span: 30, spanNight: 12,
+    homeWeight: 2.4, childHomeMultiplier: 4, childHomeMinimumPressure: 0.25, reachAdult: 36, parentReach: 20,
+    childRadius: { under1: 2, years1to3: 3, years4to7: 6, years8to11: 10, years12to13: 16 },
+  },
   sightRadius: 12,
   thinkInterval: 5,
 };
@@ -409,9 +431,16 @@ export function makeConfig(overrides: DeepPartial<SimConfig> = {}): SimConfig {
     knowledge: { ...DEFAULT_CONFIG.knowledge, ...overrides.knowledge },
     learning: { ...DEFAULT_CONFIG.learning, ...overrides.learning },
     ai: { ...DEFAULT_CONFIG.ai, ...overrides.ai },
+    motivation: {
+      ...DEFAULT_CONFIG.motivation,
+      ...overrides.motivation,
+      childRadius: { ...DEFAULT_CONFIG.motivation.childRadius, ...overrides.motivation?.childRadius },
+    },
   } as SimConfig;
 }
 
-export type DeepPartial<T> = {
-  [K in keyof T]?: T[K] extends object ? Partial<T[K]> : T[K];
-};
+export type DeepPartial<T> = T extends readonly (infer U)[]
+  ? DeepPartial<U>[]
+  : T extends object
+    ? { [K in keyof T]?: DeepPartial<T[K]> }
+    : T;

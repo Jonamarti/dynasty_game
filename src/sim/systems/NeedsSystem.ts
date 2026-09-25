@@ -42,6 +42,7 @@ const EXERTION: Record<string, number> = {
   // Being somewhere, or thinking about something.
   walk: 1.05,
   goto: 1.05,
+  go_home: 1.05,
   wander: 1.0,
   talk: 0.75,
   court: 0.75,

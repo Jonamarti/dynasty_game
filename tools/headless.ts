@@ -13,17 +13,19 @@ function arg(name: string): string | undefined {
   return i >= 0 ? process.argv[i + 1] : undefined;
 }
 
-const name = arg('scenario') ?? 'band';
-const scenario = SCENARIOS[name];
-if (!scenario) {
-  console.error('Unknown scenario "' + name + '". Available: ' + Object.keys(SCENARIOS).join(', '));
+// vite-node keeps unknown flag values but strips their names after the package
+// script's `--` delimiter; accept the same positional form as `sim:seeds`.
+const forwarded = process.argv.slice(2).filter(value => value !== '--');
+const scenarioName = arg('scenario') ?? forwarded[0] ?? 'band';
+const stepsArg = arg('steps') ?? forwarded[1];
+const selectedScenario = SCENARIOS[scenarioName];
+if (!selectedScenario) {
+  console.error('Unknown scenario "' + scenarioName + '". Available: ' + Object.keys(SCENARIOS).join(', '));
   process.exit(2);
 }
-
-const stepsArg = arg('steps');
 const steps = stepsArg ? Number(stepsArg) : undefined;
 
-const report = runScenario(scenario, steps);
+const report = runScenario(selectedScenario, steps);
 
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify(report, null, 2));

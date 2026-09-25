@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-09-25 — M13 phase 2 progress and babies under one year
+
+Added a `home` drive, household/carer anchors, child reach by age, a return-home
+action, reach filters, HUD feedback and health checks. Hunger- and thirst-driven
+work remains exempt from family-separation interruption. The corrected 20-seed
+`lean` result was 45.9% survival against 65.9% baseline (-20 points), above the
+phase's declared five-point ceiling; see `bugs.md`. At the owner's direction,
+added an immediate first-year restriction: babies stay at their birth position,
+cannot choose or execute actions, cannot be ordered to move, and cannot be moved
+by direct input. The child-proximity check now measures walking-age children.
+The M14 plan records that visible carrying, a resting pose, nursing and infant
+care remain future work. Typecheck and focused tests pass; the full suite's one
+remaining timeout in `band.test.ts` is described in the delivery note.
+
+## 2026-09-25 — M13 phase 2 measurement stopped at survival gate
+
+Implemented the local home/family drive and its reach rules, including the
+exception that lets hunger- or thirst-driven work continue when it takes a
+child away from family. Added anchor and temperament tests, translated the
+family-separation refusal, and added home/family health checks and CLI scenario
+argument handling. The corrected 20-seed lean cohort averaged 45.9% survival,
+20.0 points below the phase-0 baseline and beyond the declared five-point
+limit. Per the plan, phase 2 stops here pending the owner's decision; details
+and artifacts are recorded in `bugs.md`. These behavior changes remain
+uncommitted.
+
 ## 2026-09-25 — M13 phase 0: cohesion and historical baselines
 
 Added read-only `CohesionWatch` and `HistoryWatch` observers, the `range`

@@ -793,6 +793,11 @@ export class Person {
     return Math.floor(this.age / this.daysPerYear);
   }
 
+  /** Under one year, a baby can be carried or left resting but cannot act independently. */
+  get isInfant(): boolean {
+    return this.age < this.daysPerYear;
+  }
+
   get isChild(): boolean {
     return this.years < ADULT_YEARS;
   }

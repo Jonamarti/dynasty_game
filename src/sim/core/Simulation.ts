@@ -27,6 +27,7 @@ import { MovementSystem } from '../systems/MovementSystem.ts';
 import { Pathfinder } from './Pathfinder.ts';
 import { ActionSystem } from '../systems/ActionSystem.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
+import { carerOf, childRadius } from '../ai/Anchor.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -133,6 +134,7 @@ export interface StopNotice {
  * "the tree is gone" is the end of the matter.
  */
 const RESUMABLE_STOPS = new Set(['thirsty', 'hungry', 'cold']);
+const NO_HOME_ANCHORS = new Map<number, { x: number; y: number }>();
 
 /**
  * Ticks between passes over who is working beside whom.
@@ -2530,6 +2532,10 @@ export class Simulation {
     } = {}
   ): boolean {
     if (!person.alive) return false;
+    if (person.isInfant) {
+      this.lastRefusal = t('babies cannot act on their own');
+      return false;
+    }
 
     // A new order supersedes whatever was set aside. Doing this here rather
     // than at every call site means the player changing their mind cannot leave
@@ -3737,6 +3743,8 @@ export class Simulation {
       },
       snowBuries: this.config.world.snowBuries,
       householdsById: this.householdsById,
+      buildingsById: this.buildingsById,
+      motivation: this.config.motivation,
       bandRelations: this.bandRelations,
       sabotageCandidatesByBand: this.sabotageCache,
       homes: this.bandHomes(),
@@ -3753,6 +3761,14 @@ export class Simulation {
       relationships: this.relationships,
       onTreeFelled: (tree: Tree) => this.removeTree(tree),
       peopleById: this.peopleById,
+      childAwayFromCarer: (person: Person) => {
+        if (!person.isChild || person.action === 'go_home') return false;
+        const carer = carerOf(person, { world: this.world, peopleById: this.peopleById,
+          buildingsById: this.buildingsById, householdsById: this.householdsById,
+          homes: NO_HOME_ANCHORS, motivation: this.config.motivation });
+        return carer !== null && Math.hypot(person.x - carer.x, person.y - carer.y) >
+          childRadius(person, this.config.motivation) + 3;
+      },
       peopleHash: this.peopleHash,
       bandRelations: this.bandRelations,
       social: this.social,
@@ -3820,6 +3836,15 @@ export class Simulation {
     const interval = this.config.thinkInterval;
     for (const person of this.people) {
       if (!person.alive) continue;
+
+      // The first year is before walking: the baby rests where born until a
+      // carrier system exists. Letting its own needs choose `forage` or `drink`
+      // made newborns roam and feed themselves like small adults.
+      if (person.isInfant) {
+        person.forgetPlans();
+        person.action = 'idle';
+        continue;
+      }
 
       // Staggered thinking: each person re-plans on their own phase of the
       // cycle. Two exclusions matter:

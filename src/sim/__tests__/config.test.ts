@@ -76,6 +76,12 @@ describe('Normal is what ships', () => {
 });
 
 describe('the tunable table', () => {
+  it('deep-merges home motivation and the child radius table', () => {
+    const config = makeConfig({ motivation: { parentReach: 8, childRadius: { under1: 1 } } });
+    expect(config.motivation.parentReach).toBe(8);
+    expect(config.motivation.childRadius.under1).toBe(1);
+    expect(config.motivation.childRadius.years4to7).toBe(DEFAULT_CONFIG.motivation.childRadius.years4to7);
+  });
   it('has no path that fails to resolve', () => {
     // The failure this catches is silent rather than loud: `needs.hungerrate`
     // would have the settings screen writing a field nothing anywhere reads,

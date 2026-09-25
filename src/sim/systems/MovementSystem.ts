@@ -318,6 +318,8 @@ export class MovementSystem {
    * walkability rules an NPC gets, so direct control is not a privileged path.
    */
   nudge(person: Person, dx: number, dy: number): void {
+    // Babies may be carried or left resting; key input is never their own locomotion.
+    if (person.isInfant) return;
     const length = Math.sqrt(dx * dx + dy * dy);
     if (length === 0) return;
     const speed = this.speedOf(person);
@@ -352,6 +354,7 @@ export class MovementSystem {
    * ordered and a wander nobody did.
    */
   advance(person: Person, tick: number): Arrival {
+    if (person.isInfant) return Arrival.Arrived;
     if (person.targetX === null || person.targetY === null) return Arrival.Arrived;
 
     const dx = person.targetX - person.x;

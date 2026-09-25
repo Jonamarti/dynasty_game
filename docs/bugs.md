@@ -1,5 +1,45 @@
 # Known bugs and rough edges
 
+## Bebés inmóviles sin lactancia, 2026-09-25
+
+Los menores de un año ya no eligen ni ejecutan acciones y se quedan en el lugar
+del nacimiento; las órdenes se rechazan y el movimiento directo no los desplaza.
+Esto evita que recolecten comida, beban o deambulen por sí solos. Aún no existe
+transporte en brazos, cuna/lecho, ni la acción `nurse`; por tanto, la comida y
+el agua del bebé no reciben cuidado automático y su supervivencia puede bajar.
+La fase 6 del plan M14 sigue siendo necesaria para completar esa crianza.
+
+## M13 phase 2 survival gate, 2026-09-25
+
+The phase-2 `lean` cohort with `reachAdult=36`, `parentReach=20`, and the
+hunger/thirst interruption exemption averaged 45.9% survival across 20 seeds,
+versus the 65.9% phase-0 baseline (-20.0 percentage points); 5/20 worlds
+collapsed below a quarter. It recorded 304 infant, 67 older-child, and 176
+adult starvation deaths. This exceeds the phase's declared five-point maximum.
+The previous `reachAdult=32` run was also below the gate, but it used a build
+that could interrupt children answering hunger or thirst, so it is not a clean
+comparison. The corrected 36/20 run is the decision-quality result. Per the
+plan, do not tune further or ship this behavior until the owner decides how to
+proceed. Artifacts are `m13-phase2-lean.txt` and
+`m13-phase2-lean-reach32-parent16.txt` (the earlier build).
+
+The cohort output still reports zero deaths in `DemographyWatch` despite
+starvation deaths from the seed runner and `HistoryWatch`; see the M13 phase-0
+entry below. That observer cannot be used to explain the phase-2 mortality.
+
+## M13 phase 2, 2026-09-25
+
+The first `children-keep-close` check measured only the mother-first carer
+chosen by `Anchor.carerOf`, but the phase-0 HOME baseline measures the nearest
+living parent. On the same 5,000-step `century` run, 60.0% of children were
+within `childRadius + 3` of the designated carer while 80.3% were within that
+radius of either living parent. The check now uses either parent and keeps the
+designated-carer share in its detail, so the behavior gate matches the baseline
+and the stated family-proximity goal. The AI still uses its mother-first carer
+anchor. The designated-carer share remains lower and should be revisited if the
+player-facing behavior requires a particular caregiver rather than family
+proximity.
+
 ## M13 phase 0, 2026-09-25
 
 The throwaway script used for the plan's cohesion figures is not checked in;

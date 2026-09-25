@@ -49,7 +49,7 @@ import { chooseAmongBest } from '../core/Choice.ts';
 import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
 import { mayUse } from '../social/Property.ts';
 import {
-  homeRange, homeward, fearOf, wariness, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
+  homeward, fearOf, wariness, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
   DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
 } from '../social/Fear.ts';
 import { INVESTIGATE, CONCEAL, CONCEAL_WATER_REACH } from '../social/Investigation.ts';
@@ -70,6 +70,8 @@ import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
+import type { MotivationConfig } from '../core/Config.ts';
+import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 
 export interface BrainContext {
   world: World;
@@ -132,6 +134,8 @@ export interface BrainContext {
   snowBuries: boolean;
   /** For `store`'s hoarding term: which building a person's own household calls home. */
   householdsById: ReadonlyMap<number, Household>;
+  buildingsById: ReadonlyMap<number, Building>;
+  motivation: MotivationConfig;
   /** Lets the scorer identify the chief when choosing a privileged larder. */
   peopleById?: ReadonlyMap<number, Person>;
   /** For `mayUse`'s reading of how two bands currently stand. */
@@ -621,7 +625,12 @@ export class Brain {
    */
   score(person: Person, ctx: BrainContext): { scores: ScoredAction[]; found: FoundTargets } {
     const scores: ScoredAction[] = [];
-    const drive = drivePressures(person);
+    const anchorCtx = { world: ctx.world, peopleById: ctx.peopleById ?? new Map(), buildingsById: ctx.buildingsById,
+      householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation };
+    const anchor = anchorOf(person, anchorCtx);
+    const reach = reachOf(person, anchorCtx);
+    const homeCtx = { ...anchorCtx, time: ctx.time };
+    const drive = drivePressures(person, homeCtx);
     // Hysteresis: whatever you are already doing is worth a little more than
     // starting something else. Without this people dither on the spot, walking
     // half way to the water, half way to a bush, and satisfying neither need.
@@ -688,8 +697,9 @@ export class Brain {
     // things made at a station from 26 to nothing. Foraging is opportunistic,
     // and the technologies that turn what is underfoot into food depend on it
     // being so.
+    const desperateForFood = pressedByNeed(person, ctx.needs.workLimits, 'hunger');
     const foodNode = this.findNode(person, ctx,
-      n => !n.depleted && this.nodeWorth(person, n) > 0);
+      n => !n.depleted && this.nodeWorth(person, n) > 0, !desperateForFood, anchor, reach);
     if (foodNode) {
       // Hunger drives foraging only to the extent it is not already answered by
       // what you carry — but the reserve is generous. A first attempt cut the
@@ -735,7 +745,8 @@ export class Brain {
     // anything at all fixes it, and in a world where nobody can grind the two
     // queries return the same tree and this costs one extra hash lookup.
     const reachable = (t: Tree): boolean =>
-      t.standing && t.fruit >= 1 && ctx.world.sameRegion(person.x, person.y, t.x, t.y);
+      t.standing && t.fruit >= 1 && ctx.world.sameRegion(person.x, person.y, t.x, t.y) &&
+      (desperateForFood || withinReach(anchor, reach, t.x, t.y));
     const edible = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
       t => reachable(t) && (ITEMS[t.def.fruitItem ?? '']?.nutrition ?? 0) > 0);
     const worthwhile = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
@@ -747,7 +758,7 @@ export class Brain {
 
     // --- Gather materials --------------------------------------------------
     let matNode = this.findNode(person, ctx,
-      n => (n.kind === 'flint' || n.kind === 'sticks') && !n.depleted);
+      n => (n.kind === 'flint' || n.kind === 'sticks') && !n.depleted, true, anchor, reach);
     if (matNode) {
       // Only the genuinely comfortable pick up rocks and firewood. The gate is
       // hard rather than gradual because the first version used a soft
@@ -1331,7 +1342,8 @@ export class Brain {
         if (ownerBandId === person.bandId) continue;
         if (this.bandHostility(person, ownerBandId, ctx) <= 0) continue;
         for (const b of owned) {
-          if (!ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY)) continue;
+          if (!ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY) ||
+            !withinReach(anchor, reach, b.centerX, b.centerY)) continue;
           const access = mayUse(person, b, ctx);
           if (access.watched || access.ours) continue;
           const d = person.distanceTo({ x: b.centerX, y: b.centerY });
@@ -2057,7 +2069,7 @@ export class Brain {
             const candidate = ctx.treeHash.findNearest(
               person.x, person.y, ctx.sightRadius * 3,
               t => t.standing && t.isMature &&
-                ctx.world.sameRegion(person.x, person.y, t.x, t.y)
+                ctx.world.sameRegion(person.x, person.y, t.x, t.y) && withinReach(anchor, reach, t.x, t.y)
             );
             if (candidate) {
               add('chop', (comfortNow - 0.45) * 1.5 * (0.4 + person.skillFactor('build'))
@@ -2089,7 +2101,7 @@ export class Brain {
             }
             const wantedKind = wanted ? kindFor[wanted] : undefined;
             if (wantedKind) {
-              const source = this.findNode(person, ctx, n => n.kind === wantedKind && !n.depleted);
+              const source = this.findNode(person, ctx, n => n.kind === wantedKind && !n.depleted, true, anchor, reach);
               if (source) {
                 add('gather_for_site', (comfortNow - 0.45) * 1.2
                   * this.proximityBonus(person, source, ctx.sightRadius));
@@ -2315,7 +2327,7 @@ export class Brain {
       quarry = ctx.animalHash.findNearest(
         person.x, person.y,
         ctx.sightRadius * 1.5 * quarryReachFactor(person),
-        a => a.alive
+        a => a.alive && (desperateForFood || withinReach(anchor, reach, a.x, a.y))
       );
       // Do not *begin* a chase already over the line, the same rule crafting
       // learned. A hunt checks its interruption during the work rather than
@@ -2712,6 +2724,17 @@ export class Brain {
     }
 
     // --- Rest --------------------------------------------------------------
+    // Home pressure gets its own verb so the return can be interrupted by
+    // thirst, hunger or an immediate threat just like any other long walk.
+    const homeAnchor = anchor;
+    const nightRadius = person.isChild ? Math.max(2, childRadius(person, ctx.motivation) / 2) : ctx.motivation.nightRadius;
+    const homeDistance = homeAnchor ? Math.hypot(person.x - homeAnchor.x, person.y - homeAnchor.y) : 0;
+    if (homeAnchor && homeDistance > nightRadius) {
+      const childFactor = person.isChild ? ctx.motivation.childHomeMultiplier : 1;
+      const childPressure = person.isChild && homeDistance > childRadius(person, ctx.motivation) + 3
+        ? Math.max(drive.home, ctx.motivation.childHomeMinimumPressure) : drive.home;
+      add('go_home', childPressure * ctx.motivation.homeWeight * childFactor);
+    }
     // Still here for people with no roof, which after a bad winter is most of
     // them. Sleeping is strictly better and scores higher when it is available.
     add('rest', fatigue * (ctx.time.isNight ? 2.4 : 1.2));
@@ -2721,7 +2744,10 @@ export class Brain {
     // the action distribution never collapses to a single behaviour. Kept low:
     // wandering must never out-score real work, or people mill about while
     // their needs climb.
-    add('wander', 0.02 + ctx.rng.next() * 0.03);
+    const wanderScore = 0.02 + ctx.rng.next() * 0.03;
+    const childOutsideFamilyRange = person.isChild && anchor !== null &&
+      Math.hypot(person.x - anchor.x, person.y - anchor.y) > childRadius(person, ctx.motivation) + 3;
+    if (!(person.isChild && (drive.home > 0.2 || childOutsideFamilyRange))) add('wander', wanderScore);
 
     // --- Words that would be cut off, and being set upon ---------------------
     // M12 phase 2c. Here, after every route has had its say, because both
@@ -3097,16 +3123,19 @@ export class Brain {
   private findNode(
     person: Person,
     ctx: BrainContext,
-    filter: (n: ResourceNode) => boolean
+    filter: (n: ResourceNode) => boolean,
+    enforceReach = true,
+    knownAnchor?: Anchor | null,
+    knownReach?: number
   ): ResourceNode | null {
-    // M11 phase 14b: a frightened person works near home. See `homeRange`.
-    const home = ctx.homes?.get(person.bandId);
-    const range = home ? homeRange(person) : Infinity;
-    const rangeSq = range * range;
+    const anchorCtx = knownAnchor === undefined ? { world: ctx.world, peopleById: ctx.peopleById ?? new Map(), buildingsById: ctx.buildingsById,
+      householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation } : null;
+    const anchor = knownAnchor === undefined ? anchorOf(person, anchorCtx!) : knownAnchor;
+    const reach = knownReach ?? (anchorCtx ? reachOf(person, anchorCtx) : 0);
     return ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
       n => filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y) &&
         !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
-        (range === Infinity || (n.x - home!.x) ** 2 + (n.y - home!.y) ** 2 <= rangeSq));
+        (!enforceReach || withinReach(anchor, reach, n.x, n.y)));
   }
 
   private setup(
@@ -3264,8 +3293,11 @@ export class Brain {
         // M11 phase 14b: centred part of the way home for somebody afraid,
         // so an idle walk drifts back to camp rather than out of it. The same
         // two draws per attempt either way; only where the box sits moves.
-        const home = ctx.homes?.get(person.bandId);
-        const pull = home ? homeward(person) : 0;
+        const home = anchorOf(person, { world: ctx.world, peopleById: ctx.peopleById ?? new Map(), buildingsById: ctx.buildingsById,
+          householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation });
+        const homeDrive = drivePressures(person, { world: ctx.world, peopleById: ctx.peopleById ?? new Map(), buildingsById: ctx.buildingsById,
+          householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation, time: ctx.time }).home;
+        const pull = Math.max(home ? homeward(person) : 0, Math.min(0.8, homeDrive));
         const cx = home ? person.x + (home.x - person.x) * pull : person.x;
         const cy = home ? person.y + (home.y - person.y) * pull : person.y;
         for (let attempt = 0; attempt < 8; attempt++) {
@@ -3276,6 +3308,24 @@ export class Brain {
             person.targetY = ty;
             break;
           }
+        }
+        break;
+      }
+      case 'go_home': {
+        const anchor = anchorOf(person, { world: ctx.world, peopleById: ctx.peopleById ?? new Map(), buildingsById: ctx.buildingsById,
+          householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation });
+        if (anchor) {
+          let destination: { x: number; y: number } | null = null;
+          const radius = anchor.kind === 'carer' ? 1 : 4;
+          for (let r = 0; r <= radius && !destination; r++) {
+            for (let dy = -r; dy <= r && !destination; dy++) for (let dx = -r; dx <= r; dx++) {
+              if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+              const x = Math.round(anchor.x + dx), y = Math.round(anchor.y + dy);
+              if (ctx.world.isWalkable(x, y)) { destination = { x, y }; break; }
+            }
+          }
+          if (destination) { person.targetX = destination.x; person.targetY = destination.y; }
+          if (anchor.kind === 'carer') person.targetPersonId = anchor.carerId;
         }
         break;
       }

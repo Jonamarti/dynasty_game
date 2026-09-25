@@ -1,7 +1,11 @@
 import type { Person } from '../entities/Person.ts';
 import { t } from '../../i18n/i18n.ts';
+import type { AnchorContext } from './Anchor.ts';
+import { anchorOf, childRadius } from './Anchor.ts';
+import { sensitivity } from './Temperament.ts';
+import type { MotivationConfig } from '../core/Config.ts';
 
-export type DriveId = 'hunger' | 'thirst' | 'rest' | 'warmth' | 'company';
+export type DriveId = 'hunger' | 'thirst' | 'rest' | 'warmth' | 'company' | 'home';
 export interface DriveDef {
   id: DriveId;
   /** English label for the inspector; translated at the UI boundary. */
@@ -15,6 +19,7 @@ export const DRIVES: Record<DriveId, DriveDef> = {
   rest: { id: 'rest', label: t('Rest drive'), readers: ['sleep', 'rest'] },
   warmth: { id: 'warmth', label: t('Warmth drive'), readers: ['shelter'] },
   company: { id: 'company', label: t('Company drive'), readers: ['talk'] },
+  home: { id: 'home', label: t('Home drive'), readers: ['go_home', 'wander', 'forage', 'hunt'] },
 };
 export type DrivePressures = Record<DriveId, number>;
 
@@ -25,12 +30,27 @@ export function urgencyCurve(value: number): number {
 }
 
 /** Current physical need pressures, before personality sensitivities are added in phase 2. */
-export function drivePressures(person: Person): DrivePressures {
+export function drivePressures(person: Person, ctx?: AnchorContext & { time: { daylight: number }; motivation: MotivationConfig }): DrivePressures {
+  let home = 0;
+  if (ctx) {
+    const anchor = anchorOf(person, ctx);
+    if (anchor) {
+      const d = Math.hypot(person.x - anchor.x, person.y - anchor.y);
+      const attachment = sensitivity(person, 'home');
+      const radius = person.isChild ? childRadius(person, ctx.motivation) : ctx.motivation.comfortAdult / attachment;
+      const night = Math.max(0, Math.min(1, 1 - ctx.time.daylight / 0.35));
+      const nightRadius = person.isChild ? Math.max(2, childRadius(person, ctx.motivation) / 2) : ctx.motivation.nightRadius;
+      const away = Math.max(Math.max(0, Math.min(1, (d - radius) / ctx.motivation.span)),
+        Math.max(0, Math.min(1, (d - nightRadius) / ctx.motivation.spanNight)) * night);
+      home = urgencyCurve(100 * away) * attachment;
+    }
+  }
   return {
     hunger: urgencyCurve(person.needs.hunger),
     thirst: urgencyCurve(person.needs.thirst),
     rest: urgencyCurve(person.needs.fatigue),
     warmth: urgencyCurve(person.needs.cold),
     company: urgencyCurve(person.needs.company),
+    home,
   };
 }

@@ -656,13 +656,29 @@ El padre sólo si la madre ha muerto o no está en la banda. Es lo histórico
     fracción a menos de 15 casillas de su ancla es **≥ 70%**. n/a con menos de
     200 muestras.
   - `children-keep-close`: de las muestras de niños de menos de 8 años con
-    cuidador, la fracción dentro de `childRadius + 3` de él es **≥ 75%**. n/a
-    con menos de 200 muestras.
+    cuidador, la fracción dentro de `childRadius + 3` de al menos uno de sus
+    progenitores vivos y elegibles es **≥ 75%**. La misma muestra conserva la
+    distancia a la cuidadora designada como diagnóstico: la IA sigue
+    prefiriendo a la madre como ancla, pero la métrica mide proximidad familiar.
+    n/a con menos de 200 muestras.
   **Los dos tienen que fallar en el commit de instrumento** (la línea base del
   §1b dice que fallarán con holgura). Si alguno pasa en el build viejo, el
   check está mal: no sigas.
 
 ### 2h. Medición
+
+**Estado, 2026-09-25: la implementación se entrega por indicación del
+propietario, pese a que la fase no pasa la puerta de supervivencia.** Con la
+excepción de hambre/sed ya corregida, `lean` a 20 semillas da 45,9% de
+supervivencia frente a 65,9% en la base (-20,0 puntos), y 5/20 mundos colapsan
+bajo un cuarto. El reparto observado (304 muertes por inanición de bebés, 67
+de niños mayores, 176 de adultos) incluye mortalidad en los tres grupos; la
+discrepancia abierta de `DemographyWatch` impide atribuir con confianza qué
+radio es la causa. Por la regla 3 del plan, se detiene la fase y se consulta al
+propietario, que indicó hacer commit y push de lo hecho y añadió el requisito
+de inmovilizar a los bebés. No se ajustan más radios; siguen pendientes las
+comparaciones a 20 semillas de `crowded` y `century`. Véase `docs/bugs.md` y el
+artefacto `artifacts/m13-phase2-lean.txt`.
 
 Coste declarado: **supervivencia media ≤ 5 puntos por debajo** de la línea
 base en `century`, `lean` y `crowded` a 20 semillas. Lo esperable: menos

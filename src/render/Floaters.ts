@@ -136,6 +136,7 @@ export const ACTION_LABELS: Record<string, string> = {
   idle: 'at a loose end',
   wander: 'wandering',
   goto: 'walking',
+  go_home: 'going home',
   walk: 'walking',
   drink: 'drinking',
   eat: 'eating',
@@ -266,6 +267,8 @@ export const STOP_REASONS: Record<string, string> = {
   // shoreline, a lagoon, a rock ridge. Not resumable: a route that does not
   // exist now will not exist in two hundred ticks either.
   cannot_reach: 'they could not get there',
+  cannot_reach_home: 'they could not find the way home',
+  away_from_family: 'they had to stay close to their family',
   tree_gone: 'the tree was gone',
   site_gone: 'the site was gone',
   target_gone: 'they were gone',
