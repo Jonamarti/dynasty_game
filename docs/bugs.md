@@ -1,21 +1,40 @@
 # Known bugs and rough edges
 
-## Bebés inmóviles sin lactancia, 2026-09-25
+## Crianza y supervivencia infantil, 2026-09-25
 
-Los menores de un año ya no eligen ni ejecutan acciones y se quedan en el lugar
-del nacimiento; las órdenes se rechazan y el movimiento directo no los desplaza.
-Esto evita que recolecten comida, beban o deambulen por sí solos. Aún no existe
-transporte en brazos, cuna/lecho, ni la acción `nurse`; por tanto, la comida y
-el agua del bebé no reciben cuidado automático y su supervivencia puede bajar.
-La fase 6 del plan M14 sigue siendo necesaria para completar esa crianza.
-En el commit `39b3361`, la cohorte `lean` a 20 semillas promedió 43,8% de
-supervivencia (6/20 colapsos); la base de fase 0 era 65,9%. El contador del
-runner agrupa bajo «infants (5 or under)» todas las muertes antes de los seis
-años: fueron 473 y no permite aislar a los menores de uno. La cohorte anterior
-con la inmovilidad aún no aplicada dio 45,9% y 304 muertes en ese mismo grupo.
-No es una comparación que permita atribuir todo el cambio a la inmovilidad,
-pero confirma que la supervivencia sigue por debajo del límite de la fase y
-que hay que resolver el cuidado antes de calibrar más.
+Los menores de un año no eligen acciones ni se desplazan; se quedan en el lugar
+del nacimiento. Cuando su madre detecta hambre (30) o sed (35), interrumpe
+cualquier trabajo, va hasta el bebé y amamanta durante 15 ticks, aliviando
+ambas necesidades. La sed y el hambre propias de la madre no interrumpen la
+sesión; una agresión sí tiene prioridad. El niño permanece en el suelo al
+terminar. Siguen pendientes el transporte visible en brazos, el lecho/cuna y
+la lactancia por otra cuidadora si la madre muere o no puede llegar.
+
+La cohorte `lean` a 20 semillas pasó de 43,8% de supervivencia con bebé inmóvil
+sin lactancia automática (`39b3361`) a 49,7% con lactancia urgente; los
+colapsos bajaron de 6/20 a 5/20. El runner bajó de 473 a 134 las muertes que
+agrupa en «infants (5 or under)», pero esta categoría incluye a todos los
+menores de seis años y no aísla a menores de uno. La base de fase 0 fue 65,9%;
+el nuevo resultado continúa 16,2 puntos por debajo y supera el coste aceptable
+de la fase M13. `DemographyWatch` aún registra cero muertes en estas mismas
+cohortes; no se debe usar para inferir la tasa infantil.
+
+## Check matrix after urgent nursing, 2026-09-25
+
+`sim:check:all` had `children-keep-close` failures in `band`, `crowded`,
+`craft`, `scribes`, `harsh-winter`, `traps`, `millers`, `hunters`, `fishers`,
+`farmers`, `feasts`, `stewards`, `labour` and `lean`. It passed in the four-year
+`century` run (75.1% against a 75% floor), so short `band` and long `century`
+do not agree. A single four-year `century` run before excluding infants was
+65.1%; the same run after excluding them reached 81.5%. Other matrix failures
+were `peoples-drift-apart` (crowded, millers), `bands-take-sides` (century,
+farmers, feasts, stewards, lean), `research-is-social` (craft, fishers,
+culture), `opinions-diverge` (coast, traps, hunters, fishers, farmers,
+culture, lean), `gossip-is-aimed` (traps, hunters), and `animals-are-tamed`
+(farmers, culture), plus one-offs for herders (`the-tree-is-climbed`,
+`wool-is-sheared-and-woven`, `bands-dont-overbuild`) and feasts
+(`techs-are-refined`). This is a current snapshot, not a before/after
+regression claim.
 
 ## M13 phase 2 survival gate, 2026-09-25
 

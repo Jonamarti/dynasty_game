@@ -337,14 +337,21 @@ El núcleo de la nota y la fase más cara del bloque.
   donde nacieron: no puntúan acciones, no ejecutan órdenes y el movimiento
   directo tampoco los desplaza. El renderer aún los dibuja como figuras pequeñas
   de pie; queda pendiente una pose tumbada o el transporte visible en brazos.
-  La lactancia de 6b también sigue pendiente, así que este cambio no soluciona
-  por sí solo las necesidades de hambre y sed del bebé.
+  Véase la implementación de lactancia urgente en la fase 6b.
 - **6b. Mamar.** El bebé tiene hambre y sed propias a un ritmo propio. Un verbo
   `nurse`, corto (unos 15 ticks) y que se repite varias veces al día, lo
   alivia. La madre lo elige por puntuación cuando el hambre del bebé sube; el
   jugador lo ve y puede ordenarlo. Mientras amamanta, la madre **gasta más**:
   un término en `NeedsSystem.exertionOf`, reutilizado y no duplicado, que
   también mueve `macroTarget` (M11 fase 8).
+
+  **Avance parcial, 2026-09-25:** cuando el hambre del bebé llega a 30 o la sed
+  a 35, la madre interrumpe su acción u orden, camina hasta él y amamanta por
+  15 ticks. Cada sesión resta 45 de hambre y 55 de sed; la propia sed de la
+  madre sube con un factor de esfuerzo 1,25. La acción aparece en el HUD como
+  «nursing the baby». El bebé queda en el suelo al terminar. Aún faltan tasas
+  propias del bebé, transporte en brazos, cuna, lactancia de nodrizas y una
+  orden directa en el menú.
 - **6c. La amenorrea de la lactancia.** Mientras amamanta, la probabilidad de
   concebir de la madre se multiplica por un factor bajo. **Es la palanca «frenar
   la natalidad bajo presión» de `next-steps.md` §1**, y llega con base

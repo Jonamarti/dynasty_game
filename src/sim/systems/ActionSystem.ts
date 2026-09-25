@@ -11,6 +11,7 @@
  * draw their own conclusions.
  */
 import type { Person } from '../entities/Person.ts';
+import { NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF } from '../ai/Nursing.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import { Arrival, type MovementSystem } from './MovementSystem.ts';
@@ -224,6 +225,8 @@ function talkModeOf(person: Person, rel: Relationship | null, tick: number): Con
 
 /** Ticks to hand something over and be thanked for it. */
 const GIVE_TICKS = 15;
+/** A short nursing session is frequent care, not a job the mother can abandon halfway. */
+const NURSE_TICKS = 15;
 
 /** Ticks to haggle out a trade. Longer than a plain gift; both sides bargain. */
 const TRADE_TICKS = 25;
@@ -379,6 +382,8 @@ interface InterruptionOptions {
    * the next, and only one of those is food.
    */
   answers?: LethalNeed;
+  /** This act answers the infant's needs, so its mother's needs do not cancel it. */
+  ignoreNeeds?: boolean;
 }
 
 /** No single stretch of work runs longer than this, whatever else is true. */
@@ -658,6 +663,7 @@ export class ActionSystem {
       case 'discuss': this.doDiscuss(person, ctx); break;
       case 'prototype': this.doPrototype(person, ctx); break;
       case 'give': this.doGive(person, ctx); break;
+      case 'nurse': this.doNurse(person, ctx); break;
       case 'trade': this.doTrade(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
@@ -968,14 +974,16 @@ export class ActionSystem {
       // alone kept the total above zero.
       telemetry.count('pushed_on_' + opts.answers + '_' + person.action);
     }
-    if (person.needs.thirst + ctx.needs.thirstRate * ahead >
-      workLimit(person, 'thirst', limits, opts.answers)) return 'thirsty';
-    if (person.needs.hunger + ctx.needs.hungerRate * ahead >
-      workLimit(person, 'hunger', limits, opts.answers)) return 'hungry';
-    // Cold is read as it stands: its rate depends on the season and the roof
-    // overhead, so projecting it forward from a per-tick constant would be a
-    // guess dressed up as arithmetic.
-    if (person.needs.cold > workLimit(person, 'cold', limits, opts.answers)) return 'cold';
+    if (!opts.ignoreNeeds) {
+      if (person.needs.thirst + ctx.needs.thirstRate * ahead >
+        workLimit(person, 'thirst', limits, opts.answers)) return 'thirsty';
+      if (person.needs.hunger + ctx.needs.hungerRate * ahead >
+        workLimit(person, 'hunger', limits, opts.answers)) return 'hungry';
+      // Cold is read as it stands: its rate depends on the season and the roof
+      // overhead, so projecting it forward from a per-tick constant would be a
+      // guess dressed up as arithmetic.
+      if (person.needs.cold > workLimit(person, 'cold', limits, opts.answers)) return 'cold';
+    }
 
     // A committed child's long action must yield to being reunited with their
     // carer. Replanning them directly would erase progress without a reason;
@@ -3477,6 +3485,35 @@ export class ActionSystem {
       kind: 'did',
     });
     ctx.onInsight(person, t('built a {tech} to try', { tech: t(def.label).toLowerCase() }), 'idea');
+    this.finish(person);
+  }
+
+  private doNurse(person: Person, ctx: ActionContext): void {
+    const baby = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
+    if (!baby?.alive || !baby.isInfant || baby.motherId !== person.id) {
+      this.abandon(person, 'target_gone', ctx);
+      return;
+    }
+    if (baby.needs.hunger < NURSING_HUNGER && baby.needs.thirst < NURSING_THIRST) {
+      this.finish(person);
+      return;
+    }
+    if (!this.approach(person, ctx)) return;
+
+    if (person.actionTimer <= 0) person.actionTimer = NURSE_TICKS;
+    person.actionTimer--;
+    person.workedTicks++;
+    if (person.actionTimer > 0) {
+      const stopped = this.interruption(person, ctx, { ignoreLaden: true, ignoreNeeds: true });
+      if (stopped) this.stop(person, stopped, ctx);
+      return;
+    }
+
+    baby.needs.hunger = Math.max(0, baby.needs.hunger - NURSING_HUNGER_RELIEF);
+    baby.needs.thirst = Math.max(0, baby.needs.thirst - NURSING_THIRST_RELIEF);
+    telemetry.count('nursing_sessions');
+    telemetry.count('nursing_hunger_relief', NURSING_HUNGER_RELIEF);
+    telemetry.count('nursing_thirst_relief', NURSING_THIRST_RELIEF);
     this.finish(person);
   }
 

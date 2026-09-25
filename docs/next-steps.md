@@ -24,13 +24,13 @@ staying near home and family, is next.
 that the work be committed and added an infant autonomy correction.** The
 corrected 20-seed `lean` cohort averages 45.9% survival against 65.9% at
 baseline, exceeding the declared five-point maximum; see [m13_plan.md](m13_plan.md)
-§2h and [bugs.md](bugs.md). A single `century` health run after immobilizing
-infants still fails `children-keep-close`; the check now measures only walking-
-age children, and needs rerunning. The pushed build's 20-seed `lean` run is
-43.8% survival (6/20 collapses), with 473 deaths in the runner's broad under-
-six counter; see [bugs.md](bugs.md). The infant immobility needs a care path
-before further tuning. The `crowded` and `century` 20-seed phase-2 comparisons
-and the M14 nursing/carrying work remain open.
+§2h and [bugs.md](bugs.md). After urgent maternal nursing, the four-year
+`century` run passes `children-keep-close` at 75.1%, but the matrix still fails
+that check in fourteen scenarios. The pushed build's 20-seed `lean` run was
+43.8% survival; urgent maternal nursing improves it to 49.7% (5/20 collapses,
+134 deaths in the runner's broad under-six counter), still below the phase
+gate. See [bugs.md](bugs.md). The other 20-seed comparisons and M14 carrying,
+cradle, wet-nurse and infant-specific rates remain open.
 
 Ordered, with the reason for the order.
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-25 — Respuesta materna urgente al hambre y la sed del bebé
+
+Added `nurse` as the mother's overriding response when an infant reaches 30
+hunger or 35 thirst. It interrupts current work or orders, travels to the baby,
+and after 15 ticks relieves 45 hunger and 55 thirst. The mother continues to
+accrue thirst at 1.25 exertion; her own needs do not interrupt nursing, while
+an immediate attack does. The infant remains at its birth location. In 20
+`lean` seeds, survival rose from 43.8% with immobility alone to 49.7% with
+nursing, and under-six starvation deaths fell from 473 to 134; the cohort still
+misses the phase's five-point cost gate. `DemographyWatch` mortality remains
+unreliable. Added urgent-nursing tests and localized the visible action.
+
 ## 2026-09-25 — M13 phase 2 progress and babies under one year
 
 Added a `home` drive, household/carer anchors, child reach by age, a return-home
@@ -10,8 +22,8 @@ phase's declared five-point ceiling; see `bugs.md`. At the owner's direction,
 added an immediate first-year restriction: babies stay at their birth position,
 cannot choose or execute actions, cannot be ordered to move, and cannot be moved
 by direct input. The child-proximity check now measures walking-age children.
-The M14 plan records that visible carrying, a resting pose, nursing and infant
-care remain future work. Typecheck and focused tests pass; the full suite's one
+The M14 plan records that visible carrying, a resting pose, wet nursing and
+infant-specific need rates remain future work. Typecheck and focused tests pass; the full suite's one
 remaining timeout in `band.test.ts` is described in the delivery note.
 After the owner's baby restriction was committed, a fresh 20-seed `lean` run
 on that exact build averaged 43.8% survival (6/20 collapses), with 473 deaths

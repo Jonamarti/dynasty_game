@@ -164,6 +164,7 @@ export const ACTION_LABELS: Record<string, string> = {
   inscribe: 'cutting it into stone',
   read: 'reading a record',
   give: 'giving food',
+  nurse: 'nursing the baby',
   steal: 'stealing',
   threaten: 'making a demand',
   attack: 'fighting',

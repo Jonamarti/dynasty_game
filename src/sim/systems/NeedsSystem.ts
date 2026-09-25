@@ -47,6 +47,7 @@ const EXERTION: Record<string, number> = {
   talk: 0.75,
   court: 0.75,
   teach: 0.75,
+  nurse: 1.25,
   discuss: 0.75,
   ponder: 0.65,
   read: 0.65,

@@ -285,4 +285,6 @@ export const ES_SIM: Record<string, string> = {
   "led a party onto the {band}'s ground for {what}": "encabezó una partida en tierras de la {band} en busca de {what}",
   "leads a party onto the {band}'s ground for {what}": "encabeza una partida en tierras de la {band} en busca de {what}",
   "babies cannot act on their own": "los bebés no pueden actuar por sí solos",
+  "nursing the baby": "amamantando al bebé",
+  "nurse the baby": "amamantar al bebé",
 };

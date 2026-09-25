@@ -72,6 +72,7 @@ import {
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
 import type { MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
+import { infantNeedingNursing } from './Nursing.ts';
 
 export interface BrainContext {
   world: World;
@@ -233,6 +234,8 @@ interface FoundTargets {
   giftee: Person | null;
   giftItem: string | null;
   beneficiary: Person | null;
+  /** The mother's hungry infant, for urgent nursing. */
+  nursingChild: Person | null;
   /**
    * Who a `trade` is aimed at. Not merged with `beneficiary`: `give` and
    * `trade` can both be scored in the same tick, toward different people —
@@ -805,6 +808,13 @@ export class Brain {
     let victim: Person | null = null;
     let foe: Person | null = null;
     let beneficiary: Person | null = null;
+    let nursingChild: Person | null = null;
+    nursingChild = ctx.peopleById ? infantNeedingNursing(person, ctx.peopleById, ctx.world) : null;
+    if (nursingChild) {
+      // Simulation also interrupts committed work immediately; this makes the
+      // overriding care need visible in `why` and ordinary replanning.
+      add('nurse', 1000 + Math.max(nursingChild.needs.hunger, nursingChild.needs.thirst));
+    }
     let tradePartner: Person | null = null;
     let fleeFrom: Person | null = null;
     let fleePoint: { x: number; y: number } | null = null;
@@ -2772,6 +2782,9 @@ export class Brain {
     // Written onto the row rather than through `add`, whose hysteresis and
     // appetite this is deliberately above.
     if (setUpon) {
+      // A baby can wait while its mother escapes or answers an immediate blow.
+      const nursing = scores.findIndex(row => row.id === 'nurse');
+      if (nursing >= 0) scores.splice(nursing, 1);
       const flee = fleeFrom === setUpon ? scores.find(row => row.id === 'flee') : undefined;
       const strike = foe === setUpon ? scores.find(row => row.id === 'attack') : undefined;
       const answer = strike && (!flee || strike.score > flee.score) ? strike : flee;
@@ -2800,7 +2813,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, attackRoute, intruder, restrainee, correctee, amendsTo, complainTo, parleyWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, tradePartner, fleeFrom, fleePoint,
+        victim, foe, attackRoute, intruder, restrainee, correctee, amendsTo, complainTo, parleyWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -3345,6 +3358,7 @@ export class Brain {
       case 'discuss':
       case 'court':
       case 'spar':
+      case 'nurse':
       case 'feed':
       case 'give':
       case 'gift':
@@ -3380,6 +3394,7 @@ export class Brain {
           action === 'discuss' ? found.colleague :
           action === 'court' ? found.suitor :
           action === 'spar' ? found.sparPartner :
+          action === 'nurse' ? found.nursingChild :
           action === 'feed' || action === 'give' ? found.beneficiary :
           action === 'gift' ? found.giftee :
           action === 'trade' ? found.tradePartner :

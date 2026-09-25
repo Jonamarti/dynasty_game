@@ -28,6 +28,7 @@ import { Pathfinder } from './Pathfinder.ts';
 import { ActionSystem } from '../systems/ActionSystem.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
+import { infantNeedingNursing } from '../ai/Nursing.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -46,7 +47,7 @@ import {
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
 import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
-import { isHeld } from '../social/Defence.ts';
+import { assailantOf, isHeld } from '../social/Defence.ts';
 import { wouldInvestigate, noticeBloodied, INVESTIGATION_DAYS } from '../social/Investigation.ts';
 import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
 import { Household, resetHouseholdIds } from '../entities/Household.ts';
@@ -169,6 +170,7 @@ const RESUME_WINDOW = 2000;
  * falls back to its id.
  */
 export const ORDER_WORDS: Record<string, string> = {
+  nurse: 'nurse the baby',
   sabotage: 'wreck a rival building',
   take: 'take from a rival store',
   build: 'work on a building',
@@ -3861,8 +3863,31 @@ export class Simulation {
       // the hold every tick they keep it up, so it lapses by itself.
       if (isHeld(person, this.time.tick)) continue;
 
+      const underAttack = assailantOf(person, id => this.peopleById.get(id), this.time.tick) !== null;
+      const urgentBaby = underAttack ? null : infantNeedingNursing(person, this.peopleById, this.world);
+      const activeNursing = person.action === 'nurse';
+      const currentBaby = activeNursing && person.targetPersonId !== null
+        ? this.peopleById.get(person.targetPersonId) : null;
+      if (!underAttack && (urgentBaby || activeNursing)) {
+        const baby = urgentBaby ?? currentBaby;
+        if (baby && (person.action !== 'nurse' || person.targetPersonId !== baby.id)) {
+          // A baby's cry interrupts any job or order, including the player's
+          // current intent. The mother stops where she is and goes to the child.
+          person.forgetPlans();
+          person.clearTarget();
+          person.action = 'nurse';
+          person.order = 'nurse';
+          person.targetPersonId = baby.id;
+          person.workedTicks = 0;
+        }
+        if (baby && person.action === 'nurse') {
+          person.targetX = baby.x;
+          person.targetY = baby.y;
+        }
+      }
+
       // The player's held keys override whatever they were doing.
-      if (person.isPlayer && this.playerIntent) {
+      if ((underAttack || (!urgentBaby && !activeNursing)) && person.isPlayer && this.playerIntent) {
         person.action = 'walk';
         person.clearTarget();
         this.movementSystem.nudge(person, this.playerIntent.dx, this.playerIntent.dy);
