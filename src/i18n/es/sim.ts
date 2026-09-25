@@ -1,5 +1,10 @@
 /** Spanish for sim. Keys are the English templates; see `i18n.ts`. */
 export const ES_SIM: Record<string, string> = {
+  "Hunger drive": "Motivo de hambre",
+  "Thirst drive": "Motivo de sed",
+  "Rest drive": "Motivo de descanso",
+  "Warmth drive": "Motivo de calor",
+  "Company drive": "Motivo de compañía",
   "{actor} gave {target} a gift": "{actor} hizo un regalo a {target}",
   "{actor} shared food with {target}": "{actor} compartió comida con {target}",
   "{actor} traded with {target}": "{actor} hizo un trueque con {target}",

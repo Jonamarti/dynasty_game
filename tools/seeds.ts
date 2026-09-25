@@ -29,12 +29,16 @@ import { Simulation } from '../src/sim/core/Simulation.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { DemographyWatch, formatDemography, type Demography } from './demography.ts';
+import { CohesionWatch, formatCohesion, type Cohesion } from './cohesion.ts';
+import { HistoryWatch, formatHistory, type HistoryReport } from './history.ts';
 import {
   SCENARIOS, thousands, watchConflict, peoplesApart, apartAroundIncidents, type ConflictWatch,
 } from './simcheck.ts';
 
 interface SeedResult {
   demography: Demography;
+  cohesion: Cohesion;
+  history: HistoryReport;
   seed: string;
   peak: number;
   end: number;
@@ -104,11 +108,15 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   let born = 0;
   const startingIds = new Set(sim.people.map(p => p.id));
   const demography = new DemographyWatch(sim.peopleById.values(), sim.config.time.ticksPerDay);
+  const cohesion = new CohesionWatch(sim);
+  const history = new HistoryWatch(sim);
 
   const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [] };
   let lastEventId = 0;
   for (let i = 1; i <= steps; i++) {
     sim.step();
+    if (sim.time.tick % 40 === 0) cohesion.observe();
+    if (sim.time.tick % sim.config.time.ticksPerDay === 0) history.observe();
     // One census per day is enough for fertility exposure and birth/death
     // cohorts. Scanning the retained dead-person registry on every tick made
     // this read-only report scale with both run length and all prior deaths.
@@ -154,6 +162,8 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
 
   return {
     demography: demography.finish(sim.peopleById.values(), sim.time.tick),
+    cohesion: cohesion.finish(),
+    history: history.finish(),
     seed,
     peak,
     end: sim.livingPeople().length,
@@ -203,8 +213,10 @@ function main(): void {
     return i >= 0 ? args[i + 1] : undefined;
   };
 
-  const scenarioName = flag('scenario') ?? 'century';
-  const count = Number(flag('seeds') ?? 10);
+  // vite-node consumes unknown long-option names after the package script's
+  // `--` delimiter and forwards the values positionally.
+  const scenarioName = flag('scenario') ?? args[0] ?? 'century';
+  const count = Number(flag('seeds') ?? args[1] ?? 10);
   const scenario = SCENARIOS[scenarioName];
   if (!scenario) {
     console.error('unknown scenario "' + scenarioName + '"');
@@ -212,8 +224,9 @@ function main(): void {
     process.exit(1);
     return;
   }
-  const steps = Number(flag('steps') ?? scenario.steps);
-  const size = flag('size') === undefined ? null : Number(flag('size'));
+  const steps = Number(flag('steps') ?? args[2] ?? scenario.steps);
+  const sizeValue = flag('size') ?? args[3];
+  const size = sizeValue === undefined ? null : Number(sizeValue);
 
   // Named rather than numbered: adjacent numeric seeds are the case the RNG is
   // most likely to correlate on, and these are the seeds the docs quote.
@@ -254,6 +267,8 @@ function main(): void {
   const collapsed = results.filter(r => r.peak > 0 && r.end / r.peak < 0.25).length;
 
   console.log(formatDemography(results.map(r => r.demography)));
+  console.log(formatCohesion(results.map(r => r.cohesion)));
+  console.log(formatHistory(results.map(r => r.history)));
 
   console.log('='.repeat(78));
   console.log(

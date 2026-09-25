@@ -58,6 +58,10 @@ export function consumeFood(person: Person, itemId: string): boolean {
   // forage than one that does not, and can therefore support more people on
   // the same ground.
   const eaten = def.nutrition * nutritionFactor(person);
+  // M13 phase 0 cohort observer: pooled nutrition from genuinely protein-rich
+  // food, recorded at the same point as consumed nutrition without touching the sim.
+  telemetry.count('diet_nutrition_total', eaten);
+  if ((def.macros?.protein ?? 0) >= 0.3) telemetry.count('diet_nutrition_protein', eaten);
   person.needs.hunger = Math.max(0, person.needs.hunger - eaten);
   // M11 phase 8b: fold what was actually eaten into today's ledger, in the
   // same units `decayMacroBalance` will normalise into fractions. Cooking's

@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-09-25 — M13 phase 0: cohesion and historical baselines
+
+Added read-only `CohesionWatch` and `HistoryWatch` observers, the `range`
+command, and pooled HOME/HISTORY output from `sim:seeds`. The observers cover
+camp distance and night actions; population drawdown/recovery, losses, violence,
+war, fire discovery, technology adoption, malnutrition, and protein-rich food.
+Added intake telemetry at the actual food-consumption point. Fixed argument
+forwarding for seed and range CLIs: vite-node passes option values positionally
+through the package script's `--` delimiter. Added observer-neutrality tests
+and the 20-seed HOME/HISTORY baselines for century, lean, and crowded. The
+pre-existing DemographyWatch reports zero deaths in those same cohorts while
+the seed counters and HistoryWatch observe deaths; this remains open in
+`bugs.md` and is excluded from M13's baseline conclusions.
+
+The final `sim:check:all` matrix has the same 14 failing scenario/check pairs
+as its first post-instrumentation run; no check availability or failure pair
+changed. The output is saved at `artifacts/m13-phase0-after.txt`.
+
+## 2026-09-25 — M13 phase 1: physical drive table, no score changes
+
+Moved the existing quadratic urgency curve and five physical need pressures to
+`sim/ai/Drives.ts`. `Brain.score` computes them once and reads the table where
+it previously computed each value inline; the separate industriousness work
+appetite keeps its existing name and coefficient. `lastDrives` and `why` expose
+the values for diagnosis, with Spanish labels. The exact-curve and table-reader
+tests pass. All 543 tests pass with one worker; the default parallel run hit
+the documented 5-second timeout in `band.test.ts`. The post-change matrix has
+the same 14 failure pairs as phase 0 (`artifacts/m13-phase1-after.txt`).
+
 ## 2026-09-25 — M13 becomes NPC motivation; the world map becomes M14
 
 Documentation only, plus one comment. The owner asked whether the way NPCs

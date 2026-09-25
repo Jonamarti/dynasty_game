@@ -13,6 +13,7 @@
     "sim:check": "vite-node tools/headless.ts --",
     "sim:check:all": "vite-node tools/scenarios.ts --",
     "sim:seeds": "vite-node tools/seeds.ts --",
+    "range": "vite-node tools/range.ts --",
     "verify": "npm run typecheck && npm run test && npm run sim:check:all && npm run e2e",
     "e2e": "playwright test e2e/smoke.spec.ts",
     "shots": "playwright test e2e/screenshots.spec.ts",

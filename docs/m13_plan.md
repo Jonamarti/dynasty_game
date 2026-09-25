@@ -297,6 +297,14 @@ Además de las de `AGENTS.md`, que siguen mandando:
 
 ## Fase 0 — Instrumentos y línea base (bit-idéntico)
 
+**Avance del 2026-09-25 — completada:** `CohesionWatch`, `HistoryWatch`,
+`range`, y las líneas pooled HOME/HISTORY de `sim:seeds` están implementados.
+Las tres cohortes de veinte semillas y `m13_baseline.md` están guardados. Los
+cuatro tests de neutralidad, `typecheck` y los 541 tests pasan. `sim:check:all`
+termina con los mismos 14 pares escenario/check ya observados antes; el informe
+final está en `artifacts/m13-phase0-after.txt`. La discrepancia de
+`DemographyWatch` queda anotada en `bugs.md` y sus cifras no se usan.
+
 **Objetivo.** Que cada fase posterior tenga un número contra el que medirse.
 Nada de esta fase cambia el mundo.
 
@@ -416,6 +424,14 @@ test equivalente de cohesión en verde; `m13_baseline.md` escrito.
 # Bloque II — Motivos
 
 ## Fase 1 — El andamiaje de los motivos (bit-idéntico)
+
+**Avance del 2026-09-25 — completada:** `Drives.ts` concentra las cinco
+presiones físicas con la misma curva cuadrática y sin sensibilidades. `Brain`
+usa esos valores en sus filas existentes; `why` muestra las cinco presiones a
+dos decimales. Los cuatro campos de etiqueta tienen traducción española.
+`drives.test.ts`, `typecheck` y los 543 tests serializados pasan. La matriz
+final conserva los mismos pares fallidos que la fase 0; no se alteró ninguna
+decisión ni stream RNG.
 
 **Objetivo.** Que exista un solo sitio donde se calcula cuánto empuja cada
 motivo, y que `Brain` lo lea desde ahí, **sin cambiar ni un número**.

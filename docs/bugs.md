@@ -1,5 +1,31 @@
 # Known bugs and rough edges
 
+## M13 phase 0, 2026-09-25
+
+The throwaway script used for the plan's cohesion figures is not checked in;
+`CohesionWatch` now establishes repeatable measurements from the phase-0
+baseline onward.
+
+`DemographyWatch` reports zero deaths in all three M13 20-seed raw artifacts,
+including `lean`, where the same seed run reports 319 starvation deaths and
+`HistoryWatch` detects deaths. `DemographyWatch.finish` receives the same
+`peopleById.values()` registry after the run, so the discrepancy needs a
+reproduction and diagnosis before its mortality output is trusted. The M13
+baseline excludes those demography death figures; the issue is not fixed here.
+The first post-instrumentation `sim:check:all` run completed with 14 failing
+scenario/check pairs: crowded (`peoples-drift-apart`); century
+(`violence-concentrates`, `wrongs-reach-the-chief`); craft (the same two);
+scribes (`research-is-social`, `violence-concentrates`,
+`peoples-drift-apart`); traps (`animals-are-tamed`); millers
+(`violence-concentrates`); farmers and herders (`bands-take-sides`); feasts
+(`techs-are-refined`, `peoples-drift-apart`); stewards (`soil-is-drawn-down`,
+`compost-answers-exhaustion`, `bands-take-sides`); labour
+(`walkers-do-not-grind`, `violence-concentrates`, `peoples-drift-apart`,
+`wrongs-reach-the-chief`); and lean (`violence-concentrates`,
+`peoples-drift-apart`, `wrongs-reach-the-chief`). This was not compared
+against a pre-instrumentation matrix, so it is a current observation, not an
+M13 regression.
+
 As of 2026-09-25. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 

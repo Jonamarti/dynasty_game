@@ -69,6 +69,7 @@ import { COMPLAIN, COMPLAIN_AFTER, PARLEY } from '../social/Justice.ts';
 import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
+import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
 
 export interface BrainContext {
   world: World;
@@ -157,6 +158,8 @@ export interface ScoredAction {
 
 /** Last think's score table, for the inspector. Not part of simulation state. */
 export const lastScores = new Map<number, ScoredAction[]>();
+/** Last scored motive pressures, for `why` and the inspector. Not simulation state. */
+export const lastDrives = new Map<number, DrivePressures>();
 
 interface FoundTargets {
   water: { x: number; y: number } | null;
@@ -572,11 +575,6 @@ const PREY_AT = 0.45;
 const JOB_BIAS_UP = 1.3;
 const JOB_BIAS_DOWN = 0.85;
 
-function urgencyCurve(value: number): number {
-  const u = value / 100;
-  return u * u;
-}
-
 export class Brain {
 
   /**
@@ -623,6 +621,7 @@ export class Brain {
    */
   score(person: Person, ctx: BrainContext): { scores: ScoredAction[]; found: FoundTargets } {
     const scores: ScoredAction[] = [];
+    const drive = drivePressures(person);
     // Hysteresis: whatever you are already doing is worth a little more than
     // starting something else. Without this people dither on the spot, walking
     // half way to the water, half way to a bush, and satisfying neither need.
@@ -636,7 +635,7 @@ export class Brain {
     // Kept to a narrow band for the reason every coefficient here is: they are
     // calibrated against each other, and a wide multiplier on half the verbs
     // would silently disable gates elsewhere.
-    const drive = 0.8 + person.traits.industriousness * 0.4;
+    const industriousAppetite = 0.8 + person.traits.industriousness * 0.4;
     const idle = 1.2 - person.traits.industriousness * 0.4;
     // Only `WORK_ACTIONS` are biased by a job. Damping social or research
     // verbs for a hunter would make a job a personality change rather than a
@@ -644,7 +643,7 @@ export class Brain {
     // against by an occupation.
     const job = person.job ? JOBS[person.job] : null;
     const add = (id: string, score: number) => {
-      const appetite = WORK_ACTIONS.has(id) ? drive : IDLE_ACTIONS.has(id) ? idle : 1;
+      const appetite = WORK_ACTIONS.has(id) ? industriousAppetite : IDLE_ACTIONS.has(id) ? idle : 1;
       const jobBias = job && WORK_ACTIONS.has(id)
         ? (job.actions.includes(id) ? JOB_BIAS_UP : JOB_BIAS_DOWN)
         : 1;
@@ -655,9 +654,9 @@ export class Brain {
     let fruitTree: Tree | null = null;
     let fellTree: Tree | null = null;
 
-    const thirst = urgencyCurve(person.needs.thirst);
-    const hunger = urgencyCurve(person.needs.hunger);
-    const fatigue = urgencyCurve(person.needs.fatigue);
+    const thirst = drive.thirst;
+    const hunger = drive.hunger;
+    const fatigue = drive.rest;
 
     // --- Drink -------------------------------------------------------------
     const water = this.findWater(person, ctx);
@@ -790,7 +789,7 @@ export class Brain {
         ctx.world.sameRegion(person.x, person.y, other.x, other.y));
 
 
-    const loneliness = urgencyCurve(person.needs.company);
+    const loneliness = drive.company;
     let companion: Person | null = null;
     let victim: Person | null = null;
     let foe: Person | null = null;
@@ -2360,7 +2359,7 @@ export class Brain {
       if (shelter) {
         const nearness =
           this.proximityBonus(person, { x: shelter.centerX, y: shelter.centerY }, ctx.sightRadius);
-        add('shelter', urgencyCurve(person.needs.cold) * 2.6 * shelter.def.shelter * nearness);
+        add('shelter', drive.warmth * 2.6 * shelter.def.shelter * nearness);
         // Above `rest` at night by construction, and below it by day: a roof
         // within reach after dark is where a tired person should be, and
         // sleeping through the afternoon is not.
@@ -2770,6 +2769,7 @@ export class Brain {
 
     scores.sort((a, b) => b.score - a.score);
     lastScores.set(person.id, scores.slice(0, 6));
+    lastDrives.set(person.id, drive);
     return {
       scores,
       found: {

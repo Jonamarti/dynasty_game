@@ -16,6 +16,11 @@ remain open.** See [m14_phase1.md](m14_phase1.md).
 M13 is now NPC motivation — why anybody does anything — planned in
 [m13_plan.md](m13_plan.md); the world map becomes M14 and everything after it
 moves up by one.** See §7j.
+**2026-09-25, later: M13 phases 0-1 are complete.** The cohort baseline is in
+[m13_baseline.md](m13_baseline.md); the utility scorer now reads its five
+physical pressures from `Drives.ts` without changing decisions. Phase 2,
+staying near home and family, is next.
+
 Ordered, with the reason for the order.
 
 **2026-09-10: the owner moved the social and interface pass ahead of the
@@ -152,7 +157,7 @@ Both are inside what twenty seeds can resolve across the whole of phases
 | M11 phase 16 — the body stays | shipped 2026-09-23. Owner's note 1: every death leaves a body (16a); it decays, and can be cut up past knowing or dragged into water (16b); whoever sees it finds it, and a widow is widowed when she knows (16c); a killing is looked into through witnesses, motives and blood, and named — sometimes wrongly (16d); the player sees and can do all of it (16e). The gate added killers hiding a body nobody saw fall. Cohort: 78-87% of bodies found; 45-55% of investigations name the killer, 10-13% somebody else |
 | M11 phase 17 — the close | shipped 2026-09-23. `gift` emitted by the Kit and by a spare tool given away, measured to move renown little (17a); phase 5's four checks — `gossip-is-aimed` per run, exile, factions and adoption in the cohort (17b); a field can be trampled (17c); the measurement policy — wall clocks alone and scaled, tripwires in the cohort (17d); these documents (17e). **M11 is complete** |
 | M12 — the tribe before the map | shipped 2026-09-24, phases 1-7: peace within the band, justice and amends, the depot window, captives kept, territory, inherited feuds, stratification. See [m12_plan.md](m12_plan.md) |
-| **M13 — why anybody does anything** | **next.** Drives in place of needs-plus-scattered-traits; staying near home and kin (children beside their parents, nobody spending their nights across the island); a day with a night in it; threats before hunger, and kin defended; a craving for variety; expectations learned by doing, watching and being told; the hearth and roast meat as the first thing adopted because people found it better; discovery by need; building by persuasion (`notes4.txt`); raids by proposal; and history's shape as a measured calibration target. Local map only. Planned in full in [m13_plan.md](m13_plan.md) |
+| **M13 — why anybody does anything** | **underway; phases 0-1 shipped, phase 2 next.** Drives in place of needs-plus-scattered-traits; staying near home and kin (children beside their parents, nobody spending their nights across the island); a day with a night in it; threats before hunger, and kin defended; a craving for variety; expectations learned by doing, watching and being told; the hearth and roast meat as the first thing adopted because people found it better; discovery by need; building by persuasion (`notes4.txt`); raids by proposal; and history's shape as a measured calibration target. Local map only. Planned in full in [m13_plan.md](m13_plan.md) |
 | M14 — the world beyond the comarca | after M13 (was M13 until 2026-09-25). The body (pregnancy, nursing, wounds, illness), the wild (grass, grazing, predators, breeding), the world map with its globe, simulation LOD, migration, caravans and — possibly as M15 — civilisation. Phase 1 shipped under the old name. Planned in [m14_plan.md](m14_plan.md) |
 | M9.6 phases 4b–5 — happiness reads, and sleeping rough | **moved to M13** (phases 3 and 10); 4a (the field) shipped with M11 phase 5a. The `security` channel's writers and readers were taken over by M11 phase 14 |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |

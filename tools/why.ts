@@ -11,7 +11,7 @@
  * the outside can be traced to the number that caused it.
  */
 import { Simulation } from '../src/sim/core/Simulation.ts';
-import { lastScores } from '../src/sim/ai/Brain.ts';
+import { lastDrives, lastScores } from '../src/sim/ai/Brain.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { SCENARIOS } from './simcheck.ts';
 
@@ -46,7 +46,7 @@ if (!subject) throw new Error('no such person');
 console.log('Following ' + subject.name + ' (id ' + subject.id + ') from step ' + from + ' to ' + to);
 console.log('');
 console.log(
-  ['step', 'action', 'hung', 'thir', 'tire', 'hp', 'inv', 'tgt', 'scores'].join('\t')
+  ['step', 'action', 'hung', 'thir', 'tire', 'hp', 'inv', 'tgt', 'drives', 'scores'].join('\t')
 );
 
 for (let step = 1; step <= to; step++) {
@@ -61,6 +61,8 @@ for (let step = 1; step <= to; step++) {
   const scores = committed + (lastScores.get(subject.id) ?? [])
     .map(s => s.id + ':' + s.score.toFixed(2))
     .join(' ');
+  const drives = Object.entries(lastDrives.get(subject.id) ?? {})
+    .map(([name, pressure]) => name + ':' + pressure.toFixed(2)).join(' ');
   const target =
     subject.targetX === null ? '-' :
     Math.round(subject.targetX) + ',' + Math.round(subject.targetY ?? 0) +
@@ -76,6 +78,7 @@ for (let step = 1; step <= to; step++) {
       subject.health.toFixed(0),
       subject.inventory.total,
       target,
+      drives,
       scores,
     ].join('\t')
   );
