@@ -198,6 +198,23 @@ cuerpo. Los resultados y sus límites están en
 [m14_phase1.md](m14_phase1.md). La matriz roja y la pregunta de `bands-take-sides`
 siguen sin resolución; la fase 1 permanece abierta.
 
+**Continuación:** la revisión de las matrices y de las líneas `CONFLICT` de las
+cohortes clasificó `violence-concentrates` y `peoples-drift-apart`: el déficit
+de golpes cerca del campamento se repite en `lean` y `century` en ambos builds,
+mientras el cambio de distancia es mixto y depende del escenario. El volumen
+de golpes baja en las tres cohortes, sin causa aislada. Cohortes adicionales
+muestran que investigación social falla en la matriz sólo por su semilla, que
+compost en `stewards` aparece en 11/20 mundos y que `labour` no reproduce el
+atasco en ninguna de 20 semillas. En `farmers`, `stewards` y `feasts`, sólo
+8/20 mundos por cohorte tienen standing medible tras 60 días; pasan 4, 5 y 5
+mundos elegibles, respectivamente. La diferencia de 88 frente a 93 checks y los
+cambios de elegibilidad impiden atribuir la brecha general de matrices a
+M12. El bloque 1a queda medido parcialmente; faltan
+diagnósticos de los rojos restantes y la resolución de la pregunta de
+`bands-take-sides`. Detalle y límites en [m14_phase1.md](m14_phase1.md) y
+[bugs.md](bugs.md),
+«Matrix comparison».
+
 ## Fase 2 — Las órdenes pesan lo que piden (nota 9)
 
 - **2a. Que se vea.** La razón de `standingOver` (`because`) no menciona el

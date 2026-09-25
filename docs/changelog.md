@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-25 — Clasificación de la matriz de M14 fase 1
+
+Se compararon las matrices pre-M12 y al cierre de M12 y las medidas `CONFLICT`
+de las cohortes de 20 semillas. El déficit de golpes cerca de campamentos es
+estable en `lean` y `century`, mientras la deriva depende del escenario; el
+volumen de conflicto baja en las tres cohortes sin causa aislada. También se
+separaron mecanismos con contador concreto y resultados de una sola semilla.
+`sim:seeds` ahora agrupa eventos de investigación, justicia, suelo, compost,
+atascos al caminar y standing de bandas; la cohorte `scribes` muestra discusión
+en 19/20 semillas aunque su matriz individual falla. Las cohortes de
+`farmers`/`stewards`/`feasts` dan 4/8, 5/8 y 5/8 mundos elegibles por encima del
+umbral de standing; `labour` no reproduce su atasco de una sola semilla, y
+`century` registra quejas y demandas por separado: 30/639 quejas de víctimas
+en 9/20 semillas y 9 demandas entregadas.
+`feasts` produjo refinamientos en 15/20 semillas; `traps` no llegó a conocer
+taming en ninguna. La matriz activa del build M13 posterior confirma
+`peoples-drift-apart` en `crowded` (0/10 semillas elegibles se separaron) y no
+lista las antiguas fallas de violencia, investigación, quejas o atasco. Las
+matrices de M12 tienen 88 y 93 checks y no permiten atribución causal directa;
+la fase sigue abierta para los diagnósticos restantes y la decisión pendiente
+de `bands-take-sides`.
+
 ## 2026-09-25 — Las creencias prácticas se observan (M13 fase 6)
 
 `KnowledgeSystem.tryObserve` transmite una expectativa práctica con fuente

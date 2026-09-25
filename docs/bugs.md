@@ -201,6 +201,83 @@ Across `lean` and `century`, the fall in murders may explain much of the higher
 survival while leaving more people alive to die of hunger; test that mechanism
 before changing food supply or mortality rules.
 
+### Matrix comparison: what the red checks do and do not establish
+
+The archived matrix logs are not a controlled before/after test of M12. The
+pre-M12 artifact has 88 checks and the close-of-M12 artifact has 93, and several
+scenario seeds or eligibility windows changed. Comparing only checks available
+in both logs still does not make their one-seed measurements causal. In the
+current matrix, `violence-concentrates` misses its 50% floor in six worlds
+(20-48%). The cohorts show the same threshold gap in `lean` (42% pre-M12, 44%
+after) and `century` (46% and 44%), while `crowded` passes both builds (75%
+and 78%). This looks like a persistent shortfall for two scenarios, not a
+regression across the comparison; cohort conflict volume fell in all three
+scenarios, but the cause is unresolved. `peoples-drift-apart` fails in five
+matrix worlds. The pooled mean distance change is negative in `crowded` in both
+builds (−6.3 and −6.0 tiles), positive in `century` in both (+1.8 and +1.4),
+and moves from −0.2 to +0.6 in `lean`; seeds drift apart in 7/20 and 12/20
+`lean` runs. Thus the result depends on scenario, with a modest improvement in
+`lean`; it is not a universal check defect or an attributable M12 regression.
+See the pooled results in [m14_phase1.md](m14_phase1.md).
+
+Other current reds expose concrete opportunities for mechanism-level follow-up:
+`wrongs-reach-the-chief` has only 1/55 complaints heard in `labour` and 3/156
+in `lean`, while `century` and `craft` hear none; `compost-answers-exhaustion`
+reports zero spread in `stewards`; and `research-is-social` observes no
+argument-led breakthrough in `scribes` despite 39 solo breakthroughs. Those
+are observed single-run outcomes, not yet confirmed defects across seeds.
+Historically, the broad `complaint_heard` counter included demands carried home
+after a parley as well as victim-led complaints. The M14 diagnostic pass now
+splits this into `complaint_grievance_heard` and `demand_carried_heard`;
+`wrongs-reach-the-chief` uses the victim-only numerator. The refreshed
+20-seed `century` cohort heard 30/639 victim complaints in 9/20 seeds and
+separately delivered 9 carried demands. See [m14_phase1.md](m14_phase1.md).
+`walkers-do-not-grind` fails only in `labour` in the current matrix (6.2 per
+1,000 against a ceiling of 5), while its pre-M12 `craft` failure does not
+repeat in the current `craft` run. The `labour` result matches the already
+documented path congestion from people sent to the same construction site; it
+is a known scenario-specific behavior to profile, not a newly established M12
+regression. `research-is-social` is scenario-specific as well: pre-M12
+`scribes` recorded 4 argument-led breakthroughs beside 23 solo breakthroughs;
+the current seed records 0 beside 39, while `century` still records 22 beside
+287 and `stewards` 6 beside 152. A current 20-seed `scribes` cohort makes 137
+argument-led breakthroughs out of 1,184 total, with the action producing one
+or more in 19/20 seeds. The matrix failure is a single-seed tripwire, not a
+cohort-wide failure of social research; see
+`artifacts/m14-phase1-scribes-20.txt`. In `stewards`, `soil-is-drawn-down` also fails at 99.7% of
+resting soil, so the companion compost check's zero spreading has no measured
+soil deficit to answer in this run. Treat both as a paired seed-specific
+tripwire; the check should not be tuned by demanding compost use without
+confirming the field actually needs it. `bands-take-sides` remains below its
+spread floor in `farmers`, `herders`, and `stewards`; this is still the pending
+design question for well-fed worlds, not a check to tune without the owner's
+answer.
+
+The archived current-only reds `animals-are-tamed` (`traps`),
+`soil-is-drawn-down` (`stewards`), and `techs-are-refined` (`feasts`) are each
+single-scenario observations. Their output gives a direct opportunity or
+measurement explanation (no taming meals; ground at 99.7% of untouched;
+zero refinement events), but does not establish a cross-seed defect. The old
+`millers` collapse and the current matrix's survival are also not comparable
+evidence of a fix: the cohort is required for that judgment. Keep these as
+open tripwires until pooled counters or a mechanism-specific reproduction
+separates build behavior from seed and check-availability changes.
+
+### Later M13 worktree matrix, 2026-09-25
+
+The full active matrix has since been rerun and is saved as
+`artifacts/m14-phase1-current-matrix.txt`. Its failure summary no longer lists
+`violence-concentrates`, `research-is-social`, `wrongs-reach-the-chief`, or
+`walkers-do-not-grind`; this is a later build with M13 simulation changes, not
+evidence those changes fixed M12 regressions. The `crowded` single-run
+`peoples-drift-apart` failure does repeat in the later 20-seed cohort: 0/10
+eligible seeds drift apart, with a mean change of −5.0 tiles. `century` fails
+in the matrix but drifts apart in 9/11 eligible cohort seeds (mean +2.8), so
+its matrix result is a seed tripwire. The `traps` animal-taming failure from
+the archived matrix is n/a in the later worktree because nobody knows taming;
+the later 20-seed `traps` cohort agrees (0/20 seeds knew taming). See
+`docs/m14_phase1.md` for the additional cohort readings and limits.
+
 ## Follow-ups from notes3, 2026-09-24
 
 The two requested interface behaviours from notes3 are now implemented:

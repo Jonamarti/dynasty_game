@@ -2696,13 +2696,15 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // Measured after: `century` seeds 19/296, 5/115; `lean` 9/179, 22/263.
   const debts = (tel.debt_incurred_theft ?? 0) + (tel.debt_incurred_threaten ?? 0) +
     (tel.debt_incurred_assault ?? 0);
-  const heard = tel.complaint_heard ?? 0;
+  const heard = tel.complaint_grievance_heard ?? 0;
+  const demandsDelivered = tel.demand_carried_heard ?? 0;
   if (debts < 40) {
     skip('wrongs-reach-the-chief', 'only ' + debts + ' debts run up; too few to say');
   } else {
     add('wrongs-reach-the-chief', heard / debts >= 0.02,
-      heard + ' complaints heard of ' + debts + ' debts run up (floor 2%); ' +
-      (tel.parley_held ?? 0) + ' put to another people, ' + (tel.amends_made ?? 0) + ' amends made');
+      heard + ' victim complaints heard of ' + debts + ' debts run up (floor 2%); ' +
+      demandsDelivered + ' carried demands delivered, ' + (tel.parley_held ?? 0) +
+      ' put to another people, ' + (tel.amends_made ?? 0) + ' amends made');
   }
 
   // M12 phase 2d: a people corrects its children for wronging strangers as

@@ -62,7 +62,9 @@ interface SeedResult {
   seenByOwner: number;
   coats: number;
   tended: number;
+  fedAnimals: number;
   tamed: number;
+  tamingKnown: boolean;
   exiled: number;
   adopted: number;
   factionDays: number;
@@ -78,6 +80,22 @@ interface SeedResult {
   childBlows: number;
   ownBandThefts: number;
   thefts: number;
+  /** M14 phase 1: pooled measurements for the red matrix checks. */
+  ponderBreakthroughs: number;
+  discussBreakthroughs: number;
+  refinements: number;
+  designsProven: number;
+  debts: number;
+  complaints: number;
+  demandsDelivered: number;
+  compostPlanned: number;
+  compostMatured: number;
+  compostSpread: number;
+  walkTicks: number;
+  walkStuckTicks: number;
+  soilRatio: number;
+  bandSpread: number;
+  bandPairs: number;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -160,6 +178,12 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   const transmitted = Object.entries(counts)
     .filter(([k]) => k.startsWith('taught_') || k.startsWith('observed_'))
     .reduce((n, [, v]) => n + v, 0);
+  const cropFields = sim.buildings.filter(b => b.crop !== null && b.complete);
+  const soilCapacity = cropFields.reduce((n, field) => n + sim.soilReport(field).resting, 0);
+  const soilHeld = cropFields.reduce((n, field) => n + sim.soilReport(field).effective, 0);
+  const soilRatio = soilCapacity > 0 && (counts.field_reaped ?? 0) > 0
+    ? soilHeld / soilCapacity : NaN;
+  const bandStanding = sim.bandRelations.stats();
 
   return {
     demography: demography.finish(sim.peopleById.values(), sim.time.tick),
@@ -187,7 +211,9 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     // M11 phase 17d: tripwires one event wide in a single run.
     coats: counts.crafted_fur_coat ?? 0,
     tended: counts.tended_ticks ?? 0,
+    fedAnimals: counts.animal_fed ?? 0,
     tamed: counts.animal_tamed ?? 0,
+    tamingKnown: sim.knownTech.has('taming'),
     // M11 phase 17b: phase 5's three rare mechanisms.
     exiled: counts.exiled ?? 0,
     adopted: counts.adopted ?? 0,
@@ -204,6 +230,26 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     childBlows: (counts.harm_child_assault ?? 0) + (counts.harm_child_murder ?? 0),
     ownBandThefts: counts.harm_own_band_theft ?? 0,
     thefts: counts.event_theft ?? 0,
+    ponderBreakthroughs: counts.breakthrough_ponder ?? 0,
+    discussBreakthroughs: counts.breakthrough_discuss ?? 0,
+    refinements: Object.entries(counts)
+      .filter(([name]) => name.startsWith('refined_'))
+      .reduce((n, [, value]) => n + value, 0),
+    designsProven: Object.entries(counts)
+      .filter(([name]) => name.startsWith('proven_'))
+      .reduce((n, [, value]) => n + value, 0),
+    debts: (counts.debt_incurred_theft ?? 0) + (counts.debt_incurred_threaten ?? 0) +
+      (counts.debt_incurred_assault ?? 0),
+    complaints: counts.complaint_grievance_heard ?? 0,
+    demandsDelivered: counts.demand_carried_heard ?? 0,
+    compostPlanned: counts.band_planned_compost_heap ?? 0,
+    compostMatured: counts.compost_matured ?? 0,
+    compostSpread: counts.compost_spread ?? 0,
+    walkTicks: counts.walk_tick ?? 0,
+    walkStuckTicks: counts.walk_stuck_tick ?? 0,
+    soilRatio,
+    bandSpread: bandStanding.friendliest - bandStanding.hostile,
+    bandPairs: bandStanding.pairs,
   };
 }
 
@@ -329,7 +375,9 @@ function main(): void {
   console.log(
     '  TRIPWIRES coats sewn in ' + results.filter(r => r.coats > 0).length + '/' + results.length +
     ' seeds · the hurt tended in ' + results.filter(r => r.tended > 0).length +
-    ' · animals tamed in ' + results.filter(r => r.tamed > 0).length
+    ' · animals fed in ' + results.filter(r => r.fedAnimals > 0).length +
+    ' · tamed in ' + results.filter(r => r.tamed > 0).length +
+    ' · taming known in ' + results.filter(r => r.tamingKnown).length
   );
   // M11 phase 17b: exile, factions and the way back in — phase 5's promised
   // checks that are one or two events a run and can only be read here.
@@ -357,6 +405,54 @@ function main(): void {
     ' witnessed attacks; fled closer ' + sum(r => r.conflict.youngFleeCloser) + '/' +
     sum(r => r.conflict.youngFleeTests) + ' times'
   );
+  // M14 phase 1: cohort measurements for matrix checks that a single run can
+  // only treat as tripwires. Keep denominators pooled where the check is a
+  // rate, and report seed counts where one event can flip a run.
+  {
+    const ponder = sum(r => r.ponderBreakthroughs);
+    const discuss = sum(r => r.discussBreakthroughs);
+    const debts = sum(r => r.debts);
+    const complaints = sum(r => r.complaints);
+    const soils = results.filter(r => Number.isFinite(r.soilRatio));
+    const walkTicks = sum(r => r.walkTicks);
+    const stuck = sum(r => r.walkStuckTicks);
+    const ticksPerDay = scenario.config.time?.ticksPerDay ?? 240;
+    const standingEligible = results.filter(r => r.bandPairs > 0 && steps >= 60 * ticksPerDay);
+    console.log(
+      '  RESEARCH ' + discuss + ' argued breakthroughs / ' + (ponder + discuss) +
+      ' total; argument breakthroughs in ' + results.filter(r => r.discussBreakthroughs > 0).length +
+      '/' + results.length + ' seeds'
+    );
+    console.log(
+      '  REFINEMENT ' + sum(r => r.refinements) + ' improvements from ' + sum(r => r.designsProven) +
+      ' proven designs in ' + results.filter(r => r.refinements > 0).length + '/' +
+      results.length + ' seeds'
+    );
+    console.log(
+      '  JUSTICE ' + complaints + '/' + debts + ' victim complaints heard; ' +
+      sum(r => r.demandsDelivered) + ' carried demands delivered; complaints in ' +
+      results.filter(r => r.complaints > 0).length + '/' + results.length + ' seeds'
+    );
+    console.log(
+      '  SOIL ' + soils.filter(r => r.soilRatio < 0.985).length + '/' + soils.length +
+      ' harvested worlds below 98.5% of resting (' + (soils.length
+        ? (soils.reduce((n, r) => n + r.soilRatio * 100, 0) / soils.length).toFixed(1) : 'n/a') +
+      '% mean); compost spread in ' + results.filter(r => r.compostSpread > 0).length + '/' +
+      results.length + ' seeds (' + sum(r => r.compostSpread) + ' spreads; ' +
+      sum(r => r.compostMatured) + ' loads matured)'
+    );
+    console.log(
+      '  WALK ' + stuck + '/' + walkTicks + ' stuck ticks (' +
+      (walkTicks ? (stuck / walkTicks * 1000).toFixed(1) : 'n/a') +
+      ' per 1,000); above the check floor in ' + results.filter(r => r.walkTicks > 0 &&
+        r.walkStuckTicks / r.walkTicks * 1000 >= 5).length + '/' + results.length + ' seeds'
+    );
+    console.log(
+      '  STANDING ' + standingEligible.filter(r => r.bandSpread > 20).length + '/' +
+      standingEligible.length + ' eligible 60-day worlds above 20 points (' +
+      standingEligible.filter(r => r.bandSpread <= 20).length + ' at or below)'
+    );
+  }
   console.log('  ' + ((Date.now() - started) / 1000).toFixed(1) + 's');
   console.log('');
 }

@@ -3929,9 +3929,14 @@ export class ActionSystem {
 
     if (person.carriedDemand) {
       person.carriedDemand = null;
+      telemetry.count('demand_carried_heard');
     } else {
       const grievance = person.grievances.find(g => g.againstId === told.accusedId);
       if (grievance) grievance.lodged = true;
+      // Keep the phase-1 check's numerator to a victim telling their own
+      // chief. A demand brought home after a parley reaches a chief too, but
+      // it is a different route and must not count as a victim complaint.
+      telemetry.count('complaint_grievance_heard');
     }
     const outcome = ctx.onComplaint(person, chief, told);
     telemetry.count('complaint_heard');
