@@ -40,6 +40,23 @@ check are implemented. The 20-seed `lean` run with these rules is 46.4% survival
 (5/20 collapses), still 19.5 points below the 65.9% baseline. The century
 night-sleep gate and follow-up remain open.
 
+**2026-09-25, continuación M13:** fases 4-5 añaden huida infantil hacia el
+cuidador, defensa de menores por familiares, telemetría `KIN`, antojos de
+macros y selección de comida/caza. El check dietético falla: sólo 7,6% de
+comidas ricas en proteína durante el antojo contra 44,6% en calma. `lean` (20
+semillas) marca 51,7% supervivencia (3/20 colapsos), todavía por debajo de la
+base; `nights-are-slept` queda en 19,9%. Fase 6 ya tiene creencias personales
+acotadas, instinto y aprendizaje/herencia de expectativas de comida, conectado
+a la elección de alimentos. Pendientes: medir ataques infantiles con mayor
+cobertura, arreglar y recalibrar antojo, sueño y distancia familiar, completar
+aprendizaje/observación/transmisión de rendimientos, y continuar fases 7-12 de
+[m13_plan.md](m13_plan.md). Consultar [bugs.md](bugs.md) antes de modificar
+coeficientes: el coste acumulado de supervivencia rebasa el límite del plan.
+La cohorte completa de 20 semillas tras la fase 6 confirma 50,6% de
+supervivencia y 4/20 colapsos, 15,3 puntos por debajo de la base. La lectura
+de fase 5 había dado 51,7% y 3/20; ambos resultados son acumulados, no permiten
+atribuir la caída a una sola regla.
+
 Ordered, with the reason for the order.
 
 **2026-09-10: the owner moved the social and interface pass ahead of the

@@ -23,6 +23,7 @@ import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
 import { TERRITORY_RADIUS } from '../src/sim/systems/BandSystem.ts';
+import { isHeld, isBound } from '../src/sim/social/Defence.ts';
 
 // ---------------------------------------------------------------------------
 // Scenarios
@@ -656,6 +657,14 @@ export interface ConflictWatch {
   incidents: number;
   /** Once a day: mean distance between members of different bands, and the incident count then. */
   apart: { distance: number; incidents: number }[];
+  kinAttacks: number;
+  kinDefended: number;
+  youngFleeTests: number;
+  youngFleeCloser: number;
+  kinPending: {
+    victimId: number; attackerId: number; defenderIds: number[]; tick: number;
+    defended: boolean; fleeTick: number | null; fleeDistance: number | null; fleeSampled: boolean;
+  }[];
 }
 
 export interface HomeWatch { adultNightSamples: number; adultsNear: number; adultsSleeping: number; childSamples: number; childrenNear: number; childrenNearAnyParent: number; childActions: Record<string, number> }
@@ -812,6 +821,23 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const tel = base.telemetry;
 
   const home = base.home;
+  if (base.conflict.kinAttacks < 10) skip('kin-are-defended', base.conflict.kinAttacks + ' attacks on children with adult witnesses (need 10)');
+  else add('kin-are-defended', base.conflict.kinDefended / base.conflict.kinAttacks >= 0.60,
+    base.conflict.kinDefended + ' of ' + base.conflict.kinAttacks + ' witnessed attacks were answered (need 60%)');
+  if (base.conflict.youngFleeTests < 10) skip('the-young-run-to-their-own', base.conflict.youngFleeTests + ' attacked children fled (need 10)');
+  else add('the-young-run-to-their-own', base.conflict.youngFleeCloser / base.conflict.youngFleeTests >= 0.60,
+    base.conflict.youngFleeCloser + ' of ' + base.conflict.youngFleeTests + ' reached a closer distance to their carer (need 60%)');
+  const cravingMeals = tel.eat_craving_protein ?? 0;
+  const calmMeals = tel.eat_calm_protein ?? 0;
+  if (cravingMeals < 20 || calmMeals < 20) {
+    skip('cravings-steer-the-diet', cravingMeals + ' protein-craving meals and ' + calmMeals + ' calm meals (need 20 each)');
+  } else {
+    const cravingRich = (tel.eat_craving_protein_rich ?? 0) / cravingMeals;
+    const calmRich = (tel.eat_calm_protein_rich ?? 0) / calmMeals;
+    add('cravings-steer-the-diet', calmRich > 0 && cravingRich / calmRich >= 1.3,
+      (100 * cravingRich).toFixed(1) + '% rich-protein meals while craving vs ' +
+      (100 * calmRich).toFixed(1) + '% while calm (need 1.3x)');
+  }
   if (home.adultNightSamples < 200) skip('nights-are-slept', home.adultNightSamples + ' adult night samples (need 200)');
   else add('nights-are-slept', home.adultsSleeping / home.adultNightSamples >= 0.55,
     (100 * home.adultsSleeping / home.adultNightSamples).toFixed(1) + '% of ' + home.adultNightSamples + ' adult samples in full night sleeping or resting (need 55%)');
@@ -2881,7 +2907,8 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   let jobsExist = false;
 
   // See `ConflictWatch`. `recent` is bounded, so it is read every step.
-  const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [] };
+  const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [],
+    kinAttacks: 0, kinDefended: 0, youngFleeTests: 0, youngFleeCloser: 0, kinPending: [] };
   const home: HomeWatch = { adultNightSamples: 0, adultsNear: 0, adultsSleeping: 0, childSamples: 0, childrenNear: 0, childrenNearAnyParent: 0, childActions: {} };
   let lastEventId = 0;
 
@@ -3111,13 +3138,75 @@ export function apartAroundIncidents(conflict: ConflictWatch): { before: number;
 }
 
 export function watchConflict(sim: Simulation, conflict: ConflictWatch, lastEventId: number): void {
+  for (const incident of conflict.kinPending) {
+    if (!incident.defended && sim.time.tick - incident.tick <= 60) {
+      incident.defended = incident.defenderIds.some(id => {
+        const defender = sim.peopleById.get(id);
+        if (!defender?.alive) return false;
+        const aimed = defender.targetPersonId === incident.attackerId;
+        return aimed && (defender.action === 'attack' || defender.action === 'restrain') ||
+          defender.action === 'call_for_help' ||
+          (defender.calledForHelpTick >= incident.tick && defender.calledForHelpTick <= incident.tick + 60);
+      });
+    }
+    if (incident.fleeTick === null) {
+      const child = sim.peopleById.get(incident.victimId);
+      if (child?.alive && child.action === 'flee') {
+        const carer = carerOf(child, {
+          world: sim.world, peopleById: sim.peopleById, buildingsById: sim.buildingsById,
+          householdsById: sim.householdsById,
+          homes: new Map(sim.bands.filter(b => !b.outcast).map(b => [b.id, { x: b.homeX, y: b.homeY }])),
+          motivation: sim.config.motivation,
+        });
+        if (carer) {
+          incident.fleeTick = sim.time.tick;
+          incident.fleeDistance = Math.hypot(child.x - carer.x, child.y - carer.y);
+        }
+      }
+    } else if (!incident.fleeSampled && sim.time.tick - incident.fleeTick >= 40) {
+      const child = sim.peopleById.get(incident.victimId);
+      const carer = child ? carerOf(child, {
+        world: sim.world, peopleById: sim.peopleById, buildingsById: sim.buildingsById,
+        householdsById: sim.householdsById,
+        homes: new Map(sim.bands.filter(b => !b.outcast).map(b => [b.id, { x: b.homeX, y: b.homeY }])),
+        motivation: sim.config.motivation,
+      }) : null;
+      if (child && carer && incident.fleeDistance !== null) {
+        conflict.youngFleeTests++;
+        if (Math.hypot(child.x - carer.x, child.y - carer.y) < incident.fleeDistance) conflict.youngFleeCloser++;
+      }
+      incident.fleeSampled = true;
+    }
+    if (sim.time.tick > incident.tick + 60) {
+      conflict.kinAttacks++;
+      if (incident.defended) conflict.kinDefended++;
+    }
+  }
+  for (let i = conflict.kinPending.length - 1; i >= 0; i--) {
+    if (sim.time.tick > conflict.kinPending[i]!.tick + 60) conflict.kinPending.splice(i, 1);
+  }
+
   for (const event of sim.social.recent) {
     if (event.id <= lastEventId || event.targetId === null) continue;
     if (event.type !== 'assault' && event.type !== 'murder' &&
         event.type !== 'threaten' && event.type !== 'theft') continue;
     const actor = sim.peopleById.get(event.actorId);
     const target = sim.peopleById.get(event.targetId);
-    if (!actor || !target || actor.bandId === target.bandId) continue;
+    if (!actor || !target) continue;
+    if ((event.type === 'assault' || event.type === 'murder') && target.isChild) {
+      const defenders = sim.peopleHash.queryRadius(target.x, target.y, sim.config.sightRadius)
+        .filter(person => person.alive && !person.isChild && person.id !== actor.id &&
+          (person.id === target.motherId || person.id === target.fatherId ||
+            (target.householdId !== null && person.householdId === target.householdId)) &&
+          !isHeld(person, sim.time.tick) && !isBound(person, sim.time.tick))
+        .map(person => person.id);
+      if (defenders.length > 0 && !conflict.kinPending.some(item =>
+        item.victimId === target.id && item.tick === event.tick)) {
+        conflict.kinPending.push({ victimId: target.id, attackerId: actor.id, defenderIds: defenders,
+          tick: event.tick, defended: false, fleeTick: null, fleeDistance: null, fleeSampled: false });
+      }
+    }
+    if (actor.bandId === target.bandId) continue;
     conflict.incidents++;
     if (event.type !== 'assault' && event.type !== 'murder') continue;
     conflict.blows++;

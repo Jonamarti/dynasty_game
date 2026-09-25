@@ -70,6 +70,7 @@ import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
+import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { infantNeedingNursing } from './Nursing.ts';
@@ -213,6 +214,8 @@ interface FoundTargets {
   intruder: Person | null;
   /** One of this person's own people a `restrain` is aimed at, M11 phase 15b. */
   restrainee: Person | null;
+  /** A chosen kin-protection route, for separate health-report telemetry. */
+  kinDefence: string;
   /** A child of the band a `correct` is aimed at. See `Restraint.ts`. */
   correctee: Person | null;
   /** Whoever a `make_amends` goes to, M12 phase 2a. See `Amends.ts`. */
@@ -669,6 +672,7 @@ export class Brain {
     const thirst = drive.thirst;
     const hunger = drive.hunger;
     const fatigue = drive.rest;
+    const variety = drive.variety;
 
     // --- Drink -------------------------------------------------------------
     const water = this.findWater(person, ctx);
@@ -683,7 +687,7 @@ export class Brain {
     // plenty, carried it around, and starved with full packs.
     const carriedFood = person.inventory.bestFood();
     if (carriedFood) {
-      add('eat', hunger * 3.2);
+      add('eat', hunger * 3.2 + hunger * variety * 0.35);
     }
 
     // --- Forage / hunt -----------------------------------------------------
@@ -718,7 +722,7 @@ export class Brain {
       const stockpileWish = person.traits.greed * 0.25;
       add(
         'forage',
-        (hunger * 1.6 * shortfall + stockpileWish) *
+        (hunger * 1.6 * shortfall + stockpileWish) * (1 + variety * 0.2) *
           this.proximityBonus(person, foodNode, ctx.sightRadius)
       );
     }
@@ -735,6 +739,7 @@ export class Brain {
       // lasts. That seasonal swing is most of what gives the year a shape.
       const laden = Math.min(1, tree.fruit / 8);
       return (hunger * 2.3 * shortfall + person.traits.greed * 0.35) * (0.6 + laden * 0.7)
+        * (1 + variety * 0.2)
         * this.worthRatio(this.fruitWorth(person, tree))
         * this.proximityBonus(person, tree, ctx.sightRadius);
     };
@@ -820,6 +825,7 @@ export class Brain {
     let fleePoint: { x: number; y: number } | null = null;
     let intruder: Person | null = null;
     let restrainee: Person | null = null;
+    let kinDefence = '';
     let correctee: Person | null = null;
     let amendsTo: Person | null = null;
     let complainTo: Person | null = null;
@@ -2032,6 +2038,67 @@ export class Brain {
       }
     }
 
+    // Defending kin is a separate route into the existing verbs: bandmates
+    // restrain a local aggressor, while a child's family confronts an outsider.
+    // The child's parent outranks household and band ties; self-defence below
+    // still has final say when the person is the one being hit.
+    if (!person.isChild) {
+      let protectedPerson: Person | null = null;
+      let attacker: Person | null = null;
+      let protectedKind: 'child' | 'household' | 'band' = 'band';
+      let rank = -1;
+      for (const child of neighbours) {
+        if (!child.isChild) continue;
+        const kind = person.childIds.includes(child.id) ? 'child'
+          : person.householdId !== null && child.householdId === person.householdId ? 'household'
+          : child.bandId === person.bandId ? 'band' : null;
+        if (!kind) continue;
+        const aggressor = assailantOf(child, id => neighbours.find(other => other.id === id), ctx.time.tick);
+        if (!aggressor || aggressor.id === person.id) continue;
+        const candidateRank = kind === 'child' ? 3 : kind === 'household' ? 2 : 1;
+        telemetry.count('kin_attack_seen_' + kind);
+        if (candidateRank > rank || (candidateRank === rank && protectedPerson &&
+          person.distanceTo(child) < person.distanceTo(protectedPerson))) {
+          protectedPerson = child;
+          attacker = aggressor;
+          protectedKind = kind;
+          rank = candidateRank;
+        }
+      }
+      if (protectedPerson && attacker) {
+        const priority = protectedKind === 'child' ? RESPOND
+          : protectedKind === 'household' ? RESPOND * 0.9
+          : (0.4 + person.traits.aggression * 0.6 + person.traits.loyalty * 0.4);
+        if (attacker.bandId === person.bandId) {
+          const row = scores.find(candidate => candidate.id === 'restrain');
+          if (row) row.score = Math.max(row.score, priority);
+          else scores.push({ id: 'restrain', score: priority });
+          restrainee = attacker;
+          kinDefence = 'restrain';
+        } else {
+          const myPower = fightingPower(person);
+          const theirPower = fightingPower(attacker);
+          const theirFriends = neighbours.filter(other => other.id !== attacker.id &&
+            ctx.relationships.opinion(other.id, attacker.id) > 15).length;
+          const odds = Math.max(0, myPower - theirPower * 0.8) / (1 + theirFriends);
+          if (protectedKind !== 'child' && odds < 0.2) {
+            const row = scores.find(candidate => candidate.id === 'call_for_help');
+            if (row) row.score = Math.max(row.score, priority);
+            else scores.push({ id: 'call_for_help', score: priority });
+            kinDefence = 'call_for_help';
+          } else {
+            const defenceScore = priority * (protectedKind === 'child' ? 1 : Math.max(0.2, odds));
+            if (defenceScore > attackScore) {
+              attackScore = defenceScore;
+              foe = attacker;
+              attackRoute = 'defend_kin';
+              kinDefence = 'attack';
+            }
+          }
+        }
+      }
+    }
+
     // One row, whichever reason won it, with `foe` naming the person that
     // reason was about.
     if (attackScore > 0) add('attack', attackScore);
@@ -2360,7 +2427,10 @@ export class Brain {
         // scorer cannot tell a boar from a hare — and with hunger alone driving
         // it, foraging won every single time and nobody in the world ever
         // hunted at all.
-        const payoff = quarry.def.meat / 20;
+        const craving = cravings(person);
+        const meatMacros = ITEMS.meat!.macros!;
+        const payoff = quarry.def.meat / 20 * (1 + VARIETY_WEIGHT *
+          (craving.protein * meatMacros.protein + craving.fat * meatMacros.fat));
         add('hunt', hunger * HUNT_APPETITE * odds * payoff
           * this.proximityBonus(person, quarry, ctx.sightRadius));
       }
@@ -2406,7 +2476,7 @@ export class Brain {
       ? null
       : neighbours.find(other => other.id === person.lastHarmedBy) ?? null;
     // M12 phase 2c: only where there is somewhere to run. See `escapeFrom`.
-    const escapeFromThreat = recentlyHarmed && threat ? this.escapeFrom(person, threat, ctx) : null;
+    const escapeFromThreat = recentlyHarmed && threat ? this.escapeFrom(person, threat, ctx, anchor) : null;
     if (recentlyHarmed && threat && escapeFromThreat) {
       const hurt = 1 - person.health / 100;
       const outmatched = Math.max(
@@ -2436,7 +2506,7 @@ export class Brain {
           dreaded = other;
         }
       }
-      const away = dreaded ? this.escapeFrom(person, dreaded, ctx) : null;
+      const away = dreaded ? this.escapeFrom(person, dreaded, ctx, anchor) : null;
       if (dreaded && away) {
         const dread = ctx.relationships.dread(person.id, dreaded.id) / 100;
         add('flee', (dread * 1.5 + 0.2) * (1.4 - person.traits.aggression));
@@ -2772,6 +2842,10 @@ export class Brain {
     // M12 phase 2c. Here, after every route has had its say, because both
     // questions are about the table as a whole rather than about any one row.
     const setUpon = assailantOf(person, id => neighbours.find(other => other.id === id), ctx.time.tick);
+    if (person.isChild && neighbours.some(other =>
+      person.distanceTo(other) <= 6 &&
+      assailantOf(other, id => neighbours.find(candidate => candidate.id === id), ctx.time.tick) !== null
+    )) add('go_home', RESPOND * 0.8);
     // A word said, a warning, a telling-off: `ActionSystem.interruption` ends
     // each of them on the tick after it begins if a need is past the working
     // line or somebody is hitting this person, and the scorer used to offer
@@ -2791,6 +2865,9 @@ export class Brain {
     // Written onto the row rather than through `add`, whose hysteresis and
     // appetite this is deliberately above.
     if (setUpon) {
+      // The person hit personally answers first; do not count that as a kin
+      // rescue even if somebody else in the family is under attack too.
+      kinDefence = '';
       // A baby can wait while its mother escapes or answers an immediate blow.
       const nursing = scores.findIndex(row => row.id === 'nurse');
       if (nursing >= 0) scores.splice(nursing, 1);
@@ -2822,7 +2899,7 @@ export class Brain {
       scores,
       found: {
         water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, attackRoute, intruder, restrainee, correctee, amendsTo, complainTo, parleyWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, tradePartner, fleeFrom, fleePoint,
+        victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -2845,17 +2922,26 @@ export class Brain {
    * for somebody set upon then falls to hitting back, which is what a
    * cornered animal does too.
    */
-  private escapeFrom(person: Person, from: Person, ctx: BrainContext): { x: number; y: number } | null {
+  private escapeFrom(person: Person, from: Person, ctx: BrainContext, anchor: Anchor | null): { x: number; y: number } | null {
     const away = Math.atan2(person.y - from.y, person.x - from.x);
+    let best: { x: number; y: number } | null = null;
+    let bestDistance = Infinity;
     for (const turn of ESCAPE_TURNS) {
       const angle = away + turn;
       for (const distance of ESCAPE_DISTANCES) {
         const tx = Math.round(person.x + Math.cos(angle) * distance);
         const ty = Math.round(person.y + Math.sin(angle) * distance);
-        if (ctx.world.isWalkable(tx, ty)) return { x: tx, y: ty };
+        if (!ctx.world.isWalkable(tx, ty)) continue;
+        const point = { x: tx, y: ty };
+        if (!person.isChild || anchor?.kind !== 'carer') return point;
+        const carerDistance = Math.hypot(tx - anchor.x, ty - anchor.y);
+        if (carerDistance < bestDistance) {
+          best = point;
+          bestDistance = carerDistance;
+        }
       }
     }
-    return null;
+    return best;
   }
 
   /**
@@ -2907,10 +2993,12 @@ export class Brain {
     const itemId = tree.def.fruitItem;
     if (itemId === null) return 0;
     const direct = ITEMS[itemId]?.nutrition ?? 0;
-    if (direct > 0) return direct;
+    if (direct > 0) return appealOf(person, itemId);
     const recipe = recipeUsing(itemId);
     if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
-    return nutritionPerUnit(recipe, itemId) * 0.6;
+    const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
+    const appeal = output ? appealOf(person, output) / (ITEMS[output]?.nutrition ?? 1) : 1;
+    return nutritionPerUnit(recipe, itemId) * 0.6 * appeal;
   }
 
   /**
@@ -3132,14 +3220,16 @@ export class Brain {
    */
   private nodeWorth(person: Person, node: ResourceNode): number {
     const direct = ITEMS[node.def.itemId]?.nutrition ?? 0;
-    if (direct > 0) return direct;
+    if (direct > 0) return appealOf(person, node.def.itemId);
     // Everything below is the inedible case — flint, sticks, clay and wild
     // grain — and only the last of them has a recipe that turns it into food.
     // Cheap enough now that `recipeUsing` is indexed, but the early return
     // above is what keeps the ordinary case to one property read.
     const recipe = recipeUsing(node.def.itemId);
     if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
-    return nutritionPerUnit(recipe, node.def.itemId) * 0.6;
+    const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
+    const appeal = output ? appealOf(person, output) / (ITEMS[output]?.nutrition ?? 1) : 1;
+    return nutritionPerUnit(recipe, node.def.itemId) * 0.6 * appeal;
   }
 
   private findNode(
@@ -3168,6 +3258,7 @@ export class Brain {
   ): void {
     person.clearTarget();
     person.action = action;
+    if (found.kinDefence === action) telemetry.count('kin_defended_' + action);
 
     switch (action) {
       case 'drag':

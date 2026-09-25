@@ -111,7 +111,8 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   const cohesion = new CohesionWatch(sim);
   const history = new HistoryWatch(sim);
 
-  const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [] };
+  const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [],
+    kinAttacks: 0, kinDefended: 0, youngFleeTests: 0, youngFleeCloser: 0, kinPending: [] };
   let lastEventId = 0;
   for (let i = 1; i <= steps; i++) {
     sim.step();
@@ -350,6 +351,11 @@ function main(): void {
     '  VIOLENCE ' + sum(r => r.assaults) + ' blows in all, ' + sum(r => r.ownBandBlows) +
     ' inside a band, ' + sum(r => r.childBlows) + ' by an adult on a child · ' +
     sum(r => r.ownBandThefts) + ' of ' + sum(r => r.thefts) + ' thefts from a person inside a band'
+  );
+  console.log(
+    '  KIN defended ' + sum(r => r.conflict.kinDefended) + '/' + sum(r => r.conflict.kinAttacks) +
+    ' witnessed attacks; fled closer ' + sum(r => r.conflict.youngFleeCloser) + '/' +
+    sum(r => r.conflict.youngFleeTests) + ' times'
   );
   console.log('  ' + ((Date.now() - started) / 1000).toFixed(1) + 's');
   console.log('');

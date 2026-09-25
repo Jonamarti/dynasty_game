@@ -16,9 +16,47 @@ import type { Person } from '../entities/Person.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { nutritionFactor } from '../knowledge/Tech.ts';
 import { telemetry } from './Telemetry.ts';
+import { expectedFood } from '../ai/Beliefs.ts';
 
 export type Macro = 'fat' | 'protein' | 'carb';
 export const MACROS: readonly Macro[] = ['fat', 'protein', 'carb'];
+export const VARIETY_WEIGHT = 0.6;
+export const CRAVE_SPAN = 0.12;
+
+/** Current shortfall by macro, scaled to the useful 0-1 range. */
+export function cravings(person: Person): Record<Macro, number> {
+  return {
+    fat: Math.max(0, Math.min(1, (person.macroTarget.fat - person.macroBalance.fat) / CRAVE_SPAN)),
+    protein: Math.max(0, Math.min(1, (person.macroTarget.protein - person.macroBalance.protein) / CRAVE_SPAN)),
+    carb: Math.max(0, Math.min(1, (person.macroTarget.carb - person.macroBalance.carb) / CRAVE_SPAN)),
+  };
+}
+
+/** Nutrition adjusted for the nutrients this person has been missing. */
+export function appealOf(person: Person, itemId: string, varietyWeight = VARIETY_WEIGHT): number {
+  const food = ITEMS[itemId];
+  if (!food || food.nutrition <= 0) return 0;
+  const craving = cravings(person);
+  const macros = food.macros;
+  const pull = macros
+    ? MACROS.reduce((sum, macro) => sum + craving[macro] * macros[macro], 0)
+    : 0;
+  return expectedFood(person, itemId) * (1 + varietyWeight * pull);
+}
+
+/** Highest-appeal food in inventory; stack order breaks ties deterministically. */
+export function bestFoodFor(person: Person, varietyWeight = VARIETY_WEIGHT): string | null {
+  let chosen: string | null = null;
+  let best = 0;
+  for (const [itemId] of person.inventory.entries()) {
+    const appeal = appealOf(person, itemId, varietyWeight);
+    if (appeal > best) {
+      chosen = itemId;
+      best = appeal;
+    }
+  }
+  return chosen;
+}
 
 /** A person's rolling diet, three fractions that always sum to 1. */
 export class MacroBalance {
@@ -49,10 +87,24 @@ const MACRO_DECAY_PER_DAY = 0.35;
  * frozen at whatever it was the day they stopped eating by order. The
  * `moveToward` argument: two copies of one idea drift.
  */
-export function consumeFood(person: Person, itemId: string): boolean {
+export function consumeFood(person: Person, itemId: string, tick = 0): boolean {
   const def = ITEMS[itemId];
   if (!def || def.nutrition <= 0) return false;
+  const craving = cravings(person);
+  const wantsProtein = craving.protein > 0.5;
+  const calmProtein = craving.protein < 0.1;
   if (person.inventory.remove(itemId, 1) === 0) return false;
+  // Eating is the direct evidence for the personal payoff of this food.
+  person.beliefs.learn('eat:' + itemId, def.nutrition * nutritionFactor(person),
+    0.3 * (1.5 - person.traits.tradition), 'own', tick);
+  if (wantsProtein) {
+    telemetry.count('eat_craving_protein');
+    if ((def.macros?.protein ?? 0) >= 0.3) telemetry.count('eat_craving_protein_rich');
+  }
+  if (calmProtein) {
+    telemetry.count('eat_calm_protein');
+    if ((def.macros?.protein ?? 0) >= 0.3) telemetry.count('eat_calm_protein_rich');
+  }
   // Cooking makes food go further. It is the plainest possible payoff for
   // knowing something, and it compounds: a band that cooks needs a third less
   // forage than one that does not, and can therefore support more people on

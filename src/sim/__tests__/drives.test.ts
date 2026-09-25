@@ -25,6 +25,15 @@ describe('physical drives', () => {
     for (const drive of Object.values(DRIVES)) expect(drive.readers.length).toBeGreaterThan(0);
   });
 
+  it('adds variety pressure only for a macro below its current target', () => {
+    const person = new Person('Test', 0, 0, 0, new RNG('variety-drive'), 40);
+    person.macroTarget = { fat: 0.3, protein: 0.3, carb: 0.4 };
+    person.macroBalance = { fat: 0.3, protein: 0.18, carb: 0.52 };
+    expect(drivePressures(person).variety).toBe(1);
+    person.macroBalance = { ...person.macroTarget };
+    expect(drivePressures(person).variety).toBe(0);
+  });
+
   it('raises home pressure with distance and darkness, with stronger attachment', () => {
     const config = makeConfig();
     const world = new World(DEFAULT_CONFIG.world, new RNG('home-pressure'));

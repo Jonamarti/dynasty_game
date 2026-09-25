@@ -42,7 +42,7 @@ import {
 } from '../entities/Inscription.ts';
 import type { NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
-import { consumeFood } from '../core/Macros.ts';
+import { bestFoodFor, consumeFood } from '../core/Macros.ts';
 import {
   TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
   prerequisitesMet, reapFactor, tallyFactor, techPower, weaponOf, armourOf, type Tech,
@@ -615,6 +615,10 @@ const SPREAD_COMMIT = 6;
 export class ActionSystem {
   execute(person: Person, ctx: ActionContext): void {
     if (!person.alive) return;
+    if (person.action !== 'idle') {
+      person.actionTicks++;
+      person.lastActionTick = ctx.tick;
+    }
 
     // M12 phase 2c, the owner's note 4. Somebody committed to something — a
     // timer running, or an order — does not re-plan, so this is the only way a
@@ -741,6 +745,17 @@ export class ActionSystem {
    * and a verb added later cannot forget to record itself.
    */
   private finish(person: Person): void {
+    if (person.yieldKey !== null && person.actionTicks >= 20) {
+      const alpha = 0.3 * (1.5 - person.traits.tradition);
+      const observed = person.yieldNutrition / person.actionTicks * 100;
+      person.beliefs.learn(person.yieldKey, observed, alpha, 'own', person.lastActionTick);
+      const metric = person.yieldKey.replace(':', '_');
+      telemetry.count('yield_obs_' + metric + '_sum', observed);
+      telemetry.count('yield_obs_' + metric + '_n');
+    }
+    person.actionTicks = 0;
+    person.yieldKey = null;
+    person.yieldNutrition = 0;
     person.noteDid(person.action);
     person.clearTarget();
     person.clearOrder();
@@ -903,8 +918,8 @@ export class ActionSystem {
   }
 
   private doEat(person: Person, ctx: ActionContext): void {
-    const foodId = person.inventory.bestFood();
-    if (!foodId || !consumeFood(person, foodId)) {
+    const foodId = bestFoodFor(person);
+    if (!foodId || !consumeFood(person, foodId, ctx.tick)) {
       this.abandon(person, 'no_food', ctx);
       return;
     }
@@ -1015,6 +1030,9 @@ export class ActionSystem {
       this.abandon(person, 'node_gone', ctx);
       return;
     }
+    if (person.yieldKey === null && (ITEMS[node.def.itemId]?.nutrition ?? 0) > 0) {
+      person.yieldKey = node.kind === 'fish' ? 'yield:fish' : 'yield:forage';
+    }
 
     if (!this.travel(person, ctx)) return;
     const owner = ctx.territoryOwnerAt(node.x, node.y);
@@ -1035,6 +1053,7 @@ export class ActionSystem {
     const taken = node.take(Math.min(yieldUnits, room));
     if (taken > 0) {
       person.inventory.add(node.def.itemId, taken);
+      person.yieldNutrition += (ITEMS[node.def.itemId]?.nutrition ?? 0) * taken;
       person.practice(node.def.skill, 0.6);
       telemetry.count('harvest_' + node.kind);
     }
@@ -1092,6 +1111,7 @@ export class ActionSystem {
     )), room));
     if (picked > 0 && tree.def.fruitItem) {
       person.inventory.add(tree.def.fruitItem, picked);
+      person.yieldNutrition += (ITEMS[tree.def.fruitItem]?.nutrition ?? 0) * picked;
       person.practice('forage', 0.5);
       telemetry.count('picked_' + tree.def.fruitItem);
     }
@@ -1120,6 +1140,7 @@ export class ActionSystem {
       return;
     }
 
+    if (person.yieldKey === null) person.yieldKey = 'yield:pick';
     person.targetX = tree.x;
     person.targetY = tree.y;
     if (!this.travel(person, ctx)) return;
@@ -1665,6 +1686,7 @@ export class ActionSystem {
    * through `noticeRadius`.
    */
   private doHunt(person: Person, ctx: ActionContext): void {
+    if (person.yieldKey === null) person.yieldKey = 'yield:hunt';
     const animal = person.targetAnimalId === null
       ? null
       : ctx.animalsById.get(person.targetAnimalId);
@@ -1764,6 +1786,7 @@ export class ActionSystem {
     const yielded = Math.max(1, Math.round(animal.def.meat * person.skillFactor('hunt')));
     const room = person.carryCapacity - person.carrying;
     person.inventory.add('meat', Math.min(yielded, Math.max(0, room)));
+    person.yieldNutrition += ITEMS.meat.nutrition * Math.min(yielded, Math.max(0, room));
     telemetry.count('hunt_killed');
     telemetry.count('harvest_meat', yielded);
     // The skin comes off with the meat. Nothing consumed hides before M6b, and
@@ -3599,7 +3622,7 @@ export class ActionSystem {
       return;
     }
 
-    const foodId = person.inventory.bestFood();
+    const foodId = bestFoodFor(person);
     if (!foodId) {
       this.abandon(person, 'nothing_to_give', ctx);
       return;

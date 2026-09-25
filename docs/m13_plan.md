@@ -850,6 +850,29 @@ padres defienden a sus hijos`.
 
 ---
 
+**Avance, 2026-09-25:** implementados huida hacia el cuidador, respuesta
+parental y observadores `KIN` en simcheck/cohortes. La cobertura de defensa es
+n/a en los 20 `lean` seeds (0 ataques infantiles observados), así que no
+demuestra aún su eficacia en mundos ordinarios. Fase 5 implementó antojos,
+selección de comida, sesgo de caza/recolección y telemetría. El check falla en
+`century`: 8,0% de comidas ricas en proteína durante el antojo frente a 39,9%
+cuando está calmado; no se considera completada. `lean` en 20 semillas promedió
+51,7% de supervivencia (3 colapsos), frente al 65,9% base. La comparación
+agrupa las reglas de las fases 2-5 y no permite atribuir el coste. La matriz
+también deja rojos sueño nocturno y proximidad infantil en varios escenarios.
+
+**Avance fase 6, 2026-09-25:** creada la memoria acotada de creencias por
+persona, instinto para alimentos crudos, aprendizaje tras comer e herencia con
+confianza reducida. La expectativa influye en la elección de qué comer. También
+se registran rendimiento nutricional por tick de recolección, pesca, fruta y
+caza, incluida la caminata y los intentos sin fruto; tradición modula cuánto
+aprende cada cual. Faltan la comparación con instintos de rendimiento al
+escoger acciones, observación/transmisión social y mostrar evidencia al
+jugador; la fase sigue abierta.
+En la nueva cohorte `lean` de 20 semillas el resultado acumulado quedó en
+50,6% de supervivencia (4 colapsos), frente a 65,9% base; el coste supera el
+límite declarado y requiere revisión antes de calibrar la fase.
+
 ## Fase 5 — El antojo: variedad en la dieta
 
 **Objetivo.** «Me he llenado de bayas pero no me satisface.» La malnutrición

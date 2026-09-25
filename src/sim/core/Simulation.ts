@@ -1859,7 +1859,7 @@ export class Simulation {
    * by order does, so the two can never again disagree about what a meal is.
    */
   eatItem(person: Person, itemId: string): boolean {
-    return consumeFood(person, itemId);
+    return consumeFood(person, itemId, this.time.tick);
   }
 
   /**

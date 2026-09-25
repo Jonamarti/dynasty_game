@@ -16,6 +16,7 @@ import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { JobId } from './Job.ts';
 import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
 import { MacroBalance, macroTargetFor } from '../core/Macros.ts';
+import { Beliefs } from '../ai/Beliefs.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -271,6 +272,13 @@ export class Person {
 
   /** What this person has seen and been told. See `social/Memory.ts`. */
   memory: Memory;
+  /** What this person expects from food and work, learned from experience. */
+  beliefs = new Beliefs();
+  /** Evidence accumulator for the current food gathering attempt. */
+  actionTicks = 0;
+  yieldKey: string | null = null;
+  yieldNutrition = 0;
+  lastActionTick = 0;
   /**
    * What this person knows how to do.
    *

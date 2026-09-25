@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-25 — Defensa familiar, antojos y primera memoria de creencias (M13)
+
+Los niños que huyen ahora buscan a su cuidador, y los adultos responden a
+agresiones contra hijos y menores cercanos; `KIN` mide cuándo se dan esas
+oportunidades. El hambre de proteína modula dieta, caza y selección de comida.
+La primera capa de creencias guarda expectativas de comida, aprende al comer y
+transmite expectativas débiles a hijos; registra el rendimiento de recolección,
+pesca, fruta y caza por tick de esfuerzo. `century` deja sin aprobar dieta
+(8,0% de comidas ricas mientras hay antojo frente a 39,9% calmado) y sueño
+nocturno (20,4% frente al objetivo 55%); `lean` en 20 semillas dio 51,7% tras
+fase 5 y 50,6% tras la primera lectura de fase 6 (4/20 colapsos), frente a
+65,9% de base. Las fases permanecen
+abiertas; las limitaciones y mediciones están en `m13_plan.md` y `bugs.md`.
+
 ## 2026-09-25 — La madre lleva al bebé a casa; empieza el sueño nocturno (M13)
 
 Sólo la madre puede amamantar. Cuando el hogar tiene una casa terminada,

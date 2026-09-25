@@ -4,8 +4,9 @@ import type { AnchorContext } from './Anchor.ts';
 import { anchorOf, childRadius } from './Anchor.ts';
 import { sensitivity } from './Temperament.ts';
 import type { MotivationConfig } from '../core/Config.ts';
+import { cravings } from '../core/Macros.ts';
 
-export type DriveId = 'hunger' | 'thirst' | 'rest' | 'warmth' | 'company' | 'home';
+export type DriveId = 'hunger' | 'thirst' | 'rest' | 'warmth' | 'company' | 'home' | 'variety';
 export interface DriveDef {
   id: DriveId;
   /** English label for the inspector; translated at the UI boundary. */
@@ -20,6 +21,7 @@ export const DRIVES: Record<DriveId, DriveDef> = {
   warmth: { id: 'warmth', label: t('Warmth drive'), readers: ['shelter'] },
   company: { id: 'company', label: t('Company drive'), readers: ['talk'] },
   home: { id: 'home', label: t('Home drive'), readers: ['go_home', 'wander', 'forage', 'hunt'] },
+  variety: { id: 'variety', label: t('Variety drive'), readers: ['eat', 'hunt', 'forage', 'pick'] },
 };
 export type DrivePressures = Record<DriveId, number>;
 
@@ -32,6 +34,8 @@ export function urgencyCurve(value: number): number {
 /** Current physical need pressures, before personality sensitivities are added in phase 2. */
 export function drivePressures(person: Person, ctx?: AnchorContext & { time: { daylight: number }; motivation: MotivationConfig }): DrivePressures {
   let home = 0;
+  const craving = cravings(person);
+  const variety = urgencyCurve(100 * Math.max(craving.fat, craving.protein, craving.carb));
   if (ctx) {
     const anchor = anchorOf(person, ctx);
     if (anchor) {
@@ -56,5 +60,6 @@ export function drivePressures(person: Person, ctx?: AnchorContext & { time: { d
     warmth: urgencyCurve(person.needs.cold),
     company: urgencyCurve(person.needs.company),
     home,
+    variety,
   };
 }

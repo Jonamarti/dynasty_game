@@ -209,6 +209,9 @@ export function inheritTraits(
   father: Person | null,
   rng: RNG
 ): void {
+  // A newborn starts with faint expectations from its mother; confidence, not
+  // certainty, is inherited so experience can quickly replace family lore.
+  child.beliefs = mother.beliefs.inherit(0.25);
   for (const trait of TRAITS) {
     const inherited = father
       ? (mother.traits[trait] + father.traits[trait]) / 2

@@ -1,5 +1,40 @@
 # Known bugs and rough edges
 
+## M13, fases 4-6, 2026-09-25
+
+La respuesta familiar a agresiones y el sesgo dietético ya están instrumentados.
+Los dos checks de defensa infantil quedan n/a en `lean` a 20 semillas (ningún
+ataque infantil observado con adulto testigo); la matriz también carece de
+muestra suficiente. `cravings-steer-the-diet` falla en `century`: 7,6% de
+comidas ricas en proteína cuando se desea proteína, frente a 44,6% en comidas
+con el antojo calmado. Hay que revisar disponibilidad local y opciones que el
+NPC realmente puede recoger antes de ajustar pesos.
+
+La cohorte `lean` de 20 semillas después de fase 6 dio 50,6% de supervivencia
+y 4/20 colapsos frente a 65,9% base (-15,3 puntos). La lectura anterior tras
+fase 5 dio 51,7% y 3/20 colapsos. Ambas son comparaciones acumuladas desde la
+base y no permiten culpar a una fase sola; superan el coste aceptable descrito
+por el plan, así que las fases no están calibradas.
+Tras la fase 6, `century` mide 8,0% de comidas ricas en proteína durante el
+antojo frente a 39,9% cuando está calmado; `nights-are-slept` da 20,4% contra
+55%. Hay telemetría de rendimientos aprendidos (3.509 cosechas, 1.209 pescas,
+363 recogidas de fruta y 24 cacerías con muestra suficiente en esa ejecución),
+pero todavía no hay acción de `Brain` que lea esas expectativas.
+Además, `children-keep-close` permanece bajo su umbral en varios escenarios.
+
+Fase 6 tiene almacén acotado de creencias, instinto de alimentos crudos,
+aprendizaje directo al comer, rendimiento nutricional por tick de recolección,
+pesca, fruta y caza, herencia atenuada y lectura de expectativas al seleccionar
+comida. El rendimiento aún no interviene en la elección de acciones; tampoco
+hay observación o transmisión social ni presentación al jugador. Evitar afirmar
+que las creencias de eficacia están completas.
+
+La matriz `sim:check:all` de esta revisión (18 escenarios) deja `tiny` en verde;
+`cravings-steer-the-diet` y `nights-are-slept` fallan en los otros 17. La
+proximidad infantil falla en 14 escenarios, y el resto de fallos varía por
+escenario. Los checks `KIN` son n/a por escasez de ataques de niños y testigos;
+requieren una cohorte con incidentes para juzgar la defensa.
+
 ## Casa del bebé y sueño nocturno, 2026-09-25
 
 La lactancia corresponde sólo a la madre. Con una casa terminada, no arruinada,
