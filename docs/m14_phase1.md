@@ -1,6 +1,8 @@
-# M13 phase 1 — baseline and demographic measure
+# M14 phase 1 — baseline and demographic measure
 
-Run on 2026-09-25 against `master` at `c10bec5` (`m12 veredictos`). The comparison baseline requested by `m13_plan.md` is `0dd2d9f`, the build just before M12 began. Captured in `artifacts/m13-matrix-before.txt` and `artifacts/m13-matrix-pre-m12.txt`; 20-seed cohorts are in matching `artifacts/m13-{pre,current}-{scenario}.txt` files. These artifacts are local and ignored by Git.
+> Shipped on 2026-09-25 as "M13 phase 1" (commit `72b1240`). Renumbered the same day, when the owner put the NPC-motivation milestone in front of the world map: see [m13_plan.md](m13_plan.md) and [m14_plan.md](m14_plan.md). The local `artifacts/m13-*.txt` files keep their original names.
+
+Run on 2026-09-25 against `master` at `c10bec5` (`m12 veredictos`). The comparison baseline requested by `m14_plan.md` is `0dd2d9f`, the build just before M12 began. Captured in `artifacts/m13-matrix-before.txt` and `artifacts/m13-matrix-pre-m12.txt`; 20-seed cohorts are in matching `artifacts/m13-{pre,current}-{scenario}.txt` files. These artifacts are local and ignored by Git.
 
 ## What the new `DEMOGRAPHY` line measures
 

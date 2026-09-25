@@ -1,7 +1,7 @@
 # Architecture
 
-Current as of 2026-09-25 (M13 phase 1). No runtime dependencies, Vite + a 2D
-canvas.
+Current as of 2026-09-25 (M14 phase 1, shipped under its old name M13 phase
+1). No runtime dependencies, Vite + a 2D canvas.
 
 ## Layout
 

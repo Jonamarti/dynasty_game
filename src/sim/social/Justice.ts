@@ -4,7 +4,7 @@
  * The plan: "a victim can take the grievance to the chief (knowledge by
  * testimony, the owner's rule). The chief decides: compensation, public shame,
  * or exile. The first use of authority for something other than sending
- * people to work, and the seed of the written law M13 wants for
+ * people to work, and the seed of the written law M14 wants for
  * civilisation." Widened, by the owner's choice, to wrongs across a band
  * line: there a chief cannot order the culprit, and takes it up instead with
  * the culprit's own people, whose chief judges their own.

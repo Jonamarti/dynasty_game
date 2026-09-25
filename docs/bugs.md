@@ -3,11 +3,11 @@
 As of 2026-09-25. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
 
-## M13 phase 1 baseline, 2026-09-25
+## M14 phase 1 baseline (shipped as "M13 phase 1"), 2026-09-25
 
 The `0dd2d9f` pre-M12 matrix and the `c10bec5` close-of-M12 matrix reproduce
 different scenario results. At baseline only `farmers` fails, on
-`bands-take-sides`; at M12's close 12 scenarios fail. A fresh M13 matrix run
+`bands-take-sides`; at M12's close 12 scenarios fail. A fresh matrix run for that phase
 repeats the same 12 failing scenario/check pairs (`artifacts/m13-matrix-before.txt`
 and `artifacts/m13-matrix-after.txt`), confirming that the M12-close report
 was not a one-run flip. This does not identify what caused the gap from the

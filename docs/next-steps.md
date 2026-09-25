@@ -6,12 +6,16 @@ actually stand" section below was rewritten then, not amended.
 **2026-09-24: the owner's notes moved the world map to M13**; M12 is now
 the tribe before the map, [m12_plan.md](m12_plan.md). See §7h.
 **2026-09-24, later: M12 is complete, `notes3.txt` is triaged, and M13 — the
-world map, the body and the wild — is planned in [m13_plan.md](m13_plan.md),
-which also gathers every plan earlier documents left without a phase.**
-See §7i.
-**2026-09-25: M13 phase 1 has its demographic observer and an initial
+world map, the body and the wild — is planned in what is now
+[m14_plan.md](m14_plan.md), which also gathers every plan earlier documents
+left without a phase.** See §7i.
+**2026-09-25: that plan's phase 1 has its demographic observer and an initial
 pre-M12/M12 `crowded` cohort; the longer cohorts and check-by-check diagnosis
-remain open.** See [m13_phase1.md](m13_phase1.md).
+remain open.** See [m14_phase1.md](m14_phase1.md).
+**2026-09-25, later: the owner put a new milestone in front of the map.
+M13 is now NPC motivation — why anybody does anything — planned in
+[m13_plan.md](m13_plan.md); the world map becomes M14 and everything after it
+moves up by one.** See §7j.
 Ordered, with the reason for the order.
 
 **2026-09-10: the owner moved the social and interface pass ahead of the
@@ -148,8 +152,9 @@ Both are inside what twenty seeds can resolve across the whole of phases
 | M11 phase 16 — the body stays | shipped 2026-09-23. Owner's note 1: every death leaves a body (16a); it decays, and can be cut up past knowing or dragged into water (16b); whoever sees it finds it, and a widow is widowed when she knows (16c); a killing is looked into through witnesses, motives and blood, and named — sometimes wrongly (16d); the player sees and can do all of it (16e). The gate added killers hiding a body nobody saw fall. Cohort: 78-87% of bodies found; 45-55% of investigations name the killer, 10-13% somebody else |
 | M11 phase 17 — the close | shipped 2026-09-23. `gift` emitted by the Kit and by a spare tool given away, measured to move renown little (17a); phase 5's four checks — `gossip-is-aimed` per run, exile, factions and adoption in the cohort (17b); a field can be trampled (17c); the measurement policy — wall clocks alone and scaled, tripwires in the cohort (17d); these documents (17e). **M11 is complete** |
 | M12 — the tribe before the map | shipped 2026-09-24, phases 1-7: peace within the band, justice and amends, the depot window, captives kept, territory, inherited feuds, stratification. See [m12_plan.md](m12_plan.md) |
-| **M13 — the world beyond the comarca** | **next.** The body (pregnancy, nursing, wounds, illness, fire), the wild (grass, grazing, predators, breeding), the world map with its globe, simulation LOD, migration, caravans and — possibly as M14 — civilisation. Planned in full in [m13_plan.md](m13_plan.md) |
-| M9.6 phases 4b–5 — happiness reads, and sleeping rough | planned; 4a (the field) shipped with M11 phase 5a. The `security` channel's writers and readers are taken over by M11 phase 14; `comfort`, `belonging` and `purpose` stay here |
+| **M13 — why anybody does anything** | **next.** Drives in place of needs-plus-scattered-traits; staying near home and kin (children beside their parents, nobody spending their nights across the island); a day with a night in it; threats before hunger, and kin defended; a craving for variety; expectations learned by doing, watching and being told; the hearth and roast meat as the first thing adopted because people found it better; discovery by need; building by persuasion (`notes4.txt`); raids by proposal; and history's shape as a measured calibration target. Local map only. Planned in full in [m13_plan.md](m13_plan.md) |
+| M14 — the world beyond the comarca | after M13 (was M13 until 2026-09-25). The body (pregnancy, nursing, wounds, illness), the wild (grass, grazing, predators, breeding), the world map with its globe, simulation LOD, migration, caravans and — possibly as M15 — civilisation. Phase 1 shipped under the old name. Planned in [m14_plan.md](m14_plan.md) |
+| M9.6 phases 4b–5 — happiness reads, and sleeping rough | **moved to M13** (phases 3 and 10); 4a (the field) shipped with M11 phase 5a. The `security` channel's writers and readers were taken over by M11 phase 14 |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | ~~M10 — standing, territory and raids between bands~~ | folded into M11: standing is phase 7, sabotage and raids are phase 11, territory and the border guard are Block V phases 14 and 15 |
 | M7 — walls, interiors, beds, region repair | what M7 still owes after stage C |
@@ -948,11 +953,11 @@ children as captives and captives tied up (phase 4); compensation and the
 chief as judge (phase 2); land, permission and raids for what is missing
 (phase 5); inherited feuds (phase 6); stratification (phase 7).
 
-## 7i. The owner's notes of 2026-09-24, second batch (`notes3.txt`), and M13
+## 7i. The owner's notes of 2026-09-24, second batch (`notes3.txt`), and M13 (now M14)
 
 Ten notes. Two were already done before triage (making peace, and naming
 whom somebody flees; commit `fc68101`); the other eight have a phase in
-[m13_plan.md](m13_plan.md), whose §0a is the full table and §0c the
+[m14_plan.md](m14_plan.md) (written as M13, renumbered M14 on 2026-09-25), whose §0a is the full table and §0c the
 inventory of every earlier plan left without a phase. `notes3.txt` has been
 emptied.
 
@@ -960,18 +965,57 @@ emptied.
 |---|---|---|
 | 1 | Make peace with someone you are on bad terms with | **Done** before triage |
 | 2 | "Fleeing" does not say from whom | **Done** before triage |
-| 3 | Conceiving needs the couple under one roof; late pregnancy slows and spares heavy work | M13 phases 4c and 5 |
-| 4 | A baby is carried and nursed for its first year; the mother eats more; the cradle frees her | M13 phase 6 |
-| 5 | Grass, grazing herbivores, predators, breeding, animals that attack or defend | M13 phase 9 |
-| 6 | Illnesses with grades and kinds; body parts that blows and bites damage | M13 phase 7 |
-| 7 | Fresh rivers and a salt sea; fruit and springs; migrate when there is no fresh water | M13 phases 12 and 16 |
-| 8 | Animals enter and leave the map; fauna by climate | M13 phases 9h, 11 and 14e |
-| 9 | An order's success should depend on its kind | M13 phase 2 — already true in `ORDER_COST`, and invisible in the interface |
-| 10 | Raw meat is cooked on a fire; eaten raw it can sicken | M13 phase 8 |
+| 3 | Conceiving needs the couple under one roof; late pregnancy slows and spares heavy work | M14 phases 4c and 5 |
+| 4 | A baby is carried and nursed for its first year; the mother eats more; the cradle frees her | M14 phase 6 (a walking child kept near its carer: M13 phase 2) |
+| 5 | Grass, grazing herbivores, predators, breeding, animals that attack or defend | M14 phase 9 |
+| 6 | Illnesses with grades and kinds; body parts that blows and bites damage | M14 phase 7 |
+| 7 | Fresh rivers and a salt sea; fruit and springs; migrate when there is no fresh water | M14 phases 12 and 16 |
+| 8 | Animals enter and leave the map; fauna by climate | M14 phases 9h, 11 and 14e |
+| 9 | An order's success should depend on its kind | M14 phase 2 — already true in `ORDER_COST`, and invisible in the interface |
+| 10 | Raw meat is cooked on a fire; eaten raw it can sicken | M13 phase 8 (the hearth and roasting) and M14 phase 8c (raw meat sickens) |
 
 This section, §1's untried birth-rate lever, §6's boats, beds and walls, §7b's
-N1 and N2, §8 below and the "Nobody plants a tree" gap all now have an M13
+N1 and N2, §8 below and the "Nobody plants a tree" gap all now have an M14
 phase; they are left in place here as the record of where each came from.
+
+## 7j. 2026-09-25: motivation goes before the map, and `notes4.txt`
+
+The owner asked whether the way NPCs decide is the right foundation for what
+the game is meant to produce on its own: bands that learn, keep territory,
+trade, raid and make peace, and grow toward civilisations, without any of it
+being scripted. The answer, measured before it was written down, was no, for
+three structural reasons rather than a matter of coefficients:
+
+- **Nobody learns that anything is better.** A technology's benefit is either
+  applied automatically (`cooking` multiplies every meal for whoever knows it)
+  or used because a branch of `Brain` names it (`techPower(person, 'cordage')`
+  seven times over). Adding a technology means writing its use by hand.
+- **Personality has no drives to act through.** Sixty-one trait reads in
+  `Brain` alone, each a coefficient on one verb. `Mood` has four channels and
+  the scorer reads none of them; `Macros.malnutrition` lowers health and moves
+  nothing anybody wants.
+- **Group decisions are rules applied to the band, not wills added up.**
+  `planBuildings` decides and everybody comfortable builds, which is exactly
+  the owner's `notes4.txt`: "first the tribe has to be convinced".
+
+And one thing the owner asked to fix first, measured on the build of this date
+(`century` and `lean`, 16,000 steps each, a throwaway script): **40-46% of all
+night samples find people more than 25 tiles from their camp**, 12-25% more
+than 45, with one at 138 tiles, the far side of the island; **3-5% of night
+samples are anyone asleep under a roof**, while forage, pick, ponder, talk and
+spar carry on through the dark; and **children under ten are a median 12-21
+tiles from the nearest parent**, more than 30 tiles away 20-37% of the time.
+
+**M13 is that milestone, and the map is M14.** Everything the old M13 plan
+held keeps its phase numbers under M14; its phases 4a, 4b and 4d (sleeping
+rough, mood writers and readers), the walking-child half of 6e, and 8a-8b
+(the hearth and roasting) moved to M13, where they belong to the motivation
+work. The plan is [m13_plan.md](m13_plan.md).
+
+`notes4.txt` held one note: "instead of NPCs starting to build straight away,
+the tribe first has to be convinced; the player can start alone or order
+tribe or family to help, but everyone starting at once is wrong." It is M13
+phase 11, and the file has been emptied.
 
 ## 8. Wildlife, second pass
 

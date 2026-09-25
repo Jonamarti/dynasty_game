@@ -1,6 +1,36 @@
 # Changelog
 
-## 2026-09-25 — M13 phase 1: cohort demography and baseline
+## 2026-09-25 — M13 becomes NPC motivation; the world map becomes M14
+
+Documentation only, plus one comment. The owner asked whether the way NPCs
+decide can produce the history-like emergence the game is aimed at (families
+and bands that learn, hold territory, trade, raid, make peace and grow toward
+civilisations without being scripted). It cannot yet: nobody learns that an
+option is better, personality acts through 61 scattered coefficients rather
+than through drives, and band decisions are rules rather than persuaded wills.
+Measured on this build with a throwaway script: 40-46% of night samples find
+people more than 25 tiles from camp, 3-5% of them are anyone asleep, and
+children under ten are a median 12-21 tiles from the nearest parent.
+
+- **New `docs/m13_plan.md`**: drives, home and kin, a night that is slept
+  through, threats before hunger and kin defended, a craving for variety,
+  expectations learned by doing, seeing, being told and growing up, the hearth
+  and roast meat as the first thing adopted because people found it better,
+  discovery by need, building and raiding by persuasion, an optional camp
+  move, and calibration against measured historical targets. Local map only.
+  Written in enough detail for an agent without this conversation.
+- **Renumbered**: the old M13 plan is now `docs/m14_plan.md` and its phase-1
+  report `docs/m14_phase1.md` (commit `72b1240` still says "m13 phase 1");
+  what that plan called M14 is now M15. Its phases 4a, 4b, 4d, the
+  walking-child half of 6e, and 8a-8b moved into M13 and are marked in place.
+  Forward references in `README.md`, `architecture.md`, `bugs.md`,
+  `m12_plan.md`, `next-steps.md` and the header comment of
+  `src/sim/social/Justice.ts` now say M14. Past changelog entries are left as
+  written.
+- **`notes4.txt` triaged**: its one note (convince the tribe before building)
+  is M13 phase 11; the file is empty. See `next-steps.md` §7j.
+
+## 2026-09-25 — M13 phase 1 (now M14 phase 1): cohort demography and baseline
 
 `sim:seeds` now prints a `DEMOGRAPHY` line to establish the birth and mortality
 baseline needed before M13 changes pregnancy, nursing, disease or ecology. It

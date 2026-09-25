@@ -1,7 +1,7 @@
 # M12 — La tribu antes del mapa
 
 Escrito el 2026-09-24, al procesar `docs/notes2.txt`. **El mapa del mundo pasa
-a ser M13.** El propietario pidió «un plan a más largo plazo antes de pasar al
+a ser M13** (desde el 2026-09-25, M14: la motivación de los NPC entró delante como M13; ver [m13_plan.md](m13_plan.md)). El propietario pidió «un plan a más largo plazo antes de pasar al
 world map», y la razón está en la nota que más pesaba: el juego degeneraba en
 una lucha de todos contra todos —dentro de la propia tribu, contra los propios
 niños— en cuanto pasaba el primer año. Un mapa con muchas casillas habitadas
@@ -80,7 +80,7 @@ intermedio que las sociedades reales ponen entre el rencor y la violencia**:
   (conocimiento por testimonio, regla del propietario). El jefe decide:
   compensación, vergüenza pública (un `shame` que baja el renombre del hogar) o
   destierro. Es el primer uso de la autoridad para algo que no sea mandar a
-  trabajar, y la semilla de la ley escrita que M13 pide para civilización.
+  trabajar, y la semilla de la ley escrita que M14 pide para civilización.
 - **2c. Huir o defenderse, siempre.** **Construida** (2026-09-24, detalle en
   `changelog.md`). Tres causas: dos lecturas de «bajo ataque» que hacían
   bucle con `Brain`; ocho verbos con temporizador a los que ningún golpe
@@ -274,10 +274,10 @@ se rompa.
 
 ---
 
-## Después: M13, el mapa del mundo
+## Después: M14, el mapa del mundo (era M13 hasta el 2026-09-25)
 
 El boceto de `m11_plan.md` («M12 — el mundo más allá de la isla») pasa a ser
-M13 sin cambios de fondo: casillas, icono de globo, migración, civilización
+M13 (hoy M14) sin cambios de fondo: casillas, icono de globo, migración, civilización
 como tribu con gobierno, caravanas. Sigue necesitando antes un LOD de
 simulación y romper la suposición «una `Simulation` = una isla». M12 le deja
 lo que necesita encontrar al llegar: bandas con orden interno, territorio
