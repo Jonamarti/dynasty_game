@@ -8,6 +8,14 @@ Esto evita que recolecten comida, beban o deambulen por sí solos. Aún no exist
 transporte en brazos, cuna/lecho, ni la acción `nurse`; por tanto, la comida y
 el agua del bebé no reciben cuidado automático y su supervivencia puede bajar.
 La fase 6 del plan M14 sigue siendo necesaria para completar esa crianza.
+En el commit `39b3361`, la cohorte `lean` a 20 semillas promedió 43,8% de
+supervivencia (6/20 colapsos); la base de fase 0 era 65,9%. El contador del
+runner agrupa bajo «infants (5 or under)» todas las muertes antes de los seis
+años: fueron 473 y no permite aislar a los menores de uno. La cohorte anterior
+con la inmovilidad aún no aplicada dio 45,9% y 304 muertes en ese mismo grupo.
+No es una comparación que permita atribuir todo el cambio a la inmovilidad,
+pero confirma que la supervivencia sigue por debajo del límite de la fase y
+que hay que resolver el cuidado antes de calibrar más.
 
 ## M13 phase 2 survival gate, 2026-09-25
 

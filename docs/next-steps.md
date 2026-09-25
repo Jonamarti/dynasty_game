@@ -26,8 +26,11 @@ corrected 20-seed `lean` cohort averages 45.9% survival against 65.9% at
 baseline, exceeding the declared five-point maximum; see [m13_plan.md](m13_plan.md)
 §2h and [bugs.md](bugs.md). A single `century` health run after immobilizing
 infants still fails `children-keep-close`; the check now measures only walking-
-age children, and needs rerunning. The `crowded` and `century` 20-seed phase-2
-comparisons and the M14 nursing/carrying work remain open.
+age children, and needs rerunning. The pushed build's 20-seed `lean` run is
+43.8% survival (6/20 collapses), with 473 deaths in the runner's broad under-
+six counter; see [bugs.md](bugs.md). The infant immobility needs a care path
+before further tuning. The `crowded` and `century` 20-seed phase-2 comparisons
+and the M14 nursing/carrying work remain open.
 
 Ordered, with the reason for the order.
 

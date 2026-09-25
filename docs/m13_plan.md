@@ -676,9 +676,12 @@ de niños mayores, 176 de adultos) incluye mortalidad en los tres grupos; la
 discrepancia abierta de `DemographyWatch` impide atribuir con confianza qué
 radio es la causa. Por la regla 3 del plan, se detiene la fase y se consulta al
 propietario, que indicó hacer commit y push de lo hecho y añadió el requisito
-de inmovilizar a los bebés. No se ajustan más radios; siguen pendientes las
-comparaciones a 20 semillas de `crowded` y `century`. Véase `docs/bugs.md` y el
-artefacto `artifacts/m13-phase2-lean.txt`.
+de inmovilizar a los bebés. El commit `39b3361` con ese requisito da 43,8% de
+supervivencia en `lean` (20 semillas), 22,1 puntos bajo la base. El contador
+solo agrupa muertes hasta los cinco años; no permite medir por separado a los
+menores de uno. No se ajustan más radios; siguen pendientes las comparaciones
+a 20 semillas de `crowded` y `century`, y resolver el cuidado del bebé. Véanse
+`docs/bugs.md` y `artifacts/m13-phase2-lean-infants-ground.txt`.
 
 Coste declarado: **supervivencia media ≤ 5 puntos por debajo** de la línea
 base en `century`, `lean` y `crowded` a 20 semillas. Lo esperable: menos

@@ -13,6 +13,12 @@ by direct input. The child-proximity check now measures walking-age children.
 The M14 plan records that visible carrying, a resting pose, nursing and infant
 care remain future work. Typecheck and focused tests pass; the full suite's one
 remaining timeout in `band.test.ts` is described in the delivery note.
+After the owner's baby restriction was committed, a fresh 20-seed `lean` run
+on that exact build averaged 43.8% survival (6/20 collapses), with 473 deaths
+in the runner's broad under-six category. The base was 65.9%; this fails the
+declared phase gate and does not isolate the infant change as the only cause.
+The result is saved in `artifacts/m13-phase2-lean-infants-ground.txt` and
+recorded in `bugs.md`.
 
 ## 2026-09-25 — M13 phase 2 measurement stopped at survival gate
 
