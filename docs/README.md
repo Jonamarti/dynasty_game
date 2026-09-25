@@ -20,6 +20,9 @@ it, what to do next, and why each change was made.
 | [m7_mov_m9_3_quant_plan.md](m7_mov_m9_3_quant_plan.md) | M7 — routing, and the quantity prompts that shipped alongside it |
 | [m11_plan.md](m11_plan.md) | M11 — predation, knowledge by witness, property, inequality, standing between bands, macros, the widened Neolithic and war (phases 0-11, shipped) |
 | [m11_block_v_plan.md](m11_block_v_plan.md) | M11 Block V — the owner's notes of 2026-09-22 and everything M11 still owes, commit by commit (phases 12-17) |
+| [m12_plan.md](m12_plan.md) | M12 — the tribe before the map: peace within the band, justice, captives, territory, feuds, stratification (shipped) |
+| [m13_plan.md](m13_plan.md) | M13 — the body, the wild, the world map, LOD, migration, trade and civilisation; also the inventory of every earlier plan left without a phase |
+| [m13_phase1.md](m13_phase1.md) | M13 phase 1 — baseline matrix, `DEMOGRAPHY` and the measurements still running |
 
 If you are an AI agent picking this project up, read
 [../AGENTS.md](../AGENTS.md) first — it is shorter and tells you what will

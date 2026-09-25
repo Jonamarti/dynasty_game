@@ -28,11 +28,13 @@
 import { Simulation } from '../src/sim/core/Simulation.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
+import { DemographyWatch, formatDemography, type Demography } from './demography.ts';
 import {
   SCENARIOS, thousands, watchConflict, peoplesApart, apartAroundIncidents, type ConflictWatch,
 } from './simcheck.ts';
 
 interface SeedResult {
+  demography: Demography;
   seed: string;
   peak: number;
   end: number;
@@ -101,11 +103,18 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   let peak = 0;
   let born = 0;
   const startingIds = new Set(sim.people.map(p => p.id));
+  const demography = new DemographyWatch(sim.peopleById.values(), sim.config.time.ticksPerDay);
 
   const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [] };
   let lastEventId = 0;
   for (let i = 1; i <= steps; i++) {
     sim.step();
+    // One census per day is enough for fertility exposure and birth/death
+    // cohorts. Scanning the retained dead-person registry on every tick made
+    // this read-only report scale with both run length and all prior deaths.
+    if (sim.time.tick % sim.config.time.ticksPerDay === 0) {
+      demography.observe(sim.peopleById.values(), sim.time.tick);
+    }
     peak = Math.max(peak, sim.livingPeople().length);
     watchConflict(sim, conflict, lastEventId);
     const recent = sim.social.recent;
@@ -144,6 +153,7 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     .reduce((n, [, v]) => n + v, 0);
 
   return {
+    demography: demography.finish(sim.peopleById.values(), sim.time.tick),
     seed,
     peak,
     end: sim.livingPeople().length,
@@ -242,6 +252,8 @@ function main(): void {
   const totalPeak = sum(r => r.peak);
   const totalEnd = sum(r => r.end);
   const collapsed = results.filter(r => r.peak > 0 && r.end / r.peak < 0.25).length;
+
+  console.log(formatDemography(results.map(r => r.demography)));
 
   console.log('='.repeat(78));
   console.log(

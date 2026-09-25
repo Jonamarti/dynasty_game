@@ -1,7 +1,7 @@
 # Architecture
 
-Current as of 2026-09-05 (M6b phase 1). Roughly 11,900 lines of TypeScript, no
-runtime dependencies, Vite + a 2D canvas.
+Current as of 2026-09-25 (M13 phase 1). No runtime dependencies, Vite + a 2D
+canvas.
 
 ## Layout
 
@@ -22,7 +22,8 @@ src/
   render/       Canvas 2D renderer, Camera, Floaters
   ui/           Hud, RadialMenu, EntityPicker, NewGame, Succession
   data/         Name syllables
-tools/          simcheck (library) + headless / scenarios / seeds / why (CLIs)
+tools/          simcheck (library) + headless / scenarios / seeds / why (CLIs);
+                demographic cohort observer for seeded calibration
 e2e/            Playwright smoke tests and screenshot tour
 ```
 

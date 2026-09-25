@@ -1,7 +1,45 @@
 # Known bugs and rough edges
 
-As of 2026-09-24. Everything here is real and reproducible; nothing here is
+As of 2026-09-25. Everything here is real and reproducible; nothing here is
 speculative. Fixed defects are in [changelog.md](changelog.md).
+
+## M13 phase 1 baseline, 2026-09-25
+
+The `0dd2d9f` pre-M12 matrix and the `c10bec5` close-of-M12 matrix reproduce
+different scenario results. At baseline only `farmers` fails, on
+`bands-take-sides`; at M12's close 12 scenarios fail. A fresh M13 matrix run
+repeats the same 12 failing scenario/check pairs (`artifacts/m13-matrix-before.txt`
+and `artifacts/m13-matrix-after.txt`), confirming that the M12-close report
+was not a one-run flip. This does not identify what caused the gap from the
+pre-M12 matrix: check availability and measurements also changed in that
+interval, and the seed cohorts are still running. Do not label the difference
+as either an M12 regression or harmless chaos yet.
+
+In the completed 20-seed `crowded` comparison, survival is 100% and collapses
+are zero in both builds (77 births before M12, 76 at its close). Current
+cross-band distance grows after incidents in only 2/18 seeds with enough
+incidents, mean −6.0 tiles. The scenario runs for 12 days and cannot exercise
+the 60-day `bands-take-sides` check. This is insufficient evidence to resolve
+the check or the owner's question about well-fed worlds; leave both open.
+
+The 20-seed `lean` comparison shows an unresolved cause shift, not a clear food
+result: mean survival moves 51.2% to 65.9%, murders 393 to 146, and starvation
+deaths 144 to 319. One-year mortality among eligible birth cohorts moves from
+111/304 to 72/318. Every eligible under-five birth died in both builds
+(180/180 and 127/127), with 201 and 288 more births respectively still
+awaiting follow-up. Investigate what reduced inter-band murders and why
+starvation deaths rose before tuning the food economy; neither survival nor a
+single cause count identifies that mechanism on its own.
+
+The `century` cohort independently repeats the direction: mean survival
+79.5% to 95.5%, murders 312 to 132, and starvation deaths 20 to 60. Under-one
+mortality is 60/526 versus 9/540 eligible births. Every birth in the complete
+under-five cohorts died before age five (161/161 before M12; 36/36 after), but
+the post-M12 complete cohort is small and most births await follow-up. Treat
+this as a strong child-survival problem to investigate, not a calibrated rate.
+Across `lean` and `century`, the fall in murders may explain much of the higher
+survival while leaving more people alive to die of hunger; test that mechanism
+before changing food supply or mortality rules.
 
 ## Follow-ups from notes3, 2026-09-24
 
@@ -55,6 +93,24 @@ faction route remains separate, and the verdict checks that the accused and
 plaintiff belong to the chief's band before changing membership.
 
 ## M12 health report after completion, 2026-09-24
+
+Rechecked after the peace-target and stale-verdict fixes: the same 12 of 19
+scenarios still fail. `century` no longer fails `the-hurt-are-tended`; every
+other failure is unchanged. The fixes remove reproduced mechanism defects,
+not the remaining failures of `violence-concentrates`, `peoples-drift-apart`
+or `wrongs-reach-the-chief`. The before/after matrices are saved under
+`artifacts/m12-health-{baseline,after}.txt`.
+
+On this Windows run, the unit suite's `band.test.ts` middle-rank exercise
+exceeded its 5-second timeout both before and after the changes under parallel
+load. Running Vitest with `--maxWorkers=1` passed; the timeout was not raised.
+
+The Windows Playwright runner also remained open after printing success for
+every test, both through `npm run e2e` (54 tests before the new regression)
+and the direct CLI (55 tests after it). The targeted verdict run exited
+normally. Full runs required interruption after the last passing test;
+their logs are `artifacts/m12-e2e.txt` and `artifacts/m12-e2e-final.txt`.
+The teardown hang still needs investigation; no test failure was hidden.
 
 The full `sim:check:all` matrix still has scenario-sensitive failures in the
 crowded, century, craft, scribes, traps, millers, farmers, herders, feasts,

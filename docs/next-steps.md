@@ -5,6 +5,13 @@ the close of M9, and **2026-09-23 on the close of M11** — the "Where things
 actually stand" section below was rewritten then, not amended.
 **2026-09-24: the owner's notes moved the world map to M13**; M12 is now
 the tribe before the map, [m12_plan.md](m12_plan.md). See §7h.
+**2026-09-24, later: M12 is complete, `notes3.txt` is triaged, and M13 — the
+world map, the body and the wild — is planned in [m13_plan.md](m13_plan.md),
+which also gathers every plan earlier documents left without a phase.**
+See §7i.
+**2026-09-25: M13 phase 1 has its demographic observer and an initial
+pre-M12/M12 `crowded` cohort; the longer cohorts and check-by-check diagnosis
+remain open.** See [m13_phase1.md](m13_phase1.md).
 Ordered, with the reason for the order.
 
 **2026-09-10: the owner moved the social and interface pass ahead of the
@@ -140,7 +147,8 @@ Both are inside what twenty seeds can resolve across the whole of phases
 | M11 phase 15 — defending what is yours, and captivity | shipped 2026-09-23. Owner's notes 6 and 9 and the old 11d: a watched use happens and is remembered (15a); the witness's ladder — warned off, held (`restrain`), a call for help (15b); rope and `bind` (15c); captives taken with a rope, held by attention, home by adoption (15d); the border guard (15e); `DECISIVE_GAP` as a ratio (15f). Gate: `the-watched-intervene` and `captives-are-taken`, both failing on the build before; `guards-see` not shipped (it discriminated nothing). Captivity is rare and never lasts — two design questions for the owner in `bugs.md` |
 | M11 phase 16 — the body stays | shipped 2026-09-23. Owner's note 1: every death leaves a body (16a); it decays, and can be cut up past knowing or dragged into water (16b); whoever sees it finds it, and a widow is widowed when she knows (16c); a killing is looked into through witnesses, motives and blood, and named — sometimes wrongly (16d); the player sees and can do all of it (16e). The gate added killers hiding a body nobody saw fall. Cohort: 78-87% of bodies found; 45-55% of investigations name the killer, 10-13% somebody else |
 | M11 phase 17 — the close | shipped 2026-09-23. `gift` emitted by the Kit and by a spare tool given away, measured to move renown little (17a); phase 5's four checks — `gossip-is-aimed` per run, exile, factions and adoption in the cohort (17b); a field can be trampled (17c); the measurement policy — wall clocks alone and scaled, tripwires in the cohort (17d); these documents (17e). **M11 is complete** |
-| **M12 — the world beyond the island** | **next.** The Spore-like arc: a world map, migration, civilisations, caravans. Sketched in [m11_plan.md](m11_plan.md)'s "Para el futuro"; it gets its own document before any code |
+| M12 — the tribe before the map | shipped 2026-09-24, phases 1-7: peace within the band, justice and amends, the depot window, captives kept, territory, inherited feuds, stratification. See [m12_plan.md](m12_plan.md) |
+| **M13 — the world beyond the comarca** | **next.** The body (pregnancy, nursing, wounds, illness, fire), the wild (grass, grazing, predators, breeding), the world map with its globe, simulation LOD, migration, caravans and — possibly as M14 — civilisation. Planned in full in [m13_plan.md](m13_plan.md) |
 | M9.6 phases 4b–5 — happiness reads, and sleeping rough | planned; 4a (the field) shipped with M11 phase 5a. The `security` channel's writers and readers are taken over by M11 phase 14; `comfort`, `belonging` and `purpose` stay here |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | ~~M10 — standing, territory and raids between bands~~ | folded into M11: standing is phase 7, sabotage and raids are phase 11, territory and the border guard are Block V phases 14 and 15 |
@@ -939,6 +947,31 @@ depot transfer window, cancelling a build, why somebody likes you (phase 3);
 children as captives and captives tied up (phase 4); compensation and the
 chief as judge (phase 2); land, permission and raids for what is missing
 (phase 5); inherited feuds (phase 6); stratification (phase 7).
+
+## 7i. The owner's notes of 2026-09-24, second batch (`notes3.txt`), and M13
+
+Ten notes. Two were already done before triage (making peace, and naming
+whom somebody flees; commit `fc68101`); the other eight have a phase in
+[m13_plan.md](m13_plan.md), whose §0a is the full table and §0c the
+inventory of every earlier plan left without a phase. `notes3.txt` has been
+emptied.
+
+| # | note | destination |
+|---|---|---|
+| 1 | Make peace with someone you are on bad terms with | **Done** before triage |
+| 2 | "Fleeing" does not say from whom | **Done** before triage |
+| 3 | Conceiving needs the couple under one roof; late pregnancy slows and spares heavy work | M13 phases 4c and 5 |
+| 4 | A baby is carried and nursed for its first year; the mother eats more; the cradle frees her | M13 phase 6 |
+| 5 | Grass, grazing herbivores, predators, breeding, animals that attack or defend | M13 phase 9 |
+| 6 | Illnesses with grades and kinds; body parts that blows and bites damage | M13 phase 7 |
+| 7 | Fresh rivers and a salt sea; fruit and springs; migrate when there is no fresh water | M13 phases 12 and 16 |
+| 8 | Animals enter and leave the map; fauna by climate | M13 phases 9h, 11 and 14e |
+| 9 | An order's success should depend on its kind | M13 phase 2 — already true in `ORDER_COST`, and invisible in the interface |
+| 10 | Raw meat is cooked on a fire; eaten raw it can sicken | M13 phase 8 |
+
+This section, §1's untried birth-rate lever, §6's boats, beds and walls, §7b's
+N1 and N2, §8 below and the "Nobody plants a tree" gap all now have an M13
+phase; they are left in place here as the record of where each came from.
 
 ## 8. Wildlife, second pass
 

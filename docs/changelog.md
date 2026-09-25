@@ -1,5 +1,84 @@
 # Changelog
 
+## 2026-09-25 — M13 phase 1: cohort demography and baseline
+
+`sim:seeds` now prints a `DEMOGRAPHY` line to establish the birth and mortality
+baseline needed before M13 changes pregnancy, nursing, disease or ecology. It
+pools births, fertile women and fertile-woman-year exposure; counts a death
+before ages one or five when it occurs and censors only living children without
+full follow-up; and reports mean age at death and causes. Combat deaths
+aggregate as `murder`. Census work stays in the CLI and runs once per day, with
+no simulation or RNG changes. The regression compares the observed and
+unobserved world and RNG state.
+
+The M13 notes record both the pre-M12 and M12-close matrices and the completed
+20-seed `crowded` and `lean` comparisons. The baseline has one failing
+scenario; M12's close and the fresh current matrix share the same 12 failing
+scenarios. This confirms the close-of-M12 report repeats, but the difference
+from pre-M12 still needs diagnosis. The crowded cohorts both show 100% survival
+and no collapses (77 births before M12, 76 after); its 12-day horizon cannot
+exercise the 60-day `bands-take-sides` gate. In `lean` and `century`, survival
+moves 51.2% to 65.9% and 79.5% to 95.5%; murders fall (393 to 146, 312 to 132)
+while starvation deaths rise (144 to 319, 20 to 60). One-year mortality among
+eligible births also falls from 111/304 to 72/318 in `lean` and 60/526 to 9/540
+in `century`. However, every eligible under-five birth dies in both builds:
+180/180 to 127/127 in `lean`, and 161/161 to 36/36 in `century`. This severe,
+conflicting cause shift is recorded for investigation before changing food
+weights or child-survival rules. Nothing was tuned to erase a red check.
+
+Verification: `npm run typecheck`; 537 Vitest tests with one worker; the
+demography observer regression; and the 19-scenario matrix (same 12 failing
+scenario/check pairs as the M12-close matrix). See `docs/m13_phase1.md` for
+cohort results and remaining follow-up work.
+
+## 2026-09-24 — M12: la paz retira la venganza y los veredictos se revalidan
+
+Cerrar una enemistad borraba el registro del hogar, pero dejaba en sus miembros
+el culpable que `Brain` usa para abrir la ruta de venganza. Ahora se retira ese
+objetivo; si queda otra enemistad abierta, se conserva su culpable. Las dos
+regresiones fallaban antes del arreglo y pasan después.
+
+Los veredictos del jugador validan la pertenencia actual de ambas partes, no
+sólo la tribu guardada en la denuncia. La interfaz descarta casos con personas
+fallecidas, ausentes o que han cambiado de tribu, explica el cierre y permite
+pasar al siguiente. También se oculta si el jugador pierde la jefatura. Los
+rechazos tienen texto en inglés y español. Pruebas de simulación cubren ambos
+cambios de tribu y la cola; Playwright verifica el desbloqueo y la pérdida del
+cargo. No se han cambiado pesos, umbrales ni streams de RNG.
+
+La matriz de 19 escenarios conserva fallos en 12: el único cambio en sus
+resultados es `the-hurt-are-tended` de `century`, que pasa de fallo a aprobado.
+Eso no se interpreta como prueba de mejora general. Informes antes/después en
+`artifacts/m12-health-baseline.txt` y `artifacts/m12-health-after.txt`.
+
+En `lean`, 20 semillas antes/después: supervivencia media 66,2% → 65,9%,
+sin colapsos por debajo del 25%; 2.720 → 2.640 golpes entre pueblos y
+161 → 146 asesinatos. Ningún golpe dentro de la banda ni de adulto a niño
+en ambas cohortes. La diferencia de supervivencia no resuelve una tendencia;
+la evidencia del arreglo es la regresión del objetivo de venganza. Informes
+en `artifacts/m12-seeds-before.txt` y `artifacts/m12-seeds-after.txt`.
+
+Verificación: `typecheck` correcto y 529 pruebas pasando con un trabajador
+de Vitest (la ejecución paralela repetía un timeout previo en `band.test.ts`).
+Las 55 pruebas de Playwright pasan, incluida la regresión del veredicto;
+el proceso queda abierto después de la última prueba y requiere interrumpir
+el cierre. Se registra como incidencia del harness, no como salida limpia.
+
+## 2026-09-24 — Plan de M13 y triaje de `notes3.txt`
+
+Sólo documentación, sin cambios de código. `docs/m13_plan.md` planifica el mapa
+del mundo, que M11 y M12 habían aplazado. Lo precede con el cuerpo (embarazo,
+crianza, heridas, enfermedad, fuego) y la vida salvaje (hierba, pastoreo,
+depredadores, reproducción), porque el modelo abstracto de las comarcas que
+no se ven tiene que calibrarse contra la demografía que esas notas cambian.
+El plan recoge también todo lo que documentos anteriores dieron por planeado
+sin asignarle fase (M9.6 4b-5, las camas, los muros y las barcas de M7, N1 y N2,
+el nodo `trade` de M8.2, que nunca llegó a `TECHS`, M8.3, `preserving`, el
+banquete de `brewing`, otros lectores de `conspiracyAgainst`). `notes3.txt`
+queda vacío: dos notas ya estaban hechas (`fc68101`) y las otras ocho tienen
+fase. `next-steps.md` §7i es el índice, y su tabla ya no dice que el
+siguiente sea M12.
+
 ## 2026-09-24 — M12: interfaz del veredicto del jefe jugador
 
 El caso que llega al jefe del jugador ya tiene una pantalla visible y traducida:
