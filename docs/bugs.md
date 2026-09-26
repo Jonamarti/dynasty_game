@@ -28,6 +28,36 @@ Se probó suprimir `go_home` al cruzar la línea de trabajo. La supervivencia fu
 0,522 asesinatos intrabanda por 1.000 personas-año. El experimento se revirtió;
 el build conserva el fallback y la regla de hogar original.
 
+Las siete ablaciones restantes medidas en `lean` (20 semillas cada una) tampoco
+cruzan 60,9%: apagar `infantsStill`, `urgentNursing`, `motherOnlyFeeds`,
+`babyToHouse`, `cravings`, `kinDefence` y `beliefChoice` dio 53,6%, 54,7%,
+57,6%, 58,2%, 51,1%, 56,0% y 56,0%. Apagar `babyToHouse` redujo las muertes
+por hambre (511 a 325) pero elevó las de exposición (25 a 246); `cravings`
+apagado elevó el hambre a 578. Los detalles están en `m15_recovery.md`.
+
+**Matriz `sim:check:all` del build con fallback, 2026-09-26.** Los tres rojos
+repetidos en casi todos los escenarios son fallos de comportamiento del mundo,
+no fallos del contador: `cravings-steer-the-diet` (la cohorte century previa
+midió 8,0% de comidas con proteína durante el antojo frente a 39,9% al estar
+calmado; sin el antojo, la supervivencia lean baja a 51,1%), `nights-are-slept`
+(en lean solo 8,8% duerme de noche frente al 55% requerido) y
+`children-keep-close` (22,7% de observaciones lean separan al niño del
+progenitor por más de 12 casillas). `tiny` pasa 34/34.
+
+Los demás rojos de esta ejecución aparecen solo en escenarios concretos:
+`pots-reach-a-granary` y `spatial-hash-spreads` (craft),
+`nobody-stalls-under-orders`, `peoples-drift-apart` y
+`the-watched-intervene` (millers), `opinions-diverge` (coast, traps, hunters,
+fishers, farmers, herders, feasts, stewards y culture), `gossip-is-aimed`
+(farmers, feasts, stewards y culture), `animals-are-tamed` (farmers, herders y
+culture), `the-tree-is-climbed` y `bands-dont-overbuild` (herders),
+`bands-take-sides` (feasts), y `pictures-are-painted` y
+`compost-answers-exhaustion` (stewards). Son resultados del comportamiento u
+oportunidad de esas cohortes; `spatial-hash-spreads` es además un tripwire
+sensible al instante y tamaño de muestra (véase su nota específica abajo).
+No atribuirlos al fallback sin una comparación antes/después de la misma
+semilla. Matriz completa: `artifacts/m15-phase1e-matrix.txt`.
+
 ## M15 fase 1a — `DemographyWatch.finish()` consumía iteradores, 2026-09-26
 
 **Corregido.** La ejecución `lean`, semilla `century`, registró 38 muertes en

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1c, completar ablaciones lean y clasificar matriz
+
+Se midieron a 20 semillas las siete reglas que faltaban en `lean` y se
+registraron supervivencia, causas de muerte y comportamiento infantil en
+`m15_recovery.md`. Ninguna ablación aislada alcanza la puerta de 60,9%; apagar
+`babyToHouse` causa una subida fuerte de muertes por exposición y apagar
+`cravings` aumenta las muertes por hambre. Se repitió `sim:check:all` con el
+fallback actual y se anotaron los rojos y los límites de sus escenarios en
+`bugs.md`. La matriz cross-scenario y la recuperación de la base apagada aún
+no pasan las condiciones para fase 2.
+
 ## 2026-09-26 — M15 fase 1d, prueba de prioridad del hogar (revertida)
 
 Se midió suprimir el regreso al hogar al alcanzar la línea de trabajo: `lean`

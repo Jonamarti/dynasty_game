@@ -16,6 +16,12 @@ Mediciones en curso. Los artefactos completos de estas cohortes están en
 | Solo `kinDefence` apagado | 50,6% | 4/20 | 698: starvation 533, dehydration 80, exposure 49, murder 22, old age 14 | idéntico al control | 0/0 |
 | Fallback de comida fuera del alcance, M15 1d | 56,0% | 1/20 | 671: starvation 511, dehydration 96, exposure 25, murder 25, old age 14 | 68,4% / 8,8%; 22,7% | 0/0 |
 | Suprimir `go_home` sobre la línea de trabajo (experimento revertido) | 56,8% | 2/20 | 584: starvation 504, dehydration 7, exposure 21, murder 36, old age 16 | 67,0% / 8,5%; 25,4% | 0/0 |
+| Solo `infantsStill` apagado | 53,6% | 3/20 | 675: starvation 528, dehydration 86, exposure 16, murder 31, old age 14 | 68,9% / 8,8%; 23,2% | 0/0 |
+| Solo `urgentNursing` apagado | 54,7% | 2/20 | 753: starvation 642, dehydration 37, exposure 14, murder 46, old age 14 | 64,8% / 8,5%; 28,1% | 0/0 |
+| Solo `motherOnlyFeeds` apagado | 57,6% | 1/20 | 655: starvation 486, dehydration 76, exposure 41, murder 36, old age 16 | 68,9% / 8,6%; 22,6% | 0/0 |
+| Solo `babyToHouse` apagado | 58,2% | 1/20 | 685: starvation 325, dehydration 62, exposure 246, murder 38, old age 14 | 64,6% / 8,7%; 28,6% | 0/0 |
+| Solo `cravings` apagado | 51,1% | 2/20 | 705: starvation 578, dehydration 66, exposure 13, murder 34, old age 14 | 70,0% / 8,9%; 21,8% | 0/0 |
+| Solo `beliefChoice` apagado | 56,0% | 1/20 | 671: starvation 511, dehydration 96, exposure 25, murder 25, old age 14 | 68,4% / 8,8%; 22,7% | 0/0 |
 
 HOME recoge también distancia diurna, percentiles infantiles y acciones en los
 archivos completos. KIN no tuvo ataques infantiles observados en ninguna de
@@ -56,11 +62,47 @@ estas tres cohortes; `0/0` es ausencia de muestra, no una defensa aprobada.
   supervivencia 0,8 puntos sobre el fallback (56,8%) y produjo 2/20 bandas
   autodestruidas más 0,522 asesinatos intrabanda por 1.000 personas-año. Se
   revirtió y no forma parte del build actual.
+- Las siete ablaciones restantes en `lean` no hallaron un rescate aislado. Sin
+  `infantsStill`, `urgentNursing` o `cravings`, la media fue 53,6%, 54,7% y
+  51,1%, respectivamente. `motherOnlyFeeds` y `babyToHouse` dieron 57,6% y
+  58,2%, aún bajo el gate; desactivar este último disparó las muertes por
+  exposición de 25 a 246. `kinDefence` y `beliefChoice` quedaron bitidénticos
+  al fallback (56,0%); KIN fue 0/0, sin ataques infantiles elegibles. El resto
+  de columnas y semillas está en los artefactos `m15-1c-lean-no-*.txt`.
+- La matriz individual completa solo se midió en `lean`. Aún faltan repetir
+  las diez ablaciones a 20 semillas en `century` y `crowded`; por tanto, estas
+  diferencias no identifican por sí solas la regla que hace fallar la base
+  apagada ni completan la fase 1c.
 - En una comparación diagnóstica separada de 5 semillas, el filtro descartó
   88.722 candidatos en el control y cero cuando `reachFilter` estaba apagado;
   este último dio 58,8% frente a 50,7%. Al apagar también `homePressure`, la
   supervivencia fue 81,4% y las oportunidades accesibles aumentaron a 649.918.
   Estas muestras cortas explican el mecanismo pero no sustituyen las cohortes
   de 20 semillas.
-- Faltan las otras nueve ablaciones individuales y las repeticiones en
-  `century` y `crowded`. La fase 1c y la fase 1e siguen abiertas.
+- Las diez ablaciones individuales están medidas en `lean`; faltan sus
+  repeticiones a 20 semillas en `century` y `crowded`. La puerta de base
+  apagada y la fase 1e siguen abiertas.
+
+## Clasificación de la matriz actual
+
+`artifacts/m15-phase1e-matrix.txt` se generó con el fallback activo. `tiny`
+pasa 34/34; los rojos repetidos son fallos de comportamiento medidos del
+mundo: `cravings-steer-the-diet` (la cohorte lean sin antojo bajó a 51,1%, y
+la medición de century documentada abajo en `bugs.md` confirma poca proteína
+durante el antojo), `nights-are-slept` (8,8% de sueño en la cohorte lean ante
+un umbral del 55%) y `children-keep-close` (22,7% de observaciones con más de
+12 casillas entre niño y progenitor). No hay evidencia de que sean defectos
+del evaluador.
+
+Los rojos adicionales son sensibles al escenario o a oportunidades poco
+frecuentes, no una regresión atribuida al fallback: `pots-reach-a-granary` y
+`spatial-hash-spreads` (craft; el último es sensible al instante de muestreo y
+al tamaño del mundo), `nobody-stalls-under-orders`, `peoples-drift-apart` y
+`the-watched-intervene` (millers), `opinions-diverge` (coast, traps, hunters,
+fishers, farmers, herders, feasts, stewards y culture), `gossip-is-aimed`
+(farmers, feasts, stewards y culture), `animals-are-tamed` (farmers, herders y
+culture), `the-tree-is-climbed` y `bands-dont-overbuild` (herders),
+`bands-take-sides` (feasts) y `pictures-are-painted` y
+`compost-answers-exhaustion` (stewards). Las mediciones previas y las
+limitaciones por check están clasificadas en `docs/bugs.md`; estos rojos
+siguen siendo tripwires de escenario, no una puerta de supervivencia cumplida.
