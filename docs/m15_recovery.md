@@ -10,6 +10,7 @@ Mediciones en curso. Los artefactos completos de estas cohortes están en
 | M15 actual, reglas activadas | 50,6% | 4/20 | 698: starvation 533, dehydration 80, exposure 49, murder 22, old age 14 | 67,8% / 8,3%; 23,0% | 0/0 |
 | Todas las reglas apagadas | 56,0% | 0/20 | 703: starvation 237, dehydration 215, exposure 51, murder 184, old age 16 | 46,4% / 0%; 57,3% | 0/0 |
 | Solo `reachFilter` apagado | 57,2% | 1/20 | 649: starvation 497, dehydration 83, exposure 30, murder 24, old age 15 | 68,8% / 8,4%; 22,7% | 0/0 |
+| Solo `nightSleep` apagado | 53,9% | 4/20 | 716: starvation 305, dehydration 57, exposure 318, murder 22, old age 14 | 69,3% / 0%; 30,7% | 0/0 |
 
 HOME recoge también distancia diurna, percentiles infantiles y acciones en los
 archivos completos. KIN no tuvo ataques infantiles observados en ninguna de
@@ -24,5 +25,8 @@ estas tres cohortes; `0/0` es ausencia de muestra, no una defensa aprobada.
 - Apagar solo `reachFilter` mejora 6,6 puntos y reduce los colapsos de 4/20 a
   1/20; es una señal para repetir en `century` y `crowded`, no una explicación
   cerrada ni una calibración de parámetros.
+- Apagar solo `nightSleep` reduce la supervivencia 3,3 puntos y cambia la causa
+  más fuerte de muerte hacia exposición (318 frente a 49 con las reglas
+  activadas). Confirma el mecanismo de frío sin explicar la brecha total.
 - Faltan las otras nueve ablaciones individuales y las repeticiones en
   `century` y `crowded`. La fase 1c y la fase 1e siguen abiertas.

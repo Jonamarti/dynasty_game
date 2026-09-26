@@ -8,6 +8,10 @@ apagado. La puerta de recuperación no pasa todavía: todas apagadas quedan 9,9
 puntos bajo la base M13. La brecha y la señal de alcance quedan documentadas en
 `docs/bugs.md`; faltan las demás ablaciones y escenarios.
 
+Medida la ablación individual `nightSleep` en `lean`, 20 semillas: supervivencia
+53,9% (-3,3 puntos) y 318 muertes por exposición frente a 49 en el control con
+reglas activadas. Tabla actualizada en `docs/m15_recovery.md`.
+
 ## 2026-09-26 — M15 fase 1b: `--set` sin `--steps`
 
 El CLI reconoce la asignación posicional que vite-node produce cuando se usa
