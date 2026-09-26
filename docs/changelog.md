@@ -12,6 +12,10 @@ Medida la ablación individual `nightSleep` en `lean`, 20 semillas: supervivenci
 53,9% (-3,3 puntos) y 318 muertes por exposición frente a 49 en el control con
 reglas activadas. Tabla actualizada en `docs/m15_recovery.md`.
 
+Medida `homePressure=false`: 61,7% (+11,1 puntos), con menos muertes por hambre
+y sed y más muertes violentas. Registrada como hipótesis de trabajo; falta mirar
+el reparto de acciones y repetir en otros escenarios.
+
 ## 2026-09-26 — M15 fase 1b: `--set` sin `--steps`
 
 El CLI reconoce la asignación posicional que vite-node produce cuando se usa

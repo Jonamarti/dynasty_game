@@ -11,6 +11,7 @@ Mediciones en curso. Los artefactos completos de estas cohortes están en
 | Todas las reglas apagadas | 56,0% | 0/20 | 703: starvation 237, dehydration 215, exposure 51, murder 184, old age 16 | 46,4% / 0%; 57,3% | 0/0 |
 | Solo `reachFilter` apagado | 57,2% | 1/20 | 649: starvation 497, dehydration 83, exposure 30, murder 24, old age 15 | 68,8% / 8,4%; 22,7% | 0/0 |
 | Solo `nightSleep` apagado | 53,9% | 4/20 | 716: starvation 305, dehydration 57, exposure 318, murder 22, old age 14 | 69,3% / 0%; 30,7% | 0/0 |
+| Solo `homePressure` apagado | 61,7% | 5/20 | 559: starvation 435, dehydration 15, exposure 20, murder 74, old age 15 | 56,5% / 5,7%; 31,5% | 0/0 |
 
 HOME recoge también distancia diurna, percentiles infantiles y acciones en los
 archivos completos. KIN no tuvo ataques infantiles observados en ninguna de
@@ -28,5 +29,10 @@ estas tres cohortes; `0/0` es ausencia de muestra, no una defensa aprobada.
 - Apagar solo `nightSleep` reduce la supervivencia 3,3 puntos y cambia la causa
   más fuerte de muerte hacia exposición (318 frente a 49 con las reglas
   activadas). Confirma el mecanismo de frío sin explicar la brecha total.
+- Apagar solo `homePressure` mejora la supervivencia 11,1 puntos y reduce las
+  muertes por hambre/sed (533/80 a 435/15), aunque las violentas suben de 22 a
+  74 y hay 5 colapsos frente a 4. Es consistente con tiempo de recolección
+  perdido al volver al campamento, pero requiere medir acciones y repetir otros
+  escenarios antes de declararlo causa.
 - Faltan las otras nueve ablaciones individuales y las repeticiones en
   `century` y `crowded`. La fase 1c y la fase 1e siguen abiertas.

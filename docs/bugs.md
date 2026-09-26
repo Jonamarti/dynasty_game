@@ -9,7 +9,10 @@ de `reachFilter` da 57,2% (+6,6 puntos respecto a las reglas activadas), así
 que no explica por sí sola la brecha. Las causas cambian de 22 asesinatos con
 reglas activadas a 184 con todas apagadas; la distancia nocturna al hogar y la
 distancia infantil también empeoran. Faltan las otras ablaciones individuales
-y medir `century`/`crowded`; ver [m15_recovery.md](m15_recovery.md). No ajustar
+y medir `century`/`crowded`; ver [m15_recovery.md](m15_recovery.md). `homePressure`
+apagado individualmente elevó la supervivencia 11,1 puntos y redujo hambre/sed,
+una señal compatible con que regresar al campamento desplaza recolección; falta
+confirmar la distribución de acciones y repetir fuera de `lean`. No ajustar
 coeficientes hasta aislar el mecanismo.
 
 ## M15 fase 1a — `DemographyWatch.finish()` consumía iteradores, 2026-09-26
