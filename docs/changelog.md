@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-26 — M15 1e, archivar la comparación de presión de hogar
+
+La gira de 24 capturas en 5 recorridos queda en
+`artifacts/screenshots/m15-phase1e-home-pressure-candidate/` como evidencia
+visual del build durante la decisión de fase 1e.
+
 ## 2026-09-26 — M15 1e, repetir `homePressure=false` en la build actual
 
 Veinte semillas miden 72,3% `lean`, 97,8% `century` y 100% `crowded`. Se
