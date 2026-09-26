@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-26 — M15 1e, repetir `homePressure=false` en la build actual
+
+Veinte semillas miden 72,3% `lean`, 97,8% `century` y 100% `crowded`. Se
+confirman los gates de supervivencia, pero empeoran la muerte violenta adulta,
+la cercanía nocturna y la distancia infantil. Queda presentado como candidato,
+sin cambiar el default pendiente de la decisión del propietario.
+
 ## 2026-09-26 — M15 1d, registrar la traza local del sueño nocturno
 
 Una ejecución `why` encuentra `rest` por encima de `go_home` y sin opción

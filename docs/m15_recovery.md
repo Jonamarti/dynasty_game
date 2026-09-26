@@ -282,3 +282,24 @@ con 0,42–0,55; `sleep` no está entre las opciones puntuadas. Al tick 240
 empieza `haul`. Esto apunta a un conflicto local entre descansar fuera del
 alcance nocturno del ancla y la querencia de volver, pero es una persona y un
 intervalo: no cuantifica el coste ni autoriza subir el peso de vuelta a casa.
+
+### Repetición actual de `homePressure=false` (20 semillas por escenario)
+
+Con la build actual, incluyendo interrupciones sociales por necesidad y la
+preferencia medida por proteína, la ablación de `homePressure` dio:
+
+| Escenario | Supervivencia | Colapsos | Muertes | Causas principales | Violencia adulta | HOME cerca<15 / duerme / descansa | Niño-padre >12 |
+|---|---:|---:|---:|---|---:|---|---:|
+| `lean` | 72,3% | 1/20 | 453 | hambre 361, homicidio 49, exposición 18 | 22,2% | 58,2% / 5,9% / 11,2% | 38,9% |
+| `century` | 97,8% | 0/20 | 176 | hambre 77, homicidio 60, exposición 14 | 48,8% | 61,8% / 6,9% / 8,9% | 29,5% |
+| `crowded` | 100,0% | 0/20 | 13 | vejez 13 | 0,0% | 58,9% / 9,2% / 25,0% | 30,0% |
+
+`lean` y `century` superan sus gates de supervivencia (60,9% y 90,5%); `crowded`
+son solo 3.000 ticks, no una medida de supervivencia generacional. La cercanía
+nocturna y el sueño bajan frente a la build normal; también crece la distancia
+de los niños. La violencia adulta elevada, sobre todo en `century`, es el coste
+central a decidir antes de hacer permanente esta retirada. No cambia el
+default sin autorización del propietario. El all-off con las diez reglas M13/
+M14 apagadas sigue en 60,8%, 5,1 puntos bajo la base de 65,9% y una décima
+fuera de tolerancia; quitar `homePressure` no cambia ese all-off porque ya está
+apagado en esa variante.

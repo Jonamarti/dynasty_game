@@ -2952,6 +2952,16 @@ con las interrupciones apagadas. Ninguna diferencia alcanza diez puntos; la
 cohorte no identifica una corrección segura para cerrar la puerta. La opción
 queda activa por defecto.
 
+**Repetición de la ablación `homePressure=false`, build actual.** Veinte
+semillas dieron 72,3% en `lean` (1/20 colapsos), 97,8% en `century` (0/20) y
+100,0% en `crowded` (0/20; escenario corto). `lean` registró 22,2% de muertes
+adultas violentas y `century` 48,8%; HOME cerca de noche fue 58,2% y 61,8%, y
+niños a más de 12 casillas, 38,9% y 29,5%. La supervivencia pasa, pero el coste
+de violencia, retorno nocturno y proximidad infantil necesita la decisión del
+propietario antes de retirar `homePressure` del default. El all-off de diez
+reglas sigue en 60,8% (base 65,9%, 5,1 puntos abajo), ya con `homePressure`
+apagado; esta candidata no repara esa décima fuera de tolerancia.
+
 **Traza puntual de `nights-are-slept`.** `npm run why -- lean 0 220 300`
 encuentra que Garur, durante los ticks 223–239 de noche, elige `rest` (0,77–0,93)
 por encima de `go_home` (0,42–0,55); `sleep` ni se puntúa. Al comenzar el día,
