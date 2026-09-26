@@ -725,6 +725,20 @@ export class Brain {
         telemetry.count('food_reach_fallback_at_think');
       }
     }
+    // M15 phase 1d: distinguish a weak craving weight from an empty local
+    // choice set. Use the same spatial search and reach rule as forage, and
+    // keep the audit out of ordinary play where telemetry is disabled.
+    if (telemetry.isEnabled() && cravings(person, ctx.motivation.cravings).protein > 0.5) {
+      const proteinFood = (node: ResourceNode) =>
+        !node.depleted && this.nodeWorth(person, node, ctx) > 0 &&
+        this.nodeProteinFraction(person, node) >= 0.3;
+      const reachable = this.findNode(person, ctx, proteinFood, true, anchor, reach);
+      const anywhereInSearch = reachable ?? this.findNode(person, ctx, proteinFood, false, anchor, reach);
+      telemetry.count('craving_protein_search');
+      if (reachable) telemetry.count('craving_protein_reachable');
+      else if (anywhereInSearch) telemetry.count('craving_protein_outside_reach');
+      else telemetry.count('craving_protein_absent');
+    }
     if (foodNode) {
       // Hunger drives foraging only to the extent it is not already answered by
       // what you carry — but the reserve is generous. A first attempt cut the
@@ -3255,6 +3269,16 @@ export class Brain {
     const appeal = output ? appealOf(person, output, VARIETY_WEIGHT,
       ctx.motivation.cravings, ctx.motivation.beliefChoice) / (ITEMS[output]?.nutrition ?? 1) : 1;
     return nutritionPerUnit(recipe, node.def.itemId) * 0.6 * appeal;
+  }
+
+  /** Protein fraction in the edible item a resource node can currently yield. */
+  private nodeProteinFraction(person: Person, node: ResourceNode): number {
+    const direct = ITEMS[node.def.itemId];
+    if (direct && direct.nutrition > 0) return direct.macros?.protein ?? 0;
+    const recipe = recipeUsing(node.def.itemId);
+    if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
+    const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
+    return output ? ITEMS[output]?.macros?.protein ?? 0 : 0;
   }
 
   private findNode(

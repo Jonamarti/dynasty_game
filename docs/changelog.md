@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-26 — M15 diagnóstico, disponibilidad de proteína en la búsqueda
+
+Durante un antojo de proteína, el scorer cuenta si el mismo radio de
+forrajeo contiene un recurso alimentario rico en proteína alcanzable, solo
+fuera del límite del ancla, o ninguno. `sim:seeds` agrega esos tres resultados
+para revisar disponibilidad antes de tocar pesos. No incluye animales de caza,
+que se mantienen explícitamente fuera de esta medición de nodos de forraje.
+
 ## 2026-09-26 — M15 diagnóstico, contar interrupciones por verbo y motivo
 
 `sim:seeds` ahora agrupa los eventos `interrupted_<verb>_<reason>` para los

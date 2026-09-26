@@ -102,6 +102,11 @@ interface SeedResult {
   foodAbsentInSearch: number;
   /** M15 phase 1d: what need or danger interrupts each timed social action. */
   socialInterruptions: Record<string, number>;
+  /** M15 phase 1d: reachable protein during a strong protein craving. */
+  cravingProteinSearch: number;
+  cravingProteinReachable: number;
+  cravingProteinOutsideReach: number;
+  cravingProteinAbsent: number;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -264,6 +269,10 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     foodBlockedByReach: counts.food_blocked_by_reach_at_think ?? 0,
     foodAbsentInSearch: counts.food_absent_in_search_at_think ?? 0,
     socialInterruptions,
+    cravingProteinSearch: counts.craving_protein_search ?? 0,
+    cravingProteinReachable: counts.craving_protein_reachable ?? 0,
+    cravingProteinOutsideReach: counts.craving_protein_outside_reach ?? 0,
+    cravingProteinAbsent: counts.craving_protein_absent ?? 0,
   };
 }
 
@@ -377,6 +386,10 @@ function main(): void {
   const interrupted = [...new Set(results.flatMap(r => Object.keys(r.socialInterruptions)))].sort();
   console.log('  SOCIAL INTERRUPTIONS ' + (interrupted.length === 0 ? 'none' : interrupted
     .map(key => key + '=' + sum(r => r.socialInterruptions[key] ?? 0)).join(' ')));
+  console.log('  PROTEIN DURING CRAVING ' + sum(r => r.cravingProteinReachable) + '/' +
+    sum(r => r.cravingProteinSearch) + ' searches had a reachable protein-rich food node · ' +
+    sum(r => r.cravingProteinOutsideReach) + ' only outside anchor reach · ' +
+    sum(r => r.cravingProteinAbsent) + ' absent from the forage search');
 
   console.log('='.repeat(78));
   console.log(
