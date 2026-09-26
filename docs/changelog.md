@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-26 — M15, clasificar el rojo de distancia en `craft`
+
+La corrida aislada registró 516 incidentes y una caída de distancia entre
+pueblos (17,9 a 17,1 casillas), así que `peoples-drift-apart` refleja una
+carencia del comportamiento observado. El `perf-budget` de una sola corrida se
+clasifica como evidencia insuficiente por su variabilidad de reloj ya medida.
+
 ## 2026-09-26 — M15, añadir la petición de clase de tecnología grupal al plan
 
 Se incorpora al bloque 2d la convocatoria de miembros cercanos que puedan oír

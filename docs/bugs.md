@@ -2930,3 +2930,16 @@ masks protein just beyond home reach (132,686/132,686 targeted cases in the
 65.9% M13 base (5.1 points below, just outside tolerance). `century` is healthy
 at 97.0% against a 90.5% minimum. Per M15 1e, the owner must choose whether to
 accept the lean loss as a new base or retire a rule before phase 2 starts.
+
+**Current matrix detail, `craft` (`npm run sim:check -- --scenario craft`).**
+`peoples-drift-apart` is a world-behavior failure in this run, not a bad
+measurement: after 516 inter-people incidents the mean distance fell from 17.9
+to 17.1 tiles. Keep the check unchanged; the cause or a deliberate proposal
+that makes conflict separate peoples belongs in the conflict work (M15 phase
+8) after the survival gate.
+
+The same isolated `craft` run also reported `perf-budget` at 1,065 steps/s
+against a 1,724 floor. This is a single wall-clock sample; the existing
+`perf-budget` investigation records large same-build swings under matrix load.
+Re-measure it alone three times before treating it as a code regression or
+changing the threshold.
