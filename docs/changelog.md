@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-26 — capturas M15 fase 1d, verbos interrumpibles
+
+`npm run shots` pasó 5/5. Se archivó la gira completa de 29 capturas en
+`artifacts/screenshots/m15-phase1d-social-interruptions/` para conservar esta
+etapa de desarrollo.
+
 ## 2026-09-26 — M15 fase 1d, no cortar la comida del hijo dependiente
 
 La primera cohorte de 20 semillas tras añadir interrupciones a ocho verbos
