@@ -27,7 +27,8 @@ const cravingCache = new WeakMap<Person, {
 }>();
 
 /** Current shortfall by macro, scaled to the useful 0-1 range. */
-export function cravings(person: Person): Record<Macro, number> {
+export function cravings(person: Person, enabled = true): Record<Macro, number> {
+  if (!enabled) return { fat: 0, protein: 0, carb: 0 };
   const target = person.macroTarget;
   const balance = person.macroBalance;
   const previous = cravingCache.get(person);
@@ -49,23 +50,29 @@ export function cravings(person: Person): Record<Macro, number> {
 }
 
 /** Nutrition adjusted for the nutrients this person has been missing. */
-export function appealOf(person: Person, itemId: string, varietyWeight = VARIETY_WEIGHT): number {
+export function appealOf(
+  person: Person, itemId: string, varietyWeight = VARIETY_WEIGHT,
+  cravingsEnabled = true, beliefsEnabled = true,
+): number {
   const food = ITEMS[itemId];
   if (!food || food.nutrition <= 0) return 0;
-  const craving = cravings(person);
+  const craving = cravings(person, cravingsEnabled);
   const macros = food.macros;
   const pull = macros
     ? MACROS.reduce((sum, macro) => sum + craving[macro] * macros[macro], 0)
     : 0;
-  return expectedFood(person, itemId) * (1 + varietyWeight * pull);
+  return (beliefsEnabled ? expectedFood(person, itemId) : food.nutrition) * (1 + varietyWeight * pull);
 }
 
 /** Highest-appeal food in inventory; stack order breaks ties deterministically. */
-export function bestFoodFor(person: Person, varietyWeight = VARIETY_WEIGHT): string | null {
+export function bestFoodFor(
+  person: Person, varietyWeight = VARIETY_WEIGHT,
+  cravingsEnabled = true, beliefsEnabled = true,
+): string | null {
   let chosen: string | null = null;
   let best = 0;
   for (const [itemId] of person.inventory.entries()) {
-    const appeal = appealOf(person, itemId, varietyWeight);
+    const appeal = appealOf(person, itemId, varietyWeight, cravingsEnabled, beliefsEnabled);
     if (appeal > best) {
       chosen = itemId;
       best = appeal;
@@ -103,10 +110,10 @@ const MACRO_DECAY_PER_DAY = 0.35;
  * frozen at whatever it was the day they stopped eating by order. The
  * `moveToward` argument: two copies of one idea drift.
  */
-export function consumeFood(person: Person, itemId: string, tick = 0): boolean {
+export function consumeFood(person: Person, itemId: string, tick = 0, cravingsEnabled = true): boolean {
   const def = ITEMS[itemId];
   if (!def || def.nutrition <= 0) return false;
-  const craving = cravings(person);
+  const craving = cravings(person, cravingsEnabled);
   const wantsProtein = craving.protein > 0.5;
   const calmProtein = craving.protein < 0.1;
   if (person.inventory.remove(itemId, 1) === 0) return false;

@@ -706,7 +706,7 @@ export class Brain {
     // being so.
     const desperateForFood = pressedByNeed(person, ctx.needs.workLimits, 'hunger');
     const foodNode = this.findNode(person, ctx,
-      n => !n.depleted && this.nodeWorth(person, n) > 0, !desperateForFood, anchor, reach);
+      n => !n.depleted && this.nodeWorth(person, n, ctx) > 0, !desperateForFood, anchor, reach);
     if (foodNode) {
       // Hunger drives foraging only to the extent it is not already answered by
       // what you carry — but the reserve is generous. A first attempt cut the
@@ -740,7 +740,7 @@ export class Brain {
       const laden = Math.min(1, tree.fruit / 8);
       return (hunger * 2.3 * shortfall + person.traits.greed * 0.35) * (0.6 + laden * 0.7)
         * (1 + variety * 0.2)
-        * this.worthRatio(this.fruitWorth(person, tree))
+        * this.worthRatio(this.fruitWorth(person, tree, ctx))
         * this.proximityBonus(person, tree, ctx.sightRadius);
     };
     // Two candidates rather than one, and the reason is worth recording because
@@ -758,7 +758,7 @@ export class Brain {
     const edible = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
       t => reachable(t) && (ITEMS[t.def.fruitItem ?? '']?.nutrition ?? 0) > 0);
     const worthwhile = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
-      t => reachable(t) && this.fruitWorth(person, t) > 0);
+      t => reachable(t) && this.fruitWorth(person, t, ctx) > 0);
     fruitTree = !edible ? worthwhile
       : !worthwhile || worthwhile.id === edible.id ? edible
       : pickScore(worthwhile) > pickScore(edible) ? worthwhile : edible;
@@ -2429,7 +2429,7 @@ export class Brain {
         // scorer cannot tell a boar from a hare — and with hunger alone driving
         // it, foraging won every single time and nobody in the world ever
         // hunted at all.
-        const craving = cravings(person);
+        const craving = cravings(person, ctx.motivation.cravings);
         const meatMacros = ITEMS.meat!.macros!;
         const payoff = quarry.def.meat / 20 * (1 + VARIETY_WEIGHT *
           (craving.protein * meatMacros.protein + craving.fat * meatMacros.fat));
@@ -2992,15 +2992,17 @@ export class Brain {
    * been carried to a stone and ground, and something that is food *now* should
    * win the tie.
    */
-  private fruitWorth(person: Person, tree: Tree): number {
+  private fruitWorth(person: Person, tree: Tree, ctx: BrainContext): number {
     const itemId = tree.def.fruitItem;
     if (itemId === null) return 0;
     const direct = ITEMS[itemId]?.nutrition ?? 0;
-    if (direct > 0) return appealOf(person, itemId);
+    if (direct > 0) return appealOf(person, itemId, VARIETY_WEIGHT,
+      ctx.motivation.cravings, ctx.motivation.beliefChoice);
     const recipe = recipeUsing(itemId);
     if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
     const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
-    const appeal = output ? appealOf(person, output) / (ITEMS[output]?.nutrition ?? 1) : 1;
+    const appeal = output ? appealOf(person, output, VARIETY_WEIGHT,
+      ctx.motivation.cravings, ctx.motivation.beliefChoice) / (ITEMS[output]?.nutrition ?? 1) : 1;
     return nutritionPerUnit(recipe, itemId) * 0.6 * appeal;
   }
 
@@ -3221,9 +3223,10 @@ export class Brain {
    * grain is not food until it has been carried to a stone, and something that
    * is food now should win the tie.
    */
-  private nodeWorth(person: Person, node: ResourceNode): number {
+  private nodeWorth(person: Person, node: ResourceNode, ctx: BrainContext): number {
     const direct = ITEMS[node.def.itemId]?.nutrition ?? 0;
-    if (direct > 0) return appealOf(person, node.def.itemId);
+    if (direct > 0) return appealOf(person, node.def.itemId, VARIETY_WEIGHT,
+      ctx.motivation.cravings, ctx.motivation.beliefChoice);
     // Everything below is the inedible case — flint, sticks, clay and wild
     // grain — and only the last of them has a recipe that turns it into food.
     // Cheap enough now that `recipeUsing` is indexed, but the early return
@@ -3231,7 +3234,8 @@ export class Brain {
     const recipe = recipeUsing(node.def.itemId);
     if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
     const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
-    const appeal = output ? appealOf(person, output) / (ITEMS[output]?.nutrition ?? 1) : 1;
+    const appeal = output ? appealOf(person, output, VARIETY_WEIGHT,
+      ctx.motivation.cravings, ctx.motivation.beliefChoice) / (ITEMS[output]?.nutrition ?? 1) : 1;
     return nutritionPerUnit(recipe, node.def.itemId) * 0.6 * appeal;
   }
 

@@ -34,7 +34,7 @@ export function urgencyCurve(value: number): number {
 /** Current physical need pressures, before personality sensitivities are added in phase 2. */
 export function drivePressures(person: Person, ctx?: AnchorContext & { time: { daylight: number }; motivation: MotivationConfig }): DrivePressures {
   let home = 0;
-  const craving = cravings(person);
+  const craving = cravings(person, ctx?.motivation.cravings ?? true);
   const variety = urgencyCurve(100 * Math.max(craving.fat, craving.protein, craving.carb));
   if (ctx?.motivation.homePressure) {
     const anchor = anchorOf(person, ctx);

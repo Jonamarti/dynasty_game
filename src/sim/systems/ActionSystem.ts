@@ -919,8 +919,8 @@ export class ActionSystem {
   }
 
   private doEat(person: Person, ctx: ActionContext): void {
-    const foodId = bestFoodFor(person);
-    if (!foodId || !consumeFood(person, foodId, ctx.tick)) {
+    const foodId = bestFoodFor(person, undefined, ctx.motivation.cravings, ctx.motivation.beliefChoice);
+    if (!foodId || !consumeFood(person, foodId, ctx.tick, ctx.motivation.cravings)) {
       this.abandon(person, 'no_food', ctx);
       return;
     }
@@ -3625,7 +3625,7 @@ export class ActionSystem {
       return;
     }
 
-    const foodId = bestFoodFor(person);
+    const foodId = bestFoodFor(person, undefined, ctx.motivation.cravings, ctx.motivation.beliefChoice);
     if (!foodId) {
       this.abandon(person, 'nothing_to_give', ctx);
       return;

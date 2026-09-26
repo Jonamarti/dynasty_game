@@ -22,4 +22,14 @@ describe('food cravings', () => {
     person.inventory.add('meat', 1);
     expect(bestFoodFor(person)).toBe('meat');
   });
+
+  it('can remove craving and belief preferences for survival ablations', () => {
+    const person = new Person('Test', 0, 0, 0, new RNG('ablated-food-choice'), 40);
+    person.macroTarget = { fat: 0, protein: 1, carb: 0 };
+    person.macroBalance = { fat: 1, protein: 0, carb: 0 };
+    person.beliefs.learn('eat:berries', 100, 1, 'own', 0);
+    expect(cravings(person, false)).toEqual({ fat: 0, protein: 0, carb: 0 });
+    expect(appealOf(person, 'berries', 0, true, false)).toBe(14);
+    expect(appealOf(person, 'berries', 0, true, true)).toBe(100);
+  });
 });

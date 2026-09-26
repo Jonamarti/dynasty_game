@@ -28,6 +28,12 @@ se apaga; la alimentación no materna sigue rechazada por defecto y puede
 aceptarse en la ablación. Los tests existentes siguen verificando lactancia y
 traslado al hogar con las reglas activadas.
 
+Conectados `cravings` y `beliefChoice` a los impulsos, valoración y selección
+de comida. Desactivarlos da una comida neutral por nutrición y elimina el
+sesgo del macro deseado o de la expectativa aprendida, respectivamente; ambos
+siguen activados por defecto. La prueba de macros verifica la selección de
+valores neutrales y aprendidos.
+
 ## 2026-09-26 — M15 fase 1a, contar las muertes
 
 El informe de semillas mostraba cero muertes en DEMOGRAPHY aunque HISTORY
