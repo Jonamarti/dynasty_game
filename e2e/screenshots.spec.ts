@@ -182,7 +182,9 @@ test('tour', async ({ page }) => {
     await page.screenshot({ path: DIR + '/10-tree-menu.png' });
     await page.keyboard.press('Escape');
   }
-  await page.locator('.hud-button', { hasText: 'Resume' }).click();
+  // The pause overlay intercepts input over the HUD, so click its own control
+  // instead of the identically named HUD button underneath it.
+  await page.locator('.pausemenu [data-act="resume"]').click();
 
   // The kit tab. A tree is selected at this point in the tour, and a tree has no
   // tabs, so put the player back in the panel first.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-27 — capturas: usar el botón «Resume» de la pausa
+
+La gira visual intentaba pulsar el botón del HUD cubierto por la pausa. El
+selector ahora apunta al botón «Resume» del propio menú de pausa, el único que
+puede recibir el clic mientras el overlay está abierto.
+
 ## 2026-09-26 — M15 1e, archivar la comparación de presión de hogar
 
 La gira de 24 capturas en 5 recorridos queda en
