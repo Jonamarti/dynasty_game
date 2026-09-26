@@ -17,6 +17,12 @@ recursos lejanos antes del hambre crítica. Hace falta instrumentar la
 disponibilidad de comida dentro/fuera del alcance y repetir en otros escenarios
 antes de corregirlo. No ajustar coeficientes hasta aislar el mecanismo.
 
+**Resultado del arreglo diagnóstico, 2026-09-26.** El fallback hace que el
+forrajeo intente comida fuera del alcance del ancla cuando no hay un nodo
+comestible dentro. La cohorte `lean` de 20 semillas subió de 50,6% a 56,0%,
+pero no alcanza la puerta de 60,9%; el hambre bajó de 533 a 511 muertes y la sed
+subió de 80 a 96. La fase sigue abierta y no se debe presentar como resuelta.
+
 ## M15 fase 1a — `DemographyWatch.finish()` consumía iteradores, 2026-09-26
 
 **Corregido.** La ejecución `lean`, semilla `century`, registró 38 muertes en

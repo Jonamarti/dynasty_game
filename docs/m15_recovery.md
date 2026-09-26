@@ -14,6 +14,7 @@ Mediciones en curso. Los artefactos completos de estas cohortes están en
 | Solo `homePressure` apagado | 61,7% | 5/20 | 559: starvation 435, dehydration 15, exposure 20, murder 74, old age 15 | 56,5% / 5,7%; 31,5% | 0/0 |
 | `homePressure` y `reachFilter` apagados | 83,9% | 0/20 | 320: starvation 220, dehydration 12, exposure 25, murder 47, old age 16 | 55,5% / 5,5%; 41,4% | 0/0 |
 | Solo `kinDefence` apagado | 50,6% | 4/20 | 698: starvation 533, dehydration 80, exposure 49, murder 22, old age 14 | idéntico al control | 0/0 |
+| Fallback de comida fuera del alcance, M15 1d | 56,0% | 1/20 | 671: starvation 511, dehydration 96, exposure 25, murder 25, old age 14 | 68,4% / 8,8%; 22,7% | 0/0 |
 
 HOME recoge también distancia diurna, percentiles infantiles y acciones en los
 archivos completos. KIN no tuvo ataques infantiles observados en ninguna de
@@ -45,5 +46,16 @@ estas tres cohortes; `0/0` es ausencia de muestra, no una defensa aprobada.
   detalle necesita instrumentación antes de corregirlo.
 - Apagar solo `kinDefence` queda bit-idéntico al control en `lean` y también
   registra 0/0 en KIN. No hubo ataques infantiles que pudieran activar la regla.
+- El fallback de alimento elevó la supervivencia 5,4 puntos, pero quedó en
+  56,0%, por debajo de la puerta. Las muertes por hambre bajaron 22 (533 a
+  511), mientras subieron las de sed de 80 a 96. Se activó 267.795 veces en la
+  cohorte. Hay señal sobre la búsqueda, pero no basta para declarar la fase
+  recuperada.
+- En una comparación diagnóstica separada de 5 semillas, el filtro descartó
+  88.722 candidatos en el control y cero cuando `reachFilter` estaba apagado;
+  este último dio 58,8% frente a 50,7%. Al apagar también `homePressure`, la
+  supervivencia fue 81,4% y las oportunidades accesibles aumentaron a 649.918.
+  Estas muestras cortas explican el mecanismo pero no sustituyen las cohortes
+  de 20 semillas.
 - Faltan las otras nueve ablaciones individuales y las repeticiones en
   `century` y `crowded`. La fase 1c y la fase 1e siguen abiertas.

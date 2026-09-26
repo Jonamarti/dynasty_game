@@ -30,6 +30,10 @@ no encuentra alimento dentro del alcance y la necesidad aún no es crítica. As�
 se evita esperar a que el hambre urgente sea la primera ocasión de buscar en un
 radio más amplio. Telemetría `FOOD ACCESS` mide cuándo se activa esta salida.
 
+Medida la cohorte `lean` de 20 semillas después del fallback: 56,0% (+5,4 puntos
+vs. M13 fases 2-6), con 1/20 colapsos y 267.795 fallbacks. Mejora, pero sigue
+por debajo del umbral 60,9%; M15 fase 1 continúa abierta.
+
 La consulta adicional para diagnóstico sólo se ejecuta con telemetría habilitada;
 la segunda consulta funcional ocurre únicamente cuando no hay comida en alcance.
 
