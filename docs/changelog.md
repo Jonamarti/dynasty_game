@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-26 — M15 1e, archivar la gira visual del antojo proteico
+
+La gira de Playwright (24 capturas, 5 recorridos) se conserva en
+`artifacts/screenshots/m15-phase1e-protein-craving/` como hito cronológico para
+`development_progress`.
+
 ## 2026-09-26 — M15 1e, registrar el resultado de la variante proteica
 
 `lean` promedia 56,0% en 20 semillas y `century` 97,0%; la variante no pasa el
