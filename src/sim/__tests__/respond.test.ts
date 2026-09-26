@@ -110,6 +110,18 @@ describe('a blow reaches somebody committed to something', () => {
       stop.personId === teacher.id && stop.action === 'teach' && stop.reason === 'thirsty'
     )).toBe(true);
   });
+
+  it('can isolate need interruptions without disabling attack or family checks', () => {
+    const { sim, teacher } = aLesson();
+    sim.config.motivation.interruptSocialNeeds = false;
+    teacher.needs.thirst = 60;
+    teacher.order = 'teach';
+
+    sim.step();
+
+    expect(teacher.action).toBe('teach');
+    expect(teacher.actionTimer).toBe(49);
+  });
 });
 
 describe('somebody set upon', () => {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-26 — M15 1d, aislar interrupciones por necesidad en verbos sociales
+
+Se añade `motivation.interruptSocialNeeds`, activo por defecto, para aislar las
+interrupciones de sed, hambre y frío sin apagar los controles de ataque,
+separación familiar o límite de trabajo. La prueba de `teach` fija esa frontera;
+las cohortes para medir la compensación demográfica están en curso.
+
 ## 2026-09-26 — M15, clasificar el rojo de distancia en `craft`
 
 La corrida aislada registró 516 incidentes y una caída de distancia entre

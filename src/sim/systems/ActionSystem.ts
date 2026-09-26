@@ -866,7 +866,11 @@ export class ActionSystem {
     // A full pack is no reason to cut off a conversation or exchange. These
     // actions do not need free hands until their final transaction, and the
     // same rule applies to giving, trading and taking goods.
-    const reason = this.interruption(person, ctx, { ignoreLaden: true, answers });
+    const reason = this.interruption(person, ctx, {
+      ignoreLaden: true,
+      answers,
+      ignoreNeeds: !ctx.motivation.interruptSocialNeeds,
+    });
     if (!reason) return false;
     this.stop(person, reason, ctx, prefix);
     return true;
