@@ -2639,7 +2639,7 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) {
-      this.interruptSocialWork(person, ctx, 'courted_');
+      this.interruptSocialWork(person, ctx, 'interrupted_court_');
       return;
     }
 
@@ -2711,7 +2711,7 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) {
-      this.interruptSocialWork(person, ctx, 'sparred_');
+      this.interruptSocialWork(person, ctx, 'interrupted_spar_');
       return;
     }
 
@@ -2741,7 +2741,7 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) {
-      this.interruptSocialWork(person, ctx, 'taught_');
+      this.interruptSocialWork(person, ctx, 'interrupted_teach_');
       return;
     }
 
@@ -2801,7 +2801,7 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) {
-      this.interruptSocialWork(person, ctx, 'asked_');
+      this.interruptSocialWork(person, ctx, 'interrupted_ask_');
       return;
     }
 
@@ -3415,7 +3415,7 @@ export class ActionSystem {
     person.actionTimer--;
     idea.effort++;
     if (person.actionTimer > 0) {
-      this.interruptSocialWork(person, ctx, 'discussed_');
+      this.interruptSocialWork(person, ctx, 'interrupted_discuss_');
       return;
     }
 
@@ -3635,7 +3635,7 @@ export class ActionSystem {
       const feedsDependentChild = person.targetItemId === null && other.isChild &&
         (person.childIds.includes(other.id) || other.householdId === person.householdId) &&
         other.needs.hunger > person.needs.hunger + 5;
-      this.interruptSocialWork(person, ctx, 'gifted_', feedsDependentChild ? 'hunger' : undefined);
+      this.interruptSocialWork(person, ctx, 'interrupted_give_', feedsDependentChild ? 'hunger' : undefined);
       return;
     }
 
@@ -3708,7 +3708,7 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) {
-      this.interruptSocialWork(person, ctx, 'traded_');
+      this.interruptSocialWork(person, ctx, 'interrupted_trade_');
       return;
     }
 
@@ -3754,7 +3754,7 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) {
-      this.interruptSocialWork(person, ctx, 'stole_');
+      this.interruptSocialWork(person, ctx, 'interrupted_steal_');
       return;
     }
 

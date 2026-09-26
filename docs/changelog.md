@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-26 — M15 diagnóstico, contar interrupciones por verbo y motivo
+
+`sim:seeds` ahora agrupa los eventos `interrupted_<verb>_<reason>` para los
+ocho verbos, permitiendo distinguir necesidades atendidas de conversaciones
+cortadas. Los contadores usan un prefijo separado de `taught_*`, porque los
+eventos de transmisión ya usan esa raíz. Solo añade lectura de telemetría.
+
 ## 2026-09-26 — M15 fase 1d, medir interrupciones en tres cohortes
 
 Las cohortes de 20 semillas dieron `lean` normal 50,1%, all-off 60,8% y

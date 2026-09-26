@@ -100,6 +100,8 @@ interface SeedResult {
   foodAccessible: number;
   foodBlockedByReach: number;
   foodAbsentInSearch: number;
+  /** M15 phase 1d: what need or danger interrupts each timed social action. */
+  socialInterruptions: Record<string, number>;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -177,6 +179,8 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   // same reason mean survival does: on the century seed it is 0 and on eleven
   // other seeds it is 2 to 6, so one run says nothing at all.
   const counts = telemetry.snapshot();
+  const socialInterruptions = Object.fromEntries(Object.entries(counts)
+    .filter(([key]) => key.startsWith('interrupted_')));
   const pastRoots = Object.keys(counts)
     .filter(k => k.startsWith('conceived_'))
     .map(k => k.slice('conceived_'.length))
@@ -259,6 +263,7 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     foodAccessible: counts.food_accessible_at_think ?? 0,
     foodBlockedByReach: counts.food_blocked_by_reach_at_think ?? 0,
     foodAbsentInSearch: counts.food_absent_in_search_at_think ?? 0,
+    socialInterruptions,
   };
 }
 
@@ -369,6 +374,9 @@ function main(): void {
   console.log(formatHistory(results.map(r => r.history)));
   console.log('  FOOD ACCESS accessible ' + sum(r => r.foodAccessible) + ' · blocked by reach ' +
     sum(r => r.foodBlockedByReach) + ' · absent from search ' + sum(r => r.foodAbsentInSearch));
+  const interrupted = [...new Set(results.flatMap(r => Object.keys(r.socialInterruptions)))].sort();
+  console.log('  SOCIAL INTERRUPTIONS ' + (interrupted.length === 0 ? 'none' : interrupted
+    .map(key => key + '=' + sum(r => r.socialInterruptions[key] ?? 0)).join(' ')));
 
   console.log('='.repeat(78));
   console.log(
