@@ -25,8 +25,13 @@ Instrumentada la búsqueda de comida para separar hallazgos, nodos descartados
 por alcance y búsquedas sin comida. Esta telemetría no escribe estado ni usa
 RNG y se imprime en el reporte de semillas como `FOOD ACCESS`.
 
-La búsqueda de diagnóstico adicional sólo se ejecuta con telemetría habilitada;
-el cliente normal no paga esa consulta espacial extra.
+La búsqueda ahora usa un nodo fuera del alcance del ancla como alternativa si
+no encuentra alimento dentro del alcance y la necesidad aún no es crítica. Así
+se evita esperar a que el hambre urgente sea la primera ocasión de buscar en un
+radio más amplio. Telemetría `FOOD ACCESS` mide cuándo se activa esta salida.
+
+La consulta adicional para diagnóstico sólo se ejecuta con telemetría habilitada;
+la segunda consulta funcional ocurre únicamente cuando no hay comida en alcance.
 
 ## 2026-09-26 — M15 fase 1b: `--set` sin `--steps`
 

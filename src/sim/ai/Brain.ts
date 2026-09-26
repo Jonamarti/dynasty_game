@@ -706,16 +706,24 @@ export class Brain {
     // being so.
     const desperateForFood = pressedByNeed(person, ctx.needs.workLimits, 'hunger');
     const isFoodNode = (n: ResourceNode) => !n.depleted && this.nodeWorth(person, n, ctx) > 0;
-    const foodNode = this.findNode(person, ctx, isFoodNode, !desperateForFood, anchor, reach);
+    const inReachFood = this.findNode(person, ctx, isFoodNode, !desperateForFood, anchor, reach);
+    // If the home-distance filter leaves somebody with no edible destination,
+    // let them make the longer food walk before starvation is imminent. The
+    // old behaviour made them wait until `desperateForFood` disabled the filter
+    // entirely, which coupled home pressure and reach into a food-access dead
+    // zone measured by the M15 1c cohort.
+    const foodNode = inReachFood ?? (!desperateForFood
+      ? this.findNode(person, ctx, isFoodNode, false, anchor, reach) : null);
     if (telemetry.isEnabled()) {
       if (foodNode) telemetry.count('food_accessible_at_think');
-      else if (!desperateForFood && this.findNode(person, ctx, isFoodNode, false, anchor, reach)) {
+      else telemetry.count('food_absent_in_search_at_think');
+      if (!inReachFood && foodNode) {
         // M15 phase 1d: a non-urgent forager can see edible food in the search
-        // radius, but the home-distance filter removes every candidate. Count
-        // this separately from an actually empty local search before changing
-        // either the reach rule or the home pull.
+        // radius, but the home-distance filter removes the candidate it can
+        // reach. The fallback keeps the missed food from becoming a dead zone.
         telemetry.count('food_blocked_by_reach_at_think');
-      } else telemetry.count('food_absent_in_search_at_think');
+        telemetry.count('food_reach_fallback_at_think');
+      }
     }
     if (foodNode) {
       // Hunger drives foraging only to the extent it is not already answered by
