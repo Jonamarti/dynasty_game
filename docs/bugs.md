@@ -2943,3 +2943,11 @@ against a 1,724 floor. This is a single wall-clock sample; the existing
 `perf-budget` investigation records large same-build swings under matrix load.
 Re-measure it alone three times before treating it as a code regression or
 changing the threshold.
+
+**Ablación M15 de `interruptSocialNeeds`.** Con el switch apagado y las reglas
+M13/M14 activas, `lean` dio 54,3% y 527 muertes por hambre (contra 56,0% y 505
+con interrupciones activas). En all-off la supervivencia se movió en sentido
+contrario (62,5% contra 60,8%), pero también subieron homicidio y exposición
+con las interrupciones apagadas. Ninguna diferencia alcanza diez puntos; la
+cohorte no identifica una corrección segura para cerrar la puerta. La opción
+queda activa por defecto.

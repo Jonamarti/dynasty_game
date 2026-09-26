@@ -464,7 +464,10 @@ mecanismo que mata. Los candidatos ya anotados en `bugs.md` son estos:
   antes que los pesos.
 - **«Eight timed verbs still ignore thirst, hunger and cold»** (`bugs.md`, M12
   2c): una acción larga sin interrupción por sed es la clase de bug que
-  `AGENTS.md` llama de los peores del proyecto.
+  `AGENTS.md` llama de los peores del proyecto. Se comprueba el coste de
+  interrumpir los ocho verbos con `motivation.interruptSocialNeeds=false`, que
+  mantiene los demás motivos y queda activa por defecto mientras no haya una
+  variante que supere la puerta.
 - **`children-keep-close`** falla en escenarios cortos y pasa en `century`: se
   comprueba si es el mundo o el check (umbral medido sobre muy pocos días).
 

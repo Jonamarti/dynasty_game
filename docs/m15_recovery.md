@@ -261,3 +261,17 @@ en `century` y `craft`, ya clasificado como dependiente de eventos. La matriz y
 la puerta 1e no quedan cerradas. Según el plan, se para aquí y se pide al
 propietario elegir entre aceptar la pérdida de `lean` como nueva base o retirar
 una regla; no se inicia la fase 2 sin esa decisión.
+
+### Coste diagnóstico de interrupciones de necesidad en verbos sociales
+
+`motivation.interruptSocialNeeds` apaga solo sed, hambre y frío en los ocho
+verbos sociales; siguen activos golpes, reunión familiar y techo de trabajo.
+En `lean` con las diez reglas M13/M14 encendidas, 20 semillas con esta opción
+apagada dieron 54,3% de supervivencia y 527 muertes por hambre, frente a 56,0%
+y 505 con las interrupciones activas. En all-off, la opción apagada dio 62,5%
+y 262 muertes por hambre, frente a 60,8% y 339; homicidios subieron de 144 a
+183 y exposición de 25 a 54. Estas diferencias de supervivencia son menores a
+diez puntos y no resuelven la variación de estos mundos; las causas se mueven
+en sentidos distintos. No se apaga la protección por defecto, y la ablación no
+supera el gate normal de `lean` ni explica por sí sola el all-off fuera de
+margen.

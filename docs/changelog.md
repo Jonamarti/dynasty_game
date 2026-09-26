@@ -1,11 +1,11 @@
 # Changelog
 
-## 2026-09-26 — M15 1d, aislar interrupciones por necesidad en verbos sociales
+## 2026-09-26 — M15 1d, medir la ablación de interrupciones sociales
 
-Se añade `motivation.interruptSocialNeeds`, activo por defecto, para aislar las
-interrupciones de sed, hambre y frío sin apagar los controles de ataque,
-separación familiar o límite de trabajo. La prueba de `teach` fija esa frontera;
-las cohortes para medir la compensación demográfica están en curso.
+`interruptSocialNeeds=false` promedia 54,3% en el build normal y 62,5% all-off,
+frente a 56,0% y 60,8% con interrupciones activas. Los cambios en supervivencia
+son menores a diez puntos y los motivos de muerte se desplazan en sentidos
+distintos; se conserva la regla por defecto mientras sigue abierta la puerta.
 
 ## 2026-09-26 — M15, clasificar el rojo de distancia en `craft`
 
