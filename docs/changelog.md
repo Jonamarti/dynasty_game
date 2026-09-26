@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1a, contar las muertes
+
+El informe de semillas mostraba cero muertes en DEMOGRAPHY aunque HISTORY
+registraba decenas. La causa era que `finish()` recorría dos veces el iterable
+recibido: `Map.values()` es un iterador de un solo uso, consumido por la primera
+pasada. Ahora toma una instantánea antes de observar y contar. Una regresión
+fuerza una muerte asentada, confirma que el muerto sale del array vivo y verifica
+que el observador la cuenta. La prueba focalizada pasa (9/9).
+
 ## 2026-09-26 — M15, el plan maestro, y `notes5.txt`
 
 Se procesan las ocho notas de `notes5.txt` con el propietario, que también
@@ -8831,3 +8840,10 @@ in full. Grouped by the section of the plan each change came from.
 Not reconstructed here; the top-level [README](../README.md) carries the
 milestone table and the war stories, and the git history has the rest. This
 changelog starts at M6a because that is when it started being kept.
+## 2026-09-26 — M15 fase 1a, muerte asentada
+
+Añadida una prueba de regresión que fuerza una muerte, deja que `Simulation`
+retire el cuerpo del array vivo y verifica que `DemographyWatch` la cuenta
+desde el registro estable de personas. El informe de cohortes mostró 38 muertes
+en HISTORY y cero en DEMOGRAPHY; queda pendiente aislar esa discrepancia en la
+ejecución de semillas antes de cambiar el observador.

@@ -89,6 +89,24 @@ describe('demographic measurement', () => {
     expect(watch.finish([a, b], 0).causes).toEqual({ murder: 2 });
   });
 
+  it('counts a death settled by the simulation after it leaves the live array', () => {
+    const sim = new Simulation({
+      seed: 'demography-settled-death', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6 },
+    });
+    const watch = new DemographyWatch(sim.peopleById.values(), sim.config.time.ticksPerDay);
+    const victim = sim.people[0]!;
+    victim.die('starvation');
+    sim.step(); // cleanupDead removes the corpse from `people`, retaining its id.
+
+    const result = watch.finish(sim.peopleById.values(), sim.time.tick);
+    expect(sim.people).not.toContain(victim);
+    expect(sim.peopleById.get(victim.id)).toBe(victim);
+    expect(victim.alive).toBe(false);
+    expect(result.deaths).toBe(1);
+    expect(result.causes).toEqual({ starvation: 1 });
+  });
+
   it('pools counts rather than averaging seed-level mortality rates', () => {
     const empty = new DemographyWatch([], 10).finish([], 0);
     const a = { ...empty, underOne: { deaths: 1, eligible: 1, censored: 2 } };

@@ -48,7 +48,10 @@ export class DemographyWatch {
 
   finish(people: Iterable<Person>, tick: number): Demography {
     // Include the final partial day, when births and deaths can still occur.
-    this.observe(people, tick);
+    // Callers pass Map.values(), which is a one-shot iterator. Reuse a snapshot
+    // so observe() cannot consume the iterable before the mortality census.
+    const census = Array.from(people);
+    this.observe(census, tick);
     const result: Demography = {
       births: this.births.size, fertileWomen: this.fertile.size,
       fertileWomanYears: this.fertileWomanYears,
@@ -56,7 +59,7 @@ export class DemographyWatch {
       underFive: { deaths: 0, eligible: 0, censored: 0 },
       deaths: 0, deathAgeYears: 0, causes: {},
     };
-    for (const p of people) {
+    for (const p of census) {
       if (!p.alive) {
         result.deaths++;
         // Person.years is rounded down; age retains the fraction of a year.

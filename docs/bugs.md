@@ -1,5 +1,14 @@
 # Known bugs and rough edges
 
+## M15 fase 1a — `DemographyWatch.finish()` consumía iteradores, 2026-09-26
+
+**Corregido.** La ejecución `lean`, semilla `century`, registró 38 muertes en
+HISTORY y cero en DEMOGRAPHY. `finish()` llamaba a `observe(people, tick)` y
+después volvía a iterar `people`; con `sim.peopleById.values()` la primera
+pasada agota el iterador. Ahora ambas pasadas usan una instantánea. La prueba
+de regresión reproduce una muerte ya retirada del array vivo y comprueba su
+conteo y causa.
+
 ## M13, fases 4-6, 2026-09-25
 
 La respuesta familiar a agresiones y el sesgo dietético ya están instrumentados.
