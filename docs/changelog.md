@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1d, interrumpir ocho verbos temporizados
+
+Las necesidades podían dejar a quien enseñaba, pedía o daba una lección,
+discutía, cortejaba, entrenaba, daba, comerciaba o robaba comprometido hasta el
+final del temporizador. Los ocho verbos ahora consultan `interruption()` por tick y comunican el motivo;
+ignoran el límite de carga, que no aplica mientras conversan. Sus ciclos
+máximos son 90 ticks, por debajo del umbral que exige guardar progreso. Se
+añadió regresión de sed en una lección comprometida; medir la cohorte lean antes
+de cerrar la puerta.
+
 ## 2026-09-26 — M15 diagnóstico, respetar los argumentos de `why`
 
 `npm run why -- --scenario … --from …` hacía que `vite-node` consumiera los

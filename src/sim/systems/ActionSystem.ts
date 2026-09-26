@@ -856,6 +856,17 @@ export class ActionSystem {
     this.finish(person);
   }
 
+  /** A social timer is still a committed action: needs must be able to reach it. */
+  private interruptSocialWork(person: Person, ctx: ActionContext, prefix: string): boolean {
+    // A full pack is no reason to cut off a conversation or exchange. These
+    // actions do not need free hands until their final transaction, and the
+    // same rule applies to giving, trading and taking goods.
+    const reason = this.interruption(person, ctx, { ignoreLaden: true });
+    if (!reason) return false;
+    this.stop(person, reason, ctx, prefix);
+    return true;
+  }
+
   // -------------------------------------------------------------------------
   // Survival
   // -------------------------------------------------------------------------
@@ -2622,7 +2633,10 @@ export class ActionSystem {
       return;
     }
     person.actionTimer--;
-    if (person.actionTimer > 0) return;
+    if (person.actionTimer > 0) {
+      this.interruptSocialWork(person, ctx, 'courted_');
+      return;
+    }
 
     // Charm helps, but only at the margin: being liked matters far more.
     const charm = 3 + person.skillFactor('persuade') * 6;
@@ -2691,7 +2705,10 @@ export class ActionSystem {
       return;
     }
     person.actionTimer--;
-    if (person.actionTimer > 0) return;
+    if (person.actionTimer > 0) {
+      this.interruptSocialWork(person, ctx, 'sparred_');
+      return;
+    }
 
     person.practice('fight', SPAR_TRAIN);
     other.practice('fight', SPAR_TRAIN);
@@ -2718,7 +2735,10 @@ export class ActionSystem {
       return;
     }
     person.actionTimer--;
-    if (person.actionTimer > 0) return;
+    if (person.actionTimer > 0) {
+      this.interruptSocialWork(person, ctx, 'taught_');
+      return;
+    }
 
     const regard = ctx.relationships.opinion(pupil.id, person.id) / 100;
     const taught = ctx.knowledge.teach(person, pupil, regard, ctx.tick, ctx.rng);
@@ -2775,7 +2795,10 @@ export class ActionSystem {
       return;
     }
     person.actionTimer--;
-    if (person.actionTimer > 0) return;
+    if (person.actionTimer > 0) {
+      this.interruptSocialWork(person, ctx, 'asked_');
+      return;
+    }
 
     // Whether they agree at all. Their opinion of the asker, not the asker's of
     // them: being willing to spend an afternoon on somebody is a fact about the
@@ -3386,7 +3409,10 @@ export class ActionSystem {
     }
     person.actionTimer--;
     idea.effort++;
-    if (person.actionTimer > 0) return;
+    if (person.actionTimer > 0) {
+      this.interruptSocialWork(person, ctx, 'discussed_');
+      return;
+    }
 
     const repeat = idea.discussedWith.includes(partner.id);
     if (!repeat) idea.discussedWith.push(partner.id);
@@ -3600,7 +3626,10 @@ export class ActionSystem {
       return;
     }
     person.actionTimer--;
-    if (person.actionTimer > 0) return;
+    if (person.actionTimer > 0) {
+      this.interruptSocialWork(person, ctx, 'gifted_');
+      return;
+    }
 
     // M11 phase 17a: a gift of something that is not food — `Brain`'s `gift`,
     // which names the thing. `gift` in `EVENT_TYPES` had been declared since
@@ -3670,7 +3699,10 @@ export class ActionSystem {
       return;
     }
     person.actionTimer--;
-    if (person.actionTimer > 0) return;
+    if (person.actionTimer > 0) {
+      this.interruptSocialWork(person, ctx, 'traded_');
+      return;
+    }
 
     const myFood = person.inventory.bestFood();
     const theirFood = other.inventory.bestFood();
@@ -3713,7 +3745,10 @@ export class ActionSystem {
       return;
     }
     person.actionTimer--;
-    if (person.actionTimer > 0) return;
+    if (person.actionTimer > 0) {
+      this.interruptSocialWork(person, ctx, 'stole_');
+      return;
+    }
 
     const carried = other.inventory.entries();
     if (carried.length === 0) {

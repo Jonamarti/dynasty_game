@@ -96,6 +96,20 @@ describe('a blow reaches somebody committed to something', () => {
     sim.step();
     expect(teacher.action).toBe('teach');
   });
+
+  it('lets thirst interrupt a committed lesson and reports the reason', () => {
+    const { sim, teacher } = aLesson();
+    teacher.needs.thirst = 60;
+    teacher.order = 'teach';
+    sim.interruptions.length = 0;
+
+    sim.step();
+
+    expect(teacher.action).not.toBe('teach');
+    expect(sim.interruptions.some(stop =>
+      stop.personId === teacher.id && stop.action === 'teach' && stop.reason === 'thirsty'
+    )).toBe(true);
+  });
 });
 
 describe('somebody set upon', () => {

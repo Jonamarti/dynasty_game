@@ -487,16 +487,18 @@ phase 5 (territory) and 6 (feuds) build on standing between peoples.
 
 ## Found shipping M12 phase 2c (the struck respond), 2026-09-24
 
-### Eight timed verbs still ignore thirst, hunger and cold
+### Fixed M15 phase 1d: needs interrupt eight timed verbs
 
-`teach`, `ask`, `discuss`, `court`, `spar`, `give`, `trade` and `steal` run
-a timer and never call `interruption`. Phase 2c made a blow reach them (one
-check in `ActionSystem.execute`), but a need still cannot: a lesson of
-ninety ticks runs to the end however thirsty the teacher gets. Left alone
-because giving them the working thresholds changes how long a lesson may
-run, and `technologies passed on` is the number that would move — a pass of
-its own, measured on twenty seeds, with each verb added to `Brain`'s
-`CUT_OFF_AT_ONCE` in the same commit or it will loop the way `talk` did.
+`teach`, `ask`, `discuss`, `court`, `spar`, `give`, `trade` and `steal` now
+check `interruption()` on each active timer tick. Previously a committed
+teacher or trader could not respond to thirst, hunger or cold until the verb
+finished. They ignore the full-pack interruption because their transactions
+do not require free hands. Their timers are 15–90 ticks, below the 140-tick
+banking line; an interruption abandons only the unfinished interaction, before
+it changes knowledge, relationships or inventory. The `respond.test.ts`
+regression confirms a thirsty committed teacher stops with the reason surfaced
+for an order. The 20-seed M15 cohort measures the survival and transmission
+cost before the phase gate is closed.
 
 ### Almost nobody hits back
 
