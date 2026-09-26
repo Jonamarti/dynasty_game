@@ -1,5 +1,19 @@
 # Known bugs and rough edges
 
+## M15 fase 1d — diagnóstico ampliado, 2026-09-26
+
+La ablación ya corregida `infantsStill=false` baja lean a 34,1% (7/20 colapsos;
+702 muertes, incluidas 139 por deshidratación), por lo que se conserva la regla.
+La medición anterior de 53,6% dejaba el movimiento bloqueado y no representa la
+ablación completa. Para `bands-take-sides`, los agravios, acusaciones y demandas
+rechazadas sí mueven `BandRelations`, al igual que matrimonio en sentido positivo.
+La intrusión territorial solo mueve postura según escasez; falta rivalidad
+territorial autónoma en bandas abastecidas y una vía separada de estatus o
+dominación. El check mide spread (>20), no enfrentamiento activo: `lean` tuvo
+16/20 mundos elegibles sobre el umbral. Se deja sin rebajar y se reserva una
+propuesta de incursión motivada por rivalidad para fase 8. Detalle en
+`m15_recovery.md`.
+
 ## M15 fase 1c — el gate normal de lean sigue abierto, 2026-09-26
 
 **All-off corregido.** En la primera medición, `infantsStill=false` liberaba el

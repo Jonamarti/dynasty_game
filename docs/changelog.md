@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1d, completar diagnóstico infantil y de bandas
+
+Se repitió la ablación `infantsStill=false` después de conectar el interruptor
+al movimiento: lean cae a 34,1% (7/20 colapsos), por lo que se conserva la
+protección de bebés. `BandRelations` permite agravios, matrimonios y presión
+territorial ligada a escasez; faltan causas autónomas de estatus/dominación y
+resentimiento territorial en bandas abastecidas. `bands-take-sides` mide spread
+de postura, no conflicto activo. Se registró el diagnóstico y la cohorte en
+`m15_recovery.md`; no se modificaron coeficientes ni umbral.
+
 ## 2026-09-26 — M15 fase 1c, cerrar la matriz de ablaciones y recuperar la base
 
 Se completaron las cohortes de 20 semillas en `lean`, `century` y `crowded`

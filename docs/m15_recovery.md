@@ -17,7 +17,8 @@ Resultados de las cohortes de 20 semillas. Los artefactos completos están en
 | Solo `kinDefence` apagado | 50,6% | 4/20 | 698: starvation 533, dehydration 80, exposure 49, murder 22, old age 14 | idéntico al control | 0/0 |
 | Fallback de comida fuera del alcance, M15 1d | 56,0% | 1/20 | 671: starvation 511, dehydration 96, exposure 25, murder 25, old age 14 | 68,4% / 8,8%; 22,7% | 0/0 |
 | Suprimir `go_home` sobre la línea de trabajo (experimento revertido) | 56,8% | 2/20 | 584: starvation 504, dehydration 7, exposure 21, murder 36, old age 16 | 67,0% / 8,5%; 25,4% | 0/0 |
-| Solo `infantsStill` apagado | 53,6% | 3/20 | 675: starvation 528, dehydration 86, exposure 16, murder 31, old age 14 | 68,9% / 8,8%; 23,2% | 0/0 |
+| Solo `infantsStill` apagado (movimiento aún bloqueado) | 53,6% | 3/20 | 675: starvation 528, dehydration 86, exposure 16, murder 31, old age 14 | 68,9% / 8,8%; 23,2% | 0/0 |
+| Solo `infantsStill` apagado, compuerta completa | 34,1% | 7/20 | 702: starvation 500, dehydration 139, exposure 19, murder 28, old age 16 | 70,5% / 8,4%; niño >12: 21,8% | 0/0 |
 | Solo `urgentNursing` apagado | 54,7% | 2/20 | 753: starvation 642, dehydration 37, exposure 14, murder 46, old age 14 | 64,8% / 8,5%; 28,1% | 0/0 |
 | Solo `motherOnlyFeeds` apagado | 57,6% | 1/20 | 655: starvation 486, dehydration 76, exposure 41, murder 36, old age 16 | 68,9% / 8,6%; 22,6% | 0/0 |
 | Solo `babyToHouse` apagado | 58,2% | 1/20 | 685: starvation 325, dehydration 62, exposure 246, murder 38, old age 14 | 64,6% / 8,7%; 28,6% | 0/0 |
@@ -170,3 +171,31 @@ culture), `the-tree-is-climbed` y `bands-dont-overbuild` (herders),
 `compost-answers-exhaustion` (stewards). Las mediciones previas y las
 limitaciones por check están clasificadas en `docs/bugs.md`; estos rojos
 siguen siendo tripwires de escenario, no una puerta de supervivencia cumplida.
+
+## Diagnóstico M15 1d: `infantsStill` y `bands-take-sides`
+
+La cohorte corregida para la ablación infantil (`lean`, 20 semillas) deja
+34,1% de supervivencia y 7/20 colapsos, frente a 56,0% y 1/20 con todas las
+reglas activadas y el fallback alimentario. `infantsStill=false` produjo 139 muertes por deshidratación
+y 500 por hambre; la estimación HOME observó a 21,8% de los niños a más de 12
+casillas del progenitor. El resultado anterior (53,6%) era inválido para
+medir la regla: MovementSystem seguía impidiendo el movimiento. Con la compuerta
+completa, el mecanismo protege a los dependientes y no es candidato a retirar.
+
+El diagnóstico de `bands-take-sides` encuentra mecanismos para agravios y
+rencillas: los delitos entre bandas, acusaciones de homicidio y demandas
+rechazadas alteran `BandRelations`; el matrimonio entre bandas mejora los
+términos. La cuarta vía, intrusión territorial, reduce la postura en función
+de la escasez de despensa. Por tanto, no genera resentimiento territorial
+autónomo en bandas bien abastecidas. Comercio usa el motor de delitos (`trade`
+en `DEED_WEIGHT`), no un motor independiente; tampoco hay una vía separada de
+estatus o dominación para iniciar enemistades. Las incursiones exigen una
+postura ya hostil y la agravan, así que no originan por sí solas esa causa.
+
+La cohorte `lean` de 20 semillas registró 16/20 mundos elegibles (60 días)
+con spread de postura >20. El check sí detecta variación entre la pareja más
+amistosa y la más hostil, pero no exige conflicto activo; un matrimonio puede
+elevar el extremo amistoso. Su aprobación es indicio del rango de relaciones,
+no prueba de que dos bandas bien alimentadas se enfrenten. Queda por añadir
+una propuesta de incursión motivada por rivalidad/estatus en fase 8, como
+indica el plan, y medirla separadamente. No se cambió el umbral.
