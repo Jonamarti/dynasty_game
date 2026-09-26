@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-26 — M15 1d, registrar la traza local del sueño nocturno
+
+Una ejecución `why` encuentra `rest` por encima de `go_home` y sin opción
+`sleep` en el intervalo nocturno de una persona alejada. Se registra como
+hipótesis para medir, sin retocar el peso de retorno ni presentar una traza
+individual como causa poblacional. Se etiqueta la tabla anterior de fase 1c
+como histórica, anterior a los cambios 1d.
+
 ## 2026-09-26 — M15 1d, archivar la comparación de interrupciones sociales
 
 La gira visual de Playwright, 24 capturas en 5 recorridos, queda en

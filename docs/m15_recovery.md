@@ -74,7 +74,7 @@ margen. Sin `nightSleep`, la exposición salta de 37 a 437 muertes; sin
 exposición. Las reglas de cuidado, sueño y quietud cambian de forma material
 las causas aunque la supervivencia total de algunas variantes siga sobre 95%.
 
-## Puerta pendiente
+## Puerta pendiente — medidas históricas de la fase 1c, antes de los arreglos 1d
 
 - La regla activada queda por debajo de la puerta `lean` de 60,9%.
 - La corrida previa con todo apagado dio 56,0%, pero era una ablación
@@ -275,3 +275,10 @@ diez puntos y no resuelven la variación de estos mundos; las causas se mueven
 en sentidos distintos. No se apaga la protección por defecto, y la ablación no
 supera el gate normal de `lean` ni explica por sí sola el all-off fuera de
 margen.
+
+La traza puntual `npm run why -- lean 0 220 300` sigue a Garur durante la
+noche. Entre los ticks 223–239 `rest` gana con 0,77–0,93 frente a `go_home`
+con 0,42–0,55; `sleep` no está entre las opciones puntuadas. Al tick 240
+empieza `haul`. Esto apunta a un conflicto local entre descansar fuera del
+alcance nocturno del ancla y la querencia de volver, pero es una persona y un
+intervalo: no cuantifica el coste ni autoriza subir el peso de vuelta a casa.

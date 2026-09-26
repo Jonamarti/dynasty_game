@@ -2951,3 +2951,11 @@ contrario (62,5% contra 60,8%), pero también subieron homicidio y exposición
 con las interrupciones apagadas. Ninguna diferencia alcanza diez puntos; la
 cohorte no identifica una corrección segura para cerrar la puerta. La opción
 queda activa por defecto.
+
+**Traza puntual de `nights-are-slept`.** `npm run why -- lean 0 220 300`
+encuentra que Garur, durante los ticks 223–239 de noche, elige `rest` (0,77–0,93)
+por encima de `go_home` (0,42–0,55); `sleep` ni se puntúa. Al comenzar el día,
+vuelve a `haul`. Esto es una hipótesis concreta sobre el conflicto entre el
+radio nocturno y la vuelta al ancla, no una cohorte ni permiso para subir pesos:
+si aumenta el tiempo de retorno podría recortar recolección, y la cohorte de
+supervivencia sigue bajo el gate.
