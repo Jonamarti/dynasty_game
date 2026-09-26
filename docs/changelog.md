@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-26 — M15, añadir la petición de clase de tecnología grupal al plan
+
+Se incorpora al bloque 2d la convocatoria de miembros cercanos que puedan oír
+y estén dispuestos a asistir, con aprendizaje simultáneo mediante
+`KnowledgeSystem.teach` y una formación sentada ante quien enseña. Queda tras la
+puerta 1e y conserva las reglas de privacidad y determinismo del proyecto.
+
 ## 2026-09-26 — M15 1e, archivar la gira visual del antojo proteico
 
 La gira de Playwright (24 capturas, 5 recorridos) se conserva en

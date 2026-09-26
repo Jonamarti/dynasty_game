@@ -544,6 +544,22 @@ lo haya probado, visto o se lo hayan contado.
   lectores en `ask` y `teach`. Al aprender una técnica se reciben las
   creencias de sus productos.
 
+- **2d.1. Convocar una lección de grupo** (petición del propietario,
+  `docs/notes_for_m15.txt`). El personaje del jugador puede llamar a los
+  miembros cercanos de su propia banda para enseñarles una tecnología que haya
+  descubierto o perfeccionado. Solo acuden quienes pueden oír la llamada y
+  quieren atender: la disposición tiene en cuenta la relación con quien llama,
+  la importancia de lo que ya hacen, la autoridad percibida y la curiosidad;
+  no se revela al jugador el estado privado de quienes no vienen. Los
+  asistentes se colocan sentados frente al docente antes de recibir la
+  explicación. La enseñanza reutiliza las reglas de `KnowledgeSystem.teach`
+  para cada oyente elegible, con orden determinista por id y sin saltarse sus
+  requisitos; el aviso de la convocatoria y los motivos de quienes no acuden
+  deben ser visibles mediante la telemetría/refusal existente sin filtrar
+  información privada. Requiere medición de asistentes, tecnologías
+  transmitidas, interrupciones y coste demográfico contra la base de fase 1.
+  **Bloqueada tras la puerta 1e** hasta que el propietario decida la base M15.
+
 **Qué cambia respecto al plan de origen:** 2a es nuevo (lo pendiente de la fase
 6). Las sub-redes de la fase 13 harán que `techAppeal` se evalúe sobre muchos
 más nodos: escríbelo por receta (producto frente a ingrediente) y no por
