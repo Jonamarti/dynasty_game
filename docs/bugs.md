@@ -506,8 +506,13 @@ the preceding build. Because `give` also carries the feeding action, treating
 hunger as a reason to abandon food already on hand can interrupt help to a
 hungrier dependent. `doGive` now uses `interruption(..., answers: 'hunger')`
 only for food going to a dependent child; thirst, cold and danger still stop
-the action. A regression covers a hungry parent feeding a hungrier child; a
-fresh cohort is required before retaining the change.
+the action. A regression covers a hungry parent feeding a hungrier child. The
+cohort with that exception still measures 50,1% survival, 284 under-five
+starvation deaths, and 2/20 collapses, so the exception did not recover lean's
+gate and cannot be called a survival fix. `century` measures 96,2%; the
+all-off reproduction is now 60,8%, 5,1 points below the M13 base. Full results
+and causes are in `m15_recovery.md`; investigate which interrupted verbs
+answer survival needs before keeping the broad interruption pass.
 
 ### Almost nobody hits back
 

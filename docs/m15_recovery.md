@@ -199,3 +199,25 @@ elevar el extremo amistoso. Su aprobación es indicio del rango de relaciones,
 no prueba de que dos bandas bien alimentadas se enfrenten. Queda por añadir
 una propuesta de incursión motivada por rivalidad/estatus en fase 8, como
 indica el plan, y medirla separadamente. No se cambió el umbral.
+
+## M15 1d: cohortes tras interrumpir verbos sociales (20 semillas)
+
+Los artefactos de consola están en `artifacts/m15-1d-interruptions-*.txt`.
+Estas corridas incluyen las interrupciones de sed, hambre, frío y peligro en
+`teach`, `ask`, `discuss`, `court`, `spar`, `give`, `trade` y `steal`, más la
+exención de hambre al dar comida a un dependiente infantil.
+
+| Cohorte | Supervivencia | Colapsos | DEMOGRAPHY: muertes y causas | Hambre: infantes / niños / adultos | HOME: cerca noche / sueño / descanso; niño >12 |
+|---|---:|---:|---|---|---|
+| `lean`, reglas activadas | 50,1% | 2/20 | 717: starvation 570, dehydration 78, exposure 30, murder 23, old age 16 | 284 / 70 / 216 | 68,6% / 8,6% / 7,1%; 23,2% |
+| `lean`, all-off | 60,8% | 1/20 | 559: starvation 339, dehydration 37, exposure 25, murder 144, old age 14 | 183 / 38 / 118 | 47,3% / 0% / 12,5%; 55,2% |
+| `century`, reglas activadas | 96,2% | 0/20 | 261: starvation 104, dehydration 87, exposure 28, murder 26, old age 16 | 88 / 4 / 12 | 76,7% / 10,4% / 5,5%; 11,5% |
+
+El gate `century` pasa su mínimo de 90,5%. `lean` normal cae 5,9 puntos
+frente al fallback medido (56,0%); no alcanza el 60,9%. All-off queda 5,1
+puntos por debajo de la base M13 (65,9%), una décima fuera del margen de cinco,
+y suben las muertes por hambre de 255 a 339 frente al all-off corregido previo.
+Aunque el cambio deja reaccionar a los personajes comprometidos, las cohortes
+no demuestran un beneficio demográfico y apuntan a que una acción social de
+comida/intercambio necesita decir qué necesidad está atendiendo. No se toca
+ningún peso ni se cierra la puerta 1e.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1d, medir interrupciones en tres cohortes
+
+Las cohortes de 20 semillas dieron `lean` normal 50,1%, all-off 60,8% y
+`century` 96,2%. `century` supera su gate; `lean` y la reproducción all-off
+fallan sus márgenes, y las muertes por hambre suben. Se conserva el diagnóstico
+en `m15_recovery.md`; falta rastrear los verbos que responden a la necesidad
+antes de decidir qué interrupciones retener.
+
 ## 2026-09-26 — capturas M15 fase 1d, verbos interrumpibles
 
 `npm run shots` pasó 5/5. Se archivó la gira completa de 29 capturas en
