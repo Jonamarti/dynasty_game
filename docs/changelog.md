@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1c, cerrar la matriz de ablaciones y recuperar la base
+
+Se completaron las cohortes de 20 semillas en `lean`, `century` y `crowded`
+para la build actual, cada interruptor individual y all-off. All-off ahora
+queda dentro de 2,3 puntos de la base M13 en lean, 2,2 en century y coincide
+con crowded. La causa del falso desvío era un bloqueo de movimiento infantil
+que seguía activo con `infantsStill=false`. El build normal aún falla el gate
+lean (56,0% frente a 60,9% requerido). `homePressure=false` supera la puerta
+de supervivencia en los tres escenarios, pero desactiva una regla de diseño;
+la fase 1e queda a decisión del propietario antes de avanzar a fase 2. Tablas
+y causas en `m15_recovery.md`.
+
 ## 2026-09-26 — M15 fase 1c, completar la ablación de movilidad infantil
 
 La opción `infantsStill=false` ya permite que bebés se muevan por los dos

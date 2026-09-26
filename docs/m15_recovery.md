@@ -1,6 +1,6 @@
 # M15 fase 1c — recuperación y ablaciones
 
-Mediciones en curso. Los artefactos completos de estas cohortes están en
+Resultados de las cohortes de 20 semillas. Los artefactos completos están en
 `artifacts/m15-1c-*.txt` (carpeta local ignorada por Git).
 
 ## `lean`, 20 semillas
@@ -27,6 +27,51 @@ Mediciones en curso. Los artefactos completos de estas cohortes están en
 HOME recoge también distancia diurna, percentiles infantiles y acciones en los
 archivos completos. KIN no tuvo ataques infantiles observados en ninguna de
 estas tres cohortes; `0/0` es ausencia de muestra, no una defensa aprobada.
+
+## `crowded`, 20 semillas
+
+| Variante | Supervivencia | Colapsos | DEMOGRAPHY: muertes y causas | HOME: noche cerca / sueño; niño >12 | KIN |
+|---|---:|---:|---|---|---:|
+| Reglas activadas (fallback actual) | 99,7% | 0/20 | 34: dehydration 7, starvation 13, old age 14 | 75,6% / 11,6%; 19,8% | 0/0 |
+| Todas apagadas, compuerta de movilidad corregida | 100,0% | 0/20 | 15: old age 15 | 54,8% / 0%; 38,0% | 0/0 |
+| Solo `reachFilter` apagado | 99,4% | 0/20 | 43: dehydration 13, starvation 15, old age 15 | 75,0% / 12,6%; 19,7% | 0/0 |
+| Solo `homePressure` apagado | 100,0% | 0/20 | 14: murder 1, old age 13 | 57,9% / 8,9%; 30,2% | 0/0 |
+| Solo `nightSleep` apagado | 99,7% | 0/20 | 38: dehydration 6, starvation 17, old age 15 | 79,5% / 0%; 20,6% | 0/0 |
+| Solo `infantsStill` apagado | 99,7% | 0/20 | 33: dehydration 8, starvation 10, old age 15 | 75,5% / 12,1%; 19,4% | 0/0 |
+| Solo `urgentNursing` apagado | 99,3% | 0/20 | 50: dehydration 7, starvation 29, old age 14 | 75,9% / 12,7%; 19,2% | 0/0 |
+| Solo `motherOnlyFeeds` apagado | 99,5% | 0/20 | 37: dehydration 7, starvation 15, old age 15 | 75,7% / 11,6%; 19,7% | 0/0 |
+| Solo `babyToHouse` apagado | 99,8% | 0/20 | 33: dehydration 6, starvation 12, old age 15 | 76,0% / 12,0%; 20,3% | 0/0 |
+| Solo `kinDefence` apagado | 99,7% | 0/20 | idéntico al control | idéntico al control | 0/0 |
+| Solo `cravings` apagado | 99,7% | 0/20 | 39: dehydration 7, starvation 18, old age 14 | 76,8% / 11,8%; 19,1% | 0/0 |
+| Solo `beliefChoice` apagado | 99,7% | 0/20 | idéntico al control | idéntico al control | 0/0 |
+
+DEMOGRAPHY nombra las causas sin víctimas en una cohorte solo cuando su cuenta
+es cero. KIN fue 0/0 en todas: el escenario no ofrece ataques infantiles con
+testigo para medir la defensa.
+
+## `century`, 20 semillas
+
+| Variante | Supervivencia | Colapsos | DEMOGRAPHY: muertes y causas | HOME: noche cerca / sueño; niño >12 | KIN |
+|---|---:|---:|---|---|---:|
+| Reglas activadas (fallback actual) | 97,2% | 0/20 | 212: dehydration 83, exposure 37, murder 22, starvation 55, old age 15 | 76,6% / 10,8%; 11,0% | 0/0 |
+| Todas apagadas, compuerta de movilidad corregida | 97,7% | 0/20 | 204: dehydration 15, exposure 19, murder 111, starvation 43, old age 16 | 47,0% / 0%; 49,6% | 0/0 |
+| Solo `reachFilter` apagado | 97,7% | 0/20 | 196: dehydration 76, exposure 19, murder 28, starvation 59, old age 14 | 76,5% / 10,3%; 11,4% | 0/0 |
+| Solo `homePressure` apagado | 97,2% | 0/20 | 179: dehydration 9, exposure 23, murder 52, starvation 78, old age 17 | 59,1% / 6,8%; 29,0% | 0/0 |
+| Solo `nightSleep` apagado | 90,0% | 0/20 | 561: dehydration 50, exposure 437, murder 36, starvation 23, old age 15 | 81,6% / 0%; 16,6% | 0/0 |
+| Solo `infantsStill` apagado | 81,8% | 0/20 | 332: dehydration 116, exposure 9, murder 14, starvation 177, old age 16 | 79,3% / 10,0%; 14,6% | 0/0 |
+| Solo `urgentNursing` apagado | 91,6% | 0/20 | 652: dehydration 20, exposure 9, murder 22, starvation 587, old age 14 | 76,2% / 10,1%; 12,1% | 0/0 |
+| Solo `motherOnlyFeeds` apagado | 97,4% | 0/20 | 219: dehydration 72, exposure 34, murder 33, starvation 66, old age 14 | 76,9% / 10,5%; 11,2% | 0/0 |
+| Solo `babyToHouse` apagado | 95,4% | 0/20 | 435: dehydration 50, exposure 302, murder 41, starvation 28, old age 14 | 74,5% / 10,9%; 15,3% | 0/0 |
+| Solo `kinDefence` apagado | 97,2% | 0/20 | idéntico al control | idéntico al control | 0/0 |
+| Solo `cravings` apagado | 96,8% | 0/20 | 258: dehydration 75, exposure 26, murder 43, starvation 99, old age 15 | 77,6% / 10,6%; 11,0% | 0/0 |
+| Solo `beliefChoice` apagado | 97,3% | 0/20 | 212: dehydration 85, exposure 35, murder 21, starvation 56, old age 15 | 76,7% / 10,8%; 10,9% | 0/0 |
+
+El M13 all-off queda a +2,2 puntos de la base `century` (95,5%) y dentro del
+margen. Sin `nightSleep`, la exposición salta de 37 a 437 muertes; sin
+`urgentNursing`, el hambre pasa de 55 a 587; sin `infantsStill`, la sed sube de
+83 a 116 y el hambre de 55 a 177. Sin `babyToHouse`, 302 muertes son por
+exposición. Las reglas de cuidado, sueño y quietud cambian de forma material
+las causas aunque la supervivencia total de algunas variantes siga sobre 95%.
 
 ## Puerta pendiente
 
@@ -86,9 +131,16 @@ estas tres cohortes; `0/0` es ausencia de muestra, no una defensa aprobada.
   supervivencia fue 81,4% y las oportunidades accesibles aumentaron a 649.918.
   Estas muestras cortas explican el mecanismo pero no sustituyen las cohortes
   de 20 semillas.
-- Las diez ablaciones individuales están medidas en `lean`; faltan sus
-  repeticiones a 20 semillas en `century` y `crowded`. La puerta de base
-  apagada y la fase 1e siguen abiertas.
+- La fase 1c está completa: build normal, las diez ablaciones individuales y
+  all-off están medidos a 20 semillas en `lean`, `century` y `crowded`; las
+  tres tablas de arriba recogen supervivencia, colapsos, DEMOGRAPHY, HOME y KIN.
+- All-off está dentro del margen de la base M13 en los tres casos: `lean`
+  68,2% frente a 65,9%; `century` 97,7% frente a 95,5%; `crowded` 100,0%
+  frente a 100,0%. El observador DEMOGRAPHY contabiliza sus causas en las tres
+  cohortes.
+- La puerta 1e sigue abierta solo por la build normal en `lean`: 56,0%, 4,9
+  puntos bajo el mínimo de 60,9%. `century` normal da 97,2%, sobre el mínimo
+  de 90,5%. La matriz roja está clasificada en `bugs.md`.
 - `homePressure=false` con las demás reglas activadas y el fallback mide
   `lean` 68,3% (0/20 colapsos), `century` 97,2% y `crowded` 100,0%. Es un
   candidato que cumple las puertas de supervivencia con estas cohortes, pero
