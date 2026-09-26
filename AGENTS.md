@@ -131,6 +131,13 @@ before a hover lands on it, so the panel never responds and nothing throws.
 
 ## Verifying your work
 
+**Commit every functional change separately.** Use a `m15:` prefix for M15 work,
+and keep each commit focused on one feature, instrument or measured fix. After
+each meaningful milestone, save a screenshot set under `artifacts/screenshots/`
+using the project's screenshot tour (`npm run shots`) or an equivalent capture
+that clearly shows the current game. These captures are a chronological visual
+record for `development_progress`; do not overwrite earlier milestone captures.
+
 Four layers, fastest first. `npm run verify` chains them. Run at least the
 first three before you claim anything works.
 
