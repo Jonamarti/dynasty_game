@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-26 — M15 diagnóstico, proteína enmascarada por otro alimento
+
+La telemetría distingue ahora los antojos en que hay comida proteica solo
+fuera del alcance del ancla **y** hay otra comida alcanzable. Esa es la
+condición exacta para que el resultado proteico pueda quedar oculto por la
+primera opción de forraje; la muestra anterior no la separaba.
+
 ## 2026-09-26 — M15 diagnóstico, proteína visible pero fuera del ancla
 
 En `century` a cinco semillas, 42,9% de las decisiones con antojo tenían una

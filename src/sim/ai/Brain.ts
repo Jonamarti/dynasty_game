@@ -736,7 +736,10 @@ export class Brain {
       const anywhereInSearch = reachable ?? this.findNode(person, ctx, proteinFood, false, anchor, reach);
       telemetry.count('craving_protein_search');
       if (reachable) telemetry.count('craving_protein_reachable');
-      else if (anywhereInSearch) telemetry.count('craving_protein_outside_reach');
+      else if (anywhereInSearch) {
+        telemetry.count('craving_protein_outside_reach');
+        if (inReachFood) telemetry.count('craving_protein_masked_by_reachable_food');
+      }
       else telemetry.count('craving_protein_absent');
     }
     if (foodNode) {

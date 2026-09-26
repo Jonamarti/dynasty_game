@@ -107,6 +107,7 @@ interface SeedResult {
   cravingProteinReachable: number;
   cravingProteinOutsideReach: number;
   cravingProteinAbsent: number;
+  cravingProteinMasked: number;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -273,6 +274,7 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     cravingProteinReachable: counts.craving_protein_reachable ?? 0,
     cravingProteinOutsideReach: counts.craving_protein_outside_reach ?? 0,
     cravingProteinAbsent: counts.craving_protein_absent ?? 0,
+    cravingProteinMasked: counts.craving_protein_masked_by_reachable_food ?? 0,
   };
 }
 
@@ -389,6 +391,7 @@ function main(): void {
   console.log('  PROTEIN DURING CRAVING ' + sum(r => r.cravingProteinReachable) + '/' +
     sum(r => r.cravingProteinSearch) + ' searches had a reachable protein-rich food node · ' +
     sum(r => r.cravingProteinOutsideReach) + ' only outside anchor reach · ' +
+    sum(r => r.cravingProteinMasked) + ' masked by another reachable food node · ' +
     sum(r => r.cravingProteinAbsent) + ' absent from the forage search');
 
   console.log('='.repeat(78));
