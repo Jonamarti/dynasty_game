@@ -2,8 +2,8 @@
  * CLI: follow one person and print why they did what they did.
  *
  *   npm run why
- *   npm run why -- --scenario band --person 3 --from 1500 --to 1560
- *   npm run why -- --scenario century --seed 1 --id 11 --from 2780 --to 2840
+ *   npm run why -- band 3 1500 1560
+ *   npm run why -- century 0 2780 2840 1
  *
  * The single most useful question in a simulation like this is "why did she do
  * that?", and the honest answer is the utility score table. This dumps it tick
@@ -15,17 +15,24 @@ import { lastDrives, lastScores } from '../src/sim/ai/Brain.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { SCENARIOS } from './simcheck.ts';
 
-function arg(name: string, fallback: string): string {
+// `vite-node` consumes long options after the package script's `--` and
+// forwards their values positionally (the same behavior handled in
+// `tools/seeds.ts`). Keep named arguments for direct execution, and accept the
+// positional form for the npm script: scenario, person index, from, to,
+// optional seed, optional person id (the id takes precedence over the index).
+const positional = process.argv.slice(2).filter(value => value !== '--');
+
+function arg(name: string, fallback: string, position: number): string {
   const i = process.argv.indexOf('--' + name);
-  return i >= 0 ? (process.argv[i + 1] ?? fallback) : fallback;
+  return i >= 0 ? (process.argv[i + 1] ?? fallback) : (positional[position] ?? fallback);
 }
 
-const scenario = SCENARIOS[arg('scenario', 'band')];
+const scenario = SCENARIOS[arg('scenario', 'band', 0)];
 if (!scenario) throw new Error('unknown scenario');
 
-const personIndex = Number(arg('person', '0'));
-const from = Number(arg('from', '0'));
-const to = Number(arg('to', String(from + 60)));
+const personIndex = Number(arg('person', '0', 1));
+const from = Number(arg('from', '0', 2));
+const to = Number(arg('to', String(from + 60), 3));
 
 telemetry.reset();
 telemetry.enable();
@@ -33,13 +40,13 @@ telemetry.enable();
 // --seed N runs the scenario on another seed, and --id picks by person id
 // rather than by founding index — so a case `npm run violence -- --cases`
 // names can be followed straight into its score table.
-const seedArg = process.argv.indexOf('--seed');
-const sim = new Simulation(seedArg >= 0
-  ? { ...scenario.config, seed: Number(process.argv[seedArg + 1]) }
+const seed = arg('seed', '', 4);
+const sim = new Simulation(seed !== ''
+  ? { ...scenario.config, seed: Number(seed) }
   : scenario.config);
-const idArg = process.argv.indexOf('--id');
-const subject = idArg >= 0
-  ? sim.people.find(p => p.id === Number(process.argv[idArg + 1]))
+const id = arg('id', '', 5);
+const subject = id !== ''
+  ? sim.people.find(p => p.id === Number(id))
   : sim.people[personIndex];
 if (!subject) throw new Error('no such person');
 

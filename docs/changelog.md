@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-26 — M15 diagnóstico, respetar los argumentos de `why`
+
+`npm run why -- --scenario … --from …` hacía que `vite-node` consumiera los
+nombres de opción y el CLI analizara por defecto solo los primeros 60 ticks.
+Se añadió forma posicional (`scenario person from to [seed] [id]`) y se
+actualizaron los ejemplos. La traza vuelve a cubrir el intervalo pedido y
+permite completar el diagnóstico nocturno de la fase 1d.
+
 ## 2026-09-26 — M15 fase 1d, completar diagnóstico infantil y de bandas
 
 Se repitió la ablación `infantsStill=false` después de conectar el interruptor
