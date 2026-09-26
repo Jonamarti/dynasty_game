@@ -1,5 +1,20 @@
 # M14 — El mundo más allá de la comarca
 
+> **2026-09-26: absorbido por M15** ([m15_plan.md](m15_plan.md)), el plan
+> maestro que reúne todo lo pendiente. La fase 1 se entregó y lo que queda de
+> ella está en **M15 fase 1**. La fase 2 es **M15 fase 7**, la 3 la **28**,
+> 4c-8c las **18-22**, 9-10 las **23-24**, 11-17 las **29-35** (con la 15c, el
+> guardado, en la **33**), 18-19 las **36-37** y 20-21 las **38-39**. Este
+> texto sigue mandando como **detalle** de cada una en todo lo que M15 no
+> cambie explícitamente. Los números de fork de su §«Determinismo» los
+> sustituye la tabla de M15.
+>
+> **Cambio de escala en M15:** este plan llama «comarca» a la celda del mapa
+> del mundo (24 × 16) porque suponía que cada celda era un mapa local. M15 usa
+> un mapa del mundo mucho más fino (96 × 48 **regiones**, cada una con muchas
+> comarcas) y un mapa real de la Tierra además del aleatorio. Donde aquí se
+> habla del mapa del mundo, léase «región». Ver el bloque VII de M15.
+
 Escrito el 2026-09-24, al cerrar M12 y procesar `docs/notes3.txt`.
 
 > **Renumerado el 2026-09-25: este plan era M13.** El propietario puso delante
@@ -83,7 +98,7 @@ Cada cosa que algún documento dio por planeada y que ninguna fase construyó:
 | origen | qué | destino en M14 |
 |---|---|---|
 | `bugs.md`, «M12 health report» | La matriz sigue en rojo en doce escenarios tras M12; nadie ha separado lo que es efecto de M12 de lo que es caos | **Fase 1** |
-| `next-steps.md`, cabecera | `bands-take-sides` en los mundos bien alimentados, pregunta de diseño pendiente para el propietario | **Fase 1** |
+| `next-steps.md`, cabecera | `bands-take-sides` en los mundos bien alimentados | **Fase 1** (criterio de diseño resuelto; diagnóstico mecánico sigue abierto) |
 | `m9_6_plan.md` fases 4b-4d | Los canales de ánimo `comfort`, `belonging` y `purpose` sin quien los escriba ni los lea | **M13 fase 10** (movido el 2026-09-25; antes fase 4b-4d de este plan) |
 | `m9_6_plan.md` fase 5 | Dormir al raso: hoy `sleep` exige un edificio | **M13 fase 3** (movido el 2026-09-25); la fase 4c de este plan lo da por hecho |
 | `next-steps.md` §1 | «Frenar la natalidad bajo presión», la palanca más barata, nunca probada | **Fase 6c**: la lactancia la da sin tocar un coeficiente (la amenorrea de la lactancia) |
@@ -172,12 +187,13 @@ sobre una matriz que nadie entiende no se puede leer.
   anterior a M12 (`0dd2d9f`) y en el actual. Para cada check rojo: ¿se mueve la
   media o sólo la semilla? Lo que sea caos pasa a la línea TRIPWIRES del
   cohorte (política de 17d); lo que sea defecto se arregla o se anota.
-- **1b.** `bands-take-sides` en los mundos bien alimentados: la pregunta de
-  diseño lleva abierta desde M11 fase 14c. Se le presenta al propietario con los
-  números: un pueblo bien alimentado ¿debe tomar partido contra su vecino? La
-  memoria del proyecto (el arco va hacia el conflicto por la tierra y los
-  recursos) sugiere que **no sin causa**, y entonces el check está mal escrito
-  para esos escenarios. Pero lo decide el propietario.
+- **1b.** `bands-take-sides` en los mundos bien alimentados: el propietario
+  confirma el 2026-09-25 que sí deben poder surgir enfrentamientos sin necesidad
+  material, por malas relaciones, rencillas pasadas o presentes, ambición
+  territorial o deseo de dominar a otras tribus. El criterio de diseño queda
+  resuelto; falta diagnosticar si el mecanismo actual permite esas causas y si
+  el check mide el comportamiento pretendido. No rebajar el umbral por estar
+  bien alimentados.
 - **1c.** Instrumento demográfico. Una línea `DEMOGRAPHY` en `sim:seeds`:
   nacimientos por mujer fértil, mortalidad antes del primer año y antes de los
   cinco, edad media al morir y causas de muerte agregadas. **Es la línea contra
@@ -195,8 +211,8 @@ cambia el mundo ni el estado del RNG. Las 20 semillas de `century`, `lean` y
 todos los nacidos con seguimiento completo hasta los cinco años murieron antes
 de esa edad. Hace falta separar las causas antes de empezar el bloque del
 cuerpo. Los resultados y sus límites están en
-[m14_phase1.md](m14_phase1.md). La matriz roja y la pregunta de `bands-take-sides`
-siguen sin resolución; la fase 1 permanece abierta.
+[m14_phase1.md](m14_phase1.md). La matriz roja y el diagnóstico del mecanismo de
+`bands-take-sides` siguen sin resolución; la fase 1 permanece abierta.
 
 **Continuación:** la revisión de las matrices y de las líneas `CONFLICT` de las
 cohortes clasificó `violence-concentrates` y `peoples-drift-apart`: el déficit
@@ -211,7 +227,9 @@ mundos elegibles, respectivamente. La diferencia de 88 frente a 93 checks y los
 cambios de elegibilidad impiden atribuir la brecha general de matrices a
 M12. El bloque 1a queda medido parcialmente; faltan
 diagnósticos de los rojos restantes y la resolución de la pregunta de
-`bands-take-sides`. Detalle y límites en [m14_phase1.md](m14_phase1.md) y
+el diagnóstico de `bands-take-sides`. El criterio del propietario es que las
+tribus puedan enfrentarse también por motivos sociales y políticos, aunque
+estén bien alimentadas; detalle y límites en [m14_phase1.md](m14_phase1.md) y
 [bugs.md](bugs.md),
 «Matrix comparison».
 

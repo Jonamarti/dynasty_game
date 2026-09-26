@@ -249,9 +249,11 @@ resting soil, so the companion compost check's zero spreading has no measured
 soil deficit to answer in this run. Treat both as a paired seed-specific
 tripwire; the check should not be tuned by demanding compost use without
 confirming the field actually needs it. `bands-take-sides` remains below its
-spread floor in `farmers`, `herders`, and `stewards`; this is still the pending
-design question for well-fed worlds, not a check to tune without the owner's
-answer.
+spread floor in `farmers`, `herders`, and `stewards`. The owner resolved the
+design question on 2026-09-25: well-fed bands should still be able to fight over
+relations, grudges, territory, or domination. Keep the check as a behavior
+tripwire and diagnose whether those causes reach standing and conflict; do not
+tune it away on the basis of food availability.
 
 The archived current-only reds `animals-are-tamed` (`traps`),
 `soil-is-drawn-down` (`stewards`), and `techs-are-refined` (`feasts`) are each

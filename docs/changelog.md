@@ -1,5 +1,51 @@
 # Changelog
 
+## 2026-09-26 — M15, el plan maestro, y `notes5.txt`
+
+Se procesan las ocho notas de `notes5.txt` con el propietario, que también
+pidió reunir en un solo plan todo lo que quedaba sin hacer. El resultado es
+[m15_plan.md](m15_plan.md): las notas, lo que queda de M13, todo M14 salvo su
+fase 1 entregada y M8.4, en cuarenta y una fases y nueve bloques. M13 y M14 se
+conservan como detalle de cada fase, con un aviso en su cabecera.
+
+Las decisiones del propietario están en su §0b. Las que más cambian el juego
+son estas: al principio solo se carga lo que cabe en las manos, con una
+escalera de contenedores; las chispas cuentan lo manejado y no solo lo
+sostenido, para que las ideas no se apaguen con las manos llenas; la
+descomposición vuelve a encenderse con la sal, el secado y el ahumado; la ropa
+abriga solo puesta; la noche ciega y el fuego da luz, calor y seguridad; el
+arte se pre-renderiza por capas y en 4 direcciones y se guarda en el repo; y el
+terreno gana altura, excavación, profundidad, vadeo y nado.
+
+**Por qué la fase 1 es recuperar la supervivencia:** las fases 2-6 de M13
+dejaron `lean` en 50,6% frente a 65,9% de base, tres veces por encima de su
+límite declarado. Las manos cargan la misma economía, y medir cambios nuevos
+sobre un mundo que no se entiende no se puede leer. `notes5.txt` se borra, como
+`notes2`-`notes4`. Sin cambios de código.
+
+**Segunda ronda, el mismo día**, al revisar el plan:
+
+- **Mapa del mundo aleatorio o real.** La Tierra real se elige de una lista
+  pregenerada con datos públicos y guardada en el repo. La rejilla es lo
+  bastante fina para que la península ibérica tenga 5 o 6 zonas. Eso obliga
+  a tres escalas (casilla, comarca y región) y a tres niveles de detalle, con
+  un modelo de pueblos para el resto del mundo, de modo que otras
+  civilizaciones surjan a su ritmo. El análisis de coste está en el plan y lo
+  comprobará `world:bench`.
+- **La grasa** da la antorcha larga, la lámpara, el pemmican, el curtido y,
+  más tarde, el sebo y el jabón.
+- **Niebla de guerra y mapa personal:** los NPC deciden solo con lo que ven o
+  recuerdan, exploran y se cuentan dónde hay comida; la pantalla muestra el
+  mapa de tu personaje.
+
+## 2026-09-25 — Criterio de conflicto entre bandas en mundos bien alimentados
+
+El propietario confirma que las tribus pueden enfrentarse sin escasez por malas
+relaciones, rencillas, territorio o dominación. Se cierra la pregunta normativa
+de M14 fase 1b; queda abierto comprobar si las causas políticas y sociales
+llegan al standing y al conflicto actuales. `bands-take-sides` sigue siendo un
+tripwire de comportamiento, no se rebaja por la disponibilidad de comida.
+
 ## 2026-09-25 — Clasificación de la matriz de M14 fase 1
 
 Se compararon las matrices pre-M12 y al cierre de M12 y las medidas `CONFLICT`

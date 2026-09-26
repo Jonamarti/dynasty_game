@@ -1,5 +1,11 @@
 # M13 — Por qué hace cada uno lo que hace
 
+> **2026-09-26: absorbido por M15** ([m15_plan.md](m15_plan.md)), el plan
+> maestro que reúne todo lo pendiente. Las fases 0-6 de este documento se
+> entregaron aquí. El arreglo de la supervivencia que dejaron es **M15 fase
+> 1**, y las fases 7-14 son **M15 fases 2-10**. Este texto sigue mandando como
+> **detalle** de cada una en todo lo que M15 no cambie explícitamente.
+
 Escrito el 2026-09-25, a partir de una conversación con el propietario sobre la
 motivación intrínseca y extrínseca de los NPC. **Este milestone ocupa el hueco
 del antiguo M13**, el mapa del mundo, que pasa a ser M14

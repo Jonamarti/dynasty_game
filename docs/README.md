@@ -25,6 +25,7 @@ it, what to do next, and why each change was made.
 | [m13_baseline.md](m13_baseline.md) | M13 phase 0 — pooled HOME and HISTORY measurements for the century, lean, and crowded 20-seed cohorts |
 | [m14_plan.md](m14_plan.md) | M14 (was M13 until 2026-09-25) — the body, the wild, the world map, LOD, migration, trade and civilisation; also the inventory of every earlier plan left without a phase |
 | [m14_phase1.md](m14_phase1.md) | M14 phase 1 (shipped as "M13 phase 1") — baseline matrix, `DEMOGRAPHY` and the measurements still running |
+| [m15_plan.md](m15_plan.md) | **M15 — the master plan, and the only live one since 2026-09-26.** `notes5.txt`, the rest of M13, all of M14 and M8.4 in forty-one phases: recovering survival, motivation, hands and containers, light, tech sub-webs, clothing, salt, interiors, art, the body, the wild, terrain and water depth, the world map, trade, the state and iron. M13 and M14 remain as per-phase detail |
 
 If you are an AI agent picking this project up, read
 [../AGENTS.md](../AGENTS.md) first — it is shorter and tells you what will

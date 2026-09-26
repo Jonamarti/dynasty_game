@@ -1,5 +1,14 @@
 # Next steps
 
+**2026-09-26: M15 es el único plan vigente.** `notes5.txt` procesado con el
+propietario (ropa escalonada, sal, interiores y muebles, sub-redes de
+tecnología, manos y antorchas, gráficos, altura, excavación y profundidad del
+agua). [m15_plan.md](m15_plan.md) reúne esas notas, lo que queda de M13 (el
+arreglo de la supervivencia y las fases 7-14), todo M14 y M8.4 (el hierro) en
+un solo orden de cuarenta y una fases. **Lo siguiente es M15 fase 1**: separar
+de qué muere la gente desde M13 y volver a menos de 5 puntos de la base de
+`lean`. Ver §7k. Lo que sigue más abajo es el registro de cómo se llegó aquí.
+
 **M13 fase 6, continuación:** `KnowledgeSystem.tryObserve` ya permite aprender
 una expectativa `seen` al observar a un NPC comer o recoger un recurso. Test
 focalizado pasa; la cohorte `lean` de 20 semillas posterior queda en 50,6% de
@@ -200,7 +209,8 @@ Both are inside what twenty seeds can resolve across the whole of phases
 | M11 phase 17 — the close | shipped 2026-09-23. `gift` emitted by the Kit and by a spare tool given away, measured to move renown little (17a); phase 5's four checks — `gossip-is-aimed` per run, exile, factions and adoption in the cohort (17b); a field can be trampled (17c); the measurement policy — wall clocks alone and scaled, tripwires in the cohort (17d); these documents (17e). **M11 is complete** |
 | M12 — the tribe before the map | shipped 2026-09-24, phases 1-7: peace within the band, justice and amends, the depot window, captives kept, territory, inherited feuds, stratification. See [m12_plan.md](m12_plan.md) |
 | **M13 — why anybody does anything** | **underway; phases 0-1 shipped, phase 2 next.** Drives in place of needs-plus-scattered-traits; staying near home and kin (children beside their parents, nobody spending their nights across the island); a day with a night in it; threats before hunger, and kin defended; a craving for variety; expectations learned by doing, watching and being told; the hearth and roast meat as the first thing adopted because people found it better; discovery by need; building by persuasion (`notes4.txt`); raids by proposal; and history's shape as a measured calibration target. Local map only. Planned in full in [m13_plan.md](m13_plan.md) |
-| M14 — the world beyond the comarca | after M13 (was M13 until 2026-09-25). The body (pregnancy, nursing, wounds, illness), the wild (grass, grazing, predators, breeding), the world map with its globe, simulation LOD, migration, caravans and — possibly as M15 — civilisation. Phase 1 shipped under the old name. Planned in [m14_plan.md](m14_plan.md) |
+| M14 — the world beyond the comarca | after M13 (was M13 until 2026-09-25). The body (pregnancy, nursing, wounds, illness), the wild (grass, grazing, predators, breeding), the world map with its globe, simulation LOD, migration, caravans and — possibly as M15 — civilisation. Phase 1 shipped under the old name. Planned in [m14_plan.md](m14_plan.md). **Absorbed into M15 on 2026-09-26** |
+| **M15 — the master plan** | **the only live plan since 2026-09-26.** `notes5.txt` (hands and containers, torches and darkness, tech sub-webs, layered clothing, salt and spoilage, interiors and furniture, pre-rendered layered art, height, digging and water depth), the rest of M13, all of M14 and M8.4, in forty-one phases. Phase 1, recovering survival, is next. Planned in [m15_plan.md](m15_plan.md) |
 | M9.6 phases 4b–5 — happiness reads, and sleeping rough | **moved to M13** (phases 3 and 10); 4a (the field) shipped with M11 phase 5a. The `security` channel's writers and readers were taken over by M11 phase 14 |
 | M8.3–M8.4 — the rest of The Ages | planned; see that document |
 | ~~M10 — standing, territory and raids between bands~~ | folded into M11: standing is phase 7, sabotage and raids are phase 11, territory and the border guard are Block V phases 14 and 15 |
@@ -1063,6 +1073,53 @@ work. The plan is [m13_plan.md](m13_plan.md).
 the tribe first has to be convinced; the player can start alone or order
 tribe or family to help, but everyone starting at once is wrong." It is M13
 phase 11, and the file has been emptied.
+
+## 7k. 2026-09-26: `notes5.txt`, and M15 as the one plan
+
+Eight notes, the last of them an instruction: gather every plan left undone
+and write one large detailed plan as M15. All eight have a destination and
+the file has been deleted, as `notes2`-`notes4` were. The owner answered
+the design questions in the same session; they are M15 §0b.
+
+| # | note | destination in [m15_plan.md](m15_plan.md) |
+|---|---|---|
+| 1 | Clothing is not all the same; some garments need more materials, tools and techniques; clothing may need its own web | Phases 13 and 14 |
+| 2 | Salt to preserve meat and fish | Phase 15, which turns spoilage back on with its remedies |
+| 3 | See inside buildings (the roof moves aside); craftable, placeable furniture; a bed is better than a floor, and a floor better than outdoors | Phase 16 (two storeys stay out of M15) |
+| 4 | Group similar technologies into their own webs (fire and oven recipes, weapons, clothing, farming, husbandry) | Phase 13 |
+| 5 | Torches of sticks, fat and fire; one or both hands hold things; fireplaces to cook and keep warm | Phases 3, 11 and 12 |
+| 6 | Better art: arms, a head joined to the body, a loincloth when unclothed and a breast band for women | Phase 17, pre-rendered and committed as PNG |
+| 7 | Height: dig down, pile up, slopes, coast; then water depth, wading and fishing in the water | Phases 25, 26 and 27, in the note's order |
+| 8 | Gather every undone plan into one large M15 plan | M15 itself; the inventory is its §0c |
+
+The decisions that shape the plan most: people start carrying only what fits
+in their hands, with a ladder of containers from the cordage bundle to the
+cart; sparks count what was *handled* recently or lies at one's feet, so
+ideas do not stop when hands are full; spoilage comes back on with salting,
+drying and smoking; clothing warms only when worn; night reduces sight, and
+fire gives light, warmth and safety from animals; and survival lost in M13
+is recovered first (phase 1), before anything else is added.
+
+Three further requests from the owner the same day, on reviewing the first
+draft (M15 §0a rows 9-11 and §0d):
+
+- **The world map can be random or the real Earth**, picked from a
+  pregenerated list built once from public data and committed. It is fine
+  enough for Iberia to hold 4-6 zones: 96 × 48 **regions** of ~400 km, each
+  holding many **comarcas** (the local maps). The rest of the world develops
+  in a simplified model of **peoples**, at different speeds that come from
+  geography and contact, so that other civilisations exist when the player's
+  does. The plan's §«Escala y coste» estimates that model at under 5% of the
+  detailed comarca's cost per step. The real limits are save size (so saves
+  go to IndexedDB), calibration across the three levels of detail, and
+  determinism. `world:bench` measures it before anything is built on top.
+- **Animal fat** makes a longer-burning torch, a fat lamp, pemmican, dressed
+  hides and, later, tallow and soap.
+- **Fog of war:** NPCs start knowing only their home range, discover the rest,
+  remember where they last saw things (memories can be stale), act only on
+  what they see or remember, explore, and tell each other where food is. The
+  screen shows your character's map, with the rest dark under the fog. This
+  is M15 phase 2, beside the beliefs that travel.
 
 ## 8. Wildlife, second pass
 
