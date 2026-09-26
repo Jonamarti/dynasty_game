@@ -1173,7 +1173,7 @@ export class Brain {
       const carriedNut = this.carriedNutrition(person);
       const dependants = neighbours.filter(other =>
         other.isChild &&
-        (!other.isInfant || other.motherId === person.id) &&
+        (!other.isInfant || !ctx.motivation.motherOnlyFeeds || other.motherId === person.id) &&
         (person.childIds.includes(other.id) || other.householdId === person.householdId) &&
         other.needs.hunger > person.needs.hunger + 5
       );
