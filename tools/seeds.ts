@@ -297,7 +297,8 @@ function main(): void {
     process.exit(1);
     return;
   }
-  const steps = Number(flag('steps') ?? args[2] ?? scenario.steps);
+  const positionalSteps = args[2] !== undefined && Number.isFinite(Number(args[2])) ? args[2] : undefined;
+  const steps = Number(flag('steps') ?? positionalSteps ?? scenario.steps);
   const positionalSize = args[3];
   const sizeValue = flag('size') ?? (positionalSize !== undefined && Number.isFinite(Number(positionalSize))
     ? positionalSize : undefined);
@@ -312,7 +313,9 @@ function main(): void {
   }
   // vite-node forwards the value of unknown `--set` options as positional
   // arguments; support that form after the legacy scenario/count/steps/size.
-  const setStart = sizeValue === undefined ? 3 : 4;
+  const hasPositionalSteps = positionalSteps !== undefined;
+  const hasPositionalSize = hasPositionalSteps && args[3] !== undefined && Number.isFinite(Number(args[3]));
+  const setStart = hasPositionalSize ? 4 : hasPositionalSteps ? 3 : 2;
   for (const value of args.slice(setStart)) {
     if (value.includes('=')) sets.push(value);
   }

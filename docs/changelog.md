@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1b: `--set` sin `--steps`
+
+El CLI reconoce la asignación posicional que vite-node produce cuando se usa
+`--set` sin `--steps`, y mantiene la duración del escenario. Verificado con
+`npm run sim:seeds -- --scenario tiny --seeds 1 --set motivation.reachFilter=false`.
+
 ## 2026-09-26 — M15 fase 1b, interruptores y `--set`
 
 Añadidos a `Config.motivation` los diez interruptores de ablación de M15, todos
