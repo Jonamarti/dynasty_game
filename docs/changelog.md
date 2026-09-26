@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1c, completar la ablación de movilidad infantil
+
+La opción `infantsStill=false` ya permite que bebés se muevan por los dos
+caminos de `MovementSystem` (objetivo y control directo). Antes, el bucle de
+pensamiento respetaba la ablación pero el movimiento seguía congelado, dejando
+parte de la regla M13 activa al reproducir la base. Prueba dirigida añadida;
+cohorte all-off en curso antes de juzgar su efecto en la brecha.
+
 ## 2026-09-26 — M15 fase 1c, completar ablaciones lean y clasificar matriz
 
 Se midieron a 20 semillas las siete reglas que faltaban en `lean` y se

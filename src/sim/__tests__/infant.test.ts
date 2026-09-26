@@ -20,6 +20,21 @@ describe('babies under one year', () => {
     expect([baby.x, baby.y]).toEqual([64, 64]);
   });
 
+  it('restores infant movement when the stillness rule is ablated', () => {
+    const sim = new Simulation({ seed: 'infant-stillness-ablated', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 4 }, motivation: { infantsStill: false } });
+    const baby = sim.people[0]!;
+    baby.age = 0;
+    const movement = new MovementSystem(sim.world, new RNG('infant-movement-ablated'),
+      new Pathfinder(sim.world), false);
+    expect(sim.world.isWalkable(baby.x, baby.y)).toBe(true);
+    const before = [baby.x, baby.y];
+
+    movement.nudge(baby, 1, 0);
+
+    expect([baby.x, baby.y]).not.toEqual(before);
+  });
+
   it('does not choose its own forage, drink, or wandering action', () => {
     const sim = new Simulation({ seed: 'infant-no-autonomy', world: { width: 48, height: 48 },
       population: { bands: 1, peoplePerBand: 4 } });

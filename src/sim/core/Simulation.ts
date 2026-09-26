@@ -500,7 +500,8 @@ export class Simulation {
 
     this.needsSystem = new NeedsSystem(this.config.needs);
     this.pathfinder = new Pathfinder(this.world);
-    this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder);
+    this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder,
+      this.config.motivation.infantsStill);
     this.social = new SocialSystem(
       this.relationships, this.normsByBand, this.bandRelations, this.strangerRegardByBand);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);

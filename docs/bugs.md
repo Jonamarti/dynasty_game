@@ -17,6 +17,13 @@ recursos lejanos antes del hambre crítica. Hace falta instrumentar la
 disponibilidad de comida dentro/fuera del alcance y repetir en otros escenarios
 antes de corregirlo. No ajustar coeficientes hasta aislar el mecanismo.
 
+**Hallazgo de compuerta, 2026-09-26.** Aunque el bucle de pensamiento respetaba
+`infantsStill=false`, `MovementSystem.nudge()` y `.advance()` aún detenían
+cualquier bebé sin consultar el interruptor. La regla quedaba parcialmente
+activa durante la ablación y el bebé no podía reproducir la movilidad de la
+base. Se corrigió ambos caminos; la nueva cohorte all-off debe confirmar cuánto
+de la diferencia explica antes de cerrar esta causa.
+
 **Resultado del arreglo diagnóstico, 2026-09-26.** El fallback hace que el
 forrajeo intente comida fuera del alcance del ancla cuando no hay un nodo
 comestible dentro. La cohorte `lean` de 20 semillas subió de 50,6% a 56,0%,

@@ -304,7 +304,8 @@ export class MovementSystem {
   constructor(
     private readonly world: World,
     private readonly rng: RNG,
-    private readonly pathfinder: Pathfinder
+    private readonly pathfinder: Pathfinder,
+    private readonly infantsStill = true
   ) {}
 
   /** Speed for a given person, shared by pathing and direct player control. */
@@ -318,8 +319,10 @@ export class MovementSystem {
    * walkability rules an NPC gets, so direct control is not a privileged path.
    */
   nudge(person: Person, dx: number, dy: number): void {
-    // Babies may be carried or left resting; key input is never their own locomotion.
-    if (person.isInfant) return;
+    // Keep infant movement coupled to the same ablation as the AI freeze. If
+    // only thinking were gated, the baseline comparison would still contain
+    // part of the rule in direct control and in stale walking targets.
+    if (person.isInfant && this.infantsStill) return;
     const length = Math.sqrt(dx * dx + dy * dy);
     if (length === 0) return;
     const speed = this.speedOf(person);
@@ -354,7 +357,7 @@ export class MovementSystem {
    * ordered and a wander nobody did.
    */
   advance(person: Person, tick: number): Arrival {
-    if (person.isInfant) return Arrival.Arrived;
+    if (person.isInfant && this.infantsStill) return Arrival.Arrived;
     if (person.targetX === null || person.targetY === null) return Arrival.Arrived;
 
     const dx = person.targetX - person.x;
