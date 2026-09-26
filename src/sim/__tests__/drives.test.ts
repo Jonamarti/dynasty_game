@@ -4,6 +4,8 @@ import { Person } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 import { makeConfig, DEFAULT_CONFIG } from '../core/Config.ts';
 import { World } from '../core/World.ts';
+import { Simulation } from '../core/Simulation.ts';
+import { lastScores } from '../ai/Brain.ts';
 
 describe('physical drives', () => {
   it('preserves the old urgency curve exactly for each need', () => {
@@ -50,5 +52,19 @@ describe('physical drives', () => {
     expect(night).toBeGreaterThan(day);
     person.traits.loyalty = 1; person.traits.curiosity = 0;
     expect(drivePressures(person, { ...ctx, time: { daylight: 0 } }).home).toBeGreaterThan(night);
+  });
+
+  it('lets food and water outrank returning home after their work line', () => {
+    const sim = new Simulation({ seed: 'home-yields-to-needs', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 4 } });
+    const person = sim.people.find(candidate => candidate.bandId === sim.bands[0]!.id && !candidate.isChild)!;
+    person.x = sim.bands[0]!.homeX + 18;
+    person.y = sim.bands[0]!.homeY;
+    person.action = 'idle';
+    person.needs.hunger = sim.config.needs.workLimits.hunger + 1;
+
+    sim.step();
+
+    expect(lastScores.get(person.id)?.some(row => row.id === 'go_home')).toBe(false);
   });
 });

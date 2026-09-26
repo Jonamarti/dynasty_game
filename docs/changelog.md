@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1d, el hogar cede ante necesidades urgentes
+
+Al llegar hambre o sed a la línea que detiene trabajos no esenciales, la
+presión de volver al hogar deja de competir con buscar alimento o agua. La
+misma línea de `Config.needs.workLimits` controla ambas decisiones; no se
+introduce un umbral nuevo. La prueba verifica que `go_home` ya no aparece en
+la tabla de puntuación después de alcanzar el límite.
+
 ## 2026-09-26 — M15 fase 1c, medición parcial
 
 Guardadas en `docs/m15_recovery.md` las primeras tres cohortes `lean` de 20
