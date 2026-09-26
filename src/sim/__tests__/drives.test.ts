@@ -52,4 +52,23 @@ describe('physical drives', () => {
     expect(drivePressures(person, { ...ctx, time: { daylight: 0 } }).home).toBeGreaterThan(night);
   });
 
+  it('lets every urgent physical need lower home pressure without erasing the safety drive', () => {
+    const config = makeConfig();
+    const world = new World(DEFAULT_CONFIG.world, new RNG('home-maslow'));
+    const person = new Person('Adult', 80, 30, 0, new RNG('adult-maslow'));
+    person.age = 20 * person.daysPerYear;
+    const ctx = { world, peopleById: new Map([[person.id, person]]), buildingsById: new Map(), householdsById: new Map(),
+      homes: new Map([[0, { x: 30, y: 30 }]]), motivation: config.motivation, time: { daylight: 1 } };
+    person.needs.hunger = 0; person.needs.thirst = 0; person.needs.fatigue = 0; person.needs.cold = 0;
+    const safeAndFed = drivePressures(person, ctx).home;
+    for (const need of ['hunger', 'thirst', 'fatigue', 'cold'] as const) {
+      person.needs[need] = 100;
+      const urgent = drivePressures(person, ctx).home;
+      expect(urgent).toBeLessThan(safeAndFed);
+      expect(urgent).toBeGreaterThan(0);
+      expect(urgent).toBeCloseTo(safeAndFed * 0.35);
+      person.needs[need] = 0;
+    }
+  });
+
 });

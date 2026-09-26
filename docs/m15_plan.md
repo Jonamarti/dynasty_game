@@ -499,6 +499,12 @@ ablación señala: parar y llevar al propietario la tabla de `m15_recovery.md`
 con la regla que cuesta y lo que se ha probado. Él decide si se acepta la
 pérdida (y queda como base nueva) o si una regla se retira.
 
+**Matiz del propietario para la presión del hogar:** `homePressure` responde a
+la urgencia de las necesidades fisiológicas. Si hambre, sed, descanso o frío
+aprietan, el NPC debe poder alejarse para atenderlas; la seguridad del hogar
+sigue teniendo un suelo y no se anula. Esta variante se mide como mecanismo de
+fase 1e antes de elegir la base, sin abrir todavía la fase 2.
+
 La base que salga de esta fase es **la base de M15** (regla 16).
 
 **Commits:** `m15: contar las muertes` (1a); `m15: interruptores de

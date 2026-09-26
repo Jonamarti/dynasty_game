@@ -46,7 +46,19 @@ export function drivePressures(person: Person, ctx?: AnchorContext & { time: { d
       const nightRadius = person.isChild ? Math.max(2, childRadius(person, ctx.motivation) / 2) : ctx.motivation.nightRadius;
       const away = Math.max(Math.max(0, Math.min(1, (d - radius) / ctx.motivation.span)),
         Math.max(0, Math.min(1, (d - nightRadius) / ctx.motivation.spanNight)) * night);
-      home = urgencyCurve(100 * away) * attachment;
+      // Home is a basic safety need, but it must not drown out another urgent
+      // basic need. As hunger, thirst, fatigue or cold rises, reduce the pull
+      // to return so survival work can win the scorer; keep a safety floor so
+      // the home drive never disappears completely. This is a competition
+      // between needs, not permission to abandon home at the first sign of hunger.
+      const basicNeedUrgency = Math.max(
+        urgencyCurve(person.needs.hunger),
+        urgencyCurve(person.needs.thirst),
+        urgencyCurve(person.needs.fatigue),
+        urgencyCurve(person.needs.cold),
+      );
+      const homePriority = 1 - 0.65 * basicNeedUrgency;
+      home = urgencyCurve(100 * away) * attachment * homePriority;
     }
   }
   return {

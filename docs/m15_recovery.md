@@ -303,3 +303,27 @@ default sin autorización del propietario. El all-off con las diez reglas M13/
 M14 apagadas sigue en 60,8%, 5,1 puntos bajo la base de 65,9% y una décima
 fuera de tolerancia; quitar `homePressure` no cambia ese all-off porque ya está
 apagado en esa variante.
+
+### `homePressure` dinámico según necesidades fisiológicas (2026-09-27)
+
+El propietario aclaró que la seguridad del hogar compite con otras necesidades
+básicas en vez de dominarlas: hambre, sed, cansancio o frío urgentes bajan la
+presión de volver, pero no la anulan. El mecanismo toma la urgencia máxima de
+esas cuatro necesidades y reduce el hogar gradualmente hasta un suelo del 35%;
+el porcentaje es provisional y se conserva como parte de la variante medida,
+no como calibración declarada.
+
+`lean`, 20 semillas, con el resto de las reglas activas: supervivencia 57,6%,
+1/20 colapsos, 661 muertes (hambre 520, sed 87, exposición 18, homicidio 22,
+vejez 14). Adultos violentamente muertos: 9,9%. HOME: 67,2% de noches cerca
+(<15), 0,7% lejos (>45), 8,3% durmiendo y 7,3% descansando; la distancia
+niño-progenitor supera 12 en 23,2% de observaciones. Frente a quitar la regla,
+la variante mantiene más proximidad y menos violencia, pero su 57,6% queda 3,3
+puntos por debajo del gate de 60,9%; mejora 1,6 puntos sobre la referencia
+normal reciente de 56,0%, señal insuficiente para atribuirle por sí sola un
+rescate.
+
+Por orden del propietario se conserva el comportamiento dinámico y se
+documenta como candidato; no se adopta una nueva base M15 ni se inicia fase 2.
+La puerta 1e sigue abierta: repetir en los demás escenarios y acordar si se
+requiere ajustar o aceptar la diferencia antes de seguir el plan.

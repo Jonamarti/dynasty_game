@@ -6,6 +6,15 @@ La gira visual intentaba pulsar el botón del HUD cubierto por la pausa. El
 selector ahora apunta al botón «Resume» del propio menú de pausa, el único que
 puede recibir el clic mientras el overlay está abierto.
 
+## 2026-09-27 — M15 1e, hogar compite con necesidades fisiológicas
+
+La presión de hogar se reduce según la urgencia máxima de hambre, sed,
+cansancio o frío, con suelo del 35%, para mantener seguridad sin bloquear la
+atención a otras necesidades básicas. La cohorte `lean` de 20 semillas sube de
+56,0% a 57,6%, pero no alcanza el gate de 60,9%; el plan y la recuperación
+registran el candidato y sus costes. No se abre fase 2. Se archivan 24 capturas
+en `artifacts/screenshots/m15-phase1e-dynamic-home-pressure/`.
+
 ## 2026-09-26 — M15 1e, archivar la comparación de presión de hogar
 
 La gira de 24 capturas en 5 recorridos queda en

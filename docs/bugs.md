@@ -1,5 +1,18 @@
 # Known bugs and rough edges
 
+## M15 fase 1e — presión de hogar según urgencia fisiológica, 2026-09-27
+
+`homePressure` ahora baja dinámicamente cuando la necesidad fisiológica más
+urgente (hambre, sed, cansancio o frío) sube; conserva un suelo del 35%. La
+cohorte `lean` de 20 semillas da 57,6% de supervivencia y 1/20 colapsos, por
+encima del 56,0% reciente pero debajo del gate de 60,9%. La violencia adulta
+queda en 9,9%, con 67,2% de noches a menos de 15 casillas de casa y separación
+niño-progenitor >12 en 23,2% de observaciones. El mecanismo sigue siendo
+candidato: necesita repetición en `century` y `crowded`, y la puerta 1e sigue
+cerrada para la fase 2. En `sim:check:all`, `tiny` queda 35/35 y `lean` 55/59;
+los rojos de dieta, sueño y distancia infantil son los ya conocidos, y `lean`
+además falla `bands-take-sides`. Ver `m15_recovery.md`.
+
 ## M15 fase 1d — disponibilidad de proteína y verbos interrumpidos
 
 En una medición diagnóstica de `century` a cinco semillas hubo 1.091.277
