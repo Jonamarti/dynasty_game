@@ -56,6 +56,7 @@ export function anchorOf(person: Person, ctx: AnchorContext): Anchor | null {
 }
 
 export function reachOf(person: Person, ctx: AnchorContext): number {
+  if (!ctx.motivation.reachFilter) return Number.POSITIVE_INFINITY;
   if (person.isChild) return childRadius(person, ctx.motivation) + 4;
   let reach = Math.min(homeRange(person), ctx.motivation.reachAdult / sensitivity(person, 'home'));
   const hasYoungChild = person.childIds.map(id => ctx.peopleById.get(id)).some(child => child?.alive && child.isChild &&

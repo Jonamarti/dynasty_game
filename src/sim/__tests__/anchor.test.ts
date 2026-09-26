@@ -8,6 +8,15 @@ import { Household } from '../entities/Household.ts';
 import { Person, resetPersonIds } from '../entities/Person.ts';
 
 describe('home anchors', () => {
+  it('can turn off the home reach filter for an ablation', () => {
+    const actor = new Person('Actor', 10, 10, 0, new RNG('anchor-ablation'));
+    const world = new World(DEFAULT_CONFIG.world, new RNG('anchor-ablation-world'));
+    const ctx = { world, peopleById: new Map([[actor.id, actor]]), buildingsById: new Map(),
+      householdsById: new Map(), homes: new Map([[0, { x: 10, y: 10 }]]),
+      motivation: makeConfig({ motivation: { reachFilter: false } }).motivation };
+    expect(reachOf(actor, ctx)).toBe(Number.POSITIVE_INFINITY);
+  });
+
   it('prefers the mother, then the father when the mother is not available', () => {
     resetPersonIds();
     const world = new World(DEFAULT_CONFIG.world, new RNG('anchor-world'));

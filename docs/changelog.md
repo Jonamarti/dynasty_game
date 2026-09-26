@@ -9,6 +9,10 @@ asignaciones repetibles `--set ruta=valor`; por ejemplo,
 valores predeterminados. Falta conectar cada interruptor con su regla antes de
 usar la cohorte de ablación de la fase 1c.
 
+El interruptor `reachFilter` ya desactiva `reachOf()` cuando se apaga. Una
+prueba focalizada comprueba que la distancia pasa a ser ilimitada sólo durante
+la ablación; activado sigue el límite existente.
+
 ## 2026-09-26 — M15 fase 1a, contar las muertes
 
 El informe de semillas mostraba cero muertes en DEMOGRAPHY aunque HISTORY
