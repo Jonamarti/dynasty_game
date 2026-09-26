@@ -25,6 +25,9 @@ Instrumentada la búsqueda de comida para separar hallazgos, nodos descartados
 por alcance y búsquedas sin comida. Esta telemetría no escribe estado ni usa
 RNG y se imprime en el reporte de semillas como `FOOD ACCESS`.
 
+La búsqueda de diagnóstico adicional sólo se ejecuta con telemetría habilitada;
+el cliente normal no paga esa consulta espacial extra.
+
 ## 2026-09-26 — M15 fase 1b: `--set` sin `--steps`
 
 El CLI reconoce la asignación posicional que vite-node produce cuando se usa
