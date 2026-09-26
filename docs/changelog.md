@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1c, medición parcial
+
+Guardadas en `docs/m15_recovery.md` las primeras tres cohortes `lean` de 20
+semillas: reglas activadas, todas apagadas y `reachFilter` individualmente
+apagado. La puerta de recuperación no pasa todavía: todas apagadas quedan 9,9
+puntos bajo la base M13. La brecha y la señal de alcance quedan documentadas en
+`docs/bugs.md`; faltan las demás ablaciones y escenarios.
+
 ## 2026-09-26 — M15 fase 1b: `--set` sin `--steps`
 
 El CLI reconoce la asignación posicional que vite-node produce cuando se usa

@@ -1,5 +1,17 @@
 # Known bugs and rough edges
 
+## M15 fase 1c — la matriz apagada no recupera la base, 2026-09-26
+
+**Abierto.** En `lean`, 20 semillas, todas las reglas M13/M14 instrumentadas
+apagadas dan 56,0% de supervivencia frente a 65,9% de la base M13: diferencia
+de -9,9 puntos, más allá del margen de cinco del plan. Una ablación individual
+de `reachFilter` da 57,2% (+6,6 puntos respecto a las reglas activadas), así
+que no explica por sí sola la brecha. Las causas cambian de 22 asesinatos con
+reglas activadas a 184 con todas apagadas; la distancia nocturna al hogar y la
+distancia infantil también empeoran. Faltan las otras ablaciones individuales
+y medir `century`/`crowded`; ver [m15_recovery.md](m15_recovery.md). No ajustar
+coeficientes hasta aislar el mecanismo.
+
 ## M15 fase 1a — `DemographyWatch.finish()` consumía iteradores, 2026-09-26
 
 **Corregido.** La ejecución `lean`, semilla `century`, registró 38 muertes en
