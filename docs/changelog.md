@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1b, interruptores y `--set`
+
+Añadidos a `Config.motivation` los diez interruptores de ablación de M15, todos
+encendidos por defecto para preservar el mundo actual. `sim:seeds` acepta
+asignaciones repetibles `--set ruta=valor`; por ejemplo,
+`--set motivation.cravings=false`. La prueba de configuración comprueba los
+valores predeterminados. Falta conectar cada interruptor con su regla antes de
+usar la cohorte de ablación de la fase 1c.
+
 ## 2026-09-26 — M15 fase 1a, contar las muertes
 
 El informe de semillas mostraba cero muertes en DEMOGRAPHY aunque HISTORY

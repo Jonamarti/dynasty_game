@@ -82,6 +82,11 @@ describe('the tunable table', () => {
     expect(config.motivation.childRadius.under1).toBe(1);
     expect(config.motivation.childRadius.years4to7).toBe(DEFAULT_CONFIG.motivation.childRadius.years4to7);
   });
+
+  it('enables every M15 survival ablation by default', () => {
+    const motivation = makeConfig().motivation;
+    expect(Object.values(motivation).filter(value => typeof value === 'boolean')).toEqual(Array(10).fill(true));
+  });
   it('has no path that fails to resolve', () => {
     // The failure this catches is silent rather than loud: `needs.hungerrate`
     // would have the settings screen writing a field nothing anywhere reads,

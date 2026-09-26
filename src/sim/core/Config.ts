@@ -251,6 +251,17 @@ export interface AiConfig {
 
 /** Tuning for the pull toward family, home and camp. */
 export interface MotivationConfig {
+  /** M15 phase 1b: reversible switches for the M13/M14 survival rules. */
+  reachFilter: boolean;
+  homePressure: boolean;
+  nightSleep: boolean;
+  infantsStill: boolean;
+  urgentNursing: boolean;
+  motherOnlyFeeds: boolean;
+  babyToHouse: boolean;
+  kinDefence: boolean;
+  cravings: boolean;
+  beliefChoice: boolean;
   comfortAdult: number;
   nightRadius: number;
   span: number;
@@ -402,6 +413,9 @@ export const DEFAULT_CONFIG: SimConfig = {
     choiceSpread: 0.12,
   },
   motivation: {
+    reachFilter: true, homePressure: true, nightSleep: true, infantsStill: true,
+    urgentNursing: true, motherOnlyFeeds: true, babyToHouse: true,
+    kinDefence: true, cravings: true, beliefChoice: true,
     comfortAdult: 24, nightRadius: 8, span: 30, spanNight: 12,
     homeWeight: 2.4, childHomeMultiplier: 4, childHomeMinimumPressure: 0.25, reachAdult: 36, parentReach: 20,
     childRadius: { under1: 2, years1to3: 3, years4to7: 6, years8to11: 10, years12to13: 16 },

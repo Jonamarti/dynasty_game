@@ -26,6 +26,7 @@
  *   npm run sim:seeds -- --size 192     (a bigger island, same food per tile)
  */
 import { Simulation } from '../src/sim/core/Simulation.ts';
+import { makeConfig, type SimConfig } from '../src/sim/core/Config.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { DemographyWatch, formatDemography, type Demography } from './demography.ts';
@@ -101,7 +102,7 @@ interface SeedResult {
 /** Ages at or below this are wholly dependent: they are fed or they die. */
 const INFANT_YEARS = 5;
 
-function runSeed(scenarioName: string, seed: string, steps: number, size: number | null): SeedResult {
+function runSeed(scenarioName: string, seed: string, steps: number, size: number | null, sets: string[]): SeedResult {
   const scenario = SCENARIOS[scenarioName];
   if (!scenario) throw new Error('unknown scenario: ' + scenarioName);
 
@@ -121,7 +122,9 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
       resourceScale: (size * size) / ((world.width ?? 128) * (world.height ?? 128)),
     },
   };
-  const sim = new Simulation({ ...scenario.config, ...sized, seed });
+  const config = makeConfig(scenario.config);
+  for (const assignment of sets) applySet(config, assignment);
+  const sim = new Simulation({ ...config, ...sized, seed });
   let peak = 0;
   let born = 0;
   const startingIds = new Set(sim.people.map(p => p.id));
@@ -253,6 +256,29 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   };
 }
 
+function applySet(config: SimConfig, assignment: string): void {
+  const equals = assignment.indexOf('=');
+  const path = assignment.slice(0, equals);
+  const raw = assignment.slice(equals + 1);
+  if (equals < 1 || raw.length === 0) throw new Error('expected --set path=value, got "' + assignment + '"');
+  const keys = path.split('.');
+  if (keys.some(key => !key || key === '__proto__' || key === 'constructor' || key === 'prototype')) {
+    throw new Error('invalid --set path: ' + path);
+  }
+  let target: Record<string, unknown> = config as unknown as Record<string, unknown>;
+  for (const key of keys.slice(0, -1)) {
+    const next = target[key];
+    if (next === null || typeof next !== 'object') throw new Error('unknown --set path: ' + path);
+    target = next as Record<string, unknown>;
+  }
+  const key = keys[keys.length - 1]!;
+  const current = target[key];
+  if (typeof current === 'boolean' && (raw === 'true' || raw === 'false')) target[key] = raw === 'true';
+  else if (typeof current === 'number' && Number.isFinite(Number(raw))) target[key] = Number(raw);
+  else if (typeof current === 'string') target[key] = raw;
+  else throw new Error('invalid value for --set ' + path + ': ' + raw);
+}
+
 function main(): void {
   const args = process.argv.slice(2);
   const flag = (name: string) => {
@@ -272,8 +298,24 @@ function main(): void {
     return;
   }
   const steps = Number(flag('steps') ?? args[2] ?? scenario.steps);
-  const sizeValue = flag('size') ?? args[3];
+  const positionalSize = args[3];
+  const sizeValue = flag('size') ?? (positionalSize !== undefined && Number.isFinite(Number(positionalSize))
+    ? positionalSize : undefined);
   const size = sizeValue === undefined ? null : Number(sizeValue);
+  const sets: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--set') {
+      const value = args[++i];
+      if (value === undefined) throw new Error('--set needs path=value');
+      sets.push(value);
+    }
+  }
+  // vite-node forwards the value of unknown `--set` options as positional
+  // arguments; support that form after the legacy scenario/count/steps/size.
+  const setStart = sizeValue === undefined ? 3 : 4;
+  for (const value of args.slice(setStart)) {
+    if (value.includes('=')) sets.push(value);
+  }
 
   // Named rather than numbered: adjacent numeric seeds are the case the RNG is
   // most likely to correlate on, and these are the seeds the docs quote.
@@ -294,7 +336,7 @@ function main(): void {
   const results: SeedResult[] = [];
   const started = Date.now();
   for (const seed of seeds) {
-    const r = runSeed(scenarioName, seed, steps, size);
+    const r = runSeed(scenarioName, seed, steps, size, sets);
     results.push(r);
     const pct = r.peak === 0 ? 0 : Math.round((r.end / r.peak) * 100);
     console.log(
