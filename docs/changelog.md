@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-26 — M15 1d, dejar que el antojo de proteína rompa el radio del hogar
+
+Cuando hay antojo fuerte, no existe proteína alcanzable y la comida accesible
+no aporta proteína suficiente, el forraje elige el nodo proteico del radio de
+búsqueda aunque esté más lejos del ancla. La condición se aisló en un helper y
+tiene pruebas para preservar comida normal si el antojo es débil, ya hay
+proteína al alcance o la opción normal ya aporta proteína. Cohortes `lean` y
+`century` en curso; la fase 1 sigue bloqueada hasta validar la media y las
+puertas all-off.
+
 ## 2026-09-26 — M15 diagnóstico, proteína enmascarada por otro alimento
 
 La telemetría distingue ahora los antojos en que hay comida proteica solo

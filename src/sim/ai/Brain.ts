@@ -33,6 +33,7 @@ import type { Household } from '../entities/Household.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
+import { chooseCravingFood } from './FoodChoice.ts';
 import { ITEMS } from '../entities/Item.ts';
 import {
   TECH, quarryReachFactor, techPower, prerequisitesMet, type Tech,
@@ -712,8 +713,17 @@ export class Brain {
     // old behaviour made them wait until `desperateForFood` disabled the filter
     // entirely, which coupled home pressure and reach into a food-access dead
     // zone measured by the M15 1c cohort.
-    const foodNode = inReachFood ?? (!desperateForFood
+    const ordinaryFoodNode = inReachFood ?? (!desperateForFood
       ? this.findNode(person, ctx, isFoodNode, false, anchor, reach) : null);
+    const strongProteinCraving = cravings(person, ctx.motivation.cravings).protein > 0.5;
+    const proteinFood = (n: ResourceNode) =>
+      !n.depleted && this.nodeWorth(person, n, ctx) > 0 && this.nodeProteinFraction(person, n) >= 0.3;
+    const reachableProtein = strongProteinCraving
+      ? this.findNode(person, ctx, proteinFood, true, anchor, reach) : null;
+    const proteinInSearch = strongProteinCraving && !reachableProtein
+      ? this.findNode(person, ctx, proteinFood, false, anchor, reach) : null;
+    const foodNode = chooseCravingFood(ordinaryFoodNode, proteinInSearch, !!reachableProtein,
+      strongProteinCraving, n => this.nodeProteinFraction(person, n));
     if (telemetry.isEnabled()) {
       if (foodNode) telemetry.count('food_accessible_at_think');
       else telemetry.count('food_absent_in_search_at_think');
@@ -728,17 +738,15 @@ export class Brain {
     // M15 phase 1d: distinguish a weak craving weight from an empty local
     // choice set. Use the same spatial search and reach rule as forage, and
     // keep the audit out of ordinary play where telemetry is disabled.
-    if (telemetry.isEnabled() && cravings(person, ctx.motivation.cravings).protein > 0.5) {
-      const proteinFood = (node: ResourceNode) =>
-        !node.depleted && this.nodeWorth(person, node, ctx) > 0 &&
-        this.nodeProteinFraction(person, node) >= 0.3;
-      const reachable = this.findNode(person, ctx, proteinFood, true, anchor, reach);
-      const anywhereInSearch = reachable ?? this.findNode(person, ctx, proteinFood, false, anchor, reach);
+    if (telemetry.isEnabled() && strongProteinCraving) {
       telemetry.count('craving_protein_search');
-      if (reachable) telemetry.count('craving_protein_reachable');
-      else if (anywhereInSearch) {
+      if (reachableProtein) telemetry.count('craving_protein_reachable');
+      else if (proteinInSearch) {
         telemetry.count('craving_protein_outside_reach');
-        if (inReachFood) telemetry.count('craving_protein_masked_by_reachable_food');
+        if (inReachFood) {
+          telemetry.count('craving_protein_masked_by_reachable_food');
+          if (foodNode === proteinInSearch) telemetry.count('craving_protein_override_selected');
+        }
       }
       else telemetry.count('craving_protein_absent');
     }
