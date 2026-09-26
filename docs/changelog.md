@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-26 — M15 diagnóstico, proteína visible pero fuera del ancla
+
+En `century` a cinco semillas, 42,9% de las decisiones con antojo tenían una
+comida proteica en el radio de forrajeo pero fuera del límite del ancla; 8,8%
+no encontraban proteína en el radio. El resultado sostiene probar una excepción
+de alcance mientras haya antojo y no exista proteína alcanzable. También se
+documentó el desglose de interrupciones en una muestra all-off de cinco
+semillas, sin atribuirle aún una causa demográfica.
+
 ## 2026-09-26 — M15 diagnóstico, disponibilidad de proteína en la búsqueda
 
 Durante un antojo de proteína, el scorer cuenta si el mismo radio de

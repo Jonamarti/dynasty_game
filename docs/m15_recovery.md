@@ -221,3 +221,20 @@ Aunque el cambio deja reaccionar a los personajes comprometidos, las cohortes
 no demuestran un beneficio demográfico y apuntan a que una acción social de
 comida/intercambio necesita decir qué necesidad está atendiendo. No se toca
 ningún peso ni se cierra la puerta 1e.
+
+## Diagnóstico de M15 1d: nodos de proteína durante el antojo
+
+La telemetría toma cada decisión de IA en la que `cravings.protein > 0,5` y
+usa el radio espacial de forrajeo. En `century`, cinco semillas sumaron
+1.091.277 búsquedas: 526.856 con comida proteica dentro del límite de alcance,
+468.363 con comida proteica solo fuera de ese límite y 96.058 sin nodos de
+forraje ricos en proteína en el radio de forrajeo. Es una lectura de nodos
+recogibles; no incluye animales para cazar. La partición indica que el caso
+más común es tener el recurso fuera del radio del ancla, no que falte en la
+búsqueda. La próxima variante medirá el efecto de preferir esa opción solo
+cuando haya antojo fuerte y no haya proteína alcanzable.
+
+En cinco semillas `lean` all-off, el desglose registró 17.025 interrupciones de
+`give` por sed, 10.362 de `spar` por hambre, 4.898 de `steal` por hambre y
+6.143 de `ask` por hambre. Como cuenta intentos y no personas, es una pista
+para instrumentar, no una medida del coste vital.

@@ -1,5 +1,21 @@
 # Known bugs and rough edges
 
+## M15 fase 1d — disponibilidad de proteína y verbos interrumpidos
+
+En una medición diagnóstica de `century` a cinco semillas hubo 1.091.277
+búsquedas espaciales durante el antojo de proteína: 526.856 tenían una comida
+rica en proteína dentro del alcance del ancla (48,3%), 468.363 solo la tenían
+fuera de ese alcance (42,9%) y 96.058 no tenían ningún nodo de forraje con
+proteína en el radio buscado (8,8%). Esto respalda un límite de alcance que
+oculta proteína con frecuencia; todavía falta probar si una excepción por
+antojo corrige el check sin perjudicar supervivencia o tecnología.
+
+En una muestra diagnóstica distinta (`lean`, cinco semillas, all-off),
+`give` se interrumpió 17.025 veces por sed, `spar` 10.362 por hambre, `steal`
+4.898 por hambre y `ask` 6.143 por hambre. Estas cifras cuentan cada intento
+abortado, no personas únicas ni costes por causa, así que muestran dónde
+observar el mecanismo, no el efecto demográfico de cada verbo.
+
 ## M15 fase 1d — diagnóstico ampliado, 2026-09-26
 
 La ablación ya corregida `infantsStill=false` baja lean a 34,1% (7/20 colapsos;
