@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-26 — M15 1d, archivar la comparación de interrupciones sociales
+
+La gira visual de Playwright, 24 capturas en 5 recorridos, queda en
+`artifacts/screenshots/m15-phase1d-social-needs-ablation/` como hito de
+desarrollo cronológico.
+
 ## 2026-09-26 — M15 1d, medir la ablación de interrupciones sociales
 
 `interruptSocialNeeds=false` promedia 54,3% en el build normal y 62,5% all-off,
