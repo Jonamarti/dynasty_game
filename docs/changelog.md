@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-26 — M15 1e, registrar el resultado de la variante proteica
+
+`lean` promedia 56,0% en 20 semillas y `century` 97,0%; la variante no pasa el
+gate `lean` de 60,9%. La cohorte all-off repite 60,8%, 5,1 puntos bajo la base
+M13 de 65,9%. `sim:check:all` deja documentados los checks rojos observados.
+Se detiene el avance conforme a M15 1e hasta que el propietario decida si
+acepta esa pérdida o retira una regla.
+
 ## 2026-09-26 — M15 1d, dejar que el antojo de proteína rompa el radio del hogar
 
 Cuando hay antojo fuerte, no existe proteína alcanzable y la comida accesible

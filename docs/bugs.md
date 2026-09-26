@@ -2920,3 +2920,13 @@ nobody currently fails to reach a door because of it. Filed because it is the
 same class of defect M7 stage C spent a commit on at the other end — an aim
 point half a tile from where the walkability test thought it was — and the
 next person to hit it will hit it from the building side.
+
+### M15 1e remains stopped after the protein-craving mechanism
+
+`chooseCravingFood` closes the measured case where nearby low-protein forage
+masks protein just beyond home reach (132,686/132,686 targeted cases in the
+20-seed `lean` cohort). It does not close the survival gate: `lean` remains
+56.0% with rules active (minimum 60.9%), and all-off remains 60.8% against the
+65.9% M13 base (5.1 points below, just outside tolerance). `century` is healthy
+at 97.0% against a 90.5% minimum. Per M15 1e, the owner must choose whether to
+accept the lean loss as a new base or retire a rule before phase 2 starts.

@@ -231,10 +231,33 @@ usa el radio espacial de forrajeo. En `century`, cinco semillas sumaron
 forraje ricos en proteína en el radio de forrajeo. Es una lectura de nodos
 recogibles; no incluye animales para cazar. La partición indica que el caso
 más común es tener el recurso fuera del radio del ancla, no que falte en la
-búsqueda. La próxima variante medirá el efecto de preferir esa opción solo
-cuando haya antojo fuerte y no haya proteína alcanzable.
+búsqueda. La variante medida debajo prefiere esa opción solo cuando hay antojo
+fuerte y no hay proteína alcanzable.
 
 En cinco semillas `lean` all-off, el desglose registró 17.025 interrupciones de
 `give` por sed, 10.362 de `spar` por hambre, 4.898 de `steal` por hambre y
 6.143 de `ask` por hambre. Como cuenta intentos y no personas, es una pista
 para instrumentar, no una medida del coste vital.
+
+### Variante de alcance ante antojo proteico y puerta 1e
+
+La medición de cinco semillas había encontrado 236.680 de 1.091.277 búsquedas
+(21,7%) con proteína solo fuera del alcance y otro nodo de comida dentro. La
+regla `chooseCravingFood` prefiere el nodo rico en proteína en ese caso, solo
+con antojo >0,5 y sin proteína alcanzable; conserva la comida normal si el
+antojo es débil o esta ya tiene proteína. `FoodChoice.test.ts` cubre esas
+fronteras. En la cohorte `lean` de 20 semillas hubo 132.686 activaciones de
+132.686 casos enmascarados y la supervivencia fue 56,0%, frente a 50,1% de la
+pasada anterior con interrupciones sociales y 56,0% del fallback previo. El
+share de nutrición proteica quedó en 8,1%: la selección por sí sola no resolvió
+la supervivencia de `lean`.
+
+En `century`, 20 semillas dieron 97,0% de supervivencia, dentro del gate
+(mínimo 90,5%) y con 20,3% de nutrición proteica. All-off `lean` sigue en
+60,8%, 5,1 puntos por debajo de la base M13 65,9%; la décima fuera del margen
+no se redondea ni se declara verde. `sim:check:all` mantiene el bloque conocido
+de rojos dieta/sueño/proximidad infantil; además marca `peoples-drift-apart`
+en `century` y `craft`, ya clasificado como dependiente de eventos. La matriz y
+la puerta 1e no quedan cerradas. Según el plan, se para aquí y se pide al
+propietario elegir entre aceptar la pérdida de `lean` como nueva base o retirar
+una regla; no se inicia la fase 2 sin esa decisión.
