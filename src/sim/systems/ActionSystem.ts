@@ -857,11 +857,16 @@ export class ActionSystem {
   }
 
   /** A social timer is still a committed action: needs must be able to reach it. */
-  private interruptSocialWork(person: Person, ctx: ActionContext, prefix: string): boolean {
+  private interruptSocialWork(
+    person: Person,
+    ctx: ActionContext,
+    prefix: string,
+    answers?: LethalNeed
+  ): boolean {
     // A full pack is no reason to cut off a conversation or exchange. These
     // actions do not need free hands until their final transaction, and the
     // same rule applies to giving, trading and taking goods.
-    const reason = this.interruption(person, ctx, { ignoreLaden: true });
+    const reason = this.interruption(person, ctx, { ignoreLaden: true, answers });
     if (!reason) return false;
     this.stop(person, reason, ctx, prefix);
     return true;
@@ -3627,7 +3632,10 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) {
-      this.interruptSocialWork(person, ctx, 'gifted_');
+      const feedsDependentChild = person.targetItemId === null && other.isChild &&
+        (person.childIds.includes(other.id) || other.householdId === person.householdId) &&
+        other.needs.hunger > person.needs.hunger + 5;
+      this.interruptSocialWork(person, ctx, 'gifted_', feedsDependentChild ? 'hunger' : undefined);
       return;
     }
 

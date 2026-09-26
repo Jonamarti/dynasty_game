@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-26 — M15 fase 1d, no cortar la comida del hijo dependiente
+
+La primera cohorte de 20 semillas tras añadir interrupciones a ocho verbos
+bajó a 50,3% y tuvo 289 muertes por hambre bajo cinco años, frente a 264 en la
+cohorte anterior. Como `give` también alimenta a los niños, la interrupción por
+hambre cancelaba comida destinada a un dependiente más hambriento. Se aplica la
+exención `answers: 'hunger'` solo a esa transferencia y se conserva la
+interrupción por sed, frío y peligro. Test de regresión añadido; la cohorte debe
+repetirse antes de cerrar el diagnóstico.
+
 ## 2026-09-26 — M15 fase 1d, interrumpir ocho verbos temporizados
 
 Las necesidades podían dejar a quien enseñaba, pedía o daba una lección,

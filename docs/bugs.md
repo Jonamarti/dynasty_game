@@ -500,6 +500,15 @@ regression confirms a thirsty committed teacher stops with the reason surfaced
 for an order. The 20-seed M15 cohort measures the survival and transmission
 cost before the phase gate is closed.
 
+**Child-feeding exception.** The first 20-seed trial of this change fell to
+50,3% survival and recorded 289 under-five starvation deaths, versus 264 in
+the preceding build. Because `give` also carries the feeding action, treating
+hunger as a reason to abandon food already on hand can interrupt help to a
+hungrier dependent. `doGive` now uses `interruption(..., answers: 'hunger')`
+only for food going to a dependent child; thirst, cold and danger still stop
+the action. A regression covers a hungry parent feeding a hungrier child; a
+fresh cohort is required before retaining the change.
+
 ### Almost nobody hits back
 
 Of 161 blows on `century` seed 1, **every one** landed on the weaker of the

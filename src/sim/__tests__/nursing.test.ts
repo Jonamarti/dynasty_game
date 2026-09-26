@@ -155,4 +155,27 @@ describe('urgent maternal nursing', () => {
     expect(baby.inventory.count('berries')).toBeGreaterThan(0);
     expect(sim.interruptions.some(stop => stop.reason === 'not_the_mother')).toBe(false);
   });
+
+  it('lets a hungry parent finish giving food to a hungrier child', () => {
+    const sim = new Simulation({ seed: 'hungry-parent-feeds-child', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 4 } });
+    const parent = sim.people[0]!;
+    const child = sim.people[1]!;
+    parent.age = 30 * parent.daysPerYear;
+    parent.childIds = [child.id];
+    parent.needs.hunger = 60;
+    parent.inventory.add('berries', 4);
+    child.age = 3 * child.daysPerYear;
+    child.motherId = parent.id;
+    child.bandId = parent.bandId;
+    child.needs.hunger = 90;
+    child.x = parent.x;
+    child.y = parent.y;
+
+    expect(sim.order(parent, 'give', { personId: child.id })).toBe(true);
+    for (let i = 0; i < 20; i++) sim.step();
+
+    expect(child.inventory.count('berries')).toBeGreaterThan(0);
+    expect(sim.interruptions.some(stop => stop.personId === parent.id && stop.reason === 'hungry')).toBe(false);
+  });
 });
