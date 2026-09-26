@@ -15,6 +15,7 @@ Mediciones en curso. Los artefactos completos de estas cohortes están en
 | `homePressure` y `reachFilter` apagados | 83,9% | 0/20 | 320: starvation 220, dehydration 12, exposure 25, murder 47, old age 16 | 55,5% / 5,5%; 41,4% | 0/0 |
 | Solo `kinDefence` apagado | 50,6% | 4/20 | 698: starvation 533, dehydration 80, exposure 49, murder 22, old age 14 | idéntico al control | 0/0 |
 | Fallback de comida fuera del alcance, M15 1d | 56,0% | 1/20 | 671: starvation 511, dehydration 96, exposure 25, murder 25, old age 14 | 68,4% / 8,8%; 22,7% | 0/0 |
+| Suprimir `go_home` sobre la línea de trabajo (experimento revertido) | 56,8% | 2/20 | 584: starvation 504, dehydration 7, exposure 21, murder 36, old age 16 | 67,0% / 8,5%; 25,4% | 0/0 |
 
 HOME recoge también distancia diurna, percentiles infantiles y acciones en los
 archivos completos. KIN no tuvo ataques infantiles observados en ninguna de
@@ -51,6 +52,10 @@ estas tres cohortes; `0/0` es ausencia de muestra, no una defensa aprobada.
   511), mientras subieron las de sed de 80 a 96. Se activó 267.795 veces en la
   cohorte. Hay señal sobre la búsqueda, pero no basta para declarar la fase
   recuperada.
+- La prueba de ceder `go_home` al superar la línea de trabajo solo elevó la
+  supervivencia 0,8 puntos sobre el fallback (56,8%) y produjo 2/20 bandas
+  autodestruidas más 0,522 asesinatos intrabanda por 1.000 personas-año. Se
+  revirtió y no forma parte del build actual.
 - En una comparación diagnóstica separada de 5 semillas, el filtro descartó
   88.722 candidatos en el control y cero cuando `reachFilter` estaba apagado;
   este último dio 58,8% frente a 50,7%. Al apagar también `homePressure`, la

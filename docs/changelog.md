@@ -1,12 +1,11 @@
 # Changelog
 
-## 2026-09-26 — M15 fase 1d, el hogar cede ante necesidades urgentes
+## 2026-09-26 — M15 fase 1d, prueba de prioridad del hogar (revertida)
 
-Al llegar hambre o sed a la línea que detiene trabajos no esenciales, la
-presión de volver al hogar deja de competir con buscar alimento o agua. La
-misma línea de `Config.needs.workLimits` controla ambas decisiones; no se
-introduce un umbral nuevo. La prueba verifica que `go_home` ya no aparece en
-la tabla de puntuación después de alcanzar el límite.
+Se midió suprimir el regreso al hogar al alcanzar la línea de trabajo: `lean`
+subió solo 0,8 puntos hasta 56,8%, aún bajo la puerta; además aparecieron 2/20
+bandas autodestruidas y una tasa de 0,522 asesinatos intrabanda por 1.000
+personas-año. Se revirtió; no compensa los nuevos riesgos ni explica la brecha.
 
 ## 2026-09-26 — M15 fase 1c, medición parcial
 

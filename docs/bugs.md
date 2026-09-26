@@ -23,6 +23,11 @@ comestible dentro. La cohorte `lean` de 20 semillas subió de 50,6% a 56,0%,
 pero no alcanza la puerta de 60,9%; el hambre bajó de 533 a 511 muertes y la sed
 subió de 80 a 96. La fase sigue abierta y no se debe presentar como resuelta.
 
+Se probó suprimir `go_home` al cruzar la línea de trabajo. La supervivencia fue
+56,8% (solo +0,8 puntos frente al fallback), con 2/20 bandas autodestruidas y
+0,522 asesinatos intrabanda por 1.000 personas-año. El experimento se revirtió;
+el build conserva el fallback y la regla de hogar original.
+
 ## M15 fase 1a — `DemographyWatch.finish()` consumía iteradores, 2026-09-26
 
 **Corregido.** La ejecución `lean`, semilla `century`, registró 38 muertes en

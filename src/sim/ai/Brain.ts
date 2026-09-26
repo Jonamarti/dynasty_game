@@ -2839,15 +2839,7 @@ export class Brain {
     const homeAnchor = anchor;
     const nightRadius = person.isChild ? Math.max(2, childRadius(person, ctx.motivation) / 2) : ctx.motivation.nightRadius;
     const homeDistance = homeAnchor ? Math.hypot(person.x - homeAnchor.x, person.y - homeAnchor.y) : 0;
-    // Home is a pull while survival is stable. Once hunger or thirst reaches
-    // the same work line that ends non-survival jobs, it must stop competing
-    // with finding food or water; otherwise a high home score could keep
-    // winning until the need became critical. The scorer and interruption
-    // now share the existing threshold rather than a second tuned number.
-    const survivalNeedIsUrgent = person.needs.hunger >= ctx.needs.workLimits.hunger ||
-      person.needs.thirst >= ctx.needs.workLimits.thirst;
-    if (ctx.motivation.homePressure && !survivalNeedIsUrgent &&
-      homeAnchor && homeDistance > nightRadius) {
+    if (ctx.motivation.homePressure && homeAnchor && homeDistance > nightRadius) {
       const childFactor = person.isChild ? ctx.motivation.childHomeMultiplier : 1;
       const childPressure = person.isChild && homeDistance > childRadius(person, ctx.motivation) + 3
         ? Math.max(drive.home, ctx.motivation.childHomeMinimumPressure) : drive.home;
@@ -2865,8 +2857,7 @@ export class Brain {
     const wanderScore = 0.02 + ctx.rng.next() * 0.03;
     const childOutsideFamilyRange = ctx.motivation.homePressure && person.isChild && anchor !== null &&
       Math.hypot(person.x - anchor.x, person.y - anchor.y) > childRadius(person, ctx.motivation) + 3;
-    if (!(ctx.motivation.homePressure && !survivalNeedIsUrgent && person.isChild &&
-      (drive.home > 0.2 || childOutsideFamilyRange))) add('wander', wanderScore);
+    if (!(person.isChild && (drive.home > 0.2 || childOutsideFamilyRange))) add('wander', wanderScore);
 
     // --- Words that would be cut off, and being set upon ---------------------
     // M12 phase 2c. Here, after every route has had its say, because both
