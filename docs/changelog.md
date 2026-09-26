@@ -16,6 +16,11 @@ Medida `homePressure=false`: 61,7% (+11,1 puntos), con menos muertes por hambre
 y sed y más muertes violentas. Registrada como hipótesis de trabajo; falta mirar
 el reparto de acciones y repetir en otros escenarios.
 
+Medida la pareja `homePressure=false` + `reachFilter=false`: 83,9% de
+supervivencia y cero colapsos, frente a 50,6% con ambos activos. La fila de
+`kinDefence=false` fue idéntica al control. Se registró como una interacción
+que necesita instrumentar disponibilidad de alimento antes de cambiar reglas.
+
 ## 2026-09-26 — M15 fase 1b: `--set` sin `--steps`
 
 El CLI reconoce la asignación posicional que vite-node produce cuando se usa

@@ -12,6 +12,8 @@ Mediciones en curso. Los artefactos completos de estas cohortes están en
 | Solo `reachFilter` apagado | 57,2% | 1/20 | 649: starvation 497, dehydration 83, exposure 30, murder 24, old age 15 | 68,8% / 8,4%; 22,7% | 0/0 |
 | Solo `nightSleep` apagado | 53,9% | 4/20 | 716: starvation 305, dehydration 57, exposure 318, murder 22, old age 14 | 69,3% / 0%; 30,7% | 0/0 |
 | Solo `homePressure` apagado | 61,7% | 5/20 | 559: starvation 435, dehydration 15, exposure 20, murder 74, old age 15 | 56,5% / 5,7%; 31,5% | 0/0 |
+| `homePressure` y `reachFilter` apagados | 83,9% | 0/20 | 320: starvation 220, dehydration 12, exposure 25, murder 47, old age 16 | 55,5% / 5,5%; 41,4% | 0/0 |
+| Solo `kinDefence` apagado | 50,6% | 4/20 | 698: starvation 533, dehydration 80, exposure 49, murder 22, old age 14 | idéntico al control | 0/0 |
 
 HOME recoge también distancia diurna, percentiles infantiles y acciones en los
 archivos completos. KIN no tuvo ataques infantiles observados en ninguna de
@@ -34,5 +36,14 @@ estas tres cohortes; `0/0` es ausencia de muestra, no una defensa aprobada.
   74 y hay 5 colapsos frente a 4. Es consistente con tiempo de recolección
   perdido al volver al campamento, pero requiere medir acciones y repetir otros
   escenarios antes de declararlo causa.
+- Apagar `homePressure` y `reachFilter` juntos da 83,9% (0/20 colapsos), un
+  efecto combinado muy superior a cada ablación sola. Mecanismo candidato:
+  el scorer atrae a la gente al ancla y después filtra recursos lejanos cuando
+  aún no está en su umbral de hambre crítica; la combinación podría quitarle
+  los recursos que tendría que recorrer para mantener su despensa. La regla de
+  reach deja de aplicarse al forraje cuando el hambre ya es urgente, así que el
+  detalle necesita instrumentación antes de corregirlo.
+- Apagar solo `kinDefence` queda bit-idéntico al control en `lean` y también
+  registra 0/0 en KIN. No hubo ataques infantiles que pudieran activar la regla.
 - Faltan las otras nueve ablaciones individuales y las repeticiones en
   `century` y `crowded`. La fase 1c y la fase 1e siguen abiertas.
