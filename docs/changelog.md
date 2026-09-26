@@ -13,6 +13,11 @@ El interruptor `reachFilter` ya desactiva `reachOf()` cuando se apaga. Una
 prueba focalizada comprueba que la distancia pasa a ser ilimitada sólo durante
 la ablación; activado sigue el límite existente.
 
+Conectados también `homePressure` y `nightSleep`: apagar el primero elimina la
+presión y el verbo de regreso a casa; apagar el segundo quita el impulso de
+sueño por oscuridad y el multiplicador nocturno del sueño, manteniendo el
+descanso por fatiga y el refugio por frío.
+
 ## 2026-09-26 — M15 fase 1a, contar las muertes
 
 El informe de semillas mostraba cero muertes en DEMOGRAPHY aunque HISTORY

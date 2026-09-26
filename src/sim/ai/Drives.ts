@@ -36,7 +36,7 @@ export function drivePressures(person: Person, ctx?: AnchorContext & { time: { d
   let home = 0;
   const craving = cravings(person);
   const variety = urgencyCurve(100 * Math.max(craving.fat, craving.protein, craving.carb));
-  if (ctx) {
+  if (ctx?.motivation.homePressure) {
     const anchor = anchorOf(person, ctx);
     if (anchor) {
       const d = Math.hypot(person.x - anchor.x, person.y - anchor.y);
@@ -55,7 +55,7 @@ export function drivePressures(person: Person, ctx?: AnchorContext & { time: { d
     // Darkness makes people sleepy without changing the other needs. Only the
     // sleep/rest scorers read this pressure, so the floor cannot steal food or
     // water decisions from the survival drives.
-    rest: ctx ? Math.max(urgencyCurve(person.needs.fatigue),
+    rest: ctx?.motivation.nightSleep ? Math.max(urgencyCurve(person.needs.fatigue),
       0.3 * Math.max(0, Math.min(1, (0.25 - ctx.time.daylight) / 0.25))) : urgencyCurve(person.needs.fatigue),
     warmth: urgencyCurve(person.needs.cold),
     company: urgencyCurve(person.needs.company),

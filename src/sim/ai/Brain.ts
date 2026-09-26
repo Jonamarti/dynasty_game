@@ -2457,12 +2457,13 @@ export class Brain {
         // Above `rest` at night by construction, and below it by day: a roof
         // within reach after dark is where a tired person should be, and
         // sleeping through the afternoon is not.
-        add('sleep', fatigue * (ctx.time.isNight ? 3.2 : 1.0) * nearness);
+        add('sleep', fatigue * (ctx.time.isNight && ctx.motivation.nightSleep ? 3.2 : 1.0) * nearness);
       }
       const roofInReach = shelter !== null &&
         person.distanceTo({ x: shelter.centerX, y: shelter.centerY }) <= ctx.sightRadius;
       const nightAnchorDistance = anchor ? Math.hypot(person.x - anchor.x, person.y - anchor.y) : Infinity;
-      if (ctx.time.isNight && !roofInReach && nightAnchorDistance <= ctx.motivation.nightRadius) {
+      if (ctx.motivation.nightSleep && ctx.time.isNight && !roofInReach &&
+        nightAnchorDistance <= ctx.motivation.nightRadius) {
         // An open-ground bed is the fallback at camp, never an excuse to sleep
         // out in the country instead of returning to the family first.
         add('sleep', fatigue * 3.2 * 0.8);
@@ -2819,7 +2820,7 @@ export class Brain {
     const homeAnchor = anchor;
     const nightRadius = person.isChild ? Math.max(2, childRadius(person, ctx.motivation) / 2) : ctx.motivation.nightRadius;
     const homeDistance = homeAnchor ? Math.hypot(person.x - homeAnchor.x, person.y - homeAnchor.y) : 0;
-    if (homeAnchor && homeDistance > nightRadius) {
+    if (ctx.motivation.homePressure && homeAnchor && homeDistance > nightRadius) {
       const childFactor = person.isChild ? ctx.motivation.childHomeMultiplier : 1;
       const childPressure = person.isChild && homeDistance > childRadius(person, ctx.motivation) + 3
         ? Math.max(drive.home, ctx.motivation.childHomeMinimumPressure) : drive.home;
@@ -2835,7 +2836,7 @@ export class Brain {
     // wandering must never out-score real work, or people mill about while
     // their needs climb.
     const wanderScore = 0.02 + ctx.rng.next() * 0.03;
-    const childOutsideFamilyRange = person.isChild && anchor !== null &&
+    const childOutsideFamilyRange = ctx.motivation.homePressure && person.isChild && anchor !== null &&
       Math.hypot(person.x - anchor.x, person.y - anchor.y) > childRadius(person, ctx.motivation) + 3;
     if (!(person.isChild && (drive.home > 0.2 || childOutsideFamilyRange))) add('wander', wanderScore);
 
