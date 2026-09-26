@@ -705,8 +705,16 @@ export class Brain {
     // and the technologies that turn what is underfoot into food depend on it
     // being so.
     const desperateForFood = pressedByNeed(person, ctx.needs.workLimits, 'hunger');
-    const foodNode = this.findNode(person, ctx,
-      n => !n.depleted && this.nodeWorth(person, n, ctx) > 0, !desperateForFood, anchor, reach);
+    const isFoodNode = (n: ResourceNode) => !n.depleted && this.nodeWorth(person, n, ctx) > 0;
+    const foodNode = this.findNode(person, ctx, isFoodNode, !desperateForFood, anchor, reach);
+    if (foodNode) telemetry.count('food_accessible_at_think');
+    else if (!desperateForFood && this.findNode(person, ctx, isFoodNode, false, anchor, reach)) {
+      // M15 phase 1d: a non-urgent forager can see edible food in the search
+      // radius, but the home-distance filter removes every candidate. Count
+      // this separately from an actually empty local search before changing
+      // either the reach rule or the home pull.
+      telemetry.count('food_blocked_by_reach_at_think');
+    } else telemetry.count('food_absent_in_search_at_think');
     if (foodNode) {
       // Hunger drives foraging only to the extent it is not already answered by
       // what you carry — but the reserve is generous. A first attempt cut the

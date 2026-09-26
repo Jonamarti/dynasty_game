@@ -97,6 +97,9 @@ interface SeedResult {
   soilRatio: number;
   bandSpread: number;
   bandPairs: number;
+  foodAccessible: number;
+  foodBlockedByReach: number;
+  foodAbsentInSearch: number;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -253,6 +256,9 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     soilRatio,
     bandSpread: bandStanding.friendliest - bandStanding.hostile,
     bandPairs: bandStanding.pairs,
+    foodAccessible: counts.food_accessible_at_think ?? 0,
+    foodBlockedByReach: counts.food_blocked_by_reach_at_think ?? 0,
+    foodAbsentInSearch: counts.food_absent_in_search_at_think ?? 0,
   };
 }
 
@@ -361,6 +367,8 @@ function main(): void {
   console.log(formatDemography(results.map(r => r.demography)));
   console.log(formatCohesion(results.map(r => r.cohesion)));
   console.log(formatHistory(results.map(r => r.history)));
+  console.log('  FOOD ACCESS accessible ' + sum(r => r.foodAccessible) + ' · blocked by reach ' +
+    sum(r => r.foodBlockedByReach) + ' · absent from search ' + sum(r => r.foodAbsentInSearch));
 
   console.log('='.repeat(78));
   console.log(

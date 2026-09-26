@@ -21,6 +21,10 @@ supervivencia y cero colapsos, frente a 50,6% con ambos activos. La fila de
 `kinDefence=false` fue idéntica al control. Se registró como una interacción
 que necesita instrumentar disponibilidad de alimento antes de cambiar reglas.
 
+Instrumentada la búsqueda de comida para separar hallazgos, nodos descartados
+por alcance y búsquedas sin comida. Esta telemetría no escribe estado ni usa
+RNG y se imprime en el reporte de semillas como `FOOD ACCESS`.
+
 ## 2026-09-26 — M15 fase 1b: `--set` sin `--steps`
 
 El CLI reconoce la asignación posicional que vite-node produce cuando se usa
