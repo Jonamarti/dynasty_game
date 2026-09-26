@@ -3782,6 +3782,7 @@ export class Simulation {
       day: this.time.day,
       seasonGrowth: this.time.growth,
       needs: this.config.needs,
+      motivation: this.config.motivation,
       dropAt: (x: number, y: number, itemId: string, count: number) =>
         this.dropAt(x, y, itemId, count),
       pilesById: this.pilesById,
@@ -3843,7 +3844,7 @@ export class Simulation {
       // The first year is before walking: the baby rests where born until a
       // carrier system exists. Letting its own needs choose `forage` or `drink`
       // made newborns roam and feed themselves like small adults.
-      if (person.isInfant) {
+      if (person.isInfant && this.config.motivation.infantsStill) {
         person.forgetPlans();
         person.action = 'idle';
         continue;
@@ -3865,13 +3866,22 @@ export class Simulation {
       if (isHeld(person, this.time.tick)) continue;
 
       const underAttack = assailantOf(person, id => this.peopleById.get(id), this.time.tick) !== null;
-      const urgentBaby = underAttack ? null : infantNeedingNursing(person, this.peopleById, this.world);
-      const activeNursing = person.action === 'nurse';
-      const activeCarry = person.action === 'carry_baby_home';
+      const urgentBaby = underAttack || !this.config.motivation.urgentNursing
+        ? null : infantNeedingNursing(person, this.peopleById, this.world);
+      const activeNursing = this.config.motivation.urgentNursing && person.action === 'nurse';
+      const activeCarry = this.config.motivation.babyToHouse && person.action === 'carry_baby_home';
       const currentBaby = activeNursing && person.targetPersonId !== null
         ? this.peopleById.get(person.targetPersonId) : null;
-      const homeBaby = underAttack ? null : infantOutsideHome(
+      const homeBaby = underAttack || !this.config.motivation.babyToHouse ? null : infantOutsideHome(
         person, this.peopleById, this.householdsById, this.buildingsById);
+      if (!this.config.motivation.urgentNursing && person.action === 'nurse') {
+        person.forgetPlans();
+        person.action = 'idle';
+      }
+      if (!this.config.motivation.babyToHouse && person.action === 'carry_baby_home') {
+        person.forgetPlans();
+        person.action = 'idle';
+      }
       const currentCarryBaby = activeCarry && person.targetPersonId !== null
         ? this.peopleById.get(person.targetPersonId) : null;
       if (!underAttack && (urgentBaby || activeNursing || homeBaby || activeCarry)) {

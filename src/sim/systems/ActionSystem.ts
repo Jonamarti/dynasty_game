@@ -40,7 +40,7 @@ import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
 import {
   INSCRIPTIONS, type Inscription, type InscriptionDef, type InscriptionForm,
 } from '../entities/Inscription.ts';
-import type { NeedsConfig } from '../core/Config.ts';
+import type { MotivationConfig, NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { bestFoodFor, consumeFood } from '../core/Macros.ts';
 import {
@@ -103,6 +103,7 @@ export interface ActionContext {
   seasonGrowth: number;
   /** Need rates, so an interruption can look one work cycle ahead. */
   needs: NeedsConfig;
+  motivation: MotivationConfig;
   /** Puts goods on the ground, for yields nobody has room to carry. */
   dropAt: (x: number, y: number, itemId: string, count: number) => void;
   pilesById: Map<number, ItemPile>;
@@ -3522,7 +3523,8 @@ export class ActionSystem {
       this.abandon(person, 'target_gone', ctx);
       return;
     }
-    const home = homeForMother(person, ctx.householdsById, ctx.buildingsById);
+    const home = ctx.motivation.babyToHouse
+      ? homeForMother(person, ctx.householdsById, ctx.buildingsById) : null;
     if (!home && baby.carriedBy === person.id) baby.carriedBy = null;
     if (home && (baby.carriedBy === person.id || !home.contains(baby.x, baby.y))) {
       if (baby.carriedBy !== person.id) {
@@ -3565,7 +3567,8 @@ export class ActionSystem {
 
   private doCarryBabyHome(person: Person, ctx: ActionContext): void {
     const baby = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
-    const home = homeForMother(person, ctx.householdsById, ctx.buildingsById);
+    const home = ctx.motivation.babyToHouse
+      ? homeForMother(person, ctx.householdsById, ctx.buildingsById) : null;
     if (!home && baby?.carriedBy === person.id) baby.carriedBy = null;
     if (!baby?.alive || !baby.isInfant || baby.motherId !== person.id || !home) {
       this.abandon(person, 'target_gone', ctx);
@@ -3617,7 +3620,7 @@ export class ActionSystem {
       return;
     }
 
-    if (other.isInfant && other.motherId !== person.id) {
+    if (ctx.motivation.motherOnlyFeeds && other.isInfant && other.motherId !== person.id) {
       this.abandon(person, 'not_the_mother', ctx);
       return;
     }

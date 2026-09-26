@@ -814,7 +814,8 @@ export class Brain {
     let foe: Person | null = null;
     let beneficiary: Person | null = null;
     let nursingChild: Person | null = null;
-    nursingChild = ctx.peopleById ? infantNeedingNursing(person, ctx.peopleById, ctx.world) : null;
+    nursingChild = ctx.motivation.urgentNursing && ctx.peopleById
+      ? infantNeedingNursing(person, ctx.peopleById, ctx.world) : null;
     if (nursingChild) {
       // Simulation also interrupts committed work immediately; this makes the
       // overriding care need visible in `why` and ordinary replanning.
@@ -2042,7 +2043,7 @@ export class Brain {
     // restrain a local aggressor, while a child's family confronts an outsider.
     // The child's parent outranks household and band ties; self-defence below
     // still has final say when the person is the one being hit.
-    if (!person.isChild) {
+    if (ctx.motivation.kinDefence && !person.isChild) {
       let protectedPerson: Person | null = null;
       let attacker: Person | null = null;
       let protectedKind: 'child' | 'household' | 'band' = 'band';

@@ -18,6 +18,16 @@ presión y el verbo de regreso a casa; apagar el segundo quita el impulso de
 sueño por oscuridad y el multiplicador nocturno del sueño, manteniendo el
 descanso por fatiga y el refugio por frío.
 
+Conectados `infantsStill`, `urgentNursing`, `babyToHouse`, `motherOnlyFeeds` y
+`kinDefence`. Cada regla puede apagarse independientemente desde `--set`; las
+decisiones por defecto siguen encendidas. Los caminos de emergencia respetan
+también los interruptores cuando la acción ya estaba comprometida.
+
+Pruebas de enfermería: la lactancia urgente deja de interrumpir trabajo cuando
+se apaga; la alimentación no materna sigue rechazada por defecto y puede
+aceptarse en la ablación. Los tests existentes siguen verificando lactancia y
+traslado al hogar con las reglas activadas.
+
 ## 2026-09-26 — M15 fase 1a, contar las muertes
 
 El informe de semillas mostraba cero muertes en DEMOGRAPHY aunque HISTORY

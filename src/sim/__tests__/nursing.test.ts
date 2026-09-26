@@ -5,6 +5,26 @@ import { Building, BUILDINGS } from '../entities/Building.ts';
 import { Household } from '../entities/Household.ts';
 
 describe('urgent maternal nursing', () => {
+  it('does not interrupt work when urgent nursing is ablated', () => {
+    const sim = new Simulation({ seed: 'nursing-ablated', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 4 }, motivation: { urgentNursing: false } });
+    const mother = sim.people[0]!;
+    const baby = sim.people[1]!;
+    mother.age = 30 * mother.daysPerYear;
+    mother.childIds = [baby.id];
+    mother.action = 'chop';
+    mother.actionTimer = 100;
+    mother.order = 'chop';
+    baby.age = 0;
+    baby.motherId = mother.id;
+    baby.needs.hunger = 100;
+    baby.needs.thirst = 100;
+
+    sim.step();
+
+    expect(mother.action).not.toBe('nurse');
+  });
+
   it('interrupts the mother and relieves a hungry, thirsty infant', () => {
     const sim = new Simulation({ seed: 'urgent-nursing', world: { width: 48, height: 48 },
       population: { bands: 1, peoplePerBand: 4 } });
@@ -113,5 +133,26 @@ describe('urgent maternal nursing', () => {
 
     expect(baby.inventory.count('berries')).toBe(foodBefore);
     expect(sim.interruptions.some(stop => stop.reason === 'not_the_mother')).toBe(true);
+  });
+
+  it('allows a non-mother to feed an infant when the rule is ablated', () => {
+    const sim = new Simulation({ seed: 'shared-infant-feeding', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 4 }, motivation: { motherOnlyFeeds: false } });
+    const mother = sim.people[0]!;
+    const baby = sim.people[1]!;
+    const neighbour = sim.people[2]!;
+    mother.childIds = [baby.id];
+    baby.age = 0;
+    baby.motherId = mother.id;
+    baby.bandId = mother.bandId;
+    baby.x = neighbour.x;
+    baby.y = neighbour.y;
+    neighbour.inventory.add('berries', 4);
+    expect(sim.order(neighbour, 'give', { personId: baby.id })).toBe(true);
+
+    for (let i = 0; i < 40; i++) sim.step();
+
+    expect(baby.inventory.count('berries')).toBeGreaterThan(0);
+    expect(sim.interruptions.some(stop => stop.reason === 'not_the_mother')).toBe(false);
   });
 });
