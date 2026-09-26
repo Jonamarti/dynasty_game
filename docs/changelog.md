@@ -5,8 +5,11 @@
 La opción `infantsStill=false` ya permite que bebés se muevan por los dos
 caminos de `MovementSystem` (objetivo y control directo). Antes, el bucle de
 pensamiento respetaba la ablación pero el movimiento seguía congelado, dejando
-parte de la regla M13 activa al reproducir la base. Prueba dirigida añadida;
-cohorte all-off en curso antes de juzgar su efecto en la brecha.
+parte de la regla M13 activa al reproducir la base. En la cohorte all-off
+corregida, la supervivencia subió de 56,0% a 68,2%, dentro de 2,3 puntos de la
+base M13 (65,9%). La sed bajó de 215 a 16 muertes. El build normal sigue bajo
+el gate lean y `homePressure=false` queda como candidato para decisión del
+propietario, con cohortes que pasan supervivencia en los tres escenarios.
 
 ## 2026-09-26 — M15 fase 1c, completar ablaciones lean y clasificar matriz
 

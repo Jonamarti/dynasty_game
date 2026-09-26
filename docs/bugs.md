@@ -1,28 +1,23 @@
 # Known bugs and rough edges
 
-## M15 fase 1c — la matriz apagada no recupera la base, 2026-09-26
+## M15 fase 1c — el gate normal de lean sigue abierto, 2026-09-26
 
-**Abierto.** En `lean`, 20 semillas, todas las reglas M13/M14 instrumentadas
-apagadas dan 56,0% de supervivencia frente a 65,9% de la base M13: diferencia
-de -9,9 puntos, más allá del margen de cinco del plan. Una ablación individual
-de `reachFilter` da 57,2% (+6,6 puntos respecto a las reglas activadas), así
-que no explica por sí sola la brecha. Las causas cambian de 22 asesinatos con
-reglas activadas a 184 con todas apagadas; la distancia nocturna al hogar y la
-distancia infantil también empeoran. Faltan las otras ablaciones individuales
-y medir `century`/`crowded`; ver [m15_recovery.md](m15_recovery.md). `homePressure`
-apagado individualmente elevó la supervivencia 11,1 puntos; combinado con
-`reachFilter` apagado llegó a 83,9% (+33,3), mientras cada ablación sola dio
-61,7% y 57,2%. El posible mecanismo es volver al ancla y filtrar a la vez los
-recursos lejanos antes del hambre crítica. Hace falta instrumentar la
-disponibilidad de comida dentro/fuera del alcance y repetir en otros escenarios
-antes de corregirlo. No ajustar coeficientes hasta aislar el mecanismo.
+**All-off corregido.** En la primera medición, `infantsStill=false` liberaba el
+pensamiento de los bebés, pero `MovementSystem.nudge()` y `.advance()` aún
+detenían cualquier bebé. La regla seguía activa parcialmente: al hacer que
+ambos caminos respeten el interruptor, la cohorte all-off de 20 semillas subió
+de 56,0% a 68,2%, a 2,3 puntos de la base M13 (65,9%, dentro del margen de
+cinco). Las muertes por hambre quedaron en 255 frente a 237 en la corrida
+incompleta, pero las de sed bajaron de 215 a 16; la nueva cohorte registra
+178 asesinatos. Ver
+[m15_recovery.md](m15_recovery.md).
 
-**Hallazgo de compuerta, 2026-09-26.** Aunque el bucle de pensamiento respetaba
-`infantsStill=false`, `MovementSystem.nudge()` y `.advance()` aún detenían
-cualquier bebé sin consultar el interruptor. La regla quedaba parcialmente
-activa durante la ablación y el bebé no podía reproducir la movilidad de la
-base. Se corrigió ambos caminos; la nueva cohorte all-off debe confirmar cuánto
-de la diferencia explica antes de cerrar esta causa.
+**Abierto: build normal.** Con las reglas activadas y el fallback alimentario,
+`lean` sigue en 56,0%, bajo el gate de 60,9%. `homePressure=false` es un
+candidato medido a 20 semillas en los tres escenarios: `lean` 68,3%, `century`
+97,2% y `crowded` 100%. Cambia la violencia adulta a 24,1% en lean y 45,6% en
+century; la fase 1e deja al propietario decidir si se retira la regla o se
+conserva la política actual. No ajustar coeficientes hasta recibir esa decisión.
 
 **Resultado del arreglo diagnóstico, 2026-09-26.** El fallback hace que el
 forrajeo intente comida fuera del alcance del ancla cuando no hay un nodo

@@ -8,7 +8,8 @@ Mediciones en curso. Los artefactos completos de estas cohortes están en
 | Variante | Supervivencia | Colapsos | DEMOGRAPHY: muertes y causas | HOME: noche cerca / sueño; niño >12 | KIN: defensa observada |
 |---|---:|---:|---|---|---:|
 | M15 actual, reglas activadas | 50,6% | 4/20 | 698: starvation 533, dehydration 80, exposure 49, murder 22, old age 14 | 67,8% / 8,3%; 23,0% | 0/0 |
-| Todas las reglas apagadas | 56,0% | 0/20 | 703: starvation 237, dehydration 215, exposure 51, murder 184, old age 16 | 46,4% / 0%; 57,3% | 0/0 |
+| Todas apagadas, medición incompleta (el movimiento infantil seguía bloqueado) | 56,0% | 0/20 | 703: starvation 237, dehydration 215, exposure 51, murder 184, old age 16 | 46,4% / 0%; 57,3% | 0/0 |
+| Todas apagadas, compuerta de movimiento corregida | 68,2% | 2/20 | 495: starvation 255, dehydration 16, exposure 31, murder 178, old age 15 | 46,6% / 0%; 58,0% | 0/0 |
 | Solo `reachFilter` apagado | 57,2% | 1/20 | 649: starvation 497, dehydration 83, exposure 30, murder 24, old age 15 | 68,8% / 8,4%; 22,7% | 0/0 |
 | Solo `nightSleep` apagado | 53,9% | 4/20 | 716: starvation 305, dehydration 57, exposure 318, murder 22, old age 14 | 69,3% / 0%; 30,7% | 0/0 |
 | Solo `homePressure` apagado | 61,7% | 5/20 | 559: starvation 435, dehydration 15, exposure 20, murder 74, old age 15 | 56,5% / 5,7%; 31,5% | 0/0 |
@@ -30,9 +31,15 @@ estas tres cohortes; `0/0` es ausencia de muestra, no una defensa aprobada.
 ## Puerta pendiente
 
 - La regla activada queda por debajo de la puerta `lean` de 60,9%.
-- Todas apagadas dan 56,0%, **9,9 puntos por debajo** de la base M13 de 65,9%:
-  excede el margen de cinco puntos y viola la regla de ablación. No se debe
-  atribuir ese resto a ninguna regla de M13 sin una cohorte individual.
+- La corrida previa con todo apagado dio 56,0%, pero era una ablación
+  incompleta: `infantsStill=false` liberaba el pensamiento y la acción mientras
+  `MovementSystem` aún detenía a los bebés. Tras hacer que el interruptor
+  gobierne ambos caminos, todo apagado da 68,2%, a 2,3 puntos de la base M13 de
+  65,9% y dentro del margen de cinco. El desvío medido era una regla activa sin
+  interruptor, no una diferencia sin explicar entre las builds.
+- El build con reglas activadas y fallback sigue en 56,0%, 4,9 puntos bajo el
+  gate de 60,9%; arreglar la ablación no recuperó por sí solo la supervivencia
+  normal.
 - Apagar solo `reachFilter` mejora 6,6 puntos y reduce los colapsos de 4/20 a
   1/20; es una señal para repetir en `century` y `crowded`, no una explicación
   cerrada ni una calibración de parámetros.
@@ -82,6 +89,11 @@ estas tres cohortes; `0/0` es ausencia de muestra, no una defensa aprobada.
 - Las diez ablaciones individuales están medidas en `lean`; faltan sus
   repeticiones a 20 semillas en `century` y `crowded`. La puerta de base
   apagada y la fase 1e siguen abiertas.
+- `homePressure=false` con las demás reglas activadas y el fallback mide
+  `lean` 68,3% (0/20 colapsos), `century` 97,2% y `crowded` 100,0%. Es un
+  candidato que cumple las puertas de supervivencia con estas cohortes, pero
+  cambia `lean` a 24,1% de muertes adultas violentas y `century` a 45,6%; no se
+  desactiva por defecto sin la decisión del propietario que pide la fase 1e.
 
 ## Clasificación de la matriz actual
 
