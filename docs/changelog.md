@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-27 — M15 1e, completar cohortes restantes de presión dinámica
+
+Medidas 20 semillas en `century` y `crowded` para la variante dinámica de
+`homePressure`. `century` queda en 97,0% y `crowded` en 99,8%; junto al 57,6%
+de `lean`, la puerta 1e sigue abierta. Se registran demografía, sueño,
+proximidad y límites en `m15_recovery.md`, y se mantiene bloqueada la fase 2
+hasta que el propietario decida la base.
+
 ## 2026-09-27 — capturas: usar el botón «Resume» de la pausa
 
 La gira visual intentaba pulsar el botón del HUD cubierto por la pausa. El

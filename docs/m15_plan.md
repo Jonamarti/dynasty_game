@@ -505,6 +505,14 @@ aprietan, el NPC debe poder alejarse para atenderlas; la seguridad del hogar
 sigue teniendo un suelo y no se anula. Esta variante se mide como mecanismo de
 fase 1e antes de elegir la base, sin abrir todavía la fase 2.
 
+**Estado medido al 2026-09-27:** la variante dinámica dio 97,0% en `century`
+(20 semillas; puerta cumplida) y 99,8% en `crowded` (20 semillas, 3.000
+pasos, sin lectura generacional). En `lean` dio 57,6%, bajo el mínimo de
+60,9%. El detalle y los costes están en `m15_recovery.md`. La puerta conjunta
+sigue abierta y, conforme a la regla de parada, no se inicia fase 2 hasta que
+el propietario decida si acepta la diferencia de `lean` como base o retira
+una regla.
+
 La base que salga de esta fase es **la base de M15** (regla 16).
 
 **Commits:** `m15: contar las muertes` (1a); `m15: interruptores de

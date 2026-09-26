@@ -327,3 +327,26 @@ Por orden del propietario se conserva el comportamiento dinámico y se
 documenta como candidato; no se adopta una nueva base M15 ni se inicia fase 2.
 La puerta 1e sigue abierta: repetir en los demás escenarios y acordar si se
 requiere ajustar o aceptar la diferencia antes de seguir el plan.
+
+### Repetición de `homePressure` dinámico en los otros escenarios (20 semillas)
+
+La variante conserva las demás reglas activas. En `century` (40.000 pasos por
+semilla) dio 97,0% de supervivencia y 0/20 colapsos, con 813 nacimientos y 251
+muertes: 98 por deshidratación, 69 por hambre, 41 por exposición, 29 por
+homicidio y 14 por vejez. `HOME`: 76,4% de noches cerca (<15), 4,5% lejos
+(>25), 0,2% muy lejos (>45), 10,5% durmiendo y 5,5% descansando; 11,8% de
+observaciones infantiles quedaron a más de 12 tiles de un progenitor. La
+violencia adulta fue 45,3%.
+
+En `crowded` (3.000 pasos por semilla) dio 99,8% de supervivencia, 0/20
+colapsos y 77 nacimientos; no es una medida generacional. `HOME`: 75,6% de
+noches cerca, 6,2% lejos (>25), ninguna muy lejos (>45), 12,1% durmiendo y
+18,7% descansando; la distancia infantil superó 12 tiles en 18,3% de las
+observaciones. Hubo 28 muertes (12 por vejez, 9 por hambre y 7 por
+deshidratación), sin muertes violentas de adultos.
+
+La variante supera la puerta de supervivencia de `century` (base 100%, mínimo
+95%) y no muestra colapsos en estos escenarios. La puerta conjunta sigue
+abierta: `lean` quedó en 57,6%, por debajo del 60,9% exigido. Estos resultados
+no autorizan fijar una base nueva ni empezar la fase 2; hace falta la decisión
+del propietario sobre aceptar la diferencia de `lean` o retirar una regla.

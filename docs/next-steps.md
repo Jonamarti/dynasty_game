@@ -5,9 +5,12 @@ propietario (ropa escalonada, sal, interiores y muebles, sub-redes de
 tecnología, manos y antorchas, gráficos, altura, excavación y profundidad del
 agua). [m15_plan.md](m15_plan.md) reúne esas notas, lo que queda de M13 (el
 arreglo de la supervivencia y las fases 7-14), todo M14 y M8.4 (el hierro) en
-un solo orden de cuarenta y una fases. **Lo siguiente es M15 fase 1**: separar
-de qué muere la gente desde M13 y volver a menos de 5 puntos de la base de
-`lean`. Ver §7k. Lo que sigue más abajo es el registro de cómo se llegó aquí.
+un solo orden de cuarenta y una fases. **M15 fase 1 sigue abierta en la puerta
+1e**: la variante dinámica de presión del hogar mide 57,6% en `lean` (mínimo
+60,9%), 97,0% en `century` y 99,8% en `crowded` (3.000 pasos, no generacional).
+La siguiente acción requiere que el propietario decida si acepta `lean` como
+nueva base o retira una regla; fase 2 no empieza antes de esa decisión. Ver
+`m15_recovery.md`. Lo que sigue más abajo es el registro de cómo se llegó aquí.
 
 **M13 fase 6, continuación:** `KnowledgeSystem.tryObserve` ya permite aprender
 una expectativa `seen` al observar a un NPC comer o recoger un recurso. Test
