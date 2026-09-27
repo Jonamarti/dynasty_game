@@ -887,6 +887,8 @@ exista una cama.
 
 **Check:** `moods-move-choices`. **Coste declarado:** ≤ 3 puntos por subfase.
 
+**Avance del 2026-09-27:** el instrumento compara la conversacion de adultos en los terciles bajo y alto de pertenencia. En tiny falla como se esperaba (0,0% frente a 1,8%, con 166 muestras por grupo), antes de que esta fase cambie las decisiones. Solo observa estado existente; typecheck pasa.
+
 ## Fase 6 — Obras por persuasión (M13 fase 11; `notes4.txt`)
 
 **Detalle en `m13_plan.md` fase 11.** `Building.sponsorId` y `backers`; nadie

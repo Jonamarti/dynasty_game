@@ -1,3 +1,7 @@
+## 2026-09-27 - M15 phase 5 measurement instrument
+
+Added the moods-move-choices health check, comparing talk frequency in the low and high belonging-mood terciles. It fails on the pre-behaviour build as intended (0.0% vs 1.8%, 166 adult samples per group in tiny). The watch only reads existing state; typecheck passes.
+
 # Changelog
 
 ## 2026-09-27 - M15 phase 4: ideas from chronic needs

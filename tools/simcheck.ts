@@ -682,6 +682,8 @@ export interface ConflictWatch {
 }
 
 export interface HomeWatch { adultNightSamples: number; adultsNear: number; adultsSleeping: number; childSamples: number; childrenNear: number; childrenNearAnyParent: number; childActions: Record<string, number> }
+/** M15 phase 5's pre-behaviour instrument: talk choice against belonging mood. */
+export interface MoodChoiceWatch { belongingTalk: { mood: number; talk: boolean }[] }
 
 export interface Report {
   scenario: string;
@@ -703,6 +705,7 @@ export interface Report {
   stall: StallWatch;
   conflict: ConflictWatch;
   home: HomeWatch;
+  moodChoice: MoodChoiceWatch;
   /** The one number `Telemetry.max` tracks rather than sums; see its own note. */
   travel: { worstExpanded: number };
   checks: Check[];
@@ -885,6 +888,22 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   if (home.adultNightSamples < 200) skip('nights-are-spent-at-home', home.adultNightSamples + ' adult night samples (need 200)');
   else add('nights-are-spent-at-home', home.adultsNear / home.adultNightSamples >= 0.70,
     (100 * home.adultsNear / home.adultNightSamples).toFixed(1) + '% of ' + home.adultNightSamples + ' adult night samples within 15 tiles of an anchor (need 70%)');
+
+  const moodSamples = base.moodChoice.belongingTalk;
+  if (moodSamples.length < 200) {
+    skip('moods-move-choices', moodSamples.length + ' adult mood/action samples (need 200)');
+  } else {
+    const ranked = [...moodSamples].sort((a, b) => a.mood - b.mood);
+    const third = Math.floor(ranked.length / 3);
+    const low = ranked.slice(0, third);
+    const high = ranked.slice(ranked.length - third);
+    const talkShare = (rows: typeof low) => rows.filter(row => row.talk).length / rows.length;
+    const lowTalk = talkShare(low);
+    const highTalk = talkShare(high);
+    add('moods-move-choices', lowTalk > highTalk,
+      (100 * lowTalk).toFixed(1) + '% talk in low-belonging tercile vs ' +
+      (100 * highTalk).toFixed(1) + '% in high (' + low.length + ' samples each; low must be higher)');
+  }
   if (home.childSamples < 200) skip('children-keep-close', home.childSamples + ' child/carer samples (need 200)');
   else add('children-keep-close', home.childrenNearAnyParent / home.childSamples >= 0.75,
     (100 * home.childrenNearAnyParent / home.childSamples).toFixed(1) + '% of ' + home.childSamples + ' child samples within radius + 3 of either living parent (need 75%; designated carer=' +
@@ -2987,6 +3006,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   const conflict: ConflictWatch = { blows: 0, blowsNearHome: 0, incidents: 0, apart: [],
     kinAttacks: 0, kinDefended: 0, youngFleeTests: 0, youngFleeCloser: 0, kinPending: [] };
   const home: HomeWatch = { adultNightSamples: 0, adultsNear: 0, adultsSleeping: 0, childSamples: 0, childrenNear: 0, childrenNearAnyParent: 0, childActions: {} };
+  const moodChoice: MoodChoiceWatch = { belongingTalk: [] };
   let lastEventId = 0;
 
   const started = Date.now();
@@ -3081,6 +3101,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
         homes: new Map(sim.bands.filter(b => !b.outcast).map(b => [b.id, { x: b.homeX, y: b.homeY }])),
         motivation: sim.config.motivation };
       for (const person of living) {
+        if (!person.isChild) moodChoice.belongingTalk.push({ mood: person.mood.belonging, talk: person.action === 'talk' });
         if (sim.time.isNight && !person.isChild) {
           const anchor = anchorOf(person, anchorCtx);
           if (anchor) {
@@ -3170,6 +3191,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     stall,
     conflict,
     home,
+    moodChoice,
     relationships: sim.relationships.stats(),
     buildings: {
       total: sim.buildings.length,
