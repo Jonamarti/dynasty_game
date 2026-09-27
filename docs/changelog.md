@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-27 — M15 fase 2a: las expectativas de rendimiento guían la elección
+
+Las expectativas personales de recolección, pesca, fruta y caza ya ponderan
+esas decisiones respecto a una referencia instintiva; la curiosidad conserva
+un pequeño atractivo por lo no probado. La pestaña Self enseña los rendimientos
+que conoce el personaje del jugador con su fuente, sin exponer creencias de
+otros personajes. La cohorte lean activa queda en 32,5% frente a ~46,8% con el
+interruptor desactivado; el propietario prioriza completar M15 y revisar la
+calibración al cierre. La base de fase 1 continúa siendo provisional.
+
 ## 2026-09-27 — M15 1e, completar cohortes restantes de presión dinámica
 
 Medidas 20 semillas en `century` y `crowded` para la variante dinámica de

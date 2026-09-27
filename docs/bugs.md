@@ -1,5 +1,15 @@
 # Known bugs and rough edges
 
+## M15 fase 2a — expectativas de rendimiento y supervivencia, 2026-09-27
+
+Las creencias de rendimiento ya influyen en forage/fish/pick/hunt y se ven en
+Self para el personaje propio. La cohorte `lean` de 20 semillas cae a 32,5%
+con la ponderación activada; el control del mismo build con
+`motivation.beliefChoice=false` promedia aproximadamente 46,8%. La mayor parte
+de la diferencia corresponde a hambre. El coste excede el límite de tres
+puntos del plan. Por prioridad del propietario, se continúa M15 y se deja la
+calibración para el cierre; ver `m15_recovery.md`.
+
 ## M15 fase 1e — presión de hogar según urgencia fisiológica, 2026-09-27
 
 `homePressure` ahora baja dinámicamente cuando la necesidad fisiológica más

@@ -9,6 +9,11 @@ export const BELIEF_KEYS = [
   'yield:forage', 'yield:fish', 'yield:pick', 'yield:hunt',
 ] as const;
 export const BELIEF_CAPACITY = 48;
+/** First-cohort instrument baselines: keeping an untried action neutral makes
+ * this reader respond only after personal experience supplies evidence. */
+export const YIELD_INSTINCT: Readonly<Record<string, number>> = {
+  'yield:forage': 12, 'yield:fish': 10, 'yield:pick': 16, 'yield:hunt': 8,
+};
 const KNOWN_RAW_FOOD = ['berries', 'apple', 'pear', 'plum', 'hazelnut', 'meat', 'fish', 'milk'] as const;
 
 /** Per-person expectations. Map iteration preserves stable eviction and inheritance order. */
@@ -100,4 +105,14 @@ export function expectedFood(person: Person, itemId: string, unknownFood = 10): 
     if (best > 0) return best;
   }
   return unknownFood;
+}
+
+/** Expected return relative to an untried person's instinct, with room for curiosity. */
+export function expectationRatio(person: Person, key: string): number {
+  const baseline = YIELD_INSTINCT[key];
+  if (baseline === undefined || baseline <= 0) return 1;
+  const belief = person.beliefs.expect(key);
+  const expected = belief.confidence > 0 ? belief.value : baseline;
+  return Math.max(0.5, Math.min(2, expected / baseline)) +
+    person.traits.curiosity * 0.15 * (1 - belief.confidence);
 }

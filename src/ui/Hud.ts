@@ -34,6 +34,7 @@ import { NEEDS, SKILLS, TRAITS } from '../sim/entities/Person.ts';
 import { MOOD_CHANNELS } from '../sim/core/Mood.ts';
 import { MACROS, malnutrition, type Macro } from '../sim/core/Macros.ts';
 import { lastScores, lastDrives } from '../sim/ai/Brain.ts';
+import { BELIEF_KEYS } from '../sim/ai/Beliefs.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
 import { actionLabel } from '../render/Floaters.ts';
 import {
@@ -1091,6 +1092,29 @@ export class Hud {
     }
     rows.push('<div class="hud-note">' +
       t('How their spirits are riding, resting toward a point their temperament sets.') + '</div>');
+
+    // Private beliefs are shown only for the player character. The inspector
+    // must not turn another person's learned expectations into omniscient UI.
+    if (known.level === 'self') {
+      const beliefLabels: Record<string, string> = {
+        'yield:forage': 'foraging pays about {n} a day',
+        'yield:fish': 'fishing pays about {n} a day',
+        'yield:pick': 'gathering fruit pays about {n} a day',
+        'yield:hunt': 'hunting pays about {n} a day',
+      };
+      const learned = BELIEF_KEYS.flatMap(key => {
+        const belief = person.beliefs.get(key);
+        if (!belief || belief.confidence <= 0) return [];
+        const text = t(beliefLabels[key]!, { n: Math.round(belief.value) });
+        const source = t(({ own: 'learnt it themselves', seen: 'saw it', told: 'was told',
+          inherited: 'grew up knowing it', instinct: 'known by instinct' } as const)[belief.source]);
+        return ['<div class="hud-know"><span>' + escapeHtml(text) + '</span><small>' +
+          escapeHtml(source) + '</small></div>'];
+      });
+      if (learned.length > 0) {
+        rows.push('<div class="hud-section">' + t('What they expect') + '</div>', ...learned);
+      }
+    }
 
     // What they are working on now, before what they already know. An idea in
     // progress is the more interesting half: it has a story attached, it can

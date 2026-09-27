@@ -509,9 +509,10 @@ fase 1e antes de elegir la base, sin abrir todavía la fase 2.
 (20 semillas; puerta cumplida) y 99,8% en `crowded` (20 semillas, 3.000
 pasos, sin lectura generacional). En `lean` dio 57,6%, bajo el mínimo de
 60,9%. El detalle y los costes están en `m15_recovery.md`. La puerta conjunta
-sigue abierta y, conforme a la regla de parada, no se inicia fase 2 hasta que
-el propietario decida si acepta la diferencia de `lean` como base o retira
-una regla.
+sigue abierta por `lean`. El propietario priorizó completar M15 antes de
+ajustar supervivencia: se continúa con la fase 2 usando esta variante y estos
+resultados como **base provisional**. La puerta 1e queda pendiente de revisión
+al terminar el plan; no se presentan los 57,6% como si cumplieran el umbral.
 
 La base que salga de esta fase es **la base de M15** (regla 16).
 
@@ -584,6 +585,14 @@ técnica, para que valga igual cuando cada receta sea un nodo.
 
 **Checks de 2a-2d:** `word-travels` (≥ 50% de adultos con una creencia
 `seen`, `told` o `inherited`). **Coste declarado:** ≤ 3 puntos.
+
+**Avance 2026-09-27:** 2a está implementada; el rendimiento esperado ya afecta
+forage/fish/pick/hunt y el panel Self muestra las expectativas del personaje
+propio. Las creencias ajenas no se muestran. La cohorte lean midió un coste de
+supervivencia alto (32,5% en veinte semillas frente a ~46,8% con la ponderación
+desactivada); por decisión del propietario la calibración se difiere hasta
+completar M15. Siguen pendientes 2b-2d y la presentación a observadores
+autorizados; después se retoma 2e-2k.
 
 ### Dónde está cada cosa: el mapa de cada uno y la niebla de guerra (2e-2k)
 

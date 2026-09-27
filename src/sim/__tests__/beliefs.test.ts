@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Beliefs, expectedFood } from '../ai/Beliefs.ts';
+import { Beliefs, expectedFood, expectationRatio } from '../ai/Beliefs.ts';
 import { Person } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 
@@ -25,5 +25,13 @@ describe('per-person beliefs', () => {
     bounded.learn('new', 1, 0.5, 'own', 100);
     expect(bounded.get('k0')).toBeUndefined();
     expect(bounded.get('new')?.value).toBe(1);
+  });
+
+  it('keeps an instinctive yield neutral and lets personal evidence steer it', () => {
+    const person = new Person('Learner', 0, 0, 0, new RNG('belief-yield'));
+    person.traits.curiosity = 0;
+    expect(expectationRatio(person, 'yield:forage')).toBe(1);
+    person.beliefs.learn('yield:forage', 24, 1, 'own', 4);
+    expect(expectationRatio(person, 'yield:forage')).toBe(2);
   });
 });

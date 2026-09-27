@@ -1,5 +1,20 @@
 # M15 fase 1c — recuperación y ablaciones
 
+## Fase 2a — coste inicial de las expectativas en las decisiones (2026-09-27)
+
+`npm run sim:seeds -- --scenario lean --seeds 20` midió 32,5% de supervivencia
+con las expectativas de rendimiento ponderando forage/fish/pick/hunt. La cohorte
+control del mismo build, con `--set motivation.beliefChoice=false`, promedió
+aproximadamente 46,8% (media de las veinte cifras por semilla impresas por el
+ejecutor). En el grupo activo hubo 811 muertes: 699 por hambre, 66 por sed,
+16 por exposición, 16 por homicidio y 14 por vejez; el control registró 661:
+520 por hambre, 87 por sed, 18 por exposición, 22 por homicidio y 14 por
+vejez. La caída es principalmente de hambre y el coste supera el límite de
+tres puntos del plan. El propietario pidió priorizar completar M15 y revisar
+los ajustes después; queda como coste conocido pendiente, no como puerta
+superada. `beliefChoice` ahora gobierna también estas ponderaciones para que
+la comparación sea reproducible.
+
 Resultados de las cohortes de 20 semillas. Los artefactos completos están en
 `artifacts/m15-1c-*.txt` (carpeta local ignorada por Git).
 

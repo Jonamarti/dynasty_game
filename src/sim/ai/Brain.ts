@@ -75,6 +75,7 @@ import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { infantNeedingNursing } from './Nursing.ts';
+import { expectationRatio } from './Beliefs.ts';
 
 export interface BrainContext {
   world: World;
@@ -766,6 +767,8 @@ export class Brain {
       add(
         'forage',
         (hunger * 1.6 * shortfall + stockpileWish) * (1 + variety * 0.2) *
+          (ctx.motivation.beliefChoice
+            ? expectationRatio(person, foodNode.kind === 'fish' ? 'yield:fish' : 'yield:forage') : 1) *
           this.proximityBonus(person, foodNode, ctx.sightRadius)
       );
     }
@@ -784,6 +787,7 @@ export class Brain {
       return (hunger * 2.3 * shortfall + person.traits.greed * 0.35) * (0.6 + laden * 0.7)
         * (1 + variety * 0.2)
         * this.worthRatio(this.fruitWorth(person, tree, ctx))
+        * (ctx.motivation.beliefChoice ? expectationRatio(person, 'yield:pick') : 1)
         * this.proximityBonus(person, tree, ctx.sightRadius);
     };
     // Two candidates rather than one, and the reason is worth recording because
@@ -2477,6 +2481,7 @@ export class Brain {
         const payoff = quarry.def.meat / 20 * (1 + VARIETY_WEIGHT *
           (craving.protein * meatMacros.protein + craving.fat * meatMacros.fat));
         add('hunt', hunger * HUNT_APPETITE * odds * payoff
+          * (ctx.motivation.beliefChoice ? expectationRatio(person, 'yield:hunt') : 1)
           * this.proximityBonus(person, quarry, ctx.sightRadius));
       }
     }
