@@ -142,6 +142,25 @@ describe('watching', () => {
     });
   });
 
+  it('prefers a valued technology and passes its product expectation with the lesson', () => {
+    const teacher = person('ValuedTeacher', 35);
+    const pupil = person('ValuedPupil', 30);
+    teacher.knownTech.add('stoneworking');
+    teacher.knownTech.add('grinding');
+    teacher.knownTech.add('firemaking');
+    pupil.knownTech.add('stoneworking');
+    teacher.skills.teach = 100;
+    teacher.beliefs.learn('eat:meal', 45, 0.8, 'own', 900);
+    teacher.beliefs.learn('eat:acorn', 5, 0.8, 'own', 900);
+    const knowledge = new KnowledgeSystem();
+    let taught: string | null = null;
+    for (let i = 0; i < 10 && taught === null; i++) {
+      taught = knowledge.teach(teacher, pupil, 1, 1000 + i, new RNG('valued-lesson-' + i));
+    }
+    expect(taught).toBe('grinding');
+    expect(pupil.beliefs.get('eat:meal')).toMatchObject({ value: 45, source: 'told' });
+  });
+
   it('reaches a child, and reaches them more readily than an adult', () => {
     // Free and passive, and the reason childhood is worth simulating at all.
     // Measured as a rate over many days rather than asserted on one roll,

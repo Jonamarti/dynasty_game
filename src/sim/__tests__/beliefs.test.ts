@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Beliefs, expectedFood, expectationRatio } from '../ai/Beliefs.ts';
+import { Beliefs, expectedFood, expectationRatio, techAppeal } from '../ai/Beliefs.ts';
 import { Person } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 
@@ -41,5 +41,13 @@ describe('per-person beliefs', () => {
     expect(parent.inherit(0.6).get('yield:fish')).toEqual({
       value: 30, confidence: 0.48, source: 'inherited', tick: 9,
     });
+  });
+
+  it('values food technologies by what their products add over their ingredients', () => {
+    const person = new Person('Cook', 0, 0, 0, new RNG('belief-tech-appeal'));
+    person.beliefs.learn('eat:meal', 45, 0.8, 'own', 9);
+    person.beliefs.learn('eat:acorn', 5, 0.8, 'own', 9);
+    expect(techAppeal(person, 'grinding')).toBeGreaterThan(0);
+    expect(techAppeal(person, 'firemaking')).toBe(0);
   });
 });

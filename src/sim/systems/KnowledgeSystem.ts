@@ -42,6 +42,7 @@ import {
 } from '../knowledge/Synthesis.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { t, aNoun, genderOf } from '../../i18n/i18n.ts';
+import { techAppeal } from '../ai/Beliefs.ts';
 
 // `CONCEPTION_BASE`, `TEST_CHANCE`, the number of trials a design needs and what
 // a failed one is worth all live in `Config.knowledge` now rather than here.
@@ -739,7 +740,12 @@ export class KnowledgeSystem {
     }
     if (teachable.length === 0) return null;
 
-    const tech = teachable[rng.int(0, teachable.length - 1)]!;
+    const ranked = teachable.map(tech => ({ tech, appeal: techAppeal(teacher, tech) }));
+    const bestAppeal = Math.max(...ranked.map(row => row.appeal));
+    const preferred = ranked.filter(row => row.appeal === bestAppeal).map(row => row.tech);
+    // Keep one draw on the knowledge stream, including a single choice: it is
+    // part of the seeded teaching contract and ties stay deterministic by RNG.
+    const tech = preferred[rng.int(0, preferred.length - 1)]!;
     // The pupil's wits count as much as the teacher's skill here: an
     // explanation only lands if somebody on the other end can follow it.
     //
@@ -763,6 +769,7 @@ export class KnowledgeSystem {
     }
 
     this.receive(pupil, tech);
+    this.shareTechBeliefs(teacher, pupil, tech, tick);
     teacher.practice('teach', 2.5);
     telemetry.count('taught_' + tech);
     // Counted apart so `children-are-taught` can ask whether the channel that
@@ -784,6 +791,29 @@ export class KnowledgeSystem {
     teacher.chronicle.push({ tick, ageDays: teacher.age, text, kind: 'did' });
     pupil.chronicle.push({ tick, ageDays: pupil.age, text, kind: 'milestone' });
     return tech;
+  }
+
+  private shareTechBeliefs(teacher: Person, pupil: Person, tech: Tech, tick: number): void {
+    for (const recipe of Object.values(RECIPES)) {
+      if (recipe.tech !== tech) continue;
+      for (const itemId of Object.keys(recipe.output)) {
+        const key = 'eat:' + itemId;
+        const lesson = teacher.beliefs.get(key);
+        if (!lesson) continue;
+        pupil.beliefs.learn(key, lesson.value,
+          0.25 * (1.5 - pupil.traits.tradition) * lesson.confidence, 'told', tick);
+        telemetry.count('belief_told');
+      }
+    }
+    for (const building of Object.values(BUILDINGS)) {
+      if (building.requiresTech !== tech || building.shelter <= 0) continue;
+      const key = 'warm:' + building.id;
+      const lesson = teacher.beliefs.get(key);
+      if (!lesson) continue;
+      pupil.beliefs.learn(key, lesson.value,
+        0.25 * (1.5 - pupil.traits.tradition) * lesson.confidence, 'told', tick);
+      telemetry.count('belief_told');
+    }
   }
 
   /**

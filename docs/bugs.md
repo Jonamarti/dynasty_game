@@ -8,7 +8,9 @@ con la ponderación activada; el control del mismo build con
 `motivation.beliefChoice=false` promedia aproximadamente 46,8%. La mayor parte
 de la diferencia corresponde a hambre. El coste excede el límite de tres
 puntos del plan. Por prioridad del propietario, se continúa M15 y se deja la
-calibración para el cierre; ver `m15_recovery.md`.
+calibración para el cierre; ver `m15_recovery.md`. La fase 2d añade pesos a
+las decisiones de enseñanza y no tiene todavía cohorte propia; su coste se
+medirá junto con la calibración al cerrar M15.
 
 ## M15 fase 1e — presión de hogar según urgencia fisiológica, 2026-09-27
 

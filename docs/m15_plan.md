@@ -586,7 +586,7 @@ técnica, para que valga igual cuando cada receta sea un nodo.
 **Checks de 2a-2d:** `word-travels` (≥ 50% de adultos con una creencia
 `seen`, `told` o `inherited`). **Coste declarado:** ≤ 3 puntos.
 
-**Avance 2026-09-27:** 2a-2c están implementadas; el rendimiento esperado ya afecta
+**Avance 2026-09-27:** 2a-2d están implementadas; el rendimiento esperado ya afecta
 forage/fish/pick/hunt y el panel Self muestra las expectativas del personaje
 propio. Las creencias ajenas no se muestran. La cohorte lean midió un coste de
 supervivencia alto (32,5% en veinte semillas frente a ~46,8% con la ponderación
@@ -594,8 +594,10 @@ desactivada); por decisión del propietario la calibración se difiere hasta
 completar M15. 2b comparte por observación directa el valor esperado de la
 comida ingerida. 2c transmite creencias en conversaciones y las hereda del
 progenitor disponible con confianza ×0,6 (se corrigió el valor anterior ×0,25).
-Siguen pendientes 2d y la presentación a observadores autorizados; después se
-retoma 2e-2k.
+2d mide el atractivo de los productos de una tecnología y lo usa al pedir,
+elegir y dar enseñanza; también comparte expectativas de sus productos. La
+cohorte demográfica de 2d queda pendiente hasta el cierre junto con la
+calibración de 2a; después se retoma 2e-2k.
 
 ### Dónde está cada cosa: el mapa de cada uno y la niebla de guerra (2e-2k)
 

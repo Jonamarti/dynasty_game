@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-27 — M15 fase 2d: las expectativas hacen valiosas las tecnologías
+
+`techAppeal` compara lo que se espera de un alimento procesado con el
+ingrediente principal, y lee expectativas de calor en edificios. La utilidad
+de pedir enseñanza y de enseñar aumenta con ese valor; al enseñar, se elige la
+técnica de mayor atractivo para el docente, usando el RNG existente sólo para
+desempatar. La lección transmite las expectativas asociadas a sus productos.
+
 ## 2026-09-27 — M15 fase 2c: las creencias se cuentan y se heredan
 
 Las conversaciones pasan una creencia por cada lado en chat/interests, dos en

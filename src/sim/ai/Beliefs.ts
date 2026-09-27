@@ -1,6 +1,8 @@
 import type { Person } from '../entities/Person.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
+import { BUILDINGS } from '../entities/Building.ts';
+import type { Tech } from '../knowledge/Tech.ts';
 
 export type BeliefSource = 'instinct' | 'own' | 'seen' | 'told' | 'inherited';
 export interface Belief { value: number; confidence: number; source: BeliefSource; tick: number }
@@ -115,4 +117,27 @@ export function expectationRatio(person: Person, key: string): number {
   const expected = belief.confidence > 0 ? belief.value : baseline;
   return Math.max(0.5, Math.min(2, expected / baseline)) +
     person.traits.curiosity * 0.15 * (1 - belief.confidence);
+}
+
+/** What this person expects a technology they lack to be worth in daily life. */
+export function techAppeal(person: Person, tech: Tech): number {
+  let appeal = 0;
+  for (const recipe of Object.values(RECIPES)) {
+    if (recipe.tech !== tech) continue;
+    const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
+    if (!output) continue;
+    const ingredient = Object.entries(recipe.ingredients)
+      .sort((a, b) => (ITEMS[b[0]]?.nutrition ?? 0) * b[1] -
+        (ITEMS[a[0]]?.nutrition ?? 0) * a[1])[0];
+    if (!ingredient) continue;
+    const expectedProduct = expectedFood(person, output);
+    const expectedIngredient = expectedFood(person, ingredient[0]);
+    appeal += Math.max(0, expectedProduct - expectedIngredient) * 3;
+  }
+  for (const building of Object.values(BUILDINGS)) {
+    if (building.requiresTech === tech && building.shelter > 0) {
+      appeal += person.beliefs.expect('warm:' + building.id).value;
+    }
+  }
+  return appeal;
 }

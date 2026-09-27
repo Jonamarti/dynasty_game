@@ -75,7 +75,7 @@ import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { infantNeedingNursing } from './Nursing.ts';
-import { expectationRatio } from './Beliefs.ts';
+import { expectationRatio, techAppeal } from './Beliefs.ts';
 
 export interface BrainContext {
   world: World;
@@ -1122,8 +1122,13 @@ export class Brain {
         );
         if (pupil) {
           const urgency = person.isElder ? 1.6 : 1;
+          const appeal = [...person.knownTech].reduce((best, t) =>
+            !pupil.knownTech.has(t as Tech) && TECH[t as Tech] &&
+              prerequisitesMet(t as Tech, pupil.knownTech)
+              ? Math.max(best, techAppeal(person, t as Tech)) : best, 0);
           add('teach', (0.2 + person.skillFactor('teach') * 0.4)
             * (0.5 + person.traits.tradition) * urgency
+            * (1 + appeal)
             * this.proximityBonus(person, pupil, ctx.sightRadius));
           student = pupil;
         }
@@ -1153,8 +1158,13 @@ export class Brain {
           // in is the most valuable person in a band, and handing it to their
           // own grandchildren is the whole shape of a dynasty.
           const urgency = person.isElder ? 1.8 : 1;
+          const appeal = [...person.knownTech].reduce((best, t) =>
+            !heir.knownTech.has(t as Tech) && TECH[t as Tech] &&
+              prerequisitesMet(t as Tech, heir.knownTech)
+              ? Math.max(best, techAppeal(person, t as Tech)) : best, 0);
           add('teach_child', (0.08 + person.skillFactor('teach') * 0.16)
             * (0.5 + person.traits.tradition) * urgency * (mine ? 1.5 : 0.7)
+            * (1 + appeal)
             * this.proximityBonus(person, heir, ctx.sightRadius));
           childPupil = heir;
         }
@@ -1188,14 +1198,22 @@ export class Brain {
           !other.isChild &&
           couldShowMe(other) &&
           ctx.relationships.opinion(other.id, person.id) >= -20);
-        const found = this.pickBest(mentors, other =>
-          other.knownTech.size * 2 +
-          ctx.relationships.opinion(person.id, other.id) -
-          person.distanceTo(other) * 2
-        );
+        const found = this.pickBest(mentors, other => {
+          const value = [...other.knownTech].reduce((best, t) =>
+            !person.knownTech.has(t as Tech) && TECH[t as Tech] &&
+              prerequisitesMet(t as Tech, person.knownTech)
+              ? Math.max(best, techAppeal(person, t as Tech)) : best, 0);
+          return other.knownTech.size * 2 + value +
+            ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other) * 2;
+        });
         if (found) {
+          const appeal = [...found.knownTech].reduce((best, t) =>
+            !person.knownTech.has(t as Tech) && TECH[t as Tech] &&
+              prerequisitesMet(t as Tech, person.knownTech)
+              ? Math.max(best, techAppeal(person, t as Tech)) : best, 0);
           add('ask', (0.1 + person.traits.curiosity * 0.26)
             * (person.isChild ? 1.6 : 1)
+            * (1 + appeal)
             * this.proximityBonus(person, found, ctx.sightRadius));
           mentor = found;
         }
