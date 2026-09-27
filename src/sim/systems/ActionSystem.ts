@@ -1061,12 +1061,14 @@ export class ActionSystem {
   private doHarvest(person: Person, ctx: ActionContext): void {
     const node = person.targetNodeId === null ? null : ctx.nodesById.get(person.targetNodeId);
     if (!node || node.depleted) {
+      let reason = 'node_gone';
       if (node?.depleted) {
         if (person.placeMemory.updateAt(`resource:${node.kind}`, node.x, node.y, 0)) {
           telemetry.count('stale_memory_resource_empty');
+          reason = 'remembered_wrong';
         }
       }
-      this.abandon(person, 'node_gone', ctx);
+      this.abandon(person, reason, ctx);
       return;
     }
     if (person.yieldKey === null && (ITEMS[node.def.itemId]?.nutrition ?? 0) > 0) {

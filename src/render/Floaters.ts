@@ -265,6 +265,7 @@ export const STOP_REASONS: Record<string, string> = {
 
   // The world changed underneath them.
   node_gone: 'it was gone',
+  remembered_wrong: 'the place was already picked over',
   // M7: greedy steering gave up on a route that does not exist — a concave
   // shoreline, a lagoon, a rock ridge. Not resumable: a route that does not
   // exist now will not exist in two hundred ticks either.

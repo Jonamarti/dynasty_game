@@ -658,6 +658,9 @@ alterar su fecha ni su fuente. Esto aún no limita las búsquedas del puntuador
 a lo visto o recordado; falta integrar los candidatos, los demás tipos de
 lugar, las órdenes y la medición de cohorte.
 
+Cuando una orden llega a un nodo ya agotado, el recuerdo se corrige y la
+interrupción explica que el lugar ya estaba agotado, con traducción española.
+
 - `Brain.findNode` y sus hermanos (agua, frutales, leña, material, presas,
   compañía y almacén) pasan a buscar **en la unión de lo que se ve ahora** (el
   hash del mundo, dentro de la vista) **y lo que se recuerda** (`PlaceMemory`,

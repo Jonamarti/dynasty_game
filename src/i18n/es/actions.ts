@@ -66,6 +66,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "there was nothing left to take": "no quedaba nada que coger",
   "there was no fruit left on it": "no le quedaba fruta",
   "it was gone": "ya no estaba",
+  "the place was already picked over": "el lugar ya estaba agotado",
   "they could not get there": "no pudo llegar",
   "the tree was gone": "el árbol ya no estaba",
   "the site was gone": "la obra ya no estaba",
