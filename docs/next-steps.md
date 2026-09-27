@@ -1175,3 +1175,7 @@ interminablemente; su cohorte actual reduce la supervivencia `lean` 32,5 puntos
 respecto a la referencia (824 muertes por hambre, 6 por sed). El propietario
 autorizó continuar hasta cerrar M15 fase 2; queda como primer tema de ajuste al
 recibir hallazgos de juego.
+
+**M15 2g:** explorar con hambre o curiosidad solo se ofrece al faltar un destino
+de comida conocido, y sus puntos quedan dentro del alcance del ancla. Todavía
+falta la cohorte final de checks del mapa en 2k.

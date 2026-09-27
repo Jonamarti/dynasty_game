@@ -889,15 +889,32 @@ export class Brain {
         place => ctx.world.sameRegion(person.x, person.y, place.x, place.y)) !== null;
       return (knowsWater ? 100 : 0) - person.distanceTo(other);
     });
-    const explorePoint = thirstyWithoutWater && !waterQuestionPeer
-      ? this.findExplorePoint(person, ctx)
+    const waterExplorePoint = thirstyWithoutWater && !waterQuestionPeer
+      ? this.findExplorePoint(person, ctx, { urgentWater: true })
       : null;
+    const idleForExploration = 1 - Math.max(
+      person.needs.hunger, person.needs.thirst, person.needs.fatigue,
+    ) / 100;
+    const curiousEnoughToExplore = idleForExploration > 0.45 && person.traits.curiosity > 0.5;
+    const hungryEnoughToSearch = drive.hunger > 0.25;
+    const curiosityExplorePoint = !thirstyWithoutWater && !foodNode &&
+      (curiousEnoughToExplore || hungryEnoughToSearch)
+      ? this.findExplorePoint(person, ctx, { anchor, reach })
+      : null;
+    const explorePoint = waterExplorePoint ?? curiosityExplorePoint;
     if (waterQuestionPeer) {
       add('ask_water', drive.thirst * 4.2
         * this.proximityBonus(person, waterQuestionPeer, ctx.sightRadius));
       telemetry.count('water_question_offered');
     } else if (explorePoint) {
-      add('explore', drive.thirst * 4.0);
+      const waterUrgency = waterExplorePoint ? drive.thirst * 4.0 : 0;
+      const discoveryInterest = curiosityExplorePoint
+        ? Math.max(
+          curiousEnoughToExplore ? idleForExploration * (0.08 + person.traits.curiosity * 0.22) : 0,
+          hungryEnoughToSearch ? drive.hunger * 0.28 : 0,
+        )
+        : 0;
+      add('explore', Math.max(waterUrgency, discoveryInterest));
       telemetry.count('water_exploration_offered');
       telemetry.count(person.isChild ? 'water_exploration_offered_child' : 'water_exploration_offered_adult');
     }
@@ -3237,17 +3254,18 @@ export class Brain {
     return wellDist < person.distanceTo(shore) ? well : shore;
   }
 
-  /** A deterministic frontier walk after thirst and nearby questions turn urgent. */
+  /** A deterministic frontier walk after thirst or curiosity calls for discovery. */
   private findExplorePoint(
     person: Person, ctx: BrainContext,
+    options: { urgentWater?: boolean; anchor?: Anchor | null; reach?: number } = {},
   ): { x: number; y: number } | null {
-    if (person.isChild) {
+    if (options.urgentWater && person.isChild) {
       const hasLivingParent = [person.motherId, person.fatherId].some(id => {
         const parent = id === null ? null : ctx.peopleById?.get(id);
         return !!parent?.alive && parent.bandId === person.bandId;
       });
       if (hasLivingParent) return null;
-    } else {
+    } else if (options.urgentWater) {
       const dependants = person.childIds.map(id => ctx.peopleById?.get(id))
         .filter((child): child is Person => !!child?.alive && child.isChild);
       const hasNearbyBackup = dependants.every(child => {
@@ -3266,6 +3284,8 @@ export class Brain {
     const firstRing = Math.max(1, Math.ceil(ctx.sightRadius / 4));
     const baseCellX = Math.floor(person.x / 4);
     const baseCellY = Math.floor(person.y / 4);
+    const allowed = (x: number, y: number): boolean => options.urgentWater === true ||
+      withinReach(options.anchor ?? null, options.reach ?? Number.POSITIVE_INFINITY, x, y);
     for (let ring = firstRing; ring <= maxCellRing; ring++) {
       // Walk the whole square edge at one map-cell spacing. Sixteen spokes
       // missed pockets behind the coastline and returned no route even while
@@ -3274,7 +3294,7 @@ export class Brain {
         for (const [dx, dy] of [[offset, -ring], [offset, ring], [-ring, offset], [ring, offset]]) {
           const x = (baseCellX + dx) * 4 + 2;
           const y = (baseCellY + dy) * 4 + 2;
-          if (!ctx.world.isWalkable(x, y) || !ctx.world.sameRegion(person.x, person.y, x, y) ||
+          if (!allowed(x, y) || !ctx.world.isWalkable(x, y) || !ctx.world.sameRegion(person.x, person.y, x, y) ||
               person.placeMemory.seenDayAt(x, y) !== 0) continue;
           return { x, y };
         }
@@ -3291,7 +3311,7 @@ export class Brain {
             const x = (baseCellX + dx) * 4 + 2;
             const y = (baseCellY + dy) * 4 + 2;
             const seen = person.placeMemory.seenDayAt(x, y);
-            if (seen === 0 || seen > staleBefore || !ctx.world.isWalkable(x, y) ||
+            if (seen === 0 || seen > staleBefore || !allowed(x, y) || !ctx.world.isWalkable(x, y) ||
                 !ctx.world.sameRegion(person.x, person.y, x, y)) continue;
             return { x, y };
           }

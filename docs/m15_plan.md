@@ -2873,3 +2873,10 @@ colapsos). Las muertes fueron sobre todo por hambre (824), frente a 6 por sed.
 El propietario ordenó continuar y aceptar este coste provisional mientras
 completa la fase y valida el juego; queda como deuda prioritaria de balance,
 no como resultado aprobado por el gate original de =5 puntos.
+
+**2g — Explorar con hambre o curiosidad.** Si no hay nodo de comida conocido,
+una persona hambrienta o con curiosidad y necesidades tranquilas elige una celda
+frontera desconocida o vieja. La opción ordinaria respeta el alcance de su ancla
+M13; la búsqueda urgente de agua conserva la excepción de supervivencia. La
+ruta termina en un punto y repuntúa, mientras `wander` sigue siendo un paseo
+corto.

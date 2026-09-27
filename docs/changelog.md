@@ -9233,3 +9233,14 @@ con 824 muertes por hambre y 6 por sed. Por instrucción explícita del propietari
 se mantiene provisionalmente y se continúa la fase; queda pendiente depurar el
 coste de tiempo sobre la economía alimentaria.
 Capturas de la entrega: `artifacts/screenshots/m15-2f-water-search.png` y `artifacts/screenshots/m15-2f-known-map.png`.
+
+## 2026-09-27 — M15 fase 2g: explorar dentro del alcance
+
+`explore` ya cubre tres motivos: sed urgente tras preguntar a los cercanos,
+hambre cuando no hay objetivo de comida conocido y curiosidad cuando las
+necesidades dejan margen. La búsqueda toma celdas caminables desconocidas (o
+antiguas) de la misma masa de tierra; la exploración por hambre/curiosidad se
+limita al alcance del ancla de M13. El recorrido de sed mantiene prioridad de
+supervivencia y puede salir más allá del alcance ordinario. Cada acción viaja a
+un único punto y vuelve a puntuar al llegar, sin convertirse en `wander`.
+Capturas: `m15-2g-exploration.png` y `m15-2g-frontier.png`.

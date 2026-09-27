@@ -101,6 +101,7 @@ describe('urgentNeeds', () => {
 describe('survivalActions', () => {
   it('offers only the verbs that answer the needs that fired', () => {
     expect(survivalActions(['thirst'])).toEqual(new Set(['drink', 'eat', 'ask_water', 'explore']));
+    expect(NEED_ACTIONS.hunger).toContain('explore');
     expect(survivalActions(['cold'])).toEqual(new Set(['shelter']));
     // The flat-allowlist version of this was written first and let a freezing
     // character pick berries on `forage`'s standing stockpiling term.
