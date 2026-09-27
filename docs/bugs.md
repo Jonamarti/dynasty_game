@@ -2994,3 +2994,13 @@ vuelve a `haul`. Esto es una hipótesis concreta sobre el conflicto entre el
 radio nocturno y la vuelta al ancla, no una cohorte ni permiso para subir pesos:
 si aumenta el tiempo de retorno podría recortar recolección, y la cohorte de
 supervivencia sigue bajo el gate.
+
+**M15 fase 2f, agua conocida aún no conectada.** `Brain.findWater` busca la
+orilla hasta seis radios de vista, aunque la persona no la haya visto, mientras
+`PlaceMemory` registra ubicaciones de agua. Una prueba de restricción a la vista
+y recuerdos dejó `drinking-is-paced` en 0 bebidas terminadas (antes pasaba con
+8 en el mismo escenario), aunque `people-drink` seguía pasando. Esa variante
+se retiró; hay que corregir cómo una persona conserva y reutiliza el destino
+durante la sed antes de limitar la consulta al mapa personal. El rojo actual
+identifica un cambio de comportamiento en esta semilla, pero todavía no una
+causa de cohorte.
