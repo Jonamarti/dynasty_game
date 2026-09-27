@@ -17,7 +17,7 @@
  * steal, talk, attack, teach) on the same interface.
  */
 import type { Person } from '../entities/Person.ts';
-import type { ResourceNode } from '../entities/ResourceNode.ts';
+import { RESOURCE_KINDS, type ResourceNode } from '../entities/ResourceNode.ts';
 import { isBuried } from '../core/Snow.ts';
 import type { World } from '../core/World.ts';
 import type { TimeManager } from '../core/TimeManager.ts';
@@ -588,7 +588,11 @@ const JOB_BIAS_UP = 1.3;
 const JOB_BIAS_DOWN = 0.85;
 
 export class Brain {
-
+  private readonly knownNodeCandidates: { node: ResourceNode; amount: number | null }[] = [];
+  private readonly knownNodeIds = new Set<number>();
+  private readonly rememberedNodeTargets = new Set<number>();
+  private knownNodeCandidatesFor: number | null = null;
+  /** Reused for point lookups around one remembered node at a time. */
   /**
    * Chooses and sets up an action. Returns the chosen action id.
    *
@@ -633,10 +637,12 @@ export class Brain {
    */
   score(person: Person, ctx: BrainContext): { scores: ScoredAction[]; found: FoundTargets } {
     const scores: ScoredAction[] = [];
+    this.rememberedNodeTargets.clear();
     const anchorCtx = { world: ctx.world, peopleById: ctx.peopleById ?? new Map(), buildingsById: ctx.buildingsById,
       householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation };
     const anchor = anchorOf(person, anchorCtx);
     const reach = reachOf(person, anchorCtx);
+    this.knownNodeCandidatesFor = null;
     const homeCtx = { ...anchorCtx, time: ctx.time };
     const drive = drivePressures(person, homeCtx);
     // Hysteresis: whatever you are already doing is worth a little more than
@@ -3327,10 +3333,79 @@ export class Brain {
       householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation } : null;
     const anchor = knownAnchor === undefined ? anchorOf(person, anchorCtx!) : knownAnchor;
     const reach = knownReach ?? (anchorCtx ? reachOf(person, anchorCtx) : 0);
-    return ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
-      n => filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y) &&
-        !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
-        (!enforceReach || withinReach(anchor, reach, n.x, n.y)));
+    // Children have no map-sharing channel until 2h. Keep their old local
+    // target selection exactly, including SpatialHash's stable tie order.
+    if (person.isChild) {
+      return ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
+        n => filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y) &&
+          !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
+          (!enforceReach || withinReach(anchor, reach, n.x, n.y)));
+    }
+    const eligible = (n: ResourceNode) =>
+      filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y) &&
+      !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
+      (!enforceReach || withinReach(anchor, reach, n.x, n.y));
+    // Preserve the established local choice, including SpatialHash's stable
+    // ring ordering. Personal memory extends the search only when no local
+    // target exists; this keeps the home and family routes from M13 intact.
+    const local = ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
+      n => eligible(n));
+    if (local) return local;
+    if (this.knownNodeCandidatesFor !== person.id) {
+      this.collectKnownNodes(person, ctx, anchor, reach);
+      this.knownNodeCandidatesFor = person.id;
+    }
+    let best: ResourceNode | null = null;
+    let bestDistance = Infinity;
+    for (const candidate of this.knownNodeCandidates) {
+      const node = candidate.node;
+      const view = candidate.amount === null ? node : Object.create(node) as ResourceNode;
+      if (candidate.amount !== null) {
+        Object.defineProperties(view, {
+          depleted: { value: false },
+          amount: { value: candidate.amount === 2 ? node.def.maxAmount : node.def.maxAmount * 0.33 },
+        });
+      }
+      if (!eligible(view)) continue;
+      const distance = person.distanceTo(node);
+      if (distance < bestDistance) {
+        best = node;
+        bestDistance = distance;
+      }
+    }
+    if (best) telemetry.count('remembered_node_target');
+    if (best) this.rememberedNodeTargets.add(best.id);
+    return best;
+  }
+
+  /** Build the remembered candidate set once, only after local sources fail. */
+  private collectKnownNodes(person: Person, ctx: BrainContext, anchor: Anchor | null, reach: number): void {
+    this.knownNodeCandidates.length = 0;
+    this.knownNodeIds.clear();
+    // Children start learning places by following their carers in phase 2h.
+    // Until that channel exists, preserve their previous local search and keep
+    // their living carers from choosing remote memories that separate them.
+    const hasDependentChildren = person.childIds.some(id => ctx.peopleById?.get(id)?.alive);
+    if (person.isChild || hasDependentChildren) return;
+    for (const kind of RESOURCE_KINDS) {
+      const include = (place: ReturnType<Person['placeMemory']['nearest']>) => {
+        if (!place) return;
+        const node = ctx.nodeHash.findNearest(place.x, place.y, 2,
+          candidate => candidate.kind === kind && Math.hypot(candidate.x - place.x, candidate.y - place.y) <= 1);
+        if (!node || this.knownNodeIds.has(node.id)) return;
+        this.knownNodeCandidates.push({ node, amount: place.amount });
+        this.knownNodeIds.add(node.id);
+        telemetry.count('remembered_node_candidate');
+      };
+      const accepts = (memory: { x: number; y: number; amount: number }) => memory.amount > 0 &&
+        ctx.world.sameRegion(person.x, person.y, memory.x, memory.y);
+      const reachDistance = anchor
+        ? Math.hypot(person.x - anchor.x, person.y - anchor.y) + reach
+        : reach;
+      include(person.placeMemory.nearest(`resource:${kind}`, person.x, person.y,
+        memory => accepts(memory) && withinReach(anchor, reach, memory.x, memory.y),
+        Math.min(ctx.sightRadius * 2, reachDistance)));
+    }
   }
 
   private setup(
@@ -3425,6 +3500,9 @@ export class Brain {
         if (action === 'gather_for_site') person.action = 'gather';
         const node = action === 'forage' ? found.foodNode : found.matNode;
         if (node) {
+          if (this.rememberedNodeTargets.has(node.id)) {
+            telemetry.count('action_target_from_memory_' + action);
+          }
           person.targetX = node.x;
           person.targetY = node.y;
           person.targetNodeId = node.id;

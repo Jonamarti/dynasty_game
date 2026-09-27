@@ -9,6 +9,12 @@ falsear la fecha o el origen del recuerdo. Esto prepara la integración del
 conocimiento personal en las búsquedas de la fase 2f.
 Si una orden encuentra agotado el recurso recordado, la interrupción explica
 el error con una frase traducida.
+Quienes vieron agotarse ese nodo actualizan también sus recuerdos.
+La búsqueda de recolección consulta nodos visibles y lugares recordados, con un
+índice espacial actualizado al agotarse cada recurso.
+Para preservar las rutas cercanas ya calibradas, el primer corte consulta los
+recuerdos solo cuando no hay un recurso local elegible; los niños y sus
+cuidadores esperan al canal de mapas compartidos de 2h.
 
 ## 2026-09-27 — M15 fase 2e: instrumentar el mapa personal
 

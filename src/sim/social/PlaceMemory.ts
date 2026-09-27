@@ -1,3 +1,5 @@
+import { SpatialHash } from '../core/SpatialHash.ts';
+
 /**
  * What one person has seen of the places around them.
  *
@@ -29,6 +31,10 @@ export class PlaceMemory {
   private rememberedDayTotal = 0;
   /** Per-kind cell indexes make revisiting a visible patch O(1), not a scan of its cap. */
   private readonly places = new Map<string, Map<number, PlaceRecord>>();
+  /** Non-exhausted subset: the scorer must not rescan empty remembered spots. */
+  private readonly available = new Map<string, Map<number, PlaceRecord>>();
+  /** Per-kind spatial indexes keep nearest-known-place queries bounded. */
+  private readonly availableHashes = new Map<string, SpatialHash<PlaceRecord>>();
 
   constructor(width: number, height: number, capPerKind = 48) {
     this.width = Math.max(1, Math.ceil(width));
@@ -52,8 +58,8 @@ export class PlaceMemory {
       this.exploredCount = 0;
     }
     this.capPerKind = nextCap;
-    for (const records of this.places.values()) {
-      while (records.size > nextCap) this.deleteRecord(records, this.weakestKey(records));
+    for (const [kind, records] of this.places) {
+      while (records.size > nextCap) this.deleteRecord(kind, records, this.weakestKey(records));
     }
   }
 
@@ -101,16 +107,28 @@ export class PlaceMemory {
       if (kind !== 'water' && records.size >= this.capPerKind) {
         // Forget the oldest and poorest place first. Stable sort order makes
         // ties deterministic without a random choice or an entity scan.
-        this.deleteRecord(records, this.weakestKey(records));
+        this.deleteRecord(kind, records, this.weakestKey(records));
       }
       this.setRecord(records, cellKey, record);
     }
+    this.indexAvailability(kind, cellKey, record);
     this.places.set(kind, records);
   }
 
   records(kind: string): readonly PlaceRecord[] {
     const records = this.places.get(kind);
     return records ? [...records.values()] : [];
+  }
+
+  /** Find the nearest matching record from this person's bounded place memory. */
+  nearest(
+    kind: string, x: number, y: number, accepts: (place: PlaceRecord) => boolean = () => true,
+    maxDistance = Math.hypot(this.width, this.height),
+  ): PlaceRecord | null {
+    const hash = this.availableHashes.get(kind);
+    if (!hash) return null;
+    const found = hash.findNearest(x, y, maxDistance, accepts);
+    return found ? { ...found } : null;
   }
 
   /**
@@ -124,7 +142,9 @@ export class PlaceMemory {
     const cell = Math.floor(y / PLACE_CELL_SIZE) * this.cols + Math.floor(x / PLACE_CELL_SIZE);
     const previous = records.get(cell);
     if (!previous) return false;
-    this.setRecord(records, cell, { ...previous, amount });
+    const next = { ...previous, amount };
+    this.setRecord(records, cell, next);
+    this.indexAvailability(kind, cell, next);
     return true;
   }
 
@@ -176,11 +196,31 @@ export class PlaceMemory {
     this.rememberedDayTotal += record.day;
   }
 
-  private deleteRecord(records: Map<number, PlaceRecord>, key: number): void {
+  private indexAvailability(kind: string, key: number, record: PlaceRecord): void {
+    const records = this.available.get(kind) ?? new Map<number, PlaceRecord>();
+    const previous = records.get(key);
+    if (previous) this.availableHashes.get(kind)?.remove(previous);
+    if (record.amount === 0) records.delete(key);
+    else {
+      records.set(key, record);
+      const hash = this.availableHashes.get(kind) ?? new SpatialHash<PlaceRecord>(8);
+      hash.insert(record);
+      this.availableHashes.set(kind, hash);
+    }
+    if (records.size === 0) {
+      this.available.delete(kind);
+      if ((this.availableHashes.get(kind)?.stats().items ?? 0) === 0) {
+        this.availableHashes.delete(kind);
+      }
+    } else this.available.set(kind, records);
+  }
+
+  private deleteRecord(kind: string, records: Map<number, PlaceRecord>, key: number): void {
     const previous = records.get(key);
     if (!previous) return;
     this.rememberedDayTotal -= previous.day;
     this.rememberedCount--;
     records.delete(key);
+    this.indexAvailability(kind, key, { ...previous, amount: 0 });
   }
 }

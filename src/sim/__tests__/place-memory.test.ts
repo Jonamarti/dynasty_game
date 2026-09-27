@@ -42,4 +42,13 @@ describe('PlaceMemory', () => {
     }]);
     expect(map.updateAt('resource:berries', 30, 30, 0)).toBe(false);
   });
+
+  it('removes exhausted memories from the nearest available-place index', () => {
+    const map = new PlaceMemory(32, 32);
+    map.remember('resource:berries', 4, 4, 1, 2);
+    map.remember('resource:berries', 20, 4, 2, 1);
+    expect(map.nearest('resource:berries', 5, 4)?.x).toBe(4);
+    map.updateAt('resource:berries', 4, 4, 0);
+    expect(map.nearest('resource:berries', 5, 4)?.x).toBe(20);
+  });
 });

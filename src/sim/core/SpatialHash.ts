@@ -47,6 +47,21 @@ export class SpatialHash<T extends HasPosition> {
     else this.cells.set(k, [item]);
   }
 
+  /** Remove one indexed object by identity, for small dynamic indexes. */
+  remove(item: T): boolean {
+    const k = this.key(
+      Math.floor(item.x * this.invCellSize),
+      Math.floor(item.y * this.invCellSize)
+    );
+    const bucket = this.cells.get(k);
+    if (!bucket) return false;
+    const index = bucket.indexOf(item);
+    if (index < 0) return false;
+    bucket.splice(index, 1);
+    if (bucket.length === 0) this.cells.delete(k);
+    return true;
+  }
+
   rebuild(items: Iterable<T>): void {
     this.clear();
     for (const item of items) this.insert(item);

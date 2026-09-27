@@ -1099,6 +1099,18 @@ export class ActionSystem {
       telemetry.count('harvest_' + node.kind);
       person.placeMemory.updateAt(`resource:${node.kind}`, node.x, node.y,
         node.amount >= node.def.maxAmount * 0.66 ? 2 : node.amount > 0 ? 1 : 0);
+      if (node.depleted) {
+        // Nearby people watched this resource run out too. Leaving their
+        // memories untouched sent the whole group to the same bare patch in
+        // turn; share only this directly witnessed fact, through the people
+        // hash, and only with observers who already knew the place.
+        for (const witness of ctx.peopleHash.queryRadius(node.x, node.y, ctx.sightRadius)) {
+          if (witness.id === person.id || !witness.alive) continue;
+          if (witness.placeMemory.updateAt(`resource:${node.kind}`, node.x, node.y, 0)) {
+            telemetry.count('shared_resource_depletion_seen');
+          }
+        }
+      }
     }
 
     // Keep going unless something stops us.

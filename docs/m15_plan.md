@@ -660,6 +660,19 @@ lugar, las órdenes y la medición de cohorte.
 
 Cuando una orden llega a un nodo ya agotado, el recuerdo se corrige y la
 interrupción explica que el lugar ya estaba agotado, con traducción española.
+Quienes presenciaron que un nodo se agotó corrigen también su propio recuerdo;
+la consulta de testigos usa `peopleHash`.
+`Brain` arma una vez por puntuación la unión de nodos a la vista y de un nodo
+por tipo recordado, consultando hashes espaciales alrededor de cada recuerdo.
+El índice de lugares disponibles se actualiza cuando un recuerdo se agota.
+Primera integración medida: solo consulta el mapa personal cuando no encuentra
+un recurso dentro de su búsqueda local; conserva la selección y el orden de
+anillo existentes si ya hay uno. Los niños y quienes tienen hijos vivos quedan
+en esa búsqueda local hasta que 2h les permita compartir mapas sin separarse.
+En `band`, 69 objetivos de nodo vinieron del recuerdo y 100 viajes hallaron un
+nodo agotado; `children-keep-close` y `drinking-is-paced` pasan. Sigue pendiente
+el resto de familias de objetivos, la verificación de todos los verbos y la
+matriz de coste.
 
 - `Brain.findNode` y sus hermanos (agua, frutales, leña, material, presas,
   compañía y almacén) pasan a buscar **en la unión de lo que se ve ahora** (el

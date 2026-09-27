@@ -123,4 +123,15 @@ describe('SpatialHash', () => {
     // population, or queries degrade back toward the linear scan it replaced.
     expect(stats.maxBucket).toBeLessThan(40);
   });
+
+  it('removes an updated record from its old cell', () => {
+    const old = { id: 1, x: 1, y: 1 };
+    const nearby = { id: 2, x: 3, y: 1 };
+    const hash = new SpatialHash<Point>(8);
+    hash.insert(old);
+    hash.insert(nearby);
+    expect(hash.remove(old)).toBe(true);
+    expect(hash.findNearest(1, 1, 8)?.id).toBe(nearby.id);
+    expect(hash.remove(old)).toBe(false);
+  });
 });
