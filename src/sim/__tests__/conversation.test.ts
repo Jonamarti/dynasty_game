@@ -111,6 +111,26 @@ describe('what a conversation settles', () => {
     expect(there.familiarity).toBeCloseTo(CONVERSATION_MODES.chat.warmth);
     expect(back.familiarity).toBeCloseTo(CONVERSATION_MODES.chat.warmth);
   });
+
+  it('passes no beliefs in a greeting and one surprising belief in chat', () => {
+    const { social, a, b } = pair();
+    a.beliefs.learn('eat:fish', 50, 0.8, 'own', 1);
+    social.converse(a, b, 100, new Map(), 'greet');
+    expect(b.beliefs.get('eat:fish')).toBeUndefined();
+    social.converse(a, b, 101, new Map(), 'chat');
+    expect(b.beliefs.get('eat:fish')).toMatchObject({ value: 50, source: 'told', tick: 101 });
+  });
+
+  it('passes two beliefs in deep talk, choosing the most surprising first', () => {
+    const { social, a, b } = pair();
+    a.beliefs.learn('eat:berries', 20, 0.8, 'own', 1);
+    a.beliefs.learn('eat:fish', 50, 0.9, 'own', 1);
+    a.beliefs.learn('eat:milk', 25, 0.1, 'own', 1);
+    social.converse(a, b, 101, new Map(), 'deep');
+    expect(b.beliefs.get('eat:fish')?.source).toBe('told');
+    expect(b.beliefs.get('eat:berries')?.source).toBe('told');
+    expect(b.beliefs.get('eat:milk')).toBeUndefined();
+  });
 });
 
 describe('which conversations may be asked for', () => {

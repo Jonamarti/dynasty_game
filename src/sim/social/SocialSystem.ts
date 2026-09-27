@@ -601,9 +601,39 @@ export class SocialSystem {
       stories += 1;
       telemetry.count('storytelling_extra_tale');
     }
+    // Beliefs travel by the same rungs as stories, but what gets passed is
+    // chosen for the listener: the best-supported claim furthest from their
+    // current expectation is the one most likely to change their mind.
+    const beliefCount = mode === 'deep' ? 2 : mode === 'greet' ? 0 : 1;
+    const aBeliefs = this.mostSurprisingBeliefs(a, b, beliefCount);
+    const bBeliefs = this.mostSurprisingBeliefs(b, a, beliefCount);
+    this.shareBeliefs(a, b, aBeliefs, tick);
+    this.shareBeliefs(b, a, bBeliefs, tick);
     for (let i = 0; i < stories; i++) {
       this.gossip(a, b, peopleById);
       this.gossip(b, a, peopleById);
+    }
+  }
+
+  private mostSurprisingBeliefs(teller: Person, listener: Person, count: number): [string, number, number][] {
+    if (count === 0) return [];
+    return [...teller.beliefs.entries()]
+      .map(([key, belief]) => [key, belief.value, belief.confidence,
+        belief.confidence * Math.abs(belief.value - listener.beliefs.expect(key).value)] as const)
+      .filter(([, , confidence]) => confidence > 0)
+      .sort((a, b) => b[3] - a[3] || a[0].localeCompare(b[0]))
+      .slice(0, count)
+      .map(([key, value, confidence]) => [key, value, confidence]);
+  }
+
+  private shareBeliefs(
+    teller: Person, listener: Person, lessons: [string, number, number][], tick: number
+  ): void {
+    const trust = Math.max(0, Math.min(1, (this.relationships.opinion(listener.id, teller.id) + 50) / 100));
+    for (const [key, value, confidence] of lessons) {
+      const alpha = 0.25 * trust * (1.5 - listener.traits.tradition) * confidence;
+      listener.beliefs.learn(key, value, alpha, 'told', tick);
+      telemetry.count('belief_told');
     }
   }
 

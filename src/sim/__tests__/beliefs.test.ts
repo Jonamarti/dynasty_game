@@ -34,4 +34,12 @@ describe('per-person beliefs', () => {
     person.beliefs.learn('yield:forage', 24, 1, 'own', 4);
     expect(expectationRatio(person, 'yield:forage')).toBe(2);
   });
+
+  it('carries a parent belief forward at the M15 cultural inheritance strength', () => {
+    const parent = new Beliefs();
+    parent.learn('yield:fish', 30, 0.8, 'own', 9);
+    expect(parent.inherit(0.6).get('yield:fish')).toEqual({
+      value: 30, confidence: 0.48, source: 'inherited', tick: 9,
+    });
+  });
 });

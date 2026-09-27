@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-27 — M15 fase 2c: las creencias se cuentan y se heredan
+
+Las conversaciones pasan una creencia por cada lado en chat/interests, dos en
+deep y ninguna en greet; se elige por confianza y diferencia respecto a lo que
+espera el oyente. La confianza de quien habla y la tradición del oyente limitan
+cuánto convence. Al nacer, el niño recibe las creencias de la madre con 0,6 de
+confianza; si ella murió en el parto, las recibe del padre. Esto corrige el
+factor 0,25 que el código tenía frente al 0,6 ya fijado en M15.
+
 ## 2026-09-27 — M15 fase 2b: ver a alguien comer enseña el valor de la comida
 
 Al terminar una comida, las personas vivas a seis casillas aprenden la
