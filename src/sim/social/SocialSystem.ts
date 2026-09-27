@@ -609,9 +609,35 @@ export class SocialSystem {
     const bBeliefs = this.mostSurprisingBeliefs(b, a, beliefCount);
     this.shareBeliefs(a, b, aBeliefs, tick);
     this.shareBeliefs(b, a, bBeliefs, tick);
+    if (mode === 'chat' || mode === 'interests' || mode === 'deep') {
+      this.shareOnePlace(a, b);
+      this.shareOnePlace(b, a);
+    }
     for (let i = 0; i < stories; i++) {
       this.gossip(a, b, peopleById);
       this.gossip(b, a, peopleById);
+    }
+  }
+
+  /** Pass one useful, newer food or water location down each conversational rung. */
+  private shareOnePlace(teller: Person, listener: Person): void {
+    const kinds = [
+      'water', 'resource:berries', 'resource:fish', 'resource:wild_grain',
+      'fruit:apple', 'fruit:pear', 'fruit:plum',
+    ];
+    const places = kinds.flatMap(kind => teller.placeMemory.records(kind));
+    const worth = (kind: string): number => kind === 'water' ? 3 :
+      kind === 'resource:berries' || kind === 'fruit:apple' || kind === 'fruit:pear' || kind === 'fruit:plum' ? 2 : 1;
+    places.sort((a, b) => worth(b.kind) - worth(a.kind) || b.day - a.day || b.amount - a.amount ||
+      a.kind.localeCompare(b.kind) || a.y - b.y || a.x - b.x);
+    for (const place of places) {
+      const known = listener.placeMemory.records(place.kind).find(other =>
+        Math.floor(other.x / 4) === Math.floor(place.x / 4) &&
+        Math.floor(other.y / 4) === Math.floor(place.y / 4));
+      if (known && known.day >= place.day) continue;
+      listener.placeMemory.remember(place.kind, place.x, place.y, place.day, place.amount, 'told');
+      telemetry.count(place.kind === 'water' ? 'water_place_told' : 'food_place_told');
+      return;
     }
   }
 

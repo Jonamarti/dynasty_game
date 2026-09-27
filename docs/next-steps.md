@@ -1179,3 +1179,7 @@ recibir hallazgos de juego.
 **M15 2g:** explorar con hambre o curiosidad solo se ofrece al faltar un destino
 de comida conocido, y sus puntos quedan dentro del alcance del ancla. Todavía
 falta la cohorte final de checks del mapa en 2k.
+
+**M15 fase 2h:** los rumores de comida/agua pasan por conversaciones largas y
+conservan su antigüedad. Las pruebas de integración social verifican un solo
+lugar por lado y excluyen los saludos.

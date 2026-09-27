@@ -9244,3 +9244,13 @@ limita al alcance del ancla de M13. El recorrido de sed mantiene prioridad de
 supervivencia y puede salir más allá del alcance ordinario. Cada acción viaja a
 un único punto y vuelve a puntuar al llegar, sin convertirse en `wander`.
 Capturas: `m15-2g-exploration.png` y `m15-2g-frontier.png`.
+
+## 2026-09-27 — M15 fase 2h: contar ubicaciones útiles
+
+Las conversaciones `chat`, `interests` y `deep` comparten hasta un lugar útil en
+cada sentido: agua o comida que el oyente no conoce, o que recuerda de antes.
+El dato conserva el día del observador original y entra como `told`, así que la
+antigüedad no se renueva por repetir el rumor. Los saludos no comparten mapa.
+Las pruebas cubren transferencia, límite de un lugar por conversación, filtro de
+saludo y antigüedad. Capturas: `m15-2h-shared-water.png` y
+`m15-2h-shared-food.png`.

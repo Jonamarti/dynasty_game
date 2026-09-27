@@ -2880,3 +2880,10 @@ frontera desconocida o vieja. La opción ordinaria respeta el alcance de su ancla
 M13; la búsqueda urgente de agua conserva la excepción de supervivencia. La
 ruta termina en un punto y repuntúa, mientras `wander` sigue siendo un paseo
 corto.
+
+**Cierre 2h (2026-09-27):** las conversaciones `chat`, `interests` y `deep`
+transmiten en cada dirección un recurso de comida o agua que el oyente desconoce
+o recuerda más viejo. Se preserva el día de observación y la fuente cambia a
+`told`; los saludos no comparten mapa. Los recién llegados siguen
+con su propio mapa personal. Seguir a quien cuida permite aprender por la
+visibilidad compartida, sin copiar el mapa de la banda.

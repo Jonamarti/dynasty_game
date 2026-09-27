@@ -121,6 +121,26 @@ describe('what a conversation settles', () => {
     expect(b.beliefs.get('eat:fish')).toMatchObject({ value: 50, source: 'told', tick: 101 });
   });
 
+  it('passes one food or water location by word in a real conversation', () => {
+    const { social, a, b } = pair();
+    a.placeMemory.remember('water', 10, 10, 3, 2, 'seen');
+    a.placeMemory.remember('resource:berries', 15, 10, 4, 2, 'seen');
+    social.converse(a, b, 100, new Map(), 'chat');
+    const learned = b.placeMemory.records('water')[0];
+    expect(learned).toMatchObject({ x: 10, y: 10, day: 3, source: 'told' });
+    expect(b.placeMemory.records('resource:berries')).toHaveLength(0);
+    social.converse(a, b, 101, new Map(), 'greet');
+    expect(b.placeMemory.records('resource:berries')).toHaveLength(0);
+  });
+
+  it('replaces an older rumour but never dates it to the conversation', () => {
+    const { social, a, b } = pair();
+    a.placeMemory.remember('water', 10, 10, 8, 2, 'seen');
+    b.placeMemory.remember('water', 10, 10, 2, 1, 'told');
+    social.converse(a, b, 300, new Map(), 'interests');
+    expect(b.placeMemory.records('water')[0]).toMatchObject({ day: 8, amount: 2, source: 'told' });
+  });
+
   it('passes two beliefs in deep talk, choosing the most surprising first', () => {
     const { social, a, b } = pair();
     a.beliefs.learn('eat:berries', 20, 0.8, 'own', 1);
