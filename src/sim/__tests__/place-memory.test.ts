@@ -66,4 +66,12 @@ describe('PlaceMemory', () => {
     map.updateAt('resource:berries', 4, 4, 0);
     expect(map.nearest('resource:berries', 5, 4)?.x).toBe(20);
   });
+
+  it('resolves a remembered resource across a coarse-cell edge', () => {
+    const map = new PlaceMemory(32, 32);
+    map.remember('resource:berries', 3.8, 8, 4, 2, 'told');
+    expect(map.hasAt('resource:berries', 4.2, 8)).toBe(false);
+    expect(map.hasNear('resource:berries', 4.2, 8)).toBe(true);
+    expect(map.hasNear('resource:berries', 6, 8)).toBe(false);
+  });
 });

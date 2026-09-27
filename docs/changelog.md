@@ -9254,3 +9254,19 @@ antigüedad no se renueva por repetir el rumor. Los saludos no comparten mapa.
 Las pruebas cubren transferencia, límite de un lugar por conversación, filtro de
 saludo y antigüedad. Capturas: `m15-2h-shared-water.png` y
 `m15-2h-shared-food.png`.
+
+## 2026-09-27 — M15 fase 2k: checks del mapa personal
+
+`sim:check` registra el conocimiento del objetivo de cada acción de
+supervivencia; comprueba que no haya objetivos invisibles ni sin recuerdo,
+que el mapa medio crezca sin cubrir el mundo entero, que una recolección use
+un recurso oído y cuántos viajes llegan a recuerdos agotados. El mismo
+muestreo informa el promedio inicial/final. `band`: mapa de 7,2% a 9,3%,
+180 viajes agotados, y quedan 14 objetivos `forage` sin recuerdo registrado;
+no hubo recolección causada por rumor aunque se compartieron ubicaciones. Los
+checks señalan estas dos brechas en vez de ocultarlas. Capturas:
+`m15-2k-map-checks.png` y `m15-2k-simulation.png`.
+
+La fase 2 queda cerrada en código y commits hasta 2k. Los resultados pendientes
+están anotados en `docs/bugs.md`; los ajustes se retoman con los errores que
+aparezcan al jugar.

@@ -2887,3 +2887,15 @@ o recuerda más viejo. Se preserva el día de observación y la fuente cambia a
 `told`; los saludos no comparten mapa. Los recién llegados siguen
 con su propio mapa personal. Seguir a quien cuida permite aprender por la
 visibilidad compartida, sin copiar el mapa de la banda.
+
+**Entrega de 2j-2k (2026-09-27):** el radio que alimenta el registro de celdas
+usa `sightRadius` del personaje en cada intervalo, por lo que la reducción de
+noche (fase 12) y el aumento desde altura (fase 25) cambian lo descubierto sin
+olvidar lo diurno. `sim:check` ahora mide el mapa inicial/final, clasifica el
+conocimiento de objetivos de `forage`, `pick`, `drink`, `hunt` y `chop`, mide
+recolecciones por rumores y cuenta viajes a recursos agotados. En `band` el
+mapa crece 7,2% ? 9,3% y hay 180 viajes a recuerdos agotados; 14 objetivos
+`forage` no pasaron el invariante de conocimiento y todavía no hubo recolección
+desde un lugar oído. Son resultados abiertos para depurar, no checks rebajados.
+La medición de cohorte de 2f sigue con la excepción provisional autorizada por
+el propietario, -32,5 puntos de supervivencia `lean`.

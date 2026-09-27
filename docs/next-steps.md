@@ -1183,3 +1183,10 @@ falta la cohorte final de checks del mapa en 2k.
 **M15 fase 2h:** los rumores de comida/agua pasan por conversaciones largas y
 conservan su antigüedad. Las pruebas de integración social verifican un solo
 lugar por lado y excluyen los saludos.
+
+**M15 fase 2 cerrada en código, con incidencias abiertas:** 2e-2k están
+implementadas y tienen commits por funcionalidad. La entrega deja documentados
+el coste de supervivencia autorizado provisionalmente, los dos invariantes 2k
+que aún fallan en `band`, y seis fallos de la suite completa (cinco de rebaños,
+uno por timeout). La siguiente pasada es ajustar esos problemas con lo que se
+observe jugando; no se deben borrar o relajar sus checks para cerrar M15.

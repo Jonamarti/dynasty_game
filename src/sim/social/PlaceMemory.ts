@@ -129,6 +129,31 @@ export class PlaceMemory {
     return records ? [...records.values()] : [];
   }
 
+  /** Constant-time check for knowledge at a remembered map cell. */
+  hasAt(kind: string, x: number, y: number): boolean {
+    const records = this.places.get(kind);
+    if (!records) return false;
+    const key = Math.floor(y / PLACE_CELL_SIZE) * this.cols + Math.floor(x / PLACE_CELL_SIZE);
+    return records.has(key);
+  }
+
+  /** Knowledge check for a live entity resolved a tile or less from its remembered cell. */
+  hasNear(kind: string, x: number, y: number, radius = 1): boolean {
+    const records = this.places.get(kind);
+    if (!records) return false;
+    const minX = Math.floor((x - radius) / PLACE_CELL_SIZE);
+    const maxX = Math.floor((x + radius) / PLACE_CELL_SIZE);
+    const minY = Math.floor((y - radius) / PLACE_CELL_SIZE);
+    const maxY = Math.floor((y + radius) / PLACE_CELL_SIZE);
+    for (let cy = minY; cy <= maxY; cy++) {
+      for (let cx = minX; cx <= maxX; cx++) {
+        const record = records.get(cy * this.cols + cx);
+        if (record && Math.hypot(record.x - x, record.y - y) <= radius) return true;
+      }
+    }
+    return false;
+  }
+
   /** Find the nearest matching record from this person's bounded place memory. */
   nearest(
     kind: string, x: number, y: number, accepts: (place: PlaceRecord) => boolean = () => true,

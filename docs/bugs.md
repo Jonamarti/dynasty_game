@@ -3012,3 +3012,38 @@ puntos; 12/20 colapsos). Se contaron 824 muertes por hambre y 6 por sed, lo que
 apunta a un coste de tiempo/actividad y no a deshidratación directa. El
 propietario pidió continuar y revisar estos errores jugando; la implementación
 se conserva de forma provisional y el coste queda abierto para depuración.
+
+**2k, lectura inicial de los nuevos checks (2026-09-27, `band`):**
+`people-act-on-what-they-know` encontró 14/4.130 objetivos de `forage` sin
+recuerdo; `word-of-food-travels` aún no observó una recolección desde un rumor,
+aunque se compartieron 17 ubicaciones de comida. `the-map-grows` pasó (7,2% a
+9,3%) y `stale-memories-cost` registró 180 viajes a nodos agotados. Se conservan
+los dos fallos como datos accionables. El recorrido `shots` también actualizó
+las capturas 2i; se restauraron desde el commit anterior y siguen sin cambios.
+
+**Suite global al cierre de M15 fase 2 (2026-09-27):** `npm test` dejó 6 fallos:
+cinco pruebas de crecimiento/producción en corrales de rebaño y un timeout en
+`band.test.ts` sobre ejercicio de rango. El resultado queda asociado al coste
+conductual provisional de 2f; pendiente reproducir y depurar junto con la
+observación del propietario en juego.
+
+**Matriz `sim:check:all` al cierre (2026-09-27):** los nuevos checks
+`people-act-on-what-they-know` fallan en los 19 escenarios; `word-of-food-travels`
+falla en los escenarios que sí compartieron comida pero no llegaron a cosechar
+por rumor. En `band` el invariante fue 5.170/5.183, mapa 7,2% ? 9,4% y 208
+viajes a recuerdos agotados. La matriz tardó unos ocho minutos; `band` midió
+787 pasos/s frente al piso 1.678 de `perf-budget`. La causa exacta de ese coste
+no quedó aislada. El propietario pidió completar M15 y depurar después jugando;
+se conserva el resultado para esa revisión.
+
+La prueba aislada de `herding.test.ts` reproduce cinco fallos: el rebaño cae a
+cero antes de crecer o producir leche/lana. Seis casos habían fallado en la
+suite global; el sexto (`band.test.ts`, rango no ejercitado) sí corría junto a
+la matriz y el soak, así que queda pendiente repetirlo sin carga concurrente.
+
+**Tour `shots` (2026-09-27):** the six-test suite reaches all six cases, but its
+long `tour` case times out even with a three-minute limit, after saving through
+`10-tree-menu.png`. The separate 2i, seasons, rank, menu/settings and opening
+screen cases pass. The named 2f/2g/2h/2k milestone images remain committed; the
+2i originals were restored after the tour regenerated them. This is a screenshot
+tour limitation, not a blocker for the new named captures.

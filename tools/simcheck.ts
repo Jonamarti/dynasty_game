@@ -536,6 +536,7 @@ export interface Sample {
   tick: number;
   day: number;
   population: number;
+  exploredMap: number;
   avgHunger: number;
   avgThirst: number;
   avgFatigue: number;
@@ -710,6 +711,9 @@ function isBad(n: number): boolean {
 
 function sample(sim: Simulation): Sample {
   const living = sim.livingPeople();
+  const exploredMap = living.length
+    ? living.reduce((sum, person) => sum + person.placeMemory.exploredFraction(), 0) / living.length
+    : 0;
   let outOfBounds = 0;
   let nonFinite = 0;
   let onUnwalkable = 0;
@@ -730,6 +734,7 @@ function sample(sim: Simulation): Sample {
     tick: stats.tick,
     day: stats.day,
     population: stats.population,
+    exploredMap,
     avgHunger: stats.avgHunger,
     avgThirst: stats.avgThirst,
     avgFatigue: stats.avgFatigue,
@@ -819,6 +824,29 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const first = samples[0]!;
   const last = samples[samples.length - 1]!;
   const tel = base.telemetry;
+
+  const knowledgeChecked = tel.action_target_knowledge_checked ?? 0;
+  const knowledgeUnknown = tel.action_target_knowledge_unknown ?? 0;
+  if (knowledgeChecked < 10) skip('people-act-on-what-they-know', knowledgeChecked + ' eligible resource targets (need 10)');
+  else add('people-act-on-what-they-know', knowledgeUnknown === 0,
+    (knowledgeChecked - knowledgeUnknown) + '/' + knowledgeChecked + ' forage, pick, drink, hunt and chop targets visible or remembered');
+
+  const toldFoodTargets = tel.food_place_target_from_told ?? 0;
+  if ((tel.food_place_told ?? 0) < 1) skip('word-of-food-travels', 'no food-place rumours shared in this scenario');
+  else add('word-of-food-travels', toldFoodTargets > 0,
+    toldFoodTargets + ' forage targets came from a food location heard in conversation');
+
+  const staleTrips = tel.stale_memory_resource_empty ?? 0;
+  if (staleTrips === 0) skip('stale-memories-cost', 'no trip reached an exhausted remembered resource');
+  else add('stale-memories-cost', true, staleTrips + ' trips reached a remembered resource that was exhausted');
+
+  if (samples.length < 2 || first.exploredMap <= 0) {
+    skip('the-map-grows', 'need at least two samples after personal-map discovery starts');
+  } else {
+    add('the-map-grows', last.exploredMap > first.exploredMap && last.exploredMap < 0.99,
+      (100 * first.exploredMap).toFixed(1) + '% → ' + (100 * last.exploredMap).toFixed(1) +
+      '% mean explored (must grow and remain below 99%)');
+  }
 
   const home = base.home;
   if (base.conflict.kinAttacks < 10) skip('kin-are-defended', base.conflict.kinAttacks + ' attacks on children with adult witnesses (need 10)');

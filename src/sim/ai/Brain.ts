@@ -36,7 +36,7 @@ import type { Animal } from '../entities/Animal.ts';
 import { chooseCravingFood } from './FoodChoice.ts';
 import { ITEMS } from '../entities/Item.ts';
 import {
-  TECH, quarryReachFactor, techPower, prerequisitesMet, type Tech,
+  TECH, techPower, prerequisitesMet, type Tech,
 } from '../knowledge/Tech.ts';
 import {
   RECIPES, hasIngredients, recipeFor, recipeUsing, nutritionPerUnit,
@@ -594,6 +594,7 @@ export class Brain {
   private readonly knownNodeCandidates: { node: ResourceNode; amount: number | null }[] = [];
   private readonly knownNodeIds = new Set<number>();
   private readonly rememberedNodeTargets = new Set<number>();
+  private readonly toldNodeTargets = new Set<number>();
   private knownNodeCandidatesFor: number | null = null;
   /** Reused for point lookups around one remembered node at a time. */
   /**
@@ -641,6 +642,7 @@ export class Brain {
   score(person: Person, ctx: BrainContext): { scores: ScoredAction[]; found: FoundTargets } {
     const scores: ScoredAction[] = [];
     this.rememberedNodeTargets.clear();
+    this.toldNodeTargets.clear();
     const anchorCtx = { world: ctx.world, peopleById: ctx.peopleById ?? new Map(), buildingsById: ctx.buildingsById,
       householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation };
     const anchor = anchorOf(person, anchorCtx);
@@ -828,9 +830,9 @@ export class Brain {
     const reachable = (t: Tree): boolean =>
       t.standing && t.fruit >= 1 && ctx.world.sameRegion(person.x, person.y, t.x, t.y) &&
       (desperateForFood || withinReach(anchor, reach, t.x, t.y));
-    const edible = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
+    const edible = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius,
       t => reachable(t) && (ITEMS[t.def.fruitItem ?? '']?.nutrition ?? 0) > 0);
-    const worthwhile = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
+    const worthwhile = ctx.treeHash.findNearest(person.x, person.y, ctx.sightRadius,
       t => reachable(t) && this.fruitWorth(person, t, ctx) > 0);
     fruitTree = !edible ? worthwhile
       : !worthwhile || worthwhile.id === edible.id ? edible
@@ -2534,11 +2536,21 @@ export class Brain {
       // Tracking is what turns hunting from a thing you stumble into to a
       // thing you go out and do: it widens the search before proximity gets to
       // settle the comparison, which it otherwise always does.
-      quarry = ctx.animalHash.findNearest(
-        person.x, person.y,
-        ctx.sightRadius * 1.5 * quarryReachFactor(person),
+      const visibleQuarry = ctx.animalHash.findNearest(
+        person.x, person.y, ctx.sightRadius,
         a => a.alive && (desperateForFood || withinReach(anchor, reach, a.x, a.y))
       );
+      const herdMemory = person.placeMemory.nearestAny(person.x, person.y,
+        ctx.sightRadius * 3, place => place.kind.startsWith('herd:') &&
+          ctx.world.sameRegion(person.x, person.y, place.x, place.y) &&
+          (desperateForFood || withinReach(anchor, reach, place.x, place.y)));
+      const rememberedQuarry = herdMemory
+        ? ctx.animalHash.findNearest(herdMemory.x, herdMemory.y, 2,
+          animal => animal.alive && Math.hypot(animal.x - herdMemory.x, animal.y - herdMemory.y) <= 1 &&
+            ctx.world.sameRegion(person.x, person.y, animal.x, animal.y) &&
+            (desperateForFood || withinReach(anchor, reach, animal.x, animal.y)))
+        : null;
+      quarry = visibleQuarry ?? rememberedQuarry;
       // Do not *begin* a chase already over the line, the same rule crafting
       // learned. A hunt checks its interruption during the work rather than
       // between pulls, so a thirsty hunter arms a chase, is stopped on the next
@@ -3215,6 +3227,16 @@ export class Brain {
     return 0.45 + 0.55 * Math.max(0, 1 - d / (sight * 2));
   }
 
+  private noteKnownTarget(
+    person: Person, action: string, x: number, y: number, kinds: readonly string[], sightRadius: number,
+  ): void {
+    const visible = person.distanceTo({ x, y }) <= sightRadius;
+    const remembered = kinds.some(kind => person.placeMemory.hasNear(kind, x, y));
+    telemetry.count('action_target_knowledge_checked');
+    telemetry.count(visible || remembered ? 'action_target_knowledge_known' : 'action_target_knowledge_unknown');
+    telemetry.count(`action_target_knowledge_${visible ? 'visible' : remembered ? 'remembered' : 'unknown'}_${action}`);
+  }
+
   private findWater(person: Person, ctx: BrainContext): { x: number; y: number } | null {
     // A visible shore is a real target; beyond sight, thirst may use only a
     // shore this person has recorded. The memory stores an exact shore tile,
@@ -3483,7 +3505,7 @@ export class Brain {
     // Preserve the established local choice, including SpatialHash's stable
     // ring ordering. Personal memory extends the search only when no local
     // target exists; this keeps the home and family routes from M13 intact.
-    const local = ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
+    const local = ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius,
       n => eligible(n));
     if (local) return local;
     if (this.knownNodeCandidatesFor !== person.id) {
@@ -3529,6 +3551,7 @@ export class Brain {
           candidate => candidate.kind === kind && Math.hypot(candidate.x - place.x, candidate.y - place.y) <= 1);
         if (!node || this.knownNodeIds.has(node.id)) return;
         this.knownNodeCandidates.push({ node, amount: place.amount });
+        if (place.source === 'told') this.toldNodeTargets.add(node.id);
         this.knownNodeIds.add(node.id);
         telemetry.count('remembered_node_candidate');
       };
@@ -3539,7 +3562,7 @@ export class Brain {
         : reach;
       include(person.placeMemory.nearest(`resource:${kind}`, person.x, person.y,
         memory => accepts(memory) && withinReach(anchor, reach, memory.x, memory.y),
-        Math.min(ctx.sightRadius * 2, reachDistance)));
+        reachDistance));
     }
   }
 
@@ -3576,6 +3599,7 @@ export class Brain {
         break;
       case 'drink':
         if (found.water) {
+          this.noteKnownTarget(person, 'drink', found.water.x, found.water.y, ['water'], ctx.sightRadius);
           person.targetX = found.water.x;
           person.targetY = found.water.y;
         }
@@ -3583,6 +3607,7 @@ export class Brain {
       case 'hunt': {
         const animal = found.quarry;
         if (animal) {
+          this.noteKnownTarget(person, 'hunt', animal.x, animal.y, [`herd:${animal.species}`], ctx.sightRadius);
           person.targetAnimalId = animal.id;
           person.targetX = animal.x;
           person.targetY = animal.y;
@@ -3593,6 +3618,8 @@ export class Brain {
       case 'chop': {
         const tree = action === 'pick' ? found.fruitTree : found.fellTree;
         if (tree) {
+          const kind = action === 'pick' && tree.def.fruitItem ? `fruit:${tree.def.fruitItem}` : 'tree';
+          this.noteKnownTarget(person, action, tree.x, tree.y, [kind], ctx.sightRadius);
           person.targetTreeId = tree.id;
           person.targetX = tree.x;
           person.targetY = tree.y;
@@ -3635,8 +3662,11 @@ export class Brain {
         if (action === 'gather_for_site') person.action = 'gather';
         const node = action === 'forage' ? found.foodNode : found.matNode;
         if (node) {
+          if (action === 'forage') this.noteKnownTarget(person, action, node.x, node.y,
+            [`resource:${node.kind}`], ctx.sightRadius);
           if (this.rememberedNodeTargets.has(node.id)) {
             telemetry.count('action_target_from_memory_' + action);
+            if (action === 'forage' && this.toldNodeTargets.has(node.id)) telemetry.count('food_place_target_from_told');
           }
           person.targetX = node.x;
           person.targetY = node.y;
