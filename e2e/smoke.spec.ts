@@ -294,6 +294,98 @@ test('boots, paints and advances the clock', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('the observer map hides unknown ground and prevents selecting its entities', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+  const unknown = await page.evaluate(() => {
+    const d = (window as unknown as { __dynasty: {
+      sim: Simulation;
+      camera: { snapTo: (x: number, y: number) => void; following: boolean;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+    } }).__dynasty;
+    const player = d.sim.player!;
+    const node = d.sim.nodes.find(n => n.amount > 0 &&
+      Math.hypot(n.x - player.x, n.y - player.y) > d.sim.config.sightRadius * 2 &&
+      player.placeMemory.seenDayAt(n.x, n.y) === 0);
+    if (!node) return null;
+    d.camera.following = false;
+    d.camera.snapTo(node.x, node.y);
+    return { x: d.camera.worldToScreenX(node.x), y: d.camera.worldToScreenY(node.y) };
+  });
+  expect(unknown, 'fixture needs a resource outside the personal map').not.toBeNull();
+  await page.waitForTimeout(100);
+  const fogPixel = await page.evaluate(({ x, y }) => {
+    const canvas = document.getElementById('view') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    const px = Math.floor((x - rect.left) * canvas.width / rect.width);
+    const py = Math.floor((y - rect.top) * canvas.height / rect.height);
+    return [...canvas.getContext('2d')!.getImageData(px, py, 1, 1).data].slice(0, 3);
+  }, unknown!);
+  expect(fogPixel[0]! + fogPixel[1]! + fogPixel[2]!).toBeLessThan(45);
+  await page.mouse.click(unknown!.x, unknown!.y);
+  await expect(page.locator('.picker')).toBeHidden();
+
+  await page.keyboard.press('v');
+  await page.waitForTimeout(100);
+  const clearPixel = await page.evaluate(({ x, y }) => {
+    const canvas = document.getElementById('view') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    const px = Math.floor((x - rect.left) * canvas.width / rect.width);
+    const py = Math.floor((y - rect.top) * canvas.height / rect.height);
+    return [...canvas.getContext('2d')!.getImageData(px, py, 1, 1).data].slice(0, 3);
+  }, unknown!);
+  expect(clearPixel[0]! + clearPixel[1]! + clearPixel[2]!).toBeGreaterThan(45);
+  await page.mouse.click(unknown!.x, unknown!.y);
+  await expect(page.locator('.picker')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  const fogPersistedOff = await page.evaluate(() =>
+    !(window as unknown as { __dynasty: { renderer: { fogEnabled: boolean } } }).__dynasty.renderer.fogEnabled
+  );
+  expect(fogPersistedOff).toBe(true);
+  await page.keyboard.press('Escape');
+  const fogButton = page.locator('.pausemenu [data-act="fog"]');
+  await expect(fogButton).toHaveText('Fog of war: Off');
+  await fogButton.click();
+  await expect(fogButton).toHaveText('Fog of war: On');
+  expect(errors).toEqual([]);
+});
+
+test('a remembered place reports when it was last seen', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+  await expect.poll(() => page.evaluate(() =>
+    (window as unknown as { __dynasty: { sim: Simulation } }).__dynasty.sim.player!.placeMemory.allRecords().length
+  )).toBeGreaterThan(0);
+  const remembered = await page.evaluate(() => {
+    const d = (window as unknown as { __dynasty: {
+      sim: Simulation;
+      camera: { snapTo: (x: number, y: number) => void; following: boolean;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+    } }).__dynasty;
+    const player = d.sim.player!;
+    const place = player.placeMemory.allRecords().find(record => record.source === 'seen');
+    if (!place) return null;
+    const corners = [
+      { x: 2, y: 2 }, { x: d.sim.world.width - 2, y: 2 },
+      { x: 2, y: d.sim.world.height - 2 },
+      { x: d.sim.world.width - 2, y: d.sim.world.height - 2 },
+    ];
+    const far = corners.sort((a, b) =>
+      Math.hypot(b.x - place.x, b.y - place.y) - Math.hypot(a.x - place.x, a.y - place.y))[0]!;
+    if (Math.hypot(far.x - place.x, far.y - place.y) <= d.sim.config.sightRadius + 2) return null;
+    player.x = far.x;
+    player.y = far.y;
+    d.camera.following = false;
+    d.camera.snapTo(place.x, place.y);
+    return { x: d.camera.worldToScreenX(place.x), y: d.camera.worldToScreenY(place.y) };
+  });
+  expect(remembered, 'fixture needs a recorded place away from the observer').not.toBeNull();
+  await page.mouse.move(remembered!.x, remembered!.y);
+  await expect.poll(() => page.locator('#view').getAttribute('title')).toContain('seen');
+  expect(errors).toEqual([]);
+});
+
 test('the panel shows who someone is and what they want', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);
@@ -597,6 +689,10 @@ test('death hands the game to an heir instead of ending it', async ({ page }) =>
   const errors = guardErrors(page);
   await ready(page);
 
+  const fogBeforeDeath = await page.evaluate(() =>
+    (window as unknown as { __dynasty: { renderer: { fogLayerKey: string } } }).__dynasty.renderer.fogLayerKey
+  );
+
   const before = await page.locator('.hud-name').textContent();
 
   // Kill the player outright. The succession machinery runs off the same path
@@ -634,6 +730,9 @@ test('death hands the game to an heir instead of ending it', async ({ page }) =>
   await expect(page.locator('.hud-tag')).toHaveText('you');
   await expect.poll(async () => page.locator('.hud-name').textContent(), { timeout: 10_000 })
     .not.toBe(before);
+  await expect.poll(() => page.evaluate(() =>
+    (window as unknown as { __dynasty: { renderer: { fogLayerKey: string } } }).__dynasty.renderer.fogLayerKey
+  )).not.toBe(fogBeforeDeath);
 
   const clock = page.locator('.hud-clock');
   const at = await clock.textContent();

@@ -10,7 +10,7 @@ import { Person } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
 import {
-  knowledgeOfPerson, regardFromThem, regardReasons, rememberedAbout, type RegardContext,
+  canSeePlace, knowledgeOfPerson, regardFromThem, regardReasons, rememberedAbout, type RegardContext,
 } from '../social/Knowledge.ts';
 import { DEED_WEIGHT, describeEvent, type EventType, type SocialEvent } from '../social/Events.ts';
 
@@ -22,6 +22,15 @@ function pair(): { me: Person; them: Person; graph: RelationshipGraph } {
   graph.addDeed(them.id, me.id, -30, 0);
   return { me, them, graph };
 }
+
+describe('places on the observer map', () => {
+  it('uses one visibility rule for painting and selection', () => {
+    const { me } = pair();
+    expect(canSeePlace(me, 5, 5, 3)).toBe(true);
+    expect(canSeePlace(me, 8, 8, 3)).toBe(false);
+    expect(canSeePlace(null, 8, 8, 3)).toBe(true);
+  });
+});
 
 describe("somebody else's regard for you", () => {
   it('cannot be read at all off a stranger', () => {

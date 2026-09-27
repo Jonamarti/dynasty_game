@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-27 — M15 fase 2i: niebla de guerra personal
+
+La máscara de visión sigue el mapa personal del personaje: solo muestra el
+terreno conocido, vela lo explorado y oculta lo nunca visto. Los objetos vivos
+fuera de la vista se omiten también del selector; las marcas recordadas salen
+del mapa propio e indican su antigüedad al pasar el puntero. `V` y el menú de
+pausa alternan el modo observador, que se conserva entre sesiones. El renderer
+cachea máscara y marcas por revisión del mapa, y las pruebas e2e comprueban
+ocultación, selección, persistencia y el cambio de mapa tras una sucesión. Capturas: `m15-2i-fog-map.png` y
+`m15-2i-observer-mode.png`. La cohorte de la variante 2f se dejó sin aceptar
+tras medir 29,2% en `lean` frente a la base de 57,6%; el gate del plan sigue
+vigente.
+
 ## 2026-09-27 — M15 fase 2f: corregir recuerdos de recursos
 
 El mapa personal conserva las fuentes de agua aunque excedan el límite normal

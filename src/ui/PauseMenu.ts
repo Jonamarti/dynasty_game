@@ -21,6 +21,8 @@ import { languageSwitchHtml, handleLanguageClick } from './LanguageSwitch.ts';
 export interface PauseMenuCallbacks {
   onResume: () => void;
   onSettings: () => void;
+  fogEnabled: () => boolean;
+  onToggleFog: () => void;
 }
 
 /** Mirrors the handler in `main.ts`. Update both together. */
@@ -36,6 +38,7 @@ export const KEYS: [string, string][] = [
   ['G', 'tech web'],
   ['K', 'family tree'],
   ['T', 'tribe graph'],
+  ['V', 'toggle fog of war'],
   ['1 – 6', 'panel tabs'],
   ['P', 'fold the panel'],
   ['H', 'hide the overlay'],
@@ -46,6 +49,7 @@ export const KEYS: [string, string][] = [
 export class PauseMenu {
   private root: HTMLElement;
   private subtitle!: HTMLElement;
+  private fogButton!: HTMLButtonElement;
   private built = false;
 
   constructor(container: HTMLElement, private readonly callbacks: PauseMenuCallbacks) {
@@ -60,6 +64,10 @@ export class PauseMenu {
       const act = target.closest<HTMLElement>('[data-act]')?.dataset.act;
       if (act === 'resume') this.callbacks.onResume();
       else if (act === 'settings') this.callbacks.onSettings();
+      else if (act === 'fog') {
+        this.callbacks.onToggleFog();
+        this.updateFogButton();
+      }
       else if (target === this.root) this.callbacks.onResume();
     });
 
@@ -84,7 +92,16 @@ export class PauseMenu {
     if (!this.built) this.build();
     this.subtitle.textContent = sim.time.label() + ' · ' +
       t('seed {seed}', { seed: String(sim.config.seed) });
+    this.updateFogButton();
     this.root.hidden = false;
+  }
+
+  private updateFogButton(): void {
+    if (this.fogButton) {
+      this.fogButton.textContent = t('Fog of war: {state}', {
+        state: this.callbacks.fogEnabled() ? t('On') : t('Off'),
+      });
+    }
   }
 
   close(): void {
@@ -100,6 +117,7 @@ export class PauseMenu {
       '<div class="pausemenu-acts">' +
       '<button class="hud-button is-primary" type="button" data-act="resume">' + t('Resume') + '</button>' +
       '<button class="hud-button" type="button" data-act="settings">' + t('Settings') + '</button>' +
+      '<button class="hud-button" type="button" data-act="fog"></button>' +
       '</div>' +
       languageSwitchHtml() +
       '<div class="pausemenu-keys-head">' + t('Keys') + '</div>' +
@@ -108,6 +126,7 @@ export class PauseMenu {
         '<span class="pausemenu-key"><b>' + tc('key', key) + '</b> ' + t(what) + '</span>').join('') +
       '</div>';
     this.subtitle = card.querySelector('.pausemenu-sub') as HTMLElement;
+    this.fogButton = card.querySelector('[data-act="fog"]') as HTMLButtonElement;
     this.root.appendChild(card);
     this.built = true;
   }

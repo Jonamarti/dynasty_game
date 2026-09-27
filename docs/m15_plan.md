@@ -695,6 +695,13 @@ matriz de coste.
   fundadores, que se cuente dónde hay comida (2h) y que se explore a tiempo
   (2g). Nunca «que vuelvan a verlo todo».
 
+**Puerta de coste, ensayo del 2026-09-27:** una variante que limita el agua a
+lo visible o recordado y mantiene una bebida hasta aliviar la sed terminó la
+cohorte `lean` de 20 semillas en 29,2% de supervivencia, frente al 57,6% de la
+base (−28,4 puntos; 10/20 mundos colapsaron). `drinking-is-paced` pasó en
+`band`, pero la variante no se acepta por exceder el límite. `docs/bugs.md`
+conserva el hallazgo; 2f-2h quedan tras esta puerta hasta resolver el coste.
+
 #### 2g. Explorar
 
 Verbo **`explore`**: ir a una celda poco conocida o vieja del borde de lo
@@ -758,6 +765,20 @@ Detalles:
   personaje, no en cada fotograma.
 - e2e con `?skipIntro=1`: lo nunca visto no se puede seleccionar; lo
   recordado muestra su antigüedad; tras la sucesión, la niebla cambia.
+
+**Avance del 2026-09-27:** renderer compone una máscara cacheada por revisión
+del `PlaceMemory` del personaje activo; la vista actual abre un círculo móvil,
+los lugares recordados se dibujan como marcas y el terreno nunca visto queda
+negro. Los objetos vivos fuera de vista no se dibujan ni se pueden seleccionar;
+el selector solo consulta ubicaciones dentro de la vista. El puntero muestra
+«visto hace N días» o «se lo contaron» mediante el título del lienzo. `V` y el
+menú de pausa alternan el modo observador; la elección persiste. E2e cubre la
+niebla, selección, traducción/antigüedad y persistencia; nuevas capturas están
+en `artifacts/screenshots/m15-2i-fog-map.png` y
+`artifacts/screenshots/m15-2i-observer-mode.png`. El caché de terreno aún dibuja
+el estado presente; la versión histórica del relieve queda para las obras de
+la fase 26, según el plan. El e2e de sucesión confirma que el heredero activa
+una clave de caché distinta y, por tanto, su propio mapa.
 
 #### 2j. La noche, la altura y el mundo (enlaces con otras fases)
 

@@ -36,6 +36,24 @@ const KEY = 'dynasty.settings';
  * looked at closely; this is the same preference stored somewhere it survives.
  */
 const AUTONOMY_KEY = 'dynasty.autonomy';
+const FOG_KEY = 'dynasty.fogOfWar';
+
+/** The one display preference with a session-stable default. */
+export function loadFogOfWar(): boolean {
+  try {
+    return localStorage.getItem(FOG_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+export function saveFogOfWar(enabled: boolean): void {
+  try {
+    localStorage.setItem(FOG_KEY, enabled ? '1' : '0');
+  } catch {
+    // The observer map still works for this session when storage is unavailable.
+  }
+}
 
 /**
  * The one tunable that is deliberately *not* remembered between sessions.

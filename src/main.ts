@@ -26,7 +26,7 @@ import { TribeGraphOverlay } from './ui/TribeGraph.ts';
 import { PauseMenu } from './ui/PauseMenu.ts';
 import { SettingsOverlay } from './ui/Settings.ts';
 import {
-  configFrom, defaultSettings, loadAutonomy, loadLanguage, loadSettings, saveAutonomy, saveSettings,
+  configFrom, defaultSettings, loadAutonomy, loadFogOfWar, loadLanguage, loadSettings, saveAutonomy, saveFogOfWar, saveSettings,
 } from './ui/SettingsStore.ts';
 import { AUTONOMY_LABELS, nextAutonomy, type Autonomy } from './sim/ai/Autonomy.ts';
 import { t, tc, setLanguage, language, onLanguageChange } from './i18n/i18n.ts';
@@ -44,7 +44,7 @@ import { stageOf } from './sim/entities/Corpse.ts';
 import type { ItemPile } from './sim/entities/ItemPile.ts';
 import { describeEvent } from './sim/social/Events.ts';
 import {
-  knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree, knowledgeOfBuilding, explainPropertyUse,
+  canSeePlace, knowledgeOfPerson, knowledgeOfNode, knowledgeOfTree, knowledgeOfBuilding, explainPropertyUse,
 } from './sim/social/Knowledge.ts';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement;
@@ -105,8 +105,14 @@ const camera = new Camera();
 if (player) camera.snapTo(player.x, player.y);
 
 const renderer = new Renderer(canvas, sim, camera);
+renderer.fogEnabled = loadFogOfWar();
 renderer.resize();
 window.addEventListener('resize', () => renderer.resize());
+
+function toggleFogOfWar(): void {
+  renderer.fogEnabled = !renderer.fogEnabled;
+  saveFogOfWar(renderer.fogEnabled);
+}
 
 let selected: Selection | null = player ? { kind: 'person', person: player } : null;
 let paused = false;
@@ -401,6 +407,8 @@ const newGame = new NewGame(document.body, sim, person => {
  */
 const pauseMenu = new PauseMenu(document.body, {
   onResume: () => closeMenu(),
+  fogEnabled: () => renderer.fogEnabled,
+  onToggleFog: () => toggleFogOfWar(),
   onSettings: () => {
     pauseMenu.close();
     settingsScreen.open(sim, settings);
@@ -720,6 +728,10 @@ window.addEventListener('keydown', event => {
     if (sim.player) camera.recentre(sim.player.x, sim.player.y);
     return;
   }
+  if (key === 'v') {
+    toggleFogOfWar();
+    return;
+  }
   // Cycles rather than toggles: there are three states and `R` has to be able
   // to reach all of them, since the segmented control it mirrors is hidden with
   // the rest of the chrome by `H`.
@@ -814,6 +826,8 @@ const PICKER_CAP = 6;
  */
 function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): ActionTarget[] {
   const scored: { target: ActionTarget; distance: number }[] = [];
+  const visibleToObserver = (x: number, y: number): boolean =>
+    !renderer.fogEnabled || canSeePlace(sim.player, x, y, sim.config.sightRadius);
 
   // A click on water is a click on water. Nothing stands in a lake, and letting
   // a shoreline tree a tile and a half away capture the click meant clicking a
@@ -842,6 +856,7 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
   // in, and "nearest wins" is exactly the bug this replaced.
   for (const person of sim.peopleHash.queryRadius(worldX, worldY, PICK_RANGE)) {
     if (person.id === sim.player?.id) continue;
+    if (!visibleToObserver(person.x, person.y)) continue;
     consider({ kind: 'person', x: person.x, y: person.y, person },
       { kind: 'person', person }, person.x, person.y);
   }
@@ -852,12 +867,14 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
     // renderer owns that rule — see `nodeIsHidden` — precisely so that the
     // picker cannot offer something the player cannot see.
     if (nodeIsHidden(node, (x, y) => sim.isBuried(x, y))) continue;
+    if (!visibleToObserver(node.x, node.y)) continue;
     consider({ kind: 'node', x: node.x, y: node.y, node },
       { kind: 'node', node }, node.x, node.y);
   }
 
   for (const tree of sim.treeHash.queryRadius(worldX, worldY, PICK_RANGE)) {
     if (!tree.standing) continue;
+    if (!visibleToObserver(tree.x, tree.y)) continue;
     consider({ kind: 'tree', x: tree.x, y: tree.y, tree },
       { kind: 'tree', tree }, tree.x, tree.y);
   }
@@ -865,12 +882,14 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
   // Above piles and below people: a stone somebody is standing on should still
   // be reachable, which is the whole reason the chooser offers everything.
   for (const record of sim.inscriptionHash.queryRadius(worldX, worldY, 1.2)) {
+    if (!visibleToObserver(record.x, record.y)) continue;
     consider({ kind: 'inscription', x: record.x, y: record.y, inscription: record },
       { kind: 'inscription', inscription: record }, record.x, record.y);
   }
 
   for (const pile of sim.pileHash.queryRadius(worldX, worldY, PICK_RANGE)) {
     if (sim.isBuried(pile.x, pile.y)) continue;
+    if (!visibleToObserver(pile.x, pile.y)) continue;
     consider({ kind: 'pile', x: pile.x, y: pile.y, pile },
       { kind: 'pile', pile }, pile.x, pile.y);
   }
@@ -878,12 +897,14 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
   // M11 phase 16a. Below the living, above the ground.
   for (const corpse of sim.corpseHash.queryRadius(worldX, worldY, PICK_RANGE)) {
     if (sim.isBuried(corpse.x, corpse.y)) continue;
+    if (!visibleToObserver(corpse.x, corpse.y)) continue;
     consider({ kind: 'corpse', x: corpse.x, y: corpse.y, corpse },
       { kind: 'corpse', corpse }, corpse.x, corpse.y);
   }
 
   for (const animal of sim.animalHash.queryRadius(worldX, worldY, PICK_RANGE)) {
     if (!animal.alive) continue;
+    if (!visibleToObserver(animal.x, animal.y)) continue;
     consider({ kind: 'animal', x: animal.x, y: animal.y, animal },
       { kind: 'animal', animal }, animal.x, animal.y);
   }
@@ -898,7 +919,7 @@ function candidatesAt(worldX: number, worldY: number, excludePlayer: boolean): A
   // things standing on it but ahead of bare ground. Its footprint is already
   // exact, so it needs no hit radius of its own.
   const building = sim.buildingAt(worldX, worldY);
-  if (building) {
+  if (building && visibleToObserver(building.centerX, building.centerY)) {
     targets.push({ kind: 'building', x: building.centerX, y: building.centerY, building });
   }
 
@@ -1086,7 +1107,10 @@ canvas.addEventListener('pointermove', event => {
 
 /** Where the pointer was last seen over the map, in world units. */
 let lastMapPointer: { x: number; y: number } | null = null;
-canvas.addEventListener('pointermove', event => { lastMapPointer = worldPoint(event); });
+canvas.addEventListener('pointermove', event => {
+  lastMapPointer = worldPoint(event);
+  canvas.title = renderer.fogDescriptionAt(lastMapPointer.x, lastMapPointer.y) ?? '';
+});
 
 /** Draws the active design's ghost at a world point, green where it fits. */
 function showBuildGhost(worldX: number, worldY: number): void {

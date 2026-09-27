@@ -29,8 +29,12 @@ export class PlaceMemory {
   private exploredCount = 0;
   private rememberedCount = 0;
   private rememberedDayTotal = 0;
+  /** Changes only when the remembered map actually changes, for renderer caches. */
+  private revisionValue = 0;
   /** Per-kind cell indexes make revisiting a visible patch O(1), not a scan of its cap. */
   private readonly places = new Map<string, Map<number, PlaceRecord>>();
+  /** All remembered markers, including spent places, indexed for hover/hit tests. */
+  private readonly allPlacesHash = new SpatialHash<PlaceRecord>(8);
   /** Non-exhausted subset: the scorer must not rescan empty remembered spots. */
   private readonly available = new Map<string, Map<number, PlaceRecord>>();
   /** Per-kind spatial indexes keep nearest-known-place queries bounded. */
@@ -45,6 +49,7 @@ export class PlaceMemory {
 
   get cols(): number { return Math.ceil(this.width / PLACE_CELL_SIZE); }
   get rows(): number { return Math.ceil(this.height / PLACE_CELL_SIZE); }
+  get revision(): number { return this.revisionValue; }
 
   /** Resize for the actual comarca; initialising a person in a small test world is common. */
   configure(width: number, height: number, capPerKind: number): void {
@@ -71,6 +76,7 @@ export class PlaceMemory {
     const minY = Math.max(0, Math.floor((y - radius) / PLACE_CELL_SIZE));
     const maxY = Math.min(this.rows - 1, Math.floor((y + radius) / PLACE_CELL_SIZE));
     const radius2 = radius * radius;
+    let changed = false;
     for (let cy = minY; cy <= maxY; cy++) {
       for (let cx = minX; cx <= maxX; cx++) {
         const centerX = cx * PLACE_CELL_SIZE + PLACE_CELL_SIZE / 2;
@@ -78,9 +84,11 @@ export class PlaceMemory {
         if ((centerX - x) ** 2 + (centerY - y) ** 2 > radius2) continue;
         const index = cy * this.cols + cx;
         if (this.explored[index] === 0) this.exploredCount++;
+        if (this.explored[index] !== safeDay) changed = true;
         this.explored[index] = safeDay;
       }
     }
+    if (changed) this.revisionValue++;
   }
 
   /** Store that a place was seen. A revisit replaces its old state in that cell. */
@@ -113,6 +121,7 @@ export class PlaceMemory {
     }
     this.indexAvailability(kind, cellKey, record);
     this.places.set(kind, records);
+    this.revisionValue++;
   }
 
   records(kind: string): readonly PlaceRecord[] {
@@ -131,6 +140,15 @@ export class PlaceMemory {
     return found ? { ...found } : null;
   }
 
+  /** Nearest remembered marker of any kind; one spatial query, including spent places. */
+  nearestAny(
+    x: number, y: number, maxDistance: number,
+    accepts: (place: PlaceRecord) => boolean = () => true,
+  ): PlaceRecord | null {
+    const found = this.allPlacesHash.findNearest(x, y, maxDistance, accepts);
+    return found ? { ...found } : null;
+  }
+
   /**
    * Replace a remembered place with what was actually found there. The source
    * and observation day stay intact: arriving does not make an old rumour true
@@ -145,6 +163,7 @@ export class PlaceMemory {
     const next = { ...previous, amount };
     this.setRecord(records, cell, next);
     this.indexAvailability(kind, cell, next);
+    this.revisionValue++;
     return true;
   }
 
@@ -190,9 +209,13 @@ export class PlaceMemory {
 
   private setRecord(records: Map<number, PlaceRecord>, key: number, record: PlaceRecord): void {
     const previous = records.get(key);
-    if (previous) this.rememberedDayTotal -= previous.day;
+    if (previous) {
+      this.rememberedDayTotal -= previous.day;
+      this.allPlacesHash.remove(previous);
+    }
     else this.rememberedCount++;
     records.set(key, record);
+    this.allPlacesHash.insert(record);
     this.rememberedDayTotal += record.day;
   }
 
@@ -221,6 +244,7 @@ export class PlaceMemory {
     this.rememberedDayTotal -= previous.day;
     this.rememberedCount--;
     records.delete(key);
+    this.allPlacesHash.remove(previous);
     this.indexAvailability(kind, key, { ...previous, amount: 0 });
   }
 }

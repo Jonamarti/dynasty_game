@@ -3004,3 +3004,5 @@ se retiró; hay que corregir cómo una persona conserva y reutiliza el destino
 durante la sed antes de limitar la consulta al mapa personal. El rojo actual
 identifica un cambio de comportamiento en esta semilla, pero todavía no una
 causa de cohorte.
+
+**M15 2f, ensayo con bebida comprometida, 2026-09-27.** La traza tick a tick mostró que el personaje dejaba la orilla tras seis turnos con sed positiva; un compromiso renovable completó 164 bebidas en `band` y puso verde `drinking-is-paced`. Sin embargo, la cohorte documentada de 20 semillas en `lean` cayó de 57,6% a 29,2% de supervivencia (−28,4 puntos, 10/20 colapsos). La variante queda sin aceptar y sin commit por la puerta de coste de 2f-2h; el indicador local de bebidas no compensa esa regresión.

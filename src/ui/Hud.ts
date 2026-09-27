@@ -407,6 +407,7 @@ export class Hud {
         [t('click'), t('inspect')], [t('right-click'), t('actions')],
         ['B', t('build')], ['M', t('make')], ['C', t('command')],
         ['G', t('tech web')], ['K', t('family tree')], ['T', t('tribe graph')],
+        ['V', t('toggle fog of war')],
         ['R', t('who steers')],
         ['P', t('fold panel')], ['H', t('hide overlay')], [t('space'), t('pause')],
         ['Esc', t('menu')],

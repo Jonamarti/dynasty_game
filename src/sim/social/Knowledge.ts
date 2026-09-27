@@ -31,6 +31,11 @@ import { t, genderOf } from '../../i18n/i18n.ts';
 /** How well the observer knows the subject. */
 export type Acquaintance = 'self' | 'close' | 'known' | 'seen' | 'stranger';
 
+/** The same visible radius controls what the map paints and what the picker offers. */
+export function canSeePlace(observer: Person | null, x: number, y: number, sightRadius: number): boolean {
+  return !observer || Math.hypot(x - observer.x, y - observer.y) <= sightRadius;
+}
+
 export interface PersonKnowledge {
   level: Acquaintance;
   /** What the observer can call them: a name, or a description. */

@@ -242,6 +242,16 @@ test('tour', async ({ page }) => {
   await page.screenshot({ path: DIR + '/06-island.png' });
 });
 
+test('M15 2i observer map and fog toggle', async ({ page }) => {
+  await page.goto('/?seed=m15-2i-fog&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: DIR + '/m15-2i-fog-map.png' });
+  await page.keyboard.press('v');
+  await page.waitForTimeout(100);
+  await page.screenshot({ path: DIR + '/m15-2i-observer-mode.png' });
+});
+
 test('the four seasons', async ({ page }) => {
   // M9.5 phase 2a's gate: the ground and the trees should look different in
   // each season. Phase 2b added `Simulation.snowDepth`, a real accumulator

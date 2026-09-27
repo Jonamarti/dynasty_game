@@ -14,6 +14,7 @@ import type { Simulation } from '../sim/core/Simulation.ts';
 import { Interpolator, type Placed } from './Interpolator.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
 import type { Person } from '../sim/entities/Person.ts';
+import type { PlaceRecord } from '../sim/social/PlaceMemory.ts';
 import type { World } from '../sim/core/World.ts';
 import { BIOMES, type Biome } from '../sim/core/World.ts';
 import type { Season } from '../sim/core/TimeManager.ts';
@@ -26,9 +27,10 @@ import type { Tree } from '../sim/entities/Tree.ts';
 import type { TreeSpecies } from '../sim/entities/Tree.ts';
 import { workProgressOf } from '../sim/core/Progress.ts';
 import { expressionOf, type Expression } from '../sim/core/Mood.ts';
-import { knowsPersonCondition } from '../sim/social/Knowledge.ts';
+import { canSeePlace, knowsPersonCondition } from '../sim/social/Knowledge.ts';
 import { Camera, TILE } from './Camera.ts';
 import { Floaters } from './Floaters.ts';
+import { t } from '../i18n/i18n.ts';
 import {
   SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
 } from './Sprites.ts';
@@ -288,6 +290,15 @@ export class Renderer {
   private terrain: HTMLCanvasElement;
   /** The `SeasonVisual.key` the current `terrain` canvas was baked for. */
   private seasonKey: string;
+  /** Static discovered/unknown mask; keyed by the observer's map revision. */
+  private fogLayer: HTMLCanvasElement | null = null;
+  private fogLayerKey = '';
+  private fogFrame: HTMLCanvasElement | null = null;
+  private fogFrameCtx: CanvasRenderingContext2D | null = null;
+  private fogRecordsFor = -1;
+  private fogRecords: PlaceRecord[] = [];
+  /** Observer mode is an explicit presentation choice, never simulation state. */
+  fogEnabled = true;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -318,6 +329,9 @@ export class Renderer {
    */
   setSim(sim: Simulation): void {
     this.sim = sim;
+    this.fogLayer = null;
+    this.fogLayerKey = '';
+    this.fogRecordsFor = -1;
     const visual = this.seasonVisual();
     this.terrain = this.prerenderTerrain(sim.world, visual);
     this.seasonKey = visual.key;
@@ -431,6 +445,9 @@ export class Renderer {
 
     const view = camera.visibleTiles();
     const scale = camera.scale;
+    const observer = this.fogEnabled ? sim.player : null;
+    const inSight = (x: number, y: number): boolean =>
+      canSeePlace(observer, x, y, sim.config.sightRadius);
 
     // Repaint the whole terrain canvas only when the season (or a hard
     // freeze threshold within winter) actually changes — a few times a game
@@ -459,6 +476,7 @@ export class Renderer {
     // --- Resource nodes ----------------------------------------------------
     for (const node of sim.nodes) {
       if (node.x < view.minX || node.x > view.maxX || node.y < view.minY || node.y > view.maxY) continue;
+      if (!inSight(node.x, node.y)) continue;
       // Buried under enough snow, or picked clean of the one thing it is —
       // not drawn, not clickable, one predicate for both. A cosmetic burial
       // the AI could still reach through would be a lie the player could catch
@@ -474,6 +492,7 @@ export class Renderer {
     for (const tree of sim.trees) {
       if (tree.x < view.minX - 3 || tree.x > view.maxX + 3) continue;
       if (tree.y < view.minY - 3 || tree.y > view.maxY + 3) continue;
+      if (!inSight(tree.x, tree.y)) continue;
       this.drawTree(tree, highlight?.treeId === tree.id);
     }
 
@@ -483,6 +502,7 @@ export class Renderer {
       if (building.x > view.maxX || building.y > view.maxY) continue;
       if (building.x + building.def.width < view.minX) continue;
       if (building.y + building.def.height < view.minY) continue;
+      if (!inSight(building.centerX, building.centerY)) continue;
       this.drawBuilding(building, highlight?.buildingId === building.id);
     }
 
@@ -490,6 +510,7 @@ export class Renderer {
     for (const pile of sim.piles) {
       if (pile.x < view.minX || pile.x > view.maxX) continue;
       if (pile.y < view.minY || pile.y > view.maxY) continue;
+      if (!inSight(pile.x, pile.y)) continue;
       if (sim.isBuried(pile.x, pile.y)) continue;
       const px = camera.worldToScreenX(pile.x);
       const py = camera.worldToScreenY(pile.y);
@@ -525,6 +546,7 @@ export class Renderer {
     for (const corpse of sim.corpses) {
       if (corpse.x < view.minX || corpse.x > view.maxX) continue;
       if (corpse.y < view.minY || corpse.y > view.maxY) continue;
+      if (!inSight(corpse.x, corpse.y)) continue;
       if (sim.isBuried(corpse.x, corpse.y)) continue;
       const px = camera.worldToScreenX(corpse.x);
       const py = camera.worldToScreenY(corpse.y);
@@ -574,6 +596,7 @@ export class Renderer {
     for (const record of sim.inscriptions) {
       if (record.x < view.minX || record.x > view.maxX) continue;
       if (record.y < view.minY || record.y > view.maxY) continue;
+      if (!inSight(record.x, record.y)) continue;
       const px = camera.worldToScreenX(record.x);
       const py = camera.worldToScreenY(record.y);
       const size = scale * 0.34;
@@ -629,6 +652,7 @@ export class Renderer {
       const at = this.interpolator.at('animal', animal, alpha);
       if (at.x < view.minX || at.x > view.maxX) continue;
       if (at.y < view.minY || at.y > view.maxY) continue;
+      if (!inSight(at.x, at.y)) continue;
       this.drawAnimal(animal, highlight?.animalId === animal.id, at);
     }
 
@@ -636,6 +660,7 @@ export class Renderer {
     for (const person of sim.livingPeople()) {
       const at = this.interpolator.at('person', person, alpha);
       if (at.x < view.minX || at.x > view.maxX || at.y < view.minY || at.y > view.maxY) continue;
+      if (!inSight(at.x, at.y)) continue;
       this.drawPerson(person, highlight?.personId === person.id, at);
     }
 
@@ -664,6 +689,12 @@ export class Renderer {
       ctx.stroke();
     }
 
+    // Fog is composed as its own layer so the moving sight circle can be cut
+    // out without erasing terrain or sprites. Unknown entities were culled
+    // above; remembered markers are drawn over the veil from the observer's
+    // own records only.
+    if (observer) this.drawFog(observer, view, alpha);
+
     // --- Night overlay -----------------------------------------------------
     const darkness = (1 - sim.time.daylight) * 0.55;
     if (darkness > 0.02) {
@@ -674,6 +705,113 @@ export class Renderer {
     // Floaters last, over the night overlay: an action label that dims with
     // nightfall is exactly the label you most need to read.
     this.floaters.draw(ctx, camera);
+  }
+
+  /** Text for a remembered marker under the pointer, without touching live entities. */
+  fogDescriptionAt(x: number, y: number): string | null {
+    const observer = this.fogEnabled ? this.sim.player : null;
+    if (!observer || Math.hypot(x - observer.x, y - observer.y) <= this.sim.config.sightRadius) return null;
+    const place = observer.placeMemory.nearestAny(x, y, 0.65);
+    if (!place) return null;
+    return place.source === 'told'
+      ? t('heard about this place')
+      : t('seen {n} days ago', { n: Math.max(0, this.sim.time.day - place.day) });
+  }
+
+  /** Paint the observer's coarse, cached map and the places they remember. */
+  private drawFog(observer: Person, view: ReturnType<Camera['visibleTiles']>, alpha: number): void {
+    const { canvas, camera, sim } = this;
+    const memory = observer.placeMemory;
+    const key = observer.id + ':' + sim.world.width + 'x' + sim.world.height + ':' + memory.revision;
+    if (!this.fogLayer || this.fogLayer.width !== sim.world.width * TILE || this.fogLayer.height !== sim.world.height * TILE) {
+      this.fogLayer = document.createElement('canvas');
+      this.fogLayer.width = sim.world.width * TILE;
+      this.fogLayer.height = sim.world.height * TILE;
+      this.fogLayerKey = '';
+    }
+    if (this.fogLayerKey !== key) {
+      const fog = this.fogLayer.getContext('2d');
+      if (!fog) return;
+      const cell = 4;
+      if (this.fogRecordsFor !== memory.revision) {
+        this.fogRecords = memory.allRecords();
+        this.fogRecordsFor = memory.revision;
+      }
+      for (let cy = 0; cy < memory.rows; cy++) {
+        for (let cx = 0; cx < memory.cols; cx++) {
+          const x = cx * cell;
+          const y = cy * cell;
+          fog.fillStyle = memory.seenDayAt(x + cell / 2, y + cell / 2) > 0
+            ? 'rgba(4, 8, 14, 0.76)' : '#020407';
+          fog.fillRect(x * TILE, y * TILE,
+            Math.min(cell, sim.world.width - x) * TILE,
+            Math.min(cell, sim.world.height - y) * TILE);
+        }
+      }
+      // Memory markers are baked into the same versioned layer. Repainting
+      // hundreds of places every animation frame made the first fog prototype
+      // shimmer under hover and spend render time on data that changes only at
+      // a thought or a new conversation.
+      for (const place of this.fogRecords) {
+        this.drawRememberedPlace(place, fog, place.x * TILE, place.y * TILE, TILE * 0.26);
+      }
+      this.fogLayerKey = key;
+    }
+
+    if (!this.fogFrame || this.fogFrame.width !== canvas.width || this.fogFrame.height !== canvas.height) {
+      this.fogFrame = document.createElement('canvas');
+      this.fogFrame.width = canvas.width;
+      this.fogFrame.height = canvas.height;
+      this.fogFrameCtx = this.fogFrame.getContext('2d');
+    }
+    const frame = this.fogFrame;
+    const frameCtx = this.fogFrameCtx;
+    if (!frame || !frameCtx || !this.fogLayer) return;
+    const dprX = frame.width / Math.max(1, camera.viewWidth);
+    const dprY = frame.height / Math.max(1, camera.viewHeight);
+    frameCtx.setTransform(dprX, 0, 0, dprY, 0, 0);
+    frameCtx.clearRect(0, 0, camera.viewWidth, camera.viewHeight);
+
+    const sx = Math.max(0, view.minX);
+    const sy = Math.max(0, view.minY);
+    const sw = Math.min(sim.world.width - sx, view.maxX - sx + 1);
+    const sh = Math.min(sim.world.height - sy, view.maxY - sy + 1);
+    if (sw > 0 && sh > 0) {
+      frameCtx.drawImage(this.fogLayer, sx * TILE, sy * TILE, sw * TILE, sh * TILE,
+        camera.worldToScreenX(sx), camera.worldToScreenY(sy), sw * camera.scale, sh * camera.scale);
+    }
+
+    const at = this.interpolator.at('person', observer, alpha);
+    frameCtx.globalCompositeOperation = 'destination-out';
+    frameCtx.beginPath();
+    frameCtx.arc(camera.worldToScreenX(at.x), camera.worldToScreenY(at.y),
+      sim.config.sightRadius * camera.scale, 0, Math.PI * 2);
+    frameCtx.fill();
+    frameCtx.globalCompositeOperation = 'source-over';
+    this.ctx.drawImage(frame, 0, 0, frame.width, frame.height,
+      0, 0, camera.viewWidth, camera.viewHeight);
+  }
+
+  /** A map marker is deliberately generic: a stale memory is not the live thing. */
+  private drawRememberedPlace(place: PlaceRecord, ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
+    ctx.globalAlpha = place.source === 'told' ? 0.48 : 0.68;
+    if (place.kind === 'water') ctx.fillStyle = '#65aeca';
+    else if (place.kind.startsWith('resource:')) ctx.fillStyle = place.amount === 0 ? '#928b79' : '#d5b45f';
+    else if (place.kind.startsWith('fruit:') || place.kind === 'tree') ctx.fillStyle = '#8da96c';
+    else if (place.kind.startsWith('building:')) ctx.fillStyle = '#c9b58d';
+    else if (place.kind.startsWith('herd:')) ctx.fillStyle = '#d7cbb2';
+    else if (place.kind === 'person') ctx.fillStyle = '#d9c7b4';
+    else ctx.fillStyle = '#b18c5b';
+    ctx.fillRect(x - size / 2, y - size / 2, size, size);
+    if (place.amount === 0) {
+      ctx.strokeStyle = 'rgba(20, 22, 25, 0.8)';
+      ctx.lineWidth = Math.max(1, size * 0.16);
+      ctx.beginPath();
+      ctx.moveTo(x - size * 0.45, y + size * 0.45);
+      ctx.lineTo(x + size * 0.45, y - size * 0.45);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
 
   /**
