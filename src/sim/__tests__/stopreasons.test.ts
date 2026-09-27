@@ -36,4 +36,8 @@ describe('stop reasons', () => {
   it('fall back to something readable for a whole family', () => {
     expect(stopReasonLabel('no_station_quern')).toMatch(/^there was no /);
   });
+
+  it('names a stale remembered resource plainly', () => {
+    expect(stopReasonLabel('remembered_wrong')).toBe('the place was already picked over');
+  });
 });
