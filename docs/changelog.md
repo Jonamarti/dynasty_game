@@ -1,3 +1,9 @@
+## 2026-09-27 - M15 phase 5a: safety motive
+
+Fear now contributes to home pressure, and the safety sensitivity scales both flee scorers by aggression. Added the drive definition, localized label, and pressure/sensitivity tests. No RNG draws were added.
+
+Measured on 20 lean seeds: survival was 23.0% versus 23.1% on the instrument commit (-0.1 points), with 12/20 collapses in both. The plan records that century and crowded cohorts remain unmeasured.
+
 ## 2026-09-27 - M15 phase 5 measurement instrument
 
 Added the moods-move-choices health check, comparing talk frequency in the low and high belonging-mood terciles. It fails on the pre-behaviour build as intended (0.0% vs 1.8%, 166 adult samples per group in tiny). The watch only reads existing state; typecheck passes.

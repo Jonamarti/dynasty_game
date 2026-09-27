@@ -5,8 +5,9 @@ import { anchorOf, childRadius } from './Anchor.ts';
 import { sensitivity } from './Temperament.ts';
 import type { MotivationConfig } from '../core/Config.ts';
 import { cravings } from '../core/Macros.ts';
+import { fearOf } from '../social/Fear.ts';
 
-export type DriveId = 'hunger' | 'thirst' | 'rest' | 'warmth' | 'company' | 'home' | 'variety';
+export type DriveId = 'hunger' | 'thirst' | 'rest' | 'warmth' | 'company' | 'home' | 'variety' | 'safety';
 export interface DriveDef {
   id: DriveId;
   /** English label for the inspector; translated at the UI boundary. */
@@ -22,6 +23,7 @@ export const DRIVES: Record<DriveId, DriveDef> = {
   company: { id: 'company', label: t('Company drive'), readers: ['talk'] },
   home: { id: 'home', label: t('Home drive'), readers: ['go_home', 'wander', 'forage', 'hunt'] },
   variety: { id: 'variety', label: t('Variety drive'), readers: ['eat', 'hunt', 'forage', 'pick'] },
+  safety: { id: 'safety', label: t('Safety drive'), readers: ['flee', 'go_home'] },
 };
 export type DrivePressures = Record<DriveId, number>;
 
@@ -36,6 +38,7 @@ export function drivePressures(person: Person, ctx?: AnchorContext & { time: { d
   let home = 0;
   const craving = cravings(person, ctx?.motivation.cravings ?? true);
   const variety = urgencyCurve(100 * Math.max(craving.fat, craving.protein, craving.carb));
+  const safety = Math.max(fearOf(person), Math.max(0, Math.min(1, -person.mood.security / 100)));
   if (ctx?.motivation.homePressure) {
     const anchor = anchorOf(person, ctx);
     if (anchor) {
@@ -58,7 +61,7 @@ export function drivePressures(person: Person, ctx?: AnchorContext & { time: { d
         urgencyCurve(person.needs.cold),
       );
       const homePriority = 1 - 0.65 * basicNeedUrgency;
-      home = urgencyCurve(100 * away) * attachment * homePriority;
+      home = urgencyCurve(100 * away) * attachment * homePriority + safety;
     }
   }
   return {
@@ -73,5 +76,6 @@ export function drivePressures(person: Person, ctx?: AnchorContext & { time: { d
     company: urgencyCurve(person.needs.company),
     home,
     variety,
+    safety,
   };
 }

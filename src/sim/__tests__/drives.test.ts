@@ -4,6 +4,7 @@ import { Person } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 import { makeConfig, DEFAULT_CONFIG } from '../core/Config.ts';
 import { World } from '../core/World.ts';
+import { sensitivity } from '../ai/Temperament.ts';
 
 describe('physical drives', () => {
   it('preserves the old urgency curve exactly for each need', () => {
@@ -23,6 +24,20 @@ describe('physical drives', () => {
 
   it('declares at least one action reader for every drive', () => {
     for (const drive of Object.values(DRIVES)) expect(drive.readers.length).toBeGreaterThan(0);
+  });
+
+  it('turns damaged security into safety pressure and scales safety by aggression', () => {
+    const person = new Person('Test', 0, 0, 0, new RNG('safety-drive'), 40);
+    person.mood.security = 0;
+    expect(drivePressures(person).safety).toBe(0);
+    person.mood.security = -30;
+    expect(drivePressures(person).safety).toBe(0.5);
+    person.mood.security = -100;
+    expect(drivePressures(person).safety).toBe(1);
+    person.traits.aggression = 0.5;
+    expect(sensitivity(person, 'safety')).toBeCloseTo(1);
+    person.traits.aggression = 1;
+    expect(sensitivity(person, 'safety')).toBeCloseTo(0.6);
   });
 
   it('adds variety pressure only for a macro below its current target', () => {

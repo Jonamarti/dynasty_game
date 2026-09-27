@@ -200,6 +200,7 @@ export const FEELING_WORDS: Record<string, string> = {
 const WANTING_WORDS: Record<DriveId, string> = {
   hunger: 'food', thirst: 'water', rest: 'rest', warmth: 'warmth',
   company: 'company', home: 'home', variety: 'variety',
+  safety: 'safety',
 };
 
 export const PLACE_WORDS: Record<string, string> = {

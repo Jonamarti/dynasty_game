@@ -71,6 +71,7 @@ import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
+import { sensitivity } from './Temperament.ts';
 import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
@@ -2648,7 +2649,7 @@ export class Brain {
         threat.skillFactor('fight') * threat.health / 100 -
           person.skillFactor('fight') * person.health / 100
       );
-      add('flee', (hurt * 2.5 + outmatched * 2 + 0.4) * (1.4 - person.traits.aggression));
+      add('flee', (hurt * 2.5 + outmatched * 2 + 0.4) * sensitivity(person, 'safety'));
       fleeFrom = threat;
       fleePoint = escapeFromThreat;
     } else if (!(recentlyHarmed && threat)) {
@@ -2673,7 +2674,7 @@ export class Brain {
       const away = dreaded ? this.escapeFrom(person, dreaded, ctx, anchor) : null;
       if (dreaded && away) {
         const dread = ctx.relationships.dread(person.id, dreaded.id) / 100;
-        add('flee', (dread * 1.5 + 0.2) * (1.4 - person.traits.aggression));
+        add('flee', (dread * 1.5 + 0.2) * sensitivity(person, 'safety'));
         fleeFrom = dreaded;
         fleePoint = away;
         telemetry.count('fled_from_dread_considered');

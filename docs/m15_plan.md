@@ -889,6 +889,8 @@ exista una cama.
 
 **Avance del 2026-09-27:** el instrumento compara la conversacion de adultos en los terciles bajo y alto de pertenencia. En tiny falla como se esperaba (0,0% frente a 1,8%, con 166 muestras por grupo), antes de que esta fase cambie las decisiones. Solo observa estado existente; typecheck pasa.
 
+**Avance del 2026-09-27 (5a):** seguridad ya modula huida y la presion para volver a casa. La cohorte lean de 20 semillas queda en 23,0% de supervivencia frente al 23,1% del commit de instrumento (-0,1 puntos); hubo 12/20 colapsos en ambas. century y crowded quedan pendientes de medicion para esta subfase.
+
 ## Fase 6 — Obras por persuasión (M13 fase 11; `notes4.txt`)
 
 **Detalle en `m13_plan.md` fase 11.** `Building.sponsorId` y `backers`; nadie
