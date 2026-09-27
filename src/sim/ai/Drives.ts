@@ -16,7 +16,7 @@ export interface DriveDef {
 }
 export const DRIVES: Record<DriveId, DriveDef> = {
   hunger: { id: 'hunger', label: t('Hunger drive'), readers: ['eat', 'forage', 'pick', 'steal', 'threaten', 'reap', 'take', 'hunt'] },
-  thirst: { id: 'thirst', label: t('Thirst drive'), readers: ['drink'] },
+  thirst: { id: 'thirst', label: t('Thirst drive'), readers: ['drink', 'eat', 'ask_water', 'explore'] },
   rest: { id: 'rest', label: t('Rest drive'), readers: ['sleep', 'rest'] },
   warmth: { id: 'warmth', label: t('Warmth drive'), readers: ['shelter'] },
   company: { id: 'company', label: t('Company drive'), readers: ['talk'] },

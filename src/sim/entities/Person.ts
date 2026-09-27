@@ -583,6 +583,8 @@ export class Person {
    * brawl really is a rapid exchange.
    */
   socialCooldownUntil = 0;
+  /** Bandmates already asked during a water search; bounds questions per episode. */
+  readonly waterQuestionAttempts = new Set<number>();
   /**
    * Earliest tick at which this person will sit down and think again.
    *

@@ -100,7 +100,7 @@ describe('urgentNeeds', () => {
 
 describe('survivalActions', () => {
   it('offers only the verbs that answer the needs that fired', () => {
-    expect(survivalActions(['thirst'])).toEqual(new Set(['drink']));
+    expect(survivalActions(['thirst'])).toEqual(new Set(['drink', 'eat', 'ask_water', 'explore']));
     expect(survivalActions(['cold'])).toEqual(new Set(['shelter']));
     // The flat-allowlist version of this was written first and let a freezing
     // character pick berries on `forage`'s standing stockpiling term.
@@ -134,7 +134,7 @@ describe('manual', () => {
 });
 
 describe('urgent', () => {
-  it('goes for water when thirst turns dangerous', () => {
+  it('seeks water when thirst turns dangerous', () => {
     const sim = new Simulation(SMALL);
     const player = playerWithNothingPressing(sim);
     sim.autonomy = 'urgent';
@@ -142,7 +142,7 @@ describe('urgent', () => {
 
     steps(sim, player);
 
-    expect(player.action).toBe('drink');
+    expect(['drink', 'ask_water', 'explore']).toContain(player.action);
     expect(sim.autonomyStall).toBeNull();
   });
 

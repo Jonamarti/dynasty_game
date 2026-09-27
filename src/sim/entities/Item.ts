@@ -12,6 +12,8 @@ export interface ItemDef {
   label: string;
   /** Hunger points restored by eating one unit. 0 means inedible. */
   nutrition: number;
+  /** Thirst points restored by the water in this food, if any. */
+  hydration?: number;
   /**
    * M11 phase 8a. Fat, protein and carbohydrate as fractions of `nutrition`
    * that sum to 1. Present only on items with `nutrition > 0` — a fraction of
@@ -44,10 +46,10 @@ export interface ItemDef {
 }
 
 export const ITEMS: Record<string, ItemDef> = {
-  berries:  { id: 'berries',  label: 'Berries',    nutrition: 14, spoilTicks: 2400, baseValue: 1, macros: { fat: 0.05, protein: 0.05, carb: 0.90 } },
-  apple:    { id: 'apple',    label: 'Apples',     nutrition: 16, spoilTicks: 6000, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 } },
-  pear:     { id: 'pear',     label: 'Pears',      nutrition: 15, spoilTicks: 4800, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 } },
-  plum:     { id: 'plum',     label: 'Plums',      nutrition: 13, spoilTicks: 3000, baseValue: 1, macros: { fat: 0.04, protein: 0.04, carb: 0.92 } },
+  berries:  { id: 'berries',  label: 'Berries',    nutrition: 14, hydration: 4, spoilTicks: 2400, baseValue: 1, macros: { fat: 0.05, protein: 0.05, carb: 0.90 } },
+  apple:    { id: 'apple',    label: 'Apples',     nutrition: 16, hydration: 6, spoilTicks: 6000, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 } },
+  pear:     { id: 'pear',     label: 'Pears',      nutrition: 15, hydration: 6, spoilTicks: 4800, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 } },
+  plum:     { id: 'plum',     label: 'Plums',      nutrition: 13, hydration: 4, spoilTicks: 3000, baseValue: 1, macros: { fat: 0.04, protein: 0.04, carb: 0.92 } },
   // A nut is a fat, not a fruit: it is what keeps `carb` from being every
   // forageable's dominant macro, which would make the whole system read as a
   // single lever wearing three names.

@@ -140,6 +140,8 @@ export const ACTION_LABELS: Record<string, string> = {
   walk: 'walking',
   drink: 'drinking',
   eat: 'eating',
+  ask_water: 'asking where the water is',
+  explore: 'exploring for water',
   forage: 'foraging',
   gather: 'gathering',
   pick: 'picking fruit',

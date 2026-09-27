@@ -138,6 +138,12 @@ export function consumeFood(person: Person, itemId: string, tick = 0, cravingsEn
   telemetry.count('diet_nutrition_total', eaten);
   if ((def.macros?.protein ?? 0) >= 0.3) telemetry.count('diet_nutrition_protein', eaten);
   person.needs.hunger = Math.max(0, person.needs.hunger - eaten);
+  const hydration = def.hydration ?? 0;
+  if (hydration > 0) {
+    const relieved = Math.min(person.needs.thirst, hydration);
+    person.needs.thirst -= relieved;
+    telemetry.count('fruit_thirst_relief', relieved);
+  }
   // M11 phase 8b: fold what was actually eaten into today's ledger, in the
   // same units `decayMacroBalance` will normalise into fractions. Cooking's
   // bonus counts here too — a band that cooks eats more of whatever it ate.

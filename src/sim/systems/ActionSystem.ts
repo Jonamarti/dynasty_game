@@ -604,6 +604,8 @@ const TEND_RATE = 0.6;
 const SOW_TICKS = 90;
 const REAP_TICKS = 110;
 const SPREAD_TICKS = 70;
+/** Replanned every tick, like spreading, until thirst is actually answered. */
+const DRINK_COMMIT = 6;
 
 /**
  * How long a spreading holds against being re-planned, refreshed every tick.
@@ -641,6 +643,8 @@ export class ActionSystem {
     switch (person.action) {
       case 'drink': this.doDrink(person, ctx); break;
       case 'eat': this.doEat(person, ctx); break;
+      case 'ask_water': this.doAskWater(person, ctx); break;
+      case 'explore': this.doExplore(person, ctx); break;
       case 'forage':
       case 'gather': this.doHarvest(person, ctx); break;
       case 'pick': this.doPickFruit(person, ctx); break;
@@ -882,6 +886,11 @@ export class ActionSystem {
   // -------------------------------------------------------------------------
 
   private doDrink(person: Person, ctx: ActionContext): void {
+    // The scorer is revisited every few ticks. A short refreshed commitment is
+    // needed because thirst often reaches zero one tick after that interval;
+    // without it the person replans at low-but-positive thirst, walks away, and
+    // never completes a drink (the `drinking-is-paced` check then reports 0).
+    person.actionTimer = DRINK_COMMIT;
     if (!this.travel(person, ctx)) return;
 
     // Movement stops within 0.6 tiles of the target, so the rounded position can
@@ -899,6 +908,65 @@ export class ActionSystem {
     telemetry.count('drink');
     if (person.needs.thirst <= 0) {
       telemetry.count('drink_finished');
+      person.waterQuestionAttempts.clear();
+      this.finish(person);
+    }
+  }
+
+  /** Ask one nearby bandmate once, then use their remembered shore if they know one. */
+  private doAskWater(person: Person, ctx: ActionContext): void {
+    const targetId = person.targetPersonId;
+    if (targetId === null) {
+      this.finish(person);
+      return;
+    }
+    // Mark before approaching: if the bandmate walks away or the route fails,
+    // the same unanswerable question cannot trap the thirsty person in a loop.
+    person.waterQuestionAttempts.add(targetId);
+    const other = this.approach(person, ctx);
+    if (!other) return;
+    if (other.bandId !== person.bandId) {
+      this.finish(person);
+      return;
+    }
+    if (person.actionTimer <= 0) {
+      person.actionTimer = 6;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stop = this.interruption(person, ctx, { ignoreLaden: true, answers: 'thirst' });
+      if (stop) this.stop(person, stop, ctx, 'water_question_');
+      return;
+    }
+
+    const place = other.placeMemory.nearest('water', person.x, person.y,
+      memory => ctx.world.sameRegion(person.x, person.y, memory.x, memory.y));
+    if (place) {
+      person.placeMemory.remember('water', place.x, place.y, place.day, place.amount, 'told');
+      telemetry.count('water_question_answered');
+    } else {
+      telemetry.count('water_question_empty');
+    }
+    const cooldown = 12;
+    person.socialCooldownUntil = Math.max(person.socialCooldownUntil, ctx.tick + cooldown);
+    other.socialCooldownUntil = Math.max(other.socialCooldownUntil, ctx.tick + cooldown);
+    this.finish(person);
+  }
+
+  /** Follow one unexplored frontier tile; arrival triggers the next frontier choice. */
+  private doExplore(person: Person, ctx: ActionContext): void {
+    if (person.targetX === null || person.targetY === null) {
+      this.finish(person);
+      return;
+    }
+    const stop = this.interruption(person, ctx, { ignoreLaden: true, answers: 'thirst' });
+    if (stop) {
+      this.stop(person, stop, ctx, 'explore_ended_');
+      return;
+    }
+    if (this.travel(person, ctx)) {
+      telemetry.count('water_exploration_arrived');
       this.finish(person);
     }
   }
@@ -940,7 +1008,10 @@ export class ActionSystem {
   }
 
   private doEat(person: Person, ctx: ActionContext): void {
-    const foodId = bestFoodFor(person, undefined, ctx.motivation.cravings, ctx.motivation.beliefChoice);
+    const preferred = person.targetItemId;
+    const foodId = preferred && person.inventory.has(preferred)
+      ? preferred
+      : bestFoodFor(person, undefined, ctx.motivation.cravings, ctx.motivation.beliefChoice);
     if (!foodId || !consumeFood(person, foodId, ctx.tick, ctx.motivation.cravings)) {
       this.abandon(person, 'no_food', ctx);
       return;

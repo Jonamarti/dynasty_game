@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appealOf, bestFoodFor, cravings } from '../core/Macros.ts';
+import { appealOf, bestFoodFor, consumeFood, cravings } from '../core/Macros.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 
@@ -21,6 +21,17 @@ describe('food cravings', () => {
     expect(bestFoodFor(person)).toBe('apple');
     person.inventory.add('meat', 1);
     expect(bestFoodFor(person)).toBe('meat');
+  });
+
+  it('gets a little water from juicy fruit without relieving more thirst than remains', () => {
+    const person = new Person('Test', 0, 0, 0, new RNG('fruit-water'), 40);
+    person.inventory.add('apple', 1);
+    person.needs.hunger = 40;
+    person.needs.thirst = 4;
+
+    expect(consumeFood(person, 'apple')).toBe(true);
+    expect(person.needs.hunger).toBe(24);
+    expect(person.needs.thirst).toBe(0);
   });
 
   it('can remove craving and belief preferences for survival ablations', () => {

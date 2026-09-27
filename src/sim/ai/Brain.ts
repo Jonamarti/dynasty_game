@@ -171,6 +171,9 @@ export const lastDrives = new Map<number, DrivePressures>();
 
 interface FoundTargets {
   water: { x: number; y: number } | null;
+  foodToEat: string | null;
+  waterQuestionPeer: Person | null;
+  explorePoint: { x: number; y: number } | null;
   foodNode: ResourceNode | null;
   quarry: Animal | null;
   matNode: ResourceNode | null;
@@ -694,8 +697,25 @@ export class Brain {
     // for more. Getting this wrong is subtle and lethal — people harvested
     // plenty, carried it around, and starved with full packs.
     const carriedFood = person.inventory.bestFood();
+    let hydratingFood: string | null = null;
+    let hydration = 0;
+    for (const [itemId, count] of person.inventory.entries()) {
+      const candidate = count > 0 ? (ITEMS[itemId]?.hydration ?? 0) : 0;
+      if (candidate > hydration) {
+        hydration = candidate;
+        hydratingFood = itemId;
+      }
+    }
+    const foodToEat = thirst > hunger && person.needs.hunger < 25 && hydratingFood
+      ? hydratingFood : carriedFood;
     if (carriedFood) {
       add('eat', hunger * 3.2 + hunger * variety * 0.35);
+    }
+    if (hydratingFood && person.needs.thirst > 35) {
+      // Fruit buys one drink tick at most. It helps when no known source exists,
+      // while any real water target remains the better answer.
+      add('eat', thirst * 1.8 * Math.min(1, hydration / 6));
+      telemetry.count('hydrating_food_candidate');
     }
 
     // --- Forage / hunt -----------------------------------------------------
@@ -859,6 +879,28 @@ export class Brain {
       .queryRadius(person.x, person.y, ctx.sightRadius)
       .filter(other => other.alive && other.id !== person.id &&
         ctx.world.sameRegion(person.x, person.y, other.x, other.y));
+    const thirstyWithoutWater = drive.thirst > 0.35 && water === null;
+    const waterQuestionPeers = thirstyWithoutWater
+      ? neighbours.filter(other => other.bandId === person.bandId &&
+        person.distanceTo(other) <= 6 && !person.waterQuestionAttempts.has(other.id))
+      : [];
+    const waterQuestionPeer = this.pickBest(waterQuestionPeers, other => {
+      const knowsWater = other.placeMemory.nearest('water', other.x, other.y,
+        place => ctx.world.sameRegion(person.x, person.y, place.x, place.y)) !== null;
+      return (knowsWater ? 100 : 0) - person.distanceTo(other);
+    });
+    const explorePoint = thirstyWithoutWater && !waterQuestionPeer
+      ? this.findExplorePoint(person, ctx)
+      : null;
+    if (waterQuestionPeer) {
+      add('ask_water', drive.thirst * 4.2
+        * this.proximityBonus(person, waterQuestionPeer, ctx.sightRadius));
+      telemetry.count('water_question_offered');
+    } else if (explorePoint) {
+      add('explore', drive.thirst * 4.0);
+      telemetry.count('water_exploration_offered');
+      telemetry.count(person.isChild ? 'water_exploration_offered_child' : 'water_exploration_offered_adult');
+    }
 
 
     const loneliness = drive.company;
@@ -2973,7 +3015,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, waterQuestionPeer, explorePoint, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
@@ -3157,11 +3199,19 @@ export class Brain {
   }
 
   private findWater(person: Person, ctx: BrainContext): { x: number; y: number } | null {
-    // Thirst searches much further than sight — people know where the river is
-    // even when they cannot see it — but only on their own landmass. Walking at
-    // water you cannot reach is how a band starves in sight of a lake.
-    const shore = ctx.shoreHash.findNearest(person.x, person.y, ctx.sightRadius * 6,
+    // A visible shore is a real target; beyond sight, thirst may use only a
+    // shore this person has recorded. The memory stores an exact shore tile,
+    // so resolve it directly: snapping it back through a hash with a 1-tile
+    // tolerance loses valid records when several shores share a 4x4 cell.
+    const visible = ctx.shoreHash.findNearest(person.x, person.y, ctx.sightRadius,
       tile => ctx.world.sameRegion(person.x, person.y, tile.x, tile.y));
+    const remembered = person.placeMemory.nearest('water', person.x, person.y,
+      place => ctx.world.sameRegion(person.x, person.y, place.x, place.y));
+    const shore = visible && remembered
+      ? person.distanceTo(visible) <= person.distanceTo(remembered) ? visible : remembered
+      : visible ?? remembered;
+    if (visible) telemetry.count('water_visible_candidate');
+    if (remembered) telemetry.count('water_memory_candidate');
 
     // `well`: open to anyone the way natural water is — see
     // `ActionSystem.waterWithinReach` — so this asks only whether one exists
@@ -3185,6 +3235,71 @@ export class Brain {
     if (!well) return shore;
     if (!shore) return well;
     return wellDist < person.distanceTo(shore) ? well : shore;
+  }
+
+  /** A deterministic frontier walk after thirst and nearby questions turn urgent. */
+  private findExplorePoint(
+    person: Person, ctx: BrainContext,
+  ): { x: number; y: number } | null {
+    if (person.isChild) {
+      const hasLivingParent = [person.motherId, person.fatherId].some(id => {
+        const parent = id === null ? null : ctx.peopleById?.get(id);
+        return !!parent?.alive && parent.bandId === person.bandId;
+      });
+      if (hasLivingParent) return null;
+    } else {
+      const dependants = person.childIds.map(id => ctx.peopleById?.get(id))
+        .filter((child): child is Person => !!child?.alive && child.isChild);
+      const hasNearbyBackup = dependants.every(child => {
+        const otherParentId = child.motherId === person.id ? child.fatherId : child.motherId;
+        const otherParent = otherParentId === null ? null : ctx.peopleById?.get(otherParentId);
+        return !!otherParent?.alive && otherParent.bandId === person.bandId &&
+          otherParent.captiveOf === null && child.distanceTo(otherParent) <= 8;
+      });
+      if (!hasNearbyBackup) return null;
+    }
+    // Thirst is lethal, so after nearby bandmates have been asked, a person may
+    // cross their ordinary home reach to look for water. The landmass check
+    // still prevents the old bug of walking at a shore across a channel.
+    const maxDistance = Math.hypot(ctx.world.width, ctx.world.height);
+    const maxCellRing = Math.ceil(maxDistance / 4);
+    const firstRing = Math.max(1, Math.ceil(ctx.sightRadius / 4));
+    const baseCellX = Math.floor(person.x / 4);
+    const baseCellY = Math.floor(person.y / 4);
+    for (let ring = firstRing; ring <= maxCellRing; ring++) {
+      // Walk the whole square edge at one map-cell spacing. Sixteen spokes
+      // missed pockets behind the coastline and returned no route even while
+      // most of the landmass remained unexplored.
+      for (let offset = -ring; offset <= ring; offset++) {
+        for (const [dx, dy] of [[offset, -ring], [offset, ring], [-ring, offset], [ring, offset]]) {
+          const x = (baseCellX + dx) * 4 + 2;
+          const y = (baseCellY + dy) * 4 + 2;
+          if (!ctx.world.isWalkable(x, y) || !ctx.world.sameRegion(person.x, person.y, x, y) ||
+              person.placeMemory.seenDayAt(x, y) !== 0) continue;
+          return { x, y };
+        }
+      }
+    }
+    // A person's explored land can cover their whole small landmass without
+    // revealing every shoreline tile. In that case revisit the oldest known
+    // cells to make a fresh sight pass; seeing water there records the source.
+    const staleBefore = ctx.time.day - 2;
+    if (staleBefore > 0) {
+      for (let ring = firstRing; ring <= maxCellRing; ring++) {
+        for (let offset = -ring; offset <= ring; offset++) {
+          for (const [dx, dy] of [[offset, -ring], [offset, ring], [-ring, offset], [ring, offset]]) {
+            const x = (baseCellX + dx) * 4 + 2;
+            const y = (baseCellY + dy) * 4 + 2;
+            const seen = person.placeMemory.seenDayAt(x, y);
+            if (seen === 0 || seen > staleBefore || !ctx.world.isWalkable(x, y) ||
+                !ctx.world.sameRegion(person.x, person.y, x, y)) continue;
+            return { x, y };
+          }
+        }
+      }
+    }
+    telemetry.count('water_exploration_no_frontier');
+    return null;
   }
 
   /**
@@ -3587,6 +3702,18 @@ export class Brain {
         }
         break;
       }
+      case 'eat':
+        person.targetItemId = found.foodToEat;
+        break;
+      case 'ask_water':
+        if (found.waterQuestionPeer) person.targetPersonId = found.waterQuestionPeer.id;
+        break;
+      case 'explore':
+        if (found.explorePoint) {
+          person.targetX = found.explorePoint.x;
+          person.targetY = found.explorePoint.y;
+        }
+        break;
       case 'go_home': {
         const anchor = anchorOf(person, { world: ctx.world, peopleById: ctx.peopleById ?? new Map(), buildingsById: ctx.buildingsById,
           householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation });

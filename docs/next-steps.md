@@ -1169,3 +1169,9 @@ most of this section now has a home. What remains outside M8:
   `Household.store` is gone, replaced by `Household.homeBuildingId` â€” a real
   building a dead member's unheired goods, and now a rival, can actually
   reach.
+
+**M15 fase 2f:** la ruta de sed pregunta a compañeros y explora sin repetir
+interminablemente; su cohorte actual reduce la supervivencia `lean` 32,5 puntos
+respecto a la referencia (824 muertes por hambre, 6 por sed). El propietario
+autorizó continuar hasta cerrar M15 fase 2; queda como primer tema de ajuste al
+recibir hallazgos de juego.

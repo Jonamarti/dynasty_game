@@ -120,7 +120,7 @@ export function urgentNeeds(person: Person, cfg: NeedsConfig): UrgentNeed[] {
  *    a real change to what combat feels like and deserves measuring.
  */
 export const NEED_ACTIONS: Record<UrgentNeed, readonly string[]> = {
-  thirst: ['drink'],
+  thirst: ['drink', 'eat', 'ask_water', 'explore'],
   hunger: ['eat', 'forage', 'pick', 'take'],
   cold: ['shelter'],
 };

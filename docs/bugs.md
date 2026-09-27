@@ -3006,3 +3006,9 @@ identifica un cambio de comportamiento en esta semilla, pero todavÃ­a no una
 causa de cohorte.
 
 **M15 2f, ensayo con bebida comprometida, 2026-09-27.** La traza tick a tick mostrÃ³ que el personaje dejaba la orilla tras seis turnos con sed positiva; un compromiso renovable completÃ³ 164 bebidas en `band` y puso verde `drinking-is-paced`. Sin embargo, la cohorte documentada de 20 semillas en `lean` cayÃ³ de 57,6% a 29,2% de supervivencia (âˆ’28,4 puntos, 10/20 colapsos). La variante queda sin aceptar y sin commit por la puerta de coste de 2f-2h; el indicador local de bebidas no compensa esa regresiÃ³n.
+**M15 fase 2f — sed sin fuente conocida, 2026-09-27.** El ensayo completo de
+veinte semillas `lean` acabó en 25,1% frente a 57,6% de la referencia (-32,5
+puntos; 12/20 colapsos). Se contaron 824 muertes por hambre y 6 por sed, lo que
+apunta a un coste de tiempo/actividad y no a deshidratación directa. El
+propietario pidió continuar y revisar estos errores jugando; la implementación
+se conserva de forma provisional y el coste queda abierto para depuración.

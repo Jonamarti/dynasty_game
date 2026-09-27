@@ -9220,3 +9220,16 @@ retire el cuerpo del array vivo y verifica que `DemographyWatch` la cuenta
 desde el registro estable de personas. El informe de cohortes mostrÃ³ 38 muertes
 en HISTORY y cero en DEMOGRAPHY; queda pendiente aislar esa discrepancia en la
 ejecuciÃ³n de semillas antes de cambiar el observador.
+
+## 2026-09-27 — M15 fase 2f: respuesta a sed sin agua conocida
+
+La sed ahora lleva a agua visible o personalmente recordada. Si no hay destino,
+el personaje pregunta una vez a cada miembro cercano de su banda, prioriza a
+quien conoce agua, y explora después de respuestas vacías; los intentos quedan
+marcados antes de acercarse para que no repita preguntas en bucle. Fruta con
+hidratación sirve como alivio cuando no hay hambre apremiante. La cohorte `lean`
+de veinte semillas dio 25,1% de supervivencia frente a 57,6% (-32,5 puntos),
+con 824 muertes por hambre y 6 por sed. Por instrucción explícita del propietario
+se mantiene provisionalmente y se continúa la fase; queda pendiente depurar el
+coste de tiempo sobre la economía alimentaria.
+Capturas de la entrega: `artifacts/screenshots/m15-2f-water-search.png` y `artifacts/screenshots/m15-2f-known-map.png`.

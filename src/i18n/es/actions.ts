@@ -13,6 +13,8 @@ export const ES_ACTIONS: Record<string, string> = {
   "wandering": "deambulando",
   "walking": "caminando",
   "drinking": "bebiendo",
+  "asking where the water is": "preguntando dónde hay agua",
+  "exploring for water": "explorando para encontrar agua",
   "eating": "comiendo",
   "foraging": "recolectando",
   "gathering": "recogiendo",

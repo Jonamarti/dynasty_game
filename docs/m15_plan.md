@@ -2856,3 +2856,20 @@ un agente no puede adivinar:
   PNG a mano sin su fuente).
 
 `docs/architecture.md`, al cerrar las fases 11, 16a, 17 y 29.
+
+**Cierre de la ruta de sed (2026-09-27):** `findWater` solo ofrece agua que
+está a la vista o en el mapa personal; el compromiso renovable mantiene a la
+persona en la orilla hasta aliviar la sed. Si no hay fuente conocida, pregunta
+una vez a cada miembro cercano de su banda, priorizando a quien recuerda agua.
+Cada intento se registra antes de acercarse, también ante una ruta fallida o
+una respuesta vacía, para impedir bucles. Tras preguntar a los cercanos sin
+éxito, el personaje explora por sí mismo; la memoria conserva las fuentes de
+agua vistas. Si lleva fruta hidratante, puede comerla mientras no tenga hambre
+apremiante. Las pruebas cubren transferencia de recuerdos y ausencia de ciclos.
+
+La cohorte `lean` de veinte semillas de esta implementación terminó en 25,1%
+de supervivencia frente al 57,6% de la referencia (-32,5 puntos; 12/20
+colapsos). Las muertes fueron sobre todo por hambre (824), frente a 6 por sed.
+El propietario ordenó continuar y aceptar este coste provisional mientras
+completa la fase y valida el juego; queda como deuda prioritaria de balance,
+no como resultado aprobado por el gate original de =5 puntos.
