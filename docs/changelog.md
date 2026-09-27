@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-27 - M15 phase 4 measurement: fire discovery across seeds
+
+The century seed summary now counts seeds where history.fireBy records firemaking before the run ends. This exposes the phase 4 cohort gate without changing simulation behavior or consuming random draws.
+
+
 ## 2026-09-27 - M15: route commitment and water priority
 
 Active routes to drink, take food from storage, store goods, and return to family now continue while their destinations remain available. This prevents each new decision from replacing a route before arrival. At the thirst work limit, known water immediately takes priority over those routes. A regression test covers a character heading home with known water within reach.

@@ -480,6 +480,11 @@ function main(): void {
     ' inside a band, ' + sum(r => r.childBlows) + ' by an adult on a child · ' +
     sum(r => r.ownBandThefts) + ' of ' + sum(r => r.thefts) + ' thefts from a person inside a band'
   );
+  if (scenarioName === 'century') {
+    const fireSeeds = results.filter(result => result.history.fireBy !== null).length;
+    console.log('  FIRE FOUND ' + fireSeeds + '/' + results.length + ' seeds (' +
+      (100 * fireSeeds / Math.max(1, results.length)).toFixed(1) + '%; phase 4 gate 50%)');
+  }
   console.log(
     '  KIN defended ' + sum(r => r.conflict.kinDefended) + '/' + sum(r => r.conflict.kinAttacks) +
     ' witnessed attacks; fled closer ' + sum(r => r.conflict.youngFleeCloser) + '/' +
