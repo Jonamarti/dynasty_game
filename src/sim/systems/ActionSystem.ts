@@ -3051,6 +3051,12 @@ export class ActionSystem {
     for (const [itemId, count] of Object.entries(recipe.output)) {
       person.inventory.add(itemId, count);
     }
+    if (recipe.id === 'roast_meat' || recipe.id === 'roast_fish') {
+      const raw = recipe.id === 'roast_meat' ? 'meat' : 'fish';
+      const cooked = recipe.id;
+      const value = person.beliefs.expect('eat:' + raw).value + 10;
+      person.beliefs.learn('eat:' + cooked, value, 0.3, 'own', ctx.tick);
+    }
     person.practice(recipe.skill, 3);
     person.clearWorkBank();
     telemetry.count('crafted_' + recipe.id);

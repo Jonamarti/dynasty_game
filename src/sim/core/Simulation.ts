@@ -819,6 +819,7 @@ export class Simulation {
       // See `systems/Founding.ts` — every part of it goes through the same code
       // an in-game marriage, birth or adoption would.
       const founded = foundBand(band, peoplePerBand, this.foundingContext(rng));
+      let adultFounderIndex = 0;
       for (const person of founded.people) {
         person.placeMemory.configure(this.world.width, this.world.height, this.config.knowledge.placeMemoryPerKind);
         person.placeMemory.observe(band.homeX, band.homeY, this.config.knowledge.foundersKnowRadius, this.time.day);
@@ -836,6 +837,17 @@ export class Simulation {
           for (const tech of granted) {
             person.knownTech.add(tech as Tech);
           }
+          for (const entry of this.config.population.startingTechFew ?? []) {
+            if (adultFounderIndex < entry.perBand) person.knownTech.add(entry.tech as Tech);
+          }
+          if (person.knownTech.has('cooking')) {
+            // Scenario founders represent people who have already tested a
+            // roast; without this evidence the scorer correctly has no reason
+            // to make one yet.
+            person.beliefs.learn('eat:roast_meat', 40, 0.3, 'own', 0);
+            person.beliefs.learn('eat:roast_fish', 26, 0.3, 'own', 0);
+          }
+          adultFounderIndex++;
         }
         this.people.push(person);
         this.peopleById.set(person.id, person);
@@ -3591,7 +3603,7 @@ export class Simulation {
       peopleById: this.peopleById,
     });
 
-    this.needsSystem.update(this.people, this.time, this.buildings);
+    this.needsSystem.update(this.people, this.time, this.buildings, this.buildingHash);
 
     // Memories and relationships age once a day, not every tick. Decaying
     // sixty people's worth of both every step would be the most expensive

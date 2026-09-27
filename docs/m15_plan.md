@@ -815,6 +815,8 @@ que se sabe` (2f); `m15: explorar`; `m15: contar dónde hay comida`;
 
 ## Fase 3 — El fuego, primera parte: la hoguera y el asado (M13 fase 8; nota 5)
 
+**Avance del 2026-09-27:** fase 3a-3c implementada: la hoguera calienta en proximidad y se planifica por experiencia; asar requiere una expectativa aprendida, cocinar mejora solo los asados y hearths mide adopcion. Las tres checks pasan; supervivencia media a 20 semillas: 99.7%. century: 97.7%, +2.2 puntos sobre referencia 95.5%. Sin cambio de interfaz.
+
 **Detalle en `m13_plan.md` fase 8.** El caso de prueba del propietario: la
 carne asada se prefiere porque alguien la probó y se corrió la voz, no por un
 coeficiente.

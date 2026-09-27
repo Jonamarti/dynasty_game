@@ -616,6 +616,19 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     requiresTech: 'carpentry',
     description: 'Jointed timber. A whole family under one roof, and a hall to hold court in.',
   },
+  // M15 phase 3a. A hearth is small enough to sit beside a camp, but unlike
+  // a roof it only helps people close to it and only while it is complete.
+  hearth: {
+    id: 'hearth', label: 'Hearth', icon: '\u{1F525}',
+    width: 1, height: 1,
+    materials: { sticks: 4, flint: 2 },
+    workTicks: 60,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'firemaking',
+    description: 'A tended fire for warmth and cooking.',
+  },
 };
 
 let nextBuildingId = 1;

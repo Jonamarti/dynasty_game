@@ -7,6 +7,7 @@ import type { NeedsConfig } from '../core/Config.ts';
 import type { TimeManager } from '../core/TimeManager.ts';
 import type { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
+import type { SpatialHash } from '../core/SpatialHash.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { warmthFrom } from '../knowledge/Tech.ts';
@@ -91,7 +92,7 @@ export class NeedsSystem {
     return best;
   }
 
-  update(people: Person[], time: TimeManager, buildings: Building[] = []): void {
+  update(people: Person[], time: TimeManager, buildings: Building[] = [], buildingHash?: SpatialHash<Building>): void {
     const cfg = this.config;
     // Cold bites at night and in winter; in high summer people warm back up.
     const chill = Math.max(0, -time.temperature);
@@ -142,9 +143,27 @@ export class NeedsSystem {
       // answers the same problem a second way; `warmthFrom` combines them with
       // diminishing returns rather than by adding them.
       const carried = warmthFrom(person);
+      const coldBefore = person.needs.cold;
       const shelter = Math.max(carried, this.shelterAt(person, buildings));
-      const effectiveChill = chill * (1 - shelter);
-      const effectiveWarming = warming + shelter * 0.8;
+      let hearth = 0;
+      if (buildingHash) {
+        for (const fire of buildingHash.queryRadius(person.x, person.y, 3, [])) {
+          if (fire.complete && !fire.ruined && fire.def.id === 'hearth' &&
+              Math.hypot(fire.x + 0.5 - person.x, fire.y + 0.5 - person.y) <= 3) {
+            hearth = 0.35;
+            telemetry.count('hearth_warm_samples');
+            if (person.needs.cold > 0 &&
+                (person.action === 'shelter' || person.action === 'rest' || person.action === 'sleep')) {
+              person.beliefs.learn('warm:hearth', 0.35, 0.25, 'own', time.tick);
+              telemetry.count('hearth_warm_learned');
+            }
+            break;
+          }
+        }
+      }
+      const effectiveShelter = Math.max(shelter, hearth);
+      const effectiveChill = chill * (1 - effectiveShelter);
+      const effectiveWarming = warming + effectiveShelter * 0.8;
       person.needs.cold = Math.max(
         0,
         Math.min(
@@ -152,6 +171,10 @@ export class NeedsSystem {
           person.needs.cold + effectiveChill * cfg.coldRate - effectiveWarming * cfg.coldRate
         )
       );
+      if (hearth > 0 && coldBefore > 0) {
+        telemetry.count('hearth_cold_samples');
+        if (person.needs.cold < coldBefore) telemetry.count('hearth_cold_relieved');
+      }
 
       // Loneliness only climbs while nobody is being talked to; conversation
       // itself is what brings it down, in SocialSystem.converse.

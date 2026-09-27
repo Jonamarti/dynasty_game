@@ -9270,3 +9270,8 @@ checks señalan estas dos brechas en vez de ocultarlas. Capturas:
 La fase 2 queda cerrada en código y commits hasta 2k. Los resultados pendientes
 están anotados en `docs/bugs.md`; los ajustes se retoman con los errores que
 aparezcan al jugar.
+
+## 2026-09-27 - M15 fase 3: hoguera, asado y adopcion
+Hoguera con calor local; coccion que mejora solo el asado; escenario hearths y checks de calor, preferencia y transmision. Cohortes de 20 semillas: hearths 99.7%, craft 99.9%, century 97.7% frente a 95.5% de referencia (+2.2 puntos).
+
+Capturas de la interfaz: artifacts/screenshots/m15-3-hearth-menu.png y m15-3-roast-kit.png.

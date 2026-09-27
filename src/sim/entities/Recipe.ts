@@ -540,6 +540,8 @@ export const RECIPES: Record<string, RecipeDef> = {
     // Food, on the same terms as `meal`: worth a few days of it on hand.
     keep: 3,
   },
+  roast_meat: { id: 'roast_meat', label: 'Roast meat', icon: '\u{1F356}', tech: 'cooking', skill: 'cook', workTicks: 80, ingredients: { meat: 1 }, output: { roast_meat: 1 }, station: 'hearth', keep: 3 },
+  roast_fish: { id: 'roast_fish', label: 'Roast fish', icon: '\u{1F41F}', tech: 'cooking', skill: 'cook', workTicks: 80, ingredients: { fish: 1 }, output: { roast_fish: 1 }, station: 'hearth', keep: 3 },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

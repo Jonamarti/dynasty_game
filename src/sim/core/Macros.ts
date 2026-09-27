@@ -113,12 +113,17 @@ const MACRO_DECAY_PER_DAY = 0.35;
 export function consumeFood(person: Person, itemId: string, tick = 0, cravingsEnabled = true): boolean {
   const def = ITEMS[itemId];
   if (!def || def.nutrition <= 0) return false;
+  telemetry.count('ate_' + itemId);
+  if (person.knownTech.has('cooking') && (itemId === 'meat' || itemId === 'fish' ||
+      itemId === 'roast_meat' || itemId === 'roast_fish')) {
+    telemetry.count('ate_cooking_' + itemId);
+  }
   const craving = cravings(person, cravingsEnabled);
   const wantsProtein = craving.protein > 0.5;
   const calmProtein = craving.protein < 0.1;
   if (person.inventory.remove(itemId, 1) === 0) return false;
   // Eating is the direct evidence for the personal payoff of this food.
-  person.beliefs.learn('eat:' + itemId, def.nutrition * nutritionFactor(person),
+  person.beliefs.learn('eat:' + itemId, def.nutrition * nutritionFactor(person, itemId),
     0.3 * (1.5 - person.traits.tradition), 'own', tick);
   if (wantsProtein) {
     telemetry.count('eat_craving_protein');
@@ -132,7 +137,7 @@ export function consumeFood(person: Person, itemId: string, tick = 0, cravingsEn
   // knowing something, and it compounds: a band that cooks needs a third less
   // forage than one that does not, and can therefore support more people on
   // the same ground.
-  const eaten = def.nutrition * nutritionFactor(person);
+  const eaten = def.nutrition * nutritionFactor(person, itemId);
   // M13 phase 0 cohort observer: pooled nutrition from genuinely protein-rich
   // food, recorded at the same point as consumed nutrition without touching the sim.
   telemetry.count('diet_nutrition_total', eaten);

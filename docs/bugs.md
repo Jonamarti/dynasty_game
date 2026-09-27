@@ -3047,3 +3047,5 @@ long `tour` case times out even with a three-minute limit, after saving through
 screen cases pass. The named 2f/2g/2h/2k milestone images remain committed; the
 2i originals were restored after the tour regenerated them. This is a screenshot
 tour limitation, not a blocker for the new named captures.
+
+**M15 fase 3, resultados (2026-09-27):** hearths pasa sus tres checks; en la corrida final, 	he-hearth-warms midio 4969/12873 muestras frias aliviadas, oast-wins 256/292 y cooking-spreads 2 a 17 adultos. Cohortes de 20: hearths 99.7%, craft 99.9%, century 97.7% frente a referencia 95.5% (+2.2 puntos; gate <=3). No hubo mundos colapsados en century. Siguen los cinco fallos de rebaños y el timeout de and.test.ts heredados de fase 2; tambien falla perf-budget en los escenarios base.

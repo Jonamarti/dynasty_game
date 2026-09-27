@@ -43,7 +43,7 @@ export const ES_TECH: Record<string, string> = {
   "sat still in a winter wood long enough to read what had crossed it": "se quedó quiet{g:o|a} en un bosque invernal el tiempo suficiente para leer qué lo había cruzado",
   "Cooking": "Cocina",
   "about 300,000 years ago": "hace unos 300.000 años",
-  "Heat makes food go further, and makes food of things that were not.": "El calor hace que la comida cunda más, y convierte en comida cosas que no lo eran.",
+  "Food cooked over a hearth gives more nourishment.": "La comida cocinada en el hogar alimenta más.",
   "held raw meat beside a fire long enough to wonder": "sostuvo carne cruda junto al fuego el tiempo suficiente para preguntarse",
   "was hungry enough to put the berries in the flames and find out": "tenía hambre suficiente para echar las bayas a las llamas y ver qué pasaba",
   "dropped a hazelnut in the embers and fished out something better": "dejó caer una avellana en las brasas y sacó algo mejor",

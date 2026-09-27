@@ -230,6 +230,8 @@ export interface PopulationConfig {
    * knowing different things is what gives reading something to do.
    */
   startingTechByBand?: string[][];
+  /** M15 phase 3c: give a technology only to the first N adult founders of each band. */
+  startingTechFew?: { tech: string; perBand: number }[];
 }
 
 /**

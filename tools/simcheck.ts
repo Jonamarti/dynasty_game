@@ -116,6 +116,19 @@ export const SCENARIOS: Record<string, Scenario> = {
     // real, just rarer per year now that a year is shorter.
     steps: 16000,
   },
+  hearths: {
+    name: 'hearths',
+    description: 'Two bands with firemaking; one founder in each begins with cooking to measure whether the knowledge spreads.',
+    config: {
+      seed: 'hearths',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTech: ['firemaking'],
+        startingTechFew: [{ tech: 'cooking', perBand: 1 }],
+      },
+    },
+    steps: 16000,
+  },
   scribes: {
     name: 'scribes',
     description:
@@ -2151,6 +2164,40 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       stationCrafts > 0 && noStation <= stationCrafts,
       stationsBuilt + ' stations finished, ' + stationCrafts + ' things made at one, ' +
       noStation + ' walks that found no station');
+  }
+
+  const hearthCold = tel.hearth_cold_samples ?? 0;
+  if (hearthCold === 0) {
+    skip('the-hearth-warms', 'nobody was cold within range of a finished hearth');
+  } else {
+    const relieved = tel.hearth_cold_relieved ?? 0;
+    add('the-hearth-warms', relieved > 0,
+      relieved + ' of ' + hearthCold + ' cold samples near a hearth ended warmer');
+  }
+
+  const cookedEaten = (tel.ate_cooking_roast_meat ?? 0) + (tel.ate_cooking_roast_fish ?? 0);
+  const rawEaten = (tel.ate_cooking_meat ?? 0) + (tel.ate_cooking_fish ?? 0);
+  const cookingHolders = sim.livingPeople().filter(p => !p.isChild && p.knownTech.has('cooking')).length;
+  if (cookingHolders === 0) {
+    skip('roast-wins', 'nobody alive knows cooking');
+  } else {
+    const total = cookedEaten + rawEaten;
+    add('roast-wins', total > 0 && cookedEaten / total >= 0.6,
+      cookedEaten + ' roasted of ' + total + ' meat and fish meals eaten by cooks');
+  }
+
+  const cfg = sim.config.population;
+  const cookingFew = (cfg.startingTechFew ?? []).filter(entry => entry.tech === 'cooking')
+    .reduce((sum, entry) => sum + entry.perBand * cfg.bands, 0);
+  const cookingAll = cfg.startingTech.includes('cooking') ? cfg.bands * cfg.peoplePerBand : 0;
+  const cookingByBand = (cfg.startingTechByBand ?? []).reduce((sum, list) =>
+    sum + (list.includes('cooking') ? cfg.peoplePerBand : 0), 0);
+  const initialCooking = Math.max(cookingFew + cookingAll, cookingByBand);
+  if (initialCooking === 0) {
+    skip('cooking-spreads', 'scenario did not found anyone knowing cooking');
+  } else {
+    add('cooking-spreads', cookingHolders >= initialCooking * 3,
+      initialCooking + ' founded with cooking; ' + cookingHolders + ' surviving adult holders');
   }
 
   // The granary chain: know pottery, dig clay, make pots, carry them to a site

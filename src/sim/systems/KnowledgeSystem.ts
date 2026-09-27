@@ -37,6 +37,7 @@ import type { KnowledgeConfig, LearningConfig } from '../core/Config.ts';
 import { TECH, TECH_EFFECTS, TECHS, prerequisitesMet, scaled, type Tech } from '../knowledge/Tech.ts';
 import { BUILDINGS } from '../entities/Building.ts';
 import { RECIPES } from '../entities/Recipe.ts';
+import { ITEMS } from '../entities/Item.ts';
 import {
   MAX_IDEAS, TRIES_TO_TEST, sparkFires, type Idea, type Notice, type Spark,
 } from '../knowledge/Synthesis.ts';
@@ -531,6 +532,13 @@ export class KnowledgeSystem {
   private prove(person: Person, idea: Idea, ctx: KnowledgeContext): void {
     const def = TECH[idea.tech];
     person.knownTech.add(idea.tech);
+    if (idea.tech === 'cooking') {
+      // Proving cooking means the inventor has actually tested the first roast.
+      // Recording that result is the evidence the food scorer needs; otherwise
+      // nobody has reason to cook and the new recipe deadlocks behind tasting it.
+      person.beliefs.learn('eat:roast_meat', ITEMS.meat!.nutrition + 10, 0.3, 'own', ctx.tick);
+      person.beliefs.learn('eat:roast_fish', ITEMS.fish!.nutrition + 8, 0.3, 'own', ctx.tick);
+    }
     person.techLevel.set(idea.tech, 0);
     idea.stage = 'proven';
     // Insight is spent proving it. What refills it from here raises the level

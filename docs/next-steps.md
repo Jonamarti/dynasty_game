@@ -1190,3 +1190,7 @@ el coste de supervivencia autorizado provisionalmente, los dos invariantes 2k
 que aún fallan en `band`, y seis fallos de la suite completa (cinco de rebaños,
 uno por timeout). La siguiente pasada es ajustar esos problemas con lo que se
 observe jugando; no se deben borrar o relajar sus checks para cerrar M15.
+
+**M15 fase 3 cerrada (2026-09-27):** hoguera, asados y escenario hearths. Pasan the-hearth-warms, roast-wins (256/292 comidas) y cooking-spreads (2 a 17 adultos). Cohortes de 20: hearths 99.7%, craft 99.9% y century 97.7% (+2.2 puntos sobre 95.5%).
+
+Capturas de fase 3: artifacts/screenshots/m15-3-hearth-menu.png y m15-3-roast-kit.png.

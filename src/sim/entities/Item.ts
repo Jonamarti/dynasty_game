@@ -239,6 +239,8 @@ export const ITEMS: Record<string, ItemDef> = {
     id: 'beer', label: 'Beer', nutrition: 6, spoilTicks: 1200, baseValue: 5,
     macros: { fat: 0.02, protein: 0.08, carb: 0.90 },
   },
+  roast_meat: { id: 'roast_meat', label: 'Roast meat', nutrition: 40, spoilTicks: 2400, baseValue: 4, macros: { fat: 0.45, protein: 0.55, carb: 0 } },
+  roast_fish: { id: 'roast_fish', label: 'Roast fish', nutrition: 24, spoilTicks: 1600, baseValue: 3, macros: { fat: 0.35, protein: 0.65, carb: 0 } },
 };
 
 export class Inventory {

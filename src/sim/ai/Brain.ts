@@ -2792,7 +2792,16 @@ export class Brain {
           person, { x: station.centerX, y: station.centerY }, ctx.sightRadius);
       }
 
-      const score = (forSite ? 0.75 : 0.55) * (0.4 + person.skillFactor(recipe.skill)) * nearness;
+      let foodGain = 1;
+      if (recipe.id === 'roast_meat' || recipe.id === 'roast_fish') {
+        const raw = recipe.id === 'roast_meat' ? 'meat' : 'fish';
+        const roasted = recipe.id;
+        const gain = person.beliefs.expect('eat:' + roasted).value -
+          person.beliefs.expect('eat:' + raw).value;
+        foodGain = Math.max(0, Math.min(1.5,
+          gain / 10 * Math.min(person.inventory.count(raw), 4)));
+      }
+      const score = (forSite ? 0.75 : 0.55) * (0.4 + person.skillFactor(recipe.skill)) * nearness * foodGain;
       if (score > craftScore) {
         craftScore = score;
         craftRecipe = recipe.id;

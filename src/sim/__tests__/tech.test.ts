@@ -296,7 +296,7 @@ describe('technology in one person’s hands', () => {
     const person = someone();
     expect(techPower(person, 'cordage')).toBe(0);
     expect(carryFactor(person)).toBe(1);
-    expect(nutritionFactor(person)).toBe(1);
+    expect(nutritionFactor(person, 'meat')).toBe(1);
     expect(warmthFrom(person)).toBe(0);
   });
 
@@ -306,7 +306,8 @@ describe('technology in one person’s hands', () => {
     expect(carryFactor(person)).toBeCloseTo(1.25);
 
     person.knownTech.add('cooking');
-    expect(nutritionFactor(person)).toBeCloseTo(1.35);
+    expect(nutritionFactor(person, 'meat')).toBe(1);
+    expect(nutritionFactor(person, 'roast_meat')).toBeCloseTo(1.35);
   });
 
   it('tells flint from berries, because different knowledge lies behind them', () => {

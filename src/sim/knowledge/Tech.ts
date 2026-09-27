@@ -467,9 +467,9 @@ export const TECH: Record<Tech, TechDef> = {
   cooking: {
     id: 'cooking', label: 'Cooking', domain: 'fire',
     age: 'middle_palaeolithic', firstKnown: 'about 300,000 years ago',
-    kind: 'practice', practisedBy: ['eat'],
+    kind: 'device',
     requires: ['firemaking'], difficulty: 0.25, skill: 'cook',
-    prototype: {}, maxRefinement: 3,
+    prototype: { meat: 1, sticks: 1 }, maxRefinement: 3,
     sparks: [
       { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'meat' }],
         weight: 1.0, story: 'held raw meat beside a fire long enough to wonder' },
@@ -479,7 +479,7 @@ export const TECH: Record<Tech, TechDef> = {
       { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'hazelnut' }],
         weight: 0.5, story: 'dropped a hazelnut in the embers and fished out something better' },
     ],
-    description: 'Heat makes food go further, and makes food of things that were not.',
+    description: 'Food cooked over a hearth gives more nourishment.',
   },
   hafting: {
     id: 'hafting', label: 'Hafting', domain: 'stone',
@@ -1895,8 +1895,9 @@ export function carryFactor(person: Person): number {
 }
 
 /** Multiplier on the nutrition of anything eaten. */
-export function nutritionFactor(person: Person): number {
-  return scaled(person, 'cooking', 1.35);
+export function nutritionFactor(person: Person, itemId?: string): number {
+  return itemId === 'roast_meat' || itemId === 'roast_fish'
+    ? scaled(person, 'cooking', 1.35) : 1;
 }
 
 /** Multiplier on how fast building work goes. */

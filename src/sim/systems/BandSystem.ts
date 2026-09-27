@@ -937,12 +937,17 @@ export class BandSystem {
     // inert-content rule failing in the one table it is hardest to see from.
     if (!wanted && underway === 0 && stores.length > 0) {
       const stations = live.filter(b => isStation(b.def));
+      const hasHearth = stations.some(b => b.def.id === 'hearth');
+      const expectsHearth = members.some(m => m.beliefs.expect('warm:hearth').value >= 0.2);
+      if (!hasHearth && expectsHearth && buildable.some(def => def.id === 'hearth')) {
+        wanted = 'hearth';
+      }
       const missing = buildable.filter(def => isStation(def) &&
         !stations.some(existing => existing.def.id === def.id) &&
         Object.values(RECIPES).some(recipe => recipe.station === def.id &&
           members.some(m => techPower(m, recipe.tech) > 0)));
       // Cheapest first: a band's first workshop should be the one it can finish.
-      wanted = this.cheapest(missing)?.id ?? null;
+      if (!wanted) wanted = this.cheapest(missing)?.id ?? null;
     }
 
     // --- A heap, which is the sixth and only exists for the fifth -----------
