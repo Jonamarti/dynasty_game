@@ -608,7 +608,7 @@ solo a lo que ve o recuerda**, **explora** cuando lo que sabe no le basta y
 **cuenta** a los demás dónde hay comida. La pantalla muestra el mapa de tu
 personaje, con lo lejano oscuro bajo la niebla.
 
-#### 2e. El mapa personal y los recuerdos (instrumento, bit-idéntico)
+#### 2e. El mapa personal y los recuerdos (instrumento, bit-idéntico) — completada 2026-09-27
 
 **`src/sim/social/PlaceMemory.ts`** (nuevo), un objeto por persona:
 
@@ -638,6 +638,15 @@ personaje, con lo lejano oscuro bajo la niebla.
 - En este commit **nadie lee** el mapa personal: solo se escribe y se mide
   (telemetría de la fracción explorada por banda y de la edad media de los
   recuerdos).
+
+**Entrega 2026-09-27:** `PlaceMemory` vive en cada persona, con cap configurable
+por tipo; los fundadores conocen el radio de su campamento y el resto empieza
+sin explorar. En cada intervalo de pensamiento se actualizan las celdas y los
+objetos móviles visibles; recursos, frutales, agua y edificios se vuelven a
+consultar al entrar en otra celda gruesa o al cambiar el día, para evitar
+repetir hashes estáticos sin perder el estado diario. La telemetría acumula
+exploración y edad de recuerdos por banda. Las consultas usan hashes espaciales.
+Ninguna decisión ni pantalla lee todavía este mapa; eso comienza en 2f.
 
 #### 2f. Decidir con lo que se sabe (medido; el commit grande)
 

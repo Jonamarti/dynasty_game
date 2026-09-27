@@ -17,6 +17,7 @@ import type { JobId } from './Job.ts';
 import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
 import { MacroBalance, macroTargetFor } from '../core/Macros.ts';
 import { Beliefs } from '../ai/Beliefs.ts';
+import { PlaceMemory } from '../social/PlaceMemory.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -274,6 +275,10 @@ export class Person {
   memory: Memory;
   /** What this person expects from food and work, learned from experience. */
   beliefs = new Beliefs();
+  /** Personal map, observed but not yet used by decisions (M15 phase 2e). */
+  placeMemory = new PlaceMemory(128, 128, 48);
+  placeMemoryStaticCell = -1;
+  placeMemoryStaticDay = -1;
   /** Evidence accumulator for the current food gathering attempt. */
   actionTicks = 0;
   yieldKey: string | null = null;

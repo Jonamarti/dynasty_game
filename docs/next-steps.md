@@ -4,9 +4,10 @@
 `lean` de 57,6% queda como base provisional; se completará el plan antes de
 revisar ese ajuste. La fase 2a (rendimientos aprendidos que afectan decisiones
 y se muestran al personaje propio) está implementada.
-2b (aprender al ver comer), 2c (contado y heredado) y 2d (el atractivo de lo
-que permite una tecnología) también están implementadas. Después sigue la
-mitad del mapa personal, 2e-2k. Ver [m15_plan.md](m15_plan.md) y
+2b (aprender al ver comer), 2c (contado y heredado), 2d (el atractivo de lo
+que permite una tecnología) y 2e (instrumentar el mapa personal) están
+implementadas. Después sigue la lectura del mapa por las decisiones, 2f.
+Ver [m15_plan.md](m15_plan.md) y
 [m15_recovery.md](m15_recovery.md).
 
 **2026-09-26: M15 es el único plan vigente.** `notes5.txt` procesado con el

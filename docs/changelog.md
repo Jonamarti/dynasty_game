@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-27 — M15 fase 2e: instrumentar el mapa personal
+
+Cada persona registra las celdas exploradas y los lugares visibles en sus
+intervalos de pensamiento, con recuerdos acotados por tipo. Los datos estáticos
+se vuelven a consultar al entrar en una celda gruesa o al cambiar el día; los
+datos móviles se actualizan en cada pensamiento. Los fundadores
+conocen el entorno del campamento; los recién nacidos empiezan sin mapa. La
+telemetría mide exploración y edad de memoria por banda. Brain y la interfaz no
+leen estos datos todavía; el mapa es instrumento para la fase 2f.
+
 ## 2026-09-27 — M15 fase 2d: las expectativas hacen valiosas las tecnologías
 
 `techAppeal` compara lo que se espera de un alimento procesado con el

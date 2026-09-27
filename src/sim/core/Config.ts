@@ -164,6 +164,10 @@ export interface KnowledgeConfig {
    * run of bad luck is a delay rather than a wall.
    */
   failedTrialCredit: number;
+  /** Maximum remembered places of each kind per person. */
+  placeMemoryPerKind: number;
+  /** Radius founders have explored around their camp on day one. */
+  foundersKnowRadius: number;
 }
 
 /**
@@ -381,6 +385,8 @@ export const DEFAULT_CONFIG: SimConfig = {
     trialChance: 0.18,
     trialsToProve: 3,
     failedTrialCredit: 0.34,
+    placeMemoryPerKind: 48,
+    foundersKnowRadius: 20,
   },
   learning: {
     // Every default here is exactly the constant it replaced, so the world this

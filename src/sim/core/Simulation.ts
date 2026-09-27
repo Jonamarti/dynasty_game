@@ -305,6 +305,7 @@ export class Simulation {
   readonly inscriptionsById = new Map<number, Inscription>();
   /** Records are static once cut, so the index is rebuilt only on change. */
   readonly inscriptionHash = new SpatialHash<Inscription>(8);
+  readonly buildingHash = new SpatialHash<Building>(8);
   /** The person the player currently inhabits. Null in headless runs. */
   player: Person | null = null;
   /**
@@ -332,6 +333,14 @@ export class Simulation {
   readonly corpsesById = new Map<number, Corpse>();
   readonly animalHash = new SpatialHash<Animal>(8);
   readonly animalsById = new Map<number, Animal>();
+  /** Reused vision-query buffers; each thinker sees the same kinds in sequence. */
+  private readonly placeNodeCandidates: ResourceNode[] = [];
+  private readonly placeTreeCandidates: Tree[] = [];
+  private readonly placeShoreCandidates: { x: number; y: number }[] = [];
+  private readonly placeAnimalCandidates: Animal[] = [];
+  private readonly placePeopleCandidates: Person[] = [];
+  private readonly placePileCandidates: ItemPile[] = [];
+  private readonly placeBuildingCandidates: Building[] = [];
 
   /** Why the most recent order was refused. Read by the UI, then cleared. */
   lastRefusal: string | null = null;
@@ -811,6 +820,8 @@ export class Simulation {
       // an in-game marriage, birth or adoption would.
       const founded = foundBand(band, peoplePerBand, this.foundingContext(rng));
       for (const person of founded.people) {
+        person.placeMemory.configure(this.world.width, this.world.height, this.config.knowledge.placeMemoryPerKind);
+        person.placeMemory.observe(band.homeX, band.homeY, this.config.knowledge.foundersKnowRadius, this.time.day);
         // Knowledge the scenario says the founders already hold. Adults only:
         // a child holding a technology would be able to teach it, and children
         // are excluded from the knowledge system on purpose. Empty for every
@@ -849,6 +860,7 @@ export class Simulation {
       makePerson: (name, x, y, bandId, personRng) => {
         const person = new Person(name, x, y, bandId, personRng, this.time.daysPerYear);
         person.skillGain = this.config.learning.skillGain;
+        person.placeMemory.configure(this.world.width, this.world.height, this.config.knowledge.placeMemoryPerKind);
         return person;
       },
       placeNear: (x, y) => this.world.findWalkableNear(x, y) ?? { x, y },
@@ -3021,6 +3033,7 @@ export class Simulation {
     const building = new Building(def, x, y, bandId);
     this.buildings.push(building);
     this.buildingsById.set(building.id, building);
+    this.buildingHash.insert(building);
     telemetry.count('site_placed');
     return building;
   }
@@ -3493,6 +3506,7 @@ export class Simulation {
 
     this.buildingsById.delete(building.id);
     this.buildings = this.buildings.filter(b => b.id !== building.id);
+    this.buildingHash.rebuild(this.buildings);
   }
 
   /** The building covering a point, if any. */
@@ -3919,9 +3933,14 @@ export class Simulation {
 
       // A player order holds until the action system completes or abandons it.
       const committed = person.actionTimer > 0 || person.order !== null;
+      const scheduledThink = (this.time.tick + person.thinkOffset) % interval === 0;
+      // An NPC under a committed order cannot think and does not observe on
+      // schedule. The player's score still runs with an order, so their view
+      // advances alongside that HUD update.
+      if (scheduledThink && (!committed || person.isPlayer)) this.observePlaces(person);
       const needsThink =
         !committed &&
-        ((this.time.tick + person.thinkOffset) % interval === 0 || person.action === 'idle');
+        (scheduledThink || person.action === 'idle');
       if (needsThink) {
         if (person.isPlayer) this.steerPlayer(person, brainCtx);
         else this.brain.think(person, brainCtx);
@@ -3952,6 +3971,64 @@ export class Simulation {
     this.cleanupDead();
   }
 
+  /** Record only what is currently visible; phase 2f will be the first reader. */
+  private observePlaces(person: Person): void {
+    const memory = person.placeMemory;
+    const day = this.time.day;
+    const radius = this.config.sightRadius;
+    const staticCell = Math.floor(person.y / 4) * Math.ceil(this.world.width / 4) + Math.floor(person.x / 4);
+    const refreshStatic = person.placeMemoryStaticCell !== staticCell || person.placeMemoryStaticDay !== day;
+    if (refreshStatic) {
+      person.placeMemoryStaticCell = staticCell;
+      person.placeMemoryStaticDay = day;
+    }
+    const near = (x: number, y: number): boolean =>
+      (x - person.x) ** 2 + (y - person.y) ** 2 <= radius * radius;
+
+    memory.observe(person.x, person.y, radius, day);
+    if (refreshStatic) {
+      for (const node of this.nodeHash.queryRadius(person.x, person.y, radius, this.placeNodeCandidates)) {
+        if (near(node.x, node.y)) memory.remember(`resource:${node.kind}`, node.x, node.y, day,
+          node.amount >= node.def.maxAmount * 0.66 ? 2 : node.amount > 0 ? 1 : 0);
+      }
+      for (const tree of this.treeHash.queryRadius(person.x, person.y, radius, this.placeTreeCandidates)) {
+        if (tree.standing && near(tree.x, tree.y)) {
+          memory.remember(tree.def.fruitItem ? `fruit:${tree.def.fruitItem}` : 'tree', tree.x, tree.y, day,
+            tree.fruit > 0 ? 2 : 1);
+        }
+      }
+      for (const shore of this.shoreHash.queryRadius(person.x, person.y, radius, this.placeShoreCandidates)) {
+        if (near(shore.x, shore.y)) memory.remember('water', shore.x, shore.y, day, 2);
+      }
+      for (const building of this.buildingHash.queryRadius(person.x, person.y, radius + 4, this.placeBuildingCandidates)) {
+        if (near(building.centerX, building.centerY)) {
+          memory.remember(`building:${building.def.id}`, building.centerX, building.centerY, day,
+            building.complete ? 2 : 1);
+        }
+      }
+    }
+    for (const animal of this.animalHash.queryRadius(person.x, person.y, radius, this.placeAnimalCandidates)) {
+      if (animal.alive && near(animal.x, animal.y)) memory.remember(`herd:${animal.species}`, animal.x, animal.y, day, 2);
+    }
+    for (const other of this.peopleHash.queryRadius(person.x, person.y, radius, this.placePeopleCandidates)) {
+      if (other.id !== person.id && other.alive && near(other.x, other.y)) {
+        memory.remember('person', other.x, other.y, day, 2);
+      }
+    }
+    for (const pile of this.pileHash.queryRadius(person.x, person.y, radius, this.placePileCandidates)) {
+      if (!pile.empty && near(pile.x, pile.y)) {
+        for (const [item, amount] of pile.contents.entries()) {
+          memory.remember(`pile:${item}`, pile.x, pile.y, day, amount > 5 ? 2 : 1);
+        }
+      }
+    }
+    if (telemetry.isEnabled()) {
+      telemetry.count(`place_exploration_fraction_band_${person.bandId}`, memory.exploredFraction());
+      telemetry.count(`place_memory_age_sum_band_${person.bandId}`, memory.averageAge(day));
+      telemetry.count(`place_memory_samples_band_${person.bandId}`);
+    }
+  }
+
   /**
    * What the player's character does when the player is not saying.
    *
@@ -3969,14 +4046,8 @@ export class Simulation {
    * `autonomy` names which of the three answers is in force; the middle one
    * exists because both ends of the range are wrong for most of the game.
    *
-   * Two invariants hold in every state, and both are enforced by where this is
-   * called from rather than by anything in it:
-   *
-   *  - **An order always wins.** This runs only when `committed` is false, so a
-   *    live order is never interrupted, and `order()` overwrites whatever was
-   *    chosen here the moment the player asks for something.
-   *  - **Held keys always win.** The `playerIntent` branch above returns before
-   *    reaching this.
+   * An order always wins: this runs only when `committed` is false. Held keys
+   * also win because the `playerIntent` branch returns before reaching this.
    */
   private steerPlayer(person: Person, ctx: BrainContext): void {
     if (this.autonomy === 'auto') {
