@@ -36,7 +36,7 @@ import type { Animal } from '../entities/Animal.ts';
 import { chooseCravingFood } from './FoodChoice.ts';
 import { ITEMS } from '../entities/Item.ts';
 import {
-  TECH, techPower, prerequisitesMet, type Tech,
+  TECH, techPower, prerequisitesMet, answerPressure, workableIdea as chooseWorkableIdea, type Tech,
 } from '../knowledge/Tech.ts';
 import {
   RECIPES, hasIngredients, recipeFor, recipeUsing, nutritionPerUnit,
@@ -2715,14 +2715,18 @@ export class Brain {
         * (0.4 + person.traits.intelligence));
     }
 
-    if (comfortNow > 0.45 && idea) {
-      const spare = (comfortNow - 0.45) * 2;
+    const ideaPressure = idea ? answerPressure(person, idea.tech) : 0;
+    const answersChronicWant = ideaPressure >= ctx.motivation.wantAt;
+    const researchComfort = answersChronicWant ? ctx.motivation.needComfort : 0.45;
+    if (idea && comfortNow > researchComfort) {
+      const spare = (comfortNow - researchComfort) * 2;
+      const motiveBonus = answersChronicWant ? 1 + ideaPressure : 1;
       // Deliberately close to `gather`, which is the other thing a comfortable
       // person does with a spare hour. It was half again higher on a first pass
       // and thinking became the sixth most common activity in the world, ahead
       // of building and sleeping, which is not a stone age.
       add('ponder', spare * spare * (0.18 + person.traits.curiosity * 0.3)
-        * (0.4 + person.traits.intelligence));
+        * (0.4 + person.traits.intelligence) * motiveBonus);
 
       if (socialReady && neighbours.length > 0) {
         const def = TECH[idea.tech];
@@ -2742,7 +2746,7 @@ export class Brain {
         );
         if (colleague) {
           add('discuss', spare * (0.3 + person.traits.curiosity * 0.4)
-            * this.proximityBonus(person, colleague, ctx.sightRadius));
+            * this.proximityBonus(person, colleague, ctx.sightRadius) * motiveBonus);
         }
       }
     }
@@ -3125,13 +3129,7 @@ export class Brain {
    * person who thinks about hafting all day and never finishes anything.
    */
   private workableIdea(person: Person): Idea | null {
-    let best: Idea | null = null;
-    for (const candidate of person.ideas) {
-      if (candidate.stage === 'prototyped') continue;
-      if (candidate.insight >= 1) continue;
-      if (best === null || candidate.insight < best.insight) best = candidate;
-    }
-    return best;
+    return chooseWorkableIdea(person);
   }
 
   /** Highest-scoring candidate, or null for an empty list. Deterministic. */

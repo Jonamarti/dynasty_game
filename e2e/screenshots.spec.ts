@@ -385,3 +385,25 @@ test('the screen the game opens on', async ({ page }) => {
   await page.waitForTimeout(250);
   await page.screenshot({ path: DIR + '/19b-newgame-after-settings.png' });
 });
+
+test('M15 phase 4 idea born from a chronic want', async ({ page }) => {
+  await page.goto('/?seed=m15-phase4&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: { sim: { player: { ideas: unknown[] } } };
+    }).__dynasty;
+    d.sim.player.ideas.length = 0;
+    d.sim.player.ideas.push({
+      tech: 'firemaking', stage: 'conceived', insight: 0,
+      story: 'wanted warmth through one cold night too many, with flint in hand',
+      conceivedTick: 0, effort: 0, discussedWith: [], trials: 0, proof: 0,
+      failedTests: 0, tries: 0,
+    });
+  });
+  await page.locator('.hud-tab', { hasText: 'Self' }).click();
+  const story = page.getByText('wanted warmth through one cold night too many, with flint in hand');
+  await story.scrollIntoViewIfNeeded();
+  await expect(story).toBeInViewport();
+  await page.screenshot({ path: DIR + '/m15-4-wanting-idea.png' });
+});

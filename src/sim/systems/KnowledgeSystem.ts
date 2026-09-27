@@ -183,6 +183,7 @@ export interface KnowledgeContext {
   ticksPerDay: number;
   knowledge: KnowledgeConfig;
   learning: LearningConfig;
+  wantAt?: number;
   /**
    * Announces something worth a floater and a chronicle line: an idea, a
    * breakthrough, a prototype that failed, a design proven or improved.
@@ -234,7 +235,7 @@ export class KnowledgeSystem {
    * situation the simulation decides on. Two definitions of "what is on your
    * mind" is one too many.
    */
-  notice(person: Person, ctx: { world: World; season: Season }): Notice {
+  notice(person: Person, ctx: { world: World; season: Season; wantAt?: number }): Notice {
     const holding = new Set<string>();
     for (const [itemId, count] of person.inventory.entries()) {
       if (count > 0) holding.add(itemId);
@@ -249,6 +250,9 @@ export class KnowledgeSystem {
     for (const need of NEEDS) {
       if (person.needs[need] >= FELT_AT) feeling.add(need);
     }
+    const wanting = new Set(Object.entries(person.chronic)
+      .filter(([, pressure]) => (pressure ?? 0) >= (ctx.wantAt ?? 0.3))
+      .map(([drive]) => drive as import('../ai/Drives.ts').DriveId));
 
     // What they saw comes from two places, because "saw" covers two things: a
     // deed somebody else did in front of them, and the reason their own work
@@ -270,6 +274,7 @@ export class KnowledgeSystem {
       holding,
       lately,
       feeling,
+      wanting,
       place: biome,
       saw,
       season: ctx.season,
@@ -457,6 +462,9 @@ export class KnowledgeSystem {
     // Per route, not just per technology: `sparks-are-various` asks whether the
     // web has more than one way in, and only this counter can answer it.
     telemetry.count('spark_' + chosen.tech + '_' + chosen.index);
+    if (chosen.spark.needs.some(need => need.kind === 'wanting')) {
+      telemetry.count('spark_wanting_' + chosen.tech + '_' + chosen.index);
+    }
     person.chronicle.push({
       tick: ctx.tick,
       ageDays: person.age,

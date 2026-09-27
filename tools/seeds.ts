@@ -109,6 +109,8 @@ interface SeedResult {
   cravingProteinAbsent: number;
   cravingProteinMasked: number;
   cravingProteinOverrideSelected: number;
+  /** M15 phase 4: conceptions whose chosen spark included a chronic want. */
+  wantingSparkRoutes: Record<string, number>;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -277,6 +279,9 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     cravingProteinAbsent: counts.craving_protein_absent ?? 0,
     cravingProteinMasked: counts.craving_protein_masked_by_reachable_food ?? 0,
     cravingProteinOverrideSelected: counts.craving_protein_override_selected ?? 0,
+    wantingSparkRoutes: Object.fromEntries(Object.entries(counts)
+      .filter(([key]) => key.startsWith('spark_wanting_') && (counts[key] ?? 0) > 0)
+      .map(([key, value]) => [key.slice('spark_wanting_'.length), value])),
   };
 }
 
@@ -484,6 +489,17 @@ function main(): void {
     const fireSeeds = results.filter(result => result.history.fireBy !== null).length;
     console.log('  FIRE FOUND ' + fireSeeds + '/' + results.length + ' seeds (' +
       (100 * fireSeeds / Math.max(1, results.length)).toFixed(1) + '%; phase 4 gate 50%)');
+  }
+  const wantingSparkCounts: Record<string, number> = {};
+  for (const result of results) {
+    for (const [route, count] of Object.entries(result.wantingSparkRoutes)) {
+      wantingSparkCounts[route] = (wantingSparkCounts[route] ?? 0) + count;
+    }
+  }
+  if (Object.keys(wantingSparkCounts).length > 0) {
+    console.log('  WANTING SPARKS ' + Object.entries(wantingSparkCounts)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([route, count]) => route + '=' + count).join(' · '));
   }
   console.log(
     '  KIN defended ' + sum(r => r.conflict.kinDefended) + '/' + sum(r => r.conflict.kinAttacks) +

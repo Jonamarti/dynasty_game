@@ -28,6 +28,7 @@ import { Pathfinder } from './Pathfinder.ts';
 import { ActionSystem } from '../systems/ActionSystem.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
+import { drivePressures, DRIVES } from '../ai/Drives.ts';
 import { infantNeedingNursing, infantOutsideHome } from '../ai/Nursing.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
@@ -2153,6 +2154,7 @@ export class Simulation {
     return this.knowledgeSystem.notice(person, {
       world: this.world,
       season: this.time.season,
+      wantAt: this.config.motivation.wantAt,
     });
   }
 
@@ -3700,6 +3702,7 @@ export class Simulation {
         season: this.time.season,
         ticksPerDay: this.config.time.ticksPerDay,
         knowledge: this.config.knowledge,
+        wantAt: this.config.motivation.wantAt,
         learning: this.config.learning,
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
       });
@@ -3867,6 +3870,18 @@ export class Simulation {
     const interval = this.config.thinkInterval;
     for (const person of this.people) {
       if (!person.alive) continue;
+
+      if ((this.time.tick + person.thinkOffset) % interval === 0) {
+        const pressure = drivePressures(person, {
+          world: this.world, time: this.time, peopleById: this.peopleById,
+          buildingsById: this.buildingsById, householdsById: this.householdsById,
+          homes: brainCtx.homes, motivation: this.config.motivation,
+        });
+        for (const drive of Object.keys(DRIVES) as (keyof typeof DRIVES)[]) {
+          const before = person.chronic[drive] ?? 0;
+          person.chronic[drive] = before + (pressure[drive] - before) * this.config.motivation.chronicRate;
+        }
+      }
 
       // The first year is before walking: the baby rests where born until a
       // carrier system exists. Letting its own needs choose `forage` or `drink`

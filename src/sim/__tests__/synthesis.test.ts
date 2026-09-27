@@ -223,6 +223,7 @@ describe('reading a situation', () => {
     holding: new Set(['flint', 'sticks']),
     lately: new Set(['gather', 'forage']),
     feeling: new Set(['cold']),
+    wanting: new Set(),
     place: 'forest',
     saw: new Set(['hands_full']),
     season: 'winter',
@@ -236,6 +237,8 @@ describe('reading a situation', () => {
     expect(satisfies({ kind: 'doing', action: 'gather' }, notice)).toBe(true);
     expect(satisfies({ kind: 'doing', action: 'hunt' }, notice)).toBe(false);
     expect(satisfies({ kind: 'feeling', need: 'cold' }, notice)).toBe(true);
+    expect(satisfies({ kind: 'wanting', drive: 'variety' }, { ...notice, wanting: new Set(['variety']) })).toBe(true);
+    expect(satisfies({ kind: 'wanting', drive: 'warmth' }, notice)).toBe(false);
     expect(satisfies({ kind: 'feeling', need: 'hunger' }, notice)).toBe(false);
     expect(satisfies({ kind: 'place', biome: 'forest' }, notice)).toBe(true);
     expect(satisfies({ kind: 'place', biome: 'hills' }, notice)).toBe(false);

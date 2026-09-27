@@ -15,7 +15,7 @@ import { describe, it, expect } from 'vitest';
 import {
   TECH, TECHS, TECH_EFFECTS, ERAS, ERA_ORDER, AGES, ageIndex, eraFor, reachableFrom,
   techPower, carryFactor, forageYieldFactor, nutritionFactor, warmthFrom,
-  axeFactor, buildFactor, reapFactor, calendarFactor,
+  axeFactor, buildFactor, reapFactor, calendarFactor, answerPressure, workableIdea,
   type Tech,
 } from '../knowledge/Tech.ts';
 import { BUILDINGS, isStation } from '../entities/Building.ts';
@@ -26,6 +26,7 @@ import { RECIPES, craftableItems, recipeFor } from '../entities/Recipe.ts';
 import { INSCRIPTIONS, Inscription } from '../entities/Inscription.ts';
 import { Person, SKILLS } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
+import type { Idea } from '../knowledge/Synthesis.ts';
 
 function someone(): Person {
   return new Person('Test', 0, 0, 0, new RNG('tech-test'));
@@ -51,6 +52,33 @@ describe('the tech table', () => {
       expect(TECH[tech].difficulty).toBeGreaterThan(0);
       expect(TECH[tech].difficulty).toBeLessThanOrEqual(1);
     }
+  });
+
+  it('only gives motives to technologies whose effects answer them', () => {
+    const supported: Partial<Record<Tech, string[]>> = {
+      firemaking: ['warmth'], clothing: ['warmth'],
+      cooking: ['hunger', 'variety'], tracking: ['hunger', 'variety'],
+      fishing: ['hunger', 'variety'], snares: ['hunger', 'variety'],
+      well: ['thirst'], flute: ['company'],
+    };
+    for (const tech of TECHS) {
+      expect(TECH[tech].answers ?? [], tech + ' has unsupported answers')
+        .toEqual(supported[tech] ?? []);
+    }
+  });
+
+  it('picks the unfinished idea that answers the strongest chronic motive', () => {
+    const person = someone();
+    const idea = (tech: Tech, insight: number): Idea => ({
+      tech, stage: 'conceived', insight, story: tech, conceivedTick: 0, effort: 0,
+      discussedWith: [], trials: 0, proof: 0, failedTests: 0, tries: 0,
+    });
+    person.ideas.push(idea('tracking', 0.2), idea('firemaking', 0.8));
+    person.chronic.warmth = 0.8;
+
+    expect(answerPressure(person, 'firemaking')).toBe(0.8);
+    expect(workableIdea(person)?.tech).toBe('firemaking');
+    expect(workableIdea(person, 'tracking')?.tech).toBe('tracking');
   });
 
   it('only names prerequisites that exist', () => {

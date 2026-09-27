@@ -870,6 +870,8 @@ una carencia crónica).
 aprobada), `discovery-is-situated` en verde, `ideas-are-conceived` bajo su
 techo. **Coste declarado:** ≤ 3 puntos; `known` y `pastRoots` no bajan.
 
+**Resultado M15 fase 4 (2026-09-27):** comodidad mínima calibrada a 0,4. En 20 semillas century, fuego 15/20 (75%), supervivencia 98,6% frente a 96,2%, tecnologías conocidas 7,8 frente a 5,4 y pasadas de raíz 7,2 frente a 4,2. En lean, 23,1% frente al control emparejado de 23,7%; conocidas 2,6 frente a 2,5 y pasadas de raíz 1,4 frente a 1,3. discovery-is-situated pasa; la tasa es 0,45 ideas por persona-año. El contador de chispas nuevas solo vio una ruta wanting de fuego, sin rutas de tracking ni pesca, aunque el gate de fuego se cumple con las rutas existentes.
+
 ## Fase 5 — Los motivos que no son del cuerpo (M13 fase 10)
 
 **Detalle en `m13_plan.md` fase 10.** Seis motivos, uno por commit medido:

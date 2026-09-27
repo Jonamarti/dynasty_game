@@ -41,6 +41,7 @@
  * deliberately different questions.
  */
 import type { Person, Skill } from '../entities/Person.ts';
+import type { Idea } from './Synthesis.ts';
 import type { Spark } from './Synthesis.ts';
 import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
 import { ITEMS } from '../entities/Item.ts';
@@ -284,6 +285,8 @@ export interface TechDef {
    * occurred to you, and saying it twice would double-count it.
    */
   sparks: Spark[];
+  /** Long-term motives this design can directly ease. */
+  answers?: import('../ai/Drives.ts').DriveId[];
   /**
    * What building a first one costs. Everything named here must be something
    * the world can actually produce, or the idea stalls at `prototyped` forever.
@@ -320,6 +323,7 @@ export const TECH: Record<Tech, TechDef> = {
     kind: 'device',
     requires: [], difficulty: 0.35, skill: 'knap',
     prototype: { sticks: 2, flint: 1 }, maxRefinement: 2,
+    answers: ['warmth'],
     sparks: [
       { needs: [{ kind: 'holding', item: 'flint' }, { kind: 'feeling', need: 'cold' }],
         weight: 1.0, story: 'struck two cold stones together and one of them spat a spark' },
@@ -336,6 +340,8 @@ export const TECH: Record<Tech, TechDef> = {
       { needs: [{ kind: 'holding', item: 'flint' }, { kind: 'holding', item: 'sticks' },
                 { kind: 'doing', action: 'gather' }],
         weight: 0.7, story: 'struck flint against flint for the noise of it, over and over' },
+      { needs: [{ kind: 'holding', item: 'flint' }, { kind: 'wanting', drive: 'warmth' }],
+        weight: 0.8, story: 'wanted warmth through one cold night too many, with flint in hand' },
     ],
     description: 'A spark from struck flint, and a cold night stops being dangerous.',
   },
@@ -436,6 +442,7 @@ export const TECH: Record<Tech, TechDef> = {
     age: 'lower_palaeolithic', firstKnown: 'older than our species',
     kind: 'practice', practisedBy: ['hunt'],
     requires: [], difficulty: 0.4, skill: 'track',
+    answers: ['hunger', 'variety'],
     prototype: {}, maxRefinement: 3,
     sparks: [
       // The ordinary route. The other three all wait on a hunt, and hunting is
@@ -459,6 +466,8 @@ export const TECH: Record<Tech, TechDef> = {
       { needs: [{ kind: 'place', biome: 'forest' }, { kind: 'season', season: 'winter' },
                 { kind: 'doing', action: 'reflect' }],
         weight: 0.4, story: 'sat still in a winter wood long enough to read what had crossed it' },
+      { needs: [{ kind: 'doing', action: 'hunt' }, { kind: 'wanting', drive: 'variety' }],
+        weight: 0.6, story: 'hunted again because the same food had grown tiresome' },
     ],
     description:
       'Prints, droppings, a bent stem. Game stops being something you stumble ' +
@@ -469,6 +478,7 @@ export const TECH: Record<Tech, TechDef> = {
     age: 'middle_palaeolithic', firstKnown: 'about 300,000 years ago',
     kind: 'device',
     requires: ['firemaking'], difficulty: 0.25, skill: 'cook',
+    answers: ['hunger', 'variety'],
     prototype: { meat: 1, sticks: 1 }, maxRefinement: 3,
     sparks: [
       { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'meat' }],
@@ -504,6 +514,7 @@ export const TECH: Record<Tech, TechDef> = {
     age: 'middle_palaeolithic', firstKnown: 'at least 120,000 years ago',
     kind: 'device',
     requires: ['cordage'], difficulty: 0.4, skill: 'forage',
+    answers: ['warmth'],
     // Plaited fibre, not a fur coat. Hide is the *idea*'s strongest spark and
     // it stays one, but a kill is rare enough in this world that costing the
     // first prototype two of them left clothing permanently conceivable and
@@ -687,6 +698,7 @@ export const TECH: Record<Tech, TechDef> = {
     age: 'upper_palaeolithic', firstKnown: 'about 42,000 years ago',
     kind: 'practice', practisedBy: ['forage', 'hunt'],
     requires: ['spear'], difficulty: 0.45, skill: 'hunt',
+    answers: ['hunger', 'variety'],
     prototype: {}, maxRefinement: 3,
     sparks: [
       // The ordinary route: everybody goes to the water's edge to drink, far
@@ -697,6 +709,8 @@ export const TECH: Record<Tech, TechDef> = {
         weight: 0.8, story: 'stood at the water with a spear in hand and watched something dart past' },
       { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'doing', action: 'hunt' }],
         weight: 0.5, story: 'carried the same throw that worked on a boar down to the shore' },
+      { needs: [{ kind: 'wanting', drive: 'variety' }, { kind: 'place', biome: 'beach' }],
+        weight: 0.6, story: 'wanted a different meal while standing where the river met the land' },
     ],
     description:
       'A spear turned on the shallows. Food that does not stop existing when ' +
@@ -757,6 +771,7 @@ export const TECH: Record<Tech, TechDef> = {
     age: 'upper_palaeolithic', firstKnown: 'about 25,000 years ago',
     kind: 'device',
     requires: ['cordage', 'tracking'], difficulty: 0.45, skill: 'track',
+    answers: ['hunger', 'variety'],
     prototype: { thatch: 3, sticks: 3 }, maxRefinement: 3,
     sparks: [
       // The heaviest route is a failure, deliberately. A snare is what occurs to
@@ -936,6 +951,7 @@ export const TECH: Record<Tech, TechDef> = {
     age: 'upper_palaeolithic', firstKnown: 'about 40,000 years ago',
     kind: 'device',
     requires: ['bone_working'], difficulty: 0.45, skill: 'build',
+    answers: ['company'],
     prototype: { bone: 1, flint: 1 }, maxRefinement: 2,
     sparks: [
       { needs: [{ kind: 'knows', tech: 'bone_working' }, { kind: 'feeling', need: 'company' }],
@@ -1433,6 +1449,7 @@ export const TECH: Record<Tech, TechDef> = {
     age: 'neolithic', firstKnown: 'about 6,500 BC',
     kind: 'device',
     requires: ['masonry'], difficulty: 0.5, skill: 'build',
+    answers: ['thirst'],
     prototype: { flint: 5, wood: 1 }, maxRefinement: 2,
     sparks: [
       { needs: [{ kind: 'knows', tech: 'masonry' }, { kind: 'doing', action: 'drink' }],
@@ -1519,6 +1536,31 @@ export const TECH: Record<Tech, TechDef> = {
       'nobody’s hunger much, and everybody’s loneliness a little.',
   },
 };
+
+/** Highest chronic motive this design can answer; zero means no recorded need. */
+export function answerPressure(person: Person, tech: Tech): number {
+  return Math.max(0, ...(TECH[tech].answers ?? []).map(drive => person.chronic[drive] ?? 0));
+}
+
+/** Picks the unfinished idea that answers the strongest chronic motive. */
+export function workableIdea(person: Person, namedTech: string | null = null): Idea | null {
+  if (namedTech !== null) {
+    return person.ideas.find(idea => idea.tech === namedTech &&
+      idea.stage !== 'prototyped' && idea.insight < 1) ?? null;
+  }
+  let best: Idea | null = null;
+  let bestPressure = -1;
+  for (const idea of person.ideas) {
+    if (idea.stage === 'prototyped' || idea.insight >= 1) continue;
+    const pressure = answerPressure(person, idea.tech);
+    // Strict comparison preserves the existing idea order on a tie.
+    if (pressure > bestPressure) {
+      best = idea;
+      bestPressure = pressure;
+    }
+  }
+  return best;
+}
 
 // ---------------------------------------------------------------------------
 // Effects

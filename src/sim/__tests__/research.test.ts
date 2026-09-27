@@ -55,6 +55,17 @@ function ideaFor(tech: 'cordage' | 'firemaking', stage: Idea['stage'] = 'conceiv
 }
 
 describe('the shape of an idea', () => {
+  it('reads chronic motives only after they cross the configured wanting threshold', () => {
+    const knowledge = new KnowledgeSystem();
+    const person = adult();
+    person.chronic.warmth = 0.29;
+    const ctx = { ...context(), wantAt: 0.3 };
+
+    expect(knowledge.notice(person, ctx).wanting.has('warmth')).toBe(false);
+    person.chronic.warmth = 0.3;
+    expect(knowledge.notice(person, ctx).wanting.has('warmth')).toBe(true);
+  });
+
   it('is conceived only when a whole situation is present', () => {
     const knowledge = new KnowledgeSystem();
     const person = adult();

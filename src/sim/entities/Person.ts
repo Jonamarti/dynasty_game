@@ -12,6 +12,7 @@ import { Memory } from '../social/Memory.ts';
 import type { LifeEvent } from '../social/SocialSystem.ts';
 import { carryFactor, TECH } from '../knowledge/Tech.ts';
 import type { Idea } from '../knowledge/Synthesis.ts';
+import type { DriveId } from '../ai/Drives.ts';
 import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
 import type { JobId } from './Job.ts';
 import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
@@ -292,6 +293,8 @@ export class Person {
    * and it is lost the moment the last of them dies without teaching it.
    */
   knownTech = new Set<string>();
+  /** Slow memory of unmet motives; unlike current needs it survives a good meal. */
+  chronic: Partial<Record<DriveId, number>> = {};
   /**
    * The record of a life, in order. This is the thing a dynasty game is
    * ultimately about: when the player dies and continues as an heir, the

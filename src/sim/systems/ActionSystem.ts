@@ -46,7 +46,8 @@ import { bestFoodFor, consumeFood } from '../core/Macros.ts';
 import { expectedFood } from '../ai/Beliefs.ts';
 import {
   TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
-  prerequisitesMet, reapFactor, tallyFactor, techPower, weaponOf, armourOf, type Tech,
+  prerequisitesMet, reapFactor, tallyFactor, techPower,
+  workableIdea as chooseWorkableIdea, weaponOf, armourOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
@@ -3359,8 +3360,8 @@ export class ActionSystem {
    * An idea being tested is excluded: there is nothing to think about while you
    * are waiting to find out whether the thing you built works. Everything else
    * — newly conceived, half researched, proven and being improved — is fair
-   * game, and the least advanced comes first so that nobody leaves an idea
-   * hanging at nine tenths while polishing something they already have.
+   * game. Without a named player target, the same selector as Brain prefers
+   * the unfinished idea that answers the strongest chronic motive.
    */
   private workableIdea(person: Person): Idea | null {
     // Named by the player, if they named one. `targetTech` is only ever set by
@@ -3372,19 +3373,7 @@ export class ActionSystem {
     // whatever else is in their head. Being handed a different conversation
     // from the one you asked for is worse than being told it is too late, and
     // the caller turns this null into a refusal that says so.
-    if (person.targetTech !== null) {
-      return person.ideas.find(idea =>
-        idea.tech === person.targetTech &&
-        idea.stage !== 'prototyped' &&
-        idea.insight < 1) ?? null;
-    }
-    let best: Idea | null = null;
-    for (const idea of person.ideas) {
-      if (idea.stage === 'prototyped') continue;
-      if (idea.insight >= 1) continue;
-      if (best === null || idea.insight < best.insight) best = idea;
-    }
-    return best;
+    return chooseWorkableIdea(person, person.targetTech);
   }
 
   /**

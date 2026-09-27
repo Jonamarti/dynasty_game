@@ -178,6 +178,7 @@ function keyOf(ingredient: Ingredient): string {
     case 'holding': return 'holding:' + ingredient.item;
     case 'doing': return 'doing:' + ingredient.action;
     case 'feeling': return 'feeling:' + ingredient.need;
+    case 'wanting': return 'wanting:' + ingredient.drive;
     case 'place': return 'place:' + ingredient.biome;
     case 'saw': return 'saw:' + ingredient.what;
     case 'season': return 'season:' + ingredient.season;

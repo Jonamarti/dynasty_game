@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-27 - M15 phase 4: ideas from chronic needs
+
+People now keep a moving memory of unmet motives. Firemaking, tracking, and fishing can arise from new wanting sparks; techniques declare the motives their effects answer. Research selects the unfinished idea that answers the strongest chronic motive, and motivated ideas can be pondered or discussed above the calibrated comfort floor of 0.4. The Tech Web supports the new ingredient and the screenshot artifacts/screenshots/m15-4-wanting-idea.png records an idea conceived from wanting warmth.
+
+Measured on 20 seeds: century firemaking was found in 15/20 seeds (75%), mean survival 98.6% versus 96.2% reference, 7.8 known technologies versus 5.4 and 7.2 past-root technologies versus 4.2. lean with the feature was 23.1% survival versus 23.7% in a matched feature-off cohort; known technologies were 2.6 versus 2.5, past-root technologies 1.4 versus 1.3. The phase gates pass. The wanting-spark counter saw one new firemaking route and no new tracking or fishing route in century; that rarity is recorded in docs/bugs.md for future review.
+
 ## 2026-09-27 - M15 phase 4 measurement: fire discovery across seeds
 
 The century seed summary now counts seeds where history.fireBy records firemaking before the run ends. This exposes the phase 4 cohort gate without changing simulation behavior or consuming random draws.

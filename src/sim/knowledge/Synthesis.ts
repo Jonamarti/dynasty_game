@@ -29,6 +29,7 @@
  */
 import type { Tech } from './Tech.ts';
 import type { Need } from '../entities/Person.ts';
+import type { DriveId } from '../ai/Drives.ts';
 import type { Biome } from '../core/World.ts';
 import type { Season } from '../core/TimeManager.ts';
 import { t, tc } from '../../i18n/i18n.ts';
@@ -47,6 +48,7 @@ export type Ingredient =
   | { kind: 'holding'; item: string }
   | { kind: 'doing'; action: string }
   | { kind: 'feeling'; need: Need }
+  | { kind: 'wanting'; drive: DriveId }
   | { kind: 'place'; biome: Biome }
   | { kind: 'saw'; what: string }
   | { kind: 'season'; season: Season };
@@ -89,6 +91,7 @@ export interface Notice {
   holding: ReadonlySet<string>;
   lately: ReadonlySet<string>;
   feeling: ReadonlySet<string>;
+  wanting: ReadonlySet<DriveId>;
   place: Biome;
   saw: ReadonlySet<string>;
   season: Season;
@@ -101,6 +104,7 @@ export function satisfies(ingredient: Ingredient, notice: Notice): boolean {
     case 'holding': return notice.holding.has(ingredient.item);
     case 'doing': return notice.lately.has(ingredient.action);
     case 'feeling': return notice.feeling.has(ingredient.need);
+    case 'wanting': return notice.wanting.has(ingredient.drive);
     case 'place': return notice.place === ingredient.biome;
     case 'saw': return notice.saw.has(ingredient.what);
     case 'season': return notice.season === ingredient.season;
@@ -155,6 +159,7 @@ export function describeIngredient(
     case 'holding': return t('holding {item}', { item: labelFor('item', ingredient.item).toLowerCase() });
     case 'doing': return t('having been {doing}', { doing: t(DOING_WORDS[ingredient.action] ?? ingredient.action) });
     case 'feeling': return t(FEELING_WORDS[ingredient.need] ?? ingredient.need);
+    case 'wanting': return t('wanting {drive}', { drive: t(WANTING_WORDS[ingredient.drive]) });
     case 'place': return PLACE_WORDS[ingredient.biome]
       ? t(PLACE_WORDS[ingredient.biome]!)
       : t('on {biome}', { biome: tc('biome', ingredient.biome) });
@@ -190,6 +195,11 @@ export const DOING_WORDS: Record<string, string> = {
 export const FEELING_WORDS: Record<string, string> = {
   cold: 'being cold', hunger: 'being hungry', thirst: 'being thirsty',
   fatigue: 'being worn out', company: 'being lonely',
+};
+
+const WANTING_WORDS: Record<DriveId, string> = {
+  hunger: 'food', thirst: 'water', rest: 'rest', warmth: 'warmth',
+  company: 'company', home: 'home', variety: 'variety',
 };
 
 export const PLACE_WORDS: Record<string, string> = {
