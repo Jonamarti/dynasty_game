@@ -147,6 +147,27 @@ describe('urgent', () => {
     expect(sim.autonomyStall).toBeNull();
   });
 
+  it('abandons a family route for known water when thirst reaches the work limit', () => {
+    const sim = new Simulation(SMALL);
+    const player = playerWithNothingPressing(sim);
+    sim.autonomy = 'auto';
+    const shore = sim.shoreHash.findNearest(player.x, player.y, 60);
+    expect(shore, 'the scenario needs a water target').not.toBeNull();
+    player.x = shore!.x;
+    player.y = shore!.y;
+    player.needs.thirst = sim.config.needs.workLimits.thirst + 1;
+    // Model the exact competition reported in play: the character is already
+    // walking home, but a known drink must take over before the next leg away
+    // from water. The selected shoreline is within the search radius.
+    player.action = 'go_home';
+    player.targetX = player.x + 4;
+    player.targetY = player.y;
+
+    steps(sim, player, 12);
+
+    expect(['drink', 'ask_water', 'explore']).toContain(player.action);
+  });
+
   it('does nothing at all until a need is dangerous', () => {
     const sim = new Simulation(SMALL);
     const player = playerWithNothingPressing(sim);

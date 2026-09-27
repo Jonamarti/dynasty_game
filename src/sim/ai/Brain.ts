@@ -557,6 +557,8 @@ const ESCAPE_DISTANCES = [14, 10, 7, 4];
 const CUT_OFF_AT_ONCE: ReadonlySet<string> = new Set([
   'talk', 'warn', 'threaten', 'slander', 'praise', 'correct', 'make_amends', 'complain', 'parley',
 ]);
+/** Routes whose value is lost if the scorer replaces them before arrival. */
+const ROUTE_COMMIT_ACTIONS: ReadonlySet<string> = new Set(['drink', 'take', 'store', 'go_home']);
 
 /**
  * How recently somebody must have hit this person for hitting back to be
@@ -618,6 +620,22 @@ export class Brain {
     // The filter allocates, so it only runs when there is one: an unrestricted
     // think is by far the common case and walks the original array.
     const pool = allowed ? scores.filter(s => allowed.has(s.id)) : scores;
+    // A route has already paid its travel cost. Keep it while its action is
+    // still a valid option, or the next think can send the person back the
+    // way they came before they reach either destination. Severe thirst is
+    // the escape hatch: when known water is available, it outranks the route
+    // home or to the larder immediately. Movement still abandons blocked or
+    // invalid targets through ActionSystem, so this is not a permanent lock.
+    const urgentDrink = person.needs.thirst >= ctx.needs.workLimits.thirst &&
+      found.water !== null && pool.some(row => row.id === 'drink');
+    const continuingRoute = ROUTE_COMMIT_ACTIONS.has(person.action) &&
+      person.targetX !== null && person.targetY !== null &&
+      pool.some(row => row.id === person.action);
+    if (urgentDrink || continuingRoute) {
+      const chosen = urgentDrink ? 'drink' : person.action;
+      this.setup(person, chosen, ctx, found);
+      return chosen;
+    }
     // At `choiceSpread: 0` this is `pool[0]` and takes no draw, which is why
     // the commit that introduced it was bit-identical. Above 0 it picks among
     // the options within a band of the best — see `core/Choice.ts` for why a

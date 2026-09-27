@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-27 - M15: route commitment and water priority
+
+Active routes to drink, take food from storage, store goods, and return to family now continue while their destinations remain available. This prevents each new decision from replacing a route before arrival. At the thirst work limit, known water immediately takes priority over those routes. A regression test covers a character heading home with known water within reach.
+
+
 ## 2026-09-27 — M15 fase 2i: niebla de guerra personal
 
 La máscara de visión sigue el mapa personal del personaje: solo muestra el
