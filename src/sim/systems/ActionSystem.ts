@@ -43,6 +43,7 @@ import {
 import type { MotivationConfig, NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { bestFoodFor, consumeFood } from '../core/Macros.ts';
+import { expectedFood } from '../ai/Beliefs.ts';
 import {
   TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
   prerequisitesMet, reapFactor, tallyFactor, techPower, weaponOf, armourOf, type Tech,
@@ -943,6 +944,18 @@ export class ActionSystem {
     if (!foodId || !consumeFood(person, foodId, ctx.tick, ctx.motivation.cravings)) {
       this.abandon(person, 'no_food', ctx);
       return;
+    }
+    // Eating is visible evidence about a food's payoff. Share it immediately
+    // with nearby witnesses; waiting for the periodic observation roll made
+    // meals the one useful yield nobody could learn from watching.
+    const foodKey = 'eat:' + foodId;
+    const value = expectedFood(person, foodId);
+    for (const observer of ctx.peopleHash.queryRadius(person.x, person.y, 6)) {
+      if (!observer.alive || observer.id === person.id) continue;
+      const regard = ctx.relationships.opinion(observer.id, person.id);
+      const alpha = 0.1 * (1.5 - observer.traits.tradition) * (regard < 0 ? 0.5 : 1);
+      observer.beliefs.learn(foodKey, value, alpha, 'seen', ctx.tick);
+      telemetry.count('belief_seen_' + foodKey.replace(':', '_'));
     }
     if (person.needs.hunger <= 0) this.finish(person);
   }

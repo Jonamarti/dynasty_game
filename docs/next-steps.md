@@ -3,7 +3,8 @@
 **2026-09-27: M15 continúa por decisión del propietario.** La supervivencia
 `lean` de 57,6% queda como base provisional; se completará el plan antes de
 revisar ese ajuste. La fase 2a (rendimientos aprendidos que afectan decisiones
-y se muestran al personaje propio) está implementada. Siguen 2b-2d y después
+y se muestran al personaje propio) está implementada. 2b (aprender al ver comer)
+también está implementada; siguen 2c-2d y después
 el mapa personal 2e-2k. Ver [m15_plan.md](m15_plan.md) y
 [m15_recovery.md](m15_recovery.md).
 

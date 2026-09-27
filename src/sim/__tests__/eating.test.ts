@@ -60,6 +60,20 @@ describe('eating from the panel', () => {
     expect(person.eatenToday.size).toBe(0);
   });
 
+  it('teaches a nearby witness what the meal was worth', () => {
+    const sim = new Simulation(SMALL);
+    const [eater, witness] = sim.livingPeople();
+    withOneBerry(eater!);
+    witness!.x = eater!.x + 1;
+    witness!.y = eater!.y;
+    witness!.traits.tradition = 0;
+    expect(sim.order(eater!, 'eat')).toBe(true);
+    for (let i = 0; i < 30 && !eater!.eatenToday.has('berries'); i++) sim.step();
+    expect(eater!.eatenToday.has('berries')).toBe(true);
+    expect(witness!.beliefs.get('eat:berries')).toMatchObject({ source: 'seen' });
+    expect(witness!.beliefs.get('eat:berries')!.tick).toBeGreaterThan(0);
+  });
+
   it("clears the day's tally at midnight, with the ledger", () => {
     const sim = new Simulation(SMALL);
     const person = sim.livingPeople()[0]!;

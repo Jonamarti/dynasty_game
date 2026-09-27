@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-27 — M15 fase 2b: ver a alguien comer enseña el valor de la comida
+
+Al terminar una comida, las personas vivas a seis casillas aprenden la
+expectativa del alimento con fuente `seen`. La tradición modera la rapidez de
+aprendizaje y una opinión negativa de quien come reduce a la mitad la
+observación. La consulta usa `peopleHash`; no añade tiradas aleatorias.
+
 ## 2026-09-27 — M15 fase 2a: las expectativas de rendimiento guían la elección
 
 Las expectativas personales de recolección, pesca, fruta y caza ya ponderan
