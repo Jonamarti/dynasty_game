@@ -650,6 +650,14 @@ Ninguna decisión ni pantalla lee todavía este mapa; eso comienza en 2f.
 
 #### 2f. Decidir con lo que se sabe (medido; el commit grande)
 
+**Avance del 2026-09-27:** empieza la integración del recuerdo de recursos:
+las fuentes de agua ya no se expulsan al llenar el cupo ordinario por tipo, y
+el recuerdo de un nodo se actualiza al agotarse o tras una recolección. Se
+añaden pruebas para el límite especial del agua y para corregir un recuerdo sin
+alterar su fecha ni su fuente. Esto aún no limita las búsquedas del puntuador
+a lo visto o recordado; falta integrar los candidatos, los demás tipos de
+lugar, las órdenes y la medición de cohorte.
+
 - `Brain.findNode` y sus hermanos (agua, frutales, leña, material, presas,
   compañía y almacén) pasan a buscar **en la unión de lo que se ve ahora** (el
   hash del mundo, dentro de la vista) **y lo que se recuerda** (`PlaceMemory`,

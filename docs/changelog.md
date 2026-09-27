@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-27 — M15 fase 2f: corregir recuerdos de recursos
+
+El mapa personal conserva las fuentes de agua aunque excedan el límite normal
+por tipo, porque una persona no olvida dónde ha encontrado agua. Al llegar a un
+nodo agotado, o después de recoger de él, actualiza la cantidad recordada sin
+falsear la fecha o el origen del recuerdo. Esto prepara la integración del
+conocimiento personal en las búsquedas de la fase 2f.
+
 ## 2026-09-27 — M15 fase 2e: instrumentar el mapa personal
 
 Cada persona registra las celdas exploradas y los lugares visibles en sus

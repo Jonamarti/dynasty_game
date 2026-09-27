@@ -95,7 +95,10 @@ export class PlaceMemory {
     };
     if (previous) this.setRecord(records, cellKey, record);
     else {
-      if (records.size >= this.capPerKind) {
+      // Water is the one place a person never forgets. It is also bounded by
+      // the size of this comarca (one record per coarse cell), so keeping it
+      // cannot grow without limit over a long save.
+      if (kind !== 'water' && records.size >= this.capPerKind) {
         // Forget the oldest and poorest place first. Stable sort order makes
         // ties deterministic without a random choice or an entity scan.
         this.deleteRecord(records, this.weakestKey(records));
@@ -108,6 +111,21 @@ export class PlaceMemory {
   records(kind: string): readonly PlaceRecord[] {
     const records = this.places.get(kind);
     return records ? [...records.values()] : [];
+  }
+
+  /**
+   * Replace a remembered place with what was actually found there. The source
+   * and observation day stay intact: arriving does not make an old rumour true
+   * today, it only corrects its remembered amount.
+   */
+  updateAt(kind: string, x: number, y: number, amount: RememberedAmount): boolean {
+    const records = this.places.get(kind);
+    if (!records) return false;
+    const cell = Math.floor(y / PLACE_CELL_SIZE) * this.cols + Math.floor(x / PLACE_CELL_SIZE);
+    const previous = records.get(cell);
+    if (!previous) return false;
+    this.setRecord(records, cell, { ...previous, amount });
+    return true;
   }
 
   /** A copy keeps renderer and UI callers from changing the person's private map. */

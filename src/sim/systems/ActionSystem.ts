@@ -1061,6 +1061,11 @@ export class ActionSystem {
   private doHarvest(person: Person, ctx: ActionContext): void {
     const node = person.targetNodeId === null ? null : ctx.nodesById.get(person.targetNodeId);
     if (!node || node.depleted) {
+      if (node?.depleted) {
+        if (person.placeMemory.updateAt(`resource:${node.kind}`, node.x, node.y, 0)) {
+          telemetry.count('stale_memory_resource_empty');
+        }
+      }
       this.abandon(person, 'node_gone', ctx);
       return;
     }
@@ -1090,6 +1095,8 @@ export class ActionSystem {
       person.yieldNutrition += (ITEMS[node.def.itemId]?.nutrition ?? 0) * taken;
       person.practice(node.def.skill, 0.6);
       telemetry.count('harvest_' + node.kind);
+      person.placeMemory.updateAt(`resource:${node.kind}`, node.x, node.y,
+        node.amount >= node.def.maxAmount * 0.66 ? 2 : node.amount > 0 ? 1 : 0);
     }
 
     // Keep going unless something stops us.
