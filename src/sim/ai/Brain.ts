@@ -3778,6 +3778,11 @@ export class Brain {
         // construction site is short of; the action system does not need to
         // know the difference, only the scorer does.
         if (action === 'gather_for_site') person.action = 'gather';
+        if (action === 'gather_for_site' && found.site) {
+          // Keep the named destination on the trip: the site crew instrument
+          // must count a sponsor/backer gathering its materials as a worker.
+          person.targetBuildingId = found.site.id;
+        }
         const node = action === 'forage' ? found.foodNode : found.matNode;
         if (node) {
           if (action === 'forage') this.noteKnownTarget(person, action, node.x, node.y,
