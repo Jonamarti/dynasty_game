@@ -1260,7 +1260,8 @@ canvas.addEventListener('pointerdown', event => {
     }
     const x = Math.round(point.x);
     const y = Math.round(point.y);
-    const placed = sim.place(activeDesign.id, x, y, sim.player?.bandId ?? 0);
+    const placed = sim.place(activeDesign.id, x, y, sim.player?.bandId ?? 0,
+      sim.player?.id ?? null, true);
     if (placed) {
       renderer.floaters.push(placed.centerX, placed.centerY,
         placed.complete
@@ -1422,6 +1423,8 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
   const subject = commanding && commanding.alive ? commanding : actor;
   const options = availableActions(subject, target, {
     world: sim.world, nearWater, commanding,
+    buildings: sim.buildings,
+    backersWanted: sim.config.motivation.backersWanted,
     stationFor: stationId => nearestStation(subject, stationId),
     propertyUse: building => sim.mayUseBuilding(subject, building),
     explainProperty: use => explainPropertyUse(actor, use, sim.relationships),

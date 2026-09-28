@@ -74,6 +74,7 @@ import { COMPLAIN_TICKS, PARLEY_TICKS, type Case } from '../social/Justice.ts';
 import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 import { noteWorkOutcome } from '../core/Mood.ts';
+import { support } from '../social/Persuasion.ts';
 
 export interface ActionContext {
   world: World;
@@ -108,6 +109,8 @@ export interface ActionContext {
   /** Need rates, so an interruption can look one work cycle ahead. */
   needs: NeedsConfig;
   motivation: MotivationConfig;
+  /** Existing order authority, reused for requests to join a project. */
+  persuasionAuthority?: (sponsor: Person, listener: Person) => number;
   /** Puts goods on the ground, for yields nobody has room to carry. */
   dropAt: (x: number, y: number, itemId: string, count: number) => void;
   pilesById: Map<number, ItemPile>;
@@ -664,6 +667,7 @@ export class ActionSystem {
       case 'shelter': this.doShelter(person, ctx); break;
       case 'sleep': this.doSleep(person, ctx); break;
       case 'talk': this.doTalk(person, ctx); break;
+      case 'propose': this.doPropose(person, ctx); break;
       case 'court': this.doCourt(person, ctx); break;
       case 'teach': this.doTeach(person, ctx); break;
       case 'spar': this.doSpar(person, ctx); break;
@@ -2733,6 +2737,59 @@ export class ActionSystem {
     const cooldown = CONVERSATION_MODES[mode].cooldown;
     other.socialCooldownUntil = ctx.tick + cooldown;
     this.finishSocial(person, ctx.tick, cooldown);
+  }
+
+  /** The sponsor asks one nearby bandmate to join this named project. */
+  private doPropose(person: Person, ctx: ActionContext): void {
+    const listener = this.approach(person, ctx);
+    if (!listener) return;
+    const site = person.targetBuildingId === null
+      ? undefined : ctx.buildingsById.get(person.targetBuildingId);
+    const sponsor = site?.sponsorId === null || site?.sponsorId === undefined
+      ? undefined : ctx.peopleById.get(site.sponsorId);
+    if (!site || site.complete || site.ownerBandId !== person.bandId ||
+        site.sponsorId !== person.id || !sponsor?.alive || listener.bandId !== person.bandId ||
+        listener.isChild || site.backers.includes(listener.id) ||
+        site.backers.length >= ctx.motivation.backersWanted) {
+      this.abandon(person, 'project_no_longer_available', ctx);
+      return;
+    }
+
+    if (person.actionTimer <= 0) {
+      person.actionTimer = 40;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx, 'proposed_');
+      return;
+    }
+
+    const agrees = support(listener, sponsor, site, {
+      relationships: ctx.relationships,
+      chiefByBand: ctx.chiefByBand ?? new Map(),
+      authority: (leader, hearer) => ctx.persuasionAuthority?.(leader, hearer) ?? 0.15,
+    }) >= ctx.motivation.persuadeAt;
+    const building = t(site.def.label).toLowerCase();
+    const message = agrees
+      ? t('{name} agreed to help with the {building}', { name: listener.name, building })
+      : t('{name} was not convinced about the {building}', { name: listener.name, building });
+    listener.chronicle.push({ tick: ctx.tick, ageDays: listener.age, text: message,
+      kind: agrees ? 'did' : 'suffered' });
+    sponsor.chronicle.push({ tick: ctx.tick, ageDays: sponsor.age, text: message,
+      kind: agrees ? 'did' : 'suffered' });
+    if (agrees) {
+      site.backers.push(listener.id);
+      telemetry.count('project_backer_added');
+      ctx.onInsight(listener, message, 'gain');
+    } else {
+      telemetry.count('project_request_refused');
+      ctx.onInsight(sponsor, message, 'setback');
+    }
+    listener.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
+    person.practice('persuade', 0.3);
+    this.finishSocial(person, ctx.tick, SOCIAL_COOLDOWN);
   }
 
   /**

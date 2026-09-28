@@ -154,6 +154,9 @@ export interface CatalogContext {
    * whether they agree to.
    */
   commanding?: Person | null;
+  /** The player's own unfinished projects, for a request made to a bandmate. */
+  buildings?: readonly Building[];
+  backersWanted?: number;
   /**
    * The actor's own view of everybody, and the tick, so the conversation rungs
    * can say which of them these two could actually have.
@@ -502,6 +505,20 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       };
     }), t('Talk to {name}…', { name: other.name }), '\u{1F4AC}',
       t('They do not know them well enough to say anything')),
+    ...(!ctx.commanding && actor.isPlayer
+      ? grouped((ctx.buildings ?? [])
+        .filter(building => !building.complete && building.ownerBandId === actor.bandId &&
+          building.sponsorId === actor.id && building.backers.length < (ctx.backersWanted ?? 3))
+        .map(building => ({
+          id: 'propose',
+          buildingId: building.id,
+          label: t('Help with {building}', { building: t(building.def.label).toLowerCase() }),
+          icon: '\u{1F91D}',
+          enabled: !other.isChild && other.bandId === actor.bandId,
+          reason: other.isChild || other.bandId !== actor.bandId
+            ? t('Only an adult member of your band can help') : undefined,
+        })), t('Ask for help with...'), '\u{1F91D}', t('There are no projects you are sponsoring'), false, 1)
+      : []),
     {
       id: 'ask_permission',
       label: t('Ask {name} for permission to gather here', { name: other.name }),

@@ -19,6 +19,7 @@ import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
+import type { Building } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
@@ -832,6 +833,27 @@ export function strandedPeople(
   return { checked, strandedFromWater, strandedFromFood };
 }
 
+/** Shared by the report and mutation-style tests so an overlarge crew cannot read green. */
+export function projectCrewWithinLimit(site: Pick<Building,
+  'first200Workers' | 'backers' | 'first200Ordered'>): boolean {
+  return site.first200Workers.size <= 1 + site.backers.length + site.first200Ordered.size;
+}
+
+export interface ProjectBackerCoverage {
+  backed: number;
+  total: number;
+  ratio: number;
+}
+
+/** Player-placed sites are excluded because the player, rather than the band planner, chose them. */
+export function projectBackerCoverage(buildings: readonly Pick<Building,
+  'complete' | 'playerPlaced' | 'backers'>[]): ProjectBackerCoverage {
+  const completed = buildings.filter(site => site.complete && !site.playerPlaced);
+  const backed = completed.filter(site => site.backers.length > 0).length;
+  return { backed, total: completed.length,
+    ratio: completed.length === 0 ? 0 : backed / completed.length };
+}
+
 function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'checks'>): Check[] {
   const checks: Check[] = [];
   const add = (id: string, ok: boolean, detail: string) => checks.push({ id, ok, detail });
@@ -1338,6 +1360,26 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ' sites=' + base.buildings.total +
       ' finished=' + base.buildings.complete
   );
+
+  const observedSites = sim.buildings.filter(site =>
+    sim.time.tick - site.plannedTick >= 200);
+  if (observedSites.length === 0) {
+    skip('building-starts-small', 'no project reached its first 200 steps');
+  } else {
+    const tooMany = observedSites.filter(site => !projectCrewWithinLimit(site));
+    add('building-starts-small', tooMany.length === 0,
+      observedSites.length + ' projects measured; ' + tooMany.length +
+      ' exceeded sponsor + backers + ordered workers');
+  }
+
+  const coverage = projectBackerCoverage(sim.buildings);
+  const completedProjects = coverage.total;
+  if (completedProjects === 0) {
+    skip('projects-find-backers', 'no AI-planned project finished');
+  } else {
+    add('projects-find-backers', coverage.ratio >= 0.70,
+      coverage.backed + '/' + completedProjects + ' completed AI-planned projects had a backer (need 70%)');
+  }
 
   // The winter payoff. Before buildings, cold at this rate emptied the map and
   // the scenario had to be tuned down to a rate nobody would notice. Passing

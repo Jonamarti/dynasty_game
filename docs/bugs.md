@@ -3067,3 +3067,13 @@ tour limitation, not a blocker for the new named captures.
 **Confirmación durante M15 5e (2026-09-28):** al repetir herding.test.ts aislada vuelven a fallar cuatro casos de crecimiento y subproductos del rebaño. El síntoma coincide con el fallo abierto anotado el día anterior; workHerds no se modificó en 5e. Sigue pendiente corregirlo en una fase propia.
 
 **M15 fase 5f (2026-09-28):** el término de posesión a escala completa hacía que `band.test.ts` eligiera ninguna incursión en el caso que debe quemar un almacén; el caso vuelve a pasar con el coeficiente de lector 0,75. La suite conserva el timeout del rango y los fallos de rebaño registrados arriba.
+
+## Found during M15 phase 6, 2026-09-28
+
+### `harsh-winter` no termina refugios
+
+`sim:check -- --scenario harsh-winter` falla `shelter-answers-cold`: 0 ticks de abrigo y frio medio final 98,8. La cadena de construccion si se activa (111 entregas, 7 proyectos medidos); la inspeccion final encontro chozas y cortavientos incompletos que aun necesitaban materiales, mientras las obras completas eran pozos de almacenamiento. Bajar `persuadeAt` a 0,4 y 0,25 no cambio el check, asi que se conserva el 0,5 de la cohorte. La falta de materiales en los refugios es una inferencia a partir del estado de esos sitios; la causa de que no lleguen sigue abierta.
+
+Los checks nuevos `building-starts-small` y `projects-find-backers` pasan en `band` y `harsh-winter`; la matriz M15 no los marca como fallidos. `sim:check:all` mantiene otros fallos ya registrados de memoria de objetivos, comida por rumores, dieta, descanso, cohesion y rendimiento, y ademas `shelter-answers-cold` en `harsh-winter`.
+
+`npm test -- --maxWorkers=1`: 618/621 pasan. Persisten las dos aserciones de produccion en `herding.test.ts` y el timeout de `band.test.ts`; el timeout de determinismo no se reprodujo en la repeticion final. Los checks enfocados de persuasion/menu, typecheck y la captura Playwright de M15 fase 6 pasan.

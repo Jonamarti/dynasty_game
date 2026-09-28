@@ -9325,3 +9325,9 @@ Capturas de la interfaz: artifacts/screenshots/m15-3-hearth-menu.png y m15-3-roa
 ## 2026-09-28 - M15 fase 6a: cada obra tiene proponente
 
 Los sitios iniciales reciben un adulto de su banda como proponente; los sitios que coloca el jugador quedan asociados a su personaje. La IA solo trabaja de forma voluntaria en obras que propone o apoya, y la jefatura solo dirige las que respalda. Las ordenes dirigidas a un sitio siguen siendo una autorizacion explicita para trabajar alli. El filtro necesitaba asignar proponente a los sitios de partida antes del primer dia de planificacion, porque una obra sin proponente se quedaba sin trabajadores.
+
+## 2026-09-28 - M15 fase 6b-e: persuadir y medir las obras
+
+El apoyo combina estima, vinculo, autoridad, necesidad atendida, lealtad y trabajo pedido. Los proponentes solicitan hasta tres partidarios; el jugador puede pedir ayuda desde el radial. Aceptacion y rechazo quedan en cronica y telemetria. El umbral medido queda en 0,5 y no consume RNG. La simulacion registra quien trabaja y quien recibio una orden en los primeros 200 pasos; se comprueba el tamano del equipo y que al menos el 70% de las obras terminadas tenga un partidario.
+
+`band`: ambos checks de proyectos pasan, 3/3 obras terminadas con partidario; `moods-move-choices` pasa (2,1% frente a 1,7%). Cohorte `lean` de 20: 20,0% de supervivencia, -2,0 puntos frente a 5f. Capturas: `artifacts/screenshots/m15-6-propose-menu.png` y `m15-6-propose-projects.png`. `harsh-winter` todavia falla `shelter-answers-cold`; la nota queda abierta en `docs/bugs.md`.

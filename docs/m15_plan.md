@@ -904,6 +904,8 @@ exista una cama.
 
 **Avance del 2026-09-28 (6a):** cada obra tiene proponente y lista de partidarios; los sitios iniciales reciben un adulto de su banda como proponente y los que coloca el jugador quedan propuestos por su personaje. La construccion voluntaria se limita al proponente y sus partidarios; una orden dirigida a una obra sigue autorizando a su destinatario. La jefatura solo dirige obras que apoya. Pruebas focalizadas pasan; la cohorte queda pendiente para cerrar la fase. Sin cambio de interfaz.
 
+**Avance del 2026-09-28 (6b-6e):** `support()` comparte la relacion social de Brain y suma estima, vinculo, autoridad, necesidad, lealtad y coste; `propose` pide apoyo sin RNG y deja cronica/mensaje en ambos desenlaces. El radial ofrece las obras que propone el jugador. `building-starts-small` y `projects-find-backers` pasan en `band` (7 proyectos medidos, 0 excedieron el limite; 3/3 obras terminadas con partidario). `moods-move-choices` tambien pasa: 2,1% frente a 1,7%. La cohorte `lean` de 20 semillas queda en 20,0%, -2,0 puntos frente a 5f, dentro del limite. Capturas: `artifacts/screenshots/m15-6-propose-menu.png` y `m15-6-propose-projects.png`. La fase sigue abierta: `harsh-winter` conserva `shelter-answers-cold` en rojo; ver `docs/bugs.md`.
+
 **Detalle en `m13_plan.md` fase 11.** `Building.sponsorId` y `backers`; nadie
 trabaja en una obra sin ser su proponente, su partidario o sin que se lo hayan
 mandado; `social/Persuasion.ts` y el verbo `propose`; «Pedir ayuda con…» en el

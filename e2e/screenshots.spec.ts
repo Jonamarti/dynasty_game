@@ -407,3 +407,48 @@ test('M15 phase 4 idea born from a chronic want', async ({ page }) => {
   await expect(story).toBeInViewport();
   await page.screenshot({ path: DIR + '/m15-4-wanting-idea.png' });
 });
+
+test('M15 phase 6 project proposal menu', async ({ page }) => {
+  await page.goto('/?seed=m15-phase6&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  const point = await page.evaluate(() => {
+    const d = (window as never as { __dynasty: {
+      sim: {
+        player: { id: number; bandId: number; x: number; y: number };
+        livingPeople: () => { id: number; bandId: number; isChild: boolean; x: number; y: number }[];
+        buildings: { id: number; ownerBandId: number; sponsorId: number | null;
+          backers: number[]; complete: boolean }[];
+      };
+      camera: { snapTo: (x: number, y: number) => void; following: boolean;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+    } }).__dynasty;
+    const player = d.sim.player;
+    const other = d.sim.livingPeople()
+      .filter(person => person.id !== player.id && person.bandId === player.bandId && !person.isChild)
+      .sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) -
+        Math.hypot(b.x - player.x, b.y - player.y))[0];
+    const site = d.sim.buildings.find(building => !building.complete &&
+      building.ownerBandId === player.bandId);
+    if (!other || !site) return null;
+    site.sponsorId = player.id;
+    site.backers.length = 0;
+    d.camera.snapTo(other.x, other.y);
+    d.camera.following = false;
+    return { x: d.camera.worldToScreenX(other.x), y: d.camera.worldToScreenY(other.y) };
+  });
+  expect(point).not.toBeNull();
+  await page.evaluate(() => new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  await clickThrough(page, point!.x, point!.y, '\u{1F464}', 'right');
+  const group = page.locator('.radial-item', { hasText: 'Ask for help with...' });
+  await expect(group).toBeVisible();
+  await page.screenshot({ path: DIR + '/m15-6-propose-menu.png' });
+  // Radial buttons fan over the full circle; one neighbor can overlap this
+  // small group label, so activate the visible group through its DOM click.
+  await group.evaluate((element: HTMLButtonElement) => element.click());
+  const projects = page.locator('.radial-item', { hasText: 'Help with' });
+  await expect(projects).toHaveCount(2);
+  await expect(projects.first()).toBeVisible();
+  await page.screenshot({ path: DIR + '/m15-6-propose-projects.png' });
+});

@@ -2681,6 +2681,16 @@ export class Simulation {
       person.targetPersonId = other.id;
       person.targetX = other.x;
       person.targetY = other.y;
+      // A proposal is the one social action aimed at both a person and a
+      // project. The ordinary person branch returns here, so carry the site
+      // through before it can be lost.
+      if (action === 'propose' && target.buildingId !== undefined) {
+        const site = this.buildingsById.get(target.buildingId);
+        if (!site || site.complete || site.ownerBandId !== person.bandId || site.sponsorId !== person.id) {
+          return this.cancelOrder(person, t('that project is no longer available'));
+        }
+        person.targetBuildingId = site.id;
+      }
       return true;
     }
     if (target.animalId !== undefined) {
@@ -2702,6 +2712,10 @@ export class Simulation {
     if (target.buildingId !== undefined) {
       const building = this.buildingsById.get(target.buildingId);
       if (!building) return this.cancelOrder(person, t('that building is gone'));
+      if (this.time.tick - building.plannedTick < 200 &&
+          ['build', 'haul', 'chop', 'gather_for_site'].includes(action)) {
+        building.first200Ordered.add(person.id);
+      }
       person.targetBuildingId = building.id;
       person.targetX = building.centerX;
       person.targetY = building.centerY;
@@ -3061,13 +3075,18 @@ export class Simulation {
   }
 
   /** Places a site. Returns the new building, or null if it will not fit. */
-  place(defId: string, x: number, y: number, bandId: number, sponsorId?: number | null): Building | null {
+  place(
+    defId: string, x: number, y: number, bandId: number,
+    sponsorId?: number | null, playerPlaced = false
+  ): Building | null {
     const def = BUILDINGS[defId];
     if (!def) return null;
     if (def.requiresTech !== null && !this.knownTech.has(def.requiresTech)) return null;
     if (!this.canPlace(def, x, y)) return null;
 
     const building = new Building(def, x, y, bandId);
+    building.plannedTick = this.time.tick;
+    building.playerPlaced = playerPlaced;
     building.sponsorId = sponsorId !== undefined
       ? sponsorId
       : this.player?.bandId === bandId ? this.player.id : null;
@@ -3806,6 +3825,8 @@ export class Simulation {
       averageRenownByBand: averageRenownByBand(this.householdsById),
       buildingsById: this.buildingsById,
       motivation: this.config.motivation,
+      persuasionAuthority: (sponsor: Person, listener: Person) =>
+        this.standing(sponsor, listener, 'build').chance,
       bandRelations: this.bandRelations,
       sabotageCandidatesByBand: this.sabotageCache,
       homes: this.bandHomes(),
@@ -3842,6 +3863,8 @@ export class Simulation {
       seasonGrowth: this.time.growth,
       needs: this.config.needs,
       motivation: this.config.motivation,
+      persuasionAuthority: (sponsor: Person, listener: Person) =>
+        this.standing(sponsor, listener, 'build').chance,
       dropAt: (x: number, y: number, itemId: string, count: number) =>
         this.dropAt(x, y, itemId, count),
       pilesById: this.pilesById,
@@ -4009,6 +4032,12 @@ export class Simulation {
       }
 
       this.actionSystem.execute(person, actionCtx);
+      const site = person.targetBuildingId === null
+        ? undefined : this.buildingsById.get(person.targetBuildingId);
+      if (site && this.time.tick - site.plannedTick < 200 &&
+          ['build', 'haul', 'chop', 'gather_for_site'].includes(person.action)) {
+        site.first200Workers.add(person.id);
+      }
     }
 
     // Children are iterated like everyone else but take no turn. Sync after all

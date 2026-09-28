@@ -80,6 +80,8 @@ import type { MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { infantNeedingNursing } from './Nursing.ts';
 import { expectationRatio, techAppeal } from './Beliefs.ts';
+import { bondBetween } from './Bond.ts';
+import { support } from '../social/Persuasion.ts';
 
 export interface BrainContext {
   world: World;
@@ -148,6 +150,8 @@ export interface BrainContext {
   averageRenownByBand?: ReadonlyMap<number, number>;
   buildingsById: ReadonlyMap<number, Building>;
   motivation: MotivationConfig;
+  /** Existing order authority, used to judge a request to help with work. */
+  persuasionAuthority?: (sponsor: Person, listener: Person) => number;
   /** Lets the scorer identify the chief when choosing a privileged larder. */
   peopleById?: ReadonlyMap<number, Person>;
   /** For `mayUse`'s reading of how two bands currently stand. */
@@ -284,6 +288,8 @@ interface FoundTargets {
    */
   slanderSubjectId: number | null;
   praiseSubjectId: number | null;
+  proposalListener: Person | null;
+  proposalSite: Building | null;
 }
 
 /**
@@ -328,8 +334,6 @@ function talkGate(rel: Relationship, tick: number): number {
  * cross the camp, not a reason to do nothing else: a band where everybody
  * queues to talk to the chief is a court, and this is a stone age.
  */
-const BAND_BOND = 0.25;
-const CHIEF_BOND = 0.7;
 /** Status is a nudge toward friendly practice, not a reason to spar all day. */
 const STATUS_READER_PULL = 0.0001;
 const STATUS_SPAR_PULL = 0.00001;
@@ -1043,6 +1047,8 @@ export class Brain {
     let strayAnimal: Animal | null = null;
     let slanderSubjectId: number | null = null;
     let praiseSubjectId: number | null = null;
+    let proposalListener: Person | null = null;
+    let proposalSite: Building | null = null;
 
 
     // Deliberate social approaches are rationed; violence and flight are not.
@@ -1181,6 +1187,36 @@ export class Brain {
             * this.proximityBonus(person, companion, ctx.sightRadius));
           praiseSubjectId = goodNews.actorId;
         }
+      }
+
+      // A project needs people who have heard why it matters before it can
+      // gather voluntary workers. The sponsor spends a social turn on one
+      // nearby adult who has not already backed the site.
+      if (!person.isChild && person.order === null) {
+        let proposalScore = -Infinity;
+        const projects = ctx.buildings.filter(building =>
+          !building.complete && building.sponsorId === person.id &&
+          building.backers.length < ctx.motivation.backersWanted);
+        for (const project of projects) {
+          for (const listener of neighbours) {
+            if (listener.isChild || listener.bandId !== person.bandId ||
+                listener.id === person.id || project.backers.includes(listener.id)) continue;
+            const supportNow = support(listener, person, project, {
+              relationships: ctx.relationships,
+              chiefByBand: ctx.chiefByBand,
+              authority: (sponsor, hearer) => ctx.persuasionAuthority?.(sponsor, hearer) ?? 0.15,
+            });
+            const score = (0.12 + status * 0.35 + Math.max(0, supportNow) * 0.12 +
+              (project.backers.length === 0 ? 0.55 : -0.12))
+              * this.proximityBonus(person, listener, ctx.sightRadius);
+            if (score > proposalScore) {
+              proposalScore = score;
+              proposalListener = listener;
+              proposalSite = project;
+            }
+          }
+        }
+        if (proposalListener && proposalSite) add('propose', proposalScore);
       }
 
       // Court: unmarried adults, not close kin, who already think well of each
@@ -3141,7 +3177,7 @@ export class Brain {
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
-        patient, strayAnimal, slanderSubjectId, praiseSubjectId,
+        patient, strayAnimal, slanderSubjectId, praiseSubjectId, proposalListener, proposalSite,
       },
     };
   }
@@ -3277,11 +3313,7 @@ export class Brain {
    * likes still has a band and an outcast who likes everybody does not.
    */
   private bond(person: Person, other: Person, ctx: BrainContext): number {
-    if (other.bandId !== person.bandId || other.id === person.id) return 0;
-    const base = ctx.chiefByBand.get(person.bandId) === other.id ? CHIEF_BOND : BAND_BOND;
-    const grievance = Math.max(0, -ctx.relationships.opinion(person.id, other.id)) / 100;
-    const defiance = grievance * (1 - person.traits.loyalty);
-    return base * (0.8 + belongingNeed(person) * 0.3) * (1 - defiance);
+    return bondBetween(person, other, ctx.relationships, ctx.chiefByBand.get(person.bandId));
   }
 
   /**
@@ -3878,6 +3910,7 @@ export class Brain {
         person.fleeFromId = found.fleeFrom?.id ?? null;
         break;
       case 'talk':
+      case 'propose':
       case 'teach':
       case 'teach_child':
       case 'ask':
@@ -3914,6 +3947,7 @@ export class Brain {
         if (action === 'teach_child') person.action = 'teach';
         const other =
           action === 'talk' ? found.companion :
+          action === 'propose' ? found.proposalListener :
           action === 'teach' ? found.student :
           action === 'teach_child' ? found.childPupil :
           action === 'ask' ? found.mentor :
@@ -3943,6 +3977,9 @@ export class Brain {
           }
           person.targetX = other.x;
           person.targetY = other.y;
+          if (action === 'propose' && found.proposalSite) {
+            person.targetBuildingId = found.proposalSite.id;
+          }
           person.targetPersonId = other.id;
           // Who a `slander` or `praise` is *about* — the listener above is
           // who it is *told to*. See `Person.targetSubjectId`.

@@ -650,6 +650,12 @@ export class Building {
   sponsorId: number | null = null;
   /** People who agreed to spend their time helping this particular project. */
   readonly backers: number[] = [];
+  /** The player chose this site directly; cohort backer checks omit these. */
+  playerPlaced = false;
+  /** Site age and first-200 work crews, kept on the project for the check. */
+  plannedTick = 0;
+  readonly first200Workers = new Set<number>();
+  readonly first200Ordered = new Set<number>();
 
   /** Materials delivered so far. */
   readonly delivered = new Inventory();
