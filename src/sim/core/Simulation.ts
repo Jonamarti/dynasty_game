@@ -3773,6 +3773,7 @@ export class Simulation {
       recorded: this.recordsInHand,
       sightRadius: this.config.sightRadius,
       needs: this.config.needs,
+      weeklyFoodNeedPerPerson: this.config.needs.hungerRate * this.config.time.ticksPerDay * 7,
       chiefByBand: this.bandSystem.chiefByBand,
       snowDepth: this.snowDepth,
       // The one number the scorer needs about the ground, from the one

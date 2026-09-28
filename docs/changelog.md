@@ -1,4 +1,7 @@
 #
+## 2026-09-28 - M15 phase 5f: possession against a weekly reserve
+
+Added household food-reserve pressure from members' carried food and their home store, compared with seven days of configured consumption. It replaces greed's stockpile terms for forage, picking, and choosing the household store, with a 0.75 reader calibration. Full strength broke the raid-mode test; 0.75 restores the expected plunder-versus-damage choice. The band mood check and 27-action check pass. Across 20 `lean` seeds, survival was 22.0%, down 2.0 points from 5e and inside the phase limit. No UI change. M15 phase 5 is complete; phase 6 follows.
 ## 2026-09-28 - M15 phase 5e: curiosity between discoveries
 
 Added a capped days-since-discovery accumulator that resets when a person gains a belief, idea, prototype trial, technology, or refinement; inherited beliefs reset the learner. Curiosity pressure and trait sensitivity now shape reflecting, pondering, gathering, idea conception, and uncertain yield expectations. Focused tests pass. In `century`, 82 ideas were conceived (0.40 per person-year), 25 technologies were proven, and 38 actions were observed; the idea and mood checks pass. Across 20 `lean` seeds, survival was 24.0%, up 0.9 points from 5d. No UI change.

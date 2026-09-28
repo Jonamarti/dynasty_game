@@ -32,6 +32,7 @@ import type { Building } from '../entities/Building.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import { statusPressure } from './Status.ts';
 import { curiosityNeed } from './Temperament.ts';
+import { possessionPressure } from './Possession.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -126,6 +127,8 @@ export interface BrainContext {
    * module constant; they must not come apart now that a scenario can move them.
    */
   needs: NeedsConfig;
+  /** Baseline nutrition consumed by one person over seven days. */
+  weeklyFoodNeedPerPerson: number;
   /**
    * Who leads each band, so that standing with the person who leads yours is
    * something anybody can want rather than something only `BandSystem` knows.
@@ -423,6 +426,34 @@ const GIVING_RESERVE = 90;
  * on it.
  */
 const HOARD_PULL = 8;
+/** A reserve should bias routine storage without deciding a band-wide raid's fate. */
+const POSSESSION_PULL_SCALE = 0.75;
+
+/** Food reserve across a person's household, compared with seven days of need. */
+function possessionPull(person: Person, ctx: BrainContext): number {
+  const household = person.householdId === null ? null : ctx.householdsById.get(person.householdId) ?? null;
+  const members = household?.memberIds
+    .map(id => ctx.peopleById?.get(id))
+    .filter((member): member is Person => !!member?.alive) ?? [];
+  if (!members.some(member => member.id === person.id)) members.push(person);
+
+  let carriedNutrition = 0;
+  for (const member of members) {
+    for (const [itemId, count] of member.inventory.entries()) {
+      carriedNutrition += (ITEMS[itemId]?.nutrition ?? 0) * count;
+    }
+  }
+  const home = household?.homeBuildingId === null || household?.homeBuildingId === undefined
+    ? undefined : ctx.buildingsById.get(household.homeBuildingId);
+  let storedNutrition = 0;
+  if (home) {
+    for (const [itemId, count] of home.store.entries()) {
+      storedNutrition += (ITEMS[itemId]?.nutrition ?? 0) * count;
+    }
+  }
+  return possessionPressure(carriedNutrition, storedNutrition,
+    ctx.weeklyFoodNeedPerPerson * members.length) * sensitivity(person, 'possession');
+}
 
 /**
  * The same, for one's own small children. Far lower, deliberately.
@@ -690,6 +721,7 @@ export class Brain {
     const homeCtx = { ...anchorCtx, time: ctx.time };
     const drive = drivePressures(person, homeCtx);
     const status = statusPull(person, ctx);
+    const possession = possessionPull(person, ctx) * POSSESSION_PULL_SCALE;
     // Hysteresis: whatever you are already doing is worth a little more than
     // starting something else. Without this people dither on the spot, walking
     // half way to the water, half way to a bush, and satisfying neither need.
@@ -831,7 +863,7 @@ export class Brain {
       const shortfall = Math.max(0.15, 1 - carriedNutrition / (person.needs.hunger + 70));
       // Greed is a standing wish to stockpile past immediate need — the seed of
       // hoarders, traders, and people worth stealing from.
-      const stockpileWish = person.traits.greed * 0.25;
+      const stockpileWish = possession * 0.25;
       add(
         'forage',
         (hunger * 1.6 * shortfall + stockpileWish) * (1 + variety * 0.2) *
@@ -852,7 +884,7 @@ export class Brain {
       // for part of the year, so it should pull people off berries while it
       // lasts. That seasonal swing is most of what gives the year a shape.
       const laden = Math.min(1, tree.fruit / 8);
-      return (hunger * 2.3 * shortfall + person.traits.greed * 0.35) * (0.6 + laden * 0.7)
+      return (hunger * 2.3 * shortfall + possession * 0.35) * (0.6 + laden * 0.7)
         * (1 + variety * 0.2)
         * this.worthRatio(this.fruitWorth(person, tree, ctx))
         * (ctx.motivation.beliefChoice ? expectationRatio(person, 'yield:pick') : 1)
@@ -2469,7 +2501,7 @@ export class Brain {
           stores.filter(b => b.storageFree > 0 && this.canUse(person, b, ctx) &&
             !isTrap(b.def) && !isHerd(b.def)),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY }) +
-            (home !== null && b.id === home ? person.traits.greed * HOARD_PULL : 0)
+            (home !== null && b.id === home ? possession * HOARD_PULL : 0)
         );
         if (store) {
           add('store', 0.35 * (1 - person.traits.greed * 0.5)
