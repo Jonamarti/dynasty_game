@@ -3054,4 +3054,7 @@ tour limitation, not a blocker for the new named captures.
 
 **M15 phase 4 spark uptake, 2026-09-27:** the 20-seed century cohort passed firemaking discovery in 15/20 seeds (75%), but the new-route telemetry counted only one chosen wanting spark (firemaking_4) and none for tracking or fishing. Existing sparks still account for the fire gate. The phase is complete under its survival, knowledge, and idea-rate gates; the low uptake is recorded so a later calibration does not mistake the 75% gate for broad adoption of the new routes.
 
+
 **M15 fase 5b (2026-09-28):** pertenencia mejora la elección de compañía en `band` (3,8% frente a 1,0% de `talk` en los terciles bajo y alto). La cohorte `lean` queda 2,7 puntos por debajo de 5a, aún dentro del coste permitido. `sim:check --scenario band` conserva los fallos conocidos de mapa personal, dieta, sueño, divergencia de opiniones y rendimiento. `npm test` repite el timeout de cinco segundos en `band.test.ts`; la prueba de rango pasa aislada con `--testTimeout=15000`. No se ajustó ese timeout.
+
+**M15 fase 5c (2026-09-28):** la cohorte `lean` subió a 24,5% de supervivencia (+4,1 puntos frente a 5b); la idea de propósito queda dentro del coste máximo. `ai-uses-many-actions` mantiene 26 acciones. El único fallo de la suite completa es el timeout de cinco segundos en `band.test.ts`, ya conocido; la ejecución aislada con 15 segundos pasa.

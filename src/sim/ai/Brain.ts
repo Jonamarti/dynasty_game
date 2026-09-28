@@ -71,7 +71,7 @@ import {
   ownPeopleLicence, tailLicence, conscienceBrake, strangerBrake, mischiefChild, CORRECT,
 } from '../social/Restraint.ts';
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
-import { sensitivity } from './Temperament.ts';
+import { purposeAppetite, sensitivity } from './Temperament.ts';
 import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
@@ -688,8 +688,8 @@ export class Brain {
     // Kept to a narrow band for the reason every coefficient here is: they are
     // calibrated against each other, and a wide multiplier on half the verbs
     // would silently disable gates elsewhere.
-    const industriousAppetite = 0.8 + person.traits.industriousness * 0.4;
-    const idle = 1.2 - person.traits.industriousness * 0.4;
+    const industriousAppetite = purposeAppetite(person);
+    const idle = 2 - industriousAppetite;
     // Only `WORK_ACTIONS` are biased by a job. Damping social or research
     // verbs for a hunter would make a job a personality change rather than a
     // work assignment, and eating, drinking and fleeing must never be leaned

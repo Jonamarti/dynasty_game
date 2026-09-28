@@ -137,6 +137,17 @@ export function decayMood(person: Person): void {
   telemetry.count('mood_samples');
 }
 
+/** Finishing work lifts purpose; an interruption lowers it. Failed targets are neutral. */
+export function noteWorkOutcome(
+  person: Person,
+  outcome: 'completed' | 'interrupted' | 'failed',
+  tick: number,
+): void {
+  if (outcome === 'failed') return;
+  person.mood.add('purpose', outcome === 'completed' ? 2 : -2,
+    outcome === 'completed' ? 'work completed' : 'work interrupted', tick);
+}
+
 /** Just enough of the world to answer the question. */
 export interface MoodView {
   time: { tick: number };

@@ -11,6 +11,7 @@
  * draw their own conclusions.
  */
 import type { Person } from '../entities/Person.ts';
+import { WORK_ACTIONS } from '../entities/Job.ts';
 import { homeForMother, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF } from '../ai/Nursing.ts';
 import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
@@ -72,6 +73,7 @@ import {
 import { COMPLAIN_TICKS, PARLEY_TICKS, type Case } from '../social/Justice.ts';
 import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
+import { noteWorkOutcome } from '../core/Mood.ts';
 
 export interface ActionContext {
   world: World;
@@ -751,7 +753,10 @@ export class ActionSystem {
    * delegate to it — so `noteDid` needs one call site rather than one per verb,
    * and a verb added later cannot forget to record itself.
    */
-  private finish(person: Person): void {
+  private finish(person: Person, outcome: 'completed' | 'interrupted' | 'failed' = 'completed'): void {
+    if (WORK_ACTIONS.has(person.action)) {
+      noteWorkOutcome(person, outcome, person.lastActionTick);
+    }
     if (person.yieldKey !== null && person.actionTicks >= 20) {
       const alpha = 0.3 * (1.5 - person.traits.tradition);
       const observed = person.yieldNutrition / person.actionTicks * 100;
@@ -814,7 +819,7 @@ export class ActionSystem {
     // is one of the senses an idea can be built out of: somebody whose hands
     // keep being full is somebody who might think of a carrying strap.
     person.noteSaw(reason);
-    this.finish(person);
+    this.finish(person, 'failed');
   }
 
   /**
@@ -859,7 +864,7 @@ export class ActionSystem {
     telemetry.count(prefix + reason);
     ctx.onStopped(person, person.action, reason);
     person.noteSaw(reason);
-    this.finish(person);
+    this.finish(person, 'interrupted');
   }
 
   /** A social timer is still a committed action: needs must be able to reach it. */

@@ -4,7 +4,7 @@ import { Person } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 import { makeConfig, DEFAULT_CONFIG } from '../core/Config.ts';
 import { World } from '../core/World.ts';
-import { sensitivity } from '../ai/Temperament.ts';
+import { purposeAppetite, sensitivity } from '../ai/Temperament.ts';
 
 describe('physical drives', () => {
   it('preserves the old urgency curve exactly for each need', () => {
@@ -48,6 +48,19 @@ describe('physical drives', () => {
     expect(sensitivity(person, 'belonging')).toBeCloseTo(1);
     person.traits.loyalty = 1;
     expect(sensitivity(person, 'belonging')).toBeCloseTo(1.4);
+  });
+
+  it('lets successful work raise purpose appetite and interruptions lower it within the old band', () => {
+    const person = new Person('Test', 0, 0, 0, new RNG('purpose-drive'), 40);
+    person.traits.industriousness = 0.5;
+    person.mood.purpose = 0;
+    expect(purposeAppetite(person)).toBeCloseTo(1);
+    person.mood.purpose = 30;
+    expect(purposeAppetite(person)).toBeGreaterThan(1);
+    person.mood.purpose = -30;
+    expect(purposeAppetite(person)).toBeLessThan(1);
+    person.mood.purpose = -100;
+    expect(purposeAppetite(person)).toBeCloseTo(0.8);
   });
 
   it('adds variety pressure only for a macro below its current target', () => {

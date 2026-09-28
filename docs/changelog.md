@@ -1,3 +1,7 @@
+## 2026-09-28 - M15 phase 5c: purpose responds to work
+
+Completing a work action raises purpose, an interruption lowers it, and an impossible target leaves it alone. Work appetite now comes from purpose mood and industriousness sensitivity, clamped to the existing 0.8-1.2 band; idle appetite remains its complement. `ai-uses-many-actions` passes with 26 distinct actions. In 20 `lean` seeds, survival rose to 24.5% from 20.4% in 5b (+4.1 points), and to 24.5% from 23.1% in 5a (+1.4). The full suite retains the known five-second timeout in `band.test.ts` (603 other tests passed). No UI change.
+
 ## 2026-09-28 - M15 phase 5b: belonging moves social choices
 
 Belonging now rises after family conversations and sleeping under the household roof, and falls after sleeping far from camp. Low belonging increases the pull toward family conversation, music, shared drinks, and returning home near dusk. Its sensitivity ranges from 0.6 to 1.4 across loyalty. The `moods-move-choices` check passes at 3.8% talk in the low-belonging tercile versus 1.0% in the high tercile (865 samples each).

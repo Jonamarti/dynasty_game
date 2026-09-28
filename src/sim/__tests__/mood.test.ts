@@ -11,7 +11,7 @@
 import { describe, it, expect } from 'vitest';
 import { RNG } from '../core/RNG.ts';
 import { Person, TRAITS, type Trait } from '../entities/Person.ts';
-import { MOOD_CHANNELS, Mood, moodBaseline, decayMood } from '../core/Mood.ts';
+import { MOOD_CHANNELS, Mood, moodBaseline, decayMood, noteWorkOutcome } from '../core/Mood.ts';
 
 function traitsAt(value: number): Record<Trait, number> {
   const traits = {} as Record<Trait, number>;
@@ -95,5 +95,16 @@ describe('Mood.add', () => {
     for (let i = 0; i < 10; i++) mood.add('purpose', 1, 'reason ' + i, i);
     expect(mood.recent.length).toBeLessThanOrEqual(4);
     expect(mood.recent.at(-1)!.reason).toBe('reason 9');
+  });
+
+  it('raises purpose after completed work and lowers it after interruption', () => {
+    const person = new Person('Dee', 0, 0, 0, new RNG('purpose-outcome'));
+    const baseline = person.mood.purpose;
+    noteWorkOutcome(person, 'completed', 10);
+    expect(person.mood.purpose).toBe(baseline + 2);
+    noteWorkOutcome(person, 'interrupted', 20);
+    expect(person.mood.purpose).toBe(baseline);
+    noteWorkOutcome(person, 'failed', 30);
+    expect(person.mood.purpose).toBe(baseline);
   });
 });
