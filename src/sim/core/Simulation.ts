@@ -2454,10 +2454,19 @@ export class Simulation {
     const byRoof = new Map<number, Person[]>();
     for (const person of this.people) {
       if (!person.alive || person.action !== 'sleep') continue;
-      if (person.targetBuildingId === null) continue;
-      const roof = this.buildingsById.get(person.targetBuildingId);
-      if (!roof || !roof.complete || roof.def.shelter <= 0) continue;
-      if (!roof.contains(person.x, person.y, 1)) continue;
+      const roof = person.targetBuildingId === null ? null : this.buildingsById.get(person.targetBuildingId);
+      const sheltered = !!roof && roof.complete && roof.def.shelter > 0 && roof.contains(person.x, person.y, 1);
+      const household = person.householdId === null ? null : this.householdsById.get(person.householdId);
+      if (sheltered && household?.homeBuildingId === roof!.id) {
+        person.mood.add('belonging', 3, 'slept at home', this.time.tick);
+      } else {
+        const home = this.bands.find(band => band.id === person.bandId && !band.outcast);
+        const distance = home ? Math.hypot(person.x - home.homeX, person.y - home.homeY) : 0;
+        if (distance > this.config.motivation.nightRadius) {
+          person.mood.add('belonging', -2, 'slept away from camp', this.time.tick);
+        }
+      }
+      if (!sheltered) continue;
       const under = byRoof.get(roof.id);
       if (under) under.push(person);
       else byRoof.set(roof.id, [person]);

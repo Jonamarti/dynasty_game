@@ -1,3 +1,9 @@
+## 2026-09-28 - M15 phase 5b: belonging moves social choices
+
+Belonging now rises after family conversations and sleeping under the household roof, and falls after sleeping far from camp. Low belonging increases the pull toward family conversation, music, shared drinks, and returning home near dusk. Its sensitivity ranges from 0.6 to 1.4 across loyalty. The `moods-move-choices` check passes at 3.8% talk in the low-belonging tercile versus 1.0% in the high tercile (865 samples each).
+
+Across 20 `lean` seeds, survival was 20.4%, down 2.7 points from phase 5a's 23.1%, inside the phase's three-point cost limit. The full suite has one known timeout in `band.test.ts`; that file passes alone with a 15-second timeout. `sim:check --scenario band` retains six failures, including known map, diet, sleep, opinion, and performance issues. This change does not alter the UI.
+
 ## 2026-09-27 - M15 phase 5a: safety motive
 
 Fear now contributes to home pressure, and the safety sensitivity scales both flee scorers by aggression. Added the drive definition, localized label, and pressure/sensitivity tests. No RNG draws were added.

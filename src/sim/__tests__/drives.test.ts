@@ -40,6 +40,16 @@ describe('physical drives', () => {
     expect(sensitivity(person, 'safety')).toBeCloseTo(0.6);
   });
 
+  it('scales belonging pressure with loyalty while keeping the population midpoint neutral', () => {
+    const person = new Person('Test', 0, 0, 0, new RNG('belonging-drive'), 40);
+    person.traits.loyalty = 0;
+    expect(sensitivity(person, 'belonging')).toBeCloseTo(0.6);
+    person.traits.loyalty = 0.5;
+    expect(sensitivity(person, 'belonging')).toBeCloseTo(1);
+    person.traits.loyalty = 1;
+    expect(sensitivity(person, 'belonging')).toBeCloseTo(1.4);
+  });
+
   it('adds variety pressure only for a macro below its current target', () => {
     const person = new Person('Test', 0, 0, 0, new RNG('variety-drive'), 40);
     person.macroTarget = { fat: 0.3, protein: 0.3, carb: 0.4 };

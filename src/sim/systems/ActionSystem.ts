@@ -2718,6 +2718,10 @@ export class ActionSystem {
 
     const mode = talkModeOf(person, ctx.relationships.peek(person.id, other.id), ctx.tick);
     ctx.social.converse(person, other, ctx.tick, ctx.peopleById, mode);
+    if (person.householdId !== null && person.householdId === other.householdId) {
+      person.mood.add('belonging', 2, 'talked with family', ctx.tick);
+      other.mood.add('belonging', 2, 'talked with family', ctx.tick);
+    }
     person.practice('persuade', 0.3);
     // Both parties were in the conversation, so both wait before the next one,
     // and for as long as this kind of conversation is worth waiting after.

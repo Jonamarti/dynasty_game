@@ -3050,7 +3050,8 @@ tour limitation, not a blocker for the new named captures.
 
 **M15 fase 3, resultados (2026-09-27):** hearths pasa sus tres checks; en la corrida final, 	he-hearth-warms midio 4969/12873 muestras frias aliviadas, oast-wins 256/292 y cooking-spreads 2 a 17 adultos. Cohortes de 20: hearths 99.7%, craft 99.9%, century 97.7% frente a referencia 95.5% (+2.2 puntos; gate <=3). No hubo mundos colapsados en century. Siguen los cinco fallos de rebaños y el timeout de and.test.ts heredados de fase 2; tambien falla perf-budget en los escenarios base.
 
-
 **M15 route oscillation, 2026-09-27:** take, store, and go_home can travel with no action timer, so a later think tick can replace the destination before arrival. Drink already refreshes a short timer. Brain now retains a valid active route and lets known water override it once thirst reaches the configured work limit. Blocked or invalid routes still end through ActionSystem. Regression coverage is in autonomy.test.ts.
 
 **M15 phase 4 spark uptake, 2026-09-27:** the 20-seed century cohort passed firemaking discovery in 15/20 seeds (75%), but the new-route telemetry counted only one chosen wanting spark (firemaking_4) and none for tracking or fishing. Existing sparks still account for the fire gate. The phase is complete under its survival, knowledge, and idea-rate gates; the low uptake is recorded so a later calibration does not mistake the 75% gate for broad adoption of the new routes.
+
+**M15 fase 5b (2026-09-28):** pertenencia mejora la elección de compañía en `band` (3,8% frente a 1,0% de `talk` en los terciles bajo y alto). La cohorte `lean` queda 2,7 puntos por debajo de 5a, aún dentro del coste permitido. `sim:check --scenario band` conserva los fallos conocidos de mapa personal, dieta, sueño, divergencia de opiniones y rendimiento. `npm test` repite el timeout de cinco segundos en `band.test.ts`; la prueba de rango pasa aislada con `--testTimeout=15000`. No se ajustó ese timeout.

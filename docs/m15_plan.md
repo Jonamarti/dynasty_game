@@ -891,6 +891,8 @@ exista una cama.
 
 **Avance del 2026-09-27 (5a):** seguridad ya modula huida y la presion para volver a casa. La cohorte lean de 20 semillas queda en 23,0% de supervivencia frente al 23,1% del commit de instrumento (-0,1 puntos); hubo 12/20 colapsos en ambas. century y crowded quedan pendientes de medicion para esta subfase.
 
+**Avance del 2026-09-28 (5b):** la pertenencia se escribe al hablar con la familia y al dormir bajo el techo propio; dormir lejos del campamento la reduce. La presión de pertenencia ahora pesa en la elección de compañía, hablar, tocar, brindar y volver al anochecer. `moods-move-choices` pasa: 3,8% de conversación en el tercil bajo frente a 1,0% en el alto, 865 muestras por grupo. Veinte semillas `lean`: 20,4% de supervivencia frente a 23,1% en 5a (-2,7 puntos), dentro del límite de tres puntos. La suite conserva el timeout conocido de `band.test.ts`; sus 27 pruebas pasan aisladas con 15 s. Sin cambio de interfaz. Siguiente: 5c, propósito.
+
 ## Fase 6 — Obras por persuasión (M13 fase 11; `notes4.txt`)
 
 **Detalle en `m13_plan.md` fase 11.** `Building.sponsorId` y `backers`; nadie

@@ -1,5 +1,7 @@
 # Next steps
 
+**2026-09-28: M15 fase 5b completa.** La pertenencia ya tiene escritores y lectores en la simulación; su check comparativo pasa y la cohorte `lean` cae 2,7 puntos frente a 5a, bajo el límite de tres. Sigue 5c (propósito), con cada motivo en un commit medido. Ver [m15_plan.md](m15_plan.md).
+
 **2026-09-27: M15 continúa por decisión del propietario.** La supervivencia
 `lean` de 57,6% queda como base provisional; se completará el plan antes de
 revisar ese ajuste. La fase 2a (rendimientos aprendidos que afectan decisiones

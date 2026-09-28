@@ -324,6 +324,12 @@ function talkGate(rel: Relationship, tick: number): number {
 const BAND_BOND = 0.25;
 const CHIEF_BOND = 0.7;
 
+/** A low belonging mood creates a modest pull toward one's own people. */
+function belongingNeed(person: Person): number {
+  const pressure = Math.max(0, Math.min(1, -person.mood.belonging / 60));
+  return pressure * sensitivity(person, 'belonging');
+}
+
 /**
  * How much a hunt is worth, before the odds and the size of the animal.
  *
@@ -941,7 +947,7 @@ export class Brain {
     }
 
 
-    const loneliness = drive.company;
+    const loneliness = Math.max(drive.company, belongingNeed(person));
     let companion: Person | null = null;
     let victim: Person | null = null;
     let foe: Person | null = null;
@@ -2847,7 +2853,8 @@ export class Brain {
       // `talk` answers two people and a tune answers everybody in earshot.
       if (person.inventory.has('flute') && techPower(person, 'flute') > 0) {
         const lonelyNear = neighbours.reduce(
-          (worst, other) => Math.max(worst, other.needs.company), person.needs.company);
+          (worst, other) => Math.max(worst, other.needs.company, belongingNeed(other)),
+          Math.max(person.needs.company, belongingNeed(person)));
         add('play', urgencyCurve(lonelyNear) * 1.5 + 0.05);
       }
 
@@ -2857,7 +2864,8 @@ export class Brain {
       // flute goes on giving for as long as somebody keeps playing it.
       if (person.inventory.has('beer') && techPower(person, 'brewing') > 0) {
         const lonelyNear = neighbours.reduce(
-          (worst, other) => Math.max(worst, other.needs.company), person.needs.company);
+          (worst, other) => Math.max(worst, other.needs.company, belongingNeed(other)),
+          Math.max(person.needs.company, belongingNeed(person)));
         add('toast', urgencyCurve(lonelyNear) * 1.3 + 0.05);
       }
 
@@ -3000,7 +3008,9 @@ export class Brain {
       const childFactor = person.isChild ? ctx.motivation.childHomeMultiplier : 1;
       const childPressure = person.isChild && homeDistance > childRadius(person, ctx.motivation) + 3
         ? Math.max(drive.home, ctx.motivation.childHomeMinimumPressure) : drive.home;
-      add('go_home', childPressure * ctx.motivation.homeWeight * childFactor);
+      const dusk = Math.max(0, Math.min(1, 1 - ctx.time.daylight / 0.35));
+      add('go_home', (childPressure + belongingNeed(person) * dusk * 0.2)
+        * ctx.motivation.homeWeight * childFactor);
     }
     // Still here for people with no roof, which after a bad winter is most of
     // them. Sleeping is strictly better and scores higher when it is available.
@@ -3221,7 +3231,7 @@ export class Brain {
     const base = ctx.chiefByBand.get(person.bandId) === other.id ? CHIEF_BOND : BAND_BOND;
     const grievance = Math.max(0, -ctx.relationships.opinion(person.id, other.id)) / 100;
     const defiance = grievance * (1 - person.traits.loyalty);
-    return base * (0.3 + person.traits.loyalty) * (1 - defiance);
+    return base * (0.8 + belongingNeed(person) * 0.3) * (1 - defiance);
   }
 
   /**
