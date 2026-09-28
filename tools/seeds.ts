@@ -113,6 +113,8 @@ interface SeedResult {
   wantingSparkRoutes: Record<string, number>;
   /** M15 phase 7: per-verb outcomes of ordinary authority rolls. */
   orders: Record<string, number>;
+  /** M15 phase 8: why a raid was weighed, approved, raised and joined. */
+  raids: { proposed: number; approved: number; rejected: number; called: number; neverRaised: number; joined: number };
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -286,6 +288,14 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
       .map(([key, value]) => [key.slice('spark_wanting_'.length), value])),
     orders: Object.fromEntries(Object.entries(counts)
       .filter(([key]) => /^order_.+_(obeyed|refused)$/.test(key))),
+    raids: {
+      proposed: counts.raid_proposed ?? 0,
+      approved: counts.raid_approved ?? 0,
+      rejected: counts.raid_rejected_by_chief ?? 0,
+      called: counts.raid_called ?? 0,
+      neverRaised: counts.raid_never_raised ?? 0,
+      joined: counts.raid_joined ?? 0,
+    },
   };
 }
 
@@ -409,6 +419,10 @@ function main(): void {
     return verb + ' ' + (total === 0 ? 'n/a' : (obeyed / total * 100).toFixed(1) + '%') +
       ' (' + obeyed + '/' + refused + ' obeyed/refused)';
   }).join(' · ')));
+  console.log('  RAIDS proposed ' + sum(r => r.raids.proposed) + ' · chief-approved ' +
+    sum(r => r.raids.approved) + ' · refused by chief ' + sum(r => r.raids.rejected) +
+    ' · called ' + sum(r => r.raids.called) + ' · no party ' + sum(r => r.raids.neverRaised) +
+    ' · followers ordered ' + sum(r => r.raids.joined));
   const interrupted = [...new Set(results.flatMap(r => Object.keys(r.socialInterruptions)))].sort();
   console.log('  SOCIAL INTERRUPTIONS ' + (interrupted.length === 0 ? 'none' : interrupted
     .map(key => key + '=' + sum(r => r.socialInterruptions[key] ?? 0)).join(' ')));

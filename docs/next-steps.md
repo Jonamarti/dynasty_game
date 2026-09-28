@@ -1207,3 +1207,5 @@ observe jugando; no se deben borrar o relajar sus checks para cerrar M15.
 **M15 fase 3 cerrada (2026-09-27):** hoguera, asados y escenario hearths. Pasan the-hearth-warms, roast-wins (256/292 comidas) y cooking-spreads (2 a 17 adultos). Cohortes de 20: hearths 99.7%, craft 99.9% y century 97.7% (+2.2 puntos sobre 95.5%).
 
 Capturas de fase 3: artifacts/screenshots/m15-3-hearth-menu.png y m15-3-roast-kit.png.
+
+**2026-09-28: M15 fase 8 implementada; fase abierta por cobertura.** Las propuestas de incursión combinan instigador, miedo, necesidad, estatus y autoridad; las incursiones por necesidad usan el recuerdo personal del instigador. La rivalidad territorial ya no depende de despensas vacías y el miedo impulsa treguas y ofertas de paz. En 20 semillas `lean`, supervivencia 20,9% (11/20 colapsos; −1,1 puntos frente a fase 6, dentro del margen de tres puntos) y peaceShare 99,9%. `century`: sabotaje 2.982 frente a 9.556 talas; `make_peace` ofrecida 87 veces. `bands-take-sides` queda `n/a` en farmers/herders/stewards por falta de contacto. Ver [m15_plan.md](m15_plan.md), [bugs.md](bugs.md) y [changelog.md](changelog.md).

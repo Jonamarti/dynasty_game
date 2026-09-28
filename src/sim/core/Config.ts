@@ -280,6 +280,8 @@ export interface MotivationConfig {
   backersWanted: number;
   /** M15 phase 6: minimum support for a request to become a backer. */
   persuadeAt: number;
+  /** M15 phase 8: motive needed before a person will risk proposing an incursion. */
+  raidUrge: number;
   comfortAdult: number;
   nightRadius: number;
   span: number;
@@ -439,6 +441,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     interruptSocialNeeds: true,
     chronicRate: 0.02, wantAt: 0.3, needComfort: 0.4,
     backersWanted: 3, persuadeAt: 0.5,
+    raidUrge: 0.45,
     comfortAdult: 24, nightRadius: 8, span: 30, spanNight: 12,
     homeWeight: 2.4, childHomeMultiplier: 4, childHomeMinimumPressure: 0.25, reachAdult: 36, parentReach: 20,
     childRadius: { under1: 2, years1to3: 3, years4to7: 6, years8to11: 10, years12to13: 16 },

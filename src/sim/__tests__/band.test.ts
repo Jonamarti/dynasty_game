@@ -505,6 +505,23 @@ describe('exile and adoption', () => {
   });
 });
 
+describe('territorial standing', () => {
+  it('builds a grudge from witnessed incursions even when neither band is hungry', () => {
+    const sim = new Simulation({ ...SMALL, population: { bands: 2, peoplePerBand: 6 } });
+    const own = sim.bands[0]!;
+    const rival = sim.bands[1]!;
+    const witness = sim.livingPeople().find(person => person.bandId === own.id && !person.isChild)!;
+    const sightings = new Map([[own.id, new Map([[witness.id, { tick: 0, bandId: rival.id }]])]]);
+    const engine = sim.bandSystem as unknown as {
+      considerTerritory: (band: Band, members: Person[], ctx: unknown, outcastBandId?: number) => void;
+    };
+
+    engine.considerTerritory(own, [witness], { sightings, bandRelations: sim.bandRelations });
+
+    expect(sim.bandRelations.standing(own.id, rival.id)).toBeLessThan(0);
+  });
+});
+
 /**
  * M9.5 phase 4e. The shape the tribe graph draws, asked of the simulation
  * rather than of the picture: `ranksAround` is the panel's only route to a
@@ -695,8 +712,12 @@ describe('raids', () => {
     const { sim, raiders, victim, chief } = feud('raid-goes');
     armBand(sim, chief, raiders.id);
     sim.bandRelations.add(raiders.id, victim.id, -100);
+    const proposed = telemetry.get('raid_proposed');
+    const approved = telemetry.get('raid_approved');
 
     expect(raidsOver(sim, 4)).toBeGreaterThan(0);
+    expect(telemetry.get('raid_proposed') - proposed).toBeGreaterThan(0);
+    expect(telemetry.get('raid_approved') - approved).toBeGreaterThan(0);
     expect(chief.chronicle.some(entry => entry.text.includes('raid'))).toBe(true);
   });
 

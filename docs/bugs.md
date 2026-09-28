@@ -3083,3 +3083,7 @@ tour limitation, not a blocker for the new named captures.
 Los checks nuevos `building-starts-small` y `projects-find-backers` pasan en `band` y `harsh-winter`; la matriz M15 no los marca como fallidos. `sim:check:all` mantiene otros fallos ya registrados de memoria de objetivos, comida por rumores, dieta, descanso, cohesion y rendimiento, y ademas `shelter-answers-cold` en `harsh-winter`.
 
 `npm test -- --maxWorkers=1`: 618/621 pasan. Persisten las dos aserciones de produccion en `herding.test.ts` y el timeout de `band.test.ts`; el timeout de determinismo no se reprodujo en la repeticion final. Los checks enfocados de persuasion/menu, typecheck y la captura Playwright de M15 fase 6 pasan.
+
+## M15 fase 8 — cobertura de contacto entre bandas (2026-09-28)
+
+Los escenarios `farmers`, `herders` y `stewards` terminaron con `bands-take-sides: n/a` porque sus bandas no llegaron a tocarse; esto no demuestra que el check pase. `lean` tuvo 13/20 mundos elegibles con spread superior a 20 puntos a los 60 días, frente a la lectura previa de 16/20, pero ambas cohortes son caóticas y no permiten atribuir el cambio. La prueba focalizada sí verifica que una intrusión presenciada reduzca el standing territorial aunque el hogar tenga despensa. Se necesita cobertura de contacto para cerrar la fase.

@@ -240,6 +240,8 @@ interface FoundTargets {
   /** The chief a `complain` goes to, and whoever a `parley` is put to — M12 phase 2b. */
   complainTo: Person | null;
   parleyWith: Person | null;
+  /** A rival chosen for the fear-driven peace offering, M15 phase 8. */
+  peaceWith: Person | null;
   /** Whoever an `answer_call` goes to, M11 phase 15b.4. */
   helpCallerTarget: Person | null;
   /** Somebody held by one of this person's own, for a `bind`, M11 phase 15c. */
@@ -1021,6 +1023,7 @@ export class Brain {
     let amendsTo: Person | null = null;
     let complainTo: Person | null = null;
     let parleyWith: Person | null = null;
+    let peaceWith: Person | null = null;
     let helpCallerTarget: Person | null = null;
     let bindTarget: Person | null = null;
     let patrolPoint: { x: number; y: number } | null = null;
@@ -2042,10 +2045,28 @@ export class Brain {
         accused.has(other.bandId) && !other.isChild && other.captiveOf === null
       ), other => (ctx.chiefByBand.get(other.bandId) === other.id ? 20 : 0) - person.distanceTo(other));
       if (envoy) {
-        add('parley', PARLEY * (0.4 + person.traits.tradition) *
+        add('parley', PARLEY * (0.4 + person.traits.tradition) * (1 + drive.safety * 0.6) *
           this.proximityBonus(person, envoy, ctx.sightRadius));
         parleyWith = envoy;
         telemetry.count('parley_offered');
+      }
+    }
+
+    // M15 phase 8: a costly feud leaves fear behind. When the person also
+    // holds a personal grievance against a reachable rival, that fear can
+    // turn into a peace offering instead of another blow.
+    if (!person.isChild && person.captiveOf === null && drive.safety > 0.15 &&
+      !pressedByNeed(person, ctx.needs.workLimits)) {
+      const rival = this.pickBest(neighbours.filter(other => other.bandId !== person.bandId &&
+        !other.isChild && other.captiveOf === null &&
+        ctx.bandRelations.standing(person.bandId, other.bandId) < 0 &&
+        ctx.relationships.opinion(person.id, other.id) < 0), other =>
+        ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other));
+      if (rival) {
+        add('make_peace', drive.safety * (0.25 + person.traits.tradition * 0.25) *
+          this.proximityBonus(person, rival, ctx.sightRadius));
+        peaceWith = rival;
+        telemetry.count('make_peace_offered');
       }
     }
 
@@ -3173,7 +3194,7 @@ export class Brain {
       scores,
       found: {
         water, foodToEat, waterQuestionPeer, explorePoint, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, tradePartner, fleeFrom, fleePoint,
+        victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -3935,6 +3956,7 @@ export class Brain {
       case 'make_amends':
       case 'complain':
       case 'parley':
+      case 'make_peace':
       case 'bind':
       case 'answer_call':
       case 'attack':
@@ -3970,6 +3992,7 @@ export class Brain {
           action === 'make_amends' ? found.amendsTo :
           action === 'complain' ? found.complainTo :
           action === 'parley' ? found.parleyWith :
+          action === 'make_peace' ? found.peaceWith :
           action === 'bind' ? found.bindTarget :
           action === 'answer_call' ? found.helpCallerTarget :
           action === 'slander' || action === 'praise' ? found.companion :

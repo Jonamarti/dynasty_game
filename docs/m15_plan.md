@@ -2921,3 +2921,9 @@ mapa crece 7,2% ? 9,3% y hay 180 viajes a recuerdos agotados; 14 objetivos
 desde un lugar o�do. Son resultados abiertos para depurar, no checks rebajados.
 La medici�n de cohorte de 2f sigue con la excepci�n provisional autorizada por
 el propietario, -32,5 puntos de supervivencia `lean`.
+
+## Avance de fase 8 — 2026-09-28
+
+Las incursiones por agravio ahora tienen instigador, cálculo de urgencia con necesidad, hostilidad, estatus y miedo, y aprobación del jefe ponderada por autoridad. Las incursiones por necesidad consultan el mapa personal del instigador. La rivalidad territorial se actualiza ante intrusiones observadas incluso con despensa llena; el miedo favorece parley y ofertas de paz.
+
+La cohorte `lean` de 20 semillas queda en 20,9% (11 colapsos), −1,1 puntos respecto a fase 6, dentro del margen de tres puntos; `peaceShare` fue 99,9%. `century` registró 2.982 sabotajes frente a 9.556 talas, por lo que no se cambió el peso del sabotaje. Las ofertas `make_peace` sumaron 87. `bands-take-sides` fue `n/a` en `farmers`, `herders` y `stewards`: no hubo contacto. La suite global se interrumpió al detectar que abarca 26 escenarios y no cinco. La fase sigue abierta hasta poder medir el check en escenarios con contacto.

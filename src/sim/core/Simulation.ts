@@ -85,7 +85,7 @@ import {
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
-import { BandMaps, MAP_CELL } from '../social/BandMaps.ts';
+import { MAP_CELL } from '../social/BandMaps.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
 
 /**
@@ -1703,16 +1703,7 @@ export class Simulation {
    * range of a camp whether or not anybody from the band was looking.
    */
   readonly sightings: Sightings = new Map();
-  /**
-   * What each band has seen of the land, M11 phase 14d — the first memory of
-   * places in the game, and the seed of M12's world map. See `BandMaps`.
-   * Created on first use, from the world's size.
-   */
-  private bandMapsStore: BandMaps | null = null;
-  get bandMaps(): BandMaps {
-    this.bandMapsStore ??= new BandMaps(this.world.width, this.world.height);
-    return this.bandMapsStore;
-  }
+  /** People who saw outsiders on their home ground. */
   private readonly sightingScratch: Person[] = [];
 
   /** Every founding band's camp, for the brain's readers of fear. */
@@ -1736,11 +1727,6 @@ export class Simulation {
       this.time.tick, this.sightings, outcast, this.sightingScratch);
     // M11 phase 16d: the same looking-around sees who has blood on them.
     noticeBloodied(this.people, this.peopleHash, this.config.sightRadius, this.time.tick);
-    // The same looking-around writes what each band knows of the land.
-    for (const person of this.people) {
-      if (!person.alive || person.bandId === outcast) continue;
-      this.bandMaps.observe(person.bandId, person.x, person.y, this.config.sightRadius, this.nodeHash);
-    }
   }
 
   /** The band of no band. Created the first time anyone is cast out. */
@@ -3714,9 +3700,11 @@ export class Simulation {
 
       this.bandSystem.daily(this.bands, this.people, {
         relationships: this.relationships,
+        authority: (leader, listener, action) => this.standing(leader, listener, action).chance,
         rng: this.forestRng,
         day: this.time.day,
         tick: this.time.tick,
+        motivation: this.config.motivation,
         buildings: this.buildings,
         place: (defId, x, y, bandId, sponsorId) => this.place(defId, x, y, bandId, sponsorId),
         onExile: (person, band, factionSize) => this.exile(person, band, factionSize),
@@ -3733,7 +3721,6 @@ export class Simulation {
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
         householdsById: this.householdsById,
         sightings: this.sightings,
-        bandMaps: this.bandMaps,
         nodeHash: this.nodeHash,
       });
 
