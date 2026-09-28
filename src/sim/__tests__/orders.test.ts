@@ -18,6 +18,7 @@ import { PATIENCE } from '../systems/MovementSystem.ts';
 import { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
 import { menaceOver, orderCost } from '../social/Authority.ts';
+import { telemetry } from '../core/Telemetry.ts';
 
 const SMALL = {
   seed: 'orders',
@@ -647,6 +648,35 @@ describe('a refusal by authority', () => {
     expect(small.because).toContain('a small thing to ask');
     expect(dangerous.because).toContain('you are asking them to risk their life');
     expect(small.chance).toBeGreaterThan(dangerous.chance);
+  });
+
+  it('keeps five verb outcomes separate and makes a gather easier than an attack', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const [leader, subordinate] = sim.livingPeople();
+    expect(leader).toBeDefined();
+    expect(subordinate).toBeDefined();
+
+    const verbs = ['rest', 'gather', 'build', 'hunt', 'attack'];
+    const chances = verbs.map(verb => sim.standing(leader!, subordinate!, verb).chance);
+    const sample = new RNG('same-chief-order-gate');
+    const draws = Array.from({ length: 10_000 }, () => sample.next());
+    const obedienceRates = chances.map(chance =>
+      draws.filter(draw => draw < chance).length / draws.length);
+    expect(obedienceRates[1]).toBeGreaterThan(obedienceRates[4]);
+
+    telemetry.reset();
+    telemetry.enable();
+    try {
+      for (const verb of verbs) sim.command(leader!, subordinate!, verb);
+      for (const verb of verbs) {
+        expect(telemetry.get('order_' + verb + '_obeyed') +
+          telemetry.get('order_' + verb + '_refused'), verb).toBe(1);
+      }
+    } finally {
+      telemetry.disable();
+      telemetry.reset();
+    }
   });
 
   it('carries the reason the standing calculation already worked out', () => {

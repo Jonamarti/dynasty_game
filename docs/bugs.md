@@ -1,5 +1,11 @@
 # Known bugs and rough edges
 
+## M15 fase 7, medicion y verificaciones (2026-09-28)
+
+La cohorte lean de 20 semillas (24.000 pasos por semilla) no emitio ordenes gather ni attack: la fila ORDERS tuvo build 68/19, haul 718/267, make_amends 0/1 y take 1/1 (obedecidas/rechazadas). Por tanto, no hay tasa de cohorte para comparar gather y attack; el gate se cubre con un test de cinco verbos, mismo mandante/persona y 10.000 tiradas deterministas. La pendiente de coste 0,6 se conserva.
+
+La matriz completa sim:check:all termina con rojos ya conocidos en memoria de objetivos, dieta, descanso, opinion, rendimiento, refugio, y checks dependientes del escenario. En particular harsh-winter mantiene shelter-answers-cold. El test suite paralelo del 2026-09-28 dio 619/623: dos fallos de herding ya registrados y timeouts de 5 s en band.test.ts y determinism.test.ts bajo carga paralela. La captura focalizada de la fase 7 pasa; la gira general npm run shots alcanzo un timeout en su prueba tour durante esta sesion y no se diagnostico.
+
 ## Suite base observada durante M15 fase 6a, 2026-09-28
 
 La ejecucion paralela completa de `npm test` dejo cuatro fallos de crecimiento y subproductos en `herding.test.ts`, mas el timeout conocido de cinco segundos en el ejercicio de rango de `band.test.ts`. La repeticion focalizada de `building-sponsor.test.ts` y `autonomy.test.ts` pasa en serie; el fallo inicial de autonomia desaparecio al asignar proponentes a los sitios de partida antes del primer ciclo de pensamiento. Los fallos de rebaño no pertenecen a esta fase y continuan pendientes de su arreglo propio.

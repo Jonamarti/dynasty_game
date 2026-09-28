@@ -111,6 +111,8 @@ interface SeedResult {
   cravingProteinOverrideSelected: number;
   /** M15 phase 4: conceptions whose chosen spark included a chronic want. */
   wantingSparkRoutes: Record<string, number>;
+  /** M15 phase 7: per-verb outcomes of ordinary authority rolls. */
+  orders: Record<string, number>;
 }
 
 /** Ages at or below this are wholly dependent: they are fed or they die. */
@@ -282,6 +284,8 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     wantingSparkRoutes: Object.fromEntries(Object.entries(counts)
       .filter(([key]) => key.startsWith('spark_wanting_') && (counts[key] ?? 0) > 0)
       .map(([key, value]) => [key.slice('spark_wanting_'.length), value])),
+    orders: Object.fromEntries(Object.entries(counts)
+      .filter(([key]) => /^order_.+_(obeyed|refused)$/.test(key))),
   };
 }
 
@@ -392,6 +396,19 @@ function main(): void {
   console.log(formatHistory(results.map(r => r.history)));
   console.log('  FOOD ACCESS accessible ' + sum(r => r.foodAccessible) + ' · blocked by reach ' +
     sum(r => r.foodBlockedByReach) + ' · absent from search ' + sum(r => r.foodAbsentInSearch));
+  // M15 phase 7: keep the result beside the action that was asked for. A
+  // world-wide obeyed/refused total hid the distinction between easy errands
+  // and dangerous orders, which is the very relationship the phase measures.
+  const orderVerbs = [...new Set(results.flatMap(result => Object.keys(result.orders)
+    .map(key => key.match(/^order_(.+)_(?:obeyed|refused)$/)?.[1])
+    .filter((verb): verb is string => verb !== undefined)))].sort();
+  console.log('  ORDERS ' + (orderVerbs.length === 0 ? 'no ordinary authority rolls' : orderVerbs.map(verb => {
+    const obeyed = sum(result => result.orders['order_' + verb + '_obeyed'] ?? 0);
+    const refused = sum(result => result.orders['order_' + verb + '_refused'] ?? 0);
+    const total = obeyed + refused;
+    return verb + ' ' + (total === 0 ? 'n/a' : (obeyed / total * 100).toFixed(1) + '%') +
+      ' (' + obeyed + '/' + refused + ' obeyed/refused)';
+  }).join(' · ')));
   const interrupted = [...new Set(results.flatMap(r => Object.keys(r.socialInterruptions)))].sort();
   console.log('  SOCIAL INTERRUPTIONS ' + (interrupted.length === 0 ? 'none' : interrupted
     .map(key => key + '=' + sum(r => r.socialInterruptions[key] ?? 0)).join(' ')));

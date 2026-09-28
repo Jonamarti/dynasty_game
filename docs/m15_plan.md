@@ -933,9 +933,9 @@ convencer: pedir y mandar.
   diferencia entre recolectar y atacar, el `0.6` único pasa a ser una
   pendiente que crece con el coste.
 
-**Puerta:** con el mismo mandante, la obediencia a gather supera a attack. Test unitario con cinco verbos.
+**Puerta:** con el mismo mandante, la tasa de obediencia a `gather` supera a `attack`. Test unitario con cinco verbos.
 
-**Avance del 2026-09-28 (7a):** standingOver nombra el tramo de coste y el radial de ordenes muestra la probabilidad estimada en palabras, en ingles y espanol. La captura artifacts/screenshots/m15-7-command-cost.png registra el menu antes de ordenar. typecheck, las pruebas de ordenes y la prueba visual focalizada pasan. No se anaden tiradas ni cambia la obediencia; 7b sigue pendiente.
+**Avance del 2026-09-28 (7a-7b):** el radial muestra coste y probabilidad en palabras; los contadores por verbo alimentan ORDERS en las cohortes. En 20 semillas lean (24.000 pasos cada una), build tuvo 68 obediencias y 19 rechazos (78,2%), haul 718 y 267 (72,9%); make_amends y take solo tuvieron un intento cada uno, y gather/attack ninguno. La cohorte no permite comparar esos dos verbos; el gate unitario usa el mismo mandante y persona, cinco verbos y 10.000 tiradas sembradas, y gather supera attack. No se observa saturacion, por lo que se conserva el 0,6. Sin tiradas nuevas en el mundo; supervivencia lean 20,0% (12/20 colapsos), igual a fase 6. La captura es artifacts/screenshots/m15-7-command-cost.png. Fase 7 completa.
 
 ## Fase 8 — Incursiones por propuesta, y guerras que empiezan y acaban (M13 fase 12)
 

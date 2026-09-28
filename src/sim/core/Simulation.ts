@@ -1205,6 +1205,7 @@ export class Simulation {
       this.ordersForeignProperty(subordinate, target.buildingId));
     if (this.commandRng.next() >= standing.chance) {
       telemetry.count('order_refused');
+      telemetry.count('order_' + action + '_refused');
       if (standing.byRank) telemetry.count('order_refused_by_rank');
       // Recorded on the leader as well as counted: see `assignJob` below, and
       // `division_of_labour`'s friction spark, which this is the heaviest
@@ -1234,6 +1235,7 @@ export class Simulation {
     }
 
     telemetry.count('order_obeyed');
+    telemetry.count('order_' + action + '_obeyed');
     // M11 phase 13f. A chief's order reaches the player's character exactly
     // as it reaches anybody else's — that is the pillar — but it used to do so
     // in silence: a chief calling a raid, or directing work, would set an

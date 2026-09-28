@@ -1,4 +1,8 @@
 #
+## 2026-09-28 - M15 phase 7b: measure orders by verb
+
+Added per-verb obeyed/refused telemetry and an ORDERS line to seed cohorts. The 20-seed lean run (24,000 steps each) produced build 68/19 (78.2%) and haul 718/267 (72.9%); make_amends and take had one attempt each. No gather or attack order occurred, so this cohort cannot compare those two verbs. The same-leader, five-verb unit gate samples 10,000 seeded rolls and confirms gather exceeds attack. The existing 0.6 cost slope stays: the measured chance gap remains intact, and the cohort showed no saturation evidence. Instrumentation adds no RNG draws; lean survival remained 20.0% (12/20 collapsed), matching the phase 6 reading. Phase 7 is complete.
+
 ## 2026-09-28 - M15 phase 7a: show the cost of an order
 
 standingOver now explains the request cost, and command mode shows a translated verbal estimate beside each radial option before the player issues it. Nested options use the same estimate and target cost as Simulation.command. Added a focused authority test and Playwright screenshot/assertion. No RNG draw or obedience change; visual evidence: artifacts/screenshots/m15-7-command-cost.png. Phase 7b still needs per-verb counters, the ORDERS cohort line, and measurement of the obedience gate.
