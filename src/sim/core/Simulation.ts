@@ -857,6 +857,20 @@ export class Simulation {
         this.households.push(household);
         this.householdsById.set(household.id, household);
       }
+      // The first camp sites predate their people, so give them a proponent as
+      // soon as the founding families exist. Waiting for the first planning
+      // day left a fresh band with nobody eligible to continue its starter hut.
+      const adults = founded.people.filter(person => !person.isChild && person.alive);
+      for (const site of this.buildings) {
+        if (site.ownerBandId !== band.id || site.complete || site.sponsorId !== null) continue;
+        const score = (person: Person): number => site.def.shelter > 0
+          ? person.needs.cold + Math.max(0, -person.mood.security)
+          : Math.max(0, 1 - person.inventory.total / 20) * 100;
+        const sponsor = adults.reduce<Person | null>((best, person) =>
+          !best || score(person) > score(best) ||
+            (score(person) === score(best) && person.id < best.id) ? person : best, null);
+        site.sponsorId = sponsor?.id ?? null;
+      }
     }
   }
 
@@ -3047,13 +3061,16 @@ export class Simulation {
   }
 
   /** Places a site. Returns the new building, or null if it will not fit. */
-  place(defId: string, x: number, y: number, bandId: number): Building | null {
+  place(defId: string, x: number, y: number, bandId: number, sponsorId?: number | null): Building | null {
     const def = BUILDINGS[defId];
     if (!def) return null;
     if (def.requiresTech !== null && !this.knownTech.has(def.requiresTech)) return null;
     if (!this.canPlace(def, x, y)) return null;
 
     const building = new Building(def, x, y, bandId);
+    building.sponsorId = sponsorId !== undefined
+      ? sponsorId
+      : this.player?.bandId === bandId ? this.player.id : null;
     this.buildings.push(building);
     this.buildingsById.set(building.id, building);
     this.buildingHash.insert(building);
@@ -3680,7 +3697,7 @@ export class Simulation {
         day: this.time.day,
         tick: this.time.tick,
         buildings: this.buildings,
-        place: (defId, x, y, bandId) => this.place(defId, x, y, bandId),
+        place: (defId, x, y, bandId, sponsorId) => this.place(defId, x, y, bandId, sponsorId),
         onExile: (person, band, factionSize) => this.exile(person, band, factionSize),
         onAdopt: (person, band) => this.adopt(person, band),
         peopleHash: this.peopleHash,

@@ -337,7 +337,7 @@ export interface BandContext {
   tick: number;
   buildings: Building[];
   /** Places a site; returns null if it will not fit. */
-  place: (defId: string, x: number, y: number, bandId: number) => Building | null;
+  place: (defId: string, x: number, y: number, bandId: number, sponsorId?: number | null) => Building | null;
   /** Called when someone is cast out, so the world can resettle them. */
   onExile: (person: Person, band: Band, factionSize: number) => void;
   /** Called when a band takes in a wandering outcast. */
@@ -802,6 +802,11 @@ export class BandSystem {
    */
   private planBuildings(band: Band, members: Person[], ctx: BandContext): void {
     const theirs = ctx.buildings.filter(b => b.ownerBandId === band.id);
+    for (const site of theirs) {
+      if (!site.complete && site.sponsorId === null) {
+        site.sponsorId = this.projectSponsor(site.def.id, members, ctx)?.id ?? null;
+      }
+    }
     this.dropStaleSites(theirs, ctx);
 
     const live = ctx.buildings.filter(b => b.ownerBandId === band.id);
@@ -1068,7 +1073,8 @@ export class BandSystem {
       const reach = placement ? 5 + Math.floor(attempt / 16) * 4 : 8;
       const x = Math.round(band.homeX + ctx.rng.range(-reach, reach));
       const y = Math.round(band.homeY + ctx.rng.range(-reach, reach));
-      const placed = ctx.place(wanted, x, y, band.id);
+      const sponsor = this.projectSponsor(wanted, members, ctx);
+      const placed = ctx.place(wanted, x, y, band.id, sponsor?.id ?? null);
       if (placed) {
         telemetry.count('band_planned_' + wanted);
         return;
@@ -1083,6 +1089,36 @@ export class BandSystem {
   /** The least work of a set of designs. Ties go to the first, which is stable. */
   private cheapest(designs: BuildingDef[]): BuildingDef | null {
     return this.bestBy(designs, def => -def.workTicks);
+  }
+
+  /**
+   * The person whose current needs best explain why this band wants the design.
+   *
+   * This is intentionally a stable ranking with no random draw: construction
+   * planning runs in the daily pass, and an extra draw here would move the
+   * shared forest stream. The richer belief and possession motives can refine
+   * this once persuasion reads them; the first sponsor must at least have a
+   * legible reason to care about the project.
+   */
+  private projectSponsor(defId: string, members: Person[], _ctx: BandContext): Person | null {
+    let best: Person | null = null;
+    let bestScore = -Infinity;
+    for (const person of members) {
+      if (person.isChild || !person.alive) continue;
+      const score = defId === 'hearth'
+        ? person.needs.cold * person.beliefs.expect('warm:hearth').value
+        : defId === 'storage_pit' || defId === 'granary' || defId === 'drying_rack'
+          ? Math.max(0, 1 - person.inventory.total / 20) * 100
+          : defId === 'mud_hut' || defId === 'windbreak' || defId === 'longhouse'
+            ? person.needs.cold + Math.max(0, -person.mood.security)
+            : person.needs.hunger + person.needs.cold;
+      if (score > bestScore || (score === bestScore && person.id < (best?.id ?? Infinity))) {
+        best = person;
+        bestScore = score;
+      }
+    }
+    const chiefId = this.chiefByBand.get(members[0]?.bandId ?? -1);
+    return best ?? members.find(person => person.id === chiefId) ?? null;
   }
 
   /**
@@ -1162,7 +1198,8 @@ export class BandSystem {
     const chief = members.find(m => m.id === chiefId);
     if (!chief) return;
 
-    const sites = ctx.buildings.filter(b => b.ownerBandId === band.id && !b.complete);
+    const sites = ctx.buildings.filter(b => b.ownerBandId === band.id && !b.complete &&
+      (b.sponsorId === chief.id || b.backers.includes(chief.id)));
     if (sites.length === 0) return;
 
     let directed = this.directTo(chief, sites[0]!, members, ctx, CHIEF_DIRECTS);

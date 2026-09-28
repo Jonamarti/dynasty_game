@@ -9321,3 +9321,7 @@ aparezcan al jugar.
 Hoguera con calor local; coccion que mejora solo el asado; escenario hearths y checks de calor, preferencia y transmision. Cohortes de 20 semillas: hearths 99.7%, craft 99.9%, century 97.7% frente a 95.5% de referencia (+2.2 puntos).
 
 Capturas de la interfaz: artifacts/screenshots/m15-3-hearth-menu.png y m15-3-roast-kit.png.
+
+## 2026-09-28 - M15 fase 6a: cada obra tiene proponente
+
+Los sitios iniciales reciben un adulto de su banda como proponente; los sitios que coloca el jugador quedan asociados a su personaje. La IA solo trabaja de forma voluntaria en obras que propone o apoya, y la jefatura solo dirige las que respalda. Las ordenes dirigidas a un sitio siguen siendo una autorizacion explicita para trabajar alli. El filtro necesitaba asignar proponente a los sitios de partida antes del primer dia de planificacion, porque una obra sin proponente se quedaba sin trabajadores.

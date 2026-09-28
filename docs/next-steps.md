@@ -1,5 +1,7 @@
 # Next steps
 
+**2026-09-28: M15 fase 6a completa.** Los proyectos ya tienen proponente, y el trabajo voluntario y las ordenes del jefe respetan quien apoya cada obra. Los sitios iniciales y los que coloca el jugador reciben proponente; la verificacion focalizada pasa. Sigue 6b, convencer a partidarios. Ver [m15_plan.md](m15_plan.md).
+
 **2026-09-28: M15 fase 5f y fase 5 completas.** Posesión compara las reservas comestibles del hogar y lo que lleva la familia con una semana de consumo, y guía acopio y almacenamiento según la codicia. El coeficiente 0,75 mantiene verde la prueba de incursión. `lean`: 22,0%, -2,0 puntos frente a 5e; `moods-move-choices` y `ai-uses-many-actions` pasan (27 verbos). Sigue fase 6 (obras por persuasión). Ver [m15_plan.md](m15_plan.md).
 **2026-09-28: M15 fase 5e completa.** La presión de curiosidad se acumula entre descubrimientos y guía reflexión, investigación, recolección y expectativas inciertas. En `century`, 82 ideas (0,40 por persona-año), 25 tecnologías probadas, 38 acciones y el check de ánimo pasan. `lean` sube a 24,0%, +0,9 puntos frente a 5d. Sigue 5f (posesión). Ver [m15_plan.md](m15_plan.md).
 **2026-09-28: M15 fase 5d completa.** El estatus relativo del hogar modula suavemente regalos, elogios y spar según la ambición; conserva el peso de lealtad en acciones sociales. La cohorte `lean` da 23,1%, -1,4 puntos frente a 5c y bajo el máximo de tres. Sigue 5e (curiosidad). Ver [m15_plan.md](m15_plan.md).

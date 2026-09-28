@@ -902,6 +902,8 @@ exista una cama.
 **Fase 5 completada (2026-09-28):** los seis motivos ya tienen escritor/presión/lectores y commits medidos. Seguridad, pertenencia, propósito, estatus, curiosidad y posesión quedan con el límite de coste de tres puntos respetado en `lean`; la fase siguiente es 6, obras por persuasión.
 ## Fase 6 — Obras por persuasión (M13 fase 11; `notes4.txt`)
 
+**Avance del 2026-09-28 (6a):** cada obra tiene proponente y lista de partidarios; los sitios iniciales reciben un adulto de su banda como proponente y los que coloca el jugador quedan propuestos por su personaje. La construccion voluntaria se limita al proponente y sus partidarios; una orden dirigida a una obra sigue autorizando a su destinatario. La jefatura solo dirige obras que apoya. Pruebas focalizadas pasan; la cohorte queda pendiente para cerrar la fase. Sin cambio de interfaz.
+
 **Detalle en `m13_plan.md` fase 11.** `Building.sponsorId` y `backers`; nadie
 trabaja en una obra sin ser su proponente, su partidario o sin que se lo hayan
 mandado; `social/Persuasion.ts` y el verbo `propose`; «Pedir ayuda con…» en el

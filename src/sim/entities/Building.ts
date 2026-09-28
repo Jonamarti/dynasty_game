@@ -643,8 +643,13 @@ export class Building {
   /** Top-left corner, in tiles. */
   readonly x: number;
   readonly y: number;
-  /** Who ordered it; used later for ownership and inheritance. */
+  /** Band that owns it; used for property, planning and inheritance. */
   ownerBandId: number;
+
+  /** Person who first wanted this project enough to put it forward. */
+  sponsorId: number | null = null;
+  /** People who agreed to spend their time helping this particular project. */
+  readonly backers: number[] = [];
 
   /** Materials delivered so far. */
   readonly delivered = new Inventory();

@@ -2319,7 +2319,7 @@ export class Brain {
     if (comfortNow > 0.45) {
       site = this.pickBest(
         ctx.buildings.filter(b =>
-          !b.complete ||
+          (!b.complete ||
           // M11 phase 11b: a sabotaged building of one's own band draws the
           // same builder a fresh frame would, at the same skill and the same
           // comfort gate — a hut does not know the difference between never
@@ -2330,7 +2330,10 @@ export class Brain {
           // permission, but nothing here should send someone across a band
           // line to volunteer for it either.
           (b.durability !== null && b.durability < b.def.workTicks &&
-            b.ownerBandId === person.bandId)),
+            b.ownerBandId === person.bandId)) &&
+          b.ownerBandId === person.bandId &&
+          (b.sponsorId === person.id || b.backers.includes(person.id) ||
+            (person.order !== null && person.targetBuildingId === b.id))),
         b => -person.distanceTo({ x: b.centerX, y: b.centerY })
       );
       if (site) {

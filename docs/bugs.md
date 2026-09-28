@@ -1,5 +1,9 @@
 # Known bugs and rough edges
 
+## Suite base observada durante M15 fase 6a, 2026-09-28
+
+La ejecucion paralela completa de `npm test` dejo cuatro fallos de crecimiento y subproductos en `herding.test.ts`, mas el timeout conocido de cinco segundos en el ejercicio de rango de `band.test.ts`. La repeticion focalizada de `building-sponsor.test.ts` y `autonomy.test.ts` pasa en serie; el fallo inicial de autonomia desaparecio al asignar proponentes a los sitios de partida antes del primer ciclo de pensamiento. Los fallos de rebaño no pertenecen a esta fase y continuan pendientes de su arreglo propio.
+
 ## M15 fase 2a — expectativas de rendimiento y supervivencia, 2026-09-27
 
 Las creencias de rendimiento ya influyen en forage/fish/pick/hunt y se ven en
