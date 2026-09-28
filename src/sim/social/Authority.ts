@@ -345,6 +345,13 @@ export function standingOver(
 
   const cost = orderCost(action, foreign);
   if (foreign) reasons.push(t('you are asking them to cross another band'));
+  // Authority used to describe who stood over the hearer but not what the
+  // order was asking of them. Keep the cost visible beside that standing: the
+  // same chief can ask for a small errand or a life-threatening act.
+  if (cost <= 0.15) reasons.push(t('a small thing to ask'));
+  else if (cost <= 0.3) reasons.push(t('a substantial ask'));
+  else if (cost <= 0.6) reasons.push(t('a great deal to ask'));
+  else reasons.push(t('you are asking them to risk their life'));
   const chance = Math.max(0, Math.min(0.98, authority - cost * 0.6));
 
   return {

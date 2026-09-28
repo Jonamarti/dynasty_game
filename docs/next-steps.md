@@ -1,5 +1,7 @@
 # Next steps
 
+**2026-09-28: M15 fase 7a implementada; fase en curso.** Las ordenes explican su coste en standingOver y muestran una probabilidad verbal en el radial, con traduccion espanola. typecheck, pruebas de ordenes y captura Playwright focalizada; sin cambios de RNG ni en la obediencia. Sigue 7b: contadores por verbo, linea ORDERS y medicion de la puerta gather > attack. La incidencia de refugios de 6e permanece abierta en bugs.md. Captura: m15-7-command-cost.png.
+
 **2026-09-28: M15 fase 6b-6e implementada; fase aun abierta.** La peticion de apoyo y sus checks pasan en `band`; la cohorte `lean` cuesta 2,0 puntos. `harsh-winter` sigue sin abrigo pese a tener obras respaldadas: resolver el cuello de materiales/refugios antes de pasar a fase 7. Capturas: `m15-6-propose-menu.png`, `m15-6-propose-projects.png`. Ver [m15_plan.md](m15_plan.md) y [bugs.md](bugs.md).
 
 **2026-09-28: M15 fase 6a completa.** Los proyectos ya tienen proponente, y el trabajo voluntario y las ordenes del jefe respetan quien apoya cada obra. Los sitios iniciales y los que coloca el jugador reciben proponente; la verificacion focalizada pasa. Avanzan 6b-6e, persuasion y medicion; sigue pendiente el refugio frio. Ver [m15_plan.md](m15_plan.md).

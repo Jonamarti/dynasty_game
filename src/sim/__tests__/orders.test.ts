@@ -635,6 +635,20 @@ describe('crafting', () => {
 });
 
 describe('a refusal by authority', () => {
+  it('explains the cost of an order in the standing estimate', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i < 50; i++) sim.step();
+    const [leader, subordinate] = sim.livingPeople();
+    expect(leader).toBeDefined();
+    expect(subordinate).toBeDefined();
+
+    const small = sim.standing(leader!, subordinate!, 'gather');
+    const dangerous = sim.standing(leader!, subordinate!, 'attack');
+    expect(small.because).toContain('a small thing to ask');
+    expect(dangerous.because).toContain('you are asking them to risk their life');
+    expect(small.chance).toBeGreaterThan(dangerous.chance);
+  });
+
   it('carries the reason the standing calculation already worked out', () => {
     // `standing.because` is computed one line above the refusal and was thrown
     // away, so the player read a bare "X refuses" — while the Ties tab showed

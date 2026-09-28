@@ -1,4 +1,8 @@
 #
+## 2026-09-28 - M15 phase 7a: show the cost of an order
+
+standingOver now explains the request cost, and command mode shows a translated verbal estimate beside each radial option before the player issues it. Nested options use the same estimate and target cost as Simulation.command. Added a focused authority test and Playwright screenshot/assertion. No RNG draw or obedience change; visual evidence: artifacts/screenshots/m15-7-command-cost.png. Phase 7b still needs per-verb counters, the ORDERS cohort line, and measurement of the obedience gate.
+
 ## 2026-09-28 - M15 phase 5f: possession against a weekly reserve
 
 Added household food-reserve pressure from members' carried food and their home store, compared with seven days of configured consumption. It replaces greed's stockpile terms for forage, picking, and choosing the household store, with a 0.75 reader calibration. Full strength broke the raid-mode test; 0.75 restores the expected plunder-versus-damage choice. The band mood check and 27-action check pass. Across 20 `lean` seeds, survival was 22.0%, down 2.0 points from 5e and inside the phase limit. No UI change. M15 phase 5 is complete; phase 6 follows.

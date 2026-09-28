@@ -1441,6 +1441,27 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     chiefOf: bandId => sim.bandSystem.chiefByBand.get(bandId),
   });
 
+  // A command is a request, not a button that guarantees compliance. Put the
+  // same estimate `Simulation.command` uses on each option before the player
+  // commits, including nested recipe/conversation pages.
+  if (commanding && commanding.alive && commanding.id !== actor.id) {
+    const annotate = (items: ActionOption[]): ActionOption[] => items.map(option => {
+      const siteId = option.buildingId ?? target.building?.id;
+      const site = siteId === undefined ? undefined : sim.buildingsById.get(siteId);
+      const foreign = site !== undefined && site.ownerBandId !== subject.bandId;
+      const standing = sim.standing(actor, subject, option.id, foreign);
+      const estimate = standing.chance >= 0.8 ? t('almost certain')
+        : standing.chance >= 0.5 ? t('may well obey')
+          : standing.chance >= 0.25 ? t('uncertain') : t('unlikely to obey');
+      return {
+        ...option,
+        label: t('{action} ({chance})', { action: option.label, chance: estimate }),
+        ...(option.children ? { children: annotate(option.children) } : {}),
+      };
+    });
+    options.splice(0, options.length, ...annotate(options));
+  }
+
   const title =
     target.kind === 'person'
       ? knowledgeOfPerson(actor, target.person!, sim.relationships).displayName :

@@ -933,8 +933,9 @@ convencer: pedir y mandar.
   diferencia entre recolectar y atacar, el `0.6` único pasa a ser una
   pendiente que crece con el coste.
 
-**Puerta:** con el mismo mandante, la obediencia a `gather` supera a la de
-`attack`. Test unitario con cinco verbos.
+**Puerta:** con el mismo mandante, la obediencia a gather supera a attack. Test unitario con cinco verbos.
+
+**Avance del 2026-09-28 (7a):** standingOver nombra el tramo de coste y el radial de ordenes muestra la probabilidad estimada en palabras, en ingles y espanol. La captura artifacts/screenshots/m15-7-command-cost.png registra el menu antes de ordenar. typecheck, las pruebas de ordenes y la prueba visual focalizada pasan. No se anaden tiradas ni cambia la obediencia; 7b sigue pendiente.
 
 ## Fase 8 — Incursiones por propuesta, y guerras que empiezan y acaban (M13 fase 12)
 

@@ -242,6 +242,75 @@ test('tour', async ({ page }) => {
   await page.screenshot({ path: DIR + '/06-island.png' });
 });
 
+test('M15 phase 7 command cost estimate', async ({ page }) => {
+  await page.goto('/?seed=m15-command-cost&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  await page.locator('.hud-tab', { hasText: 'Ties' }).click();
+
+  // The founding household is visible in the player's Ties panel. Selecting a
+  // family member there exercises the same command control without a camera
+  // race over a moving stranger.
+  await page.locator('.hud-person-link').first().click();
+  await page.locator('.hud-tab', { hasText: 'Ties' }).click();
+  const command = page.locator('.hud-commandbtn');
+  await expect(command).toBeVisible();
+  await command.click();
+
+  await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: {
+        sim: {
+          player: { x: number; y: number };
+          world: { isWalkable: (x: number, y: number) => boolean };
+          livingPeople: () => { x: number; y: number }[];
+          nodes: { x: number; y: number }[];
+          trees: { x: number; y: number }[];
+          buildingAt: (x: number, y: number) => unknown;
+        };
+        camera: { snapTo: (x: number, y: number) => void; following: boolean };
+      };
+    }).__dynasty;
+    d.camera.snapTo(d.sim.player.x, d.sim.player.y);
+    d.camera.following = false;
+  });
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  const clear = await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: {
+        sim: {
+          player: { x: number; y: number };
+          world: { isWalkable: (x: number, y: number) => boolean };
+          livingPeople: () => { x: number; y: number }[];
+          nodes: { x: number; y: number }[];
+          trees: { x: number; y: number }[];
+          buildingAt: (x: number, y: number) => unknown;
+        };
+        camera: { worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+      };
+    }).__dynasty;
+    const me = d.sim.player;
+    for (let radius = 3; radius < 12; radius++) {
+      for (let step = 0; step < 24; step++) {
+        const angle = step / 24 * Math.PI * 2;
+        const x = Math.round(me.x + Math.cos(angle) * radius);
+        const y = Math.round(me.y + Math.sin(angle) * radius);
+        if (!d.sim.world.isWalkable(x, y) || d.sim.buildingAt(x, y)) continue;
+        if (d.sim.livingPeople().some(person => Math.hypot(person.x - x, person.y - y) < 2)) continue;
+        if (d.sim.nodes.some(node => Math.hypot(node.x - x, node.y - y) < 2)) continue;
+        if (d.sim.trees.some(tree => Math.hypot(tree.x - x, tree.y - y) < 2.5)) continue;
+        return { x: d.camera.worldToScreenX(x), y: d.camera.worldToScreenY(y) };
+      }
+    }
+    return null;
+  });
+  expect(clear).not.toBeNull();
+  await page.mouse.click(clear!.x, clear!.y, { button: 'right' });
+  const walk = page.locator('.radial-item', { hasText: 'Walk here' });
+  await expect(walk).toContainText(/almost certain|may well obey|uncertain|unlikely to obey/);
+  await page.screenshot({ path: DIR + '/m15-7-command-cost.png' });
+});
+
 test('M15 2i observer map and fog toggle', async ({ page }) => {
   await page.goto('/?seed=m15-2i-fog&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
