@@ -1,4 +1,5 @@
 import type { Person } from '../entities/Person.ts';
+import { curiosityNeed } from './Temperament.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { BUILDINGS } from '../entities/Building.ts';
@@ -22,6 +23,8 @@ const KNOWN_RAW_FOOD = ['berries', 'apple', 'pear', 'plum', 'hazelnut', 'meat', 
 export class Beliefs {
   static readonly MAX = BELIEF_CAPACITY;
   private readonly values = new Map<string, Belief>();
+
+  constructor(private readonly onNewBelief?: () => void) {}
 
   get(key: string): Belief | undefined { return this.values.get(key); }
 
@@ -75,12 +78,13 @@ export class Beliefs {
       if (weakestKey !== undefined) this.values.delete(weakestKey);
     }
     this.values.set(key, { value: observed, confidence: rate, source, tick });
+    this.onNewBelief?.();
   }
 
   entries(): IterableIterator<[string, Belief]> { return this.values.entries(); }
 
-  inherit(scale: number): Beliefs {
-    const copy = new Beliefs();
+  inherit(scale: number, onNewBelief?: () => void): Beliefs {
+    const copy = new Beliefs(onNewBelief);
     const factor = Math.max(0, Math.min(1, scale));
     for (const [key, belief] of this.values) {
       copy.values.set(key, { ...belief, confidence: belief.confidence * factor, source: 'inherited' });
@@ -116,7 +120,7 @@ export function expectationRatio(person: Person, key: string): number {
   const belief = person.beliefs.expect(key);
   const expected = belief.confidence > 0 ? belief.value : baseline;
   return Math.max(0.5, Math.min(2, expected / baseline)) +
-    person.traits.curiosity * 0.15 * (1 - belief.confidence);
+    curiosityNeed(person) * 0.15 * (1 - belief.confidence);
 }
 
 /** What this person expects a technology they lack to be worth in daily life. */

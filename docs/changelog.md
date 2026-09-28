@@ -1,4 +1,7 @@
 #
+## 2026-09-28 - M15 phase 5e: curiosity between discoveries
+
+Added a capped days-since-discovery accumulator that resets when a person gains a belief, idea, prototype trial, technology, or refinement; inherited beliefs reset the learner. Curiosity pressure and trait sensitivity now shape reflecting, pondering, gathering, idea conception, and uncertain yield expectations. Focused tests pass. In `century`, 82 ideas were conceived (0.40 per person-year), 25 technologies were proven, and 38 actions were observed; the idea and mood checks pass. Across 20 `lean` seeds, survival was 24.0%, up 0.9 points from 5d. No UI change.
 ## 2026-09-28 - M15 phase 5d: household status
 
 Added relative household-renown pressure, adjusted for the person's recent public deeds, plus an ambition sensitivity based on greed, aggression, and tradition. Status gently modulates praise and gifts while preserving loyalty's established influence, and adds a minimal nudge to spar. The focused tests and `moods-move-choices` pass. Five measured variants exceeded the three-point survival cost; the accepted calibration reached 23.1% over 20 `lean` seeds, 1.4 points below 5c. No UI change.

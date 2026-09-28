@@ -275,7 +275,9 @@ export class Person {
   /** What this person has seen and been told. See `social/Memory.ts`. */
   memory: Memory;
   /** What this person expects from food and work, learned from experience. */
-  beliefs = new Beliefs();
+  beliefs = new Beliefs(() => this.noteDiscovery());
+  /** Days since a new belief, idea, technique, or refinement refreshed curiosity. */
+  curiosityDays = 0;
   /** Personal map, observed but not yet used by decisions (M15 phase 2e). */
   placeMemory = new PlaceMemory(128, 128, 48);
   placeMemoryStaticCell = -1;
@@ -301,6 +303,9 @@ export class Person {
    * chronicle is what remains of who they were.
    */
   chronicle: LifeEvent[] = [];
+
+  /** Reset the slow novelty drive when this person learns or tries something new. */
+  noteDiscovery(): void { this.curiosityDays = 0; }
 
   /**
    * Ideas being worked on, and how far each has got. Capped at `MAX_IDEAS`, so

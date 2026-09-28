@@ -31,6 +31,7 @@ import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import { statusPressure } from './Status.ts';
+import { curiosityNeed } from './Temperament.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -891,7 +892,7 @@ export class Brain {
         person.needs.hunger, person.needs.thirst, person.needs.fatigue
       ) / 100;
       const idleness = Math.max(0, comfort - 0.5) * 2;
-      add('gather', idleness * idleness * (0.15 + person.traits.curiosity * 0.3)
+      add('gather', idleness * idleness * (0.15 + curiosityNeed(person) * 0.3)
         * this.proximityBonus(person, matNode, ctx.sightRadius));
     }
 
@@ -2732,7 +2733,7 @@ export class Brain {
     // second opinion about the same thing.
     if (comfortNow > 0.45 && !idea && ctx.time.tick >= person.reflectCooldownUntil) {
       const spare = (comfortNow - 0.45) * 2;
-      add('reflect', spare * spare * (0.10 + person.traits.curiosity * 0.16)
+      add('reflect', spare * spare * (0.10 + curiosityNeed(person) * 0.16)
         * (0.4 + person.traits.intelligence));
     }
 
@@ -2746,7 +2747,7 @@ export class Brain {
       // person does with a spare hour. It was half again higher on a first pass
       // and thinking became the sixth most common activity in the world, ahead
       // of building and sleeping, which is not a stone age.
-      add('ponder', spare * spare * (0.18 + person.traits.curiosity * 0.3)
+      add('ponder', spare * spare * (0.18 + curiosityNeed(person) * 0.3)
         * (0.4 + person.traits.intelligence) * motiveBonus);
 
       if (socialReady && neighbours.length > 0) {

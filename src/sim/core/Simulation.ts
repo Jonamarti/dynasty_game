@@ -3649,6 +3649,7 @@ export class Simulation {
       this.settleCaptives();
       for (const person of this.people) {
         if (person.alive) {
+          person.curiosityDays = Math.min(60, person.curiosityDays + 1);
           decayMood(person);
           decayMacroBalance(person);
           decayMacroTarget(person);

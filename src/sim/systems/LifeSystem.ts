@@ -213,7 +213,9 @@ export function inheritTraits(
   // quickly replace family lore. If the mother died in childbirth, the living
   // father is the only parent whose expectations can reach the newborn.
   const beliefParent = mother.alive ? mother : father;
-  child.beliefs = beliefParent ? beliefParent.beliefs.inherit(0.6) : child.beliefs;
+  child.beliefs = beliefParent
+    ? beliefParent.beliefs.inherit(0.6, () => child.noteDiscovery())
+    : child.beliefs;
   for (const trait of TRAITS) {
     const inherited = father
       ? (mother.traits[trait] + father.traits[trait]) / 2

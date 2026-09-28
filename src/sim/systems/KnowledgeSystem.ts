@@ -44,6 +44,7 @@ import {
 import { telemetry } from '../core/Telemetry.ts';
 import { t, aNoun, genderOf } from '../../i18n/i18n.ts';
 import { techAppeal } from '../ai/Beliefs.ts';
+import { curiosityNeed } from '../ai/Temperament.ts';
 
 // `CONCEPTION_BASE`, `TEST_CHANCE`, the number of trials a design needs and what
 // a failed one is worth all live in `Config.knowledge` now rather than here.
@@ -414,7 +415,7 @@ export class KnowledgeSystem {
     // Curiosity is whether you look; intelligence is whether you see it when
     // you do; skill is whether you have handled the materials enough to notice
     // anything at all. All three, because any one alone produces a caricature.
-    const curiosity = 0.3 + person.traits.curiosity * 1.7;
+    const curiosity = 0.3 + curiosityNeed(person) * 1.7;
     const wit = 0.6 + person.traits.intelligence * 0.8;
     const competence = 0.2 + person.skills[def.skill] / 60;
     // Note 4's second half: having actually sat down and thought. `curiosity`
@@ -458,6 +459,7 @@ export class KnowledgeSystem {
       tries: 0,
     };
     person.ideas.push(idea);
+    person.noteDiscovery();
     telemetry.count('conceived_' + chosen.tech);
     // Per route, not just per technology: `sparks-are-various` asks whether the
     // web has more than one way in, and only this counter can answer it.
@@ -498,6 +500,7 @@ export class KnowledgeSystem {
         + (person.traits.intelligence - 0.5) * 0.2);
 
       idea.trials++;
+      person.noteDiscovery();
       const step = 1 / Math.max(1, ctx.knowledge.trialsToProve);
 
       if (!ctx.rng.chance(chance)) {
@@ -539,7 +542,9 @@ export class KnowledgeSystem {
   /** A prototype that worked. The technology enters the world. */
   private prove(person: Person, idea: Idea, ctx: KnowledgeContext): void {
     const def = TECH[idea.tech];
+    const learnedNow = !person.knownTech.has(idea.tech);
     person.knownTech.add(idea.tech);
+    if (learnedNow) person.noteDiscovery();
     if (idea.tech === 'cooking') {
       // Proving cooking means the inventor has actually tested the first roast.
       // Recording that result is the evidence the food scorer needs; otherwise
@@ -605,6 +610,7 @@ export class KnowledgeSystem {
     if (idea.stage === 'proven' && idea.insight >= 1) {
       const level = (person.techLevel.get(idea.tech) ?? 0) + 1;
       person.techLevel.set(idea.tech, level);
+      person.noteDiscovery();
       idea.insight = 0;
       telemetry.count('refined_' + idea.tech);
       person.chronicle.push({
@@ -683,7 +689,9 @@ export class KnowledgeSystem {
    * about it is dropped, because there is nothing left to work out.
    */
   private receive(person: Person, tech: Tech): void {
+    const learnedNow = !person.knownTech.has(tech);
     person.knownTech.add(tech);
+    if (learnedNow) person.noteDiscovery();
     if (!person.techLevel.has(tech)) person.techLevel.set(tech, 0);
     person.ideas = person.ideas.filter(idea => idea.tech !== tech);
   }
@@ -727,6 +735,7 @@ export class KnowledgeSystem {
       failedTests: 0,
       tries: 0,
     });
+    person.noteDiscovery();
     telemetry.count('reminded_' + tech);
     return true;
   }
