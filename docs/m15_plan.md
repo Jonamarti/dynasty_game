@@ -895,6 +895,7 @@ exista una cama.
 
 **Avance del 2026-09-28 (5c):** terminar trabajo eleva el propósito, una interrupción lo reduce y un objetivo imposible no lo altera. El apetito por trabajar lee ese ánimo con sensibilidad por industriosidad y queda limitado a 0,8-1,2. `ai-uses-many-actions` pasa con 26 acciones distintas; `moods-move-choices` también. Veinte semillas `lean`: 24,5% de supervivencia, +4,1 puntos frente a 5b y +1,4 frente a 5a. La suite conserva un timeout conocido de `band.test.ts` (603 pruebas pasan). Sin cambio de interfaz. Siguiente: 5d, estatus.
 
+**Avance del 2026-09-28 (5d):** el estatus compara el renombre del hogar con la media de su banda y resta el peso de los hechos propios recientes; su sensibilidad refleja ambición, agresividad y tradición. La señal modula regalos y elogios conservando la influencia de lealtad, y añade un empuje mínimo al spar. `moods-move-choices` y las pruebas enfocadas pasan. Cinco variantes medidas: las cuatro más intensas quedaron entre 3,8 y 6 puntos por debajo de 5c; la variante calibrada quedó en 23,1% en 20 semillas `lean`, -1,4 puntos frente a 5c, dentro del máximo de 3. Sin cambio de interfaz. Sigue 5e, curiosidad.
 ## Fase 6 — Obras por persuasión (M13 fase 11; `notes4.txt`)
 
 **Detalle en `m13_plan.md` fase 11.** `Building.sponsorId` y `backers`; nadie

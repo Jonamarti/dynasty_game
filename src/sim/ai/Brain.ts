@@ -29,7 +29,8 @@ import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
-import type { Household } from '../entities/Household.ts';
+import { averageRenown, type Household } from '../entities/Household.ts';
+import { statusPressure } from './Status.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -139,6 +140,8 @@ export interface BrainContext {
   snowBuries: boolean;
   /** For `store`'s hoarding term: which building a person's own household calls home. */
   householdsById: ReadonlyMap<number, Household>;
+  /** Same-tick peer averages, computed once instead of once per person's score. */
+  averageRenownByBand?: ReadonlyMap<number, number>;
   buildingsById: ReadonlyMap<number, Building>;
   motivation: MotivationConfig;
   /** Lets the scorer identify the chief when choosing a privileged larder. */
@@ -323,6 +326,16 @@ function talkGate(rel: Relationship, tick: number): number {
  */
 const BAND_BOND = 0.25;
 const CHIEF_BOND = 0.7;
+/** Status is a nudge toward friendly practice, not a reason to spar all day. */
+const STATUS_READER_PULL = 0.0001;
+const STATUS_SPAR_PULL = 0.00001;
+
+/** Relative household standing, softened by the person's recent public deeds. */
+function statusPull(person: Person, ctx: BrainContext): number {
+  const household = person.householdId === null ? null : ctx.householdsById.get(person.householdId) ?? null;
+  const average = ctx.averageRenownByBand?.get(person.bandId) ?? averageRenown(person.bandId, ctx.householdsById);
+  return statusPressure(person, household, average) * sensitivity(person, 'status');
+}
 
 /** A low belonging mood creates a modest pull toward one's own people. */
 function belongingNeed(person: Person): number {
@@ -675,6 +688,7 @@ export class Brain {
     this.knownNodeCandidatesFor = null;
     const homeCtx = { ...anchorCtx, time: ctx.time };
     const drive = drivePressures(person, homeCtx);
+    const status = statusPull(person, ctx);
     // Hysteresis: whatever you are already doing is worth a little more than
     // starting something else. Without this people dither on the spot, walking
     // half way to the water, half way to a bush, and satisfying neither need.
@@ -1130,7 +1144,7 @@ export class Brain {
         if (goodNews && goodNews.salience >= 0.15 &&
             goodNews.actorId !== person.id && goodNews.actorId !== companion.id &&
             !companion.memory.has(goodNews.eventId)) {
-          add('praise', goodNews.salience * (0.25 + person.traits.loyalty * 0.5)
+          add('praise', goodNews.salience * (0.25 + person.traits.loyalty * 0.5 + status * STATUS_READER_PULL)
             * this.proximityBonus(person, companion, ctx.sightRadius));
           praiseSubjectId = goodNews.actorId;
         }
@@ -1182,7 +1196,7 @@ export class Brain {
           ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other) * 2);
         if (partner) {
           const outmatched = Math.max(0, 0.5 - person.skillFactor('fight'));
-          add('spar', (0.1 + person.traits.aggression * 0.5 + outmatched * 0.6)
+          add('spar', (0.1 + person.traits.aggression * 0.5 + outmatched * 0.6 + status * STATUS_SPAR_PULL)
             * this.proximityBonus(person, partner, ctx.sightRadius));
           sparPartner = partner;
         }
@@ -2101,7 +2115,7 @@ export class Brain {
         if (!to) continue;
         const regard = Math.max(0, ctx.relationships.opinion(person.id, to.id)) / 100;
         add('gift', (0.3 + regard * 0.8 + this.bond(person, to, ctx) * 0.6) *
-          (1 - person.traits.greed * 0.7) * (0.3 + person.traits.loyalty) *
+          (1 - person.traits.greed * 0.7) * (0.3 + person.traits.loyalty) * (1 + status * STATUS_READER_PULL) *
           this.proximityBonus(person, to, ctx.sightRadius));
         giftee = to;
         giftItem = itemId;

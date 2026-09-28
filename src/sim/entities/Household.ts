@@ -88,12 +88,18 @@ export class Household {
  * apart the first time either one changed what counts as a household's band.
  */
 export function averageRenown(bandId: number, householdsById: ReadonlyMap<number, Household>): number {
-  let total = 0;
-  let count = 0;
+  return averageRenownByBand(householdsById).get(bandId) ?? 0;
+}
+
+/** One pass for scorers that need several bands' averages in the same tick. */
+export function averageRenownByBand(householdsById: ReadonlyMap<number, Household>): Map<number, number> {
+  const totals = new Map<number, { total: number; count: number }>();
   for (const household of householdsById.values()) {
-    if (household.bandId !== bandId || household.extinct) continue;
-    total += household.renown;
-    count++;
+    if (household.extinct) continue;
+    const band = totals.get(household.bandId) ?? { total: 0, count: 0 };
+    band.total += household.renown;
+    band.count++;
+    totals.set(household.bandId, band);
   }
-  return count > 0 ? total / count : 0;
+  return new Map([...totals].map(([bandId, value]) => [bandId, value.total / value.count]));
 }

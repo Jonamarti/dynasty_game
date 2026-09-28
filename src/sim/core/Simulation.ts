@@ -51,7 +51,7 @@ import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
 import { assailantOf, isHeld } from '../social/Defence.ts';
 import { wouldInvestigate, noticeBloodied, INVESTIGATION_DAYS } from '../social/Investigation.ts';
 import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
-import { Household, resetHouseholdIds } from '../entities/Household.ts';
+import { averageRenownByBand, Household, resetHouseholdIds } from '../entities/Household.ts';
 import { Tree, resetTreeIds } from '../entities/Tree.ts';
 import { giftWorth } from '../social/Events.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
@@ -3784,6 +3784,7 @@ export class Simulation {
       },
       snowBuries: this.config.world.snowBuries,
       householdsById: this.householdsById,
+      averageRenownByBand: averageRenownByBand(this.householdsById),
       buildingsById: this.buildingsById,
       motivation: this.config.motivation,
       bandRelations: this.bandRelations,

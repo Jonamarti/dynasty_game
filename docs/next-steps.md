@@ -1,5 +1,6 @@
 # Next steps
 
+**2026-09-28: M15 fase 5d completa.** El estatus relativo del hogar modula suavemente regalos, elogios y spar según la ambición; conserva el peso de lealtad en acciones sociales. La cohorte `lean` da 23,1%, -1,4 puntos frente a 5c y bajo el máximo de tres. Sigue 5e (curiosidad). Ver [m15_plan.md](m15_plan.md).
 **2026-09-28: M15 fase 5c completa.** Propósito ya responde al trabajo completado e interrumpido; la sensibilidad mantiene el multiplicador de trabajo en su banda acotada. La cohorte `lean` sube 4,1 puntos desde 5b y `ai-uses-many-actions` conserva 26 verbos. Sigue 5d (estatus). Ver [m15_plan.md](m15_plan.md).
 
 **2026-09-28: M15 fase 5b completa.** La pertenencia ya tiene escritores y lectores en la simulación; su check comparativo pasa y la cohorte `lean` cae 2,7 puntos frente a 5a, bajo el límite de tres. Ver [m15_plan.md](m15_plan.md).

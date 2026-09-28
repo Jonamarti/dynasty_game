@@ -1,3 +1,7 @@
+#
+## 2026-09-28 - M15 phase 5d: household status
+
+Added relative household-renown pressure, adjusted for the person's recent public deeds, plus an ambition sensitivity based on greed, aggression, and tradition. Status gently modulates praise and gifts while preserving loyalty's established influence, and adds a minimal nudge to spar. The focused tests and `moods-move-choices` pass. Five measured variants exceeded the three-point survival cost; the accepted calibration reached 23.1% over 20 `lean` seeds, 1.4 points below 5c. No UI change.
 ## 2026-09-28 - M15 phase 5c: purpose responds to work
 
 Completing a work action raises purpose, an interruption lowers it, and an impossible target leaves it alone. Work appetite now comes from purpose mood and industriousness sensitivity, clamped to the existing 0.8-1.2 band; idle appetite remains its complement. `ai-uses-many-actions` passes with 26 distinct actions. In 20 `lean` seeds, survival rose to 24.5% from 20.4% in 5b (+4.1 points), and to 24.5% from 23.1% in 5a (+1.4). The full suite retains the known five-second timeout in `band.test.ts` (603 other tests passed). No UI change.

@@ -4,10 +4,12 @@ import type { DriveId } from './Drives.ts';
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
 /** Derived pull sensitivity; keeping this out of TRAITS preserves founder RNG draws. */
-export function sensitivity(person: Person, drive: DriveId | 'belonging' | 'purpose'): number {
+export function sensitivity(person: Person, drive: DriveId | 'belonging' | 'purpose' | 'status'): number {
   if (drive === 'safety') return 1.4 - person.traits.aggression * 0.8;
   if (drive === 'belonging') return 0.6 + person.traits.loyalty * 0.8;
   if (drive === 'purpose') return 0.8 + person.traits.industriousness * 0.4;
+  if (drive === 'status') return clamp(1 + (person.traits.greed - 0.5) * 0.6 +
+    (person.traits.aggression - 0.5) * 0.4 - (person.traits.tradition - 0.5) * 0.3, 0.6, 1.4);
   if (drive !== 'home') return 1;
   const attachment = clamp(1 + (person.traits.loyalty - 0.5) * 0.8 - (person.traits.curiosity - 0.5) * 0.6, 0.4, 1.6);
   return person.isChild ? Math.max(1, attachment) : attachment;
