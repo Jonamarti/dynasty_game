@@ -3178,3 +3178,12 @@ por persona-año; `known` y `pastRoots` sin bajar) se cumple: `century` a 20
 semillas dio 0,46 ideas por persona-año (techo 3), conocidas 7,4 frente a 7,5
 (ruido), pasadas raíz 7,0 frente a 6,7 (sube), supervivencia 92,7% frente a
 92,3%.
+
+## Found during M15 fase 17 — la boca de `Sprites.ts` está invertida (2026-09-29)
+
+En `paintFace` la curva de la boca usa `quadraticCurveTo(cx, mouthY - curve, …)`:
+con `curve` positivo el punto de control queda **por encima** de los extremos y la
+boca se curva hacia arriba, es decir, fruncida. `warm` y `content` se dibujaban
+tristes y `pained` sonriente. No se corrige: el arte nuevo (`art/src/people/rig.ts`)
+no usa ese código y el dibujo procedural solo queda como respaldo si las hojas no
+cargan. Si alguien mantiene ese respaldo, el signo es el que hay que cambiar.
