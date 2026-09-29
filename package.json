@@ -19,7 +19,8 @@
     "shots": "playwright test e2e/screenshots.spec.ts",
     "why": "vite-node tools/why.ts --",
     "violence": "vite-node tools/violence.ts --",
-    "i18n:soak": "vite-node tools/i18n-soak.ts --"
+    "i18n:soak": "vite-node tools/i18n-soak.ts --",
+    "art:build": "vite-node tools/art/build.ts --"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
