@@ -1,5 +1,17 @@
 # Known bugs and rough edges
 
+## M15 fase 9, 2026-09-29
+
+El check `camps-move-when-the-land-fails` pasa en `lean`: la corrida de 24.000
+pasos registro una propuesta, 4 de 6 votos a favor y un traslado. Con el umbral
+inicial de 30 dias no hubo propuestas; el escenario acumulo 55 dias de escasez
+entre tres bandas, por lo que se calibra `relocateAfter` a 10. La corrida aun
+reporta los fallos previos de `people-act-on-what-they-know`,
+`cravings-steer-the-diet`, `nights-are-slept`, `opinions-diverge` y el ruidoso
+`perf-budget`. No son fallos de migracion. El conjunto de pruebas mantiene dos
+fallos de rebanos y timeouts conocidos en `band.test.ts` y
+`determinism.test.ts` bajo ejecucion completa.
+
 ## M15 fase 7, medicion y verificaciones (2026-09-28)
 
 La cohorte lean de 20 semillas (24.000 pasos por semilla) no emitio ordenes gather ni attack: la fila ORDERS tuvo build 68/19, haul 718/267, make_amends 0/1 y take 1/1 (obedecidas/rechazadas). Por tanto, no hay tasa de cohorte para comparar gather y attack; el gate se cubre con un test de cinco verbos, mismo mandante/persona y 10.000 tiradas deterministas. La pendiente de coste 0,6 se conserva.

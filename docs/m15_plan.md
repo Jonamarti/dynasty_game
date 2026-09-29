@@ -960,6 +960,14 @@ asalta lo que alguien sabe que existe, porque lo vio o se lo contaron.
 
 ## Fase 9 — El campamento se mueve (M13 fase 13; aprobado)
 
+**Implementada el 2026-09-29.** La escasez sostenida se mide con nodos de comida
+agotados en el radio del campamento, o con hambre cronica / miedo graves. Tras
+10 dias configurables, quien acumula mas hambre cronica y seguridad propone la
+mudanza. El destino se busca solo entre los recursos y el agua que esa persona
+recuerda, y se valida con indices espaciales antes de votar. Si la mayoria de
+adultos apoya, `band.homeX/Y` cambia; si no, la cronica registra que la banda se
+quedo. En `lean` hubo una propuesta aprobada y un traslado (4 votos de 6); el
+check `camps-move-when-the-land-fails` pasa. Se anadio sin RNG ni cambio de UI.
 **Detalle en `m13_plan.md` fase 13.** Cuando la comida al alcance se agota
 durante `motivation.relocateAfter` días, o tras una guerra perdida, el adulto
 con más hambre crónica y miedo propone mudarse a la banda entera. El destino es

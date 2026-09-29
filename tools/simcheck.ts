@@ -1506,6 +1506,14 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       planned + ' sites marked out by bands themselves (player placed none)');
   }
 
+  if (sim.config.seed !== 'lean') {
+    skip('camps-move-when-the-land-fails', 'measured in the lean survival scenario');
+  } else {
+    const moves = tel.camps_moved ?? 0;
+    add('camps-move-when-the-land-fails', moves > 0,
+      moves + ' camps moved after sustained local scarcity to food and water their proposer knew');
+  }
+
   // M6b phase 6: a job is a lean on the scorer, not a guarantee, so the
   // question is not whether anyone was assigned one but whether it changed
   // anything. Measured per job against everyone who does *not* hold it —

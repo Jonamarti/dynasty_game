@@ -39,7 +39,7 @@ import { t } from '../../i18n/i18n.ts';
 import type { Sightings } from '../social/Fear.ts';
 import { fearOf } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
-import type { ResourceNode, ResourceKind } from '../entities/ResourceNode.ts';
+import { isFoodKind, RESOURCE_KINDS, type ResourceNode, type ResourceKind } from '../entities/ResourceNode.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { statusPressure } from '../ai/Status.ts';
 import { sensitivity } from '../ai/Temperament.ts';
@@ -332,6 +332,14 @@ const MAX_SITES = 2;
 const CHIEF_DIRECTS = 2;
 const HEAD_DIRECTS = 1;
 const BAND_DIRECTS_PER_DAY = 4;
+const RELOCATION_FOOD_RADIUS = 36;
+const RELOCATION_DEPLETED_SHARE = 0.75;
+const RELOCATION_HUNGER_PRESSURE = 0.55;
+const RELOCATION_SAFETY_PRESSURE = 0.8;
+const RELOCATION_PROPOSE_AT = 0.35;
+const RELOCATION_SUPPORT_PRESSURE = 0.22;
+const RELOCATION_SUPPORT_WITH_REGARD = 0.14;
+const RELOCATION_SUPPORT_REGARD = 12;
 
 export interface BandContext {
   relationships: RelationshipGraph;
@@ -414,6 +422,9 @@ export class BandSystem {
    */
   private readonly raidConsidered = new Map<number, number>();
 
+  /** First day of sustained local food exhaustion, by band. */
+  private readonly foodFailureSince = new Map<number, number>();
+
   /** Band names by id, refreshed at the top of `daily`, for chronicle lines. */
   private readonly bandNames = new Map<number, string>();
   /** Each band's camp, refreshed with the names; for the raid-for-need motive. */
@@ -448,6 +459,7 @@ export class BandSystem {
       }
 
       this.chooseChief(band, members, ctx);
+      if (!band.outcast) this.considerRelocation(band, members, ctx);
       this.assignJobs(band, members, ctx);
       this.considerExile(band, members, ctx);
       this.considerRebellion(band, members, ctx);
@@ -474,6 +486,119 @@ export class BandSystem {
   // -------------------------------------------------------------------------
   // Chiefs
   // -------------------------------------------------------------------------
+
+  /**
+   * Move a band only after the food around its present camp has stayed mostly
+   * exhausted for a season. A candidate comes from the proposer’s own map,
+   * then the spatial hash checks that food is still there; this avoids both
+   * omniscient migration and walks toward a stale memory of an empty patch.
+   */
+  private considerRelocation(band: Band, members: Person[], ctx: BandContext): void {
+    const food = ctx.nodeHash.queryRadius(band.homeX, band.homeY, RELOCATION_FOOD_RADIUS)
+      .filter(isFoodKind);
+    const depleted = food.filter(node => node.depleted).length;
+    telemetry.count('relocation_food_nodes', food.length);
+    telemetry.count('relocation_food_depleted', depleted);
+    const exhausted = food.length === 0 || depleted / food.length >= RELOCATION_DEPLETED_SHARE;
+    const adults = members.filter(person => !person.isChild && person.captiveOf === null);
+    const chronicHunger = adults.length
+      ? adults.reduce((sum, person) => sum + (person.chronic.hunger ?? 0), 0) / adults.length : 0;
+    const chronicSafety = adults.length
+      ? adults.reduce((sum, person) => sum + (person.chronic.safety ?? 0), 0) / adults.length : 0;
+    // A bad season can leave scattered nodes technically alive while nobody
+    // can feed themselves. Sustained chronic hunger or fear is the observable
+    // failure in that case; the destination still has to be one this proposer
+    // has personally seen and that currently contains food and water.
+    const severeNeed = chronicHunger >= RELOCATION_HUNGER_PRESSURE ||
+      chronicSafety >= RELOCATION_SAFETY_PRESSURE;
+    if (exhausted || severeNeed) telemetry.count('relocation_scarcity_days');
+    if (!exhausted && !severeNeed) {
+      this.foodFailureSince.delete(band.id);
+      return;
+    }
+    const since = this.foodFailureSince.get(band.id) ?? ctx.day;
+    this.foodFailureSince.set(band.id, since);
+    if (ctx.day - since < ctx.motivation.relocateAfter) return;
+
+    if (adults.length < 2) return;
+    let proposer: Person | null = null;
+    let strongest = -Infinity;
+    for (const person of adults) {
+      const pressure = (person.chronic.hunger ?? 0) * 0.7 + (person.chronic.safety ?? 0) * 0.3;
+      if (pressure > strongest) { strongest = pressure; proposer = person; }
+    }
+    if (!proposer || strongest < RELOCATION_PROPOSE_AT) return;
+
+    const destination = this.bestKnownFoodPlace(proposer, band, ctx);
+    if (!destination) {
+      telemetry.count('relocation_no_known_destination');
+      proposer.chronicle.push({ tick: ctx.tick, ageDays: proposer.age,
+        text: t('wanted to move the camp but knew no better place'), kind: 'suffered' });
+      ctx.onInsight(proposer, t('wanted to move the camp but knew no better place'), 'setback');
+      this.foodFailureSince.set(band.id, ctx.day - Math.floor(ctx.motivation.relocateAfter / 2));
+      return;
+    }
+
+    let votes = 0;
+    for (const adult of adults) {
+      const pressure = Math.max(adult.chronic.hunger ?? 0, adult.chronic.safety ?? 0);
+      const regard = ctx.relationships.opinion(adult.id, proposer.id);
+      if (adult.id === proposer.id || pressure >= RELOCATION_SUPPORT_PRESSURE ||
+          (pressure >= RELOCATION_SUPPORT_WITH_REGARD && regard >= RELOCATION_SUPPORT_REGARD)) votes++;
+    }
+    telemetry.count('relocation_votes_yes', votes);
+    telemetry.count('relocation_votes_total', adults.length);
+    telemetry.count('relocation_proposed');
+    telemetry.count(votes * 2 > adults.length ? 'relocation_approved' : 'relocation_rejected');
+    if (votes * 2 <= adults.length) {
+      proposer.chronicle.push({ tick: ctx.tick, ageDays: proposer.age,
+        text: t('proposed moving camp, but the band stayed'), kind: 'suffered' });
+      ctx.onInsight(proposer, t('proposed moving camp, but the band stayed'), 'setback');
+      this.foodFailureSince.set(band.id, ctx.day - Math.floor(ctx.motivation.relocateAfter / 2));
+      return;
+    }
+
+    band.homeX = destination.x;
+    band.homeY = destination.y;
+    this.foodFailureSince.delete(band.id);
+    telemetry.count('camps_moved');
+    proposer.chronicle.push({ tick: ctx.tick, ageDays: proposer.age,
+      text: t('led the {band} to a new camp', { band: band.name }), kind: 'did' });
+    ctx.onInsight(proposer, t('led the {band} to a new camp', { band: band.name }), 'gain');
+    for (const adult of adults) {
+      if (adult.id === proposer.id) continue;
+      adult.chronicle.push({ tick: ctx.tick, ageDays: adult.age,
+        text: t('moved with the {band} to a new camp', { band: band.name }), kind: 'did' });
+    }
+  }
+
+  private bestKnownFoodPlace(proposer: Person, band: Band, ctx: BandContext): { x: number; y: number } | null {
+    const waters = proposer.placeMemory.records('water');
+    let best: { x: number; y: number; score: number } | null = null;
+    for (const kind of RESOURCE_KINDS) {
+      for (const place of proposer.placeMemory.records(`resource:${kind}`)) {
+        if (place.amount === 0 || !ctx.sameRegion(band.homeX, band.homeY, place.x, place.y)) continue;
+        const distance = Math.hypot(place.x - band.homeX, place.y - band.homeY);
+        if (distance < 12) continue;
+        const food = ctx.nodeHash.queryRadius(place.x, place.y, 4)
+          .filter(node => node.kind === kind && isFoodKind(node) && !node.depleted)
+          .reduce((sum, node) => sum + node.amount, 0);
+        if (food < 2) continue;
+        const waterDistance = waters.reduce((near, water) =>
+          Math.min(near, Math.hypot(water.x - place.x, water.y - place.y)), Infinity);
+        if (waterDistance > ctx.motivation.reachAdult) continue;
+        let rivalDistance = Infinity;
+        for (const [otherId, home] of this.bandHomes) {
+          if (otherId === band.id) continue;
+          rivalDistance = Math.min(rivalDistance, Math.hypot(home.x - place.x, home.y - place.y));
+        }
+        const score = food + Math.min(ctx.motivation.reachAdult, waterDistance) * -0.1 +
+          Math.min(60, rivalDistance) * 0.05 - distance * 0.01;
+        if (!best || score > best.score) best = { x: place.x, y: place.y, score };
+      }
+    }
+    return best ? { x: best.x, y: best.y } : null;
+  }
 
   /**
    * At an open election, the chief is whoever the band holds in highest regard.

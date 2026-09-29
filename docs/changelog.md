@@ -38,6 +38,16 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-09-29 - M15 phase 9: camps move when local food fails
+
+Added a configurable 10-day scarcity threshold. A band tracks depleted food
+near camp and sustained chronic hunger or fear; the adult with the strongest
+need proposes moving. The destination must be food and water that person
+remembers, confirmed through spatial hashes, and a majority of adults must
+support the move. Accepted moves update the camp anchor; refused proposals and
+missing destinations leave a reason in the affected person's chronicle. The
+lean scenario recorded one approved move (4 of 6 votes) and passes
+`camps-move-when-the-land-fails`. No RNG draws or UI changes.
 ## 2026-09-27 - M15 phase 4: ideas from chronic needs
 
 People now keep a moving memory of unmet motives. Firemaking, tracking, and fishing can arise from new wanting sparks; techniques declare the motives their effects answer. Research selects the unfinished idea that answers the strongest chronic motive, and motivated ideas can be pondered or discussed above the calibrated comfort floor of 0.4. The Tech Web supports the new ingredient and the screenshot artifacts/screenshots/m15-4-wanting-idea.png records an idea conceived from wanting warmth.
