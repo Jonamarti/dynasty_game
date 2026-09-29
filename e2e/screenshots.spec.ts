@@ -315,10 +315,51 @@ test('M15 2i observer map and fog toggle', async ({ page }) => {
   await page.goto('/?seed=m15-2i-fog&skipIntro=1');
   await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
   await page.waitForTimeout(1200);
-  await page.screenshot({ path: DIR + '/m15-2i-fog-map.png' });
+  await page.screenshot({ path: DIR + '/m15-2i-fog-visible-map.png' });
   await page.keyboard.press('v');
   await page.waitForTimeout(100);
-  await page.screenshot({ path: DIR + '/m15-2i-observer-mode.png' });
+  await page.screenshot({ path: DIR + '/m15-2i-fog-visible-observer.png' });
+});
+
+test('M15 2i corrected fog after memory updates', async ({ page }) => {
+  await page.goto('/?seed=m15-2i-fog&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  // Capture at midday so the night overlay does not hide the fog's own shade.
+  await page.evaluate(() => {
+    const d = (window as unknown as { __dynasty: {
+      sim: { time: { tick: number }; config: { time: { ticksPerDay: number } } };
+    } }).__dynasty;
+    d.sim.time.tick = Math.floor(d.sim.config.time.ticksPerDay / 2);
+  });
+  await page.waitForTimeout(100);
+  await page.screenshot({ path: DIR + '/m15-2i-fog-black-unvisited.png' });
+  await page.evaluate(() => {
+    const d = (window as unknown as { __dynasty: {
+      sim: { player: { x: number; y: number; placeMemory: {
+        observe: (x: number, y: number, radius: number, day: number) => void;
+      } } | null; world: { width: number; height: number }; config: { sightRadius: number };
+        time: { day: number } };
+      camera: { following: boolean; snapTo: (x: number, y: number) => void };
+    } }).__dynasty;
+    const person = d.sim.player!;
+    const x = person.x;
+    const y = person.y;
+    const far = [
+      { x: 2, y: 2 }, { x: d.sim.world.width - 2, y: 2 },
+      { x: 2, y: d.sim.world.height - 2 },
+      { x: d.sim.world.width - 2, y: d.sim.world.height - 2 },
+    ].sort((a, b) => Math.hypot(b.x - x, b.y - y) - Math.hypot(a.x - x, a.y - y))[0]!;
+    person.x = far.x;
+    person.y = far.y;
+    d.camera.following = false;
+    d.camera.snapTo(x, y);
+    for (let i = 0; i < 8; i++) {
+      person.placeMemory.observe(x, y, d.sim.config.sightRadius, d.sim.time.day + 1 + i);
+    }
+  });
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: DIR + '/m15-2i-fog-stable-visited.png' });
 });
 
 test('the four seasons', async ({ page }) => {

@@ -1,4 +1,15 @@
 #
+## 2026-09-29 — M15 corrección de la niebla acumulativa
+
+Cada revisión de la memoria volvía a pintar la máscara transparente sobre sí
+misma, de modo que el terreno visitado se oscurecía progresivamente hasta casi
+desaparecer. Ahora se limpia la capa antes de reconstruirla: lo nunca visitado
+es negro y lo visitado fuera del radio conserva una sombra azul tenue del 28%,
+similar a la noche. Los recuerdos contados de lugares no visitados tampoco
+perforan el negro. El e2e fuerza ocho revisiones y comprueba que la luminosidad
+permanece estable; las capturas son `artifacts/screenshots/m15-2i-fog-stable-visited.png`
+y `artifacts/screenshots/m15-2i-fog-black-unvisited.png`.
+
 ## 2026-09-28 - M15 phase 7b: measure orders by verb
 
 Added per-verb obeyed/refused telemetry and an ORDERS line to seed cohorts. The 20-seed lean run (24,000 steps each) produced build 68/19 (78.2%) and haul 718/267 (72.9%); make_amends and take had one attempt each. No gather or attack order occurred, so this cohort cannot compare those two verbs. The same-leader, five-verb unit gate samples 10,000 seeded rolls and confirms gather exceeds attack. The existing 0.6 cost slope stays: the measured chance gap remains intact, and the cohort showed no saturation evidence. Instrumentation adds no RNG draws; lean survival remained 20.0% (12/20 collapsed), matching the phase 6 reading. Phase 7 is complete.

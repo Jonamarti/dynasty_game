@@ -294,7 +294,7 @@ test('boots, paints and advances the clock', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('the observer map hides unknown ground and prevents selecting its entities', async ({ page }) => {
+test('the observer map hides unvisited ground and prevents selecting its entities', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);
   const unknown = await page.evaluate(() => {
@@ -308,6 +308,9 @@ test('the observer map hides unknown ground and prevents selecting its entities'
       Math.hypot(n.x - player.x, n.y - player.y) > d.sim.config.sightRadius * 2 &&
       player.placeMemory.seenDayAt(n.x, n.y) === 0);
     if (!node) return null;
+    // A place heard about is still unvisited: its marker must not put a bright
+    // dot on the black map before the player has walked there.
+    player.placeMemory.remember('water', node.x, node.y, d.sim.time.day, 1, 'told');
     d.camera.following = false;
     d.camera.snapTo(node.x, node.y);
     return { x: d.camera.worldToScreenX(node.x), y: d.camera.worldToScreenY(node.y) };
@@ -349,6 +352,50 @@ test('the observer map hides unknown ground and prevents selecting its entities'
   await fogButton.click();
   await expect(fogButton).toHaveText('Fog of war: On');
   expect(errors).toEqual([]);
+});
+
+test('explored terrain keeps the same shade as the map memory updates', async ({ page }) => {
+  await ready(page);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  const levels = await page.evaluate(() => {
+    const d = (window as unknown as { __dynasty: {
+      sim: Simulation;
+      renderer: { render: (highlight: null, alpha: number) => void; setSim: (sim: Simulation) => void };
+      camera: { following: boolean; snapTo: (x: number, y: number) => void;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+        viewWidth: number; viewHeight: number };
+    } }).__dynasty;
+    const person = d.sim.player!;
+    const x = person.x;
+    const y = person.y;
+    const far = [
+      { x: 2, y: 2 }, { x: d.sim.world.width - 2, y: 2 },
+      { x: 2, y: d.sim.world.height - 2 },
+      { x: d.sim.world.width - 2, y: d.sim.world.height - 2 },
+    ].sort((a, b) => Math.hypot(b.x - x, b.y - y) - Math.hypot(a.x - x, a.y - y))[0]!;
+    person.x = far.x;
+    person.y = far.y;
+    d.camera.following = false;
+    d.camera.snapTo(x, y);
+    d.renderer.setSim(d.sim); // Start with one coat, then force fresh map revisions.
+    const canvas = document.getElementById('view') as HTMLCanvasElement;
+    const px = Math.floor(d.camera.worldToScreenX(x) * canvas.width / d.camera.viewWidth);
+    const py = Math.floor(d.camera.worldToScreenY(y) * canvas.height / d.camera.viewHeight);
+    const brightness = (): number => {
+      d.renderer.render(null, 1);
+      const pixel = canvas.getContext('2d')!.getImageData(px, py, 1, 1).data;
+      return pixel[0]! + pixel[1]! + pixel[2]!;
+    };
+    const values: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      person.placeMemory.observe(x, y, d.sim.config.sightRadius, d.sim.time.day + 1 + i);
+      values.push(brightness());
+    }
+    return values;
+  });
+  expect(levels[0], 'the visited ground must be visible').toBeGreaterThan(45);
+  expect(Math.max(...levels) - Math.min(...levels), 'new observations must not darken old terrain')
+    .toBeLessThan(8);
 });
 
 test('a remembered place reports when it was last seen', async ({ page }) => {

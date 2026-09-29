@@ -1,5 +1,15 @@
 # Known bugs and rough edges
 
+## M15 2i, pruebas de selección tras activar la niebla (2026-09-29)
+
+Seis e2e de interacción siguen fallando en la suite completa. Cinco intentan
+seleccionar personas que están fuera del radio de visión del jugador: mover la
+cámara hasta ellas ya no las hace visibles. La sexta prueba, de enseñanza,
+queda bloqueada porque otra opción del menú intercepta el clic. Las dos pruebas
+específicas de niebla y la captura de la corrección progresiva pasan. Las
+premisas de esos e2e requieren una revisión separada; no se debe ampliar el
+radio de visión para hacerlos verdes.
+
 ## M15 fase 9, 2026-09-29
 
 El check `camps-move-when-the-land-fails` pasa en `lean`: la corrida de 24.000

@@ -744,14 +744,15 @@ estados por celda:
   (un arbusto que para él sigue lleno aunque ya no lo esté; una manada que ya
   se fue). Al pasar el cursor: «visto hace N días», o «de oídas» si se lo
   contaron;
-- **nunca visto:** negro.
+- **nunca visto:** negro; los objetos y personajes no se muestran ni se pueden
+  seleccionar.
 
 Detalles:
 
-- **El terreno de las celdas exploradas** se dibuja como es ahora, salvo lo
-  que cambia el terreno (obras de tierra, fase 26; edificios nuevos), que solo
-  se ve al volver a verlo. Para eso, el renderer guarda por celda una versión
-  de lo que tu personaje vio.
+- **El terreno de las celdas exploradas** se dibuja como es ahora bajo una
+  sombra tenue fuera del radio de visión. Los cambios del terreno (obras de
+  tierra, fase 26; edificios nuevos) solo se ven al volver a verlo. Para eso,
+  el renderer guardará por celda una versión de lo que vio el personaje.
 - **Todo pasa por `Knowledge.ts`**: el selector de entidades (`EntityPicker`),
   los clics, el menú radial y los paneles no pueden alcanzar nada que tu
   personaje no vea ni recuerde. Es la misma regla que ya protege el nombre de
@@ -766,18 +767,20 @@ Detalles:
 - e2e con `?skipIntro=1`: lo nunca visto no se puede seleccionar; lo
   recordado muestra su antigüedad; tras la sucesión, la niebla cambia.
 
-**Avance del 2026-09-27:** renderer compone una máscara cacheada por revisión
-del `PlaceMemory` del personaje activo; la vista actual abre un círculo móvil,
-los lugares recordados se dibujan como marcas y el terreno nunca visto queda
-negro. Los objetos vivos fuera de vista no se dibujan ni se pueden seleccionar;
+**Avance del 2026-09-27 (corrección 2026-09-29):** renderer compone una
+máscara cacheada por revisión del `PlaceMemory` del personaje activo; la vista
+actual abre un círculo móvil, los lugares recordados se dibujan como marcas y
+el terreno nunca visitado queda negro. Las celdas visitadas fuera del radio usan
+una sombra azul del 28%, sin acumular nuevas capas cuando cambia la memoria.
+Los objetos vivos fuera de vista no se dibujan ni se pueden seleccionar;
 el selector solo consulta ubicaciones dentro de la vista. El puntero muestra
 «visto hace N días» o «se lo contaron» mediante el título del lienzo. `V` y el
 menú de pausa alternan el modo observador; la elección persiste. E2e cubre la
 niebla, selección, traducción/antigüedad y persistencia; nuevas capturas están
-en `artifacts/screenshots/m15-2i-fog-map.png` y
-`artifacts/screenshots/m15-2i-observer-mode.png`. El caché de terreno aún dibuja
-el estado presente; la versión histórica del relieve queda para las obras de
-la fase 26, según el plan. El e2e de sucesión confirma que el heredero activa
+en `artifacts/screenshots/m15-2i-fog-stable-visited.png` y
+`artifacts/screenshots/m15-2i-fog-black-unvisited.png`. El caché de terreno aún
+dibuja el estado presente; la versión histórica del relieve queda para las
+obras de la fase 26, según el plan. El e2e de sucesión confirma que el heredero activa
 una clave de caché distinta y, por tanto, su propio mapa.
 
 #### 2j. La noche, la altura y el mundo (enlaces con otras fases)

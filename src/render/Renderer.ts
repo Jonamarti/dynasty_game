@@ -711,6 +711,7 @@ export class Renderer {
   fogDescriptionAt(x: number, y: number): string | null {
     const observer = this.fogEnabled ? this.sim.player : null;
     if (!observer || Math.hypot(x - observer.x, y - observer.y) <= this.sim.config.sightRadius) return null;
+    if (observer.placeMemory.seenDayAt(x, y) === 0) return null;
     const place = observer.placeMemory.nearestAny(x, y, 0.65);
     if (!place) return null;
     return place.source === 'told'
@@ -732,6 +733,10 @@ export class Renderer {
     if (this.fogLayerKey !== key) {
       const fog = this.fogLayer.getContext('2d');
       if (!fog) return;
+      // A memory revision repaints translucent visited cells. Without clearing
+      // the old pixels first, every observation adds another coat until the
+      // whole explored map turns black during play.
+      fog.clearRect(0, 0, this.fogLayer.width, this.fogLayer.height);
       const cell = 4;
       if (this.fogRecordsFor !== memory.revision) {
         this.fogRecords = memory.allRecords();
@@ -742,7 +747,7 @@ export class Renderer {
           const x = cx * cell;
           const y = cy * cell;
           fog.fillStyle = memory.seenDayAt(x + cell / 2, y + cell / 2) > 0
-            ? 'rgba(4, 8, 14, 0.76)' : '#020407';
+            ? 'rgba(10, 16, 40, 0.28)' : '#000000';
           fog.fillRect(x * TILE, y * TILE,
             Math.min(cell, sim.world.width - x) * TILE,
             Math.min(cell, sim.world.height - y) * TILE);
@@ -753,6 +758,9 @@ export class Renderer {
       // shimmer under hover and spend render time on data that changes only at
       // a thought or a new conversation.
       for (const place of this.fogRecords) {
+        // A rumour can name an unvisited place. Keep the knowledge, but the
+        // owner's never-visited map must remain visually black.
+        if (memory.seenDayAt(place.x, place.y) === 0) continue;
         this.drawRememberedPlace(place, fog, place.x * TILE, place.y * TILE, TILE * 0.26);
       }
       this.fogLayerKey = key;
