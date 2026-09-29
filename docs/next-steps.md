@@ -1220,3 +1220,15 @@ marcado `slow` para que `sim:check:all` no lo recorra por defecto (paso de 30s
 a 27 minutos). Se usa via `sim:check -- --scenario generations` y `sim:seeds
 -- --scenario generations`. La calibracion en si (10 semillas para explorar, 20
 para decidir, un parametro a la vez) sigue en curso. Ver [m15_plan.md](m15_plan.md).
+**2026-09-29: M15 fase 10b, arreglo de `sim:seeds`.** `--scenario X --seeds N`
+leia el propio valor de N como si fuera `--size`, encogiendo la isla a NxN sin
+tocar la poblacion; explica colapsos totales que no tenian relacion con el
+mundo. Arreglado y verificado. Ver [bugs.md](bugs.md) y [changelog.md](changelog.md).
+**2026-09-29: M15 fase 10c, linea de partida.** Con la herramienta arreglada,
+`century` da 92,3% de supervivencia (1/20 colapsos) y `lean` 21,8% (11/20).
+La mayoria de los objetivos historicos de `m13_plan.md` ya se cumplen sin
+tocar ningun parametro; `answered` en `century` (33,3% frente a >=90%) es la
+excepcion clara y queda anotada en bugs.md para diagnosticar, no ajustar a
+ciegas. `generations` (la unica medida de `recovered`) esta en curso con 5
+semillas de exploracion. Tabla completa en
+[m15_calibration.md](m15_calibration.md).

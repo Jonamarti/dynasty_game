@@ -3108,3 +3108,17 @@ Found while establishing the phase-10 calibration baseline: `npm run sim:seeds -
 **Consequence for the record.** Any *past* M15 measurement that literally read `--scenario <name> --seeds <N>` is suspect and should not be trusted at face value; one invoked with the plain positional form (`<name> <count>`) was unaffected. This is not a claim that every past number in `changelog.md` is wrong — re-running `lean` and `century` at 20 seeds with the fix gives 21.8% and 92.3% survival respectively, close to what phases 3 and 5-8 reported, so the game itself was healthy the whole time and most likely most measurements used the safe form. But nobody checked which form each one used, so a number that looks anomalously low in the M15 record before 2026-09-29 is worth re-running before it is trusted.
 
 **Fix.** `tools/seeds.ts` now tracks which argv indices a recognised `--scenario`/`--seeds`/`--steps`/`--size`/`--set` flag consumed and only offers the *remaining* tokens to the positional fallback. Verified: `--scenario lean --seeds 7` no longer prints an `island` suffix; `--scenario lean --size 40 --seeds 3` still honours an explicit `--size`; the legacy positional form (`harsh-winter 5`) still works; `--set path=value` combined with named flags still parses. `npm test` and `npm run typecheck` are unaffected (the four failures below are pre-existing and untouched by this change).
+
+## M15 fase 10 — `answered` muy por debajo del objetivo en `century` (2026-09-29)
+
+La línea de base de la calibración (`docs/m15_calibration.md`) mide
+`answered` (la fracción de agresiones a un adulto que reciben una respuesta)
+en 33,3% sobre `century` a 20 semillas, muy por debajo del objetivo
+recomendado de ≥90% en `m13_plan.md`. `lean` no tiene muestra suficiente para
+decir nada (muy pocos golpes). No se ha tocado ningún coeficiente: falta
+diagnosticar con `npm run why` si el mecanismo que decide responder a una
+agresión se ve afectado por el coste de las órdenes (fase 7) o por cómo las
+incursiones por propuesta (fase 8) dejan a la víctima sin autoridad o sin
+ánimo para replicar. `violentShare` en `lean` (0,2% de las muertes adultas)
+también queda muy por debajo del 5%-30% recomendado, mientras que `century`
+(4,5%) roza el borde inferior; ninguno de los dos se ha ajustado.
