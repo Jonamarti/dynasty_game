@@ -1129,6 +1129,20 @@ el propietario). `knowledge/Synthesis.ts` usa el ingrediente
   de tres ideas por persona-año (si lo pasa, se baja `handledDays`, no
   `conceptionBase`), y `known` y `pastRoots` no bajan.
 
+**Avance del 2026-09-29:** implementada. `Person.handled` nuevo, escrito en
+`doTake`, `doPickup` (solo si el pedido nombraba el objeto), `doCraft`
+(ingredientes y producto) y `doHaul` (lo entregado a una obra). `notice()`
+amplía `holding` con lo manejado en `handledDays` y lo que hay en
+`handledReach` casillas en un montón o en un edificio de la propia banda
+(almacén o entregas de obra), por hashes espaciales. `century` a 20 semillas:
+`ideas-are-conceived` en 0,46 por persona-año (techo 3, dentro); conocidas
+7,4 frente a 7,5 y pasadas de raíz 7,0 frente a 6,7 de la línea de partida de
+la fase 10 (dentro del ruido, ninguna baja); supervivencia 92,7% frente a
+92,3%. Tres checks crónicamente rojos en otros escenarios
+(`children-keep-close`, `discovery-is-situated`, `bands-dont-overbuild`)
+empiezan a fallar también en `century`; no son un mecanismo nuevo y se
+detallan en `bugs.md`. Sigue 11c (solo las manos, el commit grande).
+
 ### 11c. Solo las manos, y la escalera (medido; el commit grande)
 
 `legacyPack` pasa a `false`. **Nunca las manos solas**: la escalera de

@@ -2157,6 +2157,11 @@ export class Simulation {
       world: this.world,
       season: this.time.season,
       wantAt: this.config.motivation.wantAt,
+      tick: this.time.tick,
+      ticksPerDay: this.config.time.ticksPerDay,
+      carry: this.config.carry,
+      pileHash: this.pileHash,
+      buildingHash: this.buildingHash,
     });
   }
 
@@ -3739,6 +3744,9 @@ export class Simulation {
         knowledge: this.config.knowledge,
         wantAt: this.config.motivation.wantAt,
         learning: this.config.learning,
+        pileHash: this.pileHash,
+        buildingHash: this.buildingHash,
+        carry: this.config.carry,
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
       });
       this.refreshRecords();

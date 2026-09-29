@@ -1245,3 +1245,10 @@ Kit con seccion «Equipment», vacia hasta la 11c. Verificado bit-identico.
 [m15_plan.md](m15_plan.md), [changelog.md](changelog.md) y
 [m15_art_contract.md](m15_art_contract.md). Sigue 11b (las chispas cuentan lo
 manejado).
+**2026-09-29: M15 fase 11b completa.** `Person.handled` y la ampliacion de
+`notice()` a lo manejado y lo cercano (piles, almacen propio, obra), por
+hashes espaciales. `ideas-are-conceived` en 0,46/persona-ano (techo 3);
+conocidas y pasadas de raiz dentro del ruido frente a la fase 10; tres checks
+ya cronicamente rojos en otros escenarios cruzan tambien a `century`, sin
+mecanismo nuevo (ver bugs.md). Ver [m15_plan.md](m15_plan.md) y
+[changelog.md](changelog.md). Sigue 11c (solo las manos, el commit grande).

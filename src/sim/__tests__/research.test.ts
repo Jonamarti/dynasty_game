@@ -42,6 +42,9 @@ function context(seed = 'research-ctx'): Parameters<KnowledgeSystem['daily']>[1]
     ticksPerDay: config.time.ticksPerDay,
     knowledge: config.knowledge,
     learning: config.learning,
+    pileHash: new SpatialHash(8),
+    buildingHash: new SpatialHash(8),
+    carry: config.carry,
     onInsight: () => {},
   };
 }

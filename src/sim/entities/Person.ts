@@ -278,6 +278,15 @@ export class Person {
    * `inventory` until phase 11c turns off `Config.carry.legacyPack`.
    */
   equipment: Equipment = {};
+  /**
+   * M15 phase 11b. The tick each item id was last in hand — taken, picked
+   * up, worked into a craft, or hauled to a site — for `KnowledgeSystem.
+   * notice` to read as "recently handled" even after the item itself has
+   * left the inventory (spent on a build, consumed by a recipe). Written
+   * only by `ActionSystem`, never by `Brain.score` (M13's rule 5: the
+   * scorer never writes state).
+   */
+  handled = new Map<string, number>();
 
   /** What this person has seen and been told. See `social/Memory.ts`. */
   memory: Memory;

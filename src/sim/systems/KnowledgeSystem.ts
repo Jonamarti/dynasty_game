@@ -33,9 +33,10 @@ import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { World, Biome } from '../core/World.ts';
 import type { Season } from '../core/TimeManager.ts';
-import type { KnowledgeConfig, LearningConfig } from '../core/Config.ts';
+import type { KnowledgeConfig, LearningConfig, CarryConfig } from '../core/Config.ts';
 import { TECH, TECH_EFFECTS, TECHS, prerequisitesMet, scaled, type Tech } from '../knowledge/Tech.ts';
-import { BUILDINGS } from '../entities/Building.ts';
+import { BUILDINGS, type Building } from '../entities/Building.ts';
+import type { ItemPile } from '../entities/ItemPile.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { ITEMS } from '../entities/Item.ts';
 import {
@@ -185,6 +186,10 @@ export interface KnowledgeContext {
   knowledge: KnowledgeConfig;
   learning: LearningConfig;
   wantAt?: number;
+  /** M15 phase 11b: nearby piles and sites/stores widen `Notice.holding`. */
+  pileHash: SpatialHash<ItemPile>;
+  buildingHash: SpatialHash<Building>;
+  carry: CarryConfig;
   /**
    * Announces something worth a floater and a chronicle line: an idea, a
    * breakthrough, a prototype that failed, a design proven or improved.
@@ -236,10 +241,35 @@ export class KnowledgeSystem {
    * situation the simulation decides on. Two definitions of "what is on your
    * mind" is one too many.
    */
-  notice(person: Person, ctx: { world: World; season: Season; wantAt?: number }): Notice {
+  notice(person: Person, ctx: {
+    world: World; season: Season; wantAt?: number;
+    tick: number; ticksPerDay: number; carry: CarryConfig;
+    pileHash: SpatialHash<ItemPile>; buildingHash: SpatialHash<Building>;
+  }): Notice {
     const holding = new Set<string>();
     for (const [itemId, count] of person.inventory.entries()) {
       if (count > 0) holding.add(itemId);
+    }
+
+    // M15 phase 11b. The name stays `holding` in the data (a wide rename for
+    // no gain), but with hands limited to a puñado this now means "handled":
+    // carried, worked or delivered within `handledDays`, or sitting within
+    // `handledReach` tiles in a pile, this band's own store, or a site's
+    // delivered goods. Without this, a spark that needs `{ kind: 'holding',
+    // item: 'wood' }` could never fire on the wood somebody just built a wall
+    // with, because by the moment the idea would occur to them the wood is
+    // already spent.
+    const handledSince = ctx.tick - ctx.carry.handledDays * ctx.ticksPerDay;
+    for (const [itemId, lastTick] of person.handled) {
+      if (lastTick >= handledSince) holding.add(itemId);
+    }
+    for (const pile of ctx.pileHash.queryRadius(person.x, person.y, ctx.carry.handledReach)) {
+      for (const [itemId, count] of pile.contents.entries()) if (count > 0) holding.add(itemId);
+    }
+    for (const building of ctx.buildingHash.queryRadius(person.x, person.y, ctx.carry.handledReach)) {
+      if (building.ownerBandId !== person.bandId) continue;
+      for (const [itemId, count] of building.store.entries()) if (count > 0) holding.add(itemId);
+      for (const [itemId, count] of building.delivered.entries()) if (count > 0) holding.add(itemId);
     }
 
     const lately = new Set<string>();

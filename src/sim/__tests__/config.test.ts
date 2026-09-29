@@ -196,6 +196,9 @@ describe('each new field actually does something', () => {
         ticksPerDay: config.time.ticksPerDay,
         knowledge: config.knowledge,
         learning: { ...config.learning, observationChance: chance, childObservationChance: chance },
+        pileHash: new SpatialHash(8),
+        buildingHash: new SpatialHash(8),
+        carry: config.carry,
         onInsight: () => {},
       });
       return watcher.knownTech.has('firemaking');

@@ -310,6 +310,14 @@ export interface CarryConfig {
    * ladder (bundle, hide bag, basket, sledge, cart) exists to replace it.
    */
   legacyPack: boolean;
+  /**
+   * M15 phase 11b. Tiles around a person, searched by spatial hash, within
+   * which an item sitting in a pile, a store or a site's delivered goods
+   * still counts as "handled" for a spark of invention.
+   */
+  handledReach: number;
+  /** M15 phase 11b. Days since an item was last in hand that it still counts. */
+  handledDays: number;
 }
 
 export interface SimConfig {
@@ -465,6 +473,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   },
   carry: {
     legacyPack: true,
+    handledReach: 2,
+    handledDays: 3,
   },
   sightRadius: 12,
   thinkInterval: 5,

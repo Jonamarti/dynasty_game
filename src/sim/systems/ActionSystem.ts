@@ -1446,6 +1446,8 @@ export class ActionSystem {
       if (needed <= 0) continue;
       const given = person.inventory.remove(itemId, Math.min(needed, person.inventory.count(itemId)));
       site.delivered.add(itemId, given);
+      // M15 phase 11b: hauled to a site is handled, even once it leaves the pack.
+      person.handled.set(itemId, ctx.tick);
       delivered += given;
     }
 
@@ -1696,6 +1698,7 @@ export class ActionSystem {
         const got = store.store.remove(itemId, Math.min(6, count));
         if (got > 0) {
           person.inventory.add(itemId, got);
+          person.handled.set(itemId, ctx.tick);
           shared += got;
         }
       }
@@ -1719,6 +1722,8 @@ export class ActionSystem {
       : 6;
     const taken = store.store.remove(itemId, Math.min(amount, store.store.count(itemId)));
     person.inventory.add(itemId, taken);
+    // M15 phase 11b: taking something off a shelf is handling it.
+    if (taken > 0) person.handled.set(itemId, ctx.tick);
     telemetry.count('withdrawn', taken);
     // Counted apart from an ordinary withdrawal because it answers a different
     // question. A trap that fills and is never emptied stops catching, and from
@@ -1794,6 +1799,10 @@ export class ActionSystem {
       this.abandon(person, 'hands_full', ctx);
       return;
     }
+    // M15 phase 11b. `requested` is the only item id known here without
+    // re-deriving what `takeFromPile` actually chose; an unrequested pickup
+    // is still covered while it stays in the pack, through `holding` itself.
+    if (requested !== null) person.handled.set(requested, ctx.tick);
     telemetry.count('pickup_ordered', moved);
     this.finish(person);
   }
@@ -3112,11 +3121,15 @@ export class ActionSystem {
       return;
     }
 
+    // M15 phase 11b: worked into a craft, whether it survives the recipe
+    // (an ingredient) or is what came out of it (the product).
     for (const [itemId, count] of Object.entries(recipe.ingredients)) {
       person.inventory.remove(itemId, count);
+      person.handled.set(itemId, ctx.tick);
     }
     for (const [itemId, count] of Object.entries(recipe.output)) {
       person.inventory.add(itemId, count);
+      person.handled.set(itemId, ctx.tick);
     }
     if (recipe.id === 'roast_meat' || recipe.id === 'roast_fish') {
       const raw = recipe.id === 'roast_meat' ? 'meat' : 'fish';

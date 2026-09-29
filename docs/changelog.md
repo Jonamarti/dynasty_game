@@ -38,6 +38,33 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-09-29 - M15 phase 11b: ideas draw on what's been handled
+
+`Notice.holding` — what a spark of invention can see as "present" — used to
+mean only what's in the pack this instant. With hands limited to a puñado
+coming in phase 11c, that would have killed invention outright (the owner's
+own point in decision 6): the wood you just built a wall with is gone from
+your inventory by the time the idea about it would occur to you.
+
+- **New `Person.handled: Map<string, number>`**: the tick an item id was last
+  taken, picked up, crafted (ingredient or product), or hauled to a site.
+  Written only by `ActionSystem` (`doTake`, `doPickup`, `doCraft`, `doHaul`),
+  never by `Brain.score`.
+- **`KnowledgeSystem.notice` widens `holding`** to the union of: carried now,
+  handled within `Config.carry.handledDays` (3) days, and anything within
+  `Config.carry.handledReach` (2) tiles in a pile, this band's own store, or
+  a site's delivered goods — queried through the existing pile/building
+  spatial hashes, never a linear scan. The field keeps its name in the data
+  (`{ kind: 'holding', item }`); the comment now says what it actually means.
+
+Measured on `century` at 20 seeds: `ideas-are-conceived` stays at 0.46 ideas
+per person-year, far under its 3-ideas ceiling; technologies known (7.4 vs
+7.5) and passed-root (7.0 vs 6.7) hold within noise of the phase-10 baseline;
+survival 92.7% vs 92.3%. Three chronically-red checks
+(`children-keep-close`, `discovery-is-situated`, `bands-dont-overbuild`) start
+also failing on `century`, but each was already failing on other scenarios
+before this change — see `docs/bugs.md`.
+
 ## 2026-09-29 - M15 phase 11a: hands and equipment, inert
 
 Everyone still carries `40 × vigour × carryFactor` exactly as before — this

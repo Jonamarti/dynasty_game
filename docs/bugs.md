@@ -3150,3 +3150,21 @@ atributo `hidden` y no lo consigue en 5 s. **Confirmado que no lo causó esta
 fase**: se reproduce igual en `master` antes de estos cambios (`git stash` +
 la misma prueba). No se ha investigado la causa; queda para quien toque
 `EntityPicker` o el flujo de clic a continuación.
+
+## M15 fase 11b — tres checks conocidos por rojos cruzan a `century` (2026-09-29)
+
+Al ampliar `notice.holding` a lo manejado y lo cercano, `century` empieza a
+fallar `children-keep-close`, `discovery-is-situated` y `bands-dont-overbuild`,
+que antes solo fallaban en otros escenarios (`crowded`/`harsh-winter`/
+`millers`/`herders`/`feasts` para el primero; `harsh-winter`/`hunters`/
+`farmers`/`labour`/`generations` para el segundo; `stewards` para el
+tercero — confirmado comparando la matriz de antes y después de esta fase).
+Los tres son fallos crónicos ya conocidos del proyecto, no un mecanismo
+nuevo: `discovery-is-situated` es un desajuste de contabilidad de telemetría
+entre ideas concebidas y rutas nombradas que ya aparecía en cinco escenarios
+antes de esta fase. No se ha ajustado ningún coeficiente para hacerlos pasar;
+la puerta declarada de la fase 11b (`ideas-are-conceived` bajo el techo de 3
+por persona-año; `known` y `pastRoots` sin bajar) se cumple: `century` a 20
+semillas dio 0,46 ideas por persona-año (techo 3), conocidas 7,4 frente a 7,5
+(ruido), pasadas raíz 7,0 frente a 6,7 (sube), supervivencia 92,7% frente a
+92,3%.
