@@ -41,16 +41,16 @@ export function heldSvg(kind: HeldKind, side: boolean): string {
     }
     case 'bone_point': {
       const tx = side ? 3 : 0;
-      return shape(smooth([[x + tx, y - 24], [x + tx + 3.4, y - 6], [x + 2.4, y + 8], [x - 2.4, y + 8], [x + tx - 3.2, y - 6]]), '#e6dcc0', '#7a6d4e')
-        + stroke(`M${x + tx - 1},${y - 12}L${x - 1},${y + 4}`, '#c9bd9c', 0.8);
+      return shape(smooth([[x + tx, y - 15], [x + tx + 2.4, y - 4], [x + 1.8, y + 6], [x - 1.8, y + 6], [x + tx - 2.2, y - 4]]), '#e6dcc0', '#7a6d4e')
+        + stroke(`M${x + tx - 0.6},${y - 8}L${x - 0.6},${y + 2}`, '#c9bd9c', 0.7);
     }
     case 'handaxe':
       return shape(smooth([[x, y - 10], [x + 5.4, y - 3], [x + 4, y + 5], [x - 4, y + 5], [x - 5.4, y - 3]]), '#a4a8ab', STONE_D)
         + stroke(`M${x - 1},${y - 5}L${x + 2},${y - 1}`, '#7d8285', 0.9);
     case 'net':
-      return shape(smooth([[x - 9, y - 4], [x, y - 8], [x + 10, y - 3], [x + 12, y + 8], [x + 2, y + 15], [x - 10, y + 10]]), '#b3b76a', '#6d6535')
+      return `<g transform="translate(${x} ${y}) scale(0.62) translate(${-x} ${-y})">` + shape(smooth([[x - 9, y - 4], [x, y - 8], [x + 10, y - 3], [x + 12, y + 8], [x + 2, y + 15], [x - 10, y + 10]]), '#b3b76a', '#6d6535')
         + stroke(`M${x - 8},${y}L${x + 8},${y + 6}M${x - 6},${y + 6}L${x + 9},${y + 1}M${x - 2},${y - 6}L${x + 4},${y + 12}M${x + 4},${y - 6}L${x - 4},${y + 12}`, '#6d6535', 0.8)
-        + ell(x - 8, y - 2, 1.8, 1.4, WOOD, WOOD_D) + ell(x + 9, y - 1, 1.8, 1.4, WOOD, WOOD_D);
+        + ell(x - 8, y - 2, 1.8, 1.4, WOOD, WOOD_D) + ell(x + 9, y - 1, 1.8, 1.4, WOOD, WOOD_D) + '</g>';
     case 'basket': {
       const cx = x + (side ? 1 : 0), top = y + 3.5;
       return stroke(`M${cx - 4.6},${top + 0.5}Q${cx},${y - 3.5} ${cx + 4.6},${top + 0.5}`, '#6d4c2c', 1.3)
