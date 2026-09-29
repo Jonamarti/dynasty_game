@@ -1225,10 +1225,14 @@ leia el propio valor de N como si fuera `--size`, encogiendo la isla a NxN sin
 tocar la poblacion; explica colapsos totales que no tenian relacion con el
 mundo. Arreglado y verificado. Ver [bugs.md](bugs.md) y [changelog.md](changelog.md).
 **2026-09-29: M15 fase 10c, linea de partida.** Con la herramienta arreglada,
-`century` da 92,3% de supervivencia (1/20 colapsos) y `lean` 21,8% (11/20).
-La mayoria de los objetivos historicos de `m13_plan.md` ya se cumplen sin
-tocar ningun parametro; `answered` en `century` (33,3% frente a >=90%) es la
-excepcion clara y queda anotada en bugs.md para diagnosticar, no ajustar a
-ciegas. `generations` (la unica medida de `recovered`) esta en curso con 5
-semillas de exploracion. Tabla completa en
-[m15_calibration.md](m15_calibration.md).
+`century` da 92,3% de supervivencia (1/20 colapsos) y `lean` 21,8% (11/20);
+`generations` (5 semillas de exploracion) da 86,4% (0/5 colapsos). La mayoria
+de los objetivos historicos de `m13_plan.md` ya se cumplen sin tocar ningun
+parametro. Dos excepciones claras, anotadas en bugs.md para diagnosticar (no
+ajustar a ciegas): `answered` muy por debajo de objetivo en `century` (33,3%)
+y en `generations` (0,0%); y `recovered` en 0/7 en la exploracion de
+`generations` (censurado, muestra pequena). **Fase 10 cerrada** con esta
+linea de partida; la calibracion parametrizada en si y la ampliacion de
+`generations` a 20 semillas quedan para cuando haya diagnostico o mas tiempo
+de computo. Tabla completa en [m15_calibration.md](m15_calibration.md). Sigue
+fase 11 (las manos: equipo y carga).

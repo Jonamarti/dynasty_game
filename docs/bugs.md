@@ -3028,40 +3028,40 @@ identifica un cambio de comportamiento en esta semilla, pero todavÃ­a no una
 causa de cohorte.
 
 **M15 2f, ensayo con bebida comprometida, 2026-09-27.** La traza tick a tick mostrÃ³ que el personaje dejaba la orilla tras seis turnos con sed positiva; un compromiso renovable completÃ³ 164 bebidas en `band` y puso verde `drinking-is-paced`. Sin embargo, la cohorte documentada de 20 semillas en `lean` cayÃ³ de 57,6% a 29,2% de supervivencia (âˆ’28,4 puntos, 10/20 colapsos). La variante queda sin aceptar y sin commit por la puerta de coste de 2f-2h; el indicador local de bebidas no compensa esa regresiÃ³n.
-**M15 fase 2f — sed sin fuente conocida, 2026-09-27.** El ensayo completo de
-veinte semillas `lean` acabó en 25,1% frente a 57,6% de la referencia (-32,5
+**M15 fase 2f ï¿½ sed sin fuente conocida, 2026-09-27.** El ensayo completo de
+veinte semillas `lean` acabï¿½ en 25,1% frente a 57,6% de la referencia (-32,5
 puntos; 12/20 colapsos). Se contaron 824 muertes por hambre y 6 por sed, lo que
-apunta a un coste de tiempo/actividad y no a deshidratación directa. El
-propietario pidió continuar y revisar estos errores jugando; la implementación
-se conserva de forma provisional y el coste queda abierto para depuración.
+apunta a un coste de tiempo/actividad y no a deshidrataciï¿½n directa. El
+propietario pidiï¿½ continuar y revisar estos errores jugando; la implementaciï¿½n
+se conserva de forma provisional y el coste queda abierto para depuraciï¿½n.
 
 **2k, lectura inicial de los nuevos checks (2026-09-27, `band`):**
-`people-act-on-what-they-know` encontró 14/4.130 objetivos de `forage` sin
-recuerdo; `word-of-food-travels` aún no observó una recolección desde un rumor,
-aunque se compartieron 17 ubicaciones de comida. `the-map-grows` pasó (7,2% a
-9,3%) y `stale-memories-cost` registró 180 viajes a nodos agotados. Se conservan
-los dos fallos como datos accionables. El recorrido `shots` también actualizó
+`people-act-on-what-they-know` encontrï¿½ 14/4.130 objetivos de `forage` sin
+recuerdo; `word-of-food-travels` aï¿½n no observï¿½ una recolecciï¿½n desde un rumor,
+aunque se compartieron 17 ubicaciones de comida. `the-map-grows` pasï¿½ (7,2% a
+9,3%) y `stale-memories-cost` registrï¿½ 180 viajes a nodos agotados. Se conservan
+los dos fallos como datos accionables. El recorrido `shots` tambiï¿½n actualizï¿½
 las capturas 2i; se restauraron desde el commit anterior y siguen sin cambios.
 
-**Suite global al cierre de M15 fase 2 (2026-09-27):** `npm test` dejó 6 fallos:
-cinco pruebas de crecimiento/producción en corrales de rebaño y un timeout en
+**Suite global al cierre de M15 fase 2 (2026-09-27):** `npm test` dejï¿½ 6 fallos:
+cinco pruebas de crecimiento/producciï¿½n en corrales de rebaï¿½o y un timeout en
 `band.test.ts` sobre ejercicio de rango. El resultado queda asociado al coste
 conductual provisional de 2f; pendiente reproducir y depurar junto con la
-observación del propietario en juego.
+observaciï¿½n del propietario en juego.
 
 **Matriz `sim:check:all` al cierre (2026-09-27):** los nuevos checks
 `people-act-on-what-they-know` fallan en los 19 escenarios; `word-of-food-travels`
-falla en los escenarios que sí compartieron comida pero no llegaron a cosechar
+falla en los escenarios que sï¿½ compartieron comida pero no llegaron a cosechar
 por rumor. En `band` el invariante fue 5.170/5.183, mapa 7,2% ? 9,4% y 208
-viajes a recuerdos agotados. La matriz tardó unos ocho minutos; `band` midió
+viajes a recuerdos agotados. La matriz tardï¿½ unos ocho minutos; `band` midiï¿½
 787 pasos/s frente al piso 1.678 de `perf-budget`. La causa exacta de ese coste
-no quedó aislada. El propietario pidió completar M15 y depurar después jugando;
-se conserva el resultado para esa revisión.
+no quedï¿½ aislada. El propietario pidiï¿½ completar M15 y depurar despuï¿½s jugando;
+se conserva el resultado para esa revisiï¿½n.
 
-La prueba aislada de `herding.test.ts` reproduce cinco fallos: el rebaño cae a
-cero antes de crecer o producir leche/lana. Seis casos habían fallado en la
-suite global; el sexto (`band.test.ts`, rango no ejercitado) sí corría junto a
-la matriz y el soak, así que queda pendiente repetirlo sin carga concurrente.
+La prueba aislada de `herding.test.ts` reproduce cinco fallos: el rebaï¿½o cae a
+cero antes de crecer o producir leche/lana. Seis casos habï¿½an fallado en la
+suite global; el sexto (`band.test.ts`, rango no ejercitado) sï¿½ corrï¿½a junto a
+la matriz y el soak, asï¿½ que queda pendiente repetirlo sin carga concurrente.
 
 **Tour `shots` (2026-09-27):** the six-test suite reaches all six cases, but its
 long `tour` case times out even with a three-minute limit, after saving through
@@ -3122,3 +3122,19 @@ incursiones por propuesta (fase 8) dejan a la vÃ­ctima sin autoridad o sin
 Ã¡nimo para replicar. `violentShare` en `lean` (0,2% de las muertes adultas)
 tambiÃ©n queda muy por debajo del 5%-30% recomendado, mientras que `century`
 (4,5%) roza el borde inferior; ninguno de los dos se ha ajustado.
+
+**Corroborado en `generations`** (5 semillas de exploraciÃ³n, 2026-09-29):
+`answered` da 0,0%, en la misma direcciÃ³n que `century`. No es ruido de una
+sola cohorte corta. Sigue sin diagnosticarse la causa.
+
+## M15 fase 10 â€” `recovered` en 0/7 en la exploraciÃ³n de `generations` (2026-09-29)
+
+Con 5 semillas de `generations` (144.000 pasos, quince aÃ±os de juego), las
+siete caÃ­das de mÃ¡s del 40% observadas seguÃ­an sin recuperarse al terminar la
+corrida (0/7; las siete quedan censuradas, no confirmadas como Â«nunca se
+recuperanÂ» â€” quince aÃ±os puede no ser tiempo suficiente para verlas resueltas
+con solo cinco semillas de muestra). El objetivo recomendado en `m13_plan.md`
+es â‰¥50% de recuperaciÃ³n. Con una muestra tan pequeÃ±a no se puede decir si
+falla el mundo o si el escenario necesita mÃ¡s semillas o mÃ¡s aÃ±os para que la
+censura no domine; queda pendiente repetir con 20 semillas antes de
+diagnosticar un mecanismo. Ver `docs/m15_calibration.md`.

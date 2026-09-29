@@ -994,6 +994,25 @@ se revisa antes del LOD (fase 32), que tiene que calibrarse contra una
 demografÃ­a estable. Esta primera pasada fija los valores de
 `Config.motivation` con los que empieza el bloque III.
 
+**Avance del 2026-09-29:** `--set` ya existÃ­a desde la fase 1b; se aÃ±adiÃ³ el
+escenario `generations` (144.000 pasos), marcado `slow` para que no entre en
+`sim:check:all` por defecto. Al preparar la lÃ­nea de partida se encontrÃ³ que
+`sim:seeds -- --scenario X --seeds N` leÃ­a el propio valor de `--seeds` como
+`--size`, encogiendo la isla a NÃ—N desde la fase 1b â€” la causa de varios
+colapsos totales que no tenÃ­an relaciÃ³n con el mundo; arreglado y verificado
+(`docs/bugs.md`). Con la herramienta arreglada, la lÃ­nea de partida sin tocar
+ningÃºn parÃ¡metro da: `century` 92,3% de supervivencia (1/20 colapsos),
+`lean` 21,8% (11/20), `generations` 86,4% (0/5 colapsos, 5 semillas de
+exploraciÃ³n). La mayorÃ­a de los objetivos histÃ³ricos de la tabla siguiente ya
+se cumplen. Dos no: `answered` muy por debajo de objetivo en `century` (33,3%
+frente a â‰¥90%) y en `generations` (0,0%); y `recovered` en 0/7 en
+`generations` (censurado, muestra de 5 semillas). Ninguno de los dos se
+ajusta sin diagnÃ³stico, por la regla de este protocolo. Tabla completa en
+`docs/m15_calibration.md`. La fase se cierra con esta lÃ­nea de partida; el
+barrido de parÃ¡metros en sÃ­ y `generations` a 20 semillas quedan pendientes
+para cuando haya diagnÃ³stico de `answered`/`recovered` o mÃ¡s tiempo de
+cÃ³mputo, y se retoman en la segunda pasada (fase 41).
+
 ---
 # Bloque III â€” Las cosas (`notes5.txt`, notas 1-6)
 
@@ -2888,46 +2907,46 @@ un agente no puede adivinar:
 `docs/architecture.md`, al cerrar las fases 11, 16a, 17 y 29.
 
 **Cierre de la ruta de sed (2026-09-27):** `findWater` solo ofrece agua que
-está a la vista o en el mapa personal; el compromiso renovable mantiene a la
+estï¿½ a la vista o en el mapa personal; el compromiso renovable mantiene a la
 persona en la orilla hasta aliviar la sed. Si no hay fuente conocida, pregunta
 una vez a cada miembro cercano de su banda, priorizando a quien recuerda agua.
-Cada intento se registra antes de acercarse, también ante una ruta fallida o
-una respuesta vacía, para impedir bucles. Tras preguntar a los cercanos sin
-éxito, el personaje explora por sí mismo; la memoria conserva las fuentes de
+Cada intento se registra antes de acercarse, tambiï¿½n ante una ruta fallida o
+una respuesta vacï¿½a, para impedir bucles. Tras preguntar a los cercanos sin
+ï¿½xito, el personaje explora por sï¿½ mismo; la memoria conserva las fuentes de
 agua vistas. Si lleva fruta hidratante, puede comerla mientras no tenga hambre
 apremiante. Las pruebas cubren transferencia de recuerdos y ausencia de ciclos.
 
-La cohorte `lean` de veinte semillas de esta implementación terminó en 25,1%
+La cohorte `lean` de veinte semillas de esta implementaciï¿½n terminï¿½ en 25,1%
 de supervivencia frente al 57,6% de la referencia (-32,5 puntos; 12/20
 colapsos). Las muertes fueron sobre todo por hambre (824), frente a 6 por sed.
-El propietario ordenó continuar y aceptar este coste provisional mientras
+El propietario ordenï¿½ continuar y aceptar este coste provisional mientras
 completa la fase y valida el juego; queda como deuda prioritaria de balance,
 no como resultado aprobado por el gate original de =5 puntos.
 
-**2g — Explorar con hambre o curiosidad.** Si no hay nodo de comida conocido,
+**2g ï¿½ Explorar con hambre o curiosidad.** Si no hay nodo de comida conocido,
 una persona hambrienta o con curiosidad y necesidades tranquilas elige una celda
-frontera desconocida o vieja. La opción ordinaria respeta el alcance de su ancla
-M13; la búsqueda urgente de agua conserva la excepción de supervivencia. La
-ruta termina en un punto y repuntúa, mientras `wander` sigue siendo un paseo
+frontera desconocida o vieja. La opciï¿½n ordinaria respeta el alcance de su ancla
+M13; la bï¿½squeda urgente de agua conserva la excepciï¿½n de supervivencia. La
+ruta termina en un punto y repuntï¿½a, mientras `wander` sigue siendo un paseo
 corto.
 
 **Cierre 2h (2026-09-27):** las conversaciones `chat`, `interests` y `deep`
-transmiten en cada dirección un recurso de comida o agua que el oyente desconoce
-o recuerda más viejo. Se preserva el día de observación y la fuente cambia a
-`told`; los saludos no comparten mapa. Los recién llegados siguen
+transmiten en cada direcciï¿½n un recurso de comida o agua que el oyente desconoce
+o recuerda mï¿½s viejo. Se preserva el dï¿½a de observaciï¿½n y la fuente cambia a
+`told`; los saludos no comparten mapa. Los reciï¿½n llegados siguen
 con su propio mapa personal. Seguir a quien cuida permite aprender por la
 visibilidad compartida, sin copiar el mapa de la banda.
 
 **Entrega de 2j-2k (2026-09-27):** el radio que alimenta el registro de celdas
-usa `sightRadius` del personaje en cada intervalo, por lo que la reducción de
+usa `sightRadius` del personaje en cada intervalo, por lo que la reducciï¿½n de
 noche (fase 12) y el aumento desde altura (fase 25) cambian lo descubierto sin
 olvidar lo diurno. `sim:check` ahora mide el mapa inicial/final, clasifica el
 conocimiento de objetivos de `forage`, `pick`, `drink`, `hunt` y `chop`, mide
 recolecciones por rumores y cuenta viajes a recursos agotados. En `band` el
 mapa crece 7,2% ? 9,3% y hay 180 viajes a recuerdos agotados; 14 objetivos
-`forage` no pasaron el invariante de conocimiento y todavía no hubo recolección
-desde un lugar oído. Son resultados abiertos para depurar, no checks rebajados.
-La medición de cohorte de 2f sigue con la excepción provisional autorizada por
+`forage` no pasaron el invariante de conocimiento y todavï¿½a no hubo recolecciï¿½n
+desde un lugar oï¿½do. Son resultados abiertos para depurar, no checks rebajados.
+La mediciï¿½n de cohorte de 2f sigue con la excepciï¿½n provisional autorizada por
 el propietario, -32,5 puntos de supervivencia `lean`.
 
 ## Avance de fase 8 â€” 2026-09-28
