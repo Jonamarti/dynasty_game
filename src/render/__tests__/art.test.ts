@@ -1,0 +1,99 @@
+/**
+ * The art pipeline's tripwires (M15 phase 17b).
+ *
+ * The committed sheets under `public/art/` are what the game loads, and the
+ * generators under `art/src/` are what makes them. These tests fail when the
+ * two drift apart, and when the game grows something the art does not cover:
+ * a new expression, a new species, a new building, a new thing to hold. A
+ * missing picture is otherwise a silent blank on screen.
+ */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+import { ANIMAL_KINDS } from '../../../art/src/animals/animals.ts';
+import { collectAnimals, collectBuildings, collectPeople, collectProps } from '../../../art/src/registry.ts';
+import { personLayers, type PersonSpec } from '../../../art/src/people/rig.ts';
+import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, personKey, type ArtManifest } from '../ArtManifest.ts';
+import { BUILDINGS } from '../../sim/entities/Building.ts';
+import { EXPRESSIONS } from '../../sim/core/Mood.ts';
+import { SPECIES } from '../../sim/entities/Animal.ts';
+
+const load = (domain: string): ArtManifest =>
+  JSON.parse(readFileSync(fileURLToPath(new URL(`../../../public/art/${domain}.json`, import.meta.url)), 'utf8')) as ArtManifest;
+
+/** Buildings drawn by the renderer itself, on purpose: a field is ground that changes with its crop. */
+const PROCEDURAL_BUILDINGS = new Set(['field']);
+
+describe('art coverage', () => {
+  const people = load('people');
+  const props = load('props');
+  const buildings = load('buildings');
+  const animals = load('animals');
+
+  it('draws every age, sex, facing and pose the renderer can ask for', () => {
+    for (const age of ART_AGES) for (const sex of ART_SEXES) for (const dir of ART_BAKED_DIRS) for (const pose of ART_POSES) {
+      for (const slot of ['legs', 'torso', 'head'] as const) {
+        if (dir === 'E') continue; // the side view splits its legs and arms
+        expect(people.keys[personKey(slot, 'base', age, sex, dir, pose)], `${slot} ${age} ${sex} ${dir} ${pose}`).toBeDefined();
+      }
+      expect(people.keys[personKey('legs_near', 'base', age, sex, 'E', pose)], `side legs ${age} ${sex} ${pose}`).toBeDefined();
+    }
+  });
+
+  it('has a face for every expression the game can show', () => {
+    for (const expr of EXPRESSIONS) for (const dir of ['S', 'E'] as const) {
+      expect(people.keys[personKey('face', expr, 'adult', 'm', dir, 'idle')], `${expr} ${dir}`).toBeDefined();
+    }
+  });
+
+  it('has a hand-held picture for everything the sim can put in a hand', () => {
+    const held = props.meta['heldKinds'] as string[];
+    // The kinds `Sprites.ts` names today; the renderer would draw nothing for a missing one.
+    for (const kind of ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket']) {
+      expect(held, kind).toContain(kind);
+      expect(props.keys[`held/${kind}/S`]).toBeDefined();
+      expect(props.keys[`held/${kind}/E`]).toBeDefined();
+    }
+  });
+
+  it('draws every species', () => {
+    for (const species of SPECIES) {
+      expect(ANIMAL_KINDS, species).toContain(species);
+      for (const pose of ['idle', 'w0', 'w1', 'w2', 'w3']) expect(animals.keys[`a/${species}/E/${pose}`], `${species} ${pose}`).toBeDefined();
+    }
+  });
+
+  it('draws every building the sim can place, or says it is drawn in code', () => {
+    for (const id of Object.keys(BUILDINGS)) {
+      if (PROCEDURAL_BUILDINGS.has(id)) continue;
+      expect(buildings.keys[`b/${id}/ext`], id).toBeDefined();
+    }
+  });
+
+  it('gives every roofed building its floor plan', () => {
+    // A building whose plan is missing would stay a solid block while somebody stands inside it.
+    for (const id of ['mud_hut', 'wattle_hut', 'stone_house', 'longhouse', 'granary', 'library']) {
+      expect(buildings.keys[`b/${id}/plan`], id).toBeDefined();
+    }
+  });
+});
+
+describe('art build', () => {
+  it('draws the same text twice', () => {
+    const spec: PersonSpec = { age: 'adult', sex: 'f', dir: 'E', pose: 'w1', wear: { torso: 'tunic', cloak: 'cloak' }, carry: true, hair: 'long', beard: false, expr: 'warm' };
+    expect(JSON.stringify(personLayers(spec))).toBe(JSON.stringify(personLayers(spec)));
+  });
+
+  it('keeps the committed sheets in step with the generators', () => {
+    // If this fails, run `npm run art:build` and commit public/art.
+    const check = (name: string, collected: { bank: { keys: Record<string, number>; pictures: unknown[] } }): void => {
+      const m = load(name);
+      expect(Object.keys(m.keys).sort(), `${name}: keys`).toEqual(Object.keys(collected.bank.keys).sort());
+      expect(m.cells.length, `${name}: pictures`).toBe(collected.bank.pictures.length);
+    };
+    check('props', collectProps());
+    check('buildings', collectBuildings());
+    check('animals', collectAnimals());
+    check('people', collectPeople());
+  }, 60_000);
+});
