@@ -3,6 +3,7 @@ import { Simulation } from '../core/Simulation.ts';
 import { NURSING_HUNGER, NURSING_THIRST } from '../ai/Nursing.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import { Household } from '../entities/Household.ts';
+import { itemCapacityFor } from '../core/Carry.ts';
 
 describe('urgent maternal nursing', () => {
   it('does not interrupt work when urgent nursing is ablated', () => {
@@ -175,7 +176,65 @@ describe('urgent maternal nursing', () => {
     expect(sim.order(parent, 'give', { personId: child.id })).toBe(true);
     for (let i = 0; i < 20; i++) sim.step();
 
-    expect(child.inventory.count('berries')).toBeGreaterThan(0);
+    expect(child.needs.hunger).toBeLessThan(90);
     expect(sim.interruptions.some(stop => stop.personId === parent.id && stop.reason === 'hungry')).toBe(false);
+  });
+
+  it('feeds a dependent child whose full hands cannot receive another berry', () => {
+    const sim = new Simulation({ seed: 'full-child-feeding', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 4 } });
+    const parent = sim.people[0]!;
+    const child = sim.people[1]!;
+    parent.age = 30 * parent.daysPerYear;
+    parent.childIds = [child.id];
+    child.age = 3 * child.daysPerYear;
+    child.motherId = parent.id;
+    child.bandId = parent.bandId;
+    child.x = parent.x;
+    child.y = parent.y;
+    child.needs.hunger = 80;
+    parent.needs.hunger = 10;
+    for (const [id, count] of parent.inventory.entries()) parent.inventory.remove(id, count);
+    for (const [id, count] of child.inventory.entries()) child.inventory.remove(id, count);
+    parent.inventory.add('berries', 4);
+    for (const id of ['sticks', 'flint', 'thatch', 'mud']) {
+      const room = child.carryCapacity - child.carrying;
+      if (room <= 0) break;
+      child.inventory.add(id, Math.min(room, itemCapacityFor(child, sim.config.carry, id)));
+    }
+    expect(child.carrying).toBe(child.carryCapacity);
+    const pilesBefore = sim.piles.length;
+
+    expect(sim.order(parent, 'give', { personId: child.id })).toBe(true);
+    for (let i = 0; i < 40; i++) sim.step();
+
+    expect(child.needs.hunger).toBeLessThan(80);
+    expect(child.carrying).toBeLessThanOrEqual(child.carryCapacity);
+    expect(sim.piles.length).toBe(pilesBefore);
+    expect(parent.inventory.count('berries')).toBeLessThan(4);
+  });
+
+  it('keeps feeding a dependent child while the parent is cold', () => {
+    const sim = new Simulation({ seed: 'cold-parent-feeding', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 4 } });
+    const parent = sim.people[0]!;
+    const child = sim.people[1]!;
+    parent.age = 30 * parent.daysPerYear;
+    parent.childIds = [child.id];
+    child.age = 3 * child.daysPerYear;
+    child.motherId = parent.id;
+    child.bandId = parent.bandId;
+    child.x = parent.x;
+    child.y = parent.y;
+    parent.needs.hunger = 10;
+    parent.needs.cold = 90;
+    child.needs.hunger = 80;
+    parent.inventory.add('berries', 4);
+
+    expect(sim.order(parent, 'give', { personId: child.id })).toBe(true);
+    for (let i = 0; i < 40; i++) sim.step();
+
+    expect(child.needs.hunger).toBeLessThan(80);
+    expect(sim.interruptions.some(stop => stop.personId === parent.id && stop.reason === 'cold')).toBe(false);
   });
 });

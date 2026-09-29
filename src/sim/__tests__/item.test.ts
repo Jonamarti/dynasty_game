@@ -15,6 +15,10 @@ describe('M15 phase 11a: the hand-carry table', () => {
       expect(def.hand.hands === 1 || def.hand.hands === 2, id + ' hand.hands must be 1 or 2').toBe(true);
       expect(def.hand.perHand, id + ' hand.perHand must not be negative').toBeGreaterThanOrEqual(0);
       expect(def.hand.perArms, id + ' hand.perArms must not be negative').toBeGreaterThanOrEqual(0);
+      if (def.container) {
+        expect(def.container.capacity, id + ' container must carry something').toBeGreaterThan(0);
+        expect(def.container.accepts.length, id + ' container must name accepted classes').toBeGreaterThan(0);
+      }
     }
   });
 });

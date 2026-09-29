@@ -303,13 +303,12 @@ export interface MotivationConfig {
  * turn holding something into carrying it.
  */
 export interface CarryConfig {
-  /**
-   * `true` keeps `Person.carryCapacity` at today's `40 × vigour × carryFactor`
-   * and `Carry.ts`'s new machinery inert. Phase 11a ships this on so the
-   * commit is bit-identical; phase 11c turns it off once the container
-   * ladder (bundle, hide bag, basket, sledge, cart) exists to replace it.
-   */
+  /** Scenario switch for comparing the old 40 × vigour × carryFactor model. */
   legacyPack: boolean;
+  /** Eat harvested food at its source once hunger reaches this level. */
+  eatAtSourceAt: number;
+  /** Movement multiplier while dragging a fitted sledge. */
+  sledgeSpeed: number;
   /**
    * M15 phase 11b. Tiles around a person, searched by spatial hash, within
    * which an item sitting in a pile, a store or a site's delivered goods
@@ -472,7 +471,9 @@ export const DEFAULT_CONFIG: SimConfig = {
     childRadius: { under1: 2, years1to3: 3, years4to7: 6, years8to11: 10, years12to13: 16 },
   },
   carry: {
-    legacyPack: true,
+    legacyPack: false,
+    eatAtSourceAt: 55,
+    sledgeSpeed: 0.8,
     handledReach: 2,
     handledDays: 3,
   },

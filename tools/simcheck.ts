@@ -13,6 +13,7 @@
  * `tools/headless.ts` (one scenario) and `tools/scenarios.ts` (all of them).
  */
 import { Simulation } from '../src/sim/core/Simulation.ts';
+import { capacityFor, equipContainer } from '../src/sim/core/Carry.ts';
 import { anchorOf, carerOf, childRadius } from '../src/sim/ai/Anchor.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
@@ -137,6 +138,21 @@ export const SCENARIOS: Record<string, Scenario> = {
       },
     },
     steps: 16000,
+  },
+  porters: {
+    name: 'porters',
+    description: 'A controlled comparison of a bare-handed band and a band fitted with the M15 container ladder.',
+    config: {
+      seed: 'porters',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTechByBand: [
+          ['cordage', 'leatherwork', 'basketry', 'carpentry', 'the_wheel'],
+          [],
+        ],
+      },
+    },
+    steps: 3000,
   },
   scribes: {
     name: 'scribes',
@@ -885,6 +901,38 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const first = samples[0]!;
   const last = samples[samples.length - 1]!;
   const tel = base.telemetry;
+
+  const overpacked = tel.carry_over_capacity_samples ?? 0;
+  const handBlocked = tel.hand_capacity_blocked ?? 0;
+  if (base.scenario === 'porters' && handBlocked === 0) {
+    add('hands-limit-loads', false, 'the controlled run never reached a hand-capacity limit');
+  } else {
+    add('hands-limit-loads', overpacked === 0,
+      overpacked + ' post-transfer states remained above the hands and fitted-container limit; ' +
+      handBlocked + ' collection attempts hit a hand limit');
+  }
+  if (base.scenario === 'porters') {
+    const bare = tel.porter_capacity_bare ?? 0;
+    const equipped = tel.porter_capacity_equipped ?? 0;
+    if (bare <= 0) skip('containers-carry-more', 'controlled porter groups were not initialized');
+    else add('containers-carry-more', equipped > bare,
+      'mean available load: bare group ' + (bare / 12).toFixed(1) + ', equipped group ' + (equipped / 12).toFixed(1) +
+      ' units; delivered units also reported by band but depend on each site’s remaining demand');
+    const completedWithTrips = sim.buildings.filter(building => building.complete && building.haulTrips > 0)
+      .map(building => building.haulTrips).sort((a, b) => a - b);
+    if (completedWithTrips.length === 0) {
+      skip('builds-take-trips', 'no completed site had a loaded delivery to measure');
+    } else {
+      const middle = Math.floor(completedWithTrips.length / 2);
+      const median = completedWithTrips.length % 2
+        ? completedWithTrips[middle]!
+        : (completedWithTrips[middle - 1]! + completedWithTrips[middle]!) / 2;
+      add('builds-take-trips', true,
+        completedWithTrips.length + ' completed sites; median ' + median.toFixed(1) + ' loaded trips per site');
+    }
+  } else {
+    skip('containers-carry-more', 'run the porters scenario to compare fitted containers with bare hands');
+  }
 
   const knowledgeChecked = tel.action_target_knowledge_checked ?? 0;
   const knowledgeUnknown = tel.action_target_knowledge_unknown ?? 0;
@@ -3036,6 +3084,21 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
 
   const steps = stepsOverride ?? scenario.steps;
   const sim = new Simulation(scenario.config);
+  if (scenario.name === 'porters') {
+    const ids = [...new Set(sim.livingPeople().map(person => person.bandId))].sort((a, b) => a - b);
+    const equippedBand = ids[0];
+    for (const person of sim.livingPeople()) {
+      if (person.bandId === equippedBand) {
+        for (const item of ['bundle', 'hide_bag', 'basket', 'sledge']) {
+          person.inventory.add(item, 1);
+          equipContainer(person, item);
+        }
+        telemetry.count('porter_capacity_equipped', capacityFor(person, sim.config.carry));
+      } else {
+        telemetry.count('porter_capacity_bare', capacityFor(person, sim.config.carry));
+      }
+    }
+  }
 
   const samples: Sample[] = [sample(sim)];
   const sampleEvery = Math.max(1, Math.floor(steps / 10));

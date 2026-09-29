@@ -1252,3 +1252,14 @@ conocidas y pasadas de raiz dentro del ruido frente a la fase 10; tres checks
 ya cronicamente rojos en otros escenarios cruzan tambien a `century`, sin
 mecanismo nuevo (ver bugs.md). Ver [m15_plan.md](m15_plan.md) y
 [changelog.md](changelog.md). Sigue 11c (solo las manos, el commit grande).
+**2026-09-29: M15 fase 11c abierta por supervivencia.** La corrección de
+comer en la fuente y la descarga selectiva de materiales elevaron `lean` de
+0,9% a 18,1% de supervivencia en veinte semillas, todavía bajo el 21,8%
+anterior. La alimentación directa y reserva de comida quedan probadas, pero la
+cohorte de 10 semillas con el impulso por hambre de dependientes terminó igual
+que las diez semillas pareadas anteriores (18,6%, sin mejora observable).
+También se corrigió que el almacén urgente llenara montones de compost y
+bloqueara su maduración. La mortalidad de menores de un año sigue alta; se
+investiga la frecuencia y continuidad de lactancia. Los almacenes observados
+tienen sitio libre pero casi ninguna comida; ver [bugs.md](bugs.md) y
+[m15_plan.md](m15_plan.md). No se ha cambiado el tamaño de las manos.

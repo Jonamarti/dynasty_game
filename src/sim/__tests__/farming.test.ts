@@ -256,6 +256,7 @@ describe('a field in a world', () => {
     aDayIn(sim);
     const person = sim.livingPeople()[0]!;
     const field = fieldNear(sim, person);
+    for (const [id, count] of person.inventory.entries()) person.inventory.remove(id, count);
     person.inventory.add('grain', SOW_SEED * 2);
 
     const organicBefore = sim.soilReport(field).organic;
@@ -410,6 +411,7 @@ describe('composting', () => {
     for (let i = 0; i < sim.config.time.ticksPerDay * 3; i++) sim.step();
     const made = heap.store.count('compost');
     expect(made).toBeGreaterThan(0);
+    expect(heap.store.entries().every(([itemId]) => itemId === 'compost')).toBe(true);
 
     // The same honesty `workTraps` applies to a snare line whose setter died.
     for (const member of sim.people) member.knownTech.delete('composting');
@@ -425,6 +427,7 @@ describe('composting', () => {
     heapNear(sim, person, 8);
     wearOut(sim, field, 0.6);
 
+    for (const [id, count] of person.inventory.entries()) person.inventory.remove(id, count);
     person.inventory.add('compost', SPREAD_LOAD);
     const before = sim.soilReport(field);
     expect(sim.order(person, 'spread', { buildingId: field.id })).toBe(true);
@@ -451,6 +454,7 @@ describe('composting', () => {
     const field = fieldNear(sim, person);
     const heap = heapNear(sim, person, 8);
     wearOut(sim, field, 0.6);
+    for (const [id, count] of person.inventory.entries()) person.inventory.remove(id, count);
     const before = sim.soilReport(field);
 
     sim.order(person, 'spread', { buildingId: field.id });

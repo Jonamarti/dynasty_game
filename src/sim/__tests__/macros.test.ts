@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appealOf, bestFoodFor, consumeFood, cravings } from '../core/Macros.ts';
+import { appealOf, bestFoodFor, consumeFood, consumeFoodAtSource, cravings } from '../core/Macros.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 
@@ -32,6 +32,17 @@ describe('food cravings', () => {
     expect(consumeFood(person, 'apple')).toBe(true);
     expect(person.needs.hunger).toBe(24);
     expect(person.needs.thirst).toBe(0);
+  });
+
+  it('nourishes directly from a bush even when no food fits in the pack', () => {
+    const person = new Person('Hungry', 0, 0, 0, new RNG('source-meal'), 40);
+    person.needs.hunger = 80;
+    person.inventory.add('sticks', 10);
+
+    expect(consumeFoodAtSource(person, 'berries')).toBe(true);
+    expect(person.needs.hunger).toBe(66);
+    expect(person.inventory.count('berries')).toBe(0);
+    expect(person.inventory.count('sticks')).toBe(10);
   });
 
   it('can remove craving and belief preferences for survival ablations', () => {

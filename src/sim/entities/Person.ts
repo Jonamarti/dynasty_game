@@ -11,7 +11,7 @@ import { Inventory } from './Item.ts';
 import type { Equipment } from './Equipment.ts';
 import { Memory } from '../social/Memory.ts';
 import type { LifeEvent } from '../social/SocialSystem.ts';
-import { carryFactor, TECH } from '../knowledge/Tech.ts';
+import { TECH } from '../knowledge/Tech.ts';
 import type { Idea } from '../knowledge/Synthesis.ts';
 import type { DriveId } from '../ai/Drives.ts';
 import { PROTOTYPE_AT } from '../knowledge/Synthesis.ts';
@@ -272,12 +272,16 @@ export class Person {
   /** Today's exertion ledger, filled by `NeedsSystem` and folded into `recentExertion` daily. */
   exertionToday = { total: 0, ticks: 0 };
   inventory = new Inventory();
+  /** Inventory version last checked against M15 hand capacity. */
+  carryReconciledVersion = -1;
   /**
    * M15 phase 11a. What is in each hand, on the back, at the belt and on the
    * shoulder. Inert: nothing writes to it or reads it to change what fits in
    * `inventory` until phase 11c turns off `Config.carry.legacyPack`.
    */
   equipment: Equipment = {};
+  /** Cached sum of equipped container capacities; updated by Carry helpers. */
+  carryContainerCapacity = 0;
   /**
    * M15 phase 11b. The tick each item id was last in hand — taken, picked
    * up, worked into a craft, or hauled to a site — for `KnowledgeSystem.
@@ -880,7 +884,10 @@ export class Person {
    * everything else they do.
    */
   get carryCapacity(): number {
-    return Math.round(40 * this.vigour * carryFactor(this));
+    // M15 phase 11c: capacity belongs to held equipment, not the abstract
+    // multiplier granted by knowing a technology. Scenario code that still
+    // opts into legacyPack asks Carry.capacityFor for the old formula.
+    return Math.max(1, Math.floor(10 * this.vigour + this.carryContainerCapacity));
   }
 
   get carrying(): number {

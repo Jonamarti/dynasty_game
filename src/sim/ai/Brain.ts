@@ -129,6 +129,10 @@ export interface BrainContext {
    * module constant; they must not come apart now that a scenario can move them.
    */
   needs: NeedsConfig;
+  /** The same source-eating gate used by ActionSystem's forage and pick. */
+  eatAtSourceAt: number;
+  /** Highest hunger among this person's hungry dependent children. */
+  dependentHunger: (person: Person) => number;
   /** Baseline nutrition consumed by one person over seven days. */
   weeklyFoodNeedPerPerson: number;
   /**
@@ -194,6 +198,8 @@ interface FoundTargets {
   fruitTree: Tree | null;
   fellTree: Tree | null;
   storeTarget: Building | null;
+  storeItemId: string | null;
+  storeItemCount: number | null;
   larderTarget: Building | null;
   /** Whose building a `sabotage` is aimed at — M11 phase 11b. */
   sabotageTarget: Building | null;
@@ -416,6 +422,8 @@ const TRAP_ROUND = 1.1;
 
 /** Nutrition a person keeps for themselves before giving any away. */
 const GIVING_RESERVE = 90;
+/** Food kept in hand when banking surplus with bare hands. */
+const HAND_FOOD_RESERVE = 20;
 
 /**
  * How many tiles of extra walk a fully greedy person will accept to store at
@@ -857,22 +865,28 @@ export class Brain {
       }
       else telemetry.count('craving_protein_absent');
     }
-    if (foodNode) {
+    const foodBlockedByLoad = person.carrying >= person.carryCapacity &&
+      person.needs.hunger < ctx.eatAtSourceAt;
+    const carriedNutritionForFood = this.carriedNutrition(person);
+    const dependentHunger = ctx.dependentHunger(person);
+    const familyFoodDrive = carriedNutritionForFood <
+      person.needs.hunger + dependentHunger + DEPENDANT_RESERVE
+      ? urgencyCurve(dependentHunger) : 0;
+    if (foodNode && !foodBlockedByLoad) {
       // Hunger drives foraging only to the extent it is not already answered by
       // what you carry — but the reserve is generous. A first attempt cut the
       // drive as soon as a person held two berries, so they picked one meal at a
       // time, walked back and forth all day and starved anyway. People forage in
       // bulk: keep picking until the pack covers the current deficit plus a
       // day's buffer.
-      const carriedNutrition = person.inventory.entries()
-        .reduce((sum, [id, count]) => sum + (ITEMS[id]?.nutrition ?? 0) * count, 0);
-      const shortfall = Math.max(0.15, 1 - carriedNutrition / (person.needs.hunger + 70));
+      const shortfall = Math.max(0.15, 1 - carriedNutritionForFood / (person.needs.hunger + 70));
       // Greed is a standing wish to stockpile past immediate need — the seed of
       // hoarders, traders, and people worth stealing from.
       const stockpileWish = possession * 0.25;
       add(
         'forage',
-        (hunger * 1.6 * shortfall + stockpileWish) * (1 + variety * 0.2) *
+        (Math.max(hunger * 1.6 * shortfall, familyFoodDrive * 1.6) + stockpileWish) *
+          (1 + variety * 0.2) *
           (ctx.motivation.beliefChoice
             ? expectationRatio(person, foodNode.kind === 'fish' ? 'yield:fish' : 'yield:forage') : 1) *
           this.proximityBonus(person, foodNode, ctx.sightRadius)
@@ -883,14 +897,14 @@ export class Brain {
     // Orchard fruit is worth more per trip than berries and only exists in its
     // season, which is what gives the year a shape: a glut in autumn worth
     // storing, and nothing on the branches in spring.
-    const carriedNutrition = this.carriedNutrition(person);
-    const shortfall = Math.max(0.15, 1 - carriedNutrition / (person.needs.hunger + 70));
+    const shortfall = Math.max(0.15, 1 - carriedNutritionForFood / (person.needs.hunger + 70));
     const pickScore = (tree: Tree): number => {
       // A laden fruit tree is a far better haul than a bush, and only exists
       // for part of the year, so it should pull people off berries while it
       // lasts. That seasonal swing is most of what gives the year a shape.
       const laden = Math.min(1, tree.fruit / 8);
-      return (hunger * 2.3 * shortfall + possession * 0.35) * (0.6 + laden * 0.7)
+      return (Math.max(hunger * 2.3 * shortfall, familyFoodDrive * 2.3) + possession * 0.35)
+        * (0.6 + laden * 0.7)
         * (1 + variety * 0.2)
         * this.worthRatio(this.fruitWorth(person, tree, ctx))
         * (ctx.motivation.beliefChoice ? expectationRatio(person, 'yield:pick') : 1)
@@ -915,7 +929,7 @@ export class Brain {
     fruitTree = !edible ? worthwhile
       : !worthwhile || worthwhile.id === edible.id ? edible
       : pickScore(worthwhile) > pickScore(edible) ? worthwhile : edible;
-    if (fruitTree) add('pick', pickScore(fruitTree));
+    if (fruitTree && !foodBlockedByLoad) add('pick', pickScore(fruitTree));
 
     // --- Gather materials --------------------------------------------------
     let matNode = this.findNode(person, ctx,
@@ -1039,6 +1053,8 @@ export class Brain {
     let unfinished: Inscription | null = null;
     let shelter: Building | null = null;
     let storeTarget: Building | null = null;
+    let storeItemId: string | null = null;
+    let storeItemCount: number | null = null;
     let larderTarget: Building | null = null;
     let sabotageTarget: Building | null = null;
     let suitor: Person | null = null;
@@ -2544,8 +2560,33 @@ export class Brain {
     const stores = ctx.buildings.filter(b => b.complete && b.def.storage > 0);
     if (stores.length > 0) {
       const carried = this.carriedNutrition(person);
-      const surplus = carried - person.needs.hunger - GIVING_RESERVE;
-      if (surplus > 0 && comfortNow > 0.4) {
+      // A handload of sticks and flint used to make `store` impossible: the
+      // food-surplus gate below cannot pass with no food, while `forage` still
+      // sends the person to a bush that has no room to yield anything. Unload
+      // the largest unequipped material stack while hunger is still below the
+      // point at which eating straight from the bush answers the need.
+      const blockedFood = foodBlockedByLoad && (foodNode !== null || fruitTree !== null);
+      const equipped = blockedFood
+        ? new Set(Object.values(person.equipment).filter(Boolean).map(item => item!.item))
+        : null;
+      const unloadItem = blockedFood
+        ? person.inventory.entries()
+          .filter(([id, count]) => count > 0 && (ITEMS[id]?.nutrition ?? 0) === 0 && !equipped!.has(id))
+          .sort(([a, ac], [b, bc]) => bc - ac ||
+            (ITEMS[a]?.baseValue ?? 0) - (ITEMS[b]?.baseValue ?? 0))[0]?.[0] ?? null
+        : null;
+      // The gift reserve is too large for a bare-hand larder. Keep today's
+      // hunger plus a small meal in the carrier's hands, and name only the
+      // surplus stack so doStore cannot empty the rest of the inventory.
+      const foodExcess = carried - person.needs.hunger - HAND_FOOD_RESERVE;
+      const foodToStore = comfortNow > 0.4 && foodExcess > 0
+        ? person.inventory.entries()
+          .map(([id, count]) => ({ id, count: Math.min(count,
+            Math.floor(foodExcess / (ITEMS[id]?.nutrition || Infinity))) }))
+          .filter(row => row.count > 0)
+          .sort((a, b) => b.count - a.count)[0] ?? null
+        : null;
+      if (unloadItem !== null || foodToStore !== null) {
         // Which building this person's own household calls home, so a greedy
         // person can be pulled toward it below. Null for anyone whose
         // household has never slept under a roof yet.
@@ -2559,14 +2600,19 @@ export class Brain {
         // argument — see `BuildingDef.herd`.
         const store = this.pickBest(
           stores.filter(b => b.storageFree > 0 && this.canUse(person, b, ctx) &&
-            !isTrap(b.def) && !isHerd(b.def)),
+            !isTrap(b.def) && !isHerd(b.def) && !isHeap(b.def)),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY }) +
             (home !== null && b.id === home ? possession * HOARD_PULL : 0)
         );
         if (store) {
-          add('store', 0.35 * (1 - person.traits.greed * 0.5)
-            * this.proximityBonus(person, { x: store.centerX, y: store.centerY }, ctx.sightRadius));
+          add('store', (unloadItem !== null
+            ? hunger * 1.6 + 20
+            : foodToStore !== null && person.isLaden ? 3
+            : 0.35 * (1 - person.traits.greed * 0.5)) *
+            this.proximityBonus(person, { x: store.centerX, y: store.centerY }, ctx.sightRadius));
           storeTarget = store;
+          storeItemId = unloadItem ?? foodToStore?.id ?? null;
+          storeItemCount = unloadItem === null ? foodToStore?.count ?? null : null;
         }
       }
 
@@ -3196,7 +3242,7 @@ export class Brain {
         water, foodToEat, waterQuestionPeer, explorePoint, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, tradePartner, fleeFrom, fleePoint,
         quarry,
-        site, shelter, storeTarget, larderTarget, sabotageTarget, fruitTree, fellTree,
+        site, shelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
         patient, strayAnimal, slanderSubjectId, praiseSubjectId, proposalListener, proposalSite,
       },
@@ -3789,6 +3835,10 @@ export class Brain {
           person.targetBuildingId = building.id;
           person.targetX = building.centerX;
           person.targetY = building.centerY;
+          if (action === 'store') {
+            person.targetItemId = found.storeItemId;
+            person.targetItemCount = found.storeItemCount;
+          }
         }
         break;
       }

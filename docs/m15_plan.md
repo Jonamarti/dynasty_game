@@ -1160,11 +1160,11 @@ contenedores sale en este mismo commit.
 | angarillas (`sledge`) | las dos manos (arrastre) | `sledge` (nuevo, Mesolítico: `carpentry`, `cordage`) | madera 2, cuerda 2 | 30 de todo, a 0,8 de paso | las rastras del Mesolítico; la fase 35 les añade el viaje entre comarcas |
 | carro (`cart`, ya existe) | las dos manos | `the_wheel` | la de hoy | 60 de todo | |
 
-- `carryFactor` se retira: su papel lo hacen los contenedores. Sus tres
-  lectores (`cordage`, la cesta y el carro) pasan a ser la tabla. `cordage`
-  conserva su efecto de receta (la cuerda) y gana el hatillo. **La regla del
-  doble candado se mantiene**: un contenedor cuenta si está **puesto en su
-  hueco**, no solo en el inventario.
+- `carryFactor` deja de gobernar la carga normal y se conserva solo para las
+  corridas de comparación `legacyPack`. Los lectores de la carga normal son
+  los contenedores puestos en su hueco. `cordage` conserva su efecto de receta
+  (la cuerda) y gana el hatillo. **La regla del doble candado se mantiene**:
+  un contenedor cuenta si está **puesto en su hueco**, no solo en el inventario.
 - **Se come donde se recoge.** `forage` y `pick` con el hambre por encima de
   `Config.carry.eatAtSourceAt` comen del arbusto o del árbol en vez de
   guardar, hasta calmarla, y después guardan lo que quepa. Es un cambio en
@@ -1181,6 +1181,58 @@ contenedores sale en este mismo commit.
   `hands_full` («run out of hands»). Con las manos se disparará mucho más, y
   **eso es lo que debe inventar la cesta y la bolsa**. Se verifica con el
   contador por ruta, no se añade un peso.
+
+**Avance del 2026-09-29:** capacidad base de 10 unidades por `vigour`, con
+límite específico por objeto y capacidad extra solo para contenedores puestos.
+Hatillo, bolsa de piel, cesta, rastra y carro tienen receta, clase aceptada y
+hueco; la rastra reduce el paso a `Config.carry.sledgeSpeed` (0,8). Se come en
+la fuente al superar `eatAtSourceAt`, y el exceso de transferencias antiguas se
+deja en un montón a los pies en vez de borrarse. `porters` compara ambas bandas:
+capacidad media de 8,9 con manos y 85,7 con equipo. Sus checks
+`hands-limit-loads` y `containers-carry-more` pasan. La prueba unitaria cubre
+capacidad por objeto, ajuste al hueco, pérdida de carga y arrastre. La cohorte
+`porters` informa una mediana de 3 viajes cargados en 2 sitios terminados.
+Pero la puerta demográfica **falla**: `lean` a 20 semillas cayó a 0,9% de
+supervivencia y 20/20 colapsos, frente a 21,8% en la base de fase 10; 769 de
+920 muertes fueron por hambre. Se observaron 425 bloqueos por límite de carga,
+424 comidas en el lugar y solo 4 concepciones de `cordage` (3 por la chispa
+`hands_full`). La fase queda **abierta** y se detiene aquí por el coste superior
+a cinco puntos. No se cambia el tamaño del puñado sin decisión del propietario;
+antes de reanudar hay que escoger si se conserva el tamaño histórico y se
+retrabaja la economía de recolección/descubrimiento, o se revisa la carga base.
+Una ejecución diagnóstica de `lean` registró 545 trabajos terminados por
+`hands_full`, pero solo un hatillo fabricado; la señal llega al registro, aunque
+la respuesta de contenedores apenas se propaga en esa partida.
+El trabajo de NPCs para elegir herramienta y recoger sobrantes queda en 11d.
+
+**Reapertura del 2026-09-29:** el propietario prioriza la mortalidad y conserva
+el tamaño del puñado mientras se revisan las decisiones. Una pérdida de comida
+al comer directamente de la fuente se corrigió; la cohorte `lean` subió a
+13,2%. Hacer que una carga completa de materiales vaya al almacén antes de
+recolectar comida llevó la misma cohorte a 14,7%, aún bajo el 21,8% anterior.
+La inspección del día 45 encontró los almacenes a menos de la mitad y sin
+comida, con unas 615 unidades comestibles todavía en el terreno. Una tercera
+corrección hace que alimentar a un hijo sea una comida inmediata, incluso si
+tiene las manos llenas o el adulto tiene frío. La cohorte de 20 semillas que
+añade reserva de comida y alimentación directa promedió 18,1% (14/20 colapsos,
+580 muertes por hambre), aún 3,7 puntos bajo el 21,8% de referencia; no incluía
+el ajuste posterior para priorizar comida según el hambre de dependientes. Al
+medir apareció que la ruta urgente podía elegir el montón de compost como
+almacén y llenarlo de materiales, bloqueando la maduración. Se excluyó ese
+edificio y la prueba de compost vuelve a pasar. Diez semillas con el ajuste
+familiar dieron 18,6% y 6/10 colapsos, igual que esas mismas semillas de la
+cohorte anterior. El A/B confirma que aumenta el score de recolección para
+atender al dependiente, pero no una mejora de supervivencia. La petición del
+propietario autoriza un commit incremental de la implementación y el diagnóstico;
+11c sigue abierta y no se da por cerrada ni desplegada hasta superar la puerta
+demográfica.
+
+La siguiente investigación sigue a los lactantes: en esas diez semillas, la
+mortalidad observada antes del primer año fue 64,7% (88/136) y antes de los
+cinco fue 100% (115/115, con 36 nacimientos aún sin seguimiento). Un `lean`
+individual registró 227 sesiones de lactancia y 31 muertes por hambre entre 17
+nacimientos; hay que comprobar si las madres llegan vivas y si completan las
+sesiones a tiempo antes de tocar los pesos de recolección.
 
 ### 11d. Lo que hace un NPC con las manos (medido)
 

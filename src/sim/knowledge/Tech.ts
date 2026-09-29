@@ -1600,7 +1600,7 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   cordage: {
     summary: 'A net and a carrying strap: more in one trip. And rope, to tie up somebody held down.',
-    site: 'Person.carryCapacity, via carryFactor; RECIPES.rope and rope_thatch; ActionSystem.doBind',
+    site: 'RECIPES.rope and rope_thatch; the equipped bundle in sim/core/Carry.ts; ActionSystem.doBind',
   },
   plant_lore: {
     summary: 'More from every bush and every fruiting tree.',
@@ -1656,7 +1656,7 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   basketry: {
     summary: 'Something to put it in: more carried home in one trip.',
-    site: 'Person.carryCapacity, via carryFactor, when a basket is in the pack',
+    site: 'the equipped basket capacity in sim/core/Carry.ts; RECIPES.basket',
   },
   netting: {
     summary: 'A mesh instead of a point: far more from every fishing spot.',
@@ -1758,7 +1758,7 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   the_wheel: {
     summary: 'A cart: what a strap and a basket carry, and a cartload more on top.',
-    site: 'Person.carryCapacity, via carryFactor, when a cart is in the pack',
+    site: 'the equipped cart capacity in sim/core/Carry.ts; RECIPES.cart',
   },
   bread: {
     summary: 'Meal baked into bread: more nourishing than the meal it is made from, and it keeps as well.',

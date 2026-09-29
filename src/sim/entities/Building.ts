@@ -659,6 +659,8 @@ export class Building {
 
   /** Materials delivered so far. */
   readonly delivered = new Inventory();
+  /** Loaded deliveries made here, for M15 phase 11c's trips-per-site measure. */
+  haulTrips = 0;
   /** Goods kept here once finished. */
   readonly store = new Inventory();
 

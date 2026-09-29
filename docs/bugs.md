@@ -3178,3 +3178,94 @@ por persona-año; `known` y `pastRoots` sin bajar) se cumple: `century` a 20
 semillas dio 0,46 ideas por persona-año (techo 3), conocidas 7,4 frente a 7,5
 (ruido), pasadas raíz 7,0 frente a 6,7 (sube), supervivencia 92,7% frente a
 92,3%.
+
+## M15 fase 11c — la carga de manos colapsa `lean` (2026-09-29)
+
+**Revisión del 2026-09-29.** Había una pérdida determinista de comida al
+consumir en la fuente: `node.take`/`tree.pick` quitaban la unidad, pero
+`consumeFood` exigía otra en el inventario y no bajaba el hambre si faltaba.
+Se corrigió y la misma cohorte de veinte semillas pasó de 0,9% a 13,2% de
+supervivencia media, todavía con 630 muertes por hambre. Una descarga selectiva
+de material antes de recolectar llevó la cohorte a 14,7% (16/20 colapsos,
+602 muertes por hambre). Ambas lecturas siguen bajo la base de 21,8% de fase
+10; no se ha cambiado la capacidad de las manos.
+
+La observación del día 45 en una semilla con descarga selectiva encontró 190
+objetos en almacenes de capacidad 400, **ninguno comestible**. Los NPC llevaban
+solo 8 unidades de comida en total y quedaban unas 615 unidades comestibles en
+el suelo. No falta espacio de almacén: falla la conversión de comida disponible
+en comida transportada o reservada. El `store` ordinario aún pide nutrición
+transportada mayor que hambre propia + 90 y luego vacía toda la carga; con
+unas nueve bayas máximas, solo se ofrece por debajo de 36 puntos de hambre si
+no se lleva ningún otro objeto. Bajar el umbral compartido alteraría también
+regalos, comercio y domesticación, así que no se ha hecho a ciegas.
+
+La cohorte con descarga selectiva tuvo 209 muertes por hambre de menores de
+cinco años, 87 de niños mayores y 306 de adultos. Se detectó además que
+`doGive` ponía comida en el inventario de un niño ya cargado, que
+`reconcileCarry` soltaba al suelo, y 15.977 interrupciones de entrega por frío
+en las veinte semillas. Las rutas de alimentación directa y entrega urgente
+están corregidas con pruebas deterministas. Con estas rutas y la reserva de
+comida en manos, otra cohorte de veinte semillas dio 18,1% de supervivencia,
+14/20 colapsos y 580 muertes por hambre: 3,7 puntos bajo la referencia de
+21,8%. Una cohorte exploratoria de diez semillas con impulso de recolección
+por hambre de dependientes dio 18,6% y 6/10 colapsos; sus poblaciones finales
+coincidieron con las mismas semillas de la cohorte anterior. La prueba A/B sí
+confirma más puntuación de recolección cuando un dependiente tiene hambre, pero
+esta muestra no demuestra mejora de supervivencia.
+
+La mortalidad infantil queda como la siguiente pista: en la cohorte de diez,
+la mortalidad observada antes del primer año fue 64,7% (88/136) y antes de los
+cinco, 100% (115/115; 36 nacimientos aún sin seguimiento). En el `sim:check`
+`lean` de una semilla hubo 17 nacimientos, 227 sesiones de lactancia y 31
+muertes por hambre; esto no basta para atribuir esas muertes a interrupciones
+de lactancia, pero señala que hay que medir qué madres llegan vivas y cuánto
+tiempo tardan en completar cada sesión.
+
+La prueba de maduración de compost detectó un efecto colateral de la descarga:
+el nuevo destino de almacén podía ser un montón de compost. Un NPC lo llenó con
+18 materiales, bloqueando toda maduración durante cuatro días. `Brain` ahora
+excluye los montones de esa ruta; la suite de agricultura vuelve a pasar (22
+tests). El intento de guardar comida no debe convertir un lugar de producción
+en un almacén corriente.
+`carry.legacyPack=true` no es un control histórico válido: el getter
+`Person.carryCapacity` y `isLaden` siguen aplicando el límite nuevo aunque
+`Carry.itemCapacityFor` devuelva el antiguo.
+
+La primera cohorte con `Config.carry.legacyPack=false` (`lean`, 20 semillas de
+24.000 pasos) dio 0,9% de supervivencia media y 20/20 colapsos, frente a
+21,8% en la base de calibración de fase 10. El observador contó 920 muertes:
+769 por hambre, 123 por exposición, 14 por deshidratación y 14 por vejez. La
+protección de carga dejó 425 intentos con el límite alcanzado, 424 consumos en
+la fuente y cuatro ideas de `cordage` (tres por `hands_full`). Esto confirma
+que los mecanismos existen, pero no que compensen el cambio de economía; la
+muestra no identifica por sí sola cuál de recolección, acceso a contenedores o
+planificación causa la pérdida.
+
+Una ejecución diagnóstica adicional de `lean` registró 545 trabajos terminados
+por `hands_full`, 86 unidades dejadas en el suelo por exceso de carga y un solo
+hatillo fabricado. La señal aparece con frecuencia, pero la respuesta material
+no se propaga lo suficiente para validar la escalera de recipientes. Es una
+lectura de una semilla y no identifica si la barrera es concebir, aprender o
+priorizar la receta; no justifica cambiar la capacidad de las manos.
+
+En `porters`, ambos checks mecánicos pasan: no quedan estados sobrecargados y
+el grupo equipado tiene 85,7 unidades de capacidad media frente a 8,9 con las
+manos. Se midieron cinco viajes cargados por grupo y la media entregada quedó
+en 2,4 equipada y 3,6 sin equipo; cada sitio pedía materiales distintos, por
+lo que no es una comparación causal. Dos obras terminadas dieron una mediana
+de 3 viajes cargados. El escenario corrió a 958 pasos/s, por debajo del suelo
+de 2.000; `lean` dio 1.131 pasos/s, también bajo su suelo de 1.412. La matriz
+`sim:check:all` con la revisión actual queda en `lean` 57/65: fallan
+`people-act-on-what-they-know`, `cravings-steer-the-diet`, `nights-are-slept`,
+`children-keep-close`, `gossip-is-aimed`, `opinions-diverge`,
+`the-tree-is-climbed` y `discovery-is-situated`. Estos fallos aparecen también
+en otros escenarios; la matriz sirve de comparación y no demuestra que 11c los
+causara.
+
+El plan fija un coste máximo de cinco puntos y prohíbe cambiar el tamaño del
+puñado sin consultar. La puerta se detiene aquí: no se debe desplegar la nueva
+carga normal ni calibrar el puñado a partir de esta única cohorte. Hace falta
+decidir si se mantiene la carga histórica y se rediseña la cadena de
+recolección/descubrimiento, o si se reconsideran las cantidades que caben en
+las manos. Ver `docs/m15_plan.md` y el changelog del 2026-09-29.

@@ -84,7 +84,7 @@ describe('making amends', () => {
     population: { bands: 2, peoplePerBand: 4 },
   };
 
-  it('squares a debt, moves the goods, and softens the one who was wronged', () => {
+  it('squares a debt, drops payment that will not fit, and softens the one who was wronged', () => {
     const sim = new Simulation(SMALL);
     for (let i = 0; i < 5; i++) sim.step();
     const payer = sim.livingPeople().find(p => p.bandId === 0 && !p.isChild)!;
@@ -99,6 +99,7 @@ describe('making amends', () => {
     sim.relationships.addDeed(owed.id, payer.id, -40, sim.time.tick);
     const before = sim.relationships.opinion(owed.id, payer.id);
     const flintBefore = owed.inventory.count('flint');
+    const groundFlintBefore = sim.piles.reduce((sum, pile) => sum + pile.contents.count('flint'), 0);
 
     expect(sim.order(payer, 'make_amends', { personId: owed.id })).toBe(true);
     for (let i = 0; i < 40 && payer.debts.length > 0; i++) {
@@ -110,7 +111,8 @@ describe('making amends', () => {
       sim.step();
     }
     expect(payer.debts.length).toBe(0);
-    expect(owed.inventory.count('flint')).toBe(flintBefore + 4);
+    expect(owed.inventory.count('flint')).toBe(flintBefore + 3);
+    expect(sim.piles.reduce((sum, pile) => sum + pile.contents.count('flint'), 0)).toBeGreaterThan(groundFlintBefore);
     expect(sim.relationships.opinion(owed.id, payer.id)).toBeGreaterThan(before);
   });
 

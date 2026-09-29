@@ -1,7 +1,7 @@
 # Architecture
 
-Current as of 2026-09-25 (M14 phase 1, shipped under its old name M13 phase
-1). No runtime dependencies, Vite + a 2D canvas.
+Current as of 2026-09-29 (M15 phase 11c). No runtime dependencies, Vite + a
+2D canvas.
 
 ## Layout
 
@@ -256,6 +256,20 @@ of the same duty: saying that somebody *did* work something out.
 
 **One `step()` is one simulation step.** No hidden amplification, so the step
 budgets in the harness mean what they say.
+
+**Carrying is bounded by hands and fitted containers.** `Person.inventory`
+remains the count of everything carried, while `Carry.ts` checks the item
+class, hand limit, and equipped container slots. Recipes and pickups fit a
+container into its slot; if an older transfer puts too much into somebody's
+inventory, `Simulation.step()` drops the excess at their feet rather than
+destroying it. A meal eaten at the bush or tree never enters inventory, so it
+must not remove a second carried unit. With full hands and food in sight, the
+AI can store a stack of unequipped material to free room while retaining its
+carried food. Feeding a dependent child delivers nourishment directly; adding
+it to the child's already-full inventory would only drop it at their feet.
+`Config.carry.legacyPack` still changes `Carry`'s capacity calculation, but
+`Person.carryCapacity` and `isLaden` remain hand-based, so this flag is not a
+whole-simulation comparison with the old pack.
 
 ## The AI is a utility scorer
 

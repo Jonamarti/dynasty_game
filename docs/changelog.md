@@ -1,4 +1,40 @@
 #
+## 2026-09-29 — M15 fase 11c, diagnóstico de hambre con las manos ocupadas
+
+La comida recogida y consumida en el mismo arbusto se descontaba de la fuente
+pero `consumeFood` intentaba descontarla otra vez del inventario. Con las manos
+ocupadas, el recurso desaparecía sin aliviar el hambre; el contador de comidas
+también mentía. `consumeFoodAtSource` comparte los efectos nutritivos con la
+comida transportada sin exigir una segunda unidad. Una prueba de cada ruta
+(`forage` y `pick`) reproduce el fallo anterior.
+
+`Brain` ofrece ahora llevar al almacén una pila de material no equipada si la
+carga completa impide recoger comida y el hambre todavía no permite comer de
+la fuente. Guarda solo esa pila; conserva las bayas y herramientas que llevaba.
+La prueba de integración confirma la elección del almacén y la siguiente
+recogida de comida. En la misma semilla diagnóstica, los depósitos pasaron de
+27/360 a 190/400 unidades al día 45, todas materiales; la comida del suelo
+sigue abundante. La cohorte de veinte semillas pasó de 0,9% antes de corregir
+la comida en la fuente a 13,2% con esa corrección y 14,7% con la descarga
+selectiva. La puerta de supervivencia sigue abierta.
+
+Al alimentar a un hijo, la comida ya no se entrega a un inventario lleno para
+caer inmediatamente a sus pies: se consume en la propia acción de alimentar.
+Como en la lactancia, el frío y otras necesidades del adulto no cancelan esa
+entrega corta a un dependiente; los demás regalos conservan sus interrupciones.
+Ambos fallos tienen pruebas que se comprobaron rojas antes del arreglo. La
+cohorte posterior no mostró una mejora demográfica en diez semillas pareadas.
+
+La primera cohorte con reserva de comida y alimentación directa dio 18,1% de
+supervivencia, todavía por debajo del 21,8% de referencia. El test de compost
+encontró que el almacén urgente podía elegir un montón de compost y llenarlo con
+materiales, bloqueando su maduración. `Brain` ya excluye esos montones; las 22
+pruebas de agricultura pasan. El último ajuste eleva la prioridad de comida
+cuando un hijo dependiente tiene hambre. La cohorte exploratoria de diez
+semillas acabó en 18,6%, idéntica a las diez semillas correspondientes de la
+cohorte previa: el cambio altera el score probado, pero no demuestra una mejora
+de supervivencia.
+
 ## 2026-09-29 — M15 corrección de la niebla acumulativa
 
 Cada revisión de la memoria volvía a pintar la máscara transparente sobre sí
@@ -9,6 +45,37 @@ similar a la noche. Los recuerdos contados de lugares no visitados tampoco
 perforan el negro. El e2e fuerza ocho revisiones y comprueba que la luminosidad
 permanece estable; las capturas son `artifacts/screenshots/m15-2i-fog-stable-visited.png`
 y `artifacts/screenshots/m15-2i-fog-black-unvisited.png`.
+
+## 2026-09-29 — M15 fase 11c, carga de manos y contenedores (puerta abierta)
+
+`Carry.ts` pasa a limitar la carga normal a las manos, con capacidad por tipo
+de objeto y capacidad extra solo para contenedores fitted. Se añaden hatillo,
+bolsa de piel y rastra con recetas; cesta y carro pasan a conceder capacidad
+desde sus huecos. La rastra reduce la velocidad al 80%. Forage y pick comen en
+la fuente por encima de `eatAtSourceAt`; el exceso recibido por transferencias
+se conserva en un montón a los pies. `porters` mide el límite y la capacidad;
+los checks de sobrecarga y capacidad equipada pasan, con 316 intentos de
+recolección limitados y cero estados que sigan excedidos. Dos obras terminadas
+tuvieron una mediana de 3 viajes cargados. La comparación de unidades
+entregadas por viaje fue 2,4 equipada frente a 3,6 sin equipo en cinco viajes
+por banda; no se usa como puerta porque depende de los materiales que cada obra
+todavía pide.
+
+La cohorte `lean` de 20 semillas dio **0,9% de supervivencia y 20/20 colapsos**
+frente al 21,8% de la base de fase 10; 769 de 920 muertes fueron por hambre.
+Hubo 424 comidas en la fuente, 425 bloqueos de carga y solo cuatro
+concepciones de `cordage`, tres disparadas por `hands_full`. La pérdida supera
+el coste máximo de cinco puntos del plan, así que 11c queda abierta y no se
+ajusta el puñado sin decisión del propietario. El diagnóstico y los límites de
+la muestra están en `docs/bugs.md`: una ejecución adicional registró 545 cierres
+por `hands_full`, 86 unidades desbordadas y un hatillo fabricado. El estado de
+la puerta, en `docs/m15_plan.md`.
+
+La captura de la pestaña Kit quedó guardada como
+`artifacts/screenshots/m15-11c-carry-limit.png`. `npm run shots` renovó siete
+capturas históricas antes de que se detectara el solapamiento; esas siete se
+restauraron desde el índice. La prueba de tour general falló, mientras las
+nueve pruebas específicas terminaron bien.
 
 ## 2026-09-28 - M15 phase 7b: measure orders by verb
 

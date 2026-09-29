@@ -28,6 +28,7 @@
  * somebody ordered and a wander nobody did.
  */
 import type { World } from '../core/World.ts';
+import { carrySpeedFactor } from '../core/Carry.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { Person } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -305,12 +306,14 @@ export class MovementSystem {
     private readonly world: World,
     private readonly rng: RNG,
     private readonly pathfinder: Pathfinder,
-    private readonly infantsStill = true
+    private readonly infantsStill = true,
+    private readonly sledgeSpeed = 0.8
   ) {}
 
   /** Speed for a given person, shared by pathing and direct player control. */
   speedOf(person: Person): number {
-    return BASE_SPEED * (1 - person.needs.fatigue / 220) * (0.5 + (person.health / 100) * 0.5);
+    const drag = carrySpeedFactor(person, this.sledgeSpeed);
+    return BASE_SPEED * (1 - person.needs.fatigue / 220) * (0.5 + (person.health / 100) * 0.5) * drag;
   }
 
   /**

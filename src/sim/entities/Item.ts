@@ -60,10 +60,8 @@ export interface ItemDef {
    */
   class: ItemClass;
   /**
-   * M15 phase 11c. Declared on the type now so `hand`/`class` and a future
-   * container definition sit next to each other on one entry; no item sets
-   * it yet; sitting `class` next to `container` on that entry avoids ever
-   * checking a slot that class does not accept.
+   * M15 phase 11c. A container adds capacity only while assigned to this slot;
+   * `accepts` keeps the extra room specific to the kinds it can hold.
    */
   container?: { slot: import('./Equipment.ts').Slot; capacity: number; accepts: ItemClass[] };
 }
@@ -123,7 +121,7 @@ export const ITEMS: Record<string, ItemDef> = {
   // M8.2. The only item in the game whose whole purpose is to be put back into
   // the ground. Worth nothing to eat and nearly nothing to trade, and a band
   // that has some is a band whose fields have another twenty years in them.
-  compost:  { id: 'compost',  label: 'Compost',    nutrition: 0,  spoilTicks: 0,    baseValue: 1, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  compost:  { id: 'compost',  label: 'Compost',    nutrition: 0,  spoilTicks: 0,    baseValue: 1, class: 'bulky', hand: { perHand: 1, perArms: 6, hands: 1 } },
   meat:     { id: 'meat',     label: 'Raw meat',   nutrition: 30, spoilTicks: 1200, baseValue: 3, macros: { fat: 0.45, protein: 0.55, carb: 0 }, class: 'food', hand: { perHand: 2, perArms: 5, hands: 1, shoulder: 8 } },
   fish:     { id: 'fish',     label: 'Fish',       nutrition: 18, spoilTicks: 800,  baseValue: 2, macros: { fat: 0.35, protein: 0.65, carb: 0 }, class: 'food', hand: { perHand: 2, perArms: 5, hands: 1, shoulder: 8 } },
   // A kill yields a hide as well as meat, and a hide in cold hands is the
@@ -196,7 +194,10 @@ export const ITEMS: Record<string, ItemDef> = {
   // somebody who does not know basketry is a bundle of withies. That double
   // gate is deliberate: `handaxe` tests presence alone, which is the bug the
   // M8 plan lists under "three repairs to make while passing".
-  basket:   { id: 'basket',   label: 'Basket',     nutrition: 0,  spoilTicks: 0,    baseValue: 5, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  bundle:   { id: 'bundle',   label: 'Bundle',     nutrition: 0,  spoilTicks: 0,    baseValue: 4, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, container: { slot: 'shoulder', capacity: 12, accepts: ['long'] } },
+  hide_bag: { id: 'hide_bag', label: 'Hide bag',   nutrition: 0,  spoilTicks: 0,    baseValue: 6, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, container: { slot: 'belt', capacity: 12, accepts: ['small'] } },
+  basket:   { id: 'basket',   label: 'Basket',     nutrition: 0,  spoilTicks: 0,    baseValue: 5, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, container: { slot: 'back', capacity: 24, accepts: ['small', 'food'] } },
+  sledge:   { id: 'sledge',   label: 'Sledge',     nutrition: 0,  spoilTicks: 0,    baseValue: 12, class: 'bulky', hand: { perHand: 0, perArms: 0, hands: 2 }, container: { slot: 'left', capacity: 30, accepts: ['small', 'long', 'bulky', 'food'] } },
   net:      { id: 'net',      label: 'Net',        nutrition: 0,  spoilTicks: 0,    baseValue: 7, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 } },
   flint:    { id: 'flint',    label: 'Flint',      nutrition: 0,  spoilTicks: 0,    baseValue: 2, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
   sticks:   { id: 'sticks',   label: 'Sticks',     nutrition: 0,  spoilTicks: 0,    baseValue: 1, class: 'long', hand: { perHand: 2, perArms: 6, hands: 1 } },
@@ -243,7 +244,7 @@ export const ITEMS: Record<string, ItemDef> = {
   // Pulled with both hands and nothing else in them — the two-handed haul that
   // will make it a container slot in its own right once phase 11c wires up
   // the container ladder, not a thing that fits in a hand at all.
-  cart: { id: 'cart', label: 'Cart', nutrition: 0, spoilTicks: 0, baseValue: 14, class: 'bulky', hand: { perHand: 0, perArms: 0, hands: 2 } },
+  cart: { id: 'cart', label: 'Cart', nutrition: 0, spoilTicks: 0, baseValue: 14, class: 'bulky', hand: { perHand: 0, perArms: 0, hands: 2 }, container: { slot: 'left', capacity: 60, accepts: ['small', 'long', 'bulky', 'food'] } },
   // `bread`. `spoilTicks: 0`, like `meal` — it is baked meal, and keeping is
   // the whole point of baking it, per the plan's own table. Higher nutrition
   // than `meal` is the other half of the same claim, and mostly `carb` for the

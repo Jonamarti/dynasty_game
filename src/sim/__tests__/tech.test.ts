@@ -25,6 +25,7 @@ import { TREES } from '../entities/Tree.ts';
 import { RECIPES, craftableItems, recipeFor } from '../entities/Recipe.ts';
 import { INSCRIPTIONS, Inscription } from '../entities/Inscription.ts';
 import { Person, SKILLS } from '../entities/Person.ts';
+import { equipContainer } from '../core/Carry.ts';
 import { RNG } from '../core/RNG.ts';
 import type { Idea } from '../knowledge/Synthesis.ts';
 
@@ -359,11 +360,13 @@ describe('technology in one person’s hands', () => {
     expect(both).toBeLessThan(1);
   });
 
-  it('carries more with cordage than without', () => {
+  it('gets more carrying room from a fitted bundle, not from knowing cordage', () => {
     const bare = someone();
     const equipped = someone();
     equipped.age = bare.age;
     equipped.knownTech.add('cordage');
+    expect(equipped.carryCapacity).toBe(bare.carryCapacity);
+    equipContainer(equipped, 'bundle');
     expect(equipped.carryCapacity).toBeGreaterThan(bare.carryCapacity);
   });
 });

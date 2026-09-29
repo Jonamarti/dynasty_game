@@ -37,13 +37,14 @@ import {
 } from '../social/Conversation.ts';
 import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { canTake, equipContainer, itemCapacityFor, stow } from '../core/Carry.ts';
 import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
 import {
   INSCRIPTIONS, type Inscription, type InscriptionDef, type InscriptionForm,
 } from '../entities/Inscription.ts';
-import type { MotivationConfig, NeedsConfig } from '../core/Config.ts';
+import type { CarryConfig, MotivationConfig, NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
-import { bestFoodFor, consumeFood } from '../core/Macros.ts';
+import { bestFoodFor, consumeFood, consumeFoodAtSource } from '../core/Macros.ts';
 import { expectedFood } from '../ai/Beliefs.ts';
 import {
   TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
@@ -108,6 +109,7 @@ export interface ActionContext {
   seasonGrowth: number;
   /** Need rates, so an interruption can look one work cycle ahead. */
   needs: NeedsConfig;
+  carry: CarryConfig;
   motivation: MotivationConfig;
   /** Existing order authority, reused for requests to join a project. */
   persuasionAuthority?: (sponsor: Person, listener: Person) => number;
@@ -876,7 +878,8 @@ export class ActionSystem {
     person: Person,
     ctx: ActionContext,
     prefix: string,
-    answers?: LethalNeed
+    answers?: LethalNeed,
+    feedsDependentChild = false,
   ): boolean {
     // A full pack is no reason to cut off a conversation or exchange. These
     // actions do not need free hands until their final transaction, and the
@@ -884,7 +887,10 @@ export class ActionSystem {
     const reason = this.interruption(person, ctx, {
       ignoreLaden: true,
       answers,
-      ignoreNeeds: !ctx.motivation.interruptSocialNeeds,
+      // Feeding a dependent is the same survival exception as nursing. A
+      // cold parent used to restart this fifteen-tick handover forever, while
+      // the child starved beside them with food still in the parent's hands.
+      ignoreNeeds: feedsDependentChild || !ctx.motivation.interruptSocialNeeds,
     });
     if (!reason) return false;
     this.stop(person, reason, ctx, prefix);
@@ -1171,9 +1177,24 @@ export class ActionSystem {
     const yieldUnits = Math.max(1, Math.round(
       (1 + person.skillFactor(node.def.skill)) * forageYieldFactor(person, node.kind)
     ));
-    const room = Math.max(0, person.carryCapacity - person.carrying);
-    const taken = node.take(Math.min(yieldUnits, room));
-    if (taken > 0) {
+    const feeds = (ITEMS[node.def.itemId]?.nutrition ?? 0) > 0;
+    let eatenAtSource = 0;
+    if (feeds && person.needs.hunger >= ctx.carry.eatAtSourceAt) {
+      while (eatenAtSource < yieldUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
+        node.amount > 0 && node.take(1) > 0) {
+        consumeFoodAtSource(person, node.def.itemId, ctx.tick, ctx.motivation.cravings);
+        person.handled.set(node.def.itemId, ctx.tick);
+        eatenAtSource++;
+        telemetry.count('ate_at_source');
+      }
+    }
+    const room = Math.max(0, Math.min(
+      person.carryCapacity - person.carrying,
+      itemCapacityFor(person, ctx.carry, node.def.itemId) - person.inventory.count(node.def.itemId),
+    ));
+    const taken = node.take(Math.min(yieldUnits - eatenAtSource, room));
+    if (room === 0 && !node.depleted) telemetry.count('hand_capacity_blocked');
+    if (taken > 0 || eatenAtSource > 0) {
       person.inventory.add(node.def.itemId, taken);
       person.yieldNutrition += (ITEMS[node.def.itemId]?.nutrition ?? 0) * taken;
       person.practice(node.def.skill, 0.6);
@@ -1200,9 +1221,10 @@ export class ActionSystem {
     // one bush and flint at the next, and only one of those is a reason to keep
     // going while hungry.
     const nextPull = Math.ceil(node.def.harvestTicks / person.skillFactor(node.def.skill));
-    const feeds = (ITEMS[node.def.itemId]?.nutrition ?? 0) > 0;
     const stop = node.depleted
       ? 'node_empty'
+      : room === 0
+        ? 'hands_full'
       : this.interruption(person, ctx, {
           lookaheadTicks: nextPull,
           answers: feeds ? 'hunger' : undefined,
@@ -1241,12 +1263,29 @@ export class ActionSystem {
     person.workedTicks++;
     if (person.actionTimer > 0) return;
 
-    const room = Math.max(0, person.carryCapacity - person.carrying);
-    const picked = tree.pick(Math.min(Math.max(1, Math.round(
+    const room = Math.max(0, Math.min(
+      person.carryCapacity - person.carrying,
+      itemCapacityFor(person, ctx.carry, tree.def.fruitItem ?? '') - person.inventory.count(tree.def.fruitItem ?? ''),
+    ));
+    const fruitId = tree.def.fruitItem;
+    const yieldUnits = Math.max(1, Math.round(
       person.skillFactor('forage') * 2 * forageYieldFactor(person, 'fruit')
-    )), room));
-    if (picked > 0 && tree.def.fruitItem) {
-      person.inventory.add(tree.def.fruitItem, picked);
+    ));
+    let eatenAtSource = 0;
+    if (fruitId && (ITEMS[fruitId]?.nutrition ?? 0) > 0 &&
+      person.needs.hunger >= ctx.carry.eatAtSourceAt) {
+      while (eatenAtSource < yieldUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
+        tree.fruit > 0 && tree.pick(1) > 0) {
+        consumeFoodAtSource(person, fruitId, ctx.tick, ctx.motivation.cravings);
+        person.handled.set(fruitId, ctx.tick);
+        eatenAtSource++;
+        telemetry.count('ate_at_source');
+      }
+    }
+    const picked = tree.pick(Math.min(Math.max(0, yieldUnits - eatenAtSource), room));
+    if (room === 0 && tree.fruit > 0) telemetry.count('hand_capacity_blocked');
+    if ((picked > 0 || eatenAtSource > 0) && tree.def.fruitItem) {
+      if (picked > 0) person.inventory.add(tree.def.fruitItem, picked);
       person.yieldNutrition += (ITEMS[tree.def.fruitItem]?.nutrition ?? 0) * picked;
       person.practice('forage', 0.5);
       telemetry.count('picked_' + tree.def.fruitItem);
@@ -1254,6 +1293,8 @@ export class ActionSystem {
 
     const stop = tree.fruit < 1
       ? 'tree_bare'
+      : room === 0
+        ? 'hands_full'
       : this.interruption(person, ctx, { answers: 'hunger' });
     if (stop) {
       this.stop(person, stop, ctx);
@@ -1311,7 +1352,9 @@ export class ActionSystem {
     const wood = tree.woodYield;
     tree.standing = false;
     const room = Math.max(0, person.carryCapacity - person.carrying);
-    const carried = Math.min(wood, room);
+    const carried = Math.max(0, Math.min(wood, room,
+      itemCapacityFor(person, ctx.carry, 'wood') - person.inventory.count('wood')));
+    if (carried < wood) telemetry.count('hand_capacity_blocked');
     if (carried > 0) person.inventory.add('wood', carried);
     if (wood - carried > 0) ctx.dropAt(tree.x, tree.y, 'wood', wood - carried);
     person.practice('build', 2.5);
@@ -1456,6 +1499,9 @@ export class ActionSystem {
       return;
     }
     telemetry.count('materials_delivered', delivered);
+    site.haulTrips++;
+    telemetry.count('haul_trip_band_' + person.bandId);
+    telemetry.count('haul_units_band_' + person.bandId, delivered);
     this.finish(person);
   }
 
@@ -1695,15 +1741,19 @@ export class ActionSystem {
     if (isHerd(store.def) && requested === null) {
       let shared = 0;
       for (const [itemId, count] of store.store.entries()) {
-        const got = store.store.remove(itemId, Math.min(6, count));
+        const room = Math.max(0, Math.min(
+          person.carryCapacity - person.carrying,
+          itemCapacityFor(person, ctx.carry, itemId) - person.inventory.count(itemId),
+        ));
+        const got = store.store.remove(itemId, Math.min(6, count, room));
         if (got > 0) {
-          person.inventory.add(itemId, got);
+          stow(person, ctx.carry, itemId, got);
           person.handled.set(itemId, ctx.tick);
           shared += got;
         }
       }
       if (shared === 0) {
-        this.abandon(person, 'store_empty', ctx);
+        this.abandon(person, store.store.total > 0 ? 'hands_full' : 'store_empty', ctx);
         return;
       }
       telemetry.count('withdrawn', shared);
@@ -1720,8 +1770,16 @@ export class ActionSystem {
     const amount = requested !== null && person.targetItemCount !== null
       ? person.targetItemCount
       : 6;
-    const taken = store.store.remove(itemId, Math.min(amount, store.store.count(itemId)));
-    person.inventory.add(itemId, taken);
+    const room = Math.max(0, Math.min(
+      person.carryCapacity - person.carrying,
+      itemCapacityFor(person, ctx.carry, itemId) - person.inventory.count(itemId),
+    ));
+    if (room === 0) {
+      this.abandon(person, 'hands_full', ctx);
+      return;
+    }
+    const taken = store.store.remove(itemId, Math.min(amount, room));
+    stow(person, ctx.carry, itemId, taken);
     // M15 phase 11b: taking something off a shelf is handling it.
     if (taken > 0) person.handled.set(itemId, ctx.tick);
     telemetry.count('withdrawn', taken);
@@ -1763,7 +1821,11 @@ export class ActionSystem {
     // already full should be told so where they stand, not after crossing the
     // camp. The check after arrival is the one that matters, since a walk is
     // long enough for a pack to fill on the way.
-    if (person.carrying >= person.carryCapacity) {
+    const requestedItem = person.targetItemId ?? (person.targetPileId === null
+      ? null
+      : ctx.pilesById.get(person.targetPileId)?.contents.entries()[0]?.[0] ?? null);
+    if (person.carrying >= person.carryCapacity ||
+      (requestedItem !== null && !canTake(person, ctx.carry, requestedItem, 1))) {
       this.abandon(person, 'hands_full', ctx);
       return;
     }
@@ -1930,14 +1992,18 @@ export class ActionSystem {
 
     const yielded = Math.max(1, Math.round(animal.def.meat * person.skillFactor('hunt')));
     const room = person.carryCapacity - person.carrying;
-    person.inventory.add('meat', Math.min(yielded, Math.max(0, room)));
-    person.yieldNutrition += ITEMS.meat.nutrition * Math.min(yielded, Math.max(0, room));
+    const meatTaken = Math.max(0, Math.min(yielded, room,
+      itemCapacityFor(person, ctx.carry, 'meat') - person.inventory.count('meat')));
+    if (meatTaken < yielded) telemetry.count('hand_capacity_blocked');
+    person.inventory.add('meat', meatTaken);
+    person.yieldNutrition += ITEMS.meat.nutrition * meatTaken;
     telemetry.count('hunt_killed');
     telemetry.count('harvest_meat', yielded);
     // The skin comes off with the meat. Nothing consumed hides before M6b, and
     // that was the reason clothing's strongest spark — cold hands holding fur —
     // could never fire: the ingredient did not exist in the world.
-    const hideRoom = person.carryCapacity - person.carrying;
+    const hideRoom = Math.min(person.carryCapacity - person.carrying,
+      itemCapacityFor(person, ctx.carry, 'hide') - person.inventory.count('hide'));
     if (hideRoom > 0) {
       person.inventory.add('hide', 1);
       telemetry.count('harvest_hide');
@@ -2453,7 +2519,8 @@ export class ActionSystem {
         this.stop(person, pause, ctx);
         return;
       }
-      const room = Math.max(0, person.carryCapacity - person.inventory.total);
+      const room = Math.max(0, Math.min(person.carryCapacity - person.inventory.total,
+        itemCapacityFor(person, ctx.carry, 'compost') - person.inventory.count('compost')));
       const load = Math.min(SPREAD_LOAD * 2, heap.store.count('compost'), room);
       if (load <= 0) {
         this.abandon(person, room <= 0 ? 'hands_full' : 'no_compost', ctx);
@@ -3129,6 +3196,7 @@ export class ActionSystem {
     }
     for (const [itemId, count] of Object.entries(recipe.output)) {
       person.inventory.add(itemId, count);
+      equipContainer(person, itemId);
       person.handled.set(itemId, ctx.tick);
     }
     if (recipe.id === 'roast_meat' || recipe.id === 'roast_fish') {
@@ -3808,6 +3876,10 @@ export class ActionSystem {
   private doGive(person: Person, ctx: ActionContext): void {
     const other = this.approach(person, ctx);
     if (!other) return;
+    const feedsDependentChild = person.targetItemId === null && other.isChild &&
+      (person.childIds.includes(other.id) ||
+        (person.householdId !== null && other.householdId === person.householdId)) &&
+      other.needs.hunger > person.needs.hunger + 5;
 
     if (person.actionTimer <= 0) {
       person.actionTimer = GIVE_TICKS;
@@ -3815,10 +3887,8 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) {
-      const feedsDependentChild = person.targetItemId === null && other.isChild &&
-        (person.childIds.includes(other.id) || other.householdId === person.householdId) &&
-        other.needs.hunger > person.needs.hunger + 5;
-      this.interruptSocialWork(person, ctx, 'interrupted_give_', feedsDependentChild ? 'hunger' : undefined);
+      this.interruptSocialWork(person, ctx, 'interrupted_give_',
+        feedsDependentChild ? 'hunger' : undefined, feedsDependentChild);
       return;
     }
 
@@ -3856,7 +3926,16 @@ export class ActionSystem {
       this.abandon(person, 'nothing_to_give', ctx);
       return;
     }
-    other.inventory.add(foodId, given);
+    if (feedsDependentChild) {
+      // Feeding is a meal, not a transfer into the child's hands. With the
+      // smaller M15 hand limit, the old handover was immediately reconciled
+      // out of a full child's inventory and dropped at their feet.
+      for (let i = 0; i < given; i++) {
+        consumeFoodAtSource(other, foodId, ctx.tick, ctx.motivation.cravings);
+      }
+    } else {
+      other.inventory.add(foodId, given);
+    }
 
     const nutrition = (ITEMS[foodId]?.nutrition ?? 0) * given;
     ctx.social.emit(

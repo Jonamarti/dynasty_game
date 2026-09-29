@@ -153,6 +153,16 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { basket: 1 },
     keep: 1,
   },
+  bundle: {
+    id: 'bundle', label: 'Shoulder bundle', icon: '\u{1F9F5}',
+    tech: 'cordage', skill: 'build', workTicks: 70,
+    ingredients: { rope: 1 }, output: { bundle: 1 }, keep: 1,
+  },
+  hide_bag: {
+    id: 'hide_bag', label: 'Hide bag', icon: '\u{1F45C}',
+    tech: 'leatherwork', skill: 'build', workTicks: 100,
+    ingredients: { hide: 1, rope: 1 }, output: { hide_bag: 1 }, keep: 1,
+  },
   net: {
     id: 'net',
     label: 'Net',
@@ -523,6 +533,11 @@ export const RECIPES: Record<string, RecipeDef> = {
     ingredients: { wood: 6, sticks: 4 },
     output: { cart: 1 },
     keep: 1,
+  },
+  sledge: {
+    id: 'sledge', label: 'Sledge', icon: '\u{1F6F7}',
+    tech: 'carpentry', skill: 'build', workTicks: 150,
+    ingredients: { wood: 2, rope: 2 }, output: { sledge: 1 }, keep: 1,
   },
   // `bread`, mechanism 4's fourth station. Meal in, bread out, one for one —
   // unlike `meal` and `groats` this is the only recipe that turns one made

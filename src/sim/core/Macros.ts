@@ -111,8 +111,21 @@ const MACRO_DECAY_PER_DAY = 0.35;
  * `moveToward` argument: two copies of one idea drift.
  */
 export function consumeFood(person: Person, itemId: string, tick = 0, cravingsEnabled = true): boolean {
+  return eatFoodUnit(person, itemId, tick, cravingsEnabled, true);
+}
+
+/** A freshly picked unit never entered the pack. It still nourishes exactly as a carried meal does. */
+export function consumeFoodAtSource(person: Person, itemId: string, tick = 0, cravingsEnabled = true): boolean {
+  return eatFoodUnit(person, itemId, tick, cravingsEnabled, false);
+}
+
+function eatFoodUnit(person: Person, itemId: string, tick: number, cravingsEnabled: boolean, fromPack: boolean): boolean {
   const def = ITEMS[itemId];
   if (!def || def.nutrition <= 0) return false;
+  // M15 11c: forage already removed this unit from the bush/tree. Requiring
+  // another unit in inventory destroyed the harvest without relieving hunger.
+  // Check before telemetry too, or a failed meal masquerades as a real one.
+  if (fromPack && person.inventory.remove(itemId, 1) === 0) return false;
   telemetry.count('ate_' + itemId);
   if (person.knownTech.has('cooking') && (itemId === 'meat' || itemId === 'fish' ||
       itemId === 'roast_meat' || itemId === 'roast_fish')) {
@@ -121,7 +134,6 @@ export function consumeFood(person: Person, itemId: string, tick = 0, cravingsEn
   const craving = cravings(person, cravingsEnabled);
   const wantsProtein = craving.protein > 0.5;
   const calmProtein = craving.protein < 0.1;
-  if (person.inventory.remove(itemId, 1) === 0) return false;
   // Eating is the direct evidence for the personal payoff of this food.
   person.beliefs.learn('eat:' + itemId, def.nutrition * nutritionFactor(person, itemId),
     0.3 * (1.5 - person.traits.tradition), 'own', tick);

@@ -21,6 +21,7 @@ import { telemetry } from './Telemetry.ts';
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
 import { Person, resetPersonIds } from '../entities/Person.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
+import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import { ResourceNode, resetResourceIds, isFoodKind, type ResourceKind } from '../entities/ResourceNode.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import { MovementSystem } from '../systems/MovementSystem.ts';
@@ -511,7 +512,7 @@ export class Simulation {
     this.needsSystem = new NeedsSystem(this.config.needs);
     this.pathfinder = new Pathfinder(this.world);
     this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder,
-      this.config.motivation.infantsStill);
+      this.config.motivation.infantsStill, this.config.carry.sledgeSpeed);
     this.social = new SocialSystem(
       this.relationships, this.normsByBand, this.bandRelations, this.strangerRegardByBand);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
@@ -1855,18 +1856,24 @@ export class Simulation {
   takeFromPile(person: Person, pile: ItemPile, itemId?: string, count?: number): number {
     let moved = 0;
     if (itemId !== undefined) {
-      const room = person.carryCapacity - person.carrying;
+      const room = Math.min(person.carryCapacity - person.carrying,
+        itemCapacityFor(person, this.config.carry, itemId) - person.inventory.count(itemId));
       const want = Math.min(count ?? pile.contents.count(itemId), pile.contents.count(itemId), room);
       if (want > 0) {
         moved = pile.contents.remove(itemId, want);
         person.inventory.add(itemId, moved);
+        // A carried container counts only after it is fitted into its named
+        // slot; the pile is also how the player can reclaim one dropped later.
+        equipContainer(person, itemId);
       }
     } else {
       for (const [id, stackCount] of pile.contents.entries()) {
-        const room = person.carryCapacity - person.carrying - moved;
+        const room = Math.min(person.carryCapacity - person.carrying - moved,
+          itemCapacityFor(person, this.config.carry, id) - person.inventory.count(id));
         if (room <= 0) break;
         const taken = pile.contents.remove(id, Math.min(stackCount, room));
         person.inventory.add(id, taken);
+        equipContainer(person, id);
         moved += taken;
       }
     }
@@ -2022,13 +2029,15 @@ export class Simulation {
       this.lastRefusal = t('this is not a working store');
       return 0;
     }
-    const room = Math.max(0, person.carryCapacity - person.carrying);
+    const room = Math.max(0, Math.min(person.carryCapacity - person.carrying,
+      itemCapacityFor(person, this.config.carry, itemId) - person.inventory.count(itemId)));
     const moved = store.store.remove(itemId, Math.min(room, count, store.store.count(itemId)));
     if (moved <= 0) {
       this.lastRefusal = room <= 0 ? t('{name} cannot carry any more', { name: person.name }) : t('there was nothing to take');
       return 0;
     }
     person.inventory.add(itemId, moved);
+    equipContainer(person, itemId);
     telemetry.count('withdrawn', moved);
     return moved;
   }
@@ -3807,6 +3816,7 @@ export class Simulation {
       sightRadius: this.config.sightRadius,
       needs: this.config.needs,
       weeklyFoodNeedPerPerson: this.config.needs.hungerRate * this.config.time.ticksPerDay * 7,
+      eatAtSourceAt: this.config.carry.eatAtSourceAt,
       chiefByBand: this.bandSystem.chiefByBand,
       snowDepth: this.snowDepth,
       // The one number the scorer needs about the ground, from the one
@@ -3821,6 +3831,13 @@ export class Simulation {
       householdsById: this.householdsById,
       averageRenownByBand: averageRenownByBand(this.householdsById),
       buildingsById: this.buildingsById,
+      dependentHunger: (person: Person) => person.childIds.reduce((highest, id) => {
+        const child = this.peopleById.get(id);
+        if (!child?.alive || !child.isChild ||
+            (child.isInfant && this.config.motivation.motherOnlyFeeds && child.motherId !== person.id) ||
+            child.needs.hunger <= person.needs.hunger + 5) return highest;
+        return Math.max(highest, child.needs.hunger);
+      }, 0),
       motivation: this.config.motivation,
       persuasionAuthority: (sponsor: Person, listener: Person) =>
         this.standing(sponsor, listener, 'build').chance,
@@ -3859,6 +3876,7 @@ export class Simulation {
       day: this.time.day,
       seasonGrowth: this.time.growth,
       needs: this.config.needs,
+      carry: this.config.carry,
       motivation: this.config.motivation,
       persuasionAuthority: (sponsor: Person, listener: Person) =>
         this.standing(sponsor, listener, 'build').chance,
@@ -4047,6 +4065,17 @@ export class Simulation {
         baby.y = carrier.y;
       } else {
         baby.carriedBy = null;
+      }
+    }
+
+    // Social handovers and old one-off actions predate item-specific hands.
+    // Keep their goods in the world, but never let a transfer leave somebody
+    // carrying more than their hands and fitted containers can hold.
+    for (const person of this.people) {
+      if (person.alive && person.carryReconciledVersion !== person.inventory.version) {
+        reconcileCarry(person, this.config.carry,
+          (x, y, itemId, count) => this.dropAt(x, y, itemId, count));
+        person.carryReconciledVersion = person.inventory.version;
       }
     }
 
