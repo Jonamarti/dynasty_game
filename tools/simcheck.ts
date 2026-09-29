@@ -36,6 +36,14 @@ export interface Scenario {
   config: DeepPartial<SimConfig>;
   /** Simulation steps to run. One step is one step — no amplification. */
   steps: number;
+  /**
+   * Excluded from `sim:check:all`'s default matrix (`tools/scenarios.ts`).
+   * For a scenario built for calibration sweeps (`sim:seeds`) rather than the
+   * fast feedback loop: `generations` alone runs 144,000 steps, and folding it
+   * into the matrix turned a ~30s run into 27 minutes. Still runs directly via
+   * `sim:check -- --scenario <name>` or `sim:check:all -- --slow`.
+   */
+  slow?: boolean;
 }
 
 /**
@@ -539,6 +547,21 @@ export const SCENARIOS: Record<string, Scenario> = {
       population: { bands: 3, peoplePerBand: 12 },
     },
     steps: 24000,
+  },
+  generations: {
+    name: 'generations',
+    description:
+      'Fifteen in-game years on the default world (144,000 steps at the ' +
+      'default calendar). The only scenario long enough to measure recovery ' +
+      'after a collapse, because a child takes fourteen years to become an ' +
+      'adult: a shorter run can show a drawdown but never show the world ' +
+      'growing back from one. M15 phase 10 uses it for calibration against ' +
+      'the historical-objectives table in `m13_plan.md`; it is slow enough ' +
+      '(minutes per seed) that ten seeds is for exploring a parameter and ' +
+      'twenty is for deciding it.',
+    config: { seed: 'generations' },
+    steps: 144000,
+    slow: true,
   },
 };
 

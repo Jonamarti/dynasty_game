@@ -1183,24 +1183,24 @@ most of this section now has a home. What remains outside M8:
   building a dead member's unheired goods, and now a rival, can actually
   reach.
 
-**M15 fase 2f:** la ruta de sed pregunta a compañeros y explora sin repetir
+**M15 fase 2f:** la ruta de sed pregunta a compaï¿½eros y explora sin repetir
 interminablemente; su cohorte actual reduce la supervivencia `lean` 32,5 puntos
 respecto a la referencia (824 muertes por hambre, 6 por sed). El propietario
-autorizó continuar hasta cerrar M15 fase 2; queda como primer tema de ajuste al
+autorizï¿½ continuar hasta cerrar M15 fase 2; queda como primer tema de ajuste al
 recibir hallazgos de juego.
 
 **M15 2g:** explorar con hambre o curiosidad solo se ofrece al faltar un destino
-de comida conocido, y sus puntos quedan dentro del alcance del ancla. Todavía
+de comida conocido, y sus puntos quedan dentro del alcance del ancla. Todavï¿½a
 falta la cohorte final de checks del mapa en 2k.
 
 **M15 fase 2h:** los rumores de comida/agua pasan por conversaciones largas y
-conservan su antigüedad. Las pruebas de integración social verifican un solo
+conservan su antigï¿½edad. Las pruebas de integraciï¿½n social verifican un solo
 lugar por lado y excluyen los saludos.
 
-**M15 fase 2 cerrada en código, con incidencias abiertas:** 2e-2k están
+**M15 fase 2 cerrada en cï¿½digo, con incidencias abiertas:** 2e-2k estï¿½n
 implementadas y tienen commits por funcionalidad. La entrega deja documentados
 el coste de supervivencia autorizado provisionalmente, los dos invariantes 2k
-que aún fallan en `band`, y seis fallos de la suite completa (cinco de rebaños,
+que aï¿½n fallan en `band`, y seis fallos de la suite completa (cinco de rebaï¿½os,
 uno por timeout). La siguiente pasada es ajustar esos problemas con lo que se
 observe jugando; no se deben borrar o relajar sus checks para cerrar M15.
 
@@ -1214,3 +1214,9 @@ sostenida cuando una mayoria adulta apoya el destino que conoce quien propone.
 La verificacion `lean` registra una propuesta, cuatro votos favorables de seis y
 un traslado. Ver [m15_plan.md](m15_plan.md), [bugs.md](bugs.md) y
 [changelog.md](changelog.md).
+**2026-09-29: M15 fase 10a, instrumento.** Nuevo escenario `generations`
+(144.000 pasos, quince anios de juego) para la calibracion contra la historia;
+marcado `slow` para que `sim:check:all` no lo recorra por defecto (paso de 30s
+a 27 minutos). Se usa via `sim:check -- --scenario generations` y `sim:seeds
+-- --scenario generations`. La calibracion en si (10 semillas para explorar, 20
+para decidir, un parametro a la vez) sigue en curso. Ver [m15_plan.md](m15_plan.md).

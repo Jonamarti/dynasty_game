@@ -38,6 +38,21 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-09-29 - M15 phase 10a: a `generations` scenario, kept out of the fast matrix
+
+Added the `generations` scenario for the historical-calibration pass M13
+phase 14 called for: the default world at 144,000 steps (fifteen in-game
+years), the only run long enough to show a population recovering from a
+drawdown, since a child takes fourteen years to become an adult. `--set` for
+sweeping one `Config` parameter at a time already existed from phase 1b.
+
+Folding it into `sim:check:all`'s scenario matrix turned a normally-fast run
+into 27 minutes, so it carries a new `slow` flag that `tools/scenarios.ts`
+skips by default (pass `--slow` to include it). It stays reachable directly
+via `sim:check -- --scenario generations` and `sim:seeds -- --scenario
+generations`, which is the intended use: a calibration sweep, not the routine
+health check.
+
 ## 2026-09-29 - M15 phase 9: camps move when local food fails
 
 Added a configurable 10-day scarcity threshold. A band tracks depleted food
@@ -9285,54 +9300,54 @@ desde el registro estable de personas. El informe de cohortes mostrÃ³ 38 muertes
 en HISTORY y cero en DEMOGRAPHY; queda pendiente aislar esa discrepancia en la
 ejecuciÃ³n de semillas antes de cambiar el observador.
 
-## 2026-09-27 — M15 fase 2f: respuesta a sed sin agua conocida
+## 2026-09-27 ï¿½ M15 fase 2f: respuesta a sed sin agua conocida
 
 La sed ahora lleva a agua visible o personalmente recordada. Si no hay destino,
 el personaje pregunta una vez a cada miembro cercano de su banda, prioriza a
-quien conoce agua, y explora después de respuestas vacías; los intentos quedan
+quien conoce agua, y explora despuï¿½s de respuestas vacï¿½as; los intentos quedan
 marcados antes de acercarse para que no repita preguntas en bucle. Fruta con
-hidratación sirve como alivio cuando no hay hambre apremiante. La cohorte `lean`
+hidrataciï¿½n sirve como alivio cuando no hay hambre apremiante. La cohorte `lean`
 de veinte semillas dio 25,1% de supervivencia frente a 57,6% (-32,5 puntos),
-con 824 muertes por hambre y 6 por sed. Por instrucción explícita del propietario
-se mantiene provisionalmente y se continúa la fase; queda pendiente depurar el
-coste de tiempo sobre la economía alimentaria.
+con 824 muertes por hambre y 6 por sed. Por instrucciï¿½n explï¿½cita del propietario
+se mantiene provisionalmente y se continï¿½a la fase; queda pendiente depurar el
+coste de tiempo sobre la economï¿½a alimentaria.
 Capturas de la entrega: `artifacts/screenshots/m15-2f-water-search.png` y `artifacts/screenshots/m15-2f-known-map.png`.
 
-## 2026-09-27 — M15 fase 2g: explorar dentro del alcance
+## 2026-09-27 ï¿½ M15 fase 2g: explorar dentro del alcance
 
 `explore` ya cubre tres motivos: sed urgente tras preguntar a los cercanos,
 hambre cuando no hay objetivo de comida conocido y curiosidad cuando las
-necesidades dejan margen. La búsqueda toma celdas caminables desconocidas (o
-antiguas) de la misma masa de tierra; la exploración por hambre/curiosidad se
+necesidades dejan margen. La bï¿½squeda toma celdas caminables desconocidas (o
+antiguas) de la misma masa de tierra; la exploraciï¿½n por hambre/curiosidad se
 limita al alcance del ancla de M13. El recorrido de sed mantiene prioridad de
-supervivencia y puede salir más allá del alcance ordinario. Cada acción viaja a
-un único punto y vuelve a puntuar al llegar, sin convertirse en `wander`.
+supervivencia y puede salir mï¿½s allï¿½ del alcance ordinario. Cada acciï¿½n viaja a
+un ï¿½nico punto y vuelve a puntuar al llegar, sin convertirse en `wander`.
 Capturas: `m15-2g-exploration.png` y `m15-2g-frontier.png`.
 
-## 2026-09-27 — M15 fase 2h: contar ubicaciones útiles
+## 2026-09-27 ï¿½ M15 fase 2h: contar ubicaciones ï¿½tiles
 
-Las conversaciones `chat`, `interests` y `deep` comparten hasta un lugar útil en
+Las conversaciones `chat`, `interests` y `deep` comparten hasta un lugar ï¿½til en
 cada sentido: agua o comida que el oyente no conoce, o que recuerda de antes.
-El dato conserva el día del observador original y entra como `told`, así que la
-antigüedad no se renueva por repetir el rumor. Los saludos no comparten mapa.
-Las pruebas cubren transferencia, límite de un lugar por conversación, filtro de
-saludo y antigüedad. Capturas: `m15-2h-shared-water.png` y
+El dato conserva el dï¿½a del observador original y entra como `told`, asï¿½ que la
+antigï¿½edad no se renueva por repetir el rumor. Los saludos no comparten mapa.
+Las pruebas cubren transferencia, lï¿½mite de un lugar por conversaciï¿½n, filtro de
+saludo y antigï¿½edad. Capturas: `m15-2h-shared-water.png` y
 `m15-2h-shared-food.png`.
 
-## 2026-09-27 — M15 fase 2k: checks del mapa personal
+## 2026-09-27 ï¿½ M15 fase 2k: checks del mapa personal
 
-`sim:check` registra el conocimiento del objetivo de cada acción de
+`sim:check` registra el conocimiento del objetivo de cada acciï¿½n de
 supervivencia; comprueba que no haya objetivos invisibles ni sin recuerdo,
-que el mapa medio crezca sin cubrir el mundo entero, que una recolección use
-un recurso oído y cuántos viajes llegan a recuerdos agotados. El mismo
+que el mapa medio crezca sin cubrir el mundo entero, que una recolecciï¿½n use
+un recurso oï¿½do y cuï¿½ntos viajes llegan a recuerdos agotados. El mismo
 muestreo informa el promedio inicial/final. `band`: mapa de 7,2% a 9,3%,
 180 viajes agotados, y quedan 14 objetivos `forage` sin recuerdo registrado;
-no hubo recolección causada por rumor aunque se compartieron ubicaciones. Los
-checks señalan estas dos brechas en vez de ocultarlas. Capturas:
+no hubo recolecciï¿½n causada por rumor aunque se compartieron ubicaciones. Los
+checks seï¿½alan estas dos brechas en vez de ocultarlas. Capturas:
 `m15-2k-map-checks.png` y `m15-2k-simulation.png`.
 
-La fase 2 queda cerrada en código y commits hasta 2k. Los resultados pendientes
-están anotados en `docs/bugs.md`; los ajustes se retoman con los errores que
+La fase 2 queda cerrada en cï¿½digo y commits hasta 2k. Los resultados pendientes
+estï¿½n anotados en `docs/bugs.md`; los ajustes se retoman con los errores que
 aparezcan al jugar.
 
 ## 2026-09-27 - M15 fase 3: hoguera, asado y adopcion

@@ -11,9 +11,11 @@ import { SCENARIOS, runScenario, formatReport, thousands, markMatrixRun } from '
 markMatrixRun();
 
 const verbose = process.argv.includes('--verbose');
+const includeSlow = process.argv.includes('--slow');
 const rows: { name: string; passed: number; total: number; failed: string[]; stepsPerSecond: number }[] = [];
 
 for (const scenario of Object.values(SCENARIOS)) {
+  if (scenario.slow && !includeSlow) continue;
   const report = runScenario(scenario);
   if (verbose) console.log(formatReport(report));
   const failed = report.checks.filter(c => !c.ok);
