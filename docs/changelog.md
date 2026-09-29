@@ -38,6 +38,35 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-09-29 - M15 phase 10b: `sim:seeds --scenario X --seeds N` was quietly shrinking the island to N×N
+
+While establishing the phase-10 calibration baseline, `sim:seeds -- --scenario
+lean --seeds 20` (the exact form documented at the top of `tools/seeds.ts`)
+reported total collapse — 0.0% mean survival, 20/20 worlds gone — on both
+`lean` and `century`, reproducing identically across three different builds
+(`master`, and the phase-6 and phase-8 commits). That much determinism across
+different code meant nothing in the simulation had changed.
+
+The legacy positional-argument fallback in `tools/seeds.ts` read straight off
+`process.argv` without excluding indices a named flag had already consumed.
+`--scenario lean --seeds 20` produces `['--scenario','lean','--seeds','20']`;
+the fallback's `args[3]` for a positional `size` landed on `'20'` — the seed
+count's own value — so every cohort run that named its seed count also shrank
+the island to `N×N` while leaving the population untouched. `git log -S`
+traces this to phase 1b (`a69eeb9`), so any past M15 measurement that used
+this literal flag form (rather than the plain positional form) is suspect.
+Re-running `lean` and `century` at 20 seeds with the fix gives 21.8% and 92.3%
+survival — close to what phases 3 and 5-8 reported — so the game itself was
+healthy throughout; see `docs/bugs.md` for what to do with an anomalous old
+number.
+
+`tools/seeds.ts` now tracks which argv indices a recognised
+`--scenario`/`--seeds`/`--steps`/`--size`/`--set` flag consumed and only
+offers the leftover tokens to the positional fallback. Bit-identical for every
+invocation that does not mix named and positional forms; verified against
+named flags, an explicit `--size` override, the legacy positional form, and
+`--set` combined with named flags.
+
 ## 2026-09-29 - M15 phase 10a: a `generations` scenario, kept out of the fast matrix
 
 Added the `generations` scenario for the historical-calibration pass M13

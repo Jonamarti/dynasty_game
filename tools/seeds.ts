@@ -329,10 +329,28 @@ function main(): void {
     return i >= 0 ? args[i + 1] : undefined;
   };
 
+  // Indices already spoken for by a recognised `--name value` pair (including
+  // repeatable `--set`), so the legacy positional fallback below never reads a
+  // flag's own value as if it were the next positional argument. Before this
+  // guard, `--scenario lean --seeds 20` left `20` sitting at args[3], which is
+  // exactly where the positional form expects `size` — so every cohort run
+  // that named its seed count also silently shrank the island to N×N,
+  // collapsing the population and making the run look catastrophic for a
+  // reason that had nothing to do with the scenario under test.
+  const consumed = new Set<number>();
+  for (const name of ['scenario', 'seeds', 'steps', 'size']) {
+    const i = args.indexOf('--' + name);
+    if (i >= 0) { consumed.add(i); consumed.add(i + 1); }
+  }
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--set') { consumed.add(i); consumed.add(i + 1); }
+  }
+  const positional = args.filter((_, i) => !consumed.has(i));
+
   // vite-node consumes unknown long-option names after the package script's
   // `--` delimiter and forwards the values positionally.
-  const scenarioName = flag('scenario') ?? args[0] ?? 'century';
-  const count = Number(flag('seeds') ?? args[1] ?? 10);
+  const scenarioName = flag('scenario') ?? positional[0] ?? 'century';
+  const count = Number(flag('seeds') ?? positional[1] ?? 10);
   const scenario = SCENARIOS[scenarioName];
   if (!scenario) {
     console.error('unknown scenario "' + scenarioName + '"');
@@ -340,9 +358,9 @@ function main(): void {
     process.exit(1);
     return;
   }
-  const positionalSteps = args[2] !== undefined && Number.isFinite(Number(args[2])) ? args[2] : undefined;
+  const positionalSteps = positional[2] !== undefined && Number.isFinite(Number(positional[2])) ? positional[2] : undefined;
   const steps = Number(flag('steps') ?? positionalSteps ?? scenario.steps);
-  const positionalSize = args[3];
+  const positionalSize = positional[3];
   const sizeValue = flag('size') ?? (positionalSize !== undefined && Number.isFinite(Number(positionalSize))
     ? positionalSize : undefined);
   const size = sizeValue === undefined ? null : Number(sizeValue);
@@ -354,12 +372,9 @@ function main(): void {
       sets.push(value);
     }
   }
-  // vite-node forwards the value of unknown `--set` options as positional
-  // arguments; support that form after the legacy scenario/count/steps/size.
-  const hasPositionalSteps = positionalSteps !== undefined;
-  const hasPositionalSize = hasPositionalSteps && args[3] !== undefined && Number.isFinite(Number(args[3]));
-  const setStart = hasPositionalSize ? 4 : hasPositionalSteps ? 3 : 2;
-  for (const value of args.slice(setStart)) {
+  // Bare `key=value` tokens with no `--set` name in front of them (the form
+  // vite-node produces when it forwards an option it does not recognise).
+  for (const value of positional) {
     if (value.includes('=')) sets.push(value);
   }
 
