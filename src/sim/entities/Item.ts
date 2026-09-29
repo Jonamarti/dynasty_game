@@ -43,17 +43,48 @@ export interface ItemDef {
   weapon?: { damage: number; reach: number; hunt: number; tech: string };
   /** How much of a blow this turns aside, 0 to 1. */
   armour?: number;
+  /**
+   * M15 phase 11a. What fits in a hand, in two hands, or on a shoulder.
+   * `perHand` is a fistful, `perArms` an armload with both hands, and
+   * `shoulder` — only present on the few things big enough to carry that way
+   * (a log, a carcass) — the most a person can heft onto one shoulder.
+   * `hands` is how many hands holding *any* amount of this occupies: most
+   * tools and weapons take one, a drawn bow or a hauled cart takes two.
+   * Required on every entry below; `item.test.ts` enforces it.
+   */
+  hand: { perHand: number; perArms: number; hands: 1 | 2; shoulder?: number };
+  /**
+   * M15 phase 11a. What kind of thing this is for a container's `accepts`
+   * list to test against. Unread until phase 11c gives the container ladder
+   * (bundle, hide bag, basket, sledge, cart) its capacities.
+   */
+  class: ItemClass;
+  /**
+   * M15 phase 11c. Declared on the type now so `hand`/`class` and a future
+   * container definition sit next to each other on one entry; no item sets
+   * it yet; sitting `class` next to `container` on that entry avoids ever
+   * checking a slot that class does not accept.
+   */
+  container?: { slot: import('./Equipment.ts').Slot; capacity: number; accepts: ItemClass[] };
 }
 
+/**
+ * M15 phase 11a. What `ItemDef.container.accepts` and the hand table above
+ * test against: food that spoils and is eaten from the hand, a pole or a
+ * stick long enough that it will not fit in a pouch, a soft or fragile thing
+ * a pouch or basket holds, and something too big or awkward for either.
+ */
+export type ItemClass = 'food' | 'long' | 'small' | 'bulky';
+
 export const ITEMS: Record<string, ItemDef> = {
-  berries:  { id: 'berries',  label: 'Berries',    nutrition: 14, hydration: 4, spoilTicks: 2400, baseValue: 1, macros: { fat: 0.05, protein: 0.05, carb: 0.90 } },
-  apple:    { id: 'apple',    label: 'Apples',     nutrition: 16, hydration: 6, spoilTicks: 6000, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 } },
-  pear:     { id: 'pear',     label: 'Pears',      nutrition: 15, hydration: 6, spoilTicks: 4800, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 } },
-  plum:     { id: 'plum',     label: 'Plums',      nutrition: 13, hydration: 4, spoilTicks: 3000, baseValue: 1, macros: { fat: 0.04, protein: 0.04, carb: 0.92 } },
+  berries:  { id: 'berries',  label: 'Berries',    nutrition: 14, hydration: 4, spoilTicks: 2400, baseValue: 1, macros: { fat: 0.05, protein: 0.05, carb: 0.90 }, class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 } },
+  apple:    { id: 'apple',    label: 'Apples',     nutrition: 16, hydration: 6, spoilTicks: 6000, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 }, class: 'food', hand: { perHand: 2, perArms: 6, hands: 1 } },
+  pear:     { id: 'pear',     label: 'Pears',      nutrition: 15, hydration: 6, spoilTicks: 4800, baseValue: 1, macros: { fat: 0.03, protein: 0.02, carb: 0.95 }, class: 'food', hand: { perHand: 2, perArms: 6, hands: 1 } },
+  plum:     { id: 'plum',     label: 'Plums',      nutrition: 13, hydration: 4, spoilTicks: 3000, baseValue: 1, macros: { fat: 0.04, protein: 0.04, carb: 0.92 }, class: 'food', hand: { perHand: 2, perArms: 6, hands: 1 } },
   // A nut is a fat, not a fruit: it is what keeps `carb` from being every
   // forageable's dominant macro, which would make the whole system read as a
   // single lever wearing three names.
-  hazelnut: { id: 'hazelnut', label: 'Hazelnuts',  nutrition: 22, spoilTicks: 0,    baseValue: 2, macros: { fat: 0.75, protein: 0.15, carb: 0.10 } },
+  hazelnut: { id: 'hazelnut', label: 'Hazelnuts',  nutrition: 22, spoilTicks: 0,    baseValue: 2, macros: { fat: 0.75, protein: 0.15, carb: 0.10 }, class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 } },
   // M8.1, mechanism 4. The first inedible food in the game, and the point of
   // the quern.
   //
@@ -69,7 +100,7 @@ export const ITEMS: Record<string, ItemDef> = {
   // because a hazelnut at 22 nutrition is the best thing in most packs and
   // anybody holding enough to grind had eaten them by the time they reached the
   // stone. Nothing competes for an acorn.
-  acorn:    { id: 'acorn',    label: 'Acorns',     nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
+  acorn:    { id: 'acorn',    label: 'Acorns',     nutrition: 0,  spoilTicks: 0,    baseValue: 1, class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 } },
   // M8.2, and **nutrition 0 for the same reason the acorn is**: raw grain is
   // not food, which is precisely why every people who lived on it ground it
   // first. Worth 6 was tried and measured doing real damage. The forage scorer
@@ -87,17 +118,17 @@ export const ITEMS: Record<string, ItemDef> = {
   // own prerequisite — so anybody who could ever discover farming already has a
   // reason to gather wild cereal, and `Brain.nodeWorth` values it the way
   // `fruitWorth` has valued acorns since M8.1. No deadlock, and no bait.
-  grain:    { id: 'grain',    label: 'Grain',      nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
-  meal:     { id: 'meal',     label: 'Meal',       nutrition: 34, spoilTicks: 0,    baseValue: 4, macros: { fat: 0.02, protein: 0.13, carb: 0.85 } },
+  grain:    { id: 'grain',    label: 'Grain',      nutrition: 0,  spoilTicks: 0,    baseValue: 1, class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 } },
+  meal:     { id: 'meal',     label: 'Meal',       nutrition: 34, spoilTicks: 0,    baseValue: 4, macros: { fat: 0.02, protein: 0.13, carb: 0.85 }, class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 } },
   // M8.2. The only item in the game whose whole purpose is to be put back into
   // the ground. Worth nothing to eat and nearly nothing to trade, and a band
   // that has some is a band whose fields have another twenty years in them.
-  compost:  { id: 'compost',  label: 'Compost',    nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
-  meat:     { id: 'meat',     label: 'Raw meat',   nutrition: 30, spoilTicks: 1200, baseValue: 3, macros: { fat: 0.45, protein: 0.55, carb: 0 } },
-  fish:     { id: 'fish',     label: 'Fish',       nutrition: 18, spoilTicks: 800,  baseValue: 2, macros: { fat: 0.35, protein: 0.65, carb: 0 } },
+  compost:  { id: 'compost',  label: 'Compost',    nutrition: 0,  spoilTicks: 0,    baseValue: 1, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  meat:     { id: 'meat',     label: 'Raw meat',   nutrition: 30, spoilTicks: 1200, baseValue: 3, macros: { fat: 0.45, protein: 0.55, carb: 0 }, class: 'food', hand: { perHand: 2, perArms: 5, hands: 1, shoulder: 8 } },
+  fish:     { id: 'fish',     label: 'Fish',       nutrition: 18, spoilTicks: 800,  baseValue: 2, macros: { fat: 0.35, protein: 0.65, carb: 0 }, class: 'food', hand: { perHand: 2, perArms: 5, hands: 1, shoulder: 8 } },
   // A kill yields a hide as well as meat, and a hide in cold hands is the
   // heaviest spark clothing has. Without it that route could never fire.
-  hide:     { id: 'hide',     label: 'Hide',       nutrition: 0,  spoilTicks: 0,    baseValue: 3 },
+  hide:     { id: 'hide',     label: 'Hide',       nutrition: 0,  spoilTicks: 0,    baseValue: 3, class: 'bulky', hand: { perHand: 1, perArms: 2, hands: 1, shoulder: 4 } },
   // Weapons. Each is gated on a technology and read through `techPower`, so the
   // same spear is worth more in the hands of whoever kept improving the design.
   spear: {
@@ -105,6 +136,7 @@ export const ITEMS: Record<string, ItemDef> = {
     // The reach is the point of it. Damage a little above a hand axe; what a
     // spear actually buys is hitting first.
     weapon: { damage: 0.55, reach: 0.9, hunt: 1.6, tech: 'spear' },
+    class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
   bow: {
     id: 'bow', label: 'Bow', nutrition: 0, spoilTicks: 0, baseValue: 14,
@@ -112,10 +144,14 @@ export const ITEMS: Record<string, ItemDef> = {
     // the whole reason hunting has been a garnish: a fresh deer is faster than a
     // person and a hunt could only ever be won by exhausting one.
     weapon: { damage: 0.3, reach: 1.6, hunt: 2.4, tech: 'bow' },
+    // Two hands, always: there is no one-handed way to draw a bow, unlike the
+    // spear's "needs both hands to throw far, works one-handed at a pinch".
+    class: 'long', hand: { perHand: 1, perArms: 1, hands: 2 },
   },
   hide_armour: {
     id: 'hide_armour', label: 'Hide armour', nutrition: 0, spoilTicks: 0, baseValue: 11,
     armour: 0.3,
+    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
   // --- M8.1: what comes off a carcass once you know what to do with it -------
   //
@@ -123,21 +159,22 @@ export const ITEMS: Record<string, ItemDef> = {
   // both honest — nobody butchers sinew out of a leg without a use for it — and
   // what keeps every world that has not worked it out bit-identical to the one
   // before this shipped. The same rule the acorn follows.
-  bone:     { id: 'bone',     label: 'Bone',       nutrition: 0,  spoilTicks: 0,    baseValue: 2 },
-  sinew:    { id: 'sinew',    label: 'Sinew',      nutrition: 0,  spoilTicks: 0,    baseValue: 3 },
+  bone:     { id: 'bone',     label: 'Bone',       nutrition: 0,  spoilTicks: 0,    baseValue: 2, class: 'small', hand: { perHand: 2, perArms: 6, hands: 1 } },
+  sinew:    { id: 'sinew',    label: 'Sinew',      nutrition: 0,  spoilTicks: 0,    baseValue: 3, class: 'small', hand: { perHand: 4, perArms: 10, hands: 1 } },
   // A needle is a *stage*, not an ornament: it is worth making only because the
   // fur coat consumes one, and it is the reason `tailoring` sits behind
   // `bone_working` rather than behind `clothing` alone. An eyed needle is the
   // single artefact that separates people who could survive a glacial winter
   // from people who could not, and this is the closest the game can come to
   // saying so.
-  needle:   { id: 'needle',   label: 'Bone needle', nutrition: 0, spoilTicks: 0,    baseValue: 6 },
+  needle:   { id: 'needle',   label: 'Bone needle', nutrition: 0, spoilTicks: 0,    baseValue: 6, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   bone_point: {
     id: 'bone_point', label: 'Bone point', nutrition: 0, spoilTicks: 0, baseValue: 10,
     // Between the flint spear and the bow, and closer to the bow: a barbed bone
     // head is light, so it throws further than it hits hard. Poor in a brawl for
     // exactly the same reason.
     weapon: { damage: 0.4, reach: 1.15, hunt: 2.0, tech: 'bone_working' },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
   atlatl: {
     id: 'atlatl', label: 'Spear-thrower', nutrition: 0, spoilTicks: 0, baseValue: 12,
@@ -145,62 +182,68 @@ export const ITEMS: Record<string, ItemDef> = {
     // which is the whole reason it requires only `spear`: a lever on the end of
     // your arm is a smaller idea than a bow, and it arrived first.
     weapon: { damage: 0.5, reach: 1.35, hunt: 2.1, tech: 'atlatl' },
+    class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
   fur_coat: {
     id: 'fur_coat', label: 'Fur coat', nutrition: 0, spoilTicks: 0, baseValue: 15,
+    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
   // The only object in the game that does nothing useful at all, and the most
   // valuable thing a Palaeolithic band owns for exactly that reason.
-  flute: { id: 'flute', label: 'Flute', nutrition: 0, spoilTicks: 0, baseValue: 16 },
+  flute: { id: 'flute', label: 'Flute', nutrition: 0, spoilTicks: 0, baseValue: 16, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   // M8.1. Both are carried tools rather than materials, and both are read
   // through an item-presence test *and* `techPower` — a basket in the hands of
   // somebody who does not know basketry is a bundle of withies. That double
   // gate is deliberate: `handaxe` tests presence alone, which is the bug the
   // M8 plan lists under "three repairs to make while passing".
-  basket:   { id: 'basket',   label: 'Basket',     nutrition: 0,  spoilTicks: 0,    baseValue: 5 },
-  net:      { id: 'net',      label: 'Net',        nutrition: 0,  spoilTicks: 0,    baseValue: 7 },
-  flint:    { id: 'flint',    label: 'Flint',      nutrition: 0,  spoilTicks: 0,    baseValue: 2 },
-  sticks:   { id: 'sticks',   label: 'Sticks',     nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
-  wood:     { id: 'wood',     label: 'Timber',     nutrition: 0,  spoilTicks: 0,    baseValue: 4 },
+  basket:   { id: 'basket',   label: 'Basket',     nutrition: 0,  spoilTicks: 0,    baseValue: 5, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  net:      { id: 'net',      label: 'Net',        nutrition: 0,  spoilTicks: 0,    baseValue: 7, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  flint:    { id: 'flint',    label: 'Flint',      nutrition: 0,  spoilTicks: 0,    baseValue: 2, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  sticks:   { id: 'sticks',   label: 'Sticks',     nutrition: 0,  spoilTicks: 0,    baseValue: 1, class: 'long', hand: { perHand: 2, perArms: 6, hands: 1 } },
+  wood:     { id: 'wood',     label: 'Timber',     nutrition: 0,  spoilTicks: 0,    baseValue: 4, class: 'long', hand: { perHand: 0, perArms: 1, hands: 2, shoulder: 2 } },
   handaxe:  {
     id: 'handaxe', label: 'Hand axe', nutrition: 0, spoilTicks: 0, baseValue: 8,
     // It was always a weapon in everything but the code. No reach — you have to
     // be on top of somebody to use it — and poor for hunting, because the animal
     // has to be caught first.
     weapon: { damage: 0.35, reach: 0, hunt: 1.15, tech: 'hafting' },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
-  thatch:   { id: 'thatch',   label: 'Thatch',     nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
-  mud:      { id: 'mud',      label: 'Daub',       nutrition: 0,  spoilTicks: 0,    baseValue: 1 },
-  pottery:  { id: 'pottery',  label: 'Pot',        nutrition: 0,  spoilTicks: 0,    baseValue: 6 },
+  thatch:   { id: 'thatch',   label: 'Thatch',     nutrition: 0,  spoilTicks: 0,    baseValue: 1, class: 'long', hand: { perHand: 2, perArms: 6, hands: 1 } },
+  mud:      { id: 'mud',      label: 'Daub',       nutrition: 0,  spoilTicks: 0,    baseValue: 1, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  pottery:  { id: 'pottery',  label: 'Pot',        nutrition: 0,  spoilTicks: 0,    baseValue: 6, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 } },
   // --- M11 phase 10, the widened Neolithic: see m8_plan_the_ages.md ----------
   //
   // `ground_stone`'s two tools. Neither is a weapon, on the same call `basket`
   // and `net` already make: what they change is read through `techPower`
   // rather than through a fight, so giving either a `weapon` block would be
   // the `handaxe` bug wearing a polish.
-  stone_axe: { id: 'stone_axe', label: 'Polished axe', nutrition: 0, spoilTicks: 0, baseValue: 10 },
-  adze:      { id: 'adze',      label: 'Adze',         nutrition: 0, spoilTicks: 0, baseValue: 9 },
+  stone_axe: { id: 'stone_axe', label: 'Polished axe', nutrition: 0, spoilTicks: 0, baseValue: 10, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  adze:      { id: 'adze',      label: 'Adze',         nutrition: 0, spoilTicks: 0, baseValue: 9, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   // `spinning` and `weaving`, shipped in one commit because thread has no
   // reason to exist without the loom that consumes it — the same rule that
   // kept `needle` and `fur_coat` together.
-  thread: { id: 'thread', label: 'Thread', nutrition: 0, spoilTicks: 0, baseValue: 3 },
+  thread: { id: 'thread', label: 'Thread', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   // M11 phase 15c. `cordage`'s first thing in the hand, and here in the same
   // commit as the one verb that spends it — `bind` — because a rope nothing
   // used would be content declared and inert.
-  rope: { id: 'rope', label: 'Rope', nutrition: 0, spoilTicks: 0, baseValue: 2 },
+  rope: { id: 'rope', label: 'Rope', nutrition: 0, spoilTicks: 0, baseValue: 2, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   // The highest `baseValue` of anything a band can make at this point in the
   // tree, on purpose: `next-steps.md`'s note on `trade` reading `baseValue` is
   // what makes this "the first thing worth trading" rather than a description
   // nobody can act on.
-  cloth: { id: 'cloth', label: 'Cloth', nutrition: 0, spoilTicks: 0, baseValue: 12 },
+  cloth: { id: 'cloth', label: 'Cloth', nutrition: 0, spoilTicks: 0, baseValue: 12, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   // `sickle`'s tool. A blade set in a haft, read the same double-gated way as
   // every other carried tool in this file: knowing the technology is not
   // enough, and carrying one is not enough either.
-  sickle: { id: 'sickle', label: 'Sickle', nutrition: 0, spoilTicks: 0, baseValue: 8 },
+  sickle: { id: 'sickle', label: 'Sickle', nutrition: 0, spoilTicks: 0, baseValue: 8, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   // --- M11 phase 10, second commit -------------------------------------------
   // `the_wheel`'s cart. Not a weapon or a wearable, on the same double-gated
   // terms as everything else in this block.
-  cart: { id: 'cart', label: 'Cart', nutrition: 0, spoilTicks: 0, baseValue: 14 },
+  // Pulled with both hands and nothing else in them — the two-handed haul that
+  // will make it a container slot in its own right once phase 11c wires up
+  // the container ladder, not a thing that fits in a hand at all.
+  cart: { id: 'cart', label: 'Cart', nutrition: 0, spoilTicks: 0, baseValue: 14, class: 'bulky', hand: { perHand: 0, perArms: 0, hands: 2 } },
   // `bread`. `spoilTicks: 0`, like `meal` — it is baked meal, and keeping is
   // the whole point of baking it, per the plan's own table. Higher nutrition
   // than `meal` is the other half of the same claim, and mostly `carb` for the
@@ -208,6 +251,7 @@ export const ITEMS: Record<string, ItemDef> = {
   bread: {
     id: 'bread', label: 'Bread', nutrition: 42, spoilTicks: 0, baseValue: 5,
     macros: { fat: 0.05, protein: 0.15, carb: 0.80 },
+    class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 },
   },
   // `dairying`'s byproduct. Real spoil ticks, unlike most of this file's
   // pastoral entries — milk goes off fast, which is honest data even while
@@ -215,19 +259,20 @@ export const ITEMS: Record<string, ItemDef> = {
   milk: {
     id: 'milk', label: 'Milk', nutrition: 20, spoilTicks: 400, baseValue: 3,
     macros: { fat: 0.5, protein: 0.35, carb: 0.15 },
+    class: 'food', hand: { perHand: 2, perArms: 5, hands: 1 },
   },
   // `wool`'s byproduct, and the material `wool_cloth` is made from. Sheared
   // rather than culled, so — unlike `hide` — it comes off a living animal and
   // has no place in `synthesis.test.ts`'s rare-ingredient set: a pen with
   // `wool` known produces it every day, not once per kill.
-  wool: { id: 'wool', label: 'Wool', nutrition: 0, spoilTicks: 0, baseValue: 4 },
+  wool: { id: 'wool', label: 'Wool', nutrition: 0, spoilTicks: 0, baseValue: 4, class: 'bulky', hand: { perHand: 2, perArms: 6, hands: 1 } },
   // `wool`'s recipe output. Warmer than `cloth` — see `Tech.warmthFrom` — and
   // a second item rather than a second ingredient on `cloth` itself, for the
   // same reason `groats` is a second recipe rather than a second ingredient
   // on `meal`: flax and fleece are two different harvests, and a technology
   // tree should be able to tell the player it found a better material rather
   // than silently swap the old one out.
-  wool_cloth: { id: 'wool_cloth', label: 'Wool cloth', nutrition: 0, spoilTicks: 0, baseValue: 15 },
+  wool_cloth: { id: 'wool_cloth', label: 'Wool cloth', nutrition: 0, spoilTicks: 0, baseValue: 15, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   // `brewing`. Low nutrition on purpose — a jug of beer is not a meal, and a
   // number competitive with bread or meat would have made `bestFood` pick it
   // over both, distorting the whole food economy for a technology whose real
@@ -238,9 +283,10 @@ export const ITEMS: Record<string, ItemDef> = {
   beer: {
     id: 'beer', label: 'Beer', nutrition: 6, spoilTicks: 1200, baseValue: 5,
     macros: { fat: 0.02, protein: 0.08, carb: 0.90 },
+    class: 'food', hand: { perHand: 2, perArms: 5, hands: 1 },
   },
-  roast_meat: { id: 'roast_meat', label: 'Roast meat', nutrition: 40, spoilTicks: 2400, baseValue: 4, macros: { fat: 0.45, protein: 0.55, carb: 0 } },
-  roast_fish: { id: 'roast_fish', label: 'Roast fish', nutrition: 24, spoilTicks: 1600, baseValue: 3, macros: { fat: 0.35, protein: 0.65, carb: 0 } },
+  roast_meat: { id: 'roast_meat', label: 'Roast meat', nutrition: 40, spoilTicks: 2400, baseValue: 4, macros: { fat: 0.45, protein: 0.55, carb: 0 }, class: 'food', hand: { perHand: 2, perArms: 5, hands: 1, shoulder: 8 } },
+  roast_fish: { id: 'roast_fish', label: 'Roast fish', nutrition: 24, spoilTicks: 1600, baseValue: 3, macros: { fat: 0.35, protein: 0.65, carb: 0 }, class: 'food', hand: { perHand: 2, perArms: 5, hands: 1, shoulder: 8 } },
 };
 
 export class Inventory {

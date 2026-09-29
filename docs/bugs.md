@@ -3138,3 +3138,15 @@ es ≥50% de recuperación. Con una muestra tan pequeña no se puede decir si
 falla el mundo o si el escenario necesita más semillas o más años para que la
 censura no domine; queda pendiente repetir con 20 semillas antes de
 diagnosticar un mecanismo. Ver `docs/m15_calibration.md`.
+
+## Found during M15 fase 11a — seis specs de `smoke.spec.ts` fallan por `.picker` atascado en `hidden` (2026-09-29)
+
+`npm run e2e` falla seis specs (clicking a lone person still offers the
+ground under them; a stranger gives up nothing but what you can see;
+standing over someone is shown; the tech web / family tree / tribe graph
+keep a stranger to themselves; teaching appears in the menu only when you
+have something to teach), todas esperando a que `.picker` deje de tener el
+atributo `hidden` y no lo consigue en 5 s. **Confirmado que no lo causó esta
+fase**: se reproduce igual en `master` antes de estos cambios (`git stash` +
+la misma prueba). No se ha investigado la causa; queda para quien toque
+`EntityPicker` o el flujo de clic a continuación.

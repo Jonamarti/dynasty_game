@@ -8,6 +8,7 @@ import type { Debt, Grievance } from '../social/Amends.ts';
 import type { Case } from '../social/Justice.ts';
 import type { RNG } from '../core/RNG.ts';
 import { Inventory } from './Item.ts';
+import type { Equipment } from './Equipment.ts';
 import { Memory } from '../social/Memory.ts';
 import type { LifeEvent } from '../social/SocialSystem.ts';
 import { carryFactor, TECH } from '../knowledge/Tech.ts';
@@ -271,6 +272,12 @@ export class Person {
   /** Today's exertion ledger, filled by `NeedsSystem` and folded into `recentExertion` daily. */
   exertionToday = { total: 0, ticks: 0 };
   inventory = new Inventory();
+  /**
+   * M15 phase 11a. What is in each hand, on the back, at the belt and on the
+   * shoulder. Inert: nothing writes to it or reads it to change what fits in
+   * `inventory` until phase 11c turns off `Config.carry.legacyPack`.
+   */
+  equipment: Equipment = {};
 
   /** What this person has seen and been told. See `social/Memory.ts`. */
   memory: Memory;

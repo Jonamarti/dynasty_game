@@ -38,6 +38,39 @@ Added the moods-move-choices health check, comparing talk frequency in the low a
 
 # Changelog
 
+## 2026-09-29 - M15 phase 11a: hands and equipment, inert
+
+Everyone still carries `40 × vigour × carryFactor` exactly as before — this
+commit is the scaffold phase 11c builds the real hand-carry limit on top of,
+not the limit itself.
+
+- **`ItemDef.hand`**, required on every entry in `ITEMS`: how much of it fits
+  in one hand, two arms, and (for the few things carried that way) a
+  shoulder. `ItemDef.class` (`food`/`long`/`small`/`bulky`) is what a future
+  container's `accepts` list will test against. `item.test.ts` enforces both
+  on every item, the same way `tech.test.ts` already guards the tech table.
+- **New `src/sim/entities/Equipment.ts`**: the five slots that exist before
+  clothing does — both hands, the back, the belt, one shoulder — and
+  `Person.equipment`. Nothing writes to it yet.
+- **New `src/sim/core/Carry.ts`**: `capacityFor`, `canTake` and `stow`, all
+  three delegating to today's formula and to `Inventory.add` under
+  `Config.carry.legacyPack` (on by default). Phase 11c is what makes the
+  names true, once the container ladder (bundle, hide bag, basket, sledge,
+  cart) gives them slots to actually choose between.
+- **The Kit tab** gained an Equipment section listing the five slots, all
+  reading "empty" until phase 11c. Spanish labels added
+  (`slot|left`/`right`/`back`/`belt`/`shoulder`, `Equipment`). New e2e spec
+  and screenshot: `artifacts/screenshots/m15-11a-equipment-slots.png`.
+- **`docs/m15_art_contract.md`**: the anchor points and hand-carry poses the
+  phase 17 art pass will need, written from `ItemDef.hand` now so an artist
+  or agent can start from a fixed contract rather than guessing at one later.
+
+Verified bit-identical: `sim:check -- --scenario band --steps 3000` produces
+identical population rows before and after. `npm test`'s only failures are
+the pre-existing herding assertions; `npm run e2e`'s six failures reproduce
+identically on the prior commit (a `.picker` timing flake unrelated to this
+change — see `docs/bugs.md`).
+
 ## 2026-09-29 - M15 phase 10b: `sim:seeds --scenario X --seeds N` was quietly shrinking the island to N×N
 
 While establishing the phase-10 calibration baseline, `sim:seeds -- --scenario

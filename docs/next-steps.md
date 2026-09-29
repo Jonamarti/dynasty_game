@@ -1236,3 +1236,12 @@ linea de partida; la calibracion parametrizada en si y la ampliacion de
 `generations` a 20 semillas quedan para cuando haya diagnostico o mas tiempo
 de computo. Tabla completa en [m15_calibration.md](m15_calibration.md). Sigue
 fase 11 (las manos: equipo y carga).
+**2026-09-29: M15 fase 11a, huecos y carga inertes.** `ItemDef.hand`/`.class`
+en los ~50 objetos, `Equipment.ts` (cinco huecos sin ropa) y `Carry.ts`
+(`capacityFor`/`canTake`/`stow`), todo delegando en la formula y el
+inventario de hoy mientras `Config.carry.legacyPack` este encendido. Pestana
+Kit con seccion «Equipment», vacia hasta la 11c. Verificado bit-identico.
+`docs/m15_art_contract.md` deja el contrato de anclaje para la fase 17. Ver
+[m15_plan.md](m15_plan.md), [changelog.md](changelog.md) y
+[m15_art_contract.md](m15_art_contract.md). Sigue 11b (las chispas cuentan lo
+manejado).

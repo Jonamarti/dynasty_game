@@ -298,6 +298,20 @@ export interface MotivationConfig {
   childRadius: { under1: number; years1to3: number; years4to7: number; years8to11: number; years12to13: number };
 }
 
+/**
+ * M15 phase 11. What fits in a pair of hands, before ropes, bags and carts
+ * turn holding something into carrying it.
+ */
+export interface CarryConfig {
+  /**
+   * `true` keeps `Person.carryCapacity` at today's `40 × vigour × carryFactor`
+   * and `Carry.ts`'s new machinery inert. Phase 11a ships this on so the
+   * commit is bit-identical; phase 11c turns it off once the container
+   * ladder (bundle, hide bag, basket, sledge, cart) exists to replace it.
+   */
+  legacyPack: boolean;
+}
+
 export interface SimConfig {
   seed: number | string;
   world: WorldConfig;
@@ -308,6 +322,7 @@ export interface SimConfig {
   learning: LearningConfig;
   ai: AiConfig;
   motivation: MotivationConfig;
+  carry: CarryConfig;
   /** Tiles a person can see; the radius of witness and target queries. */
   sightRadius: number;
   /** A person re-scores their action every this many ticks (staggered by id). */
@@ -448,6 +463,9 @@ export const DEFAULT_CONFIG: SimConfig = {
     homeWeight: 2.4, childHomeMultiplier: 4, childHomeMinimumPressure: 0.25, reachAdult: 36, parentReach: 20,
     childRadius: { under1: 2, years1to3: 3, years4to7: 6, years8to11: 10, years12to13: 16 },
   },
+  carry: {
+    legacyPack: true,
+  },
   sightRadius: 12,
   thinkInterval: 5,
 };
@@ -478,6 +496,7 @@ export function makeConfig(overrides: DeepPartial<SimConfig> = {}): SimConfig {
       ...overrides.motivation,
       childRadius: { ...DEFAULT_CONFIG.motivation.childRadius, ...overrides.motivation?.childRadius },
     },
+    carry: { ...DEFAULT_CONFIG.carry, ...overrides.carry },
   } as SimConfig;
 }
 

@@ -1091,6 +1091,23 @@ entre viaje y viaje hay que parar a comer, y la gente **come donde recoge**.
   manos, el hombro, la espalda y el cinturón, y lo que hay en cada uno.
   `QuantityPicker` recorta por la capacidad del hueco elegido.
 
+**Avance del 2026-09-29:** implementada. `ItemDef.hand` (puñado, brazada,
+manos, hombro) y `ItemDef.class` en los ~50 objetos de `ITEMS`, exigidos por
+`item.test.ts`. `Equipment.ts` (los cinco huecos sin ropa) y `Carry.ts`
+(`capacityFor`/`canTake`/`stow`) nuevos, ambos delegando en la fórmula y en
+`Inventory.add` de hoy mientras `Config.carry.legacyPack` esté encendido
+(por defecto). La pestaña Kit gana una sección «Equipment» con los cinco
+huecos, todos vacíos hasta la 11c; se simplificó frente al plan (una lista en
+vez de una silueta dibujada) porque la silueta pertenece al contrato de arte
+de la fase 17, no a este commit. `docs/m15_art_contract.md` deja escritos los
+puntos de anclaje y las poses que ese arte necesitará. Verificado
+bit-idéntico (`sim:check --scenario band --steps 3000`, filas idénticas).
+`npm test` conserva solo los fallos de rebaño ya conocidos; `npm run e2e`
+reproduce sus mismos seis fallos en el commit anterior (parpadeo de `.picker`
+ajeno a esta fase, anotado en `bugs.md`). Captura:
+`artifacts/screenshots/m15-11a-equipment-slots.png`. Sigue 11b (las chispas
+cuentan lo manejado).
+
 ### 11b. Las chispas cuentan lo manejado (decisión 6; medido)
 
 **Antes de recortar la carga**, porque si no las ideas dejan de nacer (lo vio

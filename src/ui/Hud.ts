@@ -36,6 +36,7 @@ import { MACROS, malnutrition, type Macro } from '../sim/core/Macros.ts';
 import { lastScores, lastDrives } from '../sim/ai/Brain.ts';
 import { BELIEF_KEYS } from '../sim/ai/Beliefs.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
+import { SLOTS } from '../sim/entities/Equipment.ts';
 import { actionLabel } from '../render/Floaters.ts';
 import {
   knowledgeOfPerson, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree, corpseIdentity,
@@ -1011,6 +1012,19 @@ export class Hud {
         '<div class="hud-section">' + t('Carrying') + '</div>',
         veil(t('You cannot see what a stranger has in their pack.')),
       ];
+    }
+
+    // M15 phase 11a. Five body slots, drawn ahead of what fills them:
+    // `Person.equipment` has no writer yet, so every slot reads empty until
+    // phase 11c gives tool-equipping and the container ladder somewhere to
+    // put things. Shown regardless, so the space is there when it does.
+    rows.push('<div class="hud-section">' + t('Equipment') + '</div>');
+    for (const slot of SLOTS) {
+      const held = person.equipment[slot];
+      rows.push('<div class="hud-sub">' + tc('slot', slot) + ': ' +
+        (held ? escapeHtml(t(ITEMS[held.item]?.label ?? held.item)) + ' ×' + held.count
+          : t('empty')) +
+        '</div>');
     }
 
     const carried = person.inventory.entries();

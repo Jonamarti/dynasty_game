@@ -521,3 +521,19 @@ test('M15 phase 6 project proposal menu', async ({ page }) => {
   await expect(projects.first()).toBeVisible();
   await page.screenshot({ path: DIR + '/m15-6-propose-projects.png' });
 });
+
+test('M15 phase 11a equipment slots', async ({ page }) => {
+  await page.goto('/?seed=m15-hands&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  await page.locator('.hud-tab', { hasText: 'Kit' }).click();
+
+  // Five slots, all empty: `Person.equipment` has no writer until phase 11c,
+  // so this is what every player sees until then — but the space for it is
+  // there, which is the point of shipping the scaffold ahead of what fills it.
+  const equipment = page.locator('.hud-section', { hasText: 'Equipment' });
+  await expect(equipment).toBeVisible();
+  const slots = page.locator('.hud-sub', { hasText: 'empty' });
+  await expect(slots).toHaveCount(5);
+  await page.screenshot({ path: DIR + '/m15-11a-equipment-slots.png' });
+});
