@@ -1444,6 +1444,11 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
       : { relationships: sim.relationships, tick: sim.time.tick }),
     // M12 phase 2b: who leads a band is the one thing everybody knows.
     chiefOf: bandId => sim.bandSystem.chiefByBand.get(bandId),
+    // M15 phase 20: a baby gets its own menu, and a baby in the subject's
+    // arms can be laid down wherever the player clicks.
+    childhood: sim.config.childhood,
+    peopleById: sim.peopleById,
+    carriedBabies: sim.people.filter(p => p.alive && p.carriedBy === subject.id),
   });
 
   // A command is a request, not a button that guarantees compliance. Put the
@@ -1535,7 +1540,9 @@ function issue(
   const place = {
     x: target.kind === 'ground' ? target.x : undefined,
     y: target.kind === 'ground' ? target.y : undefined,
-    personId: target.person?.id,
+    // The option's own person first: "put the baby down here" is offered on
+    // the ground and still has to say which baby.
+    personId: option.personId ?? target.person?.id,
     nodeId: target.node?.id,
     // The option's own station wins over whatever was clicked: "Grind meal" is
     // offered on bare ground and has to arrive at the quern all the same.

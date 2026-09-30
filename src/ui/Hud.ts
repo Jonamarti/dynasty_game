@@ -1019,11 +1019,18 @@ export class Hud {
     // phase 11c gives tool-equipping and the container ladder somewhere to
     // put things. Shown regardless, so the space is there when it does.
     rows.push('<div class="hud-section">' + t('Equipment') + '</div>');
+    // M15 phase 20: a baby in arms takes a hand, and the owner could not find
+    // it anywhere on the panel. Shown in the hand it takes, left then right.
+    const inArms = sim.people.filter(p => p.alive && p.carriedBy === person.id);
     for (const slot of SLOTS) {
       const held = person.equipment[slot];
+      const baby = slot === 'left' ? inArms[0] : slot === 'right' ? inArms[1] : undefined;
+      const babyText = baby
+        ? escapeHtml(t('{name}, in arms', { name: knowledgeOfPerson(observer, baby, sim.relationships).displayName }))
+        : null;
+      const heldText = held ? escapeHtml(t(ITEMS[held.item]?.label ?? held.item)) + ' ×' + held.count : null;
       rows.push('<div class="hud-sub">' + tc('slot', slot) + ': ' +
-        (held ? escapeHtml(t(ITEMS[held.item]?.label ?? held.item)) + ' ×' + held.count
-          : t('empty')) +
+        ([babyText, heldText].filter(Boolean).join(' · ') || t('empty')) +
         '</div>');
     }
 

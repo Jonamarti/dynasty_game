@@ -297,4 +297,5 @@ export const ES_HUD: Record<string, string> = {
   "was told": "se lo contaron",
   "grew up knowing it": "lo aprendió al crecer",
   "known by instinct": "lo sabe por instinto",
+  "{name}, in arms": "{name}, en brazos",
 };

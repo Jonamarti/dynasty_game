@@ -699,6 +699,10 @@ export class ActionSystem {
       case 'nurse': this.doNurse(person, ctx); break;
       case 'carry_baby_home': this.doCarryBabyHome(person, ctx); break;
       case 'carry_baby': this.doCarryBaby(person, ctx); break;
+      case 'put_down_baby': this.doPutDownBaby(person, ctx); break;
+      // The player's "play with the baby": the same bout of play as a
+      // child's `romp`, aimed at a baby (M15 phase 20).
+      case 'play_with_baby': this.doRomp(person, ctx); break;
       case 'romp': this.doRomp(person, ctx); break;
       case 'trade': this.doTrade(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
@@ -3005,8 +3009,17 @@ export class ActionSystem {
    * `doHunt`'s small trickle is the other.
    */
   private doSpar(person: Person, ctx: ActionContext): void {
+    // Not with a baby in anybody's arms (owner, 2026-09-30).
+    if (person.armsTaken > 0) {
+      this.abandon(person, 'holding_baby', ctx);
+      return;
+    }
     const other = this.approach(person, ctx);
     if (!other) return;
+    if (other.armsTaken > 0) {
+      this.abandon(person, 'partner_holding_baby', ctx);
+      return;
+    }
 
     const regard = ctx.relationships.opinion(other.id, person.id) / 100;
     if (regard < SPAR_MIN_REGARD) {
@@ -3941,7 +3954,10 @@ export class ActionSystem {
   private doRomp(person: Person, ctx: ActionContext): void {
     const mate = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
     if (mate) {
-      if (!mate.alive || mate.carriedBy !== null) {
+      // A baby in somebody else's arms cannot be played with; one in your
+      // own can (M15 phase 20: play and holding are what keep a baby from
+      // being lonely).
+      if (!mate.alive || (mate.carriedBy !== null && mate.carriedBy !== person.id)) {
         this.abandon(person, 'target_gone', ctx);
         return;
       }
@@ -3975,7 +3991,12 @@ export class ActionSystem {
    */
   private doCarryBaby(person: Person, ctx: ActionContext): void {
     const baby = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
-    if (!baby?.alive || baby.motherId !== person.id || canWalk(baby, ctx.childhood)) {
+    // Her own, on her own account; anybody's baby of the band on an order
+    // (owner, 2026-09-30: "pick him up from wherever he is"), taken out of
+    // other arms if need be.
+    const mayTake = !!baby && (baby.motherId === person.id ||
+      (person.order === 'carry_baby' && !person.isChild && baby.bandId === person.bandId));
+    if (!baby?.alive || !mayTake || canWalk(baby, ctx.childhood)) {
       this.abandon(person, 'target_gone', ctx);
       return;
     }
@@ -3988,10 +4009,41 @@ export class ActionSystem {
       return;
     }
     if (!this.approach(person, ctx)) return;
+    const from = baby.carriedBy === null ? undefined : ctx.peopleById.get(baby.carriedBy);
+    if (from) from.armsTaken = Math.max(0, from.armsTaken - 1);
     baby.carriedBy = person.id;
     baby.laidDownBy = null;
     person.armsTaken++;
     telemetry.count('baby_picked_up');
+    this.finish(person);
+  }
+
+  /**
+   * Lays the baby in their arms down where the player said: on the ground,
+   * or inside a shelter (M15 phase 20, the owner's "leave him somewhere").
+   * A walk first, asking `interruption` on the way like any other; then the
+   * baby is put down and marked as laid down on purpose, which is what keeps
+   * its mother from picking it straight back up (`Nursing.babyToCarry`).
+   */
+  private doPutDownBaby(person: Person, ctx: ActionContext): void {
+    const baby = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
+    if (!baby?.alive || baby.carriedBy !== person.id) {
+      this.abandon(person, 'not_holding_baby', ctx);
+      return;
+    }
+    const stop = this.interruption(person, ctx, { ignoreLaden: true });
+    if (stop) {
+      this.stop(person, stop, ctx);
+      return;
+    }
+    if (!this.travel(person, ctx)) return;
+    baby.carriedBy = null;
+    baby.x = person.x;
+    baby.y = person.y;
+    baby.laidDownBy = person.id;
+    baby.laidDownTick = ctx.tick;
+    person.armsTaken = Math.max(0, person.armsTaken - 1);
+    telemetry.count('baby_laid_down');
     this.finish(person);
   }
 

@@ -37,6 +37,9 @@ import {
 } from '../social/Conversation.ts';
 import { t, aNoun, theNoun, language, joinAnd } from '../../i18n/i18n.ts';
 import { capitalise } from '../../i18n/i18n.ts';
+import type { ChildhoodConfig } from '../core/Config.ts';
+import { canWalk, isNursling } from '../entities/LifeStage.ts';
+import { mayNurse } from './Nursing.ts';
 
 export type TargetKind =
   'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription' | 'corpse';
@@ -92,6 +95,12 @@ export interface ActionOption {
    * `craft` and `techId` on `discuss`.
    */
   mode?: ConversationMode;
+  /**
+   * The person an option is about when that is not the one clicked — the
+   * baby in the actor's arms, for "put the baby down here" on the ground or
+   * in a hut (M15 phase 20).
+   */
+  personId?: number;
   /** False when the action is shown but not currently possible. */
   enabled: boolean;
   /** Why it is disabled, for the tooltip. */
@@ -176,6 +185,16 @@ export interface CatalogContext {
    * the whole band can see.
    */
   chiefOf?: (bandId: number) => number | undefined;
+  /**
+   * M15 phase 20. How children grow up and who has milk, so a baby gets its
+   * own menu (the owner: "the options should be the ones for babies") and
+   * the actor's arms are known. Optional for hand-built test contexts, which
+   * then see the ordinary person menu.
+   */
+  childhood?: ChildhoodConfig;
+  peopleById?: ReadonlyMap<number, Person>;
+  /** The babies in the actor's arms, for laying one down on the ground or in a hut. */
+  carriedBabies?: readonly Person[];
 }
 
 const NODE_VERBS: Record<string, { label: string; icon: string; action: string }> = {
@@ -365,7 +384,99 @@ function recordActions(actor: Person, record: Inscription): ActionOption[] {
   }];
 }
 
+/**
+ * Laying a baby in the actor's arms down on the spot clicked — the ground, or
+ * a shelter — one option per baby (M15 phase 20, the owner's "leave him
+ * somewhere: the player clicks the ground or a piece of furniture").
+ */
+function putDownOptions(ctx: CatalogContext, where: 'here' | 'inside', place?: string): ActionOption[] {
+  return (ctx.carriedBabies ?? []).map(baby => ({
+    id: 'put_down_baby',
+    personId: baby.id,
+    label: where === 'here'
+      ? t('Put {name} down here', { name: baby.name })
+      : t('Lay {name} down in {place}', { name: baby.name, place: place ?? '' }),
+    icon: '\u{1F6CF}',
+    enabled: true,
+  }));
+}
+
+/**
+ * What can be done with a baby, M15 phase 20: the owner found a baby's menu
+ * was an adult's (talk, spar, trade) and had none of the things a baby is
+ * for. Pick up, put down, nurse, play, feed once weaned, tend if hurt.
+ */
+function babyActions(actor: Person, baby: Person, ctx: CatalogContext, childhood: ChildhoodConfig): ActionOption[] {
+  const inMyArms = baby.carriedBy === actor.id;
+  const walks = canWalk(baby, childhood);
+  const armsFull = actor.armsTaken >= 2;
+  const options: ActionOption[] = [];
+  if (inMyArms) {
+    options.push({
+      id: 'put_down_baby',
+      personId: baby.id,
+      label: t('Put {name} down here', { name: baby.name }),
+      icon: '\u{1F6CF}',
+      enabled: true,
+    });
+  } else {
+    options.push({
+      id: 'carry_baby',
+      label: t('Pick {name} up', { name: baby.name }),
+      icon: '\u{1F932}',
+      enabled: !actor.isChild && !walks && !armsFull && baby.bandId === actor.bandId,
+      reason: actor.isChild ? t('Too young to carry a baby')
+        : walks ? t('They walk by themselves now')
+        : armsFull ? t('Your arms are full')
+        : baby.bandId !== actor.bandId ? t('Not a baby of your band') : undefined,
+    });
+  }
+  if (isNursling(baby, childhood) && actor.sex === 'female' && !actor.isChild) {
+    const milk = ctx.peopleById ? mayNurse(actor, baby, ctx.peopleById, childhood) : false;
+    options.push({
+      id: 'nurse',
+      label: t('Nurse {name}', { name: baby.name }),
+      icon: '\u{1F37C}',
+      enabled: milk,
+      reason: milk ? undefined : t('You have no milk'),
+    });
+  }
+  options.push({
+    id: 'play_with_baby',
+    label: t('Play with {name}', { name: baby.name }),
+    icon: '\u{1F9F8}',
+    enabled: !actor.isChild || actor.years >= 4,
+    reason: actor.isChild && actor.years < 4 ? t('Too young to mind a baby') : undefined,
+  });
+  if (!isNursling(baby, childhood)) {
+    const food = actor.inventory.bestFood();
+    options.push({
+      id: 'give',
+      label: t('Feed {name}', { name: baby.name }),
+      icon: '\u{1F963}',
+      enabled: food !== null,
+      reason: food === null ? t('You are carrying no food') : undefined,
+    });
+  }
+  if (techPower(actor, 'herbalism') > 0) {
+    const hurt = baby.health < 100;
+    options.push({
+      id: 'tend',
+      label: t('Tend {name}', { name: baby.name }),
+      icon: '\u{1FAF6}',
+      enabled: hurt,
+      reason: hurt ? undefined : t('They are not hurt'),
+    });
+  }
+  return options;
+}
+
 function personActions(actor: Person, other: Person, ctx: CatalogContext): ActionOption[] {
+  // A baby at the breast or in arms gets a baby's menu, not an adult's.
+  if (ctx.childhood && other.id !== actor.id &&
+      (isNursling(other, ctx.childhood) || !canWalk(other, ctx.childhood))) {
+    return babyActions(actor, other, ctx, ctx.childhood);
+  }
   const carriedFood = actor.inventory.bestFood();
   // How well the actor knows this person, which is what decides which
   // conversations the two of them could have.
@@ -477,9 +588,12 @@ function personActions(actor: Person, other: Person, ctx: CatalogContext): Actio
       id: 'spar',
       label: t('Spar with {name}', { name: other.name }),
       icon: '\u{1F94A}',
-      enabled: !actor.isChild && !other.isChild,
+      // Not with a baby in anybody's arms (owner, 2026-09-30).
+      enabled: !actor.isChild && !other.isChild && actor.armsTaken === 0 && other.armsTaken === 0,
       reason: actor.isChild || other.isChild
         ? t('Too young to spar safely')
+        : actor.armsTaken > 0 ? t('Not with a baby in your arms')
+        : other.armsTaken > 0 ? t('They have a baby in their arms')
         : undefined,
     },
     // M9 phase 4, note 5. One entry per rung of `Conversation.ts` rather than
@@ -712,6 +826,10 @@ function buildingActions(
   ctx: CatalogContext
 ): ActionOption[] {
   const options: ActionOption[] = [];
+  // A baby is laid down in a finished shelter, where it is out of the cold.
+  if (building.complete && !building.ruined && building.def.shelter > 0) {
+    options.push(...putDownOptions(ctx, 'inside', theNoun(building.def.label.toLowerCase())));
+  }
   if (!building.complete) {
     options.push({
       id: 'build',
@@ -879,6 +997,7 @@ function groundActions(
 ): ActionOption[] {
   const walkable = ctx.world.isWalkable(target.x, target.y);
   const options: ActionOption[] = [
+    ...(walkable ? putDownOptions(ctx, 'here') : []),
     {
       id: 'goto',
       label: t('Walk here'),

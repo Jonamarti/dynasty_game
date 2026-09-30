@@ -30,7 +30,7 @@ import { ActionSystem } from '../systems/ActionSystem.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
 import { drivePressures, DRIVES } from '../ai/Drives.ts';
-import { babyToCarry, infantNeedingNursing, infantOutsideHome, type NursingClock } from '../ai/Nursing.ts';
+import { babyToCarry, infantNeedingNursing, infantOutsideHome, mayNurse, type NursingClock } from '../ai/Nursing.ts';
 import { starvingInCare } from '../ai/Feeding.ts';
 import { canCrawl, canWalk, isBabyInArms, isLactating, isNursling } from '../entities/LifeStage.ts';
 import {
@@ -2695,9 +2695,43 @@ export class Simulation {
       return true;
     }
 
+    // M15 phase 20 (owner, 2026-09-30): the baby in their arms, laid down on
+    // the ground or in a shelter the player clicked. Before the person branch,
+    // which would otherwise take the baby for the target and walk to it.
+    if (action === 'put_down_baby') {
+      const baby = target.personId === undefined ? undefined : this.peopleById.get(target.personId);
+      if (!baby?.alive || baby.carriedBy !== person.id) {
+        return this.cancelOrder(person, t('they are not holding that baby'));
+      }
+      const building = target.buildingId === undefined ? undefined : this.buildingsById.get(target.buildingId);
+      const spot = building ? { x: building.centerX, y: building.centerY }
+        : target.x !== undefined && target.y !== undefined ? { x: target.x, y: target.y }
+        : { x: person.x, y: person.y };
+      if (!this.world.isWalkable(Math.round(spot.x), Math.round(spot.y))) {
+        return this.cancelOrder(person, t('they cannot walk there'));
+      }
+      if (!this.world.sameRegion(person.x, person.y, spot.x, spot.y)) {
+        return this.cancelOrder(person, t('there is no way across'));
+      }
+      person.targetPersonId = baby.id;
+      if (building) person.targetBuildingId = building.id;
+      person.targetX = spot.x;
+      person.targetY = spot.y;
+      return true;
+    }
+
     if (target.personId !== undefined) {
       const other = this.peopleById.get(target.personId);
       if (!other || !other.alive) return this.cancelOrder(person, t('they are gone'));
+      if (action === 'carry_baby' && canWalk(other, this.config.childhood)) {
+        return this.cancelOrder(person, t('they walk by themselves now'));
+      }
+      if (action === 'carry_baby' && person.armsTaken >= 2) {
+        return this.cancelOrder(person, t('their arms are already full'));
+      }
+      if (action === 'nurse' && !mayNurse(person, other, this.peopleById, this.config.childhood)) {
+        return this.cancelOrder(person, t('she has no milk for this baby'));
+      }
       person.targetPersonId = other.id;
       person.targetX = other.x;
       person.targetY = other.y;
@@ -4029,7 +4063,13 @@ export class Simulation {
       if (isHeld(person, this.time.tick)) continue;
 
       const underAttack = assailantOf(person, id => this.peopleById.get(id), this.time.tick) !== null;
-      const urgentBaby = underAttack || !this.config.motivation.urgentNursing
+      // An order to pick a baby up or put one down is finished before any
+      // feed (M15 phase 20): a feed that interrupted it dropped the order, and
+      // the player's "pick him up" silently did not happen. Both are short;
+      // the feed comes the moment they are done.
+      const handlingBaby = (person.action === 'carry_baby' || person.action === 'put_down_baby') &&
+        person.order !== null;
+      const urgentBaby = underAttack || handlingBaby || !this.config.motivation.urgentNursing
         ? null : infantNeedingNursing(person, this.peopleById, this.world, this.config.childhood,
           this.peopleHash, this.config.sightRadius, this.nursingClock());
       const activeNursing = this.config.motivation.urgentNursing && person.action === 'nurse';

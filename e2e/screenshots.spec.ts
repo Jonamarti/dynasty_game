@@ -628,3 +628,65 @@ test('M15 20 a mother carries and nurses her baby', async ({ page }) => {
   await page.waitForTimeout(300);
   await page.screenshot({ path: DIR + '/m15-20-mother-carries-baby.png' });
 });
+
+test('M15 20b playing a mother: the baby in her arms, and a baby\'s own menu', async ({ page }) => {
+  await page.goto('/?seed=m15-20-carry&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await page.waitForTimeout(800);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  // The player's own character becomes a mother holding a baby of three months.
+  const ok = await page.evaluate(() => {
+    type P = { id: number; x: number; y: number; sex: string; isChild: boolean; isPlayer: boolean;
+      age: number; daysPerYear: number; childIds: number[]; motherId: number | null; bandId: number;
+      carriedBy: number | null; lastNursedTick: number };
+    const d = (window as never as {
+      __dynasty: {
+        sim: { player: P; livingPeople: () => P[]; step: () => void; time: { tick: number } };
+        camera: { snapTo: (x: number, y: number) => void; following: boolean };
+      };
+    }).__dynasty;
+    const mother = d.sim.player;
+    mother.sex = 'female';
+    const baby = d.sim.livingPeople().find(p => p.isChild && p.bandId === mother.bandId && p.id !== mother.id)!;
+    baby.age = 0.25 * baby.daysPerYear;
+    baby.motherId = mother.id;
+    baby.x = mother.x;
+    baby.y = mother.y;
+    mother.childIds = [baby.id];
+    for (let i = 0; i < 200 && baby.carriedBy !== mother.id; i++) d.sim.step();
+    baby.lastNursedTick = d.sim.time.tick;
+    d.camera.snapTo(mother.x, mother.y);
+    d.camera.following = false;
+    return baby.carriedBy === mother.id;
+  });
+  expect(ok).toBe(true);
+  await page.locator('#view').hover();
+  for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -120);
+  await page.waitForTimeout(300);
+  // Her kit: the baby is in her left arm.
+  await page.locator('.hud-tab', { hasText: 'Kit' }).click();
+  await expect(page.locator('.hud-panel')).toContainText('in arms');
+  // Right-click where she stands and choose the baby from the stack.
+  const at = await page.evaluate(() => {
+    const d = (window as never as { __dynasty: {
+      sim: { player: { x: number; y: number } };
+      camera: { worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number } } }).__dynasty;
+    return { x: d.camera.worldToScreenX(d.sim.player.x), y: d.camera.worldToScreenY(d.sim.player.y) };
+  });
+  await page.mouse.click(at.x, at.y, { button: 'right' });
+  await page.waitForTimeout(200);
+  const picker = page.locator('.picker');
+  if (await picker.isVisible()) {
+    const items = picker.locator('.picker-item');
+    const n = await items.count();
+    for (let i = 0; i < n; i++) {
+      const text = (await items.nth(i).textContent()) ?? '';
+      // The baby is listed by name; the other entry is the ground.
+      if (!/ground/i.test(text)) { await items.nth(i).click(); break; }
+    }
+  }
+  await expect(page.locator('.radial-item', { hasText: 'Nurse' })).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator('.radial-item', { hasText: 'down here' })).toBeVisible();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: DIR + '/m15-20b-baby-menu.png' });
+});

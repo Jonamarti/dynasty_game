@@ -4,6 +4,7 @@ import { makeConfig } from '../core/Config.ts';
 import { NURSING_HUNGER } from '../ai/Nursing.ts';
 import { capacityFor, itemCapacityFor } from '../core/Carry.ts';
 import type { Person } from '../entities/Person.ts';
+import { availableActions, type CatalogContext } from '../ai/ActionCatalog.ts';
 
 /**
  * M15 phase 20, the owner's rule of 2026-09-30: a mother carries a baby that
@@ -103,5 +104,85 @@ describe('carrying the baby', () => {
     expect(baby.carriedBy).toBeNull();
     expect(baby.needs.company).toBeGreaterThan(before);
     expect(baby.needs.fatigue).toBe(0);
+  });
+});
+
+/**
+ * M15 phase 20, the owner's report of 2026-09-30: playing a mother, the baby
+ * was nowhere to be seen, its menu was an adult's, it could not be put down or
+ * picked up, and she could spar with it in her arms.
+ */
+describe("a baby's menu and a parent's orders", () => {
+  function held(seed: string) {
+    const f = family(seed);
+    f.baby.x = f.mother.x;
+    f.baby.y = f.mother.y;
+    for (let i = 0; i < 40 && f.baby.carriedBy !== f.mother.id; i++) f.sim.step();
+    expect(f.baby.carriedBy).toBe(f.mother.id);
+    return f;
+  }
+  const ctxOf = (sim: Simulation, subject: Person): CatalogContext => ({
+    world: sim.world, nearWater: false, childhood: sim.config.childhood, peopleById: sim.peopleById,
+    carriedBabies: sim.people.filter(p => p.alive && p.carriedBy === subject.id),
+  });
+  const ids = (options: { id: string; children?: { id: string }[] }[]): string[] =>
+    options.flatMap(o => [o.id, ...(o.children ?? []).map(c => c.id)]);
+
+  it('offers a baby its own verbs, not an adult conversation', () => {
+    const { sim, mother, baby } = held('menu-baby');
+    const options = availableActions(mother, { kind: 'person', x: baby.x, y: baby.y, person: baby }, ctxOf(sim, mother));
+    const got = ids(options);
+    expect(got).toContain('put_down_baby');
+    expect(got).toContain('nurse');
+    expect(got).toContain('play_with_baby');
+    expect(got).not.toContain('talk');
+    expect(got).not.toContain('spar');
+    expect(options.find(o => o.id === 'nurse')!.enabled).toBe(true);
+  });
+
+  it('offers to lay the baby down on the ground clicked, and refuses sparring while holding it', () => {
+    const { sim, mother } = held('menu-ground');
+    const ground = availableActions(mother, { kind: 'ground', x: Math.round(mother.x), y: Math.round(mother.y) }, ctxOf(sim, mother));
+    expect(ground.find(o => o.id === 'put_down_baby')?.enabled).toBe(true);
+    const other = sim.people[2]! as Person;
+    other.age = 25 * other.daysPerYear;
+    const menu = availableActions(mother, { kind: 'person', x: other.x, y: other.y, person: other }, ctxOf(sim, mother));
+    const spar = ids(menu).includes('spar')
+      ? menu.flatMap(o => [o, ...(o.children ?? [])]).find(o => o.id === 'spar')! : null;
+    expect(spar?.enabled).toBe(false);
+  });
+
+  it('puts the baby down where told, and the mother leaves it there', () => {
+    const { sim, mother, baby } = held('order-down');
+    mother.isPlayer = true;
+    const x = Math.round(mother.x) + 2;
+    const y = Math.round(mother.y);
+    expect(sim.order(mother, 'put_down_baby', { personId: baby.id, x, y })).toBe(true);
+    for (let i = 0; i < 60 && baby.carriedBy !== null; i++) sim.step();
+    expect(baby.carriedBy).toBeNull();
+    expect(baby.laidDownBy).toBe(mother.id);
+    for (let i = 0; i < 60; i++) sim.step();
+    expect(baby.carriedBy).toBeNull();
+
+    // And picked up again from wherever it lies, on an order.
+    expect(sim.order(mother, 'carry_baby', { personId: baby.id })).toBe(true);
+    for (let i = 0; i < 60 && baby.carriedBy !== mother.id; i++) sim.step();
+    expect(baby.carriedBy).toBe(mother.id);
+  });
+
+  it('lets anybody of the band pick a baby up on an order, and refuses milk to a man', () => {
+    const { sim, baby } = family('order-father');
+    const father = sim.people[2]! as Person;
+    father.sex = 'male';
+    father.age = 25 * father.daysPerYear;
+    father.bandId = baby.bandId;
+    father.needs.hunger = 0;
+    father.needs.thirst = 0;
+    baby.x = father.x + 1;
+    baby.y = father.y;
+    expect(sim.order(father, 'nurse', { personId: baby.id })).toBe(false);
+    expect(sim.order(father, 'carry_baby', { personId: baby.id })).toBe(true);
+    for (let i = 0; i < 60 && baby.carriedBy !== father.id; i++) sim.step();
+    expect(baby.carriedBy).toBe(father.id);
   });
 });

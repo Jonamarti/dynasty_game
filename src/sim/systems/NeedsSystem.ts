@@ -48,6 +48,7 @@ const EXERTION: Record<string, number> = {
   wander: 1.0,
   talk: 0.75,
   romp: 1.05,
+  play_with_baby: 1.0,
   court: 0.75,
   teach: 0.75,
   nurse: 1.25,

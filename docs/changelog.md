@@ -9962,3 +9962,32 @@ una da en su estación.
   `observePlaces` corrige el recuerdo y abandona (contador
   `remembered_empty_walk`). La orden del jugador a un arbusto vacío fuera de la
   vista también se acepta y se comprueba caminando.
+
+## 2026-09-30 — M15 fase 20: jugar como madre (el menú del bebé, dejarlo, cogerlo, amamantarlo)
+
+Lo que el propietario encontró jugando como una madre con el bebé en brazos: le
+dejaba entrenar; no se veía en ningún sitio que lo llevara; al pulsar sobre el
+bebé salían las opciones de un adulto; la madre lo amamantaba sola pero el
+jugador no tenía esa opción; no había forma de dejarlo ni de cogerlo.
+
+- **Menú propio del bebé** (`ActionCatalog.babyActions`, para un lactante o un
+  bebé que aún no anda): cogerlo en brazos (de donde esté, también de otros
+  brazos, cualquiera adulto de la banda), dejarlo aquí si lo lleva, amamantarlo
+  (solo una mujer con leche; si no, gris y con el motivo), jugar con él
+  (`play_with_baby`, el mismo rato de juego que `romp`), darle de comer si ya
+  está destetado, y curarlo con la herbolaria.
+- **Dejarlo en un sitio**: con un bebé en brazos, el clic derecho en el suelo
+  ofrece «Dejar a X aquí» y en un refugio terminado «Dejar a X en la choza»
+  (`put_down_baby`, un paseo con su comprobación de interrupción y luego el
+  bebé en el suelo, marcado como dejado a propósito). Todavía no hay cuna ni
+  lecho en el juego; cuando los haya, se añaden a los refugios de esta lista.
+- **No entrenar con un bebé en brazos**, ni con alguien que lo tiene: el menú lo
+  pone en gris con el motivo, `doSpar` lo abandona (`holding_baby`) y el `Brain`
+  no lo puntúa.
+- **El bebé se ve en el panel**: en la pestaña de equipo, la mano que ocupa dice
+  «Toran, en brazos».
+- Una orden de coger o dejar a un bebé termina antes de cualquier toma: una toma
+  que la interrumpía borraba la orden y «cógelo» no pasaba sin decir nada.
+
+Captura: `artifacts/screenshots/m15-20b-baby-menu.png` (la jugadora con su bebé
+en brazos y el menú del bebé abierto).

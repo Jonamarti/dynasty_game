@@ -8,6 +8,19 @@ así que falta correlacionar el SHA ejecutado con el código actual. Mientras se
 investiga, CI y el deploy de Pages continúan aunque `npm test` falle. Quitar
 `continue-on-error` de ambos workflows cuando el timeout quede corregido.
 
+## Seis e2e de `smoke.spec.ts` fallan desde antes de la fase 20 (2026-09-30)
+
+`a stranger gives up nothing…`, `standing over someone is shown…`, `the tech
+web keeps a stranger…`, `the family tree and tribe graph are gated…`,
+`teaching appears in the menu…` y `clicking a lone person still offers the
+ground…` fallan en `HEAD` y también en `6e6f2db` y en el merge del arte
+(`ec4ee12`), sin ninguno de los cambios de esta pasada. En los que se miraron,
+el clic sobre un desconocido de otra banda (`aimAtStranger`) no lo selecciona:
+el panel sigue mostrando al propio jugador. Lo más probable es que la premisa se
+rompiera con la niebla de guerra de M15 (el jugador no ve, y por tanto no puede
+elegir, a quien nunca ha visto), no el juego; hay que confirmarlo y rehacer el
+helper para que apunte a un desconocido a la vista. No arreglado en esta pasada.
+
 ## M15 fase 20, balance de la infancia a 40 semillas (2026-09-30)
 
 Las reglas del propietario del 2026-09-30 (lactancia hasta los dos años con

@@ -1412,9 +1412,9 @@ export class Brain {
       // almost everyone today, so `outmatched` will read near zero for a
       // while and grow meaningful only once this verb and `doHunt`'s trickle
       // have actually spread the skill out.
-      if (!person.isChild) {
+      if (!person.isChild && person.armsTaken === 0) {
         const willing = neighbours.filter(other =>
-          !other.isChild && other.bandId === person.bandId &&
+          !other.isChild && other.bandId === person.bandId && other.armsTaken === 0 &&
           ctx.relationships.opinion(person.id, other.id) >= 0);
         const partner = this.pickBest(willing, other =>
           ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other) * 2);

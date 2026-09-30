@@ -172,6 +172,8 @@ export const ACTION_LABELS: Record<string, string> = {
   romp: 'playing with the other children',
   // M15 phase 20: food carried back to somebody left starving.
   bring_food: 'bringing food to someone starving',
+  put_down_baby: 'putting the baby down',
+  play_with_baby: 'playing with the baby',
   steal: 'stealing',
   threaten: 'making a demand',
   attack: 'fighting',
@@ -327,6 +329,9 @@ export const STOP_REASONS: Record<string, string> = {
   nothing_to_give: 'they had nothing to give',
   still_nursing: 'a baby this young only takes milk',
   arms_full: 'their arms are already full',
+  not_holding_baby: 'they are not holding that baby',
+  holding_baby: 'not with a baby in their arms',
+  partner_holding_baby: 'the other has a baby in their arms',
   // M11 phase 13f: the one reason `abandon` used that had no words, so a
   // trade that fell through said "nothing to trade" in the code's own voice.
   nothing_to_trade: 'one of them had no food to swap',
