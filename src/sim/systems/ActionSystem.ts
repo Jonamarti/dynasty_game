@@ -1192,6 +1192,17 @@ export class ActionSystem {
 
   private doHarvest(person: Person, ctx: ActionContext): void {
     const node = person.targetNodeId === null ? null : ctx.nodesById.get(person.targetNodeId);
+    // M15 phase 20: a remembered place is found empty by looking at it, not
+    // known to be empty from anywhere (the owner's rule that places are known
+    // only by seeing them). Until it is in sight they walk on; once it is,
+    // `observePlaces` has corrected the memory and this abandons. The cost
+    // measured before — winter walks to stripped bushes — is what
+    // `SeasonLore` answers for anybody who has learned the seasons.
+    if (node?.depleted && person.distanceTo(node) > ctx.sightRadius) {
+      telemetry.count('remembered_empty_walk');
+      this.travel(person, ctx);
+      return;
+    }
     if (!node || node.depleted) {
       let reason = 'node_gone';
       if (node?.depleted) {

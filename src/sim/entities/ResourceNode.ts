@@ -55,10 +55,10 @@ export interface ResourceDef {
    * Bears nothing in winter: what is left on it when winter comes falls or
    * rots, and nothing sets until spring (M15 phase 20). The owner's picture
    * of a berry bush, and what makes "bushes bear nothing in winter"
-   * something a person can see and learn rather than a rumour. Before this a
-   * bush stopped regrowing in winter but kept what it had, so a remembered
-   * bush from autumn might or might not still hold berries and no amount of
-   * watching could settle which.
+   * something a person can see and learn (`SeasonLore`) rather than a rumour.
+   * Before this a bush stopped regrowing in winter but kept what it had, so
+   * a remembered bush from autumn might or might not still hold berries and
+   * no amount of watching could settle which.
    */
   wintersBare?: boolean;
 }
@@ -156,4 +156,13 @@ export class ResourceNode {
  */
 export function isFoodKind(node: ResourceNode): boolean {
   return (ITEMS[node.def.itemId]?.nutrition ?? 0) > 0;
+}
+
+/**
+ * A plant whose yield is food — berries, wild grain — as against fish or a
+ * flint outcrop: what `SeasonLore` watches bear and go bare (M15 phase 20).
+ * Read off the skill as well as the item, since fish is food and not a plant.
+ */
+export function isPlantFood(def: ResourceDef): boolean {
+  return def.skill === 'forage' && def.regrowPerTick > 0 && (ITEMS[def.itemId]?.nutrition ?? 0) > 0;
 }

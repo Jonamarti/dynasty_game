@@ -9934,3 +9934,31 @@ grano silvestre no cambia: las espigas siguen en pie sobre la nieve.
 
 Es un cambio en la economía de la comida de invierno; su medición va con el
 resto de la fase.
+
+## 2026-09-30 — M15 fase 20: saber cuándo da fruto cada planta, y el paseo honesto
+
+Respuesta del propietario (2026-09-30): la gente puede aprender que los arbustos
+no dan bayas en invierno como mejora del saber de las plantas, viendo dos
+inviernos que una planta no da fruto y cuándo sí, planta a planta, porque cada
+una da en su estación.
+
+- **`knowledge/SeasonLore.ts`**: por cada clase de planta y estación, los años
+  en que se la vio con fruto y los años en que se la vio pelada. Se sabe que no
+  da en una estación cuando se la vio pelada allí en dos años distintos, nunca
+  con fruto allí, y con fruto en alguna otra estación. Se cuentan años, no
+  avistamientos: un invierno pasando junto a cincuenta arbustos pelados sigue
+  siendo un invierno, y una sola planta con fruto deshace la lección.
+- **Solo con el saber de las plantas** (`plant_lore`, cuya descripción ya decía
+  «qué hoja, qué baya y cuándo»). Se observa en `Simulation.observePlaces`, el
+  mismo paso que llena el mapa recordado: es saber conseguido mirando.
+- **Se usa** en `Brain.collectKnownNodes`: no se camina a un recuerdo de una
+  clase que se sabe sin fruto en esta estación (contador
+  `remembered_node_out_of_season`). Hoy solo afecta a las bayas y al grano
+  silvestre, que son las plantas que se buscan por memoria; a un árbol frutal
+  solo se va si se le ve la fruta, así que para los árboles no cambiaría nada y
+  no se aprende (sería contenido declarado e inerte).
+- **El paseo honesto**: `doHarvest` ya no sabe desde lejos que un arbusto
+  recordado está vacío. Camina hasta tenerlo a la vista, y entonces
+  `observePlaces` corrige el recuerdo y abandona (contador
+  `remembered_empty_walk`). La orden del jugador a un arbusto vacío fuera de la
+  vista también se acepta y se comprueba caminando.

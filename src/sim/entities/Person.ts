@@ -3,6 +3,7 @@
  * the player has, an NPC has too. That symmetry is a design pillar, not an
  * accident: it is what makes the world feel inhabited rather than staged.
  */
+import { SeasonLore } from '../knowledge/SeasonLore.ts';
 import type { OpenInvestigation } from '../social/Investigation.ts';
 import type { Debt, Grievance } from '../social/Amends.ts';
 import type { Case } from '../social/Justice.ts';
@@ -328,6 +329,11 @@ export class Person {
   curiosityDays = 0;
   /** Personal map, observed but not yet used by decisions (M15 phase 2e). */
   placeMemory = new PlaceMemory(128, 128, 48);
+  /**
+   * When each kind of plant bears, as far as this person has watched, M15
+   * phase 20. Learned only with plant lore; see `knowledge/SeasonLore.ts`.
+   */
+  seasonLore = new SeasonLore();
   placeMemoryStaticCell = -1;
   placeMemoryStaticDay = -1;
   /** Evidence accumulator for the current food gathering attempt. */

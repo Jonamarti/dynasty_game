@@ -70,19 +70,15 @@ nodrizas (`wetNursing=false` 0,713). Debe volver a medirse cuando la madre
 lleve al bebé encima; si no se recupera, la decisión de cuánto cuesta la leche
 es del propietario.
 
-**Se sabe que un sitio recordado está vacío sin verlo (decisión del
-propietario).** `ActionSystem.doHarvest` abandona un objetivo recordado con
-`remembered_wrong` en cuanto el nodo real está agotado, a cualquier distancia, y
-corrige la memoria. Eso rompe la regla de que los sitios se conocen mirando, y
-además deja a la persona `idle`: elige un recuerdo, lo tacha, elige otro, uno por
-tick y sin moverse (una madre lactante de `lean` pasaba así el 24% del tiempo).
-Se probó lo honesto (caminar hasta tener el sitio a la vista): `lean` a 20
-semillas bajó de 21,8% a 16,1% (17/20 colapsos) y la exposición subió de 224 a
-302 muertes, porque en invierno todos los arbustos recordados están vacíos y la
-gente camina hasta ellos, también fuera de su alcance, y se hiela. Revertido.
-Propuesta para decidir: que la gente sepa que en invierno los arbustos no dan
-fruto y descarte los recuerdos de otra estación; así el paseo honesto solo se
-haría cuando el recuerdo puede ser cierto.
+**Se sabe que un sitio recordado está vacío sin verlo — resuelto (2026-09-30).**
+`ActionSystem.doHarvest` abandonaba un objetivo recordado con `remembered_wrong`
+en cuanto el nodo real estaba agotado, a cualquier distancia. Ahora la persona
+camina hasta tenerlo a la vista (lo mismo la orden del jugador), y el coste que
+eso tuvo la primera vez (en invierno todos los arbustos recordados estaban
+vacíos) lo contesta el saber de las estaciones: con el saber de las plantas,
+dos inviernos viendo solo arbustos pelados enseñan que en invierno no dan, y
+quien lo sabe no camina a ellos (`knowledge/SeasonLore.ts`, decisión del
+propietario). Quien no lo ha aprendido sigue caminando; ese es el coste honesto.
 
 **Lo que `npm run infants` encontró y queda abierto** (tres semillas `lean`):
 dos de cada tres niños que mueren lo hacen después que su madre, y el 85% de

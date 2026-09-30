@@ -3967,6 +3967,12 @@ export class Brain {
         this.knownNodeIds.add(node.id);
         telemetry.count('remembered_node_candidate');
       };
+      // M15 phase 20: a kind this person has learned bears nothing in this
+      // season is not walked to, whatever the memory says (`SeasonLore`).
+      if (person.seasonLore.barrenIn(`resource:${kind}`, ctx.time.season)) {
+        telemetry.count('remembered_node_out_of_season');
+        continue;
+      }
       const accepts = (memory: { x: number; y: number; amount: number }) => memory.amount > 0 &&
         ctx.world.sameRegion(person.x, person.y, memory.x, memory.y);
       const reachDistance = anchor

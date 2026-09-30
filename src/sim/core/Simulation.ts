@@ -22,7 +22,7 @@ import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
 import { Person, resetPersonIds } from '../entities/Person.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
-import { ResourceNode, resetResourceIds, isFoodKind, type ResourceKind } from '../entities/ResourceNode.ts';
+import { ResourceNode, resetResourceIds, isFoodKind, isPlantFood, type ResourceKind } from '../entities/ResourceNode.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import { MovementSystem } from '../systems/MovementSystem.ts';
 import { Pathfinder } from './Pathfinder.ts';
@@ -2743,7 +2743,12 @@ export class Simulation {
     }
     if (target.nodeId !== undefined) {
       const node = this.nodesById.get(target.nodeId);
-      if (!node || node.depleted) return this.cancelOrder(person, t('there is nothing left there'));
+      // Empty is refused only where they can see it is (M15 phase 20): out
+      // of sight they go and find out, as `ActionSystem.doHarvest` does.
+      if (!node || (node.depleted &&
+          Math.hypot(node.x - person.x, node.y - person.y) <= this.config.sightRadius)) {
+        return this.cancelOrder(person, t('there is nothing left there'));
+      }
       if (node.def.groundLevel && this.isBuried(node.x, node.y)) {
         return this.cancelOrder(person, t('it is under the snow'));
       }
@@ -4175,9 +4180,17 @@ export class Simulation {
 
     memory.observe(person.x, person.y, radius, day);
     if (refreshStatic) {
+      // M15 phase 20: with plant lore, what is in fruit and what is bare this
+      // season is also something learned by looking (`SeasonLore`).
+      const lore = techPower(person, 'plant_lore') > 0;
+      const year = Math.floor(day / this.time.daysPerYear);
       for (const node of this.nodeHash.queryRadius(person.x, person.y, radius, this.placeNodeCandidates)) {
-        if (near(node.x, node.y)) memory.remember(`resource:${node.kind}`, node.x, node.y, day,
+        if (!near(node.x, node.y)) continue;
+        memory.remember(`resource:${node.kind}`, node.x, node.y, day,
           node.amount >= node.def.maxAmount * 0.66 ? 2 : node.amount > 0 ? 1 : 0);
+        if (lore && isPlantFood(node.def)) {
+          person.seasonLore.observe(`resource:${node.kind}`, this.time.season, year, node.amount >= 1);
+        }
       }
       for (const tree of this.treeHash.queryRadius(person.x, person.y, radius, this.placeTreeCandidates)) {
         if (tree.standing && near(tree.x, tree.y)) {
