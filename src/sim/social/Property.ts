@@ -30,7 +30,7 @@ export interface PropertyContext {
  * alliance this complete should be rare and earned, not the state two bands
  * fall into after one wedding.
  */
-const ALLY_STANDING = 55;
+export const ALLY_STANDING = 55;
 
 export interface PropertyUse {
   /** True when no property offence exists in the first place. */

@@ -1254,6 +1254,11 @@ sesiones a tiempo antes de tocar los pesos de recolección.
   `spares-are-found` mide las recogidas con telemetría `npc_pickup`. Aún faltan
   el filtrado de propiedad para esos montones, los materiales/herramientas y
   `equipFor`; 11d continúa abierta.
+- **Avance 2026-09-30 — propiedad y materiales:** los montones respetan el
+  filtro de propiedad (un extraño solo si su banda no lo ve) y `pickup` cubre el
+  material que falta a una obra. `lean` a 20 semillas: 16,5% (referencia 21,8%,
+  última cohorte de 11c 18,1%); la puerta de 11c sigue sin superarse. Faltan
+  `equipFor`, herramientas de oficio y las razones visibles nuevas.
 - **Razones visibles** (`abandon(…, razón)` con su frase por `t()`):
   `hands_full` («tiene las manos llenas»), `no_free_hand` («no tiene una mano
   libre»), `needs_both_hands` («hacen falta las dos manos»),

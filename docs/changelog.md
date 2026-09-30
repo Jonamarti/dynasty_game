@@ -9547,3 +9547,25 @@ del scorer y del ejecutor. `porters` no produjo montones de comida, así que no
 se atribuye a esta cohorte una activación natural. 11d sigue abierto: faltan
 materiales/herramientas, atención sobre montones ajenos y `equipFor`. No cambia
 la UI; no requiere captura.
+
+## 2026-09-30 — M15 fase 11d: montones ajenos y materiales de obra
+
+`Brain.mayTakeFromPile` aplica a los montones la regla de propiedad de M11
+fase 4: un montón sin dueño (una presa, la madera de un tronco talado), propio,
+de la banda o de una banda aliada se puede planear; el de un extraño solo si
+nadie de su banda está a la vista del montón (la misma prueba `watched` de
+`mayUse`, con `ALLY_STANDING` ahora exportado). El puntuador de obras ofrece
+además `pickup` cuando a una obra le falta un material y hay un montón cercano
+que lo contiene (o los ingredientes de su receta si la persona la domina); solo
+sustituye al objetivo de comida si puntúa más. Dos pruebas nuevas fijan el
+filtro (con y sin testigo de la banda dueña).
+
+Medido: `lean` a 20 semillas, 16,5% de supervivencia y 15/20 colapsos, frente a
+18,1% de la última cohorte de 11c; dentro del ruido y aún 5,3 puntos bajo la
+referencia de 21,8%. **La puerta demográfica de 11c sigue sin superarse y 11c y
+11d siguen abiertas.** `sim:check:all` conserva su perfil de fallos crónicos; en
+`lean` dejan de fallar `population-persists` y `needs-not-pinned`, sin
+atribuirlo a este cambio. `band.test.ts` conserva su timeout conocido. Faltan
+`equipFor`, las herramientas de oficio y las razones `no_free_hand`,
+`needs_both_hands` y `too_heavy`, que no se declaran hasta que exista quien las
+use. No cambia la UI; no requiere captura.

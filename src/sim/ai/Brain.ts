@@ -51,7 +51,7 @@ import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
 import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
-import { mayUse } from '../social/Property.ts';
+import { mayUse, ALLY_STANDING } from '../social/Property.ts';
 import {
   homeward, fearOf, wariness, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
   DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
@@ -780,6 +780,10 @@ export class Brain {
     let fellTree: Tree | null = null;
     let pickupPile: ItemPile | null = null;
     let pickupItem: string | null = null;
+    // The score the current `pickupPile` earned, so a second reason to pick
+    // something up (a site's missing material) only replaces the target when it
+    // is genuinely the better errand rather than whichever was scored last.
+    let pickupBest = 0;
 
     const thirst = drive.thirst;
     const hunger = drive.hunger;
@@ -911,9 +915,9 @@ export class Brain {
     // scavenging cannot become a world-wide entity scan on every think tick.
     if (ctx.pileHash && ctx.pilesById?.size && ctx.carry &&
         person.carrying < person.carryCapacity && hunger > 0.15) {
-      let bestPickupScore = 0;
       for (const pile of ctx.pileHash.queryRadius(person.x, person.y, ctx.sightRadius, this.nearbyPiles)) {
         if (pile.empty || !ctx.world.sameRegion(person.x, person.y, pile.x, pile.y)) continue;
+        if (!this.mayTakeFromPile(person, pile, ctx)) continue;
         const item = pile.contents.entries().find(([id, count]) => count > 0 &&
           (ITEMS[id]?.nutrition ?? 0) > 0 && canTake(person, ctx.carry!, id, 1));
         if (!item) continue;
@@ -921,13 +925,13 @@ export class Brain {
         const score = hunger * 1.9 * Math.min(1, (ITEMS[itemId]?.nutrition ?? 0) / 20)
           * Math.min(1, count / 3)
           * this.proximityBonus(person, pile, ctx.sightRadius);
-        if (score > bestPickupScore) {
-          bestPickupScore = score;
+        if (score > pickupBest) {
+          pickupBest = score;
           pickupPile = pile;
           pickupItem = itemId;
         }
       }
-      if (pickupPile) add('pickup', bestPickupScore);
+      if (pickupPile) add('pickup', pickupBest);
     }
 
     // --- Pick fruit --------------------------------------------------------
@@ -2458,6 +2462,32 @@ export class Brain {
           const pending = site;
           const missing = Object.keys(pending.def.materials)
             .find(id => pending.stillNeeds(id) > 0);
+          // A heap somebody already dropped is the shortest way to a material:
+          // the log a forager felled and could not carry, the flint left at a
+          // dead person's feet. It competes with the node or tree below on the
+          // same proximity term, so a nearer heap wins and a distant one does
+          // not pull anybody off a bush at their elbow.
+          if (missing && ctx.pileHash && ctx.carry && person.carrying < person.carryCapacity) {
+            const short = recipeFor(missing);
+            const carry = ctx.carry;
+            const wantsHere = new Set(short && techPower(person, short.tech) > 0
+              ? Object.keys(short.ingredients) : [missing]);
+            for (const pile of ctx.pileHash.queryRadius(person.x, person.y, ctx.sightRadius, this.nearbyPiles)) {
+              if (pile.empty || !ctx.world.sameRegion(person.x, person.y, pile.x, pile.y)) continue;
+              if (!this.mayTakeFromPile(person, pile, ctx)) continue;
+              const itemId = pile.contents.entries().find(([id, count]) => count > 0 &&
+                wantsHere.has(id) && canTake(person, carry, id, 1))?.[0];
+              if (!itemId) continue;
+              const score = (comfortNow - 0.45) * 1.5 * (0.4 + person.skillFactor('build'))
+                * this.proximityBonus(person, pile, ctx.sightRadius);
+              if (score > pickupBest) {
+                pickupBest = score;
+                pickupPile = pile;
+                pickupItem = itemId;
+                add('pickup', score);
+              }
+            }
+          }
           // Timber comes from a standing tree and nothing else; everything
           // else is picked up off the ground.
           if (missing === 'wood') {
@@ -3655,6 +3685,27 @@ export class Brain {
    * distance and produced forty-one impossible walks in `farmers`. Property
    * and path regions are separate facts, but every scorer needs both.
    */
+  /**
+   * Whether a loose heap is fair game for this person to plan on taking.
+   *
+   * M15 phase 11d. Property is protected by attention rather than permission
+   * (M11 phase 4), and a heap is property as much as a store is: it belongs to
+   * whoever put it down. A heap nobody dropped (a kill, a felled tree's timber)
+   * is nobody's, and one a bandmate or an ally dropped is effectively ours. A
+   * stranger's heap is planned on only when nobody of the owner's band is in
+   * sight of it — the same `watched` test `mayUse` gives a building, so an NPC
+   * does not choose to steal under the owner's eye, and a heap left in an empty
+   * field is taken without anybody being told.
+   */
+  private mayTakeFromPile(person: Person, pile: ItemPile, ctx: BrainContext): boolean {
+    if (pile.ownerId === null || pile.ownerId === person.id) return true;
+    const owner = ctx.peopleById?.get(pile.ownerId);
+    if (!owner || owner.bandId === person.bandId) return true;
+    if (ctx.bandRelations.standing(person.bandId, owner.bandId) >= ALLY_STANDING) return true;
+    return !ctx.peopleHash.findNearest(pile.x, pile.y, ctx.sightRadius,
+      other => other.alive && other.id !== person.id && other.bandId === owner.bandId);
+  }
+
   private canUse(person: Person, building: Building, ctx: BrainContext): boolean {
     return !mayUse(person, building, ctx).watched &&
       ctx.world.sameRegion(person.x, person.y, building.centerX, building.centerY);
