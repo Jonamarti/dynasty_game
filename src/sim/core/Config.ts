@@ -349,6 +349,12 @@ export interface ChildhoodConfig {
    * sight feeds them.
    */
   forageYears: number;
+  /** A baby cannot move by itself until it crawls, at this age. */
+  crawlYears: number;
+  /** Old enough to hunt, though slower than an adult. */
+  huntYears: number;
+  /** Runs as fast as an adult from this age. */
+  fullSpeedYears: number;
   /** A baby is carried until it can walk, and walks from this age. */
   walkYears: number;
   /**
@@ -528,6 +534,9 @@ export const DEFAULT_CONFIG: SimConfig = {
     walkYears: 1,
     carryBaby: true,
     forageYears: 4,
+    crawlYears: 10 / 12,
+    huntYears: 8,
+    fullSpeedYears: 12,
   },
   sightRadius: 12,
   thinkInterval: 5,

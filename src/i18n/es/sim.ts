@@ -8,6 +8,8 @@ export const ES_SIM: Record<string, string> = {
   "carrying the baby home": "llevando al bebé a casa",
   "picking up the baby": "cogiendo al bebé en brazos",
   "pick up the baby": "coger al bebé en brazos",
+  "play with the other children": "jugar con los otros niños",
+  "playing with the other children": "jugando con los otros niños",
   "Hunger drive": "Motivo de hambre",
   "Thirst drive": "Motivo de sed",
   "Rest drive": "Motivo de descanso",

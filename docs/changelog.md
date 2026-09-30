@@ -9767,3 +9767,32 @@ fue afortunada o hay algo común que no se ha encontrado. Dentro de lo que veint
 semillas no resuelven; al cerrar la fase se compara el conjunto a cuarenta.
 `npm test` pasa (654 + `feeding.test.ts`; `herding.test.ts` agotó su timeout
 una vez bajo carga y pasa solo). Captura al final de la fase.
+
+## 2026-09-30 — M15 fase 20: crecer por etapas
+
+El calendario del propietario, en `Config.childhood` (`crawlYears` 10/12,
+`huntYears` 8, `fullSpeedYears` 12; `walkYears` y `forageYears` ya existían) y
+en `LifeStage.ts` (`canCrawl`, `canForage`, `canHunt`, `ageSpeed`):
+
+- **Moverse.** Quieto hasta gatear (antes, todo el primer año); a gatas hasta
+  andar; después un niño se mueve a 0,5 hasta los cuatro, a 0,7 hasta los
+  ocho, y de ahí sube de 0,8 a la velocidad adulta a los doce
+  (`MovementSystem.speedOf`). Hasta ahora un niño de tres años seguía el paso
+  de quien recolectaba y corría como un cazador. Un bebé en brazos no piensa.
+- **Qué hace un niño pequeño.** Por debajo de `forageYears` solo juega, come
+  lo que le dan, bebe, descansa, se refugia y vuelve con su cuidador
+  (`YOUNG_CHILD_ACTIONS`, filtro sobre la tabla terminada del `Brain`, como el
+  filtro de necesidad). Recoger bayas y coger del almacén llegan a los cuatro;
+  cazar, a los ocho.
+- **Jugar** (`romp`, «play with the other children» / «jugar con los otros
+  niños»; `play` ya era tocar la flauta). Con otro niño de la banda a la
+  vista, los dos acaban menos solos (30 puntos de compañía cada uno); solo, un
+  poco (8). Cuarenta ticks con comprobación de interrupción.
+- Una orden a un bebé que aún no anda se rechaza con la razón que ya existía.
+
+Medido en `lean` a 20 semillas: 13,5% de supervivencia (17/20 colapsos) frente
+a 16,7% del commit anterior; mortalidad antes del año 0,697 frente a 0,652;
+exposición 317. En tres semillas de `npm run infants` las 36 madres de los
+niños nacidos murieron, 30 de ellas lactando (3,83 por cada 100 personas-día),
+y con ellas todos sus hijos. `npm test` pasa (659 + `life-stages.test.ts`,
+salvo el timeout conocido de `herding.test.ts` bajo carga).

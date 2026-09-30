@@ -169,6 +169,7 @@ export const ACTION_LABELS: Record<string, string> = {
   nurse: 'nursing the baby',
   carry_baby_home: 'carrying the baby home',
   carry_baby: 'picking up the baby',
+  romp: 'playing with the other children',
   steal: 'stealing',
   threaten: 'making a demand',
   attack: 'fighting',

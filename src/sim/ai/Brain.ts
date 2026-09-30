@@ -83,7 +83,7 @@ import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { infantNeedingNursing } from './Nursing.ts';
 import { CHILD_FEED_AT, feederRole } from './Feeding.ts';
-import { isNursling } from '../entities/LifeStage.ts';
+import { canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
 import { expectationRatio, techAppeal } from './Beliefs.ts';
 import { bondBetween } from './Bond.ts';
 import { support } from '../social/Persuasion.ts';
@@ -285,6 +285,8 @@ interface FoundTargets {
   giftee: Person | null;
   giftItem: string | null;
   beneficiary: Person | null;
+  /** Another child to play with, M15 phase 20. */
+  playmate: Person | null;
   /** The mother's hungry infant, for urgent nursing. */
   nursingChild: Person | null;
   /**
@@ -507,6 +509,16 @@ const DEPENDANT_RESERVE = 15;
  * so that the owner's "parents feed the child first" holds at every hunger.
  */
 const PARENT_FEEDS_FIRST = 3.6;
+
+/**
+ * What a child under `childhood.forageYears` may do, M15 phase 20. The owner:
+ * at that age children only play, and they cannot get food for themselves.
+ * `explore` and `ask_water` stay out: a lost toddler looking for water is the
+ * thing the anchor to their carer exists to prevent.
+ */
+const YOUNG_CHILD_ACTIONS: ReadonlySet<string> = new Set([
+  'romp', 'eat', 'drink', 'go_home', 'rest', 'sleep', 'shelter', 'flee', 'talk', 'idle', 'wander',
+]);
 
 /**
  * The verbs `industriousness` pulls away from.
@@ -1093,6 +1105,21 @@ export class Brain {
 
 
     const loneliness = Math.max(drive.company, belongingNeed(person));
+
+    // --- Play (M15 phase 20) ------------------------------------------------
+    // What a small child does with their day. Another child of the band in
+    // sight is the better game; alone, a child plays where they are. Not
+    // offered to children old enough to forage, whose day has work in it.
+    let playmate: Person | null = null;
+    if (person.isChild && !canForage(person, ctx.childhood)) {
+      playmate = this.pickBest(
+        ctx.peopleHash.queryRadius(person.x, person.y, ctx.sightRadius).filter(other =>
+          other.alive && other.id !== person.id && other.isChild && other.bandId === person.bandId &&
+          other.carriedBy === null && ctx.world.sameRegion(person.x, person.y, other.x, other.y)),
+        other => -person.distanceTo(other));
+      add('romp', (0.25 + loneliness * 0.6) *
+        (playmate ? this.proximityBonus(person, playmate, ctx.sightRadius) : 0.6));
+    }
     let companion: Person | null = null;
     let victim: Person | null = null;
     let foe: Person | null = null;
@@ -3354,6 +3381,22 @@ export class Brain {
       }
     }
 
+    // M15 phase 20, the owner's timeline. A child too young to find food only
+    // plays, eats what is given, drinks, rests and keeps to their carer;
+    // picking berries and taking from a store come at `forageYears`, hunting
+    // at `huntYears`. Filtered here, after every term has been scored, for the
+    // reason the need filter above is: one rule over the finished table, not
+    // a condition threaded through forty scorers.
+    if (person.isChild) {
+      const young = !canForage(person, ctx.childhood);
+      const tooYoungToHunt = !canHunt(person, ctx.childhood);
+      let kept = 0;
+      for (const row of scores) {
+        if (young ? YOUNG_CHILD_ACTIONS.has(row.id) : !(tooYoungToHunt && row.id === 'hunt')) scores[kept++] = row;
+      }
+      scores.length = kept;
+    }
+
     scores.sort((a, b) => b.score - a.score);
     lastScores.set(person.id, scores.slice(0, 6));
     lastDrives.set(person.id, drive);
@@ -3361,7 +3404,7 @@ export class Brain {
       scores,
       found: {
         water, foodToEat, waterQuestionPeer, explorePoint, foodNode, pickupPile, pickupItem, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, tradePartner, fleeFrom, fleePoint,
+        victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -4067,6 +4110,13 @@ export class Brain {
           person.targetBuildingId = found.craftStation.id;
           person.targetX = found.craftStation.centerX;
           person.targetY = found.craftStation.centerY;
+        }
+        break;
+      case 'romp':
+        if (found.playmate) {
+          person.targetPersonId = found.playmate.id;
+          person.targetX = found.playmate.x;
+          person.targetY = found.playmate.y;
         }
         break;
       case 'wander': {

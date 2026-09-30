@@ -252,6 +252,9 @@ const COURT_TICKS = 60;
 /** Ticks to show somebody how a thing is done. Longer than any conversation. */
 const TEACH_TICKS = 90;
 
+/** Ticks one bout of play lasts, M15 phase 20. */
+const ROMP_TICKS = 40;
+
 /**
  * Ticks of a friendly training bout. Between a conversation and a lesson.
  *
@@ -690,6 +693,7 @@ export class ActionSystem {
       case 'nurse': this.doNurse(person, ctx); break;
       case 'carry_baby_home': this.doCarryBabyHome(person, ctx); break;
       case 'carry_baby': this.doCarryBaby(person, ctx); break;
+      case 'romp': this.doRomp(person, ctx); break;
       case 'trade': this.doTrade(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
@@ -3878,6 +3882,42 @@ export class ActionSystem {
     }
     telemetry.count('nursing_hunger_relief', NURSING_HUNGER_RELIEF);
     telemetry.count('nursing_thirst_relief', NURSING_THIRST_RELIEF);
+    this.finish(person);
+  }
+
+  /**
+   * A bout of play, M15 phase 20: what a child too young to find food does
+   * with their day (owner, 2026-09-30).
+   *
+   * With another child, it is company the way a conversation is: both come
+   * away less lonely. Alone, a little. Forty ticks is well short of the point
+   * where a long action needs to bank progress, and it still asks
+   * `interruption` every tick, so a child who gets thirsty or cold mid-game
+   * stops.
+   */
+  private doRomp(person: Person, ctx: ActionContext): void {
+    const mate = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
+    if (mate) {
+      if (!mate.alive || mate.carriedBy !== null) {
+        this.abandon(person, 'target_gone', ctx);
+        return;
+      }
+      if (!this.approach(person, ctx)) return;
+    }
+    if (person.actionTimer <= 0) {
+      person.actionTimer = ROMP_TICKS;
+      return;
+    }
+    person.actionTimer--;
+    if (person.actionTimer > 0) {
+      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      if (stop) this.stop(person, stop, ctx, 'romp_');
+      return;
+    }
+    const together = !!mate && person.distanceTo(mate) <= 3;
+    person.needs.company = Math.max(0, person.needs.company - (together ? 30 : 8));
+    if (together) mate.needs.company = Math.max(0, mate.needs.company - 30);
+    telemetry.count(together ? 'romp_together' : 'romp_alone');
     this.finish(person);
   }
 

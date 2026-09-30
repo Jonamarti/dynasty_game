@@ -30,6 +30,8 @@
 import type { World } from '../core/World.ts';
 import { carrySpeedFactor } from '../core/Carry.ts';
 import type { RNG } from '../core/RNG.ts';
+import type { ChildhoodConfig } from '../core/Config.ts';
+import { ageSpeed, canCrawl } from '../entities/LifeStage.ts';
 import type { Person } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { Pathfinder, PathStatus, DEFAULT_MAX_EXPANSIONS } from '../core/Pathfinder.ts';
@@ -307,13 +309,25 @@ export class MovementSystem {
     private readonly rng: RNG,
     private readonly pathfinder: Pathfinder,
     private readonly infantsStill = true,
-    private readonly sledgeSpeed = 0.8
+    private readonly sledgeSpeed = 0.8,
+    private readonly childhood: ChildhoodConfig | null = null
   ) {}
+
+  /**
+   * A baby that cannot move by itself. Before M15 phase 20 that was the whole
+   * first year; now it is until crawling (`childhood.crawlYears`).
+   */
+  private stillBaby(person: Person): boolean {
+    return this.childhood ? !canCrawl(person, this.childhood) : person.isInfant;
+  }
 
   /** Speed for a given person, shared by pathing and direct player control. */
   speedOf(person: Person): number {
     const drag = carrySpeedFactor(person, this.sledgeSpeed);
-    return BASE_SPEED * (1 - person.needs.fatigue / 220) * (0.5 + (person.health / 100) * 0.5) * drag;
+    // M15 phase 20: a child moves at their age's pace, not an adult's. Before
+    // this a three-year-old kept up with a forager and outran a deer hunt.
+    const age = this.childhood && person.isChild ? ageSpeed(person, this.childhood) : 1;
+    return BASE_SPEED * (1 - person.needs.fatigue / 220) * (0.5 + (person.health / 100) * 0.5) * drag * age;
   }
 
   /**
@@ -325,7 +339,7 @@ export class MovementSystem {
     // Keep infant movement coupled to the same ablation as the AI freeze. If
     // only thinking were gated, the baseline comparison would still contain
     // part of the rule in direct control and in stale walking targets.
-    if (person.isInfant && this.infantsStill) return;
+    if (this.infantsStill && this.stillBaby(person)) return;
     const length = Math.sqrt(dx * dx + dy * dy);
     if (length === 0) return;
     const speed = this.speedOf(person);
@@ -360,7 +374,7 @@ export class MovementSystem {
    * ordered and a wander nobody did.
    */
   advance(person: Person, tick: number): Arrival {
-    if (person.isInfant && this.infantsStill) return Arrival.Arrived;
+    if (this.infantsStill && this.stillBaby(person)) return Arrival.Arrived;
     if (person.targetX === null || person.targetY === null) return Arrival.Arrived;
 
     const dx = person.targetX - person.x;

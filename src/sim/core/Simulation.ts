@@ -31,7 +31,7 @@ import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
 import { drivePressures, DRIVES } from '../ai/Drives.ts';
 import { babyToCarry, infantNeedingNursing, infantOutsideHome } from '../ai/Nursing.ts';
-import { canWalk, isNursling } from '../entities/LifeStage.ts';
+import { canCrawl, canWalk, isNursling } from '../entities/LifeStage.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -175,6 +175,7 @@ const RESUME_WINDOW = 2000;
 export const ORDER_WORDS: Record<string, string> = {
   nurse: 'nurse the baby',
   carry_baby: 'pick up the baby',
+  romp: 'play with the other children',
   sabotage: 'wreck a rival building',
   take: 'take from a rival store',
   build: 'work on a building',
@@ -514,7 +515,7 @@ export class Simulation {
     this.needsSystem = new NeedsSystem(this.config.needs);
     this.pathfinder = new Pathfinder(this.world);
     this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder,
-      this.config.motivation.infantsStill, this.config.carry.sledgeSpeed);
+      this.config.motivation.infantsStill, this.config.carry.sledgeSpeed, this.config.childhood);
     this.social = new SocialSystem(
       this.relationships, this.normsByBand, this.bandRelations, this.strangerRegardByBand);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
@@ -2588,7 +2589,7 @@ export class Simulation {
     } = {}
   ): boolean {
     if (!person.alive) return false;
-    if (person.isInfant) {
+    if (!canWalk(person, this.config.childhood)) {
       this.lastRefusal = t('babies cannot act on their own');
       return false;
     }
@@ -3963,7 +3964,9 @@ export class Simulation {
       // The first year is before walking: the baby rests where born until a
       // carrier system exists. Letting its own needs choose `forage` or `drink`
       // made newborns roam and feed themselves like small adults.
-      if (person.isInfant && this.config.motivation.infantsStill) {
+      // M15 phase 20: until crawling, and whenever somebody is carrying them.
+      if (this.config.motivation.infantsStill &&
+          (!canCrawl(person, this.config.childhood) || person.carriedBy !== null)) {
         person.forgetPlans();
         person.action = 'idle';
         continue;
