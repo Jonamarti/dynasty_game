@@ -319,6 +319,26 @@ export interface CarryConfig {
   handledDays: number;
 }
 
+/**
+ * How a child grows up. Ages are in game years.
+ *
+ * The owner set the timeline on 2026-09-30, after `npm run infants` showed
+ * two of every three children who died had lost their mother first, and that
+ * an orphaned baby had nobody else who could feed it. Each field arrives with
+ * the code that reads it.
+ */
+export interface ChildhoodConfig {
+  /** Breastfed until this age; weaned afterwards and fed by hand. */
+  weanYears: number;
+  /**
+   * Any lactating woman of the band nurses a crying baby whose own mother is
+   * not there to — the wet nursing every historical band relied on.
+   */
+  wetNursing: boolean;
+  /** Hunger a nursing woman takes on for each point of hunger she relieves. */
+  nursingCost: number;
+}
+
 export interface SimConfig {
   seed: number | string;
   world: WorldConfig;
@@ -330,6 +350,7 @@ export interface SimConfig {
   ai: AiConfig;
   motivation: MotivationConfig;
   carry: CarryConfig;
+  childhood: ChildhoodConfig;
   /** Tiles a person can see; the radius of witness and target queries. */
   sightRadius: number;
   /** A person re-scores their action every this many ticks (staggered by id). */
@@ -477,6 +498,14 @@ export const DEFAULT_CONFIG: SimConfig = {
     handledReach: 2,
     handledDays: 3,
   },
+  childhood: {
+    weanYears: 2,
+    wetNursing: true,
+    // A session relieves up to 45 points of a baby's hunger, so a quarter of
+    // that is about eleven points for the one nursing: real, and well short of
+    // a meal, which is what milk costs a mother in food.
+    nursingCost: 0.25,
+  },
   sightRadius: 12,
   thinkInterval: 5,
 };
@@ -508,6 +537,7 @@ export function makeConfig(overrides: DeepPartial<SimConfig> = {}): SimConfig {
       childRadius: { ...DEFAULT_CONFIG.motivation.childRadius, ...overrides.motivation?.childRadius },
     },
     carry: { ...DEFAULT_CONFIG.carry, ...overrides.carry },
+    childhood: { ...DEFAULT_CONFIG.childhood, ...overrides.childhood },
   } as SimConfig;
 }
 

@@ -29,6 +29,14 @@ Las veinte semillas no muestran más exposición (218 frente a 247), así que no
 atribuye al cambio; pero que nadie se refugie con el frío en 63 merece mirarse
 aparte con `npm run why`.
 
+**Lactancia hasta los dos años (fase 20, primer commit).** Con las reglas del
+propietario la mortalidad antes del año sube de 0,568 a 0,636 y la
+supervivencia `lean` baja de 25,0% a 19,5%. Las ablaciones por `--set` señalan
+la carga sobre la madre (`nursingCost=0` 0,518; `weanYears=1` 0,490), no las
+nodrizas (`wetNursing=false` 0,713). Debe volver a medirse cuando la madre
+lleve al bebé encima; si no se recupera, la decisión de cuánto cuesta la leche
+es del propietario.
+
 **Lo que `npm run infants` encontró y queda abierto** (tres semillas `lean`):
 dos de cada tres niños que mueren lo hacen después que su madre, y el 85% de
 esas madres muere de hambre mientras cría a un lactante; los huérfanos de pecho

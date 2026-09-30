@@ -2,6 +2,9 @@ import type { Person } from '../entities/Person.ts';
 import type { World } from '../core/World.ts';
 import type { Household } from '../entities/Household.ts';
 import type { Building } from '../entities/Building.ts';
+import type { ChildhoodConfig } from '../core/Config.ts';
+import type { SpatialHash } from '../core/SpatialHash.ts';
+import { isLactating, isNursling } from '../entities/LifeStage.ts';
 
 /** A baby cries for care before either lethal need reaches its danger line. */
 export const NURSING_HUNGER = 30;
@@ -37,26 +40,82 @@ export function infantOutsideHome(
   ) ?? null;
 }
 
-/** The most urgent living infant of this mother, found through her direct family links. */
+/**
+ * Reused by the wet-nursing search, which runs every tick for every woman
+ * with milk (`Simulation`'s cry override is per tick, not per think).
+ */
+const nearbyScratch: Person[] = [];
+
+/** How loudly a baby is crying for the breast, 0 when it is not. */
+function cryOf(child: Person): number {
+  const hunger = child.needs.hunger >= NURSING_HUNGER ? child.needs.hunger / NURSING_HUNGER : 0;
+  const thirst = child.needs.thirst >= NURSING_THIRST ? child.needs.thirst / NURSING_THIRST : 0;
+  return Math.max(hunger, thirst);
+}
+
+/**
+ * The baby this woman should nurse now, if any.
+ *
+ * Her own first, found through her direct family links: a mother answers her
+ * own child's cry before anybody else's. Then, with `wetNursing` on and milk
+ * of her own (`isLactating`), a baby of her band crying within sight of her
+ * whose own mother is not there to answer it — dead, taken, or simply out of
+ * sight of the child. Every historical band relied on this, and without it
+ * `lean` lost 21 of 22 babies whose mothers died first (owner, 2026-09-30).
+ *
+ * "Not there" is read from what the nurse can see, never from a registry:
+ * she hears a baby crying and sees no mother with it. A mother who is merely
+ * on her way back is out of sight too, and the nurse answering in the
+ * meantime is what a camp of women with babies does.
+ */
 export function infantNeedingNursing(
-  mother: Person,
+  nurse: Person,
   peopleById: ReadonlyMap<number, Person>,
-  world: World
+  world: World,
+  childhood: ChildhoodConfig,
+  peopleHash?: SpatialHash<Person>,
+  sightRadius = 0
 ): Person | null {
   let chosen: Person | null = null;
   let highestNeed = 0;
-  for (const id of mother.childIds) {
+  for (const id of nurse.childIds) {
     const child = peopleById.get(id);
-    if (!child?.alive || child.motherId !== mother.id || !child.isInfant ||
-      child.bandId !== mother.bandId || child.captiveOf !== null ||
-      !world.sameRegion(mother.x, mother.y, child.x, child.y)) continue;
-    const hunger = child.needs.hunger >= NURSING_HUNGER ? child.needs.hunger / NURSING_HUNGER : 0;
-    const thirst = child.needs.thirst >= NURSING_THIRST ? child.needs.thirst / NURSING_THIRST : 0;
-    const need = Math.max(hunger, thirst);
+    if (!child?.alive || child.motherId !== nurse.id || !isNursling(child, childhood) ||
+      child.bandId !== nurse.bandId || child.captiveOf !== null ||
+      !world.sameRegion(nurse.x, nurse.y, child.x, child.y)) continue;
+    const need = cryOf(child);
     if (need > highestNeed) {
       highestNeed = need;
       chosen = child;
     }
   }
+  if (chosen || !childhood.wetNursing || !peopleHash || nurse.captiveOf !== null ||
+    !isLactating(nurse, peopleById, childhood)) return chosen;
+
+  for (const child of peopleHash.queryRadius(nurse.x, nurse.y, sightRadius, nearbyScratch)) {
+    if (!child.alive || child.motherId === nurse.id || child.bandId !== nurse.bandId ||
+      child.captiveOf !== null || !isNursling(child, childhood) ||
+      !world.sameRegion(nurse.x, nurse.y, child.x, child.y)) continue;
+    const need = cryOf(child);
+    if (need <= highestNeed) continue;
+    const mother = child.motherId === null ? undefined : peopleById.get(child.motherId);
+    const motherThere = !!mother?.alive && mother.captiveOf === null &&
+      Math.hypot(mother.x - child.x, mother.y - child.y) <= sightRadius;
+    if (motherThere) continue;
+    highestNeed = need;
+    chosen = child;
+  }
   return chosen;
+}
+
+/** Whether this woman may nurse this baby: her own, or a band baby she has milk for. */
+export function mayNurse(
+  nurse: Person,
+  baby: Person,
+  peopleById: ReadonlyMap<number, Person>,
+  childhood: ChildhoodConfig
+): boolean {
+  if (!baby.alive || !isNursling(baby, childhood)) return false;
+  if (baby.motherId === nurse.id) return true;
+  return childhood.wetNursing && baby.bandId === nurse.bandId && isLactating(nurse, peopleById, childhood);
 }

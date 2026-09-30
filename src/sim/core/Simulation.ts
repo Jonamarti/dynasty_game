@@ -3835,6 +3835,7 @@ export class Simulation {
       averageRenownByBand: averageRenownByBand(this.householdsById),
       buildingsById: this.buildingsById,
       peopleById: this.peopleById,
+      childhood: this.config.childhood,
       dependentHunger: (person: Person) => person.childIds.reduce((highest, id) => {
         const child = this.peopleById.get(id);
         if (!child?.alive || !child.isChild ||
@@ -3861,6 +3862,7 @@ export class Simulation {
       relationships: this.relationships,
       onTreeFelled: (tree: Tree) => this.removeTree(tree),
       peopleById: this.peopleById,
+      childhood: this.config.childhood,
       householdsById: this.householdsById,
       childAwayFromCarer: (person: Person) => {
         if (!person.isChild || person.action === 'go_home') return false;
@@ -3980,7 +3982,8 @@ export class Simulation {
 
       const underAttack = assailantOf(person, id => this.peopleById.get(id), this.time.tick) !== null;
       const urgentBaby = underAttack || !this.config.motivation.urgentNursing
-        ? null : infantNeedingNursing(person, this.peopleById, this.world);
+        ? null : infantNeedingNursing(person, this.peopleById, this.world, this.config.childhood,
+          this.peopleHash, this.config.sightRadius);
       const activeNursing = this.config.motivation.urgentNursing && person.action === 'nurse';
       const activeCarry = this.config.motivation.babyToHouse && person.action === 'carry_baby_home';
       const currentBaby = activeNursing && person.targetPersonId !== null

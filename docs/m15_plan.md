@@ -1922,6 +1922,18 @@ de `century` no cae más de **8 puntos** (decisión aprobada). Check
 `infants-are-carried`: ningún bebé a más de un paso de quien lo lleva, salvo
 en una cuna.
 
+**Avance del 2026-09-30 (adelantada por decisión del propietario).** El
+propietario fijó el calendario de la infancia: gatear a los 10 meses, andar al
+año, destete a los 2 (hasta entonces solo leche; después comen de todo, pero
+otros tienen que dárselo), recoger bayas a los 4 (aún necesitan comida cocinada
+o del almacén), cazar a los 8 más despacio que un adulto, correr como un adulto
+a los 12; los niños pequeños solo juegan. Los padres dan de comer al hijo
+primero. Cualquier lactante de la banda puede amamantar. La madre lleva al bebé
+en un brazo (ocupa una mano) o, con la bandolera de piel, sin manos, y lo
+amamanta donde esté a costa de algo de su comida. Primer commit: lactancia
+hasta los dos años, nodrizas y coste de la leche (ver changelog). Siguen:
+llevar al bebé encima; los padres alimentan primero; las etapas de edad.
+
 ## Fase 21 — Anatomía, heridas y enfermedad (M14 fase 7)
 
 **Detalle en `m14_plan.md` fase 7.** Seis partes del cuerpo con daño y estado

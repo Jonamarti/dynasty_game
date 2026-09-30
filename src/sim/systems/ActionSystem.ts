@@ -12,7 +12,7 @@
  */
 import type { Person } from '../entities/Person.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
-import { homeForMother, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF } from '../ai/Nursing.ts';
+import { homeForMother, mayNurse, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF } from '../ai/Nursing.ts';
 import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
@@ -42,7 +42,7 @@ import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
 import {
   INSCRIPTIONS, type Inscription, type InscriptionDef, type InscriptionForm,
 } from '../entities/Inscription.ts';
-import type { CarryConfig, MotivationConfig, NeedsConfig } from '../core/Config.ts';
+import type { CarryConfig, ChildhoodConfig, MotivationConfig, NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { bestFoodFor, consumeFood, consumeFoodAtSource } from '../core/Macros.ts';
 import { expectedFood } from '../ai/Beliefs.ts';
@@ -91,6 +91,7 @@ export interface ActionContext {
   /** Called when a tree is felled, so the world can remove it. */
   onTreeFelled: (tree: Tree, feller: Person) => void;
   peopleById: Map<number, Person>;
+  childhood: ChildhoodConfig;
   householdsById: Map<number, Household>;
   /** Whether a walking child has fallen outside their carer's close-family radius. */
   childAwayFromCarer: (person: Person) => boolean;
@@ -3811,7 +3812,7 @@ export class ActionSystem {
 
   private doNurse(person: Person, ctx: ActionContext): void {
     const baby = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
-    if (!baby?.alive || !baby.isInfant || baby.motherId !== person.id) {
+    if (!baby || !mayNurse(person, baby, ctx.peopleById, ctx.childhood)) {
       this.abandon(person, 'target_gone', ctx);
       return;
     }
@@ -3849,9 +3850,16 @@ export class ActionSystem {
       return;
     }
 
-    baby.needs.hunger = Math.max(0, baby.needs.hunger - NURSING_HUNGER_RELIEF);
+    // Milk is made from the nurse's own food: she takes on a share of what
+    // she relieves, so a band that is starving cannot feed its babies for
+    // free. Charged on the hunger actually relieved, not the session's
+    // ceiling, so topping up a baby that was barely crying costs little.
+    const relieved = Math.min(baby.needs.hunger, NURSING_HUNGER_RELIEF);
+    baby.needs.hunger -= relieved;
     baby.needs.thirst = Math.max(0, baby.needs.thirst - NURSING_THIRST_RELIEF);
+    person.needs.hunger = Math.min(100, person.needs.hunger + relieved * ctx.childhood.nursingCost);
     telemetry.count('nursing_sessions');
+    if (baby.motherId !== person.id) telemetry.count('wet_nursing_sessions');
     telemetry.count('nursing_hunger_relief', NURSING_HUNGER_RELIEF);
     telemetry.count('nursing_thirst_relief', NURSING_THIRST_RELIEF);
     this.finish(person);

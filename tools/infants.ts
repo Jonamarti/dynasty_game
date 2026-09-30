@@ -254,6 +254,7 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
   }
   for (const [k, v] of Object.entries(telemetry.snapshot())) {
     if (/^interrupted_.*_(hungry|thirsty|cold)$/.test(k)) bump(interrupts, k.replace(/^interrupted_/, ''), v as number);
+    if (k === 'nursing_sessions' || k === 'wet_nursing_sessions') bump(nursingCounts, k, v as number);
   }
   telemetry.disable();
   return { sim, children, tpd, steps };
@@ -270,6 +271,7 @@ const hungryAudit = new Map<string, number>();
 const hungryTotals = new Map<string, number>();
 const noFoodWhy = new Map<string, number>();
 const interrupts = new Map<string, number>();
+const nursingCounts = new Map<string, number>();
 const budget = new Map<string, Map<string, number>>();
 const cutShort = new Map<string, number>();
 const prevAction = new Map<number, string>();
@@ -350,6 +352,7 @@ console.log(`HUNGRY ADULTS NOT GETTING FOOD (samples: ${top(hungryTotals, 3)})`)
 for (const [k, v] of [...hungryAudit.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25)) console.log(`  ${String(v).padStart(6)}  ${k}`);
 console.log(`NO FOOD OPTION, WHY`);
 for (const [k, v] of [...noFoodWhy.entries()].sort((a, b) => b[1] - a[1]).slice(0, 16)) console.log(`  ${String(v).padStart(6)}  ${k}`);
+console.log(`NURSING  ${[...nursingCounts.entries()].map(([k, v]) => `${k} ${v}`).join(' · ')}`);
 console.log(`CUT OFF BY A NEED (action_need: count)`);
 console.log('  ' + [...interrupts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 24).map(([k, v]) => `${k} ${v}`).join(' · '));
 console.log(`BABY CARE CUT SHORT ${[...cutShort.values()].reduce((a, b) => a + b, 0)} times: ${top(cutShort, 12)}`);

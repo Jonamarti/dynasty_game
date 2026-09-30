@@ -79,7 +79,7 @@ import {
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
 import { purposeAppetite, sensitivity } from './Temperament.ts';
 import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
-import type { MotivationConfig } from '../core/Config.ts';
+import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { infantNeedingNursing } from './Nursing.ts';
 import { expectationRatio, techAppeal } from './Beliefs.ts';
@@ -176,6 +176,7 @@ export interface BrainContext {
    * without is not optional.
    */
   peopleById: ReadonlyMap<number, Person>;
+  childhood: ChildhoodConfig;
   /** For `mayUse`'s reading of how two bands currently stand. */
   bandRelations: BandRelations;
   /**
@@ -1088,8 +1089,8 @@ export class Brain {
     let foe: Person | null = null;
     let beneficiary: Person | null = null;
     let nursingChild: Person | null = null;
-    nursingChild = ctx.motivation.urgentNursing && ctx.peopleById
-      ? infantNeedingNursing(person, ctx.peopleById, ctx.world) : null;
+    nursingChild = ctx.motivation.urgentNursing
+      ? infantNeedingNursing(person, ctx.peopleById, ctx.world, ctx.childhood, ctx.peopleHash, ctx.sightRadius) : null;
     if (nursingChild) {
       // Simulation also interrupts committed work immediately; this makes the
       // overriding care need visible in `why` and ordinary replanning.

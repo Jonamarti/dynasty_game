@@ -9664,3 +9664,41 @@ invierno (35 muertes por exposición, nadie se refugia; 48/63 frente a 59/67);
 las veinte semillas no muestran más frío, así que se trata como divergencia de
 esa semilla y queda anotado en `bugs.md`. Los demás escenarios salen idénticos.
 `npm test` pasa entero. Sin cambio de interfaz.
+
+## 2026-09-30 — M15 fase 20: lactancia hasta los dos años, nodrizas y el coste de la leche
+
+Decisión del propietario (2026-09-30), tras el diagnóstico de `npm run infants`:
+se amamanta hasta los dos años; cualquier mujer lactante de la banda puede
+amamantar; la leche cuesta algo de comida a quien la da. `Config.childhood`
+(nuevo) guarda `weanYears` (2), `wetNursing` y `nursingCost`; cada campo entra
+con su lector. `entities/LifeStage.ts` (nuevo) responde `isNursling` y
+`isLactating` en un solo sitio; la lactancia se lee del bebé vivo, no se guarda.
+
+`infantNeedingNursing` busca primero a los hijos propios y después, si la mujer
+tiene leche, a un bebé de su banda que llora a la vista cuya madre no está a la
+vista del bebé (muerta, cautiva o lejos): lo que la nodriza oye y ve, nunca un
+registro. `doNurse` admite a la nodriza (`mayNurse`) y cobra a quien amamanta
+`nursingCost` × el hambre realmente aliviada. 0,25 no es un número afinado:
+un bebé acumula unos 13 puntos de hambre al día, así que amamantarlo cuesta
+unos 3,3 al día a la madre, un cuarto más de comida, que es lo que cuesta la
+lactancia humana.
+
+Medido en `lean` a 20 semillas, con la mortalidad antes del año (unos 270
+nacimientos por cohorte) como lectura principal:
+
+| cohorte | mortalidad <1 año | supervivencia |
+|---|---|---|
+| commit anterior | 0,568 | 25,0% |
+| este commit | 0,636 | 19,5% |
+| `nursingCost=0` | 0,518 | 24,1% |
+| `weanYears=1` | 0,490 | 20,8% |
+| `wetNursing=false` | 0,713 | 18,3% |
+
+Las nodrizas salvan bebés (0,713 → 0,636); lo que los mata es la carga sobre la
+madre: dos años de tomas y el coste de cada una, con el bebé en casa y la madre
+yendo y volviendo. Se conservan los valores del propietario y no se retoca el
+coste para recuperar la cifra: el contrapeso previsto es el siguiente commit,
+en que la madre lleva al bebé encima y amamanta donde esté. Supervivencia
+-5,5 puntos, al borde del ruido de veinte semillas; anotado en `bugs.md`.
+`npm test` pasa entero (649, con `wet-nursing.test.ts` nuevo). Sin cambio de
+interfaz.
