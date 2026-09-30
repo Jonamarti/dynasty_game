@@ -3,7 +3,7 @@ export const ES_SIM: Record<string, string> = {
   "Variety drive": "Motivo de variedad",
   "Safety drive": "Motivo de seguridad",
   "safety": "seguridad",
-  "only their mother can feed this baby": "solo su madre puede alimentar a este bebé",
+  "a baby this young only takes milk": "un bebé tan pequeño solo toma leche",
   "their arms are already full": "ya tiene los brazos ocupados",
   "carrying the baby home": "llevando al bebé a casa",
   "picking up the baby": "cogiendo al bebé en brazos",

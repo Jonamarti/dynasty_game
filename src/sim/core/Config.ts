@@ -263,6 +263,12 @@ export interface MotivationConfig {
   nightSleep: boolean;
   infantsStill: boolean;
   urgentNursing: boolean;
+  /**
+   * A baby at the breast is fed only by nursing, never by hand. The name is
+   * M13's, when only the mother could feed an infant; since M15 phase 20 any
+   * lactating woman nurses (`childhood.wetNursing`) and nobody hand-feeds a
+   * nursling. Off, anybody may hand a nursling food.
+   */
   motherOnlyFeeds: boolean;
   babyToHouse: boolean;
   kinDefence: boolean;
@@ -337,6 +343,12 @@ export interface ChildhoodConfig {
   wetNursing: boolean;
   /** Hunger a nursing woman takes on for each point of hunger she relieves. */
   nursingCost: number;
+  /**
+   * Below this age a weaned child cannot find food for themselves and is fed
+   * by the band: a bandmate who sees one hungry with no parent of theirs in
+   * sight feeds them.
+   */
+  forageYears: number;
   /** A baby is carried until it can walk, and walks from this age. */
   walkYears: number;
   /**
@@ -515,6 +527,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     nursingCost: 0.25,
     walkYears: 1,
     carryBaby: true,
+    forageYears: 4,
   },
   sightRadius: 12,
   thinkInterval: 5,

@@ -322,7 +322,7 @@ export const STOP_REASONS: Record<string, string> = {
   // they reached the store.
   store_item_gone: 'they no longer had it to store',
   nothing_to_give: 'they had nothing to give',
-  not_the_mother: 'only their mother can feed this baby',
+  still_nursing: 'a baby this young only takes milk',
   arms_full: 'their arms are already full',
   // M11 phase 13f: the one reason `abandon` used that had no words, so a
   // trade that fell through said "nothing to trade" in the code's own voice.

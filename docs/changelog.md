@@ -9733,3 +9733,37 @@ por cada 100 personas-día) y pasan el 24% del tiempo paradas; la causa se
 investiga en el commit siguiente, no es la carga (van con las manos vacías).
 `npm test` pasa entero (654, con `baby-carrying.test.ts` nuevo). Captura al
 final de esta fase.
+
+## 2026-09-30 — M15 fase 20: los padres dan de comer al hijo primero
+
+Decisión del propietario: los padres dan de comer al hijo antes que a sí
+mismos; destetado, un niño pequeño no sabe conseguir comida y se la dan sus
+padres u otros de la tribu. `ai/Feeding.ts` (nuevo) decide con un solo
+predicado, `feederRole`, para el `Brain` que elige dar de comer y el
+`ActionSystem` que lo hace; cada uno llevaba su copia de «más hambriento que el
+padre por cinco», y en `lean` la madre tenía más hambre que el niño en el 79% de
+los ticks en que el niño estaba en peligro, así que no le daba nada.
+
+- Un padre (o alguien de su hogar) da de comer a un hijo destetado con hambre
+  desde `CHILD_FEED_AT` (30), de lo que lleve, sin reserva propia, con una
+  puntuación (`PARENT_FEEDS_FIRST`, 3,6) por encima de lo más que puede valer
+  su propio `eat`.
+- Un compañero de banda da de comer a un niño menor de `childhood.forageYears`
+  (4, nuevo) si lo ve con hambre y sin ninguno de sus padres a la vista, de lo
+  que le sobre.
+- Un lactante no come de la mano de nadie (`still_nursing`, «a baby this young
+  only takes milk»), en lugar de «solo su madre puede alimentarlo».
+- `dependentHunger` (el impulso de recolectar para los hijos) ya no se compara
+  con el hambre del padre.
+- Corregido de paso: `other.householdId === person.householdId` era cierto
+  para dos personas sin hogar (`null === null`), así que cualquiera sin hogar
+  contaba como de la familia de cualquier niño sin hogar.
+
+Medido en `lean` a 20 semillas: niños mayores muertos de hambre 36 frente a 59;
+mortalidad antes del año 0,652 frente a 0,598; supervivencia 16,7% frente a
+21,8% (14/20 colapsos). Las muertes por exposición suben de 224 a 305, igual
+que en el experimento revertido del sitio recordado (302): o la cohorte de 224
+fue afortunada o hay algo común que no se ha encontrado. Dentro de lo que veinte
+semillas no resuelven; al cerrar la fase se compara el conjunto a cuarenta.
+`npm test` pasa (654 + `feeding.test.ts`; `herding.test.ts` agotó su timeout
+una vez bajo carga y pasa solo). Captura al final de la fase.

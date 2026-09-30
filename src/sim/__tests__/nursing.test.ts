@@ -135,7 +135,7 @@ describe('urgent maternal nursing', () => {
     for (let i = 0; i < 40; i++) sim.step();
 
     expect(baby.inventory.count('berries')).toBe(foodBefore);
-    expect(sim.interruptions.some(stop => stop.reason === 'not_the_mother')).toBe(true);
+    expect(sim.interruptions.some(stop => stop.reason === 'still_nursing')).toBe(true);
   });
 
   it('allows a non-mother to feed an infant when the rule is ablated', () => {
@@ -156,7 +156,7 @@ describe('urgent maternal nursing', () => {
     for (let i = 0; i < 40; i++) sim.step();
 
     expect(baby.inventory.count('berries')).toBeGreaterThan(0);
-    expect(sim.interruptions.some(stop => stop.reason === 'not_the_mother')).toBe(false);
+    expect(sim.interruptions.some(stop => stop.reason === 'still_nursing')).toBe(false);
   });
 
   it('lets a hungry parent finish giving food to a hungrier child', () => {

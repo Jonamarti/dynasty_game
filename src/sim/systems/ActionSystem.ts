@@ -12,7 +12,8 @@
  */
 import type { Person } from '../entities/Person.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
-import { canWalk } from '../entities/LifeStage.ts';
+import { canWalk, isNursling } from '../entities/LifeStage.ts';
+import { feederRole } from '../ai/Feeding.ts';
 import { homeForMother, mayNurse, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF } from '../ai/Nursing.ts';
 import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
@@ -3939,10 +3940,10 @@ export class ActionSystem {
   private doGive(person: Person, ctx: ActionContext): void {
     const other = this.approach(person, ctx);
     if (!other) return;
-    const feedsDependentChild = person.targetItemId === null && other.isChild &&
-      (person.childIds.includes(other.id) ||
-        (person.householdId !== null && other.householdId === person.householdId)) &&
-      other.needs.hunger > person.needs.hunger + 5;
+    // The same predicate the scorer used to choose this, so the handover is a
+    // meal whenever feeding was the reason for it (M15 phase 20).
+    const feedsDependentChild = person.targetItemId === null &&
+      feederRole(person, other, ctx.childhood, ctx.peopleById, ctx.sightRadius) !== null;
 
     if (person.actionTimer <= 0) {
       person.actionTimer = GIVE_TICKS;
@@ -3973,8 +3974,10 @@ export class ActionSystem {
       return;
     }
 
-    if (ctx.motivation.motherOnlyFeeds && other.isInfant && other.motherId !== person.id) {
-      this.abandon(person, 'not_the_mother', ctx);
+    // A baby at the breast takes nothing else (owner, M15 phase 20), from its
+    // mother or anybody: before weaning it is nursed, never fed by hand.
+    if (ctx.motivation.motherOnlyFeeds && isNursling(other, ctx.childhood)) {
+      this.abandon(person, 'still_nursing', ctx);
       return;
     }
 

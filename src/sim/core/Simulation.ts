@@ -31,7 +31,7 @@ import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
 import { drivePressures, DRIVES } from '../ai/Drives.ts';
 import { babyToCarry, infantNeedingNursing, infantOutsideHome } from '../ai/Nursing.ts';
-import { canWalk } from '../entities/LifeStage.ts';
+import { canWalk, isNursling } from '../entities/LifeStage.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -3838,11 +3838,13 @@ export class Simulation {
       buildingsById: this.buildingsById,
       peopleById: this.peopleById,
       childhood: this.config.childhood,
+      // The hungriest weaned child this parent feeds, for the forage drive.
+      // No longer compared with the parent's own hunger: parents feed their
+      // child first (owner, M15 phase 20), so a hungry parent still forages
+      // for a hungry child.
       dependentHunger: (person: Person) => person.childIds.reduce((highest, id) => {
         const child = this.peopleById.get(id);
-        if (!child?.alive || !child.isChild ||
-            (child.isInfant && this.config.motivation.motherOnlyFeeds && child.motherId !== person.id) ||
-            child.needs.hunger <= person.needs.hunger + 5) return highest;
+        if (!child?.alive || !child.isChild || isNursling(child, this.config.childhood)) return highest;
         return Math.max(highest, child.needs.hunger);
       }, 0),
       motivation: this.config.motivation,

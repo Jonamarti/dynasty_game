@@ -82,6 +82,8 @@ import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { infantNeedingNursing } from './Nursing.ts';
+import { CHILD_FEED_AT, feederRole } from './Feeding.ts';
+import { isNursling } from '../entities/LifeStage.ts';
 import { expectationRatio, techAppeal } from './Beliefs.ts';
 import { bondBetween } from './Bond.ts';
 import { support } from '../social/Persuasion.ts';
@@ -498,6 +500,13 @@ function possessionPull(person: Person, ctx: BrainContext): number {
  * how a band fails to raise a second generation.
  */
 const DEPENDANT_RESERVE = 15;
+
+/**
+ * The base of a parent's `feed` score, M15 phase 20: above the most a hungry
+ * parent's own `eat` can reach (3.2 at full hunger, plus the variety term),
+ * so that the owner's "parents feed the child first" holds at every hunger.
+ */
+const PARENT_FEEDS_FIRST = 3.6;
 
 /**
  * The verbs `industriousness` pulls away from.
@@ -1498,22 +1507,37 @@ export class Brain {
       // and toddlers — ages 0, 0, 0, 1, 3, 3, 5 in one two-year sample — while
       // their parents walked around holding food they were not desperate enough
       // to part with.
+      //
+      // M15 phase 20 (owner, 2026-09-30): parents feed their child *first*.
+      // The old gate fed a child only when it was hungrier than the parent by
+      // five, from food above the parent's own hunger plus a reserve; in a
+      // famine the parent is always the hungrier, so the child was never fed.
+      // A parent now hands over whatever they carry, and the score sits above
+      // their own `eat` (at most 3.2 plus the variety term), so the child eats
+      // before they do. A bandmate feeds a small child found hungry with no
+      // parent in sight, from what they can spare; see `feederRole`.
       const carriedNut = this.carriedNutrition(person);
-      const dependants = neighbours.filter(other =>
-        other.isChild &&
-        (!other.isInfant || !ctx.motivation.motherOnlyFeeds || other.motherId === person.id) &&
-        (person.childIds.includes(other.id) || other.householdId === person.householdId) &&
-        other.needs.hunger > person.needs.hunger + 5
-      );
-      const spareForKin = carriedNut - person.needs.hunger - DEPENDANT_RESERVE;
+      const roleOf = (other: Person) => other.needs.hunger >= CHILD_FEED_AT
+        ? feederRole(person, other, ctx.childhood, ctx.peopleById, ctx.sightRadius) : null;
+      const ownChildren = carriedNut > 0 ? neighbours.filter(other => roleOf(other) === 'parent') : [];
+      const bandChildren = ownChildren.length === 0 &&
+        carriedNut - person.needs.hunger - DEPENDANT_RESERVE > 0
+        ? neighbours.filter(other => roleOf(other) === 'band') : [];
       const spareFood = carriedNut - person.needs.hunger - GIVING_RESERVE;
 
-      if (spareForKin > 0 && dependants.length > 0) {
-        beneficiary = this.pickBest(dependants,
+      if (ownChildren.length > 0) {
+        beneficiary = this.pickBest(ownChildren,
           other => other.needs.hunger - person.distanceTo(other) * 2);
         if (beneficiary) {
-          // Scored well above ordinary giving and barely weighted by
-          // temperament: a greedy parent still feeds their own child.
+          add('feed', (PARENT_FEEDS_FIRST + (beneficiary.needs.hunger / 100) * 1.4)
+            * this.proximityBonus(person, beneficiary, ctx.sightRadius));
+        }
+      } else if (bandChildren.length > 0) {
+        beneficiary = this.pickBest(bandChildren,
+          other => other.needs.hunger - person.distanceTo(other) * 2);
+        if (beneficiary) {
+          // Scored as feeding used to be for one's own: well above ordinary
+          // giving and barely weighted by temperament.
           add('feed', (0.8 + (beneficiary.needs.hunger / 100) * 1.4)
             * (1 - person.traits.greed * 0.25)
             * this.proximityBonus(person, beneficiary, ctx.sightRadius));
@@ -1522,7 +1546,7 @@ export class Brain {
         // And only ever to someone hungrier than you. Generosity that flows
         // uphill is just an infinite loop with good manners.
         const hungrier = neighbours.filter(other =>
-          !other.isInfant && other.needs.hunger > person.needs.hunger + 15
+          !isNursling(other, ctx.childhood) && other.needs.hunger > person.needs.hunger + 15
         );
         beneficiary = this.pickBest(hungrier, other => {
           const regard = ctx.relationships.opinion(person.id, other.id);
