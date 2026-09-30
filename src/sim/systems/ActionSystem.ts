@@ -976,7 +976,16 @@ export class ActionSystem {
       this.finish(person);
       return;
     }
-    const stop = this.interruption(person, ctx, { ignoreLaden: true, answers: 'thirst' });
+    // Exploring answers whichever need sent this person out: water when the
+    // scorer found no source, food when it found no bush. It used to answer
+    // thirst alone, which was right when exploring was only ever for water
+    // (M15 2g); once `Brain` also sent the hungry out to search, the search
+    // was stopped on its first step by the hunger it was for, and a starving
+    // adult with no known food stood `idle` with `explore` at the top of their
+    // score table. Thirst wins when both are past the line, as it kills first.
+    const answers: LethalNeed = person.needs.thirst > workLimit(person, 'thirst', ctx.needs.workLimits)
+      ? 'thirst' : 'hunger';
+    const stop = this.interruption(person, ctx, { ignoreLaden: true, answers });
     if (stop) {
       this.stop(person, stop, ctx, 'explore_ended_');
       return;

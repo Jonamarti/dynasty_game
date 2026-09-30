@@ -9644,3 +9644,23 @@ Se probó también que robar comida contara como respuesta al hambre (pasar
 `answers: 'hunger'` a `interruptSocialWork` en `doSteal`); sus cortes solo
 bajaron de 1.568 a 1.262 y se retiró sin commit en vez de dejar un comentario
 que afirmara un efecto no confirmado.
+
+## 2026-09-30 — M15 fase 11d: explorar por hambre ya no se corta por hambre
+
+`doExplore` solo eximía la sed (`answers: 'thirst'`), de cuando explorar era
+únicamente buscar agua (fase 2g). Desde que el `Brain` manda también a los
+hambrientos a buscar comida, esa búsqueda se cortaba en su primer paso por el
+hambre que la motivaba: `npm run infants` mostraba adultos hambrientos sin
+ninguna opción de comida, `explore` en lo alto de su tabla y la acción real
+`idle`. Ahora exime la necesidad que aprieta: la sed si está pasada de la
+línea, el hambre si no.
+
+Medido: las muestras «hambriento, sin opción de comida, parado» bajan de 5.363
+a 2.593 en tres semillas `lean`, y aparece `explore` entre lo que hacen.
+`lean` a 20 semillas: 25,0% (11/20 colapsos) frente a 22,3% del commit
+anterior, dentro del ruido. Causas: exposición 218 frente a 247, hambre 563
+frente a 545. En la matriz, la corrida única de `lean` se derrumba en el primer
+invierno (35 muertes por exposición, nadie se refugia; 48/63 frente a 59/67);
+las veinte semillas no muestran más frío, así que se trata como divergencia de
+esa semilla y queda anotado en `bugs.md`. Los demás escenarios salen idénticos.
+`npm test` pasa entero. Sin cambio de interfaz.

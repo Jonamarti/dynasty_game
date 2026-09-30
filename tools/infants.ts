@@ -168,8 +168,10 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
             !!p.placeMemory.nearest(`resource:${kind}`, p.x, p.y, m => m.amount > 0));
           const parent = p.childIds.some(id => sim.peopleById.get(id)?.alive);
           const full = p.carrying >= p.carryCapacity;
+          const explore = rows.findIndex(r => r.id === 'explore');
           bump(noFoodWhy, [
             parent ? 'parent' : 'childless',
+            explore < 0 ? 'no-explore' : explore === 0 ? 'explore-top' : `explore-#${explore + 1}-under-${rows[0]!.id}`,
             inSight ? 'food-in-sight' : inDouble ? 'food-within-3x-sight' : 'no-food-within-3x',
             remembered ? 'remembers-food' : 'remembers-none',
             full ? 'hands-full' : '',

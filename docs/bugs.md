@@ -22,6 +22,13 @@ scorer con una necesidad pasada la línea) midió 22,3% frente a 25,2% sin él, 
 una medición combinada anterior 23,0%. Dos lecturas en la misma dirección, las
 dos dentro del ruido: si el propietario quiere saberlo, `--seeds 40`.
 
+Tras eximir el hambre en `doExplore`, la corrida única de `lean` en
+`sim:check:all` se derrumba en su primer invierno: frío medio 63,7 el día 35,
+35 muertes por exposición y `shelter-answers-cold` con cero ticks de refugio.
+Las veinte semillas no muestran más exposición (218 frente a 247), así que no se
+atribuye al cambio; pero que nadie se refugie con el frío en 63 merece mirarse
+aparte con `npm run why`.
+
 **Lo que `npm run infants` encontró y queda abierto** (tres semillas `lean`):
 dos de cada tres niños que mueren lo hacen después que su madre, y el 85% de
 esas madres muere de hambre mientras cría a un lactante; los huérfanos de pecho
@@ -30,9 +37,10 @@ El año dura cuarenta días, así que «lactante» significa menos de cuarenta d
 un niño de 41 días tiene que conseguir su comida o que se la den; la puerta de
 dar de comer al niño falla sobre todo porque la madre tiene más hambre que él
 (79% de los ticks en peligro). Los adultos hambrientos sin ninguna opción de
-comida pasan la mayor parte del tiempo `idle`: la exploración por hambre sigue
-respetando el alcance aunque el hambre sea desesperada, al contrario que la del
-agua.
+comida pasaban la mayor parte del tiempo `idle` porque `doExplore` cortaba por
+hambre la exploración elegida por hambre (corregido). Sigue abierto que esa
+exploración respete el alcance aunque el hambre sea desesperada, al contrario
+que la del agua.
 
 ## M15 2i, pruebas de selección tras activar la niebla (2026-09-29)
 
