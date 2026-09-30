@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { infantNeedingNursing, NURSING_HUNGER } from '../ai/Nursing.ts';
-import { isLactating, isNursling } from '../entities/LifeStage.ts';
+import { isLactating, isNursling, weanAgeYears } from '../entities/LifeStage.ts';
 import type { Person } from '../entities/Person.ts';
 
 /**
- * The owner's rules of 2026-09-30: babies are nursed until two, any woman of
- * the band with milk nurses a crying baby whose mother is not there, and milk
- * costs the one who gives it some food.
+ * The owner's rules of 2026-09-30: each baby is weaned at its own age between
+ * one and two, any woman of the band with milk nurses a crying baby whose
+ * mother is not there, and milk makes the one who has it half as hungry again.
  */
 function camp(seed: string) {
   const sim = new Simulation({ seed, world: { width: 48, height: 48 },
@@ -29,21 +29,36 @@ function camp(seed: string) {
   orphan.needs.hunger = 80;
   man.sex = 'male';
   man.age = 25 * man.daysPerYear;
+  // Fed just now, so only a hungry cry (not a feed coming round) calls a nurse.
+  ownBaby.lastNursedTick = orphan.lastNursedTick = sim.time.tick;
   sim.peopleHash.rebuild(sim.people);
   return { sim, nurse, ownBaby, orphan, mother, man };
 }
 
 describe('wet nursing', () => {
-  it('reads a baby as a nursling until the weaning age, and its mother as lactating', () => {
+  it('reads a baby as a nursling until its own weaning age, and its mother as lactating', () => {
     const { sim, nurse, ownBaby, man } = camp('wet-stages');
+    const wean = weanAgeYears(ownBaby, sim.config.childhood);
+    expect(wean).toBeGreaterThanOrEqual(1);
+    expect(wean).toBeLessThan(2);
     expect(isNursling(ownBaby, sim.config.childhood)).toBe(true);
-    ownBaby.age = 1.9 * ownBaby.daysPerYear;
+    ownBaby.age = (wean - 0.05) * ownBaby.daysPerYear;
     expect(isNursling(ownBaby, sim.config.childhood)).toBe(true);
     expect(isLactating(nurse, sim.peopleById, sim.config.childhood)).toBe(true);
-    ownBaby.age = 2 * ownBaby.daysPerYear;
+    ownBaby.age = wean * ownBaby.daysPerYear;
     expect(isNursling(ownBaby, sim.config.childhood)).toBe(false);
     expect(isLactating(nurse, sim.peopleById, sim.config.childhood)).toBe(false);
     expect(isLactating(man, sim.peopleById, sim.config.childhood)).toBe(false);
+  });
+
+  it('spreads weaning ages across the whole year between one and two', () => {
+    const { sim, ownBaby } = camp('wet-spread');
+    const ages: number[] = [];
+    for (let i = 0; i < 200; i++) {
+      ages.push(weanAgeYears({ ...ownBaby, id: i } as Person, sim.config.childhood));
+    }
+    expect(Math.min(...ages)).toBeLessThan(1.1);
+    expect(Math.max(...ages)).toBeGreaterThan(1.9);
   });
 
   it("answers a crying baby whose mother is not there, but not one whose mother is", () => {
@@ -73,21 +88,44 @@ describe('wet nursing', () => {
       sim.peopleHash, sim.config.sightRadius)).toBeNull();
   });
 
-  it("feeds the orphan, and the milk costs the nurse some of her own food", () => {
+  it('feeds the orphan without charging the nurse per feed', () => {
     const { sim, nurse, orphan, mother } = camp('wet-feed');
     mother.alive = false;
     nurse.needs.hunger = 10;
     nurse.needs.thirst = 0;
+    let before = 0;
     for (let i = 0; i < 60 && orphan.needs.hunger >= NURSING_HUNGER; i++) {
       orphan.needs.hunger = Math.max(orphan.needs.hunger, 80);
       nurse.needs.hunger = 10;
       sim.step();
       if (nurse.action === 'nurse' && nurse.actionTimer === 1) {
+        before = nurse.needs.hunger;
         sim.step();
         break;
       }
     }
     expect(orphan.needs.hunger).toBeLessThan(NURSING_HUNGER + 10);
-    expect(nurse.needs.hunger).toBeGreaterThan(10 + 45 * sim.config.childhood.nursingCost * 0.9);
+    // One tick of hunger at the lactating rate, and nothing for the feed.
+    expect(nurse.needs.hunger - before).toBeLessThan(1);
+  });
+
+  it('makes a woman with milk half as hungry again, and nobody else', () => {
+    const { sim, nurse, man } = camp('wet-rate');
+    for (const p of sim.people) { p.needs.hunger = 0; p.needs.thirst = 0; }
+    const rate = sim.config.needs.hungerRate;
+    sim.step();
+    expect(nurse.needs.hunger).toBeCloseTo(rate * 1.5, 5);
+    expect(man.needs.hunger).toBeCloseTo(rate, 5);
+  });
+
+  it('asks for the breast four times a day even when not yet hungry', () => {
+    const { sim, nurse, ownBaby } = camp('wet-feeds');
+    const clock = sim.nursingClock();
+    expect(clock.feedEvery).toBe(sim.config.time.ticksPerDay / 4);
+    ownBaby.lastNursedTick = clock.tick;
+    const ask = (tick: number) => infantNeedingNursing(nurse, sim.peopleById, sim.world, sim.config.childhood,
+      sim.peopleHash, sim.config.sightRadius, { tick, feedEvery: clock.feedEvery });
+    expect(ask(clock.tick + clock.feedEvery - 1)).toBeNull();
+    expect(ask(clock.tick + clock.feedEvery)?.id).toBe(ownBaby.id);
   });
 });

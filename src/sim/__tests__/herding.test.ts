@@ -50,6 +50,20 @@ function penNear(sim: Simulation, person: Person, away: number): Building {
   return placed!;
 }
 
+/**
+ * `days` of the pen's daily breeding and nothing else.
+ *
+ * These tests are about the breeding rule, and a live population is free to
+ * cull a pen to nothing — `doTake`'s round takes up to six of each, so one
+ * visit empties a founding stock of three. Whether anybody made that round in
+ * twenty days was a property of the seed: M15 phase 20 moved one world by a
+ * nursing schedule and five of these failed with the rule untouched. The
+ * rule is `workHerds`, run once a day, so the tests run it.
+ */
+function herdDays(sim: Simulation, days: number): void {
+  for (let i = 0; i < days; i++) (sim as unknown as { workHerds(): void }).workHerds();
+}
+
 /** Somebody with nothing pressing, so a test measures what it means to. */
 function settle(person: Person): void {
   person.needs.thirst = 0;
@@ -68,7 +82,7 @@ describe('a pen', () => {
     expect(isHerd(pen.def)).toBe(true);
     pen.store.add(pen.def.herd!.item, pen.def.herd!.seed);
 
-    for (let i = 0; i < sim.config.time.ticksPerDay * 20; i++) sim.step();
+    herdDays(sim, 20);
     expect(pen.store.count(pen.def.herd!.item)).toBeGreaterThan(pen.def.herd!.seed);
   });
 
@@ -100,7 +114,7 @@ describe('a pen', () => {
     for (const member of sim.people) member.knownTech.delete('herding');
 
     const before = pen.store.count(pen.def.herd!.item);
-    for (let i = 0; i < sim.config.time.ticksPerDay * 5; i++) sim.step();
+    herdDays(sim, 5);
     expect(pen.store.count(pen.def.herd!.item)).toBe(before);
   });
 
@@ -230,7 +244,7 @@ describe('M11 phase 10, sixth commit: dairying and wool', () => {
     person.knownTech.add('dairying');
     person.knownTech.add('wool');
 
-    for (let i = 0; i < sim.config.time.ticksPerDay * 30; i++) sim.step();
+    herdDays(sim, 30);
     expect(telemetry.get('milk_bred')).toBeGreaterThan(0);
     expect(telemetry.get('wool_bred')).toBeGreaterThan(0);
     telemetry.disable();
@@ -243,7 +257,7 @@ describe('M11 phase 10, sixth commit: dairying and wool', () => {
     const pen = penNear(sim, person, 4);
     pen.store.add(pen.def.herd!.item, pen.def.herd!.seed);
 
-    for (let i = 0; i < sim.config.time.ticksPerDay * 20; i++) sim.step();
+    herdDays(sim, 20);
     expect(pen.store.count('milk')).toBe(0);
     expect(pen.store.count('wool')).toBe(0);
     expect(pen.store.count(pen.def.herd!.item)).toBeGreaterThan(pen.def.herd!.seed);
@@ -262,7 +276,7 @@ describe('M11 phase 10, sixth commit: dairying and wool', () => {
     person.knownTech.add('dairying');
     for (const member of sim.people) member.knownTech.delete('herding');
 
-    for (let i = 0; i < sim.config.time.ticksPerDay * 20; i++) sim.step();
+    herdDays(sim, 20);
     expect(pen.store.count('milk')).toBeGreaterThan(0);
     // Breeding itself did stop — the herd is exactly what it was seeded with.
     expect(pen.store.count(pen.def.herd!.item)).toBe(pen.def.herd!.seed);

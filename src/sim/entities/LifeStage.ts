@@ -10,9 +10,31 @@
 import type { ChildhoodConfig } from '../core/Config.ts';
 import type { Person } from './Person.ts';
 
+/**
+ * The age this baby is weaned at, in years: its own point between
+ * `weanFromYears` and `weanYears` (owner, 2026-09-30: "between one and two").
+ *
+ * Read off a hash of the id rather than drawn from a stream, so it costs no
+ * RNG draw (a new draw at birth would move every later birth in every saved
+ * seed) and so that asking twice can never give two answers.
+ */
+export function weanAgeYears(person: Person, childhood: ChildhoodConfig): number {
+  const from = Math.min(childhood.weanFromYears, childhood.weanYears);
+  const spread = ((Math.imul(person.id + 1, 2654435761) >>> 0) % 1000) / 1000;
+  return from + (childhood.weanYears - from) * spread;
+}
+
 /** Still at the breast: nursed, never fed by hand. */
 export function isNursling(person: Person, childhood: ChildhoodConfig): boolean {
-  return person.age < childhood.weanYears * person.daysPerYear;
+  return person.age < weanAgeYears(person, childhood) * person.daysPerYear;
+}
+
+/**
+ * A baby in arms: cannot walk yet. Never tired, and lonely only when nobody
+ * holds it or plays with it (owner, 2026-09-30).
+ */
+export function isBabyInArms(person: Person, childhood: ChildhoodConfig): boolean {
+  return !canWalk(person, childhood);
 }
 
 /** Moves by itself at all: crawling, then walking. */

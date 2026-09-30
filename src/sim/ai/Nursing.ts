@@ -46,11 +46,28 @@ export function infantOutsideHome(
  */
 const nearbyScratch: Person[] = [];
 
+/**
+ * When a nursling next asks for the breast, M15 phase 20: `feedsPerDay`
+ * times a day whether or not hunger has reached the cry line yet (owner,
+ * 2026-09-30: four). What milk costs its mother is a rate
+ * (`lactationHunger`), so the number of feeds costs her time, not food.
+ */
+export interface NursingClock {
+  tick: number;
+  /** Ticks between feeds: `ticksPerDay / feedsPerDay`. */
+  feedEvery: number;
+}
+
+/** A nursling whose next feed has come round. */
+export function feedDue(child: Person, clock: NursingClock | undefined): boolean {
+  return !!clock && clock.tick - child.lastNursedTick >= clock.feedEvery;
+}
+
 /** How loudly a baby is crying for the breast, 0 when it is not. */
-function cryOf(child: Person): number {
+function cryOf(child: Person, clock: NursingClock | undefined): number {
   const hunger = child.needs.hunger >= NURSING_HUNGER ? child.needs.hunger / NURSING_HUNGER : 0;
   const thirst = child.needs.thirst >= NURSING_THIRST ? child.needs.thirst / NURSING_THIRST : 0;
-  return Math.max(hunger, thirst);
+  return Math.max(hunger, thirst, feedDue(child, clock) ? 1 : 0);
 }
 
 /**
@@ -74,7 +91,8 @@ export function infantNeedingNursing(
   world: World,
   childhood: ChildhoodConfig,
   peopleHash?: SpatialHash<Person>,
-  sightRadius = 0
+  sightRadius = 0,
+  clock?: NursingClock
 ): Person | null {
   let chosen: Person | null = null;
   let highestNeed = 0;
@@ -83,7 +101,7 @@ export function infantNeedingNursing(
     if (!child?.alive || child.motherId !== nurse.id || !isNursling(child, childhood) ||
       child.bandId !== nurse.bandId || child.captiveOf !== null ||
       !world.sameRegion(nurse.x, nurse.y, child.x, child.y)) continue;
-    const need = cryOf(child);
+    const need = cryOf(child, clock);
     if (need > highestNeed) {
       highestNeed = need;
       chosen = child;
@@ -96,7 +114,7 @@ export function infantNeedingNursing(
     if (!child.alive || child.motherId === nurse.id || child.bandId !== nurse.bandId ||
       child.captiveOf !== null || !isNursling(child, childhood) ||
       !world.sameRegion(nurse.x, nurse.y, child.x, child.y)) continue;
-    const need = cryOf(child);
+    const need = cryOf(child, clock);
     if (need <= highestNeed) continue;
     const mother = child.motherId === null ? undefined : peopleById.get(child.motherId);
     const motherThere = !!mother?.alive && mother.captiveOf === null &&
@@ -111,13 +129,18 @@ export function infantNeedingNursing(
 /**
  * Her own baby that cannot walk and that she is not already holding, for her
  * to go and pick up. A baby somebody else is holding (a wet nurse who found it
- * alone) is still hers to take back.
+ * alone) is still hers to take back — but not from the player, whose choice
+ * to hold it is an order, and not one she laid down on purpose herself
+ * (owner, 2026-09-30: "leave him somewhere"). Laid down on the player's
+ * word, it stays down; an NPC mother told to put it down takes it back up
+ * after `LAID_DOWN_TICKS`, since nobody is there to tell her when.
  */
 export function babyToCarry(
   mother: Person,
   peopleById: ReadonlyMap<number, Person>,
   world: World,
-  childhood: ChildhoodConfig
+  childhood: ChildhoodConfig,
+  tick = 0
 ): Person | null {
   if (!childhood.carryBaby || mother.armsTaken >= 2 || mother.captiveOf !== null) return null;
   for (const id of mother.childIds) {
@@ -125,10 +148,16 @@ export function babyToCarry(
     if (!child?.alive || child.motherId !== mother.id || canWalk(child, childhood) ||
       child.carriedBy === mother.id || child.bandId !== mother.bandId || child.captiveOf !== null ||
       !world.sameRegion(mother.x, mother.y, child.x, child.y)) continue;
+    if (child.carriedBy !== null && peopleById.get(child.carriedBy)?.isPlayer) continue;
+    if (child.laidDownBy === mother.id &&
+      (mother.isPlayer || tick - child.laidDownTick < LAID_DOWN_TICKS)) continue;
     return child;
   }
   return null;
 }
+
+/** How long an NPC mother leaves a baby where she was told to lay it: a day. */
+export const LAID_DOWN_TICKS = 240;
 
 /** Whether this woman may nurse this baby: her own, or a band baby she has milk for. */
 export function mayNurse(

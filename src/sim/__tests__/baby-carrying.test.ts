@@ -81,4 +81,27 @@ describe('carrying the baby', () => {
     expect(baby.carriedBy).toBeNull();
     expect(mother.armsTaken).toBe(0);
   });
+
+  it('never tires a baby, and lets it be lonely only when nobody holds it', () => {
+    const { sim, mother, baby } = family('carry-company');
+    baby.x = mother.x + 3;
+    baby.y = mother.y;
+    for (let i = 0; i < 80 && baby.carriedBy !== mother.id; i++) sim.step();
+    expect(baby.carriedBy).toBe(mother.id);
+    baby.needs.company = 40;
+    baby.needs.fatigue = 30;
+    for (let i = 0; i < 20; i++) sim.step();
+    expect(baby.needs.fatigue).toBe(0);
+    expect(baby.needs.company).toBeLessThan(40);
+
+    // Laid down on purpose, out of arms: the loneliness climbs again.
+    baby.carriedBy = null;
+    baby.laidDownBy = mother.id;
+    baby.laidDownTick = sim.time.tick;
+    const before = baby.needs.company;
+    for (let i = 0; i < 20; i++) sim.step();
+    expect(baby.carriedBy).toBeNull();
+    expect(baby.needs.company).toBeGreaterThan(before);
+    expect(baby.needs.fatigue).toBe(0);
+  });
 });

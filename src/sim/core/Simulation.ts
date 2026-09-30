@@ -30,8 +30,8 @@ import { ActionSystem } from '../systems/ActionSystem.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
 import { drivePressures, DRIVES } from '../ai/Drives.ts';
-import { babyToCarry, infantNeedingNursing, infantOutsideHome } from '../ai/Nursing.ts';
-import { canCrawl, canWalk, isNursling } from '../entities/LifeStage.ts';
+import { babyToCarry, infantNeedingNursing, infantOutsideHome, type NursingClock } from '../ai/Nursing.ts';
+import { canCrawl, canWalk, isBabyInArms, isLactating, isNursling } from '../entities/LifeStage.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -1115,6 +1115,14 @@ export class Simulation {
    * that asks about a verb with no structure behind it — a job, a fight, the
    * Ties panel — leaves it alone and gets exactly the answer it always did.
    */
+  /** When a nursling's next feed comes round: `feedsPerDay` a day. */
+  nursingClock(): NursingClock {
+    return {
+      tick: this.time.tick,
+      feedEvery: this.config.time.ticksPerDay / Math.max(1, this.config.childhood.feedsPerDay),
+    };
+  }
+
   standing(leader: Person, subordinate: Person, action: string, foreign = false) {
     return standingOver(leader, subordinate, action, this.authorityContext(), foreign);
   }
@@ -3655,7 +3663,13 @@ export class Simulation {
       peopleById: this.peopleById,
     });
 
-    this.needsSystem.update(this.people, this.time, this.buildings, this.buildingHash);
+    this.needsSystem.update(this.people, this.time, this.buildings, this.buildingHash, {
+      // M15 phase 20 (owner, 2026-09-30): milk makes a woman half as hungry
+      // again for as long as she has it, and a baby in arms never tires.
+      hungerFactor: (person: Person) => isLactating(person, this.peopleById, this.config.childhood)
+        ? 1 + this.config.childhood.lactationHunger : 1,
+      babyInArms: (person: Person) => isBabyInArms(person, this.config.childhood),
+    });
 
     // Memories and relationships age once a day, not every tick. Decaying
     // sixty people's worth of both every step would be the most expensive
@@ -3839,6 +3853,7 @@ export class Simulation {
       buildingsById: this.buildingsById,
       peopleById: this.peopleById,
       childhood: this.config.childhood,
+      nursingClock: this.nursingClock(),
       // The hungriest weaned child this parent feeds, for the forage drive.
       // No longer compared with the parent's own hunger: parents feed their
       // child first (owner, M15 phase 20), so a hungry parent still forages
@@ -3868,6 +3883,7 @@ export class Simulation {
       onTreeFelled: (tree: Tree) => this.removeTree(tree),
       peopleById: this.peopleById,
       childhood: this.config.childhood,
+      nursingClock: this.nursingClock(),
       householdsById: this.householdsById,
       childAwayFromCarer: (person: Person) => {
         if (!person.isChild || person.action === 'go_home') return false;
@@ -3990,7 +4006,7 @@ export class Simulation {
       const underAttack = assailantOf(person, id => this.peopleById.get(id), this.time.tick) !== null;
       const urgentBaby = underAttack || !this.config.motivation.urgentNursing
         ? null : infantNeedingNursing(person, this.peopleById, this.world, this.config.childhood,
-          this.peopleHash, this.config.sightRadius);
+          this.peopleHash, this.config.sightRadius, this.nursingClock());
       const activeNursing = this.config.motivation.urgentNursing && person.action === 'nurse';
       // Carrying the baby supersedes leaving it in the house: with it on, the
       // mother goes to pick it up rather than to take it home.
@@ -4000,7 +4016,7 @@ export class Simulation {
       const currentBaby = activeNursing && person.targetPersonId !== null
         ? this.peopleById.get(person.targetPersonId) : null;
       const homeBaby = underAttack ? null
-        : carrying ? babyToCarry(person, this.peopleById, this.world, this.config.childhood)
+        : carrying ? babyToCarry(person, this.peopleById, this.world, this.config.childhood, this.time.tick)
         : !this.config.motivation.babyToHouse ? null
         : infantOutsideHome(person, this.peopleById, this.householdsById, this.buildingsById);
       if (!this.config.motivation.urgentNursing && person.action === 'nurse') {

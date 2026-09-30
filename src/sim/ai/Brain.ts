@@ -81,7 +81,7 @@ import { purposeAppetite, sensitivity } from './Temperament.ts';
 import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
-import { infantNeedingNursing } from './Nursing.ts';
+import { infantNeedingNursing, type NursingClock } from './Nursing.ts';
 import { CHILD_FEED_AT, feederRole } from './Feeding.ts';
 import { canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
 import { expectationRatio, techAppeal } from './Beliefs.ts';
@@ -143,6 +143,8 @@ export interface BrainContext {
   carry?: CarryConfig;
   /** Highest hunger among this person's hungry dependent children. */
   dependentHunger: (person: Person) => number;
+  /** When a nursling's next feed is due; see `Nursing.feedDue`. */
+  nursingClock?: NursingClock;
   /** Baseline nutrition consumed by one person over seven days. */
   weeklyFoodNeedPerPerson: number;
   /**
@@ -1126,7 +1128,8 @@ export class Brain {
     let beneficiary: Person | null = null;
     let nursingChild: Person | null = null;
     nursingChild = ctx.motivation.urgentNursing
-      ? infantNeedingNursing(person, ctx.peopleById, ctx.world, ctx.childhood, ctx.peopleHash, ctx.sightRadius) : null;
+      ? infantNeedingNursing(person, ctx.peopleById, ctx.world, ctx.childhood, ctx.peopleHash, ctx.sightRadius,
+        ctx.nursingClock) : null;
     if (nursingChild) {
       // Simulation also interrupts committed work immediately; this makes the
       // overriding care need visible in `why` and ordinary replanning.

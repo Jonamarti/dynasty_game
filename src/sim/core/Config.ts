@@ -334,15 +334,30 @@ export interface CarryConfig {
  * the code that reads it.
  */
 export interface ChildhoodConfig {
-  /** Breastfed until this age; weaned afterwards and fed by hand. */
+  /**
+   * Each baby is weaned at its own age between `weanFromYears` and
+   * `weanYears` (owner, second pass of 2026-09-30: "between one and two").
+   * Fed by hand afterwards. See `LifeStage.weanAgeYears`.
+   */
+  weanFromYears: number;
+  /** The latest a baby is weaned. */
   weanYears: number;
+  /**
+   * How many times a day a nursling asks for the breast whether or not it
+   * is hungry yet (owner, 2026-09-30: four).
+   */
+  feedsPerDay: number;
   /**
    * Any lactating woman of the band nurses a crying baby whose own mother is
    * not there to — the wet nursing every historical band relied on.
    */
   wetNursing: boolean;
-  /** Hunger a nursing woman takes on for each point of hunger she relieves. */
-  nursingCost: number;
+  /**
+   * How much faster a woman with milk gets hungry: 0.5 is half as fast again
+   * (owner, 2026-09-30). A rate for as long as she is lactating, not a charge
+   * per feed, so four feeds a day cost her no more than one.
+   */
+  lactationHunger: number;
   /**
    * Below this age a weaned child cannot find food for themselves and is fed
    * by the band: a bandmate who sees one hungry with no parent of theirs in
@@ -525,12 +540,14 @@ export const DEFAULT_CONFIG: SimConfig = {
     handledDays: 3,
   },
   childhood: {
+    weanFromYears: 1,
     weanYears: 2,
+    feedsPerDay: 4,
     wetNursing: true,
-    // A session relieves up to 45 points of a baby's hunger, so a quarter of
-    // that is about eleven points for the one nursing: real, and well short of
-    // a meal, which is what milk costs a mother in food.
-    nursingCost: 0.25,
+    // Half as hungry again. Real lactation costs about a quarter of a
+    // woman's daily energy; the owner chose a half, and the feeding rules
+    // (`Feeding.ts`) are what keep it from starving her.
+    lactationHunger: 0.5,
     walkYears: 1,
     carryBaby: true,
     forageYears: 4,

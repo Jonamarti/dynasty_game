@@ -214,6 +214,16 @@ export class Person {
   motherId: number | null = null;
   /** Carrier while under one year; the infant still has no autonomous movement. */
   carriedBy: number | null = null;
+  /**
+   * Who last put this baby down on purpose, and when (M15 phase 20, the
+   * owner's "leave him somewhere"). Its mother does not pick up a baby she
+   * laid down herself while this stands; see `Nursing.babyToCarry`. Cleared
+   * whenever anybody picks it up.
+   */
+  laidDownBy: number | null = null;
+  laidDownTick = -9999;
+  /** The tick this baby was last nursed, for its four feeds a day. */
+  lastNursedTick = -9999;
   fatherId: number | null = null;
   childIds: number[] = [];
 

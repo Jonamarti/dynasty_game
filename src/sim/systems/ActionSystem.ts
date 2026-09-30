@@ -14,7 +14,10 @@ import type { Person } from '../entities/Person.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
 import { feederRole } from '../ai/Feeding.ts';
-import { homeForMother, mayNurse, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF } from '../ai/Nursing.ts';
+import {
+  feedDue, homeForMother, mayNurse, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF,
+  type NursingClock,
+} from '../ai/Nursing.ts';
 import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
@@ -94,6 +97,8 @@ export interface ActionContext {
   onTreeFelled: (tree: Tree, feller: Person) => void;
   peopleById: Map<number, Person>;
   childhood: ChildhoodConfig;
+  /** When a nursling's next feed is due; see `Nursing.feedDue`. */
+  nursingClock?: NursingClock;
   householdsById: Map<number, Household>;
   /** Whether a walking child has fallen outside their carer's close-family radius. */
   childAwayFromCarer: (person: Person) => boolean;
@@ -3844,7 +3849,10 @@ export class ActionSystem {
       this.finish(person);
       return;
     }
-    if (baby.needs.hunger < NURSING_HUNGER && baby.needs.thirst < NURSING_THIRST) {
+    // A feed that has come round is nursed whether or not the baby has got
+    // hungry enough to cry: four a day (owner, 2026-09-30).
+    if (baby.needs.hunger < NURSING_HUNGER && baby.needs.thirst < NURSING_THIRST &&
+        !feedDue(baby, ctx.nursingClock)) {
       this.finish(person);
       return;
     }
@@ -3859,14 +3867,14 @@ export class ActionSystem {
       return;
     }
 
-    // Milk is made from the nurse's own food: she takes on a share of what
-    // she relieves, so a band that is starving cannot feed its babies for
-    // free. Charged on the hunger actually relieved, not the session's
-    // ceiling, so topping up a baby that was barely crying costs little.
-    const relieved = Math.min(baby.needs.hunger, NURSING_HUNGER_RELIEF);
-    baby.needs.hunger -= relieved;
+    // Milk is made from the nurse's own food, but as a rate rather than a
+    // charge per feed: `childhood.lactationHunger` makes a woman with milk
+    // hungrier for as long as she has it (owner, 2026-09-30), in
+    // `NeedsSystem`. A per-feed charge made four feeds a day cost four times
+    // one, and nothing in a real body works that way.
+    baby.needs.hunger = Math.max(0, baby.needs.hunger - NURSING_HUNGER_RELIEF);
     baby.needs.thirst = Math.max(0, baby.needs.thirst - NURSING_THIRST_RELIEF);
-    person.needs.hunger = Math.min(100, person.needs.hunger + relieved * ctx.childhood.nursingCost);
+    baby.lastNursedTick = ctx.tick;
     telemetry.count('nursing_sessions');
     if (baby.motherId !== person.id) {
       telemetry.count('wet_nursing_sessions');
@@ -3876,6 +3884,7 @@ export class ActionSystem {
       if (ctx.childhood.carryBaby && baby.carriedBy === null && person.armsTaken < 2 &&
           !canWalk(baby, ctx.childhood)) {
         baby.carriedBy = person.id;
+        baby.laidDownBy = null;
         person.armsTaken++;
         telemetry.count('orphan_carried');
       }
@@ -3946,6 +3955,7 @@ export class ActionSystem {
     }
     if (!this.approach(person, ctx)) return;
     baby.carriedBy = person.id;
+    baby.laidDownBy = null;
     person.armsTaken++;
     telemetry.count('baby_picked_up');
     this.finish(person);

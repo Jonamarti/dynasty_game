@@ -9856,3 +9856,36 @@ amamantando al bebé que lleva en brazos.
 Los jobs de CI y GitHub Pages continúan al typecheck/build aunque `npm test`
 falle. Esto mantiene disponible el build mientras se investiga el timeout de
 Vitest observado en Actions; retirar `continue-on-error` cuando se corrija.
+
+## 2026-09-30 — M15 fase 20: destete entre uno y dos años, cuatro tomas y la leche como ritmo
+
+Segunda ronda de reglas del propietario (2026-09-30), tras el balance a 40
+semillas que dejó `lean` en 16,3%.
+
+- **Destete propio de cada bebé entre 1 y 2 años** (`childhood.weanFromYears`,
+  `weanYears`; `LifeStage.weanAgeYears`). Sale de un hash del id, no de un
+  sorteo: un sorteo más al nacer movería todos los nacimientos posteriores de
+  cada semilla guardada.
+- **Cuatro tomas al día** (`childhood.feedsPerDay`). El bebé pide el pecho cuando
+  le toca aunque aún no tenga hambre (`Nursing.feedDue`, `Person.lastNursedTick`);
+  antes solo lloraba al cruzar la línea del hambre, una vez cada dos días.
+- **La leche cuesta un 50% más de hambre mientras hay leche**
+  (`childhood.lactationHunger`, en `NeedsSystem`), no un cargo por toma. Con el
+  cargo por toma, cuatro tomas habrían costado cuatro veces una; el cuerpo no
+  funciona así. `nursingCost` desaparece.
+- **El bebé en brazos no se cansa**, y **solo siente soledad cuando está en el
+  suelo o en una choza sin nadie que lo tenga en brazos**: en brazos, la soledad
+  baja (`NeedsHooks.babyInArms`).
+- **Dejar al bebé a propósito** (`Person.laidDownBy`): la madre no recoge un
+  bebé que ella misma dejó. Si lo dejó por orden del jugador y es la jugadora,
+  se queda donde está; una madre NPC lo recoge al cabo de un día. Tampoco le
+  quita el bebé al jugador que lo tiene en brazos. La interfaz para dejarlo
+  llega en otro commit.
+
+`herding.test.ts`: cinco pruebas fallaban con este cambio y pasaban sin él. La
+causa no es el cambio: con un rebaño fundador de tres cabezas, cualquiera que
+haga la «ronda» del corral (`doTake`) se lleva las tres, y que nadie la hiciera
+en veinte días era suerte de esa semilla (con 3 o 5 tomas al día no pasaba, con
+2 o 4 sí). Las pruebas miden la regla de cría, así que ahora llaman a
+`workHerds` una vez por día en lugar de simular veinte días de gente con hambre.
+La prueba estaba mal, no el mundo.

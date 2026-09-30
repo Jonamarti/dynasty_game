@@ -70,6 +70,18 @@ export function exertionOf(action: string): number {
   return EXERTION[action] ?? 1;
 }
 
+/**
+ * Per-person readings the needs clock cannot make for itself, because they
+ * depend on who else is alive (M15 phase 20). Optional so a test that drives
+ * `update` by hand keeps the plain rates.
+ */
+export interface NeedsHooks {
+  /** A multiplier on the hunger rate: 1.5 for a woman with milk. */
+  hungerFactor?: (person: Person) => number;
+  /** A baby that cannot walk yet: never tired, lonely only when put down. */
+  babyInArms?: (person: Person) => boolean;
+}
+
 export class NeedsSystem {
   constructor(private readonly config: NeedsConfig) {}
 
@@ -93,7 +105,13 @@ export class NeedsSystem {
     return best;
   }
 
-  update(people: Person[], time: TimeManager, buildings: Building[] = [], buildingHash?: SpatialHash<Building>): void {
+  update(
+    people: Person[],
+    time: TimeManager,
+    buildings: Building[] = [],
+    buildingHash?: SpatialHash<Building>,
+    hooks: NeedsHooks = {}
+  ): void {
     const cfg = this.config;
     // Cold bites at night and in winter; in high summer people warm back up.
     const chill = Math.max(0, -time.temperature);
@@ -105,7 +123,9 @@ export class NeedsSystem {
     for (const person of people) {
       if (!person.alive) continue;
 
-      person.needs.hunger = Math.min(100, person.needs.hunger + cfg.hungerRate);
+      const hungerFactor = hooks.hungerFactor?.(person) ?? 1;
+      person.needs.hunger = Math.min(100, person.needs.hunger + cfg.hungerRate * hungerFactor);
+      const baby = hooks.babyInArms?.(person) ?? false;
 
       // Thirst is the one need that answers to what you are *doing*.
       //
@@ -129,7 +149,12 @@ export class NeedsSystem {
 
       // Resting and sleeping are handled by the action system, which restores
       // fatigue directly; everything else tires you.
-      if (person.action !== 'rest' && person.action !== 'sleep') {
+      // M15 phase 20: a baby does not get tired (owner, 2026-09-30). It
+      // sleeps where it is laid or held, and a fatigue it can do nothing
+      // about only ever showed up as a baby in a black mood.
+      if (baby) {
+        person.needs.fatigue = 0;
+      } else if (person.action !== 'rest' && person.action !== 'sleep') {
         person.needs.fatigue = Math.min(100, person.needs.fatigue + cfg.fatigueRate);
       }
 
@@ -179,7 +204,15 @@ export class NeedsSystem {
 
       // Loneliness only climbs while nobody is being talked to; conversation
       // itself is what brings it down, in SocialSystem.converse.
-      person.needs.company = Math.min(100, person.needs.company + cfg.companyRate);
+      //
+      // M15 phase 20: a baby is lonely only when it is put down — on the
+      // ground, in a hut — and nobody is holding it (owner, 2026-09-30). In
+      // arms, being held is its company. Play (`romp`) answers the rest.
+      if (baby && person.carriedBy !== null) {
+        person.needs.company = Math.max(0, person.needs.company - cfg.companyRate);
+      } else {
+        person.needs.company = Math.min(100, person.needs.company + cfg.companyRate);
+      }
 
       let criticalCount = 0;
       for (const need of LETHAL_NEEDS) {
