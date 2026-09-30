@@ -20,7 +20,9 @@
     "why": "vite-node tools/why.ts --",
     "infants": "vite-node tools/infants.ts --",
     "violence": "vite-node tools/violence.ts --",
-    "i18n:soak": "vite-node tools/i18n-soak.ts --"
+    "i18n:soak": "vite-node tools/i18n-soak.ts --",
+    "art:build": "vite-node tools/art/build.ts --",
+    "art:sheet": "vite-node tools/art/sheet.ts --"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

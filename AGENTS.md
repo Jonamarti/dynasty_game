@@ -116,6 +116,13 @@ the English unchanged, which is why `sim:check:all` stays bit-identical.
 and history all route through `sim/social/Knowledge.ts`. This includes the
 entity picker and any new panel.
 
+**Never edit `public/art/` by hand.** Those PNG and JSON files are generated from
+`art/src/` by `npm run art:build` and committed. Change a generator, rebuild,
+and look at `npm run art:sheet`. `src/render/__tests__/art.test.ts` fails if
+the sheets and the generators disagree, or if the game gained a species, a
+building, an expression or a held object the art does not draw. See
+`art/README.md` and `docs/m15_art_pipeline.md`.
+
 **Every full-screen overlay needs `[hidden] { display: none; }` in the CSS.**
 An author `display` beats the browser's rule for the `hidden` attribute, so a
 hidden overlay stays laid out and swallows every click on the game underneath.

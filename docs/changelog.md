@@ -35,6 +35,49 @@ semillas acabó en 18,6%, idéntica a las diez semillas correspondientes de la
 cohorte previa: el cambio altera el score probado, pero no demuestra una mejora
 de supervivencia.
 
+## 2026-09-29 — M15 fase 17: tubería de arte y arte nuevo
+
+El arte se genera una vez y se guarda en el repo (decisión 9). `art/src/` son los
+generadores (código que escribe SVG); `npm run art:build` (`tools/art/build.ts`)
+los rasteriza con el Chromium de Playwright, recorta y empaqueta en hojas PNG
+bajo `public/art/` con un manifiesto por dominio (`people`, `props`,
+`buildings`, `animals`), y deduplica por el texto del SVG: 6.245 capas de
+personas se quedan en 1.397 imágenes, y todo el arte ocupa unos 900 KB. El build
+es idéntico byte a byte entre ejecuciones (comprobado). `npm run art:sheet`
+compone todo con el mismo `ArtAtlas` que usa el juego y guarda hojas de contacto
+en `artifacts/art/`.
+
+**Personas por capas** (`art/src/people/rig.ts`): sombra, piernas, torso,
+taparrabos y banda de pecho de serie, brazos, manos, cabeza, cara, pelo, barba y
+una capa por prenda (piel al hombro, piel cruzada, túnica, túnica larga, pantalón,
+botas, trapos, guantes, gorro, capucha, capa), independientes entre sí; cinco
+edades, dos sexos, tres orientaciones (oeste es el espejo del este) y cinco poses
+(quieto y cuatro pasos). Piel, pelo y color de tribu se dibujan en blanco y grises
+y se multiplican por el color de cada persona al componerla, así que diez tonos de
+piel no multiplican las hojas. Bebé en brazos (con bracitos y piernas) y bebé
+tumbado (suelo, estera, cuna). **Objetos**: 22 iconos y ocho objetos en mano con
+punto de agarre. **Edificios**: 19 en vista oblicua con su propia forma, la planta
+sin techo de los seis que la tienen y un pendón con el color de la tribu.
+**Animales**: ciervo, jabalí y liebre con cuatro fotogramas de paso.
+
+**Renderer** (`src/render/ArtAtlas.ts`, `Renderer.ts`): carga las hojas al arrancar
+(`main.ts`; si fallan, cae al dibujo procedural de siempre), compone cada aspecto
+distinto una sola vez (caché de 1.500) y dibuja cada persona con un `drawImage`.
+La dirección la deduce del movimiento o del objetivo de la acción y nunca se guarda
+en `src/sim/`. Personas, animales y edificios altos se dibujan de atrás adelante
+por la fila de sus pies; los edificios planos (almacén, foso, lazos, nasa, molino,
+hoguera) quedan en el suelo para no tapar a nadie. Aro tenue en el suelo y pendón
+con el color de la tribu. El techo se levanta (planta a la vista) cuando el
+jugador o la persona seleccionada está dentro, o con `Renderer.hideRoofs`.
+
+Piel: hoy es un tono por tribu. Un hijo de dos tribus debería tomar la media de los
+tonos de sus padres (regla del propietario, determinista, sin RNG), pero eso pide
+guardar el tono por persona en `src/sim/` y queda para una fase de simulación.
+Detalle en `docs/m15_art_pipeline.md`. Tests: cobertura del arte frente a
+especies, edificios, expresiones y objetos en mano, y que las hojas versionadas
+coincidan con los generadores (`src/render/__tests__/art.test.ts`). Capturas:
+`artifacts/screenshots/m15-17-*.png`.
+
 ## 2026-09-29 — M15 corrección de la niebla acumulativa
 
 Cada revisión de la memoria volvía a pintar la máscara transparente sobre sí

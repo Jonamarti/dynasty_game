@@ -3382,3 +3382,12 @@ español/inglés) agotaron cada uno el timeout de 5 s sin llegar a una aserción
 fallida. `band.test.ts` también excedió el límite al ejecutarse solo (5,01 s).
 No se cambió el timeout porque estos casos no pertenecen a 11d y no se ha
 confirmado si la máquina o el código los hace cruzar el límite.
+
+## Found during M15 fase 17 — la boca de `Sprites.ts` está invertida (2026-09-29)
+
+En `paintFace` la curva de la boca usa `quadraticCurveTo(cx, mouthY - curve, …)`:
+con `curve` positivo el punto de control queda **por encima** de los extremos y la
+boca se curva hacia arriba, es decir, fruncida. `warm` y `content` se dibujaban
+tristes y `pained` sonriente. No se corrige: el arte nuevo (`art/src/people/rig.ts`)
+no usa ese código y el dibujo procedural solo queda como respaldo si las hojas no
+cargan. Si alguien mantiene ese respaldo, el signo es el que hay que cambiar.

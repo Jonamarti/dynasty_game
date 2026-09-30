@@ -11,6 +11,7 @@ import './style.css';
 import { Simulation } from './sim/core/Simulation.ts';
 import { Camera } from './render/Camera.ts';
 import { Renderer, hitRadiusOf, nodeIsHidden, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
+import { ArtAtlas } from './render/ArtAtlas.ts';
 import { actionLabel, stopReasonLabel } from './render/Floaters.ts';
 import { Hud, corpseTitle, type Selection } from './ui/Hud.ts';
 import { RadialMenu } from './ui/RadialMenu.ts';
@@ -105,6 +106,10 @@ const camera = new Camera();
 if (player) camera.snapTo(player.x, player.y);
 
 const renderer = new Renderer(canvas, sim, camera);
+// The committed art (public/art, made by `npm run art:build`). If the sheets
+// cannot be fetched the renderer falls back to the procedural figures it always
+// had, so a missing file never blanks the game.
+renderer.setArt(await ArtAtlas.load('art/').catch(() => null));
 renderer.fogEnabled = loadFogOfWar();
 renderer.resize();
 window.addEventListener('resize', () => renderer.resize());

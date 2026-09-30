@@ -31,8 +31,12 @@ import { canSeePlace, knowsPersonCondition } from '../sim/social/Knowledge.ts';
 import { Camera, TILE } from './Camera.ts';
 import { Floaters } from './Floaters.ts';
 import { t } from '../i18n/i18n.ts';
+import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
+import type { ArtDir, ArtPose } from './ArtManifest.ts';
+import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import {
   SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
+  type SizeClass,
 } from './Sprites.ts';
 
 const BIOME_COLORS: Record<Biome, [string, string]> = {
@@ -266,7 +270,24 @@ export class Renderer {
    * and never rebuilt by `setSim`: unlike the terrain, nothing about it
    * depends on which world is loaded.
    */
-  private readonly atlas = new SpriteAtlas();
+  private legacyAtlas: SpriteAtlas | null = null;
+  private get atlas(): SpriteAtlas { return (this.legacyAtlas ??= new SpriteAtlas()); }
+
+  /**
+   * The committed art (`public/art`, see `ArtAtlas.ts`). When it is present
+   * nothing is baked at startup and `atlas` above is never built; when it is
+   * absent (a test that has no sheets, a failed fetch) the game falls back to
+   * the procedural figures it always had.
+   */
+  private art: ArtAtlas | null = null;
+  /** Presentation only: hides every roof, the way the roof-lift key will once phase 16 lands. */
+  hideRoofs = false;
+  /** Buildings that stand up out of the ground this frame, depth-sorted with the people. */
+  private readonly tallBuildings: Building[] = [];
+  private frameHighlight: Highlight | null = null;
+  private readonly animalTrack = new Map<number, { x: number; distance: number; east: boolean; movedAt: number }>();
+
+  setArt(art: ArtAtlas | null): void { this.art = art; }
 
   /**
    * Walk-cycle phase per person, presentation state exactly like
@@ -275,7 +296,7 @@ export class Renderer {
    * simulation tracks, and swept the same way `Interpolator` sweeps its own
    * tracks so a century of dead people does not accumulate here.
    */
-  private readonly walkPhase = new Map<number, { x: number; y: number; distance: number; seen: number }>();
+  private readonly walkPhase = new Map<number, { x: number; y: number; distance: number; seen: number; dir: ArtDir; movedAt: number }>();
   private walkPhaseCapture = 0;
 
   /**
@@ -498,6 +519,11 @@ export class Renderer {
 
     // --- Buildings ---------------------------------------------------------
     // Drawn under people so someone standing in a doorway is not hidden by it.
+    // With the committed art, the ones that stand up out of the ground (huts,
+    // houses, ovens) are left for the depth-sorted pass below, so a person
+    // behind a hut is behind it and a person at its door is in front.
+    this.frameHighlight = highlight;
+    this.tallBuildings.length = 0;
     for (const building of sim.buildings) {
       if (building.x > view.maxX || building.y > view.maxY) continue;
       if (building.x + building.def.width < view.minX) continue;
@@ -642,20 +668,21 @@ export class Renderer {
       }
     }
 
-    // --- Animals -----------------------------------------------------------
-    // Under people, like buildings: a hunter standing over a kill should be the
-    // figure you can see.
+    // --- Animals, people and tall buildings, back to front ------------------
+    // Sorted on the row their feet (or a wall's foot) stand on. Animals go in
+    // first, then people, so at equal depth a hunter is still drawn over the
+    // kill, as before.
     // Culled on the drawn position rather than the simulation one, so nothing
     // pops out of the view half a step before it leaves it.
+    const depth: { y: number; kind: number; ref: Animal | Person | Building; at: Placed | null }[] = [];
     for (const animal of sim.animals) {
       if (!animal.alive) continue;
       const at = this.interpolator.at('animal', animal, alpha);
       if (at.x < view.minX || at.x > view.maxX) continue;
       if (at.y < view.minY || at.y > view.maxY) continue;
       if (!inSight(at.x, at.y)) continue;
-      this.drawAnimal(animal, highlight?.animalId === animal.id, at);
+      depth.push({ y: at.y + 0.1, kind: 0, ref: animal, at });
     }
-
     // --- People ------------------------------------------------------------
     // A carried baby (M15 phase 20) shares its carrier's position exactly, so
     // drawn in list order it vanished under her or covered her face. It is
@@ -673,14 +700,22 @@ export class Renderer {
       const at = this.interpolator.at('person', person, alpha);
       if (at.x < view.minX || at.x > view.maxX || at.y < view.minY || at.y > view.maxY) continue;
       if (!inSight(at.x, at.y)) continue;
-      this.drawPerson(person, highlight?.personId === person.id, at);
-      const babies = carried.get(person.id);
-      if (!babies) continue;
-      babies.forEach((baby, i) => {
-        const side = i === 0 ? 1 : -1;
-        this.drawPerson(baby, highlight?.personId === baby.id,
-          { ...at, x: at.x + side * 0.22, y: at.y - 0.06 });
-      });
+      depth.push({ y: at.y + 0.35 * bodyScaleOf(person), kind: 1, ref: person, at });
+    }
+    for (const b of this.tallBuildings) depth.push({ y: b.y - 0.5 + b.def.height, kind: 2, ref: b, at: null });
+    depth.sort((a, b) => a.y - b.y);
+    for (const d of depth) {
+      if (d.kind === 0) this.drawAnimal(d.ref as Animal, highlight?.animalId === (d.ref as Animal).id, d.at!);
+      else if (d.kind === 1) {
+        const person = d.ref as Person;
+        this.drawPerson(person, highlight?.personId === person.id, d.at!);
+        const babies = carried.get(person.id);
+        babies?.forEach((baby, i) => {
+          const side = i === 0 ? 1 : -1;
+          this.drawPerson(baby, highlight?.personId === baby.id,
+            { ...d.at!, x: d.at!.x + side * 0.22, y: d.at!.y - 0.06 });
+        });
+      } else this.drawBuildingSprite(d.ref as Building, false);
     }
 
     // --- Build ghost -------------------------------------------------------
@@ -1152,6 +1187,93 @@ export class Renderer {
     }
   }
 
+  /** Buildings the art draws flat on the ground: people walk over them, so they never hide anyone. */
+  private static readonly FLAT_BUILDINGS: ReadonlySet<string> = new Set(['stockpile', 'storage_pit', 'fish_trap', 'snare', 'quern', 'hearth']);
+
+  /** Is somebody the player is watching standing inside `b`? Then the roof lifts (phase 16's rule, early). */
+  private roofLifted(b: Building): boolean {
+    if (this.hideRoofs) return true;
+    const p = this.sim.player;
+    if (p && b.contains(p.x, p.y)) return true;
+    const id = this.frameHighlight?.personId;
+    if (id !== undefined) {
+      const sel = this.sim.peopleById.get(id);
+      if (sel && b.contains(sel.x, sel.y)) return true;
+    }
+    return false;
+  }
+
+  /**
+   * A finished building from the committed art. Returns false when there is
+   * none (a site, a ruin, a field or a kind the art lacks), and the caller
+   * draws the plain rectangle as before. The tribe's ring and selection box
+   * are drawn here, on the ground; the picture itself is either drawn now
+   * (flat things, and roofless plans) or queued for the depth-sorted pass.
+   */
+  private drawBuildingArt(building: Building, selected: boolean, px: number, py: number, w: number, h: number): boolean {
+    const art = this.art!;
+    if (!building.complete || building.crop || building.ruined) return false;
+    const bm = art.manifest('buildings');
+    const id = building.def.id;
+    if (!(('b/' + id + '/ext') in bm.keys)) return false;
+    const { ctx } = this;
+
+    // Whose it is: a thin ring on the ground round the footprint, and (below) a pennant.
+    ctx.save();
+    ctx.strokeStyle = BAND_COLORS[bandColorIndex(building.ownerBandId)]!;
+    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(px + w / 2, py + h / 2, w * 0.56, h * 0.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    if (building.soundness < 1) {
+      const barW = w * 0.8;
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(px + w * 0.1, py + h - 8, barW, 5);
+      ctx.fillStyle = '#d9705a';
+      ctx.fillRect(px + w * 0.1, py + h - 8, barW * building.soundness, 5);
+    }
+    if (selected) {
+      ctx.strokeStyle = '#7fd4ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px - 2, py - 2, w + 4, h + 4);
+    }
+
+    const hasPlan = (('b/' + id + '/plan') in bm.keys);
+    if (hasPlan && this.roofLifted(building)) this.drawBuildingSprite(building, true);
+    else if (Renderer.FLAT_BUILDINGS.has(id)) this.drawBuildingSprite(building, false);
+    else this.tallBuildings.push(building);
+    return true;
+  }
+
+  /** The exterior (or the roofless plan) of a building, its pennant included. */
+  private drawBuildingSprite(building: Building, plan: boolean): void {
+    const art = this.art!, { ctx, camera } = this;
+    const bm = art.manifest('buildings');
+    const key = 'b/' + building.def.id + (plan ? '/plan' : '/ext');
+    const box = art.assetBox('buildings', key);
+    if (!box) return;
+    const scale = camera.scale;
+    const fw = building.def.width * scale, fh = building.def.height * scale;
+    const left = camera.worldToScreenX(building.x - 0.5), top = camera.worldToScreenY(building.y - 0.5);
+    const cx = left + fw / 2, bottom = top + fh;
+    // Fit the picture's own width to the footprint, a little wider for the eaves.
+    const u = (fw * (plan ? 1.0 : 1.05)) / box.w;
+    const x0 = cx - (box.ox + box.w / 2) * u;
+    const groundY = (plan ? bm.meta['planGroundY'] : bm.meta['groundY']) as number;
+    const y0 = plan ? top + fh / 2 - (box.oy + box.h / 2) * u : bottom - groundY * u;
+    art.drawAsset(ctx, 'buildings', key, x0, y0, u);
+    if (!plan) {
+      // A pennant in the tribe's colour at the right-hand corner of the front edge.
+      const bu = scale / 40;
+      const bx = cx + fw * 0.46 - 6 * bu, by = bottom - 46 * bu;
+      art.drawAsset(ctx, 'buildings', 'banner/pole', bx, by, bu);
+      art.drawAsset(ctx, 'buildings', 'banner/cloth', bx, by, bu, BAND_COLORS[bandColorIndex(building.ownerBandId)]!);
+    }
+  }
+
   private drawBuilding(building: Building, selected: boolean): void {
     const { ctx, camera } = this;
     const scale = camera.scale;
@@ -1159,6 +1281,8 @@ export class Renderer {
     const py = camera.worldToScreenY(building.y - 0.5);
     const w = building.def.width * scale;
     const h = building.def.height * scale;
+
+    if (this.art && this.drawBuildingArt(building, selected, px, py, w, h)) return;
 
     if (!building.complete) {
       // A site reads as an outline and a progress bar: clearly a plan rather
@@ -1293,11 +1417,14 @@ export class Renderer {
     const w = scale * bodyScale * 0.34;
     const h = scale * bodyScale * 0.52;
 
-    // Shadow first, so bodies read as standing on the ground.
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(px, py + h * 0.45, w * 0.6, w * 0.28, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Shadow first, so bodies read as standing on the ground. The committed
+    // art bakes its own, so this is only the procedural fallback's.
+    if (!this.art) {
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(px, py + h * 0.45, w * 0.6, w * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     const sizeClass = sizeClassOf(person);
     const colorIndex = bandColorIndex(person.bandId);
@@ -1305,7 +1432,16 @@ export class Renderer {
     if (scale < PERSON_LOD_BELOW) {
       // Too small on screen for a face or a tool to read. One `drawImage`,
       // matching the shape `if (scale > 20)` already gives building icons.
-      this.atlas.drawSilhouette(ctx, sizeClass, colorIndex, px, py, this.atlas.bodyDrawSize(sizeClass, w) * 1.15);
+      if (this.art) {
+        ctx.fillStyle = BAND_COLORS[colorIndex]!;
+        ctx.beginPath();
+        ctx.ellipse(px, py, w * 0.75, h * 1.0, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        this.atlas.drawSilhouette(ctx, sizeClass, colorIndex, px, py, this.atlas.bodyDrawSize(sizeClass, w) * 1.15);
+      }
+    } else if (this.art) {
+      this.drawArtPerson(this.art, person, at, px, py, scale, bodyScale, sizeClass, colorIndex);
     } else {
       const bodySize = this.atlas.bodyDrawSize(sizeClass, w);
       this.atlas.drawPerson(ctx, {
@@ -1366,6 +1502,71 @@ export class Renderer {
     }
   }
 
+  /** Which way to face for a step of `dx, dy`, keeping the old facing on near-ties so a diagonal walk does not flicker. */
+  private static facingOf(dx: number, dy: number, prev: ArtDir): ArtDir {
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    const horizontal = prev === 'E' || prev === 'W';
+    if (horizontal ? ay > ax * 1.4 : ax > ay * 1.4) return ax > ay ? (dx > 0 ? 'E' : 'W') : (dy > 0 ? 'S' : 'N');
+    return horizontal ? (dx > 0 ? 'E' : 'W') : (dy > 0 ? 'S' : 'N');
+  }
+
+  /** One skin tone per tribe, in the same order as `BAND_COLORS` (the last is for outcasts). */
+  private static readonly TRIBE_SKIN = [
+    '#ecd0ab', '#d4a276', '#bd865a', '#a26a46', '#84512f', '#663a24', '#f2d8ba', '#b17c50', '#c58d5f',
+  ];
+  /** The body scale at the middle of each size class, so growing up is smooth inside a baked figure. */
+  private static readonly NOMINAL_SCALE: Record<SizeClass, number> = {
+    infant: 0.55 + (1.5 / ADULT_YEARS) * 0.45, child: 0.55 + (5.5 / ADULT_YEARS) * 0.45,
+    adolescent: 0.55 + (((8 + ADULT_YEARS) / 2) / ADULT_YEARS) * 0.45, adult: 1, elder: 0.94,
+  };
+
+  /**
+   * A person from the committed layers: the tribe's ring on the ground, then
+   * one `drawImage` of the composed figure. Which way they face is deduced
+   * here from how they moved (or, standing, from where their work is), never
+   * stored in the simulation.
+   */
+  private drawArtPerson(
+    art: ArtAtlas, person: Person, at: Placed, px: number, py: number, scale: number,
+    bodyScale: number, sizeClass: SizeClass, colorIndex: number
+  ): void {
+    const { ctx } = this;
+    const frame = this.walkPoseFor(person, at);
+    const track = this.walkPhase.get(person.id)!;
+    const moving = performance.now() - track.movedAt < 140;
+    let dir = track.dir;
+    if (!moving && person.targetX !== null && person.targetY !== null) {
+      const tx = person.targetX - at.x, ty = person.targetY - at.y;
+      if (Math.hypot(tx, ty) > 0.2) dir = Renderer.facingOf(tx, ty, dir);
+    }
+    const hair = hairVariantOf(person);
+    const hairStyle = hair === 'bald' || hair === 'balding' ? hair : person.sex === 'female' ? 'long' : 'short';
+    const aspect: PersonAspect = {
+      age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
+      pose: moving ? (('w' + frame) as ArtPose) : 'idle',
+      skin: Renderer.TRIBE_SKIN[colorIndex]!,
+      hair: hair === 'grey' ? '#a7a197' : person.id % 3 === 0 ? '#5b3d28' : '#2b2018',
+      band: BAND_COLORS[colorIndex]!,
+      hairStyle, beard: hasBeardOf(person), expression: this.expressionFor(person),
+      wear: {}, carryBaby: false, held: heldItemFor(person),
+    };
+    const ratio = Math.min(1.2, Math.max(0.85, bodyScale / Renderer.NOMINAL_SCALE[sizeClass]));
+    const k = (scale * 1.55 * ratio) / 96;
+    // The figure's vertical middle sits on the person's position, as the
+    // procedural body's did, so `hitRadiusOf` still lands on it.
+    const x0 = px - 48 * k, y0 = py - 52 * k;
+    const ring = BAND_COLORS[colorIndex]!;
+    ctx.save();
+    ctx.strokeStyle = ring;
+    ctx.globalAlpha = 0.8;
+    ctx.lineWidth = Math.max(1, 1.5 * k);
+    ctx.beginPath();
+    ctx.ellipse(px, y0 + 88.6 * k, 17 * k, 4.4 * k, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    ctx.drawImage(art.compose(aspect), x0, y0, 96 * k, 96 * k);
+  }
+
   /** Screen-tile distance a walk cycle covers before advancing to the next
    * of the atlas's four pose frames. */
   private static readonly WALK_STEP_TILES = 0.38;
@@ -1382,10 +1583,16 @@ export class Renderer {
     this.walkPhaseCapture++;
     let track = this.walkPhase.get(person.id);
     if (!track) {
-      track = { x: at.x, y: at.y, distance: 0, seen: this.walkPhaseCapture };
+      track = { x: at.x, y: at.y, distance: 0, seen: this.walkPhaseCapture, dir: 'S', movedAt: 0 };
       this.walkPhase.set(person.id, track);
     }
-    track.distance += Math.hypot(at.x - track.x, at.y - track.y);
+    const dx = at.x - track.x, dy = at.y - track.y;
+    const moved = Math.hypot(dx, dy);
+    track.distance += moved;
+    if (moved > 0.0005) {
+      track.movedAt = performance.now();
+      track.dir = Renderer.facingOf(dx, dy, track.dir);
+    }
     track.x = at.x;
     track.y = at.y;
     track.seen = this.walkPhaseCapture;
@@ -1476,6 +1683,19 @@ export class Renderer {
     const w = scale * size;
     const h = scale * size * 0.62;
 
+    if (this.art && this.drawArtAnimal(this.art, animal, at, px, py, w, h)) {
+      if (animal.alarmed) {
+        ctx.fillStyle = '#ffd35c';
+        ctx.fillRect(px - 1, py - h / 2 - scale * 0.42, 2, scale * 0.2);
+      }
+      if (selected) {
+        ctx.strokeStyle = '#7fd4ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px - w / 2 - 3, py - h / 2 - 3, w + 6, h + 6);
+      }
+      return;
+    }
+
     ctx.fillStyle = ANIMAL_COLORS[animal.species];
     ctx.fillRect(px - w / 2, py - h / 2, w, h);
     // Head, offset, so the thing has a facing at a glance.
@@ -1493,6 +1713,33 @@ export class Renderer {
       ctx.lineWidth = 2;
       ctx.strokeRect(px - w / 2 - 3, py - h / 2 - 3, w + 6, h + 6);
     }
+  }
+
+  /** A beast from the committed frames, facing whichever way it last moved. False if the art has no such species. */
+  private drawArtAnimal(art: ArtAtlas, animal: Animal, at: Placed, px: number, py: number, w: number, h: number): boolean {
+    const { ctx } = this;
+    let tr = this.animalTrack.get(animal.id);
+    if (!tr) {
+      if (this.animalTrack.size > 4096) this.animalTrack.clear();
+      tr = { x: at.x, distance: 0, east: true, movedAt: 0 };
+      this.animalTrack.set(animal.id, tr);
+    }
+    const dx = at.x - tr.x;
+    if (Math.abs(dx) > 0.0004) { tr.east = dx > 0; tr.movedAt = performance.now(); tr.distance += Math.abs(dx); }
+    tr.x = at.x;
+    const moving = performance.now() - tr.movedAt < 200;
+    const pose = moving ? 'w' + (Math.floor(tr.distance / 0.22) % 4) : 'idle';
+    const key = 'a/' + animal.species + '/E/' + pose;
+    const box = art.assetBox('animals', key);
+    if (!box) return false;
+    const k = (w * 1.35) / box.w;
+    // Feet on the row the old rectangle's bottom edge sat on.
+    const x0 = px - 48 * k, y0 = py + h / 2 - 84 * k;
+    ctx.save();
+    if (!tr.east) { ctx.translate(px, 0); ctx.scale(-1, 1); ctx.translate(-px, 0); }
+    art.drawAsset(ctx, 'animals', key, x0, y0, k);
+    ctx.restore();
+    return true;
   }
 
   /**
