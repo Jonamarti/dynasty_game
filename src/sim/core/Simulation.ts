@@ -3834,6 +3834,7 @@ export class Simulation {
       householdsById: this.householdsById,
       averageRenownByBand: averageRenownByBand(this.householdsById),
       buildingsById: this.buildingsById,
+      peopleById: this.peopleById,
       dependentHunger: (person: Person) => person.childIds.reduce((highest, id) => {
         const child = this.peopleById.get(id);
         if (!child?.alive || !child.isChild ||

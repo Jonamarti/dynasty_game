@@ -4,6 +4,7 @@ import { makeConfig } from '../core/Config.ts';
 import { ItemPile } from '../entities/ItemPile.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { lastScores } from '../ai/Brain.ts';
+import { mayTakeFromPile } from '../social/Property.ts';
 
 describe('NPC pickup', () => {
   it('scores dropped food for a hungry NPC and executes the pickup action', () => {
@@ -54,70 +55,34 @@ describe('NPC pickup', () => {
     telemetry.disable();
   });
 
-  /** A quiet one-band world with one hungry NPC standing on a heap. */
-  function hungryOnHeap(ownerId: number | null, seed: string) {
+  it("plans on a stranger's heap only while nobody of their band is watching it", () => {
     const sim = new Simulation(makeConfig({
-      seed,
+      seed: 'npc-pickup-owner',
       world: { width: 64, height: 64 },
       population: { bands: 2, peoplePerBand: 2 },
     }));
-    const person = sim.people.find(candidate => candidate.alive && !candidate.isPlayer)!;
-    for (const other of sim.people) { if (other !== person) { other.x = 2; other.y = 2; } }
-    person.x = 30;
-    person.y = 30;
-    person.needs.hunger = 80;
-    person.needs.thirst = 0;
-    person.needs.fatigue = 0;
-    person.order = null;
-    person.action = 'idle';
-    sim.nodes.length = 0;
-    sim.nodesById.clear();
-    sim.nodeHash.rebuild(sim.nodes);
-    for (const tree of sim.trees) { tree.standing = false; tree.fruit = 0; }
-    for (const animal of sim.animals) animal.alive = false;
-    const pile = new ItemPile(30, 30, ownerId, sim.time.tick);
-    pile.contents.add('meat', 8);
-    sim.piles.push(pile);
-    sim.pilesById.set(pile.id, pile);
-    sim.pileHash.rebuild(sim.piles);
-    return { sim, person, pile };
-  }
-
-  const offersPickup = (sim: Simulation, person: { id: number }) => {
-    for (let i = 0; i < 10; i++) sim.step();
-    return lastScores.get(person.id)?.some(row => row.id === 'pickup' && row.score > 0) ?? false;
-  };
-
-  it("leaves a stranger's heap alone while somebody of their band is watching it", () => {
-    const { sim, person } = hungryOnHeap(null, 'npc-pickup-watched');
+    const person = sim.people.find(p => !p.isPlayer)!;
     const stranger = sim.people.find(p => p.bandId !== person.bandId)!;
     const witness = sim.people.find(p => p.bandId === stranger.bandId && p !== stranger)!;
-    const heap = sim.piles[0]!;
-    const owned = new ItemPile(heap.x, heap.y, stranger.id, sim.time.tick);
-    owned.contents.add('meat', 8);
-    sim.piles.length = 0;
-    sim.pilesById.clear();
-    sim.piles.push(owned);
-    sim.pilesById.set(owned.id, owned);
-    sim.pileHash.rebuild(sim.piles);
-    witness.x = 32;
-    witness.y = 30;
-    stranger.x = 2;
-    stranger.y = 2;
-    expect(offersPickup(sim, person)).toBe(false);
-  });
+    const bandmate = sim.people.find(p => p.bandId === person.bandId && p !== person)!;
+    for (const p of sim.people) { p.x = 2; p.y = 2; }
+    person.x = 30; person.y = 30;
+    sim.peopleHash.rebuild(sim.people);
+    const ctx = { peopleHash: sim.peopleHash, sightRadius: sim.config.sightRadius, bandRelations: sim.bandRelations };
+    const heap = (ownerId: number | null) => ({ x: 30, y: 30, ownerId });
 
-  it("takes a stranger's heap once nobody of their band is in sight of it", () => {
-    const { sim, person } = hungryOnHeap(null, 'npc-pickup-unseen');
-    const stranger = sim.people.find(p => p.bandId !== person.bandId)!;
-    const heap = sim.piles[0]!;
-    const owned = new ItemPile(heap.x, heap.y, stranger.id, sim.time.tick);
-    owned.contents.add('meat', 8);
-    sim.piles.length = 0;
-    sim.pilesById.clear();
-    sim.piles.push(owned);
-    sim.pilesById.set(owned.id, owned);
-    sim.pileHash.rebuild(sim.piles);
-    expect(offersPickup(sim, person)).toBe(true);
+    expect(mayTakeFromPile(person, heap(null), sim.peopleById, ctx)).toBe(true);
+    expect(mayTakeFromPile(person, heap(bandmate.id), sim.peopleById, ctx)).toBe(true);
+    // Unwatched: the owner and their band are all far away.
+    expect(mayTakeFromPile(person, heap(stranger.id), sim.peopleById, ctx)).toBe(true);
+    // Watched: one of the owner's band stands beside the heap.
+    witness.x = 32; witness.y = 30;
+    sim.peopleHash.rebuild(sim.people);
+    expect(mayTakeFromPile(person, heap(stranger.id), sim.peopleById, ctx)).toBe(false);
+    // With no way to look the owner up, the same watched heap reads as fair
+    // game. That is what the scorer saw until `BrainContext.peopleById` became
+    // required, and why the watched assertion above is driven through this
+    // function directly rather than through the scorer's top six.
+    expect(mayTakeFromPile(person, heap(stranger.id), new Map(), ctx)).toBe(true);
   });
 });

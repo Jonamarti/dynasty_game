@@ -9569,3 +9569,54 @@ atribuirlo a este cambio. `band.test.ts` conserva su timeout conocido. Faltan
 `equipFor`, las herramientas de oficio y las razones `no_free_hand`,
 `needs_both_hands` y `too_heavy`, que no se declaran hasta que exista quien las
 use. No cambia la UI; no requiere captura.
+
+## 2026-09-30 — M15 fase 11d: el `Brain` ya sabe quién es quién
+
+**Defecto de fondo.** `BrainContext.peopleById` era opcional desde M12
+(`0c01f5d`) y `Simulation` nunca lo pasó. Nada fallaba: cada lector veía un
+mundo vacío. Quedaron inertes desde que se escribieron, y medidos como si
+funcionaran: el ancla de un niño en su cuidador (`carerOf`, M13 fase 2), el
+alcance recortado de los padres (`parentReach`), la reserva de comida del hogar
+en `possessionPull`, el jefe en la despensa privilegiada (M12), la puntuación de
+`nurse` dentro del `Brain`, el reparo del agua para quien tiene dependientes, y
+el filtro de propiedad de montones del commit anterior (su prueba pasaba por
+otra razón; ver abajo). Ahora es obligatorio y se pasa.
+
+**Encenderlo solo es letal.** Con el mapa pasado y nada más, tres semillas
+`lean` dieron madres lactantes muriendo a 3,73 por cada 100 personas-día (1,56
+antes) y 10.338 muestras de un padre hambriento que recordaba comida y no tenía
+ninguna opción de comer: la regla de `collectKnownNodes` que negaba toda la
+memoria a quien tuviera un hijo vivo (de cualquier edad) había estado dormida.
+Se retira: el filtro de alcance ya mantiene a los padres cerca de casa, y esta
+segunda regla solo quitaba la salida que ese filtro deja al desesperado. Además
+el conjunto de sitios recordados se filtraba por alcance incluso para la
+llamada desesperada (`enforceReach = false`), y se cacheaba por persona con el
+alcance de la primera llamada; ahora guarda por tipo el más cercano dentro del
+alcance y el más cercano sin más, y el filtro lo aplica `findNode` según pida
+cada llamada.
+
+**Medido:** `lean` a 20 semillas, **25,2%** de supervivencia y 10/20 colapsos,
+frente a 16,5% y 15/20 del commit anterior y a la referencia de 21,8%. Es la
+primera cohorte desde 11c que supera la puerta demográfica. `npm run infants`
+(nuevo, commit anterior) es el instrumento que encontró las tres piezas.
+
+`mayTakeFromPile` sale de `Brain` a `social/Property.ts` y su prueba lo llama
+directamente: la anterior pasaba por el scorer y leía las seis primeras filas
+de `lastScores`, y pasaba igual en el build roto porque la fila quedaba fuera de
+las seis por otra razón. `parent-memory.test.ts` fija el padre desesperado con
+comida recordada fuera de vista y de alcance; falla en el commit anterior y con
+la regla de los padres restaurada.
+
+`band.test.ts` «is actually exercised by somebody who is not the chief» pasaba
+de timeout a fallo real: en la semilla fijada el jefe ya no respalda ninguna
+obra en cuarenta días, así que ningún jefe de hogar tiene a dónde mandar a
+nadie. Es divergencia, no el mecanismo: otras tres semillas dan órdenes por
+rango al mismo ritmo que antes (24/40, 4/13 y 2/7 obedecidas/rechazadas frente
+a 15/37, 2/15 y 2/6). La prueba recorre ahora hasta tres semillas y tiene un
+timeout explícito de 60 s, que también cierra el timeout conocido.
+
+`sim:check:all`: los rojos crónicos siguen (`people-act-on-what-they-know`,
+`cravings-steer-the-diet`, `nights-are-slept`...). `lean` pasa de 57 a 59/66.
+Aparecen `camps-move-when-the-land-fails` en `lean`, `the-watched-intervene` en
+`century` y `pots-reach-a-granary` en `craft`; no se ha confirmado si son
+divergencia o efecto, y quedan en `bugs.md`. Sin cambio de interfaz.

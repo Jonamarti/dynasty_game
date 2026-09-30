@@ -1259,6 +1259,13 @@ sesiones a tiempo antes de tocar los pesos de recolección.
   material que falta a una obra. `lean` a 20 semillas: 16,5% (referencia 21,8%,
   última cohorte de 11c 18,1%); la puerta de 11c sigue sin superarse. Faltan
   `equipFor`, herramientas de oficio y las razones visibles nuevas.
+- **Avance 2026-09-30 — lactantes y decisiones:** `npm run infants` sigue a
+  cada niño y audita a los adultos hambrientos. Encontró que `peopleById` nunca
+  llegaba al `Brain` (y con ello estaban inertes el ancla del niño, el alcance
+  de los padres y el filtro de propiedad de montones), que la memoria de sitios
+  se negaba entera a los padres y que se filtraba por alcance incluso en modo
+  desesperado. Corregido: `lean` a 20 semillas **25,2%** (referencia 21,8%;
+  anterior 16,5%). La puerta demográfica de 11c queda superada por primera vez.
 - **Razones visibles** (`abandon(…, razón)` con su frase por `t()`):
   `hands_full` («tiene las manos llenas»), `no_free_hand` («no tiene una mano
   libre»), `needs_both_hands` («hacen falta las dos manos»),

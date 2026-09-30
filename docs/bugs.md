@@ -1,5 +1,34 @@
 # Known bugs and rough edges
 
+## M15 11d, lo que encendió `peopleById` (2026-09-30)
+
+`BrainContext.peopleById` no se pasaba desde M12, así que todo lo que el `Brain`
+buscaba por id estaba inerte. Ahora se pasa, y con ello se encienden por primera
+vez: el ancla del niño en su cuidador (`Anchor.carerOf`), `parentReach` (20
+casillas para padres de menores de cuatro años), la reserva del hogar en
+`possessionPull`, el jefe en la despensa de la élite y la exploración de agua
+restringida a quien tiene dependientes. Ninguna de esas piezas se ha medido
+aisladamente encendida; la cohorte `lean` las mide juntas (25,2%). Cualquier
+conclusión anterior sobre `children-keep-close` o sobre el alcance de los padres
+se tomó con ellas apagadas.
+
+En la matriz del mismo commit aparecen en rojo `camps-move-when-the-land-fails`
+(`lean`), `the-watched-intervene` (`century`) y `pots-reach-a-granary`
+(`craft`), que no estaban en la anterior. Sin confirmar si es divergencia de una
+sola corrida o efecto de las piezas encendidas.
+
+**Lo que `npm run infants` encontró y queda abierto** (tres semillas `lean`):
+dos de cada tres niños que mueren lo hacen después que su madre, y el 85% de
+esas madres muere de hambre mientras cría a un lactante; los huérfanos de pecho
+mueren casi todos porque solo su madre puede amamantarlos (`motherOnlyFeeds`).
+El año dura cuarenta días, así que «lactante» significa menos de cuarenta días y
+un niño de 41 días tiene que conseguir su comida o que se la den; la puerta de
+dar de comer al niño falla sobre todo porque la madre tiene más hambre que él
+(79% de los ticks en peligro). Los adultos hambrientos sin ninguna opción de
+comida pasan la mayor parte del tiempo `idle`: la exploración por hambre sigue
+respetando el alcance aunque el hambre sea desesperada, al contrario que la del
+agua.
+
 ## M15 2i, pruebas de selección tras activar la niebla (2026-09-29)
 
 Seis e2e de interacción siguen fallando en la suite completa. Cinco intentan
@@ -3086,7 +3115,8 @@ screen cases pass. The named 2f/2g/2h/2k milestone images remain committed; the
 2i originals were restored after the tour regenerated them. This is a screenshot
 tour limitation, not a blocker for the new named captures.
 
-**M15 fase 3, resultados (2026-09-27):** hearths pasa sus tres checks; en la corrida final, 	he-hearth-warms midio 4969/12873 muestras frias aliviadas, oast-wins 256/292 y cooking-spreads 2 a 17 adultos. Cohortes de 20: hearths 99.7%, craft 99.9%, century 97.7% frente a referencia 95.5% (+2.2 puntos; gate <=3). No hubo mundos colapsados en century. Siguen los cinco fallos de rebaños y el timeout de and.test.ts heredados de fase 2; tambien falla perf-budget en los escenarios base.
+**M15 fase 3, resultados (2026-09-27):** hearths pasa sus tres checks; en la corrida final, 	he-hearth-warms midio 4969/12873 muestras frias aliviadas, 
+oast-wins 256/292 y cooking-spreads 2 a 17 adultos. Cohortes de 20: hearths 99.7%, craft 99.9%, century 97.7% frente a referencia 95.5% (+2.2 puntos; gate <=3). No hubo mundos colapsados en century. Siguen los cinco fallos de rebaños y el timeout de and.test.ts heredados de fase 2; tambien falla perf-budget en los escenarios base.
 
 **M15 route oscillation, 2026-09-27:** take, store, and go_home can travel with no action timer, so a later think tick can replace the destination before arrival. Drink already refreshes a short timer. Brain now retains a valid active route and lets known water override it once thirst reaches the configured work limit. Blocked or invalid routes still end through ActionSystem. Regression coverage is in autonomy.test.ts.
 

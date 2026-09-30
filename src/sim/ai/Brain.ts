@@ -51,7 +51,7 @@ import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { JOBS, WORK_ACTIONS } from '../entities/Job.ts';
 import { chooseAmongBest } from '../core/Choice.ts';
 import { fightingPower, vulnerabilityOf } from '../social/Vulnerability.ts';
-import { mayUse, ALLY_STANDING } from '../social/Property.ts';
+import { mayUse, mayTakeFromPile } from '../social/Property.ts';
 import {
   homeward, fearOf, wariness, STRANGER_AVERSION, DREAD_FLEE_AT, DREAD_FLEE_RANGE,
   DEFEND_AT, DEFEND_BELOW_STANDING, WARN_GRACE, WARN_MEMORY, DEFEND_CEILING, INNER_SHARE,
@@ -164,8 +164,18 @@ export interface BrainContext {
   motivation: MotivationConfig;
   /** Existing order authority, used to judge a request to help with work. */
   persuasionAuthority?: (sponsor: Person, listener: Person) => number;
-  /** Lets the scorer identify the chief when choosing a privileged larder. */
-  peopleById?: ReadonlyMap<number, Person>;
+  /**
+   * Everybody, living or dead, by id.
+   *
+   * Required. It was optional from M12 until M15 phase 11d, and `Simulation`
+   * never passed it, so every reader here quietly saw an empty world: a
+   * child never anchored to its carer, a parent never had their reach cut to
+   * `parentReach`, a heap's owner was never found, and the chief's larder
+   * never knew who the chief was. Nothing threw, and each of those features
+   * was measured as if it were running. A lookup table the scorer cannot work
+   * without is not optional.
+   */
+  peopleById: ReadonlyMap<number, Person>;
   /** For `mayUse`'s reading of how two bands currently stand. */
   bandRelations: BandRelations;
   /**
@@ -917,7 +927,7 @@ export class Brain {
         person.carrying < person.carryCapacity && hunger > 0.15) {
       for (const pile of ctx.pileHash.queryRadius(person.x, person.y, ctx.sightRadius, this.nearbyPiles)) {
         if (pile.empty || !ctx.world.sameRegion(person.x, person.y, pile.x, pile.y)) continue;
-        if (!this.mayTakeFromPile(person, pile, ctx)) continue;
+        if (!mayTakeFromPile(person, pile, ctx.peopleById, ctx)) continue;
         const item = pile.contents.entries().find(([id, count]) => count > 0 &&
           (ITEMS[id]?.nutrition ?? 0) > 0 && canTake(person, ctx.carry!, id, 1));
         if (!item) continue;
@@ -2474,7 +2484,7 @@ export class Brain {
               ? Object.keys(short.ingredients) : [missing]);
             for (const pile of ctx.pileHash.queryRadius(person.x, person.y, ctx.sightRadius, this.nearbyPiles)) {
               if (pile.empty || !ctx.world.sameRegion(person.x, person.y, pile.x, pile.y)) continue;
-              if (!this.mayTakeFromPile(person, pile, ctx)) continue;
+              if (!mayTakeFromPile(person, pile, ctx.peopleById, ctx)) continue;
               const itemId = pile.contents.entries().find(([id, count]) => count > 0 &&
                 wantsHere.has(id) && canTake(person, carry, id, 1))?.[0];
               if (!itemId) continue;
@@ -3685,27 +3695,6 @@ export class Brain {
    * distance and produced forty-one impossible walks in `farmers`. Property
    * and path regions are separate facts, but every scorer needs both.
    */
-  /**
-   * Whether a loose heap is fair game for this person to plan on taking.
-   *
-   * M15 phase 11d. Property is protected by attention rather than permission
-   * (M11 phase 4), and a heap is property as much as a store is: it belongs to
-   * whoever put it down. A heap nobody dropped (a kill, a felled tree's timber)
-   * is nobody's, and one a bandmate or an ally dropped is effectively ours. A
-   * stranger's heap is planned on only when nobody of the owner's band is in
-   * sight of it — the same `watched` test `mayUse` gives a building, so an NPC
-   * does not choose to steal under the owner's eye, and a heap left in an empty
-   * field is taken without anybody being told.
-   */
-  private mayTakeFromPile(person: Person, pile: ItemPile, ctx: BrainContext): boolean {
-    if (pile.ownerId === null || pile.ownerId === person.id) return true;
-    const owner = ctx.peopleById?.get(pile.ownerId);
-    if (!owner || owner.bandId === person.bandId) return true;
-    if (ctx.bandRelations.standing(person.bandId, owner.bandId) >= ALLY_STANDING) return true;
-    return !ctx.peopleHash.findNearest(pile.x, pile.y, ctx.sightRadius,
-      other => other.alive && other.id !== person.id && other.bandId === owner.bandId);
-  }
-
   private canUse(person: Person, building: Building, ctx: BrainContext): boolean {
     return !mayUse(person, building, ctx).watched &&
       ctx.world.sameRegion(person.x, person.y, building.centerX, building.centerY);
@@ -3808,15 +3797,33 @@ export class Brain {
     return best;
   }
 
-  /** Build the remembered candidate set once, only after local sources fail. */
+  /**
+   * Build the remembered candidate set once, only after local sources fail.
+   *
+   * Two candidates per kind: the nearest remembered place inside the anchor's
+   * reach, and the nearest anywhere. `findNode`'s own `eligible` applies the
+   * reach when its caller asks for it, so the set no longer decides that for
+   * every caller at once. It used to filter by reach here, which meant the
+   * desperate forager — the one caller that passes `enforceReach = false` so a
+   * starving person may walk past their usual range — still only ever saw
+   * remembered food inside it. The set is also cached per person for the whole
+   * think, so a reach baked in by the first caller leaked into every later one.
+   *
+   * Parents used to get no candidates at all, "to keep carers from choosing
+   * remote memories that separate them" from their children. That rule sat
+   * dormant from M13 until M15 phase 11d because `BrainContext.peopleById` was
+   * never passed; once it was, `lean` measured 10,338 hungry-parent samples
+   * with remembered food and no food option, and nursing mothers dying at
+   * 3.73 per 100 person-days against 1.56 without the rule. The reach filter
+   * already keeps a parent near home; this second, harder rule only removed
+   * the fallback the reach filter leaves open to the desperate.
+   */
   private collectKnownNodes(person: Person, ctx: BrainContext, anchor: Anchor | null, reach: number): void {
     this.knownNodeCandidates.length = 0;
     this.knownNodeIds.clear();
     // Children start learning places by following their carers in phase 2h.
-    // Until that channel exists, preserve their previous local search and keep
-    // their living carers from choosing remote memories that separate them.
-    const hasDependentChildren = person.childIds.some(id => ctx.peopleById?.get(id)?.alive);
-    if (person.isChild || hasDependentChildren) return;
+    // Until that channel exists, preserve their previous local search.
+    if (person.isChild) return;
     for (const kind of RESOURCE_KINDS) {
       const include = (place: ReturnType<Person['placeMemory']['nearest']>) => {
         if (!place) return;
@@ -3836,6 +3843,7 @@ export class Brain {
       include(person.placeMemory.nearest(`resource:${kind}`, person.x, person.y,
         memory => accepts(memory) && withinReach(anchor, reach, memory.x, memory.y),
         reachDistance));
+      include(person.placeMemory.nearest(`resource:${kind}`, person.x, person.y, accepts));
     }
   }
 

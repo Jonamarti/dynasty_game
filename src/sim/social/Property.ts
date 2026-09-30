@@ -101,3 +101,34 @@ export function mayUse(
     basis: 'unseen',
   };
 }
+
+/**
+ * Whether a loose heap is fair game for this person to plan on taking.
+ *
+ * M15 phase 11d. A heap is property as much as a store is: it belongs to
+ * whoever put it down. One nobody dropped (a kill, a felled tree's timber) is
+ * nobody's, and one a bandmate or an ally dropped is effectively ours. A
+ * stranger's heap is planned on only when nobody of the owner's band is in
+ * sight of it — the same `watched` reading `mayUse` gives a building, so an
+ * NPC does not choose to steal under the owner's eye, and a heap left in an
+ * empty field is taken without anybody being told.
+ *
+ * Here rather than in `Brain` so it can be tested on its own. The first
+ * version was a private method, and its test drove the scorer and read the
+ * top six of `lastScores` — which passed on a build where the owner could
+ * never be looked up at all, because the row was being crowded out of the
+ * six for a reason that had nothing to do with ownership.
+ */
+export function mayTakeFromPile(
+  person: Person,
+  pile: { x: number; y: number; ownerId: number | null },
+  peopleById: ReadonlyMap<number, Person>,
+  ctx: PropertyContext
+): boolean {
+  if (pile.ownerId === null || pile.ownerId === person.id) return true;
+  const owner = peopleById.get(pile.ownerId);
+  if (!owner || owner.bandId === person.bandId) return true;
+  if (ctx.bandRelations.standing(person.bandId, owner.bandId) >= ALLY_STANDING) return true;
+  return !ctx.peopleHash.findNearest(pile.x, pile.y, ctx.sightRadius,
+    other => other.alive && other.id !== person.id && other.bandId === owner.bandId);
+}
