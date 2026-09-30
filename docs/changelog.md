@@ -9918,3 +9918,19 @@ querido muriéndose, no a una madre lactante.
 
 En `lean` (semilla `lean`, 12.000 pasos): 26 comidas a alguien que se moría de
 hambre. La medición a 40 semillas va con el resto de la fase.
+
+## 2026-09-30 — M15 fase 20: los arbustos no tienen bayas en invierno
+
+Al preguntar al propietario si la gente sabe que en invierno los arbustos no dan
+fruto, di por hecho algo que el mundo no hacía: un arbusto dejaba de rebrotar en
+invierno (`TimeManager.growth` es 0), pero conservaba las bayas que le quedaban
+del otoño. Un arbusto recordado de otoño podía seguir cargado o estar pelado, y
+ninguna cantidad de observación podía enseñar que en invierno «no dan», porque
+a veces sí daban. El propietario describe el arbusto como una planta que no da
+bayas en invierno, así que el mundo pasa a hacerlo: `ResourceDef.wintersBare`
+(solo las bayas), y cada día de invierno esos arbustos quedan a cero, como los
+árboles frutales, que ya dejan caer toda la fruta al cambiar de estación. El
+grano silvestre no cambia: las espigas siguen en pie sobre la nieve.
+
+Es un cambio en la economía de la comida de invierno; su medición va con el
+resto de la fase.

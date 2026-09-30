@@ -51,10 +51,20 @@ export interface ResourceDef {
    * around, or under things snow does not settle on.
    */
   groundLevel?: boolean;
+  /**
+   * Bears nothing in winter: what is left on it when winter comes falls or
+   * rots, and nothing sets until spring (M15 phase 20). The owner's picture
+   * of a berry bush, and what makes "bushes bear nothing in winter"
+   * something a person can see and learn rather than a rumour. Before this a
+   * bush stopped regrowing in winter but kept what it had, so a remembered
+   * bush from autumn might or might not still hold berries and no amount of
+   * watching could settle which.
+   */
+  wintersBare?: boolean;
 }
 
 export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
-  berries: { kind: 'berries', itemId: 'berries', maxAmount: 14, regrowPerTick: 0.0042, harvestTicks: 8, skill: 'forage' },
+  berries: { kind: 'berries', itemId: 'berries', maxAmount: 14, regrowPerTick: 0.0042, harvestTicks: 8, skill: 'forage', wintersBare: true },
   flint:   { kind: 'flint',   itemId: 'flint',   maxAmount: 30, regrowPerTick: 0,      harvestTicks: 14, skill: 'knap', groundLevel: true },
   sticks:  { kind: 'sticks',  itemId: 'sticks',  maxAmount: 12, regrowPerTick: 0.0035, harvestTicks: 7,  skill: 'forage', groundLevel: true },
   reeds:   { kind: 'reeds',   itemId: 'thatch',  maxAmount: 16, regrowPerTick: 0.005,  harvestTicks: 9,  skill: 'forage' },

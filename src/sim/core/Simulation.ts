@@ -3683,6 +3683,11 @@ export class Simulation {
     // thing in the loop, and nothing in the design could tell the difference.
     if (this.time.tick % this.config.time.ticksPerDay === 0) {
       this.snowDepth = advanceSnowDepth(this.snowDepth, this.time.temperature);
+      // M15 phase 20: a berry bush bears nothing in winter. Every day rather
+      // than on the first, because a mild winter noon still regrows a little.
+      if (this.time.season === 'winter') {
+        for (const node of this.nodes) if (node.def.wintersBare) node.amount = 0;
+      }
       this.social.dailyUpkeep(this.people);
       this.shareTheHearth();
       // Renown decays far more slowly than an ordinary opinion's `deeds`
