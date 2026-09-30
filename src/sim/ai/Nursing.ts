@@ -4,7 +4,7 @@ import type { Household } from '../entities/Household.ts';
 import type { Building } from '../entities/Building.ts';
 import type { ChildhoodConfig } from '../core/Config.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
-import { isLactating, isNursling } from '../entities/LifeStage.ts';
+import { canWalk, isLactating, isNursling } from '../entities/LifeStage.ts';
 
 /** A baby cries for care before either lethal need reaches its danger line. */
 export const NURSING_HUNGER = 30;
@@ -106,6 +106,28 @@ export function infantNeedingNursing(
     chosen = child;
   }
   return chosen;
+}
+
+/**
+ * Her own baby that cannot walk and that she is not already holding, for her
+ * to go and pick up. A baby somebody else is holding (a wet nurse who found it
+ * alone) is still hers to take back.
+ */
+export function babyToCarry(
+  mother: Person,
+  peopleById: ReadonlyMap<number, Person>,
+  world: World,
+  childhood: ChildhoodConfig
+): Person | null {
+  if (!childhood.carryBaby || mother.armsTaken >= 2 || mother.captiveOf !== null) return null;
+  for (const id of mother.childIds) {
+    const child = peopleById.get(id);
+    if (!child?.alive || child.motherId !== mother.id || canWalk(child, childhood) ||
+      child.carriedBy === mother.id || child.bandId !== mother.bandId || child.captiveOf !== null ||
+      !world.sameRegion(mother.x, mother.y, child.x, child.y)) continue;
+    return child;
+  }
+  return null;
 }
 
 /** Whether this woman may nurse this baby: her own, or a band baby she has milk for. */

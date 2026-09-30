@@ -7,6 +7,11 @@ import { telemetry } from './Telemetry.ts';
 
 const BARE_HANDS = 10;
 
+/** Arms not holding a baby. */
+function freeArms(person: Person): number {
+  return Math.max(0, 2 - person.armsTaken);
+}
+
 function equippedCapacity(person: Person, itemClass?: ItemClass): number {
   let capacity = 0;
   for (const slot of ['left', 'right', 'back', 'belt', 'shoulder'] as const) {
@@ -22,7 +27,7 @@ function equippedCapacity(person: Person, itemClass?: ItemClass): number {
 /** Total carrying room, in units, from hands and containers actually equipped. */
 export function capacityFor(person: Person, config: CarryConfig): number {
   if (config.legacyPack) return Math.round(40 * person.vigour * carryFactor(person));
-  return Math.max(1, Math.floor(BARE_HANDS * person.vigour + equippedCapacity(person)));
+  return Math.max(1, Math.floor(BARE_HANDS * person.vigour * freeArms(person) / 2 + equippedCapacity(person)));
 }
 
 /** Maximum amount of one item the hands, shoulder and fitted containers can hold. */
@@ -30,7 +35,11 @@ export function itemCapacityFor(person: Person, config: CarryConfig, itemId: str
   if (config.legacyPack) return capacityFor(person, config);
   const def = ITEMS[itemId];
   if (!def) return 0;
-  const handCapacity = Math.max(0, Math.floor(def.hand.perArms * person.vigour));
+  // Both arms hold an armful; one arm, with a baby in the other, holds a
+  // handful; a baby in each holds nothing but what is worn.
+  const arms = freeArms(person);
+  const handCapacity = Math.max(0, Math.floor(
+    (arms === 2 ? def.hand.perArms : arms === 1 ? def.hand.perHand : 0) * person.vigour));
   const shoulderCapacity = (!person.equipment.shoulder || person.equipment.shoulder.item === itemId)
     ? Math.floor((def.hand.shoulder ?? 0) * person.vigour)
     : 0;

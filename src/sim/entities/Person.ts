@@ -283,6 +283,16 @@ export class Person {
   /** Cached sum of equipped container capacities; updated by Carry helpers. */
   carryContainerCapacity = 0;
   /**
+   * Arms holding a baby, 0-2. Written once a tick by `Simulation` from the
+   * babies whose `carriedBy` names this person; read by both carrying-room
+   * formulas. A baby in one arm leaves one hand to gather with (owner,
+   * 2026-09-30), so bare-handed room halves and each item is limited to what
+   * one hand holds.
+   */
+  armsTaken = 0;
+  /** `armsTaken` as it was last tick, so a change can trigger reconciliation. */
+  armsTakenLastTick = 0;
+  /**
    * M15 phase 11b. The tick each item id was last in hand — taken, picked
    * up, worked into a craft, or hauled to a site — for `KnowledgeSystem.
    * notice` to read as "recently handled" even after the item itself has
@@ -887,7 +897,7 @@ export class Person {
     // M15 phase 11c: capacity belongs to held equipment, not the abstract
     // multiplier granted by knowing a technology. Scenario code that still
     // opts into legacyPack asks Carry.capacityFor for the old formula.
-    return Math.max(1, Math.floor(10 * this.vigour + this.carryContainerCapacity));
+    return Math.max(1, Math.floor(10 * this.vigour * (2 - this.armsTaken) / 2 + this.carryContainerCapacity));
   }
 
   get carrying(): number {

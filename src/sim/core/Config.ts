@@ -337,6 +337,14 @@ export interface ChildhoodConfig {
   wetNursing: boolean;
   /** Hunger a nursing woman takes on for each point of hunger she relieves. */
   nursingCost: number;
+  /** A baby is carried until it can walk, and walks from this age. */
+  walkYears: number;
+  /**
+   * The mother carries her baby while it cannot walk, and nurses it wherever
+   * she is. Off, the M13 rule applies instead: the baby is left in the
+   * household's shelter (`motivation.babyToHouse`) and she goes back to it.
+   */
+  carryBaby: boolean;
 }
 
 export interface SimConfig {
@@ -505,6 +513,8 @@ export const DEFAULT_CONFIG: SimConfig = {
     // that is about eleven points for the one nursing: real, and well short of
     // a meal, which is what milk costs a mother in food.
     nursingCost: 0.25,
+    walkYears: 1,
+    carryBaby: true,
   },
   sightRadius: 12,
   thinkInterval: 5,

@@ -9702,3 +9702,34 @@ en que la madre lleva al bebé encima y amamanta donde esté. Supervivencia
 -5,5 puntos, al borde del ruido de veinte semillas; anotado en `bugs.md`.
 `npm test` pasa entero (649, con `wet-nursing.test.ts` nuevo). Sin cambio de
 interfaz.
+
+## 2026-09-30 — M15 fase 20: la madre lleva al bebé encima
+
+Decisión del propietario: la madre lleva al bebé en un brazo, recoge con la otra
+mano y lo amamanta donde esté. `childhood.walkYears` (1) y `childhood.carryBaby`
+(nuevos). Mientras el bebé no anda, la madre va a por él (`carry_baby`, «pick up
+the baby») y lo lleva (`carriedBy`); lo deja cuando empieza a andar. Con el
+bebé encima no hay viaje a casa para amamantar. `Person.armsTaken` cuenta los
+brazos ocupados cada tick: con uno, las manos desnudas guardan la mitad y cada
+objeto se limita a un puñado; con dos, nada salvo lo que se lleva puesto. Las
+dos fórmulas de capacidad (`Person.carryCapacity` y `Carry.capacityFor`) lo
+aplican. Un bebé en brazos está tan caliente como quien lo lleva: piel con piel
+es como una madre en marcha mantiene vivo a un recién nacido en invierno, y es
+por lo que llevarlo no devuelve las muertes por frío que en M13 causó dejar a
+los bebés fuera de casa. Una nodriza que encuentra a un bebé solo y tiene un
+brazo libre se lo lleva; si su madre vuelve, lo recupera. Con `carryBaby` apagado
+vuelve la regla de M13 (`babyToHouse`); las dos pruebas de `nursing.test.ts` que
+la fijaban la ejercitan ahora con el interruptor apagado. Nueva razón visible
+`arms_full` («their arms are already full» / «ya tiene los brazos ocupados»).
+
+Se corrigen dos frases en español con la codificación rota que ya veía el
+jugador («bebÃ©» en `es/sim.ts`).
+
+Medido en `lean` a 20 semillas: mortalidad antes del año 0,598 frente a 0,636
+del commit anterior, supervivencia 21,8% frente a 19,5% (13/20 colapsos). En
+tres semillas de `npm run infants`, sobreviven 16 de 37 niños que pierden a su
+madre (antes 7 de 34). Las madres lactantes siguen muriendo de hambre (2,65
+por cada 100 personas-día) y pasan el 24% del tiempo paradas; la causa se
+investiga en el commit siguiente, no es la carga (van con las manos vacías).
+`npm test` pasa entero (654, con `baby-carrying.test.ts` nuevo). Captura al
+final de esta fase.

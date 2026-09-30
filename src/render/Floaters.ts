@@ -168,6 +168,7 @@ export const ACTION_LABELS: Record<string, string> = {
   give: 'giving food',
   nurse: 'nursing the baby',
   carry_baby_home: 'carrying the baby home',
+  carry_baby: 'picking up the baby',
   steal: 'stealing',
   threaten: 'making a demand',
   attack: 'fighting',
@@ -322,6 +323,7 @@ export const STOP_REASONS: Record<string, string> = {
   store_item_gone: 'they no longer had it to store',
   nothing_to_give: 'they had nothing to give',
   not_the_mother: 'only their mother can feed this baby',
+  arms_full: 'their arms are already full',
   // M11 phase 13f: the one reason `abandon` used that had no words, so a
   // trade that fell through said "nothing to trade" in the code's own voice.
   nothing_to_trade: 'one of them had no food to swap',

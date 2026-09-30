@@ -124,6 +124,14 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
   for (let i = 0; i < steps; i++) {
     sim.step();
     const tick = sim.time.tick;
+    // Every stop or abandonment, by action and reason, split by category.
+    for (const notice of sim.interruptions) {
+      if (seenNotices.has(notice)) continue;
+      seenNotices.add(notice);
+      const who = sim.peopleById.get(notice.personId);
+      const cat = who ? categoryOf(who) : null;
+      if (cat) bump(stops, `${cat === 'nursing mothers' ? 'MOTHER' : cat}: ${notice.action}/${notice.reason}`);
+    }
     for (const p of sim.peopleById.values()) {
       if (!p.alive) {
         const cat = lastCategory.get(p.id);
@@ -153,9 +161,13 @@ function run(scenarioName: string, seed: string, stepsArg: number | null) {
       if (tick % 10 === 0 && p.needs.hunger >= 50 && !FOOD_ACTIONS.has(p.action) && !p.isPlayer) {
         const rows = lastScores.get(p.id) ?? [];
         const food = rows.find(r => FOOD_ACTIONS.has(r.id));
-        const band = p.needs.hunger >= 75 ? 'h75+' : 'h50-74';
+        const band = (cat === 'nursing mothers' ? 'MOTHER ' : '') + (p.needs.hunger >= 75 ? 'h75+' : 'h50-74')
+          + (p.carrying >= p.carryCapacity ? ' full-hands' : p.carrying > 0 ? ' holding' : ' empty-handed');
         if (!food) {
           bump(hungryAudit, `${band} no food option · doing ${p.action}`);
+          if (verbose && cat === 'nursing mothers' && p.action === 'idle' && examples++ < 6) {
+            console.log(`  example: mother ${p.id} tick ${tick} at ${p.x.toFixed(0)},${p.y.toFixed(0)} hunger ${p.needs.hunger.toFixed(0)} top ${rows.map(r => r.id + ':' + r.score.toFixed(2)).join(' ')}`);
+          }
           // World truth next to what the person could have used: is there any
           // edible node in sight, within twice sight, or remembered anywhere?
           const edible = (n: { depleted: boolean; def: { itemId: string } }) =>
@@ -271,6 +283,9 @@ const hungryAudit = new Map<string, number>();
 const hungryTotals = new Map<string, number>();
 const noFoodWhy = new Map<string, number>();
 const interrupts = new Map<string, number>();
+const stops = new Map<string, number>();
+let examples = 0;
+const seenNotices = new WeakSet<object>();
 const nursingCounts = new Map<string, number>();
 const budget = new Map<string, Map<string, number>>();
 const cutShort = new Map<string, number>();
@@ -355,6 +370,8 @@ for (const [k, v] of [...noFoodWhy.entries()].sort((a, b) => b[1] - a[1]).slice(
 console.log(`NURSING  ${[...nursingCounts.entries()].map(([k, v]) => `${k} ${v}`).join(' · ')}`);
 console.log(`CUT OFF BY A NEED (action_need: count)`);
 console.log('  ' + [...interrupts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 24).map(([k, v]) => `${k} ${v}`).join(' · '));
+console.log(`STOPS AND ABANDONMENTS (category: action/reason)`);
+for (const [k, v] of [...stops.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30)) console.log(`  ${String(v).padStart(6)}  ${k}`);
 console.log(`BABY CARE CUT SHORT ${[...cutShort.values()].reduce((a, b) => a + b, 0)} times: ${top(cutShort, 12)}`);
 console.log(`HUNGER RELIEF    ${top(agg.relief)}`);
 console.log(`DANGER TICKS (hunger or thirst >= 70), by`);

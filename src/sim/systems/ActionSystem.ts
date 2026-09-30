@@ -12,6 +12,7 @@
  */
 import type { Person } from '../entities/Person.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
+import { canWalk } from '../entities/LifeStage.ts';
 import { homeForMother, mayNurse, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF } from '../ai/Nursing.ts';
 import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
@@ -687,6 +688,7 @@ export class ActionSystem {
       case 'give': this.doGive(person, ctx); break;
       case 'nurse': this.doNurse(person, ctx); break;
       case 'carry_baby_home': this.doCarryBabyHome(person, ctx); break;
+      case 'carry_baby': this.doCarryBaby(person, ctx); break;
       case 'trade': this.doTrade(person, ctx); break;
       case 'steal': this.doSteal(person, ctx); break;
       case 'threaten': this.doThreaten(person, ctx); break;
@@ -3816,9 +3818,11 @@ export class ActionSystem {
       this.abandon(person, 'target_gone', ctx);
       return;
     }
-    const home = ctx.motivation.babyToHouse
+    // With the baby carried (M15 phase 20) there is no trip home: she nurses
+    // it where she stands, which is the point of carrying it.
+    const home = ctx.motivation.babyToHouse && !ctx.childhood.carryBaby
       ? homeForMother(person, ctx.householdsById, ctx.buildingsById) : null;
-    if (!home && baby.carriedBy === person.id) baby.carriedBy = null;
+    if (!home && !ctx.childhood.carryBaby && baby.carriedBy === person.id) baby.carriedBy = null;
     if (home && (baby.carriedBy === person.id || !home.contains(baby.x, baby.y))) {
       if (baby.carriedBy !== person.id) {
         if (!this.approach(person, ctx)) return;
@@ -3859,9 +3863,50 @@ export class ActionSystem {
     baby.needs.thirst = Math.max(0, baby.needs.thirst - NURSING_THIRST_RELIEF);
     person.needs.hunger = Math.min(100, person.needs.hunger + relieved * ctx.childhood.nursingCost);
     telemetry.count('nursing_sessions');
-    if (baby.motherId !== person.id) telemetry.count('wet_nursing_sessions');
+    if (baby.motherId !== person.id) {
+      telemetry.count('wet_nursing_sessions');
+      // A wet nurse who found a baby alone and has an arm free takes it with
+      // her rather than leaving it where it lay. Its mother, if she is alive
+      // and comes back, takes it back through `babyToCarry`.
+      if (ctx.childhood.carryBaby && baby.carriedBy === null && person.armsTaken < 2 &&
+          !canWalk(baby, ctx.childhood)) {
+        baby.carriedBy = person.id;
+        person.armsTaken++;
+        telemetry.count('orphan_carried');
+      }
+    }
     telemetry.count('nursing_hunger_relief', NURSING_HUNGER_RELIEF);
     telemetry.count('nursing_thirst_relief', NURSING_THIRST_RELIEF);
+    this.finish(person);
+  }
+
+  /**
+   * Picks up her own baby that cannot walk, M15 phase 20.
+   *
+   * The owner's rule: the mother carries the baby in one arm, and gathers with
+   * the other. Before this the baby was left in the house (M13) and every cry
+   * walked her back to it, which `npm run infants` measured as the largest
+   * single cost of motherhood: nursing mothers dying at half again the rate of
+   * men, most of it hunger.
+   */
+  private doCarryBaby(person: Person, ctx: ActionContext): void {
+    const baby = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
+    if (!baby?.alive || baby.motherId !== person.id || canWalk(baby, ctx.childhood)) {
+      this.abandon(person, 'target_gone', ctx);
+      return;
+    }
+    if (baby.carriedBy === person.id) {
+      this.finish(person);
+      return;
+    }
+    if (person.armsTaken >= 2) {
+      this.abandon(person, 'arms_full', ctx);
+      return;
+    }
+    if (!this.approach(person, ctx)) return;
+    baby.carriedBy = person.id;
+    person.armsTaken++;
+    telemetry.count('baby_picked_up');
     this.finish(person);
   }
 

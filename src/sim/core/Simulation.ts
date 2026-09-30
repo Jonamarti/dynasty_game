@@ -30,7 +30,8 @@ import { ActionSystem } from '../systems/ActionSystem.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
 import { drivePressures, DRIVES } from '../ai/Drives.ts';
-import { infantNeedingNursing, infantOutsideHome } from '../ai/Nursing.ts';
+import { babyToCarry, infantNeedingNursing, infantOutsideHome } from '../ai/Nursing.ts';
+import { canWalk } from '../entities/LifeStage.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -173,6 +174,7 @@ const RESUME_WINDOW = 2000;
  */
 export const ORDER_WORDS: Record<string, string> = {
   nurse: 'nurse the baby',
+  carry_baby: 'pick up the baby',
   sabotage: 'wreck a rival building',
   take: 'take from a rival store',
   build: 'work on a building',
@@ -3985,11 +3987,17 @@ export class Simulation {
         ? null : infantNeedingNursing(person, this.peopleById, this.world, this.config.childhood,
           this.peopleHash, this.config.sightRadius);
       const activeNursing = this.config.motivation.urgentNursing && person.action === 'nurse';
-      const activeCarry = this.config.motivation.babyToHouse && person.action === 'carry_baby_home';
+      // Carrying the baby supersedes leaving it in the house: with it on, the
+      // mother goes to pick it up rather than to take it home.
+      const carrying = this.config.childhood.carryBaby;
+      const homeAction = carrying ? 'carry_baby' : 'carry_baby_home';
+      const activeCarry = (carrying || this.config.motivation.babyToHouse) && person.action === homeAction;
       const currentBaby = activeNursing && person.targetPersonId !== null
         ? this.peopleById.get(person.targetPersonId) : null;
-      const homeBaby = underAttack || !this.config.motivation.babyToHouse ? null : infantOutsideHome(
-        person, this.peopleById, this.householdsById, this.buildingsById);
+      const homeBaby = underAttack ? null
+        : carrying ? babyToCarry(person, this.peopleById, this.world, this.config.childhood)
+        : !this.config.motivation.babyToHouse ? null
+        : infantOutsideHome(person, this.peopleById, this.householdsById, this.buildingsById);
       if (!this.config.motivation.urgentNursing && person.action === 'nurse') {
         person.forgetPlans();
         person.action = 'idle';
@@ -4003,7 +4011,7 @@ export class Simulation {
       if (!underAttack && (urgentBaby || activeNursing || homeBaby || activeCarry)) {
         const shouldNurse = !!urgentBaby || activeNursing;
         const baby = shouldNurse ? urgentBaby ?? currentBaby : homeBaby ?? currentCarryBaby;
-        const action = shouldNurse ? 'nurse' : 'carry_baby_home';
+        const action = shouldNurse ? 'nurse' : homeAction;
         if (baby && (person.action !== action || person.targetPersonId !== baby.id)) {
           // A baby's cry interrupts any job or order, including the player's
           // current intent. The mother stops where she is and goes to the child.
@@ -4064,14 +4072,35 @@ export class Simulation {
 
     // Children are iterated like everyone else but take no turn. Sync after all
     // adult actions so iteration order cannot leave a carried infant behind.
+    //
+    // M15 phase 20: also where a carrier's arms are counted, and where a baby
+    // who has learned to walk is put down. A held baby is as warm as the one
+    // holding it: skin to skin is how a mother on the move keeps a newborn
+    // alive in winter, and it is why carrying does not bring back the exposure
+    // deaths that leaving babies outside the house caused in M13.
+    const carryBaby = this.config.childhood.carryBaby;
+    for (const person of this.people) person.armsTaken = 0;
     for (const baby of this.people) {
       if (!baby.alive || baby.carriedBy === null) continue;
       const carrier = this.peopleById.get(baby.carriedBy);
-      if (carrier?.alive) {
+      if (carrier?.alive && carrier.captiveOf === null &&
+          (!carryBaby || !canWalk(baby, this.config.childhood))) {
         baby.x = carrier.x;
         baby.y = carrier.y;
+        if (carryBaby) {
+          carrier.armsTaken++;
+          baby.needs.cold = Math.min(baby.needs.cold, carrier.needs.cold);
+        }
       } else {
         baby.carriedBy = null;
+      }
+    }
+    for (const person of this.people) {
+      if (person.armsTaken !== person.armsTakenLastTick) {
+        // Room in the hands changed without the inventory changing, so the
+        // reconciliation below would not otherwise notice what no longer fits.
+        person.armsTakenLastTick = person.armsTaken;
+        person.carryReconciledVersion = -1;
       }
     }
 

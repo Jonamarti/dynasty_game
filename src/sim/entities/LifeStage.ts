@@ -15,6 +15,11 @@ export function isNursling(person: Person, childhood: ChildhoodConfig): boolean 
   return person.age < childhood.weanYears * person.daysPerYear;
 }
 
+/** Walks on their own; carried by somebody before this. */
+export function canWalk(person: Person, childhood: ChildhoodConfig): boolean {
+  return person.age >= childhood.walkYears * person.daysPerYear;
+}
+
 /**
  * Has milk: a woman whose own baby is alive and not yet weaned. Lactation is
  * read off the baby rather than stored, so it cannot outlive the child it

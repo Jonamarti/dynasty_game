@@ -27,8 +27,10 @@ describe('urgent maternal nursing', () => {
   });
 
   it('interrupts the mother and relieves a hungry, thirsty infant', () => {
+    // The M13 arrangement: the baby lies where it is and the mother goes to
+    // it. Kept as the `carryBaby: false` ablation since M15 phase 20.
     const sim = new Simulation({ seed: 'urgent-nursing', world: { width: 48, height: 48 },
-      population: { bands: 1, peoplePerBand: 4 } });
+      population: { bands: 1, peoplePerBand: 4 }, childhood: { carryBaby: false } });
     const mother = sim.people[0]!;
     const baby = sim.people[1]!;
     mother.age = 30 * mother.daysPerYear;
@@ -79,7 +81,7 @@ describe('urgent maternal nursing', () => {
 
   it('carries an infant to the household shelter before nursing', () => {
     const sim = new Simulation({ seed: 'nursing-home', world: { width: 48, height: 48 },
-      population: { bands: 1, peoplePerBand: 4 } });
+      population: { bands: 1, peoplePerBand: 4 }, childhood: { carryBaby: false } });
     const mother = sim.people[0]!;
     const baby = sim.people[1]!;
     mother.age = 30 * mother.daysPerYear;
