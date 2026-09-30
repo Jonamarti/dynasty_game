@@ -1,5 +1,13 @@
 # Known bugs and rough edges
 
+## Timeout de Vitest en GitHub Actions (2026-09-30)
+
+Actions reportó `band.test.ts` agotando el límite predeterminado de 5 segundos.
+En el checkout local la prueba tiene un límite explícito de 60 segundos y pasa,
+así que falta correlacionar el SHA ejecutado con el código actual. Mientras se
+investiga, CI y el deploy de Pages continúan aunque `npm test` falle. Quitar
+`continue-on-error` de ambos workflows cuando el timeout quede corregido.
+
 ## M15 11d, lo que encendió `peopleById` (2026-09-30)
 
 `BrainContext.peopleById` no se pasaba desde M12, así que todo lo que el `Brain`
