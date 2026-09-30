@@ -37,6 +37,20 @@ nodrizas (`wetNursing=false` 0,713). Debe volver a medirse cuando la madre
 lleve al bebé encima; si no se recupera, la decisión de cuánto cuesta la leche
 es del propietario.
 
+**Se sabe que un sitio recordado está vacío sin verlo (decisión del
+propietario).** `ActionSystem.doHarvest` abandona un objetivo recordado con
+`remembered_wrong` en cuanto el nodo real está agotado, a cualquier distancia, y
+corrige la memoria. Eso rompe la regla de que los sitios se conocen mirando, y
+además deja a la persona `idle`: elige un recuerdo, lo tacha, elige otro, uno por
+tick y sin moverse (una madre lactante de `lean` pasaba así el 24% del tiempo).
+Se probó lo honesto (caminar hasta tener el sitio a la vista): `lean` a 20
+semillas bajó de 21,8% a 16,1% (17/20 colapsos) y la exposición subió de 224 a
+302 muertes, porque en invierno todos los arbustos recordados están vacíos y la
+gente camina hasta ellos, también fuera de su alcance, y se hiela. Revertido.
+Propuesta para decidir: que la gente sepa que en invierno los arbustos no dan
+fruto y descarte los recuerdos de otra estación; así el paseo honesto solo se
+haría cuando el recuerdo puede ser cierto.
+
 **Lo que `npm run infants` encontró y queda abierto** (tres semillas `lean`):
 dos de cada tres niños que mueren lo hacen después que su madre, y el 85% de
 esas madres muere de hambre mientras cría a un lactante; los huérfanos de pecho
