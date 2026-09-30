@@ -170,6 +170,8 @@ export const ACTION_LABELS: Record<string, string> = {
   carry_baby_home: 'carrying the baby home',
   carry_baby: 'picking up the baby',
   romp: 'playing with the other children',
+  // M15 phase 20: food carried back to somebody left starving.
+  bring_food: 'bringing food to someone starving',
   steal: 'stealing',
   threaten: 'making a demand',
   attack: 'fighting',

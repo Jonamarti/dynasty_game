@@ -9889,3 +9889,32 @@ en veinte días era suerte de esa semilla (con 3 o 5 tomas al día no pasaba, co
 2 o 4 sí). Las pruebas miden la regla de cría, así que ahora llaman a
 `workHerds` una vez por día en lugar de simular veinte días de gente con hambre.
 La prueba estaba mal, no el mundo.
+
+## 2026-09-30 — M15 fase 20: quien aprecia a alguien que se muere de hambre le da de comer
+
+Regla del propietario (2026-09-30): si alguien ve que otra persona se está
+muriendo de hambre y tiene buena relación con ella, le da comida si la lleva
+encima, o va a buscarla. Escrita para la madre lactante, a la que ninguna regla
+alimentaba (a 40 semillas moría de hambre a dos o tres veces la tasa de los
+hombres), y aplicada a todos, porque lo que ve quien da de comer es a alguien
+querido muriéndose, no a una madre lactante.
+
+- `Feeding.starvingInCare`: hambre desde `STARVING_AT` (70, antes de la línea
+  crítica de 85 en que empieza a perder salud), y cónyuge, pariente cercano
+  (`KIN_SIBLING` o más) u opinión desde 30. Un lactante queda para el pecho; da
+  de comer quien ya sabe buscar comida (desde los 4 años).
+- **Si lleva comida**, `feed` la da, sin la reserva de los regalos, después de
+  los hijos propios y antes que los de otros. Es una comida, no comida metida en
+  unas manos que pueden estar llenas.
+- **Si no lleva**, lo recuerda (`Person.starvingSeen`, escrito al verlo en
+  `Simulation.observePlaces`, nunca leído a distancia del estado de la otra
+  persona) y ese recuerdo sube su impulso de buscar comida mientras tenga las
+  manos vacías. Con comida en la mano, `bring_food` le lleva de vuelta al sitio
+  donde la vio; si al llegar no está, la olvida. Se olvida también al verla
+  comida o al darle de comer.
+- Primer intento: el recuerdo subía el impulso de buscar comida también con
+  comida en la mano, y en `lean` 31 de 46 vueltas se abandonaron por `forage` y
+  ninguna terminó. Ahora el impulso solo cuenta con las manos vacías.
+
+En `lean` (semilla `lean`, 12.000 pasos): 26 comidas a alguien que se moría de
+hambre. La medición a 40 semillas va con el resto de la fase.

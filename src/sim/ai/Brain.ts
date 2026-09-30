@@ -82,7 +82,7 @@ import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { infantNeedingNursing, type NursingClock } from './Nursing.ts';
-import { CHILD_FEED_AT, feederRole } from './Feeding.ts';
+import { CHILD_FEED_AT, feederRole, starvingInCare } from './Feeding.ts';
 import { canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
 import { expectationRatio, techAppeal } from './Beliefs.ts';
 import { bondBetween } from './Bond.ts';
@@ -145,6 +145,11 @@ export interface BrainContext {
   dependentHunger: (person: Person) => number;
   /** When a nursling's next feed is due; see `Nursing.feedDue`. */
   nursingClock?: NursingClock;
+  /**
+   * Somebody this person last saw starving, while the sighting is fresh
+   * (M15 phase 20); see `Person.starvingSeen`.
+   */
+  starvingSeen?: (person: Person) => Person['starvingSeen'];
   /** Baseline nutrition consumed by one person over seven days. */
   weeklyFoodNeedPerPerson: number;
   /**
@@ -213,6 +218,7 @@ interface FoundTargets {
   foodToEat: string | null;
   waterQuestionPeer: Person | null;
   explorePoint: { x: number; y: number } | null;
+  bringFoodPoint: { x: number; y: number } | null;
   foodNode: ResourceNode | null;
   pickupPile: ItemPile | null;
   pickupItem: string | null;
@@ -511,6 +517,15 @@ const DEPENDANT_RESERVE = 15;
  * so that the owner's "parents feed the child first" holds at every hunger.
  */
 const PARENT_FEEDS_FIRST = 3.6;
+
+/**
+ * The base of `feed` for somebody cared for and seen starving, M15 phase 20:
+ * below `PARENT_FEEDS_FIRST`, and with the need term above a feeder's own
+ * `eat` at the same hunger, so a hungry husband feeds his starving wife.
+ */
+const STARVING_FEED = 2.2;
+/** The base of `bring_food`: walking back with food to somebody left starving. */
+const BRING_FOOD = 1.6;
 
 /**
  * What a child under `childhood.forageYears` may do, M15 phase 20. The owner:
@@ -1179,6 +1194,19 @@ export class Brain {
 
 
     // Deliberate social approaches are rationed; violence and flight are not.
+    // Bring food: back to where they last saw somebody they care for
+    // starving, once they have some to give (M15 phase 20, the owner's "goes
+    // and fetches her food"). The fetching is the forage drive, raised by
+    // `dependentHunger`; this is the walk back. Only while that person is out
+    // of sight: in sight, `feed` answers it.
+    let bringFoodPoint: { x: number; y: number } | null = null;
+    const starvingSeen = ctx.starvingSeen?.(person) ?? null;
+    if (starvingSeen && !neighbours.some(other => other.id === starvingSeen.id) &&
+        this.carriedNutrition(person) > 0) {
+      bringFoodPoint = { x: starvingSeen.x, y: starvingSeen.y };
+      add('bring_food', (BRING_FOOD + (starvingSeen.hunger / 100) * 1.4)
+        * this.proximityBonus(person, bringFoodPoint, ctx.sightRadius * 3));
+    }
     const socialReady = ctx.time.tick >= person.socialCooldownUntil;
 
     if (neighbours.length > 0 && socialReady) {
@@ -1554,12 +1582,26 @@ export class Brain {
         carriedNut - person.needs.hunger - DEPENDANT_RESERVE > 0
         ? neighbours.filter(other => roleOf(other) === 'band') : [];
       const spareFood = carriedNut - person.needs.hunger - GIVING_RESERVE;
+      // M15 phase 20 (owner, 2026-09-30): somebody they care for, seen dying
+      // of hunger, is fed from what they carry, reserve or none. After their
+      // own children and before anybody else's.
+      const starvingLoved = ownChildren.length === 0 && carriedNut > 0
+        ? neighbours.filter(other => starvingInCare(person, other, ctx.relationships, ctx.childhood)) : [];
 
       if (ownChildren.length > 0) {
         beneficiary = this.pickBest(ownChildren,
           other => other.needs.hunger - person.distanceTo(other) * 2);
         if (beneficiary) {
           add('feed', (PARENT_FEEDS_FIRST + (beneficiary.needs.hunger / 100) * 1.4)
+            * this.proximityBonus(person, beneficiary, ctx.sightRadius));
+        }
+      } else if (starvingLoved.length > 0) {
+        beneficiary = this.pickBest(starvingLoved,
+          other => other.needs.hunger - person.distanceTo(other) * 2);
+        if (beneficiary) {
+          // Above a hungry feeder's own `eat` until they are starving too:
+          // what is in their hands goes to the one who is dying first.
+          add('feed', (STARVING_FEED + (beneficiary.needs.hunger / 100) * 1.4)
             * this.proximityBonus(person, beneficiary, ctx.sightRadius));
         }
       } else if (bandChildren.length > 0) {
@@ -3406,7 +3448,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodToEat, waterQuestionPeer, explorePoint, foodNode, pickupPile, pickupItem, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, waterQuestionPeer, explorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
@@ -4152,6 +4194,12 @@ export class Brain {
         break;
       case 'ask_water':
         if (found.waterQuestionPeer) person.targetPersonId = found.waterQuestionPeer.id;
+        break;
+      case 'bring_food':
+        if (found.bringFoodPoint) {
+          person.targetX = found.bringFoodPoint.x;
+          person.targetY = found.bringFoodPoint.y;
+        }
         break;
       case 'explore':
         if (found.explorePoint) {

@@ -44,6 +44,7 @@ const EXERTION: Record<string, number> = {
   walk: 1.05,
   goto: 1.05,
   go_home: 1.05,
+  bring_food: 1.05,
   wander: 1.0,
   talk: 0.75,
   romp: 1.05,

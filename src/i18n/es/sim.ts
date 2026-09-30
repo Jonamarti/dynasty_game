@@ -10,6 +10,7 @@ export const ES_SIM: Record<string, string> = {
   "pick up the baby": "coger al bebé en brazos",
   "play with the other children": "jugar con los otros niños",
   "playing with the other children": "jugando con los otros niños",
+  "bringing food to someone starving": "llevando comida a alguien que se muere de hambre",
   "Hunger drive": "Motivo de hambre",
   "Thirst drive": "Motivo de sed",
   "Rest drive": "Motivo de descanso",

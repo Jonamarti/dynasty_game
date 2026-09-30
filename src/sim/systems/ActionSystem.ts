@@ -13,7 +13,7 @@
 import type { Person } from '../entities/Person.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
-import { feederRole } from '../ai/Feeding.ts';
+import { feederRole, starvingInCare } from '../ai/Feeding.ts';
 import {
   feedDue, homeForMother, mayNurse, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF,
   type NursingClock,
@@ -664,6 +664,7 @@ export class ActionSystem {
       case 'eat': this.doEat(person, ctx); break;
       case 'ask_water': this.doAskWater(person, ctx); break;
       case 'explore': this.doExplore(person, ctx); break;
+      case 'bring_food': this.doBringFood(person, ctx); break;
       case 'forage':
       case 'gather': this.doHarvest(person, ctx); break;
       case 'pick': this.doPickFruit(person, ctx); break;
@@ -984,7 +985,29 @@ export class ActionSystem {
   }
 
   /** Follow one unexplored frontier tile; arrival triggers the next frontier choice. */
-  private doExplore(person: Person, ctx: ActionContext): void {
+  /**
+   * The walk back with food to somebody left starving, M15 phase 20. Only
+   * the walk: arriving ends it, and `feed` takes over if they are still
+   * there to be seen (`Simulation.observePlaces` forgets them if not). Asks
+   * `interruption` every step like any walk that can run long.
+   */
+  private doBringFood(person: Person, ctx: ActionContext): void {
+    if (person.targetX === null || person.targetY === null || person.inventory.bestFood() === null) {
+      this.finish(person);
+      return;
+    }
+    const stop = this.interruption(person, ctx, { ignoreLaden: true });
+    if (stop) {
+      this.stop(person, stop, ctx, 'bring_food_');
+      return;
+    }
+    if (this.travel(person, ctx)) {
+      telemetry.count('bring_food_arrived');
+      this.finish(person);
+    }
+  }
+
+    private doExplore(person: Person, ctx: ActionContext): void {
     if (person.targetX === null || person.targetY === null) {
       this.finish(person);
       return;
@@ -3992,8 +4015,12 @@ export class ActionSystem {
     if (!other) return;
     // The same predicate the scorer used to choose this, so the handover is a
     // meal whenever feeding was the reason for it (M15 phase 20).
-    const feedsDependentChild = person.targetItemId === null &&
-      feederRole(person, other, ctx.childhood, ctx.peopleById, ctx.sightRadius) !== null;
+    // M15 phase 20: somebody they care for, starving, is fed the same way —
+    // a meal, not food pressed into hands that may already be full.
+    const feedsStarving = person.targetItemId === null &&
+      starvingInCare(person, other, ctx.relationships, ctx.childhood);
+    const feedsDependentChild = person.targetItemId === null && (feedsStarving ||
+      feederRole(person, other, ctx.childhood, ctx.peopleById, ctx.sightRadius) !== null);
 
     if (person.actionTimer <= 0) {
       person.actionTimer = GIVE_TICKS;
@@ -4060,6 +4087,11 @@ export class ActionSystem {
       ctx.tick, ctx.peopleHash, ctx.sightRadius
     );
     telemetry.count('gift_given');
+    if (feedsStarving) telemetry.count('starving_fed');
+    if (person.starvingSeen?.id === other.id) {
+      telemetry.count('starving_fed_remembered');
+      person.starvingSeen = null;
+    }
     this.finishSocial(person, ctx.tick);
   }
 

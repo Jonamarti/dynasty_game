@@ -224,6 +224,14 @@ export class Person {
   laidDownTick = -9999;
   /** The tick this baby was last nursed, for its four feeds a day. */
   lastNursedTick = -9999;
+  /**
+   * Somebody this person cares for, last seen starving, and where (M15 phase
+   * 20). What sends them to fetch food and bring it back: written when they
+   * see it (`Simulation.observePlaces`), cleared when they feed them, see
+   * them fed, or go back and find nobody there. Never read off the starving
+   * person's live state from afar.
+   */
+  starvingSeen: { id: number; x: number; y: number; hunger: number; tick: number } | null = null;
   fatherId: number | null = null;
   childIds: number[] = [];
 

@@ -31,6 +31,7 @@ import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
 import { drivePressures, DRIVES } from '../ai/Drives.ts';
 import { babyToCarry, infantNeedingNursing, infantOutsideHome, type NursingClock } from '../ai/Nursing.ts';
+import { starvingInCare } from '../ai/Feeding.ts';
 import { canCrawl, canWalk, isBabyInArms, isLactating, isNursling } from '../entities/LifeStage.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
@@ -1115,6 +1116,12 @@ export class Simulation {
    * that asks about a verb with no structure behind it — a job, a fight, the
    * Ties panel — leaves it alone and gets exactly the answer it always did.
    */
+  /** A starving sighting young enough to act on: half a day. */
+  freshStarvingSeen(person: Person): Person['starvingSeen'] {
+    const seen = person.starvingSeen;
+    return seen && this.time.tick - seen.tick <= this.config.time.ticksPerDay / 2 ? seen : null;
+  }
+
   /** When a nursling's next feed comes round: `feedsPerDay` a day. */
   nursingClock(): NursingClock {
     return {
@@ -3858,11 +3865,19 @@ export class Simulation {
       // No longer compared with the parent's own hunger: parents feed their
       // child first (owner, M15 phase 20), so a hungry parent still forages
       // for a hungry child.
+      //
+      // And whoever they last saw starving (M15 phase 20), at the hunger they
+      // saw, for as long as the sighting is fresh and only while they carry
+      // nothing to give: that is what sends them to fetch food. With some in
+      // hand, `bring_food` takes it back; left on, this kept them picking
+      // until the sighting went stale and nobody ever arrived (`lean`: 31 of
+      // 46 walks back given up for `forage`, none finished).
       dependentHunger: (person: Person) => person.childIds.reduce((highest, id) => {
         const child = this.peopleById.get(id);
         if (!child?.alive || !child.isChild || isNursling(child, this.config.childhood)) return highest;
         return Math.max(highest, child.needs.hunger);
-      }, 0),
+      }, person.inventory.bestFood() === null ? this.freshStarvingSeen(person)?.hunger ?? 0 : 0),
+      starvingSeen: (person: Person) => this.freshStarvingSeen(person),
       motivation: this.config.motivation,
       persuasionAuthority: (sponsor: Person, listener: Person) =>
         this.standing(sponsor, listener, 'build').chance,
@@ -4181,7 +4196,15 @@ export class Simulation {
     for (const other of this.peopleHash.queryRadius(person.x, person.y, radius, this.placePeopleCandidates)) {
       if (other.id !== person.id && other.alive && near(other.x, other.y)) {
         memory.remember('person', other.x, other.y, day, 2);
+        this.noticeStarving(person, other);
       }
+    }
+    // Back where they last saw them and nobody there: gone somewhere else,
+    // and nothing tells them where.
+    const seen = person.starvingSeen;
+    if (seen && Math.hypot(seen.x - person.x, seen.y - person.y) <= 2) {
+      const there = this.peopleById.get(seen.id);
+      if (!there?.alive || !near(there.x, there.y)) person.starvingSeen = null;
     }
     for (const pile of this.pileHash.queryRadius(person.x, person.y, radius, this.placePileCandidates)) {
       if (!pile.empty && near(pile.x, pile.y)) {
@@ -4194,6 +4217,23 @@ export class Simulation {
       telemetry.count(`place_exploration_fraction_band_${person.bandId}`, memory.exploredFraction());
       telemetry.count(`place_memory_age_sum_band_${person.bandId}`, memory.averageAge(day));
       telemetry.count(`place_memory_samples_band_${person.bandId}`);
+    }
+  }
+
+  /**
+   * Somebody `person` cares for, seen now: remembered while starving, and
+   * forgotten once seen fed (M15 phase 20, the owner's "if somebody sees she
+   * is dying and gets on with her, they go and fetch her food").
+   */
+  private noticeStarving(person: Person, other: Person): void {
+    if (starvingInCare(person, other, this.relationships, this.config.childhood)) {
+      const seen = person.starvingSeen;
+      if (!seen || seen.id === other.id || other.needs.hunger > seen.hunger) {
+        person.starvingSeen = { id: other.id, x: other.x, y: other.y,
+          hunger: other.needs.hunger, tick: this.time.tick };
+      }
+    } else if (person.starvingSeen?.id === other.id) {
+      person.starvingSeen = null;
     }
   }
 
