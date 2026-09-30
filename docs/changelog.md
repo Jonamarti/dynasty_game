@@ -9991,3 +9991,18 @@ jugador no tenía esa opción; no había forma de dejarlo ni de cogerlo.
 
 Captura: `artifacts/screenshots/m15-20b-baby-menu.png` (la jugadora con su bebé
 en brazos y el menú del bebé abierto).
+
+## 2026-09-30 — M15 fase 20: revertido «los arbustos no tienen bayas en invierno»
+
+Medido a 40 semillas en `lean`, el cambio hundía el mundo: supervivencia 13,4% →
+3,4% (40/40 colapsos), adultos muertos de hambre 600 → 872. En `lean` la gente
+pasa el invierno de las bayas que quedan del otoño, y quitárselas no deja nada.
+Era un cambio del mundo que introduje yo para arreglar una premisa de mi propia
+pregunta, no algo que el propietario pidiera; se revierte y la decisión queda
+para el propietario (`bugs.md`).
+
+Consecuencia para el saber de las estaciones: en este mundo un arbusto conserva
+en invierno lo que no se le ha cogido, así que quien lo mira ve alguno con bayas
+y no aprende que «en invierno no dan». El mecanismo funciona y está probado
+(`season-lore.test.ts`, con una isla pelada cada invierno), pero hoy casi nunca
+se aprende nada.
