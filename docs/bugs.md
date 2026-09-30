@@ -2028,16 +2028,22 @@ player a greyed-out tooltip and buys back the knowledge gate. Not done here
 because it changes what the AI-facing half of the catalogue reports and wants
 measuring on its own.
 
-### Nobody ever picks anything up off the ground but the player
+### Nobody ever picks anything up off the ground but the player — partial fix, M15 11d
 
-`pickup` became a real verb in this pass, but only the radial menu issues it.
-`Brain` has no score for it, so a heap of goods — what a dead forager was
-carrying, the timber from a tree felled by somebody whose hands were full —
-sits where it fell until a player walks over and collects it. `dropAt` is
-called from several places in `ActionSystem`, so this is a genuine leak of
-goods out of the economy rather than a rare case. Worth a scorer term weighted
-by what is in the heap and how far away it is; not attempted here because a
-new work verb competes for foraging ticks and wants twenty seeds of its own.
+`pickup` became a real verb in an earlier pass, but only the radial menu issued
+it. A heap of goods — what a dead forager was carrying, the timber from a tree
+felled by somebody whose hands were full — sat where it fell until a player
+walked over and collected it. `dropAt` is called from several places in
+`ActionSystem`, so this is a genuine leak of goods out of the economy rather
+than a rare case.
+
+**First path delivered 2026-09-30.** Hungry NPCs now score edible food in a
+nearby pile through `pileHash`, walk to the selected pile, and collect the
+selected food through the existing `pickup` action. `npc-pickup.test.ts`
+controls the candidate set and verifies both scoring and execution. The
+`porters` scenario produced no food-pile pickup sample, so its cohort check is
+not yet evidence that this route fires naturally. Non-food materials and tools,
+owner attention for foreign piles, and `equipFor` remain open in M15 phase 11d.
 
 ### A practice is easier to reach than a device, and only the numbers say by how much
 
@@ -3269,3 +3275,12 @@ carga normal ni calibrar el puñado a partir de esta única cohorte. Hace falta
 decidir si se mantiene la carga histórica y se rediseña la cadena de
 recolección/descubrimiento, o si se reconsideran las cantidades que caben en
 las manos. Ver `docs/m15_plan.md` y el changelog del 2026-09-29.
+
+### Tres tests de simulación exceden el límite fijo de cinco segundos en esta máquina
+
+En la suite del 2026-09-30, 639/642 tests pasaron; `band.test.ts` (40 días),
+`herding.test.ts` (un día de crecimiento) y `determinism.test.ts` (paridad
+español/inglés) agotaron cada uno el timeout de 5 s sin llegar a una aserción
+fallida. `band.test.ts` también excedió el límite al ejecutarse solo (5,01 s).
+No se cambió el timeout porque estos casos no pertenecen a 11d y no se ha
+confirmado si la máquina o el código los hace cruzar el límite.

@@ -9537,3 +9537,13 @@ El apoyo combina estima, vinculo, autoridad, necesidad atendida, lealtad y traba
 Las incursiones por agravio parten de una persona instigadora: su urgencia combina hostilidad, necesidad del hogar, estatus y miedo. El jefe decide con su propia urgencia y la autoridad social; si rechaza la propuesta, el instigador puede reunir aliados. Las incursiones por recursos usan el mapa personal de quien las propone. La rivalidad territorial observada ya no depende de que la despensa esté vacía. El miedo aumenta la búsqueda de tregua y permite ofrecer paz a un rival cercano.
 
 La cohorte `lean` de 20 semillas dio 20,9% de supervivencia y 11/20 colapsos, 1,1 puntos por debajo de la lectura de fase 6; la diferencia queda dentro del margen caótico de tres puntos y no se atribuye a esta fase. `peaceShare` fue 99,9%, con 10 golpes interbandas. En `century`, sabotaje contó 2.982 casos frente a 9.556 de tala; no se cambió el puntuador de sabotaje. `make_peace` se ofreció 87 veces. `bands-take-sides` dio `n/a` en `farmers`, `herders` y `stewards` porque no hubo contacto entre bandas. La matriz global se interrumpió tras confirmar que recorre 26 escenarios y no los cinco indicados por la documentación. La fase queda abierta hasta obtener cobertura de contacto para ese check.
+## 2026-09-30 — M15 fase 11d: los NPC puntúan comida caída
+
+Los NPC con hambre consideran la comida comestible de los montones cercanos,
+con búsqueda por `pileHash`, y usan la acción `pickup` que ya camina hasta el
+montón antes de recoger. El objetivo conserva el alimento escogido durante el
+viaje y la telemetría distingue `npc_pickup`. Se añadió una prueba controlada
+del scorer y del ejecutor. `porters` no produjo montones de comida, así que no
+se atribuye a esta cohorte una activación natural. 11d sigue abierto: faltan
+materiales/herramientas, atención sobre montones ajenos y `equipFor`. No cambia
+la UI; no requiere captura.

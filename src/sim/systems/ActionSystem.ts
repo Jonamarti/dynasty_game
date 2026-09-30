@@ -1866,6 +1866,7 @@ export class ActionSystem {
     // is still covered while it stays in the pack, through `holding` itself.
     if (requested !== null) person.handled.set(requested, ctx.tick);
     telemetry.count('pickup_ordered', moved);
+    if (!person.isPlayer) telemetry.count('npc_pickup', moved);
     this.finish(person);
   }
 

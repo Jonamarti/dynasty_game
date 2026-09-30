@@ -1248,6 +1248,12 @@ sesiones a tiempo antes de tocar los pesos de recolección.
   una herramienta de su oficio). **Es un filtro de propiedad**: un montón
   ajeno se rige por las reglas de M11 fase 4 (se puede, si nadie de la banda
   dueña lo ve).
+- **Avance 2026-09-30 — primera parte de `pickup`:** con hambre, un NPC puntúa
+  comida comestible de montones cercanos, guarda el montón y el alimento como
+  objetivo, y camina antes de recoger. La búsqueda usa `pileHash`; la puerta
+  `spares-are-found` mide las recogidas con telemetría `npc_pickup`. Aún faltan
+  el filtrado de propiedad para esos montones, los materiales/herramientas y
+  `equipFor`; 11d continúa abierta.
 - **Razones visibles** (`abandon(…, razón)` con su frase por `t()`):
   `hands_full` («tiene las manos llenas»), `no_free_hand` («no tiene una mano
   libre»), `needs_both_hands` («hacen falta las dos manos»),
@@ -1269,7 +1275,8 @@ sesiones a tiempo antes de tocar los pesos de recolección.
   compara antes y después. La puerta es que **`bands-decide-to-build` y
   `shelter-answers-cold` sigan en verde**: las chozas se acaban, más tarde,
   pero antes del invierno.
-- `spares-are-found`: hay recogidas de NPC (`npc_pickup > 0`). Hoy falla.
+- `spares-are-found`: hay recogidas de NPC (`npc_pickup > 0`); medido tras
+  completar el comportamiento, no basta con que el scorer lo ofrezca.
 - **Coste declarado: ≤ 5 puntos** de supervivencia media en `lean` y `century`
   frente a la base de la fase 1. Si se supera, **para**. Las primeras palancas
   son de mecanismo: que la chispa de la cesta dispare (contador `hands_full`),

@@ -58,6 +58,9 @@ import {
 } from '../social/Fear.ts';
 import { INVESTIGATE, CONCEAL, CONCEAL_WATER_REACH } from '../social/Investigation.ts';
 import type { Corpse } from '../entities/Corpse.ts';
+import type { ItemPile } from '../entities/ItemPile.ts';
+import type { CarryConfig } from '../core/Config.ts';
+import { canTake } from '../core/Carry.ts';
 import {
   isCaptive, isEscapee, captorWatching, ESCAPE, ESCAPE_HOME, HOME_REACHED, CAPTURE_OVER_PREDATION,
   RAID_CAPTURE,
@@ -107,6 +110,10 @@ export interface BrainContext {
   buildings: Building[];
   treeHash: SpatialHash<Tree>;
   animalHash: SpatialHash<Animal>;
+  /** Ground goods are indexed separately; never scan every pile per person. */
+  pileHash?: SpatialHash<ItemPile>;
+  /** Avoid even an empty spatial query until the first dropped good exists. */
+  pilesById?: ReadonlyMap<number, ItemPile>;
   inscriptionHash: SpatialHash<Inscription>;
   /** Everything written down anywhere, so nobody cuts the same word twice. */
   recorded: ReadonlySet<string>;
@@ -131,6 +138,7 @@ export interface BrainContext {
   needs: NeedsConfig;
   /** The same source-eating gate used by ActionSystem's forage and pick. */
   eatAtSourceAt: number;
+  carry?: CarryConfig;
   /** Highest hunger among this person's hungry dependent children. */
   dependentHunger: (person: Person) => number;
   /** Baseline nutrition consumed by one person over seven days. */
@@ -191,6 +199,8 @@ interface FoundTargets {
   waterQuestionPeer: Person | null;
   explorePoint: { x: number; y: number } | null;
   foodNode: ResourceNode | null;
+  pickupPile: ItemPile | null;
+  pickupItem: string | null;
   quarry: Animal | null;
   matNode: ResourceNode | null;
   site: Building | null;
@@ -660,6 +670,7 @@ const JOB_BIAS_DOWN = 0.85;
 
 export class Brain {
   private readonly knownNodeCandidates: { node: ResourceNode; amount: number | null }[] = [];
+  private readonly nearbyPiles: ItemPile[] = [];
   private readonly knownNodeIds = new Set<number>();
   private readonly rememberedNodeTargets = new Set<number>();
   private readonly toldNodeTargets = new Set<number>();
@@ -767,6 +778,8 @@ export class Brain {
 
     let fruitTree: Tree | null = null;
     let fellTree: Tree | null = null;
+    let pickupPile: ItemPile | null = null;
+    let pickupItem: string | null = null;
 
     const thirst = drive.thirst;
     const hunger = drive.hunger;
@@ -891,6 +904,30 @@ export class Brain {
             ? expectationRatio(person, foodNode.kind === 'fish' ? 'yield:fish' : 'yield:forage') : 1) *
           this.proximityBonus(person, foodNode, ctx.sightRadius)
       );
+    }
+
+    // M15 phase 11d: food dropped by a dead or overloaded forager is still
+    // food. Restrict this first pass to edible goods and use the pile hash so
+    // scavenging cannot become a world-wide entity scan on every think tick.
+    if (ctx.pileHash && ctx.pilesById?.size && ctx.carry &&
+        person.carrying < person.carryCapacity && hunger > 0.15) {
+      let bestPickupScore = 0;
+      for (const pile of ctx.pileHash.queryRadius(person.x, person.y, ctx.sightRadius, this.nearbyPiles)) {
+        if (pile.empty || !ctx.world.sameRegion(person.x, person.y, pile.x, pile.y)) continue;
+        const item = pile.contents.entries().find(([id, count]) => count > 0 &&
+          (ITEMS[id]?.nutrition ?? 0) > 0 && canTake(person, ctx.carry!, id, 1));
+        if (!item) continue;
+        const [itemId, count] = item;
+        const score = hunger * 1.9 * Math.min(1, (ITEMS[itemId]?.nutrition ?? 0) / 20)
+          * Math.min(1, count / 3)
+          * this.proximityBonus(person, pile, ctx.sightRadius);
+        if (score > bestPickupScore) {
+          bestPickupScore = score;
+          pickupPile = pile;
+          pickupItem = itemId;
+        }
+      }
+      if (pickupPile) add('pickup', bestPickupScore);
     }
 
     // --- Pick fruit --------------------------------------------------------
@@ -3239,7 +3276,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodToEat, waterQuestionPeer, explorePoint, foodNode, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, waterQuestionPeer, explorePoint, foodNode, pickupPile, pickupItem, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
@@ -3799,6 +3836,14 @@ export class Brain {
         }
         break;
       }
+      case 'pickup':
+        if (found.pickupPile && found.pickupItem) {
+          person.targetPileId = found.pickupPile.id;
+          person.targetItemId = found.pickupItem;
+          person.targetX = found.pickupPile.x;
+          person.targetY = found.pickupPile.y;
+        }
+        break;
       case 'pick':
       case 'chop': {
         const tree = action === 'pick' ? found.fruitTree : found.fellTree;

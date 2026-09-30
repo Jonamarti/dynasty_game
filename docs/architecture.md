@@ -1,7 +1,7 @@
 # Architecture
 
-Current as of 2026-09-29 (M15 phase 11c). No runtime dependencies, Vite + a
-2D canvas.
+Current as of 2026-09-30 (M15 phase 11d, food pickup in progress). No runtime
+dependencies, Vite + a 2D canvas.
 
 ## Layout
 
@@ -53,6 +53,11 @@ project scanned all entities for every "nearest X" question, which made
 per-step cost quadratic in population. `SpatialHash` is checked against brute
 force in the tests, because an index that returns a *different* answer than the
 naive scan is worse than no index at all.
+
+NPC scavenging of edible food uses `pileHash`, stores the selected item and pile
+as the `pickup` target, and collects through `ActionSystem` after walking there.
+The remaining M15 phase 11d paths (non-food needs and automatic tool fitting)
+are still pending; see `m15_plan.md`.
 
 **Knowledge is held by people, not by a civilisation.** There is no global tech
 tree and no unlock. `Simulation.knownTech` is recomputed daily from the
