@@ -657,11 +657,30 @@ export class Renderer {
     }
 
     // --- People ------------------------------------------------------------
+    // A carried baby (M15 phase 20) shares its carrier's position exactly, so
+    // drawn in list order it vanished under her or covered her face. It is
+    // drawn after its carrier instead, held at her side, which is also the
+    // only way the player can see that a mother has a baby in one arm and
+    // only one hand free.
+    const carried = new Map<number, Person[]>();
     for (const person of sim.livingPeople()) {
+      if (person.carriedBy === null) continue;
+      const held = carried.get(person.carriedBy);
+      if (held) held.push(person); else carried.set(person.carriedBy, [person]);
+    }
+    for (const person of sim.livingPeople()) {
+      if (person.carriedBy !== null && sim.peopleById.get(person.carriedBy)?.alive) continue;
       const at = this.interpolator.at('person', person, alpha);
       if (at.x < view.minX || at.x > view.maxX || at.y < view.minY || at.y > view.maxY) continue;
       if (!inSight(at.x, at.y)) continue;
       this.drawPerson(person, highlight?.personId === person.id, at);
+      const babies = carried.get(person.id);
+      if (!babies) continue;
+      babies.forEach((baby, i) => {
+        const side = i === 0 ? 1 : -1;
+        this.drawPerson(baby, highlight?.personId === baby.id,
+          { ...at, x: at.x + side * 0.22, y: at.y - 0.06 });
+      });
     }
 
     // --- Build ghost -------------------------------------------------------

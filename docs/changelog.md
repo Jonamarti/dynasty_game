@@ -9796,3 +9796,14 @@ exposición 317. En tres semillas de `npm run infants` las 36 madres de los
 niños nacidos murieron, 30 de ellas lactando (3,83 por cada 100 personas-día),
 y con ellas todos sus hijos. `npm test` pasa (659 + `life-stages.test.ts`,
 salvo el timeout conocido de `herding.test.ts` bajo carga).
+
+## 2026-09-30 — M15 fase 20: el bebé en brazos se ve
+
+Un bebé en brazos comparte exactamente la posición de quien lo lleva, así que
+el renderer lo dibujaba debajo de ella o encima de su cara según el orden de la
+lista, y el jugador no podía ver que una madre llevaba a un bebé en un brazo y
+tenía una sola mano libre. `Renderer` lo dibuja ahora después de quien lo lleva,
+a su costado (a un lado el primero, al otro un segundo). Sin cambios en
+`src/sim/`. Captura nueva en el recorrido (`e2e/screenshots.spec.ts`, «M15 20»):
+`artifacts/screenshots/m15-20-mother-carries-baby.png`, una madre seleccionada
+amamantando al bebé que lleva en brazos.

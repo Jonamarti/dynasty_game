@@ -578,3 +578,53 @@ test('M15 phase 11a equipment slots', async ({ page }) => {
   await expect(slots).toHaveCount(5);
   await page.screenshot({ path: DIR + '/m15-11a-equipment-slots.png' });
 });
+
+test('M15 20 a mother carries and nurses her baby', async ({ page }) => {
+  await page.goto('/?seed=m15-20-carry&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await page.waitForTimeout(800);
+  // Make one founding child a baby of one woman, let her pick it up, then let
+  // it cry so she nurses it where she stands.
+  const at = await page.evaluate(() => {
+    type P = { id: number; x: number; y: number; sex: string; isChild: boolean; isPlayer: boolean;
+      age: number; daysPerYear: number; childIds: number[]; motherId: number | null; bandId: number;
+      carriedBy: number | null; needs: { hunger: number } };
+    const d = (window as never as {
+      __dynasty: {
+        sim: { livingPeople: () => P[]; step: () => void };
+        camera: { snapTo: (x: number, y: number) => void; following: boolean;
+          worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+      };
+    }).__dynasty;
+    const people = d.sim.livingPeople();
+    const mother = people.find(p => p.sex === 'female' && !p.isChild && !p.isPlayer)!;
+    const baby = people.find(p => p.isChild && p.bandId === mother.bandId && p.id !== mother.id)!;
+    baby.age = 0.3 * baby.daysPerYear;
+    baby.motherId = mother.id;
+    mother.childIds = [baby.id];
+    for (let i = 0; i < 200 && baby.carriedBy !== mother.id; i++) d.sim.step();
+    baby.needs.hunger = 80;
+    for (let i = 0; i < 3; i++) d.sim.step();
+    d.camera.snapTo(mother.x, mother.y);
+    d.camera.following = false;
+    return { x: d.camera.worldToScreenX(mother.x), y: d.camera.worldToScreenY(mother.y), carried: baby.carriedBy === mother.id };
+  });
+  expect(at.carried).toBe(true);
+  await page.locator('#view').hover();
+  for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -120);
+  await page.waitForTimeout(300);
+  // Select her, so the panel says what she is doing.
+  const where = await page.evaluate(() => {
+    const d = (window as never as { __dynasty: {
+      sim: { livingPeople: () => { x: number; y: number; childIds: number[]; isChild: boolean }[] };
+      camera: { worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number } } }).__dynasty;
+    const mother = d.sim.livingPeople().find(p => !p.isChild && p.childIds.length === 1)!;
+    return { x: d.camera.worldToScreenX(mother.x), y: d.camera.worldToScreenY(mother.y) };
+  });
+  await page.mouse.click(where.x, where.y);
+  await page.waitForTimeout(200);
+  const picker = page.locator('.picker');
+  if (await picker.isVisible()) await picker.locator('.picker-item').first().click();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: DIR + '/m15-20-mother-carries-baby.png' });
+});
