@@ -8,6 +8,31 @@ así que falta correlacionar el SHA ejecutado con el código actual. Mientras se
 investiga, CI y el deploy de Pages continúan aunque `npm test` falle. Quitar
 `continue-on-error` de ambos workflows cuando el timeout quede corregido.
 
+## M15 fase 20, balance de la infancia a 40 semillas (2026-09-30)
+
+Las reglas del propietario del 2026-09-30 (lactancia hasta los dos años con
+coste, nodrizas, porteo, los padres alimentan primero, etapas de edad), medidas
+juntas en `lean` a 40 semillas contra el commit anterior a la fase (`b9a1792`):
+supervivencia 23,4% → 16,3% (22/40 → 29/40 colapsos), mortalidad antes del año
+0,601 → 0,655, niños mayores muertos de hambre 114 → 83, adultos muertos de
+hambre 555 → 630, nacimientos 583 → 513. Siete puntos: por encima del límite de
+cinco del plan.
+
+Lo que lo explica, por las ablaciones de cada commit y `npm run infants`: el
+cuello de botella es la comida de la madre lactante. Muere de hambre a dos o
+tres veces la tasa de un hombre, y con ella casi siempre su bebé. La leche
+cuesta ahora un cuarto más de comida durante el doble de tiempo, y nadie le da
+de comer a ella: las reglas de alimentación cubren a los niños, no a quien
+amamanta. Lo que lo mitiga (nodrizas, porteo, que los padres den de comer
+primero) funciona en sus propios contadores y no compensa el coste.
+
+Opciones para el propietario, de más a menos histórica: que la pareja y la
+familia den de comer a la mujer que amamanta (el aprovisionamiento que la
+antropología da por clave de la crianza humana); un coste de la leche menor
+que 0,25; o el destete antes de los dos años. Queda también sin resolver el
+sitio recordado que se sabe vacío sin verlo (entrada anterior), que hace que la
+madre pase una cuarta parte del tiempo parada.
+
 ## M15 11d, lo que encendió `peopleById` (2026-09-30)
 
 `BrainContext.peopleById` no se pasaba desde M12, así que todo lo que el `Brain`

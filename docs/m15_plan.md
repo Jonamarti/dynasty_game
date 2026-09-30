@@ -1930,9 +1930,13 @@ o del almacén), cazar a los 8 más despacio que un adulto, correr como un adult
 a los 12; los niños pequeños solo juegan. Los padres dan de comer al hijo
 primero. Cualquier lactante de la banda puede amamantar. La madre lleva al bebé
 en un brazo (ocupa una mano) o, con la bandolera de piel, sin manos, y lo
-amamanta donde esté a costa de algo de su comida. Primer commit: lactancia
-hasta los dos años, nodrizas y coste de la leche (ver changelog). Siguen:
-llevar al bebé encima; los padres alimentan primero; las etapas de edad.
+amamanta donde esté a costa de algo de su comida. Hechos, cada uno con su
+commit y su medición: lactancia hasta los dos años, nodrizas y coste de la
+leche; llevar al bebé encima (y dibujarlo); los padres alimentan primero; las
+etapas de edad y el juego. **Puerta no superada:** a 40 semillas `lean` baja de
+23,4% a 16,3%, por encima del límite de cinco puntos; la causa medida es que la
+madre lactante muere de hambre. Espera decisión del propietario (`bugs.md`,
+«balance de la infancia a 40 semillas»).
 
 ## Fase 21 — Anatomía, heridas y enfermedad (M14 fase 7)
 
