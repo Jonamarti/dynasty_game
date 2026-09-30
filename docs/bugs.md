@@ -17,6 +17,11 @@ En la matriz del mismo commit aparecen en rojo `camps-move-when-the-land-fails`
 (`craft`), que no estaban en la anterior. Sin confirmar si es divergencia de una
 sola corrida o efecto de las piezas encendidas.
 
+`CUT_OFF_BY_NEED` (retirar `spar`, `teach`, `ask`, `court` y `discuss` del
+scorer con una necesidad pasada la línea) midió 22,3% frente a 25,2% sin él, y
+una medición combinada anterior 23,0%. Dos lecturas en la misma dirección, las
+dos dentro del ruido: si el propietario quiere saberlo, `--seeds 40`.
+
 **Lo que `npm run infants` encontró y queda abierto** (tres semillas `lean`):
 dos de cada tres niños que mueren lo hacen después que su madre, y el 85% de
 esas madres muere de hambre mientras cría a un lactante; los huérfanos de pecho

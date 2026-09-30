@@ -9620,3 +9620,27 @@ timeout explícito de 60 s, que también cierra el timeout conocido.
 Aparecen `camps-move-when-the-land-fails` en `lean`, `the-watched-intervene` en
 `century` y `pots-reach-a-granary` en `craft`; no se ha confirmado si son
 divergencia o efecto, y quedan en `bugs.md`. Sin cambio de interfaz.
+
+## 2026-09-30 — M15 fase 11d: no elegir lo que la necesidad va a cortar
+
+Con una necesidad por encima de la línea de trabajo, el `Brain` retiraba ya las
+conversaciones (`CUT_OFF_AT_ONCE`) porque `interruption` las corta en su primer
+tick. El mismo bucle recorría el resto de verbos de `interruptSocialWork`: en
+tres semillas `lean`, 24.827 entrenamientos (`spar`), 2.805 peticiones de
+enseñanza, 2.637 lecciones, 903 cortejos y 887 discusiones se eligieron y se
+cortaron por la necesidad que el que elegía ya tenía; `spar` ocupaba una décima
+parte del tiempo despierto de los adultos en un mundo donde morían de hambre.
+`CUT_OFF_BY_NEED` (`spar`, `teach`, `ask`, `court`, `discuss`) se retira igual
+cuando la presión es de necesidad (no cuando es un golpe).
+
+Medido: el mecanismo baja los cortes de `spar` por hambre de 24.827 a 450 y los
+de `ask` de 2.805 a 36. La supervivencia `lean` a 20 semillas fue 22,3% (11/20
+colapsos) frente a 25,2% sin el cambio; -2,9 puntos, dentro de lo que diez o
+veinte semillas no resuelven, y en la misma dirección que una medición previa
+que lo combinaba con otro cambio (23,0%). No se atribuye ni ganancia ni coste;
+anotado en `bugs.md`. `npm test` pasa entero (644). Sin cambio de interfaz.
+
+Se probó también que robar comida contara como respuesta al hambre (pasar
+`answers: 'hunger'` a `interruptSocialWork` en `doSteal`); sus cortes solo
+bajaron de 1.568 a 1.262 y se retiró sin commit en vez de dejar un comentario
+que afirmara un efecto no confirmado.

@@ -643,6 +643,23 @@ const ESCAPE_DISTANCES = [14, 10, 7, 4];
 const CUT_OFF_AT_ONCE: ReadonlySet<string> = new Set([
   'talk', 'warn', 'threaten', 'slander', 'praise', 'correct', 'make_amends', 'complain', 'parley',
 ]);
+/**
+ * Everything else `ActionSystem.interruptSocialWork` stops on its first tick
+ * for a need past the working line, M15 phase 11d.
+ *
+ * `CUT_OFF_AT_ONCE` was written for conversation and its comment tells the
+ * story: chosen, cut off, chosen again, while the person stood there thirsty.
+ * The same loop ran through every other verb on that path. Measured on three
+ * `lean` seeds: 24,827 spars, 2,805 requests to be taught, 2,637 lessons,
+ * 903 courtships and 887 discussions were each started and cut off by the
+ * need the chooser was already past, and `spar` was a tenth of every adult's
+ * waking time in a world where adults were dying of hunger at one in a
+ * hundred a day. Kept apart from `CUT_OFF_AT_ONCE` only because that set also
+ * applies to somebody being hit, and these need not.
+ */
+const CUT_OFF_BY_NEED: ReadonlySet<string> = new Set([
+  'spar', 'teach', 'ask', 'court', 'discuss',
+]);
 /** Routes whose value is lost if the scorer replaces them before arrival. */
 const ROUTE_COMMIT_ACTIONS: ReadonlySet<string> = new Set(['drink', 'take', 'store', 'go_home']);
 
@@ -3273,7 +3290,9 @@ export class Brain {
     // like somebody who would neither run nor fight.
     if (setUpon || pressedByNeed(person, ctx.needs.workLimits)) {
       let kept = 0;
-      for (const row of scores) if (!CUT_OFF_AT_ONCE.has(row.id)) scores[kept++] = row;
+      for (const row of scores) {
+        if (!CUT_OFF_AT_ONCE.has(row.id) && (setUpon || !CUT_OFF_BY_NEED.has(row.id))) scores[kept++] = row;
+      }
       scores.length = kept;
     }
     // The owner's note 4: somebody being beaten runs or hits back. Which of the
