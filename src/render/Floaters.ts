@@ -263,6 +263,7 @@ export const STOP_REASONS: Record<string, string> = {
   hungry: 'they stopped to eat',
   cold: 'they were too cold to carry on',
   under_attack: 'somebody attacked them',
+  baby_crying: 'a baby was crying for the breast',
   long_enough: 'they had worked long enough',
   daylight: 'nobody sleeps through the day',
   rested: 'they had slept enough',

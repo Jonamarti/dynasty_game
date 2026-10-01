@@ -81,7 +81,7 @@ import { purposeAppetite, sensitivity } from './Temperament.ts';
 import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
-import { infantNeedingNursing, type NursingClock } from './Nursing.ts';
+import { cryOf, infantNeedingNursing } from './Nursing.ts';
 import { CHILD_FEED_AT, feederRole, starvingInCare } from './Feeding.ts';
 import { canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
 import { expectationRatio, techAppeal } from './Beliefs.ts';
@@ -143,8 +143,6 @@ export interface BrainContext {
   carry?: CarryConfig;
   /** Highest hunger among this person's hungry dependent children. */
   dependentHunger: (person: Person) => number;
-  /** When a nursling's next feed is due; see `Nursing.feedDue`. */
-  nursingClock?: NursingClock;
   /**
    * Somebody this person last saw starving, while the sighting is fresh
    * (M15 phase 20); see `Person.starvingSeen`.
@@ -700,6 +698,10 @@ const CUT_OFF_BY_NEED: ReadonlySet<string> = new Set([
   'spar', 'teach', 'ask', 'court', 'discuss',
 ]);
 /** Routes whose value is lost if the scorer replaces them before arrival. */
+/** A crying baby's pull on the woman who would nurse it, per unit of cry. */
+const NURSE_OWN = 1.6;
+const NURSE_OTHER = 1.1;
+
 const ROUTE_COMMIT_ACTIONS: ReadonlySet<string> = new Set(['drink', 'take', 'store', 'go_home']);
 
 /**
@@ -769,8 +771,15 @@ export class Brain {
     // the escape hatch: when known water is available, it outranks the route
     // home or to the larder immediately. Movement still abandons blocked or
     // invalid targets through ActionSystem, so this is not a permanent lock.
+    //
+    // A crying baby is the one thing weighed against that hatch rather than
+    // under it (owner, 2026-10-01): a mother at thirst 45 whose baby has
+    // cried itself to hunger 60 feeds it first, because that is what the two
+    // scores say. It used to be moot, since the cry seized her outright.
+    const drinkRow = pool.find(row => row.id === 'drink');
+    const nurseRow = pool.find(row => row.id === 'nurse');
     const urgentDrink = person.needs.thirst >= ctx.needs.workLimits.thirst &&
-      found.water !== null && pool.some(row => row.id === 'drink');
+      found.water !== null && drinkRow !== undefined && !(nurseRow && nurseRow.score > drinkRow.score);
     const continuingRoute = ROUTE_COMMIT_ACTIONS.has(person.action) &&
       person.targetX !== null && person.targetY !== null &&
       pool.some(row => row.id === person.action);
@@ -1143,12 +1152,18 @@ export class Brain {
     let beneficiary: Person | null = null;
     let nursingChild: Person | null = null;
     nursingChild = ctx.motivation.urgentNursing
-      ? infantNeedingNursing(person, ctx.peopleById, ctx.world, ctx.childhood, ctx.peopleHash, ctx.sightRadius,
-        ctx.nursingClock) : null;
+      ? infantNeedingNursing(person, ctx.peopleById, ctx.world, ctx.childhood, ctx.peopleHash, ctx.sightRadius)
+      : null;
     if (nursingChild) {
-      // Simulation also interrupts committed work immediately; this makes the
-      // overriding care need visible in `why` and ordinary replanning.
-      add('nurse', 1000 + Math.max(nursingChild.needs.hunger, nursingChild.needs.thirst));
+      // A crying baby weighs heavily, and more the longer it cries, but it is
+      // weighed (owner, 2026-10-01). At the cry line it is worth what a drink
+      // is to a woman at thirst 73 or a meal at hunger 70: she answers it
+      // before anything she merely wants, and after a need of her own that
+      // has become as pressing. It used to score a thousand and win against
+      // everything, so a baby at five of a hundred took its mother away from
+      // every other job. Somebody else's baby, wet-nursed, counts for less.
+      const own = nursingChild.motherId === person.id ? NURSE_OWN : NURSE_OTHER;
+      add('nurse', own * cryOf(nursingChild));
     }
     let tradePartner: Person | null = null;
     let fleeFrom: Person | null = null;

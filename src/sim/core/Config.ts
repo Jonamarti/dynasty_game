@@ -343,8 +343,10 @@ export interface ChildhoodConfig {
   /** The latest a baby is weaned. */
   weanYears: number;
   /**
-   * How many times a day a nursling asks for the breast whether or not it
-   * is hungry yet (owner, 2026-09-30: four).
+   * How many times a day a nursling fed full gets hungry enough to cry for
+   * the breast (owner, 2026-09-30: four). It sets how fast a nursling gets
+   * hungry (`Nursing.nurslingHungerFactor`); there is no feeding clock, and a
+   * baby is nursed only when it cries (owner, 2026-10-01).
    */
   feedsPerDay: number;
   /**

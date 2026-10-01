@@ -30,7 +30,7 @@ import { ActionSystem } from '../systems/ActionSystem.ts';
 import { Brain, type BrainContext } from '../ai/Brain.ts';
 import { carerOf, childRadius } from '../ai/Anchor.ts';
 import { drivePressures, DRIVES } from '../ai/Drives.ts';
-import { babyToCarry, infantNeedingNursing, infantOutsideHome, mayNurse, type NursingClock } from '../ai/Nursing.ts';
+import { babyToCarry, infantNeedingNursing, infantOutsideHome, mayNurse, nurslingHungerFactor } from '../ai/Nursing.ts';
 import { starvingInCare } from '../ai/Feeding.ts';
 import { canCrawl, canWalk, isBabyInArms, isLactating, isNursling } from '../entities/LifeStage.ts';
 import {
@@ -136,9 +136,11 @@ export interface StopNotice {
  * Stops worth coming back to.
  *
  * A need, not a fact about the world: "he went for a drink" is an interruption,
- * "the tree is gone" is the end of the matter.
+ * "the tree is gone" is the end of the matter. A baby's cry is the same kind
+ * of break (owner, 2026-10-01): she feeds it and goes back to what she was
+ * told to do.
  */
-const RESUMABLE_STOPS = new Set(['thirsty', 'hungry', 'cold']);
+const RESUMABLE_STOPS = new Set(['thirsty', 'hungry', 'cold', 'baby_crying']);
 const NO_HOME_ANCHORS = new Map<number, { x: number; y: number }>();
 
 /**
@@ -167,6 +169,13 @@ const ORGANISED_ORDER_BONUS = 0.1;
 
 /** Ticks an interrupted order waits to be resumed before it is forgotten. */
 const RESUME_WINDOW = 2000;
+/**
+ * How often a baby still crying breaks off its mother's work again, in ticks:
+ * two hours of game time. Long enough that what she chose instead of the baby
+ * (a drink, at thirst 80) gets finished; short enough that a baby left
+ * crying is never ignored for long.
+ */
+const CRY_NAG_TICKS = 20;
 
 /**
  * How an order from somebody else is put to the player — M11 phase 13f. Only
@@ -1122,12 +1131,28 @@ export class Simulation {
     return seen && this.time.tick - seen.tick <= this.config.time.ticksPerDay / 2 ? seen : null;
   }
 
-  /** When a nursling's next feed comes round: `feedsPerDay` a day. */
-  nursingClock(): NursingClock {
-    return {
-      tick: this.time.tick,
-      feedEvery: this.config.time.ticksPerDay / Math.max(1, this.config.childhood.feedsPerDay),
-    };
+  /**
+   * Whether a baby's cry should break off what this woman is doing now: one
+   * she would nurse is crying (`Nursing.infantNeedingNursing`), and the last
+   * cry to interrupt her was more than `CRY_NAG_TICKS` ago. The pause is what
+   * lets her weigh the cry rather than obey it — having chosen a drink first,
+   * she drinks, and the baby, still crying, reaches her again a little later.
+   */
+  cryReaches(person: Person): boolean {
+    if (!this.config.motivation.urgentNursing || person.captiveOf !== null ||
+      this.time.tick - person.cryHeardTick < CRY_NAG_TICKS) return false;
+    // An order to pick a baby up or put one down is finished before any feed
+    // (M15 phase 20): a feed that interrupted it dropped the order, and the
+    // player's "pick him up" silently did not happen. Both are short.
+    if ((person.action === 'carry_baby' || person.action === 'put_down_baby') && person.order !== null) {
+      return false;
+    }
+    const baby = infantNeedingNursing(person, this.peopleById, this.world, this.config.childhood,
+      this.peopleHash, this.config.sightRadius);
+    if (!baby) return false;
+    person.cryHeardTick = this.time.tick;
+    telemetry.count('cry_interrupted');
+    return true;
   }
 
   standing(leader: Person, subordinate: Person, action: string, foreign = false) {
@@ -3709,11 +3734,17 @@ export class Simulation {
       peopleById: this.peopleById,
     });
 
+    const nurslingFactor = nurslingHungerFactor(this.config.childhood.feedsPerDay,
+      this.config.time.ticksPerDay, this.config.needs.hungerRate);
     this.needsSystem.update(this.people, this.time, this.buildings, this.buildingHash, {
       // M15 phase 20 (owner, 2026-09-30): milk makes a woman half as hungry
       // again for as long as she has it, and a baby in arms never tires.
+      //
+      // And a nursling gets hungry fast enough to cry `feedsPerDay` times a
+      // day (owner, 2026-10-01), which is what replaced the feeding clock.
       hungerFactor: (person: Person) => isLactating(person, this.peopleById, this.config.childhood)
-        ? 1 + this.config.childhood.lactationHunger : 1,
+        ? 1 + this.config.childhood.lactationHunger
+        : isNursling(person, this.config.childhood) ? nurslingFactor : 1,
       babyInArms: (person: Person) => isBabyInArms(person, this.config.childhood),
     });
 
@@ -3899,7 +3930,6 @@ export class Simulation {
       buildingsById: this.buildingsById,
       peopleById: this.peopleById,
       childhood: this.config.childhood,
-      nursingClock: this.nursingClock(),
       // The hungriest weaned child this parent feeds, for the forage drive.
       // No longer compared with the parent's own hunger: parents feed their
       // child first (owner, M15 phase 20), so a hungry parent still forages
@@ -3937,7 +3967,7 @@ export class Simulation {
       onTreeFelled: (tree: Tree) => this.removeTree(tree),
       peopleById: this.peopleById,
       childhood: this.config.childhood,
-      nursingClock: this.nursingClock(),
+      babyCrying: (person: Person) => this.cryReaches(person),
       householdsById: this.householdsById,
       childAwayFromCarer: (person: Person) => {
         if (!person.isChild || person.action === 'go_home') return false;
@@ -4058,15 +4088,9 @@ export class Simulation {
       if (isHeld(person, this.time.tick)) continue;
 
       const underAttack = assailantOf(person, id => this.peopleById.get(id), this.time.tick) !== null;
-      // An order to pick a baby up or put one down is finished before any
-      // feed (M15 phase 20): a feed that interrupted it dropped the order, and
-      // the player's "pick him up" silently did not happen. Both are short;
-      // the feed comes the moment they are done.
-      const handlingBaby = (person.action === 'carry_baby' || person.action === 'put_down_baby') &&
-        person.order !== null;
-      const urgentBaby = underAttack || handlingBaby || !this.config.motivation.urgentNursing
-        ? null : infantNeedingNursing(person, this.peopleById, this.world, this.config.childhood,
-          this.peopleHash, this.config.sightRadius, this.nursingClock());
+      // A crying baby no longer seizes the woman here (owner, 2026-10-01): its
+      // cry interrupts her work through `cryReaches`, and the brain weighs it
+      // against her own needs. A feed she has begun is carried to the end.
       const activeNursing = this.config.motivation.urgentNursing && person.action === 'nurse';
       // Carrying the baby supersedes leaving it in the house: with it on, the
       // mother goes to pick it up rather than to take it home.
@@ -4089,13 +4113,12 @@ export class Simulation {
       }
       const currentCarryBaby = activeCarry && person.targetPersonId !== null
         ? this.peopleById.get(person.targetPersonId) : null;
-      if (!underAttack && (urgentBaby || activeNursing || homeBaby || activeCarry)) {
-        const shouldNurse = !!urgentBaby || activeNursing;
-        const baby = shouldNurse ? urgentBaby ?? currentBaby : homeBaby ?? currentCarryBaby;
-        const action = shouldNurse ? 'nurse' : homeAction;
+      if (!underAttack && (activeNursing || homeBaby || activeCarry)) {
+        const baby = activeNursing ? currentBaby : homeBaby ?? currentCarryBaby;
+        const action = activeNursing ? 'nurse' : homeAction;
         if (baby && (person.action !== action || person.targetPersonId !== baby.id)) {
-          // A baby's cry interrupts any job or order, including the player's
-          // current intent. The mother stops where she is and goes to the child.
+          // A baby of hers lying out of her arms interrupts any job or order,
+          // including the player's current intent: she goes and picks it up.
           person.forgetPlans();
           person.clearTarget();
           person.action = action;
@@ -4110,7 +4133,7 @@ export class Simulation {
       }
 
       // The player's held keys override whatever they were doing.
-      if ((underAttack || (!urgentBaby && !activeNursing && !homeBaby && !activeCarry)) && person.isPlayer && this.playerIntent) {
+      if ((underAttack || (!activeNursing && !homeBaby && !activeCarry)) && person.isPlayer && this.playerIntent) {
         person.action = 'walk';
         person.clearTarget();
         this.movementSystem.nudge(person, this.playerIntent.dx, this.playerIntent.dy);

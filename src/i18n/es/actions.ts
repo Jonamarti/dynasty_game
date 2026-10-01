@@ -58,6 +58,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "tending the hurt": "cuidando a los heridos",
   "coaxing an animal": "atrayendo a un animal",
   "their hands are full": "tiene las manos llenas",
+  "a baby was crying for the breast": "un bebé lloraba pidiendo el pecho",
   "they stopped for a drink": "paró a beber",
   "they stopped to eat": "paró a comer",
   "they were too cold to carry on": "tenía demasiado frío para seguir",

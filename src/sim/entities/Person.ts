@@ -223,8 +223,14 @@ export class Person {
    */
   laidDownBy: number | null = null;
   laidDownTick = -9999;
-  /** The tick this baby was last nursed, for its four feeds a day. */
+  /** The tick this baby was last nursed. */
   lastNursedTick = -9999;
+  /**
+   * The last tick a baby's cry broke off what this woman was doing. A cry
+   * interrupts her at most once every `CRY_NAG_TICKS`: if she weighed it and
+   * chose a drink first, the next tick's cry must not stop the drink.
+   */
+  cryHeardTick = -9999;
   /**
    * Somebody this person cares for, last seen starving, and where (M15 phase
    * 20). What sends them to fetch food and bring it back: written when they

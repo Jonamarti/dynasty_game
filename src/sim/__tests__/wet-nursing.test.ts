@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
-import { infantNeedingNursing, NURSING_HUNGER } from '../ai/Nursing.ts';
+import { infantNeedingNursing, NURSE_TICKS, NURSING_HUNGER } from '../ai/Nursing.ts';
 import { isLactating, isNursling, weanAgeYears } from '../entities/LifeStage.ts';
 import type { Person } from '../entities/Person.ts';
 
@@ -118,14 +118,25 @@ describe('wet nursing', () => {
     expect(man.needs.hunger).toBeCloseTo(rate, 5);
   });
 
-  it('asks for the breast four times a day even when not yet hungry', () => {
+  it('cries for the breast only past the cry line, not on a clock', () => {
     const { sim, nurse, ownBaby } = camp('wet-feeds');
-    const clock = sim.nursingClock();
-    expect(clock.feedEvery).toBe(sim.config.time.ticksPerDay / 4);
-    ownBaby.lastNursedTick = clock.tick;
-    const ask = (tick: number) => infantNeedingNursing(nurse, sim.peopleById, sim.world, sim.config.childhood,
-      sim.peopleHash, sim.config.sightRadius, { tick, feedEvery: clock.feedEvery });
-    expect(ask(clock.tick + clock.feedEvery - 1)).toBeNull();
-    expect(ask(clock.tick + clock.feedEvery)?.id).toBe(ownBaby.id);
+    const ask = () => infantNeedingNursing(nurse, sim.peopleById, sim.world, sim.config.childhood,
+      sim.peopleHash, sim.config.sightRadius);
+    // Fed long ago but not hungry: the owner's "five of a hundred" is no cry.
+    ownBaby.lastNursedTick = -100000;
+    ownBaby.needs.hunger = 5;
+    expect(ask()).toBeNull();
+    ownBaby.needs.hunger = NURSING_HUNGER;
+    expect(ask()?.id).toBe(ownBaby.id);
+  });
+
+  it('gets a nursling fed full back to the cry line four times a day', () => {
+    const { sim, ownBaby, man } = camp('wet-rate-baby');
+    for (const p of sim.people) { p.needs.hunger = 0; p.needs.thirst = 0; }
+    sim.step();
+    // Ticks from fed-full to the cry line, plus the feed itself, is a quarter day.
+    const cycle = NURSING_HUNGER / ownBaby.needs.hunger + NURSE_TICKS;
+    expect(sim.config.time.ticksPerDay / cycle).toBeCloseTo(sim.config.childhood.feedsPerDay, 5);
+    expect(man.needs.hunger).toBeCloseTo(sim.config.needs.hungerRate, 5);
   });
 });

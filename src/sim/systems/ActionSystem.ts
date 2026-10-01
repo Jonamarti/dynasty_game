@@ -15,8 +15,7 @@ import { WORK_ACTIONS } from '../entities/Job.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
 import { feederRole, starvingInCare } from '../ai/Feeding.ts';
 import {
-  feedDue, homeForMother, mayNurse, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF,
-  type NursingClock,
+  homeForMother, mayNurse, NURSE_TICKS, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF,
 } from '../ai/Nursing.ts';
 import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
@@ -97,8 +96,12 @@ export interface ActionContext {
   onTreeFelled: (tree: Tree, feller: Person) => void;
   peopleById: Map<number, Person>;
   childhood: ChildhoodConfig;
-  /** When a nursling's next feed is due; see `Nursing.feedDue`. */
-  nursingClock?: NursingClock;
+  /**
+   * Whether a baby this woman would nurse is crying and the cry should reach
+   * her now (M15 phase 20, owner 2026-10-01). Optional so a test that drives
+   * actions by hand hears nothing; see `Simulation.cryReaches`.
+   */
+  babyCrying?: (person: Person) => boolean;
   householdsById: Map<number, Household>;
   /** Whether a walking child has fallen outside their carer's close-family radius. */
   childAwayFromCarer: (person: Person) => boolean;
@@ -245,8 +248,6 @@ function talkModeOf(person: Person, rel: Relationship | null, tick: number): Con
 
 /** Ticks to hand something over and be thanked for it. */
 const GIVE_TICKS = 15;
-/** A short nursing session is frequent care, not a job the mother can abandon halfway. */
-const NURSE_TICKS = 15;
 
 /** Ticks to haggle out a trade. Longer than a plain gift; both sides bargain. */
 const TRADE_TICKS = 25;
@@ -1121,6 +1122,12 @@ export class ActionSystem {
     // the last forty ticks — see `Defence.assailantOf` for the loop the old
     // reading made with `Brain`.
     if (this.underAttack(person, ctx)) return 'under_attack';
+    // A crying baby reaches a committed woman the way a need does: it stops
+    // the job, and the brain then weighs the baby against everything else she
+    // needs (owner, 2026-10-01: "she can stop what she is doing, she weighs it
+    // against the rest of her needs"). It used to seize her outright, every
+    // tick, whatever she was doing.
+    if (person.action !== 'nurse' && ctx.babyCrying?.(person)) return 'baby_crying';
 
     // The thresholds here are the whole difficulty of letting work continue.
     //
@@ -2766,6 +2773,8 @@ export class ActionSystem {
    */
   private wakeReason(person: Person, ctx: ActionContext): string | null {
     if (this.underAttack(person, ctx)) return 'under_attack';
+    // A baby crying in the night wakes the woman who would feed it.
+    if (ctx.babyCrying?.(person)) return 'baby_crying';
     if (person.needs.thirst > 45) return 'thirsty';
     if (person.needs.hunger > 50) return 'hungry';
     // Cold is deliberately absent. The roof overhead is the thing that fixes
@@ -3902,10 +3911,9 @@ export class ActionSystem {
       this.finish(person);
       return;
     }
-    // A feed that has come round is nursed whether or not the baby has got
-    // hungry enough to cry: four a day (owner, 2026-09-30).
-    if (baby.needs.hunger < NURSING_HUNGER && baby.needs.thirst < NURSING_THIRST &&
-        !feedDue(baby, ctx.nursingClock)) {
+    // Only a crying baby is nursed (owner, 2026-10-01): one that has quietened
+    // — somebody else fed it on the way — is left be.
+    if (baby.needs.hunger < NURSING_HUNGER && baby.needs.thirst < NURSING_THIRST) {
       this.finish(person);
       return;
     }

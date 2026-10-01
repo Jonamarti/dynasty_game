@@ -67,13 +67,22 @@ describe('urgent maternal nursing', () => {
     const restingPlace = [baby.x, baby.y];
     const initialDistance = mother.distanceTo(baby);
 
-    sim.step();
+    // The cry breaks off the chopping on the first tick and the mother, who
+    // weighs a baby at a hundred above her own thirst, chooses it on the next
+    // (owner, 2026-10-01: the cry is weighed, it no longer seizes her).
+    for (let i = 0; i < 3 && mother.action !== 'nurse'; i++) sim.step();
     expect(mother.action).toBe('nurse');
+    sim.step();
     expect(mother.distanceTo(baby)).toBeLessThan(initialDistance);
 
+    const start = sim.time.tick;
     for (let i = 0; i < 300; i++) sim.step();
 
-    expect(baby.needs.hunger).toBeLessThan(NURSING_HUNGER);
+    // A nursling gets hungry enough to cry four times a day (owner,
+    // 2026-10-01), so "below the cry line" at an arbitrary tick says nothing.
+    // It was fed, and is nowhere near danger.
+    expect(baby.lastNursedTick).toBeGreaterThan(start);
+    expect(baby.needs.hunger).toBeLessThan(NURSING_HUNGER * 2);
     expect(baby.needs.thirst).toBeLessThan(NURSING_THIRST);
     expect([baby.x, baby.y]).toEqual(restingPlace);
     expect(mother.action).not.toBe('chop');
@@ -107,11 +116,13 @@ describe('urgent maternal nursing', () => {
     baby.needs.hunger = 100;
     baby.needs.thirst = 100;
 
+    const start = sim.time.tick;
     for (let i = 0; i < 500; i++) sim.step();
 
     expect(home.contains(baby.x, baby.y)).toBe(true);
     expect(baby.carriedBy).toBeNull();
-    expect(baby.needs.hunger).toBeLessThan(NURSING_HUNGER);
+    expect(baby.lastNursedTick).toBeGreaterThan(start);
+    expect(baby.needs.hunger).toBeLessThan(NURSING_HUNGER * 2);
     expect(baby.needs.thirst).toBeLessThan(NURSING_THIRST);
   });
 
