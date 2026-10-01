@@ -1,4 +1,36 @@
 #
+## 2026-10-01 — M15 fase 22: la comida cruda enferma
+
+La carne y el pescado crudos tienen cada uno su probabilidad de intoxicar
+(`SICKENS`: 12% y 10% por unidad); lo asado no está en la tabla, así que no
+enferma por construcción y no hace falta una excepción. Un dado de `healthRng`
+por unidad de comida de riesgo y ninguno para la que no lo es; el mismo dado
+fija el grado (el 15% más desafortunado, severa). Una `Poisoning` en
+`Person.conditions` (un solo mal a la vez: otra comida mala lo agrava y lo
+alarga) dura uno, dos o cuatro días; vomita (el hambre vuelve por lo que dio la
+comida, la sed sube), tiene más hambre y sed por tick, pierde un quinto de
+fuerza de trabajo manual y un décimo de paso por grado, y solo la severa quita
+salud (muerte por `poisoning`). Al enfermar aprende `sick:<comida>` de primera
+mano, los que lo ven vomitar lo aprenden de vista y el resto lo oye por la
+conversación de siempre (`shareBeliefs`); `appealOf` lo lee: la comida pierde
+hasta tres cuartos de su atractivo, nunca todo, porque quien tiene hambre come
+lo que hay. La ficha dice el síntoma («el estómago revuelto»), nunca la causa.
+Check `raw-meat-sickens`: n/a bajo 40 comidas crudas; verifica que no haya
+intoxicaciones tras nada cocinado (`poisoned_<id>` de un id que no sea crudo
+falla; `poisoning.test.ts` reproduce el build en el que el asado tiene riesgo).
+
+**Lo que NO está: «lo que se ha pasado».** El plan lo pedía «con la
+descomposición encendida (fase 15)», y esa fase no está hecha: `spoilRate` sigue
+a 0 y las unidades se quitan enteras al pasarse, así que nadie come comida
+podrida. Declararlo ahora sería contenido inerte; entra con la 15c, que es quien
+le da un lector. Tampoco el seco, el ahumado y el salado: no existen aún.
+
+Medido: `century`, 10 semillas, 72,4% de supervivencia, 0/10 extinguidos, 0/10
+sin banda que se recupere (65,8% con 21c; la diferencia es caos, no mecanismo).
+`sim:check`: 6 fallos, los mismos seis de antes de la fase (el check nuevo pasa:
+6 enfermos de 70 comidas crudas). `npm test` 715. Sin captura propia: la ficha
+solo gana una línea de texto, que se verá con 21d.
+
 ## 2026-10-01 — M15 fase 21c y 21e: infección, fiebre, vendar, y la ficha
 
 **21c.** Una herida fresca (de un décimo o más) sin vendar tiene cada día un

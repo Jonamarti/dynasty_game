@@ -2034,7 +2034,12 @@ function woundRows(person: Person): string[] {
       escapeHtml(t('{part}: {state}', { part: partWord(part), state: word })) + '</div>');
   }
   for (const c of person.conditions) {
-    const word = c.severity === 'mild' ? t('a mild fever')
+    // Symptoms only: a poisoning is shown as a sickness of the stomach and
+    // never says what was eaten — that is for the sick person to know.
+    const word = c.kind === 'poisoning'
+      ? (c.severity === 'mild' ? t('a queasy stomach')
+        : c.severity === 'moderate' ? t('a sick stomach') : t('violently ill'))
+      : c.severity === 'mild' ? t('a mild fever')
       : c.severity === 'moderate' ? t('a moderate fever') : t('a severe fever');
     rows.push('<div class="hud-sub hud-wound hud-wound-infected">' + escapeHtml(word) + '</div>');
   }

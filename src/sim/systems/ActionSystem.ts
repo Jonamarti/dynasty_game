@@ -1088,7 +1088,7 @@ export class ActionSystem {
     const foodId = preferred && person.inventory.has(preferred)
       ? preferred
       : bestFoodFor(person, undefined, ctx.motivation.cravings, ctx.motivation.beliefChoice);
-    if (!foodId || !consumeFood(person, foodId, ctx.tick, ctx.motivation.cravings)) {
+    if (!foodId || !consumeFood(person, foodId, ctx.tick, ctx.motivation.cravings, ctx.healthRng)) {
       this.abandon(person, 'no_food', ctx);
       return;
     }
@@ -1103,6 +1103,19 @@ export class ActionSystem {
       const alpha = 0.1 * (1.5 - observer.traits.tradition) * (regard < 0 ? 0.5 : 1);
       observer.beliefs.learn(foodKey, value, alpha, 'seen', ctx.tick);
       telemetry.count('belief_seen_' + foodKey.replace(':', '_'));
+    }
+    // Phase 22: a meal that made them ill is seen by everybody close enough to
+    // watch it come back up, and that is how a people learns what not to eat
+    // without having to be poisoned each. They learn it from the sight, not
+    // from a band-wide broadcast: whoever was not there hears it told.
+    const sickKey = 'sick:' + foodId;
+    const sickness = person.beliefs.get(sickKey);
+    if (sickness && sickness.tick === ctx.tick && sickness.source === 'own') {
+      for (const observer of ctx.peopleHash.queryRadius(person.x, person.y, 6)) {
+        if (!observer.alive || observer.id === person.id) continue;
+        observer.beliefs.learn(sickKey, 1, 0.35, 'seen', ctx.tick);
+        telemetry.count('belief_seen_sick');
+      }
     }
     if (person.needs.hunger <= 0) this.finish(person);
   }
@@ -1259,7 +1272,7 @@ export class ActionSystem {
     if (feeds && person.needs.hunger >= ctx.carry.eatAtSourceAt) {
       while (eatenAtSource < yieldUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
         node.amount > 0 && node.take(1) > 0) {
-        consumeFoodAtSource(person, node.def.itemId, ctx.tick, ctx.motivation.cravings);
+        consumeFoodAtSource(person, node.def.itemId, ctx.tick, ctx.motivation.cravings, ctx.healthRng);
         person.handled.set(node.def.itemId, ctx.tick);
         eatenAtSource++;
         telemetry.count('ate_at_source');
@@ -1353,7 +1366,7 @@ export class ActionSystem {
       person.needs.hunger >= ctx.carry.eatAtSourceAt) {
       while (eatenAtSource < yieldUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
         tree.fruit > 0 && tree.pick(1) > 0) {
-        consumeFoodAtSource(person, fruitId, ctx.tick, ctx.motivation.cravings);
+        consumeFoodAtSource(person, fruitId, ctx.tick, ctx.motivation.cravings, ctx.healthRng);
         person.handled.set(fruitId, ctx.tick);
         eatenAtSource++;
         telemetry.count('ate_at_source');
@@ -4178,7 +4191,7 @@ export class ActionSystem {
       // smaller M15 hand limit, the old handover was immediately reconciled
       // out of a full child's inventory and dropped at their feet.
       for (let i = 0; i < given; i++) {
-        consumeFoodAtSource(other, foodId, ctx.tick, ctx.motivation.cravings);
+        consumeFoodAtSource(other, foodId, ctx.tick, ctx.motivation.cravings, ctx.healthRng);
       }
     } else {
       other.inventory.add(foodId, given);

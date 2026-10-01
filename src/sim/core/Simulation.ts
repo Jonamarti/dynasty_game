@@ -18,7 +18,7 @@ import { advanceSnowDepth, isBuried } from './Snow.ts';
 import { SPENT_BELOW, isGroundSpent } from './Soil.ts';
 import { SpatialHash } from './SpatialHash.ts';
 import { telemetry } from './Telemetry.ts';
-import { BODY_PARTS, partWord, woundsDaily } from '../entities/Body.ts';
+import { BODY_PARTS, partWord, poisonDaily, woundsDaily } from '../entities/Body.ts';
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
 import { ADULT_YEARS, Person, resetPersonIds } from '../entities/Person.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
@@ -1995,7 +1995,7 @@ export class Simulation {
    * by order does, so the two can never again disagree about what a meal is.
    */
   eatItem(person: Person, itemId: string): boolean {
-    return consumeFood(person, itemId, this.time.tick, this.config.motivation.cravings);
+    return consumeFood(person, itemId, this.time.tick, this.config.motivation.cravings, this.healthRng);
   }
 
   /**
@@ -2562,6 +2562,12 @@ export class Simulation {
   private woundsOfTheDay(): void {
     for (const person of this.people) {
       if (!person.alive) continue;
+      if (person.conditions.length > 0 && poisonDaily(person.conditions)) {
+        telemetry.count('poisoning_passed');
+        person.chronicle.push({
+          tick: this.time.tick, ageDays: person.age, kind: 'did', text: t('the sickness passed'),
+        });
+      }
       let hurt = false;
       for (const part of BODY_PARTS) {
         const w = person.body[part];
@@ -4380,7 +4386,9 @@ export class Simulation {
       for (const building of this.buildingHash.queryRadius(person.x, person.y, radius + 4, this.placeBuildingCandidates)) {
         if (near(building.centerX, building.centerY)) {
           memory.remember(`building:${building.def.id}`, building.centerX, building.centerY, day,
-            building.complete ? 2 : 1);
+            building.complete ? 2 : 1, 'seen', {
+              type: 'building', id: building.def.id, complete: building.complete,
+            });
         }
       }
     }

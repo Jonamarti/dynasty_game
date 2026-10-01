@@ -1988,6 +1988,11 @@ enfermar y se cuenta: un pueblo aprende qué no comer.
 **Check:** `raw-meat-sickens` (intoxicaciones solo tras comer crudo, podrido o
 tóxico; ninguna tras asado o conservado).
 
+**Avance del 2026-10-01 (22, crudo).** Hecho: la intoxicación por carne y
+pescado crudos, sus grados, la creencia `sick:<comida>` que viaja y el check.
+**Queda para la 15c:** la comida pasada, porque con `spoilRate` a 0 nadie la
+come; y lo seco, ahumado y salado, que aún no existen.
+
 ---
 
 # Bloque V — Lo salvaje (M14 bloque III; notas 5 y 8 de `notes3`)

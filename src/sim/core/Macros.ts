@@ -17,6 +17,9 @@ import { ITEMS } from '../entities/Item.ts';
 import { nutritionFactor } from '../knowledge/Tech.ts';
 import { telemetry } from './Telemetry.ts';
 import { expectedFood } from '../ai/Beliefs.ts';
+import { isRisky, sicken } from '../entities/Body.ts';
+import type { RNG } from './RNG.ts';
+import { t } from '../../i18n/i18n.ts';
 
 export type Macro = 'fat' | 'protein' | 'carb';
 export const MACROS: readonly Macro[] = ['fat', 'protein', 'carb'];
@@ -61,7 +64,11 @@ export function appealOf(
   const pull = macros
     ? MACROS.reduce((sum, macro) => sum + craving[macro] * macros[macro], 0)
     : 0;
-  return (beliefsEnabled ? expectedFood(person, itemId) : food.nutrition) * (1 + varietyWeight * pull);
+  const sick = beliefsEnabled ? person.beliefs.get('sick:' + itemId) : undefined;
+  // A food that made you ill is worth less to you, in proportion to how sure
+  // you are; never to nothing, because a hungry person eats what there is.
+  const wary = sick ? 1 - 0.75 * sick.confidence * Math.min(1, sick.value) : 1;
+  return (beliefsEnabled ? expectedFood(person, itemId) : food.nutrition) * (1 + varietyWeight * pull) * wary;
 }
 
 /** Highest-appeal food in inventory; stack order breaks ties deterministically. */
@@ -110,16 +117,53 @@ const MACRO_DECAY_PER_DAY = 0.35;
  * frozen at whatever it was the day they stopped eating by order. The
  * `moveToward` argument: two copies of one idea drift.
  */
-export function consumeFood(person: Person, itemId: string, tick = 0, cravingsEnabled = true): boolean {
-  return eatFoodUnit(person, itemId, tick, cravingsEnabled, true);
+export function consumeFood(
+  person: Person, itemId: string, tick = 0, cravingsEnabled = true, sickRng?: RNG,
+): boolean {
+  return eatFoodUnit(person, itemId, tick, cravingsEnabled, true, sickRng);
 }
 
 /** A freshly picked unit never entered the pack. It still nourishes exactly as a carried meal does. */
-export function consumeFoodAtSource(person: Person, itemId: string, tick = 0, cravingsEnabled = true): boolean {
-  return eatFoodUnit(person, itemId, tick, cravingsEnabled, false);
+export function consumeFoodAtSource(
+  person: Person, itemId: string, tick = 0, cravingsEnabled = true, sickRng?: RNG,
+): boolean {
+  return eatFoodUnit(person, itemId, tick, cravingsEnabled, false, sickRng);
 }
 
-function eatFoodUnit(person: Person, itemId: string, tick: number, cravingsEnabled: boolean, fromPack: boolean): boolean {
+/** The words for the chronicle, as literal `t` calls so the i18n scan sees each. */
+function illnessText(itemId: string): string {
+  if (itemId === 'meat') return t('was taken ill after a meal of raw meat');
+  if (itemId === 'fish') return t('was taken ill after a meal of raw fish');
+  return t('was taken ill after a bad meal');
+}
+
+/**
+ * Phase 22. Rolls the unit just eaten against the eater and, if it makes them
+ * ill, does everything illness does at the moment it starts: the meal comes
+ * back up (hunger returns by what it gave, thirst climbs), the person learns
+ * `sick:<item>` first-hand, and the chronicle says so. The belief is what
+ * lets a people learn what not to eat: it travels by being seen and told like
+ * any other (`SocialSystem.shareBeliefs`) and `appealOf` reads it.
+ *
+ * `sickRng` is optional so a caller with no `healthRng` (a unit test) eats
+ * without risk; every real path passes it, and nothing is drawn for a safe food.
+ */
+function fallIll(person: Person, itemId: string, eaten: number, tick: number, sickRng: RNG | undefined): void {
+  if (!sickRng || !isRisky(itemId)) return;
+  telemetry.count('risky_meals_' + itemId);
+  const ill = sicken(person.conditions, itemId, sickRng);
+  if (!ill) return;
+  telemetry.count('poisoned_' + itemId);
+  telemetry.count('poison_grade_' + ill.severity);
+  person.needs.hunger = Math.min(100, person.needs.hunger + eaten);
+  person.needs.thirst = Math.min(100, person.needs.thirst + 10 * (1 + ['mild', 'moderate', 'severe'].indexOf(ill.severity)));
+  person.beliefs.learn('sick:' + itemId, 1, 0.7, 'own', tick);
+  person.chronicle.push({ tick, ageDays: person.age, kind: 'suffered', text: illnessText(itemId) });
+}
+
+function eatFoodUnit(
+  person: Person, itemId: string, tick: number, cravingsEnabled: boolean, fromPack: boolean, sickRng?: RNG,
+): boolean {
   const def = ITEMS[itemId];
   if (!def || def.nutrition <= 0) return false;
   // M15 11c: forage already removed this unit from the bush/tree. Requiring
@@ -176,6 +220,7 @@ function eatFoodUnit(person: Person, itemId: string, tick: number, cravingsEnabl
   // show that a byproduct nobody has ever needed to name before is actually
   // being eaten rather than only accruing.
   telemetry.count('eaten_' + itemId);
+  fallIll(person, itemId, eaten, tick, sickRng);
   return true;
 }
 

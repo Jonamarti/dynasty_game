@@ -21,7 +21,7 @@ import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
 import { MacroBalance, macroTargetFor } from '../core/Macros.ts';
 import { Beliefs } from '../ai/Beliefs.ts';
 import { PlaceMemory } from '../social/PlaceMemory.ts';
-import { armForce, newBody, type Body, type Condition } from './Body.ts';
+import { armForce, newBody, poisonWork, type Body, type Condition } from './Body.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -1076,7 +1076,9 @@ export class Person {
   /** Skill as a multiplier, floored so a novice is slow rather than useless. */
   skillFactor(skill: Skill): number {
     return (0.35 + (this.skills[skill] / 100) * 0.85) * this.vigour *
-      (MANUAL_SKILLS.has(skill) ? armForce(this.body) : 1);
+      (MANUAL_SKILLS.has(skill)
+        ? armForce(this.body) * (this.conditions.length > 0 ? poisonWork(this.conditions) : 1)
+        : 1);
   }
 
   distanceTo(other: { x: number; y: number }): number {

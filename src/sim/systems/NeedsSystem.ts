@@ -8,7 +8,7 @@ import type { TimeManager } from '../core/TimeManager.ts';
 import type { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
-import { bleeding, feverDrain, mendBody } from '../entities/Body.ts';
+import { bleeding, feverDrain, mendBody, poisonDrain, poisonHunger, poisonThirst } from '../entities/Body.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { warmthFrom } from '../knowledge/Tech.ts';
@@ -242,6 +242,24 @@ export class NeedsSystem {
           person.die('infection');
           telemetry.count('death_infection');
           continue;
+        }
+      }
+
+      // Phase 22: a bad meal empties the body faster than it can be filled, and
+      // a severe one costs health besides. Both end when its days run out
+      // (`Body.poisonDaily`), so neither can go on for ever.
+      if (person.conditions.length > 0) {
+        person.needs.thirst = Math.min(100, person.needs.thirst + poisonThirst(person.conditions));
+        person.needs.hunger = Math.min(100, person.needs.hunger + poisonHunger(person.conditions));
+        const drain = poisonDrain(person.conditions);
+        if (drain > 0) {
+          person.health -= drain;
+          telemetry.count('poison_ticks');
+          if (person.health <= 0) {
+            person.die('poisoning');
+            telemetry.count('death_poisoning');
+            continue;
+          }
         }
       }
 

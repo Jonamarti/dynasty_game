@@ -176,11 +176,12 @@ export type Severity = 'mild' | 'moderate' | 'severe';
 const SEVERITIES: readonly Severity[] = ['mild', 'moderate', 'severe'];
 
 /**
- * A lasting illness, with a grade. The only kind so far is the fever an
- * infected wound brings; food poisoning (phase 22) and the toxic berry (21d)
- * arrive with their own writers.
+ * A lasting illness, with a grade. Two kinds: the fever an infected wound
+ * brings (21c) and the poisoning a bad meal brings (phase 22). Each has its own
+ * clock, because they end for different reasons: a fever when its wound turns
+ * or is dressed, a poisoning when it has run its days.
  */
-export interface Condition {
+export interface Fever {
   kind: 'fever';
   severity: Severity;
   /** Days since it began, which is what raises its grade. */
@@ -188,6 +189,17 @@ export interface Condition {
   /** The infected part it comes from. */
   part: BodyPart;
 }
+
+export interface Poisoning {
+  kind: 'poisoning';
+  severity: Severity;
+  /** Days it still has to run; at zero it is over. */
+  daysLeft: number;
+  /** What was eaten. Remembered so the sheet and the chronicle can say it. */
+  item: string;
+}
+
+export type Condition = Fever | Poisoning;
 
 /** Daily chance a fresh, undressed wound of any size festers, before depth. */
 export const INFECT_DAILY = 0.07;
@@ -201,6 +213,10 @@ export const INFECTION_TURNS = 0.08;
 const WORSEN_EVERY = 3;
 /** Health a tick costs, per grade of fever (1, 2, 3). */
 const FEVER_DRAIN = 0.005;
+
+function findFever(conditions: readonly Condition[], part: BodyPart): Fever | undefined {
+  return conditions.find((c): c is Fever => c.kind === 'fever' && c.part === part);
+}
 
 export type WoundEvent =
   | { kind: 'festered'; part: BodyPart }
@@ -220,7 +236,7 @@ export function needsTending(body: Body): boolean {
 /** Health a tick this person's fevers cost them. */
 export function feverDrain(conditions: readonly Condition[]): number {
   let grade = 0;
-  for (const c of conditions) grade += SEVERITIES.indexOf(c.severity) + 1;
+  for (const c of conditions) if (c.kind === 'fever') grade += SEVERITIES.indexOf(c.severity) + 1;
   return grade * FEVER_DRAIN;
 }
 
@@ -243,7 +259,7 @@ export function woundsDaily(body: Body, conditions: Condition[], rng: RNG): Woun
         events.push({ kind: 'festered', part });
       }
     } else if (state.wound === 'infected') {
-      const fever = conditions.find(c => c.kind === 'fever' && c.part === part);
+      const fever = findFever(conditions, part);
       if (rng.next() < INFECTION_TURNS) {
         state.wound = 'tended';
         if (fever) conditions.splice(conditions.indexOf(fever), 1);
@@ -288,7 +304,7 @@ export function dress(body: Body, conditions: Condition[]): Dressing | null {
     state.wound = 'tended';
     return { part: pick, result: 'dressed' };
   }
-  const fever = conditions.find(c => c.kind === 'fever' && c.part === pick);
+  const fever = findFever(conditions, pick);
   const grade = fever ? SEVERITIES.indexOf(fever.severity) : 0;
   if (!fever || grade === 0) {
     state.wound = 'tended';
@@ -315,4 +331,104 @@ export function partWord(part: BodyPart): string {
     case 'left_leg': return t('left leg');
     case 'right_leg': return t('right leg');
   }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 22: a bad meal. Raw meat and raw fish carry a chance of poisoning that
+// roasting, drying and salting remove; a toxic berry (21d) carries a far larger
+// one. The chance is a property of the *food*, so cooking is not a bonus the
+// code hands out but the absence of a risk the food had.
+// ---------------------------------------------------------------------------
+
+/**
+ * Chance that one unit of this food makes the eater ill. An id absent from the
+ * table is safe, which is what keeps roast meat, bread and everything cooked
+ * from needing a line of their own.
+ */
+export const SICKENS: Readonly<Record<string, number>> = {
+  meat: 0.12,
+  fish: 0.10,
+};
+
+/** Days each grade of poisoning runs. */
+const POISON_DAYS: Record<Severity, number> = { mild: 1, moderate: 2, severe: 4 };
+/** Health a tick a *severe* poisoning costs; the lesser grades only weaken. */
+const POISON_DRAIN = 0.004;
+
+/** Whether this food can make anybody ill at all. */
+export function isRisky(itemId: string): boolean {
+  return (SICKENS[itemId] ?? 0) > 0;
+}
+
+/**
+ * Rolls one unit of food against the eater. Draws from `rng` exactly once for
+ * a risky food, whether or not it makes them ill, and never for a safe one, so
+ * a world is the same however the dice fall and eating roast meat costs the
+ * stream nothing. The same draw sets the grade: the unluckiest few are severe.
+ * Returns the condition it left them with, or null if they were spared.
+ */
+export function sicken(conditions: Condition[], itemId: string, rng: RNG): Poisoning | null {
+  const risk = SICKENS[itemId] ?? 0;
+  if (risk <= 0) return null;
+  const roll = rng.next();
+  if (roll >= risk) return null;
+  const share = roll / risk;
+  const severity: Severity = share < 0.15 ? 'severe' : share < 0.5 ? 'moderate' : 'mild';
+  const existing = conditions.find((c): c is Poisoning => c.kind === 'poisoning');
+  if (existing) {
+    // A second bad meal on top of the first does not stack two illnesses; it
+    // deepens and prolongs the one they have.
+    if (SEVERITIES.indexOf(severity) > SEVERITIES.indexOf(existing.severity)) existing.severity = severity;
+    existing.daysLeft = Math.max(existing.daysLeft, POISON_DAYS[existing.severity]);
+    existing.item = itemId;
+    return existing;
+  }
+  const poisoning: Poisoning = { kind: 'poisoning', severity, daysLeft: POISON_DAYS[severity], item: itemId };
+  conditions.push(poisoning);
+  return poisoning;
+}
+
+/** The grade of somebody's poisoning, 0 (none) to 3. */
+export function poisonGrade(conditions: readonly Condition[]): number {
+  for (const c of conditions) if (c.kind === 'poisoning') return SEVERITIES.indexOf(c.severity) + 1;
+  return 0;
+}
+
+/** Health a tick poisoning costs: only a severe one drains. */
+export function poisonDrain(conditions: readonly Condition[]): number {
+  return poisonGrade(conditions) === 3 ? POISON_DRAIN : 0;
+}
+
+/**
+ * Multiplier on heavy work and on pace while poisoned: the sick do not haul or
+ * hew, and they do not walk as fast. One grade costs a fifth of the work and a
+ * tenth of the pace.
+ */
+export function poisonWork(conditions: readonly Condition[]): number {
+  return Math.max(0.4, 1 - 0.2 * poisonGrade(conditions));
+}
+export function poisonPace(conditions: readonly Condition[]): number {
+  return Math.max(0.7, 1 - 0.1 * poisonGrade(conditions));
+}
+
+/**
+ * Extra thirst and hunger per tick: vomiting and a flux empty a body faster
+ * than eating fills it. Added to the ordinary rates by `NeedsSystem`.
+ */
+export function poisonThirst(conditions: readonly Condition[]): number {
+  return 0.03 * poisonGrade(conditions);
+}
+export function poisonHunger(conditions: readonly Condition[]): number {
+  return 0.015 * poisonGrade(conditions);
+}
+
+/** One day passes over a poisoning. Returns whether it just ended. */
+export function poisonDaily(conditions: Condition[]): Poisoning | null {
+  const index = conditions.findIndex(c => c.kind === 'poisoning');
+  if (index < 0) return null;
+  const poisoning = conditions[index] as Poisoning;
+  poisoning.daysLeft--;
+  if (poisoning.daysLeft > 0) return null;
+  conditions.splice(index, 1);
+  return poisoning;
 }

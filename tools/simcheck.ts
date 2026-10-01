@@ -2200,6 +2200,28 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     }
   }
 
+  // M15 phase 22. Illness from food follows the food: raw meat and fish make
+  // people ill at their stated rate and nothing cooked ever does. The second
+  // half is the one with teeth — verified against a build in which roast meat is
+  // given a risk (`poisoned_roast_meat` appears and the check fails); `body.test.ts`
+  // reproduces that build. n/a until enough raw meals were eaten for a 10-12%
+  // chance to show.
+  {
+    const RAW_IDS = ['meat', 'fish'];
+    const raw = RAW_IDS.reduce((sum, id) => sum + (tel['risky_meals_' + id] ?? 0), 0);
+    const sick = RAW_IDS.reduce((sum, id) => sum + (tel['poisoned_' + id] ?? 0), 0);
+    const strays = Object.entries(tel).filter(([key, n]) => key.startsWith('poisoned_') &&
+      !RAW_IDS.includes(key.slice('poisoned_'.length)) && n > 0);
+    const FLOOR = 40;
+    if (raw < FLOOR && strays.length === 0) {
+      skip('raw-meat-sickens', raw + ' raw meals eaten; too few for a ~10% risk to show (need ' + FLOOR + ')');
+    } else {
+      add('raw-meat-sickens', strays.length === 0 && (raw < FLOOR || sick > 0),
+        sick + ' illnesses after ' + raw + ' raw meals; ' +
+        (strays.length === 0 ? 'none after anything cooked' : 'ILL AFTER ' + strays.map(([k]) => k).join(', ')));
+    }
+  }
+
   if (!sim.knownTech.has('taming')) {
     skip('animals-are-tamed', 'nobody here would think of feeding one');
   } else {
