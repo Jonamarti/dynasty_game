@@ -1,4 +1,55 @@
 #
+## 2026-10-01 — M15 fase 20, tercera ronda: el llanto, las especies de arbusto y la niebla
+
+Respuesta del propietario a las dos decisiones de la segunda ronda: los
+arbustos sí se quedan sin fruto fuera de temporada, pero el año tiene que ser
+el de verdad (especies europeas que dan en primavera, verano, otoño y alguna en
+invierno), y la supervivencia deja de ser la puerta: morir mientras se aprende
+el mundo es normal; extinguirse y no recuperarse, no.
+
+- **El bebé mama cuando llora** (`0a9f616`). Sin reloj de tomas: llora al pasar
+  hambre 25, se le llena al mamar y su hambre sube lo bastante rápido para
+  llorar unas cuatro veces al día (`Nursing.nurslingHungerFactor`). El llanto
+  ya no secuestra a la madre cada tick: interrumpe el trabajo y el sueño
+  (`baby_crying`, reanudable y visible en la interfaz) como mucho cada 20
+  ticks, y el cerebro lo pesa (1,6 × llanto; 1,1 si es de otra) contra sus
+  necesidades. Antes mamaba a hambre 3; ahora a 25-32.
+- **Una toma dura media hora** (`d1aeafb`), no hora y media. Tiempo de una
+  madre lactante amamantando: 24% → 9%; pero ese tiempo pasa a `idle` (19% →
+  30%) y su mortalidad apenas cambia (5,51 → 5,29 por 100 días-persona). No era
+  el tiempo lo que la mataba: es que no conoce comida en la que gastarlo.
+- **Una persona se recuerda una vez, donde se la vio por última vez**
+  (`75ec372`). Indexada por casilla, quien cruzaba la vista dejaba una copia
+  suya en cada casilla, todas dibujadas en la niebla.
+- **`sim:seeds` informa de extinción y recuperación** (instrumento): mundos
+  extinguidos, bandas aún viables (una mujer fértil y un hombre) y mundos que
+  acaban por encima de su mínimo tras el pico.
+- **Los arbustos son especies europeas reales** (`f3f022a`, y el grosellero en
+  el commit siguiente, para que la primavera en la que empieza la partida
+  tenga fruta): fresa silvestre, grosellero, frambueso, arándano, zarzamora, escaramujo, endrino y madroño,
+  cada uno con su temporada; fuera de ella están pelados, el escaramujo y el
+  endrino conservan el fruto sobre las ramas desnudas en invierno, y el madroño
+  madura en otoño e invierno. Flujo propio (`floraRng`, fork 18), así que cada
+  arbusto está donde estaba. El saber de las estaciones se aprende especie por
+  especie y un arbusto recordado lleva su especie. La niebla dibuja cada
+  arbusto tal como se vio. `world.bushSeasons: false` es el arbusto de antes.
+
+Medido con `sim:seeds`:
+
+| | `century`, 10 semillas | `lean`, 20 semillas |
+|---|---|---|
+| antes de la ronda | — | 8,3% · 7/20 extinguidos · 168/43/291 muertos de hambre |
+| + llanto | — | 5,7% · 6/20 · 241/54/285 |
+| + especies (7) | 70,5% · 1/10 extinguido | 2,4% · 12/20 · 258/69/432 |
+| + toma de media hora, grosellero y reparto nuevo | 65,2% · 0/10 · 8/10 recuperándose | — |
+| especies apagadas | 79,5% · 0/10 · 3/10 recuperándose | — |
+
+En `century` las causas de muerte pasan de exposición 165 / hambre 58 sin
+especies a exposición 192 / hambre 89 con todo. Diez semillas no separan una
+diferencia de supervivencia de menos de diez puntos; lo que sí cambia es la
+forma: ninguna extinción y ocho de diez mundos creciendo otra vez al final. `lean` es un mundo de hambre a propósito
+(`regrowthRate` 0,25) y con estaciones reales se extingue la mayoría de las
+veces; ver `bugs.md`.
 ## 2026-10-01 — Recuerdos visuales bajo la niebla de guerra
 
 La memoria del observador guarda la especie, el tamaño, las hojas y la fruta

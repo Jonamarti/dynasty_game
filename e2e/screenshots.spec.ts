@@ -690,3 +690,82 @@ test('M15 20b playing a mother: the baby in her arms, and a baby\'s own menu', a
   await page.waitForTimeout(200);
   await page.screenshot({ path: DIR + '/m15-20b-baby-menu.png' });
 });
+
+test('M15 20c berry bushes in their own seasons: a winter hedge', async ({ page }) => {
+  await page.goto('/?seed=m15-20c-bushes&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await page.waitForTimeout(800);
+  // Run on into the winter, then frame a dog rose still holding its hips on
+  // bare canes, with whatever else grows around it: bare raspberries, the
+  // evergreen strawberry tree.
+  const at = await page.evaluate(() => {
+    type N = { kind: string; species: string | null; amount: number; x: number; y: number };
+    const d = (window as never as {
+      __dynasty: {
+        sim: { nodes: N[]; step: () => void; time: { season: string; day: number; tick: number };
+          player: { x: number; y: number; health: number;
+            needs: { hunger: number; thirst: number; cold: number } } | null };
+        camera: { snapTo: (x: number, y: number) => void; following: boolean;
+          worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
+      };
+    }).__dynasty;
+    // The player is kept alive through the wait, or a hard first year ends
+    // the tour on the succession screen instead of in the hedge.
+    const keep = () => {
+      const pl = d.sim.player;
+      if (pl) { pl.needs.hunger = 0; pl.needs.thirst = 0; pl.needs.cold = 0; pl.health = 100; }
+    };
+    for (let i = 0; i < 20000 && d.sim.time.season !== 'winter'; i++) { keep(); d.sim.step(); }
+    for (let i = 0; i < 480; i++) { keep(); d.sim.step(); }
+    // Midday, so the hedge is not drawn in the dark.
+    for (let i = 0; i < 240 && d.sim.time.tick % 240 !== 120; i++) { keep(); d.sim.step(); }
+    const p = d.sim.player ?? { x: 64, y: 64 };
+    // The hedge with the most kinds of shrub in it, so the shot shows the
+    // difference the seasons make side by side.
+    const hips = d.sim.nodes.filter(n => n.species === 'rosehip' && n.amount >= 1)
+      .map(n => ({ n, kinds: new Set(d.sim.nodes.filter(o => o.kind === 'berries' &&
+        Math.hypot(o.x - n.x, o.y - n.y) < 7).map(o => o.species)).size }))
+      .sort((a, b) => b.kinds - a.kinds || Math.hypot(a.n.x - p.x, a.n.y - p.y) - Math.hypot(b.n.x - p.x, b.n.y - p.y))[0]?.n;
+    if (!hips) return null;
+    // Stand the player beside it: the fog shows only what they can see.
+    if (d.sim.player) { d.sim.player.x = hips.x + 1.5; d.sim.player.y = hips.y + 1; }
+    (window as never as { __shotBush: { x: number; y: number } }).__shotBush = { x: hips.x, y: hips.y };
+    for (let i = 0; i < 4; i++) { keep(); d.sim.step(); }
+    d.camera.snapTo(hips.x, hips.y);
+    d.camera.following = false;
+    return { season: d.sim.time.season };
+  });
+  expect(at?.season).toBe('winter');
+  await page.locator('#view').hover();
+  for (let i = 0; i < 5; i++) await page.mouse.wheel(0, -120);
+  await page.waitForTimeout(300);
+  const where = await page.evaluate(() => {
+    type N = { species: string | null; amount: number; x: number; y: number };
+    const d = (window as never as { __dynasty: { sim: { nodes: N[] };
+      camera: { worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+        snapTo: (x: number, y: number) => void } } }).__dynasty;
+    // Framed again after the zoom, which moves the view about the cursor.
+    const target = (window as never as { __shotBush: { x: number; y: number } }).__shotBush;
+    d.camera.snapTo(target.x - 3, target.y);
+    return { x: d.camera.worldToScreenX(target.x), y: d.camera.worldToScreenY(target.y) };
+  });
+  // The camera eases onto a snap, so where the bush is on screen is read
+  // once it has settled.
+  await page.waitForTimeout(500);
+  const settled = await page.evaluate(() => {
+    const d = (window as never as { __dynasty: { camera: { worldToScreenX: (x: number) => number;
+      worldToScreenY: (y: number) => number } } }).__dynasty;
+    const target = (window as never as { __shotBush: { x: number; y: number } }).__shotBush;
+    return { x: d.camera.worldToScreenX(target.x), y: d.camera.worldToScreenY(target.y) };
+  });
+  void where;
+  await page.mouse.click(settled.x, settled.y);
+  await page.waitForTimeout(200);
+  const picker = page.locator('.picker');
+  if (await picker.isVisible()) {
+    const rose = picker.locator('.picker-item', { hasText: /Dog rose|Escaramujo/ });
+    await (await rose.count() > 0 ? rose.first() : picker.locator('.picker-item').first()).click();
+  }
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: DIR + '/m15-20c-bushes-in-winter.png' });
+});

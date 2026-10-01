@@ -8,7 +8,38 @@ así que falta correlacionar el SHA ejecutado con el código actual. Mientras se
 investiga, CI y el deploy de Pages continúan aunque `npm test` falle. Quitar
 `continue-on-error` de ambos workflows cuando el timeout quede corregido.
 
-## M15 fase 20, segunda ronda: balance a 40 semillas y dos decisiones del propietario (2026-10-01)
+## M15 fase 20, tercera ronda: lo que queda abierto (2026-10-01)
+
+Las dos decisiones de la segunda ronda están tomadas: los arbustos se quedan
+sin fruto fuera de su temporada (ahora por especie) y el paseo honesto se
+mantiene. La puerta ya no es la supervivencia media sino la extinción y la
+recuperación (`sim:seeds` lo imprime). Lo que queda:
+
+- **`lean` se extingue con el año real: 12/20 mundos.** Es un mundo de hambre
+  a propósito (`regrowthRate` 0,25), y sin almacenar para el invierno nadie
+  pasa el primero entero. En `century` (mundo normal, 4 años) 1/10. Nadie
+  prevé el invierno: falta el mecanismo propuesto en `next-steps.md`
+  («Guardar para el invierno sin programarlo»), que espera al propietario.
+- **Los lactantes mueren más de hambre con el llanto** (`lean`, 20 semillas:
+  168 → 241). El bebé llora y se le da de mamar bien (25-32 de hambre), pero
+  su hambre sube ~8 veces más rápido que la de un adulto, así que un huérfano
+  sin nodriza llega a la zona letal en menos de un día en vez de en seis. 49
+  de 49 bebés muertos en `npm run infants` habían perdido antes a su madre.
+- **La madre lactante sigue muriendo a ~3 veces la tasa de un hombre** (5,29
+  frente a 1,79 por 100 días-persona en `lean`). Con la toma acortada no gana
+  comida: gana tiempo ocioso, porque no conoce comida cerca. La causa es el
+  +50% de hambre de la leche (regla del propietario) en un mundo donde ya los
+  adultos no encuentran bastante. Palancas posibles, todas del propietario:
+  bajar `lactationHunger`; que quien aprecia a una madre le lleve comida antes
+  de verla morirse (hoy solo al verla a hambre letal); que el almacén se abra
+  antes a quien amamanta.
+- **La niebla no borra lo que se vio desaparecer.** Un árbol talado o una pila
+  recogida delante del observador sigue en su memoria y vuelve a dibujarse en
+  cuanto la casilla queda a oscuras. «Tal como se vio la última vez» pide que se
+  borre. Las manadas siguen indexadas por casilla y dejan rastro como lo dejaban
+  las personas.
+
+## M15 fase 20, segunda ronda: balance a 40 semillas y dos decisiones del propietario (2026-10-01) — decididas
 
 `lean`, 40 semillas, cada commit medido por separado con `npm run sim:seeds`:
 

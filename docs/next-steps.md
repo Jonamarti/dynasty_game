@@ -1,5 +1,37 @@
 # Next steps
 
+**2026-10-01: M15 fase 20, tercera ronda.** El bebé mama cuando llora (hambre
+25), el llanto se pesa contra las necesidades de la madre y una toma dura media
+hora; los arbustos son ocho especies europeas con su temporada; la niebla
+recuerda a cada persona una vez. Medido en `changelog.md`; lo abierto, en
+`bugs.md` («tercera ronda»). Captura: `m15-20c-bushes-in-winter.png`.
+
+### Guardar para el invierno sin programarlo (propuesta, espera al propietario)
+
+Nadie debe tener escrito «en otoño, guarda». Cuatro piezas, cada una aprendida:
+
+1. **Hambre recordada por estación.** Cada persona anota cuánta hambre pasó en
+   cada estación del último año o dos. Es experiencia, no saber: quien no ha
+   vivido un invierno no la tiene.
+2. **Escasez prevista.** Con esa memoria y el saber de las estaciones (qué
+   especies no dan en invierno), una persona estima cuánta comida habrá en la
+   estación que viene. Sin haber pasado hambre ni haber aprendido las
+   estaciones, no prevé nada.
+3. **La idea de guardar** como práctica del Paleolítico superior
+   («aprovisionamiento»), con chispa: estar en una estación de abundancia con
+   comida de sobra en las manos y el hambre del invierno pasado en la memoria.
+   Se descubre, se enseña y se copia con la maquinaria que ya existe, y los
+   ancianos la cuentan (`storytelling`), así pasa de una generación a otra.
+4. **La conducta.** Quien conoce la práctica valora guardar en proporción a
+   la escasez que *él* prevé y al excedente que lleva. No hay estación en la
+   regla; un otoño sin recuerdo de hambre no mueve a nadie.
+
+Después, cuando lo practique la mayoría de una banda, puede volverse costumbre
+(quien come del almacén sin haber aportado gana mala fama; el jefe puede
+mandar llenarlo), que enlaza con la estratificación: quien guarda la comida
+tiene poder. Y la conservación (secar, ahumar) tiene sentido en cuanto se active
+el deterioro (`spoilRate`, hoy 0).
+
 **2026-10-01: M15 fase 20, segunda ronda implementada; puerta no superada.** Las
 reglas de la infancia del propietario (destete 1-2 años, 4 tomas, leche +50% de
 hambre, alimentar a quien se muere de hambre, saber de las estaciones, paseo
