@@ -2181,6 +2181,25 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       (tel.tended_to_health ?? 0) + ' of them nursed back to full health');
   }
 
+  // M15 phase 21c. Untended wounds fester more often than dressed ones, per
+  // wound-day. Verified against a build in which `dress` changes nothing: there
+  // the two rates are equal, which the unit test `body.test.ts` reproduces.
+  {
+    const untendedDays = tel.wound_days_untended ?? 0;
+    const tendedDays = tel.wound_days_tended ?? 0;
+    const FLOOR = 60;
+    if (untendedDays < FLOOR || tendedDays < FLOOR) {
+      skip('wounds-fester-untended',
+        untendedDays + ' untended and ' + tendedDays + ' dressed wound-days; too few to compare (need ' + FLOOR + ' of each)');
+    } else {
+      const untended = (tel.wound_festered_untended ?? 0) / untendedDays;
+      const tended = (tel.wound_festered_tended ?? 0) / tendedDays;
+      add('wounds-fester-untended', untended > tended,
+        (tel.wound_festered_untended ?? 0) + ' of ' + untendedDays + ' untended wound-days festered, ' +
+        (tel.wound_festered_tended ?? 0) + ' of ' + tendedDays + ' dressed');
+    }
+  }
+
   if (!sim.knownTech.has('taming')) {
     skip('animals-are-tamed', 'nobody here would think of feeding one');
   } else {

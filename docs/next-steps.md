@@ -1,5 +1,13 @@
 # Next steps
 
+**2026-10-01: M15 fase 21 a-c y 21e (ficha) hechas.** Cuerpo con seis partes,
+heridas que pesan, infección y fiebre, `tend` que venda, sección Heridas en la
+ficha. Quedan: 21d baya tóxica y hierbas (pasada de aparición propia; no en el
+`plan` de `spawnResources`), la venda en el sprite (pasa por `art/src` y
+`art:build`, con el test de arte), 21f ropa que protege, 21g jabón, y el
+registro de la causa de muerte por infección para el investigador (21e). Ver
+`changelog.md`.
+
 **2026-10-01: M15 fase 20, tercera ronda.** El bebé mama cuando llora (hambre
 25), el llanto se pesa contra las necesidades de la madre y una toma dura media
 hora; los arbustos son ocho especies europeas con su temporada; la niebla

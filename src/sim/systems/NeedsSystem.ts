@@ -8,7 +8,7 @@ import type { TimeManager } from '../core/TimeManager.ts';
 import type { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
-import { bleeding, mendBody } from '../entities/Body.ts';
+import { bleeding, feverDrain, mendBody } from '../entities/Body.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { warmthFrom } from '../knowledge/Tech.ts';
@@ -231,6 +231,20 @@ export class NeedsSystem {
         }
       }
 
+      // M15 phase 21c: a fever from an infected wound burns health by grade
+      // and, like a bleed, stops recovery. It ends when the wound turns or is
+      // tended (`Body.woundsDaily`, `Body.dress`), so it cannot go on for ever.
+      const fever = person.conditions.length > 0 ? feverDrain(person.conditions) : 0;
+      if (fever > 0) {
+        person.health -= fever;
+        telemetry.count('fever_ticks');
+        if (person.health <= 0) {
+          person.die('infection');
+          telemetry.count('death_infection');
+          continue;
+        }
+      }
+
       let criticalCount = 0;
       for (const need of LETHAL_NEEDS) {
         if (person.needs[need] >= cfg.criticalThreshold) criticalCount++;
@@ -264,7 +278,7 @@ export class NeedsSystem {
         mendBody(person.body);
         const severity = malnutrition(person);
         const ceiling = 100 - severity * MALNUTRITION_HEALTH_CEILING_DROP;
-        if (person.health < ceiling && bleed === 0) {
+        if (person.health < ceiling && bleed === 0 && fever === 0) {
           const recovery = cfg.recoveryRate * (1 - severity * MALNUTRITION_RECOVERY_PENALTY);
           person.health = Math.min(ceiling, person.health + recovery);
         }

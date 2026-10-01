@@ -21,7 +21,7 @@ import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
 import { MacroBalance, macroTargetFor } from '../core/Macros.ts';
 import { Beliefs } from '../ai/Beliefs.ts';
 import { PlaceMemory } from '../social/PlaceMemory.ts';
-import { armForce, newBody, type Body } from './Body.ts';
+import { armForce, newBody, type Body, type Condition } from './Body.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -271,6 +271,8 @@ export class Person {
   health = 100;
   /** Six parts, each with damage and a wound state (M15 phase 21a); `Body.ts` says what a wound does. */
   body: Body = newBody();
+  /** Lasting illnesses, with grades (M15 phase 21c): so far the fever of an infected wound. */
+  conditions: Condition[] = [];
   /** All needs are 0 (satisfied) to 100 (desperate). */
   needs: Record<Need, number> = { hunger: 0, thirst: 0, fatigue: 0, cold: 0, company: 0 };
   skills: Record<Skill, number>;

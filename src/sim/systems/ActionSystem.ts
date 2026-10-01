@@ -11,7 +11,7 @@
  * draw their own conclusions.
  */
 import type { Person } from '../entities/Person.ts';
-import { KNOCKOUT_AT, strikePart, wound } from '../entities/Body.ts';
+import { dress, needsTending, partWord, KNOCKOUT_AT, strikePart, wound } from '../entities/Body.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
 import { feederRole, starvingInCare } from '../ai/Feeding.ts';
@@ -614,6 +614,9 @@ const TOAST_RELIEF = 12;
  * is what stops a healer from being a switch that turns injury off.
  */
 const TEND_RATE = 0.6;
+
+/** Ticks between dressings in one bout of tending (M15 phase 21c). */
+const DRESS_EVERY = 20;
 
 /** How long a blow to the head leaves somebody senseless: about an hour and a half of the day. */
 const KNOCKOUT_TICKS = 15;
@@ -2245,7 +2248,7 @@ export class ActionSystem {
       this.abandon(person, 'dont_know_how', ctx);
       return;
     }
-    if (patient.health >= 100) {
+    if (patient.health >= 100 && !needsTending(patient.body)) {
       this.abandon(person, 'nothing_to_treat', ctx);
       return;
     }
@@ -2267,13 +2270,31 @@ export class ActionSystem {
     }
 
     person.workedTicks++;
+    // M15 phase 21c: the hands do something about the wound itself — dress a
+    // fresh one, ease a fever a grade — at the start of the bout and then each
+    // `DRESS_EVERY` ticks while there is still something to dress.
+    if (person.workedTicks === 1 || person.workedTicks % DRESS_EVERY === 0) {
+      const done = dress(patient.body, patient.conditions);
+      if (done) {
+        telemetry.count('wound_' + done.result);
+        person.practice('heal', 1);
+        person.chronicle.push({
+          tick: ctx.tick, ageDays: person.age, kind: 'did',
+          text: done.result === 'cured'
+            ? t('cleaned the {part} wound of {name}, and the fever left', { part: partWord(done.part), name: patient.name })
+            : done.result === 'eased'
+              ? t('eased the fever of {name}', { name: patient.name })
+              : t('dressed the {part} wound of {name}', { part: partWord(done.part), name: patient.name }),
+        });
+      }
+    }
     const mended = TEND_RATE * techPower(person, 'herbalism')
       * (0.4 + person.skillFactor('heal'));
     patient.health = Math.min(100, patient.health + mended);
     person.practice('heal', 0.4);
     telemetry.count('tended_ticks');
 
-    if (patient.health >= 100) {
+    if (patient.health >= 100 && !needsTending(patient.body)) {
       telemetry.count('tended_to_health');
       person.chronicle.push({
         tick: ctx.tick,

@@ -16,6 +16,7 @@
  * every fight in every saved seed lands exactly as hard as it did.
  */
 import type { RNG } from '../core/RNG.ts';
+import { t } from '../../i18n/i18n.ts';
 
 export const BODY_PARTS = [
   'head', 'torso', 'left_arm', 'right_arm', 'left_leg', 'right_leg',
@@ -136,6 +137,8 @@ export function bleeding(body: Body): number {
 
 /** Damage a part mends per tick (about a tenth of the whole per day). */
 export const MEND_RATE = 0.0004;
+/** A dressed wound mends this many times faster than an open one. */
+const TENDED_MEND = 3;
 /** A part this close to whole is considered healed. */
 const HEALED_AT = 0.02;
 /** A wound that once reached this deep leaves a scar. */
@@ -150,7 +153,9 @@ export function mendBody(body: Body, rate = MEND_RATE): void {
   for (const part of BODY_PARTS) {
     const state = body[part];
     if (state.wound === 'none' || state.wound === 'healed' || state.wound === 'scarred') continue;
-    state.damage = Math.max(0, state.damage - rate);
+    // A festering wound does not mend; it is the infection that has to turn.
+    if (state.wound === 'infected') continue;
+    state.damage = Math.max(0, state.damage - (state.wound === 'tended' ? rate * TENDED_MEND : rate));
     if (state.damage <= HEALED_AT) {
       state.damage = 0;
       state.wound = state.peak >= SCAR_PEAK ? 'scarred' : 'healed';
@@ -160,3 +165,154 @@ export function mendBody(body: Body, rate = MEND_RATE): void {
 
 /** Head damage at which a blow knocks somebody out. */
 export const KNOCKOUT_AT = 0.4;
+
+// ---------------------------------------------------------------------------
+// 21c: infection and fever. A fresh wound nobody dresses can fester; a
+// festering one gives a fever, which grows worse by the day until it turns by
+// itself or somebody tends it.
+// ---------------------------------------------------------------------------
+
+export type Severity = 'mild' | 'moderate' | 'severe';
+const SEVERITIES: readonly Severity[] = ['mild', 'moderate', 'severe'];
+
+/**
+ * A lasting illness, with a grade. The only kind so far is the fever an
+ * infected wound brings; food poisoning (phase 22) and the toxic berry (21d)
+ * arrive with their own writers.
+ */
+export interface Condition {
+  kind: 'fever';
+  severity: Severity;
+  /** Days since it began, which is what raises its grade. */
+  days: number;
+  /** The infected part it comes from. */
+  part: BodyPart;
+}
+
+/** Daily chance a fresh, undressed wound of any size festers, before depth. */
+export const INFECT_DAILY = 0.07;
+/** A dressed wound is this fraction as likely to fester: cleaner, not immune. */
+export const TENDED_INFECT = 0.25;
+/** Wounds shallower than this are a graze and never fester. */
+const GRAZE = 0.1;
+/** Daily chance a festering wound turns by itself and starts to mend. */
+export const INFECTION_TURNS = 0.08;
+/** Days after which a fever worsens a grade. */
+const WORSEN_EVERY = 3;
+/** Health a tick costs, per grade of fever (1, 2, 3). */
+const FEVER_DRAIN = 0.005;
+
+export type WoundEvent =
+  | { kind: 'festered'; part: BodyPart }
+  | { kind: 'turned'; part: BodyPart };
+
+/**
+ * Whether a part has a wound worth somebody's time: festering, or fresh and
+ * deeper than a graze. A grazed knee is not a reason to down tools.
+ */
+export function needsTending(body: Body): boolean {
+  return BODY_PARTS.some(p => {
+    const w = body[p];
+    return w.wound === 'infected' || (w.wound === 'fresh' && w.damage >= GRAZE);
+  });
+}
+
+/** Health a tick this person's fevers cost them. */
+export function feverDrain(conditions: readonly Condition[]): number {
+  let grade = 0;
+  for (const c of conditions) grade += SEVERITIES.indexOf(c.severity) + 1;
+  return grade * FEVER_DRAIN;
+}
+
+/**
+ * One day passes over somebody's wounds. Draws from `rng` exactly once for
+ * every part that could fester or turn, whatever the outcome, so that a world
+ * is the same however the dice fall.
+ */
+export function woundsDaily(body: Body, conditions: Condition[], rng: RNG): WoundEvent[] {
+  const events: WoundEvent[] = [];
+  for (const part of BODY_PARTS) {
+    const state = body[part];
+    if (state.wound === 'fresh' || state.wound === 'tended') {
+      if (state.damage < GRAZE) continue;
+      const chance = INFECT_DAILY * (0.5 + state.damage) *
+        (state.wound === 'tended' ? TENDED_INFECT : 1);
+      if (rng.next() < chance) {
+        state.wound = 'infected';
+        conditions.push({ kind: 'fever', severity: 'mild', days: 0, part });
+        events.push({ kind: 'festered', part });
+      }
+    } else if (state.wound === 'infected') {
+      const fever = conditions.find(c => c.kind === 'fever' && c.part === part);
+      if (rng.next() < INFECTION_TURNS) {
+        state.wound = 'tended';
+        if (fever) conditions.splice(conditions.indexOf(fever), 1);
+        events.push({ kind: 'turned', part });
+      } else if (fever) {
+        fever.days++;
+        const grade = Math.min(2, Math.floor(fever.days / WORSEN_EVERY));
+        fever.severity = SEVERITIES[Math.max(grade, SEVERITIES.indexOf(fever.severity))]!;
+        // It eats the part away while it festers.
+        state.damage = Math.min(1, state.damage + 0.01 * (grade + 1));
+        state.peak = Math.max(state.peak, state.damage);
+      }
+    }
+  }
+  return events;
+}
+
+export interface Dressing {
+  part: BodyPart;
+  /** `dressed` closes a fresh wound; `eased` drops a fever a grade; `cured` ends the infection. */
+  result: 'dressed' | 'eased' | 'cured';
+}
+
+/**
+ * Somebody tends a body: the worst open wound first, a festering one before a
+ * fresh one. Returns what was done, or null if there was nothing to treat.
+ */
+export function dress(body: Body, conditions: Condition[]): Dressing | null {
+  let pick: BodyPart | null = null;
+  for (const part of BODY_PARTS) {
+    const w = body[part];
+    const open = w.wound === 'infected' || (w.wound === 'fresh' && w.damage >= GRAZE);
+    if (!open) continue;
+    if (pick === null) { pick = part; continue; }
+    const best = body[pick];
+    if ((w.wound === 'infected' ? 1 : 0) > (best.wound === 'infected' ? 1 : 0) ||
+      ((w.wound === 'infected') === (best.wound === 'infected') && w.damage > best.damage)) pick = part;
+  }
+  if (pick === null) return null;
+  const state = body[pick];
+  if (state.wound === 'fresh') {
+    state.wound = 'tended';
+    return { part: pick, result: 'dressed' };
+  }
+  const fever = conditions.find(c => c.kind === 'fever' && c.part === pick);
+  const grade = fever ? SEVERITIES.indexOf(fever.severity) : 0;
+  if (!fever || grade === 0) {
+    state.wound = 'tended';
+    if (fever) conditions.splice(conditions.indexOf(fever), 1);
+    return { part: pick, result: 'cured' };
+  }
+  fever.severity = SEVERITIES[grade - 1]!;
+  // Hold the clock back so the next dressing is not undone by tomorrow.
+  fever.days = Math.min(fever.days, (grade - 1) * WORSEN_EVERY);
+  return { part: pick, result: 'eased' };
+}
+
+/**
+ * A part's name as a noun in a sentence ("a wound of the {part}"). Written as
+ * literal `t` calls so the i18n scan sees every one, and kept article-less so
+ * Spanish can say "herida de pierna izquierda" without agreeing a gender.
+ */
+export function partWord(part: BodyPart): string {
+  switch (part) {
+    case 'head': return t('head');
+    case 'torso': return t('torso');
+    case 'left_arm': return t('left arm');
+    case 'right_arm': return t('right arm');
+    case 'left_leg': return t('left leg');
+    case 'right_leg': return t('right leg');
+  }
+}

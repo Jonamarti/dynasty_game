@@ -78,7 +78,8 @@ export function dataTableKeys(): string[] {
   keys.push(...Object.values(STATE_NOTE));
   keys.push(...NODE_VERB_LABELS);
   for (const words of [DOING_WORDS, FEELING_WORDS, PLACE_WORDS, SAW_WORDS]) keys.push(...Object.values(words));
-  keys.push('starvation', 'dehydration', 'exposure', 'old age', 'bleeding', 'a blow to the head');
+  keys.push('starvation', 'dehydration', 'exposure', 'old age', 'bleeding', 'a blow to the head', 'infection',
+    'head', 'torso', 'left arm', 'right arm', 'left leg', 'right leg');
   keys.push(...Object.values(ORDER_WORDS));
   return keys;
 }

@@ -18,6 +18,7 @@ import { advanceSnowDepth, isBuried } from './Snow.ts';
 import { SPENT_BELOW, isGroundSpent } from './Soil.ts';
 import { SpatialHash } from './SpatialHash.ts';
 import { telemetry } from './Telemetry.ts';
+import { BODY_PARTS, partWord, woundsDaily } from '../entities/Body.ts';
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
 import { ADULT_YEARS, Person, resetPersonIds } from '../entities/Person.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
@@ -2553,6 +2554,44 @@ export class Simulation {
   }
 
   /**
+   * M15 phase 21c: a day passes over everybody's wounds. Whether a fresh one
+   * festers is a roll on `healthRng`; the telemetry counts person-days of
+   * wound and of festering by whether anybody had dressed it, which is what
+   * `wounds-fester-untended` compares.
+   */
+  private woundsOfTheDay(): void {
+    for (const person of this.people) {
+      if (!person.alive) continue;
+      let hurt = false;
+      for (const part of BODY_PARTS) {
+        const w = person.body[part];
+        if (w.wound === 'fresh' || w.wound === 'tended' || w.wound === 'infected') hurt = true;
+        if (w.damage >= 0.1 && w.wound === 'fresh') telemetry.count('wound_days_untended');
+        else if (w.damage >= 0.1 && w.wound === 'tended') telemetry.count('wound_days_tended');
+      }
+      if (!hurt) continue;
+      const before = BODY_PARTS.map(p => person.body[p].wound);
+      const events = woundsDaily(person.body, person.conditions, this.healthRng);
+      for (const event of events) {
+        const was = before[BODY_PARTS.indexOf(event.part)];
+        if (event.kind === 'festered') {
+          telemetry.count(was === 'tended' ? 'wound_festered_tended' : 'wound_festered_untended');
+          person.chronicle.push({
+            tick: this.time.tick, ageDays: person.age, kind: 'suffered',
+            text: t('the wound of the {part} festered', { part: partWord(event.part) }),
+          });
+        } else {
+          telemetry.count('infection_turned');
+          person.chronicle.push({
+            tick: this.time.tick, ageDays: person.age, kind: 'did',
+            text: t('the fever from the {part} broke', { part: partWord(event.part) }),
+          });
+        }
+      }
+    }
+  }
+
+  /**
    * Who slept under the same roof, handed to `SocialSystem.hearth`.
    *
    * Called from the daily block, which runs at `tick % ticksPerDay === 0` —
@@ -3819,6 +3858,7 @@ export class Simulation {
         if (node.species !== null && node.amount > 0 && bushPhase(node.species, season) === 'bare') node.amount = 0;
       }
       this.social.dailyUpkeep(this.people);
+      this.woundsOfTheDay();
       this.shareTheHearth();
       // Renown decays far more slowly than an ordinary opinion's `deeds`
       // component (0.997 against 0.985): it is the family's memory of itself

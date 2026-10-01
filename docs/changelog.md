@@ -1,4 +1,29 @@
 #
+## 2026-10-01 — M15 fase 21c y 21e: infección, fiebre, vendar, y la ficha
+
+**21c.** Una herida fresca (de un décimo o más) sin vendar tiene cada día un
+7% × (0,5 + profundidad) de infectarse; vendada, la cuarta parte. Un dado de
+`healthRng` por parte y día, salga lo que salga. Una herida `infected` no
+sana, crece (0,01-0,03 al día) y da una `Person.conditions` de fiebre que sube
+de grado cada tres días (leve, moderada, alta); la fiebre quita 0,005 de salud
+por tick por grado y detiene la recuperación (muerte por `infection`). Cada
+día hay un 8% de que se resuelva sola. `tend` ahora venda: una herida fresca
+pasa a `tended` (cura tres veces más rápido) y una infectada baja un grado de
+fiebre por vendaje hasta curar; el cerebro valora a alguien con herida abierta
+aunque tenga la salud alta. La crónica cuenta «se le infectó la herida de
+pierna», «vendó la herida…», «se le pasó la fiebre…». Telemetría y check
+`wounds-fester-untended` (n/a hasta 60 días-herida de cada clase; en
+`body.test.ts` la misma medida con el vendaje quitado da la misma tasa, que es
+lo que el check distingue). **21e (ficha).** Sección Heridas en el estado,
+visible a cualquiera: partes heridas y fiebre, sin causa. Captura
+`m15-21-wounds-sheet.png`.
+
+Medido: `century`, 10 semillas: 65,8% de supervivencia, 0/10 extinguidos, 8/10
+recuperándose (65,1% con 21b, 65,2% antes de la fase). `npm test` 707, e2e: 6
+fallos, los mismos seis rotos por la niebla que `next-steps.md` ya anotaba.
+Pendiente de 21: 21d (baya tóxica y hierbas), la venda dibujada en el sprite
+(arte), 21f (la ropa protege) y 21g (jabón).
+
 ## 2026-10-01 — M15 fase 21b: las heridas pesan
 
 Los lectores del cuerpo (`Body.ts`). **Pierna:** cada una quita hasta un 35%

@@ -8,6 +8,25 @@ así que falta correlacionar el SHA ejecutado con el código actual. Mientras se
 investiga, CI y el deploy de Pages continúan aunque `npm test` falle. Quitar
 `continue-on-error` de ambos workflows cuando el timeout quede corregido.
 
+## M15 fase 21: lo que queda abierto (2026-10-01)
+
+- **Las heridas casi no se ejercitan.** En `century` a 10 semillas hay 46-56
+  golpes entre pueblos en total, así que las cifras de supervivencia no dicen
+  nada de si los coeficientes de 21b/21c (35% de paso por pierna, 3 salud/día
+  de sangrado, 7% de infección diaria) son buenos: solo que no estorban. Los
+  golpes dentro de una banda son casi inexistentes (1) y los animales aún no
+  hieren (llegan en la fase 23). Hay que volver a medir cuando los depredadores
+  escriban en `Person.body`.
+- **Solo los golpes de `doAttack` hieren.** La fuente de daño de las fases 23+
+  (colmillos) debe llamar a `strikePart` y `wound` con `healthRng`.
+- **`wounds-fester-untended` sale n/a** en los escenarios de `sim:check`:
+  nunca se acumulan 60 días-herida de cada clase. Verificado solo en
+  `body.test.ts`.
+- **`sim:check -- --scenario tiny` por separado marca 11 fallos con 0 pasos**
+  (`0 steps/s`); `sim:check:all` da 42/44 para el mismo escenario. Ocurre
+  también sin los cambios de esta fase. No investigado.
+- **La venda no se dibuja** en el sprite (pasa por `art/src`).
+
 ## M15 fase 20, tercera ronda: lo que queda abierto (2026-10-01)
 
 Las dos decisiones de la segunda ronda están tomadas: los arbustos se quedan

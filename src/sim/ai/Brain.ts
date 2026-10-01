@@ -17,7 +17,7 @@
  * steal, talk, attack, teach) on the same interface.
  */
 import type { Person } from '../entities/Person.ts';
-import { cannotRun } from '../entities/Body.ts';
+import { cannotRun, needsTending } from '../entities/Body.ts';
 import { RESOURCE_KINDS, type ResourceNode } from '../entities/ResourceNode.ts';
 import { isBuried } from '../core/Snow.ts';
 import type { World } from '../core/World.ts';
@@ -3237,13 +3237,14 @@ export class Brain {
       // anyone.
       if (techPower(person, 'herbalism') > 0) {
         patient = this.pickBest(
-          neighbours.filter(other => other.health < TEND_WORTH_IT &&
+          neighbours.filter(other => (other.health < TEND_WORTH_IT || needsTending(other.body)) &&
             other.bandId === person.bandId),
           other => (100 - other.health) + ctx.relationships.opinion(person.id, other.id) * 0.4
             - person.distanceTo(other)
         );
         if (patient) {
-          const hurt = (100 - patient.health) / 100;
+          // A dressing is owed to a wound even on somebody whose health is high.
+          const hurt = Math.max((100 - patient.health) / 100, needsTending(patient.body) ? 0.3 : 0);
           add('tend', hurt * 1.6 * (0.4 + person.skillFactor('heal'))
             * (1 + ctx.relationships.opinion(person.id, patient.id) / 200)
             * this.proximityBonus(person, patient, ctx.sightRadius));
