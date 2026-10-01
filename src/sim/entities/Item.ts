@@ -41,8 +41,14 @@ export interface ItemDef {
    * `techPower`, so a refined design hits harder than a first attempt at one.
    */
   weapon?: { damage: number; reach: number; hunt: number; tech: string };
-  /** How much of a blow this turns aside, 0 to 1. */
-  armour?: number;
+  /**
+   * M15 phase 21f. How much of a blow on each part of the body this turns
+   * aside, 0 to 1, for a garment worn or carried. Replaces the single `armour`
+   * number: a hide cuirass shields the torso best and leaves the head bare, and
+   * a blow is now rolled against the part it lands on (`Tech.protectionOf`).
+   * Never 1 — a wearer nobody can hurt is a fight nobody can end.
+   */
+  protects?: Partial<Record<import('./Body.ts').BodyPart, number>>;
   /**
    * M15 phase 11a. What fits in a hand, in two hands, or on a shoulder.
    * `perHand` is a fistful, `perArms` an armload with both hands, and
@@ -148,7 +154,10 @@ export const ITEMS: Record<string, ItemDef> = {
   },
   hide_armour: {
     id: 'hide_armour', label: 'Hide armour', nutrition: 0, spoilTicks: 0, baseValue: 11,
-    armour: 0.3,
+    // Averaged over where blows land (`Body.strikeShare`) this is the 0.3 the
+    // piece turned aside as a single number before 21f: torso 0.5, arms 0.25,
+    // legs 0.2, head bare.
+    protects: { torso: 0.5, left_arm: 0.25, right_arm: 0.25, left_leg: 0.2, right_leg: 0.2 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
   // --- M8.1: what comes off a carcass once you know what to do with it -------
@@ -184,6 +193,9 @@ export const ITEMS: Record<string, ItemDef> = {
   },
   fur_coat: {
     id: 'fur_coat', label: 'Fur coat', nutrition: 0, spoilTicks: 0, baseValue: 15,
+    // Thick pelts blunt a blow a little where they cover — the coat is for
+    // warmth first, so it is a fifth of what a hide cuirass gives the torso.
+    protects: { torso: 0.2, left_arm: 0.12, right_arm: 0.12, left_leg: 0.06, right_leg: 0.06 },
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
   // The only object in the game that does nothing useful at all, and the most

@@ -1962,6 +1962,8 @@ plantas medicinales y una baya tóxica en su propia pasada de aparición, y
   mordedura sobre la parte cubierta. La armadura de piel deja de ser un
   término aparte en `armourOf` y pasa a ser una prenda más. Las prendas de la
   fase 14 reciben su protección en este commit.
+  **Hecho el 2026-10-01** con las dos prendas que existen (armadura de piel y
+  abrigo de piel); las de la fase 14 traen su `protects` cuando se declaren.
 - **21g. Jabón (opcional).** `soap` (grasa 1 y ceniza de la hoguera 1;
   Edad del Bronce, Babilonia): lavar una herida con jabón baja su probabilidad
   de infectarse. Es otro uso de la grasa (decisión 22). Si la fase se alarga,

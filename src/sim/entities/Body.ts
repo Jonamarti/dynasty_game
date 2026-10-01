@@ -55,6 +55,11 @@ const STRIKE_WEIGHT: Record<BodyPart, number> = {
 };
 const STRIKE_TOTAL = BODY_PARTS.reduce((sum, p) => sum + STRIKE_WEIGHT[p], 0);
 
+/** The share of blows that land on a part, 0 to 1 and summing to 1 over the body. */
+export function strikeShare(part: BodyPart): number {
+  return STRIKE_WEIGHT[part] / STRIKE_TOTAL;
+}
+
 /** The part a blow lands on. Exactly one draw from `rng`. */
 export function strikePart(rng: RNG): BodyPart {
   let roll = rng.next() * STRIKE_TOTAL;

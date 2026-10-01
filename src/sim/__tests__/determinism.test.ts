@@ -107,7 +107,9 @@ describe('Simulation determinism', () => {
     } finally {
       setLanguage('en');
     }
-  });
+    // Two 1,500-step worlds: about two seconds alone, over the five-second
+    // default when the whole suite runs in parallel.
+  }, 30000);
 
   it('generates the same terrain for the same seed', () => {
     const a = new Simulation(SMALL);

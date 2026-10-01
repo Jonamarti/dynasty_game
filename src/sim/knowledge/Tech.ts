@@ -45,6 +45,7 @@ import type { Idea } from './Synthesis.ts';
 import type { Spark } from './Synthesis.ts';
 import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { BODY_PARTS, strikeShare, type BodyPart } from '../entities/Body.ts';
 
 export const TECHS = [
   'firemaking', 'cordage', 'plant_lore', 'tracking',
@@ -1592,7 +1593,7 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   leatherwork: {
     summary: 'Worked hide that turns a blow.',
-    site: 'ActionSystem.doAttack, via armourOf; RECIPES.hide_armour',
+    site: 'ActionSystem.doAttack, via protectionOf; RECIPES.hide_armour',
   },
   firemaking: {
     summary: 'Warmth you carry with you, wherever you are standing.',
@@ -1847,15 +1848,29 @@ export function weaponOf(
   return best;
 }
 
-/** How much of a blow the best thing they are wearing turns aside, 0 to 1. */
-export function armourOf(person: Person): number {
+/**
+ * How much of a blow on this part of the body the best garment they carry
+ * turns aside, 0 to 1. Only the best piece counts for a part: two cuirasses are
+ * not twice the protection.
+ */
+export function protectionOf(person: Person, part: BodyPart): number {
   let best = 0;
   for (const [itemId, count] of person.inventory.entries()) {
     if (count <= 0) continue;
-    const armour = ITEMS[itemId]?.armour;
-    if (armour !== undefined && armour > best) best = armour;
+    const covers = ITEMS[itemId]?.protects?.[part];
+    if (covers !== undefined && covers > best) best = covers;
   }
   return best;
+}
+
+/**
+ * The same, averaged over where blows land: what a blow whose part is not yet
+ * known can be expected to lose. For callers with no part to hand.
+ */
+export function armourOf(person: Person): number {
+  let mean = 0;
+  for (const part of BODY_PARTS) mean += strikeShare(part) * protectionOf(person, part);
+  return mean;
 }
 
 export function techPower(person: Person, tech: Tech): number {

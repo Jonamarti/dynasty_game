@@ -236,3 +236,27 @@ describe('infection and fever (21c)', () => {
     expect(healer!.chronicle.some(e => /wound of/i.test(e.text))).toBe(true);
   });
 });
+
+describe('what is worn turns a blow aside where it lands (21f)', () => {
+  /** The health the first blow of a fixed fight takes, and the part it landed on. */
+  function firstBlow(armoured: boolean): { lost: number; part: string } {
+    const sim = new Simulation(SMALL);
+    const [attacker, victim] = sim.livingPeople();
+    attacker!.x = victim!.x + 1;
+    attacker!.y = victim!.y;
+    if (armoured) victim!.inventory.add('hide_armour', 1);
+    sim.order(attacker!, 'attack', { personId: victim!.id });
+    for (let i = 0; i < 200 && victim!.health >= 100; i++) sim.step();
+    const part = BODY_PARTS.find(p => victim!.body[p].wound === 'fresh')!;
+    return { lost: 100 - victim!.health, part };
+  }
+
+  it('costs the wearer less than a bare body unless the blow lands on the bare head', () => {
+    const bare = firstBlow(false);
+    const worn = firstBlow(true);
+    // Same seed, same streams: the blow is the same blow and lands on the same part.
+    expect(worn.part).toBe(bare.part);
+    if (bare.part === 'head') expect(worn.lost).toBeCloseTo(bare.lost, 5);
+    else expect(worn.lost).toBeLessThan(bare.lost);
+  });
+});

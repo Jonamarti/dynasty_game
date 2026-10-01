@@ -54,7 +54,7 @@ import { expectedFood } from '../ai/Beliefs.ts';
 import {
   TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
   prerequisitesMet, reapFactor, tallyFactor, techPower,
-  workableIdea as chooseWorkableIdea, weaponOf, armourOf, type Tech,
+  workableIdea as chooseWorkableIdea, weaponOf, armourOf, protectionOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
 import { mayUse, type PropertyUse } from '../social/Property.ts';
@@ -5263,15 +5263,21 @@ export class ActionSystem {
     const attack = person.skillFactor('fight') *
       (0.6 + person.traits.aggression * 0.8) * armed;
     const defence = other.skillFactor('fight') * 0.7;
-    const damage = Math.max(3, (attack - defence * 0.5) * 22 * ctx.rng.range(0.6, 1.4)) *
-      (1 - armourOf(other));
+    // M15 phase 21a/21f: the blow lands on a part, drawn from `healthRng`, and
+    // what is worn *on that part* turns some of it aside. Rolled before the
+    // damage is known because the protection depends on where it lands; with no
+    // stream (a unit test) the average over the body stands in.
+    const part = ctx.healthRng ? strikePart(ctx.healthRng) : null;
+    const turned = part === null ? armourOf(other) : protectionOf(other, part);
+    const bare = Math.max(3, (attack - defence * 0.5) * 22 * ctx.rng.range(0.6, 1.4));
+    const damage = bare * (1 - turned);
+    if (turned > 0) {
+      telemetry.count('blow_armoured');
+      telemetry.count('armour_turned_health', bare - damage);
+    }
 
     other.health -= damage;
-    // M15 phase 21a: the blow also lands on a part. Inert — `health` above is
-    // still the only number anything reads — and drawn from `healthRng`, so the
-    // blow itself is exactly as hard as it was.
-    if (ctx.healthRng) {
-      const part = strikePart(ctx.healthRng);
+    if (part !== null) {
       wound(other.body, part, damage / 100);
       // M15 phase 21b: a blow to the head that is deep enough puts them out
       // for a while; one that destroys it kills. The arms' reading is in

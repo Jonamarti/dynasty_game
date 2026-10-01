@@ -17,7 +17,8 @@ import { describe, it, expect } from 'vitest';
 import { Person } from '../entities/Person.ts';
 import { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
-import { weaponOf, armourOf, techPower } from '../knowledge/Tech.ts';
+import { weaponOf, armourOf, protectionOf, techPower } from '../knowledge/Tech.ts';
+import { BODY_PARTS } from '../entities/Body.ts';
 
 function fighter(name: string): Person {
   const person = new Person(name, 4, 4, 0, new RNG('combat-' + name));
@@ -83,17 +84,36 @@ describe('weapons', () => {
 });
 
 describe('armour', () => {
-  it('turns aside part of a blow, and only the best piece counts', () => {
+  it('turns aside part of a blow, per part, and only the best piece counts', () => {
     const person = fighter('padded');
     expect(armourOf(person)).toBe(0);
+    for (const part of BODY_PARTS) expect(protectionOf(person, part)).toBe(0);
 
     person.inventory.add('hide_armour', 1);
-    expect(armourOf(person)).toBe(ITEMS.hide_armour!.armour);
+    expect(protectionOf(person, 'torso')).toBe(ITEMS.hide_armour!.protects!.torso);
+    // The cuirass leaves the head bare and shields the torso best.
+    expect(protectionOf(person, 'head')).toBe(0);
+    expect(protectionOf(person, 'torso')).toBeGreaterThan(protectionOf(person, 'left_leg'));
+    const once = armourOf(person);
 
     // Two of them are not twice the protection: armour is the best thing worn,
     // not the sum of everything carried.
     person.inventory.add('hide_armour', 1);
-    expect(armourOf(person)).toBe(ITEMS.hide_armour!.armour);
+    expect(armourOf(person)).toBe(once);
+  });
+
+  it('is, averaged over where blows land, the 0.3 the single number used to be', () => {
+    const person = fighter('averaged');
+    person.inventory.add('hide_armour', 1);
+    expect(armourOf(person)).toBeCloseTo(0.3, 1);
+  });
+
+  it('takes a better coat of two pieces where each is better', () => {
+    const person = fighter('layers');
+    person.inventory.add('fur_coat', 1);
+    const furOnly = protectionOf(person, 'torso');
+    person.inventory.add('hide_armour', 1);
+    expect(protectionOf(person, 'torso')).toBeGreaterThan(furOnly);
   });
 
   it('never turns a blow aside completely', () => {
@@ -101,10 +121,11 @@ describe('armour', () => {
     // shape of bug that once cost a band fifteen people to a quarrel nobody
     // could win.
     for (const def of Object.values(ITEMS)) {
-      if (def.armour === undefined) continue;
-      expect(def.armour, def.id + ' makes its wearer invulnerable')
-        .toBeLessThan(1);
-      expect(def.armour).toBeGreaterThan(0);
+      if (def.protects === undefined) continue;
+      for (const [part, covers] of Object.entries(def.protects)) {
+        expect(covers, def.id + ' makes its ' + part + ' invulnerable').toBeLessThan(1);
+        expect(covers).toBeGreaterThan(0);
+      }
     }
   });
 });
