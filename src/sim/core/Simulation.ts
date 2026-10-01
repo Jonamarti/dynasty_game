@@ -4152,6 +4152,8 @@ export class Simulation {
       // not even the player, whose keys this skips too. The holder renews
       // the hold every tick they keep it up, so it lapses by itself.
       if (isHeld(person, this.time.tick)) continue;
+      // M15 phase 21b: out cold from a blow to the head. Same rule as being held.
+      if (person.knockedOutUntil >= this.time.tick) continue;
 
       const underAttack = assailantOf(person, id => this.peopleById.get(id), this.time.tick) !== null;
       // A crying baby no longer seizes the woman here (owner, 2026-10-01): its

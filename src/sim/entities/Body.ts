@@ -33,13 +33,15 @@ export interface BodyPartState {
   /** 0 (whole) to 1 (destroyed). */
   damage: number;
   wound: WoundState;
+  /** The worst `damage` this wound reached, so a bad one can leave a scar. */
+  peak: number;
 }
 
 export type Body = Record<BodyPart, BodyPartState>;
 
 export function newBody(): Body {
   const body = {} as Body;
-  for (const part of BODY_PARTS) body[part] = { damage: 0, wound: 'none' };
+  for (const part of BODY_PARTS) body[part] = { damage: 0, wound: 'none', peak: 0 };
   return body;
 }
 
@@ -70,6 +72,7 @@ export function strikePart(rng: RNG): BodyPart {
 export function wound(body: Body, part: BodyPart, fraction: number): void {
   const state = body[part];
   state.damage = Math.min(1, state.damage + Math.max(0, fraction));
+  state.peak = Math.max(state.peak, state.damage);
   if (state.wound === 'none' || state.wound === 'healed' || state.wound === 'scarred') {
     state.wound = 'fresh';
   }
@@ -81,3 +84,79 @@ export function worstDamage(body: Body): number {
   for (const part of BODY_PARTS) worst = Math.max(worst, body[part].damage);
   return worst;
 }
+
+// ---------------------------------------------------------------------------
+// 21b: what a wound does. Every reader of `body` goes through these, so the
+// numbers that decide how much a wound matters sit in one place.
+// ---------------------------------------------------------------------------
+
+/**
+ * Pace on a bad leg: each leg takes up to 35% off, so one destroyed leg is a
+ * limp at 65% and two are a crawl at 30%. Multiplies `speedOf`, on top of the
+ * pace `health` already costs.
+ */
+export function legPace(body: Body): number {
+  const lost = body.left_leg.damage + body.right_leg.damage;
+  return Math.max(0.3, 1 - 0.35 * lost);
+}
+
+/**
+ * Whether somebody can run at all. Fleeing on a single leg is a limp the
+ * pursuer closes on; with *both* legs half gone it is not a flight, it is a
+ * wait, so the brain is not offered `flee` (see `Brain`).
+ */
+export function cannotRun(body: Body): boolean {
+  return body.left_leg.damage >= 0.5 && body.right_leg.damage >= 0.5;
+}
+
+/**
+ * Strength of the arms, as a multiplier on fighting and on manual work: each
+ * takes up to 30% off, never below 40%. Somebody with a broken arm still works,
+ * more slowly; nobody is made useless by it.
+ */
+export function armForce(body: Body): number {
+  const lost = body.left_arm.damage + body.right_arm.damage;
+  return Math.max(0.4, 1 - 0.3 * lost);
+}
+
+/** Torso damage below which a wound closes by itself without bleeding. */
+const BLEED_FROM = 0.25;
+
+/**
+ * Health lost this tick to a torso wound nobody has dressed. A fresh wound of
+ * a quarter or more bleeds in proportion to how deep it is; at 0.4 that is
+ * about three health a day — a drain a healthy person outlasts while the wound
+ * mends and a weak one may not, which is the point. Tending stops it.
+ */
+export function bleeding(body: Body): number {
+  const torso = body.torso;
+  if (torso.wound !== 'fresh' || torso.damage < BLEED_FROM) return 0;
+  return 0.05 * (torso.damage - 0.15);
+}
+
+/** Damage a part mends per tick (about a tenth of the whole per day). */
+export const MEND_RATE = 0.0004;
+/** A part this close to whole is considered healed. */
+const HEALED_AT = 0.02;
+/** A wound that once reached this deep leaves a scar. */
+const SCAR_PEAK = 0.5;
+
+/**
+ * Mends every wounded part one tick. `rate` is the damage recovered; a part
+ * that gets down to `HEALED_AT` is `healed`, or `scarred` if it was once deep.
+ * Nothing is drawn: healing is time, and chance belongs to 21c's infection.
+ */
+export function mendBody(body: Body, rate = MEND_RATE): void {
+  for (const part of BODY_PARTS) {
+    const state = body[part];
+    if (state.wound === 'none' || state.wound === 'healed' || state.wound === 'scarred') continue;
+    state.damage = Math.max(0, state.damage - rate);
+    if (state.damage <= HEALED_AT) {
+      state.damage = 0;
+      state.wound = state.peak >= SCAR_PEAK ? 'scarred' : 'healed';
+    }
+  }
+}
+
+/** Head damage at which a blow knocks somebody out. */
+export const KNOCKOUT_AT = 0.4;

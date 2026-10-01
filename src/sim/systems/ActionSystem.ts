@@ -11,7 +11,7 @@
  * draw their own conclusions.
  */
 import type { Person } from '../entities/Person.ts';
-import { strikePart, wound } from '../entities/Body.ts';
+import { KNOCKOUT_AT, strikePart, wound } from '../entities/Body.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
 import { feederRole, starvingInCare } from '../ai/Feeding.ts';
@@ -614,6 +614,9 @@ const TOAST_RELIEF = 12;
  * is what stops a healer from being a switch that turns injury off.
  */
 const TEND_RATE = 0.6;
+
+/** How long a blow to the head leaves somebody senseless: about an hour and a half of the day. */
+const KNOCKOUT_TICKS = 15;
 
 /**
  * M8.2's two verbs, in ticks.
@@ -5233,7 +5236,24 @@ export class ActionSystem {
     // M15 phase 21a: the blow also lands on a part. Inert — `health` above is
     // still the only number anything reads — and drawn from `healthRng`, so the
     // blow itself is exactly as hard as it was.
-    if (ctx.healthRng) wound(other.body, strikePart(ctx.healthRng), damage / 100);
+    if (ctx.healthRng) {
+      const part = strikePart(ctx.healthRng);
+      wound(other.body, part, damage / 100);
+      // M15 phase 21b: a blow to the head that is deep enough puts them out
+      // for a while; one that destroys it kills. The arms' reading is in
+      // `skillFactor('fight')` and the legs' in `speedOf`.
+      if (part === 'head' && other.body.head.damage >= KNOCKOUT_AT && other.health > 0) {
+        if (other.body.head.damage >= 1) {
+          other.die('a blow to the head');
+          telemetry.count('death_head_blow');
+        } else {
+          other.knockedOutUntil = ctx.tick + KNOCKOUT_TICKS;
+          other.forgetPlans();
+          other.action = 'idle';
+          telemetry.count('knocked_out');
+        }
+      }
+    }
     // M12 phase 2c, for `the-struck-respond`: a second blow from the same hand
     // landing on an adult who had time since the first to run or hit back,
     // and is doing neither. Somebody held, bound or kept cannot, and is not

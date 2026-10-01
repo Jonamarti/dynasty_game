@@ -17,6 +17,7 @@
  * steal, talk, attack, teach) on the same interface.
  */
 import type { Person } from '../entities/Person.ts';
+import { cannotRun } from '../entities/Body.ts';
 import { RESOURCE_KINDS, type ResourceNode } from '../entities/ResourceNode.ts';
 import { isBuried } from '../core/Snow.ts';
 import type { World } from '../core/World.ts';
@@ -3490,6 +3491,8 @@ export class Brain {
    * cornered animal does too.
    */
   private escapeFrom(person: Person, from: Person, ctx: BrainContext, anchor: Anchor | null): { x: number; y: number } | null {
+    // M15 phase 21b: with both legs half gone there is nowhere to run to.
+    if (cannotRun(person.body)) return null;
     const away = Math.atan2(person.y - from.y, person.x - from.x);
     let best: { x: number; y: number } | null = null;
     let bestDistance = Infinity;

@@ -1,4 +1,25 @@
 #
+## 2026-10-01 — M15 fase 21b: las heridas pesan
+
+Los lectores del cuerpo (`Body.ts`). **Pierna:** cada una quita hasta un 35%
+al paso (`legPace`, en `speedOf`); con las dos a medio destruir (`cannotRun`)
+`escapeFrom` no ofrece huida. **Brazo:** hasta un 30% cada uno de fuerza
+(`armForce`, suelo 0,4) en `skillFactor` de las habilidades manuales; hablar,
+enseñar y rastrear no. **Torso:** una herida fresca de un cuarto o más sangra
+(`bleeding`, unos tres puntos de salud al día con 0,4) y quien sangra no
+recupera salud; muere de `bleeding` si se le acaba. **Cabeza:** con 0,4 de daño
+acumulado un golpe deja inconsciente quince ticks (`knockedOutUntil`: ni piensa
+ni actúa, como el sujetado); con 1 mata. **Cura natural:** cada parte repara
+0,0004 por tick (una décima al día) mientras no haya necesidad crítica, y
+queda `healed`, o `scarred` si llegó a 0,5. `tend` aún no venda ni cambia el
+estado: es 21c. Causas de muerte nuevas con su español.
+
+Medido: `century`, 10 semillas, 65,1% de supervivencia, 0/10 extinguidos, 8/10
+recuperándose (65,2%, 0/10, 8/10 antes). No es una medida de nada más que de
+que no estorba: en diez mundos hay 46 golpes entre pueblos, así que las
+heridas casi no se ejercitan en una partida real; las pruebas de `body.test.ts`
+cubren cada lector. Sin cambio de interfaz (la ficha es 21e).
+
 ## 2026-10-01 — M15 fase 21a: el cuerpo, inerte
 
 `Person.body` tiene seis partes (cabeza, torso, dos brazos, dos piernas), cada

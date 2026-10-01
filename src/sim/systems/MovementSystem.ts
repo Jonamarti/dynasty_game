@@ -33,6 +33,7 @@ import type { RNG } from '../core/RNG.ts';
 import type { ChildhoodConfig } from '../core/Config.ts';
 import { ageSpeed, canCrawl } from '../entities/LifeStage.ts';
 import type { Person } from '../entities/Person.ts';
+import { legPace } from '../entities/Body.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { Pathfinder, PathStatus, DEFAULT_MAX_EXPANSIONS } from '../core/Pathfinder.ts';
 
@@ -327,7 +328,7 @@ export class MovementSystem {
     // M15 phase 20: a child moves at their age's pace, not an adult's. Before
     // this a three-year-old kept up with a forager and outran a deer hunt.
     const age = this.childhood && person.isChild ? ageSpeed(person, this.childhood) : 1;
-    return BASE_SPEED * (1 - person.needs.fatigue / 220) * (0.5 + (person.health / 100) * 0.5) * drag * age;
+    return BASE_SPEED * (1 - person.needs.fatigue / 220) * (0.5 + (person.health / 100) * 0.5) * drag * age * legPace(person.body);
   }
 
   /**

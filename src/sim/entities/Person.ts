@@ -21,7 +21,7 @@ import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
 import { MacroBalance, macroTargetFor } from '../core/Macros.ts';
 import { Beliefs } from '../ai/Beliefs.ts';
 import { PlaceMemory } from '../social/PlaceMemory.ts';
-import { newBody, type Body } from './Body.ts';
+import { armForce, newBody, type Body } from './Body.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -36,6 +36,14 @@ export const SKILLS = [
   'fight', 'persuade', 'teach', 'heal', 'track', 'farm', 'smith',
 ] as const;
 export type Skill = (typeof SKILLS)[number];
+
+/**
+ * The skills done with the hands, which a wounded arm slows (M15 phase 21b).
+ * Talking, teaching and tracking are done with something else.
+ */
+const MANUAL_SKILLS: ReadonlySet<Skill> = new Set<Skill>([
+  'forage', 'hunt', 'knap', 'build', 'cook', 'fight', 'heal', 'farm', 'smith',
+]);
 
 /** Where each skill sits in `Person.alongside`. Built once, read per practice. */
 export const SKILL_INDEX: Record<Skill, number> =
@@ -261,7 +269,7 @@ export class Person {
   lastBirthDay = -9999;
 
   health = 100;
-  /** Six parts, each with damage and a wound state (M15 phase 21a). Written by blows; read by nothing yet. */
+  /** Six parts, each with damage and a wound state (M15 phase 21a); `Body.ts` says what a wound does. */
   body: Body = newBody();
   /** All needs are 0 (satisfied) to 100 (desperate). */
   needs: Record<Need, number> = { hunger: 0, thirst: 0, fatigue: 0, cold: 0, company: 0 };
@@ -590,6 +598,8 @@ export class Person {
    */
   heldBy: number | null = null;
   heldUntil = -9999;
+  /** Out cold from a blow to the head until this tick (M15 phase 21b). Neither thinks nor acts. */
+  knockedOutUntil = -9999;
   /**
    * Who tied this person up, and until when — M11 phase 15c. Separate from
    * `heldBy` because a rope needs nobody to keep it up: the hold lapses when
@@ -1063,7 +1073,8 @@ export class Person {
 
   /** Skill as a multiplier, floored so a novice is slow rather than useless. */
   skillFactor(skill: Skill): number {
-    return (0.35 + (this.skills[skill] / 100) * 0.85) * this.vigour;
+    return (0.35 + (this.skills[skill] / 100) * 0.85) * this.vigour *
+      (MANUAL_SKILLS.has(skill) ? armForce(this.body) : 1);
   }
 
   distanceTo(other: { x: number; y: number }): number {

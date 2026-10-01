@@ -131,6 +131,8 @@ export const ES_SIM: Record<string, string> = {
   "dehydration": "deshidratación",
   "exposure": "frío",
   "old age": "vejez",
+  "bleeding": "desangrado",
+  "a blow to the head": "un golpe en la cabeza",
   "knowing {tech}": "saber {tech}",
   "wanting {drive}": "echar en falta {drive}",
   "food": "comida",

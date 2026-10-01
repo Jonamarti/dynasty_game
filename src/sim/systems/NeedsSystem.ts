@@ -8,6 +8,7 @@ import type { TimeManager } from '../core/TimeManager.ts';
 import type { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
+import { bleeding, mendBody } from '../entities/Body.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { warmthFrom } from '../knowledge/Tech.ts';
@@ -216,6 +217,20 @@ export class NeedsSystem {
         person.needs.company = Math.min(100, person.needs.company + cfg.companyRate);
       }
 
+      // M15 phase 21b: a deep torso wound nobody has dressed bleeds, whatever
+      // else is going on. It is time-limited — the wound mends below — and a
+      // bleeding person does not recover, so it cannot be waited out for free.
+      const bleed = bleeding(person.body);
+      if (bleed > 0) {
+        person.health -= bleed;
+        telemetry.count('bleeding_ticks');
+        if (person.health <= 0) {
+          person.die('bleeding');
+          telemetry.count('death_bleeding');
+          continue;
+        }
+      }
+
       let criticalCount = 0;
       for (const need of LETHAL_NEEDS) {
         if (person.needs[need] >= cfg.criticalThreshold) criticalCount++;
@@ -246,9 +261,10 @@ export class NeedsSystem {
         // already above the ceiling (imbalance arrived after good health, not
         // before it) is left alone rather than pulled down, on the same
         // principle: this is a ceiling, not a drain.
+        mendBody(person.body);
         const severity = malnutrition(person);
         const ceiling = 100 - severity * MALNUTRITION_HEALTH_CEILING_DROP;
-        if (person.health < ceiling) {
+        if (person.health < ceiling && bleed === 0) {
           const recovery = cfg.recoveryRate * (1 - severity * MALNUTRITION_RECOVERY_PENALTY);
           person.health = Math.min(ceiling, person.health + recovery);
         }
