@@ -42,7 +42,15 @@ interface SeedResult {
   history: HistoryReport;
   seed: string;
   peak: number;
+  /** The lowest head-count after the peak, and the end against it. */
+  trough: number;
   end: number;
+  /**
+   * Bands still holding a woman of child-bearing age and a man at the end: a
+   * people that can still recover. The owner's measure (2026-10-01): deaths
+   * while a band learns its world are expected; dying out is not.
+   */
+  viableBands: number;
   born: number;
   starvedInfants: number;
   starvedChildren: number;
@@ -144,6 +152,7 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   for (const assignment of sets) applySet(config, assignment);
   const sim = new Simulation({ ...config, ...sized, seed });
   let peak = 0;
+  let trough = Infinity;
   let born = 0;
   const startingIds = new Set(sim.people.map(p => p.id));
   const demography = new DemographyWatch(sim.peopleById.values(), sim.config.time.ticksPerDay);
@@ -163,7 +172,9 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     if (sim.time.tick % sim.config.time.ticksPerDay === 0) {
       demography.observe(sim.peopleById.values(), sim.time.tick);
     }
-    peak = Math.max(peak, sim.livingPeople().length);
+    const alive = sim.livingPeople().length;
+    if (alive > peak) { peak = alive; trough = alive; }
+    trough = Math.min(trough, alive);
     watchConflict(sim, conflict, lastEventId);
     const recent = sim.social.recent;
     if (recent.length > 0) lastEventId = Math.max(lastEventId, recent[recent.length - 1]!.id);
@@ -214,7 +225,10 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     history: history.finish(),
     seed,
     peak,
+    trough: Number.isFinite(trough) ? trough : 0,
     end: sim.livingPeople().length,
+    viableBands: new Set(sim.livingPeople().filter(p => p.sex === 'female' && !p.isChild && p.years < 45 &&
+      sim.livingPeople().some(m => m.sex === 'male' && !m.isChild && m.bandId === p.bandId)).map(p => p.bandId)).size,
     born,
     starvedInfants,
     starvedChildren,
@@ -449,6 +463,16 @@ function main(): void {
     sum(r => r.cravingProteinAbsent) + ' absent from the forage search');
 
   console.log('='.repeat(78));
+  // The owner's measure since 2026-10-01: not how many survive, but whether
+  // a people dies out, and whether it is growing again by the end.
+  const extinct = results.filter(r => r.end === 0).length;
+  const unviable = results.filter(r => r.viableBands === 0).length;
+  const recovering = results.filter(r => r.trough < r.peak && r.end > r.trough).length;
+  console.log(
+    '  EXTINCT ' + extinct + '/' + results.length + '   ·  no band able to recover ' + unviable + '/' +
+    results.length + '   ·  above its low point at the end ' + recovering + '/' + results.length +
+    '   ·  bands still viable ' + sum(r => r.viableBands)
+  );
   console.log(
     '  MEAN SURVIVAL ' + ((totalEnd / Math.max(1, totalPeak)) * 100).toFixed(1) + '%' +
     '   ·  ' + collapsed + '/' + results.length + ' collapsed below a quarter' +
