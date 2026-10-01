@@ -8,6 +8,39 @@ así que falta correlacionar el SHA ejecutado con el código actual. Mientras se
 investiga, CI y el deploy de Pages continúan aunque `npm test` falle. Quitar
 `continue-on-error` de ambos workflows cuando el timeout quede corregido.
 
+## M15 fase 20, segunda ronda: balance a 40 semillas y dos decisiones del propietario (2026-10-01)
+
+`lean`, 40 semillas, cada commit medido por separado con `npm run sim:seeds`:
+
+| estado | supervivencia | colapsos | inf./niños/adultos muertos de hambre |
+|---|---|---|---|
+| `6e6f2db`, antes de esta ronda | 16,3% | 29/40 | 340 / 83 / 630 |
+| + destete 1-2 años, 4 tomas, leche +50% de hambre | 13,2% | 36/40 | 345 / 75 / 595 |
+| + alimentar a quien se muere de hambre | 13,4% | 35/40 | 353 / 82 / 600 |
+| + arbustos sin bayas en invierno (revertido) | 3,4% | 40/40 | 428 / 148 / 872 |
+| actual (saber de estaciones, paseo honesto, menú del bebé) | 9,2% | 40/40 | 347 / 80 / 592 |
+| actual sin el paseo honesto | 13,3% | 35/40 | 345 / 81 / 573 |
+
+`npm run infants` (5 semillas), antes → ahora: madres lactantes 3,49 → 3,70
+muertes por 100 días-persona (hambre media 43 → 49), hombres 1,05 → 1,49. La
+madre lactante sigue muriendo de hambre a más del doble que un hombre: la regla
+de dar de comer a quien se muere funciona (26 comidas en una semilla) pero no
+compensa un 50% más de hambre, que cuesta el doble que el cargo por toma de
+antes.
+
+**Decisión 1: ¿los arbustos se quedan sin bayas en invierno?** Así lo describe
+el propietario, y es lo que permite aprender que «en invierno no dan». Pero en
+`lean` se vive el invierno de lo que el otoño dejó en los arbustos, y quitarlo
+lleva el mundo al 3,4%. Haría falta otra comida de invierno (almacenes llenos,
+caza, pesca) para que fuera viable. Revertido mientras se decide.
+
+**Decisión 2: ¿se mantiene el paseo honesto con este coste?** Ir hasta ver un
+arbusto recordado para saber que está vacío cuesta 4,1 puntos (13,3% → 9,2%) y
+deja `lean` en 40/40 colapsos, donde ya no mide nada. El saber de las estaciones
+iba a contestarlo, pero con arbustos que conservan bayas en invierno casi nadie
+lo aprende. Sigue activo porque es la regla del propietario; quitarlo es una
+línea en `ActionSystem.doHarvest`.
+
 ## Seis e2e de `smoke.spec.ts` fallan desde antes de la fase 20 (2026-09-30)
 
 `a stranger gives up nothing…`, `standing over someone is shown…`, `the tech

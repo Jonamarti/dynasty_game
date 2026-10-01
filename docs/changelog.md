@@ -1,4 +1,16 @@
 #
+## 2026-10-01 — Recuerdos visuales y pausa ante una petición rechazada
+
+La niebla de guerra conserva ahora el estado visible del árbol (tamaño, hojas y
+fruta) y la apariencia básica de las personas que el observador vio. Al salir
+del campo de visión, esos recuerdos se dibujan con el mismo arte del juego,
+sombreados por el velo y sin consultar el estado actual de la entidad.
+
+`propose` pide apoyo para un edificio; el cortejo matrimonial es `court`. Una
+negativa dejaba al mismo par proyecto-colaborador disponible tras la pausa
+social general de 220 ticks. Ahora ese par espera tres días antes de recibir
+otra petición; el promotor puede pedir ayuda a otra persona mientras tanto.
+
 ## 2026-09-29 — M15 fase 11c, diagnóstico de hambre con las manos ocupadas
 
 La comida recogida y consumida en el mismo arbusto se descontaba de la fuente
@@ -10006,3 +10018,16 @@ en invierno lo que no se le ha cogido, así que quien lo mira ve alguno con baya
 y no aprende que «en invierno no dan». El mecanismo funciona y está probado
 (`season-lore.test.ts`, con una isla pelada cada invierno), pero hoy casi nunca
 se aprende nada.
+
+## 2026-10-01 — M15 fase 20, segunda ronda: balance
+
+`lean` a 40 semillas: 16,3% antes de la ronda, 9,2% al final (40/40 colapsos).
+El paseo honesto cuesta 4,1 puntos (13,3% sin él); las reglas de lactancia, unos
+3. Tabla completa, la lectura de `npm run infants` y las dos decisiones que
+quedan para el propietario en `bugs.md` («segunda ronda»). `sim:check:all`:
+117 checks fallando antes, 137 después sobre 1.240; los fallos sistemáticos
+(`people-act-on-what-they-know`, `cravings-steer-the-diet`, `nights-are-slept`,
+`word-of-food-travels`) ya estaban en la línea base, y el resto se mueve en las
+dos direcciones entre commits que apenas cambian la simulación, que es el caos
+de siempre; en `lean` los nuevos fallos son los que necesitan gente viva
+(`knowledge-is-found`, `ideas-become-tech`, `the-tree-is-climbed`).

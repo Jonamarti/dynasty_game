@@ -1938,6 +1938,15 @@ etapas de edad y el juego. **Puerta no superada:** a 40 semillas `lean` baja de
 madre lactante muere de hambre. Espera decisión del propietario (`bugs.md`,
 «balance de la infancia a 40 semillas»).
 
+Segunda ronda (2026-09-30/10-01), con las respuestas del propietario: destete
+entre 1 y 2 años, 4 tomas al día, la leche como un 50% más de hambre, el bebé
+sin cansancio y solo con soledad si nadie lo tiene en brazos; quien aprecia a
+alguien que se muere de hambre le da de comer o va a buscar comida; el saber de
+las estaciones con el saber de las plantas y el paseo honesto a los sitios
+recordados; el menú propio del bebé (coger, dejar, amamantar, jugar) y no
+entrenar con él en brazos. **Puerta no superada:** `lean` a 40 semillas en 9,2%
+(16,3% antes). Dos decisiones del propietario en `bugs.md` («segunda ronda»).
+
 ## Fase 21 — Anatomía, heridas y enfermedad (M14 fase 7)
 
 **Detalle en `m14_plan.md` fase 7.** Seis partes del cuerpo con daño y estado

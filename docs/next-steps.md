@@ -1,5 +1,16 @@
 # Next steps
 
+**2026-10-01: M15 fase 20, segunda ronda implementada; puerta no superada.** Las
+reglas de la infancia del propietario (destete 1-2 años, 4 tomas, leche +50% de
+hambre, alimentar a quien se muere de hambre, saber de las estaciones, paseo
+honesto, menú del bebé) están en commits separados y medidos. `lean` a 40
+semillas: 16,3% → 9,2%. Esperan dos decisiones del propietario (arbustos sin
+bayas en invierno; mantener el paseo honesto), en `bugs.md`. Pendiente además:
+cuna y lecho como muebles donde dejar al bebé; que los adultos NPC jueguen con
+los bebés (hoy solo el jugador); enseñar el saber de las estaciones al
+contarlo; rehacer los seis e2e rotos por la niebla. Captura:
+`m15-20b-baby-menu.png`.
+
 **2026-09-28: M15 fase 7 completa.** El radial explica coste y probabilidad de la orden. Telemetria por verbo y linea ORDERS agregadas a cohortes. En lean, 20 semillas: build 68/19 (78,2%), haul 718/267 (72,9%); no hubo intentos de gather ni attack, por lo que esa comparacion no fue observable en el cohorte. El test de cinco verbos, mismo mandante y 10.000 tiradas sembradas, confirma gather > attack; se conserva la pendiente 0,6. Supervivencia lean 20,0%, igual a la lectura de fase 6. Captura: m15-7-command-cost.png. Sigue abierta la incidencia de shelter-answers-cold en harsh-winter; se avanzo por indicacion del propietario. Ver bugs.md.
 
 **2026-09-28: M15 fase 6b-6e implementada; fase aun abierta.** La peticion de apoyo y sus checks pasan en `band`; la cohorte `lean` cuesta 2,0 puntos. `harsh-winter` sigue sin abrigo pese a tener obras respaldadas; la fase 7 se avanzo por indicacion del propietario y el bloqueo sigue anotado en bugs.md. Capturas: `m15-6-propose-menu.png`, `m15-6-propose-projects.png`. Ver [m15_plan.md](m15_plan.md) y [bugs.md](bugs.md).
