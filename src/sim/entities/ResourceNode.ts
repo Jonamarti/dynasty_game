@@ -102,7 +102,17 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
 export const BUSH_SPECIES = [
   'strawberry', 'raspberry', 'bilberry', 'bramble', 'rosehip', 'sloe', 'strawberry_tree', 'currant',
 ] as const;
-export type BushSpecies = (typeof BUSH_SPECIES)[number];
+/**
+ * M15 phase 21d. Two plants that grow as bushes but are not fruit bushes, so
+ * they are *not* in `BUSH_SPECIES`: that list is what `spawnFlora` plants and
+ * what its weights sum over, and a new entry there would move every draw. They
+ * are planted in a pass of their own (`Simulation.spawnWildPlants`).
+ *
+ * The baneberry is what the owner's note asked for: a berry that looks like the
+ * edible ones and is not. The yarrow gives `herbs`, which `tend` spends.
+ */
+export const WILD_PLANTS = ['baneberry', 'yarrow'] as const;
+export type BushSpecies = (typeof BUSH_SPECIES)[number] | (typeof WILD_PLANTS)[number];
 
 export interface BushDef {
   species: BushSpecies;
@@ -123,6 +133,8 @@ export interface BushDef {
   evergreen: boolean;
   /** The colour of its ripe fruit, for the renderer and the fog. */
   fruitColor: string;
+  /** What it gives when it is not `berries` (21d). */
+  yields?: string;
 }
 
 export const BUSHES: Record<BushSpecies, BushDef> = {
@@ -157,6 +169,15 @@ export const BUSHES: Record<BushSpecies, BushDef> = {
   // winter — the one plant here still ripening fruit in the cold.
   strawberry_tree: { species: 'strawberry_tree', label: 'Strawberry tree', ripens: ['autumn', 'winter'], holds: [],
     rate: 2, weight: 0.08, evergreen: true, fruitColor: '#e0602a' },
+  // Actaea and deadly nightshade stand for it: dark glossy berries in high
+  // summer that hang on into autumn. The colour sits between the bilberry's and
+  // the bramble's on purpose — it has to be mistaken for them. `weight` is
+  // unused (it is not in `BUSH_SPECIES`).
+  baneberry: { species: 'baneberry', label: 'Baneberry', ripens: ['summer'], holds: ['autumn'],
+    rate: 2, weight: 0, evergreen: false, fruitColor: '#34274f', yields: 'toxic_berries' },
+  // Achillea millefolium: leaves from spring to autumn, nothing in the cold.
+  yarrow: { species: 'yarrow', label: 'Yarrow', ripens: ['spring', 'summer', 'autumn'], holds: [],
+    rate: 1.5, weight: 0, evergreen: false, fruitColor: '#e8e2c4', yields: 'herbs' },
 };
 
 export type BushPhase = 'ripens' | 'holds' | 'bare';
@@ -210,6 +231,16 @@ export class ResourceNode {
   }
 
   /**
+   * What one harvest of this node is. The kind's item for everything, except a
+   * bush whose species gives something else (the baneberry's poison, the
+   * yarrow's herbs). A getter, so a view made with `Object.create(node)` — the
+   * remembered-place views `Brain` scores — reads it too.
+   */
+  get itemId(): string {
+    return this.species !== null ? BUSHES[this.species].yields ?? this.def.itemId : this.def.itemId;
+  }
+
+  /**
    * Grows back, at a pace set by the season.
    *
    * `growth` is 0 in deep winter and 1 at midsummer. A stripped bush recovers
@@ -255,7 +286,7 @@ export class ResourceNode {
  * definition of "what counts as food" instead of two that can drift apart.
  */
 export function isFoodKind(node: ResourceNode): boolean {
-  return (ITEMS[node.def.itemId]?.nutrition ?? 0) > 0;
+  return (ITEMS[node.itemId]?.nutrition ?? 0) > 0;
 }
 
 /**

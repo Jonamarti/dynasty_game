@@ -25,7 +25,7 @@ import { isHeld, isBound } from '../sim/social/Defence.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { BODY_PARTS, partWord } from '../sim/entities/Body.ts';
-import { BUSHES, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
+import { BUSHES, WILD_PLANTS, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
 import { isStructure, type Building, type BuildingDef } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
@@ -1546,7 +1546,7 @@ export class Hud {
     const rows: string[] = [];
 
     rows.push('<div class="hud-name">' +
-      escapeHtml(node.species !== null ? nodeName(node) : t(NODE_LABELS[node.kind])) + '</div>');
+      escapeHtml(node.species !== null ? nodeName(node, observer) : t(NODE_LABELS[node.kind])) + '</div>');
     rows.push('<div class="hud-sub">' + escapeHtml(tc('biome', sim.world.biomeAt(node.x, node.y))) +
       ' · ' + node.x + ',' + node.y + '</div>');
     rows.push('<div class="hud-known">' + escapeHtml(known.because) + '</div>');
@@ -1556,7 +1556,7 @@ export class Hud {
     if (known.amount !== null) {
       rows.push(bar(tc('bar', 'remaining'), (node.amount / node.def.maxAmount) * 100, '#7ddc96'));
       rows.push('<div class="hud-sub">' + escapeHtml(t('{n} of {max} · gives {item}', {
-        n: known.amount, max: node.def.maxAmount, item: t(ITEMS[node.def.itemId]?.label ?? node.def.itemId),
+        n: known.amount, max: node.def.maxAmount, item: yieldLabel(node, observer),
       })) + '</div>');
     } else {
       rows.push(veil(t('Get closer, or learn the trade, to judge how much is left.')));
@@ -1917,8 +1917,23 @@ export class Hud {
  * one (M15 phase 20) — "Blackthorn", not "Berry bush" — and anything else by
  * its kind. One reading for the panel, the title and the picker.
  */
-export function nodeName(node: ResourceNode): string {
-  return node.species !== null ? t(BUSHES[node.species].label) : tc('node', node.kind);
+export function nodeName(node: ResourceNode, observer: Person): string {
+  if (node.species === null) return tc('node', node.kind);
+  // M15 phase 21d: to an eye without plant lore the baneberry is a berry bush
+  // and the yarrow a bush of nothing in particular. The species is what plant
+  // lore *is*; showing it to everybody would make the poison common knowledge.
+  if ((WILD_PLANTS as readonly string[]).includes(node.species) && !observer.knownTech.has('plant_lore')) {
+    return tc('node', node.kind);
+  }
+  return t(BUSHES[node.species].label);
+}
+
+/** What a node is said to give, for somebody who may not know what it is (21d). */
+function yieldLabel(node: ResourceNode, observer: Person): string {
+  const id = node.itemId;
+  const unknowing = (id === 'toxic_berries' || id === 'herbs') && !observer.knownTech.has('plant_lore');
+  const shown = unknowing ? 'berries' : id;
+  return t(ITEMS[shown]?.label ?? shown);
 }
 
 // Typed over `ResourceKind`, not a plain `Record<string, string>` — a new
@@ -1968,7 +1983,7 @@ function panelTitle(observer: Person, selection: Selection, sim: Simulation): st
       const known = knowledgeOfPerson(observer, selection.person, sim.relationships);
       return known.knowsName ? selection.person.fullName : known.displayName;
     }
-    case 'node': return nodeName(selection.node);
+    case 'node': return nodeName(selection.node, observer);
     case 'building': return t(selection.building.def.label);
     case 'tree': return t(selection.tree.def.label);
     case 'pile': return t('Dropped goods');

@@ -300,6 +300,14 @@ export const ITEMS: Record<string, ItemDef> = {
   },
   roast_meat: { id: 'roast_meat', label: 'Roast meat', nutrition: 40, spoilTicks: 2400, baseValue: 4, macros: { fat: 0.45, protein: 0.55, carb: 0 }, class: 'food', hand: { perHand: 2, perArms: 5, hands: 1, shoulder: 8 } },
   roast_fish: { id: 'roast_fish', label: 'Roast fish', nutrition: 24, spoilTicks: 1600, baseValue: 3, macros: { fat: 0.35, protein: 0.65, carb: 0 }, class: 'food', hand: { perHand: 2, perArms: 5, hands: 1, shoulder: 8 } },
+  // M15 phase 21d. The baneberry's fruit: the same nourishment as a berry, so
+  // that anybody who does not know better finds it as appetising (`Beliefs`
+  // lists it among the foods a person already expects to be edible), and a
+  // risk of poisoning in `Body.SICKENS` that makes eating it a mistake.
+  toxic_berries: { id: 'toxic_berries', label: 'Baneberries', nutrition: 14, hydration: 4, spoilTicks: 2400, baseValue: 0, macros: { fat: 0.05, protein: 0.05, carb: 0.90 }, class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 } },
+  // The yarrow's leaves. Not food; `tend` spends one to ease a poisoning or to
+  // draw the infection out of a festering wound (`Body.dress`, `Body.soothe`).
+  herbs: { id: 'herbs', label: 'Herbs', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'small', hand: { perHand: 4, perArms: 10, hands: 1 } },
 };
 
 export class Inventory {

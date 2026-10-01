@@ -254,6 +254,7 @@ export const ES_SIM: Record<string, string> = {
   "was taken ill after a meal of raw fish": "enfermó tras comer pescado crudo",
   "was taken ill after a bad meal": "enfermó tras una mala comida",
   "the sickness passed": "se le pasó la indisposición",
+  "eased the sickness of {name} with herbs": "alivió con hierbas la indisposición de {name}",
   "cleaned the {part} wound of {name}, and the fever left": "limpió la herida de {part} de {name}, y la fiebre se fue",
   "eased the fever of {name}": "alivió la fiebre de {name}",
   "dressed the {part} wound of {name}": "vendó la herida de {part} de {name}",

@@ -1,5 +1,13 @@
 # Next steps
 
+**2026-10-01: M15 fases 21d, 21f y 22 (crudo) hechas.** La baya tóxica y la
+milenrama (pasada propia, `herbRng`, fork 20), la ropa que protege por parte del
+cuerpo, y la intoxicación por carne y pescado crudos con la creencia
+`sick:<comida>`. Queda de la 22 «lo que se ha pasado», que espera a la 15c
+(`spoilRate` sigue a 0); de la 21, la venda en el sprite (arte) y 21g (jabón);
+y el casco y las prendas de la fase 14, que traerán su `protects`. Capturas:
+`m15-22-poisoned-sheet.png`. Ver `changelog.md`.
+
 **2026-10-01: M15 fase 21 a-c y 21e (ficha) hechas.** Cuerpo con seis partes,
 heridas que pesan, infección y fiebre, `tend` que venda, sección Heridas en la
 ficha. Quedan: 21d baya tóxica y hierbas (pasada de aparición propia; no en el

@@ -988,7 +988,7 @@ function describeCandidate(observer: Person, target: ActionTarget): string {
     case 'person':
       return knowledgeOfPerson(observer, target.person!, sim.relationships).displayName;
     case 'node':
-      return nodeName(target.node!) + ' — ' + knowledgeOfNode(observer, target.node!).estimate;
+      return nodeName(target.node!, observer) + ' — ' + knowledgeOfNode(observer, target.node!).estimate;
     case 'tree':
       return t(target.tree!.def.label) + ' — ' + knowledgeOfTree(observer, target.tree!).estimate;
     case 'animal':
@@ -1479,7 +1479,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
   const title =
     target.kind === 'person'
       ? knowledgeOfPerson(actor, target.person!, sim.relationships).displayName :
-    target.kind === 'node' ? nodeName(target.node!) :
+    target.kind === 'node' ? nodeName(target.node!, actor) :
     target.kind === 'building' ? t(target.building!.def.label) :
     target.kind === 'tree' ? t(target.tree!.def.label) :
     target.kind === 'animal' ? t(target.animal!.label) :

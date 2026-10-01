@@ -412,6 +412,7 @@ export const STOP_REASONS: Record<string, string> = {
   nothing_to_toast: 'they have no beer to share',
   nobody_to_tend: 'there is nobody here to look after',
   nothing_to_treat: 'they are not hurt any more',
+  knows_poisonous: 'they know those berries are poisonous',
   nothing_to_offer: 'they had no food to offer it',
   already_tame: 'it already follows somebody',
   already_wed: 'they are already married',

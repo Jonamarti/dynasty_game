@@ -1604,8 +1604,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'RECIPES.rope and rope_thatch; the equipped bundle in sim/core/Carry.ts; ActionSystem.doBind',
   },
   plant_lore: {
-    summary: 'More from every bush and every fruiting tree.',
-    site: 'ActionSystem.doHarvest and doPickFruit, via forageYieldFactor',
+    summary: 'More from every bush and every fruiting tree, and a poisonous berry known on sight.',
+    site: 'ActionSystem.doHarvest and doPickFruit, via forageYieldFactor; Macros.appealOf, via knowsPoisonous',
   },
   tracking: {
     summary: 'Game found further off, and slower to notice you.',
@@ -1704,8 +1704,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'ActionSystem.doPlay',
   },
   herbalism: {
-    summary: 'Tending the hurt: they mend far faster than waiting would have managed.',
-    site: 'ActionSystem.doTend, the only use the heal skill has ever had',
+    summary: 'Tending the hurt: they mend far faster than waiting would have managed. Herbs ease a poisoning and draw out an infection.',
+    site: 'ActionSystem.doTend, the only use the heal skill has ever had; Body.soothe and Body.dress',
   },
   chiefdom: {
     summary:

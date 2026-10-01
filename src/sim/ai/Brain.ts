@@ -17,7 +17,7 @@
  * steal, talk, attack, teach) on the same interface.
  */
 import type { Person } from '../entities/Person.ts';
-import { cannotRun, needsTending } from '../entities/Body.ts';
+import { cannotRun, needsTending, poisonGrade } from '../entities/Body.ts';
 import { RESOURCE_KINDS, type ResourceNode } from '../entities/ResourceNode.ts';
 import { isBuried } from '../core/Snow.ts';
 import type { World } from '../core/World.ts';
@@ -433,6 +433,8 @@ const LEANEST_FRUIT = 13;
  * that holds one berry.
  */
 const TEND_WORTH_IT = 80;
+/** How many herbs somebody who tends the sick tries to keep by them (21d). */
+const HERB_STOCK = 4;
 
 /**
  * How full a trap has to be before anybody walks out to it, 0-1.
@@ -1052,6 +1054,14 @@ export class Brain {
     // --- Gather materials --------------------------------------------------
     let matNode = this.findNode(person, ctx,
       n => (n.kind === 'flint' || n.kind === 'sticks') && !n.depleted, true, anchor, reach);
+    // M15 phase 21d: somebody who tends the sick keeps a few herbs by them, and
+    // gathers more when the stock runs low and a yarrow is at hand. Taken in
+    // preference to a stone or a stick, which a healer can do without.
+    if (techPower(person, 'herbalism') > 0 && person.inventory.count('herbs') < HERB_STOCK) {
+      const herbNode = this.findNode(person, ctx,
+        n => n.itemId === 'herbs' && !n.depleted, true, anchor, reach);
+      if (herbNode) matNode = herbNode;
+    }
     if (matNode) {
       // Only the genuinely comfortable pick up rocks and firewood. The gate is
       // hard rather than gradual because the first version used a soft
@@ -3237,14 +3247,16 @@ export class Brain {
       // anyone.
       if (techPower(person, 'herbalism') > 0) {
         patient = this.pickBest(
-          neighbours.filter(other => (other.health < TEND_WORTH_IT || needsTending(other.body)) &&
+          neighbours.filter(other => (other.health < TEND_WORTH_IT || needsTending(other.body) ||
+            (poisonGrade(other.conditions) > 0 && person.inventory.has('herbs'))) &&
             other.bandId === person.bandId),
           other => (100 - other.health) + ctx.relationships.opinion(person.id, other.id) * 0.4
             - person.distanceTo(other)
         );
         if (patient) {
           // A dressing is owed to a wound even on somebody whose health is high.
-          const hurt = Math.max((100 - patient.health) / 100, needsTending(patient.body) ? 0.3 : 0);
+          const hurt = Math.max((100 - patient.health) / 100,
+            needsTending(patient.body) || poisonGrade(patient.conditions) > 0 ? 0.3 : 0);
           add('tend', hurt * 1.6 * (0.4 + person.skillFactor('heal'))
             * (1 + ctx.relationships.opinion(person.id, patient.id) / 200)
             * this.proximityBonus(person, patient, ctx.sightRadius));
@@ -3868,26 +3880,26 @@ export class Brain {
    * is food now should win the tie.
    */
   private nodeWorth(person: Person, node: ResourceNode, ctx: BrainContext): number {
-    const direct = ITEMS[node.def.itemId]?.nutrition ?? 0;
-    if (direct > 0) return appealOf(person, node.def.itemId, VARIETY_WEIGHT,
+    const direct = ITEMS[node.itemId]?.nutrition ?? 0;
+    if (direct > 0) return appealOf(person, node.itemId, VARIETY_WEIGHT,
       ctx.motivation.cravings, ctx.motivation.beliefChoice);
     // Everything below is the inedible case — flint, sticks, clay and wild
     // grain — and only the last of them has a recipe that turns it into food.
     // Cheap enough now that `recipeUsing` is indexed, but the early return
     // above is what keeps the ordinary case to one property read.
-    const recipe = recipeUsing(node.def.itemId);
+    const recipe = recipeUsing(node.itemId);
     if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
     const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
     const appeal = output ? appealOf(person, output, VARIETY_WEIGHT,
       ctx.motivation.cravings, ctx.motivation.beliefChoice) / (ITEMS[output]?.nutrition ?? 1) : 1;
-    return nutritionPerUnit(recipe, node.def.itemId) * 0.6 * appeal;
+    return nutritionPerUnit(recipe, node.itemId) * 0.6 * appeal;
   }
 
   /** Protein fraction in the edible item a resource node can currently yield. */
   private nodeProteinFraction(person: Person, node: ResourceNode): number {
-    const direct = ITEMS[node.def.itemId];
+    const direct = ITEMS[node.itemId];
     if (direct && direct.nutrition > 0) return direct.macros?.protein ?? 0;
-    const recipe = recipeUsing(node.def.itemId);
+    const recipe = recipeUsing(node.itemId);
     if (!recipe || techPower(person, recipe.tech) <= 0) return 0;
     const output = Object.keys(recipe.output).find(id => (ITEMS[id]?.nutrition ?? 0) > 0);
     return output ? ITEMS[output]?.macros?.protein ?? 0 : 0;

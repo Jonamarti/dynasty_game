@@ -1,29 +1,4 @@
 #
-## 2026-10-01 — M15 fase 21f: la ropa protege
-
-`ItemDef.armour` (un solo número) pasa a `ItemDef.protects`, un número por parte
-del cuerpo, y `doAttack` tira primero la parte (`healthRng`, el mismo dado de
-siempre) y descuenta la protección *de esa parte* (`Tech.protectionOf`). Solo
-cuenta la mejor prenda por parte, como antes. La armadura de piel protege torso
-0,5, brazos 0,25, piernas 0,2 y deja la cabeza al aire: promediada sobre dónde
-caen los golpes (`Body.strikeShare`) vuelve a dar el 0,3 de antes, así que no
-cambia cuánto protege en conjunto, solo dónde. El abrigo de piel, hecho para el
-frío, desvía algo (torso 0,2, brazos 0,12, piernas 0,06). `armourOf` se queda
-como la media para quien no tiene parte a mano (sin `healthRng`). Telemetría
-`blow_armoured` y `armour_turned_health`. Ninguna prenda protege del todo
-(`combat.test.ts`).
-
-**Lo que NO está:** «las prendas de la fase 14». La ropa por capas no existe
-aún (solo hay cinco huecos de equipo y las prendas se llevan en el inventario),
-así que protegen las dos piezas que hay; cuando la 14 declare camisa, pantalón,
-capa y casco, cada una trae su `protects` y el lector ya está. El casco es lo
-que cubriría la cabeza, que hoy ningún objeto protege.
-
-Medido: solo `body.test.ts` y `combat.test.ts` (un golpe de la misma semilla
-cuesta menos a quien lleva la armadura y lo mismo si cae en la cabeza). Los
-golpes entre pueblos son unos 46 en diez mundos `century`, así que ninguna
-medida de supervivencia diría nada; se anota en vez de simular que lo dice.
-
 ## 2026-10-01 — Menús móviles, colocación y edificios recordados
 
 En pantallas estrechas, los controles superiores y las opciones de construir y
@@ -32,6 +7,50 @@ iconos para dejar más mapa visible. La colocación ahora ocurre al soltar un
 clic confirmado: arrastrar el mapa o hacer zoom ya no marca una obra. La niebla
 recuerda si un edificio se vio como plano o terminado y dibuja ese aspecto con
 el arte del edificio en vez de un icono genérico.
+
+## 2026-10-01 — M15 fase 21d: la baya tóxica y las hierbas
+
+Dos plantas nuevas, `baneberry` (la actea: baya oscura de pleno verano que
+aguanta en otoño) y `yarrow` (la milenrama: hojas de primavera a otoño), en
+`WILD_PLANTS`, **fuera de `BUSH_SPECIES`** para no mover ni un dado de
+`spawnFlora`. Se plantan en su propia pasada (`spawnWildPlants`), con un stream
+nuevo, `herbRng` (fork 20, fila nueva en `AGENTS.md`), después de todo lo demás:
+cada una, un 12% de las matas de baya de la isla, como nodos extra de tipo
+`berries`. Las matas de siempre están exactamente donde estaban. Lo que cambia
+es `ResourceNode.itemId`: la actea da `toxic_berries` (la misma nutrición que
+una baya, y `Beliefs` la cuenta entre lo que todos esperan comestible, que es lo
+que la hace peligrosa), la milenrama da `herbs`. `SICKENS.toxic_berries` = 0,6.
+
+**`plant_lore` pasa a distinguirlas, y es el primer efecto defensivo de una
+tecnología:** quien la sabe tiene `appealOf` a cero para la baya tóxica (cero, no
+«menos»: es saber, no mala experiencia), así que ningún nodo suyo la elige; si
+una orden del jugador lo manda a recogerla, `doHarvest` se niega con la razón
+visible («sabe que esas bayas son venenosas»). Quien no la sabe la come y se
+envenena, y aprende `sick:toxic_berries` como con la carne. La interfaz
+tampoco regala la especie: sin `plant_lore` el panel, el título y el selector
+dicen «Bayas» y «da bayas»; con ella, «Actea» y «da bayas de actea».
+
+**`tend` gasta hierbas.** Un sanador (`herbalism`) con menos de cuatro hierbas
+y una milenrama a la vista las recoge antes que una piedra o un palo (`gather`);
+con una en la bolsa, una cura saca la infección sea cual sea el grado de la
+fiebre (sin ella solo baja un grado) y alivia una intoxicación un grado cada vez
+(`Body.soothe`). Atender a un envenenado solo vale si hay hierbas que darle: sin
+ellas es compañía, no cuidado, y no cuenta.
+
+Check `the-wise-avoid-baneberries`: n/a bajo 3 comidas de actea de gente sin
+`plant_lore`; falla si alguien con ella come una. Medido: `century`, 10
+semillas, 64,0% de supervivencia, 0/10 extinguidos, 0/10 sin banda que se
+recupere (72,4% en la 22, 65,8% antes: el ruido de siempre). Captura
+`m15-22-poisoned-sheet.png` (la ficha: «el estómago enfermo», la herida vendada,
+las hierbas). `npm test` 727.
+
+**Límites, anotados:** la milenrama solo se recoge por la rama de `gather` (si
+una piedra está más cerca gana la hierba, pero no hay un verbo propio);
+`foodInWorld` cuenta las matas de actea como comida, y la memoria de lugares
+sigue guardándolas como `resource:berries`, que es lo que ve quien no sabe;
+la venda dibujada y el jabón (21g) siguen pendientes.
+
+: la ropa protege
 
 ## 2026-10-01 — M15 fase 21f: la ropa protege
 

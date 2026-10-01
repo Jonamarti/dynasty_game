@@ -2210,8 +2210,11 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     const RAW_IDS = ['meat', 'fish'];
     const raw = RAW_IDS.reduce((sum, id) => sum + (tel['risky_meals_' + id] ?? 0), 0);
     const sick = RAW_IDS.reduce((sum, id) => sum + (tel['poisoned_' + id] ?? 0), 0);
+    // What may make people ill: raw flesh, and (21d) the baneberry. Anything
+    // else with a `poisoned_<id>` counter is a cooked or kept food that did.
+    const MAY_SICKEN = [...RAW_IDS, 'toxic_berries'];
     const strays = Object.entries(tel).filter(([key, n]) => key.startsWith('poisoned_') &&
-      !RAW_IDS.includes(key.slice('poisoned_'.length)) && n > 0);
+      !MAY_SICKEN.includes(key.slice('poisoned_'.length)) && n > 0);
     const FLOOR = 40;
     if (raw < FLOOR && strays.length === 0) {
       skip('raw-meat-sickens', raw + ' raw meals eaten; too few for a ~10% risk to show (need ' + FLOOR + ')');
@@ -2219,6 +2222,23 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       add('raw-meat-sickens', strays.length === 0 && (raw < FLOOR || sick > 0),
         sick + ' illnesses after ' + raw + ' raw meals; ' +
         (strays.length === 0 ? 'none after anything cooked' : 'ILL AFTER ' + strays.map(([k]) => k).join(', ')));
+    }
+  }
+
+  // M15 phase 21d. Plant lore is the first technology whose effect is to keep
+  // something from happening: nobody who has it ever eats a baneberry. The check
+  // has teeth only if somebody without it did (otherwise nothing was exposed),
+  // and it fails on a build in which `knowsPoisonous` is not read by `appealOf`
+  // and by `doHarvest` (`herbs.test.ts` reproduces it).
+  {
+    const unwise = tel.ate_toxic_unwise ?? 0;
+    const wise = tel.ate_toxic_wise ?? 0;
+    if (unwise < 3) {
+      skip('the-wise-avoid-baneberries', unwise + ' baneberry meals by the unlettered; nobody was exposed enough to tell');
+    } else {
+      add('the-wise-avoid-baneberries', wise === 0,
+        unwise + ' baneberry meals by people without plant lore (' + (tel.poisoned_toxic_berries ?? 0) +
+        ' fell ill), ' + wise + ' by people who had it');
     }
   }
 

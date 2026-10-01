@@ -52,6 +52,11 @@ export function cravings(person: Person, enabled = true): Record<Macro, number> 
   return value;
 }
 
+/** Whether this person can tell this food is poisonous on sight (21d). */
+export function knowsPoisonous(person: Person, itemId: string): boolean {
+  return itemId === 'toxic_berries' && person.knownTech.has('plant_lore');
+}
+
 /** Nutrition adjusted for the nutrients this person has been missing. */
 export function appealOf(
   person: Person, itemId: string, varietyWeight = VARIETY_WEIGHT,
@@ -64,6 +69,10 @@ export function appealOf(
   const pull = macros
     ? MACROS.reduce((sum, macro) => sum + craving[macro] * macros[macro], 0)
     : 0;
+  // M15 phase 21d, the first defensive effect of a technology in the tree:
+  // somebody with plant lore knows a baneberry from a berry and wants none of
+  // it. Exactly nothing, not "less": it is knowledge, not a bad experience.
+  if (knowsPoisonous(person, itemId)) return 0;
   const sick = beliefsEnabled ? person.beliefs.get('sick:' + itemId) : undefined;
   // A food that made you ill is worth less to you, in proportion to how sure
   // you are; never to nothing, because a hungry person eats what there is.
@@ -220,6 +229,11 @@ function eatFoodUnit(
   // show that a byproduct nobody has ever needed to name before is actually
   // being eaten rather than only accruing.
   telemetry.count('eaten_' + itemId);
+  if (itemId === 'toxic_berries') {
+    // For `the-wise-avoid-baneberries`: nobody with plant lore should ever be
+    // here, so this is the counter that would catch the gate being removed.
+    telemetry.count(person.knownTech.has('plant_lore') ? 'ate_toxic_wise' : 'ate_toxic_unwise');
+  }
   fallIll(person, itemId, eaten, tick, sickRng);
   return true;
 }

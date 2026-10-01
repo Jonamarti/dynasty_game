@@ -19,7 +19,7 @@ import type { World } from '../sim/core/World.ts';
 import { BIOMES, type Biome } from '../sim/core/World.ts';
 import type { Season } from '../sim/core/TimeManager.ts';
 import { WAYPOINT_AIM } from '../sim/systems/MovementSystem.ts';
-import { BUSH_SPECIES, BUSHES, type BushSpecies, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
+import { BUSH_SPECIES, BUSHES, WILD_PLANTS, type BushSpecies, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
 import { BUILDINGS, type Building } from '../sim/entities/Building.ts';
@@ -877,7 +877,8 @@ export class Renderer {
     } else if (place.visual?.type === 'bush') {
       // As it was seen: in leaf or bare, with fruit or without, whatever the
       // season is now (owner, 2026-10-01).
-      const species = (BUSH_SPECIES as readonly string[]).includes(place.visual.species)
+      const species = (BUSH_SPECIES as readonly string[]).includes(place.visual.species) ||
+        (WILD_PLANTS as readonly string[]).includes(place.visual.species)
         ? place.visual.species as BushSpecies : null;
       this.drawBush(x, y, TILE * 0.23 * 1.8, place.amount === 2 ? 'full' : place.amount === 1 ? 'picked' : 'spent',
         species, place.visual.leafless, ctx);

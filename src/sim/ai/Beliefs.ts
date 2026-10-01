@@ -17,7 +17,9 @@ export const BELIEF_CAPACITY = 48;
 export const YIELD_INSTINCT: Readonly<Record<string, number>> = {
   'yield:forage': 12, 'yield:fish': 10, 'yield:pick': 16, 'yield:hunt': 8,
 };
-const KNOWN_RAW_FOOD = ['berries', 'apple', 'pear', 'plum', 'hazelnut', 'meat', 'fish', 'milk'] as const;
+// `toxic_berries` is in the list on purpose: the baneberry looks like a berry,
+// so everybody expects it to be one until they know better (21d).
+const KNOWN_RAW_FOOD = ['berries', 'toxic_berries', 'apple', 'pear', 'plum', 'hazelnut', 'meat', 'fish', 'milk'] as const;
 
 /** Per-person expectations. Map iteration preserves stable eviction and inheritance order. */
 export class Beliefs {

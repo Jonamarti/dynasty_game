@@ -798,3 +798,30 @@ test('M15 21 wounds and fever show on the character sheet', async ({ page }) => 
   await expect(page.locator('.hud-wound-fresh')).toBeVisible();
   await page.screenshot({ path: DIR + '/m15-21-wounds-sheet.png' });
 });
+
+test('M15 21d/22 a poisoned player shows the sickness and carries herbs', async ({ page }) => {
+  await page.goto('/?seed=m15-22-poison&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await page.waitForTimeout(800);
+  // Staged: a moderate poisoning from a bad meal, a bandaged arm, and two
+  // herbs in the pack. The sheet shows the symptom and never the cause.
+  await page.evaluate(() => {
+    type Part = { damage: number; wound: string; peak: number };
+    const d = (window as never as {
+      __dynasty: { sim: { step: () => void; player: { health: number;
+        body: Record<string, Part>;
+        inventory: { add: (id: string, n: number) => void };
+        conditions: { kind: string; severity: string; daysLeft: number; item: string }[] } } };
+    }).__dynasty;
+    const p = d.sim.player;
+    p.body.right_arm = { damage: 0.2, wound: 'tended', peak: 0.3 };
+    p.conditions.push({ kind: 'poisoning', severity: 'moderate', daysLeft: 2, item: 'meat' });
+    p.inventory.add('herbs', 2);
+    p.health = 80;
+    d.sim.step();
+  });
+  await page.locator('.hud-tab', { hasText: 'Now' }).click();
+  await page.waitForTimeout(300);
+  await expect(page.locator('.hud-wound-infected').first()).toBeVisible();
+  await page.screenshot({ path: DIR + '/m15-22-poisoned-sheet.png' });
+});

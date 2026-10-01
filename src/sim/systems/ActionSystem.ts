@@ -11,7 +11,7 @@
  * draw their own conclusions.
  */
 import type { Person } from '../entities/Person.ts';
-import { dress, needsTending, partWord, KNOCKOUT_AT, strikePart, wound } from '../entities/Body.ts';
+import { dress, needsTending, partWord, poisonGrade, soothe, KNOCKOUT_AT, strikePart, wound } from '../entities/Body.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
 import { feederRole, starvingInCare } from '../ai/Feeding.ts';
@@ -49,7 +49,7 @@ import {
 } from '../entities/Inscription.ts';
 import type { CarryConfig, ChildhoodConfig, MotivationConfig, NeedsConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
-import { bestFoodFor, consumeFood, consumeFoodAtSource } from '../core/Macros.ts';
+import { bestFoodFor, consumeFood, consumeFoodAtSource, knowsPoisonous } from '../core/Macros.ts';
 import { expectedFood } from '../ai/Beliefs.ts';
 import {
   TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
@@ -617,6 +617,17 @@ const TEND_RATE = 0.6;
 
 /** Ticks between dressings in one bout of tending (M15 phase 21c). */
 const DRESS_EVERY = 20;
+
+/**
+ * Whether there is anything for this healer to do for this patient: a wound
+ * worth dressing, or a poisoning *and* a herb to ease it with. Sitting beside
+ * somebody who is merely sick, with nothing to give them, is company and not
+ * care, so it does not count.
+ */
+function needsCare(patient: Person, healer: Person): boolean {
+  return needsTending(patient.body) ||
+    (poisonGrade(patient.conditions) > 0 && healer.inventory.has('herbs'));
+}
 
 /** How long a blow to the head leaves somebody senseless: about an hour and a half of the day. */
 const KNOCKOUT_TICKS = 15;
@@ -1248,7 +1259,15 @@ export class ActionSystem {
       this.abandon(person, reason, ctx);
       return;
     }
-    if (person.yieldKey === null && (ITEMS[node.def.itemId]?.nutrition ?? 0) > 0) {
+    // M15 phase 21d: somebody who knows the plant will not pick it. Reached
+    // only by an order — nobody chooses it, since `appealOf` is zero — and the
+    // reason is shown, because an order that just stops is a bug the UI must
+    // explain.
+    if (knowsPoisonous(person, node.itemId)) {
+      this.abandon(person, 'knows_poisonous', ctx);
+      return;
+    }
+    if (person.yieldKey === null && (ITEMS[node.itemId]?.nutrition ?? 0) > 0) {
       person.yieldKey = node.kind === 'fish' ? 'yield:fish' : 'yield:forage';
     }
 
@@ -1267,26 +1286,26 @@ export class ActionSystem {
     const yieldUnits = Math.max(1, Math.round(
       (1 + person.skillFactor(node.def.skill)) * forageYieldFactor(person, node.kind)
     ));
-    const feeds = (ITEMS[node.def.itemId]?.nutrition ?? 0) > 0;
+    const feeds = (ITEMS[node.itemId]?.nutrition ?? 0) > 0;
     let eatenAtSource = 0;
     if (feeds && person.needs.hunger >= ctx.carry.eatAtSourceAt) {
       while (eatenAtSource < yieldUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
         node.amount > 0 && node.take(1) > 0) {
-        consumeFoodAtSource(person, node.def.itemId, ctx.tick, ctx.motivation.cravings, ctx.healthRng);
-        person.handled.set(node.def.itemId, ctx.tick);
+        consumeFoodAtSource(person, node.itemId, ctx.tick, ctx.motivation.cravings, ctx.healthRng);
+        person.handled.set(node.itemId, ctx.tick);
         eatenAtSource++;
         telemetry.count('ate_at_source');
       }
     }
     const room = Math.max(0, Math.min(
       person.carryCapacity - person.carrying,
-      itemCapacityFor(person, ctx.carry, node.def.itemId) - person.inventory.count(node.def.itemId),
+      itemCapacityFor(person, ctx.carry, node.itemId) - person.inventory.count(node.itemId),
     ));
     const taken = node.take(Math.min(yieldUnits - eatenAtSource, room));
     if (room === 0 && !node.depleted) telemetry.count('hand_capacity_blocked');
     if (taken > 0 || eatenAtSource > 0) {
-      person.inventory.add(node.def.itemId, taken);
-      person.yieldNutrition += (ITEMS[node.def.itemId]?.nutrition ?? 0) * taken;
+      person.inventory.add(node.itemId, taken);
+      person.yieldNutrition += (ITEMS[node.itemId]?.nutrition ?? 0) * taken;
       person.practice(node.def.skill, 0.6);
       telemetry.count('harvest_' + node.kind);
       person.placeMemory.updateAt(`resource:${node.kind}`, node.x, node.y,
@@ -2261,7 +2280,7 @@ export class ActionSystem {
       this.abandon(person, 'dont_know_how', ctx);
       return;
     }
-    if (patient.health >= 100 && !needsTending(patient.body)) {
+    if (patient.health >= 100 && !needsCare(patient, person)) {
       this.abandon(person, 'nothing_to_treat', ctx);
       return;
     }
@@ -2287,7 +2306,28 @@ export class ActionSystem {
     // fresh one, ease a fever a grade — at the start of the bout and then each
     // `DRESS_EVERY` ticks while there is still something to dress.
     if (person.workedTicks === 1 || person.workedTicks % DRESS_EVERY === 0) {
-      const done = dress(patient.body, patient.conditions);
+      // M15 phase 21d: a herb in the healer's pack is spent when it does work
+      // — it draws an infection out whatever the grade of the fever, or
+      // lightens a poisoning by one grade. Dressing a wound comes first.
+      const herb = person.inventory.has('herbs');
+      const done = dress(patient.body, patient.conditions, herb);
+      if (done?.herbUsed) {
+        person.inventory.remove('herbs', 1);
+        telemetry.count('herb_used_on_wound');
+      }
+      if (!done && herb && poisonGrade(patient.conditions) > 0) {
+        const eased = soothe(patient.conditions);
+        if (eased) {
+          person.inventory.remove('herbs', 1);
+          telemetry.count('herb_used_on_poison');
+          telemetry.count('poison_' + eased);
+          person.practice('heal', 1);
+          person.chronicle.push({
+            tick: ctx.tick, ageDays: person.age, kind: 'did',
+            text: t('eased the sickness of {name} with herbs', { name: patient.name }),
+          });
+        }
+      }
       if (done) {
         telemetry.count('wound_' + done.result);
         person.practice('heal', 1);
@@ -2307,7 +2347,7 @@ export class ActionSystem {
     person.practice('heal', 0.4);
     telemetry.count('tended_ticks');
 
-    if (patient.health >= 100 && !needsTending(patient.body)) {
+    if (patient.health >= 100 && !needsCare(patient, person)) {
       telemetry.count('tended_to_health');
       person.chronicle.push({
         tick: ctx.tick,

@@ -152,6 +152,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "they have no beer to share": "no tiene cerveza que compartir",
   "there is nobody here to look after": "aquí no hay nadie a quien cuidar",
   "they are not hurt any more": "ya no está herido",
+  "they know those berries are poisonous": "sabe que esas bayas son venenosas",
   "they had no food to offer it": "no tenía comida que ofrecerle",
   "it already follows somebody": "ya sigue a alguien",
   "they are already married": "ya está casado",

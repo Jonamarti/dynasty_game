@@ -1775,7 +1775,7 @@ export class BandSystem {
     telemetry.count('raid_joined', joined);
     ctx.command(leader, leader, 'gather', { nodeId: best.node.id });
 
-    const what = t(ITEMS[best.node.def.itemId]?.label ?? best.node.def.itemId).toLowerCase();
+    const what = t(ITEMS[best.node.itemId]?.label ?? best.node.itemId).toLowerCase();
     const victim = this.bandName(best.victimId);
     leader.chronicle.push({
       tick: ctx.tick,

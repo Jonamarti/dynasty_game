@@ -24,7 +24,7 @@ import { ADULT_YEARS, Person, resetPersonIds } from '../entities/Person.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import {
-  BUSH_SPECIES, BUSHES, bushPhase, ResourceNode, resetResourceIds, isFoodKind, isPlantFood, seasonLoreKind,
+  BUSH_SPECIES, BUSHES, WILD_PLANTS, bushPhase, ResourceNode, resetResourceIds, isFoodKind, isPlantFood, seasonLoreKind,
   type BushSpecies, type ResourceKind,
 } from '../entities/ResourceNode.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
@@ -180,6 +180,9 @@ const RESUME_WINDOW = 2000;
  * crying is never ignored for long.
  */
 const CRY_NAG_TICKS = 20;
+/** Each wild plant (21d) is planted as this fraction of the island's berry bushes. */
+const WILD_PLANT_SHARE = 0.12;
+
 /** How far a bush looks for a neighbour to share a species with, in tiles. */
 const FLORA_PATCH_RADIUS = 6;
 /** How often a bush with a planted neighbour is the same shrub. */
@@ -634,6 +637,11 @@ export class Simulation {
     // which part of the body a blow lands on. Nothing draws from it until a
     // blow lands, so every world is exactly as it was.
     this.healthRng = this.rng.fork();
+    // M15 phase 21d, appended after `healthRng` (row 20 of `AGENTS.md`'s
+    // table): where the baneberries and the yarrow stand. A stream of its own
+    // and a pass of its own after everything else, because adding them to the
+    // `plan` of `spawnResources` would move every herd and person.
+    const herbRng = this.rng.fork();
 
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
@@ -642,6 +650,7 @@ export class Simulation {
     this.spawnWildGrain(grainRng);
     this.spawnCulture(cultureRng);
     this.spawnFlora(floraRng);
+    this.spawnWildPlants(herbRng);
     this.rebuildHashes();
   }
 
@@ -679,6 +688,38 @@ export class Simulation {
       // The island opens in some season; a bush that bears nothing in it
       // starts bare rather than in the fruit it would have dropped.
       if (bushPhase(species, startSeason) === 'bare') bush.amount = 0;
+    }
+  }
+
+  /**
+   * Plants the baneberry and the yarrow (`WILD_PLANTS`) on top of the ordinary
+   * bushes, which stand exactly where they stood. They are extra nodes of kind
+   * `berries` with their own species, so every system that already knows what a
+   * bush is — the fog, the seasons, the memory of places — handles them; what
+   * differs is `ResourceNode.itemId`. About one in eight bushes' worth of each.
+   *
+   * Nothing is planted in a world with `bushSeasons` off, which has no species
+   * at all and so no place to put one.
+   */
+  private spawnWildPlants(rng: RNG): void {
+    if (!this.config.world.bushSeasons) return;
+    const startSeason = this.time.season;
+    for (const species of WILD_PLANTS) {
+      const count = Math.round(this.scaledCount(this.config.world.berryBushes) * WILD_PLANT_SHARE);
+      let placed = 0;
+      let attempts = 0;
+      while (placed < count && attempts < count * 60) {
+        attempts++;
+        const spot = this.world.randomWalkable(rng, 1);
+        if (!spot) continue;
+        if (!this.suitsBiome('berries', spot.x, spot.y)) continue;
+        const node = new ResourceNode('berries', spot.x, spot.y, rng);
+        node.species = species;
+        if (bushPhase(species, startSeason) === 'bare') node.amount = 0;
+        this.nodes.push(node);
+        this.nodesById.set(node.id, node);
+        placed++;
+      }
     }
   }
 

@@ -286,13 +286,15 @@ export interface Dressing {
   part: BodyPart;
   /** `dressed` closes a fresh wound; `eased` drops a fever a grade; `cured` ends the infection. */
   result: 'dressed' | 'eased' | 'cured';
+  /** Whether the dressing used the herb it was offered (`dress`'s `herb`). */
+  herbUsed?: boolean;
 }
 
 /**
  * Somebody tends a body: the worst open wound first, a festering one before a
  * fresh one. Returns what was done, or null if there was nothing to treat.
  */
-export function dress(body: Body, conditions: Condition[]): Dressing | null {
+export function dress(body: Body, conditions: Condition[], herb = false): Dressing | null {
   let pick: BodyPart | null = null;
   for (const part of BODY_PARTS) {
     const w = body[part];
@@ -311,10 +313,14 @@ export function dress(body: Body, conditions: Condition[]): Dressing | null {
   }
   const fever = findFever(conditions, pick);
   const grade = fever ? SEVERITIES.indexOf(fever.severity) : 0;
-  if (!fever || grade === 0) {
+  if (!fever || grade === 0 || herb) {
+    // A herb draws the infection out whatever the grade (21d); without one only
+    // a fever that has already eased to mild is cured outright.
     state.wound = 'tended';
     if (fever) conditions.splice(conditions.indexOf(fever), 1);
-    return { part: pick, result: 'cured' };
+    return herb && grade > 0
+      ? { part: pick, result: 'cured', herbUsed: true }
+      : { part: pick, result: 'cured' };
   }
   fever.severity = SEVERITIES[grade - 1]!;
   // Hold the clock back so the next dressing is not undone by tomorrow.
@@ -353,6 +359,9 @@ export function partWord(part: BodyPart): string {
 export const SICKENS: Readonly<Record<string, number>> = {
   meat: 0.12,
   fish: 0.10,
+  // M15 phase 21d: the baneberry. Most mouthfuls make somebody ill, because the
+  // point of the plant is that eating it unknowing is a mistake.
+  toxic_berries: 0.6,
 };
 
 /** Days each grade of poisoning runs. */
@@ -436,4 +445,22 @@ export function poisonDaily(conditions: Condition[]): Poisoning | null {
   if (poisoning.daysLeft > 0) return null;
   conditions.splice(index, 1);
   return poisoning;
+}
+
+/**
+ * A herb given to somebody poisoned: one grade lighter, or gone if it was mild.
+ * Returns what it did, or null if there was nothing to treat.
+ */
+export function soothe(conditions: Condition[]): 'eased' | 'cured' | null {
+  const index = conditions.findIndex(c => c.kind === 'poisoning');
+  if (index < 0) return null;
+  const poisoning = conditions[index] as Poisoning;
+  const grade = SEVERITIES.indexOf(poisoning.severity);
+  if (grade === 0) {
+    conditions.splice(index, 1);
+    return 'cured';
+  }
+  poisoning.severity = SEVERITIES[grade - 1]!;
+  poisoning.daysLeft = Math.min(poisoning.daysLeft, POISON_DAYS[poisoning.severity]);
+  return 'eased';
 }
