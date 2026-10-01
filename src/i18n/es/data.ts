@@ -98,6 +98,7 @@ export const ES_DATA: Record<string, string> = {
   "Plum tree": "Ciruelo",
   "Hazel": "Avellano",
   "Wild strawberry": "Fresa silvestre",
+  "Redcurrant": "Grosellero",
   "Raspberry": "Frambueso",
   "Bilberry": "Arándano",
   "Bramble": "Zarzamora",

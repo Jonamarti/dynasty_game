@@ -100,7 +100,7 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
  * bush bears, not about a new item for every hand and recipe to learn.
  */
 export const BUSH_SPECIES = [
-  'strawberry', 'raspberry', 'bilberry', 'bramble', 'rosehip', 'sloe', 'strawberry_tree',
+  'strawberry', 'raspberry', 'bilberry', 'bramble', 'rosehip', 'sloe', 'strawberry_tree', 'currant',
 ] as const;
 export type BushSpecies = (typeof BUSH_SPECIES)[number];
 
@@ -126,27 +126,37 @@ export interface BushDef {
 }
 
 export const BUSHES: Record<BushSpecies, BushDef> = {
-  // Fragaria vesca: May and June, the one fruit of the spring hungry gap.
+  // The weights make spring, summer and autumn each about half the bushes in
+  // fruit and winter a third, most of that what autumn left hanging: the
+  // owner's year (2026-10-01) — people eat calmly from spring to autumn, and
+  // winter is the lean season that hunting, fishing and stores are for. Real
+  // European spring is thin in fruit, which is why it has two species here
+  // and why the dog rose still holds hips in it.
+  //
+  // Fragaria vesca: May and June.
   strawberry: { species: 'strawberry', label: 'Wild strawberry', ripens: ['spring'], holds: [],
-    rate: 3.5, weight: 0.22, evergreen: true, fruitColor: '#d8352a' },
+    rate: 3.5, weight: 0.18, evergreen: true, fruitColor: '#d8352a' },
+  // Ribes rubrum: late spring into high summer.
+  currant: { species: 'currant', label: 'Redcurrant', ripens: ['spring', 'summer'], holds: [],
+    rate: 1.35, weight: 0.14, evergreen: false, fruitColor: '#e2263f' },
   // Rubus idaeus and Vaccinium myrtillus: high summer.
   raspberry: { species: 'raspberry', label: 'Raspberry', ripens: ['summer'], holds: [],
-    rate: 2, weight: 0.12, evergreen: false, fruitColor: '#cf3a5c' },
+    rate: 2, weight: 0.10, evergreen: false, fruitColor: '#cf3a5c' },
   bilberry: { species: 'bilberry', label: 'Bilberry', ripens: ['summer'], holds: [],
-    rate: 2, weight: 0.12, evergreen: false, fruitColor: '#3b4a8c' },
+    rate: 2, weight: 0.10, evergreen: false, fruitColor: '#3b4a8c' },
   // Rubus fruticosus: August to October. Brambles keep most of their leaves.
   bramble: { species: 'bramble', label: 'Bramble', ripens: ['summer', 'autumn'], holds: [],
-    rate: 1.35, weight: 0.18, evergreen: true, fruitColor: '#2b2033' },
+    rate: 1.35, weight: 0.16, evergreen: true, fruitColor: '#2b2033' },
   // Rosa canina: hips ripen in autumn and hang on the bare canes until spring.
   rosehip: { species: 'rosehip', label: 'Dog rose', ripens: ['autumn'], holds: ['winter', 'spring'],
     rate: 4, weight: 0.14, evergreen: false, fruitColor: '#d2502a' },
   // Prunus spinosa: sloes ripen in autumn and are best after the first frosts.
   sloe: { species: 'sloe', label: 'Blackthorn', ripens: ['autumn'], holds: ['winter'],
-    rate: 4, weight: 0.12, evergreen: false, fruitColor: '#4c5a8a' },
+    rate: 4, weight: 0.10, evergreen: false, fruitColor: '#4c5a8a' },
   // Arbutus unedo: an evergreen that flowers and fruits from October into the
   // winter — the one plant here still ripening fruit in the cold.
   strawberry_tree: { species: 'strawberry_tree', label: 'Strawberry tree', ripens: ['autumn', 'winter'], holds: [],
-    rate: 2, weight: 0.10, evergreen: true, fruitColor: '#e0602a' },
+    rate: 2, weight: 0.08, evergreen: true, fruitColor: '#e0602a' },
 };
 
 export type BushPhase = 'ripens' | 'holds' | 'bare';
