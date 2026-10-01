@@ -645,6 +645,8 @@ export class Person {
    * brawl really is a rapid exchange.
    */
   socialCooldownUntil = 0;
+  /** Rejected requests for a specific project/helper pair, keyed as `siteId:personId`. */
+  readonly proposalCooldowns = new Map<string, number>();
   /** Bandmates already asked during a water search; bounds questions per episode. */
   readonly waterQuestionAttempts = new Set<number>();
   /**

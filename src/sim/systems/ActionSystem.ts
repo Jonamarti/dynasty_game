@@ -540,6 +540,7 @@ const GOSSIP_TICKS = 14;
 
 /** Ticks before a person will deliberately approach anyone again. */
 const SOCIAL_COOLDOWN = 220;
+const REJECTED_PROPOSAL_COOLDOWN_DAYS = 3;
 
 /**
  * Fatigue restored per tick of real sleep.
@@ -2923,6 +2924,11 @@ export class ActionSystem {
     } else {
       telemetry.count('project_request_refused');
       ctx.onInsight(sponsor, message, 'setback');
+      // The ordinary social cooldown only delays another approach briefly.
+      // A refusal leaves the same project and pair eligible, so without this
+      // the sponsor asks the same person again as soon as that timer expires.
+      person.proposalCooldowns.set(`${site.id}:${listener.id}`,
+        ctx.day + REJECTED_PROPOSAL_COOLDOWN_DAYS);
     }
     listener.socialCooldownUntil = ctx.tick + SOCIAL_COOLDOWN;
     person.practice('persuade', 0.3);

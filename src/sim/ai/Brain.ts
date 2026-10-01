@@ -1355,7 +1355,8 @@ export class Brain {
         for (const project of projects) {
           for (const listener of neighbours) {
             if (listener.isChild || listener.bandId !== person.bandId ||
-                listener.id === person.id || project.backers.includes(listener.id)) continue;
+                listener.id === person.id || project.backers.includes(listener.id) ||
+                (person.proposalCooldowns.get(`${project.id}:${listener.id}`) ?? 0) > ctx.time.day) continue;
             const supportNow = support(listener, person, project, {
               relationships: ctx.relationships,
               chiefByBand: ctx.chiefByBand,

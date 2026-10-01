@@ -1,10 +1,5 @@
 #
-## 2026-10-01 — Recuerdos visuales y pausa ante una petición rechazada
-
-La niebla de guerra conserva ahora el estado visible del árbol (tamaño, hojas y
-fruta) y la apariencia básica de las personas que el observador vio. Al salir
-del campo de visión, esos recuerdos se dibujan con el mismo arte del juego,
-sombreados por el velo y sin consultar el estado actual de la entidad.
+## 2026-10-01 — Pausa ante una petición de ayuda rechazada
 
 `propose` pide apoyo para un edificio; el cortejo matrimonial es `court`. Una
 negativa dejaba al mismo par proyecto-colaborador disponible tras la pausa
