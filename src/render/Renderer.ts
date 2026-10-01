@@ -19,7 +19,7 @@ import type { World } from '../sim/core/World.ts';
 import { BIOMES, type Biome } from '../sim/core/World.ts';
 import type { Season } from '../sim/core/TimeManager.ts';
 import { WAYPOINT_AIM } from '../sim/systems/MovementSystem.ts';
-import type { ResourceKind, ResourceNode } from '../sim/entities/ResourceNode.ts';
+import { BUSH_SPECIES, BUSHES, type BushSpecies, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
 import type { Building } from '../sim/entities/Building.ts';
@@ -869,6 +869,13 @@ export class Renderer {
     }
     if (place.kind === 'water') {
       ctx.fillStyle = '#65aeca'; ctx.beginPath(); ctx.ellipse(x, y, size * 0.85, size * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (place.visual?.type === 'bush') {
+      // As it was seen: in leaf or bare, with fruit or without, whatever the
+      // season is now (owner, 2026-10-01).
+      const species = (BUSH_SPECIES as readonly string[]).includes(place.visual.species)
+        ? place.visual.species as BushSpecies : null;
+      this.drawBush(x, y, TILE * 0.23 * 1.8, place.amount === 2 ? 'full' : place.amount === 1 ? 'picked' : 'spent',
+        species, place.visual.leafless, ctx);
     } else if (place.kind.startsWith('resource:')) {
       this.drawRememberedResource(place.kind.slice('resource:'.length), place.amount, ctx, x, y);
     } else if (place.kind.startsWith('fruit:')) {
@@ -1035,6 +1042,52 @@ export class Renderer {
    * of the three constants in `NODE_SIZES` that `hitRadiusOf`'s `'node'` case
    * reads, so what is painted and what is clickable cannot drift apart.
    */
+  /**
+   * A berry bush: the shrub first and always, then its fruit on it. What a
+   * stripped bush loses is its fruit, not its size (the owner's note), and
+   * since M15 phase 20 the fruit is its species' own colour and a deciduous
+   * shrub stands leafless in winter — so the hips on a bare dog rose read as
+   * the winter food they are. Shared with the fog, which draws a remembered
+   * bush as it was seen.
+   */
+  private drawBush(px: number, py: number, size: number, state: NodeState,
+    species: BushSpecies | null, leafless: boolean, ctx = this.ctx): void {
+    const canes = (): void => {
+      ctx.strokeStyle = SPENT_COLORS.twig;
+      ctx.lineWidth = Math.max(1, size * 0.08);
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(px, py + size * 0.42);
+        ctx.quadraticCurveTo(px + i * size * 0.3, py, px + i * size * 0.44, py - size * 0.42);
+        ctx.stroke();
+      }
+    };
+    const def = species === null ? null : BUSHES[species];
+    if (state === 'spent' && (leafless || !def?.evergreen)) {
+      // Bare bramble: three canes out of a common root and no mass at all.
+      canes();
+      return;
+    }
+    if (leafless) canes();
+    else {
+      ctx.fillStyle = species === 'strawberry_tree' ? '#355a33' : BUSH_LEAF;
+      ctx.beginPath();
+      // A wild strawberry is a low plant, not a shrub.
+      ctx.ellipse(px, py + (species === 'strawberry' ? size * 0.12 : 0), size * 0.46,
+        size * (species === 'strawberry' ? 0.28 : 0.42), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (state === 'spent') return;
+    ctx.fillStyle = def?.fruitColor ?? RESOURCE_COLORS.berries;
+    const berries = state === 'full' ? 5 : 2;
+    for (let i = 0; i < berries; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(px + Math.cos(a) * size * 0.3, py + Math.sin(a) * size * 0.3, size * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   private drawNode(node: ResourceNode, selected: boolean): void {
     const { ctx, camera } = this;
     const scale = camera.scale;
@@ -1121,33 +1174,9 @@ export class Renderer {
         break;
       }
       case 'berries': {
-        // The bush is drawn first and always, and the fruit is drawn on it.
-        // That is the owner's note in one shape: what a stripped bush loses is
-        // its berries, not its size.
-        if (spent) {
-          // Bare bramble: three canes out of a common root and no mass at all.
-          ctx.strokeStyle = SPENT_COLORS.twig;
-          ctx.lineWidth = Math.max(1, size * 0.08);
-          for (let i = -1; i <= 1; i++) {
-            ctx.beginPath();
-            ctx.moveTo(px, py + size * 0.42);
-            ctx.quadraticCurveTo(px + i * size * 0.3, py, px + i * size * 0.44, py - size * 0.42);
-            ctx.stroke();
-          }
-          break;
-        }
-        ctx.fillStyle = BUSH_LEAF;
-        ctx.beginPath();
-        ctx.ellipse(px, py, size * 0.46, size * 0.42, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = RESOURCE_COLORS.berries;
-        const berries = state === 'full' ? 5 : 2;
-        for (let i = 0; i < berries; i++) {
-          const a = (i / 5) * Math.PI * 2;
-          ctx.beginPath();
-          ctx.arc(px + Math.cos(a) * size * 0.3, py + Math.sin(a) * size * 0.3, size * 0.15, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        const leafless = node.species !== null && !BUSHES[node.species].evergreen &&
+          this.sim.time.season === 'winter';
+        this.drawBush(px, py, size, state, node.species, leafless);
         break;
       }
       case 'wild_grain': {

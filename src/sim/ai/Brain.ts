@@ -82,6 +82,7 @@ import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { cryOf, infantNeedingNursing } from './Nursing.ts';
+import type { PlaceRecord } from '../social/PlaceMemory.ts';
 import { CHILD_FEED_AT, feederRole, starvingInCare } from './Feeding.ts';
 import { canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
 import { expectationRatio, techAppeal } from './Beliefs.ts';
@@ -3989,8 +3990,18 @@ export class Brain {
         telemetry.count('remembered_node_out_of_season');
         continue;
       }
-      const accepts = (memory: { x: number; y: number; amount: number }) => memory.amount > 0 &&
-        ctx.world.sameRegion(person.x, person.y, memory.x, memory.y);
+      // And a bush is judged by its species, which was seen with it: the
+      // raspberries are passed over in winter by somebody who has learned so,
+      // the sloes by the same stream are not.
+      const season = ctx.time.season;
+      const accepts = (memory: PlaceRecord) => {
+        if (memory.amount <= 0 || !ctx.world.sameRegion(person.x, person.y, memory.x, memory.y)) return false;
+        if (memory.visual?.type === 'bush' && person.seasonLore.barrenIn(`bush:${memory.visual.species}`, season)) {
+          telemetry.count('remembered_bush_out_of_season');
+          return false;
+        }
+        return true;
+      };
       const reachDistance = anchor
         ? Math.hypot(person.x - anchor.x, person.y - anchor.y) + reach
         : reach;

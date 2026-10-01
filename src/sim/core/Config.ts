@@ -53,6 +53,15 @@ export interface WorldConfig {
    */
   snowBuries: boolean;
   /**
+   * Whether berry bushes are real species that bear in their own seasons
+   * (`ResourceNode.BUSHES`, owner 2026-10-01), or the old generic bush that
+   * set fruit from spring to autumn and kept it through the winter. Default
+   * on; off is the ablation every before-and-after measurement needs. The
+   * species are drawn either way, on their own stream, so the two worlds are
+   * the same island.
+   */
+  bushSeasons: boolean;
+  /**
    * Multiplier on every resource count above (`berryBushes` through
    * `wildGrainPatches`, and `gameHerds`) at world generation.
    *
@@ -422,6 +431,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     treeDensity: 0.55,
     regrowthRate: 1,
     snowBuries: true,
+    bushSeasons: true,
     resourceScale: 1,
   },
   time: {

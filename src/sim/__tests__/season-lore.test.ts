@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SeasonLore, BARE_YEARS_TO_LEARN } from '../knowledge/SeasonLore.ts';
 import { Simulation } from '../core/Simulation.ts';
 import type { Person } from '../entities/Person.ts';
+import { BUSHES, bushPhase, ResourceNode } from '../entities/ResourceNode.ts';
 
 /**
  * M15 phase 20, the owner's answer of 2026-09-30: with plant lore, people
@@ -47,20 +48,43 @@ function world(seed: string, sightRadius = 60) {
   return sim;
 }
 
-describe('bushes in winter', () => {
-  it('are learned about, with plant lore, by watching them come up bare', { timeout: 60000 }, () => {
+describe('bush species and their seasons', () => {
+  it('ripen, hold and go bare in their own seasons', () => {
+    const sim = world('bush-seasons');
+    const bushes = sim.nodes.filter(n => n.kind === 'berries');
+    expect(bushes.length).toBeGreaterThan(0);
+    expect(bushes.every(n => n.species !== null)).toBe(true);
+    for (let day = 0; day < sim.time.daysPerYear; day++) {
+      for (let i = 0; i < sim.config.time.ticksPerDay; i++) sim.step();
+      const season = sim.time.season;
+      // Out of season every bush is bare; nothing out of season ever regrows.
+      for (const bush of bushes) {
+        if (bushPhase(bush.species!, season) === 'bare') expect(bush.amount).toBe(0);
+      }
+    }
+    // A sloe left alone keeps its autumn fruit into the winter.
+    const sloe = new ResourceNode('berries', 0, 0, { range: () => 1 } as never);
+    sloe.species = 'sloe';
+    sloe.amount = 7;
+    sloe.regrow(2400, 0, 1, 'winter');
+    expect(sloe.amount).toBe(7);
+    sloe.regrow(20, 0, 1, 'autumn');
+    expect(sloe.amount).toBeGreaterThan(7);
+  });
+
+  it('are learned about species by species, with plant lore, by watching', { timeout: 60000 }, () => {
     const sim = world('bare-learn');
     const person = sim.livingPeople()[0]! as Person;
     person.knownTech.add('plant_lore');
-    // Two years with the whole island in sight, stripped every winter: a
-    // bush keeps what it has into winter in this world, so a band that has
-    // not picked it clean is still shown berries and learns nothing.
-    for (let i = 0; i < sim.time.daysPerYear * 2 * sim.config.time.ticksPerDay + 10; i++) {
-      if (sim.time.season === 'winter') for (const n of sim.nodes) if (n.kind === 'berries') n.amount = 0;
-      sim.step();
+    for (let i = 0; i < sim.time.daysPerYear * 2 * sim.config.time.ticksPerDay + 10; i++) sim.step();
+    const species = [...new Set(sim.nodes.filter(n => n.kind === 'berries').map(n => n.species!))];
+    const learned = species.filter(kind => BUSHES[kind].ripens.length + BUSHES[kind].holds.length < 4);
+    expect(learned.length).toBeGreaterThan(0);
+    for (const kind of learned) {
+      const bare = (['spring', 'summer', 'autumn', 'winter'] as const).filter(s => bushPhase(kind, s) === 'bare');
+      for (const season of bare) expect(person.seasonLore.barrenIn(`bush:${kind}`, season)).toBe(true);
+      expect(person.seasonLore.barrenIn(`bush:${kind}`, BUSHES[kind].ripens[0]!)).toBe(false);
     }
-    expect(person.seasonLore.barrenIn('resource:berries', 'winter')).toBe(true);
-    expect(person.seasonLore.barrenIn('resource:berries', 'summer')).toBe(false);
     const other = sim.livingPeople().find(p => !p.knownTech.has('plant_lore'));
     if (other) expect(other.seasonLore.learnedKinds()).toEqual([]);
   });

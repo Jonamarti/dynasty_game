@@ -13,7 +13,7 @@ import { Camera } from './render/Camera.ts';
 import { Renderer, hitRadiusOf, nodeIsHidden, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
 import { ArtAtlas } from './render/ArtAtlas.ts';
 import { actionLabel, stopReasonLabel } from './render/Floaters.ts';
-import { Hud, corpseTitle, type Selection } from './ui/Hud.ts';
+import { Hud, corpseTitle, nodeName, type Selection } from './ui/Hud.ts';
 import { RadialMenu } from './ui/RadialMenu.ts';
 import { EntityPicker, type PickerEntry } from './ui/EntityPicker.ts';
 import { QuantityPicker } from './ui/QuantityPicker.ts';
@@ -30,7 +30,7 @@ import {
   configFrom, defaultSettings, loadAutonomy, loadFogOfWar, loadLanguage, loadSettings, saveAutonomy, saveFogOfWar, saveSettings,
 } from './ui/SettingsStore.ts';
 import { AUTONOMY_LABELS, nextAutonomy, type Autonomy } from './sim/ai/Autonomy.ts';
-import { t, tc, setLanguage, language, onLanguageChange } from './i18n/i18n.ts';
+import { t, setLanguage, language, onLanguageChange } from './i18n/i18n.ts';
 import { TUNABLES, readPath, valuesFor } from './sim/core/Difficulty.ts';
 import {
   availableActions, type ActionOption, type ActionTarget,
@@ -988,7 +988,7 @@ function describeCandidate(observer: Person, target: ActionTarget): string {
     case 'person':
       return knowledgeOfPerson(observer, target.person!, sim.relationships).displayName;
     case 'node':
-      return tc('node', target.node!.kind) + ' — ' + knowledgeOfNode(observer, target.node!).estimate;
+      return nodeName(target.node!) + ' — ' + knowledgeOfNode(observer, target.node!).estimate;
     case 'tree':
       return t(target.tree!.def.label) + ' — ' + knowledgeOfTree(observer, target.tree!).estimate;
     case 'animal':
@@ -1475,7 +1475,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
   const title =
     target.kind === 'person'
       ? knowledgeOfPerson(actor, target.person!, sim.relationships).displayName :
-    target.kind === 'node' ? tc('node', target.node!.kind) :
+    target.kind === 'node' ? nodeName(target.node!) :
     target.kind === 'building' ? t(target.building!.def.label) :
     target.kind === 'tree' ? t(target.tree!.def.label) :
     target.kind === 'animal' ? t(target.animal!.label) :

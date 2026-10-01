@@ -282,6 +282,8 @@ export const ES_HUD: Record<string, string> = {
   "node|fish": "peces",
   "node|wild_grain": "cereal silvestre",
   "Berry bush": "Arbusto de bayas",
+  "Bears in its own seasons. Known to bear nothing in: {seasons}.": "Da fruto en sus propias estaciones. Se sabe que no da nada en: {seasons}.",
+  "Bears in its own seasons, and nobody here has watched it long enough to say which.": "Da fruto en sus propias estaciones, y nadie aquí lo ha observado lo bastante para saber cuáles.",
   "Flint outcrop": "Afloramiento de sílex",
   "Fallen wood": "Leña caída",
   "Reed bed": "Juncal",

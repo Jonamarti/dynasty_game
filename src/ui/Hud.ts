@@ -24,7 +24,7 @@ import { stageOf, type Corpse, type CorpseStage } from '../sim/entities/Corpse.t
 import { isHeld, isBound } from '../sim/social/Defence.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
-import type { ResourceKind, ResourceNode } from '../sim/entities/ResourceNode.ts';
+import { BUSHES, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
 import { isStructure, type Building, type BuildingDef } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
@@ -1543,7 +1543,7 @@ export class Hud {
     const rows: string[] = [];
 
     rows.push('<div class="hud-name">' +
-      escapeHtml(t(NODE_LABELS[node.kind])) + '</div>');
+      escapeHtml(node.species !== null ? nodeName(node) : t(NODE_LABELS[node.kind])) + '</div>');
     rows.push('<div class="hud-sub">' + escapeHtml(tc('biome', sim.world.biomeAt(node.x, node.y))) +
       ' · ' + node.x + ',' + node.y + '</div>');
     rows.push('<div class="hud-known">' + escapeHtml(known.because) + '</div>');
@@ -1560,10 +1560,20 @@ export class Hud {
     }
 
     rows.push('<div class="hud-section">' + t('Regrowth') + '</div>');
+    // A bush's seasons are told as far as the observer has learned them by
+    // watching (`SeasonLore`), never from the species table: when a shrub
+    // bears is knowledge, not a label.
+    const barren = node.species !== null ? observer.seasonLore.barrenSeasons(`bush:${node.species}`) : [];
     rows.push('<div class="hud-sub">' +
       (node.def.regrowPerTick === 0
         ? t('Does not come back. Once it is gone, it is gone.')
-        : t('Recovers with the seasons — barely at all in winter.')) + '</div>');
+        : node.species === null
+          ? t('Recovers with the seasons — barely at all in winter.')
+          : barren.length > 0
+            ? t('Bears in its own seasons. Known to bear nothing in: {seasons}.', {
+              seasons: barren.map(season => tc('season', season)).join(', ') })
+            : t('Bears in its own seasons, and nobody here has watched it long enough to say which.')) +
+      '</div>');
     return rows;
   }
 
@@ -1899,6 +1909,15 @@ export class Hud {
   }
 }
 
+/**
+ * What a node is called on screen: a berry bush by its species once it has
+ * one (M15 phase 20) — "Blackthorn", not "Berry bush" — and anything else by
+ * its kind. One reading for the panel, the title and the picker.
+ */
+export function nodeName(node: ResourceNode): string {
+  return node.species !== null ? t(BUSHES[node.species].label) : tc('node', node.kind);
+}
+
 // Typed over `ResourceKind`, not a plain `Record<string, string>` — a new
 // resource kind now fails the build here the same way it already fails
 // `RESOURCE_COLORS` in Renderer.ts, rather than silently printing its raw id.
@@ -1946,7 +1965,7 @@ function panelTitle(observer: Person, selection: Selection, sim: Simulation): st
       const known = knowledgeOfPerson(observer, selection.person, sim.relationships);
       return known.knowsName ? selection.person.fullName : known.displayName;
     }
-    case 'node': return tc('node', selection.node.kind);
+    case 'node': return nodeName(selection.node);
     case 'building': return t(selection.building.def.label);
     case 'tree': return t(selection.tree.def.label);
     case 'pile': return t('Dropped goods');

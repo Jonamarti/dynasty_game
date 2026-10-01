@@ -635,7 +635,8 @@ export class SocialSystem {
         Math.floor(other.x / 4) === Math.floor(place.x / 4) &&
         Math.floor(other.y / 4) === Math.floor(place.y / 4));
       if (known && known.day >= place.day) continue;
-      listener.placeMemory.remember(place.kind, place.x, place.y, place.day, place.amount, 'told');
+      // What it was is told with where it was: "the sloes by the stream".
+      listener.placeMemory.remember(place.kind, place.x, place.y, place.day, place.amount, 'told', place.visual);
       telemetry.count(place.kind === 'water' ? 'water_place_told' : 'food_place_told');
       return;
     }

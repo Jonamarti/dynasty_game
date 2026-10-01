@@ -22,7 +22,10 @@ import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
 import { ADULT_YEARS, Person, resetPersonIds } from '../entities/Person.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
-import { ResourceNode, resetResourceIds, isFoodKind, isPlantFood, type ResourceKind } from '../entities/ResourceNode.ts';
+import {
+  BUSH_SPECIES, BUSHES, bushPhase, ResourceNode, resetResourceIds, isFoodKind, isPlantFood, seasonLoreKind,
+  type BushSpecies, type ResourceKind,
+} from '../entities/ResourceNode.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import { MovementSystem } from '../systems/MovementSystem.ts';
 import { Pathfinder } from './Pathfinder.ts';
@@ -176,6 +179,10 @@ const RESUME_WINDOW = 2000;
  * crying is never ignored for long.
  */
 const CRY_NAG_TICKS = 20;
+/** How far a bush looks for a neighbour to share a species with, in tiles. */
+const FLORA_PATCH_RADIUS = 6;
+/** How often a bush with a planted neighbour is the same shrub. */
+const FLORA_PATCH_SHARE = 0.6;
 
 /**
  * How an order from somebody else is put to the player — M11 phase 13f. Only
@@ -614,6 +621,11 @@ export class Simulation {
     // strangers. Drawn from `spawnRng` beside the norms it belongs with, it
     // would have moved every herd and person after the first band.
     const cultureRng = this.rng.fork();
+    // M15 phase 20 (owner, 2026-10-01), appended after `cultureRng` for the
+    // reason every stream below the named block gives: which species each
+    // berry bush is. Drawn in its own pass after the bushes exist, so every
+    // bush stands where it stood before and only its season is new.
+    const floraRng = this.rng.fork();
 
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
@@ -621,7 +633,45 @@ export class Simulation {
     this.spawnFish(fishRng);
     this.spawnWildGrain(grainRng);
     this.spawnCulture(cultureRng);
+    this.spawnFlora(floraRng);
     this.rebuildHashes();
+  }
+
+  /**
+   * Gives every berry bush a species (`BUSHES`), in patches: a bush near one
+   * already planted is usually the same shrub, as brambles, sloes and wild
+   * strawberries are in a real hedge or clearing. The patches are what make
+   * "the sloes by the stream" a place worth remembering in winter.
+   *
+   * The stream is forked whatever `bushSeasons` says, so `false` is the same
+   * island with the old generic bushes on it.
+   */
+  private spawnFlora(rng: RNG): void {
+    const bushes = this.nodes.filter(node => node.kind === 'berries');
+    const planted = new SpatialHash<ResourceNode>(8);
+    const total = BUSH_SPECIES.reduce((sum, species) => sum + BUSHES[species].weight, 0);
+    const startSeason = this.time.season;
+    for (const bush of bushes) {
+      const neighbour = planted.findNearest(bush.x, bush.y, FLORA_PATCH_RADIUS);
+      const roll = rng.next();
+      let species: BushSpecies;
+      if (neighbour?.species && roll < FLORA_PATCH_SHARE) {
+        species = neighbour.species;
+      } else {
+        let pick = rng.next() * total;
+        species = BUSH_SPECIES[BUSH_SPECIES.length - 1]!;
+        for (const candidate of BUSH_SPECIES) {
+          pick -= BUSHES[candidate].weight;
+          if (pick <= 0) { species = candidate; break; }
+        }
+      }
+      if (!this.config.world.bushSeasons) continue;
+      bush.species = species;
+      planted.insert(bush);
+      // The island opens in some season; a bush that bears nothing in it
+      // starts bare rather than in the fruit it would have dropped.
+      if (bushPhase(species, startSeason) === 'bare') bush.amount = 0;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -3711,7 +3761,8 @@ export class Simulation {
     if (this.time.tick % 20 === 0) {
       const growth = this.time.growth;
       const regrowth = this.config.world.regrowthRate;
-      for (const node of this.nodes) node.regrow(20, growth, regrowth);
+      const season = this.time.season;
+      for (const node of this.nodes) node.regrow(20, growth, regrowth, season);
     }
 
     // Work done side by side, and the talk that goes with it. On a cadence
@@ -3753,6 +3804,13 @@ export class Simulation {
     // thing in the loop, and nothing in the design could tell the difference.
     if (this.time.tick % this.config.time.ticksPerDay === 0) {
       this.snowDepth = advanceSnowDepth(this.snowDepth, this.time.temperature);
+      // M15 phase 20 (owner, 2026-10-01): a bush out of its season is bare —
+      // its crop has fallen and rotted. Every day rather than on the first of
+      // the season, so nothing a regrowth pass set on the boundary survives.
+      const season = this.time.season;
+      for (const node of this.nodes) {
+        if (node.species !== null && node.amount > 0 && bushPhase(node.species, season) === 'bare') node.amount = 0;
+      }
       this.social.dailyUpkeep(this.people);
       this.shareTheHearth();
       // Renown decays far more slowly than an ordinary opinion's `deeds`
@@ -4245,9 +4303,15 @@ export class Simulation {
       for (const node of this.nodeHash.queryRadius(person.x, person.y, radius, this.placeNodeCandidates)) {
         if (!near(node.x, node.y)) continue;
         memory.remember(`resource:${node.kind}`, node.x, node.y, day,
-          node.amount >= node.def.maxAmount * 0.66 ? 2 : node.amount > 0 ? 1 : 0);
+          node.amount >= node.def.maxAmount * 0.66 ? 2 : node.amount > 0 ? 1 : 0, 'seen',
+          node.species === null ? undefined : {
+            type: 'bush', species: node.species,
+            leafless: !BUSHES[node.species].evergreen && this.time.season === 'winter',
+          });
         if (lore && isPlantFood(node.def)) {
-          person.seasonLore.observe(`resource:${node.kind}`, this.time.season, year, node.amount >= 1);
+          // Learned species by species once bushes have them: a sloe in
+          // fruit in winter says nothing about a raspberry.
+          person.seasonLore.observe(seasonLoreKind(node), this.time.season, year, node.amount >= 1);
         }
       }
       for (const tree of this.treeHash.queryRadius(person.x, person.y, radius, this.placeTreeCandidates)) {

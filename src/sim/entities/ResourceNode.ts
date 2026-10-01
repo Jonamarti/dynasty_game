@@ -11,6 +11,7 @@
  * pressure that later makes territory, migration and farming matter.
  */
 import type { RNG } from '../core/RNG.ts';
+import type { Season } from '../core/TimeManager.ts';
 import { ITEMS } from './Item.ts';
 
 // `wild_grain` is appended rather than inserted, and it is spawned in a pass of
@@ -79,6 +80,91 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
   },
 };
 
+/**
+ * What kind of fruiting shrub a berry bush is, M15 phase 20 (owner,
+ * 2026-10-01): real European species, each bearing in its real season, so
+ * that spring, summer, autumn and winter each have their own fruit and winter
+ * has clearly the least.
+ *
+ * A bush used to be one generic plant that set fruit from spring to autumn
+ * and kept it through the winter, so nothing about the year could be learned
+ * by watching it and nothing made a store worth filling. Now:
+ *
+ *  - in a season it `ripens` in, fruit sets (and comes back after picking);
+ *  - in a season it `holds` in, what is on it stays but nothing new sets —
+ *    the hip and the sloe that hang on bare canes through the winter, which is
+ *    what real winter foragers in Europe picked;
+ *  - in any other season it is bare: the crop has fallen and rotted.
+ *
+ * Every species still gives the same food (`berries`): this is about when a
+ * bush bears, not about a new item for every hand and recipe to learn.
+ */
+export const BUSH_SPECIES = [
+  'strawberry', 'raspberry', 'bilberry', 'bramble', 'rosehip', 'sloe', 'strawberry_tree',
+] as const;
+export type BushSpecies = (typeof BUSH_SPECIES)[number];
+
+export interface BushDef {
+  species: BushSpecies;
+  /** English name, translated at the UI boundary. */
+  label: string;
+  ripens: readonly Season[];
+  holds: readonly Season[];
+  /**
+   * Multiplier on `berries`' regrowth while it ripens, so that a year's crop
+   * is about what the old all-season bush set: a species with one short season
+   * sets it fast. Measured as "season-units" of the old curve, which gave
+   * about two a year (half a spring, a summer, half an autumn).
+   */
+  rate: number;
+  /** Relative abundance when the island is planted. */
+  weight: number;
+  /** Keeps its leaves through the winter. */
+  evergreen: boolean;
+  /** The colour of its ripe fruit, for the renderer and the fog. */
+  fruitColor: string;
+}
+
+export const BUSHES: Record<BushSpecies, BushDef> = {
+  // Fragaria vesca: May and June, the one fruit of the spring hungry gap.
+  strawberry: { species: 'strawberry', label: 'Wild strawberry', ripens: ['spring'], holds: [],
+    rate: 3.5, weight: 0.22, evergreen: true, fruitColor: '#d8352a' },
+  // Rubus idaeus and Vaccinium myrtillus: high summer.
+  raspberry: { species: 'raspberry', label: 'Raspberry', ripens: ['summer'], holds: [],
+    rate: 2, weight: 0.12, evergreen: false, fruitColor: '#cf3a5c' },
+  bilberry: { species: 'bilberry', label: 'Bilberry', ripens: ['summer'], holds: [],
+    rate: 2, weight: 0.12, evergreen: false, fruitColor: '#3b4a8c' },
+  // Rubus fruticosus: August to October. Brambles keep most of their leaves.
+  bramble: { species: 'bramble', label: 'Bramble', ripens: ['summer', 'autumn'], holds: [],
+    rate: 1.35, weight: 0.18, evergreen: true, fruitColor: '#2b2033' },
+  // Rosa canina: hips ripen in autumn and hang on the bare canes until spring.
+  rosehip: { species: 'rosehip', label: 'Dog rose', ripens: ['autumn'], holds: ['winter', 'spring'],
+    rate: 4, weight: 0.14, evergreen: false, fruitColor: '#d2502a' },
+  // Prunus spinosa: sloes ripen in autumn and are best after the first frosts.
+  sloe: { species: 'sloe', label: 'Blackthorn', ripens: ['autumn'], holds: ['winter'],
+    rate: 4, weight: 0.12, evergreen: false, fruitColor: '#4c5a8a' },
+  // Arbutus unedo: an evergreen that flowers and fruits from October into the
+  // winter — the one plant here still ripening fruit in the cold.
+  strawberry_tree: { species: 'strawberry_tree', label: 'Strawberry tree', ripens: ['autumn', 'winter'], holds: [],
+    rate: 2, weight: 0.10, evergreen: true, fruitColor: '#e0602a' },
+};
+
+export type BushPhase = 'ripens' | 'holds' | 'bare';
+
+/** What a bush of this species does in this season. */
+export function bushPhase(species: BushSpecies, season: Season): BushPhase {
+  const def = BUSHES[species];
+  return def.ripens.includes(season) ? 'ripens' : def.holds.includes(season) ? 'holds' : 'bare';
+}
+
+/**
+ * The floor under the season's growth while a species ripens: a strawberry in
+ * a cool spring and a strawberry tree in winter still set their fruit, since
+ * that is when they bear. Without it the temperature curve that drives every
+ * other plant would leave winter's one ripening shrub bearing nothing.
+ */
+const RIPENING_FLOOR = 0.5;
+
 let nextNodeId = 1;
 
 export function resetResourceIds(): void {
@@ -92,6 +178,12 @@ export class ResourceNode {
   x: number;
   y: number;
   amount: number;
+  /**
+   * Which shrub a berry bush is (`BUSHES`); null for every other kind, and
+   * for a bush in a world built before species existed — which then behaves
+   * exactly as the old all-season bush did.
+   */
+  species: BushSpecies | null = null;
 
   constructor(kind: ResourceKind, x: number, y: number, rng: RNG) {
     this.id = nextNodeId++;
@@ -115,9 +207,17 @@ export class ResourceNode {
    * storage pit from decoration into the difference between a band that eats in
    * winter and one that does not.
    */
-  regrow(ticks: number, growth: number, multiplier = 1): void {
+  regrow(ticks: number, growth: number, multiplier = 1, season?: Season): void {
     if (this.def.regrowPerTick === 0) return;
     if (this.amount >= this.def.maxAmount) return;
+    if (this.species !== null && season !== undefined) {
+      // A bush sets fruit only in its own season; see `BUSHES`.
+      if (bushPhase(this.species, season) !== 'ripens') return;
+      const def = BUSHES[this.species];
+      this.amount = Math.min(this.def.maxAmount,
+        this.amount + this.def.regrowPerTick * ticks * Math.max(growth, RIPENING_FLOOR) * def.rate * multiplier);
+      return;
+    }
     const rate = Math.max(growth, this.def.winterFloor ?? 0);
     // The multiplier lands on the final term, not on `growth`. Scaling growth
     // would be swallowed by the `winterFloor` clamp on the line above, so
@@ -155,4 +255,12 @@ export function isFoodKind(node: ResourceNode): boolean {
  */
 export function isPlantFood(def: ResourceDef): boolean {
   return def.skill === 'forage' && def.regrowPerTick > 0 && (ITEMS[def.itemId]?.nutrition ?? 0) > 0;
+}
+
+/**
+ * The name `SeasonLore` learns a plant under: its species for a berry bush,
+ * since each shrub bears in its own seasons, and its kind for anything else.
+ */
+export function seasonLoreKind(node: { kind: ResourceKind; species: BushSpecies | null }): string {
+  return node.species !== null ? `bush:${node.species}` : `resource:${node.kind}`;
 }

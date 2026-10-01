@@ -22,6 +22,7 @@ import { BUILDINGS } from '../sim/entities/Building.ts';
 import { INSCRIPTIONS } from '../sim/entities/Inscription.ts';
 import { RECIPES } from '../sim/entities/Recipe.ts';
 import { TREES } from '../sim/entities/Tree.ts';
+import { BUSHES } from '../sim/entities/ResourceNode.ts';
 import { SPECIES_DEFS } from '../sim/entities/Animal.ts';
 import { JOBS } from '../sim/entities/Job.ts';
 import { SKILLS } from '../sim/entities/Person.ts';
@@ -52,6 +53,7 @@ export function dataTableKeys(): string[] {
   for (const def of Object.values(INSCRIPTIONS)) keys.push(def.label, def.description);
   for (const def of Object.values(RECIPES)) keys.push(def.label);
   for (const def of Object.values(TREES)) keys.push(def.label);
+  for (const def of Object.values(BUSHES)) keys.push(def.label);
   for (const def of Object.values(SPECIES_DEFS)) keys.push(def.label);
   for (const def of Object.values(JOBS)) keys.push(def.label);
   for (const skill of SKILLS) keys.push('skill|' + skill);
