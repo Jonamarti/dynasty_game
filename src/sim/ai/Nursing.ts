@@ -38,8 +38,15 @@ export function nurslingHungerFactor(feedsPerDay: number, ticksPerDay: number, h
   return NURSING_HUNGER / between / hungerRate;
 }
 
-/** A short nursing session is frequent care, not a job the mother can abandon halfway. */
-export const NURSE_TICKS = 15;
+/**
+ * A feed: half an hour of game time (ten ticks are an hour), which is what a
+ * real one takes. It was fifteen ticks — an hour and a half — and four of
+ * those a day had a nursing mother spending a quarter of her waking time at
+ * the breast (`npm run infants`, lean, five seeds: `nurse 25%`) while she
+ * starved at 2.7 times a man's rate. Short enough not to need an interruption
+ * check of its own; it is frequent care, not a job she abandons halfway.
+ */
+export const NURSE_TICKS = 5;
 
 /** The assigned home is usable for a baby only when it is a finished shelter. */
 export function homeForMother(
