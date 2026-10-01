@@ -22,7 +22,7 @@ import { WAYPOINT_AIM } from '../sim/systems/MovementSystem.ts';
 import { BUSH_SPECIES, BUSHES, type BushSpecies, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
-import type { Building } from '../sim/entities/Building.ts';
+import { BUILDINGS, type Building } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { TreeSpecies } from '../sim/entities/Tree.ts';
 import { workProgressOf } from '../sim/core/Progress.ts';
@@ -867,6 +867,11 @@ export class Renderer {
       ctx.globalAlpha = 1;
       return;
     }
+    if (place.visual?.type === 'building') {
+      this.drawRememberedBuilding(place.visual, ctx, x, y);
+      ctx.globalAlpha = 1;
+      return;
+    }
     if (place.kind === 'water') {
       ctx.fillStyle = '#65aeca'; ctx.beginPath(); ctx.ellipse(x, y, size * 0.85, size * 0.42, 0, 0, Math.PI * 2); ctx.fill();
     } else if (place.visual?.type === 'bush') {
@@ -881,7 +886,7 @@ export class Renderer {
     } else if (place.kind.startsWith('fruit:')) {
       ctx.fillStyle = '#8da96c'; ctx.beginPath(); ctx.arc(x, y, size * 0.7, 0, Math.PI * 2); ctx.fill();
     } else if (place.kind.startsWith('building:')) {
-      this.drawRememberedBuilding(place.amount, ctx, x, y, size);
+      this.drawRememberedBuildingMarker(place.amount, ctx, x, y, size);
     } else if (place.kind.startsWith('herd:')) {
       this.drawRememberedAnimal(place.kind.slice('herd:'.length), ctx, x, y, size);
     } else if (place.kind.startsWith('pile:')) {
@@ -937,7 +942,32 @@ export class Renderer {
     }
   }
 
-  private drawRememberedBuilding(amount: number, ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
+  private drawRememberedBuilding(visual: Extract<PlaceVisual, { type: 'building' }>, ctx: CanvasRenderingContext2D,
+    x: number, y: number): void {
+    const def = BUILDINGS[visual.id];
+    if (!def || !this.art) {
+      this.drawRememberedBuildingMarker(visual.complete ? 2 : 1, ctx, x, y, TILE * 0.26);
+      return;
+    }
+    const key = 'b/' + visual.id + (visual.complete ? '/ext' : '/plan');
+    const box = this.art.assetBox('buildings', key);
+    if (!box) {
+      this.drawRememberedBuildingMarker(visual.complete ? 2 : 1, ctx, x, y, TILE * 0.26);
+      return;
+    }
+    const manifest = this.art.manifest('buildings');
+    const fw = def.width * TILE;
+    const fh = def.height * TILE;
+    const scale = fw * (visual.complete ? 1.05 : 1) / box.w;
+    const x0 = x + fw / 2 - (box.ox + box.w / 2) * scale;
+    const groundY = manifest.meta[visual.complete ? 'groundY' : 'planGroundY'] as number;
+    const y0 = visual.complete
+      ? y + fh / 2 - groundY * scale
+      : y - (box.oy + box.h / 2) * scale;
+    this.art.drawAsset(ctx, 'buildings', key, x0, y0, scale);
+  }
+
+  private drawRememberedBuildingMarker(amount: number, ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
     ctx.fillStyle = amount === 2 ? '#c9b58d' : '#897d66';
     ctx.beginPath(); ctx.moveTo(x - size * 0.8, y - size * 0.1); ctx.lineTo(x, y - size * 0.8);
     ctx.lineTo(x + size * 0.8, y - size * 0.1); ctx.lineTo(x + size * 0.65, y + size * 0.65);

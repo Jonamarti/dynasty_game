@@ -52,11 +52,11 @@ recuperación (`sim:seeds` lo imprime). Lo que queda:
   bajar `lactationHunger`; que quien aprecia a una madre le lleve comida antes
   de verla morirse (hoy solo al verla a hambre letal); que el almacén se abra
   antes a quien amamanta.
-- **La niebla no borra lo que se vio desaparecer.** Un árbol talado o una pila
-  recogida delante del observador sigue en su memoria y vuelve a dibujarse en
-  cuanto la casilla queda a oscuras. «Tal como se vio la última vez» pide que se
-  borre. Las manadas siguen indexadas por casilla y dejan rastro como lo dejaban
-  las personas.
+- **La niebla conserva recuerdos de cosas que ya no están.** Los edificios ahora
+  se dibujan con el aspecto recordado (plano o terminado), pero un árbol talado
+  o una pila recogida delante del observador sigue en su memoria y vuelve a
+  dibujarse en cuanto la casilla queda a oscuras. Las manadas siguen indexadas
+  por casilla y dejan rastro como lo dejaban las personas.
 
 ## M15 fase 20, segunda ronda: balance a 40 semillas y dos decisiones del propietario (2026-10-01) — decididas
 

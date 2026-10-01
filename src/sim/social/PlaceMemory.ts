@@ -14,6 +14,7 @@ export type RememberedAmount = 0 | 1 | 2;
 export type PlaceVisual =
   | { type: 'tree'; species: string; maturity: number; bare: boolean; autumn: boolean; fruit: number }
   | { type: 'person'; id: number; sex: 'male' | 'female'; age: 'infant' | 'child' | 'adolescent' | 'adult' | 'elder'; bandId: number }
+  | { type: 'building'; id: string; complete: boolean }
   // M15 phase 20: which shrub a berry bush is, and whether it was in leaf.
   // The species is plain to anybody looking at it; when it bears is not, and
   // that is `SeasonLore`'s to learn.
@@ -303,6 +304,9 @@ function sameVisual(a: PlaceVisual | undefined, b: PlaceVisual | undefined): boo
   if (a.type === 'bush' && b.type === 'bush') return a.species === b.species && a.leafless === b.leafless;
   if (a.type === 'person' && b.type === 'person') {
     return a.id === b.id && a.sex === b.sex && a.age === b.age && a.bandId === b.bandId;
+  }
+  if (a.type === 'building' && b.type === 'building') {
+    return a.id === b.id && a.complete === b.complete;
   }
   return false;
 }

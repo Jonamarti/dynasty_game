@@ -1139,6 +1139,7 @@ function showBuildGhost(worldX: number, worldY: number): void {
  */
 const drag = {
   active: false, panning: false, longPressed: false,
+  zoomed: false,
   lastX: 0, lastY: 0, startX: 0, startY: 0,
   button: 0, pointerId: -1, pointerType: '',
 };
@@ -1235,6 +1236,7 @@ canvas.addEventListener('pointerdown', event => {
     drag.active = true;
     drag.panning = event.button === 1;
     drag.longPressed = false;
+    drag.zoomed = false;
     drag.lastX = event.clientX;
     drag.lastY = event.clientY;
     drag.startX = event.clientX;
@@ -1255,32 +1257,11 @@ canvas.addEventListener('pointerdown', event => {
       }, LONG_PRESS_MS);
     }
   }
-  const point = worldPoint(event);
-
-  // --- Build mode: left click places, right click cancels ------------------
+  // --- Build mode: right click cancels ------------------------------------
   if (buildMode && activeDesign) {
     if (event.button === 2) {
       setBuildMode(false);
       return;
-    }
-    const x = Math.round(point.x);
-    const y = Math.round(point.y);
-    const placed = sim.place(activeDesign.id, x, y, sim.player?.bandId ?? 0,
-      sim.player?.id ?? null, true);
-    if (placed) {
-      renderer.floaters.push(placed.centerX, placed.centerY,
-        placed.complete
-          ? t('{building} marked out', { building: t(placed.def.label) })
-          : t('{building} planned', { building: t(placed.def.label) }),
-        { color: '#7ddc96', boxed: true });
-    } else {
-      // "Cannot build there" is the least useful thing a game can say. The
-      // simulation knows which of the three reasons it was — and with the fish
-      // trap there is now a design that can be refused somewhere a hut would
-      // have stood happily.
-      const why = sim.placementRefusal(activeDesign, x, y)
-        ?? t('that cannot be built there');
-      renderer.floaters.push(x, y, why, { color: '#e66464', boxed: true });
     }
     return;
   }
@@ -1317,10 +1298,32 @@ window.addEventListener('pointerup', event => {
   const wasDragging = drag.panning;
   const wasLongPress = drag.longPressed;
   const wasPinching = pinch.used;
+  const wasZoomed = drag.zoomed;
   drag.active = false;
   drag.panning = false;
   drag.pointerId = -1;
-  if (wasDragging || wasLongPress || wasPinching || event.button !== 0) return;
+  if (wasDragging || wasLongPress || wasPinching || wasZoomed || event.button !== 0) return;
+  // A press is also the start of a pan or zoom gesture. Place only after the
+  // shared gesture handler has confirmed that this ended as a plain click.
+  if (buildMode && activeDesign && event.target === canvas) {
+    const point = worldPoint(event);
+    const x = Math.round(point.x);
+    const y = Math.round(point.y);
+    const placed = sim.place(activeDesign.id, x, y, sim.player?.bandId ?? 0,
+      sim.player?.id ?? null, true);
+    if (placed) {
+      renderer.floaters.push(placed.centerX, placed.centerY,
+        placed.complete
+          ? t('{building} marked out', { building: t(placed.def.label) })
+          : t('{building} planned', { building: t(placed.def.label) }),
+        { color: '#7ddc96', boxed: true });
+    } else {
+      const why = sim.placementRefusal(activeDesign, x, y)
+        ?? t('that cannot be built there');
+      renderer.floaters.push(x, y, why, { color: '#e66464', boxed: true });
+    }
+    return;
+  }
   if (buildMode || radial.isOpen || picker.isOpen || graphOpen() || menuOpen()) return;
   if (event.target !== canvas) return;
 
@@ -1369,6 +1372,7 @@ document.addEventListener('contextmenu', event => event.preventDefault());
 
 canvas.addEventListener('wheel', event => {
   event.preventDefault();
+  if (drag.active) drag.zoomed = true;
   // Down to 0.5 so the whole island fits on screen: surveying the land is how
   // you decide where to move a camp.
   camera.zoom = Math.max(0.5, Math.min(5, camera.zoom * (event.deltaY < 0 ? 1.12 : 0.89)));

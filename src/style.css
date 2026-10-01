@@ -1865,18 +1865,18 @@ html, body, #app {
 
   .hud-clock, .hud-stats { white-space: nowrap; }
   .hud-stats { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-  .hud-button { min-height: 36px; padding: 6px 10px; }
+  .hud-button { min-height: 32px; padding: 4px 7px; font-size: 12px; }
   .hud-speed { width: 70px; }
   .hud-speed-label { min-width: 36px; }
   .hud-seg { order: 20; flex: 1 1 100%; }
-  .hud-seg-button { flex: 1; min-height: 36px; padding: 6px 3px; }
+  .hud-seg-button { flex: 1; min-height: 32px; padding: 4px 2px; font-size: 11px; }
   .hud-mobile-tools {
     order: 30;
     display: flex;
     flex: 1 1 100%;
-    gap: 5px;
+    gap: 4px;
   }
-  .hud-mobile-tool { flex: 1; min-width: 0; padding-inline: 4px; }
+  .hud-mobile-tool { flex: 1; min-width: 0; min-height: 30px; padding: 3px 2px; font-size: 11px; }
 
   /* The inspector becomes a bottom sheet instead of consuming nearly the
      entire width while still being laid out as a desktop side panel. */
@@ -1906,11 +1906,18 @@ html, body, #app {
     bottom: calc(max(6px, env(safe-area-inset-bottom)) + 48px);
     left: max(6px, env(safe-area-inset-left));
     max-width: none;
-    max-height: 48dvh;
+    max-height: 24dvh;
     overflow-y: auto;
     transform: none;
+    padding: 6px 8px;
+    border-radius: 7px;
   }
-  .hud-design { width: 104px; min-height: 56px; }
+  .hud-buildbar-title { margin-bottom: 4px; font-size: 9px; }
+  .hud-buildbar-row { gap: 5px; }
+  .hud-design { width: 78px; min-height: 44px; padding: 4px 3px; gap: 1px; font-size: 11px; }
+  .hud-design-icon { font-size: 16px; }
+  .hud-design-name { line-height: 1.1; }
+  .hud-design-cost { font-size: 9px; line-height: 1.1; }
   .hud-commandbar { top: 190px; max-width: calc(100% - 20px); }
 
   .newgame-card, .succession-card, .pausemenu-card, .settings-card {

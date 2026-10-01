@@ -1,4 +1,38 @@
 #
+## 2026-10-01 — Menús móviles, colocación y edificios recordados
+
+En pantallas estrechas, los controles superiores y las opciones de construir y
+fabricar ocupaban demasiada altura. Se redujeron sus botones, tarjetas e
+iconos para dejar más mapa visible. La colocación ahora ocurre al soltar un
+clic confirmado: arrastrar el mapa o hacer zoom ya no marca una obra. La niebla
+recuerda si un edificio se vio como plano o terminado y dibuja ese aspecto con
+el arte del edificio en vez de un icono genérico.
+
+## 2026-10-01 — M15 fase 21f: la ropa protege
+
+`ItemDef.armour` (un solo número) pasa a `ItemDef.protects`, un número por parte
+del cuerpo, y `doAttack` tira primero la parte (`healthRng`, el mismo dado de
+siempre) y descuenta la protección *de esa parte* (`Tech.protectionOf`). Solo
+cuenta la mejor prenda por parte, como antes. La armadura de piel protege torso
+0,5, brazos 0,25, piernas 0,2 y deja la cabeza al aire: promediada sobre dónde
+caen los golpes (`Body.strikeShare`) vuelve a dar el 0,3 de antes, así que no
+cambia cuánto protege en conjunto, solo dónde. El abrigo de piel, hecho para el
+frío, desvía algo (torso 0,2, brazos 0,12, piernas 0,06). `armourOf` se queda
+como la media para quien no tiene parte a mano (sin `healthRng`). Telemetría
+`blow_armoured` y `armour_turned_health`. Ninguna prenda protege del todo
+(`combat.test.ts`).
+
+**Lo que NO está:** «las prendas de la fase 14». La ropa por capas no existe
+aún (solo hay cinco huecos de equipo y las prendas se llevan en el inventario),
+así que protegen las dos piezas que hay; cuando la 14 declare camisa, pantalón,
+capa y casco, cada una trae su `protects` y el lector ya está. El casco es lo
+que cubriría la cabeza, que hoy ningún objeto protege.
+
+Medido: solo `body.test.ts` y `combat.test.ts` (un golpe de la misma semilla
+cuesta menos a quien lleva la armadura y lo mismo si cae en la cabeza). Los
+golpes entre pueblos son unos 46 en diez mundos `century`, así que ninguna
+medida de supervivencia diría nada; se anota en vez de simular que lo dice.
+
 ## 2026-10-01 — M15 fase 22: la comida cruda enferma
 
 La carne y el pescado crudos tienen cada uno su probabilidad de intoxicar
