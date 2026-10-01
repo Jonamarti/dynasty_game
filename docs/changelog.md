@@ -1,4 +1,13 @@
 #
+## 2026-10-01 — Recuerdos visuales bajo la niebla de guerra
+
+La memoria del observador guarda la especie, el tamaño, las hojas y la fruta
+que tenía cada árbol, además de edad, sexo y banda de las personas vistas.
+Fuera del campo de visión, árboles y NPC se dibujan con el arte del juego desde
+esos datos recordados; recursos, edificios, animales y pilas también tienen
+formas reconocibles en vez de cuadrados. El velo sigue sombreando todos los
+recuerdos y el renderizador no consulta la entidad viva.
+
 ## 2026-10-01 — Pausa ante una petición de ayuda rechazada
 
 `propose` pide apoyo para un edificio; el cortejo matrimonial es `court`. Una

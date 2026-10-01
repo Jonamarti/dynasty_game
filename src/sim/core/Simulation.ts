@@ -19,7 +19,7 @@ import { SPENT_BELOW, isGroundSpent } from './Soil.ts';
 import { SpatialHash } from './SpatialHash.ts';
 import { telemetry } from './Telemetry.ts';
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
-import { Person, resetPersonIds } from '../entities/Person.ts';
+import { ADULT_YEARS, Person, resetPersonIds } from '../entities/Person.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import { ResourceNode, resetResourceIds, isFoodKind, isPlantFood, type ResourceKind } from '../entities/ResourceNode.ts';
@@ -4230,7 +4230,11 @@ export class Simulation {
       for (const tree of this.treeHash.queryRadius(person.x, person.y, radius, this.placeTreeCandidates)) {
         if (tree.standing && near(tree.x, tree.y)) {
           memory.remember(tree.def.fruitItem ? `fruit:${tree.def.fruitItem}` : 'tree', tree.x, tree.y, day,
-            tree.fruit > 0 ? 2 : 1);
+            tree.fruit > 0 ? 2 : 1, 'seen', {
+              type: 'tree', species: tree.def.species, maturity: tree.maturity,
+              bare: tree.def.species !== 'pine' && this.time.season === 'winter',
+              autumn: tree.def.species !== 'pine' && this.time.season === 'autumn', fruit: tree.fruit,
+            });
         }
       }
       for (const shore of this.shoreHash.queryRadius(person.x, person.y, radius, this.placeShoreCandidates)) {
@@ -4248,7 +4252,12 @@ export class Simulation {
     }
     for (const other of this.peopleHash.queryRadius(person.x, person.y, radius, this.placePeopleCandidates)) {
       if (other.id !== person.id && other.alive && near(other.x, other.y)) {
-        memory.remember('person', other.x, other.y, day, 2);
+        const years = other.years;
+        const age = other.isElder ? 'elder' : years < 3 ? 'infant' : years < 8 ? 'child' :
+          years < ADULT_YEARS ? 'adolescent' : 'adult';
+        memory.remember('person', other.x, other.y, day, 2, 'seen', {
+          type: 'person', id: other.id, sex: other.sex, age, bandId: other.bandId,
+        });
         this.noticeStarving(person, other);
       }
     }

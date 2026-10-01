@@ -10,6 +10,11 @@ import { SpatialHash } from '../core/SpatialHash.ts';
 export type PlaceSource = 'seen' | 'told';
 export type RememberedAmount = 0 | 1 | 2;
 
+/** Visual facts visible to the observer, kept apart from private entity state. */
+export type PlaceVisual =
+  | { type: 'tree'; species: string; maturity: number; bare: boolean; autumn: boolean; fruit: number }
+  | { type: 'person'; id: number; sex: 'male' | 'female'; age: 'infant' | 'child' | 'adolescent' | 'adult' | 'elder'; bandId: number };
+
 export interface PlaceRecord {
   kind: string;
   x: number;
@@ -17,6 +22,7 @@ export interface PlaceRecord {
   day: number;
   amount: RememberedAmount;
   source: PlaceSource;
+  visual?: PlaceVisual;
 }
 
 export const PLACE_CELL_SIZE = 4;
@@ -94,7 +100,7 @@ export class PlaceMemory {
   /** Store that a place was seen. A revisit replaces its old state in that cell. */
   remember(
     kind: string, x: number, y: number, day: number, amount: RememberedAmount,
-    source: PlaceSource = 'seen',
+    source: PlaceSource = 'seen', visual?: PlaceVisual,
   ): void {
     const records = this.places.get(kind) ?? new Map<number, PlaceRecord>();
     const cellX = Math.floor(x / PLACE_CELL_SIZE);
@@ -103,10 +109,11 @@ export class PlaceMemory {
     const safeDay = this.safeDay(day);
     const previous = records.get(cellKey);
     if (previous && previous.x === x && previous.y === y && previous.day === safeDay &&
-        previous.amount === amount && previous.source === source) return;
+        previous.amount === amount && previous.source === source && sameVisual(previous.visual, visual)) return;
     const record: PlaceRecord = {
       kind, x, y, day: safeDay, amount, source,
     };
+    if (visual) record.visual = { ...visual };
     if (previous) this.setRecord(records, cellKey, record);
     else {
       // Water is the one place a person never forgets. It is also bounded by
@@ -272,4 +279,17 @@ export class PlaceMemory {
     this.allPlacesHash.remove(previous);
     this.indexAvailability(kind, key, { ...previous, amount: 0 });
   }
+}
+
+function sameVisual(a: PlaceVisual | undefined, b: PlaceVisual | undefined): boolean {
+  if (!a || !b) return a === b;
+  if (a.type !== b.type) return false;
+  if (a.type === 'tree' && b.type === 'tree') {
+    return a.species === b.species && a.maturity === b.maturity && a.bare === b.bare &&
+      a.autumn === b.autumn && a.fruit === b.fruit;
+  }
+  if (a.type === 'person' && b.type === 'person') {
+    return a.id === b.id && a.sex === b.sex && a.age === b.age && a.bandId === b.bandId;
+  }
+  return false;
 }

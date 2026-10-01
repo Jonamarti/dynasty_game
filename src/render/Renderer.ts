@@ -14,7 +14,7 @@ import type { Simulation } from '../sim/core/Simulation.ts';
 import { Interpolator, type Placed } from './Interpolator.ts';
 import type { Inscription } from '../sim/entities/Inscription.ts';
 import type { Person } from '../sim/entities/Person.ts';
-import type { PlaceRecord } from '../sim/social/PlaceMemory.ts';
+import type { PlaceRecord, PlaceVisual } from '../sim/social/PlaceMemory.ts';
 import type { World } from '../sim/core/World.ts';
 import { BIOMES, type Biome } from '../sim/core/World.ts';
 import type { Season } from '../sim/core/TimeManager.ts';
@@ -857,14 +857,33 @@ export class Renderer {
   /** A map marker is deliberately generic: a stale memory is not the live thing. */
   private drawRememberedPlace(place: PlaceRecord, ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
     ctx.globalAlpha = place.source === 'told' ? 0.48 : 0.68;
-    if (place.kind === 'water') ctx.fillStyle = '#65aeca';
-    else if (place.kind.startsWith('resource:')) ctx.fillStyle = place.amount === 0 ? '#928b79' : '#d5b45f';
-    else if (place.kind.startsWith('fruit:') || place.kind === 'tree') ctx.fillStyle = '#8da96c';
-    else if (place.kind.startsWith('building:')) ctx.fillStyle = '#c9b58d';
-    else if (place.kind.startsWith('herd:')) ctx.fillStyle = '#d7cbb2';
-    else if (place.kind === 'person') ctx.fillStyle = '#d9c7b4';
-    else ctx.fillStyle = '#b18c5b';
-    ctx.fillRect(x - size / 2, y - size / 2, size, size);
+    if (place.visual?.type === 'tree') {
+      this.drawRememberedTree(place.visual, ctx, x, y);
+      ctx.globalAlpha = 1;
+      return;
+    }
+    if (place.visual?.type === 'person') {
+      this.drawRememberedPerson(place.visual, ctx, x, y);
+      ctx.globalAlpha = 1;
+      return;
+    }
+    if (place.kind === 'water') {
+      ctx.fillStyle = '#65aeca'; ctx.beginPath(); ctx.ellipse(x, y, size * 0.85, size * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (place.kind.startsWith('resource:')) {
+      this.drawRememberedResource(place.kind.slice('resource:'.length), place.amount, ctx, x, y);
+    } else if (place.kind.startsWith('fruit:')) {
+      ctx.fillStyle = '#8da96c'; ctx.beginPath(); ctx.arc(x, y, size * 0.7, 0, Math.PI * 2); ctx.fill();
+    } else if (place.kind.startsWith('building:')) {
+      this.drawRememberedBuilding(place.amount, ctx, x, y, size);
+    } else if (place.kind.startsWith('herd:')) {
+      this.drawRememberedAnimal(place.kind.slice('herd:'.length), ctx, x, y, size);
+    } else if (place.kind.startsWith('pile:')) {
+      ctx.fillStyle = '#9b7950'; ctx.beginPath(); ctx.ellipse(x, y + size * 0.08, size * 0.85, size * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c1a276'; ctx.beginPath(); ctx.ellipse(x, y - size * 0.12, size * 0.53, size * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = '#b18c5b'; ctx.beginPath(); ctx.moveTo(x, y - size * 0.7); ctx.lineTo(x + size * 0.7, y);
+      ctx.lineTo(x, y + size * 0.7); ctx.lineTo(x - size * 0.7, y); ctx.closePath(); ctx.fill();
+    }
     if (place.amount === 0) {
       ctx.strokeStyle = 'rgba(20, 22, 25, 0.8)';
       ctx.lineWidth = Math.max(1, size * 0.16);
@@ -874,6 +893,123 @@ export class Renderer {
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
+  }
+
+  private drawRememberedResource(kind: string, amount: number, ctx: CanvasRenderingContext2D, x: number, y: number): void {
+    const scale = TILE * 0.23;
+    const depleted = amount === 0;
+    ctx.strokeStyle = depleted ? '#928b79' : '#6a593c';
+    ctx.fillStyle = depleted ? '#928b79' : '#d5b45f';
+    if (kind === 'sticks' || kind === 'reeds' || kind === 'wild_grain') {
+      ctx.lineWidth = Math.max(1, scale * 0.18);
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath(); ctx.moveTo(x + i * scale * 0.32, y + scale * 0.5);
+        ctx.lineTo(x + i * scale * 0.18, y - scale * (kind === 'sticks' ? 0.25 : 0.65)); ctx.stroke();
+      }
+      if (kind === 'wild_grain' && !depleted) {
+        ctx.fillStyle = '#ceb45c';
+        for (let i = -1; i <= 1; i++) ctx.fillRect(x + i * scale * 0.18 - 1, y - scale * 0.65, 2, 3);
+      }
+    } else if (kind === 'flint' || kind === 'clay') {
+      ctx.beginPath(); ctx.ellipse(x, y, scale * 0.65, scale * 0.43, -0.2, 0, Math.PI * 2); ctx.fill();
+      if (kind === 'flint' && !depleted) {
+        ctx.strokeStyle = '#c6ccd0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - scale * 0.3, y); ctx.lineTo(x + scale * 0.3, y - scale * 0.15); ctx.stroke();
+      }
+    } else if (kind === 'fish') {
+      ctx.fillStyle = '#65aeca'; ctx.beginPath(); ctx.ellipse(x, y + scale * 0.16, scale * 0.75, scale * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = depleted ? '#928b79' : '#bdc8bd'; ctx.beginPath(); ctx.ellipse(x, y, scale * 0.57, scale * 0.25, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + scale * 0.48, y); ctx.lineTo(x + scale * 0.86, y - scale * 0.28); ctx.lineTo(x + scale * 0.86, y + scale * 0.28); ctx.closePath(); ctx.fill();
+    } else {
+      if (!depleted) {
+        ctx.fillStyle = '#638646'; ctx.beginPath(); ctx.ellipse(x, y + scale * 0.12, scale * 0.85, scale * 0.46, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#d8452f';
+        for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x + (i - 1) * scale * 0.38, y - scale * 0.06, scale * 0.18, 0, Math.PI * 2); ctx.fill(); }
+      } else {
+        ctx.strokeStyle = '#928b79'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - scale * 0.65, y + scale * 0.35); ctx.lineTo(x + scale * 0.6, y - scale * 0.35); ctx.stroke();
+      }
+    }
+  }
+
+  private drawRememberedBuilding(amount: number, ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
+    ctx.fillStyle = amount === 2 ? '#c9b58d' : '#897d66';
+    ctx.beginPath(); ctx.moveTo(x - size * 0.8, y - size * 0.1); ctx.lineTo(x, y - size * 0.8);
+    ctx.lineTo(x + size * 0.8, y - size * 0.1); ctx.lineTo(x + size * 0.65, y + size * 0.65);
+    ctx.lineTo(x - size * 0.65, y + size * 0.65); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#514537'; ctx.fillRect(x - size * 0.13, y + size * 0.1, size * 0.26, size * 0.55);
+  }
+
+  private drawRememberedAnimal(species: string, ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
+    const fur = species === 'boar' ? '#725340' : species === 'hare' ? '#b8a487' : '#aa9a7d';
+    ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(x, y, size * 0.9, size * 0.44, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + size * 0.72, y - size * 0.13, size * 0.31, size * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+    if (species === 'hare') {
+      ctx.beginPath(); ctx.ellipse(x + size * 0.8, y - size * 0.55, size * 0.12, size * 0.34, -0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x + size, y - size * 0.51, size * 0.1, size * 0.3, 0.2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  /** Draws the tree state that was observed; current season and fruit are deliberately irrelevant. */
+  private drawRememberedTree(tree: Extract<PlaceVisual, { type: 'tree' }>, ctx: CanvasRenderingContext2D,
+    x: number, y: number): void {
+    const species = tree.species as TreeSpecies;
+    const [canopy, shade] = tree.autumn && species !== 'pine'
+      ? AUTUMN_TREE_COLORS : (TREE_COLORS[species] ?? TREE_COLORS.oak);
+    const radius = (0.35 + (species === 'oak' ? 2.2 : species === 'pine' ? 1.6 :
+      species === 'apple' ? 1.8 : species === 'pear' ? 1.7 : species === 'plum' ? 1.4 : 1.1) * tree.maturity) * TILE * 0.55;
+    if (tree.maturity < 0.35) {
+      ctx.strokeStyle = tree.bare ? '#8a7256' : canopy;
+      ctx.lineWidth = Math.max(1, TILE * 0.05);
+      ctx.beginPath(); ctx.moveTo(x, y + radius * 0.5); ctx.lineTo(x, y - radius * 0.9); ctx.stroke();
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath(); ctx.ellipse(x + radius * 0.15, y + radius * 0.5, radius * 0.9, radius * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5a4028';
+      ctx.fillRect(x - Math.max(1, radius * 0.11) / 2, y - radius * 0.1, Math.max(1, radius * 0.22), radius * 0.65);
+      if (tree.bare) {
+        ctx.strokeStyle = '#6b5539'; ctx.lineWidth = Math.max(1, radius * 0.06);
+        for (let i = 0; i < 5; i++) {
+          const a = -Math.PI / 2 + (i / 4 - 0.5) * Math.PI * 0.75;
+          ctx.beginPath(); ctx.moveTo(x, y - radius * 0.1);
+          ctx.lineTo(x + Math.cos(a) * radius * 0.8, y - radius * 0.1 + Math.sin(a) * radius * 0.8); ctx.stroke();
+        }
+      } else {
+        ctx.fillStyle = shade; ctx.beginPath(); ctx.arc(x, y - radius * 0.25, radius, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = canopy; ctx.beginPath(); ctx.arc(x - radius * 0.2, y - radius * 0.4, radius * 0.78, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    if (tree.fruit > 0) {
+      const item = ({ apple: 'apple', pear: 'pear', plum: 'plum', hazel: 'hazelnut', oak: 'acorn' } as Record<string, string>)[species];
+      ctx.fillStyle = FRUIT_COLORS[item ?? ''] ?? '#d8452f';
+      const dots = Math.min(6, Math.ceil(tree.fruit / 3));
+      for (let i = 0; i < dots; i++) {
+        const a = i / dots * Math.PI * 2;
+        ctx.beginPath(); ctx.arc(x + Math.cos(a) * radius * 0.62 - radius * 0.15,
+          y + Math.sin(a) * radius * 0.62 - radius * 0.3, Math.max(1.5, radius * 0.17), 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+
+  /** A remembered person uses the same layered art, with only visible traits saved by the observer. */
+  private drawRememberedPerson(person: Extract<PlaceVisual, { type: 'person' }>, ctx: CanvasRenderingContext2D,
+    x: number, y: number): void {
+    const colorIndex = bandColorIndex(person.bandId);
+    if (!this.art) {
+      ctx.fillStyle = BAND_COLORS[colorIndex]!;
+      const h = person.age === 'infant' ? TILE * 0.3 : person.age === 'child' ? TILE * 0.55 : TILE * 0.85;
+      ctx.beginPath(); ctx.ellipse(x, y, h * 0.22, h * 0.46, 0, 0, Math.PI * 2); ctx.fill();
+      return;
+    }
+    const bald = person.age === 'elder' && person.id % 3 === 0;
+    const aspect: PersonAspect = {
+      age: person.age, sex: person.sex === 'male' ? 'm' : 'f', dir: 'S', pose: 'idle',
+      skin: Renderer.TRIBE_SKIN[colorIndex]!, hair: person.age === 'elder' && person.id % 3 === 2 ? '#a7a197' : '#2b2018',
+      band: BAND_COLORS[colorIndex]!, hairStyle: bald ? 'bald' : person.sex === 'female' ? 'long' : 'short',
+      beard: person.sex === 'male' && person.age === 'adult' && person.id % 2 === 0,
+      expression: 'neutral', wear: {}, carryBaby: false, held: null,
+    };
+    const scale = person.age === 'infant' ? 0.48 : person.age === 'child' ? 0.65 : person.age === 'adolescent' ? 0.82 : 1;
+    const k = TILE * 1.55 * scale / 96;
+    ctx.drawImage(this.art.compose(aspect), x - 48 * k, y - 52 * k, 96 * k, 96 * k);
   }
 
   /**
