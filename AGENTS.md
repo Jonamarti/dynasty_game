@@ -33,8 +33,8 @@ streams at the end. The fork order is the seed contract; inserting one silently
 invalidates every saved seed and every pinned test world.
 
 > **"The end" is not where the comment says it is.** The named fork block ends
-> at `recordRng` — the **eleventh** of eighteen — with a comment inviting you to
-> append after it. Seven more forks sit below that invitation:
+> at `recordRng` — the **eleventh** of nineteen — with a comment inviting you to
+> append after it. Eight more forks sit below that invitation:
 >
 > | # | fork | line |
 > |---|---|---|
@@ -45,6 +45,7 @@ invalidates every saved seed and every pinned test world.
 > | 16 | `hearthRng` | `Simulation.ts:618` |
 > | 17 | `cultureRng` (M12 phase 2d, each band's regard for strangers) | `Simulation.ts:623` |
 > | 18 | `floraRng` (M15 phase 20, which species each berry bush is) | `Simulation.ts:628` |
+> | 19 | `healthRng` (M15 phase 21a, which body part a blow lands on) | `Simulation.ts:636` |
 >
 > **The genuine append point is the line after the last row of that table**,
 > immediately before the `spawnResources` block. Appending where the comment
@@ -53,9 +54,9 @@ invalidates every saved seed and every pinned test world.
 > the same to the cereal.
 >
 > A fork appended genuinely last cannot shift anything, and the reason is worth
-> knowing: `this.rng` is drawn from **only** by these eighteen `fork()` calls —
-> nothing else in the constructor takes a number from it — so a nineteenth at
-> the bottom leaves all eighteen exactly where they were.
+> knowing: `this.rng` is drawn from **only** by these nineteen `fork()` calls —
+> nothing else in the constructor takes a number from it — so a twentieth at
+> the bottom leaves all nineteen exactly where they were.
 >
 > This paragraph has been wrong before, which is the reason for the table. It
 > used to call the forest fork "the fourteenth" and describe it as the last one

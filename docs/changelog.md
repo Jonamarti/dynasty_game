@@ -1,4 +1,15 @@
 #
+## 2026-10-01 — M15 fase 21a: el cuerpo, inerte
+
+`Person.body` tiene seis partes (cabeza, torso, dos brazos, dos piernas), cada
+una con daño (0-1) y estado de herida (`Body.ts`). Un golpe de `doAttack`
+elige una parte con `healthRng` (fork 19, fila nueva en `AGENTS.md`) y escribe
+en ella; `health` sigue siendo el único número que lee nadie y el golpe quita
+exactamente lo que quitaba. Es el patrón de `Building.durability`: primero el
+campo con su escritor, después los lectores (21b, las heridas pesan; 21c, la
+herida sin atender se infecta). Nada existente cambia: el flujo nuevo solo se
+consume al caer un golpe. Prueba en `body.test.ts`. Sin cambio de interfaz.
+
 ## 2026-10-01 — M15 fase 20, tercera ronda: el llanto, las especies de arbusto y la niebla
 
 Respuesta del propietario a las dos decisiones de la segunda ronda: los

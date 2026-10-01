@@ -11,6 +11,7 @@
  * draw their own conclusions.
  */
 import type { Person } from '../entities/Person.ts';
+import { strikePart, wound } from '../entities/Body.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
 import { feederRole, starvingInCare } from '../ai/Feeding.ts';
@@ -110,6 +111,8 @@ export interface ActionContext {
   bandRelations: BandRelations;
   social: SocialSystem;
   rng: RNG;
+  /** Which part a blow lands on (M15 phase 21a). Optional so a hand-driven test needs none. */
+  healthRng?: RNG;
   tick: number;
   sightRadius: number;
   /** Whether it is dark out. Sleep ends at dawn; nothing else reads it yet. */
@@ -5227,6 +5230,10 @@ export class ActionSystem {
       (1 - armourOf(other));
 
     other.health -= damage;
+    // M15 phase 21a: the blow also lands on a part. Inert — `health` above is
+    // still the only number anything reads — and drawn from `healthRng`, so the
+    // blow itself is exactly as hard as it was.
+    if (ctx.healthRng) wound(other.body, strikePart(ctx.healthRng), damage / 100);
     // M12 phase 2c, for `the-struck-respond`: a second blow from the same hand
     // landing on an adult who had time since the first to run or hit back,
     // and is doing neither. Somebody held, bound or kept cannot, and is not

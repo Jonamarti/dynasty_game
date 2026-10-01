@@ -21,6 +21,7 @@ import { Mood, MOOD_CHANNELS, moodBaseline } from '../core/Mood.ts';
 import { MacroBalance, macroTargetFor } from '../core/Macros.ts';
 import { Beliefs } from '../ai/Beliefs.ts';
 import { PlaceMemory } from '../social/PlaceMemory.ts';
+import { newBody, type Body } from './Body.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -260,6 +261,8 @@ export class Person {
   lastBirthDay = -9999;
 
   health = 100;
+  /** Six parts, each with damage and a wound state (M15 phase 21a). Written by blows; read by nothing yet. */
+  body: Body = newBody();
   /** All needs are 0 (satisfied) to 100 (desperate). */
   needs: Record<Need, number> = { hunger: 0, thirst: 0, fatigue: 0, cold: 0, company: 0 };
   skills: Record<Skill, number>;

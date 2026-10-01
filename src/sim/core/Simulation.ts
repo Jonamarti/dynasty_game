@@ -515,6 +515,8 @@ export class Simulation {
    * taught at a hearth.
    */
   private readonly hearthRng: RNG;
+  /** M15 phase 21a, fork 19: which part of the body a blow lands on. */
+  private readonly healthRng: RNG;
 
   constructor(overrides: DeepPartial<SimConfig> = {}) {
     this.config = makeConfig(overrides);
@@ -626,6 +628,11 @@ export class Simulation {
     // berry bush is. Drawn in its own pass after the bushes exist, so every
     // bush stands where it stood before and only its season is new.
     const floraRng = this.rng.fork();
+
+    // M15 phase 21a, appended after `floraRng` (row 19 of `AGENTS.md`'s table):
+    // which part of the body a blow lands on. Nothing draws from it until a
+    // blow lands, so every world is exactly as it was.
+    this.healthRng = this.rng.fork();
 
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
@@ -4039,6 +4046,7 @@ export class Simulation {
       bandRelations: this.bandRelations,
       social: this.social,
       rng: this.actionRng,
+      healthRng: this.healthRng,
       tick: this.time.tick,
       sightRadius: this.config.sightRadius,
       isNight: this.time.isNight,
