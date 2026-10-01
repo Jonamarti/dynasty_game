@@ -304,7 +304,13 @@ test('the observer map hides unvisited ground and prevents selecting its entitie
         worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number };
     } }).__dynasty;
     const player = d.sim.player!;
+    // Away from the map's edge: the camera cannot centre a node on the border,
+    // and one at y = 0 sits under the clock bar, which takes the click. Since
+    // bushes bear by season (M15 phase 20) the first stocked node on this seed
+    // is exactly such a one.
+    const margin = 12;
     const node = d.sim.nodes.find(n => n.amount > 0 &&
+      n.x > margin && n.y > margin && n.x < d.sim.world.width - margin && n.y < d.sim.world.height - margin &&
       Math.hypot(n.x - player.x, n.y - player.y) > d.sim.config.sightRadius * 2 &&
       player.placeMemory.seenDayAt(n.x, n.y) === 0);
     if (!node) return null;
@@ -689,6 +695,8 @@ test('a stranger gives up nothing but what you can see', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+const BUSH_NAME = /Wild strawberry|Redcurrant|Raspberry|Bilberry|Bramble|Dog rose|Blackthorn|Strawberry tree/;
+
 test('a berry bush reads as an estimate until you are close', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);
@@ -724,8 +732,9 @@ test('a berry bush reads as an estimate until you are close', async ({ page }) =
   });
   if (!clicked) test.skip(true, 'no berry bush at a useful distance on this seed');
 
-  await clickAndChoose(page, clicked!.x, clicked!.y, /berries/i);
-  await expect(page.locator('.hud-name')).toContainText('Berry bush');
+  // Since M15 phase 20 a bush is named by its species.
+  await clickAndChoose(page, clicked!.x, clicked!.y, BUSH_NAME);
+  await expect(page.locator('.hud-name')).toContainText(BUSH_NAME);
   await expect(page.locator('.hud-known')).toContainText('too far to judge');
   await expect(page.locator('.hud-veil')).toBeVisible();
 
