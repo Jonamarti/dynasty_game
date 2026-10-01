@@ -97,7 +97,10 @@ export class PlaceMemory {
     if (changed) this.revisionValue++;
   }
 
-  /** Store that a place was seen. A revisit replaces its old state in that cell. */
+  /**
+   * Store that a place was seen. A revisit replaces its old state in that
+   * cell — or, for a person, wherever they were last seen.
+   */
   remember(
     kind: string, x: number, y: number, day: number, amount: RememberedAmount,
     source: PlaceSource = 'seen', visual?: PlaceVisual,
@@ -105,7 +108,12 @@ export class PlaceMemory {
     const records = this.places.get(kind) ?? new Map<number, PlaceRecord>();
     const cellX = Math.floor(x / PLACE_CELL_SIZE);
     const cellY = Math.floor(y / PLACE_CELL_SIZE);
-    const cellKey = cellY * this.cols + cellX;
+    // A person is remembered once, where they were last seen, not once per
+    // cell they were seen in (M15 phase 20). Keyed by cell, somebody who
+    // walked across the observer's view left a trail of copies of themselves
+    // in the fog, and two people standing in one cell left one. The key is
+    // negative so it can never be a cell's; nothing looks people up by cell.
+    const cellKey = visual?.type === 'person' ? -1 - visual.id : cellY * this.cols + cellX;
     const safeDay = this.safeDay(day);
     const previous = records.get(cellKey);
     if (previous && previous.x === x && previous.y === y && previous.day === safeDay &&

@@ -74,4 +74,19 @@ describe('PlaceMemory', () => {
     expect(map.hasNear('resource:berries', 4.2, 8)).toBe(true);
     expect(map.hasNear('resource:berries', 6, 8)).toBe(false);
   });
+
+  it('remembers a person once, where they were last seen', () => {
+    // M15 phase 20: keyed by cell, somebody who crossed the observer's view
+    // left a copy of themselves in every cell they were seen in.
+    const map = new PlaceMemory(32, 32);
+    const ana = { type: 'person', id: 7, sex: 'female', age: 'adult', bandId: 0 } as const;
+    const bo = { type: 'person', id: 8, sex: 'male', age: 'adult', bandId: 0 } as const;
+    map.remember('person', 2, 2, 1, 2, 'seen', ana);
+    map.remember('person', 2.5, 2.5, 1, 2, 'seen', bo);
+    map.remember('person', 20, 20, 2, 2, 'seen', ana);
+    const people = map.records('person');
+    expect(people.length).toBe(2);
+    const where = people.find(p => p.visual?.type === 'person' && p.visual.id === 7)!;
+    expect([where.x, where.y]).toEqual([20, 20]);
+  });
 });
