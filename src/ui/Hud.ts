@@ -24,6 +24,7 @@ import { stageOf, type Corpse, type CorpseStage } from '../sim/entities/Corpse.t
 import { isHeld, isBound } from '../sim/social/Defence.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
+import { BODY_PARTS, partWord } from '../sim/entities/Body.ts';
 import { BUSHES, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
 import { isStructure, type Building, type BuildingDef } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
@@ -919,11 +920,13 @@ export class Hud {
     // of a person's condition is not written on their face.
     if (!known.knowsCondition) {
       rows.push('<div class="hud-sub">' + describeHealth(person.health) + '</div>');
+      rows.push(...woundRows(person));
       rows.push(veil(t('You would have to know them better to read how they are faring.')));
       return rows;
     }
 
     rows.push(bar(tc('bar', 'health'), person.health, '#5cc98a', 'health'));
+    rows.push(...woundRows(person));
     for (const need of NEEDS) {
       rows.push(bar(tc('bar', need), person.needs[need], NEED_COLORS[need] ?? '#888', need));
     }
@@ -2009,6 +2012,34 @@ function roughAge(person: Person): string {
   if (years < 25) return t('twenty');
   if (years < 45) return t('thirty');
   return t('fifty');
+}
+
+/**
+ * M15 phase 21e. What can be seen of a body: every part still wounded and, if
+ * there is one, the fever. Symptoms are visible on anybody, so this is shown
+ * even to somebody who does not know the person well; what they would not
+ * know is the cause, and nothing here says one.
+ */
+function woundRows(person: Person): string[] {
+  const rows: string[] = [];
+  for (const part of BODY_PARTS) {
+    const state = person.body[part];
+    const word = state.wound === 'fresh' ? t('open wound')
+      : state.wound === 'tended' ? t('dressed')
+      : state.wound === 'infected' ? t('festering')
+      : state.wound === 'scarred' ? t('scarred')
+      : null;
+    if (word === null) continue;
+    rows.push('<div class="hud-sub hud-wound hud-wound-' + state.wound + '">' +
+      escapeHtml(t('{part}: {state}', { part: partWord(part), state: word })) + '</div>');
+  }
+  for (const c of person.conditions) {
+    const word = c.severity === 'mild' ? t('a mild fever')
+      : c.severity === 'moderate' ? t('a moderate fever') : t('a severe fever');
+    rows.push('<div class="hud-sub hud-wound hud-wound-infected">' + escapeHtml(word) + '</div>');
+  }
+  if (rows.length > 0) rows.unshift('<div class="hud-section">' + t('Wounds') + '</div>');
+  return rows;
 }
 
 function describeHealth(health: number): string {

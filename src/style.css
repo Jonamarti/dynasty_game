@@ -144,6 +144,9 @@ html, body, #app {
 }
 
 .hud-sub { color: var(--text-dim); }
+.hud-wound-fresh { color: #e0a060; }
+.hud-wound-infected { color: #e06060; }
+.hud-wound-tended { color: #7fb7e0; }
 
 .hud-section {
   margin: 11px 0 5px;

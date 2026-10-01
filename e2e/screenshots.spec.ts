@@ -769,3 +769,32 @@ test('M15 20c berry bushes in their own seasons: a winter hedge', async ({ page 
   await page.waitForTimeout(300);
   await page.screenshot({ path: DIR + '/m15-20c-bushes-in-winter.png' });
 });
+
+test('M15 21 wounds and fever show on the character sheet', async ({ page }) => {
+  await page.goto('/?seed=m15-21-wounds&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await page.waitForTimeout(800);
+  // Staged: a fresh gash on the left leg, a dressed arm, and an infected torso
+  // with the fever it brings. The player is held at full health through the
+  // few steps taken, so the shot is of the sheet and not of a death.
+  await page.evaluate(() => {
+    type Part = { damage: number; wound: string; peak: number };
+    const d = (window as never as {
+      __dynasty: { sim: { step: () => void; player: { health: number;
+        body: Record<string, Part>;
+        conditions: { kind: string; severity: string; days: number; part: string }[] } } };
+    }).__dynasty;
+    const p = d.sim.player;
+    p.body.left_leg = { damage: 0.4, wound: 'fresh', peak: 0.4 };
+    p.body.right_arm = { damage: 0.2, wound: 'tended', peak: 0.3 };
+    p.body.torso = { damage: 0.35, wound: 'infected', peak: 0.35 };
+    p.conditions.push({ kind: 'fever', severity: 'moderate', days: 4, part: 'torso' });
+    p.health = 70;
+    d.sim.step();
+  });
+  await page.locator('.hud-tab', { hasText: 'Now' }).click();
+  await page.waitForTimeout(300);
+  await expect(page.locator('.hud-wound-infected').first()).toBeVisible();
+  await expect(page.locator('.hud-wound-fresh')).toBeVisible();
+  await page.screenshot({ path: DIR + '/m15-21-wounds-sheet.png' });
+});
