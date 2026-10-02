@@ -16,6 +16,7 @@ import { isHeld, isBound } from '../social/Defence.ts';
 import { debtTo, offerFor, OFFER_AT_LEAST } from '../social/Amends.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import type { Person } from '../entities/Person.ts';
+import { CUT_ABOVE } from '../core/Grass.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
@@ -1036,6 +1037,19 @@ function groundActions(
       reason: actor.inventory.bestFood() === null ? t('You are carrying no food') : undefined,
     },
   ];
+  // M15 phase 23b: thatch from the standing grass. Offered on the ground it
+  // stands on, because the grass is a layer and not a thing with a menu of its
+  // own; greyed with the reason when it is too short.
+  if (walkable && ctx.world.grassCap[ctx.world.index(Math.floor(target.x), Math.floor(target.y))]! > 0) {
+    const tall = ctx.world.grassAt(target.x, target.y) >= CUT_ABOVE;
+    options.push({
+      id: 'cut_grass',
+      label: t('Cut grass'),
+      icon: '\u{1F33E}',
+      enabled: tall,
+      reason: tall ? undefined : t('The grass is too short to cut'),
+    });
+  }
   // Offered whenever there is water within reach of the click, including when
   // the click landed *on* the water: the order routes to the nearest bank, so
   // clicking a lake and being told to go and drink is exactly right.

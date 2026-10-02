@@ -111,6 +111,31 @@ export class World {
   }
 
   /**
+   * The nearest walkable tile within `radius` of (x, y) whose sward stands at
+   * least `min` high, on the same landmass as the asker. A scan of a box of
+   * tiles, not of an entity array: grass has no entities, and the box is
+   * bounded by `radius`.
+   */
+  findTallGrass(x: number, y: number, radius: number, min: number): { x: number; y: number } | null {
+    let best: { x: number; y: number } | null = null;
+    let bestD = Infinity;
+    const cx = Math.floor(x);
+    const cy = Math.floor(y);
+    for (let ty = Math.max(0, cy - radius); ty <= Math.min(this.height - 1, cy + radius); ty++) {
+      for (let tx = Math.max(0, cx - radius); tx <= Math.min(this.width - 1, cx + radius); tx++) {
+        const i = ty * this.width + tx;
+        if (this.grass[i]! < min || this.walkable[i] !== 1) continue;
+        const d = (tx - cx) * (tx - cx) + (ty - cy) * (ty - cy);
+        if (d >= bestD || d > radius * radius) continue;
+        if (!this.sameRegion(x, y, tx, ty)) continue;
+        bestD = d;
+        best = { x: tx, y: ty };
+      }
+    }
+    return best;
+  }
+
+  /**
    * Takes `amount` of height off a tile and returns what was actually there to
    * take. Grazing, trampling and the scythe all go through here so the floor is
    * kept in one place.

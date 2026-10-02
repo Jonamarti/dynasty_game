@@ -54,6 +54,13 @@ export const STUBBLE = 0.04;
 /** Tallest grass is only worth cutting above this. */
 export const CUT_ABOVE = 0.7;
 
+/** A scythe-stroke stops taking from a tile at this height: the rest is root. */
+export const CUT_FLOOR = 0.45;
+
+/** Height taken off the tile by one cut, and thatch got per unit of height. */
+export const CUT_BITE = 0.3;
+export const THATCH_PER_HEIGHT = 5;
+
 /** Tall enough that a herd bothers with the tile. */
 export const WORTH_GRAZING = 0.25;
 

@@ -30,6 +30,8 @@ import {
 } from '../entities/Building.ts';
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
+import { CUT_ABOVE, CUT_BITE, CUT_FLOOR, THATCH_PER_HEIGHT } from '../core/Grass.ts';
+import { SNOW_BURY_AT } from '../core/Snow.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
@@ -115,6 +117,8 @@ export interface ActionContext {
   healthRng?: RNG;
   tick: number;
   sightRadius: number;
+  /** The snow clock, for the grass under it (M15 phase 23b). Optional for hand-built contexts. */
+  snowDepth?: number;
   /** Whether it is dark out. Sleep ends at dawn; nothing else reads it yet. */
   isNight: boolean;
   /** The day, for anything that has to remember when it happened. Sowing does. */
@@ -715,6 +719,7 @@ export class ActionSystem {
       case 'read': this.doRead(person, ctx); break;
       case 'ponder': this.doPonder(person, ctx); break;
       case 'reflect': this.doReflect(person, ctx); break;
+      case 'cut_grass': this.doCutGrass(person, ctx); break;
       case 'discuss': this.doDiscuss(person, ctx); break;
       case 'prototype': this.doPrototype(person, ctx); break;
       case 'give': this.doGive(person, ctx); break;
@@ -1343,6 +1348,76 @@ export class ActionSystem {
       return;
     }
     person.actionTimer = Math.ceil(node.def.harvestTicks / person.skillFactor(node.def.skill));
+  }
+
+  /**
+   * Cutting tall grass for thatch — M15 phase 23b (M14 phase 9b).
+   *
+   * Aimed at a tile, not an entity, because grass is a layer (`Grass.ts`). A
+   * cut takes `CUT_BITE` off the tile through `World.graze`, so a meadow that
+   * has been mown looks mown and a herd arriving later finds less to eat; the
+   * thatch is what `cordage` turns into rope and what the bed will be made of.
+   * When the tile is down to its root they move to the nearest tall one, the
+   * way mowing goes, and stop only when there is none within reach.
+   *
+   * A pull is a few ticks, so the interruption check lives on every cut and
+   * nothing here needs to bank progress: the tile's height *is* the progress.
+   */
+  private doCutGrass(person: Person, ctx: ActionContext): void {
+    if (person.targetX === null || person.targetY === null) {
+      this.abandon(person, 'grass_gone', ctx);
+      return;
+    }
+    if ((ctx.snowDepth ?? 0) >= SNOW_BURY_AT) {
+      this.abandon(person, 'grass_under_snow', ctx);
+      return;
+    }
+    const tx = Math.floor(person.targetX);
+    const ty = Math.floor(person.targetY);
+    if (ctx.world.grassAt(tx, ty) < CUT_FLOOR + 0.05) {
+      // The tile they were sent to has been cropped already, by them or by
+      // a herd. Look for more before giving up.
+      const next = ctx.world.findTallGrass(person.x, person.y, 4, CUT_ABOVE);
+      if (!next) {
+        this.stop(person, 'grass_cut', ctx);
+        return;
+      }
+      person.targetX = next.x;
+      person.targetY = next.y;
+    }
+    if (!this.travel(person, ctx)) return;
+    const owner = ctx.territoryOwnerAt(person.targetX, person.targetY);
+    if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
+
+    if (person.actionTimer <= 0) person.actionTimer = Math.ceil(10 / person.skillFactor('forage'));
+    person.actionTimer--;
+    person.workedTicks++;
+    if (person.actionTimer > 0) return;
+
+    const room = Math.max(0, Math.min(
+      person.carryCapacity - person.carrying,
+      itemCapacityFor(person, ctx.carry, 'thatch') - person.inventory.count('thatch'),
+    ));
+    if (room === 0) {
+      this.stop(person, 'hands_full', ctx);
+      return;
+    }
+    const here = Math.floor(person.targetX);
+    const there = Math.floor(person.targetY);
+    const standing = ctx.world.grassAt(here, there);
+    const bite = Math.min(CUT_BITE, Math.max(0, standing - CUT_FLOOR));
+    const taken = ctx.world.graze(here, there, bite);
+    const units = Math.min(room, Math.max(1, Math.round(taken * THATCH_PER_HEIGHT * person.skillFactor('forage'))));
+    person.inventory.add('thatch', units);
+    person.practice('forage', 0.4);
+    telemetry.count('grass_cut');
+
+    const stop = this.interruption(person, ctx, { lookaheadTicks: Math.ceil(10 / person.skillFactor('forage')) });
+    if (stop) {
+      this.stop(person, stop, ctx);
+      return;
+    }
+    person.actionTimer = Math.ceil(10 / person.skillFactor('forage'));
   }
 
   /** Picking fruit off a standing tree. Same rhythm as any other harvest. */

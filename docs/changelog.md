@@ -1,4 +1,29 @@
 #
+## 2026-10-02 — M15 fase 23b: segar
+
+Verbo `cut_grass`, el primer lector de la hierba. Está apuntado a una casilla,
+no a una entidad (la hierba es una capa): cada corte quita `CUT_BITE` (0,3) de
+altura por `World.graze` y da `thatch` (altura × 5 × habilidad), que `cordage`
+ya convierte en cuerda. Se corta solo por encima de 0,7 y nunca por debajo de
+`CUT_FLOOR` (0,45, la raíz); al agotar la casilla se pasa a la más alta a menos
+de 4, y se para con `grass_cut` cuando no queda. Cada corte llama a
+`interruption()`; no hace falta guardar progreso porque la altura de la casilla
+**es** el progreso. Razones visibles nuevas: `grass_gone`, `grass_under_snow`,
+`grass_cut`, y la negativa de la orden («la hierba está demasiado baja para
+segar», «está bajo la nieve»). Menú del suelo: «Segar hierba», en gris con su
+razón cuando está baja. Lo usa también el puntuador: una obra que pide
+`thatch` y no tiene cañaveral a la vista manda segar el prado dentro de su
+alcance (`found.grassSpot`). Cuenta como trabajo (`WORK_ACTIONS`) y como
+forrajero.
+
+Esto **sí** mueve mundos, solo donde hay una obra sin juncos cerca: 19
+`grass_cut` en la pasada por defecto de `sim:check`, y los mismos 6 checks
+rojos que antes (`perf-budget` más cinco de comportamiento, ya rojos sin el
+cambio). `sim:check:all` también termina con «SOME SCENARIOS FAILED» antes y
+después, pero mi filtro de `grep` no recogió los nombres, así que esa
+comparación **no** dice nada fino; la de la pasada por defecto sí. Pendiente
+medido: `sim:seeds`, cuando 23c cambie la economía de comida.
+
 ## 2026-10-02 — M15 fase 23a: la hierba como capa
 
 `World.grass` y `World.grassCap` (`Float32Array`, 0-1 por casilla), nuevas, en

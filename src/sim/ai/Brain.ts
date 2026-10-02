@@ -19,7 +19,8 @@
 import type { Person } from '../entities/Person.ts';
 import { cannotRun, needsTending, poisonGrade } from '../entities/Body.ts';
 import { RESOURCE_KINDS, type ResourceNode } from '../entities/ResourceNode.ts';
-import { isBuried } from '../core/Snow.ts';
+import { isBuried, SNOW_BURY_AT } from '../core/Snow.ts';
+import { CUT_ABOVE } from '../core/Grass.ts';
 import type { World } from '../core/World.ts';
 import type { TimeManager } from '../core/TimeManager.ts';
 import type { RNG } from '../core/RNG.ts';
@@ -224,6 +225,8 @@ interface FoundTargets {
   pickupItem: string | null;
   quarry: Animal | null;
   matNode: ResourceNode | null;
+  /** Tall grass to cut for a site that wants thatch, M15 phase 23b. */
+  grassSpot: { x: number; y: number } | null;
   site: Building | null;
   shelter: Building | null;
   fruitTree: Tree | null;
@@ -1052,6 +1055,7 @@ export class Brain {
     if (fruitTree && !foodBlockedByLoad) add('pick', pickScore(fruitTree));
 
     // --- Gather materials --------------------------------------------------
+    let grassSpot: { x: number; y: number } | null = null;
     let matNode = this.findNode(person, ctx,
       n => (n.kind === 'flint' || n.kind === 'sticks') && !n.depleted, true, anchor, reach);
     // M15 phase 21d: somebody who tends the sick keeps a few herbs by them, and
@@ -2685,6 +2689,15 @@ export class Brain {
                 add('gather_for_site', (comfortNow - 0.45) * 1.2
                   * this.proximityBonus(person, source, ctx.sightRadius));
                 matNode = source;
+              } else if (wantedKind === 'reeds' && ctx.snowDepth < SNOW_BURY_AT) {
+                // M15 phase 23b: no reed bed in sight, but the meadow is
+                // thatch too. Mown only where the site's own reach allows.
+                const spot = ctx.world.findTallGrass(person.x, person.y, ctx.sightRadius, CUT_ABOVE);
+                if (spot && withinReach(anchor, reach, spot.x, spot.y)) {
+                  add('cut_grass', (comfortNow - 0.45) * 1.0
+                    * this.proximityBonus(person, spot, ctx.sightRadius));
+                  grassSpot = spot;
+                }
               }
             }
           }
@@ -3479,7 +3492,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodToEat, waterQuestionPeer, explorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, waterQuestionPeer, explorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
@@ -4153,6 +4166,12 @@ export class Brain {
         }
         break;
       }
+      case 'cut_grass':
+        if (found.grassSpot) {
+          person.targetX = found.grassSpot.x;
+          person.targetY = found.grassSpot.y;
+        }
+        break;
       case 'read':
         if (found.record) {
           person.targetInscriptionId = found.record.id;

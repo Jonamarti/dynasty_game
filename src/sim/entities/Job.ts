@@ -35,7 +35,7 @@ import type { Skill } from './Person.ts';
  * `IDLE_ACTIONS`; social verbs are in neither, for the reason `Brain` records.
  */
 export const WORK_ACTIONS = new Set([
-  'forage', 'gather', 'gather_for_site', 'pick', 'chop', 'hunt',
+  'forage', 'gather', 'gather_for_site', 'cut_grass', 'pick', 'chop', 'hunt',
   'build', 'haul', 'store', 'craft', 'prototype',
   // M8.2. Both belong here for the second reason this set exists as well as the
   // first: `SocialSystem.workingAlongside` is what lets two people sowing the
@@ -65,7 +65,7 @@ export const JOBS: Record<JobId, JobDef> = {
     id: 'forager',
     label: 'Forager',
     icon: '\u{1F33F}',
-    actions: ['forage', 'pick', 'gather', 'gather_for_site'],
+    actions: ['forage', 'pick', 'gather', 'gather_for_site', 'cut_grass'],
     skill: 'forage',
   },
   hunter: {

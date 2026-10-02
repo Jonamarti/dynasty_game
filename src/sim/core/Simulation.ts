@@ -11,7 +11,7 @@
  *     reads this; this never reaches back. That is what lets the headless
  *     harness run exactly the code the browser runs.
  */
-import { advanceGrass } from './Grass.ts';
+import { advanceGrass, grassBuried, CUT_ABOVE } from './Grass.ts';
 import { RNG } from './RNG.ts';
 import { World } from './World.ts';
 import { TimeManager } from './TimeManager.ts';
@@ -2961,6 +2961,14 @@ export class Simulation {
       return true;
     }
     if (target.x !== undefined && target.y !== undefined) {
+      // M15 phase 23b: refused where they can see it is pointless, with the
+      // reason, rather than walked to and abandoned.
+      if (action === 'cut_grass') {
+        if (grassBuried(this.snowDepth)) return this.cancelOrder(person, t('it is under the snow'));
+        if (this.world.grassAt(target.x, target.y) < CUT_ABOVE) {
+          return this.cancelOrder(person, t('the grass is too short to cut'));
+        }
+      }
       // Drinking is aimed at water, and water is not somewhere you can stand.
       // Right-clicking a lake used to offer Drink and then refuse it without a
       // word, because the order tried to walk onto the tile that was clicked.
@@ -4139,6 +4147,7 @@ export class Simulation {
       healthRng: this.healthRng,
       tick: this.time.tick,
       sightRadius: this.config.sightRadius,
+      snowDepth: this.snowDepth,
       isNight: this.time.isNight,
       day: this.time.day,
       seasonGrowth: this.time.growth,
