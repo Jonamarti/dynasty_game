@@ -1,3 +1,49 @@
+## 2026-10-02 — M15 fase 23h: la fauna entra y sale por el borde
+
+**`Simulation.edgeTraffic`**, una vez al día y por especie de presa. *Entra*: si
+la tierra tiene menos animales de la especie que al empezar
+(`foundingFauna`), una manada puede llegar del borde con una probabilidad
+diaria baja (`world.edgeEntryChance`, 0,03), gastando de una reserva
+(`world.edgeReserve`, 12 animales por especie; se rellena 0,1 al día). *Sale*:
+si hay más de 1,25× lo del principio, una manada sin animales domados puede
+marcharse (5% al día) y la reserva la recupera. Una tierra llena no recibe a
+nadie, y una cazada del todo recupera unos pocos animales al año: es lo que
+hace que **se note** haberlo cazado todo. Fork nuevo **`edgeRng`, n.º 22**
+(fila añadida a `AGENTS.md`); solo se saca de él una vez al día, así que
+ninguna otra corriente se mueve. No hay mando en `Difficulty` para estas dos
+constantes todavía.
+
+**Escenarios `wilds` y `emptied`** y, en `tools/simcheck.ts`, un gancho
+`Scenario.setup` (solo del arnés) que `emptied` usa para quitar todas las
+presas antes del primer paso. Los cuatro checks de la fase, cada uno
+verificado contra el build que lo rompe:
+
+- `herds-follow-the-grass`: la medida que traía el plan («la hierba bajo los
+  animales es alta») **estaba mal**: un grazer deja su casilla a rastrojo, así
+  que en el mundo que funciona está *por debajo* de la media del prado (0,29
+  frente a 0,46). Se mide lo que sí hace una manada que sigue la hierba, dejar
+  la pobre: grazers sobre hierba pobre menos tierra pobre, < 0,35. Con el
+  forrajeo apagado sale 0,65–0,88; encendido, 0,04–0,21.
+- `predators-hunt`: presas muertas por depredadores > 0; sin ellos, 0.
+- `fire-keeps-wolves-off`: **la primera versión, mordiscos dentro y fuera del
+  círculo, también pasaba sin el lector del fuego** (1 de 17 dentro): a quien
+  está en el campamento nadie lo muerde porque no está solo, con fuego o sin
+  él. Lo que el fuego cambia es dónde *están* los depredadores: muestras de
+  depredador dentro de un círculo frente a las que daría el azar según la
+  fracción de tierra que cubren los círculos. 13 de 217 esperadas con el
+  lector; 198 de 310 sin él.
+- `a-hunted-out-land-stays-empty` (`emptied`, un año): entran animales
+  (> 0) y la tierra no pasa de la mitad de lo que tenía (16%). Con reserva 0
+  entran 0; con entrada 1 y reserva 200, 111%.
+
+**Coste en supervivencia (20 semillas): pendiente de medir** (la primera pasada
+perdió la línea de supervivencia; se anota abajo cuando esté).
+
+**`tools/headless.ts`: `sim:check -- --scenario X` corría 0 pasos** en esta
+máquina, porque npm reenvía el nombre de la bandera y `forwarded[1]` («X») se
+tomaba como número de pasos: `Number('X')` es NaN y todo salía n/a. Ahora solo
+un número cuenta como pasos.
+
 #
 ## 2026-10-02 — M15 fase 23g: la memoria animal y el perro
 

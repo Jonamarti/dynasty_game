@@ -33,6 +33,23 @@ las primeras obras.
 mostraba el botón «Resume»; los otros 15 casos de la gira terminaron. No se
 investigó el selector en este cambio.
 
+## M15 fase 23h: lo que queda abierto (2026-10-02)
+
+- **Las dos constantes del borde no están en `Difficulty`** (`world.edgeReserve`,
+  `world.edgeEntryChance`): solo se cambian por configuración. Si el propietario
+  las quiere en la pantalla de partida nueva, es una fila por cada una más una
+  captura.
+- **El borde de la isla es mar.** Una manada «entra» en una casilla caminable
+  cerca del borde del mapa (`edgeEntry`), que en la isla clásica es costa; no
+  cruza agua a nado. Con el mapa del mundo (fase 14e) la reserva es la fauna de
+  la comarca vecina y la entrada será por tierra.
+- **Los depredadores no entran ni salen**: solo las presas. Un lobo cuya presa
+  desaparece se muere de hambre (`animal_starved`) y no se repone.
+- **`emptied` mide un año y una semilla.** Es un mecanismo (lento frente a
+  cero), no una calibración: 10 animales en un año con la reserva por defecto.
+  Si se sube la entrada, el check se rompe de verdad (111%), así que sirve de
+  alarma si alguien «arregla» la lentitud.
+
 ## M15 fase 23e/f: lo que queda abierto (2026-10-02)
 
 - **La luz (fase 12) no existe todavía.** El plan de 23e da por hechos

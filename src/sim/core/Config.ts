@@ -23,6 +23,17 @@ export interface WorldConfig {
    * what the before-and-after measurements are taken against.
    */
   predators: number;
+  /**
+   * Fauna at the edge of the land, M15 phase 23h: how many animals of each
+   * prey species wait beyond it, and the daily chance that a herd of one comes
+   * in while the land is thinner than it began. The recovery of a hunted-out
+   * comarca, and slow on purpose: it has to be slower than a band that hunts
+   * in earnest, or nobody ever notices having hunted it all. Zero reserve is
+   * a closed land. Until the world map exists this is a constant; with it, it
+   * is the neighbouring comarca's own fauna (phase 14e).
+   */
+  edgeReserve: number;
+  edgeEntryChance: number;
   reedBeds: number;
   clayBanks: number;
   /** Fishing spots, placed on shore tiles like reed beds and clay banks. */
@@ -431,6 +442,8 @@ export const DEFAULT_CONFIG: SimConfig = {
     // does not stop existing in winter — which is when the island kills people.
     gameHerds: 22,
     predators: 1,
+    edgeReserve: 12,
+    edgeEntryChance: 0.03,
     reedBeds: 90,
     clayBanks: 60,
     fishingSpots: 50,

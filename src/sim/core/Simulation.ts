@@ -160,6 +160,11 @@ const ALONGSIDE_EVERY = 40;
 /** How far from every founder a hunter may begin. */
 const PREDATOR_START_DISTANCE = 30;
 
+/** Edge traffic, M15 phase 23h: see `edgeTraffic`. */
+const EDGE_REFILL = 0.1;
+const EDGE_CROWDED = 1.25;
+const EDGE_EXIT_CHANCE = 0.05;
+
 
 /**
  * What knowing how to organise work adds to the chance a job order sticks.
@@ -528,6 +533,16 @@ export class Simulation {
   private readonly healthRng: RNG;
   /** Hunters' placement, kills and bites — M15 phase 23e. */
   private readonly ecologyRng: RNG;
+  private readonly edgeRng: RNG;
+  /**
+   * The fauna beyond the edge, M15 phase 23h: animals of each prey species that
+   * could still come in. Spent as herds enter, refilled slowly and by the herds
+   * that leave. Fractional, because the refill is.
+   */
+  readonly edgeReserve: Record<string, number> = {};
+  /** How many of each species the land held when it began: what "thinner than it was" means. */
+  readonly foundingFauna: Record<string, number> = {};
+  private nextEdgeHerd = 5000;
 
   constructor(overrides: DeepPartial<SimConfig> = {}) {
     this.config = makeConfig(overrides);
@@ -655,6 +670,10 @@ export class Simulation {
     // everything else, because adding hunters to `spawnHerds` would move every
     // herd and person in every world.
     this.ecologyRng = this.rng.fork();
+    // M15 phase 23h, appended after `ecologyRng` (row 22 of `AGENTS.md`'s
+    // table): the dice of the edge — which herd comes in, where, how big, and
+    // which one leaves. Drawn from once a day and by nothing else.
+    this.edgeRng = this.rng.fork();
 
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
@@ -666,6 +685,10 @@ export class Simulation {
     this.spawnWildPlants(herbRng);
     this.spawnPredators(this.ecologyRng);
     this.rebuildHashes();
+    for (const species of PREY_SPECIES) {
+      this.foundingFauna[species] = this.animals.filter(a => a.species === species).length;
+      this.edgeReserve[species] = this.config.world.edgeReserve;
+    }
   }
 
   /**
@@ -2776,7 +2799,7 @@ export class Simulation {
    * the reader is pointed at what does, and moves to `light` when 12 lands
    * (docs/bugs.md).
    */
-  private litNear(x: number, y: number, r: number): boolean {
+  litNear(x: number, y: number, r: number): boolean {
     return this.buildingHash.queryRadius(x, y, r + 2).some(b =>
       b.complete && !b.ruined && (b.def.id === 'hearth' || b.def.shelter > 0) &&
       Math.hypot(b.centerX - x, b.centerY - y) <= r);
@@ -2809,6 +2832,85 @@ export class Simulation {
       if (witness.id === person.id || !witness.alive) continue;
       witness.mood.add('security', -1.5, 'animal_attack', this.time.tick);
     }
+  }
+
+  /**
+   * Herds crossing the edge of the land, M15 phase 23h (owner's note 8: animals
+   * come and go "so that it shows when everything has been hunted"). Once a day,
+   * per prey species:
+   *
+   * - **In**: while the land holds fewer of the species than it began with, a
+   *   herd may arrive from beyond the edge, with a small daily chance, out of
+   *   `edgeReserve`. A land at its founding count takes nobody.
+   * - **Out**: while it holds far more (`EDGE_CROWDED` × its founding count),
+   *   a herd may move off, and the reserve takes it back.
+   * - The reserve itself creeps up (`EDGE_REFILL`), the neighbour's own births.
+   *
+   * Slow on purpose. A land hunted to nothing comes back at a few animals a
+   * year, which is the difference between *noticing* one has hunted everything
+   * and not noticing. Tamed and penned animals never leave.
+   */
+  private edgeTraffic(): void {
+    const cap = this.config.world.edgeReserve;
+    for (const species of PREY_SPECIES) {
+      const roll = this.edgeRng.next();
+      const herds = new Map<number, Animal[]>();
+      let live = 0;
+      for (const a of this.animals) {
+        if (a.species !== species || !a.alive) continue;
+        live++;
+        const list = herds.get(a.herdId);
+        if (list) list.push(a); else herds.set(a.herdId, [a]);
+      }
+      const founding = this.foundingFauna[species] ?? 0;
+      this.edgeReserve[species] = Math.min(cap, (this.edgeReserve[species] ?? 0) + EDGE_REFILL);
+
+      if (live > founding * EDGE_CROWDED) {
+        if (roll >= EDGE_EXIT_CHANCE) continue;
+        const leaving = [...herds.values()].filter(h => h.every(a => a.tamedBy === null));
+        if (leaving.length === 0) continue;
+        const herd = leaving[Math.floor(this.edgeRng.next() * leaving.length)]!;
+        for (const a of herd) this.removeAnimal(a, 'animal_left_by_edge');
+        this.edgeReserve[species] = Math.min(cap, (this.edgeReserve[species] ?? 0) + herd.length);
+        telemetry.count('herd_left_by_edge');
+        continue;
+      }
+
+      if (live >= founding || roll >= this.config.world.edgeEntryChance) continue;
+      const def = SPECIES_DEFS[species];
+      const reserve = Math.floor(this.edgeReserve[species] ?? 0);
+      const size = Math.min(reserve, Math.max(1, Math.round(def.herdSize * this.edgeRng.range(0.6, 1.4))));
+      if (size < 1) continue;
+      const entry = this.edgeEntry();
+      if (!entry) continue;
+      const herdId = this.nextEdgeHerd++;
+      for (let i = 0; i < size; i++) {
+        const spot = this.world.findWalkableNear(
+          Math.round(entry.x + this.edgeRng.range(-2, 2)),
+          Math.round(entry.y + this.edgeRng.range(-2, 2)), 4) ?? entry;
+        const animal = new Animal(species, spot.x, spot.y, herdId, this.edgeRng);
+        this.animals.push(animal);
+        this.animalsById.set(animal.id, animal);
+      }
+      this.edgeReserve[species] = (this.edgeReserve[species] ?? 0) - size;
+      telemetry.count('herd_entered_by_edge');
+      telemetry.count('animal_entered_by_edge', size);
+    }
+  }
+
+  /** A walkable tile near the rim of the map, on a side picked by the edge dice. */
+  private edgeEntry(): { x: number; y: number } | null {
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const side = this.edgeRng.int(0, 3);
+      const along = this.edgeRng.next();
+      const x = side < 2 ? along * (this.world.width - 1) : side === 2 ? 1 : this.world.width - 2;
+      const y = side < 2 ? (side === 0 ? 1 : this.world.height - 2) : along * (this.world.height - 1);
+      const spot = this.world.findWalkableNear(Math.round(x), Math.round(y), 10);
+      if (!spot) continue;
+      const biome = this.world.biomeAt(spot.x, spot.y);
+      if (biome === 'grass' || biome === 'forest') return spot;
+    }
+    return null;
   }
 
   /** Takes a killed animal out of the world and its index. */
@@ -4042,6 +4144,7 @@ export class Simulation {
         this.animals.push(calf);
         this.animalsById.set(calf.id, calf);
       }
+      this.edgeTraffic();
       // M15 phase 20 (owner, 2026-10-01): a bush out of its season is bare —
       // its crop has fallen and rotted. Every day rather than on the first of
       // the season, so nothing a regrowth pass set on the boundary survives.

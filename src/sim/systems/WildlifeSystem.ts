@@ -92,7 +92,7 @@ const DESPERATE_BELOW = 0.22;
 const PERSON_RANGE_DAY = 9;
 const PERSON_RANGE_NIGHT = 14;
 /** Keep out of a fire's circle, and of the camp's. */
-const FIRE_AVOID = 7;
+export const FIRE_AVOID = 7;
 /** How near a bear has to be walked in on before it strikes. */
 const BEAR_SURPRISE = 2.8;
 /** The chance a bite lands on a move within reach, and the pause after one. */

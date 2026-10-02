@@ -17,7 +17,10 @@ function arg(name: string): string | undefined {
 // script's `--` delimiter; accept the same positional form as `sim:seeds`.
 const forwarded = process.argv.slice(2).filter(value => value !== '--');
 const scenarioName = arg('scenario') ?? forwarded[0] ?? 'band';
-const stepsArg = arg('steps') ?? forwarded[1];
+// Only a number counts as a step count: where npm forwards the flag names
+// as well (`--scenario century`), `forwarded[1]` is the scenario's name, and
+// `Number('century')` is NaN — a run of zero steps that reports every check n/a.
+const stepsArg = arg('steps') ?? (/^\d+$/.test(forwarded[1] ?? '') ? forwarded[1] : undefined);
 const selectedScenario = SCENARIOS[scenarioName];
 if (!selectedScenario) {
   console.error('Unknown scenario "' + scenarioName + '". Available: ' + Object.keys(SCENARIOS).join(', '));

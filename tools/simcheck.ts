@@ -26,6 +26,8 @@ import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
 import { TERRITORY_RADIUS } from '../src/sim/systems/BandSystem.ts';
 import { isHeld, isBound } from '../src/sim/social/Defence.ts';
+import { WORTH_GRAZING } from '../src/sim/core/Grass.ts';
+import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
 
 // ---------------------------------------------------------------------------
 // Scenarios
@@ -45,6 +47,12 @@ export interface Scenario {
    * `sim:check -- --scenario <name>` or `sim:check:all -- --slow`.
    */
   slow?: boolean;
+  /**
+   * Runs once on the fresh world, before the first step: how a scenario
+   * starts from somewhere a config cannot say (`emptied`: a land already
+   * hunted out). Harness-only; the simulation knows nothing of it.
+   */
+  setup?: (sim: Simulation) => void;
 }
 
 /**
@@ -125,6 +133,42 @@ export const SCENARIOS: Record<string, Scenario> = {
     // 55 or so. Extended for the same reason `millers` was — the chain is
     // real, just rarer per year now that a year is shorter.
     steps: 16000,
+  },
+  wilds: {
+    name: 'wilds',
+    description:
+      'Three hunting groups on a land with two bands that already have fire. ' +
+      'The only run in which the wild matters: wolves, bears and lynxes hunt ' +
+      'the herds, turn on somebody alone, and keep out of the firelight, ' +
+      'and the herds follow the grass. Kept at its own size so the ' +
+      'predator checks (`predators-hunt`, `fire-keeps-wolves-off`) have ' +
+      'something to count; the default land has one group and a short run.',
+    config: {
+      seed: 'wilds',
+      world: { predators: 3 },
+      population: { bands: 2, peoplePerBand: 12, startingTech: ['firemaking'] },
+    },
+    steps: 14000,
+  },
+  emptied: {
+    name: 'emptied',
+    description:
+      'A land already hunted out: every herd is taken off it before the first ' +
+      'step, and there are no hunters. What comes back can only come in at the ' +
+      'edge (phase 23h), and `a-hunted-out-land-stays-empty` is the claim that ' +
+      'it comes slowly enough to notice. A year long, because the edge works ' +
+      'in days and the claim is about seasons.',
+    config: {
+      seed: 'emptied',
+      world: { predators: 0 },
+      population: { bands: 1, peoplePerBand: 8 },
+    },
+    steps: 9600,
+    setup: sim => {
+      const keep = sim.animals.filter(a => a.def.predator);
+      for (const a of sim.animals) if (!a.def.predator) sim.animalsById.delete(a.id);
+      sim.animals = keep;
+    },
   },
   hearths: {
     name: 'hearths',
@@ -3132,6 +3176,80 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('perf-budget', base.stepsPerSecond > perfFloor, perfDetail);
   }
 
+  // M15 phase 23: the wild. Four claims, and each skips when the run cannot
+  // exercise it. The two about hunters count what the run's telemetry holds;
+  // the one about grass is read off the final positions; the one about a
+  // hunted-out land belongs to `emptied`, whose setup takes every herd away.
+  const preyNow = sim.animals.filter(a => a.alive && !a.def.predator);
+  if (preyNow.length < 15) {
+    skip('herds-follow-the-grass', 'only ' + preyNow.length + ' grazers left to sample');
+  } else {
+    // Not "the grass under them is tall": a grazer eats the tile it stands on
+    // down to stubble, so the herd's own ground reads *below* the meadow's
+    // average in the world that works (0.29 under, 0.46 across). What a herd
+    // that follows the grass does is *leave* poor ground, so the share of
+    // grazers standing on it is measured against the share of the land that is
+    // poor. Measured on three seeds with the forage step switched off: the
+    // excess is 0.65-0.80, and with it on 0.04-0.21.
+    let onPoor = 0;
+    for (const a of preyNow) if (sim.world.grassAt(a.x, a.y) < WORTH_GRAZING) onPoor++;
+    let poorLand = 0;
+    let tiles = 0;
+    for (let y = 0; y < sim.world.height; y++) {
+      for (let x = 0; x < sim.world.width; x++) {
+        const biome = sim.world.biomeAt(x, y);
+        if (biome !== 'grass' && biome !== 'forest') continue;
+        tiles++;
+        if (sim.world.grassAt(x, y) < WORTH_GRAZING) poorLand++;
+      }
+    }
+    const shareOn = onPoor / preyNow.length;
+    const shareLand = tiles > 0 ? poorLand / tiles : 0;
+    add('herds-follow-the-grass',
+      shareOn - shareLand < 0.35,
+      preyNow.length + ' grazers, ' + (shareOn * 100).toFixed(0) + '% of them on poor grass, against ' +
+        (shareLand * 100).toFixed(0) + '% of the meadow and the wood being poor');
+  }
+
+  const hunters = sim.animals.filter(a => a.alive && a.def.predator).length;
+  if (hunters === 0 && (tel.prey_killed_by_predator ?? 0) === 0) {
+    skip('predators-hunt', 'no hunter lived in this run');
+  } else {
+    add('predators-hunt',
+      (tel.prey_killed_by_predator ?? 0) > 0,
+      (tel.prey_killed_by_predator ?? 0) + ' grazers pulled down (' + (tel.prey_killed_by_wolf ?? 0) +
+        ' by wolves, ' + (tel.prey_killed_by_bear ?? 0) + ' by bears, ' + (tel.prey_killed_by_lynx ?? 0) +
+        ' by lynxes); ' + (tel.animal_bit_person ?? 0) + ' people bitten');
+  }
+
+  // The hunters keep out of the fire's circle: of the times one is sampled,
+  // the share inside a circle is a fraction of what the circles' share of the
+  // land would give by chance. Skips when no fire stood in the hunters' land
+  // long enough for the chance share to be worth comparing.
+  const huntSamples = tel.hunter_samples ?? 0;
+  const expectedIn = tel.hunter_samples_expected_in_firelight ?? 0;
+  const seenIn = tel.hunter_samples_in_firelight ?? 0;
+  if (huntSamples < 100 || expectedIn < 5) {
+    skip('fire-keeps-wolves-off', huntSamples + ' hunter samples with ' + expectedIn.toFixed(1) +
+      ' expected inside a circle of firelight; too few to say');
+  } else {
+    add('fire-keeps-wolves-off',
+      seenIn < expectedIn * 0.25,
+      seenIn + ' of ' + huntSamples + ' hunter samples inside a circle of firelight, where chance alone ' +
+        'would put ' + expectedIn.toFixed(1) + ' (' + (tel.predator_kept_off_by_fire ?? 0) + ' turned back)');
+  }
+
+  if (base.scenario !== 'emptied') {
+    skip('a-hunted-out-land-stays-empty', 'this land was not hunted out');
+  } else {
+    const founding = Object.values(sim.foundingFauna).reduce((a, b) => a + b, 0);
+    const came = tel.animal_entered_by_edge ?? 0;
+    add('a-hunted-out-land-stays-empty',
+      came > 0 && preyNow.length < founding / 2,
+      came + ' animals came in at the edge in a year, and the land holds ' + preyNow.length +
+        ' of the ' + founding + ' it began with (' + ((100 * preyNow.length) / Math.max(1, founding)).toFixed(0) + '%)');
+  }
+
   return checks;
 }
 
@@ -3145,6 +3263,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
 
   const steps = stepsOverride ?? scenario.steps;
   const sim = new Simulation(scenario.config);
+  scenario.setup?.(sim);
   if (scenario.name === 'porters') {
     const ids = [...new Set(sim.livingPeople().map(person => person.bandId))].sort((a, b) => a - b);
     const equippedBand = ids[0];
@@ -3293,6 +3412,25 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     if (i % sim.config.time.ticksPerDay === 0) conflict.apart.push(peoplesApart(sim, conflict.incidents));
 
     if (i % WATCH_EVERY === 0) {
+      // For `fire-keeps-wolves-off`: where the hunters stand. Counted against
+      // how much of the land the fires' circles cover, because bites cannot
+      // say whether the fire did anything: a bite needs somebody alone, the
+      // camp is never alone, and the build with no fire reader at all bit
+      // 1 in 411 samples inside the circle against 16 in 1,267 outside —
+      // the same shape as the build that works.
+      const hunting = sim.animals.filter(a => a.alive && a.def.predator);
+      if (hunting.length > 0) {
+        let circles = 0;
+        for (const b of sim.buildings) {
+          if (b.complete && !b.ruined && (b.def.id === 'hearth' || b.def.shelter > 0)) circles++;
+        }
+        const covered = Math.min(1, (circles * Math.PI * FIRE_AVOID * FIRE_AVOID) / (sim.world.width * sim.world.height * 0.5));
+        for (const a of hunting) {
+          telemetry.count('hunter_samples');
+          telemetry.count('hunter_samples_expected_in_firelight', covered);
+          if (sim.litNear(a.x, a.y, FIRE_AVOID)) telemetry.count('hunter_samples_in_firelight');
+        }
+      }
       const anchorCtx = { world: sim.world, peopleById: sim.peopleById, buildingsById: sim.buildingsById,
         householdsById: sim.householdsById,
         homes: new Map(sim.bands.filter(b => !b.outcast).map(b => [b.id, { x: b.homeX, y: b.homeY }])),
