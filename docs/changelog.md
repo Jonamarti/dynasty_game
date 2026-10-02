@@ -1,4 +1,16 @@
 #
+## 2026-10-02 — M15 bloque VII, fase 29b: mapa aleatorio y drenaje
+
+`WorldMap` ahora genera, a partir de la semilla, regiones de tierra y océano,
+relieves costeros, bandas climáticas, biomas y recursos. Un llenado de
+depresiones desde la costa da a cada región terrestre un destino de drenaje;
+los segmentos con suficiente caudal acumulado forman los ríos. Los recursos
+usan una tirada derivada por región: el cereal silvestre sólo aparece en
+estepas templadas y cálidas y el estaño sigue siendo excepcional. La generación
+no toca `Simulation` ni sus streams.
+Motivo: dejar el mapa aleatorio reproducible y con geografía suficiente para
+que las siguientes fases puedan ubicar agua y pueblos.
+
 ## 2026-10-02 — M15 bloque VII, fase 29a: rejilla y altura continua del mundo
 
 Se inicia el mapa mundial en `src/sim/world/WorldMap.ts`: rejilla configurable

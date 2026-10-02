@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMARCAS_PER_REGION, REGIONS_HIGH, REGIONS_WIDE, WorldMap } from '../world/WorldMap.ts';
 
-describe('world map phase 29a', () => {
+describe('world map phases 29a-b', () => {
   it('uses the planned grid and allows smaller grids for focused worlds', () => {
     const earth = new WorldMap('earth');
     expect([earth.regionsWide, earth.regionsHigh]).toEqual([96, 48]);
@@ -39,7 +39,43 @@ describe('world map phase 29a', () => {
     const profile = map.profileAt(31, 22);
     expect([profile.regionX, profile.regionY]).toEqual([3, 2]);
     expect(profile.latitude).toBeLessThan(0);
-    expect(profile.elevation).toBeGreaterThanOrEqual(0);
-    expect(profile.elevation).toBeLessThanOrEqual(1);
+    expect(profile.elevation).toBeGreaterThan(-1);
+    expect(profile.elevation).toBeLessThan(1);
+  });
+
+  it('generates varied continents, climate bands, and climate-specific biomes', () => {
+    const map = new WorldMap('continents');
+    const land = map.regions.filter(region => region.biome !== 'ocean');
+    expect(land.length).toBeGreaterThan(map.regions.length * 0.15);
+    expect(land.length).toBeLessThan(map.regions.length * 0.65);
+    expect(map.regionAt(40, 0).temperature).toBeLessThan(map.regionAt(40, 23).temperature);
+    expect(new Set(land.map(region => region.biome)).size).toBeGreaterThan(3);
+    expect(map.regions.every(region => region.temperature >= 0 && region.temperature <= 1)).toBe(true);
+    expect(map.regions.every(region => region.rainfall >= 0 && region.rainfall <= 1)).toBe(true);
+  });
+
+  it('keeps wild grain in temperate steppe and makes tin scarce', () => {
+    const map = new WorldMap('resources');
+    const grainRegions = map.regions.filter(region => region.resources.includes('wild_grain'));
+    const tinRegions = map.regions.filter(region => region.resources.includes('tin'));
+    expect(grainRegions.length).toBeGreaterThan(0);
+    expect(grainRegions.every(region => region.biome === 'steppe' && region.temperature >= 0.24 && region.temperature <= 0.84)).toBe(true);
+    expect(tinRegions.length).toBeGreaterThan(0);
+    expect(tinRegions.length).toBeLessThan(map.regions.length * 0.02);
+  });
+
+  it('routes accumulated rain through an acyclic river graph to the ocean', () => {
+    const map = new WorldMap('rivers');
+    expect(map.rivers.length).toBeGreaterThan(0);
+    for (const river of map.rivers) {
+      expect(river.flow).toBeGreaterThanOrEqual(3.2);
+      let region = map.regions[river.from]!;
+      const visited = new Set<number>();
+      while (region.downstream >= 0 && !visited.has(region.id)) {
+        visited.add(region.id);
+        region = map.regions[region.downstream]!;
+      }
+      expect(region.biome).toBe('ocean');
+    }
   });
 });
