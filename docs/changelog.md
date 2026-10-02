@@ -20,6 +20,14 @@ con DWM1. Motivo: preparar datos geográficos que la fase 30 conectará al agua
 del juego y que permitirán ubicar las primeras culturas sin programar pueblos
 históricos.
 
+## 2026-10-02 — M15 bloque VII, fase 29c: lector local del atlas
+
+`WorldAtlas` carga los mapas enumerados por el manifiesto desde los assets
+locales, valida la versión, la ruta, las dimensiones y el nivel del mar, y
+rechaza entradas duplicadas o rutas fuera del atlas. Motivo: los mapas
+pregenerados tienen que poder consumirse sin depender de la red ni aceptar una
+combinación incoherente de manifiesto y binario.
+
 ## 2026-10-02 — M15 bloque VII, fase 29b: mapa aleatorio y drenaje
 
 `WorldMap` ahora genera, a partir de la semilla, regiones de tierra y océano,
