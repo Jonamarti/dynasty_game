@@ -2008,6 +2008,16 @@ con su fila en `AGENTS.md`.
 
 ## Fase 23 — Un ecosistema en la comarca (M14 fase 9)
 
+**Estado (2026-10-02).** Hecho: 23a hierba, 23b segar, 23c pastoreo, 23d
+cría, 23e depredadores (lobo, oso, lince; **`ecologyRng` es el fork 21**, no el
+19: el plan es anterior a `healthRng` y `herbRng`) y 23f ataques a personas.
+**Sin hacer:** 23g (memoria animal con `hurtBy`, ya escrito pero sin lector, y
+la tecnología `dog`), 23h (fauna que entra y sale por el borde) y los cuatro
+checks con el escenario `wilds`. **Discrepancia con el código:** el plan da por
+existentes `Light.lightAt` y la antorcha (fase 12); no existen, y los
+depredadores evitan hoy un `hearth` o un techo. Coste medido de 23e: −11 puntos
+de supervivencia (20 semillas); ver `changelog.md` y `bugs.md`.
+
 **Detalle en `m14_plan.md` fase 9.** La hierba como capa (`World.grass`), segar
 para paja y cuerda, herbívoros que pastan y se reproducen con un techo que sale
 del pasto, depredadores (lobo en jauría, oso, lince) en su propia pasada,
