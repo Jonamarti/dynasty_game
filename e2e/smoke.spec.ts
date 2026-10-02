@@ -2638,3 +2638,70 @@ test('a Spanish game is Spanish in the HUD, the menus and the panels', async ({ 
   await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
 });
+
+test('a brewer is offered a feast, and told why there is none to give', async ({ page }) => {
+  // M15 phase 38a. The feast is `brewing`'s second half and a verb of the
+  // ground the actor stands on, like a toast. With no store full enough it is
+  // offered greyed, and the tooltip says what is missing rather than leaving
+  // the option out — the owner's standing rule that a refusal says why.
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { x: number; y: number; knownTech: Set<string> } | null;
+        world: { isWalkable: (x: number, y: number) => boolean };
+        livingPeople: () => { x: number; y: number }[];
+        nodes: { x: number; y: number }[];
+        trees: { x: number; y: number; standing: boolean }[];
+        buildingAt: (x: number, y: number) => unknown;
+      };
+      camera: {
+        snapTo: (x: number, y: number) => void; following: boolean;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+      };
+    };
+  };
+
+  const spot = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player;
+    if (!self) return null;
+    self.knownTech.add('brewing');
+    const clear = (x: number, y: number) =>
+      d.sim.world.isWalkable(x, y) && !d.sim.buildingAt(x, y) &&
+      d.sim.livingPeople().every(p => Math.hypot(p.x - x, p.y - y) > 3) &&
+      d.sim.nodes.every(n => Math.hypot(n.x - x, n.y - y) > 3) &&
+      d.sim.trees.every(t => !t.standing || Math.hypot(t.x - x, t.y - y) > 3);
+    for (let radius = 3; radius <= 14; radius++) {
+      for (let angle = 0; angle < 24; angle++) {
+        const x = Math.round(self.x + Math.cos(angle) * radius);
+        const y = Math.round(self.y + Math.sin(angle) * radius);
+        if (!clear(x, y)) continue;
+        d.camera.snapTo(x, y);
+        d.camera.following = false;
+        return { x, y };
+      }
+    }
+    return null;
+  });
+  expect(spot, 'no empty ground near the player on this seed').not.toBeNull();
+  await page.evaluate(() => new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  const at = await page.evaluate((p: { x: number; y: number }) => {
+    const d = (window as never as Debug).__dynasty;
+    return { x: d.camera.worldToScreenX(p.x), y: d.camera.worldToScreenY(p.y) };
+  }, spot!);
+
+  await page.mouse.click(at.x, at.y, { button: 'right' });
+  const feast = page.locator('.radial-item', { hasText: 'Hold a feast' }).first();
+  await expect(feast).toBeVisible({ timeout: 10_000 });
+  await expect(feast).toHaveClass(/is-disabled/);
+  await expect(feast).toHaveAttribute('title', /A feast needs a store/);
+
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});

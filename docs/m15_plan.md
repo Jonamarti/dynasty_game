@@ -2809,6 +2809,16 @@ entrenada y `armourOf` por `techPower`.
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)
 
+**Alcance acordado con el propietario (2026-10-03).** El bloque se empezó con
+los bloques VII y VIII a medias: no hay muros (16b), ni conservación (15), ni
+banco (16d), ni pueblos de nivel 2 (32), ni caravanas (36), ni Bronce (37). El
+propietario eligió hacer **las fases 38 y 39 dentro de la comarca**, entre
+bandas, con el nivel 2 como enganche para después. Quedan fuera hasta que
+existan sus requisitos: `city_walls` (necesita los muros de 16b), toda la
+fase 40 (el hierro necesita `charcoal`, `mining`, `smelting` y `bellows` de la
+37) y la fase 41 (el cierre de M15). Se hace en la rama `m15/block9`, en un
+worktree propio, porque otro agente trabaja a la vez en `master`.
+
 ## Fase 38 — De la jefatura al Estado (M14 fase 20)
 
 **Detalle en `m14_plan.md` fase 20.** El banquete (la mitad pendiente de
@@ -2832,6 +2842,20 @@ derivado, que el juego nunca obliga a alcanzar.
   banda **sentada** alrededor del hogar (el banco de 16d).
 - El impuesto lo recoge el estante y el granero del templo: el almacén del
   hogar ya existe (16d).
+
+**Avance del 2026-10-03 (38a, el banquete).** `feast` y `attend`
+(`social/Feast.ts`, `ActionSystem.doFeast`/`doAttend`): quien sabe `brewing`,
+con un almacén de su hogar (o, si es jefe, de la banda) que guarda comida para
+una mesa (16 raciones) y tres o más de los suyos a la vista, convoca el
+banquete; le mueve la presión de estatus de su hogar (el «gran hombre») y la
+soledad de los de alrededor, y la codicia lo frena. Los invitados acuden por
+hambre, soledad o aprecio al anfitrión. Se sirve una ración cada 6 ticks
+durante 96 (nunca carne cruda; cerveza a quien está más solo que hambriento),
+y al final el acto `feast` —nuevo en `EVENT_TYPES`, peso 10— lo ven todos:
+el renombre del hogar sube por `onDeed` y la opinión de cada testigo por las
+normas de su pueblo. La cerveza **no** es requisito: medido, con ella
+`feasts` hacía 0 banquetes (7 cervezas en 24.000 ticks). Rechazos visibles:
+`no_feast_to_give` y `nobody_came`. Check `feasts-gather-the-band`.
 
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 

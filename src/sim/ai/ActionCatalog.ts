@@ -167,6 +167,13 @@ export interface CatalogContext {
   commanding?: Person | null;
   /** The player's own unfinished projects, for a request made to a bandmate. */
   buildings?: readonly Building[];
+  /**
+   * Where the actor could hold a feast right now, or null — M15 phase 38a.
+   * Precomputed by the caller with `Simulation.feastVenueFor`, the rule the
+   * scorer and `doFeast` use, so the menu never offers a feast the executor
+   * would refuse. Optional for hand-built contexts, which offer no feast.
+   */
+  feastVenue?: Building | null;
   backersWanted?: number;
   /**
    * The actor's own view of everybody, and the tick, so the conversation rungs
@@ -1112,6 +1119,20 @@ function groundActions(
       icon: '\u{1F37A}',
       enabled: hasBeer,
       reason: hasBeer ? undefined : t('You are not carrying any beer'),
+    });
+  }
+
+  // M15 phase 38a: `brewing`'s other half. Held where the food is, so the
+  // option carries the store; greyed with the reason when there is none.
+  if (techPower(actor, 'brewing') > 0 && ctx.feastVenue !== undefined) {
+    options.push({
+      id: 'feast',
+      label: t('Hold a feast'),
+      icon: '\u{1F356}',
+      buildingId: ctx.feastVenue?.id,
+      enabled: ctx.feastVenue !== null,
+      reason: ctx.feastVenue !== null ? undefined
+        : t('A feast needs a store with food enough for a table, and a few days since the last'),
     });
   }
 

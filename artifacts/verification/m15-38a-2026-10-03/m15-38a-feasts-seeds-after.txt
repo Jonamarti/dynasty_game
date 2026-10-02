@@ -1,0 +1,47 @@
+
+> dynasty@0.0.0 sim:seeds
+> vite-node tools/seeds.ts -- --scenario feasts --seeds 10
+
+
+SEED COHORT  -  scenario "feasts", 10 seeds, 24,000 steps each
+==============================================================================
+  seed      peak   end    survived   born   starved: inf chi adu   known past taught
+  century     43    42        98%     20             0   0   2       6    2     42
+  alpha       41    41       100%     17             0   0   0       7    2     39
+  beta        42    42       100%     19             1   0   1       9    3     91
+  gamma       45    45       100%     20             0   0   0       8    5     94
+  delta       40    22        55%     21             9   0   6       7    2     53
+  eps         38    26        68%     18             9   1   6       5    2     32
+  zeta        38    38       100%     15             1   0   1       7    2     41
+  eta         39    39       100%     16             0   0   0       6    2     30
+  theta       44    44       100%     21             0   0   0       8    6     75
+  iota        45    31        69%     21             7   0   6       5    2     53
+  DEMOGRAPHY 188 births / 85 fertile women = 2.212 births/woman; 0.971 births/woman-year (193.550 woman-years) · mortality <1y 0.067 (9/134; 54 births awaiting follow-up) · <5y 1.000 (23/23; 165 births awaiting follow-up) · mean age at death 16.533y (65 deaths) · causes exposure=7, infection=1, murder=3, old age=4, starvation=50
+  HOME night near<15 0.815 far>25 0.026 far>45 0.001 sleep 0.056 rest 0.119 · actions idle:0.176,forage:0.121,rest:0.119,go_home:0.092,shelter:0.069,sleep:0.056,talk:0.047,ponder:0.047,nurse:0.041,drink:0.035 · day distance median/p90/max 9.3/18.7/57.8 · child-parent median/p90 0.9/5.7 far>12 0.014 far>30 0.000
+  HISTORY drawdown p50/p90/max 0.053/0.333/0.762 · recovered 0/2 (median days n/a; censored 2) · band lost violence/need/other/absorbed 0/0/0/0 · world lost 0/10 · self-destroyed 0 · in-band kills/1,000 person-years 0.000 · violent adult deaths 0.029 · answered n/a · war episodes/year 0.000 median days n/a peace share n/a · firemaking first known day 48 · adoption median days 0 not reached 8 · malnutrition 0.192 · protein nutrition share 0.285
+  FOOD ACCESS accessible 1329173 · blocked by reach 73562 · absent from search 1112
+  ORDERS build 90.0% (18/2 obeyed/refused) · haul 84.2% (731/137 obeyed/refused)
+  RAIDS proposed 0 · chief-approved 0 · refused by chief 0 · called 0 · no party 0 · followers ordered 0
+  SOCIAL INTERRUPTIONS interrupted_ask_away_from_family=34 interrupted_ask_baby_crying=14 interrupted_ask_cold=24 interrupted_ask_hungry=109 interrupted_ask_thirsty=1 interrupted_court_baby_crying=2 interrupted_court_cold=155 interrupted_court_hungry=177 interrupted_court_thirsty=1 interrupted_discuss_baby_crying=680 interrupted_discuss_cold=256 interrupted_give_away_from_family=2 interrupted_give_baby_crying=975 interrupted_give_cold=2172 interrupted_give_hungry=6 interrupted_spar_baby_crying=69 interrupted_spar_cold=756 interrupted_spar_hungry=485 interrupted_spar_thirsty=218 interrupted_teach_baby_crying=431 interrupted_teach_cold=5070 interrupted_teach_hungry=628
+  PROTEIN DURING CRAVING 452201/636736 searches had a reachable protein-rich food node · 170717 only outside anchor reach · 140982 masked by another reachable food node · 140982 selected by the out-of-reach override · 13818 absent from the forage search
+==============================================================================
+  EXTINCT 0/10   ·  no band able to recover 0/10   ·  above its low point at the end 3/10   ·  bands still viable 17
+  MEAN SURVIVAL 89.2%   ·  0/10 collapsed below a quarter   ·  188 born
+  starved: 27 infants (5 or under), 1 older children, 22 adults
+  MEAN 6.8 technologies known at the end, 2.8 conceived past the root nodes, 55.0 passed on   ·  0/10 never got past a root node
+  CONFLICT 0 blows between peoples, n/a near either camp · 0 murders · peoples drifted apart after incidents in 0/0 seeds (mean n/a tiles)
+  DEFENCE 0 interventions against 0 property deeds an owner saw · 0 taken captive in 0/10 seeds, 0 escaped, 0 came home
+  TRIPWIRES coats sewn in 0/10 seeds · the hurt tended in 5 · animals fed in 0 · tamed in 0 · taming known in 0
+  BANDS 0 cast out in 0 seeds · factions in 0 seeds · 0 taken in, of 0 who left or were cast out
+  BODIES 65 of 65 found · 13 investigations, 0 named the killer, 0 somebody else
+  VIOLENCE 0 blows in all, 0 inside a band, 0 by an adult on a child · 0 of 0 thefts from a person inside a band
+  WANTING SPARKS firemaking_4=9
+  KIN defended 0/0 witnessed attacks; fled closer 0/0 times
+  RESEARCH 114 argued breakthroughs / 727 total; argument breakthroughs in 10/10 seeds
+  REFINEMENT 15 improvements from 34 proven designs in 5/10 seeds
+  JUSTICE 0/0 victim complaints heard; 0 carried demands delivered; complaints in 0/10 seeds
+  SOIL 0/0 harvested worlds below 98.5% of resting (n/a% mean); compost spread in 0/10 seeds (0 spreads; 0 loads matured)
+  WALK 1/2793407 stuck ticks (0.0 per 1,000); above the check floor in 0/10 seeds
+  STANDING 0/1 eligible 60-day worlds above 20 points (1 at or below)
+  469.5s
+

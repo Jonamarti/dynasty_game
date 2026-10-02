@@ -1,3 +1,53 @@
+## 2026-10-03 — M15 fase 38a: el banquete
+
+Primer commit del bloque IX, hecho en la rama `m15/block9` (worktree propio)
+con el alcance que eligió el propietario: fases 38 y 39 dentro de la comarca;
+`city_walls`, el hierro y el cierre esperan a sus requisitos (ver el plan).
+
+- **`feast` y `attend`** (`social/Feast.ts`, `ActionSystem.doFeast` y
+  `doAttend`), la mitad pendiente de `brewing`. Nadie recibe la orden de
+  festejar: quien sabe elaborar cerveza y tiene un almacén con comida para una
+  mesa (16 raciones servibles; el de su hogar, o cualquiera de la banda si es
+  el jefe) y a tres o más de los suyos a la vista, lo puntúa por la presión de
+  estatus de su hogar y la soledad de los de alrededor; la codicia lo frena.
+  Los invitados acuden por hambre, soledad o aprecio al anfitrión. Una ración
+  cada 6 ticks durante 96 —por debajo del techo de 140 de `AGENTS.md`, así que
+  no se acumula progreso—, nunca comida que enferma; cerveza a quien está más
+  solo que hambriento. Cada hogar espera 4 días entre banquetes.
+- **El acto `feast`** se añade al final de `EVENT_TYPES` (peso 10, saliencia
+  0,6). Lo que gana el anfitrión sale de la maquinaria de actos existente: el
+  renombre del hogar por `onDeed` y la opinión de cada testigo según las
+  normas de su pueblo. Nada escribe estatus directamente.
+- **La cerveza no es requisito.** La primera versión la pedía y `feasts`, cuyo
+  escenario entero sabe `brewing`, hizo 0 banquetes: 7 cervezas en 24.000
+  ticks, todas bebidas en `toast`. Saber elaborarla es la puerta; la cerveza,
+  si la hay, se sirve.
+- **Interfaz:** «Hold a feast» en el menú del suelo, gris con la razón cuando
+  no hay almacén lleno; dos razones de abandono nuevas (`no_feast_to_give`,
+  `nobody_came`) en `Floaters`; todo en español (`i18n/es/polity.ts`, tabla
+  nueva para el bloque). `ORDER_COST` gana `feast` (0,45) y `attend` (0,05).
+- **Tests:** `feast.test.ts` (6): qué se sirve, dónde y cuándo se puede,
+  rechazo con razón, el almacén baja y el renombre y la opinión suben, y
+  «nadie vino». E2E nuevo en `smoke.spec.ts`: la opción gris con su razón.
+  Check nuevo `feasts-gather-the-band` (banquetes con al menos dos invitados
+  por banquete de media); en el build sin `doFeast` da 0 banquetes y falla.
+
+**Medido.** `feasts` (una semilla): 23 banquetes, 211 invitados servidos, 0
+tazas. A 10 semillas, contra la base en un worktree aparte: supervivencia media
+**89,6 % → 89,2 %** (dentro del ruido que `AGENTS.md` describe), muertes por
+hambre 56 → 50, nacimientos 173 → 188, ningún mundo extinguido en ninguno de
+los dos. En la semilla única de `feasts` cambian cuatro veredictos:
+`techs-are-refined` y `pots-reach-a-granary` pasan a fallar (0 vasijas hechas
+en este mundo, 6 en la base) y `crafts-happen-at-stations` y
+`bands-take-sides` pasan de fallo a n/a. El banquete no toca las vasijas ni
+las estaciones; se anota como divergencia de una semilla, sin causa
+confirmada. Lo que el banquete deja abierto está en `bugs.md`.
+
+**Validación:** `typecheck` limpio; `npm test` 823/823 tras el arreglo de la
+traducción del resumen de `brewing`; e2e del banquete en verde
+(`DYNASTY_PORT=5401`). La matriz completa parte de una línea base ya roja
+(ver `bugs.md`, bloque IX). Salidas en `artifacts/verification/m15-38a-2026-10-03/`.
+
 ## 2026-10-02 — M15 fase 17: primera animación de recolectar
 
 - Se generan cuatro poses `g0`–`g3` por edad, sexo y dirección en el rig por

@@ -1,5 +1,25 @@
 # Known bugs and rough edges
 
+## M15 bloque IX: línea base y lo que queda abierto (2026-10-03)
+
+**Línea base del worktree `m15/block9`** (sobre `6d5fe4f`), antes de tocar
+nada: `typecheck` limpio, **817/817** tests, y `sim:check:all -- --verbose`
+con los 23 escenarios rojos por fallos previos — `people-act-on-what-they-know`,
+`word-of-food-travels`, `cravings-steer-the-diet` y `nights-are-slept` en casi
+todos, más `moods-move-choices`, `opinions-diverge` y otros por escenario
+(`lean` falla 11). Ningún fallo de esa lista se atribuye al bloque IX; cada
+commit del bloque compara contra ella.
+
+- **`Nobody carries a spare` (más abajo), a medias.** El banquete (38a) da
+  por fin salida al excedente *del almacén*; el de la mochila sigue sin
+  lector, porque `gift` sólo ve lo que alguien lleva encima.
+- **El banquete no tiene banco ni hogar donde sentarse.** El plan quería a la
+  banda sentada alrededor del hogar (el banco de 16d); sin 16d, los invitados
+  esperan de pie junto al anfitrión.
+- **Ninguna cerveza en los banquetes de `feasts`.** 23 banquetes, 0 tazas: la
+  cerveza se bebe en `toast` antes de llegar al almacén. No es un error del
+  banquete, pero `FEAST_CUP_RELIEF` apenas se ejerce.
+
 ## Recolección animada: alcance visual y línea base (2026-10-02)
 
 La primera familia de trabajo usa un gesto común para recolección manual y

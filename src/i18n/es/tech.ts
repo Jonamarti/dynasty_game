@@ -362,7 +362,7 @@ export const ES_TECH: Record<string, string> = {
   "Water away from the shore: a band is no longer tied to the water’s edge.": "Agua lejos de la orilla: una banda ya no está atada al borde del agua.",
   "Milk drawn from a living herd, never once culled for it.": "Leche de un rebaño vivo, sin sacrificar a ninguno.",
   "Fleece sheared rather than flax retted: cloth warmer for the same fire.": "Vellón esquilado en vez de lino enriado: tela más cálida con el mismo fuego.",
-  "Beer: it answers loneliness for whoever drinks it, and for the band around them.": "Cerveza: alivia la soledad de quien la bebe, y de la banda que le rodea.",
+  "Beer: it answers loneliness for whoever drinks it, and for the band around them. And the feast: a store spent on the band, for renown.": "Cerveza: alivia la soledad de quien la bebe, y de la banda que le rodea. Y el banquete: un almacén gastado en la banda, a cambio de renombre.",
   "Dog": "Perro",
   "A wolf kept long enough to be a different animal. It hears the camp’s strangers and its predators before anyone does, and it hunts at the heel of the one who feeds it.": "Un lobo criado el tiempo suficiente para ser otro animal. Oye a los extraños del campamento y a sus depredadores antes que nadie, y caza a los pies de quien le da de comer.",
   "saw the tamed wolf stand between the camp and the dark, and knew it had chosen a side": "vio al lobo domado plantarse entre el campamento y la oscuridad, y supo que había elegido un bando",

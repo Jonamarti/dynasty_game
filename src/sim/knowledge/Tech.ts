@@ -1815,8 +1815,8 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'BUILDINGS.pen, via BuildingDef.herd.byproducts; RECIPES.wool_cloth; Tech.warmthFrom',
   },
   brewing: {
-    summary: 'Beer: it answers loneliness for whoever drinks it, and for the band around them.',
-    site: 'RECIPES.beer; ActionSystem.doToast',
+    summary: 'Beer: it answers loneliness for whoever drinks it, and for the band around them. And the feast: a store spent on the band, for renown.',
+    site: 'RECIPES.beer; ActionSystem.doToast; ActionSystem.doFeast and doAttend (social/Feast.ts)',
   },
   dog: {
     summary: 'A tamed wolf that hears strangers and predators before you do, and hunts at your heel.',

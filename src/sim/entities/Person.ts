@@ -446,6 +446,13 @@ export class Person {
   targetSubjectId: number | null = null;
   /** Which structure the current action is aimed at, for building and storage. */
   targetBuildingId: number | null = null;
+  /**
+   * Who has been served at the feast this person is holding — M15 phase 38a.
+   * Null whenever they are not holding one. Kept on the host rather than on
+   * the guests because it is the host who goes round the table, and it is
+   * cleared by `ActionSystem.doFeast` at both ends of the feast.
+   */
+  feastServed: number[] | null = null;
   /** Which tree the current action is aimed at, for felling and picking. */
   targetTreeId: number | null = null;
   /** Which animal the current action is aimed at, for the hunt. */
@@ -1101,6 +1108,8 @@ export class Person {
     this.targetPersonId = null;
     this.targetSubjectId = null;
     this.targetBuildingId = null;
+    // A feast set aside for another order is a feast over: see `doFeast`.
+    this.feastServed = null;
     this.targetTreeId = null;
     this.targetAnimalId = null;
     this.targetRecipe = null;

@@ -109,6 +109,12 @@ const ORDER_COST: Record<string, number> = {
   // Long, and it can get you killed.
   hunt: 0.35,
   give: 0.4,
+  // M15 phase 38a. Being told to spend your own household's store on the
+  // band: dearer than a gift, since it is a whole larder rather than one
+  // thing, and cheaper than anything that could get you hurt.
+  feast: 0.45,
+  // Being told to go and eat at somebody's table is hardly an order at all.
+  attend: 0.05,
   // Cheaper than `give`: both sides walk away with something, so it asks
   // less of whoever is told to do it than handing goods over for nothing.
   trade: 0.3,

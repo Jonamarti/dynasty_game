@@ -196,6 +196,9 @@ export const ACTION_LABELS: Record<string, string> = {
   hunt: 'hunting',
   play: 'playing a tune',
   toast: 'sharing a drink',
+  // M15 phase 38a.
+  feast: 'holding a feast',
+  attend: 'at a feast',
   tend: 'tending the hurt',
   tame: 'coaxing an animal',
   // The two verbs M11 added without words here, so the score table printed
@@ -413,6 +416,9 @@ export const STOP_REASONS: Record<string, string> = {
   // impossible, and a verb whose failures are invisible is not finished.
   nothing_to_play: 'they have no flute to play',
   nothing_to_toast: 'they have no beer to share',
+  // M15 phase 38a: the two ways a feast does not happen.
+  no_feast_to_give: 'there is no feast to give: the store wants food',
+  nobody_came: 'nobody came to the feast',
   nobody_to_tend: 'there is nobody here to look after',
   nothing_to_treat: 'they are not hurt any more',
   knows_poisonous: 'they know those berries are poisonous',

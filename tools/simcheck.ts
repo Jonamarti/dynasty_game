@@ -2216,6 +2216,23 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       toasted + ' toasts made, heard by somebody else ' + heard + ' times');
   }
 
+  // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the
+  // band. Judged on guests actually fed rather than on feasts called, since a
+  // feast nobody comes to is the failure this is here to catch — verified to
+  // fail on the build without `doFeast` (0 feasts, 0 guests).
+  if (!sim.knownTech.has('brewing')) {
+    skip('feasts-gather-the-band', 'nobody here knows how to brew');
+  } else if ((tel.crafted_beer ?? 0) === 0) {
+    skip('feasts-gather-the-band', 'the knowledge is here and no beer was ever brewed');
+  } else {
+    const held = tel.feasts_held ?? 0;
+    const guests = tel.feast_guests ?? 0;
+    add('feasts-gather-the-band',
+      held > 0 && guests >= held * 2,
+      held + ' feasts held (' + (tel.feast_called ?? 0) + ' called), ' + guests + ' guests fed, ' +
+        (tel.feast_cups ?? 0) + ' cups poured');
+  }
+
   if (!sim.knownTech.has('herbalism')) {
     skip('the-hurt-are-tended', 'nobody here knows a herb from a weed');
   } else if ((tel.hurt_person_days ?? 0) === 0) {

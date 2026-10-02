@@ -51,6 +51,11 @@ export const EVENT_TYPES = [
   // M12 phase 2a. A wrong paid for — see `social/Amends.ts`. Emitted only when
   // the one owed accepts; an offer refused is nobody's deed.
   'amends',
+  // M15 phase 38a. A household's surplus set before its people — see
+  // `social/Feast.ts`. No target: a feast is done for everybody who came, and
+  // what it moves is each witness's opinion of the host and the host's
+  // household's renown, which `emit` and `onDeed` already do for any deed.
+  'feast',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -135,6 +140,10 @@ export const DEED_WEIGHT: Record<EventType, number> = {
   // stood before. A beating (-20) is not quite bought off by the most anybody
   // pays for one: something of it stays with the one who took the blows.
   amends: 14,
+  // Above a gift: a gift is one thing to one person, and a feast is a store
+  // spent on everybody in sight. Not far above, because each guest also sees
+  // it, so a feast for eight already moves eight opinions.
+  feast: 10,
 };
 
 /**
@@ -170,6 +179,9 @@ export const DEED_SALIENCE: Record<EventType, number> = {
   // Worth telling — more than a gift, less than the wrong it answers — so the
   // story of the payment can follow the story of the theft round the camp.
   amends: 0.55,
+  // A feast is talked about for days: the first deed in the table that is a
+  // story about plenty rather than about harm.
+  feast: 0.6,
 };
 
 /** Being on the receiving end matters far more than watching from the treeline. */
@@ -198,6 +210,7 @@ export const DEFAULT_NORMS: Norms = {
   body_found: 1,
   amends: 1,
   abduction: 1,
+  feast: 1,
 };
 
 /**
@@ -246,6 +259,7 @@ export function describeEvent(
     case 'abduction': return t('{actor} abducted {target}', who);
     case 'body_found': return t('{actor} was found dead', who);
     case 'amends': return t('{actor} made amends to {target}', who);
+    case 'feast': return t('{actor} held a feast', who);
   }
 }
 

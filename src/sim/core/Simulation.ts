@@ -96,6 +96,7 @@ import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
+import { feastVenue } from '../social/Feast.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
 
 /**
@@ -2318,6 +2319,16 @@ export class Simulation {
       }
     }
     return best;
+  }
+
+  /**
+   * Where `person` could hold a feast right now, or null — M15 phase 38a.
+   * The menu's question, answered by the rule `Brain` and `doFeast` use.
+   */
+  feastVenueFor(person: Person): Building | null {
+    const household = person.householdId === null ? null : this.householdsById.get(person.householdId) ?? null;
+    return feastVenue(person, household, this.bandSystem.chiefByBand.get(person.bandId) === person.id,
+      this.buildings, this.buildingsById, this.time.day);
   }
 
   /** The one ownership answer shared by direct UI actions and simulation work. */
