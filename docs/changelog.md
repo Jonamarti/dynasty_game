@@ -18,6 +18,12 @@ que antes y la heurística octil sigue siendo admisible. Con 0,02 una subida de
 48 m cuesta una casilla, así que un rodeo largo no compensa y uno cercano sí
 (`slopes.test.ts`). `Brain.proximityBonus` sigue midiendo en línea recta.
 
+**Coste de 25b y 25c juntas, 20 semillas de `century`:** 81,8 % antes, 78,9 %
+después: **−2,9 puntos**, que a 20 semillas no se distingue del ruido (AGENTS.md:
+no resuelve menos de ~10) pero queda declarado, por encima del «≤ 2» del plan.
+No se ha separado cuánto es de la pendiente y cuánto de la vista; si molesta,
+la palanca es `world.slopeCost` (0,02), no la vista.
+
 Check `slopes-slow`: de los pasos que fueron adonde apuntaban, cuánto de la
 distancia pedida cubren, por tipo de terreno (`step_slope_up/down/flat`):
 90,2% subiendo, 103,5% bajando. **Con `slopeCost` 0 el check no da n/a sino
@@ -115,8 +121,12 @@ verificado contra el build que lo rompe:
   (> 0) y la tierra no pasa de la mitad de lo que tenía (16%). Con reserva 0
   entran 0; con entrada 1 y reserva 200, 111%.
 
-**Coste en supervivencia (20 semillas): pendiente de medir** (la primera pasada
-perdió la línea de supervivencia; se anota abajo cuando esté).
+**Coste en supervivencia, 20 semillas de `century`:** con el borde cerrado
+(`--set world.edgeReserve=0`) 78,6 %; con él abierto 78,9 %: **+0,3, sin efecto
+medible**, porque una tierra llena no recibe a nadie y una cazada recupera unos
+pocos animales al año. (La referencia de 44,9 % de 23e quedó vieja: el commit de
+frío del 2026-10-02 subió la supervivencia de `century` por sí solo; con 23g y
+23h y sin la fase 25 la media era 81,8 %.)
 
 **`tools/headless.ts`: `sim:check -- --scenario X` corría 0 pasos** en esta
 máquina, porque npm reenvía el nombre de la bandera y `forwarded[1]` («X») se

@@ -33,6 +33,24 @@ las primeras obras.
 mostraba el botón «Resume»; los otros 15 casos de la gira terminaron. No se
 investigó el selector en este cambio.
 
+## M15 fase 25: lo que queda abierto (2026-10-02)
+
+- **Coste declarado de −2,9 puntos** (81,8 % → 78,9 %, 20 semillas de
+  `century`): por encima del «≤ 2» del plan, aunque dentro del ruido de esa
+  medida. Sin separar pendiente y vista.
+- **Los animales también suben cuesta más despacio** (`moveToward` es de todos);
+  no se ha medido su efecto en la caza.
+- **`Brain.proximityBonus` mide en línea recta**: una presa al otro lado de una
+  cresta puntúa como si estuviera al alcance. Es lo que `next-steps.md` §6 ya
+  dice de la distancia por camino.
+- **La prominencia se calcula una vez** (`World.refreshProminence`); la fase 26
+  tiene que llamarla con el rectángulo cavado más `PROMINENCE_RADIUS`.
+- **El tooltip de altura es solo del mapa** (`title` del canvas): no hay panel de
+  casilla, y el plan lo llamaba así. La altura de una casilla recordada sin verla
+  no se dice a propósito.
+- **Los seis e2e de `smoke.spec.ts` siguen rotos** (los de antes de la fase 20);
+  confirmado que fallan igual con `slopeCost` y `heightSight` a 0.
+
 ## M15 fase 23h: lo que queda abierto (2026-10-02)
 
 - **Las dos constantes del borde no están en `Difficulty`** (`world.edgeReserve`,

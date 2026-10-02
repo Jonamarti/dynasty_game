@@ -2067,6 +2067,13 @@ agua y ahogarse son deterministas.
 
 ## Fase 25 — La altura
 
+**Estado (2026-10-02).** Hechas 25a, 25b y 25c (ver `changelog.md`). Desvíos del
+plan: las constantes (`metresPerUnit`, `slopeCost`, `heightSight`) viven en
+`world`, no en un `terrain` aparte, porque `World` solo recibe `WorldConfig`; y
+`Light.sightOf` no existe, así que la vista por altura es `Simulation.sightOf`.
+Coste medido de 25b y 25c juntas: −2,9 puntos a 20 semillas. Sin curvas de nivel
+(era opcional).
+
 **Objetivo.** Que el mapa tenga relieve que se vea y que pese: subir cuesta,
 desde lo alto se ve más lejos, y la altura es la que luego dirá por dónde va el
 agua.
