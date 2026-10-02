@@ -825,3 +825,44 @@ test('M15 21d/22 a poisoned player shows the sickness and carries herbs', async 
   await expect(page.locator('.hud-wound-infected').first()).toBeVisible();
   await page.screenshot({ path: DIR + '/m15-22-poisoned-sheet.png' });
 });
+
+test('M15 25a the land has relief, and the ground says how high it is', async ({ page }) => {
+  await page.goto('/?seed=m15-25-relief&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  await page.waitForTimeout(800);
+  // Frame the highest ground near the player, zoomed out enough to read the
+  // shading, and hover its summit so the tooltip carries the height.
+  const summit = await page.evaluate(() => {
+    const d = (window as never as { __dynasty: {
+      sim: { player: { x: number; y: number }; world: { width: number; height: number; walkable: Uint8Array;
+        heightAt: (x: number, y: number) => number } };
+      camera: { snapTo: (x: number, y: number) => void; following: boolean };
+    } }).__dynasty;
+    const w = d.sim.world;
+    let best = { x: 0, y: 0, h: -1 };
+    for (let y = 8; y < w.height - 8; y++) for (let x = 8; x < w.width - 8; x++) {
+      if (!w.walkable[y * w.width + x]) continue;
+      const h = w.heightAt(x, y);
+      if (h > best.h) best = { x, y, h };
+    }
+    // Staged: the player is stood on the summit so it is in sight and the
+    // tooltip is allowed to say how high it is.
+    d.sim.player.x = best.x + 0.5;
+    d.sim.player.y = best.y + 0.5;
+    d.camera.following = false;
+    d.camera.snapTo(best.x + 0.5, best.y + 0.5);
+    return { x: best.x, y: best.y };
+  });
+  await page.waitForTimeout(400);
+  const box = (await page.locator('canvas#view').boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForTimeout(300);
+  const title = await page.locator('canvas#view').getAttribute('title');
+  expect(title ?? '').toMatch(/m above the sea|at sea level/);
+  expect(summit.x).toBeGreaterThan(0);
+  // Fog off and zoomed out, or the shading is hidden behind the dark.
+  await page.keyboard.press('v');
+  for (let i = 0; i < 4; i++) await page.mouse.wheel(0, 300);
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: DIR + '/m15-phase25-2026-10-02/m15-25a-relief.png' });
+});

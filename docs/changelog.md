@@ -1,3 +1,22 @@
+## 2026-10-02 — M15 fase 25a: el relieve se ve
+
+`World.heightAt` (elevación más `offset`, un `Float32Array` a cero que escribirá
+la fase 26), `heightSmooth` (bilineal entre centros de casilla, para que la
+pendiente de un paso sea del tamaño justo en 25b) y `metresAt`. El mundo no
+cambia: es bit-idéntico, y `height.test.ts` lo ata.
+
+`WorldConfig.metresPerUnit` = 400, medido: el desnivel entre casillas vecinas
+es 0,013 de mediana y 0,045 en el percentil 99, así que son ~5 m y ~18 m, y la
+isla llega a unos 180 m sobre el mar. **Desviación del plan:** vive en
+`world`, no en un `terrain` aparte, porque `World` solo recibe `WorldConfig`
+y una docena de tests lo construyen a mano.
+
+`prerenderTerrain` sombrea cada casilla de tierra con luz del noroeste (gradiente
+leído de `heightAt`, para que una pala cambie el dibujo igual que el paso); el
+tooltip del mapa dice el bioma y los metros sobre el mar de lo que se ve
+(`Renderer.groundDescriptionAt`; lo recordado sigue siendo de la niebla). Sin
+curvas de nivel: era opcional. Captura: `m15-phase25-2026-10-02/m15-25a-relief.png`.
+
 ## 2026-10-02 — M15 fase 23h: la fauna entra y sale por el borde
 
 **`Simulation.edgeTraffic`**, una vez al día y por especie de presa. *Entra*: si

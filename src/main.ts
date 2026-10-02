@@ -1114,7 +1114,8 @@ canvas.addEventListener('pointermove', event => {
 let lastMapPointer: { x: number; y: number } | null = null;
 canvas.addEventListener('pointermove', event => {
   lastMapPointer = worldPoint(event);
-  canvas.title = renderer.fogDescriptionAt(lastMapPointer.x, lastMapPointer.y) ?? '';
+  canvas.title = renderer.fogDescriptionAt(lastMapPointer.x, lastMapPointer.y) ??
+    renderer.groundDescriptionAt(lastMapPointer.x, lastMapPointer.y) ?? '';
 });
 
 /** Draws the active design's ghost at a world point, green where it fits. */

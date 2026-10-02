@@ -34,6 +34,14 @@ export interface WorldConfig {
    */
   edgeReserve: number;
   edgeEntryChance: number;
+  /**
+   * How many metres one unit of `World.elevation` stands for, M15 phase 25.
+   * Height above the sea is `(elevation - waterLevel) * metresPerUnit`: the
+   * default island tops out near 180 m, and a tile's neighbours differ by 5 m
+   * at the median and 18 m at the 99th percentile. Everything that wants a
+   * number in metres (the ground readout, the slope cost) converts here.
+   */
+  metresPerUnit: number;
   reedBeds: number;
   clayBanks: number;
   /** Fishing spots, placed on shore tiles like reed beds and clay banks. */
@@ -444,6 +452,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     predators: 1,
     edgeReserve: 12,
     edgeEntryChance: 0.03,
+    metresPerUnit: 400,
     reedBeds: 90,
     clayBanks: 60,
     fishingSpots: 50,

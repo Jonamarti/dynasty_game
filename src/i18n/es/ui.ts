@@ -146,6 +146,8 @@ export const ES_UI: Record<string, string> = {
   "toggle fog of war": "alternar niebla de guerra",
   "heard about this place": "se lo contaron sobre este lugar",
   "seen {n} days ago": "visto hace {n} días",
+  "{m} m above the sea": "{m} m sobre el mar",
+  "at sea level": "a nivel del mar",
   "Fog of war: {state}": "Niebla de guerra: {state}",
   "On": "Activada",
   "Off": "Desactivada",

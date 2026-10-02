@@ -29,8 +29,15 @@ import { workProgressOf } from '../sim/core/Progress.ts';
 import { expressionOf, type Expression } from '../sim/core/Mood.ts';
 import { canSeePlace, knowsPersonCondition } from '../sim/social/Knowledge.ts';
 import { Camera, TILE } from './Camera.ts';
+
+/**
+ * How hard the relief shows: elevation differences between neighbouring tiles
+ * are about 0.013 at the median and 0.045 at the 99th percentile, so this puts
+ * a median slope near a tenth of opacity and a cliff at the cap.
+ */
+const RELIEF_GAIN = 10;
 import { Floaters } from './Floaters.ts';
-import { t } from '../i18n/i18n.ts';
+import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
@@ -428,6 +435,19 @@ export class Renderer {
 
         if (biome === 'water') continue;
 
+        // Relief, M15 phase 25a: the sun in the north-west. A tile whose ground
+        // climbs towards the east and south faces it and is lit; one that falls
+        // away is in its own shade. The gradient is read off `heightAt`, so a
+        // spade (phase 26) changes the picture the same way it changes the walk.
+        const shade = (world.heightAt(x + 1, y) - world.heightAt(x - 1, y) +
+                       world.heightAt(x, y + 1) - world.heightAt(x, y - 1)) * 0.35 * RELIEF_GAIN;
+        if (Math.abs(shade) > 0.02) {
+          ctx.fillStyle = shade > 0
+            ? `rgba(255,248,220,${Math.min(0.22, shade)})`
+            : `rgba(10,20,40,${Math.min(0.26, -shade)})`;
+          ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+        }
+
         // Tall grass is a deeper green and a cropped or dead sward is paler.
         // Per tile, so a grazed patch shows; the bake is redone when the
         // meadow's overall level changes.
@@ -800,6 +820,22 @@ export class Renderer {
     return place.source === 'told'
       ? t('heard about this place')
       : t('seen {n} days ago', { n: Math.max(0, this.sim.time.day - place.day) });
+  }
+
+  /**
+   * What the ground under a point is, for the tooltip: its biome and how high
+   * above the sea. Only for ground in sight — what is merely remembered is
+   * `fogDescriptionAt`'s, and the height of a place nobody is looking at is not
+   * something the player has earned.
+   */
+  groundDescriptionAt(x: number, y: number): string | null {
+    const world = this.sim.world;
+    if (!world.inBounds(x, y)) return null;
+    const observer = this.fogEnabled ? this.sim.player : null;
+    if (observer && Math.hypot(x - observer.x, y - observer.y) > this.sim.config.sightRadius) return null;
+    const metres = Math.round(world.metresAt(x, y));
+    return tc('biome', world.biomeAt(x, y)) + ' · ' +
+      (metres > 0 ? t('{m} m above the sea', { m: metres }) : t('at sea level'));
   }
 
   /** Paint the observer's coarse, cached map and the places they remember. */

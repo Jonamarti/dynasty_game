@@ -28,6 +28,13 @@ export class World {
 
   /** Per-tile arrays, indexed by `y * width + x`. */
   readonly elevation: Float32Array;
+  /**
+   * What has been dug out or piled up, added to `elevation` by `heightAt`
+   * — M15 phase 25. All zero until phase 26 writes it; kept apart from
+   * `elevation` so the generated land stays the thing the biomes were
+   * classified from, and so a world nobody has dug is bit-identical.
+   */
+  readonly offset: Float32Array;
   readonly moisture: Float32Array;
   readonly fertility: Float32Array;
   /**
@@ -85,6 +92,7 @@ export class World {
 
     const n = this.width * this.height;
     this.elevation = new Float32Array(n);
+    this.offset = new Float32Array(n);
     this.moisture = new Float32Array(n);
     this.fertility = new Float32Array(n);
     this.biome = new Uint8Array(n);
@@ -102,6 +110,46 @@ export class World {
       // summer is not a year of bare earth.
       this.grass[i] = this.grassCap[i]! * 0.8;
     }
+  }
+
+  /**
+   * The height of a tile in elevation units — `elevation` plus whatever has
+   * been dug or piled (phase 26). The one answer to "how high is it?", so that
+   * the slope cost, the sight bonus and the shading all agree after a spade
+   * has been at the ground.
+   */
+  heightAt(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return 0;
+    const i = this.index(Math.floor(x), Math.floor(y));
+    return this.elevation[i]! + this.offset[i]!;
+  }
+
+  /**
+   * Height at a point between tile centres, interpolated. A step is a fraction
+   * of a tile, and the slope it climbs is only felt at the right size if the
+   * ground under it rises smoothly: sampling whole tiles would charge the one
+   * step that crosses a boundary the entire tile's rise and the others
+   * nothing, which averages to a fraction of the true cost.
+   */
+  heightSmooth(x: number, y: number): number {
+    const fx = Math.max(0, Math.min(this.width - 1.001, x - 0.5));
+    const fy = Math.max(0, Math.min(this.height - 1.001, y - 0.5));
+    const x0 = Math.floor(fx);
+    const y0 = Math.floor(fy);
+    const tx = fx - x0;
+    const ty = fy - y0;
+    const i = y0 * this.width + x0;
+    const e = this.elevation;
+    const o = this.offset;
+    const top = (e[i]! + o[i]!) * (1 - tx) + (e[i + 1]! + o[i + 1]!) * tx;
+    const j = i + this.width;
+    const bottom = (e[j]! + o[j]!) * (1 - tx) + (e[j + 1]! + o[j + 1]!) * tx;
+    return top * (1 - ty) + bottom * ty;
+  }
+
+  /** Metres above the sea at a tile (negative below it). */
+  metresAt(x: number, y: number): number {
+    return (this.heightAt(x, y) - this.config.waterLevel) * this.config.metresPerUnit;
   }
 
   /** The sward at a tile, 0 off the map. */
