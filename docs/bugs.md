@@ -1,5 +1,13 @@
 # Known bugs and rough edges
 
+## Línea base al iniciar el bloque VII (2026-10-02)
+
+Antes de los cambios de la fase 29a, `npm run sim:check` en `c65c0d2` dejó 7
+checks rojos: `people-act-on-what-they-know`, `word-of-food-travels`,
+`cravings-steer-the-diet`, `nights-are-slept`, `moods-move-choices`,
+`opinions-diverge` y `perf-budget` (657 pasos/s frente al suelo de 1.678).
+Es una captura del estado inicial; no se ha atribuido ninguno al mapa mundial.
+
 ## Frío e interrupciones del trabajo (2026-10-02) — corregido
 
 `interruption()` paraba cualquier trabajo cuando el frío superaba 50, incluso

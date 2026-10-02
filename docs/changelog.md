@@ -1,4 +1,16 @@
 #
+## 2026-10-02 — M15 bloque VII, fase 29a: rejilla y altura continua del mundo
+
+Se inicia el mapa mundial en `src/sim/world/WorldMap.ts`: rejilla configurable
+con valores por defecto de 96 × 48 regiones y diez comarcas por región,
+coordenadas de latitud y un campo de altura determinista que interpola los
+centros regionales, añade detalle y cierra el antimeridiano sin un salto. Se
+mantiene independiente de `Simulation` para que esta base no consuma los streams
+del mundo clásico. La fase 29 sigue abierta: clima, ríos, biomas, recursos,
+mapas pregenerados, guardado e integración quedan pendientes.
+Motivo: comenzar la escala mundial con una geometría comprobable antes de
+añadir encima los mapas y su coste de simulación.
+
 ## 2026-10-02 — M15: el frío no corta el trabajo que da abrigo
 
 Construir o reparar un refugio o un hogar, investigar o prototipar una
