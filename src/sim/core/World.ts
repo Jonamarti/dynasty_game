@@ -85,6 +85,8 @@ export class World {
   readonly region: Int32Array;
   /** Tile count per region id, so the biggest landmass is easy to find. */
   readonly regionSizes = new Map<number, number>();
+  /** The next id `setWalkable` hands out; ids are never reused, so a stale one cannot alias. */
+  private nextRegionId = 0;
 
   /**
    * Every walkable tile touching water. Precomputed once because "where can I
@@ -301,6 +303,183 @@ export class World {
       }
       this.regionSizes.set(id, size);
     }
+    this.nextRegionId = nextId;
+  }
+
+  /**
+   * The only place `walkable` changes after generation — M15 phase 16a — and it
+   * keeps `region` true as it does, repairing the landmass labels in place
+   * instead of re-flooding the island. Digging (phase 26) and walls (phase 16b)
+   * both come through here, so one piece of code owns the invariant that
+   * `regions-stay-true` checks against a full recompute.
+   *
+   * **Blocking** a tile may cut its landmass in two: flood outward from each
+   * walkable neighbour, one step per front in turn, merging fronts that touch.
+   * A front that runs out of tiles while another is still going has found a
+   * piece that is cut off, and that piece is relabelled with a fresh id. The
+   * cost is the size of the smaller pieces, not of the island. **Unblocking**
+   * joins whatever landmasses the tile touches into the largest of them,
+   * relabelling the smaller ones. Ids are never reused and nothing iterates by
+   * id after the founding spawn, so the labels a repair hands out cannot reach
+   * a draw.
+   */
+  setWalkable(x: number, y: number, walkable: boolean): void {
+    if (!this.inBounds(x, y)) return;
+    const i = this.index(x, y);
+    const now = walkable ? 1 : 0;
+    if (this.walkable[i] === now) return;
+    this.walkable[i] = now;
+    if (walkable) this.joinRegions(i); else this.splitRegions(i);
+  }
+
+  /** The four walkable neighbours of a tile, as indices. */
+  private walkableNeighbours(i: number): number[] {
+    const out: number[] = [];
+    const x = i % this.width;
+    if (x > 0 && this.walkable[i - 1] === 1) out.push(i - 1);
+    if (x < this.width - 1 && this.walkable[i + 1] === 1) out.push(i + 1);
+    if (i >= this.width && this.walkable[i - this.width] === 1) out.push(i - this.width);
+    if (i + this.width < this.walkable.length && this.walkable[i + this.width] === 1) out.push(i + this.width);
+    return out;
+  }
+
+  private joinRegions(i: number): void {
+    const around = this.walkableNeighbours(i);
+    if (around.length === 0) {
+      const id = this.nextRegionId++;
+      this.region[i] = id;
+      this.regionSizes.set(id, 1);
+      return;
+    }
+    let target = this.region[around[0]!]!;
+    for (const n of around) {
+      const r = this.region[n]!;
+      if ((this.regionSizes.get(r) ?? 0) > (this.regionSizes.get(target) ?? 0)) target = r;
+    }
+    this.region[i] = target;
+    let size = (this.regionSizes.get(target) ?? 0) + 1;
+    for (const n of around) {
+      const r = this.region[n]!;
+      if (r === target) continue;
+      size += this.relabel(n, r, target);
+      this.regionSizes.delete(r);
+    }
+    this.regionSizes.set(target, size);
+  }
+
+  /** Moves every tile of region `from` connected to `start` into `to`; returns how many. */
+  private relabel(start: number, from: number, to: number): number {
+    const queue = [start];
+    this.region[start] = to;
+    let count = 0;
+    while (queue.length > 0) {
+      const index = queue.pop()!;
+      count++;
+      for (const n of this.walkableNeighbours(index)) {
+        if (this.region[n] !== from) continue;
+        this.region[n] = to;
+        queue.push(n);
+      }
+    }
+    return count;
+  }
+
+  private splitRegions(i: number): void {
+    const old = this.region[i]!;
+    this.region[i] = -1;
+    this.regionSizes.set(old, (this.regionSizes.get(old) ?? 1) - 1);
+    const seeds = this.walkableNeighbours(i);
+    if (seeds.length <= 1) {
+      if ((this.regionSizes.get(old) ?? 0) <= 0) this.regionSizes.delete(old);
+      return;
+    }
+
+    // One front per seed, each with the tiles it has seen. `owner` maps a tile
+    // to the front that claimed it so two fronts that meet can be merged.
+    interface Front { seen: number[]; queue: number[]; head: number; alive: boolean }
+    const owner = new Map<number, number>();
+    const fronts: Front[] = [];
+    for (const s of seeds) {
+      if (owner.has(s)) continue;
+      owner.set(s, fronts.length);
+      fronts.push({ seen: [s], queue: [s], head: 0, alive: true });
+    }
+    let live = fronts.length;
+    const merge = (a: number, b: number): void => {
+      const keep = fronts[a]!;
+      const gone = fronts[b]!;
+      for (const t of gone.seen) { owner.set(t, a); keep.seen.push(t); }
+      for (let k = gone.head; k < gone.queue.length; k++) keep.queue.push(gone.queue[k]!);
+      gone.alive = false;
+      gone.seen = []; gone.queue = []; gone.head = 0;
+      live--;
+    };
+
+    while (live > 1) {
+      for (let f = 0; f < fronts.length && live > 1; f++) {
+        const front = fronts[f]!;
+        if (!front.alive) continue;
+        if (front.head >= front.queue.length) {
+          // This front has covered its whole piece and met no other: it is cut
+          // off from the rest. Give it an id of its own.
+          const id = this.nextRegionId++;
+          for (const t of front.seen) this.region[t] = id;
+          this.regionSizes.set(id, front.seen.length);
+          this.regionSizes.set(old, (this.regionSizes.get(old) ?? 0) - front.seen.length);
+          front.alive = false;
+          live--;
+          continue;
+        }
+        const index = front.queue[front.head++]!;
+        for (const n of this.walkableNeighbours(index)) {
+          const other = owner.get(n);
+          if (other === undefined) {
+            owner.set(n, f);
+            front.seen.push(n);
+            front.queue.push(n);
+          } else if (other !== f) {
+            merge(f, other);
+          }
+        }
+      }
+    }
+    if ((this.regionSizes.get(old) ?? 0) <= 0) this.regionSizes.delete(old);
+  }
+
+  /**
+   * Takes earth out of a tile — M15 phase 26a. `amount` is in elevation units
+   * and lowers `offset`; a tile dug past `pitDepth` stops being walkable, and
+   * the landmass labels and the sight bonus are repaired to match. Returns the
+   * depth now dug (positive), so a caller can tell a scrape from a pit.
+   */
+  dig(x: number, y: number, amount: number): number {
+    return this.moveEarth(x, y, -Math.max(0, amount));
+  }
+
+  /** Puts earth on a tile — the other half of `dig`, on the same terms. */
+  pile(x: number, y: number, amount: number): number {
+    return this.moveEarth(x, y, Math.max(0, amount));
+  }
+
+  /** How deep a tile is dug below the land it was generated as; negative when it stands piled. */
+  depthDug(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return 0;
+    return -this.offset[this.index(x, y)]!;
+  }
+
+  private moveEarth(x: number, y: number, delta: number): number {
+    if (!this.inBounds(x, y) || delta === 0) return this.depthDug(x, y);
+    const i = this.index(x, y);
+    this.offset[i] = this.offset[i]! + delta;
+    const R = PROMINENCE_RADIUS;
+    this.refreshProminence(Math.floor(x) - R, Math.floor(y) - R, Math.floor(x) + R, Math.floor(y) + R);
+    // Water and rock stay unwalkable whatever is done to them; only ground
+    // that was walkable can be dug into a pit or piled back out of one.
+    const biome = BIOMES[this.biome[i]!]!;
+    if (biome !== 'water' && biome !== 'rock') {
+      this.setWalkable(Math.floor(x), Math.floor(y), this.offset[i]! > -this.config.pitDepth);
+    }
+    return -this.offset[i]!;
   }
 
   private visit(index: number, id: number, queue: number[]): void {

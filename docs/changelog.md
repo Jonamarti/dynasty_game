@@ -1,3 +1,26 @@
+## 2026-10-02 — M15 fases 16a y 26a: la tierra se mueve (bit-idéntico, sin llamadores)
+
+- **`World.setWalkable`** (16a) es el único sitio que cambia `walkable` tras la
+  generación, y repara `region` y `regionSizes` en sitio. Al bloquear, un
+  relleno por frentes desde cada vecino caminable (un paso por frente, los que
+  se tocan se funden): el frente que se agota solo tiene un trozo aislado y lo
+  recibe con id nuevo; el coste es el tamaño de los trozos pequeños, no el de
+  la isla. Al desbloquear, las regiones vecinas se funden en la mayor. Los ids
+  no se reutilizan (`nextRegionId`) y nada itera por id después de la aparición
+  inicial, así que no llegan a ningún sorteo.
+- **`World.dig` / `World.pile` / `depthDug`** (26a) escriben `offset`, rehacen
+  `prominence` en el parche afectado (la vista de 25c sigue a la pala) y pasan
+  por `setWalkable` cuando la casilla cruza `world.pitDepth` (0,006 u = 2,4 m):
+  un hoyo más hondo no se camina, y rellenarlo devuelve el suelo. Agua y roca
+  nunca se vuelven caminables apilando encima.
+- Nadie llama aún a `dig` ni a `pile` fuera de los tests (el objeto `earth` y
+  los verbos llegan con 26b/26c, porque `AGENTS.md` prohíbe declarar contenido
+  inerte), así que `sim:check` es idéntico.
+- `earthmoving.test.ts`: test de propiedad (tres semillas, cuatrocientos
+  cambios cada una, comparados con un recálculo completo de la partición y de
+  la tabla de tamaños), puente cortado y reunido, casilla suelta, y las reglas
+  de `dig`/`pile`.
+
 ## 2026-10-02 — M15 fase 25b: subir cuesta
 
 `World.stepFactor`: un paso que sube `g` metros por casilla va a

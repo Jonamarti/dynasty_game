@@ -58,6 +58,14 @@ export interface WorldConfig {
    * 3.8 tiles past a base of 12 and a meadow sees no further than it did.
    */
   heightSight: number;
+  /**
+   * How deep a hole can be and still be walked out of, M15 phase 26, in
+   * elevation units (0.006 is 2.4 m at 400 m a unit). A tile dug past it stops
+   * being walkable — nobody crosses a pit that deep — and piling earth back
+   * makes it ground again. Shallower diggings (a trench to cross, a scrape for
+   * a hearth) stay walkable and only slow the step, through 25b's slope cost.
+   */
+  pitDepth: number;
   reedBeds: number;
   clayBanks: number;
   /** Fishing spots, placed on shore tiles like reed beds and clay banks. */
@@ -471,6 +479,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     metresPerUnit: 400,
     slopeCost: 0.02,
     heightSight: 0.1,
+    pitDepth: 0.006,
     reedBeds: 90,
     clayBanks: 60,
     fishingSpots: 50,
