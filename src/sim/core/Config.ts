@@ -50,6 +50,14 @@ export interface WorldConfig {
    * world, and what every measurement before this phase was taken on.
    */
   slopeCost: number;
+  /**
+   * Sight from height, M15 phase 25c: tiles of sight radius gained per metre
+   * that the ground stands above its surroundings (`World.prominenceAt`).
+   * Prominence runs 2.6 m at the median walkable tile, 15.6 m at the 90th
+   * percentile and 38 m on the island's tops, so at 0.1 a hill top sees 1.6 to
+   * 3.8 tiles past a base of 12 and a meadow sees no further than it did.
+   */
+  heightSight: number;
   reedBeds: number;
   clayBanks: number;
   /** Fishing spots, placed on shore tiles like reed beds and clay banks. */
@@ -462,6 +470,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     edgeEntryChance: 0.03,
     metresPerUnit: 400,
     slopeCost: 0.02,
+    heightSight: 0.1,
     reedBeds: 90,
     clayBanks: 60,
     fishingSpots: 50,

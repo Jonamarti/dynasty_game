@@ -388,6 +388,12 @@ export function sightIntruders(
       const distSq = dx * dx + dy * dy;
       if (distSq > radiusSq) continue;
       seen += distSq <= innerSq ? 1 : OUTER_WEIGHT;
+      // `hills-see-farther` counts strangers seen from further off than the
+      // bare radius, which only a looker standing on high ground can do.
+      if (sightFor && telemetry.isEnabled()) {
+        telemetry.count('intruder_sighted');
+        if (Math.hypot(other.x - looker.x, other.y - looker.y) > sightRadius) telemetry.count('intruder_sighted_beyond_base');
+      }
       let seenByBand = sightings.get(looker.bandId);
       if (!seenByBand) {
         seenByBand = new Map();

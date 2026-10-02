@@ -1939,22 +1939,32 @@ export class Simulation {
    * which is every world before the idea is worked out and keeps them
    * bit-identical.
    */
-  private dogSight(): ((looker: Person) => number) | undefined {
+  private dogSight(): (looker: Person) => number {
     let dogs: Map<number, Animal> | undefined;
     for (const animal of this.animals) {
       if (animal.alive && animal.tamedBy !== null && animal.species === 'wolf') {
         (dogs ??= new Map()).set(animal.tamedBy, animal);
       }
     }
-    if (!dogs) return undefined;
-    const base = this.config.sightRadius;
     return looker => {
-      const dog = dogs!.get(looker.id);
+      const base = this.sightOf(looker);
+      const dog = dogs?.get(looker.id);
       if (!dog || looker.distanceTo(dog) > DOG_HEARING) return base;
       const power = techPower(looker, 'dog');
       if (power > 0) telemetry.count('dog_sight');
       return base * (1 + DOG_SIGHT * power);
     };
+  }
+
+  /**
+   * How far this person sees, M15 phase 25c: the base radius and what the
+   * ground they stand on adds (`World.sightBonusAt`). The one place that says
+   * so, read by the scorer (`brainCtx.sightRadius`, set per person each step),
+   * by the watch for strangers (`sightIntruders`, through `dogSight`) and so by
+   * the dog's hearing too, which multiplies this and not the bare radius.
+   */
+  sightOf(person: Person): number {
+    return this.config.sightRadius + this.world.sightBonusAt(person.x, person.y);
   }
 
   private lookForIntruders(): void {
@@ -4547,6 +4557,11 @@ export class Simulation {
       // Anything set aside for a drink is picked back up once they are
       // comfortable again, before the brain gets a chance to plan something else.
       this.resumeOrders(person);
+
+      // M15 phase 25c: what this person sees from where they stand. Mutated
+      // on the shared context rather than rebuilt: it is the one field of it
+      // that depends on who is asking.
+      brainCtx.sightRadius = this.sightOf(person);
 
       // A player order holds until the action system completes or abandons it.
       const committed = person.actionTimer > 0 || person.order !== null;

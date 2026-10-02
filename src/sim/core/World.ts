@@ -19,6 +19,9 @@ export const BIOME_ID: Record<Biome, number> = {
   water: 0, beach: 1, grass: 2, forest: 3, hills: 4, rock: 5,
 };
 
+/** Half-width of the box a tile's height is compared with, in tiles. */
+export const PROMINENCE_RADIUS = 5;
+
 export class World {
   readonly width: number;
   readonly height: number;
@@ -35,6 +38,13 @@ export class World {
    * classified from, and so a world nobody has dug is bit-identical.
    */
   readonly offset: Float32Array;
+  /**
+   * How far each tile stands above the mean of the `PROMINENCE_RADIUS` box
+   * round it, in elevation units (zero in a hollow). What `sightBonusAt` reads.
+   * Computed once here and redone for a patch by `refreshProminence` when a
+   * spade changes the ground (phase 26).
+   */
+  readonly prominence: Float32Array;
   readonly moisture: Float32Array;
   readonly fertility: Float32Array;
   /**
@@ -93,6 +103,7 @@ export class World {
     const n = this.width * this.height;
     this.elevation = new Float32Array(n);
     this.offset = new Float32Array(n);
+    this.prominence = new Float32Array(n);
     this.moisture = new Float32Array(n);
     this.fertility = new Float32Array(n);
     this.biome = new Uint8Array(n);
@@ -104,6 +115,7 @@ export class World {
     this.generate(rng);
     this.findShores();
     this.findRegions();
+    this.refreshProminence(0, 0, this.width - 1, this.height - 1);
     for (let i = 0; i < n; i++) {
       this.grassCap[i] = grassCapacity(this, i);
       // A world is founded at the height its ground can hold: the first
@@ -145,6 +157,47 @@ export class World {
     const j = i + this.width;
     const bottom = (e[j]! + o[j]!) * (1 - tx) + (e[j + 1]! + o[j + 1]!) * tx;
     return top * (1 - ty) + bottom * ty;
+  }
+
+  /**
+   * Redoes `prominence` for the tiles in a rectangle, inclusive. A box mean of
+   * the full height field, so a change to one tile also moves everybody within
+   * `PROMINENCE_RADIUS` of it: a caller that digs passes the dug rectangle
+   * grown by that radius. One pass is a box sum per tile, the cost of
+   * generation and no more.
+   */
+  refreshProminence(x0: number, y0: number, x1: number, y1: number): void {
+    const R = PROMINENCE_RADIUS;
+    for (let y = Math.max(0, y0); y <= Math.min(this.height - 1, y1); y++) {
+      for (let x = Math.max(0, x0); x <= Math.min(this.width - 1, x1); x++) {
+        let sum = 0;
+        let n = 0;
+        for (let dy = -R; dy <= R; dy++) {
+          const yy = y + dy;
+          if (yy < 0 || yy >= this.height) continue;
+          for (let dx = -R; dx <= R; dx++) {
+            const xx = x + dx;
+            if (xx < 0 || xx >= this.width) continue;
+            const j = yy * this.width + xx;
+            sum += this.elevation[j]! + this.offset[j]!;
+            n++;
+          }
+        }
+        const i = y * this.width + x;
+        this.prominence[i] = Math.max(0, this.elevation[i]! + this.offset[i]! - sum / n);
+      }
+    }
+  }
+
+  /**
+   * Tiles of extra sight from standing here, M15 phase 25c: the part of the
+   * land above its surroundings, in metres, times `heightSight`. Zero for any
+   * tile that is not above its neighbourhood, so a meadow sees what it did.
+   */
+  sightBonusAt(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return 0;
+    return this.prominence[this.index(Math.floor(x), Math.floor(y))]! *
+      this.config.metresPerUnit * this.config.heightSight;
   }
 
   /** Metres per elevation unit, from the config: what the slope terms scale by. */

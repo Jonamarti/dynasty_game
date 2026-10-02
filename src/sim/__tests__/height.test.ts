@@ -36,3 +36,21 @@ describe('World.heightAt', () => {
     expect(w.metresAt(30, 30)).toBeCloseTo(0, 4);
   });
 });
+
+describe('World.sightBonusAt', () => {
+  it('is zero on flat ground and in a hollow, and grows with how far a hill stands above its surroundings', () => {
+    const w = world();
+    for (let i = 0; i < w.width * w.height; i++) { w.elevation[i] = 0.5; w.offset[i] = 0; }
+    w.refreshProminence(0, 0, w.width - 1, w.height - 1);
+    expect(w.sightBonusAt(30, 30)).toBe(0);
+    w.offset[30 * w.width + 30] = 0.1;
+    w.offset[10 * w.width + 10] = -0.1;
+    w.refreshProminence(0, 0, w.width - 1, w.height - 1);
+    const hill = w.sightBonusAt(30, 30);
+    expect(hill).toBeGreaterThan(0.3);
+    expect(w.sightBonusAt(10, 10)).toBe(0);
+    w.offset[30 * w.width + 30] = 0.2;
+    w.refreshProminence(25, 25, 35, 35);
+    expect(w.sightBonusAt(30, 30)).toBeGreaterThan(hill);
+  });
+});

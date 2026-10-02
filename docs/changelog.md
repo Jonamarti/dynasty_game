@@ -41,6 +41,23 @@ solo oso, a más de 5,5 de 7 casillas del fuego): ahora se descuentan las dos
 casillas del borde (`FIRE_RIM`). Sano 0 de 172; roto 436 de 163 (`wilds`), 62 de
 62 (`hearths`).
 
+## 2026-10-02 — M15 fase 25c: desde lo alto se ve más
+
+`World.prominence` (cuánto sobresale cada casilla de la media de su caja de
+11×11, calculado una vez y rehecho por parcelas con `refreshProminence` cuando
+la fase 26 cave) y `sightBonusAt` = prominencia en metros × `heightSight`
+(0,1 casillas por metro). Medido: mediana 2,6 m, p90 15,6 m, cimas 38 m, o sea
++1,6 casillas en el p90 y hasta +3,8 en las cimas sobre una base de 12; un prado
+ve lo que veía. **`Simulation.sightOf(person)`** es el único sitio que lo dice
+y lo leen el puntuador (`brainCtx.sightRadius`, puesto por persona cada paso:
+el cazador, la comida y todo el resto de `proximityBonus`) y la guardia
+(`sightIntruders` por `dogSight`, que ahora multiplica este radio y no el base).
+El plan decía `Light.sightOf`, que no existe.
+
+Check `hills-see-farther`: de los extraños avistados, cuántos desde más lejos
+que el radio base (279 de 3.445 en `crowded`; 0 con `heightSight` 0, rojo). En
+`band` hay 19 avistamientos y da n/a.
+
 ## 2026-10-02 — M15 fase 25a: el relieve se ve
 
 `World.heightAt` (elevación más `offset`, un `Float32Array` a cero que escribirá

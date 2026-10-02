@@ -3276,6 +3276,20 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         thousands(tel.step_slope_flat ?? 0) + ' flat 100%');
   }
 
+  // M15 phase 25c: height sees further. Of the strangers a band's members
+  // sighted on their ground, some were seen from further off than the bare
+  // radius, which only a looker on high ground can do. The failure is the
+  // build with `heightSight` at 0: many sightings, none beyond the base.
+  const sighted = tel.intruder_sighted ?? 0;
+  if (sighted < 30) {
+    skip('hills-see-farther', sighted + ' sightings of strangers in this run; too few to say');
+  } else {
+    const beyond = tel.intruder_sighted_beyond_base ?? 0;
+    add('hills-see-farther',
+      beyond > 0,
+      beyond + ' of ' + thousands(sighted) + ' sightings were from further off than the bare radius of ' +
+        sim.config.sightRadius + ' tiles');
+  }
 
   return checks;
 }
