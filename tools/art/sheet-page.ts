@@ -4,7 +4,7 @@
  * tint or a missing key is visible here before it is visible in play.
  */
 import { ArtAtlas, type PersonAspect, type WornGarments } from '../../src/render/ArtAtlas.ts';
-import type { ArtAge, ArtDir, ArtPose, ArtSex } from '../../src/render/ArtManifest.ts';
+import { GATHER_POSES, type ArtAge, type ArtDir, type ArtPose, type ArtSex } from '../../src/render/ArtManifest.ts';
 
 const BANDS = ['#3b6ea8', '#a83b52', '#7a4ea8', '#a8843b', '#3ba88a', '#a83b8f', '#6f9a3b', '#a8603b', '#7d7d7d'];
 const SKINS = ['#ecd0ab', '#d4a276', '#bd865a', '#a26a46', '#84512f', '#663a24', '#f2d8ba', '#b17c50', '#c58d5f'];
@@ -102,6 +102,16 @@ function person(over: AspectOver, label: string, row: HTMLElement): void {
   const row = section('walk', 'Walk cycle');
   for (const dir of ['S', 'E', 'N'] as ArtDir[]) {
     for (const pose of ['idle', 'w0', 'w1', 'w2', 'w3'] as ArtPose[]) person({ pose, dir, sex: 'f', hairStyle: 'long', wear: { torso: 'wrap' } }, `${dir} ${pose}`, row);
+  }
+}
+
+{
+  const row = section('gather', 'Gather: reach, pick, withdraw (feet planted)');
+  for (const dir of ['S', 'E', 'N', 'W'] as ArtDir[]) {
+    for (const pose of GATHER_POSES) person({ pose, dir, sex: 'f', hairStyle: 'long', wear: { torso: 'tunic', hands: 'gloves' } }, `${dir} ${pose}`, row);
+  }
+  for (const age of ['child', 'elder'] as ArtAge[]) {
+    for (const pose of GATHER_POSES) person({ age, pose, dir: 'E' }, `${age} ${pose}`, row);
   }
 }
 

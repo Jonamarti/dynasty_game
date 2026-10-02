@@ -41,6 +41,7 @@ import { Floaters } from './Floaters.ts';
 import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
+import { gatheringPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import {
   SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
@@ -514,6 +515,9 @@ export class Renderer {
     this.camera.setViewport(width, height);
   }
 
+  /** The accumulator fraction is held by main.ts when the world is paused. */
+  private workAlpha = 1;
+
   /**
    * Draws one frame.
    *
@@ -523,6 +527,7 @@ export class Renderer {
    * computing it and throwing it away.
    */
   render(highlight: Highlight | null, alpha = 1): void {
+    this.workAlpha = alpha;
     const { ctx, camera, sim } = this;
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, camera.viewWidth, camera.viewHeight);
@@ -1822,14 +1827,15 @@ export class Renderer {
     }
     const hair = hairVariantOf(person);
     const hairStyle = hair === 'bald' || hair === 'balding' ? hair : person.sex === 'female' ? 'long' : 'short';
+    const gathering = gatheringPose(person, this.sim, moving, this.workAlpha);
     const aspect: PersonAspect = {
       age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
-      pose: moving ? (('w' + frame) as ArtPose) : 'idle',
+      pose: moving ? (('w' + frame) as ArtPose) : gathering ?? 'idle',
       skin: Renderer.TRIBE_SKIN[colorIndex]!,
       hair: hair === 'grey' ? '#a7a197' : person.id % 3 === 0 ? '#5b3d28' : '#2b2018',
       band: BAND_COLORS[colorIndex]!,
       hairStyle, beard: hasBeardOf(person), expression: this.expressionFor(person),
-      wear: {}, carryBaby: false, held: heldItemFor(person),
+      wear: {}, carryBaby: false, held: gathering ? null : heldItemFor(person),
     };
     const ratio = Math.min(1.2, Math.max(0.85, bodyScale / Renderer.NOMINAL_SCALE[sizeClass]));
     const k = (scale * 1.55 * ratio) / 96;

@@ -1,5 +1,23 @@
 # Known bugs and rough edges
 
+## Recolección animada: alcance visual y línea base (2026-10-02)
+
+La primera familia de trabajo usa un gesto común para recolección manual y
+fruta del árbol. Ajustar la altura de alcance al recurso, animar pesca/sílex/
+arcilla y dibujar el gesto en el renderer procedural de respaldo siguen
+pendientes. La ruta normal de hojas generadas sí dibuja las cuatro poses;
+no se ha cambiado la cantidad recolectada ni el comportamiento de los NPC.
+
+El chequeo previo de este pase conserva los seis fallos de `band` ya anotados:
+conocimiento de objetivos, noticias de comida, dieta, sueño, opiniones y
+presupuesto de rendimiento. No se corrigen con arte. La suite unitaria estable
+da 817/817; el navegador da 54/60 con los mismos seis fallos previos del picker.
+El test nuevo del NPC animado pasa, incluida pausa, interrupción y cuatro
+imágenes distintas. Los 23 escenarios de la matriz conservan los mismos
+checks aprobados/aplicables y listas de fallos de la referencia posterior
+a 26f, sin nuevas regresiones. La matriz sigue roja. Informes en
+`artifacts/verification/m15-gather-2026-10-02/`.
+
 ## Verificación al continuar M15 fase 26 (2026-10-02)
 
 La matriz de referencia anterior a las herramientas de cavar recorre 23

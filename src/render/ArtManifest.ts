@@ -17,13 +17,14 @@
 export type ArtDir = 'S' | 'E' | 'N' | 'W';
 export type ArtAge = 'infant' | 'child' | 'adolescent' | 'adult' | 'elder';
 export type ArtSex = 'm' | 'f';
-export type ArtPose = 'idle' | 'w0' | 'w1' | 'w2' | 'w3';
+export type ArtPose = 'idle' | 'w0' | 'w1' | 'w2' | 'w3' | 'g0' | 'g1' | 'g2' | 'g3';
 
 export const ART_AGES: readonly ArtAge[] = ['infant', 'child', 'adolescent', 'adult', 'elder'];
 export const ART_SEXES: readonly ArtSex[] = ['m', 'f'];
 /** West is the mirror of east: three drawings per pose, never four. */
 export const ART_BAKED_DIRS: readonly Exclude<ArtDir, 'W'>[] = ['S', 'E', 'N'];
-export const ART_POSES: readonly ArtPose[] = ['idle', 'w0', 'w1', 'w2', 'w3'];
+export const GATHER_POSES = ['g0', 'g1', 'g2', 'g3'] as const;
+export const ART_POSES: readonly ArtPose[] = ['idle', 'w0', 'w1', 'w2', 'w3', ...GATHER_POSES];
 
 /** One unique picture in a sheet: [sheet, x, y, w, h, ox, oy]. `ox`/`oy` say
  * where the trimmed picture sat inside its original 96 px cell. */

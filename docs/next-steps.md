@@ -1,5 +1,12 @@
 # Next steps
 
+**2026-10-02: M15 fase 17, primera animación de trabajo.** Recolección manual
+en cuatro fotogramas, integrada en NPC y jugador, con pausa y abandono visibles
+en la pose. Capturas y GIF en
+`artifacts/screenshots/m15-gather-2026-10-02T20-59-49-511Z/`.
+Talar, cavar y fabricar todavía necesitan gestos propios; el nuevo gesto no
+completa toda la fase de arte. No cambia el orden pendiente de obras de la 26.
+
 **2026-10-02: M15 fase 26f, invariante de regiones hecho.**
 `regions-stay-true` compara la partición incremental con un relleno completo al
 final de los 23 escenarios de la matriz; el test de propiedad de 16a usa el

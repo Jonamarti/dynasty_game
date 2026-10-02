@@ -115,11 +115,11 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
   return g;
 }
 
-/** The upper-body lift, in whole px, for each pose: the walk bobs on odd frames. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1 };
+/** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1 };
 
 function poseSwing(pose: ArtPose): { walk: boolean; f: number; sw: number } {
-  if (pose === 'idle') return { walk: false, f: 0, sw: 0 };
+  if (!pose.startsWith('w')) return { walk: false, f: 0, sw: 0 };
   const f = Number(pose.slice(1));
   return { walk: true, f, sw: [0, 1, 0, -1][f]! };
 }
@@ -514,6 +514,11 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
     }
     let hand: Pt = [cx + side * (sh + 1.2 - inward), sY + 2.4 + len];
     let elbow: Pt = [(sh0[0] + hand[0]) / 2 + side * 0.9, (sh0[1] + hand[1]) / 2];
+    if (spec.pose.startsWith('g') && isRight) {
+      const reach = [0.25, 0.8, 1, 0.45][Number(spec.pose.slice(1))]!;
+      hand = [cx + side * (sh + g.arm * 0.35 * reach), sY + g.arm * (0.7 - 0.38 * reach)];
+      elbow = [cx + side * (sh + g.arm * 0.25), sY + g.arm * 0.55];
+    }
     if (spec.carry) { hand = [cx + side * 2.4, sY + T * 0.66]; elbow = [cx + side * (sh + 1.8), sY + T * 0.5]; }
     add(P, 'arms', limb([sh0, elbow, hand], g.limb * 0.92, skin, line));
     add(P, 'sleeves', sleeveWear(w, sh0, elbow, hand, g));
@@ -581,6 +586,11 @@ function sideLayers(spec: PersonSpec): PersonOut {
     const col = near ? skin : REF.skinFar;
     const Larm = g.arm / 2;
     let a1 = -sw * 24 * (near ? 1 : -1), a2 = a1 + 14;
+    if (spec.pose.startsWith('g') && near) {
+      const phase = Number(spec.pose.slice(1));
+      a1 = [20, 48, 62, 28][phase]!;
+      a2 = [65, 85, 100, 110][phase]!;
+    }
     if (spec.carry) { a1 = 32; a2 = 104; }
     const elbow = at(shoulder, a1, Larm), hand = at(elbow, a2, Larm);
     const s = near ? 'near' : 'far';

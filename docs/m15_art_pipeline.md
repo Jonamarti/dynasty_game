@@ -28,11 +28,11 @@ Key: `p/<slot>/<variant>/<age>.<sex>/<dir>/<pose>` (`personKey`).
 
 - **age** `infant child adolescent adult elder` (`sizeClassOf`); **sex** `m f`;
   **dir** `S E N`, with `W` the renderer's mirror of `E` about x = 48.
-- **pose** `idle w0 w1 w2 w3` (the four walk frames). Work, sleep, sit and swim
-  poses come with their phases: add a name to `ART_POSES`, draw it in
+- **pose** `idle w0 w1 w2 w3 g0 g1 g2 g3` (four walk and four gathering frames).
+  Other work, sleep, sit and swim poses come with their phases: add a name to `ART_POSES`, draw it in
   `people/rig.ts`, rebuild. A pose is a set of layers like any other.
 - **Cell** 96 px, feet on row 88. The upper body bobs by
-  `anchors[...].bob` whole pixels on the odd walk frames: draw every layer except
+  `anchors[...].bob` whole pixels on odd walk frames and during gathering: draw every layer except
   `shadow`, `legs*`, `trousers*`, `feet*` that much lower.
 - **Slots** stack bottom to top in `meta.order[dir]`. A missing key means
   "nothing to draw for this slot" (a woman's chest band exists; a man's does not).
@@ -121,5 +121,29 @@ rule (and the key), and the two pictures stay.
 - **Garments are not in the sim yet**: `PersonAspect.wear` is always empty until
   phase 14. The layers exist, are drawn for every age, sex and facing, and are on
   `npm run art:sheet`.
-- **Work, sleep and sit poses** and the swimming pose (phase 27) are not drawn.
+- **Other work, sleep and sit poses** and the swimming pose (phase 27) are not drawn.
+  Gathering now uses four poses for berries, sticks, reeds, wild grain and tree
+  fruit. Fish, flint and clay keep their previous appearance. The same hand
+  gesture is used for bush and tree fruit; different reaching heights remain
+  a possible visual refinement. The procedural fallback has no work gesture.
 - **Trees, resource nodes and terrain** are still drawn in code.
+
+## Gathering cost measured on 2026-10-02
+
+The regenerated people domain still fits one sheet: 1,397 → 1,829 distinct
+pictures after deduplication. The PNG grows from 747,678 to 977,046 bytes
+(+224 KiB); the sheet grows from 2048×293 to 2048×431. Its raw RGBA pixels grow
+from 2,400,256 to 3,530,752 bytes (+1.08 MiB), before browser overhead or any
+GPU copies. These are asset measurements, not measured browser memory or FPS.
+
+The composed-person cache retains its 1,500-entry limit. A 96×96 RGBA sprite
+contains 36 KiB of pixels; four gathering frames therefore contain 144 KiB for
+one appearance and direction. At capacity the raw composed pixels are about
+52.7 MiB, plus canvases and browser overhead. More poses use existing slots
+so frequently changing appearances may require more compositions after eviction;
+the cap does not grow. Tinted-layer caching is separate and also remains bounded.
+Use finite pose keys, never an unbounded time or angle in `aspectKey`.
+
+`npm run art:sheet` includes `contact-gather.png`: all four facings, clothing,
+child and elder. Tests verify stationary legs, four distinct hand anchors,
+manifest coverage, pause/interruption and four distinct composed browser frames.

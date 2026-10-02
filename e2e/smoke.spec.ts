@@ -1516,6 +1516,90 @@ test('the kit tab lists what you carry and offers verbs on it', async ({ page })
   expect(errors).toEqual([]);
 });
 
+test('a gathering NPC cycles visible poses, freezes while paused and releases the gesture on interruption', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  await expect.poll(() => page.evaluate(() => !!(window as unknown as {
+    __dynasty: { renderer: { art: unknown } };
+  }).__dynasty.renderer.art)).toBe(true);
+
+  const id = await page.evaluate(() => {
+    const d = (window as unknown as { __dynasty: { sim: Simulation; camera: Camera; renderer: { fogEnabled: boolean; interpolator: { clear: () => void } } } }).__dynasty;
+    const npc = d.sim.people.find(p => p.alive && p !== d.sim.player && !p.isChild)!;
+    const bush = d.sim.nodes.filter(n => n.kind === 'berries' && !n.depleted &&
+      n.x > 15 && n.x < d.sim.world.width - 15 && n.y > 12 && n.y < d.sim.world.height - 12 &&
+      d.sim.world.isWalkable(n.x - 0.3, n.y) &&
+      !d.sim.trees.some(t => t.standing && Math.hypot(t.x - n.x, t.y - n.y) < 1.5))
+      .sort((a, b) => d.sim.player!.distanceTo(a) - d.sim.player!.distanceTo(b))[0]!;
+    npc.x = bush.x - 0.3; npc.y = bush.y;
+    npc.action = 'forage'; npc.order = 'forage'; npc.targetNodeId = bush.id;
+    npc.targetX = bush.x; npc.targetY = bush.y; npc.path = null;
+    npc.actionTimer = 20; npc.workedTicks = 1;
+    npc.inventory.add('spear', 1);
+    d.sim.time.tick = Math.floor(d.sim.config.time.ticksPerDay * 0.45);
+    // A paused world does not capture the teleport into its interpolation tracks.
+    d.renderer.interpolator.clear();
+    d.renderer.fogEnabled = false;
+    d.camera.zoom = 3.75; d.camera.snapTo(npc.x, npc.y); d.camera.following = false;
+    return npc.id;
+  });
+  await page.waitForTimeout(250); // Let the previous walking interpolation settle.
+  const captures = 'artifacts/screenshots/m15-gather-' + new Date().toISOString().replace(/[:.]/g, '-');
+
+  // Observe the real renderer's aspect without changing which pixels it draws.
+  await page.evaluate(() => {
+    type Aspect = import('../src/render/ArtAtlas.ts').PersonAspect;
+    const d = (window as unknown as { __dynasty: { renderer: { art: { compose: (a: Aspect) => HTMLCanvasElement } } } }).__dynasty;
+    const original = d.renderer.art.compose.bind(d.renderer.art);
+    d.renderer.art.compose = a => {
+      const sprite = original(a);
+      if (a.pose.startsWith('g')) {
+        (window as unknown as { __gatherAspect: Aspect }).__gatherAspect = { ...a };
+        (window as unknown as { __gatherPixels: string }).__gatherPixels = sprite.toDataURL();
+      }
+      return sprite;
+    };
+  });
+  const pose = () => page.evaluate(() => (window as unknown as {
+    __gatherAspect?: { pose: string; held: string | null };
+  }).__gatherAspect);
+  const pixels = new Set<string>();
+  for (let frame = 0; frame < 4; frame++) {
+    await page.evaluate(({ id, frame }) => {
+      const sim = (window as unknown as { __dynasty: { sim: Simulation } }).__dynasty.sim;
+      sim.peopleById.get(id)!.workedTicks = frame * 2 + 1;
+    }, { id, frame });
+    await expect.poll(async () => (await pose())?.pose).toBe('g' + frame);
+    expect((await pose())?.held).toBeNull(); // A spear in the pack does not become a picking tool.
+    pixels.add(await page.evaluate(() => (window as unknown as { __gatherPixels: string }).__gatherPixels));
+    await page.screenshot({ path: captures + `/0${frame + 1}-gather-g${frame}.png` });
+  }
+  expect(pixels.size).toBe(4); // Changing an aspect name must actually change the drawn hand.
+  const paused = await pose();
+  await page.waitForTimeout(400);
+  expect(await pose()).toEqual(paused);
+  // A direct draw of this NPC observes the interruption without relying on a
+  // captured aspect from a different worker elsewhere on screen.
+  const stopped = await page.evaluate(id => {
+    type Aspect = import('../src/render/ArtAtlas.ts').PersonAspect;
+    const d = (window as unknown as { __dynasty: { sim: Simulation; renderer: {
+      art: { compose: (a: Aspect) => HTMLCanvasElement };
+      drawArtPerson: (...args: unknown[]) => void;
+    } } }).__dynasty;
+    const npc = d.sim.peopleById.get(id)!;
+    npc.action = 'idle'; npc.actionTimer = 0; npc.order = null;
+    let aspect: Aspect | null = null;
+    const original = d.renderer.art.compose.bind(d.renderer.art);
+    d.renderer.art.compose = a => { aspect = a; return original(a); };
+    d.renderer.drawArtPerson(d.renderer.art, npc, { x: npc.x, y: npc.y }, 400, 400, 60, 1, 'adult', 0);
+    return aspect as Aspect | null;
+  }, id);
+  expect(stopped?.pose).toBe('idle');
+  expect(stopped?.held).toBe('spear');
+  expect(errors).toEqual([]);
+});
+
 test('digging tools appear in the craft bar and carried kit', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);

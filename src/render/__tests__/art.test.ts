@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { ANIMAL_KINDS } from '../../../art/src/animals/animals.ts';
 import { collectAnimals, collectBuildings, collectPeople, collectProps } from '../../../art/src/registry.ts';
 import { personLayers, type PersonSpec } from '../../../art/src/people/rig.ts';
-import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, personKey, type ArtManifest } from '../ArtManifest.ts';
+import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, GATHER_POSES, anchorKey, personKey, type ArtManifest, type PersonAnchors } from '../ArtManifest.ts';
 import { BUILDINGS } from '../../sim/entities/Building.ts';
 import { EXPRESSIONS } from '../../sim/core/Mood.ts';
 import { SPECIES } from '../../sim/entities/Animal.ts';
@@ -103,6 +103,26 @@ describe('art coverage', () => {
 });
 
 describe('art build', () => {
+  it('plants the gathering feet while the hand moves, with finite anchors in every body and facing', () => {
+    for (const age of ART_AGES) for (const sex of ART_SEXES) for (const dir of ART_BAKED_DIRS) {
+      const base: PersonSpec = { age, sex, dir, pose: 'idle', wear: { torso: 'longtunic', hands: 'gloves' }, carry: false, hair: 'long', beard: false, expr: 'neutral' };
+      const idle = personLayers(base);
+      const grounded = (out: ReturnType<typeof personLayers>) => out.layers.filter(layer => /^(shadow|legs|trousers|feet)/.test(layer.slot));
+      const hands = new Set<string>();
+      const manifest = load('people');
+      const anchors = manifest.meta['anchors'] as Record<string, PersonAnchors>;
+      for (const pose of GATHER_POSES) {
+        const frame = personLayers({ ...base, pose });
+        expect(grounded(frame)).toEqual(grounded(idle));
+        expect(anchors[anchorKey(age, sex, dir, pose, false)]).toEqual(frame.anchors);
+        expect([...frame.anchors.hr, ...frame.anchors.hl, frame.anchors.bob].every(Number.isFinite)).toBe(true);
+        hands.add(JSON.stringify(frame.anchors.hr));
+        expect(frame.layers.some(layer => /^(arms|arm_near)$/.test(layer.slot))).toBe(true);
+      }
+      expect(hands.size).toBe(4);
+    }
+  });
+
   it('draws the same text twice', () => {
     const spec: PersonSpec = { age: 'adult', sex: 'f', dir: 'E', pose: 'w1', wear: { torso: 'tunic', cloak: 'cloak' }, carry: true, hair: 'long', beard: false, expr: 'warm' };
     expect(JSON.stringify(personLayers(spec))).toBe(JSON.stringify(personLayers(spec)));

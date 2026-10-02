@@ -58,3 +58,7 @@ no change: `ArtAtlas.compose` stacks whatever the manifest has.
 
 Look at `npm run art:sheet` before committing: it is the fastest way to catch a
 wrong tint, a missing key or a garment that does not sit on a child.
+
+`contact-gather.png` reviews the four `g0`–`g3` gathering poses in every facing,
+with tunic/gloves and child/elder samples. They share the normal layered build;
+the runtime chooses work poses in `src/render/WorkAnimation.ts`.

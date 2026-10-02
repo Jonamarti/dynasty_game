@@ -1776,6 +1776,17 @@ se aparta`; `m15: muebles`; `m15: dormir mejor en casa, y el confort`;
 
 ## Fase 17 — El arte: personas pre-renderizadas por capas (nota 6; decisión 9)
 
+**Avance del 2026-10-02 (gesto de recolectar):** cuatro poses `g0`–`g3`
+generadas para todas las edades, sexos y direcciones. El renderer las usa
+durante el trabajo de recoger bayas, palos, juncos, grano silvestre y fruta del
+árbol, con pies quietos y manos libres. El trayecto conserva la marcha;
+pausar congela el gesto e interrumpirlo devuelve la pose normal. No cambia
+la simulación, el rendimiento de la cosecha ni los RNG. Hoja de contacto y
+cuatro capturas del juego en
+`artifacts/screenshots/m15-gather-2026-10-02T20-59-49-511Z/`, con GIF de vista
+previa. Las demás familias de trabajo siguen pendientes. El coste de hojas
+y caché está medido en `m15_art_pipeline.md`.
+
 **Objetivo.** Personas que parezcan personas: la cabeza unida al cuerpo por
 el cuello, brazos delante del torso con manos que sostienen, la ropa que
 llevan dibujada por capas y, sin ropa, un taparrabos (y en las mujeres una

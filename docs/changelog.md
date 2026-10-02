@@ -1,3 +1,47 @@
+## 2026-10-02 — M15 fase 17: primera animación de recolectar
+
+- Se generan cuatro poses `g0`–`g3` por edad, sexo y dirección en el rig por
+  capas: mano que alcanza, recoge y se retira, con pies plantados y pequeño
+  descenso del cuerpo. El oeste conserva el espejo del este; mangas y guantes
+  siguen los mismos anclajes. Las hojas públicas se regeneran desde `art/src`.
+- `render/WorkAnimation.ts` distingue trabajo efectivo de trayecto: exige
+  temporizador activo, trabajo iniciado, objetivo válido y distancia de llegada
+  compartida con `MovementSystem`. Se aplica a `forage`/`gather` de bayas,
+  palos, juncos y grano, y a `pick` de fruta. Un arma en el inventario se oculta
+  mientras la mano recoge. Marcha, interrupción y objetivos vacíos devuelven
+  las poses existentes. No se altera ningún fichero de `src/sim/` ni RNG.
+- La fase visual lee `workedTicks` y la fracción del acumulador de render;
+  no usa reloj de pared, por lo que pausar congela el gesto. Seis tests del
+  selector cubren ciclos, movimiento, arranque, fin, objetivos inválidos,
+  recursos excluidos y pausa. El test del rig comprueba pies y anclajes en
+  todas las combinaciones. El e2e usa un NPC y comprueba las cuatro poses,
+  cuatro imágenes distintas, pausa y cambio a reposo al interrumpir.
+- `art:sheet` añade la hoja de recolección con cuatro direcciones, ropa,
+  niños y mayores. La hoja de personas sigue siendo una: 1.397 → 1.829
+  dibujos únicos, PNG +224 KiB y píxeles RGBA +1,08 MiB. La caché mantiene
+  1.500 entradas. Son medidas de assets, sin afirmar un FPS ni memoria total
+  del navegador. Detalles en `m15_art_pipeline.md`; mediciones en
+  `artifacts/verification/m15-gather-2026-10-02/art-cost.json`.
+
+**Validación:** `typecheck` pasa, suite estable **817/817** en **106 archivos**
+con `npx vitest run --maxWorkers 1 --testTimeout 15000`. `e2e` da **54/60**,
+con los mismos seis fallos previos del picker y el test nuevo aprobado;
+una ejecución focal posterior también comprueba cuatro sprites distintos.
+`art:build -- people`, `art:sheet` y revisión visual completadas.
+`sim:check:all` recorre los **23 escenarios**: cada uno conserva exactamente
+los checks aprobados, aplicables y las listas de fallos de la referencia
+`m15-phase26-2026-10-02/updated-matrix.txt`. No se pierde aplicabilidad ni
+aparece un fallo nuevo. La matriz sigue roja por esa línea base; no se
+presenta como aprobada. Comparación en `matrix-comparison.json` del pase.
+
+**Capturas:** `artifacts/screenshots/m15-gather-2026-10-02T20-59-49-511Z/`
+contiene los cuatro fotogramas del NPC en el juego, `05-art-gather.png` y
+`gather-preview.gif`. Son capturas de una escena controlada y pausada, a luz
+del día para mostrar el gesto, no una medición de economía. Informes en
+`artifacts/verification/m15-gather-2026-10-02/`. Otras familias de trabajo,
+alturas específicas y gesto del fallback procedural quedan pendientes,
+registrados en `bugs.md` y en el plan.
+
 ## 2026-10-02 — M15 fase 26f: las regiones siguen siendo ciertas
 
 - `tools/regions.ts` rehace independientemente las componentes de suelo

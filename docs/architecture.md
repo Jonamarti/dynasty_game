@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-02 (M15 phases 26b tools and 26f region audit). No runtime
+Current as of 2026-10-02 (M15 gathering animation, 26b tools and 26f region audit). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -28,6 +28,13 @@ e2e/            Playwright smoke tests and screenshot tour
 ```
 
 ## The rules that hold it together
+
+**Work animation is presentational.** `render/WorkAnimation.ts` reads active
+harvest timers, valid node/tree targets and the shared `ARRIVAL_RADIUS`; movement
+takes priority. Four `g0`–`g3` poses advance from `workedTicks` plus the render
+accumulator fraction, so pause freezes the gesture without storing an animation
+clock in the simulation or consuming RNG. Gathering hides a carried weapon while
+the hand is working. Other work families keep their existing poses.
 
 **Earthmoving has one tool selector.** `core/Earth.ts` chooses the strongest
 usable carried digging tool through `techPower`: sticks without a technique,
