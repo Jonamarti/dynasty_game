@@ -150,6 +150,14 @@ using the project's screenshot tour (`npm run shots`) or an equivalent capture
 that clearly shows the current game. These captures are a chronological visual
 record for `development_progress`; do not overwrite earlier milestone captures.
 
+**Each functionality ships with its documentation and tests.** Update the
+plan and `docs/changelog.md` in the same commit, and add or update meaningful
+tests for the new behaviour. Record unresolved findings in `docs/bugs.md`.
+When the UI changes, capture the changed screen under a new, dated milestone
+directory in `artifacts/screenshots/` and record its path in the changelog.
+An existing failing baseline must be reported separately from new regressions;
+do not describe a failing verification run as passing.
+
 Four layers, fastest first. `npm run verify` chains them. Run at least the
 first three before you claim anything works.
 
