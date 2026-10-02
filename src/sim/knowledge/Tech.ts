@@ -132,6 +132,9 @@ export const TECHS = [
   // and shipped with its three readers: `Fear.sightIntruders` (strangers),
   // `WildlifeSystem.victimFor` (predators) and `companionBonus` (the hunt).
   'dog',
+  // M15 phase 38b: the State, one node per commit with its reader — see
+  // `social/Polity.ts`. `redistribution` is the temple store.
+  'redistribution',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1565,6 +1568,48 @@ export const TECH: Record<Tech, TechDef> = {
       'strangers and its predators before anyone does, and it hunts at the ' +
       'heel of the one who feeds it.',
   },
+
+  // --- M15 phase 38b: the State, in historical order --------------------------
+  //
+  // `m14_plan.md` phase 20b's table, one node per commit, each shipped with
+  // its reader. All of them hang off the chief's own head — see
+  // `social/Polity.ts` — so a State is a chief who knows how to run one, and
+  // it lapses the day that chief is replaced by somebody who does not.
+  redistribution: {
+    id: 'redistribution', label: 'Redistribution', domain: 'people',
+    age: 'neolithic', firstKnown: 'about 5500 BC',
+    // A practice: the temples of Eridu and Tell el-Oueili were granaries
+    // before they were anything else, and there is nothing to build that the
+    // granary is not already. Tried by doing it — handing the band's stores
+    // back out to the band, which is a feast (`doFeast` notes `feast` on
+    // finishing, through `ActionSystem.finish`).
+    kind: 'practice', practisedBy: ['feast'],
+    // `chiefdom` because a store held for everybody needs somebody it is
+    // held by, and `pottery` because the granary it is held in needs pots.
+    requires: ['chiefdom', 'pottery'], difficulty: 0.55, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      // The archaeologists' own route: the feast is redistribution before the
+      // temple, and watching one empty a single household's store is what
+      // makes the band's whole surplus look like something that could be
+      // gathered and given out the same way.
+      { needs: [{ kind: 'knows', tech: 'chiefdom' }, { kind: 'saw', what: 'feast' },
+                { kind: 'doing', action: 'store' }],
+        weight: 1.0, story: 'watched a feast empty one house\'s store, and thought the whole band\'s could be gathered and given out the same way' },
+      // Hunger beside a neighbour's full store.
+      { needs: [{ kind: 'knows', tech: 'chiefdom' }, { kind: 'feeling', need: 'hunger' },
+                { kind: 'doing', action: 'take' }],
+        weight: 0.7, story: 'went hungry while one house\'s store stood full, and wondered who the store was for' },
+      // And the quarrel over it: a theft from a store is what a store held by
+      // nobody in particular invites.
+      { needs: [{ kind: 'knows', tech: 'chiefdom' }, { kind: 'saw', what: 'theft' },
+                { kind: 'doing', action: 'store' }],
+        weight: 0.5, story: 'saw a store robbed, and thought a store kept by the chief for everybody would not be' },
+    ],
+    description:
+      'The granary becomes the temple: the band\'s surplus gathered in one ' +
+      'place, kept by the chief, and handed back out at the chief\'s table.',
+  },
 };
 
 /** Highest chronic motive this design can answer; zero means no recorded need. */
@@ -1821,6 +1866,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   dog: {
     summary: 'A tamed wolf that hears strangers and predators before you do, and hunts at your heel.',
     site: 'Fear.sightIntruders via Simulation.dogSight; WildlifeSystem.victimFor; WildlifeSystem.companionBonus',
+  },
+  redistribution: {
+    summary: 'The chief\'s granary becomes the temple: the loyal store their surplus there, and the chief feasts the band from it.',
+    site: 'social/Polity.ts templeOf and templePull; Brain store ranking; Feast.feastVenue and mayHostFeast',
   },
 };
 

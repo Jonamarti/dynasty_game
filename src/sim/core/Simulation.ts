@@ -97,6 +97,7 @@ import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
 import { feastVenue } from '../social/Feast.ts';
+import { templeOf } from '../social/Polity.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
 
 /**
@@ -284,6 +285,12 @@ export class Simulation {
   private readonly feudEvents = new Set<number>();
   /** Cases waiting for the player-chief to choose a local verdict. */
   readonly pendingVerdicts: Case[] = [];
+  /**
+   * Each band's temple store, by band id — M15 phase 38b. Recomputed daily
+   * from the chief's own head (`Polity.templeOf`), so a temple lapses the day
+   * its chief is replaced by somebody who never learned redistribution.
+   */
+  readonly templeByBand = new Map<number, number>();
 
   /**
    * Knowledge the world has, counted from the adults alive right now.
@@ -2328,7 +2335,27 @@ export class Simulation {
   feastVenueFor(person: Person): Building | null {
     const household = person.householdId === null ? null : this.householdsById.get(person.householdId) ?? null;
     return feastVenue(person, household, this.bandSystem.chiefByBand.get(person.bandId) === person.id,
-      this.buildings, this.buildingsById, this.time.day);
+      this.buildings, this.buildingsById, this.time.day, this.templeOf(person.bandId));
+  }
+
+  /** A band's temple store, if it has one today — M15 phase 38b. */
+  templeOf(bandId: number): Building | null {
+    const id = this.templeByBand.get(bandId);
+    const temple = id === undefined ? null : this.buildingsById.get(id) ?? null;
+    return temple && temple.complete && !temple.ruined ? temple : null;
+  }
+
+  /** Daily: which granary is each band's temple, from its chief's own head. */
+  private refreshTemples(): void {
+    this.templeByBand.clear();
+    for (const band of this.bands) {
+      if (band.outcast || band.chiefId === null) continue;
+      const temple = templeOf(this.peopleById.get(band.chiefId), band.id, this.buildings);
+      if (temple) {
+        this.templeByBand.set(band.id, temple.id);
+        telemetry.count('temple_days');
+      }
+    }
   }
 
   /** The one ownership answer shared by direct UI actions and simulation work. */
@@ -4277,6 +4304,8 @@ export class Simulation {
         nodeHash: this.nodeHash,
       });
 
+      this.refreshTemples();
+
       this.knowledgeSystem.daily(this.people, {
         rng: this.knowledgeRng,
         tick: this.time.tick,
@@ -4360,6 +4389,7 @@ export class Simulation {
       eatAtSourceAt: this.config.carry.eatAtSourceAt,
       carry: this.config.carry,
       chiefByBand: this.bandSystem.chiefByBand,
+      templeByBand: this.templeByBand,
       snowDepth: this.snowDepth,
       // The one number the scorer needs about the ground, from the one
       // implementation that computes it. A `spread` aimed at a plot the panel
@@ -4470,6 +4500,7 @@ export class Simulation {
       onStopped: (person: Person, action: string, reason: string) =>
         this.noteStop(person, action, reason),
       chiefByBand: this.bandSystem.chiefByBand,
+      templeByBand: this.templeByBand,
       onComplaint: (teller: Person, chief: Person, told: Case) => this.hearComplaint(teller, chief, told),
       onParley: (chief: Person, envoy: Person, told: Case) => this.putToEnvoy(chief, envoy, told),
       onWatched: (person: Person, use: PropertyUse) => this.noteWatched(person, use),

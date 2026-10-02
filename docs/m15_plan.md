@@ -2857,6 +2857,20 @@ normas de su pueblo. La cerveza **no** es requisito: medido, con ella
 `feasts` hacía 0 banquetes (7 cervezas en 24.000 ticks). Rechazos visibles:
 `no_feast_to_give` y `nobody_came`. Check `feasts-gather-the-band`.
 
+**Avance del 2026-10-03 (38b, `redistribution` y el escenario `polity`).**
+Primer nodo del Estado (práctica, `chiefdom` + `pottery`, hacia el 5500 a. C.,
+practicada al dar un banquete). Todo el Estado cuelga de la cabeza del jefe
+(`social/Polity.ts`): el templo es el mayor granero de la banda **si su jefe
+sabe** `redistribution`, recalculado a diario (`Simulation.templeByBand`), así
+que se pierde el día que lo sustituye alguien que no lo sabe. Dos efectos: al
+guardar comida sobrante, el templo tira con `TEMPLE_PULL` (16 casillas a plena
+lealtad) contra la cercanía y el tirón del propio hogar; y el jefe puede dar
+banquetes desde el templo sin saber `brewing`. La ficha del edificio dice
+cuál es el templo. Escenario `polity` (dos bandas de 14 que ya saben el
+Estado, con un granero colocado en `setup`) y check `the-temple-gathers`:
+93,5 % de la comida guardada va al templo con el tirón y 66 % sin él (umbral
+80 %).
+
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 
 **Detalle en `m14_plan.md` fase 21.** Declarar la guerra y la paz

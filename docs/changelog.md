@@ -1,3 +1,45 @@
+## 2026-10-03 — M15 fase 38b: la redistribución y el templo
+
+- **Nodo `redistribution`** (práctica, `people`, Neolítico, «hacia el 5500
+  a. C.»; requiere `chiefdom` y `pottery`; se practica al terminar un
+  banquete). Tres chispas: ver un banquete vaciar el almacén de una casa
+  mientras se guarda comida (la ruta arqueológica: el banquete es la
+  redistribución antes del templo), pasar hambre junto a un almacén ajeno
+  lleno, y ver robar un almacén.
+- **El templo** (`social/Polity.ts`, `templeOf`): el mayor granero de la
+  banda, si y sólo si **su jefe** sabe `redistribution`. Se recalcula a diario
+  en `Simulation.templeByBand` desde la cabeza del jefe, así que un templo se
+  pierde el día que lo sustituye alguien que no lo sabe, sin contabilidad que
+  lo retire. Ningún dado.
+- **Efecto 1, guardar:** en el ranking de `store`, el templo tira
+  `TEMPLE_PULL × poder del jefe × (0,25 + lealtad)` casillas (16 a plena
+  lealtad), contra la distancia y el tirón del propio hogar (`HOARD_PULL`, 8).
+  Sólo la comida sobrante; una carga de palos se deja donde siempre.
+- **Efecto 2, repartir:** el jefe que lo sabe puede dar el banquete desde el
+  templo aunque no sepa `brewing` (`Feast.mayHostFeast`), y lo prefiere a
+  cualquier otro almacén.
+- **Interfaz:** la ficha del granero dice que es el templo. Español en
+  `i18n/es/polity.ts`.
+- **Escenario `polity`** (semilla `ziggurat`, 2 bandas × 14, 24.000 pasos):
+  fundadores que ya saben el Estado, por el truco de `craft` y `scribes`, y un
+  granero terminado junto a cada campamento colocado en `setup`. Crecerá con
+  cada nodo del bloque.
+- **Check `the-temple-gathers`**: parte del templo en la comida guardada por
+  la banda en sus propios almacenes, y al menos un banquete dado desde él.
+  Medido en `polity`: **93,5 %** con el tirón, **66,2 %** con `TEMPLE_PULL` a
+  cero (el granero está junto al campamento y gana por cercanía). Umbral 80 %;
+  el primer intento, 30 %, pasaba con y sin el efecto. 30 banquetes desde el
+  templo y 403 invitados servidos.
+- **Tests:** `polity.test.ts` (4): el templo exige la idea en el jefe, no es
+  una ruina ni una obra, tira más de los leales, y deja al jefe festejar sin
+  cerveza (al jefe, no a quien sabe la idea sin el cargo).
+
+**Fuera de `polity` nada cambia**: el templo sólo existe con un jefe que sabe
+`redistribution`, y ningún otro escenario lo enseña. En `polity` fallan además
+`roast-wins`, `cooking-spreads`, `pots-reach-a-granary` y
+`fields-are-sown-and-reaped`; es un escenario nuevo sin base con la que
+comparar, y se anotan en `bugs.md`.
+
 ## 2026-10-03 — M15 fase 38a: el banquete
 
 Primer commit del bloque IX, hecho en la rama `m15/block9` (worktree propio)

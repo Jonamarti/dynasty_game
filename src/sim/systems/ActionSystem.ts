@@ -70,6 +70,7 @@ import {
 import { giftWorth } from '../social/Events.ts';
 import {
   FEAST_COMPANY, FEAST_CUP_RELIEF, FEAST_SEAT, FEAST_TICKS, SERVE_EVERY, dishFor, feastVenue, isLarder,
+  mayHostFeast,
 } from '../social/Feast.ts';
 import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import {
@@ -182,6 +183,8 @@ export interface ActionContext {
   onStopped: (person: Person, action: string, reason: string) => void;
   /** Who leads each band — `BandSystem.chiefByBand`. For `complain`, M12 phase 2b. */
   chiefByBand: ReadonlyMap<number, number>;
+  /** Each band's temple store, M15 phase 38b. Optional for hand-built contexts. */
+  templeByBand?: ReadonlyMap<number, number>;
   /**
    * `teller` has put `told` to `chief` — a grievance of their own, or a
    * demand carried from another people. The simulation judges it and says
@@ -2039,18 +2042,22 @@ export class ActionSystem {
         return;
       }
       telemetry.count('stored', moved);
+      if ((ITEMS[requested]?.nutrition ?? 0) > 0) this.noteFoodStored(person, store, moved, ctx);
       this.finish(person);
       return;
     }
 
     let moved = 0;
+    let food = 0;
     for (const [itemId, count] of person.inventory.entries()) {
       const room = store.storageFree;
       if (room <= 0) break;
       const taken = person.inventory.remove(itemId, Math.min(count, room));
       store.store.add(itemId, taken);
       moved += taken;
+      if ((ITEMS[itemId]?.nutrition ?? 0) > 0) food += taken;
     }
+    if (food > 0) this.noteFoodStored(person, store, food, ctx);
 
     if (moved === 0) {
       this.abandon(person, 'store_full', ctx);
@@ -2058,6 +2065,17 @@ export class ActionSystem {
     }
     telemetry.count('stored', moved);
     this.finish(person);
+  }
+
+  /**
+   * M15 phase 38b: how much of a band's stored food goes to its temple,
+   * against how much goes into its stores at all — `the-temple-gathers`
+   * reads the pair.
+   */
+  private noteFoodStored(person: Person, store: Building, food: number, ctx: ActionContext): void {
+    if (store.ownerBandId !== person.bandId) return;
+    telemetry.count('food_stored_own', food);
+    if (store.id === ctx.templeByBand?.get(person.bandId)) telemetry.count('food_stored_temple', food);
   }
 
   private doTake(person: Person, ctx: ActionContext): void {
@@ -2516,15 +2534,18 @@ export class ActionSystem {
    * interrupted feast is over, and whatever was served stays eaten.
    */
   private doFeast(person: Person, ctx: ActionContext): void {
-    if (techPower(person, 'brewing') <= 0) {
+    const templeId = ctx.templeByBand?.get(person.bandId);
+    const temple = templeId === undefined ? null : ctx.buildingsById.get(templeId) ?? null;
+    const isChief = ctx.chiefByBand.get(person.bandId) === person.id;
+    if (!mayHostFeast(person, isChief, temple)) {
       this.abandon(person, 'dont_know_how', ctx);
       return;
     }
     const household = person.householdId === null ? null : ctx.householdsById.get(person.householdId) ?? null;
     if (person.targetBuildingId === null) {
       // A player order names no store; the same rule the scorer used picks one.
-      const venue = feastVenue(person, household, ctx.chiefByBand.get(person.bandId) === person.id,
-        [...ctx.buildingsById.values()], ctx.buildingsById, ctx.day);
+      const venue = feastVenue(person, household, isChief,
+        [...ctx.buildingsById.values()], ctx.buildingsById, ctx.day, temple);
       if (!venue) {
         this.abandon(person, 'no_feast_to_give', ctx);
         return;
@@ -2604,6 +2625,9 @@ export class ActionSystem {
     }
     telemetry.count('feasts_held');
     telemetry.count('feast_guests', served);
+    if (person.targetBuildingId !== null && person.targetBuildingId === ctx.templeByBand?.get(person.bandId)) {
+      telemetry.count('temple_feasts');
+    }
     ctx.social.emit('feast', person, null, Math.min(1, served / 8), ctx.tick, ctx.peopleHash, ctx.sightRadius);
     person.chronicle.push({
       tick: ctx.tick,

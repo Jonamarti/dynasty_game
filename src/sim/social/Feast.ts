@@ -144,12 +144,17 @@ export function feastVenue(
   buildings: readonly Building[],
   buildingsById: ReadonlyMap<number, Building>,
   day: number,
+  temple: Building | null = null,
 ): Building | null {
-  if (host.isChild || !mayHostFeast(host)) return null;
+  if (host.isChild || !mayHostFeast(host, isChief, temple)) return null;
   if (household && day - household.lastFeastDay < FEAST_INTERVAL_DAYS) return null;
   const fit = (b: Building | undefined | null): b is Building =>
     !!b && isLarder(b) && b.ownerBandId === host.bandId && portions(b.store) >= FEAST_MIN_FOOD;
 
+  // M15 phase 38b: the chief who has worked redistribution out feasts the
+  // band from the temple first — that is what the temple is for.
+  if (isChief && fit(temple) && techPower(host, 'redistribution') > 0) return temple;
+  if (techPower(host, 'brewing') <= 0) return null;
   const home = household?.homeBuildingId != null ? buildingsById.get(household.homeBuildingId) : null;
   if (fit(home)) return home;
   if (!isChief) return null;
@@ -166,7 +171,13 @@ export function feastVenue(
   return best;
 }
 
-/** Whether somebody knows how to give a feast at all: `brewing`'s second half. */
-export function mayHostFeast(host: Person): boolean {
-  return techPower(host, 'brewing') > 0;
+/**
+ * Whether somebody knows how to give a feast at all: `brewing`'s second
+ * half, or — M15 phase 38b — a chief with a temple who understands
+ * redistribution, for whom handing the band's stores back out to the band is
+ * the office itself, beer or no beer.
+ */
+export function mayHostFeast(host: Person, isChief: boolean, temple: Building | null): boolean {
+  return techPower(host, 'brewing') > 0 ||
+    (isChief && temple !== null && techPower(host, 'redistribution') > 0);
 }

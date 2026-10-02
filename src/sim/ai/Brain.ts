@@ -33,7 +33,8 @@ import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import { statusPressure } from './Status.ts';
-import { ATTEND, FEAST, FEAST_MIN_GUESTS, FEAST_RADIUS, feastVenue } from '../social/Feast.ts';
+import { ATTEND, FEAST, FEAST_MIN_GUESTS, FEAST_RADIUS, feastVenue, mayHostFeast } from '../social/Feast.ts';
+import { templePull } from '../social/Polity.ts';
 import { curiosityNeed } from './Temperament.ts';
 import { possessionPressure } from './Possession.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
@@ -163,6 +164,8 @@ export interface BrainContext {
    * a band is one too many.
    */
   chiefByBand: ReadonlyMap<number, number>;
+  /** Each band's temple store, M15 phase 38b. Optional for hand-built contexts. */
+  templeByBand?: ReadonlyMap<number, number>;
   /** How deep the snow lies right now, and whether that is allowed to hide
    * anything — see `Snow.ts` and `Simulation.isBuried`. */
   snowDepth: number;
@@ -2442,10 +2445,12 @@ export class Brain {
     // standing below the band's (`status`) — and lonely people about them;
     // greed holds it back, because a feast is the store going down. See
     // `social/Feast.ts`.
-    if (!person.isChild && !pressedByNeed(person, ctx.needs.workLimits) && techPower(person, 'brewing') > 0) {
+    const templeId = ctx.templeByBand?.get(person.bandId);
+    const temple = templeId === undefined ? null : ctx.buildingsById.get(templeId) ?? null;
+    const isChief = ctx.chiefByBand.get(person.bandId) === person.id;
+    if (!person.isChild && !pressedByNeed(person, ctx.needs.workLimits) && mayHostFeast(person, isChief, temple)) {
       const household = person.householdId === null ? null : ctx.householdsById.get(person.householdId) ?? null;
-      const venue = feastVenue(person, household, ctx.chiefByBand.get(person.bandId) === person.id,
-        ctx.buildings, ctx.buildingsById, ctx.time.day);
+      const venue = feastVenue(person, household, isChief, ctx.buildings, ctx.buildingsById, ctx.time.day, temple);
       if (venue) {
         const guests = ctx.peopleHash.queryRadius(venue.centerX, venue.centerY, FEAST_RADIUS)
           .filter(other => other.alive && other.id !== person.id && other.bandId === person.bandId &&
@@ -2883,11 +2888,20 @@ export class Brain {
         // be a person carefully stopping their own snare line from catching
         // anything, because a full trap stops accruing. A pen is the same
         // argument — see `BuildingDef.herd`.
+        // M15 phase 38b: the temple pulls too, against the pull of home.
+        // Only surplus food is the temple's business — a load of sticks is
+        // put down wherever is nearest, as it always was.
+        const templeId = foodToStore !== null && unloadItem === null
+          ? ctx.templeByBand?.get(person.bandId) : undefined;
+        const chiefId = ctx.chiefByBand.get(person.bandId);
+        const chief = chiefId === undefined ? null : ctx.peopleById?.get(chiefId) ?? null;
+        const toTemple = templeId !== undefined && chief ? templePull(person, chief) : 0;
         const store = this.pickBest(
           stores.filter(b => b.storageFree > 0 && this.canUse(person, b, ctx) &&
             !isTrap(b.def) && !isHerd(b.def) && !isHeap(b.def)),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY }) +
-            (home !== null && b.id === home ? possession * HOARD_PULL : 0)
+            (home !== null && b.id === home ? possession * HOARD_PULL : 0) +
+            (b.id === templeId ? toTemple : 0)
         );
         if (store) {
           add('store', (unloadItem !== null

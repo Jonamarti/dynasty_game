@@ -20,7 +20,7 @@ import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
-import type { Building } from '../src/sim/entities/Building.ts';
+import { Building, BUILDINGS } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
@@ -80,6 +80,16 @@ export function markMatrixRun(): void {
  * healer to have been at hand. M11 phase 17d; see the check.
  */
 const HURT_DAYS_FLOOR = 30;
+
+/**
+ * The temple's least share of the food a band stores, for
+ * `the-temple-gathers` — M15 phase 38b. **Measured** on `polity`: with
+ * `TEMPLE_PULL` at zero the same granary, standing beside the camp, takes
+ * 66% on nearness alone; with the pull on it takes 93.5%. The floor sits
+ * between, so the check fails on the build without the pull — the first
+ * guess, 30%, passed on both and would have detected nothing.
+ */
+const TEMPLE_SHARE_FLOOR = 0.8;
 
 export const SCENARIOS: Record<string, Scenario> = {
   tiny: {
@@ -555,6 +565,55 @@ export const SCENARIOS: Record<string, Scenario> = {
       },
     },
     steps: 12000,
+  },
+  polity: {
+    name: 'polity',
+    description:
+      'M15 block IX\'s own scenario (M14\'s `polity`): founders who already ' +
+      'hold the State\'s nodes, by the trick `craft` and `scribes` use, because ' +
+      'the ladder from `chiefdom` to `kingship` is six nodes deep and no run ' +
+      'in the suite climbs it from nothing. Two bands, so the nodes that are ' +
+      'about other peoples have somebody to be about; each starts with a ' +
+      'granary already standing at its camp (`setup`), because the temple is ' +
+      'a granary and raising one from nothing costs most of a year of the run ' +
+      'before anything this scenario measures can begin. The literate core is ' +
+      '`scribes`\'s, for the same reason: `accounting` and `law_code` sit ' +
+      'behind writing.',
+    config: {
+      seed: 'ziggurat',
+      population: {
+        bands: 2, peoplePerBand: 14,
+        startingTech: [
+          'firemaking', 'cooking', 'cordage', 'hafting', 'stoneworking', 'marking',
+          'plant_lore', 'grinding', 'farming', 'pottery', 'brewing',
+          'division_of_labour', 'chiefdom',
+          'redistribution',
+        ],
+      },
+    },
+    steps: 24000,
+    setup: sim => {
+      // A finished granary beside each camp, the first free spot on a widening
+      // ring. Harness-only, like `emptied`'s hunted-out land: the simulation
+      // is never told it was not built.
+      for (const band of sim.bands) {
+        if (band.outcast) continue;
+        let placed = false;
+        for (let r = 3; r < 20 && !placed; r++) {
+          for (let a = 0; a < 16 && !placed; a++) {
+            const x = Math.round(band.homeX + Math.cos(a * Math.PI / 8) * r);
+            const y = Math.round(band.homeY + Math.sin(a * Math.PI / 8) * r);
+            if (!sim.canPlace(BUILDINGS.granary!, x, y)) continue;
+            const granary = new Building(BUILDINGS.granary!, x, y, band.id);
+            granary.complete = true;
+            sim.buildings.push(granary);
+            sim.buildingsById.set(granary.id, granary);
+            sim.buildingHash.insert(granary);
+            placed = true;
+          }
+        }
+      }
+    },
   },
   culture: {
     name: 'culture',
@@ -2214,6 +2273,23 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('beer-answers-loneliness',
       toasted > 0 && heard > 0,
       toasted + ' toasts made, heard by somebody else ' + heard + ' times');
+  }
+
+  // M15 phase 38b. The temple: a chief who has worked redistribution out
+  // draws the band's surplus food into one granary. Judged as the temple's
+  // share of all food put into the band's own stores, against the share the
+  // same granary takes on nearness alone — see the threshold's comment.
+  if ((tel.temple_days ?? 0) === 0) {
+    skip('the-temple-gathers', 'no band had a chief with redistribution and a granary');
+  } else {
+    const own = tel.food_stored_own ?? 0;
+    const temple = tel.food_stored_temple ?? 0;
+    const share = own > 0 ? temple / own : 0;
+    add('the-temple-gathers',
+      share >= TEMPLE_SHARE_FLOOR && (tel.temple_feasts ?? 0) > 0,
+      (share * 100).toFixed(1) + '% of ' + own + ' food stored went to a temple (need ' +
+        (TEMPLE_SHARE_FLOOR * 100).toFixed(0) + '%); ' + (tel.temple_feasts ?? 0) + ' feasts given from one, over ' +
+        (tel.temple_days ?? 0) + ' temple-days');
   }
 
   // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the

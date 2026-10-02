@@ -16,6 +16,11 @@ commit del bloque compara contra ella.
 - **El banquete no tiene banco ni hogar donde sentarse.** El plan quería a la
   banda sentada alrededor del hogar (el banco de 16d); sin 16d, los invitados
   esperan de pie junto al anfitrión.
+- **`polity` falla cuatro checks ajenos al Estado** (38b): `roast-wins`,
+  `cooking-spreads`, `pots-reach-a-granary` (0 vasijas: el granero ya está
+  hecho en `setup` y nadie más planea uno que necesite vasijas) y
+  `fields-are-sown-and-reaped` (sabe `farming` y no siembra en 24.000 ticks).
+  Escenario nuevo, sin base; no investigado.
 - **Ninguna cerveza en los banquetes de `feasts`.** 23 banquetes, 0 tazas: la
   cerveza se bebe en `toast` antes de llegar al almacén. No es un error del
   banquete, pero `FEAST_CUP_RELIEF` apenas se ejerce.

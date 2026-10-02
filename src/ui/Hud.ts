@@ -1780,6 +1780,13 @@ export class Hud {
     }
 
     rows.push('<div class="hud-section">' + t('Finished') + '</div>');
+    // M15 phase 38b. Which granary is a band's temple is as public as the
+    // granary itself — the band carries its surplus there in plain sight.
+    if (sim.templeOf(building.ownerBandId) === building) {
+      rows.push('<div class="hud-sub">' +
+        escapeHtml(t('The temple: the chief keeps the surplus of the band here, and gives it back at feasts')) +
+        '</div>');
+    }
     // Condition, M11 phase 11b. Not gated on `known.knowsContents` the way the
     // store's contents are below: unlike what is inside, that a wall is
     // cracked or a roof is charred is visible to anyone who can see the
