@@ -1,8 +1,8 @@
-/** Deer, boar and hare in profile, facing east, with a four-frame walk. */
+/** Deer, boar, hare, and the three hunters (wolf, bear, lynx) in profile, facing east, with a four-frame walk. */
 import { at, ell, INK, limb, poly, shade, shape, smooth, stroke, type Pt } from '../lib/draw.ts';
 
-export type AnimalKind = 'deer' | 'boar' | 'hare';
-export const ANIMAL_KINDS: readonly AnimalKind[] = ['deer', 'boar', 'hare'];
+export type AnimalKind = 'deer' | 'boar' | 'hare' | 'wolf' | 'bear' | 'lynx';
+export const ANIMAL_KINDS: readonly AnimalKind[] = ['deer', 'boar', 'hare', 'wolf', 'bear', 'lynx'];
 
 export function paintAnimal(kind: AnimalKind, frame: number, walking: boolean): string {
   const sw = walking ? [0, 1, 0, -1][frame] : 0;
@@ -58,6 +58,55 @@ export function paintAnimal(kind: AnimalKind, frame: number, walking: boolean): 
     out.push(ell(68.5, 52, 1.1, 1.2, INK));
     out.push(ell(74, 55.6, 0.9, 0.7, '#6b4a3a'));
     out.push(ell(35.5, 66, 3, 3, '#f3ece0', line));
+  }
+  if (kind === 'wolf') {
+    const col = '#7b7d80', belly = '#c9c7c0';
+    out.push(ell(48, 84.5, 22, 3, 'rgba(0,0,0,0.25)'));
+    out.push(legs([[34, 60], [62, 60]], 24, 3.2, col, true, 17));
+    // The brush, carried low.
+    out.push(shape(smooth([[27, 52], [17, 56], [10, 66], [14, 69], [24, 62], [30, 57]]), shade(col, 0.9), line));
+    out.push(shape(smooth([[26, 54], [34, 46], [50, 46.5], [62, 44.5], [68, 49], [66, 58], [56, 62], [40, 62], [30, 60]]), col, line));
+    out.push(shape(smooth([[34, 60.5], [48, 61.5], [62, 59.5], [54, 57], [40, 57.5]]), belly));
+    out.push(stroke('M44,46L47,41L52,45', shade(col, 0.7), 1.3));
+    out.push(shape(poly([[60, 48], [66, 36], [72, 36.5], [70, 49]]), col, line));
+    out.push(shape(smooth([[65, 37], [72, 31], [80, 33.5], [86, 38.5], [84.5, 42], [76, 42], [69, 42.5]]), col, line));
+    out.push(shape(poly([[68, 33], [69.5, 25.5], [74, 31.5]]), shade(col, 0.85), line));
+    out.push(shape(poly([[73, 31.5], [76.5, 25], [78.5, 32.5]]), shade(col, 0.95), line));
+    out.push(ell(76, 36.4, 1, 0.9, '#e8c14a'));
+    out.push(ell(85.5, 39.4, 1.3, 1.1, INK));
+    out.push(legs([[32, 60], [64, 60]], 24, 3.2, col, false, 17));
+  }
+  if (kind === 'bear') {
+    const col = '#5a3e2b';
+    out.push(ell(50, 84, 26, 3.6, 'rgba(0,0,0,0.28)'));
+    out.push(legs([[34, 64], [66, 64]], 20, 6.2, col, true, 11));
+    out.push(shape(smooth([[18, 62], [22, 50], [34, 40], [46, 34.5], [56, 36], [66, 44], [76, 49], [80, 55], [74, 64], [56, 68], [36, 68], [24, 67]]), col, line));
+    out.push(stroke('M30,48L33,43L37,47L41,41L45,45', shade(col, 0.72), 1.5));
+    out.push(shape(smooth([[69, 44], [76, 38], [86, 41], [90, 48], [87, 53], [78, 53], [72, 51]]), col, line));
+    out.push(ell(88.5, 48.5, 2.6, 2.3, '#8b6f55', line));
+    out.push(ell(72, 38.5, 2.4, 2.4, shade(col, 0.9), line));
+    out.push(ell(77.5, 44.5, 1, 0.9, INK));
+    out.push(ell(19.5, 59, 2.6, 2.6, shade(col, 0.9), line));
+    out.push(legs([[32, 64], [68, 64]], 20, 6.2, col, false, 11));
+  }
+  if (kind === 'lynx') {
+    const col = '#b69660', belly = '#ece0c4';
+    out.push(ell(48, 84.5, 18, 2.8, 'rgba(0,0,0,0.25)'));
+    out.push(legs([[34, 60], [60, 59]], 24, 3.6, col, true, 15));
+    out.push(shape(smooth([[26, 55], [22, 53], [20, 57], [24, 59]]), shade(col, 0.9), line));
+    out.push(ell(20.5, 56, 1.8, 3.3, '#2a2019', null, 10));
+    out.push(shape(smooth([[26, 54], [32, 46], [46, 45], [58, 43.5], [64, 48], [63, 57], [54, 62], [40, 62], [30, 60]]), col, line));
+    out.push(shape(smooth([[34, 60.5], [48, 61.5], [60, 59], [52, 57], [40, 57.5]]), belly));
+    for (const [x, y] of [[38, 50], [44, 52], [50, 49], [41, 56], [56, 53], [33, 54]]) out.push(ell(x, y, 1.3, 1.3, shade(col, 0.55)));
+    out.push(shape(poly([[56, 48], [62, 38], [68, 38.5], [66, 49]]), col, line));
+    out.push(shape(smooth([[62, 39], [68, 34], [76, 35.5], [80, 40.5], [78, 44], [70, 44.5], [64, 44]]), col, line));
+    out.push(shape(poly([[64, 36], [65.5, 27], [69.5, 34]]), shade(col, 0.88), line));
+    out.push(shape(poly([[69, 34], [72.5, 26.5], [74.5, 34.5]]), shade(col, 0.95), line));
+    out.push(stroke('M65.5,27.8L65.2,23.8', INK, 1.1) + stroke('M72.4,27.2L73,23.4', INK, 1.1));
+    out.push(stroke('M71,41.5L75,45.5', shade(col, 0.6), 1) + stroke('M65,42L62,46.5', shade(col, 0.6), 1));
+    out.push(ell(72, 38.4, 1, 0.9, '#d9b340'));
+    out.push(ell(79.2, 40.6, 1.1, 0.9, '#6b4a3a'));
+    out.push(legs([[32, 60], [62, 59]], 24, 3.6, col, false, 15));
   }
   return out.join('');
 }

@@ -149,7 +149,7 @@ function person(over: AspectOver, label: string, row: HTMLElement): void {
 // ---- animals
 {
   const row = section('animals', 'Animals');
-  for (const k of ['deer', 'boar', 'hare']) {
+  for (const k of ['deer', 'boar', 'hare', 'wolf', 'bear', 'lynx']) {
     for (const p of ['idle', 'w0', 'w1', 'w2', 'w3']) {
       const [c, ctx] = canvas(144, 144);
       atlas.drawAsset(ctx, 'animals', `a/${k}/E/${p}`, 0, 0, 1.5);

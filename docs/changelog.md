@@ -1,4 +1,14 @@
 #
+## 2026-10-02 — M15 fase 23e (arte): lobo, oso y lince
+
+Tres sprites nuevos en `art/src/animals/animals.ts` (perfil al este, cuatro
+cuadros de marcha y uno en reposo, como los demás), regenerados con
+`npm run art:build` y revisados en `npm run art:sheet`, cuya sección «animals»
+tenía las tres especies fijas y ahora recorre las seis. El lobo es gris,
+esbelto y de cola caída; el oso, grande y pardo, con joroba; el lince, leonado
+con manchas, orejas con pincel y rabo corto. Aún no están en `SPECIES`: entran
+en el commit siguiente, con la pasada que los hace aparecer.
+
 ## 2026-10-02 — M15 fases 23c y 23d: los herbívoros pastan y se reproducen
 
 **23c.** `Animal.fed` (0-1). Cada movimiento (48 al día) un animal come un
