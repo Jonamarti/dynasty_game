@@ -26,6 +26,7 @@ import { BUILDINGS, type Building } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { TreeSpecies } from '../sim/entities/Tree.ts';
 import { workProgressOf } from '../sim/core/Progress.ts';
+import { DIG_TO } from '../sim/core/Earth.ts';
 import { expressionOf, type Expression } from '../sim/core/Mood.ts';
 import { canSeePlace, knowsPersonCondition } from '../sim/social/Knowledge.ts';
 import { Camera, TILE } from './Camera.ts';
@@ -328,6 +329,8 @@ export class Renderer {
   private fogRecords: PlaceRecord[] = [];
   /** Observer mode is an explicit presentation choice, never simulation state. */
   fogEnabled = true;
+  /** The `World.earthVersion` the terrain bake was made at. */
+  private earthSeen = 0;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -417,6 +420,7 @@ export class Renderer {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('2D canvas context unavailable');
     const { season, frost, heat } = visual;
+    this.earthSeen = world.earthVersion;
 
     for (let y = 0; y < world.height; y++) {
       for (let x = 0; x < world.width; x++) {
@@ -434,6 +438,16 @@ export class Renderer {
         }
 
         if (biome === 'water') continue;
+
+        // Earth moved by a spade, M15 phase 26: a dug tile is darker, turned
+        // ground and a piled one paler, loose earth, in proportion to how far
+        // it has been moved. The rim shows through the relief shading below.
+        const moved = world.offset[world.index(x, y)]!;
+        if (Math.abs(moved) > 1e-6) {
+          const strength = Math.min(0.7, Math.abs(moved) / DIG_TO * 0.7);
+          ctx.fillStyle = moved < 0 ? `rgba(120,78,44,${strength})` : `rgba(226,204,156,${strength})`;
+          ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+        }
 
         // Relief, M15 phase 25a: the sun in the north-west. A tile whose ground
         // climbs towards the east and south faces it and is lit; one that falls
@@ -524,7 +538,7 @@ export class Renderer {
     // year, not sixty times a second. See `seasonVisual` and
     // `prerenderTerrain`.
     const visual = this.seasonVisual();
-    if (visual.key !== this.seasonKey) {
+    if (visual.key !== this.seasonKey || sim.world.earthVersion !== this.earthSeen) {
       this.terrain = this.prerenderTerrain(sim.world, visual);
       this.seasonKey = visual.key;
     }
@@ -834,8 +848,13 @@ export class Renderer {
     const observer = this.fogEnabled ? this.sim.player : null;
     if (observer && Math.hypot(x - observer.x, y - observer.y) > this.sim.config.sightRadius) return null;
     const metres = Math.round(world.metresAt(x, y));
+    // Earth moved by a spade (phase 26) is said in its own words, in metres to
+    // a tenth, because a trench is a metre deep and rounds to nothing otherwise.
+    const moved = world.depthDug(x, y) * world.metresPerUnit;
+    const spade = moved >= 0.05 ? ' · ' + t('dug {m} m deep', { m: moved.toFixed(1) })
+      : moved <= -0.05 ? ' · ' + t('piled {m} m high', { m: (-moved).toFixed(1) }) : '';
     return tc('biome', world.biomeAt(x, y)) + ' · ' +
-      (metres > 0 ? t('{m} m above the sea', { m: metres }) : t('at sea level'));
+      (metres > 0 ? t('{m} m above the sea', { m: metres }) : t('at sea level')) + spade;
   }
 
   /** Paint the observer's coarse, cached map and the places they remember. */

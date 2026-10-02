@@ -147,6 +147,8 @@ export const ES_UI: Record<string, string> = {
   "heard about this place": "se lo contaron sobre este lugar",
   "seen {n} days ago": "visto hace {n} días",
   "{m} m above the sea": "{m} m sobre el mar",
+  "dug {m} m deep": "cavado {m} m de hondo",
+  "piled {m} m high": "apilado {m} m de alto",
   "at sea level": "a nivel del mar",
   "Fog of war: {state}": "Niebla de guerra: {state}",
   "On": "Activada",

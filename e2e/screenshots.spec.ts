@@ -866,3 +866,56 @@ test('M15 25a the land has relief, and the ground says how high it is', async ({
   await page.waitForTimeout(400);
   await page.screenshot({ path: DIR + '/m15-phase25-2026-10-02/m15-25a-relief.png' });
 });
+
+// M15 phase 26: the menu offers to dig and to pile, and what has been moved
+// shows on the ground — a dark trench with its lit rim, a pale mound.
+test('earth moved', async ({ page }) => {
+  await page.goto('/?seed=tour&skipIntro=1');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15000 });
+  const spot = await page.evaluate(() => {
+    const d = (window as never as { __dynasty: {
+      sim: { player: { x: number; y: number; inventory: { add: (i: string, n: number) => void } };
+        trees: { x: number; y: number; standing: boolean }[];
+        world: { width: number; height: number; walkable: Uint8Array;
+          dig: (x: number, y: number, a: number) => number; pile: (x: number, y: number, a: number) => number } };
+      camera: { snapTo: (x: number, y: number) => void; following: boolean };
+    } }).__dynasty;
+    const p = d.sim.player;
+    const w = d.sim.world;
+    p.inventory.add('sticks', 1);
+    p.inventory.add('earth', 3);
+    // Staged: the player is stood on open ground with a clear row either side,
+    // because a forest would hide the very thing this picture is of.
+    const clear = (x: number, y: number): boolean => w.walkable[y * w.width + x] === 1 &&
+      !d.sim.trees.some(t => t.standing && Math.abs(t.x - x) < 3 && Math.abs(t.y - y) < 3);
+    let best = { x: Math.floor(p.x), y: Math.floor(p.y), d: Infinity };
+    for (let y = 8; y < w.height - 8; y++) for (let x = 8; x < w.width - 8; x++) {
+      let ok = true;
+      for (let i = -4; i <= 6 && ok; i++) ok = clear(x + i, y);
+      const dist = Math.hypot(x - p.x, y - p.y);
+      if (ok && dist < best.d) best = { x, y, d: dist };
+    }
+    p.x = best.x + 0.5;
+    p.y = best.y + 0.5;
+    const px = best.x;
+    const py = best.y;
+    // A trench four tiles long to the east and a mound to the west,
+    // on whatever walkable ground the player has, as a few orders would leave it.
+    for (let i = 2; i <= 5; i++) if (w.walkable[py * w.width + px + i]) w.dig(px + i, py, 0.0032);
+    for (let i = 2; i <= 3; i++) if (w.walkable[py * w.width + px - i]) w.pile(px - i, py, 0.0032);
+    d.camera.following = false;
+    d.camera.snapTo(p.x, p.y);
+    return { x: p.x, y: p.y };
+  });
+  expect(spot.x).toBeGreaterThan(0);
+  await page.keyboard.press('v');
+  for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -300);
+  await page.waitForTimeout(500);
+  const box = (await page.locator('canvas#view').boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2 + 90, box.y + box.height / 2 + 70, { button: 'right' });
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: DIR + '/m15-phase26-2026-10-02/m15-26-dig-menu.png' });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: DIR + '/m15-phase26-2026-10-02/m15-26-trench-and-mound.png' });
+});

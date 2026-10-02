@@ -39,6 +39,12 @@ export class World {
    */
   readonly offset: Float32Array;
   /**
+   * Counts every change to `offset`. The renderer bakes the terrain once and
+   * redoes it when this moves, so a spade shows without the draw loop having
+   * to compare two arrays of sixteen thousand tiles a frame.
+   */
+  earthVersion = 0;
+  /**
    * How far each tile stands above the mean of the `PROMINENCE_RADIUS` box
    * round it, in elevation units (zero in a hollow). What `sightBonusAt` reads.
    * Computed once here and redone for a patch by `refreshProminence` when a
@@ -471,6 +477,7 @@ export class World {
     if (!this.inBounds(x, y) || delta === 0) return this.depthDug(x, y);
     const i = this.index(x, y);
     this.offset[i] = this.offset[i]! + delta;
+    this.earthVersion++;
     const R = PROMINENCE_RADIUS;
     this.refreshProminence(Math.floor(x) - R, Math.floor(y) - R, Math.floor(x) + R, Math.floor(y) + R);
     // Water and rock stay unwalkable whatever is done to them; only ground

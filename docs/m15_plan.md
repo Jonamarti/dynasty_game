@@ -2115,6 +2115,8 @@ se ve más`.
 
 ## Fase 26 — Cavar y apilar
 
+**Estado (2026-10-02).** Hechos: 16a (`World.setWalkable`), 26a y la primera parte de 26c (verbos `dig` y `pile` para el jugador, con palo, sin técnica; ver `changelog.md`). Falta todo lo demás de 26b (pico, pala, `earthworks`), los diseños, 26d, 26e y 26f. `pitDepth` existe y está probado en `World`, pero ninguna orden lo alcanza aún.
+
 **Objetivo.** El terreno se puede cambiar: hoyos, silos, zanjas, fosos con
 agua, montones, terraplenes y canales. Es lo que `next-steps.md` §7 lleva
 planeado desde M6 («palas, canales, tierra movida, zanjas defensivas, roca

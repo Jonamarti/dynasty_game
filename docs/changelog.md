@@ -1,3 +1,27 @@
+## 2026-10-02 — M15 fase 26c (segunda parte): la tierra movida se ve
+
+- `World.earthVersion` cuenta cada cambio de `offset`; `Renderer.render` rehace
+  el terreno prerenderizado cuando se mueve, igual que cuando cambia la
+  estación, sin comparar dos arrays por fotograma.
+- Una casilla cavada se pinta de tierra removida (marrón) y una apilada de tierra
+  suelta (clara), en proporción a lo movido, y por debajo del sombreado del
+  relieve de 25a, así que el borde de una zanja se ve iluminado y su fondo en
+  sombra.
+- El tooltip del suelo añade «cavado 1,3 m de hondo» o «apilado 0,6 m de alto»
+  (a décimas: una zanja mide un metro y redondeada a metros no diría nada).
+- Captura: `artifacts/screenshots/m15-phase26-2026-10-02/` (el menú con «Cavar
+  aquí» y «Echar tierra aquí», y una zanja de cuatro casillas junto a un
+  montón de dos). La carpeta `artifacts/` está en `.gitignore`, como las
+  capturas anteriores.
+
+**Pendiente de la fase 26** (no hecho en este pase): herramientas con técnica
+(pico de asta, pala, `earthworks`), diseños (`pit`, `ditch`, `moat`, `mound`,
+`embankment`, `canal`, `terrace`), el agua que sigue a la zanja (26d), riego y
+bancales (26e), el silo que se cava, el escenario `diggers` y los checks
+`regions-stay-true`, `water-follows-the-trench` y `earthworks-are-dug` (26f).
+La reparación de regiones de 16a y `dig`/`pile` ya están y tienen su test de
+propiedad.
+
 ## 2026-10-02 — M15 fase 26c (primera parte): cavar y apilar, para el jugador
 
 Los verbos **`dig`** y **`pile`** y el objeto **`earth`**. Cavar baja el terreno
