@@ -418,6 +418,29 @@ interface InterruptionOptions {
   ignoreNeeds?: boolean;
 }
 
+/** A cold worker may finish work whose product can actually warm them. */
+function answersColdTech(tech: Tech): boolean {
+  return TECH[tech].answers?.includes('warmth') ?? false;
+}
+
+function answersColdBuilding(building: Building): boolean {
+  // A completed fire warms nearby people just as a roof shelters the people
+  // inside it; `shelter` alone cannot identify the hearth.
+  return building.def.shelter > 0 || building.def.id === 'hearth';
+}
+
+function answersColdProject(person: Person, ctx: ActionContext): boolean {
+  const building = person.targetBuildingId === null
+    ? undefined : ctx.buildingsById.get(person.targetBuildingId);
+  return !!building && answersColdBuilding(building);
+}
+
+function answersColdRecipe(recipe: (typeof RECIPES)[string]): boolean {
+  return answersColdTech(recipe.tech) ||
+    Object.keys(recipe.output).some(item =>
+      item === 'fur_coat' || item === 'cloth' || item === 'wool_cloth');
+}
+
 /** No single stretch of work runs longer than this, whatever else is true. */
 const MAX_WORK_STRETCH = 900;
 
@@ -451,7 +474,7 @@ export type LethalNeed = 'thirst' | 'hunger' | 'cold';
  * thirst; this raises the ceiling only for the person actually doing something
  * about it, which costs nothing on the average.
  */
-const ANSWERING_LIMIT: Record<LethalNeed, number> = { hunger: 90, thirst: 90, cold: 80 };
+const ANSWERING_LIMIT: Record<LethalNeed, number> = { hunger: 90, thirst: 90, cold: 100 };
 
 /**
  * Most a nearly-finished pull may push past the line, in need points.
@@ -1342,7 +1365,7 @@ export class ActionSystem {
         ? 'hands_full'
       : this.interruption(person, ctx, {
           lookaheadTicks: nextPull,
-          answers: feeds ? 'hunger' : undefined,
+          answers: feeds ? 'hunger' : answersColdProject(person, ctx) ? 'cold' : undefined,
         });
     if (stop) {
       this.stop(person, stop, ctx);
@@ -1707,7 +1730,9 @@ export class ActionSystem {
       // for `build` on a half-raised frame should reach for it on a half-wrecked
       // wall. See `Building.repair` for why it asks for no fresh materials.
       if (site.durability !== null && site.durability < site.def.workTicks) {
-        const stop = this.interruption(person, ctx);
+        const stop = this.interruption(person, ctx, {
+          answers: answersColdBuilding(site) ? 'cold' : undefined,
+        });
         if (stop) {
           this.stop(person, stop, ctx);
           return;
@@ -1744,7 +1769,9 @@ export class ActionSystem {
     // will not re-plan for them, and without a check here a chief could put
     // someone on a hut and they would work through hunger, thirst and nightfall
     // until the roof went on or they died — which is what happened.
-    const stop = this.interruption(person, ctx);
+    const stop = this.interruption(person, ctx, {
+      answers: answersColdBuilding(site) ? 'cold' : undefined,
+    });
     if (stop) {
       this.stop(person, stop, ctx);
       return;
@@ -3075,7 +3102,10 @@ export class ActionSystem {
     }
     person.actionTimer--;
     if (person.actionTimer > 0) {
-      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      const stop = this.interruption(person, ctx, {
+        ignoreLaden: true,
+        answers: answersColdBuilding(site) ? 'cold' : undefined,
+      });
       if (stop) this.stop(person, stop, ctx, 'proposed_');
       return;
     }
@@ -3428,7 +3458,10 @@ export class ActionSystem {
       // out of the pack and nothing is put into it until the final tick, so a
       // full pack is not a reason to stop — and an interrupted craft loses only
       // the walk back, because the hours are banked above.
-      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      const stop = this.interruption(person, ctx, {
+        ignoreLaden: true,
+        answers: answersColdRecipe(recipe) ? 'cold' : undefined,
+      });
       if (stop) {
         // Counted apart from the generic `work_ended_` tally so that
         // `crafting-is-interruptible` can tell whether this one action can be
@@ -3800,7 +3833,10 @@ export class ActionSystem {
       // Thinking needs a head, not hands, so a full pack is no reason to stop —
       // but hunger and cold still reach them, which is the whole point of this
       // check existing on every long action.
-      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      const stop = this.interruption(person, ctx, {
+        ignoreLaden: true,
+        answers: answersColdTech(idea.tech) ? 'cold' : undefined,
+      });
       if (stop) this.stop(person, stop, ctx);
       return;
     }
@@ -3918,7 +3954,8 @@ export class ActionSystem {
     person.actionTimer--;
     idea.effort++;
     if (person.actionTimer > 0) {
-      this.interruptSocialWork(person, ctx, 'interrupted_discuss_');
+      this.interruptSocialWork(person, ctx, 'interrupted_discuss_',
+        answersColdTech(idea.tech) ? 'cold' : undefined);
       return;
     }
 
@@ -4029,7 +4066,10 @@ export class ActionSystem {
     person.workedTicks++;
     person.bankWork(bankKey);
     if (person.actionTimer > 0) {
-      const stop = this.interruption(person, ctx, { ignoreLaden: true });
+      const stop = this.interruption(person, ctx, {
+        ignoreLaden: true,
+        answers: answersColdTech(idea.tech) ? 'cold' : undefined,
+      });
       if (stop) this.stop(person, stop, ctx);
       return;
     }

@@ -1,5 +1,38 @@
 # Known bugs and rough edges
 
+## Frío e interrupciones del trabajo (2026-10-02) — corregido
+
+`interruption()` paraba cualquier trabajo cuando el frío superaba 50, incluso
+construir un refugio o investigar `firemaking`/`clothing`. Eso hacía que el
+frío que debía motivar a buscar abrigo impidiera terminarlo. Las tareas que
+responden a `warmth` —construcción y reparación de refugios/hogares,
+investigación, discusión y prototipado de esas tecnologías, su ropa y la
+recolección dirigida de materiales— ahora pueden continuar hasta el máximo de
+frío (100). Las tareas que no reducen el frío mantienen el límite normal, y
+cualquier trabajo conserva el límite máximo de duración.
+
+La salud ahora recibe daño gradual cuando el frío supera 75; a frío 100 son
+0,025 puntos por tick, que se compensa con la recuperación natural si la
+exposición no es extrema. Antes el frío compartía el daño crítico brusco que
+empezaba en 85. Se añadió cobertura focal de construcción en `orders.test.ts`;
+`labour` termina con salud media 72,9 y pasa `health-holds-up`. `harsh-winter`
+termina con salud media 96,1, 133 ticks de construcción que continúan con frío
+y 92 materiales entregados. Las dos primeras obras de cortavientos llevan
+77/140 y 9/140; una tercera, planificada en el último día, aún no tiene
+materiales. Por eso el escenario corto de 4.000 pasos todavía acaba con cero
+abrigo útil. Al extender la misma semilla a 12.000 pasos, se completan 8
+edificios AI-planned y `shelter-answers-cold` pasa: hay 58.541 ticks de abrigo,
+frío final 43,7 y salud media 95,3. Esto confirma que el cuello era el frío
+interrumpiendo el trabajo; la duración corta solo acaba antes de que terminen
+las primeras obras.
+
+## La gira de capturas espera un selector antiguo (2026-10-02)
+
+`npm run shots` guardó las capturas individuales, pero `screenshots.spec.ts`
+`tour` agotó su minuto esperando `.pausemenu [data-act="resume"]`. El DOM sí
+mostraba el botón «Resume»; los otros 15 casos de la gira terminaron. No se
+investigó el selector en este cambio.
+
 ## M15 fase 23e/f: lo que queda abierto (2026-10-02)
 
 - **La luz (fase 12) no existe todavía.** El plan de 23e da por hechos

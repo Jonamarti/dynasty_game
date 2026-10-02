@@ -114,9 +114,9 @@ export interface NeedsConfig {
   coldRate: number;
   /** Loneliness per tick. Slow: a day alone is fine, a season alone is not. */
   companyRate: number;
-  /** Above this, a need starts costing health. */
+  /** Hunger/thirst threshold for critical damage; cold has a gradual threshold of its own. */
   criticalThreshold: number;
-  /** Health lost per tick per critical need. */
+  /** Health lost per tick per critical hunger or thirst need. */
   criticalDamage: number;
   /**
    * How fast perishable food goes off, as a multiple of `ItemDef.spoilTicks`.

@@ -1,4 +1,20 @@
 #
+## 2026-10-02 — M15: el frío no corta el trabajo que da abrigo
+
+Construir o reparar un refugio o un hogar, investigar o prototipar una
+tecnología que responde a `warmth`, y fabricar ropa útil contra el frío ahora
+usan el margen de interrupción de una tarea que responde a esa necesidad. La
+recolección de materiales dirigida a un refugio también puede continuar. El
+margen para el frío llega hasta 100 en trabajos que dan abrigo, con el techo
+general de duración todavía activo. La exposición empieza a desgastar la salud
+por encima de 75 con una pendiente gradual; el daño compite con la recuperación
+natural, en vez de esperar al umbral crítico común.
+Motivo: antes el frío interrumpía el trabajo que podía resolverlo y solo
+empezaba a dañar salud en 85.
+Con la misma semilla, `harsh-winter` aún termina antes de completar refugios a
+4.000 pasos; a 12.000 pasos termina ocho edificios de la banda, acumula 58.541
+ticks de abrigo y pasa `shelter-answers-cold` con frío final 43,7.
+
 ## 2026-10-02 — M15 fases 23e y 23f: lobos, osos y linces; los animales atacan
 
 **Los hunters existen.** `PREY_SPECIES` (ciervo, jabalí, liebre; `spawnHerds`

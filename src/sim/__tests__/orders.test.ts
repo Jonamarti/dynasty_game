@@ -109,6 +109,33 @@ describe('sleep', () => {
 });
 
 describe('stores and construction controls', () => {
+  it('lets a cold builder finish work on a building that gives warmth', () => {
+    const sim = new Simulation(SMALL);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    let site: Building | null = null;
+    for (const [dx, dy] of [[4, 0], [-4, 0], [0, 4], [0, -4]]) {
+      site = sim.place('windbreak', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+      if (site) break;
+    }
+    expect(site).not.toBeNull();
+    for (const [item, count] of Object.entries(site!.def.materials)) {
+      site!.delivered.add(item, count);
+    }
+
+    expect(sim.order(person, 'build', { buildingId: site!.id })).toBe(true);
+    sim.interruptions.length = 0;
+    for (let i = 0; i < 20; i++) {
+      // Hold the need at its maximum: a job that can provide warmth must not
+      // be the one cold itself drives them away from.
+      person.needs.cold = 100;
+      sim.step();
+    }
+
+    expect(site!.progress).toBeGreaterThan(0);
+    expect(sim.interruptions.some(stop => stop.personId === person.id && stop.reason === 'cold')).toBe(false);
+  });
+
   it('opens the transfer path even when either side is full', () => {
     const sim = new Simulation(SMALL);
     const person = sim.livingPeople()[0]!;

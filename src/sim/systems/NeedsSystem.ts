@@ -11,6 +11,10 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import { bleeding, feverDrain, mendBody, poisonDrain, poisonHunger, poisonThirst } from '../entities/Body.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
+
+/** Exposure wears health down gradually before cold becomes immediately dangerous. */
+const COLD_HEALTH_START = 75;
+const COLD_HEALTH_PER_POINT = 0.001;
 import { warmthFrom } from '../knowledge/Tech.ts';
 import { malnutrition, MALNUTRITION_HEALTH_CEILING_DROP, MALNUTRITION_RECOVERY_PENALTY } from '../core/Macros.ts';
 
@@ -263,9 +267,25 @@ export class NeedsSystem {
         }
       }
 
+      // Hunger and thirst still deal their sharp critical damage. Exposure is
+      // deliberately a slower slope: it starts at 75, leaving time to seek a
+      // roof, fire, or clothing instead of losing health only at the lethal
+      // need threshold.
+      const coldDamage = Math.max(0, person.needs.cold - COLD_HEALTH_START) * COLD_HEALTH_PER_POINT;
+      if (coldDamage > 0) {
+        person.health -= coldDamage;
+        telemetry.count('cold_damage_ticks');
+        telemetry.count('cold_damage_sum', coldDamage);
+        if (person.health <= 0) {
+          person.die('exposure');
+          telemetry.count('death_exposure');
+          continue;
+        }
+      }
+
       let criticalCount = 0;
       for (const need of LETHAL_NEEDS) {
-        if (person.needs[need] >= cfg.criticalThreshold) criticalCount++;
+        if (need !== 'cold' && person.needs[need] >= cfg.criticalThreshold) criticalCount++;
       }
 
       if (criticalCount > 0) {
