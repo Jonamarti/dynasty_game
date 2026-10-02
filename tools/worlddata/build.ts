@@ -8,39 +8,51 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { decodeWorldRaster, encodeWorldRaster } from '../../src/sim/world/WorldBinary.ts';
+import { seededWorldFeatures } from '../../src/sim/world/WorldFeatureSeeds.ts';
 import { decodeBeckClimateTiff } from './beck.ts';
 import { zipEntry } from './archive.ts';
+import { rasterizeLakes, rasterizeRivers } from './shapefile.ts';
 
 const WIDTH = 96;
 const HEIGHT = 48;
 const ETOPO_URL = 'https://oceanwatch.pifsc.noaa.gov/erddap/griddap/ETOPO_2022_v1_60s.csv?z[(-88.125):225:(88.125)][(1.875):225:(358.125)]';
 const BECK_ZIP_URL = 'https://ndownloader.figshare.com/files/12407516';
 const BECK_MEMBER = 'Beck_KG_V1_present_0p5.tif';
+const NATURAL_EARTH_RIVERS_URL = 'https://naturalearth.s3.amazonaws.com/110m_physical/ne_110m_rivers_lake_centerlines.zip';
+const NATURAL_EARTH_LAKES_URL = 'https://naturalearth.s3.amazonaws.com/110m_physical/ne_110m_lakes.zip';
 
 export interface WorldDataBuildOptions {
   elevationPath?: string;
   beckZipPath?: string;
+  riversZipPath?: string;
+  lakesZipPath?: string;
   outputDir?: string;
 }
 
 export async function buildWorldData(options: WorldDataBuildOptions = {}): Promise<void> {
   const outputDir = resolve(options.outputDir ?? 'public/world');
-  const [elevationCsv, beckZip] = await Promise.all([
+  const [elevationCsv, beckZip, riversZip, lakesZip] = await Promise.all([
     options.elevationPath ? readFile(options.elevationPath, 'utf8') : fetchText(ETOPO_URL),
     options.beckZipPath ? readFile(options.beckZipPath) : fetchBytes(BECK_ZIP_URL),
+    options.riversZipPath ? readFile(options.riversZipPath) : fetchBytes(NATURAL_EARTH_RIVERS_URL),
+    options.lakesZipPath ? readFile(options.lakesZipPath) : fetchBytes(NATURAL_EARTH_LAKES_URL),
   ]);
 
   const elevation = parseElevationCsv(elevationCsv);
   const climateRaster = decodeBeckClimateTiff(zipEntry(beckZip, BECK_MEMBER));
   const koppen = sampleClimate(climateRaster);
-  const present = { width: WIDTH, height: HEIGHT, elevationMeters: elevation, koppen, seaLevelMeters: 0 };
-  const glacial = { ...present, elevationMeters: elevation.slice(), koppen: koppen.slice(), seaLevelMeters: -60 };
+  const rivers = rasterizeRivers(zipEntry(riversZip, 'ne_110m_rivers_lake_centerlines.shp'), WIDTH, HEIGHT);
+  const lakes = rasterizeLakes(zipEntry(lakesZip, 'ne_110m_lakes.shp'), WIDTH, HEIGHT);
+  const features = seededWorldFeatures(WIDTH, HEIGHT);
+  for (let i = 0; i < features.length; i++) features[i] |= rivers[i]! | lakes[i]!;
+  const present = { width: WIDTH, height: HEIGHT, elevationMeters: elevation, koppen, features, seaLevelMeters: 0 };
+  const glacial = { ...present, elevationMeters: elevation.slice(), koppen: koppen.slice(), features: features.slice(), seaLevelMeters: -60 };
 
   await mkdir(outputDir, { recursive: true });
   await writeFile(resolve(outputDir, 'earth-present.bin'), encodeWorldRaster(present));
   await writeFile(resolve(outputDir, 'earth-12000-bce.bin'), encodeWorldRaster(glacial));
   const manifest = {
-    format: 'DWM1',
+    format: 'DWM2',
     resolution: `${WIDTH}x${HEIGHT}`,
     regionDegrees: 3.75,
     comarcasPerRegion: 10,
@@ -57,7 +69,9 @@ export async function buildWorldData(options: WorldDataBuildOptions = {}): Promi
   for (const filename of ['earth-present.bin', 'earth-12000-bce.bin']) {
     decodeWorldRaster(new Uint8Array(await readFile(resolve(outputDir, filename))));
   }
-  process.stdout.write(`Built two ${WIDTH}x${HEIGHT} world maps in ${outputDir}\n`);
+  const withRiver = features.filter(value => (value & 1) !== 0).length;
+  const withLake = features.filter(value => (value & 2) !== 0).length;
+  process.stdout.write(`Built two ${WIDTH}x${HEIGHT} world maps (${withRiver} river regions, ${withLake} lake regions) in ${outputDir}\n`);
 }
 
 export function parseElevationCsv(csv: string): Int16Array {

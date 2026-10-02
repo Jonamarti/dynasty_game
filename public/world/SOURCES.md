@@ -2,7 +2,7 @@
 
 Los ficheros `earth-present.bin` y `earth-12000-bce.bin` guardan 96 × 48
 muestras, en centros separados por 3,75°. Se generan con
-`npm run world:build`; la herramienta reduce las fuentes a 13.836 bytes por
+`npm run world:build`; la herramienta reduce las fuentes a 32.268 bytes por
 mapa y no necesita acceso a red en tiempo de juego.
 
 ## Relieve
@@ -25,12 +25,19 @@ mapa y no necesita acceso a red en tiempo de juego.
   [Artículo y licencia](https://doi.org/10.1038/sdata.2018.214)
   · [Datos de los autores](https://doi.org/10.6084/m9.figshare.6396959).
 
+## Aguas y recursos
+
+- Los ríos y lagos proceden de los vectores físicos 1:110m de Natural Earth
+  (ríos, líneas de lago y lagos). Sus datos se dedican al
+  [dominio público](https://www.naturalearthdata.com/about/terms-of-use/).
+  Las líneas y polígonos se rasterizan a las regiones del juego.
+- Las regiones de antepasados silvestres y minerales son semillas aproximadas
+  escritas en `src/sim/world/WorldFeatureSeeds.ts`, no puntos arqueológicos de
+  precisión. La bibliografía de cada semilla sigue pendiente.
+
 ## Límites de esta entrega
 
 `earth-12000-bce.bin` aplica un nivel del mar de −60 m al mismo relieve. Usa
 la clasificación climática presente como aproximación: esta fuente no contiene
-el clima de hace 12.000 años. La capa de ríos y lagos se deriva del relieve con
-el algoritmo del mapa aleatorio; los vectores de Natural Earth y las tablas de
-antepasados silvestres y minerales aún no están incorporados. Los mapas se
-guardan como muestras, no como una representación histórica detallada de cada
-yacimiento.
+el clima de hace 12.000 años. Los mapas se guardan como muestras, no como una
+representación histórica detallada de cada yacimiento.

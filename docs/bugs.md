@@ -2,12 +2,13 @@
 
 ## M15 bloque VII, mapas reales aún parciales (2026-10-02)
 
-La primera salida de 29c usa elevación ETOPO 2022 y el clima Beck presente
+La salida actual de 29c usa elevación ETOPO 2022 y el clima Beck presente
 (1980–2016). `earth-12000-bce.bin` desplaza el mar 60 m, pero reutiliza ese
-clima moderno porque el raster paleoclimático aún no está incorporado. Tampoco
-están en los binarios los vectores de ríos y lagos de Natural Earth ni las
-tablas regionales de antepasados silvestres y yacimientos; ver
-`public/world/SOURCES.md`. La selección desde partida nueva sigue pendiente.
+clima moderno porque el raster paleoclimático aún no está incorporado. Los
+ríos y lagos de Natural Earth se reducen a banderas regionales; las zonas de
+recursos y antepasados silvestres son aproximadas y aún necesitan bibliografía
+por fila. Ver `public/world/SOURCES.md`. La selección desde partida nueva sigue
+pendiente.
 
 ## Línea base al iniciar el bloque VII (2026-10-02)
 

@@ -8,8 +8,17 @@ manifiesto. El mapa paleolítico baja 60 m el nivel del mar y por ahora reutiliz
 el clima presente; `SOURCES.md` deja clara esa aproximación. Los binarios son
 13,8 KB cada uno y se validan tras escribirse.
 Motivo: guardar fuentes reales reducidas para la partida sin hacer descargas en
-tiempo de juego. Las capas de Natural Earth, las tablas de recursos y la
-integración de selección siguen pendientes de 29c.
+tiempo de juego. La paleoclimatología, la bibliografía de las zonas de recursos
+y la integración de selección siguen pendientes de 29c.
+
+## 2026-10-02 — M15 bloque VII, fase 29c (parcial): agua y recursos del mundo
+
+El formato DWM2 guarda elevación, clima y banderas regionales de ríos, lagos,
+antepasados silvestres y yacimientos. `world:build` rasteriza los vectores de
+Natural Earth y genera de nuevo los mapas; el lector mantiene compatibilidad
+con DWM1. Motivo: preparar datos geográficos que la fase 30 conectará al agua
+del juego y que permitirán ubicar las primeras culturas sin programar pueblos
+históricos.
 
 ## 2026-10-02 — M15 bloque VII, fase 29b: mapa aleatorio y drenaje
 

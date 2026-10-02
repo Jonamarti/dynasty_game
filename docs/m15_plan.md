@@ -2389,10 +2389,11 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 latitud y un campo de altura determinista con interpolación entre centros
 regionales, detalle fino y longitud continua en el antimeridiano. El mapa aleatorio añade
 continentes y relieves costeros, temperatura y lluvia, biomas, recursos
-regionales y una red de drenaje hacia el océano. 29c ya produce los dos
-ficheros compactos de la Tierra con alturas de NOAA y clima Beck, pero aún
-faltan las capas de Natural Earth y recursos históricos, además de integrar
-estos mapas en la partida. La puerta de coste 29d también queda pendiente.
+regionales y una red de drenaje hacia el océano. 29c produce los dos ficheros
+compactos de la Tierra con alturas de NOAA, clima Beck, capas regionales de
+ríos y lagos de Natural Earth y zonas aproximadas de recursos y antepasados
+silvestres. La paleoclimatología y la integración de selección en partida nueva
+siguen pendientes. La puerta de coste 29d también queda pendiente.
 
 **Detalle en `m14_plan.md` fase 11**, leyendo «región» donde dice «comarca»
 del mapa del mundo. `WorldMap` en `src/sim/world/`, con elevación, latitud,
@@ -2443,7 +2444,8 @@ historia tenga la misma forma sin ser la misma.
   - costas, lagos y ríos: Natural Earth (dominio público);
   - clima: la clasificación de Köppen-Geiger de Beck y otros (2018, CC BY 4.0,
     con su atribución en los créditos);
-  - tablas escritas a mano, cada fila con su fuente bibliográfica: dónde
+  - zonas iniciales aproximadas para recursos y antepasados silvestres, con
+    bibliografía por fila todavía pendiente: dónde
     crecían los antepasados silvestres de las plantas domesticadas (trigo y
     cebada en el Creciente Fértil, arroz en el Yangtsé, mijo en el río
     Amarillo, maíz en Mesoamérica, patata en los Andes, sorgo en el Sahel…),
