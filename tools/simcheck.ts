@@ -587,7 +587,8 @@ export const SCENARIOS: Record<string, Scenario> = {
           'firemaking', 'cooking', 'cordage', 'hafting', 'stoneworking', 'marking',
           'plant_lore', 'grinding', 'farming', 'pottery', 'brewing',
           'division_of_labour', 'chiefdom',
-          'redistribution',
+          'writing', 'clay_tablet',
+          'redistribution', 'accounting',
         ],
       },
     },
@@ -2290,6 +2291,22 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       (share * 100).toFixed(1) + '% of ' + own + ' food stored went to a temple (need ' +
         (TEMPLE_SHARE_FLOOR * 100).toFixed(0) + '%); ' + (tel.temple_feasts ?? 0) + ' feasts given from one, over ' +
         (tel.temple_days ?? 0) + ' temple-days');
+  }
+
+  // M15 phase 38b, `accounting`. The ledger: gifts to the temple written to
+  // the giver's credit, and debts the chief has heard of kept past the year.
+  // Judged on the first, which every temple run exercises; the second needs a
+  // wrong taken to a chief and left unpaid for a year, and is reported.
+  if ((tel.temple_days ?? 0) === 0 || !sim.knownTech.has('accounting')) {
+    skip('the-ledger-remembers', 'no temple kept by a chief who keeps accounts');
+  } else {
+    const recorded = tel.contribution_recorded ?? 0;
+    const given = tel.food_stored_temple ?? 0;
+    add('the-ledger-remembers',
+      recorded > 0 && recorded >= given * 0.5,
+      recorded + ' of ' + given + ' units given to a temple written down; ' +
+        (tel.debt_recorded ?? 0) + ' debts written, ' + (tel.recorded_debt_days ?? 0) +
+        ' debt-days kept past the year');
   }
 
   // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the

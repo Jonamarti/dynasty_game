@@ -2871,6 +2871,15 @@ Estado, con un granero colocado en `setup`) y check `the-temple-gathers`:
 93,5 % de la comida guardada va al templo con el tirón y 66 % sin él (umbral
 80 %).
 
+**Avance del 2026-10-03 (38b, `accounting`).** Práctica de la Edad del
+Bronce (`marking` + `clay_tablet`, hacia el 3200 a. C., practicada al
+guardar). Si el jefe lleva cuentas: cada aportación de comida al templo se
+apunta al hogar que la da (`Household.contributed`) y le da renombre (0,5 por
+unidad; una cesta de doce vale lo que un regalo); y la deuda de una queja que
+el jefe oye queda escrita (`Debt.recorded`) y no caduca con el año, ni su
+expediente. Check `the-ledger-remembers`. En `polity` nadie se queja al jefe,
+así que la mitad de las deudas sólo se prueba en los tests.
+
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 
 **Detalle en `m14_plan.md` fase 21.** Declarar la guerra y la paz

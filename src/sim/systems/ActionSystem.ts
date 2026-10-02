@@ -72,6 +72,7 @@ import {
   FEAST_COMPANY, FEAST_CUP_RELIEF, FEAST_SEAT, FEAST_TICKS, SERVE_EVERY, dishFor, feastVenue, isLarder,
   mayHostFeast,
 } from '../social/Feast.ts';
+import { recordContribution } from '../social/Polity.ts';
 import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import {
   weighEvidence, concludeFrom, BLOODIED_TICKS, ASK_TICKS, ASK_RADIUS,
@@ -2075,7 +2076,14 @@ export class ActionSystem {
   private noteFoodStored(person: Person, store: Building, food: number, ctx: ActionContext): void {
     if (store.ownerBandId !== person.bandId) return;
     telemetry.count('food_stored_own', food);
-    if (store.id === ctx.templeByBand?.get(person.bandId)) telemetry.count('food_stored_temple', food);
+    if (store.id !== ctx.templeByBand?.get(person.bandId)) return;
+    telemetry.count('food_stored_temple', food);
+    // `accounting`: the chief's ledger credits the giver's household.
+    const chiefId = ctx.chiefByBand.get(person.bandId);
+    const household = person.householdId === null ? null : ctx.householdsById.get(person.householdId) ?? null;
+    if (recordContribution(household, food, chiefId === undefined ? null : ctx.peopleById.get(chiefId))) {
+      telemetry.count('contribution_recorded', food);
+    }
   }
 
   private doTake(person: Person, ctx: ActionContext): void {

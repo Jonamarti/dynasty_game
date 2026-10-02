@@ -53,6 +53,13 @@ export class Household {
    */
   lastFeastDay = -Infinity;
 
+  /**
+   * Food this household is written down as having given the temple, in
+   * units — M15 phase 38b, `accounting`'s ledger. Only a chief who keeps
+   * accounts writes anything here (`Polity.recordContribution`).
+   */
+  contributed = 0;
+
   /** Persistent hostility toward other houses, keyed by household id. */
   readonly feud = new Map<number, number>();
   /** The last known culprit for each feud, so revenge names a person rather

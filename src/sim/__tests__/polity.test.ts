@@ -6,7 +6,9 @@ import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
-import { TEMPLE_PULL, templeOf, templePull } from '../social/Polity.ts';
+import { CONTRIBUTION_RENOWN, TEMPLE_PULL, keepsAccounts, recordContribution, templeOf, templePull } from '../social/Polity.ts';
+import { Household } from '../entities/Household.ts';
+import { DEBT_DAYS, incur, pruneDebts } from '../social/Amends.ts';
 import { FEAST_MIN_FOOD, feastVenue, mayHostFeast } from '../social/Feast.ts';
 
 const SMALL = {
@@ -74,5 +76,43 @@ describe('redistribution: the temple', () => {
     // The office, not the knowledge: a non-chief who knows it has no temple to give from.
     learn(other!, 'redistribution');
     expect(mayHostFeast(other!, false, temple)).toBe(false);
+  });
+});
+
+describe('accounting: the ledger', () => {
+  it('credits a gift to the temple only when the chief keeps accounts', () => {
+    const sim = new Simulation(SMALL);
+    const [chief, giver] = sim.livingPeople();
+    const household = new Household('Giver', giver!.id, giver!.bandId, 0);
+
+    expect(recordContribution(household, 12, chief)).toBe(false);
+    expect(household.contributed).toBe(0);
+    expect(keepsAccounts(chief)).toBe(false);
+
+    learn(chief!, 'accounting');
+    expect(keepsAccounts(chief)).toBe(true);
+    expect(recordContribution(household, 12, chief)).toBe(true);
+    expect(household.contributed).toBe(12);
+    expect(household.renown).toBeCloseTo(12 * CONTRIBUTION_RENOWN);
+  });
+
+  it('keeps a written debt past the year, and forgets an unwritten one', () => {
+    const sim = new Simulation(SMALL);
+    const [thief, written, unwritten] = sim.livingPeople();
+    incur(thief!, written!, 'theft', 3, 0);
+    incur(thief!, unwritten!, 'theft', 3, 0);
+    thief!.debts.find(d => d.toId === written!.id)!.recorded = true;
+    written!.grievances.find(g => g.againstId === thief!.id)!.recorded = true;
+
+    const later = (DEBT_DAYS + 1) * 240;
+    pruneDebts(thief!, later, 240, () => true);
+    pruneDebts(written!, later, 240, () => true);
+    pruneDebts(unwritten!, later, 240, () => true);
+    expect(thief!.debts.map(d => d.toId)).toEqual([written!.id]);
+    expect(written!.grievances).toHaveLength(1);
+    expect(unwritten!.grievances).toHaveLength(0);
+    // Still owed to the living only.
+    pruneDebts(thief!, later, 240, () => false);
+    expect(thief!.debts).toHaveLength(0);
   });
 });

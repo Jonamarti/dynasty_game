@@ -18,6 +18,7 @@
  * Pure functions and constants. Draws nothing.
  */
 import type { Building } from '../entities/Building.ts';
+import type { Household } from '../entities/Household.ts';
 import type { Person } from '../entities/Person.ts';
 import { techPower } from '../knowledge/Tech.ts';
 import { isLarder } from './Feast.ts';
@@ -67,4 +68,36 @@ export function templeOf(chief: Person | null | undefined, bandId: number, build
  */
 export function templePull(person: Person, chief: Person): number {
   return TEMPLE_PULL * techPower(chief, 'redistribution') * (0.25 + person.traits.loyalty);
+}
+
+/**
+ * Renown a household gains for each unit of food it is recorded as having
+ * given the temple — M15 phase 38b, `accounting`.
+ *
+ * Small per unit, because a household storing its harvest gives hundreds of
+ * units a year, and renown is read only against the band's own average
+ * (`averageRenown`): what this buys is the giving household standing above
+ * the hoarding one, not a large number. Half a point a unit, so a basket of
+ * a dozen is worth about what a gift is (`DEED_WEIGHT.gift`, 8, at most).
+ */
+export const CONTRIBUTION_RENOWN = 0.5;
+
+/**
+ * Writes a contribution to the temple into the ledger, if the chief keeps
+ * one: the household is credited with it (`Household.contributed`) and gains
+ * renown for it. Without `accounting` a gift to the temple is just food in a
+ * granary — nobody remembers whose it was. Returns whether it was written.
+ */
+export function recordContribution(household: Household | null, food: number, chief: Person | null | undefined): boolean {
+  if (!household || !chief || food <= 0) return false;
+  const power = techPower(chief, 'accounting');
+  if (power <= 0) return false;
+  household.contributed += food;
+  household.renown += food * CONTRIBUTION_RENOWN * power;
+  return true;
+}
+
+/** Whether `chief` writes down what they hear: debts and dockets kept until settled. */
+export function keepsAccounts(chief: Person | null | undefined): boolean {
+  return !!chief && techPower(chief, 'accounting') > 0;
 }

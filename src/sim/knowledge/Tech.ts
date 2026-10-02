@@ -135,6 +135,8 @@ export const TECHS = [
   // M15 phase 38b: the State, one node per commit with its reader — see
   // `social/Polity.ts`. `redistribution` is the temple store.
   'redistribution',
+  // The written ledger: contributions to the temple and debts before the chief.
+  'accounting',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1610,6 +1612,32 @@ export const TECH: Record<Tech, TechDef> = {
       'The granary becomes the temple: the band\'s surplus gathered in one ' +
       'place, kept by the chief, and handed back out at the chief\'s table.',
   },
+  accounting: {
+    id: 'accounting', label: 'Accounting', domain: 'people',
+    // The Uruk IV tablets: nine in ten of the first written documents are
+    // receipts — so much barley in, so many workers fed — and the clay
+    // tokens before them were the same idea without the writing.
+    age: 'bronze', firstKnown: 'about 3200 BC',
+    // A practice: the tablet is `clay_tablet`'s, and what is new is the habit
+    // of writing a store's comings and goings down. Tried by doing it, at the
+    // store.
+    kind: 'practice', practisedBy: ['store'],
+    requires: ['marking', 'clay_tablet'], difficulty: 0.55, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'clay_tablet' }, { kind: 'doing', action: 'store' }],
+        weight: 1.0, story: 'pressed a mark into wet clay for every basket carried into the granary' },
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'saw', what: 'theft' },
+                { kind: 'doing', action: 'store' }],
+        weight: 0.7, story: 'found the store short and nobody able to say who had put what in' },
+      { needs: [{ kind: 'knows', tech: 'clay_tablet' }, { kind: 'doing', action: 'complain' }],
+        weight: 0.5, story: 'took a wrong to the chief and found that nobody remembered it but them' },
+    ],
+    description:
+      'What went into the temple and who owes whom, written down. A gift to ' +
+      'the store is remembered to the giver\'s credit, and a debt the chief ' +
+      'has heard of is not forgotten until it is paid.',
+  },
 };
 
 /** Highest chronic motive this design can answer; zero means no recorded need. */
@@ -1870,6 +1898,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   redistribution: {
     summary: 'The chief\'s granary becomes the temple: the loyal store their surplus there, and the chief feasts the band from it.',
     site: 'social/Polity.ts templeOf and templePull; Brain store ranking; Feast.feastVenue and mayHostFeast',
+  },
+  accounting: {
+    summary: 'Gifts to the temple written to the giver\'s credit, and debts the chief has heard of kept until paid.',
+    site: 'Polity.recordContribution via ActionSystem.noteFoodStored; Simulation.hearComplaint marks Debt.recorded; Amends.pruneDebts; Simulation.keepDockets',
   },
 };
 

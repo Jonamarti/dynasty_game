@@ -97,7 +97,7 @@ import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
 import { feastVenue } from '../social/Feast.ts';
-import { templeOf } from '../social/Polity.ts';
+import { keepsAccounts, templeOf } from '../social/Polity.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
 
 /**
@@ -2500,6 +2500,15 @@ export class Simulation {
     // Heard, not seen: the story of it passes to the chief the way any story
     // does, so what the chief thinks of the accused moves as hearsay moves it.
     this.tellTheWrong(teller, chief, accused, plaintiff);
+    // M15 phase 38b: a chief who keeps accounts writes the wrong down, and a
+    // written debt does not lapse with the year (`pruneDebts`).
+    if (keepsAccounts(chief)) {
+      const owed = debtTo(accused, plaintiff.id);
+      const grievance = plaintiff.grievances.find(g => g.againstId === accused.id);
+      if (owed && !owed.recorded) telemetry.count('debt_recorded');
+      if (owed) owed.recorded = true;
+      if (grievance) grievance.recorded = true;
+    }
 
     if (accused.bandId !== chief.bandId) {
       if (!chief.docket.some(c => c.accusedId === told.accusedId && c.plaintiffId === told.plaintiffId)) {
@@ -2647,7 +2656,11 @@ export class Simulation {
       }
     }
     for (const person of this.people) {
-      if (person.docket.length > 0) person.docket = person.docket.filter(c => this.time.tick - c.tick <= stale);
+      // M15 phase 38b: a chief who keeps accounts keeps the docket too.
+      const written = keepsAccounts(person) && this.bandSystem.chiefByBand.get(person.bandId) === person.id;
+      if (person.docket.length > 0 && !written) {
+        person.docket = person.docket.filter(c => this.time.tick - c.tick <= stale);
+      }
       if (person.carriedDemand && this.time.tick - person.carriedDemand.tick > stale) person.carriedDemand = null;
     }
   }
@@ -4241,7 +4254,12 @@ export class Simulation {
       // M12 phase 2a: a debt to the dead, or one nobody has come for in a
       // year, is not owed any more.
       for (const person of this.people) {
-        if (person.alive) pruneDebts(person, this.time.tick, this.config.time.ticksPerDay,
+        if (!person.alive) continue;
+        // What the ledger saved today, for the health report: a recorded
+        // debt older than the year that an unwritten one would have lost.
+        const stale = this.time.tick - DEBT_DAYS * this.config.time.ticksPerDay;
+        for (const debt of person.debts) if (debt.recorded && debt.tick < stale) telemetry.count('recorded_debt_days');
+        pruneDebts(person, this.time.tick, this.config.time.ticksPerDay,
           id => this.peopleById.get(id)?.alive ?? false);
       }
       this.keepDockets();

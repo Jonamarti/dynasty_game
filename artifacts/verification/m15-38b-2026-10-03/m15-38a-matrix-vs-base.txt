@@ -1,0 +1,23 @@
+tiny           IDENTICAL  | feasts-gather-the-band: None -> n/a
+band           IDENTICAL  | feasts-gather-the-band: None -> n/a
+crowded        IDENTICAL  | feasts-gather-the-band: None -> n/a
+century        IDENTICAL  | feasts-gather-the-band: None -> n/a
+craft          IDENTICAL  | feasts-gather-the-band: None -> n/a
+wilds          IDENTICAL  | feasts-gather-the-band: None -> n/a
+emptied        IDENTICAL  | feasts-gather-the-band: None -> n/a
+hearths        IDENTICAL  | feasts-gather-the-band: None -> n/a
+porters        IDENTICAL  | feasts-gather-the-band: None -> n/a
+scribes        IDENTICAL  | feasts-gather-the-band: None -> n/a
+harsh-winter   IDENTICAL  | feasts-gather-the-band: None -> n/a
+coast          IDENTICAL  | feasts-gather-the-band: None -> n/a
+traps          IDENTICAL  | feasts-gather-the-band: None -> n/a
+millers        IDENTICAL  | feasts-gather-the-band: None -> n/a
+hunters        IDENTICAL  | feasts-gather-the-band: None -> n/a
+fishers        IDENTICAL  | feasts-gather-the-band: None -> n/a
+farmers        IDENTICAL  | feasts-gather-the-band: None -> n/a
+herders        IDENTICAL  | feasts-gather-the-band: None -> n/a
+feasts         differs  | bands-take-sides: FAIL -> n/a; crafting-is-interruptible13: PASS -> None; crafting-is-interruptible18: None -> PASS; crafts-happen-at-stations1: FAIL -> None; crafts-happen-at-stations5: None -> n/a; feasts-gather-the-band: None -> PASS; jobs-bias-work: n/a -> PASS; nights-are-spent-at-home90.9%: PASS -> None; nights-are-spent-at-home92.4%: None -> PASS; people-act-on-what-they-know17030/17050: FAIL -> None; people-act-on-what-they-know20127/20181: None -> FAIL; pots-reach-a-granary: PASS -> FAIL; sleep-restores: n/a -> PASS; techs-are-refined: PASS -> FAIL
+stewards       IDENTICAL  | feasts-gather-the-band: None -> n/a
+labour         IDENTICAL  | feasts-gather-the-band: None -> n/a
+culture        IDENTICAL  | feasts-gather-the-band: None -> n/a
+lean           IDENTICAL  | feasts-gather-the-band: None -> n/a

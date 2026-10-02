@@ -1,3 +1,34 @@
+## 2026-10-03 — M15 fase 38b: la contabilidad
+
+- **Nodo `accounting`** (práctica, Edad del Bronce, «hacia el 3200 a. C.»: las
+  tablillas de Uruk IV son, nueve de cada diez, recibos; requiere `marking` y
+  `clay_tablet`; se practica al guardar). Chispas: marcar en barro cada cesta
+  que entra en el granero; encontrar el almacén mermado sin saber quién puso
+  qué; llevar un agravio al jefe y ver que nadie lo recordaba.
+- **El libro del templo** (`Polity.recordContribution`): si el jefe lleva
+  cuentas, cada unidad de comida que un miembro guarda en el templo se apunta
+  a su hogar (`Household.contributed`, que leerá el impuesto) y le da 0,5 de
+  renombre. El renombre se lee siempre contra la media de la banda, así que lo
+  que compra es que el hogar que da quede por encima del que acapara.
+- **Las deudas escritas** (`Debt.recorded`, `Grievance.recorded`): la queja que
+  oye un jefe que lleva cuentas deja la deuda escrita, y `pruneDebts` ya no la
+  olvida al cabo del año —sólo al pagarse o al morir una de las dos partes—.
+  El expediente del jefe tampoco caduca (`keepDockets`).
+- **Check `the-ledger-remembers`** (al menos la mitad de lo dado al templo,
+  apuntado; informa de deudas escritas y días guardados). En `polity`: 1.306
+  de 1.306 unidades apuntadas; 0 deudas, porque nadie llevó una queja al jefe
+  en esa partida. En el build sin `recordContribution` da 0 y falla.
+- **Tests:** dos nuevos en `polity.test.ts` (el libro exige al jefe que lleva
+  cuentas; la deuda escrita sobrevive al año y la otra no, y ninguna a la
+  muerte).
+- `polity` gana `writing`, `clay_tablet` y `accounting` entre lo que saben los
+  fundadores.
+
+**Comprobado de paso:** la matriz completa con la 38a, comparada con la línea
+base escenario a escenario sin las líneas de reloj, sale **idéntica en los 22
+escenarios que no saben `brewing`**; sólo `feasts` cambia (ver la entrada de
+la 38a). Comparación en `artifacts/verification/m15-38b-2026-10-03/`.
+
 ## 2026-10-03 — M15 fase 38b: la redistribución y el templo
 
 - **Nodo `redistribution`** (práctica, `people`, Neolítico, «hacia el 5500

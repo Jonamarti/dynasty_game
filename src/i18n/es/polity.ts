@@ -30,4 +30,16 @@ export const ES_POLITY: Record<string, string> = {
     "El granero del jefe se convierte en templo: los leales guardan allí su excedente, y el jefe agasaja a la banda con él.",
   "The temple: the chief keeps the surplus of the band here, and gives it back at feasts":
     "El templo: el jefe guarda aquí el excedente de la banda, y lo devuelve en los banquetes",
+  // Phase 38b: accounting.
+  "Accounting": "Contabilidad",
+  "pressed a mark into wet clay for every basket carried into the granary":
+    "apretó una marca en el barro húmedo por cada cesta que entraba en el granero",
+  "found the store short and nobody able to say who had put what in":
+    "encontró el almacén mermado y a nadie capaz de decir quién había puesto qué",
+  "took a wrong to the chief and found that nobody remembered it but them":
+    "llevó un agravio al jefe y descubrió que nadie lo recordaba salvo él",
+  "What went into the temple and who owes whom, written down. A gift to the store is remembered to the giver's credit, and a debt the chief has heard of is not forgotten until it is paid.":
+    "Lo que entró en el templo y quién debe a quién, por escrito. Lo que se da al almacén se recuerda en favor de quien lo dio, y una deuda que el jefe ha oído no se olvida hasta que se paga.",
+  "Gifts to the temple written to the giver's credit, and debts the chief has heard of kept until paid.":
+    "Lo dado al templo, apuntado en favor de quien lo dio; y las deudas que el jefe ha oído, guardadas hasta que se pagan.",
 };
