@@ -1,4 +1,7 @@
 import type { WorldRaster } from './WorldBinary.ts';
+import { WORLD_FEATURE } from './WorldFeatureSeeds.ts';
+
+export type WorldWaterKind = 'land' | 'fresh' | 'salt';
 
 export interface RealWorldRegion {
   id: number;
@@ -11,6 +14,7 @@ export interface RealWorldRegion {
   /** `WORLD_FEATURE` bit flags, kept opaque so this module stays data-driven. */
   features: number;
   land: boolean;
+  water: WorldWaterKind;
 }
 
 /** A sampled real map with seam-safe coordinates and no simulation state. */
@@ -29,13 +33,20 @@ export class RealWorldMap {
       const x = id % raster.width;
       const y = Math.floor(id / raster.width);
       const elevationMeters = raster.elevationMeters[id]!;
+      const features = raster.features?.[id] ?? 0;
+      const freshwater = (features & (WORLD_FEATURE.river | WORLD_FEATURE.lake)) !== 0;
+      const land = elevationMeters >= raster.seaLevelMeters;
       return {
         id, x, y,
         latitude: 90 - (y + 0.5) / raster.height * 180,
         elevationMeters,
         climateClass: raster.koppen[id]!,
-        features: raster.features?.[id] ?? 0,
-        land: elevationMeters >= raster.seaLevelMeters,
+        features,
+        land,
+        // Natural Earth lakes/rivers remain fresh even when their sampled
+        // surface is below the sea-level threshold; the coastline decides
+        // salt water only after inland water features have been identified.
+        water: freshwater ? 'fresh' : land ? 'land' : 'salt',
       };
     });
   }

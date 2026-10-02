@@ -36,6 +36,13 @@ y envuelve la longitud a través del antimeridiano. Motivo: las capas
 pregeneradas deben tener una API geográfica utilizable antes de la selección de
 región y del globo.
 
+## 2026-10-02 — M15 bloque VII, fase 30 (parcial): agua interior y mar
+
+Los perfiles reales distinguen tierra, agua dulce de río/lago y mar según las
+capas Natural Earth y el nivel del mar del mapa. Motivo: impedir que los lagos
+o ríos se confundan con mar al conectar agua y sed en el nivel local. La isla
+clásica y la bebida de mar no cambian todavía.
+
 ## 2026-10-02 — M15 bloque VII, fase 29b: mapa aleatorio y drenaje
 
 `WorldMap` ahora genera, a partir de la semilla, regiones de tierra y océano,

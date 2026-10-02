@@ -2499,6 +2499,11 @@ cerrar esta fase**: «una `Simulation` es una isla» deja de ser verdad.
 
 ## Fase 30 — El agua dulce y la sal (M14 fase 12; nota 7 de `notes3`; N2)
 
+**Estado (2026-10-02): clasificación geográfica inicial; falta conectar el
+agua al terreno y a las necesidades de la partida global.** `RealWorldMap`
+clasifica las regiones con ríos o lagos como agua dulce y las regiones bajo el
+nivel del mar como saladas, manteniendo la prioridad del agua interior.
+
 **Detalle en `m14_plan.md` fase 12.** Ríos, lagos y manantiales; bioma `river`
 al final de `BIOMES`; `freshShore` y `saltShore`; el agua de la fruta
 (`ItemDef.water`); y sin agua dulce no se vive.
