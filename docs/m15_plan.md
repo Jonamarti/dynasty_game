@@ -2391,6 +2391,20 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Estado (2026-10-02): subfases 29a-b implementadas; 29c en curso.**
+`WorldMap` define la rejilla 96 × 48 (10 × 10 comarcas por región por defecto),
+latitud y un campo de altura determinista con interpolación entre centros
+regionales, detalle fino y longitud continua en el antimeridiano. El mapa aleatorio añade
+continentes y relieves costeros, temperatura y lluvia, biomas, recursos
+regionales y una red de drenaje hacia el océano. 29c produce los dos ficheros
+compactos de la Tierra con alturas de NOAA, clima Beck, capas regionales de
+ríos y lagos de Natural Earth y zonas aproximadas de recursos y antepasados
+silvestres. `WorldAtlas` carga de forma local y valida el manifiesto y los
+binarios; `RealWorldMap` expone relieve, clase climática y capas regionales con
+longitud continua en el antimeridiano. La paleoclimatología y la integración de
+selección en partida nueva siguen pendientes. La puerta de coste 29d también
+queda pendiente.
+
 **Detalle en `m14_plan.md` fase 11**, leyendo «región» donde dice «comarca»
 del mapa del mundo. `WorldMap` en `src/sim/world/`, con elevación, latitud,
 lluvia, tipo, ríos como grafo, agua dulce, fauna, flora y minerales por
@@ -2440,7 +2454,8 @@ historia tenga la misma forma sin ser la misma.
   - costas, lagos y ríos: Natural Earth (dominio público);
   - clima: la clasificación de Köppen-Geiger de Beck y otros (2018, CC BY 4.0,
     con su atribución en los créditos);
-  - tablas escritas a mano, cada fila con su fuente bibliográfica: dónde
+  - zonas iniciales aproximadas para recursos y antepasados silvestres, con
+    bibliografía por fila todavía pendiente: dónde
     crecían los antepasados silvestres de las plantas domesticadas (trigo y
     cebada en el Creciente Fértil, arroz en el Yangtsé, mijo en el río
     Amarillo, maíz en Mesoamérica, patata en los Andes, sorgo en el Sahel…),
@@ -2490,6 +2505,11 @@ de la semilla; los mapas reales cargan y su `SOURCES.md` está completo; y
 cerrar esta fase**: «una `Simulation` es una isla» deja de ser verdad.
 
 ## Fase 30 — El agua dulce y la sal (M14 fase 12; nota 7 de `notes3`; N2)
+
+**Estado (2026-10-02): clasificación geográfica inicial; falta conectar el
+agua al terreno y a las necesidades de la partida global.** `RealWorldMap`
+clasifica las regiones con ríos o lagos como agua dulce y las regiones bajo el
+nivel del mar como saladas, manteniendo la prioridad del agua interior.
 
 **Detalle en `m14_plan.md` fase 12.** Ríos, lagos y manantiales; bioma `river`
 al final de `BIOMES`; `freshShore` y `saltShore`; el agua de la fruta

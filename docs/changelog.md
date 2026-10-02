@@ -156,6 +156,74 @@ existe: el aviso a la guardia queda en `sightIntruders` (ver `bugs.md`).
 Tests: `dog.test.ts` (5). `sim:check`: los mismos rojos conocidos (más
 `perf-budget`, solo por CPU compartida durante la medida).
 
+## 2026-10-02 — M15 bloque VII, fase 29c (parcial): mapas reales compactos
+
+`npm run world:build` reduce 4.608 muestras de ETOPO 2022 a dos rejillas de
+96 × 48 y añade la clase climática de Beck et al. desde su raster global de
+0,5°. Genera `public/world/earth-present.bin`, `earth-12000-bce.bin` y el
+manifiesto. El mapa paleolítico baja 60 m el nivel del mar y por ahora reutiliza
+el clima presente; `SOURCES.md` deja clara esa aproximación. Los binarios son
+13,8 KB cada uno y se validan tras escribirse.
+Motivo: guardar fuentes reales reducidas para la partida sin hacer descargas en
+tiempo de juego. La paleoclimatología, la bibliografía de las zonas de recursos
+y la integración de selección siguen pendientes de 29c.
+
+## 2026-10-02 — M15 bloque VII, fase 29c (parcial): agua y recursos del mundo
+
+El formato DWM2 guarda elevación, clima y banderas regionales de ríos, lagos,
+antepasados silvestres y yacimientos. `world:build` rasteriza los vectores de
+Natural Earth y genera de nuevo los mapas; el lector mantiene compatibilidad
+con DWM1. Motivo: preparar datos geográficos que la fase 30 conectará al agua
+del juego y que permitirán ubicar las primeras culturas sin programar pueblos
+históricos.
+
+## 2026-10-02 — M15 bloque VII, fase 29c: lector local del atlas
+
+`WorldAtlas` carga los mapas enumerados por el manifiesto desde los assets
+locales, valida la versión, la ruta, las dimensiones y el nivel del mar, y
+rechaza entradas duplicadas o rutas fuera del atlas. Motivo: los mapas
+pregenerados tienen que poder consumirse sin depender de la red ni aceptar una
+combinación incoherente de manifiesto y binario.
+
+## 2026-10-02 — M15 bloque VII, fase 29c: modelo de mapa real
+
+`RealWorldMap` convierte una rejilla cargada en perfiles de región con altura,
+clase climática, banderas de recursos/agua y nivel del mar; interpola la altura
+y envuelve la longitud a través del antimeridiano. Motivo: las capas
+pregeneradas deben tener una API geográfica utilizable antes de la selección de
+región y del globo.
+
+## 2026-10-02 — M15 bloque VII, fase 30 (parcial): agua interior y mar
+
+Los perfiles reales distinguen tierra, agua dulce de río/lago y mar según las
+capas Natural Earth y el nivel del mar del mapa. Motivo: impedir que los lagos
+o ríos se confundan con mar al conectar agua y sed en el nivel local. La isla
+clásica y la bebida de mar no cambian todavía.
+
+## 2026-10-02 — M15 bloque VII, fase 29b: mapa aleatorio y drenaje
+
+`WorldMap` ahora genera, a partir de la semilla, regiones de tierra y océano,
+relieves costeros, bandas climáticas, biomas y recursos. Un llenado de
+depresiones desde la costa da a cada región terrestre un destino de drenaje;
+los segmentos con suficiente caudal acumulado forman los ríos. Los recursos
+usan una tirada derivada por región: el cereal silvestre sólo aparece en
+estepas templadas y cálidas y el estaño sigue siendo excepcional. La generación
+no toca `Simulation` ni sus streams.
+Motivo: dejar el mapa aleatorio reproducible y con geografía suficiente para
+que las siguientes fases puedan ubicar agua y pueblos.
+
+## 2026-10-02 — M15 bloque VII, fase 29a: rejilla y altura continua del mundo
+
+Se inicia el mapa mundial en `src/sim/world/WorldMap.ts`: rejilla configurable
+con valores por defecto de 96 × 48 regiones y diez comarcas por región,
+coordenadas de latitud y un campo de altura determinista que interpola los
+centros regionales, añade detalle y cierra el antimeridiano sin un salto. Se
+mantiene independiente de `Simulation` para que esta base no consuma los streams
+del mundo clásico. La fase 29 sigue abierta: clima, ríos, biomas, recursos,
+mapas pregenerados, guardado e integración quedan pendientes.
+Motivo: comenzar la escala mundial con una geometría comprobable antes de
+añadir encima los mapas y su coste de simulación.
+
 ## 2026-10-02 — M15: el frío no corta el trabajo que da abrigo
 
 Construir o reparar un refugio o un hogar, investigar o prototipar una

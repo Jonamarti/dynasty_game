@@ -1,5 +1,29 @@
 # Known bugs and rough edges
 
+## M15 bloque VII, mapas reales aún parciales (2026-10-02)
+
+La salida actual de 29c usa elevación ETOPO 2022 y el clima Beck presente
+(1980–2016). `earth-12000-bce.bin` desplaza el mar 60 m, pero reutiliza ese
+clima moderno porque el raster paleoclimático aún no está incorporado. Los
+ríos y lagos de Natural Earth se reducen a banderas regionales; las zonas de
+recursos y antepasados silvestres son aproximadas y aún necesitan bibliografía
+por fila. Ver `public/world/SOURCES.md`. La selección desde partida nueva sigue
+pendiente.
+
+## Línea base al iniciar el bloque VII (2026-10-02)
+
+Antes de los cambios de la fase 29a, `npm run sim:check` en `c65c0d2` dejó 7
+checks rojos: `people-act-on-what-they-know`, `word-of-food-travels`,
+`cravings-steer-the-diet`, `nights-are-slept`, `moods-move-choices`,
+`opinions-diverge` y `perf-budget` (657 pasos/s frente al suelo de 1.678).
+Es una captura del estado inicial; no se ha atribuido ninguno al mapa mundial.
+Tras 29a, `npm run sim:check:all` recorrió los 21 escenarios de la matriz por
+defecto. `band` quedó en 45/51 con los mismos seis fallos de comportamiento de
+la línea base; otros escenarios repitieron parte de ellos y además marcaron
+checks propios, como `shelter-answers-cold`, `people-survive` y
+`animals-are-tamed`. La matriz no está verde, pero `WorldMap` aún no se conecta
+a `Simulation`, por lo que esta funcionalidad no cambia esas rutas.
+
 ## Frío e interrupciones del trabajo (2026-10-02) — corregido
 
 `interruption()` paraba cualquier trabajo cuando el frío superaba 50, incluso
