@@ -1,5 +1,14 @@
 # Known bugs and rough edges
 
+## M15 bloque VII, mapas reales aún parciales (2026-10-02)
+
+La primera salida de 29c usa elevación ETOPO 2022 y el clima Beck presente
+(1980–2016). `earth-12000-bce.bin` desplaza el mar 60 m, pero reutiliza ese
+clima moderno porque el raster paleoclimático aún no está incorporado. Tampoco
+están en los binarios los vectores de ríos y lagos de Natural Earth ni las
+tablas regionales de antepasados silvestres y yacimientos; ver
+`public/world/SOURCES.md`. La selección desde partida nueva sigue pendiente.
+
 ## Línea base al iniciar el bloque VII (2026-10-02)
 
 Antes de los cambios de la fase 29a, `npm run sim:check` en `c65c0d2` dejó 7

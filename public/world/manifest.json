@@ -1,0 +1,23 @@
+{
+  "format": "DWM1",
+  "resolution": "96x48",
+  "regionDegrees": 3.75,
+  "comarcasPerRegion": 10,
+  "climate": "Köppen-Geiger present-day 1980-2016, Beck et al. (2018), sampled at 0.5 degrees",
+  "maps": [
+    {
+      "id": "earth-12000-bce",
+      "title": "Earth, about 12,000 years ago",
+      "file": "earth-12000-bce.bin",
+      "seaLevelMeters": -60,
+      "recommended": true
+    },
+    {
+      "id": "earth-present",
+      "title": "Earth today",
+      "file": "earth-present.bin",
+      "seaLevelMeters": 0,
+      "recommended": false
+    }
+  ]
+}

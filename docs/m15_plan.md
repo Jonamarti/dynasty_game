@@ -2384,13 +2384,15 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
-**Estado (2026-10-02): subfases 29a-b implementadas.** `WorldMap` define la
-rejilla 96 × 48 (10 × 10 comarcas por región por defecto), latitud y un campo
-de altura determinista con interpolación entre centros regionales, detalle
-fino y longitud continua en el antimeridiano. El mapa aleatorio añade
+**Estado (2026-10-02): subfases 29a-b implementadas; 29c en curso.**
+`WorldMap` define la rejilla 96 × 48 (10 × 10 comarcas por región por defecto),
+latitud y un campo de altura determinista con interpolación entre centros
+regionales, detalle fino y longitud continua en el antimeridiano. El mapa aleatorio añade
 continentes y relieves costeros, temperatura y lluvia, biomas, recursos
-regionales y una red de drenaje hacia el océano. Aún faltan los mapas reales,
-la interfaz de partida, la conexión con `Simulation` y la puerta de coste 29d.
+regionales y una red de drenaje hacia el océano. 29c ya produce los dos
+ficheros compactos de la Tierra con alturas de NOAA y clima Beck, pero aún
+faltan las capas de Natural Earth y recursos históricos, además de integrar
+estos mapas en la partida. La puerta de coste 29d también queda pendiente.
 
 **Detalle en `m14_plan.md` fase 11**, leyendo «región» donde dice «comarca»
 del mapa del mundo. `WorldMap` en `src/sim/world/`, con elevación, latitud,

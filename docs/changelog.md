@@ -1,4 +1,16 @@
 #
+## 2026-10-02 — M15 bloque VII, fase 29c (parcial): mapas reales compactos
+
+`npm run world:build` reduce 4.608 muestras de ETOPO 2022 a dos rejillas de
+96 × 48 y añade la clase climática de Beck et al. desde su raster global de
+0,5°. Genera `public/world/earth-present.bin`, `earth-12000-bce.bin` y el
+manifiesto. El mapa paleolítico baja 60 m el nivel del mar y por ahora reutiliza
+el clima presente; `SOURCES.md` deja clara esa aproximación. Los binarios son
+13,8 KB cada uno y se validan tras escribirse.
+Motivo: guardar fuentes reales reducidas para la partida sin hacer descargas en
+tiempo de juego. Las capas de Natural Earth, las tablas de recursos y la
+integración de selección siguen pendientes de 29c.
+
 ## 2026-10-02 — M15 bloque VII, fase 29b: mapa aleatorio y drenaje
 
 `WorldMap` ahora genera, a partir de la semilla, regiones de tierra y océano,
