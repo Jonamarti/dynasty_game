@@ -17,6 +17,7 @@ import { debtTo, offerFor, OFFER_AT_LEAST } from '../social/Amends.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import type { Person } from '../entities/Person.ts';
 import { CUT_ABOVE } from '../core/Grass.ts';
+import { DIG_TO, PILE_TO, digTool } from '../core/Earth.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
@@ -1049,6 +1050,35 @@ function groundActions(
       enabled: tall,
       reason: tall ? undefined : t('The grass is too short to cut'),
     });
+  }
+  // M15 phase 26: moving earth, offered on ground that can take a spade. Dig is
+  // always on the menu, greyed with the reason; the heap's verb appears only
+  // for someone carrying earth, because until then there is nothing to put.
+  if (walkable) {
+    const there = ctx.world.biomeAt(target.x, target.y);
+    if (there !== 'water' && there !== 'rock') {
+      const dug = ctx.world.depthDug(target.x, target.y);
+      const deep = dug >= DIG_TO - 1e-9;
+      const reason = !digTool(actor) ? t('You have nothing to dig with')
+        : deep ? t('The hole is as deep as a person can climb out of') : undefined;
+      options.push({
+        id: 'dig',
+        label: t('Dig here'),
+        icon: '⛏️',
+        enabled: reason === undefined,
+        reason,
+      });
+      if (actor.inventory.count('earth') > 0) {
+        const high = -dug >= PILE_TO - 1e-9;
+        options.push({
+          id: 'pile',
+          label: t('Pile earth here'),
+          icon: '⛰️',
+          enabled: !high,
+          reason: high ? t('The heap here is as high as it will stand') : undefined,
+        });
+      }
+    }
   }
   // Offered whenever there is water within reach of the click, including when
   // the click landed *on* the water: the order routes to the nearest bank, so

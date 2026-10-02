@@ -106,6 +106,7 @@ export const ES_DATA: Record<string, string> = {
   "Yarrow": "Milenrama",
   "Baneberries": "Bayas de actea",
   "Herbs": "Hierbas",
+  "Earth": "Tierra",
   "Dog rose": "Escaramujo",
   "Blackthorn": "Endrino",
   "Strawberry tree": "Madroño",

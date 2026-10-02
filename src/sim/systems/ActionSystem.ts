@@ -31,6 +31,7 @@ import {
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import { CUT_ABOVE, CUT_BITE, CUT_FLOOR, THATCH_PER_HEIGHT } from '../core/Grass.ts';
+import { DIG_TICKS, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, digTool } from '../core/Earth.ts';
 import { SNOW_BURY_AT } from '../core/Snow.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -744,6 +745,8 @@ export class ActionSystem {
       case 'ponder': this.doPonder(person, ctx); break;
       case 'reflect': this.doReflect(person, ctx); break;
       case 'cut_grass': this.doCutGrass(person, ctx); break;
+      case 'dig': this.doDig(person, ctx); break;
+      case 'pile': this.doPile(person, ctx); break;
       case 'discuss': this.doDiscuss(person, ctx); break;
       case 'prototype': this.doPrototype(person, ctx); break;
       case 'give': this.doGive(person, ctx); break;
@@ -1442,6 +1445,129 @@ export class ActionSystem {
       return;
     }
     person.actionTimer = Math.ceil(10 / person.skillFactor('forage'));
+  }
+
+  /**
+   * Digging a hole, one lift at a time — M15 phase 26c. The earth comes up into
+   * the hands as `earth` and the ground goes down; the work is banked in the
+   * ground itself (`World.offset`), which is what the AGENTS.md rule on long
+   * actions asks for: stopped half-way, the hole stays half-dug and the next
+   * order carries on from there.
+   *
+   * It stops, and says why, when the hole is deep enough to climb out of
+   * (`DIG_TO`), when the hands are full of what has been dug, or when there is
+   * no tool; ground that is water or rock is refused where the order is given.
+   */
+  private doDig(person: Person, ctx: ActionContext): void {
+    if (person.targetX === null || person.targetY === null) {
+      this.abandon(person, 'nowhere_to_dig', ctx);
+      return;
+    }
+    const tool = digTool(person);
+    if (!tool) {
+      this.abandon(person, 'no_digging_tool', ctx);
+      return;
+    }
+    const tx = Math.floor(person.targetX);
+    const ty = Math.floor(person.targetY);
+    const biome = ctx.world.biomeAt(tx, ty);
+    if (biome === 'water' || biome === 'rock') {
+      this.abandon(person, 'ground_too_hard', ctx);
+      return;
+    }
+    if (ctx.world.depthDug(tx, ty) >= DIG_TO - 1e-9) {
+      this.stop(person, 'dug_deep_enough', ctx);
+      return;
+    }
+    if (!this.travel(person, ctx)) return;
+    const owner = ctx.territoryOwnerAt(person.targetX, person.targetY);
+    if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
+
+    const ticks = Math.ceil(DIG_TICKS / (person.skillFactor('build') * tool.power));
+    if (person.actionTimer <= 0) person.actionTimer = ticks;
+    person.actionTimer--;
+    person.workedTicks++;
+    if (person.actionTimer > 0) return;
+
+    const room = Math.max(0, Math.min(
+      person.carryCapacity - person.carrying,
+      itemCapacityFor(person, ctx.carry, 'earth') - person.inventory.count('earth'),
+    ));
+    if (room === 0) {
+      this.stop(person, 'hands_full', ctx);
+      return;
+    }
+    // Never past the depth asked for: the last lift takes what is left.
+    const left = Math.max(1, Math.round((DIG_TO - ctx.world.depthDug(tx, ty)) / EARTH_UNIT));
+    const lift = Math.min(room, LIFT, left);
+    ctx.world.dig(tx, ty, lift * EARTH_UNIT);
+    person.inventory.add('earth', lift);
+    person.practice('build', 0.3);
+    telemetry.count('earth_dug', lift);
+
+    const stop = this.interruption(person, ctx, { lookaheadTicks: ticks });
+    if (stop) {
+      this.stop(person, stop, ctx);
+      return;
+    }
+    person.actionTimer = ticks;
+  }
+
+  /**
+   * Putting earth down — the other half of `doDig`, and what makes a mound out
+   * of it. Piled until the ground stands `PILE_TO` above what it was; past that
+   * the order is refused with the reason, because a heap does not stand taller
+   * than its footing without a wall. It carries on until the hands are empty.
+   */
+  private doPile(person: Person, ctx: ActionContext): void {
+    if (person.targetX === null || person.targetY === null) {
+      this.abandon(person, 'nowhere_to_put_the_earth', ctx);
+      return;
+    }
+    if (person.inventory.count('earth') <= 0) {
+      this.abandon(person, 'no_earth', ctx);
+      return;
+    }
+    const tx = Math.floor(person.targetX);
+    const ty = Math.floor(person.targetY);
+    const biome = ctx.world.biomeAt(tx, ty);
+    if (biome === 'water' || biome === 'rock') {
+      this.abandon(person, 'nowhere_to_put_the_earth', ctx);
+      return;
+    }
+    if (-ctx.world.depthDug(tx, ty) >= PILE_TO - 1e-9) {
+      this.stop(person, 'piled_high_enough', ctx);
+      return;
+    }
+    if (!this.travel(person, ctx)) return;
+    const owner = ctx.territoryOwnerAt(person.targetX, person.targetY);
+    if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
+
+    const ticks = Math.ceil(PILE_TICKS / person.skillFactor('build'));
+    if (person.actionTimer <= 0) person.actionTimer = ticks;
+    person.actionTimer--;
+    person.workedTicks++;
+    if (person.actionTimer > 0) return;
+
+    const headroom = Math.max(1, Math.round((PILE_TO + ctx.world.depthDug(tx, ty)) / EARTH_UNIT));
+    const lift = Math.min(LIFT, person.inventory.count('earth'), headroom);
+    ctx.world.pile(tx, ty, lift * EARTH_UNIT);
+    person.inventory.remove('earth', lift);
+    person.practice('build', 0.2);
+    telemetry.count('earth_piled', lift);
+    if (person.inventory.count('earth') <= 0) {
+      this.stop(person, 'earth_spent', ctx);
+      return;
+    }
+
+    // Laden is the whole point of this verb, so it is the one long action that
+    // does not read a full pack as a reason to stop.
+    const stop = this.interruption(person, ctx, { lookaheadTicks: ticks, ignoreLaden: true });
+    if (stop) {
+      this.stop(person, stop, ctx);
+      return;
+    }
+    person.actionTimer = ticks;
   }
 
   /** Picking fruit off a standing tree. Same rhythm as any other harvest. */

@@ -1,3 +1,47 @@
+## 2026-10-02 — M15 fase 26c (primera parte): cavar y apilar, para el jugador
+
+Los verbos **`dig`** y **`pile`** y el objeto **`earth`**. Cavar baja el terreno
+(`World.dig`) y llena las manos de tierra; apilar la devuelve (`World.pile`) y
+levanta un montón. Lo que ve el resto del juego sale solo de la fase 25: un
+montón da vista (25c), una zanja o un montón frenan al cruzarlos (25b), y el
+relieve se repinta.
+
+- **`earth`**, de clase nueva `loose`, que solo la cesta acepta además de las
+  manos (`basket.accepts`): con las manos, un puñado y una brazada de tres; con
+  cesta, lo que cabe en ella. Sin fuente fuera de `dig` y sin consumidor fuera
+  de `pile`, que es lo que pide `AGENTS.md` de un objeto nuevo.
+- **Herramienta:** un palo (`sticks`) basta, sin técnica: endurecer una punta al
+  fuego es más viejo que cualquier entrada del árbol. `Earth.DIG_TOOLS` es la
+  tabla donde entrarán el pico de asta y la pala, cada uno con su técnica y su
+  lector; hoy no se declara ninguno de los dos.
+- **El avance se guarda en el terreno** (`World.offset`), no en la acción: un
+  hoyo a medias sigue a medias, y la siguiente orden continúa donde se quedó.
+  Cada levantada interrumpe con `interruption()`; `pile` pasa `ignoreLaden`,
+  porque ir cargado es justo su caso.
+- **Topes:** `DIG_TO` y `PILE_TO` son 8 puñados (0,0032 u, 1,3 m). La última
+  levantada coge solo lo que falta. `world.pitDepth` (2,4 m) sigue sin
+  alcanzarse con estas órdenes; es para los diseños de la siguiente parte.
+- **Razones (la regla de la interfaz):** al dar la orden se rechaza con motivo
+  (sin palo, agua o roca, hoyo ya hondo, sin tierra, montón ya alto), y en el
+  camino cada parada tiene su frase en `Floaters` y en español:
+  `nowhere_to_dig`, `no_digging_tool`, `ground_too_hard`, `dug_deep_enough`,
+  `no_earth`, `nowhere_to_put_the_earth`, `piled_high_enough`, `earth_spent`
+  (más `hands_full`, que ya existía).
+- **Menú:** «Cavar aquí» en cualquier suelo, en gris con el motivo si no se
+  puede; «Echar tierra aquí» solo si se lleva tierra.
+- **Nadie lo hace por su cuenta todavía.** `Brain` no puntúa `dig` ni `pile`:
+  la banda cavará por persuasión (fase 6) cuando haya diseños que proponer. Por
+  eso `sim:check` no se mueve.
+- `digging.test.ts`: cava y llena las manos, el avance se guarda, no pasa de
+  `DIG_TO`, rechaza sin herramienta; apila y sube el terreno, rechaza sin tierra
+  y sobre un montón alto.
+
+**Medido:** ninguna escena nueva ni sorteo nuevo. `sim:check:all` sigue con los
+mismos fallos de la línea base. `e2e` falla en 6 pruebas que ya fallaban antes
+de este commit (comprobado con `git stash`: «teaching appears in the menu…» y
+«clicking a lone person still offers the ground under them» fallan igual sin
+estos cambios).
+
 ## 2026-10-02 — M15 fases 16a y 26a: la tierra se mueve (bit-idéntico, sin llamadores)
 
 - **`World.setWalkable`** (16a) es el único sitio que cambia `walkable` tras la

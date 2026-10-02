@@ -78,7 +78,7 @@ export interface ItemDef {
  * stick long enough that it will not fit in a pouch, a soft or fragile thing
  * a pouch or basket holds, and something too big or awkward for either.
  */
-export type ItemClass = 'food' | 'long' | 'small' | 'bulky';
+export type ItemClass = 'food' | 'long' | 'small' | 'bulky' | 'loose';
 
 export const ITEMS: Record<string, ItemDef> = {
   berries:  { id: 'berries',  label: 'Berries',    nutrition: 14, hydration: 4, spoilTicks: 2400, baseValue: 1, macros: { fat: 0.05, protein: 0.05, carb: 0.90 }, class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 } },
@@ -208,7 +208,7 @@ export const ITEMS: Record<string, ItemDef> = {
   // M8 plan lists under "three repairs to make while passing".
   bundle:   { id: 'bundle',   label: 'Bundle',     nutrition: 0,  spoilTicks: 0,    baseValue: 4, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, container: { slot: 'shoulder', capacity: 12, accepts: ['long'] } },
   hide_bag: { id: 'hide_bag', label: 'Hide bag',   nutrition: 0,  spoilTicks: 0,    baseValue: 6, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, container: { slot: 'belt', capacity: 12, accepts: ['small'] } },
-  basket:   { id: 'basket',   label: 'Basket',     nutrition: 0,  spoilTicks: 0,    baseValue: 5, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, container: { slot: 'back', capacity: 24, accepts: ['small', 'food'] } },
+  basket:   { id: 'basket',   label: 'Basket',     nutrition: 0,  spoilTicks: 0,    baseValue: 5, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 }, container: { slot: 'back', capacity: 24, accepts: ['small', 'food', 'loose'] } },
   sledge:   { id: 'sledge',   label: 'Sledge',     nutrition: 0,  spoilTicks: 0,    baseValue: 12, class: 'bulky', hand: { perHand: 0, perArms: 0, hands: 2 }, container: { slot: 'left', capacity: 30, accepts: ['small', 'long', 'bulky', 'food'] } },
   net:      { id: 'net',      label: 'Net',        nutrition: 0,  spoilTicks: 0,    baseValue: 7, class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 } },
   flint:    { id: 'flint',    label: 'Flint',      nutrition: 0,  spoilTicks: 0,    baseValue: 2, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
@@ -308,6 +308,12 @@ export const ITEMS: Record<string, ItemDef> = {
   // The yarrow's leaves. Not food; `tend` spends one to ease a poisoning or to
   // draw the infection out of a festering wound (`Body.dress`, `Body.soothe`).
   herbs: { id: 'herbs', label: 'Herbs', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'small', hand: { perHand: 4, perArms: 10, hands: 1 } },
+  // M15 phase 26. What a spade lifts out and a mound is built of: a handful,
+  // three to an armful, and a basket on the back is what lets a person move
+  // enough of it to matter (`loose` is the class the basket takes). Worth
+  // nearly nothing to trade; `dig` makes it and `pile` spends it, and a band
+  // with a heap of it is a band that has been moving ground.
+  earth: { id: 'earth', label: 'Earth', nutrition: 0, spoilTicks: 0, baseValue: 0, class: 'loose', hand: { perHand: 1, perArms: 3, hands: 1 } },
 };
 
 export class Inventory {
