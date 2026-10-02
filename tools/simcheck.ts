@@ -29,6 +29,15 @@ import { isHeld, isBound } from '../src/sim/social/Defence.ts';
 import { WORTH_GRAZING } from '../src/sim/core/Grass.ts';
 import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
 
+/**
+ * The outer band of a fire's circle that `fire-keeps-wolves-off` does not count.
+ * A desperate hunter with somebody standing just outside the light paces its
+ * edge: pushed out, it steps back in, so a sample can catch it a tile inside.
+ * Measured in `hearths`: all 408 samples "inside" were one bear, at the rim,
+ * with a person within six tiles, and none deeper than 1.5 tiles in.
+ */
+const FIRE_RIM = 2;
+
 // ---------------------------------------------------------------------------
 // Scenarios
 // ---------------------------------------------------------------------------
@@ -3180,35 +3189,26 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // exercise it. The two about hunters count what the run's telemetry holds;
   // the one about grass is read off the final positions; the one about a
   // hunted-out land belongs to `emptied`, whose setup takes every herd away.
-  const preyNow = sim.animals.filter(a => a.alive && !a.def.predator);
-  if (preyNow.length < 15) {
-    skip('herds-follow-the-grass', 'only ' + preyNow.length + ' grazers left to sample');
+  // Averaged over the run, not read off the last step: one instantaneous
+  // snapshot of a few dozen animals flipped this check on a seed that was fine
+  // a build earlier (0.41 and 0.38 against a 0.35 line, where the broken build
+  // sits at 0.65-0.88 and the working one at 0.04-0.21).
+  const grazerSamples = tel.grazer_samples ?? 0;
+  if (grazerSamples < 200) {
+    skip('herds-follow-the-grass', 'only ' + grazerSamples + ' grazer samples in this run');
   } else {
     // Not "the grass under them is tall": a grazer eats the tile it stands on
     // down to stubble, so the herd's own ground reads *below* the meadow's
-    // average in the world that works (0.29 under, 0.46 across). What a herd
-    // that follows the grass does is *leave* poor ground, so the share of
-    // grazers standing on it is measured against the share of the land that is
-    // poor. Measured on three seeds with the forage step switched off: the
-    // excess is 0.65-0.80, and with it on 0.04-0.21.
-    let onPoor = 0;
-    for (const a of preyNow) if (sim.world.grassAt(a.x, a.y) < WORTH_GRAZING) onPoor++;
-    let poorLand = 0;
-    let tiles = 0;
-    for (let y = 0; y < sim.world.height; y++) {
-      for (let x = 0; x < sim.world.width; x++) {
-        const biome = sim.world.biomeAt(x, y);
-        if (biome !== 'grass' && biome !== 'forest') continue;
-        tiles++;
-        if (sim.world.grassAt(x, y) < WORTH_GRAZING) poorLand++;
-      }
-    }
-    const shareOn = onPoor / preyNow.length;
-    const shareLand = tiles > 0 ? poorLand / tiles : 0;
+    // average in the world that works. What a herd that follows the grass does
+    // is *leave* poor ground, so the share of grazers standing on it is
+    // measured against the share of the land that is poor.
+    const shareOn = (tel.grazer_samples_on_poor ?? 0) / grazerSamples;
+    const shareLand = (tel.meadow_poor_share_sum ?? 0) / Math.max(1, tel.meadow_poor_share_samples ?? 0);
     add('herds-follow-the-grass',
       shareOn - shareLand < 0.35,
-      preyNow.length + ' grazers, ' + (shareOn * 100).toFixed(0) + '% of them on poor grass, against ' +
-        (shareLand * 100).toFixed(0) + '% of the meadow and the wood being poor');
+      thousands(grazerSamples) + ' grazer samples, ' + (shareOn * 100).toFixed(0) +
+        '% of them on poor grass, against ' + (shareLand * 100).toFixed(0) +
+        '% of the meadow and the wood being poor');
   }
 
   const hunters = sim.animals.filter(a => a.alive && a.def.predator).length;
@@ -3226,6 +3226,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // the share inside a circle is a fraction of what the circles' share of the
   // land would give by chance. Skips when no fire stood in the hunters' land
   // long enough for the chance share to be worth comparing.
+  // (Inside means deeper than `FIRE_RIM` tiles from the edge of the circle.)
   const huntSamples = tel.hunter_samples ?? 0;
   const expectedIn = tel.hunter_samples_expected_in_firelight ?? 0;
   const seenIn = tel.hunter_samples_in_firelight ?? 0;
@@ -3239,6 +3240,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         'would put ' + expectedIn.toFixed(1) + ' (' + (tel.predator_kept_off_by_fire ?? 0) + ' turned back)');
   }
 
+  const preyNow = sim.animals.filter(a => a.alive && !a.def.predator);
   if (base.scenario !== 'emptied') {
     skip('a-hunted-out-land-stays-empty', 'this land was not hunted out');
   } else {
@@ -3249,6 +3251,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       came + ' animals came in at the edge in a year, and the land holds ' + preyNow.length +
         ' of the ' + founding + ' it began with (' + ((100 * preyNow.length) / Math.max(1, founding)).toFixed(0) + '%)');
   }
+
 
   return checks;
 }
@@ -3418,17 +3421,43 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
       // camp is never alone, and the build with no fire reader at all bit
       // 1 in 411 samples inside the circle against 16 in 1,267 outside —
       // the same shape as the build that works.
+      if (i % (WATCH_EVERY * 10) === 0) {
+        let onPoor = 0;
+        let grazers = 0;
+        for (const a of sim.animals) {
+          if (!a.alive || a.def.predator) continue;
+          grazers++;
+          if (sim.world.grassAt(a.x, a.y) < WORTH_GRAZING) onPoor++;
+        }
+        if (grazers >= 5) {
+          let poor = 0;
+          let tiles = 0;
+          for (let y = 0; y < sim.world.height; y++) {
+            for (let x = 0; x < sim.world.width; x++) {
+              const biome = sim.world.biomeAt(x, y);
+              if (biome !== 'grass' && biome !== 'forest') continue;
+              tiles++;
+              if (sim.world.grassAt(x, y) < WORTH_GRAZING) poor++;
+            }
+          }
+          telemetry.count('grazer_samples', grazers);
+          telemetry.count('grazer_samples_on_poor', onPoor);
+          telemetry.count('meadow_poor_share_samples');
+          telemetry.count('meadow_poor_share_sum', tiles > 0 ? poor / tiles : 0);
+        }
+      }
       const hunting = sim.animals.filter(a => a.alive && a.def.predator);
       if (hunting.length > 0) {
         let circles = 0;
         for (const b of sim.buildings) {
           if (b.complete && !b.ruined && (b.def.id === 'hearth' || b.def.shelter > 0)) circles++;
         }
-        const covered = Math.min(1, (circles * Math.PI * FIRE_AVOID * FIRE_AVOID) / (sim.world.width * sim.world.height * 0.5));
+        const deep = FIRE_AVOID - FIRE_RIM;
+        const covered = Math.min(1, (circles * Math.PI * deep * deep) / (sim.world.width * sim.world.height * 0.5));
         for (const a of hunting) {
           telemetry.count('hunter_samples');
           telemetry.count('hunter_samples_expected_in_firelight', covered);
-          if (sim.litNear(a.x, a.y, FIRE_AVOID)) telemetry.count('hunter_samples_in_firelight');
+          if (sim.litNear(a.x, a.y, deep)) telemetry.count('hunter_samples_in_firelight');
         }
       }
       const anchorCtx = { world: sim.world, peopleById: sim.peopleById, buildingsById: sim.buildingsById,

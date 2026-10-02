@@ -1,3 +1,16 @@
+## 2026-10-02 — M15 fase 23h (segunda pasada de los checks)
+
+Con las pendientes puestas, dos checks de 23h dieron rojo en la matriz, y las
+dos veces era la medida y no el mundo: `herds-follow-the-grass` leía una sola
+instantánea del último paso (0,41 y 0,38 contra una línea de 0,35, con 0,04–0,21
+el mundo sano y 0,65–0,88 el roto), así que ahora promedia una muestra cada 200
+pasos de toda la corrida (28 % contra 6 % en `wilds`; roto, 76 % contra 4 %).
+`fire-keeps-wolves-off` contaba como «dentro» a un oso desesperado que paseaba
+el borde del círculo con una persona fuera de él (los 408 de `hearths` eran un
+solo oso, a más de 5,5 de 7 casillas del fuego): ahora se descuentan las dos
+casillas del borde (`FIRE_RIM`). Sano 0 de 172; roto 436 de 163 (`wilds`), 62 de
+62 (`hearths`).
+
 ## 2026-10-02 — M15 fase 25a: el relieve se ve
 
 `World.heightAt` (elevación más `offset`, un `Float32Array` a cero que escribirá
