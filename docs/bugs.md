@@ -15,6 +15,12 @@
   hambre) simplemente salen del mundo, como los demás animales.
 - **La guardia no ve a los depredadores** hasta que `Light.sightOf` exista y
   `dog` (23g) sume su aviso.
+- **`moods-move-choices` pasa a rojo en la pasada por defecto de `sim:check`**
+  (2,2% de charlas en el tercil de poca pertenencia contra 2,5% en el alto,
+  con 865 muestras cada uno) tras 23e: antes de esta fase era uno de los 6
+  rojos conocidos *distintos*; por estar a 0,3 puntos y ser el mundo caótico
+  tras el cambio de los dados de fauna, se trata como divergencia, no se
+  toca el check. Sin investigar el mecanismo.
 - **Coste de supervivencia −11 puntos** (55,8% sin, 44,9% con, 20 semillas):
   viene de la carne que se llevan los depredadores, no de los mordiscos. Los
   lactantes muertos de hambre pasan de 97 a 128. Si molesta, el palanca es
