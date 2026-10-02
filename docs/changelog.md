@@ -1,4 +1,23 @@
 #
+## 2026-10-02 — M15 fase 23a: la hierba como capa
+
+`World.grass` y `World.grassCap` (`Float32Array`, 0-1 por casilla), nuevas, en
+`src/sim/core/Grass.ts`. La hierba **no es una entidad por mata**: no cabría en
+el presupuesto. Es una función pura del suelo (bioma, fertilidad, humedad), de
+`TimeManager.dailyGrowth` y de la nieve, avanzada una vez al día sobre las
+~16.000 casillas: crece en la mitad cálida del año, se agosta hacia un rastrojo
+en la fría y no cambia bajo nieve profunda (`SNOW_BURY_AT`). `World.graze()` es
+la única vía por la que se baja (pastoreo, pisoteo y guadaña de 23b/23c).
+**Ni una tirada**, por eso es bit-idéntica: `sim:check` da los mismos 6 fallos
+que antes del cambio (`perf-budget` y cinco de comportamiento), comprobado con
+`git stash`. El renderer tiñe de verde la hierba alta y de paja la rapada, y
+vuelve a hornear el terreno solo cuando el nivel medio del prado cambia (cuatro
+escalones), no cada día. Aún no tiene lectores en la simulación: los traen 23b
+(segar) y 23c (los herbívoros).
+
+Nota para quien siga: el plan decía que `ecologyRng` sería el fork 19; ahora
+sería el **21**, detrás de `healthRng` (19) y `herbRng` (20).
+
 ## 2026-10-01 — Menús móviles, colocación y edificios recordados
 
 En pantallas estrechas, los controles superiores y las opciones de construir y

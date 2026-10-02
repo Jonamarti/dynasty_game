@@ -85,6 +85,7 @@ interface SeasonVisual {
   season: Season;
   frost: number;
   heat: number;
+  meadow: number;
   key: string;
 }
 
@@ -378,7 +379,20 @@ export class Renderer {
     const frost = Math.min(2, Math.floor(this.sim.snowDepth));
     // High summer only: the driest, hottest stretch gets dried patches.
     const heat = season === 'summer' && this.sim.time.temperature > 0.5 ? 1 : 0;
-    return { season, frost, heat, key: `${season}:${frost}:${heat}` };
+    // M15 phase 23a: how tall the meadow stands, in four steps, so the terrain
+    // is re-baked a few times a year as the sward grows and dies back and not
+    // every day. The mean over the whole map is enough: it moves with the year.
+    const meadow = this.meadowLevel();
+    return { season, frost, heat, meadow, key: `${season}:${frost}:${heat}:${meadow}` };
+  }
+
+  /** 0-3: the mean height of the sward against what the ground could carry. */
+  private meadowLevel(): number {
+    const { grass, grassCap } = this.sim.world;
+    let have = 0;
+    let cap = 0;
+    for (let i = 0; i < grass.length; i += 7) { have += grass[i]!; cap += grassCap[i]!; }
+    return cap === 0 ? 0 : Math.min(3, Math.floor((have / cap) * 4));
   }
 
   /**
@@ -413,6 +427,21 @@ export class Renderer {
         }
 
         if (biome === 'water') continue;
+
+        // Tall grass is a deeper green and a cropped or dead sward is paler.
+        // Per tile, so a grazed patch shows; the bake is redone when the
+        // meadow's overall level changes.
+        const cap = world.grassCap[world.index(x, y)]!;
+        if (cap > 0 && frost === 0) {
+          const ratio = world.grass[world.index(x, y)]! / cap;
+          if (ratio > 0.75) {
+            ctx.fillStyle = 'rgba(30,110,40,0.14)';
+            ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+          } else if (ratio < 0.3) {
+            ctx.fillStyle = 'rgba(190,170,110,0.16)';
+            ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+          }
+        }
 
         if (frost > 0) {
           // The "and then white" step: a translucent wash that thickens with

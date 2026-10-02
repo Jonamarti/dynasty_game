@@ -8,6 +8,7 @@
  */
 import { SimplexNoise } from './Noise.ts';
 import { Soil } from './Soil.ts';
+import { grassCapacity } from './Grass.ts';
 import type { RNG } from './RNG.ts';
 import type { WorldConfig } from './Config.ts';
 
@@ -41,6 +42,15 @@ export class World {
   soil!: Soil;
   readonly biome: Uint8Array;
   readonly walkable: Uint8Array;
+
+  /**
+   * The sward, 0-1 per tile — M15 phase 23a. Read by herds (23c), the scythe
+   * (23b) and the renderer; written by `advanceGrass` once a day and by
+   * `graze`. No `RNG`: it starts at its capacity and is a pure function after.
+   */
+  readonly grass: Float32Array;
+  /** The tallest the sward stands on each tile; static, see `Grass.ts`. */
+  readonly grassCap: Float32Array;
 
   /**
    * Connected-component id for every walkable tile; -1 for water and rock.
@@ -79,11 +89,39 @@ export class World {
     this.fertility = new Float32Array(n);
     this.biome = new Uint8Array(n);
     this.walkable = new Uint8Array(n);
+    this.grass = new Float32Array(n);
+    this.grassCap = new Float32Array(n);
     this.region = new Int32Array(n).fill(-1);
 
     this.generate(rng);
     this.findShores();
     this.findRegions();
+    for (let i = 0; i < n; i++) {
+      this.grassCap[i] = grassCapacity(this, i);
+      // A world is founded at the height its ground can hold: the first
+      // summer is not a year of bare earth.
+      this.grass[i] = this.grassCap[i]! * 0.8;
+    }
+  }
+
+  /** The sward at a tile, 0 off the map. */
+  grassAt(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return 0;
+    return this.grass[this.index(Math.floor(x), Math.floor(y))]!;
+  }
+
+  /**
+   * Takes `amount` of height off a tile and returns what was actually there to
+   * take. Grazing, trampling and the scythe all go through here so the floor is
+   * kept in one place.
+   */
+  graze(x: number, y: number, amount: number): number {
+    if (!this.inBounds(x, y)) return 0;
+    const i = this.index(Math.floor(x), Math.floor(y));
+    const here = this.grass[i]!;
+    const taken = Math.max(0, Math.min(amount, here));
+    this.grass[i] = here - taken;
+    return taken;
   }
 
   /** Flood-fills walkable tiles into connected landmasses. Four-connected. */

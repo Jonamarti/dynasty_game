@@ -11,6 +11,7 @@
  *     reads this; this never reaches back. That is what lets the headless
  *     harness run exactly the code the browser runs.
  */
+import { advanceGrass } from './Grass.ts';
 import { RNG } from './RNG.ts';
 import { World } from './World.ts';
 import { TimeManager } from './TimeManager.ts';
@@ -3897,6 +3898,8 @@ export class Simulation {
     // thing in the loop, and nothing in the design could tell the difference.
     if (this.time.tick % this.config.time.ticksPerDay === 0) {
       this.snowDepth = advanceSnowDepth(this.snowDepth, this.time.temperature);
+      // M15 phase 23a: the sward, a pure function of the ground and the day.
+      advanceGrass(this.world, this.time.dailyGrowth, this.snowDepth);
       // M15 phase 20 (owner, 2026-10-01): a bush out of its season is bare —
       // its crop has fallen and rotted. Every day rather than on the first of
       // the season, so nothing a regrowth pass set on the boundary survives.
