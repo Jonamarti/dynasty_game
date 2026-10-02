@@ -1678,7 +1678,7 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   carpentry: {
     summary: 'Jointed timber: the longhouse, and faster building.',
-    site: 'BuildingDef.requiresTech on the longhouse, and ActionSystem.doBuild',
+    site: 'BuildingDef.requiresTech on the longhouse, ActionSystem.doBuild, RECIPES.spade and Earth.digTool',
   },
   fishing: {
     summary: 'More from every fishing spot, and food that keeps coming in winter.',
@@ -1714,7 +1714,7 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   },
   bone_working: {
     summary: 'Bone and sinew off every kill, and a point that throws further than flint.',
-    site: 'ActionSystem.doHunt, and RECIPES.bone_point / RECIPES.needle',
+    site: 'ActionSystem.doHunt, RECIPES.bone_point / RECIPES.needle / RECIPES.antler_pick and Earth.digTool',
   },
   tailoring: {
     summary: 'A coat that fits. The largest single answer to cold anybody carries.',

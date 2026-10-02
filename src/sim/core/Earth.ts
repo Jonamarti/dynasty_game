@@ -6,6 +6,7 @@
  * unit, so a unit of 0.0004 is 16 cm).
  */
 import type { Person } from '../entities/Person.ts';
+import { techPower, type Tech } from '../knowledge/Tech.ts';
 
 /** Height one item of earth is, over one tile: what a dig takes and a pile puts. */
 export const EARTH_UNIT = 0.0004;
@@ -34,11 +35,13 @@ export const LIFT = 2;
  * What a person digs with, best first: the multiplier on the digging speed and the item
  * that gives it. A bare stick of wood is the digging stick of the Palaeolithic
  * and needs no technology — hardening the point in a fire is older than any
- * entry in the tree. The antler pick and the spade (phases 26b onward) are
- * added here, each with the technology that makes it and the verb that reads
- * it, so none is declared ahead of its reader.
+ * entry in the tree. A shaped tool is useful only with its technique, just
+ * like a weapon: its prototype and refinements belong to the person. Compare
+ * effective power, not table order, so a refined pick can beat a plain spade.
  */
-export const DIG_TOOLS: readonly { item: string; power: number }[] = [
+export const DIG_TOOLS: readonly { item: string; power: number; tech?: Tech }[] = [
+  { item: 'spade', power: 3, tech: 'carpentry' },
+  { item: 'antler_pick', power: 2, tech: 'bone_working' },
   { item: 'sticks', power: 1 },
 ];
 
@@ -46,7 +49,18 @@ export const DIG_TOOLS: readonly { item: string; power: number }[] = [
 export function digTool(person: Person): { item: string; power: number } | null {
   let best: { item: string; power: number } | null = null;
   for (const tool of DIG_TOOLS) {
-    if (person.inventory.count(tool.item) > 0 && (!best || tool.power > best.power)) best = tool;
+    if (!person.inventory.has(tool.item)) continue;
+    const technique = tool.tech ? techPower(person, tool.tech) : 1;
+    if (technique <= 0) continue;
+    const power = tool.power * technique;
+    if (!best || power > best.power) best = { item: tool.item, power };
   }
   return best;
+}
+
+/** Called after digTool returns null: carrying an unfamiliar tool is a
+ * different refusal from owning none, and must be explained as such. */
+export function digToolFailure(person: Person): 'no_digging_tool' | 'dont_know_digging_tool' {
+  return DIG_TOOLS.some(tool => person.inventory.has(tool.item))
+    ? 'dont_know_digging_tool' : 'no_digging_tool';
 }

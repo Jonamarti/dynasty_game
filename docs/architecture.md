@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-09-30 (M15 phase 11d, food pickup in progress). No runtime
+Current as of 2026-10-02 (M15 phase 26b, digging tools). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -28,6 +28,14 @@ e2e/            Playwright smoke tests and screenshot tour
 ```
 
 ## The rules that hold it together
+
+**Earthmoving has one tool selector.** `core/Earth.ts` chooses the strongest
+usable carried digging tool through `techPower`: sticks without a technique,
+an antler pick with bone working, and a wooden spade with carpentry. The
+catalogue, order validation, executor and held sprite ask that same selector.
+Missing tools and unfamiliar tools have separate visible refusal reasons.
+Work remains banked in `World.offset`; acceleration changes lift time, never
+the amount of earth moved or the safe depth of a player order.
 
 These are not style preferences. Each one is load-bearing, and each was learned
 by breaking it.

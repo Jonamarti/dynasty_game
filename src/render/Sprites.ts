@@ -24,6 +24,7 @@ import type { Person } from '../sim/entities/Person.ts';
 import { ADULT_YEARS, ELDER_YEARS } from '../sim/entities/Person.ts';
 import { EXPRESSIONS, type Expression } from '../sim/core/Mood.ts';
 import { OUTCAST_BAND_ID_BASE } from '../sim/core/Simulation.ts';
+import { digTool } from '../sim/core/Earth.ts';
 
 /** One cell in the atlas, square, at a resolution above the zoom ceiling
  * (`main.ts`'s wheel handler clamps to 80 px/tile) so nothing is ever drawn
@@ -57,7 +58,7 @@ const SIZE_CLASSES: readonly SizeClass[] = ['infant', 'child', 'adolescent', 'ad
 export type HairVariant = 'dark' | 'grey' | 'balding' | 'bald';
 const HAIR_VARIANTS: readonly HairVariant[] = ['dark', 'grey', 'balding', 'bald'];
 
-export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'bone_point' | 'handaxe' | 'net' | 'basket';
+export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'bone_point' | 'handaxe' | 'net' | 'basket' | 'antler_pick' | 'spade';
 /**
  * What shows in the hand when more than one thing is carried, most
  * conspicuous first. A hunter carrying both a bow and a basket reads as
@@ -65,7 +66,7 @@ export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'bone_point' | 'handaxe'
  * to see at a glance.
  */
 const HELD_PRIORITY: readonly HeldItemKind[] =
-  ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket'];
+  ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket', 'spade', 'antler_pick'];
 
 interface BodyGeometry {
   torsoW: number;
@@ -156,12 +157,17 @@ export function hasBeardOf(person: Person): boolean {
 }
 
 /**
- * What shows in a person's hand, or null for empty-handed. Reads
- * `Person.inventory` directly and nothing else, so the canvas and the HUD
- * can never disagree about what somebody is carrying — see this file's
- * header.
+ * What shows in a person's hand, or null for empty-handed. Normally the most
+ * conspicuous carried object; while digging, the usable tool selected by the
+ * executor instead, so a spear in the pack cannot hide a working spade.
  */
 export function heldItemFor(person: Person): HeldItemKind | null {
+  // A worker holding both a spear and a spade must show the tool doing the
+  // work. Ask the executor's selector so refinements choose the same tool.
+  if (person.action === 'dig') {
+    const tool = digTool(person);
+    if (tool?.item === 'spade' || tool?.item === 'antler_pick') return tool.item;
+  }
   for (const item of HELD_PRIORITY) {
     if (person.inventory.has(item)) return item;
   }
@@ -334,6 +340,30 @@ function paintHeld(ctx: CanvasRenderingContext2D, kind: HeldItemKind): void {
   ctx.lineCap = 'round';
 
   switch (kind) {
+    case 'antler_pick':
+    case 'spade':
+      ctx.strokeStyle = kind === 'antler_pick' ? '#e6dcc0' : '#86633c';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 20);
+      ctx.lineTo(cx, cy + 15);
+      ctx.stroke();
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.beginPath();
+      if (kind === 'spade') {
+        ctx.moveTo(cx - 5, cy + 7);
+        ctx.lineTo(cx + 5, cy + 7);
+        ctx.lineTo(cx + 6, cy + 16);
+        ctx.lineTo(cx, cy + 21);
+        ctx.lineTo(cx - 6, cy + 16);
+      } else {
+        ctx.moveTo(cx, cy - 18);
+        ctx.quadraticCurveTo(cx + 8, cy - 28, cx + 15, cy - 20);
+        ctx.lineTo(cx + 2, cy - 12);
+      }
+      ctx.closePath();
+      ctx.fill();
+      break;
     case 'spear':
     case 'atlatl':
     case 'bone_point':

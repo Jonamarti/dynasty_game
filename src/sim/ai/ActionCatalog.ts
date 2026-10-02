@@ -17,7 +17,7 @@ import { debtTo, offerFor, OFFER_AT_LEAST } from '../social/Amends.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import type { Person } from '../entities/Person.ts';
 import { CUT_ABOVE } from '../core/Grass.ts';
-import { DIG_TO, PILE_TO, digTool } from '../core/Earth.ts';
+import { DIG_TO, PILE_TO, digTool, digToolFailure } from '../core/Earth.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
@@ -1059,7 +1059,9 @@ function groundActions(
     if (there !== 'water' && there !== 'rock') {
       const dug = ctx.world.depthDug(target.x, target.y);
       const deep = dug >= DIG_TO - 1e-9;
-      const reason = !digTool(actor) ? t('You have nothing to dig with')
+      const reason = !digTool(actor)
+        ? digToolFailure(actor) === 'dont_know_digging_tool'
+          ? t('You do not know how to use your digging tools') : t('You have nothing to dig with')
         : deep ? t('The hole is as deep as a person can climb out of') : undefined;
       options.push({
         id: 'dig',

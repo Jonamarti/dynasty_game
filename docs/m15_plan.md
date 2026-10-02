@@ -2115,7 +2115,14 @@ se ve más`.
 
 ## Fase 26 — Cavar y apilar
 
-**Estado (2026-10-02).** Hechos: 16a (`World.setWalkable`), 26a y la primera parte de 26c (verbos `dig` y `pile` para el jugador, con palo, sin técnica; ver `changelog.md`). Falta todo lo demás de 26b (pico, pala, `earthworks`), los diseños, 26d, 26e y 26f. `pitDepth` existe y está probado en `World`, pero ninguna orden lo alcanza aún.
+**Estado (2026-10-02).** Hechos: 16a (`World.setWalkable`), la base de 26a,
+26b en sus herramientas (palo sin técnica, pico de asta a 2× con `bone_working`,
+pala a 3× con `carpentry`) y los verbos y el relieve visible de 26c. Las recetas,
+el equipo llevado, el sprite al cavar y los motivos de rechazo están probados.
+Faltan la conservación de fertilidad y extracción de barro de 26a, la puerta
+`earthworks` y los nodos de sus diseños de 26b, los diseños de 26c, 26d, 26e y
+26f. `pitDepth` existe y está probado en `World`, pero ninguna orden lo alcanza
+aún. Ver `changelog.md`.
 
 **Objetivo.** El terreno se puede cambiar: hoyos, silos, zanjas, fosos con
 agua, montones, terraplenes y canales. Es lo que `next-steps.md` §7 lleva
@@ -2137,6 +2144,14 @@ apilada»).
   barro.
 
 ### 26b. Herramientas y técnicas
+
+**Avance (2026-10-02): herramientas hechas.** El palo sigue siendo `sticks`,
+sin fabricar un segundo objeto idéntico. El pico se fabrica con dos huesos y
+la pala con una madera; los multiplicadores se leen por `techPower` y se elige
+la mejor potencia efectiva, incluidos prototipos y refinamientos. Tener la
+herramienta sin saber usarla da un motivo propio en el menú, al dar la orden y
+al interrumpirse. La puerta y los nodos de obras esperan a sus lectores: no se
+declaran tecnologías que todavía no puedan hacer nada.
 
 | herramienta o nodo | edad | requiere | efecto |
 |---|---|---|---|

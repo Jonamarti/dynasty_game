@@ -6,6 +6,14 @@ export type ItemArt = [id: string, label: string, tech: string, draw: () => stri
 export const WOOD = '#86633c', WOOD_D = '#3a2716', STONE = '#a9adb0', STONE_D = '#3d4244', BONE = '#e6dcc0', BONE_D = '#7a6d4e', CORD = '#c9b27f';
 const rot = (inner: string, deg: number, cx = 32, cy = 32): string => `<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`;
 export const ITEMS: ItemArt[] = [
+  ['antler_pick', 'Pico de asta', 'bone_working', () => rot(
+    limb([[28, 58], [32, 14]], 5, BONE, BONE_D)
+    + shape('M30,16Q40,4 54,12Q44,14 35,23Z', BONE, BONE_D)
+    + stroke('M28,38L20,28M30,28L24,18', BONE, 3), 18)],
+  ['spade', 'Pala de madera', 'carpentry', () => rot(
+    limb([[32, 6], [32, 39]], 3.4, WOOD, WOOD_D)
+    + shape('M24,36L40,36L42,53Q32,66 22,53Z', WOOD, WOOD_D)
+    + stroke('M30,39L28,53M34,39L36,53', '#b19165', 1), 20)],
   ['handaxe', 'Hacha de mano', 'ya existe', () =>
     shape(smooth([[32, 8], [43, 24], [47, 44], [32, 57], [18, 44], [22, 24]]), '#a4a8ab', STONE_D)
     + stroke('M27,26L34,32M25,40L37,45M31,15L30,23M38,36L42,42', '#7d8285', 1.1)],

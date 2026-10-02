@@ -13,6 +13,7 @@ import { test, expect, type Page } from '@playwright/test';
 // a fact. The fact is "every technology is on the web".
 import { TECHS } from '../src/sim/knowledge/Tech.ts';
 import type { Simulation } from '../src/sim/core/Simulation.ts';
+import type { Camera } from '../src/render/Camera.ts';
 
 /** Fails the test on any uncaught error or console error, not just assertions. */
 function guardErrors(page: Page): string[] {
@@ -1512,6 +1513,44 @@ test('the kit tab lists what you carry and offers verbs on it', async ({ page })
     return d.sim.player?.inventory.count('berries') ?? -1;
   }), { timeout: 5_000 }).toBe(3);
 
+  expect(errors).toEqual([]);
+});
+
+test('digging tools appear in the craft bar and carried kit', async ({ page }) => {
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+  await page.evaluate(() => {
+    const d = (window as unknown as { __dynasty: { sim: Simulation; camera: Camera } }).__dynasty;
+    const player = d.sim.player!;
+    player.knownTech.add('bone_working');
+    player.knownTech.add('carpentry');
+    player.inventory.add('bone', 2);
+    player.inventory.add('wood', 1);
+  });
+  await page.keyboard.press('m');
+  await expect(page.locator('.hud-design-name', { hasText: 'Antler pick' })).toBeVisible();
+  await expect(page.locator('.hud-design-name', { hasText: 'Wooden spade' })).toBeVisible();
+  const captures = 'artifacts/screenshots/m15-phase26b-' + new Date().toISOString().replace(/[:.]/g, '-');
+  await page.screenshot({ path: captures + '/01-craft-tools.png' });
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => {
+    const d = (window as unknown as { __dynasty: { sim: Simulation; camera: Camera } }).__dynasty;
+    const player = d.sim.player!;
+    player.inventory.remove('bone', 2);
+    player.inventory.remove('wood', 1);
+    player.inventory.add('antler_pick', 1);
+    player.inventory.add('spade', 1);
+    player.inventory.add('spear', 1);
+    d.sim.order(player, 'dig', { x: Math.floor(player.x), y: Math.floor(player.y) });
+    d.camera.snapTo(player.x, player.y);
+    d.camera.following = false;
+    d.camera.zoom = 3.75;
+  });
+  await page.locator('.hud-tab', { hasText: 'Kit' }).click();
+  await expect(page.locator('.hud-item-name', { hasText: 'Antler pick' })).toBeVisible();
+  await expect(page.locator('.hud-item-name', { hasText: 'Wooden spade' })).toBeVisible();
+  await page.screenshot({ path: captures + '/02-carried-tools.png' });
   expect(errors).toEqual([]);
 });
 

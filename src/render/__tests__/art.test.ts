@@ -17,6 +17,10 @@ import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, personKey, type ArtMani
 import { BUILDINGS } from '../../sim/entities/Building.ts';
 import { EXPRESSIONS } from '../../sim/core/Mood.ts';
 import { SPECIES } from '../../sim/entities/Animal.ts';
+import { DIG_TOOLS } from '../../sim/core/Earth.ts';
+import { heldItemFor } from '../Sprites.ts';
+import { Person } from '../../sim/entities/Person.ts';
+import { RNG } from '../../sim/core/RNG.ts';
 
 const load = (domain: string): ArtManifest =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`../../../public/art/${domain}.json`, import.meta.url)), 'utf8')) as ArtManifest;
@@ -49,11 +53,31 @@ describe('art coverage', () => {
   it('has a hand-held picture for everything the sim can put in a hand', () => {
     const held = props.meta['heldKinds'] as string[];
     // The kinds `Sprites.ts` names today; the renderer would draw nothing for a missing one.
-    for (const kind of ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket']) {
+    for (const kind of ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket', ...DIG_TOOLS.filter(tool => tool.tech).map(tool => tool.item)]) {
       expect(held, kind).toContain(kind);
       expect(props.keys[`held/${kind}/S`]).toBeDefined();
       expect(props.keys[`held/${kind}/E`]).toBeDefined();
     }
+  });
+
+  it('draws an inventory icon for each crafted digging tool', () => {
+    for (const tool of DIG_TOOLS.filter(tool => tool.tech)) {
+      expect(props.keys[`item/${tool.item}`], tool.item).toBeDefined();
+    }
+  });
+
+  it('shows the digging tool being used even when the worker also carries a weapon', () => {
+    const person = new Person('Worker', 0, 0, 0, new RNG('held-tool'));
+    person.inventory.add('spear', 1);
+    person.inventory.add('antler_pick', 1);
+    person.inventory.add('spade', 1);
+    person.knownTech.add('bone_working');
+    person.knownTech.add('carpentry');
+    expect(heldItemFor(person)).toBe('spear');
+    person.action = 'dig';
+    expect(heldItemFor(person)).toBe('spade');
+    person.techLevel.set('bone_working', 20);
+    expect(heldItemFor(person)).toBe('antler_pick');
   });
 
   it('draws every species', () => {

@@ -1,3 +1,35 @@
+## 2026-10-02 — M15 fase 26b: herramientas de cavar
+
+- **Pico de asta y pala de madera:** recetas con `bone: 2` y `wood: 1`,
+  respectivamente; `bone_working` y `carpentry` son las técnicas personales.
+  `digTool` elige la mayor potencia efectiva por `techPower`, a 2× y 3× sin
+  refinar. Un prototipo funciona a potencia reducida y un pico refinado puede
+  superar una pala corriente. El palo continúa siendo `sticks`, sin técnica.
+- **El motivo llega al jugador:** una herramienta desconocida se distingue de
+  no llevar herramienta en el menú, `lastRefusal` y `Floaters`. Perder la
+  herramienta o la técnica durante el trabajo también detiene con motivo.
+- **Arte y UI:** generadores de iconos y herramientas en mano; `art:build --
+  props` regeneró la hoja y el manifiesto. Mientras se cava, el sprite usa la
+  selección del ejecutor aunque el trabajador también lleve una lanza.
+  Traducciones completas en español, incluido «una pala de madera».
+- **Pruebas:** cuatro casos nuevos fallaron antes de implementar las
+  herramientas. Ahora se comprueban fabricación seguida de excavación, tiempo
+  de la primera levantada a la mitad y un tercio, elección por técnica y
+  refinamiento, prototipo, pérdida de herramienta/técnica, motivos, artículo
+  español, cobertura de arte y selección de la herramienta dibujada. El e2e
+  del menú y la ficha pasa.
+- **Capturas revisadas:**
+  `artifacts/screenshots/m15-phase26b-2026-10-02T20-03-20-395Z/` (recetas,
+  equipo llevado, hoja de objetos y hoja de manos). Las ejecuciones posteriores
+  del e2e guardan carpetas nuevas; no sobrescriben este hito.
+- **Instrucción del propietario:** `AGENTS.md` exige docs y tests en cada
+  commit funcional, y captura fechada al cambiar UI (commit `c2162da`).
+
+Siguen pendientes de 26b `earthworks` y los nodos de diseños: se añadirán junto
+a sus lectores, para no declarar contenido inerte. Los diseños y la excavación
+autónoma tampoco llegan en este commit. La validación global del pase queda
+registrada con el instrumento de 26f a continuación.
+
 ## 2026-10-02 — M15 fase 26c (segunda parte): la tierra movida se ve
 
 - `World.earthVersion` cuenta cada cambio de `offset`; `Renderer.render` rehace

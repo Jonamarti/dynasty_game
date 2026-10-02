@@ -107,6 +107,8 @@ export const ES_DATA: Record<string, string> = {
   "Baneberries": "Bayas de actea",
   "Herbs": "Hierbas",
   "Earth": "Tierra",
+  "Antler pick": "Pico de asta",
+  "Wooden spade": "Pala de madera",
   "Dog rose": "Escaramujo",
   "Blackthorn": "Endrino",
   "Strawberry tree": "Madroño",

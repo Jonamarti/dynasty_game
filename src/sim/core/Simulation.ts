@@ -12,7 +12,7 @@
  *     harness run exactly the code the browser runs.
  */
 import { advanceGrass, grassBuried, CUT_ABOVE } from './Grass.ts';
-import { DIG_TO, PILE_TO, digTool } from './Earth.ts';
+import { DIG_TO, PILE_TO, digTool, digToolFailure } from './Earth.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
 import { RNG } from './RNG.ts';
 import { World } from './World.ts';
@@ -3209,7 +3209,9 @@ export class Simulation {
             : t('there is nowhere to put earth there'));
         }
         if (action === 'dig') {
-          if (!digTool(person)) return this.cancelOrder(person, t('they have nothing to dig with'));
+          if (!digTool(person)) return this.cancelOrder(person,
+            digToolFailure(person) === 'dont_know_digging_tool'
+              ? t('they do not know how to use their digging tools') : t('they have nothing to dig with'));
           if (this.world.depthDug(target.x, target.y) >= DIG_TO - 1e-9) {
             return this.cancelOrder(person, t('the hole is already as deep as a person can climb out of'));
           }

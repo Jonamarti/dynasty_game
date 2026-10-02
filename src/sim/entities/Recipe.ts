@@ -557,6 +557,18 @@ export const RECIPES: Record<string, RecipeDef> = {
   },
   roast_meat: { id: 'roast_meat', label: 'Roast meat', icon: '\u{1F356}', tech: 'cooking', skill: 'cook', workTicks: 80, ingredients: { meat: 1 }, output: { roast_meat: 1 }, station: 'hearth', keep: 3 },
   roast_fish: { id: 'roast_fish', label: 'Roast fish', icon: '\u{1F41F}', tech: 'cooking', skill: 'cook', workTicks: 80, ingredients: { fish: 1 }, output: { roast_fish: 1 }, station: 'hearth', keep: 3 },
+  // M15 26b: both have a reader in digTool now, rather than waiting for
+  // earthwork designs to turn declared tools into something usable.
+  antler_pick: {
+    id: 'antler_pick', label: 'Antler pick', icon: '⛏', tech: 'bone_working',
+    skill: 'build', workTicks: 90, ingredients: { bone: 2 },
+    output: { antler_pick: 1 }, keep: 1,
+  },
+  spade: {
+    id: 'spade', label: 'Wooden spade', icon: '♠', tech: 'carpentry',
+    skill: 'build', workTicks: 120, ingredients: { wood: 1 },
+    output: { spade: 1 }, keep: 1,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

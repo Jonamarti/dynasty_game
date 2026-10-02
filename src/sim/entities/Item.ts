@@ -314,6 +314,8 @@ export const ITEMS: Record<string, ItemDef> = {
   // nearly nothing to trade; `dig` makes it and `pile` spends it, and a band
   // with a heap of it is a band that has been moving ground.
   earth: { id: 'earth', label: 'Earth', nutrition: 0, spoilTicks: 0, baseValue: 0, class: 'loose', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  antler_pick: { id: 'antler_pick', label: 'Antler pick', nutrition: 0, spoilTicks: 0, baseValue: 7, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  spade: { id: 'spade', label: 'Wooden spade', nutrition: 0, spoilTicks: 0, baseValue: 8, class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 } },
 };
 
 export class Inventory {

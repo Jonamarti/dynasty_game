@@ -1,5 +1,15 @@
 # Next steps
 
+**2026-10-02: M15 fase 26b, herramientas hechas.** Pico de asta y pala de
+madera, con receta, técnica personal, potencia de prototipo/refinamiento,
+motivos de rechazo y arte regenerado. El palo conserva su identidad `sticks`.
+La siguiente funcionalidad del bloque es la puerta `earthworks` junto a los
+diseños que la consumen (26b/26c); después, agua y riego. También quedan de 26a
+la fertilidad transportada y el barro del subsuelo. Capturas en
+`artifacts/screenshots/m15-phase26b-2026-10-02T20-03-20-395Z/`.
+`AGENTS.md` exige ahora explícitamente documentación y tests en el commit de
+cada funcionalidad, y captura fechada cuando cambia la UI.
+
 **2026-10-01: M15 fases 21d, 21f y 22 (crudo) hechas.** La baya tóxica y la
 milenrama (pasada propia, `herbRng`, fork 20), la ropa que protege por parte del
 cuerpo, y la intoxicación por carne y pescado crudos con la creencia

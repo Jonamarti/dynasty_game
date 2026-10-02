@@ -425,6 +425,7 @@ export const STOP_REASONS: Record<string, string> = {
   // over a hole is never just standing there.
   nowhere_to_dig: 'there was nowhere to dig',
   no_digging_tool: 'they had nothing to dig with',
+  dont_know_digging_tool: 'they did not know how to use their digging tools',
   ground_too_hard: 'the ground there was too hard to dig',
   dug_deep_enough: 'the hole is as deep as a person can climb out of',
   no_earth: 'they were carrying no earth',

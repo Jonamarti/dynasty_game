@@ -23,6 +23,7 @@ export const ES_FEMININE: ReadonlySet<string> = new Set([
   'net',
   'pot',
   'adze',
+  'wooden spade',
   'cloth',
   'beer',
   'fired pot',

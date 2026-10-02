@@ -31,7 +31,7 @@ import {
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import { CUT_ABOVE, CUT_BITE, CUT_FLOOR, THATCH_PER_HEIGHT } from '../core/Grass.ts';
-import { DIG_TICKS, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, digTool } from '../core/Earth.ts';
+import { DIG_TICKS, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, digTool, digToolFailure } from '../core/Earth.ts';
 import { SNOW_BURY_AT } from '../core/Snow.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -1465,7 +1465,7 @@ export class ActionSystem {
     }
     const tool = digTool(person);
     if (!tool) {
-      this.abandon(person, 'no_digging_tool', ctx);
+      this.abandon(person, digToolFailure(person), ctx);
       return;
     }
     const tx = Math.floor(person.targetX);

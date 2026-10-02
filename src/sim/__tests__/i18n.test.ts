@@ -114,6 +114,8 @@ describe('i18n', () => {
     setLanguage('es');
     try {
       expect(t('Settings')).toBe('Ajustes');
+      expect(aNoun('antler pick')).toBe('un pico de asta');
+      expect(aNoun('wooden spade')).toBe('una pala de madera');
       // A capitalised miss finds the lower-case entry and re-cases it.
       expect(t('settings')).toBe('ajustes');
       expect(tc('nowhere', 'Settings')).toBe('Ajustes');
