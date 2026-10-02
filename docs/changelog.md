@@ -1,4 +1,35 @@
 #
+## 2026-10-02 — M15 fases 23c y 23d: los herbívoros pastan y se reproducen
+
+**23c.** `Animal.fed` (0-1). Cada movimiento (48 al día) un animal come un
+bocado (0,03) de la hierba que pisa por `World.graze`, y pasa hambre
+(0,004/mov, ×0,3 en pleno invierno: sin esa rebaja cada invierno de diez días
+con la hierba muerta es una extinción segura, que no es lo que hace un ciervo).
+Si la casilla está pobre busca la mejor a ≤ 7 casillas (`bestGrass`, un barrido
+de la capa, no de entidades); si está buena se queda comiendo en vez de vagar.
+A cero come salud (0,02/mov, semanas para matar a un ciervo); al morir sale del
+mundo por `removeAnimal`, con su contador `animal_starved_out`. `graze` ya no
+gasta dos tiradas en cada paso de un animal que come, así que **los mundos
+cambian** (la fauna se mueve distinto en todos).
+
+**23d.** `WildlifeSystem.daily`: en primavera cada manada de ≥ 2 debe
+`miembros × fecundity × fed²` crías (ciervo 0,03, jabalí 0,035, liebre 0,07 por
+miembro y día), acumuladas como fracción, sin dados, como `workHerds` con un
+corral. **El techo sale del pasto**: la capacidad de hierba en 8 casillas a la
+redonda del centro de la manada entre 14, y nunca más de 2,5× el tamaño
+fundacional. Una manada de uno no cría, así que una comarca cazada hasta el
+final sigue vacía hasta que entre algo por el borde (23h). **Todavía no usa
+`ecologyRng`**: no hace falta ninguna tirada nueva (el temperamento de la cría
+sale de `wildlifeRng`), y el fork 21 se reservará para los depredadores (23e),
+que sí necesitan colocar cosas al azar.
+
+Medido a 200 días en tres semillas: la fauna pasa de 65/79/93 a 112/135/69,
+con la hierba oscilando 0,3-0,8 con el año y la saciedad media 0,75-1,0. Sin
+la rebaja de invierno y con fecundidad 0,05 salía un +80% en una sola primavera;
+bajada a 0,03. `sim:check` da los mismos 6 rojos de siempre. Pendiente:
+`sim:seeds` y `herds-follow-the-grass`, que van con 23h cuando la fauna ya
+entre y salga por el borde.
+
 ## 2026-10-02 — M15 fase 23b: segar
 
 Verbo `cut_grass`, el primer lector de la hierba. Está apuntado a una casilla,

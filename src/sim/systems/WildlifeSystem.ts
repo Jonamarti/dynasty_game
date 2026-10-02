@@ -12,7 +12,7 @@
  * so animals and people agree about what walkable means. Two implementations of
  * that would drift, and the first symptom would be deer standing in lakes.
  */
-import type { Animal } from '../entities/Animal.ts';
+import { Animal } from '../entities/Animal.ts';
 import type { Person } from '../entities/Person.ts';
 import type { World } from '../core/World.ts';
 import type { RNG } from '../core/RNG.ts';
@@ -20,6 +20,7 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import { moveToward } from './MovementSystem.ts';
 import { telemetry } from '../core/Telemetry.ts';
 import { techPower, stealthFactor } from '../knowledge/Tech.ts';
+import { WORTH_GRAZING, STUBBLE } from '../core/Grass.ts';
 
 /** Ticks an animal keeps running after it stops seeing what spooked it. */
 const ALARM_TICKS = 90;
@@ -55,6 +56,35 @@ const HEEL_DISTANCE = 2.5;
  */
 const MOVE_INTERVAL = 5;
 
+/**
+ * Feeding, M15 phase 23c. Per *move* (every `MOVE_INTERVAL` ticks, 48 a day).
+ * Sized so one animal wants about a tenth of a tile's height a day: a herd of
+ * five crops a good tile in a day or two and moves on, and the grass has to
+ * come back before it returns.
+ */
+const HUNGER_PER_MOVE = 0.004;
+const BITE = 0.03;
+/** Fullness one bite gives. */
+const FED_PER_BITE = 0.06;
+/** Health lost per move once it has nothing left: weeks to starve a deer. */
+const STARVE_PER_MOVE = 0.02;
+/** How far a hungry animal looks for a better tile. */
+const FORAGE_RADIUS = 7;
+/**
+ * Winter slows the body down. Without this a ten-day winter with the grass
+ * dead is a certain extinction every year, which is not what a deer does.
+ */
+const COLD_METABOLISM = 0.3;
+
+/** Births happen in this season only. */
+const BIRTH_SEASON = 'spring';
+/** Grass capacity (summed over the range, in tile-heights) one animal needs. */
+const GRASS_PER_ANIMAL = 14;
+/** Never more than this multiple of the founding herd size, whatever the grass. */
+const HERD_CEILING = 2.5;
+/** Radius of the range whose grass sets a herd's ceiling. */
+const RANGE_RADIUS = 8;
+
 export interface WildlifeContext {
   world: World;
   rng: RNG;
@@ -70,9 +100,66 @@ export interface WildlifeContext {
    * compiling; without it a tamed animal simply grazes.
    */
   peopleById?: Map<number, Person>;
+  /** The day's growth curve, 0-1 (`TimeManager.dailyGrowth`): slows hunger in the cold. */
+  dailyGrowth?: number;
+  /** Called when an animal starves, so the world can take it out. */
+  onStarved?: (animal: Animal) => void;
 }
 
 export class WildlifeSystem {
+  /** Young owed to each herd, carried between days: births are fractions of an animal. */
+  private readonly owed = new Map<number, number>();
+
+  /**
+   * The day's births, M15 phase 23d. Proportional to the herd's size and to how
+   * well fed it is, spring only, and capped by the grass round its centre —
+   * **not** by a constant, which is the point: a poor range holds fewer. A
+   * herd of one cannot breed, and a hunted-out herd stays hunted out until
+   * something enters at the edge (23h). No dice: the owed fraction accrues the
+   * way `workHerds` accrues a pen's young, so a world's births are a function of
+   * its grass.
+   */
+  daily(animals: Animal[], ctx: WildlifeContext & { season: string }): Animal[] {
+    const born: Animal[] = [];
+    if (ctx.season !== BIRTH_SEASON) return born;
+    const herds = new Map<number, Animal[]>();
+    for (const a of animals) {
+      if (!a.alive) continue;
+      const list = herds.get(a.herdId);
+      if (list) list.push(a); else herds.set(a.herdId, [a]);
+    }
+    for (const [herdId, members] of herds) {
+      if (members.length < 2) continue;
+      const lead = members[0]!;
+      const fed = members.reduce((sum, m) => sum + m.fed, 0) / members.length;
+      const cx = members.reduce((sum, m) => sum + m.x, 0) / members.length;
+      const cy = members.reduce((sum, m) => sum + m.y, 0) / members.length;
+      const ceiling = Math.min(
+        lead.def.herdSize * HERD_CEILING,
+        rangeGrass(ctx.world, cx, cy) / GRASS_PER_ANIMAL
+      );
+      if (members.length >= ceiling) {
+        this.owed.set(herdId, 0);
+        continue;
+      }
+      const owed = (this.owed.get(herdId) ?? 0) + members.length * lead.def.fecundity * fed * fed;
+      const whole = Math.floor(owed);
+      this.owed.set(herdId, owed - whole);
+      let size = members.length;
+      for (let i = 0; i < whole && size < ceiling; i++) {
+        const mother = members[(ctx.tick + i) % members.length]!;
+        const spot = ctx.world.findWalkableNear(Math.round(mother.x), Math.round(mother.y), 3);
+        if (!spot) continue;
+        const calf = new Animal(lead.species, spot.x, spot.y, herdId, ctx.rng);
+        calf.fed = 0.8;
+        born.push(calf);
+        size++;
+        telemetry.count('animal_born');
+      }
+    }
+    return born;
+  }
+
   update(animals: Animal[], ctx: WildlifeContext): void {
     if (animals.length === 0) return;
 
@@ -255,9 +342,39 @@ export class WildlifeSystem {
   ): void {
     animal.alarmedUntil = 0;
     animal.stamina = Math.min(1, animal.stamina + STAMINA_RECOVERY);
+
+    // M15 phase 23c: eat what is under the feet, and go hungry slowly.
+    const standing = ctx.world.grassAt(animal.x, animal.y);
+    if (standing > STUBBLE + BITE) {
+      const taken = ctx.world.graze(animal.x, animal.y, BITE);
+      animal.fed = Math.min(1, animal.fed + (taken / BITE) * FED_PER_BITE);
+    }
+    const metabolism = COLD_METABOLISM + (1 - COLD_METABOLISM) * (ctx.dailyGrowth ?? 1);
+    animal.fed = Math.max(0, animal.fed - HUNGER_PER_MOVE * metabolism);
+    if (animal.fed <= 0) {
+      animal.health -= STARVE_PER_MOVE * metabolism;
+      if (animal.health <= 0) {
+        animal.alive = false;
+        telemetry.count('animal_starved');
+        ctx.onStarved?.(animal);
+        return;
+      }
+    }
+
+    // Poor ground here: look for better, and keep the herd's company only
+    // loosely while doing it. The herd's centre follows its members.
+    if (standing < WORTH_GRAZING) {
+      const better = bestGrass(ctx.world, animal.x, animal.y, FORAGE_RADIUS);
+      if (better) {
+        moveToward(animal, better.x + 0.5, better.y + 0.5, animal.def.speed * MOVE_INTERVAL * 0.6, ctx.world, ctx.rng);
+        return;
+      }
+    }
     if (!centre) return;
 
     const away = Math.hypot(animal.x - centre.x, animal.y - centre.y);
+    // On good ground a feeding animal mostly stays put: grazing is standing.
+    if (away <= HERD_SPREAD && standing >= WORTH_GRAZING && animal.fed < 0.9) return;
     const tx = away > HERD_SPREAD
       ? centre.x
       : animal.x + ctx.rng.range(-2, 2);
@@ -267,6 +384,39 @@ export class WildlifeSystem {
 
     moveToward(animal, tx, ty, animal.def.speed * MOVE_INTERVAL * 0.35, ctx.world, ctx.rng);
   }
+}
+
+/**
+ * The best walkable tile within `radius`: tall grass, nearer preferred. A box
+ * scan of the grass layer, bounded by the radius; there are no entities here.
+ */
+function bestGrass(world: World, x: number, y: number, radius: number): { x: number; y: number } | null {
+  const cx = Math.floor(x);
+  const cy = Math.floor(y);
+  let best: { x: number; y: number } | null = null;
+  let bestScore = WORTH_GRAZING;
+  for (let ty = Math.max(0, cy - radius); ty <= Math.min(world.height - 1, cy + radius); ty++) {
+    for (let tx = Math.max(0, cx - radius); tx <= Math.min(world.width - 1, cx + radius); tx++) {
+      const i = ty * world.width + tx;
+      if (world.walkable[i] !== 1) continue;
+      const score = world.grass[i]! - Math.hypot(tx - cx, ty - cy) * 0.025;
+      if (score > bestScore) { bestScore = score; best = { x: tx, y: ty }; }
+    }
+  }
+  return best;
+}
+
+/** The sum of the grass capacity round a point: what a herd's range can carry. */
+function rangeGrass(world: World, x: number, y: number): number {
+  const cx = Math.floor(x);
+  const cy = Math.floor(y);
+  let total = 0;
+  for (let ty = Math.max(0, cy - RANGE_RADIUS); ty <= Math.min(world.height - 1, cy + RANGE_RADIUS); ty++) {
+    for (let tx = Math.max(0, cx - RANGE_RADIUS); tx <= Math.min(world.width - 1, cx + RANGE_RADIUS); tx++) {
+      total += world.grassCap[ty * world.width + tx]!;
+    }
+  }
+  return total;
 }
 
 /**

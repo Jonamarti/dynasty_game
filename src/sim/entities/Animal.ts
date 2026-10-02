@@ -33,6 +33,11 @@ export interface SpeciesDef {
   herdSize: number;
   /** How much health one successful strike removes. */
   health: number;
+  /**
+   * Young per member per spring day when well fed, M15 phase 23d. Hares breed
+   * like hares and deer like deer; the herd's ceiling comes from the grass.
+   */
+  fecundity: number;
 }
 
 /**
@@ -46,17 +51,17 @@ export const SPECIES_DEFS: Record<Species, SpeciesDef> = {
   deer: {
     id: 'deer', label: 'Deer',
     meat: 22, speed: 0.30, fleeSpeed: 0.52,
-    awareness: 7.5, evasion: 0.55, herdSize: 5, health: 30,
+    awareness: 7.5, evasion: 0.55, herdSize: 5, health: 30, fecundity: 0.03,
   },
   boar: {
     id: 'boar', label: 'Boar',
     meat: 30, speed: 0.22, fleeSpeed: 0.40,
-    awareness: 5.5, evasion: 0.7, herdSize: 3, health: 46,
+    awareness: 5.5, evasion: 0.7, herdSize: 3, health: 46, fecundity: 0.035,
   },
   hare: {
     id: 'hare', label: 'Hare',
     meat: 7, speed: 0.26, fleeSpeed: 0.58,
-    awareness: 9, evasion: 0.8, herdSize: 2, health: 12,
+    awareness: 9, evasion: 0.8, herdSize: 2, health: 12, fecundity: 0.07,
   },
 };
 
@@ -76,6 +81,13 @@ export class Animal {
   herdId: number;
   health: number;
   alive = true;
+
+  /**
+   * How well fed it is, 0-1 — M15 phase 23c. Falls a little every move and is
+   * refilled by what it takes off the grass under it (`World.graze`); at zero
+   * it starves, slowly. The number a herd's births (23d) are proportional to.
+   */
+  fed = 1;
 
   /** Tick until which this animal is bolting. */
   alarmedUntil = 0;

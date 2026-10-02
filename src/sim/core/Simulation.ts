@@ -2695,10 +2695,10 @@ export class Simulation {
   }
 
   /** Takes a killed animal out of the world and its index. */
-  private removeAnimal(animal: Animal): void {
+  private removeAnimal(animal: Animal, counter = 'animal_killed'): void {
     this.animalsById.delete(animal.id);
     this.animals = this.animals.filter(a => a.id !== animal.id);
-    telemetry.count('animal_killed');
+    telemetry.count(counter);
   }
 
   /** The animal nearest a point, within a click's reach. */
@@ -3885,6 +3885,8 @@ export class Simulation {
       tick: this.time.tick,
       peopleHash: this.peopleHash,
       peopleById: this.peopleById,
+      dailyGrowth: this.time.dailyGrowth,
+      onStarved: (animal: Animal) => this.removeAnimal(animal, 'animal_starved_out'),
     });
 
     const nurslingFactor = nurslingHungerFactor(this.config.childhood.feedsPerDay,
@@ -3908,6 +3910,15 @@ export class Simulation {
       this.snowDepth = advanceSnowDepth(this.snowDepth, this.time.temperature);
       // M15 phase 23a: the sward, a pure function of the ground and the day.
       advanceGrass(this.world, this.time.dailyGrowth, this.snowDepth);
+      // M15 phase 23d: spring's young, proportional to how well fed the herd
+      // is and capped by the grass round it.
+      for (const calf of this.wildlifeSystem.daily(this.animals, {
+        world: this.world, rng: this.wildlifeRng, tick: this.time.tick,
+        peopleHash: this.peopleHash, season: this.time.season,
+      })) {
+        this.animals.push(calf);
+        this.animalsById.set(calf.id, calf);
+      }
       // M15 phase 20 (owner, 2026-10-01): a bush out of its season is bare —
       // its crop has fallen and rotted. Every day rather than on the first of
       // the season, so nothing a regrowth pass set on the boundary survives.

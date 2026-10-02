@@ -1,5 +1,19 @@
 # Known bugs and rough edges
 
+## SeasonLore aprende «estéril» de un arbusto recogido (2026-10-02)
+
+`Simulation.observePlaces` anota `node.amount >= 1` como «da fruto» o «no» cada
+vez que alguien ve un arbusto, y `SeasonLore.barrenIn` da por estéril una
+estación en la que se vio vacío dos años distintos y nunca con fruto. Un arbusto
+**recogido hasta el suelo en su propia estación de fruto** cuenta como vacío:
+el pueblo puede aprender que una especie «no da en verano» solo porque ellos
+mismos la dejaron pelada. Depende del mundo (`season-lore.test.ts`, «are learned
+species by species», falla en 2 de 4 semillas tras 23c, y pasaba la semilla 3 sin
+ese cambio), así que se fijó la semilla del test en vez de afinarlo. Arreglo
+probable: anotar «vacío» solo si el arbusto está fuera de su fase de fruto
+(`bushPhase`), no si alguien lo ha vaciado. No hecho.
+
+
 ## Timeout de Vitest en GitHub Actions (2026-09-30)
 
 Actions reportó `band.test.ts` agotando el límite predeterminado de 5 segundos.
