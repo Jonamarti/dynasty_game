@@ -1,5 +1,29 @@
 # Known bugs and rough edges
 
+## Presión de caché con cientos de apariencias (2026-10-03) — corregido
+
+500 apariencias con cuatro poses expulsaban cada pose a la siguiente vuelta:
+el tope de 1.500 lienzos no retenía los 2.000 necesarios. El instrumento previo
+contó 16.000 misses calientes y 52,7 MiB de píxeles de figuras. Tras recortar
+las figuras y usar presupuestos en bytes, retiene los 2.000 en 20,8 MiB,
+con 16.000 hits y ninguna recomposición tras la primera vuelta.
+
+La carga inicial aún compone/tinta; no se ha medido FPS global ni memoria
+real del proceso/GPU con cientos de NPC simulados. El presupuesto acota píxeles
+retenidos (24 + 8 MiB), no los objetos de canvas, las hojas compartidas o la
+memoria que el recolector todavía no libera. Muchas más variantes activas
+provocan expulsión y recomposición; el test de 1.800 apariencias prueba los
+límites, no promete que todas esas variantes quepan.
+
+820/820 unitarios pasan; navegador 56/62 con los seis fallos previos del picker;
+los 23 escenarios conservan la misma aplicabilidad y fallos que antes. Informes
+en `artifacts/verification/m15-art-memory-2026-10-02/`.
+
+Durante los verificadores Chromium generó un log interno de GPU con mensajes
+`SharedImageManager::ProduceMemory` sobre un mailbox inexistente. Se conserva
+en `chromium-debug.log` del informe. No apareció un error de página en los
+tests nuevos ni una diferencia de píxeles; no se ha aislado la causa de ese log.
+
 ## Recolección animada: alcance visual y línea base (2026-10-02)
 
 La primera familia de trabajo usa un gesto común para recolección manual y

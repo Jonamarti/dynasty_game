@@ -14,6 +14,8 @@ import { test, expect, type Page } from '@playwright/test';
 import { TECHS } from '../src/sim/knowledge/Tech.ts';
 import type { Simulation } from '../src/sim/core/Simulation.ts';
 import type { Camera } from '../src/render/Camera.ts';
+import { readFileSync } from 'node:fs';
+const PERSON_PIXELS = JSON.parse(readFileSync(new URL('../src/render/__tests__/person-pixels.json', import.meta.url), 'utf8')) as Record<string, string>;
 
 /** Fails the test on any uncaught error or console error, not just assertions. */
 function guardErrors(page: Page): string[] {
@@ -1516,6 +1518,62 @@ test('the kit tab lists what you carry and offers verbs on it', async ({ page })
   expect(errors).toEqual([]);
 });
 
+test('trimmed people preserve the pre-optimisation pixels in every body, pose and facing', async ({ page }) => {
+  const errors = guardErrors(page);
+  await page.goto('/tools/art/memory.html?skipIntro=1');
+  const failures = await page.evaluate(async golden => {
+    const { ArtAtlas } = await new Function('return import("/src/render/ArtAtlas.ts")')();
+    const atlas = await ArtAtlas.load('/art/');
+    const failures: string[] = [];
+    for (const [key, expected] of Object.entries(golden)) {
+      const [age, sex, dir, pose] = key.split('/');
+      const a = { age, sex, dir, pose, skin: '#d4a276', hair: '#2b2018', band: '#3b6ea8',
+        hairStyle: sex === 'f' ? 'long' : 'short', beard: sex === 'm', expression: 'warm',
+        wear: {}, carryBaby: false, held: null };
+      const cell = atlas.compose(a);
+      const pixels = cell.getContext('2d').getImageData(0, 0, 96, 96).data;
+      const hash = await crypto.subtle.digest('SHA-256', pixels);
+      const actual = Array.from(new Uint8Array(hash), n => n.toString(16).padStart(2, '0')).join('');
+      if (actual !== expected) failures.push(key);
+    }
+    return failures;
+  }, PERSON_PIXELS);
+  expect(Object.keys(PERSON_PIXELS).length).toBe(360);
+  expect(failures).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('500 gathering appearances retain all four poses within the pixel budget without warm recompositions', async ({ page }) => {
+  const errors = guardErrors(page);
+  await page.goto('/tools/art/memory.html?skipIntro=1');
+  const stats = await page.evaluate(async () => {
+    const { ArtAtlas } = await new Function('return import("/src/render/ArtAtlas.ts")')();
+    const atlas = await ArtAtlas.load('/art/');
+    const cycle = (people: number) => {
+      for (let phase = 0; phase < 4; phase++) for (let i = 0; i < people; i++) {
+        atlas.sprite({ age: i % 7 === 0 ? 'elder' : 'adult', sex: i % 2 ? 'f' : 'm', dir: 'E', pose: 'g' + phase,
+          skin: '#' + (0xb08050 + i).toString(16), hair: '#2b2018', band: '#3b6ea8',
+          hairStyle: i % 2 ? 'long' : 'short', beard: false, expression: 'neutral',
+          wear: {}, carryBaby: false, held: null });
+      }
+    };
+    cycle(500); const cold = atlas.cacheStats;
+    cycle(500); const warm = atlas.cacheStats;
+    cycle(1800); const overflow = atlas.cacheStats;
+    return { cold, warm, overflow };
+  });
+  expect(stats.cold.composed.entries).toBe(2000);
+  expect(stats.cold.composed.bytes).toBeLessThan(24 * 1024 * 1024);
+  expect(stats.cold.composed.evictions).toBe(0);
+  expect(stats.warm.composed.misses).toBe(stats.cold.composed.misses);
+  expect(stats.warm.composed.hits - stats.cold.composed.hits).toBe(2000);
+  for (const cache of [stats.overflow.composed, stats.overflow.tints]) {
+    expect(cache.bytes).toBeLessThanOrEqual(cache.maxBytes);
+    expect(cache.evictions).toBeGreaterThan(0);
+  }
+  expect(errors).toEqual([]);
+});
+
 test('a gathering NPC cycles visible poses, freezes while paused and releases the gesture on interruption', async ({ page }) => {
   const errors = guardErrors(page);
   await ready(page);
@@ -1545,18 +1603,19 @@ test('a gathering NPC cycles visible poses, freezes while paused and releases th
     return npc.id;
   });
   await page.waitForTimeout(250); // Let the previous walking interpolation settle.
-  const captures = 'artifacts/screenshots/m15-gather-' + new Date().toISOString().replace(/[:.]/g, '-');
+  const captures = 'artifacts/screenshots/m15-gather-memory-' + new Date().toISOString().replace(/[:.]/g, '-');
 
   // Observe the real renderer's aspect without changing which pixels it draws.
   await page.evaluate(() => {
     type Aspect = import('../src/render/ArtAtlas.ts').PersonAspect;
-    const d = (window as unknown as { __dynasty: { renderer: { art: { compose: (a: Aspect) => HTMLCanvasElement } } } }).__dynasty;
-    const original = d.renderer.art.compose.bind(d.renderer.art);
-    d.renderer.art.compose = a => {
+    type Sprite = import('../src/render/ArtAtlas.ts').PersonSprite;
+    const d = (window as unknown as { __dynasty: { renderer: { art: { sprite: (a: Aspect) => Sprite } } } }).__dynasty;
+    const original = d.renderer.art.sprite.bind(d.renderer.art);
+    d.renderer.art.sprite = a => {
       const sprite = original(a);
       if (a.pose.startsWith('g')) {
         (window as unknown as { __gatherAspect: Aspect }).__gatherAspect = { ...a };
-        (window as unknown as { __gatherPixels: string }).__gatherPixels = sprite.toDataURL();
+        (window as unknown as { __gatherPixels: string }).__gatherPixels = sprite.image.toDataURL();
       }
       return sprite;
     };
@@ -1583,15 +1642,16 @@ test('a gathering NPC cycles visible poses, freezes while paused and releases th
   // captured aspect from a different worker elsewhere on screen.
   const stopped = await page.evaluate(id => {
     type Aspect = import('../src/render/ArtAtlas.ts').PersonAspect;
+    type Sprite = import('../src/render/ArtAtlas.ts').PersonSprite;
     const d = (window as unknown as { __dynasty: { sim: Simulation; renderer: {
-      art: { compose: (a: Aspect) => HTMLCanvasElement };
+      art: { sprite: (a: Aspect) => Sprite };
       drawArtPerson: (...args: unknown[]) => void;
     } } }).__dynasty;
     const npc = d.sim.peopleById.get(id)!;
     npc.action = 'idle'; npc.actionTimer = 0; npc.order = null;
     let aspect: Aspect | null = null;
-    const original = d.renderer.art.compose.bind(d.renderer.art);
-    d.renderer.art.compose = a => { aspect = a; return original(a); };
+    const original = d.renderer.art.sprite.bind(d.renderer.art);
+    d.renderer.art.sprite = a => { aspect = a; return original(a); };
     d.renderer.drawArtPerson(d.renderer.art, npc, { x: npc.x, y: npc.y }, 400, 400, 60, 1, 'adult', 0);
     return aspect as Aspect | null;
   }, id);

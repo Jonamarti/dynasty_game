@@ -62,3 +62,9 @@ wrong tint, a missing key or a garment that does not sit on a child.
 `contact-gather.png` reviews the four `g0`–`g3` gathering poses in every facing,
 with tunic/gloves and child/elder samples. They share the normal layered build;
 the runtime chooses work poses in `src/render/WorkAnimation.ts`.
+
+For runtime cache measurements use `npx vite-node tools/art/memory.ts after`.
+It submits 500 distinct appearances across four poses and records pixel bytes,
+hits and misses under `artifacts/verification/m15-art-memory-2026-10-02/`.
+It is a synthetic art workload, not game FPS. The pre-change parity reference
+and its export procedure are documented in `docs/m15_art_pipeline.md`.

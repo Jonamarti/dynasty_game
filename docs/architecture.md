@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-02 (M15 gathering animation, 26b tools and 26f region audit). No runtime
+Current as of 2026-10-03 (M15 art memory budgets, gathering animation, 26b tools and 26f region audit). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -43,6 +43,16 @@ catalogue, order validation, executor and held sprite ask that same selector.
 Missing tools and unfamiliar tools have separate visible refusal reasons.
 Work remains banked in `World.offset`; acceleration changes lift time, never
 the amount of earth moved or the safe depth of a player order.
+
+**Cached art pays for visible pixels.** `ArtAtlas.sprite()` unions the selected
+manifest cell bounds, preserving integer offsets, a one-pixel sampling margin,
+the original cell clipping and west mirroring. Runtime `drawPerson()` keeps the
+old logical 96-pixel origin while drawing one trimmed cached canvas. `compose()`
+expands a full cell for tools/exports only. Shared `PixelCache` applies LRU and
+budgets of 24 MiB/4,096 entries for figures and 8 MiB/6,000 entries for tinted
+layers. `cacheStats` counts RGBA pixels, hits, misses and evictions; these bytes
+exclude browser/GPU overhead. Asset sheets are shared and already deduplicate
+identical source drawings, independent of NPC population.
 
 The final-world harness independently recomputes connected components through
 `tools/regions.ts`. `regions-stay-true` compares partitions rather than raw

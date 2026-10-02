@@ -1137,7 +1137,7 @@ export class Renderer {
     };
     const scale = person.age === 'infant' ? 0.48 : person.age === 'child' ? 0.65 : person.age === 'adolescent' ? 0.82 : 1;
     const k = TILE * 1.55 * scale / 96;
-    ctx.drawImage(this.art.compose(aspect), x - 48 * k, y - 52 * k, 96 * k, 96 * k);
+    this.art.drawPerson(ctx, aspect, x - 48 * k, y - 52 * k, k);
   }
 
   /**
@@ -1851,7 +1851,7 @@ export class Renderer {
     ctx.ellipse(px, y0 + 88.6 * k, 17 * k, 4.4 * k, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
-    ctx.drawImage(art.compose(aspect), x0, y0, 96 * k, 96 * k);
+    art.drawPerson(ctx, aspect, x0, y0, k);
   }
 
   /** Screen-tile distance a walk cycle covers before advancing to the next

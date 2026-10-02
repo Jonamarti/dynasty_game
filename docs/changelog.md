@@ -1,3 +1,64 @@
+## 2026-10-03 — M15 fase 17: las animaciones caben en la caché
+
+Con 500 apariencias distintas y cuatro poses, la caché anterior guardaba
+solo 1.500 de los 2.000 fotogramas. En una vuelta ordenada cada consulta
+expulsaba una pose que se necesitaría después: las 16.000 consultas calientes
+de la prueba provocaban 16.000 recomposiciones. Se ocupaban 52,7 MiB solo
+en píxeles de figuras, incluidos sus amplios márgenes transparentes.
+
+- `ArtAtlas.sprite()` compone un lienzo recortado a la unión de las capas
+  elegidas. Conserva coordenadas enteras, el recorte original de 96 px, espejo
+  oeste y un píxel transparente para el muestreo. `drawPerson()` dibuja una
+  vez con el desplazamiento; las dos rutas del renderer usan esa API. El
+  `compose()` de las herramientas exporta el lienzo lógico completo bajo
+  demanda y no lo conserva en la caché. No se cambia el arte visible.
+- `PixelCache` comparte LRU y presupuestos: **24 MiB / 4.096 entradas** para
+  figuras y **8 MiB / 6.000 entradas** para tintes. Un acceso renueva también
+  el tinte; antes se expulsaba por FIFO. Se contabilizan bytes, hits, misses
+  y expulsiones. Una imagen que no cabe se dibuja sin guardarla. Tres tests
+  prueban bytes, recencia, reemplazos, imágenes grandes y techo de entradas.
+- El mismo instrumento de navegador ahora retiene **2.000 fotogramas en
+  20,8 MiB**, un **60,5% menos** de píxeles de figuras, con **16.000 hits y
+  cero recomposiciones/expulsiones de figuras** tras la primera vuelta. Sumando
+  los tintes retenidos pasa de 60,3 a 28,4 MiB. El e2e exige ese mecanismo con
+  500 apariencias y comprueba ambos presupuestos al forzar 1.800 apariencias.
+  La prueba anterior falla ese mecanismo: conserva 1.500 entradas y acumula
+  18.000 misses en los 36 fotogramas del instrumento, incluidos los 2.000 iniciales.
+- Comparación exacta contra el compositor de `6d5fe4f`: **1.080 figuras
+  completas y 2.160 dibujos con zoom fraccionario idénticos**, con edades,
+  sexos, direcciones, poses, prendas, bebés y herramientas. Un e2e fija los
+  360 hashes de píxeles de figuras sin prendas; el e2e de recolección observa
+  la nueva API y conserva pausa, interrupción y cuatro imágenes distintas.
+- La hoja ya comparte capas iguales, por lo que añadir alias a cabeza/piernas
+  no ahorraría píxeles. Inspección: solo dos celdas raster idénticas, 48 px,
+  entre 1.829. El ahorro medido está en las figuras retenidas, no en el PNG
+  compartido. `art:sheet` se volvió a revisar; no cambia un generador.
+
+**Validación:** `typecheck` pasa y la suite estable da **820/820** tests en
+**107 archivos** con `npx vitest run --maxWorkers 1 --testTimeout 15000`.
+`e2e` da **56/62**, con los mismos seis fallos previos del picker y los tres
+tests focales del arte aprobados. `sim:check:all` recorre los **23 escenarios**
+con exactamente los mismos checks aprobados/aplicables y listas de fallos que
+el pase de recolección. La matriz sigue roja por esa referencia; no se presenta
+como aprobada. Ningún cambio en `src/sim/` ni RNG.
+
+**Mediciones:** `artifacts/verification/m15-art-memory-2026-10-02/` contiene
+`before.json`, `after.json`, paridad de píxeles, suites y comparación de matriz.
+Es una carga sintética de 500 apariencias distintas, no NPC simulados: los
+bytes son píxeles RGBA retenidos, sin objetos de navegador ni copias GPU.
+Los tiempos de envío de dibujos se tomaron con otros verificadores en marcha;
+no se afirma FPS global. La primera carga todavía compone las figuras, y más
+variantes que las que caben provocan expulsión acotada. Reproducción y límites
+en `m15_art_pipeline.md`.
+
+**Capturas:** `artifacts/screenshots/m15-gather-memory-2026-10-02T22-07-15-682Z/`
+con los cuatro fotogramas del NPC, hoja de contacto y GIF, sin sobrescribir
+el hito anterior. La apariencia se conserva.
+
+El log interno GPU de Chromium emitido durante las pruebas se conserva como
+`chromium-debug.log` en el directorio de verificación; causa no aislada y
+registrada en `bugs.md`. Los tests nuevos y la paridad de píxeles pasan.
+
 ## 2026-10-02 — M15 fase 17: primera animación de recolectar
 
 - Se generan cuatro poses `g0`–`g3` por edad, sexo y dirección en el rig por

@@ -1776,6 +1776,18 @@ se aparta`; `m15: muebles`; `m15: dormir mejor en casa, y el confort`;
 
 ## Fase 17 — El arte: personas pre-renderizadas por capas (nota 6; decisión 9)
 
+**Avance del 2026-10-03 (memoria de animaciones):** las figuras se guardan
+recortadas, conservando su origen lógico y los píxeles. Caché LRU compartida
+con presupuestos de 24 MiB para figuras y 8 MiB para tintes. La prueba de
+500 apariencias distintas y cuatro poses baja de 52,7 a 20,8 MiB en figuras;
+retiene los 2.000 fotogramas y elimina las recomposiciones de las 16.000
+consultas calientes que el límite anterior de 1.500 entradas provocaba.
+Comparación exacta de 1.080 figuras y 2.160 dibujos con zoom, más test de
+presupuestos con 1.800 apariencias. Datos en `m15_art_pipeline.md`; capturas
+en `artifacts/screenshots/m15-gather-memory-2026-10-02T22-07-15-682Z/`.
+La carga inicial y la memoria real de navegador/GPU requieren medición propia;
+el instrumento mide píxeles retenidos y envío de dibujos, no FPS del juego.
+
 **Avance del 2026-10-02 (gesto de recolectar):** cuatro poses `g0`–`g3`
 generadas para todas las edades, sexos y direcciones. El renderer las usa
 durante el trabajo de recoger bayas, palos, juncos, grano silvestre y fruta del

@@ -106,9 +106,10 @@ rule (and the key), and the two pictures stay.
   the pennant's cloth is art.
 - Falls back to the procedural figures of `Sprites.ts` when the sheets fail to
   load. That code stays until the art has shipped a milestone.
-- Composes a person once per distinct appearance into a 96 px canvas
-  (`ArtAtlas.compose`, at most 1500 kept); on screen a person is one
-  `drawImage`. Below `PERSON_LOD_BELOW` a person is a flat ellipse in the
+- Composes a person once per distinct appearance into a trimmed canvas
+  (`ArtAtlas.sprite`, 24 MiB of pixels / at most 4,096 entries); `drawPerson`
+  preserves the logical 96 px cell origin and uses one `drawImage`. Tinted
+  layers have a separate 8 MiB / 6,000-entry LRU budget. Below `PERSON_LOD_BELOW` a person is a flat ellipse in the
   tribe's colour, as before.
 
 ## Open items
@@ -136,14 +137,60 @@ pictures after deduplication. The PNG grows from 747,678 to 977,046 bytes
 from 2,400,256 to 3,530,752 bytes (+1.08 MiB), before browser overhead or any
 GPU copies. These are asset measurements, not measured browser memory or FPS.
 
-The composed-person cache retains its 1,500-entry limit. A 96×96 RGBA sprite
-contains 36 KiB of pixels; four gathering frames therefore contain 144 KiB for
-one appearance and direction. At capacity the raw composed pixels are about
-52.7 MiB, plus canvases and browser overhead. More poses use existing slots
-so frequently changing appearances may require more compositions after eviction;
-the cap does not grow. Tinted-layer caching is separate and also remains bounded.
-Use finite pose keys, never an unbounded time or angle in `aspectKey`.
+The initial 1,500-entry cache stored whole 96×96 RGBA sprites: 36 KiB each,
+144 KiB for four gathering frames and 52.7 MiB at capacity. This historical
+measurement motivated the optimisation below. Use finite pose keys, never an
+unbounded time or angle in `aspectKey`.
 
 `npm run art:sheet` includes `contact-gather.png`: all four facings, clothing,
 child and elder. Tests verify stationary legs, four distinct hand anchors,
 manifest coverage, pause/interruption and four distinct composed browser frames.
+
+## Memory optimisation measured on 2026-10-03
+
+The source bank already reuses identical SVG layers: adding aliases for heads
+or legs cannot save another copy. Pixel inspection found only two duplicate
+raster cells (48 pixels) among 1,829 people cells. The population-dependent
+cost was the full-cell cache and its 1,500-entry ceiling, not repeated sheets.
+
+`sprite()` stores only the union of selected layer bounds, clamped to the
+original 96 px cell, with integer offsets and one transparent pixel for
+sampling. West mirrors around the same original centre. Both runtime figure
+paths use `drawPerson()`; `compose()` reconstructs a full cell on demand for
+tools/exports and does not retain that larger image. Budgeted `PixelCache`
+refreshes hits for both caches and evicts until both byte and entry limits fit.
+An image larger than its budget is drawn without being retained.
+
+In a synthetic browser workload of **500 distinct appearances × four poses**:
+
+| Measurement | Before | After |
+|---|---:|---:|
+| Retained figure pixels | 52.7 MiB | 20.8 MiB |
+| Retained frames | 1,500 | 2,000 |
+| Warm lookups (32 frames) | 16,000 misses | 16,000 hits, zero misses |
+| Figure pixel limit | 52.7 MiB by entry size | 24 MiB |
+| Tint pixel limit | entry count only | 8 MiB |
+
+Figure pixels decrease **60.5%** while retaining more frames; combined figure
+and tint pixels decrease from 60.3 to 28.4 MiB in that workload. It uses distinct
+synthetic skin colours to stress retention; it is not 500 simulated NPCs or
+a whole-game FPS/heap measurement. The first pass still has composition cost.
+Warm drawing submission timings are included in the report, but runs overlapped
+other verifiers and are not a controlled FPS comparison. A browser test also
+pushes 1,800 appearances and verifies both byte limits under eviction.
+
+Pixel parity compares 1,080 full-cell figures and 2,160 fractional-zoom draws
+against the compositor from `6d5fe4f`: all match exactly, covering five ages,
+two sexes, four directions, nine poses, clothing, carried babies and tools.
+The 360 unclothed reference SHA-256 hashes are pinned in
+`src/render/__tests__/person-pixels.json` and checked in the browser suite.
+
+Reproduce current measurements with `npx vite-node tools/art/memory.ts after`.
+For the historical run, export `git show 6d5fe4f:src/render/ArtAtlas.ts` to
+`artifacts/verification/m15-art-memory-2026-10-02/reference/ArtAtlas.ts`, changing
+its relative `./ArtManifest.ts` import to `/src/render/ArtManifest.ts` for Vite.
+Then `npx vite-node tools/art/memory.ts before` uses that reference.
+`npx vite-node tools/art/compare.ts` validates parity against it and refreshes
+the pinned hashes only after parity succeeds. Reference source and JSON reports
+are in the same verification directory. No sheet regeneration was needed for
+this runtime optimisation; `art:sheet` was inspected again.

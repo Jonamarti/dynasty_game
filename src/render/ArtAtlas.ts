@@ -11,8 +11,8 @@
  *
  * Composing is the expensive step, so the result is cached per distinct
  * appearance (`aspectKey`) and drawing a person on screen is one `drawImage`.
- * The cache is bounded: a crowd of a thousand distinct people fits, and past
- * that the least recently drawn appearance is dropped and rebuilt on demand.
+ * Cached figures are trimmed to their visible bounds and bounded in pixel
+ * bytes. Transparent margins must not multiply with every pose of a crowd.
  *
  * Nothing here reads the simulation. The renderer builds a `PersonAspect`
  * from a `Person` and hands it over; the direction is deduced from
@@ -22,6 +22,7 @@ import {
   anchorKey, personKey, CARRY_SUFFIX,
   type ArtAge, type ArtCell, type ArtDir, type ArtManifest, type ArtPose, type ArtSex, type ArtTint, type PersonAnchors,
 } from './ArtManifest.ts';
+import { PixelCache } from './PixelCache.ts';
 
 export interface WornGarments {
   torso?: 'cape' | 'wrap' | 'tunic' | 'longtunic';
@@ -52,16 +53,17 @@ export interface PersonAspect {
 /** Slots that stay planted when the upper body bobs in the walk. */
 const GROUNDED = /^(shadow|legs|trousers|feet)/;
 
-const CACHE_LIMIT = 1500;
-const TINT_LIMIT = 6000;
+const MIB = 1024 * 1024;
+export interface PersonSprite { image: HTMLCanvasElement; ox: number; oy: number; }
+interface LayerDraw { manifest: ArtManifest; key: string; tint: string | null; dx: number; dy: number; }
 
 export class ArtAtlas {
   private readonly people: ArtManifest;
   private readonly props: ArtManifest;
   private readonly others: Record<string, ArtManifest>;
   private readonly sheets = new Map<string, HTMLImageElement>();
-  private readonly cache = new Map<string, HTMLCanvasElement>();
-  private readonly tints = new Map<string, HTMLCanvasElement>();
+  private readonly cache = new PixelCache<PersonSprite>(24 * MIB, 4096);
+  private readonly tints = new PixelCache<HTMLCanvasElement>(8 * MIB, 6000);
 
   private constructor(people: ArtManifest, props: ArtManifest, others: Record<string, ArtManifest>, sheets: Map<string, HTMLImageElement>) {
     this.people = people;
@@ -110,8 +112,7 @@ export class ArtAtlas {
       c.fillRect(0, 0, w, h);
       c.globalCompositeOperation = 'destination-in';
       c.drawImage(sheet, x, y, w, h, 0, 0, w, h);
-      if (this.tints.size >= TINT_LIMIT) this.tints.delete(this.tints.keys().next().value!);
-      this.tints.set(tk, t);
+      this.tints.set(tk, t, w * h * 4);
     }
     return t;
   }
@@ -134,22 +135,14 @@ export class ArtAtlas {
     ].join('|');
   }
 
-  /** A 96 px canvas with the whole figure on it, feet at y = 88. */
-  compose(a: PersonAspect): HTMLCanvasElement {
+  /** A trimmed figure with its origin inside the original 96 px body cell. */
+  sprite(a: PersonAspect): PersonSprite {
     const key = ArtAtlas.aspectKey(a);
     const hit = this.cache.get(key);
-    if (hit) {
-      this.cache.delete(key);
-      this.cache.set(key, hit);
-      return hit;
-    }
+    if (hit) return hit;
     const cell = this.people.cell;
-    const canvas = document.createElement('canvas');
-    canvas.width = cell; canvas.height = cell;
-    const ctx = canvas.getContext('2d')!;
     const mirror = a.dir === 'W';
     const dir: 'S' | 'E' | 'N' = a.dir === 'W' ? 'E' : a.dir;
-    if (mirror) { ctx.translate(cell, 0); ctx.scale(-1, 1); }
 
     const order = (this.people.meta['order'] as Record<string, string[]>)[dir]!;
     const tintOf = this.people.meta['tint'] as Record<string, ArtTint>;
@@ -159,6 +152,7 @@ export class ArtAtlas {
     const w = a.wear;
     const covers = !!w.legs || w.torso === 'tunic' || w.torso === 'longtunic';
     const bandCovered = w.torso === 'tunic' || w.torso === 'longtunic' || w.torso === 'wrap';
+    const layers: LayerDraw[] = [];
 
     for (const slot of order) {
       const base = slot.replace(/_(far|near)$/, '');
@@ -185,7 +179,7 @@ export class ArtAtlas {
         if (!a.held) continue;
         const hk = `held/${a.held}/${dir === 'E' ? 'E' : 'S'}`;
         const hand = this.props.meta['handAnchor'] as [number, number];
-        this.blit(ctx, this.props, hk, null, anchor.hr[0] - hand[0], anchor.hr[1] - hand[1] + dy);
+        layers.push({ manifest: this.props, key: hk, tint: null, dx: anchor.hr[0] - hand[0], dy: anchor.hr[1] - hand[1] + dy });
         continue;
       }
       if (a.carryBaby && carrySlots.has(slot)) variant += CARRY_SUFFIX;
@@ -193,11 +187,46 @@ export class ArtAtlas {
       // A glove is leather, not skin: only bare pictures take the skin colour.
       const glove = (base === 'hands' || base === 'hand') && w.hands;
       const colour = glove ? null : tintSlot === 'skin' ? a.skin : tintSlot === 'hair' ? a.hair : tintSlot === 'band' ? a.band : null;
-      this.blit(ctx, this.people, personKey(slot, variant, a.age, a.sex, dir, a.pose), colour, 0, dy);
+      layers.push({ manifest: this.people, key: personKey(slot, variant, a.age, a.sex, dir, a.pose), tint: colour, dx: 0, dy });
     }
 
-    if (this.cache.size >= CACHE_LIMIT) this.cache.delete(this.cache.keys().next().value!);
-    this.cache.set(key, canvas);
+    // Bounds come from the already trimmed manifest cells, not a GPU readback
+    // on every miss. Integer origins preserve the old rasterisation exactly;
+    // clamp to the old cell so a held object clipped before stays clipped now.
+    let left = cell, top = cell, right = 0, bottom = 0;
+    for (const layer of layers) {
+      const c = this.cellOf(layer.manifest, layer.key);
+      if (!c) continue;
+      left = Math.min(left, c[5] + layer.dx); top = Math.min(top, c[6] + layer.dy);
+      right = Math.max(right, c[5] + layer.dx + c[3]); bottom = Math.max(bottom, c[6] + layer.dy + c[4]);
+    }
+    // Keep one transparent pixel for bilinear sampling at fractional zoom.
+    left = Math.max(0, Math.floor(left) - 1); top = Math.max(0, Math.floor(top) - 1);
+    right = Math.min(cell, Math.ceil(right) + 1); bottom = Math.min(cell, Math.ceil(bottom) + 1);
+    const ox = mirror ? cell - right : left, oy = top;
+    const image = document.createElement('canvas');
+    image.width = Math.max(1, right - left); image.height = Math.max(1, bottom - top);
+    const ctx = image.getContext('2d')!;
+    ctx.translate(-ox, -oy);
+    if (mirror) { ctx.translate(cell, 0); ctx.scale(-1, 1); }
+    for (const layer of layers) this.blit(ctx, layer.manifest, layer.key, layer.tint, layer.dx, layer.dy);
+    const sprite = { image, ox, oy };
+    this.cache.set(key, sprite, image.width * image.height * 4);
+    return sprite;
+  }
+
+  /** One draw, retaining the old cell origin and scale for hit-testing. */
+  drawPerson(ctx: CanvasRenderingContext2D, a: PersonAspect, x: number, y: number, scale: number): void {
+    const { image, ox, oy } = this.sprite(a);
+    ctx.drawImage(image, x + ox * scale, y + oy * scale, image.width * scale, image.height * scale);
+  }
+
+  /** Full cell for exports/tools. The game uses drawPerson to avoid margins. */
+  compose(a: PersonAspect): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.people.cell; canvas.height = this.people.cell;
+    const { image, ox, oy } = this.sprite(a);
+    canvas.getContext('2d')!.drawImage(image, ox, oy);
     return canvas;
   }
 
@@ -225,5 +254,7 @@ export class ArtAtlas {
 
   get propsManifest(): ArtManifest { return this.props; }
   get peopleManifest(): ArtManifest { return this.people; }
-  get cacheSize(): number { return this.cache.size; }
+  get cacheSize(): number { return this.cache.stats.entries; }
+  /** Pixel storage only: browser canvas/texture overhead is not measurable here. */
+  get cacheStats() { return { composed: this.cache.stats, tints: this.tints.stats }; }
 }
