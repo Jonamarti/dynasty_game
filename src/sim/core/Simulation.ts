@@ -68,7 +68,7 @@ import { Corpse, resetCorpseIds, stageOf, WOUNDS_SHOW_FOR, GONE_AFTER } from '..
 import {
   Animal, resetAnimalIds, PREY_SPECIES, SPECIES_DEFS, type Species,
 } from '../entities/Animal.ts';
-import { WildlifeSystem } from '../systems/WildlifeSystem.ts';
+import { WildlifeSystem, DOG_HEARING, DOG_SIGHT } from '../systems/WildlifeSystem.ts';
 import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
 import {
   LifeSystem, setChildFactory, findHeir, settleEstate,
@@ -1910,6 +1910,30 @@ export class Simulation {
     return homes;
   }
 
+  /**
+   * M15 phase 23g, `dog`: how far each person sees, when somebody with the
+   * technology has a tamed wolf at their heel. `undefined` when nobody does,
+   * which is every world before the idea is worked out and keeps them
+   * bit-identical.
+   */
+  private dogSight(): ((looker: Person) => number) | undefined {
+    let dogs: Map<number, Animal> | undefined;
+    for (const animal of this.animals) {
+      if (animal.alive && animal.tamedBy !== null && animal.species === 'wolf') {
+        (dogs ??= new Map()).set(animal.tamedBy, animal);
+      }
+    }
+    if (!dogs) return undefined;
+    const base = this.config.sightRadius;
+    return looker => {
+      const dog = dogs!.get(looker.id);
+      if (!dog || looker.distanceTo(dog) > DOG_HEARING) return base;
+      const power = techPower(looker, 'dog');
+      if (power > 0) telemetry.count('dog_sight');
+      return base * (1 + DOG_SIGHT * power);
+    };
+  }
+
   private lookForIntruders(): void {
     const territories = new Map<number, Territory>();
     for (const band of this.bands) {
@@ -1919,7 +1943,7 @@ export class Simulation {
     const outcast = this.bands.find(b => b.outcast)?.id;
     sightIntruders(
       this.people, this.peopleHash, territories, TERRITORY_RADIUS, this.config.sightRadius,
-      this.time.tick, this.sightings, outcast, this.sightingScratch);
+      this.time.tick, this.sightings, outcast, this.sightingScratch, this.dogSight());
     // M11 phase 16d: the same looking-around sees who has blood on them.
     noticeBloodied(this.people, this.peopleHash, this.config.sightRadius, this.time.tick);
   }

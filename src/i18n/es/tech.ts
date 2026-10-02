@@ -2,6 +2,7 @@
 export const ES_TECH: Record<string, string> = {
   "Firemaking": "Hacer fuego",
   "about 400,000 years ago": "hace unos 400.000 años",
+  "about 15,000 years ago": "hace unos 15.000 años",
   "A spark from struck flint, and a cold night stops being dangerous.": "Una chispa del sílex golpeado, y una noche fría deja de ser peligrosa.",
   "struck two cold stones together and one of them spat a spark": "golpeó dos piedras frías entre sí y una de ellas escupió una chispa",
   "was cold, with an armful of dry sticks and nothing to do with them": "tenía frío, con una brazada de palos secos y nada que hacer con ellos",
@@ -362,4 +363,10 @@ export const ES_TECH: Record<string, string> = {
   "Milk drawn from a living herd, never once culled for it.": "Leche de un rebaño vivo, sin sacrificar a ninguno.",
   "Fleece sheared rather than flax retted: cloth warmer for the same fire.": "Vellón esquilado en vez de lino enriado: tela más cálida con el mismo fuego.",
   "Beer: it answers loneliness for whoever drinks it, and for the band around them.": "Cerveza: alivia la soledad de quien la bebe, y de la banda que le rodea.",
+  "Dog": "Perro",
+  "A wolf kept long enough to be a different animal. It hears the camp’s strangers and its predators before anyone does, and it hunts at the heel of the one who feeds it.": "Un lobo criado el tiempo suficiente para ser otro animal. Oye a los extraños del campamento y a sus depredadores antes que nadie, y caza a los pies de quien le da de comer.",
+  "saw the tamed wolf stand between the camp and the dark, and knew it had chosen a side": "vio al lobo domado plantarse entre el campamento y la oscuridad, y supo que había elegido un bando",
+  "hunted with a wolf at the heel so long that it stopped being a wolf to them": "cazó con un lobo a los pies tanto tiempo que dejó de ser un lobo para ellos",
+  "shared a winter fire with a tamed wolf, and woke to find it had kept watch": "compartió una hoguera de invierno con un lobo domado, y despertó viendo que había hecho guardia",
+  "A tamed wolf that hears strangers and predators before you do, and hunts at your heel.": "Un lobo domado que oye a extraños y depredadores antes que tú, y caza a tus pies.",
 };

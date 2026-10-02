@@ -101,6 +101,20 @@ const BITE_PAUSE: Record<string, number> = { wolf: 60, bear: 160, lynx: 80 };
 /** Pack-mates (wolves) within this of each other count towards boldness. */
 const PACK_RADIUS = 6;
 
+/**
+ * `dog`, M15 phase 23g. A tamed wolf this close to its owner is a dog at their
+ * heel: it hears a stranger `DOG_SIGHT` further for them (at full technology),
+ * and a hunter will not pick off somebody it is standing beside.
+ */
+export const DOG_HEARING = 8;
+export const DOG_SIGHT = 0.5;
+/** Extra hunt bonus a wolf at the heel gives, at full `dog` technology. */
+const DOG_HUNT = 0.25;
+/** How long an animal holds a grudge, in ticks: six days. */
+const GRUDGE_TICKS = 1440;
+/** How much further a deer sees the hunter who once cornered it. */
+const GRUDGE_NOTICE = 1.5;
+
 /** Births happen in this season only. */
 const BIRTH_SEASON = 'spring';
 /** Grass capacity (summed over the range, in tile-heights) one animal needs. */
@@ -435,6 +449,20 @@ export class WildlifeSystem {
       return;
     }
 
+    // M15 phase 23g: a hunter that was turned on remembers whose hunt it was.
+    // It goes for that person, whatever its belly says, while the grudge lasts.
+    const grudge = grudgeOf(animal, ctx.tick);
+    if (grudge !== null) {
+      const foe = ctx.peopleById?.get(grudge);
+      if (foe && foe.alive && Math.hypot(animal.x - foe.x, animal.y - foe.y) <= PERSON_RANGE_DAY &&
+          !lit?.(foe.x, foe.y, FIRE_AVOID) && !guardedByDog(foe, ctx.animalHash) &&
+          ctx.world.sameRegion(animal.x, animal.y, foe.x, foe.y)) {
+        telemetry.count('animal_grudge_pursuit');
+        this.pounce(animal, foe, ctx, dice);
+        return;
+      }
+    }
+
     if (animal.species === 'bear') {
       const walkedIn = ctx.peopleHash.findNearest(animal.x, animal.y, BEAR_SURPRISE,
         person => person.alive && !(lit?.(person.x, person.y, FIRE_AVOID)));
@@ -509,6 +537,9 @@ export class WildlifeSystem {
     const bold = animal.species === 'bear' || packMates(animal, animals) >= 2;
     return ctx.peopleHash.findNearest(animal.x, animal.y, range, person => {
       if (!person.alive || ctx.litNear?.(person.x, person.y, FIRE_AVOID)) return false;
+      // The dog barks first: a hunter does not close on somebody whose wolf
+      // is at their side, and keeps off.
+      if (guardedByDog(person, ctx.animalHash)) return false;
       if (!ctx.world.sameRegion(animal.x, animal.y, person.x, person.y)) return false;
       const company = ctx.peopleHash.queryRadius(person.x, person.y, 4)
         .filter(other => other.alive && other.id !== person.id && !other.isChild).length;
@@ -635,7 +666,39 @@ function rangeGrass(world: World, x: number, y: number): number {
  */
 export function noticeRadius(animal: Animal, person: Person): number {
   const practice = 1 - (person.skills.track / 100) * 0.5;
-  return animal.def.awareness * practice * stealthFactor(person);
+  // M15 phase 23g: it knows your face. The stag that turned on you once sees
+  // you coming from further off for a few days, which is what makes a second
+  // hunt of the same herd harder than the first.
+  const remembered = grudgeOf(animal, 0, true) === person.id ? GRUDGE_NOTICE : 1;
+  return animal.def.awareness * practice * stealthFactor(person) * remembered;
+}
+
+/**
+ * Who this animal holds a grudge against, M15 phase 23g: the reader `hurtBy`
+ * has waited for. Forgotten after `GRUDGE_TICKS`. Pass `anyTime` from a place
+ * with no clock to hand (`noticeRadius`), which trusts the field as it stands:
+ * it is cleared the next time the animal's own move reads it with a tick.
+ */
+export function grudgeOf(animal: Animal, tick: number, anyTime = false): number | null {
+  if (animal.hurtBy === null) return null;
+  if (!anyTime && tick - animal.hurtAt > GRUDGE_TICKS) {
+    animal.hurtBy = null;
+    return null;
+  }
+  return animal.hurtBy;
+}
+
+/** Records that `person` put this animal in a corner, so it remembers. */
+export function rememberHurt(animal: Animal, person: Person, tick: number): void {
+  animal.hurtBy = person.id;
+  animal.hurtAt = tick;
+}
+
+/** Whether a tamed wolf of this person's is at their heel and they know `dog`. */
+export function guardedByDog(person: Person, hash: SpatialHash<Animal> | undefined): boolean {
+  if (!hash || techPower(person, 'dog') <= 0) return false;
+  return hash.findNearest(person.x, person.y, DOG_HEARING,
+    a => a.alive && a.tamedBy === person.id && a.species === 'wolf') !== null;
 }
 
 /**
@@ -653,7 +716,8 @@ export function companionBonus(person: Person, animals: Iterable<Animal>): numbe
   for (const animal of animals) {
     if (!animal.alive || animal.tamedBy !== person.id) continue;
     if (person.distanceTo(animal) > COMPANION_RANGE) continue;
-    return 1 + 0.35 * techPower(person, 'taming');
+    const dog = animal.species === 'wolf' ? DOG_HUNT * techPower(person, 'dog') : 0;
+    return 1 + 0.35 * techPower(person, 'taming') + dog;
   }
   return 1;
 }

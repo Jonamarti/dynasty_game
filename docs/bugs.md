@@ -46,8 +46,14 @@ investigó el selector en este cambio.
   persigue a un niño solo no tiene contraparte.
 - **Los depredadores no tienen carroña ni cadáver**: al morir (cazados,
   hambre) simplemente salen del mundo, como los demás animales.
-- **La guardia no ve a los depredadores** hasta que `Light.sightOf` exista y
-  `dog` (23g) sume su aviso.
+- **La guardia no ve a los depredadores.** `dog` (23g) amplía la vista del
+  dueño para extraños (`sightIntruders`) y aparta a los depredadores de quien
+  lo lleva al lado, pero sin `Light.sightOf` la guardia de la banda no tiene un
+  término de depredador propio.
+- **Solo un caso pone `hurtBy`** (el animal acorralado que se vuelve contra el
+  cazador). Un animal herido que huye sin matar a nadie no deja rencor porque
+  no hay herida sin matar: `doHunt` mata o falla. Y la caza a oscuras (12b)
+  que fallaba más aún no existe.
 - **`moods-move-choices` pasa a rojo en la pasada por defecto de `sim:check`**
   (2,2% de charlas en el tercil de poca pertenencia contra 2,5% en el alto,
   con 865 muestras cada uno) tras 23e: antes de esta fase era uno de los 6

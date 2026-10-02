@@ -363,7 +363,13 @@ export function sightIntruders(
   tick: number,
   sightings: Sightings,
   outcastBandId: number | undefined,
-  scratch: Person[]
+  scratch: Person[],
+  /**
+   * How far this looker sees, if not `sightRadius` — M15 phase 23g: a dog at
+   * their heel hears a stranger before they do. Optional, and absent means every
+   * looker sees `sightRadius`, so a world with no dogs is bit-identical.
+   */
+  sightFor?: (looker: Person) => number
 ): void {
   const radiusSq = radius * radius;
   const innerSq = radiusSq * INNER_SHARE * INNER_SHARE;
@@ -375,7 +381,7 @@ export function sightIntruders(
     // land `OUTER_WEIGHT`. See `INNER_SHARE`.
     let seen = 0;
     scratch.length = 0;
-    for (const other of peopleHash.queryRadius(looker.x, looker.y, sightRadius, scratch)) {
+    for (const other of peopleHash.queryRadius(looker.x, looker.y, sightFor ? sightFor(looker) : sightRadius, scratch)) {
       if (!other.alive || other.bandId === looker.bandId || other.bandId === outcastBandId) continue;
       const dx = other.x - home.homeX;
       const dy = other.y - home.homeY;

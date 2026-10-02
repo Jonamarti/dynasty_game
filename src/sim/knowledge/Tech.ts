@@ -128,6 +128,10 @@ export const TECHS = [
   // M11 phase 10, seventh and last commit of the tier: the only node whose
   // effect is a new verb, `toast` — see `ActionSystem.doToast`.
   'brewing',
+  // M15 phase 23g: the tamed wolf. A practice, like `taming` it grows out of,
+  // and shipped with its three readers: `Fear.sightIntruders` (strangers),
+  // `WildlifeSystem.victimFor` (predators) and `companionBonus` (the hunt).
+  'dog',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1536,6 +1540,31 @@ export const TECH: Record<Tech, TechDef> = {
       'Grain wetted, left to work, and drunk rather than baked. Answers ' +
       'nobody’s hunger much, and everybody’s loneliness a little.',
   },
+  dog: {
+    id: 'dog', label: 'Dog', domain: 'beasts',
+    age: 'upper_palaeolithic', firstKnown: 'about 15,000 years ago',
+    // A practice for the reason `taming` is one: nothing is built, and the
+    // act that tries it out is keeping the beast. It is the same verb, `tame`,
+    // because nobody sets out to make a dog — a tamed wolf that has stayed
+    // long enough is what one is, and the idea is noticing that it has.
+    kind: 'practice', practisedBy: ['tame'],
+    requires: ['taming'], difficulty: 0.55, skill: 'track',
+    prototype: {}, maxRefinement: 3,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'saw', what: 'under_attack' }],
+        weight: 1.0, story: 'saw the tamed wolf stand between the camp and the dark, and knew it had chosen a side' },
+      { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'doing', action: 'hunt' },
+                { kind: 'feeling', need: 'company' }],
+        weight: 0.7, story: 'hunted with a wolf at the heel so long that it stopped being a wolf to them' },
+      { needs: [{ kind: 'knows', tech: 'taming' }, { kind: 'holding', item: 'meat' },
+                { kind: 'season', season: 'winter' }],
+        weight: 0.5, story: 'shared a winter fire with a tamed wolf, and woke to find it had kept watch' },
+    ],
+    description:
+      'A wolf kept long enough to be a different animal. It hears the camp’s ' +
+      'strangers and its predators before anyone does, and it hunts at the ' +
+      'heel of the one who feeds it.',
+  },
 };
 
 /** Highest chronic motive this design can answer; zero means no recorded need. */
@@ -1788,6 +1817,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   brewing: {
     summary: 'Beer: it answers loneliness for whoever drinks it, and for the band around them.',
     site: 'RECIPES.beer; ActionSystem.doToast',
+  },
+  dog: {
+    summary: 'A tamed wolf that hears strangers and predators before you do, and hunts at your heel.',
+    site: 'Fear.sightIntruders via Simulation.dogSight; WildlifeSystem.victimFor; WildlifeSystem.companionBonus',
   },
 };
 

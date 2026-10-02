@@ -2011,8 +2011,7 @@ con su fila en `AGENTS.md`.
 **Estado (2026-10-02).** Hecho: 23a hierba, 23b segar, 23c pastoreo, 23d
 cría, 23e depredadores (lobo, oso, lince; **`ecologyRng` es el fork 21**, no el
 19: el plan es anterior a `healthRng` y `herbRng`) y 23f ataques a personas.
-**Sin hacer:** 23g (memoria animal con `hurtBy`, ya escrito pero sin lector, y
-la tecnología `dog`), 23h (fauna que entra y sale por el borde) y los cuatro
+**23g hecha** (memoria animal y `dog`; ver `changelog.md`). **Sin hacer:** 23h (fauna que entra y sale por el borde) y los cuatro
 checks con el escenario `wilds`. **Discrepancia con el código:** el plan da por
 existentes `Light.lightAt` y la antorcha (fase 12); no existen, y los
 depredadores evitan hoy un `hearth` o un techo. Coste medido de 23e: −11 puntos

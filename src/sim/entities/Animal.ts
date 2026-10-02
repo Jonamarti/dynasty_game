@@ -132,8 +132,13 @@ export class Animal {
    */
   fed = 1;
 
-  /** Who last hurt it — M15 phase 23g reads this; set by whoever lands a blow. */
+  /**
+   * Who last put it through a hunt that turned on them, and when — M15 phase
+   * 23g reads both (`WildlifeSystem.grudgeOf`). A grudge is a few days long,
+   * not a life sentence: `hurtAt` is what lets an animal forget.
+   */
   hurtBy: number | null = null;
+  hurtAt = 0;
 
   /** Tick until which this animal is bolting. */
   alarmedUntil = 0;

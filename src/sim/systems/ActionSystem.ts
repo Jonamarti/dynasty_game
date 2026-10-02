@@ -22,7 +22,7 @@ import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import { Arrival, type MovementSystem } from './MovementSystem.ts';
-import { companionBonus } from './WildlifeSystem.ts';
+import { companionBonus, rememberHurt } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { SocialSystem } from '../social/SocialSystem.ts';
 import {
@@ -2197,7 +2197,7 @@ export class ActionSystem {
       // round (a wary hare never, a stubborn boar often).
       if (animal.def.defends && ctx.healthRng && ctx.rng.chance(0.25 * (1.3 - animal.def.evasion))) {
         animal.alarmedUntil = 0;
-        animal.hurtBy = person.id;
+        rememberHurt(animal, person, ctx.tick);
         const hit = animalBlow(animal, person, ctx.tick, ctx.healthRng, ctx.rng);
         telemetry.count('hunter_turned_on_by_' + animal.species);
         ctx.onStopped(person, person.action, hit.killed ? 'gored' : 'gored_by_quarry');

@@ -1,4 +1,26 @@
 #
+## 2026-10-02 — M15 fase 23g: la memoria animal y el perro
+
+**`hurtBy` tiene por fin un lector.** Un animal que se volvió contra un cazador
+(el ciervo o el jabalí acorralados, 23f) lo recuerda seis días
+(`Animal.hurtAt`, `WildlifeSystem.grudgeOf`, `rememberHurt`): lo nota desde un
+50% más lejos (`noticeRadius`), así que la segunda caza de la misma manada es
+más difícil que la primera; y un depredador con rencor va a por esa persona
+aunque esté saciado (`animal_grudge_pursuit`), salvo dentro de un fuego o al
+lado de un perro.
+
+**Tecnología `dog`** (Paleolítico superior, requiere `taming`, práctica que se
+prueba con `tame`). Se entrega con sus tres lectores: `Fear.sightIntruders` gana
+un `sightFor` opcional y un lobo domado a ≤ 8 casillas amplía hasta un 50% la
+vista de su dueño para los extraños (`Simulation.dogSight`, `dog_sight`);
+`victimFor` no elige a quien tiene un perro al lado; y `companionBonus` suma un
+0,25 si el compañero es un lobo. Sin `dog`, `sightFor` es `undefined` y el mundo
+es bit-idéntico. El plan pedía además que lo leyera `Light.sightOf`, que no
+existe: el aviso a la guardia queda en `sightIntruders` (ver `bugs.md`).
+
+Tests: `dog.test.ts` (5). `sim:check`: los mismos rojos conocidos (más
+`perf-budget`, solo por CPU compartida durante la medida).
+
 ## 2026-10-02 — M15: el frío no corta el trabajo que da abrigo
 
 Construir o reparar un refugio o un hogar, investigar o prototipar una
