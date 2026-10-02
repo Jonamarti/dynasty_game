@@ -76,6 +76,31 @@ const FORAGE_RADIUS = 7;
  */
 const COLD_METABOLISM = 0.3;
 
+/**
+ * Hunters, M15 phase 23e. A hunter below `HUNT_BELOW` goes after the nearest
+ * prey; a pack that has just eaten lies up. One kill feeds the pack for about
+ * a week (`FED_PER_MEAT`), which is what keeps two packs from eating the
+ * island: roughly five deer a year each.
+ */
+const HUNT_BELOW = 0.6;
+const FED_PER_MEAT = 1 / 16;
+const PREDATOR_HUNGER_PER_MOVE = 0.0018;
+const HUNT_RANGE = 16;
+/** A hunter this hungry, and with no prey in reach, turns to people (23f). */
+const DESPERATE_BELOW = 0.22;
+/** How far a hungry hunter sees a lone person: by day, and by night. */
+const PERSON_RANGE_DAY = 9;
+const PERSON_RANGE_NIGHT = 14;
+/** Keep out of a fire's circle, and of the camp's. */
+const FIRE_AVOID = 7;
+/** How near a bear has to be walked in on before it strikes. */
+const BEAR_SURPRISE = 2.8;
+/** The chance a bite lands on a move within reach, and the pause after one. */
+const BITE_CHANCE = 0.35;
+const BITE_PAUSE: Record<string, number> = { wolf: 60, bear: 160, lynx: 80 };
+/** Pack-mates (wolves) within this of each other count towards boldness. */
+const PACK_RADIUS = 6;
+
 /** Births happen in this season only. */
 const BIRTH_SEASON = 'spring';
 /** Grass capacity (summed over the range, in tile-heights) one animal needs. */
@@ -104,6 +129,17 @@ export interface WildlifeContext {
   dailyGrowth?: number;
   /** Called when an animal starves, so the world can take it out. */
   onStarved?: (animal: Animal) => void;
+  /** Where the other animals are: a hunter's prey, and a herd's fear of hunters. */
+  animalHash?: SpatialHash<Animal>;
+  /** The hunters' dice, M15 phase 23e: kills and bites. Falls back to `rng`. */
+  ecologyRng?: RNG;
+  isNight?: boolean;
+  /** Whether a fire burns within a radius of a point; hunters keep out of it. */
+  litNear?: (x: number, y: number, radius: number) => boolean;
+  /** Called when a hunter kills an animal, so the world can take it out. */
+  onPredated?: (prey: Animal) => void;
+  /** Called when a hunter's bite lands on a person. */
+  onBite?: (animal: Animal, person: Person) => void;
 }
 
 export class WildlifeSystem {
@@ -134,10 +170,11 @@ export class WildlifeSystem {
       const fed = members.reduce((sum, m) => sum + m.fed, 0) / members.length;
       const cx = members.reduce((sum, m) => sum + m.x, 0) / members.length;
       const cy = members.reduce((sum, m) => sum + m.y, 0) / members.length;
-      const ceiling = Math.min(
-        lead.def.herdSize * HERD_CEILING,
-        rangeGrass(ctx.world, cx, cy) / GRASS_PER_ANIMAL
-      );
+      // A pack's ceiling is its own founding size, not the grass: what feeds
+      // a wolf is how many deer there are, and that is already in `fed`.
+      const ceiling = lead.def.predator
+        ? lead.def.herdSize * 1.5
+        : Math.min(lead.def.herdSize * HERD_CEILING, rangeGrass(ctx.world, cx, cy) / GRASS_PER_ANIMAL);
       if (members.length >= ceiling) {
         this.owed.set(herdId, 0);
         continue;
@@ -186,7 +223,12 @@ export class WildlifeSystem {
       if (!animal.alive) continue;
       if ((ctx.tick + animal.id) % MOVE_INTERVAL !== 0) continue;
 
-      const threat = this.threatNear(animal, ctx);
+      if (animal.def.predator) {
+        this.prowl(animal, centroids.get(animal.herdId), ctx, animals);
+        continue;
+      }
+
+      const threat = this.threatNear(animal, ctx) ?? this.hunterNear(animal, ctx);
       if (threat) this.alarm(animal, threat, ctx, animals);
 
       if (animal.alarmedUntil > ctx.tick) this.bolt(animal, ctx);
@@ -217,10 +259,18 @@ export class WildlifeSystem {
     );
   }
 
+  /** The nearest hunter that takes this species and is near enough to be noticed. */
+  private hunterNear(animal: Animal, ctx: WildlifeContext): Animal | null {
+    return ctx.animalHash?.findNearest(
+      animal.x, animal.y, animal.def.awareness * 0.8,
+      other => other.alive && other.def.predator && other.def.prey.includes(animal.species)
+    ) ?? null;
+  }
+
   /** Spooks an animal and everything in its herd standing nearby. */
   private alarm(
     animal: Animal,
-    threat: Person,
+    threat: { x: number; y: number },
     ctx: WildlifeContext,
     animals: Animal[]
   ): void {
@@ -335,6 +385,152 @@ export class WildlifeSystem {
     return true;
   }
 
+  /**
+   * A hunter's move, M15 phases 23e and 23f. In order of what it wants:
+   * leave the firelight; if it is hungry, chase the nearest prey it takes; if
+   * it is desperate and nothing is in reach, close on somebody alone (a child
+   * first, an adult only for a pack, a bear only if it was walked in on);
+   * otherwise lie up near its pack. Eating happens at the kill and feeds the
+   * pack, so the herd's fed level and not a grass tile is what a hunter needs.
+   */
+  private prowl(
+    animal: Animal,
+    centre: { x: number; y: number } | undefined,
+    ctx: WildlifeContext,
+    animals: Animal[]
+  ): void {
+    const dice = ctx.ecologyRng ?? ctx.rng;
+    animal.stamina = Math.min(1, animal.stamina + STAMINA_RECOVERY);
+    const metabolism = COLD_METABOLISM + (1 - COLD_METABOLISM) * (ctx.dailyGrowth ?? 1);
+    animal.fed = Math.max(0, animal.fed - PREDATOR_HUNGER_PER_MOVE * metabolism);
+    if (animal.fed <= 0) {
+      animal.health -= STARVE_PER_MOVE * metabolism;
+      if (animal.health <= 0) {
+        animal.alive = false;
+        telemetry.count('animal_starved');
+        ctx.onStarved?.(animal);
+        return;
+      }
+    }
+
+    // A bear walked in on strikes whatever its belly says; a pause after a
+    // bite is the victim's chance to get away.
+    if (animal.alarmedUntil > ctx.tick) return;
+    const lit = ctx.litNear;
+
+    if (lit?.(animal.x, animal.y, FIRE_AVOID)) {
+      // Back out of the circle: the nearest bearing, at the nearest distance,
+      // that is walkable and dark.
+      for (const reach of [5, 9, 13]) {
+        for (let a = 0; a < 8; a++) {
+          const angle = a * Math.PI / 4;
+          const tx = animal.x + Math.cos(angle) * reach;
+          const ty = animal.y + Math.sin(angle) * reach;
+          if (!ctx.world.isWalkable(tx, ty) || lit(tx, ty, FIRE_AVOID)) continue;
+          moveToward(animal, tx, ty, animal.def.speed * MOVE_INTERVAL, ctx.world, dice);
+          telemetry.count('predator_kept_off_by_fire');
+          return;
+        }
+      }
+      return;
+    }
+
+    if (animal.species === 'bear') {
+      const walkedIn = ctx.peopleHash.findNearest(animal.x, animal.y, BEAR_SURPRISE,
+        person => person.alive && !(lit?.(person.x, person.y, FIRE_AVOID)));
+      if (walkedIn) {
+        this.pounce(animal, walkedIn, ctx, dice);
+        return;
+      }
+    }
+
+    if (animal.fed < HUNT_BELOW) {
+      const prey = ctx.animalHash?.findNearest(animal.x, animal.y, HUNT_RANGE,
+        other => other.alive && !other.def.predator && animal.def.prey.includes(other.species) &&
+          !(lit?.(other.x, other.y, FIRE_AVOID)));
+      if (prey) {
+        this.chase(animal, prey, ctx, dice, animals);
+        return;
+      }
+      if (animal.fed < DESPERATE_BELOW) {
+        const target = this.victimFor(animal, ctx, animals);
+        if (target) {
+          this.pounce(animal, target, ctx, dice);
+          return;
+        }
+      }
+    }
+
+    // Lying up: stay with the pack, drifting.
+    if (!centre) return;
+    const away = Math.hypot(animal.x - centre.x, animal.y - centre.y);
+    const tx = away > HERD_SPREAD ? centre.x : animal.x + dice.range(-2, 2);
+    const ty = away > HERD_SPREAD ? centre.y : animal.y + dice.range(-2, 2);
+    moveToward(animal, tx, ty, animal.def.speed * MOVE_INTERVAL * 0.35, ctx.world, dice);
+  }
+
+  /** One move of a chase, and the kill if it is close enough and the dice allow. */
+  private chase(animal: Animal, prey: Animal, ctx: WildlifeContext, dice: RNG, animals: Animal[]): void {
+    // The quarry knows it is hunted: bolt now, so stamina drains.
+    if (prey.alarmedUntil <= ctx.tick) this.alarm(prey, animal, ctx, animals);
+    moveToward(animal, prey.x, prey.y, animal.def.fleeSpeed * MOVE_INTERVAL, ctx.world, dice);
+    if (Math.hypot(animal.x - prey.x, animal.y - prey.y) > 1.6) return;
+
+    const mates = packMates(animal, animals);
+    const chance = Math.min(0.9, 0.08 + 0.45 * (1 - prey.stamina) + 0.07 * Math.min(3, mates) +
+      (1 - prey.def.evasion) * 0.15);
+    if (!dice.chance(chance)) {
+      prey.stamina = Math.max(0, prey.stamina - 0.1);
+      return;
+    }
+    prey.alive = false;
+    prey.health = 0;
+    telemetry.count('prey_killed_by_predator');
+    telemetry.count('prey_killed_by_' + animal.species);
+    ctx.onPredated?.(prey);
+    // The kill feeds the pack, all of it that is close.
+    const meal = prey.def.meat * FED_PER_MEAT;
+    for (const mate of animals) {
+      if (!mate.alive || mate.herdId !== animal.herdId) continue;
+      if (Math.hypot(mate.x - animal.x, mate.y - animal.y) <= PACK_RADIUS) {
+        mate.fed = Math.min(1, mate.fed + meal);
+      }
+    }
+  }
+
+  /**
+   * Who a desperate hunter would go for, M15 phase 23f. A child alone, any time;
+   * an adult alone only for a pack of three or more (a bold pack), or for a
+   * bear; never anyone inside a fire's circle. Night widens the range: that is
+   * when they come, and what the fire and the watch are for.
+   */
+  private victimFor(animal: Animal, ctx: WildlifeContext, animals: Animal[]): Person | null {
+    const range = ctx.isNight ? PERSON_RANGE_NIGHT : PERSON_RANGE_DAY;
+    const bold = animal.species === 'bear' || packMates(animal, animals) >= 2;
+    return ctx.peopleHash.findNearest(animal.x, animal.y, range, person => {
+      if (!person.alive || ctx.litNear?.(person.x, person.y, FIRE_AVOID)) return false;
+      if (!ctx.world.sameRegion(animal.x, animal.y, person.x, person.y)) return false;
+      const company = ctx.peopleHash.queryRadius(person.x, person.y, 4)
+        .filter(other => other.alive && other.id !== person.id && !other.isChild).length;
+      if (person.isChild) return company === 0;
+      return bold && company === 0;
+    });
+  }
+
+  /** Closing on a person and, within reach, a bite. */
+  private pounce(animal: Animal, person: Person, ctx: WildlifeContext, dice: RNG): void {
+    moveToward(animal, person.x, person.y, animal.def.fleeSpeed * MOVE_INTERVAL, ctx.world, dice);
+    if (Math.hypot(animal.x - person.x, animal.y - person.y) > 1.5) return;
+    if (!dice.chance(BITE_CHANCE)) return;
+    telemetry.count('animal_bit_person');
+    telemetry.count('animal_bit_person_' + animal.species);
+    if (ctx.isNight) telemetry.count('animal_bit_person_at_night');
+    ctx.onBite?.(animal, person);
+    animal.alarmedUntil = ctx.tick + (BITE_PAUSE[animal.species] ?? 60);
+    animal.fleeX = null;
+    animal.fleeY = null;
+  }
+
   private graze(
     animal: Animal,
     centre: { x: number; y: number } | undefined,
@@ -384,6 +580,16 @@ export class WildlifeSystem {
 
     moveToward(animal, tx, ty, animal.def.speed * MOVE_INTERVAL * 0.35, ctx.world, ctx.rng);
   }
+}
+
+/** Pack-mates of a hunter within `PACK_RADIUS`, not counting itself. */
+function packMates(animal: Animal, animals: Animal[]): number {
+  let n = 0;
+  for (const other of animals) {
+    if (other === animal || !other.alive || other.herdId !== animal.herdId) continue;
+    if (Math.hypot(other.x - animal.x, other.y - animal.y) <= PACK_RADIUS) n++;
+  }
+  return n;
 }
 
 /**

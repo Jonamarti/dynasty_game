@@ -154,6 +154,10 @@ export const TUNABLES: Tunable[] = [
     min: 0, max: 80, step: 1, places: 0,
     hint: 'Herds, not animals. Meat is the one food that does not stop existing ' +
       'in winter, which is when the island kills people.' },
+  { path: 'world.predators', label: 'Hunting groups', group: 'land', scaled: false, restart: true,
+    min: 0, max: 4, step: 1, places: 0,
+    hint: 'Each group is a wolf pack, a bear and a lynx. They hunt the herds, ' +
+      'and a hungry one turns on somebody alone. Fire keeps them off.' },
   { path: 'world.fishingSpots', label: 'Fishing spots', group: 'land', scaled: true, restart: true,
     min: 0, max: 200, step: 1, places: 0,
     hint: 'Shore fisheries. They keep producing through the winter.' },

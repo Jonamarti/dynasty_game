@@ -154,6 +154,8 @@ export const ES_ACTIONS: Record<string, string> = {
   "there is nobody here to look after": "aquí no hay nadie a quien cuidar",
   "they are not hurt any more": "ya no está herido",
   "they know those berries are poisonous": "sabe que esas bayas son venenosas",
+  "it killed them": "lo mató",
+  "the quarry turned on them": "la presa se les volvió",
   "there is no grass there any more": "ya no queda hierba ahí",
   "the grass is under the snow": "la hierba está bajo la nieve",
   "there is no more tall grass near": "no queda hierba alta cerca",

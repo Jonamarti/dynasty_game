@@ -1006,7 +1006,8 @@ export class Renderer {
   }
 
   private drawRememberedAnimal(species: string, ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
-    const fur = species === 'boar' ? '#725340' : species === 'hare' ? '#b8a487' : '#aa9a7d';
+    const fur = species === 'boar' ? '#725340' : species === 'hare' ? '#b8a487'
+      : species === 'wolf' ? '#7b7d80' : species === 'bear' ? '#5a3e2b' : species === 'lynx' ? '#b69660' : '#aa9a7d';
     ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(x, y, size * 0.9, size * 0.44, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(x + size * 0.72, y - size * 0.13, size * 0.31, size * 0.28, 0, 0, Math.PI * 2); ctx.fill();
     if (species === 'hare') {
@@ -1981,11 +1982,14 @@ export class Renderer {
 }
 
 /** Drawn size in tiles, per species. A hare is not a boar. */
-const ANIMAL_SIZES: Record<string, number> = { deer: 0.55, boar: 0.6, hare: 0.3 };
+const ANIMAL_SIZES: Record<string, number> = { deer: 0.55, boar: 0.6, hare: 0.3, wolf: 0.55, bear: 0.85, lynx: 0.45 };
 const ANIMAL_COLORS: Record<string, string> = {
   deer: '#b3844e',
   boar: '#6b5442',
   hare: '#c9b191',
+  wolf: '#7b7d80',
+  bear: '#5a3e2b',
+  lynx: '#b69660',
 };
 
 /**

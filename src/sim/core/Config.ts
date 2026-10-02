@@ -17,6 +17,12 @@ export interface WorldConfig {
   deadwood: number;
   /** Herds of wild animals placed at world generation, not individual beasts. */
   gameHerds: number;
+  /**
+   * Hunting groups at world generation, M15 phase 23e: each is a pack of
+   * wolves, a bear and a lynx. Zero is a world without hunters, which is
+   * what the before-and-after measurements are taken against.
+   */
+  predators: number;
   reedBeds: number;
   clayBanks: number;
   /** Fishing spots, placed on shore tiles like reed beds and clay banks. */
@@ -424,6 +430,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     // fourteen herds is far harder to *find*, and wild meat is the one food that
     // does not stop existing in winter — which is when the island kills people.
     gameHerds: 22,
+    predators: 1,
     reedBeds: 90,
     clayBanks: 60,
     fishingSpots: 50,

@@ -1,4 +1,67 @@
 #
+## 2026-10-02 — M15 fases 23e y 23f: lobos, osos y linces; los animales atacan
+
+**Los hunters existen.** `PREY_SPECIES` (ciervo, jabalí, liebre; `spawnHerds`
+sigue sacando de **estas tres**, porque ampliar la lista de la que tira habría
+movido cada manada de cada semilla) y `PREDATOR_SPECIES` (lobo, oso, lince)
+forman `SPECIES`. Se colocan en `spawnPredators`, en su pasada y con su
+stream, **`ecologyRng`, el fork 21** (fila nueva en `AGENTS.md`), después de
+todo lo demás: manadas, arbustos y personas están donde estaban (test
+`predators.test.ts`). Por cada `world.predators` (nuevo, 1 por defecto, ajuste
+«Grupos de depredadores»; 0 es un mundo sin ellos, y es contra lo que se mide):
+una manada de 3 lobos, un oso y un lince, en bosque o colinas a más de 30
+casillas de cualquiera de los fundadores.
+
+**Cazan.** Un depredador con `fed < 0,6` persigue la presa que come más cercana
+(`SpeciesDef.prey`) con el mismo mecanismo de huida de los herbívoros, que
+ahora también huyen de ellos. Muerde con probabilidad
+`0,08 + 0,45·(1−stamina) + 0,07·compañeros + 0,15·(1−evasión)`; una presa
+cazada alimenta a toda la manada a 6 casillas (`meat/16`). Saciado, no caza. El
+hambre de los depredadores es más lenta que la de un ciervo (0,0018 por
+movimiento) y las manadas no crecen por encima de 1,5× su tamaño: lo que las
+frena es la presa, no un número.
+
+**Atacan a personas (23f).** Un depredador por debajo de 0,22 de saciedad y sin
+presa a la vista se acerca a quien esté solo: a un niño siempre, a un adulto
+solo si es un oso o una manada de ≥ 3; de noche ve más lejos (14 casillas
+contra 9). El oso al que alguien se acerca a menos de 2,8 ataca sin más. El
+mordisco es `animalBlow` (`entities/AnimalAttack.ts`): la misma parte del
+cuerpo (`healthRng`), la misma protección de la ropa y el mismo desmayo por
+golpe en la cabeza que `doAttack`, y baja `security` a la víctima y, menos, a
+los que están a 8 casillas. **La víctima huye** al fuego más cercano o, sin él,
+lejos de la bestia (`fled_from_animal`); sin esto se quedaba quieta y la
+mordían otra vez. El herbívoro que se defiende: ciervo, jabalí y los propios
+depredadores devuelven el golpe a un cazador que ha fallado (25·(1,3−evasión)%),
+con razón visible (`gored`, `gored_by_quarry`). La gente no sale a cazar
+depredadores: `Brain` los excluye de la presa.
+
+**Se mantienen lejos del fuego, con lo que hay.** El plan escribía este lector
+contra `Light.lightAt` y un campo de antorcha «que ya existen»: **no existen**
+(la fase 12, la luz, no está hecha). Se apunta a lo que sí hay, un `hearth`
+terminado o un edificio con techo (`Simulation.litNear`), con un círculo de 7
+casillas del que salen (`predator_kept_off_by_fire`) y al que no entran. Hay que
+repuntarlo a `light` cuando llegue la 12 (`docs/bugs.md`). La primera versión de
+la salida casi nunca encontraba casilla oscura a 4 pasos, y se quedaba parada
+dentro del círculo; ahora prueba 5, 9 y 13.
+
+**Medido.** `sim:seeds` (`century`) con `--set world.predators=0` como
+control. A **20 semillas**: sin depredadores **55,8%** de supervivencia media
+(4 extinciones, 97 lactantes muertos de hambre); con un grupo de 4 lobos, un
+oso y dos linces, **40,9%** (3 extinciones, 157 lactantes): −15 puntos, que ya
+no es ruido (a 10 semillas había dado −13). El mecanismo, mirado en una pasada
+de `century`: no son los mordiscos (10 en 40.000 pasos, todos del oso, ninguna
+muerte directa) sino la competencia por la carne, con los depredadores cazando
+64 presas contra 7 de la gente. Se bajó la presión (manada de 3 lobos, un solo
+lince que solo caza liebres) y a 20 semillas dio **44,9%** (2 extinciones,
+128 lactantes, y los adultos muertos de hambre igual: 53 y 53): **coste
+declarado, −11 puntos**, y es el precio de una isla con lobos, no un defecto
+a buscar. Antes de ajustar, con 7 lobos, la presa caía de 65 a 8 en 200 días y
+morían de 9 a 23 personas por semilla.
+
+Pendiente:
+`predators-hunt`, `fire-keeps-wolves-off` y `a-hunted-out-land-stays-empty` (con
+el escenario `wilds`, que va con 23h).
+
 ## 2026-10-02 — M15 fase 23e (arte): lobo, oso y lince
 
 Tres sprites nuevos en `art/src/animals/animals.ts` (perfil al este, cuatro

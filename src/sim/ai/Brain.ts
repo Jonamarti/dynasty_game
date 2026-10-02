@@ -2948,7 +2948,7 @@ export class Brain {
       // settle the comparison, which it otherwise always does.
       const visibleQuarry = ctx.animalHash.findNearest(
         person.x, person.y, ctx.sightRadius,
-        a => a.alive && (desperateForFood || withinReach(anchor, reach, a.x, a.y))
+        a => a.alive && !a.def.predator && (desperateForFood || withinReach(anchor, reach, a.x, a.y))
       );
       const herdMemory = person.placeMemory.nearestAny(person.x, person.y,
         ctx.sightRadius * 3, place => place.kind.startsWith('herd:') &&
@@ -2956,7 +2956,7 @@ export class Brain {
           (desperateForFood || withinReach(anchor, reach, place.x, place.y)));
       const rememberedQuarry = herdMemory
         ? ctx.animalHash.findNearest(herdMemory.x, herdMemory.y, 2,
-          animal => animal.alive && Math.hypot(animal.x - herdMemory.x, animal.y - herdMemory.y) <= 1 &&
+          animal => animal.alive && !animal.def.predator && Math.hypot(animal.x - herdMemory.x, animal.y - herdMemory.y) <= 1 &&
             ctx.world.sameRegion(person.x, person.y, animal.x, animal.y) &&
             (desperateForFood || withinReach(anchor, reach, animal.x, animal.y)))
         : null;

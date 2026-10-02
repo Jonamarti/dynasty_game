@@ -12,6 +12,7 @@
  *     harness run exactly the code the browser runs.
  */
 import { advanceGrass, grassBuried, CUT_ABOVE } from './Grass.ts';
+import { animalBlow } from '../entities/AnimalAttack.ts';
 import { RNG } from './RNG.ts';
 import { World } from './World.ts';
 import { TimeManager } from './TimeManager.ts';
@@ -65,7 +66,7 @@ import { giftWorth } from '../social/Events.ts';
 import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
 import { Corpse, resetCorpseIds, stageOf, WOUNDS_SHOW_FOR, GONE_AFTER } from '../entities/Corpse.ts';
 import {
-  Animal, resetAnimalIds, SPECIES, SPECIES_DEFS, type Species,
+  Animal, resetAnimalIds, PREY_SPECIES, SPECIES_DEFS, type Species,
 } from '../entities/Animal.ts';
 import { WildlifeSystem } from '../systems/WildlifeSystem.ts';
 import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
@@ -156,6 +157,9 @@ const NO_HOME_ANCHORS = new Map<number, { x: number; y: number }>();
  * that the spatial query it costs does not show up beside the rest of the step.
  */
 const ALONGSIDE_EVERY = 40;
+/** How far from every founder a hunter may begin. */
+const PREDATOR_START_DISTANCE = 30;
+
 
 /**
  * What knowing how to organise work adds to the chance a job order sticks.
@@ -522,6 +526,8 @@ export class Simulation {
   private readonly hearthRng: RNG;
   /** M15 phase 21a, fork 19: which part of the body a blow lands on. */
   private readonly healthRng: RNG;
+  /** Hunters' placement, kills and bites — M15 phase 23e. */
+  private readonly ecologyRng: RNG;
 
   constructor(overrides: DeepPartial<SimConfig> = {}) {
     this.config = makeConfig(overrides);
@@ -643,6 +649,12 @@ export class Simulation {
     // and a pass of its own after everything else, because adding them to the
     // `plan` of `spawnResources` would move every herd and person.
     const herbRng = this.rng.fork();
+    // M15 phase 23e, appended after `herbRng` (row 21 of `AGENTS.md`'s table):
+    // where the wolves, the bear and the lynx begin, and the dice of every kill
+    // and every bite. A stream of its own and a pass of its own after
+    // everything else, because adding hunters to `spawnHerds` would move every
+    // herd and person in every world.
+    this.ecologyRng = this.rng.fork();
 
     this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
@@ -652,6 +664,7 @@ export class Simulation {
     this.spawnCulture(cultureRng);
     this.spawnFlora(floraRng);
     this.spawnWildPlants(herbRng);
+    this.spawnPredators(this.ecologyRng);
     this.rebuildHashes();
   }
 
@@ -812,7 +825,7 @@ export class Simulation {
    */
   private spawnHerds(rng: RNG): void {
     for (let h = 0, herds = this.scaledCount(this.config.world.gameHerds); h < herds; h++) {
-      const species: Species = rng.pick(SPECIES as unknown as Species[]);
+      const species: Species = rng.pick(PREY_SPECIES as unknown as Species[]);
       const def = SPECIES_DEFS[species];
 
       let home: { x: number; y: number } | null = null;
@@ -831,6 +844,44 @@ export class Simulation {
           Math.round(home.y + rng.range(-3, 3))
         ) ?? home;
         const animal = new Animal(species, spot.x, spot.y, h, rng);
+        this.animals.push(animal);
+        this.animalsById.set(animal.id, animal);
+      }
+    }
+  }
+
+  /**
+   * Places the hunters, M15 phase 23e: a pack of three wolves, a bear and a
+   * lynx on the woods and hills, away from where people begin so that nobody
+   * wakes beside one. Their own pass on their own stream, after everything
+   * else (see the fork's comment), so every herd, bush and person is where it
+   * was before they existed.
+   */
+  private spawnPredators(rng: RNG): void {
+    const plan: { species: Species; count: number; herdId: number }[] = [];
+    for (let g = 0; g < this.config.world.predators; g++) {
+      plan.push(
+        { species: 'wolf', count: 3, herdId: 1000 + g * 10 + 1 },
+        { species: 'bear', count: 1, herdId: 1000 + g * 10 + 3 },
+        { species: 'lynx', count: 1, herdId: 1000 + g * 10 + 4 },
+      );
+    }
+    const founders = this.people.filter(p => p.alive);
+    for (const { species, count, herdId } of plan) {
+      let home: { x: number; y: number } | null = null;
+      for (let attempt = 0; attempt < 80 && !home; attempt++) {
+        const spot = this.world.randomWalkable(rng, 1);
+        if (!spot) continue;
+        const biome = this.world.biomeAt(spot.x, spot.y);
+        if (biome !== 'forest' && biome !== 'hills') continue;
+        if (founders.some(p => Math.hypot(p.x - spot.x, p.y - spot.y) < PREDATOR_START_DISTANCE)) continue;
+        home = spot;
+      }
+      if (!home) continue;
+      for (let i = 0; i < count; i++) {
+        const spot = this.world.findWalkableNear(
+          Math.round(home.x + rng.range(-2, 2)), Math.round(home.y + rng.range(-2, 2))) ?? home;
+        const animal = new Animal(species, spot.x, spot.y, herdId, rng);
         this.animals.push(animal);
         this.animalsById.set(animal.id, animal);
       }
@@ -2694,6 +2745,48 @@ export class Simulation {
     }
   }
 
+  /**
+   * Whether a fire burns within `r` of a point: a finished hearth or a roof
+   * (a hut with a fire in it). M15 phase 23e. The plan wrote this against
+   * `Light.lightAt` and a torch field from phase 12; neither exists yet, so
+   * the reader is pointed at what does, and moves to `light` when 12 lands
+   * (docs/bugs.md).
+   */
+  private litNear(x: number, y: number, r: number): boolean {
+    return this.buildingHash.queryRadius(x, y, r + 2).some(b =>
+      b.complete && !b.ruined && (b.def.id === 'hearth' || b.def.shelter > 0) &&
+      Math.hypot(b.centerX - x, b.centerY - y) <= r);
+  }
+
+  /** A beast's bite landing on a person: the wound, the fear, and the telling. */
+  private animalBites(animal: Animal, person: Person): void {
+    const hit = animalBlow(animal, person, this.time.tick, this.healthRng, this.ecologyRng);
+    if (hit.killed) telemetry.count('person_killed_by_' + animal.species);
+    else if (person.alive) {
+      // Run for the nearest fire, or failing that straight away from it. A
+      // bitten person who stood and carried on would simply be bitten again.
+      const fire = this.buildingHash.findNearest(person.x, person.y, 40,
+        b => b.complete && !b.ruined && (b.def.id === 'hearth' || b.def.shelter > 0));
+      const dx = person.x - animal.x;
+      const dy = person.y - animal.y;
+      const length = Math.max(0.001, Math.hypot(dx, dy));
+      const away = this.world.findWalkableNear(
+        Math.round(person.x + dx / length * 14), Math.round(person.y + dy / length * 14), 6);
+      const to = fire ? { x: fire.centerX, y: fire.centerY } : away;
+      if (to) {
+        person.action = 'flee';
+        person.targetX = to.x;
+        person.targetY = to.y;
+        telemetry.count('fled_from_animal');
+      }
+    }
+    // Everybody who saw it is shaken: a wolf at the edge of camp is news.
+    for (const witness of this.peopleHash.queryRadius(person.x, person.y, 8)) {
+      if (witness.id === person.id || !witness.alive) continue;
+      witness.mood.add('security', -1.5, 'animal_attack', this.time.tick);
+    }
+  }
+
   /** Takes a killed animal out of the world and its index. */
   private removeAnimal(animal: Animal, counter = 'animal_killed'): void {
     this.animalsById.delete(animal.id);
@@ -3887,6 +3980,12 @@ export class Simulation {
       peopleById: this.peopleById,
       dailyGrowth: this.time.dailyGrowth,
       onStarved: (animal: Animal) => this.removeAnimal(animal, 'animal_starved_out'),
+      animalHash: this.animalHash,
+      ecologyRng: this.ecologyRng,
+      isNight: this.time.isNight,
+      litNear: (x: number, y: number, r: number) => this.litNear(x, y, r),
+      onPredated: (prey: Animal) => this.removeAnimal(prey, 'animal_predated'),
+      onBite: (animal: Animal, person: Person) => this.animalBites(animal, person),
     });
 
     const nurslingFactor = nurslingHungerFactor(this.config.childhood.feedsPerDay,

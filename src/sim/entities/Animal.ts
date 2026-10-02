@@ -14,7 +14,15 @@
  */
 import type { RNG } from '../core/RNG.ts';
 
-export const SPECIES = ['deer', 'boar', 'hare'] as const;
+/**
+ * The herbivores come first and keep their indices, and `spawnHerds` picks
+ * from `PREY_SPECIES` alone: adding a species to the pool it draws from would
+ * move every herd in every saved seed. The hunters (M15 phase 23e) are placed
+ * by their own pass on their own stream.
+ */
+export const PREY_SPECIES = ['deer', 'boar', 'hare'] as const;
+export const PREDATOR_SPECIES = ['wolf', 'bear', 'lynx'] as const;
+export const SPECIES = [...PREY_SPECIES, ...PREDATOR_SPECIES] as const;
 export type Species = (typeof SPECIES)[number];
 
 export interface SpeciesDef {
@@ -38,6 +46,18 @@ export interface SpeciesDef {
    * like hares and deer like deer; the herd's ceiling comes from the grass.
    */
   fecundity: number;
+  /** A hunter of animals (and, hungry enough, of people), M15 phase 23e. */
+  predator: boolean;
+  /** What a hunter takes. Empty for the herbivores. */
+  prey: readonly Species[];
+  /**
+   * Health a person loses to this animal's blow, on the 100-point scale, or 0
+   * for an animal that never strikes back. A hare runs; a boar turns on the
+   * man with the spear (M15 phase 23f).
+   */
+  blow: number;
+  /** Whether it turns on a hunter who has missed it (the stag, the boar). */
+  defends: boolean;
 }
 
 /**
@@ -52,16 +72,39 @@ export const SPECIES_DEFS: Record<Species, SpeciesDef> = {
     id: 'deer', label: 'Deer',
     meat: 22, speed: 0.30, fleeSpeed: 0.52,
     awareness: 7.5, evasion: 0.55, herdSize: 5, health: 30, fecundity: 0.03,
+    predator: false, prey: [], blow: 14, defends: true,
   },
   boar: {
     id: 'boar', label: 'Boar',
     meat: 30, speed: 0.22, fleeSpeed: 0.40,
     awareness: 5.5, evasion: 0.7, herdSize: 3, health: 46, fecundity: 0.035,
+    predator: false, prey: [], blow: 24, defends: true,
   },
   hare: {
     id: 'hare', label: 'Hare',
     meat: 7, speed: 0.26, fleeSpeed: 0.58,
     awareness: 9, evasion: 0.8, herdSize: 2, health: 12, fecundity: 0.07,
+    predator: false, prey: [], blow: 0, defends: false,
+  },
+  // The hunters, M15 phase 23e. Wolf in a pack, bear alone and hard to turn,
+  // lynx alone and small: all three native to Holocene Europe.
+  wolf: {
+    id: 'wolf', label: 'Wolf',
+    meat: 20, speed: 0.34, fleeSpeed: 0.5,
+    awareness: 9, evasion: 0.6, herdSize: 4, health: 34, fecundity: 0.03,
+    predator: true, prey: ['deer', 'hare', 'boar'], blow: 14, defends: true,
+  },
+  bear: {
+    id: 'bear', label: 'Bear',
+    meat: 60, speed: 0.24, fleeSpeed: 0.36,
+    awareness: 6, evasion: 0.5, herdSize: 1, health: 90, fecundity: 0,
+    predator: true, prey: ['deer', 'boar', 'hare'], blow: 22, defends: true,
+  },
+  lynx: {
+    id: 'lynx', label: 'Lynx',
+    meat: 14, speed: 0.32, fleeSpeed: 0.55,
+    awareness: 8, evasion: 0.7, herdSize: 1, health: 22, fecundity: 0,
+    predator: true, prey: ['hare'], blow: 10, defends: true,
   },
 };
 
@@ -88,6 +131,9 @@ export class Animal {
    * it starves, slowly. The number a herd's births (23d) are proportional to.
    */
   fed = 1;
+
+  /** Who last hurt it — M15 phase 23g reads this; set by whoever lands a blow. */
+  hurtBy: number | null = null;
 
   /** Tick until which this animal is bolting. */
   alarmedUntil = 0;

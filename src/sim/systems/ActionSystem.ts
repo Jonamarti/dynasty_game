@@ -44,6 +44,7 @@ import {
 } from '../social/Conversation.ts';
 import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
+import { animalBlow } from '../entities/AnimalAttack.ts';
 import { canTake, equipContainer, itemCapacityFor, stow } from '../core/Carry.ts';
 import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
 import {
@@ -2163,6 +2164,17 @@ export class ActionSystem {
       // A miss costs the stalk: the herd is gone and the hunter is winded.
       person.needs.fatigue = Math.min(100, person.needs.fatigue + 4);
       animal.alarmedUntil = ctx.tick + 90;
+      // M15 phase 23f: the stag and the boar turn on a hunter who has missed
+      // and is still within reach, instead of running. Rarely: a cornered
+      // animal is the exception, and the roll is the animal's `evasion` turned
+      // round (a wary hare never, a stubborn boar often).
+      if (animal.def.defends && ctx.healthRng && ctx.rng.chance(0.25 * (1.3 - animal.def.evasion))) {
+        animal.alarmedUntil = 0;
+        animal.hurtBy = person.id;
+        const hit = animalBlow(animal, person, ctx.tick, ctx.healthRng, ctx.rng);
+        telemetry.count('hunter_turned_on_by_' + animal.species);
+        ctx.onStopped(person, person.action, hit.killed ? 'gored' : 'gored_by_quarry');
+      }
       return;
     }
 

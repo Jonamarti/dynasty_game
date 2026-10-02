@@ -1,5 +1,26 @@
 # Known bugs and rough edges
 
+## M15 fase 23e/f: lo que queda abierto (2026-10-02)
+
+- **La luz (fase 12) no existe todavía.** El plan de 23e da por hechos
+  `Light.lightAt`, `light` y la antorcha; el código no los tiene. Los
+  depredadores evitan un `hearth` terminado o un edificio con techo
+  (`Simulation.litNear`, radio 7). Cuando llegue la 12, repuntarlo a `light` y
+  añadir «de noche»; hoy el miedo a los lobos de noche solo lo expresa el
+  alcance mayor con que ven a una persona sola.
+- **Quien es mordido huye a un fuego, pero nadie lo defiende.** No hay
+  respuesta de la banda (las `kin_defence` miran a personas). Un lobo que
+  persigue a un niño solo no tiene contraparte.
+- **Los depredadores no tienen carroña ni cadáver**: al morir (cazados,
+  hambre) simplemente salen del mundo, como los demás animales.
+- **La guardia no ve a los depredadores** hasta que `Light.sightOf` exista y
+  `dog` (23g) sume su aviso.
+- **Coste de supervivencia −11 puntos** (55,8% sin, 44,9% con, 20 semillas):
+  viene de la carne que se llevan los depredadores, no de los mordiscos. Los
+  lactantes muertos de hambre pasan de 97 a 128. Si molesta, el palanca es
+  `SpeciesDef.fecundity` y `FED_PER_MEAT`, no el ataque a personas.
+
+
 ## SeasonLore aprende «estéril» de un arbusto recogido (2026-10-02)
 
 `Simulation.observePlaces` anota `node.amount >= 1` como «da fruto» o «no» cada

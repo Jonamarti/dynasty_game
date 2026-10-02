@@ -414,6 +414,8 @@ export const STOP_REASONS: Record<string, string> = {
   nobody_to_tend: 'there is nobody here to look after',
   nothing_to_treat: 'they are not hurt any more',
   knows_poisonous: 'they know those berries are poisonous',
+  gored: 'it killed them',
+  gored_by_quarry: 'the quarry turned on them',
   grass_gone: 'there is no grass there any more',
   grass_under_snow: 'the grass is under the snow',
   grass_cut: 'there is no more tall grass near',
