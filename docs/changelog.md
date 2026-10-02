@@ -1,3 +1,43 @@
+## 2026-10-02 — M15 fase 26f: las regiones siguen siendo ciertas
+
+- `tools/regions.ts` rehace independientemente las componentes de suelo
+  caminable y compara la partición con las etiquetas incrementales por una
+  correspondencia uno a uno. No compara ids crudos, porque cortar un puente
+  cambia ids válidos. Comprueba también el tamaño propio de cada región y
+  entradas obsoletas: comparar solo tamaños ordenados podía ocultar una
+  etiqueta que apuntaba a la isla equivocada.
+- `regions-stay-true` se ejecuta al final de cada escenario, sin alterar el
+  estado ni consumir RNG. El test de propiedad de 16a usa el mismo auditor en
+  sus tres semillas y cientos de cambios, en lugar de mantener otro relleno
+  completo dentro del test.
+- Ocho tests del instrumento prueban etiquetas válidas no canónicas, un puente
+  cortado sin reparar, falsas divisiones y fusiones, suelo sin etiqueta, agua
+  etiquetada, tamaños incorrectos, entradas obsoletas y bordes de fila. La
+  integración falló antes de conectar el check; una simulación con etiquetas
+  deliberadamente corruptas da FAIL después de conectarlo.
+
+**Validación del pase 26b/26f:** `typecheck` pasa; la suite final estable da
+**810/810** tests en **105 archivos** con
+`npx vitest run --maxWorkers 1 --testTimeout 15000` (sin cambiar configuración
+del proyecto). La ejecución estándar durante la matriz agotó los límites de
+dos pruebas, documentadas en `bugs.md`. `e2e` da **53/59**: los mismos seis
+fallos del picker que ya constaban antes y la prueba nueva de herramientas
+aprobada. `art:build -- props` y `art:sheet` se ejecutaron y se revisaron las
+capturas.
+
+`sim:check:all` corrió **antes y después** del pase: los **23 escenarios**
+conservan exactamente sus listas de fallos; cada uno gana un check aplicable
+y aprobado, y ninguno pierde aplicabilidad. `regions-stay-true` pasa en los
+23. La matriz completa sigue roja por la línea base, no se presenta como
+aprobada. Informes y comparación:
+`artifacts/verification/m15-phase26-2026-10-02/`. Los tiempos se midieron con
+otros verificadores en marcha y no sirven para atribuir coste de rendimiento
+a este cambio; no se afirma una mejora de supervivencia.
+
+El instrumento no cambia UI. Siguen pendientes `diggers`, las obras de tierra
+y el agua: no se añaden checks que solo puedan informar `n/a` por faltar su
+mecanismo.
+
 ## 2026-10-02 — M15 fase 26b: herramientas de cavar
 
 - **Pico de asta y pala de madera:** recetas con `bone: 2` y `wood: 1`,
@@ -28,7 +68,7 @@
 Siguen pendientes de 26b `earthworks` y los nodos de diseños: se añadirán junto
 a sus lectores, para no declarar contenido inerte. Los diseños y la excavación
 autónoma tampoco llegan en este commit. La validación global del pase queda
-registrada con el instrumento de 26f a continuación.
+registrada en la entrada del instrumento de 26f.
 
 ## 2026-10-02 — M15 fase 26c (segunda parte): la tierra movida se ve
 

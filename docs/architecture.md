@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-02 (M15 phase 26b, digging tools). No runtime
+Current as of 2026-10-02 (M15 phases 26b tools and 26f region audit). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -36,6 +36,13 @@ catalogue, order validation, executor and held sprite ask that same selector.
 Missing tools and unfamiliar tools have separate visible refusal reasons.
 Work remains banked in `World.offset`; acceleration changes lift time, never
 the amount of earth moved or the safe depth of a player order.
+
+The final-world harness independently recomputes connected components through
+`tools/regions.ts`. `regions-stay-true` compares partitions rather than raw
+labels and verifies each region's own size, including stale entries. The
+earthmoving property tests share this audit; its fault-injection tests prove
+it detects an unrepaired bridge cut. This O(tiles) audit runs after a scenario,
+never inside the simulation tick, and consumes no RNG or simulation state.
 
 These are not style preferences. Each one is load-bearing, and each was learned
 by breaking it.

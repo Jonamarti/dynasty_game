@@ -10,63 +10,15 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../core/World.ts';
 import { DEFAULT_CONFIG } from '../core/Config.ts';
 import { RNG } from '../core/RNG.ts';
+import { auditRegions } from '../../../tools/regions.ts';
 
 const world = (seed = 'earth') =>
   new World({ ...DEFAULT_CONFIG.world, width: 64, height: 64 }, new RNG(seed));
 
-/** The partition a full recompute would give, as a canonical label per tile. */
-function recompute(w: World): { labels: Int32Array; sizes: Map<number, number> } {
-  const labels = new Int32Array(w.walkable.length).fill(-1);
-  const sizes = new Map<number, number>();
-  let next = 0;
-  for (let s = 0; s < labels.length; s++) {
-    if (w.walkable[s] !== 1 || labels[s] !== -1) continue;
-    const id = next++;
-    const stack = [s];
-    labels[s] = id;
-    let n = 0;
-    while (stack.length > 0) {
-      const i = stack.pop()!;
-      n++;
-      const x = i % w.width;
-      const around = [
-        x > 0 ? i - 1 : -1, x < w.width - 1 ? i + 1 : -1,
-        i - w.width, i + w.width,
-      ];
-      for (const j of around) {
-        if (j < 0 || j >= labels.length || w.walkable[j] !== 1 || labels[j] !== -1) continue;
-        labels[j] = id;
-        stack.push(j);
-      }
-    }
-    sizes.set(id, n);
-  }
-  return { labels, sizes };
-}
-
-/** True when two labellings group the tiles identically. */
-function samePartition(a: Int32Array, b: Int32Array): boolean {
-  const ab = new Map<number, number>();
-  const ba = new Map<number, number>();
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i]!;
-    const y = b[i]!;
-    if ((x === -1) !== (y === -1)) return false;
-    if (x === -1) continue;
-    if (ab.has(x) && ab.get(x) !== y) return false;
-    if (ba.has(y) && ba.get(y) !== x) return false;
-    ab.set(x, y);
-    ba.set(y, x);
-  }
-  return true;
-}
-
 function expectTrue(w: World): void {
-  const full = recompute(w);
-  expect(samePartition(w.region, full.labels)).toBe(true);
-  // The size table agrees too, with no entry for a region that is gone.
-  const sizes = [...w.regionSizes.values()].sort((p, q) => p - q);
-  expect(sizes).toEqual([...full.sizes.values()].sort((p, q) => p - q));
+  // The property tests and the final-world harness now ask the same audit.
+  // It checks each region's own size, not just a sorted list of sizes.
+  expect(auditRegions(w)).toMatchObject({ ok: true, tileErrors: 0, sizeErrors: 0 });
 }
 
 describe('World.setWalkable keeps the landmass labels true', () => {

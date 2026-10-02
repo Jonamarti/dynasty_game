@@ -1,5 +1,22 @@
 # Known bugs and rough edges
 
+## Verificación al continuar M15 fase 26 (2026-10-02)
+
+La matriz de referencia anterior a las herramientas de cavar recorre 23
+escenarios y tiene fallos en todos ellos. Los informes antes/después del pase
+se guardan en `artifacts/verification/m15-phase26-2026-10-02/`. Tras el pase,
+los 23 mantienen las mismas listas de fallos y cada uno añade un check
+aplicable aprobado (`regions-stay-true`); no hay pérdidas de aplicabilidad.
+No se presenta esta línea base como una matriz verde.
+
+`npm run e2e` vuelve a dar los seis fallos del picker registrados en fase 11a
+(53 pruebas pasan, incluida la nueva de herramientas). La suite estándar de
+unitarios, ejecutada durante la matriz, agotó los timeouts de `herding.test.ts`
+(5 s) y `grazing.test.ts` (60 s); la suite final estable, con
+`npx vitest run --maxWorkers 1 --testTimeout 15000`, pasa 810/810. El límite
+explícito de 60 s del test de pastoreo se conserva. No se han cambiado los
+timeouts del proyecto ni atribuido estos fallos de tiempo a la excavación.
+
 ## M15 bloque VII, mapas reales aún parciales (2026-10-02)
 
 La salida actual de 29c usa elevación ETOPO 2022 y el clima Beck presente

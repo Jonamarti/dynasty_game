@@ -1,5 +1,12 @@
 # Next steps
 
+**2026-10-02: M15 fase 26f, invariante de regiones hecho.**
+`regions-stay-true` compara la partición incremental con un relleno completo al
+final de los 23 escenarios de la matriz; el test de propiedad de 16a usa el
+mismo auditor. Ocho tests prueban el instrumento, incluidos mundos corruptos
+que deben fallar. El resto de 26f espera a las obras y al agua. Sin cambio de
+UI ni de la simulación por tick.
+
 **2026-10-02: M15 fase 26b, herramientas hechas.** Pico de asta y pala de
 madera, con receta, técnica personal, potencia de prototipo/refinamiento,
 motivos de rechazo y arte regenerado. El palo conserva su identidad `sticks`.

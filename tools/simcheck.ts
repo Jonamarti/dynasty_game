@@ -28,6 +28,7 @@ import { TERRITORY_RADIUS } from '../src/sim/systems/BandSystem.ts';
 import { isHeld, isBound } from '../src/sim/social/Defence.ts';
 import { WORTH_GRAZING } from '../src/sim/core/Grass.ts';
 import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
+import { auditRegions } from './regions.ts';
 
 /**
  * The outer band of a fire's circle that `fire-keeps-wolves-off` does not count.
@@ -954,6 +955,11 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const first = samples[0]!;
   const last = samples[samples.length - 1]!;
   const tel = base.telemetry;
+
+  const regions = auditRegions(sim.world);
+  add('regions-stay-true', regions.ok,
+    regions.components + ' independently recomputed landmasses; ' + regions.tileErrors +
+    ' incorrectly labelled tiles and ' + regions.sizeErrors + ' incorrect region sizes');
 
   const overpacked = tel.carry_over_capacity_samples ?? 0;
   const handBlocked = tel.hand_capacity_blocked ?? 0;
