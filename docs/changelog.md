@@ -28,6 +28,14 @@ rechaza entradas duplicadas o rutas fuera del atlas. Motivo: los mapas
 pregenerados tienen que poder consumirse sin depender de la red ni aceptar una
 combinación incoherente de manifiesto y binario.
 
+## 2026-10-02 — M15 bloque VII, fase 29c: modelo de mapa real
+
+`RealWorldMap` convierte una rejilla cargada en perfiles de región con altura,
+clase climática, banderas de recursos/agua y nivel del mar; interpola la altura
+y envuelve la longitud a través del antimeridiano. Motivo: las capas
+pregeneradas deben tener una API geográfica utilizable antes de la selección de
+región y del globo.
+
 ## 2026-10-02 — M15 bloque VII, fase 29b: mapa aleatorio y drenaje
 
 `WorldMap` ahora genera, a partir de la semilla, regiones de tierra y océano,

@@ -2393,9 +2393,10 @@ regionales y una red de drenaje hacia el océano. 29c produce los dos ficheros
 compactos de la Tierra con alturas de NOAA, clima Beck, capas regionales de
 ríos y lagos de Natural Earth y zonas aproximadas de recursos y antepasados
 silvestres. `WorldAtlas` carga de forma local y valida el manifiesto y los
-binarios sin descargar fuentes en tiempo de juego. La paleoclimatología y la
-integración de selección en partida nueva siguen pendientes. La puerta de
-coste 29d también queda pendiente.
+binarios; `RealWorldMap` expone relieve, clase climática y capas regionales con
+longitud continua en el antimeridiano. La paleoclimatología y la integración de
+selección en partida nueva siguen pendientes. La puerta de coste 29d también
+queda pendiente.
 
 **Detalle en `m14_plan.md` fase 11**, leyendo «región» donde dice «comarca»
 del mapa del mundo. `WorldMap` en `src/sim/world/`, con elevación, latitud,
