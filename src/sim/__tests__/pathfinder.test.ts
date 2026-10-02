@@ -27,7 +27,12 @@ import { strandedPeople } from '../../../tools/simcheck.ts';
 function gridWorld(rows: string[]): World {
   const height = rows.length;
   const width = rows[0]!.length;
-  const world = new World({ ...DEFAULT_CONFIG.world, width, height }, new RNG('pathfinder-grid'));
+  // `slopeCost: 0`: the grid is hand-authored so every route is exact, and the
+  // elevation underneath is still the generator's noise. With the slope cost
+  // on (M15 phase 25b) a "straight" run bends round whatever rise that noise
+  // happens to hold, which is the pathfinder working and these cases being
+  // about the uniform-cost grid. `slopes.test.ts` covers the terrain.
+  const world = new World({ ...DEFAULT_CONFIG.world, width, height, slopeCost: 0 }, new RNG('pathfinder-grid'));
 
   world.walkable.fill(0);
   for (let y = 0; y < height; y++) {

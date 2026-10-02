@@ -237,6 +237,13 @@ export class Pathfinder {
     this.heapSize = 0;
 
     const width = this.width;
+    // M15 phase 25b: what a metre of climb costs, per unit of elevation. Only
+    // ever added, so no edge is cheaper than before and the octile heuristic
+    // stays admissible; and charged as `slopeCost × rise`, which is exactly the
+    // extra time `moveToward` takes over the same step.
+    const climb = this.world.slopeCost * this.world.metresPerUnit;
+    const rise = this.world.elevation;
+    const dug = this.world.offset;
     const startIndex = fy * width + fx;
     const goalIndex = ty * width + tx;
 
@@ -295,7 +302,9 @@ export class Pathfinder {
         // The avoid penalty is charged on *entering* the tile, so it is paid
         // once however the route arrives, and it cannot make a reachable goal
         // unreachable. See `AVOID_PENALTY`.
-        const tentativeG = this.gScore[current]! + NEIGHBOR_COST[i]! +
+        const up = climb === 0 ? 0 : Math.max(0,
+          (rise[neighbor]! + dug[neighbor]! - rise[current]! - dug[current]!) * climb);
+        const tentativeG = this.gScore[current]! + NEIGHBOR_COST[i]! + up +
           (neighbor === avoidIndex ? AVOID_PENALTY : 0);
         if (this.seen[neighbor] === this.gen && tentativeG >= this.gScore[neighbor]!) continue;
 

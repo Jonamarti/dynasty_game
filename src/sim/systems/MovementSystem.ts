@@ -200,6 +200,14 @@ export function moveToward(
   const dist = Math.sqrt(dx * dx + dy * dy);
   if (dist < 1e-6) return 0;
 
+  // M15 phase 25b: the ground under the step. Scaled here, before anything
+  // below reads `speed`, so the blocked-step and axis-fallback checks and the
+  // caller's own progress test all see a step the size it is actually taking.
+  const asked = speed;
+  const factor = world.stepFactor(
+    entity.x, entity.y, entity.x + (dx / dist) * speed, entity.y + (dy / dist) * speed);
+  speed *= factor;
+
   const startX = entity.x;
   const startY = entity.y;
 
@@ -274,6 +282,14 @@ export function moveToward(
   const moved = Math.sqrt(
     (entity.x - startX) * (entity.x - startX) + (entity.y - startY) * (entity.y - startY)
   );
+
+  // What the ground did to a step that went where it was aimed, as a share of
+  // the step asked for: `slopes-slow` compares the three kinds.
+  if (outcome === 0 && telemetry.isEnabled()) {
+    const kind = factor < 0.995 ? 'up' : factor > 1.005 ? 'down' : 'flat';
+    telemetry.count('step_slope_' + kind);
+    telemetry.count('step_slope_' + kind + '_ratio', moved / asked);
+  }
 
   if (outcome !== 0) {
     telemetry.count('step_blocked');

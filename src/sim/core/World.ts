@@ -147,6 +147,30 @@ export class World {
     return top * (1 - ty) + bottom * ty;
   }
 
+  /** Metres per elevation unit, from the config: what the slope terms scale by. */
+  get metresPerUnit(): number { return this.config.metresPerUnit; }
+
+  /** The slope cost per metre of climb per tile; see `WorldConfig.slopeCost`. */
+  get slopeCost(): number { return this.config.slopeCost; }
+
+  /**
+   * How much a step from one point to another is slowed or helped by the
+   * ground, as a multiple of the flat speed (M15 phase 25b). Uphill is
+   * `1 / (1 + slopeCost × g)` for a climb of `g` metres per tile; downhill is a
+   * little quicker, never more than a quarter; and never below 0.4, which is
+   * what keeps a slowed step above the stuck detector's `PROGRESS_THRESHOLD`
+   * (0.25 of the speed asked for) so a hill cannot read as being stuck.
+   */
+  stepFactor(x: number, y: number, toX: number, toY: number): number {
+    const k = this.config.slopeCost;
+    if (k === 0) return 1;
+    const run = Math.hypot(toX - x, toY - y);
+    if (run < 1e-6) return 1;
+    const g = (this.heightSmooth(toX, toY) - this.heightSmooth(x, y)) * this.config.metresPerUnit / run;
+    if (g >= 0) return Math.max(0.4, 1 / (1 + k * g));
+    return Math.min(1.25, 1 - k * g * 0.3);
+  }
+
   /** Metres above the sea at a tile (negative below it). */
   metresAt(x: number, y: number): number {
     return (this.heightAt(x, y) - this.config.waterLevel) * this.config.metresPerUnit;

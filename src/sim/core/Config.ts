@@ -42,6 +42,14 @@ export interface WorldConfig {
    * number in metres (the ground readout, the slope cost) converts here.
    */
   metresPerUnit: number;
+  /**
+   * Slope cost, M15 phase 25b: a step that climbs `g` metres per tile is
+   * `1 + slopeCost × g` times as slow (`moveToward`), and the path search
+   * charges the same. 0.02 puts the median uphill step (5 m per tile) a tenth
+   * slower and the steepest 1% (18 m) about a third slower. Zero is a flat
+   * world, and what every measurement before this phase was taken on.
+   */
+  slopeCost: number;
   reedBeds: number;
   clayBanks: number;
   /** Fishing spots, placed on shore tiles like reed beds and clay banks. */
@@ -453,6 +461,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     edgeReserve: 12,
     edgeEntryChance: 0.03,
     metresPerUnit: 400,
+    slopeCost: 0.02,
     reedBeds: 90,
     clayBanks: 60,
     fishingSpots: 50,

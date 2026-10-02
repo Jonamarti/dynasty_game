@@ -1,3 +1,33 @@
+## 2026-10-02 — M15 fase 25b: subir cuesta
+
+`World.stepFactor`: un paso que sube `g` metros por casilla va a
+`1 / (1 + slopeCost × g)` de su velocidad (`world.slopeCost` 0,02: la subida
+mediana, 5 m por casilla, un 10% más lenta; el 1% más empinado, un tercio);
+bajar es algo más rápido (`1 - 0,3·slopeCost·g`, hasta ×1,25); y nunca por
+debajo de 0,4, que es lo que mantiene un paso frenado por encima del
+`PROGRESS_THRESHOLD` (0,25) del detector de atasco, para que una cuesta no se lea
+como estar encallado. `moveToward` lo aplica antes de leer `speed`, así que la
+colisión, los fallbacks por eje y el test de progreso del llamador ven el
+paso del tamaño que realmente se da; sirve también a los animales (un solo
+caminante, no dos). La altura se interpola (`heightSmooth`): muestrear
+casillas enteras cobra toda la subida al único paso que cruza el borde.
+
+`Pathfinder` suma `slopeCost × subida (m)` a la arista, igual al tiempo extra
+que tarda `moveToward` en ese paso, y nunca resta: ninguna arista cuesta menos
+que antes y la heurística octil sigue siendo admisible. Con 0,02 una subida de
+48 m cuesta una casilla, así que un rodeo largo no compensa y uno cercano sí
+(`slopes.test.ts`). `Brain.proximityBonus` sigue midiendo en línea recta.
+
+Check `slopes-slow`: de los pasos que fueron adonde apuntaban, cuánto de la
+distancia pedida cubren, por tipo de terreno (`step_slope_up/down/flat`):
+90,2% subiendo, 103,5% bajando. **Con `slopeCost` 0 el check no da n/a sino
+rojo** (muchos pasos y ninguno sintió el suelo).
+
+Tres tests del `Pathfinder` (`pathfinder.test.ts`) daban por hecho el coste
+uniforme de una rejilla dibujada a mano; debajo seguía el ruido de elevación
+del generador, así que ahora una ruta «recta» se tuerce. Es la premisa del test
+la que cambió: la rejilla usa `slopeCost: 0`.
+
 ## 2026-10-02 — M15 fase 23h (segunda pasada de los checks)
 
 Con las pendientes puestas, dos checks de 23h dieron rojo en la matriz, y las

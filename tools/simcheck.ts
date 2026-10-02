@@ -3252,6 +3252,30 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         ' of the ' + founding + ' it began with (' + ((100 * preyNow.length) / Math.max(1, founding)).toFixed(0) + '%)');
   }
 
+  // M15 phase 25b: the ground costs time. Of the steps that went where they
+  // were aimed, the share of the asked-for distance actually covered, on each
+  // kind of ground. Flat steps cover all of it by construction, so the claim is
+  // that uphill ones cover visibly less and downhill ones more.
+  const ups = tel.step_slope_up ?? 0;
+  const downs = tel.step_slope_down ?? 0;
+  const flats = tel.step_slope_flat ?? 0;
+  if (ups + downs < 500 && ups + downs + flats >= 2000) {
+    // Plenty of steps and none of them felt the ground: the cost is off. This
+    // is the failure, not an n/a — the build with `slopeCost` at 0 lands here.
+    add('slopes-slow', false,
+      flats + ' steps taken and only ' + (ups + downs) + ' of them on a slope: the ground costs nothing');
+  } else if (ups < 500 || downs < 500) {
+    skip('slopes-slow', ups + ' uphill and ' + downs + ' downhill steps; too few to say');
+  } else {
+    const meanUp = (tel.step_slope_up_ratio ?? 0) / ups;
+    const meanDown = (tel.step_slope_down_ratio ?? 0) / downs;
+    add('slopes-slow',
+      meanUp < 0.97 && meanDown > 1.005 && meanUp < meanDown,
+      thousands(ups) + ' uphill steps cover ' + (meanUp * 100).toFixed(1) + '% of the distance asked, ' +
+        thousands(downs) + ' downhill ' + (meanDown * 100).toFixed(1) + '%, ' +
+        thousands(tel.step_slope_flat ?? 0) + ' flat 100%');
+  }
+
 
   return checks;
 }
