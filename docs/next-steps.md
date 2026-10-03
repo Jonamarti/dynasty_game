@@ -1,5 +1,9 @@
 # Next steps
 
+**2026-10-03: terreno y suelo, fase 28.** El libro JSON v1 conserva regiones,
+relieve excavado y recuperación de suelo sin regeneración. Siguiente: objetos
+del mundo, agendas y carga coordinada. [Contrato](m15_phase28_world.md).
+
 **2026-10-03: checkpoints de ejecución, fase 28.** RNG y reloj tienen
 checkpoints JSON v1 independientes con continuidad exacta y validación estricta.
 Siguiente: capturar streams de sistemas/agendas junto al roster y el terreno;

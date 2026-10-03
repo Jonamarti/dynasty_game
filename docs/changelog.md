@@ -1,3 +1,16 @@
+## 2026-10-03 — M15 fase 28: el terreno conserva su libro
+
+`WorldTerrainRecord` v1 guarda terreno y suelo completos, incluyendo regiones,
+orillas históricas, orden de recuperación y contadores. Reconstituye métodos y
+el alias de fertilidad sin regenerar el mapa. El decoder comprueba configuración,
+arrays exactos, índices y conectividad; cuatro pruebas cubren continuidad,
+independencia, alias y controles negativos. Typecheck y 4/4 focales pasan.
+No integra una carga de Simulation ni guarda todavía los objetos del mundo.
+Tour y capturas adicionales 18/18; imagen inicial revisada y registro visual en
+`artifacts/screenshots/m15-world-records-2026-10-03-pass1/`.
+Contrato: `docs/m15_phase28_world.md`. La matriz general heredada sigue roja;
+su comparación se registra al cerrar la integración.
+
 ## 2026-10-03 — M15 fase 28: checkpoints de reloj y RNG
 
 Checkpoints JSON v1 independientes de RNG y TimeManager. Recuperan la siguiente

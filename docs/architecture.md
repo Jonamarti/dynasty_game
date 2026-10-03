@@ -62,6 +62,12 @@ does not expand a seed or draw from a parent, and the clock retains its own
 calendar. System stream/schedule composition and coordinated Simulation loading
 remain pending; see [m15_phase28_execution.md](m15_phase28_execution.md).
 
+`WorldTerrainRecord` v1 restores independent tile/soil arrays and functioning
+World/Soil prototypes without generation. Soil fertility shares World's canonical
+array; topology and historical shoreline caches survive terrain edits. It covers
+terrain only; coordinated loading and world object ledgers remain pending. See
+[m15_phase28_world.md](m15_phase28_world.md).
+
 `Simulation.ids` owns the ten entity/event allocation namespaces. Creation
 passes this `IdSpace` explicitly to entities and systems; the optional second
 Simulation constructor argument shares it between local simulations. The JSON

@@ -2473,6 +2473,15 @@ antes o después y chocan entre sí y con el del jugador**.
 
 ## Fase 28 — Identidad que sobrevive a su comarca (M14 fase 3)
 
+**Avance del 2026-10-03, terreno y suelo.** `WorldTerrainRecord` v1 conserva
+arrays Float32/Int32 exactos, regiones, orillas, configuración, contadores de
+edición y recuperación del suelo. Hidrata prototipos y el alias de fertilidad
+sin generar otro mapa ni consumir RNG. Valida topología y datos corruptos;
+4/4 pruebas focales pasan. Registro visual:
+`artifacts/screenshots/m15-world-records-2026-10-03-pass1/`.
+[Contrato](m15_phase28_world.md). Quedan los objetos del mundo y el cargador
+coordinado; este avance no completa guardado/carga ni LOD.
+
 **Avance del 2026-10-03, checkpoints de ejecución.** `RNG` guarda y recupera
 sus cuatro words mediante JSON v1 sin constructor, fork o draw; `TimeManager`
 conserva tick y calendario propio. Validación estricta, independencia y
