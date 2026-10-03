@@ -128,6 +128,14 @@ the sheets and the generators disagree, or if the game gained a species, a
 building, an expression or a held object the art does not draw. See
 `art/README.md` and `docs/m15_art_pipeline.md`.
 
+**Animation event timestamps are observations, not AI inputs.** Animal
+`lastMealAt`, `lastAttackAt` and `lastRunAt` are written by real events without
+extra RNG draws. Never let decisions or food yields depend on them, and never
+infer sleeping from inactivity. Animation phases follow the simulation clock
+so pausing freezes them. Report shared sheet/cache pixel bytes separately from
+JS heap, process working sets and GPU memory; a synthetic pose workload does
+not establish FPS for hundreds of simulated NPCs.
+
 **Every full-screen overlay needs `[hidden] { display: none; }` in the CSS.**
 An author `display` beats the browser's rule for the `hidden` attribute, so a
 hidden overlay stays laid out and swallows every click on the game underneath.

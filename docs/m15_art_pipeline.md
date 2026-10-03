@@ -190,6 +190,7 @@ For actual NPC simulation, renderer, HUD, frame cadence and browser memory,
 run `npx vite-node tools/profile-population.ts`; conditions and results are in
 `population-profile.md`. Its 300 real founders are distinct from the synthetic
 500-appearance cache workload above.
+
 For the historical run, export `git show 6d5fe4f:src/render/ArtAtlas.ts` to
 `artifacts/verification/m15-art-memory-2026-10-02/reference/ArtAtlas.ts`, changing
 its relative `./ArtManifest.ts` import to `/src/render/ArtManifest.ts` for Vite.
@@ -198,3 +199,22 @@ Then `npx vite-node tools/art/memory.ts before` uses that reference.
 the pinned hashes only after parity succeeds. Reference source and JSON reports
 are in the same verification directory. No sheet regeneration was needed for
 this runtime optimisation; `art:sheet` was inspected again.
+
+Animals have their own pose catalog in `art/src/animals/animals.ts`:
+`idle`, `w0..w3` (walk), `e0..e3` (eat), `r0..r3` (run), `a0..a3` (attack),
+and prepared `s0..s3` sleep art. These never expand the people's layered pose
+catalog. `AnimalAnimation` selects real meal/attack/run event timestamps, with
+flight above eating and the killer's meal after its strike. Phases follow the
+simulation clock and pauses; distance includes vertical movement. Drawing
+uses the species' idle width so a reaching head does not resize the animal.
+The atlas shares frames across all animals, without per-animal composed canvases.
+The sleep art is previewed separately and is not selected until a real sleep
+behaviour exists. `contact-animal-e/r/a/s.png` reviews every species and phase.
+
+The six-species atlas with all four new families is 275,332 PNG bytes
+(268.9 KiB), versus 44,466 before. Its 2048×241 decoded RGBA sheet is 1.88 MiB,
+up 1.31 MiB from 2048×73; **this is shared across all animals**, not per animal.
+There are 126 keys and 112 unique drawings. A browser regression draws 300
+presentation animals across the 12 active frames (3,600 draws) without changing
+figure/tint cache statistics. This is a rendering/cache check, not a benchmark
+of 300 animal AIs. Actual animal sleep and its ecological effects remain pending.

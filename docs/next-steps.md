@@ -1,5 +1,11 @@
 # Next steps
 
+**2026-10-03: animaciones animales.** Comer, correr y atacar siguen eventos
+reales para las seis especies, con atlas compartido, escala estable y pausa.
+Arte de dormir preparado; integrar sueño requiere una rutina real de AI y
+medir su efecto en pastoreo, caza y supervivencia. No tratar estar quieto o
+estar de noche como prueba de que duerme.
+
 **2026-10-03: 300 humanos medidos en el juego completo.** A 5 pasos/s,
 52,9 FPS observados, dibujo 3,38 ms, simulación 20,80 ms por paso; caché
 6,47 MiB sin expulsiones y heap JS 29,92 MiB. Ver `population-profile.md`

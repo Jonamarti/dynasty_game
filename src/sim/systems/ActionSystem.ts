@@ -2322,6 +2322,9 @@ export class ActionSystem {
       // animal is the exception, and the roll is the animal's `evasion` turned
       // round (a wary hare never, a stubborn boar often).
       if (animal.def.defends && ctx.healthRng && ctx.rng.chance(0.25 * (1.3 - animal.def.evasion))) {
+        // Only a successful defence roll means the quarry counterattacks. The
+        // preceding human hunt attempt must not animate the animal as a striker.
+        animal.lastAttackAt = ctx.tick;
         animal.alarmedUntil = 0;
         rememberHurt(animal, person, ctx.tick);
         const hit = animalBlow(animal, person, ctx.tick, ctx.healthRng, ctx.rng);
@@ -2656,6 +2659,7 @@ export class ActionSystem {
     person.inventory.remove(food, 1);
     animal.fedBy.add(person.id);
     animal.meals++;
+    animal.lastMealAt = ctx.tick;
     person.practice('track', 0.8);
     telemetry.count('animal_fed');
 

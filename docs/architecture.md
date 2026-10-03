@@ -54,6 +54,14 @@ layers. `cacheStats` counts RGBA pixels, hits, misses and evictions; these bytes
 exclude browser/GPU overhead. Asset sheets are shared and already deduplicate
 identical source drawings, independent of NPC population.
 
+**Animal animation events are observations.** Activity pictures read
+`lastMealAt`, `lastAttackAt` and `lastRunAt`, written at real simulation events.
+No decision, RNG draw or food yield may depend on them. `AnimalAnimation`
+follows the world clock and interpolated distance, including north/south
+movement. Species keep their idle scale across trimmed poses and share the
+same atlas; no animal gets a composed canvas cache. Sleep pictures are prepared
+art, with no AI sleep routine yet. Inactivity cannot stand in for an action.
+
 The final-world harness independently recomputes connected components through
 `tools/regions.ts`. `regions-stay-true` compares partitions rather than raw
 labels and verifies each region's own size, including stale entries. The

@@ -41,6 +41,9 @@ describe('predators', () => {
     const before = telemetry.get('prey_killed_by_predator');
     steps(sim, 1200);
     expect(telemetry.get('prey_killed_by_predator')).toBeGreaterThan(before);
+    expect(sim.animals.some(animal => animal.def.predator && animal.lastRunAt >= 0)).toBe(true);
+    expect(sim.animals.some(animal => animal.def.predator && animal.lastAttackAt >= 0)).toBe(true);
+    expect(sim.animals.some(animal => animal.def.predator && animal.lastMealAt >= 0)).toBe(true);
   });
 
   it('a bear walked in on wounds the person, and the person runs', { timeout: 60000 }, () => {
@@ -53,6 +56,8 @@ describe('predators', () => {
     steps(sim, 400);
     expect(telemetry.get('animal_bit_person_bear')).toBeGreaterThan(bites);
     expect(person.health).toBeLessThan(100);
+    expect(bear.lastRunAt).toBeGreaterThanOrEqual(0);
+    expect(bear.lastAttackAt).toBeGreaterThanOrEqual(0);
   });
 
   it("keep out of a fire's circle", { timeout: 60000 }, () => {

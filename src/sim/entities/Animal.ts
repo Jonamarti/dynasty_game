@@ -132,6 +132,13 @@ export class Animal {
    */
   fed = 1;
 
+  /** Last simulation tick with an observed meal, solely for presentation. */
+  lastMealAt = -Infinity;
+  /** Last simulation tick with an observed attack attempt at reach. */
+  lastAttackAt = -Infinity;
+  /** Last simulation tick annotated as a run; renderers also verify movement. */
+  lastRunAt = -Infinity;
+
   /**
    * Who last put it through a hunt that turned on them, and when — M15 phase
    * 23g reads both (`WildlifeSystem.grudgeOf`). A grudge is a few days long,

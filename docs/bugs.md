@@ -1,5 +1,21 @@
 # Known bugs and rough edges
 
+## Sueño animal pendiente y costes con 300 humanos (2026-10-03)
+
+La AI animal todavía no tiene sueño ni horarios por especie. Las poses de
+dormir son una referencia de arte y el renderer no las activa al estar quieto
+o de noche. Comer, correr y atacar sí corresponden a eventos reales. Las
+marcas temporales son observacionales y no deben alimentar decisiones de AI.
+El signo de alarma existente usa `alarmedUntil > 0`, incluso tras expirar, y
+también aparece en la pausa de un depredador tras morder; no se usa ese getter
+para decidir una animación de carrera. Corregir su semántica visual sigue pendiente.
+
+El perfil de 300 humanos registra 61/1.057 frames con más de 33,34 ms entre
+dibujos; un paso de simulación cuesta 20,80 ms de media (41,80 ms p95), frente
+a 3,38 ms de dibujo. Caché sin expulsiones. Falta localizar el coste por sistema
+y medir velocidades mayores, mundos repartidos y sesiones largas; ver
+`population-profile.md`. Es un hallazgo de rendimiento, no un test de balance.
+
 ## Presión de caché con cientos de apariencias (2026-10-03) — corregido
 
 500 apariencias con cuatro poses expulsaban cada pose a la siguiente vuelta:

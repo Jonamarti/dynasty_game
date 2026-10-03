@@ -22,6 +22,7 @@ import { WAYPOINT_AIM } from '../sim/systems/MovementSystem.ts';
 import { BUSH_SPECIES, BUSHES, WILD_PLANTS, type BushSpecies, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
+import { animalPose, trackAnimal, type AnimalTrack } from './AnimalAnimation.ts';
 import { BUILDINGS, type Building } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { TreeSpecies } from '../sim/entities/Tree.ts';
@@ -295,7 +296,7 @@ export class Renderer {
   /** Buildings that stand up out of the ground this frame, depth-sorted with the people. */
   private readonly tallBuildings: Building[] = [];
   private frameHighlight: Highlight | null = null;
-  private readonly animalTrack = new Map<number, { x: number; distance: number; east: boolean; movedAt: number }>();
+  private readonly animalTrack = new Map<number, AnimalTrack>();
 
   setArt(art: ArtAtlas | null): void { this.art = art; }
 
@@ -2008,18 +2009,18 @@ export class Renderer {
     let tr = this.animalTrack.get(animal.id);
     if (!tr) {
       if (this.animalTrack.size > 4096) this.animalTrack.clear();
-      tr = { x: at.x, distance: 0, east: true, movedAt: 0 };
+      tr = { x: at.x, y: at.y, distance: 0, east: true, movedAt: -Infinity };
       this.animalTrack.set(animal.id, tr);
     }
-    const dx = at.x - tr.x;
-    if (Math.abs(dx) > 0.0004) { tr.east = dx > 0; tr.movedAt = performance.now(); tr.distance += Math.abs(dx); }
-    tr.x = at.x;
-    const moving = performance.now() - tr.movedAt < 200;
-    const pose = moving ? 'w' + (Math.floor(tr.distance / 0.22) % 4) : 'idle';
+    const moving = trackAnimal(tr, at, this.sim.time.tick + this.workAlpha);
+    const pose = animalPose(animal, this.sim.time.tick, this.workAlpha, moving, tr.distance);
     const key = 'a/' + animal.species + '/E/' + pose;
     const box = art.assetBox('animals', key);
     if (!box) return false;
-    const k = (w * 1.35) / box.w;
+    // A reaching head makes the trimmed cell wider. Scaling by that cell made
+    // the whole beast shrink between poses; keep the species' idle scale.
+    const idle = art.assetBox('animals', 'a/' + animal.species + '/E/idle');
+    const k = (w * 1.35) / (idle?.w ?? box.w);
     // Feet on the row the old rectangle's bottom edge sat on.
     const x0 = px - 48 * k, y0 = py + h / 2 - 84 * k;
     ctx.save();

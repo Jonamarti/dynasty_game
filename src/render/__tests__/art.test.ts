@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { ANIMAL_KINDS } from '../../../art/src/animals/animals.ts';
+import { ANIMAL_KINDS, ANIMAL_POSES } from '../../../art/src/animals/animals.ts';
 import { collectAnimals, collectBuildings, collectPeople, collectProps } from '../../../art/src/registry.ts';
 import { personLayers, type PersonSpec } from '../../../art/src/people/rig.ts';
 import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, GATHER_POSES, anchorKey, personKey, type ArtManifest, type PersonAnchors } from '../ArtManifest.ts';
@@ -83,7 +83,7 @@ describe('art coverage', () => {
   it('draws every species', () => {
     for (const species of SPECIES) {
       expect(ANIMAL_KINDS, species).toContain(species);
-      for (const pose of ['idle', 'w0', 'w1', 'w2', 'w3']) expect(animals.keys[`a/${species}/E/${pose}`], `${species} ${pose}`).toBeDefined();
+      for (const pose of ANIMAL_POSES) expect(animals.keys[`a/${species}/E/${pose}`], `${species} ${pose}`).toBeDefined();
     }
   });
 

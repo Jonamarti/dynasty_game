@@ -1,3 +1,55 @@
+## 2026-10-03 — M15 fase 17: actividades de los animales
+
+- Cuatro poses de comer, correr y atacar para las seis especies en un atlas
+  compartido. Cabeza/cuello articulados, zancada amplia y embestida; las orejas
+  de la liebre acompañan a su cabeza. Reposo y marcha conservan los SHA-256 de
+  sus SVG anteriores. Las cuatro poses de sueño son **arte preparado**:
+  patas plegadas, cuerpo junto al suelo, ojos cerrados y respiración. La AI
+  todavía no tiene rutina de sueño y el renderer no la inventa a partir de
+  estar quieto o de noche.
+- `Animal.lastMealAt/lastAttackAt/lastRunAt` observan consumo real de hierba,
+  comida de la manada tras una presa, alimento ofrecido, carreras y ataques.
+  El contraataque se marca solo cuando realmente ocurre: el golpe del humano
+  no hace atacar a la presa. No añaden RNG ni cambian decisiones o rendimientos.
+  Cuatro tests de eventos y las pruebas de depredadores cubren esas ramas.
+- `AnimalAnimation` cuenta movimiento en dos ejes, conserva la fase al pausar,
+  da prioridad al ataque y a la huida y muestra la comida tras el golpe del
+  depredador. Cada especie mantiene su escala de reposo entre poses; antes
+  el ancho recortado podía cambiarla. Cinco tests prueban eventos, caducidad,
+  prioridad, pausa y marcha vertical. Tres tests del generador preservan el
+  legado y comprueban articulación, ojos cerrados y postura; la cobertura del
+  atlas exige las 126 claves de especie/pose.
+- Dos e2e prueban los cuatro fotogramas visibles, pausa, fin del evento y
+  escala constante, y 3.600 dibujos de 300 animales de presentación con el
+  mismo atlas y sin nuevas entradas en cachés de figuras/tintes. Esa carga
+  es de dibujo: **no mide FPS de 300 animales tomando decisiones**.
+  `npm run e2e` incluye ahora ese archivo además del smoke habitual.
+- `AGENTS.md`, arquitectura, pipeline y plan distinguen eventos visuales de
+  decisiones y memoria de píxeles de heap/proceso/GPU. Sueño animal y su efecto
+  sobre la ecología quedan pendientes en `bugs.md` y `next-steps.md`.
+
+**Coste compartido:** el PNG de las seis especies, con reposo, marcha y las
+cuatro familias nuevas, pasa de 44.466 a **275.332 bytes** (268,9 KiB en total).
+La hoja RGBA pasa de 2048×73 a 2048×241: **1,88 MiB en total**, +1,31 MiB
+compartidos entre todos los animales. No es ese incremento por animal. Las
+96 claves nuevas se añaden a las 30 anteriores; hay 112 dibujos únicos.
+
+**Validación:** `typecheck` pasa; suite completa **832/832** en 110 archivos,
+con `npx vitest run --maxWorkers 1 --testTimeout 15000`. Tras pulir el arte,
+los 19 tests afectados vuelven a pasar. Navegador **59/65**, con los mismos
+seis fallos previos del picker; las tres pruebas nuevas de animales/población
+pasan. Los 23 escenarios conservan exactamente checks aplicables y fallos de
+la referencia. Matriz y navegador global siguen rojos por esa línea base.
+Tras el último caso se interrumpió el cierre atascado del webServer de Windows;
+el log y el resumen registran los 65 resultados completos, no un éxito del proceso.
+Informes y costes en `artifacts/verification/m15-population-2026-10-03T06-55-44-442Z/`.
+
+**Capturas finales:** `artifacts/screenshots/m15-animals-2026-10-03T07-33-35-954Z/`
+con los 12 fotogramas del ciervo en el juego pausado, las cuatro hojas de
+contacto y `animal-preview.gif`. Son escenas de renderer controladas; el sueño
+solo se muestra en la hoja de arte. Los dos e2e afectados vuelven a pasar tras
+regenerar la hoja final; se conservan también los dos hitos anteriores.
+
 ## 2026-10-03 — M15: perfil del juego con 300 humanos
 
 El instrumento anterior medía poses sintéticas. `tools/profile-population.ts`

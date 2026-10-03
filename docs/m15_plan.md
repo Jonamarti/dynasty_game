@@ -1776,6 +1776,17 @@ se aparta`; `m15: muebles`; `m15: dormir mejor en casa, y el confort`;
 
 ## Fase 17 — El arte: personas pre-renderizadas por capas (nota 6; decisión 9)
 
+**Avance del 2026-10-03 (animales):** cuatro poses de comer, correr y atacar
+en ciervo, jabalí, liebre, lobo, oso y lince, compartidas por especie. El renderer
+lee marcas de eventos reales, sin cambiar decisiones, metabolismo o RNG.
+Cuenta también desplazamientos norte/sur y conserva escala y pausa. Dormir
+dispone de arte de referencia; **la rutina de sueño animal sigue pendiente**,
+porque no existe tal estado en la AI y la inactividad no demuestra sueño.
+Antes de integrar esa rutina habrá que decidir ciclos por especie, hambre,
+interrupciones por amenazas y medir su efecto sobre presas/depredadores.
+Capturas y GIF en `artifacts/screenshots/m15-animals-2026-10-03T07-33-35-954Z/`;
+el atlas completo ocupa 268,9 KiB de PNG y 1,88 MiB RGBA compartidos.
+
 **Avance del 2026-10-03 (300 humanos reales):** instrumento del juego completo,
 con AI, canvas y HUD, a 5 pasos/s. 300 figuras visibles: 52,9 FPS observados,
 3,38 ms de dibujo y 20,80 ms por paso; 6,47 MiB de píxeles de caché sin expulsar.

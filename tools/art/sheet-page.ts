@@ -5,6 +5,7 @@
  */
 import { ArtAtlas, type PersonAspect, type WornGarments } from '../../src/render/ArtAtlas.ts';
 import { GATHER_POSES, type ArtAge, type ArtDir, type ArtPose, type ArtSex } from '../../src/render/ArtManifest.ts';
+import { ANIMAL_KINDS, ANIMAL_POSES } from '../../art/src/animals/animals.ts';
 
 const BANDS = ['#3b6ea8', '#a83b52', '#7a4ea8', '#a8843b', '#3ba88a', '#a83b8f', '#6f9a3b', '#a8603b', '#7d7d7d'];
 const SKINS = ['#ecd0ab', '#d4a276', '#bd865a', '#a26a46', '#84512f', '#663a24', '#f2d8ba', '#b17c50', '#c58d5f'];
@@ -159,12 +160,20 @@ function person(over: AspectOver, label: string, row: HTMLElement): void {
 // ---- animals
 {
   const row = section('animals', 'Animals');
-  for (const k of ['deer', 'boar', 'hare', 'wolf', 'bear', 'lynx']) {
+  for (const k of ANIMAL_KINDS) {
     for (const p of ['idle', 'w0', 'w1', 'w2', 'w3']) {
       const [c, ctx] = canvas(144, 144);
       atlas.drawAsset(ctx, 'animals', `a/${k}/E/${p}`, 0, 0, 1.5);
       fig(row, c, `${k} ${p}`);
     }
+  }
+}
+for (const [prefix, label] of [['e', 'Eating'], ['r', 'Running'], ['a', 'Attacking'], ['s', 'Sleep art preview — behaviour pending']]) {
+  const row = section('animal-' + prefix, label!);
+  for (const kind of ANIMAL_KINDS) for (const pose of ANIMAL_POSES.filter(p => p.startsWith(prefix!))) {
+    const [c, ctx] = canvas(144, 144);
+    atlas.drawAsset(ctx, 'animals', `a/${kind}/E/${pose}`, 0, 0, 1.5);
+    fig(row, c, `${kind} ${pose}`);
   }
 }
 document.body.dataset['ready'] = '1';

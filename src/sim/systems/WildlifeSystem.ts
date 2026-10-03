@@ -354,6 +354,7 @@ export class WildlifeSystem {
       animal.alarmedUntil = 0;
       return;
     }
+    animal.lastRunAt = ctx.tick;
     animal.stamina = Math.max(0, animal.stamina - STAMINA_DRAIN);
     // A spent animal is barely quicker than the person behind it.
     const speed = animal.def.fleeSpeed * (0.45 + 0.55 * animal.stamina);
@@ -501,9 +502,13 @@ export class WildlifeSystem {
   private chase(animal: Animal, prey: Animal, ctx: WildlifeContext, dice: RNG, animals: Animal[]): void {
     // The quarry knows it is hunted: bolt now, so stamina drains.
     if (prey.alarmedUntil <= ctx.tick) this.alarm(prey, animal, ctx, animals);
+    animal.lastRunAt = ctx.tick;
     moveToward(animal, prey.x, prey.y, animal.def.fleeSpeed * MOVE_INTERVAL, ctx.world, dice);
     if (Math.hypot(animal.x - prey.x, animal.y - prey.y) > 1.6) return;
 
+    // Presentation observes the attempt, including a miss; it must not depend
+    // on the success draw below.
+    animal.lastAttackAt = ctx.tick;
     const mates = packMates(animal, animals);
     const chance = Math.min(0.9, 0.08 + 0.45 * (1 - prey.stamina) + 0.07 * Math.min(3, mates) +
       (1 - prey.def.evasion) * 0.15);
@@ -522,6 +527,7 @@ export class WildlifeSystem {
       if (!mate.alive || mate.herdId !== animal.herdId) continue;
       if (Math.hypot(mate.x - animal.x, mate.y - animal.y) <= PACK_RADIUS) {
         mate.fed = Math.min(1, mate.fed + meal);
+        mate.lastMealAt = ctx.tick;
       }
     }
   }
@@ -550,8 +556,10 @@ export class WildlifeSystem {
 
   /** Closing on a person and, within reach, a bite. */
   private pounce(animal: Animal, person: Person, ctx: WildlifeContext, dice: RNG): void {
+    animal.lastRunAt = ctx.tick;
     moveToward(animal, person.x, person.y, animal.def.fleeSpeed * MOVE_INTERVAL, ctx.world, dice);
     if (Math.hypot(animal.x - person.x, animal.y - person.y) > 1.5) return;
+    animal.lastAttackAt = ctx.tick;
     if (!dice.chance(BITE_CHANCE)) return;
     telemetry.count('animal_bit_person');
     telemetry.count('animal_bit_person_' + animal.species);
@@ -574,6 +582,7 @@ export class WildlifeSystem {
     const standing = ctx.world.grassAt(animal.x, animal.y);
     if (standing > STUBBLE + BITE) {
       const taken = ctx.world.graze(animal.x, animal.y, BITE);
+      if (taken > 0) animal.lastMealAt = ctx.tick;
       animal.fed = Math.min(1, animal.fed + (taken / BITE) * FED_PER_BITE);
     }
     const metabolism = COLD_METABOLISM + (1 - COLD_METABOLISM) * (ctx.dailyGrowth ?? 1);

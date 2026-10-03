@@ -14,7 +14,7 @@ import { createServer } from 'vite';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = join(ROOT, 'artifacts', 'art');
-const SECTIONS = ['tribes', 'ages', 'faces', 'wear', 'hands', 'walk', 'gather', 'items', 'buildings', 'animals'];
+const SECTIONS = ['tribes', 'ages', 'faces', 'wear', 'hands', 'walk', 'gather', 'items', 'buildings', 'animals', 'animal-e', 'animal-r', 'animal-a', 'animal-s'];
 
 mkdirSync(OUT, { recursive: true });
 const server = await createServer({ root: ROOT, logLevel: 'error', server: { port: 0, host: '127.0.0.1' } });

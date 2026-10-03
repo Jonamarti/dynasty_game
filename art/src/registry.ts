@@ -12,7 +12,7 @@ import {
   ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, anchorKey, personKey,
   type ArtAge, type ArtSex, type PersonAnchors,
 } from '../../src/render/ArtManifest.ts';
-import { ANIMAL_KINDS, paintAnimal } from './animals/animals.ts';
+import { ANIMAL_KINDS, ANIMAL_POSES, paintAnimal } from './animals/animals.ts';
 import { BUILDINGS, PLANS } from './buildings/buildings.ts';
 import { ell, limb, normalizeIds, poly, shape, stroke, svgDoc } from './lib/draw.ts';
 import { CARRY_SLOTS, SLOT_ORDER, SLOT_TINT, personLayers, type FaceExpr, type HairStyle, type PersonSpec, type Wear } from './people/rig.ts';
@@ -163,11 +163,10 @@ export function collectBuildings(): Collected {
 // ------------------------------------------------------------------ animals
 export function collectAnimals(): Collected {
   const bank = new Bank();
-  for (const kind of ANIMAL_KINDS) {
-    bank.add(`a/${kind}/E/idle`, paintAnimal(kind, 0, false), CELL, CELL);
-    for (let f = 0; f < 4; f++) bank.add(`a/${kind}/E/w${f}`, paintAnimal(kind, f, true), CELL, CELL);
+  for (const kind of ANIMAL_KINDS) for (const pose of ANIMAL_POSES) {
+    bank.add(`a/${kind}/E/${pose}`, paintAnimal(kind, pose), CELL, CELL);
   }
-  return { bank, meta: { kinds: [...ANIMAL_KINDS], baseline: 84 } };
+  return { bank, meta: { kinds: [...ANIMAL_KINDS], poses: [...ANIMAL_POSES], baseline: 84 } };
 }
 
 export const DOMAINS = {

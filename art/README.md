@@ -68,3 +68,11 @@ It submits 500 distinct appearances across four poses and records pixel bytes,
 hits and misses under `artifacts/verification/m15-art-memory-2026-10-02/`.
 It is a synthetic art workload, not game FPS. The pre-change parity reference
 and its export procedure are documented in `docs/m15_art_pipeline.md`.
+
+Animal activities have a separate pose catalog: four frames each of eating,
+running and attacking, plus prepared sleep art. Their shared atlas is drawn
+directly; adding more animals does not allocate more animation sheets.
+`contact-animal-e/r/a/s.png` shows all six species. Sleep still needs a real
+simulation behaviour; the runtime does not infer it from standing still.
+`npx vite-node tools/profile-population.ts` measures actual 30/300-human game
+loops; see `docs/population-profile.md` for FPS and memory accounting limits.
