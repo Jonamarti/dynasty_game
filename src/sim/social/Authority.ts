@@ -115,6 +115,10 @@ const ORDER_COST: Record<string, number> = {
   feast: 0.45,
   // Being told to go and eat at somebody's table is hardly an order at all.
   attend: 0.05,
+  // M15 phase 38b. Carrying your own household's goods to the temple:
+  // more than a trip to the store, which is what it otherwise is, because
+  // they are not coming back.
+  render: 0.3,
   // Cheaper than `give`: both sides walk away with something, so it asks
   // less of whoever is told to do it than handing goods over for nothing.
   trade: 0.3,

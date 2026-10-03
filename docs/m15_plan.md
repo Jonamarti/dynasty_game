@@ -2880,6 +2880,20 @@ el jefe oye queda escrita (`Debt.recorded`) y no caduca con el año, ni su
 expediente. Check `the-ledger-remembers`. En `polity` nadie se queja al jefe,
 así que la mitad de las deudas sólo se prueba en los tests.
 
+**Avance del 2026-10-03 (38b, `taxation`).** Práctica de la Edad del Bronce
+(`redistribution` + `accounting`, hacia el 2500 a. C., practicada al gravar).
+La tasa la fija el gobierno entre `TAX_RATES` (0, 5, 10, 20 y 30 %, el 0
+incluido): el jefe PNJ según su codicia, el jugador desde su pestaña de
+trabajo (sección «Gobierno», sólo si es jefe). Cada día el jefe pide al hogar
+al que le toca (uno cada 5 días) y que más comida tiene —en su almacén si su
+casa lo es, y en las manos de sus miembros— que lleve su parte al templo
+(`render`); con contabilidad, lo dado de grado desde el último tributo se
+descuenta. El hogar del jefe está exento. Cada adulto gravado pierde opinión
+del jefe por `taxResentment`, que es lo que alimenta la rebelión. Check
+`taxes-reach-the-temple`. En `polity` casi nada se debe: los hogares ya
+llevan su excedente al templo y el libro lo descuenta (121 de 129 tributos
+sin deuda).
+
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 
 **Detalle en `m14_plan.md` fase 21.** Declarar la guerra y la paz

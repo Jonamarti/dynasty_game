@@ -6,7 +6,10 @@ import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
-import { CONTRIBUTION_RENOWN, TEMPLE_PULL, keepsAccounts, recordContribution, templeOf, templePull } from '../social/Polity.ts';
+import {
+  CONTRIBUTION_RENOWN, TAX_RATES, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
+  templeOf, templePull,
+} from '../social/Polity.ts';
 import { Household } from '../entities/Household.ts';
 import { DEBT_DAYS, incur, pruneDebts } from '../social/Amends.ts';
 import { FEAST_MIN_FOOD, feastVenue, mayHostFeast } from '../social/Feast.ts';
@@ -114,5 +117,56 @@ describe('accounting: the ledger', () => {
     // Still owed to the living only.
     pruneDebts(thief!, later, 240, () => false);
     expect(thief!.debts).toHaveLength(0);
+  });
+});
+
+describe('taxation: the levy', () => {
+  it('owes a share of what is at home, less what was given freely when it is written down', () => {
+    expect(dueFrom(40, 0.1, 0, false)).toBe(4);
+    expect(dueFrom(40, 0, 0, false)).toBe(0);
+    // Given three since the last levy: credited only if the chief keeps accounts.
+    expect(dueFrom(40, 0.1, 3, true)).toBe(1);
+    expect(dueFrom(40, 0.1, 3, false)).toBe(4);
+    expect(dueFrom(40, 0.1, 30, true)).toBe(0);
+  });
+
+  it('is set by a chief from their own greed, on the steps a custom can name', () => {
+    const sim = new Simulation(SMALL);
+    const chief = sim.livingPeople()[0]!;
+    chief.traits.greed = 0;
+    expect(npcTaxRate(chief)).toBe(0);
+    chief.traits.greed = 1;
+    expect(npcTaxRate(chief)).toBe(TAX_RATES[TAX_RATES.length - 1]);
+    chief.traits.greed = 0.5;
+    expect(TAX_RATES).toContain(npcTaxRate(chief));
+  });
+
+  it('is resented more the heavier it is, and more by the greedy', () => {
+    const sim = new Simulation(SMALL);
+    const [a, b] = sim.livingPeople();
+    a!.traits.greed = 0.9;
+    b!.traits.greed = 0.1;
+    expect(taxResentment(0.3, a!)).toBeGreaterThan(taxResentment(0.05, a!));
+    expect(taxResentment(0.3, a!)).toBeGreaterThan(taxResentment(0.3, b!));
+    expect(taxResentment(0, a!)).toBe(0);
+  });
+
+  it('can be set by the player only as chief and only by one who knows how', () => {
+    const sim = new Simulation({ ...SMALL, population: { ...SMALL.population, startingTech: [...SMALL.population.startingTech] } });
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    const band = sim.bands.find(b => !b.outcast)!;
+    const chief = sim.peopleById.get(band.chiefId!)!;
+    const other = sim.livingPeople().find(p => p.id !== chief.id && p.bandId === band.id)!;
+
+    expect(sim.setTaxRate(chief, 0.1)).toBe(false);
+    expect(sim.lastRefusal).toMatch(/knows how to levy/);
+    learn(chief, 'taxation');
+    expect(sim.setTaxRate(other, 0.1)).toBe(false);
+    expect(sim.lastRefusal).toMatch(/only the chief/);
+    expect(sim.setTaxRate(chief, 0.1)).toBe(true);
+    expect(band.taxRate).toBe(0.1);
+    expect(sim.setTaxRate(chief, 0.15)).toBe(false);
+    expect(sim.setTaxRate(chief, 0)).toBe(true);
+    expect(band.taxRate).toBe(0);
   });
 });

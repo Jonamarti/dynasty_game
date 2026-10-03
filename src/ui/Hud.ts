@@ -20,6 +20,7 @@
  *  - **Life** — not their diary, but *what you remember about them*, which is a
  *    very different and usually much shorter list.
  */
+import { TAX_RATES } from '../sim/social/Polity.ts';
 import { stageOf, type Corpse, type CorpseStage } from '../sim/entities/Corpse.ts';
 import { isHeld, isBound } from '../sim/social/Defence.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
@@ -96,6 +97,8 @@ export interface HudCallbacks {
   onAssignJob: (person: Person, job: JobId | null) => void;
   /** Open the partial-stack transfer window for a nearby store. */
   onTransfer: (building: Building) => void;
+  /** M15 phase 38b: the player's government sets the levy. */
+  onSetTaxRate: (rate: number) => void;
   /** Cancel an unfinished player-owned construction. */
   onCancelConstruction: (building: Building) => void;
   /**
@@ -433,13 +436,18 @@ export class Hud {
     this.panelEl.addEventListener('click', event => {
       const found = (event.target as HTMLElement)
         .closest('[data-tab], [data-person], [data-focus], [data-possess], ' +
-        '[data-command], [data-verb], [data-job], [data-transfer], [data-cancel-construction]');
+        '[data-command], [data-verb], [data-job], [data-transfer], [data-cancel-construction], [data-tax]');
       if (!found) return;
       const node = found as HTMLElement;
 
       if (node.dataset.job !== undefined && this.currentSelection?.kind === 'person') {
         const job = node.dataset.job === 'none' ? null : node.dataset.job as JobId;
         this.callbacks.onAssignJob(this.currentSelection.person, job);
+        this.builtFor = null;
+        return;
+      }
+      if (node.dataset.tax !== undefined) {
+        this.callbacks.onSetTaxRate(Number(node.dataset.tax));
         this.builtFor = null;
         return;
       }
@@ -1275,6 +1283,36 @@ export class Hud {
     rows.push('<div class="hud-note">' + escapeHtml(current
       ? t('Leans them toward {list}.', { list: current.actions.map(a => actionLabel(a)).join(', ') })
       : t('A settled job leans someone toward its own work and a little away from everything else — it is a preference, not a command.')) + '</div>');
+    rows.push(...this.governmentRows(observer, person, sim));
+    return rows;
+  }
+
+  /**
+   * What the player governs, when the player leads their band — M15 block IX.
+   * Shown on the player's own Work tab only: governing is something you do,
+   * not something you read off somebody else. Each control is offered only
+   * once the chief knows the idea behind it, and says so when it is not.
+   */
+  private governmentRows(observer: Person, person: Person, sim: Simulation): string[] {
+    if (observer.id !== person.id || !person.isPlayer) return [];
+    const band = sim.bands.find(b => b.id === person.bandId);
+    if (!band || sim.bandSystem.chiefByBand.get(band.id) !== person.id) return [];
+    const rows: string[] = ['<div class="hud-section">' + t('Government') + '</div>'];
+    if (techPower(person, 'taxation') <= 0) {
+      rows.push('<div class="hud-note">' + escapeHtml(t('You lead the band. Nobody here knows yet how to levy a tax.')) + '</div>');
+      return rows;
+    }
+    const rate = band.taxRate ?? 0;
+    rows.push('<div class="hud-sub">' + escapeHtml(t('The levy: each house carries this share of its store to the temple')) + '</div>');
+    rows.push('<div class="hud-buildbar-row">' + TAX_RATES.map(step =>
+      '<button class="hud-design' + (rate === step ? ' is-active' : '') + '" data-tax="' + step + '">' +
+      '<span class="hud-design-name">' + (step === 0 ? escapeHtml(t('None')) : Math.round(step * 100) + '%') + '</span>' +
+      '</button>').join('') + '</div>');
+    if (!sim.templeOf(band.id)) {
+      rows.push('<div class="hud-note">' + escapeHtml(t('There is no temple to pay into: it takes a granary, and a chief who knows redistribution.')) + '</div>');
+    } else if (rate > 0) {
+      rows.push('<div class="hud-note">' + escapeHtml(t('Every house taxed thinks the worse of you for it, and the more so the heavier the share.')) + '</div>');
+    }
     return rows;
   }
 

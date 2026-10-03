@@ -354,6 +354,19 @@ const hud = new Hud(hudRoot, {
           : t('{name} does not', { name: person.name })),
       { color: ok ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
   },
+  onSetTaxRate: rate => {
+    // M15 phase 38b. Refused out loud, like every order: `setTaxRate` writes
+    // the reason, and it reaches the player as a floater over their head.
+    if (!sim.player) return;
+    const ok = sim.setTaxRate(sim.player, rate);
+    const why = sim.lastRefusal;
+    sim.lastRefusal = null;
+    renderer.floaters.push(sim.player.x, sim.player.y,
+      ok
+        ? (rate === 0 ? t('No levy is owed to the temple') : t('The levy is now {share}', { share: Math.round(rate * 100) + '%' }))
+        : (why ?? t('The levy stays as it was')),
+      { color: ok ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
+  },
   onOpenMenu: () => { if (!menuOpen()) openMenu(); },
   onToggleBuild: () => setBuildMode(!buildMode),
   onToggleCraft: () => setCraftMode(!craftMode),

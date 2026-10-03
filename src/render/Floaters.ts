@@ -199,6 +199,7 @@ export const ACTION_LABELS: Record<string, string> = {
   // M15 phase 38a.
   feast: 'holding a feast',
   attend: 'at a feast',
+  render: 'bringing their due to the temple',
   tend: 'tending the hurt',
   tame: 'coaxing an animal',
   // The two verbs M11 added without words here, so the score table printed
@@ -419,6 +420,9 @@ export const STOP_REASONS: Record<string, string> = {
   // M15 phase 38a: the two ways a feast does not happen.
   no_feast_to_give: 'there is no feast to give: the store wants food',
   nobody_came: 'nobody came to the feast',
+  // M15 phase 38b.
+  nothing_to_render: 'there was nothing at home to pay with',
+  no_temple: 'there is no temple to pay into',
   nobody_to_tend: 'there is nobody here to look after',
   nothing_to_treat: 'they are not hurt any more',
   knows_poisonous: 'they know those berries are poisonous',

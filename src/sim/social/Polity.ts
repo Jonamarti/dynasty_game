@@ -101,3 +101,47 @@ export function recordContribution(household: Household | null, food: number, ch
 export function keepsAccounts(chief: Person | null | undefined): boolean {
   return !!chief && techPower(chief, 'accounting') > 0;
 }
+
+/**
+ * The shares a government can set — M15 phase 38b, `taxation`. Zero
+ * included, by the plan's wording: a chief who knows how to tax is not made
+ * to. Steps rather than a slider because a levy is a custom people can name.
+ */
+export const TAX_RATES = [0, 0.05, 0.1, 0.2, 0.3] as const;
+
+/** Days a household is left between two levies. */
+export const LEVY_EVERY_DAYS = 5;
+
+/**
+ * Opinion a taxed adult loses of the chief per levy, at a share of 1 and an
+ * ordinary temper: `rate × TAX_RESENTMENT × (0.5 + greed)`. At the heaviest
+ * share (0.3) a greedy household loses about ten points a levy, which is what
+ * lets a heavy tax feed `considerRebellion` (M6b phase 6) — and at 5% about
+ * one and a half, which the ordinary warmth of a band absorbs.
+ */
+export const TAX_RESENTMENT = 30;
+
+/**
+ * The share an NPC chief who knows taxation sets: their greed, read onto the
+ * steps. A generous chief taxes lightly or not at all; a greedy one at the
+ * heaviest share. The player's chief is never chosen for — `Simulation.setTaxRate`.
+ */
+export function npcTaxRate(chief: Person): number {
+  const index = Math.max(0, Math.min(TAX_RATES.length - 1, Math.round(chief.traits.greed * (TAX_RATES.length - 1))));
+  return TAX_RATES[index]!;
+}
+
+/**
+ * What a household owes at one levy: its share of the food at home, less —
+ * when the chief keeps accounts — what it is written down as having given
+ * the temple freely since the last levy. The ledger is what makes paying in
+ * before you are asked worth anything.
+ */
+export function dueFrom(foodAtHome: number, rate: number, givenSince: number, written: boolean): number {
+  return Math.max(0, Math.floor(foodAtHome * rate) - (written ? givenSince : 0));
+}
+
+/** Opinion one taxed adult loses of the chief at one levy. */
+export function taxResentment(rate: number, taxed: Person): number {
+  return rate * TAX_RESENTMENT * (0.5 + taxed.traits.greed);
+}

@@ -102,6 +102,23 @@ export function portions(store: Inventory): number {
 }
 
 /**
+ * The servable food a store holds most of, ties by id — what a household
+ * pays its due in (`BandSystem.levyTaxes`): the thing it has plenty of.
+ */
+export function mostOf(store: Inventory): string | null {
+  let best: string | null = null;
+  let most = 0;
+  for (const [itemId, count] of store.entries()) {
+    if (!servable(itemId)) continue;
+    if (count > most || (count === most && best !== null && itemId < best)) {
+      best = itemId;
+      most = count;
+    }
+  }
+  return best;
+}
+
+/**
  * What to put in front of a guest next: beer to somebody lonelier than they
  * are hungry (it is a cup to share, not a meal), otherwise the most filling
  * thing the store holds. Ties broken by id so the same store always serves

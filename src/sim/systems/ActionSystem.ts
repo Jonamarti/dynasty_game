@@ -794,6 +794,8 @@ export class ActionSystem {
       // M15 phase 38a: `brewing`'s second half. See `social/Feast.ts`.
       case 'feast': this.doFeast(person, ctx); break;
       case 'attend': this.doAttend(person, ctx); break;
+      // M15 phase 38b: paying a household's due into the temple.
+      case 'render': this.doRender(person, ctx); break;
       case 'tend': this.doTend(person, ctx); break;
       case 'tame': this.doTame(person, ctx); break;
       case 'sow': this.doSow(person, ctx); break;
@@ -2648,6 +2650,57 @@ export class ActionSystem {
     ctx.onInsight(person, t('holds a feast for {n}', { n: served }), 'gain');
     if (stop) this.stop(person, stop, ctx);
     else this.finish(person);
+  }
+
+  /**
+   * Carrying a household's due to the temple — M15 phase 38b, `taxation`.
+   *
+   * Two legs. The first takes the due: out of the bearer's own hands when the
+   * order names no building, or out of the household's home store when it
+   * does (as much of `targetItemId` as was asked and as the hands will hold).
+   * The second walks it to the temple and puts it in. Walking only, no long
+   * work, so no interruption check beyond the walk's own; what is in hand when
+   * an interruption comes stays in hand, and is the household's again.
+   */
+  private doRender(person: Person, ctx: ActionContext): void {
+    if (person.renderTo === null) {
+      const templeId = ctx.templeByBand?.get(person.bandId);
+      const temple = templeId === undefined ? null : ctx.buildingsById.get(templeId) ?? null;
+      if (!temple || !isLarder(temple)) {
+        this.abandon(person, 'no_temple', ctx);
+        return;
+      }
+      const itemId = person.targetItemId;
+      const wanted = person.targetItemCount ?? 1;
+      let taken = 0;
+      if (itemId !== null && person.targetBuildingId === null) {
+        taken = Math.min(wanted, person.inventory.count(itemId));
+      } else if (itemId !== null) {
+        const home = this.reachBuilding(person, ctx, { ok: isLarder, reason: 'nothing_to_render' });
+        if (!home) return;
+        const room = Math.max(0, itemCapacityFor(person, ctx.carry, itemId) - person.inventory.count(itemId));
+        taken = home.store.remove(itemId, Math.min(wanted, room));
+        stow(person, ctx.carry, itemId, taken);
+      }
+      if (taken <= 0 || itemId === null) {
+        this.abandon(person, 'nothing_to_render', ctx);
+        return;
+      }
+      person.renderGoods = { itemId, count: taken };
+      person.renderTo = temple.id;
+      person.targetBuildingId = temple.id;
+      return;
+    }
+    const temple = this.reachBuilding(person, ctx, { ok: isLarder, reason: 'no_temple' });
+    if (!temple) return;
+    const goods = person.renderGoods;
+    const paid = goods ? temple.accept(person.inventory, goods.itemId, goods.count) : 0;
+    if (paid <= 0) {
+      this.abandon(person, 'store_full', ctx);
+      return;
+    }
+    telemetry.count('tax_collected', paid);
+    this.finish(person);
   }
 
   /**

@@ -2705,3 +2705,55 @@ test('a brewer is offered a feast, and told why there is none to give', async ({
   await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
 });
+
+test('a chief who knows how to tax sets the levy from the Work tab', async ({ page }) => {
+  // M15 phase 38b. Governing is on the player's own Work tab, and only for a
+  // chief; the share is one of the steps `TAX_RATES` names, none included.
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { id: number; bandId: number; knownTech: Set<string> } | null;
+        bands: { id: number; chiefId: number | null; chiefSince: number | null; taxRate?: number }[];
+        bandSystem: { chiefByBand: Map<number, number> };
+        time: { day: number };
+      };
+    };
+  };
+  const made = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player;
+    const band = d.sim.bands.find(b => b.id === self?.bandId);
+    if (!self || !band) return false;
+    d.sim.bandSystem.chiefByBand.set(band.id, self.id);
+    band.chiefId = self.id;
+    band.chiefSince = d.sim.time.day;
+    return true;
+  });
+  expect(made).toBe(true);
+
+  await page.locator('.hud-tab', { hasText: 'Work' }).click();
+  await expect(page.locator('.hud-section', { hasText: 'Government' })).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.hud-note', { hasText: 'Nobody here knows yet how to levy a tax' })).toBeVisible();
+
+  await page.evaluate(() => {
+    (window as never as Debug).__dynasty.sim.player!.knownTech.add('taxation');
+  });
+  // The panel redraws on a digest of what it shows, and a paused game does not
+  // move it: going to another tab and back is what rebuilds it.
+  await page.locator('.hud-tab', { hasText: 'Self' }).click();
+  await page.locator('.hud-tab', { hasText: 'Work' }).click();
+  const tenth = page.locator('[data-tax="0.1"]');
+  await expect(tenth).toBeVisible({ timeout: 10_000 });
+  await tenth.click();
+  await expect.poll(async () => page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    return d.sim.bands.find(b => b.id === d.sim.player!.bandId)?.taxRate;
+  })).toBe(0.1);
+  await expect(page.locator('[data-tax="0.1"]')).toHaveClass(/is-active/);
+
+  expect(errors).toEqual([]);
+});

@@ -42,4 +42,32 @@ export const ES_POLITY: Record<string, string> = {
     "Lo que entró en el templo y quién debe a quién, por escrito. Lo que se da al almacén se recuerda en favor de quien lo dio, y una deuda que el jefe ha oído no se olvida hasta que se paga.",
   "Gifts to the temple written to the giver's credit, and debts the chief has heard of kept until paid.":
     "Lo dado al templo, apuntado en favor de quien lo dio; y las deudas que el jefe ha oído, guardadas hasta que se pagan.",
+  // Phase 38b: taxation.
+  "Taxation": "Tributación",
+  "about 2500 BC": "hacia el 2500 a. C.",
+  "read down the temple's tally and saw which houses had never once given to it":
+    "repasó la cuenta del templo y vio qué casas no le habían dado nunca nada",
+  "found the temple bare in a lean month while every house about it was full":
+    "encontró el templo vacío en un mes de escasez, con todas las casas de alrededor llenas",
+  "watched the band eat the temple empty, and thought of who should fill it again":
+    "vio a la banda vaciar el templo comiendo, y pensó en quién debía llenarlo de nuevo",
+  "A share of what every house keeps, owed to the temple and carried there. The government sets the share, and nothing is owed at none; a heavy one empties the houses to fill the temple, and is resented by every house it is taken from.":
+    "Una parte de lo que guarda cada casa, debida al templo y llevada hasta él. El gobierno fija la parte, y con ninguna no se debe nada; una parte grande vacía las casas para llenar el templo, y cada casa a la que se le quita la guarda rencor.",
+  "A share of every house's store, set by the government, carried to the temple; resented in proportion.":
+    "Una parte del almacén de cada casa, fijada por el gobierno y llevada al templo; con un rencor proporcional.",
+  "bringing their due to the temple": "llevando lo debido al templo",
+  "there was nothing at home to pay with": "no había nada en casa con qué pagar",
+  "there is no temple to pay into": "no hay templo al que pagar",
+  "only the chief can set the levy": "sólo el jefe puede fijar el tributo",
+  "nobody here knows how to levy a tax": "aquí nadie sabe cobrar un tributo",
+  "Government": "Gobierno",
+  "You lead the band. Nobody here knows yet how to levy a tax.": "Diriges la banda. Aquí nadie sabe todavía cobrar un tributo.",
+  "The levy: each house carries this share of its store to the temple": "El tributo: cada casa lleva esta parte de su almacén al templo",
+  "There is no temple to pay into: it takes a granary, and a chief who knows redistribution.":
+    "No hay templo al que pagar: hace falta un granero, y un jefe que sepa redistribuir.",
+  "Every house taxed thinks the worse of you for it, and the more so the heavier the share.":
+    "Cada casa a la que gravas piensa peor de ti por ello, y más cuanto mayor es la parte.",
+  "No levy is owed to the temple": "No se debe tributo al templo",
+  "The levy is now {share}": "El tributo es ahora del {share}",
+  "The levy stays as it was": "El tributo sigue como estaba",
 };

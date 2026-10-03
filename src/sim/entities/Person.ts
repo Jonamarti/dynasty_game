@@ -453,6 +453,13 @@ export class Person {
    * cleared by `ActionSystem.doFeast` at both ends of the feast.
    */
   feastServed: number[] | null = null;
+  /**
+   * A `render` under way — M15 phase 38b: the temple it is going to once the
+   * due has been taken from home, and what was taken. Null before the first
+   * leg is done. Cleared with the target.
+   */
+  renderTo: number | null = null;
+  renderGoods: { itemId: string; count: number } | null = null;
   /** Which tree the current action is aimed at, for felling and picking. */
   targetTreeId: number | null = null;
   /** Which animal the current action is aimed at, for the hunt. */
@@ -1110,6 +1117,8 @@ export class Person {
     this.targetBuildingId = null;
     // A feast set aside for another order is a feast over: see `doFeast`.
     this.feastServed = null;
+    this.renderTo = null;
+    this.renderGoods = null;
     this.targetTreeId = null;
     this.targetAnimalId = null;
     this.targetRecipe = null;

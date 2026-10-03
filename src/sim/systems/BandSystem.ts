@@ -16,6 +16,8 @@
  *    band gets you driven into the wilderness, and theft in a tolerant one does
  *    not, without either outcome being written as a rule.
  */
+import { LEVY_EVERY_DAYS, dueFrom, keepsAccounts, npcTaxRate, taxResentment } from '../social/Polity.ts';
+import { isLarder, portions, mostOf } from '../social/Feast.ts';
 import { MEMBERS_PER_GUARD } from '../social/Defence.ts';
 import type { Person } from '../entities/Person.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
@@ -377,7 +379,9 @@ export interface BandContext {
   abandonSite: (building: Building) => void;
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
   command: (leader: Person, subordinate: Person, action: string,
-    target: { buildingId?: number; nodeId?: number }) => boolean;
+    target: { buildingId?: number; nodeId?: number; itemId?: string; count?: number }) => boolean;
+  /** Each band's temple store today, M15 phase 38b. */
+  templeOf: (bandId: number) => Building | null;
   /** Assigns a job, subject to the same roll `command` uses. */
   assignJob: (leader: Person, subordinate: Person, job: JobId | null) => boolean;
   /** Moves someone out of their band of their own accord, not by exile. */
@@ -480,6 +484,7 @@ export class BandSystem {
       if (!band.outcast) this.considerRaid(band, members, ctx, outcastBand?.id);
       if (ctx.day % PLANNING_INTERVAL === 0) this.planBuildings(band, members, ctx);
       this.directWork(band, members, ctx);
+      if (!band.outcast) this.levyTaxes(band, members, ctx);
     }
   }
 
@@ -767,6 +772,130 @@ export class BandSystem {
     }
 
     ctx.assignJob(chief, unassigned[0]!, wanted);
+  }
+
+  // -------------------------------------------------------------------------
+  // Taxes
+  // -------------------------------------------------------------------------
+
+  /**
+   * The levy — M15 phase 38b, `taxation`. Once a day, a chief who knows how to
+   * tax tells the household whose turn has come, and who holds the most food,
+   * to carry its share to the temple (`render`). The household carries it
+   * itself: the dues were brought, not fetched.
+   *
+   * What a household holds is its home's store, when the home is somewhere
+   * food can be kept, and the food its members are carrying. **Measured**: the
+   * first version read the home's store alone, and on `polity` every home was a
+   * windbreak — a roof that keeps nothing — so no household ever owed anything.
+   * The bearer pays out of their own hands first, and from the home store when
+   * that is where the food is.
+   *
+   * Deterministic, as everything in this system must be (its `rng` is the
+   * forest's): who pays is chosen by turn and by holdings, never by a roll. The
+   * compliance roll is `command`'s own, against `ORDER_COST.render`. The
+   * chief's own household is not taxed — the oldest exemption there is, and
+   * the one that makes the levy widen the gap it was meant to fill.
+   *
+   * Every adult of the taxed household thinks the worse of the chief for it,
+   * by `taxResentment`: a heavy share is what feeds `considerRebellion`.
+   */
+  private levyTaxes(band: Band, members: Person[], ctx: BandContext): void {
+    const chiefId = this.chiefByBand.get(band.id);
+    const chief = chiefId === undefined ? undefined : members.find(m => m.id === chiefId);
+    if (!chief || techPower(chief, 'taxation') <= 0) return;
+    if (!chief.isPlayer) band.taxRate = npcTaxRate(chief);
+    const rate = band.taxRate ?? 0;
+    const temple = ctx.templeOf(band.id);
+    if (rate <= 0 || !temple) return;
+
+    // Who may carry a household's due: never the player's character — an
+    // order from a chief is the player's to obey or not, the rule
+    // `orderAmends` keeps for the same reason.
+    const mayBear = (m: Person) => !m.isChild && !m.isPlayer && m.captiveOf === null &&
+      m.order === null && this.fitToTravel(m);
+
+    let payer: Household | null = null;
+    let most = 0;
+    for (const household of ctx.householdsById.values()) {
+      if (household.bandId !== band.id || household.extinct) continue;
+      if (household.id === chief.householdId) continue;
+      if (ctx.day - household.lastLevyDay < LEVY_EVERY_DAYS) continue;
+      const food = this.householdFood(household, members, temple, ctx);
+      if (food > most || (food === most && payer !== null && household.id < payer.id)) {
+        payer = household;
+        most = food;
+      }
+    }
+    if (!payer) return;
+
+    const givenSince = payer.contributed - payer.contributedAtLevy;
+    const due = dueFrom(most, rate, givenSince, keepsAccounts(chief));
+    payer.lastLevyDay = ctx.day;
+    payer.contributedAtLevy = payer.contributed;
+    if (due < 1) {
+      telemetry.count('levy_nothing_owed');
+      return;
+    }
+
+    // The bearer: whoever of the household carries the most of one food, or
+    // — if the home store holds more of something than anybody carries — the
+    // first fit adult, sent to fetch it from home.
+    const household = payer;
+    const bearers = members.filter(m => m.householdId === household.id && mayBear(m)).sort((a, b) => a.id - b.id);
+    let bearer: Person | null = null;
+    let dish: string | null = null;
+    let held = 0;
+    for (const member of bearers) {
+      const item = mostOf(member.inventory);
+      const count = item === null ? 0 : member.inventory.count(item);
+      if (item !== null && count > held) {
+        bearer = member;
+        dish = item;
+        held = count;
+      }
+    }
+    const home = this.larderHome(household, temple, ctx);
+    const atHome = home ? mostOf(home.store) : null;
+    const homeHeld = home && atHome ? home.store.count(atHome) : 0;
+    let target: { buildingId?: number; itemId: string; count: number } | null = null;
+    if (home && atHome && homeHeld > held && bearers.length > 0) {
+      bearer = bearers[0]!;
+      target = { buildingId: home.id, itemId: atHome, count: Math.min(due, homeHeld) };
+    } else if (bearer && dish) {
+      target = { itemId: dish, count: Math.min(due, held) };
+    }
+    if (!bearer || !target) {
+      telemetry.count('levy_nobody_to_bring_it');
+      return;
+    }
+
+    chief.noteDid('levy');
+    telemetry.count('levy_ordered');
+    for (const member of members) {
+      if (member.householdId !== household.id || member.isChild) continue;
+      ctx.relationships.addDeed(member.id, chief.id, -taxResentment(rate, member), ctx.tick);
+    }
+    if (ctx.command(chief, bearer, 'render', target)) {
+      telemetry.count('levy_obeyed');
+    } else {
+      telemetry.count('levy_refused');
+    }
+  }
+
+  /** A household's home, when it is somewhere food is kept and is not the temple itself. */
+  private larderHome(household: Household, temple: Building, ctx: BandContext): Building | null {
+    if (household.homeBuildingId === null || household.homeBuildingId === temple.id) return null;
+    const home = ctx.buildings.find(b => b.id === household.homeBuildingId);
+    return home && isLarder(home) ? home : null;
+  }
+
+  /** What a household holds for the levy: its larder at home and what its members carry. */
+  private householdFood(household: Household, members: Person[], temple: Building, ctx: BandContext): number {
+    const home = this.larderHome(household, temple, ctx);
+    let food = home ? portions(home.store) : 0;
+    for (const member of members) if (member.householdId === household.id) food += portions(member.inventory);
+    return food;
   }
 
   // -------------------------------------------------------------------------

@@ -97,7 +97,7 @@ import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
 import { feastVenue } from '../social/Feast.ts';
-import { keepsAccounts, templeOf } from '../social/Polity.ts';
+import { TAX_RATES, keepsAccounts, templeOf } from '../social/Polity.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
 
 /**
@@ -261,6 +261,14 @@ export interface Band {
   claimedCells?: Set<string>;
   /** True for the standing-place of the exiled: no camp, no chief, no norms. */
   outcast?: boolean;
+  /**
+   * The share of every household's store owed to the temple at each levy —
+   * M15 phase 38b, `taxation`. Set by the government: an NPC chief from their
+   * own greed (`Polity.npcTaxRate`), the player's chief by the player
+   * (`Simulation.setTaxRate`). Read only while the chief knows taxation and the
+   * band has a temple. Absent means none.
+   */
+  taxRate?: number;
 }
 
 export class Simulation {
@@ -2345,6 +2353,26 @@ export class Simulation {
     return temple && temple.complete && !temple.ruined ? temple : null;
   }
 
+  /**
+   * The player's government sets the levy — M15 phase 38b. Refused, with the
+   * reason in `lastRefusal`, unless `chief` leads their band and knows how to
+   * tax; and only to one of `TAX_RATES`.
+   */
+  setTaxRate(chief: Person, rate: number): boolean {
+    const band = this.bands.find(b => b.id === chief.bandId);
+    if (!band || this.bandSystem.chiefByBand.get(band.id) !== chief.id) {
+      this.lastRefusal = t('only the chief can set the levy');
+      return false;
+    }
+    if (techPower(chief, 'taxation') <= 0) {
+      this.lastRefusal = t('nobody here knows how to levy a tax');
+      return false;
+    }
+    if (!(TAX_RATES as readonly number[]).includes(rate)) return false;
+    band.taxRate = rate;
+    return true;
+  }
+
   /** Daily: which granary is each band's temple, from its chief's own head. */
   private refreshTemples(): void {
     this.templeByBand.clear();
@@ -4314,6 +4342,7 @@ export class Simulation {
         abandonSite: site => this.removeBuilding(site),
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),
+        templeOf: bandId => this.templeOf(bandId),
         assignJob: (leader, subordinate, job) => this.assignJob(leader, subordinate, job),
         leaveBand: person => this.removeBandMembership(person),
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),

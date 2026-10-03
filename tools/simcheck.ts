@@ -588,7 +588,7 @@ export const SCENARIOS: Record<string, Scenario> = {
           'plant_lore', 'grinding', 'farming', 'pottery', 'brewing',
           'division_of_labour', 'chiefdom',
           'writing', 'clay_tablet',
-          'redistribution', 'accounting',
+          'redistribution', 'accounting', 'taxation',
         ],
       },
     },
@@ -2307,6 +2307,21 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       recorded + ' of ' + given + ' units given to a temple written down; ' +
         (tel.debt_recorded ?? 0) + ' debts written, ' + (tel.recorded_debt_days ?? 0) +
         ' debt-days kept past the year');
+  }
+
+  // M15 phase 38b, `taxation`. The levy: households told to carry a share of
+  // their store to the temple, and doing it. Judged on food actually arriving,
+  // not on levies ordered — an order nobody obeys is not a tax.
+  if ((tel.temple_days ?? 0) === 0 || !sim.knownTech.has('taxation')) {
+    skip('taxes-reach-the-temple', 'no temple kept by a chief who knows how to tax');
+  } else {
+    const ordered = tel.levy_ordered ?? 0;
+    const collected = tel.tax_collected ?? 0;
+    add('taxes-reach-the-temple',
+      ordered > 0 && collected > 0,
+      ordered + ' levies ordered (' + (tel.levy_obeyed ?? 0) + ' obeyed, ' + (tel.levy_refused ?? 0) +
+        ' refused, ' + (tel.levy_nothing_owed ?? 0) + ' owing nothing), ' + collected + ' units carried in; ' +
+        'rebellion: ' + (tel.rebellion_refused ?? 0) + ' refusals, ' + (tel.rebellion_left ?? 0) + ' left');
   }
 
   // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the

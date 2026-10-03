@@ -137,6 +137,8 @@ export const TECHS = [
   'redistribution',
   // The written ledger: contributions to the temple and debts before the chief.
   'accounting',
+  // The levy: a share of every household's store, carried to the temple.
+  'taxation',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1638,6 +1640,33 @@ export const TECH: Record<Tech, TechDef> = {
       'the store is remembered to the giver\'s credit, and a debt the chief ' +
       'has heard of is not forgotten until it is paid.',
   },
+  taxation: {
+    id: 'taxation', label: 'Taxation', domain: 'people',
+    // Sumerian temple dues and the Old Kingdom's harvest levy: the store the
+    // band gives to becomes a store the band owes.
+    age: 'bronze', firstKnown: 'about 2500 BC',
+    // A practice: nothing is built. Tried by levying — `BandSystem.levyTaxes`
+    // notes `levy` on the chief each time a household is told to pay.
+    kind: 'practice', practisedBy: ['levy'],
+    requires: ['redistribution', 'accounting'], difficulty: 0.6, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      // The ledger shows who never gives.
+      { needs: [{ kind: 'knows', tech: 'accounting' }, { kind: 'doing', action: 'store' }],
+        weight: 1.0, story: 'read down the temple\'s tally and saw which houses had never once given to it' },
+      // A bare temple in a lean month beside full houses.
+      { needs: [{ kind: 'knows', tech: 'redistribution' }, { kind: 'feeling', need: 'hunger' },
+                { kind: 'doing', action: 'take' }],
+        weight: 0.7, story: 'found the temple bare in a lean month while every house about it was full' },
+      { needs: [{ kind: 'knows', tech: 'redistribution' }, { kind: 'saw', what: 'feast' }],
+        weight: 0.5, story: 'watched the band eat the temple empty, and thought of who should fill it again' },
+    ],
+    description:
+      'A share of what every house keeps, owed to the temple and carried ' +
+      'there. The government sets the share, and nothing is owed at none; ' +
+      'a heavy one empties the houses to fill the temple, ' +
+      'and is resented by every house it is taken from.',
+  },
 };
 
 /** Highest chronic motive this design can answer; zero means no recorded need. */
@@ -1902,6 +1931,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   accounting: {
     summary: 'Gifts to the temple written to the giver\'s credit, and debts the chief has heard of kept until paid.',
     site: 'Polity.recordContribution via ActionSystem.noteFoodStored; Simulation.hearComplaint marks Debt.recorded; Amends.pruneDebts; Simulation.keepDockets',
+  },
+  taxation: {
+    summary: 'A share of every house\'s store, set by the government, carried to the temple; resented in proportion.',
+    site: 'BandSystem.levyTaxes; ActionSystem.doRender; Polity.npcTaxRate, dueFrom and taxResentment; Simulation.setTaxRate',
   },
 };
 

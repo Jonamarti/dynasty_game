@@ -21,6 +21,10 @@ commit del bloque compara contra ella.
   hecho en `setup` y nadie más planea uno que necesite vasijas) y
   `fields-are-sown-and-reaped` (sabe `farming` y no siembra en 24.000 ticks).
   Escenario nuevo, sin base; no investigado.
+- **El tributo cobra poco en `polity`** (38b): los hogares llevan su
+  excedente al templo por su cuenta y el libro lo descuenta, así que casi
+  nunca deben nada (121 de 129 tributos). Con `taxation` sin `accounting`, o
+  con un jefe que no lleva cuentas, cobraría más; no se ha medido ese caso.
 - **Ninguna cerveza en los banquetes de `feasts`.** 23 banquetes, 0 tazas: la
   cerveza se bebe en `toast` antes de llegar al almacén. No es un error del
   banquete, pero `FEAST_CUP_RELIEF` apenas se ejerce.

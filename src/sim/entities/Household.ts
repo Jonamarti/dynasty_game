@@ -60,6 +60,14 @@ export class Household {
    */
   contributed = 0;
 
+  /**
+   * The levy's bookkeeping — M15 phase 38b, `taxation`: the day this
+   * household was last told to pay, and what `contributed` stood at then, so
+   * the next levy can credit what it gave freely in between.
+   */
+  lastLevyDay = -Infinity;
+  contributedAtLevy = 0;
+
   /** Persistent hostility toward other houses, keyed by household id. */
   readonly feud = new Map<number, number>();
   /** The last known culprit for each feud, so revenge names a person rather

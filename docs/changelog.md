@@ -1,3 +1,46 @@
+## 2026-10-03 — M15 fase 38b: el tributo
+
+- **Nodo `taxation`** (práctica, Edad del Bronce, «hacia el 2500 a. C.»;
+  requiere `redistribution` y `accounting`; se practica al gravar, que
+  `BandSystem.levyTaxes` anota en el jefe). Chispas: leer la cuenta del templo
+  y ver qué casas nunca le dieron; encontrar el templo vacío en un mes de
+  escasez con las casas llenas; ver a la banda vaciar el templo en un banquete.
+- **La tasa la fija el gobierno**, entre `TAX_RATES` (0, 5, 10, 20, 30 %; el 0
+  incluido, como pide el plan): el jefe PNJ según su codicia
+  (`npcTaxRate`), el jugador desde la sección «Gobierno» de su pestaña de
+  trabajo, que sólo aparece si es jefe y que, si aún no sabe gravar, lo dice.
+  `Simulation.setTaxRate` rechaza con razón a quien no es jefe o no sabe.
+- **El tributo** (`levyTaxes`, determinista, sin dados): una vez al día, el
+  hogar al que le toca (cada 5 días) y que más comida tiene paga
+  `floor(comida × tasa)`, menos lo dado de grado al templo desde el último
+  tributo si el jefe lleva cuentas. Lo que tiene un hogar es su almacén, si
+  su casa guarda algo, más lo que llevan sus miembros: **medido**, la primera
+  versión leía sólo el almacén de casa, y en `polity` todas las casas eran
+  cortavientos que no guardan nada, así que nadie debió nunca nada. Lo lleva
+  un adulto del hogar (nunca el personaje del jugador) con el verbo nuevo
+  `render`, desde sus manos o desde casa, al templo. El hogar del jefe está
+  exento.
+- **El rencor**: cada adulto del hogar gravado pierde
+  `tasa × 30 × (0,5 + codicia)` de opinión del jefe en cada tributo (unos 10
+  puntos a la tasa más alta y con codicia alta; 1,5 al 5 %). Es lo que
+  alimenta `considerRebellion`.
+- **Interfaz**: la sección de gobierno con los cinco botones; floaters del
+  resultado; `render` y sus dos razones de abandono (`nothing_to_render`,
+  `no_temple`) en `Floaters`; todo en español. E2E nuevo: un jefe que sabe
+  gravar pone el 10 % desde la pestaña.
+- **Tests:** cuatro nuevos en `polity.test.ts` (lo debido y el descuento del
+  libro, la tasa según la codicia, el rencor, y quién puede fijar la tasa).
+- **Check `taxes-reach-the-temple`**, sobre comida que llega, no sobre
+  órdenes. En `polity`: 129 tributos, de los que 121 no debían nada —los
+  hogares ya llevan su excedente al templo y el libro lo descuenta—, 8
+  ordenados y acatados, 3 unidades llegadas. Funciona, con poco que cobrar
+  en este mundo; ninguna rebelión. Sin `levyTaxes` da 0 y falla.
+
+**Tests en paralelo:** con otro agente usando la máquina, dos tests ajenos
+(`band.test.ts`, `grazing.test.ts`) agotaron su tiempo en una pasada; solos
+pasan, y la suite pasa entera (833/833) con `--maxWorkers 2 --testTimeout
+20000`.
+
 ## 2026-10-03 — M15 fase 38b: la contabilidad
 
 - **Nodo `accounting`** (práctica, Edad del Bronce, «hacia el 3200 a. C.»: las
