@@ -1,3 +1,32 @@
+## 2026-10-03 — M15 fase 28: roster coordinado con relaciones
+
+`RosterRecords` v1 compone los codecs de persona, hogar, banda, opiniones y
+relaciones entre bandas a un tick común. Captura todo el archivo `peopleById`
+y guarda aparte la lista activa: conserva fallecidos, el jugador muerto
+pendiente de sucesión y el orden activo sin resucitar ni duplicar instancias.
+Los mapas rehidratados apuntan a los mismos objetos que sus arrays.
+
+La carga valida IDs únicos, tick de captura, referencias de pertenencia,
+miembros recíprocos y presencia de los vivos en la lista activa. Rechaza también
+arrays/mapas fuente divergentes. Permite genealogía y vínculos históricos
+externos, titulares antiguos y la banda distinta del hogar tras el exilio.
+Tres pruebas ricas ejercitan estas rutas reales, métodos después de JSON,
+copias independientes y controles negativos. No registra entidades en una
+simulación ni integra libros, RNG/agendas o transferencia de autoridad.
+
+Verificación conjunta final: typecheck, **909/909 unitarios en 122 archivos**,
+16 focales y **70/70 navegador** pasan. Nueve hashes de estado existente/RNG
+coinciden. La matriz completa conserva **104 fallos heredados en 27 escenarios**
+y cero diferencias de checks aplicables/aprobados y listas de fallos, sin
+comparar throughput. Logs, resultados normalizados y QA visual:
+`artifacts/verification/m15-phase28-groups-20261003-160240/`;
+suite final `artifacts/verification/m15-phase28-tests-stable.log`.
+
+Capturas cronológicas nuevas, gira 1/1 y QA, sin cambio de interfaz:
+`artifacts/screenshots/m15-phase28-roster-2026-10-03-161719/`.
+Plan, arquitectura, bugs y siguiente trabajo reflejan esta composición inerte
+y los límites pendientes antes de carga de mundo y compacto/LOD.
+
 ## 2026-10-03 — M15 fase 28: identidad compartida de bandas y manadas
 
 `IdSpace` v2 añade namespaces independientes para bandas y manadas. Reserva

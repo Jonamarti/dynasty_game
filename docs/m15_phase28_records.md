@@ -50,8 +50,11 @@ La suite completa de esta pasada incluye estos casos y el determinismo.
 No es todavía un formato de partida con migraciones ni un registro compacto.
 La validación de forma no sustituye la consistencia entre entidades. Los grafos
 de opiniones y `BandRelations` ya tienen codecs independientes en
-[m15_phase28_social.md](m15_phase28_social.md); todavía hay que coordinar su carga
-con el roster. `IdSpace` ya controla la creación de entidades/eventos por mundo,
+[m15_phase28_social.md](m15_phase28_social.md). `RosterRecords` ya compone estos
+registros y valida tick, pertenencias y aliases sin registrarlos en el motor;
+conserva el archivo de fallecidos y la lista activa separadamente. Contrato en
+[m15_phase28_roster.md](m15_phase28_roster.md).
+`IdSpace` ya controla la creación de entidades/eventos por mundo,
 incluidas ahora bandas/manadas mediante su checkpoint v2. Antes de integrarlo quedan libros
 de edificios/recursos, RNG del mundo y agendas; transferencia de autoridad
 sin duplicar personas o bienes y calendario de avances. `Knowledge` continúa

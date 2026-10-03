@@ -3812,8 +3812,10 @@ otros mecanismos. Las cohortes heredadas de veinte semillas dejan `lean` en
 
 Los registros v1 de fase 28 copian y reconstruyen estado propio. Opiniones y
 `BandRelations` externos ya tienen codecs independientes en `SocialRecords.ts`;
-su carga todavía no se coordina con el roster. Una rehidratación no se inserta
-aún en `Simulation`. `IdSpace` ya controla por mundo los diez namespaces de
+`RosterRecords` ya coordina su snapshot con personas, hogares y bandas a un tick
+común, validando pertenencias y conservando archivo muerto/lista activa. Una
+rehidratación no se inserta aún en `Simulation` ni transfiere autoridad.
+`IdSpace` ya controla por mundo los diez namespaces de
 entidades/eventos y el factory de nacimientos es local. El checkpoint v2 también
 coordina bandas/manadas y no libera identidades retiradas. Quedan libros,
 RNG/agendas y transferencia
@@ -3821,6 +3823,12 @@ con un solo dueño de personas y bienes. Compartir el allocator no autoriza
 fusionar dos rosters/bandas directamente. Los constructores standalone retienen
 contadores de compatibilidad; al incorporar objetos al motor hay que pasar
 `sim.ids`. No se declara guardado de partida ni LOD activo.
+
+La verificación conjunta de grupos/roster repite 27 escenarios y conserva los
+104 fallos heredados, con cero diferencias de checks aplicables/aprobados y
+listas de fallos frente a la referencia. La matriz sigue roja; typecheck,
+909 pruebas unitarias y 70 de navegador pasan. Evidencia en
+`artifacts/verification/m15-phase28-groups-20261003-160240/`.
 
 ### Nombres estacionales de la gira visual — 2026-10-03, corregido
 

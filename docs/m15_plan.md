@@ -2508,8 +2508,17 @@ retienen también grupos retirados y rechazan v1 sin historia de grupos. El
 dibujo usa `Band.outcast`, sin inferir destierro por el número de ID. Contrato:
 [m15_phase28_groups.md](m15_phase28_groups.md).
 
-Siguen pendientes libros y la integración
-del roster, además de coordinar los registros propios con los grafos externos.
+**Avance del 2026-10-03, roster coordinado.** `RosterRecords` v1 compone
+personas, hogares, bandas y ambos grafos externos a un tick común. Conserva
+todo `peopleById`, incluido el archivo de muertos, y guarda explícitamente
+la lista activa; arrays y mapas rehidratados comparten instancias canónicas.
+Valida IDs, pertenencias y aliases, sin exigir que un desterrado tenga la misma
+banda que su hogar ni resucitar al jugador muerto pendiente de sucesión.
+Las pruebas cubren evolución tras JSON, independencia, referencias históricas
+y rechazos de carga corrupta. [Contrato](m15_phase28_roster.md).
+
+Siguen pendientes libros, registro del roster en una simulación viva y
+transferencia de autoridad con un solo dueño de personas y bienes.
 Los constructores standalone mantienen contadores de compatibilidad; incorporar
 entidades a una simulación requiere pasar `sim.ids`. La fase 28 y el LOD siguen abiertos.
 

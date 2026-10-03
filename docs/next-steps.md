@@ -1,10 +1,20 @@
 # Next steps
 
+**2026-10-03: fase 28, roster coordinado.** `RosterRecords` v1 compone entidades
+y grafos sociales a un tick común, conserva muertos retenidos y membresía activa
+por separado y valida pertenencias antes de devolver arrays/mapas canónicos.
+No registra ni transfiere entidades a una simulación viva. La entrega conjunta
+grupos/roster pasa typecheck, 909 unitarios y 70 e2e; nueve hashes coinciden y la
+matriz conserva sus mismos 104 fallos heredados en 27 escenarios. Siguiente:
+libros del mundo, RNG/agendas, carga y transferencia con un único dueño antes
+de activar compacto/LOD. [Contrato](m15_phase28_roster.md).
+
 **2026-10-03: fase 28, bandas/manadas compartidas.** `IdSpace` v2 conserva los
 IDs históricos del mundo aislado y evita colisiones entre comarcas que comparten
 el asignador. Retiene grupos retirados; v1 se rechaza por falta de esa historia.
-El color de desterrados usa el estado de la banda. El siguiente tramo coordina
-el roster; siguen pendientes carga de mundo, libros y transferencia de autoridad.
+El color de desterrados usa el estado de la banda. La composición del roster
+se recoge en la entrega posterior; siguen pendientes carga de mundo, libros y
+transferencia de autoridad.
 Ver [m15_phase28_groups.md](m15_phase28_groups.md).
 
 **2026-10-03: fase 28, identidades y relaciones.** El motor crea entidades y
