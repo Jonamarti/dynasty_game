@@ -2893,9 +2893,11 @@ export class Brain {
         // Which building this person's own household calls home, so a greedy
         // person can be pulled toward it below. Null for anyone whose
         // household has never slept under a roof yet.
-        const home = person.householdId === null
+        // M15 phase 39b: a serf's work goes to the household that owns them.
+        const keeper = person.serfOf ?? person.householdId;
+        const home = keeper === null
           ? null
-          : ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
+          : ctx.householdsById.get(keeper)?.homeBuildingId ?? null;
 
         // A trap is somewhere food comes *from*. Filling one with berries would
         // be a person carefully stopping their own snare line from catching

@@ -7,7 +7,7 @@ import { Simulation } from '../core/Simulation.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
 import {
-  CONTRIBUTION_RENOWN, SOLDIER_UPKEEP, WAR_MIN_DAYS, fightOf, loyalistsOf, civilisationLacks, strengthOf, submits, TAX_RATES, heirOf, mayKeepSoldier, reignsForLife, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
+  CONTRIBUTION_RENOWN, SERF_REVOLT_QUORUM, SOLDIER_UPKEEP, WAR_MIN_DAYS, serfRefuses, fightOf, loyalistsOf, civilisationLacks, strengthOf, submits, TAX_RATES, heirOf, mayKeepSoldier, reignsForLife, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
   templeOf, templePull,
 } from '../social/Polity.ts';
 import { Household } from '../entities/Household.ts';
@@ -498,5 +498,58 @@ describe('plots against the king', () => {
     const loyal = loyalistsOf(king!, sim.livingPeople(), new Set([plotter!.id]));
     expect(loyal.map(p => p.id).sort()).toEqual([soldier!.id, kin!.id].sort());
     expect(fightOf([king!, soldier!])).toBeGreaterThan(fightOf([king!]));
+  });
+});
+
+describe('slavery: the captive as a serf', () => {
+  const TWO = { ...SMALL, population: { bands: 2, peoplePerBand: 6, startingTech: ['pottery', 'division_of_labour', 'chiefdom'] } };
+  type Taker = { takeCaptive: (person: Person, binder: Person) => void };
+
+  function setup(govern: boolean) {
+    const sim = new Simulation(TWO);
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    const [ours, theirs] = sim.bands.filter(band => !band.outcast);
+    const chief = sim.peopleById.get(ours!.chiefId!)!;
+    if (govern) learn(chief, 'law_code');
+    const binder = sim.livingPeople().find(p => p.bandId === ours!.id && p.householdId !== null && !p.isChild)!;
+    const taken = sim.livingPeople().filter(p => p.bandId === theirs!.id && !p.isChild);
+    return { sim, ours: ours!, binder, taken, take: (p: Person) => (sim as unknown as Taker).takeCaptive(p, binder) };
+  }
+
+  it('makes an adult captive the serf of the binder\'s house, only under a law or a crown', () => {
+    const free = setup(false);
+    free.take(free.taken[0]!);
+    expect(free.taken[0]!.captiveOf).toBe(free.ours.id);
+    expect(free.taken[0]!.serfOf).toBeNull();
+
+    const owned = setup(true);
+    owned.take(owned.taken[0]!);
+    expect(owned.taken[0]!.serfOf).toBe(owned.binder.householdId);
+  });
+
+  it('lets a serf with a temper and a grudge refuse to their master\'s face', () => {
+    const { sim, binder, taken, take } = setup(true);
+    const serf = taken[0]!;
+    take(serf);
+    expect(serfRefuses(serf, 0)).toBe(false);
+    serf.traits.aggression = 0.9;
+    for (let i = 0; i < 4; i++) sim.relationships.addDeed(serf.id, binder.id, -25, sim.time.tick);
+    expect(serfRefuses(serf, sim.relationships.opinion(serf.id, binder.id))).toBe(true);
+    expect(sim.command(binder, serf, 'goto', { x: 10, y: 10 })).toBe(false);
+    expect(sim.lastRefusal).toMatch(/will not be ordered/);
+  });
+
+  it('frees serfs who trust each other when enough of them rise together', () => {
+    const { sim, ours, taken, take } = setup(true);
+    const serfs = taken.slice(0, SERF_REVOLT_QUORUM);
+    for (const serf of serfs) take(serf);
+    for (const a of serfs) for (const b of serfs) if (a !== b) {
+      for (let i = 0; i < 3; i++) sim.relationships.addDeed(a.id, b.id, 20, sim.time.tick);
+    }
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    for (const serf of serfs) {
+      expect(serf.bandId).not.toBe(ours.id);
+      expect(serf.serfOf).toBeNull();
+    }
   });
 });

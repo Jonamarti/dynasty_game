@@ -362,3 +362,25 @@ export function loyalistsOf(king: Person, members: readonly Person[], plotters: 
 export function fightOf(people: readonly Person[]): number {
   return people.reduce((sum, p) => sum + p.skillFactor('fight'), 0);
 }
+
+/**
+ * How badly a serf must think of whoever orders them before they refuse to
+ * their face — M15 phase 39b, slavery's refusal. Against the captive's rule
+ * that a captive has no standing to refuse, a serf with a temper and a
+ * grudge this deep refuses anyway, and is not rolled for it.
+ */
+export const SERF_REFUSES_AT = -40;
+
+/** The aggression a serf needs to refuse rather than bend. */
+export const SERF_TEMPER = 0.6;
+
+/** Whether a serf refuses an order from `leader` outright. Deterministic. */
+export function serfRefuses(serf: Person, opinionOfLeader: number): boolean {
+  return serf.serfOf !== null && serf.traits.aggression >= SERF_TEMPER && opinionOfLeader <= SERF_REFUSES_AT;
+}
+
+/**
+ * How many serfs of one band, all trusting each other, rise together —
+ * M15 phase 39b, slavery's rebellion. Three, the plot's own quorum.
+ */
+export const SERF_REVOLT_QUORUM = 3;

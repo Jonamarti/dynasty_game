@@ -640,6 +640,14 @@ export class Person {
   /** Tick at which the present captivity began; used by the adoption clock. */
   captiveSince: number | null = null;
   /**
+   * The household this captive serves, once captivity is an institution —
+   * M15 phase 39b: taken by a band whose chief governs (`Polity.governs`), an
+   * adult captive is the serf of the household of whoever tied them, and
+   * passes with it. Null for a free person and for a captive of a people with
+   * no law. Cleared with `captiveOf` on every way out.
+   */
+  serfOf: number | null = null;
+  /**
    * The people this person went raiding against, and until when — M11 phase
    * 15d's raid source of captives. Set by `BandSystem.considerRaid` on each
    * member of a grudge raid's party who answered; while it holds, `Brain`

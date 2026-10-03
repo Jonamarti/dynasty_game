@@ -42,6 +42,12 @@ commit del bloque compara contra ella.
   que tres se junten contra el rey. Un escenario con un rey impuesto y un
   impuesto alto (que resta opinión) lo ejercitaría; tampoco hay noche en la
   decisión, que el plan quería como momento natural del golpe.
+- **La servidumbre, la conjura y el tributo no se ejercitan en ningún
+  escenario** (39b-d): en `polity` no hay incursiones (graneros fuera de
+  alcance), ni conjuras (la banda se aprecia), ni un pueblo 1,5 veces más
+  fuerte que el otro. Están probados en tests; su peso en un mundo, no. Un
+  escenario de conquista (campamentos cerca, bandas desiguales, rencor y un
+  rey) lo mediría todo junto; queda propuesto.
 - **Ninguna cerveza en los banquetes de `feasts`.** 23 banquetes, 0 tazas: la
   cerveza se bebe en `toast` antes de llegar al almacén. No es un error del
   banquete, pero `FEAST_CUP_RELIEF` apenas se ejerce.

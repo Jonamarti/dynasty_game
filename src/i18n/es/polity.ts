@@ -155,4 +155,9 @@ export const ES_POLITY: Record<string, string> = {
   "seized the rule of the {band} from {name}": "arrebató el gobierno de la {band} a {name}",
   "was overthrown by {name}": "fue derrocado por {name}",
   "plotted against {name}, and was found out": "conspiró contra {name}, y fue descubierto",
+  // Phase 39b: slavery.
+  "was made a serf of the {household}": "fue hecho siervo de los {household}",
+  "rose with the other serfs and broke free": "se alzó con los demás siervos y se liberó",
+  "{name} will not be ordered by you": "{name} no acepta órdenes tuyas",
+  "serf of the {household}, of the {band}": "siervo de los {household}, de la {band}",
 };

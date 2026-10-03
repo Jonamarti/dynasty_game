@@ -3001,6 +3001,17 @@ Determinista. En `polity` nadie conspira (la banda se aprecia: 0 opiniones
 hostiles), así que se prueba en tests; no se añade un check porque lo único
 medible sin conjuras sería cierto por construcción.
 
+**Avance del 2026-10-03 (39b, la esclavitud).** La cautividad adulta ya era
+trabajo forzado (M12 4c); con un jefe que gobierna, el cautivo adulto pasa a
+ser siervo de la casa de quien lo ató (`Person.serfOf`), lo que guarda va a
+esa casa, y la condición se hereda: si la casa se extingue pasa a la del
+jefe. Rechazo: un siervo de genio (agresividad ≥ 0,6) con un rencor de -40 o
+peor se niega a la cara, sin tirada. Fuga: la de siempre. Rebelión: tres o
+más siervos de una banda que confían entre sí se alzan juntos y se liberan.
+La ficha dice «siervo de los X». Check `serfs-are-owned`, n/a en `polity`
+(no hay cautivos: la guerra no llega a las manos). **Con esto quedan hechas
+las fases 38 (salvo `city_walls`) y 39 dentro de la comarca.**
+
 ## Fase 40 — El hierro (M8.4)
 
 **Detalle en `m8_plan_the_ages.md` §M8.4.** Seis nodos de la sub-red Metal:

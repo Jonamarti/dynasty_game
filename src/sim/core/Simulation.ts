@@ -11,6 +11,7 @@
  *     reads this; this never reaches back. That is what lets the headless
  *     harness run exactly the code the browser runs.
  */
+import { trustEachOther } from '../social/Factions.ts';
 import { advanceGrass, grassBuried, CUT_ABOVE } from './Grass.ts';
 import { DIG_TO, PILE_TO, digTool, digToolFailure } from './Earth.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
@@ -98,6 +99,7 @@ import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '
 import { MAP_CELL } from '../social/BandMaps.ts';
 import { feastVenue, isLarder } from '../social/Feast.ts';
 import {
+  SERF_REVOLT_QUORUM, serfRefuses,
   PEACE_BROKEN_REGARD, PEACE_BROKEN_STANDING, TAX_RATES, acceptsPeace, civilisationLacks, governs, keepsAccounts,
   templeOf,
 } from '../social/Polity.ts';
@@ -1434,6 +1436,15 @@ export class Simulation {
     // the people holding them. Keeping this exception here, at the same seam
     // as every other order, means the player and the AI get the same forced
     // labour rule instead of one of them quietly bypassing it.
+    // M15 phase 39b: a serf with a temper and a deep enough grudge refuses
+    // even the people who own them, to their face. Not rolled: decided by the
+    // serf's own nature and what they think of the one giving the order.
+    if (isCaptive(subordinate) && subordinate.captiveOf === leader.bandId && leader.captiveOf === null &&
+      serfRefuses(subordinate, this.relationships.opinion(subordinate.id, leader.id))) {
+      telemetry.count('serf_refused');
+      this.lastRefusal = t('{name} will not be ordered by you', { name: subordinate.name });
+      return false;
+    }
     if (isCaptive(subordinate) && subordinate.captiveOf === leader.bandId &&
       leader.captiveOf === null) {
       telemetry.count('captive_order_obeyed');
@@ -1660,6 +1671,21 @@ export class Simulation {
     person.resume = null;
     person.forgetPlans();
     telemetry.count('taken_captive');
+    // M15 phase 39b: among a people with a law or a crown, an adult captive
+    // is not merely held but owned — the serf of the household of whoever
+    // tied them, or of the chief's if the binder has none.
+    const captorChief = captors.chiefId === null ? null : this.peopleById.get(captors.chiefId) ?? null;
+    if (!person.isChild && governs(captorChief)) {
+      person.serfOf = binder.householdId ?? captorChief?.householdId ?? null;
+      if (person.serfOf !== null) {
+        telemetry.count('serf_taken');
+        const master = this.householdsById.get(person.serfOf);
+        person.chronicle.push({
+          tick: this.time.tick, ageDays: person.age,
+          text: t('was made a serf of the {household}', { household: master?.name ?? '' }), kind: 'suffered',
+        });
+      }
+    }
     person.chronicle.push({
       tick: this.time.tick, ageDays: person.age,
       text: t('was taken captive by the {band}', { band: captors.name }), kind: 'suffered',
@@ -1678,6 +1704,8 @@ export class Simulation {
    */
   private escape(person: Person): void {
     const captors = this.bands.find(b => b.id === person.captiveOf);
+    if (person.serfOf !== null) telemetry.count('serf_escaped');
+    person.serfOf = null;
     person.captiveOf = null;
     person.captiveSince = null;
     const outcasts = this.outcastBand();
@@ -1777,6 +1805,7 @@ export class Simulation {
     captor.inventory.add(itemId, count);
     const oldBand = captive.captiveFrom;
     captive.captiveOf = null;
+    captive.serfOf = null;
     captive.captiveSince = null;
     captive.boundBy = null;
     captive.boundUntil = -9999;
@@ -1795,6 +1824,45 @@ export class Simulation {
       text: t('paid a ransom for {name}', { name: captive.name }), kind: 'did',
     });
     return true;
+  }
+
+  /**
+   * Daily, M15 phase 39b. Serfdom is heritable: a serf whose household has
+   * died out passes to the household of the captors' chief, as goods do to
+   * the crown. And serfs rise: when at least `SERF_REVOLT_QUORUM` serfs of
+   * one band trust one another (`trustEachOther`, the plot's own test), they
+   * all slip away together, whoever is watching. Deterministic.
+   */
+  private settleSerfs(): void {
+    const byBand = new Map<number, Person[]>();
+    for (const serf of this.people) {
+      if (!serf.alive || serf.serfOf === null || !isCaptive(serf)) continue;
+      telemetry.count('serf_days');
+      const master = this.householdsById.get(serf.serfOf);
+      if (!master || master.extinct) {
+        const band = this.bands.find(b => b.id === serf.captiveOf);
+        const chief = band?.chiefId == null ? null : this.peopleById.get(band.chiefId) ?? null;
+        serf.serfOf = chief?.householdId ?? null;
+        if (serf.serfOf !== null) telemetry.count('serf_inherited');
+      }
+      const list = byBand.get(serf.bandId) ?? [];
+      list.push(serf);
+      byBand.set(serf.bandId, list);
+    }
+    for (const serfs of byBand.values()) {
+      if (serfs.length < SERF_REVOLT_QUORUM) continue;
+      const rising = serfs.filter(a => serfs.filter(b => b !== a && trustEachOther(a.id, b.id, this.relationships)).length >=
+        SERF_REVOLT_QUORUM - 1);
+      if (rising.length < SERF_REVOLT_QUORUM) continue;
+      telemetry.count('serf_revolt');
+      for (const serf of rising) {
+        serf.chronicle.push({
+          tick: this.time.tick, ageDays: serf.age,
+          text: t('rose with the other serfs and broke free'), kind: 'milestone',
+        });
+        this.escape(serf);
+      }
+    }
   }
 
   /** Once per day, children who have lived long enough among their captors are
@@ -1823,6 +1891,7 @@ export class Simulation {
       captive.surname = household.name;
       household.add(captive.id);
       captive.captiveOf = null;
+      captive.serfOf = null;
       captive.captiveFrom = null;
       captive.captiveSince = null;
       captive.boundBy = null;
@@ -4451,6 +4520,7 @@ export class Simulation {
       this.bandRelations.decay();
       this.settleFeuds();
       this.settleCaptives();
+      this.settleSerfs();
       for (const person of this.people) {
         if (person.alive) {
           person.curiosityDays = Math.min(60, person.curiosityDays + 1);

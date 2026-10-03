@@ -2421,6 +2421,20 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         (tel.tributary_days ?? 0) + ' band-days as a tributary, ' + (tel.tribute_thrown_off ?? 0) + ' thrown off');
   }
 
+  // M15 phase 39b. Slavery as an institution: where a governed people took an
+  // adult captive, they are owned by a household and their work goes to it.
+  // Judged where any serf was taken; reported with refusals, escapes and
+  // risings, which are the plan's three answers to it.
+  if ((tel.serf_taken ?? 0) === 0) {
+    skip('serfs-are-owned', 'no governed people took an adult captive in this run');
+  } else {
+    add('serfs-are-owned',
+      (tel.serf_days ?? 0) > 0,
+      (tel.serf_taken ?? 0) + ' made serfs, ' + (tel.serf_days ?? 0) + ' serf-days, ' + (tel.serf_inherited ?? 0) +
+        ' inherited, ' + (tel.serf_refused ?? 0) + ' refusals, ' + (tel.serf_escaped ?? 0) + ' escaped, ' +
+        (tel.serf_revolt ?? 0) + ' risings');
+  }
+
   // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the
   // band. Judged on guests actually fed rather than on feasts called, since a
   // feast nobody comes to is the failure this is here to catch — verified to

@@ -1,3 +1,26 @@
+## 2026-10-03 — M15 fase 39b: la esclavitud como institución
+
+- **Siervo de una casa** (`Person.serfOf`): un adulto tomado cautivo por un
+  pueblo cuyo jefe gobierna (`law_code` o `kingship`) es siervo de la casa de
+  quien lo ató, o de la del jefe si el captor no tiene. Sin gobierno, la
+  cautividad sigue como estaba (trabajo forzado, M12 4c).
+- **Su trabajo es de la casa**: lo que guarda un siervo va al hogar de sus
+  amos (`Brain`, ranking de `store`).
+- **Hereditaria** (`Simulation.settleSerfs`): si la casa se extingue, el
+  siervo pasa a la del jefe de los captores.
+- **Su rechazo**: un siervo con agresividad ≥ 0,6 y opinión de -40 o peor de
+  quien le manda se niega a la cara (`Polity.serfRefuses`), contra la regla
+  de que un cautivo no puede negarse; determinista, con razón visible.
+- **Su fuga**: la de siempre (`Captivity.ts`), y libera de la servidumbre.
+- **Su rebelión**: tres o más siervos de una banda que confían entre sí
+  (`trustEachOther`) se alzan juntos y se liberan, los mire quien los mire.
+- **Interfaz**: la ficha dice «siervo de los X, de la Y». Español.
+- **Check `serfs-are-owned`**: n/a en `polity`, donde la guerra no llega a
+  las manos y nadie es tomado. **Tests:** el siervo sólo bajo gobierno, la
+  negativa con su razón, y el alzamiento.
+- **Con esto quedan hechas las fases 38 (salvo `city_walls`) y 39 dentro de
+  la comarca**, según el alcance acordado.
+
 ## 2026-10-03 — M15 fase 39c: conspirar contra el rey
 
 - **El golpe** (`BandSystem.considerCoup`), segundo lector de

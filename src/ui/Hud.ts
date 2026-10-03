@@ -851,7 +851,10 @@ export class Hud {
     // M11 phase 15d: a captive is of their captors' band and plainly not one
     // of them — obvious to that band, and to anybody who knows them.
     const captive = person.captiveOf !== null && (sameBand || known.level !== 'stranger');
-    const bandText = captive
+    const master = person.serfOf === null ? null : sim.householdsById.get(person.serfOf);
+    const bandText = captive && master
+      ? escapeHtml(t('serf of the {household}, of the {band}', { household: master.name, band: band?.name ?? '' }))
+      : captive
       ? escapeHtml(t('captive of the {band}', { band: band?.name ?? '' }))
       : known.level === 'stranger'
       ? (sameBand ? escapeHtml(band?.name ?? '') : t('not of your band'))
