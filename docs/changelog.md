@@ -11468,3 +11468,14 @@ visible y de adulto. En band, people-act-on-what-they-know pasa con 2967/2967
 objetivos conocidos; siguen rojos dieta, sueño y rendimiento. Typecheck y cuatro
 tests focales aprobados. Cohortes antes/después se completan con la revisión
 de sueño; no se atribuirá por separado un cambio demográfico caótico a esta línea.
+
+## 2026-10-03 — M15: gira de capturas recuperada
+
+La gira puede guardar cada hito en `DYNASTY_CAPTURE_DIR`. Al cerrar un menú de
+árbol solo pulsa Escape si hay un radial abierto; de lo contrario abría la
+pantalla de pausa. Resume desde la superficie realmente visible (overlay o
+HUD). No cambia la UI del juego. La primera gira quedó 17/18 por ese paso;
+el recorrido principal corregido pasa 1/1 en 34,7 s. Captura radial revisada
+visualmente, opciones y título legibles sin solapamientos. Registro nuevo:
+`artifacts/screenshots/m15-checks-2026-10-03T-tour-fixed/`.
+Las otras 17 escenas están en `m15-checks-2026-10-03T-circadian/`.

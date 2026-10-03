@@ -6,7 +6,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const DIR = 'artifacts/screenshots';
+const DIR = process.env.DYNASTY_CAPTURE_DIR ?? 'artifacts/screenshots';
 
 /**
  * Clicks something and takes it out of the chooser.
@@ -180,11 +180,15 @@ test('tour', async ({ page }) => {
     await page.screenshot({ path: DIR + '/09-tree.png' });
     await clickThrough(page, tree.x, tree.y, '\u{1F333}', 'right');
     await page.screenshot({ path: DIR + '/10-tree-menu.png' });
-    await page.keyboard.press('Escape');
+    if (await page.locator('.radial').isVisible()) await page.keyboard.press('Escape');
   }
-  // The pause overlay intercepts input over the HUD, so click its own control
-  // instead of the identically named HUD button underneath it.
-  await page.locator('.pausemenu [data-act="resume"]').click();
+  // A missed world target leaves no radial for Escape to close, so older tour
+  // runs opened the pause overlay here. Resume whichever surface is visible.
+  if (await page.locator('.pausemenu').isVisible()) {
+    await page.locator('.pausemenu [data-act="resume"]').click();
+  } else {
+    await page.locator('#hud .hud-button', { hasText: 'Resume' }).click();
+  }
 
   // The kit tab. A tree is selected at this point in the tour, and a tree has no
   // tabs, so put the player back in the panel first.

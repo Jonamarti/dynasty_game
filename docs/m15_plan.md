@@ -3392,3 +3392,8 @@ century/lean/crowded. El objetivo de rendimiento sigue pendiente del propietario
 Visión infantil igual a la adulta en findNode. Regresión con comida visible y
 fuera de vista, fallaba con el radio doble. Band: 2967/2967 objetivos conocidos.
 Resto de las búsquedas y transmisión infantil de memoria conservados.
+
+Registro visual 2026-10-03: la gira acepta DYNASTY_CAPTURE_DIR para no sobrescribir
+hitos. Recorrido principal corregido y aprobado; capturas en
+artifacts/screenshots/m15-checks-2026-10-03T-tour-fixed/ y las otras 17 escenas en
+m15-checks-2026-10-03T-circadian/. El sueño continúa bajo evaluación de cohortes.
