@@ -141,4 +141,12 @@ export const ES_POLITY: Record<string, string> = {
   "War with the {band}": "Guerra con la {band}",
   "Peace with the {band}": "Paz con la {band}",
   "Nothing is declared": "No se declara nada",
+  // Phase 39d: tribute.
+  "refused the {band} its tribute": "negó su tributo a la {band}",
+  "tribute is offered to a people you are at war with": "el tributo se ofrece a un pueblo con el que estás en guerra",
+  "the {band} have no government to take a tribute": "la {band} no tiene un gobierno que pueda cobrar un tributo",
+  "submitted to the {band}, and will pay them tribute": "se sometió a la {band}, y le pagará tributo",
+  "king over their people": "rey sobre su pueblo",
+  "Offer tribute": "Ofrecer tributo",
+  "Your people will pay the {band} tribute": "Tu pueblo pagará tributo a la {band}",
 };

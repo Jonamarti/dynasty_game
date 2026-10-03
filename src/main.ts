@@ -380,6 +380,17 @@ const hud = new Hud(hudRoot, {
         : (why ?? t('Nothing is declared')),
       { color: ok ? (kind === 'war' ? '#e0705c' : '#7ddc96') : '#e0705c', boxed: true, ttl: 3.4 });
   },
+  onSubmit: bandId => {
+    // M15 phase 39d.
+    if (!sim.player) return;
+    const ok = sim.submit(sim.player, bandId);
+    const why = sim.lastRefusal;
+    sim.lastRefusal = null;
+    const name = sim.bands.find(b => b.id === bandId)?.name ?? '';
+    renderer.floaters.push(sim.player.x, sim.player.y,
+      ok ? t('Your people will pay the {band} tribute', { band: name }) : (why ?? t('Nothing is declared')),
+      { color: ok ? '#e0b055' : '#e0705c', boxed: true, ttl: 3.4 });
+  },
   onOpenMenu: () => { if (!menuOpen()) openMenu(); },
   onToggleBuild: () => setBuildMode(!buildMode),
   onToggleCraft: () => setCraftMode(!craftMode),

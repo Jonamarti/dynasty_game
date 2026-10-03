@@ -20,6 +20,7 @@ import type { Band } from '../core/Simulation.ts';
 import type { RelationshipGraph } from './Relationships.ts';
 import { chiefHoneymoon } from './Leadership.ts';
 import { techPower } from '../knowledge/Tech.ts';
+import { OVERLORD_AUTHORITY, reignsForLife } from './Polity.ts';
 import { t } from '../../i18n/i18n.ts';
 
 export interface AuthorityContext {
@@ -33,6 +34,8 @@ export interface AuthorityContext {
   bands: readonly Band[];
   /** Absolute day, on the same clock as `Band.chiefSince`. */
   day: number;
+  /** The band a band pays tribute to, M15 phase 39d. Optional for hand-built contexts. */
+  overlordOf?: (bandId: number) => number | null;
 }
 
 export interface Standing {
@@ -304,6 +307,14 @@ export function standingOver(
   if (isKin && !isHead) {
     authority += 0.1;
     reasons.push(t('kin'));
+  }
+
+  // M15 phase 39d: a king over the people of a band that pays him tribute.
+  if (!isChief && ctx.overlordOf && reignsForLife(leader) &&
+    ctx.chiefByBand.get(leader.bandId) === leader.id &&
+    ctx.overlordOf(subordinate.bandId) === leader.bandId) {
+    authority += OVERLORD_AUTHORITY;
+    reasons.push(t('king over their people'));
   }
 
   // M9.5 phase 4d: the middle rung. Until `chiefdom` a band is flat — `isHead`

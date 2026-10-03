@@ -96,7 +96,7 @@ import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
-import { feastVenue } from '../social/Feast.ts';
+import { feastVenue, isLarder } from '../social/Feast.ts';
 import {
   PEACE_BROKEN_REGARD, PEACE_BROKEN_STANDING, TAX_RATES, acceptsPeace, civilisationLacks, governs, keepsAccounts,
   templeOf,
@@ -1308,6 +1308,7 @@ export class Simulation {
       chiefByBand: this.bandSystem.chiefByBand,
       bands: this.bands,
       day: this.time.day,
+      overlordOf: bandId => this.bandRelations.overlordOf(bandId),
     };
   }
 
@@ -2397,7 +2398,10 @@ export class Simulation {
    * holding a captive can make use of is what the captive knows.
    */
   civilisationLacks(bandId: number): string[] {
-    const adults = this.people.filter(p => p.alive && !p.isChild && p.bandId === bandId);
+    // "Or several under a king" (M14 20c): a king's tributaries' knowledge
+    // counts toward his civilisation — M15 phase 39d.
+    const under = new Set([bandId, ...this.bandRelations.tributariesOf(bandId)]);
+    const adults = this.people.filter(p => p.alive && !p.isChild && under.has(p.bandId));
     const chiefId = this.bandSystem.chiefByBand.get(bandId);
     return civilisationLacks(adults, chiefId === undefined ? null : this.peopleById.get(chiefId));
   }
@@ -2450,6 +2454,52 @@ export class Simulation {
     chief.chronicle.push({ tick: this.time.tick, ageDays: chief.age, text, kind: 'milestone' });
     this.noteInsight(chief, text, kind === 'war' ? 'setback' : 'gain');
     return true;
+  }
+
+  /**
+   * A chief submits their band to an enemy as its tributary — M15 phase 39d.
+   * Any chief may, government or none: being beaten needs no law. Only to a
+   * band this one is at war with, and only to a government, which is what
+   * can hold a tributary. The player's chief through the Government section.
+   */
+  submit(chief: Person, overlordBandId: number): boolean {
+    const band = this.bands.find(b => b.id === chief.bandId);
+    const overlord = this.bands.find(b => b.id === overlordBandId);
+    if (!band || this.bandSystem.chiefByBand.get(band.id) !== chief.id) {
+      this.lastRefusal = t('only the chief can speak for the band');
+      return false;
+    }
+    if (!overlord || overlord.outcast || this.bandRelations.stance(band.id, overlord.id) !== 'war') {
+      this.lastRefusal = t('tribute is offered to a people you are at war with');
+      return false;
+    }
+    const theirChiefId = this.bandSystem.chiefByBand.get(overlord.id);
+    if (!governs(theirChiefId === undefined ? null : this.peopleById.get(theirChiefId))) {
+      this.lastRefusal = t('the {band} have no government to take a tribute', { band: overlord.name });
+      return false;
+    }
+    this.bandRelations.setStance(band.id, overlord.id, 'tributary', this.time.day, overlord.id);
+    telemetry.count('tribute_submitted');
+    const text = t('submitted to the {band}, and will pay them tribute', { band: overlord.name });
+    chief.chronicle.push({ tick: this.time.tick, ageDays: chief.age, text, kind: 'milestone' });
+    this.noteInsight(chief, text, 'setback');
+    return true;
+  }
+
+  /**
+   * Where tribute to `bandId` is carried: its temple, or else its largest
+   * larder, ties by id. Null if it has nowhere to keep anything.
+   */
+  tributeStoreOf(bandId: number): Building | null {
+    const temple = this.templeOf(bandId);
+    if (temple) return temple;
+    let best: Building | null = null;
+    for (const building of this.buildings) {
+      if (building.ownerBandId !== bandId || !isLarder(building)) continue;
+      if (!best || building.def.storage > best.def.storage ||
+        (building.def.storage === best.def.storage && building.id < best.id)) best = building;
+    }
+    return best;
   }
 
   /**
@@ -4449,6 +4499,8 @@ export class Simulation {
         templeOf: bandId => this.templeOf(bandId),
         personById: id => this.peopleById.get(id),
         declare: (chief, otherBandId, kind) => this.declare(chief, otherBandId, kind),
+        submit: (chief, overlordBandId) => this.submit(chief, overlordBandId),
+        tributeStoreOf: bandId => this.tributeStoreOf(bandId),
         assignJob: (leader, subordinate, job) => this.assignJob(leader, subordinate, job),
         leaveBand: person => this.removeBandMembership(person),
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),

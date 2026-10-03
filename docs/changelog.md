@@ -1,3 +1,39 @@
+## 2026-10-03 — M15 fase 39d: tratados y tributo
+
+- **Someterse** (`Simulation.submit`, `BandSystem.considerSubmission`): un jefe
+  en guerra desde hace 10 días con un gobierno al menos 1,5 veces más fuerte
+  (`strengthOf`: adultos libres, soldados al doble) se somete, salvo que su
+  agresividad pase de 0,8. Cualquier jefe puede: para ser vencido no hace
+  falta ley; el señor sí tiene que ser un gobierno. La postura pasa a
+  `tributary` con el señor.
+- **Pagar** (`payTribute`): cada 5 días el jefe tributario manda a uno de los
+  suyos a llevar el 15 % de lo que guarda la banda —su templo o su mayor
+  almacén, o lo que lleva encima su gente— al almacén del señor
+  (`Simulation.tributeStoreOf`: su templo o su mayor almacén). Es el mismo
+  `render` del impuesto, dirigido con `Person.renderInto`; el portador puede
+  negarse, y eso es un tributo no pagado.
+- **Sacudirse el yugo** (`throwsOff`): un tributario que iguala la fuerza de
+  su señor, con un jefe con valor, deja de pagar, y eso es la guerra.
+- **El rey sobre los tributarios**: `standingOver` suma
+  `OVERLORD_AUTHORITY` (0,25) y la razón «king over their people» cuando un rey
+  da una orden a alguien de un pueblo que le paga tributo.
+  `civilisationLacks` cuenta lo que saben los tributarios («o varias bajo un
+  rey»). Señor y tributario no se asaltan.
+- **Interfaz:** «Ofrecer tributo» en la sección de gobierno, frente a un
+  pueblo en guerra, para cualquier jefe; la postura tributaria se lee «te paga
+  tributo» / «les pagas tributo».
+- **Check `the-beaten-pay-tribute`**: n/a en `polity`, donde los dos pueblos
+  tienen 14 y ninguno es 1,5 veces el otro. **Tests:** cuándo se somete un
+  jefe y cuánto vale un soldado; someterse sólo a un gobierno en guerra y la
+  autoridad del rey sobre el sometido; y uno de integración en el que el
+  tributo llega al almacén del señor, medido por la propia entrega (la
+  primera versión medía el total del almacén, que el pueblo del señor también
+  llena, y habría pasado sin ningún tributo).
+- **Comprobado:** la matriz completa con la 38c, comparada con la de la 38a,
+  sólo difiere en la línea nueva de telemetría `food_stored_own` en los 23
+  escenarios antiguos: los nodos del Estado no tocan ningún mundo que no los
+  sepa. Comparación en `artifacts/verification/m15-39d-2026-10-03/`.
+
 ## 2026-10-03 — M15 fase 39a: declarar la guerra y la paz
 
 - **Postura declarada** en `BandRelations` (`war`, `peace`, `tributary`, ésta

@@ -7,13 +7,14 @@ import { Simulation } from '../core/Simulation.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
 import {
-  CONTRIBUTION_RENOWN, SOLDIER_UPKEEP, civilisationLacks, TAX_RATES, heirOf, mayKeepSoldier, reignsForLife, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
+  CONTRIBUTION_RENOWN, SOLDIER_UPKEEP, WAR_MIN_DAYS, civilisationLacks, strengthOf, submits, TAX_RATES, heirOf, mayKeepSoldier, reignsForLife, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
   templeOf, templePull,
 } from '../social/Polity.ts';
 import { Household } from '../entities/Household.ts';
 import { DEBT_DAYS, incur, pruneDebts } from '../social/Amends.ts';
 import { FEAST_MIN_FOOD, feastVenue, mayHostFeast } from '../social/Feast.ts';
 import { warParty } from '../social/Factions.ts';
+import { telemetry } from '../core/Telemetry.ts';
 import { answerWeight, judgeOwn, judgesByLaw, verdictGrudge } from '../social/Justice.ts';
 
 const SMALL = {
@@ -377,5 +378,72 @@ describe('war and peace: only a government declares them', () => {
     expect(sim.bandRelations.overlordOf(7)).toBeNull();
     expect(sim.bandRelations.tributariesOf(7)).toEqual([3]);
     expect(sim.bandRelations.touching(3)).toEqual([7]);
+  });
+});
+
+describe('tribute: the beaten pay rather than disappear', () => {
+  const TWO = { ...SMALL, population: { bands: 2, peoplePerBand: 5, startingTech: ['pottery', 'division_of_labour', 'chiefdom'] } };
+
+  it('submits only to a much stronger government, and not out of defiance', () => {
+    const sim = new Simulation(SMALL);
+    const chief = sim.livingPeople()[0]!;
+    chief.traits.aggression = 0.3;
+    expect(submits(chief, 10, 14, WAR_MIN_DAYS)).toBe(false);
+    expect(submits(chief, 10, 15, WAR_MIN_DAYS)).toBe(true);
+    expect(submits(chief, 10, 15, WAR_MIN_DAYS - 1)).toBe(false);
+    chief.traits.aggression = 0.9;
+    expect(submits(chief, 10, 30, WAR_MIN_DAYS)).toBe(false);
+    // A soldier counts twice.
+    const [a, b] = sim.livingPeople();
+    a!.job = 'soldier';
+    expect(strengthOf([a!, b!])).toBe(3);
+  });
+
+  it('makes the beaten a tributary, whose king has some say over them', () => {
+    const sim = new Simulation(TWO);
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    const [ours, theirs] = sim.bands.filter(band => !band.outcast);
+    const king = sim.peopleById.get(ours!.chiefId!)!;
+    const beaten = sim.peopleById.get(theirs!.chiefId!)!;
+    expect(sim.submit(beaten, ours!.id)).toBe(false);
+    expect(sim.lastRefusal).toMatch(/at war with/);
+    learn(king, 'kingship');
+    expect(sim.declare(king, theirs!.id, 'war')).toBe(true);
+    expect(sim.submit(beaten, ours!.id)).toBe(true);
+    expect(sim.bandRelations.overlordOf(theirs!.id)).toBe(ours!.id);
+
+    const subject = sim.livingPeople().find(p => p.bandId === theirs!.id && p.id !== beaten.id)!;
+    expect(sim.standing(king, subject, 'goto').because).toMatch(/king over their people/);
+  });
+});
+
+describe('tribute: carried to the overlord', () => {
+  it('arrives at the overlord\'s store', () => {
+    const TWO = { ...SMALL, population: { bands: 2, peoplePerBand: 5, startingTech: ['pottery', 'division_of_labour', 'chiefdom'] } };
+    const sim = new Simulation(TWO);
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    const [ours, theirs] = sim.bands.filter(band => !band.outcast);
+    const king = sim.peopleById.get(ours!.chiefId!)!;
+    learn(king, 'law_code');
+    const store = granaryFor(sim, ours!.id, Math.round(ours!.homeX), Math.round(ours!.homeY));
+    sim.buildingHash.insert(store);
+    sim.bandRelations.setStance(ours!.id, theirs!.id, 'tributary', sim.time.day, ours!.id);
+    // A chief without the nerve to throw the yoke off: as strong as their
+    // overlord, one with it would refuse the tribute on the first day.
+    sim.peopleById.get(theirs!.chiefId!)!.traits.aggression = 0.2;
+    // The tributary's own larder, well stocked, beside its camp.
+    const theirStore = granaryFor(sim, theirs!.id, Math.round(theirs!.homeX), Math.round(theirs!.homeY));
+    sim.buildingHash.insert(theirStore);
+    theirStore.store.add('berries', 60);
+
+    // Counted by the delivery itself: the overlord's own people store food in
+    // that granary too, so its total alone would pass without any tribute.
+    telemetry.enable();
+    telemetry.reset();
+    for (let day = 0; day < 6 && telemetry.get('tribute_delivered') === 0; day++) {
+      for (let i = 0; i < sim.config.time.ticksPerDay; i++) sim.step();
+    }
+    expect(telemetry.get('tribute_ordered')).toBeGreaterThan(0);
+    expect(telemetry.get('tribute_delivered')).toBeGreaterThan(0);
   });
 });

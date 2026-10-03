@@ -2974,6 +2974,21 @@ gobierno. `polity` empieza con un viejo rencor (-55) entre sus dos pueblos.
 Check `governments-declare-war-and-peace`. **Simplificación**: la postura la
 conocen los dos pueblos en el acto, sin mensajero; anotado en `bugs.md`.
 
+**Avance del 2026-10-03 (39d, tratados y tributo).** Un jefe en guerra con
+un gobierno al menos 1,5 veces más fuerte (adultos, soldados al doble) se
+somete tras 10 días, salvo que su agresividad pase de 0,8, y su banda queda
+como tributaria (`Simulation.submit`, cualquier jefe: para ser vencido no
+hace falta ley). Cada 5 días el tributario lleva el 15 % de lo que guarda (su
+templo o su mayor almacén, o lo que llevan encima) al almacén del señor, con
+el mismo `render` del tributo (`Person.renderInto`); el portador puede
+negarse. Un tributario que llega a igualar la fuerza del señor, con un jefe
+con valor, deja de pagar, y eso es la guerra. El rey tiene autoridad sobre la
+gente de sus tributarios (`OVERLORD_AUTHORITY`, 0,25) y la civilización
+cuenta lo que saben («o varias bajo un rey»). Las bandas tributaria y señora
+no se asaltan. El jugador-jefe en guerra ve «Ofrecer tributo». Check
+`the-beaten-pay-tribute`, n/a en `polity` (los dos pueblos son de 14); el
+tributo que llega se prueba en un test de integración.
+
 ## Fase 40 — El hierro (M8.4)
 
 **Detalle en `m8_plan_the_ages.md` §M8.4.** Seis nodos de la sub-red Metal:

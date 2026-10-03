@@ -460,6 +460,12 @@ export class Person {
    */
   renderTo: number | null = null;
   renderGoods: { itemId: string; count: number } | null = null;
+  /**
+   * The store a `render` is owed to when it is not the bearer's own band's
+   * temple — M15 phase 39d, a tribute carried to an overlord. Set by whoever
+   * gave the order, after the order (which clears the target) has been given.
+   */
+  renderInto: number | null = null;
   /** Which tree the current action is aimed at, for felling and picking. */
   targetTreeId: number | null = null;
   /** Which animal the current action is aimed at, for the hunt. */
@@ -1119,6 +1125,7 @@ export class Person {
     this.feastServed = null;
     this.renderTo = null;
     this.renderGoods = null;
+    this.renderInto = null;
     this.targetTreeId = null;
     this.targetAnimalId = null;
     this.targetRecipe = null;

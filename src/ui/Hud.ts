@@ -101,6 +101,8 @@ export interface HudCallbacks {
   onSetTaxRate: (rate: number) => void;
   /** M15 phase 39a: the player's government declares a war or a peace. */
   onDeclare: (bandId: number, kind: 'war' | 'peace') => void;
+  /** M15 phase 39d: the player's chief submits to an enemy as its tributary. */
+  onSubmit: (bandId: number) => void;
   /** Cancel an unfinished player-owned construction. */
   onCancelConstruction: (building: Building) => void;
   /**
@@ -438,13 +440,18 @@ export class Hud {
     this.panelEl.addEventListener('click', event => {
       const found = (event.target as HTMLElement)
         .closest('[data-tab], [data-person], [data-focus], [data-possess], ' +
-        '[data-command], [data-verb], [data-job], [data-transfer], [data-cancel-construction], [data-tax], [data-stance]');
+        '[data-command], [data-verb], [data-job], [data-transfer], [data-cancel-construction], [data-tax], [data-stance], [data-submit]');
       if (!found) return;
       const node = found as HTMLElement;
 
       if (node.dataset.job !== undefined && this.currentSelection?.kind === 'person') {
         const job = node.dataset.job === 'none' ? null : node.dataset.job as JobId;
         this.callbacks.onAssignJob(this.currentSelection.person, job);
+        this.builtFor = null;
+        return;
+      }
+      if (node.dataset.submit !== undefined) {
+        this.callbacks.onSubmit(Number(node.dataset.submit));
         this.builtFor = null;
         return;
       }
@@ -1318,6 +1325,12 @@ export class Hud {
       const standing = Math.round(sim.bandRelations.standing(bandId, other.id));
       rows.push('<div class="hud-need"><span>' + escapeHtml(other.name) + '</span><span>' +
         escapeHtml(word) + ' (' + standing + ')</span></div>');
+      // Any chief can submit to a people they are at war with — being beaten
+      // needs no law.
+      if (stance === 'war') {
+        rows.push('<div class="hud-buildbar-row"><button class="hud-design" data-submit="' + other.id + '">' +
+          '<span class="hud-design-name">' + escapeHtml(t('Offer tribute')) + '</span></button></div>');
+      }
       if (canDeclare && stance !== 'tributary') {
         rows.push('<div class="hud-buildbar-row">' +
           (stance !== 'war'

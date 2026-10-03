@@ -2664,7 +2664,8 @@ export class ActionSystem {
    */
   private doRender(person: Person, ctx: ActionContext): void {
     if (person.renderTo === null) {
-      const templeId = ctx.templeByBand?.get(person.bandId);
+      // A tribute names its overlord's store; a tax goes to the band's own temple.
+      const templeId = person.renderInto ?? ctx.templeByBand?.get(person.bandId);
       const temple = templeId === undefined ? null : ctx.buildingsById.get(templeId) ?? null;
       if (!temple || !isLarder(temple)) {
         this.abandon(person, 'no_temple', ctx);
@@ -2699,7 +2700,7 @@ export class ActionSystem {
       this.abandon(person, 'store_full', ctx);
       return;
     }
-    telemetry.count('tax_collected', paid);
+    telemetry.count(person.renderInto !== null ? 'tribute_delivered' : 'tax_collected', paid);
     this.finish(person);
   }
 

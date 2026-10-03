@@ -2408,6 +2408,19 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         (tel.peace_broken ?? 0) + ' peaces broken');
   }
 
+  // M15 phase 39d. Tribute: a people beaten in a war submits rather than
+  // disappears, and its tribute arrives at its overlord's store. Judged where
+  // anybody submitted; reported with what was thrown off.
+  if ((tel.tribute_submitted ?? 0) === 0) {
+    skip('the-beaten-pay-tribute', 'no people submitted to another in this run');
+  } else {
+    add('the-beaten-pay-tribute',
+      (tel.tribute_delivered ?? 0) > 0,
+      (tel.tribute_submitted ?? 0) + ' submissions, ' + (tel.tribute_ordered ?? 0) + ' tributes ordered (' +
+        (tel.tribute_refused ?? 0) + ' refused), ' + (tel.tribute_delivered ?? 0) + ' units delivered, ' +
+        (tel.tributary_days ?? 0) + ' band-days as a tributary, ' + (tel.tribute_thrown_off ?? 0) + ' thrown off');
+  }
+
   // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the
   // band. Judged on guests actually fed rather than on feasts called, since a
   // feast nobody comes to is the failure this is here to catch — verified to

@@ -17,8 +17,9 @@
  *    not, without either outcome being written as a rule.
  */
 import {
-  LEVY_EVERY_DAYS, PEACE_STANDING, TREATY_STANDING, WAR_MIN_DAYS, WAR_NERVE, WAR_STANDING, dueFrom, governs, heirOf,
-  keepsAccounts, mayKeepSoldier, npcTaxRate, reignsForLife, taxResentment,
+  LEVY_EVERY_DAYS, PEACE_STANDING, TREATY_STANDING, TRIBUTE_EVERY_DAYS, TRIBUTE_SHARE, WAR_MIN_DAYS, WAR_NERVE,
+  WAR_STANDING, dueFrom, governs, heirOf, keepsAccounts, mayKeepSoldier, npcTaxRate, reignsForLife, strengthOf,
+  submits, taxResentment, throwsOff,
 } from '../social/Polity.ts';
 import { isLarder, portions, mostOf } from '../social/Feast.ts';
 import { MEMBERS_PER_GUARD } from '../social/Defence.ts';
@@ -389,6 +390,10 @@ export interface BandContext {
   personById: (id: number) => Person | undefined;
   /** A government declares a war or a peace, M15 phase 39a. See `Simulation.declare`. */
   declare: (chief: Person, otherBandId: number, kind: 'war' | 'peace') => boolean;
+  /** A chief at war submits to the enemy as its tributary, M15 phase 39d. See `Simulation.submit`. */
+  submit: (chief: Person, overlordBandId: number) => boolean;
+  /** Where a band's tribute is carried: its temple, or its largest larder. M15 phase 39d. */
+  tributeStoreOf: (bandId: number) => Building | null;
   /** Assigns a job, subject to the same roll `command` uses. */
   assignJob: (leader: Person, subordinate: Person, job: JobId | null) => boolean;
   /** Moves someone out of their band of their own accord, not by exile. */
@@ -436,6 +441,17 @@ export class BandSystem {
   /** First day of sustained local food exhaustion, by band. */
   private readonly foodFailureSince = new Map<number, number>();
 
+  /** Last day each tributary band sent its tribute, M15 phase 39d. */
+  private readonly tributePaid = new Map<number, number>();
+
+  /** Living members by band, refreshed at the top of `daily`. */
+  private readonly membersByBand = new Map<number, Person[]>();
+
+  /** A band's living members today; empty for a band nobody is left in. */
+  private membersOf(bandId: number): Person[] {
+    return this.membersByBand.get(bandId) ?? [];
+  }
+
   /** Band names by id, refreshed at the top of `daily`, for chronicle lines. */
   private readonly bandNames = new Map<number, string>();
   /** Each band's camp, refreshed with the names; for the raid-for-need motive. */
@@ -450,6 +466,8 @@ export class BandSystem {
       else byBand.set(person.bandId, [person]);
     }
 
+    this.membersByBand.clear();
+    for (const [bandId, list] of byBand) this.membersByBand.set(bandId, list);
     this.bandNames.clear();
     this.bandHomes.clear();
     for (const band of bands) {
@@ -843,7 +861,11 @@ export class BandSystem {
   private considerStance(band: Band, members: Person[], bands: Band[], ctx: BandContext): void {
     const chiefId = this.chiefByBand.get(band.id);
     const chief = chiefId === undefined ? undefined : members.find(m => m.id === chiefId);
-    if (!chief || chief.isPlayer || !governs(chief)) return;
+    if (!chief || chief.isPlayer) return;
+    // M15 phase 39d. Submitting and throwing off the yoke are any chief's to
+    // do, government or none: a band with no law can still be beaten.
+    this.considerSubmission(band, chief, members, ctx);
+    if (!governs(chief)) return;
     for (const other of ctx.bandRelations.touching(band.id)) {
       const them = bands.find(b => b.id === other);
       if (!them || them.outcast) continue;
@@ -869,6 +891,94 @@ export class BandSystem {
         const theirs = theirChiefId === undefined ? undefined : ctx.personById(theirChiefId);
         if (governs(theirs)) ctx.declare(chief, other, 'peace');
       }
+    }
+  }
+
+  /**
+   * A chief at war with a government much stronger than their own people
+   * submits and pays tribute; a tributary that has outgrown its overlord
+   * throws the yoke off, which is a declaration of war — M15 phase 39d.
+   * Strength is `strengthOf` the living adults on each side, read the same
+   * way by both. Deterministic.
+   */
+  private considerSubmission(band: Band, chief: Person, members: Person[], ctx: BandContext): void {
+    const ours = strengthOf(members.filter(m => !m.isChild && m.captiveOf === null));
+    const strengthOfBand = (bandId: number) => strengthOf(
+      this.membersOf(bandId).filter(m => !m.isChild && m.captiveOf === null));
+    const overlord = ctx.bandRelations.overlordOf(band.id);
+    if (overlord !== null) {
+      telemetry.count('tributary_days');
+      if (throwsOff(chief, ours, strengthOfBand(overlord))) {
+        ctx.bandRelations.setStance(band.id, overlord, 'war', ctx.day);
+        telemetry.count('tribute_thrown_off');
+        const text = t('refused the {band} its tribute', { band: this.bandName(overlord) });
+        chief.chronicle.push({ tick: ctx.tick, ageDays: chief.age, text, kind: 'milestone' });
+        ctx.onInsight(chief, text, 'setback');
+      } else {
+        this.payTribute(band, chief, members, overlord, ctx);
+      }
+      return;
+    }
+    for (const other of ctx.bandRelations.touching(band.id)) {
+      const record = ctx.bandRelations.stanceRecord(band.id, other);
+      if (record?.kind !== 'war') continue;
+      const theirChiefId = this.chiefByBand.get(other);
+      const theirs = theirChiefId === undefined ? undefined : ctx.personById(theirChiefId);
+      if (!governs(theirs)) continue;
+      if (submits(chief, ours, strengthOfBand(other), ctx.day - record.since)) {
+        ctx.submit(chief, other);
+        return;
+      }
+    }
+  }
+
+  /**
+   * Every `TRIBUTE_EVERY_DAYS`, the tributary's chief sends one of its people
+   * to carry a share of what the band holds — its temple, or whatever its
+   * members carry — to the overlord's store (`render`, aimed at
+   * `renderInto`). The bearer may refuse like anybody told to do anything,
+   * and that is a tribute not paid.
+   */
+  private payTribute(band: Band, chief: Person, members: Person[], overlord: number, ctx: BandContext): void {
+    const last = this.tributePaid.get(band.id);
+    if (last !== undefined && ctx.day - last < TRIBUTE_EVERY_DAYS) return;
+    const into = ctx.tributeStoreOf(overlord);
+    if (!into) return;
+    this.tributePaid.set(band.id, ctx.day);
+
+    const own = ctx.tributeStoreOf(band.id);
+    const bearers = members.filter(m => !m.isChild && !m.isPlayer && m.captiveOf === null &&
+      m.order === null && this.fitToTravel(m)).sort((a, b) => a.id - b.id);
+    if (bearers.length === 0) return;
+    let target: { buildingId?: number; itemId: string; count: number } | null = null;
+    let bearer: Person | null = null;
+    const atHome = own ? mostOf(own.store) : null;
+    if (own && atHome && own.id !== into.id) {
+      const due = Math.max(1, Math.floor(portions(own.store) * TRIBUTE_SHARE));
+      bearer = bearers[0]!;
+      target = { buildingId: own.id, itemId: atHome, count: Math.min(due, own.store.count(atHome)) };
+    } else {
+      let held = 0;
+      for (const member of bearers) {
+        const item = mostOf(member.inventory);
+        const count = item === null ? 0 : member.inventory.count(item);
+        if (item !== null && count > held) {
+          bearer = member;
+          held = count;
+          target = { itemId: item, count: Math.max(1, Math.floor(count * TRIBUTE_SHARE * 4)) };
+        }
+      }
+    }
+    if (!bearer || !target) {
+      telemetry.count('tribute_nothing_to_send');
+      return;
+    }
+    telemetry.count('tribute_ordered');
+    if (ctx.command(chief, bearer, 'render', target)) {
+      bearer.renderInto = into.id;
+      telemetry.count('tribute_sent');
+    } else {
+      telemetry.count('tribute_refused');
     }
   }
 

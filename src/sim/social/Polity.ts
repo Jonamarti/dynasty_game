@@ -290,3 +290,50 @@ export const BREAKS_PEACE = new Set(['theft', 'assault', 'murder', 'sabotage', '
 export function acceptsPeace(chief: Person, standing: number): boolean {
   return chief.traits.aggression < 0.7 || standing >= PEACE_STANDING;
 }
+
+/**
+ * A people's strength in a war, as its chief reckons it: grown members, and
+ * soldiers counted twice — M15 phase 39d. Deterministic and crude on
+ * purpose; who is stronger is what decides a submission, not by how much.
+ */
+export function strengthOf(adults: readonly Person[]): number {
+  return adults.reduce((sum, p) => sum + (p.job === 'soldier' ? 2 : 1), 0);
+}
+
+/**
+ * How many times stronger the enemy must be before a chief at war submits
+ * and pays tribute rather than fight on — M15 phase 39d. The plan: "a
+ * defeated band pays tribute instead of disappearing".
+ */
+export const SUBMIT_RATIO = 1.5;
+
+/** The aggression above which a chief would sooner be destroyed than pay. */
+export const DEFIANT = 0.8;
+
+/** Whether a chief at war since `since` submits to an enemy of strength `theirs`. */
+export function submits(chief: Person, ours: number, theirs: number, warDays: number): boolean {
+  return warDays >= WAR_MIN_DAYS && chief.traits.aggression < DEFIANT && theirs >= ours * SUBMIT_RATIO;
+}
+
+/**
+ * Whether a tributary has outgrown its overlord enough to stop paying: as
+ * strong again as the overlord, with a chief who has the nerve for the war
+ * that follows. Throwing off the yoke is a declaration of war.
+ */
+export function throwsOff(chief: Person, ours: number, theirs: number): boolean {
+  return chief.traits.aggression >= WAR_NERVE && ours >= theirs;
+}
+
+/** Days between two tributes. */
+export const TRIBUTE_EVERY_DAYS = 5;
+
+/** The share of what the tributary holds that each tribute carries off. */
+export const TRIBUTE_SHARE = 0.15;
+
+/**
+ * Authority a king has over the people of a band that pays him tribute —
+ * M15 phase 39d. Below a chief's own 0.45 over their own band: the king is
+ * the tributary's master, not its chief, and its own chief still stands
+ * between him and its people.
+ */
+export const OVERLORD_AUTHORITY = 0.25;
