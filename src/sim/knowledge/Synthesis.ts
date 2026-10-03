@@ -219,6 +219,10 @@ export const SAW_WORDS: Record<string, string> = {
   // M9.5 phase 4a emitted `threaten` as a deed and never gave it words here,
   // which was harmless only for as long as no spark named it. 4c names it.
   threaten: 'watched somebody menaced into handing something over',
+  // M15 block IX. `feast` is named by `redistribution` and `taxation`, and
+  // `body_found` by `kingship`; a deed without words here prints its raw id
+  // in the tech web.
+  feast: 'sat at a feast', body_found: 'seen one of their own found dead',
   // Reasons their own work stopped, from `ActionSystem`.
   hands_full: 'run out of hands', quarry_escaped: 'lost an animal in the chase',
   node_empty: 'worked a place until nothing was left',

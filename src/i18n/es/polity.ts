@@ -114,4 +114,6 @@ export const ES_POLITY: Record<string, string> = {
     "El jefe reina de por vida, y el cargo pasa al cabeza de su casa o a su hijo mayor.",
   "inherited the rule of the {band} from {name}": "heredó el gobierno de la {band} de {name}",
   "inherits the rule of the {band}": "hereda el gobierno de la {band}",
+  "sat at a feast": "estado en un banquete",
+  "seen one of their own found dead": "visto aparecer muerto a uno de los suyos",
 };

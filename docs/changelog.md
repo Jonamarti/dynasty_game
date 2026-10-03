@@ -1,3 +1,12 @@
+## 2026-10-03 — M15 bloque IX: palabras para dos chispas
+
+- `SAW_WORDS` gana `feast` («sat at a feast») y `body_found` («seen one of
+  their own found dead»). Las chispas de `redistribution`, `taxation` y
+  `kingship` los nombran, y sin palabras la red de técnicas imprimía el id
+  crudo. El commit de `kingship` se hizo con `synthesis.test.ts` en rojo por
+  `body_found`; éste lo deja en verde (841/841). `feast` no fallaba el test
+  sólo porque su id no lleva guion bajo.
+
 ## 2026-10-03 — M15 fase 38b: la realeza
 
 - **Nodo `kingship`** (práctica, Edad del Bronce, «hacia el 2600 a. C.», las
