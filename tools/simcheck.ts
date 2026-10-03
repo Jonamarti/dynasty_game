@@ -1796,16 +1796,25 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // that compared employed-on-their-own-job against unemployed-on-any-job
   // failed by construction, dragged down by narrow jobs like `crafter`
   // whose actions are a small share of anyone's time.
-  const totalHolderTicks = JOB_IDS.reduce((sum, id) => sum + base.jobs.holderTicks[id], 0);
-  const totalOtherTicks = JOB_IDS.reduce((sum, id) => sum + base.jobs.otherTicks[id], 0);
+  // `soldier` only where somebody held it. It is the one job gated on a
+  // node (`standing_army`, M15 phase 38b), so in any world without one it has
+  // no holders to compare and only adds its verbs to the control group:
+  // measured, that moved `labour`'s control from 3.3% to 3.6% in a world
+  // whose every other figure was identical. The measurement was wrong, not
+  // the world. Not every unheld job is dropped: that was tried, and it moved
+  // the baseline's own figure (3.3% to 4.0%) — a different measurement, not
+  // the same one repaired.
+  const heldJobs = JOB_IDS.filter(id => id !== 'soldier' || base.jobs.holderTicks[id] > 0);
+  const totalHolderTicks = heldJobs.reduce((sum, id) => sum + base.jobs.holderTicks[id], 0);
+  const totalOtherTicks = heldJobs.reduce((sum, id) => sum + base.jobs.otherTicks[id], 0);
   if (totalHolderTicks < 200 || totalOtherTicks < 200) {
     skip('jobs-bias-work',
       'too few ticks with a job assigned to compare (' + totalHolderTicks + ' held, ' +
       totalOtherTicks + ' not)');
   } else {
-    const holderShare = JOB_IDS.reduce((sum, id) => sum + base.jobs.holderMatchTicks[id], 0) /
+    const holderShare = heldJobs.reduce((sum, id) => sum + base.jobs.holderMatchTicks[id], 0) /
       totalHolderTicks;
-    const otherShare = JOB_IDS.reduce((sum, id) => sum + base.jobs.otherMatchTicks[id], 0) /
+    const otherShare = heldJobs.reduce((sum, id) => sum + base.jobs.otherMatchTicks[id], 0) /
       totalOtherTicks;
     add('jobs-bias-work',
       holderShare > otherShare,

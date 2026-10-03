@@ -1,3 +1,23 @@
+## 2026-10-03 — M15 bloque IX: `jobs-bias-work` medía mal con `soldier`
+
+- **La matriz final del bloque**, comparada con la línea base escenario a
+  escenario sin las líneas de reloj ni las de los checks y la telemetría
+  nuevos: idéntica en 18 escenarios; `feasts` cambia por el banquete (38a);
+  `polity` y `conquest` son nuevos; y en `farmers`, `herders`, `stewards` y
+  `labour` cambiaba **una sola cifra**, el grupo de control de
+  `jobs-bias-work` (por ejemplo, `labour` 3,3 % → 3,6 %), con toda la
+  telemetría idéntica. El check recorre `JOB_IDS` y, desde la 38b, contaba
+  los verbos de `soldier`, un trabajo que en esos mundos nadie puede tener.
+  **Se arregla la medida, no el mundo**: `soldier` sólo entra si alguien lo
+  tuvo. Se probó antes descartar todo trabajo sin titulares, y movía la cifra
+  de la propia línea base (3,3 % → 4,0 %): otra medida, no la misma
+  reparada. Con el arreglo, los cuatro vuelven a la cifra exacta de la base.
+- **Corrección**: la entrada de la 39d dice que la matriz de la 38c sólo
+  difería de la de la 38a en la línea de telemetría `food_stored_own`. No es
+  cierto: también difería esta cifra en esos cuatro escenarios, y no lo vi
+  porque sólo miré la cabeza de la comparación.
+- Comparación final en `artifacts/verification/m15-block9-final-2026-10-03/`.
+
 ## 2026-10-03 — M15 bloque IX: capturas y e2e
 
 - **Capturas** en `artifacts/screenshots/m15-block9-2026-10-03/`: la opción
