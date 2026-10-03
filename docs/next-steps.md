@@ -1,5 +1,9 @@
 # Next steps
 
+**2026-10-03: gesto de cavar, fase 17.** Cuatro golpes de herramienta,
+probados desde una orden real, pausa e interrupción; arte y captura revisados.
+Quedan gestos de talar y fabricar. [Evidencia](m15_dig_animation.md).
+
 **2026-10-03: banco RNG, fase 28.** Reloj y 15 ubicaciones RNG se capturan a
 un tick común, conservando aliases y continuidad. Quedan agendas, objetos del
 mundo y aplicación coordinada al motor. [Contrato](m15_phase28_streams.md).

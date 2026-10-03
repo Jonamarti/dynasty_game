@@ -1,3 +1,15 @@
+## 2026-10-03 — M15 fase 17: cavar con un gesto visible
+
+Cuatro poses de cavar por edad/sexo/dirección y bastón primitivo en el atlas
+generado. El renderer conserva herramienta, llegada, reloj y pausa y quita
+el gesto al cancelar; no escribe trabajo ni terreno. Se regeneraron las hojas
+con art:build y se revisó contact-dig de art:sheet. 21/21 pruebas focales pasan;
+e2e de orden real, pausa, cuatro imágenes e interrupción incluido en npm run e2e.
+Capturas revisadas: `artifacts/screenshots/m15-dig-2026-10-03-final-pass1/`.
+Contrato: `docs/m15_dig_animation.md`. La suite conjunta pasa 935/935 y e2e
+72/72; matriz heredada roja y comparación en curso. Talar y fabricar siguen
+pendientes, y este gesto no completa toda la fase 17.
+
 ## 2026-10-03 — M15 fase 28: banco de corrientes de ejecución
 
 `ExecutionRecord` v1 compone reloj y las 15 ubicaciones RNG vivas del motor.

@@ -13,13 +13,16 @@ import { CORD, STONE_D, WOOD, WOOD_D } from './items.ts';
 export const HAND: readonly [number, number] = [48, 48];
 
 /** What the sim can put in a hand today, plus the torch phase 12 adds. */
-export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade'] as const;
+export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'digging_stick'] as const;
 export type HeldKind = (typeof HELD_KINDS)[number];
 
 /** `side` is true when seen from the east or west. */
 export function heldSvg(kind: HeldKind, side: boolean): string {
   const [x, y] = HAND;
   switch (kind) {
+    case 'digging_stick':
+      return limb([[x - 1, y + 14], [x + 1, y - 18]], 2.4, WOOD, WOOD_D)
+        + shape(`M${x - 1},${y - 18}L${x + 1},${y - 26}L${x + 4},${y - 20}Z`, WOOD_D, WOOD_D);
     case 'antler_pick':
       return limb([[x - 1, y + 12], [x + 1, y - 19]], 3, '#e6dcc0', '#7a6d4e')
         + shape(`M${x},${y - 17}Q${x + 7},${y - 26} ${x + 14},${y - 20}Q${x + 8},${y - 19} ${x + 2},${y - 13}Z`, '#e6dcc0', '#7a6d4e');

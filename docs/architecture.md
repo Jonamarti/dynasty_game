@@ -101,7 +101,10 @@ harvest timers, valid node/tree targets and the shared `ARRIVAL_RADIUS`; movemen
 takes priority. Four `g0`–`g3` poses advance from `workedTicks` plus the render
 accumulator fraction, so pause freezes the gesture without storing an animation
 clock in the simulation or consuming RNG. Gathering hides a carried weapon while
-the hand is working. Other work families keep their existing poses.
+the hand is working. Digging additionally uses `d0`–`d3` at a reached, valid tile
+with its held tool; its browser regression starts from a real order and checks
+pause, interruption and unchanged work/terrain during rendering. Other work
+families keep their existing poses. See [m15_dig_animation.md](m15_dig_animation.md).
 
 **Earthmoving has one tool selector.** `core/Earth.ts` chooses the strongest
 usable carried digging tool through `techPower`: sticks without a technique,

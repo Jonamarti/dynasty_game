@@ -1790,6 +1790,14 @@ se aparta`; `m15: muebles`; `m15: dormir mejor en casa, y el confort`;
 
 ## Fase 17 — El arte: personas pre-renderizadas por capas (nota 6; decisión 9)
 
+**Avance del 2026-10-03 (gesto de cavar).** Cuatro poses `d0`–`d3` y bastón
+de cavar generado. Se dibujan solo trabajando en el objetivo alcanzado, con
+la herramienta seleccionada, reloj y fracción de simulación; viaje, pausa e
+interrupción conservan su significado. Pruebas de poses/arte y e2e con orden
+real; capturas revisadas en `artifacts/screenshots/m15-dig-2026-10-03-final-pass1/`.
+Contrato: [m15_dig_animation.md](m15_dig_animation.md). Talar y fabricar siguen
+pendientes; este gesto no completa toda la fase 17.
+
 **Avance del 2026-10-03 (animales):** cuatro poses de comer, correr y atacar
 en ciervo, jabalí, liebre, lobo, oso y lince, compartidas por especie. El renderer
 lee marcas de eventos reales, sin cambiar decisiones, metabolismo o RNG.

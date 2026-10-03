@@ -116,7 +116,13 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, d0: 0, d1: 0, d2: 0, d3: 0 };
+
+const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
+  { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
+  { reach: 0.55, handY: 0.95, elbowY: 0.55 }, { reach: 0.4, handY: 0.35, elbowY: 0.5 },
+];
+const DIG_SIDE: readonly (readonly [number, number])[] = [[-38, 25], [-58, 5], [12, 48], [26, 68]];
 
 function poseSwing(pose: ArtPose): { walk: boolean; f: number; sw: number } {
   if (!pose.startsWith('w')) return { walk: false, f: 0, sw: 0 };
@@ -514,7 +520,11 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
     }
     let hand: Pt = [cx + side * (sh + 1.2 - inward), sY + 2.4 + len];
     let elbow: Pt = [(sh0[0] + hand[0]) / 2 + side * 0.9, (sh0[1] + hand[1]) / 2];
-    if (spec.pose.startsWith('g') && isRight) {
+    if (spec.pose.startsWith('d') && isRight) {
+      const { reach, handY, elbowY } = DIG_FRONT[Number(spec.pose.slice(1))]!;
+      hand = [cx + side * (sh + g.arm * 0.45 * reach), sY + g.arm * handY];
+      elbow = [cx + side * (sh + g.arm * 0.22), sY + g.arm * elbowY];
+    } else if (spec.pose.startsWith('g') && isRight) {
       const reach = [0.25, 0.8, 1, 0.45][Number(spec.pose.slice(1))]!;
       hand = [cx + side * (sh + g.arm * 0.35 * reach), sY + g.arm * (0.7 - 0.38 * reach)];
       elbow = [cx + side * (sh + g.arm * 0.25), sY + g.arm * 0.55];
@@ -586,7 +596,9 @@ function sideLayers(spec: PersonSpec): PersonOut {
     const col = near ? skin : REF.skinFar;
     const Larm = g.arm / 2;
     let a1 = -sw * 24 * (near ? 1 : -1), a2 = a1 + 14;
-    if (spec.pose.startsWith('g') && near) {
+    if (spec.pose.startsWith('d') && near) {
+      [a1, a2] = DIG_SIDE[Number(spec.pose.slice(1))]!;
+    } else if (spec.pose.startsWith('g') && near) {
       const phase = Number(spec.pose.slice(1));
       a1 = [20, 48, 62, 28][phase]!;
       a2 = [65, 85, 100, 110][phase]!;

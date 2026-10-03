@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { ANIMAL_KINDS, ANIMAL_POSES } from '../../../art/src/animals/animals.ts';
 import { collectAnimals, collectBuildings, collectPeople, collectProps } from '../../../art/src/registry.ts';
 import { personLayers, type PersonSpec } from '../../../art/src/people/rig.ts';
-import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, GATHER_POSES, anchorKey, personKey, type ArtManifest, type PersonAnchors } from '../ArtManifest.ts';
+import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, DIG_POSES, GATHER_POSES, anchorKey, personKey, type ArtManifest, type PersonAnchors } from '../ArtManifest.ts';
 import { BUILDINGS } from '../../sim/entities/Building.ts';
 import { EXPRESSIONS } from '../../sim/core/Mood.ts';
 import { SPECIES } from '../../sim/entities/Animal.ts';
@@ -53,7 +53,7 @@ describe('art coverage', () => {
   it('has a hand-held picture for everything the sim can put in a hand', () => {
     const held = props.meta['heldKinds'] as string[];
     // The kinds `Sprites.ts` names today; the renderer would draw nothing for a missing one.
-    for (const kind of ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket', ...DIG_TOOLS.filter(tool => tool.tech).map(tool => tool.item)]) {
+    for (const kind of ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket', 'digging_stick', ...DIG_TOOLS.filter(tool => tool.tech).map(tool => tool.item)]) {
       expect(held, kind).toContain(kind);
       expect(props.keys[`held/${kind}/S`]).toBeDefined();
       expect(props.keys[`held/${kind}/E`]).toBeDefined();
@@ -69,6 +69,7 @@ describe('art coverage', () => {
   it('shows the digging tool being used even when the worker also carries a weapon', () => {
     const person = new Person('Worker', 0, 0, 0, new RNG('held-tool'));
     person.inventory.add('spear', 1);
+    person.inventory.add('sticks', 1);
     person.inventory.add('antler_pick', 1);
     person.inventory.add('spade', 1);
     person.knownTech.add('bone_working');
@@ -78,6 +79,9 @@ describe('art coverage', () => {
     expect(heldItemFor(person)).toBe('spade');
     person.techLevel.set('bone_working', 20);
     expect(heldItemFor(person)).toBe('antler_pick');
+    person.inventory.remove('antler_pick', 1);
+    person.inventory.remove('spade', 1);
+    expect(heldItemFor(person)).toBe('digging_stick');
   });
 
   it('draws every species', () => {
@@ -118,6 +122,25 @@ describe('art build', () => {
         expect([...frame.anchors.hr, ...frame.anchors.hl, frame.anchors.bob].every(Number.isFinite)).toBe(true);
         hands.add(JSON.stringify(frame.anchors.hr));
         expect(frame.layers.some(layer => /^(arms|arm_near)$/.test(layer.slot))).toBe(true);
+      }
+      expect(hands.size).toBe(4);
+    }
+  });
+
+  it('keeps digging feet planted and gives each tool stroke its own hand anchor', () => {
+    for (const age of ART_AGES) for (const sex of ART_SEXES) for (const dir of ART_BAKED_DIRS) {
+      const base: PersonSpec = { age, sex, dir, pose: 'idle', wear: { torso: 'longtunic', hands: 'gloves' }, carry: false, hair: 'long', beard: false, expr: 'neutral' };
+      const idle = personLayers(base);
+      const grounded = (out: ReturnType<typeof personLayers>) => out.layers.filter(layer => /^(shadow|legs|trousers|feet)/.test(layer.slot));
+      const hands = new Set<string>();
+      const manifest = load('people');
+      const anchors = manifest.meta['anchors'] as Record<string, PersonAnchors>;
+      for (const pose of DIG_POSES) {
+        const frame = personLayers({ ...base, pose });
+        expect(grounded(frame)).toEqual(grounded(idle));
+        expect(anchors[anchorKey(age, sex, dir, pose, false)]).toEqual(frame.anchors);
+        expect([...frame.anchors.hr, ...frame.anchors.hl, frame.anchors.bob].every(Number.isFinite)).toBe(true);
+        hands.add(JSON.stringify(frame.anchors.hr));
       }
       expect(hands.size).toBe(4);
     }

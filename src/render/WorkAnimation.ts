@@ -2,7 +2,7 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { GATHER_POSES, type ArtPose } from './ArtManifest.ts';
+import { DIG_POSES, GATHER_POSES, type ArtPose } from './ArtManifest.ts';
 
 /** A forage order also covers clay and flint. Those need their own gestures. */
 const HAND_GATHERED = new Set(['berries', 'sticks', 'reeds', 'wild_grain']);
@@ -24,4 +24,23 @@ export function gatheringPose(
   // paused; wall time would keep picking even while the whole world stands still.
   const phase = Math.floor((person.workedTicks - 1 + Math.max(0, Math.min(1, alpha))) / 2) % 4;
   return GATHER_POSES[phase]!;
+}
+
+/** A digging gesture is shown only for real work at a reachable, valid tile. */
+export function diggingPose(
+  person: Person, sim: Pick<Simulation, 'world'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'dig' || person.actionTimer <= 0 || person.workedTicks <= 0
+    || person.targetX === null || person.targetY === null) return null;
+  // World coordinates name the tile's south-west corner; valid walking targets
+  // arrive within the centred aim square. The action stays `dig` while walking.
+  const dx = person.x - (person.targetX + 0.5), dy = person.y - (person.targetY + 0.5);
+  if (Math.hypot(dx, dy) >= ARRIVAL_RADIUS) return null;
+  const biome = sim.world.biomeAt(Math.floor(person.targetX), Math.floor(person.targetY));
+  if (biome === 'water' || biome === 'rock') return null;
+  // Four strokes advance with work ticks and the bounded simulation fraction;
+  // pausing the simulation therefore freezes the tool at the same point.
+  const phase = Math.floor((person.workedTicks - 1 + Math.max(0, Math.min(1, alpha))) / 2) % DIG_POSES.length;
+  return DIG_POSES[phase]!;
 }

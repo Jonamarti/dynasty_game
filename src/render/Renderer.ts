@@ -42,7 +42,7 @@ import { Floaters } from './Floaters.ts';
 import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
-import { gatheringPose } from './WorkAnimation.ts';
+import { diggingPose, gatheringPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import {
   SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
@@ -1833,9 +1833,11 @@ export class Renderer {
     const hair = hairVariantOf(person);
     const hairStyle = hair === 'bald' || hair === 'balding' ? hair : person.sex === 'female' ? 'long' : 'short';
     const gathering = gatheringPose(person, this.sim, moving, this.workAlpha);
+    const digging = diggingPose(person, this.sim, moving, this.workAlpha);
+    const workPose = gathering ?? digging;
     const aspect: PersonAspect = {
       age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
-      pose: moving ? (('w' + frame) as ArtPose) : gathering ?? 'idle',
+      pose: moving ? (('w' + frame) as ArtPose) : workPose ?? 'idle',
       skin: Renderer.TRIBE_SKIN[colorIndex]!,
       hair: hair === 'grey' ? '#a7a197' : person.id % 3 === 0 ? '#5b3d28' : '#2b2018',
       band: BAND_COLORS[colorIndex]!,

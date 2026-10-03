@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Person } from '../../sim/entities/Person.ts';
 import { RNG } from '../../sim/core/RNG.ts';
-import { gatheringPose } from '../WorkAnimation.ts';
+import { diggingPose, gatheringPose } from '../WorkAnimation.ts';
 import type { Simulation } from '../../sim/core/Simulation.ts';
 
 function fixture() {
@@ -85,5 +85,54 @@ describe('gathering animation', () => {
     expect(gatheringPose(person, sim, false, 1)).toBe('g1');
     expect(gatheringPose(person, sim, false, 50)).toBe('g1');
     expect(gatheringPose(person, sim, false, -50)).toBe('g0');
+  });
+});
+
+describe('digging animation', () => {
+  function digFixture() {
+    const person = new Person('Digger', 4.5, 4.5, 0, new RNG('dig-animation'));
+    person.action = 'dig'; person.targetX = 4; person.targetY = 4;
+    person.actionTimer = 10; person.workedTicks = 1;
+    const sim = { world: { biomeAt: () => 'grass' } } as unknown as Pick<Simulation, 'world'>;
+    return { person, sim };
+  }
+
+  it('cycles four tool strokes from work ticks without changing the worker or world', () => {
+    const { person, sim } = digFixture();
+    const frames = [1, 3, 5, 7, 9].map(ticks => {
+      person.workedTicks = ticks;
+      return diggingPose(person, sim, false, 0);
+    });
+    expect(frames).toEqual(['d0', 'd1', 'd2', 'd3', 'd0']);
+    expect(person.actionTimer).toBe(10);
+    expect([person.x, person.y, person.targetX, person.targetY]).toEqual([4.5, 4.5, 4, 4]);
+  });
+
+  it('does not show a stroke while travelling, moving, unstarted, interrupted, dead or over invalid ground', () => {
+    const { person, sim } = digFixture();
+    expect(diggingPose(person, sim, true)).toBeNull();
+    person.x = 6;
+    expect(diggingPose(person, sim, false)).toBeNull();
+    person.x = 4.5; person.actionTimer = 0;
+    expect(diggingPose(person, sim, false)).toBeNull();
+    person.actionTimer = 10; person.workedTicks = 0;
+    expect(diggingPose(person, sim, false)).toBeNull();
+    person.workedTicks = 1; person.action = 'idle';
+    expect(diggingPose(person, sim, false)).toBeNull();
+    person.action = 'dig'; person.alive = false;
+    expect(diggingPose(person, sim, false)).toBeNull();
+    person.alive = true;
+    const badGround = { world: { biomeAt: () => 'water' } } as unknown as Pick<Simulation, 'world'>;
+    expect(diggingPose(person, badGround, false)).toBeNull();
+  });
+
+  it('holds and interpolates the stroke only within the bounded simulation fraction', () => {
+    const { person, sim } = digFixture();
+    person.workedTicks = 2;
+    expect(diggingPose(person, sim, false, 0.5)).toBe('d0');
+    expect(diggingPose(person, sim, false, 0.5)).toBe('d0');
+    expect(diggingPose(person, sim, false, 1)).toBe('d1');
+    expect(diggingPose(person, sim, false, 50)).toBe('d1');
+    expect(diggingPose(person, sim, false, -50)).toBe('d0');
   });
 });

@@ -58,7 +58,7 @@ const SIZE_CLASSES: readonly SizeClass[] = ['infant', 'child', 'adolescent', 'ad
 export type HairVariant = 'dark' | 'grey' | 'balding' | 'bald';
 const HAIR_VARIANTS: readonly HairVariant[] = ['dark', 'grey', 'balding', 'bald'];
 
-export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'bone_point' | 'handaxe' | 'net' | 'basket' | 'antler_pick' | 'spade';
+export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'bone_point' | 'handaxe' | 'net' | 'basket' | 'antler_pick' | 'spade' | 'digging_stick';
 /**
  * What shows in the hand when more than one thing is carried, most
  * conspicuous first. A hunter carrying both a bow and a basket reads as
@@ -166,6 +166,7 @@ export function heldItemFor(person: Person): HeldItemKind | null {
   // work. Ask the executor's selector so refinements choose the same tool.
   if (person.action === 'dig') {
     const tool = digTool(person);
+    if (tool?.item === 'sticks') return 'digging_stick';
     if (tool?.item === 'spade' || tool?.item === 'antler_pick') return tool.item;
   }
   for (const item of HELD_PRIORITY) {
@@ -363,6 +364,14 @@ function paintHeld(ctx: CanvasRenderingContext2D, kind: HeldItemKind): void {
       }
       ctx.closePath();
       ctx.fill();
+      break;
+    case 'digging_stick':
+      ctx.strokeStyle = '#86633c';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + 15);
+      ctx.lineTo(cx + 1, cy - 20);
+      ctx.stroke();
       break;
     case 'spear':
     case 'atlatl':
