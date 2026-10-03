@@ -1,3 +1,19 @@
+## 2026-10-03 — M15 bloque IX: capturas y e2e
+
+- **Capturas** en `artifacts/screenshots/m15-block9-2026-10-03/`: la opción
+  «Hold a feast» en el menú del suelo (`01-feast-option.png`), la sección
+  «Gobierno» de un jefe que gobierna —qué le falta para ser civilización, los
+  pueblos tratados con guerra y paz, y el tributo al 10 %—
+  (`02-government.png`), y la ficha de un granero que es el templo
+  (`03-temple.png`). Escena en pausa, preparada desde la consola de depuración
+  (jefe, técnicas, granero); no es una medición. Se rehacen con
+  `npx playwright test e2e/block9-shots.spec.ts`, aparte del tour para no
+  cambiar sus capturas.
+- **E2E completo** (`DYNASTY_PORT=5401`): 57 pasan y 6 fallan; los 6 son
+  exactamente los que fallan en la línea base (worktree en `6d5fe4f`,
+  `DYNASTY_PORT=5402`, mismos seis tests del selector y los paneles), ninguno
+  nuevo. Los cuatro e2e del bloque pasan.
+
 ## 2026-10-03 — M15 bloque IX: el escenario `conquest`
 
 - **Escenario nuevo `conquest`** (semilla `akkad`, 2 bandas × 12, 24.000
