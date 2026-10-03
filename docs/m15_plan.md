@@ -2473,6 +2473,13 @@ antes o después y chocan entre sí y con el del jugador**.
 
 ## Fase 28 — Identidad que sobrevive a su comarca (M14 fase 3)
 
+**Avance del 2026-10-03, checkpoints de ejecución.** `RNG` guarda y recupera
+sus cuatro words mediante JSON v1 sin constructor, fork o draw; `TimeManager`
+conserva tick y calendario propio. Validación estricta, independencia y
+continuidad de streams/reloj probadas en cuatro casos. Contrato y evidencia:
+[m15_phase28_execution.md](m15_phase28_execution.md). Capturar conjuntamente
+todos los streams de sistemas y agendas e integrarlos en una carga sigue pendiente.
+
 **Avance del 2026-10-03, registros.** `persistence/EntityRecords.ts` ofrece
 sobres v1 con marca de avance explícita e ida/vuelta JSON de personas, hogares
 y bandas. Conserva estado propio completo, índices y referencias compartidas,

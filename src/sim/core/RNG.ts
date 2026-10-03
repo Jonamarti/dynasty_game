@@ -9,6 +9,11 @@
  * Algorithm is xorshift128, chosen because its state is four 32-bit integers:
  * that serializes exactly into a save file, unlike a float-based generator.
  */
+export interface RngSnapshot {
+  readonly version: 1;
+  readonly words: readonly [number, number, number, number];
+}
+
 export class RNG {
   private s0: number;
   private s1: number;
@@ -99,6 +104,32 @@ export class RNG {
   /** Serializable state, for saves and for the determinism test. */
   getState(): [number, number, number, number] {
     return [this.s0, this.s1, this.s2, this.s3];
+  }
+
+  /** A checkpoint must preserve the next draw, rather than re-seeding a stream. */
+  snapshot(): RngSnapshot {
+    return { version: 1, words: this.getState() };
+  }
+
+  static fromSnapshot(snapshot: unknown): RNG {
+    if (snapshot === null || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+      throw new TypeError('Invalid RNG checkpoint');
+    }
+    const raw = snapshot as Record<string, unknown>;
+    const keys = Object.keys(raw);
+    const words = raw.words;
+    if (keys.length !== 2 || !Object.hasOwn(raw, 'version') || !Object.hasOwn(raw, 'words') ||
+        raw.version !== 1 || !Array.isArray(words) || words.length !== 4 ||
+        ![0, 1, 2, 3].every(index => Object.hasOwn(words, index) &&
+          Number.isInteger(words[index]) && words[index] >= 0 && words[index] <= 0xffffffff) ||
+        words.every(word => word === 0)) {
+      // xorshift's all-zero state is absorbing: accepting it silently ends all randomness.
+      throw new TypeError('Invalid RNG checkpoint words or version');
+    }
+    // No constructor or seed expansion: restoring a child stream must not fork its parent.
+    const restored = Object.create(RNG.prototype) as RNG;
+    restored.setState(words as [number, number, number, number]);
+    return restored;
   }
 
   setState(state: readonly [number, number, number, number]): void {

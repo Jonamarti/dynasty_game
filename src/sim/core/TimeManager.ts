@@ -12,10 +12,48 @@ import { t, tc } from '../../i18n/i18n.ts';
 export const SEASONS = ['spring', 'summer', 'autumn', 'winter'] as const;
 export type Season = (typeof SEASONS)[number];
 
+export interface TimeSnapshot {
+  readonly version: 1;
+  readonly tick: number;
+  readonly config: TimeConfig;
+}
+
 export class TimeManager {
   tick = 0;
 
   constructor(private readonly config: TimeConfig) {}
+
+  /** The calendar is part of the checkpoint: a tick alone cannot preserve age or season. */
+  snapshot(): TimeSnapshot {
+    return { version: 1, tick: this.tick, config: { ...this.config } };
+  }
+
+  static fromSnapshot(snapshot: unknown): TimeManager {
+    const isRecord = (value: unknown): value is Record<string, unknown> =>
+      value !== null && typeof value === 'object' && !Array.isArray(value);
+    if (!isRecord(snapshot) || Object.keys(snapshot).length !== 3 ||
+        !['version', 'tick', 'config'].every(key => Object.hasOwn(snapshot, key)) ||
+        snapshot.version !== 1 || !Number.isSafeInteger(snapshot.tick) ||
+        (snapshot.tick as number) < 0 || !isRecord(snapshot.config)) {
+      throw new TypeError('Invalid clock checkpoint');
+    }
+    const config = snapshot.config;
+    const keys = ['ticksPerDay', 'daysPerSeason', 'startDay', 'tickRate', 'maxTicksPerFrame'];
+    if (Object.keys(config).length !== keys.length || !keys.every(key => Object.hasOwn(config, key)) ||
+        !keys.every(key => typeof config[key] === 'number' && Number.isFinite(config[key])) ||
+        !['ticksPerDay', 'daysPerSeason', 'maxTicksPerFrame'].every(key =>
+          Number.isSafeInteger(config[key]) && (config[key] as number) > 0) ||
+        !Number.isSafeInteger(config.startDay) || (config.startDay as number) < 0 ||
+        (config.tickRate as number) <= 0 ||
+        !Number.isSafeInteger((config.daysPerSeason as number) * 4) ||
+        !Number.isSafeInteger((config.startDay as number) +
+          Math.floor((snapshot.tick as number) / (config.ticksPerDay as number)))) {
+      throw new TypeError('Invalid clock checkpoint calendar');
+    }
+    const restored = new TimeManager({ ...config } as unknown as TimeConfig);
+    restored.tick = snapshot.tick as number;
+    return restored;
+  }
 
   advance(): void {
     this.tick++;

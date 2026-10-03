@@ -57,6 +57,11 @@ from the active list, including a dead player awaiting succession. Loading into
 a live Simulation, transfer of authority and the compact scheduler remain pending;
 see [m15_phase28_records.md](m15_phase28_records.md).
 
+`RNG` and `TimeManager` also have independent v1 JSON checkpoints: RNG hydration
+does not expand a seed or draw from a parent, and the clock retains its own
+calendar. System stream/schedule composition and coordinated Simulation loading
+remain pending; see [m15_phase28_execution.md](m15_phase28_execution.md).
+
 `Simulation.ids` owns the ten entity/event allocation namespaces. Creation
 passes this `IdSpace` explicitly to entities and systems; the optional second
 Simulation constructor argument shares it between local simulations. The JSON

@@ -1,3 +1,18 @@
+## 2026-10-03 — M15 fase 28: checkpoints de reloj y RNG
+
+Checkpoints JSON v1 independientes de RNG y TimeManager. Recuperan la siguiente
+tirada y el calendario original, sin resembrar streams ni avanzar el reloj.
+Rechazan formas/versiones desconocidas, uint32 inválidos, estado todo cero y
+calendarios que desborden las fronteras de día/año. Cuatro pruebas verifican
+continuidad, copia y datos corruptos; typecheck y los cuatro casos focales pasan.
+No se declara carga de mundo ni LOD: falta composición de streams y agendas.
+
+Registro visual de seguimiento (sin cambio de UI), tour 1/1 y captura inicial
+revisada: `artifacts/screenshots/m15-execution-checkpoints-2026-10-03-pass1/`.
+Contrato: `docs/m15_phase28_execution.md`. La matriz previa ya falla en 104
+instancias entre 27 escenarios; la comparación de integración se registra por
+separado al cerrar la pasada. No se presenta esa matriz como una validación verde.
+
 ## 2026-10-03 — M15 fase 28: roster coordinado con relaciones
 
 `RosterRecords` v1 compone los codecs de persona, hogar, banda, opiniones y

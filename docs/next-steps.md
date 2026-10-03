@@ -1,5 +1,10 @@
 # Next steps
 
+**2026-10-03: checkpoints de ejecución, fase 28.** RNG y reloj tienen
+checkpoints JSON v1 independientes con continuidad exacta y validación estricta.
+Siguiente: capturar streams de sistemas/agendas junto al roster y el terreno;
+no hay aún carga de Simulation ni LOD. [Contrato](m15_phase28_execution.md).
+
 **2026-10-03: fase 28, roster coordinado.** `RosterRecords` v1 compone entidades
 y grafos sociales a un tick común, conserva muertos retenidos y membresía activa
 por separado y valida pertenencias antes de devolver arrays/mapas canónicos.
