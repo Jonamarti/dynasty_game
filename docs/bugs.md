@@ -34,8 +34,10 @@ para decidir una animación de carrera. Corregir su semántica visual sigue pend
 
 El perfil de 300 humanos registra 61/1.057 frames con más de 33,34 ms entre
 dibujos; un paso de simulación cuesta 20,80 ms de media (41,80 ms p95), frente
-a 3,38 ms de dibujo. Caché sin expulsiones. Falta localizar el coste por sistema
-y medir velocidades mayores, mundos repartidos y sesiones largas; ver
+a 3,38 ms de dibujo. Caché sin expulsiones. El primer perfil por métodos está
+en `m15_profile_systems.md`: `Brain.score` es el bloque instrumentado más caro,
+pero parte del paso todavía no tiene wrapper. Faltan percepción, velocidades
+mayores, mundos repartidos y sesiones largas; ver
 `population-profile.md`. Es un hallazgo de rendimiento, no un test de balance.
 
 ## Presión de caché con cientos de apariencias (2026-10-03) — corregido

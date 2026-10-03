@@ -11567,3 +11567,27 @@ frente a la referencia heredada y sigue con exit 1. Logs/summary en
 `artifacts/verification/m15-continue-2026-10-03/`. Sin cambio de UI.
 Esta entrega no completa `IdSpace`, relaciones externas, roster ni transferencia
 de autoridad; no se declara compacto, LOD ni formato de partida definitivo.
+
+## 2026-10-03 — M15 32a: medir el coste de cada sistema sin alterar el mundo
+
+`npm run profile:systems` abre navegador nuevo para 30/300 fundadores agrupados
+y compara 480 pasos, con/sin wrappers de métodos. La instrumentación vive solo
+en esa página, sin hook ni coste en el juego normal. Separa llamadas dentro y
+fuera de la visión efectiva del jugador; no interpreta un campamento como una
+unidad de activación. Hashes de mundo, entidades, relaciones, sistemas y RNG
+coinciden al inicio y final de ambos tamaños. Un negativo cambia hambre y otro
+consume un draw raíz; ambos son detectados y restaurados antes de medir.
+
+Referencia final sin wrappers: 1,09 ms/paso con 30; 28,72 con 300. En 300 se
+observan 955 thinks y 8.370 ejecuciones fuera de visión. `Brain.score` es el
+bloque instrumentado más caro, con 4.915,7 ms inclusivos en 20.470 llamadas;
+no se suma con `think`, ni se atribuye a él el resto del paso sin wrapper.
+La repetición anterior varió; no se deduce un overhead fijo ni FPS. Condiciones
+completas, límites y datos en `docs/m15_profile_systems.md` y
+`artifacts/verification/m15-systems-2026-10-03T12-07-39-289Z/report.json`.
+
+Validación: cuatro corridas completas con negativos y SHA-256 iguales;
+typecheck limpio, suite conjunta 886/886, e2e 69/69. La matriz sigue con exit 1,
+sin cambios de aplicabilidad/fallos en sus 27 escenarios frente a la referencia
+heredada. No cambia UI. Quedan percepción, distribución, sesiones largas,
+demografía y los modelos compactos: esta referencia no cierra 32a ni el LOD.

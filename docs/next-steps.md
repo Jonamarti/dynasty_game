@@ -1,5 +1,11 @@
 # Next steps
 
+**2026-10-03: primera referencia de coste por sistemas, 32a.** Nuevo CLI
+`profile:systems`, con 30/300 agrupados, 480 pasos, hashes y controles negativos.
+Se mide el detalle fuera de visión actual; no es LOD. Faltan distribución,
+duración, percepción y cohortes demográficas antes de calibrar compacto.
+Datos y límites en [m15_profile_systems.md](m15_profile_systems.md).
+
 **2026-10-03: primera entrega de identidad, fase 28.** Los registros v1 hacen
 ida/vuelta del estado propio de personas, hogares y bandas, incluido progreso
 en curso, sin constructores/IDs/RNG. Tres pruebas ricas y suite conjunta 886/886

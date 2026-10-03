@@ -51,6 +51,13 @@ to the hydrated person. They do not register people, transfer authority or
 compress simulation work. Global identity, external relationships and the
 compact scheduler remain pending; see [m15_phase28_records.md](m15_phase28_records.md).
 
+`tools/profile-systems.ts` wraps methods only inside its profiling browser and
+compares whole-state hashes against unprofiled worlds, including RNG. It measures
+the current all-detailed loop over fixed synchronous steps, with presentation
+stopped; inclusive methods overlap. Call counters inside/outside the player's
+effective vision describe existing remote detail, not LOD activation. Conditions
+and incomplete coverage are in [m15_profile_systems.md](m15_profile_systems.md).
+
 ## The rules that hold it together
 
 **Work animation is presentational.** `render/WorkAnimation.ts` reads active

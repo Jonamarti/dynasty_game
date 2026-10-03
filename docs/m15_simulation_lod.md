@@ -197,6 +197,10 @@ No se promete que una aglomeración de 300 visibles cueste lo mismo que 30.
 1. **32a, referencia:** cerrar demografía y medir coste por sistema, actividad
    visible y coste remoto. El harness conserva un modo explícito de referencia
    con todo detallado para calibración; no es el modo normal del juego.
+   Primera medida por sistemas entregada el 2026-10-03 en
+   [m15_profile_systems.md](m15_profile_systems.md): 30/300 agrupados,
+   480 pasos y equivalencia con controles negativos. Demografía, distribución
+   y perfil de los modelos compactos continúan pendientes.
 2. **32b, registros y compacto local:** completar identidad de fase 28, libros
    y scheduler de nivel 1 con conservación y correspondencia antes de filtrar
    el loop detallado. El recorte aislado que congela los NPC lejanos no se entrega.

@@ -2672,6 +2672,17 @@ vuelta, y el LOD de fauna.
 
 ### 32a. Recalibrar antes
 
+**Avance del 2026-10-03, coste por sistemas.** `npm run profile:systems` mide
+30/300 fundadores agrupados, 480 pasos síncronos en navegador, con y sin
+wrappers. Compara estado completo/RNG por SHA-256 y demuestra negativos por
+hambre y draw extra, ambos restaurados antes de medir. Clasifica llamadas por
+visión efectiva de `player`: en 300, 955 thinks y 8.370 ejecuciones fuera de
+visión. Tiempos inclusivos, no sumables; referencia sin wrappers 1,09/28,72
+ms/paso en esta muestra, con variación entre corridas. No mide FPS ni LOD.
+Condiciones, tabla y límites en [m15_profile_systems.md](m15_profile_systems.md).
+Quedan distribución, duración, percepción sin wrapper y las cohortes
+demográficas; esta entrega no cierra 32a.
+
 Los bloques III a VI han cambiado la economía (manos, descomposición, noche,
 mapa personal, ropa, cuerpo, fauna y terreno). Antes de escribir los modelos se
 repite el protocolo de la fase 10 en `generations` y en `century`, y **se
