@@ -135,6 +135,445 @@ El log interno GPU de Chromium emitido durante las pruebas se conserva como
 `chromium-debug.log` en el directorio de verificación; causa no aislada y
 registrada en `bugs.md`. Los tests nuevos y la paridad de píxeles pasan.
 
+## 2026-10-03 — M15 bloque IX: `jobs-bias-work` medía mal con `soldier`
+
+- **La matriz final del bloque**, comparada con la línea base escenario a
+  escenario sin las líneas de reloj ni las de los checks y la telemetría
+  nuevos: idéntica en 18 escenarios; `feasts` cambia por el banquete (38a);
+  `polity` y `conquest` son nuevos; y en `farmers`, `herders`, `stewards` y
+  `labour` cambiaba **una sola cifra**, el grupo de control de
+  `jobs-bias-work` (por ejemplo, `labour` 3,3 % → 3,6 %), con toda la
+  telemetría idéntica. El check recorre `JOB_IDS` y, desde la 38b, contaba
+  los verbos de `soldier`, un trabajo que en esos mundos nadie puede tener.
+  **Se arregla la medida, no el mundo**: `soldier` sólo entra si alguien lo
+  tuvo. Se probó antes descartar todo trabajo sin titulares, y movía la cifra
+  de la propia línea base (3,3 % → 4,0 %): otra medida, no la misma
+  reparada. Con el arreglo, los cuatro vuelven a la cifra exacta de la base.
+- **Corrección**: la entrada de la 39d dice que la matriz de la 38c sólo
+  difería de la de la 38a en la línea de telemetría `food_stored_own`. No es
+  cierto: también difería esta cifra en esos cuatro escenarios, y no lo vi
+  porque sólo miré la cabeza de la comparación.
+- Comparación final en `artifacts/verification/m15-block9-final-2026-10-03/`.
+
+## 2026-10-03 — M15 bloque IX: capturas y e2e
+
+- **Capturas** en `artifacts/screenshots/m15-block9-2026-10-03/`: la opción
+  «Hold a feast» en el menú del suelo (`01-feast-option.png`), la sección
+  «Gobierno» de un jefe que gobierna —qué le falta para ser civilización, los
+  pueblos tratados con guerra y paz, y el tributo al 10 %—
+  (`02-government.png`), y la ficha de un granero que es el templo
+  (`03-temple.png`). Escena en pausa, preparada desde la consola de depuración
+  (jefe, técnicas, granero); no es una medición. Se rehacen con
+  `npx playwright test e2e/block9-shots.spec.ts`, aparte del tour para no
+  cambiar sus capturas.
+- **E2E completo** (`DYNASTY_PORT=5401`): 57 pasan y 6 fallan; los 6 son
+  exactamente los que fallan en la línea base (worktree en `6d5fe4f`,
+  `DYNASTY_PORT=5402`, mismos seis tests del selector y los paneles), ninguno
+  nuevo. Los cuatro e2e del bloque pasan.
+
+## 2026-10-03 — M15 bloque IX: el escenario `conquest`
+
+- **Escenario nuevo `conquest`** (semilla `akkad`, 2 bandas × 12, 24.000
+  pasos): un Estado con rey —lo que saben los fundadores de `polity`, más
+  `spear`— y un pueblo menor sin ley (`startingTechByBand`). En `setup`, sólo
+  arnés: el segundo pueblo se acerca a un día del primero en la misma tierra
+  y se reduce a dos tercios; el Estado recibe su granero; un viejo rencor
+  (-60) entre ambos; y los adultos del Estado, agresividad ≥ 0,6. Lo demás es
+  de la simulación.
+- **Medido**: 1 guerra declarada; a los 10 días el pueblo menor se somete; 18
+  tributos ordenados, 4 negados por el portador, 53 unidades entregadas, 89
+  días-banda como tributario, ninguno sacudido. Población 22 → 35. Pasan
+  `the-beaten-pay-tribute`, `governments-declare-war-and-peace`,
+  `soldiers-are-kept`, `kings-reign-for-life` y `civilisation-is-derived` (1
+  de 2 bandas). `serfs-are-owned` sigue n/a: un solo golpe entre pueblos y
+  ningún cautivo. Fallan además `projects-find-backers` y
+  `the-wise-avoid-baneberries`, que también fallan en otros escenarios de la
+  línea base; escenario nuevo, sin base propia.
+- Existe porque `polity` no puede llegar a la guerra (graneros fuera de
+  alcance) ni a la sumisión (pueblos iguales), y un mecanismo que ningún
+  escenario ejercita sólo está probado en tests.
+
+## 2026-10-03 — M15 fase 39b: la esclavitud como institución
+
+- **Siervo de una casa** (`Person.serfOf`): un adulto tomado cautivo por un
+  pueblo cuyo jefe gobierna (`law_code` o `kingship`) es siervo de la casa de
+  quien lo ató, o de la del jefe si el captor no tiene. Sin gobierno, la
+  cautividad sigue como estaba (trabajo forzado, M12 4c).
+- **Su trabajo es de la casa**: lo que guarda un siervo va al hogar de sus
+  amos (`Brain`, ranking de `store`).
+- **Hereditaria** (`Simulation.settleSerfs`): si la casa se extingue, el
+  siervo pasa a la del jefe de los captores.
+- **Su rechazo**: un siervo con agresividad ≥ 0,6 y opinión de -40 o peor de
+  quien le manda se niega a la cara (`Polity.serfRefuses`), contra la regla
+  de que un cautivo no puede negarse; determinista, con razón visible.
+- **Su fuga**: la de siempre (`Captivity.ts`), y libera de la servidumbre.
+- **Su rebelión**: tres o más siervos de una banda que confían entre sí
+  (`trustEachOther`) se alzan juntos y se liberan, los mire quien los mire.
+- **Interfaz**: la ficha dice «siervo de los X, de la Y». Español.
+- **Check `serfs-are-owned`**: n/a en `polity`, donde la guerra no llega a
+  las manos y nadie es tomado. **Tests:** el siervo sólo bajo gobierno, la
+  negativa con su razón, y el alzamiento.
+- **Con esto quedan hechas las fases 38 (salvo `city_walls`) y 39 dentro de
+  la comarca**, según el alcance acordado.
+
+## 2026-10-03 — M15 fase 39c: conspirar contra el rey
+
+- **El golpe** (`BandSystem.considerCoup`), segundo lector de
+  `conspiracyAgainst` tras el destierro: cada 6 días, contra un rey (un jefe
+  con mandato ya tiene la elección y el desafío de `considerRebellion`), si
+  una facción de al menos tres se movería contra él, se mueve. Si la suma de
+  su habilidad de lucha supera la del rey con sus leales (`loyalistsOf`: sus
+  soldados y los adultos de su casa, ninguno de la conjura), el instigador
+  toma el gobierno; si no, la conjura se rompe y el instigador es expulsado.
+  Determinista: opiniones, rasgos y habilidad, ninguna tirada.
+- **La sucesión disputada**: cuando la corona va a pasar, una facción contra
+  el heredero levanta a su instigador como pretendiente, y la consideración
+  de la banda (`standingScore`, la misma medida que una elección) decide.
+- Crónica para los tres desenlaces, con español.
+- **Sin check**: en `polity` nadie conspira (la banda se tiene aprecio;
+  `opinions-diverge` ya falla por 0 relaciones hostiles), y lo único que se
+  podría comprobar sin conjuras sería cierto por construcción, el tipo de
+  check que `AGENTS.md` prohíbe. Se probó uno así y se quitó. Los contadores
+  `coup_*` y `succession_*` salen en la telemetría del informe.
+- **Tests:** el golpe que triunfa contra un rey sin guardia, el que se rompe
+  contra uno con soldados (con el instigador fuera de la banda), y quién es
+  leal.
+
+## 2026-10-03 — M15 fase 39d: tratados y tributo
+
+- **Someterse** (`Simulation.submit`, `BandSystem.considerSubmission`): un jefe
+  en guerra desde hace 10 días con un gobierno al menos 1,5 veces más fuerte
+  (`strengthOf`: adultos libres, soldados al doble) se somete, salvo que su
+  agresividad pase de 0,8. Cualquier jefe puede: para ser vencido no hace
+  falta ley; el señor sí tiene que ser un gobierno. La postura pasa a
+  `tributary` con el señor.
+- **Pagar** (`payTribute`): cada 5 días el jefe tributario manda a uno de los
+  suyos a llevar el 15 % de lo que guarda la banda —su templo o su mayor
+  almacén, o lo que lleva encima su gente— al almacén del señor
+  (`Simulation.tributeStoreOf`: su templo o su mayor almacén). Es el mismo
+  `render` del impuesto, dirigido con `Person.renderInto`; el portador puede
+  negarse, y eso es un tributo no pagado.
+- **Sacudirse el yugo** (`throwsOff`): un tributario que iguala la fuerza de
+  su señor, con un jefe con valor, deja de pagar, y eso es la guerra.
+- **El rey sobre los tributarios**: `standingOver` suma
+  `OVERLORD_AUTHORITY` (0,25) y la razón «king over their people» cuando un rey
+  da una orden a alguien de un pueblo que le paga tributo.
+  `civilisationLacks` cuenta lo que saben los tributarios («o varias bajo un
+  rey»). Señor y tributario no se asaltan.
+- **Interfaz:** «Ofrecer tributo» en la sección de gobierno, frente a un
+  pueblo en guerra, para cualquier jefe; la postura tributaria se lee «te paga
+  tributo» / «les pagas tributo».
+- **Check `the-beaten-pay-tribute`**: n/a en `polity`, donde los dos pueblos
+  tienen 14 y ninguno es 1,5 veces el otro. **Tests:** cuándo se somete un
+  jefe y cuánto vale un soldado; someterse sólo a un gobierno en guerra y la
+  autoridad del rey sobre el sometido; y uno de integración en el que el
+  tributo llega al almacén del señor, medido por la propia entrega (la
+  primera versión medía el total del almacén, que el pueblo del señor también
+  llena, y habría pasado sin ningún tributo).
+- **Comprobado:** la matriz completa con la 38c, comparada con la de la 38a,
+  sólo difiere en la línea nueva de telemetría `food_stored_own` en los 23
+  escenarios antiguos: los nodos del Estado no tocan ningún mundo que no los
+  sepa. Comparación en `artifacts/verification/m15-39d-2026-10-03/`.
+
+## 2026-10-03 — M15 fase 39a: declarar la guerra y la paz
+
+- **Postura declarada** en `BandRelations` (`war`, `peace`, `tributary`, ésta
+  con el señor): registro aparte de la posición, que no decae y que sólo fija
+  un gobierno —un jefe que sabe `law_code` o `kingship` (`Polity.governs`)—
+  por `Simulation.declare`, el mismo camino para el jugador y los PNJ, con
+  razón de rechazo. La paz con otro gobierno necesita que su jefe la acepte
+  (`acceptsPeace`); un pueblo sin gobierno no tiene forma de negarla.
+  `touching` incluye las bandas con postura aunque el rencor haya decaído.
+- **Qué cambia en el mundo:** en guerra, la incursión no espera al umbral de
+  rencor (`considerRaid` la lee como la peor posición); en paz, no se asalta
+  al pueblo jurado.
+- **Romper la paz** (`SocialSystem.onPeaceBroken`, `Simulation.breakPeace`):
+  robo, agresión, muerte, sabotaje, rapto o amenaza contra el pueblo jurado
+  la terminan, cuestan 20 de posición entre los dos pueblos, y cada testigo
+  —sólo quien lo vio— piensa 12 puntos peor del jefe del infractor.
+- **Gobiernos PNJ** (`BandSystem.considerStance`, determinista): guerra con
+  rencor peor que -40 y agresividad ≥ 0,5; paz tras 10 días de guerra si
+  falta valor o el rencor ha bajado de -15; tratado entre dos gobiernos por
+  encima de +30. **La paz jurada se guarda**: medido, sin esa regla `polity`
+  hizo 10 guerras y 9 paces en 100 días, porque el jefe agresivo volvía a
+  declararla al día siguiente.
+- **Interfaz:** la sección «Gobierno» lista los pueblos tratados con su
+  postura y su posición, y ofrece «Declarar la guerra» / «Hacer la paz» a un
+  gobierno (y explica por qué no a quien no lo es). Floaters del resultado.
+  E2E nuevo.
+- **`polity`** empieza con un viejo rencor (-55) entre sus dos pueblos,
+  puesto en `setup` como los graneros. Medido: 1 guerra, 1 paz, 19 días-banda
+  en guerra, ninguna incursión (los graneros enemigos quedan fuera de
+  `RAID_RANGE`: `raid_nothing_in_reach` 170) y ninguna paz rota. Los checks
+  del Estado siguen igual.
+- **Tests:** cuatro nuevos (quién puede declarar, guerra, paz negada y
+  aceptada, la paz rota y su coste para quien lo vio, y el señor de un
+  tributario).
+
+## 2026-10-03 — M15 fase 38c: qué es una civilización
+
+- **Derivada, nunca guardada** (`Polity.civilisationLacks`,
+  `Simulation.isCivilisation`): una banda es una civilización el día que sus
+  adultos vivos saben entre todos los seis de `CIVILISATION_NEEDS`
+  (`farming`, `writing`, `division_of_labour`, `taxation`, `standing_army`,
+  `kingship`) y su jefe reina como rey; deja de serlo el día que falta uno.
+  Nada obliga a alcanzarla.
+- **Interfaz:** la línea de estado añade «una civilización» cuando la banda
+  del jugador lo es; la sección «Gobierno» del jugador-jefe dice que lo es o,
+  si no, qué le falta, por su nombre. E2E de gobierno ampliado.
+- **Check `civilisation-is-derived`**: donde una banda sabe los seis, debe
+  llamarse civilización si y sólo si su jefe es rey. En `polity`, 2 de 2
+  bandas, 0 mal nombradas; n/a en los escenarios que no los saben (`labour`
+  comprobado).
+- Test nuevo: los seis entre los adultos y la corona en la cabeza del jefe, y
+  la civilización que se pierde con el último que sabía escribir.
+- **Con esto la fase 38 queda hecha salvo `city_walls`.**
+
+## 2026-10-03 — M15 bloque IX: palabras para dos chispas
+
+- `SAW_WORDS` gana `feast` («sat at a feast») y `body_found` («seen one of
+  their own found dead»). Las chispas de `redistribution`, `taxation` y
+  `kingship` los nombran, y sin palabras la red de técnicas imprimía el id
+  crudo. El commit de `kingship` se hizo con `synthesis.test.ts` en rojo por
+  `body_found`; éste lo deja en verde (841/841). `feast` no fallaba el test
+  sólo porque su id no lleva guion bajo.
+
+## 2026-10-03 — M15 fase 38b: la realeza
+
+- **Nodo `kingship`** (práctica, Edad del Bronce, «hacia el 2600 a. C.», las
+  casas de Kish y Ur de la Lista Real Sumeria; requiere `chiefdom` y
+  `standing_army`; se practica al presidir, como `chiefdom` un peldaño más
+  arriba). Chispas: oír a la banda discutir quién mandará antes de enfriarse
+  el viejo jefe; entrenar soldados que obedecen al cargo y no al hombre; ser
+  desobedecido por quien sabe que tu mandato acaba.
+- **El rey reina de por vida** (`Polity.reignsForLife`, en `chooseChief`): su
+  mandato no expira; sólo el desafío de `considerRebellion` puede deponerlo.
+- **La corona pasa** (`Polity.heirOf`): cuando el rey muere o deja la banda,
+  antes de cualquier elección el cargo va al cabeza de su casa —si ya no es
+  él— o a su hijo adulto mayor en la banda, libre y de la misma gente. Un
+  heredero que no sabe ser rey gobierna, pero a su muerte la banda vuelve a
+  elegir. Línea en la crónica y aviso.
+- `BandContext` gana `personById` (vivos y muertos) para leer la casa y los
+  hijos del rey difunto.
+- **Check `kings-reign-for-life`**: n/a si ningún rey gobernó más de un
+  mandato normal; falla si gobernaron y nunca pasaron del mandato. En
+  `polity`: 140 días-banda más allá del mandato, 2 jefes elegidos en toda la
+  partida, 0 coronas heredadas (ningún rey murió). La herencia se prueba en
+  dos tests nuevos.
+
+## 2026-10-03 — M15 fase 38b: el ejército permanente
+
+- **Nodo `standing_army`** (práctica, Edad del Bronce, «hacia el 2300 a. C.»,
+  los 5.400 hombres de Sargón «que comían pan ante él cada día»; requiere
+  `division_of_labour` y `taxation`; se practica entrenando). Chispas: ver
+  atacar a la banda sin nadie cuyo oficio fuera impedirlo; entrenar hasta el
+  anochecer; ver robar el templo.
+- **Trabajo `soldier`**, añadido al final de `JOB_IDS` (en una banda sin el
+  nodo nunca se ofrece, así que el reparto de trabajos no cambia). El jefe lo
+  ofrece si sabe el nodo, hay templo y el templo tiene 12 raciones por
+  soldado, contando el nuevo; uno por cada seis miembros como mucho.
+  `Simulation.assignJob` rechaza con razón a quien no lo sabe o no tiene
+  templo, para el jugador y para los PNJ.
+- **Qué hace un soldado**: entrena (`spar`) 2,5 veces más; come del templo
+  (`SOLDIER_RATION_PULL` en la despensa) y, mientras el templo tenga comida,
+  recolecta, coge fruta y caza a un cuarto de lo normal. **Medido**: sólo con
+  el sesgo del trabajo, el soldado de `polity` pasaba un cuarto de su tiempo
+  recolectando, llevaba comida tres de cada cuatro muestras y nunca fue al
+  templo. Y en `warParty` va sin el valor ni la confianza mutua que se piden
+  a un voluntario, y el primero de la partida; obedecer sigue siendo la
+  tirada de `command`.
+- **Check `soldiers-are-kept`**: en `polity`, 95 días-soldado y 223 comidas
+  buscadas en el templo (0 antes de racionarlos).
+- **Tests:** tres nuevos (cuántos soldados puede mantener el templo, la
+  partida de guerra, el rechazo con razón). Suite 839/839.
+
+## 2026-10-03 — M15 fase 38b: el código de leyes
+
+- **Nodo `law_code`** (práctica, Edad del Bronce, «hacia el 2100 a. C.», el
+  código de Ur-Nammu; requiere `writing` y `taxation`; se practica al
+  inscribir). Chispas: llevar un agravio al jefe sabiendo que dependerá de a
+  quién aprecie; grabar los tributos del templo y pensar en grabar las penas
+  al lado; ver avergonzar a un ladrón y dejar ir a otro por lo mismo.
+- **Tres efectos en `Justice.ts`**, todos sobre el jefe que juzga: no puede
+  desestimar el caso de un favorito (`judgeOwn` ignora `favour`); no protege
+  a los suyos de la demanda de otro pueblo (`answerWeight` sin el término de
+  protección; cuentan aún la consideración por los extraños y la relación
+  entre pueblos); y el avergonzado le guarda la mitad de rencor
+  (`verdictGrudge`, `LAW_SOFTENS` 0,5).
+- **Check `the-law-is-the-same-for-all`**: ningún caso desestimado donde un
+  jefe juzgó por la ley. **n/a en `polity`**, y lo será casi siempre: en la
+  línea base sólo `century` y `labour` llegan a oír una queja cada uno. El
+  efecto se prueba en tres tests nuevos de `polity.test.ts`. Anotado en
+  `bugs.md`.
+- `polity` gana `law_code`. Sigue igual en lo demás: templo 92,1 %, libro,
+  banquetes y tributo en verde.
+
+## 2026-10-03 — M15 fase 38b: el tributo
+
+- **Nodo `taxation`** (práctica, Edad del Bronce, «hacia el 2500 a. C.»;
+  requiere `redistribution` y `accounting`; se practica al gravar, que
+  `BandSystem.levyTaxes` anota en el jefe). Chispas: leer la cuenta del templo
+  y ver qué casas nunca le dieron; encontrar el templo vacío en un mes de
+  escasez con las casas llenas; ver a la banda vaciar el templo en un banquete.
+- **La tasa la fija el gobierno**, entre `TAX_RATES` (0, 5, 10, 20, 30 %; el 0
+  incluido, como pide el plan): el jefe PNJ según su codicia
+  (`npcTaxRate`), el jugador desde la sección «Gobierno» de su pestaña de
+  trabajo, que sólo aparece si es jefe y que, si aún no sabe gravar, lo dice.
+  `Simulation.setTaxRate` rechaza con razón a quien no es jefe o no sabe.
+- **El tributo** (`levyTaxes`, determinista, sin dados): una vez al día, el
+  hogar al que le toca (cada 5 días) y que más comida tiene paga
+  `floor(comida × tasa)`, menos lo dado de grado al templo desde el último
+  tributo si el jefe lleva cuentas. Lo que tiene un hogar es su almacén, si
+  su casa guarda algo, más lo que llevan sus miembros: **medido**, la primera
+  versión leía sólo el almacén de casa, y en `polity` todas las casas eran
+  cortavientos que no guardan nada, así que nadie debió nunca nada. Lo lleva
+  un adulto del hogar (nunca el personaje del jugador) con el verbo nuevo
+  `render`, desde sus manos o desde casa, al templo. El hogar del jefe está
+  exento.
+- **El rencor**: cada adulto del hogar gravado pierde
+  `tasa × 30 × (0,5 + codicia)` de opinión del jefe en cada tributo (unos 10
+  puntos a la tasa más alta y con codicia alta; 1,5 al 5 %). Es lo que
+  alimenta `considerRebellion`.
+- **Interfaz**: la sección de gobierno con los cinco botones; floaters del
+  resultado; `render` y sus dos razones de abandono (`nothing_to_render`,
+  `no_temple`) en `Floaters`; todo en español. E2E nuevo: un jefe que sabe
+  gravar pone el 10 % desde la pestaña.
+- **Tests:** cuatro nuevos en `polity.test.ts` (lo debido y el descuento del
+  libro, la tasa según la codicia, el rencor, y quién puede fijar la tasa).
+- **Check `taxes-reach-the-temple`**, sobre comida que llega, no sobre
+  órdenes. En `polity`: 129 tributos, de los que 121 no debían nada —los
+  hogares ya llevan su excedente al templo y el libro lo descuenta—, 8
+  ordenados y acatados, 3 unidades llegadas. Funciona, con poco que cobrar
+  en este mundo; ninguna rebelión. Sin `levyTaxes` da 0 y falla.
+
+**Tests en paralelo:** con otro agente usando la máquina, dos tests ajenos
+(`band.test.ts`, `grazing.test.ts`) agotaron su tiempo en una pasada; solos
+pasan, y la suite pasa entera (833/833) con `--maxWorkers 2 --testTimeout
+20000`.
+
+## 2026-10-03 — M15 fase 38b: la contabilidad
+
+- **Nodo `accounting`** (práctica, Edad del Bronce, «hacia el 3200 a. C.»: las
+  tablillas de Uruk IV son, nueve de cada diez, recibos; requiere `marking` y
+  `clay_tablet`; se practica al guardar). Chispas: marcar en barro cada cesta
+  que entra en el granero; encontrar el almacén mermado sin saber quién puso
+  qué; llevar un agravio al jefe y ver que nadie lo recordaba.
+- **El libro del templo** (`Polity.recordContribution`): si el jefe lleva
+  cuentas, cada unidad de comida que un miembro guarda en el templo se apunta
+  a su hogar (`Household.contributed`, que leerá el impuesto) y le da 0,5 de
+  renombre. El renombre se lee siempre contra la media de la banda, así que lo
+  que compra es que el hogar que da quede por encima del que acapara.
+- **Las deudas escritas** (`Debt.recorded`, `Grievance.recorded`): la queja que
+  oye un jefe que lleva cuentas deja la deuda escrita, y `pruneDebts` ya no la
+  olvida al cabo del año —sólo al pagarse o al morir una de las dos partes—.
+  El expediente del jefe tampoco caduca (`keepDockets`).
+- **Check `the-ledger-remembers`** (al menos la mitad de lo dado al templo,
+  apuntado; informa de deudas escritas y días guardados). En `polity`: 1.306
+  de 1.306 unidades apuntadas; 0 deudas, porque nadie llevó una queja al jefe
+  en esa partida. En el build sin `recordContribution` da 0 y falla.
+- **Tests:** dos nuevos en `polity.test.ts` (el libro exige al jefe que lleva
+  cuentas; la deuda escrita sobrevive al año y la otra no, y ninguna a la
+  muerte).
+- `polity` gana `writing`, `clay_tablet` y `accounting` entre lo que saben los
+  fundadores.
+
+**Comprobado de paso:** la matriz completa con la 38a, comparada con la línea
+base escenario a escenario sin las líneas de reloj, sale **idéntica en los 22
+escenarios que no saben `brewing`**; sólo `feasts` cambia (ver la entrada de
+la 38a). Comparación en `artifacts/verification/m15-38b-2026-10-03/`.
+
+## 2026-10-03 — M15 fase 38b: la redistribución y el templo
+
+- **Nodo `redistribution`** (práctica, `people`, Neolítico, «hacia el 5500
+  a. C.»; requiere `chiefdom` y `pottery`; se practica al terminar un
+  banquete). Tres chispas: ver un banquete vaciar el almacén de una casa
+  mientras se guarda comida (la ruta arqueológica: el banquete es la
+  redistribución antes del templo), pasar hambre junto a un almacén ajeno
+  lleno, y ver robar un almacén.
+- **El templo** (`social/Polity.ts`, `templeOf`): el mayor granero de la
+  banda, si y sólo si **su jefe** sabe `redistribution`. Se recalcula a diario
+  en `Simulation.templeByBand` desde la cabeza del jefe, así que un templo se
+  pierde el día que lo sustituye alguien que no lo sabe, sin contabilidad que
+  lo retire. Ningún dado.
+- **Efecto 1, guardar:** en el ranking de `store`, el templo tira
+  `TEMPLE_PULL × poder del jefe × (0,25 + lealtad)` casillas (16 a plena
+  lealtad), contra la distancia y el tirón del propio hogar (`HOARD_PULL`, 8).
+  Sólo la comida sobrante; una carga de palos se deja donde siempre.
+- **Efecto 2, repartir:** el jefe que lo sabe puede dar el banquete desde el
+  templo aunque no sepa `brewing` (`Feast.mayHostFeast`), y lo prefiere a
+  cualquier otro almacén.
+- **Interfaz:** la ficha del granero dice que es el templo. Español en
+  `i18n/es/polity.ts`.
+- **Escenario `polity`** (semilla `ziggurat`, 2 bandas × 14, 24.000 pasos):
+  fundadores que ya saben el Estado, por el truco de `craft` y `scribes`, y un
+  granero terminado junto a cada campamento colocado en `setup`. Crecerá con
+  cada nodo del bloque.
+- **Check `the-temple-gathers`**: parte del templo en la comida guardada por
+  la banda en sus propios almacenes, y al menos un banquete dado desde él.
+  Medido en `polity`: **93,5 %** con el tirón, **66,2 %** con `TEMPLE_PULL` a
+  cero (el granero está junto al campamento y gana por cercanía). Umbral 80 %;
+  el primer intento, 30 %, pasaba con y sin el efecto. 30 banquetes desde el
+  templo y 403 invitados servidos.
+- **Tests:** `polity.test.ts` (4): el templo exige la idea en el jefe, no es
+  una ruina ni una obra, tira más de los leales, y deja al jefe festejar sin
+  cerveza (al jefe, no a quien sabe la idea sin el cargo).
+
+**Fuera de `polity` nada cambia**: el templo sólo existe con un jefe que sabe
+`redistribution`, y ningún otro escenario lo enseña. En `polity` fallan además
+`roast-wins`, `cooking-spreads`, `pots-reach-a-granary` y
+`fields-are-sown-and-reaped`; es un escenario nuevo sin base con la que
+comparar, y se anotan en `bugs.md`.
+
+## 2026-10-03 — M15 fase 38a: el banquete
+
+Primer commit del bloque IX, hecho en la rama `m15/block9` (worktree propio)
+con el alcance que eligió el propietario: fases 38 y 39 dentro de la comarca;
+`city_walls`, el hierro y el cierre esperan a sus requisitos (ver el plan).
+
+- **`feast` y `attend`** (`social/Feast.ts`, `ActionSystem.doFeast` y
+  `doAttend`), la mitad pendiente de `brewing`. Nadie recibe la orden de
+  festejar: quien sabe elaborar cerveza y tiene un almacén con comida para una
+  mesa (16 raciones servibles; el de su hogar, o cualquiera de la banda si es
+  el jefe) y a tres o más de los suyos a la vista, lo puntúa por la presión de
+  estatus de su hogar y la soledad de los de alrededor; la codicia lo frena.
+  Los invitados acuden por hambre, soledad o aprecio al anfitrión. Una ración
+  cada 6 ticks durante 96 —por debajo del techo de 140 de `AGENTS.md`, así que
+  no se acumula progreso—, nunca comida que enferma; cerveza a quien está más
+  solo que hambriento. Cada hogar espera 4 días entre banquetes.
+- **El acto `feast`** se añade al final de `EVENT_TYPES` (peso 10, saliencia
+  0,6). Lo que gana el anfitrión sale de la maquinaria de actos existente: el
+  renombre del hogar por `onDeed` y la opinión de cada testigo según las
+  normas de su pueblo. Nada escribe estatus directamente.
+- **La cerveza no es requisito.** La primera versión la pedía y `feasts`, cuyo
+  escenario entero sabe `brewing`, hizo 0 banquetes: 7 cervezas en 24.000
+  ticks, todas bebidas en `toast`. Saber elaborarla es la puerta; la cerveza,
+  si la hay, se sirve.
+- **Interfaz:** «Hold a feast» en el menú del suelo, gris con la razón cuando
+  no hay almacén lleno; dos razones de abandono nuevas (`no_feast_to_give`,
+  `nobody_came`) en `Floaters`; todo en español (`i18n/es/polity.ts`, tabla
+  nueva para el bloque). `ORDER_COST` gana `feast` (0,45) y `attend` (0,05).
+- **Tests:** `feast.test.ts` (6): qué se sirve, dónde y cuándo se puede,
+  rechazo con razón, el almacén baja y el renombre y la opinión suben, y
+  «nadie vino». E2E nuevo en `smoke.spec.ts`: la opción gris con su razón.
+  Check nuevo `feasts-gather-the-band` (banquetes con al menos dos invitados
+  por banquete de media); en el build sin `doFeast` da 0 banquetes y falla.
+
+**Medido.** `feasts` (una semilla): 23 banquetes, 211 invitados servidos, 0
+tazas. A 10 semillas, contra la base en un worktree aparte: supervivencia media
+**89,6 % → 89,2 %** (dentro del ruido que `AGENTS.md` describe), muertes por
+hambre 56 → 50, nacimientos 173 → 188, ningún mundo extinguido en ninguno de
+los dos. En la semilla única de `feasts` cambian cuatro veredictos:
+`techs-are-refined` y `pots-reach-a-granary` pasan a fallar (0 vasijas hechas
+en este mundo, 6 en la base) y `crafts-happen-at-stations` y
+`bands-take-sides` pasan de fallo a n/a. El banquete no toca las vasijas ni
+las estaciones; se anota como divergencia de una semilla, sin causa
+confirmada. Lo que el banquete deja abierto está en `bugs.md`.
+
+**Validación:** `typecheck` limpio; `npm test` 823/823 tras el arreglo de la
+traducción del resumen de `brewing`; e2e del banquete en verde
+(`DYNASTY_PORT=5401`). La matriz completa parte de una línea base ya roja
+(ver `bugs.md`, bloque IX). Salidas en `artifacts/verification/m15-38a-2026-10-03/`.
+
 ## 2026-10-02 — M15 fase 17: primera animación de recolectar
 
 - Se generan cuatro poses `g0`–`g3` por edad, sexo y dirección en el rig por

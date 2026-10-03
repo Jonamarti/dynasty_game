@@ -17,10 +17,13 @@ import { capacityFor, equipContainer } from '../src/sim/core/Carry.ts';
 import { anchorOf, carerOf, childRadius } from '../src/sim/ai/Anchor.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
-import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
+import { TECH, techPower, type Tech } from '../src/sim/knowledge/Tech.ts';
+
+/** Whether somebody holds a technology at any strength — for the civilisation check. */
+const TECH_KNOWN = (person: import('../src/sim/entities/Person.ts').Person, tech: Tech) => techPower(person, tech) > 0;
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
-import type { Building } from '../src/sim/entities/Building.ts';
+import { Building, BUILDINGS } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
 import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
@@ -80,6 +83,16 @@ export function markMatrixRun(): void {
  * healer to have been at hand. M11 phase 17d; see the check.
  */
 const HURT_DAYS_FLOOR = 30;
+
+/**
+ * The temple's least share of the food a band stores, for
+ * `the-temple-gathers` — M15 phase 38b. **Measured** on `polity`: with
+ * `TEMPLE_PULL` at zero the same granary, standing beside the camp, takes
+ * 66% on nearness alone; with the pull on it takes 93.5%. The floor sits
+ * between, so the check fails on the build without the pull — the first
+ * guess, 30%, passed on both and would have detected nothing.
+ */
+const TEMPLE_SHARE_FLOOR = 0.8;
 
 export const SCENARIOS: Record<string, Scenario> = {
   tiny: {
@@ -555,6 +568,136 @@ export const SCENARIOS: Record<string, Scenario> = {
       },
     },
     steps: 12000,
+  },
+  polity: {
+    name: 'polity',
+    description:
+      'M15 block IX\'s own scenario (M14\'s `polity`): founders who already ' +
+      'hold the State\'s nodes, by the trick `craft` and `scribes` use, because ' +
+      'the ladder from `chiefdom` to `kingship` is six nodes deep and no run ' +
+      'in the suite climbs it from nothing. Two bands, so the nodes that are ' +
+      'about other peoples have somebody to be about; each starts with a ' +
+      'granary already standing at its camp (`setup`), because the temple is ' +
+      'a granary and raising one from nothing costs most of a year of the run ' +
+      'before anything this scenario measures can begin. The literate core is ' +
+      '`scribes`\'s, for the same reason: `accounting` and `law_code` sit ' +
+      'behind writing.',
+    config: {
+      seed: 'ziggurat',
+      population: {
+        bands: 2, peoplePerBand: 14,
+        startingTech: [
+          'firemaking', 'cooking', 'cordage', 'hafting', 'stoneworking', 'marking',
+          'plant_lore', 'grinding', 'farming', 'pottery', 'brewing',
+          'division_of_labour', 'chiefdom',
+          'writing', 'clay_tablet',
+          'redistribution', 'accounting', 'taxation', 'law_code', 'standing_army', 'kingship',
+        ],
+      },
+    },
+    steps: 24000,
+    setup: sim => {
+      // An old feud between the two peoples, so the half of the State that is
+      // about other peoples — war, peace, tribute (phase 39) — has something
+      // to be about. Harness-only, like the granaries below.
+      const peoples = sim.bands.filter(b => !b.outcast);
+      if (peoples.length >= 2) sim.bandRelations.add(peoples[0]!.id, peoples[1]!.id, -55);
+      // A finished granary beside each camp, the first free spot on a widening
+      // ring. Harness-only, like `emptied`'s hunted-out land: the simulation
+      // is never told it was not built.
+      for (const band of sim.bands) {
+        if (band.outcast) continue;
+        let placed = false;
+        for (let r = 3; r < 20 && !placed; r++) {
+          for (let a = 0; a < 16 && !placed; a++) {
+            const x = Math.round(band.homeX + Math.cos(a * Math.PI / 8) * r);
+            const y = Math.round(band.homeY + Math.sin(a * Math.PI / 8) * r);
+            if (!sim.canPlace(BUILDINGS.granary!, x, y)) continue;
+            const granary = new Building(BUILDINGS.granary!, x, y, band.id);
+            granary.complete = true;
+            sim.buildings.push(granary);
+            sim.buildingsById.set(granary.id, granary);
+            sim.buildingHash.insert(granary);
+            placed = true;
+          }
+        }
+      }
+    },
+  },
+  conquest: {
+    name: 'conquest',
+    description:
+      'The war, tribute and serfdom of M15 block IX, which `polity` cannot ' +
+      'reach: its two peoples are equal and camp out of reach of each other. ' +
+      'Here a State with a king (the knowledge of the `polity` founders) and ' +
+      'a smaller people with no law camp within a day of each other, with an ' +
+      'old feud between them. Harness-only setup: the second band is moved ' +
+      'beside the first and thinned to two thirds, the State gets its ' +
+      'granary, and its grown members are given the nerve for a war. ' +
+      'Everything after that (the declaration, the raids, captives, ' +
+      'submission and tribute) is the simulation and nothing else.',
+    config: {
+      seed: 'akkad',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTechByBand: [
+          ['firemaking', 'cooking', 'cordage', 'hafting', 'stoneworking', 'marking', 'plant_lore', 'grinding',
+            'farming', 'pottery', 'brewing', 'division_of_labour', 'chiefdom', 'writing', 'clay_tablet',
+            'redistribution', 'accounting', 'taxation', 'law_code', 'standing_army', 'kingship', 'spear'],
+          ['firemaking', 'cooking', 'cordage', 'hafting', 'plant_lore'],
+        ],
+      },
+    },
+    steps: 24000,
+    setup: sim => {
+      const [state, weaker] = sim.bands.filter(b => !b.outcast);
+      if (!state || !weaker) return;
+      // Beside the State's camp: the first walkable spot on a widening ring
+      // past thirty tiles, on the same land.
+      let moved = false;
+      for (let r = 30; r < 60 && !moved; r += 2) {
+        for (let a = 0; a < 24 && !moved; a++) {
+          const x = Math.round(state.homeX + Math.cos(a * Math.PI / 12) * r);
+          const y = Math.round(state.homeY + Math.sin(a * Math.PI / 12) * r);
+          if (!sim.world.isWalkable(x, y) || !sim.world.sameRegion(x, y, state.homeX, state.homeY)) continue;
+          const dx = x - weaker.homeX;
+          const dy = y - weaker.homeY;
+          weaker.homeX = x;
+          weaker.homeY = y;
+          for (const p of sim.people) {
+            if (p.bandId !== weaker.id) continue;
+            const nx = Math.round(p.x + dx);
+            const ny = Math.round(p.y + dy);
+            p.x = sim.world.isWalkable(nx, ny) ? nx : x;
+            p.y = sim.world.isWalkable(nx, ny) ? ny : y;
+          }
+          moved = true;
+        }
+      }
+      sim.peopleHash.rebuild(sim.people);
+      // Thinned to two thirds, so the State is half as strong again.
+      const adults = sim.people.filter(p => p.bandId === weaker.id && p.alive && !p.isChild);
+      for (const p of adults.slice(0, Math.floor(adults.length / 3))) p.die('setup');
+      sim.bandRelations.add(state.id, weaker.id, -60);
+      for (let r = 3; r < 20; r++) {
+        let placed = false;
+        for (let a = 0; a < 16 && !placed; a++) {
+          const x = Math.round(state.homeX + Math.cos(a * Math.PI / 8) * r);
+          const y = Math.round(state.homeY + Math.sin(a * Math.PI / 8) * r);
+          if (!sim.canPlace(BUILDINGS.granary!, x, y)) continue;
+          const granary = new Building(BUILDINGS.granary!, x, y, state.id);
+          granary.complete = true;
+          sim.buildings.push(granary);
+          sim.buildingsById.set(granary.id, granary);
+          sim.buildingHash.insert(granary);
+          placed = true;
+        }
+        if (placed) break;
+      }
+      // The nerve for a war, in every grown member of the State: whoever the
+      // band chooses as chief will have it.
+      for (const p of sim.people) if (p.bandId === state.id && !p.isChild) p.traits.aggression = Math.max(p.traits.aggression, 0.6);
+    },
   },
   culture: {
     name: 'culture',
@@ -1653,16 +1796,25 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   // that compared employed-on-their-own-job against unemployed-on-any-job
   // failed by construction, dragged down by narrow jobs like `crafter`
   // whose actions are a small share of anyone's time.
-  const totalHolderTicks = JOB_IDS.reduce((sum, id) => sum + base.jobs.holderTicks[id], 0);
-  const totalOtherTicks = JOB_IDS.reduce((sum, id) => sum + base.jobs.otherTicks[id], 0);
+  // `soldier` only where somebody held it. It is the one job gated on a
+  // node (`standing_army`, M15 phase 38b), so in any world without one it has
+  // no holders to compare and only adds its verbs to the control group:
+  // measured, that moved `labour`'s control from 3.3% to 3.6% in a world
+  // whose every other figure was identical. The measurement was wrong, not
+  // the world. Not every unheld job is dropped: that was tried, and it moved
+  // the baseline's own figure (3.3% to 4.0%) — a different measurement, not
+  // the same one repaired.
+  const heldJobs = JOB_IDS.filter(id => id !== 'soldier' || base.jobs.holderTicks[id] > 0);
+  const totalHolderTicks = heldJobs.reduce((sum, id) => sum + base.jobs.holderTicks[id], 0);
+  const totalOtherTicks = heldJobs.reduce((sum, id) => sum + base.jobs.otherTicks[id], 0);
   if (totalHolderTicks < 200 || totalOtherTicks < 200) {
     skip('jobs-bias-work',
       'too few ticks with a job assigned to compare (' + totalHolderTicks + ' held, ' +
       totalOtherTicks + ' not)');
   } else {
-    const holderShare = JOB_IDS.reduce((sum, id) => sum + base.jobs.holderMatchTicks[id], 0) /
+    const holderShare = heldJobs.reduce((sum, id) => sum + base.jobs.holderMatchTicks[id], 0) /
       totalHolderTicks;
-    const otherShare = JOB_IDS.reduce((sum, id) => sum + base.jobs.otherMatchTicks[id], 0) /
+    const otherShare = heldJobs.reduce((sum, id) => sum + base.jobs.otherMatchTicks[id], 0) /
       totalOtherTicks;
     add('jobs-bias-work',
       holderShare > otherShare,
@@ -2214,6 +2366,174 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('beer-answers-loneliness',
       toasted > 0 && heard > 0,
       toasted + ' toasts made, heard by somebody else ' + heard + ' times');
+  }
+
+  // M15 phase 38b. The temple: a chief who has worked redistribution out
+  // draws the band's surplus food into one granary. Judged as the temple's
+  // share of all food put into the band's own stores, against the share the
+  // same granary takes on nearness alone — see the threshold's comment.
+  if ((tel.temple_days ?? 0) === 0) {
+    skip('the-temple-gathers', 'no band had a chief with redistribution and a granary');
+  } else {
+    const own = tel.food_stored_own ?? 0;
+    const temple = tel.food_stored_temple ?? 0;
+    const share = own > 0 ? temple / own : 0;
+    add('the-temple-gathers',
+      share >= TEMPLE_SHARE_FLOOR && (tel.temple_feasts ?? 0) > 0,
+      (share * 100).toFixed(1) + '% of ' + own + ' food stored went to a temple (need ' +
+        (TEMPLE_SHARE_FLOOR * 100).toFixed(0) + '%); ' + (tel.temple_feasts ?? 0) + ' feasts given from one, over ' +
+        (tel.temple_days ?? 0) + ' temple-days');
+  }
+
+  // M15 phase 38b, `accounting`. The ledger: gifts to the temple written to
+  // the giver's credit, and debts the chief has heard of kept past the year.
+  // Judged on the first, which every temple run exercises; the second needs a
+  // wrong taken to a chief and left unpaid for a year, and is reported.
+  if ((tel.temple_days ?? 0) === 0 || !sim.knownTech.has('accounting')) {
+    skip('the-ledger-remembers', 'no temple kept by a chief who keeps accounts');
+  } else {
+    const recorded = tel.contribution_recorded ?? 0;
+    const given = tel.food_stored_temple ?? 0;
+    add('the-ledger-remembers',
+      recorded > 0 && recorded >= given * 0.5,
+      recorded + ' of ' + given + ' units given to a temple written down; ' +
+        (tel.debt_recorded ?? 0) + ' debts written, ' + (tel.recorded_debt_days ?? 0) +
+        ' debt-days kept past the year');
+  }
+
+  // M15 phase 38b, `taxation`. The levy: households told to carry a share of
+  // their store to the temple, and doing it. Judged on food actually arriving,
+  // not on levies ordered — an order nobody obeys is not a tax.
+  if ((tel.temple_days ?? 0) === 0 || !sim.knownTech.has('taxation')) {
+    skip('taxes-reach-the-temple', 'no temple kept by a chief who knows how to tax');
+  } else {
+    const ordered = tel.levy_ordered ?? 0;
+    const collected = tel.tax_collected ?? 0;
+    add('taxes-reach-the-temple',
+      ordered > 0 && collected > 0,
+      ordered + ' levies ordered (' + (tel.levy_obeyed ?? 0) + ' obeyed, ' + (tel.levy_refused ?? 0) +
+        ' refused, ' + (tel.levy_nothing_owed ?? 0) + ' owing nothing), ' + collected + ' units carried in; ' +
+        'rebellion: ' + (tel.rebellion_refused ?? 0) + ' refusals, ' + (tel.rebellion_left ?? 0) + ' left');
+  }
+
+  // M15 phase 38b, `law_code`. Judged where a chief who judges by the law
+  // actually heard a case of their own people: none of them dismissed. Justice
+  // is rare in every scenario (one complaint in `century`, one in `labour` at
+  // the baseline), so this is n/a in most runs and says so.
+  if ((tel.verdict_by_law ?? 0) === 0) {
+    skip('the-law-is-the-same-for-all', 'no chief who judges by the law heard a case of their own people');
+  } else {
+    add('the-law-is-the-same-for-all',
+      (tel.verdict_dismiss ?? 0) === 0,
+      (tel.verdict_by_law ?? 0) + ' verdicts by the law, ' + (tel.verdict_dismiss ?? 0) + ' cases dismissed');
+  }
+
+  // M15 phase 38b, `standing_army`. Soldiers kept: the job handed out, and
+  // the soldier fed from the temple rather than foraging for themselves.
+  if ((tel.temple_days ?? 0) === 0 || !sim.knownTech.has('standing_army')) {
+    skip('soldiers-are-kept', 'no temple kept by a chief who knows a standing army');
+  } else {
+    const kept = tel.job_soldier_days ?? 0;
+    const fed = tel.soldier_fed_from_temple ?? 0;
+    add('soldiers-are-kept',
+      kept > 0 && fed > 0,
+      kept + ' soldier-days, ' + fed + ' meals sought at the temple');
+  }
+
+  // M15 phase 38b, `kingship`. A king's term does not run out: the office is
+  // held past the ordinary term, and passes to an heir when the king goes.
+  // Judged on the first, which every run with a king exercises; inheritance
+  // needs a king to die inside the run, and is reported.
+  if (!sim.knownTech.has('kingship')) {
+    skip('kings-reign-for-life', 'nobody here knows kingship');
+  } else if ((tel.king_days ?? 0) <= 30) {
+    // An ordinary term is twenty to thirty days (`chiefTermDays`): a world
+    // whose kings ruled for fewer days than that cannot show one outlasting it.
+    skip('kings-reign-for-life', 'no chief who knew kingship ruled longer than an ordinary term');
+  } else {
+    add('kings-reign-for-life',
+      (tel.king_reigns_days ?? 0) > 0,
+      (tel.king_reigns_days ?? 0) + ' band-days ruled past the ordinary term, ' + (tel.crown_inherited ?? 0) +
+        ' crowns inherited, ' + (tel.chief_chosen ?? 0) + ' chiefs chosen in all');
+  }
+
+  // M15 phase 38c. A civilisation is derived, never stored: report which bands
+  // are one at the end. Judged only where some band's adults hold all six of
+  // `CIVILISATION_NEEDS` between them — there, the band whose chief is a king
+  // must be named one, and a band without a king must not.
+  {
+    const bands = sim.bands.filter(b => !b.outcast && sim.livingPeople().some(p => p.bandId === b.id));
+    const named = bands.filter(b => sim.isCivilisation(b.id));
+    const knowing = bands.filter(b => sim.civilisationLacks(b.id).every(id => id === 'kingship'));
+    if (knowing.length === 0) {
+      skip('civilisation-is-derived', 'no band holds the six things a civilisation is');
+    } else {
+      const wrong = knowing.filter(b => {
+        const chief = b.chiefId === null ? null : sim.peopleById.get(b.chiefId);
+        const king = !!chief && TECH_KNOWN(chief, 'kingship');
+        return sim.isCivilisation(b.id) !== king;
+      });
+      add('civilisation-is-derived',
+        wrong.length === 0 && named.length > 0,
+        named.length + ' of ' + bands.length + ' bands are a civilisation (' +
+          named.map(b => b.name).join(', ') + '); ' + wrong.length + ' misnamed');
+    }
+  }
+
+  // M15 phase 39a. War and peace declared by a government: at least one of
+  // either in a world with governments and a quarrel, reported with breaches.
+  if ((tel.war_declared ?? 0) === 0 && (tel.peace_made ?? 0) === 0 && (tel.war_days ?? 0) === 0) {
+    skip('governments-declare-war-and-peace', 'no government declared anything in this run');
+  } else {
+    add('governments-declare-war-and-peace',
+      (tel.war_declared ?? 0) + (tel.peace_made ?? 0) > 0,
+      (tel.war_declared ?? 0) + ' wars declared, ' + (tel.peace_made ?? 0) + ' peaces made (' +
+        (tel.peace_refused ?? 0) + ' refused), ' + (tel.war_days ?? 0) + ' band-days at war, ' +
+        (tel.peace_broken ?? 0) + ' peaces broken');
+  }
+
+  // M15 phase 39d. Tribute: a people beaten in a war submits rather than
+  // disappears, and its tribute arrives at its overlord's store. Judged where
+  // anybody submitted; reported with what was thrown off.
+  if ((tel.tribute_submitted ?? 0) === 0) {
+    skip('the-beaten-pay-tribute', 'no people submitted to another in this run');
+  } else {
+    add('the-beaten-pay-tribute',
+      (tel.tribute_delivered ?? 0) > 0,
+      (tel.tribute_submitted ?? 0) + ' submissions, ' + (tel.tribute_ordered ?? 0) + ' tributes ordered (' +
+        (tel.tribute_refused ?? 0) + ' refused), ' + (tel.tribute_delivered ?? 0) + ' units delivered, ' +
+        (tel.tributary_days ?? 0) + ' band-days as a tributary, ' + (tel.tribute_thrown_off ?? 0) + ' thrown off');
+  }
+
+  // M15 phase 39b. Slavery as an institution: where a governed people took an
+  // adult captive, they are owned by a household and their work goes to it.
+  // Judged where any serf was taken; reported with refusals, escapes and
+  // risings, which are the plan's three answers to it.
+  if ((tel.serf_taken ?? 0) === 0) {
+    skip('serfs-are-owned', 'no governed people took an adult captive in this run');
+  } else {
+    add('serfs-are-owned',
+      (tel.serf_days ?? 0) > 0,
+      (tel.serf_taken ?? 0) + ' made serfs, ' + (tel.serf_days ?? 0) + ' serf-days, ' + (tel.serf_inherited ?? 0) +
+        ' inherited, ' + (tel.serf_refused ?? 0) + ' refusals, ' + (tel.serf_escaped ?? 0) + ' escaped, ' +
+        (tel.serf_revolt ?? 0) + ' risings');
+  }
+
+  // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the
+  // band. Judged on guests actually fed rather than on feasts called, since a
+  // feast nobody comes to is the failure this is here to catch — verified to
+  // fail on the build without `doFeast` (0 feasts, 0 guests).
+  if (!sim.knownTech.has('brewing')) {
+    skip('feasts-gather-the-band', 'nobody here knows how to brew');
+  } else if ((tel.crafted_beer ?? 0) === 0) {
+    skip('feasts-gather-the-band', 'the knowledge is here and no beer was ever brewed');
+  } else {
+    const held = tel.feasts_held ?? 0;
+    const guests = tel.feast_guests ?? 0;
+    add('feasts-gather-the-band',
+      held > 0 && guests >= held * 2,
+      held + ' feasts held (' + (tel.feast_called ?? 0) + ' called), ' + guests + ' guests fed, ' +
+        (tel.feast_cups ?? 0) + ' cups poured');
   }
 
   if (!sim.knownTech.has('herbalism')) {

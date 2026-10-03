@@ -41,6 +41,12 @@ export interface Debt {
   tick: number;
   /** When the one owed last refused what was offered; not asked again for a while. */
   refusedTick: number;
+  /**
+   * Written down by a chief who keeps accounts — M15 phase 38b, `accounting`.
+   * A recorded debt does not lapse with the year (`pruneDebts`): it is owed
+   * until it is paid, or until one of the two is dead.
+   */
+  recorded?: boolean;
 }
 
 /**
@@ -56,6 +62,8 @@ export interface Grievance {
   tick: number;
   /** Told to the chief already; not taken there twice. */
   lodged: boolean;
+  /** Written down by a chief who keeps accounts: does not lapse. See `Debt.recorded`. */
+  recorded?: boolean;
 }
 
 /**
@@ -133,9 +141,12 @@ export function settleDebt(actor: Person, owed: Person): void {
 export function pruneDebts(person: Person, tick: number, ticksPerDay: number,
   alive: (id: number) => boolean): void {
   const fresh = (at: number) => tick - at <= DEBT_DAYS * ticksPerDay;
-  if (person.debts.length > 0) person.debts = person.debts.filter(d => alive(d.toId) && fresh(d.tick));
+  // M15 phase 38b: what a chief has written down is owed until it is paid.
+  if (person.debts.length > 0) {
+    person.debts = person.debts.filter(d => alive(d.toId) && (d.recorded === true || fresh(d.tick)));
+  }
   if (person.grievances.length > 0) {
-    person.grievances = person.grievances.filter(g => alive(g.againstId) && fresh(g.tick));
+    person.grievances = person.grievances.filter(g => alive(g.againstId) && (g.recorded === true || fresh(g.tick)));
   }
 }
 

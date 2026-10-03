@@ -11,6 +11,7 @@
  *     reads this; this never reaches back. That is what lets the headless
  *     harness run exactly the code the browser runs.
  */
+import { trustEachOther } from '../social/Factions.ts';
 import { advanceGrass, grassBuried, CUT_ABOVE } from './Grass.ts';
 import { DIG_TO, PILE_TO, digTool, digToolFailure } from './Earth.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
@@ -50,7 +51,7 @@ import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType 
 import { STRANGER_REGARD_MEAN, STRANGER_REGARD_SPREAD } from '../social/Restraint.ts';
 import { pruneDebts, debtTo, offerFor, OFFER_AT_LEAST, DEBT_DAYS } from '../social/Amends.ts';
 import {
-  judgeOwn, answerDemand, DISMISSED_GRUDGE, SHAME_RENOWN, REFUSED_STANDING, type Case,
+  judgeOwn, answerDemand, DISMISSED_GRUDGE, SHAME_RENOWN, REFUSED_STANDING, type Case, judgesByLaw, verdictGrudge,
 } from '../social/Justice.ts';
 import {
   Building, BUILDINGS, isTrap, isHerd, isStructure, resetBuildingIds, type BuildingDef,
@@ -96,6 +97,12 @@ import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
+import { feastVenue, isLarder } from '../social/Feast.ts';
+import {
+  SERF_REVOLT_QUORUM, serfRefuses,
+  PEACE_BROKEN_REGARD, PEACE_BROKEN_STANDING, TAX_RATES, acceptsPeace, civilisationLacks, governs, keepsAccounts,
+  templeOf,
+} from '../social/Polity.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
 
 /**
@@ -259,6 +266,14 @@ export interface Band {
   claimedCells?: Set<string>;
   /** True for the standing-place of the exiled: no camp, no chief, no norms. */
   outcast?: boolean;
+  /**
+   * The share of every household's store owed to the temple at each levy —
+   * M15 phase 38b, `taxation`. Set by the government: an NPC chief from their
+   * own greed (`Polity.npcTaxRate`), the player's chief by the player
+   * (`Simulation.setTaxRate`). Read only while the chief knows taxation and the
+   * band has a temple. Absent means none.
+   */
+  taxRate?: number;
 }
 
 export class Simulation {
@@ -283,6 +298,12 @@ export class Simulation {
   private readonly feudEvents = new Set<number>();
   /** Cases waiting for the player-chief to choose a local verdict. */
   readonly pendingVerdicts: Case[] = [];
+  /**
+   * Each band's temple store, by band id — M15 phase 38b. Recomputed daily
+   * from the chief's own head (`Polity.templeOf`), so a temple lapses the day
+   * its chief is replaced by somebody who never learned redistribution.
+   */
+  readonly templeByBand = new Map<number, number>();
 
   /**
    * Knowledge the world has, counted from the adults alive right now.
@@ -566,6 +587,7 @@ export class Simulation {
       this.relationships, this.normsByBand, this.bandRelations, this.strangerRegardByBand);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
     this.social.onDeed = (actor, type, magnitude) => this.accrueRenown(actor, type, magnitude);
+    this.social.onPeaceBroken = (actor, victimBandId, witnesses) => this.breakPeace(actor, victimBandId, witnesses);
     this.actionRng = this.rng.fork();
     this.lifeRng = this.rng.fork();
     this.forestRng = this.rng.fork();
@@ -1288,6 +1310,7 @@ export class Simulation {
       chiefByBand: this.bandSystem.chiefByBand,
       bands: this.bands,
       day: this.time.day,
+      overlordOf: bandId => this.bandRelations.overlordOf(bandId),
     };
   }
 
@@ -1413,6 +1436,15 @@ export class Simulation {
     // the people holding them. Keeping this exception here, at the same seam
     // as every other order, means the player and the AI get the same forced
     // labour rule instead of one of them quietly bypassing it.
+    // M15 phase 39b: a serf with a temper and a deep enough grudge refuses
+    // even the people who own them, to their face. Not rolled: decided by the
+    // serf's own nature and what they think of the one giving the order.
+    if (isCaptive(subordinate) && subordinate.captiveOf === leader.bandId && leader.captiveOf === null &&
+      serfRefuses(subordinate, this.relationships.opinion(subordinate.id, leader.id))) {
+      telemetry.count('serf_refused');
+      this.lastRefusal = t('{name} will not be ordered by you', { name: subordinate.name });
+      return false;
+    }
     if (isCaptive(subordinate) && subordinate.captiveOf === leader.bandId &&
       leader.captiveOf === null) {
       telemetry.count('captive_order_obeyed');
@@ -1639,6 +1671,21 @@ export class Simulation {
     person.resume = null;
     person.forgetPlans();
     telemetry.count('taken_captive');
+    // M15 phase 39b: among a people with a law or a crown, an adult captive
+    // is not merely held but owned — the serf of the household of whoever
+    // tied them, or of the chief's if the binder has none.
+    const captorChief = captors.chiefId === null ? null : this.peopleById.get(captors.chiefId) ?? null;
+    if (!person.isChild && governs(captorChief)) {
+      person.serfOf = binder.householdId ?? captorChief?.householdId ?? null;
+      if (person.serfOf !== null) {
+        telemetry.count('serf_taken');
+        const master = this.householdsById.get(person.serfOf);
+        person.chronicle.push({
+          tick: this.time.tick, ageDays: person.age,
+          text: t('was made a serf of the {household}', { household: master?.name ?? '' }), kind: 'suffered',
+        });
+      }
+    }
     person.chronicle.push({
       tick: this.time.tick, ageDays: person.age,
       text: t('was taken captive by the {band}', { band: captors.name }), kind: 'suffered',
@@ -1657,6 +1704,8 @@ export class Simulation {
    */
   private escape(person: Person): void {
     const captors = this.bands.find(b => b.id === person.captiveOf);
+    if (person.serfOf !== null) telemetry.count('serf_escaped');
+    person.serfOf = null;
     person.captiveOf = null;
     person.captiveSince = null;
     const outcasts = this.outcastBand();
@@ -1756,6 +1805,7 @@ export class Simulation {
     captor.inventory.add(itemId, count);
     const oldBand = captive.captiveFrom;
     captive.captiveOf = null;
+    captive.serfOf = null;
     captive.captiveSince = null;
     captive.boundBy = null;
     captive.boundUntil = -9999;
@@ -1774,6 +1824,45 @@ export class Simulation {
       text: t('paid a ransom for {name}', { name: captive.name }), kind: 'did',
     });
     return true;
+  }
+
+  /**
+   * Daily, M15 phase 39b. Serfdom is heritable: a serf whose household has
+   * died out passes to the household of the captors' chief, as goods do to
+   * the crown. And serfs rise: when at least `SERF_REVOLT_QUORUM` serfs of
+   * one band trust one another (`trustEachOther`, the plot's own test), they
+   * all slip away together, whoever is watching. Deterministic.
+   */
+  private settleSerfs(): void {
+    const byBand = new Map<number, Person[]>();
+    for (const serf of this.people) {
+      if (!serf.alive || serf.serfOf === null || !isCaptive(serf)) continue;
+      telemetry.count('serf_days');
+      const master = this.householdsById.get(serf.serfOf);
+      if (!master || master.extinct) {
+        const band = this.bands.find(b => b.id === serf.captiveOf);
+        const chief = band?.chiefId == null ? null : this.peopleById.get(band.chiefId) ?? null;
+        serf.serfOf = chief?.householdId ?? null;
+        if (serf.serfOf !== null) telemetry.count('serf_inherited');
+      }
+      const list = byBand.get(serf.bandId) ?? [];
+      list.push(serf);
+      byBand.set(serf.bandId, list);
+    }
+    for (const serfs of byBand.values()) {
+      if (serfs.length < SERF_REVOLT_QUORUM) continue;
+      const rising = serfs.filter(a => serfs.filter(b => b !== a && trustEachOther(a.id, b.id, this.relationships)).length >=
+        SERF_REVOLT_QUORUM - 1);
+      if (rising.length < SERF_REVOLT_QUORUM) continue;
+      telemetry.count('serf_revolt');
+      for (const serf of rising) {
+        serf.chronicle.push({
+          tick: this.time.tick, ageDays: serf.age,
+          text: t('rose with the other serfs and broke free'), kind: 'milestone',
+        });
+        this.escape(serf);
+      }
+    }
   }
 
   /** Once per day, children who have lived long enough among their captors are
@@ -1802,6 +1891,7 @@ export class Simulation {
       captive.surname = household.name;
       household.add(captive.id);
       captive.captiveOf = null;
+      captive.serfOf = null;
       captive.captiveFrom = null;
       captive.captiveSince = null;
       captive.boundBy = null;
@@ -1866,6 +1956,19 @@ export class Simulation {
       this.lastRefusal =
         t('{name} has never had the idea of setting one person to one task', { name: leader.name });
       return false;
+    }
+
+    // M15 phase 38b: a soldier is a mouth the temple feeds, and only somebody
+    // who has had the idea of a standing army thinks of keeping one.
+    if (job === 'soldier') {
+      if (techPower(leader, 'standing_army') <= 0) {
+        this.lastRefusal = t('{name} has never had the idea of keeping men whose work is fighting', { name: leader.name });
+        return false;
+      }
+      if (!this.templeOf(leader.bandId)) {
+        this.lastRefusal = t('there is no temple to feed a soldier from');
+        return false;
+      }
     }
 
     if (leader.id === subordinate.id) {
@@ -2320,6 +2423,191 @@ export class Simulation {
     return best;
   }
 
+  /**
+   * Where `person` could hold a feast right now, or null — M15 phase 38a.
+   * The menu's question, answered by the rule `Brain` and `doFeast` use.
+   */
+  feastVenueFor(person: Person): Building | null {
+    const household = person.householdId === null ? null : this.householdsById.get(person.householdId) ?? null;
+    return feastVenue(person, household, this.bandSystem.chiefByBand.get(person.bandId) === person.id,
+      this.buildings, this.buildingsById, this.time.day, this.templeOf(person.bandId));
+  }
+
+  /** A band's temple store, if it has one today — M15 phase 38b. */
+  templeOf(bandId: number): Building | null {
+    const id = this.templeByBand.get(bandId);
+    const temple = id === undefined ? null : this.buildingsById.get(id) ?? null;
+    return temple && temple.complete && !temple.ruined ? temple : null;
+  }
+
+  /**
+   * The player's government sets the levy — M15 phase 38b. Refused, with the
+   * reason in `lastRefusal`, unless `chief` leads their band and knows how to
+   * tax; and only to one of `TAX_RATES`.
+   */
+  setTaxRate(chief: Person, rate: number): boolean {
+    const band = this.bands.find(b => b.id === chief.bandId);
+    if (!band || this.bandSystem.chiefByBand.get(band.id) !== chief.id) {
+      this.lastRefusal = t('only the chief can set the levy');
+      return false;
+    }
+    if (techPower(chief, 'taxation') <= 0) {
+      this.lastRefusal = t('nobody here knows how to levy a tax');
+      return false;
+    }
+    if (!(TAX_RATES as readonly number[]).includes(rate)) return false;
+    band.taxRate = rate;
+    return true;
+  }
+
+  /**
+   * What a band still lacks to be a civilisation — M15 phase 38c, derived
+   * fresh on every call (`Polity.civilisationLacks`). Empty when it is one.
+   * Every adult of the band counts, captives included: what the people
+   * holding a captive can make use of is what the captive knows.
+   */
+  civilisationLacks(bandId: number): string[] {
+    // "Or several under a king" (M14 20c): a king's tributaries' knowledge
+    // counts toward his civilisation — M15 phase 39d.
+    const under = new Set([bandId, ...this.bandRelations.tributariesOf(bandId)]);
+    const adults = this.people.filter(p => p.alive && !p.isChild && under.has(p.bandId));
+    const chiefId = this.bandSystem.chiefByBand.get(bandId);
+    return civilisationLacks(adults, chiefId === undefined ? null : this.peopleById.get(chiefId));
+  }
+
+  /** Whether a band is a civilisation today. See `civilisationLacks`. */
+  isCivilisation(bandId: number): boolean {
+    const band = this.bands.find(b => b.id === bandId);
+    return !!band && !band.outcast && this.civilisationLacks(bandId).length === 0;
+  }
+
+  /**
+   * A government declares a war or a peace — M15 phase 39a. The player's
+   * chief through the Government section; NPC governments through
+   * `BandSystem.considerStance`, which calls this too, so both are refused for
+   * the same reasons. Refused, with the reason in `lastRefusal`, unless
+   * `chief` leads their band and governs (`Polity.governs`). Peace with a
+   * people that is itself a government needs its chief to accept; a people
+   * with no government takes a peace offered, having no way to refuse it in
+   * form. Declaring the stance two bands already have is a no-op.
+   */
+  declare(chief: Person, otherBandId: number, kind: 'war' | 'peace'): boolean {
+    const band = this.bands.find(b => b.id === chief.bandId);
+    const other = this.bands.find(b => b.id === otherBandId);
+    if (!band || this.bandSystem.chiefByBand.get(band.id) !== chief.id) {
+      this.lastRefusal = t('only the chief can speak for the band');
+      return false;
+    }
+    if (!governs(chief)) {
+      this.lastRefusal = t('nobody here has a law or a crown that could bind the band to a war or a peace');
+      return false;
+    }
+    if (!other || other.outcast || other.id === band.id) return false;
+    const current = this.bandRelations.stance(band.id, other.id);
+    if (current === kind) return true;
+    if (kind === 'peace') {
+      const theirChiefId = this.bandSystem.chiefByBand.get(other.id);
+      const theirChief = theirChiefId === undefined ? null : this.peopleById.get(theirChiefId) ?? null;
+      if (theirChief && governs(theirChief) && !acceptsPeace(theirChief,
+        this.bandRelations.standing(band.id, other.id))) {
+        this.lastRefusal = t('the {band} will not hear of peace', { band: other.name });
+        telemetry.count('peace_refused');
+        return false;
+      }
+    }
+    this.bandRelations.setStance(band.id, other.id, kind, this.time.day);
+    telemetry.count(kind === 'war' ? 'war_declared' : 'peace_made');
+    const text = kind === 'war'
+      ? t('declared war on the {band}', { band: other.name })
+      : t('made peace with the {band}', { band: other.name });
+    chief.chronicle.push({ tick: this.time.tick, ageDays: chief.age, text, kind: 'milestone' });
+    this.noteInsight(chief, text, kind === 'war' ? 'setback' : 'gain');
+    return true;
+  }
+
+  /**
+   * A chief submits their band to an enemy as its tributary — M15 phase 39d.
+   * Any chief may, government or none: being beaten needs no law. Only to a
+   * band this one is at war with, and only to a government, which is what
+   * can hold a tributary. The player's chief through the Government section.
+   */
+  submit(chief: Person, overlordBandId: number): boolean {
+    const band = this.bands.find(b => b.id === chief.bandId);
+    const overlord = this.bands.find(b => b.id === overlordBandId);
+    if (!band || this.bandSystem.chiefByBand.get(band.id) !== chief.id) {
+      this.lastRefusal = t('only the chief can speak for the band');
+      return false;
+    }
+    if (!overlord || overlord.outcast || this.bandRelations.stance(band.id, overlord.id) !== 'war') {
+      this.lastRefusal = t('tribute is offered to a people you are at war with');
+      return false;
+    }
+    const theirChiefId = this.bandSystem.chiefByBand.get(overlord.id);
+    if (!governs(theirChiefId === undefined ? null : this.peopleById.get(theirChiefId))) {
+      this.lastRefusal = t('the {band} have no government to take a tribute', { band: overlord.name });
+      return false;
+    }
+    this.bandRelations.setStance(band.id, overlord.id, 'tributary', this.time.day, overlord.id);
+    telemetry.count('tribute_submitted');
+    const text = t('submitted to the {band}, and will pay them tribute', { band: overlord.name });
+    chief.chronicle.push({ tick: this.time.tick, ageDays: chief.age, text, kind: 'milestone' });
+    this.noteInsight(chief, text, 'setback');
+    return true;
+  }
+
+  /**
+   * Where tribute to `bandId` is carried: its temple, or else its largest
+   * larder, ties by id. Null if it has nowhere to keep anything.
+   */
+  tributeStoreOf(bandId: number): Building | null {
+    const temple = this.templeOf(bandId);
+    if (temple) return temple;
+    let best: Building | null = null;
+    for (const building of this.buildings) {
+      if (building.ownerBandId !== bandId || !isLarder(building)) continue;
+      if (!best || building.def.storage > best.def.storage ||
+        (building.def.storage === best.def.storage && building.id < best.id)) best = building;
+    }
+    return best;
+  }
+
+  /**
+   * A sworn peace broken by `actor`'s deed against `victimBandId` — M15 phase
+   * 39a. The peace ends; the two peoples' standing pays once; and everybody
+   * who saw it thinks the less of the breaker's chief, who swore it. Nobody
+   * else learns of it except by being told.
+   */
+  private breakPeace(actor: Person, victimBandId: number, witnesses: Person[]): void {
+    this.bandRelations.clearStance(actor.bandId, victimBandId);
+    this.bandRelations.add(actor.bandId, victimBandId, -PEACE_BROKEN_STANDING);
+    telemetry.count('peace_broken');
+    const chiefId = this.bandSystem.chiefByBand.get(actor.bandId);
+    if (chiefId !== undefined) {
+      for (const witness of witnesses) {
+        if (witness.id === chiefId) continue;
+        this.relationships.addDeed(witness.id, chiefId, -PEACE_BROKEN_REGARD, this.time.tick);
+      }
+    }
+    const victims = this.bands.find(b => b.id === victimBandId)?.name ?? '';
+    actor.chronicle.push({
+      tick: this.time.tick, ageDays: actor.age,
+      text: t('broke the peace with the {band}', { band: victims }), kind: 'did',
+    });
+  }
+
+  /** Daily: which granary is each band's temple, from its chief's own head. */
+  private refreshTemples(): void {
+    this.templeByBand.clear();
+    for (const band of this.bands) {
+      if (band.outcast || band.chiefId === null) continue;
+      const temple = templeOf(this.peopleById.get(band.chiefId), band.id, this.buildings);
+      if (temple) {
+        this.templeByBand.set(band.id, temple.id);
+        telemetry.count('temple_days');
+      }
+    }
+  }
+
   /** The one ownership answer shared by direct UI actions and simulation work. */
   mayUseBuilding(person: Person, building: Building): PropertyUse {
     return mayUse(person, building, {
@@ -2462,6 +2750,15 @@ export class Simulation {
     // Heard, not seen: the story of it passes to the chief the way any story
     // does, so what the chief thinks of the accused moves as hearsay moves it.
     this.tellTheWrong(teller, chief, accused, plaintiff);
+    // M15 phase 38b: a chief who keeps accounts writes the wrong down, and a
+    // written debt does not lapse with the year (`pruneDebts`).
+    if (keepsAccounts(chief)) {
+      const owed = debtTo(accused, plaintiff.id);
+      const grievance = plaintiff.grievances.find(g => g.againstId === accused.id);
+      if (owed && !owed.recorded) telemetry.count('debt_recorded');
+      if (owed) owed.recorded = true;
+      if (grievance) grievance.recorded = true;
+    }
 
     if (accused.bandId !== chief.bandId) {
       if (!chief.docket.some(c => c.accusedId === told.accusedId && c.plaintiffId === told.plaintiffId)) {
@@ -2502,6 +2799,7 @@ export class Simulation {
 
     const verdict = judgeOwn(chief, plaintiff, accused, this.relationships, canPay);
     telemetry.count('verdict_' + verdict);
+    if (judgesByLaw(chief)) telemetry.count('verdict_by_law');
     if (verdict === 'dismiss') {
       this.relationships.addDeed(plaintiff.id, chief.id, -DISMISSED_GRUDGE, this.time.tick);
       const text = t('{chief} would not hear {name} against {accused}',
@@ -2569,7 +2867,7 @@ export class Simulation {
     }
     const household = accused.householdId === null ? null : this.householdsById.get(accused.householdId);
     if (household) household.renown -= SHAME_RENOWN;
-    this.relationships.addDeed(accused.id, chief.id, -DISMISSED_GRUDGE / 2, this.time.tick);
+    this.relationships.addDeed(accused.id, chief.id, -verdictGrudge(chief), this.time.tick);
     const text = t('{chief} shamed {name} before the band', { chief: chief.name, name: accused.name });
     accused.chronicle.push({ tick: this.time.tick, ageDays: accused.age, text, kind: 'suffered' });
     chief.chronicle.push({ tick: this.time.tick, ageDays: chief.age, text, kind: 'did' });
@@ -2609,7 +2907,11 @@ export class Simulation {
       }
     }
     for (const person of this.people) {
-      if (person.docket.length > 0) person.docket = person.docket.filter(c => this.time.tick - c.tick <= stale);
+      // M15 phase 38b: a chief who keeps accounts keeps the docket too.
+      const written = keepsAccounts(person) && this.bandSystem.chiefByBand.get(person.bandId) === person.id;
+      if (person.docket.length > 0 && !written) {
+        person.docket = person.docket.filter(c => this.time.tick - c.tick <= stale);
+      }
       if (person.carriedDemand && this.time.tick - person.carriedDemand.tick > stale) person.carriedDemand = null;
     }
   }
@@ -4203,7 +4505,12 @@ export class Simulation {
       // M12 phase 2a: a debt to the dead, or one nobody has come for in a
       // year, is not owed any more.
       for (const person of this.people) {
-        if (person.alive) pruneDebts(person, this.time.tick, this.config.time.ticksPerDay,
+        if (!person.alive) continue;
+        // What the ledger saved today, for the health report: a recorded
+        // debt older than the year that an unwritten one would have lost.
+        const stale = this.time.tick - DEBT_DAYS * this.config.time.ticksPerDay;
+        for (const debt of person.debts) if (debt.recorded && debt.tick < stale) telemetry.count('recorded_debt_days');
+        pruneDebts(person, this.time.tick, this.config.time.ticksPerDay,
           id => this.peopleById.get(id)?.alive ?? false);
       }
       this.keepDockets();
@@ -4213,6 +4520,7 @@ export class Simulation {
       this.bandRelations.decay();
       this.settleFeuds();
       this.settleCaptives();
+      this.settleSerfs();
       for (const person of this.people) {
         if (person.alive) {
           person.curiosityDays = Math.min(60, person.curiosityDays + 1);
@@ -4258,6 +4566,11 @@ export class Simulation {
         abandonSite: site => this.removeBuilding(site),
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),
+        templeOf: bandId => this.templeOf(bandId),
+        personById: id => this.peopleById.get(id),
+        declare: (chief, otherBandId, kind) => this.declare(chief, otherBandId, kind),
+        submit: (chief, overlordBandId) => this.submit(chief, overlordBandId),
+        tributeStoreOf: bandId => this.tributeStoreOf(bandId),
         assignJob: (leader, subordinate, job) => this.assignJob(leader, subordinate, job),
         leaveBand: person => this.removeBandMembership(person),
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),
@@ -4265,6 +4578,8 @@ export class Simulation {
         sightings: this.sightings,
         nodeHash: this.nodeHash,
       });
+
+      this.refreshTemples();
 
       this.knowledgeSystem.daily(this.people, {
         rng: this.knowledgeRng,
@@ -4296,6 +4611,8 @@ export class Simulation {
       // be able to skip honestly when there was nothing to tend.
       for (const person of this.people) {
         if (person.alive && person.health < 80) telemetry.count('hurt_person_days');
+        // M15 phase 38b: how many soldiers a world keeps, for `soldiers-are-kept`.
+        if (person.alive && person.job === 'soldier') telemetry.count('job_soldier_days');
       }
       this.refreshEra();
 
@@ -4349,6 +4666,7 @@ export class Simulation {
       eatAtSourceAt: this.config.carry.eatAtSourceAt,
       carry: this.config.carry,
       chiefByBand: this.bandSystem.chiefByBand,
+      templeByBand: this.templeByBand,
       snowDepth: this.snowDepth,
       // The one number the scorer needs about the ground, from the one
       // implementation that computes it. A `spread` aimed at a plot the panel
@@ -4459,6 +4777,7 @@ export class Simulation {
       onStopped: (person: Person, action: string, reason: string) =>
         this.noteStop(person, action, reason),
       chiefByBand: this.bandSystem.chiefByBand,
+      templeByBand: this.templeByBand,
       onComplaint: (teller: Person, chief: Person, told: Case) => this.hearComplaint(teller, chief, told),
       onParley: (chief: Person, envoy: Person, told: Case) => this.putToEnvoy(chief, envoy, told),
       onWatched: (person: Person, use: PropertyUse) => this.noteWatched(person, use),

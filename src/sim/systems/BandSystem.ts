@@ -16,6 +16,12 @@
  *    band gets you driven into the wilderness, and theft in a tolerant one does
  *    not, without either outcome being written as a rule.
  */
+import {
+  COUP_INTERVAL, COUP_QUORUM, LEVY_EVERY_DAYS, PEACE_STANDING, fightOf, loyalistsOf, TREATY_STANDING, TRIBUTE_EVERY_DAYS, TRIBUTE_SHARE, WAR_MIN_DAYS, WAR_NERVE,
+  WAR_STANDING, dueFrom, governs, heirOf, keepsAccounts, mayKeepSoldier, npcTaxRate, reignsForLife, strengthOf,
+  submits, taxResentment, throwsOff,
+} from '../social/Polity.ts';
+import { isLarder, portions, mostOf } from '../social/Feast.ts';
 import { MEMBERS_PER_GUARD } from '../social/Defence.ts';
 import type { Person } from '../entities/Person.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
@@ -377,7 +383,17 @@ export interface BandContext {
   abandonSite: (building: Building) => void;
   /** Issues an order subject to a compliance roll. Returns whether it stuck. */
   command: (leader: Person, subordinate: Person, action: string,
-    target: { buildingId?: number; nodeId?: number }) => boolean;
+    target: { buildingId?: number; nodeId?: number; itemId?: string; count?: number }) => boolean;
+  /** Each band's temple store today, M15 phase 38b. */
+  templeOf: (bandId: number) => Building | null;
+  /** Anybody, living or dead, by id — a late king's house and children, M15 phase 38b. */
+  personById: (id: number) => Person | undefined;
+  /** A government declares a war or a peace, M15 phase 39a. See `Simulation.declare`. */
+  declare: (chief: Person, otherBandId: number, kind: 'war' | 'peace') => boolean;
+  /** A chief at war submits to the enemy as its tributary, M15 phase 39d. See `Simulation.submit`. */
+  submit: (chief: Person, overlordBandId: number) => boolean;
+  /** Where a band's tribute is carried: its temple, or its largest larder. M15 phase 39d. */
+  tributeStoreOf: (bandId: number) => Building | null;
   /** Assigns a job, subject to the same roll `command` uses. */
   assignJob: (leader: Person, subordinate: Person, job: JobId | null) => boolean;
   /** Moves someone out of their band of their own accord, not by exile. */
@@ -425,6 +441,20 @@ export class BandSystem {
   /** First day of sustained local food exhaustion, by band. */
   private readonly foodFailureSince = new Map<number, number>();
 
+  /** Last day each band reckoned with a plot against its king, M15 phase 39c. */
+  private readonly coupConsidered = new Map<number, number>();
+
+  /** Last day each tributary band sent its tribute, M15 phase 39d. */
+  private readonly tributePaid = new Map<number, number>();
+
+  /** Living members by band, refreshed at the top of `daily`. */
+  private readonly membersByBand = new Map<number, Person[]>();
+
+  /** A band's living members today; empty for a band nobody is left in. */
+  private membersOf(bandId: number): Person[] {
+    return this.membersByBand.get(bandId) ?? [];
+  }
+
   /** Band names by id, refreshed at the top of `daily`, for chronicle lines. */
   private readonly bandNames = new Map<number, string>();
   /** Each band's camp, refreshed with the names; for the raid-for-need motive. */
@@ -439,6 +469,8 @@ export class BandSystem {
       else byBand.set(person.bandId, [person]);
     }
 
+    this.membersByBand.clear();
+    for (const [bandId, list] of byBand) this.membersByBand.set(bandId, list);
     this.bandNames.clear();
     this.bandHomes.clear();
     for (const band of bands) {
@@ -463,6 +495,7 @@ export class BandSystem {
       this.assignJobs(band, members, ctx);
       this.considerExile(band, members, ctx);
       this.considerRebellion(band, members, ctx);
+      if (!band.outcast) this.considerCoup(band, members, ctx);
       // Re-read per band: `outcasts` was gathered before this loop, and an
       // outcast one band has just taken in is no longer anybody's to take.
       // Before M11 phase 15d that was only latent — it needed a wanderer
@@ -476,10 +509,12 @@ export class BandSystem {
           (byBand.get(person.captiveFrom)?.length ?? 0) === 0));
       if (!band.outcast && stillOut.length > 0) this.considerAdoption(band, members, stillOut, ctx);
       if (!band.outcast) this.markTerritory(band, members);
+      if (!band.outcast) this.considerStance(band, members, bands, ctx);
       if (!band.outcast) this.considerTerritory(band, members, ctx, outcastBand?.id);
       if (!band.outcast) this.considerRaid(band, members, ctx, outcastBand?.id);
       if (ctx.day % PLANNING_INTERVAL === 0) this.planBuildings(band, members, ctx);
       this.directWork(band, members, ctx);
+      if (!band.outcast) this.levyTaxes(band, members, ctx);
     }
   }
 
@@ -621,8 +656,61 @@ export class BandSystem {
     // chief who understands `chiefdom` hold the office half as long again, and
     // a band that replaces them with somebody who does not goes back to the
     // short term. See `chiefTermDays`.
+    // Counted before the term test, so the health report can tell a world
+    // with no king from a world whose kings never outlast a term.
+    if (incumbent && reignsForLife(incumbent)) telemetry.count('king_days');
     if (incumbent && band.chiefSince !== null &&
         ctx.day - band.chiefSince < chiefTermDays(incumbent)) return;
+
+    // M15 phase 38b, `kingship`. A king's term does not run out; and when a
+    // king dies or leaves, the office goes to their heir before the band has
+    // any say. Only the challenge (`considerRebellion`) can unseat one.
+    if (incumbent && reignsForLife(incumbent)) {
+      telemetry.count('king_reigns_days');
+      return;
+    }
+    if (!incumbent && incumbentId !== undefined) {
+      const late = ctx.personById(incumbentId);
+      const heir = late && reignsForLife(late) ? heirOf(late, members, ctx.householdsById) : null;
+      if (late && heir) {
+        // M15 phase 39c: a disputed succession. A faction that would move
+        // against the heir puts its own claimant up, and the band's regard
+        // settles it — the same measure an election uses.
+        const rival = conspiracyAgainst(heir.id, members.filter(m => m.captiveOf === null), ctx.relationships);
+        if (rival && rival.memberIds.length >= COUP_QUORUM) {
+          const claimant = members.find(m => m.id === rival.instigatorId);
+          telemetry.count('succession_disputed');
+          if (claimant && this.standingScore(claimant, band, members, ctx) >
+            this.standingScore(heir, band, members, ctx)) {
+            this.chiefByBand.set(band.id, claimant.id);
+            band.chiefId = claimant.id;
+            band.chiefSince = ctx.day;
+            telemetry.count('chief_chosen');
+            telemetry.count('succession_usurped');
+            const text = t('took the rule of the {band} from {name}, the heir', { band: band.name, name: heir.name });
+            claimant.chronicle.push({ tick: ctx.tick, ageDays: claimant.age, text, kind: 'milestone' });
+            heir.chronicle.push({
+              tick: ctx.tick, ageDays: heir.age,
+              text: t('was passed over for the rule by {name}', { name: claimant.name }), kind: 'suffered',
+            });
+            ctx.onInsight(claimant, text, 'gain');
+            return;
+          }
+        }
+        this.chiefByBand.set(band.id, heir.id);
+        band.chiefId = heir.id;
+        band.chiefSince = ctx.day;
+        telemetry.count('chief_chosen');
+        telemetry.count('crown_inherited');
+        heir.chronicle.push({
+          tick: ctx.tick, ageDays: heir.age,
+          text: t('inherited the rule of the {band} from {name}', { band: band.name, name: late.name }),
+          kind: 'milestone',
+        });
+        ctx.onInsight(heir, t('inherits the rule of the {band}', { band: band.name }), 'gain');
+        return;
+      }
+    }
 
     let best: Person | null = null;
     let bestScore = -Infinity;
@@ -755,7 +843,11 @@ export class BandSystem {
       // one that has stopped working.
       (id !== 'guard' || (
         counts.guard < Math.ceil(members.length / MEMBERS_PER_GUARD) &&
-        [...(ctx.sightings.get(band.id)?.values() ?? [])].some(seen => seen.bandId !== band.id))));
+        [...(ctx.sightings.get(band.id)?.values() ?? [])].some(seen => seen.bandId !== band.id))) &&
+      // M15 phase 38b: a soldier only for a chief who knows how to keep one,
+      // and only as many as the temple can feed. A band without it never
+      // offers the job, so the counting above is unchanged for it.
+      (id !== 'soldier' || this.templeCanKeepSoldier(chief, band, members, counts.soldier, ctx)));
 
     let wanted: JobId = offered[0] ?? JOB_IDS[0]!;
     let fewest = Infinity;
@@ -767,6 +859,338 @@ export class BandSystem {
     }
 
     ctx.assignJob(chief, unassigned[0]!, wanted);
+  }
+
+  /** Whether the chief can take another soldier into the temple's pay. */
+  private templeCanKeepSoldier(chief: Person, band: Band, members: Person[], soldiers: number, ctx: BandContext): boolean {
+    const temple = ctx.templeOf(band.id);
+    return temple !== null && mayKeepSoldier(chief, portions(temple.store), soldiers, members.length);
+  }
+
+  // -------------------------------------------------------------------------
+  // War and peace
+  // -------------------------------------------------------------------------
+
+  /**
+   * An NPC government's foreign policy — M15 phase 39a. Deterministic, as this
+   * system must be: read off the two peoples' standing, the chief's nerve and
+   * how long a war has run, in ascending order of the other band's id.
+   *
+   * - A chief with the nerve declares war on a people the band stands with
+   *   worse than `WAR_STANDING`.
+   * - After `WAR_MIN_DAYS`, a chief without it — or any, once standing has
+   *   recovered past `PEACE_STANDING` — offers peace; the other side's
+   *   government may refuse (`acceptsPeace`).
+   * - Two governments on good terms swear a peace (`TREATY_STANDING`).
+   * - A sworn peace is kept until somebody breaks it.
+   *
+   * The player's government decides for itself; nothing here speaks for it.
+   */
+  private considerStance(band: Band, members: Person[], bands: Band[], ctx: BandContext): void {
+    const chiefId = this.chiefByBand.get(band.id);
+    const chief = chiefId === undefined ? undefined : members.find(m => m.id === chiefId);
+    if (!chief || chief.isPlayer) return;
+    // M15 phase 39d. Submitting and throwing off the yoke are any chief's to
+    // do, government or none: a band with no law can still be beaten.
+    this.considerSubmission(band, chief, members, ctx);
+    if (!governs(chief)) return;
+    for (const other of ctx.bandRelations.touching(band.id)) {
+      const them = bands.find(b => b.id === other);
+      if (!them || them.outcast) continue;
+      const standing = ctx.bandRelations.standing(band.id, other);
+      const record = ctx.bandRelations.stanceRecord(band.id, other);
+      // A sworn peace is kept: it ends only when somebody breaks it
+      // (`Simulation.breakPeace`). Measured: without this, a chief with the
+      // nerve declared war again the day after the peace, and `polity` ran
+      // ten wars and nine peaces in a hundred days.
+      if (record?.kind === 'tributary' || record?.kind === 'peace') continue;
+      if (record?.kind === 'war') {
+        telemetry.count('war_days');
+        if (ctx.day - record.since < WAR_MIN_DAYS) continue;
+        if (chief.traits.aggression < WAR_NERVE || standing >= PEACE_STANDING) ctx.declare(chief, other, 'peace');
+        continue;
+      }
+      if (standing <= WAR_STANDING && chief.traits.aggression >= WAR_NERVE) {
+        ctx.declare(chief, other, 'war');
+        continue;
+      }
+      if (record === null && standing >= TREATY_STANDING) {
+        const theirChiefId = this.chiefByBand.get(other);
+        const theirs = theirChiefId === undefined ? undefined : ctx.personById(theirChiefId);
+        if (governs(theirs)) ctx.declare(chief, other, 'peace');
+      }
+    }
+  }
+
+  /**
+   * A chief at war with a government much stronger than their own people
+   * submits and pays tribute; a tributary that has outgrown its overlord
+   * throws the yoke off, which is a declaration of war — M15 phase 39d.
+   * Strength is `strengthOf` the living adults on each side, read the same
+   * way by both. Deterministic.
+   */
+  private considerSubmission(band: Band, chief: Person, members: Person[], ctx: BandContext): void {
+    const ours = strengthOf(members.filter(m => !m.isChild && m.captiveOf === null));
+    const strengthOfBand = (bandId: number) => strengthOf(
+      this.membersOf(bandId).filter(m => !m.isChild && m.captiveOf === null));
+    const overlord = ctx.bandRelations.overlordOf(band.id);
+    if (overlord !== null) {
+      telemetry.count('tributary_days');
+      if (throwsOff(chief, ours, strengthOfBand(overlord))) {
+        ctx.bandRelations.setStance(band.id, overlord, 'war', ctx.day);
+        telemetry.count('tribute_thrown_off');
+        const text = t('refused the {band} its tribute', { band: this.bandName(overlord) });
+        chief.chronicle.push({ tick: ctx.tick, ageDays: chief.age, text, kind: 'milestone' });
+        ctx.onInsight(chief, text, 'setback');
+      } else {
+        this.payTribute(band, chief, members, overlord, ctx);
+      }
+      return;
+    }
+    for (const other of ctx.bandRelations.touching(band.id)) {
+      const record = ctx.bandRelations.stanceRecord(band.id, other);
+      if (record?.kind !== 'war') continue;
+      const theirChiefId = this.chiefByBand.get(other);
+      const theirs = theirChiefId === undefined ? undefined : ctx.personById(theirChiefId);
+      if (!governs(theirs)) continue;
+      if (submits(chief, ours, strengthOfBand(other), ctx.day - record.since)) {
+        ctx.submit(chief, other);
+        return;
+      }
+    }
+  }
+
+  /**
+   * Every `TRIBUTE_EVERY_DAYS`, the tributary's chief sends one of its people
+   * to carry a share of what the band holds — its temple, or whatever its
+   * members carry — to the overlord's store (`render`, aimed at
+   * `renderInto`). The bearer may refuse like anybody told to do anything,
+   * and that is a tribute not paid.
+   */
+  private payTribute(band: Band, chief: Person, members: Person[], overlord: number, ctx: BandContext): void {
+    const last = this.tributePaid.get(band.id);
+    if (last !== undefined && ctx.day - last < TRIBUTE_EVERY_DAYS) return;
+    const into = ctx.tributeStoreOf(overlord);
+    if (!into) return;
+    this.tributePaid.set(band.id, ctx.day);
+
+    const own = ctx.tributeStoreOf(band.id);
+    const bearers = members.filter(m => !m.isChild && !m.isPlayer && m.captiveOf === null &&
+      m.order === null && this.fitToTravel(m)).sort((a, b) => a.id - b.id);
+    if (bearers.length === 0) return;
+    let target: { buildingId?: number; itemId: string; count: number } | null = null;
+    let bearer: Person | null = null;
+    const atHome = own ? mostOf(own.store) : null;
+    if (own && atHome && own.id !== into.id) {
+      const due = Math.max(1, Math.floor(portions(own.store) * TRIBUTE_SHARE));
+      bearer = bearers[0]!;
+      target = { buildingId: own.id, itemId: atHome, count: Math.min(due, own.store.count(atHome)) };
+    } else {
+      let held = 0;
+      for (const member of bearers) {
+        const item = mostOf(member.inventory);
+        const count = item === null ? 0 : member.inventory.count(item);
+        if (item !== null && count > held) {
+          bearer = member;
+          held = count;
+          target = { itemId: item, count: Math.max(1, Math.floor(count * TRIBUTE_SHARE * 4)) };
+        }
+      }
+    }
+    if (!bearer || !target) {
+      telemetry.count('tribute_nothing_to_send');
+      return;
+    }
+    telemetry.count('tribute_ordered');
+    if (ctx.command(chief, bearer, 'render', target)) {
+      bearer.renderInto = into.id;
+      telemetry.count('tribute_sent');
+    } else {
+      telemetry.count('tribute_refused');
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Taxes
+  // -------------------------------------------------------------------------
+
+  /**
+   * The levy — M15 phase 38b, `taxation`. Once a day, a chief who knows how to
+   * tax tells the household whose turn has come, and who holds the most food,
+   * to carry its share to the temple (`render`). The household carries it
+   * itself: the dues were brought, not fetched.
+   *
+   * What a household holds is its home's store, when the home is somewhere
+   * food can be kept, and the food its members are carrying. **Measured**: the
+   * first version read the home's store alone, and on `polity` every home was a
+   * windbreak — a roof that keeps nothing — so no household ever owed anything.
+   * The bearer pays out of their own hands first, and from the home store when
+   * that is where the food is.
+   *
+   * Deterministic, as everything in this system must be (its `rng` is the
+   * forest's): who pays is chosen by turn and by holdings, never by a roll. The
+   * compliance roll is `command`'s own, against `ORDER_COST.render`. The
+   * chief's own household is not taxed — the oldest exemption there is, and
+   * the one that makes the levy widen the gap it was meant to fill.
+   *
+   * Every adult of the taxed household thinks the worse of the chief for it,
+   * by `taxResentment`: a heavy share is what feeds `considerRebellion`.
+   */
+  private levyTaxes(band: Band, members: Person[], ctx: BandContext): void {
+    const chiefId = this.chiefByBand.get(band.id);
+    const chief = chiefId === undefined ? undefined : members.find(m => m.id === chiefId);
+    if (!chief || techPower(chief, 'taxation') <= 0) return;
+    if (!chief.isPlayer) band.taxRate = npcTaxRate(chief);
+    const rate = band.taxRate ?? 0;
+    const temple = ctx.templeOf(band.id);
+    if (rate <= 0 || !temple) return;
+
+    // Who may carry a household's due: never the player's character — an
+    // order from a chief is the player's to obey or not, the rule
+    // `orderAmends` keeps for the same reason.
+    const mayBear = (m: Person) => !m.isChild && !m.isPlayer && m.captiveOf === null &&
+      m.order === null && this.fitToTravel(m);
+
+    let payer: Household | null = null;
+    let most = 0;
+    for (const household of ctx.householdsById.values()) {
+      if (household.bandId !== band.id || household.extinct) continue;
+      if (household.id === chief.householdId) continue;
+      if (ctx.day - household.lastLevyDay < LEVY_EVERY_DAYS) continue;
+      const food = this.householdFood(household, members, temple, ctx);
+      if (food > most || (food === most && payer !== null && household.id < payer.id)) {
+        payer = household;
+        most = food;
+      }
+    }
+    if (!payer) return;
+
+    const givenSince = payer.contributed - payer.contributedAtLevy;
+    const due = dueFrom(most, rate, givenSince, keepsAccounts(chief));
+    payer.lastLevyDay = ctx.day;
+    payer.contributedAtLevy = payer.contributed;
+    if (due < 1) {
+      telemetry.count('levy_nothing_owed');
+      return;
+    }
+
+    // The bearer: whoever of the household carries the most of one food, or
+    // — if the home store holds more of something than anybody carries — the
+    // first fit adult, sent to fetch it from home.
+    const household = payer;
+    const bearers = members.filter(m => m.householdId === household.id && mayBear(m)).sort((a, b) => a.id - b.id);
+    let bearer: Person | null = null;
+    let dish: string | null = null;
+    let held = 0;
+    for (const member of bearers) {
+      const item = mostOf(member.inventory);
+      const count = item === null ? 0 : member.inventory.count(item);
+      if (item !== null && count > held) {
+        bearer = member;
+        dish = item;
+        held = count;
+      }
+    }
+    const home = this.larderHome(household, temple, ctx);
+    const atHome = home ? mostOf(home.store) : null;
+    const homeHeld = home && atHome ? home.store.count(atHome) : 0;
+    let target: { buildingId?: number; itemId: string; count: number } | null = null;
+    if (home && atHome && homeHeld > held && bearers.length > 0) {
+      bearer = bearers[0]!;
+      target = { buildingId: home.id, itemId: atHome, count: Math.min(due, homeHeld) };
+    } else if (bearer && dish) {
+      target = { itemId: dish, count: Math.min(due, held) };
+    }
+    if (!bearer || !target) {
+      telemetry.count('levy_nobody_to_bring_it');
+      return;
+    }
+
+    chief.noteDid('levy');
+    telemetry.count('levy_ordered');
+    for (const member of members) {
+      if (member.householdId !== household.id || member.isChild) continue;
+      ctx.relationships.addDeed(member.id, chief.id, -taxResentment(rate, member), ctx.tick);
+    }
+    if (ctx.command(chief, bearer, 'render', target)) {
+      telemetry.count('levy_obeyed');
+    } else {
+      telemetry.count('levy_refused');
+    }
+  }
+
+  /** A household's home, when it is somewhere food is kept and is not the temple itself. */
+  private larderHome(household: Household, temple: Building, ctx: BandContext): Building | null {
+    if (household.homeBuildingId === null || household.homeBuildingId === temple.id) return null;
+    const home = ctx.buildings.find(b => b.id === household.homeBuildingId);
+    return home && isLarder(home) ? home : null;
+  }
+
+  /** What a household holds for the levy: its larder at home and what its members carry. */
+  private householdFood(household: Household, members: Person[], temple: Building, ctx: BandContext): number {
+    const home = this.larderHome(household, temple, ctx);
+    let food = home ? portions(home.store) : 0;
+    for (const member of members) if (member.householdId === household.id) food += portions(member.inventory);
+    return food;
+  }
+
+  // -------------------------------------------------------------------------
+  // Plots against a king
+  // -------------------------------------------------------------------------
+
+  /**
+   * A conspiracy against the king — M15 phase 39c, and `conspiracyAgainst`'s
+   * second reader after exile. Every `COUP_INTERVAL` days, if a faction of at
+   * least `COUP_QUORUM` would move against a king, it moves: if the plotters'
+   * strength in a fight is greater than the king's and his loyalists'
+   * (`loyalistsOf`: his soldiers and his own house), the instigator takes the
+   * rule; if not, the plot is broken and its instigator is cast out.
+   *
+   * Only a king: a chief whose term runs out is replaced by the band's choice
+   * (`chooseChief`) and challenged by `considerRebellion`, and a plot is what
+   * a crown that does not run out invites. Deterministic — the plot and the
+   * fight are read off opinions, traits and skill, never rolled — because this
+   * system's `rng` is the forest's.
+   */
+  private considerCoup(band: Band, members: Person[], ctx: BandContext): void {
+    const chiefId = this.chiefByBand.get(band.id);
+    const king = chiefId === undefined ? undefined : members.find(m => m.id === chiefId);
+    if (!king || king.isPlayer || !reignsForLife(king)) return;
+    const last = this.coupConsidered.get(band.id);
+    if (last !== undefined && ctx.day - last < COUP_INTERVAL) return;
+    this.coupConsidered.set(band.id, ctx.day);
+
+    const free = members.filter(m => m.captiveOf === null);
+    const faction = conspiracyAgainst(king.id, free, ctx.relationships);
+    if (!faction || faction.memberIds.length < COUP_QUORUM) return;
+    const plotters = members.filter(m => faction.memberIds.includes(m.id));
+    const instigator = plotters.find(m => m.id === faction.instigatorId);
+    if (!instigator || instigator.isPlayer) return;
+    telemetry.count('coup_attempted');
+    const loyal = [king, ...loyalistsOf(king, members, new Set(faction.memberIds))];
+
+    if (fightOf(plotters) > fightOf(loyal)) {
+      this.chiefByBand.set(band.id, instigator.id);
+      band.chiefId = instigator.id;
+      band.chiefSince = ctx.day;
+      telemetry.count('chief_chosen');
+      telemetry.count('coup_won');
+      const text = t('seized the rule of the {band} from {name}', { band: band.name, name: king.name });
+      instigator.chronicle.push({ tick: ctx.tick, ageDays: instigator.age, text, kind: 'milestone' });
+      king.chronicle.push({
+        tick: ctx.tick, ageDays: king.age,
+        text: t('was overthrown by {name}', { name: instigator.name }), kind: 'suffered',
+      });
+      ctx.onInsight(instigator, text, 'gain');
+    } else {
+      telemetry.count('coup_failed');
+      instigator.chronicle.push({
+        tick: ctx.tick, ageDays: instigator.age,
+        text: t('plotted against {name}, and was found out', { name: king.name }), kind: 'did',
+      });
+      ctx.onInsight(instigator, t('plotted against {name}, and was found out', { name: king.name }), 'setback');
+      ctx.onExile(instigator, band, faction.memberIds.length);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -1544,7 +1968,12 @@ export class BandSystem {
     let worst = RAID_HOSTILITY;
     for (const other of ctx.bandRelations.touching(band.id)) {
       if (other === band.id || other === outcastBandId) continue;
-      const standing = ctx.bandRelations.standing(band.id, other);
+      // M15 phase 39a. A sworn peace is not raided by the band that swore it;
+      // a declared war is raided without waiting for the grudge to ripen —
+      // read here as the worst standing there is.
+      const stance = ctx.bandRelations.stance(band.id, other);
+      if (stance === 'peace' || stance === 'tributary') continue;
+      const standing = stance === 'war' ? -100 : ctx.bandRelations.standing(band.id, other);
       if (standing < worst) {
         worst = standing;
         victimId = other;

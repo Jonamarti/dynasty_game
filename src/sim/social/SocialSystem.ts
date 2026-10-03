@@ -16,6 +16,7 @@
  * locally, from what they saw and what they were told — which is why it can be
  * wrong, and why moving somewhere new genuinely works.
  */
+import { BREAKS_PEACE } from './Polity.ts';
 import { SKILLS, type Person } from '../entities/Person.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { RelationshipGraph } from './Relationships.ts';
@@ -254,6 +255,12 @@ export class SocialSystem {
    * simulation's business, not this module's — see `Simulation.accrueRenown`.
    */
   onDeed: ((actor: Person, type: EventType, magnitude: number) => void) | null = null;
+  /**
+   * A sworn peace broken by a deed — M15 phase 39a. Called with everybody
+   * who saw it, because what breaking the peace costs is known only to them
+   * (the owner's rule: nobody finds out by magic).
+   */
+  onPeaceBroken: ((actor: Person, victimBandId: number, witnesses: Person[]) => void) | null = null;
 
   constructor(
     private readonly relationships: RelationshipGraph,
@@ -368,6 +375,7 @@ export class SocialSystem {
 
     let witnesses = 0;
     let ownerSaw = false;
+    const saw: Person[] = [];
     for (const bystander of peopleHash.queryRadius(actor.x, actor.y, sightRadius)) {
       if (!bystander.alive) continue;
       if (bystander.bandId === ownerBandId && bystander.id !== actor.id) ownerSaw = true;
@@ -382,6 +390,7 @@ export class SocialSystem {
       }
       this.absorb(bystander, event, actor, true, 1, null, targetBandId);
       witnesses++;
+      saw.push(bystander);
       // M11 phase 15b. A witness steps in only for what belongs to their own
       // people: a building of their band, or goods on one of their band.
       // Somebody watching their own kin rob a stranger's store has seen a
@@ -401,6 +410,14 @@ export class SocialSystem {
     this.recent.push(event);
     if (this.recent.length > this.recentCap) this.recent.shift();
     this.onDeed?.(actor, type, event.magnitude);
+
+    // M15 phase 39a: one people wronging another it is sworn to peace with.
+    const wronged = event.victimBandId;
+    if (wronged !== null && wronged !== actor.bandId && BREAKS_PEACE.has(type) &&
+      this.bandRelations.stance(actor.bandId, wronged) === 'peace') {
+      if (target && notifyTarget && !saw.includes(target)) saw.push(target);
+      this.onPeaceBroken?.(actor, wronged, saw);
+    }
 
     // M11 phase 7b, first engine: a deed with a target from another band
     // moves how those two *peoples* stand with each other, not only how the

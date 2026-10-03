@@ -46,6 +46,28 @@ export class Household {
   /** Stored wealth remembered by the household, including inherited position. */
   wealth = 0;
 
+  /**
+   * Absolute day of this household's last feast, M15 phase 38a. Read by
+   * `Feast.feastVenue` so that one well-stocked store is not spent on a
+   * feast every evening until it is empty.
+   */
+  lastFeastDay = -Infinity;
+
+  /**
+   * Food this household is written down as having given the temple, in
+   * units — M15 phase 38b, `accounting`'s ledger. Only a chief who keeps
+   * accounts writes anything here (`Polity.recordContribution`).
+   */
+  contributed = 0;
+
+  /**
+   * The levy's bookkeeping — M15 phase 38b, `taxation`: the day this
+   * household was last told to pay, and what `contributed` stood at then, so
+   * the next levy can credit what it gave freely in between.
+   */
+  lastLevyDay = -Infinity;
+  contributedAtLevy = 0;
+
   /** Persistent hostility toward other houses, keyed by household id. */
   readonly feud = new Map<number, number>();
   /** The last known culprit for each feud, so revenge names a person rather

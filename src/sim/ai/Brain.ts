@@ -33,6 +33,8 @@ import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import { statusPressure } from './Status.ts';
+import { ATTEND, FEAST, FEAST_MIN_GUESTS, FEAST_RADIUS, feastVenue, mayHostFeast } from '../social/Feast.ts';
+import { SOLDIER_DRILL, SOLDIER_FORAGE, SOLDIER_RATION_PULL, templePull } from '../social/Polity.ts';
 import { curiosityNeed } from './Temperament.ts';
 import { possessionPressure } from './Possession.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
@@ -162,6 +164,8 @@ export interface BrainContext {
    * a band is one too many.
    */
   chiefByBand: ReadonlyMap<number, number>;
+  /** Each band's temple store, M15 phase 38b. Optional for hand-built contexts. */
+  templeByBand?: ReadonlyMap<number, number>;
   /** How deep the snow lies right now, and whether that is allowed to hide
    * anything — see `Snow.ts` and `Simulation.isBuried`. */
   snowDepth: number;
@@ -294,6 +298,9 @@ interface FoundTargets {
   concealCorpse: Corpse | null;
   /** Who a `gift` goes to, and what, M11 phase 17a. */
   giftee: Person | null;
+  /** The store a `feast` is held from, and the host an `attend` goes to — M15 phase 38a. */
+  feastStore: Building | null;
+  feastHost: Person | null;
   giftItem: string | null;
   beneficiary: Person | null;
   /** Another child to play with, M15 phase 20. */
@@ -564,6 +571,9 @@ const YOUNG_CHILD_ACTIONS: ReadonlySet<string> = new Set([
  * is weighted as such.
  */
 const IDLE_ACTIONS = new Set(['rest', 'wander']);
+
+/** The ways of finding one's own food, which a soldier fed by the temple leaves to others. */
+const FOOD_GETTING = new Set(['forage', 'pick', 'hunt']);
 
 /**
  * How much a settled job leans someone toward its own work and away from
@@ -849,12 +859,20 @@ export class Brain {
     // work assignment, and eating, drinking and fleeing must never be leaned
     // against by an occupation.
     const job = person.job ? JOBS[person.job] : null;
+    // M15 phase 38b: a soldier whose temple has food in it is fed from it, and
+    // does not go looking for their own. Measured: with the job bias alone a
+    // soldier on `polity` spent a quarter of their samples foraging and
+    // carried food three samples in four, so never once went to the temple.
+    const rationTemple = person.job === 'soldier' ? ctx.templeByBand?.get(person.bandId) : undefined;
+    const rationed = rationTemple !== undefined &&
+      (ctx.buildingsById.get(rationTemple)?.store.bestFood() ?? null) !== null;
     const add = (id: string, score: number) => {
       const appetite = WORK_ACTIONS.has(id) ? industriousAppetite : IDLE_ACTIONS.has(id) ? idle : 1;
       const jobBias = job && WORK_ACTIONS.has(id)
         ? (job.actions.includes(id) ? JOB_BIAS_UP : JOB_BIAS_DOWN)
         : 1;
-      const weighted = (id === current ? score * 1.25 : score) * appetite * jobBias;
+      const ration = rationed && FOOD_GETTING.has(id) ? SOLDIER_FORAGE : 1;
+      const weighted = (id === current ? score * 1.25 : score) * appetite * jobBias * ration;
       if (weighted > 0) scores.push({ id, score: weighted });
     };
 
@@ -1199,6 +1217,8 @@ export class Brain {
     let concealCorpse: Corpse | null = null;
     let giftee: Person | null = null;
     let giftItem: string | null = null;
+    let feastStore: Building | null = null;
+    let feastHost: Person | null = null;
     let site: Building | null = null;
     let craftRecipe: string | null = null;
     let craftStation: Building | null = null;
@@ -1452,7 +1472,9 @@ export class Brain {
           ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other) * 2);
         if (partner) {
           const outmatched = Math.max(0, 0.5 - person.skillFactor('fight'));
-          add('spar', (0.1 + person.traits.aggression * 0.5 + outmatched * 0.6 + status * STATUS_SPAR_PULL)
+          // M15 phase 38b: drill is a soldier's work.
+          const drill = person.job === 'soldier' ? SOLDIER_DRILL : 1;
+          add('spar', drill * (0.1 + person.traits.aggression * 0.5 + outmatched * 0.6 + status * STATUS_SPAR_PULL)
             * this.proximityBonus(person, partner, ctx.sightRadius));
           sparPartner = partner;
         }
@@ -2427,6 +2449,55 @@ export class Brain {
       }
     }
 
+    // --- A feast (M15 phase 38a) ---------------------------------------------------
+    // `brewing`'s second half, and the surplus `gift` was missing: not a spare
+    // in the pack but a store with more in it than the household eats. Worth
+    // calling when there is a table's worth of food, a cup to pour and enough
+    // of one's own people in sight of the store to make an evening of it.
+    // What makes somebody *want* to is the big man's motive — their household
+    // standing below the band's (`status`) — and lonely people about them;
+    // greed holds it back, because a feast is the store going down. See
+    // `social/Feast.ts`.
+    const templeId = ctx.templeByBand?.get(person.bandId);
+    const temple = templeId === undefined ? null : ctx.buildingsById.get(templeId) ?? null;
+    const isChief = ctx.chiefByBand.get(person.bandId) === person.id;
+    if (!person.isChild && !pressedByNeed(person, ctx.needs.workLimits) && mayHostFeast(person, isChief, temple)) {
+      const household = person.householdId === null ? null : ctx.householdsById.get(person.householdId) ?? null;
+      const venue = feastVenue(person, household, isChief, ctx.buildings, ctx.buildingsById, ctx.time.day, temple);
+      if (venue) {
+        const guests = ctx.peopleHash.queryRadius(venue.centerX, venue.centerY, FEAST_RADIUS)
+          .filter(other => other.alive && other.id !== person.id && other.bandId === person.bandId &&
+            !other.isChild).length;
+        if (guests >= FEAST_MIN_GUESTS) {
+          const lonelyNear = neighbours.reduce(
+            (worst, other) => other.bandId === person.bandId
+              ? Math.max(worst, other.needs.company / 100, belongingNeed(other)) : worst, 0);
+          add('feast', FEAST * (0.2 + status * 1.2 + lonelyNear * 0.4) * (1 - person.traits.greed * 0.6) *
+            this.proximityBonus(person, { x: venue.centerX, y: venue.centerY }, ctx.sightRadius));
+          feastStore = venue;
+          telemetry.count('feast_considered');
+        }
+      }
+    }
+    // And going to one. Anybody who can see a feast under way and has not yet
+    // been served: the hungry for the plate, the lonely for the company, and
+    // whoever thinks well of the host for the host. One's own people, kin or
+    // a friend — a stranger's feast is not one you walk into.
+    {
+      const host = ctx.peopleHash.queryRadius(person.x, person.y, FEAST_RADIUS).find(other =>
+        other.alive && other.action === 'feast' && other.feastServed !== null &&
+        !other.feastServed.includes(person.id) && other.id !== person.id &&
+        ctx.world.sameRegion(person.x, person.y, other.x, other.y) &&
+        (other.bandId === person.bandId || ctx.relationships.kinship(person.id, other.id) > 0 ||
+          ctx.relationships.opinion(person.id, other.id) > 15));
+      if (host) {
+        const regard = Math.max(0, ctx.relationships.opinion(person.id, host.id)) / 100;
+        add('attend', ATTEND * (0.3 + hunger * 0.8 + person.needs.company / 100 * 0.8 + regard * 0.5) *
+          this.proximityBonus(person, host, ctx.sightRadius));
+        feastHost = host;
+      }
+    }
+
     // --- Hiding a body -------------------------------------------------------------
     // M11 phase 16's gate. A killer whose killing nobody saw, still marked by
     // it, with nobody else about, hides the body: into the water if there is
@@ -2822,19 +2893,30 @@ export class Brain {
         // Which building this person's own household calls home, so a greedy
         // person can be pulled toward it below. Null for anyone whose
         // household has never slept under a roof yet.
-        const home = person.householdId === null
+        // M15 phase 39b: a serf's work goes to the household that owns them.
+        const keeper = person.serfOf ?? person.householdId;
+        const home = keeper === null
           ? null
-          : ctx.householdsById.get(person.householdId)?.homeBuildingId ?? null;
+          : ctx.householdsById.get(keeper)?.homeBuildingId ?? null;
 
         // A trap is somewhere food comes *from*. Filling one with berries would
         // be a person carefully stopping their own snare line from catching
         // anything, because a full trap stops accruing. A pen is the same
         // argument — see `BuildingDef.herd`.
+        // M15 phase 38b: the temple pulls too, against the pull of home.
+        // Only surplus food is the temple's business — a load of sticks is
+        // put down wherever is nearest, as it always was.
+        const templeId = foodToStore !== null && unloadItem === null
+          ? ctx.templeByBand?.get(person.bandId) : undefined;
+        const chiefId = ctx.chiefByBand.get(person.bandId);
+        const chief = chiefId === undefined ? null : ctx.peopleById?.get(chiefId) ?? null;
+        const toTemple = templeId !== undefined && chief ? templePull(person, chief) : 0;
         const store = this.pickBest(
           stores.filter(b => b.storageFree > 0 && this.canUse(person, b, ctx) &&
             !isTrap(b.def) && !isHerd(b.def) && !isHeap(b.def)),
           b => -person.distanceTo({ x: b.centerX, y: b.centerY }) +
-            (home !== null && b.id === home ? possession * HOARD_PULL : 0)
+            (home !== null && b.id === home ? possession * HOARD_PULL : 0) +
+            (b.id === templeId ? toTemple : 0)
         );
         if (store) {
           add('store', (unloadItem !== null
@@ -2886,10 +2968,14 @@ export class Brain {
         const elite = household !== null && chief !== null &&
           (household.headId === chief.id ||
             ctx.relationships.opinion(person.id, chief.id) >= 25);
+        // M15 phase 38b: a soldier eats from the temple that keeps them.
+        const ration = person.job === 'soldier' ? ctx.templeByBand?.get(person.bandId) : undefined;
         const larder = this.pickBest(
           stores.filter(b => this.canUse(person, b, ctx) && b.store.bestFood() !== null),
-          b => -person.distanceTo({ x: b.centerX, y: b.centerY }) + (elite ? 12 : 0)
+          b => -person.distanceTo({ x: b.centerX, y: b.centerY }) + (elite ? 12 : 0) +
+            (b.id === ration ? SOLDIER_RATION_PULL : 0)
         );
+        if (larder && larder.id === ration) telemetry.count('soldier_fed_from_temple');
         // Weighted well above foraging, and scaled by how well stocked it is. A
         // full pit is a certainty; a bush in February is a walk and a gamble.
         if (larder) {
@@ -3493,7 +3579,7 @@ export class Brain {
       scores,
       found: {
         water, foodToEat, waterQuestionPeer, explorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
-        victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
+        victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
@@ -4211,6 +4297,14 @@ export class Brain {
       case 'toast':
         // Drunk where they stand, on the same terms as `play`.
         break;
+      case 'feast':
+        // M15 phase 38a: held at the store it is spent from.
+        if (found.feastStore) {
+          person.targetBuildingId = found.feastStore.id;
+          person.targetX = found.feastStore.centerX;
+          person.targetY = found.feastStore.centerY;
+        }
+        break;
       case 'craft':
         // The only target a craft has is what is being made. Without this the
         // action would find `targetRecipe` null — `clearTarget` at the top of
@@ -4326,6 +4420,7 @@ export class Brain {
       case 'make_peace':
       case 'bind':
       case 'answer_call':
+      case 'attend':
       case 'attack':
       case 'slander':
       case 'praise': {
@@ -4362,6 +4457,7 @@ export class Brain {
           action === 'make_peace' ? found.peaceWith :
           action === 'bind' ? found.bindTarget :
           action === 'answer_call' ? found.helpCallerTarget :
+          action === 'attend' ? found.feastHost :
           action === 'slander' || action === 'praise' ? found.companion :
           found.victim;
         if (other) {

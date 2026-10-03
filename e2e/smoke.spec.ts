@@ -2714,3 +2714,171 @@ test('a Spanish game is Spanish in the HUD, the menus and the panels', async ({ 
   await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
 });
+
+test('a brewer is offered a feast, and told why there is none to give', async ({ page }) => {
+  // M15 phase 38a. The feast is `brewing`'s second half and a verb of the
+  // ground the actor stands on, like a toast. With no store full enough it is
+  // offered greyed, and the tooltip says what is missing rather than leaving
+  // the option out — the owner's standing rule that a refusal says why.
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { x: number; y: number; knownTech: Set<string> } | null;
+        world: { isWalkable: (x: number, y: number) => boolean };
+        livingPeople: () => { x: number; y: number }[];
+        nodes: { x: number; y: number }[];
+        trees: { x: number; y: number; standing: boolean }[];
+        buildingAt: (x: number, y: number) => unknown;
+      };
+      camera: {
+        snapTo: (x: number, y: number) => void; following: boolean;
+        worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
+      };
+    };
+  };
+
+  const spot = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player;
+    if (!self) return null;
+    self.knownTech.add('brewing');
+    const clear = (x: number, y: number) =>
+      d.sim.world.isWalkable(x, y) && !d.sim.buildingAt(x, y) &&
+      d.sim.livingPeople().every(p => Math.hypot(p.x - x, p.y - y) > 3) &&
+      d.sim.nodes.every(n => Math.hypot(n.x - x, n.y - y) > 3) &&
+      d.sim.trees.every(t => !t.standing || Math.hypot(t.x - x, t.y - y) > 3);
+    for (let radius = 3; radius <= 14; radius++) {
+      for (let angle = 0; angle < 24; angle++) {
+        const x = Math.round(self.x + Math.cos(angle) * radius);
+        const y = Math.round(self.y + Math.sin(angle) * radius);
+        if (!clear(x, y)) continue;
+        d.camera.snapTo(x, y);
+        d.camera.following = false;
+        return { x, y };
+      }
+    }
+    return null;
+  });
+  expect(spot, 'no empty ground near the player on this seed').not.toBeNull();
+  await page.evaluate(() => new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  const at = await page.evaluate((p: { x: number; y: number }) => {
+    const d = (window as never as Debug).__dynasty;
+    return { x: d.camera.worldToScreenX(p.x), y: d.camera.worldToScreenY(p.y) };
+  }, spot!);
+
+  await page.mouse.click(at.x, at.y, { button: 'right' });
+  const feast = page.locator('.radial-item', { hasText: 'Hold a feast' }).first();
+  await expect(feast).toBeVisible({ timeout: 10_000 });
+  await expect(feast).toHaveClass(/is-disabled/);
+  await expect(feast).toHaveAttribute('title', /A feast needs a store/);
+
+  await page.keyboard.press('Escape');
+  expect(errors).toEqual([]);
+});
+
+test('a chief who knows how to tax sets the levy from the Work tab', async ({ page }) => {
+  // M15 phase 38b. Governing is on the player's own Work tab, and only for a
+  // chief; the share is one of the steps `TAX_RATES` names, none included.
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { id: number; bandId: number; knownTech: Set<string> } | null;
+        bands: { id: number; chiefId: number | null; chiefSince: number | null; taxRate?: number }[];
+        bandSystem: { chiefByBand: Map<number, number> };
+        time: { day: number };
+      };
+    };
+  };
+  const made = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player;
+    const band = d.sim.bands.find(b => b.id === self?.bandId);
+    if (!self || !band) return false;
+    d.sim.bandSystem.chiefByBand.set(band.id, self.id);
+    band.chiefId = self.id;
+    band.chiefSince = d.sim.time.day;
+    return true;
+  });
+  expect(made).toBe(true);
+
+  await page.locator('.hud-tab', { hasText: 'Work' }).click();
+  await expect(page.locator('.hud-section', { hasText: 'Government' })).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.hud-note', { hasText: 'Nobody here knows yet how to levy a tax' })).toBeVisible();
+  // M15 phase 38c: what a civilisation is, and what this one still wants.
+  await expect(page.locator('.hud-sub', { hasText: 'Not yet a civilisation' })).toBeVisible();
+
+  await page.evaluate(() => {
+    (window as never as Debug).__dynasty.sim.player!.knownTech.add('taxation');
+  });
+  // The panel redraws on a digest of what it shows, and a paused game does not
+  // move it: going to another tab and back is what rebuilds it.
+  await page.locator('.hud-tab', { hasText: 'Self' }).click();
+  await page.locator('.hud-tab', { hasText: 'Work' }).click();
+  const tenth = page.locator('[data-tax="0.1"]');
+  await expect(tenth).toBeVisible({ timeout: 10_000 });
+  await tenth.click();
+  await expect.poll(async () => page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    return d.sim.bands.find(b => b.id === d.sim.player!.bandId)?.taxRate;
+  })).toBe(0.1);
+  await expect(page.locator('[data-tax="0.1"]')).toHaveClass(/is-active/);
+
+  expect(errors).toEqual([]);
+});
+
+test('a chief who rules by law declares war on a people it knows', async ({ page }) => {
+  // M15 phase 39a. The other peoples are listed on the Government section of
+  // the player's own Work tab, with what has been declared; war and peace
+  // are buttons for a government only.
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { id: number; bandId: number; knownTech: Set<string> } | null;
+        bands: { id: number; outcast?: boolean; chiefId: number | null; chiefSince: number | null; name: string }[];
+        bandSystem: { chiefByBand: Map<number, number> };
+        bandRelations: { add: (a: number, b: number, d: number) => void; stance: (a: number, b: number) => string | null };
+        time: { day: number };
+      };
+    };
+  };
+  const other = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player;
+    const band = d.sim.bands.find(b => b.id === self?.bandId);
+    const them = d.sim.bands.find(b => !b.outcast && b.id !== self?.bandId);
+    if (!self || !band || !them) return null;
+    d.sim.bandSystem.chiefByBand.set(band.id, self.id);
+    band.chiefId = self.id;
+    band.chiefSince = d.sim.time.day;
+    self.knownTech.add('law_code');
+    d.sim.bandRelations.add(band.id, them.id, -20);
+    return { id: them.id, name: them.name };
+  });
+  if (!other) test.skip(true, 'this seed has one band');
+
+  await page.locator('.hud-tab', { hasText: 'Work' }).click();
+  await expect(page.locator('.hud-sub', { hasText: 'Other peoples' })).toBeVisible({ timeout: 10_000 });
+  const war = page.locator('[data-stance="' + other!.id + ':war"]');
+  await expect(war).toBeVisible();
+  await war.click();
+  await expect.poll(async () => page.evaluate((id: number) => {
+    const d = (window as never as Debug).__dynasty;
+    return d.sim.bandRelations.stance(d.sim.player!.bandId, id);
+  }, other!.id)).toBe('war');
+
+  expect(errors).toEqual([]);
+});

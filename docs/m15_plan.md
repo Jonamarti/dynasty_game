@@ -2840,6 +2840,16 @@ entrenada y `armourOf` por `techPower`.
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)
 
+**Alcance acordado con el propietario (2026-10-03).** El bloque se empezó con
+los bloques VII y VIII a medias: no hay muros (16b), ni conservación (15), ni
+banco (16d), ni pueblos de nivel 2 (32), ni caravanas (36), ni Bronce (37). El
+propietario eligió hacer **las fases 38 y 39 dentro de la comarca**, entre
+bandas, con el nivel 2 como enganche para después. Quedan fuera hasta que
+existan sus requisitos: `city_walls` (necesita los muros de 16b), toda la
+fase 40 (el hierro necesita `charcoal`, `mining`, `smelting` y `bellows` de la
+37) y la fase 41 (el cierre de M15). Se hace en la rama `m15/block9`, en un
+worktree propio, porque otro agente trabaja a la vez en `master`.
+
 ## Fase 38 — De la jefatura al Estado (M14 fase 20)
 
 **Detalle en `m14_plan.md` fase 20.** El banquete (la mitad pendiente de
@@ -2864,6 +2874,99 @@ derivado, que el juego nunca obliga a alcanzar.
 - El impuesto lo recoge el estante y el granero del templo: el almacén del
   hogar ya existe (16d).
 
+**Avance del 2026-10-03 (38a, el banquete).** `feast` y `attend`
+(`social/Feast.ts`, `ActionSystem.doFeast`/`doAttend`): quien sabe `brewing`,
+con un almacén de su hogar (o, si es jefe, de la banda) que guarda comida para
+una mesa (16 raciones) y tres o más de los suyos a la vista, convoca el
+banquete; le mueve la presión de estatus de su hogar (el «gran hombre») y la
+soledad de los de alrededor, y la codicia lo frena. Los invitados acuden por
+hambre, soledad o aprecio al anfitrión. Se sirve una ración cada 6 ticks
+durante 96 (nunca carne cruda; cerveza a quien está más solo que hambriento),
+y al final el acto `feast` —nuevo en `EVENT_TYPES`, peso 10— lo ven todos:
+el renombre del hogar sube por `onDeed` y la opinión de cada testigo por las
+normas de su pueblo. La cerveza **no** es requisito: medido, con ella
+`feasts` hacía 0 banquetes (7 cervezas en 24.000 ticks). Rechazos visibles:
+`no_feast_to_give` y `nobody_came`. Check `feasts-gather-the-band`.
+
+**Avance del 2026-10-03 (38b, `redistribution` y el escenario `polity`).**
+Primer nodo del Estado (práctica, `chiefdom` + `pottery`, hacia el 5500 a. C.,
+practicada al dar un banquete). Todo el Estado cuelga de la cabeza del jefe
+(`social/Polity.ts`): el templo es el mayor granero de la banda **si su jefe
+sabe** `redistribution`, recalculado a diario (`Simulation.templeByBand`), así
+que se pierde el día que lo sustituye alguien que no lo sabe. Dos efectos: al
+guardar comida sobrante, el templo tira con `TEMPLE_PULL` (16 casillas a plena
+lealtad) contra la cercanía y el tirón del propio hogar; y el jefe puede dar
+banquetes desde el templo sin saber `brewing`. La ficha del edificio dice
+cuál es el templo. Escenario `polity` (dos bandas de 14 que ya saben el
+Estado, con un granero colocado en `setup`) y check `the-temple-gathers`:
+93,5 % de la comida guardada va al templo con el tirón y 66 % sin él (umbral
+80 %).
+
+**Avance del 2026-10-03 (38b, `accounting`).** Práctica de la Edad del
+Bronce (`marking` + `clay_tablet`, hacia el 3200 a. C., practicada al
+guardar). Si el jefe lleva cuentas: cada aportación de comida al templo se
+apunta al hogar que la da (`Household.contributed`) y le da renombre (0,5 por
+unidad; una cesta de doce vale lo que un regalo); y la deuda de una queja que
+el jefe oye queda escrita (`Debt.recorded`) y no caduca con el año, ni su
+expediente. Check `the-ledger-remembers`. En `polity` nadie se queja al jefe,
+así que la mitad de las deudas sólo se prueba en los tests.
+
+**Avance del 2026-10-03 (38b, `taxation`).** Práctica de la Edad del Bronce
+(`redistribution` + `accounting`, hacia el 2500 a. C., practicada al gravar).
+La tasa la fija el gobierno entre `TAX_RATES` (0, 5, 10, 20 y 30 %, el 0
+incluido): el jefe PNJ según su codicia, el jugador desde su pestaña de
+trabajo (sección «Gobierno», sólo si es jefe). Cada día el jefe pide al hogar
+al que le toca (uno cada 5 días) y que más comida tiene —en su almacén si su
+casa lo es, y en las manos de sus miembros— que lleve su parte al templo
+(`render`); con contabilidad, lo dado de grado desde el último tributo se
+descuenta. El hogar del jefe está exento. Cada adulto gravado pierde opinión
+del jefe por `taxResentment`, que es lo que alimenta la rebelión. Check
+`taxes-reach-the-temple`. En `polity` casi nada se debe: los hogares ya
+llevan su excedente al templo y el libro lo descuenta (121 de 129 tributos
+sin deuda).
+
+**Avance del 2026-10-03 (38b, `law_code`).** Práctica de la Edad del Bronce
+(`writing` + `taxation`, hacia el 2100 a. C., practicada al inscribir). Un
+jefe que juzga por la ley no desestima el caso de un favorito (`judgeOwn`),
+no protege a los suyos de la demanda justa de otro pueblo (`answerWeight`
+sin el término de protección) y deja la mitad de rencor al avergonzar
+(`verdictGrudge`). La justicia casi no se ejerce en ningún escenario (una
+queja en `century` y otra en `labour` en la línea base), así que
+`the-law-is-the-same-for-all` es n/a en `polity` y el efecto se prueba en
+los tests.
+
+**Avance del 2026-10-03 (38b, `standing_army`).** Práctica de la Edad del
+Bronce (`division_of_labour` + `taxation`, hacia el 2300 a. C., practicada
+entrenando). Trabajo nuevo `soldier`, al final de `JOB_IDS`: el jefe que lo
+sabe lo ofrece si el templo puede alimentarlo (12 raciones por soldado, uno
+por cada seis miembros); entrena el doble y medio (`spar`), come del templo y
+apenas se busca la comida mientras el templo tenga; y va a la guerra sin el
+valor ni la amistad que `warParty` pide a un voluntario, y el primero.
+`assignJob` rechaza con razón a quien no sabe o no tiene templo. Check
+`soldiers-are-kept`.
+
+**Avance del 2026-10-03 (38b, `kingship`).** Práctica de la Edad del Bronce
+(`chiefdom` + `standing_army`, hacia el 2600 a. C., practicada al presidir).
+El rey no agota mandato (`reignsForLife`); al morir o irse, el cargo pasa
+antes de cualquier elección a su heredero (`heirOf`): el cabeza de su casa si
+ya no es él, o su hijo adulto mayor en la banda. Un heredero que no sabe ser
+rey no lo transmite. Sólo el desafío de `considerRebellion` lo depone (la
+conspiración contra el rey es la 39c). La autoridad sobre bandas tributarias
+llega con la 39d. Check `kings-reign-for-life`: en `polity`, 140 días-banda
+gobernados más allá del mandato normal; ninguna corona heredada (ningún rey
+murió en la partida; la herencia se prueba en los tests). Con esto quedan los
+seis nodos del Estado salvo `city_walls`.
+
+**Avance del 2026-10-03 (38c, la civilización).** Campo derivado y nunca
+guardado (`Polity.civilisationLacks`, `Simulation.isCivilisation`): una
+banda es una civilización el día que sus adultos vivos saben entre todos
+`farming`, `writing`, `division_of_labour`, `taxation`, `standing_army` y
+`kingship` y su jefe reina como rey, y deja de serlo cuando falta algo. La
+interfaz la nombra en la línea de estado y, en la sección de gobierno del
+jugador, dice qué le falta. «O varias bajo un rey» espera a los tributarios
+de la 39d. Check `civilisation-is-derived`. **La fase 38 queda hecha salvo
+`city_walls`**, que espera a los muros de la 16b.
+
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 
 **Detalle en `m14_plan.md` fase 21.** Declarar la guerra y la paz
@@ -2883,6 +2986,71 @@ contra el rey, el segundo lector de `conspiracyAgainst`; y tratados y tributo.
   funde en el Estado que lo venció.
 - La noche (12) es el momento natural de la fuga y del golpe, y eso tiene que
   salir del puntuador, no de una regla.
+
+**Avance del 2026-10-03 (39a, guerra y paz).** `BandRelations` gana una
+postura declarada (`war`, `peace`, `tributary`; la última nombra al señor)
+que no decae y que sólo fija un gobierno: un jefe que sabe `law_code` o
+`kingship` (`Polity.governs`). Guerra: la incursión no espera al umbral de
+rencor (se lee como la peor posición). Paz: no se asalta a quien se juró, y
+quien la rompe (robo, agresión, muerte, sabotaje, rapto o amenaza contra el
+otro pueblo) la termina, cuesta 20 de posición entre los pueblos y cada
+testigo piensa peor del jefe del infractor (`SocialSystem.onPeaceBroken`,
+`Simulation.breakPeace`). Los gobiernos PNJ declaran la guerra con rencor
+peor que -40 y valor; ofrecen la paz tras 10 días si les falta valor o el
+rencor se ha enfriado, y la del otro gobierno puede negarla; dos gobiernos en
+buenos términos juran la paz; y **la paz jurada se guarda** (medido: sin eso,
+`polity` hizo diez guerras y nueve paces en cien días). El jugador-jefe ve
+los pueblos con los que ha tratado y declara guerra o paz desde su sección de
+gobierno. `polity` empieza con un viejo rencor (-55) entre sus dos pueblos.
+Check `governments-declare-war-and-peace`. **Simplificación**: la postura la
+conocen los dos pueblos en el acto, sin mensajero; anotado en `bugs.md`.
+
+**Avance del 2026-10-03 (39d, tratados y tributo).** Un jefe en guerra con
+un gobierno al menos 1,5 veces más fuerte (adultos, soldados al doble) se
+somete tras 10 días, salvo que su agresividad pase de 0,8, y su banda queda
+como tributaria (`Simulation.submit`, cualquier jefe: para ser vencido no
+hace falta ley). Cada 5 días el tributario lleva el 15 % de lo que guarda (su
+templo o su mayor almacén, o lo que llevan encima) al almacén del señor, con
+el mismo `render` del tributo (`Person.renderInto`); el portador puede
+negarse. Un tributario que llega a igualar la fuerza del señor, con un jefe
+con valor, deja de pagar, y eso es la guerra. El rey tiene autoridad sobre la
+gente de sus tributarios (`OVERLORD_AUTHORITY`, 0,25) y la civilización
+cuenta lo que saben («o varias bajo un rey»). Las bandas tributaria y señora
+no se asaltan. El jugador-jefe en guerra ve «Ofrecer tributo». Check
+`the-beaten-pay-tribute`, n/a en `polity` (los dos pueblos son de 14); el
+tributo que llega se prueba en un test de integración.
+
+**Avance del 2026-10-03 (39c, conspirar contra el rey).** Segundo lector de
+`conspiracyAgainst`, sólo contra un rey (un jefe con mandato ya tiene la
+elección y el desafío). Cada 6 días, si una facción de al menos tres se
+movería contra él, se mueve: si su fuerza de lucha supera la del rey con sus
+leales —sus soldados y los adultos de su casa—, el instigador toma el
+gobierno; si no, la conjura se rompe y el instigador es expulsado. A la
+muerte de un rey, una facción contra el heredero levanta a su propio
+pretendiente y decide la consideración de la banda (sucesión disputada).
+Determinista. En `polity` nadie conspira (la banda se aprecia: 0 opiniones
+hostiles), así que se prueba en tests; no se añade un check porque lo único
+medible sin conjuras sería cierto por construcción.
+
+**Avance del 2026-10-03 (39b, la esclavitud).** La cautividad adulta ya era
+trabajo forzado (M12 4c); con un jefe que gobierna, el cautivo adulto pasa a
+ser siervo de la casa de quien lo ató (`Person.serfOf`), lo que guarda va a
+esa casa, y la condición se hereda: si la casa se extingue pasa a la del
+jefe. Rechazo: un siervo de genio (agresividad ≥ 0,6) con un rencor de -40 o
+peor se niega a la cara, sin tirada. Fuga: la de siempre. Rebelión: tres o
+más siervos de una banda que confían entre sí se alzan juntos y se liberan.
+La ficha dice «siervo de los X». Check `serfs-are-owned`, n/a en `polity`
+(no hay cautivos: la guerra no llega a las manos). **Con esto quedan hechas
+las fases 38 (salvo `city_walls`) y 39 dentro de la comarca.**
+
+**Avance del 2026-10-03 (escenario `conquest`).** Un Estado con rey (lo que
+saben los fundadores de `polity`) y un pueblo menor sin ley, acampados a un
+día el uno del otro, con un viejo rencor; el segundo se acerca y se reduce a
+dos tercios en `setup`, y los adultos del Estado reciben el valor para una
+guerra. Lo demás es de la simulación. Medido: 1 guerra declarada, sumisión a
+los 10 días, 18 tributos ordenados (4 negados), 53 unidades entregadas, 89
+días-banda como tributario, población de 22 a 35. Ejercita `the-beaten-pay-
+tribute`; la servidumbre sigue sin darse (un solo golpe entre pueblos).
 
 ## Fase 40 — El hierro (M8.4)
 

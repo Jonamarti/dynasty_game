@@ -42,6 +42,59 @@ Durante los verificadores Chromium generó un log interno de GPU con mensajes
 en `chromium-debug.log` del informe. No apareció un error de página en los
 tests nuevos ni una diferencia de píxeles; no se ha aislado la causa de ese log.
 
+## M15 bloque IX: línea base y lo que queda abierto (2026-10-03)
+
+**Línea base del worktree `m15/block9`** (sobre `6d5fe4f`), antes de tocar
+nada: `typecheck` limpio, **817/817** tests, y `sim:check:all -- --verbose`
+con los 23 escenarios rojos por fallos previos — `people-act-on-what-they-know`,
+`word-of-food-travels`, `cravings-steer-the-diet` y `nights-are-slept` en casi
+todos, más `moods-move-choices`, `opinions-diverge` y otros por escenario
+(`lean` falla 11). Ningún fallo de esa lista se atribuye al bloque IX; cada
+commit del bloque compara contra ella.
+
+- **`Nobody carries a spare` (más abajo), a medias.** El banquete (38a) da
+  por fin salida al excedente *del almacén*; el de la mochila sigue sin
+  lector, porque `gift` sólo ve lo que alguien lleva encima.
+- **El banquete no tiene banco ni hogar donde sentarse.** El plan quería a la
+  banda sentada alrededor del hogar (el banco de 16d); sin 16d, los invitados
+  esperan de pie junto al anfitrión.
+- **`polity` falla cuatro checks ajenos al Estado** (38b): `roast-wins`,
+  `cooking-spreads`, `pots-reach-a-granary` (0 vasijas: el granero ya está
+  hecho en `setup` y nadie más planea uno que necesite vasijas) y
+  `fields-are-sown-and-reaped` (sabe `farming` y no siembra en 24.000 ticks).
+  Escenario nuevo, sin base; no investigado.
+- **El tributo cobra poco en `polity`** (38b): los hogares llevan su
+  excedente al templo por su cuenta y el libro lo descuenta, así que casi
+  nunca deben nada (121 de 129 tributos). Con `taxation` sin `accounting`, o
+  con un jefe que no lleva cuentas, cobraría más; no se ha medido ese caso.
+- **La justicia apenas se ejerce, así que `law_code` no se mide** (38b): en
+  la línea base sólo `century` y `labour` oyen una queja cada uno, y en
+  `polity` ninguna. El efecto está probado en tests; su peso en un mundo no.
+  Un escenario con más agravios entre los propios (rasgos de codicia y
+  malicia altos) lo ejercitaría.
+- **La guerra y la paz se saben sin mensajero** (39a): una declaración la
+  conocen los dos pueblos en el acto. La regla del propietario pide que
+  alguien la lleve; con las noticias de la fase 36 debería viajar con un
+  enviado o un testigo.
+- **En `polity` la guerra no llega a las manos** (39a): los graneros del otro
+  pueblo quedan fuera de `RAID_RANGE` (75), así que la guerra declarada no
+  produce incursiones. El mapa de la semilla, no la regla; un escenario con
+  campamentos más cerca lo ejercitaría.
+- **Ninguna conjura en `polity`** (39c): la banda se aprecia demasiado para
+  que tres se junten contra el rey. Un escenario con un rey impuesto y un
+  impuesto alto (que resta opinión) lo ejercitaría; tampoco hay noche en la
+  decisión, que el plan quería como momento natural del golpe.
+- **La servidumbre, la conjura y el tributo no se ejercitan en ningún
+  escenario** (39b-d): en `polity` no hay incursiones (graneros fuera de
+  alcance), ni conjuras (la banda se aprecia), ni un pueblo 1,5 veces más
+  fuerte que el otro. Están probados en tests; su peso en un mundo, no. Un
+  escenario de conquista (campamentos cerca, bandas desiguales, rencor y un
+  rey) lo mediría todo junto. **Hecho después: `conquest`** ejercita la
+  guerra y el tributo; la servidumbre y la conjura siguen sin darse en él.
+- **Ninguna cerveza en los banquetes de `feasts`.** 23 banquetes, 0 tazas: la
+  cerveza se bebe en `toast` antes de llegar al almacén. No es un error del
+  banquete, pero `FEAST_CUP_RELIEF` apenas se ejerce.
+
 ## Recolección animada: alcance visual y línea base (2026-10-02)
 
 La primera familia de trabajo usa un gesto común para recolección manual y

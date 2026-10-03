@@ -29,9 +29,83 @@ const DECAY_PER_DAY = 0.998;
 /** Below this magnitude a decayed edge is deleted rather than kept as noise. */
 const PRUNE_BELOW = 0.05;
 
+/**
+ * What a government has declared two peoples to be to each other — M15 phase
+ * 39a (M14 phase 21a). `war` and `peace` are symmetric; `tributary` names the
+ * overlord. Set only by a government (`Polity.governs`, through
+ * `Simulation.declare` or `BandSystem.considerStance`); never by standing,
+ * which is how two peoples *feel* and goes on moving underneath.
+ */
+export type Stance = 'war' | 'peace' | 'tributary';
+
+export interface StanceRecord {
+  kind: Stance;
+  /** Absolute day it was declared. */
+  since: number;
+  /** For `tributary`: the band paid. Null otherwise. */
+  overlord: number | null;
+}
+
 export class BandRelations {
   /** `min(a,b):max(a,b)` -> standing, -100 (open hostility) to 100 (close allies). */
   private edges = new Map<string, number>();
+
+  /**
+   * Declared stances, by the same key — M15 phase 39a. Unlike `edges` these
+   * do not decay: a war or a peace lasts until a government ends it, or until
+   * a deed breaks it (`SocialSystem.emit`'s breach).
+   */
+  private stances = new Map<string, StanceRecord>();
+
+  /** The declared stance between two bands, or null for none. */
+  stance(a: number, b: number): Stance | null {
+    if (a === b) return null;
+    return this.stances.get(this.key(a, b))?.kind ?? null;
+  }
+
+  /** The whole record, for the day it was declared and the overlord. */
+  stanceRecord(a: number, b: number): StanceRecord | null {
+    if (a === b) return null;
+    return this.stances.get(this.key(a, b)) ?? null;
+  }
+
+  /** Declares a stance between two bands. A no-op for a band and itself. */
+  setStance(a: number, b: number, kind: Stance, day: number, overlord: number | null = null): void {
+    if (a === b) return;
+    this.stances.set(this.key(a, b), { kind, since: day, overlord: kind === 'tributary' ? overlord : null });
+  }
+
+  /** Ends whatever stance two bands had. */
+  clearStance(a: number, b: number): void {
+    this.stances.delete(this.key(a, b));
+  }
+
+  /** The band `bandId` pays tribute to, or null. Ascending key order, so ties never depend on insertion. */
+  overlordOf(bandId: number): number | null {
+    const keys = [...this.stances.keys()].sort();
+    for (const key of keys) {
+      const record = this.stances.get(key)!;
+      if (record.kind !== 'tributary' || record.overlord === null || record.overlord === bandId) continue;
+      const colon = key.indexOf(':');
+      const low = Number(key.slice(0, colon));
+      const high = Number(key.slice(colon + 1));
+      if (low === bandId || high === bandId) return record.overlord;
+    }
+    return null;
+  }
+
+  /** The bands paying tribute to `overlord`, ascending. */
+  tributariesOf(overlord: number): number[] {
+    const out: number[] = [];
+    for (const [key, record] of this.stances) {
+      if (record.kind !== 'tributary' || record.overlord !== overlord) continue;
+      const colon = key.indexOf(':');
+      const low = Number(key.slice(0, colon));
+      const high = Number(key.slice(colon + 1));
+      out.push(low === overlord ? high : low);
+    }
+    return out.sort((x, y) => x - y);
+  }
 
   private key(a: number, b: number): string {
     return a < b ? a + ':' + b : b + ':' + a;
@@ -54,15 +128,18 @@ export class BandRelations {
    * would make the world depend on something no seed controls.
    */
   touching(a: number): number[] {
-    const others: number[] = [];
-    for (const key of this.edges.keys()) {
+    const others = new Set<number>();
+    // M15 phase 39a: a declared stance counts as touching even once the
+    // feeling behind it has decayed to nothing, so a war is never forgotten
+    // by the policy that has to end it.
+    for (const key of [...this.edges.keys(), ...this.stances.keys()]) {
       const colon = key.indexOf(':');
       const low = Number(key.slice(0, colon));
       const high = Number(key.slice(colon + 1));
-      if (low === a) others.push(high);
-      else if (high === a) others.push(low);
+      if (low === a) others.add(high);
+      else if (high === a) others.add(low);
     }
-    return others.sort((x, y) => x - y);
+    return [...others].sort((x, y) => x - y);
   }
 
   /** Moves the standing between two bands. A no-op for a band and itself. */

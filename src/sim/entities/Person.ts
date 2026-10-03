@@ -446,6 +446,26 @@ export class Person {
   targetSubjectId: number | null = null;
   /** Which structure the current action is aimed at, for building and storage. */
   targetBuildingId: number | null = null;
+  /**
+   * Who has been served at the feast this person is holding — M15 phase 38a.
+   * Null whenever they are not holding one. Kept on the host rather than on
+   * the guests because it is the host who goes round the table, and it is
+   * cleared by `ActionSystem.doFeast` at both ends of the feast.
+   */
+  feastServed: number[] | null = null;
+  /**
+   * A `render` under way — M15 phase 38b: the temple it is going to once the
+   * due has been taken from home, and what was taken. Null before the first
+   * leg is done. Cleared with the target.
+   */
+  renderTo: number | null = null;
+  renderGoods: { itemId: string; count: number } | null = null;
+  /**
+   * The store a `render` is owed to when it is not the bearer's own band's
+   * temple — M15 phase 39d, a tribute carried to an overlord. Set by whoever
+   * gave the order, after the order (which clears the target) has been given.
+   */
+  renderInto: number | null = null;
   /** Which tree the current action is aimed at, for felling and picking. */
   targetTreeId: number | null = null;
   /** Which animal the current action is aimed at, for the hunt. */
@@ -619,6 +639,14 @@ export class Person {
   captiveFrom: number | null = null;
   /** Tick at which the present captivity began; used by the adoption clock. */
   captiveSince: number | null = null;
+  /**
+   * The household this captive serves, once captivity is an institution —
+   * M15 phase 39b: taken by a band whose chief governs (`Polity.governs`), an
+   * adult captive is the serf of the household of whoever tied them, and
+   * passes with it. Null for a free person and for a captive of a people with
+   * no law. Cleared with `captiveOf` on every way out.
+   */
+  serfOf: number | null = null;
   /**
    * The people this person went raiding against, and until when — M11 phase
    * 15d's raid source of captives. Set by `BandSystem.considerRaid` on each
@@ -1101,6 +1129,11 @@ export class Person {
     this.targetPersonId = null;
     this.targetSubjectId = null;
     this.targetBuildingId = null;
+    // A feast set aside for another order is a feast over: see `doFeast`.
+    this.feastServed = null;
+    this.renderTo = null;
+    this.renderGoods = null;
+    this.renderInto = null;
     this.targetTreeId = null;
     this.targetAnimalId = null;
     this.targetRecipe = null;

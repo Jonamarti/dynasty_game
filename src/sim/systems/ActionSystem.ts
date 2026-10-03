@@ -68,6 +68,11 @@ import {
   PATROL_LINGER, GUARD_REASSURES, assailantOf, UNDER_ATTACK_TICKS,
 } from '../social/Defence.ts';
 import { giftWorth } from '../social/Events.ts';
+import {
+  FEAST_COMPANY, FEAST_CUP_RELIEF, FEAST_SEAT, FEAST_TICKS, SERVE_EVERY, dishFor, feastVenue, isLarder,
+  mayHostFeast,
+} from '../social/Feast.ts';
+import { recordContribution } from '../social/Polity.ts';
 import { knowledgeOfPerson } from '../social/Knowledge.ts';
 import {
   weighEvidence, concludeFrom, BLOODIED_TICKS, ASK_TICKS, ASK_RADIUS,
@@ -179,6 +184,8 @@ export interface ActionContext {
   onStopped: (person: Person, action: string, reason: string) => void;
   /** Who leads each band — `BandSystem.chiefByBand`. For `complain`, M12 phase 2b. */
   chiefByBand: ReadonlyMap<number, number>;
+  /** Each band's temple store, M15 phase 38b. Optional for hand-built contexts. */
+  templeByBand?: ReadonlyMap<number, number>;
   /**
    * `teller` has put `told` to `chief` — a grievance of their own, or a
    * demand carried from another people. The simulation judges it and says
@@ -784,6 +791,11 @@ export class ActionSystem {
       // beyond waiting it out, and an animal that is neither food nor a threat.
       case 'play': this.doPlay(person, ctx); break;
       case 'toast': this.doToast(person, ctx); break;
+      // M15 phase 38a: `brewing`'s second half. See `social/Feast.ts`.
+      case 'feast': this.doFeast(person, ctx); break;
+      case 'attend': this.doAttend(person, ctx); break;
+      // M15 phase 38b: paying a household's due into the temple.
+      case 'render': this.doRender(person, ctx); break;
       case 'tend': this.doTend(person, ctx); break;
       case 'tame': this.doTame(person, ctx); break;
       case 'sow': this.doSow(person, ctx); break;
@@ -2033,18 +2045,22 @@ export class ActionSystem {
         return;
       }
       telemetry.count('stored', moved);
+      if ((ITEMS[requested]?.nutrition ?? 0) > 0) this.noteFoodStored(person, store, moved, ctx);
       this.finish(person);
       return;
     }
 
     let moved = 0;
+    let food = 0;
     for (const [itemId, count] of person.inventory.entries()) {
       const room = store.storageFree;
       if (room <= 0) break;
       const taken = person.inventory.remove(itemId, Math.min(count, room));
       store.store.add(itemId, taken);
       moved += taken;
+      if ((ITEMS[itemId]?.nutrition ?? 0) > 0) food += taken;
     }
+    if (food > 0) this.noteFoodStored(person, store, food, ctx);
 
     if (moved === 0) {
       this.abandon(person, 'store_full', ctx);
@@ -2052,6 +2068,24 @@ export class ActionSystem {
     }
     telemetry.count('stored', moved);
     this.finish(person);
+  }
+
+  /**
+   * M15 phase 38b: how much of a band's stored food goes to its temple,
+   * against how much goes into its stores at all — `the-temple-gathers`
+   * reads the pair.
+   */
+  private noteFoodStored(person: Person, store: Building, food: number, ctx: ActionContext): void {
+    if (store.ownerBandId !== person.bandId) return;
+    telemetry.count('food_stored_own', food);
+    if (store.id !== ctx.templeByBand?.get(person.bandId)) return;
+    telemetry.count('food_stored_temple', food);
+    // `accounting`: the chief's ledger credits the giver's household.
+    const chiefId = ctx.chiefByBand.get(person.bandId);
+    const household = person.householdId === null ? null : ctx.householdsById.get(person.householdId) ?? null;
+    if (recordContribution(household, food, chiefId === undefined ? null : ctx.peopleById.get(chiefId))) {
+      telemetry.count('contribution_recorded', food);
+    }
   }
 
   private doTake(person: Person, ctx: ActionContext): void {
@@ -2495,6 +2529,210 @@ export class ActionSystem {
     telemetry.count('toast_listeners', listeners);
     telemetry.count('toasted');
     this.finish(person);
+  }
+
+  /**
+   * Holding a feast — M15 phase 38a, `brewing`'s second half. See
+   * `social/Feast.ts` for why anybody does it.
+   *
+   * The host walks to the store (`Brain` aimed them at it with
+   * `feastVenue`, and a player's order is given one the same way), then goes
+   * round whoever has gathered, one portion every `SERVE_EVERY` ticks, out of
+   * the store — the host's own cup if the store has none. Every guest is
+   * served once. What the evening is worth is decided at the end, by the
+   * deed: a `feast` that everybody in sight witnesses, which is how the
+   * host's household gains renown and every guest's opinion of them rises.
+   *
+   * Short of `AGENTS.md`'s ~140-tick ceiling, so nothing is banked: an
+   * interrupted feast is over, and whatever was served stays eaten.
+   */
+  private doFeast(person: Person, ctx: ActionContext): void {
+    const templeId = ctx.templeByBand?.get(person.bandId);
+    const temple = templeId === undefined ? null : ctx.buildingsById.get(templeId) ?? null;
+    const isChief = ctx.chiefByBand.get(person.bandId) === person.id;
+    if (!mayHostFeast(person, isChief, temple)) {
+      this.abandon(person, 'dont_know_how', ctx);
+      return;
+    }
+    const household = person.householdId === null ? null : ctx.householdsById.get(person.householdId) ?? null;
+    if (person.targetBuildingId === null) {
+      // A player order names no store; the same rule the scorer used picks one.
+      const venue = feastVenue(person, household, isChief,
+        [...ctx.buildingsById.values()], ctx.buildingsById, ctx.day, temple);
+      if (!venue) {
+        this.abandon(person, 'no_feast_to_give', ctx);
+        return;
+      }
+      person.targetBuildingId = venue.id;
+    }
+    const store = this.reachBuilding(person, ctx, { ok: isLarder, reason: 'no_feast_to_give' });
+    if (!store) return;
+
+    if (person.feastServed === null) {
+      person.feastServed = [];
+      person.actionTimer = FEAST_TICKS;
+      telemetry.count('feast_called');
+      return;
+    }
+    person.actionTimer--;
+    person.workedTicks++;
+
+    const stop = this.interruption(person, ctx, { ignoreLaden: true });
+    if (stop) {
+      this.endFeast(person, household, ctx, stop);
+      return;
+    }
+
+    if (person.actionTimer % SERVE_EVERY === 0) {
+      const served = person.feastServed;
+      // The guest who wants it most: hunger and loneliness together, so the
+      // lonely get a cup and the hungry a plate. Ties by id.
+      let guest: Person | null = null;
+      let want = -1;
+      for (const other of ctx.peopleHash.queryRadius(person.x, person.y, FEAST_SEAT * 2)) {
+        if (!other.alive || other.id === person.id || served.includes(other.id)) continue;
+        if (!canWalk(other, ctx.childhood)) continue;
+        const wants = other.needs.hunger + other.needs.company;
+        if (wants > want || (wants === want && guest !== null && other.id < guest.id)) {
+          guest = other;
+          want = wants;
+        }
+      }
+      if (guest) {
+        const fromStore = dishFor(guest, store.store);
+        const dish = fromStore ?? (person.inventory.has('beer') ? 'beer' : null);
+        if (dish === null) {
+          // The table is bare: the feast ends here, with whoever was fed.
+          this.endFeast(person, household, ctx);
+          return;
+        }
+        if (fromStore !== null) store.store.remove(dish, 1);
+        else person.inventory.remove(dish, 1);
+        // `consumeFoodAtSource` eats one unit that never entered the pack —
+        // the plate is set down and eaten, not carried off.
+        consumeFoodAtSource(guest, dish, ctx.tick, ctx.motivation.cravings, ctx.healthRng);
+        guest.needs.company = Math.max(0, guest.needs.company - FEAST_COMPANY -
+          (dish === 'beer' ? FEAST_CUP_RELIEF * techPower(person, 'brewing') : 0));
+        served.push(guest.id);
+        telemetry.count('feast_portions');
+        if (dish === 'beer') telemetry.count('feast_cups');
+      }
+    }
+
+    if (person.actionTimer <= 0) this.endFeast(person, household, ctx);
+  }
+
+  /**
+   * The end of a feast, however it came: the deed if anybody was fed, the
+   * reason if nobody came. Shared by every way out of `doFeast` so that a
+   * feast cut short by a wolf still counts for the guests who had eaten.
+   */
+  private endFeast(person: Person, household: Household | null, ctx: ActionContext, stop?: string): void {
+    const served = person.feastServed?.length ?? 0;
+    person.feastServed = null;
+    if (household) household.lastFeastDay = ctx.day;
+    if (served === 0) {
+      if (stop) this.stop(person, stop, ctx);
+      else this.abandon(person, 'nobody_came', ctx);
+      return;
+    }
+    telemetry.count('feasts_held');
+    telemetry.count('feast_guests', served);
+    if (person.targetBuildingId !== null && person.targetBuildingId === ctx.templeByBand?.get(person.bandId)) {
+      telemetry.count('temple_feasts');
+    }
+    ctx.social.emit('feast', person, null, Math.min(1, served / 8), ctx.tick, ctx.peopleHash, ctx.sightRadius);
+    person.chronicle.push({
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: served === 1
+        ? t('held a feast, and one guest came')
+        : t('held a feast for {n} guests', { n: served }),
+      kind: 'did',
+    });
+    ctx.onInsight(person, t('holds a feast for {n}', { n: served }), 'gain');
+    if (stop) this.stop(person, stop, ctx);
+    else this.finish(person);
+  }
+
+  /**
+   * Carrying a household's due to the temple — M15 phase 38b, `taxation`.
+   *
+   * Two legs. The first takes the due: out of the bearer's own hands when the
+   * order names no building, or out of the household's home store when it
+   * does (as much of `targetItemId` as was asked and as the hands will hold).
+   * The second walks it to the temple and puts it in. Walking only, no long
+   * work, so no interruption check beyond the walk's own; what is in hand when
+   * an interruption comes stays in hand, and is the household's again.
+   */
+  private doRender(person: Person, ctx: ActionContext): void {
+    if (person.renderTo === null) {
+      // A tribute names its overlord's store; a tax goes to the band's own temple.
+      const templeId = person.renderInto ?? ctx.templeByBand?.get(person.bandId);
+      const temple = templeId === undefined ? null : ctx.buildingsById.get(templeId) ?? null;
+      if (!temple || !isLarder(temple)) {
+        this.abandon(person, 'no_temple', ctx);
+        return;
+      }
+      const itemId = person.targetItemId;
+      const wanted = person.targetItemCount ?? 1;
+      let taken = 0;
+      if (itemId !== null && person.targetBuildingId === null) {
+        taken = Math.min(wanted, person.inventory.count(itemId));
+      } else if (itemId !== null) {
+        const home = this.reachBuilding(person, ctx, { ok: isLarder, reason: 'nothing_to_render' });
+        if (!home) return;
+        const room = Math.max(0, itemCapacityFor(person, ctx.carry, itemId) - person.inventory.count(itemId));
+        taken = home.store.remove(itemId, Math.min(wanted, room));
+        stow(person, ctx.carry, itemId, taken);
+      }
+      if (taken <= 0 || itemId === null) {
+        this.abandon(person, 'nothing_to_render', ctx);
+        return;
+      }
+      person.renderGoods = { itemId, count: taken };
+      person.renderTo = temple.id;
+      person.targetBuildingId = temple.id;
+      return;
+    }
+    const temple = this.reachBuilding(person, ctx, { ok: isLarder, reason: 'no_temple' });
+    if (!temple) return;
+    const goods = person.renderGoods;
+    const paid = goods ? temple.accept(person.inventory, goods.itemId, goods.count) : 0;
+    if (paid <= 0) {
+      this.abandon(person, 'store_full', ctx);
+      return;
+    }
+    telemetry.count(person.renderInto !== null ? 'tribute_delivered' : 'tax_collected', paid);
+    this.finish(person);
+  }
+
+  /**
+   * Going to somebody's feast and waiting to be served — M15 phase 38a.
+   *
+   * Over as soon as the host is no longer feasting, or this guest has been
+   * served: there is nothing more to stay for. Until then they walk to the
+   * host and sit, and anything pressing breaks it off like any other wait.
+   */
+  private doAttend(person: Person, ctx: ActionContext): void {
+    const host = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId) ?? null;
+    if (!host || !host.alive || host.action !== 'feast' || host.feastServed === null) {
+      this.finish(person);
+      return;
+    }
+    if (host.feastServed.includes(person.id)) {
+      telemetry.count('feast_attended');
+      this.finish(person);
+      return;
+    }
+    if (person.distanceTo(host) > FEAST_SEAT) {
+      person.targetX = host.x;
+      person.targetY = host.y;
+      this.travel(person, ctx);
+      return;
+    }
+    const stop = this.interruption(person, ctx, { ignoreLaden: true });
+    if (stop) this.stop(person, stop, ctx);
   }
 
   /**

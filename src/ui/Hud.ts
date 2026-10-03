@@ -20,6 +20,7 @@
  *  - **Life** — not their diary, but *what you remember about them*, which is a
  *    very different and usually much shorter list.
  */
+import { TAX_RATES, governs } from '../sim/social/Polity.ts';
 import { stageOf, type Corpse, type CorpseStage } from '../sim/entities/Corpse.ts';
 import { isHeld, isBound } from '../sim/social/Defence.ts';
 import type { Simulation } from '../sim/core/Simulation.ts';
@@ -96,6 +97,12 @@ export interface HudCallbacks {
   onAssignJob: (person: Person, job: JobId | null) => void;
   /** Open the partial-stack transfer window for a nearby store. */
   onTransfer: (building: Building) => void;
+  /** M15 phase 38b: the player's government sets the levy. */
+  onSetTaxRate: (rate: number) => void;
+  /** M15 phase 39a: the player's government declares a war or a peace. */
+  onDeclare: (bandId: number, kind: 'war' | 'peace') => void;
+  /** M15 phase 39d: the player's chief submits to an enemy as its tributary. */
+  onSubmit: (bandId: number) => void;
   /** Cancel an unfinished player-owned construction. */
   onCancelConstruction: (building: Building) => void;
   /**
@@ -433,13 +440,29 @@ export class Hud {
     this.panelEl.addEventListener('click', event => {
       const found = (event.target as HTMLElement)
         .closest('[data-tab], [data-person], [data-focus], [data-possess], ' +
-        '[data-command], [data-verb], [data-job], [data-transfer], [data-cancel-construction]');
+        '[data-command], [data-verb], [data-job], [data-transfer], [data-cancel-construction], [data-tax], [data-stance], [data-submit]');
       if (!found) return;
       const node = found as HTMLElement;
 
       if (node.dataset.job !== undefined && this.currentSelection?.kind === 'person') {
         const job = node.dataset.job === 'none' ? null : node.dataset.job as JobId;
         this.callbacks.onAssignJob(this.currentSelection.person, job);
+        this.builtFor = null;
+        return;
+      }
+      if (node.dataset.submit !== undefined) {
+        this.callbacks.onSubmit(Number(node.dataset.submit));
+        this.builtFor = null;
+        return;
+      }
+      if (node.dataset.stance !== undefined) {
+        const [bandId, kind] = node.dataset.stance.split(':');
+        this.callbacks.onDeclare(Number(bandId), kind as 'war' | 'peace');
+        this.builtFor = null;
+        return;
+      }
+      if (node.dataset.tax !== undefined) {
+        this.callbacks.onSetTaxRate(Number(node.dataset.tax));
         this.builtFor = null;
         return;
       }
@@ -694,7 +717,7 @@ export class Hud {
     this.statsEl.textContent = t('{era} · {alive} alive · {built}/{buildings} built · step {tick}', {
       era: t(stats.era), alive: stats.population,
       built: stats.buildingsComplete, buildings: stats.buildings, tick: stats.tick,
-    });
+    }) + (sim.player && sim.isCivilisation(sim.player.bandId) ? ' · ' + t('a civilisation') : '');
 
     this.currentSim = sim;
     this.currentSelection = selection;
@@ -828,7 +851,10 @@ export class Hud {
     // M11 phase 15d: a captive is of their captors' band and plainly not one
     // of them — obvious to that band, and to anybody who knows them.
     const captive = person.captiveOf !== null && (sameBand || known.level !== 'stranger');
-    const bandText = captive
+    const master = person.serfOf === null ? null : sim.householdsById.get(person.serfOf);
+    const bandText = captive && master
+      ? escapeHtml(t('serf of the {household}, of the {band}', { household: master.name, band: band?.name ?? '' }))
+      : captive
       ? escapeHtml(t('captive of the {band}', { band: band?.name ?? '' }))
       : known.level === 'stranger'
       ? (sameBand ? escapeHtml(band?.name ?? '') : t('not of your band'))
@@ -1275,6 +1301,92 @@ export class Hud {
     rows.push('<div class="hud-note">' + escapeHtml(current
       ? t('Leans them toward {list}.', { list: current.actions.map(a => actionLabel(a)).join(', ') })
       : t('A settled job leans someone toward its own work and a little away from everything else — it is a preference, not a command.')) + '</div>');
+    rows.push(...this.governmentRows(observer, person, sim));
+    return rows;
+  }
+
+  /**
+   * The peoples the player's band has had dealings with, and what it has
+   * declared them to be — M15 phase 39a. Only bands it has touched: the rest
+   * are nobody it knows of. War and peace are offered only to a government,
+   * and say so otherwise.
+   */
+  private foreignRows(chief: Person, bandId: number, sim: Simulation): string[] {
+    const others = sim.bandRelations.touching(bandId)
+      .map(id => sim.bands.find(b => b.id === id))
+      .filter((b): b is NonNullable<typeof b> => !!b && !b.outcast);
+    if (others.length === 0) return [];
+    const rows: string[] = ['<div class="hud-sub">' + escapeHtml(t('Other peoples')) + '</div>'];
+    const canDeclare = governs(chief);
+    for (const other of others) {
+      const stance = sim.bandRelations.stance(bandId, other.id);
+      const overlord = stance === 'tributary' ? sim.bandRelations.stanceRecord(bandId, other.id)?.overlord : null;
+      const word = stance === 'war' ? t('at war')
+        : stance === 'peace' ? t('at peace')
+        : stance === 'tributary' ? (overlord === bandId ? t('pays you tribute') : t('you pay them tribute'))
+        : t('no word given');
+      const standing = Math.round(sim.bandRelations.standing(bandId, other.id));
+      rows.push('<div class="hud-need"><span>' + escapeHtml(other.name) + '</span><span>' +
+        escapeHtml(word) + ' (' + standing + ')</span></div>');
+      // Any chief can submit to a people they are at war with — being beaten
+      // needs no law.
+      if (stance === 'war') {
+        rows.push('<div class="hud-buildbar-row"><button class="hud-design" data-submit="' + other.id + '">' +
+          '<span class="hud-design-name">' + escapeHtml(t('Offer tribute')) + '</span></button></div>');
+      }
+      if (canDeclare && stance !== 'tributary') {
+        rows.push('<div class="hud-buildbar-row">' +
+          (stance !== 'war'
+            ? '<button class="hud-design" data-stance="' + other.id + ':war"><span class="hud-design-name">' +
+              escapeHtml(t('Declare war')) + '</span></button>' : '') +
+          (stance !== 'peace'
+            ? '<button class="hud-design" data-stance="' + other.id + ':peace"><span class="hud-design-name">' +
+              escapeHtml(t('Make peace')) + '</span></button>' : '') +
+          '</div>');
+      }
+    }
+    if (!canDeclare) {
+      rows.push('<div class="hud-note">' + escapeHtml(t('Only a chief who rules by a law or a crown can declare a war or a peace.')) + '</div>');
+    }
+    return rows;
+  }
+
+  /**
+   * What the player governs, when the player leads their band — M15 block IX.
+   * Shown on the player's own Work tab only: governing is something you do,
+   * not something you read off somebody else. Each control is offered only
+   * once the chief knows the idea behind it, and says so when it is not.
+   */
+  private governmentRows(observer: Person, person: Person, sim: Simulation): string[] {
+    if (observer.id !== person.id || !person.isPlayer) return [];
+    const band = sim.bands.find(b => b.id === person.bandId);
+    if (!band || sim.bandSystem.chiefByBand.get(band.id) !== person.id) return [];
+    const rows: string[] = ['<div class="hud-section">' + t('Government') + '</div>'];
+    // M15 phase 38c: what a civilisation is, named for the player and never
+    // required of them. What is still missing is listed by name, because a
+    // label the player cannot work toward would be the opaque kind of goal.
+    const lacks = sim.civilisationLacks(band.id);
+    rows.push('<div class="hud-sub">' + escapeHtml(lacks.length === 0
+      ? t('The {band} are a civilisation', { band: band.name })
+      : t('Not yet a civilisation: it wants {list}', {
+        list: lacks.map(id => t(TECH[id as Tech].label).toLowerCase()).join(', '),
+      })) + '</div>');
+    rows.push(...this.foreignRows(person, band.id, sim));
+    if (techPower(person, 'taxation') <= 0) {
+      rows.push('<div class="hud-note">' + escapeHtml(t('You lead the band. Nobody here knows yet how to levy a tax.')) + '</div>');
+      return rows;
+    }
+    const rate = band.taxRate ?? 0;
+    rows.push('<div class="hud-sub">' + escapeHtml(t('The levy: each house carries this share of its store to the temple')) + '</div>');
+    rows.push('<div class="hud-buildbar-row">' + TAX_RATES.map(step =>
+      '<button class="hud-design' + (rate === step ? ' is-active' : '') + '" data-tax="' + step + '">' +
+      '<span class="hud-design-name">' + (step === 0 ? escapeHtml(t('None')) : Math.round(step * 100) + '%') + '</span>' +
+      '</button>').join('') + '</div>');
+    if (!sim.templeOf(band.id)) {
+      rows.push('<div class="hud-note">' + escapeHtml(t('There is no temple to pay into: it takes a granary, and a chief who knows redistribution.')) + '</div>');
+    } else if (rate > 0) {
+      rows.push('<div class="hud-note">' + escapeHtml(t('Every house taxed thinks the worse of you for it, and the more so the heavier the share.')) + '</div>');
+    }
     return rows;
   }
 
@@ -1780,6 +1892,13 @@ export class Hud {
     }
 
     rows.push('<div class="hud-section">' + t('Finished') + '</div>');
+    // M15 phase 38b. Which granary is a band's temple is as public as the
+    // granary itself — the band carries its surplus there in plain sight.
+    if (sim.templeOf(building.ownerBandId) === building) {
+      rows.push('<div class="hud-sub">' +
+        escapeHtml(t('The temple: the chief keeps the surplus of the band here, and gives it back at feasts')) +
+        '</div>');
+    }
     // Condition, M11 phase 11b. Not gated on `known.knowsContents` the way the
     // store's contents are below: unlike what is inside, that a wall is
     // cracked or a roof is charred is visible to anyone who can see the

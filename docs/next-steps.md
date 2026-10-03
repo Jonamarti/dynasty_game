@@ -19,6 +19,19 @@ anterior retenía 1.500 poses, ocupaba 52,7 MiB y expulsaba cada pose a la vuelt
 Las demás familias pueden usar el mismo compositor. El perfil siguiente mide
 cadencia y memoria de navegador con 300 NPC; arranque y VRAM siguen pendientes.
 
+**2026-10-03: M15 bloque IX, fases 38 y 39 dentro de la comarca** (rama
+`m15/block9`, alcance elegido por el propietario). El banquete; los nodos
+`redistribution`, `accounting`, `taxation`, `law_code`, `standing_army` y
+`kingship`, todos colgados de la cabeza del jefe (`social/Polity.ts`); la
+civilización derivada; guerra y paz declaradas por un gobierno; tributo;
+conjura contra el rey y sucesión disputada; y la servidumbre. Escenarios
+`polity` y `conquest`. **Pendiente del bloque**: `city_walls` (espera a los
+muros de la 16b), la fase 40 entera (el hierro espera al Bronce de la 37),
+la 41 (cierre de M15), y lo que necesita el nivel 2 (pueblos de la 32 y
+caravanas de la 36): las otras civilizaciones del mundo y que las noticias
+de una guerra viajen. Sin ejercitar en ningún escenario: la servidumbre, la
+conjura y `law_code` (ver `bugs.md`).
+
 **2026-10-02: M15 fase 17, primera animación de trabajo.** Recolección manual
 en cuatro fotogramas, integrada en NPC y jugador, con pausa y abandono visibles
 en la pose. Capturas y GIF en

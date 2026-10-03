@@ -1,0 +1,674 @@
+
+> dynasty@0.0.0 sim:check
+> vite-node tools/headless.ts -- --scenario polity
+
+
+WORLD HEALTH REPORT  -  scenario "polity"  seed "ziggurat"
+==============================================================================
+24000 steps in 53207ms  (451 steps/s)
+
+POPULATION OVER TIME
+  step    day   alive  hunger  thirst  tired   cold   lonely  health  food   bare  store  trees  grown  fruit  kids  wed  age   oob  
+  0       5     29     0.0     0.0     0.0     0.0    0.0     100.0   1467   196   0      929    821    0      11    18   18    0    
+  2400    15    29     17.8    17.7    9.6     0.0    20.5    100.0   1913   155   185    842    716    627    11    18   18    0    
+  4800    25    37     16.8    15.0    7.1     0.0    22.1    99.9    2158   172   393    841    717    1411   19    18   14    0    
+  7200    35    38     18.6    11.9    14.2    2.0    24.6    99.7    1412   286   562    840    718    0      20    18   14    0    
+  9600    45    38     19.8    16.0    12.7    0.0    17.5    99.7    1143   238   510    845    717    0      20    18   14    0    
+  12000   55    39     16.0    14.7    11.5    0.0    13.4    99.7    1898   155   504    870    719    610    21    18   14    0    
+  14400   65    45     17.1    10.5    8.8     0.0    18.7    99.5    2202   176   563    869    720    1440   27    18   12    0    
+  16800   75    46     18.0    14.4    10.8    1.0    17.1    98.2    1418   283   647    868    721    0      28    18   12    0    
+  19200   85    48     21.6    12.9    14.4    0.0    17.5    99.1    1156   236   623    879    721    0      30    18   12    0    
+  21600   95    51     22.5    14.4    13.7    0.0    20.8    98.9    1907   147   562    900    722    629    33    18   12    0    
+  24000   105   54     21.7    13.2    8.9     0.0    18.4    99.2    2159   177   682    899    722    1409   36    18   11    0    
+
+EVENTS
+  malnutrition_samples    981674
+  path_expanded           728067
+  place_memory_age_sum_band_1391732.17866863933
+  walk_tick               357354
+  step_slope_up           350071
+  nursing_hunger_relief   344600
+  nursing_thirst_relief   344600
+  step_slope_up_ratio     316620.890034354
+  step_slope_down_ratio   290271.7243423701
+  step_slope_down         280560
+  place_memory_age_sum_band_0246327.38585165946
+  remembered_node_candidate218153
+  malnutrition_sum        186364.03575617418
+  food_accessible_at_think124481
+  water_memory_candidate  124130
+  water_visible_candidate 122050
+  walk_arrived            110789
+  path_denied_cooldown    100995
+  hearth_warm_samples     69911
+  yield_obs_yield_forage_sum69273.33572696475
+  path_found              68916
+  diet_nutrition_total    54966.60000000024
+  craving_protein_search  52273
+  rest                    46483
+  step_slope_flat_ratio   44450.92040253931
+  step_slope_flat         44391
+  yield_obs_yield_fish_sum42387.55445466898
+  place_memory_samples_band_141261
+  place_memory_samples_band_039652
+  craving_protein_reachable36941
+  action_target_knowledge_checked29310
+  action_target_knowledge_known29254
+  remembered_node_target  28734
+  sleeping                26743
+  mood_belonging_sum      22496.58886252108
+  action_target_knowledge_visible_forage22243
+  diet_nutrition_protein  20559.600000000064
+  elite_larder_preferred  19826
+  shared_resource_depletion_seen19683
+  woke_rested             17626
+  craving_protein_outside_reach14876
+  relocation_food_nodes   14100
+  belief_seen_eat_berries 11683
+  craving_protein_masked_by_reachable_food11519
+  craving_protein_override_selected11519
+  poison_ticks            10063
+  drink                   9447
+  witnessed               8934
+  sleeping_open           8714
+  fruit_thirst_relief     8224.197507463823
+  relocation_food_depleted7981
+  remembered_bush_out_of_season7755
+  grazer_samples          7439
+  food_blocked_by_reach_at_think6893
+  food_reach_fallback_at_think6893
+  hunter_samples          6265
+  belief_seen_eat_fish    6101
+  mood_security_sum       5260.260236407269
+  place_exploration_fraction_band_15059.9130859375
+  abandoned_hands_full    4757
+  worked_alongside        4510
+  step_blocked            4366
+  mood_samples            4108
+  macro_samples           4108
+  macro_exertion_sum      4001.4589871970134
+  stale_memory_resource_empty3978
+  abandoned_remembered_wrong3978
+  place_exploration_fraction_band_03928.5537109375
+  nursing_sessions        3446
+  eat                     3391
+  hydrating_food_candidate3209
+  action_target_knowledge_visible_pick2878
+  grazer_samples_on_poor  2567
+  macro_carb_sum          2326.435286862455
+  action_target_from_memory_forage2318
+  yield_obs_yield_forage_n2124
+  stored                  1965
+  work_ended_node_empty   1915
+  sought_out_chief_attend 1885
+  ate_berries             1878
+  eaten_berries           1878
+  step_slide              1715
+  yield_obs_yield_fish_n  1708
+  feast_considered        1689
+  harvest_berries         1647
+  eat_calm_protein        1615
+  action_target_knowledge_visible_chop1539
+  sought_out_chief_talk   1532
+  food_stored_own         1528
+  would_spoil_berries     1510
+  drink_finished          1476
+  action_target_knowledge_visible_drink1457
+  eat_craving_protein     1447
+  belief_seen_eat_roast_fish1443
+  cry_interrupted         1442
+  food_stored_temple      1429
+  animal_alarmed          1410
+  hungry_at_work_romp     1382
+  belief_seen_eat_pear    1317
+  mood_comfort_sum        1253.1203791956539
+  belief_told             1140
+  romp_together           1125
+  hungry_at_work_nurse    1112
+  romp_hungry             1102
+  spoilage_prevented      1086
+  remembered_empty_walk   1046
+  route_arrived           1001
+  macro_protein_sum       979.0992066734844
+  action_target_knowledge_remembered_forage915
+  harvest_fish            896
+  withdrawn               880
+  work_ended_hands_full   861
+  ate_fish                842
+  eaten_fish              842
+  risky_meals_fish        842
+  water_place_told        821
+  macro_fat_sum           802.4655064640359
+  ate_cooking_fish        800
+  belief_seen_eat_hazelnut758
+  eat_calm_protein_rich   700
+  hand_capacity_blocked   679
+  belief_seen_eat_apple   658
+  conversation            614
+  belief_seen_sick        601
+  would_spoil_fish        572
+  belief_seen_eat_plum    558
+  hearth_cold_samples     474
+  hearth_cold_relieved    474
+  craving_protein_absent  456
+  interrupted_teach_baby_crying434
+  woke_hungry             426
+  hunter_samples_expected_in_firelight416.955152907179
+  work_ended_baby_crying  416
+  romp_away_from_family   406
+  feast_portions          403
+  feast_guests            403
+  settled_over_work       378
+  event_share_food        353
+  gift_given              353
+  hungry_at_work_talk     349
+  hungry_at_work_teach    343
+  tended_ticks            339
+  interrupted_teach_thirsty303
+  shared_a_roof           279
+  yield_obs_yield_hunt_sum259.13933016404724
+  materials_delivered     259
+  talked_hungry           244
+  toast_listeners         237
+  abandoned_no_food       231
+  ate_pear                229
+  eaten_pear              229
+  work_ended_tree_bare    220
+  picked_pear             215
+  eat_craving_protein_rich212
+  harvest_sticks          210
+  action_target_knowledge_visible_hunt201
+  temple_days             200
+  talked_baby_crying      200
+  sought_out_chief_spar   188
+  raid_for_need_nowhere   187
+  yield_obs_yield_pick_sum178.2378858588184
+  conversation_chat       177
+  feast_attended          177
+  crafted_roast_fish      177
+  craft_interrupted       176
+  conversation_greet      176
+  hungry_at_work_craft    168
+  event_teach             165
+  haul_units_band_0       164
+  ate_roast_fish          164
+  ate_cooking_roast_fish  164
+  eaten_roast_fish        164
+  dropped                 158
+  sparred                 154
+  child_taught            154
+  rumor_spread            150
+  conversation_interests  150
+  harvest_wild_grain      145
+  interrupted_discuss_baby_crying145
+  child_taught_by_parent  142
+  abandoned_no_fruit      139
+  hungry_at_work_give     135
+  pushed_on_hunger_give   135
+  hearth_warm_learned     129
+  yield_obs_yield_pick_n  127
+  interrupted_teach_hungry125
+  meadow_poor_share_samples120
+  interrupted_give_baby_crying119
+  ask_taught              118
+  carry_overflow_dropped  118
+  sought_out_chief_ask    112
+  tree_died_old           111
+  child_watched           111
+  conversation_deep       111
+  reflected               109
+  would_spoil_plum        104
+  hungry_at_work_propose  96
+  hearths                 96
+  sought_out_chief_discuss96
+  haul_units_band_1       95
+  picked_plum             95
+  ate_hazelnut            94
+  eaten_hazelnut          94
+  tree_seeded             86
+  ate_plum                86
+  eaten_plum              86
+  ate_apple               86
+  eaten_apple             86
+  proposed_baby_crying    85
+  picked_hazelnut         84
+  action_target_from_memory_gather80
+  hungry_at_work_hunt     77
+  pushed_on_hunger_hunt   77
+  order_obeyed            75
+  order_haul_obeyed       75
+  belief_seen_eat_toxic_berries74
+  poisoned_fish           73
+  picked_up               73
+  pickup_ordered          73
+  npc_pickup              73
+  poisoning_passed        71
+  wood_cut                71
+  harvest_reeds           70
+  picked_apple            67
+  ask_refused             58
+  asked_would_not_teach   58
+  action_target_knowledge_unknown56
+  haul_trip_band_0        55
+  action_target_knowledge_unknown_forage54
+  bleeding_ticks          50
+  teaching_failed         48
+  prey_killed_by_predator 45
+  animal_predated         45
+  crafted_rope            44
+  abandoned_nothing_to_haul41
+  order_refused           41
+  order_haul_refused      41
+  poison_grade_mild       40
+  harvest_flint           39
+  work_ended_away_from_family39
+  order_refused_by_rank   39
+  territory_cell_claimed  38
+  food_place_told         37
+  sought_out_chief_propose37
+  breakthrough_ponder     36
+  animal_born             36
+  woke_baby_crying        35
+  project_request_refused 34
+  ponder_nothing          34
+  thought_nothing_came_of_it34
+  starving_fed_remembered 34
+  order_obeyed_by_rank    32
+  ask_taught_nothing      31
+  asked_learned_nothing   31
+  feast_called            30
+  feasts_held             30
+  temple_feasts           30
+  event_feast             30
+  woke_daylight           30
+  harvest_meat            30
+  starving_fed            29
+  poison_grade_moderate   28
+  event_help              28
+  site_placed             27
+  haul_trip_band_1        27
+  conception              27
+  interrupted_ask_away_from_family27
+  sought_out_chief_feed   26
+  prey_killed_by_wolf     25
+  birth                   25
+  baby_picked_up          25
+  hungry_at_work_ask      24
+  interrupted_ask_hungry  24
+  observed_firemaking     23
+  proposed_hungry         23
+  discuss_nothing         23
+  talked_nothing_came_of_it23
+  relocation_scarcity_days22
+  food_absent_in_search_at_think22
+  meadow_poor_share_sum   21.20724755700326
+  yield_obs_yield_hunt_n  21
+  action_target_knowledge_remembered_drink20
+  breakthrough_discuss    20
+  taught_herbalism        20
+  taught_cooking          19
+  crafted_beer            19
+  observed_hafting        19
+  toasted                 18
+  sought_out_chief_give   18
+  harvest_clay            18
+  belief_seen_eat_meat    18
+  job_assigned            17
+  observed_cordage        17
+  work_ended_thirsty      17
+  belief_seen_yield_fish  16
+  animal_entered_by_edge  16
+  site_abandoned          15
+  ate_at_source           15
+  taught_pottery          14
+  talked_away_from_family 14
+  sought_out_chief_teach  14
+  project_backer_added    13
+  taught_division_of_labour12
+  crafted_bundle          12
+  band_planned_mud_hut    12
+  poison_grade_severe     12
+  belief_seen_yield_forage12
+  prototype_trial_passed  12
+  prey_killed_by_bear     11
+  taught_redistribution   11
+  belief_seen_eat_beer    11
+  taught_plant_lore       10
+  taught_cordage          10
+  taught_chiefdom         10
+  building_completed      10
+  observed_division_of_labour10
+  taught_grinding         10
+  taught_farming          10
+  observed_stoneworking   10
+  hunt_ended_baby_crying  10
+  bring_food_away_from_family10
+  marriage                9
+  founding_households     9
+  observed_cooking        9
+  action_target_from_memory_gather_for_site9
+  prey_killed_by_lynx     9
+  conceived_basketry      9
+  taught_stoneworking     9
+  taught_marking          9
+  crafted_handaxe         9
+  taught_brewing          9
+  ate_toxic_berries       8
+  eaten_toxic_berries     8
+  ate_toxic_unwise        8
+  risky_meals_toxic_berries8
+  taught_firemaking       7
+  spark_basketry_1        7
+  conceived_herbalism     7
+  spark_herbalism_0       7
+  observed_marking        7
+  hurt_person_days        7
+  event_praise            6
+  praise_told             6
+  poisoned_toxic_berries  6
+  herd_entered_by_edge    6
+  interrupted_spar_baby_crying6
+  observed_herbalism      6
+  wound_dressed           6
+  herb_used_on_poison     6
+  tree_felled             5
+  hungry_at_work_attend   5
+  event_trade             5
+  trade_made              5
+  animal_bit_person       5
+  animal_bit_person_bear  5
+  animal_blow_bear        5
+  fled_from_animal        5
+  predator_kept_off_by_fire5
+  abandoned_already_built 4
+  conceived_spinning      4
+  hungry_at_work_forage   4
+  pushed_on_hunger_forage 4
+  prototype_failed        4
+  chief_chosen            3
+  band_planned_windbreak  3
+  crafted_rope_thatch     3
+  taught_hafting          3
+  completed_mud_hut       3
+  completed_windbreak     3
+  observed_plant_lore     3
+  observed_brewing        3
+  reasoned_out_herbalism  3
+  wet_nursing_sessions    3
+  conceived_tracking      3
+  spark_tracking_0        3
+  proven_herbalism        3
+  discovered_herbalism    3
+  wound_days_tended       3
+  poison_eased            3
+  poison_cured            3
+  tended_to_health        3
+  ate_meat                3
+  ate_cooking_meat        3
+  eaten_meat              3
+  risky_meals_meat        3
+  taught_tracking         3
+  job_refused             2
+  belief_seen_yield_pick  2
+  completed_storage_pit   2
+  abandoned_tree_gone     2
+  abandoned_project_no_longer_available2
+  spark_spinning_0        2
+  spark_basketry_0        2
+  observed_grinding       2
+  observed_farming        2
+  band_planned_granary    2
+  conceived_storytelling  2
+  spark_storytelling_0    2
+  conceived_ochre         2
+  spark_ochre_0           2
+  conceived_bread         2
+  spark_bread_2           2
+  band_planned_quern      2
+  conceived_writing       2
+  spark_writing_0         2
+  abandoned_nothing_to_give2
+  spark_spinning_2        2
+  action_target_knowledge_unknown_hunt2
+  abandoned_store_full    2
+  fled                    2
+  interrupted_ask_baby_crying2
+  animal_killed           2
+  hunt_killed             2
+  observed_tracking       2
+  romp_alone              1
+  era_advanced            1
+  action_target_knowledge_remembered_hunt1
+  would_spoil_toxic_berries1
+  observed_chiefdom       1
+  talked_thirsty          1
+  interrupted_spar_thirsty1
+  ate_beer                1
+  eaten_beer              1
+  hearth_taught           1
+  conceived_ground_stone  1
+  spark_ground_stone_1    1
+  band_planned_hearth     1
+  completed_hearth        1
+  sought_out_chief_praise 1
+  romp_thirsty            1
+  animal_bit_person_at_night1
+  completed_quern         1
+  water_exploration_no_frontier1
+  reasoned_out_tracking   1
+  animal_left_by_edge     1
+  herd_left_by_edge       1
+  work_ended_hungry       1
+  band_planned_field      1
+  abandoned_target_gone   1
+  observed_pottery        1
+  hunt_missed             1
+  animal_blow_boar        1
+  hunter_turned_on_by_boar1
+  refined_herbalism       1
+  harvest_hide            1
+  poisoned_meat           1
+  proven_tracking         1
+  discovered_tracking     1
+  idea_abandoned_spinning 1
+  idea_abandoned_basketry 1
+  would_spoil_beer        0
+  would_spoil_pear        0
+  would_spoil_apple       0
+  would_spoil_roast_fish  0
+  mood_purpose_sum        -38371.33685906161
+
+ACTIONS (summed over samples)
+  idle                    236091
+  forage                  148661
+  romp                    82834
+  go_home                 73852
+  craft                   52738
+  talk                    49922
+  sleep                   41077
+  rest                    35834
+  ask                     33607
+  drink                   32019
+  pick                    26048
+  nurse                   20412
+  teach                   19231
+  store                   18027
+  ponder                  16637
+  gather                  14845
+  spar                    13069
+  give                    12810
+  discuss                 11213
+  attend                  8648
+  chop                    7354
+  take                    6919
+  propose                 6206
+  feast                   3336
+  haul                    3141
+  build                   3108
+  reflect                 2366
+  eat                     1736
+  tend                    1339
+  hunt                    928
+  toast                   592
+  pickup                  575
+  bring_food              229
+  trade                   202
+  praise                  154
+  flee                    82
+  shelter                 53
+  wander                  50
+
+KNOWLEDGE
+  era: Middle Palaeolithic  ·  16 things known to somebody  ·  18 can make fire
+  1 advances, 0 relapses
+
+BANDS
+  2 chiefs  ·  0 outcast  ·  0 exiled  ·  75 orders obeyed, 41 refused
+
+BUILDINGS
+  12 of 14 finished  ·  682 items in store
+
+RELATIONSHIPS
+  987 edges across 54 people  ·  987 warm  ·  0 hostile
+  Fenok band            theft tolerance 1.02   murder 0.71
+  Aron band             theft tolerance 1.27   murder 0.80
+
+TERRAIN
+  water=5866  beach=1349  grass=4355  forest=3013  hills=1502  rock=299
+
+TRAVEL
+  68916 routes found  ·  10.6 mean / 208 worst expansions  ·  2871.5 searches per 1,000 ticks
+  route_arrived=1001  walk_blocked=0  abandoned_cannot_reach=0
+  everything that walks: step_blocked=4366  ·  axis_null=0  ·  slides=1715
+  people only: 0 stuck of 357354 walk ticks (0.0 per 1,000)  ·  denied: cooldown=100995 budget=0
+  recoveries=0 (0 found a route)
+
+CHECKS
+  PASS  regions-stay-true       10 independently recomputed landmasses; 0 incorrectly labelled tiles and 0 incorrect region sizes
+  PASS  hands-limit-loads       0 post-transfer states remained above the hands and fitted-container limit; 679 collection attempts hit a hand limit
+  n/a   containers-carry-more   run the porters scenario to compare fitted containers with bare hands
+  FAIL  people-act-on-what-they-know29254/29310 forage, pick, drink, hunt and chop targets visible or remembered
+  FAIL  word-of-food-travels    0 forage targets came from a food location heard in conversation
+  PASS  stale-memories-cost     3978 trips reached a remembered resource that was exhausted
+  PASS  the-map-grows           7.1% → 9.2% mean explored (must grow and remain below 99%)
+  n/a   kin-are-defended        0 attacks on children with adult witnesses (need 10)
+  n/a   the-young-run-to-their-own0 attacked children fled (need 10)
+  FAIL  cravings-steer-the-diet 14.7% rich-protein meals while craving vs 43.3% while calm (need 1.3x)
+  FAIL  nights-are-slept        28.1% of 6858 adult samples in full night sleeping or resting (need 55%)
+  PASS  nights-are-spent-at-home91.8% of 6858 adult night samples within 15 tiles of an anchor (need 70%)
+  PASS  moods-move-choices      5.7% talk in low-belonging tercile vs 4.3% in high (7200 samples each; low must be higher)
+  PASS  children-keep-close     94.8% of 15052 child samples within radius + 3 of either living parent (need 75%; designated carer=91.4%; top actions: romp=4168, go_home=2853, ask=1179, forage=1166, sleep=1058)
+  PASS  no-nan                  worst sample had 0 non-finite fields
+  PASS  people-in-bounds        worst sample had 0 people outside a 128x128 world
+  PASS  people-on-land          worst sample had 0 people standing in water or on rock
+  PASS  population-persists     54 alive after 3 years (peaked at 54, 25 born); need 19 and at least one birth
+  PASS  deaths-explained        nobody died
+  PASS  nobody-stalls-under-orders0 people stalled under order for a full day; 0 gave up walking, 0 of those under order
+  PASS  walkers-do-not-grind    0 of 357,354 walking ticks made no real progress (0.0 per 1,000; wanted under 5)
+  PASS  paths-are-found         200 pairs sampled on the largest region, every one found — mean 634.7 / worst 3559 expansions; 0 gave up mid-play
+  PASS  nobody-walled-in        54 checked; 0 cut off from water, 0 cut off from food in their own region
+  PASS  people-drink            drink=9447
+  PASS  drinking-is-paced       1476 drinks finished over 4127 person-days (0.36 each per day; wanted some, and fewer than 4)
+  PASS  food-work-continues     4 ticks of food-gathering continued through hunger that would otherwise have stopped it (77 hunting)
+  PASS  people-harvest          berries=1647 meat=30 wood=0 flint=39
+  PASS  people-eat              eat=3391
+  PASS  ai-uses-many-actions    38 distinct actions observed: idle=236091 forage=148661 romp=82834 go_home=73852 craft=52738 talk=49922 sleep=41077 rest=35834 ask=33607 drink=32019 pick=26048 nurse=20412 teach=19231 store=18027 ponder=16637 gather=14845 spar=13069 give=12810 discuss=11213 attend=8648 chop=7354 take=6919 propose=6206 feast=3336 haul=3141 build=3108 reflect=2366 eat=1736 tend=1339 hunt=928 toast=592 pickup=575 bring_food=229 trade=202 praise=154 flee=82 shelter=53 wander=50
+  PASS  needs-not-pinned        final avgHunger=21.7 avgThirst=13.2 avgCold=0.0 avgCompany=18.4
+  PASS  health-holds-up         final avgHealth=99.2 (floor is 60)
+  PASS  events-witnessed        deeds=587 witnessed=8934 unwitnessed=0
+  PASS  people-talk             conversations=614
+  PASS  gossip-is-aimed         0 slanders and 6 praises over 614 conversations
+  PASS  rumor-propagates        stories passed on=150
+  FAIL  opinions-diverge        987 relationships across 54 people: 987 warm, 0 hostile
+  PASS  materials-delivered     delivered=259 sites=14 finished=12
+  PASS  building-starts-small   13 projects measured; 0 exceeded sponsor + backers + ordered workers
+  PASS  projects-find-backers   10/12 completed AI-planned projects had a backer (need 70%)
+  n/a   shelter-answers-cold    never got cold (peak avgCold 2.0)
+  PASS  work-runs-in-stretches  node_empty=1915 hands_full=861 tree_bare=220 thirsty=17 away_from_family=39 baby_crying=416 hungry=1
+  PASS  foraging-bites          most bushes stripped at once: 286; wild food went from 1467 to 2159
+  PASS  generations-turn-over   over 2 years: 0 courtships, 9 marriages, 27 conceptions, 25 births, 0 successions
+  PASS  forest-is-used          5 trees felled, 71 timber cut, 534 fruit picked
+  PASS  fruit-comes-and-goes-with-the-seasonworst sample had 0 fruit hanging out of season; most windfall seen at once was 5358 across 4 seasons
+  PASS  forest-persists         stand went from 929 to 899 (722 grown, 97 seedlings); 86 seeded, 111 died of age
+  PASS  bands-have-chiefs       2 chiefs for 54 people; 3 changes of leadership
+  PASS  bands-decide-to-build   21 sites marked out by bands themselves (player placed none)
+  n/a   camps-move-when-the-land-failsmeasured in the lean survival scenario
+  PASS  jobs-bias-work          holders spent 13.5% of their time on their own job's work; everyone else spent 3.7% of theirs on that same work
+  n/a   rebellion-is-rare-but-happensnone fired in this run; a rare stochastic event, see band.test.ts for the deterministic assertion
+  n/a   raids-are-organised     no chief in this world ever stood badly enough with a neighbour to weigh one
+  PASS  knowledge-is-found      herbalism=3 tracking=1
+  PASS  knowledge-is-passed-on  166 taught deliberately, 115 picked up by watching; 48 lessons that did not take
+  PASS  children-are-taught     154 of 166 lessons went to a child, 142 of those from a parent
+  n/a   sparks-are-various      this world was handed 14 technologies; what is left to conceive is the scenario talking, not the web
+  PASS  ideas-are-conceived     32 ideas conceived (0.31 per person-year; wanted some, and fewer than 3)
+  PASS  ideas-become-tech       32 conceived, 0 built, 4 proven, 4 failed their trial
+  PASS  the-tree-is-climbed     7 of 9 technologies conceived were past the root nodes: spinning basketry herbalism ground_stone ochre bread writing
+  PASS  research-is-social      36 breakthroughs alone, 20 by arguing it out
+  PASS  trials-accumulate       12 trials went well across 4 designs proven, 4 went badly
+  PASS  techs-are-refined       1 improvements to proven designs, 0 carried as far as they go
+  n/a   records-are-cut         nobody in this world can write
+  PASS  crafting-is-interruptible264 things made, 176 attempts broken off for a need
+  n/a   food-spoils             spoilage is switched off in this scenario
+  n/a   stores-keep-food-better-than-packsspoilage is switched off in this scenario
+  n/a   pictures-are-painted    nobody here knows how to burn earth red
+  n/a   music-answers-lonelinessnobody here can make a flute
+  PASS  beer-answers-loneliness 18 toasts made, heard by somebody else 237 times
+  PASS  the-temple-gathers      93.5% of 1528 food stored went to a temple (need 30%); 30 feasts given from one, over 200 temple-days
+  PASS  feasts-gather-the-band  30 feasts held (30 called), 403 guests fed, 0 cups poured
+  n/a   the-hurt-are-tended     only 7 person-days of hurt; too few to expect a healer at hand
+  n/a   wounds-fester-untended  0 untended and 3 dressed wound-days; too few to compare (need 60 of each)
+  PASS  raw-meat-sickens        74 illnesses after 845 raw meals; none after anything cooked
+  PASS  the-wise-avoid-baneberries8 baneberry meals by people without plant lore (6 fell ill), 0 by people who had it
+  n/a   animals-are-tamed       nobody here would think of feeding one
+  PASS  heads-direct-work       32 orders landed on rank alone, 39 refused
+  n/a   kills-are-butchered-for-bonenobody alive knows what to do with a carcass
+  PASS  crafts-happen-at-stations2 stations finished, 177 things made at one, 0 walks that found no station
+  PASS  the-hearth-warms        474 of 474 cold samples near a hearth ended warmer
+  FAIL  roast-wins              164 roasted of 967 meat and fish meals eaten by cooks
+  FAIL  cooking-spreads         28 founded with cooking; 18 surviving adult holders
+  FAIL  pots-reach-a-granary    2 granaries marked out, 0 pots made, 0 finished
+  PASS  discovery-is-situated   every one of 32 ideas came by a named route; 0 of them into the technologies cold suggests
+  PASS  population-bounded      peak population 54
+  PASS  spatial-hash-spreads    largest bucket holds 24 of 54 items across 8 cells
+  PASS  animals-move            mean drift 13.8 tiles/day (floor is 2)
+  PASS  animals-flee            1167 bolts opened the distance, 447 did not
+  n/a   hunts-succeed-and-fail  too few strikes to tell (2 kills, 1 misses)
+  PASS  people-eat-meat         30 meat taken; 3391 meals eaten
+  PASS  fish-are-caught         896 fish taken; 3391 meals eaten
+  n/a   bands-set-traps         nobody in this world knows how to set a trap
+  FAIL  fields-are-sown-and-reaped1 planned, 0 standing, 0 sown, 0 reaped for 0 grain; 0 left standing too long, 0 gave nothing
+  n/a   soil-is-drawn-down      no harvest was taken off any ground in this run
+  n/a   compost-answers-exhaustionnobody in this world knows how to compost
+  n/a   traps-catch             no trap was finished in this run
+  n/a   herds-breed-and-are-cullednobody in this world knows how to keep a pen
+  n/a   wells-are-drawn-from    nobody in this world knows how to sink a well
+  n/a   milk-is-drawn-and-drunk no milk was ever bred in this run
+  n/a   wool-is-sheared-and-wovenno wool was ever bred in this run
+  PASS  bands-dont-overbuild    band0=7 band1=5; 0 over the ceiling, 0 holding empty stores
+  PASS  families-exist          9 households of more than one; 54 people with family
+  PASS  sleep-restores          1954 sleeps begun, fatigue fell on 16855 ticks of them
+  n/a   kin-outrank-strangers   not all three kinds of tie have 10+ pairs here: household=65.2 band=37.2 outsider=n/a outsider-unrelated=n/a · band-pairs=0 friendliest=0.0 hostile=0.0
+  n/a   bands-take-sides        no two bands have touched each other in this run
+  n/a   violence-concentrates   only 0 blows between peoples here; too few to say where they land
+  n/a   peoples-drift-apart     0 incidents between peoples; too few to split the run around
+  n/a   peace-within-bands      only 0 blows here; too few to say where they land
+  n/a   children-are-not-struck only 0 blows here; too few to say
+  n/a   the-struck-respond      only 0 second blows here; too few to say
+  n/a   wrongs-reach-the-chief  only 0 debts run up; too few to say
+  n/a   upbringing-follows-culturefewer than two peoples saw 15 wrongs by their children abroad, with regard for strangers 0.15 apart
+  n/a   the-watched-intervene   only 0 property deeds were seen by their owners; too few to say
+  n/a   captives-are-taken      only 0 blows between peoples; no quarrel long enough
+  n/a   bodies-are-found        only 0 deaths here; too few to say
+  n/a   murders-are-solved      only 0 killings here; too few to say
+  PASS  world-has-land          grass=4355 forest=3013 water=5866
+  FAIL  perf-budget             451 steps/s with 54 people at the peak (floor 1,037)
+  PASS  herds-follow-the-grass  7,439 grazer samples, 35% of them on poor grass, against 18% of the meadow and the wood being poor
+  PASS  predators-hunt          45 grazers pulled down (25 by wolves, 11 by bears, 9 by lynxes); 5 people bitten
+  PASS  fire-keeps-wolves-off   0 of 6265 hunter samples inside a circle of firelight, where chance alone would put 417.0 (5 turned back)
+  n/a   a-hunted-out-land-stays-emptythis land was not hunted out
+  PASS  slopes-slow             350,071 uphill steps cover 90.4% of the distance asked, 280,560 downhill 103.5%, 44,391 flat 100%
+  n/a   hills-see-farther       0 sightings of strangers in this run; too few to say
+
+==============================================================================
+10/124 CHECKS FAILED: people-act-on-what-they-know, word-of-food-travels, cravings-steer-the-diet, nights-are-slept, opinions-diverge, roast-wins, cooking-spreads, pots-reach-a-granary, fields-are-sown-and-reaped, perf-budget
+

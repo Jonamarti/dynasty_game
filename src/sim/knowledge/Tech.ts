@@ -132,6 +132,19 @@ export const TECHS = [
   // and shipped with its three readers: `Fear.sightIntruders` (strangers),
   // `WildlifeSystem.victimFor` (predators) and `companionBonus` (the hunt).
   'dog',
+  // M15 phase 38b: the State, one node per commit with its reader — see
+  // `social/Polity.ts`. `redistribution` is the temple store.
+  'redistribution',
+  // The written ledger: contributions to the temple and debts before the chief.
+  'accounting',
+  // The levy: a share of every household's store, carried to the temple.
+  'taxation',
+  // The written law: the same wrong, the same verdict.
+  'law_code',
+  // The soldier the temple feeds: a job, `soldier`, and the war party it leads.
+  'standing_army',
+  // The crown: the chiefdom held for life and passed to an heir.
+  'kingship',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1565,6 +1578,173 @@ export const TECH: Record<Tech, TechDef> = {
       'strangers and its predators before anyone does, and it hunts at the ' +
       'heel of the one who feeds it.',
   },
+
+  // --- M15 phase 38b: the State, in historical order --------------------------
+  //
+  // `m14_plan.md` phase 20b's table, one node per commit, each shipped with
+  // its reader. All of them hang off the chief's own head — see
+  // `social/Polity.ts` — so a State is a chief who knows how to run one, and
+  // it lapses the day that chief is replaced by somebody who does not.
+  redistribution: {
+    id: 'redistribution', label: 'Redistribution', domain: 'people',
+    age: 'neolithic', firstKnown: 'about 5500 BC',
+    // A practice: the temples of Eridu and Tell el-Oueili were granaries
+    // before they were anything else, and there is nothing to build that the
+    // granary is not already. Tried by doing it — handing the band's stores
+    // back out to the band, which is a feast (`doFeast` notes `feast` on
+    // finishing, through `ActionSystem.finish`).
+    kind: 'practice', practisedBy: ['feast'],
+    // `chiefdom` because a store held for everybody needs somebody it is
+    // held by, and `pottery` because the granary it is held in needs pots.
+    requires: ['chiefdom', 'pottery'], difficulty: 0.55, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      // The archaeologists' own route: the feast is redistribution before the
+      // temple, and watching one empty a single household's store is what
+      // makes the band's whole surplus look like something that could be
+      // gathered and given out the same way.
+      { needs: [{ kind: 'knows', tech: 'chiefdom' }, { kind: 'saw', what: 'feast' },
+                { kind: 'doing', action: 'store' }],
+        weight: 1.0, story: 'watched a feast empty one house\'s store, and thought the whole band\'s could be gathered and given out the same way' },
+      // Hunger beside a neighbour's full store.
+      { needs: [{ kind: 'knows', tech: 'chiefdom' }, { kind: 'feeling', need: 'hunger' },
+                { kind: 'doing', action: 'take' }],
+        weight: 0.7, story: 'went hungry while one house\'s store stood full, and wondered who the store was for' },
+      // And the quarrel over it: a theft from a store is what a store held by
+      // nobody in particular invites.
+      { needs: [{ kind: 'knows', tech: 'chiefdom' }, { kind: 'saw', what: 'theft' },
+                { kind: 'doing', action: 'store' }],
+        weight: 0.5, story: 'saw a store robbed, and thought a store kept by the chief for everybody would not be' },
+    ],
+    description:
+      'The granary becomes the temple: the band\'s surplus gathered in one ' +
+      'place, kept by the chief, and handed back out at the chief\'s table.',
+  },
+  accounting: {
+    id: 'accounting', label: 'Accounting', domain: 'people',
+    // The Uruk IV tablets: nine in ten of the first written documents are
+    // receipts — so much barley in, so many workers fed — and the clay
+    // tokens before them were the same idea without the writing.
+    age: 'bronze', firstKnown: 'about 3200 BC',
+    // A practice: the tablet is `clay_tablet`'s, and what is new is the habit
+    // of writing a store's comings and goings down. Tried by doing it, at the
+    // store.
+    kind: 'practice', practisedBy: ['store'],
+    requires: ['marking', 'clay_tablet'], difficulty: 0.55, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'clay_tablet' }, { kind: 'doing', action: 'store' }],
+        weight: 1.0, story: 'pressed a mark into wet clay for every basket carried into the granary' },
+      { needs: [{ kind: 'knows', tech: 'marking' }, { kind: 'saw', what: 'theft' },
+                { kind: 'doing', action: 'store' }],
+        weight: 0.7, story: 'found the store short and nobody able to say who had put what in' },
+      { needs: [{ kind: 'knows', tech: 'clay_tablet' }, { kind: 'doing', action: 'complain' }],
+        weight: 0.5, story: 'took a wrong to the chief and found that nobody remembered it but them' },
+    ],
+    description:
+      'What went into the temple and who owes whom, written down. A gift to ' +
+      'the store is remembered to the giver\'s credit, and a debt the chief ' +
+      'has heard of is not forgotten until it is paid.',
+  },
+  taxation: {
+    id: 'taxation', label: 'Taxation', domain: 'people',
+    // Sumerian temple dues and the Old Kingdom's harvest levy: the store the
+    // band gives to becomes a store the band owes.
+    age: 'bronze', firstKnown: 'about 2500 BC',
+    // A practice: nothing is built. Tried by levying — `BandSystem.levyTaxes`
+    // notes `levy` on the chief each time a household is told to pay.
+    kind: 'practice', practisedBy: ['levy'],
+    requires: ['redistribution', 'accounting'], difficulty: 0.6, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      // The ledger shows who never gives.
+      { needs: [{ kind: 'knows', tech: 'accounting' }, { kind: 'doing', action: 'store' }],
+        weight: 1.0, story: 'read down the temple\'s tally and saw which houses had never once given to it' },
+      // A bare temple in a lean month beside full houses.
+      { needs: [{ kind: 'knows', tech: 'redistribution' }, { kind: 'feeling', need: 'hunger' },
+                { kind: 'doing', action: 'take' }],
+        weight: 0.7, story: 'found the temple bare in a lean month while every house about it was full' },
+      { needs: [{ kind: 'knows', tech: 'redistribution' }, { kind: 'saw', what: 'feast' }],
+        weight: 0.5, story: 'watched the band eat the temple empty, and thought of who should fill it again' },
+    ],
+    description:
+      'A share of what every house keeps, owed to the temple and carried ' +
+      'there. The government sets the share, and nothing is owed at none; ' +
+      'a heavy one empties the houses to fill the temple, ' +
+      'and is resented by every house it is taken from.',
+  },
+  law_code: {
+    id: 'law_code', label: 'Law code', domain: 'people',
+    // Ur-Nammu's code, the oldest that survives: "if a man commits a
+    // robbery, he will be killed" — the penalty set down before the case.
+    age: 'bronze', firstKnown: 'about 2100 BC',
+    // A practice, tried by writing — the law is cut, like any record, by
+    // `inscribe`.
+    kind: 'practice', practisedBy: ['inscribe'],
+    requires: ['writing', 'taxation'], difficulty: 0.65, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'writing' }, { kind: 'doing', action: 'complain' }],
+        weight: 1.0, story: 'took a wrong to the chief and knew the answer would depend on who the chief liked' },
+      { needs: [{ kind: 'knows', tech: 'taxation' }, { kind: 'doing', action: 'inscribe' }],
+        weight: 0.7, story: 'cut the temple\'s dues into stone and thought the penalties could be cut beside them' },
+      { needs: [{ kind: 'knows', tech: 'writing' }, { kind: 'saw', what: 'theft' }],
+        weight: 0.5, story: 'saw one thief shamed and another let off for the same handful' },
+    ],
+    description:
+      'The wrong and its penalty written down before the case is heard. A ' +
+      'chief who judges by the law cannot let off a favourite, does not ' +
+      'shield their own from another people\'s just demand, and is resented ' +
+      'less for a verdict that was the law\'s and not theirs.',
+  },
+  standing_army: {
+    id: 'standing_army', label: 'Standing army', domain: 'people',
+    // Sargon of Akkad's "5,400 men who ate bread before him daily": men whose
+    // work was fighting, fed from the king's stores rather than their own
+    // fields.
+    age: 'bronze', firstKnown: 'about 2300 BC',
+    // A practice, tried by drilling.
+    kind: 'practice', practisedBy: ['spar'],
+    requires: ['division_of_labour', 'taxation'], difficulty: 0.6, skill: 'fight',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'taxation' }, { kind: 'saw', what: 'assault' }],
+        weight: 1.0, story: 'saw the band set upon and nobody whose work it was to stand in the way' },
+      { needs: [{ kind: 'knows', tech: 'division_of_labour' }, { kind: 'doing', action: 'spar' }],
+        weight: 0.7, story: 'sparred until dark and thought a man who did nothing else would be worth feeding' },
+      { needs: [{ kind: 'knows', tech: 'taxation' }, { kind: 'saw', what: 'theft' }],
+        weight: 0.5, story: 'watched the temple robbed and thought its stores could feed the men to guard it' },
+    ],
+    description:
+      'Fighting as a trade. A soldier drills rather than forages, eats from ' +
+      'the temple the levy fills, and goes first and without question when ' +
+      'the band goes to war.',
+  },
+  kingship: {
+    id: 'kingship', label: 'Kingship', domain: 'people',
+    // "After kingship descended from heaven, the kingship was in Eridu": the
+    // Sumerian King List's first line, and the Early Dynastic houses of Kish
+    // and Ur that passed the office from father to son.
+    age: 'bronze', firstKnown: 'about 2600 BC',
+    // A practice, tried by ruling: `preside`, the deed `chiefdom` is
+    // practised by, one rung up.
+    kind: 'practice', practisedBy: ['preside'],
+    requires: ['chiefdom', 'standing_army'], difficulty: 0.65, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'chiefdom' }, { kind: 'saw', what: 'body_found' },
+                { kind: 'doing', action: 'talk' }],
+        weight: 1.0, story: 'heard the band quarrel over who would lead before the old chief was cold' },
+      { needs: [{ kind: 'knows', tech: 'standing_army' }, { kind: 'doing', action: 'spar' }],
+        weight: 0.7, story: 'drilled the soldiers and saw that they answered to the office, not to the man' },
+      { needs: [{ kind: 'knows', tech: 'chiefdom' }, { kind: 'saw', what: 'order_refused' }],
+        weight: 0.4, story: 'was refused by a man who knew their term would end, and thought of one that would not' },
+    ],
+    description:
+      'The chiefdom held for life, and passed on to an heir rather than ' +
+      'won again: the head of the king\'s own house, or his eldest child. ' +
+      'An heir who never learned to be king will not pass it on in turn.',
+  },
 };
 
 /** Highest chronic motive this design can answer; zero means no recorded need. */
@@ -1815,12 +1995,36 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     site: 'BUILDINGS.pen, via BuildingDef.herd.byproducts; RECIPES.wool_cloth; Tech.warmthFrom',
   },
   brewing: {
-    summary: 'Beer: it answers loneliness for whoever drinks it, and for the band around them.',
-    site: 'RECIPES.beer; ActionSystem.doToast',
+    summary: 'Beer: it answers loneliness for whoever drinks it, and for the band around them. And the feast: a store spent on the band, for renown.',
+    site: 'RECIPES.beer; ActionSystem.doToast; ActionSystem.doFeast and doAttend (social/Feast.ts)',
   },
   dog: {
     summary: 'A tamed wolf that hears strangers and predators before you do, and hunts at your heel.',
     site: 'Fear.sightIntruders via Simulation.dogSight; WildlifeSystem.victimFor; WildlifeSystem.companionBonus',
+  },
+  redistribution: {
+    summary: 'The chief\'s granary becomes the temple: the loyal store their surplus there, and the chief feasts the band from it.',
+    site: 'social/Polity.ts templeOf and templePull; Brain store ranking; Feast.feastVenue and mayHostFeast',
+  },
+  accounting: {
+    summary: 'Gifts to the temple written to the giver\'s credit, and debts the chief has heard of kept until paid.',
+    site: 'Polity.recordContribution via ActionSystem.noteFoodStored; Simulation.hearComplaint marks Debt.recorded; Amends.pruneDebts; Simulation.keepDockets',
+  },
+  taxation: {
+    summary: 'A share of every house\'s store, set by the government, carried to the temple; resented in proportion.',
+    site: 'BandSystem.levyTaxes; ActionSystem.doRender; Polity.npcTaxRate, dueFrom and taxResentment; Simulation.setTaxRate',
+  },
+  law_code: {
+    summary: 'A chief who judges by the law cannot dismiss a case for a favourite or shield their own, and a verdict is resented less.',
+    site: 'Justice.judgeOwn, answerWeight and verdictGrudge; Simulation.hearComplaint and shame',
+  },
+  standing_army: {
+    summary: 'The soldier: a job that drills instead of foraging, eats from the temple, and leads the war party.',
+    site: 'JOBS.soldier; BandSystem.assignJobs; Simulation.assignJob; Brain spar and larder; Factions.warParty',
+  },
+  kingship: {
+    summary: 'The chief reigns for life, and the office passes to the head of their house or their eldest child.',
+    site: 'BandSystem.chooseChief via Polity.reignsForLife and heirOf',
   },
 };
 

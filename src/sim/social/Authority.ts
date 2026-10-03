@@ -20,6 +20,7 @@ import type { Band } from '../core/Simulation.ts';
 import type { RelationshipGraph } from './Relationships.ts';
 import { chiefHoneymoon } from './Leadership.ts';
 import { techPower } from '../knowledge/Tech.ts';
+import { OVERLORD_AUTHORITY, reignsForLife } from './Polity.ts';
 import { t } from '../../i18n/i18n.ts';
 
 export interface AuthorityContext {
@@ -33,6 +34,8 @@ export interface AuthorityContext {
   bands: readonly Band[];
   /** Absolute day, on the same clock as `Band.chiefSince`. */
   day: number;
+  /** The band a band pays tribute to, M15 phase 39d. Optional for hand-built contexts. */
+  overlordOf?: (bandId: number) => number | null;
 }
 
 export interface Standing {
@@ -109,6 +112,16 @@ const ORDER_COST: Record<string, number> = {
   // Long, and it can get you killed.
   hunt: 0.35,
   give: 0.4,
+  // M15 phase 38a. Being told to spend your own household's store on the
+  // band: dearer than a gift, since it is a whole larder rather than one
+  // thing, and cheaper than anything that could get you hurt.
+  feast: 0.45,
+  // Being told to go and eat at somebody's table is hardly an order at all.
+  attend: 0.05,
+  // M15 phase 38b. Carrying your own household's goods to the temple:
+  // more than a trip to the store, which is what it otherwise is, because
+  // they are not coming back.
+  render: 0.3,
   // Cheaper than `give`: both sides walk away with something, so it asks
   // less of whoever is told to do it than handing goods over for nothing.
   trade: 0.3,
@@ -294,6 +307,14 @@ export function standingOver(
   if (isKin && !isHead) {
     authority += 0.1;
     reasons.push(t('kin'));
+  }
+
+  // M15 phase 39d: a king over the people of a band that pays him tribute.
+  if (!isChief && ctx.overlordOf && reignsForLife(leader) &&
+    ctx.chiefByBand.get(leader.bandId) === leader.id &&
+    ctx.overlordOf(subordinate.bandId) === leader.bandId) {
+    authority += OVERLORD_AUTHORITY;
+    reasons.push(t('king over their people'));
   }
 
   // M9.5 phase 4d: the middle rung. Until `chiefdom` a band is flat — `isHead`
