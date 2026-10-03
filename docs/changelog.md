@@ -1,3 +1,17 @@
+## 2026-10-03 — M15 fase 28: objetos con un solo índice canónico
+
+Registro JSON v1 de recursos, edificios/cultivos, árboles, montones, cuerpos,
+animales e inscripciones, con orden, métodos y progreso intactos. El grafo
+compartido con EntityRecords evita que dos implementaciones de aliases diverjan;
+rechaza claves extra, referencias colgantes, duplicados y typed arrays que
+perderían valores. Los cuerpos se ligan al roster sin modificar a sus personas.
+Tres casos ricos de objetos y las regresiones existentes de entidad pasan;
+typecheck limpio. No carga una Simulation ni cambia la interfaz. Tour nuevo
+1/1 y captura inicial revisada:
+`artifacts/screenshots/m15-phase28-objects-2026-10-03-pass1/`.
+Contrato: `docs/m15_phase28_objects.md`. La matriz de referencia ya está roja
+con 108 fallos en 27 escenarios; comparación conjunta al cerrar el checkpoint.
+
 ## 2026-10-03 — M15 fase 11d: preparar la herramienta para trabajar
 
 Talar/cazar prepara el útil poseído más efectivo y recolectar libera las manos.

@@ -2520,6 +2520,15 @@ antes o después y chocan entre sí y con el del jugador**.
 
 ## Fase 28 — Identidad que sobrevive a su comarca (M14 fase 3)
 
+**Avance del 2026-10-03, objetos del mundo.** `WorldObjectRecord` v1 conserva
+los siete arrays de entidades locales y sus mapas canónicos en un grafo común,
+incluidos cultivos, almacenes, progreso y cuerpos. El codec de grafos es ahora
+compartido con EntityRecords; conserva métodos y aliases y rechaza referencias,
+formas y valores typed-array corruptos. Los cadáveres se ligan al roster
+canónico al componer. [Contrato](m15_phase28_objects.md). Registro visual sin
+cambio de UI: `artifacts/screenshots/m15-phase28-objects-2026-10-03-pass1/`.
+Siguen pendientes agendas y aplicación coordinada al motor.
+
 **Avance del 2026-10-03, banco ejecutable.** `ExecutionRecord` v1 captura
 reloj y las 15 ubicaciones RNG retenidas, con referencias canónicas para aliases.
 La prueba recorre independientemente una Simulation real y verifica continuidad

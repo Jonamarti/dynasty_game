@@ -72,6 +72,13 @@ array; topology and historical shoreline caches survive terrain edits. It covers
 terrain only; coordinated loading and world object ledgers remain pending. See
 [m15_phase28_world.md](m15_phase28_world.md).
 
+`WorldObjectRecord` v1 now captures the seven ordered entity collections and
+their canonical ID maps in one graph, including nested building state. It shares
+`GraphRecords` with the existing entity codecs; explicit class tags survive
+minification. A supplied roster binds corpse references to canonical people.
+Hydration does not register objects or rebuild spatial hashes. Execution ledgers
+and live loading remain pending; see [m15_phase28_objects.md](m15_phase28_objects.md).
+
 `Simulation.ids` owns the ten entity/event allocation namespaces. Creation
 passes this `IdSpace` explicitly to entities and systems; the optional second
 Simulation constructor argument shares it between local simulations. The JSON
