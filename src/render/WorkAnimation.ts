@@ -2,7 +2,13 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { DIG_POSES, GATHER_POSES, type ArtPose } from './ArtManifest.ts';
+import { CHOP_POSES, DIG_POSES, GATHER_POSES, type ArtPose } from './ArtManifest.ts';
+
+/** Shared clock contract: two work ticks per frame, with a bounded accumulator. */
+function workFrame(poses: readonly ArtPose[], workedTicks: number, alpha: number): ArtPose {
+  const phase = Math.floor((workedTicks - 1 + Math.max(0, Math.min(1, alpha))) / 2) % poses.length;
+  return poses[phase]!;
+}
 
 /** A forage order also covers clay and flint. Those need their own gestures. */
 const HAND_GATHERED = new Set(['berries', 'sticks', 'reeds', 'wild_grain']);
@@ -22,8 +28,7 @@ export function gatheringPose(
   } else if (!target.standing || target.fruit < 1) return null;
   // Two simulation ticks per pose. The accumulator's fraction freezes while
   // paused; wall time would keep picking even while the whole world stands still.
-  const phase = Math.floor((person.workedTicks - 1 + Math.max(0, Math.min(1, alpha))) / 2) % 4;
-  return GATHER_POSES[phase]!;
+  return workFrame(GATHER_POSES, person.workedTicks, alpha);
 }
 
 /** A digging gesture is shown only for real work at a reachable, valid tile. */
@@ -41,6 +46,17 @@ export function diggingPose(
   if (biome === 'water' || biome === 'rock') return null;
   // Four strokes advance with work ticks and the bounded simulation fraction;
   // pausing the simulation therefore freezes the tool at the same point.
-  const phase = Math.floor((person.workedTicks - 1 + Math.max(0, Math.min(1, alpha))) / 2) % DIG_POSES.length;
-  return DIG_POSES[phase]!;
+  return workFrame(DIG_POSES, person.workedTicks, alpha);
+}
+
+/** Felling banks progress on the trunk and has no repeated harvest countdown. */
+export function choppingPose(
+  person: Person, sim: Pick<Simulation, 'treesById'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'chop' || person.workedTicks <= 0 ||
+      person.actionTimer > 0 || person.targetTreeId === null) return null;
+  const tree = sim.treesById.get(person.targetTreeId);
+  if (!tree?.standing || tree.chopProgress <= 0 || person.distanceTo(tree) >= ARRIVAL_RADIUS) return null;
+  return workFrame(CHOP_POSES, person.workedTicks, alpha);
 }

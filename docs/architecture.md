@@ -106,6 +106,11 @@ with its held tool; its browser regression starts from a real order and checks
 pause, interruption and unchanged work/terrain during rendering. Other work
 families keep their existing poses. See [m15_dig_animation.md](m15_dig_animation.md).
 
+Felling uses `c0`–`c3` while a reached standing tree holds real chop progress.
+Its selector follows the banked trunk ledger instead of a harvest countdown,
+and hides the swing during a positive setup timer. All three work families share
+the bounded simulation fraction. See [m15_chop_animation.md](m15_chop_animation.md).
+
 **Earthmoving has one tool selector.** `core/Earth.ts` chooses the strongest
 usable carried digging tool through `techPower`: sticks without a technique,
 an antler pick with bone working, and a wooden spade with carpentry. The

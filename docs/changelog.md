@@ -1,3 +1,14 @@
+## 2026-10-03 — M15 fase 17: talar también se ve
+
+Cuatro golpes de tala por cuerpo/dirección, pies plantados, ropa y herramienta
+ancladas al brazo. El selector lee el progreso bancado en el árbol y quita el
+gesto al viajar, preparar herramienta, cancelar o caer el tronco. Se comparte
+el reloj visual con cavar/recolectar sin tocar el motor. Arte regenerado y
+contact-chop revisada; 26/26 casos focales, suite 940/940 en 128 archivos,
+typecheck limpio y e2e 73/73. Capturas del cambio revisadas:
+`artifacts/screenshots/m15-chop-2026-10-03-final/`.
+Contrato: `docs/m15_chop_animation.md`. Fabricación sigue pendiente.
+
 ## 2026-10-03 — M15 fase 23d: comprobar la reproducción sin esperar un año
 
 La prueba de reproducción agotó dos veces sus 60 segundos al esperar estaciones

@@ -1,8 +1,12 @@
 # Next steps
 
+**2026-10-03: tala, fase 17.** Cuatro golpes con progreso real del tronco,
+pausa y cancelación comprobadas desde una orden. Quedan fabricación y otras
+familias de trabajo. [Evidencia](m15_chop_animation.md).
+
 **2026-10-03: gesto de cavar, fase 17.** Cuatro golpes de herramienta,
 probados desde una orden real, pausa e interrupción; arte y captura revisados.
-Quedan gestos de talar y fabricar. [Evidencia](m15_dig_animation.md).
+Tala ya tiene su gesto; quedan fabricación y otras familias. [Evidencia](m15_dig_animation.md).
 
 **2026-10-03: banco RNG, fase 28.** Reloj y 15 ubicaciones RNG se capturan a
 un tick común, conservando aliases y continuidad. Quedan agendas, objetos del

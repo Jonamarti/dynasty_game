@@ -42,7 +42,7 @@ import { Floaters } from './Floaters.ts';
 import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
-import { diggingPose, gatheringPose } from './WorkAnimation.ts';
+import { choppingPose, diggingPose, gatheringPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import {
   SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
@@ -1834,7 +1834,8 @@ export class Renderer {
     const hairStyle = hair === 'bald' || hair === 'balding' ? hair : person.sex === 'female' ? 'long' : 'short';
     const gathering = gatheringPose(person, this.sim, moving, this.workAlpha);
     const digging = diggingPose(person, this.sim, moving, this.workAlpha);
-    const workPose = gathering ?? digging;
+    const chopping = choppingPose(person, this.sim, moving, this.workAlpha);
+    const workPose = gathering ?? digging ?? chopping;
     const aspect: PersonAspect = {
       age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
       pose: moving ? (('w' + frame) as ArtPose) : workPose ?? 'idle',
