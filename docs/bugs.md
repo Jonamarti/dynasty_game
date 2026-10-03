@@ -47,7 +47,8 @@ commit del bloque compara contra ella.
   alcance), ni conjuras (la banda se aprecia), ni un pueblo 1,5 veces más
   fuerte que el otro. Están probados en tests; su peso en un mundo, no. Un
   escenario de conquista (campamentos cerca, bandas desiguales, rencor y un
-  rey) lo mediría todo junto; queda propuesto.
+  rey) lo mediría todo junto. **Hecho después: `conquest`** ejercita la
+  guerra y el tributo; la servidumbre y la conjura siguen sin darse en él.
 - **Ninguna cerveza en los banquetes de `feasts`.** 23 banquetes, 0 tazas: la
   cerveza se bebe en `toast` antes de llegar al almacén. No es un error del
   banquete, pero `FEAST_CUP_RELIEF` apenas se ejerce.

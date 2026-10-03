@@ -1,3 +1,25 @@
+## 2026-10-03 — M15 bloque IX: el escenario `conquest`
+
+- **Escenario nuevo `conquest`** (semilla `akkad`, 2 bandas × 12, 24.000
+  pasos): un Estado con rey —lo que saben los fundadores de `polity`, más
+  `spear`— y un pueblo menor sin ley (`startingTechByBand`). En `setup`, sólo
+  arnés: el segundo pueblo se acerca a un día del primero en la misma tierra
+  y se reduce a dos tercios; el Estado recibe su granero; un viejo rencor
+  (-60) entre ambos; y los adultos del Estado, agresividad ≥ 0,6. Lo demás es
+  de la simulación.
+- **Medido**: 1 guerra declarada; a los 10 días el pueblo menor se somete; 18
+  tributos ordenados, 4 negados por el portador, 53 unidades entregadas, 89
+  días-banda como tributario, ninguno sacudido. Población 22 → 35. Pasan
+  `the-beaten-pay-tribute`, `governments-declare-war-and-peace`,
+  `soldiers-are-kept`, `kings-reign-for-life` y `civilisation-is-derived` (1
+  de 2 bandas). `serfs-are-owned` sigue n/a: un solo golpe entre pueblos y
+  ningún cautivo. Fallan además `projects-find-backers` y
+  `the-wise-avoid-baneberries`, que también fallan en otros escenarios de la
+  línea base; escenario nuevo, sin base propia.
+- Existe porque `polity` no puede llegar a la guerra (graneros fuera de
+  alcance) ni a la sumisión (pueblos iguales), y un mecanismo que ningún
+  escenario ejercita sólo está probado en tests.
+
 ## 2026-10-03 — M15 fase 39b: la esclavitud como institución
 
 - **Siervo de una casa** (`Person.serfOf`): un adulto tomado cautivo por un

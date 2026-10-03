@@ -624,6 +624,81 @@ export const SCENARIOS: Record<string, Scenario> = {
       }
     },
   },
+  conquest: {
+    name: 'conquest',
+    description:
+      'The war, tribute and serfdom of M15 block IX, which `polity` cannot ' +
+      'reach: its two peoples are equal and camp out of reach of each other. ' +
+      'Here a State with a king (the knowledge of the `polity` founders) and ' +
+      'a smaller people with no law camp within a day of each other, with an ' +
+      'old feud between them. Harness-only setup: the second band is moved ' +
+      'beside the first and thinned to two thirds, the State gets its ' +
+      'granary, and its grown members are given the nerve for a war. ' +
+      'Everything after that (the declaration, the raids, captives, ' +
+      'submission and tribute) is the simulation and nothing else.',
+    config: {
+      seed: 'akkad',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTechByBand: [
+          ['firemaking', 'cooking', 'cordage', 'hafting', 'stoneworking', 'marking', 'plant_lore', 'grinding',
+            'farming', 'pottery', 'brewing', 'division_of_labour', 'chiefdom', 'writing', 'clay_tablet',
+            'redistribution', 'accounting', 'taxation', 'law_code', 'standing_army', 'kingship', 'spear'],
+          ['firemaking', 'cooking', 'cordage', 'hafting', 'plant_lore'],
+        ],
+      },
+    },
+    steps: 24000,
+    setup: sim => {
+      const [state, weaker] = sim.bands.filter(b => !b.outcast);
+      if (!state || !weaker) return;
+      // Beside the State's camp: the first walkable spot on a widening ring
+      // past thirty tiles, on the same land.
+      let moved = false;
+      for (let r = 30; r < 60 && !moved; r += 2) {
+        for (let a = 0; a < 24 && !moved; a++) {
+          const x = Math.round(state.homeX + Math.cos(a * Math.PI / 12) * r);
+          const y = Math.round(state.homeY + Math.sin(a * Math.PI / 12) * r);
+          if (!sim.world.isWalkable(x, y) || !sim.world.sameRegion(x, y, state.homeX, state.homeY)) continue;
+          const dx = x - weaker.homeX;
+          const dy = y - weaker.homeY;
+          weaker.homeX = x;
+          weaker.homeY = y;
+          for (const p of sim.people) {
+            if (p.bandId !== weaker.id) continue;
+            const nx = Math.round(p.x + dx);
+            const ny = Math.round(p.y + dy);
+            p.x = sim.world.isWalkable(nx, ny) ? nx : x;
+            p.y = sim.world.isWalkable(nx, ny) ? ny : y;
+          }
+          moved = true;
+        }
+      }
+      sim.peopleHash.rebuild(sim.people);
+      // Thinned to two thirds, so the State is half as strong again.
+      const adults = sim.people.filter(p => p.bandId === weaker.id && p.alive && !p.isChild);
+      for (const p of adults.slice(0, Math.floor(adults.length / 3))) p.die('setup');
+      sim.bandRelations.add(state.id, weaker.id, -60);
+      for (let r = 3; r < 20; r++) {
+        let placed = false;
+        for (let a = 0; a < 16 && !placed; a++) {
+          const x = Math.round(state.homeX + Math.cos(a * Math.PI / 8) * r);
+          const y = Math.round(state.homeY + Math.sin(a * Math.PI / 8) * r);
+          if (!sim.canPlace(BUILDINGS.granary!, x, y)) continue;
+          const granary = new Building(BUILDINGS.granary!, x, y, state.id);
+          granary.complete = true;
+          sim.buildings.push(granary);
+          sim.buildingsById.set(granary.id, granary);
+          sim.buildingHash.insert(granary);
+          placed = true;
+        }
+        if (placed) break;
+      }
+      // The nerve for a war, in every grown member of the State: whoever the
+      // band chooses as chief will have it.
+      for (const p of sim.people) if (p.bandId === state.id && !p.isChild) p.traits.aggression = Math.max(p.traits.aggression, 0.6);
+    },
+  },
   culture: {
     name: 'culture',
     description:

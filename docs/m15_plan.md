@@ -3012,6 +3012,15 @@ La ficha dice «siervo de los X». Check `serfs-are-owned`, n/a en `polity`
 (no hay cautivos: la guerra no llega a las manos). **Con esto quedan hechas
 las fases 38 (salvo `city_walls`) y 39 dentro de la comarca.**
 
+**Avance del 2026-10-03 (escenario `conquest`).** Un Estado con rey (lo que
+saben los fundadores de `polity`) y un pueblo menor sin ley, acampados a un
+día el uno del otro, con un viejo rencor; el segundo se acerca y se reduce a
+dos tercios en `setup`, y los adultos del Estado reciben el valor para una
+guerra. Lo demás es de la simulación. Medido: 1 guerra declarada, sumisión a
+los 10 días, 18 tributos ordenados (4 negados), 53 unidades entregadas, 89
+días-banda como tributario, población de 22 a 35. Ejercita `the-beaten-pay-
+tribute`; la servidumbre sigue sin darse (un solo golpe entre pueblos).
+
 ## Fase 40 — El hierro (M8.4)
 
 **Detalle en `m8_plan_the_ages.md` §M8.4.** Seis nodos de la sub-red Metal:
