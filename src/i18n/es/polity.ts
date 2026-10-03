@@ -70,4 +70,17 @@ export const ES_POLITY: Record<string, string> = {
   "No levy is owed to the temple": "No se debe tributo al templo",
   "The levy is now {share}": "El tributo es ahora del {share}",
   "The levy stays as it was": "El tributo sigue como estaba",
+  // Phase 38b: law_code.
+  "Law code": "Código de leyes",
+  "about 2100 BC": "hacia el 2100 a. C.",
+  "took a wrong to the chief and knew the answer would depend on who the chief liked":
+    "llevó un agravio al jefe sabiendo que la respuesta dependería de a quién apreciara el jefe",
+  "cut the temple's dues into stone and thought the penalties could be cut beside them":
+    "grabó en piedra lo que se debía al templo y pensó que las penas podían grabarse al lado",
+  "saw one thief shamed and another let off for the same handful":
+    "vio avergonzar a un ladrón y dejar ir a otro por el mismo puñado",
+  "The wrong and its penalty written down before the case is heard. A chief who judges by the law cannot let off a favourite, does not shield their own from another people's just demand, and is resented less for a verdict that was the law's and not theirs.":
+    "El agravio y su pena, escritos antes de oír el caso. Un jefe que juzga por la ley no puede absolver a un favorito, no protege a los suyos de la demanda justa de otro pueblo, y se le guarda menos rencor por un veredicto que fue de la ley y no suyo.",
+  "A chief who judges by the law cannot dismiss a case for a favourite or shield their own, and a verdict is resented less.":
+    "Un jefe que juzga por la ley no puede desestimar un caso por un favorito ni proteger a los suyos, y su veredicto deja menos rencor.",
 };

@@ -2894,6 +2894,16 @@ del jefe por `taxResentment`, que es lo que alimenta la rebelión. Check
 llevan su excedente al templo y el libro lo descuenta (121 de 129 tributos
 sin deuda).
 
+**Avance del 2026-10-03 (38b, `law_code`).** Práctica de la Edad del Bronce
+(`writing` + `taxation`, hacia el 2100 a. C., practicada al inscribir). Un
+jefe que juzga por la ley no desestima el caso de un favorito (`judgeOwn`),
+no protege a los suyos de la demanda justa de otro pueblo (`answerWeight`
+sin el término de protección) y deja la mitad de rencor al avergonzar
+(`verdictGrudge`). La justicia casi no se ejerce en ningún escenario (una
+queja en `century` y otra en `labour` en la línea base), así que
+`the-law-is-the-same-for-all` es n/a en `polity` y el efecto se prueba en
+los tests.
+
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 
 **Detalle en `m14_plan.md` fase 21.** Declarar la guerra y la paz

@@ -139,6 +139,8 @@ export const TECHS = [
   'accounting',
   // The levy: a share of every household's store, carried to the temple.
   'taxation',
+  // The written law: the same wrong, the same verdict.
+  'law_code',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1667,6 +1669,30 @@ export const TECH: Record<Tech, TechDef> = {
       'a heavy one empties the houses to fill the temple, ' +
       'and is resented by every house it is taken from.',
   },
+  law_code: {
+    id: 'law_code', label: 'Law code', domain: 'people',
+    // Ur-Nammu's code, the oldest that survives: "if a man commits a
+    // robbery, he will be killed" — the penalty set down before the case.
+    age: 'bronze', firstKnown: 'about 2100 BC',
+    // A practice, tried by writing — the law is cut, like any record, by
+    // `inscribe`.
+    kind: 'practice', practisedBy: ['inscribe'],
+    requires: ['writing', 'taxation'], difficulty: 0.65, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'writing' }, { kind: 'doing', action: 'complain' }],
+        weight: 1.0, story: 'took a wrong to the chief and knew the answer would depend on who the chief liked' },
+      { needs: [{ kind: 'knows', tech: 'taxation' }, { kind: 'doing', action: 'inscribe' }],
+        weight: 0.7, story: 'cut the temple\'s dues into stone and thought the penalties could be cut beside them' },
+      { needs: [{ kind: 'knows', tech: 'writing' }, { kind: 'saw', what: 'theft' }],
+        weight: 0.5, story: 'saw one thief shamed and another let off for the same handful' },
+    ],
+    description:
+      'The wrong and its penalty written down before the case is heard. A ' +
+      'chief who judges by the law cannot let off a favourite, does not ' +
+      'shield their own from another people\'s just demand, and is resented ' +
+      'less for a verdict that was the law\'s and not theirs.',
+  },
 };
 
 /** Highest chronic motive this design can answer; zero means no recorded need. */
@@ -1935,6 +1961,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   taxation: {
     summary: 'A share of every house\'s store, set by the government, carried to the temple; resented in proportion.',
     site: 'BandSystem.levyTaxes; ActionSystem.doRender; Polity.npcTaxRate, dueFrom and taxResentment; Simulation.setTaxRate',
+  },
+  law_code: {
+    summary: 'A chief who judges by the law cannot dismiss a case for a favourite or shield their own, and a verdict is resented less.',
+    site: 'Justice.judgeOwn, answerWeight and verdictGrudge; Simulation.hearComplaint and shame',
   },
 };
 

@@ -1,3 +1,24 @@
+## 2026-10-03 — M15 fase 38b: el código de leyes
+
+- **Nodo `law_code`** (práctica, Edad del Bronce, «hacia el 2100 a. C.», el
+  código de Ur-Nammu; requiere `writing` y `taxation`; se practica al
+  inscribir). Chispas: llevar un agravio al jefe sabiendo que dependerá de a
+  quién aprecie; grabar los tributos del templo y pensar en grabar las penas
+  al lado; ver avergonzar a un ladrón y dejar ir a otro por lo mismo.
+- **Tres efectos en `Justice.ts`**, todos sobre el jefe que juzga: no puede
+  desestimar el caso de un favorito (`judgeOwn` ignora `favour`); no protege
+  a los suyos de la demanda de otro pueblo (`answerWeight` sin el término de
+  protección; cuentan aún la consideración por los extraños y la relación
+  entre pueblos); y el avergonzado le guarda la mitad de rencor
+  (`verdictGrudge`, `LAW_SOFTENS` 0,5).
+- **Check `the-law-is-the-same-for-all`**: ningún caso desestimado donde un
+  jefe juzgó por la ley. **n/a en `polity`**, y lo será casi siempre: en la
+  línea base sólo `century` y `labour` llegan a oír una queja cada uno. El
+  efecto se prueba en tres tests nuevos de `polity.test.ts`. Anotado en
+  `bugs.md`.
+- `polity` gana `law_code`. Sigue igual en lo demás: templo 92,1 %, libro,
+  banquetes y tributo en verde.
+
 ## 2026-10-03 — M15 fase 38b: el tributo
 
 - **Nodo `taxation`** (práctica, Edad del Bronce, «hacia el 2500 a. C.»;

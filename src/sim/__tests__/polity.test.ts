@@ -13,6 +13,7 @@ import {
 import { Household } from '../entities/Household.ts';
 import { DEBT_DAYS, incur, pruneDebts } from '../social/Amends.ts';
 import { FEAST_MIN_FOOD, feastVenue, mayHostFeast } from '../social/Feast.ts';
+import { answerWeight, judgeOwn, judgesByLaw, verdictGrudge } from '../social/Justice.ts';
 
 const SMALL = {
   seed: 'polity-test',
@@ -168,5 +169,40 @@ describe('taxation: the levy', () => {
     expect(sim.setTaxRate(chief, 0.15)).toBe(false);
     expect(sim.setTaxRate(chief, 0)).toBe(true);
     expect(band.taxRate).toBe(0);
+  });
+});
+
+describe('law_code: the same wrong, the same verdict', () => {
+  it('stops a chief dismissing a case against a favourite', () => {
+    const sim = new Simulation(SMALL);
+    const [chief, plaintiff, favourite] = sim.livingPeople();
+    // Somebody the chief thinks the world of, against somebody they cannot stand.
+    for (let i = 0; i < 10; i++) {
+      sim.relationships.addDeed(chief!.id, favourite!.id, 20, 0);
+      sim.relationships.addDeed(chief!.id, plaintiff!.id, -20, 0);
+    }
+    expect(judgeOwn(chief!, plaintiff!, favourite!, sim.relationships, true)).toBe('dismiss');
+    learn(chief!, 'law_code');
+    expect(judgesByLaw(chief!)).toBe(true);
+    expect(judgeOwn(chief!, plaintiff!, favourite!, sim.relationships, true)).toBe('order');
+    expect(judgeOwn(chief!, plaintiff!, favourite!, sim.relationships, false)).toBe('shame');
+  });
+
+  it('stops a chief shielding their own from another people\'s just demand', () => {
+    const sim = new Simulation(SMALL);
+    const [chief, accused] = sim.livingPeople();
+    for (let i = 0; i < 10; i++) sim.relationships.addDeed(chief!.id, accused!.id, 20, 0);
+    const before = answerWeight(chief!, accused!, 0.5, 0, sim.relationships);
+    learn(chief!, 'law_code');
+    expect(answerWeight(chief!, accused!, 0.5, 0, sim.relationships)).toBeGreaterThan(before);
+  });
+
+  it('leaves less of a grudge for a verdict that was the law\'s', () => {
+    const sim = new Simulation(SMALL);
+    const chief = sim.livingPeople()[0]!;
+    const without = verdictGrudge(chief);
+    learn(chief, 'law_code');
+    expect(verdictGrudge(chief)).toBeLessThan(without);
+    expect(verdictGrudge(chief)).toBeGreaterThan(0);
   });
 });

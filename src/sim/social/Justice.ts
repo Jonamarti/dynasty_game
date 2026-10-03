@@ -23,6 +23,7 @@
 import type { Person } from '../entities/Person.ts';
 import type { Debt } from './Amends.ts';
 import type { RelationshipGraph } from './Relationships.ts';
+import { techPower } from '../knowledge/Tech.ts';
 
 /** A wrong a chief has been told of. */
 export interface Case {
@@ -98,8 +99,27 @@ export type OwnVerdict = 'order' | 'shame' | 'dismiss' | 'exile';
 export function judgeOwn(
   chief: Person, plaintiff: Person, accused: Person, rels: RelationshipGraph, canPay: boolean
 ): OwnVerdict {
-  if (favour(chief, accused, plaintiff, rels) > PARTIAL_AT) return 'dismiss';
+  // M15 phase 38b: under a written law the case is heard whoever the accused
+  // is to the judge — "the same wrong, the same penalty".
+  if (!judgesByLaw(chief) && favour(chief, accused, plaintiff, rels) > PARTIAL_AT) return 'dismiss';
   return canPay ? 'order' : 'shame';
+}
+
+/** Whether `chief` judges by a written law (`law_code`) rather than by whom they like. */
+export function judgesByLaw(chief: Person): boolean {
+  return techPower(chief, 'law_code') > 0;
+}
+
+/**
+ * How much of the shamed party's grudge against the judge survives a written
+ * law: the verdict was the law's, not the chief's. Half of it at full
+ * knowledge — a law nobody chose for you is still a law you were punished by.
+ */
+export const LAW_SOFTENS = 0.5;
+
+/** The opinion a shamed party loses of the chief who shamed them. */
+export function verdictGrudge(chief: Person): number {
+  return (DISMISSED_GRUDGE / 2) * (1 - LAW_SOFTENS * Math.min(1, techPower(chief, 'law_code')));
 }
 
 export type DemandVerdict = 'order' | 'shame' | 'refuse';
@@ -149,7 +169,9 @@ export const ORDINARY_REGARD = 40;
 export function answerWeight(
   chief: Person, accused: Person, strangerRegard: number, standing: number, rels: RelationshipGraph
 ): number {
-  const protect = Math.max(0,
+  // M15 phase 38b: a chief who judges by the law does not shield their own
+  // from a just demand; the people's regard and standing still count.
+  const protect = judgesByLaw(chief) ? 0 : Math.max(0,
     rels.opinion(chief.id, accused.id) + rels.kinship(chief.id, accused.id) * 0.5 - ORDINARY_REGARD) / 100;
   return strangerRegard + standing / 200 + (chief.traits.tradition - 0.5) * 0.4 - protect * 0.5;
 }

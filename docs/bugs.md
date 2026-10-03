@@ -25,6 +25,11 @@ commit del bloque compara contra ella.
   excedente al templo por su cuenta y el libro lo descuenta, así que casi
   nunca deben nada (121 de 129 tributos). Con `taxation` sin `accounting`, o
   con un jefe que no lleva cuentas, cobraría más; no se ha medido ese caso.
+- **La justicia apenas se ejerce, así que `law_code` no se mide** (38b): en
+  la línea base sólo `century` y `labour` oyen una queja cada uno, y en
+  `polity` ninguna. El efecto está probado en tests; su peso en un mundo no.
+  Un escenario con más agravios entre los propios (rasgos de codicia y
+  malicia altos) lo ejercitaría.
 - **Ninguna cerveza en los banquetes de `feasts`.** 23 banquetes, 0 tazas: la
   cerveza se bebe en `toast` antes de llegar al almacén. No es un error del
   banquete, pero `FEAST_CUP_RELIEF` apenas se ejerce.

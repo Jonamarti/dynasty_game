@@ -50,7 +50,7 @@ import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType 
 import { STRANGER_REGARD_MEAN, STRANGER_REGARD_SPREAD } from '../social/Restraint.ts';
 import { pruneDebts, debtTo, offerFor, OFFER_AT_LEAST, DEBT_DAYS } from '../social/Amends.ts';
 import {
-  judgeOwn, answerDemand, DISMISSED_GRUDGE, SHAME_RENOWN, REFUSED_STANDING, type Case,
+  judgeOwn, answerDemand, DISMISSED_GRUDGE, SHAME_RENOWN, REFUSED_STANDING, type Case, judgesByLaw, verdictGrudge,
 } from '../social/Justice.ts';
 import {
   Building, BUILDINGS, isTrap, isHerd, isStructure, resetBuildingIds, type BuildingDef,
@@ -2577,6 +2577,7 @@ export class Simulation {
 
     const verdict = judgeOwn(chief, plaintiff, accused, this.relationships, canPay);
     telemetry.count('verdict_' + verdict);
+    if (judgesByLaw(chief)) telemetry.count('verdict_by_law');
     if (verdict === 'dismiss') {
       this.relationships.addDeed(plaintiff.id, chief.id, -DISMISSED_GRUDGE, this.time.tick);
       const text = t('{chief} would not hear {name} against {accused}',
@@ -2644,7 +2645,7 @@ export class Simulation {
     }
     const household = accused.householdId === null ? null : this.householdsById.get(accused.householdId);
     if (household) household.renown -= SHAME_RENOWN;
-    this.relationships.addDeed(accused.id, chief.id, -DISMISSED_GRUDGE / 2, this.time.tick);
+    this.relationships.addDeed(accused.id, chief.id, -verdictGrudge(chief), this.time.tick);
     const text = t('{chief} shamed {name} before the band', { chief: chief.name, name: accused.name });
     accused.chronicle.push({ tick: this.time.tick, ageDays: accused.age, text, kind: 'suffered' });
     chief.chronicle.push({ tick: this.time.tick, ageDays: chief.age, text, kind: 'did' });

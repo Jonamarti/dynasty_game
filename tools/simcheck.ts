@@ -588,7 +588,7 @@ export const SCENARIOS: Record<string, Scenario> = {
           'plant_lore', 'grinding', 'farming', 'pottery', 'brewing',
           'division_of_labour', 'chiefdom',
           'writing', 'clay_tablet',
-          'redistribution', 'accounting', 'taxation',
+          'redistribution', 'accounting', 'taxation', 'law_code',
         ],
       },
     },
@@ -2322,6 +2322,18 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       ordered + ' levies ordered (' + (tel.levy_obeyed ?? 0) + ' obeyed, ' + (tel.levy_refused ?? 0) +
         ' refused, ' + (tel.levy_nothing_owed ?? 0) + ' owing nothing), ' + collected + ' units carried in; ' +
         'rebellion: ' + (tel.rebellion_refused ?? 0) + ' refusals, ' + (tel.rebellion_left ?? 0) + ' left');
+  }
+
+  // M15 phase 38b, `law_code`. Judged where a chief who judges by the law
+  // actually heard a case of their own people: none of them dismissed. Justice
+  // is rare in every scenario (one complaint in `century`, one in `labour` at
+  // the baseline), so this is n/a in most runs and says so.
+  if ((tel.verdict_by_law ?? 0) === 0) {
+    skip('the-law-is-the-same-for-all', 'no chief who judges by the law heard a case of their own people');
+  } else {
+    add('the-law-is-the-same-for-all',
+      (tel.verdict_dismiss ?? 0) === 0,
+      (tel.verdict_by_law ?? 0) + ' verdicts by the law, ' + (tel.verdict_dismiss ?? 0) + ' cases dismissed');
   }
 
   // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the
