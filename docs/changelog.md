@@ -1,3 +1,16 @@
+## 2026-10-03 — M15 fase 28: banco de corrientes de ejecución
+
+`ExecutionRecord` v1 compone reloj y las 15 ubicaciones RNG vivas del motor.
+Conserva rutas, identidad compartida y siguiente tirada sin draws, forks ni
+constructor RNG. Tres pruebas recorren el grafo real de Simulation, continúan
+las corrientes tras JSON y rechazan rutas/estados/ticks corruptos. No aplica el
+banco a una simulación: faltan agendas y cargador coordinado.
+Verificación conjunta actual: typecheck limpio, 935/935 pruebas en 127 archivos
+y 72/72 e2e. La matriz conserva una referencia roja de 104 fallos y su comparación
+sigue en curso. Tour 1/1 e imagen inicial revisada:
+`artifacts/screenshots/m15-stream-records-2026-10-03-pass1/`.
+Contrato: `docs/m15_phase28_streams.md`.
+
 ## 2026-10-03 — M15 fase 28: el terreno conserva su libro
 
 `WorldTerrainRecord` v1 guarda terreno y suelo completos, incluyendo regiones,

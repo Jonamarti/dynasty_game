@@ -2473,6 +2473,13 @@ antes o después y chocan entre sí y con el del jugador**.
 
 ## Fase 28 — Identidad que sobrevive a su comarca (M14 fase 3)
 
+**Avance del 2026-10-03, banco ejecutable.** `ExecutionRecord` v1 captura
+reloj y las 15 ubicaciones RNG retenidas, con referencias canónicas para aliases.
+La prueba recorre independientemente una Simulation real y verifica continuidad
+después de JSON. No lo aplica sobre el motor; siguen pendientes agendas,
+objetos del mundo y carga coordinada. [Contrato](m15_phase28_streams.md).
+Registro visual: `artifacts/screenshots/m15-stream-records-2026-10-03-pass1/`.
+
 **Avance del 2026-10-03, terreno y suelo.** `WorldTerrainRecord` v1 conserva
 arrays Float32/Int32 exactos, regiones, orillas, configuración, contadores de
 edición y recuperación del suelo. Hidrata prototipos y el alias de fertilidad
@@ -2486,8 +2493,8 @@ coordinado; este avance no completa guardado/carga ni LOD.
 sus cuatro words mediante JSON v1 sin constructor, fork o draw; `TimeManager`
 conserva tick y calendario propio. Validación estricta, independencia y
 continuidad de streams/reloj probadas en cuatro casos. Contrato y evidencia:
-[m15_phase28_execution.md](m15_phase28_execution.md). Capturar conjuntamente
-todos los streams de sistemas y agendas e integrarlos en una carga sigue pendiente.
+[m15_phase28_execution.md](m15_phase28_execution.md). La composición de streams
+ya está en ExecutionRecord; capturar agendas e integrarlo en una carga sigue pendiente.
 
 **Avance del 2026-10-03, registros.** `persistence/EntityRecords.ts` ofrece
 sobres v1 con marca de avance explícita e ida/vuelta JSON de personas, hogares

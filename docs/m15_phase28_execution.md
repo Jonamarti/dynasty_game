@@ -18,9 +18,10 @@ gaussian/shuffle, ausencia de draw en el padre, copias independientes, rechazos
 de datos corruptos y continuidad de todos los getters del reloj durante cien
 pasos que cruzan medianoches, estaciones y años con calendario no estándar.
 
-Estos checkpoints son componentes de fase 28. No capturan por sí solos los
-streams privados de todos los sistemas, agendas ni config completa, y no
-integran una carga de Simulation. El guardado completo y el LOD siguen pendientes.
+Estos checkpoints son componentes de fase 28. La composición posterior de
+reloj y todos los streams vivos está en [ExecutionRecords](m15_phase28_streams.md).
+Faltan agendas y config completa, y no se integra una carga de Simulation.
+El guardado completo y el LOD siguen pendientes.
 
 Typecheck y 4/4 pruebas focales pasan. Gira de seguimiento sin cambio de interfaz:
 `artifacts/screenshots/m15-execution-checkpoints-2026-10-03-pass1/` (1/1 tour;

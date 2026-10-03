@@ -59,8 +59,12 @@ see [m15_phase28_records.md](m15_phase28_records.md).
 
 `RNG` and `TimeManager` also have independent v1 JSON checkpoints: RNG hydration
 does not expand a seed or draw from a parent, and the clock retains its own
-calendar. System stream/schedule composition and coordinated Simulation loading
-remain pending; see [m15_phase28_execution.md](m15_phase28_execution.md).
+calendar. `ExecutionRecord` v1 composes that clock and the 15 retained RNG
+locations into an independent bank, preserving shared stream identities. Tests
+walk the real Simulation object graph to detect omissions. Schedule ledgers and
+coordinated Simulation loading remain pending; see
+[m15_phase28_execution.md](m15_phase28_execution.md) and
+[m15_phase28_streams.md](m15_phase28_streams.md).
 
 `WorldTerrainRecord` v1 restores independent tile/soil arrays and functioning
 World/Soil prototypes without generation. Soil fertility shares World's canonical
