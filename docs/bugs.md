@@ -1,5 +1,16 @@
 # Known bugs and rough edges
 
+## Selección de desconocidos y botones del radial (2026-10-03) — corregido
+
+Cinco de los seis e2e históricos del picker tenían una premisa obsoleta: cámara
+sobre el desconocido, observador fuera de su radio de visión. La preparación lo
+acerca sin conocerlo. La enseñanza además fallaba porque los botones del radial
+se solapaban y «Play as» interceptaba «Teach and learn». Se mide el layout real y
+se usa una lista si no cabe. Siete pruebas focales y el e2e de 16 opciones en
+desktop/móvil pasan. Las entradas históricas de abajo se conservan como registro.
+Captura: `artifacts/screenshots/m15-menu-2026-10-03T-review/teaching-menu.png`.
+
+
 ## Sueño animal pendiente y costes con 300 humanos (2026-10-03)
 
 La AI animal todavía no tiene sueño ni horarios por especie. Las poses de

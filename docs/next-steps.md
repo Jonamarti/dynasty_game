@@ -1,5 +1,14 @@
 # Next steps
 
+**2026-10-03: reparación de checks autorizada por el propietario.** Misma vista
+para niños/adultos; noticias de comida en un escenario donde hagan falta;
+hostilidad en un escenario que ejercite conflictos. Sueño mediante presión
+circadiana continua y refugio cercano también de día. El presupuesto de
+rendimiento queda por decidir (población, velocidad y pausas admisibles).
+Selección y privacidad del picker recuperadas; el radial usa lista si sus
+botones se solapan. Captura en `m15-menu-2026-10-03T-review`.
+
+
 **2026-10-03: animaciones animales.** Comer, correr y atacar siguen eventos
 reales para las seis especies, con atlas compartido, escala estable y pausa.
 Arte de dormir preparado; integrar sueño requiere una rutina real de AI y

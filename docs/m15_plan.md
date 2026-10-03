@@ -735,6 +735,13 @@ explorado, mirar y volver. Se puntúa con:
 
 #### 2i. La niebla de guerra en la pantalla (renderer; bit-idéntico; e2e)
 
+**Avance del 2026-10-03:** recuperadas las pruebas de selección de desconocidos
+poniendo al observador a la vista, sin cambiar privacidad ni desactivar niebla.
+El menú de enseñanza expuso botones solapados; el radial cambia a lista al
+medir que sus etiquetas no caben. E2e focales y caso de desktop/móvil aprobados;
+captura `artifacts/screenshots/m15-menu-2026-10-03T-review/teaching-menu.png`.
+
+
 La pantalla muestra **el mapa de tu personaje** (decisión 20), con tres
 estados por celda:
 

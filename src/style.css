@@ -549,6 +549,32 @@ html, body, #app {
   height: 0;
 }
 
+.radial[hidden], .radial.is-list[hidden] { display: none; }
+.radial.is-list {
+  display: grid;
+  gap: 4px;
+  width: min(250px, calc(100vw - 16px));
+  height: auto;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 6px;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  background: rgba(14, 17, 24, 0.96);
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+}
+.radial.is-list .radial-title,
+.radial.is-list .radial-item {
+  position: static;
+  transform: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.radial.is-list .radial-title { white-space: normal; }
+.radial.is-list .radial-item { display: flex; gap: 8px; }
+.radial.is-list .radial-label { text-align: left; }
+
 .radial-title {
   position: absolute;
   left: 50%;

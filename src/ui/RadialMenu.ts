@@ -110,6 +110,7 @@ export class RadialMenu {
    */
   private draw(page: Page): void {
     const { title, options } = page;
+    this.root.classList.remove('is-list');
     this.root.innerHTML = '';
     this.root.hidden = false;
     this.open = true;
@@ -187,6 +188,26 @@ export class RadialMenu {
 
     this.root.style.left = this.x + 'px';
     this.root.style.top = this.y + 'px';
+    this.fitOptions();
+  }
+
+  private fitOptions(): void {
+    const boxes = [...this.root.children].map(child => child.getBoundingClientRect());
+    const overlaps = boxes.some((a, i) => boxes.slice(i + 1).some(b =>
+      a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top));
+    const clipped = boxes.some(b => b.left < 8 || b.top < 8 ||
+      b.right > window.innerWidth - 8 || b.bottom > window.innerHeight - 8);
+    if (!overlaps && !clipped) return;
+
+    // More verbs and wrapped translations made fixed-radius buttons cover one
+    // another: "Play as" swallowed the click on "Teach and learn". Measure the
+    // actual labels, then use a scrollable list when the ring cannot fit.
+    this.root.classList.add('is-list');
+    const { width, height } = this.root.getBoundingClientRect();
+    this.root.style.left = Math.max(width / 2 + 8,
+      Math.min(window.innerWidth - width / 2 - 8, this.x)) + 'px';
+    this.root.style.top = Math.max(height / 2 + 8,
+      Math.min(window.innerHeight - height / 2 - 8, this.y)) + 'px';
   }
 
   close(): void {

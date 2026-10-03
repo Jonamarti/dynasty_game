@@ -11425,3 +11425,18 @@ quedan para el propietario en `bugs.md` («segunda ronda»). `sim:check:all`:
 dos direcciones entre commits que apenas cambian la simulación, que es el caos
 de siempre; en `lean` los nuevos fallos son los que necesitan gente viva
 (`knowledge-is-found`, `ideas-become-tech`, `the-tree-is-climbed`).
+## 2026-10-03 — M15: selección visible y menús alcanzables
+
+Las pruebas de desconocidos movían la cámara a una banda que el observador no
+veía. La preparación ahora acerca al observador sin introducir relaciones ni
+revelar estado privado; cinco casos vuelven a ejercitar selección y privacidad.
+La prueba de enseñanza expuso un fallo distinto: el anillo de radio fijo hacía
+que «Play as» tapase «Teach and learn». El menú mide sus botones y título; si
+se solapan o salen de pantalla, usa una lista con scroll. Conserva submenús y
+Escape y oculta también la variante lista al cerrarse.
+
+Validación focal: siete casos de selección/enseñanza aprobados y un nuevo e2e
+de 16 opciones, submenús y cierre en 1280 y 390 px. El caso de enseñanza fallaba
+antes por intercepción del clic. Typecheck aprobado. La matriz completa se está
+reproduciendo: no se declara verde ni se modifican decisiones de simulación.
+Captura revisada: `artifacts/screenshots/m15-menu-2026-10-03T-review/teaching-menu.png`.

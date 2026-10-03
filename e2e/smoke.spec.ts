@@ -96,7 +96,8 @@ async function aimAtStranger(page: Page): Promise<{ x: number; y: number } | nul
   type Debug = {
     __dynasty: {
       sim: {
-        player: { id: number };
+        player: { id: number; x: number; y: number; forgetPlans: () => void };
+        world: { findWalkableNear: (x: number, y: number) => { x: number; y: number } | null };
         livingPeople: () => { id: number; bandId: number; x: number; y: number }[];
       };
       camera: {
@@ -117,6 +118,15 @@ async function aimAtStranger(page: Page): Promise<{ x: number; y: number } | nul
     if (!self) return null;
     const other = d.sim.livingPeople().find(p => p.bandId !== self.bandId);
     if (!other) return null;
+    // Moving the camera does not move the observer's eyes. Since fog arrived,
+    // the old fixture clicked an unseen camp and correctly selected nothing.
+    // Put only the observer nearby; keep the stranger's private knowledge and
+    // relationship untouched, so the privacy assertions still earn their pass.
+    const spot = d.sim.world.findWalkableNear(Math.round(other.x + 3), Math.round(other.y));
+    if (!spot) return null;
+    d.sim.player.forgetPlans();
+    d.sim.player.x = spot.x;
+    d.sim.player.y = spot.y;
     d.camera.snapTo(other.x, other.y);
     d.camera.following = false;
     return other.id;
@@ -1017,60 +1027,10 @@ test('the tech web keeps a stranger to themselves', async ({ page }) => {
   // reliable way to get an actual stranger: "the next person in the list" is
   // now very often the player's own wife, and three specs learned that the
   // hard way when households landed.
-  const found = await page.evaluate(() => {
-    const d = (window as never as {
-      __dynasty: {
-        sim: {
-          player: { id: number; bandId: number; householdId: number | null } | null;
-          livingPeople: () => {
-            id: number; x: number; y: number; bandId: number; householdId: number | null;
-          }[];
-          buildingAt: (x: number, y: number) => unknown;
-        };
-        camera: {
-          snapTo: (x: number, y: number) => void; following: boolean;
-          worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
-        };
-      };
-    }).__dynasty;
-    const player = d.sim.player;
-    if (!player) return null;
-    // And not standing on a building: two candidates under one cursor opens the
-    // chooser rather than selecting, so the click would land on neither. The
-    // fixture seed puts this stranger squarely on an unfinished mud hut.
-    const other = d.sim.livingPeople().find(p =>
-      p.id !== player.id && p.bandId !== player.bandId &&
-      p.householdId !== player.householdId &&
-      d.sim.buildingAt(p.x, p.y) === null);
-    if (!other) return null;
-    d.camera.snapTo(other.x, other.y);
-    d.camera.following = false;
-    return { id: other.id };
-  });
-  expect(found, 'this seed has nobody from another band').not.toBeNull();
+  const at = await aimAtStranger(page);
+  expect(at, 'this seed has nobody from another band').not.toBeNull();
 
-  // The screen position is read in a *second* pass, after the camera has
-  // settled. Taken in the same breath as the snap it was 65 pixels out — the
-  // frame loop clamps the camera to the world bounds afterwards — and the click
-  // landed on a mud hut a little way off.
-  await page.waitForTimeout(300);
-  const at = await page.evaluate((id: number) => {
-    const d = (window as never as {
-      __dynasty: {
-        sim: { peopleById: Map<number, { x: number; y: number }> };
-        camera: {
-          worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
-        };
-      };
-    }).__dynasty;
-    const who = d.sim.peopleById.get(id)!;
-    return { x: d.camera.worldToScreenX(who.x), y: d.camera.worldToScreenY(who.y) };
-  }, found!.id);
-
-  // The bubble for a person, not the one for the tile they are standing on.
-  // A stranger is "a man" or "a woman" — the picker is knowledge-gated too, so
-  // there is no name here to match against.
-  await clickAndChoose(page, at.x, at.y, /man|woman|child/i);
+  await clickAndChoose(page, at!.x, at!.y, /man|woman|child/i);
   // The panel names them the way the player's character would, which is also
   // the proof the click landed on the stranger and not on whatever they were
   // standing on.
@@ -1277,47 +1237,10 @@ test('the family tree and tribe graph are gated the same as the tech web', async
   await ready(page);
   await page.keyboard.press(' ');
 
-  const found = await page.evaluate(() => {
-    const d = (window as never as {
-      __dynasty: {
-        sim: {
-          player: { id: number; bandId: number; householdId: number | null } | null;
-          livingPeople: () => {
-            id: number; x: number; y: number; bandId: number; householdId: number | null;
-          }[];
-          buildingAt: (x: number, y: number) => unknown;
-        };
-        camera: { snapTo: (x: number, y: number) => void; following: boolean };
-      };
-    }).__dynasty;
-    const player = d.sim.player;
-    if (!player) return null;
-    const other = d.sim.livingPeople().find(p =>
-      p.id !== player.id && p.bandId !== player.bandId &&
-      p.householdId !== player.householdId &&
-      d.sim.buildingAt(p.x, p.y) === null);
-    if (!other) return null;
-    d.camera.snapTo(other.x, other.y);
-    d.camera.following = false;
-    return { id: other.id };
-  });
-  expect(found, 'this seed has nobody from another band').not.toBeNull();
+  const at = await aimAtStranger(page);
+  expect(at, 'this seed has nobody from another band').not.toBeNull();
 
-  await page.waitForTimeout(300);
-  const at = await page.evaluate((id: number) => {
-    const d = (window as never as {
-      __dynasty: {
-        sim: { peopleById: Map<number, { x: number; y: number }> };
-        camera: {
-          worldToScreenX: (x: number) => number; worldToScreenY: (y: number) => number;
-        };
-      };
-    }).__dynasty;
-    const who = d.sim.peopleById.get(id)!;
-    return { x: d.camera.worldToScreenX(who.x), y: d.camera.worldToScreenY(who.y) };
-  }, found!.id);
-
-  await clickAndChoose(page, at.x, at.y, /man|woman|child/i);
+  await clickAndChoose(page, at!.x, at!.y, /man|woman|child/i);
   await expect(page.locator('.hud-panel'))
     .toContainText('not of your band', { timeout: 5_000 });
 
@@ -1416,6 +1339,9 @@ test('teaching appears in the menu only when you have something to teach', async
   // discussing, one click in from the person's.
   const family = page.locator('.radial-item', { hasText: 'Teach and learn' }).first();
   await expect(family).toBeVisible({ timeout: 10_000 });
+  if (process.env.DYNASTY_CAPTURE_DIR) {
+    await page.screenshot({ path: process.env.DYNASTY_CAPTURE_DIR + '/teaching-menu.png' });
+  }
   await family.click();
   const teach = page.locator('.radial-item', { hasText: /^.*Teach (?!and)/ }).first();
   await expect(teach).toBeVisible({ timeout: 10_000 });
@@ -1424,6 +1350,44 @@ test('teaching appears in the menu only when you have something to teach', async
   await page.keyboard.press('Escape');
   await page.locator('.hud-button', { hasText: 'Resume' }).click();
   expect(errors).toEqual([]);
+});
+
+test('crowded radial options stay clickable on desktop and phone, including submenus', async ({ page }) => {
+  await ready(page);
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate(async () => {
+      const path = '/src/ui/RadialMenu.ts';
+      const { RadialMenu } = await import(/* @vite-ignore */ path);
+      const menu = new RadialMenu(document.body);
+      (window as any).__testMenu = menu;
+      (window as any).__menuPicks = [];
+      const children = Array.from({ length: 16 }, (_, i) => ({
+        label: 'A long option that wraps ' + i, icon: '•', enabled: true, action: 'rest',
+      }));
+      menu.show(10, 10, 'Many actions', children.map((option, i) =>
+        i === 0 ? { ...option, children } : option),
+        (option: { label: string }) => (window as any).__menuPicks.push(option.label));
+    });
+    const menu = page.locator('.radial:visible').last();
+    await expect(menu).toHaveClass(/is-list/);
+    const boxes = await menu.locator('.radial-item').evaluateAll(items =>
+      items.map(item => { const b = item.getBoundingClientRect(); return {
+        left: b.left, right: b.right, top: b.top, bottom: b.bottom,
+      }; }));
+    for (let i = 0; i < boxes.length; i++) {
+      expect(boxes[i]!.left).toBeGreaterThanOrEqual(0);
+      expect(boxes[i]!.right).toBeLessThanOrEqual(width);
+      if (i > 0) expect(boxes[i]!.top).toBeGreaterThanOrEqual(boxes[i - 1]!.bottom);
+    }
+    await menu.locator('.radial-item').first().click();
+    await menu.locator('.radial-item').last().click();
+    expect(await page.evaluate(() => (window as any).__menuPicks)).toEqual(['A long option that wraps 15']);
+    await expect(menu).toBeHidden();
+    await page.evaluate(() => document.querySelectorAll('.radial').forEach(root => {
+      if (root === (window as any).__testMenu.root) root.remove();
+    }));
+  }
 });
 
 test('the talk menu nests, and offers a stranger only a greeting', async ({ page }) => {
