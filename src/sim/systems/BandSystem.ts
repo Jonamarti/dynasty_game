@@ -17,7 +17,7 @@
  *    not, without either outcome being written as a rule.
  */
 import {
-  LEVY_EVERY_DAYS, PEACE_STANDING, TREATY_STANDING, TRIBUTE_EVERY_DAYS, TRIBUTE_SHARE, WAR_MIN_DAYS, WAR_NERVE,
+  COUP_INTERVAL, COUP_QUORUM, LEVY_EVERY_DAYS, PEACE_STANDING, fightOf, loyalistsOf, TREATY_STANDING, TRIBUTE_EVERY_DAYS, TRIBUTE_SHARE, WAR_MIN_DAYS, WAR_NERVE,
   WAR_STANDING, dueFrom, governs, heirOf, keepsAccounts, mayKeepSoldier, npcTaxRate, reignsForLife, strengthOf,
   submits, taxResentment, throwsOff,
 } from '../social/Polity.ts';
@@ -441,6 +441,9 @@ export class BandSystem {
   /** First day of sustained local food exhaustion, by band. */
   private readonly foodFailureSince = new Map<number, number>();
 
+  /** Last day each band reckoned with a plot against its king, M15 phase 39c. */
+  private readonly coupConsidered = new Map<number, number>();
+
   /** Last day each tributary band sent its tribute, M15 phase 39d. */
   private readonly tributePaid = new Map<number, number>();
 
@@ -492,6 +495,7 @@ export class BandSystem {
       this.assignJobs(band, members, ctx);
       this.considerExile(band, members, ctx);
       this.considerRebellion(band, members, ctx);
+      if (!band.outcast) this.considerCoup(band, members, ctx);
       // Re-read per band: `outcasts` was gathered before this loop, and an
       // outcast one band has just taken in is no longer anybody's to take.
       // Before M11 phase 15d that was only latent — it needed a wanderer
@@ -669,6 +673,30 @@ export class BandSystem {
       const late = ctx.personById(incumbentId);
       const heir = late && reignsForLife(late) ? heirOf(late, members, ctx.householdsById) : null;
       if (late && heir) {
+        // M15 phase 39c: a disputed succession. A faction that would move
+        // against the heir puts its own claimant up, and the band's regard
+        // settles it — the same measure an election uses.
+        const rival = conspiracyAgainst(heir.id, members.filter(m => m.captiveOf === null), ctx.relationships);
+        if (rival && rival.memberIds.length >= COUP_QUORUM) {
+          const claimant = members.find(m => m.id === rival.instigatorId);
+          telemetry.count('succession_disputed');
+          if (claimant && this.standingScore(claimant, band, members, ctx) >
+            this.standingScore(heir, band, members, ctx)) {
+            this.chiefByBand.set(band.id, claimant.id);
+            band.chiefId = claimant.id;
+            band.chiefSince = ctx.day;
+            telemetry.count('chief_chosen');
+            telemetry.count('succession_usurped');
+            const text = t('took the rule of the {band} from {name}, the heir', { band: band.name, name: heir.name });
+            claimant.chronicle.push({ tick: ctx.tick, ageDays: claimant.age, text, kind: 'milestone' });
+            heir.chronicle.push({
+              tick: ctx.tick, ageDays: heir.age,
+              text: t('was passed over for the rule by {name}', { name: claimant.name }), kind: 'suffered',
+            });
+            ctx.onInsight(claimant, text, 'gain');
+            return;
+          }
+        }
         this.chiefByBand.set(band.id, heir.id);
         band.chiefId = heir.id;
         band.chiefSince = ctx.day;
@@ -1104,6 +1132,65 @@ export class BandSystem {
     let food = home ? portions(home.store) : 0;
     for (const member of members) if (member.householdId === household.id) food += portions(member.inventory);
     return food;
+  }
+
+  // -------------------------------------------------------------------------
+  // Plots against a king
+  // -------------------------------------------------------------------------
+
+  /**
+   * A conspiracy against the king — M15 phase 39c, and `conspiracyAgainst`'s
+   * second reader after exile. Every `COUP_INTERVAL` days, if a faction of at
+   * least `COUP_QUORUM` would move against a king, it moves: if the plotters'
+   * strength in a fight is greater than the king's and his loyalists'
+   * (`loyalistsOf`: his soldiers and his own house), the instigator takes the
+   * rule; if not, the plot is broken and its instigator is cast out.
+   *
+   * Only a king: a chief whose term runs out is replaced by the band's choice
+   * (`chooseChief`) and challenged by `considerRebellion`, and a plot is what
+   * a crown that does not run out invites. Deterministic — the plot and the
+   * fight are read off opinions, traits and skill, never rolled — because this
+   * system's `rng` is the forest's.
+   */
+  private considerCoup(band: Band, members: Person[], ctx: BandContext): void {
+    const chiefId = this.chiefByBand.get(band.id);
+    const king = chiefId === undefined ? undefined : members.find(m => m.id === chiefId);
+    if (!king || king.isPlayer || !reignsForLife(king)) return;
+    const last = this.coupConsidered.get(band.id);
+    if (last !== undefined && ctx.day - last < COUP_INTERVAL) return;
+    this.coupConsidered.set(band.id, ctx.day);
+
+    const free = members.filter(m => m.captiveOf === null);
+    const faction = conspiracyAgainst(king.id, free, ctx.relationships);
+    if (!faction || faction.memberIds.length < COUP_QUORUM) return;
+    const plotters = members.filter(m => faction.memberIds.includes(m.id));
+    const instigator = plotters.find(m => m.id === faction.instigatorId);
+    if (!instigator || instigator.isPlayer) return;
+    telemetry.count('coup_attempted');
+    const loyal = [king, ...loyalistsOf(king, members, new Set(faction.memberIds))];
+
+    if (fightOf(plotters) > fightOf(loyal)) {
+      this.chiefByBand.set(band.id, instigator.id);
+      band.chiefId = instigator.id;
+      band.chiefSince = ctx.day;
+      telemetry.count('chief_chosen');
+      telemetry.count('coup_won');
+      const text = t('seized the rule of the {band} from {name}', { band: band.name, name: king.name });
+      instigator.chronicle.push({ tick: ctx.tick, ageDays: instigator.age, text, kind: 'milestone' });
+      king.chronicle.push({
+        tick: ctx.tick, ageDays: king.age,
+        text: t('was overthrown by {name}', { name: instigator.name }), kind: 'suffered',
+      });
+      ctx.onInsight(instigator, text, 'gain');
+    } else {
+      telemetry.count('coup_failed');
+      instigator.chronicle.push({
+        tick: ctx.tick, ageDays: instigator.age,
+        text: t('plotted against {name}, and was found out', { name: king.name }), kind: 'did',
+      });
+      ctx.onInsight(instigator, t('plotted against {name}, and was found out', { name: king.name }), 'setback');
+      ctx.onExile(instigator, band, faction.memberIds.length);
+    }
   }
 
   // -------------------------------------------------------------------------

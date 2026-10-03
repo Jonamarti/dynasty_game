@@ -2989,6 +2989,18 @@ no se asaltan. El jugador-jefe en guerra ve «Ofrecer tributo». Check
 `the-beaten-pay-tribute`, n/a en `polity` (los dos pueblos son de 14); el
 tributo que llega se prueba en un test de integración.
 
+**Avance del 2026-10-03 (39c, conspirar contra el rey).** Segundo lector de
+`conspiracyAgainst`, sólo contra un rey (un jefe con mandato ya tiene la
+elección y el desafío). Cada 6 días, si una facción de al menos tres se
+movería contra él, se mueve: si su fuerza de lucha supera la del rey con sus
+leales —sus soldados y los adultos de su casa—, el instigador toma el
+gobierno; si no, la conjura se rompe y el instigador es expulsado. A la
+muerte de un rey, una facción contra el heredero levanta a su propio
+pretendiente y decide la consideración de la banda (sucesión disputada).
+Determinista. En `polity` nadie conspira (la banda se aprecia: 0 opiniones
+hostiles), así que se prueba en tests; no se añade un check porque lo único
+medible sin conjuras sería cierto por construcción.
+
 ## Fase 40 — El hierro (M8.4)
 
 **Detalle en `m8_plan_the_ages.md` §M8.4.** Seis nodos de la sub-red Metal:

@@ -38,6 +38,10 @@ commit del bloque compara contra ella.
   pueblo quedan fuera de `RAID_RANGE` (75), así que la guerra declarada no
   produce incursiones. El mapa de la semilla, no la regla; un escenario con
   campamentos más cerca lo ejercitaría.
+- **Ninguna conjura en `polity`** (39c): la banda se aprecia demasiado para
+  que tres se junten contra el rey. Un escenario con un rey impuesto y un
+  impuesto alto (que resta opinión) lo ejercitaría; tampoco hay noche en la
+  decisión, que el plan quería como momento natural del golpe.
 - **Ninguna cerveza en los banquetes de `feasts`.** 23 banquetes, 0 tazas: la
   cerveza se bebe en `toast` antes de llegar al almacén. No es un error del
   banquete, pero `FEAST_CUP_RELIEF` apenas se ejerce.

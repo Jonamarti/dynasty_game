@@ -7,7 +7,7 @@ import { Simulation } from '../core/Simulation.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
 import {
-  CONTRIBUTION_RENOWN, SOLDIER_UPKEEP, WAR_MIN_DAYS, civilisationLacks, strengthOf, submits, TAX_RATES, heirOf, mayKeepSoldier, reignsForLife, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
+  CONTRIBUTION_RENOWN, SOLDIER_UPKEEP, WAR_MIN_DAYS, fightOf, loyalistsOf, civilisationLacks, strengthOf, submits, TAX_RATES, heirOf, mayKeepSoldier, reignsForLife, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
   templeOf, templePull,
 } from '../social/Polity.ts';
 import { Household } from '../entities/Household.ts';
@@ -445,5 +445,58 @@ describe('tribute: carried to the overlord', () => {
     }
     expect(telemetry.get('tribute_ordered')).toBeGreaterThan(0);
     expect(telemetry.get('tribute_delivered')).toBeGreaterThan(0);
+  });
+});
+
+describe('plots against the king', () => {
+  /** A band of six with a king and three who hate him and trust each other. */
+  function plot(soldiers: number) {
+    const sim = new Simulation({ ...SMALL, population: { bands: 1, peoplePerBand: 8, startingTech: ['pottery', 'division_of_labour', 'chiefdom'] } });
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    const band = sim.bands.find(b => !b.outcast)!;
+    const king = sim.peopleById.get(band.chiefId!)!;
+    learn(king, 'kingship');
+    const others = sim.livingPeople().filter(p => p.bandId === band.id && p.id !== king.id && !p.isChild);
+    const plotters = others.slice(0, 3);
+    for (const p of plotters) {
+      for (let i = 0; i < 4; i++) sim.relationships.addDeed(p.id, king.id, -25, sim.time.tick);
+      for (const q of plotters) if (q !== p) for (let i = 0; i < 3; i++) sim.relationships.addDeed(p.id, q.id, 20, sim.time.tick);
+      p.skills.fight = 10;
+    }
+    plotters[0]!.traits.loyalty = 0.1;
+    for (const p of others.slice(3, 3 + soldiers)) {
+      p.job = 'soldier';
+      p.skills.fight = 100;
+    }
+    return { sim, band, king, instigator: plotters[0]! };
+  }
+
+  it('unseats a king whose guard is weaker than the plot', () => {
+    const { sim, band, king, instigator } = plot(0);
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    expect(band.chiefId).not.toBe(king.id);
+    expect(band.chiefId).toBe(instigator.id);
+    expect(king.chronicle.some(line => line.text.includes('overthrown'))).toBe(true);
+  });
+
+  it('is broken by a king with soldiers, and its instigator cast out', () => {
+    const { sim, band, king, instigator } = plot(2);
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    expect(band.chiefId).toBe(king.id);
+    expect(instigator.bandId).not.toBe(band.id);
+  });
+
+  it('counts the soldiers and the king\'s own house as his, and not the plotters', () => {
+    const sim = new Simulation(SMALL);
+    const [king, soldier, kin, plotter] = sim.livingPeople();
+    king!.householdId = 9999;
+    kin!.householdId = 9999;
+    kin!.age = Math.max(kin!.age, 4000);
+    soldier!.job = 'soldier';
+    soldier!.age = Math.max(soldier!.age, 4000);
+    plotter!.job = 'soldier';
+    const loyal = loyalistsOf(king!, sim.livingPeople(), new Set([plotter!.id]));
+    expect(loyal.map(p => p.id).sort()).toEqual([soldier!.id, kin!.id].sort());
+    expect(fightOf([king!, soldier!])).toBeGreaterThan(fightOf([king!]));
   });
 });

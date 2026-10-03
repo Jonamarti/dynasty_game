@@ -1,3 +1,26 @@
+## 2026-10-03 — M15 fase 39c: conspirar contra el rey
+
+- **El golpe** (`BandSystem.considerCoup`), segundo lector de
+  `conspiracyAgainst` tras el destierro: cada 6 días, contra un rey (un jefe
+  con mandato ya tiene la elección y el desafío de `considerRebellion`), si
+  una facción de al menos tres se movería contra él, se mueve. Si la suma de
+  su habilidad de lucha supera la del rey con sus leales (`loyalistsOf`: sus
+  soldados y los adultos de su casa, ninguno de la conjura), el instigador
+  toma el gobierno; si no, la conjura se rompe y el instigador es expulsado.
+  Determinista: opiniones, rasgos y habilidad, ninguna tirada.
+- **La sucesión disputada**: cuando la corona va a pasar, una facción contra
+  el heredero levanta a su instigador como pretendiente, y la consideración
+  de la banda (`standingScore`, la misma medida que una elección) decide.
+- Crónica para los tres desenlaces, con español.
+- **Sin check**: en `polity` nadie conspira (la banda se tiene aprecio;
+  `opinions-diverge` ya falla por 0 relaciones hostiles), y lo único que se
+  podría comprobar sin conjuras sería cierto por construcción, el tipo de
+  check que `AGENTS.md` prohíbe. Se probó uno así y se quitó. Los contadores
+  `coup_*` y `succession_*` salen en la telemetría del informe.
+- **Tests:** el golpe que triunfa contra un rey sin guardia, el que se rompe
+  contra uno con soldados (con el instigador fuera de la banda), y quién es
+  leal.
+
 ## 2026-10-03 — M15 fase 39d: tratados y tributo
 
 - **Someterse** (`Simulation.submit`, `BandSystem.considerSubmission`): un jefe

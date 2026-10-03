@@ -337,3 +337,28 @@ export const TRIBUTE_SHARE = 0.15;
  * between him and its people.
  */
 export const OVERLORD_AUTHORITY = 0.25;
+
+/**
+ * How many plotters a conspiracy against a king needs before it moves —
+ * M15 phase 39c. Three: one malcontent is a grumble and two a quarrel, and
+ * the same quorum `considerRebellion` asks of voices against a chief.
+ */
+export const COUP_QUORUM = 3;
+
+/** Days a band is left between two reckonings of a plot against its king. */
+export const COUP_INTERVAL = 6;
+
+/**
+ * Who stands by a king when the plot moves: the soldiers the temple feeds,
+ * and the grown members of the king's own house — none of them in the plot.
+ * A king's guard is what makes a coup something more than a vote.
+ */
+export function loyalistsOf(king: Person, members: readonly Person[], plotters: ReadonlySet<number>): Person[] {
+  return members.filter(m => m.id !== king.id && !m.isChild && m.captiveOf === null && !plotters.has(m.id) &&
+    (m.job === 'soldier' || (king.householdId !== null && m.householdId === king.householdId)));
+}
+
+/** A side's strength in a coup: the king fights too. */
+export function fightOf(people: readonly Person[]): number {
+  return people.reduce((sum, p) => sum + p.skillFactor('fight'), 0);
+}

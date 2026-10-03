@@ -149,4 +149,10 @@ export const ES_POLITY: Record<string, string> = {
   "king over their people": "rey sobre su pueblo",
   "Offer tribute": "Ofrecer tributo",
   "Your people will pay the {band} tribute": "Tu pueblo pagará tributo a la {band}",
+  // Phase 39c: plots against the king.
+  "took the rule of the {band} from {name}, the heir": "arrebató el gobierno de la {band} a {name}, el heredero",
+  "was passed over for the rule by {name}": "fue apartado del gobierno por {name}",
+  "seized the rule of the {band} from {name}": "arrebató el gobierno de la {band} a {name}",
+  "was overthrown by {name}": "fue derrocado por {name}",
+  "plotted against {name}, and was found out": "conspiró contra {name}, y fue descubierto",
 };
