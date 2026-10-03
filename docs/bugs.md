@@ -8,8 +8,10 @@ contó 16.000 misses calientes y 52,7 MiB de píxeles de figuras. Tras recortar
 las figuras y usar presupuestos en bytes, retiene los 2.000 en 20,8 MiB,
 con 16.000 hits y ninguna recomposición tras la primera vuelta.
 
-La carga inicial aún compone/tinta; no se ha medido FPS global ni memoria
-real del proceso/GPU con cientos de NPC simulados. El presupuesto acota píxeles
+La carga inicial aún compone/tinta. `population-profile.md` mide el juego con
+300 NPC: 52,9 FPS, pasos de 20,8 ms y 6,47 MiB de caché sin expulsiones;
+el coste de simulación necesita desglosarse y la VRAM sigue sin medir.
+El presupuesto acota píxeles
 retenidos (24 + 8 MiB), no los objetos de canvas, las hojas compartidas o la
 memoria que el recolector todavía no libera. Muchas más variantes activas
 provocan expulsión y recomposición; el test de 1.800 apariencias prueba los

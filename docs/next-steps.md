@@ -1,11 +1,17 @@
 # Next steps
 
+**2026-10-03: 300 humanos medidos en el juego completo.** A 5 pasos/s,
+52,9 FPS observados, dibujo 3,38 ms, simulación 20,80 ms por paso; caché
+6,47 MiB sin expulsiones y heap JS 29,92 MiB. Ver `population-profile.md`
+para condiciones, working sets y límites. Pendiente localizar el coste por
+sistema, medir el arranque y velocidades mayores; la VRAM no está medida.
+
 **2026-10-03: M15 fase 17, caché de animación medida y optimizada.** Figuras
 recortadas y presupuestos LRU en bytes. Con 500 apariencias y cuatro poses,
 20,8 MiB en figuras y ninguna recomposición tras calentarlas; el límite
 anterior retenía 1.500 poses, ocupaba 52,7 MiB y expulsaba cada pose a la vuelta.
-Las demás familias pueden usar el mismo compositor. Queda medir el arranque,
-la memoria real de navegador/GPU y FPS junto a cientos de NPC simulados.
+Las demás familias pueden usar el mismo compositor. El perfil siguiente mide
+cadencia y memoria de navegador con 300 NPC; arranque y VRAM siguen pendientes.
 
 **2026-10-02: M15 fase 17, primera animación de trabajo.** Recolección manual
 en cuatro fotogramas, integrada en NPC y jugador, con pausa y abandono visibles

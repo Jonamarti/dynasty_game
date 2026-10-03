@@ -1,3 +1,27 @@
+## 2026-10-03 — M15: perfil del juego con 300 humanos
+
+El instrumento anterior medía poses sintéticas. `tools/profile-population.ts`
+ahora mide el bucle real con fundadores, decisiones, canvas y HUD, en navegadores
+separados para 30/300 personas, misma semilla, 10 s de calentamiento y 20 s
+medidos. Un override exclusivo de desarrollo permite esa población sin cambiar
+las preferencias del jugador. El e2e comprueba 300 fundadores familiares,
+avance del reloj y arte cargado; el build anterior no alcanza esos 300 fundadores.
+
+Con 300 personas dibujadas a 5 pasos/s: 52,9 FPS observados, dibujo medio
+3,38 ms y simulación 20,80 ms por paso. Caché 6,47 MiB sin expulsiones; heap JS
+29,92 MiB tras GC. La suma de working sets de Chromium es 483,09 MiB e incluye
+el navegador y el mundo, con posibles páginas compartidas contadas varias veces.
+No es una reserva por NPC ni VRAM. Condiciones y tabla comparativa en
+`docs/population-profile.md`; el coste por sistema de simulación sigue abierto.
+
+**Validación:** `typecheck`, unitarios y el e2e del perfil pasan. La línea base
+`sim:check` mantiene sus seis fallos anteriores; los 23 escenarios de la matriz
+conservan exactamente la aplicabilidad y las listas de fallos de la referencia.
+La matriz sigue roja por esos fallos previos; comparación registrada en el informe.
+**Informes:** `artifacts/verification/m15-population-2026-10-03T06-55-44-442Z/`.
+**Capturas:** `artifacts/screenshots/m15-population-2026-10-03T06-55-44-442Z/`
+(30 y 300 personas en el juego completo).
+
 ## 2026-10-03 — M15 fase 17: las animaciones caben en la caché
 
 Con 500 apariencias distintas y cuatro poses, la caché anterior guardaba

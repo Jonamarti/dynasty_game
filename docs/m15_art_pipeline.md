@@ -186,6 +186,10 @@ The 360 unclothed reference SHA-256 hashes are pinned in
 `src/render/__tests__/person-pixels.json` and checked in the browser suite.
 
 Reproduce current measurements with `npx vite-node tools/art/memory.ts after`.
+For actual NPC simulation, renderer, HUD, frame cadence and browser memory,
+run `npx vite-node tools/profile-population.ts`; conditions and results are in
+`population-profile.md`. Its 300 real founders are distinct from the synthetic
+500-appearance cache workload above.
 For the historical run, export `git show 6d5fe4f:src/render/ArtAtlas.ts` to
 `artifacts/verification/m15-art-memory-2026-10-02/reference/ArtAtlas.ts`, changing
 its relative `./ArtManifest.ts` import to `/src/render/ArtManifest.ts` for Vite.

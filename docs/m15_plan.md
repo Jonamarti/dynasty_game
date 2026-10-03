@@ -1776,6 +1776,14 @@ se aparta`; `m15: muebles`; `m15: dormir mejor en casa, y el confort`;
 
 ## Fase 17 — El arte: personas pre-renderizadas por capas (nota 6; decisión 9)
 
+**Avance del 2026-10-03 (300 humanos reales):** instrumento del juego completo,
+con AI, canvas y HUD, a 5 pasos/s. 300 figuras visibles: 52,9 FPS observados,
+3,38 ms de dibujo y 20,80 ms por paso; 6,47 MiB de píxeles de caché sin expulsar.
+Heap JS tras GC 29,92 MiB; memoria del navegador y límites de la medida en
+`population-profile.md`. El siguiente perfil debe localizar el coste dentro de
+la simulación; esta prueba no certifica velocidades mayores ni supervivencia.
+Capturas en `artifacts/screenshots/m15-population-2026-10-03T06-55-44-442Z/`.
+
 **Avance del 2026-10-03 (memoria de animaciones):** las figuras se guardan
 recortadas, conservando su origen lógico y los píxeles. Caché LRU compartida
 con presupuestos de 24 MiB para figuras y 8 MiB para tintes. La prueba de

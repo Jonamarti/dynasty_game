@@ -49,6 +49,22 @@ async function ready(page: Page): Promise<void> {
   await expect(page.locator('.hud-name')).not.toBeEmpty();
 }
 
+test('population profiler runs 300 real founders through the production loop', async ({ page }) => {
+  const errors = guardErrors(page);
+  await page.goto('/?seed=profile-4&defaults=1&skipIntro=1&profileHumans=300');
+  await expect(page.locator('.hud-clock')).not.toBeEmpty({ timeout: 15_000 });
+  const initial = await page.evaluate(() => {
+    const d = (window as any).__dynasty;
+    return { count: d.sim.livingPeople().length, tick: d.sim.time.tick,
+      families: d.sim.livingPeople().filter((p: any) => p.motherId !== null || p.partnerId !== null).length };
+  });
+  expect(initial.count).toBe(300);
+  expect(initial.families).toBeGreaterThan(0);
+  await page.waitForFunction(tick => (window as any).__dynasty.sim.time.tick > tick + 2, initial.tick);
+  expect(await page.evaluate(() => (window as any).__dynasty.renderer.art.cacheStats.composed.entries)).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
 /**
  * Clicks the map, and chooses from the entity picker when one opens.
  *

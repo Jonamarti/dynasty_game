@@ -90,7 +90,14 @@ let settings = params.get('defaults') === '1' ? defaultSettings() : loadSettings
 // A `let`, because the settings screen the game now opens on can change the
 // size of the map or the amount of food on it, and those are spent when the
 // world is generated. See `rebuildBeforeStart`.
-let sim = new Simulation({ ...configFrom(settings), seed });
+// A browser profiling fixture must exercise the real frame loop and HUD. The
+// settings UI caps founders at 240; this dev-only override leaves saved player
+// settings alone and deliberately requires skipIntro to avoid world rebuilding.
+const profileHumans = import.meta.env.DEV && params.get('skipIntro') === '1'
+  ? Number(params.get('profileHumans')) : 0;
+const profilePopulation = Number.isInteger(profileHumans) && profileHumans >= 2 && profileHumans <= 1000
+  ? { population: { bands: 1, peoplePerBand: profileHumans } } : {};
+let sim = new Simulation({ ...configFrom(settings), ...profilePopulation, seed });
 
 /**
  * `?skipIntro=1` goes straight into the first living body.
