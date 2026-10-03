@@ -2,7 +2,8 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { ARRIVAL_RADIUS } from '../sim/systems/MovementSystem.ts';
-import { CHOP_POSES, DIG_POSES, GATHER_POSES, type ArtPose } from './ArtManifest.ts';
+import { CHOP_POSES, DIG_POSES, GATHER_POSES, MAKE_POSES, type ArtPose } from './ArtManifest.ts';
+import { RECIPES } from '../sim/entities/Recipe.ts';
 
 /** Shared clock contract: two work ticks per frame, with a bounded accumulator. */
 function workFrame(poses: readonly ArtPose[], workedTicks: number, alpha: number): ArtPose {
@@ -59,4 +60,22 @@ export function choppingPose(
   const tree = sim.treesById.get(person.targetTreeId);
   if (!tree?.standing || tree.chopProgress <= 0 || person.distanceTo(tree) >= ARRIVAL_RADIUS) return null;
   return workFrame(CHOP_POSES, person.workedTicks, alpha);
+}
+
+/** Generic hand manipulation while a valid recipe is actually being worked. */
+export function craftingPose(
+  person: Person, sim: Pick<Simulation, 'buildingsById'>,
+  moving: boolean, alpha = 1,
+): ArtPose | null {
+  if (moving || !person.alive || person.action !== 'craft' || person.actionTimer <= 0 ||
+      person.workedTicks <= 0 || person.targetRecipe === null) return null;
+  const recipe = RECIPES[person.targetRecipe];
+  // The executor owns knowledge/material checks. Presentation reads the
+  // observed job, never a stranger's private knowledge or inventory to guess it.
+  if (!recipe) return null;
+  if (recipe.station !== undefined) {
+    const station = person.targetBuildingId === null ? null : sim.buildingsById.get(person.targetBuildingId);
+    if (!station?.complete || station.def.id !== recipe.station || !station.contains(person.x, person.y)) return null;
+  }
+  return workFrame(MAKE_POSES, person.workedTicks, alpha);
 }

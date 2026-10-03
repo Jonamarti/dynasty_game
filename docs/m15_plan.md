@@ -1790,12 +1790,20 @@ se aparta`; `m15: muebles`; `m15: dormir mejor en casa, y el confort`;
 
 ## Fase 17 — El arte: personas pre-renderizadas por capas (nota 6; decisión 9)
 
+**Avance del 2026-10-03 (fabricación).** Cuatro poses `m0`–`m3` con mano de
+apoyo y pies plantados. Leen trabajo iniciado y estación válida, sin consultar
+inventario ni conocimientos privados. Arte generado, anclas/selector y e2e
+desde orden real cubren pausa, cancelación e inmutabilidad del motor. Capturas
+revisadas: `artifacts/screenshots/m15-craft-2026-10-03-final/`.
+[Contrato](m15_craft_animation.md). Quedan materiales/productos visibles y otras
+familias de trabajo; la fase continúa abierta.
+
 **Avance del 2026-10-03 (tala).** Cuatro poses `c0`–`c3` con pies plantados
 y herramienta en el ancla de la mano. Leen progreso real bancado en el tronco,
 sin confundirlo con el temporizador de cosecha/preparación; viaje, caída y
 cancelación quitan el gesto. Pruebas de anclas/selector y orden real en navegador;
 capturas revisadas en `artifacts/screenshots/m15-chop-2026-10-03-final/`.
-[Contrato](m15_chop_animation.md). Fabricación y otras familias siguen pendientes.
+[Contrato](m15_chop_animation.md). Otras familias siguen pendientes.
 
 **Avance del 2026-10-03 (gesto de cavar).** Cuatro poses `d0`–`d3` y bastón
 de cavar generado. Se dibujan solo trabajando en el objetivo alcanzado, con
@@ -1803,7 +1811,7 @@ la herramienta seleccionada, reloj y fracción de simulación; viaje, pausa e
 interrupción conservan su significado. Pruebas de poses/arte y e2e con orden
 real; capturas revisadas en `artifacts/screenshots/m15-dig-2026-10-03-final-pass1/`.
 Contrato: [m15_dig_animation.md](m15_dig_animation.md). La tala ya tiene su gesto;
-fabricar y otras familias siguen pendientes. La fase 17 continúa abierta.
+otras familias siguen pendientes. La fase 17 continúa abierta.
 
 **Avance del 2026-10-03 (animales):** cuatro poses de comer, correr y atacar
 en ciervo, jabalí, liebre, lobo, oso y lince, compartidas por especie. El renderer

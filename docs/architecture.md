@@ -111,6 +111,11 @@ Its selector follows the banked trunk ledger instead of a harvest countdown,
 and hides the swing during a positive setup timer. All three work families share
 the bounded simulation fraction. See [m15_chop_animation.md](m15_chop_animation.md).
 
+Crafting uses `m0`–`m3` for an observed active recipe, at its completed station
+when required. Its selector never reads private knowledge or inventory; the
+executor owns those requirements. It shares the same clock and hides a packed
+weapon during hand manipulation. See [m15_craft_animation.md](m15_craft_animation.md).
+
 **Earthmoving has one tool selector.** `core/Earth.ts` chooses the strongest
 usable carried digging tool through `techPower`: sticks without a technique,
 an antler pick with bone working, and a wooden spade with carpentry. The

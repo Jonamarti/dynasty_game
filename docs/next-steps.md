@@ -1,12 +1,17 @@
 # Next steps
 
+**2026-10-03: fabricación, fase 17.** Cuatro gestos con estación/receta válidas,
+pausa y cancelación comprobadas desde una orden, sin leer requisitos privados
+en el renderer. Quedan otras familias y materiales/productos en las manos.
+[Contrato](m15_craft_animation.md).
+
 **2026-10-03: tala, fase 17.** Cuatro golpes con progreso real del tronco,
-pausa y cancelación comprobadas desde una orden. Quedan fabricación y otras
+pausa y cancelación comprobadas desde una orden. Quedan otras
 familias de trabajo. [Evidencia](m15_chop_animation.md).
 
 **2026-10-03: gesto de cavar, fase 17.** Cuatro golpes de herramienta,
 probados desde una orden real, pausa e interrupción; arte y captura revisados.
-Tala ya tiene su gesto; quedan fabricación y otras familias. [Evidencia](m15_dig_animation.md).
+Tala y fabricación ya tienen su gesto; quedan otras familias. [Evidencia](m15_dig_animation.md).
 
 **2026-10-03: banco RNG, fase 28.** Reloj y 15 ubicaciones RNG se capturan a
 un tick común, conservando aliases y continuidad. Quedan agendas, objetos del
@@ -123,7 +128,7 @@ conjura y `law_code` (ver `bugs.md`).
 en cuatro fotogramas, integrada en NPC y jugador, con pausa y abandono visibles
 en la pose. Capturas y GIF en
 `artifacts/screenshots/m15-gather-2026-10-02T20-59-49-511Z/`.
-Talar, cavar y fabricar todavía necesitan gestos propios; el nuevo gesto no
+Talar, cavar y fabricar ya tienen gestos propios; el gesto de recolección no
 completa toda la fase de arte. No cambia el orden pendiente de obras de la 26.
 
 **2026-10-02: M15 fase 26f, invariante de regiones hecho.**

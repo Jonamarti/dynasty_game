@@ -116,7 +116,7 @@ export function geometry(age: ArtAge, sex: ArtSex): Geo {
 }
 
 /** Whole-pixel upper-body dip; gathering keeps its feet planted like idle. */
-export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0 };
+export const POSE_BOB: Record<ArtPose, number> = { idle: 0, w0: 0, w1: 1, w2: 0, w3: 1, g0: 0, g1: 1, g2: 2, g3: 1, d0: 0, d1: 0, d2: 0, d3: 0, c0: 0, c1: 0, c2: 0, c3: 0, m0: 1, m1: 2, m2: 1, m3: 0 };
 
 const DIG_FRONT: readonly { reach: number; handY: number; elbowY: number }[] = [
   { reach: 0.4, handY: -0.3, elbowY: 0.05 }, { reach: 0.25, handY: -0.6, elbowY: -0.1 },
@@ -527,7 +527,14 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
     }
     let hand: Pt = [cx + side * (sh + 1.2 - inward), sY + 2.4 + len];
     let elbow: Pt = [(sh0[0] + hand[0]) / 2 + side * 0.9, (sh0[1] + hand[1]) / 2];
-    if ((spec.pose.startsWith('d') || spec.pose.startsWith('c')) && isRight) {
+    if (spec.pose.startsWith('m')) {
+      const phase = Number(spec.pose.slice(1));
+      // One hand supports the work at the belly; the other manipulates it.
+      // Both arms meet at that point; the renderer hides packed weapons.
+      hand = [cx + side * (isRight ? [2, 1, 3, 4][phase]! : 3),
+        sY + g.arm * (isRight ? [0.75, 0.55, 0.85, 0.65][phase]! : 0.8)];
+      elbow = [cx + side * (sh + g.arm * 0.12), sY + g.arm * 0.55];
+    } else if ((spec.pose.startsWith('d') || spec.pose.startsWith('c')) && isRight) {
       const poses = spec.pose.startsWith('c') ? CHOP_FRONT : DIG_FRONT;
       const { reach, handY, elbowY } = poses[Number(spec.pose.slice(1))]!;
       hand = [cx + side * (sh + g.arm * 0.45 * reach), sY + g.arm * handY];
@@ -604,7 +611,10 @@ function sideLayers(spec: PersonSpec): PersonOut {
     const col = near ? skin : REF.skinFar;
     const Larm = g.arm / 2;
     let a1 = -sw * 24 * (near ? 1 : -1), a2 = a1 + 14;
-    if ((spec.pose.startsWith('d') || spec.pose.startsWith('c')) && near) {
+    if (spec.pose.startsWith('m')) {
+      const phase = Number(spec.pose.slice(1));
+      [a1, a2] = near ? [[38, 80], [20, 50], [55, 90], [35, 110]][phase]! : [45, 110];
+    } else if ((spec.pose.startsWith('d') || spec.pose.startsWith('c')) && near) {
       const poses = spec.pose.startsWith('c') ? CHOP_SIDE : DIG_SIDE;
       [a1, a2] = poses[Number(spec.pose.slice(1))]!;
     } else if (spec.pose.startsWith('g') && near) {

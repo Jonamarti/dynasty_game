@@ -1,3 +1,16 @@
+## 2026-10-03 — M15 fase 17: fabricar también se ve
+
+Cuatro gestos de manipulación y apoyo por cuerpo/dirección, pies plantados y
+arma transportada oculta durante el trabajo. El selector observa la receta y
+la estación alcanzada sin consultar conocimientos o inventario privados.
+Comparte el reloj visual con los otros gestos: pausa, viaje y cancelación
+conservan su significado. Arte regenerado, contacto y captura frontal revisados;
+cuatro casos del selector, cobertura de anclas y e2e desde orden real con
+inmutabilidad del motor. Suite conjunta 946/946 en 129 archivos, typecheck limpio
+y 74/74 e2e; matriz de mundos roja, informada por separado. Capturas:
+`artifacts/screenshots/m15-craft-2026-10-03-final/`.
+Contrato: `docs/m15_craft_animation.md`. Otras familias siguen pendientes.
+
 ## 2026-10-03 — M15 fase 17: talar también se ve
 
 Cuatro golpes de tala por cuerpo/dirección, pies plantados, ropa y herramienta

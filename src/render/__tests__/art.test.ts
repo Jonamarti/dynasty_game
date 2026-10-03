@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { ANIMAL_KINDS, ANIMAL_POSES } from '../../../art/src/animals/animals.ts';
 import { collectAnimals, collectBuildings, collectPeople, collectProps } from '../../../art/src/registry.ts';
 import { personLayers, type PersonSpec } from '../../../art/src/people/rig.ts';
-import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, CHOP_POSES, DIG_POSES, GATHER_POSES, anchorKey, personKey, type ArtManifest, type PersonAnchors } from '../ArtManifest.ts';
+import { ART_AGES, ART_BAKED_DIRS, ART_POSES, ART_SEXES, CHOP_POSES, DIG_POSES, GATHER_POSES, MAKE_POSES, anchorKey, personKey, type ArtManifest, type PersonAnchors } from '../ArtManifest.ts';
 import { BUILDINGS } from '../../sim/entities/Building.ts';
 import { EXPRESSIONS } from '../../sim/core/Mood.ts';
 import { SPECIES } from '../../sim/entities/Animal.ts';
@@ -159,6 +159,24 @@ describe('art build', () => {
       const idle = feet(personLayers(base));
       const hands = new Set<string>();
       for (const pose of CHOP_POSES) {
+        const frame = personLayers({ ...base, pose });
+        expect(feet(frame)).toEqual(idle);
+        expect(anchors[anchorKey(age, sex, dir, pose, false)]).toEqual(frame.anchors);
+        expect([...frame.anchors.hr, ...frame.anchors.hl].every(Number.isFinite)).toBe(true);
+        hands.add(JSON.stringify(frame.anchors.hr));
+      }
+      expect(hands.size).toBe(4);
+    }
+  });
+
+  it('gives manipulation four distinct anchors with stable feet in every body and facing', () => {
+    const anchors = load('people').meta['anchors'] as Record<string, PersonAnchors>;
+    for (const age of ART_AGES) for (const sex of ART_SEXES) for (const dir of ART_BAKED_DIRS) {
+      const base: PersonSpec = { age, sex, dir, pose: 'idle', wear: { torso: 'tunic', hands: 'gloves' }, carry: false, hair: 'long', beard: false, expr: 'neutral' };
+      const feet = (out: ReturnType<typeof personLayers>) => out.layers.filter(layer => /^(shadow|legs|trousers|feet)/.test(layer.slot));
+      const idle = feet(personLayers(base));
+      const hands = new Set<string>();
+      for (const pose of MAKE_POSES) {
         const frame = personLayers({ ...base, pose });
         expect(feet(frame)).toEqual(idle);
         expect(anchors[anchorKey(age, sex, dir, pose, false)]).toEqual(frame.anchors);

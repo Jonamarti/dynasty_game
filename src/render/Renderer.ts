@@ -42,7 +42,7 @@ import { Floaters } from './Floaters.ts';
 import { t, tc } from '../i18n/i18n.ts';
 import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
-import { choppingPose, diggingPose, gatheringPose } from './WorkAnimation.ts';
+import { choppingPose, craftingPose, diggingPose, gatheringPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
 import {
   SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
@@ -1835,7 +1835,8 @@ export class Renderer {
     const gathering = gatheringPose(person, this.sim, moving, this.workAlpha);
     const digging = diggingPose(person, this.sim, moving, this.workAlpha);
     const chopping = choppingPose(person, this.sim, moving, this.workAlpha);
-    const workPose = gathering ?? digging ?? chopping;
+    const crafting = craftingPose(person, this.sim, moving, this.workAlpha);
+    const workPose = gathering ?? digging ?? chopping ?? crafting;
     const aspect: PersonAspect = {
       age: sizeClass, sex: person.sex === 'male' ? 'm' : 'f', dir,
       pose: moving ? (('w' + frame) as ArtPose) : workPose ?? 'idle',
@@ -1843,7 +1844,7 @@ export class Renderer {
       hair: hair === 'grey' ? '#a7a197' : person.id % 3 === 0 ? '#5b3d28' : '#2b2018',
       band: BAND_COLORS[colorIndex]!,
       hairStyle, beard: hasBeardOf(person), expression: this.expressionFor(person),
-      wear: {}, carryBaby: false, held: gathering ? null : heldItemFor(person),
+      wear: {}, carryBaby: false, held: gathering || crafting ? null : heldItemFor(person),
     };
     const ratio = Math.min(1.2, Math.max(0.85, bodyScale / Renderer.NOMINAL_SCALE[sizeClass]));
     const k = (scale * 1.55 * ratio) / 96;
