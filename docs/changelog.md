@@ -1,3 +1,16 @@
+## 2026-10-03 — M15 fase 28: decisiones que conservan su agenda
+
+LedgerRecord guarda permisos, feudos, casos, avisos, sucesión, cooldowns de
+bandas, fracciones de cría y reserva del borde. También conserva reclamaciones
+de escritura y cachés de técnicas/templos entre pasadas diarias: recomputarlas
+antes cambiaría el próximo paso. Personas ligadas por IDs al roster; día
+capturado desde el reloj, sin asumir 240 ticks ni olvidar su día inicial.
+Dos pruebas ricas con calendario alternativo pasan. El negativo de duplicación
+de eventos falla antes del rechazo y pasa después. Typecheck limpio; comparación
+conjunta de matriz al cerrar composición. No aplica los libros al motor.
+Contrato: `docs/m15_phase28_ledgers.md`. Tour 1/1 sin cambio de UI y captura
+inicial revisada: `artifacts/screenshots/m15-phase28-ledgers-2026-10-03-pass1/`.
+
 ## 2026-10-03 — M15 fase 28: objetos con un solo índice canónico
 
 Registro JSON v1 de recursos, edificios/cultivos, árboles, montones, cuerpos,

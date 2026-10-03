@@ -76,8 +76,16 @@ terrain only; coordinated loading and world object ledgers remain pending. See
 their canonical ID maps in one graph, including nested building state. It shares
 `GraphRecords` with the existing entity codecs; explicit class tags survive
 minification. A supplied roster binds corpse references to canonical people.
-Hydration does not register objects or rebuild spatial hashes. Execution ledgers
-and live loading remain pending; see [m15_phase28_objects.md](m15_phase28_objects.md).
+Hydration does not register objects or rebuild spatial hashes; see
+[m15_phase28_objects.md](m15_phase28_objects.md).
+
+`LedgerRecord` v1 retains tick and day, player/succession, notices, permissions,
+cases, sightings and social events, plus band deliberation cooldowns and fractional
+wildlife births. It also preserves technology/temple caches and record claims
+between daily refreshes: recomputing them early can change the next decision.
+Canonical people are supplied by the roster. Held keyboard intent, route budgets
+and reconstructible scratch/spatial indexes are excluded. Coordinated application
+and live loading remain pending; see [m15_phase28_ledgers.md](m15_phase28_ledgers.md).
 
 `Simulation.ids` owns the ten entity/event allocation namespaces. Creation
 passes this `IdSpace` explicitly to entities and systems; the optional second
