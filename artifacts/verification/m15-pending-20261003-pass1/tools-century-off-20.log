@@ -1,0 +1,58 @@
+
+> dynasty@0.0.0 sim:seeds
+> vite-node tools/seeds.ts -- --scenario century --seeds 20 --set carry.autoEquipTools=false
+
+
+SEED COHORT  -  scenario "century", 20 seeds, 40,000 steps each
+==============================================================================
+  seed      peak   end    survived   born   starved: inf chi adu   known past taught
+  century     62    59        95%     40             8   1   2       5    4    157
+  alpha       62    41        66%     38            10   1  10       6    3    149
+  beta        67    66        99%     41             4   0   1       5    7    162
+  gamma       57    31        54%     38            14   1   9       2    1     91
+  delta       54    45        83%     35            12   0   7       6    5    151
+  eps         55    50        91%     39            12   0   6       6    1    145
+  zeta        37    26        70%     20             9   1   9       3    3     46
+  eta         69    53        77%     47            13   0   2       3    4    140
+  theta       56    51        91%     38             8   0   3       6    2    123
+  iota        72    63        88%     45             9   0   5       4    1    172
+  kappa       58    51        88%     32             4   1   2       4    1    122
+  lambda      43    24        56%     23             7   1   4       3    2     53
+  mu          54    31        57%     31            14   1   7       4    1    120
+  nu          58    47        81%     34            10   1   5       6    3    133
+  xi          50    43        86%     28             4   0   0       3    1    104
+  omicron     39    15        38%     15             9   1  10       4    1     41
+  pi          47    42        89%     29             9   0   4       6    2     63
+  rho         50    44        88%     28             8   0   5       4    5     92
+  sigma       39     6        15%     11             8   0  13       1    0      2
+  tau         67    63        94%     44             6   0   3       5    5    143
+  DEMOGRAPHY 656 births / 219 fertile women = 2.995 births/woman; 0.915 births/woman-year (716.667 woman-years) · mortality <1y 0.074 (41/551; 105 births awaiting follow-up) · <5y 1.000 (199/199; 457 births awaiting follow-up) · mean age at death 14.597y (420 deaths) · causes dehydration=4, exposure=44, infection=5, murder=59, old age=14, starvation=294
+  HOME night near<15 0.803 far>25 0.042 far>45 0.002 sleep 0.183 rest 0.215 · actions rest:0.215,sleep:0.183,idle:0.096,forage:0.078,go_home:0.055,ponder:0.053,give:0.047,shelter:0.045,nurse:0.039,talk:0.037 · day distance median/p90/max 8.2/19.7/100.2 · child-parent median/p90 1.3/5.8 far>12 0.016 far>30 0.001
+  HISTORY drawdown p50/p90/max 0.182/0.750/1.000 · recovered 1/24 (median days 51; censored 23) · band lost violence/need/other/absorbed 0/2/0/0 · world lost 0/20 · self-destroyed 0 · in-band kills/1,000 person-years 0.000 · violent adult deaths 0.178 · answered 0.400 · war episodes/year 1.759 median days 1 peace share 0.999 · firemaking first known day 24 · adoption median days 9 not reached 15 · malnutrition 0.201 · protein nutrition share 0.279
+  FOOD ACCESS accessible 5023659 · blocked by reach 385477 · absent from search 420253
+  ORDERS build 87.4% (166/24 obeyed/refused) · haul 88.9% (3483/435 obeyed/refused) · sabotage 67.9% (57/27 obeyed/refused) · take 53.6% (15/13 obeyed/refused)
+  RAIDS proposed 290 · chief-approved 257 · refused by chief 33 · called 58 · no party 232 · followers ordered 72
+  SOCIAL INTERRUPTIONS interrupted_ask_away_from_family=163 interrupted_ask_baby_crying=50 interrupted_ask_cold=196 interrupted_ask_hungry=15 interrupted_ask_thirsty=13 interrupted_court_baby_crying=5 interrupted_court_cold=666 interrupted_court_hungry=197 interrupted_court_thirsty=2 interrupted_discuss_baby_crying=2297 interrupted_discuss_cold=2401 interrupted_discuss_thirsty=2 interrupted_give_away_from_family=9 interrupted_give_baby_crying=5535 interrupted_give_cold=3516 interrupted_give_hungry=26 interrupted_give_thirsty=4 interrupted_spar_baby_crying=205 interrupted_spar_cold=2724 interrupted_spar_hungry=213 interrupted_spar_thirsty=292 interrupted_steal_cold=57 interrupted_steal_hungry=9 interrupted_teach_baby_crying=519 interrupted_teach_cold=1476 interrupted_teach_hungry=303 interrupted_teach_thirsty=4 interrupted_trade_cold=1
+  PROTEIN DURING CRAVING 1488438/2644910 searches had a reachable protein-rich food node · 424767 only outside anchor reach · 325661 masked by another reachable food node · 325661 selected by the out-of-reach override · 731705 absent from the forage search
+==============================================================================
+  EXTINCT 0/20   ·  no band able to recover 1/20   ·  above its low point at the end 8/20   ·  bands still viable 41
+  MEAN SURVIVAL 77.6%   ·  1/20 collapsed below a quarter   ·  656 born
+  starved: 178 infants (5 or under), 9 older children, 107 adults
+  MEAN 4.3 technologies known at the end, 2.6 conceived past the root nodes, 110.5 passed on   ·  1/20 never got past a root node
+  CONFLICT 68 blows between peoples, 94% near either camp · 2 murders · peoples drifted apart after incidents in 8/13 seeds (mean 1.4 tiles)
+  DEFENCE 241 interventions against 170 property deeds an owner saw · 3 taken captive in 2/20 seeds, 0 escaped, 0 came home
+  TRIPWIRES coats sewn in 0/20 seeds · the hurt tended in 5 · animals fed in 0 · tamed in 0 · taming known in 1
+  BANDS 1 cast out in 1 seeds · factions in 2 seeds · 3 taken in, of 4 who left or were cast out
+  BODIES 408 of 420 found · 163 investigations, 0 named the killer, 0 somebody else
+  VIOLENCE 68 blows in all, 0 inside a band, 0 by an adult on a child · 0 of 2020 thefts from a person inside a band
+  FIRE FOUND 4/20 seeds (20.0%; phase 4 gate 50%)
+  WANTING SPARKS firemaking_4=13 · tracking_4=2
+  KIN defended 0/0 witnessed attacks; fled closer 0/0 times
+  RESEARCH 449 argued breakthroughs / 3318 total; argument breakthroughs in 20/20 seeds
+  REFINEMENT 223 improvements from 206 proven designs in 20/20 seeds
+  JUSTICE 1/17 victim complaints heard; 0 carried demands delivered; complaints in 1/20 seeds
+  SOIL 0/0 harvested worlds below 98.5% of resting (n/a% mean); compost spread in 0/20 seeds (0 spreads; 0 loads matured)
+  WALK 87/12212705 stuck ticks (0.0 per 1,000); above the check floor in 0/20 seeds
+  STANDING 13/16 eligible 60-day worlds above 20 points (3 at or below)
+  2994.3s
+

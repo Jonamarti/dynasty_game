@@ -371,10 +371,14 @@ export interface MotivationConfig {
 export interface CarryConfig {
   /** Scenario switch for comparing the old 40 × vigour × carryFactor model. */
   legacyPack: boolean;
+  /** M15 phase 11d. Scenario ablation for automatic action-specific tool fitting. */
+  autoEquipTools: boolean;
   /** Eat harvested food at its source once hunger reaches this level. */
   eatAtSourceAt: number;
   /** Movement multiplier while dragging a fitted sledge. */
   sledgeSpeed: number;
+  /** M15 phase 11d. Ticks spent changing a tool between an action and its hands. */
+  equipTicks: number;
   /**
    * M15 phase 11b. Tiles around a person, searched by spatial hash, within
    * which an item sitting in a pile, a store or a site's delivered goods
@@ -605,8 +609,10 @@ export const DEFAULT_CONFIG: SimConfig = {
   },
   carry: {
     legacyPack: false,
+    autoEquipTools: true,
     eatAtSourceAt: 55,
     sledgeSpeed: 0.8,
+    equipTicks: 3,
     handledReach: 2,
     handledDays: 3,
   },

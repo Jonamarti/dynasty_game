@@ -1,0 +1,40 @@
+
+> dynasty@0.0.0 test
+> vitest run src/sim/__tests__/tool-equipment.negative.test.ts -t releases a formerly fitted bow --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/tool-equipment.negative.test.ts (8 tests | 1 failed | 7 skipped) 22ms
+     × releases a formerly fitted bow when a baby leaves no arm for a second-handed weapon 19ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/tool-equipment.negative.test.ts > automatic tool fitting > releases a formerly fitted bow when a baby leaves no arm for a second-handed weapon
+AssertionError: expected { changed: false, reason: null } to deeply equal { changed: true, reason: null }
+
+- Expected
++ Received
+
+  {
+-   "changed": true,
++   "changed": false,
+    "reason": null,
+  }
+
+ ❯ src/sim/__tests__/tool-equipment.negative.test.ts:24:8
+     22|     expect(equipFor(worker, 'hunt', DEFAULT_CONFIG.carry,
+     23|       (_x, _y, item, count) => dropped.push([item, count])))
+     24|       .toEqual({ changed: true, reason: null });
+       |        ^
+     25|     expect(worker.equipment.left).toBeUndefined();
+     26|     expect(worker.equipment.right).toBeUndefined();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 skipped (8)
+   Start at  18:59:05
+   Duration  3.40s (transform 1.58s, setup 0ms, import 3.00s, tests 22ms, environment 0ms)
+

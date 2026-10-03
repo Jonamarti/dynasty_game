@@ -16,6 +16,14 @@ function fixture() {
 }
 
 describe('gathering animation', () => {
+  it('does not mistake a tool change after an earlier pull for gathering work', () => {
+    const { person, sim } = fixture();
+    person.workedTicks = 3; person.actionTimer = 3; person.actionTotal = 0;
+    expect(gatheringPose(person, sim, false)).toBeNull();
+    person.actionTotal = 10;
+    expect(gatheringPose(person, sim, false)).toBe('g1');
+  });
+
   it('cycles four frames during work without moving the feet or advancing the simulation', () => {
     const { person, sim } = fixture();
     const frames = [1, 3, 5, 7, 9].map(ticks => {

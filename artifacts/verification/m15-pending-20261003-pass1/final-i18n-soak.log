@@ -1,0 +1,5 @@
+
+> dynasty@0.0.0 i18n:soak
+> vite-node tools/i18n-soak.ts --
+
+524 distinct lines written in Spanish, 0 that look English

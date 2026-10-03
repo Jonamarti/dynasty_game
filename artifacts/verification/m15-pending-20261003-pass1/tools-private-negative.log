@@ -1,0 +1,34 @@
+
+> dynasty@0.0.0 test
+> vitest run src/render/__tests__/equipment-animation.test.ts -t reads visible --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/render/__tests__/equipment-animation.test.ts (5 tests | 1 failed | 4 skipped) 13ms
+     × reads visible hand slots without inspecting private inventory or techniques 11ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/render/__tests__/equipment-animation.test.ts > fitted tool rendering > reads visible hand slots without inspecting private inventory or techniques
+Error: Private inventory read
+ ❯ Person.get [as inventory] src/render/__tests__/equipment-animation.test.ts:16:69
+     14|     person.equipment.right = { item: 'handaxe', count: 1 };
+     15|     Object.defineProperty(person, 'knownTech', { get: () => { throw ne…
+     16|     Object.defineProperty(person, 'inventory', { get: () => { throw ne…
+       |                                                                     ^
+     17|     expect(heldItemFor(person, true)).toBe('handaxe');
+     18|     person.action = 'hunt';
+ ❯ axeItemOf src/sim/knowledge/Tech.ts:2251:26
+ ❯ fittedActionToolFor src/render/EquipmentAnimation.ts:30:7
+ ❯ heldItemFor src/render/Sprites.ts:173:18
+ ❯ src/render/__tests__/equipment-animation.test.ts:17:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 skipped (5)
+   Start at  19:09:55
+   Duration  1.09s (transform 403ms, setup 0ms, import 815ms, tests 13ms, environment 0ms)
+

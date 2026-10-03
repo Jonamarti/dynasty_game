@@ -1,0 +1,249 @@
+{
+  "baselineFailures": 104,
+  "currentFailures": 108,
+  "scenarios": 27,
+  "applicabilityAuditedScenarios": 12,
+  "deltas": [
+    {
+      "scenario": "craft",
+      "applicableBefore": 66,
+      "applicableAfter": 65,
+      "addedFailures": [],
+      "removedFailures": [
+        "projects-find-backers"
+      ],
+      "lostApplicability": [
+        {
+          "id": "people-eat-meat",
+          "before": "19 meat taken; 1491 meals eaten",
+          "after": "no meat entered the world in this run"
+        }
+      ],
+      "gainedApplicability": []
+    },
+    {
+      "scenario": "porters",
+      "applicableBefore": 54,
+      "applicableAfter": 54,
+      "addedFailures": [
+        "animals-flee"
+      ],
+      "removedFailures": [],
+      "lostApplicability": [],
+      "gainedApplicability": []
+    },
+    {
+      "scenario": "scribes",
+      "applicableBefore": 67,
+      "applicableAfter": 66,
+      "addedFailures": [
+        "discovery-is-situated"
+      ],
+      "removedFailures": [
+        "gossip-is-aimed"
+      ],
+      "lostApplicability": [
+        {
+          "id": "trials-accumulate",
+          "before": "3 trials went well across 1 designs proven, 2 went badly",
+          "after": "nothing was proven, so nothing was tried more than once"
+        }
+      ],
+      "gainedApplicability": []
+    },
+    {
+      "scenario": "millers",
+      "applicableBefore": 77,
+      "applicableAfter": 75,
+      "addedFailures": [
+        "gossip-is-aimed"
+      ],
+      "removedFailures": [],
+      "lostApplicability": [
+        {
+          "id": "raids-are-organised",
+          "before": "5 called (1 for plunder, 4 for damage), 6 followed, 12 never raised a party, 0 found nothing within a day of walking",
+          "after": "weighed 16 times and never once raised a party; no fighting party could be assembled in this world"
+        },
+        {
+          "id": "kin-outrank-strangers",
+          "before": "household=65.1 band=35.6 outsider=-31.0 outsider-unrelated=-31.0 · band-pairs=1 friendliest=0.0 hostile=-100.0",
+          "after": "not all three kinds of tie have 10+ pairs here: household=67.1 band=46.3 outsider=n/a outsider-unrelated=n/a · band-pairs=1 friendliest=0.0 hostile=-60.9"
+        },
+        {
+          "id": "the-watched-intervene",
+          "before": "4 interventions against 11 property deeds seen by an owner (floor 5%): 8 warnings in all, 5 holds won, 0 calls for help",
+          "after": "only 0 property deeds were seen by their owners; too few to say"
+        }
+      ],
+      "gainedApplicability": [
+        {
+          "id": "crafts-happen-at-stations",
+          "before": "5 station designs exist and no band finished one in this run",
+          "after": "1 stations finished, 4 things made at one, 0 walks that found no station"
+        }
+      ]
+    },
+    {
+      "scenario": "farmers",
+      "applicableBefore": 72,
+      "applicableAfter": 75,
+      "addedFailures": [
+        "crafts-happen-at-stations",
+        "herds-breed-and-are-culled",
+        "bands-take-sides"
+      ],
+      "removedFailures": [
+        "animals-are-tamed"
+      ],
+      "lostApplicability": [],
+      "gainedApplicability": [
+        {
+          "id": "crafts-happen-at-stations",
+          "before": "5 station designs exist and no band finished one in this run",
+          "after": "1 stations finished, 0 things made at one, 0 walks that found no station"
+        },
+        {
+          "id": "herds-breed-and-are-culled",
+          "before": "nobody in this world knows how to keep a pen",
+          "after": "1 planned, 0 standing; 0 bred, 0 culled, 0 days at capacity, 0 days nobody could keep one"
+        },
+        {
+          "id": "bands-take-sides",
+          "before": "no two bands have touched each other in this run",
+          "after": "1 pairs, friendliest=0.0 hostile=-0.6 (spread 0.6)"
+        }
+      ]
+    },
+    {
+      "scenario": "herders",
+      "applicableBefore": 72,
+      "applicableAfter": 72,
+      "addedFailures": [
+        "techs-are-refined"
+      ],
+      "removedFailures": [
+        "moods-move-choices"
+      ],
+      "lostApplicability": [],
+      "gainedApplicability": []
+    },
+    {
+      "scenario": "feasts",
+      "applicableBefore": 78,
+      "applicableAfter": 75,
+      "addedFailures": [
+        "techs-are-refined",
+        "bands-take-sides",
+        "hills-see-farther"
+      ],
+      "removedFailures": [
+        "crafts-happen-at-stations"
+      ],
+      "lostApplicability": [
+        {
+          "id": "crafting-is-interruptible",
+          "before": "14 things made, 80 attempts broken off for a need",
+          "after": "too few crafting attempts to tell (10 made, 11 interrupted)"
+        },
+        {
+          "id": "crafts-happen-at-stations",
+          "before": "1 stations finished, 0 things made at one, 0 walks that found no station",
+          "after": "5 station designs exist and no band finished one in this run"
+        },
+        {
+          "id": "kin-outrank-strangers",
+          "before": "household=59.9 band=42.9 outsider=-5.8 outsider-unrelated=-5.8 · band-pairs=1 friendliest=0.0 hostile=-27.9",
+          "after": "not all three kinds of tie have 10+ pairs here: household=70.6 band=46.0 outsider=n/a outsider-unrelated=n/a · band-pairs=1 friendliest=0.0 hostile=-8.1"
+        }
+      ],
+      "gainedApplicability": []
+    },
+    {
+      "scenario": "stewards",
+      "applicableBefore": 72,
+      "applicableAfter": 72,
+      "addedFailures": [
+        "gossip-is-aimed",
+        "discovery-is-situated"
+      ],
+      "removedFailures": [
+        "nights-are-slept"
+      ],
+      "lostApplicability": [],
+      "gainedApplicability": []
+    },
+    {
+      "scenario": "labour",
+      "applicableBefore": 65,
+      "applicableAfter": 65,
+      "addedFailures": [
+        "peoples-drift-apart"
+      ],
+      "removedFailures": [],
+      "lostApplicability": [],
+      "gainedApplicability": []
+    },
+    {
+      "scenario": "polity",
+      "applicableBefore": 85,
+      "applicableAfter": 84,
+      "addedFailures": [
+        "people-act-on-what-they-know"
+      ],
+      "removedFailures": [
+        "the-wise-avoid-baneberries"
+      ],
+      "lostApplicability": [
+        {
+          "id": "the-wise-avoid-baneberries",
+          "before": "3 baneberry meals by people without plant lore (6 fell ill), 4 by people who had it",
+          "after": "2 baneberry meals by the unlettered; nobody was exposed enough to tell"
+        }
+      ],
+      "gainedApplicability": []
+    },
+    {
+      "scenario": "conquest",
+      "applicableBefore": 90,
+      "applicableAfter": 89,
+      "addedFailures": [],
+      "removedFailures": [
+        "moods-move-choices",
+        "techs-are-refined",
+        "records-are-cut",
+        "spatial-hash-spreads"
+      ],
+      "lostApplicability": [
+        {
+          "id": "heads-direct-work",
+          "before": "48 orders landed on rank alone, 79 refused",
+          "after": "too few orders on rank to tell (0 obeyed, 0 refused)"
+        }
+      ],
+      "gainedApplicability": []
+    },
+    {
+      "scenario": "lean",
+      "applicableBefore": 70,
+      "applicableAfter": 68,
+      "addedFailures": [
+        "needs-not-pinned"
+      ],
+      "removedFailures": [],
+      "lostApplicability": [
+        {
+          "id": "knowledge-is-passed-on",
+          "before": "0 taught deliberately, 2 picked up by watching; 0 lessons that did not take",
+          "after": "nobody knew anything worth passing on"
+        },
+        {
+          "id": "people-eat-meat",
+          "before": "14 meat taken; 1087 meals eaten",
+          "after": "no meat entered the world in this run"
+        }
+      ],
+      "gainedApplicability": []
+    }
+  ]
+}

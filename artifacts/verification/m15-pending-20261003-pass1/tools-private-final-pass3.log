@@ -1,0 +1,13 @@
+
+> dynasty@0.0.0 test
+> vitest run src/render/__tests__/equipment-animation.test.ts src/render/__tests__/work-animation.test.ts src/sim/__tests__/tool-equipment.test.ts --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  3 passed (3)
+      Tests  24 passed (24)
+   Start at  19:11:39
+   Duration  3.55s (transform 1.33s, setup 0ms, import 2.72s, tests 127ms, environment 0ms)
+

@@ -187,8 +187,15 @@ naive scan is worse than no index at all.
 
 NPC scavenging of edible food uses `pileHash`, stores the selected item and pile
 as the `pickup` target, and collects through `ActionSystem` after walking there.
-The remaining M15 phase 11d paths (non-food needs and automatic tool fitting)
-are still pending; see `m15_plan.md`.
+Construction-material pickup also follows ownership and need. Automatic fitting
+uses a separate three-tick setup counter at work, rechecks possession/arms and
+reports interruptions through the existing stop/abandon path. In the enabled
+branch, chop/hunt modifiers read fitted tools rather than a spare in inventory;
+the progress bar follows the same axe denominator. Rendering reads visible hand
+slots and static item kinds, without inspecting private technique or inventory
+to choose a silhouette. `carry.autoEquipTools=false` is the unchanged legacy
+ablation. Occupation-tool pickup and manual slot controls remain pending; see
+[m15_tool_equipment.md](m15_tool_equipment.md).
 
 **Knowledge is held by people, not by a civilisation.** There is no global tech
 tree and no unlock. `Simulation.knownTech` is recomputed daily from the

@@ -1844,7 +1844,7 @@ export class Renderer {
       hair: hair === 'grey' ? '#a7a197' : person.id % 3 === 0 ? '#5b3d28' : '#2b2018',
       band: BAND_COLORS[colorIndex]!,
       hairStyle, beard: hasBeardOf(person), expression: this.expressionFor(person),
-      wear: {}, carryBaby: false, held: gathering || crafting ? null : heldItemFor(person),
+      wear: {}, carryBaby: false, held: gathering || crafting ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools),
     };
     const ratio = Math.min(1.2, Math.max(0.85, bodyScale / Renderer.NOMINAL_SCALE[sizeClass]));
     const k = (scale * 1.55 * ratio) / 96;

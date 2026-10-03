@@ -24,6 +24,7 @@ import type { Person } from '../sim/entities/Person.ts';
 import { ADULT_YEARS, ELDER_YEARS } from '../sim/entities/Person.ts';
 import { EXPRESSIONS, type Expression } from '../sim/core/Mood.ts';
 import { digTool } from '../sim/core/Earth.ts';
+import { fittedActionToolFor } from './EquipmentAnimation.ts';
 
 /** One cell in the atlas, square, at a resolution above the zoom ceiling
  * (`main.ts`'s wheel handler clamps to 80 px/tile) so nothing is ever drawn
@@ -161,7 +162,7 @@ export function hasBeardOf(person: Person): boolean {
  * conspicuous carried object; while digging, the usable tool selected by the
  * executor instead, so a spear in the pack cannot hide a working spade.
  */
-export function heldItemFor(person: Person): HeldItemKind | null {
+export function heldItemFor(person: Person, autoEquipTools = false): HeldItemKind | null {
   // A worker holding both a spear and a spade must show the tool doing the
   // work. Ask the executor's selector so refinements choose the same tool.
   if (person.action === 'dig') {
@@ -169,6 +170,8 @@ export function heldItemFor(person: Person): HeldItemKind | null {
     if (tool?.item === 'sticks') return 'digging_stick';
     if (tool?.item === 'spade' || tool?.item === 'antler_pick') return tool.item;
   }
+  const fitted = fittedActionToolFor(person, autoEquipTools);
+  if (fitted !== undefined) return fitted;
   for (const item of HELD_PRIORITY) {
     if (person.inventory.has(item)) return item;
   }

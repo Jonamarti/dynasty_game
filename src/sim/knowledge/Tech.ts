@@ -2064,25 +2064,41 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
  */
 export function weaponOf(
   person: Person,
-  forHunt: boolean
+  forHunt: boolean,
+  equippedOnly = false,
 ): { damage: number; reach: number; hunt: number; power: number } | null {
-  let best = null as
-    { damage: number; reach: number; hunt: number; power: number } | null;
+  const itemId = weaponItemOf(person, forHunt, equippedOnly);
+  const weapon = itemId ? ITEMS[itemId]?.weapon : null;
+  if (!weapon) return null;
+  return {
+    damage: weapon.damage,
+    reach: weapon.reach,
+    hunt: weapon.hunt,
+    power: techPower(person, weapon.tech as Tech),
+  };
+}
+
+/** The item selected by `weaponOf`, exposed so the action system can fit it. */
+export function weaponItemOf(
+  person: Person,
+  forHunt: boolean,
+  equippedOnly = false,
+  maxHands: 1 | 2 = 2,
+): string | null {
+  let best: { item: string; worth: number } | null = null;
+  const equipped = equippedOnly
+    ? new Set(['left', 'right'].map(slot => person.equipment[slot as 'left' | 'right']?.item).filter(Boolean))
+    : null;
   for (const [itemId, count] of person.inventory.entries()) {
-    if (count <= 0) continue;
+    if (count <= 0 || (equipped && !equipped.has(itemId))) continue;
     const weapon = ITEMS[itemId]?.weapon;
-    if (!weapon) continue;
+    if (!weapon || ITEMS[itemId]!.hand.hands > maxHands) continue;
     const power = techPower(person, weapon.tech as Tech);
     if (power <= 0) continue;
-    const worth = forHunt ? weapon.hunt * power : weapon.damage * power;
-    const bestWorth = best === null
-      ? 0
-      : (forHunt ? best.hunt * best.power : best.damage * best.power);
-    if (best === null || worth > bestWorth) {
-      best = { damage: weapon.damage, reach: weapon.reach, hunt: weapon.hunt, power };
-    }
+    const worth = (forHunt ? weapon.hunt : weapon.damage) * power;
+    if (best === null || worth > best.worth) best = { item: itemId, worth };
   }
-  return best;
+  return best?.item ?? null;
 }
 
 /**
@@ -2216,15 +2232,33 @@ export function buildFactor(person: Person): number {
  * carrying rather than stacking them, because two axes do not fell a tree
  * twice as fast — only one is swinging.
  */
-export function axeFactor(person: Person): number {
+export function axeFactor(person: Person, equippedOnly = false): number {
   let best = 1;
-  if (person.inventory.has('handaxe')) {
+  if (person.inventory.has('handaxe') && (!equippedOnly || equippedItem(person, 'handaxe'))) {
     best = Math.min(best, scaled(person, 'hafting', 0.5));
   }
-  if (person.inventory.has('stone_axe')) {
+  if (person.inventory.has('stone_axe') && (!equippedOnly || equippedItem(person, 'stone_axe'))) {
     best = Math.min(best, scaled(person, 'ground_stone', 0.35));
   }
   return best;
+}
+
+/** The strongest axe present, optionally limited to what is actually in hand. */
+export function axeItemOf(person: Person, equippedOnly = false): string | null {
+  const held = equippedOnly
+    ? new Set(['left', 'right'].map(slot => person.equipment[slot as 'left' | 'right']?.item).filter(Boolean))
+    : null;
+  const handaxe = person.inventory.has('handaxe') && (!held || held.has('handaxe'));
+  const stoneAxe = person.inventory.has('stone_axe') && (!held || held.has('stone_axe'));
+  if (!handaxe && !stoneAxe) return null;
+  if (!handaxe) return stoneAxe ? 'stone_axe' : null;
+  if (!stoneAxe) return 'handaxe';
+  return scaled(person, 'ground_stone', 0.35) < scaled(person, 'hafting', 0.5)
+    ? 'stone_axe' : 'handaxe';
+}
+
+function equippedItem(person: Person, itemId: string): boolean {
+  return person.equipment.left?.item === itemId || person.equipment.right?.item === itemId;
 }
 
 /**

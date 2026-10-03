@@ -1,0 +1,213 @@
+import { describe, expect, it } from 'vitest';
+import { Simulation } from '../core/Simulation.ts';
+import { DEFAULT_CONFIG } from '../core/Config.ts';
+import { equipFor } from '../core/ToolEquipment.ts';
+import { RNG } from '../core/RNG.ts';
+import { Person } from '../entities/Person.ts';
+import { axeFactor } from '../knowledge/Tech.ts';
+import { fromPersonRecord, toPersonRecord } from '../persistence/EntityRecords.ts';
+
+function person(): Person {
+  const result = new Person('Tool user', 8, 8, 0, new RNG('tool-equipment'));
+  result.age = 30 * 80;
+  return result;
+}
+
+describe('automatic tool fitting', () => {
+  it('releases a formerly fitted bow when a baby leaves no arm for a second-handed weapon', () => {
+    const worker = person(); worker.armsTaken = 1;
+    worker.knownTech.add('bow'); worker.inventory.add('bow', 1);
+    worker.equipment.left = { item: 'bow', count: 1 };
+    worker.equipment.right = { item: 'bow', count: 1 };
+    const dropped: [string, number][] = [];
+    expect(equipFor(worker, 'hunt', DEFAULT_CONFIG.carry,
+      (_x, _y, item, count) => dropped.push([item, count])))
+      .toEqual({ changed: true, reason: null });
+    expect(worker.equipment.left).toBeUndefined();
+    expect(worker.equipment.right).toBeUndefined();
+    expect(worker.inventory.count('bow')).toBe(0);
+    expect(dropped).toEqual([['bow', 1]]);
+  });
+
+  it('reserves the baby arm and falls back from a bow to a one-handed spear', () => {
+    const worker = person();
+    worker.armsTaken = 1;
+    worker.knownTech.add('bow'); worker.knownTech.add('spear');
+    worker.inventory.add('bow', 1); worker.inventory.add('spear', 1);
+    worker.equipment.left = { item: 'bow', count: 1 };
+    worker.equipment.right = { item: 'bow', count: 1 };
+    const dropped: [string, number][] = [];
+    expect(equipFor(worker, 'hunt', DEFAULT_CONFIG.carry,
+      (_x, _y, item, count) => dropped.push([item, count]))).toEqual({ changed: true, reason: null });
+    expect(Object.values(worker.equipment).filter(Boolean)).toEqual([{ item: 'spear', count: 1 }]);
+    expect(dropped).toEqual([['bow', 1]]);
+    expect(worker.inventory.count('spear')).toBe(1);
+    expect(equipFor(worker, 'hunt', DEFAULT_CONFIG.carry, () => { throw new Error('No second drop'); }))
+      .toEqual({ changed: false, reason: null });
+  });
+
+  it('releases an extra fitted item even when the desired tool is already in hand', () => {
+    const worker = person();
+    worker.armsTaken = 1;
+    worker.knownTech.add('hafting');
+    worker.inventory.add('handaxe', 1); worker.inventory.add('sticks', 1);
+    worker.equipment.right = { item: 'handaxe', count: 1 };
+    worker.equipment.left = { item: 'sticks', count: 1 };
+    const dropped: string[] = [];
+    expect(equipFor(worker, 'chop', DEFAULT_CONFIG.carry,
+      (_x, _y, item) => dropped.push(item))).toEqual({ changed: true, reason: null });
+    expect(worker.equipment.left).toBeUndefined();
+    expect(worker.equipment.right?.item).toBe('handaxe');
+    expect(dropped).toEqual(['sticks']);
+  });
+
+  it('moves a carried axe into a hand without changing possession', () => {
+    const worker = person();
+    worker.knownTech.add('hafting');
+    worker.inventory.add('handaxe', 1);
+    worker.equipment.back = { item: 'handaxe', count: 1 };
+    const dropped: string[] = [];
+
+    const result = equipFor(worker, 'chop', DEFAULT_CONFIG.carry,
+      (_x, _y, item, count) => dropped.push(item + ':' + count));
+
+    expect(result).toEqual({ changed: true, reason: null });
+    expect(worker.equipment.right?.item).toBe('handaxe');
+    expect(worker.equipment.back).toBeUndefined();
+    expect(worker.inventory.count('handaxe')).toBe(1);
+    expect(axeFactor(worker, true)).toBeCloseTo(0.5);
+    expect(dropped).toEqual([]);
+  });
+
+  it('drops a displaced hand item and keeps the fitted container capacity in sync', () => {
+    const worker = person();
+    worker.knownTech.add('hafting');
+    worker.inventory.add('handaxe', 1);
+    worker.inventory.add('sticks', 1);
+    worker.inventory.add('sledge', 1);
+    worker.inventory.add('berries', 10);
+    worker.equipment.right = { item: 'sticks', count: 1 };
+    worker.equipment.left = { item: 'sledge', count: 1 };
+    worker.carryContainerCapacity = 30;
+    const dropped: string[] = [];
+
+    equipFor(worker, 'chop', DEFAULT_CONFIG.carry,
+      (_x, _y, item, count) => dropped.push(item + ':' + count));
+
+    expect(worker.equipment.left?.item).toBe('handaxe');
+    expect(worker.equipment.right?.item).toBe('sticks');
+    expect(worker.inventory.count('sticks')).toBe(1);
+    expect(worker.inventory.count('sledge')).toBe(0);
+    expect(worker.carryContainerCapacity).toBe(0);
+    expect(worker.carrying).toBeLessThanOrEqual(worker.carryCapacity);
+    expect(dropped.sort()).toEqual(['berries:2', 'sledge:1']);
+  });
+
+  it('empties the working hands for foraging and leaves the tool on the ground', () => {
+    const worker = person();
+    worker.inventory.add('handaxe', 1);
+    worker.equipment.right = { item: 'handaxe', count: 1 };
+    const dropped: string[] = [];
+
+    const result = equipFor(worker, 'forage', DEFAULT_CONFIG.carry,
+      (_x, _y, item, count) => dropped.push(item + ':' + count));
+
+    expect(result.changed).toBe(true);
+    expect(worker.equipment.right).toBeUndefined();
+    expect(worker.inventory.count('handaxe')).toBe(0);
+    expect(dropped).toEqual(['handaxe:1']);
+  });
+
+  it('keeps an NPC committed for equipTicks before chopping with the axe', () => {
+    const sim = new Simulation({
+      seed: 'tool-equipment-action',
+      world: { width: 48, height: 48, berryBushes: 40, flintOutcrops: 10, deadwood: 20, gameHerds: 4 },
+      population: { bands: 1, peoplePerBand: 6 },
+    });
+    const worker = sim.livingPeople()[0]!;
+    for (const [item, count] of worker.inventory.entries()) worker.inventory.remove(item, count);
+    worker.needs.hunger = worker.needs.thirst = worker.needs.cold = 0;
+    worker.knownTech.add('hafting');
+    worker.inventory.add('handaxe', 1);
+    const tree = sim.trees.find(candidate => candidate.standing &&
+      sim.world.sameRegion(worker.x, worker.y, candidate.x, candidate.y))!;
+    worker.x = tree.x;
+    worker.y = tree.y;
+
+    expect(sim.order(worker, 'chop', { treeId: tree.id })).toBe(true);
+    for (let i = 0; i < 50 &&
+      worker.equipment.left?.item !== 'handaxe' && worker.equipment.right?.item !== 'handaxe'; i++) {
+      sim.step();
+    }
+
+    expect(worker.action).toBe('chop');
+    expect(worker.equipment.right?.item ?? worker.equipment.left?.item).toBe('handaxe');
+    expect(tree.chopProgress).toBe(0);
+    expect(worker.actionTimer).toBe(DEFAULT_CONFIG.carry.equipTicks);
+
+    const restored = fromPersonRecord(JSON.parse(JSON.stringify(toPersonRecord(worker, sim.time.tick))));
+    expect(restored.toolChangeAction).toBe('chop');
+    expect(restored.toolChangeTicks).toBe(DEFAULT_CONFIG.carry.equipTicks);
+    expect(restored.actionTimer).toBe(DEFAULT_CONFIG.carry.equipTicks);
+    expect(restored.actionTotal).toBe(0);
+    expect(restored.equipment.right?.item ?? restored.equipment.left?.item).toBe('handaxe');
+    expect(restored.equipment).not.toBe(worker.equipment);
+
+    for (let i = 0; i < DEFAULT_CONFIG.carry.equipTicks - 1; i++) sim.step();
+    expect(tree.chopProgress).toBe(0);
+    sim.step();
+    expect(tree.chopProgress).toBeGreaterThan(0);
+    expect(axeFactor(worker, true)).toBeCloseTo(0.5);
+  });
+
+  it('finishes a forage pull after clearing the axe instead of resetting its work timer', () => {
+    const sim = new Simulation({
+      seed: 'tool-equipment-forage',
+      world: { width: 48, height: 48, berryBushes: 40, flintOutcrops: 10, deadwood: 20, gameHerds: 4 },
+      population: { bands: 1, peoplePerBand: 6 },
+    });
+    const worker = sim.livingPeople()[0]!;
+    for (const [item, count] of worker.inventory.entries()) worker.inventory.remove(item, count);
+    worker.needs.hunger = worker.needs.thirst = worker.needs.cold = 0;
+    worker.inventory.add('handaxe', 1);
+    worker.equipment.right = { item: 'handaxe', count: 1 };
+    const node = sim.nodes.find(candidate => candidate.kind === 'berries' && !candidate.depleted &&
+      candidate.amount >= 3)!;
+    worker.x = node.x;
+    worker.y = node.y;
+    expect(sim.order(worker, 'forage', { nodeId: node.id })).toBe(true);
+    sim.step();
+    expect(worker.equipment.right).toBeUndefined();
+    expect(worker.inventory.count('handaxe')).toBe(0);
+    expect(worker.actionTimer).toBe(DEFAULT_CONFIG.carry.equipTicks);
+
+    for (let i = 0; i < 80 && worker.inventory.count('berries') === 0; i++) sim.step();
+    expect(worker.inventory.count('berries')).toBeGreaterThan(0);
+    expect(sim.piles.some(pile => pile.contents.count('handaxe') > 0)).toBe(true);
+  });
+
+  it('preserves inventory-based chopping and skips setup in the disabled ablation', () => {
+    const sim = new Simulation({
+      seed: 'tool-equipment-ablation', carry: { autoEquipTools: false },
+      world: { width: 48, height: 48, berryBushes: 40, flintOutcrops: 10, deadwood: 20, gameHerds: 4 },
+      population: { bands: 1, peoplePerBand: 6 },
+    });
+    const worker = sim.livingPeople()[0]!;
+    for (const [item, count] of worker.inventory.entries()) worker.inventory.remove(item, count);
+    worker.needs.hunger = worker.needs.thirst = worker.needs.cold = 0;
+    worker.knownTech.add('hafting'); worker.inventory.add('handaxe', 1);
+    const tree = sim.trees.find(candidate => candidate.standing &&
+      sim.world.sameRegion(worker.x, worker.y, candidate.x, candidate.y))!;
+    worker.x = tree.x; worker.y = tree.y;
+    expect(sim.order(worker, 'chop', { treeId: tree.id })).toBe(true);
+    sim.step();
+    expect(tree.chopProgress).toBeGreaterThan(0);
+    expect(worker.actionTimer).toBe(0);
+    expect(worker.toolChangeAction).toBeNull();
+    expect(worker.toolChangeTicks).toBe(0);
+    expect(worker.equipment.left).toBeUndefined();
+    expect(worker.equipment.right).toBeUndefined();
+    expect(axeFactor(worker)).toBe(0.5);
+    expect(axeFactor(worker, true)).toBe(1);
+  });
+});

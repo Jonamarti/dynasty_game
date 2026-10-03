@@ -48,6 +48,7 @@ import type { RNG } from '../core/RNG.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
 import { canTake, equipContainer, itemCapacityFor, stow } from '../core/Carry.ts';
+import { equipFor as fitToolForAction, type ToolAction } from '../core/ToolEquipment.ts';
 import { RECIPES, hasIngredients } from '../entities/Recipe.ts';
 import {
   INSCRIPTIONS, type Inscription, type InscriptionDef, type InscriptionForm,
@@ -1281,6 +1282,48 @@ export class ActionSystem {
     return assailantOf(person, id => ctx.peopleById.get(id), ctx.tick) !== null;
   }
 
+  /**
+   * Prepare the hands at the work site. Tool changes keep the action committed
+   * for their configured ticks, so the ordinary think cadence cannot erase the
+   * work before it begins; needs and danger still reach the short transition.
+   */
+  private prepareTool(
+    person: Person, action: ToolAction, ctx: ActionContext, answers?: LethalNeed,
+  ): boolean {
+    if (!ctx.carry.autoEquipTools) return false;
+    const changing = person.toolChangeAction === action && person.toolChangeTicks > 0;
+    // Arms and possession can change during setup (a carried baby, a transfer).
+    // Recheck the fit rather than finishing a two-handed change with one arm.
+    const fit = fitToolForAction(person, action, ctx.carry, ctx.dropAt);
+    if (fit.reason) {
+      this.abandon(person, fit.reason, ctx);
+      return true;
+    }
+
+    if (fit.changed || changing) {
+      const interrupted = this.interruption(person, ctx, { ignoreLaden: true, answers });
+      if (interrupted) {
+        this.stop(person, interrupted, ctx);
+        return true;
+      }
+      if (fit.changed) {
+        person.actionTimer = Math.max(0, ctx.carry.equipTicks);
+        person.toolChangeAction = action;
+        person.toolChangeTicks = person.actionTimer;
+        // This short setup is not work on the node/tree; avoid drawing it as a
+        // harvest cycle or allowing a nearly-done work threshold to read it.
+        person.actionTotal = 0;
+        telemetry.count('tool_equipped_' + action);
+      } else {
+        person.toolChangeTicks--;
+        person.actionTimer = person.toolChangeTicks;
+      }
+      if (person.toolChangeTicks > 0) return true;
+      person.toolChangeAction = null;
+    }
+    return false;
+  }
+
   private doHarvest(person: Person, ctx: ActionContext): void {
     const node = person.targetNodeId === null ? null : ctx.nodesById.get(person.targetNodeId);
     // M15 phase 20: a remembered place is found empty by looking at it, not
@@ -1318,6 +1361,11 @@ export class ActionSystem {
     }
 
     if (!this.travel(person, ctx)) return;
+
+    const setupAnswers = (ITEMS[node.itemId]?.nutrition ?? 0) > 0
+      ? 'hunger'
+      : answersColdProject(person, ctx) ? 'cold' : undefined;
+    if (person.action === 'forage' && this.prepareTool(person, 'forage', ctx, setupAnswers)) return;
     const owner = ctx.territoryOwnerAt(node.x, node.y);
     if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
 
@@ -1669,6 +1717,7 @@ export class ActionSystem {
     person.targetX = tree.x;
     person.targetY = tree.y;
     if (!this.travel(person, ctx)) return;
+    if (this.prepareTool(person, 'chop', ctx)) return;
 
     const owner = ctx.territoryOwnerAt(tree.x, tree.y);
     if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
@@ -1679,7 +1728,7 @@ export class ActionSystem {
     // people chopped steadily through to a hundred thirst and died holding the
     // axe. Progress on the trunk means the same work happens, but the person
     // is free to leave for a drink and come back to it.
-    const required = tree.fellingTicks * axeFactor(person);
+    const required = tree.fellingTicks * axeFactor(person, ctx.carry.autoEquipTools);
     tree.chopProgress += person.skillFactor('build');
     person.workedTicks++;
     person.practice('build', 0.05);
@@ -2279,6 +2328,8 @@ export class ActionSystem {
       return;
     }
 
+    if (this.prepareTool(person, 'hunt', ctx, 'hunger')) return;
+
     const distance = person.distanceTo(animal);
     if (distance > PURSUIT_LIMIT * 2) {
       // Outrun. A chase that never ends is a person who never eats again.
@@ -2316,7 +2367,7 @@ export class ActionSystem {
     // to win brawls. The atlatl arriving in this pass is a weapon whose *whole
     // point* is the throw, so leaving it would have shipped a third node with a
     // decorative stat.
-    const weapon = weaponOf(person, true);
+    const weapon = weaponOf(person, true, ctx.carry.autoEquipTools);
     if (distance > REACH + (weapon?.reach ?? 0)) {
       person.targetX = animal.x;
       person.targetY = animal.y;

@@ -751,6 +751,9 @@ export class Person {
   private timer = 0;
   actionTotal = 0;
   workedTicks = 0;
+  /** M15 11d setup delay, separate from a harvest's real work countdown. */
+  toolChangeAction: string | null = null;
+  toolChangeTicks = 0;
 
   get actionTimer(): number {
     return this.timer;
@@ -1150,6 +1153,8 @@ export class Person {
     this.fleeFromId = null;
     this.pursuitFrom = null;
     this.actionTimer = 0;
+    this.toolChangeAction = null;
+    this.toolChangeTicks = 0;
     // A route and the aim it was computed for have to be forgotten together —
     // this is the one place that forgets where somebody was going, and a
     // route outliving it would send them toward the last errand's bush. The

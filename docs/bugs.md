@@ -1,5 +1,37 @@
 # Known bugs and rough edges
 
+## M15 equipamiento: matriz roja y cobertura perdida (2026-10-03)
+
+La integración de herramientas tiene 108 instancias de check fallidas en 27
+escenarios, frente a 104 en la referencia: 93 persisten, 15 aparecen y 11 se
+retiran. Los nuevos fallos observados son `animals-flee` (porters),
+`discovery-is-situated` (scribes/stewards), `gossip-is-aimed`
+(millers/stewards), `crafts-happen-at-stations`, `herds-breed-and-are-culled` y
+`bands-take-sides` (farmers), `techs-are-refined` (herders/feasts),
+`bands-take-sides` y `hills-see-farther` (feasts), `peoples-drift-apart`
+(labour), `people-act-on-what-they-know` (polity) y `needs-not-pinned` (lean).
+Su causa no se ha establecido; no se atribuyen todos a la referencia ni se
+declara que son solo caos. No se ajustaron pesos o umbrales.
+
+La ablación de herramientas en doce escenarios identifica doce pérdidas de
+aplicabilidad. En craft/lean no entra carne; scribes deja de probar diseños;
+millers no reúne partidas, no tiene suficientes vínculos con extranjeros y no
+observa delitos; feasts fabrica poco, no acaba estaciones y pierde la muestra
+de vínculos; polity no tiene suficiente exposición a bayas venenosas; conquest
+no recibe órdenes de rango; lean no transmite conocimientos. Dos son antiguos
+FAIL que pasan a n/a (estaciones de feasts y bayas de polity): no son arreglos.
+Farmers gana tres checks aplicables y millers uno. Evidencia completa:
+`artifacts/verification/m15-pending-20261003-pass1/matrix-final-delta.json`.
+
+`lean` conserva un problema demográfico grave: 4,0% de supervivencia media con
+equipamiento frente a 4,2% sin él en veinte semillas; ambas cohortes colapsan
+20/20. La parte restante de 11d para recoger herramientas de oficio importa
+también aquí: soltar una herramienta al liberar manos no crea aún un motivo
+para recuperarla. No se ha demostrado que esa sea la causa de la pérdida de
+carne o de los fallos de la matriz. `century` final a veinte semillas cumple el
+límite de caída (77,4% con equipo, 77,6% sin él), pero tiene dos colapsos en vez
+de uno y diez nacimientos menos (646/656); no se declara mejora de balance.
+
 ## LOD de simulación ausente — diseño aprobado el 2026-10-03
 
 La niebla restringe dibujo y selección, pero Simulation.step sigue ejecutando

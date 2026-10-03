@@ -1250,6 +1250,24 @@ sesiones a tiempo antes de tocar los pesos de recolección.
 
 ### 11d. Lo que hace un NPC con las manos (medido)
 
+- **Avance 2026-10-03 — preparar herramienta:** hacha efectiva para talar,
+  arma para cazar y manos vacías para recolectar. La preparación cuesta tres
+  ticks en un contador propio y vuelve a comprobar posesión y brazos; un bebé
+  impide usar arco. Soltar conserva objetos y capacidad del contenedor; el
+  trabajo y su barra leen solo herramientas equipadas en la variante nueva.
+  Dibujo basado en huecos visibles, sin leer técnicas o inventario privados.
+  Checkpoint de persona conserva la preparación en curso. Ablación antigua
+  `carry.autoEquipTools=false`; no se cambiaron coeficientes.
+  `lean` final a 20 semillas: 4,0% frente a 4,2%, ambas 20/20 colapsos;
+  `century` final: 77,4% frente a 77,6%, dos colapsos frente a uno. Ambas
+  puertas de caída máxima de tres puntos se superan, sin demostrar mejora.
+  Matriz 104→108 fallos, con pérdidas de
+  aplicabilidad y nuevos fallos registrados en bugs, sin llamarlos heredados.
+  Capturas revisadas de trabajador/Kit:
+  `artifacts/screenshots/m15-tools-2026-10-03-final-pass4/`.
+  [Contrato](m15_tool_equipment.md). Quedan recogida de herramientas de oficio
+  y controles manuales; 11d continúa abierta.
+
 - **Elegir herramienta.** `ActionSystem` gana `equipFor(person, action)`: el
   hacha para `chop`, la lanza para `hunt` y las manos vacías para `forage`.
   Pasar algo de la espalda o del cinturón a la mano cuesta

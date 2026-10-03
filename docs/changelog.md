@@ -1,3 +1,27 @@
+## 2026-10-03 — M15 fase 11d: preparar la herramienta para trabajar
+
+Talar/cazar prepara el útil poseído más efectivo y recolectar libera las manos.
+Tres ticks de preparación en contador propio, interrupciones y brazos/posesión
+recomprobados; un bebé impide el arco. Lo soltado conserva objetos y capacidad
+del contenedor. Modificadores y barra leen lo equipado; el dibujo observa huecos
+visibles sin leer técnicas o inventario privados. La preparación sobrevive al
+checkpoint de persona y no reinicia una cosecha ni finge su gesto. La ablación
+`carry.autoEquipTools=false` conserva el comportamiento anterior.
+
+Pruebas detectan las regresiones de arco/bebé, gesto durante preparación y
+lectura privada en versiones anteriores. Typecheck limpio, 949/949 pruebas
+en 129 archivos, 74/74 e2e y soak español 524 líneas sin inglés detectado.
+Veinte semillas por variante: lean 4,0% frente a 4,2%, ambas 20/20 colapsos;
+century 77,4% frente a 77,6%, dos colapsos frente a uno. Se supera la puerta
+de caída máxima de tres puntos en ambas, sin demostrar una mejora. Matriz
+**roja**, 104→108 fallos: 93 persisten, 15 nuevos observados, 11 retirados;
+doce pérdidas de aplicabilidad auditadas y registradas en bugs. No se ajustaron
+pesos ni checks para ponerla verde. Contrato `docs/m15_tool_equipment.md`, estado
+`docs/m15_status_20261003.md` y evidencia `docs/m15_pending_verification_20261003.md`.
+Capturas nuevas del trabajador y Kit revisadas:
+`artifacts/screenshots/m15-tools-2026-10-03-final-pass4/`.
+Quedan recogida de herramientas de oficio y controles manuales en 11d.
+
 ## 2026-10-03 — M15 fase 17: fabricar también se ve
 
 Cuatro gestos de manipulación y apoyo por cuerpo/dirección, pies plantados y

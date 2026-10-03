@@ -1043,10 +1043,8 @@ export class Hud {
       ];
     }
 
-    // M15 phase 11a. Five body slots, drawn ahead of what fills them:
-    // `Person.equipment` has no writer yet, so every slot reads empty until
-    // phase 11c gives tool-equipping and the container ladder somewhere to
-    // put things. Shown regardless, so the space is there when it does.
+    // Inventory records possession; these slots show the fitted containers
+    // and tools. Packing a spare axe does not put it in the working hand.
     rows.push('<div class="hud-section">' + t('Equipment') + '</div>');
     // M15 phase 20: a baby in arms takes a hand, and the owner could not find
     // it anywhere on the panel. Shown in the hand it takes, left then right.

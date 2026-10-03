@@ -18,7 +18,9 @@ export function gatheringPose(
   person: Person, sim: Pick<Simulation, 'nodesById' | 'treesById'>,
   moving: boolean, alpha = 1,
 ): ArtPose | null {
-  if (moving || !person.alive || person.actionTimer <= 0 || person.workedTicks <= 0) return null;
+  // Tool setup borrows the commitment timer but deliberately has no work
+  // denominator. Old workedTicks from an earlier pull cannot turn it into work.
+  if (moving || !person.alive || person.actionTimer <= 0 || person.actionTotal <= 0 || person.workedTicks <= 0) return null;
   const target = (person.action === 'forage' || person.action === 'gather') && person.targetNodeId !== null
     ? sim.nodesById.get(person.targetNodeId)
     : person.action === 'pick' && person.targetTreeId !== null

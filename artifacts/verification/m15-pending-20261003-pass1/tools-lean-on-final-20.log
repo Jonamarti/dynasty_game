@@ -1,0 +1,57 @@
+
+> dynasty@0.0.0 sim:seeds
+> vite-node tools/seeds.ts -- --scenario lean --seeds 20 --set carry.autoEquipTools=true
+
+
+SEED COHORT  -  scenario "lean", 20 seeds, 24,000 steps each
+==============================================================================
+  seed      peak   end    survived   born   starved: inf chi adu   known past taught
+  century     42     0         0%     11             9   4  25       0    0      5
+  alpha       40     0         0%      9            11   2  18       0    0      3
+  beta        42     5        12%     13            18   1  16       2    1     16
+  gamma       36     0         0%      4             9   4  18       0    0      0
+  delta       45     2         4%     11            14   4  21       1    0      5
+  eps         43     4         9%     12            14   0  19       1    0      2
+  zeta        46     6        13%     10            13   6  15       2    1      3
+  eta         45     4         9%     12            10   1  20       2    0      1
+  theta       40     2         5%     10            11   3  14       1    0      1
+  iota        41     0         0%     10            11   6  18       0    0      0
+  kappa       39     0         0%      5             7   4  12       0    0      0
+  lambda      47     2         4%     12            17   5  19       1    0      1
+  mu          42     0         0%      8            13   2  22       0    0      0
+  nu          38     4        11%      9            14   5  19       1    0      4
+  xi          37     0         0%      7            10   1  22       0    0      0
+  omicron     45     0         0%     10            19   1  21       0    0      1
+  pi          38     1         3%     10            10   9  20       1    0      1
+  rho         44     3         7%     11            14   6  17       1    0      3
+  sigma       43     0         0%      9            12   5  21       0    0      0
+  tau         40     0         0%      8            11   5  20       0    0     16
+  DEMOGRAPHY 191 births / 244 fertile women = 0.783 births/woman; 0.926 births/woman-year (206.275 woman-years) · mortality <1y 0.958 (182/190; 1 births awaiting follow-up) · <5y 1.000 (190/190; 1 births awaiting follow-up) · mean age at death 17.581y (891 deaths) · causes dehydration=1, exposure=136, infection=2, murder=41, old age=13, starvation=698
+  HOME night near<15 0.737 far>25 0.086 far>45 0.005 sleep 0.108 rest 0.208 · actions idle:0.296,rest:0.208,go_home:0.109,sleep:0.108,forage:0.041,drink:0.030,ponder:0.027,talk:0.026,pick:0.019,shelter:0.018 · day distance median/p90/max 9.7/22.5/77.4 · child-parent median/p90 1.4/7.7 far>12 0.044 far>30 0.007
+  HISTORY drawdown p50/p90/max 1.000/1.000/1.000 · recovered 0/60 (median days n/a; censored 60) · band lost violence/need/other/absorbed 1/42/0/0 · world lost 10/20 · self-destroyed 0 · in-band kills/1,000 person-years 0.000 · violent adult deaths 0.034 · answered n/a · war episodes/year 0.182 median days 1 peace share 0.999 · firemaking first known day 22 · adoption median days 0 not reached 3 · malnutrition 0.211 · protein nutrition share 0.127
+  FOOD ACCESS accessible 1031353 · blocked by reach 57294 · absent from search 917464
+  ORDERS build 72.5% (50/19 obeyed/refused) · haul 71.4% (606/243 obeyed/refused) · sabotage 100.0% (2/0 obeyed/refused)
+  RAIDS proposed 54 · chief-approved 43 · refused by chief 11 · called 1 · no party 53 · followers ordered 2
+  SOCIAL INTERRUPTIONS interrupted_ask_away_from_family=8 interrupted_ask_hungry=11 interrupted_court_baby_crying=2 interrupted_court_cold=120 interrupted_court_hungry=116 interrupted_discuss_baby_crying=202 interrupted_discuss_cold=233 interrupted_give_baby_crying=232 interrupted_give_cold=548 interrupted_give_hungry=3 interrupted_spar_baby_crying=33 interrupted_spar_cold=984 interrupted_spar_hungry=1681 interrupted_spar_thirsty=147 interrupted_steal_baby_crying=13 interrupted_steal_cold=192 interrupted_steal_hungry=7459 interrupted_steal_thirsty=1 interrupted_teach_baby_crying=11 interrupted_teach_cold=114 interrupted_teach_hungry=390
+  PROTEIN DURING CRAVING 310579/1372566 searches had a reachable protein-rich food node · 84946 only outside anchor reach · 75185 masked by another reachable food node · 75185 selected by the out-of-reach override · 977041 absent from the forage search
+==============================================================================
+  EXTINCT 10/20   ·  no band able to recover 18/20   ·  above its low point at the end 1/20   ·  bands still viable 2
+  MEAN SURVIVAL 4.0%   ·  20/20 collapsed below a quarter   ·  191 born
+  starved: 247 infants (5 or under), 74 older children, 377 adults
+  MEAN 0.7 technologies known at the end, 0.1 conceived past the root nodes, 3.1 passed on   ·  18/20 never got past a root node
+  CONFLICT 1 blows between peoples, 100% near either camp · 0 murders · peoples drifted apart after incidents in 4/5 seeds (mean -1.3 tiles)
+  DEFENCE 3 interventions against 3 property deeds an owner saw · 0 taken captive in 0/20 seeds, 0 escaped, 0 came home
+  TRIPWIRES coats sewn in 0/20 seeds · the hurt tended in 0 · animals fed in 0 · tamed in 0 · taming known in 0
+  BANDS 0 cast out in 0 seeds · factions in 0 seeds · 0 taken in, of 0 who left or were cast out
+  BODIES 729 of 891 found · 71 investigations, 0 named the killer, 0 somebody else
+  VIOLENCE 1 blows in all, 0 inside a band, 0 by an adult on a child · 0 of 2 thefts from a person inside a band
+  WANTING SPARKS firemaking_4=15
+  KIN defended 0/0 witnessed attacks; fled closer 0/0 times
+  RESEARCH 91 argued breakthroughs / 633 total; argument breakthroughs in 17/20 seeds
+  REFINEMENT 9 improvements from 39 proven designs in 4/20 seeds
+  JUSTICE 1/2 victim complaints heard; 0 carried demands delivered; complaints in 1/20 seeds
+  SOIL 0/0 harvested worlds below 98.5% of resting (n/a% mean); compost spread in 0/20 seeds (0 spreads; 0 loads matured)
+  WALK 613/2810183 stuck ticks (0.2 per 1,000); above the check floor in 0/20 seeds
+  STANDING 16/20 eligible 60-day worlds above 20 points (4 at or below)
+  1272.1s
+

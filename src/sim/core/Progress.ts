@@ -25,6 +25,7 @@ import { axeFactor } from '../knowledge/Tech.ts';
 export interface ProgressView {
   treesById: Map<number, Tree>;
   buildingsById: Map<number, Building>;
+  config?: { carry: { autoEquipTools: boolean } };
 }
 
 /** 0-1 through the current job, or null when they are not working to one. */
@@ -37,7 +38,8 @@ export function workProgressOf(person: Person, world: ProgressView): number | nu
     if (tree && tree.fellingTicks > 0) {
       // Mirrors `doChop`: an axe shortens the work, so it must shorten the
       // denominator too or the bar lies to whoever is holding one.
-      const required = tree.fellingTicks * axeFactor(person);
+      const required = tree.fellingTicks * axeFactor(person,
+        world.config?.carry.autoEquipTools ?? false);
       return Math.max(0, Math.min(1, tree.chopProgress / required));
     }
   }

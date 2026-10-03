@@ -1,5 +1,13 @@
 # Next steps
 
+**2026-10-03: herramientas, fase 11d.** Preparación automática, herramientas
+efectivas en mano y conservación al soltar; cuenta atrás independiente y brazos
+del bebé respetados. Quedan recogida de herramientas de oficio y controles
+manuales. `lean` final 4,0% frente a 4,2%; `century` 77,4% frente a 77,6%,
+dentro de los límites declarados, sin establecer una mejora.
+La matriz sigue roja (104→108 fallos); doce checks pierden aplicabilidad.
+[Contrato](m15_tool_equipment.md).
+
 **2026-10-03: fabricación, fase 17.** Cuatro gestos con estación/receta válidas,
 pausa y cancelación comprobadas desde una orden, sin leer requisitos privados
 en el renderer. Quedan otras familias y materiales/productos en las manos.
