@@ -1,3 +1,23 @@
+## 2026-10-03 — M15: diseño de simulación por visión y mundo compacto
+
+Decisión del propietario: detalle solo dentro de la visión del NPC seleccionado;
+fuera de vista, bandas con identidad y pueblos lejanos siguen evolucionando en
+compacto. Se crea `docs/m15_simulation_lod.md` como apartado propio de fase 32:
+crecimiento, conocimiento y contactos entre pueblos, agendas individuales,
+conservación al materializar, una autoridad por recurso/persona, RNG y scheduler,
+tests con controles negativos y perfil por visibles/compactos/agregados.
+
+El plan incorpora el LOD dentro de la comarca antes excluido y sustituye el
+detalle de toda la comarca. Retira la conclusión no medida de coste inferior
+al 5% y de CPU irrelevante. Arquitectura y próximos pasos distinguen el diseño
+del código actual, que aún ejecuta todos los NPC vivos. Velocidades altas pueden
+bajar FPS; no saltan pasos/eventos ni cambian resultados por cadencia de dibujo.
+Se documenta que el límite actual de pasos por frame debe revisarse al separar
+dibujo y avance. Presupuestos finales pendientes del modelo mixto medido.
+
+Entrega documental: enlaces y consistencia revisados; sin cambios de runtime ni
+UI y sin nuevas capturas. Los checks y el sueño en evaluación siguen abiertos.
+
 ## 2026-10-03 — M15 fase 17: actividades de los animales
 
 - Cuatro poses de comer, correr y atacar para las seis especies en un atlas

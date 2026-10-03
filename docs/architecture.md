@@ -27,6 +27,23 @@ tools/          simcheck (library) + headless / scenarios / seeds / why (CLIs);
 e2e/            Playwright smoke tests and screenshot tour
 ```
 
+## Planned simulation LOD — owner's decision, 2026-10-03
+
+The current step still executes all living NPCs. Fog is not simulation LOD.
+The approved design limits full AI/actions to the selected NPC's vision and
+keeps everyone outside it evolving through compact individual/band records or
+aggregate peoples. The same rule applies to friendly and rival bands; observing
+one member must not activate the whole band. Selection is passed to simulation
+as an explicit focus id, independently of camera/rendering and without granting
+private knowledge. The scope, transition invariants, world evolution, calibration
+and implementation order live in [m15_simulation_lod.md](m15_simulation_lod.md).
+
+High simulation speeds may reduce drawing/HUD frame rate. All tiers keep the
+simulation clock, events and seeded RNG independent of presentation cadence.
+The benchmark must separate visible individuals, compact records and peoples;
+the previous 300 fully simulated humans measure the current cost, not the target
+architecture. This section describes planned work, not a shipped optimization.
+
 ## The rules that hold it together
 
 **Work animation is presentational.** `render/WorkAnimation.ts` reads active

@@ -1,5 +1,16 @@
 # Known bugs and rough edges
 
+## LOD de simulación ausente — diseño aprobado el 2026-10-03
+
+La niebla restringe dibujo y selección, pero Simulation.step sigue ejecutando
+todos los NPC vivos. El perfil de 300 humanos mide ese comportamiento actual.
+El propietario pide detalle solo dentro de la visión del seleccionado y avance
+compacto para los demás, incluidos rivales en la misma comarca. La fase 32 y
+docs/m15_simulation_lod.md incorporan esa arquitectura y sus pruebas; todavía
+no se ha implementado. Se acepta bajar FPS en aceleración, con eventos y reloj
+de simulación independientes del dibujo. No basta con saltarse NPC lejanos:
+deben seguir creciendo, investigando e interactuando sin duplicar su estado.
+
 ## Selección de desconocidos y botones del radial (2026-10-03) — corregido
 
 Cinco de los seis e2e históricos del picker tenían una premisa obsoleta: cámara

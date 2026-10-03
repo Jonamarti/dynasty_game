@@ -3,6 +3,13 @@
 Escrito el 2026-09-26, al procesar `docs/notes5.txt` con el propietario. Es el
 **único plan vigente** del proyecto a partir de hoy.
 
+**Decisión del propietario, 2026-10-03:** solo se simula en detalle dentro de
+la visión del NPC seleccionado. El LOD dentro de la comarca entra en M15;
+bandas y pueblos fuera de vista siguen evolucionando en compacto. El diseño,
+las transiciones y sus puertas tienen apartado propio en
+[Simulación por visión y evolución compacta](m15_simulation_lod.md), fase 32.
+A velocidades altas se acepta reducir FPS; no se omite avance del mundo.
+
 Reúne en un solo orden todo lo que quedaba sin hacer:
 
 1. **Las siete notas de `notes5.txt`**: ropa escalonada con su propia red,
@@ -2354,9 +2361,10 @@ del agua`; `m15: nadar y ahogarse`; `m15: el escenario shallows`.
 ---
 # Bloque VII — El mapa del mundo (M14 bloques I, IV, V y VI; peticiones 9 y 11)
 
-El principio de M14 se conserva: **una sola comarca se simula en detalle**, la
-del personaje del jugador; el resto vive en modelos abstractos; el mundo es un
-objeto **por encima** de `Simulation`, y los forks de su constructor no se
+La decisión del 2026-10-03 sustituye el detalle de toda la comarca: **solo los
+individuos dentro de la visión del NPC seleccionado se simulan completamente**.
+También dentro de esa comarca, los demás usan modelos compactos. El mundo es
+un objeto **por encima** de `Simulation`, y los forks de su constructor no se
 tocan. Los streams del mapa, de los modelos abstractos, de los viajes y de las
 caravanas **se derivan de la semilla** en `WorldState` (`deriveSeed`), no son
 forks.
@@ -2379,19 +2387,22 @@ derivada y del perfil de su región, y solo se guarda su libro si alguien la ha
 cambiado. Una región entera son cien comarcas en potencia, y casi ninguna se
 genera nunca.
 
-**Tres niveles de detalle**, uno por escala:
+**Tres niveles de detalle**, por visión y relevancia, no solo por escala:
 
 | nivel | dónde | qué se simula | cada cuánto |
 |---|---|---|---|
-| **0** | la comarca del personaje del jugador | la `Simulation` de hoy, persona a persona | cada paso |
-| **1** | las comarcas cercanas con bandas que importan: la región del jugador y las vecinas donde su gente tiene parientes, enemigos o comercio | bandas de personas **con nombre** (`PersonRecord`), en `ComarcaSim` | una vez al día |
-| **2** | el resto del mundo | **pueblos** sin nombres propios: población, cultura, técnicas, relaciones, comercio y guerra, en `PeopleSim` | una vez por estación, repartido entre los pasos |
+| **0** | dentro de la visión del NPC seleccionado | individuos visibles, aliados o rivales, con AI y acciones completas | cada paso |
+| **1** | fuera de vista en la comarca activa y bandas relevantes de comarcas próximas | personas **con nombre** (`PersonRecord`) y agendas compactas, en `ComarcaSim` | por intervalos y eventos fechados; avance ordinario diario |
+| **2** | pueblos lejanos | población, cultura, técnicas, relaciones, comercio y guerra, en `PeopleSim`; conserva registros de individuos conocidos | una vez por estación, repartido entre pasos, con eventos intermedios |
 
 Un pueblo de nivel 2 que se acerca (por contacto, comercio, guerra o porque el
 jugador llega) **se materializa** en bandas de nivel 1 con nombre, de forma
 determinista y conservando su población, sus técnicas y su cultura. Una banda
-de nivel 1 que queda lejos se funde de vuelta en su pueblo. Hay histéresis
-para que nada parpadee entre niveles.
+de nivel 1 que queda lejos se funde de vuelta en su pueblo. Hay histéresis entre
+relevancia individual y agregado. Las entidades materializadas pueden permanecer
+en caché fuera de vista, pero no reciben AI completa fuera del círculo. La banda
+rival no se activa entera por ver a un integrante. Véase el contrato de conservación
+y contactos entre niveles en [el apartado de LOD](m15_simulation_lod.md).
 
 ## Escala y coste: ¿aguanta el proceso tantos pueblos?
 
@@ -2420,13 +2431,19 @@ pasos), repartida entre los pasos, son **unos pocos pueblos por paso: menos de
 `PersonRecord` actualizados una vez al día a unos pocos µs cada uno: unos 5 ms
 por día, **unos 20 µs por paso** repartidos.
 
-**Nivel 0:** el de hoy, que es con mucho el caro: el suelo de `perf-budget` es
-100 µs por paso más 16 µs por persona, **unos 900 µs por paso** con 50
-personas.
+**Corrección del 2026-10-03:** esos tiempos de niveles 1 y 2 son estimaciones,
+no medidas del código implementado. El presupuesto antiguo de `perf-budget`
+tampoco predice el coste actual: el perfil del juego completo con 300 humanos
+a 5 pasos/s midió 20,80 ms por paso y 52,9 FPS (ver
+[population-profile.md](population-profile.md)). No se conserva la conclusión
+de «menos del 5%» ni de que el procesador no sea un límite demostrado.
 
-**Conclusión:** los niveles 1 y 2 juntos cuestan **menos del 5%** de lo que ya
-cuesta la comarca detallada. **El procesador no es el límite.** Los límites de
-verdad son otros tres:
+El coste de nivel 0 se medirá por **individuos visibles**, separado del número
+total del mapa; niveles 1 y 2, por registros, pueblos, eventos y transiciones.
+En aceleración se acepta menos FPS para priorizar pasos/s reales, conservando
+controles y eventos. Las pruebas y separación de dibujo/avance están en
+[m15_simulation_lod.md](m15_simulation_lod.md). Además del tiempo de CPU, hay
+otros tres límites:
 
 1. **La memoria y el guardado.** Nivel 2: ~4.000 pueblos × ~300 bytes, algo más
    de 1 MB. Nivel 1: ~1.000 registros × ~3 KB (con el mapa personal
@@ -2628,7 +2645,13 @@ conocidos, de oídas y desconocidos, todo por `Knowledge.ts`, y
   interfaz **el zoom de `FamilyTree` en el móvil** (`bugs.md`). El globo se
   diseña táctil desde el principio.
 
-## Fase 32 — Los modelos abstractos: bandas con nombre y pueblos (M14 fase 14; decisión 19)
+## Fase 32 — Simulación por visión y modelos compactos de bandas y pueblos
+
+**Cambio aprobado del 2026-10-03:** incluye LOD dentro de la comarca. El
+apartado propio [m15_simulation_lod.md](m15_simulation_lod.md) concreta ámbito
+visible, identidad fuera de vista, evolución de pueblos, transiciones,
+determinismo, aceleración y entregas con puertas. Ese contrato sustituye la
+premisa de simular en detalle la comarca entera del jugador.
 
 **Detalle en `m14_plan.md` fase 14** para el nivel 1 (allí `RegionSim`; aquí
 **`ComarcaSim`**, porque simula comarcas): las personas con nombre siguen
@@ -2645,7 +2668,8 @@ calibrarían contra una demografía que ya no existe.
 
 ### 32b. Nivel 1: `ComarcaSim`
 
-Como en M14 fase 14, con estos añadidos:
+Como en M14 fase 14, extendido también a individuos fuera de vista **dentro de
+la comarca activa**, con estos añadidos:
 
 - modela la **cultura material** en agregado (la carga que permiten los
   contenedores que la banda sabe hacer, la conservación de la comida, el calor
@@ -2655,6 +2679,11 @@ Como en M14 fase 14, con estos añadidos:
   los recuerdos más valiosos);
 - el libro guarda muebles, obras de tierra, la altura cavada o apilada
   (`offset`, comprimido) y las prendas que quedaron en los almacenes.
+- agendas compactas con fechas de consumo, necesidades, llegadas y acciones;
+  conserva órdenes y progreso al entrar/salir de la visión;
+- puente de interacción entre niveles y autoridad única sobre personas y
+  recursos. Solo los individuos realmente visibles pasan al loop detallado;
+  no se activa una banda entera ni se congela al resto.
 
 **Puerta:** `lod-matches-detail` (±15% de población final media y la misma
 tendencia tecnológica a 20 semillas, nivel 0 frente a nivel 1).
@@ -3277,8 +3306,12 @@ diga otra cosa:
 12. **Escala:** 96 × 48 regiones y 10 × 10 comarcas por región. *Recomendado:*
     así, ajustable. `world:bench` puede pedir menos.
 13. **Quién pasa a nivel 1:** las bandas de la región del jugador y de las
-    vecinas con las que su gente tiene relación. *Recomendado:* así; si
-    `world:bench` lo permite, un radio mayor.
+    vecinas con las que su gente tiene relación. **Ampliado por el propietario
+    el 2026-10-03:** también los individuos fuera de vista dentro de la comarca
+    activa. El detalle queda limitado a la visión del NPC seleccionado.
+14. **Fluidez en aceleración:** aprobado el 2026-10-03 reducir FPS a velocidades
+    altas para priorizar simulación. Los límites numéricos se fijan con el
+    perfil mixto de visibles, compactos y pueblos; véase el apartado de LOD.
 
 ---
 
@@ -3290,8 +3323,6 @@ Cosas que se han pedido o planeado y que **no** entran, cada una con su motivo:
   pensaremos cómo mostrarlo». La propuesta para entonces es que la planta
   visible sea la del personaje, con teclas para subir y bajar, y el tejado de
   la fase 16c como modelo.
-- **Las ciudades de cientos de personas.** Necesitan un LOD **dentro** de la
-  comarca, que es otro problema (M14 ya lo dejaba fuera).
 - **El archienemigo multigeneracional como sistema propio.** La memoria del
   proyecto pide explícitamente no construirlo antes de tiempo; M15 solo evita
   que la enemistad de hogar se pierda entre comarcas (fase 36).

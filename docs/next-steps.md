@@ -1,5 +1,14 @@
 # Next steps
 
+**2026-10-03: LOD por visión, decisión del propietario.** Solo los individuos
+en la visión del NPC seleccionado reciben simulación completa. Los demás, aun
+dentro de la misma comarca, siguen con identidad y agendas compactas; pueblos
+lejanos evolucionan en población, tecnología y relaciones. La fase 32 incorpora
+el LOD local antes excluido. Apartado propio:
+[m15_simulation_lod.md](m15_simulation_lod.md). En velocidades altas se acepta
+menos FPS, manteniendo pasos y eventos y respuesta de los controles. Todavía
+no está implementado; el loop actual sigue ejecutando todos los NPC vivos.
+
 **2026-10-03: reparación de checks autorizada por el propietario.** Misma vista
 para niños/adultos; noticias de comida en un escenario donde hagan falta;
 hostilidad en un escenario que ejercite conflictos. Sueño mediante presión
@@ -1259,10 +1268,11 @@ draft (M15 §0a rows 9-11 and §0d):
   holding many **comarcas** (the local maps). The rest of the world develops
   in a simplified model of **peoples**, at different speeds that come from
   geography and contact, so that other civilisations exist when the player's
-  does. The plan's §«Escala y coste» estimates that model at under 5% of the
-  detailed comarca's cost per step. The real limits are save size (so saves
-  go to IndexedDB), calibration across the three levels of detail, and
-  determinism. `world:bench` measures it before anything is built on top.
+  does. The old under-5% cost estimate has not been measured. The 2026-10-03
+  decision limits detailed simulation to the selected NPC's vision, including
+  within the active comarca. `world:bench` must measure visible detail, compact
+  records, peoples and transitions separately; save size (IndexedDB), calibration
+  and determinism remain constraints. See m15_simulation_lod.md.
 - **Animal fat** makes a longer-burning torch, a fat lamp, pemmican, dressed
   hides and, later, tallow and soap.
 - **Fog of war:** NPCs start knowing only their home range, discover the rest,
@@ -1297,7 +1307,9 @@ most of this section now has a home. What remains outside M8:
   M11 phase 5e: `considerExile` now gates on `Factions.conspiracyAgainst`
   rather than a band-average opinion the average never actually crossed, and
   phase 5f's `considerAdoption` opens the door back for a wandering outcast.
-- **No simulation LOD.** Everyone is simulated in full detail.
+- **No simulation LOD yet.** Everyone is simulated in full detail. The owner's
+  2026-10-03 vision-based design is specified in M15 phase 32 and
+  [m15_simulation_lod.md](m15_simulation_lod.md).
 - **Nobody plants a tree.** Bands fell timber when a site needs it, but no one
   has a reason to leave a stand standing for their grandchildren. All of the
   entity machinery for it already exists in `Tree` and `ForestSystem`; what is
