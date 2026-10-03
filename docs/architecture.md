@@ -51,6 +51,17 @@ earthmoving property tests share this audit; its fault-injection tests prove
 it detects an unrepaired bridge cut. This O(tiles) audit runs after a scenario,
 never inside the simulation tick, and consumes no RNG or simulation state.
 
+**The State hangs off the chief's own head** (M15 block IX, `social/Polity.ts`).
+A temple is the band's largest granary *if its chief* knows redistribution; the
+levy, the soldiers' pay, the written ledger, the law and the crown each read the
+chief's own `techPower`. Nothing about a government is stored on the band except
+the levy's chosen rate and the declared stances in `BandRelations`, so a State
+lapses the day its chief is replaced by somebody who never learned to run one,
+and a civilisation (`civilisationLacks`) is derived fresh on every call. Only a
+government (`governs`: `law_code` or `kingship`) can declare war, make peace or
+take a tributary. Everything the bands do with it is decided in `BandSystem`
+deterministically: its `rng` is the forest's, and the block adds no draw there.
+
 These are not style preferences. Each one is load-bearing, and each was learned
 by breaking it.
 
