@@ -3805,3 +3805,11 @@ evitar que una observación de cosecha pueda producir una creencia equivocada.
 La matriz sigue abierta por dieta, descanso en algunos escenarios, ánimo y
 otros mecanismos. Las cohortes heredadas de veinte semillas dejan `lean` en
 4,2% de supervivencia; no se presenta el sueño como reparación de esa deuda.
+
+### Identidad global y transferencia pendientes — 2026-10-03
+
+Los registros v1 de fase 28 copian y reconstruyen estado propio, pero los
+contadores de módulo siguen siendo la autoridad de creación. Una rehidratación
+no se inserta aún en `Simulation`: antes de hacerlo hay que completar `IdSpace`,
+relaciones/opiniones y `BandRelations` externos y una transferencia con un solo
+dueño de personas y bienes. No se declara guardado de partida ni LOD activo.

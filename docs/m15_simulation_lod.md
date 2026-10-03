@@ -40,8 +40,12 @@ familia, historia ni deudas aunque su pueblo pase al agregado.
 
 ## 2. Bandas fuera de vista: personas que siguen existiendo
 
-`PersonRecord`, `HouseholdRecord`, `BandRecord` y `ComarcaSim` son piezas por
-construir en las fases 28 y 32. El registro conserva identidad, parentesco,
+La primera entrega de fase 28 aporta `PersonRecord`, `HouseholdRecord` y
+`BandRecord` como snapshots v1 serializables del estado propio completo;
+véase [m15_phase28_records.md](m15_phase28_records.md). Todavía no son agendas
+compactas ni sustituyen entidades del roster. `IdSpace`, relaciones externas,
+transferencia de autoridad y `ComarcaSim` siguen por construir en las fases
+28 y 32. El registro compacto objetivo conserva identidad, parentesco,
 edad, rasgos, habilidades, conocimientos y recuerdos; necesidades y lesiones;
 hogar y pertenencia; inventario, equipo, órdenes y progreso pendiente.
 Cada registro tiene fecha del último avance y estado de su stream aleatorio.

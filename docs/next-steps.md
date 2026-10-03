@@ -1,5 +1,11 @@
 # Next steps
 
+**2026-10-03: primera entrega de identidad, fase 28.** Los registros v1 hacen
+ida/vuelta del estado propio de personas, hogares y bandas, incluido progreso
+en curso, sin constructores/IDs/RNG. Tres pruebas ricas y suite conjunta 886/886
+pasan. Falta `IdSpace`, relaciones externas, libros y transferencia de autoridad
+antes de activar compacto/LOD. Ver [m15_phase28_records.md](m15_phase28_records.md).
+
 **2026-10-03: LOD por visión, decisión del propietario.** Solo los individuos
 en la visión del NPC seleccionado reciben simulación completa. Los demás, aun
 dentro de la misma comarca, siguen con identidad y agendas compactas; pueblos

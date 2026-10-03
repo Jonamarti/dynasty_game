@@ -11544,3 +11544,26 @@ fallos de la referencia heredada `matrix-after.txt`; comparación en
 `artifacts/verification/m15-continue-2026-10-03/summary.json`. Esta equivalencia
 no declara reparados los fallos de balance ni atribuye las divergencias de la
 pasada anterior exclusivamente al sueño.
+
+## 2026-10-03 — M15 fase 28: snapshots de identidad sin perder trabajo
+
+`EntityRecords.ts` añade `PersonRecord`, `HouseholdRecord` y `BandRecord` v1
+con tick de avance explícito. El codec JSON conserva el grafo de campos propios,
+Map/Set/typed arrays, ciclos, referencias de índices y prototipos por tags
+estables. Incluye equipo/desgaste, heridas, creencias, mapas, parentesco,
+conocimiento y órdenes/rutas/progreso actuales. Mantiene Infinity escalar y
+rechaza versiones, referencias, estado base y funciones incompatibles.
+
+Rehidratar no ejecuta constructores ni mueve los contadores o RNG; no registra
+una segunda población. El callback de `Beliefs` se vuelve a ligar a su dueño
+reconstruido, evitando refrescar la curiosidad del personaje original. Tres
+tests comparan snapshots completos, llaman métodos reales, cambian las copias
+independientemente y comprueban IDs, draw sembrado y negativos de corrupción.
+Detalle: `docs/m15_phase28_records.md`.
+
+Validación: focal 3/3, typecheck limpio, suite conjunta 886/886 y e2e 69/69.
+La matriz conserva los mismos checks aplicables/fallos en sus 27 escenarios
+frente a la referencia heredada y sigue con exit 1. Logs/summary en
+`artifacts/verification/m15-continue-2026-10-03/`. Sin cambio de UI.
+Esta entrega no completa `IdSpace`, relaciones externas, roster ni transferencia
+de autoridad; no se declara compacto, LOD ni formato de partida definitivo.

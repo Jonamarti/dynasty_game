@@ -44,6 +44,13 @@ The benchmark must separate visible individuals, compact records and peoples;
 the previous 300 fully simulated humans measure the current cost, not the target
 architecture. This section describes planned work, not a shipped optimization.
 
+Phase 28 now has inert JSON graph snapshots in `persistence/EntityRecords.ts`.
+They preserve entity-owned state, class methods and internal aliases without
+constructors, ID allocation or RNG draws; the known belief callback is rebound
+to the hydrated person. They do not register people, transfer authority or
+compress simulation work. Global identity, external relationships and the
+compact scheduler remain pending; see [m15_phase28_records.md](m15_phase28_records.md).
+
 ## The rules that hold it together
 
 **Work animation is presentational.** `render/WorkAnimation.ts` reads active

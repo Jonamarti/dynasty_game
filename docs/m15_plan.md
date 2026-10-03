@@ -2473,6 +2473,18 @@ antes o después y chocan entre sí y con el del jugador**.
 
 ## Fase 28 — Identidad que sobrevive a su comarca (M14 fase 3)
 
+**Avance del 2026-10-03, registros.** `persistence/EntityRecords.ts` ofrece
+sobres v1 con marca de avance explícita e ida/vuelta JSON de personas, hogares
+y bandas. Conserva estado propio completo, índices y referencias compartidas,
+equipo, heridas, memorias y progreso/órdenes en curso; rehidrata sin constructor,
+IDs ni RNG y vuelve a ligar el callback de creencias al nuevo dueño. Tres tests
+ricos pasan, incluida igualdad del snapshot completo y controles negativos.
+Detalle y límites: [m15_phase28_records.md](m15_phase28_records.md).
+
+Es una base inerte, aún sin compactación ni transferencia de autoridad. Siguen
+pendientes `IdSpace`, relaciones/opiniones y `BandRelations` externos, libros
+y la integración del roster. La fase 28 y el LOD no se declaran completos.
+
 **Detalle en `m14_plan.md` fase 3.** `IdSpace` en lugar de los diez contadores
 de módulo; `PersonRecord`, `HouseholdRecord` y `BandRecord`; ida y vuelta con
 test. Bit-idéntico.
