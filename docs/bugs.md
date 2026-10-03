@@ -3815,3 +3815,14 @@ contadores de módulo siguen siendo la autoridad de creación. Una rehidratació
 no se inserta aún en `Simulation`: antes de hacerlo hay que completar `IdSpace`,
 relaciones/opiniones y `BandRelations` externos y una transferencia con un solo
 dueño de personas y bienes. No se declara guardado de partida ni LOD activo.
+
+### Nombres estacionales de la gira visual — 2026-10-03, corregido
+
+La gira de cuatro estaciones conservaba pasos de un calendario de veinte días;
+el actual tiene diez. Su captura de primavera correspondía a verano. Un
+negativo con la nueva aserción falla antes de corregir la preparación; la
+gira ahora deriva checkpoints del calendario real y confirma su estación.
+Los hitos anteriores se preservan, incluidos sus nombres erróneos. Usar
+`artifacts/screenshots/m15-seasons-2026-10-03T-final/` para la evidencia estacional.
+Los floaters viejos del avance síncrono se limpian tras consumir los avisos;
+solo afecta a esta captura, no a las reglas o mensajes del juego.

@@ -11591,3 +11591,25 @@ typecheck limpio, suite conjunta 886/886, e2e 69/69. La matriz sigue con exit 1,
 sin cambios de aplicabilidad/fallos en sus 27 escenarios frente a la referencia
 heredada. No cambia UI. Quedan percepción, distribución, sesiones largas,
 demografía y los modelos compactos: esta referencia no cierra 32a ni el LOD.
+
+## 2026-10-03 — M15: la gira visual captura la estación que indica
+
+La gira usaba checkpoints de veinte días por estación tras cambiar el juego a
+diez. La nueva aserción falla en el script anterior: esperaba primavera y el
+reloj marcaba verano. Ahora los puntos salen del calendario vivo y alcanzan
+mediodía a mitad de cada estación con pasos reales, manteniendo crecimiento
+y nieve acumulados. Se comprueba la estación antes de cada captura. Solo para
+esta gira se limpian floaters después de que la UI consuma los avisos: el
+avance síncrono acumulaba semanas de mensajes en un único frame y tapaba el
+paisaje. No cambia reglas, mensajes ni UI del juego.
+
+Negativo 1/1 falla por la premisa antigua; focal final 1/1 pasa y las cuatro
+capturas corresponden a sus nombres (arranque y invierno revisados visualmente).
+Hito nuevo: `artifacts/screenshots/m15-seasons-2026-10-03T-final/`. Se preservan
+la gira de 40 imágenes y las dos preparaciones intermedias de esta pasada.
+`AGENTS.md` documenta la pérdida de flags por `npm.ps1`: la primera invocación
+de test filtró seis casos; la suite válida se repite por `npm.cmd` con los
+flags efectivos. Verificación final: typecheck limpio, 886/886 en 117 archivos,
+69/69 e2e y 18/18 en la gira general. La matriz termina con exit 1 y conserva
+checks aplicables y fallos en 27/27 escenarios de la referencia heredada.
+Logs y comparación: `artifacts/verification/m15-continue-2026-10-03/summary.json`.

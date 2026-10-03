@@ -3470,3 +3470,16 @@ de la ruta real de observación detecta aprendizaje sin `plant_lore`; no se
 rebajan aserciones ni timeout. Pruebas focales: 15/15. Gira visual: 18/18,
 40 capturas nuevas en `artifacts/screenshots/m15-circadian-close-2026-10-03T-01/`.
 Los checks de descanso que siguen rojos se conservan como trabajo de calibración.
+
+### Gira estacional ajustada al calendario — 2026-10-03
+
+La gira mantenía checkpoints de veinte días por estación, pero el juego usa
+diez: una imagen llamada primavera mostraba verano. Ahora deriva el mediodía
+de cada estación del calendario vivo, avanza con pasos reales y comprueba la
+estación antes de capturar. El negativo falla con los puntos antiguos; la
+versión final pasa 1/1. Se limpian solo los labels transitorios ya consumidos
+por la UI, para que semanas de avisos acumulados no tapen el paisaje.
+Capturas nuevas: `artifacts/screenshots/m15-seasons-2026-10-03T-final/`.
+No cambia la simulación ni la UI del juego. Verificación conjunta: typecheck
+limpio, 886/886 unitarios, 69/69 e2e; matriz roja con los mismos checks/fallos
+en sus 27 escenarios que la referencia heredada.

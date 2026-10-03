@@ -201,6 +201,13 @@ npm run shots                             # screenshot tour to artifacts/
 
 `npm install` needs `--legacy-peer-deps` on this machine.
 
+**In PowerShell, use `npm.cmd` when forwarding script flags.** On this machine
+`npm.ps1` dropped `--maxWorkers` and `--testTimeout`, leaving `vitest run 1
+15000`: six filtered tests passed while the full suite had not run. Use
+`npm.cmd test -- --maxWorkers=1 --testTimeout=15000` and check the echoed
+command and file count. The same trap dropped `--grep` from the screenshot
+tour; use `npm.cmd` or the runner's Node CLI for focused captures.
+
 **If `npm run e2e` dies with `EACCES` before any test runs**, Windows has
 reserved Vite's port. `netsh interface ipv4 show excludedportrange protocol=tcp`
 lists the reserved ranges — on this machine 5111-5210 swallows the default 5173

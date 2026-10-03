@@ -1,5 +1,11 @@
 # Next steps
 
+**2026-10-03: gira estacional verificada.** Checkpoints desde el calendario
+vivo y aserción que detecta nombres incorrectos. Cuatro capturas finales en
+`m15-seasons-2026-10-03T-final/`; la gira anterior se conserva como registro.
+Typecheck, 886 unitarios y 69 e2e pasan; los 27 escenarios de la matriz siguen
+rojos con los mismos checks aplicables/fallos de la referencia heredada.
+
 **2026-10-03: primera referencia de coste por sistemas, 32a.** Nuevo CLI
 `profile:systems`, con 30/300 agrupados, 480 pasos, hashes y controles negativos.
 Se mide el detalle fuera de visión actual; no es LOD. Faltan distribución,

@@ -379,26 +379,26 @@ test('the four seasons', async ({ page }) => {
   await page.locator('.hud-button', { hasText: 'Pause' }).click();
   await page.waitForTimeout(200);
 
-  // Config defaults: ticksPerDay 240, daysPerSeason 20, startDay 10
-  // (`Config.ts`). These land mid-season rather than on a boundary, so
-  // temperature (and snowfall) has settled into the season's typical range
-  // rather than showing whatever a transition tick happens to look like.
-  const midSeasonTicks: [string, number][] = [
-    ['spring', 1200],  // day 15
-    ['summer', 4800],  // day 30
-    ['autumn', 9600],  // day 50
-    ['winter', 14400], // day 70
-  ];
-  let stepped = 0;
-  for (const [season, tick] of midSeasonTicks) {
-    const toStep = tick - stepped;
-    stepped = tick;
-    await page.evaluate((n) => {
-      const d = (window as never as { __dynasty: { sim: { step: () => void } } }).__dynasty;
-      for (let i = 0; i < n; i++) d.sim.step();
-    }, toStep);
+  // Read the live calendar: the old hardcoded 20-day seasons captured summer
+  // as "spring" once the game moved to ten-day seasons. Mid-season noon gives
+  // growth and snow time to accumulate without jumping the simulation clock.
+  const midSeasonTicks = await page.evaluate(() => {
+    const sim = (window as any).__dynasty.sim;
+    const { ticksPerDay, daysPerSeason, startDay } = sim.config.time;
+    const yearStart = Math.floor(sim.time.day / sim.time.daysPerYear) * sim.time.daysPerYear;
+    return ['spring', 'summer', 'autumn', 'winter'].map((season, index) => ({
+      season,
+      tick: (yearStart + index * daysPerSeason + Math.floor(daysPerSeason / 2) - startDay)
+        * ticksPerDay + Math.floor(ticksPerDay / 2),
+    }));
+  });
+  for (const { season, tick } of midSeasonTicks) {
+    await page.evaluate((targetTick) => {
+      const sim = (window as any).__dynasty.sim;
+      while (sim.time.tick < targetTick) sim.step();
+    }, tick);
     await page.waitForTimeout(150);
-    // Over 14,400 real steps somebody in an unwatched band can die of
+    // Over the real seasonal steps somebody in an unwatched band can die of
     // ordinary old age or misfortune, which raises the succession screen —
     // a tour of what winter looks like should not stall on it.
     const succession = page.locator('.succession-go');
@@ -406,6 +406,12 @@ test('the four seasons', async ({ page }) => {
       await succession.click();
       await page.waitForTimeout(150);
     }
+    expect(await page.evaluate(() => (window as any).__dynasty.sim.time.season)).toBe(season);
+    // The synchronous advance queues a season's notices into one UI frame.
+    // Let the normal UI consume them, then remove only the fading labels so
+    // the landscape shot is not covered by messages from weeks of past work.
+    await page.evaluate(() => (window as any).__dynasty.renderer.floaters.clear());
+    await page.waitForTimeout(50);
     await page.screenshot({ path: `${DIR}/13-season-${season}.png` });
   }
 });
