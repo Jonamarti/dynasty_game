@@ -183,3 +183,34 @@ export const SOLDIER_RATION_PULL = 20;
  * far from the temple with a bush in reach still eats from it.
  */
 export const SOLDIER_FORAGE = 0.25;
+
+/**
+ * Whether a chief reigns for life — M15 phase 38b, `kingship`. Read off the
+ * chief's own head like everything here: a king who never learned it is a
+ * chief whose term runs out.
+ */
+export function reignsForLife(chief: Person): boolean {
+  return techPower(chief, 'kingship') > 0;
+}
+
+/**
+ * Who inherits a late king's office, or null to fall back to the band's
+ * choice: the head of the king's household, if somebody else now heads it
+ * and is an adult free member of the band; otherwise the king's eldest adult
+ * child in the band, ties by id. Nobody outside the band inherits it — a son
+ * married away has another people's chief.
+ */
+export function heirOf(
+  late: Person, members: readonly Person[], households: ReadonlyMap<number, Household>,
+): Person | null {
+  const eligible = (p: Person | undefined): p is Person =>
+    !!p && p.alive && p.id !== late.id && !p.isChild && p.captiveOf === null && p.bandId === late.bandId;
+  const household = late.householdId === null ? null : households.get(late.householdId) ?? null;
+  if (household) {
+    const head = members.find(m => m.id === household.headId);
+    if (eligible(head)) return head;
+  }
+  const children = members.filter(m => late.childIds.includes(m.id) && eligible(m))
+    .sort((a, b) => b.age - a.age || a.id - b.id);
+  return children[0] ?? null;
+}

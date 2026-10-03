@@ -588,7 +588,7 @@ export const SCENARIOS: Record<string, Scenario> = {
           'plant_lore', 'grinding', 'farming', 'pottery', 'brewing',
           'division_of_labour', 'chiefdom',
           'writing', 'clay_tablet',
-          'redistribution', 'accounting', 'taxation', 'law_code', 'standing_army',
+          'redistribution', 'accounting', 'taxation', 'law_code', 'standing_army', 'kingship',
         ],
       },
     },
@@ -2346,6 +2346,23 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('soldiers-are-kept',
       kept > 0 && fed > 0,
       kept + ' soldier-days, ' + fed + ' meals sought at the temple');
+  }
+
+  // M15 phase 38b, `kingship`. A king's term does not run out: the office is
+  // held past the ordinary term, and passes to an heir when the king goes.
+  // Judged on the first, which every run with a king exercises; inheritance
+  // needs a king to die inside the run, and is reported.
+  if (!sim.knownTech.has('kingship')) {
+    skip('kings-reign-for-life', 'nobody here knows kingship');
+  } else if ((tel.king_days ?? 0) <= 30) {
+    // An ordinary term is twenty to thirty days (`chiefTermDays`): a world
+    // whose kings ruled for fewer days than that cannot show one outlasting it.
+    skip('kings-reign-for-life', 'no chief who knew kingship ruled longer than an ordinary term');
+  } else {
+    add('kings-reign-for-life',
+      (tel.king_reigns_days ?? 0) > 0,
+      (tel.king_reigns_days ?? 0) + ' band-days ruled past the ordinary term, ' + (tel.crown_inherited ?? 0) +
+        ' crowns inherited, ' + (tel.chief_chosen ?? 0) + ' chiefs chosen in all');
   }
 
   // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the

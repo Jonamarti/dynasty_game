@@ -1,3 +1,26 @@
+## 2026-10-03 — M15 fase 38b: la realeza
+
+- **Nodo `kingship`** (práctica, Edad del Bronce, «hacia el 2600 a. C.», las
+  casas de Kish y Ur de la Lista Real Sumeria; requiere `chiefdom` y
+  `standing_army`; se practica al presidir, como `chiefdom` un peldaño más
+  arriba). Chispas: oír a la banda discutir quién mandará antes de enfriarse
+  el viejo jefe; entrenar soldados que obedecen al cargo y no al hombre; ser
+  desobedecido por quien sabe que tu mandato acaba.
+- **El rey reina de por vida** (`Polity.reignsForLife`, en `chooseChief`): su
+  mandato no expira; sólo el desafío de `considerRebellion` puede deponerlo.
+- **La corona pasa** (`Polity.heirOf`): cuando el rey muere o deja la banda,
+  antes de cualquier elección el cargo va al cabeza de su casa —si ya no es
+  él— o a su hijo adulto mayor en la banda, libre y de la misma gente. Un
+  heredero que no sabe ser rey gobierna, pero a su muerte la banda vuelve a
+  elegir. Línea en la crónica y aviso.
+- `BandContext` gana `personById` (vivos y muertos) para leer la casa y los
+  hijos del rey difunto.
+- **Check `kings-reign-for-life`**: n/a si ningún rey gobernó más de un
+  mandato normal; falla si gobernaron y nunca pasaron del mandato. En
+  `polity`: 140 días-banda más allá del mandato, 2 jefes elegidos en toda la
+  partida, 0 coronas heredadas (ningún rey murió). La herencia se prueba en
+  dos tests nuevos.
+
 ## 2026-10-03 — M15 fase 38b: el ejército permanente
 
 - **Nodo `standing_army`** (práctica, Edad del Bronce, «hacia el 2300 a. C.»,

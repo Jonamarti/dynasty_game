@@ -16,7 +16,9 @@
  *    band gets you driven into the wilderness, and theft in a tolerant one does
  *    not, without either outcome being written as a rule.
  */
-import { LEVY_EVERY_DAYS, dueFrom, keepsAccounts, mayKeepSoldier, npcTaxRate, taxResentment } from '../social/Polity.ts';
+import {
+  LEVY_EVERY_DAYS, dueFrom, heirOf, keepsAccounts, mayKeepSoldier, npcTaxRate, reignsForLife, taxResentment,
+} from '../social/Polity.ts';
 import { isLarder, portions, mostOf } from '../social/Feast.ts';
 import { MEMBERS_PER_GUARD } from '../social/Defence.ts';
 import type { Person } from '../entities/Person.ts';
@@ -382,6 +384,8 @@ export interface BandContext {
     target: { buildingId?: number; nodeId?: number; itemId?: string; count?: number }) => boolean;
   /** Each band's temple store today, M15 phase 38b. */
   templeOf: (bandId: number) => Building | null;
+  /** Anybody, living or dead, by id — a late king's house and children, M15 phase 38b. */
+  personById: (id: number) => Person | undefined;
   /** Assigns a job, subject to the same roll `command` uses. */
   assignJob: (leader: Person, subordinate: Person, job: JobId | null) => boolean;
   /** Moves someone out of their band of their own accord, not by exile. */
@@ -626,8 +630,37 @@ export class BandSystem {
     // chief who understands `chiefdom` hold the office half as long again, and
     // a band that replaces them with somebody who does not goes back to the
     // short term. See `chiefTermDays`.
+    // Counted before the term test, so the health report can tell a world
+    // with no king from a world whose kings never outlast a term.
+    if (incumbent && reignsForLife(incumbent)) telemetry.count('king_days');
     if (incumbent && band.chiefSince !== null &&
         ctx.day - band.chiefSince < chiefTermDays(incumbent)) return;
+
+    // M15 phase 38b, `kingship`. A king's term does not run out; and when a
+    // king dies or leaves, the office goes to their heir before the band has
+    // any say. Only the challenge (`considerRebellion`) can unseat one.
+    if (incumbent && reignsForLife(incumbent)) {
+      telemetry.count('king_reigns_days');
+      return;
+    }
+    if (!incumbent && incumbentId !== undefined) {
+      const late = ctx.personById(incumbentId);
+      const heir = late && reignsForLife(late) ? heirOf(late, members, ctx.householdsById) : null;
+      if (late && heir) {
+        this.chiefByBand.set(band.id, heir.id);
+        band.chiefId = heir.id;
+        band.chiefSince = ctx.day;
+        telemetry.count('chief_chosen');
+        telemetry.count('crown_inherited');
+        heir.chronicle.push({
+          tick: ctx.tick, ageDays: heir.age,
+          text: t('inherited the rule of the {band} from {name}', { band: band.name, name: late.name }),
+          kind: 'milestone',
+        });
+        ctx.onInsight(heir, t('inherits the rule of the {band}', { band: band.name }), 'gain');
+        return;
+      }
+    }
 
     let best: Person | null = null;
     let bestScore = -Infinity;

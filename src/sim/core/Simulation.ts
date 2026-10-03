@@ -4357,6 +4357,7 @@ export class Simulation {
         command: (leader, subordinate, action, target) =>
           this.command(leader, subordinate, action, target),
         templeOf: bandId => this.templeOf(bandId),
+        personById: id => this.peopleById.get(id),
         assignJob: (leader, subordinate, job) => this.assignJob(leader, subordinate, job),
         leaveBand: person => this.removeBandMembership(person),
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),

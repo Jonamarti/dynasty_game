@@ -99,4 +99,19 @@ export const ES_POLITY: Record<string, string> = {
   "{name} has never had the idea of keeping men whose work is fighting":
     "{name} nunca ha pensado en mantener a gente cuyo oficio sea luchar",
   "there is no temple to feed a soldier from": "no hay templo del que alimentar a un soldado",
+  // Phase 38b: kingship.
+  "Kingship": "Realeza",
+  "about 2600 BC": "hacia el 2600 a. C.",
+  "heard the band quarrel over who would lead before the old chief was cold":
+    "oyó a la banda discutir quién mandaría antes de que el viejo jefe se enfriara",
+  "drilled the soldiers and saw that they answered to the office, not to the man":
+    "entrenó a los soldados y vio que obedecían al cargo, no al hombre",
+  "was refused by a man who knew their term would end, and thought of one that would not":
+    "fue desobedecido por alguien que sabía que su mandato acabaría, y pensó en uno que no acabara",
+  "The chiefdom held for life, and passed on to an heir rather than won again: the head of the king's own house, or his eldest child. An heir who never learned to be king will not pass it on in turn.":
+    "La jefatura de por vida, que pasa a un heredero en vez de ganarse de nuevo: el cabeza de la propia casa del rey, o su hijo mayor. Un heredero que nunca aprendió a ser rey no la pasará a su vez.",
+  "The chief reigns for life, and the office passes to the head of their house or their eldest child.":
+    "El jefe reina de por vida, y el cargo pasa al cabeza de su casa o a su hijo mayor.",
+  "inherited the rule of the {band} from {name}": "heredó el gobierno de la {band} de {name}",
+  "inherits the rule of the {band}": "hereda el gobierno de la {band}",
 };

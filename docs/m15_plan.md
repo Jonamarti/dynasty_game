@@ -2914,6 +2914,18 @@ valor ni la amistad que `warParty` pide a un voluntario, y el primero.
 `assignJob` rechaza con razón a quien no sabe o no tiene templo. Check
 `soldiers-are-kept`.
 
+**Avance del 2026-10-03 (38b, `kingship`).** Práctica de la Edad del Bronce
+(`chiefdom` + `standing_army`, hacia el 2600 a. C., practicada al presidir).
+El rey no agota mandato (`reignsForLife`); al morir o irse, el cargo pasa
+antes de cualquier elección a su heredero (`heirOf`): el cabeza de su casa si
+ya no es él, o su hijo adulto mayor en la banda. Un heredero que no sabe ser
+rey no lo transmite. Sólo el desafío de `considerRebellion` lo depone (la
+conspiración contra el rey es la 39c). La autoridad sobre bandas tributarias
+llega con la 39d. Check `kings-reign-for-life`: en `polity`, 140 días-banda
+gobernados más allá del mandato normal; ninguna corona heredada (ningún rey
+murió en la partida; la herencia se prueba en los tests). Con esto quedan los
+seis nodos del Estado salvo `city_walls`.
+
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 
 **Detalle en `m14_plan.md` fase 21.** Declarar la guerra y la paz

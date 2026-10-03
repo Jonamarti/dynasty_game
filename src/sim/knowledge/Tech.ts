@@ -143,6 +143,8 @@ export const TECHS = [
   'law_code',
   // The soldier the temple feeds: a job, `soldier`, and the war party it leads.
   'standing_army',
+  // The crown: the chiefdom held for life and passed to an heir.
+  'kingship',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1718,6 +1720,31 @@ export const TECH: Record<Tech, TechDef> = {
       'the temple the levy fills, and goes first and without question when ' +
       'the band goes to war.',
   },
+  kingship: {
+    id: 'kingship', label: 'Kingship', domain: 'people',
+    // "After kingship descended from heaven, the kingship was in Eridu": the
+    // Sumerian King List's first line, and the Early Dynastic houses of Kish
+    // and Ur that passed the office from father to son.
+    age: 'bronze', firstKnown: 'about 2600 BC',
+    // A practice, tried by ruling: `preside`, the deed `chiefdom` is
+    // practised by, one rung up.
+    kind: 'practice', practisedBy: ['preside'],
+    requires: ['chiefdom', 'standing_army'], difficulty: 0.65, skill: 'persuade',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'chiefdom' }, { kind: 'saw', what: 'body_found' },
+                { kind: 'doing', action: 'talk' }],
+        weight: 1.0, story: 'heard the band quarrel over who would lead before the old chief was cold' },
+      { needs: [{ kind: 'knows', tech: 'standing_army' }, { kind: 'doing', action: 'spar' }],
+        weight: 0.7, story: 'drilled the soldiers and saw that they answered to the office, not to the man' },
+      { needs: [{ kind: 'knows', tech: 'chiefdom' }, { kind: 'saw', what: 'order_refused' }],
+        weight: 0.4, story: 'was refused by a man who knew their term would end, and thought of one that would not' },
+    ],
+    description:
+      'The chiefdom held for life, and passed on to an heir rather than ' +
+      'won again: the head of the king\'s own house, or his eldest child. ' +
+      'An heir who never learned to be king will not pass it on in turn.',
+  },
 };
 
 /** Highest chronic motive this design can answer; zero means no recorded need. */
@@ -1994,6 +2021,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   standing_army: {
     summary: 'The soldier: a job that drills instead of foraging, eats from the temple, and leads the war party.',
     site: 'JOBS.soldier; BandSystem.assignJobs; Simulation.assignJob; Brain spar and larder; Factions.warParty',
+  },
+  kingship: {
+    summary: 'The chief reigns for life, and the office passes to the head of their house or their eldest child.',
+    site: 'BandSystem.chooseChief via Polity.reignsForLife and heirOf',
   },
 };
 

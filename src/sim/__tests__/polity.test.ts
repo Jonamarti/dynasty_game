@@ -7,7 +7,7 @@ import { Simulation } from '../core/Simulation.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
 import {
-  CONTRIBUTION_RENOWN, SOLDIER_UPKEEP, TAX_RATES, mayKeepSoldier, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
+  CONTRIBUTION_RENOWN, SOLDIER_UPKEEP, TAX_RATES, heirOf, mayKeepSoldier, reignsForLife, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
   templeOf, templePull,
 } from '../social/Polity.ts';
 import { Household } from '../entities/Household.ts';
@@ -246,5 +246,50 @@ describe('standing_army: the soldier', () => {
     learn(leader!, 'standing_army');
     expect(sim.assignJob(leader!, other!, 'soldier')).toBe(false);
     expect(sim.lastRefusal).toMatch(/no temple/);
+  });
+});
+
+describe('kingship: the crown', () => {
+  it('passes to the head of the late king\'s house, or else the eldest child', () => {
+    const sim = new Simulation(SMALL);
+    const [king, head, elder, younger] = sim.livingPeople();
+    for (const p of [head!, elder!, younger!]) p.bandId = king!.bandId;
+    const household = new Household('Royal', king!.id, king!.bandId, 0);
+    const households = new Map([[household.id, household]]);
+    king!.householdId = household.id;
+    king!.childIds = [elder!.id, younger!.id];
+    // Grown, both, so neither is passed over for a child.
+    for (const p of [head!, elder!, younger!]) p.age = Math.max(p.age, 4000);
+    elder!.age = younger!.age + 100;
+    const members = sim.livingPeople();
+
+    // Still headed by the king: the eldest child.
+    expect(heirOf(king!, members, households)?.id).toBe(elder!.id);
+    // Somebody else heads the house now: them.
+    household.headId = head!.id;
+    expect(heirOf(king!, members, households)?.id).toBe(head!.id);
+  });
+
+  it('keeps the office past the term, and hands it on at the king\'s death', () => {
+    const sim = new Simulation(SMALL);
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    const band = sim.bands.find(b => !b.outcast)!;
+    const king = sim.peopleById.get(band.chiefId!)!;
+    learn(king, 'kingship');
+    expect(reignsForLife(king)).toBe(true);
+    const heir = heirOf(king, sim.livingPeople().filter(p => p.bandId === band.id), sim.householdsById);
+    // Far past any ordinary term, still king.
+    band.chiefSince = sim.time.day - 200;
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    expect(band.chiefId).toBe(king.id);
+
+    king.die('test');
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    if (heir) {
+      expect(band.chiefId).toBe(heir.id);
+      expect(heir.chronicle.some(line => line.text.includes('inherited the rule'))).toBe(true);
+    } else {
+      expect(band.chiefId).not.toBe(king.id);
+    }
   });
 });
