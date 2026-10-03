@@ -145,3 +145,41 @@ export function dueFrom(foodAtHome: number, rate: number, givenSince: number, wr
 export function taxResentment(rate: number, taxed: Person): number {
   return rate * TAX_RESENTMENT * (0.5 + taxed.traits.greed);
 }
+
+/**
+ * How many soldiers a band keeps for every so many members, at most — M15
+ * phase 38b, `standing_army`. One in six: a soldier who does not forage is a
+ * mouth the rest must fill, and Akkad's 5,400 were a sliver of the kingdom.
+ */
+export const MEMBERS_PER_SOLDIER = 6;
+
+/**
+ * Portions the temple must hold for each soldier it keeps, the new one
+ * included, before the chief will take another into its pay. A soldier is
+ * fed from the temple; a temple that cannot feed one does not raise one.
+ */
+export const SOLDIER_UPKEEP = 12;
+
+/** Whether `chief` can keep another soldier on the temple `temple` holds. */
+export function mayKeepSoldier(chief: Person, templeFood: number, soldiers: number, members: number): boolean {
+  return techPower(chief, 'standing_army') > 0 &&
+    soldiers < Math.floor(members / MEMBERS_PER_SOLDIER) &&
+    templeFood >= SOLDIER_UPKEEP * (soldiers + 1);
+}
+
+/**
+ * How much more a soldier wants to drill than anybody else, as a multiple of
+ * `spar`'s ordinary score. Drill is the soldier's work, the way patrolling is
+ * a guard's.
+ */
+export const SOLDIER_DRILL = 2.5;
+
+/** How many tiles nearer the temple counts as for a soldier looking for food. */
+export const SOLDIER_RATION_PULL = 20;
+
+/**
+ * How much a soldier the temple can feed still wants to forage, pick or hunt
+ * for themselves, as a multiple of the ordinary score. Not zero: a soldier
+ * far from the temple with a bush in reach still eats from it.
+ */
+export const SOLDIER_FORAGE = 0.25;

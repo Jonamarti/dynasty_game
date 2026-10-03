@@ -34,7 +34,7 @@ import type { Building } from '../entities/Building.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import { statusPressure } from './Status.ts';
 import { ATTEND, FEAST, FEAST_MIN_GUESTS, FEAST_RADIUS, feastVenue, mayHostFeast } from '../social/Feast.ts';
-import { templePull } from '../social/Polity.ts';
+import { SOLDIER_DRILL, SOLDIER_FORAGE, SOLDIER_RATION_PULL, templePull } from '../social/Polity.ts';
 import { curiosityNeed } from './Temperament.ts';
 import { possessionPressure } from './Possession.ts';
 import type { BandRelations } from '../social/BandRelations.ts';
@@ -572,6 +572,9 @@ const YOUNG_CHILD_ACTIONS: ReadonlySet<string> = new Set([
  */
 const IDLE_ACTIONS = new Set(['rest', 'wander']);
 
+/** The ways of finding one's own food, which a soldier fed by the temple leaves to others. */
+const FOOD_GETTING = new Set(['forage', 'pick', 'hunt']);
+
 /**
  * How much a settled job leans someone toward its own work and away from
  * everyone else's.
@@ -856,12 +859,20 @@ export class Brain {
     // work assignment, and eating, drinking and fleeing must never be leaned
     // against by an occupation.
     const job = person.job ? JOBS[person.job] : null;
+    // M15 phase 38b: a soldier whose temple has food in it is fed from it, and
+    // does not go looking for their own. Measured: with the job bias alone a
+    // soldier on `polity` spent a quarter of their samples foraging and
+    // carried food three samples in four, so never once went to the temple.
+    const rationTemple = person.job === 'soldier' ? ctx.templeByBand?.get(person.bandId) : undefined;
+    const rationed = rationTemple !== undefined &&
+      (ctx.buildingsById.get(rationTemple)?.store.bestFood() ?? null) !== null;
     const add = (id: string, score: number) => {
       const appetite = WORK_ACTIONS.has(id) ? industriousAppetite : IDLE_ACTIONS.has(id) ? idle : 1;
       const jobBias = job && WORK_ACTIONS.has(id)
         ? (job.actions.includes(id) ? JOB_BIAS_UP : JOB_BIAS_DOWN)
         : 1;
-      const weighted = (id === current ? score * 1.25 : score) * appetite * jobBias;
+      const ration = rationed && FOOD_GETTING.has(id) ? SOLDIER_FORAGE : 1;
+      const weighted = (id === current ? score * 1.25 : score) * appetite * jobBias * ration;
       if (weighted > 0) scores.push({ id, score: weighted });
     };
 
@@ -1461,7 +1472,9 @@ export class Brain {
           ctx.relationships.opinion(person.id, other.id) - person.distanceTo(other) * 2);
         if (partner) {
           const outmatched = Math.max(0, 0.5 - person.skillFactor('fight'));
-          add('spar', (0.1 + person.traits.aggression * 0.5 + outmatched * 0.6 + status * STATUS_SPAR_PULL)
+          // M15 phase 38b: drill is a soldier's work.
+          const drill = person.job === 'soldier' ? SOLDIER_DRILL : 1;
+          add('spar', drill * (0.1 + person.traits.aggression * 0.5 + outmatched * 0.6 + status * STATUS_SPAR_PULL)
             * this.proximityBonus(person, partner, ctx.sightRadius));
           sparPartner = partner;
         }
@@ -2953,10 +2966,14 @@ export class Brain {
         const elite = household !== null && chief !== null &&
           (household.headId === chief.id ||
             ctx.relationships.opinion(person.id, chief.id) >= 25);
+        // M15 phase 38b: a soldier eats from the temple that keeps them.
+        const ration = person.job === 'soldier' ? ctx.templeByBand?.get(person.bandId) : undefined;
         const larder = this.pickBest(
           stores.filter(b => this.canUse(person, b, ctx) && b.store.bestFood() !== null),
-          b => -person.distanceTo({ x: b.centerX, y: b.centerY }) + (elite ? 12 : 0)
+          b => -person.distanceTo({ x: b.centerX, y: b.centerY }) + (elite ? 12 : 0) +
+            (b.id === ration ? SOLDIER_RATION_PULL : 0)
         );
+        if (larder && larder.id === ration) telemetry.count('soldier_fed_from_temple');
         // Weighted well above foraging, and scaled by how well stocked it is. A
         // full pit is a certainty; a bush in February is a walk and a gamble.
         if (larder) {

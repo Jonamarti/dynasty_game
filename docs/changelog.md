@@ -1,3 +1,29 @@
+## 2026-10-03 — M15 fase 38b: el ejército permanente
+
+- **Nodo `standing_army`** (práctica, Edad del Bronce, «hacia el 2300 a. C.»,
+  los 5.400 hombres de Sargón «que comían pan ante él cada día»; requiere
+  `division_of_labour` y `taxation`; se practica entrenando). Chispas: ver
+  atacar a la banda sin nadie cuyo oficio fuera impedirlo; entrenar hasta el
+  anochecer; ver robar el templo.
+- **Trabajo `soldier`**, añadido al final de `JOB_IDS` (en una banda sin el
+  nodo nunca se ofrece, así que el reparto de trabajos no cambia). El jefe lo
+  ofrece si sabe el nodo, hay templo y el templo tiene 12 raciones por
+  soldado, contando el nuevo; uno por cada seis miembros como mucho.
+  `Simulation.assignJob` rechaza con razón a quien no lo sabe o no tiene
+  templo, para el jugador y para los PNJ.
+- **Qué hace un soldado**: entrena (`spar`) 2,5 veces más; come del templo
+  (`SOLDIER_RATION_PULL` en la despensa) y, mientras el templo tenga comida,
+  recolecta, coge fruta y caza a un cuarto de lo normal. **Medido**: sólo con
+  el sesgo del trabajo, el soldado de `polity` pasaba un cuarto de su tiempo
+  recolectando, llevaba comida tres de cada cuatro muestras y nunca fue al
+  templo. Y en `warParty` va sin el valor ni la confianza mutua que se piden
+  a un voluntario, y el primero de la partida; obedecer sigue siendo la
+  tirada de `command`.
+- **Check `soldiers-are-kept`**: en `polity`, 95 días-soldado y 223 comidas
+  buscadas en el templo (0 antes de racionarlos).
+- **Tests:** tres nuevos (cuántos soldados puede mantener el templo, la
+  partida de guerra, el rechazo con razón). Suite 839/839.
+
 ## 2026-10-03 — M15 fase 38b: el código de leyes
 
 - **Nodo `law_code`** (práctica, Edad del Bronce, «hacia el 2100 a. C.», el

@@ -1884,6 +1884,19 @@ export class Simulation {
       return false;
     }
 
+    // M15 phase 38b: a soldier is a mouth the temple feeds, and only somebody
+    // who has had the idea of a standing army thinks of keeping one.
+    if (job === 'soldier') {
+      if (techPower(leader, 'standing_army') <= 0) {
+        this.lastRefusal = t('{name} has never had the idea of keeping men whose work is fighting', { name: leader.name });
+        return false;
+      }
+      if (!this.templeOf(leader.bandId)) {
+        this.lastRefusal = t('there is no temple to feed a soldier from');
+        return false;
+      }
+    }
+
     if (leader.id === subordinate.id) {
       subordinate.job = job;
       telemetry.count('job_assigned');
@@ -4384,6 +4397,8 @@ export class Simulation {
       // be able to skip honestly when there was nothing to tend.
       for (const person of this.people) {
         if (person.alive && person.health < 80) telemetry.count('hurt_person_days');
+        // M15 phase 38b: how many soldiers a world keeps, for `soldiers-are-kept`.
+        if (person.alive && person.job === 'soldier') telemetry.count('job_soldier_days');
       }
       this.refreshEra();
 

@@ -47,7 +47,7 @@ export const WORK_ACTIONS = new Set([
   'patrol',
 ]);
 
-export const JOB_IDS = ['forager', 'hunter', 'builder', 'crafter', 'farmer', 'guard'] as const;
+export const JOB_IDS = ['forager', 'hunter', 'builder', 'crafter', 'farmer', 'guard', 'soldier'] as const;
 export type JobId = (typeof JOB_IDS)[number];
 
 export interface JobDef {
@@ -113,6 +113,18 @@ export const JOBS: Record<JobId, JobDef> = {
     label: 'Guard',
     icon: '\u{1F6E1}',
     actions: ['patrol', 'warn', 'restrain'],
+    skill: 'fight',
+  },
+  // M15 phase 38b, `standing_army`. Fighting as a trade. Of these verbs only
+  // `patrol` is in `WORK_ACTIONS`, so the job leans a soldier away from
+  // foraging and toward walking the ground through the ordinary job bias;
+  // the drill (`spar`) and the temple's bread are `Brain`'s, reading the job
+  // directly, and the war party is `Factions.warParty`'s.
+  soldier: {
+    id: 'soldier',
+    label: 'Soldier',
+    icon: '\u{2694}',
+    actions: ['patrol', 'spar', 'warn', 'restrain'],
     skill: 'fight',
   },
 };

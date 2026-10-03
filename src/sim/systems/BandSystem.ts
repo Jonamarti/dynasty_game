@@ -16,7 +16,7 @@
  *    band gets you driven into the wilderness, and theft in a tolerant one does
  *    not, without either outcome being written as a rule.
  */
-import { LEVY_EVERY_DAYS, dueFrom, keepsAccounts, npcTaxRate, taxResentment } from '../social/Polity.ts';
+import { LEVY_EVERY_DAYS, dueFrom, keepsAccounts, mayKeepSoldier, npcTaxRate, taxResentment } from '../social/Polity.ts';
 import { isLarder, portions, mostOf } from '../social/Feast.ts';
 import { MEMBERS_PER_GUARD } from '../social/Defence.ts';
 import type { Person } from '../entities/Person.ts';
@@ -760,7 +760,11 @@ export class BandSystem {
       // one that has stopped working.
       (id !== 'guard' || (
         counts.guard < Math.ceil(members.length / MEMBERS_PER_GUARD) &&
-        [...(ctx.sightings.get(band.id)?.values() ?? [])].some(seen => seen.bandId !== band.id))));
+        [...(ctx.sightings.get(band.id)?.values() ?? [])].some(seen => seen.bandId !== band.id))) &&
+      // M15 phase 38b: a soldier only for a chief who knows how to keep one,
+      // and only as many as the temple can feed. A band without it never
+      // offers the job, so the counting above is unchanged for it.
+      (id !== 'soldier' || this.templeCanKeepSoldier(chief, band, members, counts.soldier, ctx)));
 
     let wanted: JobId = offered[0] ?? JOB_IDS[0]!;
     let fewest = Infinity;
@@ -772,6 +776,12 @@ export class BandSystem {
     }
 
     ctx.assignJob(chief, unassigned[0]!, wanted);
+  }
+
+  /** Whether the chief can take another soldier into the temple's pay. */
+  private templeCanKeepSoldier(chief: Person, band: Band, members: Person[], soldiers: number, ctx: BandContext): boolean {
+    const temple = ctx.templeOf(band.id);
+    return temple !== null && mayKeepSoldier(chief, portions(temple.store), soldiers, members.length);
   }
 
   // -------------------------------------------------------------------------

@@ -144,17 +144,27 @@ export function warParty(
     if (member.id === leader.id || member.isChild || !member.alive) continue;
     // M11 phase 15d: nobody arms a captive and walks them to war.
     if (member.captiveOf !== null) continue;
+    // M15 phase 38b: a soldier goes because going is the work — no nerve,
+    // no friendship with the leader asked. Whether they obey is still
+    // `command`'s roll, like anybody's.
+    if (member.job === 'soldier') {
+      willing.push(member);
+      continue;
+    }
     if (member.traits.aggression < RAID_NERVE) continue;
     if (member.skillFactor('fight') < RAID_FIGHT) continue;
     if (!trustEachOther(leader.id, member.id, rels)) continue;
     willing.push(member);
   }
 
-  // Strongest first, ties broken by id. The tiebreak is not cosmetic: two
-  // people with identical skill and vigour are common in a young band, and a
-  // sort that left their order to the engine would make the party — and every
-  // world downstream of it — depend on something no seed controls.
+  // Soldiers first, then strongest first, ties broken by id. The tiebreak is
+  // not cosmetic: two people with identical skill and vigour are common in a
+  // young band, and a sort that left their order to the engine would make
+  // the party — and every world downstream of it — depend on something no
+  // seed controls.
   willing.sort((a, b) => {
+    const soldier = Number(b.job === 'soldier') - Number(a.job === 'soldier');
+    if (soldier !== 0) return soldier;
     const gap = b.skillFactor('fight') - a.skillFactor('fight');
     return gap !== 0 ? gap : a.id - b.id;
   });

@@ -2904,6 +2904,16 @@ queja en `century` y otra en `labour` en la línea base), así que
 `the-law-is-the-same-for-all` es n/a en `polity` y el efecto se prueba en
 los tests.
 
+**Avance del 2026-10-03 (38b, `standing_army`).** Práctica de la Edad del
+Bronce (`division_of_labour` + `taxation`, hacia el 2300 a. C., practicada
+entrenando). Trabajo nuevo `soldier`, al final de `JOB_IDS`: el jefe que lo
+sabe lo ofrece si el templo puede alimentarlo (12 raciones por soldado, uno
+por cada seis miembros); entrena el doble y medio (`spar`), come del templo y
+apenas se busca la comida mientras el templo tenga; y va a la guerra sin el
+valor ni la amistad que `warParty` pide a un voluntario, y el primero.
+`assignJob` rechaza con razón a quien no sabe o no tiene templo. Check
+`soldiers-are-kept`.
+
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 
 **Detalle en `m14_plan.md` fase 21.** Declarar la guerra y la paz

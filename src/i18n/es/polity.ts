@@ -83,4 +83,20 @@ export const ES_POLITY: Record<string, string> = {
     "El agravio y su pena, escritos antes de oír el caso. Un jefe que juzga por la ley no puede absolver a un favorito, no protege a los suyos de la demanda justa de otro pueblo, y se le guarda menos rencor por un veredicto que fue de la ley y no suyo.",
   "A chief who judges by the law cannot dismiss a case for a favourite or shield their own, and a verdict is resented less.":
     "Un jefe que juzga por la ley no puede desestimar un caso por un favorito ni proteger a los suyos, y su veredicto deja menos rencor.",
+  // Phase 38b: standing_army.
+  "Standing army": "Ejército permanente",
+  "saw the band set upon and nobody whose work it was to stand in the way":
+    "vio atacar a la banda sin nadie cuyo oficio fuera plantarse delante",
+  "sparred until dark and thought a man who did nothing else would be worth feeding":
+    "entrenó hasta el anochecer y pensó que valdría la pena alimentar a un hombre que no hiciera otra cosa",
+  "watched the temple robbed and thought its stores could feed the men to guard it":
+    "vio robar el templo y pensó que sus reservas podían alimentar a los hombres que lo guardaran",
+  "Fighting as a trade. A soldier drills rather than forages, eats from the temple the levy fills, and goes first and without question when the band goes to war.":
+    "La guerra como oficio. Un soldado entrena en lugar de recolectar, come del templo que llena el tributo, y va el primero y sin rechistar cuando la banda va a la guerra.",
+  "The soldier: a job that drills instead of foraging, eats from the temple, and leads the war party.":
+    "El soldado: un oficio que entrena en lugar de recolectar, come del templo y encabeza la partida de guerra.",
+  "Soldier": "Soldado",
+  "{name} has never had the idea of keeping men whose work is fighting":
+    "{name} nunca ha pensado en mantener a gente cuyo oficio sea luchar",
+  "there is no temple to feed a soldier from": "no hay templo del que alimentar a un soldado",
 };

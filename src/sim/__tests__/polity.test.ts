@@ -7,12 +7,13 @@ import { Simulation } from '../core/Simulation.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
 import {
-  CONTRIBUTION_RENOWN, TAX_RATES, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
+  CONTRIBUTION_RENOWN, SOLDIER_UPKEEP, TAX_RATES, mayKeepSoldier, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
   templeOf, templePull,
 } from '../social/Polity.ts';
 import { Household } from '../entities/Household.ts';
 import { DEBT_DAYS, incur, pruneDebts } from '../social/Amends.ts';
 import { FEAST_MIN_FOOD, feastVenue, mayHostFeast } from '../social/Feast.ts';
+import { warParty } from '../social/Factions.ts';
 import { answerWeight, judgeOwn, judgesByLaw, verdictGrudge } from '../social/Justice.ts';
 
 const SMALL = {
@@ -204,5 +205,46 @@ describe('law_code: the same wrong, the same verdict', () => {
     learn(chief, 'law_code');
     expect(verdictGrudge(chief)).toBeLessThan(without);
     expect(verdictGrudge(chief)).toBeGreaterThan(0);
+  });
+});
+
+describe('standing_army: the soldier', () => {
+  it('is kept only by a chief who knows how, and only as many as the temple feeds', () => {
+    const sim = new Simulation(SMALL);
+    const chief = sim.livingPeople()[0]!;
+    expect(mayKeepSoldier(chief, 100, 0, 12)).toBe(false);
+    learn(chief, 'standing_army');
+    expect(mayKeepSoldier(chief, 100, 0, 12)).toBe(true);
+    // One in six members at most.
+    expect(mayKeepSoldier(chief, 100, 2, 12)).toBe(false);
+    // And the temple has to hold their bread.
+    expect(mayKeepSoldier(chief, SOLDIER_UPKEEP - 1, 0, 12)).toBe(false);
+  });
+
+  it('goes to war without the nerve or the friendship a volunteer needs', () => {
+    const sim = new Simulation(SMALL);
+    const [leader, soldier, farmer] = sim.livingPeople();
+    leader!.traits.aggression = 0.9;
+    leader!.skills.fight = 100;
+    for (const p of [soldier!, farmer!]) {
+      p.traits.aggression = 0.1;
+      p.skills.fight = 0;
+    }
+    soldier!.job = 'soldier';
+    const party = warParty(leader!, sim.livingPeople(), sim.relationships, 4);
+    expect(party.map(p => p.id)).toContain(soldier!.id);
+    expect(party.map(p => p.id)).not.toContain(farmer!.id);
+    expect(party[0]!.id).toBe(soldier!.id);
+  });
+
+  it('cannot be made by a leader who has never had the idea, and says so', () => {
+    const sim = new Simulation(SMALL);
+    const [leader, other] = sim.livingPeople();
+    learn(leader!, 'division_of_labour');
+    expect(sim.assignJob(leader!, other!, 'soldier')).toBe(false);
+    expect(sim.lastRefusal).toMatch(/never had the idea of keeping men whose work is fighting/);
+    learn(leader!, 'standing_army');
+    expect(sim.assignJob(leader!, other!, 'soldier')).toBe(false);
+    expect(sim.lastRefusal).toMatch(/no temple/);
   });
 });

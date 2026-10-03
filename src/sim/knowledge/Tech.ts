@@ -141,6 +141,8 @@ export const TECHS = [
   'taxation',
   // The written law: the same wrong, the same verdict.
   'law_code',
+  // The soldier the temple feeds: a job, `soldier`, and the war party it leads.
+  'standing_army',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1693,6 +1695,29 @@ export const TECH: Record<Tech, TechDef> = {
       'shield their own from another people\'s just demand, and is resented ' +
       'less for a verdict that was the law\'s and not theirs.',
   },
+  standing_army: {
+    id: 'standing_army', label: 'Standing army', domain: 'people',
+    // Sargon of Akkad's "5,400 men who ate bread before him daily": men whose
+    // work was fighting, fed from the king's stores rather than their own
+    // fields.
+    age: 'bronze', firstKnown: 'about 2300 BC',
+    // A practice, tried by drilling.
+    kind: 'practice', practisedBy: ['spar'],
+    requires: ['division_of_labour', 'taxation'], difficulty: 0.6, skill: 'fight',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'taxation' }, { kind: 'saw', what: 'assault' }],
+        weight: 1.0, story: 'saw the band set upon and nobody whose work it was to stand in the way' },
+      { needs: [{ kind: 'knows', tech: 'division_of_labour' }, { kind: 'doing', action: 'spar' }],
+        weight: 0.7, story: 'sparred until dark and thought a man who did nothing else would be worth feeding' },
+      { needs: [{ kind: 'knows', tech: 'taxation' }, { kind: 'saw', what: 'theft' }],
+        weight: 0.5, story: 'watched the temple robbed and thought its stores could feed the men to guard it' },
+    ],
+    description:
+      'Fighting as a trade. A soldier drills rather than forages, eats from ' +
+      'the temple the levy fills, and goes first and without question when ' +
+      'the band goes to war.',
+  },
 };
 
 /** Highest chronic motive this design can answer; zero means no recorded need. */
@@ -1965,6 +1990,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   law_code: {
     summary: 'A chief who judges by the law cannot dismiss a case for a favourite or shield their own, and a verdict is resented less.',
     site: 'Justice.judgeOwn, answerWeight and verdictGrudge; Simulation.hearComplaint and shame',
+  },
+  standing_army: {
+    summary: 'The soldier: a job that drills instead of foraging, eats from the temple, and leads the war party.',
+    site: 'JOBS.soldier; BandSystem.assignJobs; Simulation.assignJob; Brain spar and larder; Factions.warParty',
   },
 };
 

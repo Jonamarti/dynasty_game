@@ -588,7 +588,7 @@ export const SCENARIOS: Record<string, Scenario> = {
           'plant_lore', 'grinding', 'farming', 'pottery', 'brewing',
           'division_of_labour', 'chiefdom',
           'writing', 'clay_tablet',
-          'redistribution', 'accounting', 'taxation', 'law_code',
+          'redistribution', 'accounting', 'taxation', 'law_code', 'standing_army',
         ],
       },
     },
@@ -2334,6 +2334,18 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('the-law-is-the-same-for-all',
       (tel.verdict_dismiss ?? 0) === 0,
       (tel.verdict_by_law ?? 0) + ' verdicts by the law, ' + (tel.verdict_dismiss ?? 0) + ' cases dismissed');
+  }
+
+  // M15 phase 38b, `standing_army`. Soldiers kept: the job handed out, and
+  // the soldier fed from the temple rather than foraging for themselves.
+  if ((tel.temple_days ?? 0) === 0 || !sim.knownTech.has('standing_army')) {
+    skip('soldiers-are-kept', 'no temple kept by a chief who knows a standing army');
+  } else {
+    const kept = tel.job_soldier_days ?? 0;
+    const fed = tel.soldier_fed_from_temple ?? 0;
+    add('soldiers-are-kept',
+      kept > 0 && fed > 0,
+      kept + ' soldier-days, ' + fed + ' meals sought at the temple');
   }
 
   // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the
