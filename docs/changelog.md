@@ -1,3 +1,32 @@
+## 2026-10-03 — M15 fase 28: un checkpoint, un tick y referencias canónicas
+
+CheckpointRecord v1 compone config e IDs, roster/relaciones, reloj/RNG,
+terreno/suelo, objetos y libros. La hidratación devuelve estado independiente,
+con cadáveres/sucesión/normas ligados al roster; comprueba calendario, reglas,
+agenda, autoridad y cobertura de asignadores antes de cualquier carga viva.
+Tres casos de composición cubren un mundo evolucionado, muerte, objetos y
+rechazos de snapshots mezclados/corruptos. No genera mundo, avanza reloj,
+asigna IDs ni tira RNG; no implementa todavía el cargador o LOD.
+
+Verificación final: **957/957 pruebas en 132 archivos**, typecheck limpio,
+11 focales y **74/74 e2e**. La matriz antes/después conserva **108 fallos en
+27 escenarios**; cero diferencias de aplicabilidad, fallos y todas las líneas
+PASS/FAIL/n/a con sus métricas, excluyendo perf-budget/throughput. Sigue roja,
+no se declara recuperado el balance. Evidencia normalizada y logs:
+`artifacts/verification/m15-phase28-checkpoint-20261003-pass1/`.
+La pasada intermedia falló tres casos de fixtures/refactor en elaboración;
+se conserva como `unit.log`, separada de `unit-stable.log`. El negativo
+intencional de eventos duplicados queda registrado y su versión corregida pasa.
+Playwright terminó sus 74 casos y se desbloqueó su cierre al detener el Vite
+creado por esa ejecución; exit 0 confirmado, causa de la espera sin aislar.
+
+Plan, arquitectura, estado, siguiente trabajo y bugs actualizados. Los tres
+tours cronológicos pasan 1/1 y sus imágenes iniciales fueron revisadas.
+Último registro visual sin cambio de UI:
+`artifacts/screenshots/m15-phase28-checkpoint-2026-10-03-pass1/`.
+Contrato: `docs/m15_phase28_checkpoint.md`. Siguiente: construir una Simulation
+sin generación y probar continuación idéntica, antes de transferir autoridad.
+
 ## 2026-10-03 — M15 fase 28: decisiones que conservan su agenda
 
 LedgerRecord guarda permisos, feudos, casos, avisos, sucesión, cooldowns de

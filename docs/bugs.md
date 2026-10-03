@@ -1,5 +1,27 @@
 # Known bugs and rough edges
 
+## M15 fase 28: checkpoint compuesto sin carga ejecutable (2026-10-03)
+
+Objetos y libros laterales ya tienen codecs y CheckpointRecord los compone
+con roster, terreno, config, IDs y reloj/RNG. La hidratación liga personas,
+normas y autoridad canónicas, pero aún no crea una Simulation ejecutable ni
+reconstruye índices, sistemas y callbacks. La fase 28 y el LOD siguen abiertos;
+el próximo cargador debe probar continuación idéntica en acciones y fronteras
+diarias, sin constructores generadores. La validación actual cubre los contratos
+de composición y estados locales requeridos, no cada campo privado ni toda
+referencia histórica externa. Contrato: `m15_phase28_checkpoint.md`.
+
+Verificación final 957/957 unitarios, typecheck y 74/74 e2e. La matriz mantiene
+los mismos 108 fallos en 27 escenarios; todas las líneas de checks y sus
+métricas coinciden, excluyendo throughput. No hay nuevas regresiones observadas
+en esa matriz. Comparación: `artifacts/verification/m15-phase28-checkpoint-20261003-pass1/comparison.json`.
+
+La ejecución de Playwright marcó sus 74 casos aprobados pero quedó esperando
+el cierre de su servidor Vite en 5173. Detener ese servidor propio permitió
+cerrar con exit 0 y resumen 74 passed. La causa de esa espera no se ha aislado;
+el proceso antiguo de otra ejecución en 5399 se conservó. No se cambió la
+configuración de pruebas ni se atribuye el bloqueo al juego.
+
 ## M15 equipamiento: matriz roja y cobertura perdida (2026-10-03)
 
 La integración de herramientas tiene 108 instancias de check fallidas en 27

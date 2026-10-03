@@ -1,5 +1,13 @@
 # Next steps
 
+**2026-10-03: checkpoint coordinado, fase 28.** Objetos/agendas ya se unen
+con config/IDs, roster, terreno y reloj/RNG en un estado independiente y
+canónico. Verificación: 957 unitarios, typecheck y 74 e2e pasan; 27 escenarios
+mantienen sus mismos 108 fallos y todas las métricas de checks. Siguiente:
+cargador de Simulation sin generación y continuación idéntica durante trabajo,
+fronteras diarias y sucesión; después transferencia de autoridad y compacto/LOD.
+[Contrato](m15_phase28_checkpoint.md).
+
 **2026-10-03: herramientas, fase 11d.** Preparación automática, herramientas
 efectivas en mano y conservación al soltar; cuenta atrás independiente y brazos
 del bebé respetados. Quedan recogida de herramientas de oficio y controles
@@ -22,16 +30,16 @@ probados desde una orden real, pausa e interrupción; arte y captura revisados.
 Tala y fabricación ya tienen su gesto; quedan otras familias. [Evidencia](m15_dig_animation.md).
 
 **2026-10-03: banco RNG, fase 28.** Reloj y 15 ubicaciones RNG se capturan a
-un tick común, conservando aliases y continuidad. Quedan agendas, objetos del
-mundo y aplicación coordinada al motor. [Contrato](m15_phase28_streams.md).
+un tick común, conservando aliases y continuidad. Objetos/agendas ya están
+compuestos; queda aplicación al motor. [Contrato](m15_phase28_streams.md).
 
 **2026-10-03: terreno y suelo, fase 28.** El libro JSON v1 conserva regiones,
-relieve excavado y recuperación de suelo sin regeneración. Siguiente: objetos
-del mundo, agendas y carga coordinada. [Contrato](m15_phase28_world.md).
+relieve excavado y recuperación de suelo sin regeneración. Objetos/agendas ya
+están compuestos; siguiente: carga ejecutable. [Contrato](m15_phase28_world.md).
 
 **2026-10-03: checkpoints de ejecución, fase 28.** RNG y reloj tienen
 checkpoints JSON v1 independientes con continuidad exacta y validación estricta.
-Los streams ya se componen; siguiente: agendas junto al roster y el terreno;
+Los streams/agendas ya se componen junto al roster y el terreno;
 no hay aún carga de Simulation ni LOD. [Contrato](m15_phase28_execution.md).
 
 **2026-10-03: fase 28, roster coordinado.** `RosterRecords` v1 compone entidades

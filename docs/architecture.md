@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-03 (M15 art memory budgets, gathering animation, 26b tools and 26f region audit). No runtime
+Current as of 2026-10-03 (M15 detached checkpoint composition and world ledgers). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -61,15 +61,15 @@ see [m15_phase28_records.md](m15_phase28_records.md).
 does not expand a seed or draw from a parent, and the clock retains its own
 calendar. `ExecutionRecord` v1 composes that clock and the 15 retained RNG
 locations into an independent bank, preserving shared stream identities. Tests
-walk the real Simulation object graph to detect omissions. Schedule ledgers and
-coordinated Simulation loading remain pending; see
+walk the real Simulation object graph to detect omissions. Schedule ledgers now
+have a separate codec; coordinated Simulation loading remains pending. See
 [m15_phase28_execution.md](m15_phase28_execution.md) and
 [m15_phase28_streams.md](m15_phase28_streams.md).
 
 `WorldTerrainRecord` v1 restores independent tile/soil arrays and functioning
 World/Soil prototypes without generation. Soil fertility shares World's canonical
 array; topology and historical shoreline caches survive terrain edits. It covers
-terrain only; coordinated loading and world object ledgers remain pending. See
+terrain only; world objects now have their own codec, and live loading remains pending. See
 [m15_phase28_world.md](m15_phase28_world.md).
 
 `WorldObjectRecord` v1 now captures the seven ordered entity collections and
@@ -86,6 +86,14 @@ between daily refreshes: recomputing them early can change the next decision.
 Canonical people are supplied by the roster. Held keyboard intent, route budgets
 and reconstructible scratch/spatial indexes are excluded. Coordinated application
 and live loading remain pending; see [m15_phase28_ledgers.md](m15_phase28_ledgers.md).
+
+`CheckpointRecord` v1 composes all these detached pieces, complete configuration
+and IdSpace v2 at one tick/day. It checks cross-record calendar/rules, allocation
+coverage, group reservations and canonical person/culture/chief identities.
+Hydration returns one detached state graph, with no running Simulation or
+authority transfer. A live loader must rebind systems and indexes without world
+generation and prove identical continuation; see
+[m15_phase28_checkpoint.md](m15_phase28_checkpoint.md).
 
 `Simulation.ids` owns the ten entity/event allocation namespaces. Creation
 passes this `IdSpace` explicitly to entities and systems; the optional second

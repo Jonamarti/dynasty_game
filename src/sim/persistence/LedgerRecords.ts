@@ -213,8 +213,8 @@ export function fromLedgerRecord(input: unknown, peopleById?: ReadonlyMap<number
   const eventIds = new Set<number>();
   const socialRecent = input.socialRecent.map(raw => {
     if (!validateEvent(raw) || raw.tick > checkpointTick) invalid('invalid social event');
-    // Replaying two copies would double a deed after a later loader rejoins
-    // this feed with the deduplication ledgers and people's memories.
+    // An allocated event has one identity. Duplicate copies make the saved
+    // feed ambiguous, even when their fields happen to agree.
     if (eventIds.has(raw.id)) invalid('duplicate social event');
     eventIds.add(raw.id);
     return clone(raw);

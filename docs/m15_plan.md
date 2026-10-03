@@ -2520,6 +2520,18 @@ antes o después y chocan entre sí y con el del jugador**.
 
 ## Fase 28 — Identidad que sobrevive a su comarca (M14 fase 3)
 
+**Avance del 2026-10-03, checkpoint coordinado inerte.** `CheckpointRecord`
+v1 compone config/IdSpace, roster/relaciones, reloj/RNG, terreno/suelo, objetos
+y agendas bajo un tick común. Valida días/calendario, reglas, contadores,
+reservas de grupos y referencias canónicas de cadáveres, normas y autoridad.
+Tres pruebas de composición pasan; typecheck limpio, 957/957 unitarios en 132
+archivos y 74/74 e2e. Los 27 escenarios conservan sus mismos 108 fallos y
+todos los resultados/métricas PASS/FAIL/n/a, excluyendo tiempo de ejecución.
+[Contrato](m15_phase28_checkpoint.md). Capturas generales nuevas revisadas:
+`artifacts/screenshots/m15-phase28-checkpoint-2026-10-03-pass1/`.
+**Siguiente:** carga ejecutable sin generación, reconstrucción de sistemas e
+índices y continuación idéntica antes de transferir autoridad o activar LOD.
+
 **Avance del 2026-10-03, libros y agendas.** `LedgerRecord` v1 conserva
 tick/día, jugador/sucesión, avisos, permisos, casos y feed; cooldowns de bandas
 y cría fraccionaria; reserva del borde y estado de técnicas/templos entre
@@ -2528,7 +2540,7 @@ el calendario conserva días iniciales y jornadas distintas de 240 ticks.
 Dos casos ricos y un negativo que detecta eventos duplicados cubren el contrato.
 [Detalle](m15_phase28_ledgers.md). Registro visual:
 `artifacts/screenshots/m15-phase28-ledgers-2026-10-03-pass1/`.
-Quedan composición coordinada, carga ejecutable y autoridad única.
+La composición inerte ya está en CheckpointRecord; quedan carga y autoridad única.
 
 **Avance del 2026-10-03, objetos del mundo.** `WorldObjectRecord` v1 conserva
 los siete arrays de entidades locales y sus mapas canónicos en un grafo común,
@@ -2542,8 +2554,8 @@ Las agendas ya están en LedgerRecord; sigue pendiente aplicación al motor.
 **Avance del 2026-10-03, banco ejecutable.** `ExecutionRecord` v1 captura
 reloj y las 15 ubicaciones RNG retenidas, con referencias canónicas para aliases.
 La prueba recorre independientemente una Simulation real y verifica continuidad
-después de JSON. No lo aplica sobre el motor; siguen pendientes agendas,
-objetos del mundo y carga coordinada. [Contrato](m15_phase28_streams.md).
+después de JSON. No lo aplica sobre el motor; agendas y objetos ya tienen sus
+libros; sigue pendiente la carga ejecutable. [Contrato](m15_phase28_streams.md).
 Registro visual: `artifacts/screenshots/m15-stream-records-2026-10-03-pass1/`.
 
 **Avance del 2026-10-03, terreno y suelo.** `WorldTerrainRecord` v1 conserva
@@ -2552,15 +2564,15 @@ edición y recuperación del suelo. Hidrata prototipos y el alias de fertilidad
 sin generar otro mapa ni consumir RNG. Valida topología y datos corruptos;
 4/4 pruebas focales pasan. Registro visual:
 `artifacts/screenshots/m15-world-records-2026-10-03-pass1/`.
-[Contrato](m15_phase28_world.md). Quedan los objetos del mundo y el cargador
-coordinado; este avance no completa guardado/carga ni LOD.
+[Contrato](m15_phase28_world.md). Los objetos ya tienen su libro; queda el
+cargador ejecutable. Este avance no completa guardado/carga ni LOD.
 
 **Avance del 2026-10-03, checkpoints de ejecución.** `RNG` guarda y recupera
 sus cuatro words mediante JSON v1 sin constructor, fork o draw; `TimeManager`
 conserva tick y calendario propio. Validación estricta, independencia y
 continuidad de streams/reloj probadas en cuatro casos. Contrato y evidencia:
 [m15_phase28_execution.md](m15_phase28_execution.md). La composición de streams
-ya está en ExecutionRecord; capturar agendas e integrarlo en una carga sigue pendiente.
+ya está en ExecutionRecord; agendas en LedgerRecord. Aplicarlo al motor sigue pendiente.
 
 **Avance del 2026-10-03, registros.** `persistence/EntityRecords.ts` ofrece
 sobres v1 con marca de avance explícita e ida/vuelta JSON de personas, hogares
@@ -2606,7 +2618,7 @@ banda que su hogar ni resucitar al jugador muerto pendiente de sucesión.
 Las pruebas cubren evolución tras JSON, independencia, referencias históricas
 y rechazos de carga corrupta. [Contrato](m15_phase28_roster.md).
 
-Siguen pendientes libros, registro del roster en una simulación viva y
+Los libros ya se componen en CheckpointRecord. Siguen pendientes carga viva y
 transferencia de autoridad con un solo dueño de personas y bienes.
 Los constructores standalone mantienen contadores de compatibilidad; incorporar
 entidades a una simulación requiere pasar `sim.ids`. La fase 28 y el LOD siguen abiertos.
