@@ -97,7 +97,7 @@ import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
 import { feastVenue } from '../social/Feast.ts';
-import { TAX_RATES, keepsAccounts, templeOf } from '../social/Polity.ts';
+import { TAX_RATES, civilisationLacks, keepsAccounts, templeOf } from '../social/Polity.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
 
 /**
@@ -2384,6 +2384,24 @@ export class Simulation {
     if (!(TAX_RATES as readonly number[]).includes(rate)) return false;
     band.taxRate = rate;
     return true;
+  }
+
+  /**
+   * What a band still lacks to be a civilisation — M15 phase 38c, derived
+   * fresh on every call (`Polity.civilisationLacks`). Empty when it is one.
+   * Every adult of the band counts, captives included: what the people
+   * holding a captive can make use of is what the captive knows.
+   */
+  civilisationLacks(bandId: number): string[] {
+    const adults = this.people.filter(p => p.alive && !p.isChild && p.bandId === bandId);
+    const chiefId = this.bandSystem.chiefByBand.get(bandId);
+    return civilisationLacks(adults, chiefId === undefined ? null : this.peopleById.get(chiefId));
+  }
+
+  /** Whether a band is a civilisation today. See `civilisationLacks`. */
+  isCivilisation(bandId: number): boolean {
+    const band = this.bands.find(b => b.id === bandId);
+    return !!band && !band.outcast && this.civilisationLacks(bandId).length === 0;
   }
 
   /** Daily: which granary is each band's temple, from its chief's own head. */

@@ -2738,6 +2738,8 @@ test('a chief who knows how to tax sets the levy from the Work tab', async ({ pa
   await page.locator('.hud-tab', { hasText: 'Work' }).click();
   await expect(page.locator('.hud-section', { hasText: 'Government' })).toBeVisible({ timeout: 10_000 });
   await expect(page.locator('.hud-note', { hasText: 'Nobody here knows yet how to levy a tax' })).toBeVisible();
+  // M15 phase 38c: what a civilisation is, and what this one still wants.
+  await expect(page.locator('.hud-sub', { hasText: 'Not yet a civilisation' })).toBeVisible();
 
   await page.evaluate(() => {
     (window as never as Debug).__dynasty.sim.player!.knownTech.add('taxation');

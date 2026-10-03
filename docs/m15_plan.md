@@ -2926,6 +2926,16 @@ gobernados más allá del mandato normal; ninguna corona heredada (ningún rey
 murió en la partida; la herencia se prueba en los tests). Con esto quedan los
 seis nodos del Estado salvo `city_walls`.
 
+**Avance del 2026-10-03 (38c, la civilización).** Campo derivado y nunca
+guardado (`Polity.civilisationLacks`, `Simulation.isCivilisation`): una
+banda es una civilización el día que sus adultos vivos saben entre todos
+`farming`, `writing`, `division_of_labour`, `taxation`, `standing_army` y
+`kingship` y su jefe reina como rey, y deja de serlo cuando falta algo. La
+interfaz la nombra en la línea de estado y, en la sección de gobierno del
+jugador, dice qué le falta. «O varias bajo un rey» espera a los tributarios
+de la 39d. Check `civilisation-is-derived`. **La fase 38 queda hecha salvo
+`city_walls`**, que espera a los muros de la 16b.
+
 ## Fase 39 — Lo que un Estado puede hacer (M14 fase 21)
 
 **Detalle en `m14_plan.md` fase 21.** Declarar la guerra y la paz

@@ -7,7 +7,7 @@ import { Simulation } from '../core/Simulation.ts';
 import { Building, BUILDINGS } from '../entities/Building.ts';
 import type { Person } from '../entities/Person.ts';
 import {
-  CONTRIBUTION_RENOWN, SOLDIER_UPKEEP, TAX_RATES, heirOf, mayKeepSoldier, reignsForLife, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
+  CONTRIBUTION_RENOWN, SOLDIER_UPKEEP, civilisationLacks, TAX_RATES, heirOf, mayKeepSoldier, reignsForLife, TEMPLE_PULL, dueFrom, keepsAccounts, npcTaxRate, recordContribution, taxResentment,
   templeOf, templePull,
 } from '../social/Polity.ts';
 import { Household } from '../entities/Household.ts';
@@ -291,5 +291,23 @@ describe('kingship: the crown', () => {
     } else {
       expect(band.chiefId).not.toBe(king.id);
     }
+  });
+});
+
+describe('civilisation: derived, never stored', () => {
+  it('is the six things held between the adults, and a king', () => {
+    const sim = new Simulation(SMALL);
+    const [chief, scribe] = sim.livingPeople();
+    expect(civilisationLacks([chief!, scribe!], chief)).toEqual(
+      expect.arrayContaining(['farming', 'writing', 'taxation', 'standing_army', 'kingship']));
+    for (const tech of ['farming', 'division_of_labour', 'taxation', 'standing_army']) learn(chief!, tech);
+    learn(scribe!, 'writing');
+    // Everything but the crown, and the crown has to be on the chief's head.
+    learn(scribe!, 'kingship');
+    expect(civilisationLacks([chief!, scribe!], chief)).toEqual(['kingship']);
+    learn(chief!, 'kingship');
+    expect(civilisationLacks([chief!, scribe!], chief)).toEqual([]);
+    // And it lapses with the knowledge: the scribe gone, nobody writes.
+    expect(civilisationLacks([chief!], chief)).toEqual(['writing']);
   });
 });

@@ -116,4 +116,8 @@ export const ES_POLITY: Record<string, string> = {
   "inherits the rule of the {band}": "hereda el gobierno de la {band}",
   "sat at a feast": "estado en un banquete",
   "seen one of their own found dead": "visto aparecer muerto a uno de los suyos",
+  // Phase 38c: civilisation.
+  "The {band} are a civilisation": "La {band} es una civilización",
+  "Not yet a civilisation: it wants {list}": "Aún no es una civilización: le falta {list}",
+  "a civilisation": "una civilización",
 };

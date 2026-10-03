@@ -702,7 +702,7 @@ export class Hud {
     this.statsEl.textContent = t('{era} · {alive} alive · {built}/{buildings} built · step {tick}', {
       era: t(stats.era), alive: stats.population,
       built: stats.buildingsComplete, buildings: stats.buildings, tick: stats.tick,
-    });
+    }) + (sim.player && sim.isCivilisation(sim.player.bandId) ? ' · ' + t('a civilisation') : '');
 
     this.currentSim = sim;
     this.currentSelection = selection;
@@ -1298,6 +1298,15 @@ export class Hud {
     const band = sim.bands.find(b => b.id === person.bandId);
     if (!band || sim.bandSystem.chiefByBand.get(band.id) !== person.id) return [];
     const rows: string[] = ['<div class="hud-section">' + t('Government') + '</div>'];
+    // M15 phase 38c: what a civilisation is, named for the player and never
+    // required of them. What is still missing is listed by name, because a
+    // label the player cannot work toward would be the opaque kind of goal.
+    const lacks = sim.civilisationLacks(band.id);
+    rows.push('<div class="hud-sub">' + escapeHtml(lacks.length === 0
+      ? t('The {band} are a civilisation', { band: band.name })
+      : t('Not yet a civilisation: it wants {list}', {
+        list: lacks.map(id => t(TECH[id as Tech].label).toLowerCase()).join(', '),
+      })) + '</div>');
     if (techPower(person, 'taxation') <= 0) {
       rows.push('<div class="hud-note">' + escapeHtml(t('You lead the band. Nobody here knows yet how to levy a tax.')) + '</div>');
       return rows;

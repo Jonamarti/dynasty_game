@@ -17,7 +17,10 @@ import { capacityFor, equipContainer } from '../src/sim/core/Carry.ts';
 import { anchorOf, carerOf, childRadius } from '../src/sim/ai/Anchor.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
-import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
+import { TECH, techPower, type Tech } from '../src/sim/knowledge/Tech.ts';
+
+/** Whether somebody holds a technology at any strength — for the civilisation check. */
+const TECH_KNOWN = (person: import('../src/sim/entities/Person.ts').Person, tech: Tech) => techPower(person, tech) > 0;
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
 import { Building, BUILDINGS } from '../src/sim/entities/Building.ts';
@@ -2363,6 +2366,29 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       (tel.king_reigns_days ?? 0) > 0,
       (tel.king_reigns_days ?? 0) + ' band-days ruled past the ordinary term, ' + (tel.crown_inherited ?? 0) +
         ' crowns inherited, ' + (tel.chief_chosen ?? 0) + ' chiefs chosen in all');
+  }
+
+  // M15 phase 38c. A civilisation is derived, never stored: report which bands
+  // are one at the end. Judged only where some band's adults hold all six of
+  // `CIVILISATION_NEEDS` between them — there, the band whose chief is a king
+  // must be named one, and a band without a king must not.
+  {
+    const bands = sim.bands.filter(b => !b.outcast && sim.livingPeople().some(p => p.bandId === b.id));
+    const named = bands.filter(b => sim.isCivilisation(b.id));
+    const knowing = bands.filter(b => sim.civilisationLacks(b.id).every(id => id === 'kingship'));
+    if (knowing.length === 0) {
+      skip('civilisation-is-derived', 'no band holds the six things a civilisation is');
+    } else {
+      const wrong = knowing.filter(b => {
+        const chief = b.chiefId === null ? null : sim.peopleById.get(b.chiefId);
+        const king = !!chief && TECH_KNOWN(chief, 'kingship');
+        return sim.isCivilisation(b.id) !== king;
+      });
+      add('civilisation-is-derived',
+        wrong.length === 0 && named.length > 0,
+        named.length + ' of ' + bands.length + ' bands are a civilisation (' +
+          named.map(b => b.name).join(', ') + '); ' + wrong.length + ' misnamed');
+    }
   }
 
   // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the

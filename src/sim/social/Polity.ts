@@ -214,3 +214,29 @@ export function heirOf(
     .sort((a, b) => b.age - a.age || a.id - b.id);
   return children[0] ?? null;
 }
+
+/**
+ * What a people must know between them to be called a civilisation — M15
+ * phase 38c, M14 phase 20c's list. Food that is grown, records that are
+ * kept, work that is divided, a levy, an army and a crown.
+ */
+export const CIVILISATION_NEEDS = [
+  'farming', 'writing', 'division_of_labour', 'taxation', 'standing_army', 'kingship',
+] as const;
+
+/**
+ * Which of `CIVILISATION_NEEDS` a band is still without, given its adults
+ * and its chief. **Derived, never stored**, like the rebellion: a band is a
+ * civilisation on the day its living adults hold every one of the six
+ * between them and its chief reigns as a king, and stops being one the day
+ * either is no longer true. Nothing in the game makes anybody reach it — the
+ * owner's rule that the player is free to play as they like. An empty list
+ * means it is one.
+ */
+export function civilisationLacks(adults: readonly Person[], chief: Person | null | undefined): string[] {
+  const lacks: string[] = CIVILISATION_NEEDS.filter(tech => !adults.some(p => techPower(p, tech) > 0));
+  if (!chief || !reignsForLife(chief)) {
+    if (!lacks.includes('kingship')) lacks.push('kingship');
+  }
+  return lacks;
+}

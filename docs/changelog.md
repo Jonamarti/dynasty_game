@@ -1,3 +1,22 @@
+## 2026-10-03 — M15 fase 38c: qué es una civilización
+
+- **Derivada, nunca guardada** (`Polity.civilisationLacks`,
+  `Simulation.isCivilisation`): una banda es una civilización el día que sus
+  adultos vivos saben entre todos los seis de `CIVILISATION_NEEDS`
+  (`farming`, `writing`, `division_of_labour`, `taxation`, `standing_army`,
+  `kingship`) y su jefe reina como rey; deja de serlo el día que falta uno.
+  Nada obliga a alcanzarla.
+- **Interfaz:** la línea de estado añade «una civilización» cuando la banda
+  del jugador lo es; la sección «Gobierno» del jugador-jefe dice que lo es o,
+  si no, qué le falta, por su nombre. E2E de gobierno ampliado.
+- **Check `civilisation-is-derived`**: donde una banda sabe los seis, debe
+  llamarse civilización si y sólo si su jefe es rey. En `polity`, 2 de 2
+  bandas, 0 mal nombradas; n/a en los escenarios que no los saben (`labour`
+  comprobado).
+- Test nuevo: los seis entre los adultos y la corona en la cabeza del jefe, y
+  la civilización que se pierde con el último que sabía escribir.
+- **Con esto la fase 38 queda hecha salvo `city_walls`.**
+
 ## 2026-10-03 — M15 bloque IX: palabras para dos chispas
 
 - `SAW_WORDS` gana `feast` («sat at a feast») y `body_found` («seen one of
