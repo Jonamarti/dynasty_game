@@ -1,3 +1,23 @@
+## 2026-10-03 — M15 fase 28: registros de relaciones externas
+
+`SocialRecords.ts` conserva mediante JSON v1 las opiniones dirigidas y las
+relaciones entre bandas, incluidos standing y declaraciones de guerra, paz y
+tributo. Los snapshots copian su almacenamiento y mantienen el orden de Map:
+rehidratar no cambia los empates de `knownBy` ni pierde contactos que solo
+conservan una declaración política. Los métodos siguen disponibles después de
+cargar. La validación rechaza versiones, duplicados, IDs, fechas, rangos y
+campos inválidos, y preserva las self-edges que admite la API actual.
+
+Siete pruebas focales cubren ida/vuelta JSON, grafos de una simulación viva,
+evolución posterior del original y la copia, independencia, orden, poda,
+contactos políticos y controles negativos. Pasan junto con las pruebas de
+identidad en la revisión final; `typecheck` pasa. Los resultados conjuntos de
+suite y matriz se registran en la entrega de identidad de esta misma pasada.
+Capturas de seguimiento (gira existente, sin cambio de interfaz):
+`artifacts/screenshots/m15-phase28-social-2026-10-03-153933/`; gira 1/1,
+paneles e inicio revisados visualmente. El plan, la arquitectura y el contrato de registros
+se actualizan; no se declara todavía carga coordinada de un mundo ni LOD.
+
 ## 2026-10-03 — M15: diseño de simulación por visión y mundo compacto
 
 Decisión del propietario: detalle solo dentro de la visión del NPC seleccionado;

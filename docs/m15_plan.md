@@ -2481,9 +2481,16 @@ IDs ni RNG y vuelve a ligar el callback de creencias al nuevo dueño. Tres tests
 ricos pasan, incluida igualdad del snapshot completo y controles negativos.
 Detalle y límites: [m15_phase28_records.md](m15_phase28_records.md).
 
+**Avance del 2026-10-03, estado social externo.** `SocialRecords.ts` añade
+sobres JSON v1 de opiniones dirigidas y relaciones entre bandas, incluidos
+standing, guerra, paz y tributo. Conserva el orden de los grafos y sus métodos,
+valida entradas desconocidas y reconstruye copias independientes; no crea
+personas ni consume IDs o RNG. Contrato y pruebas en
+[m15_phase28_social.md](m15_phase28_social.md).
+
 Es una base inerte, aún sin compactación ni transferencia de autoridad. Siguen
-pendientes `IdSpace`, relaciones/opiniones y `BandRelations` externos, libros
-y la integración del roster. La fase 28 y el LOD no se declaran completos.
+pendientes `IdSpace`, libros y la integración del roster, además de coordinar
+los registros propios con los grafos externos. La fase 28 y el LOD siguen abiertos.
 
 **Detalle en `m14_plan.md` fase 3.** `IdSpace` en lugar de los diez contadores
 de módulo; `PersonRecord`, `HouseholdRecord` y `BandRecord`; ida y vuelta con

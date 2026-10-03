@@ -46,6 +46,11 @@ export interface StanceRecord {
   overlord: number | null;
 }
 
+export interface BandRelationsSnapshot {
+  edges: [string, number][];
+  stances: [string, StanceRecord][];
+}
+
 export class BandRelations {
   /** `min(a,b):max(a,b)` -> standing, -100 (open hostility) to 100 (close allies). */
   private edges = new Map<string, number>();
@@ -56,6 +61,19 @@ export class BandRelations {
    * a deed breaks it (`SocialSystem.emit`'s breach).
    */
   private stances = new Map<string, StanceRecord>();
+
+  /** Ordered defensive copy for the inert persistence codec. */
+  snapshot(): BandRelationsSnapshot {
+    return { edges: [...this.edges], stances: [...this.stances].map(([key, value]) => [key, { ...value }]) };
+  }
+
+  /** Hydrates owned data without changing the relation methods. */
+  static fromSnapshot(snapshot: BandRelationsSnapshot): BandRelations {
+    const relations = new BandRelations();
+    relations.edges = new Map(snapshot.edges);
+    relations.stances = new Map(snapshot.stances.map(([key, value]) => [key, { ...value }]));
+    return relations;
+  }
 
   /** The declared stance between two bands, or null for none. */
   stance(a: number, b: number): Stance | null {

@@ -47,9 +47,11 @@ identificador inválido, referencia colgante, fecha inválida y funciones.
 La suite completa de esta pasada incluye estos casos y el determinismo.
 
 No es todavía un formato de partida con migraciones ni un registro compacto.
-La validación de forma no sustituye la consistencia entre entidades. Antes de
-integrarlo quedan `IdSpace`, relaciones/opiniones y `BandRelations` externos,
-libros de edificios/recursos, RNG del mundo y agendas; transferencia de autoridad
+La validación de forma no sustituye la consistencia entre entidades. Los grafos
+de opiniones y `BandRelations` ya tienen codecs independientes en
+[m15_phase28_social.md](m15_phase28_social.md); todavía hay que coordinar su carga
+con el roster. Antes de integrarlo quedan `IdSpace`, libros de edificios/recursos,
+RNG del mundo y agendas; transferencia de autoridad
 sin duplicar personas o bienes y calendario de avances. `Knowledge` continúa
 siendo la única vía para exponer estado a la interfaz: rehidratar no concede
 conocimiento. La fase 28 y el LOD de la 32 permanecen abiertos.

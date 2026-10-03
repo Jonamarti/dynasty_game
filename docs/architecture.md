@@ -48,8 +48,11 @@ Phase 28 now has inert JSON graph snapshots in `persistence/EntityRecords.ts`.
 They preserve entity-owned state, class methods and internal aliases without
 constructors, ID allocation or RNG draws; the known belief callback is rebound
 to the hydrated person. They do not register people, transfer authority or
-compress simulation work. Global identity, external relationships and the
-compact scheduler remain pending; see [m15_phase28_records.md](m15_phase28_records.md).
+compress simulation work. External relationships now have separate versioned
+JSON codecs in `persistence/SocialRecords.ts`, preserving directed opinions and
+band standing/stances with independent storage and Map order. Loading them
+together with a roster, global identity and the compact scheduler remain pending;
+see [m15_phase28_records.md](m15_phase28_records.md).
 
 `tools/profile-systems.ts` wraps methods only inside its profiling browser and
 compares whole-state hashes against unprofiled worlds, including RNG. It measures

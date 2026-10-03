@@ -3810,11 +3810,12 @@ otros mecanismos. Las cohortes heredadas de veinte semillas dejan `lean` en
 
 ### Identidad global y transferencia pendientes — 2026-10-03
 
-Los registros v1 de fase 28 copian y reconstruyen estado propio, pero los
-contadores de módulo siguen siendo la autoridad de creación. Una rehidratación
-no se inserta aún en `Simulation`: antes de hacerlo hay que completar `IdSpace`,
-relaciones/opiniones y `BandRelations` externos y una transferencia con un solo
-dueño de personas y bienes. No se declara guardado de partida ni LOD activo.
+Los registros v1 de fase 28 copian y reconstruyen estado propio. Opiniones y
+`BandRelations` externos ya tienen codecs independientes en `SocialRecords.ts`;
+su carga todavía no se coordina con el roster. Una rehidratación no se inserta
+aún en `Simulation`: antes de hacerlo hay que completar `IdSpace` y una
+transferencia con un solo dueño de personas y bienes. No se declara guardado
+de partida ni LOD activo.
 
 ### Nombres estacionales de la gira visual — 2026-10-03, corregido
 

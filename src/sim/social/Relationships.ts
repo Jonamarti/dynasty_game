@@ -44,6 +44,8 @@ export interface Relationship {
   dread: number;
 }
 
+export type RelationshipGraphSnapshot = [number, [number, Relationship][]][];
+
 function empty(): Relationship {
   return { kinship: 0, deeds: 0, familiarity: 0, romance: 0, lastContact: 0, bias: 0, dread: 0 };
 }
@@ -66,6 +68,18 @@ export const FAMILIARITY_WEIGHT = 0.35;
 export class RelationshipGraph {
   /** viewerId -> subjectId -> relationship. */
   private edges = new Map<number, Map<number, Relationship>>();
+
+  /** Ordered defensive copy for the inert persistence codec. */
+  snapshot(): RelationshipGraphSnapshot {
+    return [...this.edges].map(([viewer, row]) => [viewer, [...row].map(([subject, rel]) => [subject, { ...rel }])]);
+  }
+
+  /** Hydrates owned data without changing the graph's public behavior. */
+  static fromSnapshot(snapshot: RelationshipGraphSnapshot): RelationshipGraph {
+    const graph = new RelationshipGraph();
+    graph.edges = new Map(snapshot.map(([viewer, row]) => [viewer, new Map(row.map(([subject, rel]) => [subject, { ...rel }]))]));
+    return graph;
+  }
 
   /** The relationship as it stands, without creating one. */
   peek(viewerId: number, subjectId: number): Relationship | null {
