@@ -11456,3 +11456,15 @@ Tres tests aprobados, con controles negativos: impedir la conversación o las
 consecuencias sociales de la agresión hace fallar el check correspondiente.
 Typecheck aprobado. No cambia el comportamiento del juego; la matriz conserva
 sus otros fallos de referencia. Logs: artifacts/verification/m15-checks-2026-10-03/.
+
+## 2026-10-03 — M15: visión infantil igual a la adulta
+
+La búsqueda local de nodos de los niños usaba dos veces `sightRadius`, aunque
+la observación y el check de conocimiento usan el radio normal. Ahora usa el
+mismo radio efectivo que los adultos, incluidos noche y altura. No cambia el
+alcance familiar ni añade recuerdos. La regresión falla en la versión rota por
+ofrecer comida lejana al niño y pasa con el arreglo, con controles de comida
+visible y de adulto. En band, people-act-on-what-they-know pasa con 2967/2967
+objetivos conocidos; siguen rojos dieta, sueño y rendimiento. Typecheck y cuatro
+tests focales aprobados. Cohortes antes/después se completan con la revisión
+de sueño; no se atribuirá por separado un cambio demográfico caótico a esta línea.

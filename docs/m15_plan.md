@@ -3386,3 +3386,9 @@ La revisión pendiente del sueño usará presión circadiana continua; visión i
 igual a la adulta. Límite declarado antes de medir: no perder más de tres puntos
 porcentuales de supervivencia media frente a las cohortes previas de 20 semillas
 century/lean/crowded. El objetivo de rendimiento sigue pendiente del propietario.
+
+### Corrección del conocimiento 2k — 2026-10-03
+
+Visión infantil igual a la adulta en findNode. Regresión con comida visible y
+fuera de vista, fallaba con el radio doble. Band: 2967/2967 objetivos conocidos.
+Resto de las búsquedas y transmisión infantil de memoria conservados.

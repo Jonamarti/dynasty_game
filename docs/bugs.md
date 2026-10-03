@@ -3771,3 +3771,7 @@ negativos. No se exige conflicto en una comarca pacífica. La matriz previa comp
 sigue roja por conocimiento, sueño, dieta y otros mecanismos; no se declara verde.
 La cohorte lean previa (20 semillas) da 5,9% de supervivencia, 19/20 colapsos bajo
 un cuarto y 6/20 extinciones. Es deuda de master anterior a esta pasada.
+
+Corrección 2026-10-03: los objetivos infantiles fuera de vista procedían del
+radio doble de findNode. Arreglado con regresión que falla antes; band ya no
+registra objetivos desconocidos. La matriz completa todavía debe comprobarse.

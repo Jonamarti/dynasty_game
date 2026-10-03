@@ -4016,10 +4016,10 @@ export class Brain {
       householdsById: ctx.householdsById, homes: ctx.homes ?? new Map(), motivation: ctx.motivation } : null;
     const anchor = knownAnchor === undefined ? anchorOf(person, anchorCtx!) : knownAnchor;
     const reach = knownReach ?? (anchorCtx ? reachOf(person, anchorCtx) : 0);
-    // Children have no map-sharing channel until 2h. Keep their old local
-    // target selection exactly, including SpatialHash's stable tie order.
+    // Age changes roaming and map-sharing, not eyesight. The doubled radius
+    // let children forage beyond sight without ever knowing the food existed.
     if (person.isChild) {
-      return ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius * 2,
+      return ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius,
         n => filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y) &&
           !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
           (!enforceReach || withinReach(anchor, reach, n.x, n.y)));
