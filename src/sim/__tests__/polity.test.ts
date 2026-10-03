@@ -311,3 +311,71 @@ describe('civilisation: derived, never stored', () => {
     expect(civilisationLacks([chief!], chief)).toEqual(['writing']);
   });
 });
+
+describe('war and peace: only a government declares them', () => {
+  const TWO = { ...SMALL, population: { bands: 2, peoplePerBand: 5, startingTech: ['pottery', 'division_of_labour', 'chiefdom'] } };
+
+  function twoChiefs(sim: Simulation): [Person, Person] {
+    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    const [a, b] = sim.bands.filter(band => !band.outcast);
+    return [sim.peopleById.get(a!.chiefId!)!, sim.peopleById.get(b!.chiefId!)!];
+  }
+
+  it('is refused to a chief without a law or a crown, and to anybody but the chief', () => {
+    const sim = new Simulation(TWO);
+    const [ours, theirs] = twoChiefs(sim);
+    expect(sim.declare(ours, theirs.bandId, 'war')).toBe(false);
+    expect(sim.lastRefusal).toMatch(/law or a crown/);
+    const follower = sim.livingPeople().find(p => p.bandId === ours.bandId && p.id !== ours.id)!;
+    learn(follower, 'law_code');
+    expect(sim.declare(follower, theirs.bandId, 'war')).toBe(false);
+    expect(sim.lastRefusal).toMatch(/only the chief/);
+  });
+
+  it('is declared, refused by a warlike government, and kept', () => {
+    const sim = new Simulation(TWO);
+    const [ours, theirs] = twoChiefs(sim);
+    learn(ours, 'law_code');
+    expect(sim.declare(ours, theirs.bandId, 'war')).toBe(true);
+    expect(sim.bandRelations.stance(ours.bandId, theirs.bandId)).toBe('war');
+    // A government that wants the war goes on with it while the grudge is fresh.
+    learn(theirs, 'kingship');
+    theirs.traits.aggression = 0.9;
+    sim.bandRelations.add(ours.bandId, theirs.bandId, -60);
+    expect(sim.declare(ours, theirs.bandId, 'peace')).toBe(false);
+    expect(sim.lastRefusal).toMatch(/will not hear of peace/);
+    theirs.traits.aggression = 0.2;
+    expect(sim.declare(ours, theirs.bandId, 'peace')).toBe(true);
+    expect(sim.bandRelations.stance(ours.bandId, theirs.bandId)).toBe('peace');
+  });
+
+  it('is broken by a wrong done across it, and those who saw it blame the breaker\'s chief', () => {
+    const sim = new Simulation(TWO);
+    const [ours, theirs] = twoChiefs(sim);
+    learn(ours, 'law_code');
+    learn(theirs, 'law_code');
+    expect(sim.declare(ours, theirs.bandId, 'peace')).toBe(true);
+    const culprit = sim.livingPeople().find(p => p.bandId === ours.bandId && p.id !== ours.id)!;
+    const victim = sim.livingPeople().find(p => p.bandId === theirs.bandId && p.id !== theirs.id)!;
+    const witness = sim.livingPeople().find(p => p.bandId === theirs.bandId && p.id !== victim.id)!;
+    for (const p of [culprit, victim, witness]) { p.x = 20; p.y = 20; }
+    sim.peopleHash.rebuild(sim.people);
+    const before = sim.relationships.opinion(witness.id, ours.id);
+    const standing = sim.bandRelations.standing(ours.bandId, theirs.bandId);
+
+    sim.social.emit('assault', culprit, victim, 0.5, sim.time.tick, sim.peopleHash, sim.config.sightRadius);
+
+    expect(sim.bandRelations.stance(ours.bandId, theirs.bandId)).toBeNull();
+    expect(sim.bandRelations.standing(ours.bandId, theirs.bandId)).toBeLessThan(standing);
+    expect(sim.relationships.opinion(witness.id, ours.id)).toBeLessThan(before);
+  });
+
+  it('remembers who pays whom', () => {
+    const sim = new Simulation(TWO);
+    sim.bandRelations.setStance(3, 7, 'tributary', 0, 7);
+    expect(sim.bandRelations.overlordOf(3)).toBe(7);
+    expect(sim.bandRelations.overlordOf(7)).toBeNull();
+    expect(sim.bandRelations.tributariesOf(7)).toEqual([3]);
+    expect(sim.bandRelations.touching(3)).toEqual([7]);
+  });
+});

@@ -17,7 +17,8 @@
  *    not, without either outcome being written as a rule.
  */
 import {
-  LEVY_EVERY_DAYS, dueFrom, heirOf, keepsAccounts, mayKeepSoldier, npcTaxRate, reignsForLife, taxResentment,
+  LEVY_EVERY_DAYS, PEACE_STANDING, TREATY_STANDING, WAR_MIN_DAYS, WAR_NERVE, WAR_STANDING, dueFrom, governs, heirOf,
+  keepsAccounts, mayKeepSoldier, npcTaxRate, reignsForLife, taxResentment,
 } from '../social/Polity.ts';
 import { isLarder, portions, mostOf } from '../social/Feast.ts';
 import { MEMBERS_PER_GUARD } from '../social/Defence.ts';
@@ -386,6 +387,8 @@ export interface BandContext {
   templeOf: (bandId: number) => Building | null;
   /** Anybody, living or dead, by id — a late king's house and children, M15 phase 38b. */
   personById: (id: number) => Person | undefined;
+  /** A government declares a war or a peace, M15 phase 39a. See `Simulation.declare`. */
+  declare: (chief: Person, otherBandId: number, kind: 'war' | 'peace') => boolean;
   /** Assigns a job, subject to the same roll `command` uses. */
   assignJob: (leader: Person, subordinate: Person, job: JobId | null) => boolean;
   /** Moves someone out of their band of their own accord, not by exile. */
@@ -484,6 +487,7 @@ export class BandSystem {
           (byBand.get(person.captiveFrom)?.length ?? 0) === 0));
       if (!band.outcast && stillOut.length > 0) this.considerAdoption(band, members, stillOut, ctx);
       if (!band.outcast) this.markTerritory(band, members);
+      if (!band.outcast) this.considerStance(band, members, bands, ctx);
       if (!band.outcast) this.considerTerritory(band, members, ctx, outcastBand?.id);
       if (!band.outcast) this.considerRaid(band, members, ctx, outcastBand?.id);
       if (ctx.day % PLANNING_INTERVAL === 0) this.planBuildings(band, members, ctx);
@@ -815,6 +819,57 @@ export class BandSystem {
   private templeCanKeepSoldier(chief: Person, band: Band, members: Person[], soldiers: number, ctx: BandContext): boolean {
     const temple = ctx.templeOf(band.id);
     return temple !== null && mayKeepSoldier(chief, portions(temple.store), soldiers, members.length);
+  }
+
+  // -------------------------------------------------------------------------
+  // War and peace
+  // -------------------------------------------------------------------------
+
+  /**
+   * An NPC government's foreign policy — M15 phase 39a. Deterministic, as this
+   * system must be: read off the two peoples' standing, the chief's nerve and
+   * how long a war has run, in ascending order of the other band's id.
+   *
+   * - A chief with the nerve declares war on a people the band stands with
+   *   worse than `WAR_STANDING`.
+   * - After `WAR_MIN_DAYS`, a chief without it — or any, once standing has
+   *   recovered past `PEACE_STANDING` — offers peace; the other side's
+   *   government may refuse (`acceptsPeace`).
+   * - Two governments on good terms swear a peace (`TREATY_STANDING`).
+   * - A sworn peace is kept until somebody breaks it.
+   *
+   * The player's government decides for itself; nothing here speaks for it.
+   */
+  private considerStance(band: Band, members: Person[], bands: Band[], ctx: BandContext): void {
+    const chiefId = this.chiefByBand.get(band.id);
+    const chief = chiefId === undefined ? undefined : members.find(m => m.id === chiefId);
+    if (!chief || chief.isPlayer || !governs(chief)) return;
+    for (const other of ctx.bandRelations.touching(band.id)) {
+      const them = bands.find(b => b.id === other);
+      if (!them || them.outcast) continue;
+      const standing = ctx.bandRelations.standing(band.id, other);
+      const record = ctx.bandRelations.stanceRecord(band.id, other);
+      // A sworn peace is kept: it ends only when somebody breaks it
+      // (`Simulation.breakPeace`). Measured: without this, a chief with the
+      // nerve declared war again the day after the peace, and `polity` ran
+      // ten wars and nine peaces in a hundred days.
+      if (record?.kind === 'tributary' || record?.kind === 'peace') continue;
+      if (record?.kind === 'war') {
+        telemetry.count('war_days');
+        if (ctx.day - record.since < WAR_MIN_DAYS) continue;
+        if (chief.traits.aggression < WAR_NERVE || standing >= PEACE_STANDING) ctx.declare(chief, other, 'peace');
+        continue;
+      }
+      if (standing <= WAR_STANDING && chief.traits.aggression >= WAR_NERVE) {
+        ctx.declare(chief, other, 'war');
+        continue;
+      }
+      if (record === null && standing >= TREATY_STANDING) {
+        const theirChiefId = this.chiefByBand.get(other);
+        const theirs = theirChiefId === undefined ? undefined : ctx.personById(theirChiefId);
+        if (governs(theirs)) ctx.declare(chief, other, 'peace');
+      }
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -1716,7 +1771,12 @@ export class BandSystem {
     let worst = RAID_HOSTILITY;
     for (const other of ctx.bandRelations.touching(band.id)) {
       if (other === band.id || other === outcastBandId) continue;
-      const standing = ctx.bandRelations.standing(band.id, other);
+      // M15 phase 39a. A sworn peace is not raided by the band that swore it;
+      // a declared war is raided without waiting for the grudge to ripen —
+      // read here as the worst standing there is.
+      const stance = ctx.bandRelations.stance(band.id, other);
+      if (stance === 'peace' || stance === 'tributary') continue;
+      const standing = stance === 'war' ? -100 : ctx.bandRelations.standing(band.id, other);
       if (standing < worst) {
         worst = standing;
         victimId = other;

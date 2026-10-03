@@ -2759,3 +2759,50 @@ test('a chief who knows how to tax sets the levy from the Work tab', async ({ pa
 
   expect(errors).toEqual([]);
 });
+
+test('a chief who rules by law declares war on a people it knows', async ({ page }) => {
+  // M15 phase 39a. The other peoples are listed on the Government section of
+  // the player's own Work tab, with what has been declared; war and peace
+  // are buttons for a government only.
+  const errors = guardErrors(page);
+  await ready(page);
+  await page.locator('.hud-button', { hasText: 'Pause' }).click();
+
+  type Debug = {
+    __dynasty: {
+      sim: {
+        player: { id: number; bandId: number; knownTech: Set<string> } | null;
+        bands: { id: number; outcast?: boolean; chiefId: number | null; chiefSince: number | null; name: string }[];
+        bandSystem: { chiefByBand: Map<number, number> };
+        bandRelations: { add: (a: number, b: number, d: number) => void; stance: (a: number, b: number) => string | null };
+        time: { day: number };
+      };
+    };
+  };
+  const other = await page.evaluate(() => {
+    const d = (window as never as Debug).__dynasty;
+    const self = d.sim.player;
+    const band = d.sim.bands.find(b => b.id === self?.bandId);
+    const them = d.sim.bands.find(b => !b.outcast && b.id !== self?.bandId);
+    if (!self || !band || !them) return null;
+    d.sim.bandSystem.chiefByBand.set(band.id, self.id);
+    band.chiefId = self.id;
+    band.chiefSince = d.sim.time.day;
+    self.knownTech.add('law_code');
+    d.sim.bandRelations.add(band.id, them.id, -20);
+    return { id: them.id, name: them.name };
+  });
+  if (!other) test.skip(true, 'this seed has one band');
+
+  await page.locator('.hud-tab', { hasText: 'Work' }).click();
+  await expect(page.locator('.hud-sub', { hasText: 'Other peoples' })).toBeVisible({ timeout: 10_000 });
+  const war = page.locator('[data-stance="' + other!.id + ':war"]');
+  await expect(war).toBeVisible();
+  await war.click();
+  await expect.poll(async () => page.evaluate((id: number) => {
+    const d = (window as never as Debug).__dynasty;
+    return d.sim.bandRelations.stance(d.sim.player!.bandId, id);
+  }, other!.id)).toBe('war');
+
+  expect(errors).toEqual([]);
+});

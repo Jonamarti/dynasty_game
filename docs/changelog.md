@@ -1,3 +1,38 @@
+## 2026-10-03 — M15 fase 39a: declarar la guerra y la paz
+
+- **Postura declarada** en `BandRelations` (`war`, `peace`, `tributary`, ésta
+  con el señor): registro aparte de la posición, que no decae y que sólo fija
+  un gobierno —un jefe que sabe `law_code` o `kingship` (`Polity.governs`)—
+  por `Simulation.declare`, el mismo camino para el jugador y los PNJ, con
+  razón de rechazo. La paz con otro gobierno necesita que su jefe la acepte
+  (`acceptsPeace`); un pueblo sin gobierno no tiene forma de negarla.
+  `touching` incluye las bandas con postura aunque el rencor haya decaído.
+- **Qué cambia en el mundo:** en guerra, la incursión no espera al umbral de
+  rencor (`considerRaid` la lee como la peor posición); en paz, no se asalta
+  al pueblo jurado.
+- **Romper la paz** (`SocialSystem.onPeaceBroken`, `Simulation.breakPeace`):
+  robo, agresión, muerte, sabotaje, rapto o amenaza contra el pueblo jurado
+  la terminan, cuestan 20 de posición entre los dos pueblos, y cada testigo
+  —sólo quien lo vio— piensa 12 puntos peor del jefe del infractor.
+- **Gobiernos PNJ** (`BandSystem.considerStance`, determinista): guerra con
+  rencor peor que -40 y agresividad ≥ 0,5; paz tras 10 días de guerra si
+  falta valor o el rencor ha bajado de -15; tratado entre dos gobiernos por
+  encima de +30. **La paz jurada se guarda**: medido, sin esa regla `polity`
+  hizo 10 guerras y 9 paces en 100 días, porque el jefe agresivo volvía a
+  declararla al día siguiente.
+- **Interfaz:** la sección «Gobierno» lista los pueblos tratados con su
+  postura y su posición, y ofrece «Declarar la guerra» / «Hacer la paz» a un
+  gobierno (y explica por qué no a quien no lo es). Floaters del resultado.
+  E2E nuevo.
+- **`polity`** empieza con un viejo rencor (-55) entre sus dos pueblos,
+  puesto en `setup` como los graneros. Medido: 1 guerra, 1 paz, 19 días-banda
+  en guerra, ninguna incursión (los graneros enemigos quedan fuera de
+  `RAID_RANGE`: `raid_nothing_in_reach` 170) y ninguna paz rota. Los checks
+  del Estado siguen igual.
+- **Tests:** cuatro nuevos (quién puede declarar, guerra, paz negada y
+  aceptada, la paz rota y su coste para quien lo vio, y el señor de un
+  tributario).
+
 ## 2026-10-03 — M15 fase 38c: qué es una civilización
 
 - **Derivada, nunca guardada** (`Polity.civilisationLacks`,

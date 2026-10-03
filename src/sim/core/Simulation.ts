@@ -97,7 +97,10 @@ import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
 import { feastVenue } from '../social/Feast.ts';
-import { TAX_RATES, civilisationLacks, keepsAccounts, templeOf } from '../social/Polity.ts';
+import {
+  PEACE_BROKEN_REGARD, PEACE_BROKEN_STANDING, TAX_RATES, acceptsPeace, civilisationLacks, governs, keepsAccounts,
+  templeOf,
+} from '../social/Polity.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
 
 /**
@@ -582,6 +585,7 @@ export class Simulation {
       this.relationships, this.normsByBand, this.bandRelations, this.strangerRegardByBand);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
     this.social.onDeed = (actor, type, magnitude) => this.accrueRenown(actor, type, magnitude);
+    this.social.onPeaceBroken = (actor, victimBandId, witnesses) => this.breakPeace(actor, victimBandId, witnesses);
     this.actionRng = this.rng.fork();
     this.lifeRng = this.rng.fork();
     this.forestRng = this.rng.fork();
@@ -2402,6 +2406,74 @@ export class Simulation {
   isCivilisation(bandId: number): boolean {
     const band = this.bands.find(b => b.id === bandId);
     return !!band && !band.outcast && this.civilisationLacks(bandId).length === 0;
+  }
+
+  /**
+   * A government declares a war or a peace — M15 phase 39a. The player's
+   * chief through the Government section; NPC governments through
+   * `BandSystem.considerStance`, which calls this too, so both are refused for
+   * the same reasons. Refused, with the reason in `lastRefusal`, unless
+   * `chief` leads their band and governs (`Polity.governs`). Peace with a
+   * people that is itself a government needs its chief to accept; a people
+   * with no government takes a peace offered, having no way to refuse it in
+   * form. Declaring the stance two bands already have is a no-op.
+   */
+  declare(chief: Person, otherBandId: number, kind: 'war' | 'peace'): boolean {
+    const band = this.bands.find(b => b.id === chief.bandId);
+    const other = this.bands.find(b => b.id === otherBandId);
+    if (!band || this.bandSystem.chiefByBand.get(band.id) !== chief.id) {
+      this.lastRefusal = t('only the chief can speak for the band');
+      return false;
+    }
+    if (!governs(chief)) {
+      this.lastRefusal = t('nobody here has a law or a crown that could bind the band to a war or a peace');
+      return false;
+    }
+    if (!other || other.outcast || other.id === band.id) return false;
+    const current = this.bandRelations.stance(band.id, other.id);
+    if (current === kind) return true;
+    if (kind === 'peace') {
+      const theirChiefId = this.bandSystem.chiefByBand.get(other.id);
+      const theirChief = theirChiefId === undefined ? null : this.peopleById.get(theirChiefId) ?? null;
+      if (theirChief && governs(theirChief) && !acceptsPeace(theirChief,
+        this.bandRelations.standing(band.id, other.id))) {
+        this.lastRefusal = t('the {band} will not hear of peace', { band: other.name });
+        telemetry.count('peace_refused');
+        return false;
+      }
+    }
+    this.bandRelations.setStance(band.id, other.id, kind, this.time.day);
+    telemetry.count(kind === 'war' ? 'war_declared' : 'peace_made');
+    const text = kind === 'war'
+      ? t('declared war on the {band}', { band: other.name })
+      : t('made peace with the {band}', { band: other.name });
+    chief.chronicle.push({ tick: this.time.tick, ageDays: chief.age, text, kind: 'milestone' });
+    this.noteInsight(chief, text, kind === 'war' ? 'setback' : 'gain');
+    return true;
+  }
+
+  /**
+   * A sworn peace broken by `actor`'s deed against `victimBandId` — M15 phase
+   * 39a. The peace ends; the two peoples' standing pays once; and everybody
+   * who saw it thinks the less of the breaker's chief, who swore it. Nobody
+   * else learns of it except by being told.
+   */
+  private breakPeace(actor: Person, victimBandId: number, witnesses: Person[]): void {
+    this.bandRelations.clearStance(actor.bandId, victimBandId);
+    this.bandRelations.add(actor.bandId, victimBandId, -PEACE_BROKEN_STANDING);
+    telemetry.count('peace_broken');
+    const chiefId = this.bandSystem.chiefByBand.get(actor.bandId);
+    if (chiefId !== undefined) {
+      for (const witness of witnesses) {
+        if (witness.id === chiefId) continue;
+        this.relationships.addDeed(witness.id, chiefId, -PEACE_BROKEN_REGARD, this.time.tick);
+      }
+    }
+    const victims = this.bands.find(b => b.id === victimBandId)?.name ?? '';
+    actor.chronicle.push({
+      tick: this.time.tick, ageDays: actor.age,
+      text: t('broke the peace with the {band}', { band: victims }), kind: 'did',
+    });
   }
 
   /** Daily: which granary is each band's temple, from its chief's own head. */
@@ -4376,6 +4448,7 @@ export class Simulation {
           this.command(leader, subordinate, action, target),
         templeOf: bandId => this.templeOf(bandId),
         personById: id => this.peopleById.get(id),
+        declare: (chief, otherBandId, kind) => this.declare(chief, otherBandId, kind),
         assignJob: (leader, subordinate, job) => this.assignJob(leader, subordinate, job),
         leaveBand: person => this.removeBandMembership(person),
         onInsight: (person, text, kind) => this.noteInsight(person, text, kind),

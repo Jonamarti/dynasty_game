@@ -597,6 +597,11 @@ export const SCENARIOS: Record<string, Scenario> = {
     },
     steps: 24000,
     setup: sim => {
+      // An old feud between the two peoples, so the half of the State that is
+      // about other peoples — war, peace, tribute (phase 39) — has something
+      // to be about. Harness-only, like the granaries below.
+      const peoples = sim.bands.filter(b => !b.outcast);
+      if (peoples.length >= 2) sim.bandRelations.add(peoples[0]!.id, peoples[1]!.id, -55);
       // A finished granary beside each camp, the first free spot on a widening
       // ring. Harness-only, like `emptied`'s hunted-out land: the simulation
       // is never told it was not built.
@@ -2389,6 +2394,18 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         named.length + ' of ' + bands.length + ' bands are a civilisation (' +
           named.map(b => b.name).join(', ') + '); ' + wrong.length + ' misnamed');
     }
+  }
+
+  // M15 phase 39a. War and peace declared by a government: at least one of
+  // either in a world with governments and a quarrel, reported with breaches.
+  if ((tel.war_declared ?? 0) === 0 && (tel.peace_made ?? 0) === 0 && (tel.war_days ?? 0) === 0) {
+    skip('governments-declare-war-and-peace', 'no government declared anything in this run');
+  } else {
+    add('governments-declare-war-and-peace',
+      (tel.war_declared ?? 0) + (tel.peace_made ?? 0) > 0,
+      (tel.war_declared ?? 0) + ' wars declared, ' + (tel.peace_made ?? 0) + ' peaces made (' +
+        (tel.peace_refused ?? 0) + ' refused), ' + (tel.war_days ?? 0) + ' band-days at war, ' +
+        (tel.peace_broken ?? 0) + ' peaces broken');
   }
 
   // M15 phase 38a. The feast, `brewing`'s second half: a store spent on the

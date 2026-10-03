@@ -367,6 +367,19 @@ const hud = new Hud(hudRoot, {
         : (why ?? t('The levy stays as it was')),
       { color: ok ? '#7ddc96' : '#e0705c', boxed: true, ttl: 3.4 });
   },
+  onDeclare: (bandId, kind) => {
+    // M15 phase 39a. Refused out loud, like the levy.
+    if (!sim.player) return;
+    const ok = sim.declare(sim.player, bandId, kind);
+    const why = sim.lastRefusal;
+    sim.lastRefusal = null;
+    const name = sim.bands.find(b => b.id === bandId)?.name ?? '';
+    renderer.floaters.push(sim.player.x, sim.player.y,
+      ok
+        ? (kind === 'war' ? t('War with the {band}', { band: name }) : t('Peace with the {band}', { band: name }))
+        : (why ?? t('Nothing is declared')),
+      { color: ok ? (kind === 'war' ? '#e0705c' : '#7ddc96') : '#e0705c', boxed: true, ttl: 3.4 });
+  },
   onOpenMenu: () => { if (!menuOpen()) openMenu(); },
   onToggleBuild: () => setBuildMode(!buildMode),
   onToggleCraft: () => setCraftMode(!craftMode),

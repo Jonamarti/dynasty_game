@@ -120,4 +120,25 @@ export const ES_POLITY: Record<string, string> = {
   "The {band} are a civilisation": "La {band} es una civilización",
   "Not yet a civilisation: it wants {list}": "Aún no es una civilización: le falta {list}",
   "a civilisation": "una civilización",
+  // Phase 39a: war and peace.
+  "only the chief can speak for the band": "sólo el jefe puede hablar por la banda",
+  "nobody here has a law or a crown that could bind the band to a war or a peace":
+    "aquí nadie tiene una ley o una corona que pueda obligar a la banda a una guerra o a una paz",
+  "the {band} will not hear of peace": "la {band} no quiere oír hablar de paz",
+  "declared war on the {band}": "declaró la guerra a la {band}",
+  "made peace with the {band}": "hizo la paz con la {band}",
+  "broke the peace with the {band}": "rompió la paz con la {band}",
+  "Other peoples": "Otros pueblos",
+  "at war": "en guerra",
+  "at peace": "en paz",
+  "pays you tribute": "te paga tributo",
+  "you pay them tribute": "les pagas tributo",
+  "no word given": "sin palabra dada",
+  "Declare war": "Declarar la guerra",
+  "Make peace": "Hacer la paz",
+  "Only a chief who rules by a law or a crown can declare a war or a peace.":
+    "Sólo un jefe que gobierna con una ley o una corona puede declarar una guerra o una paz.",
+  "War with the {band}": "Guerra con la {band}",
+  "Peace with the {band}": "Paz con la {band}",
+  "Nothing is declared": "No se declara nada",
 };

@@ -30,6 +30,14 @@ commit del bloque compara contra ella.
   `polity` ninguna. El efecto está probado en tests; su peso en un mundo no.
   Un escenario con más agravios entre los propios (rasgos de codicia y
   malicia altos) lo ejercitaría.
+- **La guerra y la paz se saben sin mensajero** (39a): una declaración la
+  conocen los dos pueblos en el acto. La regla del propietario pide que
+  alguien la lleve; con las noticias de la fase 36 debería viajar con un
+  enviado o un testigo.
+- **En `polity` la guerra no llega a las manos** (39a): los graneros del otro
+  pueblo quedan fuera de `RAID_RANGE` (75), así que la guerra declarada no
+  produce incursiones. El mapa de la semilla, no la regla; un escenario con
+  campamentos más cerca lo ejercitaría.
 - **Ninguna cerveza en los banquetes de `feasts`.** 23 banquetes, 0 tazas: la
   cerveza se bebe en `toast` antes de llegar al almacén. No es un error del
   banquete, pero `FEAST_CUP_RELIEF` apenas se ejerce.

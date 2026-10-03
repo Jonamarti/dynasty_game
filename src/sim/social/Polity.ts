@@ -240,3 +240,53 @@ export function civilisationLacks(adults: readonly Person[], chief: Person | nul
   }
   return lacks;
 }
+
+/**
+ * Whether a chief is a government — M15 phase 39a: somebody who rules by a
+ * written law or wears a crown. Only a government can declare a war or a
+ * peace, or take a people as tributary (the plan: "a formal state that only a
+ * government can set").
+ */
+export function governs(chief: Person | null | undefined): boolean {
+  return !!chief && (techPower(chief, 'law_code') > 0 || techPower(chief, 'kingship') > 0);
+}
+
+/**
+ * How badly two peoples must stand before a government with the stomach for
+ * it declares war. Past `RAID_HOSTILITY` (-30), so a declared war is a grudge
+ * carried further than a raid, and short of `RAID_FURY` (-70).
+ */
+export const WAR_STANDING = -40;
+
+/** The aggression a chief needs to declare a war, and below which they will seek a peace. */
+export const WAR_NERVE = 0.5;
+
+/** Days a war runs before either side will hear of peace. */
+export const WAR_MIN_DAYS = 10;
+
+/** Standing two peoples at war must have recovered to before peace is made on standing alone. */
+export const PEACE_STANDING = -15;
+
+/** Standing above which two governments, on good terms already, swear a peace. */
+export const TREATY_STANDING = 30;
+
+/** What breaking a sworn peace costs the two peoples' standing, once. */
+export const PEACE_BROKEN_STANDING = 20;
+
+/**
+ * What each witness of a broken peace thinks the less of the breaker's chief:
+ * the chief swore for the band, and the band's man broke it.
+ */
+export const PEACE_BROKEN_REGARD = 12;
+
+/** The deeds that break a sworn peace when one people does them to the other. */
+export const BREAKS_PEACE = new Set(['theft', 'assault', 'murder', 'sabotage', 'abduction', 'threaten']);
+
+/**
+ * Whether a government's chief accepts a peace offered: one without the
+ * stomach for war does, and so does any once the two peoples stand no worse
+ * than `PEACE_STANDING`.
+ */
+export function acceptsPeace(chief: Person, standing: number): boolean {
+  return chief.traits.aggression < 0.7 || standing >= PEACE_STANDING;
+}

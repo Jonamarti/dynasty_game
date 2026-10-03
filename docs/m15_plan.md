@@ -2956,6 +2956,24 @@ contra el rey, el segundo lector de `conspiracyAgainst`; y tratados y tributo.
 - La noche (12) es el momento natural de la fuga y del golpe, y eso tiene que
   salir del puntuador, no de una regla.
 
+**Avance del 2026-10-03 (39a, guerra y paz).** `BandRelations` gana una
+postura declarada (`war`, `peace`, `tributary`; la última nombra al señor)
+que no decae y que sólo fija un gobierno: un jefe que sabe `law_code` o
+`kingship` (`Polity.governs`). Guerra: la incursión no espera al umbral de
+rencor (se lee como la peor posición). Paz: no se asalta a quien se juró, y
+quien la rompe (robo, agresión, muerte, sabotaje, rapto o amenaza contra el
+otro pueblo) la termina, cuesta 20 de posición entre los pueblos y cada
+testigo piensa peor del jefe del infractor (`SocialSystem.onPeaceBroken`,
+`Simulation.breakPeace`). Los gobiernos PNJ declaran la guerra con rencor
+peor que -40 y valor; ofrecen la paz tras 10 días si les falta valor o el
+rencor se ha enfriado, y la del otro gobierno puede negarla; dos gobiernos en
+buenos términos juran la paz; y **la paz jurada se guarda** (medido: sin eso,
+`polity` hizo diez guerras y nueve paces en cien días). El jugador-jefe ve
+los pueblos con los que ha tratado y declara guerra o paz desde su sección de
+gobierno. `polity` empieza con un viejo rencor (-55) entre sus dos pueblos.
+Check `governments-declare-war-and-peace`. **Simplificación**: la postura la
+conocen los dos pueblos en el acto, sin mensajero; anotado en `bugs.md`.
+
 ## Fase 40 — El hierro (M8.4)
 
 **Detalle en `m8_plan_the_ages.md` §M8.4.** Seis nodos de la sub-red Metal:
