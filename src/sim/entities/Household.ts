@@ -10,6 +10,8 @@
  * Households outlive their members. When a head dies the household does not
  * dissolve; it passes, which is the whole point.
  */
+import type { IdSpace } from '../core/IdSpace.ts';
+
 let nextHouseholdId = 1;
 
 export function resetHouseholdIds(): void {
@@ -78,8 +80,8 @@ export class Household {
   readonly foundedTick: number;
   endedTick: number | null = null;
 
-  constructor(name: string, headId: number, bandId: number, tick: number) {
-    this.id = nextHouseholdId++;
+  constructor(name: string, headId: number, bandId: number, tick: number, ids?: IdSpace) {
+    this.id = ids ? ids.allocate('household') : nextHouseholdId++;
     this.name = name;
     this.headId = headId;
     this.bandId = bandId;

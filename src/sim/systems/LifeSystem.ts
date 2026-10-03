@@ -57,6 +57,8 @@ export interface LifeContext {
   onBirth: (child: Person, mother: Person, father: Person | null) => void;
   /** Called when someone dies of anything this system is responsible for. */
   onDeath: (person: Person, cause: string) => void;
+  /** Per-simulation birth factory; avoids a cross-world module hook. */
+  makeChild: (mother: Person, rng: RNG) => Person;
 }
 
 export class LifeSystem {
@@ -126,7 +128,7 @@ export class LifeSystem {
     const father = mother.pregnantBy === null ? null : ctx.peopleById.get(mother.pregnantBy) ?? null;
     mother.pregnantBy = null;
 
-    ctx.onBirth(this.conceiveChild(mother, father, ctx.rng), mother, father);
+    ctx.onBirth(this.conceiveChild(mother, father, ctx), mother, father);
   }
 
   /**
@@ -137,11 +139,12 @@ export class LifeSystem {
    * nothing: nobody is born knowing how to knap flint, and everything a child
    * ends up good at, somebody had to teach them or they had to practise.
    */
-  private conceiveChild(mother: Person, father: Person | null, rng: RNG): Person {
+  private conceiveChild(mother: Person, father: Person | null, ctx: LifeContext): Person {
     // Constructed through the mother's own class so ids and defaults stay in
     // one place; the caller supplies the constructor via a factory instead of
     // this module importing Person concretely for `new`.
-    const child = makeChild(mother, rng);
+    const rng = ctx.rng;
+    const child = ctx.makeChild(mother, rng);
     inheritTraits(child, mother, father, rng);
 
     for (const skill of SKILLS) {
@@ -222,20 +225,6 @@ export function inheritTraits(
       : mother.traits[trait];
     child.traits[trait] = Math.max(0, Math.min(1, inherited + rng.gaussian(0, INHERITED_DRIFT)));
   }
-}
-
-/**
- * Factory hook.
- *
- * Set once at start-up by the simulation. It exists so this module can create
- * people without importing the concrete constructor and its id counter, which
- * would make the dependency graph circular (Person imports Memory imports
- * Events, and Simulation owns them all).
- */
-let makeChild: (mother: Person, rng: RNG) => Person;
-
-export function setChildFactory(factory: (mother: Person, rng: RNG) => Person): void {
-  makeChild = factory;
 }
 
 // ---------------------------------------------------------------------------

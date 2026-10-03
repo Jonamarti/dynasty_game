@@ -24,11 +24,12 @@ import { SpatialHash } from './SpatialHash.ts';
 import { telemetry } from './Telemetry.ts';
 import { BODY_PARTS, partWord, poisonDaily, woundsDaily } from '../entities/Body.ts';
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
-import { ADULT_YEARS, Person, resetPersonIds } from '../entities/Person.ts';
+import { ADULT_YEARS, Person } from '../entities/Person.ts';
+import { IdSpace, type IdSpaceSnapshot } from './IdSpace.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import {
-  BUSH_SPECIES, BUSHES, WILD_PLANTS, bushPhase, ResourceNode, resetResourceIds, isFoodKind, isPlantFood, seasonLoreKind,
+  BUSH_SPECIES, BUSHES, WILD_PLANTS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
   type BushSpecies, type ResourceKind,
 } from '../entities/ResourceNode.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
@@ -46,7 +47,7 @@ import {
 } from '../ai/Autonomy.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
 import { BandRelations } from '../social/BandRelations.ts';
-import { SocialSystem, resetEventIds } from '../social/SocialSystem.ts';
+import { SocialSystem } from '../social/SocialSystem.ts';
 import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType } from '../social/Events.ts';
 import { STRANGER_REGARD_MEAN, STRANGER_REGARD_SPREAD } from '../social/Restraint.ts';
 import { pruneDebts, debtTo, offerFor, OFFER_AT_LEAST, DEBT_DAYS } from '../social/Amends.ts';
@@ -54,7 +55,7 @@ import {
   judgeOwn, answerDemand, DISMISSED_GRUDGE, SHAME_RENOWN, REFUSED_STANDING, type Case, judgesByLaw, verdictGrudge,
 } from '../social/Justice.ts';
 import {
-  Building, BUILDINGS, isTrap, isHerd, isStructure, resetBuildingIds, type BuildingDef,
+  Building, BUILDINGS, isTrap, isHerd, isStructure, type BuildingDef,
 } from '../entities/Building.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
@@ -62,18 +63,18 @@ import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
 import { assailantOf, isHeld } from '../social/Defence.ts';
 import { wouldInvestigate, noticeBloodied, INVESTIGATION_DAYS } from '../social/Investigation.ts';
 import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
-import { averageRenownByBand, Household, resetHouseholdIds } from '../entities/Household.ts';
-import { Tree, resetTreeIds } from '../entities/Tree.ts';
+import { averageRenownByBand, Household } from '../entities/Household.ts';
+import { Tree } from '../entities/Tree.ts';
 import { giftWorth } from '../social/Events.ts';
-import { ItemPile, resetPileIds } from '../entities/ItemPile.ts';
-import { Corpse, resetCorpseIds, stageOf, WOUNDS_SHOW_FOR, GONE_AFTER } from '../entities/Corpse.ts';
+import { ItemPile } from '../entities/ItemPile.ts';
+import { Corpse, stageOf, WOUNDS_SHOW_FOR, GONE_AFTER } from '../entities/Corpse.ts';
 import {
-  Animal, resetAnimalIds, PREY_SPECIES, SPECIES_DEFS, type Species,
+  Animal, PREY_SPECIES, SPECIES_DEFS, type Species,
 } from '../entities/Animal.ts';
 import { WildlifeSystem, DOG_HEARING, DOG_SIGHT } from '../systems/WildlifeSystem.ts';
 import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
 import {
-  LifeSystem, setChildFactory, findHeir, settleEstate,
+  LifeSystem, findHeir, settleEstate,
 } from '../systems/LifeSystem.ts';
 import { linkFamily } from '../social/SocialSystem.ts';
 import { BandSystem, TERRITORY_RADIUS } from '../systems/BandSystem.ts';
@@ -91,7 +92,7 @@ import {
 } from '../social/Rank.ts';
 import { JOBS, type JobId } from '../entities/Job.ts';
 import {
-  Inscription, INSCRIPTIONS, resetInscriptionIds, type InscriptionForm,
+  Inscription, INSCRIPTIONS, type InscriptionForm,
 } from '../entities/Inscription.ts';
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
@@ -277,6 +278,7 @@ export interface Band {
 }
 
 export class Simulation {
+  readonly ids: IdSpace;
   readonly config: SimConfig;
   readonly rng: RNG;
   readonly world: World;
@@ -566,7 +568,8 @@ export class Simulation {
   readonly foundingFauna: Record<string, number> = {};
   private nextEdgeHerd = 5000;
 
-  constructor(overrides: DeepPartial<SimConfig> = {}) {
+  constructor(overrides: DeepPartial<SimConfig> = {}, ids: IdSpace = new IdSpace()) {
+    this.ids = ids;
     this.config = makeConfig(overrides);
     this.rng = new RNG(this.config.seed);
 
@@ -584,7 +587,7 @@ export class Simulation {
     this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder,
       this.config.motivation.infantsStill, this.config.carry.sledgeSpeed, this.config.childhood);
     this.social = new SocialSystem(
-      this.relationships, this.normsByBand, this.bandRelations, this.strangerRegardByBand);
+      this.relationships, this.normsByBand, this.bandRelations, this.strangerRegardByBand, this.ids);
     this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
     this.social.onDeed = (actor, type, magnitude) => this.accrueRenown(actor, type, magnitude);
     this.social.onPeaceBroken = (actor, victimBandId, witnesses) => this.breakPeace(actor, victimBandId, witnesses);
@@ -608,35 +611,12 @@ export class Simulation {
     // point is the line after `grainRng`. See `AGENTS.md`, which carries the
     // numbered table and the instruction to add a row to it when you append.
 
-    resetPersonIds();
-    resetResourceIds();
-    resetEventIds();
-    resetBuildingIds();
-    resetHouseholdIds();
-    resetTreeIds();
-    resetPileIds();
-    resetCorpseIds();
-    resetInscriptionIds();
-    resetAnimalIds();
-
-    // Births need to construct people, but LifeSystem cannot import the Person
-    // constructor without a cycle (Person -> Memory -> Events, and Simulation
-    // owns them all), so the factory is injected here.
-    setChildFactory((mother, childRng) => {
-      const name = childRng.pick(NAME_ONSETS) + childRng.pick(NAME_CODAS);
-      const child = new Person(name, mother.x, mother.y, mother.bandId, childRng, this.time.daysPerYear);
-      // Stamped here as well as in `applyLearning`: the sweep catches everyone
-      // already alive when the setting changes, this catches everyone born after.
-      child.skillGain = this.config.learning.skillGain;
-      return child;
-    });
-
     this.shoreHash.rebuild(this.world.shoreTiles);
 
     // The wood is planted before anything else looks for it: a band founded in
     // a clearing and a band founded under oaks have very different prospects.
     this.trees = seedInitialForest(
-      this.world, this.rng.fork(), this.config.world.treeDensity, this.time.daysPerYear
+      this.world, this.rng.fork(), this.config.world.treeDensity, this.time.daysPerYear, this.ids
     );
     for (const tree of this.trees) this.treesById.set(tree.id, tree);
     this.treeHash.rebuild(this.trees);
@@ -714,6 +694,12 @@ export class Simulation {
     }
   }
 
+  /** Versioned, JSON-safe identity continuation state (entity records stay inert). */
+  idSnapshot(): IdSpaceSnapshot { return this.ids.snapshot(); }
+
+  /** Advance this allocator to at least the saved point without reissuing IDs. */
+  restoreIdSnapshot(snapshot: unknown): void { this.ids.restore(snapshot); }
+
   /**
    * Gives every berry bush a species (`BUSHES`), in patches: a bush near one
    * already planted is usually the same shrub, as brambles, sloes and wild
@@ -773,7 +759,7 @@ export class Simulation {
         const spot = this.world.randomWalkable(rng, 1);
         if (!spot) continue;
         if (!this.suitsBiome('berries', spot.x, spot.y)) continue;
-        const node = new ResourceNode('berries', spot.x, spot.y, rng);
+        const node = new ResourceNode('berries', spot.x, spot.y, rng, this.ids);
         node.species = species;
         if (bushPhase(species, startSeason) === 'bare') node.amount = 0;
         this.nodes.push(node);
@@ -807,7 +793,7 @@ export class Simulation {
         const spot = this.world.randomWalkable(rng, 1);
         if (!spot) continue;
         if (!this.suitsBiome(kind, spot.x, spot.y)) continue;
-        const node = new ResourceNode(kind, spot.x, spot.y, rng);
+        const node = new ResourceNode(kind, spot.x, spot.y, rng, this.ids);
         this.nodes.push(node);
         this.nodesById.set(node.id, node);
         placed++;
@@ -830,7 +816,7 @@ export class Simulation {
       const spot = this.world.randomWalkable(rng, 1);
       if (!spot) continue;
       if (!this.suitsBiome('fish', spot.x, spot.y)) continue;
-      const node = new ResourceNode('fish', spot.x, spot.y, rng);
+      const node = new ResourceNode('fish', spot.x, spot.y, rng, this.ids);
       this.nodes.push(node);
       this.nodesById.set(node.id, node);
       placed++;
@@ -855,7 +841,7 @@ export class Simulation {
       const spot = this.world.randomWalkable(rng, 1);
       if (!spot) continue;
       if (!this.suitsBiome('wild_grain', spot.x, spot.y)) continue;
-      const node = new ResourceNode('wild_grain', spot.x, spot.y, rng);
+      const node = new ResourceNode('wild_grain', spot.x, spot.y, rng, this.ids);
       this.nodes.push(node);
       this.nodesById.set(node.id, node);
       placed++;
@@ -889,7 +875,7 @@ export class Simulation {
           Math.round(home.x + rng.range(-3, 3)),
           Math.round(home.y + rng.range(-3, 3))
         ) ?? home;
-        const animal = new Animal(species, spot.x, spot.y, h, rng);
+        const animal = new Animal(species, spot.x, spot.y, h, rng, this.ids);
         this.animals.push(animal);
         this.animalsById.set(animal.id, animal);
       }
@@ -927,7 +913,7 @@ export class Simulation {
       for (let i = 0; i < count; i++) {
         const spot = this.world.findWalkableNear(
           Math.round(home.x + rng.range(-2, 2)), Math.round(home.y + rng.range(-2, 2))) ?? home;
-        const animal = new Animal(species, spot.x, spot.y, herdId, rng);
+        const animal = new Animal(species, spot.x, spot.y, herdId, rng, this.ids);
         this.animals.push(animal);
         this.animalsById.set(animal.id, animal);
       }
@@ -1095,8 +1081,9 @@ export class Simulation {
       rng,
       relationships: this.relationships,
       social: this.social,
+      ids: this.ids,
       makePerson: (name, x, y, bandId, personRng) => {
-        const person = new Person(name, x, y, bandId, personRng, this.time.daysPerYear);
+        const person = new Person(name, x, y, bandId, personRng, this.time.daysPerYear, this.ids);
         person.skillGain = this.config.learning.skillGain;
         person.placeMemory.configure(this.world.width, this.world.height, this.config.knowledge.placeMemoryPerKind);
         return person;
@@ -1555,7 +1542,7 @@ export class Simulation {
       if (previous.extinct) previous.endedTick = this.time.tick;
     }
 
-    const household = new Household(person.surname, person.id, band.id, this.time.tick);
+    const household = new Household(person.surname, person.id, band.id, this.time.tick, this.ids);
     this.households.push(household);
     this.householdsById.set(household.id, household);
     household.add(person.id);
@@ -2171,7 +2158,7 @@ export class Simulation {
 
     let pile = this.pileHash.findNearest(person.x, person.y, 1.2);
     if (!pile) {
-      pile = new ItemPile(Math.round(person.x), Math.round(person.y), person.id, this.time.tick);
+      pile = new ItemPile(Math.round(person.x), Math.round(person.y), person.id, this.time.tick, this.ids);
       this.piles.push(pile);
       this.pilesById.set(pile.id, pile);
       this.pileHash.rebuild(this.piles);
@@ -2192,7 +2179,7 @@ export class Simulation {
     if (count <= 0) return;
     let pile = this.pileHash.findNearest(x, y, 1.2);
     if (!pile) {
-      pile = new ItemPile(Math.round(x), Math.round(y), null, this.time.tick);
+      pile = new ItemPile(Math.round(x), Math.round(y), null, this.time.tick, this.ids);
       this.piles.push(pile);
       this.pilesById.set(pile.id, pile);
       this.pileHash.rebuild(this.piles);
@@ -3201,7 +3188,7 @@ export class Simulation {
         const spot = this.world.findWalkableNear(
           Math.round(entry.x + this.edgeRng.range(-2, 2)),
           Math.round(entry.y + this.edgeRng.range(-2, 2)), 4) ?? entry;
-        const animal = new Animal(species, spot.x, spot.y, herdId, this.edgeRng);
+        const animal = new Animal(species, spot.x, spot.y, herdId, this.edgeRng, this.ids);
         this.animals.push(animal);
         this.animalsById.set(animal.id, animal);
       }
@@ -3589,7 +3576,7 @@ export class Simulation {
     const ty = Math.round(y);
     if (!this.world.isWalkable(tx, ty)) return null;
 
-    const made = new Inscription(def, tx, ty, author, this.time.tick);
+    const made = new Inscription(def, tx, ty, author, this.time.tick, this.ids);
     this.inscriptions.push(made);
     this.inscriptionsById.set(made.id, made);
     this.inscriptionHash.rebuild(this.inscriptions);
@@ -3875,7 +3862,7 @@ export class Simulation {
     if (def.requiresTech !== null && !this.knownTech.has(def.requiresTech)) return null;
     if (!this.canPlace(def, x, y)) return null;
 
-    const building = new Building(def, x, y, bandId);
+    const building = new Building(def, x, y, bandId, this.ids);
     building.plannedTick = this.time.tick;
     building.playerPlaced = playerPlaced;
     building.sponsorId = sponsorId !== undefined
@@ -4346,7 +4333,7 @@ export class Simulation {
       const taken = building.delivered.remove(itemId, count);
       if (taken <= 0) continue;
       const pile = new ItemPile(
-        Math.round(building.centerX), Math.round(building.centerY), null, this.time.tick
+        Math.round(building.centerX), Math.round(building.centerY), null, this.time.tick, this.ids
       );
       pile.contents.add(itemId, taken);
       this.piles.push(pile);
@@ -4435,6 +4422,7 @@ export class Simulation {
     if (this.time.tick % SIGHTING_EVERY === 0) this.lookForIntruders();
 
     this.wildlifeSystem.update(this.animals, {
+      ids: this.ids,
       world: this.world,
       rng: this.wildlifeRng,
       tick: this.time.tick,
@@ -4474,6 +4462,7 @@ export class Simulation {
       // M15 phase 23d: spring's young, proportional to how well fed the herd
       // is and capped by the grass round it.
       for (const calf of this.wildlifeSystem.daily(this.animals, {
+        ids: this.ids,
         world: this.world, rng: this.wildlifeRng, tick: this.time.tick,
         peopleHash: this.peopleHash, season: this.time.season,
       })) {
@@ -4537,6 +4526,7 @@ export class Simulation {
         // and `dailyGrowth`'s header explains what that was doing to the wood.
         growth: this.time.dailyGrowth,
         treeHash: this.treeHash,
+        ids: this.ids,
       });
       if (forest.died.length > 0 || forest.born.length > 0) {
         for (const dead of forest.died) this.treesById.delete(dead.id);
@@ -4637,6 +4627,15 @@ export class Simulation {
         day: this.time.day,
         peopleById: this.peopleById,
         householdsById: this.householdsById,
+        makeChild: (mother, childRng) => {
+          // A process-wide hook let the most recently constructed world choose
+          // another world's newborn IDs, calendar and learning rate.
+          const name = childRng.pick(NAME_ONSETS) + childRng.pick(NAME_CODAS);
+          const child = new Person(name, mother.x, mother.y, mother.bandId,
+            childRng, this.time.daysPerYear, this.ids);
+          child.skillGain = this.config.learning.skillGain;
+          return child;
+        },
         onBirth: (child, mother, father) => this.registerBirth(child, mother, father),
         onDeath: (person, cause) => person.die(cause),
       });
@@ -5178,7 +5177,7 @@ export class Simulation {
         // old man in his hut as much as the man in the clearing.
         const wounded = (person.causeOfDeath ?? '').startsWith('killed') ||
           this.time.tick - person.lastHarmedTick < WOUNDS_SHOW_FOR;
-        const corpse = new Corpse(person, this.time.tick, wounded);
+        const corpse = new Corpse(person, this.time.tick, wounded, this.ids);
         this.corpses.push(corpse);
         this.corpsesById.set(corpse.id, corpse);
         anyBody = true;

@@ -631,6 +631,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
 };
 
+import type { IdSpace } from '../core/IdSpace.ts';
+
 let nextBuildingId = 1;
 
 export function resetBuildingIds(): void {
@@ -741,8 +743,8 @@ export class Building {
    */
   readonly crop: Crop | null;
 
-  constructor(def: BuildingDef, x: number, y: number, ownerBandId: number) {
-    this.id = nextBuildingId++;
+  constructor(def: BuildingDef, x: number, y: number, ownerBandId: number, ids?: IdSpace) {
+    this.id = ids ? ids.allocate('building') : nextBuildingId++;
     this.def = def;
     this.x = x;
     this.y = y;

@@ -107,6 +107,8 @@ export const TREES: Record<TreeSpecies, TreeDef> = {
  */
 const WINDFALL_ROT_PER_DAY = 3.5;
 
+import type { IdSpace } from '../core/IdSpace.ts';
+
 let nextTreeId = 1;
 
 export function resetTreeIds(): void {
@@ -157,9 +159,9 @@ export class Tree {
 
   constructor(
     species: TreeSpecies, x: number, y: number, ageDays: number,
-    daysPerYear: number = DAYS_PER_YEAR
+    daysPerYear: number = DAYS_PER_YEAR, ids?: IdSpace
   ) {
-    this.id = nextTreeId++;
+    this.id = ids ? ids.allocate('tree') : nextTreeId++;
     this.def = TREES[species];
     this.x = x;
     this.y = y;

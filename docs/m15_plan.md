@@ -2488,9 +2488,23 @@ valida entradas desconocidas y reconstruye copias independientes; no crea
 personas ni consume IDs o RNG. Contrato y pruebas en
 [m15_phase28_social.md](m15_phase28_social.md).
 
-Es una base inerte, aún sin compactación ni transferencia de autoridad. Siguen
-pendientes `IdSpace`, libros y la integración del roster, además de coordinar
-los registros propios con los grafos externos. La fase 28 y el LOD siguen abiertos.
+**Avance del 2026-10-03, asignación de identidad.** Cada `Simulation` tiene
+su `IdSpace` para los diez namespaces de entidades/eventos; recibe uno compartido
+como segundo argumento cuando varias comarcas deben continuar la misma secuencia.
+Todos los caminos de creación del motor lo reciben explícitamente. El factory
+de nacimientos vive en `LifeContext`, evitando que otra simulación sustituya
+el calendario o la velocidad de aprendizaje del recién nacido. Snapshot JSON
+v1 validado, restore monotónico y cinco pruebas con colisión/nacimiento reales,
+continuación y controles negativos. Contrato: [m15_phase28_ids.md](m15_phase28_ids.md).
+Nueve hashes de estado existente/RNG coinciden antes/después en tres semillas,
+ticks 0/500/3000; no se reordena ni añade ningún fork.
+Los graneros preparados por `polity`/`conquest` también usan `sim.ids`; una
+prueba detectó 6 IDs únicos para 8 edificios antes de corregir los fixtures.
+
+Siguen pendientes identidad global de bandas/manadas, libros y la integración
+del roster, además de coordinar los registros propios con los grafos externos.
+Los constructores standalone mantienen contadores de compatibilidad; incorporar
+entidades a una simulación requiere pasar `sim.ids`. La fase 28 y el LOD siguen abiertos.
 
 **Detalle en `m14_plan.md` fase 3.** `IdSpace` en lugar de los diez contadores
 de módulo; `PersonRecord`, `HouseholdRecord` y `BandRecord`; ida y vuelta con

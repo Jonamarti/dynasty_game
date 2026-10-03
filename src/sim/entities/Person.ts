@@ -22,6 +22,7 @@ import { MacroBalance, macroTargetFor } from '../core/Macros.ts';
 import { Beliefs } from '../ai/Beliefs.ts';
 import { PlaceMemory } from '../social/PlaceMemory.ts';
 import { armForce, newBody, poisonWork, type Body, type Condition } from './Body.ts';
+import type { IdSpace } from '../core/IdSpace.ts';
 
 /**
  * `farm` and `smith` are added ahead of the technologies that will use them.
@@ -884,9 +885,9 @@ export class Person {
 
   constructor(
     name: string, x: number, y: number, bandId: number, rng: RNG,
-    daysPerYear: number = DAYS_PER_YEAR
+    daysPerYear: number = DAYS_PER_YEAR, ids?: IdSpace
   ) {
-    this.id = nextPersonId++;
+    this.id = ids ? ids.allocate('person') : nextPersonId++;
     this.name = name;
     this.x = x;
     this.y = y;

@@ -1,8 +1,9 @@
 # M15 28 — Registros de identidad, primera entrega
 
 2026-10-03. `src/sim/persistence/EntityRecords.ts` aporta un codec v1 inerte
-para `PersonRecord`, `HouseholdRecord` y `BandRecord`. No sustituye aún los
-contadores de identidad ni activa simulación compacta o guardado de partida.
+para `PersonRecord`, `HouseholdRecord` y `BandRecord`. No activa simulación
+compacta o guardado de partida. La asignación de identidad del motor se describe
+en [m15_phase28_ids.md](m15_phase28_ids.md).
 
 ## Contrato
 
@@ -50,8 +51,9 @@ No es todavía un formato de partida con migraciones ni un registro compacto.
 La validación de forma no sustituye la consistencia entre entidades. Los grafos
 de opiniones y `BandRelations` ya tienen codecs independientes en
 [m15_phase28_social.md](m15_phase28_social.md); todavía hay que coordinar su carga
-con el roster. Antes de integrarlo quedan `IdSpace`, libros de edificios/recursos,
-RNG del mundo y agendas; transferencia de autoridad
+con el roster. `IdSpace` ya controla la creación de entidades/eventos por mundo,
+pero bandas/manadas siguen con IDs locales. Antes de integrarlo quedan libros
+de edificios/recursos, RNG del mundo y agendas; transferencia de autoridad
 sin duplicar personas o bienes y calendario de avances. `Knowledge` continúa
 siendo la única vía para exponer estado a la interfaz: rehidratar no concede
 conocimiento. La fase 28 y el LOD de la 32 permanecen abiertos.

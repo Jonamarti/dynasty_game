@@ -13,6 +13,7 @@
 import type { RNG } from '../core/RNG.ts';
 import type { Season } from '../core/TimeManager.ts';
 import { ITEMS } from './Item.ts';
+import type { IdSpace } from '../core/IdSpace.ts';
 
 // `wild_grain` is appended rather than inserted, and it is spawned in a pass of
 // its own on a stream of its own — see `Simulation.spawnWildGrain`. Adding it to
@@ -216,8 +217,8 @@ export class ResourceNode {
    */
   species: BushSpecies | null = null;
 
-  constructor(kind: ResourceKind, x: number, y: number, rng: RNG) {
-    this.id = nextNodeId++;
+  constructor(kind: ResourceKind, x: number, y: number, rng: RNG, ids?: IdSpace) {
+    this.id = ids ? ids.allocate('resourceNode') : nextNodeId++;
     this.kind = kind;
     this.def = RESOURCE_DEFS[kind];
     this.x = x;

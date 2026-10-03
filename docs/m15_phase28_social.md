@@ -17,9 +17,12 @@ comparan snapshots completos del grafo original y el rehidratado después de
 las mismas operaciones. Cubren orden de empates y poda por decaimiento,
 contacto mantenido solo por stance, independencia en ambas direcciones,
 duplicados, IDs y claves fuera de rango, NaN, timestamps/rangos inválidos y
-campos desconocidos. También conserva self-edges permitidos por la API actual y
-verifica la ida y vuelta de los grafos de una simulación viva de dos bandas tras 500 pasos. El
+campos desconocidos. Otra prueba conserva self-edges permitidos por la API actual
+y verifica la ida y vuelta de los grafos de una simulación viva de dos bandas
+tras 500 pasos. El
 codec no recibe RNG; una comprobación adicional confirma que no consume IDs de
 entidad. Esta entrega no integra un world save ni declara completo el LOD:
-siguen pendientes `IdSpace`, libros de edificios y recursos, RNG/agendas y la
+`IdSpace` ya tiene asignación/checkpoints por mundo (véase
+[m15_phase28_ids.md](m15_phase28_ids.md)); siguen pendientes identidad global de
+bandas/manadas, libros de edificios y recursos, RNG/agendas y la
 transferencia coordinada de autoridad descrita en la hoja principal de fase 28.

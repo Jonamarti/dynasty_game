@@ -13,6 +13,7 @@
  * what taming will read.
  */
 import type { RNG } from '../core/RNG.ts';
+import type { IdSpace } from '../core/IdSpace.ts';
 
 /**
  * The herbivores come first and keep their indices, and `spawnHerds` picks
@@ -209,8 +210,8 @@ export class Animal {
    */
   meals = 0;
 
-  constructor(species: Species, x: number, y: number, herdId: number, rng: RNG) {
-    this.id = nextAnimalId++;
+  constructor(species: Species, x: number, y: number, herdId: number, rng: RNG, ids?: IdSpace) {
+    this.id = ids ? ids.allocate('animal') : nextAnimalId++;
     this.species = species;
     this.def = SPECIES_DEFS[species];
     this.x = x;

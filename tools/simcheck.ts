@@ -636,7 +636,7 @@ export const SCENARIOS: Record<string, Scenario> = {
             const x = Math.round(band.homeX + Math.cos(a * Math.PI / 8) * r);
             const y = Math.round(band.homeY + Math.sin(a * Math.PI / 8) * r);
             if (!sim.canPlace(BUILDINGS.granary!, x, y)) continue;
-            const granary = new Building(BUILDINGS.granary!, x, y, band.id);
+            const granary = new Building(BUILDINGS.granary!, x, y, band.id, sim.ids);
             granary.complete = true;
             sim.buildings.push(granary);
             sim.buildingsById.set(granary.id, granary);
@@ -708,7 +708,7 @@ export const SCENARIOS: Record<string, Scenario> = {
           const x = Math.round(state.homeX + Math.cos(a * Math.PI / 8) * r);
           const y = Math.round(state.homeY + Math.sin(a * Math.PI / 8) * r);
           if (!sim.canPlace(BUILDINGS.granary!, x, y)) continue;
-          const granary = new Building(BUILDINGS.granary!, x, y, state.id);
+          const granary = new Building(BUILDINGS.granary!, x, y, state.id, sim.ids);
           granary.complete = true;
           sim.buildings.push(granary);
           sim.buildingsById.set(granary.id, granary);

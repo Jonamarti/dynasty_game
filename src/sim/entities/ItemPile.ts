@@ -14,6 +14,8 @@ import { Inventory } from './Item.ts';
 import { t, language } from '../../i18n/i18n.ts';
 import { ITEMS } from './Item.ts';
 
+import type { IdSpace } from '../core/IdSpace.ts';
+
 let nextPileId = 1;
 
 export function resetPileIds(): void {
@@ -30,8 +32,8 @@ export class ItemPile {
   /** Tick it was dropped, for "left here yesterday". */
   readonly droppedTick: number;
 
-  constructor(x: number, y: number, ownerId: number | null, tick: number) {
-    this.id = nextPileId++;
+  constructor(x: number, y: number, ownerId: number | null, tick: number, ids?: IdSpace) {
+    this.id = ids ? ids.allocate('itemPile') : nextPileId++;
     this.x = x;
     this.y = y;
     this.ownerId = ownerId;

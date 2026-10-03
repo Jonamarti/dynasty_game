@@ -1,3 +1,51 @@
+## 2026-10-03 — M15 fase 28: identidades aisladas por mundo
+
+`Simulation.ids` sustituye los contadores globales en los diez namespaces de
+creación del motor: personas, hogares, árboles, recursos, edificios, animales,
+cuerpos, inscripciones, montones y eventos sociales. El espacio se puede
+compartir explícitamente entre simulaciones. Sus checkpoints JSON v1 validan
+entradas desconocidas y restauran monotonamente, sin volver a emitir IDs
+usados. Los constructores standalone conservan compatibilidad; al insertar
+objetos en una simulación se pasa su asignador. Bandas/manadas aún tienen IDs
+locales; el plan no declara identidad global completa, carga de mundo ni LOD.
+
+El factory de nacimientos pasa por `LifeContext`: una segunda simulación ya no
+elige los IDs, calendario o aprendizaje de un hijo nacido en la primera. El
+negativo contra HEAD emitía pile ID 1 dos veces al crear otro mundo entre dos
+`dropAt`; la nueva regresión detecta la colisión y verifica también el factory
+de nacimiento. Otros casos cubren los diez namespaces tras JSON, shared space,
+restore inválido atómico, copias independientes, agotamiento y checkpoint
+ausente. Los graneros de los fixtures `polity`/`conquest` también reciben
+`sim.ids`: el test fallaba con 6 IDs únicos para 8 edificios antes de corregirlo.
+
+**Verificación final:** typecheck pasa; **898/898 pruebas en 119 archivos** con
+`npm.cmd test -- --maxWorkers=1 --testTimeout=15000`, incluido determinismo.
+Nueve hashes SHA-256 del estado mutable existente/RNG coinciden antes/después
+en tres semillas, ticks 0/500/3000; se excluyen funciones y metadata nueva del
+asignador. La primera corrida de suite falló solo por la preparación del
+nacimiento nuevo; corregida la frontera diaria, las repeticiones completas pasan.
+
+La matriz completa de 27 escenarios sigue roja. Su primera pasada después del
+refactor detectó divergencias solo en `polity` y `conquest`, causadas por los
+fixtures sin asignador. Tras corregirlos se repiten esos dos escenarios con el
+mismo runner/criterios: todos los counts de checks aplicables y fallos coinciden
+con la referencia. Se conserva el log completo anterior a esa corrección y el
+recheck separado; no se presenta como una única matriz limpia ni se comparan
+pasos/s como equivalencia. La deuda previa de dieta, sueño, ánimo, supervivencia
+y otros mecanismos permanece abierta.
+
+Evidencia: `artifacts/verification/m15-phase28-20261003-152530/` (referencia),
+`m15-phase28-final-matrix.log`, `m15-phase28-rechecked-scenarios.json`,
+`m15-phase28-final-combined-checks.json` (27 filas, cero diferencias),
+`m15-phase28-tests-verified.log` y `m15-phase28-reference*` bajo esa raíz
+`artifacts/verification/`. Documentación de fase 28, plan, arquitectura,
+siguiente trabajo y bugs actualizados en este commit.
+
+Capturas de seguimiento, sin cambio de interfaz:
+`artifacts/screenshots/m15-phase28-identity-2026-10-03-153933/`; la gira pasa
+1/1 y se revisan visualmente el inicio y los paneles. Se conserva también el
+hito social de esta misma pasada.
+
 ## 2026-10-03 — M15 fase 28: registros de relaciones externas
 
 `SocialRecords.ts` conserva mediante JSON v1 las opiniones dirigidas y las

@@ -45,8 +45,9 @@ La primera entrega de fase 28 aporta `PersonRecord`, `HouseholdRecord` y
 véase [m15_phase28_records.md](m15_phase28_records.md). Todavía no son agendas
 compactas ni sustituyen entidades del roster. Las relaciones externas tienen
 codecs JSON propios en [m15_phase28_social.md](m15_phase28_social.md), aún sin
-carga coordinada del roster. `IdSpace`, transferencia de autoridad y `ComarcaSim`
-siguen por construir en las fases
+carga coordinada del roster. [IdSpace](m15_phase28_ids.md) ya asigna los diez
+namespaces de entidades/eventos por mundo, con checkpoint JSON; aún no globaliza
+bandas/manadas. Transferencia de autoridad y `ComarcaSim` siguen por construir en las fases
 28 y 32. El registro compacto objetivo conserva identidad, parentesco,
 edad, rasgos, habilidades, conocimientos y recuerdos; necesidades y lesiones;
 hogar y pertenencia; inventario, equipo, órdenes y progreso pendiente.

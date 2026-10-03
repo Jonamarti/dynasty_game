@@ -21,6 +21,8 @@
  */
 import type { Person } from './Person.ts';
 
+import type { IdSpace } from '../core/IdSpace.ts';
+
 let nextCorpseId = 1;
 
 export function resetCorpseIds(): void {
@@ -58,8 +60,8 @@ export class Corpse {
   readonly foundBy = new Set<number>();
   foundEventId: number | null = null;
 
-  constructor(person: Person, tick: number, wounded: boolean) {
-    this.id = nextCorpseId++;
+  constructor(person: Person, tick: number, wounded: boolean, ids?: IdSpace) {
+    this.id = ids ? ids.allocate('corpse') : nextCorpseId++;
     this.person = person;
     this.x = person.x;
     this.y = person.y;

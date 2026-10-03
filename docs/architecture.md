@@ -51,8 +51,18 @@ to the hydrated person. They do not register people, transfer authority or
 compress simulation work. External relationships now have separate versioned
 JSON codecs in `persistence/SocialRecords.ts`, preserving directed opinions and
 band standing/stances with independent storage and Map order. Loading them
-together with a roster, global identity and the compact scheduler remain pending;
+together with a roster and the compact scheduler remain pending;
 see [m15_phase28_records.md](m15_phase28_records.md).
+
+`Simulation.ids` owns the ten entity/event allocation namespaces. Creation
+passes this `IdSpace` explicitly to entities and systems; the optional second
+Simulation constructor argument shares it between local simulations. The JSON
+checkpoint validates all counters and restores monotonically. Births take a
+factory from their own `LifeContext`, so constructing another world cannot
+replace newborn identity, calendar or learning settings. Standalone constructors
+keep legacy counters for fixtures/tools; entities inserted into a simulation
+must use its allocator. Band/herd IDs remain local and coordinated world loading
+is pending. See [m15_phase28_ids.md](m15_phase28_ids.md).
 
 `tools/profile-systems.ts` wraps methods only inside its profiling browser and
 compares whole-state hashes against unprofiled worlds, including RNG. It measures

@@ -19,6 +19,7 @@ import type { RNG } from '../core/RNG.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import { moveToward } from './MovementSystem.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import type { IdSpace } from '../core/IdSpace.ts';
 import { techPower, stealthFactor } from '../knowledge/Tech.ts';
 import { WORTH_GRAZING, STUBBLE } from '../core/Grass.ts';
 
@@ -125,6 +126,7 @@ const HERD_CEILING = 2.5;
 const RANGE_RADIUS = 8;
 
 export interface WildlifeContext {
+  ids?: IdSpace;
   world: World;
   rng: RNG;
   tick: number;
@@ -201,7 +203,7 @@ export class WildlifeSystem {
         const mother = members[(ctx.tick + i) % members.length]!;
         const spot = ctx.world.findWalkableNear(Math.round(mother.x), Math.round(mother.y), 3);
         if (!spot) continue;
-        const calf = new Animal(lead.species, spot.x, spot.y, herdId, ctx.rng);
+        const calf = new Animal(lead.species, spot.x, spot.y, herdId, ctx.rng, ctx.ids);
         calf.fed = 0.8;
         born.push(calf);
         size++;

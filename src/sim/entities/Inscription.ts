@@ -164,6 +164,8 @@ export const INSCRIPTIONS: Record<InscriptionForm, InscriptionDef> = {
   },
 };
 
+import type { IdSpace } from '../core/IdSpace.ts';
+
 let nextInscriptionId = 1;
 
 export function resetInscriptionIds(): void {
@@ -203,9 +205,10 @@ export class Inscription {
     x: number,
     y: number,
     author: { id: number; name: string },
-    tick: number
+    tick: number,
+    ids?: IdSpace
   ) {
-    this.id = nextInscriptionId++;
+    this.id = ids ? ids.allocate('inscription') : nextInscriptionId++;
     this.def = def;
     this.x = x;
     this.y = y;

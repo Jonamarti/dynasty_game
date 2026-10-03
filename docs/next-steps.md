@@ -1,5 +1,16 @@
 # Next steps
 
+**2026-10-03: fase 28, identidades y relaciones.** El motor crea entidades y
+eventos con `Simulation.ids`; JSON v1 conserva su continuación y restaura
+monotónicamente. El factory de nacimientos ya es por contexto, sin interferencia
+entre simulaciones. Los grafos externos tienen codecs independientes y pruebas
+de evolución/orden/carga inválida. Suite conjunta 898/898; tres semillas y nueve
+checkpoints de estado existente/RNG coinciden con la referencia. Capturas nuevas
+en `m15-phase28-social-2026-10-03-153933/` y
+`m15-phase28-identity-2026-10-03-153933/`. El próximo tramo completa identidad
+global de bandas/manadas y carga coordinada/autoridad del roster; después libros
+y scheduler compacto. La fase 28 y el LOD siguen abiertos.
+
 **2026-10-03: gira estacional verificada.** Checkpoints desde el calendario
 vivo y aserción que detecta nombres incorrectos. Cuatro capturas finales en
 `m15-seasons-2026-10-03T-final/`; la gira anterior se conserva como registro.
@@ -15,8 +26,10 @@ Datos y límites en [m15_profile_systems.md](m15_profile_systems.md).
 **2026-10-03: primera entrega de identidad, fase 28.** Los registros v1 hacen
 ida/vuelta del estado propio de personas, hogares y bandas, incluido progreso
 en curso, sin constructores/IDs/RNG. Tres pruebas ricas y suite conjunta 886/886
-pasan. Falta `IdSpace`, relaciones externas, libros y transferencia de autoridad
-antes de activar compacto/LOD. Ver [m15_phase28_records.md](m15_phase28_records.md).
+pasan. `IdSpace` y los codecs externos se entregan en la pasada siguiente de
+esta misma fecha (cabecera); faltan identidad global de bandas/manadas, libros
+y transferencia de autoridad antes de activar compacto/LOD.
+Ver [m15_phase28_records.md](m15_phase28_records.md).
 
 **2026-10-03: LOD por visión, decisión del propietario.** Solo los individuos
 en la visión del NPC seleccionado reciben simulación completa. Los demás, aun

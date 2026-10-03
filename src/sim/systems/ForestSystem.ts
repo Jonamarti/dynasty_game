@@ -22,6 +22,7 @@ import type { RNG } from '../core/RNG.ts';
 import type { Season } from '../core/TimeManager.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import type { IdSpace } from '../core/IdSpace.ts';
 
 /**
  * Chance per mature tree per spring day of casting a viable seed.
@@ -46,6 +47,7 @@ export interface ForestContext {
   /** 0-1 growing conditions, from TimeManager. */
   growth: number;
   treeHash: SpatialHash<Tree>;
+  ids?: IdSpace;
 }
 
 export class ForestSystem {
@@ -120,7 +122,7 @@ export class ForestSystem {
       if (!this.hasRoom(x, y, ctx)) continue;
 
       telemetry.count('tree_seeded');
-      return new Tree(species, x, y, 0, parent.daysPerYear);
+      return new Tree(species, x, y, 0, parent.daysPerYear, ctx.ids);
     }
     return null;
   }
@@ -149,7 +151,8 @@ export function seedInitialForest(
   world: World,
   rng: RNG,
   density: number,
-  daysPerYear: number = DAYS_PER_YEAR
+  daysPerYear: number = DAYS_PER_YEAR,
+  ids?: IdSpace
 ): Tree[] {
   const trees: Tree[] = [];
   const occupied = new Set<number>();
@@ -175,7 +178,7 @@ export function seedInitialForest(
     const maxAge = 220 * daysPerYear;
     const age = Math.min(maxAge, rng.range(0, 1) ** 0.7 * 90 * daysPerYear);
     occupied.add(key);
-    trees.push(new Tree(species, x, y, age, daysPerYear));
+    trees.push(new Tree(species, x, y, age, daysPerYear, ids));
   }
   return trees;
 }

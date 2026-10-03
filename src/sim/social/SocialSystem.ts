@@ -33,6 +33,7 @@ import { telemetry } from '../core/Telemetry.ts';
 import { t } from '../../i18n/i18n.ts';
 import { frighten, opennessOf } from './Fear.ts';
 import { noteMischief, partiality, STRANGER_REGARD_MEAN, type Culture } from './Restraint.ts';
+import type { IdSpace } from '../core/IdSpace.ts';
 
 export interface LifeEvent {
   tick: number;
@@ -272,8 +273,13 @@ export class SocialSystem {
      * `normsByBand`, and filled once the bands exist; a band missing from it
      * reads as the middle of the curve, which is what every band was before.
      */
-    private readonly strangerRegardByBand: Map<number, number> = new Map()
+    private readonly strangerRegardByBand: Map<number, number> = new Map(),
+    private readonly ids?: IdSpace
   ) {}
+
+  private allocateEventId(): number {
+    return this.ids ? this.ids.allocate('socialEvent') : nextEventId++;
+  }
 
   private normsFor(person: Person): Norms | null {
     return this.normsByBand.get(person.bandId) ?? null;
@@ -331,7 +337,7 @@ export class SocialSystem {
     bandNudge = true
   ): SocialEvent {
     const event: SocialEvent = {
-      id: nextEventId++,
+      id: this.allocateEventId(),
       type,
       actorId: actor.id,
       targetId: target?.id ?? null,
@@ -455,7 +461,7 @@ export class SocialSystem {
    */
   accuse(accuser: Person, suspect: Person, dead: Person, confidence: number, tick: number): void {
     const event: SocialEvent = {
-      id: nextEventId++,
+      id: this.allocateEventId(),
       type: 'murder',
       actorId: suspect.id,
       targetId: dead.id,
@@ -482,7 +488,7 @@ export class SocialSystem {
    */
   findBody(finder: Person, dead: Person, eventId: number | null, x: number, y: number, tick: number): number {
     const event: SocialEvent = {
-      id: eventId ?? nextEventId++,
+      id: eventId ?? this.allocateEventId(),
       type: 'body_found',
       actorId: dead.id,
       targetId: null,

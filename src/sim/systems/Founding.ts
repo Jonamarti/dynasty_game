@@ -28,6 +28,7 @@ import { linkFamily, KIN_SIBLING } from '../social/SocialSystem.ts';
 import { inheritTraits } from './LifeSystem.ts';
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import type { IdSpace } from '../core/IdSpace.ts';
 
 /** Marrying age for a founding couple, in years. */
 const COUPLE_MIN_AGE = 20;
@@ -44,6 +45,7 @@ export interface FoundingContext {
   rng: RNG;
   relationships: RelationshipGraph;
   social: SocialSystem;
+  ids?: IdSpace;
   /**
    * Builds a bare person. Injected rather than imported so this module does not
    * take a hard dependency on the `Person` constructor and its id counter — the
@@ -175,7 +177,7 @@ function foundFamily(
   // The household exists before the wedding: `SocialSystem.wed` hands off to
   // the simulation's household merge, and a merge with both parties already in
   // the same household is a no-op that still fixes the shared surname.
-  const household = new Household(surname, husband.id, band.id, 0);
+  const household = new Household(surname, husband.id, band.id, 0, ctx.ids);
   for (const person of members) {
     household.add(person.id);
     person.householdId = household.id;
