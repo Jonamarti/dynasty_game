@@ -1,3 +1,14 @@
+## 2026-10-03 — M15 fase 23d: comprobar la reproducción sin esperar un año
+
+La prueba de reproducción agotó dos veces sus 60 segundos al esperar estaciones
+en una economía humana completa. Ahora compara nueve llamadas diarias al sistema
+real, con la alimentación y capacidad del pasto controladas; conserva controles
+de invierno/sin pasto y detecta una mutación que elimina `fed * fed`. Los otros
+dos casos siguen usando Simulation para pastoreo y hambre. No cambia el juego.
+La suite conjunta pasó 940/940 en 128 archivos y typecheck limpio después de
+aislar la prueba. Evidencia: `docs/m15_grazing_check.md`; tour 1/1 en
+`artifacts/screenshots/m15-grazing-check-2026-10-03-pass1/`.
+
 ## 2026-10-03 — M15 fase 17: cavar con un gesto visible
 
 Cuatro poses de cavar por edad/sexo/dirección y bastón primitivo en el atlas

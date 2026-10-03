@@ -5,6 +5,13 @@
 import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { World } from '../core/World.ts';
+import { DEFAULT_CONFIG } from '../core/Config.ts';
+import { RNG } from '../core/RNG.ts';
+import { IdSpace } from '../core/IdSpace.ts';
+import { SpatialHash } from '../core/SpatialHash.ts';
+import { Animal } from '../entities/Animal.ts';
+import { WildlifeSystem } from '../systems/WildlifeSystem.ts';
 
 function run(sim: Simulation, days: number): void {
   for (let i = 0; i < days * sim.config.time.ticksPerDay; i++) sim.step();
@@ -34,19 +41,30 @@ describe('grazing', () => {
   }, 60000);
 
   it('breeds in spring in proportion to how well fed the herd is', () => {
-    const born = (fed: number) => {
-      const sim = new Simulation({ seed: 'graze-3' });
-      let guard = 0;
-      // The world opens five days from the end of a spring; wait for the next whole one.
-      while (sim.time.season === 'spring' && guard++ < 60 * sim.config.time.ticksPerDay) sim.step();
-      while (sim.time.season !== 'spring' && guard++ < 60 * sim.config.time.ticksPerDay) sim.step();
-      const start = telemetry.get('animal_born');
-      for (let i = 0; i < 9 * sim.config.time.ticksPerDay; i++) {
-        for (const a of sim.animals) { a.fed = fed; a.health = a.def.health; }
-        sim.step();
+    const born = (fed: number, season = 'spring', grass = 1) => {
+      const rng = new RNG('graze-3');
+      const ids = new IdSpace();
+      const world = new World({ ...DEFAULT_CONFIG.world, width: 32, height: 32 }, rng);
+      world.walkable.fill(1);
+      world.grass.fill(grass);
+      world.grassCap.fill(grass);
+      const animals = Array.from({ length: 5 }, () => new Animal('deer', 16, 16, 0, rng, ids));
+      const wildlife = new WildlifeSystem();
+      // The mechanism is a daily spring ledger. Waiting through a whole human
+      // economy made this assertion exceed its 60s limit during cohort runs,
+      // while hunting and starvation also changed the herd being compared.
+      let births = 0;
+      for (let day = 0; day < 9; day++) {
+        for (const animal of animals) animal.fed = fed;
+        const young = wildlife.daily(animals, { world, rng, ids, tick: day * 240,
+          peopleHash: new SpatialHash(), season });
+        animals.push(...young);
+        births += young.length;
       }
-      return telemetry.get('animal_born') - start;
+      return births;
     };
     expect(born(1)).toBeGreaterThan(born(0.2));
-  }, 60000);
+    expect(born(1, 'winter')).toBe(0);
+    expect(born(1, 'spring', 0)).toBe(0);
+  });
 });

@@ -2109,6 +2109,12 @@ que lo rompe; y `fire-keeps-wolves-off` (los ataques de depredador dentro de un
 radio de luz son una fracción pequeña de los que hay fuera; falla sin el lector
 de la luz).
 
+**Instrumentación del 2026-10-03, reproducción 23d.** Su prueba compara el
+libro diario real durante nueve días con alimentación y capacidad de pasto
+controladas. Ya no espera todo un año de economía humana. Se probó que falla
+al quitar la dependencia de alimentación; los controles de invierno/sin pasto
+se mantienen. [Evidencia](m15_grazing_check.md). No modifica la simulación.
+
 ## Fase 24 — Plantar (M14 fase 10)
 
 **Detalle en `m14_plan.md` fase 10.** `arboriculture` (requiere `farming` y
