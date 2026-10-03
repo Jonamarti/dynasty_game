@@ -2501,7 +2501,14 @@ ticks 0/500/3000; no se reordena ni añade ningún fork.
 Los graneros preparados por `polity`/`conquest` también usan `sim.ids`; una
 prueba detectó 6 IDs únicos para 8 edificios antes de corregir los fixtures.
 
-Siguen pendientes identidad global de bandas/manadas, libros y la integración
+**Avance del 2026-10-03, grupos compartidos.** `IdSpace` v2 reserva IDs de bandas
+y manadas sin RNG: conserva la preferencia histórica en una simulación aislada
+y resuelve colisiones entre comarcas de forma determinista. Los checkpoints
+retienen también grupos retirados y rechazan v1 sin historia de grupos. El
+dibujo usa `Band.outcast`, sin inferir destierro por el número de ID. Contrato:
+[m15_phase28_groups.md](m15_phase28_groups.md).
+
+Siguen pendientes libros y la integración
 del roster, además de coordinar los registros propios con los grafos externos.
 Los constructores standalone mantienen contadores de compatibilidad; incorporar
 entidades a una simulación requiere pasar `sim.ids`. La fase 28 y el LOD siguen abiertos.

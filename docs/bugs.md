@@ -3808,14 +3808,15 @@ La matriz sigue abierta por dieta, descanso en algunos escenarios, ánimo y
 otros mecanismos. Las cohortes heredadas de veinte semillas dejan `lean` en
 4,2% de supervivencia; no se presenta el sueño como reparación de esa deuda.
 
-### Identidad global y transferencia pendientes — 2026-10-03
+### Transferencia y carga de mundo pendientes — 2026-10-03
 
 Los registros v1 de fase 28 copian y reconstruyen estado propio. Opiniones y
 `BandRelations` externos ya tienen codecs independientes en `SocialRecords.ts`;
 su carga todavía no se coordina con el roster. Una rehidratación no se inserta
 aún en `Simulation`. `IdSpace` ya controla por mundo los diez namespaces de
-entidades/eventos y el factory de nacimientos es local. Queda identidad global
-de bandas/manadas (sus IDs aún son locales), libros, RNG/agendas y transferencia
+entidades/eventos y el factory de nacimientos es local. El checkpoint v2 también
+coordina bandas/manadas y no libera identidades retiradas. Quedan libros,
+RNG/agendas y transferencia
 con un solo dueño de personas y bienes. Compartir el allocator no autoriza
 fusionar dos rosters/bandas directamente. Los constructores standalone retienen
 contadores de compatibilidad; al incorporar objetos al motor hay que pasar

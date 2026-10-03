@@ -223,10 +223,11 @@ export const ORDER_WORDS: Record<string, string> = {
 };
 
 /**
- * Where the outcast band's id starts, clear of every founding band's. Named
- * (M11 phase 12c) because the renderer has to tell the outcasts apart to give
- * them their own neutral colour rather than whichever tribe's their id
- * happened to fall on modulo the palette.
+ * The outcast band's preferred legacy ID base, clear of founding bands in a
+ * single simulation. It no longer classifies colour; `Band.outcast` does.
+ * Named (M11 phase 12c) because the renderer has to tell outcasts apart to
+ * give them their own neutral colour instead of the palette slot their ID
+ * happens to land on.
  */
 export const OUTCAST_BAND_ID_BASE = 1000;
 
@@ -558,6 +559,8 @@ export class Simulation {
   /** Hunters' placement, kills and bites — M15 phase 23e. */
   private readonly ecologyRng: RNG;
   private readonly edgeRng: RNG;
+  /** Preferred edge-herd sequence; IdSpace resolves collisions on shared maps. */
+  private nextEdgeHerd = 5000;
   /**
    * The fauna beyond the edge, M15 phase 23h: animals of each prey species that
    * could still come in. Spent as herds enter, refilled slowly and by the herds
@@ -566,7 +569,6 @@ export class Simulation {
   readonly edgeReserve: Record<string, number> = {};
   /** How many of each species the land held when it began: what "thinner than it was" means. */
   readonly foundingFauna: Record<string, number> = {};
-  private nextEdgeHerd = 5000;
 
   constructor(overrides: DeepPartial<SimConfig> = {}, ids: IdSpace = new IdSpace()) {
     this.ids = ids;
@@ -868,6 +870,7 @@ export class Simulation {
         if (biome === 'grass' || biome === 'forest') home = spot;
       }
       if (!home) continue;
+      const herdId = this.ids.claimGroupId('herd', h);
 
       const size = Math.max(1, Math.round(def.herdSize * rng.range(0.6, 1.4)));
       for (let i = 0; i < size; i++) {
@@ -875,7 +878,7 @@ export class Simulation {
           Math.round(home.x + rng.range(-3, 3)),
           Math.round(home.y + rng.range(-3, 3))
         ) ?? home;
-        const animal = new Animal(species, spot.x, spot.y, h, rng, this.ids);
+        const animal = new Animal(species, spot.x, spot.y, herdId, rng, this.ids);
         this.animals.push(animal);
         this.animalsById.set(animal.id, animal);
       }
@@ -890,16 +893,16 @@ export class Simulation {
    * was before they existed.
    */
   private spawnPredators(rng: RNG): void {
-    const plan: { species: Species; count: number; herdId: number }[] = [];
+    const plan: { species: Species; count: number; preferredHerdId: number }[] = [];
     for (let g = 0; g < this.config.world.predators; g++) {
       plan.push(
-        { species: 'wolf', count: 3, herdId: 1000 + g * 10 + 1 },
-        { species: 'bear', count: 1, herdId: 1000 + g * 10 + 3 },
-        { species: 'lynx', count: 1, herdId: 1000 + g * 10 + 4 },
+        { species: 'wolf', count: 3, preferredHerdId: 1000 + g * 10 + 1 },
+        { species: 'bear', count: 1, preferredHerdId: 1000 + g * 10 + 3 },
+        { species: 'lynx', count: 1, preferredHerdId: 1000 + g * 10 + 4 },
       );
     }
     const founders = this.people.filter(p => p.alive);
-    for (const { species, count, herdId } of plan) {
+    for (const { species, count, preferredHerdId } of plan) {
       let home: { x: number; y: number } | null = null;
       for (let attempt = 0; attempt < 80 && !home; attempt++) {
         const spot = this.world.randomWalkable(rng, 1);
@@ -910,6 +913,7 @@ export class Simulation {
         home = spot;
       }
       if (!home) continue;
+      const herdId = this.ids.claimGroupId('herd', preferredHerdId);
       for (let i = 0; i < count; i++) {
         const spot = this.world.findWalkableNear(
           Math.round(home.x + rng.range(-2, 2)), Math.round(home.y + rng.range(-2, 2))) ?? home;
@@ -991,7 +995,7 @@ export class Simulation {
       }
 
       const band: Band = {
-        id: b,
+        id: this.ids.claimGroupId('band', b),
         // Two draws, then the words: `t` takes nothing from `rng`, so the
         // language a world is generated in cannot move the draws after it.
         name: t('{name} band', { name: rng.pick(NAME_ONSETS) + rng.pick(NAME_CODAS) }),
@@ -2078,7 +2082,7 @@ export class Simulation {
     if (existing) return existing;
 
     const band: Band = {
-      id: this.bands.length + OUTCAST_BAND_ID_BASE,
+      id: this.ids.claimGroupId('band', this.bands.length + OUTCAST_BAND_ID_BASE),
       name: t('the outcast'),
       homeX: this.world.width / 2,
       homeY: this.world.height / 2,
@@ -3183,7 +3187,8 @@ export class Simulation {
       if (size < 1) continue;
       const entry = this.edgeEntry();
       if (!entry) continue;
-      const herdId = this.nextEdgeHerd++;
+      const herdId = this.ids.claimGroupAtOrAfter('herd', this.nextEdgeHerd);
+      this.nextEdgeHerd = herdId + 1;
       for (let i = 0; i < size; i++) {
         const spot = this.world.findWalkableNear(
           Math.round(entry.x + this.edgeRng.range(-2, 2)),

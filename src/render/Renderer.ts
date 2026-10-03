@@ -1121,7 +1121,7 @@ export class Renderer {
   /** A remembered person uses the same layered art, with only visible traits saved by the observer. */
   private drawRememberedPerson(person: Extract<PlaceVisual, { type: 'person' }>, ctx: CanvasRenderingContext2D,
     x: number, y: number): void {
-    const colorIndex = bandColorIndex(person.bandId);
+    const colorIndex = this.colorIndexOfBand(person.bandId);
     if (!this.art) {
       ctx.fillStyle = BAND_COLORS[colorIndex]!;
       const h = person.age === 'infant' ? TILE * 0.3 : person.age === 'child' ? TILE * 0.55 : TILE * 0.85;
@@ -1507,7 +1507,7 @@ export class Renderer {
 
     // Whose it is: a thin ring on the ground round the footprint, and (below) a pennant.
     ctx.save();
-    ctx.strokeStyle = BAND_COLORS[bandColorIndex(building.ownerBandId)]!;
+    ctx.strokeStyle = BAND_COLORS[this.colorIndexOfBand(building.ownerBandId)]!;
     ctx.globalAlpha = 0.5;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -1557,7 +1557,7 @@ export class Renderer {
       const bu = scale / 40;
       const bx = cx + fw * 0.46 - 6 * bu, by = bottom - 46 * bu;
       art.drawAsset(ctx, 'buildings', 'banner/pole', bx, by, bu);
-      art.drawAsset(ctx, 'buildings', 'banner/cloth', bx, by, bu, BAND_COLORS[bandColorIndex(building.ownerBandId)]!);
+      art.drawAsset(ctx, 'buildings', 'banner/cloth', bx, by, bu, BAND_COLORS[this.colorIndexOfBand(building.ownerBandId)]!);
     }
   }
 
@@ -1662,7 +1662,7 @@ export class Renderer {
     // must read as a ruin first and as somebody's second. Skipped when too
     // small for two rings to be told apart.
     if (w > 14 && h > 14) {
-      ctx.strokeStyle = BAND_COLORS[bandColorIndex(building.ownerBandId)]!;
+      ctx.strokeStyle = BAND_COLORS[this.colorIndexOfBand(building.ownerBandId)]!;
       ctx.globalAlpha = building.ruined || !building.complete ? 0.6 : 0.9;
       ctx.lineWidth = 2;
       ctx.strokeRect(px + 4, py + 4, w - 8, h - 8);
@@ -1714,7 +1714,7 @@ export class Renderer {
     }
 
     const sizeClass = sizeClassOf(person);
-    const colorIndex = bandColorIndex(person.bandId);
+    const colorIndex = this.colorIndexOfBand(person.bandId);
 
     if (scale < PERSON_LOD_BELOW) {
       // Too small on screen for a face or a tool to read. One `drawImage`,
@@ -1806,6 +1806,10 @@ export class Renderer {
     infant: 0.55 + (1.5 / ADULT_YEARS) * 0.45, child: 0.55 + (5.5 / ADULT_YEARS) * 0.45,
     adolescent: 0.55 + (((8 + ADULT_YEARS) / 2) / ADULT_YEARS) * 0.45, adult: 1, elder: 0.94,
   };
+
+  private colorIndexOfBand(bandId: number): number {
+    return bandColorIndex(bandId, this.sim.bands.find(band => band.id === bandId)?.outcast ?? false);
+  }
 
   /**
    * A person from the committed layers: the tribe's ring on the ground, then

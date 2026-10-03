@@ -61,8 +61,13 @@ checkpoint validates all counters and restores monotonically. Births take a
 factory from their own `LifeContext`, so constructing another world cannot
 replace newborn identity, calendar or learning settings. Standalone constructors
 keep legacy counters for fixtures/tools; entities inserted into a simulation
-must use its allocator. Band/herd IDs remain local and coordinated world loading
-is pending. See [m15_phase28_ids.md](m15_phase28_ids.md).
+must use its allocator. Band/herd namespaces now share the same allocator,
+reserving historical preferences or deterministic free IDs on collision.
+Its v2 checkpoint retains occupied group IDs, including departed herds; v1 is
+explicitly rejected because it has no group history. Band colour follows the
+public outcast flag, rather than an ID range. Coordinated world loading remains
+pending. See [m15_phase28_ids.md](m15_phase28_ids.md) and
+[m15_phase28_groups.md](m15_phase28_groups.md).
 
 `tools/profile-systems.ts` wraps methods only inside its profiling browser and
 compares whole-state hashes against unprofiled worlds, including RNG. It measures

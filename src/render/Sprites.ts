@@ -23,7 +23,6 @@
 import type { Person } from '../sim/entities/Person.ts';
 import { ADULT_YEARS, ELDER_YEARS } from '../sim/entities/Person.ts';
 import { EXPRESSIONS, type Expression } from '../sim/core/Mood.ts';
-import { OUTCAST_BAND_ID_BASE } from '../sim/core/Simulation.ts';
 import { digTool } from '../sim/core/Earth.ts';
 
 /** One cell in the atlas, square, at a resolution above the zoom ceiling
@@ -47,9 +46,10 @@ export const BAND_COLORS = [
 
 const OUTCAST_COLOR_INDEX = BAND_COLORS.length - 1;
 
-/** Which `BAND_COLORS` entry a band wears. */
-export function bandColorIndex(bandId: number): number {
-  return bandId >= OUTCAST_BAND_ID_BASE ? OUTCAST_COLOR_INDEX : bandId % OUTCAST_COLOR_INDEX;
+/** Shared comarca identities can put an outcast below 1000 or a founding
+ * band above it. Colour follows the public band's status, never an ID range. */
+export function bandColorIndex(bandId: number, outcast: boolean): number {
+  return outcast ? OUTCAST_COLOR_INDEX : bandId % OUTCAST_COLOR_INDEX;
 }
 
 export type SizeClass = 'infant' | 'child' | 'adolescent' | 'adult' | 'elder';

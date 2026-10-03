@@ -1,5 +1,12 @@
 # Next steps
 
+**2026-10-03: fase 28, bandas/manadas compartidas.** `IdSpace` v2 conserva los
+IDs históricos del mundo aislado y evita colisiones entre comarcas que comparten
+el asignador. Retiene grupos retirados; v1 se rechaza por falta de esa historia.
+El color de desterrados usa el estado de la banda. El siguiente tramo coordina
+el roster; siguen pendientes carga de mundo, libros y transferencia de autoridad.
+Ver [m15_phase28_groups.md](m15_phase28_groups.md).
+
 **2026-10-03: fase 28, identidades y relaciones.** El motor crea entidades y
 eventos con `Simulation.ids`; JSON v1 conserva su continuación y restaura
 monotónicamente. El factory de nacimientos ya es por contexto, sin interferencia

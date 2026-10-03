@@ -11,8 +11,10 @@ people, households, trees, resource nodes, buildings, animals, corpses,
 inscriptions, item piles and social events. IDs remain positive safe integers
 and retain the previous creation order and per-kind numbering.
 
-`IdSpace.snapshot()` returns JSON data `{ version: 1, next: { ... } }` for all
-ten namespaces. `IdSpace.fromSnapshot(unknown)` validates the version, exact
+`IdSpace.snapshot()` now returns JSON v2 with `next` for all ten namespaces
+and separate occupied-ID sets/cursors for bands and herds. v1 counter-only
+checkpoints are explicitly rejected, because their missing group history cannot
+be recovered safely. `IdSpace.fromSnapshot(unknown)` validates the version, exact
 shape, namespace set and positive safe-integer counters. `restore(unknown)` is
 monotonic: restoring an earlier snapshot cannot make an already-issued ID
 available again. `Simulation.idSnapshot()` and `restoreIdSnapshot()` expose
@@ -24,12 +26,11 @@ their allocator explicitly through births, founding, forest growth, wildlife,
 actions and systems. Newborn creation is supplied through `LifeContext`, so a
 different simulation cannot replace a process-wide callback.
 
-Band IDs and herd/group IDs remain local identifiers with their existing
-generation rules (including predator and edge-herd ranges). Sharing `IdSpace`
-coordinates the ten entity/event namespaces above; it does not make those
-band/herd identifiers globally unique. Extending shared-world identity to
-those domains needs a separate contract because their current values are
-embedded in generation and grouping rules.
+Band and herd IDs now participate in shared-world allocation, preserving their
+historical preferences in isolated simulations and reserving free identities
+on collision. Their independent namespaces permit zero and retain sparse
+occupied sets rather than positive entity counters. Details and continuation
+rules: [m15_phase28_groups.md](m15_phase28_groups.md).
 
 ## Focused results
 

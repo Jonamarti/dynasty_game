@@ -1,3 +1,42 @@
+## 2026-10-03 — M15 fase 28: identidad compartida de bandas y manadas
+
+`IdSpace` v2 añade namespaces independientes para bandas y manadas. Reserva
+los números históricos cuando están libres y resuelve colisiones entre
+comarcas sin RNG; los grupos retirados conservan su identidad. Los checkpoints
+guardan ocupaciones dispersas y restauran por unión monotónica, sin reemitir
+IDs. Se rechaza v1 por carecer de historia de grupos. `nextEdgeHerd` se conserva
+como preferencia local para mantener el estado anterior del mundo aislado.
+
+El renderer usa `Band.outcast` para el gris: un desterrado puede tener ID bajo
+y una banda fundadora, ID alto. Las pruebas de color fallan con el umbral
+anterior. Otro control negativo demuestra que un campo `occupied` heredado
+permitía colar una clave desconocida; el validador ahora exige ambos campos
+propios. La revisión también corrigió un cursor que retrocedía al rellenar un
+hueco entre IDs ocupados; su snapshot vuelve a ser canónico tras restaurar.
+
+Evidencia en `artifacts/verification/m15-phase28-groups-20261003-160240/`:
+nueve hashes del estado mutable existente/RNG coinciden en tres semillas y
+ticks 0/500/3000, omitiendo únicamente funciones y metadata del asignador.
+Typecheck, 909/909 pruebas en 122 archivos y 16 casos focales conjuntos pasan;
+70 pruebas de navegador pasan. Suite estable en
+`artifacts/verification/m15-phase28-tests-stable.log` y navegador en
+`m15-phase28-groups-e2e.log` bajo la misma raíz de verificación.
+Los controles negativos quedan en `m15-phase28-group-shape-negative.log` y la
+pasada intermedia completa que coincidió con ese negativo muestra 908/909,
+no se presenta como aprobada.
+
+La matriz final completa (27 escenarios, exit 1) coincide con la referencia
+en counts de checks aplicables, aprobados y listas de fallos: **cero
+diferencias**, 104 instancias de fallos heredados. No se convierte un `n/a` en
+aprobado ni se compara throughput como equivalencia. Logs y comparación
+normalizada en la carpeta de evidencia anterior (`comparison.json`/`.md`).
+
+Capturas nuevas, gira 1/1 y revisión visual:
+`artifacts/screenshots/m15-phase28-groups-2026-10-03-161130/`, incluida
+`13-low-id-outcast.png` del caso real de destierro con colisión de preferencia.
+Plan, arquitectura, siguiente trabajo y contratos de identidad actualizados.
+La carga de mundo y transferencia de autoridad siguen pendientes.
+
 ## 2026-10-03 — M15 fase 28: identidades aisladas por mundo
 
 `Simulation.ids` sustituye los contadores globales en los diez namespaces de

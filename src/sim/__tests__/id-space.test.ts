@@ -42,7 +42,7 @@ describe('per-world ID spaces', () => {
     const saved = JSON.parse(JSON.stringify(ids.snapshot())) as unknown;
     const resumed = IdSpace.fromSnapshot(saved);
     expect(resumed.allocate('person')).toBe(prefix + 1);
-    resumed.restore({ version: 1, next: { ...resumed.snapshot().next, person: 1 } });
+    resumed.restore({ ...resumed.snapshot(), next: { ...resumed.snapshot().next, person: 1 } });
     expect(resumed.allocate('person')).toBe(prefix + 2);
 
     const detached = ids.snapshot();
@@ -89,17 +89,19 @@ describe('per-world ID spaces', () => {
       undefined,
       null,
       { version: 2, next: {} },
-      { version: 1, next: { person: 0 } },
-      { version: 1, next: { person: 1, household: 1, tree: 1, resourceNode: 1,
+      { version: 1, next: {}, groups: {} }, // v1 is rejected; groups cannot be guessed safely.
+      { ...new IdSpace().snapshot(), next: { person: 0 } },
+      { ...new IdSpace().snapshot(), next: { person: 1, household: 1, tree: 1, resourceNode: 1,
         building: 1, animal: 1, corpse: 1, inscription: 1, itemPile: 1, socialEvent: 1, extra: 1 } },
+      { ...new IdSpace().snapshot(), groups: { band: { occupied: [0, 0], nextCandidate: 1 }, herd: { occupied: [], nextCandidate: 0 } } },
     ]) expect(() => IdSpace.fromSnapshot(snapshot)).toThrow();
 
     const ids = new IdSpace();
-    expect(() => ids.restore({ version: 1, next: { invalid: 4 } })).toThrow();
+    expect(() => ids.restore({ ...ids.snapshot(), next: { invalid: 4 } })).toThrow();
     expect(ids.allocate('person')).toBe(1); // failed restore was atomic
     expect(() => ids.allocate('unknown' as IdKind)).toThrow();
     const exhausted = IdSpace.fromSnapshot({
-      version: 1,
+      ...new IdSpace().snapshot(),
       next: Object.fromEntries(ID_KINDS.map(kind => [kind, kind === 'person' ? Number.MAX_SAFE_INTEGER : 1])),
     });
     expect(() => exhausted.allocate('person')).toThrow(RangeError);

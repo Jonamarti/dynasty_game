@@ -52,7 +52,7 @@ La validación de forma no sustituye la consistencia entre entidades. Los grafos
 de opiniones y `BandRelations` ya tienen codecs independientes en
 [m15_phase28_social.md](m15_phase28_social.md); todavía hay que coordinar su carga
 con el roster. `IdSpace` ya controla la creación de entidades/eventos por mundo,
-pero bandas/manadas siguen con IDs locales. Antes de integrarlo quedan libros
+incluidas ahora bandas/manadas mediante su checkpoint v2. Antes de integrarlo quedan libros
 de edificios/recursos, RNG del mundo y agendas; transferencia de autoridad
 sin duplicar personas o bienes y calendario de avances. `Knowledge` continúa
 siendo la única vía para exponer estado a la interfaz: rehidratar no concede
