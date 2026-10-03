@@ -3428,3 +3428,22 @@ Registro visual 2026-10-03: la gira acepta DYNASTY_CAPTURE_DIR para no sobrescri
 hitos. Recorrido principal corregido y aprobado; capturas en
 artifacts/screenshots/m15-checks-2026-10-03T-tour-fixed/ y las otras 17 escenas en
 m15-checks-2026-10-03T-circadian/. El sueño continúa bajo evaluación de cohortes.
+
+### Sueño circadiano integrado — 2026-10-03
+
+El propietario pide presión continua de sueño, menor percepción de fatiga de día
+y mayor de noche, y refugio cercano también para descansar. Se cierra la
+implementación y la preparación del test de lore sin declarar verde la matriz.
+Circadian.ts no muta deuda ni asigna acciones. Scorer y despertar comparten la
+presión; amplitud inicial 60 en NeedsConfig, sin RNG nuevo. Band da 65,0% de
+reposo nocturno con umbral intacto. En veinte semillas, crowded conserva 100%,
+century pasa 78,9% → 77,6% y lean 5,9% → 4,2%: dentro del coste declarado de
+tres puntos; lean sigue siendo deuda grave. Las cohortes heredadas combinan
+esta pasada con la corrección de visión; no aíslan el coste del sueño.
+
+Lore mantiene el test de dos años por `Simulation.step`, sin cosechadores y con
+estaciones de diez días para permitir maduración natural. Un control independiente
+de la ruta real de observación detecta aprendizaje sin `plant_lore`; no se
+rebajan aserciones ni timeout. Pruebas focales: 15/15. Gira visual: 18/18,
+40 capturas nuevas en `artifacts/screenshots/m15-circadian-close-2026-10-03T-01/`.
+Los checks de descanso que siguen rojos se conservan como trabajo de calibración.

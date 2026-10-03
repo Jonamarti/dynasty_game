@@ -40,10 +40,10 @@ describe('season lore', () => {
   });
 });
 
-/** A year of four one-day seasons, so two winters pass in two thousand steps. */
-function world(seed: string, sightRadius = 60) {
+/** Short seasons keep most fixtures quick; the growth test opts into ten-day seasons. */
+function world(seed: string, sightRadius = 60, daysPerSeason = 1) {
   const sim = new Simulation({ seed, world: { width: 48, height: 48 },
-    time: { daysPerSeason: 1, startDay: 0 }, sightRadius,
+    time: { daysPerSeason, startDay: 0 }, sightRadius,
     population: { bands: 1, peoplePerBand: 4 } });
   return sim;
 }
@@ -73,22 +73,57 @@ describe('bush species and their seasons', () => {
   });
 
   it('are learned about species by species, with plant lore, by watching', { timeout: 60000 }, () => {
-    // Seed pinned, not tuned: on some worlds a bush picked clean in its own fruiting
-    // season for two years running is learned as barren there (docs/bugs.md).
-    const sim = world('bare-learn-2');
-    const person = sim.livingPeople()[0]! as Person;
+    // Keep the full simulation and its clock, but hold everyone at rest so a
+    // harvest cannot make a fruiting season look barren to the observer.
+    const sim = world('bare-learn-2', 100, 10);
+    const person = sim.livingPeople().find(p => !p.isChild)! as Person;
     person.knownTech.add('plant_lore');
-    for (let i = 0; i < sim.time.daysPerYear * 2 * sim.config.time.ticksPerDay + 10; i++) sim.step();
+    sim.possess(person);
+    for (const p of sim.livingPeople()) sim.order(p, 'rest');
+    for (let i = 0; i < sim.time.daysPerYear * BARE_YEARS_TO_LEARN * sim.config.time.ticksPerDay + 10; i++) {
+      // A hungry or thirsty sleeper can legitimately wake, so hold those needs
+      // below their wake lines while the real seasons and observation cadence run.
+      for (const p of sim.livingPeople()) {
+        p.needs.hunger = 0;
+        p.needs.thirst = 0;
+        p.needs.cold = 0;
+      }
+      sim.step();
+    }
     const species = [...new Set(sim.nodes.filter(n => n.kind === 'berries').map(n => n.species!))];
     const learned = species.filter(kind => BUSHES[kind].ripens.length + BUSHES[kind].holds.length < 4);
     expect(learned.length).toBeGreaterThan(0);
     for (const kind of learned) {
       const bare = (['spring', 'summer', 'autumn', 'winter'] as const).filter(s => bushPhase(kind, s) === 'bare');
       for (const season of bare) expect(person.seasonLore.barrenIn(`bush:${kind}`, season)).toBe(true);
-      expect(person.seasonLore.barrenIn(`bush:${kind}`, BUSHES[kind].ripens[0]!)).toBe(false);
+      expect(person.seasonLore.barrenIn(`bush:${kind}`, BUSHES[kind].ripens[0]!),
+        `${kind} learned its fruiting season (${BUSHES[kind].ripens[0]}) as barren`).toBe(false);
     }
-    const other = sim.livingPeople().find(p => !p.knownTech.has('plant_lore'));
-    if (other) expect(other.seasonLore.learnedKinds()).toEqual([]);
+  });
+
+  it('does not learn a season from the calendar without plant lore', () => {
+    const sim = world('season-lore-gate', 100, 10);
+    const [informed, control] = sim.livingPeople().filter(p => !p.isChild).slice(0, 2) as Person[];
+    informed!.knownTech.add('plant_lore');
+    control!.knownTech.delete('plant_lore');
+    const observe = (sim as unknown as { observePlaces: (person: Person) => void }).observePlaces.bind(sim);
+    const bushes = sim.nodes.filter(n => n.kind === 'berries');
+
+    for (let year = 0; year < BARE_YEARS_TO_LEARN; year++) {
+      for (let seasonIndex = 0; seasonIndex < 4; seasonIndex++) {
+        const day = year * sim.time.daysPerYear + seasonIndex * sim.config.time.daysPerSeason;
+        sim.time.tick = day * sim.config.time.ticksPerDay;
+        const season = sim.time.season;
+        for (const bush of bushes) {
+          bush.amount = bushPhase(bush.species!, season) === 'bare' ? 0 : bush.def.maxAmount;
+        }
+        observe(informed!);
+        observe(control!);
+      }
+    }
+
+    expect(informed!.seasonLore.learnedKinds().length).toBeGreaterThan(0);
+    expect(control!.seasonLore.learnedKinds()).toEqual([]);
   });
 });
 

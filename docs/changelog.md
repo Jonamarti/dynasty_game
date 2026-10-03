@@ -11499,3 +11499,48 @@ el recorrido principal corregido pasa 1/1 en 34,7 s. Captura radial revisada
 visualmente, opciones y título legibles sin solapamientos. Registro nuevo:
 `artifacts/screenshots/m15-checks-2026-10-03T-tour-fixed/`.
 Las otras 17 escenas están en `m15-checks-2026-10-03T-circadian/`.
+
+## 2026-10-03 — M15: sueño circadiano y observación estacional verificable
+
+Se integra la implementación que estaba en evaluación: presión percibida continua
+(deuda física + coseno diario, amplitud inicial 60), compartida por elección y
+despertar. Mantiene posibilidad de siesta por agotamiento e interrupciones por
+hambre, sed, peligro y cuidado familiar. Rest/sleep encuentran un techo cercano
+con spatial hash también de día y caminan a él antes de recuperar cansancio.
+Las interrupciones llegan durante el trayecto y conservan los motivos visibles.
+
+Los tres casos de medianoche, siesta bajo techo y descanso en camino fallan antes
+y pasan después. Tests nuevos de curva, despertar diurno y hambre, y los tests
+previos de órdenes/drives pasan. El antecedente de suite fue 880/882: timeout
+de grazing bajo cohortes simultáneas (aislado 3/3 en 46,83 s) y lore. La fixture
+`bare-learn-2` confundía cosecha con esterilidad (bramble: 888 vistas vacías en
+verano) y comprimía las estaciones a un día, sin tiempo para madurar sloe en
+otoño. Ahora conserva `Simulation.step` durante dos años, detiene cosecha y
+usa estaciones de diez días. Se conserva cada aserción y el timeout de 60 s.
+Un control adicional de `observePlaces`, sin difusión social, detecta aprender
+por el calendario sin `plant_lore`. No cambia la regla de aprendizaje.
+Pruebas focales finales: 15/15; typecheck limpio. Suite del árbol conjunto: 886/886
+en 117 archivos, con un worker y timeout general de 15 s; el timeout propio de
+grazing sigue en 60 s y pasa. Navegador: 69/69. Gira visual: 18/18 con 40
+capturas en `artifacts/screenshots/m15-circadian-close-2026-10-03T-01/`, con
+revisión visual de arranque y menú. La gira estacional se revisa aparte: sus
+checkpoints todavía asumían el calendario antiguo; no se usan sus nombres de
+archivo para afirmar que una imagen corresponde a una estación.
+
+Band: descanso nocturno 65,0% frente al 30,4% de master (umbral 55% conservado),
+2653/2653 objetivos conocidos. Siguen dieta y presupuesto histórico de rendimiento
+rojos; otros escenarios siguen sin alcanzar suficiente descanso nocturno.
+La matriz completa terminó roja; conserva fallos de referencia y registra cambios
+de resultado en mundos divergentes. No se declara verde. Cohortes de veinte
+semillas: crowded 100,0% antes/después; century 78,9% → 77,6% (-1,3 puntos);
+lean 5,9% → 4,2% (-1,7 puntos, extinciones 6/20 → 8/20). Dentro del límite
+previo de tres puntos, con la deuda grave de lean intacta. No separa el efecto
+de visión y sueño ni demuestra una mejora de supervivencia. Logs en
+`artifacts/verification/m15-checks-2026-10-03/`; verificación nueva en
+`artifacts/verification/m15-continue-2026-10-03/`. Se cierra código y fixture;
+las puertas de balance global siguen abiertas. La matriz nueva termina con
+exit 1: sus 27 escenarios conservan exactamente aplicabilidad y listas de
+fallos de la referencia heredada `matrix-after.txt`; comparación en
+`artifacts/verification/m15-continue-2026-10-03/summary.json`. Esta equivalencia
+no declara reparados los fallos de balance ni atribuye las divergencias de la
+pasada anterior exclusivamente al sueño.

@@ -21,6 +21,7 @@ import {
 import type { Household } from '../entities/Household.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
+import { perceivedFatigue } from '../core/Circadian.ts';
 import { Arrival, type MovementSystem } from './MovementSystem.ts';
 import { companionBonus, rememberHurt } from './WildlifeSystem.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
@@ -126,8 +127,9 @@ export interface ActionContext {
   sightRadius: number;
   /** The snow clock, for the grass under it (M15 phase 23b). Optional for hand-built contexts. */
   snowDepth?: number;
-  /** Whether it is dark out. Sleep ends at dawn; nothing else reads it yet. */
+  /** Legacy clock fallback for hand-built action contexts. */
   isNight: boolean;
+  dayFraction?: number;
   /** The day, for anything that has to remember when it happened. Sowing does. */
   day: number;
   /** The season as a growing rate, 0 in deep winter. Sowing refuses at 0. */
@@ -728,7 +730,7 @@ export class ActionSystem {
       case 'pick': this.doPickFruit(person, ctx); break;
       case 'chop': this.doChop(person, ctx); break;
       case 'hunt': this.doHunt(person, ctx); break;
-      case 'rest': this.doRest(person); break;
+      case 'rest': this.doRest(person, ctx); break;
       case 'flee': this.doFlee(person, ctx); break;
       case 'haul': this.doHaul(person, ctx); break;
       case 'build': this.doBuild(person, ctx); break;
@@ -1725,15 +1727,17 @@ export class ActionSystem {
     }
   }
 
-  private doRest(person: Person): void {
+  private doRest(person: Person, ctx: ActionContext): void {
+    const wake = this.wakeReason(person, ctx);
+    // Orders to sit and watch are held even when rested, but danger and urgent
+    // needs must reach a committed rest just as they reach a committed sleep.
+    if (wake && (wake !== 'rested' || !person.order)) {
+      this.stop(person, wake, ctx, 'rest_ended_');
+      return;
+    }
+    if (person.targetBuildingId !== null && !this.reachBuilding(person, ctx, undefined, 'trespass')) return;
     person.needs.fatigue = Math.max(0, person.needs.fatigue - 0.35);
     telemetry.count('rest');
-    // A player order is held until it is finished or countermanded. Left to its
-    // own judgement the simulation ends a rest the moment fatigue hits zero,
-    // which is right for an NPC and wrong for an instruction: telling someone
-    // who is not tired to sit down and watch the camp did nothing at all,
-    // because they stood straight back up on the same tick.
-    if (person.needs.fatigue <= 0 && !person.order) this.finish(person);
   }
 
   // -------------------------------------------------------------------------
@@ -3300,6 +3304,13 @@ export class ActionSystem {
    * are lying, not because sleeping is warm.
    */
   private doSleep(person: Person, ctx: ActionContext): void {
+    // Check before walking too: a committed trip to bed must yield to danger
+    // and urgent needs, rather than waiting until arrival to notice them.
+    const wake = this.wakeReason(person, ctx);
+    if (wake) {
+      this.stop(person, wake, ctx, 'woke_');
+      return;
+    }
     const building = person.targetBuildingId === null
       ? null : this.reachBuilding(person, ctx, undefined, 'trespass');
     if (person.targetBuildingId !== null && !building) return;
@@ -3312,42 +3323,35 @@ export class ActionSystem {
     // counting it toward `MAX_WORK_STRETCH` would eventually report that
     // somebody had been asleep long enough to need a break.
 
-    const wake = this.wakeReason(person, ctx);
-    if (wake) {
-      this.stop(person, wake, ctx, 'woke_');
-      return;
-    }
   }
 
   /**
    * Why somebody wakes up.
    *
-   * Deliberately *not* `interruption()`, which is the list of reasons to stop
-   * working. Borrowing it made sleep unusable in the most ordinary case in the
-   * game: its first clause is `isLaden`, so a player who had been out foraging
-   * came home with a full pack, lay down, and was woken on the same tick by
-   * "your hands are full" — which is a reason to stop picking berries and has
-   * nothing whatever to do with lying down.
+   * Reuses danger/family interruptions with pack and work-need gates disabled.
+   * A laden sleeper needs no free hands, and fatigue is the need this action
+   * answers; applying the ordinary work gates would abort sleep immediately.
    *
    * The thresholds sit above the working ones on purpose. You work through mild
    * thirst and stop at 35; you sleep through it and wake at 45. Waking for a
    * need you would not even have broken off work for is not rest.
    */
   private wakeReason(person: Person, ctx: ActionContext): string | null {
-    if (this.underAttack(person, ctx)) return 'under_attack';
-    // A baby crying in the night wakes the woman who would feed it.
-    if (ctx.babyCrying?.(person)) return 'baby_crying';
+    const interrupted = this.interruption(person, ctx, { ignoreLaden: true, ignoreNeeds: true });
+    if (interrupted) return interrupted;
     if (person.needs.thirst > 45) return 'thirsty';
     if (person.needs.hunger > 50) return 'hungry';
     // Cold is deliberately absent. The roof overhead is the thing that fixes
     // cold, and throwing somebody out of the hut for being cold in it is a
     // circle. `NeedsSystem.shelterAt` warms them where they lie.
 
-    if (person.needs.fatigue <= 0) return 'rested';
-    // A player order holds through the daylight the way `rest` does — being told
-    // to lie down and being ignored is worse than a pointless nap. Left to their
-    // own judgement, nobody sleeps through the day.
-    if (!ctx.isNight && !person.order) return 'daylight';
+    // Orders recover physical debt; autonomous sleep follows perceived debt.
+    // Reaching zero during the night no longer causes a wake/sleep loop, and
+    // daylight does not forbid a nap when exhaustion outweighs the clock.
+    const fatigue = !person.order && ctx.motivation.nightSleep
+      ? perceivedFatigue(person.needs.fatigue, ctx.dayFraction ?? (ctx.isNight ? 0 : 0.5), ctx.needs.circadianAmplitude)
+      : person.needs.fatigue;
+    if (fatigue <= 0) return 'rested';
     return null;
   }
 

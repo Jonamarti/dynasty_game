@@ -1404,3 +1404,11 @@ Revisión 2026-10-03: noticias necesarias y hostilidad se verifican en food-news
 conflicts. Continúan visión infantil y sueño circadiano, con deuda de supervivencia
 separada. Rendimiento: acordar población, velocidad y presupuesto de fluidez antes
 de sustituir la calibración histórica del check.
+
+Sueño circadiano integrado (2026-10-03): preparación estacional resuelta sin
+cambiar aserciones ni timeout; 15 pruebas focales pasan y la gira guarda 40
+capturas en `m15-circadian-close-2026-10-03T-01/`. Cohortes heredadas de veinte
+semillas: crowded 100% sin cambio, century 78,9% → 77,6%, lean 5,9% → 4,2%.
+Combinan esta pasada con visión y no aíslan el coste del sueño. Dentro del
+límite de tres puntos, con lean sin recuperar y la matriz todavía abierta.
+El LOD necesita sus registros y el perfil por sistemas antes de recortar el loop.

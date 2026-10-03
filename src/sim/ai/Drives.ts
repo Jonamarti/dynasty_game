@@ -3,7 +3,8 @@ import { t } from '../../i18n/i18n.ts';
 import type { AnchorContext } from './Anchor.ts';
 import { anchorOf, childRadius } from './Anchor.ts';
 import { sensitivity } from './Temperament.ts';
-import type { MotivationConfig } from '../core/Config.ts';
+import type { MotivationConfig, NeedsConfig } from '../core/Config.ts';
+import { perceivedFatigue } from '../core/Circadian.ts';
 import { cravings } from '../core/Macros.ts';
 import { fearOf } from '../social/Fear.ts';
 
@@ -34,7 +35,10 @@ export function urgencyCurve(value: number): number {
 }
 
 /** Current physical need pressures, before personality sensitivities are added in phase 2. */
-export function drivePressures(person: Person, ctx?: AnchorContext & { time: { daylight: number }; motivation: MotivationConfig }): DrivePressures {
+export function drivePressures(person: Person, ctx?: AnchorContext & {
+  time: { daylight: number; dayFraction?: number }; motivation: MotivationConfig;
+  needs?: Pick<NeedsConfig, 'circadianAmplitude'>;
+}): DrivePressures {
   let home = 0;
   const craving = cravings(person, ctx?.motivation.cravings ?? true);
   const variety = urgencyCurve(100 * Math.max(craving.fat, craving.protein, craving.carb));
@@ -67,11 +71,11 @@ export function drivePressures(person: Person, ctx?: AnchorContext & { time: { d
   return {
     hunger: urgencyCurve(person.needs.hunger),
     thirst: urgencyCurve(person.needs.thirst),
-    // Darkness makes people sleepy without changing the other needs. Only the
-    // sleep/rest scorers read this pressure, so the floor cannot steal food or
-    // water decisions from the survival drives.
-    rest: ctx?.motivation.nightSleep ? Math.max(urgencyCurve(person.needs.fatigue),
-      0.3 * Math.max(0, Math.min(1, (0.25 - ctx.time.daylight) / 0.25))) : urgencyCurve(person.needs.fatigue),
+    // The scorer and waking use the same pressure. The old darkness floor
+    // repeatedly sent a rested person back to sleep just after waking them.
+    rest: urgencyCurve(ctx?.motivation.nightSleep && ctx.time.dayFraction !== undefined
+      ? perceivedFatigue(person.needs.fatigue, ctx.time.dayFraction, ctx.needs?.circadianAmplitude ?? 0)
+      : person.needs.fatigue),
     warmth: urgencyCurve(person.needs.cold),
     company: urgencyCurve(person.needs.company),
     home,

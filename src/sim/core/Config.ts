@@ -153,6 +153,8 @@ export interface NeedsConfig {
   hungerRate: number;
   thirstRate: number;
   fatigueRate: number;
+  /** Continuous midnight/noon modulation in fatigue points; zero removes the clock's influence. */
+  circadianAmplitude: number;
   /** Extra warmth drain per tick at the coldest point of winter night. */
   coldRate: number;
   /** Loneliness per tick. Slow: a day alone is fine, a season alone is not. */
@@ -516,6 +518,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     // the rate of one felling a tree in July.
     thirstRate: 0.075,
     fatigueRate: 0.04,
+    circadianAmplitude: 60,
     coldRate: 0.06,
     companyRate: 0.07,
     criticalThreshold: 85,

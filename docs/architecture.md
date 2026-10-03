@@ -263,9 +263,10 @@ worker, because a committed person does not re-plan. Omitting it has produced th
 two worst bugs in this project's history — woodcutters who chopped through to a
 hundred thirst, and builders a chief had ordered onto a hut who worked through a
 winter until they died. `doHunt` calls it, and any new long action must too.
-`doSleep` is the one deliberate exception: it has its own `wakeReason`, because
-the work list's first clause is `isLaden` and a full pack is not a reason to stop
-sleeping.
+`doSleep` and `doRest` use `wakeReason`: it reuses danger/family interruptions
+with pack and work-need gates disabled, then checks urgent hunger and thirst.
+A full pack is not a reason to stop sleeping. The check runs while approaching
+the roof too, so a committed journey cannot hide an urgent need.
 
 > **The base limits are low because a need parks at whatever line stops it.**
 > Work continues right up to the limit and ends there, so `Config.needs.workLimits`
@@ -392,8 +393,8 @@ another:
 - **`Person.resume`**: an order broken off for a need is set aside and picked
   back up once the person is comfortable, so a long job and a short one behave
   the same from the player's side.
-- **Sleep has its own wake list** rather than borrowing the work-interruption
-  one, whose first clause is `isLaden`.
+- **Sleep has its own need thresholds**, while reusing danger/family interruptions
+  without the work list's pack gate.
 - **`workProgressOf`** (`sim/core/Progress.ts`), shared by the renderer and the
   panel, covering all three ways work is measured.
 - **The larder gate**, which was the single biggest change to the world's health
@@ -448,3 +449,21 @@ scenarios, and checks a scenario cannot exercise report **n/a** rather than
 passing silently. `npm run why -- --person 0 --from 1700 --to 1760` prints one
 person's score table tick by tick, which is the actual reason for every
 decision they make.
+
+## Human sleep pressure — M15 review, 2026-10-03
+
+`core/Circadian.ts` computes perceived fatigue from physical debt plus a continuous
+cosine of the day's fraction: midnight adds pressure and noon subtracts it.
+`needs.circadianAmplitude` is 60 fatigue points initially; zero removes the clock
+modulation, and `motivation.nightSleep` disables its use. The scorer and autonomous
+waking read the same quantity. Sleeping reduces physical debt without cancelling
+the clock's pressure, so reaching zero debt at midnight does not cause a repeated
+wake/sleep loop. Exhaustion can outweigh daytime alertness and permit a nap;
+hunger, thirst, danger and a crying baby can interrupt sleep at any hour.
+
+Rest and sleep query the building spatial hash for a usable nearby roof even in
+warm daylight. Both carry that destination and approach it before recovering.
+Cold sheltering retains its separate refuge destination. The clock does not
+assign an action: food, water, safety and the other scores still compete.
+Player orders to sleep recover physical debt; an order to rest remains held
+when rested, while urgent interruptions stay visible through onStopped.

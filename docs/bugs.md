@@ -3786,3 +3786,22 @@ un cuarto y 6/20 extinciones. Es deuda de master anterior a esta pasada.
 Corrección 2026-10-03: los objetivos infantiles fuera de vista procedían del
 radio doble de findNode. Arreglado con regresión que falla antes; band ya no
 registra objetivos desconocidos. La matriz completa todavía debe comprobarse.
+
+### Revisión de sueño y preparación de SeasonLore — 2026-10-03
+
+La pasada anterior dio 880/882: timeout de grazing bajo cohortes simultáneas y
+fallo de lore. Grazing pasó aislado 3/3 en 46,83 s, sin cambiar su timeout. Se
+conserva como antecedente de carga, no como fallo nuevo del sueño.
+
+La preparación de lore queda corregida: `bare-learn-2` mezclaba la regla con
+dos premisas del mundo. La cosecha dejaba bramble vacío en verano (888 vistas
+sin fruto), y estaciones de un día no permitían madurar sloe en otoño. El
+positivo mantiene `Simulation.step`, las aserciones y 60 s de timeout, con
+personajes descansando y estaciones de diez días. Un control de `observePlaces`
+sin difusión social confirma que con `plant_lore` se aprende y sin él no.
+Los 15 tests focales de sueño/lore pasan. No se cambia el aprendizaje para
+evitar que una observación de cosecha pueda producir una creencia equivocada.
+
+La matriz sigue abierta por dieta, descanso en algunos escenarios, ánimo y
+otros mecanismos. Las cohortes heredadas de veinte semillas dejan `lean` en
+4,2% de supervivencia; no se presenta el sueño como reparación de esa deuda.

@@ -115,6 +115,7 @@ export interface BrainContext {
   corpseHash?: SpatialHash<Corpse>;
   relationships: RelationshipGraph;
   buildings: Building[];
+  buildingHash: SpatialHash<Building>;
   treeHash: SpatialHash<Tree>;
   animalHash: SpatialHash<Animal>;
   /** Ground goods are indexed separately; never scan every pile per person. */
@@ -233,6 +234,7 @@ interface FoundTargets {
   grassSpot: { x: number; y: number } | null;
   site: Building | null;
   shelter: Building | null;
+  restShelter: Building | null;
   fruitTree: Tree | null;
   fellTree: Tree | null;
   storeTarget: Building | null;
@@ -835,7 +837,7 @@ export class Brain {
     const anchor = anchorOf(person, anchorCtx);
     const reach = reachOf(person, anchorCtx);
     this.knownNodeCandidatesFor = null;
-    const homeCtx = { ...anchorCtx, time: ctx.time };
+    const homeCtx = { ...anchorCtx, time: ctx.time, needs: ctx.needs };
     const drive = drivePressures(person, homeCtx);
     const status = statusPull(person, ctx);
     const possession = possessionPull(person, ctx) * POSSESSION_PULL_SCALE;
@@ -1226,6 +1228,7 @@ export class Brain {
     let record: Inscription | null = null;
     let unfinished: Inscription | null = null;
     let shelter: Building | null = null;
+    let restShelter: Building | null = null;
     let storeTarget: Building | null = null;
     let storeItemId: string | null = null;
     let storeItemCount: number | null = null;
@@ -3078,10 +3081,26 @@ export class Brain {
     }
 
     // --- Shelter and sleep -------------------------------------------------
-    // Cold sends people indoors. This is the payoff for building anything at
-    // all, and the reason a winter is now survivable. The same roof is also
-    // where anyone tired enough goes to bed, so both are scored off one search.
-    if (person.needs.cold > 25 || ctx.time.isNight) {
+    // Fatigue can call for a nap in daylight too. Use a local spatial query,
+    // even with no cold: gating this search on night left tired people resting
+    // outside a roof they were already standing beside.
+    if (fatigue > 0) {
+      restShelter = this.pickBest(ctx.buildingHash.queryRadius(person.x, person.y, ctx.sightRadius + 4)
+        .filter(b => b.complete && !b.ruined && b.def.shelter > 0.2 &&
+          person.distanceTo({ x: b.centerX, y: b.centerY }) <= ctx.sightRadius &&
+          ctx.world.sameRegion(person.x, person.y, b.centerX, b.centerY) && this.canUse(person, b, ctx)),
+        b => b.def.shelter * 40 - person.distanceTo({ x: b.centerX, y: b.centerY }));
+      if (restShelter) {
+        const nearness = this.proximityBonus(person,
+          { x: restShelter.centerX, y: restShelter.centerY }, ctx.sightRadius);
+        add('sleep', fatigue * 3.2 * nearness);
+      } else if (anchor && Math.hypot(person.x - anchor.x, person.y - anchor.y) <= ctx.motivation.nightRadius) {
+        add('sleep', fatigue * 3.2 * 0.8);
+      }
+    }
+    // Cold can still justify a journey to a more distant refuge. It is a
+    // separate destination from the nearby bed used for sleep and rest.
+    if (person.needs.cold > 25) {
       shelter = this.pickBest(
         // `!b.ruined`, M11 phase 11b: sent to a sabotaged roof, the scorer's
         // own promise — warmer the moment they arrive — would simply be false,
@@ -3094,19 +3113,6 @@ export class Brain {
         const nearness =
           this.proximityBonus(person, { x: shelter.centerX, y: shelter.centerY }, ctx.sightRadius);
         add('shelter', drive.warmth * 2.6 * shelter.def.shelter * nearness);
-        // Above `rest` at night by construction, and below it by day: a roof
-        // within reach after dark is where a tired person should be, and
-        // sleeping through the afternoon is not.
-        add('sleep', fatigue * (ctx.time.isNight && ctx.motivation.nightSleep ? 3.2 : 1.0) * nearness);
-      }
-      const roofInReach = shelter !== null &&
-        person.distanceTo({ x: shelter.centerX, y: shelter.centerY }) <= ctx.sightRadius;
-      const nightAnchorDistance = anchor ? Math.hypot(person.x - anchor.x, person.y - anchor.y) : Infinity;
-      if (ctx.motivation.nightSleep && ctx.time.isNight && !roofInReach &&
-        nightAnchorDistance <= ctx.motivation.nightRadius) {
-        // An open-ground bed is the fallback at camp, never an excuse to sleep
-        // out in the country instead of returning to the family first.
-        add('sleep', fatigue * 3.2 * 0.8);
       }
     }
 
@@ -3488,7 +3494,7 @@ export class Brain {
     }
     // Still here for people with no roof, which after a bad winter is most of
     // them. Sleeping is strictly better and scores higher when it is available.
-    add('rest', fatigue * (ctx.time.isNight ? 2.4 : 1.2));
+    add('rest', fatigue * 2.4);
 
     // --- Wander ------------------------------------------------------------
     // A small floor so a person with nothing pressing still looks alive, and so
@@ -3581,7 +3587,7 @@ export class Brain {
         water, foodToEat, waterQuestionPeer, explorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
-        site, shelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
+        site, shelter, restShelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
         recipe: craftRecipe, craftStation, fieldTarget, record, unfinished,
         patient, strayAnimal, slanderSubjectId, praiseSubjectId, proposalListener, proposalSite,
       },
@@ -4204,11 +4210,10 @@ export class Brain {
       case 'reap':
       case 'spread':
       case 'sleep':
+      case 'rest':
       case 'shelter': {
-        const building = action === 'sleep' && found.shelter &&
-          person.distanceTo({ x: found.shelter.centerX, y: found.shelter.centerY }) > ctx.sightRadius
-          ? null :
-          action === 'shelter' || action === 'sleep' ? found.shelter :
+        const building = action === 'sleep' || action === 'rest' ? found.restShelter :
+          action === 'shelter' ? found.shelter :
           action === 'take' ? found.larderTarget :
           action === 'store' ? found.storeTarget :
           action === 'sabotage' ? found.sabotageTarget :
