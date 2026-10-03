@@ -3763,3 +3763,11 @@ boca se curva hacia arriba, es decir, fruncida. `warm` y `content` se dibujaban
 tristes y `pained` sonriente. No se corrige: el arte nuevo (`art/src/people/rig.ts`)
 no usa ese código y el dibujo procedural solo queda como respaldo si las hojas no
 cargan. Si alguien mantiene ese respaldo, el signo es el que hay que cambiar.
+
+### Checks sin ocasión necesaria — revisión 2026-10-03
+
+Rumores útiles y hostilidad ya tienen fixtures de oportunidad explícita y controles
+negativos. No se exige conflicto en una comarca pacífica. La matriz previa completa
+sigue roja por conocimiento, sueño, dieta y otros mecanismos; no se declara verde.
+La cohorte lean previa (20 semillas) da 5,9% de supervivencia, 19/20 colapsos bajo
+un cuarto y 6/20 extinciones. Es deuda de master anterior a esta pasada.

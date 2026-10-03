@@ -11440,3 +11440,19 @@ de 16 opciones, submenús y cierre en 1280 y 390 px. El caso de enseñanza falla
 antes por intercepción del clic. Typecheck aprobado. La matriz completa se está
 reproduciendo: no se declara verde ni se modifican decisiones de simulación.
 Captura revisada: `artifacts/screenshots/m15-menu-2026-10-03T-review/teaching-menu.png`.
+
+## 2026-10-03 — M15: checks con oportunidad explícita
+
+`word-of-food-travels` se mide en `food-news`: un adulto hambriento recibe por
+conversación real la ubicación de la única comida, fuera de su vista. El check
+exige noticia transmitida y destino elegido; el test exige también pescado
+recolectado. `opinions-diverge` se mide en `conflicts`: una agresión real entre
+bandas debe conservar vínculos cálidos y producir hostilidad. No se inyectan
+opiniones. Mundos ordinarios pacíficos no tienen obligación de producir rumores
+útiles ni enemigos. Las dos fixtures cortas declaran los checks que ejercitan;
+no pretenden verificar construcción o generaciones en 80/600 ticks.
+
+Tres tests aprobados, con controles negativos: impedir la conversación o las
+consecuencias sociales de la agresión hace fallar el check correspondiente.
+Typecheck aprobado. No cambia el comportamiento del juego; la matriz conserva
+sus otros fallos de referencia. Logs: artifacts/verification/m15-checks-2026-10-03/.

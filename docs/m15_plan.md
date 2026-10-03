@@ -3375,3 +3375,14 @@ el propietario, -32,5 puntos de supervivencia `lean`.
 Las incursiones por agravio ahora tienen instigador, cálculo de urgencia con necesidad, hostilidad, estatus y miedo, y aprobación del jefe ponderada por autoridad. Las incursiones por necesidad consultan el mapa personal del instigador. La rivalidad territorial se actualiza ante intrusiones observadas incluso con despensa llena; el miedo favorece parley y ofertas de paz.
 
 La cohorte `lean` de 20 semillas queda en 20,9% (11 colapsos), −1,1 puntos respecto a fase 6, dentro del margen de tres puntos; `peaceShare` fue 99,9%. `century` registró 2.982 sabotajes frente a 9.556 talas, por lo que no se cambió el peso del sabotaje. Las ofertas `make_peace` sumaron 87. `bands-take-sides` fue `n/a` en `farmers`, `herders` y `stewards`: no hubo contacto. La suite global se interrumpió al detectar que abarca 26 escenarios y no cinco. La fase sigue abierta hasta poder medir el check en escenarios con contacto.
+
+### Revisión de checks 2k y sociales — 2026-10-03
+
+El propietario aprueba medir noticias necesarias y conflictos en escenarios
+preparados. `food-news` y `conflicts` ejercitan las rutas reales y tienen controles
+negativos en controlled-checks.test.ts. Estos dos checks quedan n/a en los mundos
+ordinarios: abundancia y distancia pueden producir paz sin que sea un defecto.
+La revisión pendiente del sueño usará presión circadiana continua; visión infantil
+igual a la adulta. Límite declarado antes de medir: no perder más de tres puntos
+porcentuales de supervivencia media frente a las cohortes previas de 20 semillas
+century/lean/crowded. El objetivo de rendimiento sigue pendiente del propietario.

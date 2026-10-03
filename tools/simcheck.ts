@@ -32,6 +32,7 @@ import { isHeld, isBound } from '../src/sim/social/Defence.ts';
 import { WORTH_GRAZING } from '../src/sim/core/Grass.ts';
 import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
 import { auditRegions } from './regions.ts';
+import { setupFoodNews, setupConflicts } from './checkFixtures.ts';
 
 /**
  * The outer band of a fire's circle that `fire-keeps-wolves-off` does not count.
@@ -66,6 +67,8 @@ export interface Scenario {
    * hunted out). Harness-only; the simulation knows nothing of it.
    */
   setup?: (sim: Simulation) => void;
+  /** Short mechanism fixtures exercise these checks, not a whole year's economy. */
+  checks?: readonly string[];
 }
 
 /**
@@ -95,6 +98,26 @@ const HURT_DAYS_FLOOR = 30;
 const TEMPLE_SHARE_FLOOR = 0.8;
 
 export const SCENARIOS: Record<string, Scenario> = {
+  'food-news': {
+    name: 'food-news',
+    description: 'A hungry adult hears where the only food lies, outside sight.',
+    config: { seed: 'food-news', world: { width: 64, height: 64, treeDensity: 0,
+      gameHerds: 0, predators: 0, regrowthRate: 0, heightSight: 0 },
+      population: { bands: 1, peoplePerBand: 4 },
+      motivation: { reachFilter: false, homePressure: false }, ai: { choiceSpread: 0 } },
+    steps: 600,
+    setup: setupFoodNews,
+    checks: ['word-of-food-travels'],
+  },
+  conflicts: {
+    name: 'conflicts',
+    description: 'Two bands encounter a witnessed assault; family ties remain the positive control.',
+    config: { seed: 'conflicts', world: { width: 48, height: 48, predators: 0 },
+      population: { bands: 2, peoplePerBand: 6 }, ai: { choiceSpread: 0 } },
+    steps: 80,
+    setup: setupConflicts,
+    checks: ['opinions-diverge'],
+  },
   tiny: {
     name: 'tiny',
     description: 'Small island, one band. Quick smoke run.',
@@ -1143,8 +1166,8 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     (knowledgeChecked - knowledgeUnknown) + '/' + knowledgeChecked + ' forage, pick, drink, hunt and chop targets visible or remembered');
 
   const toldFoodTargets = tel.food_place_target_from_told ?? 0;
-  if ((tel.food_place_told ?? 0) < 1) skip('word-of-food-travels', 'no food-place rumours shared in this scenario');
-  else add('word-of-food-travels', toldFoodTargets > 0,
+  if (base.scenario !== 'food-news') skip('word-of-food-travels', 'measured in food-news, where the rumour supplies the only food');
+  else add('word-of-food-travels', (tel.food_place_told ?? 0) > 0 && toldFoodTargets > 0,
     toldFoodTargets + ' forage targets came from a food location heard in conversation');
 
   const staleTrips = tel.stale_memory_resource_empty ?? 0;
@@ -1611,14 +1634,13 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     base.relationships.edges + ' relationships across ' + base.relationships.viewers +
     ' people: ' + base.relationships.positive + ' warm, ' +
     base.relationships.negative + ' hostile';
-  if (sim.bands.length < 2) {
-    // With one band everyone is kin and a stranger, which the out-group bias
-    // exists to distinguish, never appears. Divergence would then require
-    // somebody to misbehave, which a small quiet run may simply never do.
-    skip('opinions-diverge', 'only one band; nothing to be a stranger to. ' + relationshipSummary);
+  if (base.scenario !== 'conflicts') {
+    // Space and plentiful food can leave even several bands at peace. Test
+    // social consequences where a real assault supplies the opportunity.
+    skip('opinions-diverge', 'measured after a witnessed assault in conflicts. ' + relationshipSummary);
   } else {
     add('opinions-diverge',
-      base.relationships.positive > 0 && base.relationships.negative > 0,
+      (tel.event_assault ?? 0) > 0 && base.relationships.positive > 0 && base.relationships.negative > 0,
       relationshipSummary);
   }
 
@@ -3934,7 +3956,8 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   };
 
   telemetry.disable();
-  return { ...base, checks: buildChecks(sim, samples, base) };
+  const checks = buildChecks(sim, samples, base);
+  return { ...base, checks: scenario.checks ? checks.filter(c => scenario.checks!.includes(c.id)) : checks };
 }
 
 /**

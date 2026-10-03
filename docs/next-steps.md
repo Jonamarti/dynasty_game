@@ -1387,3 +1387,8 @@ bloqueara su maduración. La mortalidad de menores de un año sigue alta; se
 investiga la frecuencia y continuidad de lactancia. Los almacenes observados
 tienen sitio libre pero casi ninguna comida; ver [bugs.md](bugs.md) y
 [m15_plan.md](m15_plan.md). No se ha cambiado el tamaño de las manos.
+
+Revisión 2026-10-03: noticias necesarias y hostilidad se verifican en food-news y
+conflicts. Continúan visión infantil y sueño circadiano, con deuda de supervivencia
+separada. Rendimiento: acordar población, velocidad y presupuesto de fluidez antes
+de sustituir la calibración histórica del check.
