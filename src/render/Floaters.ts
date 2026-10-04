@@ -438,6 +438,7 @@ export const STOP_REASONS: Record<string, string> = {
   dont_know_digging_tool: 'they did not know how to use their digging tools',
   ground_too_hard: 'the ground there was too hard to dig',
   dug_deep_enough: 'the hole is as deep as a person can climb out of',
+  water_came_in: 'water came into the hole and filled it',
   no_earth: 'they were carrying no earth',
   nowhere_to_put_the_earth: 'there was nowhere to put the earth',
   piled_high_enough: 'the heap is as high as it will stand',

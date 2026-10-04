@@ -1,5 +1,14 @@
 # Known bugs and rough edges
 
+## M15 fase 26d: agua que entra, cosas que quedan debajo (2026-10-04)
+
+Una casilla que se llena de agua no avisa a lo que haya encima: otra persona
+parada en ella, un árbol o un nodo de recurso quedan en una casilla de agua no
+caminable. Quien cava es reubicado, pero un tercero no. Hoy solo se llega a esto
+cavando junto al agua con una orden del jugador; antes de que la banda cave por
+persuasión (26c) hay que decidir si el llenado reubica a los ocupantes o si las
+órdenes de cavar se niegan en casillas con algo encima. Sin resolver.
+
 ## M15 29: perfiles geográficos disponibles; generación global pendiente (2026-10-04)
 
 WorldState ya genera terreno/nodos de inspección desde una ventana geográfica.

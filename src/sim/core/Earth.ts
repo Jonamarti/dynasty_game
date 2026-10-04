@@ -6,6 +6,7 @@
  * unit, so a unit of 0.0004 is 16 cm).
  */
 import type { Person } from '../entities/Person.ts';
+import type { World } from './World.ts';
 import { techPower, type Tech } from '../knowledge/Tech.ts';
 
 /** Height one item of earth is, over one tile: what a dig takes and a pile puts. */
@@ -63,4 +64,36 @@ export function digTool(person: Person): { item: string; power: number } | null 
 export function digToolFailure(person: Person): 'no_digging_tool' | 'dont_know_digging_tool' {
   return DIG_TOOLS.some(tool => person.inventory.has(tool.item))
     ? 'dont_know_digging_tool' : 'no_digging_tool';
+}
+
+/**
+ * How many items of earth deep the fertile layer lies: the first 32 cm. Only
+ * these lifts carry the tile's humus and nutrient up with them; below it is
+ * subsoil, which carries none (M15 phase 26a, "digging removes the fertile
+ * layer and leaves the subsoil").
+ */
+export const TOPSOIL_ITEMS = 2;
+
+/** Moisture at or above which the subsoil is wet (the wettest tenth of the land). Shores always are. */
+export const WET_SUBSOIL = 0.7;
+
+/** Whether a tile's subsoil is wet enough that digging below the topsoil brings up mud, not earth. */
+export function isWetSubsoil(world: World, x: number, y: number): boolean {
+  const tx = Math.floor(x);
+  const ty = Math.floor(y);
+  if (!world.inBounds(tx, ty)) return false;
+  return world.isShore(tx, ty) || world.moisture[world.index(tx, ty)]! >= WET_SUBSOIL;
+}
+
+/**
+ * What the next lift out of a tile brings up, and how many items of it at
+ * most. A lift never straddles the topsoil boundary, so each lift is one kind:
+ * `earth` through the fertile layer (and everywhere that is dry), `mud` below
+ * it where the subsoil is wet. A heap (negative depth) is loose earth.
+ */
+export function liftKind(world: World, x: number, y: number, depth: number): { item: 'earth' | 'mud'; topsoil: boolean; limit: number } {
+  const dugItems = Math.max(0, Math.round(depth / EARTH_UNIT));
+  if (depth < -1e-9) return { item: 'earth', topsoil: false, limit: LIFT };
+  if (dugItems < TOPSOIL_ITEMS) return { item: 'earth', topsoil: true, limit: Math.min(LIFT, TOPSOIL_ITEMS - dugItems) };
+  return { item: isWetSubsoil(world, x, y) ? 'mud' : 'earth', topsoil: false, limit: LIFT };
 }

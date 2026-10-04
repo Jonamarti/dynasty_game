@@ -234,6 +234,11 @@ export class World {
     return Math.min(1.25, 1 - k * g * 0.3);
   }
 
+  /** The elevation of the water's surface: ground dug below it, beside water, floods (26d). */
+  get waterLevel(): number {
+    return this.config.waterLevel;
+  }
+
   /** Metres above the sea at a tile (negative below it). */
   metresAt(x: number, y: number): number {
     return (this.heightAt(x, y) - this.config.waterLevel) * this.config.metresPerUnit;
@@ -486,9 +491,83 @@ export class World {
     // that was walkable can be dug into a pit or piled back out of one.
     const biome = BIOMES[this.biome[i]!]!;
     if (biome !== 'water' && biome !== 'rock') {
+      const before = this.walkable[i];
       this.setWalkable(Math.floor(x), Math.floor(y), this.offset[i]! > -this.config.pitDepth);
+      if (before !== this.walkable[i]) this.updateShore(Math.floor(x), Math.floor(y));
     }
+    if (delta < 0) this.floodFrom(Math.floor(x), Math.floor(y));
     return -this.offset[i]!;
+  }
+
+  /**
+   * The most tiles one dig step may turn to water. A bound, not a tuning knob:
+   * the fill is a breadth-first walk over dug tiles that are below the water
+   * level, so it ends by itself when the trench does; this only keeps a
+   * pathological world (a whole basin dug through) from stalling a tick.
+   */
+  static readonly FLOOD_LIMIT = 512;
+
+  /**
+   * The water follows the trench — M15 phase 26d. A tile that is dug below the
+   * water level and touches water is filled, and the fill goes on through the
+   * connected tiles that are also below the level. No random draw, a fixed
+   * neighbour order (so two builds fill the same tiles in the same order), and
+   * a bound (`FLOOD_LIMIT`). A filled tile is water for good: it is `water`
+   * biome, unwalkable (through `setWalkable`, so the landmass labels follow),
+   * and the shore list is patched around it by `updateShore`.
+   *
+   * Returns how many tiles were filled. Tiles at or above the level never
+   * flood, and rock never does; piling earth back does not drain water.
+   */
+  floodFrom(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return 0;
+    const level = this.config.waterLevel;
+    const wet = (tx: number, ty: number): boolean => {
+      if (!this.inBounds(tx, ty)) return false;
+      const k = this.index(tx, ty);
+      if (BIOMES[this.biome[k]!] === 'water' || BIOMES[this.biome[k]!] === 'rock') return false;
+      return this.elevation[k]! + this.offset[k]! < level - 1e-9;
+    };
+    const touchesWater = (tx: number, ty: number): boolean => this.isShore(tx, ty);
+    if (!wet(x, y) || !touchesWater(x, y)) return 0;
+    const queue: number[] = [this.index(x, y)];
+    let filled = 0;
+    while (queue.length > 0 && filled < World.FLOOD_LIMIT) {
+      const k = queue.shift()!;
+      const tx = k % this.width;
+      const ty = Math.floor(k / this.width);
+      if (!wet(tx, ty)) continue;
+      this.biome[k] = BIOMES.indexOf('water');
+      this.setWalkable(tx, ty, false);
+      this.grass[k] = 0;
+      filled++;
+      this.updateShore(tx, ty);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        if (wet(tx + dx, ty + dy)) queue.push(this.index(tx + dx, ty + dy));
+      }
+    }
+    if (filled > 0) this.earthVersion++;
+    return filled;
+  }
+
+  /**
+   * Brings `shoreTiles` up to date around one changed tile (M15 phase 26d),
+   * instead of recomputing the list: a tile is a shore tile when it is walkable
+   * and touches water, so a change to (x, y) can alter only (x, y) and its four
+   * neighbours. Entries are removed in place and new ones appended, so the
+   * list keeps the order everything downstream already iterates in.
+   * `Simulation` rebuilds `shoreHash` from the list when `earthVersion` moves.
+   */
+  updateShore(x: number, y: number): void {
+    for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      const tx = x + dx;
+      const ty = y + dy;
+      if (!this.inBounds(tx, ty)) continue;
+      const should = this.walkable[this.index(tx, ty)] === 1 && this.isShore(tx, ty);
+      const at = this.shoreTiles.findIndex(t => t.x === tx && t.y === ty);
+      if (should && at < 0) this.shoreTiles.push({ x: tx, y: ty });
+      else if (!should && at >= 0) this.shoreTiles.splice(at, 1);
+    }
   }
 
   private visit(index: number, id: number, queue: number[]): void {

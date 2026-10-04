@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
-import { DIG_TO, PILE_TO, EARTH_UNIT, digTool } from '../core/Earth.ts';
+import { DIG_TO, PILE_TO, EARTH_UNIT, TOPSOIL_ITEMS, digTool, isWetSubsoil, liftKind } from '../core/Earth.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { techPower } from '../knowledge/Tech.ts';
 
@@ -99,8 +99,8 @@ describe('dig', () => {
     const h0 = sim.world.heightAt(spot.x, spot.y);
     expect(sim.order(person, 'dig', { x: spot.x, y: spot.y })).toBe(true);
     for (let i = 0; i < 400 && person.action === 'dig'; i++) sim.step();
-    const earth = person.inventory.count('earth');
-    expect(earth).toBeGreaterThan(0);
+    const earth = person.inventory.count('earth') + person.inventory.count('mud');
+    expect(person.inventory.count('earth')).toBeGreaterThan(0);
     expect(sim.world.heightAt(spot.x, spot.y)).toBeCloseTo(h0 - earth * EARTH_UNIT, 6);
   });
 
@@ -166,5 +166,77 @@ describe('pile', () => {
     expect(sim.world.sightBonusAt(spot.x, spot.y)).toBeGreaterThan(flat);
     person.inventory.add('sticks', 1);
     expect(sim.order(person, 'dig', { x: spot.x, y: spot.y })).toBe(true);
+  });
+});
+
+/** A dry, inland tile and a wet one, so the two subsoils can be told apart. */
+function findTile(sim: Simulation, wet: boolean) {
+  const w = sim.world;
+  for (let y = 2; y < w.height - 2; y++) {
+    for (let x = 2; x < w.width - 2; x++) {
+      if (!w.isWalkable(x, y)) continue;
+      if (isWetSubsoil(w, x, y) === wet && w.biomeAt(x, y) !== 'rock') return { x, y };
+    }
+  }
+  throw new Error('no such tile');
+}
+
+function digAll(sim: Simulation, person: ReturnType<typeof digSite>['person'], at: { x: number; y: number }) {
+  person.x = at.x + 0.5;
+  person.y = at.y + 0.5;
+  person.inventory.add('sticks', 1);
+  expect(sim.order(person, 'dig', at)).toBe(true);
+  for (let i = 0; i < 800 && person.action === 'dig'; i++) sim.step();
+}
+
+describe('earth keeps its fertility and wet ground gives mud (26a)', () => {
+  it('scrapes the fertile layer off the tile and carries it, leaving subsoil', () => {
+    const { sim, person } = digSite();
+    const at = findTile(sim, false);
+    const i = sim.world.index(at.x, at.y);
+    const organic0 = sim.world.soil.organic[i]!;
+    digAll(sim, person, at);
+    // Dry ground: everything that comes up is earth, but only the topsoil carries richness.
+    expect(person.inventory.count('mud')).toBe(0);
+    expect(person.inventory.count('earth')).toBeGreaterThan(TOPSOIL_ITEMS - 1);
+    expect(sim.world.soil.organic[i]!).toBeLessThan(organic0 * 0.01 + 1e-6);
+    expect(person.earthOrganic).toBeCloseTo(organic0, 4);
+  });
+
+  it('heaping carried earth hands its richness to the new tile, and subsoil dilutes it', () => {
+    const { sim, person } = digSite();
+    const at = findTile(sim, false);
+    digAll(sim, person, at);
+    const rich = person.earthOrganic;
+    expect(rich).toBeGreaterThan(0);
+    // Heap it on a tile worn down to nothing.
+    const bare = { x: at.x + 1, y: at.y };
+    if (!sim.world.isWalkable(bare.x, bare.y)) return;
+    const j = sim.world.index(bare.x, bare.y);
+    sim.world.soil.organic[j] = 0;
+    person.x = bare.x + 0.5;
+    person.y = bare.y + 0.5;
+    expect(sim.order(person, 'pile', bare)).toBe(true);
+    for (let k = 0; k < 800 && person.action === 'pile'; k++) sim.step();
+    expect(person.inventory.count('earth')).toBe(0);
+    expect(sim.world.soil.organic[j]!).toBeGreaterThan(0);
+    // The hands are empty, so nothing is left carried.
+    expect(person.earthOrganic).toBe(0);
+    expect(person.earthNutrient).toBe(0);
+  });
+
+  it('brings up mud below the topsoil where the subsoil is wet, and daub is the use for it', () => {
+    const { sim, person } = digSite();
+    const wet = findTile(sim, true);
+    expect(liftKind(sim.world, wet.x, wet.y, 0).item).toBe('earth');
+    expect(liftKind(sim.world, wet.x, wet.y, TOPSOIL_ITEMS * EARTH_UNIT).item).toBe('mud');
+    const dry = findTile(sim, false);
+    expect(liftKind(sim.world, dry.x, dry.y, TOPSOIL_ITEMS * EARTH_UNIT).item).toBe('earth');
+    // A heap is loose earth wherever it stands.
+    expect(liftKind(sim.world, wet.x, wet.y, -EARTH_UNIT).item).toBe('earth');
+    digAll(sim, person, wet);
+    expect(person.inventory.count('earth')).toBeGreaterThan(0);
+    expect(person.inventory.count('earth') + person.inventory.count('mud')).toBeGreaterThan(TOPSOIL_ITEMS);
+    expect(person.inventory.count('mud')).toBeGreaterThan(0);
   });
 });

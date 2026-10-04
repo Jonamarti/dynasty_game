@@ -32,7 +32,7 @@ import {
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import { CUT_ABOVE, CUT_BITE, CUT_FLOOR, THATCH_PER_HEIGHT } from '../core/Grass.ts';
-import { DIG_TICKS, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, digTool, digToolFailure } from '../core/Earth.ts';
+import { DIG_TICKS, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, TOPSOIL_ITEMS, digTool, digToolFailure, liftKind } from '../core/Earth.ts';
 import { SNOW_BURY_AT } from '../core/Snow.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -1551,21 +1551,38 @@ export class ActionSystem {
     person.workedTicks++;
     if (person.actionTimer > 0) return;
 
+    const depth = ctx.world.depthDug(tx, ty);
+    const kind = liftKind(ctx.world, tx, ty, depth);
     const room = Math.max(0, Math.min(
       person.carryCapacity - person.carrying,
-      itemCapacityFor(person, ctx.carry, 'earth') - person.inventory.count('earth'),
+      itemCapacityFor(person, ctx.carry, kind.item) - person.inventory.count(kind.item),
     ));
     if (room === 0) {
       this.stop(person, 'hands_full', ctx);
       return;
     }
     // Never past the depth asked for: the last lift takes what is left.
-    const left = Math.max(1, Math.round((DIG_TO - ctx.world.depthDug(tx, ty)) / EARTH_UNIT));
-    const lift = Math.min(room, LIFT, left);
+    const left = Math.max(1, Math.round((DIG_TO - depth) / EARTH_UNIT));
+    const lift = Math.min(room, kind.limit, left);
     ctx.world.dig(tx, ty, lift * EARTH_UNIT);
-    person.inventory.add('earth', lift);
+    if (kind.topsoil) {
+      // The fertile layer comes up with the earth and leaves the tile.
+      const taken = ctx.world.soil.strip(ctx.world.index(tx, ty), lift / TOPSOIL_ITEMS);
+      person.earthOrganic += taken.organic;
+      person.earthNutrient += taken.nutrient;
+    }
+    person.inventory.add(kind.item, lift);
     person.practice('build', 0.3);
-    telemetry.count('earth_dug', lift);
+    if (ctx.world.isWater(tx, ty)) {
+      // M15 phase 26d: the hole reached the water and filled. Whoever was
+      // digging it is standing in the water now; put them on the bank and say so.
+      telemetry.count('trench_flooded');
+      const bank = ctx.world.findWalkableNear(tx, ty);
+      if (bank) { person.x = bank.x + 0.5; person.y = bank.y + 0.5; }
+      this.stop(person, 'water_came_in', ctx);
+      return;
+    }
+    telemetry.count(kind.item === 'mud' ? 'mud_dug' : 'earth_dug', lift);
 
     const stop = this.interruption(person, ctx, { lookaheadTicks: ticks });
     if (stop) {
@@ -1612,9 +1629,18 @@ export class ActionSystem {
     if (person.actionTimer > 0) return;
 
     const headroom = Math.max(1, Math.round((PILE_TO + ctx.world.depthDug(tx, ty)) / EARTH_UNIT));
-    const lift = Math.min(LIFT, person.inventory.count('earth'), headroom);
+    const carried = person.inventory.count('earth');
+    const lift = Math.min(LIFT, carried, headroom);
+    // The earth brings its richness: the average of what is in the hands, mixed
+    // into the tile it is heaped on. Subsoil dilutes it, so the mean falls.
+    const organic = person.earthOrganic / carried;
+    const nutrient = person.earthNutrient / carried;
+    ctx.world.soil.bury(ctx.world.index(tx, ty), lift, organic, nutrient);
+    person.earthOrganic -= organic * lift;
+    person.earthNutrient -= nutrient * lift;
     ctx.world.pile(tx, ty, lift * EARTH_UNIT);
     person.inventory.remove('earth', lift);
+    if (person.inventory.count('earth') <= 0) { person.earthOrganic = 0; person.earthNutrient = 0; }
     person.practice('build', 0.2);
     telemetry.count('earth_piled', lift);
     if (person.inventory.count('earth') <= 0) {

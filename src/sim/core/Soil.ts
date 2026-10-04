@@ -154,6 +154,9 @@ export function isGroundSpent(effective: number, resting: number): boolean {
   return effective < SPENT_BELOW || effective < resting * SPENT_SHARE;
 }
 
+/** The topsoil layer's weight, in items of earth, against a heap in `bury` (same as `TOPSOIL_ITEMS`; Soil does not import Earth). */
+const TOPSOIL_ITEMS_W = 2;
+
 /** Below this distance from equilibrium a tile is settled and leaves `active`. */
 const SETTLED = 0.002;
 
@@ -281,6 +284,35 @@ export class Soil {
   /** Taking the crop off: eats the fast pool. */
   reap(i: number): void {
     this.nutrient[i] = clamp01(this.nutrient[i]! - REAP_NUTRIENT_COST);
+    this.active.add(i);
+  }
+
+  /**
+   * Scraping off the fertile layer — M15 phase 26a. `share` is the part of the
+   * topsoil a lift takes (items lifted over `TOPSOIL_ITEMS`); the tile keeps the
+   * rest and the caller gets what came up, to carry. Dug ground is left with
+   * subsoil, so the tile's own pools fall; they climb back toward the climate's
+   * ceiling only at the slow recovery rate.
+   */
+  strip(i: number, share: number): { organic: number; nutrient: number } {
+    const o = this.organic[i]!;
+    const n = this.nutrient[i]!;
+    this.organic[i] = clamp01(o * (1 - share));
+    this.nutrient[i] = clamp01(n * (1 - share));
+    this.active.add(i);
+    return { organic: o * share, nutrient: n * share };
+  }
+
+  /**
+   * Heaping earth on a tile: the tile moves toward the richness the earth
+   * carried, by the weight of the heap against a topsoil layer's worth. Heaping
+   * rich earth on poor ground enriches it; heaping subsoil (concentration 0)
+   * buries it. `organic` and `nutrient` are the carried concentrations.
+   */
+  bury(i: number, items: number, organic: number, nutrient: number): void {
+    const w = items / (items + TOPSOIL_ITEMS_W);
+    this.organic[i] = clamp01(this.organic[i]! + (organic - this.organic[i]!) * w);
+    this.nutrient[i] = clamp01(this.nutrient[i]! + (nutrient - this.nutrient[i]!) * w);
     this.active.add(i);
   }
 
