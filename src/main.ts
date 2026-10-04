@@ -1482,6 +1482,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
     buildings: sim.buildings,
     backersWanted: sim.config.motivation.backersWanted,
     stationFor: stationId => nearestStation(subject, stationId),
+    builtOn: (x, y) => sim.buildingAt(x, y) !== null,
     feastVenue: sim.feastVenueFor(subject),
     propertyUse: building => sim.mayUseBuilding(subject, building),
     explainProperty: use => explainPropertyUse(actor, use, sim.relationships),

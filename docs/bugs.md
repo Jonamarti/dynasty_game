@@ -1,13 +1,15 @@
 # Known bugs and rough edges
 
-## M15 fase 26d: agua que entra, cosas que quedan debajo (2026-10-04)
+## M15 fase 26d: agua que entra, cosas que quedan debajo — RESUELTO (2026-10-04)
 
-Una casilla que se llena de agua no avisa a lo que haya encima: otra persona
-parada en ella, un árbol o un nodo de recurso quedan en una casilla de agua no
-caminable. Quien cava es reubicado, pero un tercero no. Hoy solo se llega a esto
-cavando junto al agua con una orden del jugador; antes de que la banda cave por
-persuasión (26c) hay que decidir si el llenado reubica a los ocupantes o si las
-órdenes de cavar se niegan en casillas con algo encima. Sin resolver.
+Una casilla que se llenaba de agua (o un hoyo más hondo que `pitDepth`) no
+avisaba a lo que hubiera encima. Resuelto en 26c: `Simulation.clearLostGround`
+corre cuando `earthVersion` se ha movido (nunca en un mundo donde nadie cava) y
+reubica a las personas en la orilla más cercana con la razón `ground_gave_way`,
+lleva los montones de objetos y los cuerpos a tierra firme y ahoga lo que no
+se mueve (árboles y plantas). Test: `flooding.test.ts`. Queda por decidir, si
+llega la persuasión de la banda, si además conviene negar la orden de cavar
+bajo un edificio: hoy la orden lo niega (ver el changelog de 26c).
 
 ## M15 29: perfiles geográficos disponibles; generación global pendiente (2026-10-04)
 

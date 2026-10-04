@@ -148,6 +148,12 @@ export interface CatalogContext {
    */
   stationFor?: (stationId: string) => Building | null;
   /**
+   * Whether a building stands on a point. Handed in, like `stationFor`, because
+   * the catalogue does no world queries of its own; `dig` and `pile` read it so
+   * the menu refuses ground that `Simulation.order` would.
+   */
+  builtOn?: (x: number, y: number) => boolean;
+  /**
    * Whether the actor can use a structure without an owner stopping them.
    * Optional for hand-built test contexts; the live catalogue always supplies
    * it so the menu and the executor answer ownership with the same rule.
@@ -1066,7 +1072,9 @@ function groundActions(
     if (there !== 'water' && there !== 'rock') {
       const dug = ctx.world.depthDug(target.x, target.y);
       const deep = dug >= DIG_TO - 1e-9;
-      const reason = !digTool(actor)
+      const built = ctx.builtOn?.(target.x, target.y) ?? false;
+      const reason = built ? t('There is a building on that ground')
+        : !digTool(actor)
         ? digToolFailure(actor) === 'dont_know_digging_tool'
           ? t('You do not know how to use your digging tools') : t('You have nothing to dig with')
         : deep ? t('The hole is as deep as a person can climb out of') : undefined;

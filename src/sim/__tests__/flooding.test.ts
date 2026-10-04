@@ -127,4 +127,55 @@ describe('water follows the trench', () => {
     expect(sim.interruptions.some(n => n.personId === person.id && n.reason === 'water_came_in')).toBe(true);
     expect(w.isWalkable(person.x, person.y)).toBe(true);
   });
+  it('moves a third party and a heap off a tile that floods, and drowns what cannot move', () => {
+    const sim = new Simulation({ seed: 'flood' });
+    const w = sim.world;
+    const t = lowShore(w, 1)[0]!;
+    w.elevation[w.index(t.x, t.y)] = w.waterLevel + 0.5 * EARTH_UNIT;
+    const bystander = sim.people.find(p => p.alive && !p.isChild)!;
+    bystander.x = t.x + 0.5;
+    bystander.y = t.y + 0.5;
+    sim.dropAt(t.x, t.y, 'sticks', 3);
+    const tree = sim.trees[0]!;
+    (tree as { x: number }).x = t.x;
+    (tree as { y: number }).y = t.y;
+    sim.treeHash.rebuild(sim.trees);
+    const node = sim.nodes[0]!;
+    node.x = t.x;
+    node.y = t.y;
+    const treeId = tree.id;
+    const nodeId = node.id;
+    w.dig(t.x, t.y, 4 * EARTH_UNIT);
+    expect(w.isWater(t.x, t.y)).toBe(true);
+    sim.step();
+    expect(w.isWalkable(bystander.x, bystander.y)).toBe(true);
+    expect(sim.piles.every(p => w.isWalkable(p.x, p.y))).toBe(true);
+    expect(sim.piles.some(p => p.contents.count('sticks') >= 3)).toBe(true);
+    expect(sim.treesById.has(treeId)).toBe(false);
+    expect(sim.nodesById.has(nodeId)).toBe(false);
+    expect(sim.nodes.some(n => n.id === nodeId)).toBe(false);
+  });
+
+  it('does nothing at all in a world where nobody has dug', () => {
+    const a = new Simulation({ seed: 'flood' });
+    const b = new Simulation({ seed: 'flood' });
+    for (let i = 0; i < 30; i++) { a.step(); b.step(); }
+    expect(a.people.map(p => [p.x, p.y])).toEqual(b.people.map(p => [p.x, p.y]));
+    expect(a.world.earthVersion).toBe(0);
+  });
+});
+
+describe('digging under a building', () => {
+  it('is refused with the reason, for dig and for pile', () => {
+    const sim = new Simulation({ seed: 'flood' });
+    const person = sim.people.find(p => p.alive && !p.isChild)!;
+    person.inventory.add('sticks', 1);
+    person.inventory.add('earth', 2);
+    const b = sim.buildings[0] ?? sim.place('stockpile', Math.floor(person.x), Math.floor(person.y), person.bandId ?? 0, null);
+    expect(b).toBeTruthy();
+    const target = { x: b!.centerX, y: b!.centerY };
+    expect(sim.order(person, 'dig', target)).toBe(false);
+    expect(sim.lastRefusal).toBe('there is a building on that ground');
+    expect(sim.order(person, 'pile', target)).toBe(false);
+  });
 });

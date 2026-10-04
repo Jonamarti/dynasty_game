@@ -1,3 +1,17 @@
+## 2026-10-04 — M15 fase 26c (1): el agua que entra reubica a quien estaba encima
+
+Cierra el punto abierto de `bugs.md` tras 26d. Cuando `earthVersion` se mueve,
+`Simulation.clearLostGround` busca lo que quedó sobre una casilla que ya no se
+camina: personas (a la orilla más cercana, la orden se corta con
+`ground_gave_way`, «el suelo que pisaban se cavó o se inundó», en español
+también), montones de objetos (se sacan del índice y se vuelven a dejar en tierra
+firme, para no caer en el propio montón), cuerpos, y lo que no se mueve, árboles
+y plantas, que se ahogan (telemetría `drowned_in_the_flood`). Sin RNG, orden de
+arrays y espiral fijos. No es estado que un checkpoint deba guardar: se calcula
+de lo que hay. En un mundo sin excavaciones (`earthVersion` 0) no corre. Pruebas:
+dos nuevas en `flooding.test.ts`; la primera falla si se desactiva el barrido.
+La orden de cavar o apilar sobre un edificio se niega con motivo (menú y orden). Typecheck limpio; 1012/1012 unitarios en 140 archivos.
+
 ## 2026-10-04 — M15 fase 29: atlas terrestre alineado y comprobado en navegador
 
 La captura de Iberia reveló un desfase previo de 180°: NOAA estaba guardado

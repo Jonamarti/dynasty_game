@@ -3821,6 +3821,11 @@ export class Simulation {
             ? t('the ground there is too hard to dig')
             : t('there is nowhere to put earth there'));
         }
+        // Ground under a building is not the digger's to move: it would
+        // undermine the walls, and a flooded tile would strand the roof.
+        if (this.buildingAt(target.x, target.y)) {
+          return this.cancelOrder(person, t('there is a building on that ground'));
+        }
         if (action === 'dig') {
           if (!digTool(person)) return this.cancelOrder(person,
             digToolFailure(person) === 'dont_know_digging_tool'
@@ -5486,6 +5491,72 @@ export class Simulation {
   /** `World.earthVersion` the shore hash was last built against (M15 phase 26d). */
   private shoreSeen = -1;
 
+  /**
+   * Whatever is standing where the ground no longer is — M15 phase 26c, the
+   * open point of 26d. A hole that reaches the water fills it, a pit past
+   * `pitDepth` is not walkable, and neither knows who was in it. Rather than a
+   * queue of lost tiles (state that a checkpoint taken mid-step would have to
+   * carry), this sweeps every kind of occupant whenever `earthVersion` has
+   * moved and acts on those whose tile is no longer land:
+   *
+   *  - people are set on the nearest walkable tile and told why (their order
+   *    ends with `ground_gave_way`),
+   *  - heaps of goods and bodies are carried to the nearest land,
+   *  - trees and plants cannot move: they drown and leave the world.
+   *
+   * No RNG, fixed array order, `findWalkableNear`'s fixed spiral: two builds
+   * relocate the same things to the same tiles.
+   */
+  private clearLostGround(): void {
+    const world = this.world;
+    const lost = (x: number, y: number): boolean => world.inBounds(x, y) && !world.isWalkable(x, y);
+    for (const person of this.people) {
+      if (!person.alive || !lost(person.x, person.y)) continue;
+      const bank = world.findWalkableNear(Math.floor(person.x), Math.floor(person.y));
+      if (!bank) continue;
+      const action = person.action;
+      person.x = bank.x + 0.5;
+      person.y = bank.y + 0.5;
+      this.noteStop(person, action, 'ground_gave_way');
+      person.clearTarget();
+      person.forgetPlans();
+      person.action = 'idle';
+      telemetry.count('stranded_moved');
+    }
+    for (const pile of [...this.piles]) {
+      if (!lost(pile.x, pile.y)) continue;
+      const bank = world.findWalkableNear(Math.floor(pile.x), Math.floor(pile.y));
+      if (!bank) continue;
+      // Out of the index first: `dropAt` joins the nearest heap, and the
+      // nearest one to the bank could be this very pile.
+      const goods = [...pile.contents.entries()];
+      this.removePile(pile);
+      for (const [itemId, count] of goods) this.dropAt(bank.x, bank.y, itemId, count);
+      telemetry.count('stranded_moved');
+    }
+    for (const corpse of this.corpses) {
+      if (!lost(corpse.x, corpse.y)) continue;
+      const bank = world.findWalkableNear(Math.floor(corpse.x), Math.floor(corpse.y));
+      if (!bank) continue;
+      corpse.x = bank.x + 0.5;
+      corpse.y = bank.y + 0.5;
+      this.corpseHash.rebuild(this.corpses);
+      telemetry.count('stranded_moved');
+    }
+    const drownedTrees = this.trees.filter(tree => lost(tree.x, tree.y));
+    for (const tree of drownedTrees) this.removeTree(tree);
+    const drownedNodes = this.nodes.filter(node => lost(node.x, node.y));
+    if (drownedNodes.length > 0) {
+      for (const node of drownedNodes) {
+        this.nodesById.delete(node.id);
+        this.nodes.splice(this.nodes.indexOf(node), 1);
+      }
+    }
+    if (drownedTrees.length + drownedNodes.length > 0) {
+      telemetry.count('drowned_in_the_flood', drownedTrees.length + drownedNodes.length);
+    }
+  }
+
   private rebuildHashes(): void {
     // Dug ground that floods patches `world.shoreTiles` in place; the hash
     // follows whenever the earth has moved, which costs nothing in a world
@@ -5493,6 +5564,9 @@ export class Simulation {
     if (this.shoreSeen !== this.world.earthVersion) {
       this.shoreHash.rebuild(this.world.shoreTiles);
       this.shoreSeen = this.world.earthVersion;
+      // Nothing has ever been dug while `earthVersion` is 0, so a world that
+      // nobody digs never pays for (or is changed by) the sweep.
+      if (this.world.earthVersion > 0) this.clearLostGround();
     }
     this.peopleHash.clear();
     for (const person of this.people) {
