@@ -2355,9 +2355,17 @@ test('the game opens on its settings, and Begin rebuilds the island they describ
   await expect(page.locator('.pausemenu')).toBeHidden();
 
   const before = await page.evaluate(() => (window as never as {
-    __dynasty: { sim: { config: { world: { berryBushes: number } } } };
+    __dynasty: { sim: { config: { world: { berryBushes: number } }; ids: object }; worldState: { current: object; ids: object } };
   }).__dynasty.sim.config.world.berryBushes);
   expect(before).toBe(280);
+  const initialRootIsCurrent = await page.evaluate(() => {
+    const d = (window as never as {
+      __dynasty: { sim: { ids: object }; worldState: { current: object; ids: object } };
+    }).__dynasty;
+    (window as never as { __previousWorldState?: object }).__previousWorldState = d.worldState;
+    return d.worldState.current === d.sim && d.worldState.ids === d.sim.ids;
+  });
+  expect(initialRootIsCurrent).toBe(true);
 
   const difficulty = settings.locator('.settings-difficulty-range');
   await difficulty.fill('4');
@@ -2373,15 +2381,22 @@ test('the game opens on its settings, and Begin rebuilds the island they describ
       __dynasty: { sim: {
         config: { world: { berryBushes: number } };
         nodes: { kind: string }[];
-      } };
+        ids: object;
+      }; worldState: { current: object; ids: object } };
     }).__dynasty;
     return {
       configured: d.sim.config.world.berryBushes,
       placed: d.sim.nodes.filter(n => n.kind === 'berries').length,
+      rootIsCurrent: d.worldState.current === d.sim,
+      rootSharesIdsWithCurrent: d.worldState.ids === d.sim.ids,
+      rootWasReplaced: d.worldState !== (window as never as { __previousWorldState: object }).__previousWorldState,
     };
   });
   expect(after.configured).toBe(155);
   expect(after.placed).toBeLessThan(200);
+  expect(after.rootIsCurrent).toBe(true);
+  expect(after.rootSharesIdsWithCurrent).toBe(true);
+  expect(after.rootWasReplaced).toBe(true);
 
   expect(errors).toEqual([]);
 });

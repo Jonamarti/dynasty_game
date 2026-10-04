@@ -2674,6 +2674,19 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Avance del 2026-10-04: raíz WorldState y main clásico.** La partida inicial
+y su reconstrucción previa a Begin pasan por una raíz con geografía clásica,
+IdSpace propio y Simulation actual, sin derivar la semilla ni cambiar forks.
+Cuatro regresiones comparan checkpoints completos/independencia; el e2e de
+ajustes comprueba que raíz, motor y asignador se mantienen canónicos al
+reconstruir. Typecheck y 984/984 unitarios pasan. Tour 1/1, 13 capturas:
+`artifacts/screenshots/m15-phase29-worldstate-2026-10-04-pass1/`.
+[Contrato y verificación](m15_phase29_worldstate.md). Falta aplicar perfiles
+al terreno/recursos antes de ofrecer nuevos mundos; 29 continúa abierta.
+E2e estable 74/74 y build aprobado. Matriz antes/después: 108 fallos en 27
+escenarios, con recuentos de pases/aplicables y listas de fallos idénticos;
+no se comparan métricas ni aplicabilidad individual de cada check. Sigue roja.
+
 **Avance del 2026-10-04: perfiles de comarca con procedencia explícita.**
 `RealWorldMap.comarcaAt` añade escala de comarca, altura interpolada en metros
 y altura sobre el mar, con clima/agua/features de su región de origen.

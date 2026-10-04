@@ -10,6 +10,17 @@ selección de partida global y `world:bench`. La entrega no resuelve el balance
 heredado: el sim:check inicial falla cravings-steer-the-diet y perf-budget.
 Ver [contrato](m15_phase29_geography.md).
 
+WorldState ya conecta la creación/reconstrucción clásica desde main, con
+checkpoints completos idénticos en tres semillas. Aún no guarda libros de
+comarcas abandonadas ni crea pueblos. Primera suite de navegador: 73/74;
+timeout esperando Resume en el picker individual, conservado con traza y
+sin causa confirmada. Seguimiento en [m15_phase29_worldstate.md](m15_phase29_worldstate.md).
+La repetición completa estable pasa 74/74 (exit 0), sin suavizar el caso fallido;
+el primer intento se conserva como evidencia, no como fallo final reproducido.
+Matriz completa antes/después: 108 fallos en 27 escenarios; coinciden los
+recuentos de pases/aplicables y listas ordenadas de fallos. No se comparan
+métricas ni aplicabilidad individual de checks. La deuda de balance persiste.
+
 ## M15 fase 28: cargador y autoridad local completados; LOD pendiente (2026-10-04)
 
 `Simulation.fromCheckpointRecord` reconstruye un mundo ejecutable independiente

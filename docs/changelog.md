@@ -1,3 +1,27 @@
+## 2026-10-04 — M15 fase 29: WorldState conectado a la partida clásica
+
+main crea y reconstruye el motor desde WorldState, con geografía clásica y
+asignador propio. El constructor conserva la semilla de partida y todos los
+streams; el harness sigue creando Simulation independiente. Cuatro pruebas
+cubren checkpoints completos en tres semillas después de fronteras diarias,
+posesión e independencia de reconstrucción. El spec existente de Begin ahora
+detecta una raíz antigua o un asignador distinto al motor actual.
+Typecheck limpio, 984/984 unitarios en 136 archivos; tour 1/1, 13 capturas
+generales nuevas, con la inicial revisada y sin cambio de UI:
+`artifacts/screenshots/m15-phase29-worldstate-2026-10-04-pass1/`.
+Primera suite e2e: 73/74, timeout en Resume del picker individual conservado.
+Repetición estable: 74/74, exit 0, sin modificar ese spec. Build aprobado.
+El negativo de semilla inicial distinta falla en los tres casos de igualdad;
+restaurado el constructor, pasan los cuatro focales de WorldState.
+Matriz antes/después: 27 escenarios y 108 fallos en ambas (exit 1); comparación
+aprobada (exit 0) de recuentos de pases/aplicables y listas ordenadas de fallos.
+No compara métricas ni aplicabilidad por check; excluye throughput. No se
+declara mejora de balance. Logs y comparación reproducible en
+`artifacts/verification/m15-phase29-geography-20261004-pass1/`.
+[Contrato, evidencia y pendientes](m15_phase29_worldstate.md).
+La fase 29 sigue abierta: terreno/recursos desde perfil y selección de mapa,
+fuentes completas/paleoclima y banco pendientes; no se entrega aún LOD.
+
 ## 2026-10-04 — M15 fase 29: perfiles geográficos sin mezclar unidades
 
 El atlas real se consulta ahora en coordenadas de comarca, con altura absoluta

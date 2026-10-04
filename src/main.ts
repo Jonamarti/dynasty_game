@@ -8,7 +8,7 @@
  * alt-tab, a breakpoint) cannot produce a spiral of death.
  */
 import './style.css';
-import { Simulation } from './sim/core/Simulation.ts';
+import { WorldState } from './sim/world/WorldState.ts';
 import { Camera } from './render/Camera.ts';
 import { Renderer, hitRadiusOf, nodeIsHidden, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
 import { ArtAtlas } from './render/ArtAtlas.ts';
@@ -97,7 +97,8 @@ const profileHumans = import.meta.env.DEV && params.get('skipIntro') === '1'
   ? Number(params.get('profileHumans')) : 0;
 const profilePopulation = Number.isInteger(profileHumans) && profileHumans >= 2 && profileHumans <= 1000
   ? { population: { bands: 1, peoplePerBand: profileHumans } } : {};
-let sim = new Simulation({ ...configFrom(settings), ...profilePopulation, seed });
+let worldState = new WorldState({ ...configFrom(settings), ...profilePopulation, seed });
+let sim = worldState.current;
 
 /**
  * `?skipIntro=1` goes straight into the first living body.
@@ -163,7 +164,8 @@ function worldWouldDiffer(): boolean {
  * One mechanism each, for two situations that are genuinely different.
  */
 function rebuildBeforeStart(): void {
-  sim = new Simulation({ ...configFrom(settings), seed });
+  worldState = new WorldState({ ...configFrom(settings), seed });
+  sim = worldState.current;
   player = sim.possessFirst();
   renderer.setSim(sim);
   newGame.setSim(sim);
@@ -2244,6 +2246,7 @@ if (import.meta.env.DEV) {
   // silently, and to the browser tests as much as to the console.
   (window as unknown as Record<string, unknown>).__dynasty = {
     get sim() { return sim; },
+    get worldState() { return worldState; },
     camera,
     renderer,
   };

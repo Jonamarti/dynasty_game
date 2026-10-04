@@ -1,5 +1,14 @@
 # Next steps
 
+**2026-10-04: fase 29, geografía y WorldState.** main crea/reconstruye la isla
+clásica desde una raíz con IdSpace y Simulation actual. La geografía distingue
+clásico/aleatorio/Tierra sin mezclar relieve normalizado y metros. El atlas
+ofrece perfiles de comarca continuos y categorías de su región de origen.
+Siguiente: aplicar perfiles al terreno y recursos locales antes de ofrecer
+selección global; fuentes/paleoclima y world:bench pendientes. La fase 28 ya
+tiene carga y autoridad; scheduler/transiciones individuales siguen en 32.
+[Contrato](m15_phase29_worldstate.md).
+
 **2026-10-03: checkpoint coordinado, fase 28.** Objetos/agendas ya se unen
 con config/IDs, roster, terreno y reloj/RNG en un estado independiente y
 canónico. Verificación: 957 unitarios, typecheck y 74 e2e pasan; 27 escenarios

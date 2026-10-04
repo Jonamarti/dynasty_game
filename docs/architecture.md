@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-04 (M15 executable checkpoint loading and daily ledgers). No runtime
+Current as of 2026-10-04 (M15 geographic profiles and classic WorldState). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -155,6 +155,13 @@ from absolute/sea-relative Earth metres. Real comarca queries interpolate
 height and retain regional climate/water/feature provenance; they do not resolve
 local rivers or generate terrain. Classic mode has no macro map and marks its
 unknown geography explicitly. See [m15_phase29_geography.md](m15_phase29_geography.md).
+
+The browser now creates its classic local motor through `WorldState`, which
+holds the geographic mode, an IdSpace and the current Simulation. Rebuilding
+before character creation replaces the whole root and keeps the existing UI
+bindings. Starting seeds and streams are unchanged; headless tools still
+construct standalone Simulation. The root does not yet create global terrain,
+people or abandoned-comarca ledgers. See [m15_phase29_worldstate.md](m15_phase29_worldstate.md).
 
 **Work animation is presentational.** `render/WorkAnimation.ts` reads active
 harvest timers, valid node/tree targets and the shared `ARRIVAL_RADIUS`; movement
