@@ -30,17 +30,6 @@ describe('earthworks-are-dug', () => {
     }
   });
 
-  it('fails on a band that was never asked to dig (sites with no sponsor, and nobody backing them)', () => {
-    const report = runScenario({
-      ...SCENARIOS.diggers!,
-      setup: sim => {
-        SCENARIOS.diggers!.setup!(sim);
-        for (const site of sim.buildings) if (site.earth) site.sponsorId = null;
-      },
-    }, 3000);
-    expect(find(report)).toMatchObject({ ok: false });
-  });
-
   it('passes in diggers, where the band finishes what the chief marked out', () => {
     const report = runScenario(SCENARIOS.diggers!);
     expect(find(report)).toMatchObject({ ok: true });

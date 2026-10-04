@@ -87,11 +87,12 @@ function validate(state: WorldObjects, tick: number): void {
   // M15 phase 26c: an earthwork's plan and its banked progress travel with it.
   // The tiles are the record of how much was moved, so a malformed one would
   // turn a half-dug ditch into a finished or an impossible one on reload.
-  if (state.buildings.some(b => isEarthwork(b.def)
+  if (state.buildings.some(b => isEarthwork(b.def) || b.def.dig
       ? !Array.isArray(b.earth) || b.earth.some(tile => !tile || !Number.isSafeInteger(tile.x) || !Number.isSafeInteger(tile.y) ||
           (tile.kind !== 'dig' && tile.kind !== 'pile') || !Number.isFinite(tile.goal) || tile.goal <= 0 ||
           !Number.isFinite(tile.progress) || tile.progress < 0 || tile.progress > tile.goal) ||
-        (b.complete && b.earth.some(tile => tile.progress < tile.goal))
+        ((b.complete && b.earth.some(tile => tile.progress < tile.goal)) ||
+          (!isEarthwork(b.def) && b.progress > 0 && b.earth.some(tile => tile.progress < tile.goal)))
       : b.earth !== null && b.earth !== undefined)) invalid('invalid earthwork plan');
   if (state.trees.some(t => !(t instanceof Tree) || !t.def || !Number.isFinite(t.age) || !Number.isFinite(t.chopProgress))) invalid('invalid tree');
   if (state.piles.some(p => !(p instanceof ItemPile) || !(p.contents instanceof Inventory))) invalid('invalid item pile');

@@ -1,5 +1,15 @@
 # Known bugs and rough edges
 
+## M15 fase 26c: el silo cavado cuesta economía (2026-10-04)
+
+Medido en `farmers` (20 semillas): supervivencia media 73,1 % → 69,4 % (dentro
+del ruido) y −24 % de lo almacenado. Los silos terminados bajan de 48 a 29 en
+`band` a 3000 pasos, y `diggers` pierde `people-survive`. No se ha aislado si
+la causa es solo el trabajo añadido o también la planificación (una obra en
+curso ocupa más tiempo uno de los dos huecos de `MAX_SITES`). Opciones
+si el propietario lo quiere más barato: hoyo de 1 unidad, o que los silos de
+arranque vengan ya cavados, o `git revert` del commit del silo.
+
 ## M15 fase 26c: lo que las obras de tierra no hacen todavía (2026-10-04)
 
 - **La banda no las propone.** El jugador las coloca y su banda las trabaja

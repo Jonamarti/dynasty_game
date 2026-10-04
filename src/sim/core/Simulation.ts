@@ -3883,6 +3883,7 @@ export class Simulation {
   earthworkOrderRefusal(person: Person, site: Building): string | null {
     if (!site.earth) return t('that is not an earthwork');
     if (site.complete) return t('that earthwork is finished');
+    if (!site.def.earthwork && site.earthDone) return t('it is already dug');
     if (!this.world.sameRegion(person.x, person.y, site.centerX, site.centerY) &&
       !site.earth.some(tile => this.world.sameRegion(person.x, person.y, tile.x, tile.y))) {
       return t('there is no way across');
@@ -4256,9 +4257,8 @@ export class Simulation {
     if (!this.canPlace(def, x, y)) return null;
 
     const building = new Building(def, x, y, bandId, this.ids);
-    if (def.earthwork) {
-      building.earth = earthworkTiles(def.earthwork, x, y, def.width, def.height, this.world);
-    }
+    const plan = def.earthwork ?? def.dig;
+    if (plan) building.earth = earthworkTiles(plan, x, y, def.width, def.height, this.world);
     building.plannedTick = this.time.tick;
     building.playerPlaced = playerPlaced;
     building.sponsorId = sponsorId !== undefined

@@ -1641,13 +1641,16 @@ export class Renderer {
     const w = building.def.width * scale;
     const h = building.def.height * scale;
 
-    if (building.earth) {
+    if (building.def.earthwork) {
       this.drawEarthwork(building, selected);
       return;
     }
     if (this.art && this.drawBuildingArt(building, selected, px, py, w, h)) return;
 
     if (!building.complete) {
+      // A silo is dug before it is lined: while there is hollow still to dig,
+      // the tiles of the plan are drawn under the frame (`BuildingDef.dig`).
+      if (building.earth && !building.earthDone) this.drawEarthwork(building, false);
       // A site reads as an outline and a progress bar: clearly a plan rather
       // than a structure.
       ctx.fillStyle = 'rgba(210, 190, 150, 0.16)';

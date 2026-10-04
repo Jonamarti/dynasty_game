@@ -1221,7 +1221,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     const placed = tel.earthwork_placed ?? 0;
     if (placed === 0) skip('earthworks-are-dug', 'no earthwork was marked out in this scenario');
     else {
-      const sites = sim.buildings.filter(b => b.earth);
+      const sites = sim.buildings.filter(b => b.def.earthwork);
       const done = sites.filter(b => b.complete && b.earth!.every(t => t.progress >= t.goal));
       const lifts = tel.earthwork_lifts ?? 0;
       add('earthworks-are-dug', done.length > 0,

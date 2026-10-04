@@ -1,3 +1,56 @@
+## 2026-10-04 — M15 fase 26c (3): el silo se cava (medido aparte)
+
+`storage_pit` pasa a exigir cavar: `BuildingDef.dig` (hoyo 2x2, 2 unidades de
+hondo, 32 cm: una bodega, no un pozo; se sigue caminando). El plan cuelga de
+`Building.earth` como el de una obra, pero la obra **no se termina al cavarla**:
+`addWork` no cuenta hasta que `earthDone`, y quien termina el hueco pasa, sin
+soltar la orden, a revestirlo (`doEarthwork` cambia a `build`). `doBuild` sobre
+un silo sin cavar se vuelve `dig`; sin herramienta la razón es la de siempre
+(`no_digging_tool`), en el menú y al interrumpirse. `Brain` puntúa `dig` sobre
+el silo sin cavar igual que `build` y no puntúa `build` mientras falte el
+hueco; `directWork` manda a cavar a quien tiene herramienta. **Corrección
+encontrada al medir:** `dropStaleSites` miraba `progress + delivered` y un silo
+cavándose no movía ninguno de los dos, así que se descartaba como obsoleto a
+medio cavar; ahora cuenta también las levantadas. Los silos de arranque de cada
+banda (`placeCampSites`) también se cavan.
+
+**Medición (`sim:seeds` por escenario es demasiado lento aquí: 3 min por
+semilla en `century`, y un proceso en segundo plano no avanza; se usó un
+arnés propio con las mismas semillas, 20 en `band`/`crowded`/`farmers`,
+brazos A/B con la misma compilación y una variable temporal que se quitó antes
+del commit):**
+
+| escenario (semillas) | supervivencia media | silos terminados | almacenado (media) |
+|---|---|---|---|
+| `band` 3000 pasos (20) base | 99,8 % | 48 | 176 |
+| `band` con silo cavado de 3 uds. | 99,8 % | 29 | 91 |
+| `crowded` (20) base | 100 % | 61 | 132 |
+| `farmers` 24000 (20) base | 73,1 % | — | 323 |
+| `farmers` con hoyo de 3 uds. | 66,3 % | — | 232 |
+| `farmers` con hoyo de 2 uds. (**lo que se queda**) | **69,4 %** | — | **245** |
+
+Coste: **−3,7 puntos de supervivencia media en `farmers` a 20 semillas** (error
+típico de la diferencia de unos 7 puntos: no es resoluble) y **−24 % de lo
+almacenado**, que sí es consistente con el mecanismo (cavar el hueco dobla el
+trabajo del silo y la banda planifica menos obras mientras hay una en curso). El
+plan declaraba ≤ 3 puntos para toda la fase 26: **este paso lo supera
+ligeramente** y queda separado para poder revertirlo con un `git revert` sin
+tocar las obras. Con 3 unidades de profundidad el coste era de unos 7 puntos,
+por eso se dejó en 2. La matriz de 28 escenarios pasa de 108 a 100 fallos, pero
+con listas distintas por la divergencia habitual de todo cambio de economía
+(p. ej. `spatial-hash-spreads` en `labour`, `knowledge-is-found` en `farmers`);
+`diggers` pierde `people-survive` (8/12). Ninguno se atribuyó a una causa sin
+medir; `earthworks-are-dug` pasa. Más aplicables: el cavado hace aplicables
+`water-follows-the-trench` y `regions-stay-true` en todos (tiny 47/47 → 50/50).
+
+Pruebas: `silo-digging.test.ts` (4: declaración y plan, no se puede revestir
+sin cavar, cavado por quien va a construir y luego construido, razón sin
+herramienta, guardado a medio cavar y rechazo de un registro construido sin
+cavar). Se ajustaron dos pruebas que daban por hecho el silo sin cavar
+(`sabotage` lo cava por decreto; `farming` deja solo al que cosecha, porque un
+compañero se le adelantaba: era frágil ante cualquier cambio de la vida de la
+banda). Typecheck limpio; 1030/1030 unitarios en 143 archivos.
+
 ## 2026-10-04 — M15 fase 26f: el escenario `diggers` y `earthworks-are-dug`
 
 - **Escenario `diggers`** (matriz de 27 pasa a **28 escenarios**): una banda de 12
@@ -16,8 +69,8 @@
   que nadie va se descarta a los seis días y mirar solo a los supervivientes leería
   «nada que cavar»); pasa si al menos una está terminada con todas las casillas
   en su meta, leído del plan del edificio. **Medido contra el build roto**
-  (`earthwork-checks.test.ts`): con `addEarth` sin hacer nada falla («0 de 2…»), con
-  obras sin patrocinador falla, y n/a en `tiny`. Un intento de «banda sin
+  (`earthwork-checks.test.ts`): con `addEarth` sin hacer nada falla («0 de 2…»),
+  y n/a en `tiny`. (Una variante con obras sin patrocinador se descartó: el planificador de la banda patrocina los sitios huérfanos y los trabaja, así que no falla.) Un intento de «banda sin
   herramientas» no valía: los palos están por toda la isla y alguien cava igual;
   se descartó y se dejó constancia en el test.
 - `diggers` da 58/60: `cravings-steer-the-diet` y `nights-are-slept`, los mismos

@@ -845,7 +845,7 @@ function buildingActions(
   if (building.complete && !building.ruined && building.def.shelter > 0) {
     options.push(...putDownOptions(ctx, 'inside', theNoun(building.def.label.toLowerCase())));
   }
-  if (!building.complete && building.earth) {
+  if (!building.complete && building.def.earthwork) {
     // M15 phase 26c: ground to be moved. One verb, the design's own, and the
     // reason it is greyed is the tool — the one thing the person could fix.
     const lacks = earthworkWorkRefusal(actor, building);
@@ -859,11 +859,18 @@ function buildingActions(
         : undefined,
     });
   } else if (!building.complete) {
+    // A storage pit is dug before it is lined (`BuildingDef.dig`): until it is,
+    // the work on it is the digging, and the menu says what is missing for that.
+    const unDug = building.earth !== null && !building.earthDone;
+    const lacks = unDug ? earthworkWorkRefusal(actor, building) : null;
     options.push({
       id: 'build',
       label: t('Work on {site}', { site: theSite(building.def.label) }),
       icon: '\u{1F528}',
-      enabled: true,
+      enabled: lacks === null,
+      reason: lacks === 'dont_know_digging_tool' ? t('You do not know how to use your digging tools')
+        : lacks === 'no_digging_tool' ? t('You have nothing to dig with')
+        : undefined,
     });
     options.push({
       id: 'haul',

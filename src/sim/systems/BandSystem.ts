@@ -27,7 +27,7 @@ import type { Person } from '../entities/Person.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import type { Band } from '../core/Simulation.ts';
 import {
-  BUILDINGS, isTrap, isStation, isField, isHeap, isHerd, isWell, isStructure,
+  BUILDINGS, isTrap, isStation, isField, isEarthwork, isHeap, isHerd, isWell, isStructure,
   type Building, type BuildingDef,
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
@@ -1366,7 +1366,7 @@ export class BandSystem {
     const live = ctx.buildings.filter(b => b.ownerBandId === band.id);
     // Ground being moved is not a hut going up: it neither fills the band's
     // two site slots nor counts as a roof (M15 phase 26c).
-    const underway = live.filter(b => !b.complete && !b.earth).length;
+    const underway = live.filter(b => !b.complete && !isEarthwork(b.def)).length;
     if (underway >= MAX_SITES) return;
 
     // A hard ceiling, so that no combination of the conditions below can
@@ -1381,7 +1381,7 @@ export class BandSystem {
     // thing.
     const built = live.filter(b =>
       b.complete && !isTrap(b.def) && !isStation(b.def) && !isField(b.def) &&
-      !isHeap(b.def) && !isHerd(b.def) && !isWell(b.def) && !b.earth).length;
+      !isHeap(b.def) && !isHerd(b.def) && !isWell(b.def) && !isEarthwork(b.def)).length;
     if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
 
     // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
@@ -1714,7 +1714,12 @@ export class BandSystem {
         this.siteProgress.delete(site.id);
         continue;
       }
-      const mark = site.progress + site.delivered.total;
+      // Digging is work too: a silo's hollow moves `earth`, not `progress`, and
+      // a site whose lifts were not counted would be dropped as stale half dug.
+      // (An earthwork mirrors its tiles into `progress`; adding them again only
+      // makes the mark move, which is all it has to do.)
+      const dug = site.earth?.reduce((sum, tile) => sum + tile.progress, 0) ?? 0;
+      const mark = site.progress + site.delivered.total + dug;
       const seen = this.siteProgress.get(site.id);
       if (!seen || seen.mark !== mark) {
         this.siteProgress.set(site.id, { mark, day: ctx.day });
@@ -1803,9 +1808,10 @@ export class BandSystem {
       // Ground to be moved is worked with the earth verbs, and only by a hand
       // that has something to move it with: an order nobody can carry out would
       // be refused to the leader's face for no reason of the member's.
-      if (site.earth && earthworkWorkRefusal(member, site)) continue;
-      const action = site.earth ? site.def.earthwork!.kind
-        : site.materialsReady ? 'build' : 'haul';
+      const dig = site.earth !== null && !site.earthDone;
+      if (dig && earthworkWorkRefusal(member, site)) continue;
+      const action = site.def.earthwork ? site.def.earthwork.kind
+        : dig ? 'dig' : site.materialsReady ? 'build' : 'haul';
       if (ctx.command(leader, member, action, { buildingId: site.id })) directed++;
     }
     return directed;

@@ -164,6 +164,14 @@ export interface BuildingDef {
    * number of items of earth it asks to be moved, not ticks of building.
    */
   earthwork?: EarthworkSpec;
+  /**
+   * Ground that has to be dug out before this structure can be raised — M15
+   * phase 26c, the storage pit. The plan hangs off `Building.earth` exactly as
+   * an earthwork's does, but the building is not finished when it is dug: it
+   * is only then that materials are fitted and `addWork` counts. A silo is a
+   * hole first, and a lined one second.
+   */
+  dig?: EarthworkSpec;
   description: string;
 }
 
@@ -279,6 +287,10 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     // this the pit is a hole that food rots in at exactly the rate it rots in a
     // pack, which would make the sentence below a lie.
     preserves: 1.6,
+    // M15 phase 26c: the hollow is dug, a lift at a time, before it is lined.
+    // 2x2 and two items (32 cm) deep: a root cellar, not a pit anyone falls
+    // into, so it stays ground a person can walk across.
+    dig: { layout: 'fill', kind: 'dig', depth: 2 },
     requiresTech: null,
     description: 'A lined hollow. Holds a band’s surplus through a season.',
   },
@@ -831,7 +843,7 @@ export class Building {
     // it is drawn.
     this.complete = def.workTicks === 0 && Object.keys(def.materials).length === 0;
     this.crop = isField(def) ? new Crop() : null;
-    this.earth = isEarthwork(def) ? [] : null;
+    this.earth = isEarthwork(def) || def.dig ? [] : null;
   }
 
   /**
@@ -843,12 +855,16 @@ export class Building {
   addEarth(tile: EarthworkTile, items: number): boolean {
     if (this.complete || !this.earth) return false;
     tile.progress = Math.min(tile.goal, tile.progress + items);
-    this.progress = this.earth.reduce((sum, t) => sum + t.progress, 0);
-    if (earthworkDone(this.earth)) {
-      this.complete = true;
-      return true;
-    }
-    return false;
+    // A silo's `progress` is ticks of building, which this must not touch.
+    if (isEarthwork(this.def)) this.progress = this.earth.reduce((sum, t) => sum + t.progress, 0);
+    if (!earthworkDone(this.earth)) return false;
+    if (isEarthwork(this.def)) this.complete = true;
+    return true;
+  }
+
+  /** True once the ground is dug: always for a building with nothing to dig. */
+  get earthDone(): boolean {
+    return this.earth === null || earthworkDone(this.earth);
   }
 
   /** Centre of the footprint, which is where people walk to. */
@@ -938,7 +954,8 @@ export class Building {
 
   /** Adds work. Returns true if this was the moment it was finished. */
   addWork(amount: number): boolean {
-    if (this.complete || !this.materialsReady) return false;
+    // A silo cannot be lined before the hollow is dug (`BuildingDef.dig`).
+    if (this.complete || !this.materialsReady || !this.earthDone) return false;
     this.progress += amount;
     if (this.progress >= this.def.workTicks) {
       this.complete = true;

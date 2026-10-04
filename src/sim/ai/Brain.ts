@@ -2681,7 +2681,7 @@ export class Brain {
             (person.order !== null && person.targetBuildingId === b.id))),
         b => -person.distanceTo({ x: b.centerX, y: b.centerY })
       );
-      if (site && site.earth) {
+      if (site && site.def.earthwork) {
         // M15 phase 26c: ground to be moved is worked with the earth verbs, on
         // the same score a frame draws a builder at, and only by somebody who
         // could start (a tool in hand and the idea of how to use it). Nobody is
@@ -2692,8 +2692,17 @@ export class Brain {
               * this.proximityBonus(person, { x: site.centerX, y: site.centerY }, ctx.sightRadius));
         }
       } else if (site) {
-        const ready = site.materialsReady;
+        // A storage pit is dug before it is lined: nobody builds on a hollow
+        // that is not there, so it is not `ready` until the digging is done,
+        // and whoever can dig it scores the dig on the same terms as a builder.
+        const unDug = site.earth !== null && !site.earthDone;
+        const digger = unDug && !earthworkWorkRefusal(person, site);
+        const ready = site.materialsReady && !unDug;
         const canHelp = ready || site.wants(person.inventory);
+        if (digger) {
+          add('dig', (comfortNow - 0.45) * 1.4 * (0.4 + person.skillFactor('build'))
+            * this.proximityBonus(person, { x: site.centerX, y: site.centerY }, ctx.sightRadius));
+        }
         if (canHelp) {
           add(ready ? 'build' : 'haul',
             (comfortNow - 0.45) * 1.4 * (0.4 + person.skillFactor('build'))

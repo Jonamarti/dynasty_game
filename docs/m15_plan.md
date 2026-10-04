@@ -2228,7 +2228,7 @@ terraplén, canal y bancal; `Building.earth`, progreso por casilla, razones, men
 con vista previa y rechazo) están hechos (2026-10-04); también el reubicado de lo
 que queda bajo el agua. Faltan la puerta `earthworks`
 y los nodos de sus diseños de 26b, la persuasión de la banda como proponente, el
-silo que se cava y 26e. El escenario `diggers` con `earthworks-are-dug` de 26f
+26e. El silo que se cava está hecho y medido aparte (2026-10-04; coste −3,7 puntos a 20 semillas, ver `changelog.md`). El escenario `diggers` con `earthworks-are-dug` de 26f
 está hecho (2026-10-04). `pitDepth`, que ya alcanza el diseño del hoyo, está probado en `World`.
 Ver `changelog.md`.
 

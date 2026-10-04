@@ -317,6 +317,13 @@ describe('a field in a world', () => {
     aDayIn(sim);
     const person = sim.livingPeople()[0]!;
     const field = fieldNear(sim, person);
+    // Nobody else about, so a bandmate cannot reap the ripe crop first: what
+    // the world does around a ripe field changes with every unrelated
+    // change to how a band spends its days, and this test is about what the
+    // reaping gives and takes. (The pack may also hold the spoil and the stick
+    // of a silo dug in the first day, M15 phase 26c, which would leave no room.)
+    for (const other of sim.livingPeople()) if (other !== person) other.die('test');
+    for (const item of ['earth', 'sticks']) person.inventory.remove(item, person.inventory.count(item));
     field.crop!.sow(sim.time.day);
     field.crop!.growth = 1;
     field.crop!.stage = 'ripe';

@@ -1716,6 +1716,12 @@ export class ActionSystem {
       this.stop(person, 'earthwork_done', ctx);
       return;
     }
+    if (!site.def.earthwork && site.earthDone) {
+      // A silo that has been dug is built next, by the same hands.
+      person.action = 'build';
+      person.actionTimer = 0;
+      return;
+    }
     const lacks = earthworkWorkRefusal(person, site);
     if (lacks) {
       this.abandon(person, lacks, ctx);
@@ -1850,6 +1856,13 @@ export class ActionSystem {
       if (task === 'pile') finished = site.addEarth(planTile!, lift);
     }
 
+    if (finished && !site.complete) {
+      // The hollow of a storage pit is dug: carry on to lining it.
+      telemetry.count('hollow_dug');
+      person.action = 'build';
+      person.actionTimer = 0;
+      return;
+    }
     if (finished) {
       telemetry.count('earthwork_completed');
       telemetry.count('completed_' + site.def.id);
@@ -2160,8 +2173,8 @@ export class ActionSystem {
     // Ground to be moved is not built: turn to the verb that works it, the way
     // `haul` is taken up below when a builder is carrying what the site wants.
     const dug = person.targetBuildingId === null ? undefined : ctx.buildingsById.get(person.targetBuildingId);
-    if (dug?.earth) {
-      person.action = dug.def.earthwork!.kind;
+    if (dug?.earth && (dug.def.earthwork || !dug.earthDone)) {
+      person.action = dug.def.earthwork?.kind ?? 'dig';
       return;
     }
     const site = this.reachBuilding(person, ctx);

@@ -68,6 +68,7 @@ function finishedBuilding(
   expect(placed, 'could not site a ' + defId + ' near ' + nearX + ',' + nearY).not.toBeNull();
   const site = placed!;
   for (const [itemId, needed] of Object.entries(site.def.materials)) site.delivered.add(itemId, needed);
+  for (const tile of site.earth ?? []) site.addEarth(tile, tile.goal); // a silo is dug first
   expect(site.addWork(site.def.workTicks + 1)).toBe(true);
   expect(site.complete).toBe(true);
   expect(site.durability).toBe(site.def.workTicks);
