@@ -6,6 +6,7 @@
  * unit, so a unit of 0.0004 is 16 cm).
  */
 import type { Person } from '../entities/Person.ts';
+import type { Building } from '../entities/Building.ts';
 import type { World } from './World.ts';
 import { techPower, type Tech } from '../knowledge/Tech.ts';
 
@@ -96,4 +97,22 @@ export function liftKind(world: World, x: number, y: number, depth: number): { i
   if (depth < -1e-9) return { item: 'earth', topsoil: false, limit: LIFT };
   if (dugItems < TOPSOIL_ITEMS) return { item: 'earth', topsoil: true, limit: Math.min(LIFT, TOPSOIL_ITEMS - dugItems) };
   return { item: isWetSubsoil(world, x, y) ? 'mud' : 'earth', topsoil: false, limit: LIFT };
+}
+
+/**
+ * What stops this person working an earthwork at all, before any ground is
+ * looked at: the tool. A digging design needs one; a heaping design needs
+ * earth in the hands or a tool to scrape some up. Null means they can start.
+ * One answer for the order, the menu and the scorer, so that a person is never
+ * sent to a ditch they have nothing to cut it with.
+ */
+export function earthworkWorkRefusal(
+  person: Person, site: Building
+): 'no_digging_tool' | 'dont_know_digging_tool' | null {
+  const tiles = site.earth ?? [];
+  const digs = tiles.some(tile => tile.kind === 'dig' && tile.progress < tile.goal);
+  const heaps = tiles.some(tile => tile.kind === 'pile' && tile.progress < tile.goal);
+  if (digTool(person)) return null;
+  if (!digs && heaps && person.inventory.count('earth') > 0) return null;
+  return digToolFailure(person);
 }

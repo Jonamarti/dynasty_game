@@ -1,5 +1,38 @@
 # Known bugs and rough edges
 
+## M15 fase 26c: lo que las obras de tierra no hacen todavía (2026-10-04)
+
+- **La banda no las propone.** El jugador las coloca y su banda las trabaja
+  (apoyo y órdenes del jefe), pero ningún proponente NPC decide una zanja
+  defensiva tras una incursión ni un canal por el campo seco. La persuasión de la
+  fase 6 existe para `Building.sponsorId`, y encajaría; lo que falta es la
+  *razón* medible de proponer (presión de seguridad, sequía del campo), y
+  `BandSystem.planBuildings` no tiene ni un registro de incursiones por banda que
+  la alimente, ni un lector de sequía por campo. Se deja sin hacer antes que
+  inventar una regla «cava cuando…». Se retoma con 26e.
+- **Foso, canal, bancal y terraplén tienen lectores parciales.** Todos cambian
+  el relieve, y lo leen la pendiente (25b), la vista (25c) y el llenado (26d);
+  el foso solo se llena donde el terreno es bajo, y una playa natural sube unos
+  4 m por casilla. Pero el coste de cruzar una zanja *honda*, las incursiones que la
+  rodean, el riego del canal (`irrigation`) y la fertilidad del bancal son 26e.
+  Por eso la puerta `earthworks` y los nodos `ditch`/`moat`/`terracing` siguen sin
+  declararse: no hay lector que los pida, y las obras están abiertas a todos
+  (un agujero en el suelo es más antiguo que cualquier técnica).
+- **Una casilla de plan que se hace honda bajo los pies de otro peón.** El que
+  cava no está nunca en la casilla que se hará pozo (trabaja desde el borde),
+  pero otro compañero de la cuadrilla sí puede estar en ella cuando alguien
+  la lleva a `pitDepth`: `clearLostGround` lo pone a salvo y su orden se corta
+  con `ground_gave_way`. Es visible y no se pierde trabajo; no se ha medido
+  con cuadrillas grandes.
+- **Un foso que se llena puede aislar casillas pendientes** (el agua corta el
+  camino hasta ellas): la orden se niega con «no hay paso» y la obra queda a
+  medias. En un mapa abierto se trabaja desde fuera y no ocurre; junto al borde del
+  mapa sí. Ver `earthwork-results` en `earthworks.test.ts`, que elige un sitio
+  con tierra alrededor por esta razón.
+- **El hoyo es tan hondo (16 unidades, 2,6 m) que una persona sola tarda
+  semanas** con palo de cavar; es deliberado (lo hondo es lo difícil), pero
+  conviene mirarlo con el escenario `diggers`.
+
 ## M15 fase 26d: agua que entra, cosas que quedan debajo — RESUELTO (2026-10-04)
 
 Una casilla que se llenaba de agua (o un hoyo más hondo que `pitDepth`) no

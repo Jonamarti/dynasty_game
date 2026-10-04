@@ -2223,10 +2223,13 @@ se ve más`.
 pala a 3× con `carpentry`) y los verbos y el relieve visible de 26c. Las recetas,
 el equipo llevado, el sprite al cavar y los motivos de rechazo están probados.
 También está `regions-stay-true` de 26f, aplicado a toda la matriz. La conservación de
-fertilidad y la extracción de barro de 26a también están (2026-10-04). El agua sigue a la zanja (26d) y el check `water-follows-the-trench` también (2026-10-04). Faltan la puerta `earthworks`
-y los nodos de sus diseños de 26b, los diseños de 26c, 26e y el escenario
-`diggers` con `earthworks-are-dug` de 26f. `pitDepth` existe y está probado en `World`, pero ninguna orden lo alcanza
-aún. Ver `changelog.md`.
+fertilidad y la extracción de barro de 26a también están (2026-10-04). El agua sigue a la zanja (26d) y el check `water-follows-the-trench` también (2026-10-04). Los diseños de 26c (hoyo, zanja, foso, montículo,
+terraplén, canal y bancal; `Building.earth`, progreso por casilla, razones, menú
+con vista previa y rechazo) están hechos (2026-10-04); también el reubicado de lo
+que queda bajo el agua. Faltan la puerta `earthworks`
+y los nodos de sus diseños de 26b, la persuasión de la banda como proponente, el
+silo que se cava, 26e y el escenario `diggers` con `earthworks-are-dug` de 26f. `pitDepth`, que ya alcanza el diseño del hoyo, está probado en `World`.
+Ver `changelog.md`.
 
 **Objetivo.** El terreno se puede cambiar: hoyos, silos, zanjas, fosos con
 agua, montones, terraplenes y canales. Es lo que `next-steps.md` §7 lleva

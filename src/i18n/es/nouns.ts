@@ -9,6 +9,7 @@
  */
 export const ES_FEMININE: ReadonlySet<string> = new Set([
   'mud hut',
+  'ditch',
   'wattle hut',
   'stone house',
   'snare line',

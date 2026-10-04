@@ -312,4 +312,6 @@ export const ES_HUD: Record<string, string> = {
   "grew up knowing it": "lo aprendió al crecer",
   "known by instinct": "lo sabe por instinto",
   "{name}, in arms": "{name}, en brazos",
+  "{n} items of earth to move": "{n} unidades de tierra por mover",
+  "R turns the plan to run the other way": "R gira el plano para que corra al otro lado",
 };

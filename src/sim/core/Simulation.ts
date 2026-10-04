@@ -13,7 +13,7 @@
  */
 import { trustEachOther } from '../social/Factions.ts';
 import { advanceGrass, grassBuried, CUT_ABOVE } from './Grass.ts';
-import { DIG_TO, PILE_TO, digTool, digToolFailure } from './Earth.ts';
+import { DIG_TO, PILE_TO, digTool, digToolFailure, earthworkWorkRefusal } from './Earth.ts';
 import { animalBlow } from '../entities/AnimalAttack.ts';
 import { RNG } from './RNG.ts';
 import { World } from './World.ts';
@@ -57,6 +57,7 @@ import {
 import {
   Building, BUILDINGS, isTrap, isHerd, isStructure, type BuildingDef,
 } from '../entities/Building.ts';
+import { earthworkTiles, slopeAcross } from '../entities/Earthwork.ts';
 import { accrueUnits } from './Progress.ts';
 import { decayMood } from './Mood.ts';
 import { consumeFood, decayMacroBalance, decayMacroTarget } from './Macros.ts';
@@ -3779,8 +3780,16 @@ export class Simulation {
       const building = this.buildingsById.get(target.buildingId);
       if (!building) return this.cancelOrder(person, t('that building is gone'));
       if (this.time.tick - building.plannedTick < 200 &&
-          ['build', 'haul', 'chop', 'gather_for_site'].includes(action)) {
+          ['build', 'haul', 'chop', 'gather_for_site', 'dig', 'pile'].includes(action)) {
         building.first200Ordered.add(person.id);
+      }
+      // M15 phase 26c: an earthwork is worked with the earth verbs, and each
+      // refusal is a sentence rather than a walk that ends in nothing.
+      if (action === 'dig' || action === 'pile') {
+        const why = this.earthworkOrderRefusal(person, building);
+        if (why) return this.cancelOrder(person, why);
+      } else if (building.def.earthwork && (action === 'build' || action === 'haul')) {
+        return this.cancelOrder(person, t('that is dug, not built'));
       }
       person.targetBuildingId = building.id;
       person.targetX = building.centerX;
@@ -3864,6 +3873,24 @@ export class Simulation {
     }
     // Actions like 'rest' and 'eat' happen where you stand.
     return true;
+  }
+
+  /**
+   * Why this person cannot be put to work on this earthwork, or null. Shared
+   * by the player's order and `Brain`'s scorer through `earthworkWorkable`, so
+   * the menu, the order and the AI refuse for the same reasons.
+   */
+  earthworkOrderRefusal(person: Person, site: Building): string | null {
+    if (!site.earth) return t('that is not an earthwork');
+    if (site.complete) return t('that earthwork is finished');
+    if (!this.world.sameRegion(person.x, person.y, site.centerX, site.centerY) &&
+      !site.earth.some(tile => this.world.sameRegion(person.x, person.y, tile.x, tile.y))) {
+      return t('there is no way across');
+    }
+    const lacks = earthworkWorkRefusal(person, site);
+    return lacks === 'dont_know_digging_tool' ? t('they do not know how to use their digging tools')
+      : lacks === 'no_digging_tool' ? t('they have nothing to dig with')
+      : null;
   }
 
   /**
@@ -4007,7 +4034,8 @@ export class Simulation {
   /** Designs currently placeable, given what the world knows how to do. */
   availableDesigns(): BuildingDef[] {
     return Object.values(BUILDINGS).filter(
-      def => def.requiresTech === null || this.knownTech.has(def.requiresTech)
+      def => !def.earthwork?.turnOf &&
+        (def.requiresTech === null || this.knownTech.has(def.requiresTech))
     );
   }
 
@@ -4081,6 +4109,10 @@ export class Simulation {
         return t('{thing} is already there', { thing: theNoun(existing.def.label.toLowerCase()) });
       }
     }
+    if (def.earthwork) {
+      const why = this.earthworkRefusal(def, x, y);
+      if (why) return why;
+    }
     if (def.placement === 'shore' && !this.touchesShore(def, x, y)) {
       return t('{thing} has to sit at the water\u2019s edge', { thing: aNoun(def.label.toLowerCase()) });
     }
@@ -4095,6 +4127,34 @@ export class Simulation {
     if (def.placement === 'arable') {
       const barren = this.arableRefusal(def, x, y);
       if (barren) return barren;
+    }
+    return null;
+  }
+
+  /**
+   * Why an earthwork cannot be marked out here, or null — M15 phase 26c, the
+   * refusals that are about the ground rather than about something standing on
+   * it. Tiles that cannot take a spade (rock, water) are already refused by the
+   * walkable test in `placementRefusal`, since every footprint tile has to be
+   * land; what is left is the two designs that must start at water and the
+   * terrace, which is for a slope and means nothing on the flat.
+   */
+  private earthworkRefusal(def: BuildingDef, x: number, y: number): string | null {
+    const spec = def.earthwork!;
+    if (spec.water) {
+      const tiles = earthworkTiles(spec, x, y, def.width, def.height, this.world);
+      const wet = spec.water === 'ring'
+        ? tiles.some(tile => this.world.isShore(tile.x, tile.y))
+        : this.world.isShore(tiles[0]!.x, tiles[0]!.y);
+      if (!wet) {
+        return spec.water === 'ring'
+          ? t('{thing} has to touch the water somewhere', { thing: aNoun(def.label.toLowerCase()) })
+          : t('{thing} has to start at the water’s edge', { thing: aNoun(def.label.toLowerCase()) });
+      }
+    }
+    if (spec.slope !== undefined &&
+      slopeAcross(spec, x, y, def.width, def.height, this.world) < spec.slope) {
+      return t('the ground there is too level for {thing}', { thing: aNoun(def.label.toLowerCase()) });
     }
     return null;
   }
@@ -4196,6 +4256,9 @@ export class Simulation {
     if (!this.canPlace(def, x, y)) return null;
 
     const building = new Building(def, x, y, bandId, this.ids);
+    if (def.earthwork) {
+      building.earth = earthworkTiles(def.earthwork, x, y, def.width, def.height, this.world);
+    }
     building.plannedTick = this.time.tick;
     building.playerPlaced = playerPlaced;
     building.sponsorId = sponsorId !== undefined

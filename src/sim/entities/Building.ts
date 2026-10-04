@@ -20,6 +20,7 @@
 import { Inventory } from './Item.ts';
 import { Crop } from './Field.ts';
 import type { Tech } from '../knowledge/Tech.ts';
+import { designTotal, earthworkDone, type EarthworkSpec, type EarthworkTile } from './Earthwork.ts';
 
 export interface BuildingDef {
   id: string;
@@ -155,6 +156,14 @@ export interface BuildingDef {
    * their own mechanisms to.
    */
   providesWater?: boolean;
+  /**
+   * Set on a design that moves ground to a plan rather than raising a
+   * structure — M15 phase 26c. The tiles, and how far each has got, hang off
+   * `Building.earth`; see `Earthwork.ts` for the vocabulary and for why a
+   * design is a `BuildingDef` at all. `workTicks` on such a design is the
+   * number of items of earth it asks to be moved, not ticks of building.
+   */
+  earthwork?: EarthworkSpec;
   description: string;
 }
 
@@ -218,7 +227,14 @@ export function isWell(def: BuildingDef): boolean {
  * that agreement drifts.
  */
 export function isStructure(def: BuildingDef): boolean {
-  return def.workTicks > 0;
+  // An earthwork is ground that has been moved: there are no walls to damage,
+  // no roof to burn and no `durability`, so it is neither sabotaged nor raided.
+  return def.workTicks > 0 && def.earthwork === undefined;
+}
+
+/** True if a design moves ground to a plan (a pit, a ditch, a mound...). See `earthwork`. */
+export function isEarthwork(def: BuildingDef): boolean {
+  return def.earthwork !== undefined;
 }
 
 export const BUILDINGS: Record<string, BuildingDef> = {
@@ -631,6 +647,59 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
 };
 
+// --- M15 phase 26c: designs that move ground -----------------------------------
+//
+// Appended after the table so that every design above keeps its place in
+// `Object.values(BUILDINGS)`, which the planner and the menu iterate. No
+// materials and no technology: a hole in the ground is older than any entry in
+// the tree, and what limits it is the digger's tool (`digTool`) and the hours.
+// The designs that wait on the `earthworks` gate (26e) are declared with it,
+// when the ditch and the moat have a reader; until then they are open to all.
+// Each linear design has a turned copy (`_ns`) that is the same plan running
+// north-south: the build menu lists one design and R turns it.
+function earthworkDef(
+  id: string, label: string, icon: string, width: number, height: number,
+  spec: EarthworkSpec, description: string
+): BuildingDef {
+  return {
+    id, label, icon, width, height, materials: {},
+    workTicks: designTotal(spec, width, height),
+    shelter: 0, storage: 0, requiresTech: null, earthwork: spec, description,
+  };
+}
+
+function withTurned(def: BuildingDef): BuildingDef[] {
+  const spec = def.earthwork!;
+  const turned = earthworkDef(def.id + '_ns', def.label, def.icon, def.height, def.width,
+    { ...spec, turned: true, turnOf: def.id }, def.description);
+  return [def, turned];
+}
+
+const EARTHWORK_DEFS: BuildingDef[] = [
+  earthworkDef('pit', 'Pit', '\u{1F573}', 2, 2,
+    { layout: 'fill', kind: 'dig', depth: 16 },
+    'A hole sunk past what anyone can climb out of. Nobody crosses it, and what falls in stays.'),
+  ...withTurned(earthworkDef('ditch', 'Ditch', '\u{3030}', 6, 1,
+    { layout: 'fill', kind: 'dig', depth: 6 },
+    'A trench a person can still climb out of. It costs a step to cross, and the earth comes up beside it.')),
+  earthworkDef('moat', 'Moat', '\u{1F30A}', 6, 6,
+    { layout: 'ring', kind: 'dig', depth: 16, water: 'ring' },
+    'A ring of ground dug too deep to cross, starting at the water. Where the water follows, it fills.'),
+  earthworkDef('mound', 'Mound', '\u{26F0}', 3, 3,
+    { layout: 'cone', kind: 'pile', depth: 6 },
+    'Earth heaped into a rise. Whoever stands on it sees further, and whoever climbs it goes slower.'),
+  ...withTurned(earthworkDef('embankment', 'Embankment', '\u{1F9F1}', 6, 1,
+    { layout: 'fill', kind: 'pile', depth: 6 },
+    'A long bank of earth. Dug earth is carried to it, and it is a wall to climb rather than to pass.')),
+  ...withTurned(earthworkDef('canal', 'Canal', '\u{1F6A3}', 7, 1,
+    { layout: 'fill', kind: 'dig', depth: 4, water: 'end' },
+    'A shallow cut that starts at the water and leads away from it. Where the ground lies low, the water follows.')),
+  ...withTurned(earthworkDef('terrace', 'Terrace', '\u{1F33E}', 5, 3,
+    { layout: 'cutfill', kind: 'dig', depth: 2, slope: 2 },
+    'The slope cut level: the high edge dug away and the low edge built up with it.')),
+];
+for (const def of EARTHWORK_DEFS) BUILDINGS[def.id] = def;
+
 import type { IdSpace } from '../core/IdSpace.ts';
 
 let nextBuildingId = 1;
@@ -743,6 +812,15 @@ export class Building {
    */
   readonly crop: Crop | null;
 
+  /**
+   * The tiles of an earthwork and how much of each is done, null for every
+   * other design — M15 phase 26c. The progress lives here, on the tile, and is
+   * written on every lift, which is what `AGENTS.md` asks of any action that
+   * outlasts a person's needs. Filled by `Simulation.place`, since the plan
+   * depends on the ground (which edge of a terrace is the high one).
+   */
+  earth: EarthworkTile[] | null;
+
   constructor(def: BuildingDef, x: number, y: number, ownerBandId: number, ids?: IdSpace) {
     this.id = ids ? ids.allocate('building') : nextBuildingId++;
     this.def = def;
@@ -753,6 +831,24 @@ export class Building {
     // it is drawn.
     this.complete = def.workTicks === 0 && Object.keys(def.materials).length === 0;
     this.crop = isField(def) ? new Crop() : null;
+    this.earth = isEarthwork(def) ? [] : null;
+  }
+
+  /**
+   * Moves one tile of an earthwork on by `items`, and the building with it.
+   * Returns true the moment the last tile is complete. `progress` is kept as
+   * the sum of the tiles so that `completion`, and the bar on the map, read it
+   * the way they read any other site.
+   */
+  addEarth(tile: EarthworkTile, items: number): boolean {
+    if (this.complete || !this.earth) return false;
+    tile.progress = Math.min(tile.goal, tile.progress + items);
+    this.progress = this.earth.reduce((sum, t) => sum + t.progress, 0);
+    if (earthworkDone(this.earth)) {
+      this.complete = true;
+      return true;
+    }
+    return false;
   }
 
   /** Centre of the footprint, which is where people walk to. */

@@ -1,3 +1,59 @@
+## 2026-10-04 — M15 fase 26c (2): los diseños de obras de tierra
+
+Siete diseños que se colocan como un campo: `pit` (hoyo 2x2, 16 unidades de
+hondo, que deja de caminarse), `ditch` (zanja 6x1 de 6), `moat` (foso, anillo
+6x6 de 16, que ha de tocar el agua), `mound` (montículo 3x3 en cono, 6 en el
+centro), `embankment` (terraplén 6x1 de 6 de alto), `canal` (7x1 de 4, que
+empieza en la orilla) y `terrace` (bancal 5x3: se cava el borde alto y se levanta el
+bajo, y se niega en llano). Cada línea tiene su copia girada (`_ns`) que el menú
+no lista: **R** gira el plano.
+
+- **Qué son.** `BuildingDef.earthwork` (`EarthworkSpec`: disposición, verbo,
+  hondura, agua, pendiente) y `Building.earth`: la lista de `EarthworkTile`
+  `{x, y, kind, goal, progress}`. El campo es el patrón: sitio, dueño, picker,
+  patrocinador y quienes lo apoyan, la orden por `buildingId` y el guardado salen
+  de `Building` sin una segunda entidad (`Earthwork.ts` lo razona). No son
+  `isStructure`: no se sabotean ni se asaltan, y el planificador de la banda no
+  los cuenta como techo ni como obra en curso.
+- **El progreso está en la casilla.** `EarthworkTile.progress` se escribe en
+  cada levantada (`Building.addEarth`), como pide `AGENTS.md` de las acciones
+  largas; el suelo (`World.offset`) es el segundo registro. Persiste por el grafo
+  de objetos (`WorldObjectRecords` valida el plan: casillas finitas, `progress` entre
+  0 y `goal`, una obra completa sin casillas a medias). `WorldRecords` guarda el
+  terreno, no los edificios, así que ahí no hay nada que añadir.
+- **Los verbos.** `dig` y `pile` apuntados a una obra pasan a `doEarthwork`: cada
+  tic decide la siguiente levantada desde las manos y lo que falta del plan
+  (tierra en las manos y algo que amontonar: amontonar; algo que cavar: cavar, o,
+  con las manos llenas de tierra, llevar el escombro a una casilla junto a la obra
+  y echarlo, así una zanja crece su talud sin que nadie lo pida; barro lleno: se deja
+  donde está, que la arcilla no es escombro; solo amontonar y sin tierra: rascar de
+  suelo cercano). Un hoyo hondo se cava desde el borde. `interruption()` tras cada
+  levantada, sin `ignoreLaden`: cargar es el trabajo.
+- **Razones, todas en pantalla y traducidas:** `no_digging_tool`,
+  `dont_know_digging_tool`, `ground_too_hard` (orden sobre roca/agua),
+  `hands_full`, `nowhere_to_put_the_earth`, `nowhere_to_dig` (nada de donde
+  rascar), `earthwork_done`, y en la colocación «tiene que tocar el agua», «tiene
+  que empezar en el borde del agua» y «el suelo ahí es demasiado llano para…».
+  `build`/`haul` sobre una obra se niegan («eso se cava, no se construye»).
+- **Quién cava.** El jugador, desde el menú (opción «Trabajar en…», con la razón
+  de la herramienta si falta). Y quienes lo apoyan: `Brain` puntúa `dig`/`pile`
+  sobre un sitio patrocinado o apoyado igual que `build`, y `directWork` del jefe
+  manda a los que tienen herramienta. La banda no *propone* obras de tierra por
+  persuasión: pendiente, ver `bugs.md`.
+- **Interfaz.** La barra de construcción lista las obras (coste: «N unidades de
+  tierra por mover»); la sombra previa dibuja el plan casilla a casilla (oscuro
+  lo que se cava, claro lo que se amontona; el anillo de un foso es un anillo) y
+  escribe la razón del rechazo junto al cursor. El mapa pinta las casillas
+  pendientes y una barra de avance; terminadas, el relieve del terreno es la imagen.
+- **Medido.** Typecheck limpio; 1023/1023 unitarios en 141 archivos (11 nuevos en
+  `earthworks.test.ts`: declaración y suma del plan, colocación y rechazos,
+  zanja cavada por una persona con el progreso en las casillas y el talud, montículo
+  con tierra rascada al lado, hoyo desde el borde y sin nadie dentro, foso que se
+  llena, bancal, órdenes y razones, ida y vuelta por el guardado con dos corridas
+  iguales). Matriz de 27 escenarios: 108 fallos, **las mismas comprobaciones por
+  escenario** que la línea base (ver `bugs.md`); ninguna obra existe en ellos, así
+  que nada se mueve, como se pretendía.
+
 ## 2026-10-04 — M15 fase 26c (1): el agua que entra reubica a quien estaba encima
 
 Cierra el punto abierto de `bugs.md` tras 26d. Cuando `earthVersion` se mueve,

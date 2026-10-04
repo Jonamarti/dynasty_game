@@ -239,6 +239,11 @@ export class World {
     return this.config.waterLevel;
   }
 
+  /** How deep a hole must be, in elevation units, before it stops being ground you can walk on. */
+  get pitDepth(): number {
+    return this.config.pitDepth;
+  }
+
   /** Metres above the sea at a tile (negative below it). */
   metresAt(x: number, y: number): number {
     return (this.heightAt(x, y) - this.config.waterLevel) * this.config.metresPerUnit;

@@ -27,7 +27,7 @@ import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import { BODY_PARTS, partWord } from '../sim/entities/Body.ts';
 import { BUSHES, WILD_PLANTS, type ResourceKind, type ResourceNode } from '../sim/entities/ResourceNode.ts';
-import { isStructure, type Building, type BuildingDef } from '../sim/entities/Building.ts';
+import { BUILDINGS, isStructure, type Building, type BuildingDef } from '../sim/entities/Building.ts';
 import type { Tree } from '../sim/entities/Tree.ts';
 import type { ItemPile } from '../sim/entities/ItemPile.ts';
 import type { Animal } from '../sim/entities/Animal.ts';
@@ -559,9 +559,12 @@ export class Hud {
     for (const def of sim.availableDesigns()) {
       const button = document.createElement('button');
       button.className = 'hud-design' + (this.activeDesign?.id === def.id ? ' is-active' : '');
-      const cost = Object.entries(def.materials)
-        .map(([id, n]) => n + ' ' + t(ITEMS[id]?.label ?? id).toLowerCase())
-        .join(', ') || t('no materials');
+      // An earthwork costs no materials, only earth moved: say how much.
+      const cost = def.earthwork
+        ? t('{n} items of earth to move', { n: def.workTicks })
+        : Object.entries(def.materials)
+          .map(([id, n]) => n + ' ' + t(ITEMS[id]?.label ?? id).toLowerCase())
+          .join(', ') || t('no materials');
       button.innerHTML =
         '<span class="hud-design-icon">' + def.icon + '</span>' +
         '<span class="hud-design-name">' + escapeHtml(t(def.label)) + '</span>' +
@@ -575,6 +578,13 @@ export class Hud {
       row.appendChild(button);
     }
     this.buildBarEl.appendChild(row);
+
+    // A line design can be turned; say so where the player is looking.
+    if (this.activeDesign && BUILDINGS[this.activeDesign.id + '_ns']) {
+      const hint = el('div', 'hud-buildbar-locked');
+      hint.textContent = t('R turns the plan to run the other way');
+      this.buildBarEl.appendChild(hint);
+    }
 
     const lockedDefs = sim.lockedDesigns();
     if (lockedDefs.length > 0) {

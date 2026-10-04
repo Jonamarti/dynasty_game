@@ -345,4 +345,12 @@ export const ES_SIM: Record<string, string> = {
   "babies cannot act on their own": "los bebés no pueden actuar por sí solos",
   "nursing the baby": "amamantando al bebé",
   "nurse the baby": "amamantar al bebé",
+  // M15 phase 26c: marking out and ordering earthworks.
+  "{thing} has to touch the water somewhere": "{thing} tiene que tocar el agua en algún punto",
+  "{thing} has to start at the water’s edge": "{thing} tiene que empezar en el borde del agua",
+  "the ground there is too level for {thing}": "el suelo ahí es demasiado llano para {thing}",
+  "that is not an earthwork": "eso no es una obra de tierra",
+  "that earthwork is finished": "esa obra de tierra ya está terminada",
+  "that is dug, not built": "eso se cava, no se construye",
+  "finished {thing}": "terminó {thing}",
 };

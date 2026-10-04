@@ -29,6 +29,7 @@ import type { Relationship, RelationshipGraph } from '../social/Relationships.ts
 import { telemetry } from '../core/Telemetry.ts';
 import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../entities/Building.ts';
+import { earthworkWorkRefusal } from '../core/Earth.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
 import type { Building } from '../entities/Building.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
@@ -2680,7 +2681,17 @@ export class Brain {
             (person.order !== null && person.targetBuildingId === b.id))),
         b => -person.distanceTo({ x: b.centerX, y: b.centerY })
       );
-      if (site) {
+      if (site && site.earth) {
+        // M15 phase 26c: ground to be moved is worked with the earth verbs, on
+        // the same score a frame draws a builder at, and only by somebody who
+        // could start (a tool in hand and the idea of how to use it). Nobody is
+        // sent for materials: an earthwork has none.
+        if (!earthworkWorkRefusal(person, site)) {
+          add(site.def.earthwork!.kind,
+            (comfortNow - 0.45) * 1.4 * (0.4 + person.skillFactor('build'))
+              * this.proximityBonus(person, { x: site.centerX, y: site.centerY }, ctx.sightRadius));
+        }
+      } else if (site) {
         const ready = site.materialsReady;
         const canHelp = ready || site.wants(person.inventory);
         if (canHelp) {
@@ -4203,6 +4214,8 @@ export class Brain {
       }
       case 'store':
       case 'take':
+      case 'dig':
+      case 'pile':
       case 'build':
       case 'sabotage':
       case 'haul':

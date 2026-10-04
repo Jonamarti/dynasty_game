@@ -371,4 +371,5 @@ export const ES_ACTIONS: Record<string, string> = {
   "Feed {name}": "Dar de comer a {name}",
   "Not with a baby in your arms": "No con un bebé en brazos",
   "They have a baby in their arms": "Tiene un bebé en brazos",
+  "the earthwork is finished": "la obra de tierra está terminada",
 };

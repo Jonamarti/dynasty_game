@@ -93,7 +93,9 @@ describe('art coverage', () => {
 
   it('draws every building the sim can place, or says it is drawn in code', () => {
     for (const id of Object.keys(BUILDINGS)) {
-      if (PROCEDURAL_BUILDINGS.has(id)) continue;
+      // An earthwork is the ground itself: the terrain bake shows the relief and
+      // the renderer marks the plan, so there is no sprite to draw.
+      if (PROCEDURAL_BUILDINGS.has(id) || BUILDINGS[id]!.earthwork) continue;
       expect(buildings.keys[`b/${id}/ext`], id).toBeDefined();
     }
   });

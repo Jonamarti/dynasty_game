@@ -17,7 +17,7 @@ import { debtTo, offerFor, OFFER_AT_LEAST } from '../social/Amends.ts';
 import { isCaptive, isEscapee } from '../social/Captivity.ts';
 import type { Person } from '../entities/Person.ts';
 import { CUT_ABOVE } from '../core/Grass.ts';
-import { DIG_TO, PILE_TO, digTool, digToolFailure } from '../core/Earth.ts';
+import { DIG_TO, PILE_TO, digTool, digToolFailure, earthworkWorkRefusal } from '../core/Earth.ts';
 import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
@@ -845,7 +845,20 @@ function buildingActions(
   if (building.complete && !building.ruined && building.def.shelter > 0) {
     options.push(...putDownOptions(ctx, 'inside', theNoun(building.def.label.toLowerCase())));
   }
-  if (!building.complete) {
+  if (!building.complete && building.earth) {
+    // M15 phase 26c: ground to be moved. One verb, the design's own, and the
+    // reason it is greyed is the tool — the one thing the person could fix.
+    const lacks = earthworkWorkRefusal(actor, building);
+    options.push({
+      id: building.def.earthwork!.kind,
+      label: t('Work on {site}', { site: theSite(building.def.label) }),
+      icon: '⛏️',
+      enabled: lacks === null,
+      reason: lacks === 'dont_know_digging_tool' ? t('You do not know how to use your digging tools')
+        : lacks === 'no_digging_tool' ? t('You have nothing to dig with')
+        : undefined,
+    });
+  } else if (!building.complete) {
     options.push({
       id: 'build',
       label: t('Work on {site}', { site: theSite(building.def.label) }),

@@ -37,6 +37,9 @@ import type { Skill } from './Person.ts';
 export const WORK_ACTIONS = new Set([
   'forage', 'gather', 'gather_for_site', 'cut_grass', 'pick', 'chop', 'hunt',
   'build', 'haul', 'store', 'craft', 'prototype',
+  // M15 phase 26c. Spades side by side are work alongside each other, and a
+  // job that lists them is one a person is biased toward.
+  'dig', 'pile',
   // M8.2. Both belong here for the second reason this set exists as well as the
   // first: `SocialSystem.workingAlongside` is what lets two people sowing the
   // same field learn from each other and come to like each other, and a verb

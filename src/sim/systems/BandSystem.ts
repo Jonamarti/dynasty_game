@@ -31,6 +31,7 @@ import {
   type Building, type BuildingDef,
 } from '../entities/Building.ts';
 import { SOW_SEED } from '../entities/Field.ts';
+import { earthworkWorkRefusal } from '../core/Earth.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { techPower, type Tech } from '../knowledge/Tech.ts';
 import { JOB_IDS, type JobId } from '../entities/Job.ts';
@@ -1363,7 +1364,9 @@ export class BandSystem {
     this.dropStaleSites(theirs, ctx);
 
     const live = ctx.buildings.filter(b => b.ownerBandId === band.id);
-    const underway = live.filter(b => !b.complete).length;
+    // Ground being moved is not a hut going up: it neither fills the band's
+    // two site slots nor counts as a roof (M15 phase 26c).
+    const underway = live.filter(b => !b.complete && !b.earth).length;
     if (underway >= MAX_SITES) return;
 
     // A hard ceiling, so that no combination of the conditions below can
@@ -1378,7 +1381,7 @@ export class BandSystem {
     // thing.
     const built = live.filter(b =>
       b.complete && !isTrap(b.def) && !isStation(b.def) && !isField(b.def) &&
-      !isHeap(b.def) && !isHerd(b.def) && !isWell(b.def)).length;
+      !isHeap(b.def) && !isHerd(b.def) && !isWell(b.def) && !b.earth).length;
     if (built >= Math.ceil(members.length / MEMBERS_PER_STRUCTURE) + 2) return;
 
     // Roof measured as floor area, not as a count of roofs. A 3x3 hut and a 2x2
@@ -1797,7 +1800,12 @@ export class BandSystem {
       if (directed >= limit) break;
       if (!this.fitForOrders(leader, member)) continue;
 
-      const action = site.materialsReady ? 'build' : 'haul';
+      // Ground to be moved is worked with the earth verbs, and only by a hand
+      // that has something to move it with: an order nobody can carry out would
+      // be refused to the leader's face for no reason of the member's.
+      if (site.earth && earthworkWorkRefusal(member, site)) continue;
+      const action = site.earth ? site.def.earthwork!.kind
+        : site.materialsReady ? 'build' : 'haul';
       if (ctx.command(leader, member, action, { buildingId: site.id })) directed++;
     }
     return directed;

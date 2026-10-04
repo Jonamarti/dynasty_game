@@ -37,7 +37,8 @@ import {
 } from './sim/ai/ActionCatalog.ts';
 import { TECH, techPower, type Tech } from './sim/knowledge/Tech.ts';
 import type { Person } from './sim/entities/Person.ts';
-import type { Building, BuildingDef } from './sim/entities/Building.ts';
+import { BUILDINGS, type Building, type BuildingDef } from './sim/entities/Building.ts';
+import { earthworkTiles } from './sim/entities/Earthwork.ts';
 import { ITEMS } from './sim/entities/Item.ts';
 import { JOBS } from './sim/entities/Job.ts';
 import { EARSHOT } from './sim/systems/ActionSystem.ts';
@@ -195,6 +196,8 @@ let commanding: Person | null = null;
 let buildMode = false;
 let craftMode = false;
 let activeDesign: BuildingDef | null = null;
+/** R has turned the active design to run north-south (M15 phase 26c). */
+let buildTurned = false;
 
 // Attached to the body, not to #hud: the HUD rebuilds its own subtree, and a
 // menu living inside it was silently erased the moment the HUD re-rendered.
@@ -296,6 +299,7 @@ const hud = new Hud(hudRoot, {
   },
   onPickDesign: def => {
     activeDesign = def;
+    buildTurned = false;
     // The owner's note of 2026-09-24: picking a design showed no ghost at all
     // until the pointer next moved over the map — and on a touch screen,
     // where nothing hovers, never. Put it down at once where the pointer last
@@ -729,6 +733,14 @@ window.addEventListener('keydown', event => {
     setBuildMode(!buildMode);
     return;
   }
+  // M15 phase 26c: R turns a line design (ditch, bank, canal, terrace) to run
+  // the other way. Only while a design is being placed, and only where a
+  // turned copy exists, so the key does nothing the player cannot see.
+  if (key === 'r' && buildMode && activeDesign && BUILDINGS[activeDesign.id + '_ns']) {
+    buildTurned = !buildTurned;
+    if (lastMapPointer) showBuildGhost(lastMapPointer.x, lastMapPointer.y);
+    return;
+  }
   if (key === 'm') {
     setCraftMode(!craftMode);
     return;
@@ -849,6 +861,7 @@ function setBuildMode(on: boolean): void {
   if (on && craftMode) setCraftMode(false);
   if (!on) {
     activeDesign = null;
+    buildTurned = false;
     hud.clearDesign();
     renderer.buildGhost = null;
   }
@@ -1167,14 +1180,33 @@ canvas.addEventListener('pointermove', event => {
 /** Draws the active design's ghost at a world point, green where it fits. */
 function showBuildGhost(worldX: number, worldY: number): void {
   if (!buildMode || !activeDesign) return;
+  const design = effectiveDesign();
+  if (!design) return;
   const x = Math.round(worldX);
   const y = Math.round(worldY);
+  const why = sim.placementRefusal(design, x, y);
   renderer.buildGhost = {
     x, y,
-    width: activeDesign.width,
-    height: activeDesign.height,
-    ok: sim.canPlace(activeDesign, x, y),
+    width: design.width,
+    height: design.height,
+    ok: why === null,
+    reason: why,
+    // An earthwork previews its plan, not its bounding box: a moat is a ring.
+    plan: design.earthwork
+      ? earthworkTiles(design.earthwork, x, y, design.width, design.height, sim.world)
+          .map(tile => ({ x: tile.x, y: tile.y, kind: tile.kind }))
+      : undefined,
   };
+}
+
+/**
+ * The design to place: the one picked, or its turned copy if R has turned it.
+ * A line (a ditch, a bank, a canal) is the same plan running the other way,
+ * so the menu lists it once and the turned copy is found by id.
+ */
+function effectiveDesign(): BuildingDef | null {
+  if (!activeDesign) return null;
+  return buildTurned ? BUILDINGS[activeDesign.id + '_ns'] ?? activeDesign : activeDesign;
 }
 
 /**
@@ -1356,7 +1388,8 @@ window.addEventListener('pointerup', event => {
     const point = worldPoint(event);
     const x = Math.round(point.x);
     const y = Math.round(point.y);
-    const placed = sim.place(activeDesign.id, x, y, sim.player?.bandId ?? 0,
+    const design = effectiveDesign()!;
+    const placed = sim.place(design.id, x, y, sim.player?.bandId ?? 0,
       sim.player?.id ?? null, true);
     if (placed) {
       renderer.floaters.push(placed.centerX, placed.centerY,
@@ -1365,7 +1398,7 @@ window.addEventListener('pointerup', event => {
           : t('{building} planned', { building: t(placed.def.label) }),
         { color: '#7ddc96', boxed: true });
     } else {
-      const why = sim.placementRefusal(activeDesign, x, y)
+      const why = sim.placementRefusal(design, x, y)
         ?? t('that cannot be built there');
       renderer.floaters.push(x, y, why, { color: '#e66464', boxed: true });
     }

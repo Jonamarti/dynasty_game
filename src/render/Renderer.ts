@@ -256,7 +256,13 @@ export class Renderer {
   /** Who the player is currently commanding, outlined on the map. */
   commandedId: number | null = null;
   /** Tile the build cursor is hovering, or null when not in build mode. */
-  buildGhost: { x: number; y: number; width: number; height: number; ok: boolean } | null = null;
+  buildGhost: {
+    x: number; y: number; width: number; height: number; ok: boolean;
+    /** Why it cannot stand here, written next to the cursor (M15 phase 26c). */
+    reason?: string | null;
+    /** For an earthwork, the tiles of the plan, so the preview is the work and not its bounding box. */
+    plan?: { x: number; y: number; kind: 'dig' | 'pile' }[];
+  } | null = null;
   /**
    * Ring drawn around whichever bubble of the entity picker the cursor is over.
    *
@@ -793,10 +799,32 @@ export class Renderer {
       const px = camera.worldToScreenX(g.x - 0.5);
       const py = camera.worldToScreenY(g.y - 0.5);
       ctx.fillStyle = g.ok ? 'rgba(120, 220, 150, 0.28)' : 'rgba(230, 100, 100, 0.28)';
-      ctx.fillRect(px, py, g.width * scale, g.height * scale);
+      if (g.plan) {
+        // The plan itself: dug tiles dark, heaped tiles light, the bounding box faint.
+        for (const tile of g.plan) {
+          ctx.fillStyle = g.ok
+            ? (tile.kind === 'dig' ? 'rgba(92, 64, 36, 0.55)' : 'rgba(214, 190, 140, 0.55)')
+            : 'rgba(230, 100, 100, 0.4)';
+          ctx.fillRect(camera.worldToScreenX(tile.x - 0.5), camera.worldToScreenY(tile.y - 0.5), scale, scale);
+        }
+      } else {
+        ctx.fillRect(px, py, g.width * scale, g.height * scale);
+      }
       ctx.strokeStyle = g.ok ? '#7ddc96' : '#e66464';
       ctx.lineWidth = 2;
       ctx.strokeRect(px, py, g.width * scale, g.height * scale);
+      if (!g.ok && g.reason) {
+        // The refusal beside the cursor, so the player does not have to click to be told.
+        ctx.font = '600 13px system-ui, sans-serif';
+        const width = ctx.measureText(g.reason).width + 12;
+        const tx = Math.max(4, Math.min(px, camera.viewWidth - width - 4));
+        const ty = Math.max(20, py - 8);
+        ctx.fillStyle = 'rgba(30, 14, 14, 0.82)';
+        ctx.fillRect(tx, ty - 15, width, 21);
+        ctx.fillStyle = '#ffb4b4';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(g.reason, tx + 6, ty);
+      }
     }
 
     // --- Picker hover ------------------------------------------------------
@@ -1561,6 +1589,50 @@ export class Renderer {
     }
   }
 
+  /**
+   * An earthwork on the map — M15 phase 26c. The ground itself is the picture:
+   * a pit, a bank and a ditch are drawn by the terrain bake as relief, so what
+   * is added here is the plan while it is unfinished: each tile shaded for what
+   * is still to do (dark for dug, light for heaped) with a bar of how far it
+   * has got, and a dashed outline round the lot. Once complete there is nothing
+   * to add, and a selected one gets its outline back.
+   */
+  private drawEarthwork(building: Building, selected: boolean): void {
+    const { ctx, camera } = this;
+    const scale = camera.scale;
+    const px = camera.worldToScreenX(building.x - 0.5);
+    const py = camera.worldToScreenY(building.y - 0.5);
+    const w = building.def.width * scale;
+    const h = building.def.height * scale;
+    if (!building.complete) {
+      for (const tile of building.earth!) {
+        const left = camera.worldToScreenX(tile.x - 0.5);
+        const top = camera.worldToScreenY(tile.y - 0.5);
+        const todo = 1 - tile.progress / tile.goal;
+        ctx.fillStyle = tile.kind === 'dig' ? 'rgba(92, 64, 36, 0.38)' : 'rgba(214, 190, 140, 0.32)';
+        ctx.fillRect(left, top, scale, scale * todo);
+        ctx.strokeStyle = tile.kind === 'dig' ? 'rgba(60, 40, 20, 0.6)' : 'rgba(230, 214, 170, 0.7)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(left + 0.5, top + 0.5, scale - 1, scale - 1);
+      }
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = 'rgba(230, 214, 170, 0.75)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px, py, w, h);
+      ctx.setLineDash([]);
+      const barW = Math.max(w * 0.8, 24);
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(px + (w - barW) / 2, py + h + 3, barW, 5);
+      ctx.fillStyle = '#e0b055';
+      ctx.fillRect(px + (w - barW) / 2, py + h + 3, barW * building.completion, 5);
+    }
+    if (selected) {
+      ctx.strokeStyle = '#7fd4ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px - 2, py - 2, w + 4, h + 4);
+    }
+  }
+
   private drawBuilding(building: Building, selected: boolean): void {
     const { ctx, camera } = this;
     const scale = camera.scale;
@@ -1569,6 +1641,10 @@ export class Renderer {
     const w = building.def.width * scale;
     const h = building.def.height * scale;
 
+    if (building.earth) {
+      this.drawEarthwork(building, selected);
+      return;
+    }
     if (this.art && this.drawBuildingArt(building, selected, px, py, w, h)) return;
 
     if (!building.complete) {

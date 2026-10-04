@@ -32,7 +32,8 @@ import {
 import { SOW_SEED, SPREAD_LOAD, harvestYield } from '../entities/Field.ts';
 import { isGroundSpent, COMPOST_ORGANIC } from '../core/Soil.ts';
 import { CUT_ABOVE, CUT_BITE, CUT_FLOOR, THATCH_PER_HEIGHT } from '../core/Grass.ts';
-import { DIG_TICKS, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, TOPSOIL_ITEMS, digTool, digToolFailure, liftKind } from '../core/Earth.ts';
+import { DIG_TICKS, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, TOPSOIL_ITEMS, digTool, digToolFailure, earthworkWorkRefusal, liftKind } from '../core/Earth.ts';
+import { BORROW_DEPTH, borrowTile, nearestTile, pendingTiles, spoilTile, standingFor, standingForRim, type EarthworkTile } from '../entities/Earthwork.ts';
 import { SNOW_BURY_AT } from '../core/Snow.ts';
 import type { Tree } from '../entities/Tree.ts';
 import type { Animal } from '../entities/Animal.ts';
@@ -1521,6 +1522,7 @@ export class ActionSystem {
    * no tool; ground that is water or rock is refused where the order is given.
    */
   private doDig(person: Person, ctx: ActionContext): void {
+    if (person.targetBuildingId !== null) { this.doEarthwork(person, ctx); return; }
     if (person.targetX === null || person.targetY === null) {
       this.abandon(person, 'nowhere_to_dig', ctx);
       return;
@@ -1564,15 +1566,7 @@ export class ActionSystem {
     // Never past the depth asked for: the last lift takes what is left.
     const left = Math.max(1, Math.round((DIG_TO - depth) / EARTH_UNIT));
     const lift = Math.min(room, kind.limit, left);
-    ctx.world.dig(tx, ty, lift * EARTH_UNIT);
-    if (kind.topsoil) {
-      // The fertile layer comes up with the earth and leaves the tile.
-      const taken = ctx.world.soil.strip(ctx.world.index(tx, ty), lift / TOPSOIL_ITEMS);
-      person.earthOrganic += taken.organic;
-      person.earthNutrient += taken.nutrient;
-    }
-    person.inventory.add(kind.item, lift);
-    person.practice('build', 0.3);
+    this.takeEarth(person, ctx, tx, ty, lift, kind);
     if (ctx.world.isWater(tx, ty)) {
       // M15 phase 26d: the hole reached the water and filled. Whoever was
       // digging it is standing in the water now; put them on the bank and say so.
@@ -1599,6 +1593,7 @@ export class ActionSystem {
    * than its footing without a wall. It carries on until the hands are empty.
    */
   private doPile(person: Person, ctx: ActionContext): void {
+    if (person.targetBuildingId !== null) { this.doEarthwork(person, ctx); return; }
     if (person.targetX === null || person.targetY === null) {
       this.abandon(person, 'nowhere_to_put_the_earth', ctx);
       return;
@@ -1631,18 +1626,7 @@ export class ActionSystem {
     const headroom = Math.max(1, Math.round((PILE_TO + ctx.world.depthDug(tx, ty)) / EARTH_UNIT));
     const carried = person.inventory.count('earth');
     const lift = Math.min(LIFT, carried, headroom);
-    // The earth brings its richness: the average of what is in the hands, mixed
-    // into the tile it is heaped on. Subsoil dilutes it, so the mean falls.
-    const organic = person.earthOrganic / carried;
-    const nutrient = person.earthNutrient / carried;
-    ctx.world.soil.bury(ctx.world.index(tx, ty), lift, organic, nutrient);
-    person.earthOrganic -= organic * lift;
-    person.earthNutrient -= nutrient * lift;
-    ctx.world.pile(tx, ty, lift * EARTH_UNIT);
-    person.inventory.remove('earth', lift);
-    if (person.inventory.count('earth') <= 0) { person.earthOrganic = 0; person.earthNutrient = 0; }
-    person.practice('build', 0.2);
-    telemetry.count('earth_piled', lift);
+    this.setEarthDown(person, ctx, tx, ty, lift);
     if (person.inventory.count('earth') <= 0) {
       this.stop(person, 'earth_spent', ctx);
       return;
@@ -1656,6 +1640,243 @@ export class ActionSystem {
       return;
     }
     person.actionTimer = ticks;
+  }
+
+  /**
+   * One lift of earth out of a tile into the hands: the ground goes down, the
+   * fertile layer (if it is the top) comes up with it, and what was dug is in
+   * the pack. Shared by the single-tile `dig` and by the earthwork loop, so
+   * there is one definition of what a lift does.
+   */
+  private takeEarth(
+    person: Person, ctx: ActionContext, tx: number, ty: number, lift: number,
+    kind: { item: 'earth' | 'mud'; topsoil: boolean }
+  ): void {
+    ctx.world.dig(tx, ty, lift * EARTH_UNIT);
+    if (kind.topsoil) {
+      // The fertile layer comes up with the earth and leaves the tile.
+      const taken = ctx.world.soil.strip(ctx.world.index(tx, ty), lift / TOPSOIL_ITEMS);
+      person.earthOrganic += taken.organic;
+      person.earthNutrient += taken.nutrient;
+    }
+    person.inventory.add(kind.item, lift);
+    person.practice('build', 0.3);
+  }
+
+  /**
+   * The other half: `lift` items of carried earth set down on a tile. The earth
+   * brings its richness, the average of what is in the hands, mixed into the
+   * tile it is heaped on (subsoil dilutes it, so the mean falls).
+   */
+  private setEarthDown(person: Person, ctx: ActionContext, tx: number, ty: number, lift: number): void {
+    const carried = person.inventory.count('earth');
+    const organic = person.earthOrganic / carried;
+    const nutrient = person.earthNutrient / carried;
+    ctx.world.soil.bury(ctx.world.index(tx, ty), lift, organic, nutrient);
+    person.earthOrganic -= organic * lift;
+    person.earthNutrient -= nutrient * lift;
+    ctx.world.pile(tx, ty, lift * EARTH_UNIT);
+    person.inventory.remove('earth', lift);
+    if (person.inventory.count('earth') <= 0) { person.earthOrganic = 0; person.earthNutrient = 0; }
+    person.practice('build', 0.2);
+    telemetry.count('earth_piled', lift);
+  }
+
+  /**
+   * Working an earthwork — M15 phase 26c, and both earth verbs when they are
+   * aimed at a design rather than at a tile. One lift at a time, each written
+   * to the tile it was taken from or put on (`EarthworkTile.progress`) the
+   * instant it is done: a digger stopped for a drink leaves the ditch half
+   * dug, and whoever comes next carries on from there. The interruption check
+   * follows every lift, laden or not, because a full armful is what this job
+   * *is*.
+   *
+   * What the next lift is depends on the hands and on what is left of the plan,
+   * and is decided afresh each tick from those two things, so it never needs
+   * to remember a half-made decision:
+   *
+   *  1. earth in the hands and something left to heap: heap it;
+   *  2. something left to dig: dig it, or, with the hands full of earth and
+   *     nothing to heap, carry the spoil to a tile beside the work and put it
+   *     down (a ditch grows a bank that way); with the hands full of mud, set
+   *     it down where it is, since clay is not spoil;
+   *  3. only heaping left and no earth: scrape some from ground near the plan.
+   *
+   * Stops, each with its reason on the screen: no tool, the plan finished,
+   * the hands full of something that is not earth, nowhere to put the spoil
+   * (`nowhere_to_put_the_earth`), nowhere to scrape from.
+   */
+  private doEarthwork(person: Person, ctx: ActionContext): void {
+    const site = person.targetBuildingId === null ? undefined : ctx.buildingsById.get(person.targetBuildingId);
+    if (!site || !site.earth) {
+      this.abandon(person, 'site_gone', ctx);
+      return;
+    }
+    if (site.complete) {
+      this.stop(person, 'earthwork_done', ctx);
+      return;
+    }
+    const lacks = earthworkWorkRefusal(person, site);
+    if (lacks) {
+      this.abandon(person, lacks, ctx);
+      return;
+    }
+    const world = ctx.world;
+    const tool = digTool(person);
+    const builtOn = (x: number, y: number): boolean => {
+      for (const other of ctx.buildingsById.values()) if (other.contains(x, y)) return true;
+      return false;
+    };
+    const digs = pendingTiles(site.earth, 'dig');
+    const heaps = pendingTiles(site.earth, 'pile');
+    const carried = person.inventory.count('earth');
+
+    // --- What is the next lift, and where? -----------------------------------
+    type Task = 'dig' | 'pile' | 'spoil' | 'borrow';
+    let task: Task;
+    let tile: { x: number; y: number };
+    let planTile: EarthworkTile | null = null;
+    if (carried > 0 && heaps.length > 0) {
+      task = 'pile';
+      planTile = nearestTile(heaps, person.x, person.y)!;
+      tile = planTile;
+    } else if (digs.length > 0) {
+      planTile = nearestTile(digs, person.x, person.y)!;
+      if (world.isWater(planTile.x, planTile.y)) {
+        // Water has been into this tile already and done the digging.
+        this.finishTile(person, site, planTile, planTile.goal - planTile.progress);
+        return;
+      }
+      const kind = liftKind(world, planTile.x, planTile.y, world.depthDug(planTile.x, planTile.y));
+      const room = Math.max(0, Math.min(
+        person.carryCapacity - person.carrying,
+        itemCapacityFor(person, ctx.carry, kind.item) - person.inventory.count(kind.item),
+      ));
+      if (room > 0) {
+        task = 'dig';
+        tile = planTile;
+      } else if (carried > 0) {
+        const spoil = spoilTile(world, site.earth, person.x, person.y, builtOn);
+        if (!spoil) {
+          this.abandon(person, 'nowhere_to_put_the_earth', ctx);
+          return;
+        }
+        task = 'spoil';
+        tile = spoil;
+        planTile = null;
+      } else if (person.inventory.count('mud') > 0) {
+        // Clay is not spoil. Set it down where they stand, for whoever wants it.
+        const mud = person.inventory.count('mud');
+        person.inventory.remove('mud', mud);
+        ctx.dropAt(Math.floor(person.x), Math.floor(person.y), 'mud', mud);
+        telemetry.count('mud_set_down', mud);
+        return;
+      } else {
+        this.stop(person, 'hands_full', ctx);
+        return;
+      }
+    } else if (heaps.length > 0) {
+      const scrape = borrowTile(world, site.earth, person.x, person.y, builtOn);
+      if (!scrape) {
+        this.abandon(person, 'nowhere_to_dig', ctx);
+        return;
+      }
+      task = 'borrow';
+      tile = scrape;
+    } else {
+      this.stop(person, 'earthwork_done', ctx);
+      return;
+    }
+
+    // --- Get there ------------------------------------------------------------
+    // A tile that is to become a pit is worked from its rim: nobody stands in a
+    // hole that is about to stop being ground. The rim is a walkable neighbour
+    // that is not itself a tile still waiting to be dug.
+    const rim = task === 'dig' && planTile !== null && planTile.goal * EARTH_UNIT >= world.pitDepth - 1e-9;
+    const stand = rim
+      ? standingForRim(world, tile, person.x, person.y, site.earth)
+      : standingFor(world, tile, person.x, person.y);
+    if (!stand) {
+      this.abandon(person, 'cannot_reach', ctx);
+      return;
+    }
+    person.targetX = stand.x;
+    person.targetY = stand.y;
+    if (!this.travel(person, ctx)) return;
+    const owner = ctx.territoryOwnerAt(tile.x, tile.y);
+    if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
+
+    const ticks = task === 'dig' || task === 'borrow'
+      ? Math.ceil(DIG_TICKS / (person.skillFactor('build') * (tool?.power ?? 1)))
+      : Math.ceil(PILE_TICKS / person.skillFactor('build'));
+    if (person.actionTimer <= 0) person.actionTimer = ticks;
+    person.actionTimer--;
+    person.workedTicks++;
+    if (person.actionTimer > 0) return;
+
+    // --- The lift -------------------------------------------------------------
+    let finished = false;
+    if (task === 'dig' || task === 'borrow') {
+      const depth = world.depthDug(tile.x, tile.y);
+      const kind = liftKind(world, tile.x, tile.y, depth);
+      const room = Math.max(0, Math.min(
+        person.carryCapacity - person.carrying,
+        itemCapacityFor(person, ctx.carry, kind.item) - person.inventory.count(kind.item),
+      ));
+      if (room === 0) { person.actionTimer = 0; return; }
+      const left = task === 'dig'
+        ? planTile!.goal - planTile!.progress
+        : Math.max(1, BORROW_DEPTH - Math.round(depth / EARTH_UNIT));
+      const lift = Math.min(room, kind.limit, left);
+      this.takeEarth(person, ctx, tile.x, tile.y, lift, kind);
+      const flooded = world.isWater(tile.x, tile.y);
+      if (flooded) {
+        // The cut reached the water and filled; whoever was standing in it is
+        // put on the bank. For a moat that is the design working, not a refusal.
+        telemetry.count('trench_flooded');
+        const bank = world.findWalkableNear(tile.x, tile.y);
+        if (bank && !world.isWalkable(person.x, person.y)) { person.x = bank.x + 0.5; person.y = bank.y + 0.5; }
+      } else {
+        telemetry.count(kind.item === 'mud' ? 'mud_dug' : 'earth_dug', lift);
+      }
+      telemetry.count('earthwork_lifts');
+      if (task === 'dig') finished = site.addEarth(planTile!, flooded ? planTile!.goal - planTile!.progress : lift);
+    } else {
+      const headroom = Math.max(1, Math.round((PILE_TO + world.depthDug(tile.x, tile.y)) / EARTH_UNIT));
+      const lift = Math.min(LIFT, carried, headroom,
+        task === 'pile' ? planTile!.goal - planTile!.progress : LIFT);
+      this.setEarthDown(person, ctx, tile.x, tile.y, lift);
+      telemetry.count('earthwork_lifts');
+      if (task === 'pile') finished = site.addEarth(planTile!, lift);
+    }
+
+    if (finished) {
+      telemetry.count('earthwork_completed');
+      telemetry.count('completed_' + site.def.id);
+      person.chronicle.push({
+        tick: ctx.tick,
+        ageDays: person.age,
+        text: t('finished {thing}', { thing: aNoun(site.def.label.toLowerCase()) }),
+        kind: 'did',
+      });
+      this.finish(person);
+      return;
+    }
+    const stop = this.interruption(person, ctx, { lookaheadTicks: ticks, ignoreLaden: true });
+    if (stop) {
+      this.stop(person, stop, ctx);
+      return;
+    }
+    person.actionTimer = 0;
+  }
+
+  /** A tile the water took before anyone reached it counts as dug: the work is done for it. */
+  private finishTile(person: Person, site: Building, tile: EarthworkTile, items: number): void {
+    if (site.addEarth(tile, items)) {
+      telemetry.count('earthwork_completed');
+      telemetry.count('completed_' + site.def.id);
+      this.finish(person);
+    }
   }
 
   /** Picking fruit off a standing tree. Same rhythm as any other harvest. */
@@ -1936,6 +2157,13 @@ export class ActionSystem {
    * this hands off to gathering rather than simply failing.
    */
   private doBuild(person: Person, ctx: ActionContext): void {
+    // Ground to be moved is not built: turn to the verb that works it, the way
+    // `haul` is taken up below when a builder is carrying what the site wants.
+    const dug = person.targetBuildingId === null ? undefined : ctx.buildingsById.get(person.targetBuildingId);
+    if (dug?.earth) {
+      person.action = dug.def.earthwork!.kind;
+      return;
+    }
     const site = this.reachBuilding(person, ctx);
     if (!site) return;
 
