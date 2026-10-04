@@ -1,3 +1,28 @@
+## 2026-10-04 — M15 fase 26c (4): la vista previa sigue al cursor, y la barra ya no tapa el suelo
+
+Dos fallos de interfaz que apareció al probar las obras de tierra con un
+navegador, y un e2e que los guarda:
+
+- **La sombra de construcción no seguía al ratón en escritorio** (desde M5): el
+  manejador de `pointermove` descartaba todo movimiento cuyo `pointerId` no
+  fuera el del arrastre en curso, y sin arrastre ese es `-1`, así que la sombra se
+  quedaba donde la dejó `onPickDesign` hasta el siguiente clic. Ahora solo un
+  arrastre en curso pertenece a un puntero. Es lo que permite que la razón del
+  rechazo («un foso tiene que tocar el agua en algún punto») viaje con el cursor.
+- **La barra de construcción** creció a tres filas con siete diseños más y tapaba
+  el suelo que se estaba marcando: ahora tiene `max-height: 38vh` y se
+  desplaza.
+- `e2e/earthworks.spec.ts` (con `?skipIntro=1`): elegir Zanja, ver «N unidades de
+  tierra por mover» y la ayuda de R, la sombra de 6x1 con plan de 6 casillas, R
+  la gira a 1x6, un foso en seco se rechaza con la razón, la zanja se marca con un
+  clic y el jugador la cava hasta que hay progreso.
+- Verificación: typecheck limpio; 1030/1030 unitarios; e2e 75/75 con el puerto
+  5399 más `earthworks.spec.ts` suelto (1/1), que ahora entra en `npm run e2e` (76). Capturas del e2e:
+  `artifacts/screenshots/m15-phase26c-earthworks-2026-10-04/` (vista previa de la
+  zanja, foso rechazado con su razón, zanja marcada, zanja medio cavada); gira
+  completa `npm run shots` (18/18, 40 imágenes):
+  `artifacts/screenshots/m15-phase26c-tour-2026-10-04/`.
+
 ## 2026-10-04 — M15 fase 26c (3): el silo se cava (medido aparte)
 
 `storage_pit` pasa a exigir cavar: `BuildingDef.dig` (hoyo 2x2, 2 unidades de

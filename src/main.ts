@@ -1143,7 +1143,11 @@ canvas.addEventListener('pointermove', event => {
       return;
     }
   }
-  if (event.pointerId !== drag.pointerId) return;
+  // Only a press in progress belongs to one pointer; with none, a hover is
+  // anybody's. Comparing against the idle `-1` threw every mouse hover away,
+  // so the build ghost sat where it was first put until the next click and
+  // the refusal reason written beside it could never follow the cursor.
+  if (drag.pointerId !== -1 && event.pointerId !== drag.pointerId) return;
   if (drag.active) {
     const dx = event.clientX - drag.lastX;
     const dy = event.clientY - drag.lastY;
@@ -1166,6 +1170,9 @@ canvas.addEventListener('pointermove', event => {
     return;
   }
   const point = worldPoint(event);
+  // The ghost follows the pointer wherever it is over the page, so R turns it
+  // where it is drawn even if the canvas's own listener never saw the move.
+  lastMapPointer = point;
   showBuildGhost(point.x, point.y);
 });
 
