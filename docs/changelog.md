@@ -1,3 +1,16 @@
+## 2026-10-04 — M15 fase 29: perfiles geográficos sin mezclar unidades
+
+El atlas real se consulta ahora en coordenadas de comarca, con altura absoluta
+y relativa al mar, continuidad en bordes y procedencia regional explícita de
+clima/agua/flags. WorldGeography distingue clásico, aleatorio y Tierra; la isla
+clásica no recibe datos globales inventados y el relieve aleatorio conserva su
+escala. Se prepara el enlace futuro con terreno sin cambiar la generación ni
+los RNG del juego. Once pruebas focales y typecheck pasan. Contrato y pendientes:
+[m15_phase29_geography.md](m15_phase29_geography.md). La fase 29 sigue abierta.
+Capturas generales revisadas, sin cambio de UI (2 imágenes):
+`artifacts/screenshots/m15-phase29-profiles-2026-10-04-pass1/`.
+Evidencia: `artifacts/verification/m15-phase29-geography-20261004-pass1/`.
+
 ## 2026-10-04 — M15 fase 28: un único dueño ejecutable y cierre de identidad
 
 Se completa la base de fase 28 con `parkForTransfer`/`resumeTransfer`: el origen

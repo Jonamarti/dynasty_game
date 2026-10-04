@@ -149,6 +149,13 @@ and incomplete coverage are in [m15_profile_systems.md](m15_profile_systems.md).
 
 ## The rules that hold it together
 
+`world/WorldGeography.ts` is the pure geographic facade for classic, random and
+Earth maps. Source-specific profiles keep normalized random relief separate
+from absolute/sea-relative Earth metres. Real comarca queries interpolate
+height and retain regional climate/water/feature provenance; they do not resolve
+local rivers or generate terrain. Classic mode has no macro map and marks its
+unknown geography explicitly. See [m15_phase29_geography.md](m15_phase29_geography.md).
+
 **Work animation is presentational.** `render/WorkAnimation.ts` reads active
 harvest timers, valid node/tree targets and the shared `ARRIVAL_RADIUS`; movement
 takes priority. Four `g0`–`g3` poses advance from `workedTicks` plus the render

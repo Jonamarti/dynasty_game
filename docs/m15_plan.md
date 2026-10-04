@@ -2674,6 +2674,16 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Avance del 2026-10-04: perfiles de comarca con procedencia explícita.**
+`RealWorldMap.comarcaAt` añade escala de comarca, altura interpolada en metros
+y altura sobre el mar, con clima/agua/features de su región de origen.
+`WorldGeography` distingue isla clásica, aleatorio y atlas sin mezclar unidades
+ni inventar información; la isla deja los datos macro desconocidos y no genera
+otro mapa. Once regresiones focales y typecheck pasan. Capturas generales:
+`artifacts/screenshots/m15-phase29-profiles-2026-10-04-pass1/`.
+[Contrato y límites](m15_phase29_geography.md). No se cambia aún la generación
+local ni se cierra 29c/29d: faltan perfiles aplicados, fuentes completas y banco.
+
 **Estado (2026-10-02): subfases 29a-b implementadas; 29c en curso.**
 `WorldMap` define la rejilla 96 × 48 (10 × 10 comarcas por región por defecto),
 latitud y un campo de altura determinista con interpolación entre centros

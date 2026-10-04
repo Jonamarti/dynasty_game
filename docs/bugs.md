@@ -1,5 +1,15 @@
 # Known bugs and rough edges
 
+## M15 29: perfiles geográficos disponibles; generación global pendiente (2026-10-04)
+
+La fachada distingue clásico/aleatorio/Tierra y el atlas devuelve perfiles de
+comarca con altura en metros y categorías regionales. Estas categorías no
+describen cursos de agua ni recursos locales; la generación de World todavía
+no consume el perfil. Siguen pendientes bibliografía por semilla, paleoclima,
+selección de partida global y `world:bench`. La entrega no resuelve el balance
+heredado: el sim:check inicial falla cravings-steer-the-diet y perf-budget.
+Ver [contrato](m15_phase29_geography.md).
+
 ## M15 fase 28: cargador y autoridad local completados; LOD pendiente (2026-10-04)
 
 `Simulation.fromCheckpointRecord` reconstruye un mundo ejecutable independiente
