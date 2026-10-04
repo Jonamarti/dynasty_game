@@ -48,9 +48,12 @@ escenarios conservan 108 fallos heredados y coinciden en todas las líneas
 PASS/FAIL/n/a con sus métricas; se excluyen perf-budget/throughput de esa
 comparación. `comparison.json` conserva ambas referencias. La matriz sigue roja.
 
-La carga ejecutable continúa pendiente: debe reconstruir sistemas, callbacks,
-índices espaciales y contextos sobre estos objetos sin llamar al constructor
-generador de Simulation, y demostrar continuación idéntica durante acciones,
-fronteras diarias y sucesión. Tampoco se aplica aún el avance compacto ni LOD.
+La carga ejecutable se añadió el 2026-10-04 mediante
+`Simulation.fromCheckpointRecord`: reconstruye sistemas, callbacks e índices
+sin generación; compara continuación JSON durante acciones, nacimiento diario
+y sucesión. El componente LedgerRecord ahora exige v2 para conservar la lista
+diaria de sabotajes; el sobre coordinado sigue siendo v1. Véase
+[el contrato del cargador](m15_phase28_loader.md). No se aplica aún el avance
+compacto, transferencia entre comarcas ni LOD.
 No hay cambio de UI. Registro visual general:
 `artifacts/screenshots/m15-phase28-checkpoint-2026-10-03-pass1/`.

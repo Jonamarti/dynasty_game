@@ -1,0 +1,55 @@
+
+> dynasty@0.0.0 test
+> vitest run --config artifacts/verification/m15-phase28-loader-20261004-pass1/negative.config.ts --testNamePattern restores the stale daily sabotage cache
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/live-checkpoint-continuation.test.ts (5 tests | 1 failed | 4 skipped) 1139ms
+     × restores the stale daily sabotage cache with canonical buildings and preserves its first continuation 1136ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/live-checkpoint-continuation.test.ts > live checkpoint continuation > restores the stale daily sabotage cache with canonical buildings and preserves its first continuation
+AssertionError: expected { …(10) } to deeply equal { …(10) }
+
+- Expected
++ Received
+
+@@ -517,18 +517,11 @@
+      "playerId": null,
+      "recordType": "LedgerRecord",
+      "recordedTech": [],
+      "recordsInHand": [],
+      "rememberedTech": [],
+-     "sabotageCache": [
+-       [
+-         0,
+-         [
+-           7,
+-         ],
+-       ],
+-     ],
++     "sabotageCache": [],
+      "sightings": [],
+      "snowDepth": 0,
+      "socialRecent": [],
+      "strangerRegardByBand": [
+        [
+
+ ❯ src/sim/__tests__/live-checkpoint-continuation.test.ts:175:46
+    173|     const saved = wire(toCheckpointRecord(source));
+    174|     const loaded = Simulation.fromCheckpointRecord(wire(saved));
+    175|     expect(wire(toCheckpointRecord(loaded))).toEqual(saved);
+       |                                              ^
+    176|     const loadedBuilding = loaded.buildingsById.get(building.id)!;
+    177|     expect(loadedBuilding).not.toBe(building);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 skipped (5)
+   Start at  10:14:56
+   Duration  3.30s (transform 1.52s, setup 1.80s, import 34ms, tests 1.14s, environment 0ms)
+

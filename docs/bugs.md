@@ -1,5 +1,26 @@
 # Known bugs and rough edges
 
+## M15 fase 28: cargador añadido, transferencia todavía pendiente (2026-10-04)
+
+`Simulation.fromCheckpointRecord` reconstruye un mundo ejecutable independiente
+sin generación, draws/forks ni nuevas identidades. Cinco tests cubren trabajo
+bancado, nacimiento diario, sucesión, callbacks y el snapshot diario de sabotaje;
+la omisión de esa caché falla en un control aislado. Igualdad medida en el
+formato JSON real, que normaliza `-0` a `0` y conserva el resto del checkpoint.
+La carga no implementa el protocolo para detener un dueño antes de entregar
+personas a otro nivel/comarca. LOD y guardar/cargar desde la UI siguen abiertos.
+Contrato: `m15_phase28_loader.md`.
+
+Verificación estable: typecheck, 963/963 unitarios en 133 archivos y 74/74 e2e.
+La primera ejecución de navegador tuvo dos fallos con navegación durante la
+edición de módulos Vite; la repetición estable pasa completa, sin cambiar los
+specs. La gira volvió a esperar cierre tras 1/1 aprobado y terminó con exit 0
+al parar su Vite propio. Se conservan ambas evidencias, sin atribuir una causa
+nueva al juego. La matriz mantiene 108 fallos antes/después en 27 escenarios;
+no cambian aplicabilidad, recuentos de pases ni listas de fallos. Sigue roja;
+esta comparación no cubre métricas individuales ni throughput. Logs en
+`artifacts/verification/m15-phase28-loader-20261004-pass1/`.
+
 ## M15 fase 28: lista diaria de sabotajes omitida — corregido (2026-10-04)
 
 `sabotageCache` no era scratch reconstruible: su pertenencia se refresca a

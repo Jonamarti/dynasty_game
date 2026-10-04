@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-03 (M15 detached checkpoint composition and world ledgers). No runtime
+Current as of 2026-10-04 (M15 executable checkpoint loading and daily ledgers). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -53,8 +53,8 @@ JSON codecs in `persistence/SocialRecords.ts`, preserving directed opinions and
 band standing/stances with independent storage and Map order. `RosterRecords`
 now composes these codecs at one capture tick, validates membership and returns
 canonical arrays/maps. It preserves the full retained person archive separately
-from the active list, including a dead player awaiting succession. Loading into
-a live Simulation, transfer of authority and the compact scheduler remain pending;
+from the active list, including a dead player awaiting succession. Live loading
+now uses the factory described below; authority transfer and the compact scheduler remain pending;
 see [m15_phase28_records.md](m15_phase28_records.md).
 
 `RNG` and `TimeManager` also have independent v1 JSON checkpoints: RNG hydration
@@ -62,14 +62,14 @@ does not expand a seed or draw from a parent, and the clock retains its own
 calendar. `ExecutionRecord` v1 composes that clock and the 15 retained RNG
 locations into an independent bank, preserving shared stream identities. Tests
 walk the real Simulation object graph to detect omissions. Schedule ledgers now
-have a separate codec; coordinated Simulation loading remains pending. See
+have a separate codec and are applied by the factory. See
 [m15_phase28_execution.md](m15_phase28_execution.md) and
 [m15_phase28_streams.md](m15_phase28_streams.md).
 
 `WorldTerrainRecord` v1 restores independent tile/soil arrays and functioning
 World/Soil prototypes without generation. Soil fertility shares World's canonical
 array; topology and historical shoreline caches survive terrain edits. It covers
-terrain only; world objects now have their own codec, and live loading remains pending. See
+terrain only; world objects have their own codec, composed by the live loader. See
 [m15_phase28_world.md](m15_phase28_world.md).
 
 `WorldObjectRecord` v1 now captures the seven ordered entity collections and
@@ -79,13 +79,13 @@ minification. A supplied roster binds corpse references to canonical people.
 Hydration does not register objects or rebuild spatial hashes; see
 [m15_phase28_objects.md](m15_phase28_objects.md).
 
-`LedgerRecord` v1 retains tick and day, player/succession, notices, permissions,
+`LedgerRecord` v2 retains tick and day, player/succession, notices, permissions,
 cases, sightings and social events, plus band deliberation cooldowns and fractional
 wildlife births. It also preserves technology/temple caches and record claims
 between daily refreshes: recomputing them early can change the next decision.
 Canonical people are supplied by the roster. Held keyboard intent, route budgets
-and reconstructible scratch/spatial indexes are excluded. Coordinated application
-and live loading remain pending; see [m15_phase28_ledgers.md](m15_phase28_ledgers.md).
+and reconstructible scratch/spatial indexes are excluded. The live factory applies
+the ledgers; see [m15_phase28_ledgers.md](m15_phase28_ledgers.md).
 
 The 2026-10-04 v2 ledger also retains the daily sabotage candidate snapshot.
 Its membership can intentionally lag behind buildings completed or ruined
@@ -97,9 +97,20 @@ v1 is rejected because it cannot restore that historical membership.
 and IdSpace v2 at one tick/day. It checks cross-record calendar/rules, allocation
 coverage, group reservations and canonical person/culture/chief identities.
 Hydration returns one detached state graph, with no running Simulation or
-authority transfer. A live loader must rebind systems and indexes without world
-generation and prove identical continuation; see
+authority transfer. The live factory rebinds systems and indexes without world
+generation; see
 [m15_phase28_checkpoint.md](m15_phase28_checkpoint.md).
+
+`Simulation.fromCheckpointRecord(input)` is the only public live loading entry.
+It hydrates fresh state, then enters a module-private construction branch before
+seed expansion, forks or spawning. Field initializers provide empty scratch and
+helpers; the factory applies canonical collections, RNG aliases, schedule ledgers
+and rebuilds every spatial index. Normal and restored worlds share the social
+callback wiring. Tests compare complete JSON checkpoints after banked work,
+birth at a daily boundary and succession, and detect an omitted daily cache.
+JSON normalizes negative zero; no other state is excluded from that comparison.
+This makes an independent world, not a transfer between executable owners or
+a user-facing save/load flow. See [m15_phase28_loader.md](m15_phase28_loader.md).
 
 `Simulation.ids` owns the ten entity/event allocation namespaces. Creation
 passes this `IdSpace` explicitly to entities and systems; the optional second
@@ -112,8 +123,8 @@ must use its allocator. Band/herd namespaces now share the same allocator,
 reserving historical preferences or deterministic free IDs on collision.
 Its v2 checkpoint retains occupied group IDs, including departed herds; v1 is
 explicitly rejected because it has no group history. Band colour follows the
-public outcast flag, rather than an ID range. Coordinated world loading remains
-pending. See [m15_phase28_ids.md](m15_phase28_ids.md) and
+public outcast flag, rather than an ID range. The live loader restores this
+allocator independently. See [m15_phase28_ids.md](m15_phase28_ids.md) and
 [m15_phase28_groups.md](m15_phase28_groups.md).
 
 `tools/profile-systems.ts` wraps methods only inside its profiling browser and

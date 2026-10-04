@@ -1,0 +1,6 @@
+
+> dynasty@0.0.0 typecheck
+> tsc --noEmit
+
+src/sim/__tests__/ledger-records.test.ts(45,69): error TS2554: Expected 1-2 arguments, but got 3.
+src/sim/__tests__/ledger-records.test.ts(46,21): error TS2339: Property 'sabotageCache' does not exist on type 'LedgerState'.

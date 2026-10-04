@@ -40,14 +40,20 @@ familia, historia ni deudas aunque su pueblo pase al agregado.
 
 ## 2. Bandas fuera de vista: personas que siguen existiendo
 
+La carga ejecutable de fase 28 ya reconstruye mundos independientes desde
+checkpoints JSON, sin generación ni corrientes adicionales; véase
+[m15_phase28_loader.md](m15_phase28_loader.md). La transferencia de autoridad
+y el scheduler compacto siguen pendientes: cargar una copia no autoriza a
+avanzar dos dueños sobre las mismas personas.
+
 La primera entrega de fase 28 aporta `PersonRecord`, `HouseholdRecord` y
 `BandRecord` como snapshots v1 serializables del estado propio completo;
 véase [m15_phase28_records.md](m15_phase28_records.md). Todavía no son agendas
 compactas ni sustituyen entidades del roster. Las relaciones externas tienen
-codecs JSON propios en [m15_phase28_social.md](m15_phase28_social.md), aún sin
-carga coordinada del roster. [IdSpace](m15_phase28_ids.md) ya asigna los diez
-namespaces de entidades/eventos por mundo, con checkpoint JSON; aún no globaliza
-bandas/manadas. Transferencia de autoridad y `ComarcaSim` siguen por construir en las fases
+codecs JSON propios en [m15_phase28_social.md](m15_phase28_social.md), unidos
+por el roster coordinado. [IdSpace](m15_phase28_ids.md) asigna los diez
+namespaces de entidades/eventos y reservas de bandas/manadas por mundo, con
+checkpoint JSON. Transferencia de autoridad y `ComarcaSim` siguen por construir en las fases
 28 y 32. El registro compacto objetivo conserva identidad, parentesco,
 edad, rasgos, habilidades, conocimientos y recuerdos; necesidades y lesiones;
 hogar y pertenencia; inventario, equipo, órdenes y progreso pendiente.

@@ -1,0 +1,599 @@
+{
+  "scenarios": 27,
+  "comparison": "applicable checks, passed counts and ordered failed IDs; throughput excluded; does not compare individual check metrics",
+  "baselineFailures": 108,
+  "finalFailures": 108,
+  "differences": [],
+  "before": [
+    {
+      "scenario": "food-news",
+      "passed": 1,
+      "applicable": 1,
+      "failures": []
+    },
+    {
+      "scenario": "conflicts",
+      "passed": 1,
+      "applicable": 1,
+      "failures": []
+    },
+    {
+      "scenario": "tiny",
+      "passed": 47,
+      "applicable": 47,
+      "failures": []
+    },
+    {
+      "scenario": "band",
+      "passed": 53,
+      "applicable": 54,
+      "failures": [
+        "cravings-steer-the-diet"
+      ]
+    },
+    {
+      "scenario": "crowded",
+      "passed": 55,
+      "applicable": 56,
+      "failures": [
+        "cravings-steer-the-diet"
+      ]
+    },
+    {
+      "scenario": "century",
+      "passed": 71,
+      "applicable": 76,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "the-wise-avoid-baneberries",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "craft",
+      "passed": 61,
+      "applicable": 65,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "gossip-is-aimed",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "wilds",
+      "passed": 61,
+      "applicable": 64,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices",
+        "the-wise-avoid-baneberries"
+      ]
+    },
+    {
+      "scenario": "emptied",
+      "passed": 53,
+      "applicable": 58,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-spent-at-home",
+        "moods-move-choices",
+        "needs-not-pinned",
+        "shelter-answers-cold"
+      ]
+    },
+    {
+      "scenario": "hearths",
+      "passed": 62,
+      "applicable": 67,
+      "failures": [
+        "people-act-on-what-they-know",
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "roast-wins"
+      ]
+    },
+    {
+      "scenario": "porters",
+      "passed": 51,
+      "applicable": 54,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices",
+        "animals-flee"
+      ]
+    },
+    {
+      "scenario": "scribes",
+      "passed": 64,
+      "applicable": 66,
+      "failures": [
+        "cravings-steer-the-diet",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "harsh-winter",
+      "passed": 51,
+      "applicable": 57,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "nights-are-spent-at-home",
+        "moods-move-choices",
+        "needs-not-pinned",
+        "shelter-answers-cold"
+      ]
+    },
+    {
+      "scenario": "coast",
+      "passed": 52,
+      "applicable": 53,
+      "failures": [
+        "cravings-steer-the-diet"
+      ]
+    },
+    {
+      "scenario": "traps",
+      "passed": 59,
+      "applicable": 64,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "gossip-is-aimed",
+        "shelter-answers-cold"
+      ]
+    },
+    {
+      "scenario": "millers",
+      "passed": 70,
+      "applicable": 75,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "gossip-is-aimed",
+        "the-wise-avoid-baneberries"
+      ]
+    },
+    {
+      "scenario": "hunters",
+      "passed": 59,
+      "applicable": 63,
+      "failures": [
+        "cravings-steer-the-diet",
+        "gossip-is-aimed",
+        "kills-are-butchered-for-bone",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "fishers",
+      "passed": 59,
+      "applicable": 61,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices"
+      ]
+    },
+    {
+      "scenario": "farmers",
+      "passed": 68,
+      "applicable": 75,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "crafts-happen-at-stations",
+        "discovery-is-situated",
+        "herds-breed-and-are-culled",
+        "bands-take-sides"
+      ]
+    },
+    {
+      "scenario": "herders",
+      "passed": 67,
+      "applicable": 72,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "gossip-is-aimed",
+        "techs-are-refined",
+        "animals-are-tamed"
+      ]
+    },
+    {
+      "scenario": "feasts",
+      "passed": 68,
+      "applicable": 75,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices",
+        "techs-are-refined",
+        "pots-reach-a-granary",
+        "discovery-is-situated",
+        "bands-take-sides",
+        "hills-see-farther"
+      ]
+    },
+    {
+      "scenario": "stewards",
+      "passed": 67,
+      "applicable": 72,
+      "failures": [
+        "people-act-on-what-they-know",
+        "cravings-steer-the-diet",
+        "moods-move-choices",
+        "gossip-is-aimed",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "labour",
+      "passed": 58,
+      "applicable": 65,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "people-survive",
+        "needs-not-pinned",
+        "gossip-is-aimed",
+        "shelter-answers-cold",
+        "peoples-drift-apart"
+      ]
+    },
+    {
+      "scenario": "polity",
+      "passed": 78,
+      "applicable": 84,
+      "failures": [
+        "people-act-on-what-they-know",
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "roast-wins",
+        "cooking-spreads"
+      ]
+    },
+    {
+      "scenario": "conquest",
+      "passed": 84,
+      "applicable": 89,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "roast-wins",
+        "cooking-spreads",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "culture",
+      "passed": 60,
+      "applicable": 65,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "pictures-are-painted",
+        "kills-are-butchered-for-bone"
+      ]
+    },
+    {
+      "scenario": "lean",
+      "passed": 59,
+      "applicable": 68,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "population-persists",
+        "needs-not-pinned",
+        "projects-find-backers",
+        "the-tree-is-climbed",
+        "techs-are-refined",
+        "families-exist"
+      ]
+    }
+  ],
+  "after": [
+    {
+      "scenario": "food-news",
+      "passed": 1,
+      "applicable": 1,
+      "failures": []
+    },
+    {
+      "scenario": "conflicts",
+      "passed": 1,
+      "applicable": 1,
+      "failures": []
+    },
+    {
+      "scenario": "tiny",
+      "passed": 47,
+      "applicable": 47,
+      "failures": []
+    },
+    {
+      "scenario": "band",
+      "passed": 53,
+      "applicable": 54,
+      "failures": [
+        "cravings-steer-the-diet"
+      ]
+    },
+    {
+      "scenario": "crowded",
+      "passed": 55,
+      "applicable": 56,
+      "failures": [
+        "cravings-steer-the-diet"
+      ]
+    },
+    {
+      "scenario": "century",
+      "passed": 71,
+      "applicable": 76,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "the-wise-avoid-baneberries",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "craft",
+      "passed": 61,
+      "applicable": 65,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "gossip-is-aimed",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "wilds",
+      "passed": 61,
+      "applicable": 64,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices",
+        "the-wise-avoid-baneberries"
+      ]
+    },
+    {
+      "scenario": "emptied",
+      "passed": 53,
+      "applicable": 58,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-spent-at-home",
+        "moods-move-choices",
+        "needs-not-pinned",
+        "shelter-answers-cold"
+      ]
+    },
+    {
+      "scenario": "hearths",
+      "passed": 62,
+      "applicable": 67,
+      "failures": [
+        "people-act-on-what-they-know",
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "roast-wins"
+      ]
+    },
+    {
+      "scenario": "porters",
+      "passed": 51,
+      "applicable": 54,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices",
+        "animals-flee"
+      ]
+    },
+    {
+      "scenario": "scribes",
+      "passed": 64,
+      "applicable": 66,
+      "failures": [
+        "cravings-steer-the-diet",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "harsh-winter",
+      "passed": 51,
+      "applicable": 57,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "nights-are-spent-at-home",
+        "moods-move-choices",
+        "needs-not-pinned",
+        "shelter-answers-cold"
+      ]
+    },
+    {
+      "scenario": "coast",
+      "passed": 52,
+      "applicable": 53,
+      "failures": [
+        "cravings-steer-the-diet"
+      ]
+    },
+    {
+      "scenario": "traps",
+      "passed": 59,
+      "applicable": 64,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "gossip-is-aimed",
+        "shelter-answers-cold"
+      ]
+    },
+    {
+      "scenario": "millers",
+      "passed": 70,
+      "applicable": 75,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "gossip-is-aimed",
+        "the-wise-avoid-baneberries"
+      ]
+    },
+    {
+      "scenario": "hunters",
+      "passed": 59,
+      "applicable": 63,
+      "failures": [
+        "cravings-steer-the-diet",
+        "gossip-is-aimed",
+        "kills-are-butchered-for-bone",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "fishers",
+      "passed": 59,
+      "applicable": 61,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices"
+      ]
+    },
+    {
+      "scenario": "farmers",
+      "passed": 68,
+      "applicable": 75,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "crafts-happen-at-stations",
+        "discovery-is-situated",
+        "herds-breed-and-are-culled",
+        "bands-take-sides"
+      ]
+    },
+    {
+      "scenario": "herders",
+      "passed": 67,
+      "applicable": 72,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "gossip-is-aimed",
+        "techs-are-refined",
+        "animals-are-tamed"
+      ]
+    },
+    {
+      "scenario": "feasts",
+      "passed": 68,
+      "applicable": 75,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices",
+        "techs-are-refined",
+        "pots-reach-a-granary",
+        "discovery-is-situated",
+        "bands-take-sides",
+        "hills-see-farther"
+      ]
+    },
+    {
+      "scenario": "stewards",
+      "passed": 67,
+      "applicable": 72,
+      "failures": [
+        "people-act-on-what-they-know",
+        "cravings-steer-the-diet",
+        "moods-move-choices",
+        "gossip-is-aimed",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "labour",
+      "passed": 58,
+      "applicable": 65,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "people-survive",
+        "needs-not-pinned",
+        "gossip-is-aimed",
+        "shelter-answers-cold",
+        "peoples-drift-apart"
+      ]
+    },
+    {
+      "scenario": "polity",
+      "passed": 78,
+      "applicable": 84,
+      "failures": [
+        "people-act-on-what-they-know",
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "roast-wins",
+        "cooking-spreads"
+      ]
+    },
+    {
+      "scenario": "conquest",
+      "passed": 84,
+      "applicable": 89,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "roast-wins",
+        "cooking-spreads",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "scenario": "culture",
+      "passed": 60,
+      "applicable": 65,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "pictures-are-painted",
+        "kills-are-butchered-for-bone"
+      ]
+    },
+    {
+      "scenario": "lean",
+      "passed": 59,
+      "applicable": 68,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "population-persists",
+        "needs-not-pinned",
+        "projects-find-backers",
+        "the-tree-is-climbed",
+        "techs-are-refined",
+        "families-exist"
+      ]
+    }
+  ]
+}

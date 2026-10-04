@@ -1,3 +1,33 @@
+## 2026-10-04 — M15 fase 28: cargar un mundo ejecutable sin regenerarlo
+
+`Simulation.fromCheckpointRecord(input)` valida/hidrata objetos independientes
+y los liga a un motor nuevo. Una rama de construcción con token privado evita
+expansión de semilla, forks, generación y spawns. Reconstruye índices, sistemas
+y callbacks sobre el roster/objetos canónicos; aplica los libros entre días,
+incluida la lista de sabotajes v2. Dos cargas del mismo checkpoint no comparten
+estado mutable. La intención de teclado queda limpia.
+
+Cinco tests cubren tala con progreso, nacimiento real en frontera diaria,
+sucesión, creencias/reputación, independencia, rechazos y ausencia de draws/IDs
+al cargar. Comparan todo el checkpoint tras JSON, que normaliza `-0` a `0`.
+El negativo aislado que omite la caché falla; config e inyección reproducibles
+se conservan junto a los logs. Typecheck limpio, **963/963 unitarios en 133
+archivos** y **74/74 e2e**. La primera pasada falló por un fixture que retenía
+el Map anterior al refresco y una comparación de `-0` antes de JSON; dos e2e
+fallaron con recargas del navegador. Se conservan como fallos de esa pasada.
+La repetición estable pasa sin suavizar specs/checks. La referencia de
+27 escenarios conserva **108** fallos antes/después, sin diferencias en checks
+aplicables, recuentos de pases y listas ordenadas de fallos. La comparación no
+mide cada métrica individual ni throughput; la matriz sigue roja.
+
+Documentación de plan, arquitectura, estado y deuda actualizada. Tour 1/1,
+13 capturas nuevas y vista inicial revisada, sin cambio de UI:
+`artifacts/screenshots/m15-phase28-loader-2026-10-04-pass2/`.
+Evidencia: `artifacts/verification/m15-phase28-loader-20261004-pass1/`.
+Contrato: `docs/m15_phase28_loader.md`. Siguiente: transferencia con un único
+dueño ejecutable; siguen pendientes el scheduler compacto, LOD y controles de
+guardar/cargar en la UI. La fase 28 y M15 permanecen abiertos.
+
 ## 2026-10-04 — M15 fase 28: guardar los candidatos diarios de sabotaje
 
 La auditoría del cargador detectó una omisión del checkpoint: Brain conserva
@@ -11,8 +41,8 @@ La regresión falla antes de la corrección por ausencia del campo y pasa con
 v2; comprueba obra recién terminada, siguiente refresco diario, ruina y alias
 canónico; rechaza también candidatos atribuidos a otra banda. Typecheck limpio
 y nueve pruebas focales de libros/checkpoint/carga pasan.
-La referencia de 27 escenarios sigue roja con 108 fallos; comparación final
-del bloque en curso. Evidencia:
+La referencia de 27 escenarios sigue roja con 108 fallos; la comparación final
+del bloque conserva los mismos checks aplicables y listas de fallos. Evidencia:
 `artifacts/verification/m15-phase28-sabotage-cache-baseline.log` y
 `artifacts/verification/m15-phase28-loader-20261004-pass1/`.
 Tour 1/1 y captura inicial revisada, sin cambio de UI:

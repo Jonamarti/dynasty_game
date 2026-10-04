@@ -2520,6 +2520,22 @@ antes o después y chocan entre sí y con el del jugador**.
 
 ## Fase 28 — Identidad que sobrevive a su comarca (M14 fase 3)
 
+**Avance del 2026-10-04, cargador ejecutable.**
+`Simulation.fromCheckpointRecord(input)` valida/hidrata un grafo independiente
+y reconstruye sistemas, callbacks e índices antes de devolver un motor vivo.
+La rama de restauración salta generación, forks y creación de entidades.
+Cinco regresiones cubren tala con progreso, nacimiento en frontera diaria,
+sucesión, callbacks, independencia y caché diaria; un negativo que omite la
+caché falla. La igualdad corresponde al JSON persistido (normaliza `-0`).
+Typecheck limpio, 963/963 unitarios en 133 archivos y 74/74 e2e. La matriz de
+27 escenarios sigue roja con 108 fallos antes/después, sin diferencias de
+aplicabilidad, recuentos de pases o listas de fallos; esta comparación no
+cubre métricas individuales ni throughput.
+[Contrato](m15_phase28_loader.md). Capturas generales nuevas, sin cambio de UI:
+`artifacts/screenshots/m15-phase28-loader-2026-10-04-pass2/`.
+**Siguiente:** protocolo de transferencia con un único dueño ejecutable antes
+de alternar niveles de simulación; no hay todavía guardar/cargar en UI ni LOD.
+
 **Avance del 2026-10-04, candidatos diarios conservados.** La auditoría del
 cargador encuentra que `sabotageCache` gobierna decisiones durante el día aunque
 una obra se termine o arruine después del refresco. `LedgerRecord` v2 conserva

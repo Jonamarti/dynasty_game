@@ -105,6 +105,14 @@ import {
   templeOf,
 } from '../social/Polity.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
+import { fromCheckpointRecord as hydrateCheckpointRecord, type CheckpointState } from '../persistence/CheckpointRecords.ts';
+import type { ExecutionStreamPath } from '../persistence/ExecutionRecords.ts';
+
+const RESTORE_CONSTRUCTION = Symbol('Simulation restore construction');
+interface RestoreConstruction {
+  readonly token: typeof RESTORE_CONSTRUCTION;
+  readonly state: CheckpointState;
+}
 
 /**
  * Something somebody worked out, waiting to be reported. See
@@ -281,9 +289,9 @@ export interface Band {
 export class Simulation {
   readonly ids: IdSpace;
   readonly config: SimConfig;
-  readonly rng: RNG;
-  readonly world: World;
-  readonly time: TimeManager;
+  readonly rng!: RNG;
+  readonly world!: World;
+  readonly time!: TimeManager;
 
   people: Person[] = [];
   nodes: ResourceNode[] = [];
@@ -493,20 +501,20 @@ export class Simulation {
   readonly relationships = new RelationshipGraph();
   /** How each pair of bands stands with the other. M11 phase 7a. */
   readonly bandRelations = new BandRelations();
-  readonly social: SocialSystem;
+  readonly social!: SocialSystem;
   private readonly normsByBand = new Map<number, Norms>();
   /** Each band's `strangerRegard`, for `SocialSystem` — the same arrangement as `normsByBand`. */
   private readonly strangerRegardByBand = new Map<number, number>();
 
-  private readonly needsSystem: NeedsSystem;
+  private readonly needsSystem!: NeedsSystem;
   /**
    * The one A* instance this world uses, for `MovementSystem`, the health
    * checks and later `Brain` alike — two definitions of "can they get there"
    * is one too many, and the checks should measure the same instance the
    * simulation actually walks people with.
    */
-  readonly pathfinder: Pathfinder;
-  private readonly movementSystem: MovementSystem;
+  readonly pathfinder!: Pathfinder;
+  private readonly movementSystem!: MovementSystem;
   private readonly actionSystem = new ActionSystem();
   private readonly brain = new Brain();
   private readonly lifeSystem = new LifeSystem();
@@ -514,9 +522,9 @@ export class Simulation {
   readonly bandSystem = new BandSystem();
   private readonly knowledgeSystem = new KnowledgeSystem();
   private readonly wildlifeSystem = new WildlifeSystem();
-  private readonly knowledgeRng: RNG;
-  private readonly wildlifeRng: RNG;
-  private readonly recordRng: RNG;
+  private readonly knowledgeRng!: RNG;
+  private readonly wildlifeRng!: RNG;
+  private readonly recordRng!: RNG;
   /** Recomputed daily from who is alive. An era can be lost as well as gained. */
   // The first rung itself, not a hand-written copy of it. The copy that used
   // to sit here was a second list nothing kept in step with `ERAS` — the same
@@ -525,13 +533,13 @@ export class Simulation {
   era: EraDef = ERAS[0]!;
   /** Living holders per tech, for the UI and the health report. */
   readonly techHolders = new Map<Tech, number>();
-  private readonly lifeRng: RNG;
-  private readonly forestRng: RNG;
+  private readonly lifeRng!: RNG;
+  private readonly forestRng!: RNG;
 
   /** Separate RNG streams so adding a draw in one system does not shift others. */
-  private readonly aiRng: RNG;
-  private readonly actionRng: RNG;
-  private readonly commandRng: RNG;
+  private readonly aiRng!: RNG;
+  private readonly actionRng!: RNG;
+  private readonly commandRng!: RNG;
   /**
    * The stream `Brain.think` draws from when it has a real choice to make.
    *
@@ -542,7 +550,7 @@ export class Simulation {
    * back to 0 and land on the old world exactly is that this stream is untouched
    * at that value.
    */
-  private readonly choiceRng: RNG;
+  private readonly choiceRng!: RNG;
   /**
    * `shareTheHearth`'s own stream, M11 phase 9b.
    *
@@ -553,12 +561,12 @@ export class Simulation {
    * is bit-identical to one built after it except for what actually gets
    * taught at a hearth.
    */
-  private readonly hearthRng: RNG;
+  private readonly hearthRng!: RNG;
   /** M15 phase 21a, fork 19: which part of the body a blow lands on. */
-  private readonly healthRng: RNG;
+  private readonly healthRng!: RNG;
   /** Hunters' placement, kills and bites — M15 phase 23e. */
-  private readonly ecologyRng: RNG;
-  private readonly edgeRng: RNG;
+  private readonly ecologyRng!: RNG;
+  private readonly edgeRng!: RNG;
   /** Preferred edge-herd sequence; IdSpace resolves collisions on shared maps. */
   private nextEdgeHerd = 5000;
   /**
@@ -570,7 +578,17 @@ export class Simulation {
   /** How many of each species the land held when it began: what "thinner than it was" means. */
   readonly foundingFauna: Record<string, number> = {};
 
-  constructor(overrides: DeepPartial<SimConfig> = {}, ids: IdSpace = new IdSpace()) {
+  constructor(overrides?: DeepPartial<SimConfig>, ids?: IdSpace);
+  constructor(overrides: DeepPartial<SimConfig> = {}, ids: IdSpace = new IdSpace(), restore?: RestoreConstruction) {
+    // Field initializers above create only empty containers and stateless helpers.
+    // A checkpoint must never pass through the seed/world/spawn path below: even
+    // constructing then replacing those objects would consume IDs and RNG draws.
+    if (restore?.token === RESTORE_CONSTRUCTION) {
+      this.ids = restore.state.ids;
+      this.config = restore.state.config;
+      this.initializeRestoredState(restore.state);
+      return;
+    }
     this.ids = ids;
     this.config = makeConfig(overrides);
     this.rng = new RNG(this.config.seed);
@@ -590,9 +608,7 @@ export class Simulation {
       this.config.motivation.infantsStill, this.config.carry.sledgeSpeed, this.config.childhood);
     this.social = new SocialSystem(
       this.relationships, this.normsByBand, this.bandRelations, this.strangerRegardByBand, this.ids);
-    this.social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
-    this.social.onDeed = (actor, type, magnitude) => this.accrueRenown(actor, type, magnitude);
-    this.social.onPeaceBroken = (actor, victimBandId, witnesses) => this.breakPeace(actor, victimBandId, witnesses);
+    this.bindSocialCallbacks(this.social);
     this.actionRng = this.rng.fork();
     this.lifeRng = this.rng.fork();
     this.forestRng = this.rng.fork();
@@ -694,6 +710,95 @@ export class Simulation {
       this.foundingFauna[species] = this.animals.filter(a => a.species === species).length;
       this.edgeReserve[species] = this.config.world.edgeReserve;
     }
+  }
+
+  /** Validate a detached JSON checkpoint, then bind its one state graph to a live owner. */
+  static fromCheckpointRecord(input: unknown): Simulation {
+    const state = hydrateCheckpointRecord(input);
+    // Keep the restoration-only constructor argument out of the public TypeScript
+    // signature. The token is module-private and the regular constructor remains
+    // the only way callers can request generated worlds.
+    return Reflect.construct(Simulation, [{}, state.ids, { token: RESTORE_CONSTRUCTION, state }]) as Simulation;
+  }
+
+  private initializeRestoredState(state: CheckpointState): void {
+    const { roster, execution, world, objects, ledgers } = state;
+    const stream = (path: ExecutionStreamPath): RNG => {
+      const value = execution.streamsByPath.get(path);
+      if (!value) throw new TypeError(`Invalid checkpoint state: missing RNG stream ${path}`);
+      return value;
+    };
+    const pathfinder = new Pathfinder(world);
+    const movementRng = stream('simulation.movementSystem.rng');
+    const movementSystem = new MovementSystem(world, movementRng, pathfinder,
+      state.config.motivation.infantsStill, state.config.carry.sledgeSpeed, state.config.childhood);
+    const normsByBand = ledgers.normsByBand;
+    const strangerRegardByBand = ledgers.strangerRegardByBand;
+    const social = new SocialSystem(roster.relationships, normsByBand, roster.bandRelations,
+      strangerRegardByBand, state.ids);
+
+    Object.assign(this, {
+      ids: state.ids, config: state.config, rng: stream('simulation.rng'), world, time: execution.time,
+      people: roster.activePeople, nodes: objects.nodes, buildings: objects.buildings, trees: objects.trees,
+      piles: objects.piles, corpses: objects.corpses, animals: objects.animals,
+      households: roster.households, bands: roster.bands, inscriptions: objects.inscriptions,
+      inscriptionsById: objects.inscriptionsById,
+      nodesById: objects.nodesById, peopleById: roster.peopleById,
+      buildingsById: objects.buildingsById, householdsById: roster.householdsById,
+      treesById: objects.treesById, pilesById: objects.pilesById,
+      corpsesById: objects.corpsesById, animalsById: objects.animalsById,
+      relationships: roster.relationships, bandRelations: roster.bandRelations,
+      normsByBand, strangerRegardByBand, social,
+      needsSystem: new NeedsSystem(state.config.needs), pathfinder, movementSystem,
+      aiRng: stream('simulation.aiRng'), actionRng: stream('simulation.actionRng'),
+      commandRng: stream('simulation.commandRng'), choiceRng: stream('simulation.choiceRng'),
+      hearthRng: stream('simulation.hearthRng'), lifeRng: stream('simulation.lifeRng'),
+      forestRng: stream('simulation.forestRng'), knowledgeRng: stream('simulation.knowledgeRng'),
+      wildlifeRng: stream('simulation.wildlifeRng'), recordRng: stream('simulation.recordRng'),
+      healthRng: stream('simulation.healthRng'), ecologyRng: stream('simulation.ecologyRng'),
+      edgeRng: stream('simulation.edgeRng'),
+      player: ledgers.player, autonomy: ledgers.autonomy, autonomyStall: ledgers.autonomyStall,
+      lastRefusal: ledgers.lastRefusal, snowDepth: ledgers.snowDepth, succession: ledgers.succession,
+      interruptions: ledgers.interruptions, watchedUses: ledgers.watchedUses,
+      helpCalls: ledgers.helpCalls, insights: ledgers.insights,
+      territoryPermissions: ledgers.territoryPermissions, feudEvents: ledgers.feudEvents,
+      pendingVerdicts: ledgers.pendingVerdicts, sightings: ledgers.sightings,
+      edgeReserve: ledgers.edgeReserve, foundingFauna: ledgers.foundingFauna,
+      sabotageCache: ledgers.sabotageCache,
+      nextEdgeHerd: ledgers.nextEdgeHerd, knownTech: ledgers.knownTech,
+      recordedTech: ledgers.recordedTech, rememberedTech: ledgers.rememberedTech,
+      recordsInHand: ledgers.recordsInHand, techHolders: ledgers.techHolders,
+      era: ledgers.era, templeByBand: ledgers.templeByBand,
+    });
+
+    this.bindSocialCallbacks(social);
+    social.recent.push(...ledgers.socialRecent);
+
+    // These maps are private implementation state of BandSystem and
+    // WildlifeSystem. Their stable keys are part of LedgerRecord, while the
+    // per-day member/name/home maps are scratch rebuilt by the next daily pass.
+    const bandSystem = this.bandSystem as unknown as Record<string, unknown>;
+    for (const key of ['chiefByBand', 'siteProgress', 'raidConsidered', 'foodFailureSince', 'coupConsidered', 'tributePaid']) {
+      const entries = key === 'chiefByBand' ? ledgers.bandSystem.chiefByBand :
+        ledgers.bandSystem[key as keyof typeof ledgers.bandSystem];
+      bandSystem[key] = new Map(entries as [number, unknown][]);
+    }
+    const wildlifeSystem = this.wildlifeSystem as unknown as Record<string, unknown>;
+    wildlifeSystem.owed = new Map(ledgers.wildlifeOwed);
+
+    this.shoreHash.rebuild(world.shoreTiles);
+    this.rebuildHashes();
+    this.treeHash.rebuild(this.trees);
+    this.pileHash.rebuild(this.piles);
+    this.corpseHash.rebuild(this.corpses);
+    this.buildingHash.rebuild(this.buildings);
+    this.inscriptionHash.rebuild(this.inscriptions);
+  }
+
+  private bindSocialCallbacks(social: SocialSystem): void {
+    social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
+    social.onDeed = (actor, type, magnitude) => this.accrueRenown(actor, type, magnitude);
+    social.onPeaceBroken = (actor, victimBandId, witnesses) => this.breakPeace(actor, victimBandId, witnesses);
   }
 
   /** Versioned, JSON-safe identity continuation state (entity records stay inert). */
