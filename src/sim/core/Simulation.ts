@@ -5383,7 +5383,17 @@ export class Simulation {
     this.autonomyStall = chosen === null ? stallReason(urgent[0]!) : null;
   }
 
+  /** `World.earthVersion` the shore hash was last built against (M15 phase 26d). */
+  private shoreSeen = -1;
+
   private rebuildHashes(): void {
+    // Dug ground that floods patches `world.shoreTiles` in place; the hash
+    // follows whenever the earth has moved, which costs nothing in a world
+    // where nobody digs.
+    if (this.shoreSeen !== this.world.earthVersion) {
+      this.shoreHash.rebuild(this.world.shoreTiles);
+      this.shoreSeen = this.world.earthVersion;
+    }
     this.peopleHash.clear();
     for (const person of this.people) {
       if (person.alive) this.peopleHash.insert(person);

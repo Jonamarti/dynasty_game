@@ -1,3 +1,32 @@
+## 2026-10-04 — M15 fase 26d: el agua sigue a la zanja
+
+- **`World.floodFrom(x, y)`**, llamado tras cada `dig`: una casilla cavada por
+  debajo de `waterLevel` que toca agua se llena (bioma `water`, no caminable por
+  `setWalkable`, así que las regiones de 16a siguen), y el llenado sigue por las
+  casillas conectadas que también están por debajo del nivel. Sin RNG, orden de
+  vecinos fijo, tope `FLOOD_LIMIT` (512). Una casilla llena lo es para siempre:
+  apilar no desagua. Las playas naturales suben unos 4 m por casilla, así que
+  una zanja de 1,3 m solo sigue el agua donde el terreno es llano (marismas y
+  estuarios): es el comportamiento correcto, no un límite arbitrario.
+- **`World.updateShore(x, y)`** parchea `shoreTiles` en su sitio (la casilla y
+  sus cuatro vecinas, que son las únicas que pueden cambiar), conservando el
+  orden. `Simulation.rebuildHashes` rehace `shoreHash` solo cuando se mueve
+  `earthVersion`; en un mundo donde nadie cava, no cuesta nada. Un hoyo que
+  cruza `pitDepth` (deja de caminarse) también sale de la lista de orilla.
+- **Razón visible:** `water_came_in` («el agua entró en el hoyo y lo llenó»,
+  español incluido). Quien cavaba queda en la orilla más cercana y la orden
+  se detiene con esa frase. Telemetría `trench_flooded`.
+- **Check `water-follows-the-trench`** (26f): recalcula desde los arrays crudos
+  que ninguna casilla cavada por debajo del nivel y junto al agua siga seca;
+  n/a donde no se cavó nada. Se midió contra el comportamiento roto
+  (`water-checks.test.ts`: sin llenado, falla; con llenado, pasa).
+- Pruebas: `flooding.test.ts` (seis: llena solo bajo el nivel y junto al agua,
+  no llena tierra adentro, sigue una zanja conectada con lista de orilla y
+  regiones iguales a un recálculo completo, determinismo, `shoreHash` al día,
+  mensaje al cavador).
+- `WorldRecords`: el comentario sobre `shoreTiles` ya no dice que las
+  ediciones del terreno no la mantienen.
+
 ## 2026-10-04 — M15 fase 26a (resto): la fertilidad viaja con la tierra, y el barro sale del subsuelo húmedo
 
 - **Cavar quita la capa fértil.** Las dos primeras levantadas de una casilla

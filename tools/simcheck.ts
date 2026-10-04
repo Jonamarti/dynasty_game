@@ -1127,6 +1127,30 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     regions.components + ' independently recomputed landmasses; ' + regions.tileErrors +
     ' incorrectly labelled tiles and ' + regions.sizeErrors + ' incorrect region sizes');
 
+  // M15 phase 26d: the water follows the trench. Recomputed from the raw
+  // arrays rather than asked of `World.floodFrom`, so a fill that was missed
+  // (a dig path that bypasses the fill, a stale rule) is seen by something
+  // that did not do the filling. A dug tile that is below the level and
+  // touches water must itself be water.
+  {
+    const w = sim.world;
+    let dug = 0;
+    let dry = 0;
+    let wet = 0;
+    for (let y = 0; y < w.height; y++) {
+      for (let x = 0; x < w.width; x++) {
+        const k = w.index(x, y);
+        if (w.offset[k]! < 0) dug++;
+        if (w.isWater(x, y) && w.offset[k]! < 0) wet++;
+        if (w.isWater(x, y) || w.biomeAt(x, y) === 'rock') continue;
+        if (w.elevation[k]! + w.offset[k]! < w.waterLevel - 1e-9 && w.isShore(x, y)) dry++;
+      }
+    }
+    if (dug === 0) skip('water-follows-the-trench', 'nothing was dug in this scenario');
+    else add('water-follows-the-trench', dry === 0,
+      dug + ' dug tiles, ' + wet + ' of them flooded; ' + dry + ' dug tiles below the water level still dry beside water');
+  }
+
   const overpacked = tel.carry_over_capacity_samples ?? 0;
   const handBlocked = tel.hand_capacity_blocked ?? 0;
   if (base.scenario === 'porters' && handBlocked === 0) {

@@ -165,6 +165,7 @@ export const ES_ACTIONS: Record<string, string> = {
   "there was nowhere to dig": "no había dónde cavar",
   "they had nothing to dig with": "no tenían con qué cavar",
   "the ground there was too hard to dig": "el suelo de allí era demasiado duro para cavar",
+  "water came into the hole and filled it": "el agua entró en el hoyo y lo llenó",
   "the hole is as deep as a person can climb out of": "el hoyo ya es tan hondo como se puede salir de él",
   "they were carrying no earth": "no llevaban tierra",
   "there was nowhere to put the earth": "no había dónde echar la tierra",

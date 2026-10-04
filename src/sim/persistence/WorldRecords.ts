@@ -231,8 +231,9 @@ export function fromWorldTerrainRecord(record: unknown): World {
     if (shoreIds.has(id)) invalid('duplicate shore tile');
     shoreIds.add(id); shores.push({ x: tile.x as number, y: tile.y as number });
   }
-  // `shoreTiles` is built once at generation and terrain edits do not maintain it;
-  // preserve that cache exactly rather than falsely recomputing it from edited ground.
+  // `shoreTiles` is built at generation and patched in place by `World.updateShore`
+  // (M15 phase 26d) as dug ground floods; preserve the list exactly rather than
+  // recomputing it, so a restored world keeps the same order.
 
   // No constructors run here. Soil's fertility pointer is a deliberate alias to World's array.
   const world = Object.create(World.prototype) as World;

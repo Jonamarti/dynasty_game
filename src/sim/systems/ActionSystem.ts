@@ -1573,6 +1573,15 @@ export class ActionSystem {
     }
     person.inventory.add(kind.item, lift);
     person.practice('build', 0.3);
+    if (ctx.world.isWater(tx, ty)) {
+      // M15 phase 26d: the hole reached the water and filled. Whoever was
+      // digging it is standing in the water now; put them on the bank and say so.
+      telemetry.count('trench_flooded');
+      const bank = ctx.world.findWalkableNear(tx, ty);
+      if (bank) { person.x = bank.x + 0.5; person.y = bank.y + 0.5; }
+      this.stop(person, 'water_came_in', ctx);
+      return;
+    }
     telemetry.count(kind.item === 'mud' ? 'mud_dug' : 'earth_dug', lift);
 
     const stop = this.interruption(person, ctx, { lookaheadTicks: ticks });
