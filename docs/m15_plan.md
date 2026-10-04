@@ -2222,8 +2222,8 @@ se ve más`.
 26b en sus herramientas (palo sin técnica, pico de asta a 2× con `bone_working`,
 pala a 3× con `carpentry`) y los verbos y el relieve visible de 26c. Las recetas,
 el equipo llevado, el sprite al cavar y los motivos de rechazo están probados.
-También está `regions-stay-true` de 26f, aplicado a toda la matriz. Faltan la
-conservación de fertilidad y extracción de barro de 26a, la puerta `earthworks`
+También está `regions-stay-true` de 26f, aplicado a toda la matriz. La conservación de
+fertilidad y la extracción de barro de 26a también están (2026-10-04). Faltan la puerta `earthworks`
 y los nodos de sus diseños de 26b, los diseños de 26c, 26d, 26e y el resto de
 26f. `pitDepth` existe y está probado en `World`, pero ninguna orden lo alcanza
 aún. Ver `changelog.md`.

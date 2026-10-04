@@ -1,3 +1,26 @@
+## 2026-10-04 — M15 fase 26a (resto): la fertilidad viaja con la tierra, y el barro sale del subsuelo húmedo
+
+- **Cavar quita la capa fértil.** Las dos primeras levantadas de una casilla
+  (`TOPSOIL_ITEMS`, 32 cm) son capa fértil: `Soil.strip` saca la parte
+  correspondiente de humus y nutriente de la casilla y la persona la lleva
+  (`Person.earthOrganic/earthNutrient`, sumas sobre los objetos `earth`
+  llevados). Por debajo está el subsuelo, que no lleva nada.
+- **Apilar la devuelve.** `Soil.bury` mezcla la riqueza media de la tierra
+  llevada en la casilla donde se echa, ponderada por el montón frente a una capa
+  de tierra vegetal: tierra rica sobre suelo pobre lo mejora, el subsuelo diluye.
+  Es conservación de concentración, no de masa (una mezcla): la masa se perdería
+  contra el tope 0..1 de cada casilla. La tierra que sale de las manos por otra
+  vía se lleva su riqueza (pérdida a propósito, documentada en `Person`).
+  El humus de una casilla cavada vuelve solo a la velocidad de recuperación
+  lenta de siempre.
+- **Barro.** Bajo la capa fértil, en casillas de orilla o con humedad >= 0,7 (el
+  10 % más húmedo de la tierra), cavar da `mud` (daub, que ya tiene consumidores:
+  cerámica, techumbre, escritura) en vez de `earth`. Una levantada nunca cruza la
+  frontera de la capa. Telemetría `mud_dug`.
+- Nadie cava por su cuenta todavía: `sim:check` no se mueve (comprobado, ver
+  abajo). Pruebas nuevas en `digging.test.ts` (capa raspada y portada, riqueza
+  entregada y vaciado del acarreo, mud solo bajo la capa y solo en húmedo).
+
 ## 2026-10-04 — M15 fase 29: WorldState conectado a la partida clásica
 
 main crea y reconstruye el motor desde WorldState, con geografía clásica y

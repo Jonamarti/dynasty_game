@@ -311,6 +311,15 @@ export class Person {
   /** Today's exertion ledger, filled by `NeedsSystem` and folded into `recentExertion` daily. */
   exertionToday = { total: 0, ticks: 0 };
   inventory = new Inventory();
+  /**
+   * The humus and nutrient the carried `earth` came up with, as sums over its
+   * items (item count times the concentration it was scraped at; M15 phase
+   * 26a). `doPile` hands the average back to the tile it heaps onto. Zero while
+   * no earth is carried; earth that leaves the hands any other way takes its
+   * richness with it, which is the honest loss.
+   */
+  earthOrganic = 0;
+  earthNutrient = 0;
   /** Inventory version last checked against M15 hand capacity. */
   carryReconciledVersion = -1;
   /**
