@@ -97,6 +97,33 @@ const HURT_DAYS_FLOOR = 30;
  */
 const TEMPLE_SHARE_FLOOR = 0.8;
 
+/**
+ * `diggers`: tools in every hand and two earthworks marked out by the chief, on
+ * the first open ground near the camp. See the scenario's own description.
+ */
+function setupDiggers(sim: Simulation): void {
+  const band = sim.bands.find(b => !b.outcast)!;
+  const chief = sim.bandSystem.chiefByBand.get(band.id);
+  const members = sim.people.filter(p => p.alive && p.bandId === band.id && !p.isChild);
+  for (const [i, person] of members.entries()) {
+    person.inventory.add('sticks', 1);
+    if (i % 2 === 0) person.inventory.add('spade', 1);
+  }
+  const sponsor = chief ?? members[0]?.id ?? null;
+  for (const [design, wanted] of [['ditch', 1], ['mound', 1]] as const) {
+    let placed = 0;
+    for (let r = 4; r < 24 && placed < wanted; r++) {
+      for (let a = 0; a < 24 && placed < wanted; a++) {
+        const x = Math.round(band.homeX + Math.cos(a * Math.PI / 12) * r);
+        const y = Math.round(band.homeY + Math.sin(a * Math.PI / 12) * r);
+        if (!sim.canPlace(BUILDINGS[design]!, x, y)) continue;
+        sim.place(design, x, y, band.id, sponsor, false);
+        placed++;
+      }
+    }
+  }
+}
+
 export const SCENARIOS: Record<string, Scenario> = {
   'food-news': {
     name: 'food-news',
@@ -784,6 +811,38 @@ export const SCENARIOS: Record<string, Scenario> = {
     },
     steps: 24000,
   },
+  diggers: {
+    name: 'diggers',
+    description:
+      'A band with spades and earthworks marked out beside the camp, and **the ' +
+      'only run in which anyone moves earth to a plan**. Nothing in the other ' +
+      'scenarios places an earthwork, so `earthworks-are-dug` and the lifts ' +
+      'behind it would report n/a for ever (the `craft` and `scribes` problem ' +
+      'again). The founders know farming and carpentry, the band holds a spade ' +
+      'and a digging stick apiece, and the harness marks out a ditch and a ' +
+      'mound with the chief as sponsor — what a player does from the build ' +
+      'menu. Who digs, who carries the spoil and when they stop for water are ' +
+      'the band\'s own: the chief directs and the backers volunteer, through ' +
+      'the same sponsor and persuasion machinery a hut uses. Harness-only ' +
+      'setup, like `emptied`\'s hunted-out land: the simulation is never told ' +
+      'the sites were not its own idea. The world is generous on purpose ' +
+      '(220 bushes, more game): a project is only worked while people are ' +
+      'comfortable, and on the default island the founders\' hunger and thirst ' +
+      'hover just under that line, so the ditch was dropped as stale with ' +
+      'seventy per cent dug. Generosity is what lets hands be spared for the ' +
+      'spade, the same affordance `lean` uses the other way round. Persuasion ' +
+      'that *proposes* an earthwork unprompted is not in this run; see `bugs.md`.',
+    config: {
+      seed: 'diggers',
+      world: { berryBushes: 220, gameHerds: 14, regrowthRate: 0.4 },
+      population: {
+        bands: 1, peoplePerBand: 12,
+        startingTech: ['firemaking', 'plant_lore', 'grinding', 'farming', 'carpentry', 'basketry'],
+      },
+    },
+    steps: 9600,
+    setup: setupDiggers,
+  },
   generations: {
     name: 'generations',
     description:
@@ -1149,6 +1208,27 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     if (dug === 0) skip('water-follows-the-trench', 'nothing was dug in this scenario');
     else add('water-follows-the-trench', dry === 0,
       dug + ' dug tiles, ' + wet + ' of them flooded; ' + dry + ' dug tiles below the water level still dry beside water');
+  }
+
+  // M15 phase 26c: earthworks are dug. Applies only where an earthwork was
+  // marked out (n/a elsewhere: nothing places one unprompted yet). The count of
+  // those marked out is the telemetry ledger, not the buildings still standing:
+  // a site nobody worked is dropped as stale after six days, and a check that
+  // only looked at the survivors would read a band that dug nothing as having
+  // nothing to dig. Passes when at least one was finished with every tile at its
+  // goal, read off the plan on the building and not a counter.
+  {
+    const placed = tel.earthwork_placed ?? 0;
+    if (placed === 0) skip('earthworks-are-dug', 'no earthwork was marked out in this scenario');
+    else {
+      const sites = sim.buildings.filter(b => b.earth);
+      const done = sites.filter(b => b.complete && b.earth!.every(t => t.progress >= t.goal));
+      const lifts = tel.earthwork_lifts ?? 0;
+      add('earthworks-are-dug', done.length > 0,
+        done.length + ' of ' + placed + ' earthworks marked out finished (' +
+        (sites.map(b => b.def.id + ' ' + Math.round(b.completion * 100) + '%').join(', ') || 'none left standing') +
+        '); ' + lifts + ' lifts of earth');
+    }
   }
 
   const overpacked = tel.carry_over_capacity_samples ?? 0;

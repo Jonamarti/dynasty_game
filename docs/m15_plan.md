@@ -2228,7 +2228,8 @@ terraplén, canal y bancal; `Building.earth`, progreso por casilla, razones, men
 con vista previa y rechazo) están hechos (2026-10-04); también el reubicado de lo
 que queda bajo el agua. Faltan la puerta `earthworks`
 y los nodos de sus diseños de 26b, la persuasión de la banda como proponente, el
-silo que se cava, 26e y el escenario `diggers` con `earthworks-are-dug` de 26f. `pitDepth`, que ya alcanza el diseño del hoyo, está probado en `World`.
+silo que se cava y 26e. El escenario `diggers` con `earthworks-are-dug` de 26f
+está hecho (2026-10-04). `pitDepth`, que ya alcanza el diseño del hoyo, está probado en `World`.
 Ver `changelog.md`.
 
 **Objetivo.** El terreno se puede cambiar: hoyos, silos, zanjas, fosos con
@@ -2317,8 +2318,10 @@ entre componentes y etiquetas y el tamaño propio de cada región. Lo comparten
 la matriz y el test de propiedad de 16a. Ocho pruebas del instrumento incluyen
 el rechazo de etiquetas obsoletas tras cortar un puente, regiones falsamente
 divididas o fundidas y entradas de tamaño que ya no existen. No corre dentro
-de `Simulation.step()` ni modifica el mundo. `diggers`,
-`water-follows-the-trench` y `earthworks-are-dug` esperan a sus mecanismos.
+de `Simulation.step()` ni modifica el mundo. **Hechos (2026-10-04):**
+`water-follows-the-trench` (26d), el escenario `diggers` y `earthworks-are-dug`
+(26c; `diggers` sin la puerta `earthworks`, que espera a 26e: las obras están
+abiertas a todos), medidos contra el build roto (`earthwork-checks.test.ts`).
 
 - Escenario **`diggers`**: una banda que cultiva, con `earthworks`,
   `basketry` y `carpentry`.

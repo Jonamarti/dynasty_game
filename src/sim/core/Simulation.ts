@@ -4268,6 +4268,7 @@ export class Simulation {
     this.buildingsById.set(building.id, building);
     this.buildingHash.insert(building);
     telemetry.count('site_placed');
+    if (def.earthwork) telemetry.count('earthwork_placed');
     return building;
   }
 

@@ -1,3 +1,32 @@
+## 2026-10-04 — M15 fase 26f: el escenario `diggers` y `earthworks-are-dug`
+
+- **Escenario `diggers`** (matriz de 27 pasa a **28 escenarios**): una banda de 12
+  con `farming`, `carpentry` y `basketry`, un palo de cavar para cada uno y una
+  pala para uno de cada dos, y dos obras marcadas junto al campamento por el
+  jefe como patrocinador (una zanja y un montículo): lo que hace un jugador desde
+  el menú. Quién cava, quién lleva el escombro y cuándo se para a beber es de la
+  banda: el jefe manda y los que lo apoyan se ofrecen, por la misma persuasión
+  que una choza. Mundo generoso a propósito (220 matas, más caza): en la isla
+  por defecto el hambre y la sed de los fundadores rondan justo bajo la línea de
+  comodidad en que se trabaja un proyecto y la zanja se descartaba por obsoleta
+  al 70 % (medido con un volcado cada 400 pasos). Con abundancia la zanja se
+  termina hacia el paso 3600 y el montículo hacia el 4000, sin que nadie lo ordene.
+- **Check `earthworks-are-dug`:** n/a si no se marcó ninguna obra (el registro es
+  la telemetría `earthwork_placed`, no los edificios que quedan, porque un sitio al
+  que nadie va se descarta a los seis días y mirar solo a los supervivientes leería
+  «nada que cavar»); pasa si al menos una está terminada con todas las casillas
+  en su meta, leído del plan del edificio. **Medido contra el build roto**
+  (`earthwork-checks.test.ts`): con `addEarth` sin hacer nada falla («0 de 2…»), con
+  obras sin patrocinador falla, y n/a en `tiny`. Un intento de «banda sin
+  herramientas» no valía: los palos están por toda la isla y alguien cava igual;
+  se descartó y se dejó constancia en el test.
+- `diggers` da 58/60: `cravings-steer-the-diet` y `nights-are-slept`, los mismos
+  fallos heredados que el resto de escenarios; `regions-stay-true`,
+  `water-follows-the-trench` y `people-on-land` pasan con tierra en movimiento.
+  Las otras 27 filas no cambian (ver la entrada de 26c (2)).
+- **Aviso para quien compare matrices:** `artifacts/verification/*/compare-matrices.ps1`
+  exige 27 filas y fallará con 28; hay que actualizarlo.
+
 ## 2026-10-04 — M15 fase 26c (2): los diseños de obras de tierra
 
 Siete diseños que se colocan como un campo: `pit` (hoyo 2x2, 16 unidades de
