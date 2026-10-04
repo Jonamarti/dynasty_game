@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decodeWorldRaster } from '../world/WorldBinary.ts';
+import { RealWorldMap } from '../world/RealWorldMap.ts';
 import { WORLD_FEATURE } from '../world/WorldFeatureSeeds.ts';
 
 describe('pregenerated Earth maps', () => {
@@ -26,5 +27,20 @@ describe('pregenerated Earth maps', () => {
     expect(landThen).toBeGreaterThan(landNow);
     expect(Array.from(glacial.koppen)).toEqual(Array.from(present.koppen));
     expect(Array.from(glacial.features!)).toEqual(Array.from(present.features!));
+  });
+
+  it('keeps real atlas coordinates aligned with Iberia and the central Pacific', () => {
+    const raster = decodeWorldRaster(new Uint8Array(readFileSync('public/world/earth-present.bin')));
+    const map = new RealWorldMap(raster, 10);
+    const at = (longitude: number, latitude: number) => map.comarcaAt(
+      (longitude + 180) / 360 * map.width,
+      (90 - latitude) / 180 * map.height,
+    );
+    const iberia = at(-3, 40);
+    const pacific = at(175, 0);
+    expect(iberia.land).toBe(true);
+    expect(iberia.elevationAboveSeaMeters).toBeGreaterThan(0);
+    expect(pacific.land).toBe(false);
+    expect(pacific.water).toBe('salt');
   });
 });

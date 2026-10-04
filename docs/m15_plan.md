@@ -2674,6 +2674,21 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Corrección del 2026-10-04: origen longitudinal del atlas terrestre.** La
+inspección detectó un desfase heredado de 180° del relieve y un recorte del
+clima. El generador normaliza NOAA a −180–180° y consulta Beck en los mismos
+centros que regiones, recursos y Natural Earth. Ambos atlas se regeneran con
+los inputs originales de caché. Tres controles fallan antes y pasan después;
+los 14 focales de fuentes/activos/mapa real pasan. La captura de Iberia ya
+representa tierra, costas y biomas, y el nuevo e2e comprueba que el render no
+altera el checkpoint. [Contrato](m15_phase29_atlas_alignment.md).
+Capturas nuevas:
+`artifacts/screenshots/m15-phase29-atlas-alignment-2026-10-04-pass1/`.
+Typecheck, 997/997 unitarios en 138 archivos, 75/75 e2e y build pasan; gira
+1/1 y 30 imágenes. Matriz antes/después: mismos 108 fallos en 27 escenarios,
+con recuentos y listas iguales; no se comparan métricas ni throughput. Sigue roja.
+El arreglo no cierra agua dulce, selección global, paleoclima ni banco de 29.
+
 **Avance del 2026-10-04: integración geográfica de inspección y recursos.**
 WorldState pasa mapa, centro y extensión a Simulation; solo se acepta
 `population.bands = 0` hasta conectar agua dulce local. Cereal y sílex respetan
@@ -2683,7 +2698,7 @@ ni fauna. Se conserva el orden clásico de forks y spawns. Typecheck y suite de
 tres semillas coinciden antes/después, al inicio y tras 180 ticks. Cuatro
 regresiones nuevas cubren generaciones reales, rechazo, océano y continuación
 entre días. [Contrato](m15_phase29_local_generation.md).
-Gira 1/1 y 13 capturas generales nuevas:
+Gira 1/1 y 29 capturas de verificación nuevas:
 `artifacts/screenshots/m15-phase29-resources-2026-10-04-pass1/`.
 La captura geográfica detectó un desfase heredado de 180° en el atlas y un
 muestreo climático incorrecto; la reparación de fuentes va en otro commit.

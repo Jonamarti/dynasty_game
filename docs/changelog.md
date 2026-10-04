@@ -1,3 +1,34 @@
+## 2026-10-04 — M15 fase 29: atlas terrestre alineado y comprobado en navegador
+
+La captura de Iberia reveló un desfase previo de 180°: NOAA estaba guardado
+en 0–360° y las consultas/recursos/capas regionales usaban −180–180°. El clima
+Beck también se consultaba fuera de su longitud válida y quedaba recortado al
+borde. El generador ahora normaliza NOAA y muestrea Beck en los mismos centros
+firmados. Los dos binarios se regeneran desde CSV/ZIP originales de la caché
+local; no hay rotación manual ni nueva descarga. Natural Earth conserva sus
+151 regiones de río y cinco de lago. Los controles de ubicación y gradiente
+climático detectan el fallo anterior (tres fallos focales) y pasan tras reparar.
+
+Verificación final: typecheck, 997/997 unitarios en 138 archivos, 75/75 e2e y
+build pasan. El build conserva el aviso de bundle mayor de 500 kB. Gira final
+1/1 y 30 imágenes nuevas, incluida ventana ibérica revisada:
+`artifacts/screenshots/m15-phase29-atlas-alignment-2026-10-04-pass1/`.
+Los intentos iniciales del nuevo e2e fallaron antes de corregir el atlas; la
+repetición completa final aprueba sus 75 casos. Playwright quedó esperando
+el cierre de su Vite propio tras completar los tests; cerrarlo permitió
+terminar con exit 0, sin cambiar aserciones para lograr el cierre ni atribuir
+una causa no aislada.
+La matriz antes/después sigue roja con 108 fallos en 27 escenarios (exit 1).
+La comparación pasa (exit 0): orden, recuentos de pases/aplicables y listas
+de fallos iguales; no compara métricas individuales ni throughput. Checkpoints
+clásicos completos de tres semillas coinciden al inicio y tras 180 ticks.
+La cohorte clásica `century` de diez semillas y 40.000 ticks termina con
+82,9 % de supervivencia media, cero colapsos por debajo de un cuarto de
+población y 369 nacimientos. Es una referencia sin cohorte anterior comparable;
+no mide la calibración de los nuevos mapas, que todavía no admiten habitantes.
+[Contrato y límites](m15_phase29_atlas_alignment.md). Logs y comparación:
+`artifacts/verification/m15-phase29-local-20261004-pass1/`.
+
 ## 2026-10-04 — M15 fase 29: recursos y construcción geográfica de inspección
 
 WorldState conecta un mapa y ventana de comarcas a Simulation sin ofrecerlo
@@ -11,7 +42,7 @@ con la ruta clásica manteniendo su orden de draws.
 Typecheck y 995/995 unitarios en 138 archivos pasan, incluidas cuatro
 regresiones de recursos/rechazo/océano/continuación. SHA-256 de checkpoints JSON
 completos en tres semillas coincide al inicio y tras 180 ticks con la referencia
-anterior a los cambios. Gira 1/1, 13 imágenes nuevas, inicial revisada:
+anterior a los cambios. Gira 1/1, 29 imágenes nuevas, inicial revisada:
 `artifacts/screenshots/m15-phase29-resources-2026-10-04-pass1/`.
 La primera suite e2e conserva 74 casos aprobados y falla el nuevo caso de mapa;
 la inspección posterior confirma un desfase heredado de 180° en el relieve y

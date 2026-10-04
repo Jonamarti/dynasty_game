@@ -10,6 +10,9 @@ dulce local y salinidad antes de ofrecer inicios geográficos poblados y
 selección global; fuentes/paleoclima y world:bench pendientes. La fase 28 ya
 tiene carga y autoridad; scheduler/transiciones individuales siguen en 32.
 [Contrato de generación y límites](m15_phase29_local_generation.md).
+Los dos atlas terrestres se han regenerado tras corregir el origen longitudinal
+NOAA y el muestreo de clima Beck. Regresiones de columnas/gradiente e Iberia
+protegen la ubicación; [contrato](m15_phase29_atlas_alignment.md).
 
 **2026-10-03: checkpoint coordinado, fase 28.** Objetos/agendas ya se unen
 con config/IDs, roster, terreno y reloj/RNG en un estado independiente y

@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-04 (M15 geographic profiles and classic WorldState). No runtime
+Current as of 2026-10-04 (M15 local geographic inspection and atlas alignment). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -171,6 +171,13 @@ and regional river flags cannot locate freshwater tiles. The browser still
 offers classic play only. The root does not yet create global peoples or
 abandoned-comarca ledgers. See
 [m15_phase29_local_generation.md](m15_phase29_local_generation.md).
+
+The Earth builder normalizes NOAA's 0–360° source longitudes into the same
+−180–180° grid used by profiles, Beck climate, Natural Earth and resource flags.
+Both committed binaries were regenerated from original cached inputs after the
+inspection fixture exposed the previous 180° mismatch. Source gradient and
+real-location regressions guard that alignment; see
+[m15_phase29_atlas_alignment.md](m15_phase29_atlas_alignment.md).
 
 **Work animation is presentational.** `render/WorkAnimation.ts` reads active
 harvest timers, valid node/tree targets and the shared `ARRIVAL_RADIUS`; movement

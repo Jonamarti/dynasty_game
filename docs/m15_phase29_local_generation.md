@@ -49,12 +49,14 @@ de checkpoint sin metadatos globales. Typecheck y 995/995 unitarios en 138
 archivos pasan en la entrega integrada; la comparación de checkpoints clásicos
 SHA-256 de tres semillas coincide antes/después (inicio y 180 ticks).
 
-Registro visual general, sin cambio de interfaz: gira 1/1, 13 imágenes en
+Registro visual, sin cambio de interfaz: gira 1/1 y e2e con 29 imágenes en
 `artifacts/screenshots/m15-phase29-resources-2026-10-04-pass1/`.
-La inspección de Iberia detecta un defecto heredado del atlas: relieve guardado
+La inspección de Iberia detectó un defecto heredado del atlas: relieve guardado
 con origen 0° y consultado con origen −180°, más longitudes climáticas
-recortadas al borde del raster. La regeneración de fuentes y la regresión de
-navegador se entregan por separado; no se declara validada la ubicación de
-este atlas ni aprobado el nuevo caso e2e en esta pasada. Los otros 74 casos
-de navegador pasan. Logs y hashes:
+recortadas al borde del raster. El commit separado de fuentes corrige el
+generador, regenera los binarios con datos originales y añade controles de
+ubicación y muestreo. La regresión de navegador ahora dibuja una ventana
+ibérica real de 30×20 comarcas y conserva el checkpoint durante el render.
+Los primeros dos intentos fallidos quedan en los logs; no se declaran pases.
+[Contrato de la reparación](m15_phase29_atlas_alignment.md). Logs y hashes:
 `artifacts/verification/m15-phase29-local-20261004-pass1/`.

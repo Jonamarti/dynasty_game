@@ -5,6 +5,14 @@ muestras, en centros separados por 3,75°. Se generan con
 `npm run world:build`; la herramienta reduce las fuentes a 32.268 bytes por
 mapa y no necesita acceso a red en tiempo de juego.
 
+La rejilla se guarda de oeste a este, con centros de longitud desde −178,125°
+hasta 178,125°, y de norte a sur. NOAA sirve longitudes 0–360°; el generador las
+normaliza a −180–180° antes de asignarlas. El clima Beck y las capas Natural
+Earth se muestrean en esos mismos centros. El 2026-10-04 se regeneraron ambos
+binarios para corregir un desfase previo de 180° del relieve y longitudes
+climáticas recortadas al borde del raster. Ver
+[contrato de coordenadas](../../docs/m15_phase29_atlas_alignment.md).
+
 ## Relieve
 
 - NOAA NCEI, **ETOPO 2022, 60 arc-second, global, Ice Surface**, superficie

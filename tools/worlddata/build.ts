@@ -84,7 +84,11 @@ export function parseElevationCsv(csv: string): Int16Array {
     const longitude = Number(fields[1]);
     const meters = Number(fields[2]);
     if (![latitude, longitude, meters].every(Number.isFinite)) continue;
-    const x = Math.round((longitude - 1.875) / 3.75);
+    // NOAA's global CSV numbers longitude 0..360; the atlas numbers west to
+    // east from -180..180. Wrap the source longitude before assigning its
+    // sample so the binary's x=0 remains the Pacific side of the dateline.
+    const signedLongitude = ((longitude + 180) % 360 + 360) % 360 - 180;
+    const x = Math.round((signedLongitude + 178.125) / 3.75);
     // The service response runs south to north; the game grid runs north to south.
     const y = Math.round((88.125 - latitude) / 3.75);
     if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
@@ -102,7 +106,7 @@ export function sampleClimate(raster: ReturnType<typeof decodeBeckClimateTiff>):
   const codes = new Uint8Array(WIDTH * HEIGHT);
   for (let y = 0; y < HEIGHT; y++) {
     for (let x = 0; x < WIDTH; x++) {
-      const longitude = 1.875 + x * 3.75;
+      const longitude = -178.125 + x * 3.75;
       const latitude = 88.125 - y * 3.75;
       const px = Math.max(0, Math.min(raster.width - 1, Math.round((longitude - raster.originLongitude) / raster.pixelSize)));
       const py = Math.max(0, Math.min(raster.height - 1, Math.round((raster.originLatitude - latitude) / raster.pixelSize)));

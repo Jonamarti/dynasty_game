@@ -9,14 +9,21 @@ ríos. Cereal/sílex tienen puertas de disponibilidad; fauna, flora genérica,
 suelo y humedad aún no tienen fidelidad ecológica local. El checkpoint conserva
 el estado local pero no ID del mapa ni posición/extensión global.
 
-La inspección nueva detecta que el atlas terrestre heredado está desfasado
-180° en altura: el builder guarda NOAA 0–360° y las consultas/features usan
-−180–180°. El muestreo de clima usa además longitudes mayores de 180° que
-acaban recortadas al borde del raster Beck. Iberia aparece bajo miles de metros
-de océano. Dos intentos del nuevo e2e de mapa fallan por paisaje uniforme; la
-conservación del checkpoint durante el render sí pasa, y los otros 74 e2e
-pasan. La reparación y regeneración van en el siguiente commit de fuentes.
-Contrato y evidencia: [m15_phase29_local_generation.md](m15_phase29_local_generation.md).
+**Desfase terrestre de 180° — corregido en commit de fuentes (2026-10-04).**
+El builder guardaba NOAA 0–360° con una API de consultas/features −180–180°;
+el muestreo de clima recortaba además longitudes mayores de 180° al borde del
+raster Beck. Iberia aparecía bajo miles de metros de océano. Las columnas y
+el muestreo ahora comparten coordenadas firmadas; ambos binarios se regeneran
+con los inputs originales locales. Tres controles de fuentes/ubicación fallaban
+antes; pasan tras corregir el generador. Se conservan los dos intentos fallidos
+de la captura inicial; no fueron una verificación geográfica aprobada.
+El nuevo e2e focal pasa tras regenerar. La resolución regional sigue pudiendo
+desplazar costas interpoladas; no se declara geografía subregional medida.
+[Contrato y evidencia](m15_phase29_atlas_alignment.md).
+Verificación final de esta entrega: typecheck, 997/997 unitarios en 138
+archivos, 75/75 e2e y build pasan. Matriz antes/después con los mismos 108
+fallos en 27 escenarios; orden/recuentos/listas coinciden, sin comparar métricas
+individuales ni throughput. No se declara recuperación del balance.
 
 La fachada distingue clásico/aleatorio/Tierra y el atlas devuelve perfiles de
 comarca con altura en metros y categorías regionales. Estas categorías no
