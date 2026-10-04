@@ -1,3 +1,15 @@
+## 2026-10-04 — M15 fase 26 (26a resto y 26d): medición
+
+Typecheck limpio; 996/996 unitarios en 138 archivos; e2e 74/74 (puerto 5399).
+La matriz completa (27 escenarios no lentos) da 108 comprobaciones fallidas,
+la misma cifra que la línea base registrada en `bugs.md` (fallos heredados:
+`cravings-steer-the-diet`, `nights-are-slept`, `moods-move-choices`, etc.; ninguno
+nuevo); `water-follows-the-trench` es n/a en todos porque nadie cava por su
+cuenta, así que la matriz no se mueve, como se pretendía. No hay cambio de pantalla
+(solo una frase nueva de motivo), así que no hay capturas nuevas. Nota práctica:
+en esta máquina un proceso lanzado en segundo plano avanzó casi nada; la matriz se
+midió en primer plano por tandas.
+
 ## 2026-10-04 — M15 fase 26d: el agua sigue a la zanja
 
 - **`World.floodFrom(x, y)`**, llamado tras cada `dig`: una casilla cavada por
