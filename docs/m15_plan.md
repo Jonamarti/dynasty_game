@@ -2674,6 +2674,16 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Avance del 2026-10-04: terreno local desde perfiles continuos.** World acepta
+un adaptador antes de construir suelo, orillas, regiones, prominencia y hierba.
+La Tierra conserva metros relativos al mar; el relieve aleatorio tiene escala
+explícita. Humedad/fertilidad son políticas regionales documentadas, sin inventar
+cursos de agua. La ruta clásica conserva su generador y sus draws. Pruebas de
+continuidad, unidades, caches, ausencia de draws y biomas en tres semillas.
+[Contrato](m15_phase29_terrain.md). Gira 18/18, 38 capturas generales nuevas:
+`artifacts/screenshots/m15-phase29-terrain-2026-10-04-pass1/`.
+No se cierra la fase 29 ni se ofrece aún selección de mapa.
+
 **Avance del 2026-10-04: raíz WorldState y main clásico.** La partida inicial
 y su reconstrucción previa a Begin pasan por una raíz con geografía clásica,
 IdSpace propio y Simulation actual, sin derivar la semilla ni cambiar forks.

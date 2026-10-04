@@ -1,0 +1,133 @@
+import { describe, expect, it } from 'vitest';
+import { DEFAULT_CONFIG } from '../core/Config.ts';
+import { RNG } from '../core/RNG.ts';
+import { World } from '../core/World.ts';
+import { fromWorldTerrainRecord, toWorldTerrainRecord } from '../persistence/WorldRecords.ts';
+import { createLocalGeography, RANDOM_RELIEF_TO_WORLD_UNITS } from '../world/LocalGeography.ts';
+import { earthWorldGeography, randomWorldGeography } from '../world/WorldGeography.ts';
+import type { LoadedWorldMap } from '../world/WorldAtlas.ts';
+import { WORLD_FEATURE } from '../world/WorldFeatureSeeds.ts';
+
+function loadedEarth(): LoadedWorldMap {
+  return {
+    entry: { id: 'terrain-test', title: 'Terrain test', file: 'terrain-test.bin', seaLevelMeters: 0, recommended: false },
+    raster: {
+      width: 4,
+      height: 2,
+      elevationMeters: Int16Array.from([0, 500, 1500, -10, 0, 500, 1500, -10]),
+      koppen: Uint8Array.from([1, 4, 8, 29, 3, 7, 16, 30]),
+      features: Uint32Array.from([WORLD_FEATURE.lake, 0, 0, 0, 0, 0, 0, 0]),
+      seaLevelMeters: 0,
+    },
+  };
+}
+
+const bounds = { originX: 0, originY: 0, comarcasWide: 4, comarcasHigh: 2 };
+const config = { ...DEFAULT_CONFIG.world, width: 4, height: 2, metresPerUnit: 100 };
+
+describe('local geography terrain projection', () => {
+  it('maps local tile coordinates continuously and converts Earth metres from configured sea level', () => {
+    const geography = earthWorldGeography(loadedEarth(), 1);
+    const local = createLocalGeography(geography, bounds, config);
+    const fiveHundredMetres = local.sample(1.5, 0.5);
+
+    expect(local.bounds).toEqual(bounds);
+    expect(local.profileAtLocal(1.5, 0.5)).toMatchObject({ kind: 'earth', x: 1.5, y: 0.5 });
+    expect(fiveHundredMetres.elevation).toBeCloseTo(config.waterLevel + 5);
+    expect(fiveHundredMetres.land).toBe(true);
+    expect(fiveHundredMetres.profile.kind).toBe('earth');
+    if (fiveHundredMetres.profile.kind === 'earth') expect(fiveHundredMetres.profile.region.climateClass).toBe(4);
+
+    const seaLevel = local.sample(0.5, 0.5);
+    expect(seaLevel.elevation).toBe(config.waterLevel);
+    expect(seaLevel.land).toBe(true);
+    expect(seaLevel.profile.kind === 'earth' && seaLevel.profile.water).toBe('fresh');
+    expect(seaLevel.land).toBe(true); // regional lake metadata does not paint a whole tile as water
+    expect(local.sample(3.5, 0.5).land).toBe(false);
+    expect(() => local.sample(-0.01, 0)).toThrow('inside');
+  });
+
+  it('uses explicit Beck ID wetness bands and does not treat regional water flags as local water', () => {
+    const local = createLocalGeography(earthWorldGeography(loadedEarth(), 1), bounds, config);
+    expect(local.sample(0.5, 0.5).moisture).toBe(0.82); // code 1, tropical
+    expect(local.sample(1.5, 0.5).moisture).toBe(0.12); // code 4, arid
+    expect(local.sample(2.5, 0.5).moisture).toBe(0.58); // code 8, temperate
+    expect(local.sample(3.5, 0.5).moisture).toBe(0.42); // code 29, polar
+    // An atlas cell can be called inland water while interpolated height is
+    // above sea; local terrain follows continuous elevation and keeps the flag.
+    expect(local.sample(0.5, 0.5).profile.kind).toBe('earth');
+  });
+
+  it('maps normalized random relief separately and builds all derived World state without draws', () => {
+    const geography = randomWorldGeography('local-terrain', { regionsWide: 8, regionsHigh: 4 });
+    const local = createLocalGeography(geography, { originX: 7, originY: 4, comarcasWide: 3, comarcasHigh: 2 }, config);
+    const sample = local.sample(1.5, 0.5);
+    if (sample.profile.kind !== 'random') throw new Error('Expected a random map profile');
+    expect(sample.elevation).toBeCloseTo(config.waterLevel + sample.profile.elevation * RANDOM_RELIEF_TO_WORLD_UNITS);
+    expect(sample.moisture).toBeGreaterThanOrEqual(0);
+    expect(sample.moisture).toBeLessThanOrEqual(1);
+
+    const rng = new RNG('not-consumed-by-geographic-generation');
+    const before = rng.snapshot();
+    const world = new World(config, rng, local);
+    expect(rng.snapshot()).toEqual(before);
+    expect(world.soil.effectiveFertility(0)).toBeGreaterThanOrEqual(0);
+    expect(world.countBiomes()).toEqual(expect.objectContaining({ water: expect.any(Number), rock: expect.any(Number) }));
+    expect(Array.from(world.walkable).every((value) => value === 0 || value === 1)).toBe(true);
+    expect(world.shoreTiles.every(({ x, y }) => world.isWalkable(x, y))).toBe(true);
+    const terrainRecord = toWorldTerrainRecord(world);
+    const restored = fromWorldTerrainRecord(JSON.parse(JSON.stringify(terrainRecord)));
+    expect(toWorldTerrainRecord(restored)).toEqual(terrainRecord);
+  });
+
+  it('projects sampled macro relief into local hills and rock across representative seeds', () => {
+    for (const seed of ['relief-a', 'relief-b', 'relief-c']) {
+      const geography = randomWorldGeography(seed);
+      const localConfig = { ...DEFAULT_CONFIG.world, width: 96, height: 48 };
+      const source = createLocalGeography(geography, {
+        originX: 0, originY: 0, comarcasWide: geography.map.width, comarcasHigh: geography.map.height,
+      }, localConfig);
+      const world = new World(localConfig, new RNG(`local-${seed}`), source);
+      const counts = world.countBiomes();
+      expect(counts.hills + counts.rock, `${seed}: normalized relief should reach elevated local classes`).toBeGreaterThan(0);
+      expect(counts.rock, `${seed}: high macro ridges should include exposed rock`).toBeGreaterThan(0);
+    }
+  });
+
+  it('keeps Earth biome and fertility policy stable when metric display scale changes', () => {
+    const geography = earthWorldGeography(loadedEarth(), 1);
+    const ordinary = new World(config, new RNG('earth-scale'), createLocalGeography(geography, bounds, config));
+    const differentScaleConfig = { ...config, waterLevel: 0.7, metresPerUnit: 400 };
+    const differentScale = new World(
+      differentScaleConfig,
+      new RNG('earth-scale'),
+      createLocalGeography(geography, bounds, differentScaleConfig),
+    );
+
+    expect(Array.from(differentScale.biome)).toEqual(Array.from(ordinary.biome));
+    expect(Array.from(differentScale.moisture)).toEqual(Array.from(ordinary.moisture));
+    expect(Array.from(differentScale.fertility)).toEqual(Array.from(ordinary.fertility));
+    expect(Array.from(ordinary.elevation)).not.toEqual(Array.from(differentScale.elevation));
+  });
+
+  it('snapshots caller bounds so later mutation cannot move a generated local map', () => {
+    const geography = randomWorldGeography('stable-bounds', { regionsWide: 8, regionsHigh: 4 });
+    const mutableBounds = { ...bounds };
+    const mutableConfig = { ...config };
+    const local = createLocalGeography(geography, mutableBounds, mutableConfig);
+    const before = local.sample(1, 1);
+    mutableBounds.originX = 40;
+    mutableBounds.comarcasWide = 400;
+    mutableConfig.waterLevel = 99;
+    mutableConfig.metresPerUnit = 1;
+    expect(local.sample(1, 1)).toEqual(before);
+  });
+
+  it('samples adjacent comarca patches at a shared boundary with the same continuous profile', () => {
+    const geography = earthWorldGeography(loadedEarth(), 1);
+    const west = createLocalGeography(geography, { ...bounds, comarcasWide: 2 }, config);
+    const east = createLocalGeography(geography, { ...bounds, originX: 2, comarcasWide: 2 }, config);
+    expect(west.sample(config.width, 1).profile).toEqual(east.sample(0, 1).profile);
+    expect(west.sample(config.width, 1).elevation).toBe(east.sample(0, 1).elevation);
+  });
+});

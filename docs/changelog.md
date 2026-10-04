@@ -1,3 +1,16 @@
+## 2026-10-04 — M15 fase 29: terreno local desde perfiles continuos
+
+World puede generar desde un rectángulo geográfico antes de calcular suelo,
+orillas, componentes, prominencia y hierba. El adaptador conserva unidades y
+procedencia: metros relativos al mar para Tierra y escala normalizada explícita
+para aleatorio. Las categorías regionales de agua no crean ríos locales.
+Se evita aplicar coeficientes de la isla normalizada al suelo terrestre; humedad
+y fertilidad siguen una política regional documentada e independiente de la
+escala de representación. La ruta clásica conserva el generador original.
+Typecheck y 7/7 pruebas focales pasan. [Contrato y límites](m15_phase29_terrain.md).
+Gira general 18/18; 38 capturas nuevas, inicial revisada, sin cambio de UI:
+`artifacts/screenshots/m15-phase29-terrain-2026-10-04-pass1/`.
+
 ## 2026-10-04 — M15 fase 29: WorldState conectado a la partida clásica
 
 main crea y reconstruye el motor desde WorldState, con geografía clásica y

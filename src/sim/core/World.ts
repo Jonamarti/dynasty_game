@@ -11,6 +11,7 @@ import { Soil } from './Soil.ts';
 import { grassCapacity } from './Grass.ts';
 import type { RNG } from './RNG.ts';
 import type { WorldConfig } from './Config.ts';
+import type { LocalGeographySource } from '../world/LocalGeography.ts';
 
 export const BIOMES = ['water', 'beach', 'grass', 'forest', 'hills', 'rock'] as const;
 export type Biome = (typeof BIOMES)[number];
@@ -101,7 +102,7 @@ export class World {
    */
   readonly shoreTiles: { x: number; y: number }[] = [];
 
-  constructor(private readonly config: WorldConfig, rng: RNG) {
+  constructor(private readonly config: WorldConfig, rng: RNG, localGeography?: LocalGeographySource) {
     this.width = config.width;
     this.height = config.height;
     this.chunkSize = config.chunkSize;
@@ -120,7 +121,8 @@ export class World {
     this.grassCap = new Float32Array(n);
     this.region = new Int32Array(n).fill(-1);
 
-    this.generate(rng);
+    if (localGeography) this.generateFromGeography(localGeography);
+    else this.generate(rng);
     this.findShores();
     this.findRegions();
     this.refreshProminence(0, 0, this.width - 1, this.height - 1);
@@ -611,12 +613,54 @@ export class World {
     );
   }
 
+  /**
+   * Fill terrain from continuous global comarca profiles without drawing from
+   * Simulation RNG. The classic generator remains the exact default path.
+   */
+  private generateFromGeography(geography: LocalGeographySource): void {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const i = y * this.width + x;
+        const sample = geography.sample(x + 0.5, y + 0.5);
+        const elev = sample.elevation;
+        const moist = sample.moisture;
+        this.elevation[i] = elev;
+        this.moisture[i] = moist;
+
+        const biome = this.classifyGeographic(elev, moist, geography.kind);
+        this.biome[i] = BIOME_ID[biome];
+        this.walkable[i] = biome === 'water' || biome === 'rock' ? 0 : 1;
+        // No source has local soil measurements: use its coarse wetness as a
+        // transparent fertility proxy, independent of elevation-unit scale.
+        this.fertility[i] = biome === 'grass' || biome === 'forest'
+          ? Math.max(0, Math.min(1, moist))
+          : biome === 'beach' ? 0.15 : 0;
+      }
+    }
+    // Regional wetness is the only soil signal in the source data. Keep the
+    // Soil-owned fertility array canonical, as in classic worlds.
+    this.soil = new Soil(this.width, this.fertility, (x, y) => this.moisture[this.index(x, y)]!);
+  }
+
   private classify(elev: number, moist: number): Biome {
     const water = this.config.waterLevel;
     if (elev < water) return 'water';
     if (elev < water + 0.04) return 'beach';
     if (elev > 0.78) return 'rock';
     if (elev > 0.62) return 'hills';
+    return moist > 0.52 ? 'forest' : 'grass';
+  }
+
+  private classifyGeographic(elev: number, moist: number, kind: LocalGeographySource['kind']): Biome {
+    if (kind === 'random') return this.classify(elev, moist);
+    // Earth heights are metresPerUnit-scaled world units. Apply explicit
+    // absolute relief bands (10 m beach, 500 m hills, 1500 m bare rock) rather
+    // than reusing the classic island's normalized cutoffs.
+    const aboveSea = elev - this.config.waterLevel;
+    if (aboveSea < 0) return 'water';
+    if (aboveSea < 10 / this.config.metresPerUnit) return 'beach';
+    if (aboveSea >= 1500 / this.config.metresPerUnit) return 'rock';
+    if (aboveSea >= 500 / this.config.metresPerUnit) return 'hills';
     return moist > 0.52 ? 'forest' : 'grass';
   }
 

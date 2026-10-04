@@ -4,8 +4,10 @@
 
 La fachada distingue clásico/aleatorio/Tierra y el atlas devuelve perfiles de
 comarca con altura en metros y categorías regionales. Estas categorías no
-describen cursos de agua ni recursos locales; la generación de World todavía
-no consume el perfil. Siguen pendientes bibliografía por semilla, paleoclima,
+describen cursos de agua ni recursos locales. World ya puede consumir un
+adaptador de terreno antes de construir sus índices y suelo; humedad y bioma
+locales siguen siendo aproximaciones regionales. No se reconstruyen ríos ni
+se verifica fidelidad ecológica local. Siguen pendientes bibliografía por semilla, paleoclima,
 selección de partida global y `world:bench`. La entrega no resuelve el balance
 heredado: el sim:check inicial falla cravings-steer-the-diet y perf-budget.
 Ver [contrato](m15_phase29_geography.md).
