@@ -160,8 +160,17 @@ The browser now creates its classic local motor through `WorldState`, which
 holds the geographic mode, an IdSpace and the current Simulation. Rebuilding
 before character creation replaces the whole root and keeps the existing UI
 bindings. Starting seeds and streams are unchanged; headless tools still
-construct standalone Simulation. The root does not yet create global terrain,
-people or abandoned-comarca ledgers. See [m15_phase29_worldstate.md](m15_phase29_worldstate.md).
+construct standalone Simulation. The root also accepts an explicit geographic
+inspection patch with zero human bands. `LocalGeography` samples continuous
+profiles before World builds its shore/region/prominence/soil/grass caches.
+Earth heights retain metres relative to the atlas sea level; random relief has
+an explicit separate scale. Regional grain/flint gates filter local placement
+on independent, derived seed streams. Populated geographic starts are rejected
+before generation: the current drinking model treats every shoreline as potable,
+and regional river flags cannot locate freshwater tiles. The browser still
+offers classic play only. The root does not yet create global peoples or
+abandoned-comarca ledgers. See
+[m15_phase29_local_generation.md](m15_phase29_local_generation.md).
 
 **Work animation is presentational.** `render/WorkAnimation.ts` reads active
 harvest timers, valid node/tree targets and the shared `ARRIVAL_RADIUS`; movement

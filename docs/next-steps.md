@@ -4,10 +4,12 @@
 clásica desde una raíz con IdSpace y Simulation actual. La geografía distingue
 clásico/aleatorio/Tierra sin mezclar relieve normalizado y metros. El atlas
 ofrece perfiles de comarca continuos y categorías de su región de origen.
-Siguiente: aplicar perfiles al terreno y recursos locales antes de ofrecer
+Los perfiles ya se aplican al terreno local y a las puertas regionales de
+cereal/sílex en una ruta de inspección sin población. Siguiente: conectar agua
+dulce local y salinidad antes de ofrecer inicios geográficos poblados y
 selección global; fuentes/paleoclima y world:bench pendientes. La fase 28 ya
 tiene carga y autoridad; scheduler/transiciones individuales siguen en 32.
-[Contrato](m15_phase29_worldstate.md).
+[Contrato de generación y límites](m15_phase29_local_generation.md).
 
 **2026-10-03: checkpoint coordinado, fase 28.** Objetos/agendas ya se unen
 con config/IDs, roster, terreno y reloj/RNG en un estado independiente y

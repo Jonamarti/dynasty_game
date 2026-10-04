@@ -2,6 +2,22 @@
 
 ## M15 29: perfiles geográficos disponibles; generación global pendiente (2026-10-04)
 
+WorldState ya genera terreno/nodos de inspección desde una ventana geográfica.
+Los inicios con población se rechazan antes de generación: el motor de bebida
+clásico no distingue mar y agua dulce, y los flags regionales no localizan
+ríos. Cereal/sílex tienen puertas de disponibilidad; fauna, flora genérica,
+suelo y humedad aún no tienen fidelidad ecológica local. El checkpoint conserva
+el estado local pero no ID del mapa ni posición/extensión global.
+
+La inspección nueva detecta que el atlas terrestre heredado está desfasado
+180° en altura: el builder guarda NOAA 0–360° y las consultas/features usan
+−180–180°. El muestreo de clima usa además longitudes mayores de 180° que
+acaban recortadas al borde del raster Beck. Iberia aparece bajo miles de metros
+de océano. Dos intentos del nuevo e2e de mapa fallan por paisaje uniforme; la
+conservación del checkpoint durante el render sí pasa, y los otros 74 e2e
+pasan. La reparación y regeneración van en el siguiente commit de fuentes.
+Contrato y evidencia: [m15_phase29_local_generation.md](m15_phase29_local_generation.md).
+
 La fachada distingue clásico/aleatorio/Tierra y el atlas devuelve perfiles de
 comarca con altura en metros y categorías regionales. Estas categorías no
 describen cursos de agua ni recursos locales. World ya puede consumir un

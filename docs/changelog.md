@@ -1,3 +1,25 @@
+## 2026-10-04 — M15 fase 29: recursos y construcción geográfica de inspección
+
+WorldState conecta un mapa y ventana de comarcas a Simulation sin ofrecerlo
+todavía como partida poblada. La validación exige cero bandas antes de crear
+RNG, generar terreno o reservar IDs, porque aún falta distinguir orillas
+potables y mar. Las puertas regionales de cereal/sílex y los streams derivados
+por mapa/posición/extensión/recurso conservan las otras pasadas. El motor
+descarta el contexto de generación; el checkpoint conserva el estado local,
+pero no la identidad/posición global futura. El helper de recursos se comparte
+con la ruta clásica manteniendo su orden de draws.
+Typecheck y 995/995 unitarios en 138 archivos pasan, incluidas cuatro
+regresiones de recursos/rechazo/océano/continuación. SHA-256 de checkpoints JSON
+completos en tres semillas coincide al inicio y tras 180 ticks con la referencia
+anterior a los cambios. Gira 1/1, 13 imágenes nuevas, inicial revisada:
+`artifacts/screenshots/m15-phase29-resources-2026-10-04-pass1/`.
+La primera suite e2e conserva 74 casos aprobados y falla el nuevo caso de mapa;
+la inspección posterior confirma un desfase heredado de 180° en el relieve y
+un muestreo climático que recorta longitudes. Se documenta para reparar las
+fuentes en un commit propio; esta pasada no se declara e2e aprobada.
+[Contrato y pendientes](m15_phase29_local_generation.md). Evidencia:
+`artifacts/verification/m15-phase29-local-20261004-pass1/`.
+
 ## 2026-10-04 — M15 fase 29: terreno local desde perfiles continuos
 
 World puede generar desde un rectángulo geográfico antes de calcular suelo,

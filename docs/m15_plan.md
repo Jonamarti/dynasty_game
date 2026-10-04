@@ -2674,6 +2674,22 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Avance del 2026-10-04: integración geográfica de inspección y recursos.**
+WorldState pasa mapa, centro y extensión a Simulation; solo se acepta
+`population.bands = 0` hasta conectar agua dulce local. Cereal y sílex respetan
+disponibilidad regional y sus streams derivados no desplazan otros recursos
+ni fauna. Se conserva el orden clásico de forks y spawns. Typecheck y suite de
+995/995 pruebas en 138 archivos pasan; los checkpoints clásicos completos de
+tres semillas coinciden antes/después, al inicio y tras 180 ticks. Cuatro
+regresiones nuevas cubren generaciones reales, rechazo, océano y continuación
+entre días. [Contrato](m15_phase29_local_generation.md).
+Gira 1/1 y 13 capturas generales nuevas:
+`artifacts/screenshots/m15-phase29-resources-2026-10-04-pass1/`.
+La captura geográfica detectó un desfase heredado de 180° en el atlas y un
+muestreo climático incorrecto; la reparación de fuentes va en otro commit.
+La fase 29 sigue abierta: agua dulce/inicios poblados, selección, fuentes
+completas/paleoclima y banco pendientes.
+
 **Avance del 2026-10-04: terreno local desde perfiles continuos.** World acepta
 un adaptador antes de construir suelo, orillas, regiones, prominencia y hierba.
 La Tierra conserva metros relativos al mar; el relieve aleatorio tiene escala

@@ -109,11 +109,26 @@ import { fromCheckpointRecord as hydrateCheckpointRecord, toCheckpointRecord, ty
 import type { ExecutionStreamPath } from '../persistence/ExecutionRecords.ts';
 import { ParkedSimulation, assertExecutionOwner, parkExecutionOwner, registerExecutionOwner,
   resumeParkedSimulation, SimulationAuthorityError, transferSimulationAuthority } from '../runtime/authority.ts';
+import { createLocalGeography, type LocalGeographySource } from '../world/LocalGeography.ts';
+import type { WorldGeography } from '../world/WorldGeography.ts';
+import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 
 const RESTORE_CONSTRUCTION = Symbol('Simulation restore construction');
 interface RestoreConstruction {
   readonly token: typeof RESTORE_CONSTRUCTION;
   readonly state: CheckpointState;
+}
+
+/** Optional macro-map placement for inspection worlds. Populated starts wait
+ * for phase 30's freshwater semantics; this is intentionally not a game start. */
+export interface GeographicStart {
+  geography: WorldGeography;
+  /** Global comarca coordinates; longitude wraps only after this is validated. */
+  x: number;
+  y: number;
+  /** Local map span in comarcas. Defaults to one by one. */
+  comarcasWide?: number;
+  comarcasHigh?: number;
 }
 
 /**
@@ -293,6 +308,9 @@ export class Simulation {
   private readonly pendingFounders = new WeakSet<Person>();
   readonly ids: IdSpace;
   readonly config: SimConfig;
+  /** Present only during deterministic generation; checkpoints bake terrain/nodes. */
+  private geographicStart: GeographicStart | null;
+  private localGeography: LocalGeographySource | null;
   readonly rng!: RNG;
   readonly world!: World;
   readonly time!: TimeManager;
@@ -583,12 +601,16 @@ export class Simulation {
   readonly foundingFauna: Record<string, number> = {};
 
   constructor(overrides?: DeepPartial<SimConfig>, ids?: IdSpace);
-  constructor(overrides: DeepPartial<SimConfig> = {}, ids: IdSpace = new IdSpace(), restore?: RestoreConstruction) {
+  constructor(overrides: DeepPartial<SimConfig>, ids: IdSpace, geographicStart?: GeographicStart);
+  constructor(overrides: DeepPartial<SimConfig> = {}, ids: IdSpace = new IdSpace(),
+    geographicStart?: GeographicStart, restore?: RestoreConstruction) {
     registerExecutionOwner(this);
     // Field initializers above create only empty containers and stateless helpers.
     // A checkpoint must never pass through the seed/world/spawn path below: even
     // constructing then replacing those objects would consume IDs and RNG draws.
     if (restore?.token === RESTORE_CONSTRUCTION) {
+      this.geographicStart = null;
+      this.localGeography = null;
       this.ids = restore.state.ids;
       this.config = restore.state.config;
       this.initializeRestoredState(restore.state);
@@ -596,6 +618,12 @@ export class Simulation {
     }
     this.ids = ids;
     this.config = makeConfig(overrides);
+    if (geographicStart && this.config.population.bands !== 0) {
+      throw new RangeError('Populated geographic starts require local freshwater; use population.bands = 0 until phase 30');
+    }
+    this.geographicStart = geographicStart ?? null;
+    const localGeography = geographicStart ? this.makeLocalGeography(geographicStart) : undefined;
+    this.localGeography = localGeography ?? null;
     this.rng = new RNG(this.config.seed);
 
     // Fork order is part of the seed contract; do not reorder these.
@@ -604,7 +632,7 @@ export class Simulation {
     this.aiRng = this.rng.fork();
     const moveRng = this.rng.fork();
 
-    this.world = new World(this.config.world, worldRng);
+    this.world = new World(this.config.world, worldRng, localGeography);
     this.time = new TimeManager(this.config.time);
 
     this.needsSystem = new NeedsSystem(this.config.needs);
@@ -701,7 +729,8 @@ export class Simulation {
     // which one leaves. Drawn from once a day and by nothing else.
     this.edgeRng = this.rng.fork();
 
-    this.spawnResources(spawnRng);
+    if (geographicStart) this.spawnGeographicResources();
+    else this.spawnResources(spawnRng);
     this.spawnHerds(spawnRng);
     this.spawnPeople(spawnRng);
     this.spawnFish(fishRng);
@@ -710,11 +739,47 @@ export class Simulation {
     this.spawnFlora(floraRng);
     this.spawnWildPlants(herbRng);
     this.spawnPredators(this.ecologyRng);
+    // Geography is construction input, not live simulation state. The root may
+    // retain the selected map; the motor keeps only its generated tile arrays.
+    this.geographicStart = null;
+    this.localGeography = null;
     this.rebuildHashes();
     for (const species of PREY_SPECIES) {
       this.foundingFauna[species] = this.animals.filter(a => a.species === species).length;
       this.edgeReserve[species] = this.config.world.edgeReserve;
     }
+  }
+
+  /** Validate geographic construction before any RNG fork, allocation or spawn. */
+  private makeLocalGeography(start: GeographicStart): LocalGeographySource {
+    const { geography } = start;
+    const width = geography.kind === 'random' ? geography.map.width :
+      geography.kind === 'earth' ? geography.map.width : NaN;
+    const height = geography.kind === 'random' ? geography.map.height :
+      geography.kind === 'earth' ? geography.map.height : NaN;
+    if (!Number.isFinite(start.x) || !Number.isFinite(start.y) ||
+        !Number.isFinite(width) || !Number.isFinite(height) ||
+        start.x < 0 || start.x >= width || start.y < 0 || start.y >= height) {
+      throw new RangeError('Geographic start must be finite and inside a random or Earth map');
+    }
+    const comarcasWide = start.comarcasWide ?? 1;
+    const comarcasHigh = start.comarcasHigh ?? 1;
+    if (!Number.isFinite(comarcasWide) || comarcasWide <= 0 ||
+        !Number.isFinite(comarcasHigh) || comarcasHigh <= 0) {
+      throw new RangeError('Geographic local extent must be positive and finite');
+    }
+    const originX = start.x - comarcasWide / 2;
+    const originY = start.y - comarcasHigh / 2;
+    if (originY < 0 || originY + comarcasHigh > height) {
+      throw new RangeError('Geographic local extent crosses a map pole');
+    }
+    const source = createLocalGeography(geography, { originX, originY, comarcasWide, comarcasHigh }, {
+      width: this.config.world.width,
+      height: this.config.world.height,
+      waterLevel: this.config.world.waterLevel,
+      metresPerUnit: this.config.world.metresPerUnit,
+    });
+    return source;
   }
 
   /** Validate a detached JSON checkpoint, then bind its one state graph to a live owner. */
@@ -735,7 +800,7 @@ export class Simulation {
     // Keep the restoration-only constructor argument out of the public TypeScript
     // signature. The token is module-private and the regular constructor remains
     // the only way callers can request generated worlds.
-    return Reflect.construct(Simulation, [{}, state.ids, { token: RESTORE_CONSTRUCTION, state }]) as Simulation;
+    return Reflect.construct(Simulation, [{}, state.ids, undefined, { token: RESTORE_CONSTRUCTION, state }]) as Simulation;
   }
 
   /** Park this execution owner as an opaque, single-use in-memory checkpoint. */
@@ -953,20 +1018,7 @@ export class Simulation {
     ];
 
     for (const [kind, quoted] of plan) {
-      const count = this.scaledCount(quoted);
-      let placed = 0;
-      let attempts = 0;
-      const maxAttempts = count * 60;
-      while (placed < count && attempts < maxAttempts) {
-        attempts++;
-        const spot = this.world.randomWalkable(rng, 1);
-        if (!spot) continue;
-        if (!this.suitsBiome(kind, spot.x, spot.y)) continue;
-        const node = new ResourceNode(kind, spot.x, spot.y, rng, this.ids);
-        this.nodes.push(node);
-        this.nodesById.set(node.id, node);
-        placed++;
-      }
+      this.spawnResourceKind(kind, quoted, rng, false);
     }
   }
 
@@ -976,6 +1028,7 @@ export class Simulation {
    * the `fishRng` fork in the constructor.
    */
   private spawnFish(rng: RNG): void {
+    if (this.geographicStart) rng = this.geographicResourceRng('fish');
     const count = this.scaledCount(this.config.world.fishingSpots);
     let placed = 0;
     let attempts = 0;
@@ -1001,6 +1054,7 @@ export class Simulation {
    * `Item.ts` for why raw grain is worth eating at all.
    */
   private spawnWildGrain(rng: RNG): void {
+    if (this.geographicStart) rng = this.geographicResourceRng('wild_grain');
     const count = this.scaledCount(this.config.world.wildGrainPatches);
     let placed = 0;
     let attempts = 0;
@@ -1010,6 +1064,7 @@ export class Simulation {
       const spot = this.world.randomWalkable(rng, 1);
       if (!spot) continue;
       if (!this.suitsBiome('wild_grain', spot.x, spot.y)) continue;
+      if (!this.geographicResourceAvailableAt('wild_grain', spot.x, spot.y)) continue;
       const node = new ResourceNode('wild_grain', spot.x, spot.y, rng, this.ids);
       this.nodes.push(node);
       this.nodesById.set(node.id, node);
@@ -1399,6 +1454,51 @@ export class Simulation {
     this.assertCanonical(this.peopleById, a, 'person');
     this.assertCanonical(this.peopleById, b, 'person');
     this.mergeHouseholdsImpl(a, b);
+  }
+
+  /** Geographic resources use seed-derived per-kind streams so gates cannot
+   * shift another resource, herd, or founder when a profile changes. */
+  private spawnGeographicResources(): void {
+    const cfg = this.config.world;
+    const plan: [ResourceKind, number][] = [
+      ['berries', cfg.berryBushes], ['flint', cfg.flintOutcrops],
+      ['sticks', cfg.deadwood], ['reeds', cfg.reedBeds], ['clay', cfg.clayBanks],
+    ];
+    for (const [kind, quoted] of plan) {
+      this.spawnResourceKind(kind, quoted, this.geographicResourceRng(kind), true);
+    }
+  }
+
+  private geographicResourceRng(kind: ResourceKind): RNG {
+    const start = this.geographicStart!;
+    const width = start.comarcasWide ?? 1;
+    const height = start.comarcasHigh ?? 1;
+    const sourceId = start.geography.kind === 'earth' ? start.geography.entry.id : start.geography.kind;
+    return new RNG(`${this.config.seed}:geographic-resource:${sourceId}:${start.x}:${start.y}:${width}:${height}:${kind}`);
+  }
+
+  /** One resource pass. The legacy caller keeps its old shared stream/order. */
+  private spawnResourceKind(kind: ResourceKind, quoted: number, rng: RNG, geographic: boolean): void {
+    const count = this.scaledCount(quoted);
+    let placed = 0;
+    let attempts = 0;
+    const maxAttempts = count * 60;
+    while (placed < count && attempts < maxAttempts) {
+      attempts++;
+      const spot = this.world.randomWalkable(rng, 1);
+      if (!spot || !this.suitsBiome(kind, spot.x, spot.y)) continue;
+      if (geographic && !this.geographicResourceAvailableAt(kind, spot.x, spot.y)) continue;
+      const node = new ResourceNode(kind, spot.x, spot.y, rng, this.ids);
+      this.nodes.push(node);
+      this.nodesById.set(node.id, node);
+      placed++;
+    }
+  }
+
+  private geographicResourceAvailableAt(kind: ResourceKind, x: number, y: number): boolean {
+    if (!this.geographicStart || !this.localGeography) return true;
+    const profile = this.localGeography.profileAtLocal(x + 0.5, y + 0.5);
+    return geographicResourceAvailable(this.geographicStart.geography, profile.x, profile.y, kind);
   }
 
   private mergeHouseholdsImpl(a: Person, b: Person): void {
