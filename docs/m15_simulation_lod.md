@@ -116,6 +116,13 @@ familias o equipo ni borra las personas que ya hemos conocido.
 
 ## 4. Transiciones y una sola autoridad sobre el estado
 
+**Base implementada en fase 28 (2026-10-04):** un motor local puede aparcarse
+en un handle opaco y reanudarse una sola vez, conservando el asignador global
+y revocando las APIs de ejecución del origen. La transferencia directa revierte
+la revocación si la carga falla. Esto conserva el estado completo del motor;
+no activa aún los modelos compactos ni las transiciones individuales descritas
+abajo. [Contrato y límites](m15_phase28_authority.md).
+
 Cada persona, grupo y recurso se contabiliza **una sola vez**. Pasar de agregado
 a registros o de registro a entidad transfiere autoridad, no copia una segunda
 población. Primero se avanza hasta la fecha de transición; luego se transfiere

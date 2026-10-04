@@ -236,6 +236,9 @@ export function resetEventIds(): void {
 }
 
 export class SocialSystem {
+  private mutationGuard: (people: readonly Person[]) => void = () => {};
+  private mutationGuardBound = false;
+
   /** Recent events, newest last, for the UI feed. Bounded. */
   readonly recent: SocialEvent[] = [];
   /** Scratch for `workingAlongside`'s query. Reused; never read across calls. */
@@ -276,6 +279,13 @@ export class SocialSystem {
     private readonly strangerRegardByBand: Map<number, number> = new Map(),
     private readonly ids?: IdSpace
   ) {}
+
+  /** Bind the owning Simulation's lease and canonical-reference checks. */
+  setMutationGuard(guard: (people: readonly Person[]) => void): void {
+    if (this.mutationGuardBound) throw new TypeError('SocialSystem mutation guard is already bound');
+    this.mutationGuard = guard;
+    this.mutationGuardBound = true;
+  }
 
   private allocateEventId(): number {
     return this.ids ? this.ids.allocate('socialEvent') : nextEventId++;
@@ -336,6 +346,7 @@ export class SocialSystem {
     ownerBandId?: number,
     bandNudge = true
   ): SocialEvent {
+    this.mutationGuard(target ? [actor, target] : [actor]);
     const event: SocialEvent = {
       id: this.allocateEventId(),
       type,
@@ -460,6 +471,7 @@ export class SocialSystem {
    * line does. Right or wrong: nothing here knows which.
    */
   accuse(accuser: Person, suspect: Person, dead: Person, confidence: number, tick: number): void {
+    this.mutationGuard([accuser, suspect, dead]);
     const event: SocialEvent = {
       id: this.allocateEventId(),
       type: 'murder',
@@ -487,6 +499,7 @@ export class SocialSystem {
    * same story, and `Memory` never records it twice. Returns the event's id.
    */
   findBody(finder: Person, dead: Person, eventId: number | null, x: number, y: number, tick: number): number {
+    this.mutationGuard([finder, dead]);
     const event: SocialEvent = {
       id: eventId ?? this.allocateEventId(),
       type: 'body_found',
@@ -602,6 +615,7 @@ export class SocialSystem {
     peopleById: Map<number, Person>,
     mode: ConversationMode
   ): void {
+    this.mutationGuard([a, b]);
     const def = CONVERSATION_MODES[mode];
     this.settle(a, b, tick, def.warmth, def.relief, def.relief);
     telemetry.count('conversation');
@@ -709,6 +723,7 @@ export class SocialSystem {
     a: Person, b: Person, tick: number,
     warmth: number, reliefA: number, reliefB: number
   ): void {
+    this.mutationGuard([a, b]);
     this.introduce(a, b);
     this.introduce(b, a);
 
@@ -751,6 +766,7 @@ export class SocialSystem {
    * them further apart than that on its own, without a rule about it.
    */
   workingAlongside(people: Person[], peopleHash: SpatialHash<Person>, tick: number): void {
+    this.mutationGuard(people);
     for (const person of people) {
       // Cleared for everybody, not only for workers: somebody who has stopped
       // working has stopped learning from whoever they were standing next to,
@@ -811,6 +827,7 @@ export class SocialSystem {
    * and what they feel, and nothing about buildings.
    */
   hearth(sleepers: Person[], tick: number): void {
+    this.mutationGuard(sleepers);
     if (sleepers.length < 2) return;
     const share = Math.min(1, HEARTH_REACH / (sleepers.length - 1));
     const warmth = HEARTH_WARMTH * share;
@@ -831,6 +848,7 @@ export class SocialSystem {
    * the graph can hold, and it produces its own stories.
    */
   courtship(suitor: Person, courted: Person, charm: number, tick: number): boolean {
+    this.mutationGuard([suitor, courted]);
     this.introduce(suitor, courted);
     this.introduce(courted, suitor);
 
@@ -859,6 +877,7 @@ export class SocialSystem {
    * assault event, and moves sharply the other way.
    */
   dischargeGrudge(aggressorId: number, victimId: number, amount: number, tick: number): void {
+    this.mutationGuard([]);
     const opinion = this.relationships.opinion(aggressorId, victimId);
     if (opinion >= 0) return;
     this.relationships.addDeed(aggressorId, victimId, Math.min(amount, -opinion), tick);
@@ -866,6 +885,7 @@ export class SocialSystem {
 
   /** Marries two people. The household merge is the caller's business. */
   wed(a: Person, b: Person, tick: number): void {
+    this.mutationGuard([a, b]);
     a.spouseId = b.id;
     b.spouseId = a.id;
     this.relationships.setKinship(a.id, b.id, KIN_SPOUSE);
@@ -883,6 +903,7 @@ export class SocialSystem {
 
   /** Stamps a first impression the first time one person notices another. */
   introduce(observer: Person, subject: Person): void {
+    this.mutationGuard([observer, subject]);
     this.relationships.introduce(
       observer.id, subject.id, firstImpression(observer, subject, this.bandRelations));
   }
@@ -908,6 +929,7 @@ export class SocialSystem {
   tellStory(
     teller: Person, listener: Person, story: MemoryEntry, peopleById: Map<number, Person>
   ): void {
+    this.mutationGuard([teller, listener]);
     const actor = peopleById.get(story.actorId);
     if (!actor) return;
 
@@ -945,6 +967,7 @@ export class SocialSystem {
    * and nothing in the design can tell the difference.
    */
   dailyUpkeep(people: Person[]): void {
+    this.mutationGuard(people);
     for (const person of people) person.memory.decay();
     this.relationships.decay();
   }

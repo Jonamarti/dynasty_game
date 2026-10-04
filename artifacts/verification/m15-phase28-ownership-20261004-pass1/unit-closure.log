@@ -1,0 +1,13 @@
+
+> dynasty@0.0.0 test
+> vitest run --maxWorkers=1 --pool=threads --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  134 passed (134)
+      Tests  972 passed (972)
+   Start at  10:46:30
+   Duration  162.46s (transform 3.91s, setup 0ms, import 23.66s, tests 105.00s, environment 22ms)
+

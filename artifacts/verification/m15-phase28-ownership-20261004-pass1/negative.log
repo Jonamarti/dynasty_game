@@ -1,0 +1,37 @@
+
+> dynasty@0.0.0 test
+> vitest run --config artifacts/verification/m15-phase28-ownership-20261004-pass1/negative.config.ts --testNamePattern parks and resumes
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/authority-transfer.test.ts (8 tests | 1 failed | 7 skipped) 665ms
+     × parks and resumes the same state, rejects stale writes, and can transfer back once 662ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/authority-transfer.test.ts > single-owner Simulation handoff > parks and resumes the same state, rejects stale writes, and can transfer back once
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ src/sim/__tests__/authority-transfer.test.ts:36:33
+     34|     const handle = source.parkForTransfer();
+     35|     expect(checkpoint(source)).toEqual(before);
+     36|     expect(() => source.step()).toThrow('Simulation authority has been…
+       |                                 ^
+     37|     expect(() => source.order(stalePlayer, 'goto', { x: stalePlayer.x …
+     38|       .toThrow('Simulation authority has been transferred');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 skipped (8)
+   Start at  10:41:42
+   Duration  2.66s (transform 1.40s, setup 1.64s, import 38ms, tests 665ms, environment 0ms)
+

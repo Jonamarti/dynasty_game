@@ -1,0 +1,13 @@
+
+> dynasty@0.0.0 test
+> vitest run --maxWorkers=1 --testTimeout=15000 src/sim/__tests__/authority-transfer.test.ts src/sim/__tests__/live-checkpoint-continuation.test.ts src/sim/__tests__/checkpoint-records.test.ts src/sim/__tests__/execution-checkpoints.test.ts src/sim/__tests__/id-space.test.ts src/sim/__tests__/group-ids.test.ts src/sim/__tests__/familytree.test.ts src/sim/__tests__/life-stages.test.ts src/sim/__tests__/social-records.test.ts
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  9 passed (9)
+      Tests  49 passed (49)
+   Start at  10:42:58
+   Duration  29.61s (transform 2.39s, setup 0ms, import 7.36s, tests 18.14s, environment 2ms)
+

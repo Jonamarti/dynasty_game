@@ -1,17 +1,32 @@
 # Known bugs and rough edges
 
-## M15 fase 28: cargador añadido, transferencia todavía pendiente (2026-10-04)
+## M15 fase 28: cargador y autoridad local completados; LOD pendiente (2026-10-04)
 
 `Simulation.fromCheckpointRecord` reconstruye un mundo ejecutable independiente
 sin generación, draws/forks ni nuevas identidades. Cinco tests cubren trabajo
 bancado, nacimiento diario, sucesión, callbacks y el snapshot diario de sabotaje;
 la omisión de esa caché falla en un control aislado. Igualdad medida en el
 formato JSON real, que normaliza `-0` a `0` y conserva el resto del checkpoint.
-La carga no implementa el protocolo para detener un dueño antes de entregar
-personas a otro nivel/comarca. LOD y guardar/cargar desde la UI siguen abiertos.
-Contrato: `m15_phase28_loader.md`.
+La transferencia del motor local se completa con handles opacos consumibles,
+revocación del origen y conservación del mismo IdSpace. Mutadores y callbacks
+retenidos comprueban el dueño antes de cualquier efecto; referencias del grafo
+antiguo se rechazan. La materialización individual entre niveles, los viajes
+entre comarcas y guardar/cargar desde la UI siguen abiertos en 32–35.
+Contrato: `m15_phase28_authority.md`. Los campos crudos públicos no están
+congelados y el asignador permite reservas explícitas por diseño; la garantía
+de autoridad gobierna las APIs de ejecución, no escrituras arbitrarias.
 
-Verificación estable: typecheck, 963/963 unitarios en 133 archivos y 74/74 e2e.
+Cierre de autoridad: typecheck limpio, 972/972 unitarios en 134 archivos y
+74/74 e2e; nueve regresiones de transferencia pasan. El negativo sin guardia
+falla por permitir avanzar al dueño retirado. Evidencia y capturas nuevas:
+`artifacts/verification/m15-phase28-ownership-20261004-pass1/` y
+`artifacts/screenshots/m15-phase28-ownership-2026-10-04-pass1/`.
+La comparación completa antes/después tiene los mismos 108 fallos en 27
+escenarios y cero diferencias de aplicabilidad, resultados y métricas
+PASS/FAIL/n/a salvo rendimiento, excluido. La matriz sigue roja; no hay nuevos
+fallos de checks ni pérdidas de aplicabilidad en esta entrega.
+
+Verificación del cargador anterior: typecheck, 963/963 unitarios en 133 archivos y 74/74 e2e.
 La primera ejecución de navegador tuvo dos fallos con navegación durante la
 edición de módulos Vite; la repetición estable pasa completa, sin cambiar los
 specs. La gira volvió a esperar cierre tras 1/1 aprobado y terminó con exit 0

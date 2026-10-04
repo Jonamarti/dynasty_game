@@ -2520,6 +2520,22 @@ antes o después y chocan entre sí y con el del jugador**.
 
 ## Fase 28 — Identidad que sobrevive a su comarca (M14 fase 3)
 
+**Cierre del 2026-10-04: identidad, registros y autoridad del motor local.**
+`parkForTransfer` revoca al origen y entrega un handle opaco de un solo uso;
+`resumeTransfer` conserva el mismo asignador compartido y no consume el handle
+si la carga falla. `transferAuthority` restaura al origen ante un fallo de
+reconstrucción. Las APIs de mutación y los callbacks retenidos rechazan al
+dueño retirado antes de IDs/RNG/estado; las referencias del grafo antiguo no
+pueden actuar sobre el destino. Continúan tala, nacimiento y sucesión sin
+duplicación ni reinicio de progreso. [Contrato](m15_phase28_authority.md).
+La fase 28 queda cerrada como base de identidad y transferencia completa de
+un motor; scheduler compacto y materialización individual pertenecen a 32,
+guardado/carga en UI a 33 y viajes entre comarcas a 34–35. Evidencia y registro
+visual de cierre en el changelog. Typecheck limpio, 972/972 unitarios y 74/74
+e2e; 27 escenarios con los mismos 108 fallos heredados y cero diferencias
+de checks o métricas completas PASS/FAIL/n/a, excluyendo rendimiento. La matriz
+sigue roja; el gate de continuidad de fase 28 se cumple sin rebajar checks.
+
 **Avance del 2026-10-04, cargador ejecutable.**
 `Simulation.fromCheckpointRecord(input)` valida/hidrata un grafo independiente
 y reconstruye sistemas, callbacks e índices antes de devolver un motor vivo.
@@ -2533,8 +2549,8 @@ aplicabilidad, recuentos de pases o listas de fallos; esta comparación no
 cubre métricas individuales ni throughput.
 [Contrato](m15_phase28_loader.md). Capturas generales nuevas, sin cambio de UI:
 `artifacts/screenshots/m15-phase28-loader-2026-10-04-pass2/`.
-**Siguiente:** protocolo de transferencia con un único dueño ejecutable antes
-de alternar niveles de simulación; no hay todavía guardar/cargar en UI ni LOD.
+Este avance precede al protocolo de autoridad descrito en el cierre anterior;
+no hay todavía guardar/cargar en UI ni LOD.
 
 **Avance del 2026-10-04, candidatos diarios conservados.** La auditoría del
 cargador encuentra que `sabotageCache` gobierna decisiones durante el día aunque
@@ -2642,10 +2658,10 @@ banda que su hogar ni resucitar al jugador muerto pendiente de sucesión.
 Las pruebas cubren evolución tras JSON, independencia, referencias históricas
 y rechazos de carga corrupta. [Contrato](m15_phase28_roster.md).
 
-Los libros ya se componen en CheckpointRecord. Siguen pendientes carga viva y
-transferencia de autoridad con un solo dueño de personas y bienes.
+Los libros ya se componen en CheckpointRecord; la carga viva y la transferencia
+del motor local se completan en los avances del 2026-10-04 descritos arriba.
 Los constructores standalone mantienen contadores de compatibilidad; incorporar
-entidades a una simulación requiere pasar `sim.ids`. La fase 28 y el LOD siguen abiertos.
+entidades a una simulación requiere pasar `sim.ids`. El LOD sigue abierto.
 
 **Detalle en `m14_plan.md` fase 3.** `IdSpace` en lugar de los diez contadores
 de módulo; `PersonRecord`, `HouseholdRecord` y `BandRecord`; ida y vuelta con

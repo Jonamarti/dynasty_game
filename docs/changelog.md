@@ -1,3 +1,39 @@
+## 2026-10-04 — M15 fase 28: un único dueño ejecutable y cierre de identidad
+
+Se completa la base de fase 28 con `parkForTransfer`/`resumeTransfer`: el origen
+queda revocado y un handle opaco reanuda exactamente una vez el motor local,
+conservando el mismo IdSpace compartido. Reservas hechas por otro motor durante
+el aparcamiento no se pierden. La reconstrucción fallida deja el handle
+reintentable; el atajo `transferAuthority` recupera al origen si falla. Una
+reentrada no puede producir dos dueños. El handle consumido libera su checkpoint.
+
+Las APIs de mutación, los eventos sociales y los callbacks retenidos comprueban
+autoridad antes de IDs/RNG/estado. Se rechazan referencias antiguas con IDs
+válidos para evitar retirar bienes del grafo antiguo y entregarlos al nuevo.
+La fundación conserva su ruta previa: solo su propia fábrica puede aportar
+personas temporales antes de insertarlas en el roster. No se añade ni reordena
+ningún fork, no se cambian coeficientes ni se altera la UI.
+
+Nueve regresiones cubren transferencias repetidas, tala bancada, nacimiento,
+sucesión, asignador usado por otro motor, reentrada, fallos recuperables,
+referencias antiguas, callbacks y handles falsificados. El control aislado que
+quita la guardia falla porque el origen retirado vuelve a avanzar. La API de
+copia independiente `fromCheckpointRecord` mantiene su contrato y asignador
+propio. [Contrato y límites](m15_phase28_authority.md).
+
+Registro visual general: 13 capturas nuevas revisadas en
+`artifacts/screenshots/m15-phase28-ownership-2026-10-04-pass1/`; gira 1/1.
+Typecheck limpio, 972/972 pruebas unitarias en 134 archivos y 74/74 e2e.
+La matriz completa conserva 108 fallos en sus 27 escenarios: cero diferencias
+en aplicabilidad, pases, listas ordenadas de fallos y todas las métricas
+PASS/FAIL/n/a, excluyendo `perf-budget` y throughput. Ambas matrices terminan
+con exit 1 por los fallos heredados; la comparación termina con exit 0.
+Evidencia de verificación y comparación completa en
+`artifacts/verification/m15-phase28-ownership-20261004-pass1/`.
+El cierre es de identidad, registros y transferencia completa del motor local;
+LOD/scheduler y materialización individual siguen en 32, UI de partidas en 33
+y viajes entre comarcas en 34–35. La matriz de mundos heredada sigue roja.
+
 ## 2026-10-04 — M15 fase 28: cargar un mundo ejecutable sin regenerarlo
 
 `Simulation.fromCheckpointRecord(input)` valida/hidrata objetos independientes

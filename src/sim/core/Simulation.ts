@@ -105,8 +105,10 @@ import {
   templeOf,
 } from '../social/Polity.ts';
 import { CAPTIVE_ADOPTION_DAYS, CAPTIVE_DAILY_MOOD_LOSS, isCaptive } from '../social/Captivity.ts';
-import { fromCheckpointRecord as hydrateCheckpointRecord, type CheckpointState } from '../persistence/CheckpointRecords.ts';
+import { fromCheckpointRecord as hydrateCheckpointRecord, toCheckpointRecord, type CheckpointState } from '../persistence/CheckpointRecords.ts';
 import type { ExecutionStreamPath } from '../persistence/ExecutionRecords.ts';
+import { ParkedSimulation, assertExecutionOwner, parkExecutionOwner, registerExecutionOwner,
+  resumeParkedSimulation, SimulationAuthorityError, transferSimulationAuthority } from '../runtime/authority.ts';
 
 const RESTORE_CONSTRUCTION = Symbol('Simulation restore construction');
 interface RestoreConstruction {
@@ -287,6 +289,8 @@ export interface Band {
 }
 
 export class Simulation {
+  /** Only this world's factory may supply temporary people before roster insertion. */
+  private readonly pendingFounders = new WeakSet<Person>();
   readonly ids: IdSpace;
   readonly config: SimConfig;
   readonly rng!: RNG;
@@ -580,6 +584,7 @@ export class Simulation {
 
   constructor(overrides?: DeepPartial<SimConfig>, ids?: IdSpace);
   constructor(overrides: DeepPartial<SimConfig> = {}, ids: IdSpace = new IdSpace(), restore?: RestoreConstruction) {
+    registerExecutionOwner(this);
     // Field initializers above create only empty containers and stateless helpers.
     // A checkpoint must never pass through the seed/world/spawn path below: even
     // constructing then replacing those objects would consume IDs and RNG draws.
@@ -714,11 +719,52 @@ export class Simulation {
 
   /** Validate a detached JSON checkpoint, then bind its one state graph to a live owner. */
   static fromCheckpointRecord(input: unknown): Simulation {
+    return Simulation.fromCheckpointRecordWithIds(input);
+  }
+
+  /** Resume a parked live world. A successful reconstruction consumes the handle. */
+  static resumeTransfer(handle: ParkedSimulation): Simulation {
+    return resumeParkedSimulation(handle, (record, ids) => Simulation.fromCheckpointRecordWithIds(record, ids));
+  }
+
+  private static fromCheckpointRecordWithIds(input: unknown, sharedIds?: IdSpace): Simulation {
     const state = hydrateCheckpointRecord(input);
+    // Live transfers retain the world's allocator object. That matters when a
+    // world-level owner has reserved IDs while this comarca was parked.
+    if (sharedIds) (state as { ids: IdSpace }).ids = sharedIds;
     // Keep the restoration-only constructor argument out of the public TypeScript
     // signature. The token is module-private and the regular constructor remains
     // the only way callers can request generated worlds.
     return Reflect.construct(Simulation, [{}, state.ids, { token: RESTORE_CONSTRUCTION, state }]) as Simulation;
+  }
+
+  /** Park this execution owner as an opaque, single-use in-memory checkpoint. */
+  parkForTransfer(): ParkedSimulation {
+    assertExecutionOwner(this);
+    const checkpoint = toCheckpointRecord(this);
+    return parkExecutionOwner(this, checkpoint, this.ids);
+  }
+
+  /** Atomically replace this owner with a reconstructed executable copy. */
+  transferAuthority(): Simulation {
+    return transferSimulationAuthority(this, () => {
+      const checkpoint = toCheckpointRecord(this);
+      return Simulation.fromCheckpointRecordWithIds(checkpoint, this.ids);
+    });
+  }
+
+  private assertExecutionAuthority(): void { assertExecutionOwner(this); }
+
+  private assertCanonical<T extends { id: number }>(entities: ReadonlyMap<number, T>, entity: T, kind: string): void {
+    if (entities.get(entity.id) !== entity) throw new SimulationAuthorityError(`Stale ${kind} handle does not belong to this Simulation`);
+  }
+
+  private assertCanonicalSocialPeople(people: readonly Person[]): void {
+    for (const person of people) {
+      if (this.peopleById.get(person.id) !== person && !this.pendingFounders.has(person)) {
+        throw new SimulationAuthorityError('Stale person handle does not belong to this Simulation');
+      }
+    }
   }
 
   private initializeRestoredState(state: CheckpointState): void {
@@ -796,16 +842,32 @@ export class Simulation {
   }
 
   private bindSocialCallbacks(social: SocialSystem): void {
-    social.onMarriage = (a, b) => this.mergeHouseholds(a, b);
-    social.onDeed = (actor, type, magnitude) => this.accrueRenown(actor, type, magnitude);
-    social.onPeaceBroken = (actor, victimBandId, witnesses) => this.breakPeace(actor, victimBandId, witnesses);
+    social.setMutationGuard(people => {
+      this.assertExecutionAuthority();
+      this.assertCanonicalSocialPeople(people);
+    });
+    social.onMarriage = (a, b) => {
+      this.assertExecutionAuthority();
+      this.assertCanonicalSocialPeople([a, b]);
+      this.mergeHouseholdsImpl(a, b);
+    };
+    social.onDeed = (actor, type, magnitude) => {
+      this.assertExecutionAuthority();
+      this.assertCanonicalSocialPeople([actor]);
+      this.accrueRenown(actor, type, magnitude);
+    };
+    social.onPeaceBroken = (actor, victimBandId, witnesses) => {
+      this.assertExecutionAuthority();
+      this.assertCanonicalSocialPeople([actor, ...witnesses]);
+      this.breakPeace(actor, victimBandId, witnesses);
+    };
   }
 
   /** Versioned, JSON-safe identity continuation state (entity records stay inert). */
   idSnapshot(): IdSpaceSnapshot { return this.ids.snapshot(); }
 
   /** Advance this allocator to at least the saved point without reissuing IDs. */
-  restoreIdSnapshot(snapshot: unknown): void { this.ids.restore(snapshot); }
+  restoreIdSnapshot(snapshot: unknown): void { this.assertExecutionAuthority(); this.ids.restore(snapshot); }
 
   /**
    * Gives every berry bush a species (`BUSHES`), in patches: a bush near one
@@ -1185,6 +1247,7 @@ export class Simulation {
    * build a tribe through exactly the same path world generation does.
    */
   foundingContext(rng: RNG): FoundingContext {
+    this.assertExecutionAuthority();
     return {
       world: this.world,
       rng,
@@ -1192,12 +1255,17 @@ export class Simulation {
       social: this.social,
       ids: this.ids,
       makePerson: (name, x, y, bandId, personRng) => {
+        this.assertExecutionAuthority();
         const person = new Person(name, x, y, bandId, personRng, this.time.daysPerYear, this.ids);
         person.skillGain = this.config.learning.skillGain;
         person.placeMemory.configure(this.world.width, this.world.height, this.config.knowledge.placeMemoryPerKind);
+        this.pendingFounders.add(person);
         return person;
       },
-      placeNear: (x, y) => this.world.findWalkableNear(x, y) ?? { x, y },
+      placeNear: (x, y) => {
+        this.assertExecutionAuthority();
+        return this.world.findWalkableNear(x, y) ?? { x, y };
+      },
     };
   }
 
@@ -1327,6 +1395,13 @@ export class Simulation {
    * the one with standing. The younger's household dissolves into it.
    */
   mergeHouseholds(a: Person, b: Person): void {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, a, 'person');
+    this.assertCanonical(this.peopleById, b, 'person');
+    this.mergeHouseholdsImpl(a, b);
+  }
+
+  private mergeHouseholdsImpl(a: Person, b: Person): void {
     const elder = a.age >= b.age ? a : b;
     const younger = elder === a ? b : a;
     const target = elder.householdId === null
@@ -1433,6 +1508,8 @@ export class Simulation {
    * she drinks, and the baby, still crying, reaches her again a little later.
    */
   cryReaches(person: Person): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, person, 'person');
     if (!this.config.motivation.urgentNursing || person.captiveOf !== null ||
       this.time.tick - person.cryHeardTick < CRY_NAG_TICKS) return false;
     // An order to pick a baby up or put one down is finished before any feed
@@ -1525,6 +1602,9 @@ export class Simulation {
     action: string,
     target: Parameters<Simulation['order']>[2] = {}
   ): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, leader, 'person');
+    this.assertCanonical(this.peopleById, subordinate, 'person');
     if (!leader.alive || !subordinate.alive) return false;
     if (leader.id === subordinate.id) return this.order(leader, action, target);
 
@@ -1891,6 +1971,9 @@ export class Simulation {
    * so this is a real exchange rather than a menu-only pardon.
    */
   ransomCaptive(payer: Person, captive: Person, itemId: string, count: number): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, payer, 'person');
+    this.assertCanonical(this.peopleById, captive, 'person');
     if (!payer.alive || !captive.alive || !isCaptive(captive) || count <= 0) return false;
     if (payer.bandId !== captive.captiveFrom || payer.distanceTo(captive) > 6) return false;
     if (!payer.inventory.has(itemId, count)) return false;
@@ -2039,6 +2122,9 @@ export class Simulation {
    * day per band on a question that cannot be answered yes.
    */
   assignJob(leader: Person, subordinate: Person, job: JobId | null): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, leader, 'person');
+    this.assertCanonical(this.peopleById, subordinate, 'person');
     if (!leader.alive || !subordinate.alive) return false;
 
     // Held by the individual doing the arranging, like every other technology
@@ -2262,6 +2348,8 @@ export class Simulation {
    * camp does not fill up with single-berry heaps.
    */
   drop(person: Person, itemId: string, count: number): ItemPile | null {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, person, 'person');
     const taken = person.inventory.remove(itemId, count);
     if (taken === 0) return null;
 
@@ -2285,6 +2373,7 @@ export class Simulation {
    * hands were already full.
    */
   dropAt(x: number, y: number, itemId: string, count: number): void {
+    this.assertExecutionAuthority();
     if (count <= 0) return;
     let pile = this.pileHash.findNearest(x, y, 1.2);
     if (!pile) {
@@ -2305,6 +2394,9 @@ export class Simulation {
    * gave the player a choice of item and amount without changing that default.
    */
   takeFromPile(person: Person, pile: ItemPile, itemId?: string, count?: number): number {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, person, 'person');
+    this.assertCanonical(this.pilesById, pile, 'pile');
     let moved = 0;
     if (itemId !== undefined) {
       const room = Math.min(person.carryCapacity - person.carrying,
@@ -2345,6 +2437,8 @@ export class Simulation {
    * by order does, so the two can never again disagree about what a meal is.
    */
   eatItem(person: Person, itemId: string): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, person, 'person');
     return consumeFood(person, itemId, this.time.tick, this.config.motivation.cravings, this.healthRng);
   }
 
@@ -2360,6 +2454,9 @@ export class Simulation {
    * found; the panel calling it with no way to ask for less was.
    */
   handOver(giver: Person, receiver: Person, itemId: string, count = giver.inventory.count(itemId)): number {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, giver, 'person');
+    this.assertCanonical(this.peopleById, receiver, 'person');
     const room = receiver.carryCapacity - receiver.carrying;
     if (room <= 0) {
       this.lastRefusal = t('{name} cannot carry any more', { name: receiver.name });
@@ -2391,6 +2488,9 @@ export class Simulation {
    * less, in M9 phase 2, not this method.
    */
   storeItem(person: Person, store: Building, itemId: string, count = person.inventory.count(itemId)): number {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, person, 'person');
+    this.assertCanonical(this.buildingsById, store, 'building');
     const access = this.mayUseBuilding(person, store);
     if (!access.ours) {
       // The inventory-panel shortcut does not run through ActionSystem, so it
@@ -2432,6 +2532,9 @@ export class Simulation {
    * treating every foreign gatherer as a thief.
    */
   requestTerritoryPermission(visitor: Person, owner: Person): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, visitor, 'person');
+    this.assertCanonical(this.peopleById, owner, 'person');
     if (!visitor.alive || !owner.alive || visitor.bandId === owner.bandId ||
       owner.isChild || visitor.distanceTo(owner) > this.config.sightRadius) return false;
     const band = this.bands.find(candidate => candidate.id === owner.bandId);
@@ -2471,6 +2574,9 @@ export class Simulation {
    * from taking more than the carrier can actually hold.
    */
   takeItem(person: Person, store: Building, itemId: string, count: number): number {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, person, 'person');
+    this.assertCanonical(this.buildingsById, store, 'building');
     const access = this.mayUseBuilding(person, store);
     if (!access.ours) {
       this.lastRefusal = t('this store is not yours');
@@ -2542,6 +2648,8 @@ export class Simulation {
    * tax; and only to one of `TAX_RATES`.
    */
   setTaxRate(chief: Person, rate: number): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, chief, 'person');
     const band = this.bands.find(b => b.id === chief.bandId);
     if (!band || this.bandSystem.chiefByBand.get(band.id) !== chief.id) {
       this.lastRefusal = t('only the chief can set the levy');
@@ -2588,6 +2696,8 @@ export class Simulation {
    * form. Declaring the stance two bands already have is a no-op.
    */
   declare(chief: Person, otherBandId: number, kind: 'war' | 'peace'): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, chief, 'person');
     const band = this.bands.find(b => b.id === chief.bandId);
     const other = this.bands.find(b => b.id === otherBandId);
     if (!band || this.bandSystem.chiefByBand.get(band.id) !== chief.id) {
@@ -2628,6 +2738,8 @@ export class Simulation {
    * can hold a tributary. The player's chief through the Government section.
    */
   submit(chief: Person, overlordBandId: number): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, chief, 'person');
     const band = this.bands.find(b => b.id === chief.bandId);
     const overlord = this.bands.find(b => b.id === overlordBandId);
     if (!band || this.bandSystem.chiefByBand.get(band.id) !== chief.id) {
@@ -3401,6 +3513,8 @@ export class Simulation {
       count?: number;
     } = {}
   ): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, person, 'person');
     if (!person.alive) return false;
     if (!canWalk(person, this.config.childhood)) {
       this.lastRefusal = t('babies cannot act on their own');
@@ -3680,6 +3794,8 @@ export class Simulation {
     y: number,
     author: Person
   ): Inscription | null {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, author, 'person');
     const def = INSCRIPTIONS[form];
     if (!def) return null;
     const tx = Math.round(x);
@@ -3775,6 +3891,7 @@ export class Simulation {
    * a promise the settings screen cannot otherwise keep to anyone already alive.
    */
   applyLearning(): void {
+    this.assertExecutionAuthority();
     for (const person of this.people) person.skillGain = this.config.learning.skillGain;
   }
 
@@ -3967,6 +4084,7 @@ export class Simulation {
     defId: string, x: number, y: number, bandId: number,
     sponsorId?: number | null, playerPlaced = false
   ): Building | null {
+    this.assertExecutionAuthority();
     const def = BUILDINGS[defId];
     if (!def) return null;
     if (def.requiresTech !== null && !this.knownTech.has(def.requiresTech)) return null;
@@ -4016,6 +4134,8 @@ export class Simulation {
 
   /** Resolves a local case explicitly chosen by the player-chief. */
   resolveVerdict(chief: Person, told: Case, verdict: 'order' | 'shame' | 'dismiss' | 'exile'): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, chief, 'person');
     if (!chief.isPlayer || !chief.alive || this.bandSystem.chiefByBand.get(chief.bandId) !== chief.id ||
       told.plaintiffBandId !== chief.bandId || told.accusedBandId !== chief.bandId) {
       this.lastRefusal = t('Only the current chief can judge this case');
@@ -4055,6 +4175,9 @@ export class Simulation {
    * different action and would incorrectly make this a property shortcut.
    */
   cancelConstruction(person: Person, building: Building): boolean {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, person, 'person');
+    this.assertCanonical(this.buildingsById, building, 'building');
     if (building.ownerBandId !== person.bandId) {
       this.lastRefusal = t('that construction belongs to another band');
       return false;
@@ -4476,6 +4599,7 @@ export class Simulation {
 
   /** Orders the player's character to walk to a tile. */
   orderPlayerTo(x: number, y: number): void {
+    this.assertExecutionAuthority();
     if (!this.player) return;
     this.order(this.player, 'goto', { x, y });
   }
@@ -4489,6 +4613,8 @@ export class Simulation {
    * brain from inside the grave.
    */
   possess(person: Person): Person {
+    this.assertExecutionAuthority();
+    this.assertCanonical(this.peopleById, person, 'person');
     if (this.player && this.player.id !== person.id) this.player.isPlayer = false;
     person.isPlayer = true;
     this.player = person;
@@ -4497,6 +4623,7 @@ export class Simulation {
 
   /** The fallback when nobody has chosen: whoever is first in the list. */
   possessFirst(): Person | null {
+    this.assertExecutionAuthority();
     const living = this.livingPeople();
     if (living.length === 0) return null;
     return this.possess(living[0]!);
@@ -4507,6 +4634,7 @@ export class Simulation {
   // -------------------------------------------------------------------------
 
   step(): void {
+    this.assertExecutionAuthority();
     this.time.advance();
     this.rebuildHashes();
 
@@ -5307,6 +5435,7 @@ export class Simulation {
    * the person they now inhabit, or null if the line has ended.
    */
   takeUpSuccession(): Person | null {
+    this.assertExecutionAuthority();
     const pending = this.succession;
     this.succession = null;
     if (!pending) return null;

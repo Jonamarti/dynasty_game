@@ -54,7 +54,7 @@ band standing/stances with independent storage and Map order. `RosterRecords`
 now composes these codecs at one capture tick, validates membership and returns
 canonical arrays/maps. It preserves the full retained person archive separately
 from the active list, including a dead player awaiting succession. Live loading
-now uses the factory described below; authority transfer and the compact scheduler remain pending;
+now uses the factory described below; the compact scheduler remains pending;
 see [m15_phase28_records.md](m15_phase28_records.md).
 
 `RNG` and `TimeManager` also have independent v1 JSON checkpoints: RNG hydration
@@ -101,7 +101,7 @@ authority transfer. The live factory rebinds systems and indexes without world
 generation; see
 [m15_phase28_checkpoint.md](m15_phase28_checkpoint.md).
 
-`Simulation.fromCheckpointRecord(input)` is the only public live loading entry.
+`Simulation.fromCheckpointRecord(input)` is the independent-world loading entry.
 It hydrates fresh state, then enters a module-private construction branch before
 seed expansion, forks or spawning. Field initializers provide empty scratch and
 helpers; the factory applies canonical collections, RNG aliases, schedule ledgers
@@ -109,8 +109,21 @@ and rebuilds every spatial index. Normal and restored worlds share the social
 callback wiring. Tests compare complete JSON checkpoints after banked work,
 birth at a daily boundary and succession, and detect an omitted daily cache.
 JSON normalizes negative zero; no other state is excluded from that comparison.
-This makes an independent world, not a transfer between executable owners or
-a user-facing save/load flow. See [m15_phase28_loader.md](m15_phase28_loader.md).
+This makes an independent world with its own allocator. See
+[m15_phase28_loader.md](m15_phase28_loader.md).
+
+`parkForTransfer()` revokes the source and returns an opaque in-memory handle;
+`Simulation.resumeTransfer(handle)` consumes it only after successful hydration.
+`transferAuthority()` reconstructs atomically and restores source authority on
+failure. Runtime WeakMaps track leases and reject duplicate/reentrant resume.
+The destination keeps the exact shared IdSpace object, including reservations
+made by other worlds while parked. Simulation mutation APIs, retained founding
+callbacks and the bound SocialSystem reject retired owners before side effects;
+entity arguments must belong to the canonical local graph. Raw public objects
+are not frozen, and explicit allocator reservations remain permitted by design.
+This foundation transfers a whole local motor; per-person LOD transitions and
+the save/load UI remain future work. See
+[m15_phase28_authority.md](m15_phase28_authority.md).
 
 `Simulation.ids` owns the ten entity/event allocation namespaces. Creation
 passes this `IdSpace` explicitly to entities and systems; the optional second

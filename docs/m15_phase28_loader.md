@@ -17,9 +17,10 @@ acción y nacimiento se crean sobre ella cuando avanza, conservando sus reglas
 y su asignador. La intención de teclado se limpia: un input de presentación
 anterior no es una orden que deba quedar pulsada al cargar.
 
-Esta fábrica crea un mundo independiente. No transfiere autoridad entre
-comarcas ni permite que dos niveles avancen una misma persona; ese protocolo
-sigue pendiente. Tampoco añade almacenamiento de partidas, controles de
+Esta fábrica crea un mundo independiente. La transferencia de un motor local
+se realiza por el [protocolo de autoridad](m15_phase28_authority.md), que conserva
+el asignador compartido y revoca al origen. La materialización individual entre
+niveles sigue pendiente. Tampoco añade almacenamiento de partidas, controles de
 guardar/cargar ni un scheduler compacto/LOD. Todos los NPC vivos siguen
 recibiendo el loop detallado.
 
