@@ -1,0 +1,10 @@
+M15 phase 28 sabotage-cache negative baseline
+
+Before LedgerRecords persisted the cache, running:
+  npm.cmd test -- --run src/sim/__tests__/ledger-records.test.ts --maxWorkers=1 --testTimeout=15000
+failed the new regression:
+  FAIL preserves the daily sabotage snapshot across structures completed or ruined after refresh
+  AssertionError: expected undefined to deeply equal []
+  ledger-records.test.ts:36:34
+
+The test advances through the daily refresh while a windbreak is unfinished, completes it afterward, and asserts the cache snapshot remains empty through serialization. This failed because v1 omitted sabotageCache, proving that recomputing or dropping this mid-day cache loses continuation state.

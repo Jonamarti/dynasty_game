@@ -87,6 +87,12 @@ Canonical people are supplied by the roster. Held keyboard intent, route budgets
 and reconstructible scratch/spatial indexes are excluded. Coordinated application
 and live loading remain pending; see [m15_phase28_ledgers.md](m15_phase28_ledgers.md).
 
+The 2026-10-04 v2 ledger also retains the daily sabotage candidate snapshot.
+Its membership can intentionally lag behind buildings completed or ruined
+within a day, so reconstruction from current buildings changes the next AI
+decision. Hydration resolves its ordered IDs against canonical buildings;
+v1 is rejected because it cannot restore that historical membership.
+
 `CheckpointRecord` v1 composes all these detached pieces, complete configuration
 and IdSpace v2 at one tick/day. It checks cross-record calendar/rules, allocation
 coverage, group reservations and canonical person/culture/chief identities.

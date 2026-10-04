@@ -1,6 +1,7 @@
-/** Inert v1 snapshot of execution ledgers kept outside entity records. */
+/** Inert v2 snapshot of execution ledgers kept outside entity records. */
 import type { Simulation, InsightNotice, StopNotice, WatchedNotice } from '../core/Simulation.ts';
 import type { Person } from '../entities/Person.ts';
+import type { Building } from '../entities/Building.ts';
 import type { Case } from '../social/Justice.ts';
 import { EVENT_TYPES, type EventType, type Norms, type SocialEvent } from '../social/Events.ts';
 import type { Sighting } from '../social/Fear.ts';
@@ -8,11 +9,11 @@ import type { PropertyUse } from '../social/Property.ts';
 import type { Autonomy } from '../ai/Autonomy.ts';
 import { ERAS, TECHS, type EraDef, type Tech } from '../knowledge/Tech.ts';
 
-export const LEDGER_RECORD_VERSION = 1 as const;
+export const LEDGER_RECORD_VERSION = 2 as const;
 
 type Entry<K, V> = [K, V];
 export interface LedgerRecord {
-  readonly recordType: 'LedgerRecord'; readonly version: 1; readonly lastAdvancedTick: number; readonly lastAdvancedDay: number;
+  readonly recordType: 'LedgerRecord'; readonly version: 2; readonly lastAdvancedTick: number; readonly lastAdvancedDay: number;
   readonly playerId: number | null; readonly autonomy: Autonomy; readonly autonomyStall: string | null;
   readonly lastRefusal: string | null; readonly snowDepth: number;
   readonly succession: { diedId: number; heirId: number | null } | null;
@@ -30,6 +31,8 @@ export interface LedgerRecord {
     raidConsidered: Entry<number, number>[]; foodFailureSince: Entry<number, number>[];
     coupConsidered: Entry<number, number>[]; tributePaid: Entry<number, number>[];
   };
+  /** Daily AI snapshot; IDs preserve intentionally stale membership until midnight. */
+  readonly sabotageCache: Entry<number, number[]>[];
   readonly wildlifeOwed: Entry<number, number>[];
 }
 
@@ -46,7 +49,8 @@ export interface LedgerState {
   readonly socialRecent: SocialEvent[];
   readonly knownTech: Set<string>; readonly recordedTech: Set<string>; readonly rememberedTech: Set<string>; readonly recordsInHand: Set<string>;
   readonly techHolders: Map<Tech, number>; readonly era: EraDef; readonly templeByBand: Map<number, number>;
-  readonly bandSystem: LedgerRecord['bandSystem']; readonly wildlifeOwed: Map<number, number>;
+  readonly bandSystem: LedgerRecord['bandSystem']; readonly sabotageCache: Map<number, Building[]>;
+  readonly wildlifeOwed: Map<number, number>;
 }
 
 function invalid(message: string): never { throw new TypeError(`Invalid ledger record: ${message}`); }
@@ -107,6 +111,11 @@ export function toLedgerRecord(sim: Simulation, lastAdvancedTick = sim.time.tick
   const internals = sim as unknown as Record<string, any>;
   const band = sim.bandSystem as unknown as Record<string, Map<number, unknown>>;
   const wildlife = internals.wildlifeSystem as { owed: Map<number, number> };
+  const sabotageCache = internals.sabotageCache as Map<number, Building[]>;
+  const sabotageCacheRecord = [...sabotageCache].map(([bandId, buildings]) => [bandId, buildings.map(building => {
+    if (sim.buildingsById.get(building.id) !== building) invalid(`sabotage cache building ${building.id} is not canonical`);
+    return building.id;
+  })] as Entry<number, number[]>);
   return {
     recordType: 'LedgerRecord', version: LEDGER_RECORD_VERSION, lastAdvancedTick, lastAdvancedDay: sim.time.day,
     playerId: sim.player?.id ?? null, autonomy: sim.autonomy, autonomyStall: sim.autonomyStall,
@@ -132,18 +141,19 @@ export function toLedgerRecord(sim: Simulation, lastAdvancedTick = sim.time.tick
       raidConsidered: mapEntries(band.raidConsidered as Map<number, number>), foodFailureSince: mapEntries(band.foodFailureSince as Map<number, number>),
       coupConsidered: mapEntries(band.coupConsidered as Map<number, number>), tributePaid: mapEntries(band.tributePaid as Map<number, number>),
     },
+    sabotageCache: sabotageCacheRecord,
     wildlifeOwed: mapEntries(wildlife.owed),
   };
 }
 
 /** Validate and hydrate detached ledgers. Person references are rebound by retained ID. */
-export function fromLedgerRecord(input: unknown, peopleById?: ReadonlyMap<number, Person>): LedgerState {
+export function fromLedgerRecord(input: unknown, peopleById?: ReadonlyMap<number, Person>, buildingsById?: ReadonlyMap<number, Building>): LedgerState {
   if (!object(input)) invalid('expected LedgerRecord');
-  exact(input, ['recordType', 'version', 'lastAdvancedTick', 'lastAdvancedDay', 'playerId', 'autonomy', 'autonomyStall', 'lastRefusal', 'snowDepth', 'succession', 'interruptions', 'watchedUses', 'helpCalls', 'insights', 'territoryPermissions', 'feudEvents', 'pendingVerdicts', 'sightings', 'edgeReserve', 'foundingFauna', 'nextEdgeHerd', 'normsByBand', 'strangerRegardByBand', 'socialRecent', 'knownTech', 'recordedTech', 'rememberedTech', 'recordsInHand', 'techHolders', 'eraId', 'templeByBand', 'bandSystem', 'wildlifeOwed']);
+  exact(input, ['recordType', 'version', 'lastAdvancedTick', 'lastAdvancedDay', 'playerId', 'autonomy', 'autonomyStall', 'lastRefusal', 'snowDepth', 'succession', 'interruptions', 'watchedUses', 'helpCalls', 'insights', 'territoryPermissions', 'feudEvents', 'pendingVerdicts', 'sightings', 'edgeReserve', 'foundingFauna', 'nextEdgeHerd', 'normsByBand', 'strangerRegardByBand', 'socialRecent', 'knownTech', 'recordedTech', 'rememberedTech', 'recordsInHand', 'techHolders', 'eraId', 'templeByBand', 'bandSystem', 'sabotageCache', 'wildlifeOwed']);
   if (input.recordType !== 'LedgerRecord' || input.version !== LEDGER_RECORD_VERSION || !tick(input.lastAdvancedTick) || !tick(input.lastAdvancedDay) ||
       !(input.playerId === null || id(input.playerId)) || !['manual', 'urgent', 'auto'].includes(String(input.autonomy)) ||
       !(input.autonomyStall === null || typeof input.autonomyStall === 'string') || !(input.lastRefusal === null || typeof input.lastRefusal === 'string') ||
-      !finite(input.snowDepth) || input.snowDepth < 0 || !id(input.nextEdgeHerd)) invalid('expected LedgerRecord v1 fields');
+      !finite(input.snowDepth) || input.snowDepth < 0 || !id(input.nextEdgeHerd)) invalid('expected LedgerRecord v2 fields');
   const checkpointTick = input.lastAdvancedTick as number;
   const checkpointDay = input.lastAdvancedDay as number;
   const person = (personId: unknown): Person | null => {
@@ -248,6 +258,23 @@ export function fromLedgerRecord(input: unknown, peopleById?: ReadonlyMap<number
   const siteProgress = validMap(bandRaw.siteProgress, id, (raw): raw is { mark: number; day: number } => object(raw) && Object.keys(raw).length === 2 && finite(raw.mark) && tick(raw.day) && raw.day <= checkpointDay);
   const dayMap = (raw: unknown): Map<number, number> => validMap(raw, id, (value): value is number => tick(value) && value <= checkpointDay);
   const bandSystem = { chiefByBand: mapEntries(chiefByBand), siteProgress: mapEntries(siteProgress), raidConsidered: mapEntries(dayMap(bandRaw.raidConsidered)), foodFailureSince: mapEntries(dayMap(bandRaw.foodFailureSince)), coupConsidered: mapEntries(dayMap(bandRaw.coupConsidered)), tributePaid: mapEntries(dayMap(bandRaw.tributePaid)) };
+  if (!Array.isArray(input.sabotageCache)) invalid('invalid sabotage cache');
+  const sabotageCache = new Map<number, Building[]>();
+  const cachedBuildings = new Set<number>();
+  for (const entry of input.sabotageCache) {
+    if (!Array.isArray(entry) || entry.length !== 2 || !id(entry[0]) || !Array.isArray(entry[1]) || sabotageCache.has(entry[0])) invalid('invalid sabotage cache band');
+    const candidates: Building[] = [];
+    for (const buildingId of entry[1]) {
+      if (!id(buildingId) || buildingId === 0 || cachedBuildings.has(buildingId)) invalid('invalid or duplicate sabotage cache building');
+      if (!buildingsById) invalid('canonical buildings map required for sabotage cache references');
+      const building = buildingsById.get(buildingId);
+      if (!building) invalid(`building ${buildingId} is not retained`);
+      if (building.ownerBandId !== entry[0]) invalid('sabotage cache band does not own its building');
+      cachedBuildings.add(buildingId);
+      candidates.push(building);
+    }
+    sabotageCache.set(entry[0], candidates);
+  }
   const wildlifeOwed = mapIdNumber(input.wildlifeOwed, n => n >= 0 && n < 1);
   return {
     lastAdvancedTick: checkpointTick, lastAdvancedDay: checkpointDay, player, playerId: input.playerId as number | null,
@@ -255,6 +282,6 @@ export function fromLedgerRecord(input: unknown, peopleById?: ReadonlyMap<number
     lastRefusal: input.lastRefusal as string | null, snowDepth: input.snowDepth,
     succession, interruptions, watchedUses, helpCalls, insights, territoryPermissions, feudEvents, pendingVerdicts, sightings,
     edgeReserve, foundingFauna, nextEdgeHerd: input.nextEdgeHerd as number, normsByBand, strangerRegardByBand,
-    socialRecent, knownTech, recordedTech, rememberedTech, recordsInHand, techHolders, era, templeByBand, bandSystem, wildlifeOwed,
+    socialRecent, knownTech, recordedTech, rememberedTech, recordsInHand, techHolders, era, templeByBand, bandSystem, sabotageCache, wildlifeOwed,
   };
 }

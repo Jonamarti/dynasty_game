@@ -1,5 +1,16 @@
 # Known bugs and rough edges
 
+## M15 fase 28: lista diaria de sabotajes omitida — corregido (2026-10-04)
+
+`sabotageCache` no era scratch reconstruible: su pertenencia se refresca a
+medianoche, mientras las estructuras cambian durante el día. El checkpoint
+v1 de libros la omitía; un cargador que la recalculase cambiaría el siguiente
+scoring. `LedgerRecord` v2 conserva bandas/candidatos en orden y liga los IDs
+a edificios canónicos, incluso si ya están arruinados. La regresión falla en
+el codec anterior y pasa tras la corrección. Ver `m15_phase28_ledgers.md`.
+La carga ejecutable y la comparación final se verifican en el siguiente hito;
+esto por sí solo no cierra la fase 28 ni el LOD.
+
 ## M15 fase 28: checkpoint compuesto sin carga ejecutable (2026-10-03)
 
 Objetos y libros laterales ya tienen codecs y CheckpointRecord los compone

@@ -2520,6 +2520,14 @@ antes o después y chocan entre sí y con el del jugador**.
 
 ## Fase 28 — Identidad que sobrevive a su comarca (M14 fase 3)
 
+**Avance del 2026-10-04, candidatos diarios conservados.** La auditoría del
+cargador encuentra que `sabotageCache` gobierna decisiones durante el día aunque
+una obra se termine o arruine después del refresco. `LedgerRecord` v2 conserva
+su orden y referencias canónicas; el v1 incompleto se rechaza. La composición
+hidrata los objetos antes de resolver estas referencias, sin recalcular la
+agenda. [Contrato y regresión](m15_phase28_ledgers.md). Registro visual:
+`artifacts/screenshots/m15-phase28-loader-2026-10-04-pass1/`.
+
 **Avance del 2026-10-03, checkpoint coordinado inerte.** `CheckpointRecord`
 v1 compone config/IdSpace, roster/relaciones, reloj/RNG, terreno/suelo, objetos
 y agendas bajo un tick común. Valida días/calendario, reglas, contadores,

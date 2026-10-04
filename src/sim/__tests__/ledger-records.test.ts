@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { fromLedgerRecord, toLedgerRecord } from '../persistence/LedgerRecords.ts';
 import { EVENT_TYPES } from '../social/Events.ts';
+import { Building, BUILDINGS } from '../entities/Building.ts';
 
 function world(): Simulation {
   return new Simulation({
@@ -13,6 +14,45 @@ function world(): Simulation {
 }
 
 describe('execution ledger records', () => {
+  it('preserves the daily sabotage snapshot across structures completed or ruined after refresh', () => {
+    const sim = world();
+    const building = new Building(BUILDINGS.windbreak!, 12, 12, sim.bands[0]!.id, sim.ids);
+    sim.buildings.push(building);
+    sim.buildingsById.set(building.id, building);
+
+    // The first daily refresh sees an unfinished frame and caches no candidates.
+    for (let i = 0; i < sim.config.time.ticksPerDay; i++) sim.step();
+    expect(building.complete).toBe(false);
+    const sabotageCacheOf = () => (sim as unknown as { sabotageCache: Map<number, Building[]> }).sabotageCache;
+    expect(sabotageCacheOf().size).toBe(0);
+
+    // Completion later in the day must not silently refresh that daily snapshot.
+    for (const [itemId, count] of Object.entries(building.def.materials)) building.delivered.add(itemId, count);
+    building.addWork(building.def.workTicks);
+    expect(building.complete).toBe(true);
+    expect(sabotageCacheOf().size).toBe(0);
+
+    const record = JSON.parse(JSON.stringify(toLedgerRecord(sim)));
+    expect(record.sabotageCache).toEqual([]);
+
+    // The next midnight captures it as a candidate. A ruin later that day does
+    // not refresh the cache, so its ID and canonical object must survive too.
+    for (let i = 0; i < sim.config.time.ticksPerDay; i++) sim.step();
+    expect(sabotageCacheOf().get(building.ownerBandId)).toContain(building);
+    building.damage(1_000);
+    expect(building.ruined).toBe(true);
+    const ruinedRecord = JSON.parse(JSON.stringify(toLedgerRecord(sim)));
+    expect(ruinedRecord.sabotageCache).toEqual([[building.ownerBandId, [building.id]]]);
+    const restored = fromLedgerRecord(ruinedRecord, sim.peopleById, sim.buildingsById);
+    expect(restored.sabotageCache.get(building.ownerBandId)?.[0]).toBe(building);
+    const missingBuilding = JSON.parse(JSON.stringify(ruinedRecord));
+    missingBuilding.sabotageCache[0][1] = [999999];
+    expect(() => fromLedgerRecord(missingBuilding, sim.peopleById, sim.buildingsById)).toThrow(/not retained/);
+    const wrongOwner = JSON.parse(JSON.stringify(ruinedRecord));
+    wrongOwner.sabotageCache[0][0] = sim.bands[1]!.id;
+    expect(() => fromLedgerRecord(wrongOwner, sim.peopleById, sim.buildingsById)).toThrow(/does not own/);
+  });
+
   it('round-trips retained queues, future decisions and canonical person references through JSON', () => {
     const sim = world();
     for (let i = 0; i < 80; i++) sim.step();
@@ -53,7 +93,7 @@ describe('execution ledger records', () => {
 
     const record = toLedgerRecord(sim);
     const wire = JSON.parse(JSON.stringify(record));
-    const restored = fromLedgerRecord(wire, sim.peopleById);
+    const restored = fromLedgerRecord(wire, sim.peopleById, sim.buildingsById);
     expect(restored.lastAdvancedTick).toBe(sim.time.tick);
     expect(restored.lastAdvancedDay).toBe(sim.time.day);
     expect(restored.player).toBe(p);
@@ -85,28 +125,28 @@ describe('execution ledger records', () => {
   it('rejects unknown versions, future ledger days, broken identities and malformed nested collections', () => {
     const sim = world();
     const record = JSON.parse(JSON.stringify(toLedgerRecord(sim)));
-    expect(() => fromLedgerRecord({ ...record, version: 2 }, sim.peopleById)).toThrow(/v1/);
-    expect(() => fromLedgerRecord({ ...record, extra: true }, sim.peopleById)).toThrow(/unknown or missing/);
-    expect(() => fromLedgerRecord({ ...record, lastAdvancedDay: -1 }, sim.peopleById)).toThrow(/v1/);
+    expect(() => fromLedgerRecord({ ...record, version: 1 }, sim.peopleById, sim.buildingsById)).toThrow(/v2/);
+    expect(() => fromLedgerRecord({ ...record, extra: true }, sim.peopleById, sim.buildingsById)).toThrow(/unknown or missing/);
+    expect(() => fromLedgerRecord({ ...record, lastAdvancedDay: -1 }, sim.peopleById, sim.buildingsById)).toThrow(/v2/);
     const missingPerson = JSON.parse(JSON.stringify(record));
     missingPerson.playerId = 999999;
-    expect(() => fromLedgerRecord(missingPerson, sim.peopleById)).toThrow(/not retained/);
+    expect(() => fromLedgerRecord(missingPerson, sim.peopleById, sim.buildingsById)).toThrow(/not retained/);
     const futureDay = JSON.parse(JSON.stringify(record));
     futureDay.bandSystem.raidConsidered = [[sim.bands[0]!.id, sim.time.day + 1]];
-    expect(() => fromLedgerRecord(futureDay, sim.peopleById)).toThrow(/invalid or duplicate map entry/);
+    expect(() => fromLedgerRecord(futureDay, sim.peopleById, sim.buildingsById)).toThrow(/invalid or duplicate map entry/);
     const malformedEvent = JSON.parse(JSON.stringify(record));
     malformedEvent.socialRecent = [{ id: 1, type: 'not-an-event', actorId: 0, targetId: null, x: 0, y: 0, tick: 0, magnitude: 1, witnesses: 0, victimBandId: null }];
-    expect(() => fromLedgerRecord(malformedEvent, sim.peopleById)).toThrow(/invalid social event/);
+    expect(() => fromLedgerRecord(malformedEvent, sim.peopleById, sim.buildingsById)).toThrow(/invalid social event/);
     const malformedNorms = JSON.parse(JSON.stringify(record));
     malformedNorms.normsByBand = [[sim.bands[0]!.id, Object.fromEntries(EVENT_TYPES.map(type => [type, 1]).slice(1))]];
-    expect(() => fromLedgerRecord(malformedNorms, sim.peopleById)).toThrow(/invalid or duplicate map entry/);
+    expect(() => fromLedgerRecord(malformedNorms, sim.peopleById, sim.buildingsById)).toThrow(/invalid or duplicate map entry/);
     const badWitness = JSON.parse(JSON.stringify(record));
     badWitness.watchedUses = [{ personId: sim.people[0]!.id, use: { ours: false, watched: true, basis: 'seen', seenId: 999999 } }];
-    expect(() => fromLedgerRecord(badWitness, sim.peopleById)).toThrow(/not retained/);
+    expect(() => fromLedgerRecord(badWitness, sim.peopleById, sim.buildingsById)).toThrow(/not retained/);
     const duplicateEvents = JSON.parse(JSON.stringify(record));
     const event = { id: 1, type: 'gift', actorId: sim.people[0]!.id, targetId: null,
       x: 0, y: 0, tick: 0, magnitude: 1, witnesses: 0, victimBandId: null };
     duplicateEvents.socialRecent = [event, { ...event }];
-    expect(() => fromLedgerRecord(duplicateEvents, sim.peopleById)).toThrow(/duplicate social event/);
+    expect(() => fromLedgerRecord(duplicateEvents, sim.peopleById, sim.buildingsById)).toThrow(/duplicate social event/);
   });
 });

@@ -1,3 +1,24 @@
+## 2026-10-04 — M15 fase 28: guardar los candidatos diarios de sabotaje
+
+La auditoría del cargador detectó una omisión del checkpoint: Brain conserva
+durante el día una lista de estructuras que puede quedar obsoleta cuando se
+termina o arruina una obra. `LedgerRecord` v2 guarda orden e IDs, resueltos
+contra edificios canónicos, en lugar de recalcular esa lista al cargar. El v1
+se rechaza por no conservar ese historial. El checkpoint hidrata objetos antes
+de resolver el libro; no cambia el comportamiento de un mundo generado.
+
+La regresión falla antes de la corrección por ausencia del campo y pasa con
+v2; comprueba obra recién terminada, siguiente refresco diario, ruina y alias
+canónico; rechaza también candidatos atribuidos a otra banda. Typecheck limpio
+y nueve pruebas focales de libros/checkpoint/carga pasan.
+La referencia de 27 escenarios sigue roja con 108 fallos; comparación final
+del bloque en curso. Evidencia:
+`artifacts/verification/m15-phase28-sabotage-cache-baseline.log` y
+`artifacts/verification/m15-phase28-loader-20261004-pass1/`.
+Tour 1/1 y captura inicial revisada, sin cambio de UI:
+`artifacts/screenshots/m15-phase28-loader-2026-10-04-pass1/`.
+Contrato actualizado: `docs/m15_phase28_ledgers.md`.
+
 ## 2026-10-03 — M15 fase 28: un checkpoint, un tick y referencias canónicas
 
 CheckpointRecord v1 compone config e IDs, roster/relaciones, reloj/RNG,

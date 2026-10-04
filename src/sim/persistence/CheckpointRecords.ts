@@ -167,11 +167,13 @@ export function fromCheckpointRecord(input: unknown): CheckpointState {
   const config = copyConfig(input.config);
   const ids = IdSpace.fromSnapshot(input.ids);
   const roster = fromRosterRecord(input.roster);
+  const execution = fromExecutionRecord(input.execution);
+  const world = fromWorldTerrainRecord(input.terrain);
+  const objects = fromWorldObjectRecord(input.objects, roster.peopleById);
   const state: CheckpointState = {
     lastAdvancedTick: tick, config, ids, roster,
-    execution: fromExecutionRecord(input.execution), world: fromWorldTerrainRecord(input.terrain),
-    objects: fromWorldObjectRecord(input.objects, roster.peopleById),
-    ledgers: fromLedgerRecord(input.ledgers, roster.peopleById),
+    execution, world, objects,
+    ledgers: fromLedgerRecord(input.ledgers, roster.peopleById, objects.buildingsById),
   };
   validateState(state);
   return state;

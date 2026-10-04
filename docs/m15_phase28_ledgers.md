@@ -1,5 +1,29 @@
 # M15 28 — Libros de ejecución retenidos
 
+## Corrección de la agenda diaria — 2026-10-04
+
+`LedgerRecord` pasa a v2 y conserva también `sabotageCache`: orden de bandas,
+orden de candidatos y referencias a los edificios canónicos. La lista se
+refresca una vez al día; terminar o arruinar una estructura después del refresco
+no cambia su pertenencia hasta el siguiente. Reconstruirla desde los edificios
+actuales al cargar cambiaría los candidatos de Brain. El v1 se rechaza: carece
+de ese historial y no permite prometer continuación idéntica entre días.
+
+`fromLedgerRecord(record, peopleById, buildingsById)` resuelve estas referencias
+contra los objetos ya hidratados. Rechaza IDs ausentes, duplicados, candidatos
+atribuidos a otra banda y aliases
+fuente separados de los edificios registrados. No filtra ruinas ni añade obras
+recién terminadas: se conserva el snapshot observado, no una lista calculada
+de nuevo. El checkpoint coordinado sigue usando un sobre v1 con este componente
+v2; no hay migración de partidas públicas.
+
+La regresión termina una obra tras un refresco real y conserva la lista vacía;
+también mantiene una estructura que se arruina después de entrar en la lista.
+Pruebas y control negativo en
+`artifacts/verification/m15-phase28-loader-20261004-pass1/`.
+Registro visual general sin cambio de UI:
+`artifacts/screenshots/m15-phase28-loader-2026-10-04-pass1/`.
+
 2026-10-03. `LedgerRecords.ts` añade un sobre JSON v1 para el estado retenido
 que no pertenece a una persona, hogar, banda, objeto del mundo, reloj o stream
 RNG. Es un componente inerte del checkpoint; todavía no carga estos valores en
