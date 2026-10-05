@@ -369,4 +369,10 @@ export const ES_TECH: Record<string, string> = {
   "hunted with a wolf at the heel so long that it stopped being a wolf to them": "cazó con un lobo a los pies tanto tiempo que dejó de ser un lobo para ellos",
   "shared a winter fire with a tamed wolf, and woke to find it had kept watch": "compartió una hoguera de invierno con un lobo domado, y despertó viendo que había hecho guardia",
   "A tamed wolf that hears strangers and predators before you do, and hunts at your heel.": "Un lobo domado que oye a extraños y depredadores antes que tú, y caza a tus pies.",
+  "Arboriculture": "Arboricultura",
+  "A stone or a nut set in the ground beside the camp, and the patience to wait years for it. The first thing anyone did for a generation not yet born.": "Un hueso o una nuez puestos en la tierra junto al campamento, y la paciencia de esperarlos años. Lo primero que alguien hizo por una generación que aún no había nacido.",
+  "saw a pip dropped beside the field come up as a sapling the next spring": "vio que una pepita caída junto al campo brotaba como un arbolito a la primavera siguiente",
+  "counted the years a hazel took to bear and thought of planting one for the children": "contó los años que tarda un avellano en dar fruto y pensó en plantar uno para los hijos",
+  "spat a plum stone into the soft ground by the camp and came back to find it growing": "escupió un hueso de ciruela en la tierra blanda junto al campamento y volvió para encontrarlo creciendo",
+  "Fruit trees planted near the camp: a stone set in the ground now, a crop in years.": "Frutales plantados junto al campamento: un hueso en la tierra hoy, una cosecha dentro de años.",
 };

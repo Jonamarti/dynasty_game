@@ -2150,6 +2150,12 @@ se mantienen. [Evidencia](m15_grazing_check.md). No modifica la simulación.
 
 ## Fase 24 — Plantar (M14 fase 10)
 
+**Avance del 2026-10-05 (24, primer commit):** `arboriculture` y el verbo
+`plant` existen, con su menú, su orden con razones y el puntuador. El
+escenario `orchard` y el check `orchards-are-planted` también (segundo commit),
+medidos contra el build roto. Falta la medida a veinte semillas. Ver
+`changelog.md`.
+
 **Detalle en `m14_plan.md` fase 10.** `arboriculture` (requiere `farming` y
 `calendar`) y el verbo `plant`: frutales cerca del poblado, la primera
 inversión a una generación vista.

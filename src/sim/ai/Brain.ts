@@ -31,6 +31,7 @@ import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../entities/Building.ts';
 import { earthworkWorkRefusal } from '../core/Earth.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
+import { ORCHARD_SPACING, findPlantingSpot, plantable } from '../entities/Orchard.ts';
 import type { Building } from '../entities/Building.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import { statusPressure } from './Status.ts';
@@ -236,6 +237,8 @@ interface FoundTargets {
   matNode: ResourceNode | null;
   /** Tall grass to cut for a site that wants thatch, M15 phase 23b. */
   grassSpot: { x: number; y: number } | null;
+  /** Ground beside the camp to set a fruit tree in, M15 phase 24. */
+  plantSpot: { x: number; y: number } | null;
   site: Building | null;
   shelter: Building | null;
   restShelter: Building | null;
@@ -2882,6 +2885,34 @@ export class Brain {
       }
     }
 
+    // --- Plant a tree ------------------------------------------------------
+    //
+    // M15 phase 24. An investment that pays a generation later, so it is
+    // weighed like sowing - low, and only when nothing urgent is pulling - and
+    // it is gated on everything `doPlant` refuses on, because a scorer that
+    // sends somebody across the camp to be turned away is how a band spends a
+    // spring walking to a patch and back. Only adults with a piece of fruit in
+    // the pack and an anchor to plant beside; the fruit is the price, so a
+    // hungry person eats it instead (`comfortNow` is below the line).
+    let plantSpot: { x: number; y: number } | null = null;
+    if (!person.isChild && anchor && ctx.time.growth > 0 && comfortNow > 0.5 &&
+        techPower(person, 'arboriculture') > 0 && plantable(person)) {
+      const spot = findPlantingSpot({
+        world: ctx.world, treeHash: ctx.treeHash,
+        built: (x, y) => ctx.buildingHash.queryRadius(x, y, 8).some(b => b.contains(x, y)),
+        claimed: (x, y) => ctx.peopleHash.queryRadius(x, y, ORCHARD_SPACING + 12).some(p =>
+          p.id !== person.id && p.alive && p.action === 'plant' &&
+          p.targetX !== null && p.targetY !== null &&
+          Math.hypot(p.targetX - x, p.targetY - y) < ORCHARD_SPACING),
+      }, person, anchor, person.id);
+      if (spot) {
+        add('plant',
+          (0.5 + person.traits.industriousness * 0.3) *
+            this.proximityBonus(person, spot, ctx.sightRadius));
+        plantSpot = spot;
+      }
+    }
+
     // --- Store and withdraw ------------------------------------------------
     // The two halves of surviving a winter. Storing is a comfortable-weather
     // job; withdrawing is what you do when you are hungry and the bushes are
@@ -3607,7 +3638,7 @@ export class Brain {
     return {
       scores,
       found: {
-        water, foodToEat, waterQuestionPeer, explorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
+        water, foodToEat, waterQuestionPeer, explorePoint, bringFoodPoint, foodNode, pickupPile, pickupItem, matNode, grassSpot, plantSpot, companion, suitor, sparPartner, student, childPupil, mentor, colleague,
         victim, foe, attackRoute, intruder, restrainee, kinDefence, correctee, amendsTo, complainTo, parleyWith, peaceWith, helpCallerTarget, bindTarget, patrolPoint, investigatePoint, concealCorpse, giftee, giftItem, feastStore, feastHost, beneficiary, nursingChild, playmate, tradePartner, fleeFrom, fleePoint,
         quarry,
         site, shelter, restShelter, storeTarget, storeItemId, storeItemCount, larderTarget, sabotageTarget, fruitTree, fellTree,
@@ -4297,6 +4328,12 @@ export class Brain {
         }
         break;
       }
+      case 'plant':
+        if (found.plantSpot) {
+          person.targetX = found.plantSpot.x;
+          person.targetY = found.plantSpot.y;
+        }
+        break;
       case 'cut_grass':
         if (found.grassSpot) {
           person.targetX = found.grassSpot.x;

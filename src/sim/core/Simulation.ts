@@ -65,7 +65,8 @@ import { assailantOf, isHeld } from '../social/Defence.ts';
 import { wouldInvestigate, noticeBloodied, INVESTIGATION_DAYS } from '../social/Investigation.ts';
 import { knowledgeOfPerson, corpseIdentity } from '../social/Knowledge.ts';
 import { averageRenownByBand, Household } from '../entities/Household.ts';
-import { Tree } from '../entities/Tree.ts';
+import { Tree, type TreeSpecies } from '../entities/Tree.ts';
+import { plantable, plantingRefusal, plantRefusalText } from '../entities/Orchard.ts';
 import { giftWorth } from '../social/Events.ts';
 import { ItemPile } from '../entities/ItemPile.ts';
 import { Corpse, stageOf, WOUNDS_SHOW_FOR, GONE_AFTER } from '../entities/Corpse.ts';
@@ -3833,6 +3834,12 @@ export class Simulation {
           return this.cancelOrder(person, t('the grass is too short to cut'));
         }
       }
+      // M15 phase 24: planting is refused where the tree could not stand, with
+      // the reason, rather than walked to and abandoned.
+      if (action === 'plant') {
+        const why = this.plantOrderRefusal(person, target.x, target.y);
+        if (why) return this.cancelOrder(person, why);
+      }
       // M15 phase 26: moving earth is refused where it is pointless, with the
       // reason, rather than walked to and abandoned.
       if (action === 'dig' || action === 'pile') {
@@ -3889,6 +3896,19 @@ export class Simulation {
     }
     // Actions like 'rest' and 'eat' happen where you stand.
     return true;
+  }
+
+  /**
+   * Why this person cannot set a tree at this tile, or null. The wording lives
+   * here once, so the menu (`ActionCatalog`) and the order say the same thing.
+   */
+  plantOrderRefusal(person: Person, x: number, y: number): string | null {
+    if (techPower(person, 'arboriculture') <= 0) return t('they do not know how to plant a tree');
+    if (!plantable(person)) return t('they have no fruit to plant');
+    if (this.time.growth <= 0) return t('nothing would take root in this season');
+    const refusal = plantingRefusal({ world: this.world, treeHash: this.treeHash,
+      built: (bx, by) => this.buildingAt(bx, by) !== null }, Math.floor(x), Math.floor(y));
+    return refusal === null ? null : plantRefusalText(refusal);
   }
 
   /**
@@ -4767,6 +4787,23 @@ export class Simulation {
     this.buildingHash.rebuild(this.buildings);
   }
 
+  /**
+   * M15 phase 24: a planted tree enters the world exactly as a seeded one does
+   * (`ForestSystem.daily`'s births), through the same arrays and indexes, so
+   * nothing downstream can tell the difference. Refused where the ground will
+   * not take it - the same `plantingRefusal` the action checked, because two
+   * people can reach one tile in the same tick.
+   */
+  plantTree(species: TreeSpecies, x: number, y: number): Tree | null {
+    if (plantingRefusal({ world: this.world, treeHash: this.treeHash,
+      built: (bx, by) => this.buildingAt(bx, by) !== null }, x, y)) return null;
+    const tree = new Tree(species, x, y, 0, this.time.daysPerYear, this.ids);
+    this.trees.push(tree);
+    this.treesById.set(tree.id, tree);
+    this.treeHash.insert(tree);
+    return tree;
+  }
+
   /** The building covering a point, if any. */
   buildingAt(x: number, y: number): Building | null {
     for (const building of this.buildings) {
@@ -5203,6 +5240,9 @@ export class Simulation {
       claimRecord: (tech: string) => this.recordsInHand.add(tech),
       inLibrary: (x: number, y: number) => this.inLibrary(x, y),
       territoryOwnerAt: (x: number, y: number) => this.territoryOwnerAt(x, y),
+      plantTree: (species: TreeSpecies, x: number, y: number) => this.plantTree(species, x, y),
+      buildingAt: (x: number, y: number) => this.buildingAt(x, y) !== null,
+      treeHash: this.treeHash,
       onTerritoryUse: (person: Person, ownerBandId: number) => {
         if (person.territoryUseNoted === ownerBandId ||
           this.hasTerritoryPermission(person, ownerBandId)) return;

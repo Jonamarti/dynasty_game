@@ -145,6 +145,9 @@ export const TECHS = [
   'standing_army',
   // The crown: the chiefdom held for life and passed to an heir.
   'kingship',
+  // M15 phase 24: planting a tree. A practice, and it ships with its reader —
+  // the `plant` verb (`ActionSystem.doPlant`) — so it is not declared inert.
+  'arboriculture',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1373,6 +1376,36 @@ export const TECH: Record<Tech, TechDef> = {
       'Sowing timed to a tally of the seasons rather than to guesswork. The ' +
       'same field, worked the same, gives more back for going in on the right day.',
   },
+  arboriculture: {
+    id: 'arboriculture', label: 'Arboriculture', domain: 'plants',
+    age: 'neolithic', firstKnown: 'about 5,000 BC',
+    // A practice, for the reason `calendar` is one: nothing is built, and the
+    // trial is the act it improves. Setting a stone or a nut in the ground
+    // beside the camp is the whole of the idea, so `plant` is both what tries it
+    // and what it unlocks — `techPower` gives a practice half strength from
+    // `PROTOTYPE_AT` onward for exactly that reason.
+    kind: 'practice', practisedBy: ['plant'],
+    requires: ['farming', 'calendar'], difficulty: 0.55, skill: 'farm',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      // The pip that came up where it was spat: the observation every account
+      // of the first orchards starts from, and one a band that sows already has
+      // the ground and the fruit for.
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'holding', item: 'apple' },
+                { kind: 'doing', action: 'sow' }],
+        weight: 1.0, story: 'saw a pip dropped beside the field come up as a sapling the next spring' },
+      { needs: [{ kind: 'knows', tech: 'calendar' }, { kind: 'holding', item: 'hazelnut' },
+                { kind: 'season', season: 'autumn' }],
+        weight: 0.7, story: 'counted the years a hazel took to bear and thought of planting one for the children' },
+      { needs: [{ kind: 'knows', tech: 'farming' }, { kind: 'holding', item: 'plum' },
+                { kind: 'place', biome: 'grass' }],
+        weight: 0.5, story: 'spat a plum stone into the soft ground by the camp and came back to find it growing' },
+    ],
+    description:
+      'A stone or a nut set in the ground beside the camp, and the patience to ' +
+      'wait years for it. The first thing anyone did for a generation not yet ' +
+      'born.',
+  },
   the_wheel: {
     id: 'the_wheel', label: 'The wheel', domain: 'timber',
     age: 'neolithic', firstKnown: 'about 3500 BC',
@@ -1966,6 +1999,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'Sowing timed to a tally instead of to guesswork: more off the same ground.',
     site: 'Tech.calendarFactor, read by ActionSystem.doReap',
   },
+  arboriculture: {
+    summary: 'Fruit trees planted near the camp: a stone set in the ground now, a crop in years.',
+    site: 'ActionSystem.doPlant (the verb it unlocks); Tech.orchardFactor shortens the planting; Brain plant scorer',
+  },
   the_wheel: {
     summary: 'A cart: what a strap and a basket carry, and a cartload more on top.',
     site: 'the equipped cart capacity in sim/core/Carry.ts; RECIPES.cart',
@@ -2277,6 +2314,16 @@ export function reapFactor(person: Person): number {
  */
 export function calendarFactor(person: Person): number {
   return scaled(person, 'calendar', 1.2);
+}
+
+/**
+ * Multiplier on the work of setting a tree, read by `ActionSystem.doPlant`.
+ * A practice with no item gate, like `calendarFactor`: an orchardist who has
+ * refined the knack plants faster, and one who has only the idea plants slower
+ * by nothing at all, because `scaled` is 1 for anybody who does not know it.
+ */
+export function orchardFactor(person: Person): number {
+  return scaled(person, 'arboriculture', 0.7);
 }
 
 /**

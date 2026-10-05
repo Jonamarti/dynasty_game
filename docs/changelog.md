@@ -106,6 +106,91 @@ horneado real. [Contrato](m15_phase27_depth.md). Captura nueva:
 `artifacts/screenshots/m15-phase27-depth-2026-10-05-pass2/01-coast-depth.png`.
 Verificación de la fase completa documentada al terminar la integración.
 
+## 2026-10-05 — M15 fase 24 (3): coste medido a veinte semillas, por encima de lo declarado
+
+`sim:seeds --scenario orchard --seeds 20` (el arnés de seeds no ejecuta
+`setup`, así que sin la fruta regalada), con y sin `arboriculture` en los
+fundadores y nada más distinto: **supervivencia media 86,6 % con plantar frente a
+91,7 % sin él (−5,1 puntos)**; extinciones 1/20 frente a 0/20; adultos muertos de
+hambre 20 frente a 10. El coste declarado de la fase era ≤ 3 puntos, y 20
+semillas no resuelven menos de unos diez, así que **no se afirma que el verbo
+sea la causa ni que sea inocuo**: queda anotado en `bugs.md` y sin tocar los
+pesos. Hipótesis sin confirmar: el tiempo de plantar (70 ticks y el paseo) se
+resta al forrajeo en una isla de bayas justas.
+
+Verificación del bloque (fase 24, tres commits): typecheck limpio; unitarios con
+`orchard.test.ts` y `orchard-checks.test.ts` pasando; `sim:check:all` de 26
+escenarios (sin `orchard`, añadido después) sigue rojo por la línea base heredada
+(`cravings-steer-the-diet` en casi todos), sin comparar contra master fallo a
+fallo; e2e `orchard.spec.ts` pasa.
+
+## 2026-10-05 — M15 fase 24 (2): el escenario `orchard` y `orchards-are-planted`
+
+- **`orchard`**: una banda de doce con toda la cadena (`farming`, `calendar`,
+  `arboriculture`) y tres piezas de fruta por adulto, que el arnés reparte (el
+  forrajeo ya trae fruta de los árboles). Es **la única corrida en la que alguien
+  planta**: nadie llega a `arboriculture` de la nada en una corrida corta, y sin
+  el escenario el check diría n/a para siempre (el problema de `craft` y
+  `scribes`). Quién planta, dónde y cuándo es de la banda.
+- **`orchards-are-planted`**: aplica solo si alguien vivo sabe plantar (n/a en
+  el resto). Pasa si se plantó al menos un árbol (el contador) **y** quedan
+  frutales jóvenes en pie, no más viejos que la corrida.
+- **Medido contra el build roto antes de confiar en él:** con `plant` sin
+  puntuar el check falla (0 plantados por 9 que saben; 19 frutales jóvenes, todos
+  de la siembra natural del bosque, por eso no basta mirar los árboles); con
+  `plantTree` rechazando siempre, también (test). En `orchard`: 5 plantados por 9
+  que saben, 22 frutales jóvenes en pie.
+- **Hallazgo al medirlo, y arreglo:** la primera versión del buscador mandaba a
+  los nueve plantadores al mismo anillo y **23 volvieron del hoyo** con
+  `no_room_for_a_tree` por 4 árboles puestos. `PlantingGround.claimed` descarta
+  casillas a menos de 2,6 de donde otro ya va a plantar (lo lee solo el buscador,
+  no el rechazo: un plan no es un hecho del suelo). Tras el arreglo: 5 plantados,
+  0 rechazos.
+- Pruebas: `orchard-checks.test.ts` (3): n/a donde nadie sabe, falla con el
+  build roto y pasa en `orchard`, con las invariantes de región y de pisar tierra.
+
+## 2026-10-05 — M15 fase 24 (1): plantar un frutal (`arboriculture` y el verbo `plant`)
+
+La fase 24 se hace en su propio worktree (`.wt/m15-phase24`, rama `m15/phase24`)
+porque la 27 (agua) toca `World`, `Pathfinder`, `Needs`, `Movement` y el
+renderer; ésta vive en `Tech`, `ActionSystem`, `Brain` y el catálogo.
+
+- **`arboriculture`** (práctica, neolítica; requiere `farming` y `calendar`, habilidad
+  `farm`), con tres chispas que piden fruta en la mano. Se declara con su lector,
+  como pide la regla de «ningún nodo inerte»: el verbo `plant`. Su refinamiento
+  acorta la plantación (`Tech.orchardFactor`).
+- **`plant`**, un verbo de casilla como `dig`: una pieza de fruta (manzana, pera,
+  ciruela o avellana; lleva la pepita dentro, y es el precio de la inversión) se
+  pone en el suelo y nace una plántula `Tree` que envejece, da fruto y muere por
+  las reglas de `ForestSystem`, sin casos especiales. 70 ticks de trabajo: muy
+  por debajo del umbral de banco de progreso, y con comprobación de interrupción.
+  Las bellotas se dejan fuera a propósito (un roble tarda treinta años).
+- **Dónde:** `entities/Orchard.ts` es la única definición de «suelo que admite un
+  árbol» (`plantingRefusal`): hierba o bosque, caminable, sin cavar ni apilar,
+  sin edificio encima (campos incluidos) y a 2,6 casillas de cualquier árbol en
+  pie. `findPlantingSpot` recorre anillos entre 3 y 11 casillas del hogar o del
+  campamento, empezando por un ángulo que sale del id de la persona (sin dado, y
+  dos plantadores no van a la misma casilla).
+- **Brain:** `plant` se puntúa como `sow` (bajo, no paga hoy), solo a adultos con
+  fruta en el zurrón, con el conocimiento, en estación de crecimiento y con el
+  confort por encima de 0,5 (un hambriento se come la fruta).
+- **Todo rechazo dice por qué**, en la orden del jugador (`Simulation.order` →
+  `plantOrderRefusal`), en el menú radial («Plantar un árbol aquí», solo si se
+  sabe, gris con la razón) y al pararse la acción (`Floaters`): sin fruta, suelo
+  inadecuado, edificio, sin sitio, estación, sin saber.
+- **Determinismo:** no hay ningún fork nuevo ni dado; la tabla de `AGENTS.md` no
+  gana fila. Un mundo en el que nadie sabe `arboriculture` no cambia.
+- e2e `e2e/orchard.spec.ts` (con `?skipIntro=1`): el menú radial ofrece «Plant a
+  tree here» gris sin fruta, viva con una manzana, y al elegirla el jugador planta
+  una plántula de manzano y gasta una pieza. Capturas:
+  `artifacts/screenshots/m15-phase24-orchard-2026-10-05/` (entrada gris, entrada
+  viva, plántula plantada; la tercera muestra la acción `plant` y «plant 0,53»
+  entre lo que el personaje quiere).
+- Pruebas: `orchard.test.ts` (7): la tecnología, qué se planta, el suelo (agua,
+  cavado, junto a otro árbol), anillo y reparto, la plántula en los índices con
+  una pieza de fruta menos y el contador, y los tres rechazos de la orden y el
+  menú. `i18n.test.ts` con el español de las 15 frases nuevas.
+
 ## 2026-10-04 — M15 fase 26c (4): la vista previa sigue al cursor, y la barra ya no tapa el suelo
 
 Dos fallos de interfaz que apareció al probar las obras de tierra con un

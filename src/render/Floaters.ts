@@ -437,6 +437,12 @@ export const STOP_REASONS: Record<string, string> = {
   grass_cut: 'there is no more tall grass near',
   // M15 phase 26. Every way moving earth can stop, so that a person standing
   // over a hole is never just standing there.
+  // M15 phase 24. Every way planting a tree can stop.
+  nowhere_to_plant: 'there was nowhere to plant',
+  no_fruit_to_plant: 'they had no fruit to plant',
+  ground_unfit_for_trees: 'a tree will not grow in that ground',
+  building_in_the_way: 'there is a building on that ground',
+  no_room_for_a_tree: 'there is no room for another tree there',
   nowhere_to_dig: 'there was nowhere to dig',
   no_digging_tool: 'they had nothing to dig with',
   dont_know_digging_tool: 'they did not know how to use their digging tools',

@@ -40,6 +40,8 @@ export const WORK_ACTIONS = new Set([
   // M15 phase 26c. Spades side by side are work alongside each other, and a
   // job that lists them is one a person is biased toward.
   'dig', 'pile',
+  // M15 phase 24. Setting trees side by side is work alongside each other.
+  'plant',
   // M8.2. Both belong here for the second reason this set exists as well as the
   // first: `SocialSystem.workingAlongside` is what lets two people sowing the
   // same field learn from each other and come to like each other, and a verb
@@ -100,7 +102,7 @@ export const JOBS: Record<JobId, JobDef> = {
     id: 'farmer',
     label: 'Farmer',
     icon: '\u{1F33E}',
-    actions: ['sow', 'reap', 'spread'],
+    actions: ['sow', 'reap', 'spread', 'plant'],
     skill: 'farm',
   },
   // M11 phase 15e — the border guard, O5 of M10's plan, which never had a
