@@ -1,0 +1,922 @@
+{
+  "baselineFile": "baseline-matrix.log",
+  "finalFile": "matrix-final-v4.log",
+  "baselineCount": 28,
+  "finalCount": 29,
+  "baselineFailures": 106,
+  "finalFailures": 112,
+  "comparison": [
+    {
+      "scenario": "food-news",
+      "baseline": {
+        "scenario": "food-news",
+        "passed": 1,
+        "applicable": 1,
+        "failed": []
+      },
+      "final": {
+        "scenario": "food-news",
+        "passed": 1,
+        "applicable": 1,
+        "failed": []
+      },
+      "newFailures": [],
+      "absentFailures": [],
+      "applicableDelta": 0,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "conflicts",
+      "baseline": {
+        "scenario": "conflicts",
+        "passed": 1,
+        "applicable": 1,
+        "failed": []
+      },
+      "final": {
+        "scenario": "conflicts",
+        "passed": 1,
+        "applicable": 1,
+        "failed": []
+      },
+      "newFailures": [],
+      "absentFailures": [],
+      "applicableDelta": 0,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "tiny",
+      "baseline": {
+        "scenario": "tiny",
+        "passed": 50,
+        "applicable": 50,
+        "failed": []
+      },
+      "final": {
+        "scenario": "tiny",
+        "passed": 47,
+        "applicable": 47,
+        "failed": []
+      },
+      "newFailures": [],
+      "absentFailures": [],
+      "applicableDelta": -3,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "band",
+      "baseline": {
+        "scenario": "band",
+        "passed": 52,
+        "applicable": 54,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "final": {
+        "scenario": "band",
+        "passed": 52,
+        "applicable": 53,
+        "failed": [
+          "cravings-steer-the-diet"
+        ]
+      },
+      "newFailures": [],
+      "absentFailures": [
+        "moods-move-choices"
+      ],
+      "applicableDelta": -1,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "crowded",
+      "baseline": {
+        "scenario": "crowded",
+        "passed": 56,
+        "applicable": 57,
+        "failed": [
+          "cravings-steer-the-diet"
+        ]
+      },
+      "final": {
+        "scenario": "crowded",
+        "passed": 57,
+        "applicable": 59,
+        "failed": [
+          "cravings-steer-the-diet",
+          "shelter-answers-cold"
+        ]
+      },
+      "newFailures": [
+        "shelter-answers-cold"
+      ],
+      "absentFailures": [],
+      "applicableDelta": 2,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "century",
+      "baseline": {
+        "scenario": "century",
+        "passed": 72,
+        "applicable": 78,
+        "failed": [
+          "people-act-on-what-they-know",
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "the-wise-avoid-baneberries",
+          "peoples-drift-apart"
+        ]
+      },
+      "final": {
+        "scenario": "century",
+        "passed": 71,
+        "applicable": 76,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "the-wise-avoid-baneberries",
+          "discovery-is-situated"
+        ]
+      },
+      "newFailures": [
+        "discovery-is-situated"
+      ],
+      "absentFailures": [
+        "people-act-on-what-they-know",
+        "peoples-drift-apart"
+      ],
+      "applicableDelta": -2,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "craft",
+      "baseline": {
+        "scenario": "craft",
+        "passed": 64,
+        "applicable": 70,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "people-survive",
+          "pots-reach-a-granary",
+          "discovery-is-situated"
+        ]
+      },
+      "final": {
+        "scenario": "craft",
+        "passed": 65,
+        "applicable": 70,
+        "failed": [
+          "people-act-on-what-they-know",
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "people-survive",
+          "pots-reach-a-granary"
+        ]
+      },
+      "newFailures": [
+        "people-act-on-what-they-know"
+      ],
+      "absentFailures": [
+        "moods-move-choices",
+        "discovery-is-situated"
+      ],
+      "applicableDelta": 0,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "wilds",
+      "baseline": {
+        "scenario": "wilds",
+        "passed": 61,
+        "applicable": 64,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices",
+          "the-wise-avoid-baneberries"
+        ]
+      },
+      "final": {
+        "scenario": "wilds",
+        "passed": 60,
+        "applicable": 63,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices"
+        ]
+      },
+      "newFailures": [
+        "nights-are-slept"
+      ],
+      "absentFailures": [
+        "the-wise-avoid-baneberries"
+      ],
+      "applicableDelta": -1,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "emptied",
+      "baseline": {
+        "scenario": "emptied",
+        "passed": 51,
+        "applicable": 57,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "nights-are-spent-at-home",
+          "moods-move-choices",
+          "needs-not-pinned",
+          "shelter-answers-cold"
+        ]
+      },
+      "final": {
+        "scenario": "emptied",
+        "passed": 54,
+        "applicable": 58,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "projects-find-backers",
+          "shelter-answers-cold"
+        ]
+      },
+      "newFailures": [
+        "projects-find-backers"
+      ],
+      "absentFailures": [
+        "nights-are-spent-at-home",
+        "moods-move-choices",
+        "needs-not-pinned"
+      ],
+      "applicableDelta": 1,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "hearths",
+      "baseline": {
+        "scenario": "hearths",
+        "passed": 63,
+        "applicable": 67,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "roast-wins"
+        ]
+      },
+      "final": {
+        "scenario": "hearths",
+        "passed": 64,
+        "applicable": 69,
+        "failed": [
+          "people-act-on-what-they-know",
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "roast-wins",
+          "pots-reach-a-granary"
+        ]
+      },
+      "newFailures": [
+        "people-act-on-what-they-know",
+        "pots-reach-a-granary"
+      ],
+      "absentFailures": [
+        "moods-move-choices"
+      ],
+      "applicableDelta": 2,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "porters",
+      "baseline": {
+        "scenario": "porters",
+        "passed": 53,
+        "applicable": 55,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "final": {
+        "scenario": "porters",
+        "passed": 54,
+        "applicable": 56,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "newFailures": [],
+      "absentFailures": [],
+      "applicableDelta": 1,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "scribes",
+      "baseline": {
+        "scenario": "scribes",
+        "passed": 64,
+        "applicable": 68,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "discovery-is-situated"
+        ]
+      },
+      "final": {
+        "scenario": "scribes",
+        "passed": 66,
+        "applicable": 68,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept"
+        ]
+      },
+      "newFailures": [],
+      "absentFailures": [
+        "moods-move-choices",
+        "discovery-is-situated"
+      ],
+      "applicableDelta": 0,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "harsh-winter",
+      "baseline": {
+        "scenario": "harsh-winter",
+        "passed": 54,
+        "applicable": 57,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "shelter-answers-cold"
+        ]
+      },
+      "final": {
+        "scenario": "harsh-winter",
+        "passed": 52,
+        "applicable": 57,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "nights-are-spent-at-home",
+          "needs-not-pinned",
+          "shelter-answers-cold"
+        ]
+      },
+      "newFailures": [
+        "nights-are-spent-at-home",
+        "needs-not-pinned"
+      ],
+      "absentFailures": [],
+      "applicableDelta": 0,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "coast",
+      "baseline": {
+        "scenario": "coast",
+        "passed": 52,
+        "applicable": 54,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "final": {
+        "scenario": "coast",
+        "passed": 53,
+        "applicable": 54,
+        "failed": [
+          "cravings-steer-the-diet"
+        ]
+      },
+      "newFailures": [],
+      "absentFailures": [
+        "moods-move-choices"
+      ],
+      "applicableDelta": 0,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "shallows",
+      "baseline": null,
+      "final": {
+        "scenario": "shallows",
+        "passed": 6,
+        "applicable": 6,
+        "failed": []
+      },
+      "newFailures": [],
+      "absentFailures": [],
+      "applicableDelta": null,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "traps",
+      "baseline": {
+        "scenario": "traps",
+        "passed": 59,
+        "applicable": 64,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "gossip-is-aimed",
+          "shelter-answers-cold"
+        ]
+      },
+      "final": {
+        "scenario": "traps",
+        "passed": 64,
+        "applicable": 66,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "newFailures": [],
+      "absentFailures": [
+        "nights-are-slept",
+        "gossip-is-aimed",
+        "shelter-answers-cold"
+      ],
+      "applicableDelta": 2,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "millers",
+      "baseline": {
+        "scenario": "millers",
+        "passed": 76,
+        "applicable": 81,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "discovery-is-situated",
+          "peoples-drift-apart"
+        ]
+      },
+      "final": {
+        "scenario": "millers",
+        "passed": 67,
+        "applicable": 72,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "the-wise-avoid-baneberries",
+          "spatial-hash-spreads"
+        ]
+      },
+      "newFailures": [
+        "the-wise-avoid-baneberries",
+        "spatial-hash-spreads"
+      ],
+      "absentFailures": [
+        "discovery-is-situated",
+        "peoples-drift-apart"
+      ],
+      "applicableDelta": -9,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "hunters",
+      "baseline": {
+        "scenario": "hunters",
+        "passed": 62,
+        "applicable": 64,
+        "failed": [
+          "cravings-steer-the-diet",
+          "kills-are-butchered-for-bone"
+        ]
+      },
+      "final": {
+        "scenario": "hunters",
+        "passed": 59,
+        "applicable": 62,
+        "failed": [
+          "cravings-steer-the-diet",
+          "kills-are-butchered-for-bone",
+          "discovery-is-situated"
+        ]
+      },
+      "newFailures": [
+        "discovery-is-situated"
+      ],
+      "absentFailures": [],
+      "applicableDelta": -2,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "fishers",
+      "baseline": {
+        "scenario": "fishers",
+        "passed": 62,
+        "applicable": 64,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "final": {
+        "scenario": "fishers",
+        "passed": 61,
+        "applicable": 63,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "newFailures": [],
+      "absentFailures": [],
+      "applicableDelta": -1,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "farmers",
+      "baseline": {
+        "scenario": "farmers",
+        "passed": 64,
+        "applicable": 70,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "gossip-is-aimed",
+          "knowledge-is-found",
+          "ideas-become-tech",
+          "animals-are-tamed"
+        ]
+      },
+      "final": {
+        "scenario": "farmers",
+        "passed": 71,
+        "applicable": 74,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "discovery-is-situated"
+        ]
+      },
+      "newFailures": [
+        "discovery-is-situated"
+      ],
+      "absentFailures": [
+        "gossip-is-aimed",
+        "knowledge-is-found",
+        "ideas-become-tech",
+        "animals-are-tamed"
+      ],
+      "applicableDelta": 4,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "herders",
+      "baseline": {
+        "scenario": "herders",
+        "passed": 68,
+        "applicable": 73,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "the-wise-avoid-baneberries",
+          "animals-are-tamed"
+        ]
+      },
+      "final": {
+        "scenario": "herders",
+        "passed": 69,
+        "applicable": 76,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "techs-are-refined",
+          "the-wise-avoid-baneberries",
+          "animals-are-tamed",
+          "herds-breed-and-are-culled"
+        ]
+      },
+      "newFailures": [
+        "techs-are-refined",
+        "herds-breed-and-are-culled"
+      ],
+      "absentFailures": [],
+      "applicableDelta": 3,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "feasts",
+      "baseline": {
+        "scenario": "feasts",
+        "passed": 72,
+        "applicable": 74,
+        "failed": [
+          "cravings-steer-the-diet",
+          "pots-reach-a-granary"
+        ]
+      },
+      "final": {
+        "scenario": "feasts",
+        "passed": 73,
+        "applicable": 78,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "pots-reach-a-granary",
+          "discovery-is-situated",
+          "bands-take-sides"
+        ]
+      },
+      "newFailures": [
+        "nights-are-slept",
+        "discovery-is-situated",
+        "bands-take-sides"
+      ],
+      "absentFailures": [],
+      "applicableDelta": 4,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "stewards",
+      "baseline": {
+        "scenario": "stewards",
+        "passed": 70,
+        "applicable": 74,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "discovery-is-situated",
+          "bands-take-sides"
+        ]
+      },
+      "final": {
+        "scenario": "stewards",
+        "passed": 71,
+        "applicable": 74,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "discovery-is-situated"
+        ]
+      },
+      "newFailures": [],
+      "absentFailures": [
+        "bands-take-sides"
+      ],
+      "applicableDelta": 0,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "labour",
+      "baseline": {
+        "scenario": "labour",
+        "passed": 64,
+        "applicable": 70,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "people-survive",
+          "gossip-is-aimed",
+          "discovery-is-situated",
+          "spatial-hash-spreads"
+        ]
+      },
+      "final": {
+        "scenario": "labour",
+        "passed": 63,
+        "applicable": 71,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "people-survive",
+          "gossip-is-aimed",
+          "research-is-social",
+          "the-wise-avoid-baneberries",
+          "spatial-hash-spreads"
+        ]
+      },
+      "newFailures": [
+        "moods-move-choices",
+        "research-is-social",
+        "the-wise-avoid-baneberries"
+      ],
+      "absentFailures": [
+        "discovery-is-situated"
+      ],
+      "applicableDelta": 1,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "polity",
+      "baseline": {
+        "scenario": "polity",
+        "passed": 81,
+        "applicable": 87,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "roast-wins",
+          "cooking-spreads",
+          "pots-reach-a-granary"
+        ]
+      },
+      "final": {
+        "scenario": "polity",
+        "passed": 82,
+        "applicable": 88,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "roast-wins",
+          "cooking-spreads",
+          "pots-reach-a-granary"
+        ]
+      },
+      "newFailures": [],
+      "absentFailures": [],
+      "applicableDelta": 1,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "conquest",
+      "baseline": {
+        "scenario": "conquest",
+        "passed": 86,
+        "applicable": 93,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "the-wise-avoid-baneberries",
+          "roast-wins",
+          "cooking-spreads",
+          "discovery-is-situated",
+          "peoples-drift-apart"
+        ]
+      },
+      "final": {
+        "scenario": "conquest",
+        "passed": 84,
+        "applicable": 91,
+        "failed": [
+          "people-act-on-what-they-know",
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "projects-find-backers",
+          "records-are-cut",
+          "roast-wins",
+          "cooking-spreads"
+        ]
+      },
+      "newFailures": [
+        "people-act-on-what-they-know",
+        "projects-find-backers",
+        "records-are-cut"
+      ],
+      "absentFailures": [
+        "the-wise-avoid-baneberries",
+        "discovery-is-situated",
+        "peoples-drift-apart"
+      ],
+      "applicableDelta": -2,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "culture",
+      "baseline": {
+        "scenario": "culture",
+        "passed": 62,
+        "applicable": 66,
+        "failed": [
+          "cravings-steer-the-diet",
+          "pictures-are-painted",
+          "animals-are-tamed",
+          "kills-are-butchered-for-bone"
+        ]
+      },
+      "final": {
+        "scenario": "culture",
+        "passed": 56,
+        "applicable": 65,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "gossip-is-aimed",
+          "shelter-answers-cold",
+          "pictures-are-painted",
+          "animals-are-tamed",
+          "kills-are-butchered-for-bone",
+          "discovery-is-situated"
+        ]
+      },
+      "newFailures": [
+        "nights-are-slept",
+        "moods-move-choices",
+        "gossip-is-aimed",
+        "shelter-answers-cold",
+        "discovery-is-situated"
+      ],
+      "absentFailures": [],
+      "applicableDelta": -1,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "lean",
+      "baseline": {
+        "scenario": "lean",
+        "passed": 65,
+        "applicable": 72,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "population-persists",
+          "the-tree-is-climbed",
+          "techs-are-refined",
+          "families-exist"
+        ]
+      },
+      "final": {
+        "scenario": "lean",
+        "passed": 61,
+        "applicable": 73,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "moods-move-choices",
+          "population-persists",
+          "needs-not-pinned",
+          "gossip-is-aimed",
+          "projects-find-backers",
+          "the-tree-is-climbed",
+          "techs-are-refined",
+          "discovery-is-situated",
+          "families-exist",
+          "bands-take-sides"
+        ]
+      },
+      "newFailures": [
+        "needs-not-pinned",
+        "gossip-is-aimed",
+        "projects-find-backers",
+        "discovery-is-situated",
+        "bands-take-sides"
+      ],
+      "absentFailures": [],
+      "applicableDelta": 1,
+      "absenceIsNotEvidenceOfPass": true
+    },
+    {
+      "scenario": "diggers",
+      "baseline": {
+        "scenario": "diggers",
+        "passed": 54,
+        "applicable": 60,
+        "failed": [
+          "the-map-grows",
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "people-survive",
+          "gossip-is-aimed",
+          "projects-find-backers"
+        ]
+      },
+      "final": {
+        "scenario": "diggers",
+        "passed": 56,
+        "applicable": 61,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "gossip-is-aimed",
+          "shelter-answers-cold",
+          "spatial-hash-spreads"
+        ]
+      },
+      "newFailures": [
+        "shelter-answers-cold",
+        "spatial-hash-spreads"
+      ],
+      "absentFailures": [
+        "the-map-grows",
+        "people-survive",
+        "projects-find-backers"
+      ],
+      "applicableDelta": 1,
+      "absenceIsNotEvidenceOfPass": true
+    }
+  ]
+}

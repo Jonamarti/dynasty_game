@@ -1,19 +1,33 @@
 # Known bugs and rough edges
 
-## M15 fase 27: puerta de coste todavía abierta (2026-10-05)
+## M15 fase 27: puerta de coste abierta (2026-10-05)
 
-`century`, veinte semillas emparejadas: supervivencia ponderada 72,88 % →
-68,18 %, pérdida de 4,70 puntos frente al máximo declarado de tres. La media
-por semilla cambia 70,32 % → 66,40 %; el intervalo aproximado del cambio
-emparejado es −15,67 a +7,84 puntos, demasiado amplio para confirmar una causa
-ni una mejora. La puerta numérica queda incumplida aunque el resultado sea
-compatible con divergencia. La implementación no se ha afinado para aprobarla.
+La comparación completa de 560 parejas (veinte semillas × 28 escenarios)
+excede el máximo de tres puntos de pérdida ponderada en siete escenarios:
 
-En `sigma` el desplome no registra nado ni ahogamientos: aumentan exposición y
-ataques, y la caída temprana reduce también las capturas. No se ha aislado si
-el coste procede de acceder a nuevos bajíos, humedad, recolocación de bancos
-o divergencia ecológica. [Protocolo, sonda y resultados](m15_phase27_verification.md).
-Los otros escenarios de la comparación siguen en ejecución.
+- `century`: 72,88 % → 68,18 %, pérdida 4,70 puntos.
+- `scribes`: 94,26 % → 86,00 %, pérdida 8,26 puntos.
+- `farmers`: 69,20 % → 64,91 %, pérdida 4,29 puntos.
+- `feasts`: 85,89 % → 76,45 %, pérdida 9,45 puntos.
+- `stewards`: 64,69 % → 54,62 %, pérdida 10,07 puntos.
+- `labour`: 96,11 % → 88,77 %, pérdida 7,34 puntos.
+- `conquest`: 81,06 % → 60,97 %, pérdida 20,09 puntos.
+
+No se ha aislado el mecanismo responsable ni ajustado un coeficiente para
+aprobar. En `scribes/alpha` coinciden los fundadores; la diferencia posterior
+incluye hambre y exposición sin ahogamientos. En `century/sigma` el desplome
+tampoco incluye nado ni ahogamientos. Las sondas no establecen cuál de los
+cambios de acceso, distribución de peces, tiempo de viaje o humedad lo causa.
+Los intervalos de `scribes` y `conquest` son negativos; los de los otros cinco
+incluyen cero, sin que ello supere la puerta numérica.
+
+La matriz continúa roja: 106 fallos previos → 112 finales, 36 fallos nuevos
+y 30 ausentes. Nueve escenarios tienen menos checks aplicables; ausente no
+equivale a arreglado. La comparación completa de IDs queda en los datos.
+El fallo de medición que mezclaba pendiente y vadeo sí está corregido con
+control negativo; los demás hallazgos no tienen causa confirmada.
+[Protocolo, sondas, tabla y evidencia](m15_phase27_verification.md).
+
 ## M15 fase 26c: el silo cavado cuesta economía (2026-10-04)
 
 Medido en `farmers` (20 semillas): supervivencia media 73,1 % → 69,4 % (dentro

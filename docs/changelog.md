@@ -1,3 +1,23 @@
+## 2026-10-05 — M15 fase 27: medición final; coste abierto
+
+Entregadas y verificadas profundidad, vadeo, pesca, natación y checks en commits
+separados. Typecheck, 1.056 tests/149 archivos, 80 e2e y el soak de español
+pasan. La suite posterior al contador agotó un timeout bajo carga; la repetición
+completa con un worker y 60 segundos pasa, y se conservan ambos logs.
+La matriz final queda roja: 106 → 112 fallos, 36 nuevos y 30 ausentes;
+nueve escenarios pierden aplicabilidad. El único cambio v3→v4 es que la
+medición de pendiente de `crowded` pasa tras separar el vadeo.
+
+Comparación completa: 560 parejas, veinte semillas en cada uno de los 28
+escenarios clásicos. Siete incumplen el máximo de tres puntos: `century` 4,70;
+`scribes` 8,26; `farmers` 4,29; `feasts` 9,45; `stewards` 10,07; `labour` 7,34;
+`conquest` 20,09. La fase permanece abierta por el coste. Las sondas de dos
+semillas muestran hambre/exposición sin nado ni ahogamientos; no aíslan la causa.
+Datos por semilla, intervalos, selección de `food-news`, scripts y hashes quedan
+versionados en `artifacts/verification/m15-phase27-20261005/`.
+[Informe definitivo](m15_phase27_verification.md); hallazgos en `bugs.md`.
+Capturas finales revisadas: `artifacts/screenshots/m15-phase27-final-2026-10-05-v3/`;
+hito de instrumentación: `artifacts/screenshots/m15-phase27-slope-measure-2026-10-05/`.
 ## 2026-10-05 — M15 fase 27: la pendiente se mide aparte del vadeo
 
 El nuevo fallo `slopes-slow` de `crowded` mezclaba el coste de la pendiente

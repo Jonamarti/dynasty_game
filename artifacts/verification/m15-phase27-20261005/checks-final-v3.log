@@ -1,0 +1,13 @@
+
+> dynasty@0.0.0 test
+> vitest run src/sim/__tests__/shallows-checks.test.ts src/sim/__tests__/region-checks.test.ts src/sim/__tests__/controlled-checks.test.ts --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  3 passed (3)
+      Tests  18 passed (18)
+   Start at  16:37:27
+   Duration  19.04s (transform 5.17s, setup 0ms, import 9.75s, tests 6.03s, environment 1ms)
+

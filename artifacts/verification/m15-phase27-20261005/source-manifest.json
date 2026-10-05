@@ -1,0 +1,2712 @@
+{
+  "baselineCommit": "cf903f7",
+  "finalImplementationCommit": "4a0b798",
+  "measurementFollowupCommit": "4b05a55",
+  "normalizedLineEndings": "LF",
+  "baseline": [
+    {
+      "path": "src/data/names.ts",
+      "sha256": "3e5dc94c084131f5e987121e66700aa3b864e736706eab1ea7fe152dad5341d7"
+    },
+    {
+      "path": "src/i18n/es/actions.ts",
+      "sha256": "1ffd36251774b70e72c897ed93c2e2cecbd26d0ddbe0584f0829d665df50121c"
+    },
+    {
+      "path": "src/i18n/es/data.ts",
+      "sha256": "362632d4144fcab3e60353cc4c6e5a4eec238f44b9639a144c0c3ae60741df84"
+    },
+    {
+      "path": "src/i18n/es/hud.ts",
+      "sha256": "ed6db52bb1a57225b33a8638fce9d24e60db8c259dd3f6aeb952cf8533a8209e"
+    },
+    {
+      "path": "src/i18n/es/index.ts",
+      "sha256": "0f1cf05c23d95d38f38d149d8cf868655b3c2f9e21eb58ea0f915fa0cce6b996"
+    },
+    {
+      "path": "src/i18n/es/nouns.ts",
+      "sha256": "702b5a1cc9ddc7d791833ba651f5929b1af593144883211437f2a771d8931345"
+    },
+    {
+      "path": "src/i18n/es/polity.ts",
+      "sha256": "c529db4fdbc70b0bf4ace4851694ca0cbd8491b97277a70d580e76596e62a185"
+    },
+    {
+      "path": "src/i18n/es/sim.ts",
+      "sha256": "aa753e65e65576d55e878c1f0afc02665dea3e02c8230b6267cb12be6fcc4bfd"
+    },
+    {
+      "path": "src/i18n/es/tech.ts",
+      "sha256": "13c948c33e0f029890c8809a2286bc053aca49ea6e7d38b65597c3ad1435a6e7"
+    },
+    {
+      "path": "src/i18n/es/ui.ts",
+      "sha256": "cb7cc7b6fe7873d07f8339acebbf07f05a8cea5a03d9d2f0f4351a68e7fa6cc4"
+    },
+    {
+      "path": "src/i18n/i18n.ts",
+      "sha256": "f06eb1101b799ac6a5c8cf057e0ced03d0f2235d65b52dd20c8b6cc9a3e02cc7"
+    },
+    {
+      "path": "src/i18n/tables.ts",
+      "sha256": "abfe84e37ea2c9d61b18cf27fa46d9263208e8eb218d23ee43813d5920c39a24"
+    },
+    {
+      "path": "src/main.ts",
+      "sha256": "acd2da3c5b58f18fb9160f03f57c20d6b1393a1c49b1f3caf96838b374152030"
+    },
+    {
+      "path": "src/render/AnimalAnimation.ts",
+      "sha256": "fb81a2c33d29556f9a99bd91ee418a75b73c18b5d688cb94964a8304b9da0369"
+    },
+    {
+      "path": "src/render/ArtAtlas.ts",
+      "sha256": "0fd25b66bc18db5177c5d62710093cd987346ca535a597fc214363748a3e3995"
+    },
+    {
+      "path": "src/render/ArtManifest.ts",
+      "sha256": "6404ec8916a5d4a44a0abed232cdef62500e7f5c67031aeafcebead3106ff95f"
+    },
+    {
+      "path": "src/render/Camera.ts",
+      "sha256": "6bac22f64188617d928949cb6fb8c78b3c34e28c17ffc1656cd00b2cbd743aaf"
+    },
+    {
+      "path": "src/render/EquipmentAnimation.ts",
+      "sha256": "350231d3eb11d41c7383fe7f6f8bcfa5955eca0afca4b24b338ba4db1ee5e5f6"
+    },
+    {
+      "path": "src/render/Floaters.ts",
+      "sha256": "d99779606c0d9daa456959cdd9553cbb33f416932a9ca262eb9f484f9958e881"
+    },
+    {
+      "path": "src/render/Interpolator.ts",
+      "sha256": "b6caeaa863cad2edb4e52833787f95aa30b85ce2cc5dbe6554b3faeb9c7d135f"
+    },
+    {
+      "path": "src/render/PixelCache.ts",
+      "sha256": "d8f083ff60c9002d00aa06c4224d22467d98e2965239cedd1ef9cd729af7663a"
+    },
+    {
+      "path": "src/render/Renderer.ts",
+      "sha256": "e4931e280d78322389175fbfb99c716ef2a538990da0a4d87b44a0865eacae18"
+    },
+    {
+      "path": "src/render/Sprites.ts",
+      "sha256": "040214fc7b4003db456f42fbeb10c6b2f09b27316f86b6db475064d4fd85699f"
+    },
+    {
+      "path": "src/render/WorkAnimation.ts",
+      "sha256": "1fd7a06fc87c696d92368bf3b04cc4a50df2694d7ff981a25400f5c78ef033f7"
+    },
+    {
+      "path": "src/render/__tests__/animal-animation.test.ts",
+      "sha256": "68ba1ac020960f6479dd0e516774a7ab7529183c3a69d654ac684ddeda81e8b9"
+    },
+    {
+      "path": "src/render/__tests__/animal-art-generator.test.ts",
+      "sha256": "dde84426e1010176be406d1b8939fefd841384c4ab90f7e7b146b33dfdb0d0ea"
+    },
+    {
+      "path": "src/render/__tests__/art.test.ts",
+      "sha256": "2584837027c14f67429f2da05d4e34df28bce172901c797b5c056716302d706f"
+    },
+    {
+      "path": "src/render/__tests__/band-colors.test.ts",
+      "sha256": "e995428754652cf65923a1e5c8320e3448060380d8da98e2fb519f5169ce843b"
+    },
+    {
+      "path": "src/render/__tests__/chopping-animation.test.ts",
+      "sha256": "58d27756c337633b2fed7b8fdde83d12f0caa658c4babbc9a63dc4da090186ad"
+    },
+    {
+      "path": "src/render/__tests__/crafting-animation.test.ts",
+      "sha256": "08236c3ec28e5c3df3591d318fb9b36c242583756a8cf0d0d10239820a96250a"
+    },
+    {
+      "path": "src/render/__tests__/equipment-animation.test.ts",
+      "sha256": "50e07d88aa68c9b67c5203d36d4747a103c5140a7fe1b9ae8b4489502ca5ca1d"
+    },
+    {
+      "path": "src/render/__tests__/person-pixels.json",
+      "sha256": "37231b5c4f29b715587fd092b07593bffdb4a6f5839a566986620adb34fb8a26"
+    },
+    {
+      "path": "src/render/__tests__/pixel-cache.test.ts",
+      "sha256": "99562bacec159a549e320f16301d780b886e086b13032a6901e0f819bb9b548a"
+    },
+    {
+      "path": "src/render/__tests__/work-animation.test.ts",
+      "sha256": "c5ad5457ecda8deb00fa1b3dfb03d5fd6638827345538a7e8bacdb6ba63e0731"
+    },
+    {
+      "path": "src/sim/__tests__/amends.test.ts",
+      "sha256": "29758e48fe34e81c7cc44f1133c775c0aae65e9619ea8833d73915df95bfc145"
+    },
+    {
+      "path": "src/sim/__tests__/anchor.test.ts",
+      "sha256": "e3c492566a9daeca5ef69c97cc48990b559bcf4604a3f19c4608f149828d0e3b"
+    },
+    {
+      "path": "src/sim/__tests__/animal-observations.test.ts",
+      "sha256": "dc734d00f6f3b33739d38b916d6e00c33cee957dba7688f04170e6c080602f7b"
+    },
+    {
+      "path": "src/sim/__tests__/authority-transfer.test.ts",
+      "sha256": "f342db34afa5f2164586b744d3ba0773e47b924af884463f677267ae15e47197"
+    },
+    {
+      "path": "src/sim/__tests__/autonomy.test.ts",
+      "sha256": "2ad58c4eff5ee9461af85b34e5f67b50593acc5124793708a32530cf0bfd54cf"
+    },
+    {
+      "path": "src/sim/__tests__/baby-carrying.test.ts",
+      "sha256": "7d66ac2056e2ba3f0eb1e15a09fef7cefa68a450195ec165b926c6d4a006a731"
+    },
+    {
+      "path": "src/sim/__tests__/band.test.ts",
+      "sha256": "eb5f391fc4f787d37c56716a770f8b54d11ac16c16b415766351bb698127d395"
+    },
+    {
+      "path": "src/sim/__tests__/bandmaps.test.ts",
+      "sha256": "303529e2ada3ef8c0af53869e6879544849306fc1694b9ae6cab0462177fb518"
+    },
+    {
+      "path": "src/sim/__tests__/beliefs.test.ts",
+      "sha256": "e5537124188c0357c45baac26ed08835dab025d90462e9da7eff8c8509a5f469"
+    },
+    {
+      "path": "src/sim/__tests__/body.test.ts",
+      "sha256": "acacd1701cd0f6af5e0581bbe95ae0db7496543bbdcee647183553ddaadcae6b"
+    },
+    {
+      "path": "src/sim/__tests__/brewing.test.ts",
+      "sha256": "ab618007e62820eea8e6f53c4aa56f013d81a4a3efbee7b3032d8431ab1bdfa9"
+    },
+    {
+      "path": "src/sim/__tests__/building-sponsor.test.ts",
+      "sha256": "20c122dc68e04f5d6a25ec6f2537299208325e8a3c1c79bd709128795165bcb2"
+    },
+    {
+      "path": "src/sim/__tests__/captivity.test.ts",
+      "sha256": "ee430f8dd09804a8f460e463ecbd2a578fcdcf12c25cbd7b76975cf858d4ff76"
+    },
+    {
+      "path": "src/sim/__tests__/carry.test.ts",
+      "sha256": "23302e653dbc8bb9f91591fface40d4d5c936b64d0afc82fd4557c43fc282210"
+    },
+    {
+      "path": "src/sim/__tests__/checkpoint-records.test.ts",
+      "sha256": "3c1d798495064a907fe2af4dba5885785a69d60705128b0b46c535328b07cbe7"
+    },
+    {
+      "path": "src/sim/__tests__/child-vision.test.ts",
+      "sha256": "fa372e5e555137d694bb223464942208efd9ba39869666009977be970f6de7fc"
+    },
+    {
+      "path": "src/sim/__tests__/choice.test.ts",
+      "sha256": "38fe9c614e6c90fb063fa15811d914432abd8623026d487c85c24ba1ac0ccc9e"
+    },
+    {
+      "path": "src/sim/__tests__/circadian-sleep.test.ts",
+      "sha256": "ff59d0fdfe2555ea8658aa5acf73f156b56eb71f10abc9767a0645034c4e948f"
+    },
+    {
+      "path": "src/sim/__tests__/circadian.test.ts",
+      "sha256": "5a77b8b6f09adc370d53f6fe6ec13023b6b72c457ca8d273ae1442b383772808"
+    },
+    {
+      "path": "src/sim/__tests__/cohesion.test.ts",
+      "sha256": "76328668c5df7a6a320cc14ee9bc602dd931248e2dbf8d04a93679750f213b0b"
+    },
+    {
+      "path": "src/sim/__tests__/combat.test.ts",
+      "sha256": "89b7962026bf4e0a83155cca8a71065d80d85c4518ca8cc9cae6cb800a8712ed"
+    },
+    {
+      "path": "src/sim/__tests__/config.test.ts",
+      "sha256": "2f31a078b2c82c3b1c200f52dd582c6d41eb3c6d09000a7c4513a070e6758ea1"
+    },
+    {
+      "path": "src/sim/__tests__/controlled-checks.test.ts",
+      "sha256": "58d8592d54393683356a6d632009bb318d30d40db4fe035dbdecee576f0cbed2"
+    },
+    {
+      "path": "src/sim/__tests__/conversation.test.ts",
+      "sha256": "a2e4a4a3032dac34b3a14e0957283041df33a7367b808adfa8f9d0cdf1977cf7"
+    },
+    {
+      "path": "src/sim/__tests__/corpse.test.ts",
+      "sha256": "340bcd4acdd329c5e5c464cc0176bcc58cb53fc74c7cbdf080be5c548d593244"
+    },
+    {
+      "path": "src/sim/__tests__/curiosity.test.ts",
+      "sha256": "05be22ed7dd1a25bc76a5196e689711f98e9c2f2fa6b73e0156fa8777c2429d9"
+    },
+    {
+      "path": "src/sim/__tests__/cutgrass.test.ts",
+      "sha256": "0e3ca9bb3942287828cb105cce5306c9f7cec11f70cdc9db5f00a86907691503"
+    },
+    {
+      "path": "src/sim/__tests__/defence.test.ts",
+      "sha256": "828652b82b3a3dbcd839ddc01c1b953c6a609353594b4c0f50d51fee099fc2de"
+    },
+    {
+      "path": "src/sim/__tests__/demography.test.ts",
+      "sha256": "f4258dc78f9d841444567d2969f9b80f4c2023e18151d5d0a55f1647c1b8cca6"
+    },
+    {
+      "path": "src/sim/__tests__/determinism.test.ts",
+      "sha256": "098602b54d3b5f5da1785443dccde63a833e6c89c46933c0567ac64c95f43de1"
+    },
+    {
+      "path": "src/sim/__tests__/digging.test.ts",
+      "sha256": "12f97ec92c1c3f3fbf827b9b8d3cd4d7c9cf79f9d6f58864d416f7bfbcad3d32"
+    },
+    {
+      "path": "src/sim/__tests__/dog.test.ts",
+      "sha256": "29c1d84dba3c005b512b5cecc8cfdf2df86d767d078ea5210941ff9b3b02e7b0"
+    },
+    {
+      "path": "src/sim/__tests__/drives.test.ts",
+      "sha256": "feab3f3a640ac5d22a0bd0bacf78fbebf4729053c9d7d4da5997d59ba916ac48"
+    },
+    {
+      "path": "src/sim/__tests__/earthmoving.test.ts",
+      "sha256": "374ed3fd72a29b67fa7ea59b3b9aeb094a1dbf096fb5bb5d677e302af47e4b17"
+    },
+    {
+      "path": "src/sim/__tests__/earthwork-checks.test.ts",
+      "sha256": "b261b87d5457ea34b84812e6c4b32ccfdef65f542391a91e23c2d22a6b3647b6"
+    },
+    {
+      "path": "src/sim/__tests__/earthworks.test.ts",
+      "sha256": "3d3a965d5ad0c6713f79953e7f1f5a7b0cdbb8f1d493065de74020e98d51b112"
+    },
+    {
+      "path": "src/sim/__tests__/eating.test.ts",
+      "sha256": "1a264d58b127c69762902f9e205bdca6f3dfa704f86ccf08942fd38d2a48066a"
+    },
+    {
+      "path": "src/sim/__tests__/edge-fauna.test.ts",
+      "sha256": "18371050876386503ccc2be6cda02fe521fa8d148dd4c286dce19a178be6ec85"
+    },
+    {
+      "path": "src/sim/__tests__/entity-records.test.ts",
+      "sha256": "92d18a25d9f3279f1d2353aa82cf19432baf915bb8db3ba1eb95aa2e1070f0af"
+    },
+    {
+      "path": "src/sim/__tests__/execution-checkpoints.test.ts",
+      "sha256": "3e9cc2ee4fb1f87abbc477e68ec2f2510a66642456fdc42e02cd33d1c030299a"
+    },
+    {
+      "path": "src/sim/__tests__/execution-records.test.ts",
+      "sha256": "fe7bb0b6f11f6ece6cae137f14c8e1d7ea3921b501c960e2d1089e31ba7cdd83"
+    },
+    {
+      "path": "src/sim/__tests__/familytree.test.ts",
+      "sha256": "f154600c8b7974958f169587de19913c4b01f54563e4b76f5bb99b9a61a23cba"
+    },
+    {
+      "path": "src/sim/__tests__/farming.test.ts",
+      "sha256": "f7282b3839ecd7fa7f69dba30b5cd40f38d53549aa673e3ec3d99e55221c30a4"
+    },
+    {
+      "path": "src/sim/__tests__/fear.test.ts",
+      "sha256": "7e875f89c8718d5b81d8bf832805782e3c2c198d69509905da14ad899dd74861"
+    },
+    {
+      "path": "src/sim/__tests__/feast.test.ts",
+      "sha256": "23948a31d7548254d662de3ca3722a91fb9386d6d5c4591a15c7b0c812d2d013"
+    },
+    {
+      "path": "src/sim/__tests__/feeding.test.ts",
+      "sha256": "deb0d3c5db1e8284d90b74da37dd2047ed862d4e5d5adc368868accf9709ac17"
+    },
+    {
+      "path": "src/sim/__tests__/feud.test.ts",
+      "sha256": "e825fb83e73edadd53b66811caf74cb6ef22b0732b5f0d3c9b9b33256aae2c2b"
+    },
+    {
+      "path": "src/sim/__tests__/flooding.test.ts",
+      "sha256": "0560d859ab6b6cb7859082f8d0647ce03177c1fee19f0f4ef2ce3f41220ede06"
+    },
+    {
+      "path": "src/sim/__tests__/geographic-worldstate.test.ts",
+      "sha256": "3feaef8012b6300461bf8efc08e1adb2fb8d9a4e90190e8bc4d901dc1a7abea9"
+    },
+    {
+      "path": "src/sim/__tests__/gift.test.ts",
+      "sha256": "b051a41d867f5639fd465aa57a2d5c74bb27bf3f77140ce96292a7a70be0af9b"
+    },
+    {
+      "path": "src/sim/__tests__/grass.test.ts",
+      "sha256": "8e4daaa6777251c7d5da5fffdeb784428c5066f148c65de1f207934df9b461bb"
+    },
+    {
+      "path": "src/sim/__tests__/grazing.test.ts",
+      "sha256": "0127fd65bac186a832af7da6644500f8bc0bc7385a854b3f846dc6f2a7c43b42"
+    },
+    {
+      "path": "src/sim/__tests__/group-ids.test.ts",
+      "sha256": "83274653b9b0bf30eb1e1cbd893ae701cb6251fe8d45e3c3699ab533f3bee78c"
+    },
+    {
+      "path": "src/sim/__tests__/height.test.ts",
+      "sha256": "17b85b72d3416f7e33a389b2a2577cac3bbccb27a5bf00606d0d9027f378b4d2"
+    },
+    {
+      "path": "src/sim/__tests__/herbs.test.ts",
+      "sha256": "45544affb58bd337d2b3e28fc74418b72b5119635cdbfebaa3296685a2f69d03"
+    },
+    {
+      "path": "src/sim/__tests__/herding.test.ts",
+      "sha256": "934682493ebd6d5d996bc89fd35cc96940c5ea0f3e6a26ef0f4d12f4c82de7aa"
+    },
+    {
+      "path": "src/sim/__tests__/history.test.ts",
+      "sha256": "64ea07fa51ed2bd1630481983aa8dd6cf42413d472142d8c94038391903fb0ad"
+    },
+    {
+      "path": "src/sim/__tests__/i18n.test.ts",
+      "sha256": "54eef97177a76065daf32b4b73b04298ed056638fb5ed77415c6f4e5071e374c"
+    },
+    {
+      "path": "src/sim/__tests__/id-space.test.ts",
+      "sha256": "4e88945dd293e149973d4d1612868ade1fc1ce7ff803aa2320aeb83a31257db4"
+    },
+    {
+      "path": "src/sim/__tests__/infant.test.ts",
+      "sha256": "e4d511777a3c606a1e11d91c12310a10acaca0c13a2ee032167c92632105cdc4"
+    },
+    {
+      "path": "src/sim/__tests__/interpolator.test.ts",
+      "sha256": "8436fdf88bb6a06bf65c10c072c7e6c0f3b1f25c5f3af567dce51860336e830d"
+    },
+    {
+      "path": "src/sim/__tests__/investigation.test.ts",
+      "sha256": "33864fd2618c651f67b0375c372b892325b5bc9f975f87426aa819f91b1363bd"
+    },
+    {
+      "path": "src/sim/__tests__/item.test.ts",
+      "sha256": "035de769f2aee8cdc9cb07123e36bab6ed1842cc0289ab8d1b5ee5bcef795b48"
+    },
+    {
+      "path": "src/sim/__tests__/justice.test.ts",
+      "sha256": "e4542baccedcc7f51bf65182baf88ae4d9c0a449a9901e6a4b2e9d03f1cc4739"
+    },
+    {
+      "path": "src/sim/__tests__/kin_defence.test.ts",
+      "sha256": "f83df726806003f0ead4aaadbad060a29f70678f52258f4d239a25aab6eb1dd3"
+    },
+    {
+      "path": "src/sim/__tests__/knowledge.test.ts",
+      "sha256": "bd6737b3db8326e5e1de82e986a4aeba739b9d098d24ec15910497d1fe517026"
+    },
+    {
+      "path": "src/sim/__tests__/ledger-records.test.ts",
+      "sha256": "f190d8ef34528c8b13827785d4e68b945bdb6289611879b3afa7204a4165da50"
+    },
+    {
+      "path": "src/sim/__tests__/life-stages.test.ts",
+      "sha256": "8f2949134f77f85c9d7d05efc0c1c6da242d118430936c05a2d3dd51db246d31"
+    },
+    {
+      "path": "src/sim/__tests__/lifelog.test.ts",
+      "sha256": "d8e26bc519bbf51ca2b37afb00584fc6902a8777b8f1e91fdf8edb62b75672fe"
+    },
+    {
+      "path": "src/sim/__tests__/live-checkpoint-continuation.test.ts",
+      "sha256": "77124bb61840e25f8df5633cc6d20b9221f95f28df8ecc1a6b765e9e7c8c9d99"
+    },
+    {
+      "path": "src/sim/__tests__/local-geography.test.ts",
+      "sha256": "c9ceec986a15fe27c5c8ad46fa6ed900ce3f05d9945ed6adec5b9f2be77fae4f"
+    },
+    {
+      "path": "src/sim/__tests__/macros.test.ts",
+      "sha256": "db6ededd2a32f1a6d70feae101775fa5127707a8c71c358095bec169ae04ea74"
+    },
+    {
+      "path": "src/sim/__tests__/mood.test.ts",
+      "sha256": "cd652e3e6bf3f0b58cf341c21b44a4abdf3f843e0a374ea5b49c93285c2f7430"
+    },
+    {
+      "path": "src/sim/__tests__/npc-pickup.test.ts",
+      "sha256": "f5299741717e592ac5d3808fde3963479e329098c2da19e0918cb8c310e25fa5"
+    },
+    {
+      "path": "src/sim/__tests__/nursing.test.ts",
+      "sha256": "576cb5ea936601d6212a9559705f7bfb8792986f44b84ab71c791d87d94a2077"
+    },
+    {
+      "path": "src/sim/__tests__/orders.test.ts",
+      "sha256": "07bf6dd8b0c5f4ffc9be5ffc599c89c38848719d5967fe130ea1799dbef175e5"
+    },
+    {
+      "path": "src/sim/__tests__/parent-memory.test.ts",
+      "sha256": "7a216a37b3f8f0eb6b7a8e48188441102860568d1f291a33ac35c03836c046a6"
+    },
+    {
+      "path": "src/sim/__tests__/pathfinder.test.ts",
+      "sha256": "c92376553d506150af16258f2854b91dd8c1c7372b1b288b9a86a8267cafe2b8"
+    },
+    {
+      "path": "src/sim/__tests__/persuasion.test.ts",
+      "sha256": "1de9ca5a284e1cce029fd30f77a10f7c6228181f9de6cd9ec9e6ba612797b968"
+    },
+    {
+      "path": "src/sim/__tests__/place-memory.test.ts",
+      "sha256": "882a93a5ae3aa8c5535aa6d385ae9c5a35fdc2293acd50079141770cb8ca5ad1"
+    },
+    {
+      "path": "src/sim/__tests__/poisoning.test.ts",
+      "sha256": "52f63ba492774950d564873b5b603f20f463c6155a300bbf892020e669991a2a"
+    },
+    {
+      "path": "src/sim/__tests__/polity.test.ts",
+      "sha256": "78fa1b12a34b791486e88f1f6df8a052fefc404b5584f1499dfea92463d8bbf2"
+    },
+    {
+      "path": "src/sim/__tests__/possession.test.ts",
+      "sha256": "9d55e1025281b10fb4ead3a03a29df72f35a773ef5bdec647741a2ea043901e2"
+    },
+    {
+      "path": "src/sim/__tests__/predators.test.ts",
+      "sha256": "dc044966dfff515840f276756b12b7f7855c937a084818ec53beb6f6fdbc5086"
+    },
+    {
+      "path": "src/sim/__tests__/project-checks.test.ts",
+      "sha256": "1c26d67a3463feac9e79c3ab80605c636e6d11c8e6b5cd163ad05f6c7841582e"
+    },
+    {
+      "path": "src/sim/__tests__/project-menu.test.ts",
+      "sha256": "d905b0b399b719c86bea1c75962e9e6d6c4ccdc262f67d3653a27ae9883ccbce"
+    },
+    {
+      "path": "src/sim/__tests__/property.test.ts",
+      "sha256": "146dc37aea4002abfa59db75ec2c2a35d6d9849ed2ad9e891a965128f7cb852f"
+    },
+    {
+      "path": "src/sim/__tests__/pursuit.test.ts",
+      "sha256": "435911f7e2ae59b650732d0e81f833977fe44a864a9ac77c1941572690e40f53"
+    },
+    {
+      "path": "src/sim/__tests__/real-world-assets.test.ts",
+      "sha256": "b5a03a3692666ffa1c989872672a8828657a66ed03db4a7a716146f8a9d145b4"
+    },
+    {
+      "path": "src/sim/__tests__/real-world-map.test.ts",
+      "sha256": "4f54d04e9b26bd7f982a52d8b59ae24e99e96e7b9a1ead01b1ab628df1232e0e"
+    },
+    {
+      "path": "src/sim/__tests__/region-checks.test.ts",
+      "sha256": "d64c5a87feab5be91e4c11174a01ed6c9f36600b7dc31d78220176cff1310dea"
+    },
+    {
+      "path": "src/sim/__tests__/relocation.test.ts",
+      "sha256": "4bb37c69f5d09b6b482644b62fb1a5693854187d4fd5252c539645a261e4a5b0"
+    },
+    {
+      "path": "src/sim/__tests__/research.test.ts",
+      "sha256": "ba4b59c194c898ef59acb5eb56217a1de603aa53da2e0c574e4250c92bca5ef2"
+    },
+    {
+      "path": "src/sim/__tests__/respond.test.ts",
+      "sha256": "69cda91c64a41c3bcfd29df9d1df4e8f0739d2d24806a66446392dfd1bc527b1"
+    },
+    {
+      "path": "src/sim/__tests__/restraint.test.ts",
+      "sha256": "9d006fa5c6add49adc7e93aa9ac005b242e2bcb4f10d585b4d259e2cc120ff9e"
+    },
+    {
+      "path": "src/sim/__tests__/roster-records.test.ts",
+      "sha256": "44c19594b4e4db1d02967310d9545e5e3f31de756a5f1be4be6e90563ba65690"
+    },
+    {
+      "path": "src/sim/__tests__/sabotage.test.ts",
+      "sha256": "a05267e844b29ea7f71f95fecd40cf0686a41ac40064e451040fdcdabcc306e6"
+    },
+    {
+      "path": "src/sim/__tests__/season-lore.test.ts",
+      "sha256": "4811d1c9b4a11e435afabc83caa2c5bd6ecc0d3ee399fcdc5d0e1c312d0c76c3"
+    },
+    {
+      "path": "src/sim/__tests__/settings.test.ts",
+      "sha256": "6cc7ae7c17172f5b3dd4d6b39b40dedde0970d09c36ac617aaebf8e865c8dfcc"
+    },
+    {
+      "path": "src/sim/__tests__/shorewalk.test.ts",
+      "sha256": "66041d1f46d23adda72bc32d270daef45be00a45e339c7ac058901d19825fb8b"
+    },
+    {
+      "path": "src/sim/__tests__/silo-digging.test.ts",
+      "sha256": "4810e2bfc8d97497399cbc197da91028ec23ab461750015fe224017a9a5b15cc"
+    },
+    {
+      "path": "src/sim/__tests__/slopes.test.ts",
+      "sha256": "844052d6e4a278d42358783870d802ceb5b162d4150c4c84aa726ab5485f7c24"
+    },
+    {
+      "path": "src/sim/__tests__/snow.test.ts",
+      "sha256": "da62b1dd44ae95ad97b0d474b0d0b19cb774995c702a1b15d77239b8349e8a58"
+    },
+    {
+      "path": "src/sim/__tests__/social-records.test.ts",
+      "sha256": "b2a3b11d65bba23b032545715cc18a183ab10bc7981fe2224a6d183246d08dd7"
+    },
+    {
+      "path": "src/sim/__tests__/source-food.test.ts",
+      "sha256": "e6c4c9dcc38a9d526296833bc64eee6b88e2d557fa8e7d0faa576d3f749f5ef0"
+    },
+    {
+      "path": "src/sim/__tests__/spar.test.ts",
+      "sha256": "4d9e2feb77acf82113faa1ea6a2e711cbc60f87d5db478fa95f8b11571002ef7"
+    },
+    {
+      "path": "src/sim/__tests__/spatial.test.ts",
+      "sha256": "73cb6a367f10197b487b226b57e5859b0aa5c9ad1a9e388074c807550e8444f1"
+    },
+    {
+      "path": "src/sim/__tests__/status.test.ts",
+      "sha256": "5a3e70bdf2d4d7172759dbfc6f1ed6b8d38268afccb4267707a2e61aa2fb6161"
+    },
+    {
+      "path": "src/sim/__tests__/stopreasons.test.ts",
+      "sha256": "d66fa4451e9df4446b032e915a42c82161655d0e69d8cd1b9f337e3544a6155e"
+    },
+    {
+      "path": "src/sim/__tests__/stratification.test.ts",
+      "sha256": "210242ae86e6f7bfedb08dcd8d9bed9fe4a99036a49b887628ad95182272e07b"
+    },
+    {
+      "path": "src/sim/__tests__/synthesis.test.ts",
+      "sha256": "b9f5fd45050c9e69a2a85f9e3fe54166fcae11e74659f0fc174ca8d9f6eceda0"
+    },
+    {
+      "path": "src/sim/__tests__/tech.test.ts",
+      "sha256": "bdc6876a59c846a65f960f0ad45eb7e7e077379422dcfd684aa884220dc9570b"
+    },
+    {
+      "path": "src/sim/__tests__/techweb.test.ts",
+      "sha256": "8e7b8008a5de8c74b22f1cf10c50bcd73fb98b989cbcaebdba49a59d3dab35a9"
+    },
+    {
+      "path": "src/sim/__tests__/territory.test.ts",
+      "sha256": "89ea51d10b8c72c880551d8fb2bf72898cf58bb90c52dfbcadcc3736da8a8f41"
+    },
+    {
+      "path": "src/sim/__tests__/tool-equipment.test.ts",
+      "sha256": "0d9ef69e87fdf4858bbb8ee2053d3d467e1f374620e5745ab9a8e375842f0e1d"
+    },
+    {
+      "path": "src/sim/__tests__/transmission.test.ts",
+      "sha256": "dd74118a7fd0907d51fe844263391b155d04d61c97e5d73476a532a2c6617fe0"
+    },
+    {
+      "path": "src/sim/__tests__/traps.test.ts",
+      "sha256": "48503f642db344b10c7a1c37780b1c29981d78dab166cf4ec4b4d7e0987444d6"
+    },
+    {
+      "path": "src/sim/__tests__/tribegraph.test.ts",
+      "sha256": "7524d16935ea77e6524dc339bd7714729f7f40f214231256e34101b4d8bf3225"
+    },
+    {
+      "path": "src/sim/__tests__/unload-for-food.test.ts",
+      "sha256": "81e91e684c60c27bcda685a907f9ad7e66278a2e83eaa539a7b184579e544878"
+    },
+    {
+      "path": "src/sim/__tests__/water-checks.test.ts",
+      "sha256": "c8fc604e241ed2f40be4e32f0ceb367231446949c7b51aff6923ffdefae4c7df"
+    },
+    {
+      "path": "src/sim/__tests__/water-search.test.ts",
+      "sha256": "4f80fe7339ac0304bda1c32b8948529db683b4c89d132f5a0c150f24ba8b3389"
+    },
+    {
+      "path": "src/sim/__tests__/well.test.ts",
+      "sha256": "59a28b70a01dcfd88fae05558a02a8aea2b3b1301afd67e10387047d6879c1b5"
+    },
+    {
+      "path": "src/sim/__tests__/wet-nursing.test.ts",
+      "sha256": "705b730c05d00337bc674142b3c17e9c7426b8772877fa38921db7bcf7a59824"
+    },
+    {
+      "path": "src/sim/__tests__/witness.test.ts",
+      "sha256": "c39b82986d402f5c0ab4af120037c12e97b583a3a6cce70d1e298f2e6744c8da"
+    },
+    {
+      "path": "src/sim/__tests__/world-atlas.test.ts",
+      "sha256": "b4b124455552ed24e6b7c2723f03be3cff8575eec6df2ed5c87b1cbe1472bc67"
+    },
+    {
+      "path": "src/sim/__tests__/world-binary.test.ts",
+      "sha256": "8227e2a282f5e8963f1d4bcd6a0bb6f1705281cf1b6f22c49b858362b1aadde7"
+    },
+    {
+      "path": "src/sim/__tests__/world-geography.test.ts",
+      "sha256": "b2cf21a007bbb007fa9e8cfe898de7d62f0776a94dd95b007bbf9ac735f426ee"
+    },
+    {
+      "path": "src/sim/__tests__/world-map.test.ts",
+      "sha256": "8dd7c39b75f5c49a0360975b598fb5f19a9e1a8ff5cb07febd36f61d1263f12a"
+    },
+    {
+      "path": "src/sim/__tests__/world-object-records.test.ts",
+      "sha256": "6a39e0193b7710fe7dd7983963f0daac8beea9b32d22f3b10158cf0dc388bbf2"
+    },
+    {
+      "path": "src/sim/__tests__/world-records.test.ts",
+      "sha256": "5b7a93a7d79ed1fe5add8e4e666f749f75effabb62ecd5b95834e08f2ea7bee2"
+    },
+    {
+      "path": "src/sim/__tests__/world-state.test.ts",
+      "sha256": "39e4e52b804ea6e299e842350a92f473906a5baaacbb19ea4708783f5aa4f314"
+    },
+    {
+      "path": "src/sim/__tests__/world.test.ts",
+      "sha256": "a5b80fc52ee63c55a1a13bb5863e40297a529fc8ede794c15053af0847f4927d"
+    },
+    {
+      "path": "src/sim/__tests__/worlddata-sources.test.ts",
+      "sha256": "c24be7121a4cef16d585605c3253e78bd3fb0995e6b26d3e9a5d3c40a9d5697f"
+    },
+    {
+      "path": "src/sim/ai/ActionCatalog.ts",
+      "sha256": "f954f1ead8c56081cfcb7c552a64aed3dddeb2702e54fb7dbf6bfe4e60e6a5bd"
+    },
+    {
+      "path": "src/sim/ai/Anchor.ts",
+      "sha256": "271d0a398cfee1dd200f716fdd2cb5b9f99a09c79f83758ccb87eced4d2f0001"
+    },
+    {
+      "path": "src/sim/ai/Autonomy.ts",
+      "sha256": "582143f1261afee9212ec6c6f5402b9a241250656fa42127d866ff830036903a"
+    },
+    {
+      "path": "src/sim/ai/Beliefs.ts",
+      "sha256": "a1b795f5349455081b0af6d5a49940c357b3f9bc831ff11aa962b4b526042c7b"
+    },
+    {
+      "path": "src/sim/ai/Bond.ts",
+      "sha256": "9b25846dc45f22437469fb512565b7af973c0e8649bcf779d178a8b52cee2405"
+    },
+    {
+      "path": "src/sim/ai/Brain.ts",
+      "sha256": "94b8abb6f8725a0194ae81d0f14817e605353f1207c38639d73b99a67953518a"
+    },
+    {
+      "path": "src/sim/ai/Drives.ts",
+      "sha256": "cd82179efbacd7522125fc29d1cc7bf32e50d1f30b94121a36e01b002743e502"
+    },
+    {
+      "path": "src/sim/ai/Feeding.ts",
+      "sha256": "e8c37e821ea89bf2c26ca144aab575c10e02136bf000eedd2de2a489bd16628d"
+    },
+    {
+      "path": "src/sim/ai/FoodChoice.ts",
+      "sha256": "8a57c68c67b6b3a5a2671eb1991a4c57ae8dacbad1e9eee83b4c311a5ec70e10"
+    },
+    {
+      "path": "src/sim/ai/Nursing.ts",
+      "sha256": "e202339e477edb7239996ecae79e500e82b7d78a3229917a566955abfeca62fd"
+    },
+    {
+      "path": "src/sim/ai/Possession.ts",
+      "sha256": "a1276680db56667d92e1d177c3d834222d15de9be03079d0eb9ec461192b30cf"
+    },
+    {
+      "path": "src/sim/ai/Status.ts",
+      "sha256": "c851f8c425679aa6e416ad4f84f5abb89a37a9e6eb24c9b9fb40a9102940a184"
+    },
+    {
+      "path": "src/sim/ai/Temperament.ts",
+      "sha256": "5d64021cded8f48d3a27961b2d48892f25dd8bf5bed2c844bb7ea29ffdf5cb59"
+    },
+    {
+      "path": "src/sim/ai/__tests__/FoodChoice.test.ts",
+      "sha256": "177d57314d09f976b1c285c3e89d873d5634b9969c1d01818928041e40d2c32d"
+    },
+    {
+      "path": "src/sim/core/Carry.ts",
+      "sha256": "99f469d70bf3ef976d4dbf8739aeff30faf6a8f69d00f2a9ecdacaaa63daa050"
+    },
+    {
+      "path": "src/sim/core/Choice.ts",
+      "sha256": "c5063bb2038dcb3b9f972b63c1e7bcc5c319a8e6200befd9cbe18d875f7c896d"
+    },
+    {
+      "path": "src/sim/core/Circadian.ts",
+      "sha256": "762d1b56dce79ab1913b3baedb72bdc9de6d898383941394dff78a18b10956f3"
+    },
+    {
+      "path": "src/sim/core/Config.ts",
+      "sha256": "a38186012ef8b2735abf9470f69cf80eca047875ef067325652cd1ecfad6ac0b"
+    },
+    {
+      "path": "src/sim/core/Difficulty.ts",
+      "sha256": "f094bb60a8fe4fc42962f73cf5e9c93b30fc98a45dc888ee8076d48d3499ddb6"
+    },
+    {
+      "path": "src/sim/core/Earth.ts",
+      "sha256": "90e2ecabbb402c7cecfadbecfa102de0365c7b9c9dea89e484138fdd0696d082"
+    },
+    {
+      "path": "src/sim/core/Grass.ts",
+      "sha256": "c5d1f99751967cdc18304d7080133323dbbc8d4db40f4b6c3fbe531d2379d9cc"
+    },
+    {
+      "path": "src/sim/core/IdSpace.ts",
+      "sha256": "b22880469f1dd3c151c2071334917aef7a6830668725fad8a6666d9e31fbcbcb"
+    },
+    {
+      "path": "src/sim/core/Macros.ts",
+      "sha256": "2d1ce60574e4a6e5f8340f1704287e976aaa63ecf4938a5c189d3c74fb0f405d"
+    },
+    {
+      "path": "src/sim/core/Mood.ts",
+      "sha256": "5405dab439fc169f8f124fa6701a559287744a8d33061e7d0caa38ff7f0c2e9d"
+    },
+    {
+      "path": "src/sim/core/Noise.ts",
+      "sha256": "72f408f437fee3eac8ea7fc0a519feaf814ece15e148fd4189990ce84e29a46c"
+    },
+    {
+      "path": "src/sim/core/Pathfinder.ts",
+      "sha256": "65a642bef7d0fc726e57913406ffb696baddad34d20104294d79f7d68844face"
+    },
+    {
+      "path": "src/sim/core/Progress.ts",
+      "sha256": "d5095afb212b99b87a3aa936779703a59743ca40f99e515698b77cc9566ab482"
+    },
+    {
+      "path": "src/sim/core/RNG.ts",
+      "sha256": "18e908565f7033904c665caf723b8674af05225a66b5b323bbcc8f8dbe80a01c"
+    },
+    {
+      "path": "src/sim/core/Simulation.ts",
+      "sha256": "a614554d5b26b276b5fb4ef0a3550444d7c2cbc6e6728c79c7b2b2143d0037b4"
+    },
+    {
+      "path": "src/sim/core/Snow.ts",
+      "sha256": "a7bc9531fc7b7f1f04503fb0a0660551323ebf150ad850ec954be5397d1d5d32"
+    },
+    {
+      "path": "src/sim/core/Soil.ts",
+      "sha256": "32f9408073beb963ad9ecec1a7616f85e5591cbf72aac29096d471fd104a718e"
+    },
+    {
+      "path": "src/sim/core/SpatialHash.ts",
+      "sha256": "1c07209f3105c23a380f44470084b7cd71ae07023be3860273c52aaf5bfb8a2e"
+    },
+    {
+      "path": "src/sim/core/Telemetry.ts",
+      "sha256": "37cb938341d01ff3f102f26382ca7a143845fc4ea58a41fd247527045f39d937"
+    },
+    {
+      "path": "src/sim/core/TimeManager.ts",
+      "sha256": "a7c78759b832f977a46d5c3b5f03ab620563ad8ab298749ea233b5740a9e7b89"
+    },
+    {
+      "path": "src/sim/core/ToolEquipment.ts",
+      "sha256": "8c7138cc9de266b189fd21e61d47a5d500ee0118f7abb212c2387304055b3e69"
+    },
+    {
+      "path": "src/sim/core/World.ts",
+      "sha256": "096e4913797524a7fc33423bf9ef6372449a122f54e6917665a0528c9bd10921"
+    },
+    {
+      "path": "src/sim/entities/Animal.ts",
+      "sha256": "3f658ba96041c04b866bdc3b217639eeb55411f0b7ffcfb69af8a94eff162e0e"
+    },
+    {
+      "path": "src/sim/entities/AnimalAttack.ts",
+      "sha256": "acc6342008b2c68719b89d2018bab04213c42e42cb60d7fafe9850d3d99c88cf"
+    },
+    {
+      "path": "src/sim/entities/Body.ts",
+      "sha256": "4be39f04eaf26dee0eac4366475755098d152206a3096af8144c48dd99ff1848"
+    },
+    {
+      "path": "src/sim/entities/Building.ts",
+      "sha256": "7638077bc2d333d6fe33ed15443adc36350a7da923a43830c9bcc07abcd8c4aa"
+    },
+    {
+      "path": "src/sim/entities/Corpse.ts",
+      "sha256": "25569c97de1530641fe0f1da786a699152c5b47acac695aae37dbe7c53ecc098"
+    },
+    {
+      "path": "src/sim/entities/Earthwork.ts",
+      "sha256": "5f452f4b3855208a8293428c2a8c682cac35a89d8daccdb245dd42d0ac79efbd"
+    },
+    {
+      "path": "src/sim/entities/Equipment.ts",
+      "sha256": "b4353baa97c324f83194ee0a2fc223f454a5fcda13b677a71fccc06edbf82908"
+    },
+    {
+      "path": "src/sim/entities/Field.ts",
+      "sha256": "8293eb2f6eeb978f781deb995787a1941cfe189dcf0329f144fb714c0dc14305"
+    },
+    {
+      "path": "src/sim/entities/Household.ts",
+      "sha256": "f8e5307620496b04a3a9b6de2945dace9b2ceb3297adbbd0fb612e246fccf90b"
+    },
+    {
+      "path": "src/sim/entities/Inscription.ts",
+      "sha256": "96ada0e4b6a175a6471c5552602b410e66d4154a15b17bfd6ac0162d8e5d5385"
+    },
+    {
+      "path": "src/sim/entities/Item.ts",
+      "sha256": "05ffad67845fdb2e7c80d5048abfad6f16b5abd4181d049bcbdd16f5139038aa"
+    },
+    {
+      "path": "src/sim/entities/ItemPile.ts",
+      "sha256": "8b75fd26fb580176f5c4c805ec5d0708a33e5a8d0af4354d87f5bf3ad2cf65ff"
+    },
+    {
+      "path": "src/sim/entities/Job.ts",
+      "sha256": "42bdc5fa023c30688263dc522120fb5ac089e9925167d520114567f5f582a9b9"
+    },
+    {
+      "path": "src/sim/entities/LifeStage.ts",
+      "sha256": "18aec6e082bdb4aaf810b367dd05c644b7b4feca12c40bfed9b7e65d276995fc"
+    },
+    {
+      "path": "src/sim/entities/Person.ts",
+      "sha256": "809241239a82dc0578255e8bee11632a742e9b52266b8eba6382c5abad214cb4"
+    },
+    {
+      "path": "src/sim/entities/Recipe.ts",
+      "sha256": "5fb73fb4bc9f99c9734eb783e9deb6a5a08c6d5606c402548f311f597756572a"
+    },
+    {
+      "path": "src/sim/entities/ResourceNode.ts",
+      "sha256": "725352d463466a492cddbb15ef45d94533876616e1ac39716fd33c262ce0023f"
+    },
+    {
+      "path": "src/sim/entities/Tree.ts",
+      "sha256": "dc80dfcb8ae0464575f267b09c352a7b6682d3a8aec147b783d5e9931329db41"
+    },
+    {
+      "path": "src/sim/knowledge/SeasonLore.ts",
+      "sha256": "5018635b1923d97e51d2fcf93169278962775807b20afce7d1f0e7c36d7aa666"
+    },
+    {
+      "path": "src/sim/knowledge/Synthesis.ts",
+      "sha256": "2c7af41771c41002ad70fb8a7102289cccd884e2a7c8c30b048773a482f5b84c"
+    },
+    {
+      "path": "src/sim/knowledge/Tech.ts",
+      "sha256": "117ddee30c3c5f8f7fb8b5c9afb5f5d581523fd7d4e03a7de421bb00699b65aa"
+    },
+    {
+      "path": "src/sim/persistence/CheckpointRecords.ts",
+      "sha256": "57607564aed2315234e0d994a3d7d01adaaf1f5a7e067cc3d10da1e08ddfde2f"
+    },
+    {
+      "path": "src/sim/persistence/EntityRecords.ts",
+      "sha256": "10e55028941c3fb51c441a463a20af834768a89313bf6d8b29b8ae77b906aca3"
+    },
+    {
+      "path": "src/sim/persistence/ExecutionRecords.ts",
+      "sha256": "71e4c67e31b5c90a833b9a6bd01784c753d8bbed4ec93df1a6fe766b314208a2"
+    },
+    {
+      "path": "src/sim/persistence/GraphRecords.ts",
+      "sha256": "e267ffa646e8cd35d849ae19cd2e6b18ea4f9ee0955be433243f8228a3b217ca"
+    },
+    {
+      "path": "src/sim/persistence/LedgerRecords.ts",
+      "sha256": "5bb3ed5d0954d27097a4e19c8110db035e87328b1bbcca31de0a6312e4eaddca"
+    },
+    {
+      "path": "src/sim/persistence/RosterRecords.ts",
+      "sha256": "ba8188c1e5bf843873b37d5841b746fcc70934c4d8a4aafce211242addd5163f"
+    },
+    {
+      "path": "src/sim/persistence/SocialRecords.ts",
+      "sha256": "c4c8111e63c4d9ee3f25a57628066aca6886ba8ef809920af66b5701aa5dce70"
+    },
+    {
+      "path": "src/sim/persistence/WorldObjectRecords.ts",
+      "sha256": "8fa58b85b48d2868cc5bb7f3c60dd90d08250b3ed9236a518640d958b3776942"
+    },
+    {
+      "path": "src/sim/persistence/WorldRecords.ts",
+      "sha256": "0fc6c6dd1fd7cf29c5302af2926045f3af88acd32eea57b40506b9167c538d8d"
+    },
+    {
+      "path": "src/sim/runtime/authority.ts",
+      "sha256": "65917321b67e7487131e7db7db3a983569b2ccdbfe1e029f17b461877e201819"
+    },
+    {
+      "path": "src/sim/social/Amends.ts",
+      "sha256": "515c827e94543c7bb5bdddf89926a15767ed36c5b74126992a95e9aff94068a9"
+    },
+    {
+      "path": "src/sim/social/Authority.ts",
+      "sha256": "ee1682be13a7bf93b358ee644afb4979b3c728c6b717f2070303ffb0ab129008"
+    },
+    {
+      "path": "src/sim/social/BandMaps.ts",
+      "sha256": "590903210f4aedaf1e55d5b3b297817745c53f57b5bcc08013ab426b5d1c78e4"
+    },
+    {
+      "path": "src/sim/social/BandRelations.ts",
+      "sha256": "494a2b9f31d92447ece812d2dd4d4b408ff790ace9432de47e3878326f045b7f"
+    },
+    {
+      "path": "src/sim/social/Captivity.ts",
+      "sha256": "449724945e337533fc55253cbedcf5ed1bfa2bb66a607a193194f2ca2a5cf129"
+    },
+    {
+      "path": "src/sim/social/Conversation.ts",
+      "sha256": "6dce16cac1f6c1fc90b7c56494f9a3ed4ef86fabbf8495273b0e70a88c89f45c"
+    },
+    {
+      "path": "src/sim/social/Defence.ts",
+      "sha256": "51803e61bda536e2f4b64e7ce8ccb21da025fae8206a00952f0bcc4e1b1b129f"
+    },
+    {
+      "path": "src/sim/social/Events.ts",
+      "sha256": "0db4f1e5b3ee4ddc82aac07e84b3700b979b00d31e0524f1570143f57e8ed41c"
+    },
+    {
+      "path": "src/sim/social/Factions.ts",
+      "sha256": "60bd9311cfa6ad72dd1bb31ebb51339cf305742f15e332635edf3730fc6cfba6"
+    },
+    {
+      "path": "src/sim/social/Fear.ts",
+      "sha256": "49f80b2f6f4bdcefa1f2c9f0a50c44b31e8e4f65e4c588b20cdfaef455f2ff91"
+    },
+    {
+      "path": "src/sim/social/Feast.ts",
+      "sha256": "c131016a86c6664a7ad5115063984ed484375914269b67ac87ef7ed3f30f47a5"
+    },
+    {
+      "path": "src/sim/social/Investigation.ts",
+      "sha256": "253608b3523ac6f68e16326402c05ff7c7afd60e673919115ba9de067816a83e"
+    },
+    {
+      "path": "src/sim/social/Justice.ts",
+      "sha256": "bf2bfce78853acfc39f9471e5fefdf0d5317f542cf670704c61e26b3200bd7b8"
+    },
+    {
+      "path": "src/sim/social/Knowledge.ts",
+      "sha256": "30f43d263e737a2b9fed91b4fc3fc2ec9a3813f1e7300c75df17552451555fd1"
+    },
+    {
+      "path": "src/sim/social/Leadership.ts",
+      "sha256": "4f626fa43ed5978da8a3918d9519546c0c507fdcc456fac0396b6f258a55a4eb"
+    },
+    {
+      "path": "src/sim/social/Memory.ts",
+      "sha256": "a44a43a480d1227ee0e30b4fa0d1b6836ddcf21faa276a708d1f0840e440192c"
+    },
+    {
+      "path": "src/sim/social/Persuasion.ts",
+      "sha256": "f350d98fc97e512f0b1ba90fc44144710cf322573b138cbf2952a9d291a2a28a"
+    },
+    {
+      "path": "src/sim/social/PlaceMemory.ts",
+      "sha256": "7d1883af9ca531aab65342bd796aacfa8a90bd6f57cb24a2f2d15b236df7bc36"
+    },
+    {
+      "path": "src/sim/social/Polity.ts",
+      "sha256": "670aeb33f2021846e30fd5ad8f30b0811d2393d10dde3fea050b429981b9c163"
+    },
+    {
+      "path": "src/sim/social/Property.ts",
+      "sha256": "02e8841fbf4853937b3fa23a599063840e5161d51e56b7aca5f0adf57d4fa5d8"
+    },
+    {
+      "path": "src/sim/social/Rank.ts",
+      "sha256": "23ccf7bd13a6bfa4deb0e1acc26100226733dc1df8f8178371d4c39154ac5393"
+    },
+    {
+      "path": "src/sim/social/Relationships.ts",
+      "sha256": "62c20c04174f4328b1981745ba66ecd1a1a5d971377252bd9d8724e495c887a4"
+    },
+    {
+      "path": "src/sim/social/Restraint.ts",
+      "sha256": "9810162bf0cad98a3aef95448bf55885d8e3d9edc421adc387731a2551f86d3d"
+    },
+    {
+      "path": "src/sim/social/SocialSystem.ts",
+      "sha256": "8f136460647eba146e05e11ec6e29bbdacdf7d7f304266b0399a8a1501b179f3"
+    },
+    {
+      "path": "src/sim/social/Vulnerability.ts",
+      "sha256": "40a24c1d80d09512e2d89312416a850f8df702ebcd8980c9f3332bb103d7c0fa"
+    },
+    {
+      "path": "src/sim/systems/ActionSystem.ts",
+      "sha256": "6242f2099a3c5b4f477e43f162e76dc1ccf88fe9f359180d119dc0351b3df409"
+    },
+    {
+      "path": "src/sim/systems/BandSystem.ts",
+      "sha256": "9c0283baa6682ffda2457d6ab12a1444a20383560c8b24c5711cdfceda631335"
+    },
+    {
+      "path": "src/sim/systems/ForestSystem.ts",
+      "sha256": "58c9f1f0f22a8b7b205e64924562ce75bbab4d8483425c6f79e643028305c3a6"
+    },
+    {
+      "path": "src/sim/systems/Founding.ts",
+      "sha256": "68392de9c4a66ea213b67b2e4e1b12684f3fe863b92dd54dced239bbe2b0b71f"
+    },
+    {
+      "path": "src/sim/systems/KnowledgeSystem.ts",
+      "sha256": "6815fcd7501d04867e56a58028978cc3a9538d4e3ad45873d38428edf0d6e876"
+    },
+    {
+      "path": "src/sim/systems/LifeSystem.ts",
+      "sha256": "5422e7172d3b619c29e943a42d636019c0079a2c141c67d3d250448e558fd215"
+    },
+    {
+      "path": "src/sim/systems/MovementSystem.ts",
+      "sha256": "9b9c9724c44d0e3efeac6f333feb70d1fc3b4c288aa5ac9e8beee2fe4c3914cd"
+    },
+    {
+      "path": "src/sim/systems/NeedsSystem.ts",
+      "sha256": "55cb0f87348993bc5e6f21682af59b029577227350fd5ea49af006a28db9940c"
+    },
+    {
+      "path": "src/sim/systems/WildlifeSystem.ts",
+      "sha256": "12fb5f981fa8d325574630b13e092b54638fa1b423dc8482918734e6fa74b4e3"
+    },
+    {
+      "path": "src/sim/world/GeographicResources.ts",
+      "sha256": "287d8c69f0b608b8b7db05e2cd05b6bc53937c59aed24bfe026051e90b610c82"
+    },
+    {
+      "path": "src/sim/world/LocalGeography.ts",
+      "sha256": "0ead921303edd5bd875d7a0da28480a5aaae64d3a9dff49f90dcffb1dc21339b"
+    },
+    {
+      "path": "src/sim/world/RealWorldMap.ts",
+      "sha256": "4e7360be631aae0768854c01152203c153b27c8d77be25f48a93a81230a906b9"
+    },
+    {
+      "path": "src/sim/world/WorldAtlas.ts",
+      "sha256": "a454aac14e6d0ae1d8c378ecee29e9a35daf17e4a209ac741c36a22c317ddad9"
+    },
+    {
+      "path": "src/sim/world/WorldBinary.ts",
+      "sha256": "c42621da90ea8ad1a60d6ab685ceb13ea5346064607168c27f374cf85d219086"
+    },
+    {
+      "path": "src/sim/world/WorldFeatureSeeds.ts",
+      "sha256": "96178e7920d675d08d12c741fb8d4868c3bea024fe2ec7b9695683d0f780bc9a"
+    },
+    {
+      "path": "src/sim/world/WorldGeography.ts",
+      "sha256": "7934de56b9dd37fda15009a8806830898f22997fd05ef69ff0f53c88bbab75e1"
+    },
+    {
+      "path": "src/sim/world/WorldMap.ts",
+      "sha256": "b85dedbb8867d95fdd5b5741ba1147aa1d136c998170aa1eb69fa87bc61bfa08"
+    },
+    {
+      "path": "src/sim/world/WorldState.ts",
+      "sha256": "d45d51d793d4921722da3d1059d8fa09f2674258875e5e5b9b00b7077b044246"
+    },
+    {
+      "path": "src/style.css",
+      "sha256": "fdf81665e87733c1fda8ea3661db9c280beb56eddf519a7f1a13585017c86e27"
+    },
+    {
+      "path": "src/ui/EntityPicker.ts",
+      "sha256": "fe819d5bba5378c3d4989546ab7803bd446fc75f1ddb3d857ea35f3af9b79677"
+    },
+    {
+      "path": "src/ui/FamilyTree.ts",
+      "sha256": "3f3221a8c2cd13f2ba1fcf36ed008cdb988a06472e13927d4d4e3404d6ad70f8"
+    },
+    {
+      "path": "src/ui/FamilyTreeLayout.ts",
+      "sha256": "08e8e807265636b44e552f82bffa543c1adff5b8da50a6fe8f6558bde7f64bd7"
+    },
+    {
+      "path": "src/ui/GraphLayout.ts",
+      "sha256": "85e463dc27f354b4e44bcd297835d0221aa396b7c8cfaff056738cbe68e58684"
+    },
+    {
+      "path": "src/ui/Hud.ts",
+      "sha256": "55c4e43239059ce925e98be1002cfbdf872cde1627d688922e402f12b111f4ef"
+    },
+    {
+      "path": "src/ui/LanguageSwitch.ts",
+      "sha256": "ec34ebcdd388546ca1aa216084b38a565bb0ce23c5af04f9c59345954096906f"
+    },
+    {
+      "path": "src/ui/LifeLog.ts",
+      "sha256": "d2d6df153331b7e7102376eacbe8c70621f30b546313249aefba9f64ab0a14d4"
+    },
+    {
+      "path": "src/ui/NewGame.ts",
+      "sha256": "eb01a221b4c0cda5de4b52e6fb0301bc6aedbf85d0afab5d5fda435596d1490d"
+    },
+    {
+      "path": "src/ui/PanelBox.ts",
+      "sha256": "c8496935f4f0540902d03fe2135555e83a9c7ef61b0fa7da726cc336010e6d3c"
+    },
+    {
+      "path": "src/ui/PauseMenu.ts",
+      "sha256": "8df5cde17ab773749f723e8c3ff0b615ee2514807091f663b0eff3147990fba6"
+    },
+    {
+      "path": "src/ui/QuantityPicker.ts",
+      "sha256": "5d0b80746a15657bb7ff4af70693e7ff2ea1577a813e817a22409a71f18ab362"
+    },
+    {
+      "path": "src/ui/RadialMenu.ts",
+      "sha256": "0b75bab10984c77e8d2deab75b40038aa7ad4cf418236bc7f438bff89d737595"
+    },
+    {
+      "path": "src/ui/Settings.ts",
+      "sha256": "a051e2077accdb970ce5fe2d09be2f112750933cc0057328affb3e4a124b72a7"
+    },
+    {
+      "path": "src/ui/SettingsStore.ts",
+      "sha256": "e215f5e5defbbd5e56dd4f475e6aa66739c78780820e26cf21974795756208ac"
+    },
+    {
+      "path": "src/ui/SliderRow.ts",
+      "sha256": "cd3df8c71880c9e0290f9a0e7ccd334c4b9ffac2587838cc300d92f2d499a5fe"
+    },
+    {
+      "path": "src/ui/Succession.ts",
+      "sha256": "dd048e1cba4470e950dd6e34d55a43b2116100d23e533b98328d245a7afe7d5f"
+    },
+    {
+      "path": "src/ui/TechWeb.ts",
+      "sha256": "f47bcd6c9f8c42184575e5888899863d09baa68de232ab42d91f6bc3a4bd3323"
+    },
+    {
+      "path": "src/ui/TechWebLayout.ts",
+      "sha256": "05a6bad24f2e8628dc2fe784cc0ce294c373ce45f3ff84752e2784d84b8c2fca"
+    },
+    {
+      "path": "src/ui/TransferPanel.ts",
+      "sha256": "979266b39bc53304251d0439a366848ff86e5a01030e31ca6fc70c73c27a5bfd"
+    },
+    {
+      "path": "src/ui/TribeGraph.ts",
+      "sha256": "a8ccd5d343d63c4f1b492d46aa4fac22ef7f6ea24825944c44c63c417d5c7344"
+    },
+    {
+      "path": "src/ui/TribeGraphLayout.ts",
+      "sha256": "83e1c002ddfeed212f1e6311b431174e1b63414d69d3a7899bebbf91197ffce0"
+    },
+    {
+      "path": "src/ui/VerdictOverlay.ts",
+      "sha256": "92942eb226cf6a61f5ad34bc69e58fbac1faaaef2919cdb0ae71ad0698a66727"
+    },
+    {
+      "path": "tools/art/build.ts",
+      "sha256": "cfd904b2465736ad96a465eae33facc42d098574360e7336d3215445a01137d5"
+    },
+    {
+      "path": "tools/art/compare.ts",
+      "sha256": "726414a00a73d57a1d1276700fbca7f4ece79251229ea126804e0f71625926bd"
+    },
+    {
+      "path": "tools/art/memory.html",
+      "sha256": "a1973a500a02d6e55a8ce0fc8d360d28bf9e99dc64dc4eec69e8af7c9510cc30"
+    },
+    {
+      "path": "tools/art/memory.ts",
+      "sha256": "fc30a4de89a123cd5e376a44353567cf869b895e3f6381e4bf82e009c33d4d3e"
+    },
+    {
+      "path": "tools/art/sheet-page.ts",
+      "sha256": "7c8441d6e6894e9f92cbcf48c7cc86a4ebb66dca7621b11bba4a16f819d9ca7d"
+    },
+    {
+      "path": "tools/art/sheet.html",
+      "sha256": "7b74a468841e24af0c57a262379819a9915507b08679b1079a08c5c664a46afe"
+    },
+    {
+      "path": "tools/art/sheet.ts",
+      "sha256": "f46988b4f975835dca13c003ae2aaf7d51c4e90179e4a4808656bc7d4aca5542"
+    },
+    {
+      "path": "tools/checkFixtures.ts",
+      "sha256": "57e2fc42b700985be191bd28ebfdb4d783a300daef376ea69dca8276830ef190"
+    },
+    {
+      "path": "tools/cohesion.ts",
+      "sha256": "0d299c5299ca369857d7772681d3d5537cdc313a5198d10c6794dd666deb8100"
+    },
+    {
+      "path": "tools/demography.ts",
+      "sha256": "c62861b41c729e619371acb8344253c3e4268a811b9be02bd59d9791eb15940a"
+    },
+    {
+      "path": "tools/headless.ts",
+      "sha256": "46a93678fb744db8ee5340d3ef103b855d5a287392ad838cc0548b556627922a"
+    },
+    {
+      "path": "tools/history.ts",
+      "sha256": "836d61eaa7dcc93c28cf3993c50af4092ea7f3787e3c7c1cd2f8301f5295adf5"
+    },
+    {
+      "path": "tools/i18n-soak.ts",
+      "sha256": "6d775f161a4d20851ce42f0981bcdecd8907476fa43f8890e491b022c96b3baf"
+    },
+    {
+      "path": "tools/infants.ts",
+      "sha256": "e7c907658cad8b4a0b61acc6a2a4c1cb1490d21d68f0ad1731def72d7c032814"
+    },
+    {
+      "path": "tools/m15-local-reference.ts",
+      "sha256": "01f91b006d65d113c3bcc823b6e028dd05f0729d1d117600239b289aa4029bc6"
+    },
+    {
+      "path": "tools/profile-population.ts",
+      "sha256": "d2b4f9926f4e74c54271a3667264dfb7328daf10bb73bd2bc4e2d5a5b7bf4d90"
+    },
+    {
+      "path": "tools/profile-systems.ts",
+      "sha256": "a6267459915a62dda6eb51912a9bc14e4d9040c1c56413e24baee4a38049030b"
+    },
+    {
+      "path": "tools/range.ts",
+      "sha256": "f8488451a95daee2be33bddc999656dae7877b77381da1a1c77c99cf7d7df434"
+    },
+    {
+      "path": "tools/regions.ts",
+      "sha256": "7743f98053c28c34f6b51e8a24a6c369b323e28c563d762b6e46939604cc1ce8"
+    },
+    {
+      "path": "tools/scenarios.ts",
+      "sha256": "3baf9b0f3e497d4c70c3c47d9d862c53a1c3086c4f3aedf1db6ae74541adc2f0"
+    },
+    {
+      "path": "tools/scratch/justdbg.ts",
+      "sha256": "351b572b6453c0fdbee779f80efab701198f06dd1342a294ffbfdd422ebb6fd3"
+    },
+    {
+      "path": "tools/scratch/nursefreq.ts",
+      "sha256": "c796a1a84c73ab7fa2a714428768a3baf6c18228a6728ef53ac60131d4e5c05e"
+    },
+    {
+      "path": "tools/scratch/nursefreq2.ts",
+      "sha256": "fb76a213399d15f44e076cd3b0def5a2d55ecce56fe3c0f6d9b02d6519001e6f"
+    },
+    {
+      "path": "tools/seeds.ts",
+      "sha256": "cae6e71e28bb13af3247fe5c247b6807570fa0eec4bcb0f2e3f94ba5233b6e31"
+    },
+    {
+      "path": "tools/simcheck.ts",
+      "sha256": "d9061033ea1c5282dfb245e432bfe76ce84d11d1d109fc0ca4d503a21eb57d1c"
+    },
+    {
+      "path": "tools/violence.ts",
+      "sha256": "6a78b228ea1aba68111017e9906a44551f68e4b36b2811f0d183beeb31eb888e"
+    },
+    {
+      "path": "tools/why.ts",
+      "sha256": "e92bf138c98d8d00036241f09170cc3bd20f066cce932f8c25df29eb2991da2e"
+    },
+    {
+      "path": "tools/worlddata/archive.ts",
+      "sha256": "8e1ee833693faedf21902918be87a34e93e1746256077a2f7d1d381f59e588ca"
+    },
+    {
+      "path": "tools/worlddata/beck.ts",
+      "sha256": "2cd26179daf1fcaf2c38e163605e314d5e39f350017b169ea14e2a4074f71e42"
+    },
+    {
+      "path": "tools/worlddata/build.ts",
+      "sha256": "da38e58f62ff88bad93492976d067fdb93d944adc50dafde322bee2684956a32"
+    },
+    {
+      "path": "tools/worlddata/run.ts",
+      "sha256": "208b07fa81890e351e0be3085931c77c206ca72398385ef9103efb2050d64edf"
+    },
+    {
+      "path": "tools/worlddata/shapefile.ts",
+      "sha256": "2748888e45683e6669b87baf5862594b1ae26aa711eb72057ccd8603ad12b87b"
+    }
+  ],
+  "final": [
+    {
+      "path": "src/data/names.ts",
+      "sha256": "3e5dc94c084131f5e987121e66700aa3b864e736706eab1ea7fe152dad5341d7"
+    },
+    {
+      "path": "src/i18n/es/actions.ts",
+      "sha256": "d22172478ee5887b943e0f4a3903e9e47e9112c57dac5e1c8154647171a73ebb"
+    },
+    {
+      "path": "src/i18n/es/data.ts",
+      "sha256": "80f46045afe33370f42c12fac8a5607360fc2b4c679770af2fc04523d03ba5c4"
+    },
+    {
+      "path": "src/i18n/es/hud.ts",
+      "sha256": "ed6db52bb1a57225b33a8638fce9d24e60db8c259dd3f6aeb952cf8533a8209e"
+    },
+    {
+      "path": "src/i18n/es/index.ts",
+      "sha256": "0f1cf05c23d95d38f38d149d8cf868655b3c2f9e21eb58ea0f915fa0cce6b996"
+    },
+    {
+      "path": "src/i18n/es/nouns.ts",
+      "sha256": "702b5a1cc9ddc7d791833ba651f5929b1af593144883211437f2a771d8931345"
+    },
+    {
+      "path": "src/i18n/es/polity.ts",
+      "sha256": "c529db4fdbc70b0bf4ace4851694ca0cbd8491b97277a70d580e76596e62a185"
+    },
+    {
+      "path": "src/i18n/es/sim.ts",
+      "sha256": "aa753e65e65576d55e878c1f0afc02665dea3e02c8230b6267cb12be6fcc4bfd"
+    },
+    {
+      "path": "src/i18n/es/tech.ts",
+      "sha256": "75edc34d78142f964d7d8fa17346d087c9e9ddf1665a7e805d609e0c17b23c20"
+    },
+    {
+      "path": "src/i18n/es/ui.ts",
+      "sha256": "4b3ab72a63929ae03862a499baac89b2a867c5bfc1703d08108c710c8135275d"
+    },
+    {
+      "path": "src/i18n/i18n.ts",
+      "sha256": "f06eb1101b799ac6a5c8cf057e0ced03d0f2235d65b52dd20c8b6cc9a3e02cc7"
+    },
+    {
+      "path": "src/i18n/tables.ts",
+      "sha256": "abfe84e37ea2c9d61b18cf27fa46d9263208e8eb218d23ee43813d5920c39a24"
+    },
+    {
+      "path": "src/main.ts",
+      "sha256": "00507a1a3cb33290f03c9aef7b5acf4cf4e256d2fcbd4bbb9dcbc01b540dd090"
+    },
+    {
+      "path": "src/render/AnimalAnimation.ts",
+      "sha256": "fb81a2c33d29556f9a99bd91ee418a75b73c18b5d688cb94964a8304b9da0369"
+    },
+    {
+      "path": "src/render/ArtAtlas.ts",
+      "sha256": "0fd25b66bc18db5177c5d62710093cd987346ca535a597fc214363748a3e3995"
+    },
+    {
+      "path": "src/render/ArtManifest.ts",
+      "sha256": "6404ec8916a5d4a44a0abed232cdef62500e7f5c67031aeafcebead3106ff95f"
+    },
+    {
+      "path": "src/render/Camera.ts",
+      "sha256": "6bac22f64188617d928949cb6fb8c78b3c34e28c17ffc1656cd00b2cbd743aaf"
+    },
+    {
+      "path": "src/render/EquipmentAnimation.ts",
+      "sha256": "350231d3eb11d41c7383fe7f6f8bcfa5955eca0afca4b24b338ba4db1ee5e5f6"
+    },
+    {
+      "path": "src/render/Floaters.ts",
+      "sha256": "36f54c9ae29c4680c69c2cdae33921b72a34de220eade2b79ce5b94cc6a7a48c"
+    },
+    {
+      "path": "src/render/Interpolator.ts",
+      "sha256": "b6caeaa863cad2edb4e52833787f95aa30b85ce2cc5dbe6554b3faeb9c7d135f"
+    },
+    {
+      "path": "src/render/PixelCache.ts",
+      "sha256": "d8f083ff60c9002d00aa06c4224d22467d98e2965239cedd1ef9cd729af7663a"
+    },
+    {
+      "path": "src/render/Renderer.ts",
+      "sha256": "7c845828e3a1da70042e6a332cd0f5970c84b46a299e02325c02aa8884b9f566"
+    },
+    {
+      "path": "src/render/Sprites.ts",
+      "sha256": "040214fc7b4003db456f42fbeb10c6b2f09b27316f86b6db475064d4fd85699f"
+    },
+    {
+      "path": "src/render/WaterColor.ts",
+      "sha256": "1c6505abb074810b543dd17b0510a326eb37720b28bb004db464bdddc720c3b5"
+    },
+    {
+      "path": "src/render/WorkAnimation.ts",
+      "sha256": "1fd7a06fc87c696d92368bf3b04cc4a50df2694d7ff981a25400f5c78ef033f7"
+    },
+    {
+      "path": "src/render/__tests__/animal-animation.test.ts",
+      "sha256": "68ba1ac020960f6479dd0e516774a7ab7529183c3a69d654ac684ddeda81e8b9"
+    },
+    {
+      "path": "src/render/__tests__/animal-art-generator.test.ts",
+      "sha256": "dde84426e1010176be406d1b8939fefd841384c4ab90f7e7b146b33dfdb0d0ea"
+    },
+    {
+      "path": "src/render/__tests__/art.test.ts",
+      "sha256": "2584837027c14f67429f2da05d4e34df28bce172901c797b5c056716302d706f"
+    },
+    {
+      "path": "src/render/__tests__/band-colors.test.ts",
+      "sha256": "e995428754652cf65923a1e5c8320e3448060380d8da98e2fb519f5169ce843b"
+    },
+    {
+      "path": "src/render/__tests__/chopping-animation.test.ts",
+      "sha256": "58d27756c337633b2fed7b8fdde83d12f0caa658c4babbc9a63dc4da090186ad"
+    },
+    {
+      "path": "src/render/__tests__/crafting-animation.test.ts",
+      "sha256": "08236c3ec28e5c3df3591d318fb9b36c242583756a8cf0d0d10239820a96250a"
+    },
+    {
+      "path": "src/render/__tests__/equipment-animation.test.ts",
+      "sha256": "50e07d88aa68c9b67c5203d36d4747a103c5140a7fe1b9ae8b4489502ca5ca1d"
+    },
+    {
+      "path": "src/render/__tests__/person-pixels.json",
+      "sha256": "37231b5c4f29b715587fd092b07593bffdb4a6f5839a566986620adb34fb8a26"
+    },
+    {
+      "path": "src/render/__tests__/pixel-cache.test.ts",
+      "sha256": "99562bacec159a549e320f16301d780b886e086b13032a6901e0f819bb9b548a"
+    },
+    {
+      "path": "src/render/__tests__/water-color.test.ts",
+      "sha256": "b76b3063f32c34db29fe5aa14cb09bef863bfe0e994c70dd6aaa6447756136b7"
+    },
+    {
+      "path": "src/render/__tests__/work-animation.test.ts",
+      "sha256": "c5ad5457ecda8deb00fa1b3dfb03d5fd6638827345538a7e8bacdb6ba63e0731"
+    },
+    {
+      "path": "src/sim/__tests__/amends.test.ts",
+      "sha256": "29758e48fe34e81c7cc44f1133c775c0aae65e9619ea8833d73915df95bfc145"
+    },
+    {
+      "path": "src/sim/__tests__/anchor.test.ts",
+      "sha256": "e3c492566a9daeca5ef69c97cc48990b559bcf4604a3f19c4608f149828d0e3b"
+    },
+    {
+      "path": "src/sim/__tests__/animal-observations.test.ts",
+      "sha256": "dc734d00f6f3b33739d38b916d6e00c33cee957dba7688f04170e6c080602f7b"
+    },
+    {
+      "path": "src/sim/__tests__/authority-transfer.test.ts",
+      "sha256": "f342db34afa5f2164586b744d3ba0773e47b924af884463f677267ae15e47197"
+    },
+    {
+      "path": "src/sim/__tests__/autonomy.test.ts",
+      "sha256": "2ad58c4eff5ee9461af85b34e5f67b50593acc5124793708a32530cf0bfd54cf"
+    },
+    {
+      "path": "src/sim/__tests__/baby-carrying.test.ts",
+      "sha256": "7d66ac2056e2ba3f0eb1e15a09fef7cefa68a450195ec165b926c6d4a006a731"
+    },
+    {
+      "path": "src/sim/__tests__/band.test.ts",
+      "sha256": "eb5f391fc4f787d37c56716a770f8b54d11ac16c16b415766351bb698127d395"
+    },
+    {
+      "path": "src/sim/__tests__/bandmaps.test.ts",
+      "sha256": "303529e2ada3ef8c0af53869e6879544849306fc1694b9ae6cab0462177fb518"
+    },
+    {
+      "path": "src/sim/__tests__/beliefs.test.ts",
+      "sha256": "e5537124188c0357c45baac26ed08835dab025d90462e9da7eff8c8509a5f469"
+    },
+    {
+      "path": "src/sim/__tests__/body.test.ts",
+      "sha256": "acacd1701cd0f6af5e0581bbe95ae0db7496543bbdcee647183553ddaadcae6b"
+    },
+    {
+      "path": "src/sim/__tests__/brewing.test.ts",
+      "sha256": "ab618007e62820eea8e6f53c4aa56f013d81a4a3efbee7b3032d8431ab1bdfa9"
+    },
+    {
+      "path": "src/sim/__tests__/building-sponsor.test.ts",
+      "sha256": "20c122dc68e04f5d6a25ec6f2537299208325e8a3c1c79bd709128795165bcb2"
+    },
+    {
+      "path": "src/sim/__tests__/captivity.test.ts",
+      "sha256": "ee430f8dd09804a8f460e463ecbd2a578fcdcf12c25cbd7b76975cf858d4ff76"
+    },
+    {
+      "path": "src/sim/__tests__/carry.test.ts",
+      "sha256": "23302e653dbc8bb9f91591fface40d4d5c936b64d0afc82fd4557c43fc282210"
+    },
+    {
+      "path": "src/sim/__tests__/checkpoint-records.test.ts",
+      "sha256": "3c1d798495064a907fe2af4dba5885785a69d60705128b0b46c535328b07cbe7"
+    },
+    {
+      "path": "src/sim/__tests__/child-vision.test.ts",
+      "sha256": "fa372e5e555137d694bb223464942208efd9ba39869666009977be970f6de7fc"
+    },
+    {
+      "path": "src/sim/__tests__/choice.test.ts",
+      "sha256": "38fe9c614e6c90fb063fa15811d914432abd8623026d487c85c24ba1ac0ccc9e"
+    },
+    {
+      "path": "src/sim/__tests__/circadian-sleep.test.ts",
+      "sha256": "ff59d0fdfe2555ea8658aa5acf73f156b56eb71f10abc9767a0645034c4e948f"
+    },
+    {
+      "path": "src/sim/__tests__/circadian.test.ts",
+      "sha256": "5a77b8b6f09adc370d53f6fe6ec13023b6b72c457ca8d273ae1442b383772808"
+    },
+    {
+      "path": "src/sim/__tests__/cohesion.test.ts",
+      "sha256": "76328668c5df7a6a320cc14ee9bc602dd931248e2dbf8d04a93679750f213b0b"
+    },
+    {
+      "path": "src/sim/__tests__/combat.test.ts",
+      "sha256": "89b7962026bf4e0a83155cca8a71065d80d85c4518ca8cc9cae6cb800a8712ed"
+    },
+    {
+      "path": "src/sim/__tests__/config.test.ts",
+      "sha256": "2f31a078b2c82c3b1c200f52dd582c6d41eb3c6d09000a7c4513a070e6758ea1"
+    },
+    {
+      "path": "src/sim/__tests__/controlled-checks.test.ts",
+      "sha256": "58d8592d54393683356a6d632009bb318d30d40db4fe035dbdecee576f0cbed2"
+    },
+    {
+      "path": "src/sim/__tests__/conversation.test.ts",
+      "sha256": "a2e4a4a3032dac34b3a14e0957283041df33a7367b808adfa8f9d0cdf1977cf7"
+    },
+    {
+      "path": "src/sim/__tests__/corpse.test.ts",
+      "sha256": "340bcd4acdd329c5e5c464cc0176bcc58cb53fc74c7cbdf080be5c548d593244"
+    },
+    {
+      "path": "src/sim/__tests__/curiosity.test.ts",
+      "sha256": "05be22ed7dd1a25bc76a5196e689711f98e9c2f2fa6b73e0156fa8777c2429d9"
+    },
+    {
+      "path": "src/sim/__tests__/cutgrass.test.ts",
+      "sha256": "0e3ca9bb3942287828cb105cce5306c9f7cec11f70cdc9db5f00a86907691503"
+    },
+    {
+      "path": "src/sim/__tests__/defence.test.ts",
+      "sha256": "828652b82b3a3dbcd839ddc01c1b953c6a609353594b4c0f50d51fee099fc2de"
+    },
+    {
+      "path": "src/sim/__tests__/demography.test.ts",
+      "sha256": "f4258dc78f9d841444567d2969f9b80f4c2023e18151d5d0a55f1647c1b8cca6"
+    },
+    {
+      "path": "src/sim/__tests__/determinism.test.ts",
+      "sha256": "098602b54d3b5f5da1785443dccde63a833e6c89c46933c0567ac64c95f43de1"
+    },
+    {
+      "path": "src/sim/__tests__/digging.test.ts",
+      "sha256": "12f97ec92c1c3f3fbf827b9b8d3cd4d7c9cf79f9d6f58864d416f7bfbcad3d32"
+    },
+    {
+      "path": "src/sim/__tests__/dog.test.ts",
+      "sha256": "29c1d84dba3c005b512b5cecc8cfdf2df86d767d078ea5210941ff9b3b02e7b0"
+    },
+    {
+      "path": "src/sim/__tests__/drives.test.ts",
+      "sha256": "feab3f3a640ac5d22a0bd0bacf78fbebf4729053c9d7d4da5997d59ba916ac48"
+    },
+    {
+      "path": "src/sim/__tests__/earthmoving.test.ts",
+      "sha256": "eb2085b5936c3573927523229d7f6e3cb327d9eb6d13e73c3076fbe08db85016"
+    },
+    {
+      "path": "src/sim/__tests__/earthwork-checks.test.ts",
+      "sha256": "b261b87d5457ea34b84812e6c4b32ccfdef65f542391a91e23c2d22a6b3647b6"
+    },
+    {
+      "path": "src/sim/__tests__/earthworks.test.ts",
+      "sha256": "3d3a965d5ad0c6713f79953e7f1f5a7b0cdbb8f1d493065de74020e98d51b112"
+    },
+    {
+      "path": "src/sim/__tests__/eating.test.ts",
+      "sha256": "1a264d58b127c69762902f9e205bdca6f3dfa704f86ccf08942fd38d2a48066a"
+    },
+    {
+      "path": "src/sim/__tests__/edge-fauna.test.ts",
+      "sha256": "18371050876386503ccc2be6cda02fe521fa8d148dd4c286dce19a178be6ec85"
+    },
+    {
+      "path": "src/sim/__tests__/entity-records.test.ts",
+      "sha256": "41e4268308a846877a92ef10904065339618a4403352e205fce625a12e770edc"
+    },
+    {
+      "path": "src/sim/__tests__/execution-checkpoints.test.ts",
+      "sha256": "3e9cc2ee4fb1f87abbc477e68ec2f2510a66642456fdc42e02cd33d1c030299a"
+    },
+    {
+      "path": "src/sim/__tests__/execution-records.test.ts",
+      "sha256": "fe7bb0b6f11f6ece6cae137f14c8e1d7ea3921b501c960e2d1089e31ba7cdd83"
+    },
+    {
+      "path": "src/sim/__tests__/familytree.test.ts",
+      "sha256": "f154600c8b7974958f169587de19913c4b01f54563e4b76f5bb99b9a61a23cba"
+    },
+    {
+      "path": "src/sim/__tests__/farming.test.ts",
+      "sha256": "f7282b3839ecd7fa7f69dba30b5cd40f38d53549aa673e3ec3d99e55221c30a4"
+    },
+    {
+      "path": "src/sim/__tests__/fear.test.ts",
+      "sha256": "7e875f89c8718d5b81d8bf832805782e3c2c198d69509905da14ad899dd74861"
+    },
+    {
+      "path": "src/sim/__tests__/feast.test.ts",
+      "sha256": "23948a31d7548254d662de3ca3722a91fb9386d6d5c4591a15c7b0c812d2d013"
+    },
+    {
+      "path": "src/sim/__tests__/feeding.test.ts",
+      "sha256": "deb0d3c5db1e8284d90b74da37dd2047ed862d4e5d5adc368868accf9709ac17"
+    },
+    {
+      "path": "src/sim/__tests__/feud.test.ts",
+      "sha256": "e825fb83e73edadd53b66811caf74cb6ef22b0732b5f0d3c9b9b33256aae2c2b"
+    },
+    {
+      "path": "src/sim/__tests__/flooding.test.ts",
+      "sha256": "0fe1b5835d6cca97a75152a0547603ba1f63b4db2cd0b6bcd51fdf3877bf000d"
+    },
+    {
+      "path": "src/sim/__tests__/geographic-worldstate.test.ts",
+      "sha256": "3feaef8012b6300461bf8efc08e1adb2fb8d9a4e90190e8bc4d901dc1a7abea9"
+    },
+    {
+      "path": "src/sim/__tests__/gift.test.ts",
+      "sha256": "b051a41d867f5639fd465aa57a2d5c74bb27bf3f77140ce96292a7a70be0af9b"
+    },
+    {
+      "path": "src/sim/__tests__/grass.test.ts",
+      "sha256": "8e4daaa6777251c7d5da5fffdeb784428c5066f148c65de1f207934df9b461bb"
+    },
+    {
+      "path": "src/sim/__tests__/grazing.test.ts",
+      "sha256": "0127fd65bac186a832af7da6644500f8bc0bc7385a854b3f846dc6f2a7c43b42"
+    },
+    {
+      "path": "src/sim/__tests__/group-ids.test.ts",
+      "sha256": "83274653b9b0bf30eb1e1cbd893ae701cb6251fe8d45e3c3699ab533f3bee78c"
+    },
+    {
+      "path": "src/sim/__tests__/height.test.ts",
+      "sha256": "17b85b72d3416f7e33a389b2a2577cac3bbccb27a5bf00606d0d9027f378b4d2"
+    },
+    {
+      "path": "src/sim/__tests__/herbs.test.ts",
+      "sha256": "45544affb58bd337d2b3e28fc74418b72b5119635cdbfebaa3296685a2f69d03"
+    },
+    {
+      "path": "src/sim/__tests__/herding.test.ts",
+      "sha256": "934682493ebd6d5d996bc89fd35cc96940c5ea0f3e6a26ef0f4d12f4c82de7aa"
+    },
+    {
+      "path": "src/sim/__tests__/history.test.ts",
+      "sha256": "64ea07fa51ed2bd1630481983aa8dd6cf42413d472142d8c94038391903fb0ad"
+    },
+    {
+      "path": "src/sim/__tests__/i18n.test.ts",
+      "sha256": "54eef97177a76065daf32b4b73b04298ed056638fb5ed77415c6f4e5071e374c"
+    },
+    {
+      "path": "src/sim/__tests__/id-space.test.ts",
+      "sha256": "4e88945dd293e149973d4d1612868ade1fc1ce7ff803aa2320aeb83a31257db4"
+    },
+    {
+      "path": "src/sim/__tests__/infant.test.ts",
+      "sha256": "e4d511777a3c606a1e11d91c12310a10acaca0c13a2ee032167c92632105cdc4"
+    },
+    {
+      "path": "src/sim/__tests__/interpolator.test.ts",
+      "sha256": "8436fdf88bb6a06bf65c10c072c7e6c0f3b1f25c5f3af567dce51860336e830d"
+    },
+    {
+      "path": "src/sim/__tests__/investigation.test.ts",
+      "sha256": "33864fd2618c651f67b0375c372b892325b5bc9f975f87426aa819f91b1363bd"
+    },
+    {
+      "path": "src/sim/__tests__/item.test.ts",
+      "sha256": "035de769f2aee8cdc9cb07123e36bab6ed1842cc0289ab8d1b5ee5bcef795b48"
+    },
+    {
+      "path": "src/sim/__tests__/justice.test.ts",
+      "sha256": "e4542baccedcc7f51bf65182baf88ae4d9c0a449a9901e6a4b2e9d03f1cc4739"
+    },
+    {
+      "path": "src/sim/__tests__/kin_defence.test.ts",
+      "sha256": "f83df726806003f0ead4aaadbad060a29f70678f52258f4d239a25aab6eb1dd3"
+    },
+    {
+      "path": "src/sim/__tests__/knowledge.test.ts",
+      "sha256": "bd6737b3db8326e5e1de82e986a4aeba739b9d098d24ec15910497d1fe517026"
+    },
+    {
+      "path": "src/sim/__tests__/ledger-records.test.ts",
+      "sha256": "f190d8ef34528c8b13827785d4e68b945bdb6289611879b3afa7204a4165da50"
+    },
+    {
+      "path": "src/sim/__tests__/life-stages.test.ts",
+      "sha256": "8f2949134f77f85c9d7d05efc0c1c6da242d118430936c05a2d3dd51db246d31"
+    },
+    {
+      "path": "src/sim/__tests__/lifelog.test.ts",
+      "sha256": "d8e26bc519bbf51ca2b37afb00584fc6902a8777b8f1e91fdf8edb62b75672fe"
+    },
+    {
+      "path": "src/sim/__tests__/live-checkpoint-continuation.test.ts",
+      "sha256": "77124bb61840e25f8df5633cc6d20b9221f95f28df8ecc1a6b765e9e7c8c9d99"
+    },
+    {
+      "path": "src/sim/__tests__/local-geography.test.ts",
+      "sha256": "c9ceec986a15fe27c5c8ad46fa6ed900ce3f05d9945ed6adec5b9f2be77fae4f"
+    },
+    {
+      "path": "src/sim/__tests__/macros.test.ts",
+      "sha256": "db6ededd2a32f1a6d70feae101775fa5127707a8c71c358095bec169ae04ea74"
+    },
+    {
+      "path": "src/sim/__tests__/mood.test.ts",
+      "sha256": "cd652e3e6bf3f0b58cf341c21b44a4abdf3f843e0a374ea5b49c93285c2f7430"
+    },
+    {
+      "path": "src/sim/__tests__/npc-pickup.test.ts",
+      "sha256": "f5299741717e592ac5d3808fde3963479e329098c2da19e0918cb8c310e25fa5"
+    },
+    {
+      "path": "src/sim/__tests__/nursing.test.ts",
+      "sha256": "576cb5ea936601d6212a9559705f7bfb8792986f44b84ab71c791d87d94a2077"
+    },
+    {
+      "path": "src/sim/__tests__/orders.test.ts",
+      "sha256": "07bf6dd8b0c5f4ffc9be5ffc599c89c38848719d5967fe130ea1799dbef175e5"
+    },
+    {
+      "path": "src/sim/__tests__/parent-memory.test.ts",
+      "sha256": "7a216a37b3f8f0eb6b7a8e48188441102860568d1f291a33ac35c03836c046a6"
+    },
+    {
+      "path": "src/sim/__tests__/pathfinder.test.ts",
+      "sha256": "c92376553d506150af16258f2854b91dd8c1c7372b1b288b9a86a8267cafe2b8"
+    },
+    {
+      "path": "src/sim/__tests__/persuasion.test.ts",
+      "sha256": "1de9ca5a284e1cce029fd30f77a10f7c6228181f9de6cd9ec9e6ba612797b968"
+    },
+    {
+      "path": "src/sim/__tests__/place-memory.test.ts",
+      "sha256": "882a93a5ae3aa8c5535aa6d385ae9c5a35fdc2293acd50079141770cb8ca5ad1"
+    },
+    {
+      "path": "src/sim/__tests__/poisoning.test.ts",
+      "sha256": "52f63ba492774950d564873b5b603f20f463c6155a300bbf892020e669991a2a"
+    },
+    {
+      "path": "src/sim/__tests__/polity.test.ts",
+      "sha256": "d9e9f7db5214e0db25c5653d7760a9db02663d07ad282a712a2d737ce3b17434"
+    },
+    {
+      "path": "src/sim/__tests__/possession.test.ts",
+      "sha256": "9d55e1025281b10fb4ead3a03a29df72f35a773ef5bdec647741a2ea043901e2"
+    },
+    {
+      "path": "src/sim/__tests__/predators.test.ts",
+      "sha256": "a2d75a68c0b99f8039465e6066e73376bc3c7f56c0a7f6a456f8083a3e2d67dc"
+    },
+    {
+      "path": "src/sim/__tests__/project-checks.test.ts",
+      "sha256": "1c26d67a3463feac9e79c3ab80605c636e6d11c8e6b5cd163ad05f6c7841582e"
+    },
+    {
+      "path": "src/sim/__tests__/project-menu.test.ts",
+      "sha256": "d905b0b399b719c86bea1c75962e9e6d6c4ccdc262f67d3653a27ae9883ccbce"
+    },
+    {
+      "path": "src/sim/__tests__/property.test.ts",
+      "sha256": "146dc37aea4002abfa59db75ec2c2a35d6d9849ed2ad9e891a965128f7cb852f"
+    },
+    {
+      "path": "src/sim/__tests__/pursuit.test.ts",
+      "sha256": "435911f7e2ae59b650732d0e81f833977fe44a864a9ac77c1941572690e40f53"
+    },
+    {
+      "path": "src/sim/__tests__/real-world-assets.test.ts",
+      "sha256": "b5a03a3692666ffa1c989872672a8828657a66ed03db4a7a716146f8a9d145b4"
+    },
+    {
+      "path": "src/sim/__tests__/real-world-map.test.ts",
+      "sha256": "4f54d04e9b26bd7f982a52d8b59ae24e99e96e7b9a1ead01b1ab628df1232e0e"
+    },
+    {
+      "path": "src/sim/__tests__/region-checks.test.ts",
+      "sha256": "5458ae363546e079461c2501d3534303f4d194c27efffb04004d7e1c2030256e"
+    },
+    {
+      "path": "src/sim/__tests__/relocation.test.ts",
+      "sha256": "4bb37c69f5d09b6b482644b62fb1a5693854187d4fd5252c539645a261e4a5b0"
+    },
+    {
+      "path": "src/sim/__tests__/research.test.ts",
+      "sha256": "ba4b59c194c898ef59acb5eb56217a1de603aa53da2e0c574e4250c92bca5ef2"
+    },
+    {
+      "path": "src/sim/__tests__/respond.test.ts",
+      "sha256": "69cda91c64a41c3bcfd29df9d1df4e8f0739d2d24806a66446392dfd1bc527b1"
+    },
+    {
+      "path": "src/sim/__tests__/restraint.test.ts",
+      "sha256": "9d006fa5c6add49adc7e93aa9ac005b242e2bcb4f10d585b4d259e2cc120ff9e"
+    },
+    {
+      "path": "src/sim/__tests__/roster-records.test.ts",
+      "sha256": "44c19594b4e4db1d02967310d9545e5e3f31de756a5f1be4be6e90563ba65690"
+    },
+    {
+      "path": "src/sim/__tests__/sabotage.test.ts",
+      "sha256": "a05267e844b29ea7f71f95fecd40cf0686a41ac40064e451040fdcdabcc306e6"
+    },
+    {
+      "path": "src/sim/__tests__/season-lore.test.ts",
+      "sha256": "4811d1c9b4a11e435afabc83caa2c5bd6ecc0d3ee399fcdc5d0e1c312d0c76c3"
+    },
+    {
+      "path": "src/sim/__tests__/settings.test.ts",
+      "sha256": "6cc7ae7c17172f5b3dd4d6b39b40dedde0970d09c36ac617aaebf8e865c8dfcc"
+    },
+    {
+      "path": "src/sim/__tests__/shallows-checks.test.ts",
+      "sha256": "4c89e0bb1d0f8a127db282810d91bb41aacec934467121b354e0c8187cade93d"
+    },
+    {
+      "path": "src/sim/__tests__/shorewalk.test.ts",
+      "sha256": "66041d1f46d23adda72bc32d270daef45be00a45e339c7ac058901d19825fb8b"
+    },
+    {
+      "path": "src/sim/__tests__/silo-digging.test.ts",
+      "sha256": "4810e2bfc8d97497399cbc197da91028ec23ab461750015fe224017a9a5b15cc"
+    },
+    {
+      "path": "src/sim/__tests__/slopes.test.ts",
+      "sha256": "a50d76ac0096a63f2741138dee16b4f7ebab0b0b8c1fb5808eca31caa3652c4b"
+    },
+    {
+      "path": "src/sim/__tests__/snow.test.ts",
+      "sha256": "da62b1dd44ae95ad97b0d474b0d0b19cb774995c702a1b15d77239b8349e8a58"
+    },
+    {
+      "path": "src/sim/__tests__/social-records.test.ts",
+      "sha256": "b2a3b11d65bba23b032545715cc18a183ab10bc7981fe2224a6d183246d08dd7"
+    },
+    {
+      "path": "src/sim/__tests__/source-food.test.ts",
+      "sha256": "e6c4c9dcc38a9d526296833bc64eee6b88e2d557fa8e7d0faa576d3f749f5ef0"
+    },
+    {
+      "path": "src/sim/__tests__/spar.test.ts",
+      "sha256": "4d9e2feb77acf82113faa1ea6a2e711cbc60f87d5db478fa95f8b11571002ef7"
+    },
+    {
+      "path": "src/sim/__tests__/spatial.test.ts",
+      "sha256": "73cb6a367f10197b487b226b57e5859b0aa5c9ad1a9e388074c807550e8444f1"
+    },
+    {
+      "path": "src/sim/__tests__/spear-fishing.test.ts",
+      "sha256": "e599fe7a10722a4d2851987c0c975cdcc0afbbf66d990bbec77ce66da395ba39"
+    },
+    {
+      "path": "src/sim/__tests__/status.test.ts",
+      "sha256": "5a3e70bdf2d4d7172759dbfc6f1ed6b8d38268afccb4267707a2e61aa2fb6161"
+    },
+    {
+      "path": "src/sim/__tests__/stopreasons.test.ts",
+      "sha256": "d66fa4451e9df4446b032e915a42c82161655d0e69d8cd1b9f337e3544a6155e"
+    },
+    {
+      "path": "src/sim/__tests__/stratification.test.ts",
+      "sha256": "210242ae86e6f7bfedb08dcd8d9bed9fe4a99036a49b887628ad95182272e07b"
+    },
+    {
+      "path": "src/sim/__tests__/swimming.test.ts",
+      "sha256": "5c76a19a32052d72c299b01a8148f7c4623d004dd21f48f0ac6e943c3298027b"
+    },
+    {
+      "path": "src/sim/__tests__/synthesis.test.ts",
+      "sha256": "b9f5fd45050c9e69a2a85f9e3fe54166fcae11e74659f0fc174ca8d9f6eceda0"
+    },
+    {
+      "path": "src/sim/__tests__/tech.test.ts",
+      "sha256": "bdc6876a59c846a65f960f0ad45eb7e7e077379422dcfd684aa884220dc9570b"
+    },
+    {
+      "path": "src/sim/__tests__/techweb.test.ts",
+      "sha256": "8e7b8008a5de8c74b22f1cf10c50bcd73fb98b989cbcaebdba49a59d3dab35a9"
+    },
+    {
+      "path": "src/sim/__tests__/territory.test.ts",
+      "sha256": "89ea51d10b8c72c880551d8fb2bf72898cf58bb90c52dfbcadcc3736da8a8f41"
+    },
+    {
+      "path": "src/sim/__tests__/tool-equipment.test.ts",
+      "sha256": "0d9ef69e87fdf4858bbb8ee2053d3d467e1f374620e5745ab9a8e375842f0e1d"
+    },
+    {
+      "path": "src/sim/__tests__/transmission.test.ts",
+      "sha256": "dd74118a7fd0907d51fe844263391b155d04d61c97e5d73476a532a2c6617fe0"
+    },
+    {
+      "path": "src/sim/__tests__/traps.test.ts",
+      "sha256": "48503f642db344b10c7a1c37780b1c29981d78dab166cf4ec4b4d7e0987444d6"
+    },
+    {
+      "path": "src/sim/__tests__/tribegraph.test.ts",
+      "sha256": "7524d16935ea77e6524dc339bd7714729f7f40f214231256e34101b4d8bf3225"
+    },
+    {
+      "path": "src/sim/__tests__/unload-for-food.test.ts",
+      "sha256": "81e91e684c60c27bcda685a907f9ad7e66278a2e83eaa539a7b184579e544878"
+    },
+    {
+      "path": "src/sim/__tests__/wading.test.ts",
+      "sha256": "f3494c59089d2fffa77b5420f78d31509f4157cd884dc7da4f3f896c3a8b9626"
+    },
+    {
+      "path": "src/sim/__tests__/water-checks.test.ts",
+      "sha256": "c8fc604e241ed2f40be4e32f0ceb367231446949c7b51aff6923ffdefae4c7df"
+    },
+    {
+      "path": "src/sim/__tests__/water-depth.test.ts",
+      "sha256": "daf42deea2e6645e9e4cc5b580bb01c725d93dad27da1ea1ff141c7ed8c2e126"
+    },
+    {
+      "path": "src/sim/__tests__/water-search.test.ts",
+      "sha256": "4f80fe7339ac0304bda1c32b8948529db683b4c89d132f5a0c150f24ba8b3389"
+    },
+    {
+      "path": "src/sim/__tests__/well.test.ts",
+      "sha256": "59a28b70a01dcfd88fae05558a02a8aea2b3b1301afd67e10387047d6879c1b5"
+    },
+    {
+      "path": "src/sim/__tests__/wet-nursing.test.ts",
+      "sha256": "705b730c05d00337bc674142b3c17e9c7426b8772877fa38921db7bcf7a59824"
+    },
+    {
+      "path": "src/sim/__tests__/witness.test.ts",
+      "sha256": "c39b82986d402f5c0ab4af120037c12e97b583a3a6cce70d1e298f2e6744c8da"
+    },
+    {
+      "path": "src/sim/__tests__/world-atlas.test.ts",
+      "sha256": "b4b124455552ed24e6b7c2723f03be3cff8575eec6df2ed5c87b1cbe1472bc67"
+    },
+    {
+      "path": "src/sim/__tests__/world-binary.test.ts",
+      "sha256": "8227e2a282f5e8963f1d4bcd6a0bb6f1705281cf1b6f22c49b858362b1aadde7"
+    },
+    {
+      "path": "src/sim/__tests__/world-geography.test.ts",
+      "sha256": "b2cf21a007bbb007fa9e8cfe898de7d62f0776a94dd95b007bbf9ac735f426ee"
+    },
+    {
+      "path": "src/sim/__tests__/world-map.test.ts",
+      "sha256": "8dd7c39b75f5c49a0360975b598fb5f19a9e1a8ff5cb07febd36f61d1263f12a"
+    },
+    {
+      "path": "src/sim/__tests__/world-object-records.test.ts",
+      "sha256": "6a39e0193b7710fe7dd7983963f0daac8beea9b32d22f3b10158cf0dc388bbf2"
+    },
+    {
+      "path": "src/sim/__tests__/world-records.test.ts",
+      "sha256": "76010f922ba261901c9fba56b8d4afe5954c863c912a45adc9b893072ef83049"
+    },
+    {
+      "path": "src/sim/__tests__/world-state.test.ts",
+      "sha256": "39e4e52b804ea6e299e842350a92f473906a5baaacbb19ea4708783f5aa4f314"
+    },
+    {
+      "path": "src/sim/__tests__/world.test.ts",
+      "sha256": "9c1c3f598d605df54cd5a7e6c97cacee5bf56eeba49afff7b031fc784f020bd7"
+    },
+    {
+      "path": "src/sim/__tests__/worlddata-sources.test.ts",
+      "sha256": "c24be7121a4cef16d585605c3253e78bd3fb0995e6b26d3e9a5d3c40a9d5697f"
+    },
+    {
+      "path": "src/sim/ai/ActionCatalog.ts",
+      "sha256": "4ebfb79dd42f2d223710b87d72144b8b006f3a22d2f076ce447ffb960101028d"
+    },
+    {
+      "path": "src/sim/ai/Anchor.ts",
+      "sha256": "271d0a398cfee1dd200f716fdd2cb5b9f99a09c79f83758ccb87eced4d2f0001"
+    },
+    {
+      "path": "src/sim/ai/Autonomy.ts",
+      "sha256": "582143f1261afee9212ec6c6f5402b9a241250656fa42127d866ff830036903a"
+    },
+    {
+      "path": "src/sim/ai/Beliefs.ts",
+      "sha256": "a1b795f5349455081b0af6d5a49940c357b3f9bc831ff11aa962b4b526042c7b"
+    },
+    {
+      "path": "src/sim/ai/Bond.ts",
+      "sha256": "9b25846dc45f22437469fb512565b7af973c0e8649bcf779d178a8b52cee2405"
+    },
+    {
+      "path": "src/sim/ai/Brain.ts",
+      "sha256": "ad91e1df36001731096bae7947d4893610534f6dc2cdf5a7229910bc7cfc81a2"
+    },
+    {
+      "path": "src/sim/ai/Drives.ts",
+      "sha256": "cd82179efbacd7522125fc29d1cc7bf32e50d1f30b94121a36e01b002743e502"
+    },
+    {
+      "path": "src/sim/ai/Feeding.ts",
+      "sha256": "e8c37e821ea89bf2c26ca144aab575c10e02136bf000eedd2de2a489bd16628d"
+    },
+    {
+      "path": "src/sim/ai/FoodChoice.ts",
+      "sha256": "8a57c68c67b6b3a5a2671eb1991a4c57ae8dacbad1e9eee83b4c311a5ec70e10"
+    },
+    {
+      "path": "src/sim/ai/Nursing.ts",
+      "sha256": "e202339e477edb7239996ecae79e500e82b7d78a3229917a566955abfeca62fd"
+    },
+    {
+      "path": "src/sim/ai/Possession.ts",
+      "sha256": "a1276680db56667d92e1d177c3d834222d15de9be03079d0eb9ec461192b30cf"
+    },
+    {
+      "path": "src/sim/ai/Status.ts",
+      "sha256": "c851f8c425679aa6e416ad4f84f5abb89a37a9e6eb24c9b9fb40a9102940a184"
+    },
+    {
+      "path": "src/sim/ai/Temperament.ts",
+      "sha256": "5d64021cded8f48d3a27961b2d48892f25dd8bf5bed2c844bb7ea29ffdf5cb59"
+    },
+    {
+      "path": "src/sim/ai/__tests__/FoodChoice.test.ts",
+      "sha256": "177d57314d09f976b1c285c3e89d873d5634b9969c1d01818928041e40d2c32d"
+    },
+    {
+      "path": "src/sim/core/Carry.ts",
+      "sha256": "99f469d70bf3ef976d4dbf8739aeff30faf6a8f69d00f2a9ecdacaaa63daa050"
+    },
+    {
+      "path": "src/sim/core/Choice.ts",
+      "sha256": "c5063bb2038dcb3b9f972b63c1e7bcc5c319a8e6200befd9cbe18d875f7c896d"
+    },
+    {
+      "path": "src/sim/core/Circadian.ts",
+      "sha256": "762d1b56dce79ab1913b3baedb72bdc9de6d898383941394dff78a18b10956f3"
+    },
+    {
+      "path": "src/sim/core/Config.ts",
+      "sha256": "576ec99228a24a783f19b17c56d37424f1fd26335937e6cc9f87713cc98dfa53"
+    },
+    {
+      "path": "src/sim/core/Difficulty.ts",
+      "sha256": "f094bb60a8fe4fc42962f73cf5e9c93b30fc98a45dc888ee8076d48d3499ddb6"
+    },
+    {
+      "path": "src/sim/core/Earth.ts",
+      "sha256": "90e2ecabbb402c7cecfadbecfa102de0365c7b9c9dea89e484138fdd0696d082"
+    },
+    {
+      "path": "src/sim/core/Grass.ts",
+      "sha256": "c5d1f99751967cdc18304d7080133323dbbc8d4db40f4b6c3fbe531d2379d9cc"
+    },
+    {
+      "path": "src/sim/core/IdSpace.ts",
+      "sha256": "b22880469f1dd3c151c2071334917aef7a6830668725fad8a6666d9e31fbcbcb"
+    },
+    {
+      "path": "src/sim/core/Macros.ts",
+      "sha256": "2d1ce60574e4a6e5f8340f1704287e976aaa63ecf4938a5c189d3c74fb0f405d"
+    },
+    {
+      "path": "src/sim/core/Mood.ts",
+      "sha256": "5405dab439fc169f8f124fa6701a559287744a8d33061e7d0caa38ff7f0c2e9d"
+    },
+    {
+      "path": "src/sim/core/Noise.ts",
+      "sha256": "72f408f437fee3eac8ea7fc0a519feaf814ece15e148fd4189990ce84e29a46c"
+    },
+    {
+      "path": "src/sim/core/Pathfinder.ts",
+      "sha256": "891ced9f909ad670954f8a191f9e10efe9be1aa6ab9a5508cb6dda6b02a80e7c"
+    },
+    {
+      "path": "src/sim/core/Progress.ts",
+      "sha256": "d5095afb212b99b87a3aa936779703a59743ca40f99e515698b77cc9566ab482"
+    },
+    {
+      "path": "src/sim/core/RNG.ts",
+      "sha256": "18e908565f7033904c665caf723b8674af05225a66b5b323bbcc8f8dbe80a01c"
+    },
+    {
+      "path": "src/sim/core/Simulation.ts",
+      "sha256": "ef757b3698c7a0cc94421f56bedba173171149725137c089ce5c5644f49e1707"
+    },
+    {
+      "path": "src/sim/core/Snow.ts",
+      "sha256": "a7bc9531fc7b7f1f04503fb0a0660551323ebf150ad850ec954be5397d1d5d32"
+    },
+    {
+      "path": "src/sim/core/Soil.ts",
+      "sha256": "32f9408073beb963ad9ecec1a7616f85e5591cbf72aac29096d471fd104a718e"
+    },
+    {
+      "path": "src/sim/core/SpatialHash.ts",
+      "sha256": "1c07209f3105c23a380f44470084b7cd71ae07023be3860273c52aaf5bfb8a2e"
+    },
+    {
+      "path": "src/sim/core/Swimming.ts",
+      "sha256": "9983dd38565aeae54d43672df877a663c4a521876a379c6b5f0f3e68cfeb07f3"
+    },
+    {
+      "path": "src/sim/core/Telemetry.ts",
+      "sha256": "37cb938341d01ff3f102f26382ca7a143845fc4ea58a41fd247527045f39d937"
+    },
+    {
+      "path": "src/sim/core/TimeManager.ts",
+      "sha256": "a7c78759b832f977a46d5c3b5f03ab620563ad8ab298749ea233b5740a9e7b89"
+    },
+    {
+      "path": "src/sim/core/ToolEquipment.ts",
+      "sha256": "8c7138cc9de266b189fd21e61d47a5d500ee0118f7abb212c2387304055b3e69"
+    },
+    {
+      "path": "src/sim/core/World.ts",
+      "sha256": "2eb08d071249a4138acb244e71db250d171bcffdc4f5765bcced40cd066fabdf"
+    },
+    {
+      "path": "src/sim/entities/Animal.ts",
+      "sha256": "3f658ba96041c04b866bdc3b217639eeb55411f0b7ffcfb69af8a94eff162e0e"
+    },
+    {
+      "path": "src/sim/entities/AnimalAttack.ts",
+      "sha256": "acc6342008b2c68719b89d2018bab04213c42e42cb60d7fafe9850d3d99c88cf"
+    },
+    {
+      "path": "src/sim/entities/Body.ts",
+      "sha256": "4be39f04eaf26dee0eac4366475755098d152206a3096af8144c48dd99ff1848"
+    },
+    {
+      "path": "src/sim/entities/Building.ts",
+      "sha256": "7638077bc2d333d6fe33ed15443adc36350a7da923a43830c9bcc07abcd8c4aa"
+    },
+    {
+      "path": "src/sim/entities/Corpse.ts",
+      "sha256": "25569c97de1530641fe0f1da786a699152c5b47acac695aae37dbe7c53ecc098"
+    },
+    {
+      "path": "src/sim/entities/Earthwork.ts",
+      "sha256": "5f452f4b3855208a8293428c2a8c682cac35a89d8daccdb245dd42d0ac79efbd"
+    },
+    {
+      "path": "src/sim/entities/Equipment.ts",
+      "sha256": "b4353baa97c324f83194ee0a2fc223f454a5fcda13b677a71fccc06edbf82908"
+    },
+    {
+      "path": "src/sim/entities/Field.ts",
+      "sha256": "8293eb2f6eeb978f781deb995787a1941cfe189dcf0329f144fb714c0dc14305"
+    },
+    {
+      "path": "src/sim/entities/Household.ts",
+      "sha256": "f8e5307620496b04a3a9b6de2945dace9b2ceb3297adbbd0fb612e246fccf90b"
+    },
+    {
+      "path": "src/sim/entities/Inscription.ts",
+      "sha256": "96ada0e4b6a175a6471c5552602b410e66d4154a15b17bfd6ac0162d8e5d5385"
+    },
+    {
+      "path": "src/sim/entities/Item.ts",
+      "sha256": "05ffad67845fdb2e7c80d5048abfad6f16b5abd4181d049bcbdd16f5139038aa"
+    },
+    {
+      "path": "src/sim/entities/ItemPile.ts",
+      "sha256": "8b75fd26fb580176f5c4c805ec5d0708a33e5a8d0af4354d87f5bf3ad2cf65ff"
+    },
+    {
+      "path": "src/sim/entities/Job.ts",
+      "sha256": "42bdc5fa023c30688263dc522120fb5ac089e9925167d520114567f5f582a9b9"
+    },
+    {
+      "path": "src/sim/entities/LifeStage.ts",
+      "sha256": "18aec6e082bdb4aaf810b367dd05c644b7b4feca12c40bfed9b7e65d276995fc"
+    },
+    {
+      "path": "src/sim/entities/Person.ts",
+      "sha256": "7ea5b53576e53cc7e32c55168af60c7cffcc09a9341f31f86968fbf4fc5a5339"
+    },
+    {
+      "path": "src/sim/entities/Recipe.ts",
+      "sha256": "5fb73fb4bc9f99c9734eb783e9deb6a5a08c6d5606c402548f311f597756572a"
+    },
+    {
+      "path": "src/sim/entities/ResourceNode.ts",
+      "sha256": "725352d463466a492cddbb15ef45d94533876616e1ac39716fd33c262ce0023f"
+    },
+    {
+      "path": "src/sim/entities/Tree.ts",
+      "sha256": "dc80dfcb8ae0464575f267b09c352a7b6682d3a8aec147b783d5e9931329db41"
+    },
+    {
+      "path": "src/sim/knowledge/SeasonLore.ts",
+      "sha256": "5018635b1923d97e51d2fcf93169278962775807b20afce7d1f0e7c36d7aa666"
+    },
+    {
+      "path": "src/sim/knowledge/Synthesis.ts",
+      "sha256": "2c7af41771c41002ad70fb8a7102289cccd884e2a7c8c30b048773a482f5b84c"
+    },
+    {
+      "path": "src/sim/knowledge/Tech.ts",
+      "sha256": "0d41c0f9e8d1925b54cfe121d815e0f64a874532bf9e5208cd7f573de3fcff5e"
+    },
+    {
+      "path": "src/sim/persistence/CheckpointRecords.ts",
+      "sha256": "57607564aed2315234e0d994a3d7d01adaaf1f5a7e067cc3d10da1e08ddfde2f"
+    },
+    {
+      "path": "src/sim/persistence/EntityRecords.ts",
+      "sha256": "10e55028941c3fb51c441a463a20af834768a89313bf6d8b29b8ae77b906aca3"
+    },
+    {
+      "path": "src/sim/persistence/ExecutionRecords.ts",
+      "sha256": "71e4c67e31b5c90a833b9a6bd01784c753d8bbed4ec93df1a6fe766b314208a2"
+    },
+    {
+      "path": "src/sim/persistence/GraphRecords.ts",
+      "sha256": "e267ffa646e8cd35d849ae19cd2e6b18ea4f9ee0955be433243f8228a3b217ca"
+    },
+    {
+      "path": "src/sim/persistence/LedgerRecords.ts",
+      "sha256": "5bb3ed5d0954d27097a4e19c8110db035e87328b1bbcca31de0a6312e4eaddca"
+    },
+    {
+      "path": "src/sim/persistence/RosterRecords.ts",
+      "sha256": "ba8188c1e5bf843873b37d5841b746fcc70934c4d8a4aafce211242addd5163f"
+    },
+    {
+      "path": "src/sim/persistence/SocialRecords.ts",
+      "sha256": "c4c8111e63c4d9ee3f25a57628066aca6886ba8ef809920af66b5701aa5dce70"
+    },
+    {
+      "path": "src/sim/persistence/WorldObjectRecords.ts",
+      "sha256": "8fa58b85b48d2868cc5bb7f3c60dd90d08250b3ed9236a518640d958b3776942"
+    },
+    {
+      "path": "src/sim/persistence/WorldRecords.ts",
+      "sha256": "8fde5d1d08b5da1c87bed331986c5949aef1cc80a65ed1907f1feb7831a46334"
+    },
+    {
+      "path": "src/sim/runtime/authority.ts",
+      "sha256": "65917321b67e7487131e7db7db3a983569b2ccdbfe1e029f17b461877e201819"
+    },
+    {
+      "path": "src/sim/social/Amends.ts",
+      "sha256": "515c827e94543c7bb5bdddf89926a15767ed36c5b74126992a95e9aff94068a9"
+    },
+    {
+      "path": "src/sim/social/Authority.ts",
+      "sha256": "ee1682be13a7bf93b358ee644afb4979b3c728c6b717f2070303ffb0ab129008"
+    },
+    {
+      "path": "src/sim/social/BandMaps.ts",
+      "sha256": "590903210f4aedaf1e55d5b3b297817745c53f57b5bcc08013ab426b5d1c78e4"
+    },
+    {
+      "path": "src/sim/social/BandRelations.ts",
+      "sha256": "494a2b9f31d92447ece812d2dd4d4b408ff790ace9432de47e3878326f045b7f"
+    },
+    {
+      "path": "src/sim/social/Captivity.ts",
+      "sha256": "449724945e337533fc55253cbedcf5ed1bfa2bb66a607a193194f2ca2a5cf129"
+    },
+    {
+      "path": "src/sim/social/Conversation.ts",
+      "sha256": "6dce16cac1f6c1fc90b7c56494f9a3ed4ef86fabbf8495273b0e70a88c89f45c"
+    },
+    {
+      "path": "src/sim/social/Defence.ts",
+      "sha256": "51803e61bda536e2f4b64e7ce8ccb21da025fae8206a00952f0bcc4e1b1b129f"
+    },
+    {
+      "path": "src/sim/social/Events.ts",
+      "sha256": "0db4f1e5b3ee4ddc82aac07e84b3700b979b00d31e0524f1570143f57e8ed41c"
+    },
+    {
+      "path": "src/sim/social/Factions.ts",
+      "sha256": "60bd9311cfa6ad72dd1bb31ebb51339cf305742f15e332635edf3730fc6cfba6"
+    },
+    {
+      "path": "src/sim/social/Fear.ts",
+      "sha256": "49f80b2f6f4bdcefa1f2c9f0a50c44b31e8e4f65e4c588b20cdfaef455f2ff91"
+    },
+    {
+      "path": "src/sim/social/Feast.ts",
+      "sha256": "c131016a86c6664a7ad5115063984ed484375914269b67ac87ef7ed3f30f47a5"
+    },
+    {
+      "path": "src/sim/social/Investigation.ts",
+      "sha256": "253608b3523ac6f68e16326402c05ff7c7afd60e673919115ba9de067816a83e"
+    },
+    {
+      "path": "src/sim/social/Justice.ts",
+      "sha256": "bf2bfce78853acfc39f9471e5fefdf0d5317f542cf670704c61e26b3200bd7b8"
+    },
+    {
+      "path": "src/sim/social/Knowledge.ts",
+      "sha256": "30f43d263e737a2b9fed91b4fc3fc2ec9a3813f1e7300c75df17552451555fd1"
+    },
+    {
+      "path": "src/sim/social/Leadership.ts",
+      "sha256": "4f626fa43ed5978da8a3918d9519546c0c507fdcc456fac0396b6f258a55a4eb"
+    },
+    {
+      "path": "src/sim/social/Memory.ts",
+      "sha256": "a44a43a480d1227ee0e30b4fa0d1b6836ddcf21faa276a708d1f0840e440192c"
+    },
+    {
+      "path": "src/sim/social/Persuasion.ts",
+      "sha256": "f350d98fc97e512f0b1ba90fc44144710cf322573b138cbf2952a9d291a2a28a"
+    },
+    {
+      "path": "src/sim/social/PlaceMemory.ts",
+      "sha256": "7d1883af9ca531aab65342bd796aacfa8a90bd6f57cb24a2f2d15b236df7bc36"
+    },
+    {
+      "path": "src/sim/social/Polity.ts",
+      "sha256": "670aeb33f2021846e30fd5ad8f30b0811d2393d10dde3fea050b429981b9c163"
+    },
+    {
+      "path": "src/sim/social/Property.ts",
+      "sha256": "02e8841fbf4853937b3fa23a599063840e5161d51e56b7aca5f0adf57d4fa5d8"
+    },
+    {
+      "path": "src/sim/social/Rank.ts",
+      "sha256": "23ccf7bd13a6bfa4deb0e1acc26100226733dc1df8f8178371d4c39154ac5393"
+    },
+    {
+      "path": "src/sim/social/Relationships.ts",
+      "sha256": "62c20c04174f4328b1981745ba66ecd1a1a5d971377252bd9d8724e495c887a4"
+    },
+    {
+      "path": "src/sim/social/Restraint.ts",
+      "sha256": "9810162bf0cad98a3aef95448bf55885d8e3d9edc421adc387731a2551f86d3d"
+    },
+    {
+      "path": "src/sim/social/SocialSystem.ts",
+      "sha256": "8f136460647eba146e05e11ec6e29bbdacdf7d7f304266b0399a8a1501b179f3"
+    },
+    {
+      "path": "src/sim/social/Vulnerability.ts",
+      "sha256": "40a24c1d80d09512e2d89312416a850f8df702ebcd8980c9f3332bb103d7c0fa"
+    },
+    {
+      "path": "src/sim/systems/ActionSystem.ts",
+      "sha256": "1f946fbe74b0b11b8b9cc54f7e0dd11fdcc1063b14cc3764cd1404fd60cc0600"
+    },
+    {
+      "path": "src/sim/systems/BandSystem.ts",
+      "sha256": "9c0283baa6682ffda2457d6ab12a1444a20383560c8b24c5711cdfceda631335"
+    },
+    {
+      "path": "src/sim/systems/ForestSystem.ts",
+      "sha256": "58c9f1f0f22a8b7b205e64924562ce75bbab4d8483425c6f79e643028305c3a6"
+    },
+    {
+      "path": "src/sim/systems/Founding.ts",
+      "sha256": "68392de9c4a66ea213b67b2e4e1b12684f3fe863b92dd54dced239bbe2b0b71f"
+    },
+    {
+      "path": "src/sim/systems/KnowledgeSystem.ts",
+      "sha256": "6815fcd7501d04867e56a58028978cc3a9538d4e3ad45873d38428edf0d6e876"
+    },
+    {
+      "path": "src/sim/systems/LifeSystem.ts",
+      "sha256": "3dc4a43c9fa7a62034a325aa6c604877e0569dec2f986bb31ea952dacfd65c5c"
+    },
+    {
+      "path": "src/sim/systems/MovementSystem.ts",
+      "sha256": "6fea1baf23b7c97501759cac2af508cd73176cbc80882e9e5d6110af994a630c"
+    },
+    {
+      "path": "src/sim/systems/NeedsSystem.ts",
+      "sha256": "053795ae2d5219bb797e6ea6ab93623b1c8412380b1626ebb36f2b543a540c05"
+    },
+    {
+      "path": "src/sim/systems/WildlifeSystem.ts",
+      "sha256": "12fb5f981fa8d325574630b13e092b54638fa1b423dc8482918734e6fa74b4e3"
+    },
+    {
+      "path": "src/sim/world/GeographicResources.ts",
+      "sha256": "287d8c69f0b608b8b7db05e2cd05b6bc53937c59aed24bfe026051e90b610c82"
+    },
+    {
+      "path": "src/sim/world/LocalGeography.ts",
+      "sha256": "0ead921303edd5bd875d7a0da28480a5aaae64d3a9dff49f90dcffb1dc21339b"
+    },
+    {
+      "path": "src/sim/world/RealWorldMap.ts",
+      "sha256": "4e7360be631aae0768854c01152203c153b27c8d77be25f48a93a81230a906b9"
+    },
+    {
+      "path": "src/sim/world/WorldAtlas.ts",
+      "sha256": "a454aac14e6d0ae1d8c378ecee29e9a35daf17e4a209ac741c36a22c317ddad9"
+    },
+    {
+      "path": "src/sim/world/WorldBinary.ts",
+      "sha256": "c42621da90ea8ad1a60d6ab685ceb13ea5346064607168c27f374cf85d219086"
+    },
+    {
+      "path": "src/sim/world/WorldFeatureSeeds.ts",
+      "sha256": "96178e7920d675d08d12c741fb8d4868c3bea024fe2ec7b9695683d0f780bc9a"
+    },
+    {
+      "path": "src/sim/world/WorldGeography.ts",
+      "sha256": "7934de56b9dd37fda15009a8806830898f22997fd05ef69ff0f53c88bbab75e1"
+    },
+    {
+      "path": "src/sim/world/WorldMap.ts",
+      "sha256": "b85dedbb8867d95fdd5b5741ba1147aa1d136c998170aa1eb69fa87bc61bfa08"
+    },
+    {
+      "path": "src/sim/world/WorldState.ts",
+      "sha256": "d45d51d793d4921722da3d1059d8fa09f2674258875e5e5b9b00b7077b044246"
+    },
+    {
+      "path": "src/style.css",
+      "sha256": "fdf81665e87733c1fda8ea3661db9c280beb56eddf519a7f1a13585017c86e27"
+    },
+    {
+      "path": "src/ui/EntityPicker.ts",
+      "sha256": "fe819d5bba5378c3d4989546ab7803bd446fc75f1ddb3d857ea35f3af9b79677"
+    },
+    {
+      "path": "src/ui/FamilyTree.ts",
+      "sha256": "3f3221a8c2cd13f2ba1fcf36ed008cdb988a06472e13927d4d4e3404d6ad70f8"
+    },
+    {
+      "path": "src/ui/FamilyTreeLayout.ts",
+      "sha256": "08e8e807265636b44e552f82bffa543c1adff5b8da50a6fe8f6558bde7f64bd7"
+    },
+    {
+      "path": "src/ui/GraphLayout.ts",
+      "sha256": "85e463dc27f354b4e44bcd297835d0221aa396b7c8cfaff056738cbe68e58684"
+    },
+    {
+      "path": "src/ui/Hud.ts",
+      "sha256": "9245ea04b82a02cec869e7f6cd39ecf66b4742f2d1e3edf1ece48a6b5c53da21"
+    },
+    {
+      "path": "src/ui/LanguageSwitch.ts",
+      "sha256": "ec34ebcdd388546ca1aa216084b38a565bb0ce23c5af04f9c59345954096906f"
+    },
+    {
+      "path": "src/ui/LifeLog.ts",
+      "sha256": "d2d6df153331b7e7102376eacbe8c70621f30b546313249aefba9f64ab0a14d4"
+    },
+    {
+      "path": "src/ui/NewGame.ts",
+      "sha256": "eb01a221b4c0cda5de4b52e6fb0301bc6aedbf85d0afab5d5fda435596d1490d"
+    },
+    {
+      "path": "src/ui/PanelBox.ts",
+      "sha256": "c8496935f4f0540902d03fe2135555e83a9c7ef61b0fa7da726cc336010e6d3c"
+    },
+    {
+      "path": "src/ui/PauseMenu.ts",
+      "sha256": "8df5cde17ab773749f723e8c3ff0b615ee2514807091f663b0eff3147990fba6"
+    },
+    {
+      "path": "src/ui/QuantityPicker.ts",
+      "sha256": "5d0b80746a15657bb7ff4af70693e7ff2ea1577a813e817a22409a71f18ab362"
+    },
+    {
+      "path": "src/ui/RadialMenu.ts",
+      "sha256": "0b75bab10984c77e8d2deab75b40038aa7ad4cf418236bc7f438bff89d737595"
+    },
+    {
+      "path": "src/ui/Settings.ts",
+      "sha256": "a051e2077accdb970ce5fe2d09be2f112750933cc0057328affb3e4a124b72a7"
+    },
+    {
+      "path": "src/ui/SettingsStore.ts",
+      "sha256": "e215f5e5defbbd5e56dd4f475e6aa66739c78780820e26cf21974795756208ac"
+    },
+    {
+      "path": "src/ui/SliderRow.ts",
+      "sha256": "cd3df8c71880c9e0290f9a0e7ccd334c4b9ffac2587838cc300d92f2d499a5fe"
+    },
+    {
+      "path": "src/ui/Succession.ts",
+      "sha256": "dd048e1cba4470e950dd6e34d55a43b2116100d23e533b98328d245a7afe7d5f"
+    },
+    {
+      "path": "src/ui/TechWeb.ts",
+      "sha256": "f47bcd6c9f8c42184575e5888899863d09baa68de232ab42d91f6bc3a4bd3323"
+    },
+    {
+      "path": "src/ui/TechWebLayout.ts",
+      "sha256": "05a6bad24f2e8628dc2fe784cc0ce294c373ce45f3ff84752e2784d84b8c2fca"
+    },
+    {
+      "path": "src/ui/TransferPanel.ts",
+      "sha256": "979266b39bc53304251d0439a366848ff86e5a01030e31ca6fc70c73c27a5bfd"
+    },
+    {
+      "path": "src/ui/TribeGraph.ts",
+      "sha256": "a8ccd5d343d63c4f1b492d46aa4fac22ef7f6ea24825944c44c63c417d5c7344"
+    },
+    {
+      "path": "src/ui/TribeGraphLayout.ts",
+      "sha256": "83e1c002ddfeed212f1e6311b431174e1b63414d69d3a7899bebbf91197ffce0"
+    },
+    {
+      "path": "src/ui/VerdictOverlay.ts",
+      "sha256": "92942eb226cf6a61f5ad34bc69e58fbac1faaaef2919cdb0ae71ad0698a66727"
+    },
+    {
+      "path": "tools/art/build.ts",
+      "sha256": "cfd904b2465736ad96a465eae33facc42d098574360e7336d3215445a01137d5"
+    },
+    {
+      "path": "tools/art/compare.ts",
+      "sha256": "726414a00a73d57a1d1276700fbca7f4ece79251229ea126804e0f71625926bd"
+    },
+    {
+      "path": "tools/art/memory.html",
+      "sha256": "a1973a500a02d6e55a8ce0fc8d360d28bf9e99dc64dc4eec69e8af7c9510cc30"
+    },
+    {
+      "path": "tools/art/memory.ts",
+      "sha256": "fc30a4de89a123cd5e376a44353567cf869b895e3f6381e4bf82e009c33d4d3e"
+    },
+    {
+      "path": "tools/art/sheet-page.ts",
+      "sha256": "7c8441d6e6894e9f92cbcf48c7cc86a4ebb66dca7621b11bba4a16f819d9ca7d"
+    },
+    {
+      "path": "tools/art/sheet.html",
+      "sha256": "7b74a468841e24af0c57a262379819a9915507b08679b1079a08c5c664a46afe"
+    },
+    {
+      "path": "tools/art/sheet.ts",
+      "sha256": "f46988b4f975835dca13c003ae2aaf7d51c4e90179e4a4808656bc7d4aca5542"
+    },
+    {
+      "path": "tools/checkFixtures.ts",
+      "sha256": "1c7badf18f4277ab34e7606c163ad71b5b84d265c82ec983e677039546655b93"
+    },
+    {
+      "path": "tools/cohesion.ts",
+      "sha256": "0d299c5299ca369857d7772681d3d5537cdc313a5198d10c6794dd666deb8100"
+    },
+    {
+      "path": "tools/demography.ts",
+      "sha256": "c62861b41c729e619371acb8344253c3e4268a811b9be02bd59d9791eb15940a"
+    },
+    {
+      "path": "tools/headless.ts",
+      "sha256": "46a93678fb744db8ee5340d3ef103b855d5a287392ad838cc0548b556627922a"
+    },
+    {
+      "path": "tools/history.ts",
+      "sha256": "836d61eaa7dcc93c28cf3993c50af4092ea7f3787e3c7c1cd2f8301f5295adf5"
+    },
+    {
+      "path": "tools/i18n-soak.ts",
+      "sha256": "6d775f161a4d20851ce42f0981bcdecd8907476fa43f8890e491b022c96b3baf"
+    },
+    {
+      "path": "tools/infants.ts",
+      "sha256": "e7c907658cad8b4a0b61acc6a2a4c1cb1490d21d68f0ad1731def72d7c032814"
+    },
+    {
+      "path": "tools/m15-local-reference.ts",
+      "sha256": "01f91b006d65d113c3bcc823b6e028dd05f0729d1d117600239b289aa4029bc6"
+    },
+    {
+      "path": "tools/profile-population.ts",
+      "sha256": "d2b4f9926f4e74c54271a3667264dfb7328daf10bb73bd2bc4e2d5a5b7bf4d90"
+    },
+    {
+      "path": "tools/profile-systems.ts",
+      "sha256": "a6267459915a62dda6eb51912a9bc14e4d9040c1c56413e24baee4a38049030b"
+    },
+    {
+      "path": "tools/range.ts",
+      "sha256": "f8488451a95daee2be33bddc999656dae7877b77381da1a1c77c99cf7d7df434"
+    },
+    {
+      "path": "tools/regions.ts",
+      "sha256": "488e944b4222a92f9a69a0ed1f5283c2052f0c1c4b23e8c026633f7c24a29318"
+    },
+    {
+      "path": "tools/scenarios.ts",
+      "sha256": "3baf9b0f3e497d4c70c3c47d9d862c53a1c3086c4f3aedf1db6ae74541adc2f0"
+    },
+    {
+      "path": "tools/scratch/justdbg.ts",
+      "sha256": "351b572b6453c0fdbee779f80efab701198f06dd1342a294ffbfdd422ebb6fd3"
+    },
+    {
+      "path": "tools/scratch/nursefreq.ts",
+      "sha256": "c796a1a84c73ab7fa2a714428768a3baf6c18228a6728ef53ac60131d4e5c05e"
+    },
+    {
+      "path": "tools/scratch/nursefreq2.ts",
+      "sha256": "fb76a213399d15f44e076cd3b0def5a2d55ecce56fe3c0f6d9b02d6519001e6f"
+    },
+    {
+      "path": "tools/seeds.ts",
+      "sha256": "cae6e71e28bb13af3247fe5c247b6807570fa0eec4bcb0f2e3f94ba5233b6e31"
+    },
+    {
+      "path": "tools/simcheck.ts",
+      "sha256": "287164834ee5158dacfa841625aa9f80f9268884b82a2592909a1776b640c8e4"
+    },
+    {
+      "path": "tools/violence.ts",
+      "sha256": "6a78b228ea1aba68111017e9906a44551f68e4b36b2811f0d183beeb31eb888e"
+    },
+    {
+      "path": "tools/why.ts",
+      "sha256": "e92bf138c98d8d00036241f09170cc3bd20f066cce932f8c25df29eb2991da2e"
+    },
+    {
+      "path": "tools/worlddata/archive.ts",
+      "sha256": "8e1ee833693faedf21902918be87a34e93e1746256077a2f7d1d381f59e588ca"
+    },
+    {
+      "path": "tools/worlddata/beck.ts",
+      "sha256": "2cd26179daf1fcaf2c38e163605e314d5e39f350017b169ea14e2a4074f71e42"
+    },
+    {
+      "path": "tools/worlddata/build.ts",
+      "sha256": "da38e58f62ff88bad93492976d067fdb93d944adc50dafde322bee2684956a32"
+    },
+    {
+      "path": "tools/worlddata/run.ts",
+      "sha256": "208b07fa81890e351e0be3085931c77c206ca72398385ef9103efb2050d64edf"
+    },
+    {
+      "path": "tools/worlddata/shapefile.ts",
+      "sha256": "2748888e45683e6669b87baf5862594b1ae26aa711eb72057ccd8603ad12b87b"
+    }
+  ],
+  "finalMatchesWorkspace": false,
+  "measurementOnlyFollowup": [
+    {
+      "path": "src/sim/__tests__/slopes.test.ts",
+      "sha256": "a50d76ac0096a63f2741138dee16b4f7ebab0b0b8c1fb5808eca31caa3652c4b",
+      "currentSha256": "92d3b75bbd053268d1a11a33fad0b44d4a46737fa82c33e36ca2158ab2f97f1b"
+    },
+    {
+      "path": "src/sim/systems/MovementSystem.ts",
+      "sha256": "6fea1baf23b7c97501759cac2af508cd73176cbc80882e9e5d6110af994a630c",
+      "currentSha256": "df2ec507122b68d5b0832de1a3b12b284d95b828ade52f0bf67dbe6684d9a515"
+    }
+  ],
+  "movementGameplayProjectionMatchesFrozenSource": true
+}

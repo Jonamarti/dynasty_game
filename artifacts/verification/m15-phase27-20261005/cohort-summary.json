@@ -1,0 +1,884 @@
+{
+  "format": "m15-phase27-cohort-summary-v1",
+  "expectedClassicScenarios": 28,
+  "expectedSeedsPerArmPerScenario": 20,
+  "partial": false,
+  "status": "complete",
+  "note": "All 28 classic scenarios have at least 20 unique rows in both arms and 20 matched seeds.",
+  "survivalDefinitions": {
+    "weighted": "100 × sum(end) / sum(peak), matching tools/seeds.ts",
+    "arithmeticMeanPerSeed": "mean of 100 × end / peak for each unique seed; peak=0 contributes 0",
+    "collapse": "peak > 0 and end / peak < 0.25",
+    "pairedDelta": "final per-seed survival percentage minus baseline percentage"
+  },
+  "scenarios": [
+    {
+      "scenario": "food-news",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 81,
+        "sumEnd": 81,
+        "weightedSurvivalPct": 100,
+        "meanPerSeedSurvivalPct": 100,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 81,
+        "sumEnd": 81,
+        "weightedSurvivalPct": 100,
+        "meanPerSeedSurvivalPct": 100,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 0,
+      "pairedDelta95PctApprox": {
+        "lowerPp": 0,
+        "upperPp": 0,
+        "halfWidthPp": 0,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 0,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "conflicts",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 253,
+        "sumEnd": 253,
+        "weightedSurvivalPct": 100,
+        "meanPerSeedSurvivalPct": 100,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 253,
+        "sumEnd": 253,
+        "weightedSurvivalPct": 100,
+        "meanPerSeedSurvivalPct": 100,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 0,
+      "pairedDelta95PctApprox": {
+        "lowerPp": 0,
+        "upperPp": 0,
+        "halfWidthPp": 0,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 0,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "tiny",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 166,
+        "sumEnd": 165,
+        "weightedSurvivalPct": 99.3975903614458,
+        "meanPerSeedSurvivalPct": 99.44444444444444,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 166,
+        "sumEnd": 165,
+        "weightedSurvivalPct": 99.3975903614458,
+        "meanPerSeedSurvivalPct": 99.44444444444444,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 0,
+      "pairedDelta95PctApprox": {
+        "lowerPp": 0,
+        "upperPp": 0,
+        "halfWidthPp": 0,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 0,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "band",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 645,
+        "sumEnd": 642,
+        "weightedSurvivalPct": 99.53488372093024,
+        "meanPerSeedSurvivalPct": 99.51579301075269,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 648,
+        "sumEnd": 646,
+        "weightedSurvivalPct": 99.69135802469135,
+        "meanPerSeedSurvivalPct": 99.67204301075269,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 0.15625,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -0.17078125,
+        "upperPp": 0.48328125,
+        "halfWidthPp": 0.32703125,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": -0.15647430376111515,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "crowded",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 1523,
+        "sumEnd": 1522,
+        "weightedSurvivalPct": 99.93434011818779,
+        "meanPerSeedSurvivalPct": 99.9342105263158,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 1523,
+        "sumEnd": 1518,
+        "weightedSurvivalPct": 99.67170059093894,
+        "meanPerSeedSurvivalPct": 99.67354925775979,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -0.26066126855600585,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -0.5778045838931983,
+        "upperPp": 0.05648204678118662,
+        "halfWidthPp": 0.3171433153371925,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 0.26263952724885087,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "century",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 1014,
+        "sumEnd": 739,
+        "weightedSurvivalPct": 72.87968441814596,
+        "meanPerSeedSurvivalPct": 70.31762837396788,
+        "collapsedBelow25Pct": 1
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 924,
+        "sumEnd": 630,
+        "weightedSurvivalPct": 68.18181818181817,
+        "meanPerSeedSurvivalPct": 66.4029414087387,
+        "collapsedBelow25Pct": 1
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -3.9146869652292025,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -15.673531111367815,
+        "upperPp": 7.844157180909409,
+        "halfWidthPp": 11.758844146138612,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 4.697866236327783,
+      "weightedLossGateMax3Pp": false,
+      "partial": false
+    },
+    {
+      "scenario": "craft",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 724,
+        "sumEnd": 698,
+        "weightedSurvivalPct": 96.40883977900553,
+        "meanPerSeedSurvivalPct": 95.66271551724138,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 728,
+        "sumEnd": 713,
+        "weightedSurvivalPct": 97.93956043956044,
+        "meanPerSeedSurvivalPct": 97.53327886194265,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 1.870563344701275,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -1.8204262799629187,
+        "upperPp": 5.561552969365469,
+        "halfWidthPp": 3.690989624664194,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": -1.5307206605549055,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "wilds",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 687,
+        "sumEnd": 621,
+        "weightedSurvivalPct": 90.39301310043668,
+        "meanPerSeedSurvivalPct": 89.88384707331207,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 681,
+        "sumEnd": 603,
+        "weightedSurvivalPct": 88.54625550660793,
+        "meanPerSeedSurvivalPct": 87.61325924047779,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -2.270587832834283,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -10.828979837288836,
+        "upperPp": 6.287804171620271,
+        "halfWidthPp": 8.558392004454554,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 1.846757593828741,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "emptied",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 213,
+        "sumEnd": 212,
+        "weightedSurvivalPct": 99.53051643192488,
+        "meanPerSeedSurvivalPct": 99.58333333333334,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 215,
+        "sumEnd": 215,
+        "weightedSurvivalPct": 100,
+        "meanPerSeedSurvivalPct": 100,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 0.41666666666666713,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -0.4554166666666673,
+        "upperPp": 1.2887500000000016,
+        "halfWidthPp": 0.8720833333333344,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": -0.4694835680751197,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "hearths",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 716,
+        "sumEnd": 666,
+        "weightedSurvivalPct": 93.01675977653632,
+        "meanPerSeedSurvivalPct": 92.0274496815445,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 694,
+        "sumEnd": 663,
+        "weightedSurvivalPct": 95.53314121037464,
+        "meanPerSeedSurvivalPct": 94.64847100330971,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 2.6210213217652036,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -5.942944595909983,
+        "upperPp": 11.18498723944039,
+        "halfWidthPp": 8.563965917675187,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": -2.516381433838319,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "porters",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 514,
+        "sumEnd": 510,
+        "weightedSurvivalPct": 99.22178988326849,
+        "meanPerSeedSurvivalPct": 99.18333333333334,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 514,
+        "sumEnd": 509,
+        "weightedSurvivalPct": 99.0272373540856,
+        "meanPerSeedSurvivalPct": 98.98333333333333,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -0.2,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -0.6186,
+        "upperPp": 0.21859999999999996,
+        "halfWidthPp": 0.41859999999999997,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 0.1945525291828858,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "scribes",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 697,
+        "sumEnd": 657,
+        "weightedSurvivalPct": 94.26111908177906,
+        "meanPerSeedSurvivalPct": 92.95582437275985,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 650,
+        "sumEnd": 559,
+        "weightedSurvivalPct": 86,
+        "meanPerSeedSurvivalPct": 85.32811065101899,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -7.627713721740863,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -15.169379251824756,
+        "upperPp": -0.08604819165696931,
+        "halfWidthPp": 7.541665530083893,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 8.261119081779057,
+      "weightedLossGateMax3Pp": false,
+      "partial": false
+    },
+    {
+      "scenario": "harsh-winter",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 731,
+        "sumEnd": 721,
+        "weightedSurvivalPct": 98.63201094391245,
+        "meanPerSeedSurvivalPct": 98.4375,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 740,
+        "sumEnd": 740,
+        "weightedSurvivalPct": 100,
+        "meanPerSeedSurvivalPct": 100,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 1.5625,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -0.5859209568741077,
+        "upperPp": 3.7109209568741077,
+        "halfWidthPp": 2.1484209568741077,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": -1.367989056087552,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "coast",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 557,
+        "sumEnd": 557,
+        "weightedSurvivalPct": 100,
+        "meanPerSeedSurvivalPct": 100,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 552,
+        "sumEnd": 552,
+        "weightedSurvivalPct": 100,
+        "meanPerSeedSurvivalPct": 100,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 0,
+      "pairedDelta95PctApprox": {
+        "lowerPp": 0,
+        "upperPp": 0,
+        "halfWidthPp": 0,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 0,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "traps",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 424,
+        "sumEnd": 423,
+        "weightedSurvivalPct": 99.76415094339622,
+        "meanPerSeedSurvivalPct": 99.76190476190476,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 426,
+        "sumEnd": 420,
+        "weightedSurvivalPct": 98.59154929577466,
+        "meanPerSeedSurvivalPct": 98.66190476190476,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -1.1,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -2.6918101663796072,
+        "upperPp": 0.4918101663796073,
+        "halfWidthPp": 1.5918101663796074,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 1.172601647621562,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "millers",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 516,
+        "sumEnd": 318,
+        "weightedSurvivalPct": 61.627906976744185,
+        "meanPerSeedSurvivalPct": 60.33196337865125,
+        "collapsedBelow25Pct": 2
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 493,
+        "sumEnd": 292,
+        "weightedSurvivalPct": 59.2292089249493,
+        "meanPerSeedSurvivalPct": 58.03415599490917,
+        "collapsedBelow25Pct": 4
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -2.297807383742085,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -20.28359984338327,
+        "upperPp": 15.6879850758991,
+        "halfWidthPp": 17.985792459641186,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 2.398698051794888,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "hunters",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 533,
+        "sumEnd": 513,
+        "weightedSurvivalPct": 96.24765478424015,
+        "meanPerSeedSurvivalPct": 96.34848171152518,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 534,
+        "sumEnd": 510,
+        "weightedSurvivalPct": 95.50561797752809,
+        "meanPerSeedSurvivalPct": 95.49594262697711,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -0.85253908454808,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -4.1895128687345675,
+        "upperPp": 2.484434699638407,
+        "halfWidthPp": 3.3369737841864873,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 0.7420368067120648,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "fishers",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 529,
+        "sumEnd": 518,
+        "weightedSurvivalPct": 97.92060491493385,
+        "meanPerSeedSurvivalPct": 98.08355437665782,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 525,
+        "sumEnd": 512,
+        "weightedSurvivalPct": 97.52380952380952,
+        "meanPerSeedSurvivalPct": 97.65160765160766,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -0.43194672505017306,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -1.3261951056404362,
+        "upperPp": 0.46230165554009006,
+        "halfWidthPp": 0.8942483805902631,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 0.3967953911243285,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "farmers",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 685,
+        "sumEnd": 474,
+        "weightedSurvivalPct": 69.1970802919708,
+        "meanPerSeedSurvivalPct": 67.38929997366284,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 664,
+        "sumEnd": 431,
+        "weightedSurvivalPct": 64.90963855421687,
+        "meanPerSeedSurvivalPct": 63.6935589835882,
+        "collapsedBelow25Pct": 1
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -3.695740990074653,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -17.901937875506167,
+        "upperPp": 10.51045589535686,
+        "halfWidthPp": 14.206196885431513,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 4.287441737753937,
+      "weightedLossGateMax3Pp": false,
+      "partial": false
+    },
+    {
+      "scenario": "herders",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 612,
+        "sumEnd": 532,
+        "weightedSurvivalPct": 86.9281045751634,
+        "meanPerSeedSurvivalPct": 85.4967019495417,
+        "collapsedBelow25Pct": 1
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 620,
+        "sumEnd": 547,
+        "weightedSurvivalPct": 88.2258064516129,
+        "meanPerSeedSurvivalPct": 87.08994972418219,
+        "collapsedBelow25Pct": 1
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 1.5932477746404994,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -6.746802498733274,
+        "upperPp": 9.933298048014272,
+        "halfWidthPp": 8.340050273373773,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": -1.2977018764494943,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "feasts",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 723,
+        "sumEnd": 621,
+        "weightedSurvivalPct": 85.89211618257261,
+        "meanPerSeedSurvivalPct": 83.76807508751293,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 692,
+        "sumEnd": 529,
+        "weightedSurvivalPct": 76.44508670520231,
+        "meanPerSeedSurvivalPct": 74.91999218440156,
+        "collapsedBelow25Pct": 2
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -8.848082903111365,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -20.499432563301664,
+        "upperPp": 2.8032667570789336,
+        "halfWidthPp": 11.651349660190299,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 9.447029477370293,
+      "weightedLossGateMax3Pp": false,
+      "partial": false
+    },
+    {
+      "scenario": "stewards",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 674,
+        "sumEnd": 436,
+        "weightedSurvivalPct": 64.68842729970326,
+        "meanPerSeedSurvivalPct": 63.643589883958455,
+        "collapsedBelow25Pct": 2
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 650,
+        "sumEnd": 355,
+        "weightedSurvivalPct": 54.61538461538461,
+        "meanPerSeedSurvivalPct": 53.31438731805755,
+        "collapsedBelow25Pct": 3
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -10.329202565900893,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -23.000738380470626,
+        "upperPp": 2.34233324866884,
+        "halfWidthPp": 12.671535814569733,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 10.07304268431865,
+      "weightedLossGateMax3Pp": false,
+      "partial": false
+    },
+    {
+      "scenario": "labour",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 745,
+        "sumEnd": 716,
+        "weightedSurvivalPct": 96.10738255033557,
+        "meanPerSeedSurvivalPct": 95.86567186567187,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 739,
+        "sumEnd": 656,
+        "weightedSurvivalPct": 88.76860622462787,
+        "meanPerSeedSurvivalPct": 88.72533186697272,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -7.1403399986991305,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -15.334544989177676,
+        "upperPp": 1.053864991779414,
+        "halfWidthPp": 8.194204990478545,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 7.338776325707698,
+      "weightedLossGateMax3Pp": false,
+      "partial": false
+    },
+    {
+      "scenario": "polity",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 916,
+        "sumEnd": 895,
+        "weightedSurvivalPct": 97.70742358078603,
+        "meanPerSeedSurvivalPct": 97.54343528065269,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 887,
+        "sumEnd": 863,
+        "weightedSurvivalPct": 97.29425028184893,
+        "meanPerSeedSurvivalPct": 96.94263831458952,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -0.6007969660631514,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -5.726918444280714,
+        "upperPp": 4.525324512154412,
+        "halfWidthPp": 5.126121478217563,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 0.413173298937096,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "conquest",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 586,
+        "sumEnd": 475,
+        "weightedSurvivalPct": 81.05802047781569,
+        "meanPerSeedSurvivalPct": 80.74456836762872,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 579,
+        "sumEnd": 353,
+        "weightedSurvivalPct": 60.96718480138169,
+        "meanPerSeedSurvivalPct": 61.350202378194275,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -19.394365989434448,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -32.47524359963961,
+        "upperPp": -6.313488379229286,
+        "halfWidthPp": 13.080877610205162,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 20.090835676433997,
+      "weightedLossGateMax3Pp": false,
+      "partial": false
+    },
+    {
+      "scenario": "culture",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 527,
+        "sumEnd": 514,
+        "weightedSurvivalPct": 97.53320683111954,
+        "meanPerSeedSurvivalPct": 97.66483516483517,
+        "collapsedBelow25Pct": 0
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 527,
+        "sumEnd": 524,
+        "weightedSurvivalPct": 99.43074003795066,
+        "meanPerSeedSurvivalPct": 99.45054945054946,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 1.785714285714286,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -1.9517857142857151,
+        "upperPp": 5.523214285714287,
+        "halfWidthPp": 3.737500000000001,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": -1.8975332068311133,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "lean",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 828,
+        "sumEnd": 27,
+        "weightedSurvivalPct": 3.260869565217391,
+        "meanPerSeedSurvivalPct": 3.1838824433257193,
+        "collapsedBelow25Pct": 20
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 830,
+        "sumEnd": 24,
+        "weightedSurvivalPct": 2.891566265060241,
+        "meanPerSeedSurvivalPct": 2.84545796813362,
+        "collapsedBelow25Pct": 20
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": -0.33842447519209984,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -2.3747952029538295,
+        "upperPp": 1.69794625256963,
+        "halfWidthPp": 2.03637072776173,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": 0.3693033001571502,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    },
+    {
+      "scenario": "diggers",
+      "expectedSeeds": 20,
+      "baseline": {
+        "count": 20,
+        "sumPeak": 303,
+        "sumEnd": 250,
+        "weightedSurvivalPct": 82.50825082508251,
+        "meanPerSeedSurvivalPct": 81.48759696186167,
+        "collapsedBelow25Pct": 1
+      },
+      "final": {
+        "count": 20,
+        "sumPeak": 305,
+        "sumEnd": 263,
+        "weightedSurvivalPct": 86.22950819672131,
+        "meanPerSeedSurvivalPct": 85.31705182072828,
+        "collapsedBelow25Pct": 0
+      },
+      "pairedCount": 20,
+      "pairedDeltaMeanPp": 3.8294548588666215,
+      "pairedDelta95PctApprox": {
+        "lowerPp": -3.8571933287984486,
+        "upperPp": 11.516103046531692,
+        "halfWidthPp": 7.68664818766507,
+        "method": "approximate Student t interval: t(19)=2.093 × paired SEM, n=20"
+      },
+      "baselineMinusFinalWeightedLossPp": -3.7212573716387993,
+      "weightedLossGateMax3Pp": true,
+      "partial": false
+    }
+  ]
+}

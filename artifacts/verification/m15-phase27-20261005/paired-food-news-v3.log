@@ -1,0 +1,23 @@
+{"paired":"century","count":1}
+{"paired":"alpha","count":2}
+{"paired":"beta","count":3}
+{"paired":"gamma","count":4}
+{"paired":"delta","count":5}
+{"paired":"eps","count":6}
+{"paired":"zeta","count":7}
+{"paired":"eta","count":8}
+{"paired":"theta","count":9}
+{"paired":"iota","count":10}
+{"excluded":"kappa","baseline":null,"final":"food-news fixture needs fish beyond sight on the same landmass"}
+{"excluded":"lambda","baseline":null,"final":"food-news fixture needs fish beyond sight on the same landmass"}
+{"paired":"mu","count":11}
+{"paired":"nu","count":12}
+{"paired":"xi","count":13}
+{"paired":"omicron","count":14}
+{"paired":"pi","count":15}
+{"paired":"rho","count":16}
+{"paired":"sigma","count":17}
+{"paired":"tau","count":18}
+{"paired":"food-news-1","count":19}
+{"paired":"food-news-2","count":20}
+{"completed":20,"excluded":2}

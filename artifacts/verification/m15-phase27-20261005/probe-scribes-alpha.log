@@ -1,0 +1,2 @@
+{"arm":"baseline","scenario":"scribes","seed":"alpha","initialRosterHash":"c59e1136657b0be96760c344485570f93af6b27a174aa6eb7c200e5f86c34f13","peak":35,"end":35,"deaths":{},"samples":[{"tick":5000,"alive":28},{"tick":10000,"alive":30}]}
+{"arm":"final","scenario":"scribes","seed":"alpha","initialRosterHash":"c59e1136657b0be96760c344485570f93af6b27a174aa6eb7c200e5f86c34f13","peak":31,"end":19,"deaths":{"starvation":11,"exposure":2},"samples":[{"tick":5000,"alive":28},{"tick":10000,"alive":31}]}

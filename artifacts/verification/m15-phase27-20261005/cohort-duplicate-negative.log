@@ -1,0 +1,12 @@
+file:///C:/Users/Marty/Documents/Work/Programs/dynastyGame/artifacts/verification/m15-phase27-20261005/summarize-cohort.mjs:54
+        throw new Error(`Conflicting duplicate cohort row: ${file}: ${row.scenario}/${row.seed}`);
+              ^
+
+Error: Conflicting duplicate cohort row: final-cohort-worker99.jsonl: conflicts/delta
+    at mergeRows (file:///C:/Users/Marty/Documents/Work/Programs/dynastyGame/artifacts/verification/m15-phase27-20261005/summarize-cohort.mjs:54:15)
+    at file:///C:/Users/Marty/Documents/Work/Programs/dynastyGame/artifacts/verification/m15-phase27-20261005/summarize-cohort.mjs:100:15
+    at ModuleJob.run (node:internal/modules/esm/module_job:272:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:583:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:98:5)
+
+Node.js v23.7.0

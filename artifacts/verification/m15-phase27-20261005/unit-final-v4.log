@@ -1,0 +1,31 @@
+
+> dynasty@0.0.0 test
+> vitest run --maxWorkers=2 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/earthwork-checks.test.ts (3 tests | 1 failed) 69722ms
+     × fails when the progress is never banked (the broken build) 19802ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/earthwork-checks.test.ts > earthworks-are-dug > fails when the progress is never banked (the broken build)
+Error: Test timed out in 15000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/sim/__tests__/earthwork-checks.test.ts:18:3
+     16|   });
+     17|
+     18|   it('fails when the progress is never banked (the broken build)', () …
+       |   ^
+     19|     // Sticks are lying about on the island, so a band cannot be made …
+     20|     // what can be broken is the thing the check exists to see: that a…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 148 passed (149)
+      Tests  1 failed | 1055 passed (1056)
+   Start at  17:05:11
+   Duration  307.89s (transform 24.06s, setup 0ms, import 91.61s, tests 406.01s, environment 47ms)
+

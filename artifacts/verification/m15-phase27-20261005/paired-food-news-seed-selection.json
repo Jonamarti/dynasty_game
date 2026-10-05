@@ -1,0 +1,61 @@
+{
+  "scenario": "food-news",
+  "steps": 600,
+  "standardPool": [
+    "century",
+    "alpha",
+    "beta",
+    "gamma",
+    "delta",
+    "eps",
+    "zeta",
+    "eta",
+    "theta",
+    "iota",
+    "kappa",
+    "lambda",
+    "mu",
+    "nu",
+    "xi",
+    "omicron",
+    "pi",
+    "rho",
+    "sigma",
+    "tau"
+  ],
+  "pairedSeeds": [
+    "century",
+    "alpha",
+    "beta",
+    "gamma",
+    "delta",
+    "eps",
+    "zeta",
+    "eta",
+    "theta",
+    "iota",
+    "mu",
+    "nu",
+    "xi",
+    "omicron",
+    "pi",
+    "rho",
+    "sigma",
+    "tau",
+    "food-news-1",
+    "food-news-2"
+  ],
+  "excluded": [
+    {
+      "seed": "kappa",
+      "baseline": "valid",
+      "final": "food-news fixture needs fish beyond sight on the same landmass"
+    },
+    {
+      "seed": "lambda",
+      "baseline": "valid",
+      "final": "food-news fixture needs fish beyond sight on the same landmass"
+    }
+  ],
+  "fixture": "final/tools/checkFixtures.setupFoodNews applied to both baseline and final simulations"
+}

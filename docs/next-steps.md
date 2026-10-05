@@ -1,18 +1,15 @@
 # Next steps
 
-**2026-10-05: fase 27 en integración.** Fondo y colores comparten umbrales
-de profundidad; los bajíos son caminables y dejan humedad visible en el
-inspector. Los peces ya están en agua somera y una lanza equipada mejora la
-captura. La natación admite manos vacías y cesta compatible, con razones de
-negativa, frío/cansancio y ahogamiento determinista. Los checks de pesca, cruce y particiones ya están integrados. Siguiente:
-cerrar matriz y coste. Typecheck, 1.055 tests, 80 e2e y `shallows` pasan;
-`century` excede el presupuesto en veinte parejas (−4,70 puntos ponderados).
-La matriz v3 tiene 113 fallos frente a 106 previos; se repite tras corregir
-el contador que mezclaba pendiente y vadeo. La fase permanece abierta por su coste; [medición](m15_phase27_verification.md).
-La clasificación
-de agua dulce y los inicios geográficos poblados esperan a 30.
-[Contrato de profundidad](m15_phase27_depth.md).
-
+**2026-10-05: fase 27 implementada; puerta económica abierta.** Profundidad,
+vadeo, humedad, pesca en agua con lanza equipada y natación están entregados,
+con negativas visibles, manos/cesta compatibles y ahogamiento determinista.
+Typecheck, 1.056 unitarios, 80 e2e, soak y seis checks de `shallows` pasan.
+La matriz sigue roja (106 → 112 fallos). Las 560 parejas están completas:
+siete escenarios exceden tres puntos de coste, hasta −20,09 en `conquest`.
+Siguiente: aislar el mecanismo económico antes de declarar cerrada la fase;
+no elevar el umbral ni elegir un coeficiente por una semilla.
+[Medición, sondas y datos](m15_phase27_verification.md). Agua dulce e inicios
+geográficos poblados esperan a 30.
 **2026-10-04: fase 29, geografía y WorldState.** main crea/reconstruye la isla
 clásica desde una raíz con IdSpace y Simulation actual. La geografía distingue
 clásico/aleatorio/Tierra sin mezclar relieve normalizado y metros. El atlas

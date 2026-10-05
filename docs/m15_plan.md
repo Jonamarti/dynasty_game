@@ -2339,12 +2339,15 @@ abiertas a todos), medidos contra el build roto (`earthwork-checks.test.ts`).
 
 ## Fase 27 — La profundidad del agua: vadear, pescar dentro y nadar (decisión 12)
 
-**Verificación del 2026-10-05:** typecheck, 1.055 unitarios, 80 e2e, soak de
-español y los seis checks de `shallows` pasan. La puerta económica permanece
-abierta: `century` pierde 4,70 puntos ponderados en veinte parejas (límite tres).
-Matriz v3 roja (106 → 113 fallos); se repite tras separar pendiente de
-vadeo en su contador, con regresión que falla en la medición anterior.
-Resto del coste en ejecución. [Resultados](m15_phase27_verification.md).
+**Entrega y medición del 2026-10-05:** 27a–27e implementadas en commits
+separados, con docs, tests y capturas. Typecheck, 1.056 unitarios, 80 e2e,
+soak de español y los seis checks de `shallows` pasan. La matriz queda roja:
+106 → 112 fallos; se corrigió el contador de pendiente que mezclaba el vadeo,
+con control negativo. Comparación completa de 560 parejas (veinte por cada
+uno de los 28 escenarios clásicos): siete exceden los tres puntos declarados.
+**La fase permanece abierta por el coste.** El mayor es `conquest`, −20,09
+puntos ponderados. No se afinó un coeficiente para superar la puerta.
+[Resultados, protocolo y datos](m15_phase27_verification.md).
 **Avance del 2026-10-05 (27e): escenario y checks.** `shallows` ejecuta
 pesca y una orden real de cruce. Los controles negativos provocan un
 ahogamiento somero y colocan personas en agua honda o con carga; ambos deben
@@ -2352,13 +2355,13 @@ fallar. La auditoría independiente comprueba las particiones de andar y nadar,
 incluso si etiquetas corruptas conservan sus tamaños. `food-news` elige el
 banco más cercano por spatial hash: escoger el primero de la lista dejó de
 asegurar que su puntuación venciera al descanso. Verificación conjunta y
-coste pendientes; [registro de verificación](m15_phase27_verification.md).
+coste medidos; [registro de verificación](m15_phase27_verification.md).
 **Avance del 2026-10-05 (27d): natación y ahogamiento.** Rutas de coste seis,
 manos vacías o cesta compatible, habilidad a cero sin draws y aprendizaje por
 paso real. Frío y cansancio de nado dependen de la casilla. Órdenes y movimiento
 manual dan razones visibles; las interrupciones buscan una orilla seca del
 mismo componente. El guardado en pleno nado continúa de forma idéntica.
-[Contrato y captura](m15_phase27d_swimming.md). La medición sigue abierta.
+[Contrato y captura](m15_phase27d_swimming.md). La puerta de coste sigue abierta tras medirla.
 
 **Avance del 2026-10-05 (27c): pesca en agua somera.** Los bancos usan su
 `fishRng` existente y el contorno de bajíos para mantener la cantidad pedida.

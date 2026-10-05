@@ -1,0 +1,40 @@
+
+> dynasty@0.0.0 sim:check:all
+> vite-node tools/scenarios.ts --
+
+
+SCENARIO MATRIX
+==============================================================================
+  scenario        checks    steps/s     failures
+  food-news       1/1       654         -
+  conflicts       1/1       426         -
+  tiny            47/47     420         -
+  band            52/53     152         cravings-steer-the-diet
+  crowded         57/59     78          cravings-steer-the-diet, shelter-answers-cold
+  century         71/76     232         cravings-steer-the-diet, nights-are-slept, moods-move-choices, the-wise-avoid-baneberries, discovery-is-situated
+  craft           65/70     202         people-act-on-what-they-know, cravings-steer-the-diet, nights-are-slept, people-survive, pots-reach-a-granary
+  wilds           60/63     245         cravings-steer-the-diet, nights-are-slept, moods-move-choices
+  emptied         54/58     743         cravings-steer-the-diet, nights-are-slept, projects-find-backers, shelter-answers-cold
+  hearths         64/69     210         people-act-on-what-they-know, cravings-steer-the-diet, nights-are-slept, roast-wins, pots-reach-a-granary
+  porters         54/56     346         cravings-steer-the-diet, moods-move-choices
+  scribes         66/68     194         cravings-steer-the-diet, nights-are-slept
+  harsh-winter    52/57     230         cravings-steer-the-diet, nights-are-slept, nights-are-spent-at-home, needs-not-pinned, shelter-answers-cold
+  coast           53/54     375         cravings-steer-the-diet
+  shallows        6/6       359         -
+  traps           64/66     362         cravings-steer-the-diet, moods-move-choices
+  millers         67/72     199         cravings-steer-the-diet, nights-are-slept, moods-move-choices, the-wise-avoid-baneberries, spatial-hash-spreads
+  hunters         59/62     291         cravings-steer-the-diet, kills-are-butchered-for-bone, discovery-is-situated
+  fishers         61/63     394         cravings-steer-the-diet, moods-move-choices
+  farmers         71/74     184         cravings-steer-the-diet, nights-are-slept, discovery-is-situated
+  herders         69/76     274         cravings-steer-the-diet, nights-are-slept, moods-move-choices, techs-are-refined, the-wise-avoid-baneberries, animals-are-tamed, herds-breed-and-are-culled
+  feasts          73/78     162         cravings-steer-the-diet, nights-are-slept, pots-reach-a-granary, discovery-is-situated, bands-take-sides
+  stewards        71/74     155         cravings-steer-the-diet, nights-are-slept, discovery-is-situated
+  labour          63/71     139         cravings-steer-the-diet, nights-are-slept, moods-move-choices, people-survive, gossip-is-aimed, research-is-social, the-wise-avoid-baneberries, spatial-hash-spreads
+  polity          82/88     124         cravings-steer-the-diet, nights-are-slept, moods-move-choices, roast-wins, cooking-spreads, pots-reach-a-granary
+  conquest        84/91     177         people-act-on-what-they-know, cravings-steer-the-diet, nights-are-slept, projects-find-backers, records-are-cut, roast-wins, cooking-spreads
+  culture         56/65     301         cravings-steer-the-diet, nights-are-slept, moods-move-choices, gossip-is-aimed, shelter-answers-cold, pictures-are-painted, animals-are-tamed, kills-are-butchered-for-bone, discovery-is-situated
+  lean            61/73     144         cravings-steer-the-diet, nights-are-slept, moods-move-choices, population-persists, needs-not-pinned, gossip-is-aimed, projects-find-backers, the-tree-is-climbed, techs-are-refined, discovery-is-situated, families-exist, bands-take-sides
+  diggers         56/61     297         cravings-steer-the-diet, nights-are-slept, gossip-is-aimed, shelter-answers-cold, spatial-hash-spreads
+==============================================================================
+SOME SCENARIOS FAILED
+

@@ -1,0 +1,38 @@
+{
+  "scenario": "food-news",
+  "steps": 600,
+  "pairedSeeds": [
+    "century",
+    "alpha",
+    "beta",
+    "gamma",
+    "delta",
+    "eps",
+    "zeta",
+    "eta",
+    "theta",
+    "iota",
+    "mu",
+    "nu",
+    "xi",
+    "omicron",
+    "pi",
+    "rho",
+    "sigma",
+    "tau",
+    "food-news-1",
+    "food-news-2"
+  ],
+  "excluded": [
+    {
+      "seed": "kappa",
+      "baseline": "valid",
+      "final": "food-news fixture needs fish beyond sight on the same landmass"
+    },
+    {
+      "seed": "lambda",
+      "baseline": "valid",
+      "final": "food-news fixture needs fish beyond sight on the same landmass"
+    }
+  ]
+}
