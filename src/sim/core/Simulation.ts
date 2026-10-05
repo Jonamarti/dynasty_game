@@ -1024,25 +1024,24 @@ export class Simulation {
   }
 
   /**
-   * Places fishing spots on the shore, on their own RNG stream and in their
-   * own pass after everything else has been placed — see the comment above
-   * the `fishRng` fork in the constructor.
+   * Places fishing spots in walkable shallow water, on their own RNG stream
+   * and in their own pass after everything else has been placed — see the
+   * comment above the `fishRng` fork in the constructor.
    */
   private spawnFish(rng: RNG): void {
     if (this.geographicStart) rng = this.geographicResourceRng('fish');
     const count = this.scaledCount(this.config.world.fishingSpots);
-    let placed = 0;
-    let attempts = 0;
-    const maxAttempts = count * 60;
-    while (placed < count && attempts < maxAttempts) {
-      attempts++;
-      const spot = this.world.randomWalkable(rng, 1);
-      if (!spot) continue;
-      if (!this.suitsBiome('fish', spot.x, spot.y)) continue;
+    // Sampling random land tiles and rejecting almost all of them made the
+    // number of fish collapse when wade-depth water became a narrow contour.
+    // Sample that contour directly so raising resolution or changing the sea
+    // level cannot silently erase most of the configured fishing spots.
+    const shallows = this.world.shoreTiles.filter(tile => this.world.isShallow(tile.x, tile.y));
+    if (shallows.length === 0) return;
+    for (let placed = 0; placed < count; placed++) {
+      const spot = rng.pick(shallows);
       const node = new ResourceNode('fish', spot.x, spot.y, rng, this.ids);
       this.nodes.push(node);
       this.nodesById.set(node.id, node);
-      placed++;
     }
   }
 
@@ -1171,7 +1170,10 @@ export class Simulation {
       // shoreline the most valuable ground to camp on.
       case 'reeds': return biome === 'beach' && this.world.isShore(x, y);
       case 'clay': return (biome === 'beach' || biome === 'grass') && this.world.isShore(x, y);
-      case 'fish': return biome === 'beach' && this.world.isShore(x, y);
+      // M15 phase 27c: the fish are in the water, on walkable shallows. Keep
+      // them on fishRng's dedicated stream and in this post-people pass; putting
+      // them into spawnResources would move every herd and person after them.
+      case 'fish': return this.world.isShallow(x, y);
       // Open ground only. Wild cereal is a grass and it wants sun, so a stand
       // under the canopy would be a stand nobody would ever find — and the
       // fertility floor is higher than the berry bush's because thin ground

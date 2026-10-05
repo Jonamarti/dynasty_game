@@ -2,7 +2,9 @@
 
 **2026-10-05: fase 27 en integración.** Fondo y colores comparten umbrales
 de profundidad; los bajíos son caminables y dejan humedad visible en el
-inspector. Siguiente: pesca desde el agua y natación con manos vacías. La clasificación
+inspector. Los peces ya están en agua somera y una lanza equipada mejora la
+captura. Siguiente: cerrar natación con manos vacías y medir el coste conjunto.
+La clasificación
 de agua dulce y los inicios geográficos poblados esperan a 30.
 [Contrato de profundidad](m15_phase27_depth.md).
 

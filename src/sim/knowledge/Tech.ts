@@ -1793,8 +1793,8 @@ export interface TechEffect {
 
 export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   spear: {
-    summary: 'A blade at the end of a shaft: harder blows, and landed first.',
-    site: 'ActionSystem.doAttack and doHunt, via weaponOf; RECIPES.spear',
+    summary: 'A blade at the end of a shaft: harder blows, first strikes, and more fish when harpooned.',
+    site: 'ActionSystem.doAttack, doHunt and doHarvest; RECIPES.spear',
   },
   bow: {
     summary: 'Meat from an animal that would have outrun you.',

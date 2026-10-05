@@ -313,7 +313,7 @@ export const ES_TECH: Record<string, string> = {
   "domain|beasts": "bestias",
   "domain|water": "agua",
   "domain|people": "gente",
-  "A blade at the end of a shaft: harder blows, and landed first.": "Una hoja en la punta de un asta: golpes más duros, y dados antes.",
+  "A blade at the end of a shaft: harder blows, first strikes, and more fish when harpooned.": "Una hoja en la punta de un asta: golpes más duros, golpes primero y más peces al arponear.",
   "Meat from an animal that would have outrun you.": "Carne de un animal que te habría dejado atrás.",
   "Worked hide that turns a blow.": "Piel trabajada que desvía un golpe.",
   "Warmth you carry with you, wherever you are standing.": "Un calor que llevas contigo, estés donde estés.",

@@ -1,3 +1,14 @@
+## 2026-10-05 — M15 fase 27c: peces en el bajío y pesca con lanza
+
+Los bancos se colocan directamente en agua somera con el `fishRng` existente.
+El muestreo del contorno conserva el número configurado de bancos; rechazar
+casillas de tierra al azar dejaba casi todos sin colocar en una costa estrecha.
+Una lanza equipada aumenta la captura y no se guarda al empezar ese trabajo;
+llevar una lanza de repuesto no concede el beneficio. La descripción de la
+tecnología explica ambos usos. [Contrato y capturas](m15_phase27_fishing.md).
+La prueba compara manos vacías, lanza guardada y lanza equipada. Verificación
+conjunta y coste a veinte semillas pendientes del cierre de la fase.
+
 ## 2026-10-05 — M15 fase 27b: vadear y secarse
 
 Los bajíos son caminables y cuentan en las regiones y las orillas de bebida.

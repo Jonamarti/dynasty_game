@@ -1366,7 +1366,12 @@ export class ActionSystem {
     const setupAnswers = (ITEMS[node.itemId]?.nutrition ?? 0) > 0
       ? 'hunger'
       : answersColdProject(person, ctx) ? 'cold' : undefined;
-    if (person.action === 'forage' && this.prepareTool(person, 'forage', ctx, setupAnswers)) return;
+    // Fish are the one harvest a spear improves. Keep a spear that's already
+    // fitted in hand through this pull; ordinary foraging still clears tools
+    // that would otherwise occupy the worker's hands.
+    const harpoon = node.kind === 'fish' && person.inventory.has('spear') &&
+      (person.equipment.left?.item === 'spear' || person.equipment.right?.item === 'spear');
+    if (person.action === 'forage' && !harpoon && this.prepareTool(person, 'forage', ctx, setupAnswers)) return;
     const owner = ctx.territoryOwnerAt(node.x, node.y);
     if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
 
@@ -1379,7 +1384,8 @@ export class ActionSystem {
     if (person.actionTimer > 0) return;
 
     const yieldUnits = Math.max(1, Math.round(
-      (1 + person.skillFactor(node.def.skill)) * forageYieldFactor(person, node.kind)
+      (1 + person.skillFactor(node.def.skill)) * forageYieldFactor(person, node.kind) *
+        (harpoon ? 1.5 : 1)
     ));
     const feeds = (ITEMS[node.itemId]?.nutrition ?? 0) > 0;
     let eatenAtSource = 0;
@@ -1403,6 +1409,9 @@ export class ActionSystem {
       person.yieldNutrition += (ITEMS[node.itemId]?.nutrition ?? 0) * taken;
       person.practice(node.def.skill, 0.6);
       telemetry.count('harvest_' + node.kind);
+      if (node.kind === 'fish' && ctx.world.isShallow(person.x, person.y)) {
+        telemetry.count('harvest_fish_shallows');
+      }
       person.placeMemory.updateAt(`resource:${node.kind}`, node.x, node.y,
         node.amount >= node.def.maxAmount * 0.66 ? 2 : node.amount > 0 ? 1 : 0);
       if (node.depleted) {

@@ -2339,6 +2339,12 @@ abiertas a todos), medidos contra el build roto (`earthwork-checks.test.ts`).
 
 ## Fase 27 — La profundidad del agua: vadear, pescar dentro y nadar (decisión 12)
 
+**Avance del 2026-10-05 (27c): pesca en agua somera.** Los bancos usan su
+`fishRng` existente y el contorno de bajíos para mantener la cantidad pedida.
+La lanza aumenta el rendimiento solo equipada en la mano y permanece en ella
+durante la captura. [Contrato y capturas](m15_phase27_fishing.md).
+El coste conjunto se mide al cerrar la integración.
+
 **Avance del 2026-10-05 (27b): bajíos, humedad y componentes de paso.** El
 agua somera es caminable, bebe desde su casilla y se recorre a 0,4. La humedad
 añade frío y se seca antes junto al fuego. El inspector lo explica sin revelar
