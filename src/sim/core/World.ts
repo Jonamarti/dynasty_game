@@ -90,10 +90,15 @@ export class World {
    * ever sets out for something they cannot walk to.
    */
   readonly region: Int32Array;
+  /** Connected components that include walkable ground and swim-depth water. */
+  readonly swimRegion: Int32Array;
+  readonly swimRegionSizes = new Map<number, number>();
   /** Tile count per region id, so the biggest landmass is easy to find. */
   readonly regionSizes = new Map<number, number>();
   /** The next id `setWalkable` hands out; ids are never reused, so a stale one cannot alias. */
   private nextRegionId = 0;
+  private swimRegionsDirty = true;
+  private swimRegionEarthVersion = -1;
 
   /**
    * Every walkable tile touching water. Precomputed once because "where can I
@@ -120,11 +125,13 @@ export class World {
     this.grass = new Float32Array(n);
     this.grassCap = new Float32Array(n);
     this.region = new Int32Array(n).fill(-1);
+    this.swimRegion = new Int32Array(n).fill(-1);
 
     if (localGeography) this.generateFromGeography(localGeography);
     else this.generate(rng);
     this.findShores();
     this.findRegions();
+    this.findSwimRegions();
     this.refreshProminence(0, 0, this.width - 1, this.height - 1);
     for (let i = 0; i < n; i++) {
       this.grassCap[i] = grassCapacity(this, i);
@@ -239,13 +246,19 @@ export class World {
     return this.config.waterLevel;
   }
 
+  /** Wet-body duration after entering the shallows, in simulation ticks. */
+  get wetTicks(): number { return this.config.wetTicks; }
+
   /** Shallows cutoff in elevation units; exposed for depth rendering. */
   get wadeDepth(): number { return this.config.wadeDepth; }
 
   /** Swimming cutoff in elevation units; exposed for depth rendering. */
   get swimDepth(): number { return this.config.swimDepth; }
 
-  /** Water over a tile, in elevation units. Dry land and off-map are zero. */
+  /** Cold need that kills a swimmer; exposed for the simulation's drown rule. */
+  get drownAt(): number { return this.config.drownAt; }
+
+  /** Heightfield below the water surface, in elevation units; off-map is zero. */
   depthAt(x: number, y: number): number {
     if (!this.inBounds(x, y)) return 0;
     return Math.max(0, this.config.waterLevel - this.heightAt(x, y));
@@ -260,6 +273,11 @@ export class World {
   isSwimTile(x: number, y: number): boolean {
     const depth = this.depthAt(x, y);
     return this.isWater(x, y) && depth >= this.config.wadeDepth && depth < this.config.swimDepth;
+  }
+
+  /** Walkable shallow-water tile, used by wading movement and fishing. */
+  isWadeTile(x: number, y: number): boolean {
+    return this.isShallow(x, y) && this.isWalkable(x, y);
   }
 
   /** How deep a hole must be, in elevation units, before it stops being ground you can walk on. */
@@ -370,6 +388,7 @@ export class World {
     const now = walkable ? 1 : 0;
     if (this.walkable[i] === now) return;
     this.walkable[i] = now;
+    this.swimRegionsDirty = true;
     if (walkable) this.joinRegions(i); else this.splitRegions(i);
   }
 
@@ -515,10 +534,15 @@ export class World {
     this.earthVersion++;
     const R = PROMINENCE_RADIUS;
     this.refreshProminence(Math.floor(x) - R, Math.floor(y) - R, Math.floor(x) + R, Math.floor(y) + R);
-    // Water and rock stay unwalkable whatever is done to them; only ground
-    // that was walkable can be dug into a pit or piled back out of one.
+    // Land follows the pit-depth rule; water follows its depth band. Piling
+    // earth can make a shallow-water tile walkable, and digging can make it too
+    // deep to wade, so both land and swim regions observe this edit.
     const biome = BIOMES[this.biome[i]!]!;
-    if (biome !== 'water' && biome !== 'rock') {
+    if (biome === 'water') {
+      const before = this.walkable[i];
+      this.setWalkable(Math.floor(x), Math.floor(y), this.isShallow(x, y));
+      if (before !== this.walkable[i]) this.updateShore(Math.floor(x), Math.floor(y));
+    } else if (biome !== 'rock') {
       const before = this.walkable[i];
       this.setWalkable(Math.floor(x), Math.floor(y), this.offset[i]! > -this.config.pitDepth);
       if (before !== this.walkable[i]) this.updateShore(Math.floor(x), Math.floor(y));
@@ -566,7 +590,9 @@ export class World {
       const ty = Math.floor(k / this.width);
       if (!wet(tx, ty)) continue;
       this.biome[k] = BIOMES.indexOf('water');
-      this.setWalkable(tx, ty, false);
+      // A newly flooded cut may be shallow enough to wade. Deeper water keeps
+      // using the swim-region path once the swimming phase registers it.
+      this.setWalkable(tx, ty, this.isShallow(tx, ty));
       this.grass[k] = 0;
       filled++;
       this.updateShore(tx, ty);
@@ -614,6 +640,54 @@ export class World {
   sameRegion(ax: number, ay: number, bx: number, by: number): boolean {
     const a = this.regionAt(ax, ay);
     return a !== -1 && a === this.regionAt(bx, by);
+  }
+
+  /** Swim-capable component id, or -1 for water too deep to swim or off-map. */
+  swimRegionAt(x: number, y: number): number {
+    this.ensureSwimRegions();
+    if (!this.inBounds(x, y)) return -1;
+    return this.swimRegion[this.index(x, y)]!;
+  }
+
+  /** True when both points connect by land/wading or swim-depth water. */
+  sameSwimRegion(ax: number, ay: number, bx: number, by: number): boolean {
+    const a = this.swimRegionAt(ax, ay);
+    return a !== -1 && a === this.swimRegionAt(bx, by);
+  }
+
+  private ensureSwimRegions(): void {
+    if (this.swimRegionsDirty || this.swimRegionEarthVersion !== this.earthVersion) this.findSwimRegions();
+  }
+
+  /** Full rebuild is lazy: digging/flooding is rare, route queries are not. */
+  private findSwimRegions(): void {
+    this.swimRegion.fill(-1);
+    this.swimRegionSizes.clear();
+    let id = 0;
+    const queue: number[] = [];
+    for (let start = 0; start < this.swimRegion.length; start++) {
+      const sx = start % this.width, sy = Math.floor(start / this.width);
+      if (this.swimRegion[start] !== -1 || (this.walkable[start] !== 1 && !this.isSwimTile(sx, sy))) continue;
+      queue.length = 0;
+      queue.push(start);
+      this.swimRegion[start] = id;
+      let head = 0;
+      while (head < queue.length) {
+        const current = queue[head++]!;
+        const x = current % this.width, y = Math.floor(current / this.width);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+          const nx = x + dx, ny = y + dy;
+          if (!this.inBounds(nx, ny)) continue;
+          const next = this.index(nx, ny);
+          if (this.swimRegion[next] !== -1 || (this.walkable[next] !== 1 && !this.isSwimTile(nx, ny))) continue;
+          this.swimRegion[next] = id;
+          queue.push(next);
+        }
+      }
+      this.swimRegionSizes.set(id++, queue.length);
+    }
+    this.swimRegionsDirty = false;
+    this.swimRegionEarthVersion = this.earthVersion;
   }
 
   /** The id of the largest landmass, or -1 if there is no land at all. */
@@ -693,7 +767,8 @@ export class World {
 
         const biome = this.classify(elev, moist);
         this.biome[i] = BIOME_ID[biome];
-        this.walkable[i] = biome === 'water' || biome === 'rock' ? 0 : 1;
+        this.walkable[i] = biome === 'rock' || (biome === 'water' &&
+          this.config.waterLevel - elev >= this.config.wadeDepth) ? 0 : 1;
 
         // Fertility drives berry regrowth and, much later, agriculture.
         this.fertility[i] =
@@ -736,7 +811,8 @@ export class World {
 
         const biome = this.classifyGeographic(elev, moist, geography.kind);
         this.biome[i] = BIOME_ID[biome];
-        this.walkable[i] = biome === 'water' || biome === 'rock' ? 0 : 1;
+        this.walkable[i] = biome === 'rock' || (biome === 'water' &&
+          this.config.waterLevel - elev >= this.config.wadeDepth) ? 0 : 1;
         // No source has local soil measurements: use its coarse wetness as a
         // transparent fertility proxy, independent of elevation-unit scale.
         this.fertility[i] = biome === 'grass' || biome === 'forest'
@@ -830,9 +906,10 @@ export class World {
     return null;
   }
 
-  /** True if any of the four neighbours is water — where people can drink. */
+  /** True on a wadeable water tile or next to water — for drinking and shore work. */
   isShore(x: number, y: number): boolean {
     return (
+      this.isShallow(x, y) ||
       this.isWater(x + 1, y) || this.isWater(x - 1, y) ||
       this.isWater(x, y + 1) || this.isWater(x, y - 1)
     );

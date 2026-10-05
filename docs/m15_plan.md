@@ -2339,6 +2339,16 @@ abiertas a todos), medidos contra el build roto (`earthwork-checks.test.ts`).
 
 ## Fase 27 — La profundidad del agua: vadear, pescar dentro y nadar (decisión 12)
 
+**Avance del 2026-10-05 (27b): bajíos, humedad y componentes de paso.** El
+agua somera es caminable, bebe desde su casilla y se recorre a 0,4. La humedad
+añade frío y se seca antes junto al fuego. El inspector lo explica sin revelar
+la condición privada de un desconocido. Las modificaciones de relieve y el
+codec conservan los componentes de paso; la ejecución de nado sigue en 27d.
+[Contrato](m15_phase27_wading.md). Captura:
+`artifacts/screenshots/m15-phase27-wading-2026-10-05-pass2/02-wading-condition.png`.
+Este paso cambia los mundos clásicos; los resultados a veinte semillas por
+escenario se registran al terminar la integración.
+
 **Avance del 2026-10-05 (27a): fondo y colores de profundidad.** `depthAt`
 lee el relieve actual sin draws. Los umbrales en `Config.world` equivalen a
 0,8 m para vadear y 3,2 m como límite del nado a la escala clásica; la igualdad
@@ -2355,7 +2365,7 @@ ella; más adentro hay que nadar, y más allá, una barca.
 
 `World.depthAt(x, y) = max(0, waterLevel − heightAt)`. La caída radial de la
 isla ya hace la costa más somera cerca de tierra, como pide la nota. Tres
-clases en `Config.terrain`: **somera** (`< wadeDepth`), **de nado**
+clases en `Config.world`: **somera** (`< wadeDepth`), **de nado**
 (`< swimDepth`) y **honda**. El renderer colorea el agua por profundidad.
 
 ### 27b. Vadear (medido; cambia el mundo clásico)
@@ -2394,7 +2404,7 @@ con red o nasa, como hoy.
 - Se nada **solo con las manos vacías** (lo del hombro y las manos fuera; la
   cesta a la espalda sí). Frío ×3 y cansancio.
 - **Ahogarse**, sin dados: en una casilla de nado, con el cansancio o el frío
-  por encima de `Config.terrain.drownAt`, se muere, con causa `drowned` y
+  por encima de `Config.world.drownAt`, se muere, con causa `drowned` y
   cuerpo que el agua deja en la orilla más cercana (los cuerpos de M11 fase 16
   ya existen).
 - El puntuador solo nada si el destino lo merece y las manos están vacías; el

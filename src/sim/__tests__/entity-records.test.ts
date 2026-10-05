@@ -59,6 +59,7 @@ describe('versioned entity records', () => {
     person.path = new Int16Array([2, 5, 8]);
     person.alongside[0] = 13.5;
     person.curiosityDays = 3;
+    person.wet = 37;
 
     const record = toPersonRecord(person, 422);
     expect(record.lastAdvancedTick).toBe(422);

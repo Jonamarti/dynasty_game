@@ -91,6 +91,15 @@ describe('WorldTerrainRecord', () => {
     const unsafeConfig = structuredClone(valid);
     unsafeConfig.config.slopeCost = -1;
     expect(() => fromWorldTerrainRecord(unsafeConfig)).toThrow(/range slopeCost/);
+    const invalidWadingDepth = structuredClone(valid);
+    invalidWadingDepth.config.wadeDepth = invalidWadingDepth.config.swimDepth;
+    expect(() => fromWorldTerrainRecord(invalidWadingDepth)).toThrow(/water depth thresholds/);
+    const invalidWetDuration = structuredClone(valid);
+    invalidWetDuration.config.wetTicks = 0.5;
+    expect(() => fromWorldTerrainRecord(invalidWetDuration)).toThrow(/range wetTicks/);
+    const invalidDrownThreshold = structuredClone(valid);
+    invalidDrownThreshold.config.drownAt = 101;
+    expect(() => fromWorldTerrainRecord(invalidDrownThreshold)).toThrow(/range drownAt/);
     const shortArray = structuredClone(valid);
     shortArray.tiles.moisture.pop();
     expect(() => fromWorldTerrainRecord(shortArray)).toThrow(/moisture array/);

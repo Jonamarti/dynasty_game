@@ -808,6 +808,12 @@ export class Hud {
 
     if (!known.knowsCondition) return;
 
+    const wet = this.panelBodyEl.querySelector('.hud-wet') as HTMLElement | null;
+    if (wet) {
+      wet.hidden = person.wet <= 0;
+      wet.textContent = t('Being wet makes you colder until you dry off.');
+    }
+
     for (const row of this.panelBodyEl.querySelectorAll('[data-need]')) {
       const need = (row as HTMLElement).dataset.need as string;
       const raw = need === 'health'
@@ -966,6 +972,8 @@ export class Hud {
     for (const need of NEEDS) {
       rows.push(bar(tc('bar', need), person.needs[need], NEED_COLORS[need] ?? '#888', need));
     }
+    rows.push('<div class="hud-note hud-wet"' + (person.wet > 0 ? '' : ' hidden') + '>' +
+      escapeHtml(t('Being wet makes you colder until you dry off.')) + '</div>');
     const homePressure = lastDrives.get(person.id)?.home;
     if (homePressure !== undefined) {
       const reason = homePressure > 0.3

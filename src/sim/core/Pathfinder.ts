@@ -75,6 +75,10 @@ import { telemetry } from './Telemetry.ts';
 
 export const enum PathStatus { Found = 0, AlreadyThere = 1, NoRoute = 2, GaveUp = 3 }
 
+/** The movement graph a route is allowed to use. */
+export type PassMode = 'walk' | 'swim' | 'boat';
+const SWIM_COST = 6;
+
 /**
  * A bail-out, not a working limit — roughly half a 128x128 map.
  *
@@ -195,13 +199,13 @@ export class Pathfinder {
    * this without a search. For the health checks, which ask it hundreds of
    * times a run.
    */
-  reachable(fromX: number, fromY: number, toX: number, toY: number): boolean {
+  reachable(fromX: number, fromY: number, toX: number, toY: number, mode: PassMode = 'walk'): boolean {
     const fx = fromX | 0;
     const fy = fromY | 0;
-    if (!this.world.isWalkable(fx, fy)) return false;
-    const goal = this.snapGoal(toX, toY);
+    if (!this.canPass(fx, fy, mode)) return false;
+    const goal = this.snapGoal(toX, toY, mode);
     if (!goal) return false;
-    return this.world.sameRegion(fx, fy, goal.x, goal.y);
+    return this.samePassRegion(fx, fy, goal.x, goal.y, mode);
   }
 
   /**
@@ -211,15 +215,16 @@ export class Pathfinder {
   find(
     fromX: number, fromY: number, toX: number, toY: number,
     maxExpansions = DEFAULT_MAX_EXPANSIONS,
-    avoidIndex = -1
+    avoidIndex = -1,
+    mode: PassMode = 'walk'
   ): PathStatus {
     const fx = fromX | 0;
     const fy = fromY | 0;
     this.routeLength = 0;
     this.lastExpanded = 0;
 
-    const goal = this.snapGoal(toX, toY);
-    if (!goal) {
+    const goal = this.snapGoal(toX, toY, mode);
+    if (!goal || !this.canPass(fx, fy, mode)) {
       telemetry.count('path_no_route');
       return PathStatus.NoRoute;
     }
@@ -228,7 +233,7 @@ export class Pathfinder {
 
     if (fx === tx && fy === ty) return PathStatus.AlreadyThere;
 
-    if (!this.world.isWalkable(fx, fy) || !this.world.sameRegion(fx, fy, tx, ty)) {
+    if (!this.samePassRegion(fx, fy, tx, ty, mode)) {
       telemetry.count('path_no_route');
       return PathStatus.NoRoute;
     }
@@ -288,11 +293,11 @@ export class Pathfinder {
         const dy = NEIGHBOR_DY[i]!;
         const nx = cx + dx;
         const ny = cy + dy;
-        if (!this.world.isWalkable(nx, ny)) continue;
+        if (!this.canPass(nx, ny, mode)) continue;
         // Corner rule: a diagonal step may not clip the corner of an
         // unwalkable tile either side of it.
         if (dx !== 0 && dy !== 0 &&
-            (!this.world.isWalkable(cx + dx, cy) || !this.world.isWalkable(cx, cy + dy))) {
+            (!this.canPass(cx + dx, cy, mode) || !this.canPass(cx, cy + dy, mode))) {
           continue;
         }
 
@@ -304,7 +309,8 @@ export class Pathfinder {
         // unreachable. See `AVOID_PENALTY`.
         const up = climb === 0 ? 0 : Math.max(0,
           (rise[neighbor]! + dug[neighbor]! - rise[current]! - dug[current]!) * climb);
-        const tentativeG = this.gScore[current]! + NEIGHBOR_COST[i]! + up +
+        const stepCost = NEIGHBOR_COST[i]! * (mode === 'swim' && this.world.isSwimTile(nx, ny) ? SWIM_COST : 1);
+        const tentativeG = this.gScore[current]! + stepCost + up +
           (neighbor === avoidIndex ? AVOID_PENALTY : 0);
         if (this.seen[neighbor] === this.gen && tentativeG >= this.gScore[neighbor]!) continue;
 
@@ -331,11 +337,23 @@ export class Pathfinder {
   }
 
   /** The goal tile, snapped off unwalkable ground via `World.findWalkableNear`. */
-  private snapGoal(toX: number, toY: number): { x: number; y: number } | null {
+  private snapGoal(toX: number, toY: number, mode: PassMode = 'walk'): { x: number; y: number } | null {
     const tx = toX | 0;
     const ty = toY | 0;
-    if (this.world.isWalkable(tx, ty)) return { x: tx, y: ty };
+    if (this.canPass(tx, ty, mode)) return { x: tx, y: ty };
+    if (mode === 'swim') return null;
     return this.world.findWalkableNear(tx, ty, 8);
+  }
+
+  private canPass(x: number, y: number, mode: PassMode): boolean {
+    if (this.world.isWalkable(x, y)) return true;
+    return mode === 'swim' && this.world.isSwimTile(x, y);
+  }
+
+  private samePassRegion(ax: number, ay: number, bx: number, by: number, mode: PassMode): boolean {
+    return mode === 'swim'
+      ? this.world.sameSwimRegion(ax, ay, bx, by)
+      : this.world.sameRegion(ax, ay, bx, by);
   }
 
   /**

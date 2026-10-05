@@ -1,3 +1,17 @@
+## 2026-10-05 — M15 fase 27b: vadear y secarse
+
+Los bajíos son caminables y cuentan en las regiones y las orillas de bebida.
+El paso cuesta tiempo (0,4 de velocidad) y deja humedad que añade frío hasta
+secarse, antes junto a un hogar encendido. El inspector explica ese efecto
+dentro de la puerta de conocimiento de la condición y retira el aviso al secarse.
+Una casa sigue necesitando suelo seco aunque el agua sea caminable.
+Los componentes y registros preparan también las rutas de nado; su ejecución
+se integra en 27d. [Contrato](m15_phase27_wading.md).
+Captura nueva y e2e del aviso (1/1):
+`artifacts/screenshots/m15-phase27-wading-2026-10-05-pass2/02-wading-condition.png`.
+Este cambio mueve los mundos clásicos. La comparación completa de coste y
+la matriz se documentan al terminar la integración, sin declarar verde la referencia.
+
 ## 2026-10-05 — M15 fase 27a: el agua tiene fondo
 
 La costa distingue visualmente agua de vadeo, de nado y honda. `World.depthAt`

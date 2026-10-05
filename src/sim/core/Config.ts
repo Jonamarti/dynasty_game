@@ -13,6 +13,10 @@ export interface WorldConfig {
   wadeDepth: number;
   /** Water at or above this depth needs a boat; between wadeDepth and this limit it can be swum. */
   swimDepth: number;
+  /** Cold need at which swimming becomes fatal (M15 27d). */
+  drownAt: number;
+  /** Wet-body duration in simulation ticks after entering water. */
+  wetTicks: number;
   /** Chunk edge in tiles; the LOD system activates and freezes whole chunks. */
   chunkSize: number;
   /** Target count of each resource node kind, before terrain suitability filtering. */
@@ -476,6 +480,8 @@ export const DEFAULT_CONFIG: SimConfig = {
     waterLevel: 0.32,
     wadeDepth: 0.002,
     swimDepth: 0.008,
+    drownAt: 85,
+    wetTicks: 120,
     chunkSize: 16,
     berryBushes: 280,
     flintOutcrops: 60,

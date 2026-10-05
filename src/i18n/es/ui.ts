@@ -1,5 +1,6 @@
 /** Spanish for ui. Keys are the English templates; see `i18n.ts`. */
 export const ES_UI: Record<string, string> = {
+  "Being wet makes you colder until you dry off.": "La humedad aumenta el frío hasta que te seques.",
   "Before you begin": "Antes de empezar",
   "Settings": "Ajustes",
   "seed {seed}": "semilla {seed}",

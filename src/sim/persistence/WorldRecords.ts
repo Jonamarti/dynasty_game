@@ -34,11 +34,12 @@ const numericKeys: NumericArrayKey[] = ['elevation', 'offset', 'prominence', 'mo
 const byteKeys: ByteArrayKey[] = ['biome', 'walkable'];
 const soilKeys: SoilArrayKey[] = ['texture', 'organic', 'nutrient'];
 const worldOwnKeys = ['config', 'width', 'height', 'chunkSize', 'chunksX', 'chunksY', 'elevation', 'offset', 'earthVersion',
-  'prominence', 'moisture', 'fertility', 'biome', 'walkable', 'grass', 'grassCap', 'region', 'regionSizes', 'nextRegionId', 'shoreTiles', 'soil'];
+  'prominence', 'moisture', 'fertility', 'biome', 'walkable', 'grass', 'grassCap', 'region', 'regionSizes', 'nextRegionId', 'shoreTiles',
+  'swimRegion', 'swimRegionSizes', 'swimRegionsDirty', 'swimRegionEarthVersion', 'soil'];
 const soilOwnKeys = ['width', 'fertility', 'texture', 'organic', 'nutrient', 'active'];
 const configKeys = Object.keys(DEFAULT_CONFIG.world) as (keyof WorldConfig)[];
 const integerConfigKeys = ['width', 'height', 'chunkSize', 'berryBushes', 'flintOutcrops', 'deadwood', 'gameHerds', 'predators',
-  'edgeReserve', 'reedBeds', 'clayBanks', 'fishingSpots', 'wildGrainPatches'] as const;
+  'edgeReserve', 'reedBeds', 'clayBanks', 'fishingSpots', 'wildGrainPatches', 'wetTicks'] as const;
 
 function invalid(reason: string): never { throw new TypeError(`Invalid world terrain record: ${reason}`); }
 function object(value: unknown): value is Record<string, unknown> {
@@ -75,7 +76,8 @@ function validateConfig(config: unknown, width: number, height: number, chunkSiz
   }
   if (config.width !== width || config.height !== height || config.chunkSize !== chunkSize) invalid('world config dimensions disagree with envelope');
   for (const key of integerConfigKeys) {
-    if (!Number.isSafeInteger(config[key]) || (config[key] as number) < (key === 'width' || key === 'height' || key === 'chunkSize' ? 1 : 0)) {
+    if (!Number.isSafeInteger(config[key]) || (config[key] as number) <
+        (key === 'width' || key === 'height' || key === 'chunkSize' || key === 'wetTicks' ? 1 : 0)) {
       invalid(`invalid world config range ${key}`);
     }
   }
@@ -86,6 +88,12 @@ function validateConfig(config: unknown, width: number, height: number, chunkSiz
     else if (key === 'edgeEntryChance' || key === 'treeDensity') { if (value < 0 || value > 1) invalid(`invalid world config range ${key}`); }
     else if (key !== 'waterLevel' && value < 0) invalid(`invalid world config range ${key}`);
   }
+  const wadeDepth = config.wadeDepth;
+  const swimDepth = config.swimDepth;
+  const drownAt = config.drownAt;
+  if (typeof wadeDepth !== 'number' || typeof swimDepth !== 'number' ||
+      wadeDepth <= 0 || swimDepth <= wadeDepth) invalid('invalid world water depth thresholds');
+  if (typeof drownAt !== 'number' || drownAt < 0 || drownAt > 100) invalid('invalid world config range drownAt');
 }
 
 /** Capture all tile and soil state, including caches/counters that affect later terrain edits. */
@@ -184,9 +192,17 @@ export function fromWorldTerrainRecord(record: unknown): World {
   const walkable = arrays.get('walkable') as Uint8Array;
   const biome = arrays.get('biome') as Uint8Array;
   const regions = arrays.get('region') as Int32Array;
+  const elevation = arrays.get('elevation') as Float32Array;
+  const offset = arrays.get('offset') as Float32Array;
+  const waterConfig = record.config as Record<string, number>;
   for (let i = 0; i < n; i++) {
     const id = regions[i]!;
-    if ((walkable[i] === 1) !== (id >= 0) || ((biome[i] === 0 || biome[i] === 5) && walkable[i] !== 0)) invalid('walkability and region labels disagree');
+    const waterDepth = Math.max(0, waterConfig.waterLevel! - elevation[i]! - offset[i]!);
+    if ((walkable[i] === 1) !== (id >= 0) ||
+        (biome[i] === 5 && walkable[i] !== 0) ||
+        (biome[i] === 0 && walkable[i] === 1 && waterDepth >= waterConfig.wadeDepth!)) {
+      invalid('walkability and region labels disagree');
+    }
     if (id >= 0) counted.set(id, (counted.get(id) ?? 0) + 1);
   }
   if (counted.size !== sizes.size || [...counted].some(([id, size]) => sizes.get(id) !== size) ||
@@ -246,6 +262,11 @@ export function fromWorldTerrainRecord(record: unknown): World {
     biome: arrays.get('biome'), walkable: arrays.get('walkable'), grass: arrays.get('grass'),
     grassCap: arrays.get('grassCap'), region: arrays.get('region'), regionSizes: sizes,
     nextRegionId: record.nextRegionId, shoreTiles: shores,
+    // Swimming components are a derived cache. Rebuild lazily after restore:
+    // water thresholds are in the validated config, and no random draw or
+    // terrain ownership changes during this rebuild.
+    swimRegion: new Int32Array(n).fill(-1), swimRegionSizes: new Map<number, number>(),
+    swimRegionsDirty: true, swimRegionEarthVersion: -1,
   })) Object.defineProperty(mutableWorld, key, { value, enumerable: true, writable: true, configurable: true });
   const soil = Object.create(Soil.prototype) as Soil;
   const mutableSoil = soil as unknown as Record<string, unknown>;

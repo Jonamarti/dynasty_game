@@ -270,6 +270,8 @@ export class Person {
   lastBirthDay = -9999;
 
   health = 100;
+  /** Ticks until dry after wading or swimming (M15 phase 27b). */
+  wet = 0;
   /** Six parts, each with damage and a wound state (M15 phase 21a); `Body.ts` says what a wound does. */
   body: Body = newBody();
   /** Lasting illnesses, with grades (M15 phase 21c): so far the fever of an infected wound. */

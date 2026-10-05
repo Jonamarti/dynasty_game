@@ -116,16 +116,26 @@ describe('World.dig and World.pile', () => {
     expectTrue(w);
   });
 
-  it('never makes water or rock walkable by piling on it', () => {
+  it('only makes water walkable when piling raises the bottom into the wading band', () => {
     const w = world();
     let wx = -1, wy = -1;
     for (let i = 0; i < w.biome.length; i++) {
       const x = i % w.width;
       const y = (i - x) / w.width;
-      if (w.biomeAt(x, y) === 'water') { wx = x; wy = y; break; }
+      if (w.biomeAt(x, y) === 'water' && w.depthAt(x, y) > w.wadeDepth + 0.05) { wx = x; wy = y; break; }
     }
+    expect(wx).toBeGreaterThanOrEqual(0);
     w.pile(wx, wy, 0.05);
     expect(w.isWalkable(wx, wy)).toBe(false);
+    expect(w.depthAt(wx, wy)).toBeGreaterThan(w.wadeDepth);
+
+    const shallow = w.biome.findIndex((biome) => biome === 0);
+    const sx = shallow % w.width, sy = Math.floor(shallow / w.width);
+    w.elevation[shallow] = w.waterLevel - 0.01;
+    w.setWalkable(sx, sy, false);
+    w.pile(sx, sy, 0.01);
+    expect(w.isShallow(sx, sy)).toBe(true);
+    expect(w.isWalkable(sx, sy)).toBe(true);
   });
 
   it('raises the sight bonus of a mound and drops it again when levelled', () => {

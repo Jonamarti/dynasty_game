@@ -8,6 +8,7 @@ import type { TimeManager } from '../core/TimeManager.ts';
 import type { Person } from '../entities/Person.ts';
 import type { Building } from '../entities/Building.ts';
 import type { SpatialHash } from '../core/SpatialHash.ts';
+import type { World } from '../core/World.ts';
 import { bleeding, feverDrain, mendBody, poisonDrain, poisonHunger, poisonThirst } from '../entities/Body.ts';
 import { LETHAL_NEEDS } from '../entities/Person.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -90,7 +91,7 @@ export interface NeedsHooks {
 }
 
 export class NeedsSystem {
-  constructor(private readonly config: NeedsConfig) {}
+  constructor(private readonly config: NeedsConfig, private readonly world?: World) {}
 
   /**
    * Best shelter covering this person, 0-1.
@@ -194,8 +195,17 @@ export class NeedsSystem {
           }
         }
       }
+      // Wading leaves a body wet for a while after leaving the water. It adds
+      // chill until dry, while a nearby hearth shortens the wet spell fourfold.
+      // Staying in the shallows refreshes the timer each tick.
+      if (this.world?.isWadeTile(person.x, person.y)) {
+        person.wet = Math.max(person.wet ?? 0, this.world.wetTicks);
+      } else if ((person.wet ?? 0) > 0) {
+        person.wet = Math.max(0, person.wet - (hearth > 0 ? 4 : 1));
+      }
       const effectiveShelter = Math.max(shelter, hearth);
-      const effectiveChill = chill * (1 - effectiveShelter);
+      const wetChill = person.wet > 0 ? 1 : 0;
+      const effectiveChill = (chill + wetChill) * (1 - effectiveShelter);
       const effectiveWarming = warming + effectiveShelter * 0.8;
       person.needs.cold = Math.max(
         0,

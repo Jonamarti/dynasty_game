@@ -636,7 +636,7 @@ export class Simulation {
     this.world = new World(this.config.world, worldRng, localGeography);
     this.time = new TimeManager(this.config.time);
 
-    this.needsSystem = new NeedsSystem(this.config.needs);
+    this.needsSystem = new NeedsSystem(this.config.needs, this.world);
     this.pathfinder = new Pathfinder(this.world);
     this.movementSystem = new MovementSystem(this.world, moveRng, this.pathfinder,
       this.config.motivation.infantsStill, this.config.carry.sledgeSpeed, this.config.childhood);
@@ -861,7 +861,7 @@ export class Simulation {
       corpsesById: objects.corpsesById, animalsById: objects.animalsById,
       relationships: roster.relationships, bandRelations: roster.bandRelations,
       normsByBand, strangerRegardByBand, social,
-      needsSystem: new NeedsSystem(state.config.needs), pathfinder, movementSystem,
+      needsSystem: new NeedsSystem(state.config.needs, world), pathfinder, movementSystem,
       aiRng: stream('simulation.aiRng'), actionRng: stream('simulation.actionRng'),
       commandRng: stream('simulation.commandRng'), choiceRng: stream('simulation.choiceRng'),
       hearthRng: stream('simulation.hearthRng'), lifeRng: stream('simulation.lifeRng'),
@@ -4098,7 +4098,9 @@ export class Simulation {
   placementRefusal(def: BuildingDef, x: number, y: number): string | null {
     for (let dy = 0; dy < def.height; dy++) {
       for (let dx = 0; dx < def.width; dx++) {
-        if (!this.world.isWalkable(x + dx, y + dy)) {
+        // Wading water can be crossed but cannot support huts or dry earthworks.
+        if (!this.world.isWalkable(x + dx, y + dy) ||
+            (def.placement !== 'shore' && this.world.isWater(x + dx, y + dy))) {
           return t('the ground there will not take it');
         }
       }

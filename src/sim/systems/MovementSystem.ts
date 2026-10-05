@@ -206,7 +206,10 @@ export function moveToward(
   const asked = speed;
   const factor = world.stepFactor(
     entity.x, entity.y, entity.x + (dx / dist) * speed, entity.y + (dy / dist) * speed);
-  speed *= factor;
+  const proposedX = entity.x + (dx / dist) * speed;
+  const proposedY = entity.y + (dy / dist) * speed;
+  // Shallow water is slower than dry ground; apply it before blocked-step and progress checks.
+  speed *= factor * (world.isWadeTile(proposedX, proposedY) ? 0.4 : 1);
 
   const startX = entity.x;
   const startY = entity.y;
@@ -360,7 +363,9 @@ export class MovementSystem {
     if (this.infantsStill && this.stillBaby(person)) return;
     const length = Math.sqrt(dx * dx + dy * dy);
     if (length === 0) return;
-    const speed = this.speedOf(person);
+    const requestedSpeed = this.speedOf(person);
+    const speed = requestedSpeed * (this.world.isWadeTile(person.x + (dx / length) * requestedSpeed,
+      person.y + (dy / length) * requestedSpeed) ? 0.4 : 1);
     const nx = person.x + (dx / length) * speed;
     const ny = person.y + (dy / length) * speed;
     if (this.world.isWalkable(nx, ny)) {
@@ -371,6 +376,7 @@ export class MovementSystem {
     } else if (this.world.isWalkable(person.x, ny)) {
       person.y = ny;
     }
+    if (this.world.isWadeTile(person.x, person.y)) person.wet = Math.max(person.wet, this.world.wetTicks);
   }
 
   /**
@@ -459,7 +465,9 @@ export class MovementSystem {
     // The honest test: did we actually get anywhere?
     this.refused.x = -1;
     const progress = moveToward(person, aimX, aimY, speed, this.world, this.rng, this.refused);
-    if (progress >= speed * PROGRESS_THRESHOLD) {
+    if (this.world.isWadeTile(person.x, person.y)) person.wet = Math.max(person.wet, this.world.wetTicks);
+    const wadingFactor = this.world.isWadeTile(person.x, person.y) ? 0.4 : 1;
+    if (progress >= speed * wadingFactor * PROGRESS_THRESHOLD) {
       person.stuckSteps = 0;
       return Arrival.Moving;
     }

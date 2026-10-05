@@ -25,12 +25,13 @@ describe('World', () => {
     expect(counts.grass + counts.forest).toBeGreaterThan(total * 0.15);
   });
 
-  it('never reports water or rock as walkable', () => {
+  it('walks shallow water but keeps deep water and rock impassable', () => {
     const world = makeWorld();
     for (let y = 0; y < world.height; y++) {
       for (let x = 0; x < world.width; x++) {
         const biome = world.biomeAt(x, y);
-        if (biome === 'water' || biome === 'rock') expect(world.isWalkable(x, y)).toBe(false);
+        if (biome === 'water') expect(world.isWalkable(x, y)).toBe(world.isShallow(x, y));
+        else if (biome === 'rock') expect(world.isWalkable(x, y)).toBe(false);
         else expect(world.isWalkable(x, y)).toBe(true);
       }
     }
@@ -44,12 +45,13 @@ describe('World', () => {
     expect(world.isWalkable(5, world.height)).toBe(false);
   });
 
-  it('lists shore tiles that are walkable and actually touch water', () => {
+  it('lists walkable shore tiles and wadeable shallows', () => {
     const world = makeWorld();
     expect(world.shoreTiles.length).toBeGreaterThan(0);
     for (const tile of world.shoreTiles) {
       expect(world.isWalkable(tile.x, tile.y)).toBe(true);
       expect(world.isShore(tile.x, tile.y)).toBe(true);
+      expect(world.isWater(tile.x, tile.y) ? world.isShallow(tile.x, tile.y) : true).toBe(true);
     }
   });
 
