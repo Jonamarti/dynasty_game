@@ -31,7 +31,7 @@ import { CONVERSATION_MODES, chooseMode } from '../social/Conversation.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../entities/Building.ts';
 import { earthworkWorkRefusal } from '../core/Earth.ts';
 import { SOW_SEED, SPREAD_LOAD } from '../entities/Field.ts';
-import { findPlantingSpot, plantable } from '../entities/Orchard.ts';
+import { ORCHARD_SPACING, findPlantingSpot, plantable } from '../entities/Orchard.ts';
 import type { Building } from '../entities/Building.ts';
 import { averageRenown, type Household } from '../entities/Household.ts';
 import { statusPressure } from './Status.ts';
@@ -2897,6 +2897,10 @@ export class Brain {
       const spot = findPlantingSpot({
         world: ctx.world, treeHash: ctx.treeHash,
         built: (x, y) => ctx.buildingHash.queryRadius(x, y, 8).some(b => b.contains(x, y)),
+        claimed: (x, y) => ctx.peopleHash.queryRadius(x, y, ORCHARD_SPACING + 12).some(p =>
+          p.id !== person.id && p.alive && p.action === 'plant' &&
+          p.targetX !== null && p.targetY !== null &&
+          Math.hypot(p.targetX - x, p.targetY - y) < ORCHARD_SPACING),
       }, person, anchor, person.id);
       if (spot) {
         add('plant',

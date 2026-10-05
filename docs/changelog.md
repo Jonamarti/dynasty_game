@@ -1,3 +1,28 @@
+## 2026-10-05 — M15 fase 24 (2): el escenario `orchard` y `orchards-are-planted`
+
+- **`orchard`**: una banda de doce con toda la cadena (`farming`, `calendar`,
+  `arboriculture`) y tres piezas de fruta por adulto, que el arnés reparte (el
+  forrajeo ya trae fruta de los árboles). Es **la única corrida en la que alguien
+  planta**: nadie llega a `arboriculture` de la nada en una corrida corta, y sin
+  el escenario el check diría n/a para siempre (el problema de `craft` y
+  `scribes`). Quién planta, dónde y cuándo es de la banda.
+- **`orchards-are-planted`**: aplica solo si alguien vivo sabe plantar (n/a en
+  el resto). Pasa si se plantó al menos un árbol (el contador) **y** quedan
+  frutales jóvenes en pie, no más viejos que la corrida.
+- **Medido contra el build roto antes de confiar en él:** con `plant` sin
+  puntuar el check falla (0 plantados por 9 que saben; 19 frutales jóvenes, todos
+  de la siembra natural del bosque, por eso no basta mirar los árboles); con
+  `plantTree` rechazando siempre, también (test). En `orchard`: 5 plantados por 9
+  que saben, 22 frutales jóvenes en pie.
+- **Hallazgo al medirlo, y arreglo:** la primera versión del buscador mandaba a
+  los nueve plantadores al mismo anillo y **23 volvieron del hoyo** con
+  `no_room_for_a_tree` por 4 árboles puestos. `PlantingGround.claimed` descarta
+  casillas a menos de 2,6 de donde otro ya va a plantar (lo lee solo el buscador,
+  no el rechazo: un plan no es un hecho del suelo). Tras el arreglo: 5 plantados,
+  0 rechazos.
+- Pruebas: `orchard-checks.test.ts` (3): n/a donde nadie sabe, falla con el
+  build roto y pasa en `orchard`, con las invariantes de región y de pisar tierra.
+
 ## 2026-10-05 — M15 fase 24 (1): plantar un frutal (`arboriculture` y el verbo `plant`)
 
 La fase 24 se hace en su propio worktree (`.wt/m15-phase24`, rama `m15/phase24`)

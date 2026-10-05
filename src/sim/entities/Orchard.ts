@@ -59,6 +59,14 @@ export interface PlantingGround {
   treeHash: SpatialHash<Tree>;
   /** Whether any building covers the tile (a field's plot included). */
   built: (x: number, y: number) => boolean;
+  /**
+   * Whether somebody else is already on their way to plant within spacing of
+   * the tile. Read by `findPlantingSpot` only, never by `plantingRefusal`: a
+   * claim is a plan and not a fact about the ground, and measured without it
+   * nine planters sent to the same ring turned back at the hole twenty-three
+   * times for the four trees that went in.
+   */
+  claimed?: (x: number, y: number) => boolean;
 }
 
 /** Why this tile cannot take a tree, or null. The one definition of "fit". */
@@ -97,7 +105,7 @@ export function findPlantingSpot(
       const x = Math.round(anchor.x + Math.cos(a) * r);
       const y = Math.round(anchor.y + Math.sin(a) * r);
       if (!ground.world.sameRegion(from.x, from.y, x, y)) continue;
-      if (plantingRefusal(ground, x, y) === null) return { x, y };
+      if (plantingRefusal(ground, x, y) === null && !ground.claimed?.(x, y)) return { x, y };
     }
   }
   return null;

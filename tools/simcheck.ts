@@ -124,6 +124,16 @@ function setupDiggers(sim: Simulation): void {
   }
 }
 
+/**
+ * `orchard`: a band that knows how to plant, with fruit in every adult's pack.
+ * See the scenario's own description for why the fruit is the harness's gift.
+ */
+function setupOrchard(sim: Simulation): void {
+  const adults = sim.people.filter(p => p.alive && !p.isChild);
+  const fruit = ['apple', 'pear', 'plum', 'hazelnut'];
+  for (const [i, person] of adults.entries()) person.inventory.add(fruit[i % fruit.length]!, 3);
+}
+
 export const SCENARIOS: Record<string, Scenario> = {
   'food-news': {
     name: 'food-news',
@@ -843,6 +853,33 @@ export const SCENARIOS: Record<string, Scenario> = {
     steps: 9600,
     setup: setupDiggers,
   },
+  orchard: {
+    name: 'orchard',
+    description:
+      'A band that knows how to plant a tree and has the fruit to do it with, and ' +
+      '**the only run in which anyone plants**. A tree is planted only by somebody ' +
+      'who knows `arboriculture`, which sits behind farming and the calendar, and ' +
+      'nobody reaches that from nothing in a short run (the `craft` and `scribes` ' +
+      'problem again, so `orchards-are-planted` would report n/a for ever). The ' +
+      'founders know the whole chain and the harness hands each adult three pieces ' +
+      'of fruit, the one thing a forager does carry back from a tree. **Who plants, ' +
+      'where and when are the band\'s own**: the scorer sends an adult with fruit ' +
+      'and the idea to open ground a few tiles from the hearth, in the growing ' +
+      'season, when nothing more pressing pulls. Harness-only setup, like ' +
+      '`diggers`\' spades; the simulation is never told the fruit was a gift. The ' +
+      'world is generous on purpose (a project is only worked while people are ' +
+      'comfortable).',
+    config: {
+      seed: 'orchard',
+      world: { berryBushes: 220, gameHerds: 14, regrowthRate: 0.4 },
+      population: {
+        bands: 1, peoplePerBand: 12,
+        startingTech: ['firemaking', 'plant_lore', 'grinding', 'marking', 'farming', 'calendar', 'arboriculture'],
+      },
+    },
+    steps: 9600,
+    setup: setupOrchard,
+  },
   generations: {
     name: 'generations',
     description:
@@ -1228,6 +1265,27 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
         done.length + ' of ' + placed + ' earthworks marked out finished (' +
         (sites.map(b => b.def.id + ' ' + Math.round(b.completion * 100) + '%').join(', ') || 'none left standing') +
         '); ' + lifts + ' lifts of earth');
+    }
+  }
+
+  // M15 phase 24: orchards are planted. Applies only where somebody knows how to
+  // plant (n/a elsewhere: nobody reaches `arboriculture` in a short run). Passes
+  // when at least one tree was planted *and* one of them is still standing, read
+  // off the trees themselves and not only the counter: a planting that was
+  // counted and then cleared away is not an orchard. The planted trees are the
+  // ones young enough to have been set during the run.
+  {
+    const knowers = sim.people.filter(p => p.alive && p.knownTech.has('arboriculture')).length;
+    if (knowers === 0) skip('orchards-are-planted', 'nobody alive knows arboriculture in this scenario');
+    else {
+      const planted = tel.tree_planted ?? 0;
+      const days = sim.time.tick / sim.config.time.ticksPerDay;
+      // Young fruit trees no older than the run: the planted ones, and any the
+      // forest seeded in spring, so the counter above is what proves the hand.
+      const young = sim.trees.filter(t => t.standing && t.def.fruitItem !== null && t.age <= days + 1).length;
+      add('orchards-are-planted', planted > 0 && young > 0,
+        planted + ' trees planted by ' + knowers + ' who know how; ' + young +
+        ' young fruit trees standing');
     }
   }
 
