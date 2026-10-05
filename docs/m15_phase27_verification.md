@@ -37,7 +37,11 @@ intermedias v1 y v2 no forman parte de los resultados finales.
 - `npm.cmd run typecheck`: pasa.
 - `npm.cmd test -- --maxWorkers=2 --testTimeout=15000`: 149 archivos, 1.055 tests pasan.
 - Checks focalizados: 18/18 pasan, incluidos controles negativos.
-- Matriz, navegador y soak de español: en ejecución.
+- `DYNASTY_PORT=5399 npm.cmd run e2e`: 80/80 pasan.
+- `npm.cmd run i18n:soak`: 419 líneas en español, cero detectadas como inglesas.
+- `npm.cmd run sim:check -- --scenario shallows`: 6/6 checks pasan;
+  23 capturas someras, seis pasos de nado y cero muertes en bajíos.
+- Matriz final y cohortes: en ejecución.
 
 ## Referencia de checks
 
@@ -55,3 +59,13 @@ en agua honda o cargadas y regiones corruptas.
 - Pesca y tecnología: `artifacts/screenshots/m15-phase27-fishing-2026-10-05/`.
 - Natación: `artifacts/screenshots/2026-10-05/m15-phase27d-swimming/01-swim-hand-load-refusal.png`.
 - Conjunto final: `artifacts/screenshots/m15-phase27-final-2026-10-05-v3/`.
+
+## Sonda de divergencia: `century/sigma`
+
+Con el mismo árbol congelado y 40.000 pasos, la referencia termina con
+18 vivos de un pico de 37 y el resultado con uno de 37. Las causas de muerte
+son referencia: hambre 22, exposición 4, agresión 1; resultado: hambre 24,
+exposición 8, oso 4, agresión 1. El resultado no registra pasos de nado ni
+ahogamientos. Sus capturas de peces bajan de 862 a 277, pero el desplome
+temprano reduce también las oportunidades de actuar: estos totales no aíslan
+una causa económica. No se ha cambiado un coeficiente a partir de esta sonda.

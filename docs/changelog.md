@@ -1,3 +1,15 @@
+## 2026-10-05 — M15 fase 27: hito visual y pruebas de integración
+
+Typecheck, 1.055 tests en 149 archivos, 80 e2e y el soak de español (419 líneas,
+cero detectadas como inglesas) pasan. `shallows` pasa sus seis mecanismos:
+23 capturas someras, seis pasos de nado, cero ahogamientos en bajíos y ambos
+grafos correctos. Las cinco vistas finales se capturan y revisan en
+`artifacts/screenshots/m15-phase27-final-2026-10-05-v3/`.
+
+La puerta de coste sigue abierta: `century`, veinte parejas, pierde 4,70 puntos
+ponderados frente al máximo de tres; el intervalo del cambio es amplio y no
+confirma una causa. Matriz final y demás escenarios económicos aún en ejecución.
+[Pruebas, protocolo y sonda](m15_phase27_verification.md).
 ## 2026-10-05 — M15 fase 27e: comprobar bajíos, pesca y regiones de nado
 
 `shallows` prueba pesca en agua y cruces reales. `people-on-land` admite nado

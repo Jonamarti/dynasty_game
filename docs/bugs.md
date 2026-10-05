@@ -1,5 +1,19 @@
 # Known bugs and rough edges
 
+## M15 fase 27: puerta de coste todavía abierta (2026-10-05)
+
+`century`, veinte semillas emparejadas: supervivencia ponderada 72,88 % →
+68,18 %, pérdida de 4,70 puntos frente al máximo declarado de tres. La media
+por semilla cambia 70,32 % → 66,40 %; el intervalo aproximado del cambio
+emparejado es −15,67 a +7,84 puntos, demasiado amplio para confirmar una causa
+ni una mejora. La puerta numérica queda incumplida aunque el resultado sea
+compatible con divergencia. La implementación no se ha afinado para aprobarla.
+
+En `sigma` el desplome no registra nado ni ahogamientos: aumentan exposición y
+ataques, y la caída temprana reduce también las capturas. No se ha aislado si
+el coste procede de acceder a nuevos bajíos, humedad, recolocación de bancos
+o divergencia ecológica. [Protocolo, sonda y resultados](m15_phase27_verification.md).
+Los otros escenarios de la comparación siguen en ejecución.
 ## M15 fase 26c: el silo cavado cuesta economía (2026-10-04)
 
 Medido en `farmers` (20 semillas): supervivencia media 73,1 % → 69,4 % (dentro

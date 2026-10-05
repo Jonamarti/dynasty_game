@@ -2339,6 +2339,10 @@ abiertas a todos), medidos contra el build roto (`earthwork-checks.test.ts`).
 
 ## Fase 27 — La profundidad del agua: vadear, pescar dentro y nadar (decisión 12)
 
+**Verificación del 2026-10-05:** typecheck, 1.055 unitarios, 80 e2e, soak de
+español y los seis checks de `shallows` pasan. La puerta económica permanece
+abierta: `century` pierde 4,70 puntos ponderados en veinte parejas (límite tres).
+Matriz final y resto del coste en ejecución. [Resultados](m15_phase27_verification.md).
 **Avance del 2026-10-05 (27e): escenario y checks.** `shallows` ejecuta
 pesca y una orden real de cruce. Los controles negativos provocan un
 ahogamiento somero y colocan personas en agua honda o con carga; ambos deben
@@ -2441,7 +2445,7 @@ con red o nasa, como hoy.
 - `nobody-drowns-in-the-shallows`: ninguna muerte `drowned` en agua somera
   (invariante).
 - `fish-caught-in-water`: hay capturas desde casillas de agua somera.
-  Hoy no hay ninguna y falla.
+  El control negativo sin capturas debe fallar.
 - `swimmers-cross`: en `shallows`, hay cruces por casillas de nado.
 - `paths-are-found`, `people-on-land` (tierra, bajío o nado con carga compatible; rechaza
   agua honda, roca y nadadores cargados) y
