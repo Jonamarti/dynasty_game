@@ -1,3 +1,17 @@
+## 2026-10-05 — M15 fase 18: concebir exige un techo compartido
+
+`LifeSystem.tryConceive` exige que la madre y su cónyuge hayan dormido bajo el
+mismo edificio en la muestra de medianoche de `shareTheHearth` (cualquier
+refugio, paravientos incluido; no el raso). Nuevo `roofTonight` transitorio,
+sin fork de RNG, y check `conception-needs-a-roof` medido desde las personas:
+falla con la puerta desactivada (16 de 19 concepciones sin techo en `century`)
+y pasa con ella. La puerta va tras el sorteo para no desplazar la mortalidad
+(la primera versión rompía `earthworks-are-dug` de `diggers` por divergencia).
+Veinte semillas de `century`: nacimientos 516 → 191, supervivencia media
+68,2 % → 81,9 %, colapsos 1 → 2 de 20 (medido con la primera versión de la puerta, antes del sorteo); la natalidad queda para calibrar.
+`sim:check:all`: 106 fallos, en línea con la referencia 106-112 de la fase 27;
+`cravings-steer-the-diet` y `perf-budget` siguen fallando como antes.
+Sin cambios de UI, por tanto sin capturas. [Detalle](m15_phase18_roof.md).
 ## 2026-10-05 — M15 fase 27: medición final; coste abierto
 
 Entregadas y verificadas profundidad, vadeo, pesca, natación y checks en commits

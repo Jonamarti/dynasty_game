@@ -105,16 +105,6 @@ export class LifeSystem {
     const father = mother.spouseId === null ? null : ctx.peopleById.get(mother.spouseId);
     if (!father || !father.alive || father.isChild) return;
 
-    // M15 phase 18: under the same roof tonight, or not at all. Placed before
-    // the conception draw, so a couple kept apart consumes no number from the
-    // life stream; the draw sequence of everyone who did share a roof is the
-    // only thing that moves.
-    const roof = ctx.roofTonight.get(mother.id);
-    if (roof === undefined || ctx.roofTonight.get(father.id) !== roof) {
-      telemetry.count('conception_no_roof');
-      return;
-    }
-
     // Hunger and injury suppress conception. A band on the edge of starvation
     // does not produce a baby boom, which is what stops the population from
     // exploding exactly when it can least afford to.
@@ -129,6 +119,16 @@ export class LifeSystem {
     if (condition <= 0) return;
 
     if (ctx.rng.chance(ctx.population.conceptionChance * condition)) {
+      // M15 phase 18: under the same roof tonight, or not at all. The gate sits
+      // *after* the draw on purpose: the life stream also feeds mortality, so a
+      // gate before it removed numbers and shifted every death in the world,
+      // breaking unrelated runs (`diggers`' earthworks) by pure divergence.
+      // Drawn first, a refused conception changes only the conception.
+      const roof = ctx.roofTonight.get(mother.id);
+      if (roof === undefined || ctx.roofTonight.get(father.id) !== roof) {
+        telemetry.count('conception_no_roof');
+        return;
+      }
       mother.pregnant = true;
       mother.gestationLeft = gestationDays(mother);
       mother.pregnantBy = father.id;
