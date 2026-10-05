@@ -9,6 +9,10 @@ export interface WorldConfig {
   width: number;
   height: number;
   waterLevel: number;
+  /** Maximum water depth, in elevation units, that can be walked through. M15 27b. */
+  wadeDepth: number;
+  /** Water at or above this depth needs a boat; between wadeDepth and this limit it can be swum. */
+  swimDepth: number;
   /** Chunk edge in tiles; the LOD system activates and freezes whole chunks. */
   chunkSize: number;
   /** Target count of each resource node kind, before terrain suitability filtering. */
@@ -470,6 +474,8 @@ export const DEFAULT_CONFIG: SimConfig = {
     width: 128,
     height: 128,
     waterLevel: 0.32,
+    wadeDepth: 0.002,
+    swimDepth: 0.008,
     chunkSize: 16,
     berryBushes: 280,
     flintOutcrops: 60,

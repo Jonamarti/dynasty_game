@@ -1,3 +1,13 @@
+## 2026-10-05 — M15 fase 27a: el agua tiene fondo
+
+La costa distingue visualmente agua de vadeo, de nado y honda. `World.depthAt`
+lee el fondo actual y comparte límites con la navegación, para que el color
+sirva como información de ruta. No consume RNG ni avanza la simulación.
+Pruebas de límites y una regresión de navegador que inspecciona el terreno
+horneado real. [Contrato](m15_phase27_depth.md). Captura nueva:
+`artifacts/screenshots/m15-phase27-depth-2026-10-05-pass2/01-coast-depth.png`.
+Verificación de la fase completa documentada al terminar la integración.
+
 ## 2026-10-04 — M15 fase 26c (4): la vista previa sigue al cursor, y la barra ya no tapa el suelo
 
 Dos fallos de interfaz que apareció al probar las obras de tierra con un

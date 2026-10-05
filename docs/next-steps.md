@@ -1,5 +1,11 @@
 # Next steps
 
+**2026-10-05: fase 27 en integración.** Fondo y colores comparten umbrales
+de profundidad. La próxima funcionalidad de esta fase permite vadear;
+después pesca desde el agua y natación con manos vacías. La clasificación
+de agua dulce y los inicios geográficos poblados esperan a 30.
+[Contrato de profundidad](m15_phase27_depth.md).
+
 **2026-10-04: fase 29, geografía y WorldState.** main crea/reconstruye la isla
 clásica desde una raíz con IdSpace y Simulation actual. La geografía distingue
 clásico/aleatorio/Tierra sin mezclar relieve normalizado y metros. El atlas

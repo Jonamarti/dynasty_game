@@ -16,7 +16,7 @@
     "range": "vite-node tools/range.ts --",
     "world:build": "vite-node tools/worlddata/run.ts",
     "verify": "npm run typecheck && npm run test && npm run sim:check:all && npm run e2e",
-    "e2e": "playwright test e2e/smoke.spec.ts e2e/animals.spec.ts e2e/group-colors.spec.ts e2e/dig-animation.spec.ts e2e/chop-animation.spec.ts e2e/craft-animation.spec.ts e2e/tool-equipment.spec.ts e2e/geographic-terrain.spec.ts e2e/earthworks.spec.ts",
+    "e2e": "playwright test e2e/smoke.spec.ts e2e/animals.spec.ts e2e/group-colors.spec.ts e2e/dig-animation.spec.ts e2e/chop-animation.spec.ts e2e/craft-animation.spec.ts e2e/tool-equipment.spec.ts e2e/geographic-terrain.spec.ts e2e/earthworks.spec.ts e2e/water-depth.spec.ts",
     "shots": "playwright test e2e/screenshots.spec.ts",
     "why": "vite-node tools/why.ts --",
     "profile:systems": "vite-node tools/profile-systems.ts",

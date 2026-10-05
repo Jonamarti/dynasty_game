@@ -2339,6 +2339,15 @@ abiertas a todos), medidos contra el build roto (`earthwork-checks.test.ts`).
 
 ## Fase 27 — La profundidad del agua: vadear, pescar dentro y nadar (decisión 12)
 
+**Avance del 2026-10-05 (27a): fondo y colores de profundidad.** `depthAt`
+lee el relieve actual sin draws. Los umbrales en `Config.world` equivalen a
+0,8 m para vadear y 3,2 m como límite del nado a la escala clásica; la igualdad
+pertenece a la banda más profunda. El renderer usa los mismos límites.
+[Contrato](m15_phase27_depth.md). Captura:
+`artifacts/screenshots/m15-phase27-depth-2026-10-05-pass2/01-coast-depth.png`.
+La verificación conjunta y las cohortes se registran al cerrar la integración;
+no se declara verde la matriz heredada.
+
 **Objetivo.** El agua tiene fondo. Cerca de tierra es somera y se entra en
 ella; más adentro hay que nadar, y más allá, una barca.
 

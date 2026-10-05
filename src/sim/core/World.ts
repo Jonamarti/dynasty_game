@@ -239,6 +239,29 @@ export class World {
     return this.config.waterLevel;
   }
 
+  /** Shallows cutoff in elevation units; exposed for depth rendering. */
+  get wadeDepth(): number { return this.config.wadeDepth; }
+
+  /** Swimming cutoff in elevation units; exposed for depth rendering. */
+  get swimDepth(): number { return this.config.swimDepth; }
+
+  /** Water over a tile, in elevation units. Dry land and off-map are zero. */
+  depthAt(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return 0;
+    return Math.max(0, this.config.waterLevel - this.heightAt(x, y));
+  }
+
+  /** Water shallow enough to walk through; equality belongs to swimming. */
+  isShallow(x: number, y: number): boolean {
+    return this.isWater(x, y) && this.depthAt(x, y) < this.config.wadeDepth;
+  }
+
+  /** Water tiles in the swim band; deeper water remains a future boat route. */
+  isSwimTile(x: number, y: number): boolean {
+    const depth = this.depthAt(x, y);
+    return this.isWater(x, y) && depth >= this.config.wadeDepth && depth < this.config.swimDepth;
+  }
+
   /** How deep a hole must be, in elevation units, before it stops being ground you can walk on. */
   get pitDepth(): number {
     return this.config.pitDepth;

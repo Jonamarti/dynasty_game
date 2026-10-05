@@ -31,6 +31,7 @@ import { DIG_TO } from '../sim/core/Earth.ts';
 import { expressionOf, type Expression } from '../sim/core/Mood.ts';
 import { canSeePlace, knowsPersonCondition } from '../sim/social/Knowledge.ts';
 import { Camera, TILE } from './Camera.ts';
+import { waterColors } from './WaterColor.ts';
 
 /**
  * How hard the relief shows: elevation differences between neighbouring tiles
@@ -433,7 +434,9 @@ export class Renderer {
     for (let y = 0; y < world.height; y++) {
       for (let x = 0; x < world.width; x++) {
         const biome = BIOMES[world.biome[world.index(x, y)]!]!;
-        const [base, speckle] = SEASON_BIOME_COLORS[season]?.[biome] ?? BIOME_COLORS[biome];
+        const [base, speckle] = biome === 'water'
+          ? waterColors(world.depthAt(x, y), world.wadeDepth, world.swimDepth)
+          : SEASON_BIOME_COLORS[season]?.[biome] ?? BIOME_COLORS[biome];
         ctx.fillStyle = base;
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
 
