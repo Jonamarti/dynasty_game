@@ -2735,6 +2735,21 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Avance del 2026-10-05: banco provisional de coste global.**
+`npm.cmd run world:bench` carga el atlas y mide 200 años de un fixture con
+2.440 registros y bucles de requisitos técnicos, relaciones, comercio y RNG.
+No evoluciona demografía ni tecnología. Las dos mediciones dan 14,059–26,714
+µs/tick amortizados, bajo el techo provisional de 59,6; el JSON pesa 1.460.178
+bytes. No establece una cota superior ni sustituye la puerta del futuro
+`PeopleSim` de 32c. Cinco regresiones cubren calendario, determinismo,
+continuidad JSON, límites polares y carga vacía. [Informe](m15_phase29_bench.md).
+Gira 1/1, trece capturas nuevas:
+`artifacts/screenshots/m15-phase29-bench-2026-10-05/`.
+Typecheck, 1.075 tests/153 archivos y 80 e2e pasan; matriz final pendiente.
+La fase 29 permanece abierta por fuentes históricas, paleoclima, selección
+jugable y el coste del modelo global real; el agua dulce de 30 es dependencia
+del inicio poblado.
+
 **Avance del 2026-10-05: procedencia por semilla y límites del atlas.**
 Cada semilla regional lleva una clave bibliográfica; `SOURCES.md` documenta
 evidencia, licencia y límites. El manifiesto y el generador declaran que el

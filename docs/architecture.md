@@ -149,6 +149,14 @@ and incomplete coverage are in [m15_profile_systems.md](m15_profile_systems.md).
 
 ## The rules that hold it together
 
+`tools/world-bench.ts` measures a synthetic seasonal workload over Earth-region
+records using the planned level-two data shape, real technology requirement
+lists and retained derived RNG states. `world:bench` reports setup/run process
+memory, serialized bytes and cost amortized with the actual game calendar.
+Population and technology do not evolve in this fixture: it is a provisional
+baseline, not an upper bound or an implementation of PeopleSim/LOD. The final
+gate remains open; see [m15_phase29_bench.md](m15_phase29_bench.md).
+
 **Water depth and traversability share thresholds.** `World.depthAt` reads the
 current heightfield below the water surface. Water under `wadeDepth` belongs to
 the walking components and shores; walking there takes 0.4 of normal speed and

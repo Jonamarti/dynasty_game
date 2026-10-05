@@ -15,6 +15,7 @@
     "sim:seeds": "vite-node tools/seeds.ts --",
     "range": "vite-node tools/range.ts --",
     "world:build": "vite-node tools/worlddata/run.ts",
+    "world:bench": "vite-node tools/world-bench.ts",
     "verify": "npm run typecheck && npm run test && npm run sim:check:all && npm run e2e",
     "e2e": "playwright test e2e/smoke.spec.ts e2e/animals.spec.ts e2e/group-colors.spec.ts e2e/dig-animation.spec.ts e2e/chop-animation.spec.ts e2e/craft-animation.spec.ts e2e/tool-equipment.spec.ts e2e/geographic-terrain.spec.ts e2e/earthworks.spec.ts e2e/water-depth.spec.ts e2e/water-wading.spec.ts e2e/swimming.spec.ts e2e/fishing.spec.ts",
     "shots": "playwright test e2e/screenshots.spec.ts",

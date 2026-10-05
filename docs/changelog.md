@@ -1,3 +1,15 @@
+## 2026-10-05 — M15 fase 29d: banco global provisional
+
+`world:bench` mide 200 años de bucles estacionales sobre 2.440 registros
+agregados sintéticos. Publica operaciones, tiempo amortizado con el calendario
+del juego, memoria de proceso y bytes JSON por separado. Dos ejecuciones dan
+14,059–26,714 µs/tick y 1.460.178 bytes serializados. La población no evoluciona:
+esta medida prepara la comparación y no cierra el coste de `PeopleSim`.
+[Protocolo y límites](m15_phase29_bench.md). Cinco regresiones pasan, incluidos
+continuidad tras JSON y polos sin wrap; typecheck, 1.075 tests/153 archivos y
+80 e2e pasan. La matriz final continúa ejecutándose. Gira 1/1, trece capturas
+nuevas: `artifacts/screenshots/m15-phase29-bench-2026-10-05/`.
+
 ## 2026-10-05 — M15 fase 29c: bibliografía auditable de las semillas
 
 Cada fila de recursos/antepasados tiene una referencia bibliográfica explícita.

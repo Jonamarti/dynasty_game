@@ -1,0 +1,51 @@
+{
+  "benchmark": "PeopleSim-shaped workload (synthetic fixture; no PeopleSim/LOD implementation)",
+  "map": "earth-12000-bce.bin",
+  "seed": "m15-world-bench",
+  "years": 200,
+  "timeModel": {
+    "ticksPerDay": 240,
+    "daysPerSeason": 10,
+    "seasonsPerYear": 4,
+    "ticksPerYear": 9600,
+    "simulatedTicks": 1920000
+  },
+  "world": {
+    "seed": "m15-world-bench",
+    "years": 200,
+    "seasonalUpdates": 800,
+    "eligibleRegions": 959,
+    "peoples": 2440,
+    "population": 3425120,
+    "candidateChecks": 162016000,
+    "neighborChecks": 11296800,
+    "tradeChecks": 5702400,
+    "conflictChecks": 11296800,
+    "checksum": 1519912.3187495545
+  },
+  "timing": {
+    "totalMs": 51290.075,
+    "averageMsPerSeasonalUpdate": 64.113,
+    "amortizedMicrosecondsPerSimulationTick": 26.714,
+    "perfBudgetReference": "sim:check perf-budget floor formula at 31 peak people",
+    "referenceStepsPerSecondFloor": 1677.852,
+    "referenceMicrosecondsPerStep": 596,
+    "allowedMicrosecondsPerTick": 59.6,
+    "passed": true
+  },
+  "memory": {
+    "peopleStateJsonBytes": 1460178,
+    "heapUsedBeforeSetupBytes": 48426688,
+    "heapUsedAfterSetupBytes": 42660392,
+    "heapUsedAfterRunBytes": 76665840,
+    "heapUsedSetupDeltaBytes": -5766296,
+    "heapUsedRunDeltaBytes": 34005448,
+    "rssBeforeSetupBytes": 133890048,
+    "rssAfterSetupBytes": 142622720,
+    "rssAfterRunBytes": 171638784,
+    "rssSetupDeltaBytes": 8732672,
+    "rssRunDeltaBytes": 29016064,
+    "maxRssKiB": 171312
+  },
+  "caveat": "The fixture reads the planned level-two record shape and operation loops. Demography, invention, regional eligibility, social outcomes, and LOD transitions are not calibrated game rules."
+}
