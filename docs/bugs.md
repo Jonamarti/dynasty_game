@@ -1,3 +1,10 @@
+## Fase 24: plantar cuesta supervivencia en `orchard` (abierto, 2026-10-05)
+
+Veinte semillas: 86,6 % con `arboriculture` frente a 91,7 % sin él (−5,1 puntos;
+adultos muertos de hambre 20 frente a 10). Por encima del coste declarado (≤ 3) y
+dentro del ruido de 20 semillas. No investigado: probar un umbral de confort más
+alto o plantar solo con despensa llena, y repetir a 40 semillas antes de decidir.
+
 # Known bugs and rough edges
 
 ## M15 fase 26c: el silo cavado cuesta economía (2026-10-04)

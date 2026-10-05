@@ -1,3 +1,21 @@
+## 2026-10-05 — M15 fase 24 (3): coste medido a veinte semillas, por encima de lo declarado
+
+`sim:seeds --scenario orchard --seeds 20` (el arnés de seeds no ejecuta
+`setup`, así que sin la fruta regalada), con y sin `arboriculture` en los
+fundadores y nada más distinto: **supervivencia media 86,6 % con plantar frente a
+91,7 % sin él (−5,1 puntos)**; extinciones 1/20 frente a 0/20; adultos muertos de
+hambre 20 frente a 10. El coste declarado de la fase era ≤ 3 puntos, y 20
+semillas no resuelven menos de unos diez, así que **no se afirma que el verbo
+sea la causa ni que sea inocuo**: queda anotado en `bugs.md` y sin tocar los
+pesos. Hipótesis sin confirmar: el tiempo de plantar (70 ticks y el paseo) se
+resta al forrajeo en una isla de bayas justas.
+
+Verificación del bloque (fase 24, tres commits): typecheck limpio; unitarios con
+`orchard.test.ts` y `orchard-checks.test.ts` pasando; `sim:check:all` de 26
+escenarios (sin `orchard`, añadido después) sigue rojo por la línea base heredada
+(`cravings-steer-the-diet` en casi todos), sin comparar contra master fallo a
+fallo; e2e `orchard.spec.ts` pasa.
+
 ## 2026-10-05 — M15 fase 24 (2): el escenario `orchard` y `orchards-are-planted`
 
 - **`orchard`**: una banda de doce con toda la cadena (`farming`, `calendar`,
