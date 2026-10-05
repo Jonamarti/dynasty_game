@@ -1,3 +1,16 @@
+## 2026-10-05 — M15 fase 29: evidencia final de la pasada
+
+Typecheck pasa y la suite repetida después de revisar la fábrica pública pasa
+1.075/1.075 tests en 153 archivos; e2e 80/80. La matriz completa pasa de
+116 fallos a los mismos 116 en 30 escenarios, con iguales recuentos
+PASS/aplicables e IDs de fallo. Ambos comandos de matriz terminan con código 1;
+la referencia sigue roja. Nueve hashes completos clásicos coinciden; no se
+afirma equivalencia de todas las métricas de la matriz. Logs completos y el
+intento de suite fallido durante edición se conservan en
+`artifacts/verification/m15-phase29-20261005/`.
+[Informe](m15_phase29_verification_20261005.md). Dieciséis capturas en los
+cuatro hitos citados allí, sin cambios de UI. La fase 29 continúa abierta.
+
 ## 2026-10-05 — M15 fase 29: proteger también el ensamblado directo
 
 La revisión independiente detectó que `WorldState.fromRestored` podía unir un

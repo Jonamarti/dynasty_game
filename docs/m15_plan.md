@@ -2735,6 +2735,16 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Verificación final de la pasada del 2026-10-05.** Typecheck limpio;
+suite repetida tras revisión: 1.075/1.075 en 153 archivos; e2e 80/80.
+Nueve checkpoints clásicos completos coinciden. La matriz de 30 escenarios
+queda roja con los mismos 116 fallos antes/después, sin diferencias en
+recuentos PASS/aplicables ni IDs de fallos. No se comparan todas las métricas
+individuales. Dieciséis capturas nuevas en cuatro hitos, sin cambios de UI.
+Intentos fallidos, logs y límites en
+[el informe](m15_phase29_verification_20261005.md).
+La fase 29 permanece abierta por las dependencias y puertas descritas abajo.
+
 **Revisión del 2026-10-05: cierre de la vía pública de ensamblado.**
 El rechazo de población geográfica vive ahora en `WorldState.fromRestored`,
 por donde pasa también el lector JSON. Una llamada directa ya no puede saltar

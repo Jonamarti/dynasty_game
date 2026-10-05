@@ -1,0 +1,31 @@
+
+> dynasty@0.0.0 test
+> vitest run --maxWorkers=1 --testTimeout=60000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/real-world-assets.test.ts (4 tests | 1 failed) 32ms
+     × keeps bibliography provenance on every broad feature seed and labels the climate baseline honestly 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/real-world-assets.test.ts > pregenerated Earth maps > keeps bibliography provenance on every broad feature seed and labels the climate baseline honestly
+TypeError: Cannot read properties of undefined (reading 'includes')
+ ❯ src/sim/__tests__/real-world-assets.test.ts:34:71
+     32|   it('keeps bibliography provenance on every broad feature seed and la…
+     33|     expect(WORLD_FEATURE_SEEDS.length).toBeGreaterThan(0);
+     34|     expect(WORLD_FEATURE_SEEDS.every(seed => WORLD_FEATURE_SOURCE_IDS.…
+       |                                                                       ^
+     35|     const sourceNotes = readFileSync('public/world/SOURCES.md', 'utf8'…
+     36|     expect(WORLD_FEATURE_SOURCE_IDS.every(id => sourceNotes.includes(`…
+ ❯ src/sim/__tests__/real-world-assets.test.ts:34:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 150 passed (151)
+      Tests  1 failed | 1066 passed (1067)
+   Start at  18:51:50
+   Duration  244.72s (transform 4.58s, setup 0ms, import 37.90s, tests 165.75s, environment 25ms)
+

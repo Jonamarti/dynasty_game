@@ -1,0 +1,713 @@
+{
+  "compared": "Scenario pass/applicable counts and failed IDs; excludes timings and individual check metrics",
+  "scenarios": 30,
+  "baselineFailures": 116,
+  "finalFailures": 116,
+  "differences": [],
+  "rows": [
+    {
+      "name": "food-news",
+      "baseline": {
+        "passed": 1,
+        "applicable": 1,
+        "failed": []
+      },
+      "final": {
+        "passed": 1,
+        "applicable": 1,
+        "failed": []
+      },
+      "identical": true
+    },
+    {
+      "name": "conflicts",
+      "baseline": {
+        "passed": 1,
+        "applicable": 1,
+        "failed": []
+      },
+      "final": {
+        "passed": 1,
+        "applicable": 1,
+        "failed": []
+      },
+      "identical": true
+    },
+    {
+      "name": "tiny",
+      "baseline": {
+        "passed": 47,
+        "applicable": 47,
+        "failed": []
+      },
+      "final": {
+        "passed": 47,
+        "applicable": 47,
+        "failed": []
+      },
+      "identical": true
+    },
+    {
+      "name": "band",
+      "baseline": {
+        "passed": 52,
+        "applicable": 53,
+        "failed": [
+          "cravings-steer-the-diet"
+        ]
+      },
+      "final": {
+        "passed": 52,
+        "applicable": 53,
+        "failed": [
+          "cravings-steer-the-diet"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "crowded",
+      "baseline": {
+        "passed": 57,
+        "applicable": 59,
+        "failed": [
+          "cravings-steer-the-diet",
+          "shelter-answers-cold"
+        ]
+      },
+      "final": {
+        "passed": 57,
+        "applicable": 59,
+        "failed": [
+          "cravings-steer-the-diet",
+          "shelter-answers-cold"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "century",
+      "baseline": {
+        "passed": 71,
+        "applicable": 76,
+        "failed": [
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "moods-move-choices",
+          "nights-are-slept",
+          "the-wise-avoid-baneberries"
+        ]
+      },
+      "final": {
+        "passed": 71,
+        "applicable": 76,
+        "failed": [
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "moods-move-choices",
+          "nights-are-slept",
+          "the-wise-avoid-baneberries"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "craft",
+      "baseline": {
+        "passed": 65,
+        "applicable": 70,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "people-act-on-what-they-know",
+          "people-survive",
+          "pots-reach-a-granary"
+        ]
+      },
+      "final": {
+        "passed": 65,
+        "applicable": 70,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "people-act-on-what-they-know",
+          "people-survive",
+          "pots-reach-a-granary"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "wilds",
+      "baseline": {
+        "passed": 60,
+        "applicable": 63,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices",
+          "nights-are-slept"
+        ]
+      },
+      "final": {
+        "passed": 60,
+        "applicable": 63,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices",
+          "nights-are-slept"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "emptied",
+      "baseline": {
+        "passed": 54,
+        "applicable": 58,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "projects-find-backers",
+          "shelter-answers-cold"
+        ]
+      },
+      "final": {
+        "passed": 54,
+        "applicable": 58,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "projects-find-backers",
+          "shelter-answers-cold"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "hearths",
+      "baseline": {
+        "passed": 64,
+        "applicable": 69,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "people-act-on-what-they-know",
+          "pots-reach-a-granary",
+          "roast-wins"
+        ]
+      },
+      "final": {
+        "passed": 64,
+        "applicable": 69,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "people-act-on-what-they-know",
+          "pots-reach-a-granary",
+          "roast-wins"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "porters",
+      "baseline": {
+        "passed": 54,
+        "applicable": 56,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "final": {
+        "passed": 54,
+        "applicable": 56,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "scribes",
+      "baseline": {
+        "passed": 66,
+        "applicable": 68,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept"
+        ]
+      },
+      "final": {
+        "passed": 66,
+        "applicable": 68,
+        "failed": [
+          "cravings-steer-the-diet",
+          "nights-are-slept"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "harsh-winter",
+      "baseline": {
+        "passed": 52,
+        "applicable": 57,
+        "failed": [
+          "cravings-steer-the-diet",
+          "needs-not-pinned",
+          "nights-are-slept",
+          "nights-are-spent-at-home",
+          "shelter-answers-cold"
+        ]
+      },
+      "final": {
+        "passed": 52,
+        "applicable": 57,
+        "failed": [
+          "cravings-steer-the-diet",
+          "needs-not-pinned",
+          "nights-are-slept",
+          "nights-are-spent-at-home",
+          "shelter-answers-cold"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "coast",
+      "baseline": {
+        "passed": 53,
+        "applicable": 54,
+        "failed": [
+          "cravings-steer-the-diet"
+        ]
+      },
+      "final": {
+        "passed": 53,
+        "applicable": 54,
+        "failed": [
+          "cravings-steer-the-diet"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "shallows",
+      "baseline": {
+        "passed": 6,
+        "applicable": 6,
+        "failed": []
+      },
+      "final": {
+        "passed": 6,
+        "applicable": 6,
+        "failed": []
+      },
+      "identical": true
+    },
+    {
+      "name": "traps",
+      "baseline": {
+        "passed": 64,
+        "applicable": 66,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "final": {
+        "passed": 64,
+        "applicable": 66,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "millers",
+      "baseline": {
+        "passed": 67,
+        "applicable": 72,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices",
+          "nights-are-slept",
+          "spatial-hash-spreads",
+          "the-wise-avoid-baneberries"
+        ]
+      },
+      "final": {
+        "passed": 67,
+        "applicable": 72,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices",
+          "nights-are-slept",
+          "spatial-hash-spreads",
+          "the-wise-avoid-baneberries"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "hunters",
+      "baseline": {
+        "passed": 59,
+        "applicable": 62,
+        "failed": [
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "kills-are-butchered-for-bone"
+        ]
+      },
+      "final": {
+        "passed": 59,
+        "applicable": 62,
+        "failed": [
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "kills-are-butchered-for-bone"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "fishers",
+      "baseline": {
+        "passed": 61,
+        "applicable": 63,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "final": {
+        "passed": 61,
+        "applicable": 63,
+        "failed": [
+          "cravings-steer-the-diet",
+          "moods-move-choices"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "farmers",
+      "baseline": {
+        "passed": 71,
+        "applicable": 74,
+        "failed": [
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "nights-are-slept"
+        ]
+      },
+      "final": {
+        "passed": 71,
+        "applicable": 74,
+        "failed": [
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "nights-are-slept"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "herders",
+      "baseline": {
+        "passed": 69,
+        "applicable": 76,
+        "failed": [
+          "animals-are-tamed",
+          "cravings-steer-the-diet",
+          "herds-breed-and-are-culled",
+          "moods-move-choices",
+          "nights-are-slept",
+          "techs-are-refined",
+          "the-wise-avoid-baneberries"
+        ]
+      },
+      "final": {
+        "passed": 69,
+        "applicable": 76,
+        "failed": [
+          "animals-are-tamed",
+          "cravings-steer-the-diet",
+          "herds-breed-and-are-culled",
+          "moods-move-choices",
+          "nights-are-slept",
+          "techs-are-refined",
+          "the-wise-avoid-baneberries"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "feasts",
+      "baseline": {
+        "passed": 73,
+        "applicable": 78,
+        "failed": [
+          "bands-take-sides",
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "nights-are-slept",
+          "pots-reach-a-granary"
+        ]
+      },
+      "final": {
+        "passed": 73,
+        "applicable": 78,
+        "failed": [
+          "bands-take-sides",
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "nights-are-slept",
+          "pots-reach-a-granary"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "stewards",
+      "baseline": {
+        "passed": 71,
+        "applicable": 74,
+        "failed": [
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "nights-are-slept"
+        ]
+      },
+      "final": {
+        "passed": 71,
+        "applicable": 74,
+        "failed": [
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "nights-are-slept"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "labour",
+      "baseline": {
+        "passed": 63,
+        "applicable": 71,
+        "failed": [
+          "cravings-steer-the-diet",
+          "gossip-is-aimed",
+          "moods-move-choices",
+          "nights-are-slept",
+          "people-survive",
+          "research-is-social",
+          "spatial-hash-spreads",
+          "the-wise-avoid-baneberries"
+        ]
+      },
+      "final": {
+        "passed": 63,
+        "applicable": 71,
+        "failed": [
+          "cravings-steer-the-diet",
+          "gossip-is-aimed",
+          "moods-move-choices",
+          "nights-are-slept",
+          "people-survive",
+          "research-is-social",
+          "spatial-hash-spreads",
+          "the-wise-avoid-baneberries"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "polity",
+      "baseline": {
+        "passed": 82,
+        "applicable": 88,
+        "failed": [
+          "cooking-spreads",
+          "cravings-steer-the-diet",
+          "moods-move-choices",
+          "nights-are-slept",
+          "pots-reach-a-granary",
+          "roast-wins"
+        ]
+      },
+      "final": {
+        "passed": 82,
+        "applicable": 88,
+        "failed": [
+          "cooking-spreads",
+          "cravings-steer-the-diet",
+          "moods-move-choices",
+          "nights-are-slept",
+          "pots-reach-a-granary",
+          "roast-wins"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "conquest",
+      "baseline": {
+        "passed": 84,
+        "applicable": 91,
+        "failed": [
+          "cooking-spreads",
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "people-act-on-what-they-know",
+          "projects-find-backers",
+          "records-are-cut",
+          "roast-wins"
+        ]
+      },
+      "final": {
+        "passed": 84,
+        "applicable": 91,
+        "failed": [
+          "cooking-spreads",
+          "cravings-steer-the-diet",
+          "nights-are-slept",
+          "people-act-on-what-they-know",
+          "projects-find-backers",
+          "records-are-cut",
+          "roast-wins"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "culture",
+      "baseline": {
+        "passed": 56,
+        "applicable": 65,
+        "failed": [
+          "animals-are-tamed",
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "gossip-is-aimed",
+          "kills-are-butchered-for-bone",
+          "moods-move-choices",
+          "nights-are-slept",
+          "pictures-are-painted",
+          "shelter-answers-cold"
+        ]
+      },
+      "final": {
+        "passed": 56,
+        "applicable": 65,
+        "failed": [
+          "animals-are-tamed",
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "gossip-is-aimed",
+          "kills-are-butchered-for-bone",
+          "moods-move-choices",
+          "nights-are-slept",
+          "pictures-are-painted",
+          "shelter-answers-cold"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "lean",
+      "baseline": {
+        "passed": 61,
+        "applicable": 73,
+        "failed": [
+          "bands-take-sides",
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "families-exist",
+          "gossip-is-aimed",
+          "moods-move-choices",
+          "needs-not-pinned",
+          "nights-are-slept",
+          "population-persists",
+          "projects-find-backers",
+          "techs-are-refined",
+          "the-tree-is-climbed"
+        ]
+      },
+      "final": {
+        "passed": 61,
+        "applicable": 73,
+        "failed": [
+          "bands-take-sides",
+          "cravings-steer-the-diet",
+          "discovery-is-situated",
+          "families-exist",
+          "gossip-is-aimed",
+          "moods-move-choices",
+          "needs-not-pinned",
+          "nights-are-slept",
+          "population-persists",
+          "projects-find-backers",
+          "techs-are-refined",
+          "the-tree-is-climbed"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "diggers",
+      "baseline": {
+        "passed": 56,
+        "applicable": 61,
+        "failed": [
+          "cravings-steer-the-diet",
+          "gossip-is-aimed",
+          "nights-are-slept",
+          "shelter-answers-cold",
+          "spatial-hash-spreads"
+        ]
+      },
+      "final": {
+        "passed": 56,
+        "applicable": 61,
+        "failed": [
+          "cravings-steer-the-diet",
+          "gossip-is-aimed",
+          "nights-are-slept",
+          "shelter-answers-cold",
+          "spatial-hash-spreads"
+        ]
+      },
+      "identical": true
+    },
+    {
+      "name": "orchard",
+      "baseline": {
+        "passed": 55,
+        "applicable": 59,
+        "failed": [
+          "cravings-steer-the-diet",
+          "gossip-is-aimed",
+          "nights-are-slept",
+          "spatial-hash-spreads"
+        ]
+      },
+      "final": {
+        "passed": 55,
+        "applicable": 59,
+        "failed": [
+          "cravings-steer-the-diet",
+          "gossip-is-aimed",
+          "nights-are-slept",
+          "spatial-hash-spreads"
+        ]
+      },
+      "identical": true
+    }
+  ]
+}

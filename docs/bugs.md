@@ -1,5 +1,11 @@
 ## M15 fase 29c: semillas y fuentes históricas incompletas (2026-10-05)
 
+La matriz de esta pasada conserva los 116 fallos del checkout inicial en
+30 escenarios, sin diferencias en recuentos o IDs de fallos. La cifra incluye
+`orchard` y no sustituye el resultado histórico de 27. Los cambios de raíz,
+procedencia y banco no resuelven esas deudas de simulación.
+[Verificación y límites](m15_phase29_verification_20261005.md).
+
 La bibliografía por fila permite ver deudas antes ocultas:
 
 - Sorgo (13°N, 1°E): la semilla está en Sahel occidental, pero la evidencia

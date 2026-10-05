@@ -1,0 +1,12 @@
+{
+  "source": "Initial npm.cmd run sim:check tool output, before implementation",
+  "baselineCommit": "df88cca",
+  "scenario": "band",
+  "steps": 3000,
+  "seed": "band",
+  "checks": 137,
+  "failed": ["cravings-steer-the-diet", "perf-budget"],
+  "stepsPerSecond": 487,
+  "reportedPerformanceFloor": 1678,
+  "exitCode": 1
+}
