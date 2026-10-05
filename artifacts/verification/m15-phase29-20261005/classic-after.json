@@ -1,0 +1,47 @@
+[
+  {
+    "seed": "band",
+    "tick": 0,
+    "hash": "d622b941918d05e51f3aa5e404f25d34e135679a916ad873f45ec8ceb3034e89"
+  },
+  {
+    "seed": "band",
+    "tick": 180,
+    "hash": "371ad34dfa84dad828de0acd11067d02f68b8469d35135204b8f09128a5a58e2"
+  },
+  {
+    "seed": "band",
+    "tick": 500,
+    "hash": "c4f4991574e1d221da1f36bbc409eda9b955daa1e18164fffec0d03c8d1bfc50"
+  },
+  {
+    "seed": "century",
+    "tick": 0,
+    "hash": "ebbd4869703283d38b3b6241f8e67d32a3a4d8baea7897a6dda6ee317c7c06c8"
+  },
+  {
+    "seed": "century",
+    "tick": 180,
+    "hash": "711a2942e26eba51656c4758cff3d28c3ae41bb7e5f2d355fe76f273e4e9ec42"
+  },
+  {
+    "seed": "century",
+    "tick": 500,
+    "hash": "b58b326e5dc3ca217a601630b40b06243f522eb9a6c81751c4473a00fee800b9"
+  },
+  {
+    "seed": "phase29-continuity",
+    "tick": 0,
+    "hash": "358cb793d9d298712a02852ad143f48b42e76d97099e33ff341fe59ac8d5349c"
+  },
+  {
+    "seed": "phase29-continuity",
+    "tick": 180,
+    "hash": "c68f517b92bc931e971372dd55ae2b1fd2bd5f7f1964007043e11bb20b79940a"
+  },
+  {
+    "seed": "phase29-continuity",
+    "tick": 500,
+    "hash": "4f4455b4b92c5e2c0b5f6b0d04fdacfbd715fdd4039b2afd2d66a5d3f2dbcfe8"
+  }
+]

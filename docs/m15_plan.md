@@ -2735,6 +2735,17 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Avance del 2026-10-05: checkpoint de la raíz geográfica.**
+`WorldStateRecord` v1 conserva posición/extensión, semilla y rejilla aleatoria,
+o entrada y raster Earth autocontenido, junto al checkpoint local existente.
+La lectura recupera una raíz independiente sin red ni generación local;
+rechaza adjuntar geografía a un motor poblado antes de la fase 30.
+Tres regresiones cubren continuidad, aislamiento, campos corruptos y el rechazo;
+el e2e geográfico pasa 1/1 y nueve hashes clásicos coinciden antes/después.
+[Contrato](m15_phase29_root_records.md). Registro visual revisado:
+`artifacts/screenshots/m15-phase29-root-2026-10-05/`.
+Esta base no habilita selección global, viajes ni guardado/carga desde la UI.
+
 **Corrección del 2026-10-04: origen longitudinal del atlas terrestre.** La
 inspección detectó un desfase heredado de 180° del relieve y un recorte del
 clima. El generador normaliza NOAA a −180–180° y consulta Beck en los mismos

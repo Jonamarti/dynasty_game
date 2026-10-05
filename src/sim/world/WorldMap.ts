@@ -69,6 +69,8 @@ export interface WorldRiverSegment {
  * detailed comarcas.
  */
 export class WorldMap {
+  /** Canonical seed text is part of the world identity and survives checkpoints. */
+  readonly seed: string;
   readonly regionsWide: number;
   readonly regionsHigh: number;
   readonly width: number;
@@ -82,6 +84,7 @@ export class WorldMap {
   private readonly currents: SimplexNoise;
 
   constructor(seed: number | string, options: WorldMapOptions = {}) {
+    this.seed = String(seed);
     this.regionsWide = options.regionsWide ?? REGIONS_WIDE;
     this.regionsHigh = options.regionsHigh ?? REGIONS_HIGH;
     if (!Number.isInteger(this.regionsWide) || this.regionsWide < 2 ||
@@ -92,7 +95,7 @@ export class WorldMap {
     this.height = this.regionsHigh * COMARCAS_PER_REGION;
 
     // Named derived seeds make each field stable when another generator grows.
-    const seedText = String(seed);
+    const seedText = this.seed;
     this.broad = new SimplexNoise(new RNG(`${seedText}:worldmap:continents`));
     this.detail = new SimplexNoise(new RNG(`${seedText}:worldmap:detail`));
     this.ridges = new SimplexNoise(new RNG(`${seedText}:worldmap:ridges`));

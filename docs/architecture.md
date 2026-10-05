@@ -180,7 +180,13 @@ an explicit separate scale. Regional grain/flint gates filter local placement
 on independent, derived seed streams. Populated geographic starts are rejected
 before generation: the current drinking model treats every shoreline as potable,
 and regional river flags cannot locate freshwater tiles. The browser still
-offers classic play only. The root does not yet create global peoples or
+offers classic play only. `WorldStateRecord` now wraps the local checkpoint with
+immutable starting placement and independent macro geography. Random maps retain
+their canonical seed and grid dimensions; Earth embeds its raster and entry for
+offline restoration. The loader rejects populated geographic roots until local
+freshwater is supported. The local checkpoint format is unchanged; see
+[m15_phase29_root_records.md](m15_phase29_root_records.md).
+The root does not yet create global peoples or
 abandoned-comarca ledgers. See
 [m15_phase29_local_generation.md](m15_phase29_local_generation.md).
 

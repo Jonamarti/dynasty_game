@@ -1,3 +1,16 @@
+## 2026-10-05 — M15 fase 29: conservar la raíz geográfica
+
+El checkpoint local perdía el mapa, la posición y la extensión que habían
+originado su terreno. `WorldStateRecord` conserva esos datos y restaura mapas
+Earth offline con arrays independientes; el modo aleatorio retiene su semilla
+propia. No cambia el checkpoint clásico ni los forks del motor.
+Tres regresiones verifican continuidad y corrupción; nueve hashes completos
+clásicos, en tres semillas y ticks 0/180/500, coinciden antes/después.
+E2e geográfico 1/1 y captura revisada:
+`artifacts/screenshots/m15-phase29-root-2026-10-05/14-earth-iberia-inspection.png`.
+[Contrato](m15_phase29_root_records.md). Suite y matriz finales se registran
+al terminar la integración, conservando las ejecuciones fallidas.
+
 ## 2026-10-05 — M15 fase 27: medición final; coste abierto
 
 Entregadas y verificadas profundidad, vadeo, pesca, natación y checks en commits
