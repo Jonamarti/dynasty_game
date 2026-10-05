@@ -35,7 +35,8 @@ import { CUT_ABOVE, CUT_BITE, CUT_FLOOR, THATCH_PER_HEIGHT } from '../core/Grass
 import { DIG_TICKS, DIG_TO, EARTH_UNIT, LIFT, PILE_TICKS, PILE_TO, TOPSOIL_ITEMS, digTool, digToolFailure, earthworkWorkRefusal, liftKind } from '../core/Earth.ts';
 import { BORROW_DEPTH, borrowTile, nearestTile, pendingTiles, spoilTile, standingFor, standingForRim, type EarthworkTile } from '../entities/Earthwork.ts';
 import { SNOW_BURY_AT } from '../core/Snow.ts';
-import type { Tree } from '../entities/Tree.ts';
+import type { Tree, TreeSpecies } from '../entities/Tree.ts';
+import { PLANT_TICKS, plantable, plantingRefusal } from '../entities/Orchard.ts';
 import type { Animal } from '../entities/Animal.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import type { KnowledgeSystem } from './KnowledgeSystem.ts';
@@ -60,7 +61,7 @@ import { bestFoodFor, consumeFood, consumeFoodAtSource, knowsPoisonous } from '.
 import { expectedFood } from '../ai/Beliefs.ts';
 import {
   TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
-  prerequisitesMet, reapFactor, tallyFactor, techPower,
+  orchardFactor, prerequisitesMet, reapFactor, tallyFactor, techPower,
   workableIdea as chooseWorkableIdea, weaponOf, armourOf, protectionOf, type Tech,
 } from '../knowledge/Tech.ts';
 import { MAX_IDEAS, PROTOTYPE_AT, type Idea } from '../knowledge/Synthesis.ts';
@@ -164,6 +165,16 @@ export interface ActionContext {
   unfinishedAt: (x: number, y: number) => Inscription | null;
   /** Whether a point is under a finished library's roof. */
   inLibrary: (x: number, y: number) => boolean;
+  /**
+   * M15 phase 24: sets a tree in the ground and puts it in the world's indexes.
+   * Null if the ground will not take one. The simulation owns the arrays; the
+   * action only says what and where.
+   */
+  plantTree: (species: TreeSpecies, x: number, y: number) => Tree | null;
+  /** Whether any building covers a tile, for `plantingRefusal`. */
+  buildingAt: (x: number, y: number) => boolean;
+  /** Standing trees by place, for the spacing of an orchard. */
+  treeHash: SpatialHash<Tree>;
   /** Returns the marked owner of a cell, if any. */
   territoryOwnerAt: (x: number, y: number) => number | null;
   /** Records a witnessed use of another band's marked ground. */
@@ -756,6 +767,7 @@ export class ActionSystem {
       case 'ponder': this.doPonder(person, ctx); break;
       case 'reflect': this.doReflect(person, ctx); break;
       case 'cut_grass': this.doCutGrass(person, ctx); break;
+      case 'plant': this.doPlant(person, ctx); break;
       case 'dig': this.doDig(person, ctx); break;
       case 'pile': this.doPile(person, ctx); break;
       case 'discuss': this.doDiscuss(person, ctx); break;
@@ -1508,6 +1520,77 @@ export class ActionSystem {
       return;
     }
     person.actionTimer = Math.ceil(10 / person.skillFactor('forage'));
+  }
+
+  /**
+   * Setting a fruit tree - M15 phase 24, the first investment in the game
+   * that pays a generation later. One piece of fruit (the pip or the nut is in
+   * it) goes into the ground on a tile beside the camp and a seedling stands
+   * there; it is the same `Tree` the forest seeds, so it ages, bears and dies
+   * by `ForestSystem` with nothing special-cased.
+   *
+   * Short enough (`PLANT_TICKS`) that nothing needs banking on the ground, and
+   * it checks for interruption like any other work. Every way it can stop has a
+   * worded reason, because a person standing over a hole they did not dig is the
+   * silent refusal this project has been burned by before.
+   */
+  private doPlant(person: Person, ctx: ActionContext): void {
+    if (person.targetX === null || person.targetY === null) {
+      this.abandon(person, 'nowhere_to_plant', ctx);
+      return;
+    }
+    if (techPower(person, 'arboriculture') <= 0) {
+      this.abandon(person, 'dont_know_how', ctx);
+      return;
+    }
+    const fruit = plantable(person);
+    if (!fruit) {
+      this.abandon(person, 'no_fruit_to_plant', ctx);
+      return;
+    }
+    // Nothing takes root in frozen ground, and a sapling set into it is a piece
+    // of fruit thrown away.
+    if (ctx.seasonGrowth <= 0) {
+      this.abandon(person, 'wrong_season', ctx);
+      return;
+    }
+    const tx = Math.floor(person.targetX);
+    const ty = Math.floor(person.targetY);
+    const refusal = plantingRefusal(
+      { world: ctx.world, treeHash: ctx.treeHash, built: ctx.buildingAt }, tx, ty);
+    if (refusal) {
+      this.abandon(person, refusal, ctx);
+      return;
+    }
+    if (!this.travel(person, ctx)) return;
+    const owner = ctx.territoryOwnerAt(person.targetX, person.targetY);
+    if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
+
+    const ticks = Math.ceil(PLANT_TICKS * orchardFactor(person) / person.skillFactor('farm'));
+    if (person.actionTimer <= 0) person.actionTimer = ticks;
+    person.actionTimer--;
+    person.workedTicks++;
+    person.practice('farm', 0.4);
+    if (person.actionTimer > 0) {
+      const stop = this.interruption(person, ctx, { lookaheadTicks: person.actionTimer });
+      if (stop) this.stop(person, stop, ctx);
+      return;
+    }
+
+    const tree = ctx.plantTree(fruit.species, tx, ty);
+    if (!tree) {
+      this.abandon(person, 'no_room_for_a_tree', ctx);
+      return;
+    }
+    person.inventory.remove(fruit.item, 1);
+    telemetry.count('tree_planted');
+    person.chronicle.push({
+      tick: ctx.tick,
+      ageDays: person.age,
+      text: t('planted a fruit tree'),
+      kind: 'did',
+    });
+    this.finish(person);
   }
 
   /**

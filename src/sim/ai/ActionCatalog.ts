@@ -154,6 +154,13 @@ export interface CatalogContext {
    */
   builtOn?: (x: number, y: number) => boolean;
   /**
+   * Why the actor cannot set a tree at a point, or null (M15 phase 24). Handed
+   * in because it needs the tree index; it is `Simulation.plantOrderRefusal`,
+   * the function the order itself asks, so the menu and the order cannot
+   * disagree.
+   */
+  plantRefusal?: (x: number, y: number) => string | null;
+  /**
    * Whether the actor can use a structure without an owner stopping them.
    * Optional for hand-built test contexts; the live catalogue always supplies
    * it so the menu and the executor answer ownership with the same rule.
@@ -1082,6 +1089,20 @@ function groundActions(
       icon: '\u{1F33E}',
       enabled: tall,
       reason: tall ? undefined : t('The grass is too short to cut'),
+    });
+  }
+  // M15 phase 24: setting a fruit tree. Offered only to somebody who knows how,
+  // as `spread` is: a menu of greyed verbs would hand over the shape of the
+  // tech web. Once offered it is always on the menu, greyed with the reason.
+  if (walkable && techPower(actor, 'arboriculture') > 0) {
+    const why = ctx.plantRefusal?.(target.x, target.y) ?? null;
+    options.push({
+      id: 'plant',
+      label: t('Plant a tree here'),
+      icon: '\u{1F333}',
+      enabled: why === null,
+      // Sentence-cased for the menu: the order's wording starts lower-case.
+      reason: why === null ? undefined : why.charAt(0).toUpperCase() + why.slice(1),
     });
   }
   // M15 phase 26: moving earth, offered on ground that can take a spade. Dig is

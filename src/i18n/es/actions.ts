@@ -372,4 +372,12 @@ export const ES_ACTIONS: Record<string, string> = {
   "Not with a baby in your arms": "No con un bebé en brazos",
   "They have a baby in their arms": "Tiene un bebé en brazos",
   "the earthwork is finished": "la obra de tierra está terminada",
+  "there was nowhere to plant": "no había dónde plantar",
+  "they had no fruit to plant": "no tenían fruta que plantar",
+  "a tree will not grow in that ground": "en ese suelo no crece un árbol",
+  "there is no room for another tree there": "ahí no cabe otro árbol",
+  "they have no fruit to plant": "no tienen fruta que plantar",
+  "they do not know how to plant a tree": "no saben plantar un árbol",
+  "nothing would take root in this season": "nada echaría raíces en esta estación",
+  "Plant a tree here": "Plantar un árbol aquí",
 };
