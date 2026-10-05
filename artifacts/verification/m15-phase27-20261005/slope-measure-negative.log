@@ -1,0 +1,30 @@
+
+> dynasty@0.0.0 test
+> vitest run src/sim/__tests__/slopes.test.ts --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+ ❯ src/sim/__tests__/slopes.test.ts (5 tests | 1 failed) 130ms
+     × reports the downhill contribution separately from wading slowdown 19ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/sim/__tests__/slopes.test.ts > moveToward on a slope > reports the downhill contribution separately from wading slowdown
+AssertionError: expected 0.40960000514984074 to be greater than 1.005
+ ❯ src/sim/__tests__/slopes.test.ts:70:54
+     68|       expect(moved).toBeLessThan(0.5);
+     69|       expect(telemetry.get('step_slope_down')).toBe(1);
+     70|       expect(telemetry.get('step_slope_down_ratio')).toBeGreaterThan(1…
+       |                                                      ^
+     71|     } finally {
+     72|       telemetry.disable(); telemetry.reset();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  17:03:50
+   Duration  2.17s (transform 680ms, setup 0ms, import 1.41s, tests 130ms, environment 0ms)
+

@@ -2342,7 +2342,9 @@ abiertas a todos), medidos contra el build roto (`earthwork-checks.test.ts`).
 **Verificación del 2026-10-05:** typecheck, 1.055 unitarios, 80 e2e, soak de
 español y los seis checks de `shallows` pasan. La puerta económica permanece
 abierta: `century` pierde 4,70 puntos ponderados en veinte parejas (límite tres).
-Matriz final y resto del coste en ejecución. [Resultados](m15_phase27_verification.md).
+Matriz v3 roja (106 → 113 fallos); se repite tras separar pendiente de
+vadeo en su contador, con regresión que falla en la medición anterior.
+Resto del coste en ejecución. [Resultados](m15_phase27_verification.md).
 **Avance del 2026-10-05 (27e): escenario y checks.** `shallows` ejecuta
 pesca y una orden real de cruce. Los controles negativos provocan un
 ahogamiento somero y colocan personas en agua honda o con carga; ambos deben

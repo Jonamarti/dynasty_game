@@ -212,7 +212,8 @@ export function moveToward(
   const proposedY = entity.y + (dy / dist) * speed;
   // Shallow water is walkable, but slower than dry ground. Apply this before
   // blocked-step/progress checks so a wading step still counts as movement.
-  speed *= factor * (world.isWadeTile(proposedX, proposedY) ? 0.4 : 1);
+  const wadingFactor = world.isWadeTile(proposedX, proposedY) ? 0.4 : 1;
+  speed *= factor * wadingFactor;
 
   const startX = entity.x;
   const startY = entity.y;
@@ -300,7 +301,10 @@ export function moveToward(
   if (outcome === 0 && telemetry.isEnabled()) {
     const kind = factor < 0.995 ? 'up' : factor > 1.005 ? 'down' : 'flat';
     telemetry.count('step_slope_' + kind);
-    telemetry.count('step_slope_' + kind + '_ratio', moved / asked);
+    // Wading is a separate cost: counting it as part of a downhill slope
+    // made crowded's slope check claim that descending no longer helps.
+    // Divide out only that applied multiplier; movement and RNG stay intact.
+    telemetry.count('step_slope_' + kind + '_ratio', moved / (asked * wadingFactor));
   }
 
   if (outcome !== 0) {

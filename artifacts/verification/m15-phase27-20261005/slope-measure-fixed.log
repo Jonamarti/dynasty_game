@@ -1,0 +1,13 @@
+
+> dynasty@0.0.0 test
+> vitest run src/sim/__tests__/slopes.test.ts --maxWorkers=1 --testTimeout=15000
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  17:04:18
+   Duration  1.89s (transform 609ms, setup 0ms, import 1.26s, tests 138ms, environment 0ms)
+

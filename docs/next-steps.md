@@ -7,7 +7,8 @@ captura. La natación admite manos vacías y cesta compatible, con razones de
 negativa, frío/cansancio y ahogamiento determinista. Los checks de pesca, cruce y particiones ya están integrados. Siguiente:
 cerrar matriz y coste. Typecheck, 1.055 tests, 80 e2e y `shallows` pasan;
 `century` excede el presupuesto en veinte parejas (−4,70 puntos ponderados).
-La fase permanece abierta por esa puerta; [medición](m15_phase27_verification.md).
+La matriz v3 tiene 113 fallos frente a 106 previos; se repite tras corregir
+el contador que mezclaba pendiente y vadeo. La fase permanece abierta por su coste; [medición](m15_phase27_verification.md).
 La clasificación
 de agua dulce y los inicios geográficos poblados esperan a 30.
 [Contrato de profundidad](m15_phase27_depth.md).

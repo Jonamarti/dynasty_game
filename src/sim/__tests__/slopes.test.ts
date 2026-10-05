@@ -8,6 +8,7 @@ import { DEFAULT_CONFIG } from '../core/Config.ts';
 import { RNG } from '../core/RNG.ts';
 import { moveToward } from '../systems/MovementSystem.ts';
 import { Pathfinder, PathStatus } from '../core/Pathfinder.ts';
+import { telemetry } from '../core/Telemetry.ts';
 
 function plain(slopeCost = DEFAULT_CONFIG.world.slopeCost): World {
   const w = new World({ ...DEFAULT_CONFIG.world, width: 64, height: 64, slopeCost }, new RNG('slopes'));
@@ -50,6 +51,28 @@ describe('stepFactor', () => {
 });
 
 describe('moveToward on a slope', () => {
+  it('reports the downhill contribution separately from wading slowdown', () => {
+    const w = plain();
+    for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) {
+      w.elevation[y * w.width + x] = w.waterLevel - 0.001 + (x - 20) * 0.01;
+    }
+    w.biome[30 * w.width + 20] = BIOME_ID.water;
+    const walker = { x: 20.75, y: 30.5 };
+    expect(w.isWadeTile(walker.x, walker.y)).toBe(true);
+    telemetry.reset(); telemetry.enable();
+    try {
+      // Descending helps, yet the combined water step is slower than dry flat
+      // ground. Treating its total distance as a slope ratio made crowded's
+      // slopes-slow check report that downhill ground did not help at all.
+      const moved = moveToward(walker, 10.75, 30.5, 0.5, w, rng);
+      expect(moved).toBeLessThan(0.5);
+      expect(telemetry.get('step_slope_down')).toBe(1);
+      expect(telemetry.get('step_slope_down_ratio')).toBeGreaterThan(1.005);
+    } finally {
+      telemetry.disable(); telemetry.reset();
+    }
+  });
+
   it('climbs slower than it walks the flat, and descends faster', () => {
     const w = plain();
     const flat = { x: 10.5, y: 30.5 };

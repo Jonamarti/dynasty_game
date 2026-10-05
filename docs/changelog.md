@@ -1,3 +1,13 @@
+## 2026-10-05 — M15 fase 27: la pendiente se mide aparte del vadeo
+
+El nuevo fallo `slopes-slow` de `crowded` mezclaba el coste de la pendiente
+con el del agua. El contador divide ahora por el factor de vadeo aplicado,
+conservando exactamente el movimiento. Una bajada somera sigue siendo más
+lenta que tierra plana, pero su pendiente ayuda. La regresión falla en la
+medición anterior (ratio 0,4096) y pasa con la corrección. La matriz v3 tenía
+113 fallos frente a 106 previos; la verificación corregida sigue en ejecución.
+[Informe](m15_phase27_verification.md). Hito visual:
+`artifacts/screenshots/m15-phase27-slope-measure-2026-10-05/01-coast-depth.png`.
 ## 2026-10-05 — M15 fase 27: hito visual y pruebas de integración
 
 Typecheck, 1.055 tests en 149 archivos, 80 e2e y el soak de español (419 líneas,

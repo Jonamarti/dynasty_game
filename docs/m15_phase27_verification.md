@@ -41,11 +41,13 @@ intermedias v1 y v2 no forman parte de los resultados finales.
 - `npm.cmd run i18n:soak`: 419 líneas en español, cero detectadas como inglesas.
 - `npm.cmd run sim:check -- --scenario shallows`: 6/6 checks pasan;
   23 capturas someras, seis pasos de nado y cero muertes en bajíos.
-- Matriz final y cohortes: en ejecución.
+- Matriz v3: roja, 113 fallos frente a 106 previos; 37 fallos nuevos y
+  30 ausentes (ausente no establece paso). Nueve escenarios pierden checks
+  aplicables. La matriz corregida de instrumentación y cohortes siguen en ejecución.
 
 ## Referencia de checks
 
-La matriz previa ya era roja: 100 fallos en 28 escenarios. Los resultados
+La matriz previa ya era roja: 106 fallos en 28 escenarios. Los resultados
 finales se compararán por check y aplicabilidad; `n/a` no equivale a pasar.
 No se han ajustado umbrales de checks ni coeficientes del Brain para forzar
 una matriz verde. Las pruebas de mecanismo de 27e contienen controles
@@ -69,3 +71,13 @@ exposición 8, oso 4, agresión 1. El resultado no registra pasos de nado ni
 ahogamientos. Sus capturas de peces bajan de 862 a 277, pero el desplome
 temprano reduce también las oportunidades de actuar: estos totales no aíslan
 una causa económica. No se ha cambiado un coeficiente a partir de esta sonda.
+
+## Corrección de instrumentación de pendiente
+
+`crowded` produjo un nuevo fallo `slopes-slow`: la clasificación usaba solo
+pendiente, mientras `moved / asked` incluía también el factor 0,4 del vadeo.
+La regresión de una bajada somera mide 0,4096 con el contador anterior y falla;
+el contador corregido divide únicamente por ese factor independiente y pasa.
+No se cambia el movimiento, el RNG ni los coeficientes de la pendiente.
+La suite y la matriz se repiten tras corregir la medición. Las cohortes usan
+la instrumentación desactivada y mantienen el árbol v3 congelado.
