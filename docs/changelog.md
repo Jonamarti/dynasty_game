@@ -1,3 +1,16 @@
+## 2026-10-05 — M15 fase 27e: comprobar bajíos, pesca y regiones de nado
+
+`shallows` prueba pesca en agua y cruces reales. `people-on-land` admite nado
+seguro, pero sigue rechazando agua honda y carga incompatible. Una auditoría
+independiente reconstruye ambos grafos de regiones; sus controles negativos
+incluyen particiones corruptas con los mismos tamaños. El fixture `food-news`
+usa el banco próximo fuera de vista por spatial hash, para aislar el recuerdo
+compartido sin depender del orden de colocación de los peces.
+
+Las capturas de costa y humedad de 27a/27b quedan versionadas, y la pesca usa
+un destino explícito de captura para conservar cada hito sin sobrescribirlo.
+La verificación completa y el coste a veinte semillas de los 28 escenarios
+clásicos se registran en [el informe](m15_phase27_verification.md).
 ## 2026-10-05 — M15 fase 27d: nadar con las manos vacías
 
 Las rutas combinan tierra y agua de nado con coste seis, y el paso en el agua

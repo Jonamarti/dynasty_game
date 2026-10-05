@@ -27,6 +27,9 @@ actual swim-crossing event, and confirms a fatigued person survives on a shoal.
 It also changes the swim-depth predicate in a negative control; the same
 threshold-fatigued person then drowns and fails the shallow-death invariant.
 See the scenario and its counters in `tools/simcheck.ts`.
+The `regions-stay-true` check independently recomputes both land partitions
+and the mixed land-and-swimmable-water graph; a swim-only split with unchanged
+component-size totals still fails the check.
 
 The browser capture performs an actual ordered harvest on a shallow fish node
 with a fitted spear, checks that the person receives fish and remains in the

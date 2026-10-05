@@ -6,7 +6,12 @@ export function setupFoodNews(sim: Simulation): void {
   const adults = sim.livingPeople().filter(p => !p.isChild);
   const learner = adults[0]!;
   const teller = adults[1]!;
-  const food = sim.nodes.find(n => n.kind === 'fish' &&
+  // A shoal's spawn order is unrelated to its distance from the listener.
+  // The first generated fish moved farther away when phase 27 put fish in
+  // shallow water; that made rest beat the rumour without testing whether
+  // conversation transfers a location. Keep the nearest opportunity beyond
+  // sight, through the same spatial query the simulation uses.
+  const food = sim.nodeHash.findNearest(learner.x, learner.y, 30, n => n.kind === 'fish' &&
     learner.distanceTo(n) > sim.sightOf(learner) + 4 && learner.distanceTo(n) < 30 &&
     sim.world.sameRegion(learner.x, learner.y, n.x, n.y));
   if (!food) throw new Error('food-news fixture needs fish beyond sight on the same landmass');

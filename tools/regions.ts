@@ -7,22 +7,34 @@
  */
 import type { World } from '../src/sim/core/World.ts';
 
-export function auditRegions(world: Pick<World, 'width' | 'walkable' | 'region' | 'regionSizes'>): {
-  ok: boolean; components: number; tileErrors: number; sizeErrors: number;
-} {
-  const labels = new Int32Array(world.walkable.length).fill(-1);
+type Partition = Pick<World, 'width'> & {
+  walkable: Uint8Array;
+  region: Int32Array;
+  regionSizes: ReadonlyMap<number, number>;
+};
+
+function auditPartition(
+  width: number,
+  length: number,
+  passable: (x: number, y: number, index: number) => boolean,
+  actual: Int32Array,
+  actualSizes: ReadonlyMap<number, number>,
+): { ok: boolean; components: number; tileErrors: number; sizeErrors: number } {
+  const labels = new Int32Array(length).fill(-1);
   let components = 0;
   for (let start = 0; start < labels.length; start++) {
-    if (world.walkable[start] !== 1 || labels[start] !== -1) continue;
+    const sx = start % width, sy = Math.floor(start / width);
+    if (!passable(sx, sy, start) || labels[start] !== -1) continue;
     const id = components++;
     const stack = [start];
     labels[start] = id;
     while (stack.length > 0) {
       const i = stack.pop()!;
-      const x = i % world.width;
-      for (const next of [x > 0 ? i - 1 : -1, x < world.width - 1 ? i + 1 : -1,
-        i - world.width, i + world.width]) {
-        if (next < 0 || next >= labels.length || world.walkable[next] !== 1 || labels[next] !== -1) continue;
+      const x = i % width, y = Math.floor(i / width);
+      for (const next of [x > 0 ? i - 1 : -1, x < width - 1 ? i + 1 : -1,
+        y > 0 ? i - width : -1, y + 1 < Math.ceil(length / width) ? i + width : -1]) {
+        if (next < 0 || next >= labels.length || labels[next] !== -1 ||
+            !passable(next % width, Math.floor(next / width), next)) continue;
         labels[next] = id;
         stack.push(next);
       }
@@ -35,7 +47,7 @@ export function auditRegions(world: Pick<World, 'width' | 'walkable' | 'region' 
   let tileErrors = 0;
   for (let i = 0; i < labels.length; i++) {
     const full = labels[i]!;
-    const incremental = world.region[i]!;
+    const incremental = actual[i]!;
     if (full === -1) {
       if (incremental !== -1) tileErrors++;
       continue;
@@ -48,8 +60,30 @@ export function auditRegions(world: Pick<World, 'width' | 'walkable' | 'region' 
     backward.set(incremental, full);
   }
   let sizeErrors = 0;
-  for (const id of new Set([...sizes.keys(), ...world.regionSizes.keys()])) {
-    if (sizes.get(id) !== world.regionSizes.get(id)) sizeErrors++;
+  for (const id of new Set([...sizes.keys(), ...actualSizes.keys()])) {
+    if (sizes.get(id) !== actualSizes.get(id)) sizeErrors++;
   }
   return { ok: tileErrors === 0 && sizeErrors === 0, components, tileErrors, sizeErrors };
+}
+
+export function auditRegions(world: Partition): {
+  ok: boolean; components: number; tileErrors: number; sizeErrors: number;
+} {
+  return auditPartition(world.width, world.walkable.length,
+    (_x, _y, index) => world.walkable[index] === 1,
+    world.region, world.regionSizes);
+}
+
+/** Independently recompute the mixed land-and-swimmable-water graph. */
+export function auditSwimRegions(world: Pick<World,
+  'width' | 'height' | 'walkable' | 'isSwimTile' | 'swimRegion' | 'swimRegionSizes' | 'swimRegionAt'>): {
+  ok: boolean; components: number; tileErrors: number; sizeErrors: number;
+} {
+  // Swim labels are lazy because terrain edits are rare; ask the public getter
+  // once so the arrays below describe the current world, then independently
+  // flood-fill without asking World to repair or compare the partition.
+  world.swimRegionAt(0, 0);
+  return auditPartition(world.width, world.walkable.length,
+    (x, y, index) => world.walkable[index] === 1 || world.isSwimTile(x, y),
+    world.swimRegion, world.swimRegionSizes);
 }

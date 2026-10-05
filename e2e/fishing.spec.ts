@@ -2,7 +2,9 @@
 import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-const SHOTS = 'artifacts/screenshots/m15-phase27-fishing-2026-10-05';
+// A capture run names a new milestone directory; ordinary regression runs
+// must not overwrite the chronological screenshots from an earlier milestone.
+const SHOTS = process.env.DYNASTY_CAPTURE_DIR;
 
 test('a fitted spear harvests a real shoal and the tech web explains the harpoon bonus', async ({ page }) => {
   const errors: string[] = [];
@@ -45,11 +47,11 @@ test('a fitted spear harvests a real shoal and the tech web explains the harpoon
   expect(caught).toMatchObject({ spear: 1, fitted: true, shallow: true });
   expect(caught.amount).toBeGreaterThan(0);
 
-  mkdirSync(SHOTS, { recursive: true });
+  if (SHOTS) mkdirSync(SHOTS, { recursive: true });
   await page.locator('.hud-tab[data-tab="kit"]').click();
   await expect(page.locator('.hud-tab[data-tab="kit"]')).toHaveClass(/is-active/);
   await expect(page.locator('#hud')).toContainText('Fish');
-  await page.screenshot({ path: `${SHOTS}/01-shoal-catch-with-fitted-spear.png` });
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/01-shoal-catch-with-fitted-spear.png` });
 
   await page.keyboard.press('g');
   await expect(page.locator('.techweb-card')).toBeVisible({ timeout: 10_000 });
@@ -58,6 +60,6 @@ test('a fitted spear harvests a real shoal and the tech web explains the harpoon
   await expect(page.locator('.techweb-title')).toHaveText('The spear');
   await expect(page.locator('.techweb-detail'))
     .toContainText('A blade at the end of a shaft: harder blows, first strikes, and more fish when harpooned.');
-  await page.screenshot({ path: `${SHOTS}/02-spear-techweb-harpoon-bonus.png` });
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/02-spear-techweb-harpoon-bonus.png` });
   expect(errors).toEqual([]);
 });

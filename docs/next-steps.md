@@ -4,8 +4,8 @@
 de profundidad; los bajíos son caminables y dejan humedad visible en el
 inspector. Los peces ya están en agua somera y una lanza equipada mejora la
 captura. La natación admite manos vacías y cesta compatible, con razones de
-negativa, frío/cansancio y ahogamiento determinista. Siguiente: cerrar los
-checks y medir el coste conjunto a veinte semillas en toda la matriz.
+negativa, frío/cansancio y ahogamiento determinista. Los checks de pesca, cruce y particiones ya están integrados. Siguiente:
+terminar la verificación y medir el coste a veinte semillas en toda la matriz.
 La clasificación
 de agua dulce y los inicios geográficos poblados esperan a 30.
 [Contrato de profundidad](m15_phase27_depth.md).

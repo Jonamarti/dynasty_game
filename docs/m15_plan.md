@@ -2339,6 +2339,14 @@ abiertas a todos), medidos contra el build roto (`earthwork-checks.test.ts`).
 
 ## Fase 27 — La profundidad del agua: vadear, pescar dentro y nadar (decisión 12)
 
+**Avance del 2026-10-05 (27e): escenario y checks.** `shallows` ejecuta
+pesca y una orden real de cruce. Los controles negativos provocan un
+ahogamiento somero y colocan personas en agua honda o con carga; ambos deben
+fallar. La auditoría independiente comprueba las particiones de andar y nadar,
+incluso si etiquetas corruptas conservan sus tamaños. `food-news` elige el
+banco más cercano por spatial hash: escoger el primero de la lista dejó de
+asegurar que su puntuación venciera al descanso. Verificación conjunta y
+coste pendientes; [registro de verificación](m15_phase27_verification.md).
 **Avance del 2026-10-05 (27d): natación y ahogamiento.** Rutas de coste seis,
 manos vacías o cesta compatible, habilidad a cero sin draws y aprendizaje por
 paso real. Frío y cansancio de nado dependen de la casilla. Órdenes y movimiento
@@ -2432,11 +2440,11 @@ con red o nasa, como hoy.
   generación que sube el nivel del agua).
 - `nobody-drowns-in-the-shallows`: ninguna muerte `drowned` en agua somera
   (invariante).
-- `fish-are-caught-in-the-water`: hay capturas desde casillas de agua somera.
+- `fish-caught-in-water`: hay capturas desde casillas de agua somera.
   Hoy no hay ninguna y falla.
 - `swimmers-cross`: en `shallows`, hay cruces por casillas de nado.
-- `paths-are-found`, `people-on-land` (a redefinir: en tierra **o en lo
-  somero**; el check tiene que seguir detectando a alguien en lo hondo) y
+- `paths-are-found`, `people-on-land` (tierra, bajío o nado con carga compatible; rechaza
+  agua honda, roca y nadadores cargados) y
   `regions-stay-true` en verde.
 - **Coste declarado:** ≤ 3 puntos.
 

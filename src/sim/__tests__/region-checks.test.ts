@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { auditRegions } from '../../../tools/regions.ts';
+import { Simulation } from '../core/Simulation.ts';
+import { auditRegions, auditSwimRegions } from '../../../tools/regions.ts';
 import { runScenario, SCENARIOS } from '../../../tools/simcheck.ts';
 
 // Two disconnected islands of the same size: a size-only check would miss
@@ -23,6 +24,44 @@ describe('regions-stay-true measurement', () => {
     } }, 2);
     expect(report.checks.find(check => check.id === 'regions-stay-true')).toMatchObject({ ok: false });
   });
+
+  it('audits actual swim-depth tiles in the mixed land-and-water graph', () => {
+    const sim = new Simulation(SCENARIOS.shallows!.config);
+    const world = sim.world;
+    let swimTiles = 0;
+    for (let y = 0; y < world.height; y++) for (let x = 0; x < world.width; x++) {
+      if (world.isSwimTile(x, y)) swimTiles++;
+    }
+    expect(swimTiles).toBeGreaterThan(0);
+    expect(auditSwimRegions(world)).toMatchObject({ ok: true });
+  });
+
+  it('makes regions-stay-true fail for a split swim component with matching size totals', () => {
+    const scenario = SCENARIOS.shallows!;
+    const report = runScenario({
+      ...scenario,
+      setup: sim => {
+        const world = sim.world;
+        world.swimRegionAt(0, 0); // Materialise the lazy baseline before corrupting it.
+        let index = -1;
+        for (let i = 0; i < world.swimRegion.length; i++) {
+          const x = i % world.width, y = Math.floor(i / world.width);
+          const id = world.swimRegion[i]!;
+          if (world.isSwimTile(x, y) && id >= 0 && (world.swimRegionSizes.get(id) ?? 0) > 1) {
+            index = i; break;
+          }
+        }
+        if (index < 0) throw new Error('shallows fixture has no multi-tile swim region');
+        const previous = world.swimRegion[index]!;
+        const replacement = Math.max(...world.swimRegionSizes.keys()) + 1;
+        world.swimRegion[index] = replacement;
+        world.swimRegionSizes.set(previous, world.swimRegionSizes.get(previous)! - 1);
+        world.swimRegionSizes.set(replacement, 1);
+      },
+    }, 0);
+    expect(report.checks.find(check => check.id === 'regions-stay-true')).toMatchObject({ ok: false });
+  });
+
   it('accepts a matching partition with noncanonical ids', () => {
     expect(auditRegions(islands())).toEqual({ ok: true, components: 2, tileErrors: 0, sizeErrors: 0 });
   });

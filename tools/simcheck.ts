@@ -30,8 +30,9 @@ import { PathStatus } from '../src/sim/core/Pathfinder.ts';
 import { TERRITORY_RADIUS } from '../src/sim/systems/BandSystem.ts';
 import { isHeld, isBound } from '../src/sim/social/Defence.ts';
 import { WORTH_GRAZING } from '../src/sim/core/Grass.ts';
+import { handsEmptyForSwimming } from '../src/sim/core/Swimming.ts';
 import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
-import { auditRegions } from './regions.ts';
+import { auditRegions, auditSwimRegions } from './regions.ts';
 import { setupFoodNews, setupConflicts } from './checkFixtures.ts';
 
 /**
@@ -121,6 +122,42 @@ function setupDiggers(sim: Simulation): void {
         placed++;
       }
     }
+  }
+}
+
+/** Give the shallows fixture one real crossing with both feet on land. */
+function setupShallows(sim: Simulation): void {
+  const fishInWater = sim.nodes.filter(node => node.kind === 'fish' && sim.world.isShallow(node.x, node.y));
+  if (fishInWater.length === 0) throw new Error('shallows fixture needs a fish node in walkable shallow water');
+  const traveler = sim.livingPeople().find(person => !person.isChild && person.inventory.total === 0);
+  if (!traveler) throw new Error('shallows fixture needs an adult with empty hands');
+  const sx = traveler.x | 0;
+  const sy = traveler.y | 0;
+  const sourceRegion = sim.world.regionAt(sx, sy);
+  let destination: { x: number; y: number; distance: number } | null = null;
+  for (let y = 0; y < sim.world.height; y++) {
+    for (let x = 0; x < sim.world.width; x++) {
+      if (!sim.world.isWalkable(x, y) || sim.world.regionAt(x, y) === sourceRegion) continue;
+      const distance = Math.abs(x - sx) + Math.abs(y - sy);
+      if (destination && distance >= destination.distance) continue;
+      // A walk-only path cannot reach a different landmass. The swim-mode
+      // reachability check makes the crossing a guaranteed opportunity rather
+      // than hoping the autonomous planner happens to choose one this run.
+      if (!sim.pathfinder.reachable(sx, sy, x, y, 'swim')) continue;
+      destination = { x, y, distance };
+    }
+  }
+  if (!destination) throw new Error('shallows fixture has no swim-connected second landmass');
+  if (!sim.order(traveler, 'goto', destination)) {
+    throw new Error('shallows fixture could not order its swimmer across');
+  }
+  const fisher = sim.livingPeople().find(person => !person.isChild && person.id !== traveler.id &&
+    fishInWater.some(node => sim.world.sameRegion(person.x, person.y, node.x, node.y)));
+  const fish = fisher && fishInWater
+    .filter(node => sim.world.sameRegion(fisher.x, fisher.y, node.x, node.y))
+    .sort((a, b) => fisher.distanceTo(a) - fisher.distanceTo(b))[0];
+  if (!fisher || !fish || !sim.order(fisher, 'forage', { nodeId: fish.id })) {
+    throw new Error('shallows fixture needs a reachable shallow-water fish order');
   }
 }
 
@@ -342,6 +379,33 @@ export const SCENARIOS: Record<string, Scenario> = {
       },
     },
     steps: 4000,
+  },
+  shallows: {
+    name: 'shallows',
+    description:
+      'A coast with exposed shallows and water deep enough to require swimming. ' +
+      'The raised sea level makes both kinds of crossing available while the ' +
+      'founders already know spear-fishing, so this run measures fishing in ' +
+      'the water and routes that cross it. Its setup orders one fisher to a ' +
+      'shallow shoal and another adult across to a separate landmass.',
+    config: {
+      seed: 'shallows',
+      world: { waterLevel: 0.38 },
+      population: {
+        bands: 2, peoplePerBand: 10,
+        startingTech: ['spear', 'fishing'],
+      },
+    },
+    setup: setupShallows,
+    steps: 5000,
+    checks: [
+      'nobody-drowns-in-the-shallows',
+      'fish-caught-in-water',
+      'swimmers-cross',
+      'paths-are-found',
+      'people-on-land',
+      'regions-stay-true',
+    ],
   },
   traps: {
     name: 'traps',
@@ -1061,7 +1125,7 @@ function sample(sim: Simulation): Sample {
     // movement system had just approved, was reported as having escaped the
     // island. Two definitions of "in the world" is one too many.
     else if (!sim.world.inBounds(person.x, person.y)) outOfBounds++;
-    else if (!sim.world.isWalkable(person.x, person.y)) onUnwalkable++;
+    else if (!isOnValidGround(sim, person)) onUnwalkable++;
   }
 
   const stats = sim.stats();
@@ -1101,6 +1165,12 @@ function sample(sim: Simulation): Sample {
     nonFinite,
     onUnwalkable,
   };
+}
+
+/** Rock and deep water are invalid positions; a swimmer needs both a swim tile and empty hands. */
+export function isOnValidGround(sim: Simulation, person: import('../src/sim/entities/Person.ts').Person): boolean {
+  return sim.world.isWalkable(person.x, person.y) ||
+    (sim.world.isSwimTile(person.x, person.y) && handsEmptyForSwimming(person));
 }
 
 // ---------------------------------------------------------------------------
@@ -1182,9 +1252,11 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const tel = base.telemetry;
 
   const regions = auditRegions(sim.world);
-  add('regions-stay-true', regions.ok,
-    regions.components + ' independently recomputed landmasses; ' + regions.tileErrors +
-    ' incorrectly labelled tiles and ' + regions.sizeErrors + ' incorrect region sizes');
+  const swimRegions = auditSwimRegions(sim.world);
+  add('regions-stay-true', regions.ok && swimRegions.ok,
+    regions.components + ' landmasses and ' + swimRegions.components + ' swim-connected regions; ' +
+    (regions.tileErrors + swimRegions.tileErrors) + ' incorrectly labelled tiles and ' +
+    (regions.sizeErrors + swimRegions.sizeErrors) + ' incorrect region sizes');
 
   // M15 phase 26d: the water follows the trench. Recomputed from the raw
   // arrays rather than asked of `World.floodFrom`, so a fill that was missed
@@ -1350,7 +1422,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     'people-on-land',
     samples.every(s => s.onUnwalkable === 0),
     'worst sample had ' + Math.max(...samples.map(s => s.onUnwalkable)) +
-      ' people standing in water or on rock'
+      ' people on deep water without empty hands or on rock (land and valid swimmers are allowed)'
   );
 
   // Survival means different things over different spans.
@@ -3018,6 +3090,22 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('fish-are-caught',
       (tel.eat ?? 0) > 0,
       (tel.harvest_fish ?? 0) + ' fish taken; ' + (tel.eat ?? 0) + ' meals eaten');
+  }
+
+  // M15 phase 27e. These are mechanism checks for the dedicated `shallows`
+  // run, not economy proxies: each must fail when its underlying event is
+  // absent, so zero is a failure rather than n/a.
+  if (base.scenario === 'shallows') {
+    add('nobody-drowns-in-the-shallows', (tel.drowned_shallows ?? 0) === 0,
+      (tel.drowned_shallows ?? 0) + ' deaths in wading-depth water (need 0)');
+    add('fish-caught-in-water', (tel.harvest_fish_shallows ?? 0) > 0,
+      (tel.harvest_fish_shallows ?? 0) + ' fish taken from shallow water (need at least 1)');
+    add('swimmers-cross', (tel.swim_tile_steps ?? 0) > 0,
+      (tel.swim_tile_steps ?? 0) + ' steps through swimming-depth water (need at least 1)');
+  } else {
+    skip('nobody-drowns-in-the-shallows', 'only measured in the shallows scenario');
+    skip('fish-caught-in-water', 'only measured in the shallows scenario');
+    skip('swimmers-cross', 'only measured in the shallows scenario');
   }
 
   // M8.1, mechanism 3. Three checks, because a trap has three ways to be
