@@ -1101,6 +1101,13 @@ export interface ConflictWatch {
   }[];
 }
 
+/**
+ * M15 phase 18: conceptions, and under what roof the pair lay when each began.
+ * Measured from the people themselves (action and target the step before the
+ * midnight block), not from the roof table `LifeSystem` reads, so a gate that
+ * silently stopped working would still be seen here.
+ */
+export interface ConceptionWatch { total: number; roofless: number }
 export interface HomeWatch { adultNightSamples: number; adultsNear: number; adultsSleeping: number; childSamples: number; childrenNear: number; childrenNearAnyParent: number; childActions: Record<string, number> }
 /** M15 phase 5's pre-behaviour instrument: talk choice against belonging mood. */
 export interface MoodChoiceWatch { belongingTalk: { mood: number; talk: boolean }[] }
@@ -1125,6 +1132,7 @@ export interface Report {
   stall: StallWatch;
   conflict: ConflictWatch;
   home: HomeWatch;
+  conceptions: ConceptionWatch;
   moodChoice: MoodChoiceWatch;
   /** The one number `Telemetry.max` tracks rather than sums; see its own note. */
   travel: { worstExpanded: number };
@@ -1423,6 +1431,9 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   if (base.conflict.youngFleeTests < 10) skip('the-young-run-to-their-own', base.conflict.youngFleeTests + ' attacked children fled (need 10)');
   else add('the-young-run-to-their-own', base.conflict.youngFleeCloser / base.conflict.youngFleeTests >= 0.60,
     base.conflict.youngFleeCloser + ' of ' + base.conflict.youngFleeTests + ' reached a closer distance to their carer (need 60%)');
+  if (base.conceptions.total < 5) skip('conception-needs-a-roof', base.conceptions.total + ' conceptions (need 5)');
+  else add('conception-needs-a-roof', base.conceptions.roofless === 0,
+    base.conceptions.roofless + ' of ' + base.conceptions.total + ' conceptions began without both parents asleep under one roof (need 0)');
   const cravingMeals = tel.eat_craving_protein ?? 0;
   const calmMeals = tel.eat_calm_protein ?? 0;
   if (cravingMeals < 20 || calmMeals < 20) {
@@ -3962,11 +3973,38 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     kinAttacks: 0, kinDefended: 0, youngFleeTests: 0, youngFleeCloser: 0, kinPending: [] };
   const home: HomeWatch = { adultNightSamples: 0, adultsNear: 0, adultsSleeping: 0, childSamples: 0, childrenNear: 0, childrenNearAnyParent: 0, childActions: {} };
   const moodChoice: MoodChoiceWatch = { belongingTalk: [] };
+  const conceptions: ConceptionWatch = { total: 0, roofless: 0 };
+  const wasPregnant = new Set<number>();
+  let bedtime: Map<number, { action: string; roof: number | null }> | null = null;
   let lastEventId = 0;
 
   const started = Date.now();
+  const dayLength = sim.config.time.ticksPerDay;
   for (let i = 1; i <= steps; i++) {
+    // The midnight block runs at the start of the step that lands on a day
+    // boundary, so the state it saw is the state before that step.
+    bedtime = null;
+    if ((sim.time.tick + 1) % dayLength === 0) {
+      bedtime = new Map();
+      for (const person of sim.people) {
+        if (!person.alive) continue;
+        const roof = person.targetBuildingId === null ? undefined : sim.buildingsById.get(person.targetBuildingId);
+        const sheltered = !!roof && roof.complete && roof.def.shelter > 0 && roof.contains(person.x, person.y, 1);
+        bedtime.set(person.id, { action: person.action, roof: sheltered ? roof!.id : null });
+      }
+    }
     sim.step();
+    for (const person of sim.people) {
+      if (!person.alive || !person.pregnant) { wasPregnant.delete(person.id); continue; }
+      if (wasPregnant.has(person.id)) continue;
+      wasPregnant.add(person.id);
+      if (!bedtime) continue; // pregnant on arrival (founders), not a conception we saw
+      conceptions.total++;
+      const mine = bedtime.get(person.id);
+      const his = person.pregnantBy === null ? undefined : bedtime.get(person.pregnantBy);
+      if (!mine || !his || mine.action !== 'sleep' || his.action !== 'sleep' ||
+          mine.roof === null || mine.roof !== his.roof) conceptions.roofless++;
+    }
     // Every step, not every sample: a behaviour that only ever runs for a few
     // ticks at a time is still the AI using it, and sparse sampling misses it.
     const living = sim.livingPeople();
@@ -4191,6 +4229,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     stall,
     conflict,
     home,
+    conceptions,
     moodChoice,
     relationships: sim.relationships.stats(),
     buildings: {

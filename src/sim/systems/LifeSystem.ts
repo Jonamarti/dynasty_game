@@ -53,6 +53,13 @@ export interface LifeContext {
   day: number;
   peopleById: Map<number, Person>;
   householdsById: Map<number, Household>;
+  /**
+   * Who slept under which roof at midnight (`Simulation.shareTheHearth`).
+   * Conception reads it: a couple who did not share a roof tonight conceive
+   * nothing, which is what makes the hut — not the open ground — the thing
+   * that grows a family. Any shelter counts, a windbreak included.
+   */
+  roofTonight: ReadonlyMap<number, number>;
   /** Called with each newborn so the simulation can register and place them. */
   onBirth: (child: Person, mother: Person, father: Person | null) => void;
   /** Called when someone dies of anything this system is responsible for. */
@@ -97,6 +104,16 @@ export class LifeSystem {
 
     const father = mother.spouseId === null ? null : ctx.peopleById.get(mother.spouseId);
     if (!father || !father.alive || father.isChild) return;
+
+    // M15 phase 18: under the same roof tonight, or not at all. Placed before
+    // the conception draw, so a couple kept apart consumes no number from the
+    // life stream; the draw sequence of everyone who did share a roof is the
+    // only thing that moves.
+    const roof = ctx.roofTonight.get(mother.id);
+    if (roof === undefined || ctx.roofTonight.get(father.id) !== roof) {
+      telemetry.count('conception_no_roof');
+      return;
+    }
 
     // Hunger and injury suppress conception. A band on the edge of starvation
     // does not produce a baby boom, which is what stops the population from

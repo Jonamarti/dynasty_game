@@ -3366,6 +3366,13 @@ export class Simulation {
   }
 
   /**
+   * Person id to the building they slept under at the last midnight sample.
+   * Transient: `shareTheHearth` clears and refills it on the same tick that
+   * `LifeSystem.daily` reads it, so no checkpoint ever sees it half-built.
+   */
+  private readonly roofTonight = new Map<number, number>();
+
+  /**
    * Who slept under the same roof, handed to `SocialSystem.hearth`.
    *
    * Called from the daily block, which runs at `tick % ticksPerDay === 0` —
@@ -3381,6 +3388,9 @@ export class Simulation {
    */
   private shareTheHearth(): void {
     const byRoof = new Map<number, Person[]>();
+    // M15 phase 18: rebuilt from nothing every midnight, so a person who is
+    // not asleep tonight is simply absent rather than carrying last night's roof.
+    this.roofTonight.clear();
     for (const person of this.people) {
       if (!person.alive || person.action !== 'sleep') continue;
       const roof = person.targetBuildingId === null ? null : this.buildingsById.get(person.targetBuildingId);
@@ -3396,6 +3406,7 @@ export class Simulation {
         }
       }
       if (!sheltered) continue;
+      this.roofTonight.set(person.id, roof.id);
       const under = byRoof.get(roof.id);
       if (under) under.push(person);
       else byRoof.set(roof.id, [person]);
@@ -5102,6 +5113,7 @@ export class Simulation {
         day: this.time.day,
         peopleById: this.peopleById,
         householdsById: this.householdsById,
+        roofTonight: this.roofTonight,
         makeChild: (mother, childRng) => {
           // A process-wide hook let the most recently constructed world choose
           // another world's newborn IDs, calendar and learning rate.
