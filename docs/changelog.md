@@ -1,3 +1,21 @@
+## 2026-10-05 — M15 fase 27d: nadar con las manos vacías
+
+Las rutas combinan tierra y agua de nado con coste seis, y el paso en el agua
+va a un sexto. La habilidad empieza en cero sin consumir RNG y se entrena al
+nadar. Manos, hombro y bebé impiden entrar; una cesta a la espalda admite solo
+carga compatible que cabe dentro. Frío y cansancio se leen desde la casilla,
+incluso si el verbo sigue siendo beber o buscar comida. Superar el umbral mata
+sin dados y deja el cuerpo en la orilla. Las negativas del jugador usan el
+aviso visible existente. [Contrato y captura](m15_phase27d_swimming.md).
+
+Las regresiones incluyen continuidad idéntica desde un checkpoint en pleno
+nado, RNG de fundador fijado, carga y agua honda. Las obras de tierra conservan
+al nadador válido y a los peces de bajío; rescatan a quien lleva carga y
+desplazan objetos a suelo seco. Los fixtures de inundación y pendiente ahora
+distinguen agua somera y suelo seco. La prueba de revuelta aísla el mecanismo
+diario de las fugas individuales; la del fuego identifica al individuo protegido.
+La comparación económica y verificación completa se registran al cerrar 27e.
+
 ## 2026-10-05 — M15 fase 27c: peces en el bajío y pesca con lanza
 
 Los bancos se colocan directamente en agua somera con el `fishRng` existente.

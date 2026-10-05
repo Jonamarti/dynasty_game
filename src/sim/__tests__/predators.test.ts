@@ -64,6 +64,11 @@ describe('predators', () => {
     const sim = new Simulation({ seed: 'pred-5' });
     const bear = sim.animals.find(a => a.species === 'bear')!;
     const person = sim.people.find(p => p.alive && !p.isChild)!;
+    // One person and one bear make the bite counter answer the question this
+    // fixture asks. Otherwise another isolated adult outside the hearth's
+    // seven-tile circle can be bitten by the same bear and look like a breach.
+    for (const other of sim.animals) if (other !== bear && other.species === 'bear') other.alive = false;
+    for (const other of sim.people) if (other !== person) other.alive = false;
     sim.knownTech.add('firemaking');
     let hearth: ReturnType<typeof sim.place> = null;
     for (let ring = 2; ring <= 12 && !hearth; ring++) {
@@ -78,10 +83,13 @@ describe('predators', () => {
     const spot = sim.world.findWalkableNear(Math.round(hearth!.centerX) + 2, Math.round(hearth!.centerY))!;
     bear.x = spot.x; bear.y = spot.y; bear.fed = 0.1;
     person.x = hearth!.centerX; person.y = hearth!.centerY;
+    expect(sim.litNear(person.x, person.y, 7)).toBe(true);
+    expect(sim.litNear(bear.x, bear.y, 7)).toBe(true);
     const bites = telemetry.get('animal_bit_person_bear');
     const kept = telemetry.get('predator_kept_off_by_fire');
     steps(sim, 400);
     expect(telemetry.get('animal_bit_person_bear')).toBe(bites);
+    expect(person.health).toBe(100);
     expect(telemetry.get('predator_kept_off_by_fire')).toBeGreaterThan(kept);
   });
 });

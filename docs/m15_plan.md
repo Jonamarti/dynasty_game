@@ -2339,6 +2339,13 @@ abiertas a todos), medidos contra el build roto (`earthwork-checks.test.ts`).
 
 ## Fase 27 — La profundidad del agua: vadear, pescar dentro y nadar (decisión 12)
 
+**Avance del 2026-10-05 (27d): natación y ahogamiento.** Rutas de coste seis,
+manos vacías o cesta compatible, habilidad a cero sin draws y aprendizaje por
+paso real. Frío y cansancio de nado dependen de la casilla. Órdenes y movimiento
+manual dan razones visibles; las interrupciones buscan una orilla seca del
+mismo componente. El guardado en pleno nado continúa de forma idéntica.
+[Contrato y captura](m15_phase27d_swimming.md). La medición sigue abierta.
+
 **Avance del 2026-10-05 (27c): pesca en agua somera.** Los bancos usan su
 `fishRng` existente y el contorno de bajíos para mantener la cantidad pedida.
 La lanza aumenta el rendimiento solo equipada en la mano y permanece en ella

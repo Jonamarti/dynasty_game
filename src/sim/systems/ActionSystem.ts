@@ -93,6 +93,7 @@ import type { EventType } from '../social/Events.ts';
 import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 import { noteWorkOutcome } from '../core/Mood.ts';
 import { support } from '../social/Persuasion.ts';
+import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
 
 export interface ActionContext {
   world: World;
@@ -138,6 +139,8 @@ export interface ActionContext {
   seasonGrowth: number;
   /** Need rates, so an interruption can look one work cycle ahead. */
   needs: NeedsConfig;
+  /** Fatal cold/fatigue threshold for swimming. */
+  drownAt?: number;
   carry: CarryConfig;
   motivation: MotivationConfig;
   /** Existing order authority, reused for requests to join a project. */
@@ -242,6 +245,8 @@ export interface ActionContext {
   removeCorpse: (corpse: Corpse) => void;
   /** The nearest water's edge reachable from a point, for `drag`. */
   nearestShore: (x: number, y: number) => { x: number; y: number } | null;
+  /** Nearest bank in this connected swim region, for an interrupted swimmer. */
+  nearestSwimShore?: (x: number, y: number) => { x: number; y: number } | null;
 }
 
 /** How close two people must be to hand something over, or land a blow. */
@@ -810,6 +815,9 @@ export class ActionSystem {
         // so the person stands where they were sent.
         if (this.travel(person, ctx)) this.finish(person);
         break;
+      case 'swim':
+        if (this.travel(person, ctx)) this.finish(person);
+        break;
       case 'go_home': {
         const carer = person.targetPersonId === null ? null : ctx.peopleById.get(person.targetPersonId);
         if (carer?.alive && carer.bandId === person.bandId && carer.captiveOf === null &&
@@ -932,13 +940,57 @@ export class ActionSystem {
    * nothing to abandon and no reason to report — see that case's own
    * handling of `Arrival.Blocked`.
    */
-  private travel(person: Person, ctx: ActionContext): boolean {
+  private travel(person: Person, ctx: ActionContext, answers?: LethalNeed): boolean {
+    if (person.targetX !== null && person.targetY !== null) {
+      const crossing = !ctx.world.sameRegion(person.x, person.y, person.targetX, person.targetY) &&
+        ctx.world.sameSwimRegion(person.x, person.y, person.targetX, person.targetY);
+      const escapingToShore = person.action === 'swim' && person.order === null;
+      const inSwimWater = ctx.world.isSwimTile(person.x, person.y);
+      if (!escapingToShore && (person.action === 'swim' || crossing || inSwimWater)) {
+        const reason = person.action === 'swim'
+          ? swimRefusal(person, ctx.world, person.targetX, person.targetY, ctx.drownAt ?? 85)
+          : swimRouteRefusal(person, ctx.drownAt ?? 85);
+        if (reason) {
+          this.abandon(person, reason, ctx);
+          if (inSwimWater) this.escapeToShore(person, ctx);
+          return false;
+        }
+      }
+      // Swimming can last much longer than an ordinary walk. Keep the same
+      // interruption contract as other committed actions; once interrupted in
+      // the water, report why and use the swim-connected shore hash to escape.
+      if (!escapingToShore && (person.action === 'swim' || crossing || inSwimWater)) {
+        const interrupted = this.interruption(person, ctx, { ignoreLaden: true, answers });
+        if (interrupted) {
+          this.stop(person, interrupted, ctx);
+          if (inSwimWater) this.escapeToShore(person, ctx);
+          return false;
+        }
+      }
+    }
     const arrival = ctx.movement.advance(person, ctx.tick);
     if (arrival === Arrival.Blocked) {
       this.abandon(person, 'cannot_reach', ctx);
+      if (!(person.action === 'swim' && person.order === null) && ctx.world.isSwimTile(person.x, person.y)) this.escapeToShore(person, ctx);
       return false;
     }
     return arrival === Arrival.Arrived;
+  }
+
+  /** Clear an unsafe or interrupted swim order toward dry, connected land. */
+  private escapeToShore(person: Person, ctx: ActionContext): void {
+    const shore = ctx.nearestSwimShore?.(person.x, person.y);
+    if (!shore) return;
+    person.action = 'swim';
+    person.order = null;
+    // With no order the brain would normally replace this emergency retreat at
+    // its next scheduled think. Keep one committed tick until reaching land;
+    // `finish` clears it when `travel` arrives.
+    person.actionTimer = Math.max(person.actionTimer, 1);
+    person.targetX = shore.x + 0.5;
+    person.targetY = shore.y + 0.5;
+    person.pathCount = 0;
+    person.pathAt = 0;
   }
 
   /**
@@ -995,7 +1047,7 @@ export class ActionSystem {
     // without it the person replans at low-but-positive thirst, walks away, and
     // never completes a drink (the `drinking-is-paced` check then reports 0).
     person.actionTimer = DRINK_COMMIT;
-    if (!this.travel(person, ctx)) return;
+    if (!this.travel(person, ctx, 'thirst')) return;
 
     // Movement stops within 0.6 tiles of the target, so the rounded position can
     // land on the tile next door. Test the neighbourhood rather than one tile,
@@ -1081,7 +1133,7 @@ export class ActionSystem {
     }
   }
 
-    private doExplore(person: Person, ctx: ActionContext): void {
+  private doExplore(person: Person, ctx: ActionContext): void {
     if (person.targetX === null || person.targetY === null) {
       this.finish(person);
       return;
@@ -1100,7 +1152,7 @@ export class ActionSystem {
       this.stop(person, stop, ctx, 'explore_ended_');
       return;
     }
-    if (this.travel(person, ctx)) {
+    if (this.travel(person, ctx, answers)) {
       telemetry.count('water_exploration_arrived');
       this.finish(person);
     }
@@ -1327,6 +1379,8 @@ export class ActionSystem {
 
   private doHarvest(person: Person, ctx: ActionContext): void {
     const node = person.targetNodeId === null ? null : ctx.nodesById.get(person.targetNodeId);
+    const travelAnswers: LethalNeed | undefined = node &&
+      (ITEMS[node.itemId]?.nutrition ?? 0) > 0 ? 'hunger' : undefined;
     // M15 phase 20: a remembered place is found empty by looking at it, not
     // known to be empty from anywhere (the owner's rule that places are known
     // only by seeing them). Until it is in sight they walk on; once it is,
@@ -1335,7 +1389,7 @@ export class ActionSystem {
     // `SeasonLore` answers for anybody who has learned the seasons.
     if (node?.depleted && person.distanceTo(node) > ctx.sightRadius) {
       telemetry.count('remembered_empty_walk');
-      this.travel(person, ctx);
+      this.travel(person, ctx, travelAnswers);
       return;
     }
     if (!node || node.depleted) {
@@ -1361,7 +1415,7 @@ export class ActionSystem {
       person.yieldKey = node.kind === 'fish' ? 'yield:fish' : 'yield:forage';
     }
 
-    if (!this.travel(person, ctx)) return;
+    if (!this.travel(person, ctx, travelAnswers)) return;
 
     const setupAnswers = (ITEMS[node.itemId]?.nutrition ?? 0) > 0
       ? 'hunger'
@@ -1917,7 +1971,7 @@ export class ActionSystem {
 
     person.targetX = tree.x;
     person.targetY = tree.y;
-    if (!this.travel(person, ctx)) return;
+    if (!this.travel(person, ctx, 'hunger')) return;
     const owner = ctx.territoryOwnerAt(tree.x, tree.y);
     if (owner !== null && owner !== person.bandId) ctx.onTerritoryUse(person, owner);
 

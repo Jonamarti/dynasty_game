@@ -35,7 +35,8 @@ import { ageSpeed, canCrawl } from '../entities/LifeStage.ts';
 import type { Person } from '../entities/Person.ts';
 import { legPace, poisonPace } from '../entities/Body.ts';
 import { telemetry } from '../core/Telemetry.ts';
-import { Pathfinder, PathStatus, DEFAULT_MAX_EXPANSIONS } from '../core/Pathfinder.ts';
+import { Pathfinder, PathStatus, DEFAULT_MAX_EXPANSIONS, type PassMode } from '../core/Pathfinder.ts';
+import { handsEmptyForSwimming, swimRefusal, type SwimRefusal } from '../core/Swimming.ts';
 
 /** A person is considered to have arrived within this many tiles of a target. */
 export const ARRIVAL_RADIUS = 0.6;
@@ -193,7 +194,8 @@ export function moveToward(
   speed: number,
   world: World,
   rng: RNG,
-  refused?: { x: number; y: number }
+  refused?: { x: number; y: number },
+  mode: PassMode = 'walk'
 ): number {
   const dx = targetX - entity.x;
   const dy = targetY - entity.y;
@@ -208,11 +210,18 @@ export function moveToward(
     entity.x, entity.y, entity.x + (dx / dist) * speed, entity.y + (dy / dist) * speed);
   const proposedX = entity.x + (dx / dist) * speed;
   const proposedY = entity.y + (dy / dist) * speed;
-  // Shallow water is slower than dry ground; apply it before blocked-step and progress checks.
+  // Shallow water is walkable, but slower than dry ground. Apply this before
+  // blocked-step/progress checks so a wading step still counts as movement.
   speed *= factor * (world.isWadeTile(proposedX, proposedY) ? 0.4 : 1);
 
   const startX = entity.x;
   const startY = entity.y;
+
+  // A swim route is proved against water connectivity by Pathfinder. The
+  // movement primitive must honour that same medium or every route stalls at
+  // its first wet tile.
+  const passable = (x: number, y: number): boolean => world.isWalkable(x, y) ||
+    (mode === 'swim' && world.isSwimTile(x, y));
 
   const nx = entity.x + (dx / dist) * speed;
   const ny = entity.y + (dy / dist) * speed;
@@ -242,7 +251,7 @@ export function moveToward(
   const alongX = Math.abs(dx) / dist >= PROGRESS_THRESHOLD;
   const alongY = Math.abs(dy) / dist >= PROGRESS_THRESHOLD;
 
-  if (world.isWalkable(nx, ny)) {
+  if (passable(nx, ny)) {
     entity.x = nx;
     entity.y = ny;
   } else {
@@ -256,10 +265,10 @@ export function moveToward(
       refused.y = ny | 0;
     }
 
-    if (alongX && world.isWalkable(nx, entity.y)) {
+    if (alongX && passable(nx, entity.y)) {
       entity.x = nx;
       outcome = 1;
-    } else if (alongY && world.isWalkable(entity.x, ny)) {
+    } else if (alongY && passable(entity.x, ny)) {
       entity.y = ny;
       outcome = 1;
     } else {
@@ -272,10 +281,10 @@ export function moveToward(
       const jitter = rng.range(-0.5, 0.5) * speed;
       const px = (dy / dist) * speed;
       const py = -(dx / dist) * speed;
-      if (world.isWalkable(entity.x + px + jitter, entity.y + py + jitter)) {
+      if (passable(entity.x + px + jitter, entity.y + py + jitter)) {
         entity.x += px + jitter;
         entity.y += py + jitter;
-      } else if (world.isWalkable(entity.x - px + jitter, entity.y - py + jitter)) {
+      } else if (passable(entity.x - px + jitter, entity.y - py + jitter)) {
         entity.x += -px + jitter;
         entity.y += -py + jitter;
       }
@@ -356,27 +365,42 @@ export class MovementSystem {
    * player's own key presses reach the world: the same speed and the same
    * walkability rules an NPC gets, so direct control is not a privileged path.
    */
-  nudge(person: Person, dx: number, dy: number): void {
+  nudge(person: Person, dx: number, dy: number): SwimRefusal | null {
     // Keep infant movement coupled to the same ablation as the AI freeze. If
     // only thinking were gated, the baseline comparison would still contain
     // part of the rule in direct control and in stale walking targets.
-    if (this.infantsStill && this.stillBaby(person)) return;
+    if (this.infantsStill && this.stillBaby(person)) return null;
     const length = Math.sqrt(dx * dx + dy * dy);
-    if (length === 0) return;
+    if (length === 0) return null;
     const requestedSpeed = this.speedOf(person);
-    const speed = requestedSpeed * (this.world.isWadeTile(person.x + (dx / length) * requestedSpeed,
-      person.y + (dy / length) * requestedSpeed) ? 0.4 : 1);
+    const fullX = person.x + (dx / length) * requestedSpeed;
+    const fullY = person.y + (dy / length) * requestedSpeed;
+    const wantsSwim = this.world.isSwimTile(fullX, fullY);
+    if (this.world.isWater(fullX, fullY) && !this.world.isWalkable(fullX, fullY) && !wantsSwim) {
+      return 'too_deep';
+    }
+    const refusal = wantsSwim ? swimRefusal(person, this.world, fullX, fullY, this.world.drownAt) : null;
+    if (refusal) return refusal;
+    const speed = requestedSpeed * (wantsSwim ? 1 / 6 : this.world.isWadeTile(fullX, fullY) ? 0.4 : 1);
     const nx = person.x + (dx / length) * speed;
     const ny = person.y + (dy / length) * speed;
-    if (this.world.isWalkable(nx, ny)) {
+    const canEnter = (x: number, y: number) => this.world.isWalkable(x, y) ||
+      (wantsSwim && this.world.isSwimTile(x, y));
+    if (canEnter(nx, ny)) {
       person.x = nx;
       person.y = ny;
-    } else if (this.world.isWalkable(nx, person.y)) {
+    } else if (canEnter(nx, person.y)) {
       person.x = nx;
-    } else if (this.world.isWalkable(person.x, ny)) {
+    } else if (canEnter(person.x, ny)) {
       person.y = ny;
     }
     if (this.world.isWadeTile(person.x, person.y)) person.wet = Math.max(person.wet, this.world.wetTicks);
+    if (wantsSwim && this.world.isSwimTile(person.x, person.y)) {
+      person.wet = Math.max(person.wet, this.world.wetTicks);
+      person.practice('swim', 0.05);
+      telemetry.count('swim_tile_steps');
+    }
+    return null;
   }
 
   /**
@@ -405,7 +429,12 @@ export class MovementSystem {
     const dy = person.targetY - person.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist < ARRIVAL_RADIUS) {
+    const mode = this.passMode(person);
+    const startsInSwim = this.world.isSwimTile(person.x, person.y);
+    const targetsSwim = this.world.isSwimTile(person.targetX, person.targetY);
+    const mustEnterWater = mode === 'swim' && targetsSwim && !startsInSwim;
+    const mustReachLand = mode === 'swim' && startsInSwim && !targetsSwim;
+    if (dist < ARRIVAL_RADIUS && !mustEnterWater && !mustReachLand) {
       person.stuckSteps = 0;
       telemetry.count('walk_arrived');
       // Separate from `walk_arrived`, which counts every arrival: this one
@@ -417,7 +446,12 @@ export class MovementSystem {
       return Arrival.Arrived;
     }
 
-    if (this.needsRoute(person)) this.requestRoute(person, tick);
+    if (mode === 'swim' && person.order !== null && (!handsEmptyForSwimming(person) ||
+        person.needs.cold >= this.world.drownAt || person.needs.fatigue >= this.world.drownAt)) {
+      telemetry.count('swim_route_refused');
+      return Arrival.Blocked;
+    }
+    if (this.needsRoute(person, mode)) this.requestRoute(person, tick, mode);
 
     // Skip waypoints already behind us. Speed-relative, and not the arrival
     // radius: a fixed 0.3 against a 0.32 step is stepped over every tick, and
@@ -454,7 +488,9 @@ export class MovementSystem {
 
     // Fatigue and poor health slow people down; this is what makes an exhausted
     // forager fail to get home before dark.
-    const speed = this.speedOf(person);
+    const swimDistance = mode === 'swim' &&
+      (this.world.isSwimTile(person.x, person.y) || this.world.isSwimTile(aimX, aimY));
+    const speed = this.speedOf(person) / (swimDistance ? 6 : 1);
 
     // The denominator for `walk_stuck_tick`: every tick somebody spent walking
     // somewhere. A raw stuck count says nothing without it — a thousand stuck
@@ -464,8 +500,15 @@ export class MovementSystem {
 
     // The honest test: did we actually get anywhere?
     this.refused.x = -1;
-    const progress = moveToward(person, aimX, aimY, speed, this.world, this.rng, this.refused);
+    const progress = moveToward(person, aimX, aimY, speed, this.world, this.rng, this.refused, mode);
     if (this.world.isWadeTile(person.x, person.y)) person.wet = Math.max(person.wet, this.world.wetTicks);
+    if (mode === 'swim' && this.world.isSwimTile(person.x, person.y)) {
+      person.wet = Math.max(person.wet, this.world.wetTicks);
+      if (progress > 0) {
+        person.practice('swim', 0.05);
+        telemetry.count('swim_tile_steps');
+      }
+    }
     const wadingFactor = this.world.isWadeTile(person.x, person.y) ? 0.4 : 1;
     if (progress >= speed * wadingFactor * PROGRESS_THRESHOLD) {
       person.stuckSteps = 0;
@@ -526,7 +569,7 @@ export class MovementSystem {
 
     person.pathTick = tick;
     const status = this.pathfinder.find(
-      person.x, person.y, person.targetX!, person.targetY!, DEFAULT_MAX_EXPANSIONS, avoid
+      person.x, person.y, person.targetX!, person.targetY!, DEFAULT_MAX_EXPANSIONS, avoid, this.passMode(person)
     );
     if (this.storeRoute(person, status)) telemetry.count('path_recovery_found');
   }
@@ -566,7 +609,7 @@ export class MovementSystem {
    * Whether `person.path` is missing, aimed at a goal that has since moved,
    * or about to walk into a tile that stopped being walkable under it.
    */
-  private needsRoute(person: Person): boolean {
+  private needsRoute(person: Person, mode: PassMode): boolean {
     if (person.pathCount === 0) return true;
 
     const gdx = person.targetX! - person.pathGoalX;
@@ -585,7 +628,7 @@ export class MovementSystem {
       // until the day it does not.
       const nx = person.path![person.pathAt * 2]!;
       const ny = person.path![person.pathAt * 2 + 1]!;
-      if (!this.world.isWalkable(nx, ny)) return true;
+      if (!this.world.isWalkable(nx, ny) && !(mode === 'swim' && this.world.isSwimTile(nx, ny))) return true;
     }
     return false;
   }
@@ -602,7 +645,7 @@ export class MovementSystem {
    * anyway: routing matters for closing on the herd, and the last few tiles
    * of a chase are open ground.
    */
-  private requestRoute(person: Person, tick: number): void {
+  private requestRoute(person: Person, tick: number, mode: PassMode): void {
     if (tick !== this.budgetTick) {
       this.budgetTick = tick;
       this.searchesUsed = 0;
@@ -626,7 +669,18 @@ export class MovementSystem {
 
     this.storeRoute(
       person,
-      this.pathfinder.find(person.x, person.y, person.targetX!, person.targetY!)
+      this.pathfinder.find(person.x, person.y, person.targetX!, person.targetY!, DEFAULT_MAX_EXPANSIONS, -1, mode)
     );
+  }
+
+  /** Appetitive scoring picks the destination; this gate only picks its medium. */
+  private passMode(person: Person): PassMode {
+    if (person.action === 'swim') return 'swim';
+    if (person.targetX === null || person.targetY === null ||
+        this.world.sameRegion(person.x, person.y, person.targetX, person.targetY)) return 'walk';
+    if (handsEmptyForSwimming(person) && person.needs.cold < this.world.drownAt &&
+        person.needs.fatigue < this.world.drownAt &&
+        this.world.sameSwimRegion(person.x, person.y, person.targetX, person.targetY)) return 'swim';
+    return 'walk';
   }
 }

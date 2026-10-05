@@ -9,12 +9,13 @@ import { World } from '../core/World.ts';
 import { EARTH_UNIT } from '../core/Earth.ts';
 import { auditRegions } from '../../../tools/regions.ts';
 
-/** Shore tiles low enough that a 1.3 m dig takes them under the water. */
+/** Dry shore tiles low enough that a 1.3 m dig takes them under the water. */
 function lowShore(world: World, count: number): { x: number; y: number }[] {
   const out: { x: number; y: number }[] = [];
   for (const t of world.shoreTiles) {
     const e = world.elevation[world.index(t.x, t.y)]!;
-    if (e - world.waterLevel < 6 * EARTH_UNIT && world.biomeAt(t.x, t.y) !== 'rock') out.push(t);
+    if (!world.isWater(t.x, t.y) && e - world.waterLevel < 6 * EARTH_UNIT &&
+        world.biomeAt(t.x, t.y) !== 'rock') out.push(t);
     if (out.length >= count) break;
   }
   return out;
@@ -43,7 +44,8 @@ describe('water follows the trench', () => {
     expect(w.isWater(t!.x, t!.y)).toBe(false);
     w.dig(t!.x, t!.y, 3e-4);
     expect(w.isWater(t!.x, t!.y)).toBe(true);
-    expect(w.isWalkable(t!.x, t!.y)).toBe(false);
+    expect(w.isShallow(t!.x, t!.y)).toBe(true);
+    expect(w.isWalkable(t!.x, t!.y)).toBe(true);
   });
 
   it('does not flood dug ground that is inland, nor ground still above the level', () => {
@@ -162,6 +164,54 @@ describe('water follows the trench', () => {
     for (let i = 0; i < 30; i++) { a.step(); b.step(); }
     expect(a.people.map(p => [p.x, p.y])).toEqual(b.people.map(p => [p.x, p.y]));
     expect(a.world.earthVersion).toBe(0);
+  });
+
+  it('keeps fish spots in natural shallows when earth changes elsewhere', () => {
+    const sim = new Simulation({ seed: 'flood' });
+    const w = sim.world;
+    const fish = sim.nodes.find(node => node.kind === 'fish')!;
+    expect(fish).toBeDefined();
+    expect(w.isShallow(fish.x, fish.y)).toBe(true);
+
+    // A distant dry tile dirties the earth cache and triggers the global lost-
+    // ground sweep, but does not touch the fish's tile or the water beside it.
+    let dry: { x: number; y: number } | undefined;
+    for (let y = 0; y < w.height && !dry; y++) for (let x = 0; x < w.width && !dry; x++) {
+      if (w.isWalkable(x, y) && !w.isWater(x, y) && !w.isShore(x, y) &&
+          Math.hypot(x - fish.x, y - fish.y) > 5) dry = { x, y };
+    }
+    expect(dry).toBeDefined();
+    w.dig(dry!.x, dry!.y, 0.001);
+    sim.step();
+
+    expect(sim.nodesById.has(fish.id)).toBe(true);
+    expect(w.isShallow(fish.x, fish.y)).toBe(true);
+  });
+
+  it('moves a loaded swimmer to a dry bank when an earth change catches them in deep water', () => {
+    const sim = new Simulation({ seed: 'flood' });
+    const w = sim.world;
+    const waterIndex = w.biome.findIndex((biome, i) => biome === 0 && w.walkable[i] === 0);
+    expect(waterIndex).toBeGreaterThanOrEqual(0);
+    const x = waterIndex % w.width, y = Math.floor(waterIndex / w.width);
+    w.elevation[waterIndex] = w.waterLevel - (w.wadeDepth + w.swimDepth) / 2;
+    w.setWalkable(x, y, false);
+    const person = sim.possessFirst()!;
+    person.x = x + 0.5; person.y = y + 0.5;
+    person.inventory.add('sticks', 1);
+    person.action = 'swim'; person.order = 'swim';
+    person.targetX = x + 2.5; person.targetY = y + 0.5;
+
+    // The edit is elsewhere: this verifies lost-ground recovery also checks
+    // whether somebody standing in swim-depth water can actually swim loaded.
+    const dry = w.shoreTiles.find(tile => w.isWalkable(tile.x, tile.y) && !w.isWater(tile.x, tile.y));
+    expect(dry).toBeDefined();
+    w.dig(dry!.x, dry!.y, 0.001);
+    sim.step();
+
+    expect(w.isWalkable(person.x, person.y)).toBe(true);
+    expect(w.isWater(person.x, person.y)).toBe(false);
+    expect(sim.interruptions.some(event => event.personId === person.id && event.reason === 'ground_gave_way')).toBe(true);
   });
 });
 

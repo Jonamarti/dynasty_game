@@ -1518,7 +1518,7 @@ function openRadial(actor: Person, target: ActionTarget, screenX: number, screen
   // not for the player: what *they* can carry, what *they* know how to make.
   const subject = commanding && commanding.alive ? commanding : actor;
   const options = availableActions(subject, target, {
-    world: sim.world, nearWater, commanding,
+    world: sim.world, nearWater, drownAt: sim.config.world.drownAt, commanding,
     buildings: sim.buildings,
     backersWanted: sim.config.motivation.backersWanted,
     stationFor: stationId => nearestStation(subject, stationId),

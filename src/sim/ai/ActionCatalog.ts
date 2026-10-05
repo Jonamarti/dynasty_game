@@ -42,6 +42,7 @@ import { capitalise } from '../../i18n/i18n.ts';
 import type { ChildhoodConfig } from '../core/Config.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
 import { mayNurse } from './Nursing.ts';
+import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming.ts';
 
 export type TargetKind =
   'ground' | 'person' | 'node' | 'building' | 'tree' | 'pile' | 'animal' | 'inscription' | 'corpse';
@@ -133,6 +134,8 @@ export interface ActionOption {
 
 export interface CatalogContext {
   world: World;
+  /** Swim fatality threshold for the disabled-option explanation. */
+  drownAt?: number;
   /** True if the actor is standing close enough to water to drink. */
   nearWater: boolean;
   /**
@@ -1031,14 +1034,20 @@ function groundActions(
   ctx: CatalogContext
 ): ActionOption[] {
   const walkable = ctx.world.isWalkable(target.x, target.y);
+  const sameLand = walkable && ctx.world.sameRegion(actor.x, actor.y, target.x, target.y);
+  const swimLink = walkable && !sameLand && ctx.world.sameSwimRegion(actor.x, actor.y, target.x, target.y);
+  const swimProblem = swimLink
+    ? swimRouteRefusal(actor, ctx.drownAt ?? 85) : null;
   const options: ActionOption[] = [
     ...(walkable ? putDownOptions(ctx, 'here') : []),
     {
       id: 'goto',
       label: t('Walk here'),
       icon: '\u{1F45F}',
-      enabled: walkable,
-      reason: walkable ? undefined : t('You cannot walk there'),
+      enabled: walkable && (sameLand || (swimLink && swimProblem === null)),
+      reason: !walkable ? t('You cannot walk there')
+        : swimProblem ? swimRefusalText(swimProblem)
+          : swimLink ? undefined : t('There is no way across'),
     },
     // M11 phase 15d: the way out, for a captive — and the road home, for one
     // who has already slipped away. Offered without asking who is watching:
@@ -1071,6 +1080,16 @@ function groundActions(
       reason: actor.inventory.bestFood() === null ? t('You are carrying no food') : undefined,
     },
   ];
+  if (ctx.world.isWater(target.x, target.y) && !ctx.world.isShallow(target.x, target.y)) {
+    const refusal = swimRefusal(actor, ctx.world, target.x, target.y, ctx.drownAt ?? 85);
+    options.push({
+      id: 'swim',
+      label: t('Swim here'),
+      icon: '\u{1F30A}',
+      enabled: refusal === null,
+      reason: refusal ? swimRefusalText(refusal) : undefined,
+    });
+  }
   // M15 phase 23b: thatch from the standing grass. Offered on the ground it
   // stands on, because the grass is a layer and not a thing with a menu of its
   // own; greyed with the reason when it is too short.

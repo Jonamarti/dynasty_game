@@ -148,7 +148,9 @@ export class LifeSystem {
     inheritTraits(child, mother, father, rng);
 
     for (const skill of SKILLS) {
-      child.skills[skill] = Math.max(0, rng.gaussian(1.5, 1));
+      // Nobody inherits the ability to stay afloat; it is practised. As with
+      // founders, consuming no draw keeps the shared birth stream unchanged.
+      child.skills[skill] = skill === 'swim' ? 0 : Math.max(0, rng.gaussian(1.5, 1));
     }
 
     child.age = 0;

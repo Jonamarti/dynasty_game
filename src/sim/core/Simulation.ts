@@ -97,6 +97,7 @@ import {
 } from '../entities/Inscription.ts';
 import { NAME_ONSETS, NAME_CODAS } from '../../data/names.ts';
 import { t, aNoun, theNoun, language } from '../../i18n/i18n.ts';
+import { handsEmptyForSwimming, swimRefusal, swimRouteRefusal, swimRefusalText } from './Swimming.ts';
 import { sightIntruders, SIGHTING_EVERY, type Sightings, type Territory } from '../social/Fear.ts';
 import { MAP_CELL } from '../social/BandMaps.ts';
 import { feastVenue, isLarder } from '../social/Feast.ts';
@@ -406,6 +407,8 @@ export class Simulation {
    * clock like everyone else's rather than on the frame clock.
    */
   playerIntent: { dx: number; dy: number } | null = null;
+  /** Suppresses a refusal floater repeating every tick while a key is held. */
+  private playerMovementRefusal: string | null = null;
 
   readonly peopleHash = new SpatialHash<Person>(8);
   readonly nodeHash = new SpatialHash<ResourceNode>(8);
@@ -3815,6 +3818,13 @@ export class Simulation {
       return true;
     }
     if (target.x !== undefined && target.y !== undefined) {
+      if (action === 'swim') {
+        const reason = swimRefusal(person, this.world, target.x, target.y, this.config.world.drownAt);
+        if (reason) return this.cancelOrder(person, swimRefusalText(reason));
+        person.targetX = target.x;
+        person.targetY = target.y;
+        return true;
+      }
       // M15 phase 23b: refused where they can see it is pointless, with the
       // reason, rather than walked to and abandoned.
       if (action === 'cut_grass') {
@@ -3867,7 +3877,11 @@ export class Simulation {
         return this.cancelOrder(person, t('they cannot walk there'));
       }
       if (!this.world.sameRegion(person.x, person.y, target.x, target.y)) {
-        return this.cancelOrder(person, t('there is no way across'));
+        if (!this.world.sameSwimRegion(person.x, person.y, target.x, target.y)) {
+          return this.cancelOrder(person, t('there is no way across'));
+        }
+        const reason = swimRouteRefusal(person, this.config.world.drownAt);
+        if (reason) return this.cancelOrder(person, swimRefusalText(reason));
       }
       person.targetX = target.x;
       person.targetY = target.y;
@@ -4100,7 +4114,8 @@ export class Simulation {
   placementRefusal(def: BuildingDef, x: number, y: number): string | null {
     for (let dy = 0; dy < def.height; dy++) {
       for (let dx = 0; dx < def.width; dx++) {
-        // Wading water can be crossed but cannot support huts or dry earthworks.
+        // A ford is traversable, but it cannot hold a hut or a dry earthwork.
+        // Shore installations retain their existing water-edge placement rule.
         if (!this.world.isWalkable(x + dx, y + dy) ||
             (def.placement !== 'shore' && this.world.isWater(x + dx, y + dy))) {
           return t('the ground there will not take it');
@@ -4808,6 +4823,7 @@ export class Simulation {
 
   step(): void {
     this.assertExecutionAuthority();
+    if (!this.playerIntent) this.playerMovementRefusal = null;
     this.time.advance();
     this.rebuildHashes();
 
@@ -4862,6 +4878,17 @@ export class Simulation {
         : isNursling(person, this.config.childhood) ? nurslingFactor : 1,
       babyInArms: (person: Person) => isBabyInArms(person, this.config.childhood),
     });
+
+    // M15 phase 27d: fatigue and cold can overwhelm somebody swimming. This
+    // runs after needs rise and before anyone acts, so crossing the threshold
+    // has one deterministic outcome and cannot be undone by iteration order.
+    for (const person of this.people) {
+      if (!person.alive || !this.world.isSwimTile(person.x, person.y) ||
+          (person.needs.cold <= this.config.world.drownAt && person.needs.fatigue <= this.config.world.drownAt)) continue;
+      person.die('drowned');
+      telemetry.count('death_drowned');
+      if (this.world.isShallow(person.x, person.y)) telemetry.count('drowned_shallows');
+    }
 
     // Memories and relationships age once a day, not every tick. Decaying
     // sixty people's worth of both every step would be the most expensive
@@ -5054,6 +5081,7 @@ export class Simulation {
 
     const brainCtx = {
       world: this.world,
+      drownAt: this.config.world.drownAt,
       time: this.time,
       rng: this.aiRng,
       choiceRng: this.choiceRng,
@@ -5153,6 +5181,7 @@ export class Simulation {
       dayFraction: this.time.dayFraction,
       seasonGrowth: this.time.growth,
       needs: this.config.needs,
+      drownAt: this.config.world.drownAt,
       carry: this.config.carry,
       motivation: this.config.motivation,
       persuasionAuthority: (sponsor: Person, listener: Person) =>
@@ -5199,6 +5228,10 @@ export class Simulation {
       removeCorpse: (corpse: Corpse) => this.removeCorpse(corpse),
       nearestShore: (x: number, y: number) => this.shoreHash.findNearest(x, y, 60,
         tile => this.world.sameRegion(x, y, tile.x, tile.y)),
+      nearestSwimShore: (x: number, y: number) => this.shoreHash.findNearest(x, y,
+        Math.hypot(this.world.width, this.world.height),
+        tile => this.world.isWalkable(tile.x, tile.y) && !this.world.isWater(tile.x, tile.y) &&
+          this.world.sameSwimRegion(x, y, tile.x, tile.y)),
       onEscape: (person: Person) => this.escape(person),
       homeOf: (bandId: number) => {
         const band = this.bands.find(b => b.id === bandId);
@@ -5305,7 +5338,17 @@ export class Simulation {
       if ((underAttack || (!activeNursing && !homeBaby && !activeCarry)) && person.isPlayer && this.playerIntent) {
         person.action = 'walk';
         person.clearTarget();
-        this.movementSystem.nudge(person, this.playerIntent.dx, this.playerIntent.dy);
+        const movementRefusal = this.movementSystem.nudge(person, this.playerIntent.dx, this.playerIntent.dy);
+        if (movementRefusal) {
+          this.lastRefusal = swimRefusalText(movementRefusal);
+          if (this.playerMovementRefusal !== movementRefusal) {
+            this.interruptions.push({ personId: person.id, action: 'swim', reason: movementRefusal, recipe: null });
+            if (this.interruptions.length > this.interruptionCap) this.interruptions.shift();
+          }
+          this.playerMovementRefusal = movementRefusal;
+        } else {
+          this.playerMovementRefusal = null;
+        }
         continue;
       }
 
@@ -5568,19 +5611,34 @@ export class Simulation {
    * moved and acts on those whose tile is no longer land:
    *
    *  - people are set on the nearest walkable tile and told why (their order
-   *    ends with `ground_gave_way`),
-   *  - heaps of goods and bodies are carried to the nearest land,
-   *  - trees and plants cannot move: they drown and leave the world.
+   *    ends with `ground_gave_way`), except swimmers who can safely swim,
+   *  - heaps of goods and bodies are carried to dry land, even if the ford is
+   *    shallow enough for a person to walk through,
+   *  - trees and plants cannot move: any flood drowns them and they leave.
    *
    * No RNG, fixed array order, `findWalkableNear`'s fixed spiral: two builds
    * relocate the same things to the same tiles.
    */
   private clearLostGround(): void {
     const world = this.world;
-    const lost = (x: number, y: number): boolean => world.inBounds(x, y) && !world.isWalkable(x, y);
+    const lost = (x: number, y: number): boolean => world.inBounds(x, y) &&
+      !world.isWalkable(x, y) && !world.isSwimTile(x, y);
+    const flooded = (x: number, y: number): boolean => world.inBounds(x, y) && world.isWater(x, y);
+    const lostPerson = (person: Person): boolean => {
+      if (!world.inBounds(person.x, person.y) || world.isWalkable(person.x, person.y)) return false;
+      if (!world.isSwimTile(person.x, person.y)) return true;
+      return !handsEmptyForSwimming(person) || person.needs.cold >= world.drownAt ||
+        person.needs.fatigue >= world.drownAt;
+    };
+    const dryBank = (x: number, y: number): { x: number; y: number } | null =>
+      this.shoreHash.findNearest(x, y, Math.hypot(world.width, world.height),
+        tile => world.isWalkable(tile.x, tile.y) && !world.isWater(tile.x, tile.y)) ??
+      world.findWalkableNear(Math.floor(x), Math.floor(y));
     for (const person of this.people) {
-      if (!person.alive || !lost(person.x, person.y)) continue;
-      const bank = world.findWalkableNear(Math.floor(person.x), Math.floor(person.y));
+      if (!person.alive || !lostPerson(person)) continue;
+      const bank = world.isWater(person.x, person.y)
+        ? dryBank(person.x, person.y)
+        : world.findWalkableNear(Math.floor(person.x), Math.floor(person.y));
       if (!bank) continue;
       const action = person.action;
       person.x = bank.x + 0.5;
@@ -5592,8 +5650,10 @@ export class Simulation {
       telemetry.count('stranded_moved');
     }
     for (const pile of [...this.piles]) {
-      if (!lost(pile.x, pile.y)) continue;
-      const bank = world.findWalkableNear(Math.floor(pile.x), Math.floor(pile.y));
+      if (!lost(pile.x, pile.y) && !flooded(pile.x, pile.y)) continue;
+      const bank = flooded(pile.x, pile.y)
+        ? dryBank(pile.x, pile.y)
+        : world.findWalkableNear(Math.floor(pile.x), Math.floor(pile.y));
       if (!bank) continue;
       // Out of the index first: `dropAt` joins the nearest heap, and the
       // nearest one to the bank could be this very pile.
@@ -5603,17 +5663,25 @@ export class Simulation {
       telemetry.count('stranded_moved');
     }
     for (const corpse of this.corpses) {
-      if (!lost(corpse.x, corpse.y)) continue;
-      const bank = world.findWalkableNear(Math.floor(corpse.x), Math.floor(corpse.y));
+      if (!lost(corpse.x, corpse.y) && !flooded(corpse.x, corpse.y)) continue;
+      const bank = flooded(corpse.x, corpse.y)
+        ? dryBank(corpse.x, corpse.y)
+        : world.findWalkableNear(Math.floor(corpse.x), Math.floor(corpse.y));
       if (!bank) continue;
       corpse.x = bank.x + 0.5;
       corpse.y = bank.y + 0.5;
       this.corpseHash.rebuild(this.corpses);
       telemetry.count('stranded_moved');
     }
-    const drownedTrees = this.trees.filter(tree => lost(tree.x, tree.y));
+    const drownedTrees = this.trees.filter(tree => lost(tree.x, tree.y) || flooded(tree.x, tree.y));
     for (const tree of drownedTrees) this.removeTree(tree);
-    const drownedNodes = this.nodes.filter(node => lost(node.x, node.y));
+    // Fishing spots are deliberately placed in walkable shallows. The sweep
+    // runs after any earth edit, not only edits touching a node, so treating
+    // every water tile as a flood would erase every natural fishing spot on
+    // the first unrelated dig. A spot only leaves when its own tile becomes
+    // too deep to fish from.
+    const drownedNodes = this.nodes.filter(node => lost(node.x, node.y) ||
+      (flooded(node.x, node.y) && (node.kind !== 'fish' || !world.isShallow(node.x, node.y))));
     if (drownedNodes.length > 0) {
       for (const node of drownedNodes) {
         this.nodesById.delete(node.id);
@@ -5668,6 +5736,14 @@ export class Simulation {
         const wounded = (person.causeOfDeath ?? '').startsWith('killed') ||
           this.time.tick - person.lastHarmedTick < WOUNDS_SHOW_FOR;
         const corpse = new Corpse(person, this.time.tick, wounded, this.ids);
+        if (person.causeOfDeath === 'drowned') {
+          // The body washes to a bank instead of remaining where it sank. This
+          // query uses the same shore hash as drinking and dragging; no tile
+          // array is scanned and equal-distance ties stay deterministic.
+          const shore = this.shoreHash.findNearest(person.x, person.y,
+            Math.hypot(this.world.width, this.world.height));
+          if (shore) { corpse.x = shore.x + 0.5; corpse.y = shore.y + 0.5; }
+        }
         this.corpses.push(corpse);
         this.corpsesById.set(corpse.id, corpse);
         anyBody = true;

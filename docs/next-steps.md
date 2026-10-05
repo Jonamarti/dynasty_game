@@ -3,7 +3,9 @@
 **2026-10-05: fase 27 en integración.** Fondo y colores comparten umbrales
 de profundidad; los bajíos son caminables y dejan humedad visible en el
 inspector. Los peces ya están en agua somera y una lanza equipada mejora la
-captura. Siguiente: cerrar natación con manos vacías y medir el coste conjunto.
+captura. La natación admite manos vacías y cesta compatible, con razones de
+negativa, frío/cansancio y ahogamiento determinista. Siguiente: cerrar los
+checks y medir el coste conjunto a veinte semillas en toda la matriz.
 La clasificación
 de agua dulce y los inicios geográficos poblados esperan a 30.
 [Contrato de profundidad](m15_phase27_depth.md).

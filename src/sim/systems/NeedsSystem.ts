@@ -134,6 +134,11 @@ export class NeedsSystem {
       const hungerFactor = hooks.hungerFactor?.(person) ?? 1;
       person.needs.hunger = Math.min(100, person.needs.hunger + cfg.hungerRate * hungerFactor);
       const baby = hooks.babyInArms?.(person) ?? false;
+      // Water is physically taxing regardless of what the person was doing
+      // when they entered it. Key this from position so a routed forage or a
+      // stationary swimmer cannot bypass the drowning clock by keeping a
+      // different action label.
+      const swimming = this.world?.isSwimTile(person.x, person.y) ?? false;
 
       // Thirst is the one need that answers to what you are *doing*.
       //
@@ -162,8 +167,8 @@ export class NeedsSystem {
       // about only ever showed up as a baby in a black mood.
       if (baby) {
         person.needs.fatigue = 0;
-      } else if (person.action !== 'rest' && person.action !== 'sleep') {
-        person.needs.fatigue = Math.min(100, person.needs.fatigue + cfg.fatigueRate);
+      } else if (swimming || (person.action !== 'rest' && person.action !== 'sleep')) {
+        person.needs.fatigue = Math.min(100, person.needs.fatigue + cfg.fatigueRate * (swimming ? 3 : 1));
       }
 
       // Shelter is the first real answer to winter. Standing inside a finished
@@ -205,7 +210,7 @@ export class NeedsSystem {
       }
       const effectiveShelter = Math.max(shelter, hearth);
       const wetChill = person.wet > 0 ? 1 : 0;
-      const effectiveChill = (chill + wetChill) * (1 - effectiveShelter);
+      const effectiveChill = (chill * (swimming ? 3 : 1) + wetChill) * (1 - effectiveShelter);
       const effectiveWarming = warming + effectiveShelter * 0.8;
       person.needs.cold = Math.max(
         0,

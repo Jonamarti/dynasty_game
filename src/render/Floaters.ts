@@ -138,6 +138,7 @@ export const ACTION_LABELS: Record<string, string> = {
   goto: 'walking',
   go_home: 'going home',
   walk: 'walking',
+  swim: 'swimming',
   drink: 'drinking',
   eat: 'eating',
   ask_water: 'asking where the water is',
@@ -266,6 +267,9 @@ export function actionLabel(
 export const STOP_REASONS: Record<string, string> = {
   // Ran out of room, need or patience.
   hands_full: 'their hands are full',
+  hands_not_empty: 'they had to put down what they were carrying',
+  too_deep: 'the water was too deep to swim',
+  too_cold_to_swim: 'they were too cold or tired to swim safely',
   thirsty: 'they stopped for a drink',
   hungry: 'they stopped to eat',
   cold: 'they were too cold to carry on',

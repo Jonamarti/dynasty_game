@@ -34,7 +34,7 @@ import type { IdSpace } from '../core/IdSpace.ts';
  */
 export const SKILLS = [
   'forage', 'hunt', 'knap', 'build', 'cook',
-  'fight', 'persuade', 'teach', 'heal', 'track', 'farm', 'smith',
+  'fight', 'persuade', 'teach', 'heal', 'track', 'farm', 'smith', 'swim',
 ] as const;
 export type Skill = (typeof SKILLS)[number];
 
@@ -43,7 +43,7 @@ export type Skill = (typeof SKILLS)[number];
  * Talking, teaching and tracking are done with something else.
  */
 const MANUAL_SKILLS: ReadonlySet<Skill> = new Set<Skill>([
-  'forage', 'hunt', 'knap', 'build', 'cook', 'fight', 'heal', 'farm', 'smith',
+  'forage', 'hunt', 'knap', 'build', 'cook', 'fight', 'heal', 'farm', 'smith', 'swim',
 ]);
 
 /** Where each skill sits in `Person.alongside`. Built once, read per practice. */
@@ -918,7 +918,11 @@ export class Person {
     this.memory = new Memory(this.id);
 
     this.skills = {} as Record<Skill, number>;
-    for (const skill of SKILLS) this.skills[skill] = Math.max(0, rng.gaussian(8, 5));
+    for (const skill of SKILLS) {
+      // M15 phase 27d: swimmers begin untrained. Drawing a founding value
+      // here would shift every later founder's traits and starting equipment.
+      this.skills[skill] = skill === 'swim' ? 0 : Math.max(0, rng.gaussian(8, 5));
+    }
 
     this.traits = {} as Record<Trait, number>;
     for (const trait of TRAITS) this.traits[trait] = Math.max(0, Math.min(1, rng.gaussian(0.5, TRAIT_SPREAD)));

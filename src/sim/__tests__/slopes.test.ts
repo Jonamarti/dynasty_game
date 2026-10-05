@@ -3,7 +3,7 @@
  * the route.
  */
 import { describe, it, expect } from 'vitest';
-import { World } from '../core/World.ts';
+import { BIOME_ID, World } from '../core/World.ts';
 import { DEFAULT_CONFIG } from '../core/Config.ts';
 import { RNG } from '../core/RNG.ts';
 import { moveToward } from '../systems/MovementSystem.ts';
@@ -15,6 +15,9 @@ function plain(slopeCost = DEFAULT_CONFIG.world.slopeCost): World {
   for (let i = 0; i < w.width * w.height; i++) {
     w.elevation[i] = 0.5;
     w.walkable[i] = 1;
+    // Water is a biome now, not just a walkability value. Keep this synthetic
+    // movement fixture genuinely dry so wading costs do not mask slope costs.
+    w.biome[i] = BIOME_ID.grass;
     w.offset[i] = 0;
   }
   // The regions were drawn for the island this started as; redraw them for the field.

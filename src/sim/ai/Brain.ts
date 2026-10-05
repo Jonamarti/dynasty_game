@@ -93,9 +93,12 @@ import { canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
 import { expectationRatio, techAppeal } from './Beliefs.ts';
 import { bondBetween } from './Bond.ts';
 import { support } from '../social/Persuasion.ts';
+import { handsEmptyForSwimming } from '../core/Swimming.ts';
 
 export interface BrainContext {
   world: World;
+  /** Cold/fatigue limit for the estimated swimming route. */
+  drownAt?: number;
   time: TimeManager;
   rng: RNG;
   /**
@@ -3795,9 +3798,9 @@ export class Brain {
     // so resolve it directly: snapping it back through a hash with a 1-tile
     // tolerance loses valid records when several shores share a 4x4 cell.
     const visible = ctx.shoreHash.findNearest(person.x, person.y, ctx.sightRadius,
-      tile => ctx.world.sameRegion(person.x, person.y, tile.x, tile.y));
+      tile => this.canTravelTo(person, tile.x, tile.y, ctx));
     const remembered = person.placeMemory.nearest('water', person.x, person.y,
-      place => ctx.world.sameRegion(person.x, person.y, place.x, place.y));
+      place => this.canTravelTo(person, place.x, place.y, ctx));
     const shore = visible && remembered
       ? person.distanceTo(visible) <= person.distanceTo(remembered) ? visible : remembered
       : visible ?? remembered;
@@ -3826,6 +3829,19 @@ export class Brain {
     if (!well) return shore;
     if (!shore) return well;
     return wellDist < person.distanceTo(shore) ? well : shore;
+  }
+
+  /** A deliberate need may justify swimming, provided the estimated crossing
+   * still leaves room before fatigue or cold reaches the fatal limit. */
+  private canTravelTo(person: Person, x: number, y: number, ctx: BrainContext): boolean {
+    if (ctx.world.sameRegion(person.x, person.y, x, y)) return true;
+    if (!handsEmptyForSwimming(person) || !ctx.world.sameSwimRegion(person.x, person.y, x, y)) return false;
+    const limit = ctx.drownAt ?? 85;
+    const ticks = person.distanceTo({ x, y }) * 6 / 0.32;
+    const fatigueRate = ctx.needs.fatigueRate * 3;
+    const coldRate = ctx.needs.coldRate * 3 * Math.max(0, -ctx.time.temperature);
+    return person.needs.fatigue + ticks * fatigueRate < limit &&
+      person.needs.cold + ticks * coldRate < limit;
   }
 
   /** A deterministic frontier walk after thirst or curiosity calls for discovery. */
@@ -4046,12 +4062,12 @@ export class Brain {
     // let children forage beyond sight without ever knowing the food existed.
     if (person.isChild) {
       return ctx.nodeHash.findNearest(person.x, person.y, ctx.sightRadius,
-        n => filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y) &&
+        n => filter(n) && this.canTravelTo(person, n.x, n.y, ctx) &&
           !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
           (!enforceReach || withinReach(anchor, reach, n.x, n.y)));
     }
     const eligible = (n: ResourceNode) =>
-      filter(n) && ctx.world.sameRegion(person.x, person.y, n.x, n.y) &&
+      filter(n) && this.canTravelTo(person, n.x, n.y, ctx) &&
       !(n.def.groundLevel && ctx.snowBuries && isBuried(n.x, n.y, ctx.snowDepth, ctx.treeHash)) &&
       (!enforceReach || withinReach(anchor, reach, n.x, n.y));
     // Preserve the established local choice, including SpatialHash's stable
@@ -4136,7 +4152,9 @@ export class Brain {
       // the sloes by the same stream are not.
       const season = ctx.time.season;
       const accepts = (memory: PlaceRecord) => {
-        if (memory.amount <= 0 || !ctx.world.sameRegion(person.x, person.y, memory.x, memory.y)) return false;
+        // Remembered food must use the same permitted travel medium as food
+        // in sight, or hearing about an island silently removes the candidate.
+        if (memory.amount <= 0 || !this.canTravelTo(person, memory.x, memory.y, ctx)) return false;
         if (memory.visual?.type === 'bush' && person.seasonLore.barrenIn(`bush:${memory.visual.species}`, season)) {
           telemetry.count('remembered_bush_out_of_season');
           return false;

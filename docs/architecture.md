@@ -154,10 +154,12 @@ current heightfield below the water surface. Water under `wadeDepth` belongs to
 the walking components and shores; walking there takes 0.4 of normal speed and
 refreshes the person's wet timer. Dry ground and a lit hearth let it expire;
 wetness adds chill. The HUD explains this through the existing condition
-knowledge gate. `swimRegion` and Pathfinder's mode support prepare water routes;
-the actor permissions and execution are added in phase 27d. Terrain checkpoints
+knowledge gate. `swimRegion` and Pathfinder's mode connect land through swim-depth
+water at cost six. Actors share cargo/safety gates; physical immersion drives
+needs and deterministic drowning. Terrain checkpoints
 retain both component graphs and their invalidation state. See
-[m15_phase27_wading.md](m15_phase27_wading.md).
+[m15_phase27_wading.md](m15_phase27_wading.md) and
+[m15_phase27d_swimming.md](m15_phase27d_swimming.md).
 
 `world/WorldGeography.ts` is the pure geographic facade for classic, random and
 Earth maps. Source-specific profiles keep normalized random relief separate

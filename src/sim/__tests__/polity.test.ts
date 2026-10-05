@@ -546,7 +546,11 @@ describe('slavery: the captive as a serf', () => {
     for (const a of serfs) for (const b of serfs) if (a !== b) {
       for (let i = 0; i < 3; i++) sim.relationships.addDeed(a.id, b.id, 20, sim.time.tick);
     }
-    for (let i = 0; i <= sim.config.time.ticksPerDay; i++) sim.step();
+    // Crossing water now lets an unwatched captive escape independently before
+    // the daily revolt settles. Invoke the daily mechanism directly so this
+    // test distinguishes the joint rising from an unrelated individual escape.
+    (sim as unknown as { settleSerfs: () => void }).settleSerfs();
+    expect(telemetry.get('serf_revolt')).toBeGreaterThan(0);
     for (const serf of serfs) {
       expect(serf.bandId).not.toBe(ours.id);
       expect(serf.serfOf).toBeNull();
