@@ -1,3 +1,13 @@
+## 2026-10-05 — M15 fase 29c: bibliografía auditable de las semillas
+
+Cada fila de recursos/antepasados tiene una referencia bibliográfica explícita.
+El atlas y su generador declaran que el mapa antiguo conserva clima moderno;
+la bajada del mar no equivale a reconstruir paleoclima o rangos silvestres.
+Cuatro pruebas focales pasan y el e2e geográfico pasa 1/1. La revisión detecta
+discrepancias de datos que quedan en `bugs.md`; no se mueven posiciones ni se
+declara completa la fuente histórica. [Contrato](m15_phase29_sources.md).
+Captura revisada: `artifacts/screenshots/m15-phase29-sources-2026-10-05/`.
+
 ## 2026-10-05 — M15 fase 29: conservar la raíz geográfica
 
 El checkpoint local perdía el mapa, la posición y la extensión que habían

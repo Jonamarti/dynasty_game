@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decodeWorldRaster } from '../world/WorldBinary.ts';
 import { RealWorldMap } from '../world/RealWorldMap.ts';
-import { WORLD_FEATURE } from '../world/WorldFeatureSeeds.ts';
+import { WORLD_FEATURE, WORLD_FEATURE_SEEDS, WORLD_FEATURE_SOURCE_IDS } from '../world/WorldFeatureSeeds.ts';
 
 describe('pregenerated Earth maps', () => {
   it('ships two compact, correctly sized climate and elevation grids', () => {
@@ -27,6 +27,20 @@ describe('pregenerated Earth maps', () => {
     expect(landThen).toBeGreaterThan(landNow);
     expect(Array.from(glacial.koppen)).toEqual(Array.from(present.koppen));
     expect(Array.from(glacial.features!)).toEqual(Array.from(present.features!));
+  });
+
+  it('keeps bibliography provenance on every broad feature seed and labels the climate baseline honestly', () => {
+    expect(WORLD_FEATURE_SEEDS.length).toBeGreaterThan(0);
+    expect(WORLD_FEATURE_SEEDS.every(seed => WORLD_FEATURE_SOURCE_IDS.includes(seed.source))).toBe(true);
+    const sourceNotes = readFileSync('public/world/SOURCES.md', 'utf8');
+    expect(WORLD_FEATURE_SOURCE_IDS.every(id => sourceNotes.includes(`\`${id}\``))).toBe(true);
+    const manifest = JSON.parse(readFileSync('public/world/manifest.json', 'utf8')) as {
+      climate: string; paleoclimate: string;
+    };
+    expect(manifest.climate).toContain('present-day 1980-2016');
+    expect(manifest.paleoclimate).toContain('Not represented');
+    expect(manifest.paleoclimate).toContain('retains 1980-2016 climate classes');
+    expect(manifest.paleoclimate).toContain('No past climate or resource ranges');
   });
 
   it('keeps real atlas coordinates aligned with Iberia and the central Pacific', () => {

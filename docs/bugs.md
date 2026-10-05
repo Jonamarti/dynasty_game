@@ -1,3 +1,23 @@
+## M15 fase 29c: semillas y fuentes históricas incompletas (2026-10-05)
+
+La bibliografía por fila permite ver deudas antes ocultas:
+
+- Sorgo (13°N, 1°E): la semilla está en Sahel occidental, pero la evidencia
+  citada procede del Sudán oriental, unos 35° más al este.
+- Caballo (48°N, 35°E): está al oeste del foco Volga–Don citado; el estudio
+  trata el linaje doméstico moderno, no la distribución completa del caballo silvestre.
+- Oro (25°N, 33°E): el nombre Sinaí no concuerda con el punto, situado al sur;
+  la referencia al desierto oriental/Nubia no valida ese centroide.
+- Sílex levantino: falta evidencia geológica local para el punto guardado.
+- Sal del mar Muerto: la evidencia de precipitación moderna de halita no
+  demuestra acceso/explotación prehistórica en la celda.
+
+Los centros se conservan para no cambiar los binarios en una entrega de
+procedencia. Corregirlos exige nuevas fuentes, mover semillas y regenerar
+los dos atlas en un commit propio. El mapa antiguo sigue sin paleoclima;
+las clases Köppen y flags son los mismos que en el mapa moderno.
+[Bibliografía y límites](../public/world/SOURCES.md).
+
 ## Fase 24: plantar cuesta supervivencia en `orchard` (abierto, 2026-10-05)
 
 Veinte semillas: 86,6 % con `arboriculture` frente a 91,7 % sin él (−5,1 puntos;

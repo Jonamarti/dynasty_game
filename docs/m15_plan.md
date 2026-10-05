@@ -2735,6 +2735,17 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Avance del 2026-10-05: procedencia por semilla y límites del atlas.**
+Cada semilla regional lleva una clave bibliográfica; `SOURCES.md` documenta
+evidencia, licencia y límites. El manifiesto y el generador declaran que el
+mapa antiguo solo modifica el nivel del mar: no contiene paleoclima ni rangos
+históricos de recursos. La regresión de activos pasa 4/4. No se alteran los
+binarios ni las posiciones. Persisten discrepancias de sorgo/caballo/oro y
+evidencia insuficiente de sílex levantino/sal del mar Muerto, registradas en
+`bugs.md`; la puerta de fuentes completas sigue abierta.
+[Detalle](m15_phase29_sources.md). Captura geográfica nueva revisada:
+`artifacts/screenshots/m15-phase29-sources-2026-10-05/`.
+
 **Avance del 2026-10-05: checkpoint de la raíz geográfica.**
 `WorldStateRecord` v1 conserva posición/extensión, semilla y rejilla aleatoria,
 o entrada y raster Earth autocontenido, junto al checkpoint local existente.

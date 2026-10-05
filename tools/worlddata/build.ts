@@ -57,6 +57,7 @@ export async function buildWorldData(options: WorldDataBuildOptions = {}): Promi
     regionDegrees: 3.75,
     comarcasPerRegion: 10,
     climate: 'Köppen-Geiger present-day 1980-2016, Beck et al. (2018), sampled at 0.5 degrees',
+    paleoclimate: 'Not represented: the about-12000-years-ago map applies a -60 m sea level to present-day ETOPO elevation and retains 1980-2016 climate classes and unchanged regional feature seeds. No past climate or resource ranges are modeled.',
     maps: [
       { id: 'earth-12000-bce', title: 'Earth, about 12,000 years ago', file: 'earth-12000-bce.bin', seaLevelMeters: -60, recommended: true },
       { id: 'earth-present', title: 'Earth today', file: 'earth-present.bin', seaLevelMeters: 0, recommended: false },
