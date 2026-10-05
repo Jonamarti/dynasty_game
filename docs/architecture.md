@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-04 (M15 local geographic inspection and atlas alignment). No runtime
+Current as of 2026-10-05 (M15 geographic root records and provisional global benchmark). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout

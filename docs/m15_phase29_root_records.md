@@ -32,3 +32,7 @@ La prueba cubre reanudación determinista en un mapa aleatorio, restauración
 Earth offline e independiente, compatibilidad clásica y rechazos de registros
 malformados. Esta envoltura no habilita inicios con población en mapas
 geográficos; la semántica local de agua dulce sigue siendo la puerta de fase 30.
+
+El rechazo de población y la consistencia modo/selección se comprueban también
+en `WorldState.fromRestored`, no solo en el codec. La regresión directa impide
+que otro consumidor del ensamblado público eluda esta dependencia.

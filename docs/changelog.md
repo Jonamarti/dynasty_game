@@ -1,3 +1,15 @@
+## 2026-10-05 — M15 fase 29: proteger también el ensamblado directo
+
+La revisión independiente detectó que `WorldState.fromRestored` podía unir un
+motor poblado a geografía macro aunque el lector JSON lo rechazaba. El mismo
+rechazo vive ahora en la fábrica compartida; valida además modo/selección.
+La regresión llama directamente a esa API y pasa con el arreglo. Typecheck,
+tres tests focales y e2e geográfico 1/1 pasan. Captura nueva del hito:
+`artifacts/screenshots/m15-phase29-root-guard-2026-10-05/`.
+El informe del banco aclara picos estacionales, smoke de un año y tamaño
+del fixture frente al guardado completo. La revisión completa posterior
+y la comparación de matrices se registran al cerrar la pasada.
+
 ## 2026-10-05 — M15 fase 29d: banco global provisional
 
 `world:bench` mide 200 años de bucles estacionales sobre 2.440 registros

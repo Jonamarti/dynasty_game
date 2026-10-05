@@ -155,8 +155,5 @@ export function fromWorldStateRecord(input: unknown): WorldState {
     start = { geography, start: { x, y }, comarcasWide, comarcasHigh };
   } else if (geography.kind !== 'legacyIsland') invalid('geographic map needs a start');
   const current = Simulation.fromCheckpointRecord(input.simulation);
-  if (start && (current.config.population.bands !== 0 || current.people.length > 0 || current.bands.length > 0)) {
-    invalid('geographic starts cannot restore a populated simulation before freshwater support');
-  }
   return WorldState.fromRestored(current, geography, start);
 }

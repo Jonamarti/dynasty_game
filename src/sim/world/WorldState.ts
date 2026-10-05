@@ -50,6 +50,16 @@ export class WorldState {
   /** Join an independently restored Simulation checkpoint to its world root. */
   static fromRestored(current: Simulation, geography: WorldGeography,
     geographicStart: WorldStateGeographicStart | null): WorldState {
+    // The JSON reader is not the only caller of this public assembly path.
+    // Attaching macro metadata must not bypass the constructor's freshwater gate.
+    if (geography.kind !== 'legacyIsland' &&
+        (current.config.population.bands !== 0 || current.people.length > 0 || current.bands.length > 0)) {
+      throw new RangeError('Geographic starts cannot restore a populated simulation before freshwater support');
+    }
+    if ((geography.kind === 'legacyIsland') !== (geographicStart === null) ||
+        (geographicStart && geographicStart.geography !== geography)) {
+      throw new RangeError('Restored geography must match its starting placement');
+    }
     const state = Object.create(WorldState.prototype) as WorldState;
     Object.defineProperties(state, {
       geography: { value: geography, enumerable: true },

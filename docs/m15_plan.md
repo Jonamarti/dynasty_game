@@ -2735,6 +2735,14 @@ de cada casa (en el libro de la comarca, fase 32c) y las obras de tierra (26).
 
 ## Fase 29 — El mundo por encima de la comarca: aleatorio o la Tierra real (M14 fase 11; petición 9)
 
+**Revisión del 2026-10-05: cierre de la vía pública de ensamblado.**
+El rechazo de población geográfica vive ahora en `WorldState.fromRestored`,
+por donde pasa también el lector JSON. Una llamada directa ya no puede saltar
+la dependencia de agua dulce. La fábrica comprueba que el modo y la geografía
+concuerden con la selección retenida. Tres tests focales y typecheck pasan;
+el e2e de inspección pasa 1/1. Captura de hito:
+`artifacts/screenshots/m15-phase29-root-guard-2026-10-05/`.
+
 **Avance del 2026-10-05: banco provisional de coste global.**
 `npm.cmd run world:bench` carga el atlas y mide 200 años de un fixture con
 2.440 registros y bucles de requisitos técnicos, relaciones, comercio y RNG.

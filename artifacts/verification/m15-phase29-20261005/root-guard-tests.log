@@ -1,0 +1,13 @@
+
+> dynasty@0.0.0 test
+> vitest run --maxWorkers=1 --testTimeout=60000 src/sim/__tests__/world-state-records.test.ts
+
+
+ RUN  v4.1.11 C:/Users/Marty/Documents/Work/Programs/dynastyGame
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  19:11:15
+   Duration  3.65s (transform 1.54s, setup 0ms, import 3.07s, tests 305ms, environment 0ms)
+

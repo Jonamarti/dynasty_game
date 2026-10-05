@@ -15,6 +15,13 @@ walks neighbor relations and trade routes, and advances each record's stream.
 It runs four passes per game year. The clock uses `DEFAULT_CONFIG`:
 240 ticks/day × 10 days/season × 4 seasons = 9,600 simulation ticks/year.
 
+Each pass visits all records synchronously. The reported per-tick figure is
+amortized arithmetic, not a measurement of peak frame/step latency or a
+distributed scheduler. `--years 1` is a smoke run even when the cost check says
+`passed`; the formal workload evidence uses 200 years. Serialized bytes describe
+only these aggregate fixture records, not a complete game save with local
+terrain, known identities and history.
+
 This is a synthetic workload fixture, not the missing `PeopleSim`. It does
 not change population or grant technologies: demographic arithmetic is consumed
 by a checksum, and requirements are scanned without an invention roll. It has

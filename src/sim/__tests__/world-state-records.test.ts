@@ -85,5 +85,11 @@ describe('WorldState JSON envelope', () => {
     attached.geography = { kind: 'random', seed: 'other-map', regionsWide: 8, regionsHigh: 4 };
     attached.start = { x: 10, y: 10, comarcasWide: 1, comarcasHigh: 1 };
     expect(() => fromWorldStateRecord(attached)).toThrow(/populated simulation before freshwater support/i);
+    const map = randomWorldGeography('other-map', { regionsWide: 8, regionsHigh: 4 });
+    expect(() => WorldState.fromRestored(populated.current, map,
+      { geography: map, start: { x: 10, y: 10 } }))
+      .toThrow(/populated simulation before freshwater support/i);
+    expect(() => WorldState.fromRestored(classic.current, map, null))
+      .toThrow(/geography must match its starting placement/i);
   });
 });

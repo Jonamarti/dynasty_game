@@ -24,18 +24,20 @@ sílex: el mapa aleatorio consulta los recursos de su región y Earth usa sus
 flags regionales aproximados. Bayas, ramas, juncos y arcilla todavía dependen
 solo de la adecuación del terreno local; peces dependen de la costa que deriva
 el `World` actual. Las semillas de recursos y antepasados de Earth siguen
-siendo zonas aproximadas, con bibliografía por semilla pendiente. Otros
+siendo zonas aproximadas, ahora con bibliografía por semilla y discrepancias
+abiertas descritas en [m15_phase29_sources.md](m15_phase29_sources.md). Otros
 recursos macro no tienen todavía un tipo de nodo local correspondiente.
 
 Las pasadas geográficas de nodos usan corrientes derivadas de la semilla, el
 mapa, la posición, la extensión y el tipo de recurso. No añaden draws a los
 forks de `Simulation`. La generación clásica mantiene su ruta y orden
 anteriores. Tras construir el mundo, `Simulation` descarta el adaptador y la
-selección de inicio; `WorldState` conserva el objeto geográfico, pero no la
-posición ni la extensión local. El `CheckpointRecord` conserva las matrices y
-los nodos para continuar el motor, pero no conserva el ID del mapa ni las
-coordenadas globales. Habrá que registrar esos metadatos antes de guardar o
-mostrar una partida con navegación global.
+selección de inicio. Desde el 2026-10-05 `WorldState` conserva también una copia
+inmutable de posición y extensión; `WorldStateRecord` envuelve el checkpoint
+local con geografía independiente y entrada/raster Earth offline.
+El `CheckpointRecord` aislado sigue conservando solo las matrices y nodos,
+sin ID del mapa ni coordenadas globales. Para recuperar la raíz completa se
+usan [los registros de WorldState](m15_phase29_root_records.md).
 
 Esta integración no crea pueblos, libros de comarcas abandonadas, fauna
 regional ni un scheduler global. Tampoco habilita una partida geográfica con
