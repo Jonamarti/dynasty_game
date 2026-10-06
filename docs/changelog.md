@@ -1,3 +1,14 @@
+## 2026-10-06 — M15 fase 30: hidratación continental de la leche
+
+La leche quita cinco puntos de sed en mundos continentales, completando el
+puente de fruta/leche de M14 12c. `hydrationOf` concentra la política y la usan
+IA, comida de mochila, cosecha, fiesta, entrega a niños y consumo desde la UI.
+La isla clásica conserva la leche sin hidratación, para no desplazar sus
+decisiones históricas. Tests de macros y consumidores reales comprueban
+ambos modos y una orden de comer tras guardar/cargar JSON. La suite integrada
+pasa 1.108 tests en 161 archivos, typecheck y 83 e2e. Registro visual de esta
+integración: `artifacts/screenshots/m15-phase30-closure-2026-10-06T-01/`.
+
 ## 2026-10-06 — M15 fase 30: cauces compartidos y vados globales
 
 Los mapas vecinos consultan una red fluvial común, con nodos globales en giros

@@ -2977,6 +2977,12 @@ Captura revisada del giro: `artifacts/screenshots/m15-phase30-continuity-2026-10
 La cohorte continental de veinte semillas y la verificación integrada están
 en curso; el cierre se registra con sus resultados.
 
+**Segunda pasada del 2026-10-06: leche hidratante.** La política compartida
+aplica cinco puntos de alivio de sed a la leche continental, incluida IA,
+comida directa y comidas compartidas. Clásico conserva su resultado anterior.
+Macros, consumo real y continuación JSON tienen regresiones; la suite
+integrada pasa 1.108 tests. Capturas: `artifacts/screenshots/m15-phase30-closure-2026-10-06T-01/`.
+
 **Avance del 2026-10-06: terreno y registros de agua local.** `river` se añade
 al final de los biomas; las orillas dulces/saladas y las superficies fluviales
 se conservan en terreno geográfico v2. Zanjas heredan el agua de su origen.

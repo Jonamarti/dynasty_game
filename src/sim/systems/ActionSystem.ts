@@ -1241,7 +1241,8 @@ export class ActionSystem {
     const foodId = preferred && person.inventory.has(preferred)
       ? preferred
       : bestFoodFor(person, undefined, ctx.motivation.cravings, ctx.motivation.beliefChoice);
-    if (!foodId || !consumeFood(person, foodId, ctx.tick, ctx.motivation.cravings, ctx.healthRng)) {
+    if (!foodId || !consumeFood(person, foodId, ctx.tick, ctx.motivation.cravings, ctx.healthRng,
+      ctx.world.waterKind !== undefined)) {
       this.abandon(person, 'no_food', ctx);
       return;
     }
@@ -1488,7 +1489,8 @@ export class ActionSystem {
     if (feeds && person.needs.hunger >= ctx.carry.eatAtSourceAt) {
       while (eatenAtSource < yieldUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
         node.amount > 0 && node.take(1) > 0) {
-        consumeFoodAtSource(person, node.itemId, ctx.tick, ctx.motivation.cravings, ctx.healthRng);
+        consumeFoodAtSource(person, node.itemId, ctx.tick, ctx.motivation.cravings, ctx.healthRng,
+          ctx.world.waterKind !== undefined);
         person.handled.set(node.itemId, ctx.tick);
         eatenAtSource++;
         telemetry.count('ate_at_source');
@@ -2108,7 +2110,8 @@ export class ActionSystem {
       person.needs.hunger >= ctx.carry.eatAtSourceAt) {
       while (eatenAtSource < yieldUnits && person.needs.hunger >= ctx.carry.eatAtSourceAt &&
         tree.fruit > 0 && tree.pick(1) > 0) {
-        consumeFoodAtSource(person, fruitId, ctx.tick, ctx.motivation.cravings, ctx.healthRng);
+        consumeFoodAtSource(person, fruitId, ctx.tick, ctx.motivation.cravings, ctx.healthRng,
+          ctx.world.waterKind !== undefined);
         person.handled.set(fruitId, ctx.tick);
         eatenAtSource++;
         telemetry.count('ate_at_source');
@@ -3108,7 +3111,8 @@ export class ActionSystem {
         else person.inventory.remove(dish, 1);
         // `consumeFoodAtSource` eats one unit that never entered the pack —
         // the plate is set down and eaten, not carried off.
-        consumeFoodAtSource(guest, dish, ctx.tick, ctx.motivation.cravings, ctx.healthRng);
+        consumeFoodAtSource(guest, dish, ctx.tick, ctx.motivation.cravings, ctx.healthRng,
+          ctx.world.waterKind !== undefined);
         guest.needs.company = Math.max(0, guest.needs.company - FEAST_COMPANY -
           (dish === 'beer' ? FEAST_CUP_RELIEF * techPower(person, 'brewing') : 0));
         served.push(guest.id);
@@ -5224,7 +5228,8 @@ export class ActionSystem {
       // smaller M15 hand limit, the old handover was immediately reconciled
       // out of a full child's inventory and dropped at their feet.
       for (let i = 0; i < given; i++) {
-        consumeFoodAtSource(other, foodId, ctx.tick, ctx.motivation.cravings, ctx.healthRng);
+        consumeFoodAtSource(other, foodId, ctx.tick, ctx.motivation.cravings, ctx.healthRng,
+          ctx.world.waterKind !== undefined);
       }
     } else {
       other.inventory.add(foodId, given);

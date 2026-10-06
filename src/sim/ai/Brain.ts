@@ -84,7 +84,7 @@ import {
 } from '../social/Restraint.ts';
 import { drivePressures, urgencyCurve, type DrivePressures } from './Drives.ts';
 import { purposeAppetite, sensitivity } from './Temperament.ts';
-import { appealOf, cravings, VARIETY_WEIGHT } from '../core/Macros.ts';
+import { appealOf, cravings, hydrationOf, VARIETY_WEIGHT } from '../core/Macros.ts';
 import type { ChildhoodConfig, MotivationConfig } from '../core/Config.ts';
 import { anchorOf, childRadius, reachOf, withinReach, type Anchor } from './Anchor.ts';
 import { cryOf, infantNeedingNursing } from './Nursing.ts';
@@ -916,7 +916,7 @@ export class Brain {
     let hydratingFood: string | null = null;
     let hydration = 0;
     for (const [itemId, count] of person.inventory.entries()) {
-      const candidate = count > 0 ? (ITEMS[itemId]?.hydration ?? 0) : 0;
+      const candidate = count > 0 ? hydrationOf(itemId, ctx.world.waterKind !== undefined) : 0;
       if (candidate > hydration) {
         hydration = candidate;
         hydratingFood = itemId;

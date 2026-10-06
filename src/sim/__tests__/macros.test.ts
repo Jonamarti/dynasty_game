@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appealOf, bestFoodFor, consumeFood, consumeFoodAtSource, cravings } from '../core/Macros.ts';
+import { appealOf, bestFoodFor, consumeFood, consumeFoodAtSource, cravings, hydrationOf } from '../core/Macros.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person } from '../entities/Person.ts';
 
@@ -32,6 +32,27 @@ describe('food cravings', () => {
     expect(consumeFood(person, 'apple')).toBe(true);
     expect(person.needs.hunger).toBe(24);
     expect(person.needs.thirst).toBe(0);
+  });
+
+  it('enables milk hydration on geographic worlds while preserving classic diet decisions', () => {
+    expect(hydrationOf('apple')).toBe(6);
+    expect(hydrationOf('milk')).toBe(0);
+    expect(hydrationOf('milk', true)).toBe(5);
+
+    const classic = new Person('Classic', 0, 0, 0, new RNG('milk-water-classic'), 40);
+    classic.inventory.add('milk', 1);
+    classic.needs.hunger = 40;
+    classic.needs.thirst = 12;
+    expect(consumeFood(classic, 'milk')).toBe(true);
+    expect(classic.needs.thirst).toBe(12);
+
+    const continental = new Person('Continental', 0, 0, 0, new RNG('milk-water-geo'), 40);
+    continental.inventory.add('milk', 1);
+    continental.needs.hunger = 40;
+    continental.needs.thirst = 12;
+    expect(consumeFood(continental, 'milk', 0, true, undefined, true)).toBe(true);
+    expect(continental.needs.hunger).toBe(20);
+    expect(continental.needs.thirst).toBe(7);
   });
 
   it('nourishes directly from a bush even when no food fits in the pack', () => {

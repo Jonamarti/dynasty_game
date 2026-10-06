@@ -2,6 +2,13 @@
 
 ## Segunda pasada — continuidad entre mapas
 
+La leche añade cinco puntos de hidratación continental. Se mantiene el nombre
+existente `ItemDef.hydration` para el `water` de M14; `hydrationOf` preserva
+la política histórica de la leche clásica y la hidratación existente de fruta
+en ambos modos. Todos los consumidores y el scorer consultan esa política.
+Las pruebas cubren consumo desde la UI, una orden real de comer y continuidad
+desde JSON, además de macros; no añaden estado privado ni draws de RNG.
+
 La red geográfica comparte nodos y aristas globales en giros y confluencias.
 Cada baldosa consulta esa red, por lo que un recorte no vuelve a trazar el
 río desde su propio borde. Superficies ancladas al relieve y fase de vados

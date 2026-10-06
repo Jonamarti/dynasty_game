@@ -12,7 +12,7 @@ export interface ItemDef {
   label: string;
   /** Hunger points restored by eating one unit. 0 means inedible. */
   nutrition: number;
-  /** Thirst points restored by the water in this food, if any. */
+  /** Thirst points restored by this food; M14 phase 12c's `ItemDef.water` uses this existing name. */
   hydration?: number;
   /**
    * M11 phase 8a. Fat, protein and carbohydrate as fractions of `nutrition`
@@ -270,7 +270,9 @@ export const ITEMS: Record<string, ItemDef> = {
   // pastoral entries — milk goes off fast, which is honest data even while
   // `spoilRate` sits at 0 by default and nothing yet reads it for this item.
   milk: {
-    id: 'milk', label: 'Milk', nutrition: 20, spoilTicks: 400, baseValue: 3,
+    // M14 phase 12c: the continental water fallback includes milk; the shared
+    // helper keeps this new hydration inactive in the classic island.
+    id: 'milk', label: 'Milk', nutrition: 20, hydration: 5, spoilTicks: 400, baseValue: 3,
     macros: { fat: 0.5, protein: 0.35, carb: 0.15 },
     class: 'food', hand: { perHand: 2, perArms: 5, hands: 1 },
   },

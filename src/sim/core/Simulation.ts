@@ -2553,7 +2553,8 @@ export class Simulation {
   eatItem(person: Person, itemId: string): boolean {
     this.assertExecutionAuthority();
     this.assertCanonical(this.peopleById, person, 'person');
-    return consumeFood(person, itemId, this.time.tick, this.config.motivation.cravings, this.healthRng);
+    return consumeFood(person, itemId, this.time.tick, this.config.motivation.cravings, this.healthRng,
+      this.world.waterKind !== undefined);
   }
 
   /**

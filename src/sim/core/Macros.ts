@@ -127,16 +127,27 @@ const MACRO_DECAY_PER_DAY = 0.35;
  * `moveToward` argument: two copies of one idea drift.
  */
 export function consumeFood(
-  person: Person, itemId: string, tick = 0, cravingsEnabled = true, sickRng?: RNG,
+  person: Person, itemId: string, tick = 0, cravingsEnabled = true, sickRng?: RNG, continentalWater = false,
 ): boolean {
-  return eatFoodUnit(person, itemId, tick, cravingsEnabled, true, sickRng);
+  return eatFoodUnit(person, itemId, tick, cravingsEnabled, true, sickRng, continentalWater);
 }
 
 /** A freshly picked unit never entered the pack. It still nourishes exactly as a carried meal does. */
 export function consumeFoodAtSource(
-  person: Person, itemId: string, tick = 0, cravingsEnabled = true, sickRng?: RNG,
+  person: Person, itemId: string, tick = 0, cravingsEnabled = true, sickRng?: RNG, continentalWater = false,
 ): boolean {
-  return eatFoodUnit(person, itemId, tick, cravingsEnabled, false, sickRng);
+  return eatFoodUnit(person, itemId, tick, cravingsEnabled, false, sickRng, continentalWater);
+}
+
+/**
+ * Hydration food the simulation may count for this world. Milk is the new
+ * M14 phase 12c fallback, but enabling it on old classic worlds would change
+ * the scorer and seeded dairy cohorts; pre-existing fruit hydration stays as
+ * it was in both world modes.
+ */
+export function hydrationOf(itemId: string, continentalWater = false): number {
+  if (itemId === 'milk' && !continentalWater) return 0;
+  return ITEMS[itemId]?.hydration ?? 0;
 }
 
 /** The words for the chronicle, as literal `t` calls so the i18n scan sees each. */
@@ -171,7 +182,8 @@ function fallIll(person: Person, itemId: string, eaten: number, tick: number, si
 }
 
 function eatFoodUnit(
-  person: Person, itemId: string, tick: number, cravingsEnabled: boolean, fromPack: boolean, sickRng?: RNG,
+  person: Person, itemId: string, tick: number, cravingsEnabled: boolean, fromPack: boolean,
+  sickRng?: RNG, continentalWater = false,
 ): boolean {
   const def = ITEMS[itemId];
   if (!def || def.nutrition <= 0) return false;
@@ -208,7 +220,7 @@ function eatFoodUnit(
   telemetry.count('diet_nutrition_total', eaten);
   if ((def.macros?.protein ?? 0) >= 0.3) telemetry.count('diet_nutrition_protein', eaten);
   person.needs.hunger = Math.max(0, person.needs.hunger - eaten);
-  const hydration = def.hydration ?? 0;
+  const hydration = hydrationOf(itemId, continentalWater);
   if (hydration > 0) {
     const relieved = Math.min(person.needs.thirst, hydration);
     person.needs.thirst -= relieved;
