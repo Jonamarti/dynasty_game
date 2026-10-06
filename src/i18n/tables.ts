@@ -9,7 +9,7 @@
  * Contexted keys (`skill|forage`) are listed with their context, which is how
  * `tc` looks them up first.
  */
-import { TECH, TECH_EFFECTS, AGE_LABELS, ERAS, DOMAINS } from '../sim/knowledge/Tech.ts';
+import { TECH, TECH_EFFECTS, AGE_LABELS, ERAS, DOMAINS, WEBS } from '../sim/knowledge/Tech.ts';
 import { NEEDS, TRAITS } from '../sim/entities/Person.ts';
 import { MOOD_CHANNELS } from '../sim/core/Mood.ts';
 import { MACROS } from '../sim/core/Macros.ts';
@@ -48,6 +48,7 @@ export function dataTableKeys(): string[] {
   keys.push(...Object.values(AGE_LABELS));
   for (const era of ERAS) keys.push(era.description);
   for (const domain of DOMAINS) keys.push('domain|' + domain);
+  for (const web of Object.values(WEBS)) keys.push(web.label);
   for (const def of Object.values(ITEMS)) keys.push(def.label);
   for (const def of Object.values(BUILDINGS)) keys.push(def.label, def.description);
   for (const def of Object.values(INSCRIPTIONS)) keys.push(def.label, def.description);

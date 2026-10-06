@@ -16,7 +16,7 @@ import {
   TECH, TECHS, TECH_EFFECTS, ERAS, ERA_ORDER, AGES, ageIndex, eraFor, reachableFrom,
   techPower, carryFactor, forageYieldFactor, nutritionFactor, warmthFrom,
   axeFactor, buildFactor, reapFactor, calendarFactor, answerPressure, workableIdea,
-  type Tech,
+  WEBS, SUB_WEBS, webOf, techsOfWeb, type Tech,
 } from '../knowledge/Tech.ts';
 import { BUILDINGS, isStation } from '../entities/Building.ts';
 import { ITEMS } from '../entities/Item.ts';
@@ -581,5 +581,64 @@ describe('recipes', () => {
     expect(recipeFor('pottery')?.id).toBe('pot');
     expect(recipeFor('handaxe')?.id).toBe('handaxe');
     expect(recipeFor('berries')).toBeNull();
+  });
+});
+
+describe('the sub-webs (M15 phase 13a)', () => {
+  /** True when `tech` cannot be known without first knowing `gate`. */
+  function needs(tech: Tech, gate: Tech, seen = new Set<Tech>()): boolean {
+    for (const parent of TECH[tech].requires) {
+      if (parent === gate) return true;
+      if (seen.has(parent)) continue;
+      seen.add(parent);
+      if (needs(parent, gate, seen)) return true;
+    }
+    return false;
+  }
+
+  it('keeps every gate in the main web', () => {
+    for (const web of SUB_WEBS) {
+      expect(web.gate, web.id + ' needs a gate').not.toBeNull();
+      expect(webOf(web.gate!), web.gate + ' is the door to ' + web.id + ', so it lives outside it').toBe('main');
+    }
+  });
+
+  it('makes every node of a sub-web require its gate, directly or not', () => {
+    for (const web of SUB_WEBS) {
+      for (const tech of techsOfWeb(web.id)) {
+        expect(needs(tech, web.gate!), tech + ' is in ' + web.id + ' without needing ' + web.gate).toBe(true);
+      }
+    }
+  });
+
+  it('never opens a sub-web with fewer than two nodes', () => {
+    for (const web of SUB_WEBS) {
+      expect(techsOfWeb(web.id).length, web.id + ' opens nearly empty').toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('points every web and opens value at an entry of WEBS', () => {
+    for (const id of TECHS) {
+      expect(WEBS[webOf(id)], id + ' sits in a web nobody declared').toBeDefined();
+      const opens = TECH[id].opens;
+      if (opens !== undefined) expect(WEBS[opens], id + ' opens a web nobody declared').toBeDefined();
+    }
+  });
+
+  it('gives each gate an opens equal to its web, and no other node one', () => {
+    for (const web of SUB_WEBS) expect(TECH[web.gate!].opens).toBe(web.id);
+    const gates = new Set(SUB_WEBS.map(web => web.gate));
+    for (const id of TECHS) {
+      if (!gates.has(id)) expect(TECH[id].opens, id + ' opens something without being a gate').toBeUndefined();
+    }
+  });
+
+  it('declares each web once, with a colour and a label', () => {
+    for (const [id, web] of Object.entries(WEBS)) {
+      expect(web.id).toBe(id);
+      expect(web.label.length).toBeGreaterThan(0);
+      expect(web.color).toMatch(/^#[0-9a-f]{6}$/i);
+    }
+    expect(SUB_WEBS.map(web => web.id)).toEqual(['arms', 'field', 'domestication']);
   });
 });

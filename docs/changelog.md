@@ -1,3 +1,17 @@
+## 2026-10-06 — M15 fase 13a: redes y puertas
+
+`TechDef` gana `web` (ausente = red principal) y `opens`, y `Tech.ts` una tabla
+`WEBS` (id, etiqueta, puerta, color). Se mudan solo de `web`: `bow` y `atlatl`
+a Armas (puerta `spear`); `composting`, `sickle`, `calendar` y `arboriculture`
+a Campo (`farming`); `herding`, `dairying`, `wool` y `dog` a Doma (`taming`).
+Cocina no se abre: el asado es una receta y `bread` y `brewing` no requieren
+`cooking`, así que se quedan en la red principal (duda abierta en
+[m15_phase13_subwebs.md](m15_phase13_subwebs.md)). La simulación y la pantalla
+no leen `web`: 12 hashes de checkpoint (3 semillas por 4 ticks) y los informes
+de `band`, `hearths` y `craft` coinciden antes y después. Verificación en el
+sustituto esbuild de vitest, no en `npm test`. Evidencia en
+`artifacts/verification/m15-phase13a-20261006/`.
+
 ## 2026-10-06 — M15 fase 30: puerta continental y límites medidos
 
 `frontier` construye agua geográfica real y mide bebida dulce junto al mar

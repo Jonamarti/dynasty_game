@@ -248,10 +248,54 @@ export function ageIndex(age: AgeId): number {
  */
 export type TechKind = 'practice' | 'device';
 
+/**
+ * The sub-webs of the tech web (M15 phase 13).
+ *
+ * The main web holds the techniques; each gate technique opens a web of its own
+ * for the recipes, garments and weapons that are variants of it. **Only the webs
+ * that have at least two nodes with an effect are declared here** — a web
+ * declared before its content would be inert, and an inert door is the failure
+ * the file header forbids. Kitchen, Clothing, Preserving, Fire, Earth and Metal
+ * join this list in the phase that gives them nodes; see `docs/m15_plan.md`,
+ * phase 13a.
+ *
+ * `web` is a *grouping for the screen* and nothing in `src/sim/` reads it: where
+ * a node lives never changes what anyone can discover, which is why moving a
+ * node between webs is bit-identical.
+ */
+export type WebId = 'main' | 'arms' | 'field' | 'domestication';
+
+export interface WebDef {
+  id: WebId;
+  /** Shown through `t()`; the Spanish is in `i18n/es/tech.ts`. */
+  label: string;
+  /** The technique that opens this web, or `null` for the main web itself. */
+  gate: Tech | null;
+  /** Hex, for the web's marker and breadcrumb. */
+  color: string;
+}
+
+export const WEBS: Record<WebId, WebDef> = {
+  main: { id: 'main', label: 'Main web', gate: null, color: '#9aa4b2' },
+  arms: { id: 'arms', label: 'Weapons', gate: 'spear', color: '#c9694b' },
+  field: { id: 'field', label: 'Field', gate: 'farming', color: '#8fb35a' },
+  domestication: { id: 'domestication', label: 'Taming', gate: 'taming', color: '#c9a34b' },
+};
+
+/** The webs that hang off a gate, in the order a screen should list them. */
+export const SUB_WEBS: WebDef[] = Object.values(WEBS).filter(web => web.gate !== null);
+
 export interface TechDef {
   id: Tech;
   label: string;
   domain: Domain;
+  /**
+   * Which web this node is drawn in. Left out, it is `'main'`: read it through
+   * `webOf`, so the many nodes that never move need no line.
+   */
+  web?: WebId;
+  /** On a gate technique only: the sub-web it opens. */
+  opens?: WebId;
   /**
    * The archaeological period our own species arrived at this in.
    *
@@ -402,6 +446,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   spear: {
     id: 'spear', label: 'The spear', domain: 'beasts',
+    opens: 'arms',
     age: 'middle_palaeolithic', firstKnown: 'about 200,000 years ago',
     kind: 'device',
     requires: ['hafting'], difficulty: 0.35, skill: 'knap',
@@ -420,6 +465,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   bow: {
     id: 'bow', label: 'The bow', domain: 'beasts',
+    web: 'arms',
     age: 'mesolithic', firstKnown: 'about 12,000 years ago',
     kind: 'device',
     requires: ['cordage', 'spear'], difficulty: 0.6, skill: 'hunt',
@@ -927,6 +973,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   atlatl: {
     id: 'atlatl', label: 'Spear-thrower', domain: 'beasts',
+    web: 'arms',
     age: 'upper_palaeolithic', firstKnown: 'about 18,000 years ago',
     kind: 'device',
     requires: ['spear'], difficulty: 0.45, skill: 'hunt',
@@ -1009,6 +1056,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   taming: {
     id: 'taming', label: 'Taming', domain: 'beasts',
+    opens: 'domestication',
     age: 'upper_palaeolithic', firstKnown: 'about 30,000 years ago',
     kind: 'practice', practisedBy: ['tame'],
     requires: ['tracking'], difficulty: 0.5, skill: 'track',
@@ -1088,6 +1136,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   farming: {
     id: 'farming', label: 'Farming', domain: 'plants',
+    opens: 'field',
     age: 'neolithic', firstKnown: 'about 9500 BC',
     // A device, by this file's own test of one: it gates a building. The
     // prototype is the first deliberate sowing — a handful of seed put in the
@@ -1123,6 +1172,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   composting: {
     id: 'composting', label: 'Composting', domain: 'plants',
+    web: 'field',
     age: 'neolithic', firstKnown: 'about 4000 BC',
     kind: 'device',
     requires: ['farming'], difficulty: 0.5, skill: 'farm',
@@ -1292,6 +1342,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   sickle: {
     id: 'sickle', label: 'Sickle', domain: 'plants',
+    web: 'field',
     age: 'neolithic', firstKnown: 'about 9,000 BC',
     kind: 'device',
     requires: ['farming', 'hafting'], difficulty: 0.4, skill: 'knap',
@@ -1354,6 +1405,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   calendar: {
     id: 'calendar', label: 'Calendar', domain: 'plants',
+    web: 'field',
     age: 'neolithic', firstKnown: 'about 5,000 BC',
     // A practice: nothing is built, and the trial is the act it improves —
     // sowing at the right time rather than by guesswork. The same road
@@ -1378,6 +1430,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   arboriculture: {
     id: 'arboriculture', label: 'Arboriculture', domain: 'plants',
+    web: 'field',
     age: 'neolithic', firstKnown: 'about 5,000 BC',
     // A practice, for the reason `calendar` is one: nothing is built, and the
     // trial is the act it improves. Setting a stone or a nut in the ground
@@ -1451,6 +1504,7 @@ export const TECH: Record<Tech, TechDef> = {
   // mechanism behind it. See `BuildingDef.herd` and `Simulation.workHerds`.
   herding: {
     id: 'herding', label: 'Herding', domain: 'beasts',
+    web: 'domestication',
     age: 'neolithic', firstKnown: 'about 8,500 BC',
     kind: 'device',
     requires: ['taming'], difficulty: 0.5, skill: 'track',
@@ -1521,6 +1575,7 @@ export const TECH: Record<Tech, TechDef> = {
   // rather than gating a recipe of their own — see `Simulation.workHerds`.
   dairying: {
     id: 'dairying', label: 'Dairying', domain: 'beasts',
+    web: 'domestication',
     age: 'neolithic', firstKnown: 'about 7,000 BC',
     // A practice, not a device: nothing is built, and milking is not a
     // second thing to build, it is a better way to use a pen that already
@@ -1546,6 +1601,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   wool: {
     id: 'wool', label: 'Wool', domain: 'cloth',
+    web: 'domestication',
     age: 'neolithic', firstKnown: 'about 6,000 BC',
     kind: 'device',
     requires: ['herding', 'spinning'], difficulty: 0.5, skill: 'build',
@@ -1588,6 +1644,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   dog: {
     id: 'dog', label: 'Dog', domain: 'beasts',
+    web: 'domestication',
     age: 'upper_palaeolithic', firstKnown: 'about 15,000 years ago',
     // A practice for the reason `taming` is one: nothing is built, and the
     // act that tries it out is keeping the beast. It is the same verb, `tame`,
@@ -1779,6 +1836,16 @@ export const TECH: Record<Tech, TechDef> = {
       'An heir who never learned to be king will not pass it on in turn.',
   },
 };
+
+/** The web a technology lives in (`'main'` unless its entry says otherwise). */
+export function webOf(tech: Tech): WebId {
+  return TECH[tech].web ?? 'main';
+}
+
+/** Every technology of one web, in `TECHS` order (deterministic, for the screen). */
+export function techsOfWeb(web: WebId): Tech[] {
+  return TECHS.filter(tech => webOf(tech) === web);
+}
 
 /** Highest chronic motive this design can answer; zero means no recorded need. */
 export function answerPressure(person: Person, tech: Tech): number {

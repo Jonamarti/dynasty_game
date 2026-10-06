@@ -1483,6 +1483,8 @@ armas como nodos propios que se descubren, se enseñan y se heredan.
   sub-red requiere su puerta (directa o transitivamente), así que nadie lo
   conoce antes; ninguna sub-red se abre vacía.
 
+**Avance del 2026-10-06:** 13a hecha, bit-idéntica (`m15: redes y puertas`). `WEBS`, `SUB_WEBS`, `webOf` y `techsOfWeb` en `Tech.ts`; se abren Armas, Campo y Doma con 2, 4 y 4 nodos mudados solo de `web`. **Cocina no se abre aún**: el asado es una receta (`roast_meat`), no una técnica, y `bread` y `brewing` no requieren `cooking`; se queda sin nodos hasta 13d. Detalle y dudas en [m15_phase13_subwebs.md](m15_phase13_subwebs.md).
+
 ### 13b. El nodo de receta (medido)
 
 `TechDef.tier: 'technique' | 'craft'`. Un nodo `craft`:
