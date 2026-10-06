@@ -3170,7 +3170,11 @@ pendientes solo las cohortes de visibles, compactos y agregados (dependen de
 piezas inertes en `src/sim/compact/`, sin tocar el loop detallado ni el juego.
 Entregado: `CompactScheduler` (eventos por tick/fase/sujeto/id y ledger de
 transacciones idempotentes); `CompactPerson`/`CompactAuthority` (misma instancia,
-stream derivado, dueño único con epoch y rechazos nombrados). Lista actualizada en
+stream derivado, dueño único con epoch y rechazos nombrados); `CompactBody.advance`
+(cuerpo cerrado a una fecha con el mismo `NeedsSystem`, sin ingesta ni producción).
+**Pendiente de 32b-2:** ingesta, producción y demografía compactas con tasas
+medidas del modelo detallado (no inventadas) y, por tanto, el enchufe en
+`Simulation` y `lod-matches-detail`. Lista actualizada en
 [m15_phase32b_compact.md](m15_phase32b_compact.md).
 
 Como en M14 fase 14, extendido también a individuos fuera de vista **dentro de

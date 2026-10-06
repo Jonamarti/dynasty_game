@@ -1,5 +1,12 @@
 ## M15 fase 32b: lo que el nivel compacto no hace todavía (2026-10-06)
 
+- **Faltan ingesta, producción y demografía compactas, y no se han inventado.**
+  `CompactBody.advance` solo avanza el cuerpo cerrado (mismo `NeedsSystem`): sin
+  comer, beber ni producir, una persona compacta muere de hambre/sed en ~8 días
+  (medido, 10 personas). Necesitan tasas medidas del modelo detallado (rendimiento
+  de comida por persona-día según estación y terreno, bebida, concepción real); no
+  se midió en esta pasada. Hasta entonces el compacto no puede sustituir a nadie
+  y la puerta `lod-matches-detail` ni siquiera es medible.
 - **Ningún sistema lo llama.** `CompactScheduler`, `CompactPerson` y `CompactAuthority`
   son inertes: `Simulation.step()` ejecuta a todos en detalle y nadie sale de
   `Simulation.people` ni de los spatial hashes. El dueño único es todavía un

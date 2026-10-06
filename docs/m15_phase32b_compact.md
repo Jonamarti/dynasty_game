@@ -71,3 +71,45 @@ secuencia que un control); negativos: demote duplicado, promote doble, adopt de 
 segundo vivo y de un registro viejo, copia decodificada, tick atrasado, cada
 motivo de rechazo, un registro que pierde inventario (distinto del original) y
 registros dañados.
+
+## 3. `CompactBody.advance`, el cuerpo cerrado (commit «avance del cuerpo»)
+
+`compact/CompactAdvance.ts`. Lleva a una persona compacta hasta una fecha ejecutando
+**el mismo `NeedsSystem.update`** del nivel detallado, tick a tick, sobre una sola
+persona y un reloj privado (`TimeManager` propio, que no toca el del mundo). Es
+deliberadamente no una segunda implementación de las tasas: comparte el código y
+no puede divergir. Cubre necesidades, exposición, hemorragia, fiebre, veneno y la
+muerte que causan; devuelve eventos fechados (`death` en el tick exacto, fase
+demografía, id del llamante). El avance solo va hacia delante (rebobinar lanza), el
+muerto no se avanza ni resucita, y partir el intervalo (0→300 frente a 0→100→JSON→300) no
+cambia el registro completo: cambiar de selección no puede renovar reservas ni
+esquivar una muerte.
+
+**Qué NO hace, y por eso no está enchufado a `Simulation`:**
+
+- **Sin ingesta.** Nadie come, bebe, se calienta ni duerme mientras es compacto:
+  hambre y sed solo suben. Medido con 10 personas a hambre 0 y sed 0: mueren entre
+  los ticks 1.961 y 2.127 (~8 días), todas «starvation». Eso es lo que el modelo
+  detallado haría sin comida ni agua, no lo que una banda con intendencia hace.
+- **Sin producción ni progreso de órdenes.** La acción y su trabajo bancado quedan
+  retenidos, no avanzan (congelarlos fuera de vista es justo lo que §4 prohíbe, por
+  eso este mecanismo es insuficiente para activar el LOD).
+- **Sin demografía.** No envejece, concibe, pare ni muere de viejo (`LifeSystem.daily`
+  necesita `LifeContext` completo: padre, rng de nacimientos, `onBirth`).
+
+La ingesta, la producción y la demografía necesitan tasas **medidas** contra el
+modelo detallado (qué rendimiento de comida por persona-día en cada estación y
+terreno, qué fracción del día se bebe, tasa de concepción real con su condición),
+y esa medición es de varios escenarios y semillas; no se ha hecho en esta pasada ni
+se han inventado coeficientes: darles un valor sin medirlo regala o quita
+supervivencia, que es lo que el diseño prohíbe. Queda pendiente (ver `bugs.md`).
+
+Coste (una sola corrida, 10 personas × 2.400 ticks, V8 caliente, sin repetir):
+≈1,4 µs por persona-tick, frente a los ≈100 µs por persona-paso del paso completo
+(1,09 ms/paso con 10 humanos, `m15_profile_systems.md`). Es un orden de magnitud, no
+un benchmark: no incluye la ingesta ni la producción que faltan.
+
+Tests (`compact-advance.test.ts`): igualdad de registro completo con el reloj
+detallado manejado tick a tick; invariancia a cortes y a ida y vuelta JSON; fecha
+de muerte y no resurrección; negativos (tasa de hambre distinta, un trozo de
+tiempo saltado, fecha rebobinada).

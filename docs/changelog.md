@@ -1,3 +1,18 @@
+## 2026-10-06 — M15 fase 32b: `CompactBody.advance`, el cuerpo cerrado a una fecha
+
+Tercer mecanismo, inerte. Avanza una persona compacta a una fecha ejecutando el
+mismo `NeedsSystem.update` tick a tick con un reloj privado (no una segunda
+copia de las tasas), y devuelve eventos fechados (`death` en su tick exacto).
+Porqué esa vía y no una fórmula por intervalos: temperatura, exertion, heridas y
+veneno harían de la integral cerrada una segunda implementación que se desviaría;
+compartir el código da correspondencia exacta (registro completo idéntico al
+reloj detallado) a ≈1,4 µs por persona-tick. Invariante a cortes y a JSON; sin
+resurrección ni retroceso. **No incluye ingesta, producción ni demografía**: esas
+tasas hay que medirlas contra el modelo detallado y no se inventaron (sin ellas
+una persona compacta muere de hambre en ~8 días; `bugs.md`). Por eso no se enchufa
+a `Simulation`. Sin cambio de juego ni interfaz.
+[Detalle](m15_phase32b_compact.md).
+
 ## 2026-10-06 — M15 fase 32b: `CompactPerson` y `CompactAuthority`, un dueño por persona
 
 Segundo mecanismo, inerte. Una persona compacta es la misma instancia de `Person`

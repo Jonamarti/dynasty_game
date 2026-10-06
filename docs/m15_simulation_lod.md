@@ -221,7 +221,8 @@ No se promete que una aglomeración de 300 visibles cueste lo mismo que 30.
    y scheduler de nivel 1 con conservación y correspondencia antes de filtrar
    el loop detallado. El recorte aislado que congela los NPC lejanos no se entrega.
    Avance 2026-10-06: piezas inertes en `src/sim/compact/` (scheduler de
-   eventos y ledger de transacciones, ...); estado en
+   eventos y ledger de transacciones, persona compacta con autoridad única, avance
+   del cuerpo cerrado sin ingesta ni producción); estado en
    [m15_phase32b_compact.md](m15_phase32b_compact.md). Todavía no se llaman desde
    `Simulation.step()`.
 3. **32b, activación por visión:** conjunto exacto de activos, puente entre
