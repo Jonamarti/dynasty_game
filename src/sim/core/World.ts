@@ -13,11 +13,11 @@ import type { RNG } from './RNG.ts';
 import type { WorldConfig } from './Config.ts';
 import type { LocalGeographySource } from '../world/LocalGeography.ts';
 
-export const BIOMES = ['water', 'beach', 'grass', 'forest', 'hills', 'rock'] as const;
+export const BIOMES = ['water', 'beach', 'grass', 'forest', 'hills', 'rock', 'river'] as const;
 export type Biome = (typeof BIOMES)[number];
 
 export const BIOME_ID: Record<Biome, number> = {
-  water: 0, beach: 1, grass: 2, forest: 3, hills: 4, rock: 5,
+  water: 0, beach: 1, grass: 2, forest: 3, hills: 4, rock: 5, river: 6,
 };
 
 /** Half-width of the box a tile's height is compared with, in tiles. */
@@ -66,6 +66,11 @@ export class World {
   soil!: Soil;
   readonly biome: Uint8Array;
   readonly walkable: Uint8Array;
+
+  /** Optional geographic water provenance. Omitted in classic play to keep its checkpoint shape stable. */
+  declare readonly waterKind?: Uint8Array;
+  /** Per-tile surface for rivers/lakes; salt water continues to use waterLevel. */
+  declare readonly waterSurface?: Float32Array;
 
   /**
    * The sward, 0-1 per tile — M15 phase 23a. Read by herds (23c), the scythe
@@ -261,7 +266,11 @@ export class World {
   /** Heightfield below the water surface, in elevation units; off-map is zero. */
   depthAt(x: number, y: number): number {
     if (!this.inBounds(x, y)) return 0;
-    return Math.max(0, this.config.waterLevel - this.heightAt(x, y));
+    const i = this.index(Math.floor(x), Math.floor(y));
+    const surface = this.waterKind?.[i] === 1 && this.waterSurface
+      ? this.waterSurface[i]!
+      : this.config.waterLevel;
+    return Math.max(0, surface - this.heightAt(x, y));
   }
 
   /** Water shallow enough to walk through; equality belongs to swimming. */
@@ -538,7 +547,7 @@ export class World {
     // earth can make a shallow-water tile walkable, and digging can make it too
     // deep to wade, so both land and swim regions observe this edit.
     const biome = BIOMES[this.biome[i]!]!;
-    if (biome === 'water') {
+    if (biome === 'water' || biome === 'river') {
       const before = this.walkable[i];
       this.setWalkable(Math.floor(x), Math.floor(y), this.isShallow(x, y));
       if (before !== this.walkable[i]) this.updateShore(Math.floor(x), Math.floor(y));
@@ -574,11 +583,14 @@ export class World {
   floodFrom(x: number, y: number): number {
     if (!this.inBounds(x, y)) return 0;
     const level = this.config.waterLevel;
+    const source = this.findAdjacentWaterSource(x, y);
+    if (!source) return 0;
+    const { kind: sourceKind, surface: sourceSurface } = source;
     const wet = (tx: number, ty: number): boolean => {
       if (!this.inBounds(tx, ty)) return false;
       const k = this.index(tx, ty);
-      if (BIOMES[this.biome[k]!] === 'water' || BIOMES[this.biome[k]!] === 'rock') return false;
-      return this.elevation[k]! + this.offset[k]! < level - 1e-9;
+      if (this.isWater(tx, ty) || BIOMES[this.biome[k]!] === 'rock') return false;
+      return this.elevation[k]! + this.offset[k]! < sourceSurface - 1e-9;
     };
     const touchesWater = (tx: number, ty: number): boolean => this.isShore(tx, ty);
     if (!wet(x, y) || !touchesWater(x, y)) return 0;
@@ -589,7 +601,9 @@ export class World {
       const tx = k % this.width;
       const ty = Math.floor(k / this.width);
       if (!wet(tx, ty)) continue;
-      this.biome[k] = BIOMES.indexOf('water');
+      this.biome[k] = sourceKind === 1 && sourceSurface > level ? BIOME_ID.river : BIOME_ID.water;
+      if (this.waterKind) this.waterKind[k] = sourceKind;
+      if (this.waterSurface) this.waterSurface[k] = sourceSurface;
       // A newly flooded cut may be shallow enough to wade. Deeper water keeps
       // using the swim-region path once the swimming phase registers it.
       this.setWalkable(tx, ty, this.isShallow(tx, ty));
@@ -640,6 +654,65 @@ export class World {
   sameRegion(ax: number, ay: number, bx: number, by: number): boolean {
     const a = this.regionAt(ax, ay);
     return a !== -1 && a === this.regionAt(bx, by);
+  }
+
+  /** Walkable tiles at freshwater edges, including wadeable freshwater itself. */
+  get freshShore(): { x: number; y: number }[] {
+    if (!this.waterKind) return this.shoreTiles;
+    return this.shoreTiles.filter(({ x, y }) => this.hasWaterOfKind(x, y, 1));
+  }
+
+  /** Walkable tiles at saltwater edges, including wadeable saltwater itself. */
+  get saltShore(): { x: number; y: number }[] {
+    return this.shoreTiles.filter(({ x, y }) => this.hasWaterOfKind(x, y, 2));
+  }
+
+  isFreshShore(x: number, y: number): boolean { return this.hasWaterOfKind(x, y, 1); }
+  isSaltShore(x: number, y: number): boolean { return this.hasWaterOfKind(x, y, 2); }
+
+  /** True when this tile itself contains fresh water (classic islands stay potable). */
+  isFreshWater(x: number, y: number): boolean {
+    if (!this.isWater(x, y)) return false;
+    return this.waterKind ? this.waterKind[this.index(Math.floor(x), Math.floor(y))] === 1 : true;
+  }
+
+  /** True when this tile itself contains salt water. */
+  isSaltWater(x: number, y: number): boolean {
+    if (!this.isWater(x, y)) return false;
+    return this.waterKind?.[this.index(Math.floor(x), Math.floor(y))] === 2;
+  }
+
+  /** Natural potable water; wells remain a separate building source. */
+  isDrinkingWater(x: number, y: number): boolean { return this.isFreshWater(x, y); }
+
+  private hasWaterOfKind(x: number, y: number, kind: 1 | 2): boolean {
+    const ownKind = (tx: number, ty: number): boolean => {
+      if (!this.isWater(tx, ty)) return false;
+      return this.waterKind ? this.waterKind[this.index(tx, ty)] === kind : kind === 1;
+    };
+    return (this.isShallow(x, y) && ownKind(x, y)) || ownKind(x + 1, y) || ownKind(x - 1, y) ||
+      ownKind(x, y + 1) || ownKind(x, y - 1);
+  }
+
+  private findAdjacentWaterSource(x: number, y: number): { kind: number; surface: number } | null {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      const tx = x + dx;
+      const ty = y + dy;
+      if (!this.inBounds(tx, ty)) {
+        // Preserve classic island's historical map-edge water behavior. A
+        // geographic map has explicit water classes and must not infer a
+        // freshwater source from its local clipping boundary.
+        if (!this.waterKind) return { kind: 1, surface: this.config.waterLevel };
+        continue;
+      }
+      if (!this.isWater(tx, ty)) continue;
+      const i = this.index(tx, ty);
+      return {
+        kind: this.waterKind ? this.waterKind[i]! : 1,
+        surface: this.waterKind?.[i] === 1 && this.waterSurface ? this.waterSurface[i]! : this.config.waterLevel,
+      };
+    }
+    return null;
   }
 
   /** Swim-capable component id, or -1 for water too deep to swim or off-map. */
@@ -800,6 +873,9 @@ export class World {
    * Simulation RNG. The classic generator remains the exact default path.
    */
   private generateFromGeography(geography: LocalGeographySource): void {
+    const n = this.width * this.height;
+    const waterKind = new Uint8Array(n);
+    const waterSurface = new Float32Array(n);
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         const i = y * this.width + x;
@@ -811,8 +887,21 @@ export class World {
 
         const biome = this.classifyGeographic(elev, moist, geography.kind);
         this.biome[i] = BIOME_ID[biome];
-        this.walkable[i] = biome === 'rock' || (biome === 'water' &&
+        if (biome === 'water') {
+          waterKind[i] = 2;
+          waterSurface[i] = this.config.waterLevel;
+        }
+        const hydro = geography.hydrologyAt?.(x + 0.5, y + 0.5) ?? null;
+        if (hydro && Number.isFinite(hydro.surface) && hydro.surface > elev) {
+          this.biome[i] = BIOME_ID.river;
+          waterKind[i] = 1;
+          waterSurface[i] = hydro.surface;
+        }
+        this.walkable[i] = this.biome[i] === BIOME_ID.rock || ((this.biome[i] === BIOME_ID.water || this.biome[i] === BIOME_ID.river) &&
           this.config.waterLevel - elev >= this.config.wadeDepth) ? 0 : 1;
+        if (this.biome[i] === BIOME_ID.river) {
+          this.walkable[i] = hydro!.surface - elev < this.config.wadeDepth ? 1 : 0;
+        }
         // No source has local soil measurements: use its coarse wetness as a
         // transparent fertility proxy, independent of elevation-unit scale.
         this.fertility[i] = biome === 'grass' || biome === 'forest'
@@ -823,6 +912,8 @@ export class World {
     // Regional wetness is the only soil signal in the source data. Keep the
     // Soil-owned fertility array canonical, as in classic worlds.
     this.soil = new Soil(this.width, this.fertility, (x, y) => this.moisture[this.index(x, y)]!);
+    Object.defineProperty(this, 'waterKind', { value: waterKind, enumerable: true, writable: true, configurable: true });
+    Object.defineProperty(this, 'waterSurface', { value: waterSurface, enumerable: true, writable: true, configurable: true });
   }
 
   private classify(elev: number, moist: number): Biome {
@@ -866,7 +957,7 @@ export class World {
   }
 
   isWater(x: number, y: number): boolean {
-    return this.biomeAt(x, y) === 'water';
+    return this.biomeAt(x, y) === 'water' || this.biomeAt(x, y) === 'river';
   }
 
   fertilityAt(x: number, y: number): number {
@@ -916,8 +1007,9 @@ export class World {
   }
 
   countBiomes(): Record<Biome, number> {
-    const counts = { water: 0, beach: 0, grass: 0, forest: 0, hills: 0, rock: 0 };
+    const counts: Record<Biome, number> = { water: 0, beach: 0, grass: 0, forest: 0, hills: 0, rock: 0, river: 0 };
     for (let i = 0; i < this.biome.length; i++) counts[BIOMES[this.biome[i]!]!]++;
+    if (counts.river === 0) delete (counts as Partial<Record<Biome, number>>).river;
     return counts;
   }
 }

@@ -782,6 +782,8 @@ export class Simulation {
       width: this.config.world.width,
       height: this.config.world.height,
       waterLevel: this.config.world.waterLevel,
+      wadeDepth: this.config.world.wadeDepth,
+      swimDepth: this.config.world.swimDepth,
       metresPerUnit: this.config.world.metresPerUnit,
     });
     return source;

@@ -77,7 +77,13 @@ describe('WorldTerrainRecord', () => {
 
   it('rejects malformed versions, arrays, indexes, region ledgers and unknown fields', () => {
     const valid = JSON.parse(JSON.stringify(toWorldTerrainRecord(world())));
-    expect(() => fromWorldTerrainRecord({ ...valid, version: 2 })).toThrow(/v1/);
+    expect(() => fromWorldTerrainRecord({ ...valid, version: 3 })).toThrow(/v1 or v2/);
+    const v2 = structuredClone(valid);
+    v2.version = 2;
+    v2.tiles.waterKind = v2.tiles.biome.map((biome: number) => biome === 0 ? 1 : 0);
+    v2.tiles.waterSurface = v2.tiles.biome.map((biome: number) => biome === 0 ? Math.fround(v2.config.waterLevel) : 0);
+    const v2World = fromWorldTerrainRecord(v2);
+    expect(toWorldTerrainRecord(v2World)).toEqual(v2);
     expect(() => fromWorldTerrainRecord({ ...valid, extra: true })).toThrow(/unknown or missing/);
     const incompleteConfig = structuredClone(valid);
     delete incompleteConfig.config.pitDepth;

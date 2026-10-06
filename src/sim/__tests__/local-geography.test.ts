@@ -130,4 +130,67 @@ describe('local geography terrain projection', () => {
     expect(west.sample(config.width, 1).profile).toEqual(east.sample(0, 1).profile);
     expect(west.sample(config.width, 1).elevation).toBe(east.sample(0, 1).elevation);
   });
+
+  it('traces a narrow descending river from coarse candidates and keeps a falling water surface', () => {
+    const heights = [100, 85, 70, 55, 40, 25, -10, -20];
+    const riverGeography = earthWorldGeography({
+      entry: { id: 'river-course', title: 'River course', file: 'river-course.bin', seaLevelMeters: 0, recommended: false },
+      raster: {
+        width: 8, height: 4,
+        elevationMeters: Int16Array.from({ length: 32 }, (_, i) => heights[i % 8]!),
+        koppen: new Uint8Array(32).fill(8),
+        features: Uint32Array.from({ length: 32 }, (_, i) => i % 8 < 6 ? WORLD_FEATURE.river : 0),
+        seaLevelMeters: 0,
+      },
+    }, 10);
+    const local = createLocalGeography(riverGeography,
+      { originX: 40, originY: 20, comarcasWide: 60, comarcasHigh: 20 },
+      { ...DEFAULT_CONFIG.world, width: 64, height: 48 });
+
+    expect(local.hydrology.rivers.length).toBeGreaterThan(0);
+    const freshTiles = Array.from(local.hydrology.kind).filter(value => value === 1).length;
+    expect(freshTiles).toBeGreaterThan(1);
+    expect(freshTiles).toBeLessThan(64 * 48 / 3); // coarse flags do not flood their regions
+    expect(Array.from(local.hydrology.kind).every((kind, i) => kind !== 1 ||
+      local.hydrology.surface[i]! >= DEFAULT_CONFIG.world.waterLevel)).toBe(true); // the mouth cannot repaint salt sea
+    for (const river of local.hydrology.rivers) {
+      expect(river.tiles.length).toBeGreaterThan(1);
+      for (let step = 1; step < river.tiles.length; step++) {
+        const previous = river.tiles[step - 1]!;
+        const current = river.tiles[step]!;
+        expect(local.hydrology.surface[current]).toBeLessThanOrEqual(local.hydrology.surface[previous]!);
+        expect(local.hydrology.surface[current]).toBeLessThanOrEqual(local.hydrology.surface[previous]!);
+        expect(local.hydrology.surface[current]! - local.hydrology.bed[current]!).toBeGreaterThan(0);
+      }
+    }
+    expect(Array.from(local.hydrology.surface).some((surface, i) => local.hydrology.kind[i] === 1 &&
+      surface - local.sample(i % 64 + 0.5, Math.floor(i / 64) + 0.5).elevation <= DEFAULT_CONFIG.world.wadeDepth))
+      .toBe(true); // at least one shallow ford remains walkable
+  });
+
+  it('keeps a flagged river connected across the edge of adjacent local maps', () => {
+    const heights = [100, 85, 70, 55, 40, 25, -10, -20];
+    const geography = earthWorldGeography({
+      entry: { id: 'river-seam', title: 'River seam', file: 'river-seam.bin', seaLevelMeters: 0, recommended: false },
+      raster: {
+        width: 8, height: 4,
+        elevationMeters: Int16Array.from({ length: 32 }, (_, i) => heights[i % 8]!),
+        koppen: new Uint8Array(32).fill(8),
+        features: Uint32Array.from({ length: 32 }, (_, i) => i % 8 < 6 ? WORLD_FEATURE.river : 0),
+        seaLevelMeters: 0,
+      },
+    }, 10);
+    const west = createLocalGeography(geography,
+      { originX: 40, originY: 27, comarcasWide: 1, comarcasHigh: 1 },
+      { ...DEFAULT_CONFIG.world, width: 64, height: 48 });
+    const east = createLocalGeography(geography,
+      { originX: 41, originY: 27, comarcasWide: 1, comarcasHigh: 1 },
+      { ...DEFAULT_CONFIG.world, width: 64, height: 48 });
+
+    const westEdge = Array.from({ length: 48 }, (_, y) => west.hydrologyAt(64, y + 0.5)?.kind ?? null);
+    const eastEdge = Array.from({ length: 48 }, (_, y) => east.hydrologyAt(0, y + 0.5)?.kind ?? null);
+    expect(west.hydrology.rivers.length).toBeGreaterThan(0);
+    expect(westEdge.some(kind => kind === 'fresh')).toBe(true);
+    expect(eastEdge).toEqual(westEdge);
+  });
 });

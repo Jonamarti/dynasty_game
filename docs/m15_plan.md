@@ -2969,6 +2969,15 @@ cerrar esta fase**: «una `Simulation` es una isla» deja de ser verdad.
 
 ## Fase 30 — El agua dulce y la sal (M14 fase 12; nota 7 de `notes3`; N2)
 
+**Avance del 2026-10-06: terreno y registros de agua local.** `river` se añade
+al final de los biomas; las orillas dulces/saladas y las superficies fluviales
+se conservan en terreno geográfico v2. Zanjas heredan el agua de su origen.
+El generador talla lechos con vados, lagos en depresiones y manantiales; su
+conexión recta entre mapas está probada; quedan giros y fase global de vados.
+Clásico mantiene
+terreno v1 y mar potable, sin draws nuevos. [Contrato](m15_phase30_water.md).
+Capturas del terreno en `artifacts/screenshots/m15-phase30-water-2026-10-06T-02/`.
+
 **Estado (2026-10-02): clasificación geográfica inicial; falta conectar el
 agua al terreno y a las necesidades de la partida global.** `RealWorldMap`
 clasifica las regiones con ríos o lagos como agua dulce y las regiones bajo el

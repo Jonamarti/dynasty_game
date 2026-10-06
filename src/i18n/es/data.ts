@@ -137,6 +137,7 @@ export const ES_DATA: Record<string, string> = {
   "skill|smith": "forja",
   "skill|swim": "natación",
   "biome|water": "agua",
+  "biome|river": "río",
   "biome|beach": "playa",
   "biome|grass": "pradera",
   "biome|forest": "bosque",

@@ -1,3 +1,16 @@
+## 2026-10-06 — M15 fase 30: terreno con agua dulce y salada
+
+El mar geográfico deja de ser indistinguible de un río. `World` clasifica
+agua y orillas, conserva superficies fluviales elevadas y propaga la fuente
+a zanjas. El bioma `river` se añade al final; su renderer lee la profundidad
+real del lecho tallado. El terreno geográfico usa registros v2 independientes;
+clásico conserva v1 y su agua potable. Sin nuevos draws o forks del motor.
+[Contrato y límites](m15_phase30_water.md). Regresiones del modelo, codec y
+generador se integran con controles negativos. Capturas revisadas:
+`artifacts/screenshots/m15-phase30-water-2026-10-06T-02/01-continental-water.png`.
+Los primeros intentos fallidos de tests permanecen en los logs; la evidencia
+completa de la pasada se registrará después de integrar los consumidores.
+
 ## 2026-10-05 — M15 fase 29: evidencia final de la pasada
 
 Typecheck pasa y la suite repetida después de revisar la fábrica pública pasa

@@ -1,5 +1,12 @@
 # Next steps
 
+**2026-10-06: fase 30, agua local.** Entregadas semántica dulce/salada,
+superficie y lecho fluvial, herencia de agua en zanjas y terreno geográfico v2.
+Clásico conserva su registro v1 y mar potable. Consumidores, escenario
+continental y continuidad entre comarcas están en integración; no se declara
+cerrada la fase ni se ofrece selección geográfica en el navegador.
+[Contrato](m15_phase30_water.md).
+
 **2026-10-05: fase 27 implementada; puerta económica abierta.** Profundidad,
 vadeo, humedad, pesca en agua con lanza equipada y natación están entregados,
 con negativas visibles, manos/cesta compatibles y ahogamiento determinista.

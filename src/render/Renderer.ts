@@ -55,6 +55,7 @@ const BIOME_COLORS: Record<Biome, [string, string]> = {
   // This is also spring and summer's palette: the two growing seasons keep
   // the ground's year-round colours, and only autumn and winter override it.
   water:  ['#24506f', '#2b5c7e'],
+  river:  ['#24506f', '#2b5c7e'],
   beach:  ['#d6c493', '#c9b585'],
   grass:  ['#6b9c4a', '#628f43'],
   forest: ['#3c6b33', '#355f2d'],
@@ -434,7 +435,8 @@ export class Renderer {
     for (let y = 0; y < world.height; y++) {
       for (let x = 0; x < world.width; x++) {
         const biome = BIOMES[world.biome[world.index(x, y)]!]!;
-        const [base, speckle] = biome === 'water'
+        const aquatic = biome === 'water' || biome === 'river';
+        const [base, speckle] = aquatic
           ? waterColors(world.depthAt(x, y), world.wadeDepth, world.swimDepth)
           : SEASON_BIOME_COLORS[season]?.[biome] ?? BIOME_COLORS[biome];
         ctx.fillStyle = base;
@@ -448,7 +450,7 @@ export class Renderer {
           ctx.fillRect(x * TILE + ((h >> 3) & 3) * 4, y * TILE + ((h >> 5) & 3) * 4, 4, 4);
         }
 
-        if (biome === 'water') continue;
+        if (aquatic) continue;
 
         // Earth moved by a spade, M15 phase 26: a dug tile is darker, turned
         // ground and a piled one paler, loose earth, in proportion to how far

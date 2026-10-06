@@ -5,7 +5,7 @@ import { World } from '../core/World.ts';
 import { Soil } from '../core/Soil.ts';
 import { DEFAULT_CONFIG, type WorldConfig } from '../core/Config.ts';
 
-export const WORLD_TERRAIN_RECORD_VERSION = 1 as const;
+export const WORLD_TERRAIN_RECORD_VERSION = 2 as const;
 
 type NumericArrayKey = 'elevation' | 'offset' | 'prominence' | 'moisture' | 'fertility' |
   'grass' | 'grassCap';
@@ -15,7 +15,7 @@ type SoilArrayKey = 'texture' | 'organic' | 'nutrient';
 
 export interface WorldTerrainRecord {
   readonly recordType: 'WorldTerrainRecord';
-  readonly version: 1;
+  readonly version: 1 | 2;
   readonly width: number;
   readonly height: number;
   readonly chunkSize: number;
@@ -24,7 +24,8 @@ export interface WorldTerrainRecord {
   readonly earthVersion: number;
   readonly nextRegionId: number;
   readonly config: Record<string, number | boolean>;
-  readonly tiles: Record<NumericArrayKey, number[]> & Record<ByteArrayKey, number[]> & Record<RegionArrayKey, number[]>;
+  readonly tiles: Record<NumericArrayKey, number[]> & Record<ByteArrayKey, number[]> & Record<RegionArrayKey, number[]> &
+    { readonly waterKind?: number[]; readonly waterSurface?: number[] };
   readonly soil: Record<SoilArrayKey, number[]> & { active: number[] };
   readonly regionSizes: [number, number][];
   readonly shoreTiles: { x: number; y: number }[];
@@ -98,7 +99,8 @@ function validateConfig(config: unknown, width: number, height: number, chunkSiz
 
 /** Capture all tile and soil state, including caches/counters that affect later terrain edits. */
 export function toWorldTerrainRecord(world: World): WorldTerrainRecord {
-  assertOwnKeys(world, worldOwnKeys, 'World');
+  const hasHydrology = world.waterKind !== undefined || world.waterSurface !== undefined;
+  assertOwnKeys(world, hasHydrology ? [...worldOwnKeys, 'waterKind', 'waterSurface'] : worldOwnKeys, 'World');
   assertOwnKeys(world.soil, soilOwnKeys, 'Soil');
   const soilInternals = world.soil as unknown as { fertility: Float32Array };
   if (soilInternals.fertility !== world.fertility) invalid('Soil fertility alias diverges from World fertility');
@@ -114,8 +116,13 @@ export function toWorldTerrainRecord(world: World): WorldTerrainRecord {
   for (const key of numericKeys) tiles[key] = copyValues(world[key]);
   for (const key of byteKeys) tiles[key] = copyValues(world[key]);
   tiles.region = copyValues(world.region);
+  if (hasHydrology) {
+    if (!world.waterKind || !world.waterSurface || world.waterKind.length !== world.biome.length || world.waterSurface.length !== world.biome.length) invalid('incomplete local hydrology arrays');
+    (tiles as Record<string, number[]>).waterKind = copyValues(world.waterKind);
+    (tiles as Record<string, number[]>).waterSurface = copyValues(world.waterSurface);
+  }
   return {
-    recordType: 'WorldTerrainRecord', version: WORLD_TERRAIN_RECORD_VERSION,
+    recordType: 'WorldTerrainRecord', version: hasHydrology ? WORLD_TERRAIN_RECORD_VERSION : 1,
     width: world.width, height: world.height, chunkSize: world.chunkSize,
     chunksX: world.chunksX, chunksY: world.chunksY, earthVersion: world.earthVersion,
     nextRegionId: internals.nextRegionId, config,
@@ -132,8 +139,9 @@ export function toWorldTerrainRecord(world: World): WorldTerrainRecord {
 /** Validate first, then hydrate independent arrays and working World/Soil prototypes without constructors. */
 export function fromWorldTerrainRecord(record: unknown): World {
   if (!object(record)) invalid('expected object');
+  if (record.version !== 1 && record.version !== 2) invalid('expected WorldTerrainRecord v1 or v2');
   exact(record, ['recordType', 'version', 'width', 'height', 'chunkSize', 'chunksX', 'chunksY', 'earthVersion', 'nextRegionId', 'config', 'tiles', 'soil', 'regionSizes', 'shoreTiles']);
-  if (record.recordType !== 'WorldTerrainRecord' || record.version !== WORLD_TERRAIN_RECORD_VERSION) invalid('expected WorldTerrainRecord v1');
+  if (record.recordType !== 'WorldTerrainRecord') invalid('expected WorldTerrainRecord');
   if (!safeDimension(record.width) || !safeDimension(record.height) || !safeDimension(record.chunkSize) ||
       record.chunksX !== Math.ceil(record.width / record.chunkSize) || record.chunksY !== Math.ceil(record.height / record.chunkSize) ||
       !Number.isSafeInteger(record.earthVersion) || (record.earthVersion as number) < 0 ||
@@ -142,7 +150,8 @@ export function fromWorldTerrainRecord(record: unknown): World {
   if (!Number.isSafeInteger(n) || n > 10_000_000) invalid('tile count out of range');
   validateConfig(record.config, record.width as number, record.height as number, record.chunkSize as number);
   if (!object(record.tiles)) invalid('invalid tile arrays');
-  exact(record.tiles, [...numericKeys, ...byteKeys, 'region']);
+  const hasHydrology = record.version === 2;
+  exact(record.tiles, [...numericKeys, ...byteKeys, 'region', ...(hasHydrology ? ['waterKind', 'waterSurface'] : [])]);
   const arrays = new Map<string, Float32Array | Uint8Array | Int32Array>();
   for (const key of [...numericKeys, ...soilKeys]) {
     const raw = key === 'texture' || key === 'organic' || key === 'nutrient' ?
@@ -161,7 +170,7 @@ export function fromWorldTerrainRecord(record: unknown): World {
     if (!Array.isArray(raw) || raw.length !== n) invalid(`invalid ${key} array`);
     for (let i = 0; i < n; i++) {
       const value: unknown = Object.hasOwn(raw, i) ? raw[i] : undefined;
-      if (!Number.isInteger(value) || (key === 'biome' ? (value as number) < 0 || (value as number) > 5 : value !== 0 && value !== 1)) invalid(`invalid ${key} array`);
+      if (!Number.isInteger(value) || (key === 'biome' ? (value as number) < 0 || (value as number) > (record.version === 2 ? 6 : 5) : value !== 0 && value !== 1)) invalid(`invalid ${key} array`);
     }
     arrays.set(key, new Uint8Array(raw as number[]));
   }
@@ -172,6 +181,28 @@ export function fromWorldTerrainRecord(record: unknown): World {
     if (!Number.isSafeInteger(value) || (value as number) < -1 || (value as number) > 2_147_483_647) invalid('invalid region array');
   }
   arrays.set('region', new Int32Array(regionRaw as number[]));
+  if (hasHydrology) {
+    const kinds = record.tiles.waterKind;
+    const surfaces = record.tiles.waterSurface;
+    if (!Array.isArray(kinds) || kinds.length !== n) invalid('invalid water kind array');
+    for (let i = 0; i < n; i++) {
+      const value: unknown = Object.hasOwn(kinds, i) ? kinds[i] : undefined;
+      if (!Number.isInteger(value) || (value as number) < 0 || (value as number) > 2) invalid('invalid water kind array');
+    }
+    if (!validDenseNumbers(surfaces, n, true)) invalid('invalid water surface array');
+    const biomeValues = arrays.get('biome') as Uint8Array;
+    for (let i = 0; i < n; i++) {
+      const waterBiome = biomeValues[i] === 0 || biomeValues[i] === 6;
+      if (waterBiome !== (kinds[i] !== 0) || (biomeValues[i] === 6 && kinds[i] !== 1)) invalid('water kind and biome disagree');
+      if (kinds[i] === 2 && surfaces[i] !== Math.fround((record.config as Record<string, number>).waterLevel!)) {
+        invalid('saltwater surface must match sea level');
+      }
+    }
+    arrays.set('waterKind', new Uint8Array(kinds));
+    arrays.set('waterSurface', new Float32Array(surfaces));
+  } else {
+    for (const value of arrays.get('biome') as Uint8Array) if (value > 5) invalid('river biome requires WorldTerrainRecord v2');
+  }
   if (!object(record.soil)) invalid('invalid soil record');
   exact(record.soil, [...soilKeys, 'active']);
   const activeTiles: unknown = record.soil.active;
@@ -198,9 +229,12 @@ export function fromWorldTerrainRecord(record: unknown): World {
   for (let i = 0; i < n; i++) {
     const id = regions[i]!;
     const waterDepth = Math.max(0, waterConfig.waterLevel! - elevation[i]! - offset[i]!);
+    const depth = hasHydrology && (arrays.get('waterKind') as Uint8Array)[i] === 1
+      ? (arrays.get('waterSurface') as Float32Array)[i]! - elevation[i]! - offset[i]!
+      : waterDepth;
     if ((walkable[i] === 1) !== (id >= 0) ||
         (biome[i] === 5 && walkable[i] !== 0) ||
-        (biome[i] === 0 && walkable[i] === 1 && waterDepth >= waterConfig.wadeDepth!)) {
+        ((biome[i] === 0 || biome[i] === 6) && walkable[i] === 1 && depth >= waterConfig.wadeDepth!)) {
       invalid('walkability and region labels disagree');
     }
     if (id >= 0) counted.set(id, (counted.get(id) ?? 0) + 1);
@@ -268,6 +302,10 @@ export function fromWorldTerrainRecord(record: unknown): World {
     swimRegion: new Int32Array(n).fill(-1), swimRegionSizes: new Map<number, number>(),
     swimRegionsDirty: true, swimRegionEarthVersion: -1,
   })) Object.defineProperty(mutableWorld, key, { value, enumerable: true, writable: true, configurable: true });
+  if (hasHydrology) {
+    Object.defineProperty(mutableWorld, 'waterKind', { value: arrays.get('waterKind'), enumerable: true, writable: true, configurable: true });
+    Object.defineProperty(mutableWorld, 'waterSurface', { value: arrays.get('waterSurface'), enumerable: true, writable: true, configurable: true });
+  }
   const soil = Object.create(Soil.prototype) as Soil;
   const mutableSoil = soil as unknown as Record<string, unknown>;
   for (const [key, value] of Object.entries({

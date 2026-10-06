@@ -36,7 +36,7 @@ import { SNOW_BURY_AT } from './Snow.ts';
 
 /** Share of the ground's carrying capacity each biome can hold as sward. */
 const BIOME_CAPACITY: Record<(typeof BIOMES)[number], number> = {
-  water: 0, beach: 0, grass: 1, forest: 0.5, hills: 0.35, rock: 0,
+  water: 0, beach: 0, grass: 1, forest: 0.5, hills: 0.35, rock: 0, river: 0,
 };
 
 /** Fraction of the gap to capacity regrown on a day of full growth. */

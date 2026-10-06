@@ -72,6 +72,13 @@ array; topology and historical shoreline caches survive terrain edits. It covers
 terrain only; world objects have their own codec, composed by the live loader. See
 [m15_phase28_world.md](m15_phase28_world.md).
 
+Geographic terrain now uses `WorldTerrainRecord` v2 for local water kinds and
+river/lake surfaces. `river` is appended as biome 6; the classic island retains
+v1 and potable seas. Carved channels, fords, depression lakes and slope springs
+are generated independently of Simulation streams. Flooded trenches inherit
+their source's kind and surface; depth and rendering share that local surface.
+See [m15_phase30_water.md](m15_phase30_water.md).
+
 `WorldObjectRecord` v1 now captures the seven ordered entity collections and
 their canonical ID maps in one graph, including nested building state. It shares
 `GraphRecords` with the existing entity codecs; explicit class tags survive
