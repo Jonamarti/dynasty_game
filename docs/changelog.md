@@ -1,3 +1,12 @@
+## 2026-10-06 — M15 fase 13: integración de la pantalla y el contenido
+
+La pantalla de sub-redes (13c) y el contenido (13b, 13d) se hicieron en ramas
+paralelas y se juntan aquí. `e2e/tech-subwebs.spec.ts` y
+`e2e/phase13d-nodes.spec.ts` entran en el script `e2e` de `package.json`, que
+antes no los corría. Capturas de la red con las cuatro sub-redes ya abiertas
+(Cocina incluida) en `artifacts/screenshots/m15-phase13-integrada-2026-10-06/`.
+Verificación y límites en [la fase](m15_phase13_subwebs.md).
+
 ## 2026-10-06 — M15 fase 13d: `sub-webs-are-climbed` cuenta nodos, no puertas
 
 El check recién añadido pasaba con «una puerta conocida». Una puerta es una

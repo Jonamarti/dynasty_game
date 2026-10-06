@@ -586,3 +586,35 @@ recetas se enseñan pero nadie las concibe desde cero en ese plazo (ver
 **Queda abierto.** Decisión del propietario: alargar el escenario, sembrar una
 receta en los fundadores de `craft`, o dar una fuente de hueso y de harina. La
 duda 16 de arriba queda sustituida por esta sección.
+
+## Integración y verificación conjunta (2026-10-06)
+
+**Qué se hizo.** 13c se trajo sobre la rama de 13b y 13d (`m15/phase13`); el
+único conflicto fue este documento. Los dos specs nuevos se añaden al script
+`e2e` de `package.json`.
+
+**Cómo se verificó.** Todo en un contenedor Linux en la nube, sin `npm
+install` posible: los tests unitarios corren en un sustituto de vitest
+(esbuild más un shim con el `expect` de vitest) y Playwright contra una página
+servida por esbuild, no por Vite. **No se ha ejecutado `npm test`, `npm run
+e2e`, `npm run sim:check:all` ni ninguna cohorte de semillas.**
+
+- Typecheck (`tsc --noEmit`): limpio.
+- Unitarios: 161 archivos, 1.156 tests, todos pasan (base antes de la fase:
+  158 archivos). Un test de `earthwork-checks` supera los 5 s en esta máquina.
+- E2e, lista completa del script: 86 de 89 pasan. Los tres que fallan
+  (`freshwater` «continental river…», `geographic-terrain`, `water-depth`)
+  fallan igual en `master` (`8aba05f`) con este mismo sustituto: importan
+  módulos sueltos por ruta y el sustituto les da instancias de clase distintas
+  de las del juego. No tocan nada de esta fase; hay que verlos pasar con Vite.
+- Headless: `band` 2/137 fallos (igual que antes); `hearths` y `craft` 7/140
+  (antes 6): el único cambio es `sub-webs-are-climbed`, en rojo a propósito.
+
+**Capturas.** `artifacts/screenshots/m15-phase13-integrada-2026-10-06/`: red
+principal con las marcas de Cocina y Armas, sub-red Armas con sus cuatro
+nodos, la misma en español y en móvil.
+
+**Pendiente antes de dar la fase por cerrada.**
+1. `npm run verify` real en la máquina del propietario.
+2. Cohorte de 20 semillas de 13d (coste declarado: 3 puntos o menos).
+3. Las decisiones de «Dudas abiertas» y el hallazgo de `sub-webs-are-climbed`.
