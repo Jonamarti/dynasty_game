@@ -411,3 +411,152 @@ headless en un contenedor Linux en la nube.
 17. **Validación pendiente.** La cohorte de 20 semillas de 13d (no se corrió) y
     la decisión sobre `bread`/`brewing` y `cooking` (duda 1) son del propietario.
 
+
+## 13c — La pantalla: la red se abre y no se mueve (2026-10-06)
+
+**Qué se quería.** Que la red principal (`G`) dibuje solo los nodos de `main`;
+que una puerta que el personaje del jugador conoce lleve una marca «conocidos /
+total» que abre la misma superposición filtrada por red, con miga de pan y
+vuelta con `Escape`; que una sub-red cuya puerta no se conoce no exista para el
+jugador; y que el trazado deje de moverse (`docs/bugs.md`, «The tech web's
+arrangement shifted…»).
+
+**Qué se hizo.**
+
+- `TechWebLayout.ts`: `layOutWeb(web = 'main', { previous?, members? })`. Una
+  red dibuja sus nodos y, si es sub-red, **su puerta como raíz** (nodo `main` ya
+  conocido; sin ella las aristas de la red no tendrían de dónde salir). Ningún
+  otro nodo de otra red, y `webEdges(members)` solo une nodos de la propia red
+  (las aristas compartidas se calculan por red, no se filtran, para que el tope
+  de grado no se gaste en aristas que no se dibujan). Es **incremental**: los
+  nodos de `previous` que siguen siendo miembros conservan `x, y` exactamente; los
+  nuevos se siembran donde los habría sembrado el primer trazado, se relajan con
+  los colocados **congelados** (`lockX/lockY` de `GraphLayout`: empujan y tiran,
+  pero su resultado se descarta), en orden de `TECHS`, y `settleOverlaps` los
+  separa. El primer trazado sigue desplazándose al origen; los siguientes no
+  (desplazar movería lo que esto quiere quieto), así que `WebLayout` gana
+  `bounds` y `origin` y puede haber coordenadas negativas tras crecer. El
+  argumento `previous` no se modifica. `members` solo lo usan los tests para
+  simular una tabla que crece.
+- `TechWeb.ts`: un trazado por red (`layouts: Map<WebId, WebLayout>`), reutilizado
+  mientras no cambie el número de nodos; el digest incluye la red en pantalla y,
+  por cada sub-red, si es visible y cuántas conoce el sujeto (aprender una puerta
+  cambia la pantalla sin cambiar un solo nodo). `openWeb`/`back`; clic en
+  `[data-web]` (marca o miga), `[data-back]`. `Escape` dentro de una sub-red
+  vuelve a la principal y llama a `stopImmediatePropagation()`: `main.ts` cierra
+  cualquier grafo abierto con la misma tecla «por si acaso» y sin esto el primer
+  `Escape` sacaría al jugador de la red entera. El segundo cierra como siempre.
+  `main.ts` no se toca.
+- **Visibilidad** (`webVisible`): una sub-red es visible si el personaje del
+  jugador (`sim.player`; el sujeto si no hay jugador) conoce su puerta. Sin eso no
+  hay marca, `openWeb` la rechaza y ningún nombre de sus nodos sale en pantalla:
+  `labelOf` sustituye el nombre de una técnica de red oculta por «algo que aún no
+  sabes nombrar» en el panel de detalle («se apoya en…» y los ingredientes de las
+  chispas). Hoy ninguna técnica `main` apunta a una de sub-red (se comprobó); la
+  guardia es para cuando 13d añada nodos.
+- **Una puerta desconocida** es un nodo normal de la red principal, con las reglas
+  de siempre para lo desconocido (oscuro y sin nombre si le falta algo; con
+  nombre si es comprensible), y **sin marca**. La marca solo existe si el
+  personaje la conoce.
+- La marca es un `<span role="button" data-web>` dentro del botón del nodo (un
+  botón dentro de un botón no es HTML válido), con el color de `WEBS[..].color`,
+  el nombre de la red y «n / m». `n` cuenta lo que conoce el **sujeto** de la red
+  abierta; la visibilidad depende del **observador**. Con el sujeto = jugador (el
+  caso normal) es exactamente «conocidos por el personaje del jugador». Un
+  margen invisible (`::before`) la hace pulsable con el dedo.
+- Miga de pan: fila propia bajo la cabecera, solo en sub-redes: botón «‹ Volver»
+  (táctil, 36 px en móvil), «Red principal» (enlace) › nombre de la red (con
+  subrayado de su color); la tarjeta lleva una barra superior del color de la
+  red. Una sub-red pequeña se encuadra hasta 1,5x (la principal, 1,1x).
+- Móvil: la tarjeta se ancla arriba en vez de centrarse. Hallazgo del e2e: en un
+  móvil un toque es primero un «hover» que enfoca el nodo, el panel de detalle de
+  debajo cambia de alto y una tarjeta centrada se recentra, moviendo la marca
+  bajo el dedo antes del clic (el toque caía en una arista SVG). Crece solo hacia
+  abajo y no se mueve.
+- Cadenas por `t()`: «something you cannot yet name», «Where you are in the
+  web», «Open {web}: {known} of {total} known» (`es/ui.ts`); «Back», «Main web»
+  y las etiquetas de red ya existían.
+- Test existente tocado por diseño (la principal ya no dibuja todo):
+  `smoke.spec.ts` «the tech web opens on G…» cuenta `techsOfWeb('main')` en vez de
+  `TECHS`; en `techweb.test.ts`, «places every technology exactly once» pasa a ser
+  «of the web» (la unión de las redes la comprueba el test nuevo), el test de
+  extremos de aristas se hace por red, y el de anillos usa `bow` (ahora en Armas)
+  desde el trazado de `arms`.
+
+**Cómo se verificó** (contenedor Linux en la nube, sustituto esbuild/shim de
+vitest y página servida con esbuild para Playwright; no se ejecutó `npm test` ni
+`npm run e2e`).
+
+- Tests unitarios primero (`techweb-subwebs.test.ts`, 10 tests): 5 fallaban
+  (`layOutWeb` ignoraba la red) antes de implementar; ahora pasan. Cubren: la
+  principal sin ningún nodo ni arista de sub-red, una sub-red con sus nodos y su
+  puerta (todos alcanzables desde la puerta), cada técnica en exactamente una red,
+  mismo resultado dos veces en cada red, **los nodos ya colocados conservan sus
+  coordenadas exactas al añadir nodos** (en uno y en dos pasos), los nuevos sin
+  solapes y deterministas, `previous` intacto, trazados independientes por red y
+  `bounds` que contienen todo tras crecer. Nada fija el número ni los miembros
+  de las redes.
+- e2e nuevo `e2e/tech-subwebs.spec.ts` (5 tests; los e2e se escribieron junto a la
+  implementación y no se vieron fallar contra la versión anterior, que no tiene
+  marcas: es obvio que (a) fallaría ahí): (a) marca «1 / m», clic, miga, nodos de
+  la sub-red y su puerta como raíz, `Escape` vuelve, segundo `Escape` cierra sin
+  abrir el menú, botón «Volver» y miga «Red principal» funcionan, y reabrir
+  empieza en la principal; (b) la sub-red de una puerta desconocida no tiene marca
+  y ninguno de los `data-tech` ni de los nombres de sus nodos está en el HTML ni
+  en el texto de la superposición, y toda arista acaba en un nodo dibujado; (c) un
+  clic derecho en un terreno vacío abre el menú radial con la red cerrada
+  (control) y **no** lo abre sobre la red (principal ni sub-red), el panel del HUD
+  no cambia, y al cerrar el mismo clic vuelve a ser del mundo; (d) las posiciones
+  de todos los nodos son idénticas antes y después de aprender las puertas con la
+  red abierta, tras entrar en una sub-red y volver, y tras cerrar y reabrir; (e)
+  capturas, con el móvil comprobando que «Volver» cabe en pantalla y mide ≥ 30 px.
+  Dos pasadas seguidas: 5/5 y 5/5.
+- Subconjuntos de `smoke.spec.ts`: `-g "tech web"` 5/5, `-g "Escape opens the menu"`
+  1/1, `-g "Spanish"` 2/2.
+- `tsc --noEmit` limpio. Suite completa con el sustituto
+  (`JOBS=2 node /home/claude/work/harness/unit.mjs`): **159 archivos, 1.110 tests,
+  0 fallos** (1.100 de 13a + 10 nuevos; un test supera los 5 s en esta máquina
+  lenta, `earthwork-checks`, ajeno).
+- **Aviso del entorno:** el servidor de la arnés de Playwright devuelve 404 a
+  `/favicon.ico` y `guardErrors` lo cuenta como error de consola, así que con la
+  configuración de la arnés tal cual incluso el test «Escape opens the menu» (que
+  no toca nada mío) falla en esa línea. Las pasadas de arriba se hicieron con una
+  copia de la configuración y del servidor que responde 204 a `/favicon.ico` (copia
+  fuera del repositorio; no se commitea). No es un cambio del juego.
+- Capturas en `artifacts/screenshots/m15-phase13c-subwebs-2026-10-06/` (1280x800;
+  la 4, 390x844 móvil como el test existente), vistas una a una:
+  `1-main-web-gate-mark.png` (red principal con la marca «Weapons 1 / 2» en la
+  lanza), `2-sub-web-breadcrumb.png` (Armas abierta: «‹ Back · Main web › Weapons»,
+  barra y raíz de color), `3-sub-web-spanish.png` (la misma en español, con el
+  detalle de «El arco»), `4-sub-web-phone.png` (móvil con Armas abierta, botón
+  «Back» a la vista).
+- **Pendiente del propietario:** añadir `e2e/tech-subwebs.spec.ts` a la lista del
+  script `e2e` de `package.json` (COMMON.md prohíbe tocarlo aquí).
+
+**Qué queda abierto.** Ver «Dudas abiertas de 13c» abajo.
+
+### Dudas abiertas de 13c
+
+1. **El bug de `bugs.md` queda arreglado a medias, y lo digo en su anotación.**
+   El mecanismo está (un nodo con sitio no se mueve cuando llega otro, probado),
+   pero el estado del trazado vive en la página: no se guarda entre sesiones ni se
+   fija en el repositorio. Si alguien retoca `MAX_PUSH`, `heat` o `AT_REST` de
+   `GraphLayout`, el primer trazado de cada red cambia en la siguiente carga, y lo
+   que sí queda quieto es lo que ya estaba abierto. Fijarlo entre versiones pediría
+   guardar las posiciones (localStorage o un archivo versionado); no se hizo por no
+   inventar una persistencia que el plan no pide.
+2. **El e2e (d) no puede añadir una técnica a la tabla en caliente**, así que
+   demuestra que aprender no mueve nada; que añadir nodos no mueve los previos lo
+   demuestra el test unitario (la tabla no crece en ejecución).
+3. **Marca para un sujeto distinto del jugador.** Se cuenta lo que sabe el sujeto
+   y se decide la visibilidad con lo que sabe el observador (el jugador). La lectura
+   literal del plan («conocidos por el personaje del jugador») coincide con la
+   mía cuando el sujeto es el jugador. Si se prefiere contar siempre lo del jugador,
+   es cambiar una línea en `gateMark`.
+4. **La puerta como raíz de la sub-red** es una decisión mía (el plan no dice qué
+   dibuja la sub-red): sin ella las aristas hacia la puerta no existirían y la
+   sub-red sería un conjunto flotante. Cuenta como nodo de la red principal, no
+   entra en los «n conocidas».
+5. Las sub-redes con un nodo que requiere técnicas de `main` distintas de la
+   puerta (p. ej. `sling` requerirá `cordage`) no dibujan esa otra técnica: se
+   explica en el panel de detalle («se apoya en…»), no con una arista.

@@ -1787,6 +1787,15 @@ looks different. A snapshot of a few known node positions would catch it,
 though it would also need rewriting on every deliberate change — which is why
 one was not added here rather than added and immediately tuned green.
 
+**Annotation, M15 phase 13c (2026-10-06): partly fixed.** `layOutWeb` is now
+incremental and per web: a node that already has a place keeps its exact
+coordinates when another is added, and only the newcomers are relaxed (with the
+placed ones frozen), in `TECHS` order. `techweb-subwebs.test.ts` pins it. What is
+*not* fixed: the arrangement lives in the page, not in storage or in the repo, so
+retuning `MAX_PUSH`, `heat` or `AT_REST` still moves a web the next time it is
+first laid out. Pinning it across builds would need the positions persisted, which
+13c did not invent. See `m15_phase13_subwebs.md`.
+
 ### `FamilyTree` never got the mobile zoom treatment the tech web did
 
 `PanelBox` fixes the box all three panels ask for, so the family tree no

@@ -11,7 +11,7 @@ import { test, expect, type Page } from '@playwright/test';
 // node count used to be written here as a literal and broke the moment a
 // milestone added a technology, which is a test asserting a number rather than
 // a fact. The fact is "every technology is on the web".
-import { TECHS } from '../src/sim/knowledge/Tech.ts';
+import { techsOfWeb } from '../src/sim/knowledge/Tech.ts';
 import type { Simulation } from '../src/sim/core/Simulation.ts';
 import type { Camera } from '../src/render/Camera.ts';
 import { readFileSync } from 'node:fs';
@@ -982,8 +982,9 @@ test('the tech web opens on G and answers why an idea has not arrived', async ({
   await page.keyboard.press('g');
   await expect(page.locator('.techweb-card')).toBeVisible({ timeout: 10_000 });
 
-  // Every technology is on the web, and the states are distinguishable.
-  await expect(page.locator('.techweb-node')).toHaveCount(TECHS.length);
+  // Every technology of the main web is on it (M15 phase 13c: the sub-webs have
+  // their own screens, behind their gates), and the states are distinguishable.
+  await expect(page.locator('.techweb-node')).toHaveCount(techsOfWeb('main').length);
   await expect(page.locator('.techweb-node.is-proven')).toHaveCount(1);
   await expect(page.locator('.techweb-node.is-working')).toHaveCount(1);
   // Out of reach means unlabelled: the shape of what is unknown is visible,

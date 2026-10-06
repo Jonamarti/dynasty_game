@@ -1522,6 +1522,8 @@ añadir técnicas**, solo moverlas de red.
 - e2e: abrir la red, entrar en una sub-red, volver y comprobar que no se traga
   los clics; una sub-red de una puerta desconocida no aparece.
 
+**Avance del 2026-10-06:** 13c hecha (`m15: la red se abre y no se mueve`). La red principal dibuja solo `main`; una puerta conocida lleva «conocidos / total» y abre la sub-red con miga de pan y botón «Volver» (`Escape` vuelve; el segundo cierra); una sub-red de puerta desconocida no se ve ni se nombra; `layOutWeb` es incremental y por red (los nodos colocados no se mueven, probado). La puerta se dibuja como raíz de su sub-red. Tests unitarios, `e2e/tech-subwebs.spec.ts` (el propietario debe añadirlo al script `e2e`) y capturas en `artifacts/screenshots/m15-phase13c-subwebs-2026-10-06/`. Detalle y dudas en [m15_phase13_subwebs.md](m15_phase13_subwebs.md).
+
 ### 13d. Contenido que estrena las sub-redes (medido)
 
 Cada nodo con su efecto en el mismo commit y su `age` y `firstKnown`:

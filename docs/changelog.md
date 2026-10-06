@@ -89,6 +89,25 @@ de `band`, `hearths` y `craft` coinciden antes y después. Verificación en el
 sustituto esbuild de vitest, no en `npm test`. Evidencia en
 `artifacts/verification/m15-phase13a-20261006/`.
 
+## 2026-10-06 — M15 fase 13c: la red se abre y no se mueve
+
+La red principal (`G`) dibuja solo los nodos de `main`; una puerta que el
+personaje del jugador conoce lleva «conocidos / total» de su sub-red y un clic
+la abre en la misma superposición, con miga de pan, botón «Volver» y `Escape`
+que vuelve (el segundo cierra). Una sub-red cuya puerta no se conoce no tiene
+marca ni se puede abrir, y ninguno de los nombres de sus nodos sale en pantalla.
+`layOutWeb` pasa a ser incremental y por red: los nodos ya colocados conservan
+sus coordenadas exactas y solo se relajan los nuevos, en orden de `TECHS`, con
+los colocados congelados; era el defecto de «The tech web's arrangement shifted»
+(`bugs.md`), arreglado en lo que cabe en la página (el estado no se guarda entre
+sesiones). En móvil la tarjeta se ancla arriba: un toque enfocaba el nodo, el
+detalle cambiaba de alto y una tarjeta centrada se recentraba bajo el dedo. 10
+tests unitarios nuevos, `e2e/tech-subwebs.spec.ts` (el propietario debe añadirlo
+al script `e2e`) y capturas en
+`artifacts/screenshots/m15-phase13c-subwebs-2026-10-06/`. Verificación en el
+sustituto esbuild de vitest y en una página servida con esbuild; no se ejecutó
+`npm test` ni `npm run e2e`. Detalle en [m15_phase13_subwebs.md](m15_phase13_subwebs.md).
+
 ## 2026-10-06 — M15 fase 30: puerta continental y límites medidos
 
 `frontier` construye agua geográfica real y mide bebida dulce junto al mar

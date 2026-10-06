@@ -34,7 +34,8 @@
 import type { Simulation } from '../sim/core/Simulation.ts';
 import type { Person } from '../sim/entities/Person.ts';
 import {
-  TECH, TECH_EFFECTS, AGE_LABELS, prerequisitesMet, type Tech,
+  TECH, TECH_EFFECTS, AGE_LABELS, WEBS, SUB_WEBS, webOf, techsOfWeb, prerequisitesMet,
+  type Tech, type WebId,
 } from '../sim/knowledge/Tech.ts';
 import {
   describeIngredient, sparkStatus, STAGE_LABELS, PRACTICE_STAGE_LABELS,
@@ -84,12 +85,16 @@ const DRAG_THRESHOLD = 4;
 export class TechWebOverlay {
   private root: HTMLElement;
   /**
-   * The whole web's arrangement. Computed once, ever — unlike the rest of
-   * this panel's state it does not depend on which subject the panel is open
-   * on, or on how big the window is, because there is no box it has to fit
-   * into any more. See `layOutWeb`'s own comment.
+   * Each web's arrangement, kept for the life of the page. Computed once per
+   * web and only ever *extended* — a node that has a place keeps it, see
+   * `layOutWeb` — and it does not depend on which subject the panel is open on,
+   * or on how big the window is, because there is no box it has to fit into any
+   * more. M15 phase 13c: one entry per web, so opening a sub-web and coming back
+   * cannot disturb the main one.
    */
-  private layout: WebLayout | null = null;
+  private layouts = new Map<WebId, WebLayout>();
+  /** The web on screen. `main` on every open; a gate's mark opens a sub-web. */
+  private web: WebId = 'main';
   private subject: Person | null = null;
   private sim: Simulation | null = null;
   private focused: Tech | null = null;
@@ -161,6 +166,18 @@ export class TechWebOverlay {
       const target = event.target as HTMLElement;
       if (target.closest('[data-close]')) {
         this.close();
+        return;
+      }
+      if (target.closest('[data-back]')) {
+        this.back();
+        return;
+      }
+      // A gate's mark and a breadcrumb both name a web to go to. Checked before
+      // `data-tech`: the mark sits inside its gate's node, and a tap on it means
+      // "open", not "show me the gate's detail".
+      const webButton = target.closest('[data-web]');
+      if (webButton) {
+        this.openWeb(webButton.getAttribute('data-web') as WebId);
         return;
       }
       const node = target.closest('[data-tech]');
@@ -268,6 +285,16 @@ export class TechWebOverlay {
       if (!this.isOpen) return;
       if (event.key === 'Escape') {
         event.preventDefault();
+        // Inside a sub-web, Escape steps back to the main one and is *spent*:
+        // `main.ts` closes any open graph on the same key as belt and braces,
+        // and without this the first Escape would take the player straight out
+        // of the web instead of out of the sub-web. This listener is registered
+        // before that one, so stopping the event here is enough.
+        if (this.web !== 'main') {
+          event.stopImmediatePropagation();
+          this.back();
+          return;
+        }
         this.close();
       }
     });
@@ -293,15 +320,55 @@ export class TechWebOverlay {
     this.sim = sim;
     this.subject = subject;
     this.focused = null;
+    this.web = 'main';
     this.fitted = false;
     this.signature = '';
     this.render();
     this.root.hidden = false;
   }
 
+  /**
+   * Whether the observer may see a web at all.
+   *
+   * The `Knowledge.ts` rule: the player knows what their character knows. A
+   * sub-web whose gate they have not worked out has no mark, cannot be opened
+   * and is not named anywhere on screen. The observer is the player's own
+   * character (the subject, when there is no player), whoever's web is open:
+   * what a stranger's web may show is already the veil's business.
+   */
+  private webVisible(web: WebId): boolean {
+    const gate = WEBS[web].gate;
+    if (gate === null) return true;
+    const observer = this.sim?.player ?? this.subject;
+    return observer?.knownTech.has(gate) ?? false;
+  }
+
+  /** Opens a web, if the player has the right to see it. */
+  openWeb(web: WebId): void {
+    if (!this.isOpen || web === this.web || !this.webVisible(web)) return;
+    this.web = web;
+    this.focused = null;
+    this.fitted = false;
+    this.signature = '';
+    this.render();
+  }
+
+  /** Steps from a sub-web back to the main one. False when already there. */
+  back(): boolean {
+    if (this.web === 'main') return false;
+    this.openWeb('main');
+    return true;
+  }
+
+  /** A technology's name as this player may read it: hidden webs keep their secrets. */
+  private labelOf(tech: Tech): string {
+    return this.webVisible(webOf(tech)) ? t(TECH[tech].label) : t('something you cannot yet name');
+  }
+
   close(): void {
     this.root.hidden = true;
     this.root.innerHTML = '';
+    this.web = 'main';
     this.subject = null;
     this.sim = null;
     this.focused = null;
@@ -349,11 +416,14 @@ export class TechWebOverlay {
     notice: Notice
   ): void {
     this.fitted = true;
-    const whole = Math.min(1.1, box.width / layout.width, box.height / layout.height);
+    // A small sub-web may be framed larger than the main one is allowed to be:
+    // three nodes at 1.1x are a speck in the middle of a big empty box.
+    const cap = this.web === 'main' ? 1.1 : 1.5;
+    const whole = Math.min(cap, box.width / layout.width, box.height / layout.height);
     if (whole >= READABLE_ZOOM) {
       this.zoom = Math.max(MIN_ZOOM, whole);
-      this.panX = (box.width - layout.width * this.zoom) / 2;
-      this.panY = (box.height - layout.height * this.zoom) / 2;
+      this.panX = (box.width - layout.width * this.zoom) / 2 - layout.bounds.minX * this.zoom;
+      this.panY = (box.height - layout.height * this.zoom) / 2 - layout.bounds.minY * this.zoom;
       return;
     }
 
@@ -383,7 +453,12 @@ export class TechWebOverlay {
       if (state === 'unknown' || state === 'understood') continue;
       x += node.x; y += node.y; count++;
     }
-    if (count === 0) return { x: layout.width / 2, y: layout.height / 2 };
+    if (count === 0) {
+      return {
+        x: (layout.bounds.minX + layout.bounds.maxX) / 2,
+        y: (layout.bounds.minY + layout.bounds.maxY) / 2,
+      };
+    }
     return { x: x / count, y: y / count };
   }
 
@@ -433,7 +508,11 @@ export class TechWebOverlay {
     // deliberately absent: they go through `applyTransform`, not a rebuild,
     // and including them here would mean every wheel notch fought this method
     // for the right to touch the DOM.
-    const parts = [subject.id, this.focused ?? '-',
+    // The web on screen, and which gates carry a mark with what count on it:
+    // learning a gate changes the main web without changing a single node.
+    const parts = [subject.id, this.focused ?? '-', 'web:' + this.web,
+      SUB_WEBS.map(web => web.id + (this.webVisible(web.id) ? '+' : '-') +
+        techsOfWeb(web.id).filter(tech => subject.knownTech.has(tech)).length).join(','),
       this.sim ? [...this.sim.recordedTech].sort().join(',') : ''];
     for (const tech of Object.keys(TECH) as Tech[]) {
       const idea = subject.ideaFor(tech);
@@ -482,8 +561,10 @@ export class TechWebOverlay {
     }
 
     const box = this.boxSize();
-    this.layout ??= layOutWeb();
-    const layout = this.layout;
+    // A sub-web whose gate has been forgotten (or a subject swapped under us)
+    // falls back to the main web rather than showing what it may not.
+    if (!this.webVisible(this.web)) { this.web = 'main'; this.fitted = false; }
+    const layout = this.layoutOf(this.web);
     const notice = sim.noticeOf(subject);
 
     const digest = this.digest(subject, notice);
@@ -502,6 +583,8 @@ export class TechWebOverlay {
       return;
     }
 
+    const web = this.web;
+    const inView = layout.nodes.filter(node => node.web === web);
     const edges = layout.edges.map(edge => {
       const from = layout.nodes.find(n => n.tech === edge.from)!;
       const to = layout.nodes.find(n => n.tech === edge.to)!;
@@ -517,6 +600,9 @@ export class TechWebOverlay {
       const idea = subject.ideaFor(node.tech);
       const level = subject.techLevel.get(node.tech) ?? 0;
       const colour = DOMAIN_COLORS[node.domain];
+      // A sub-web's own gate, drawn as its root. Marked so it reads as where
+      // you came from rather than as one of the web's members.
+      const anchor = node.web !== web ? ' is-anchor' : '';
 
       // A technology out of reach shows as an unlabelled dark node, so the
       // *shape* of what is unknown is visible without its content being given
@@ -548,24 +634,40 @@ export class TechWebOverlay {
       // unreachable node belongs to.
       const shape = state !== 'unknown' && def.kind === 'practice'
         ? ' is-practice' : '';
-      return '<button class="techweb-node is-' + state + shape +
+      // The gate mark: «known / total» of the web this node opens, on a gate the
+      // player's character knows. Only in the main web (inside the sub-web the
+      // gate is already the root) and only when the web is visible at all.
+      const opens = def.opens;
+      const mark = opens && web === 'main' && this.webVisible(opens)
+        ? this.gateMark(subject, opens) : '';
+      return '<button class="techweb-node is-' + state + shape + anchor +
+        (mark ? ' is-gate' : '') +
         (this.focused === node.tech ? ' is-focused' : '') +
         '" data-tech="' + node.tech + '"' +
         ' style="left:' + node.x.toFixed(1) + 'px;top:' + node.y.toFixed(1) +
         'px;--domain:' + colour + '">' +
         ring + written +
-        '<span class="techweb-name">' + label + '</span>' + pips +
+        '<span class="techweb-name">' + label + '</span>' + pips + mark +
         '</button>';
     }).join('');
 
-    const counts = layout.nodes.reduce((tally, node) => {
+    const counts = inView.reduce((tally, node) => {
       tally[this.stateOf(subject, node.tech, notice)]++;
       return tally;
     }, { proven: 0, working: 0, conceivable: 0, understood: 0, unknown: 0 } as
       Record<NodeState, number>);
 
+    const crumbs = web === 'main' ? '' :
+      '<nav class="techweb-crumbs" aria-label="' + escapeHtml(t('Where you are in the web')) + '">' +
+        '<button class="techweb-back" data-back="1">\u2039 ' + t('Back') + '</button>' +
+        '<button class="techweb-crumb" data-web="main">' +
+          escapeHtml(t(WEBS.main.label)) + '</button>' +
+        '<span class="techweb-crumb-sep">\u203A</span>' +
+        '<b class="techweb-crumb is-here">' + escapeHtml(t(WEBS[web].label)) + '</b>' +
+      '</nav>';
+
     this.root.innerHTML =
-      '<div class="techweb-card">' +
+      '<div class="techweb-card" data-web-view="' + web + '" style="--web:' + WEBS[web].color + '">' +
       '<div class="techweb-head">' +
         '<b>' + escapeHtml(name) + '</b>' +
         '<span class="techweb-sub">' +
@@ -573,14 +675,14 @@ export class TechWebOverlay {
             known: counts.proven, working: counts.working, reach: counts.conceivable, unknown: counts.unknown,
           }) + '</span>' +
         '<button class="techweb-close" data-close="1">' + t('close') + '</button>' +
-      '</div>' +
+      '</div>' + crumbs +
       '<div class="techweb-body">' +
         '<div class="techweb-viewport" style="width:' + box.width +
           'px;height:' + box.height + 'px">' +
-          '<div class="techweb-canvas" style="width:' + layout.width +
-            'px;height:' + layout.height + 'px">' +
-            '<svg class="techweb-edges" width="' + layout.width + '" height="' +
-              layout.height + '">' + edges + '</svg>' +
+          '<div class="techweb-canvas" style="width:' + layout.bounds.maxX +
+            'px;height:' + layout.bounds.maxY + 'px">' +
+            '<svg class="techweb-edges" width="' + layout.bounds.maxX + '" height="' +
+              layout.bounds.maxY + '">' + edges + '</svg>' +
             nodes +
           '</div>' +
         '</div>' +
@@ -591,6 +693,37 @@ export class TechWebOverlay {
     this.viewportEl = this.root.querySelector('.techweb-viewport');
     this.canvasEl = this.root.querySelector('.techweb-canvas');
     this.applyTransform();
+  }
+
+  /**
+   * The arrangement of one web, extended if the table grew since it was drawn.
+   *
+   * Almost always a map lookup. The size check is what makes it cheap: nothing
+   * is recomputed on a frame where no technology was added, and when one was,
+   * `layOutWeb` is handed the old arrangement so that only the newcomer moves.
+   */
+  private layoutOf(web: WebId): WebLayout {
+    const old = this.layouts.get(web);
+    const expected = techsOfWeb(web).length + (WEBS[web].gate ? 1 : 0);
+    if (old && old.nodes.length === expected) return old;
+    const next = layOutWeb(web, { previous: old ?? null });
+    this.layouts.set(web, next);
+    return next;
+  }
+
+  /** The mark on a gate: the web's colour, its name, and «known / total». */
+  private gateMark(subject: Person, opens: WebId): string {
+    const members = techsOfWeb(opens);
+    const known = members.filter(tech => subject.knownTech.has(tech)).length;
+    const label = t(WEBS[opens].label);
+    return '<span class="techweb-gatemark" data-web="' + opens + '" role="button"' +
+      ' style="--web:' + WEBS[opens].color + '" title="' +
+      escapeHtml(t('Open {web}: {known} of {total} known', {
+        web: label, known, total: members.length,
+      })) + '">' +
+      '<span class="techweb-gatename">' + escapeHtml(label) + '</span>' +
+      '<span class="techweb-gatecount">' + known + ' / ' + members.length + '</span>' +
+      '</span>';
   }
 
   /** How one node stands, in the five states the plan names. */
@@ -631,8 +764,8 @@ export class TechWebOverlay {
         '<div class="techweb-note">' + t('It rests on {list}, which they do not have.', {
           list: missing.map(required =>
             subject.knownTech.has(required)
-              ? escapeHtml(t(TECH[required].label))
-              : (prerequisitesMet(required, subject.knownTech)
+              ? escapeHtml(this.labelOf(required))
+              : (prerequisitesMet(required, subject.knownTech) && this.webVisible(webOf(required))
                   ? escapeHtml(t(TECH[required].label).toLowerCase())
                   : t('something else again'))
           ).join(t(' and ')),
@@ -756,7 +889,7 @@ export class TechWebOverlay {
   private sparkRow(spark: Spark, notice: Notice): string {
     const status = sparkStatus(spark, notice);
     const label = (kind: 'tech' | 'item', id: string) =>
-      kind === 'tech' ? t(TECH[id as Tech].label) : t(ITEMS[id]?.label ?? id);
+      kind === 'tech' ? this.labelOf(id as Tech) : t(ITEMS[id]?.label ?? id);
     const parts = spark.needs.map(ingredient => {
       const met = !status.missing.includes(ingredient);
       return '<span class="techweb-ing' + (met ? ' is-met' : '') + '">' +
