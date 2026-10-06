@@ -1,0 +1,10 @@
+
+Running 3 tests using 1 worker
+
+(node:19060) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 e2e\freshwater.spec.ts:4:1 › continental river and salt coast paint without changing the checkpoint (2.4s)
+  ok 2 e2e\freshwater.spec.ts:50:1 › salt water has a harmful menu label and a visible stop reason after drinking (2.4s)
+  ok 3 e2e\river-continuity.spec.ts:4:1 › the shared river bend renders deep water and fords without changing simulation state (2.2s)
+
+  3 passed (9.3s)

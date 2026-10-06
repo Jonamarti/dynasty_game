@@ -1,3 +1,26 @@
+## 2026-10-06 — M15 fase 30 cerrada: evidencia final y capturas
+
+Completados continuidad de cauces/vados, hidratación continental de leche,
+pesca en río/lago/costa y el puente real de fruta/pozo. Cinco commits de
+funcionalidad de esta pasada incluyen documentación y regresiones. Typecheck,
+1.111 tests en 162 archivos, 83 e2e y soak español (419 líneas, cero inglés)
+pasan. La matriz final conserva los mismos 116 fallos previos y sale con
+código 1; `frontier` pasa 2/2 y `frontier-cohort` 3/3. Los treinta estados
+persistidos y resultados clásicos coinciden con `8aba05f` y con `3d585f6`,
+anterior a toda la fase; se exponen cuatro excepciones históricas del codec.
+
+Veinte semillas finales, cinco años de juego cada una: cero colapsos,
+deshidrataciones y bebida marina autónoma; media final/pico 97,9%, con 645
+nacimientos y 90 muertes, incluidas 31 por hambre. No es supervivencia
+individual ni una mejora económica emparejada. Vadeos observados y caída
+neta de peces no se presentan como cruces ni capturas exactas.
+[Informe completo](m15_phase30_verification_20261006.md).
+Capturas finales revisadas, sin sobrescribir milestones:
+`artifacts/screenshots/m15-phase30-closed-2026-10-06T-03/` (cuatro imágenes).
+Se versionan esos PNG, los digests clásicos, resultados y logs finales
+seleccionados. Salinas de fase 15 y selección global posterior siguen en
+sus fases; no mantienen abierta la puerta de agua local.
+
 ## 2026-10-06 — M15 fase 30: cohorte continental autónoma y métricas explícitas
 
 `frontier-cohort` usa dos bandas pobladas por el constructor normal durante

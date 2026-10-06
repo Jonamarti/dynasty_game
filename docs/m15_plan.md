@@ -2969,22 +2969,34 @@ cerrar esta fase**: «una `Simulation` es una isla» deja de ser verdad.
 
 ## Fase 30 — El agua dulce y la sal (M14 fase 12; nota 7 de `notes3`; N2)
 
+**CERRADA — 2026-10-06.** Continuidad entre giros/recortes, vados globales,
+agua dulce/salada y sus consumidores, leche y puente de fruta/pozo, pesca en
+río/lago/costa y guardado continental entregados. Puertas: `frontier` 2/2,
+cohorte autónoma 3/3, veinte semillas finales sin deshidratación ni bebida
+marina autónoma; treinta estados clásicos persistidos y checks idénticos a
+`3d585f6` (antes de toda la fase) y `8aba05f` (antes de esta pasada).
+Typecheck, 1.111 tests, 162 archivos, 83 e2e y soak pasan. La matriz conserva
+116 fallos previos y sigue roja. [Evidencia y límites](m15_phase30_verification_20261006.md).
+Capturas: `artifacts/screenshots/m15-phase30-closed-2026-10-06T-03/`.
+La cohorte observa vadeos, no demuestra cruces topológicos; el cruce real
+lo prueba `frontier`. Salinas quedan en 15; globo y migración, después.
+
 **Segunda pasada del 2026-10-06: cohorte autónoma.** `frontier-cohort` añade
 cinco años de dos bandas sin setup forzado y tres checks de bebida/vadeo.
 El observador es pasivo y distingue cruces completos de estancias en agua.
 Sus cinco regresiones incluyen hash salado roto, desvío a la misma orilla,
 checkpoint idéntico y muerte por deshidratación sin fuentes alternativas.
 Suite final: 1.111 tests, 162 archivos; typecheck y 83 e2e pasan.
-El cierre espera veinte semillas finales y auditorías contra las referencias
-de esta pasada y de antes de toda la fase. [Informe](m15_phase30_verification_20261006.md).
+Las veinte semillas finales y ambas auditorías terminaron y figuran en el
+[informe](m15_phase30_verification_20261006.md).
 
 **Segunda pasada del 2026-10-06: continuidad fluvial corregida.** Los giros,
 confluencias y vados consultan nodos globales y una fase común hacia el desagüe.
 Un mapa entero coincide baldosa por baldosa con cuatro recortes a la misma
 resolución; el control falla en el build anterior. Los 15 focales pasan.
 Captura revisada del giro: `artifacts/screenshots/m15-phase30-continuity-2026-10-06T-02/`.
-La cohorte continental de veinte semillas y la verificación integrada están
-en curso; el cierre se registra con sus resultados.
+La cohorte continental y la verificación integrada finales figuran en el
+informe de cierre de arriba.
 
 **Segunda pasada del 2026-10-06: leche hidratante.** La política compartida
 aplica cinco puntos de alivio de sed a la leche continental, incluida IA,
@@ -3004,10 +3016,10 @@ con vecino seco caminable y región accesible.
 agua dulce detecta que explorar supera comer fruta ya llevada, incluso con
 sed extrema. Se aplaza esa búsqueda continental hasta gastar el alimento
 hidratante; clásico no cambia. Dos pruebas cubren fruta autónoma por sed
-y pozo como única fuente potable. La cohorte y las auditorías se repiten
-tras el arreglo, antes de declarar cierre.
+y pozo como única fuente potable. La cohorte y las auditorías se repitieron
+tras el arreglo y permiten el cierre documentado arriba.
 
-**Avance del 2026-10-06: terreno y registros de agua local.** `river` se añade
+**Primera pasada del 2026-10-06: terreno y registros de agua local.** `river` se añade
 al final de los biomas; las orillas dulces/saladas y las superficies fluviales
 se conservan en terreno geográfico v2. Zanjas heredan el agua de su origen.
 El generador talla lechos con vados, lagos en depresiones y manantiales; su

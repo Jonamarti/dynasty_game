@@ -1,16 +1,18 @@
 # Next steps
 
-**2026-10-06: fase 30, agua local.** Entregadas semántica dulce/salada,
-superficie y lecho fluvial, herencia de agua en zanjas y terreno geográfico v2.
-Clásico conserva su registro v1 y mar potable. IA, recuerdos y campamentos
-buscan agua dulce; la orden salada advierte y explica el daño. Inicios
-continentales poblados guardan y continúan. `frontier` pasa ambos checks con
-controles negativos; giros fluviales y fase global de vados siguen pendientes.
-La supervivencia continental a largo plazo y el contenido salinero requieren
-otra pasada. La matriz conserva los 116 fallos iniciales y los mismos recuentos
-e IDs clásicos; typecheck, 1.094 unitarios, 82 e2e y soak pasan. No se declara
-cerrada la fase ni se ofrece selección geográfica en el navegador.
-[Contrato](m15_phase30_water.md).
+**2026-10-06: fase 30 cerrada; siguiente, fase 31 (el globo).** Entregadas
+agua dulce/salada, cauces compartidos en giros, vados globales, herencia en
+zanjas, pesca en río/lago/costa, leche hidratante y puente efectivo de fruta/pozo.
+Clásico conserva mar potable y treinta estados persistidos idénticos al
+commit anterior a toda la fase. `frontier` pasa 2/2 y la cohorte 3/3; veinte
+semillas de cinco años terminan sin deshidratación ni bebida marina autónoma.
+Hay 31 muertes por hambre: no se afirma resolver la economía. Typecheck,
+1.111 tests, 162 archivos, 83 e2e y soak pasan. La matriz conserva 116 fallos
+previos y sigue roja. El navegador conserva selección clásica; la selección
+global llega con sus fases posteriores. Salinas siguen en 15 y las deudas de
+coste de 27 y fuentes de 29 permanecen separadas.
+[Evidencia](m15_phase30_verification_20261006.md).
+Capturas: `artifacts/screenshots/m15-phase30-closed-2026-10-06T-03/`.
 
 **2026-10-05: fase 27 implementada; puerta económica abierta.** Profundidad,
 vadeo, humedad, pesca en agua con lanza equipada y natación están entregados,

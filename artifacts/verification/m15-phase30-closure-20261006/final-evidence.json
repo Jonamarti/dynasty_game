@@ -1,0 +1,704 @@
+{
+  "referenceBeforePhase": "3d585f6",
+  "referenceBeforeClosure": "8aba05f",
+  "classicalStatesEqual": 30,
+  "codecFallbackScenarios": [
+    "hearths",
+    "porters",
+    "scribes",
+    "conquest"
+  ],
+  "classicalFailingChecksPreserved": 116,
+  "matrix": [
+    {
+      "name": "frontier-cohort",
+      "passed": 3,
+      "total": 3,
+      "failures": []
+    },
+    {
+      "name": "frontier",
+      "passed": 2,
+      "total": 2,
+      "failures": []
+    },
+    {
+      "name": "food-news",
+      "passed": 1,
+      "total": 1,
+      "failures": []
+    },
+    {
+      "name": "conflicts",
+      "passed": 1,
+      "total": 1,
+      "failures": []
+    },
+    {
+      "name": "tiny",
+      "passed": 47,
+      "total": 47,
+      "failures": []
+    },
+    {
+      "name": "band",
+      "passed": 52,
+      "total": 53,
+      "failures": [
+        "cravings-steer-the-diet"
+      ]
+    },
+    {
+      "name": "crowded",
+      "passed": 57,
+      "total": 59,
+      "failures": [
+        "cravings-steer-the-diet",
+        "shelter-answers-cold"
+      ]
+    },
+    {
+      "name": "century",
+      "passed": 71,
+      "total": 76,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "the-wise-avoid-baneberries",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "name": "craft",
+      "passed": 65,
+      "total": 70,
+      "failures": [
+        "people-act-on-what-they-know",
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "people-survive",
+        "pots-reach-a-granary"
+      ]
+    },
+    {
+      "name": "wilds",
+      "passed": 60,
+      "total": 63,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices"
+      ]
+    },
+    {
+      "name": "emptied",
+      "passed": 54,
+      "total": 58,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "projects-find-backers",
+        "shelter-answers-cold"
+      ]
+    },
+    {
+      "name": "hearths",
+      "passed": 64,
+      "total": 69,
+      "failures": [
+        "people-act-on-what-they-know",
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "roast-wins",
+        "pots-reach-a-granary"
+      ]
+    },
+    {
+      "name": "porters",
+      "passed": 54,
+      "total": 56,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices"
+      ]
+    },
+    {
+      "name": "scribes",
+      "passed": 66,
+      "total": 68,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept"
+      ]
+    },
+    {
+      "name": "harsh-winter",
+      "passed": 52,
+      "total": 57,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "nights-are-spent-at-home",
+        "needs-not-pinned",
+        "shelter-answers-cold"
+      ]
+    },
+    {
+      "name": "coast",
+      "passed": 53,
+      "total": 54,
+      "failures": [
+        "cravings-steer-the-diet"
+      ]
+    },
+    {
+      "name": "shallows",
+      "passed": 6,
+      "total": 6,
+      "failures": []
+    },
+    {
+      "name": "traps",
+      "passed": 64,
+      "total": 66,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices"
+      ]
+    },
+    {
+      "name": "millers",
+      "passed": 67,
+      "total": 72,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "the-wise-avoid-baneberries",
+        "spatial-hash-spreads"
+      ]
+    },
+    {
+      "name": "hunters",
+      "passed": 59,
+      "total": 62,
+      "failures": [
+        "cravings-steer-the-diet",
+        "kills-are-butchered-for-bone",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "name": "fishers",
+      "passed": 61,
+      "total": 63,
+      "failures": [
+        "cravings-steer-the-diet",
+        "moods-move-choices"
+      ]
+    },
+    {
+      "name": "farmers",
+      "passed": 71,
+      "total": 74,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "name": "herders",
+      "passed": 69,
+      "total": 76,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "techs-are-refined",
+        "the-wise-avoid-baneberries",
+        "animals-are-tamed",
+        "herds-breed-and-are-culled"
+      ]
+    },
+    {
+      "name": "feasts",
+      "passed": 73,
+      "total": 78,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "pots-reach-a-granary",
+        "discovery-is-situated",
+        "bands-take-sides"
+      ]
+    },
+    {
+      "name": "stewards",
+      "passed": 71,
+      "total": 74,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "name": "labour",
+      "passed": 63,
+      "total": 71,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "people-survive",
+        "gossip-is-aimed",
+        "research-is-social",
+        "the-wise-avoid-baneberries",
+        "spatial-hash-spreads"
+      ]
+    },
+    {
+      "name": "polity",
+      "passed": 82,
+      "total": 88,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "roast-wins",
+        "cooking-spreads",
+        "pots-reach-a-granary"
+      ]
+    },
+    {
+      "name": "conquest",
+      "passed": 84,
+      "total": 91,
+      "failures": [
+        "people-act-on-what-they-know",
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "projects-find-backers",
+        "records-are-cut",
+        "roast-wins",
+        "cooking-spreads"
+      ]
+    },
+    {
+      "name": "culture",
+      "passed": 56,
+      "total": 65,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "gossip-is-aimed",
+        "shelter-answers-cold",
+        "pictures-are-painted",
+        "animals-are-tamed",
+        "kills-are-butchered-for-bone",
+        "discovery-is-situated"
+      ]
+    },
+    {
+      "name": "lean",
+      "passed": 61,
+      "total": 73,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "moods-move-choices",
+        "population-persists",
+        "needs-not-pinned",
+        "gossip-is-aimed",
+        "projects-find-backers",
+        "the-tree-is-climbed",
+        "techs-are-refined",
+        "discovery-is-situated",
+        "families-exist",
+        "bands-take-sides"
+      ]
+    },
+    {
+      "name": "diggers",
+      "passed": 56,
+      "total": 61,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "gossip-is-aimed",
+        "shelter-answers-cold",
+        "spatial-hash-spreads"
+      ]
+    },
+    {
+      "name": "orchard",
+      "passed": 55,
+      "total": 59,
+      "failures": [
+        "cravings-steer-the-diet",
+        "nights-are-slept",
+        "gossip-is-aimed",
+        "spatial-hash-spreads"
+      ]
+    }
+  ],
+  "cohort": {
+    "stepsPerSeed": 12000,
+    "ticksPerDay": 60,
+    "yearsOfGameCalendarPerSeed": 5,
+    "totals": {
+      "meanEndOverPeakPercent": 97.9,
+      "freshDrinkingTicks": 93961,
+      "autonomousSeaDrinkingTicks": 0,
+      "dehydrationDeaths": 0,
+      "shallowRiverObservations": 1681363,
+      "provenBankToBankCrossings": 0,
+      "freshFishStockNetDecline": 11551.130832926088,
+      "hydratingFoodUnitsObserved": 21817,
+      "aiHydratingFoodCandidateObservations": 17812,
+      "saltVisibleAutonomousNpcOpportunities": null,
+      "births": 645,
+      "deaths": 90,
+      "starvationDeaths": 31,
+      "starvationInfants": 14,
+      "starvationAdults": 17,
+      "freshFishNodes": 1000,
+      "saltFishNodes": 0,
+      "collapseSeeds": 0,
+      "extinctionSeeds": 0
+    },
+    "waterSummarySource": "FRONTIER WATER freshwater drinking ticks 93961 · autonomous sea drinks 0 · dehydration deaths 0 · shallow-river observations 1681363 · bank-to-bank crossings 0 · fresh/salt fish nodes 1000/0 · fresh fish stock net decline 11551.130832926088",
+    "caveats": [
+      "end/peak is population retention, not individual survival",
+      "shallow observations are person-ticks, not steps or crossings",
+      "fish decline is net stock, not exact harvest",
+      "daily ledger can omit hydration observations",
+      "salt opportunity count was not printed for this cohort; null means unavailable"
+    ],
+    "seeds": [
+      {
+        "seed": "century",
+        "peak": 41,
+        "end": 41,
+        "roundedEndOverPeakPercent": 100,
+        "born": 22,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 2,
+        "freshDrinkingTicks": 4293,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 2,
+        "shallowRiverObservations": 46582,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "alpha",
+        "peak": 56,
+        "end": 56,
+        "roundedEndOverPeakPercent": 100,
+        "born": 32,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 0,
+        "freshDrinkingTicks": 4470,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 0,
+        "shallowRiverObservations": 57812,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "beta",
+        "peak": 56,
+        "end": 56,
+        "roundedEndOverPeakPercent": 100,
+        "born": 36,
+        "starvationInfants": 1,
+        "starvationChildren": 0,
+        "starvationAdults": 1,
+        "freshDrinkingTicks": 4810,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 2,
+        "shallowRiverObservations": 91507,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "gamma",
+        "peak": 49,
+        "end": 47,
+        "roundedEndOverPeakPercent": 96,
+        "born": 32,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 0,
+        "freshDrinkingTicks": 4637,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 0,
+        "shallowRiverObservations": 97444,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "delta",
+        "peak": 69,
+        "end": 68,
+        "roundedEndOverPeakPercent": 99,
+        "born": 45,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 1,
+        "freshDrinkingTicks": 5524,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 1,
+        "shallowRiverObservations": 105159,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "eps",
+        "peak": 55,
+        "end": 52,
+        "roundedEndOverPeakPercent": 95,
+        "born": 35,
+        "starvationInfants": 3,
+        "starvationChildren": 0,
+        "starvationAdults": 2,
+        "freshDrinkingTicks": 5363,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 5,
+        "shallowRiverObservations": 135224,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "zeta",
+        "peak": 53,
+        "end": 53,
+        "roundedEndOverPeakPercent": 100,
+        "born": 31,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 0,
+        "freshDrinkingTicks": 3884,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 0,
+        "shallowRiverObservations": 43661,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "eta",
+        "peak": 56,
+        "end": 56,
+        "roundedEndOverPeakPercent": 100,
+        "born": 32,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 0,
+        "freshDrinkingTicks": 4803,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 0,
+        "shallowRiverObservations": 104068,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "theta",
+        "peak": 51,
+        "end": 50,
+        "roundedEndOverPeakPercent": 98,
+        "born": 28,
+        "starvationInfants": 1,
+        "starvationChildren": 0,
+        "starvationAdults": 1,
+        "freshDrinkingTicks": 4270,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 2,
+        "shallowRiverObservations": 40453,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "iota",
+        "peak": 57,
+        "end": 56,
+        "roundedEndOverPeakPercent": 98,
+        "born": 38,
+        "starvationInfants": 1,
+        "starvationChildren": 0,
+        "starvationAdults": 0,
+        "freshDrinkingTicks": 5020,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 1,
+        "shallowRiverObservations": 101077,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "kappa",
+        "peak": 54,
+        "end": 51,
+        "roundedEndOverPeakPercent": 94,
+        "born": 31,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 0,
+        "freshDrinkingTicks": 4430,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 0,
+        "shallowRiverObservations": 59127,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "lambda",
+        "peak": 54,
+        "end": 53,
+        "roundedEndOverPeakPercent": 98,
+        "born": 31,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 0,
+        "freshDrinkingTicks": 4795,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 0,
+        "shallowRiverObservations": 81950,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "mu",
+        "peak": 60,
+        "end": 60,
+        "roundedEndOverPeakPercent": 100,
+        "born": 36,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 0,
+        "freshDrinkingTicks": 4732,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 0,
+        "shallowRiverObservations": 51205,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "nu",
+        "peak": 54,
+        "end": 54,
+        "roundedEndOverPeakPercent": 100,
+        "born": 33,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 0,
+        "freshDrinkingTicks": 5105,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 0,
+        "shallowRiverObservations": 102378,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "xi",
+        "peak": 42,
+        "end": 42,
+        "roundedEndOverPeakPercent": 100,
+        "born": 25,
+        "starvationInfants": 3,
+        "starvationChildren": 0,
+        "starvationAdults": 2,
+        "freshDrinkingTicks": 4244,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 5,
+        "shallowRiverObservations": 75034,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "omicron",
+        "peak": 46,
+        "end": 44,
+        "roundedEndOverPeakPercent": 96,
+        "born": 26,
+        "starvationInfants": 1,
+        "starvationChildren": 0,
+        "starvationAdults": 1,
+        "freshDrinkingTicks": 4207,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 2,
+        "shallowRiverObservations": 46258,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "pi",
+        "peak": 51,
+        "end": 45,
+        "roundedEndOverPeakPercent": 88,
+        "born": 31,
+        "starvationInfants": 1,
+        "starvationChildren": 0,
+        "starvationAdults": 4,
+        "freshDrinkingTicks": 5070,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 5,
+        "shallowRiverObservations": 115436,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "rho",
+        "peak": 54,
+        "end": 54,
+        "roundedEndOverPeakPercent": 100,
+        "born": 35,
+        "starvationInfants": 1,
+        "starvationChildren": 0,
+        "starvationAdults": 1,
+        "freshDrinkingTicks": 4410,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 2,
+        "shallowRiverObservations": 123709,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "sigma",
+        "peak": 59,
+        "end": 58,
+        "roundedEndOverPeakPercent": 98,
+        "born": 36,
+        "starvationInfants": 0,
+        "starvationChildren": 0,
+        "starvationAdults": 0,
+        "freshDrinkingTicks": 4891,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 0,
+        "shallowRiverObservations": 109510,
+        "provenBankToBankCrossings": 0
+      },
+      {
+        "seed": "tau",
+        "peak": 52,
+        "end": 51,
+        "roundedEndOverPeakPercent": 98,
+        "born": 30,
+        "starvationInfants": 2,
+        "starvationChildren": 0,
+        "starvationAdults": 2,
+        "freshDrinkingTicks": 5003,
+        "autonomousSeaDrinkingTicks": 0,
+        "dehydrationDeaths": 0,
+        "starvationDeaths": 4,
+        "shallowRiverObservations": 93769,
+        "provenBankToBankCrossings": 0
+      }
+    ]
+  }
+}

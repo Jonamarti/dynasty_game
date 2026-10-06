@@ -1,0 +1,12 @@
+{
+  "before": {
+    "differingWater": 1,
+    "differingSurface": 1,
+    "differingBed": 9
+  },
+  "after": {
+    "differingWater": 0,
+    "differingSurface": 0,
+    "differingBed": 0
+  }
+}

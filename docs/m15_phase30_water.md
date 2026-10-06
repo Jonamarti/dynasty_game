@@ -1,5 +1,13 @@
 # M15 fase 30 — Agua dulce local y salinidad
 
+**Cerrada el 2026-10-06.** Typecheck, 1.111 tests y 83 e2e pasan; las puertas
+continentales pasan 2/2 y 3/3. Veinte semillas finales registran cero muertes
+por deshidratación y cero bebida marina autónoma. Los treinta estados
+persistidos clásicos coinciden con ambas referencias, incluida la anterior
+a toda la fase; la matriz conserva sus 116 fallos previos. [Resultados,
+excepciones y límites](m15_phase30_verification_20261006.md).
+Capturas finales: `artifacts/screenshots/m15-phase30-closed-2026-10-06T-03/`.
+
 La segunda pasada incorpora `frontier-cohort`: dos bandas pobladas por el
 constructor geográfico normal y cinco años de juego. Las observaciones
 no alimentan decisiones y conservan un checkpoint idéntico. Los checks
@@ -56,7 +64,7 @@ un checkpoint intacto al renderizar. Captura revisada:
 `artifacts/screenshots/m15-phase30-continuity-2026-10-06T-02/04-river-bend-and-fords.png`.
 
 Las secciones de la primera pasada conservan su evidencia histórica; el
-cierre integrado se añade después de la cohorte y las verificaciones finales.
+cierre integrado figura en el informe enlazado al principio.
 
 ## Terreno y registros — 2026-10-06
 

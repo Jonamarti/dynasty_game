@@ -1,0 +1,79 @@
+
+> dynasty@0.0.0 sim:seeds
+> vite-node tools/seeds.ts -- --scenario frontier-cohort --seeds 20
+
+
+SEED COHORT  -  scenario "frontier-cohort", 20 seeds, 12,000 steps each
+==============================================================================
+  seed      peak   end    survived   born   starved: inf chi adu   known past taught
+  century     41    41       100%     22             0   0   2       0    0      0
+  alpha       56    56       100%     32             0   0   0       0    0      0
+  beta        56    56       100%     36             1   0   1       0    0      0
+  gamma       49    47        96%     32             0   0   0       0    0      0
+  delta       69    68        99%     45             0   0   1       0    0      0
+  eps         55    52        95%     35             3   0   2       0    0      0
+  zeta        53    53       100%     31             0   0   0       2    1     84
+  eta         56    56       100%     32             0   0   0       0    0      0
+  theta       51    50        98%     28             1   0   1       1    0     44
+  iota        57    56        98%     38             1   0   0       0    0      0
+  kappa       54    51        94%     31             0   0   0       1    0     51
+  lambda      54    53        98%     31             0   0   0       0    0      0
+  mu          60    60       100%     36             0   0   0       0    0      0
+  nu          54    54       100%     33             0   0   0       0    0      0
+  xi          42    42       100%     25             3   0   2       0    0      0
+  omicron     46    44        96%     26             1   0   1       0    0      0
+  pi          51    45        88%     31             1   0   4       0    0      0
+  rho         54    54       100%     35             1   0   1       1    0     26
+  sigma       59    58        98%     36             0   0   0       0    0      0
+  tau         52    51        98%     30             2   0   2       0    0      0
+  DEMOGRAPHY 645 births / 165 fertile women = 3.909 births/woman; 0.834 births/woman-year (773.150 woman-years) · mortality <1y 0.002 (1/552; 93 births awaiting follow-up) · <5y 1.000 (29/29; 616 births awaiting follow-up) · mean age at death 26.638y (90 deaths) · causes exposure=33, murder=6, old age=20, starvation=31
+  HOME night near<15 0.880 far>25 0.010 far>45 0.000 sleep 0.168 rest 0.284 · actions rest:0.284,sleep:0.168,nurse:0.108,idle:0.108,forage:0.094,give:0.054,ponder:0.053,spar:0.020,pick:0.018,shelter:0.015 · day distance median/p90/max 8.0/17.0/42.7 · child-parent median/p90 1.2/3.6 far>12 0.001 far>30 0.000
+  HISTORY drawdown p50/p90/max 0.059/0.120/0.292 · recovered 0/0 (median days n/a; censored 0) · band lost violence/need/other/absorbed 0/0/0/0 · world lost 0/20 · self-destroyed 0 · in-band kills/1,000 person-years 0.000 · violent adult deaths 0.085 · answered n/a · war episodes/year 0.000 median days n/a peace share n/a · firemaking first known day never · adoption median days 22 not reached 1 · malnutrition 0.199 · protein nutrition share 0.399
+  FOOD ACCESS accessible 2103573 · blocked by reach 22638 · absent from search 6477
+  FRONTIER WATER freshwater drinking ticks 93961 · autonomous sea drinks 0 · dehydration deaths 0 · shallow-river observations 1681363 · bank-to-bank crossings 0 · fresh/salt fish nodes 1000/0 · fresh fish stock net decline 11551.130832926088
+  HYDRATION food units observed in eatenToday 21817 · AI candidate observations 17812
+  WATER BY SEED: seed fresh-drinking-ticks sea dehydration food-death river-observations cross hydrated-food-observed fish-stock-net-decline
+    century    4293    0           0          2   46582     0          1032490.6150668815811
+    alpha      4470    0           0          0   57812     0          1014606.043314622619
+    beta       4810    0           0          2   91507     0          1013569.6766373365527
+    gamma      4637    0           0          0   97444     0          1142619.763136114618
+    delta      5524    0           0          1  105159     0          1055747.7087601356689
+    eps        5363    0           0          5  135224     0          1017781.5734007595374
+    zeta       3884    0           0          0   43661     0          1091372.817254594443
+    eta        4803    0           0          0  104068     0          1048646.179272523945
+    theta      4270    0           0          2   40453     0          1012370.40977094322415
+    iota       5020    0           0          1  101077     0          1080847.3050205447427
+    kappa      4430    0           0          0   59127     0          1214314.8206969144343
+    lambda     4795    0           0          0   81950     0          1293534.0939781609387
+    mu         4732    0           0          0   51205     0          1350356.0554564317637
+    nu         5105    0           0          0  102378     0          1060666.312372781391
+    xi         4244    0           0          5   75034     0          1023550.2419163182568
+    omicron    4207    0           0          2   46258     0          1325317.7824250362045
+    pi         5070    0           0          5  115436     0           904746.5421036125612
+    rho        4410    0           0          2  123709     0          1232463.33807386594816
+    sigma      4891    0           0          0  109510     0          1108711.3596727529962
+    tau        5003    0           0          4   93769     0           804838.4925025946608
+  ORDERS build 59.3% (51/35 obeyed/refused) · dig 65.5% (38/20 obeyed/refused) · haul 69.8% (1266/547 obeyed/refused)
+  RAIDS proposed 26 · chief-approved 23 · refused by chief 3 · called 1 · no party 25 · followers ordered 0
+  SOCIAL INTERRUPTIONS interrupted_ask_away_from_family=2 interrupted_ask_cold=164 interrupted_ask_hungry=16 interrupted_court_cold=8 interrupted_discuss_baby_crying=872 interrupted_discuss_cold=1185 interrupted_give_baby_crying=3230 interrupted_give_cold=1947 interrupted_give_hungry=10 interrupted_give_thirsty=1 interrupted_spar_baby_crying=149 interrupted_spar_cold=1871 interrupted_steal_cold=192 interrupted_teach_baby_crying=5 interrupted_teach_cold=3 interrupted_teach_hungry=2
+  PROTEIN DURING CRAVING 688178/810159 searches had a reachable protein-rich food node · 103471 only outside anchor reach · 92245 masked by another reachable food node · 92245 selected by the out-of-reach override · 18510 absent from the forage search
+==============================================================================
+  EXTINCT 0/20   ·  no band able to recover 0/20   ·  above its low point at the end 3/20   ·  bands still viable 40
+  MEAN SURVIVAL 97.9%   ·  0/20 collapsed below a quarter   ·  645 born
+  starved: 14 infants (5 or under), 0 older children, 17 adults
+  MEAN 0.3 technologies known at the end, 0.1 conceived past the root nodes, 10.3 passed on   ·  19/20 never got past a root node
+  CONFLICT 0 blows between peoples, n/a near either camp · 0 murders · peoples drifted apart after incidents in 4/5 seeds (mean 4.6 tiles)
+  DEFENCE 5 interventions against 1 property deeds an owner saw · 0 taken captive in 0/20 seeds, 0 escaped, 0 came home
+  TRIPWIRES coats sewn in 0/20 seeds · the hurt tended in 0 · animals fed in 0 · tamed in 0 · taming known in 0
+  BANDS 0 cast out in 0 seeds · factions in 0 seeds · 1 taken in, of 1 who left or were cast out
+  BODIES 88 of 90 found · 38 investigations, 0 named the killer, 0 somebody else
+  VIOLENCE 0 blows in all, 0 inside a band, 0 by an adult on a child · 0 of 0 thefts from a person inside a band
+  WANTING SPARKS tracking_4=4
+  KIN defended 0/0 witnessed attacks; fled closer 0/0 times
+  RESEARCH 50 argued breakthroughs / 784 total; argument breakthroughs in 17/20 seeds
+  REFINEMENT 1 improvements from 7 proven designs in 1/20 seeds
+  JUSTICE 0/18 victim complaints heard; 0 carried demands delivered; complaints in 0/20 seeds
+  SOIL 0/0 harvested worlds below 98.5% of resting (n/a% mean); compost spread in 0/20 seeds (0 spreads; 0 loads matured)
+  WALK 159/1836060 stuck ticks (0.1 per 1,000); above the check floor in 0/20 seeds
+  STANDING 18/19 eligible 60-day worlds above 20 points (1 at or below)
+  1220.7s

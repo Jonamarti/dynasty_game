@@ -1,18 +1,30 @@
-## M15 fase 30: continuidad fluvial corregida; cohorte en verificación (2026-10-06)
+## M15 fase 30: límites conservados tras el cierre (2026-10-06)
 
 Resuelto el corte de cauces al girar entre regiones y el reinicio de los vados:
 la red comparte nodos globales, superficie y fase hacia el desagüe. El mapa
 entero y cuatro recortes iguales coinciden en todas las baldosas; el control
-antes/después detecta el defecto anterior. La cohorte larga y la auditoría
-integrada están en curso, sin declarar todavía el cierre completo.
+antes/después detecta el defecto anterior. También está corregido explorar
+en lugar de consumir fruta ya llevada con sed extrema, con regresión que
+fallaba antes. Veinte semillas finales no registran deshidratación ni bebida
+marina autónoma; los treinta estados clásicos son idénticos a ambas referencias.
 
 Los lagos y manantiales actuales son aproximaciones del relieve regional,
-no una reconstrucción de cursos reales. La prueba `frontier` es una oportunidad
-controlada de bebida y cruce, no demuestra supervivencia continental a largo
-plazo. Salinas, `saltmaking` y `salt_pan` no existen aún en el contenido actual;
-la herencia salada de canales está disponible pero no cierra esa dependencia
-de fase 15. El navegador mantiene selección clásica.
-[Contrato y evidencia](m15_phase30_water.md).
+no una reconstrucción de cursos reales. La cohorte larga observa vadeos,
+pero cero cruces entre componentes secos; el cruce real se demuestra en
+`frontier` controlado. Caída neta de peces y piezas hidratantes observadas
+pueden subcontar por regeneración/límite diario y no son capturas exactas
+ni puntos de sed. La fruta de mochila y el pozo funcionan; no se ha añadido
+recolección por sed sola ni demostrado supervivencia ilimitada sólo con fruta.
+Los 116 fallos clásicos previos y las 31 muertes por hambre de la cohorte
+continúan documentados. [Evidencia](m15_phase30_verification_20261006.md).
+
+## M15 fase 15: contenido salinero pendiente (2026-10-06)
+
+Salinas, `saltmaking` y `salt_pan` no existen aún en el contenido actual.
+La clasificación del agua y la herencia salada de canales ya están entregadas
+en 30, pero no sustituyen esa subred de producción de 15. La selección global
+y la migración pertenecen a fases posteriores; el navegador conserva el inicio
+clásico. Estas deudas no mantienen abierta la puerta de agua local de fase 30.
 
 ## M15 fase 29c: semillas y fuentes históricas incompletas (2026-10-05)
 

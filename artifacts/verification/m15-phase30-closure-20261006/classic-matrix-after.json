@@ -1,0 +1,358 @@
+[
+  {
+    "name": "food-news",
+    "hash": "58b4c123567a5ac790b06db6b5e13f7f891b99e5e9ab78fdf8e613e1bd9c259c",
+    "passed": 1,
+    "total": 1,
+    "failures": []
+  },
+  {
+    "name": "conflicts",
+    "hash": "d72f6f85a80fb78638467500620e2e0f8127a79c38c8133cfe2dded86089bee0",
+    "passed": 1,
+    "total": 1,
+    "failures": []
+  },
+  {
+    "name": "tiny",
+    "hash": "8a9c47bc886a2c97b9a9bfda1189db77ab528fa0682553ddac88fcfb6e0c312a",
+    "passed": 47,
+    "total": 47,
+    "failures": []
+  },
+  {
+    "name": "band",
+    "hash": "13e841722b726157ba44bec5cfbfc2c1f296ba6bbf47b2d8cbc19c925acd6fdb",
+    "passed": 52,
+    "total": 53,
+    "failures": [
+      "cravings-steer-the-diet"
+    ]
+  },
+  {
+    "name": "crowded",
+    "hash": "aa89699c19d745e2d6b59ba6d7c8d7a3f99c6817af803b1c934c440d93c3a880",
+    "passed": 57,
+    "total": 59,
+    "failures": [
+      "cravings-steer-the-diet",
+      "shelter-answers-cold"
+    ]
+  },
+  {
+    "name": "century",
+    "hash": "c7038369e669ee4b84f568efde8a735888500e21943b86f16e52b3aa000a7963",
+    "passed": 71,
+    "total": 76,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "moods-move-choices",
+      "the-wise-avoid-baneberries",
+      "discovery-is-situated"
+    ]
+  },
+  {
+    "name": "craft",
+    "hash": "a4960a3003ea8fe8ae7c7d86b547db88d15de3362196ce1f7b56aa9099ec0ed9",
+    "passed": 65,
+    "total": 70,
+    "failures": [
+      "people-act-on-what-they-know",
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "people-survive",
+      "pots-reach-a-granary"
+    ]
+  },
+  {
+    "name": "wilds",
+    "hash": "65541429951b0f4200af74983e29599cb0bf03bf5d5a4db8f62c005e246832f2",
+    "passed": 60,
+    "total": 63,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "moods-move-choices"
+    ]
+  },
+  {
+    "name": "emptied",
+    "hash": "7d653fbd50f1fe23cd0d1ab4c0521ecd94d64ff9925dd07f9d609324d0f0d690",
+    "passed": 54,
+    "total": 58,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "projects-find-backers",
+      "shelter-answers-cold"
+    ]
+  },
+  {
+    "name": "hearths",
+    "hash": "4f44d0aa0642921cc8827d7a16eb246df174a85ab680ead009255f0c2185b2cd",
+    "passed": 64,
+    "total": 69,
+    "failures": [
+      "people-act-on-what-they-know",
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "roast-wins",
+      "pots-reach-a-granary"
+    ],
+    "configFallback": true
+  },
+  {
+    "name": "porters",
+    "hash": "623d4ac1af0e70f78e84247fbcccb797ea7098db11e7011c843f349aae45bafb",
+    "passed": 54,
+    "total": 56,
+    "failures": [
+      "cravings-steer-the-diet",
+      "moods-move-choices"
+    ],
+    "configFallback": true
+  },
+  {
+    "name": "scribes",
+    "hash": "3a4bda488d81bcd00c603226296223cd4dd5677ffb764a6ec7d2dbd1bf5fff01",
+    "passed": 66,
+    "total": 68,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept"
+    ],
+    "configFallback": true
+  },
+  {
+    "name": "harsh-winter",
+    "hash": "bcbdd9ba0e542d8e90907d7d2bd37eea73b64b1746255b5927fc1d0dc4924e98",
+    "passed": 52,
+    "total": 57,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "nights-are-spent-at-home",
+      "needs-not-pinned",
+      "shelter-answers-cold"
+    ]
+  },
+  {
+    "name": "coast",
+    "hash": "6892edae93ab8c8e2c4c1946574059333e3cc838be6cf20a8fda4a0abc78a6f1",
+    "passed": 53,
+    "total": 54,
+    "failures": [
+      "cravings-steer-the-diet"
+    ]
+  },
+  {
+    "name": "shallows",
+    "hash": "bf3ce715812ac46ab316c4fc966d771971df7f5c0cc4d7f314400f634f4b80eb",
+    "passed": 6,
+    "total": 6,
+    "failures": []
+  },
+  {
+    "name": "traps",
+    "hash": "f0415b7e92c4450d72622d01245ce1eb0d9d590c91b0526b919ec9d4d6609cf2",
+    "passed": 64,
+    "total": 66,
+    "failures": [
+      "cravings-steer-the-diet",
+      "moods-move-choices"
+    ]
+  },
+  {
+    "name": "millers",
+    "hash": "2dbfced19ceb32ada1650e134f52194f46ec71d5d3202b45eafc1d3e38f0ef97",
+    "passed": 67,
+    "total": 72,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "moods-move-choices",
+      "the-wise-avoid-baneberries",
+      "spatial-hash-spreads"
+    ]
+  },
+  {
+    "name": "hunters",
+    "hash": "8b08a9e7d7cbc6fac60ad849c61c7594691f1efd823555a85cd05abf9eb333d2",
+    "passed": 59,
+    "total": 62,
+    "failures": [
+      "cravings-steer-the-diet",
+      "kills-are-butchered-for-bone",
+      "discovery-is-situated"
+    ]
+  },
+  {
+    "name": "fishers",
+    "hash": "0b8c57c8531336ad381515cb43c214ef39fb1a8cee25a1c859b3e29305cbac48",
+    "passed": 61,
+    "total": 63,
+    "failures": [
+      "cravings-steer-the-diet",
+      "moods-move-choices"
+    ]
+  },
+  {
+    "name": "farmers",
+    "hash": "51b731125e5baacde8b40bf935a4dfdf0d1e87a3f8e1fd810edf940fda7c7945",
+    "passed": 71,
+    "total": 74,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "discovery-is-situated"
+    ]
+  },
+  {
+    "name": "herders",
+    "hash": "d61650f8932ad97b8427312fc9a40e72dd09100b46c2f24cfceac2d541f4c49c",
+    "passed": 69,
+    "total": 76,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "moods-move-choices",
+      "techs-are-refined",
+      "the-wise-avoid-baneberries",
+      "animals-are-tamed",
+      "herds-breed-and-are-culled"
+    ]
+  },
+  {
+    "name": "feasts",
+    "hash": "35b47846ec97d01ab637bb4a16e4e202f4e953b177404734404c5cc773b95c71",
+    "passed": 73,
+    "total": 78,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "pots-reach-a-granary",
+      "discovery-is-situated",
+      "bands-take-sides"
+    ]
+  },
+  {
+    "name": "stewards",
+    "hash": "0270f3300070dc7d49c75538dc816dd23f000f5808903676fc013c052fbef4c6",
+    "passed": 71,
+    "total": 74,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "discovery-is-situated"
+    ]
+  },
+  {
+    "name": "labour",
+    "hash": "e9229e3fd64adf6a85c9a2bcb3729fe0ac9eae93cba2a5542088096a78c5b929",
+    "passed": 63,
+    "total": 71,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "moods-move-choices",
+      "people-survive",
+      "gossip-is-aimed",
+      "research-is-social",
+      "the-wise-avoid-baneberries",
+      "spatial-hash-spreads"
+    ]
+  },
+  {
+    "name": "polity",
+    "hash": "81460f063a1fe97f7276eb617384c16a95c4f1653aad7e5366f00b7182bdc8b8",
+    "passed": 82,
+    "total": 88,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "moods-move-choices",
+      "roast-wins",
+      "cooking-spreads",
+      "pots-reach-a-granary"
+    ]
+  },
+  {
+    "name": "conquest",
+    "hash": "0cfebbe9261e0d833ebc7738cb0261ffef55d24974e4b7844fe5084284c4bbca",
+    "passed": 84,
+    "total": 91,
+    "failures": [
+      "people-act-on-what-they-know",
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "projects-find-backers",
+      "records-are-cut",
+      "roast-wins",
+      "cooking-spreads"
+    ],
+    "configFallback": true
+  },
+  {
+    "name": "culture",
+    "hash": "4de084c7a3dfdcbae54d1664bf8b9f68b2898d6c063c620f45fd3e50391a940c",
+    "passed": 56,
+    "total": 65,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "moods-move-choices",
+      "gossip-is-aimed",
+      "shelter-answers-cold",
+      "pictures-are-painted",
+      "animals-are-tamed",
+      "kills-are-butchered-for-bone",
+      "discovery-is-situated"
+    ]
+  },
+  {
+    "name": "lean",
+    "hash": "8f2ff4a4f948ca7754491f87d3363c73cc5a0e2922ceca679cb650c77f80e858",
+    "passed": 61,
+    "total": 73,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "moods-move-choices",
+      "population-persists",
+      "needs-not-pinned",
+      "gossip-is-aimed",
+      "projects-find-backers",
+      "the-tree-is-climbed",
+      "techs-are-refined",
+      "discovery-is-situated",
+      "families-exist",
+      "bands-take-sides"
+    ]
+  },
+  {
+    "name": "diggers",
+    "hash": "f710545f0fc1333510fb000224657dd5bff4494bfb09d12bfbecebdfa142b013",
+    "passed": 56,
+    "total": 61,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "gossip-is-aimed",
+      "shelter-answers-cold",
+      "spatial-hash-spreads"
+    ]
+  },
+  {
+    "name": "orchard",
+    "hash": "af4fe246cf18a9c597f3e1ba49bb620b044625cbfc9233a2707067d6e9888f18",
+    "passed": 55,
+    "total": 59,
+    "failures": [
+      "cravings-steer-the-diet",
+      "nights-are-slept",
+      "gossip-is-aimed",
+      "spatial-hash-spreads"
+    ]
+  }
+]

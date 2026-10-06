@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-05 (M15 geographic root records and provisional global benchmark). No runtime
+Current as of 2026-10-06 (M15 local continental water and geographic root records). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -80,6 +80,15 @@ connect bends and confluences; tile projection and outlet-distance ford phases
 make equal-resolution crops agree with the whole map. Flooded trenches inherit
 their source's kind and surface; depth and rendering share that local surface.
 See [m15_phase30_water.md](m15_phase30_water.md).
+
+Food hydration is shared through `hydrationOf`: fruit keeps its existing
+policy, while milk hydrates continental terrain only. Geographic AI spends
+carried hydrating food before asking/exploring for an absent water source;
+the classic scorer retains its seeded choices. Geographic fish reserve one
+spot per available shallow-water class when the quota permits, using the
+existing dedicated stream. Cohort observers remain outside simulation state:
+river occupancy is not a bank crossing, and net fish-stock decline is not
+an exact harvest count.
 
 `WorldObjectRecord` v1 now captures the seven ordered entity collections and
 their canonical ID maps in one graph, including nested building state. It shares
