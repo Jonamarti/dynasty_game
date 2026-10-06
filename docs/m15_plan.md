@@ -3166,6 +3166,12 @@ pendientes solo las cohortes de visibles, compactos y agregados (dependen de
 
 ### 32b. Nivel 1: `ComarcaSim`
 
+**Avance del 2026-10-06 (32b, punto 2 de §7, registros y compacto local):**
+piezas inertes en `src/sim/compact/`, sin tocar el loop detallado ni el juego.
+Entregado: `CompactScheduler` (eventos por tick/fase/sujeto/id y ledger de
+transacciones idempotentes). Lista actualizada en
+[m15_phase32b_compact.md](m15_phase32b_compact.md).
+
 Como en M14 fase 14, extendido también a individuos fuera de vista **dentro de
 la comarca activa**, con estos añadidos:
 

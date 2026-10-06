@@ -1,3 +1,13 @@
+## 2026-10-06 — M15 fase 32b: `CompactScheduler`, eventos de nivel 1 por tick y clave estable
+
+Primer mecanismo del nivel 1, inerte (nadie lo llama aún). Eventos ordenados por
+tick, fase, sujeto e id, con independencia del orden de inserción; ledger de
+transacciones que rechaza la segunda aplicación de un id; snapshot JSON.
+Porqué: el LOD exige que una transferencia o baja no se aplique dos veces y que
+el orden no dependa de FPS ni de inserción (§4–§5). `compact-scheduler.test.ts`
+con controles negativos (duplicar, perder, programar atrás). Sin cambio de
+interfaz ni de juego. [Detalle](m15_phase32b_compact.md).
+
 ## 2026-10-06 — M15 fase 32a: `profile:systems` mide distribución, duración y percepción
 
 El perfil solo daba medias y tiempos inclusivos por wrapper. Se añade (sin tocar
