@@ -1,3 +1,15 @@
+## 2026-10-06 — M15 fase 32c: por qué `PeopleSim` no reproduce `lean` (investigación, sin cambio de modelo)
+
+Se probaron cinco hipótesis con medidas en el detallado antes de tocar nada (`tools/people-trajectory.ts`, `people-probe.ts`,
+`people-groups.ts`, `people-condition.ts`, `people-supply-vs-pop.ts`, `people-hazard.ts`, `people-replay.ts`; todo medición, nada conectado a
+`Simulation`, juego bit-idéntico). Hallazgos: la oferta de primavera a otoño sigue a la gente (0,85 / 1,0 / 0,8 raciones por persona
+y día con 12, 25 y 37 fundadores) y solo la de invierno es de la comarca; con la oferta exacta el modelo acierta la inanición del primer
+invierno y la natalidad (0,84-0,93 frente a 0,98) pero no colapsa (30-42 frente a 0-3), porque en el detallado la muerte de la segunda
+primavera depende de la condición de entrada (hambre al máximo, salud < 50: casi ninguna supervivencia) y de que todas las fundadoras mueren
+primero. **No se cambió el modelo ni las tolerancias**: arreglar solo la oferta lo dejaría más vivo, y el estado que falta (condición, sexo)
+no sale de una medida que no sean las semillas del test. T1-T4 sin cambio: T1 3 de 4, T2 11,3 frente a 1,3, T3 pasa, T4 0,739 frente a 0,982.
+Detalle y lo que falta en `m15_phase32c_peoples.md`; `bugs.md` actualizado.
+
 ## 2026-10-06 — M15 fase 32c: inventar y aprender de vecinos (`PeopleKnowledge`)
 
 Tercer mecanismo del nivel 2. Invención al modo de Kremer: probabilidad por técnica candidata y temporada

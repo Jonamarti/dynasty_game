@@ -3271,6 +3271,13 @@ frente a 3,7 técnicas, orden de magnitud). **`MU` del aprendizaje no se pudo me
 Test «nada por guion» con auditoría que falla contra versiones trucadas por fecha, nombre, región e identidad.
 [Detalle](m15_phase32c_peoples.md).
 
+**Avance del 2026-10-06 (32c-4, por qué `PeopleSim` no reproduce `lean`):** investigación sin cambio de modelo. Medido en el
+detallado (3 semillas nuevas, más tres de calibración para la condición): la oferta de primavera a otoño es consumo proporcional a la
+gente (0,85 / 1,0 / 0,8 raciones por persona y día con 12, 25 y 37 fundadores), solo la de invierno es de la comarca; con la oferta exacta
+el modelo acierta el primer invierno pero no colapsa (30-42 frente a 0-3) porque la muerte del detallado depende de la condición de
+entrada y del sexo (todas las fundadoras mueren, quedan 1-3 hombres), y el modelo no tiene estado. T4 falla por la oferta, no por
+la natalidad. Sin corrección: ver el veredicto y lo que falta en el doc de 32c. [Detalle](m15_phase32c_peoples.md).
+
 **Puertas**, encadenadas:
 
 - `peoples-match-bands`: el mismo escenario, dos años en nivel 1 y dos en nivel

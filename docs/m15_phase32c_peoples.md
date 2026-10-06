@@ -146,6 +146,71 @@ supervivencia de un pueblo en espiral descendente. Por eso: **no se declara corr
 (20 semillas, +-15 %) sigue **pendiente de medición diferida**; no se afirma que se cumpla ni se ha corrido. No debe
 usarse `PeopleSim` para pueblos en régimen `lean` hasta resolverlo (`bugs.md`).
 
+### Por qué no reproduce `lean` (investigación, 2026-10-06)
+
+El modelo **no se tocó**: mismas tolerancias, mismas semillas (`delta,eps,zeta`), y la medida de partida se repitió y da lo
+mismo que arriba (T1 3 de 4, T2 11,3 frente a 1,3, T3 pasa, T4 0,739 frente a 0,982). Instrumentos nuevos, todos medición y
+ninguno toca `Simulation`: `tools/people-trajectory.ts` (día a día: población, raciones, tiempo forrajeando, muertes por
+causa, existencias), `people-probe.ts` (condición de la gente y despensas cada 5 días), `people-groups.ts` (quién muere y de
+qué), `people-condition.ts` (supervivencia según la condición de entrada), `people-supply-vs-pop.ts`, `people-hazard.ts`
+(el enlace oferta-hambre-inanición contra lo que hizo el detallado) y `people-replay.ts` (se le da al modelo la comida por
+persona que el detallado tuvo de verdad). Salidas en `artifacts/verification/m15-phase32c-lean-2026-10-06/` (local).
+
+**El detallado, a lo largo del colapso** (`lean`, `delta,eps,zeta`, 36-37 fundadores; el año del detallado son 40 días, 10 por
+estación). Población al cierre de cada estación, delta/eps/zeta: 36 42 42 19 0 / 36 38 38 13 1 / 37 41 44 30 3; el mundo
+sigue después con 0, 1 y 3 supervivientes **sin cambio en 60 días**. Raciones por persona y día (sumadas sobre personas): 0,94
+1,05 0,73 0,21 0,18 (delta), con `foodInWorld` ~150-300 todo el tiempo: no se agota la comarca. El primer invierno (días 30-40)
+mata 30-47 % por inanición y 7-19 % más por exposición o animales; en la segunda primavera mueren 63-87 % de los que quedan.
+
+Hipótesis, cada una con su medida y su veredicto:
+
+1. **«La oferta depende de cuánta gente forrajea» (la del agente anterior). Confirmada para primavera, verano y otoño;
+   refutada para invierno.** Mismo mundo `lean` con 1, 2 y 3 bandas fundadoras (12, 25, 37 personas, tres semillas), primer año:
+   raciones por persona y día **0,85 / 0,84 / 0,87** (primavera), **1,00 / 1,00 / 1,07** (verano) y **0,90 / 0,79 / 0,75**
+   (otoño) para 12 / 25 / 37 fundadores, y por tanto el total diario crece con la boca (10,4 / 20,8 / 31,7 en primavera). Lo que
+   la curva llama «suministro de la región» es, fuera del invierno, lo que la gente comió, limitado por el apetito (una ración
+   es la necesidad diaria), no una propiedad de la comarca. En invierno el total sí es casi fijo: 5,6 / 3,5 / 6,6 raciones al
+   día para 12 / 25 / 37, o sea 0,48 / 0,18 / 0,19 por persona, que es el supuesto del modelo. Consecuencia mecánica: la región
+   del modelo (5,3 / 11 / 14,3 / 6,5 raciones, promedio de una corrida que se colapsa) deja a 36 personas con `s` = 0,15-0,4 en
+   estaciones en las que el detallado tiene ~0,9: el modelo mata gente **de más** en el primer año (en su corrida, 36 a 25
+   en la primera estación media, cuando el detallado no pierde a nadie).
+2. **«El enlace oferta-hambre-inanición está mal»: refutada donde se midió.** Con la oferta *exacta*
+   (`people-replay.ts`, `s` = raciones/persona-día del detallado en cada estación, forzada), el primer invierno sale bien: inanición
+   por estación 0,31 / 0,33 / 0,30 del modelo frente a 0,36 / 0,47 / 0,30 del detallado (`people-hazard.ts`), y el `hungryZero` que
+   da la curva extrapolada (0,90 / 0,94 / 0,89) es el que tuvo el detallado (0,84 / 0,89 / 0,83). El tope de `z` = 0,889 no es la causa.
+3. **«La maquinaria sola sí falla»: confirmada, y aquí está el grueso.** Con la oferta exacta el modelo **sigue sin colapsar**: población
+   final media 30,4 / 41,7 / 33,4 (0 de 20 extinguidos) frente a 0 / 1 / 3 del detallado. Dos partes distintas:
+   a. **La condición de entrada.** En la segunda primavera el detallado mata 63 / 69 / 87 % de los que quedan con `s` = 0,18 / 0,65 / 0,35,
+      donde el modelo da 0,31 / 0,03 / 0,24 por inanición. Al día 40, con las seis semillas (`alpha..gamma` y `delta..zeta`), 61 de
+      96 supervivientes tienen ya el hambre al máximo (>= 100) y 47 la salud < 50; de los 10 días siguientes sobreviven un 2 % de
+      los de hambre >= 100 y un 18-50 % de los de menos, 0 de 47 con salud < 50 y 31-33 % con salud >= 75 (`people-condition.ts`; son
+      11 de 96 en total). La muerte en el detallado depende del estado en que se llega, y el modelo no tiene estado: cada
+      estación reparte hambre y muerte como si la gente empezara fresca. Además el `hungryZero` observado en esas primaveras
+      (0,25-0,65) es **menor** que el de la curva: murieron con alivio parcial, no por una racha de 8 días vacíos, así que la racha
+      derivada en 32b para una persona sana no es el mecanismo de la muerte de una persona debilitada.
+   b. **Quién muere.** Las fundadoras (40) mueren todas antes del día 50 (0 % de supervivencia), los varones sobreviven un 10 %, los niños
+      0 %: los supervivientes son 1-3 hombres sin ninguna mujer fértil, y por eso el detallado **no se recupera** (60 días con 1 y
+      3 personas sin un nacimiento) mientras que el modelo, con hazard uniforme por sexo y banda, conserva mujeres y sigue naciendo.
+      Además, causas que el modelo no tiene: de 106 muertes de fundadores, 22 exposición y 5 fieras (frío y animales, ya declarados como
+      «no modelados»).
+4. **Natalidad (T4).** Con la oferta exacta el modelo da 0,84 / 0,91 / 0,93 nacimientos por mujer-año fértil, dentro de 0,20 del
+   0,98 del detallado: **el fallo de T4 viene de la oferta errónea de (1)** (un `hungryShare` demasiado alto en el primer año), no de la
+   fórmula de natalidad.
+5. **«Ruido de banda pequeña / curva fuera de rango»: descartada.** Hubo 0 de 60 extinciones del modelo, así que no es ruido; y en
+   invierno `s` = 0,12-0,23 queda por debajo del primer punto medido (0,396) y la extrapolación acierta (punto 2).
+
+**Veredicto.** Lo que hace que `PeopleSim` no reproduzca `lean` son dos defectos que **se compensan en parte**, y arreglar solo uno
+empeoraría la razón T2: (i) la oferta de primavera a otoño la fijó la calibración como propiedad de la región cuando es consumo
+proporcional a la gente (el modelo mata de más pronto) y (ii) la demografía no tiene memoria de condición ni distingue sexos
+(no mata de más tarde, cuando la banda ya está debilitada, y mantiene a las mujeres que el detallado pierde primero). **No se
+implementó ninguna corrección**: (i) por sí sola daría un modelo aún más vivo (el replay, que ya incluye la oferta exacta, termina en 30-42
+frente a 0-3), y (ii) exige un estado nuevo (reserva de salud o racha de hambre acumulada por cohorte y sexo) cuya forma no sale de
+ninguna medida hecha: la racha de 8 días no la explica (punto 3a), y ajustarla contra estas mismas tres semillas sería afinar contra el
+test. Lo que falta: medir en el detallado la mortalidad por sexo/edad y por salud de entrada con **semillas de calibración** (`alpha..gamma`)
+y solo entonces proponer un estado, contrastándolo en `delta..zeta`; y separar, en el mundo `lean`, la oferta que es de la comarca
+(invierno) de la que sigue a la gente (resto del año), que la curva actual mezcla. Hasta entonces la advertencia de arriba se mantiene: no usar
+`PeopleSim` en régimen `lean`.
+
 Límites declarados: una sola comarca por mundo medido; tres semillas por mundo; el kit de técnicas es una sola
 medida; no hay mortalidad infantil propia, ni frío, ni salud (la vejez es la sana); la cohorte 60+ se evalúa a los
 62 años; la inanición por encima de `z = 0,81` es extrapolación. Tests: `people-demography.test.ts` (16),

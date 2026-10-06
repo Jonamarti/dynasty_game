@@ -16,9 +16,12 @@
 
 - **`lean`: el detallado colapsa a ~1 persona y el modelo de pueblo se queda en ~11** (semillas nuevas `delta,eps,zeta`:
   1,3 frente a 11,3, razón 8,5, T2 falla; natalidad 0,98 frente a 0,74, T4 falla; capacidad de otoño falla por 0,19).
-  Causa **sin confirmar**; hipótesis: la oferta medida (raciones/día) depende de cuánta gente forrajea, y el modelo la
-  mantiene fija; y no hay colapso de banda pequeña (sin pareja, cuidados ni enseñanza). Hasta resolverlo, el pueblo
-  sobreestima la supervivencia en régimen de escasez. `craft` (régimen sano) sí pasa.
+  **Causa investigada el mismo día (doc de 32c, «Por qué no reproduce `lean`»), sin corregir**: (i) la oferta de primavera a otoño
+  se calibró como propiedad de la comarca y es consumo proporcional a la gente, así que el modelo mata de más en el primer año (y de
+  ahí falla T4); (ii) la demografía no tiene estado de condición ni distingue sexos, así que no mata la segunda primavera ni pierde a las
+  mujeres, y no hay colapso aunque se le dé la oferta exacta (30-42 frente a 0-3). Cada defecto compensa en parte al otro. Falta medir
+  mortalidad por sexo/edad y salud de entrada con semillas de calibración antes de proponer un estado. Hasta resolverlo, el pueblo
+  sobreestima la supervivencia en escasez. `craft` (régimen sano) sí pasa.
 - **Solo se midió un conjunto de técnicas** (el kit de forrajeo, x1,24, tres semillas, confundido con el efecto de
   población). Agricultura, pastoreo, almacén y recipientes cuentan 1: conservador, no un hallazgo.
 - **Sin mortalidad infantil propia, frío, salud ni guerra/enfermedad**: `DemographyEnv.losses` es un enganche que nada
