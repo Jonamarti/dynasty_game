@@ -21,6 +21,15 @@ Una aceptación separada genera un lago de depresión sin candidatos de río
 y comprueba peces dulces someros junto a un banco seco de la misma región.
 Los tres focales de pesca pasan (reserva, lago y cosecha autónoma).
 
+La aceptación de fruta sin orillas dulces encontró otro defecto: explorar
+por agua siempre superaba comer la manzana de mochila, incluso con sed 95.
+En continente, preguntar/explorar espera a consumir ese puente hidratante;
+al agotarse se vuelve a buscar una fuente duradera. Se conserva el scorer
+clásico y no se calibran pesos nuevos. Dos pruebas reales demuestran consumo
+autónomo de manzana por sed y consumo de un pozo terminado sin orillas dulces.
+No demuestran que una sola fruta sostenga indefinidamente a una población
+ni que se recolecte fruta por sed sola.
+
 La red geográfica comparte nodos y aristas globales en giros y confluencias.
 Cada baldosa consulta esa red, por lo que un recorte no vuelve a trazar el
 río desde su propio borde. Superficies ancladas al relieve y fase de vados

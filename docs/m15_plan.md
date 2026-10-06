@@ -2991,6 +2991,13 @@ su stream y resultado. Capturas integradas en el mismo milestone anterior.
 Los tres focales incluyen pesca en un lago de depresión sin cauces candidatos,
 con vecino seco caminable y región accesible.
 
+**Segunda pasada del 2026-10-06: puente de fruta efectivo.** Un control sin
+agua dulce detecta que explorar supera comer fruta ya llevada, incluso con
+sed extrema. Se aplaza esa búsqueda continental hasta gastar el alimento
+hidratante; clásico no cambia. Dos pruebas cubren fruta autónoma por sed
+y pozo como única fuente potable. La cohorte y las auditorías se repiten
+tras el arreglo, antes de declarar cierre.
+
 **Avance del 2026-10-06: terreno y registros de agua local.** `river` se añade
 al final de los biomas; las orillas dulces/saladas y las superficies fluviales
 se conservan en terreno geográfico v2. Zanjas heredan el agua de su origen.

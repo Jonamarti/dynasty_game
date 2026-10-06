@@ -1,3 +1,16 @@
+## 2026-10-06 — M15 fase 30: la fruta de mochila precede a buscar agua
+
+Una regresión sin orillas dulces detectó que el scorer ofrecía explorar
+con peso 4 y comer fruta con 1,8: el NPC conservaba su manzana incluso con
+sed extrema. En continente, tener comida hidratante aplaza preguntar/explorar
+por agua hasta consumirla; la siguiente planificación vuelve a buscar una
+fuente duradera. No se retocan coeficientes y clásico conserva el scorer.
+Dos pruebas reales cubren comer fruta de mochila por sed y beber desde un
+pozo terminado cuando no hay orillas dulces; ambas pasan. El intento previo
+fallido queda registrado en `artifacts/verification/m15-phase30-closure-20261006/`.
+Se repiten cohorte y verificación integrada después del arreglo. Capturas
+anteriores de esta integración: `artifacts/screenshots/m15-phase30-closure-2026-10-06T-01/`.
+
 ## 2026-10-06 — M15 fase 30: pesca dulce junto a costas saladas
 
 El muestreo conjunto podía gastar toda la cuota en mar aunque existiera río

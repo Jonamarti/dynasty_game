@@ -1134,7 +1134,12 @@ export class Brain {
       .queryRadius(person.x, person.y, ctx.sightRadius)
       .filter(other => other.alive && other.id !== person.id &&
         ctx.world.sameRegion(person.x, person.y, other.x, other.y));
-    const thirstyWithoutWater = drive.thirst > 0.35 && water === null;
+    // Asking or exploring scored above eating even at lethal thirst, so a
+    // continental traveller kept a hydrating apple while searching for water.
+    // Spend the carried food bridge first; once consumed, the next plan can
+    // seek a lasting source. Preserve the classic scorer's seeded choices.
+    const carriedWaterBridge = ctx.world.waterKind !== undefined && hydratingFood !== null;
+    const thirstyWithoutWater = drive.thirst > 0.35 && water === null && !carriedWaterBridge;
     const waterQuestionPeers = thirstyWithoutWater
       ? neighbours.filter(other => other.bandId === person.bandId &&
         person.distanceTo(other) <= 6 && !person.waterQuestionAttempts.has(other.id))
