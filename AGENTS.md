@@ -176,6 +176,19 @@ npm run sim:check:all  # world health, five scenarios   ~15s
 npm run e2e            # Playwright                     ~21s
 ```
 
+**Until M15 is finished, do not run the heavy verification.** The owner's
+priority is closing the M15 plan as soon as possible; making the tests faster is
+M16's job, and bugs found along the way go to `docs/bugs.md` and the M16 notes.
+For every pending M15 phase use only the fast layers: `npm run typecheck`,
+`npm test` and a single-seed `npm run sim:check` (plus `npm run e2e` when the UI
+changed). **Do not launch** `npm run sim:seeds` cohorts of 10 or 20 seeds,
+`--scenario generations`, `--scenario century` cohorts or the full
+`sim:check:all` matrix on your own. A 20-seed `century` + `generations` pair
+took about two and a half hours on 2026-10-06. Run them only if the owner asks
+for that measurement by name. This overrides the advice below about
+`sim:seeds` for food-economy changes: say in the commit that the cohort was
+deferred, and do not claim the economy improved.
+
 Useful extras:
 
 ```bash
