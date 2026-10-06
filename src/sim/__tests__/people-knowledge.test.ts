@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PeopleSim, TechSet, closeUnderRequires, emptyCohorts, type People, type PeopleCohorts, type SeasonMechanism } from '../world/PeopleSim.ts';
 import {
-  ALL_MATERIALS, KREMER_KAPPA, LEARN_MU_BOUND, LEARN_MU_START, MEAN_TRANSMISSIBILITY, climateSimilarity, learnRate, traitsOf, transmissibility, feasibleIn, inventionChance, knowledge, learningChance,
+  ALL_MATERIALS, KnowledgeLedger, PARTIAL_START, insightGain, type PartialLearning, KREMER_KAPPA, LEARN_MU_BOUND, LEARN_MU_START, MEAN_TRANSMISSIBILITY, climateSimilarity, learnRate, traitsOf, transmissibility, feasibleIn, inventionChance, knowledge, learningChance,
   regionMaterials, type KnowledgeEvent, type KnowledgeRegion,
 } from '../world/PeopleKnowledge.ts';
 import { TECHS, TECH, type Tech } from '../knowledge/Tech.ts';
@@ -19,11 +19,11 @@ const adults = (n: number): PeopleCohorts => {
 interface Run { sim: PeopleSim; people: People[]; events: KnowledgeEvent[] }
 /** One world of `specs.length` peoples, related as `contact` says, run `seasons` seasons. */
 function world(seed: string, specs: { n: number; techs?: readonly Tech[]; region?: KnowledgeRegion; comarcas?: number }[],
-  opts: { kappa?: number; mu?: number; contact?: number; seasons: number; extra?: SeasonMechanism[]; startStep?: number }): Run {
+  opts: { kappa?: number; mu?: number; partial?: PartialLearning; ledger?: KnowledgeLedger; contact?: number; seasons: number; extra?: SeasonMechanism[]; startStep?: number }): Run {
   const events: KnowledgeEvent[] = [];
   const regions = new Map<number, KnowledgeRegion>();
   const sim = new PeopleSim(seed, CLOCK, [
-    knowledge({ regionOf: p => regions.get(p.id)!, kappa: opts.kappa, mu: opts.mu ?? 0 }, e => events.push(e)),
+    knowledge({ regionOf: p => regions.get(p.id)!, kappa: opts.kappa, mu: opts.mu ?? 0, partial: opts.partial ?? PARTIAL_START, ledger: opts.ledger }, e => events.push(e)),
     ...(opts.extra ?? []),
   ]);
   if (opts.startStep) sim.advanceTo(opts.startStep);
@@ -290,3 +290,114 @@ describe('nothing by script: no technique is granted by date, name, region or id
 });
 
 void TechSet;
+
+// ---------------------------------------------------------------------------------------------
+// Partial learning: hints, insight, exposure events, and the gap that persists
+// ---------------------------------------------------------------------------------------------
+
+describe('partial learning (insight and hints)', () => {
+  const SMALL: PartialLearning = { rate: 0.004, hintGain: 4, sufferedWeapon: 3 };
+  const fire = 'firemaking' as Tech;
+
+  it('contact leaves insight behind without granting the technique', () => {
+    const ledger = new KnowledgeLedger();
+    const r = world('insight', [{ n: 30 }, { n: 30, techs: [fire] }], { kappa: 0, mu: 0, contact: 1, seasons: 5, partial: SMALL, ledger });
+    expect(r.people[0]!.techs.has(fire)).toBe(false);
+    const i = ledger.insight(r.people[0]!.id, fire);
+    expect(i).toBeGreaterThan(0); expect(i).toBeLessThan(1);
+    expect(i).toBeCloseTo(5 * insightGain(fire, 'witnessed', SMALL), 10);   // contact 1, same climate, five seasons
+    expect(ledger.hinted(r.people[0]!.id)).toContain(fire);
+    // No contact, no insight.
+    const none = new KnowledgeLedger();
+    world('insight', [{ n: 30 }, { n: 30, techs: [fire] }], { kappa: 0, mu: 0, contact: 0, seasons: 5, partial: SMALL, ledger: none });
+    expect(none.hinted(1)).toEqual([]);
+  });
+
+  it('a hint makes the people find the technique itself sooner (and a hintless build does not)', () => {
+    const invented = (hintGain: number) => {
+      let n = 0;
+      for (let k = 0; k < 250; k++) {
+        const r = world(`hint-${k}`, [{ n: 24 }, { n: 24, techs: [fire] }], { kappa: 5e-4, mu: 0, contact: 1, seasons: 30, partial: { ...SMALL, rate: 0.01, hintGain } });
+        n += r.events.filter(e => e.peopleId === r.people[0]!.id && e.tech === fire && e.how === 'invented').length;
+      }
+      return n;
+    };
+    const none = invented(0), hinted = invented(40);
+    expect(hinted).toBeGreaterThan(none * 1.15);
+  });
+
+  it('completes at insight 1, and never ahead of the requires', () => {
+    const lib = 'library' as Tech;
+    expect(TECH[lib].requires.length).toBeGreaterThan(0);
+    const r = world('complete', [{ n: 30 }, { n: 30, techs: [lib] }], { kappa: 0, mu: 0, contact: 1, seasons: 400, partial: { rate: 0.5, hintGain: 0, sufferedWeapon: 1 } });
+    expect(r.people[0]!.techs.has(lib)).toBe(true);
+    const when = new Map(r.events.filter(e => e.peopleId === r.people[0]!.id).map(e => [e.tech, e.season]));
+    expect(r.events.some(e => e.how === 'completed')).toBe(true);
+    for (const [t, season] of when) for (const q of TECH[t].requires) expect(when.get(q) ?? -1).toBeLessThan(season);
+  });
+
+  it('a weapon suffered is taken in faster than the same technique seen, a non-weapon is not boosted, and a transaction counts once', () => {
+    const weapon = TECHS.find(t => traitsOf(t).weapon && TECH[t].requires.length === 0) ?? TECHS.find(t => traitsOf(t).weapon)!;
+    const plain = TECHS.find(t => !traitsOf(t).weapon && transmissibility(t) === transmissibility(weapon))!;
+    expect(insightGain(weapon, 'suffered', SMALL)).toBeCloseTo(3 * insightGain(weapon, 'witnessed', SMALL), 12);
+    expect(insightGain(plain, 'suffered', SMALL)).toBe(insightGain(plain, 'witnessed', SMALL));
+
+    const ledger = new KnowledgeLedger();
+    const regions = new Map<number, KnowledgeRegion>();
+    const sim = new PeopleSim('raid', CLOCK, [knowledge({ regionOf: p => regions.get(p.id)!, kappa: 0, mu: 0, partial: SMALL, ledger })]);
+    const victim = sim.found({ cohorts: adults(30), comarcas: 1 }); regions.set(victim.id, FULL);
+    const raid = { id: 'raid-1', peopleId: victim.id, tech: weapon, how: 'suffered' as const, intensity: 1 };
+    expect(ledger.post(raid)).toBe(true);
+    expect(ledger.post(raid)).toBe(false);               // the same transaction reported again
+    expect(() => ledger.post({ ...raid, id: 'bad', intensity: 2 })).toThrow();
+    sim.advanceTo(SEASON);
+    expect(ledger.insight(victim.id, weapon)).toBeCloseTo(insightGain(weapon, 'suffered', SMALL), 12);
+    expect(victim.techs.has(weapon)).toBe(false);
+    sim.advanceTo(2 * SEASON);                           // taken in once, not each season
+    expect(ledger.insight(victim.id, weapon)).toBeCloseTo(insightGain(weapon, 'suffered', SMALL), 12);
+    // A held technique takes no insight.
+    const ledger2 = new KnowledgeLedger();
+    const sim2 = new PeopleSim('raid', CLOCK, [knowledge({ regionOf: () => FULL, kappa: 0, mu: 0, partial: SMALL, ledger: ledger2 })]);
+    const holder = sim2.found({ cohorts: adults(30), comarcas: 1, techs: [fire] });
+    ledger2.post({ id: 'x', peopleId: holder.id, tech: fire, how: 'suffered', intensity: 1 });
+    sim2.advanceTo(SEASON);
+    expect(ledger2.insight(holder.id, fire)).toBe(0);
+  });
+
+  it('draws the same two numbers per technique per update with or without partial learning (the stream does not move)', () => {
+    const a = world('draws2', [{ n: 40 }, { n: 40, techs: [fire] }], { kappa: 1e-4, mu: 0.02, contact: 1, seasons: 1, partial: { rate: 0, hintGain: 0, sufferedWeapon: 1 } });
+    const b = world('draws2', [{ n: 40 }, { n: 40, techs: [fire] }], { kappa: 1e-4, mu: 0.02, contact: 1, seasons: 1, partial: PARTIAL_START });
+    expect(b.people[0]!.rng.getState()).toEqual(a.people[0]!.rng.getState());
+  });
+});
+
+describe('a technological gap persists (owner decision 2026-10-06: diffusion must be small)', () => {
+  const A = closeUnderRequires(['bow', 'atlatl', 'sling']), B = closeUnderRequires(['plant_lore', 'cooking', 'basketry', 'fishing']);
+  /** Techniques held by exactly one of the two peoples, averaged over streams, as a share of what it was at founding. */
+  const dispersion = (contact: number, mu: number, partial: PartialLearning, seasons: number, streams = 30): number => {
+    let sum = 0, initial = 0;
+    for (let k = 0; k < streams; k++) {
+      const r = world(`gap-${k}`, [{ n: 40, techs: A }, { n: 40, techs: B }], { mu, partial, contact, seasons });
+      const diff = () => { let n = 0; for (const t of new Set([...r.people[0]!.techs.list(), ...r.people[1]!.techs.list()])) if (r.people[0]!.techs.has(t) !== r.people[1]!.techs.has(t)) n++; return n; };
+      initial = new Set([...A, ...B]).size - A.filter(t => B.includes(t)).length * 2;
+      sum += diff();
+    }
+    return sum / streams / initial;
+  };
+  const SEASONS_10Y = 40;
+
+  it('with realistic contact the dispersion over ten game years does not collapse to zero (nor does it need to grow)', () => {
+    expect(dispersion(0.3, LEARN_MU_START, PARTIAL_START, SEASONS_10Y)).toBeGreaterThan(0.9);
+    expect(dispersion(0.1, LEARN_MU_START, PARTIAL_START, SEASONS_10Y)).toBeGreaterThan(0.9);
+  });
+
+  it('control: a high-diffusion build collapses it, so the test above could have failed', () => {
+    const hot = { rate: 5, hintGain: 4, sufferedWeapon: 3 };
+    expect(dispersion(1, 50, hot, SEASONS_10Y)).toBeLessThan(0.1);
+    expect(dispersion(0.3, 50, hot, SEASONS_10Y)).toBeLessThan(0.15);
+  });
+
+  it('the model is honest that sustained full contact does homogenise, over generations', () => {
+    expect(dispersion(1, LEARN_MU_START, PARTIAL_START, 120, 20)).toBeLessThan(0.3);
+  });
+});

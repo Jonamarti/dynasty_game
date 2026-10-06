@@ -20,7 +20,7 @@ import { Simulation } from '../src/sim/core/Simulation.ts';
 import { makeConfig } from '../src/sim/core/Config.ts';
 import { SCENARIOS } from './simcheck.ts';
 import { PeopleSim, emptyCohorts } from '../src/sim/world/PeopleSim.ts';
-import { knowledge, regionMaterials, KREMER_KAPPA } from '../src/sim/world/PeopleKnowledge.ts';
+import { knowledge, regionMaterials, KREMER_KAPPA, PARTIAL_START } from '../src/sim/world/PeopleKnowledge.ts';
 
 const args = process.argv.slice(2).filter(a => a !== '--');
 const seeds = (args[0] ?? 'delta').split(',');
@@ -48,7 +48,7 @@ function model(n: number, scale = 1): number[] {
   const counts: number[] = [];
   for (let k = 0; k < STREAMS; k++) {
     const clock = { ticksPerDay: 240, daysPerSeason: 10 };
-    const sim = new PeopleSim(`know-${n}-${scale}-${k}`, clock, [knowledge({ mu: 0, regionOf: () => ({ materials: regionMaterials(), climate: { temperature: 0.5, wetness: 0.5 } }) })]);
+    const sim = new PeopleSim(`know-${n}-${scale}-${k}`, clock, [knowledge({ mu: 0, partial: PARTIAL_START, regionOf: () => ({ materials: regionMaterials(), climate: { temperature: 0.5, wetness: 0.5 } }) })]);
     const cohorts = emptyCohorts();
     const per = Math.round(n * scale / 16);
     for (let b = 3; b <= 10; b++) { cohorts.male[b] = per; cohorts.female[b] = per; }

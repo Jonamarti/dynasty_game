@@ -3275,6 +3275,10 @@ Test «nada por guion» con auditoría que falla contra versiones trucadas por f
 técnica derivada de rasgos de su fila en `TECHS` (práctica a la vista, receta), `mu` agregado de partida `LEARN_MU_START` = 0,0215 bajo la cota
 0,043; difusión pequeña a propósito (pueblos por delante de otros). [Detalle](m15_phase32c_peoples.md).
 
+**Avance del 2026-10-06 (32c-6, aprendizaje parcial y brecha):** intuición por contacto (pista que facilita inventar y, a 1 y con `requires`, concede),
+armas sufridas x3, entrada explícita `KnowledgeLedger.post` con identificador de transacción para guerras futuras; brecha tecnológica persistente medida
+(`tools/people-gap.ts`: 1,48x la inicial a 10 años con contacto 0,3; el control de difusión alta, 0,016). Valores = suposiciones declaradas. [Detalle](m15_phase32c_peoples.md).
+
 **Avance del 2026-10-06 (32c-4, por qué `PeopleSim` no reproduce `lean`):** investigación sin cambio de modelo. Medido en el
 detallado (3 semillas nuevas, más tres de calibración para la condición): la oferta de primavera a otoño es consumo proporcional a la
 gente (0,85 / 1,0 / 0,8 raciones por persona y día con 12, 25 y 37 fundadores), solo la de invierno es de la comarca; con la oferta exacta

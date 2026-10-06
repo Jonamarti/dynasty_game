@@ -1,3 +1,11 @@
+## M15 fase 32c: aprendizaje parcial sin valores medidos (2026-10-06)
+
+- `PARTIAL_START` (`rate` 0,02, `hintGain` 4, `sufferedWeapon` 3) y los pesos de transmisibilidad son **suposiciones de diseño**: el detallado no tiene progreso parcial de banda que medir.
+  Solo está respaldado el orden. Medir exigiría un experimento nuevo (exposición controlada a una técnica ajena en el detallado), no hecho.
+- Nada postea `KnowledgeLedger.post`: las guerras e incursiones de `PeopleSim` no existen. El «sufrirla» está probado solo con exposiciones de test.
+- Con contacto sostenido alto (>= 0,3) la brecha se cierra en décadas (0,33 y 0,03 a 30 años): consecuencia de las suposiciones, no un hallazgo del detallado.
+- `KnowledgeLedger` no entra en la instantánea de `PeopleSim` (insight y exposiciones se pierden al guardar/cargar); el `seen` de transacciones crece sin límite. Pendiente de la integración (32).
+
 ## M15 fase 32c: el aprendizaje entre pueblos no tiene tasa medida (2026-10-06)
 
 - **`MU` sin medir**: solo la cota `LEARN_MU_BOUND` = 0,043 (`firemaking` 0 de 85 temporadas-candidata en 5 semillas). `plant_lore`

@@ -35,7 +35,7 @@
  * Not modelled, and so not declared: forgetting (a technique dying with its last practitioner), refinement and
  * practitioners within a people (conocer como pueblo no es que todos sepan practicar); the people holds a bit.
  */
-import { TECHS, TECH, tierOf, type Tech } from '../knowledge/Tech.ts';
+import { TECHS, TECH, tierOf, webOf, type Tech } from '../knowledge/Tech.ts';
 import { populationOf, type PeopleSeason, type SeasonMechanism, type People } from './PeopleSim.ts';
 
 /** Climate of a region on two unit axes. The similarity of two is how far apart they sit. */
@@ -94,15 +94,20 @@ export const LEARN_MU_BOUND = 0.043;
  * - `craft`: a recipe or a variant of its gate, which "is passed on in ordinary small talk as well as in a lesson"
  *   (`Tech.ts`, `TechTier`).
  *
+ * - `weapon`: a node of (or the gate of) the `arms` web. It is made to be used on somebody, so the people it is used
+ *   against does not only see it, it *suffers* it (`KnowledgeExposure`, `how: 'suffered'`), and what is suffered is
+ *   studied: what it is made of, how it is held, where it bites.
+ *
  * A device that is none of these (a thing one makes at a hearth and has to be shown how) has none of them: it travels
  * only by being taught, which is the least contagious case.
  */
-export interface TechTraits { readonly seenInUse: boolean; readonly craft: boolean }
+export interface TechTraits { readonly seenInUse: boolean; readonly craft: boolean; readonly weapon: boolean }
 export function traitsOf(tech: Tech): TechTraits {
   const def = TECH[tech];
   return {
     seenInUse: (def.practisedBy?.length ?? 0) > 0,
     craft: tierOf(tech) === 'craft',
+    weapon: webOf(tech) === 'arms' || def.opens === 'arms',
   };
 }
 
@@ -138,9 +143,98 @@ export function learnRate(tech: Tech, mu: number): number {
   return mu * transmissibility(tech) / MEAN_TRANSMISSIBILITY;
 }
 
-/** Chance this season that a people with effective population `neff` invents a feasible, open technique. */
-export function inventionChance(tech: Tech, neff: number, kappa = KREMER_KAPPA): number {
-  return 1 - Math.exp(-kappa * neff / TECH[tech].difficulty);
+/**
+ * Chance this season that a people with effective population `neff` invents a feasible, open technique. `ease` is
+ * how much easier a hint has made it (1 for none): the same as dividing the technique's difficulty by it.
+ */
+export function inventionChance(tech: Tech, neff: number, kappa = KREMER_KAPPA, ease = 1): number {
+  return 1 - Math.exp(-kappa * neff * ease / TECH[tech].difficulty);
+}
+
+/**
+ * **Partial learning: what contact leaves behind short of the whole technique.** A people that sees a technique
+ * practised, or suffers it (a weapon used against it), does not copy it. It accumulates *insight* in [0, 1) towards it,
+ * which does two things and nothing else:
+ *
+ * - it is a **hint**: invention is `1 + hintGain x insight` times easier (the difficulty is divided by it), so a
+ *   people that has seen a technique finds its own way to it faster than one that has not, without being given it;
+ * - at 1 it is the technique (`how: 'completed'`), provided the people holds its `requires` (no skipped rung).
+ *
+ * Every number here is a **design assumption**, not a measurement: the detailed game has no partial-learning
+ * quantity to measure (a person either has a technology or has an idea of it, `KnowledgeSystem`; there is no
+ * band-level progress). They are small on purpose (owner decision 2026-10-06: diffusion must not be large, so that
+ * a people can stay ahead of another): at full contact a technique of average transmissibility takes 50 seasons
+ * (12 years) to complete by sight alone.
+ */
+export interface PartialLearning {
+  /** Insight gained per open season at full contact and the same climate, for a technique of average transmissibility. */
+  readonly rate: number;
+  /** How much each unit of insight eases invention. */
+  readonly hintGain: number;
+  /** How many times faster a weapon suffered is taken in than the same technique merely seen. */
+  readonly sufferedWeapon: number;
+}
+export const PARTIAL_START: PartialLearning = { rate: 0.02, hintGain: 4, sufferedWeapon: 3 };
+
+/** Insight gained from one unit of exposure to a technique: the technique's own share, and the weapon bonus if it was suffered. */
+export function insightGain(tech: Tech, how: 'witnessed' | 'suffered', partial: PartialLearning): number {
+  const bonus = how === 'suffered' && traitsOf(tech).weapon ? partial.sufferedWeapon : 1;
+  return partial.rate * bonus * transmissibility(tech) / MEAN_TRANSMISSIBILITY;
+}
+
+/**
+ * **An explicit input to the model: a people was exposed to a technique that is not its own.** Contact between
+ * neighbours produces these by itself (every season, from `PeopleRelation.contact`); this is how an event that is
+ * not a standing relation gets in: a weapon used on them in a raid or a war (`suffered`), a delegation shown
+ * a craft (`witnessed`). Nothing in `PeopleSim` makes war yet; whoever does will `post` here.
+ *
+ * `id` is the **transaction**: the same id is counted once, however many times it is posted (a raid reported by
+ * both sides, a replayed log), and `post` says whether it counted. The poster guarantees that the other party held
+ * the technique and that it was used where `peopleId` could see or feel it; the model does not check that.
+ * `intensity` is in [0, 1]: how much of a season's exposure it was.
+ */
+export interface KnowledgeExposure {
+  readonly id: string;
+  readonly peopleId: number;
+  readonly tech: Tech;
+  readonly how: 'witnessed' | 'suffered';
+  readonly intensity: number;
+}
+
+/** What the model keeps about partial learning: each people's insight, and the exposures posted but not yet taken in. */
+export class KnowledgeLedger {
+  private readonly insights = new Map<number, Map<Tech, number>>();
+  private readonly seen = new Set<string>();
+  private readonly pending = new Map<number, KnowledgeExposure[]>();
+
+  insight(peopleId: number, tech: Tech): number { return this.insights.get(peopleId)?.get(tech) ?? 0; }
+  /** Add insight; returns the new total (not capped here: 1 or more means complete). */
+  addInsight(peopleId: number, tech: Tech, amount: number): number {
+    let m = this.insights.get(peopleId);
+    if (!m) { m = new Map(); this.insights.set(peopleId, m); }
+    const total = (m.get(tech) ?? 0) + amount;
+    m.set(tech, total);
+    return total;
+  }
+  clear(peopleId: number, tech: Tech): void { this.insights.get(peopleId)?.delete(tech); }
+  /** Techniques a people has any insight into, in `TECHS` order. */
+  hinted(peopleId: number): Tech[] { const m = this.insights.get(peopleId); return m ? TECHS.filter(t => (m.get(t) ?? 0) > 0) : []; }
+
+  /** Queue an exposure for the exposed people's next update. False if this transaction was already posted. */
+  post(e: KnowledgeExposure): boolean {
+    if (!(e.intensity >= 0 && e.intensity <= 1)) throw new RangeError(`intensity ${e.intensity} outside [0, 1]`);
+    if (this.seen.has(e.id)) return false;
+    this.seen.add(e.id);
+    const q = this.pending.get(e.peopleId);
+    if (q) q.push(e); else this.pending.set(e.peopleId, [e]);
+    return true;
+  }
+  /** Take (and forget) what is queued for a people, in the order posted. */
+  take(peopleId: number): KnowledgeExposure[] {
+    const q = this.pending.get(peopleId) ?? [];
+    this.pending.delete(peopleId);
+    return q;
+  }
 }
 
 /** Chance this season of learning a technique, given the summed `contact x similarity` of the neighbours holding it. */
@@ -157,39 +251,54 @@ export interface KnowledgeEnv {
    * measured ceiling `LEARN_MU_BOUND`) unless you are measuring.
    */
   readonly mu: number;
+  /** Partial learning (insight and hints); required for the same reason as `mu`: pass `PARTIAL_START` unless measuring. */
+  readonly partial: PartialLearning;
+  /** Where insight and posted exposures are kept. Omit it and the model keeps a private one nobody can post to. */
+  readonly ledger?: KnowledgeLedger;
 }
 
 /** One technique acquired, for whoever measures (never read by the model). */
 export interface KnowledgeEvent {
   readonly peopleId: number; readonly season: number; readonly seasonOfYear: PeopleSeason; readonly tech: Tech;
-  readonly how: 'invented' | 'learned';
+  /** `completed`: the insight from sight and suffering filled up. */
+  readonly how: 'invented' | 'learned' | 'completed';
 }
 
 export function knowledge(env: KnowledgeEnv, report?: (e: KnowledgeEvent) => void): SeasonMechanism {
-  const kappa = env.kappa ?? KREMER_KAPPA, mu = env.mu;
+  const kappa = env.kappa ?? KREMER_KAPPA, mu = env.mu, partial = env.partial, ledger = env.ledger ?? new KnowledgeLedger();
   return ({ sim, people, season, seasonOfYear }) => {
     const rng = people.rng;
     const region = env.regionOf(people);
     const neighbours = sim.relationsOf(people.id).map(rel => ({ rel, other: sim.peoples.get(rel.a === people.id ? rel.b : rel.a)! }));
     let neff = populationOf(people);
     for (const { rel, other } of neighbours) neff += rel.contact * populationOf(other);
-    // Judge every candidate against what is held now; add afterwards.
-    const arrivals: { tech: Tech; how: 'invented' | 'learned' }[] = [];
+    // Exposures posted from outside (a weapon used on this people) are taken in with this season's.
+    const posted = new Map<Tech, number>();
+    for (const e of ledger.take(people.id)) {
+      if (!people.techs.has(e.tech)) posted.set(e.tech, (posted.get(e.tech) ?? 0) + e.intensity * insightGain(e.tech, e.how, partial));
+    }
+    // Judge every candidate against what is held now (and the insight held now); add afterwards.
+    const arrivals: { tech: Tech; how: 'invented' | 'learned' | 'completed' }[] = [];
     for (const tech of TECHS) {
       const uInvent = rng.next(), uLearn = rng.next();
-      if (people.techs.has(tech) || !people.techs.prerequisitesHeld(tech)) continue;
-      const invented = neff > 0 && feasibleIn(tech, region) && uInvent < inventionChance(tech, neff, kappa);
+      if (people.techs.has(tech)) { ledger.clear(people.id, tech); continue; }
       let exposure = 0;
       for (const { rel, other } of neighbours) {
         if (rel.contact > 0 && other.techs.has(tech)) exposure += rel.contact * climateSimilarity(region.climate, env.regionOf(other).climate);
       }
+      const before = ledger.insight(people.id, tech);
+      const gain = exposure * insightGain(tech, 'witnessed', partial) + (posted.get(tech) ?? 0);
+      const after = gain > 0 ? ledger.addInsight(people.id, tech, gain) : before;
+      if (!people.techs.prerequisitesHeld(tech)) continue;
+      const invented = neff > 0 && feasibleIn(tech, region) && uInvent < inventionChance(tech, neff, kappa, 1 + partial.hintGain * Math.min(before, 1));
       const learned = exposure > 0 && uLearn < learningChance(exposure, learnRate(tech, mu));
-      if (invented || learned) arrivals.push({ tech, how: invented ? 'invented' : 'learned' });
+      const completed = after >= 1;
+      if (invented || learned || completed) arrivals.push({ tech, how: invented ? 'invented' : learned ? 'learned' : 'completed' });
     }
     for (const { tech, how } of arrivals) {
       people.techs.add(tech);
+      ledger.clear(people.id, tech);
       report?.({ peopleId: people.id, season, seasonOfYear, tech, how });
     }
   };
 }
-

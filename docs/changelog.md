@@ -1,3 +1,12 @@
+## 2026-10-06 — M15 fase 32c: aprendizaje parcial, pistas y exposición con transacción (`PeopleKnowledge`)
+
+Por qué: la decisión del propietario pide que haya pueblos tecnológicamente por delante de otros, y que al ver o sufrir (un arma usada contra ellos) una técnica se haga
+una parte del aprendizaje o se sepa por dónde investigar. Ahora el contacto acumula *intuición* hacia cada técnica ausente: sube la tasa de invención (pista) y al llegar a 1,
+con los `requires`, la concede (`completed`). Las armas sufridas se absorben x3. Entrada explícita `KnowledgeLedger.post` con id de transacción (cuenta una vez) para
+guerras/incursiones futuras; nada de `PeopleSim` guerrea aún. Valores de `PARTIAL_START` = suposición de diseño, pequeños a propósito. Medida: `tools/people-gap.ts`; con contacto
+0,3 la dispersión a 10 años es 1,48 veces la inicial, con difusión alta 0,016 (control); a 30 años y contacto 1 se homogeneiza (0,03), dicho en el doc. Stream intacto (test).
+Juego bit-idéntico.
+
 ## 2026-10-06 — M15 fase 32c: transmisibilidad por técnica (`PeopleKnowledge`)
 
 Decisión del propietario sobre `MU`: por técnica, con un agregado pequeño de partida, y difusión pequeña para que haya pueblos por delante de

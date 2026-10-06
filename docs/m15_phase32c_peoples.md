@@ -280,6 +280,39 @@ sigue siendo obligatorio). Con él, el dispositivo-de-lección sin requisitos qu
 Muestra de lo medido en el detallado, por honestidad: **dos técnicas, 5 semillas, 85 temporadas-candidata para `firemaking`**; no se midió ningún
 valor por técnica nuevo en esta fase (no hay datos para hacerlo sin otro experimento de dispersión).
 
+### Aprendizaje parcial, pistas y exposición (`PartialLearning`, `KnowledgeLedger`, `KnowledgeExposure`)
+
+El contacto no copia la técnica entera: **deja un resto**. Cada temporada, por cada técnica que el pueblo no tiene y algún vecino sí, el pueblo
+acumula *intuición* (`insight`, 0 a 1): `rate x contacto x similitud x T(t)/media(T)`. La intuición hace dos cosas y nada más: (1) es una **pista**,
+la invención es `1 + hintGain x intuición` veces más fácil (se divide la dificultad: sube su tasa de Kremer) sin dar la técnica; (2) al llegar a 1 es la técnica
+(`how: 'completed'`) **si el pueblo tiene sus `requires`** (ningún peldaño se salta). Además la copia entera de siempre (`mu` por técnica, §anterior).
+Valores de partida `PARTIAL_START = {rate 0,02, hintGain 4, sufferedWeapon 3}`: **suposiciones de diseño, no medidas** (el detallado no tiene un progreso parcial de
+banda que medir: una persona tiene la técnica o una idea de ella) y pequeñas a propósito: a contacto 1 una técnica media tarda 50 temporadas (12 años) en completarse solo
+por verla, y la copia entera suma 0,0215 por temporada.
+
+**Sufrirla.** `traitsOf(t).weapon` (nodo de la web `arms` o su puerta; leído de `TECHS`) multiplica por `sufferedWeapon` = 3 lo que se absorbe cuando la técnica se *sufre* y no solo
+se ve. El enganche con guerras e incursiones es una entrada explícita: `KnowledgeLedger.post({ id, peopleId, tech, how: 'witnessed' | 'suffered', intensity })`, con
+`id` = identificador de transacción (la misma id cuenta una vez, aunque se envíe dos veces: incursión contada por los dos bandos, registro repetido; `post` dice si contó) y la
+exposición se absorbe en la siguiente actualización del pueblo expuesto. Quien postea garantiza que el otro tenía la técnica; el modelo no lo comprueba. **Aún nada de `PeopleSim`
+guerrea**, así que ningún camino real postea: solo los tests. No se declara más.
+
+**Disciplina del stream:** la intuición no consume números (determinista); las dos tiradas por técnica siguen siendo las mismas, con o sin aprendizaje parcial (test).
+
+**Brecha persistente (`tools/people-gap.ts`, tests `a technological gap persists`).** Dos pueblos de 40 adultos, A funda con la rama de armas (arco, atlatl, honda y sus
+requisitos) y B con la de plantas y cocina; dispersión = técnicas que tiene exactamente uno (diferencia simétrica), `KAPPA` medida, `LEARN_MU_START`, `PARTIAL_START`, 40 flujos:
+
+| contacto (qué-si, no medido) | 10 años (40 temporadas): final/inicial | 30 años (120 temporadas) |
+|---|---|---|
+| 0 | 1,85 | 1,31 |
+| 0,1 | 1,73 | 0,75 |
+| 0,3 | 1,48 | 0,33 |
+| 1 | 0,88 | 0,03 |
+| **control: difusión alta (`mu` 50, `rate` 5), contacto 1** | **0,016** | 0,000 |
+
+La dispersión no se hunde en años con contacto realista (sube porque cada pueblo inventa sus propias cosas); con contacto sostenido se homogeneiza en generaciones, y
+**eso se dice, no se esconde**; el control de difusión alta la colapsa en una década. Los tests exigen > 0,9 a 10 años con contacto 0,1 y 0,3, < 0,1 con la difusión alta y < 0,3 a 30
+años con contacto 1. El contacto que de verdad guardan dos pueblos **no está medido** y nada lo escribe todavía.
+
 ### Correspondencia de la invención (`tools/people-knowledge-correspond.ts`)
 
 Semillas fuera de la medida (`delta,eps,zeta`); el detallado de 16 temporadas desde nada; el modelo, un pueblo con la población media
