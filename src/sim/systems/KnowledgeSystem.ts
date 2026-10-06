@@ -34,7 +34,9 @@ import type { SpatialHash } from '../core/SpatialHash.ts';
 import type { World, Biome } from '../core/World.ts';
 import type { Season } from '../core/TimeManager.ts';
 import type { KnowledgeConfig, LearningConfig, CarryConfig } from '../core/Config.ts';
-import { TECH, TECH_EFFECTS, TECHS, prerequisitesMet, scaled, type Tech } from '../knowledge/Tech.ts';
+import {
+  TECH, TECH_EFFECTS, TECHS, difficultyOf, prerequisitesMet, scaled, tierOf, type Tech, type TechTier,
+} from '../knowledge/Tech.ts';
 import { BUILDINGS, type Building } from '../entities/Building.ts';
 import type { ItemPile } from '../entities/ItemPile.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -471,7 +473,7 @@ export class KnowledgeSystem {
     );
 
     const chance =
-      (ctx.knowledge.conceptionBase / def.difficulty) *
+      (ctx.knowledge.conceptionBase / difficultyOf(chosen.tech, ctx.knowledge)) *
       chosen.spark.weight * curiosity * wit * competence * reflection;
     if (!ctx.rng.chance(chance)) return;
 
@@ -777,7 +779,13 @@ export class KnowledgeSystem {
    * depends on the teacher's skill and the pupil's regard for them — you do not
    * learn much from somebody you have no time for.
    */
-  teach(teacher: Person, pupil: Person, regard: number, tick: number, rng: RNG): Tech | null {
+  teach(
+    teacher: Person, pupil: Person, regard: number, tick: number, rng: RNG,
+    // M15 phase 13b: small talk shows only recipes. Left out, every node is a
+    // candidate, as before. A pair with no candidate returns before any draw,
+    // so asking for `'craft'` costs nothing in a world that has no craft.
+    only?: TechTier
+  ): Tech | null {
     // A child can be taught and cannot teach. What they hold is real and
     // personal, but it is held at level 0 and it does not travel any further
     // until they are grown — which is also why the world's `knownTech` is
@@ -791,6 +799,7 @@ export class KnowledgeSystem {
       const def = TECH[tech as Tech];
       if (!def) continue;
       if (!def.requires.every(r => pupil.knownTech.has(r))) continue;
+      if (only !== undefined && tierOf(tech as Tech) !== only) continue;
       teachable.push(tech as Tech);
     }
     if (teachable.length === 0) return null;
@@ -846,6 +855,37 @@ export class KnowledgeSystem {
     teacher.chronicle.push({ tick, ageDays: teacher.age, text, kind: 'did' });
     pupil.chronicle.push({ tick, ageDays: pupil.age, text, kind: 'milestone' });
     return tech;
+  }
+
+  /**
+   * What gets said about a craft over small talk (M15 phase 13b).
+   *
+   * A recipe is the kind of knowledge that moves by being mentioned - "put the
+   * bones in with the water and drop in a hot stone" - so every rung but the
+   * greeting may carry one, in each direction, where a technique needs a lesson
+   * (`doTeach`, `doAsk`) or a night under one roof (`hearthLesson`). It is the
+   * ordinary `teach`, restricted to crafts: the same prerequisites, the same
+   * child-cannot-teach rule, the same roll, the same level-zero landing.
+   *
+   * **Determinism.** `teach` draws once to choose among the candidates and once
+   * for the roll, and only when it has a candidate. This draws for crafts only,
+   * so a conversation between two people who share no craft takes nothing from
+   * the stream, and until the first craft exists every world is untouched.
+   * `regardOf(pupil, teacher)` is the pupil's regard for the teacher in [-1, 1].
+   *
+   * Returns what landed, in the order it did.
+   */
+  conversationLesson(
+    a: Person, b: Person, mode: 'greet' | 'chat' | 'interests' | 'deep', tick: number, rng: RNG,
+    regardOf: (pupil: Person, teacher: Person) => number
+  ): Tech[] {
+    if (mode === 'greet') return [];
+    const landed: Tech[] = [];
+    const first = this.teach(a, b, regardOf(b, a), tick, rng, 'craft');
+    if (first !== null) landed.push(first);
+    const second = this.teach(b, a, regardOf(a, b), tick, rng, 'craft');
+    if (second !== null) landed.push(second);
+    return landed;
   }
 
   private shareTechBeliefs(teacher: Person, pupil: Person, tech: Tech, tick: number): void {

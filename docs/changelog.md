@@ -1,3 +1,19 @@
+## 2026-10-06 — M15 fase 13b: la receta como conocimiento
+
+`TechDef` gana `tier` (`technique` por defecto, o `craft`) y `Config.knowledge`
+gana `craftDifficulty` (0,4). Un `craft` es una receta: su dificultad se
+multiplica por ese valor en el único sitio que la lee (`difficultyOf`, desde
+`tryConceive`) y, además, se enseña en las conversaciones `chat`, `interests` y
+`deep` (`KnowledgeSystem.conversationLesson`, llamado desde `doTalk`), donde las
+técnicas siguen sin enseñarse. No añade tiradas por técnica: sin ningún `craft`
+que compartir, la conversación no toma nada del stream. Ningún nodo existente se
+marca `craft`; los primeros llegan en 13d, que es donde se mide el
+comportamiento. El plan decía que hoy enseñan los modos largos, pero
+`converse` no enseña técnicas (duda abierta en
+[m15_phase13_subwebs.md](m15_phase13_subwebs.md)). 12 hashes de checkpoint y
+los informes de `band`, `hearths` y `craft` coinciden. Evidencia en
+`artifacts/verification/m15-phase13b-20261006/`.
+
 ## 2026-10-06 — M15 fase 13a: redes y puertas
 
 `TechDef` gana `web` (ausente = red principal) y `opens`, y `Tech.ts` una tabla

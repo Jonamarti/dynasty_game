@@ -41,6 +41,7 @@
  * deliberately different questions.
  */
 import type { Person, Skill } from '../entities/Person.ts';
+import type { KnowledgeConfig } from '../core/Config.ts';
 import type { Idea } from './Synthesis.ts';
 import type { Spark } from './Synthesis.ts';
 import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
@@ -285,6 +286,23 @@ export const WEBS: Record<WebId, WebDef> = {
 /** The webs that hang off a gate, in the order a screen should list them. */
 export const SUB_WEBS: WebDef[] = Object.values(WEBS).filter(web => web.gate !== null);
 
+/**
+ * What kind of node this is in its web (M15 phase 13b).
+ *
+ * A `technique` is a way of doing things that has to be worked out. A `craft` is
+ * a recipe or a variant of its gate - broth from the hearth, a flatbread, a
+ * hardened spear - which is hit upon quickly (`KnowledgeConfig.craftDifficulty`
+ * multiplies its difficulty, see `difficultyOf`) and is passed on in ordinary
+ * small talk as well as in a lesson (`KnowledgeSystem.conversationLesson`).
+ * Nothing else about it differs: refining, dying with its holder and being
+ * shown to a child at the hearth are the machinery a technique already has.
+ *
+ * Its sparks are mostly `doing` and `holding` ones - a recipe occurs to whoever
+ * is at the work with the ingredients to hand - but that is a way of writing
+ * the node and not a mechanism: the spark machinery is unchanged.
+ */
+export type TechTier = 'technique' | 'craft';
+
 export interface TechDef {
   id: Tech;
   label: string;
@@ -296,6 +314,11 @@ export interface TechDef {
   web?: WebId;
   /** On a gate technique only: the sub-web it opens. */
   opens?: WebId;
+  /**
+   * Technique or craft. Left out, it is a technique: read it through `tierOf`,
+   * for the same reason `web` is read through `webOf`.
+   */
+  tier?: TechTier;
   /**
    * The archaeological period our own species arrived at this in.
    *
@@ -1840,6 +1863,21 @@ export const TECH: Record<Tech, TechDef> = {
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
 export function webOf(tech: Tech): WebId {
   return TECH[tech].web ?? 'main';
+}
+
+/** Whether a node is a technique or a craft (a technique unless its entry says otherwise). */
+export function tierOf(tech: Tech): TechTier {
+  return TECH[tech].tier ?? 'technique';
+}
+
+/**
+ * How hard a node is to arrive at unaided. **The one place `difficulty` is
+ * read** by the simulation: a craft is a recipe and is hit upon faster, so its
+ * difficulty is scaled by `craftDifficulty`. A technique is returned as written.
+ */
+export function difficultyOf(tech: Tech, knowledge: Pick<KnowledgeConfig, 'craftDifficulty'>): number {
+  const def = TECH[tech];
+  return tierOf(tech) === 'craft' ? def.difficulty * knowledge.craftDifficulty : def.difficulty;
 }
 
 /** Every technology of one web, in `TECHS` order (deterministic, for the screen). */

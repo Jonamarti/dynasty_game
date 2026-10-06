@@ -3934,6 +3934,10 @@ export class ActionSystem {
 
     const mode = talkModeOf(person, ctx.relationships.peek(person.id, other.id), ctx.tick);
     ctx.social.converse(person, other, ctx.tick, ctx.peopleById, mode);
+    // A recipe is passed on in small talk (M15 phase 13b). Draws only when one
+    // of the two holds a craft the other lacks, so it moves no stream until then.
+    ctx.knowledge.conversationLesson(person, other, mode, ctx.tick, ctx.rng,
+      (pupil, teacher) => ctx.relationships.opinion(pupil.id, teacher.id) / 100);
     if (person.householdId !== null && person.householdId === other.householdId) {
       person.mood.add('belonging', 2, 'talked with family', ctx.tick);
       other.mood.add('belonging', 2, 'talked with family', ctx.tick);

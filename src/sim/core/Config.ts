@@ -232,6 +232,12 @@ export interface KnowledgeConfig {
    * run of bad luck is a delay rather than a wall.
    */
   failedTrialCredit: number;
+  /**
+   * Multiplier on the `difficulty` of a `craft` node (M15 phase 13b), so a
+   * recipe is hit upon faster than a technique. Read in one place,
+   * `difficultyOf`; a technique is unaffected.
+   */
+  craftDifficulty: number;
   /** Maximum remembered places of each kind per person. */
   placeMemoryPerKind: number;
   /** Radius founders have explored around their camp on day one. */
@@ -572,6 +578,7 @@ export const DEFAULT_CONFIG: SimConfig = {
     trialChance: 0.18,
     trialsToProve: 3,
     failedTrialCredit: 0.34,
+    craftDifficulty: 0.4,
     placeMemoryPerKind: 48,
     foundersKnowRadius: 20,
   },

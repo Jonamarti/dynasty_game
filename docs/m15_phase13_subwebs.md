@@ -53,6 +53,78 @@ esbuild/shim de vitest; no se ejecutó `npm test` ni `npm run e2e`).
 - `tsc --noEmit` limpio. Suite completa con el sustituto: 158 archivos, 1.100 tests (1.094 de base + 6 nuevos), todos pasan (`unit-full.log`; un test supera los 5 s en esta máquina lenta, `earthwork-checks`, ajeno a esta fase).
 - Artefactos: `artifacts/verification/m15-phase13a-20261006/`.
 
+## 13b — La receta como conocimiento (2026-10-06, bit-idéntica por ahora)
+
+**Qué se quería.** Un nivel de nodo, `craft`, para recetas y variantes de su
+puerta: se prueba rápido (dificultad × 0,4), se enseña también charlando, y por
+lo demás viaja por la maquinaria de siempre.
+
+**Qué se hizo.**
+
+- `TechDef.tier?: 'technique' | 'craft'` (ausente = técnica; se lee con
+  `tierOf`, como `web` con `webOf`).
+- `Config.knowledge.craftDifficulty = 0.4`. **Un solo sitio** lee la dificultad
+  de un nodo: `tryConceive` en `KnowledgeSystem`, que ahora llama a
+  `difficultyOf(tech, knowledge)` (en `Tech.ts`); el cálculo del multiplicador
+  no está en ningún otro sitio. Los checkpoints validan la config con la forma
+  de `DEFAULT_CONFIG` (`copyConfig`), así que basta con añadir el campo allí,
+  como hizo `foundersKnowRadius`; un checkpoint antiguo sin el campo ya no
+  carga (la regla de siempre: «la configuración completa»).
+- `KnowledgeSystem.teach` gana un parámetro opcional `only?: TechTier`, y un
+  método nuevo `conversationLesson(a, b, mode, …)` llama a `teach(..., 'craft')`
+  en las dos direcciones, en todos los modos menos `greet`. `ActionSystem.doTalk`
+  lo llama justo después de `social.converse`.
+- **Dado por candidata, medido a mano.** `teach` hace como mucho dos tiradas por
+  intento (`rng.int` para elegir entre los candidatos y `rng.chance` para el
+  éxito), y **ninguna si no hay candidato** (vuelve antes). La conversación solo
+  considera nodos `craft`, así que una pareja sin ninguna receta que compartir
+  no toma nada de `actionRng`; un test lo cuenta (0 tiradas). Hasta que exista
+  el primer `craft`, ningún mundo cambia. No se añade ninguna tirada por técnica
+  no craft.
+- Las chispas «sobre todo de hacer y de lo manejado» son guía para el contenido
+  de los nodos de 13d, no un mecanismo: no se construye nada en `Synthesis`.
+- Refinar, olvidar y heredar: sin cambios. Un test pasa un `craft` por
+  `advance` (sube de nivel y se retira en su techo), por `countHolders` (se va
+  con su último portador vivo) y por `hearthLesson` (a un niño, a nivel 0).
+
+**Qué nodos son `craft` en este commit: ninguno.** Los nodos que podrían
+serlo por naturaleza (`bow`, `atlatl`, `sickle`, `wool`, `dairying`…) son
+tecnologías con dificultad 0,4–0,6 calibradas con las medidas de M11, y
+marcarlas `craft` bajaría su dificultad a 0,16–0,24 (la cota de
+`ideas-are-conceived` es tres ideas por persona-año): sería un cambio de
+comportamiento grande sin que el plan lo pida. El plan dice «recetas»: los
+primeros nodos receta del plan son los de 13d (`stone_boiling`, `flatbread`),
+y «nada declarado e inerte» impide declarar un nivel que nadie tiene. Por eso
+el mecanismo se prueba con tests que marcan un nodo real como `craft` durante
+un test y lo devuelven (`src/sim/__tests__/craft-tier.test.ts`, 15 tests). **La
+medición de comportamiento pasa a los commits de 13d.**
+
+**Cómo se verificó** (contenedor Linux en la nube, sustituto esbuild/shim de
+vitest; no se ejecutó `npm test` ni `npm run e2e`).
+
+- Tests primero: `craft-tier.test.ts` falló por import inexistente
+  (`tierOf`, `difficultyOf`); ahora pasa (15 tests). Cubren: el multiplicador se
+  aplica al craft y no a la técnica (y es lo que divide la tirada de
+  concepción: la razón de probabilidades es exactamente 1/0,4); `chat`
+  enseña un craft y no una técnica; `greet` no enseña; ambas direcciones;
+  prerrequisitos; cero tiradas sin craft; refinar/heredar/olvidar.
+- Hashes SHA-256 del registro de checkpoint (el script de 13a, con
+  `config.knowledge.craftDifficulty` borrado del registro porque el campo
+  nuevo forma parte de la config por diseño) para `band`, `century` y
+  `phase13a` en los ticks 0, 180, 500 y 1500: **12/12 coinciden** con los de
+  13a (`hashes-before.json` = `hashes-after.json`, `cmp` sin diferencias).
+- `headless --scenario band|hearths|craft`: todas las líneas coinciden con las
+  de antes de este commit salvo `steps/s` y `ms`.
+- `tsc --noEmit` limpio. Suite completa con el sustituto: 159 archivos, 1.115 tests (1.100 de base + 15 nuevos), todos pasan (`unit-full.log`; el mismo test lento `earthwork-checks` supera los 5 s en esta máquina).
+- Artefactos: `artifacts/verification/m15-phase13b-20261006/`.
+
+**Qué queda abierto.** La premisa del plan («se enseña también en `chat`; hoy
+solo en los modos largos») no coincide con el código: `SocialSystem.converse`
+no enseña técnicas en ningún modo (comparte noticias, creencias y un lugar); las
+técnicas viajan por `doTeach`, `doAsk`, `hearthLesson` y la observación. Lectura
+conservadora adoptada: los crafts se enseñan en `chat`, `interests` y `deep` (no
+en `greet`) y las técnicas siguen como estaban. Ver «Dudas abiertas», 5.
+
 ## Dudas abiertas
 
 1. **Cocina no se abre en 13a.** La tabla del plan supone que el asado, `bread` y
@@ -76,3 +148,9 @@ esbuild/shim de vitest; no se ejecutó `npm test` ni `npm run e2e`).
    mudaron a Campo y Doma.
 4. Los ids de red (`arms`, `field`, `domestication`) son nombres internos
    elegidos aquí; las etiquetas visibles son «Armas», «Campo», «Doma».
+5. **El plan dice que hoy enseñan los modos largos de conversación; el código no.**
+   `converse` no llama a `teach` en ningún modo. 13b añade la enseñanza de crafts
+   en `chat`, `interests` y `deep`; si el propietario quería que además las
+   técnicas se enseñaran en los modos largos, es un cambio aparte (medido).
+6. **Ningún nodo existente es `craft`** (ver 13b). Si el propietario quiere que
+   `bow`/`atlatl`/`sickle`… lo sean, hay que medir el efecto de bajar su dificultad.

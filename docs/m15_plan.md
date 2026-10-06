@@ -1503,6 +1503,8 @@ candidata, cada técnica nueva añade tiradas y mueve el stream de
 `knowledgeRng`. Es un commit de comportamiento y se mide, pero **13a no puede
 añadir técnicas**, solo moverlas de red.
 
+**Avance del 2026-10-06:** 13b hecha (`m15: la receta como conocimiento`), todavía bit-idéntica: `TechDef.tier`, `Config.knowledge.craftDifficulty` (0,4) leído solo en `difficultyOf`, y enseñanza de crafts en `chat`/`interests`/`deep` sin tiradas si no hay crafts que compartir. Ningún nodo existente es `craft`; la medición pasa a 13d. El plan suponía que los modos largos ya enseñaban; `converse` no enseña técnicas (ver [m15_phase13_subwebs.md](m15_phase13_subwebs.md)).
+
 ### 13c. La pantalla (interfaz; e2e)
 
 - La red principal (`G`) dibuja solo los nodos de `main`. Una puerta que el
