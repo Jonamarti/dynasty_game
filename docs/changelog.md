@@ -1,3 +1,16 @@
+## 2026-10-06 — M15 fase 30: pesca dulce junto a costas saladas
+
+El muestreo conjunto podía gastar toda la cuota en mar aunque existiera río
+somero. Los inicios geográficos reservan un punto por clase de agua disponible
+si la cuota alcanza, con el stream de pesca ya existente. La isla clásica
+mantiene su secuencia histórica. Una regresión reproduce el bucle anterior:
+dos puntos salados; el nuevo conserva un punto dulce y otro salado, ambos
+someros y accesibles. La aceptación de IA también recorre y cosecha un punto
+dulce real. No se crea pesca somera donde la costa no ofrece ese hábitat.
+Los tres focales de pesca pasan, incluido un lago de depresión generado sin
+candidatos fluviales, con banco seco vecino en la misma región. Registro
+visual integrado: `artifacts/screenshots/m15-phase30-closure-2026-10-06T-01/`.
+
 ## 2026-10-06 — M15 fase 30: hidratación continental de la leche
 
 La leche quita cinco puntos de sed en mundos continentales, completando el

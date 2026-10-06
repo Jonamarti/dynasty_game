@@ -2983,6 +2983,14 @@ comida directa y comidas compartidas. Clásico conserva su resultado anterior.
 Macros, consumo real y continuación JSON tienen regresiones; la suite
 integrada pasa 1.108 tests. Capturas: `artifacts/screenshots/m15-phase30-closure-2026-10-06T-01/`.
 
+**Segunda pasada del 2026-10-06: pesca dulce disponible.** La cuota reserva
+un punto por clase de agua somera disponible, cuando alcanza. Una semilla
+reproduce el fallo anterior (ambos puntos salados) y verifica la reserva
+dulce/salada accesible. La IA cosecha un punto dulce real; clásico conserva
+su stream y resultado. Capturas integradas en el mismo milestone anterior.
+Los tres focales incluyen pesca en un lago de depresión sin cauces candidatos,
+con vecino seco caminable y región accesible.
+
 **Avance del 2026-10-06: terreno y registros de agua local.** `river` se añade
 al final de los biomas; las orillas dulces/saladas y las superficies fluviales
 se conservan en terreno geográfico v2. Zanjas heredan el agua de su origen.
@@ -3025,15 +3033,16 @@ al final de `BIOMES`; `freshShore` y `saltShore`; el agua de la fruta
 **Puerta:** escenario `frontier`; `nobody-drinks-the-sea` y
 `rivers-are-crossed`; la matriz clásica bit-idéntica.
 
-**Avance del 2026-10-06: puerta de mecanismo.** `frontier` pasa 2/2 checks
+**Primera pasada del 2026-10-06: puerta de mecanismo.** `frontier` pasa 2/2 checks
 aplicables: 17 ticks de bebida dulce, cero bebida marina autónoma y un cruce
 terminado de vado generado. Los controles negativos fallan al ofrecer mar
 en el hash de bebida o bloquear el vado. Typecheck, 1.094 unitarios, 82 e2e
 y soak español pasan; seis hashes clásicos completos coinciden. Esta evidencia
 conserva los 116 fallos iniciales en la matriz, con los mismos recuentos e IDs
 clásicos; no acredita igualdad de todas las métricas ni una matriz verde.
-Esta pasada
-no cierra giros, vados globales, supervivencia continental ni salinas.
+Esa primera pasada no cerraba giros, vados globales ni validación continental
+larga. La segunda pasada de arriba corrige esos puntos; las salinas siguen
+como contenido de fase 15.
 [Contrato y límites](m15_phase30_water.md).
 
 ## Fase 31 — El globo (M14 fase 13)

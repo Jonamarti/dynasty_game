@@ -9,6 +9,18 @@ en ambos modos. Todos los consumidores y el scorer consultan esa política.
 Las pruebas cubren consumo desde la UI, una orden real de comer y continuidad
 desde JSON, además de macros; no añaden estado privado ni draws de RNG.
 
+La cuota geográfica de pesca reserva una casilla de cada clase dulce/salada
+disponible si el número de puntos lo permite. El bucle anterior podía gastar
+ambos draws en mar pese a tener río somero; una regresión reproduce esa
+secuencia exacta. Los peces conservan el stream dedicado existente y las
+condiciones de agua somera y banco accesible de fase 27. La prueba de IA
+demuestra ruta y cosecha efectiva de un punto dulce; la isla clásica conserva
+su distribución histórica. La reserva es condicional: un acantilado sin agua
+somera no gana un banco artificial.
+Una aceptación separada genera un lago de depresión sin candidatos de río
+y comprueba peces dulces someros junto a un banco seco de la misma región.
+Los tres focales de pesca pasan (reserva, lago y cosecha autónoma).
+
 La red geográfica comparte nodos y aristas globales en giros y confluencias.
 Cada baldosa consulta esa red, por lo que un recorte no vuelve a trazar el
 río desde su propio borde. Superficies ancladas al relieve y fase de vados
@@ -88,7 +100,7 @@ Cuatro regresiones prueban IA, orden dañina, guardado y fuente desaparecida.
 El navegador ejercita menú, daño y parada en la UI real. Capturas revisadas:
 `artifacts/screenshots/m15-phase30-final-2026-10-06T-02/` (tres imágenes).
 
-## Verificación final — 2026-10-06
+## Verificación de la primera pasada — 2026-10-06
 
 - Typecheck limpio; suite completa 1.094/1.094 tests, 158 archivos.
 - E2e completo 82/82; repetición de los dos nuevos después del último arreglo
@@ -129,5 +141,7 @@ escenario tiene dos checks aplicables, nunca `n/a`, y no afirma supervivencia
 continental ni mejora económica. `sim:seeds` acepta su constructor geográfico
 sin cambiar el setup histórico de las cohortes clásicas.
 
-Quedan abiertos giros y vados globales, validación continental a largo plazo,
-selección global y contenido salinero de fase 15. La fase 30 continúa abierta.
+Al terminar la primera pasada quedaban abiertos giros, vados globales y
+validación continental larga; esa entrega parcial no cerraba la fase 30.
+La segunda pasada corrige la continuidad y añade la cohorte. Selección
+global y contenido salinero de fase 15 siguen en sus fases correspondientes.

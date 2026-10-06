@@ -1048,7 +1048,28 @@ export class Simulation {
     // level cannot silently erase most of the configured fishing spots.
     const shallows = this.world.shoreTiles.filter(tile => this.world.isShallow(tile.x, tile.y));
     if (shallows.length === 0) return;
-    for (let placed = 0; placed < count; placed++) {
+    // A continental coastline can have thousands of salt shallows for every
+    // narrow river ford. Sampling only the combined list made the configured
+    // fish count look healthy while a whole freshwater network had no shoal.
+    // Reserve one spot in each available water class on geographic starts;
+    // the classic island keeps the historical draw loop below byte-for-byte.
+    const habitats = this.geographicStart
+      ? [
+          shallows.filter(tile => this.world.isFreshWater(tile.x, tile.y)),
+          shallows.filter(tile => this.world.isSaltWater(tile.x, tile.y)),
+        ].filter(tiles => tiles.length > 0)
+      : [];
+    let placed = 0;
+    if (count >= habitats.length) {
+      for (const habitat of habitats) {
+        const spot = rng.pick(habitat);
+        const node = new ResourceNode('fish', spot.x, spot.y, rng, this.ids);
+        this.nodes.push(node);
+        this.nodesById.set(node.id, node);
+        placed++;
+      }
+    }
+    for (; placed < count; placed++) {
       const spot = rng.pick(shallows);
       const node = new ResourceNode('fish', spot.x, spot.y, rng, this.ids);
       this.nodes.push(node);
