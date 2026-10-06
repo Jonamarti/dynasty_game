@@ -75,7 +75,9 @@ terrain only; world objects have their own codec, composed by the live loader. S
 Geographic terrain now uses `WorldTerrainRecord` v2 for local water kinds and
 river/lake surfaces. `river` is appended as biome 6; the classic island retains
 v1 and potable seas. Carved channels, fords, depression lakes and slope springs
-are generated independently of Simulation streams. Flooded trenches inherit
+are generated independently of Simulation streams. Shared global river nodes
+connect bends and confluences; tile projection and outlet-distance ford phases
+make equal-resolution crops agree with the whole map. Flooded trenches inherit
 their source's kind and surface; depth and rendering share that local surface.
 See [m15_phase30_water.md](m15_phase30_water.md).
 

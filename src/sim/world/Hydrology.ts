@@ -27,6 +27,8 @@ export interface HydrologyInput {
   moisture: Float32Array;
   /** Nonzero only where a regional river feature is a plausible source. */
   riverCandidates: Uint8Array;
+  /** Rasterized global centerline corridor, used to keep traces on its path. */
+  riverCorridor?: Uint8Array;
   /** Nonzero where regional lake metadata overlaps the local elevation field. */
   lakeCandidates: Uint8Array;
   /** Canonical downhill direction, independent of the local patch bounds. */
@@ -35,6 +37,12 @@ export interface HydrologyInput {
   /** Global tile-centre coordinates, used only for stable spring thinning. */
   globalX: Float64Array;
   globalY: Float64Array;
+  /** Shared macro-network distance to outlet, equal on either side of a map seam. */
+  riverDistance?: Float64Array;
+  /** Canonical, descending absolute river surface sampled from the macro segment. */
+  riverSurface?: Float32Array;
+  /** Ford spacing in comarca units; maps at equal tile resolution share this phase. */
+  fordInterval?: number;
   waterLevel: number;
   wadeDepth: number;
   swimDepth: number;
@@ -53,39 +61,47 @@ export interface HydrologyResult {
 export function generateLocalHydrology(input: HydrologyInput): HydrologyResult {
   validate(input);
   const n = input.width * input.height;
+  const fordInterval = input.fordInterval ?? 0;
+  const fordTolerance = fordInterval > 0 ? localTileRadius(input) : 0;
   const kind = new Uint8Array(n);
   const surface = new Float32Array(n);
   const bed = input.elevation.slice();
   const claimed = new Uint8Array(n);
   const rivers: HydrologyRiver[] = [];
 
-  // A regional river flag is deliberately sparse in the local map: only
-  // candidate cells at a channel head can start a course. Steepest descent
-  // then determines the path, so a flag never paints an entire region blue.
-  const starts = candidateIndices(input.riverCandidates);
-  for (let i = starts.length - 1; i >= 0; i--) {
-    if (input.elevation[starts[i]!]! <= input.waterLevel) starts.splice(i, 1);
-  }
-  starts.sort((a, b) => input.elevation[b]! - input.elevation[a]! || a - b);
-  for (const source of starts) {
-    if (claimed[source]) continue;
-    const route = traceDownhill(input, source, claimed);
-    if (route.tiles.length < 2) continue;
-    for (let step = 0; step < route.tiles.length; step++) {
-      const index = route.tiles[step]!;
-      claimed[index] = 1;
-      kind[index] = HYDROLOGY_FRESH;
-      // The surface follows the falling terrain. The channel is cut below it,
-      // so water does not sit above unmodified river banks and spread inland.
-      const wantsFord = step % 9 === 4;
-      const targetDepth = wantsFord ? input.wadeDepth * 0.65 : input.swimDepth * 1.15;
-      const waterSurface = input.elevation[index]!;
-      surface[index] = waterSurface;
-      const depth = targetDepth;
-      bed[index] = waterSurface - depth;
-      widenRiver(input, route.tiles, step, kind, surface, bed, claimed, depth);
+  if (input.riverCorridor && input.riverDistance && input.riverSurface && fordInterval > 0) {
+    rasterCanonicalRivers(input, kind, surface, bed, claimed, rivers, fordInterval, fordTolerance);
+  } else {
+    // A regional river flag is deliberately sparse in the local map: only
+    // candidate cells at a channel head can start a course. Steepest descent
+    // then determines the path, so a flag never paints an entire region blue.
+    const starts = candidateIndices(input.riverCandidates);
+    for (let i = starts.length - 1; i >= 0; i--) {
+      if (input.elevation[starts[i]!]! <= input.waterLevel) starts.splice(i, 1);
     }
-    rivers.push({ source, outlet: route.outlet, tiles: route.tiles });
+    starts.sort((a, b) => input.elevation[b]! - input.elevation[a]! || a - b);
+    for (const source of starts) {
+      if (claimed[source]) continue;
+      const route = traceDownhill(input, source, claimed);
+      if (route.tiles.length < 2) continue;
+      for (let step = 0; step < route.tiles.length; step++) {
+        const index = route.tiles[step]!;
+        claimed[index] = 1;
+        kind[index] = HYDROLOGY_FRESH;
+        // The surface follows the falling terrain. The channel is cut below it,
+        // so water does not sit above unmodified river banks and spread inland.
+        const wantsFord = input.riverDistance && fordInterval > 0
+          ? isCanonicalFord(input.riverDistance[index]!, fordInterval, fordTolerance)
+          : step % 9 === 4;
+        const targetDepth = wantsFord ? input.wadeDepth * 0.65 : input.swimDepth * 1.15;
+        const waterSurface = input.elevation[index]!;
+        surface[index] = waterSurface;
+        const depth = targetDepth;
+        bed[index] = waterSurface - depth;
+        widenRiver(input, route.tiles, step, kind, surface, bed, claimed, depth);
+      }
+      rivers.push({ source, outlet: route.outlet, tiles: route.tiles });
+    }
   }
 
   fillCandidateLakes(input, kind, surface, bed, claimed);
@@ -99,13 +115,13 @@ function traceDownhill(input: HydrologyInput, source: number, claimed: Uint8Arra
   const visited = new Uint8Array(input.width * input.height);
   visited[source] = 1;
   let current = source;
-  const flowX = input.flowX[source]!;
-  const flowY = input.flowY[source]!;
   let outlet: number | null = null;
   const maxSteps = Math.min(input.width * input.height, input.width + input.height + 8);
   for (let step = 0; step < maxSteps && outlet === null; step++) {
     const x = current % input.width;
     const y = Math.floor(current / input.width);
+    const flowX = input.flowX[current]!;
+    const flowY = input.flowY[current]!;
     let next = -1;
     let nextHeight = input.elevation[current]!;
     const currentHeight = input.elevation[current]!;
@@ -117,6 +133,10 @@ function traceDownhill(input: HydrologyInput, source: number, claimed: Uint8Arra
       const candidate = yy * input.width + xx;
       const height = input.elevation[candidate]!;
       if (visited[candidate] || height >= currentHeight) continue;
+      if (input.riverCorridor && !input.riverCorridor[candidate]) continue;
+      if (input.riverDistance && Number.isFinite(input.riverDistance[current]!) &&
+          (!Number.isFinite(input.riverDistance[candidate]!) ||
+           input.riverDistance[candidate]! >= input.riverDistance[current]!)) continue;
       const projection = dx * flowX + dy * flowY;
       const alignment = flowX === 0 && flowY === 0 ? 0 :
         projection / (Math.hypot(flowX, flowY) * Math.hypot(dx, dy));
@@ -151,7 +171,10 @@ function widenRiver(input: HydrologyInput, route: readonly number[], step: numbe
   const next = route[Math.min(route.length - 1, step + 1)]!;
   const dx = Math.sign((next % input.width) - (previous % input.width));
   const dy = Math.sign(Math.floor(next / input.width) - Math.floor(previous / input.width));
-  const radius = input.moisture[center]! >= 0.68 && step % 3 === 1 ? 1 : 0;
+  // Rivers stay one to three tiles wide. A stable width is important at local
+  // map edges: tying width to the route's local step number made a one-tile
+  // stream disappear and reappear where two detailed maps met.
+  const radius = 1;
   for (let side = -radius; side <= radius; side++) {
     if (side === 0) continue;
     const x = center % input.width - dy * side;
@@ -272,10 +295,96 @@ function validate(input: HydrologyInput): void {
   const n = input.width * input.height;
   if (!Number.isInteger(input.width) || input.width < 2 || !Number.isInteger(input.height) || input.height < 2 ||
       input.elevation.length !== n || input.moisture.length !== n || input.riverCandidates.length !== n ||
+      (input.riverCorridor !== undefined && input.riverCorridor.length !== n) ||
       input.lakeCandidates.length !== n || input.flowX.length !== n || input.flowY.length !== n ||
       input.globalX.length !== n || input.globalY.length !== n ||
+      (input.riverDistance !== undefined && input.riverDistance.length !== n) ||
+      (input.riverSurface !== undefined && input.riverSurface.length !== n) ||
+      (input.fordInterval !== undefined && (!Number.isFinite(input.fordInterval) || input.fordInterval <= 0)) ||
       !Number.isFinite(input.waterLevel) || !Number.isFinite(input.wadeDepth) || input.wadeDepth <= 0 ||
       !Number.isFinite(input.swimDepth) || input.swimDepth <= input.wadeDepth) {
     throw new RangeError('Invalid local hydrology grid or water-depth thresholds');
   }
+}
+
+function rasterCanonicalRivers(input: HydrologyInput, kind: Uint8Array, surface: Float32Array,
+  bed: Float32Array, claimed: Uint8Array, rivers: HydrologyRiver[], fordInterval: number,
+  fordTolerance: number): void {
+  const n = input.width * input.height;
+  for (let index = 0; index < n; index++) {
+    const waterSurface = input.riverSurface![index]!;
+    if (!input.riverCorridor![index] || !Number.isFinite(input.riverDistance![index]!) ||
+        !Number.isFinite(waterSurface) || input.elevation[index]! < input.waterLevel ||
+        waterSurface < input.waterLevel) continue;
+    const ford = isCanonicalFord(input.riverDistance![index]!, fordInterval, fordTolerance);
+    const depth = ford ? input.wadeDepth * 0.65 : input.swimDepth * 1.15;
+    kind[index] = HYDROLOGY_FRESH;
+    surface[index] = waterSurface;
+    bed[index] = waterSurface - depth;
+    claimed[index] = 1;
+  }
+
+  // Report the rasterized courses in upstream-to-downstream order. Their
+  // cells came from the shared geographic line above, so crops cannot choose
+  // a different head or restart the ford phase.
+  const next = new Int32Array(n).fill(-1);
+  const incoming = new Uint8Array(n);
+  for (let index = 0; index < n; index++) {
+    if (kind[index] !== HYDROLOGY_FRESH) continue;
+    const x = index % input.width, y = Math.floor(index / input.width);
+    const flowX = input.flowX[index]!, flowY = input.flowY[index]!;
+    let best = -1, bestAlignment = -Infinity;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const xx = x + dx, yy = y + dy;
+      if (xx < 0 || yy < 0 || xx >= input.width || yy >= input.height) continue;
+      const candidate = yy * input.width + xx;
+      if (kind[candidate] !== HYDROLOGY_FRESH ||
+          input.riverDistance![candidate]! >= input.riverDistance![index]! ||
+          surface[candidate]! >= surface[index]!) continue;
+      const projection = dx * flowX + dy * flowY;
+      if ((flowX || flowY) && projection <= 0) continue;
+      const alignment = (flowX || flowY)
+        ? projection / (Math.hypot(flowX, flowY) * Math.hypot(dx, dy))
+        : 0;
+      if (alignment > bestAlignment ||
+          (alignment === bestAlignment && (best < 0 || input.riverDistance![candidate]! < input.riverDistance![best]!)) ||
+          (alignment === bestAlignment && best >= 0 && input.riverDistance![candidate] === input.riverDistance![best] && candidate < best)) {
+        best = candidate;
+        bestAlignment = alignment;
+      }
+    }
+    next[index] = best;
+    if (best >= 0) incoming[best]++;
+  }
+
+  // Each listed river is now an actual directed course; confluences produce
+  // one course per incoming arm instead of a component sorted into a fake line.
+  const visitedEdges = new Set<string>();
+  for (let start = 0; start < n; start++) {
+    if (kind[start] !== HYDROLOGY_FRESH || incoming[start] > 0) continue;
+    const tiles = [start];
+    let current = start;
+    while (next[current]! >= 0) {
+      const downstream = next[current]!;
+      const edge = `${current}:${downstream}`;
+      if (visitedEdges.has(edge)) break;
+      visitedEdges.add(edge);
+      tiles.push(downstream);
+      current = downstream;
+    }
+    if (tiles.length > 1) rivers.push({ source: start, outlet: current, tiles });
+  }
+}
+
+function isCanonicalFord(distance: number, interval: number, tolerance: number): boolean {
+  if (!Number.isFinite(distance)) return false;
+  const phase = ((distance % interval) + interval) % interval;
+  return Math.min(phase, interval - phase) <= tolerance;
+}
+
+function localTileRadius(input: HydrologyInput): number {
+  const xStep = input.width > 1 ? Math.abs(input.globalX[1]! - input.globalX[0]!) : 0;
+  const yStep = input.height > 1 ? Math.abs(input.globalY[input.width]! - input.globalY[0]!) : 0;
+  return Math.hypot(xStep, yStep) * 0.55;
 }

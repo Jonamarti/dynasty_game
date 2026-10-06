@@ -1,11 +1,10 @@
-## M15 fase 30: continuidad del agua local incompleta (2026-10-06)
+## M15 fase 30: continuidad fluvial corregida; cohorte en verificación (2026-10-06)
 
-La conexión fluvial entre mapas vecinos está cubierta en un tramo recto.
-La dirección canónica depende de la región: al girar entre regiones el corredor
-puede cambiar y cortar la conexión. Además, los vados usan el índice de ruta
-local, que reinicia en cada mapa; su profundidad no tiene fase global.
-Falta una red de cauces compartida que conecte giros y derive los vados de
-coordenadas globales antes de habilitar viajes entre comarcas.
+Resuelto el corte de cauces al girar entre regiones y el reinicio de los vados:
+la red comparte nodos globales, superficie y fase hacia el desagüe. El mapa
+entero y cuatro recortes iguales coinciden en todas las baldosas; el control
+antes/después detecta el defecto anterior. La cohorte larga y la auditoría
+integrada están en curso, sin declarar todavía el cierre completo.
 
 Los lagos y manantiales actuales son aproximaciones del relieve regional,
 no una reconstrucción de cursos reales. La prueba `frontier` es una oportunidad

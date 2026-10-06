@@ -4,6 +4,8 @@
  * This module deliberately does not construct the local simulation World or
  * consume one of Simulation's RNG streams. Legacy island play has no global
  * geography data, so it reports that absence instead of synthesizing a map.
+ * Its sea deliberately stays potable: changing the old island's only water
+ * source would invalidate every classic seed before continental play exists.
  */
 import type { ComarcaProfile, WorldMapOptions } from './WorldMap.ts';
 import { WorldMap } from './WorldMap.ts';

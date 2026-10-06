@@ -97,11 +97,15 @@ export function createLocalGeography(
   const lakeCandidates = new Uint8Array(count);
   const flowX = new Int8Array(count);
   const flowY = new Int8Array(count);
+  const riverDistance = new Float64Array(count);
+  riverDistance.fill(Number.NaN);
+  const riverSurface = new Float32Array(count);
+  riverSurface.fill(Number.NaN);
   const globalX = new Float64Array(count);
   const globalY = new Float64Array(count);
-  const riverHeadByRegion = new Map<string, { index: number; elevation: number }>();
   const flowByRegion = new Map<string, { x: number; y: number }>();
-  const centerX = (width - 1) / 2, centerY = (height - 1) / 2;
+  const distanceByRegion = new Map<string, number>();
+  const activeRiverByRegion = new Map<string, boolean>();
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
     const index = y * width + x;
     const localX = x + 0.5, localY = y + 0.5;
@@ -118,43 +122,32 @@ export function createLocalGeography(
       const region = geography.map.regions[profile.regionY * geography.map.regionsWide + profile.regionX];
       riverCandidates[index] = region && region.riverFlow >= 3.2 ? 1 : 0;
     }
-    if (riverCandidates[index]) {
-      const key = `${profile.regionX},${profile.regionY}`;
-      let flow = flowByRegion.get(key);
-      if (!flow) {
-        flow = macroFlowDirection(geography, profile);
-        flowByRegion.set(key, flow);
-      }
-      const regionSize = geography.kind === 'earth' ? geography.map.comarcasPerRegion : geography.map.width / geography.map.regionsWide;
+    const path = canonicalRiverAt(geography, profile.regionX, profile.regionY,
+      globalX[index]!, globalY[index]!, flowByRegion, distanceByRegion, activeRiverByRegion,
+      waterLevel, metresPerUnit);
+    if (path) {
       const tileRadius = Math.hypot(frozenBounds.comarcasWide / width, frozenBounds.comarcasHigh / height) / 2;
-      if ((flow.x === 0 && flow.y === 0) ||
-          !nearCanonicalRiver(globalX[index]!, globalY[index]!, profile.regionX, profile.regionY,
-            flow, regionSize, tileRadius)) {
-        riverCandidates[index] = 0;
+      riverCandidates[index] = path.distance <= tileRadius + 1e-9 ? 1 : 0;
+      if (riverCandidates[index]) {
+      flowX[index] = path.flow.x;
+      flowY[index] = path.flow.y;
+      riverDistance[index] = path.distanceToOutlet;
+      // The cut sits below both the coarse route grade and this tile's ground;
+      // regional anchors can otherwise leave a short perched bank on relief.
+      riverSurface[index] = Math.min(path.surface, elevation[index]!);
       }
-      if (!riverCandidates[index]) continue;
-      flowX[index] = flow.x;
-      flowY[index] = flow.y;
-      const previous = riverHeadByRegion.get(key);
-      const candidateDistance = (x - centerX) ** 2 + (y - centerY) ** 2;
-      const previousX = previous ? previous.index % width : 0;
-      const previousY = previous ? Math.floor(previous.index / width) : 0;
-      const previousDistance = (previousX - centerX) ** 2 + (previousY - centerY) ** 2;
-      if (!previous || elevation[index]! > previous.elevation ||
-          (elevation[index] === previous.elevation &&
-           (candidateDistance < previousDistance || (candidateDistance === previousDistance && index < previous.index)))) {
-        riverHeadByRegion.set(key, { index, elevation: elevation[index]! });
-      }
+    } else {
+      riverCandidates[index] = 0;
     }
   }
-  // Region features cover hundreds of kilometres. At local scale they select
-  // one high-side head per touched cell; the traced course, not the flag mask,
-  // determines which individual tiles hold fresh water.
-  riverCandidates.fill(0);
-  for (const head of riverHeadByRegion.values()) riverCandidates[head.index] = 1;
+  // Region features seed one global downstream graph. Rasterizing each tile
+  // against that graph avoids patch-local source selection and ford resets.
+  const riverCorridor = riverCandidates.slice();
   const hydrology = generateLocalHydrology({
-    width, height, elevation, moisture, riverCandidates, lakeCandidates, globalX, globalY,
+    width, height, elevation, moisture, riverCandidates, riverCorridor, lakeCandidates, globalX, globalY,
+    riverDistance, riverSurface,
     flowX, flowY, waterLevel, wadeDepth: config.wadeDepth, swimDepth: config.swimDepth,
+    fordInterval: 9 * (frozenBounds.comarcasWide / width + frozenBounds.comarcasHigh / height) / 2,
   });
   const sample = (x: number, y: number): LocalTerrainSample => {
     const tile = rawSample(x, y);
@@ -175,26 +168,194 @@ export function createLocalGeography(
   return { kind: geography.kind, bounds: frozenBounds, profileAtLocal, sample, hydrologyAt, hydrology };
 }
 
-function nearCanonicalRiver(globalX: number, globalY: number, regionX: number, regionY: number,
-  flow: { x: number; y: number }, regionSize: number, tileRadius: number): boolean {
-  const length = Math.hypot(flow.x, flow.y);
-  const normalX = -flow.y / length, normalY = flow.x / length;
-  // The cross product stays unchanged as the river advances through adjacent
-  // macro cells, so every local patch reconstructs the same corridor. Coarse
-  // river flags outside this narrow line never become local water.
-  const cross = regionX * flow.y - regionY * flow.x;
-  const offset = positiveMod(cross * 73_856_093 + 19_349_663, regionSize) + 0.5 - regionSize / 2;
-  const centerX = (regionX + 0.5) * regionSize + normalX * offset;
-  const centerY = (regionY + 0.5) * regionSize + normalY * offset;
-  const distance = Math.abs((globalX - centerX) * normalX + (globalY - centerY) * normalY);
-  return distance <= tileRadius + 1e-9;
+interface CanonicalRiverSample {
+  flow: { x: number; y: number };
+  distance: number;
+  distanceToOutlet: number;
+  surface: number;
+  sourceKey: string;
+}
+
+type MappedGeography = Exclude<WorldGeography, { kind: 'legacyIsland' }>;
+
+function canonicalRiverAt(geography: MappedGeography, regionX: number, regionY: number,
+  x: number, y: number, flowCache: Map<string, { x: number; y: number }>,
+  distanceCache: Map<string, number>, activeRiverCache: Map<string, boolean>,
+  waterLevel: number, metresPerUnit: number): CanonicalRiverSample | null {
+  const regionSize = geography.kind === 'earth'
+    ? geography.map.comarcasPerRegion
+    : geography.map.width / geography.map.regionsWide;
+  const regionsWide = geography.kind === 'earth' ? geography.map.regionsWide : geography.map.regionsWide;
+  const regionsHigh = geography.kind === 'earth' ? geography.map.regionsHigh : geography.map.regionsHigh;
+  const worldWidth = regionsWide * regionSize;
+  let best: CanonicalRiverSample | null = null;
+  // A bend is the shared vertex of two directed macro segments. Looking at the
+  // surrounding region segments means both maps either side of a comarca seam
+  // rasterize that same vertex, even when the river turns there.
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const sy = regionY + dy;
+    if (sy < 0 || sy >= regionsHigh) continue;
+    const sx = positiveMod(regionX + dx, regionsWide);
+    const key = `${sx},${sy}`;
+    let flow = flowCache.get(key);
+    if (!flow) {
+      const source = geography.profileAt((sx + 0.5) * regionSize, (sy + 0.5) * regionSize);
+      flow = macroFlowDirection(geography, source);
+      flowCache.set(key, flow);
+    }
+    if (!flow.x && !flow.y) continue;
+    if (!isRiverNetworkRegion(geography, sx, sy, regionSize, flowCache, activeRiverCache)) continue;
+    const sourceAnchor = riverAnchor(sx, sy, regionSize);
+    const targetX = positiveMod(sx + flow.x, regionsWide);
+    const targetY = sy + flow.y;
+    if (targetY < 0 || targetY >= regionsHigh) continue;
+    const targetAnchor = riverAnchor(targetX, targetY, regionSize);
+    let x0 = sourceAnchor.x;
+    x0 += Math.round((x - x0) / worldWidth) * worldWidth;
+    const y0 = sourceAnchor.y;
+    let x1 = targetAnchor.x;
+    x1 += Math.round((x0 + flow.x * regionSize - x1) / worldWidth) * worldWidth;
+    const y1 = targetAnchor.y;
+    // Surface anchors use the same jittered nodes as the polyline. Sampling
+    // region centres here made rivers float above the interpolated ground when
+    // an anchor shifted downhill inside a steep macro cell.
+    const sourceHeight = worldElevationAt(geography, x0, y0, waterLevel, metresPerUnit);
+    const targetHeight = worldElevationAt(geography, x1, y1, waterLevel, metresPerUnit);
+    const vx = x1 - x0, vy = y1 - y0;
+    const lengthSquared = vx * vx + vy * vy;
+    const t = Math.max(0, Math.min(1, ((x - x0) * vx + (y - y0) * vy) / lengthSquared));
+    const px = x0 + t * vx, py = y0 + t * vy;
+    const distance = Math.hypot(x - px, y - py);
+    const distanceToOutlet = distanceFromOutlet(geography, sx, sy, regionSize, flowCache, distanceCache) - t * Math.sqrt(lengthSquared);
+    const surface = sourceHeight + (targetHeight - sourceHeight) * t;
+    // The drainage graph, not the control-point jitter, determines which
+    // neighboring tile is downstream. Jitter bends the shared centreline but
+    // never makes a flat valley climb toward an arbitrary local grid edge.
+    const tangent = flow;
+    if (!best || distance < best.distance - 1e-9 ||
+        (Math.abs(distance - best.distance) <= 1e-9 && key < best.sourceKey)) {
+      best = { flow: tangent, distance, distanceToOutlet, surface, sourceKey: key };
+    }
+  }
+  return best;
+}
+
+function riverAnchor(regionX: number, regionY: number, regionSize: number): { x: number; y: number } {
+  // One coordinate-hashed control point per macro cell lets incoming and
+  // outgoing segments meet exactly at a bend while keeping the route away
+  // from arbitrary map boundaries. Its displacement is bounded to the cell.
+  const hash = stableHash(regionX, regionY);
+  const jitterX = ((hash & 0xffff) / 0xffff - 0.5) * 0.64;
+  const jitterY = (((hash >>> 16) & 0xffff) / 0xffff - 0.5) * 0.64;
+  return { x: (regionX + 0.5 + jitterX) * regionSize, y: (regionY + 0.5 + jitterY) * regionSize };
+}
+
+function distanceFromOutlet(geography: MappedGeography, x: number, y: number, regionSize: number,
+  flowCache: Map<string, { x: number; y: number }>, cache: Map<string, number>,
+  visiting = new Set<string>()): number {
+  const key = `${x},${y}`;
+  const cached = cache.get(key);
+  if (cached !== undefined) return cached;
+  if (visiting.has(key)) return 0; // random atlas edges are validated, this also bounds corrupt cycles
+  visiting.add(key);
+  let flow = flowCache.get(key);
+  if (!flow) {
+    const source = geography.profileAt((x + 0.5) * regionSize, (y + 0.5) * regionSize);
+    flow = macroFlowDirection(geography, source);
+    flowCache.set(key, flow);
+  }
+  let distance = 0;
+  if (flow.x || flow.y) {
+    const regionsWide = geography.kind === 'earth' ? geography.map.regionsWide : geography.map.regionsWide;
+    const regionsHigh = geography.kind === 'earth' ? geography.map.regionsHigh : geography.map.regionsHigh;
+    const ny = y + flow.y;
+    if (ny >= 0 && ny < regionsHigh) {
+      const nx = positiveMod(x + flow.x, regionsWide);
+      distance = riverSegmentLength(x, y, flow.x, flow.y, regionsWide, regionSize) +
+        distanceFromOutlet(geography, nx, ny, regionSize, flowCache, cache, visiting);
+    }
+  }
+  visiting.delete(key);
+  cache.set(key, distance);
+  return distance;
+}
+
+function riverSegmentLength(x: number, y: number, dx: number, dy: number,
+  regionsWide: number, regionSize: number): number {
+  const from = riverAnchor(x, y, regionSize);
+  const to = riverAnchor(positiveMod(x + dx, regionsWide), y + dy, regionSize);
+  let targetX = to.x;
+  targetX += Math.round((from.x + dx * regionSize - targetX) / (regionsWide * regionSize)) * regionsWide * regionSize;
+  return Math.hypot(targetX - from.x, to.y - from.y);
+}
+
+function isRiverRegion(geography: MappedGeography,
+  profile: Exclude<WorldGeographyProfile, { kind: 'legacyIsland' }>): boolean {
+  if (profile.kind === 'earth') return (profile.features & WORLD_FEATURE.river) !== 0;
+  const region = geography.kind === 'random'
+    ? geography.map.regions[profile.regionY * geography.map.regionsWide + profile.regionX]
+    : undefined;
+  return !!region && region.riverFlow >= 3.2;
+}
+
+function isRiverNetworkRegion(geography: MappedGeography, x: number, y: number, regionSize: number,
+  flowCache: Map<string, { x: number; y: number }>, cache: Map<string, boolean>,
+  visiting = new Set<string>()): boolean {
+  const key = `${x},${y}`;
+  const known = cache.get(key);
+  if (known !== undefined) return known;
+  const profile = geography.profileAt((x + 0.5) * regionSize, (y + 0.5) * regionSize);
+  if (isRiverRegion(geography, profile)) {
+    cache.set(key, true);
+    return true;
+  }
+  if (visiting.has(key)) return false;
+  visiting.add(key);
+  const regionsWide = geography.map.regionsWide;
+  const regionsHigh = geography.map.regionsHigh;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    if (!dx && !dy) continue;
+    const uy = y - dy;
+    if (uy < 0 || uy >= regionsHigh) continue;
+    const ux = positiveMod(x - dx, regionsWide);
+    const upstreamKey = `${ux},${uy}`;
+    let upstreamFlow = flowCache.get(upstreamKey);
+    if (!upstreamFlow) {
+      const upstreamProfile = geography.profileAt((ux + 0.5) * regionSize, (uy + 0.5) * regionSize);
+      upstreamFlow = macroFlowDirection(geography, upstreamProfile);
+      flowCache.set(upstreamKey, upstreamFlow);
+    }
+    if (upstreamFlow.x !== dx || upstreamFlow.y !== dy) continue;
+    if (isRiverNetworkRegion(geography, ux, uy, regionSize, flowCache, cache, visiting)) {
+      visiting.delete(key);
+      cache.set(key, true);
+      return true;
+    }
+  }
+  visiting.delete(key);
+  cache.set(key, false);
+  return false;
 }
 
 function positiveMod(value: number, divisor: number): number {
   return ((value % divisor) + divisor) % divisor;
 }
 
-function macroFlowDirection(geography: WorldGeography,
+function stableHash(x: number, y: number): number {
+  let hash = Math.imul(Math.round(x * 4096) ^ 0x9e3779b9, 0x85ebca6b);
+  hash = Math.imul(hash ^ Math.round(y * 4096), 0xc2b2ae35);
+  return (hash ^ (hash >>> 16)) >>> 0;
+}
+
+function worldElevationAt(geography: MappedGeography, x: number, y: number,
+  waterLevel: number, metresPerUnit: number): number {
+  const profile = geography.profileAt(x, y);
+  return profile.kind === 'earth'
+    ? waterLevel + profile.elevationAboveSeaMeters / metresPerUnit
+    : waterLevel + profile.elevation * RANDOM_RELIEF_TO_WORLD_UNITS;
+}
+
+function macroFlowDirection(geography: MappedGeography,
   profile: Exclude<WorldGeographyProfile, { kind: 'legacyIsland' }>): { x: number; y: number } {
   if (geography.kind === 'random' && profile.kind === 'random') {
     const regionIndex = profile.regionY * geography.map.regionsWide + profile.regionX;
@@ -206,6 +367,15 @@ function macroFlowDirection(geography: WorldGeography,
       const toX = edge.to % geography.map.regionsWide;
       const toY = Math.floor(edge.to / geography.map.regionsWide);
       return { x: Math.sign(toX - fromX), y: Math.sign(toY - fromY) };
+    }
+    const region = geography.map.regions[regionIndex]!;
+    if (region.downstream >= 0) {
+      const toX = region.downstream % geography.map.regionsWide;
+      const toY = Math.floor(region.downstream / geography.map.regionsWide);
+      const rawDx = toX - profile.regionX;
+      const dx = Math.abs(rawDx) > geography.map.regionsWide / 2
+        ? rawDx - Math.sign(rawDx) * geography.map.regionsWide : rawDx;
+      return { x: Math.sign(dx), y: Math.sign(toY - profile.regionY) };
     }
   }
   if (geography.kind === 'earth' && profile.kind === 'earth') {

@@ -2969,6 +2969,14 @@ cerrar esta fase**: «una `Simulation` es una isla» deja de ser verdad.
 
 ## Fase 30 — El agua dulce y la sal (M14 fase 12; nota 7 de `notes3`; N2)
 
+**Segunda pasada del 2026-10-06: continuidad fluvial corregida.** Los giros,
+confluencias y vados consultan nodos globales y una fase común hacia el desagüe.
+Un mapa entero coincide baldosa por baldosa con cuatro recortes a la misma
+resolución; el control falla en el build anterior. Los 15 focales pasan.
+Captura revisada del giro: `artifacts/screenshots/m15-phase30-continuity-2026-10-06T-02/`.
+La cohorte continental de veinte semillas y la verificación integrada están
+en curso; el cierre se registra con sus resultados.
+
 **Avance del 2026-10-06: terreno y registros de agua local.** `river` se añade
 al final de los biomas; las orillas dulces/saladas y las superficies fluviales
 se conservan en terreno geográfico v2. Zanjas heredan el agua de su origen.

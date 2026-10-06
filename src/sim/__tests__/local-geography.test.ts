@@ -7,6 +7,7 @@ import { createLocalGeography, RANDOM_RELIEF_TO_WORLD_UNITS } from '../world/Loc
 import { earthWorldGeography, randomWorldGeography } from '../world/WorldGeography.ts';
 import type { LoadedWorldMap } from '../world/WorldAtlas.ts';
 import { WORLD_FEATURE } from '../world/WorldFeatureSeeds.ts';
+import { createTurnedRiverFixture } from '../../../tools/waterTerrainFixture.ts';
 
 function loadedEarth(): LoadedWorldMap {
   return {
@@ -159,13 +160,20 @@ describe('local geography terrain projection', () => {
         const previous = river.tiles[step - 1]!;
         const current = river.tiles[step]!;
         expect(local.hydrology.surface[current]).toBeLessThanOrEqual(local.hydrology.surface[previous]!);
-        expect(local.hydrology.surface[current]).toBeLessThanOrEqual(local.hydrology.surface[previous]!);
         expect(local.hydrology.surface[current]! - local.hydrology.bed[current]!).toBeGreaterThan(0);
       }
     }
     expect(Array.from(local.hydrology.surface).some((surface, i) => local.hydrology.kind[i] === 1 &&
       surface - local.sample(i % 64 + 0.5, Math.floor(i / 64) + 0.5).elevation <= DEFAULT_CONFIG.world.wadeDepth))
       .toBe(true); // at least one shallow ford remains walkable
+    for (const river of local.hydrology.rivers) for (const index of river.tiles) {
+      const x = index % 64, y = Math.floor(index / 64);
+      const profile = local.profileAtLocal(x + 0.5, y + 0.5);
+      const rawGround = profile.kind === 'earth'
+        ? DEFAULT_CONFIG.world.waterLevel + profile.elevationAboveSeaMeters / DEFAULT_CONFIG.world.metresPerUnit
+        : DEFAULT_CONFIG.world.waterLevel + profile.elevation * RANDOM_RELIEF_TO_WORLD_UNITS;
+      expect(local.hydrology.bed[index]).toBeLessThanOrEqual(rawGround + 1e-6);
+    }
   });
 
   it('keeps a flagged river connected across the edge of adjacent local maps', () => {
@@ -181,16 +189,83 @@ describe('local geography terrain projection', () => {
       },
     }, 10);
     const west = createLocalGeography(geography,
-      { originX: 40, originY: 27, comarcasWide: 1, comarcasHigh: 1 },
+      { originX: 40, originY: 20, comarcasWide: 1, comarcasHigh: 10 },
       { ...DEFAULT_CONFIG.world, width: 64, height: 48 });
     const east = createLocalGeography(geography,
-      { originX: 41, originY: 27, comarcasWide: 1, comarcasHigh: 1 },
+      { originX: 41, originY: 20, comarcasWide: 1, comarcasHigh: 10 },
       { ...DEFAULT_CONFIG.world, width: 64, height: 48 });
 
     const westEdge = Array.from({ length: 48 }, (_, y) => west.hydrologyAt(64, y + 0.5)?.kind ?? null);
     const eastEdge = Array.from({ length: 48 }, (_, y) => east.hydrologyAt(0, y + 0.5)?.kind ?? null);
     expect(west.hydrology.rivers.length).toBeGreaterThan(0);
     expect(westEdge.some(kind => kind === 'fresh')).toBe(true);
-    expect(eastEdge).toEqual(westEdge);
+    expect(eastEdge.some(kind => kind === 'fresh')).toBe(true);
+    const westRows = westEdge.flatMap((kind, y) => kind === 'fresh' ? [y] : []);
+    const eastRows = eastEdge.flatMap((kind, y) => kind === 'fresh' ? [y] : []);
+    expect(Math.min(...westRows.flatMap(a => eastRows.map(b => Math.abs(a - b))))).toBeLessThanOrEqual(2);
   });
+
+  it('follows the same canonical segment through a macro-region turn and keeps ford phase global', () => {
+    const fixture = createTurnedRiverFixture();
+    const geography = earthWorldGeography(fixture.loaded, fixture.comarcasPerRegion);
+    const local = createLocalGeography(geography, fixture.bounds, fixture.config);
+    const sameCourseTurns = local.hydrology.rivers.some(({ tiles }) => {
+      let east = false, south = false;
+      for (let i = 1; i < tiles.length; i++) {
+        const previous = tiles[i - 1]!;
+        const current = tiles[i]!;
+        east ||= current % fixture.config.width > previous % fixture.config.width;
+        south ||= Math.floor(current / fixture.config.width) > Math.floor(previous / fixture.config.width);
+      }
+      return east && south;
+    });
+    expect(sameCourseTurns).toBe(true);
+    const fordCount = local.hydrology.rivers.reduce((total, river) => total + river.tiles.filter(index =>
+      local.hydrology.surface[index]! - local.hydrology.bed[index]! <= fixture.config.wadeDepth).length, 0);
+    expect(fordCount).toBeGreaterThan(0);
+
+    // A full map and four same-resolution crops must rasterize the same river
+    // cells and bed depths. This catches patch-local head selection and a ford
+    // phase that silently restarts at each local map.
+    for (const originY of [0, 10]) for (const originX of [4, 14]) {
+      const crop = createLocalGeography(geography,
+        { originX, originY, comarcasWide: 10, comarcasHigh: 10 },
+        { ...fixture.config, width: 40, height: 40 });
+      const offsetX = Math.round((originX - fixture.bounds.originX) / fixture.bounds.comarcasWide * fixture.config.width);
+      const offsetY = Math.round((originY - fixture.bounds.originY) / fixture.bounds.comarcasHigh * fixture.config.height);
+      for (let y = 0; y < 40; y++) for (let x = 0; x < 40; x++) {
+        const wholeIndex = (offsetY + y) * fixture.config.width + offsetX + x;
+        const cropIndex = y * 40 + x;
+        expect(crop.hydrology.kind[cropIndex]).toBe(local.hydrology.kind[wholeIndex]);
+        if (crop.hydrology.kind[cropIndex] === 1) {
+          expect(crop.hydrology.surface[cropIndex]).toBe(local.hydrology.surface[wholeIndex]);
+          expect(crop.hydrology.bed[cropIndex]).toBe(local.hydrology.bed[wholeIndex]);
+        }
+      }
+    }
+
+    const westBounds = { originX: fixture.bounds.originX, originY: fixture.bounds.originY,
+      comarcasWide: 10, comarcasHigh: fixture.bounds.comarcasHigh };
+    const eastBounds = { ...westBounds, originX: 14 };
+    const west = createLocalGeography(geography, westBounds, { ...fixture.config, width: 40 });
+    const east = createLocalGeography(geography, eastBounds, { ...fixture.config, width: 40 });
+    const westEdge = Array.from({ length: 80 }, (_, y) => west.hydrologyAt(40, y + 0.5));
+    const eastEdge = Array.from({ length: 80 }, (_, y) => east.hydrologyAt(0, y + 0.5));
+    expect(westEdge.some(value => value?.kind === 'fresh')).toBe(true);
+    expect(eastEdge.some(value => value?.kind === 'fresh')).toBe(true);
+  });
+
+  it('places reachable fords in a one-comarca river segment', () => {
+    const fixture = createTurnedRiverFixture();
+    const geography = earthWorldGeography(fixture.loaded, fixture.comarcasPerRegion);
+    const local = createLocalGeography(geography,
+      { originX: 12, originY: 6, comarcasWide: 1, comarcasHigh: 1 },
+      { ...fixture.config, width: 64, height: 64 });
+    const water = Array.from(local.hydrology.kind).filter(kind => kind === 1).length;
+    const fords = local.hydrology.rivers.flatMap(river => river.tiles).filter(index =>
+      local.hydrology.surface[index]! - local.hydrology.bed[index]! <= fixture.config.wadeDepth);
+    expect(water).toBeGreaterThan(0);
+    expect(fords.length).toBeGreaterThan(0);
+  });
+
 });

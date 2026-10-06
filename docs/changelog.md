@@ -1,3 +1,17 @@
+## 2026-10-06 — M15 fase 30: cauces compartidos y vados globales
+
+Los mapas vecinos consultan una red fluvial común, con nodos globales en giros
+y confluencias. La superficie se ancla al relieve del nodo; la fase de los
+vados sigue la distancia al desagüe y la resolución global, sin reiniciarse
+en cada recorte. Los diagnósticos siguen aristas descendentes reales.
+La comparación de un mapa de 80×80 con sus cuatro recortes de 40×40 detecta
+en el build anterior una diferencia de clase, una de superficie y nueve de
+lecho; ahora las tres diferencias son cero. Los 15 tests focales y typecheck
+pasan. El e2e dibuja el giro y los vados sin modificar el checkpoint; captura
+revisada: `artifacts/screenshots/m15-phase30-continuity-2026-10-06T-02/04-river-bend-and-fords.png`.
+La verificación integrada y la cohorte de veinte semillas se registrarán al
+cerrar la fase.
+
 ## 2026-10-06 — M15 fase 30: puerta continental y límites medidos
 
 `frontier` construye agua geográfica real y mide bebida dulce junto al mar

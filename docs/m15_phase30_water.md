@@ -1,5 +1,25 @@
 # M15 fase 30 — Agua dulce local y salinidad
 
+## Segunda pasada — continuidad entre mapas
+
+La red geográfica comparte nodos y aristas globales en giros y confluencias.
+Cada baldosa consulta esa red, por lo que un recorte no vuelve a trazar el
+río desde su propio borde. Superficies ancladas al relieve y fase de vados
+medida hacia el desagüe conservan clase, cota y lecho a igual resolución.
+Los diagnósticos recorren aristas descendentes reales: ordenar una componente
+por altura no demostraba que sus baldosas fueran vecinas.
+
+El control antes/después de un mapa 80×80 frente a cuatro recortes 40×40
+detecta 1 clase, 1 superficie y 9 lechos diferentes en el build anterior;
+ahora son cero. Los 15 tests focales cubren también confluencia, descenso,
+lechos que no elevan el terreno y vados en una extensión de una comarca.
+`tools/waterTerrainFixture.ts` comparte el giro real con el e2e, que verifica
+un checkpoint intacto al renderizar. Captura revisada:
+`artifacts/screenshots/m15-phase30-continuity-2026-10-06T-02/04-river-bend-and-fords.png`.
+
+Las secciones de la primera pasada conservan su evidencia histórica; el
+cierre integrado se añade después de la cohorte y las verificaciones finales.
+
 ## Terreno y registros — 2026-10-06
 
 `World` conserva `shoreTiles` para las operaciones que necesitan cualquier
