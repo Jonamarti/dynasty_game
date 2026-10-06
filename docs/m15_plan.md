@@ -3279,6 +3279,9 @@ técnica derivada de rasgos de su fila en `TECHS` (práctica a la vista, receta)
 armas sufridas x3, entrada explícita `KnowledgeLedger.post` con identificador de transacción para guerras futuras; brecha tecnológica persistente medida
 (`tools/people-gap.ts`: 1,48x la inicial a 10 años con contacto 0,3; el control de difusión alta, 0,016). Valores = suposiciones declaradas. [Detalle](m15_phase32c_peoples.md).
 
+**Avance del 2026-10-06 (32c-7, auditoría ampliada):** `auditPartial` (P1-P4) y lectura del código para los mecanismos nuevos; falla contra cinco versiones trucadas
+(nombre, fecha, región, identidad, pista que concede). [Detalle](m15_phase32c_peoples.md).
+
 **Avance del 2026-10-06 (32c-4, por qué `PeopleSim` no reproduce `lean`):** investigación sin cambio de modelo. Medido en el
 detallado (3 semillas nuevas, más tres de calibración para la condición): la oferta de primavera a otoño es consumo proporcional a la
 gente (0,85 / 1,0 / 0,8 raciones por persona y día con 12, 25 y 37 fundadores), solo la de invierno es de la comarca; con la oferta exacta

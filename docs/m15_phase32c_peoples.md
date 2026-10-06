@@ -347,6 +347,13 @@ con contacto 0 no; sin trigo silvestre no hay agricultura (0 de 40) y con trigo 
 escalón de la cadena de requisitos de `farming` (la cadena completa llega a farming, sin saltos) y cuenta con la similitud
 climática y el contacto.
 
+**Auditoría ampliada (8 pruebas más, 35 en el archivo).** `auditPartial` mide cuatro invariantes del aprendizaje parcial que un guion rompe: P1 el contacto
+con tasa pequeña nunca concede la técnica (la intuición es pista, no copia); P2 sin contacto no entra intuición, sea cual sea la región; P3 la intuición de cada técnica es exactamente
+`temporadas x insightGain` (rasgos y contacto, nada más), con el pueblo fundado en 0 o 40 temporadas después; P4 dos técnicas con los mismos rasgos absorben lo mismo. Pasa el modelo
+honesto (y no es vacía: deja intuición en más de 20 técnicas) y **falla** contra cinco versiones trucadas: pista a una técnica por nombre (P3), por fecha, por región (P2), por
+identidad y «la pista concede la técnica» (P1). Además se lee el código de `PeopleKnowledge.ts` sin comentarios: ningún nombre de técnica, `comarcas`, comparación de `id`, `season` o `step`
+(y la lectura se prueba con fuentes trucadas, que sí detecta).
+
 Límites: una sola `KAPPA` para todas las técnicas; sin olvido, sin refinamiento ni practicantes; el clima es una suposición;
 `MU` solo acotado (el agregado de partida es una suposición bajo la cota); contacto sin escritor; la población del pueblo viene de fuera (aquí constante: este mecanismo no la mueve). La
 puerta `peoples-match-bands` no se ha corrido.

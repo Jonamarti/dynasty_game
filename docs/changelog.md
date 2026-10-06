@@ -1,3 +1,10 @@
+## 2026-10-06 — M15 fase 32c: la auditoría «nada por guion» cubre transmisibilidad, intuición y exposición
+
+Por qué: la regla del propietario es que nada se conceda por nombre, fecha o región, y los mecanismos nuevos (rasgos por técnica, intuición, pistas, exposición) son justo
+donde un atajo podría esconderse. `auditPartial` mide cuatro invariantes (la pista no concede; sin contacto no entra intuición; la intuición es exactamente lo que dicen los
+rasgos y no depende del calendario; técnicas con los mismos rasgos reciben lo mismo) y falla contra cinco versiones trucadas (por nombre, fecha, región, identidad, y pista que
+concede); más una lectura del código que prohíbe región, identidad y calendario y se prueba contra fuentes trucadas. Sin cambio de modelo; juego bit-idéntico.
+
 ## 2026-10-06 — M15 fase 32c: aprendizaje parcial, pistas y exposición con transacción (`PeopleKnowledge`)
 
 Por qué: la decisión del propietario pide que haya pueblos tecnológicamente por delante de otros, y que al ver o sufrir (un arma usada contra ellos) una técnica se haga

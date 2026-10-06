@@ -401,3 +401,80 @@ describe('a technological gap persists (owner decision 2026-10-06: diffusion mus
     expect(dispersion(1, LEARN_MU_START, PARTIAL_START, 120, 20)).toBeLessThan(0.3);
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// The audit, extended to transmissibility, insight, hints and exposure
+// ---------------------------------------------------------------------------------------------
+
+/** A cheat aimed at the partial-learning mechanism itself: it gets the ledger, which the honest build only writes through `knowledge`. */
+type PartialBuild = { name: string; cheat: (ledger: KnowledgeLedger) => SeasonMechanism[] };
+const HONEST_PARTIAL: PartialBuild = { name: 'honest', cheat: () => [] };
+const HINT_BY_NAME: PartialBuild = { name: 'hint by name', cheat: l => [ctx => { if (!ctx.people.techs.has('sling')) l.addInsight(ctx.people.id, 'sling', 0.3); }] };
+const HINT_BY_DATE: PartialBuild = { name: 'hint by date', cheat: l => [ctx => { if (ctx.season === 2) for (const t of TECHS) if (!ctx.people.techs.has(t)) l.addInsight(ctx.people.id, t, 0.2); }] };
+const HINT_BY_REGION: PartialBuild = { name: 'hint by region', cheat: l => [ctx => { if (ctx.people.comarcas === 3) l.addInsight(ctx.people.id, 'bow', 0.2); }] };
+const HINT_BY_IDENTITY: PartialBuild = { name: 'hint by identity', cheat: l => [ctx => { if (ctx.people.id === 1) l.addInsight(ctx.people.id, 'pottery', 0.2); }] };
+const GRANT_ON_HINT: PartialBuild = { name: 'grant on first hint', cheat: l => [ctx => { for (const t of l.hinted(ctx.people.id)) if (TECH[t].requires.every(r => ctx.people.techs.has(r))) ctx.people.techs.add(t); }] };
+
+/** Invariants the partial-learning mechanism keeps when honest; each returns a name when broken. */
+function auditPartial(build: PartialBuild): string[] {
+  const broken: string[] = [];
+  const SMALL: PartialLearning = { rate: 0.004, hintGain: 4, sufferedWeapon: 3 };
+  const all = closeUnderRequires(TECHS);
+  const run = (seed: string, contact: number, comarcas: number, startStep?: number) => {
+    const ledger = new KnowledgeLedger();
+    const r = world(seed, [{ n: 30, comarcas }, { n: 30, techs: all, comarcas }], { kappa: 0, mu: 0, contact, seasons: 3, partial: SMALL, ledger, extra: build.cheat(ledger), startStep });
+    return { r, ledger };
+  };
+  // P1 contact alone never grants a technique at a small rate: insight is a hint, not a copy.
+  const near = run('audit-partial', 1, 1);
+  if (near.r.people[0]!.techs.size > 0) broken.push('a hint granted a technique');
+  // P2 with no contact there is nothing to take in, whatever the region or the id.
+  for (const comarcas of [1, 3]) {
+    const far = run(`audit-partial-${comarcas}`, 0, comarcas);
+    for (const p of far.r.people) if (far.ledger.hinted(p.id).length > 0 && p.id === far.r.people[0]!.id) broken.push(`insight without contact (comarcas ${comarcas}, people ${p.id})`);
+  }
+  // P3 insight is exactly what the technique's own traits and the contact say: no technique by name gets more, and the
+  // calendar does not matter (same people founded 40 seasons later).
+  for (const startStep of [0, 40 * SEASON]) {
+    const { r, ledger } = run('audit-insight', 1, 1, startStep);
+    for (const t of TECHS) {
+      if (r.people[0]!.techs.has(t)) continue;
+      const want = 3 * insightGain(t, 'witnessed', SMALL);
+      if (Math.abs(ledger.insight(r.people[0]!.id, t) - want) > 1e-9) { broken.push(`insight into ${t} is not what its traits say (start ${startStep})`); break; }
+    }
+  }
+  // P4 two techniques with the same traits and difficulty take in the same insight.
+  const { r: tw, ledger: tl } = run('audit-twins', 1, 1);
+  const twins = TECHS.filter(t => !tw.people[0]!.techs.has(t)), key = (t: Tech) => JSON.stringify(traitsOf(t));
+  for (const a of twins) for (const b of twins) if (a < b && key(a) === key(b) && Math.abs(tl.insight(tw.people[0]!.id, a) - tl.insight(tw.people[0]!.id, b)) > 1e-9) broken.push(`${a} and ${b} have the same traits and different insight`);
+  return broken;
+}
+
+describe('nothing by script, extended: transmissibility, insight, hints and exposure', () => {
+  it('the honest partial-learning mechanism passes every invariant', () => {
+    expect(auditPartial(HONEST_PARTIAL)).toEqual([]);
+  });
+  it('the audit is not vacuous: the honest mechanism does leave insight behind for every technique the neighbour holds', () => {
+    const ledger = new KnowledgeLedger();
+    const r = world('vac', [{ n: 30 }, { n: 30, techs: closeUnderRequires(TECHS) }], { kappa: 0, mu: 0, contact: 1, seasons: 3, partial: { rate: 0.004, hintGain: 4, sufferedWeapon: 3 }, ledger });
+    expect(ledger.hinted(r.people[0]!.id).length).toBeGreaterThan(20);
+  });
+  it('control: it fails a hint handed to one technique by name', () => { expect(auditPartial(HINT_BY_NAME).some(m => m.includes('not what its traits say'))).toBe(true); });
+  it('control: it fails a hint handed out by date', () => { expect(auditPartial(HINT_BY_DATE).length).toBeGreaterThan(0); });
+  it('control: it fails a hint handed out by region', () => { expect(auditPartial(HINT_BY_REGION).some(m => m.includes('without contact'))).toBe(true); });
+  it('control: it fails a hint handed to one people by identity', () => { expect(auditPartial(HINT_BY_IDENTITY).length).toBeGreaterThan(0); });
+  it('control: it fails a build where a hint grants the whole technique', () => { expect(auditPartial(GRANT_ON_HINT)).toContain('a hint granted a technique'); });
+
+  it('the source of the mechanism reads no technique name, no region, no identity and no calendar', async () => {
+    const fs = await import('node:fs');
+    const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const src = strip(fs.readFileSync(new URL('../world/PeopleKnowledge.ts', import.meta.url), 'utf8'));
+    const forbidden = [/\.comarcas\b/, /\.id\s*[!=]==/, /\bseason\s*[<>=!]/, /\bseasonOfYear\s*[<>=!]/, /\bstep\s*[<>=!]/];
+    for (const f of forbidden) expect(f.test(src)).toBe(false);
+    // The scan is not blind: doctored sources are caught.
+    expect(forbidden.some(f => f.test(src + ' if (people.comarcas === 3) {}'))).toBe(true);
+    expect(forbidden.some(f => f.test(src + ' if (people.id === 2) {}'))).toBe(true);
+    expect(forbidden.some(f => f.test(src + ' if (season > 6) {}'))).toBe(true);
+    for (const tech of TECHS) expect(src.includes(`'${tech}'`) || src.includes(`"${tech}"`)).toBe(false);
+  });
+});
