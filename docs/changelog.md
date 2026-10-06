@@ -1,3 +1,17 @@
+## 2026-10-06 — M15 fase 32b: `CompactPerson` y `CompactAuthority`, un dueño por persona
+
+Segundo mecanismo, inerte. Una persona compacta es la misma instancia de `Person`
+más fecha del último avance, stream propio derivado de la semilla y la identidad
+(fuera de los forks), etiqueta de agenda leída de la acción y `epoch`.
+`CompactAuthority` transfiere (no copia) entre niveles y rechaza con motivo
+nombrado la doble degradación, la doble promoción, el registro viejo, la copia
+decodificada, el registro atrasado y las personas aún no resolubles (jugador,
+llevado, retenido, con bebé, en interacción). Porqué: sin un dueño único
+comprobable, el LOD podría contar dos veces a una persona o perder su estado al
+cambiar de selección (§4). Ida y vuelta repetida por JSON con registro de `Person`
+idéntico y stream continuo; controles negativos. Los rechazos no tienen UI aún
+(anotado en `bugs.md`). Sin cambio de juego ni interfaz.
+[Detalle](m15_phase32b_compact.md).
 ## 2026-10-06 — M15 fase 32b: `CompactScheduler`, eventos de nivel 1 por tick y clave estable
 
 Primer mecanismo del nivel 1, inerte (nadie lo llama aún). Eventos ordenados por

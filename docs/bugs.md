@@ -1,3 +1,17 @@
+## M15 fase 32b: lo que el nivel compacto no hace todavía (2026-10-06)
+
+- **Ningún sistema lo llama.** `CompactScheduler`, `CompactPerson` y `CompactAuthority`
+  son inertes: `Simulation.step()` ejecuta a todos en detalle y nadie sale de
+  `Simulation.people` ni de los spatial hashes. El dueño único es todavía un
+  registro, no una frontera impuesta por el motor.
+- **Rechazos sin camino de UI.** `demotionBlock` nombra once motivos de rechazo
+  (jugador, muerto, llevado, retenido, con bebé, interactuando...). Al no existir
+  ninguna orden del jugador que los dispare, no hay texto visible; cuando la
+  activación por visión los use, cada motivo debe pasar por `lastRefusal` y `t()`
+  (regla de la casa: si la simulación rechaza, la UI dice por qué).
+- **`interacting` es conservador.** Rechaza a cualquiera con `targetPersonId`,
+  `caughtId` o `fleeFromId`; hasta el puente de interacciones nadie en pleno trato
+  puede pasar a compacto, y es probable que sea una fracción grande de la banda.
 ## M15 fase 32a: perfil fuera de visión sin explicar frente al del 2026-10-03 (2026-10-06)
 
 Con la misma semilla y 300 humanos, `think`/`execute` fuera de visión pasaron de
