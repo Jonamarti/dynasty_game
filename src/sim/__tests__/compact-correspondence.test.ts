@@ -13,7 +13,10 @@ import { runCorrespondence } from '../../../tools/compactCorrespondence.ts';
  * The compact arm here is given the band capacity of the days it is compared on (the
  * oracle): what is verified is the shape of the intake. Forecasting capacity across a
  * season boundary is NOT verified and fails (docs/m15_phase32b_compact.md section 5).
-
+ * Births (section 6), declared before the first measurement: over 40 days the compact
+ * cohort bears between 0.6x and 1.4x the children the detailed cohort's mothers bore,
+ * and at least one. Pooled over three seeds the table in the doc is tighter; one seed
+ * of ~30 people bears ~7, so the single-seed band is as wide as chance allows.
  * Cohorts are 31-42 people, so one seed's survival moves by ~0.07 on chance alone.
  */
 const model = new IntakeModel(MEASURED_RATES);
@@ -33,4 +36,16 @@ describe('compact vs detailed correspondence (small cohort, 10 days; seeds not u
       expect(r.closed.hunger).toBeGreaterThan(r.detailed.hunger + 30);
     }, 180000);
   }
+});
+
+describe('compact demography against the detailed cohort (craft, 40 days, ageing/conception/birth on)', () => {
+  it('bears about as many children as the detailed mothers did', () => {
+    const r = runCorrespondence({ scenario: 'craft', seed: 'delta', warmupSteps: 4800, windowSteps: 2400, days: 40, model, life: true });
+    expect(r.detailed.births).toBeGreaterThanOrEqual(4);   // the control is not vacuous
+    expect(r.oracle.births).toBeGreaterThanOrEqual(1);
+    expect(r.oracle.births / r.detailed.births).toBeGreaterThanOrEqual(0.6);
+    expect(r.oracle.births / r.detailed.births).toBeLessThanOrEqual(1.4);
+    // Negative control: the closed body (no intake, no life rules) bears nobody, and all of it starves.
+    expect(r.closed.births).toBe(0);
+  }, 240000);
 });

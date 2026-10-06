@@ -22,7 +22,11 @@
  * slice boundary changes nothing: advancing 0→300 equals 0→100→300 (tested), which
  * is what stops a change of selection from renewing reserves or dodging a death.
  */
-import type { ChildhoodConfig, NeedsConfig, TimeConfig } from '../core/Config.ts';
+import type { ChildhoodConfig, NeedsConfig, PopulationConfig, TimeConfig } from '../core/Config.ts';
+import type { RNG } from '../core/RNG.ts';
+import type { Person } from '../entities/Person.ts';
+import type { Household } from '../entities/Household.ts';
+import { LifeSystem } from '../systems/LifeSystem.ts';
 import { TimeManager } from '../core/TimeManager.ts';
 import { NeedsSystem, thirstDriftPerTick, type NeedsHooks } from '../systems/NeedsSystem.ts';
 import type { Building } from '../entities/Building.ts';
@@ -50,6 +54,22 @@ export interface CompactBodyEnv {
     readonly capacity: (person: CompactPerson['person']) => BandCapacity | undefined;
     readonly childhood: ChildhoodConfig;
   };
+  /**
+   * Ageing, conception, birth and death of old age, by the very `LifeSystem.daily` the
+   * detailed level runs once a day (CompactLife in docs/m15_phase32b_compact.md §6), with
+   * the person's own stream standing in for the world's birth stream. Whoever integrates
+   * this owns what a birth *means* (register the child, link kin, give it a compact record):
+   * `makeChild` builds the newborn and `onBirth` receives it; a `birth` event is dated too.
+   * The father is read from `peopleById`: if he is himself compact and not yet advanced to
+   * this tick his `alive` may be stale (a limit, see bugs.md).
+   */
+  readonly life?: {
+    readonly population: PopulationConfig;
+    readonly peopleById: Map<number, Person>;
+    readonly householdsById: Map<number, Household>;
+    readonly makeChild: (mother: Person, rng: RNG) => Person;
+    readonly onBirth: (child: Person, mother: Person, father: Person | null) => void;
+  };
   /** Allocates the id of an event this advance produces (the caller's `IdSpace`). */
   readonly nextEventId: () => number;
 }
@@ -58,6 +78,7 @@ export interface CompactBodyEnv {
 export class CompactBody {
   private readonly clock: TimeManager;
   private readonly system: NeedsSystem;
+  private readonly lifeSystem = new LifeSystem();
   constructor(private readonly env: CompactBodyEnv) {
     this.clock = new TimeManager(env.time);
     this.system = new NeedsSystem(env.needs, env.world);
@@ -65,7 +86,7 @@ export class CompactBody {
 
   /**
    * Bring `compact` forward to `toTick`. Returns the dated events it produced
-   * (today only `death`, at the tick it happened). A dead person is not advanced
+   * (`death` and, with `env.life`, `birth`, at the tick they happened). A dead person is not advanced
    * further and nothing resurrects them.
    */
   advance(compact: CompactPerson, toTick: number): CompactEvent[] {
@@ -105,6 +126,29 @@ export class CompactBody {
           kind: 'death', data: { cause: person.causeOfDeath },
         });
         break;
+      }
+      const life = this.env.life;
+      if (life && tick % this.env.time.ticksPerDay === 0) {
+        // The same moment of the step the detailed daily block runs at: after the needs clock.
+        this.lifeSystem.daily(people, {
+          rng: compact.rng, population: life.population, tick, day: this.clock.day,
+          peopleById: life.peopleById, householdsById: life.householdsById,
+          makeChild: life.makeChild,
+          onBirth: (child, mother, father) => {
+            life.onBirth(child, mother, father);
+            events.push({
+              id: this.env.nextEventId(), tick, phase: COMPACT_PHASE.demography, subjectId: mother.id,
+              kind: 'birth', data: { childId: child.id, fatherId: father?.id ?? null },
+            });
+          },
+          onDeath: (dying, cause) => dying.die(cause),
+        });
+        if (!person.alive) {
+          events.push({
+            id: this.env.nextEventId(), tick, phase: COMPACT_PHASE.demography, subjectId: person.id,
+            kind: 'death', data: { cause: person.causeOfDeath },
+          });
+        }
       }
     }
     compact.lastAdvancedTick = toTick;

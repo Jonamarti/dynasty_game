@@ -1,3 +1,17 @@
+## 2026-10-06 — M15 fase 32b: demografía compacta (envejecer, concebir, parir, morir de vejez)
+
+`CompactBody` acepta `env.life`: en cada día de calendario cruzado llama a `LifeSystem.daily` con la
+persona, su propio stream y los callbacks del integrador (`makeChild`, `onBirth`), y fecha los
+eventos `birth` y `death`. Sin coeficientes nuevos: es el código del detallado. Verificación (tolerancias
+declaradas antes): un día de edad por día de calendario (el cuerpo cerrado no envejece); la vida media
+truncada de 300 personas que empiezan al 93 % de su vida está a menos del 10 % de la esperada con la
+fórmula del detallado (control sin reglas de vida: viven todas); concepción el primer día elegible y
+parto exactamente `gestationDays` después, con negativos (sin padre, sin pareja, probabilidad 0,
+espaciado); mismo stream, mismo día de parto; y, contra una cohorte equivalente del detallado
+(`craft`, 40 días, 3 semillas, capacidad del periodo), 21 hijos frente a 23 (−9 %; tolerancia 0,6x-1,4x).
+Límites: el recién nacido no tiene registro compacto, el padre compacto puede estar atrasado y el
+frío sigue sin modelar. Sin producción compacta; nada de `Simulation` lo llama. Suite 1.229/1.229 (175 archivos); `sim:check` de una semilla solo con los fallos heredados.
+
 ## 2026-10-06 — M15 fase 32b: ingesta v2 (capacidad = probabilidad de día vacío) y corrección de `RateWatch`
 
 La primera ingesta compacta (entrada de abajo) aprobó 10 días y suspendió a 40: en `craft` murieron

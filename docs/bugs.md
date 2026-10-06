@@ -1,3 +1,14 @@
+## M15 fase 32b-3: límites de la demografía compacta (2026-10-06)
+
+- **El recién nacido en el compacto no tiene registro**: `onBirth` lo recibe, pero nadie le da
+  `CompactPerson` ni cuerpo; la correspondencia cuenta nacimientos, no sigue a los niños.
+- **El padre se lee de `peopleById`**: si es compacto y no está avanzado a este tick, `alive` puede
+  estar atrasado (concibe con un padre ya muerto). El integrador debe avanzar a la pareja antes.
+- **Mortalidad por edad no verificada en frecuencia**, solo en fórmula: en las corridas baratas
+  hay 2 muertes de vejez en 127 (`lean`) y ninguna en `craft`.
+- **Sin correspondencia a varias generaciones**: 40 días (un año) de cohorte; la demografía a siglos
+  (`century`/`generations`) no se ha medido en compacto y no se lanza (AGENTS.md, no cohortes pesadas).
+
 ## M15 fase 32b-2: capacidad de banda pronosticada, colas y producción (2026-10-06)
 
 - **La ingesta compacta no sabe qué capacidad tendrá la banda en la estación siguiente.** Con la

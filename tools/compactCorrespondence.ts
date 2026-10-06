@@ -20,10 +20,12 @@ import { CompactBody } from '../src/sim/compact/CompactAdvance.ts';
 import { deriveCompactStream, goalOf, type CompactPerson } from '../src/sim/compact/CompactPerson.ts';
 import { RateWatch, type PersonDay } from '../src/sim/compact/CompactCalibration.ts';
 import { IntakeModel, type BandCapacity } from '../src/sim/compact/CompactIntake.ts';
+import { NAME_ONSETS, NAME_CODAS } from '../src/data/names.ts';
+import { Person } from '../src/sim/entities/Person.ts';
+import type { IdSpace } from '../src/sim/core/IdSpace.ts';
 import { isLactating, isNursling } from '../src/sim/entities/LifeStage.ts';
 import { nurslingHungerFactor } from '../src/sim/ai/Nursing.ts';
 import { SCENARIOS } from './simcheck.ts';
-import type { Person } from '../src/sim/entities/Person.ts';
 
 export interface ArmStats {
   n: number;
@@ -80,6 +82,8 @@ export interface CorrespondenceOptions {
   model: IntakeModel;
   /** Force a scale for every band instead of reading it (the negative controls). */
   scaleOverride?: BandCapacity;
+  /** Also run ageing, conception, birth and death of old age in the compact arms. */
+  life?: boolean;
 }
 
 export function runCorrespondence(o: CorrespondenceOptions): CorrespondenceResult {
@@ -114,8 +118,9 @@ export function runCorrespondence(o: CorrespondenceOptions): CorrespondenceResul
   const scaleFor = (p: Person): BandCapacity | undefined => o.scaleOverride ?? scales[p.bandId];
 
   const records = cohort.map(p => wire(toPersonRecord(p, T)));
-  const arm = (withIntake: boolean, scaleOf: (p: Person) => BandCapacity | undefined): { people: Person[]; born: Person[] } => {
+  const arm = (withIntake: boolean, scaleOf: (p: Person) => BandCapacity | undefined, withLife = false): { people: Person[]; born: Person[] } => {
     const born: Person[] = [];
+    let nextChildId = 1_000_000;
     const copies = new Map<number, Person>();
     const compacts: CompactPerson[] = records.map(record => {
       const copy = fromPersonRecord(wire(record));
@@ -131,6 +136,20 @@ export function runCorrespondence(o: CorrespondenceOptions): CorrespondenceResul
         hungerFactor: (person: Person) => isLactating(person, copies, sim.config.childhood)
           ? 1 + sim.config.childhood.lactationHunger : isNursling(person, sim.config.childhood) ? nurslingFactor : 1,
       },
+      life: withLife ? {
+        population: sim.config.population, peopleById: copies, householdsById: new Map(),
+        makeChild: (mother, childRng) => {
+          const name = childRng.pick(NAME_ONSETS) + childRng.pick(NAME_CODAS);
+          const child = new Person(name, mother.x, mother.y, mother.bandId, childRng, mother.daysPerYear,
+            { allocate: () => nextChildId++ } as unknown as IdSpace);
+          child.skillGain = sim.config.learning.skillGain;
+          return child;
+        },
+        onBirth: (child, mother, father) => {
+          copies.set(child.id, child); born.push(child);
+          mother.childIds.push(child.id); father?.childIds.push(child.id);
+        },
+      } : undefined,
       intake: withIntake ? { model: o.model, capacity: scaleOf, childhood: sim.config.childhood } : undefined,
       nextEventId: () => id++,
     });
@@ -143,9 +162,9 @@ export function runCorrespondence(o: CorrespondenceOptions): CorrespondenceResul
   // The oracle capacity: the band's own relief on the days that are being compared.
   const later: readonly PersonDay[] = watch.days.slice(markAfter);
   const oracleScales = readBands(later);
-  const compactArm = arm(true, scaleFor);
+  const compactArm = arm(true, scaleFor, o.life);
   const closedArm = arm(false, scaleFor);
-  const oracleArm = arm(true, p => o.scaleOverride ?? oracleScales[p.bandId]);
+  const oracleArm = arm(true, p => o.scaleOverride ?? oracleScales[p.bandId], o.life);
   const compactPeople = compactArm.people, closedPeople = closedArm.people, oraclePeople = oracleArm.people;
   const cohortIds = new Set(cohort.map(p => p.id));
   const detailedBirths = [...sim.peopleById.values()].filter(p => !cohortIds.has(p.id) && p.motherId !== null && cohortIds.has(p.motherId)).length;

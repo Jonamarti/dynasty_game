@@ -94,8 +94,8 @@ esquivar una muerte.
 - **Sin producción ni progreso de órdenes.** La acción y su trabajo bancado quedan
   retenidos, no avanzan (congelarlos fuera de vista es justo lo que §4 prohíbe, por
   eso este mecanismo es insuficiente para activar el LOD).
-- **Sin demografía.** No envejece, concibe, pare ni muere de viejo (`LifeSystem.daily`
-  necesita `LifeContext` completo: padre, rng de nacimientos, `onBirth`).
+- **Sin demografía** (hasta el §6: con `env.life` envejece, concibe, pare y muere de viejo por
+  `LifeSystem.daily`, que necesita `LifeContext` completo: padre, stream, `onBirth`).
 
 La ingesta, la producción y la demografía necesitan tasas **medidas** contra el
 modelo detallado (qué rendimiento de comida por persona-día en cada estación y
@@ -295,3 +295,49 @@ despensas que el detallado no publica. El compacto sigue sin avanzar órdenes ni
 (congelarlas fuera de vista lo prohíbe §4 de `m15_simulation_lod.md`, así que sigue sin poder
 activarse el LOD). No se calienta ni se duerme. La correlación entre personas de una misma banda
 (una semana mala para todos) no está: cada persona sortea sus días por separado.
+
+## 6. Envejecer, concebir y morir de vejez (commit «demografía»)
+
+`CompactBody` acepta `env.life`. En cada tick que cruza un día de calendario (`tick % ticksPerDay
+=== 0`, tras el reloj de necesidades, el mismo punto del paso en que corre el bloque diario) llama a
+`LifeSystem.daily` con la persona, **su propio stream** en lugar del de nacimientos del mundo, y los
+callbacks de quien integre (`makeChild`, `onBirth`). No hay coeficientes nuevos: edad, condición de
+concepción (hambre y salud de la madre), espaciado, gestación y la probabilidad diaria de morir de
+vejez son el código del nivel detallado, no una copia. Lo que sí se verifica es que las cifras que
+produce coinciden con el detallado. `onBirth` recibe al niño; además se fecha un evento `birth`
+(sujeto: la madre; `childId`, `fatherId`). Quien integre decide qué significa un nacimiento
+(registrar, parentesco, darle registro compacto).
+
+Tests (`compact-life.test.ts`), tolerancias declaradas antes de medir:
+
+- **Envejecer**: exactamente un día por día de calendario cruzado; el cuerpo cerrado no envejece
+  (control).
+- **Vejez**: la vida media truncada a 25 días de 300 personas compactas que empiezan al 93 % de su
+  vida está a menos del 10 % de la esperada con la fórmula del detallado (`min(0,5, 0,002·exceso²·
+  fragilidad)` una vez al día); el control sin reglas de vida vive los 25 días en los 20 casos.
+- **Concebir y parir**: con probabilidad 1 concibe el primer día elegible y pare `gestationDays`
+  días después, en ese tick exacto, con el niño apuntando a la madre y al padre; controles negativos:
+  sin padre vivo, sin pareja, con probabilidad 0 o demasiado pronto tras un parto no nace nadie.
+- **Stream propio**: dos mujeres con el mismo stream y la misma situación paren el mismo día.
+
+Correspondencia (`compact-correspondence.test.ts` y la tabla del §5, `craft`, 40 días, semillas
+`delta,eps,zeta`, cohorte equivalente, capacidad del periodo): hijos de las madres de la cohorte
+**detallado 23 / compacto con capacidad previa 21 / oráculo 21** (−9 %); por semilla 7/6/7, 7/8/7,
+9/7/7. Tolerancia declarada: 0,6x a 1,4x y al menos un nacimiento (la semilla `delta` del test
+cumple: 7 frente a 7). Es el mismo orden que los 0,954 nacimientos por mujer fértil-año medidos en
+`craft` (§4, 38 / 39,8) y los 0,898 / 0,841 de la línea congelada de 32a. En `lean` (colapsa) el
+detallado de la cohorte parió 4 y el compacto con capacidad del periodo 4 en 40 días; con capacidad
+previa 15, porque esa capacidad sobreestima el invierno (ver §5).
+
+Mortalidad por edad: no se calibra desde una tabla. La de `lean`/`craft` (§4) está dominada por la
+inanición y la de vejez es 2 muertes en 127 en `lean` y ninguna en `craft`; la de la línea 32a es
+vejez 14 de 502 y 25 de 949. Con tan pocas muertes de vejez medidas, lo que se verifica de ella es
+la fórmula (test de arriba), no su frecuencia en una población: el compacto comparte el código, así
+que mismo hazard por edad, y la frecuencia sale de cuántos llegan a viejos, que depende de la
+supervivencia del §5.
+
+**No cubierto**: el niño nacido en el compacto no recibe registro compacto ni cuerpo (la
+correspondencia no lo avanza); un padre compacto aún no avanzado a este tick puede figurar vivo
+cuando ya murió (se lee de `peopleById`); no hay muertes ni nacimientos de parejas compactas
+coordinados (cada una sortea con su stream, lo que es correcto para la tasa pero no reproduce la
+secuencia del detallado); y las muertes por exposición del compacto siguen sin modelo de calor (§5).

@@ -3180,6 +3180,7 @@ sec. 4 de [m15_phase32b_compact.md](m15_phase32b_compact.md).
 capacidad de banda; aprobada con la capacidad del periodo (`lean` otoño e invierno, 40 días;
 `craft` 40 días al límite), suspende al cruzar de régimen con la capacidad pronosticada de la ventana
 previa (`lean` otoño→invierno 76 % frente a 41 %); sec. 5 del doc de 32b.
+**Demografía compacta (2026-10-06):** `CompactBody` con `env.life` (envejecer, concebir, parir, vejez por `LifeSystem.daily`, stream propio); 21 frente a 23 hijos en la cohorte `craft` de 40 días (sec. 6 del doc de 32b).
 **Pendiente de 32b-2:** producción compacta, capacidad de banda por estación (32c), frío; y, antes de esto, ingesta, producción y demografía compactas con tasas
 medidas del modelo detallado (no inventadas) y, por tanto, el enchufe en
 `Simulation` y `lod-matches-detail`. Lista actualizada en

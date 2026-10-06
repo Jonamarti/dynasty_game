@@ -230,7 +230,8 @@ No se promete que una aglomeración de 300 visibles cueste lo mismo que 30.
    `craft` difieren x2-3 en comida/deriva y x50 en mortalidad. Ingesta compacta
    (sec. 5, v2): aprobada con la capacidad de banda del periodo; suspende al cruzar de
    régimen (`lean` otoño→invierno) si se pronostica de la ventana previa, entrada que
-   corresponde al modelo de pueblo (32c). Sin producción compacta ni frío todavía.
+   corresponde al modelo de pueblo (32c). Demografía compacta (sec. 6): mismo `LifeSystem.daily`,
+   21 frente a 23 nacimientos en cohorte equivalente. Sin producción compacta ni frío todavía.
 3. **32b, activación por visión:** conjunto exacto de activos, puente entre
    niveles, viajes, órdenes e interacciones; integración del foco desde main.
 4. **32c, pueblos:** demografía, economía, avance técnico y contactos agregados,
