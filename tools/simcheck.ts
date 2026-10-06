@@ -45,8 +45,8 @@ import { createFrontier, setupFrontier, observeFrontier } from './frontierFixtur
  */
 const FIRE_RIM = 2;
 
-/** How many sub-web gates `hearths` and `craft` must know by the end (`sub-webs-are-climbed`). */
-const SUB_WEB_GATES_KNOWN = 1;
+/** How many sub-web nodes (not gates) `hearths` and `craft` must know by the end (`sub-webs-are-climbed`). */
+const SUB_WEB_NODES_KNOWN = 1;
 
 // ---------------------------------------------------------------------------
 // Scenarios
@@ -3078,9 +3078,19 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       const web = TECH[tech as Tech]?.web;
       return web !== undefined && web !== 'main';
     });
-    add('sub-webs-are-climbed', gates.length >= SUB_WEB_GATES_KNOWN,
-      gates.length + ' sub-web gates known at the end' + (gates.length ? ' (' + gates.map(def => def.id).join(', ') + ')' : '') +
-        '; ' + nodes.length + ' of their nodes known; at least ' + SUB_WEB_GATES_KNOWN + ' gate expected');
+    // The plan asks for sub-web NODES known, not gates. A gate is a main-web
+    // technique (`craft` founders start with the spear), so counting gates
+    // passed on every build that merely declared a web: reassuring, and
+    // detecting nothing. A node takes about a year to be proven, so a shorter
+    // run cannot say either way and reports n/a rather than a pass.
+    const yearsRun = sim.time.tick / sim.config.time.ticksPerDay / sim.time.daysPerYear;
+    const detail = gates.length + ' sub-web gates known at the end' +
+      (gates.length ? ' (' + gates.map(def => def.id).join(', ') + ')' : '') +
+      '; ' + nodes.length + ' of their nodes known; at least ' + SUB_WEB_NODES_KNOWN + ' node expected';
+    if (nodes.length >= SUB_WEB_NODES_KNOWN) add('sub-webs-are-climbed', true, detail);
+    else if (gates.length === 0) skip('sub-webs-are-climbed', 'nobody knows a sub-web gate, so no sub-web is open to climb');
+    else if (yearsRun < 1) skip('sub-webs-are-climbed', detail + '; ' + yearsRun.toFixed(2) + ' years run, too short for a node to be proven');
+    else add('sub-webs-are-climbed', false, detail);
   }
 
   // The granary chain: know pottery, dig clay, make pots, carry them to a site

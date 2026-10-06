@@ -560,3 +560,29 @@ vitest y página servida con esbuild para Playwright; no se ejecutó `npm test` 
 5. Las sub-redes con un nodo que requiere técnicas de `main` distintas de la
    puerta (p. ej. `sling` requerirá `cordage`) no dibujan esa otra técnica: se
    explica en el panel de detalle («se apoya en…»), no con una arista.
+
+## 13d — corrección del check: cuenta nodos, no puertas (2026-10-06, revisión de integración)
+
+**Qué se quería.** Que `sub-webs-are-climbed` mida lo que dice el plan: nodos
+de sub-red conocidos al final de `hearths` y `craft`.
+
+**Por qué se cambia.** La primera versión (commit anterior) exigía una puerta
+conocida. La puerta es una técnica de `main`, y `craft` arranca con la lanza
+sabida: el check pasaba en cualquier build con una sub-red declarada. `AGENTS.md`
+lo dice así: un check que tranquiliza y no detecta nada es peor que ninguno. La
+justificación de entonces («ningún escenario dura un año») tampoco era exacta:
+16.000 pasos son 66,7 días, 1,67 años de 40 días.
+
+**Qué se hizo.** N = 1 nodo de sub-red conocido por alguien vivo. n/a si nadie
+conoce una puerta, o si la corrida dura menos de un año; FAIL si hay puerta, ha
+pasado un año y no hay nodos.
+
+**Resultado.** `hearths`: FAIL, 1 puerta (`cooking`), 0 nodos; 7/140 fallos
+(antes 6). `craft`: FAIL, 1 puerta (`spear`), 0 nodos; 7/140 (antes 6). `band`
+no corre el check: 2/137, igual. Es un hallazgo del mundo, no del check: las
+recetas se enseñan pero nadie las concibe desde cero en ese plazo (ver
+`bugs.md`). No se ha ajustado ninguna constante.
+
+**Queda abierto.** Decisión del propietario: alargar el escenario, sembrar una
+receta en los fundadores de `craft`, o dar una fuente de hueso y de harina. La
+duda 16 de arriba queda sustituida por esta sección.

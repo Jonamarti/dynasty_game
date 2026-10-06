@@ -1,3 +1,17 @@
+## M15 fase 13d: nadie sube a una sub-red en `hearths` ni en `craft` (2026-10-06)
+
+`sub-webs-are-climbed` falla en los dos escenarios: tras 16.000 pasos (1,67
+años de juego) se conoce una puerta (`cooking` en `hearths`, `spear` en
+`craft`) y **cero** nodos de sub-red. Las cuatro recetas nuevas se enseñan bien
+cuando alguien las sabe (18 a 22 portadores en las corridas sembradas), pero
+nadie las concibe desde cero en ese plazo, y el caldo y la torta casi no se
+cocinan aunque se sepan: el hueso es escaso y no se levanta molino en corridas
+cortas (0 caldos y 0 tortas sembrando la técnica; 255 y 398 al entregar además
+el hueso o la harina). No se ha tocado ningún peso ni umbral para ponerlo en
+verde. Falta decidir si se alarga el escenario, si los fundadores de `craft`
+empiezan con una receta, o si hace falta una fuente de hueso.
+[Fase 13d](m15_phase13_subwebs.md).
+
 ## M15 fase 13d: la honda no gasta munición ni se limita a la caza menor (2026-10-06)
 
 `sling` es un arma como el arco: se elige por `hunt * poder` y no consume nada

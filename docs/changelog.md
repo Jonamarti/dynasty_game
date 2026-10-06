@@ -1,3 +1,15 @@
+## 2026-10-06 — M15 fase 13d: `sub-webs-are-climbed` cuenta nodos, no puertas
+
+El check recién añadido pasaba con «una puerta conocida». Una puerta es una
+técnica de la red principal (los fundadores de `craft` empiezan con la lanza),
+así que pasaba en cualquier build que declarase una sub-red: tranquilizaba y no
+detectaba nada. Ahora mide lo que pide el plan, nodos de sub-red conocidos al
+final (N = 1); da n/a si nadie conoce una puerta o si la corrida dura menos de
+un año, y falla en otro caso. Resultado medido: FAIL en `hearths` y en `craft`
+(1 puerta, 0 nodos, 1,67 años). Fallos por escenario: `hearths` 6 → 7, `craft`
+6 → 7, `band` 2 → 2; el único cambio es este check. El hallazgo queda abierto en
+`bugs.md`.
+
 ## 2026-10-06 — M15 fase 13d: el check `sub-webs-are-climbed`
 
 Nuevo check en `hearths` y `craft` (bloque pequeño en `tools/simcheck.ts`, junto
