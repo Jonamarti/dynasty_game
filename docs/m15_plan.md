@@ -3151,6 +3151,11 @@ repite el protocolo de la fase 10 en `generations` y en `century`, y **se
 congela la línea `DEMOGRAPHY`** contra la que se calibran. Sin eso, se
 calibrarían contra una demografía que ya no existe.
 
+**Avance del 2026-10-06 (32a, demografía):** línea `DEMOGRAPHY` congelada en
+`century` y `generations` a 20 semillas, sin cambio de código; es referencia, no
+objetivo. [Tabla](m15_phase32a_demography.md). Siguen pendientes distribución,
+percepción sin wrapper y las cohortes de los modelos compactos.
+
 ### 32b. Nivel 1: `ComarcaSim`
 
 Como en M14 fase 14, extendido también a individuos fuera de vista **dentro de

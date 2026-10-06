@@ -1,3 +1,14 @@
+## 2026-10-06 — M15 fase 32a: línea `DEMOGRAPHY` congelada (`century` y `generations`)
+
+Dos cohortes de 20 semillas sobre `dcc6066`, sin cambio de código: `century`
+68,2% de supervivencia media, 0,898 hijos/mujer-año, <1 año 0,188; `generations`
+53,6%, 5/20 colapsos, <1 año 0,148, <5 años 0,621 (440/709). La inanición es el
+65% de las muertes en las dos. Es la referencia de `lod-matches-detail` y
+`peoples-match-bands`, no un objetivo; el `1,000` de <5 en `century` es
+censura, no una tasa. Tardaron ~34 min y ~113 min, así que se repiten al cerrar
+bloque, no por commit. Sin cambio de interfaz.
+[Tabla y límites](m15_phase32a_demography.md).
+
 ## 2026-10-06 — M15 fase 31b: el globo (`WorldMapView`)
 
 Icono de globo abajo a la izquierda (y `O`; en móvil, «Mundo» en la barra
