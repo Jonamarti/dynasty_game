@@ -188,18 +188,19 @@ holds the geographic mode, an IdSpace and the current Simulation. Rebuilding
 before character creation replaces the whole root and keeps the existing UI
 bindings. Starting seeds and streams are unchanged; headless tools still
 construct standalone Simulation. The root also accepts an explicit geographic
-inspection patch with zero human bands. `LocalGeography` samples continuous
+patch, including populated starts with explicit freshwater. `LocalGeography` samples continuous
 profiles before World builds its shore/region/prominence/soil/grass caches.
 Earth heights retain metres relative to the atlas sea level; random relief has
 an explicit separate scale. Regional grain/flint gates filter local placement
-on independent, derived seed streams. Populated geographic starts are rejected
-before generation: the current drinking model treats every shoreline as potable,
-and regional river flags cannot locate freshwater tiles. The browser still
+on independent, derived seed streams. Separate spatial shore hashes route AI
+drinking, water memories and camps to fresh water. A player may explicitly order
+salt water, with a harmful menu label and a visible interruption. The browser still
 offers classic play only. `WorldStateRecord` now wraps the local checkpoint with
 immutable starting placement and independent macro geography. Random maps retain
 their canonical seed and grid dimensions; Earth embeds its raster and entry for
-offline restoration. The loader rejects populated geographic roots until local
-freshwater is supported. The local checkpoint format is unchanged; see
+offline restoration. The loader rejects attaching a populated classic checkpoint
+to geography without explicit water arrays; populated geographic roots round-trip.
+See [m15_phase30_water.md](m15_phase30_water.md) and
 [m15_phase29_root_records.md](m15_phase29_root_records.md).
 The root does not yet create global peoples or
 abandoned-comarca ledgers. See

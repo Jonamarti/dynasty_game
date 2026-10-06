@@ -1,3 +1,15 @@
+## 2026-10-06 — M15 fase 30: consumidores e intención salada
+
+La IA deja de buscar el mar continental como agua potable: bebida, recuerdos,
+comunicación y campamentos consultan orillas dulces por hash. La orden explícita
+salada conserva su intención al guardar o reanudar, añade sed y daño y termina
+con una razón visible y traducida; una fuente desaparecida se rechaza.
+Se habilitan raíces continentales pobladas con agua explícita y continuidad
+JSON de 180 ticks. Cuatro tests del consumidor, una regresión de raíz y el
+e2e de menú/daño/parada cubren estos caminos. Capturas:
+`artifacts/screenshots/m15-phase30-final-2026-10-06T-02/`.
+[Contrato](m15_phase30_water.md).
+
 ## 2026-10-06 — M15 fase 30: terreno con agua dulce y salada
 
 El mar geográfico deja de ser indistinguible de un río. `World` clasifica

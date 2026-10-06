@@ -138,6 +138,8 @@ export interface CatalogContext {
   drownAt?: number;
   /** True if the actor is standing close enough to water to drink. */
   nearWater: boolean;
+  /** True when the clicked water or bank is saline and drinking it is harmful. */
+  saltWater?: boolean;
   /**
    * The nearest finished station of a given `BUILDINGS` id that the actor could
    * work at, or null.
@@ -1161,7 +1163,9 @@ function groundActions(
   // the click landed *on* the water: the order routes to the nearest bank, so
   // clicking a lake and being told to go and drink is exactly right.
   if (ctx.nearWater) {
-    options.push({ id: 'drink', label: t('Drink'), icon: '\u{1F4A7}', enabled: true });
+    options.push({ id: 'drink',
+      label: ctx.saltWater ? t('Drink salt water (harmful)') : t('Drink'),
+      icon: '\u{1F4A7}', enabled: true });
   }
 
   // Playing, where you stand: a tune has no destination, and everybody in

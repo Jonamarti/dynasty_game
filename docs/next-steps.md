@@ -2,8 +2,10 @@
 
 **2026-10-06: fase 30, agua local.** Entregadas semántica dulce/salada,
 superficie y lecho fluvial, herencia de agua en zanjas y terreno geográfico v2.
-Clásico conserva su registro v1 y mar potable. Consumidores, escenario
-continental y continuidad entre comarcas están en integración; no se declara
+Clásico conserva su registro v1 y mar potable. IA, recuerdos y campamentos
+buscan agua dulce; la orden salada advierte y explica el daño. Inicios
+continentales poblados guardan y continúan. Escenario continental y evidencia
+final están en integración; giros fluviales y fase global de vados siguen pendientes. No se declara
 cerrada la fase ni se ofrece selección geográfica en el navegador.
 [Contrato](m15_phase30_water.md).
 

@@ -39,3 +39,24 @@ Capturas iniciales revisadas: `artifacts/screenshots/m15-phase30-water-2026-10-0
 y `artifacts/screenshots/m15-phase30-water-2026-10-06T-02/`. La segunda muestra
 el lecho tallado al mediodía. La verificación final se registra al terminar
 los consumidores y el escenario continental.
+
+## Consumidores y órdenes — 2026-10-06
+
+`Simulation` mantiene hashes de orilla dulce y salada junto al hash genérico.
+La IA, los recuerdos y la comunicación sobre agua y la elección de campamento
+consultan agua potable. Ocultar un cadáver y retirarse nadando siguen usando
+cualquier orilla. Los índices se reconstruyen al cargar o cambiar el terreno.
+
+Una orden explícita al mar conserva su intención salada al interrumpirse,
+reanudarse y guardarse; si desaparece esa fuente, termina con `no_water`.
+No se convierte silenciosamente en una bebida dulce. Beber mar añade cuatro
+puntos de sed, quita uno de salud y detiene la orden con `salt_water` visible.
+El menú advierte del daño y ambos textos tienen traducción española. El mar
+clásico mantiene su comportamiento histórico potable.
+
+Se habilitan inicios continentales poblados mediante `WorldState`, sin nueva
+selección en el navegador. Un test guarda la raíz en JSON y compara dos
+continuaciones de 180 ticks, incluidos los arrays de agua independientes.
+Cuatro regresiones prueban IA, orden dañina, guardado y fuente desaparecida.
+El navegador ejercita menú, daño y parada en la UI real. Capturas revisadas:
+`artifacts/screenshots/m15-phase30-final-2026-10-06T-02/` (tres imágenes).

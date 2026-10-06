@@ -116,6 +116,8 @@ export interface BrainContext {
   nodeHash: SpatialHash<ResourceNode>;
   peopleHash: SpatialHash<Person>;
   shoreHash: SpatialHash<{ x: number; y: number }>;
+  /** Fresh banks for thirst; `shoreHash` also serves non-drinking water work. */
+  freshShoreHash?: SpatialHash<{ x: number; y: number }>;
   /** M11 phase 16: the bodies, for a killer hiding one. */
   corpseHash?: SpatialHash<Corpse>;
   relationships: RelationshipGraph;
@@ -1139,7 +1141,8 @@ export class Brain {
       : [];
     const waterQuestionPeer = this.pickBest(waterQuestionPeers, other => {
       const knowsWater = other.placeMemory.nearest('water', other.x, other.y,
-        place => ctx.world.sameRegion(person.x, person.y, place.x, place.y)) !== null;
+        place => ctx.world.isFreshShore(place.x, place.y) &&
+          ctx.world.sameRegion(person.x, person.y, place.x, place.y)) !== null;
       return (knowsWater ? 100 : 0) - person.distanceTo(other);
     });
     const waterExplorePoint = thirstyWithoutWater && !waterQuestionPeer
@@ -3828,10 +3831,11 @@ export class Brain {
     // shore this person has recorded. The memory stores an exact shore tile,
     // so resolve it directly: snapping it back through a hash with a 1-tile
     // tolerance loses valid records when several shores share a 4x4 cell.
-    const visible = ctx.shoreHash.findNearest(person.x, person.y, ctx.sightRadius,
+    const visible = (ctx.freshShoreHash ?? ctx.shoreHash).findNearest(person.x, person.y, ctx.sightRadius,
       tile => this.canTravelTo(person, tile.x, tile.y, ctx));
     const remembered = person.placeMemory.nearest('water', person.x, person.y,
-      place => this.canTravelTo(person, place.x, place.y, ctx));
+      place => ctx.world.isFreshShore(place.x, place.y) &&
+        this.canTravelTo(person, place.x, place.y, ctx));
     const shore = visible && remembered
       ? person.distanceTo(visible) <= person.distanceTo(remembered) ? visible : remembered
       : visible ?? remembered;

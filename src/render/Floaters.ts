@@ -303,6 +303,7 @@ export const STOP_REASONS: Record<string, string> = {
 
   // They could not do it after all.
   no_water: 'there was no water within reach',
+  salt_water: 'the water was salty and made them thirstier',
   no_food: 'they had nothing to eat',
   no_fruit: 'there was nothing to pick',
   // The season turned. Distinct from `no_fruit` because the tree visibly had

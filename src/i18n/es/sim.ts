@@ -20,6 +20,7 @@ export const ES_SIM: Record<string, string> = {
   "bringing food to someone starving": "llevando comida a alguien que se muere de hambre",
   "Hunger drive": "Motivo de hambre",
   "Thirst drive": "Motivo de sed",
+  "the water was salty and made them thirstier": "el agua tenía sal y le dio más sed",
   "Rest drive": "Motivo de descanso",
   "Warmth drive": "Motivo de calor",
   "Company drive": "Motivo de compañía",

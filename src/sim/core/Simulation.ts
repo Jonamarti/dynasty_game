@@ -413,8 +413,12 @@ export class Simulation {
 
   readonly peopleHash = new SpatialHash<Person>(8);
   readonly nodeHash = new SpatialHash<ResourceNode>(8);
-  /** Static: the shoreline never moves, so this is built once at construction. */
+  /** All-water bank index for swimming, concealment and other non-drinking uses. */
   readonly shoreHash = new SpatialHash<{ x: number; y: number }>(8);
+  /** Fresh banks are the only natural water targets for thirst. */
+  readonly freshShoreHash = new SpatialHash<{ x: number; y: number }>(8);
+  /** Geographic salt banks are indexed separately so explicit player orders can find them. */
+  readonly saltShoreHash = new SpatialHash<{ x: number; y: number }>(8);
   readonly nodesById = new Map<number, ResourceNode>();
   readonly peopleById = new Map<number, Person>();
   readonly buildingsById = new Map<number, Building>();
@@ -623,9 +627,6 @@ export class Simulation {
     }
     this.ids = ids;
     this.config = makeConfig(overrides);
-    if (geographicStart && this.config.population.bands !== 0) {
-      throw new RangeError('Populated geographic starts require local freshwater; use population.bands = 0 until phase 30');
-    }
     this.geographicStart = geographicStart ?? null;
     const localGeography = geographicStart ? this.makeLocalGeography(geographicStart) : undefined;
     this.localGeography = localGeography ?? null;
@@ -668,6 +669,8 @@ export class Simulation {
     // numbered table and the instruction to add a row to it when you append.
 
     this.shoreHash.rebuild(this.world.shoreTiles);
+    this.freshShoreHash.rebuild(this.world.freshShore);
+    this.saltShoreHash.rebuild(this.world.saltShore);
 
     // The wood is planted before anything else looks for it: a band founded in
     // a clearing and a band founded under oaks have very different prospects.
@@ -905,6 +908,8 @@ export class Simulation {
     wildlifeSystem.owed = new Map(ledgers.wildlifeOwed);
 
     this.shoreHash.rebuild(world.shoreTiles);
+    this.freshShoreHash.rebuild(world.freshShore);
+    this.saltShoreHash.rebuild(world.saltShore);
     this.rebuildHashes();
     this.treeHash.rebuild(this.trees);
     this.pileHash.rebuild(this.piles);
@@ -1206,9 +1211,9 @@ export class Simulation {
     const { bands, peoplePerBand } = this.config.population;
 
     for (let b = 0; b < bands; b++) {
-      // Camps want water within reach; a band placed in the middle of a rock
+      // Camps want fresh water within reach; a band placed in the middle of a rock
       // field would simply die, which makes for a poor test scenario.
-      // Big enough to forage across, and with water in reach. A camp on a
+      // Big enough to forage across, and with potable water in reach. A camp on a
       // pinched headland is a death sentence: greedy movement cannot route
       // around the shoreline, so the band starves in sight of food.
       const minLand = Math.max(400, this.world.width * this.world.height * 0.05);
@@ -3266,6 +3271,7 @@ export class Simulation {
       count: person.targetItemCount,
       x: person.targetX,
       y: person.targetY,
+      ...(person.saltDrinkTarget === true ? { saltDrinkTarget: true } : {}),
     };
   }
 
@@ -3317,6 +3323,7 @@ export class Simulation {
         pending.animalId === null && pending.pileId === null
         ? pending.y ?? undefined : undefined,
     });
+    if (ok && pending.saltDrinkTarget) person.saltDrinkTarget = true;
     // A refusal here is ordinary — the bush was stripped while they drank — and
     // must not surface as a refusal message the player never asked for.
     this.lastRefusal = null;
@@ -3564,7 +3571,7 @@ export class Simulation {
   private hasWaterNear(x: number, y: number, radius: number): boolean {
     for (let dy = -radius; dy <= radius; dy += 2) {
       for (let dx = -radius; dx <= radius; dx += 2) {
-        if (this.world.isWater(x + dx, y + dy)) return true;
+        if (this.world.isFreshWater(x + dx, y + dy)) return true;
       }
     }
     return false;
@@ -3875,7 +3882,15 @@ export class Simulation {
       // word, because the order tried to walk onto the tile that was clicked.
       // Send them to the nearest bank instead.
       if (action === 'drink') {
-        const bank = this.shoreHash.findNearest(target.x, target.y, 24,
+        // AI only sees `freshShoreHash`. A deliberately clicked salt
+        // tile takes the separate path so the player can learn that the sea is
+        // harmful by trying it; it is never a candidate in Brain.findWater.
+        const saltTarget = this.world.isSaltWater(target.x, target.y) ||
+          (!this.world.isFreshWater(target.x, target.y) && this.world.isSaltShore(target.x, target.y) &&
+            !this.world.isFreshShore(target.x, target.y));
+        if (saltTarget) person.saltDrinkTarget = true;
+        const banks = saltTarget ? this.saltShoreHash : this.freshShoreHash;
+        const bank = banks.findNearest(target.x, target.y, 24,
           tile => this.world.sameRegion(person.x, person.y, tile.x, tile.y));
         if (!bank) return this.cancelOrder(person, t('no bank they can reach from here'));
         person.targetX = bank.x;
@@ -5128,6 +5143,7 @@ export class Simulation {
       nodeHash: this.nodeHash,
       peopleHash: this.peopleHash,
       shoreHash: this.shoreHash,
+      freshShoreHash: this.freshShoreHash,
       corpseHash: this.corpseHash,
       relationships: this.relationships,
       buildings: this.buildings,
@@ -5525,8 +5541,10 @@ export class Simulation {
             });
         }
       }
-      for (const shore of this.shoreHash.queryRadius(person.x, person.y, radius, this.placeShoreCandidates)) {
-        if (near(shore.x, shore.y)) memory.remember('water', shore.x, shore.y, day, 2);
+      for (const shore of this.freshShoreHash.queryRadius(person.x, person.y, radius, this.placeShoreCandidates)) {
+        if (near(shore.x, shore.y) && this.world.isFreshShore(shore.x, shore.y)) {
+          memory.remember('water', shore.x, shore.y, day, 2);
+        }
       }
       for (const building of this.buildingHash.queryRadius(person.x, person.y, radius + 4, this.placeBuildingCandidates)) {
         if (near(building.centerX, building.centerY)) {
@@ -5741,6 +5759,8 @@ export class Simulation {
     // where nobody digs.
     if (this.shoreSeen !== this.world.earthVersion) {
       this.shoreHash.rebuild(this.world.shoreTiles);
+      this.freshShoreHash.rebuild(this.world.freshShore);
+      this.saltShoreHash.rebuild(this.world.saltShore);
       this.shoreSeen = this.world.earthVersion;
       // Nothing has ever been dug while `earthVersion` is 0, so a world that
       // nobody digs never pays for (or is changed by) the sweep.

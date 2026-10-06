@@ -1064,11 +1064,28 @@ export class ActionSystem {
     // Movement stops within 0.6 tiles of the target, so the rounded position can
     // land on the tile next door. Test the neighbourhood rather than one tile,
     // otherwise people walk to the water's edge and then refuse to drink.
-    if (!this.waterWithinReach(person.x, person.y, ctx)) {
+    const orderedToSalt = person.saltDrinkTarget === true;
+    // A changed shore must not silently change the source the player chose.
+    // Check the requested salt source first; if it disappeared, refuse visibly.
+    const freshWithinReach = !orderedToSalt && this.waterWithinReach(person.x, person.y, ctx);
+    if ((!freshWithinReach || orderedToSalt) && this.saltWaterWithinReach(person.x, person.y, ctx)) {
+        // Salt water is available to a person the player explicitly sends to
+        // it, but it worsens thirst and harms them. The action ends after one
+        // attempt so a standing order cannot turn that warning into repeated
+        // damage. Brain never offers this source.
+        telemetry.count('drink_sea');
+        if (person.order === null) telemetry.count('drink_sea_ai');
+        person.needs.thirst = Math.min(100, person.needs.thirst + 4);
+        person.health = Math.max(0, person.health - 1);
+        this.abandon(person, 'salt_water', ctx);
+        return;
+    }
+    if (!freshWithinReach) {
       this.abandon(person, 'no_water', ctx);
       return;
     }
     person.needs.thirst = Math.max(0, person.needs.thirst - 6);
+    telemetry.count('drink_fresh');
     // `drink` counts *ticks* spent drinking; `drink_finished` counts trips to the
     // water. Only the second answers "how often does somebody stop what they are
     // doing and go to the river?", which is the question the owner asked and
@@ -1109,7 +1126,8 @@ export class ActionSystem {
     }
 
     const place = other.placeMemory.nearest('water', person.x, person.y,
-      memory => ctx.world.sameRegion(person.x, person.y, memory.x, memory.y));
+      memory => ctx.world.isFreshShore(memory.x, memory.y) &&
+        ctx.world.sameRegion(person.x, person.y, memory.x, memory.y));
     if (place) {
       person.placeMemory.remember('water', place.x, place.y, place.day, place.amount, 'told');
       telemetry.count('water_question_answered');
@@ -1186,7 +1204,7 @@ export class ActionSystem {
     const cy = Math.round(y);
     for (let dy = -2; dy <= 2; dy++) {
       for (let dx = -2; dx <= 2; dx++) {
-        if (ctx.world.isWater(cx + dx, cy + dy)) return true;
+        if (ctx.world.isDrinkingWater(cx + dx, cy + dy)) return true;
       }
     }
     // `well`: a real second source rather than a decoration, and open to
@@ -1201,6 +1219,18 @@ export class ActionSystem {
         // standing built and unused while everybody still walks to the shore.
         telemetry.count('drink_at_well');
         return true;
+      }
+    }
+    return false;
+  }
+
+  /** Salt water is a harmful, explicitly ordered fallback; AI never seeks it. */
+  private saltWaterWithinReach(x: number, y: number, ctx: ActionContext): boolean {
+    const cx = Math.round(x);
+    const cy = Math.round(y);
+    for (let dy = -2; dy <= 2; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        if (ctx.world.isSaltWater(cx + dx, cy + dy)) return true;
       }
     }
     return false;

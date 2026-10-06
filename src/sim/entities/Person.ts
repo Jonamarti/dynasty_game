@@ -152,6 +152,8 @@ export interface ResumedOrder {
   count: number | null;
   x: number | null;
   y: number | null;
+  /** Preserves a deliberate saline-water order while a need interrupts its walk. */
+  saltDrinkTarget?: boolean;
 }
 
 /** In-game days in a year. Ages, gestation and lifespans are all in days. */
@@ -835,6 +837,8 @@ export class Person {
   }
   targetX: number | null = null;
   targetY: number | null = null;
+  /** Present only while an explicit drink order targets saline water. */
+  declare saltDrinkTarget?: boolean;
   targetNodeId: number | null = null;
 
   /**
@@ -1144,6 +1148,7 @@ export class Person {
   clearTarget(): void {
     this.targetX = null;
     this.targetY = null;
+    delete this.saltDrinkTarget;
     this.targetNodeId = null;
     this.targetPersonId = null;
     this.targetSubjectId = null;

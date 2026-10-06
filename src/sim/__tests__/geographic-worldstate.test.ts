@@ -27,12 +27,12 @@ function geographicStart(geography = earth()) {
 }
 
 describe('geographic WorldState construction', () => {
-  it('rejects populated starts before an allocator or simulation stream advances', () => {
+  it('rejects malformed populated geographic starts before an allocator advances', () => {
     const ids = new IdSpace();
     const before = ids.snapshot();
     expect(() => new Simulation({ population: { bands: 1 } }, ids, {
-      geography: earth(), x: 20, y: 10,
-    })).toThrow(/freshwater.*population\.bands = 0/i);
+      geography: earth(), x: NaN, y: 10,
+    })).toThrow(/geographic/i);
     expect(ids.snapshot()).toEqual(before);
   });
 

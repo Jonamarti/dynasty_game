@@ -2978,7 +2978,14 @@ Clásico mantiene
 terreno v1 y mar potable, sin draws nuevos. [Contrato](m15_phase30_water.md).
 Capturas del terreno en `artifacts/screenshots/m15-phase30-water-2026-10-06T-02/`.
 
-**Estado (2026-10-02): clasificación geográfica inicial; falta conectar el
+**Avance del 2026-10-06: consumidores e inicios poblados.** IA, memoria y
+campamentos consultan orillas dulces por hash espacial; la orden explícita
+salada aplica daño y comunica por qué se detiene. Su intención sobrevive a
+guardado e interrupción. La raíz continental poblada continúa desde JSON;
+el navegador conserva selección clásica. Tests y capturas de menú/parada en
+`artifacts/screenshots/m15-phase30-final-2026-10-06T-02/`.
+
+**Estado histórico (2026-10-02): clasificación geográfica inicial; falta conectar el
 agua al terreno y a las necesidades de la partida global.** `RealWorldMap`
 clasifica las regiones con ríos o lagos como agua dulce y las regiones bajo el
 nivel del mar como saladas, manteniendo la prioridad del agua interior.

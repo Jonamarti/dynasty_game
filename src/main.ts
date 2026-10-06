@@ -1514,11 +1514,14 @@ function isNearWater(x: number, y: number): boolean {
  */
 function openRadial(actor: Person, target: ActionTarget, screenX: number, screenY: number): void {
   const nearWater = isNearWater(target.x, target.y);
+  const saltWater = sim.world.isSaltWater(target.x, target.y) ||
+    (!sim.world.isFreshWater(target.x, target.y) && sim.world.isSaltShore(target.x, target.y) &&
+      !sim.world.isFreshShore(target.x, target.y));
   // In command mode the verbs are worked out for the person being commanded,
   // not for the player: what *they* can carry, what *they* know how to make.
   const subject = commanding && commanding.alive ? commanding : actor;
   const options = availableActions(subject, target, {
-    world: sim.world, nearWater, drownAt: sim.config.world.drownAt, commanding,
+    world: sim.world, nearWater, saltWater, drownAt: sim.config.world.drownAt, commanding,
     buildings: sim.buildings,
     backersWanted: sim.config.motivation.backersWanted,
     stationFor: stationId => nearestStation(subject, stationId),

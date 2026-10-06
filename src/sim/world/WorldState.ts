@@ -23,8 +23,8 @@ function retainStart(geography: WorldGeography, input: WorldStateGeographicStart
 
 /**
  * The browser's world root. The optional macro-map start builds a terrain and
- * resource inspection world only; people cannot start there until freshwater
- * has local semantics (phase 30). The default remains the classic island.
+ * resource world with explicit local water provenance. The default remains
+ * the classic island; geographic selection in the browser comes later.
  */
 export class WorldState {
   readonly geography: WorldGeography;
@@ -51,8 +51,10 @@ export class WorldState {
   static fromRestored(current: Simulation, geography: WorldGeography,
     geographicStart: WorldStateGeographicStart | null): WorldState {
     // The JSON reader is not the only caller of this public assembly path.
-    // Attaching macro metadata must not bypass the constructor's freshwater gate.
+    // A classic checkpoint cannot acquire a salt coast merely by attaching
+    // macro metadata. Geographic water provenance must come from its terrain.
     if (geography.kind !== 'legacyIsland' &&
+        !current.world.waterKind &&
         (current.config.population.bands !== 0 || current.people.length > 0 || current.bands.length > 0)) {
       throw new RangeError('Geographic starts cannot restore a populated simulation before freshwater support');
     }
