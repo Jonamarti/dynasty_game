@@ -149,6 +149,10 @@ export const TECHS = [
   // M15 phase 24: planting a tree. A practice, and it ships with its reader —
   // the `plant` verb (`ActionSystem.doPlant`) — so it is not declared inert.
   'arboriculture',
+  // M15 phase 13d: the first recipe nodes (`tier: 'craft'`), one per commit
+  // with the item and the recipe it unlocks. Appended: `TECHS` order is the
+  // order the web is laid out in.
+  'stone_boiling',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1482,6 +1486,44 @@ export const TECH: Record<Tech, TechDef> = {
       'wait years for it. The first thing anyone did for a generation not yet ' +
       'born.',
   },
+  // M15 phase 13d. The first recipe node: a craft, so it is hit upon five times
+  // as readily as a technique of its difficulty and is passed on in small talk.
+  // Its web (Kitchen) opens with the next commit, when `flatbread` gives it a
+  // second node; until then it sits in the main web, as 13a's rule says.
+  stone_boiling: {
+    id: 'stone_boiling', label: 'Stone boiling', domain: 'fire',
+    tier: 'craft',
+    age: 'upper_palaeolithic', firstKnown: 'about 30,000 years ago',
+    // A device: it gates `RECIPES.broth`. Its first try is the stones and the
+    // tongs, not the bones: a first attempt with bone as the cost was measured
+    // conceived nine times in three game-years and never once built, because a
+    // band that has not worked bone leaves the carcass where it lies (see
+    // `doHunt`) and the few that do carry two bones home rarely. The bones are
+    // the *recipe's* cost, so the broth is as scarce as the bone.
+    kind: 'device',
+    requires: ['cooking', 'leatherwork'], difficulty: 0.5, skill: 'cook',
+    prototype: { flint: 1, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      // 13b's guidance for a craft: its sparks are mostly doing and handling.
+      // The broth occurs to whoever roasts with bones to hand.
+      { needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'doing', action: 'craft' },
+                { kind: 'holding', item: 'bone' }],
+        weight: 1.0, story: 'was roasting with a heap of cleaned bones beside the hearth and wondered what was left in them' },
+      // The route that needs no bone and no hide in hand: a hide that holds
+      // water, a fire that makes stones hot, and somebody hungry for something
+      // other than roast.
+      { needs: [{ kind: 'knows', tech: 'leatherwork' }, { kind: 'knows', tech: 'cooking' },
+                { kind: 'feeling', need: 'hunger' }, { kind: 'doing', action: 'eat' }],
+        weight: 0.6, story: 'dropped a hot stone from the fire into a hide of water and watched it boil' },
+      { needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'knows', tech: 'leatherwork' },
+                { kind: 'wanting', drive: 'variety' }],
+        weight: 0.5, story: 'tired of roast and tried the fire’s hottest stones in a hide full of water' },
+    ],
+    description:
+      'Stones heated in the fire and dropped into a hide of water, with the ' +
+      'bones that nobody was eating. A broth: the first food made of what a ' +
+      'carcass used to leave behind.',
+  },
   the_wheel: {
     id: 'the_wheel', label: 'The wheel', domain: 'timber',
     age: 'neolithic', firstKnown: 'about 3500 BC',
@@ -2107,6 +2149,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   arboriculture: {
     summary: 'Fruit trees planted near the camp: a stone set in the ground now, a crop in years.',
     site: 'ActionSystem.doPlant (the verb it unlocks); Tech.orchardFactor shortens the planting; Brain plant scorer',
+  },
+  stone_boiling: {
+    summary: 'Bones boiled with hot stones into a broth: food made of what a carcass used to leave behind.',
+    site: 'RECIPES.broth at the hearth; ITEMS.broth',
   },
   the_wheel: {
     summary: 'A cart: what a strap and a basket carry, and a cartload more on top.',

@@ -1,3 +1,16 @@
+## 2026-10-06 — M15 fase 13d: caldo (`stone_boiling`)
+
+Primer nodo `craft`: `stone_boiling` (Paleolítico superior; requiere `cooking` y
+`leatherwork`; dificultad 0,5 x 0,4). Da la receta `broth` en la hoguera: 2
+huesos, un caldo (`broth`, 26 de nutrición, 10 de hidratación, grasa y
+proteína; no enferma). Quien lo descubre y lo prueba aprende a fiarse del
+caldo (`eat:broth`). Se enseña también de pasada en `chat`. Cambia el
+comportamiento y se midió con una siembra de dos fundadores por banda: se
+enseña (14 y 15 lecciones, 20 y 22 portadores) pero casi no se cocina, porque
+casi nadie lleva dos huesos a la vez (con huesos servidos, 255 caldos en 10000
+pasos). Cocina sigue sin abrirse. La cohorte de 20 semillas no se corrió.
+Evidencia en `artifacts/verification/m15-phase13d-20261006/stone_boiling/`.
+
 ## 2026-10-06 — M15 fase 13b: la receta como conocimiento
 
 `TechDef` gana `tier` (`technique` por defecto, o `craft`) y `Config.knowledge`

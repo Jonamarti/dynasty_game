@@ -125,6 +125,54 @@ técnicas viajan por `doTeach`, `doAsk`, `hearthLesson` y la observación. Lectu
 conservadora adoptada: los crafts se enseñan en `chat`, `interests` y `deep` (no
 en `greet`) y las técnicas siguen como estaban. Ver «Dudas abiertas», 5.
 
+## 13d — `stone_boiling`: caldo (2026-10-06, comportamiento medido)
+
+Primer commit de contenido de 13d. Es un cambio de comportamiento declarado: el
+nodo existe en `TECHS`, así que puede concebirse, enseñarse y usarse.
+
+**Qué hay.** `stone_boiling`, `tier: 'craft'`, dispositivo, edad
+`upper_palaeolithic`, requiere `cooking` y `leatherwork`, dificultad 0,5 (0,2
+efectiva), habilidad `cook`, prototipo `{ flint: 1, sticks: 2 }`, refinamiento
+máximo 2, tres chispas (hacer algo con huesos a mano; hambre con piel y comida
+reciente; ganas de variedad), todas de hacer, de objeto manejado o de querer.
+Receta `broth` en la hoguera (`ingredients: { bone: 2 }`, `keep: 2`, 100 ticks).
+Ítem `broth` añadido al final de `Item.ts`, sin entrar en ningún plan de
+aparición. Es comida de grasa y proteína, sin carbohidrato, y no está en
+`SICKENS`. `prove()` siembra `eat:broth` en la creencia de quien prueba el
+primer caldo, para que el puntuador de comida lo tome por comida (mismo papel
+que el asado). Textos en `src/i18n/es/tech.ts`.
+
+**Por qué `craft`.** Es una receta de la hoguera: variante del asado, no una
+herramienta nueva. Sin ningún nodo existente que lo fuera (duda 6), este es el
+primero.
+
+**Tests.** `src/sim/__tests__/craft-nodes.test.ts` (9): declaración, dificultad
+0,4, receta, ítem, chispas, enseñanza por `chat`, prueba y creencia, y un caldo
+hecho de punta a punta en una hoguera.
+
+**Medida.** Los informes `band`, `hearths` y `craft` de antes y después
+coinciden en fila final (vivos 31/31, 42/42, 13/13) y en estado de checks
+(ninguno cambia; fallos 2, 6 y 6 en ambos lados). En carreras cortas nadie
+descubre técnicas, así que esa medida no ve el nodo. Para verlo se siembran dos
+fundadores por banda con el nodo (`exercise.ts`, 2 bandas, 10000 pasos, hoguera
+colocada en el paso 300): el nodo se enseña (14 y 15 lecciones, 20 y 22
+portadores al final) y el recuento de población no se hunde (25 a 30 y 25 a 32
+frente a 25 a 29 y 25 a 33 antes). **Pero casi no se cocina caldo** (0
+`crafted_broth`): el hueso escasea (24 cosechados, y la aguja y el pico de
+asta lo consumen), y solo en 43 de ~4000 muestras alguien lleva dos a la vez. Con
+huesos servidos cada 100 pasos el mismo escenario hace 255 caldos, así que el
+camino funciona y el límite es el suministro de hueso. Un cambio de
+suministro (por ejemplo `bone` 1 más grasa 1) queda para el propietario.
+
+**No se corrió** la cohorte de 20 semillas; queda para la máquina del
+propietario. Los números anteriores de supervivencia son de carreras cortas con
+caos por divergencia del RNG: no son atribuibles al nodo.
+
+**Verificación:** sustituto esbuild/shim de vitest y página servida por esbuild
+en un contenedor Linux en la nube, no `npm test` ni Vite.
+
+**Capturas:** `artifacts/screenshots/m15-phase13d-stone_boiling-2026-10-06/`.
+
 ## Dudas abiertas
 
 1. **Cocina no se abre en 13a.** La tabla del plan supone que el asado, `bread` y
@@ -154,3 +202,18 @@ en `greet`) y las técnicas siguen como estaban. Ver «Dudas abiertas», 5.
    técnicas se enseñaran en los modos largos, es un cambio aparte (medido).
 6. **Ningún nodo existente es `craft`** (ver 13b). Si el propietario quiere que
    `bow`/`atlatl`/`sickle`… lo sean, hay que medir el efecto de bajar su dificultad.
+
+7. **Caldo con hueso y grasa (13d).** El plan decía «hueso 2 (o hueso 1 y
+   grasa 1) y agua». No hay ítem `fat` ni `water` en el inventario, así que se
+   implementó solo `bone: 2`. El agua se da por supuesta en la hoguera.
+8. **Cocina y el orden de los commits.** El plan pedía abrir Cocina con
+   `stone_boiling`, pero la regla de 13a pide dos nodos con efecto por red. Se
+   abre con `flatbread`, en el commit siguiente.
+9. **Prototipo de `stone_boiling`.** Con huesos en el prototipo se concibió 9
+   veces en 30000 pasos y nunca se construyó; se usan `flint` y `sticks`.
+10. **Suministro de hueso.** Ver la medida de 13d: el caldo se enseña pero casi
+    no se cocina. ¿Aceptable, o se abre otra fuente de hueso?
+11. **Edad de `fire_hardened_spear`.** El plan dice Paleolítico inferior, pero
+    el test de edades prohíbe una edad anterior a la de los requisitos
+    (`firemaking`, `spear`); se decidirá en su commit.
+

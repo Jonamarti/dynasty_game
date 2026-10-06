@@ -569,6 +569,15 @@ export const RECIPES: Record<string, RecipeDef> = {
     skill: 'build', workTicks: 120, ingredients: { wood: 1 },
     output: { spade: 1 }, keep: 1,
   },
+  // M15 phase 13d. Two bones for a ration, at the hearth. The plan also names
+  // "bone 1 and fat 1" and water as ingredients; there is no fat item and no
+  // water in the pack in this game, so the water is the hide the stones go
+  // into (not modelled) and the recipe is the bone alone. See the phase doc.
+  broth: {
+    id: 'broth', label: 'Broth', icon: '\u{1F372}', tech: 'stone_boiling', skill: 'cook',
+    workTicks: 100, ingredients: { bone: 2 }, output: { broth: 1 },
+    station: 'hearth', keep: 2,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

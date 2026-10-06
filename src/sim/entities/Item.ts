@@ -316,6 +316,11 @@ export const ITEMS: Record<string, ItemDef> = {
   earth: { id: 'earth', label: 'Earth', nutrition: 0, spoilTicks: 0, baseValue: 0, class: 'loose', hand: { perHand: 1, perArms: 3, hands: 1 } },
   antler_pick: { id: 'antler_pick', label: 'Antler pick', nutrition: 0, spoilTicks: 0, baseValue: 7, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   spade: { id: 'spade', label: 'Wooden spade', nutrition: 0, spoilTicks: 0, baseValue: 8, class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  // M15 phase 13d. `stone_boiling`'s broth: the first food made from bone, which
+  // until now only served for tools. Fat and protein out of the marrow, and some
+  // water in it. Cooked, so absent from `Body.SICKENS` and safe like every other
+  // cooked food. It goes off faster than roast meat: a broth is not carried.
+  broth: { id: 'broth', label: 'Broth', nutrition: 26, hydration: 10, spoilTicks: 1200, baseValue: 3, macros: { fat: 0.4, protein: 0.6, carb: 0 }, class: 'food', hand: { perHand: 2, perArms: 5, hands: 1 } },
 };
 
 export class Inventory {

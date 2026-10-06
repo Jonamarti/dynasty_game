@@ -377,4 +377,11 @@ export const ES_TECH: Record<string, string> = {
   "counted the years a hazel took to bear and thought of planting one for the children": "contó los años que tarda un avellano en dar fruto y pensó en plantar uno para los hijos",
   "spat a plum stone into the soft ground by the camp and came back to find it growing": "escupió un hueso de ciruela en la tierra blanda junto al campamento y volvió para encontrarlo creciendo",
   "Fruit trees planted near the camp: a stone set in the ground now, a crop in years.": "Frutales plantados junto al campamento: un hueso en la tierra hoy, una cosecha dentro de años.",
+  "Stone boiling": "Cocer con piedras",
+  "Stones heated in the fire and dropped into a hide of water, with the bones that nobody was eating. A broth: the first food made of what a carcass used to leave behind.": "Piedras calentadas en el fuego y echadas en una piel con agua, junto con los huesos que nadie se comía. Un caldo: la primera comida hecha con lo que una res dejaba atrás.",
+  "was roasting with a heap of cleaned bones beside the hearth and wondered what was left in them": "asaba con un montón de huesos limpios junto al hogar y se preguntó qué quedaba en ellos",
+  "dropped a hot stone from the fire into a hide of water and watched it boil": "echó una piedra caliente del fuego en una piel con agua y la vio hervir",
+  "tired of roast and tried the fire’s hottest stones in a hide full of water": "se cansó del asado y probó las piedras más calientes del fuego en una piel llena de agua",
+  "Bones boiled with hot stones into a broth: food made of what a carcass used to leave behind.": "Huesos hervidos con piedras calientes hasta hacer un caldo: comida hecha con lo que una res dejaba atrás.",
+  "Broth": "Caldo",
 };

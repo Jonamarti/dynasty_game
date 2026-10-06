@@ -1541,6 +1541,8 @@ falla). **Coste declarado:** ≤ 3 puntos.
 `m15: la red se abre y no se mueve`; `m15: caldo, torta, lanza endurecida y
 honda`.
 
+**Avance del 2026-10-06:** `stone_boiling` hecho (`m15: caldo — hervir con piedras`): nodo `craft` (Paleolítico superior; `cooking`, `leatherwork`), receta `broth` en la hoguera (2 huesos → 1 caldo), ítem `broth` añadido al final de `Item.ts`, y la prueba del primer caldo siembra la creencia `eat:broth`. Cocina sigue sin abrirse (un solo nodo; se abre con `flatbread`). Los siguientes nodos van en commits propios. Detalle, medidas y dudas en [m15_phase13_subwebs.md](m15_phase13_subwebs.md).
+
 ## Fase 14 — La ropa por capas (nota 1; decisión 8)
 
 **Objetivo.** «No toda la ropa es igual.» Una capa de piel pide piel y una

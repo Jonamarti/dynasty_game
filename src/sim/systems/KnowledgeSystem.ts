@@ -584,6 +584,19 @@ export class KnowledgeSystem {
       person.beliefs.learn('eat:roast_meat', ITEMS.meat!.nutrition + 10, 0.3, 'own', ctx.tick);
       person.beliefs.learn('eat:roast_fish', ITEMS.fish!.nutrition + 8, 0.3, 'own', ctx.tick);
     }
+    // A craft that makes food is proven by tasting the first of it, the same
+    // evidence `cooking` records above, so the food scorer has a belief to read
+    // and `shareTechBeliefs` something to pass on. Craft nodes only: the other
+    // food recipes have never needed it and are left exactly as they were.
+    if (tierOf(idea.tech) === 'craft') {
+      for (const recipe of Object.values(RECIPES)) {
+        if (recipe.tech !== idea.tech) continue;
+        for (const itemId of Object.keys(recipe.output)) {
+          const nutrition = ITEMS[itemId]?.nutrition ?? 0;
+          if (nutrition > 0) person.beliefs.learn('eat:' + itemId, nutrition, 0.3, 'own', ctx.tick);
+        }
+      }
+    }
     person.techLevel.set(idea.tech, 0);
     idea.stage = 'proven';
     // Insight is spent proving it. What refills it from here raises the level
