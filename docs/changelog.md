@@ -1,3 +1,19 @@
+## 2026-10-06 — M15 fase 32c: crecer o menguar y capacidad de banda por estación (`PeopleDemography`)
+
+Segundo mecanismo del nivel 2. Primero se **midió** (`tools/people-calibrate.ts`: `lean`, `craft` y `lean` con el kit
+de forrajeo, 3 semillas, por estación: raciones de comida por día de la comarca, población media, días de hambre
+sin alivio y fracción de hambrientos) y de eso salió una curva monótona `s` (raciones por persona) a capacidad
+(`PeopleCapacity.ts`). El modelo no inventa coeficientes: la inanición es la probabilidad de una racha de 8 días
+sin comida (medida en 32b) con esa capacidad; la vejez es la función de `LifeSystem` (ahora exportada,
+`oldAgeChancePerDay`, y con `LIFESPAN_*` en `Person.ts`; misma aritmética, juego bit-idéntico, suite verde);
+los nacimientos son la natalidad medida en `craft`, escalada por el hambre. `bandCapacityOf(pueblo, región, estación)`
+da el `BandCapacity` de `CompactIntake` para cualquier estación, que era la entrada que le faltaba a 32b.
+Correspondencia en semillas nuevas, con tolerancias escritas antes: **`craft` pasa** (capacidad 4/4, población 0,96x,
+natalidad) y **`lean` no** (población 11,3 frente a 1,3; natalidad 0,74 frente a 0,98; capacidad 3/4, falla el otoño
+por 0,19). La primera medida fue peor por un fallo mío (el eje de la curva era el cociente de los adultos y el modelo
+usa el de todos); se corrigió el eje, no las tolerancias. No se declara correspondencia y `peoples-match-bands`
+queda pendiente de medición diferida. Nada de `Simulation` lo llama. Doc: `m15_phase32c_peoples.md` sec. 2.
+
 ## 2026-10-06 — M15 fase 32c: estructura de un pueblo (`PeopleSim`)
 
 Primer mecanismo del nivel 2. `src/sim/world/PeopleSim.ts`: un pueblo tiene cohortes por edad y

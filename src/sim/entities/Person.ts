@@ -161,6 +161,9 @@ export interface ResumedOrder {
 export const DAYS_PER_YEAR = 80;
 
 /** Below this a person is a child: they cannot marry, work or be held to a deed. */
+/** Lifespan of a person is drawn from this (years); read by `PeopleDemography` so the aggregate and the individual share it. */
+export const LIFESPAN_MEAN_YEARS = 64;
+export const LIFESPAN_SD_YEARS = 9;
 export const ADULT_YEARS = 14;
 /** Above this, skills start to fade and the years begin to tell. */
 export const ELDER_YEARS = 50;
@@ -924,7 +927,7 @@ export class Person {
     // a second generation, whatever else is working.
     this.age = rng.range(16, 32) * this.daysPerYear;
     // Most people who reach adulthood see their sixties; a few see much more.
-    this.lifespanDays = rng.gaussian(64, 9) * this.daysPerYear;
+    this.lifespanDays = rng.gaussian(LIFESPAN_MEAN_YEARS, LIFESPAN_SD_YEARS) * this.daysPerYear;
     this.thinkOffset = this.id;
     this.memory = new Memory(this.id);
 

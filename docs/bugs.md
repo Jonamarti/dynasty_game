@@ -1,3 +1,20 @@
+## M15 fase 32c: `PeopleSim` no reproduce el colapso de `lean` (2026-10-06)
+
+- **`lean`: el detallado colapsa a ~1 persona y el modelo de pueblo se queda en ~11** (semillas nuevas `delta,eps,zeta`:
+  1,3 frente a 11,3, razón 8,5, T2 falla; natalidad 0,98 frente a 0,74, T4 falla; capacidad de otoño falla por 0,19).
+  Causa **sin confirmar**; hipótesis: la oferta medida (raciones/día) depende de cuánta gente forrajea, y el modelo la
+  mantiene fija; y no hay colapso de banda pequeña (sin pareja, cuidados ni enseñanza). Hasta resolverlo, el pueblo
+  sobreestima la supervivencia en régimen de escasez. `craft` (régimen sano) sí pasa.
+- **Solo se midió un conjunto de técnicas** (el kit de forrajeo, x1,24, tres semillas, confundido con el efecto de
+  población). Agricultura, pastoreo, almacén y recipientes cuentan 1: conservador, no un hallazgo.
+- **Sin mortalidad infantil propia, frío, salud ni guerra/enfermedad**: `DemographyEnv.losses` es un enganche que nada
+  escribe. La cohorte 60+ se evalúa a los 62 años; la inanición por encima de `hungryZero` 0,81 es extrapolación.
+- **No se midió** si `bandCapacityOf` arregla el cruce `lean` otoño a invierno del compacto de 32b (la medida de 45 s por
+  semilla no se corrió). Y `peoples-match-bands` (20 semillas, +-15 %) queda pendiente de medición diferida.
+- **Instrumento**: la herramienta de correspondencia fundaba pueblos con técnicas sin sus requisitos (`craft` da
+  `hafting` y `spear` sin `cordage`); `closeUnderRequires` lo resuelve. El juego detallado acepta ese conjunto no cerrado
+  (los fundadores de `craft` saben `hafting` sin su requisito): se anota, no se toca.
+
 ## M15 fase 32b-3: límites de la demografía compacta (2026-10-06)
 
 - **El recién nacido en el compacto no tiene registro**: `onBirth` lo recibe, pero nadie le da

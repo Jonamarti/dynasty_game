@@ -41,6 +41,21 @@ function birthSpacingDays(mother: Person): number {
 /** Skill lost per day past elderhood, as a fraction of the current level. */
 const ELDER_SKILL_DECAY = 0.0012;
 
+/** Share of its lifespan after which a person can die of old age. */
+export const OLD_AGE_ONSET = 0.85;
+
+/**
+ * The chance of dying of old age on one day: zero before `OLD_AGE_ONSET` of the lifespan, then
+ * `0.002 * overdue_years^2` (x1.8 when frail), capped at one half. A function so that the
+ * aggregate model of a people (`world/PeopleDemography.ts`) integrates the very same hazard
+ * the individual rolls, instead of a second copy that could drift.
+ */
+export function oldAgeChancePerDay(ageDays: number, lifespanDays: number, daysPerYear: number, frail: boolean): number {
+  if (ageDays < lifespanDays * OLD_AGE_ONSET) return 0;
+  const overdue = (ageDays - lifespanDays * OLD_AGE_ONSET) / daysPerYear;
+  return Math.min(0.5, 0.002 * overdue * overdue * (frail ? 1.8 : 1));
+}
+
 export interface LifeContext {
   rng: RNG;
   /**
@@ -172,11 +187,9 @@ export class LifeSystem {
    * than being a cliff, so a household cannot time a succession to the day.
    */
   private checkMortality(person: Person, ctx: LifeContext): void {
-    if (person.age < person.lifespanDays * 0.85) return;
+    if (person.age < person.lifespanDays * OLD_AGE_ONSET) return;
 
-    const overdue = (person.age - person.lifespanDays * 0.85) / person.daysPerYear;
-    const frailty = person.health < 50 ? 1.8 : 1;
-    const chance = Math.min(0.5, 0.002 * overdue * overdue * frailty);
+    const chance = oldAgeChancePerDay(person.age, person.lifespanDays, person.daysPerYear, person.health < 50);
 
     if (ctx.rng.chance(chance)) {
       ctx.onDeath(person, 'old age');

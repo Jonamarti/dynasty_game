@@ -3255,6 +3255,14 @@ funden en su pueblo sin perder población ni técnicas.
 (bitset sobre `TECHS` con los mismos `requires`), cultura, organización derivada, relaciones de un solo
 dueño, stream derivado de la semilla y actualización por número de paso; inerte. [Detalle](m15_phase32c_peoples.md).
 
+**Avance del 2026-10-06 (32c-2, crecer o menguar):** `PeopleCapacity.ts` + `PeopleDemography.ts`: cohortes que nacen y mueren
+con las tasas medidas (`tools/people-calibrate.ts`), capacidad de carga = raciones por comarca x técnicas (solo
+medido el kit de forrajeo, x1,24), inanición derivada de una racha de 8 días sin comida, vejez con la misma
+función que `LifeSystem`, y `bandCapacityOf` (capacidad de banda para cualquier estación). Correspondencia en
+semillas fuera de la curva, tolerancias declaradas antes: `craft` pasa T1-T4; `lean` falla T2 (11,3 frente a 1,3) y
+T4 y T1 pasa 3 de 4. No se declara correspondencia; `peoples-match-bands` pendiente de medición diferida.
+[Detalle](m15_phase32c_peoples.md).
+
 **Puertas**, encadenadas:
 
 - `peoples-match-bands`: el mismo escenario, dos años en nivel 1 y dos en nivel

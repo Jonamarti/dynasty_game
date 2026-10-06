@@ -239,6 +239,9 @@ No se promete que una aglomeración de 300 visibles cueste lo mismo que 30.
    Avance 2026-10-06: `src/sim/world/PeopleSim.ts` (estructura de un pueblo: cohortes por
    edad y sexo, técnicas como bitset sobre `TECHS`, cultura, organización derivada, relaciones
    de un solo dueño, stream derivado y actualización estacional por número de paso); inerte.
+   Crecer o menguar (2026-10-06): nacimientos y muertes por cohorte con las tasas medidas, capacidad
+   de carga por región x técnicas y `bandCapacityOf` (la capacidad de banda por estación que pedía el compacto);
+   reproduce `craft` (T1-T4) y **no** `lean` (colapso a ~1 frente a ~11 del modelo).
    Detalle y medidas en [m15_phase32c_peoples.md](m15_phase32c_peoples.md).
 5. **32, integración y coste:** cohortes y perfil de las transiciones; separación
    de dibujo y pasos para aceleración. Guardado definitivo en fase 33.

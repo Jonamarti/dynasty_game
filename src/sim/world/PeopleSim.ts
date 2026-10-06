@@ -68,6 +68,14 @@ export function seasonOffset(worldSeed: string | number, peopleId: number, steps
 export const TECH_LIST_HASH = hashString(TECHS.join(','));
 const TECH_INDEX: ReadonlyMap<string, number> = new Map(TECHS.map((tech, i) => [tech, i]));
 
+/** `wanted` plus everything it requires, in `TECHS` order: the closed set a founding people may be handed. */
+export function closeUnderRequires(wanted: Iterable<Tech>): Tech[] {
+  const out = new Set<Tech>();
+  const visit = (t: Tech) => { if (out.has(t)) return; out.add(t); TECH[t].requires.forEach(visit); };
+  for (const t of wanted) visit(t);
+  return TECHS.filter(t => out.has(t));
+}
+
 export interface TechSetRecord { readonly count: number; readonly hash: number; readonly words: readonly number[] }
 
 /**
