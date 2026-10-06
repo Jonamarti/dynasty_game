@@ -2483,7 +2483,8 @@ test('a phone viewport keeps the HUD reachable and touch pans the map', async ({
   await expect(page.locator('.hud-help-touch')).toBeVisible();
 
   const mobileTools = page.locator('.hud-mobile-tool');
-  await expect(mobileTools).toHaveCount(4);
+  // Centre, Tech, Family, Tribe and, since M15 phase 31, World (the globe).
+  await expect(mobileTools).toHaveCount(5);
   await page.locator('.hud-mobile-tool', { hasText: 'Tech' }).click();
   await expect(page.locator('.techweb')).toBeVisible();
   await page.locator('.techweb-close').click();
@@ -2493,6 +2494,12 @@ test('a phone viewport keeps the HUD reachable and touch pans the map', async ({
   await page.locator('.hud-mobile-tool', { hasText: 'Tribe' }).click();
   await expect(page.locator('.tribegraph')).toBeVisible();
   await page.locator('.tribegraph-close').click();
+  await page.locator('.hud-mobile-tool', { hasText: 'World' }).click();
+  await expect(page.locator('.worldmap')).toBeVisible();
+  await page.locator('.worldmap-close').click();
+  await expect(page.locator('.worldmap')).toBeHidden();
+  // The round desktop button gives way to the tool row on a phone.
+  await expect(page.locator('.hud-globe')).toBeHidden();
 
   const before = await page.evaluate(() => {
     const camera = (window as never as { __dynasty: { camera: {

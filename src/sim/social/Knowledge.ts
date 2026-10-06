@@ -26,6 +26,7 @@ import type { MemoryEntry } from './Memory.ts';
 import type { PropertyUse } from './Property.ts';
 import type { LifeEvent } from './SocialSystem.ts';
 import { describeEvent } from './Events.ts';
+import { comarcaX, comarcaY } from './WorldKnowledge.ts';
 import { t, genderOf } from '../../i18n/i18n.ts';
 
 /** How well the observer knows the subject. */
@@ -526,4 +527,57 @@ export function corpseIdentity(
   const close = relationships.kinship(observer.id, corpse.person.id) > 0 ||
     (rel !== null && rel.familiarity >= CLOSE_AT);
   return close ? { identified: true, name: known.displayName } : { identified: false, name: '' };
+}
+
+// --- the world ----------------------------------------------------------------
+
+/**
+ * What one person knows of one comarca of the globe (M15 phase 31): how they
+ * know it, when, and which peoples they met there. A comarca they know nothing
+ * of has no `ComarcaLore` at all: `at` answers `null`, and the globe says
+ * nothing about it.
+ */
+export interface ComarcaLore {
+  source: 'seen' | 'told';
+  day: number;
+  peoples: { bandId: number; day: number }[];
+}
+
+export interface WorldLore {
+  /** Moves only when the map does, so a panel can redraw only then. */
+  revision: number;
+  size: number;
+  at(cx: number, cy: number): ComarcaLore | null;
+  each(visit: (cx: number, cy: number, lore: ComarcaLore) => void): void;
+}
+
+const NO_LORE: WorldLore = { revision: 0, size: 0, at: () => null, each: () => {} };
+
+/**
+ * The globe as `observer` knows it. The one door the world map reads through,
+ * for the reason every panel reads through this file: what somebody knows of
+ * the world is as private as what they know of a stranger. Anyone with no
+ * `WorldKnowledge` (a classic world, or nobody) knows nothing of it.
+ */
+export function knowledgeOfWorld(observer: Person | null): WorldLore {
+  const known = observer?.worldKnowledge;
+  if (!known) return NO_LORE;
+  const lore = (entry: { source: 'seen' | 'told'; day: number; peoples?: Record<number, number> }): ComarcaLore => ({
+    source: entry.source, day: entry.day,
+    // Band ids ascending, so the card lists them in the same order on every run.
+    peoples: Object.entries(entry.peoples ?? {})
+      .map(([bandId, day]) => ({ bandId: Number(bandId), day }))
+      .sort((a, b) => a.bandId - b.bandId),
+  });
+  return {
+    revision: known.revision,
+    size: known.size,
+    at(cx, cy) {
+      const entry = known.entry(cx, cy);
+      return entry ? lore(entry) : null;
+    },
+    each(visit) {
+      for (const [key, entry] of known.entries()) visit(comarcaX(key), comarcaY(key), lore(entry));
+    },
+  };
 }

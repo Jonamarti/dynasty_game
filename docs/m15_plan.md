@@ -3114,6 +3114,11 @@ conocidos, de oídas y desconocidos, todo por `Knowledge.ts`, y
 por persona, comarcas vistas y de oídas, con los pueblos encontrados; se escribe
 al ver, al conversar y al nacer; ausente en el mundo clásico. [Contrato](m15_phase31_world_knowledge.md).
 
+**Avance del 2026-10-06 (31b):** el globo hecho (`m15: el globo`): icono, tecla
+`O`, `WorldMapView` con dos zooms, tres estados (vista, de oídas, desconocida),
+e2e y capturas. `?world=random` es la única puerta hasta el ajuste de la fase 33.
+[Detalle](m15_phase31_world_knowledge.md).
+
 ## Fase 32 — Simulación por visión y modelos compactos de bandas y pueblos
 
 **Cambio aprobado del 2026-10-03:** incluye LOD dentro de la comarca. El

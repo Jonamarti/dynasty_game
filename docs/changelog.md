@@ -1,3 +1,19 @@
+## 2026-10-06 — M15 fase 31b: el globo (`WorldMapView`)
+
+Icono de globo abajo a la izquierda (y `O`; en móvil, «Mundo» en la barra
+superior) que abre el mundo tal como lo conoce *tu personaje*: regiones y
+comarcas vistas (con día y pueblos encontrados), de oídas (apagadas, borde
+discontinuo, sin pueblos) o desconocidas (oscuras, sin revelar ni el terreno).
+Dos zooms: mundo y región. Todo por `Knowledge.ts` (`knowledgeOfWorld`),
+overlay con su `[hidden]` y digest, textos por `t()` con su español
+(`es/world.ts`). La isla clásica no tiene globo y lo dice. Mientras no llegue el
+ajuste de partida (fase 33), `?world=random` arranca sobre un globo aleatorio
+(`findGlobeStart`); el clásico sigue por defecto. Un defecto visto solo en la
+primera captura —el lienzo estirado desalineaba clic y celda— se corrigió
+antes de commitear. Tres e2e nuevos (`e2e/globe.spec.ts`, en `npm run e2e`).
+Capturas: `artifacts/screenshots/m15-phase31-globe-2026-10-06/`.
+[Detalle](m15_phase31_world_knowledge.md).
+
 ## 2026-10-06 — M15 fase 31a: `WorldKnowledge`, qué comarcas conoce cada persona
 
 Primera mitad del globo (M14 fase 13c): por persona, qué comarcas del mundo ha

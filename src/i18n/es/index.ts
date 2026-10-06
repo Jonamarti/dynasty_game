@@ -12,6 +12,7 @@ import { ES_POLITY } from './polity.ts';
 import { ES_SIM } from './sim.ts';
 import { ES_TECH } from './tech.ts';
 import { ES_UI } from './ui.ts';
+import { ES_WORLD } from './world.ts';
 
 export const ES_TABLES: Record<string, Record<string, string>> = {
   actions: ES_ACTIONS,
@@ -21,6 +22,7 @@ export const ES_TABLES: Record<string, Record<string, string>> = {
   sim: ES_SIM,
   tech: ES_TECH,
   ui: ES_UI,
+  world: ES_WORLD,
 };
 
 export const ES: Record<string, string> = Object.assign({}, ...Object.values(ES_TABLES));

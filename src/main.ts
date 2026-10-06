@@ -9,6 +9,8 @@
  */
 import './style.css';
 import { WorldState } from './sim/world/WorldState.ts';
+import { randomWorldGeography } from './sim/world/WorldGeography.ts';
+import { findGlobeStart } from './sim/world/WorldTerrain.ts';
 import { Camera } from './render/Camera.ts';
 import { Renderer, hitRadiusOf, nodeIsHidden, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
 import { ArtAtlas } from './render/ArtAtlas.ts';
@@ -22,6 +24,7 @@ import { VerdictOverlay } from './ui/VerdictOverlay.ts';
 import { NewGame } from './ui/NewGame.ts';
 import { SuccessionOverlay } from './ui/Succession.ts';
 import { TechWebOverlay } from './ui/TechWeb.ts';
+import { WorldMapOverlay } from './ui/WorldMapView.ts';
 import { FamilyTreeOverlay } from './ui/FamilyTree.ts';
 import { TribeGraphOverlay } from './ui/TribeGraph.ts';
 import { PauseMenu } from './ui/PauseMenu.ts';
@@ -98,7 +101,22 @@ const profileHumans = import.meta.env.DEV && params.get('skipIntro') === '1'
   ? Number(params.get('profileHumans')) : 0;
 const profilePopulation = Number.isInteger(profileHumans) && profileHumans >= 2 && profileHumans <= 1000
   ? { population: { bands: 1, peoplePerBand: profileHumans } } : {};
-let worldState = new WorldState({ ...configFrom(settings), ...profilePopulation, seed });
+/**
+ * `?world=random` starts on a seeded globe instead of the classic island, which
+ * has no globe to show. The browser's own world setting comes with phase 33;
+ * until then this is the one door into a world with a map (M15 phase 31), and
+ * the classic island stays the default for every player and every spec.
+ */
+const GLOBE_SPAN = 4;
+function makeWorldState(overrides: Record<string, unknown>): WorldState {
+  const config = { ...configFrom(settings), ...overrides, seed };
+  if (params.get('world') !== 'random') return new WorldState(config);
+  const geography = randomWorldGeography(seed);
+  const start = findGlobeStart(geography, GLOBE_SPAN);
+  if (!start) return new WorldState(config);
+  return new WorldState(config, { geography, start, comarcasWide: GLOBE_SPAN, comarcasHigh: GLOBE_SPAN });
+}
+let worldState = makeWorldState(profilePopulation);
 let sim = worldState.current;
 
 /**
@@ -165,7 +183,7 @@ function worldWouldDiffer(): boolean {
  * One mechanism each, for two situations that are genuinely different.
  */
 function rebuildBeforeStart(): void {
-  worldState = new WorldState({ ...configFrom(settings), seed });
+  worldState = makeWorldState({});
   sim = worldState.current;
   player = sim.possessFirst();
   renderer.setSim(sim);
@@ -231,6 +249,8 @@ const techWeb = new TechWebOverlay(document.body);
 // them, so opening a second cannot leave two stacked on screen at once.
 const familyTree = new FamilyTreeOverlay(document.body);
 const tribeGraph = new TribeGraphOverlay(document.body);
+// The globe: the fourth full-screen overlay, behind the same single door.
+const worldMap = new WorldMapOverlay(document.body);
 
 /**
  * Whether anything was on screen at the instant Escape was pressed.
@@ -251,7 +271,7 @@ window.addEventListener('keydown', event => {
 
 /** True while any of the three full-screen graphs is open. */
 function graphOpen(): boolean {
-  return techWeb.isOpen || familyTree.isOpen || tribeGraph.isOpen;
+  return techWeb.isOpen || familyTree.isOpen || tribeGraph.isOpen || worldMap.isOpen;
 }
 
 /**
@@ -262,13 +282,16 @@ function graphOpen(): boolean {
  * the tech web was already up would otherwise leave both in the DOM, one
  * painted over the other.
  */
-function openGraph(which: 'tech' | 'family' | 'tribe', subject: Person | null): void {
+function openGraph(which: 'tech' | 'family' | 'tribe' | 'globe', subject: Person | null): void {
+  if (which !== 'globe' && worldMap.isOpen) worldMap.close();
   if (which !== 'tech' && techWeb.isOpen) techWeb.close();
   if (which !== 'family' && familyTree.isOpen) familyTree.close();
   if (which !== 'tribe' && tribeGraph.isOpen) tribeGraph.close();
   if (which === 'tech') techWeb.toggle(sim, subject);
   if (which === 'family') familyTree.toggle(sim, subject);
   if (which === 'tribe') tribeGraph.toggle(sim, subject);
+  // The globe is the player's own character's knowledge, whoever is selected.
+  if (which === 'globe') worldMap.toggle(sim, worldState.geography);
 }
 
 // On the body for the same reason as the radial menu: the HUD rebuilds its own
@@ -414,6 +437,7 @@ const hud = new Hud(hudRoot, {
     'family', selected?.kind === 'person' ? selected.person : sim.player),
   onOpenTribe: () => openGraph(
     'tribe', selected?.kind === 'person' ? selected.person : sim.player),
+  onOpenGlobe: () => openGraph('globe', sim.player),
   onCommand: person => {
     commanding = commanding?.id === person?.id ? null : person;
     if (commanding) {
@@ -766,6 +790,7 @@ window.addEventListener('keydown', event => {
     if (techWeb.isOpen) techWeb.close();
     if (familyTree.isOpen) familyTree.close();
     if (tribeGraph.isOpen) tribeGraph.close();
+    if (worldMap.isOpen) worldMap.close();
 
     // Each of these *consumes* the key. That is a deliberate change: Escape
     // used to clear `commanding` even while it was also closing a graph, which
@@ -809,6 +834,10 @@ window.addEventListener('keydown', event => {
   if (key === 'g') {
     const subject = selected?.kind === 'person' ? selected.person : sim.player;
     openGraph('tech', subject);
+    return;
+  }
+  if (key === 'o') {
+    openGraph('globe', sim.player);
     return;
   }
   if (key === 'k') {
@@ -2251,6 +2280,7 @@ function frame(now: number): void {
   techWeb.update(sim);
   familyTree.update(sim);
   tribeGraph.update(sim);
+  worldMap.update(sim);
   reportInterruptions();
   reportWatched();
   reportHelpCalls();

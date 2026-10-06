@@ -1,3 +1,20 @@
+## M15 fase 31: lo que el globo no hace todavía (2026-10-06)
+
+- **El navegador no tiene ajuste de mundo.** El globo solo existe con
+  `?world=random`; la partida normal es la isla clásica y su globo dice que no
+  hay mapa. El ajuste es de la fase 33.
+- **Nadie trae el mapa de fuera.** `WorldKnowledge.tellAllTo` es la API del canal
+  «llega alguien de otra comarca» (matrimonio, captura, explorador que vuelve),
+  pero no tiene llamador: sin salir de la comarca (fase 34) no hay forastero.
+- **Sin «fauna vista».** El plan de origen la nombra en la comarca conocida; no
+  hay lector que la use, y un campo declarado e inerte es lo que la regla de la
+  casa prohíbe.
+- **Mapa local de 4×4 comarcas.** Con una comarca por mapa el globo mostraría un
+  punto; el tamaño es provisional hasta que la fase 33 decida cuánto mundo
+  cabe en una partida.
+- **Táctil solo emulado.** Verificado con viewport de 390 px y toque emulado
+  de Playwright; no en un dispositivo real.
+
 ## M15 fase 13d: nadie sube a una sub-red en `hearths` ni en `craft` (2026-10-06)
 
 `sub-webs-are-climbed` falla en los dos escenarios: tras 16.000 pasos (1,67

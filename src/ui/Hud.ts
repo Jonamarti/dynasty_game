@@ -120,6 +120,8 @@ export interface HudCallbacks {
   onOpenTech: () => void;
   onOpenFamily: () => void;
   onOpenTribe: () => void;
+  /** The globe (M15 phase 31): the world as the player's character knows it. */
+  onOpenGlobe: () => void;
   /**
    * A different answer to "how much does your character do for itself?".
    *
@@ -371,6 +373,7 @@ export class Hud {
       mobileTool(t('Tech'), t('Technology web'), () => this.callbacks.onOpenTech()),
       mobileTool(t('Family'), t('Family tree'), () => this.callbacks.onOpenFamily()),
       mobileTool(t('Tribe'), t('Tribe graph'), () => this.callbacks.onOpenTribe()),
+      mobileTool('◍ ' + t('World'), t('The world as you know it (O)'), () => this.callbacks.onOpenGlobe()),
     );
 
     topBar.append(
@@ -415,7 +418,7 @@ export class Hud {
         ['WASD', t('walk')], [t('drag'), t('pan')], ['F', t('re-centre')],
         [t('click'), t('inspect')], [t('right-click'), t('actions')],
         ['B', t('build')], ['M', t('make')], ['C', t('command')],
-        ['G', t('tech web')], ['K', t('family tree')], ['T', t('tribe graph')],
+        ['G', t('tech web')], ['K', t('family tree')], ['T', t('tribe graph')], ['O', t('world')],
         ['V', t('toggle fog of war')],
         ['R', t('who steers')],
         ['P', t('fold panel')], ['H', t('hide overlay')], [t('space'), t('pause')],
@@ -425,8 +428,18 @@ export class Hud {
         [t('Tap'), t('inspect')], [t('hold'), t('actions')], [t('drag'), t('pan')],
       ].map(([key, what]) => '<b>' + key + '</b> ' + what).join(' &middot; ') + '</span>';
 
+    // The globe, bottom left above the help line (the owner's placement). On a
+    // phone the same command is in the top bar's tool row instead.
+    const globe = document.createElement('button');
+    globe.className = 'hud-globe';
+    globe.type = 'button';
+    globe.textContent = '◍';
+    globe.title = t('The world as you know it (O)');
+    globe.setAttribute('aria-label', t('The world as you know it (O)'));
+    globe.onclick = () => this.callbacks.onOpenGlobe();
+
     this.root.append(
-      topBar, this.panelEl, this.buildBarEl, this.craftBarEl, this.commandBarEl, help);
+      topBar, this.panelEl, this.buildBarEl, this.craftBarEl, this.commandBarEl, help, globe);
   }
 
   /**
