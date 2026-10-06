@@ -1,3 +1,19 @@
+## 2026-10-06 — M15 fase 32b: `RateWatch`, las tasas del detallado se miden antes de modelarse
+
+Hasta hoy el compacto no comía ni bebía y una persona moría en ~8 días; darle una tasa
+inventada habría regalado o quitado supervivencia (lo que §2 de `m15_simulation_lod.md`
+prohíbe). `compact/CompactCalibration.ts` (`RateWatch`) y `tools/compact-rates.ts` leen
+un `Simulation` sin engancharlo ni sacar números de ningún stream y publican, por estación,
+grupo (lactante/niño/adulto) y hambre/sed al empezar el día, la distribución del alivio
+diario como fracción de la deriva; además agenda, natalidad por mujer fértil-año y
+mortalidad por edad. Medido en `lean` y `craft`, 3 semillas cada uno (4.088 y 6.042
+personas-día): el balance comida/deriva de adultos va de 0,48 a 1,33 y la mortalidad de
+~0,02 a ~1,2 por persona-año según el escenario, así que no hay tasa única y el
+compacto recibirá una medida agregada de banda. Cifras y límites en la sec. 4 de
+`m15_phase32b_compact.md`. Tests (`compact-calibration.test.ts`): el instrumento es de
+solo lectura (estado idéntico con y sin él) y un control negativo (mundo donde nadie
+puede comer ni beber) lee alivio ~0. Nada de `Simulation` lo llama.
+
 ## 2026-10-06 — M15 fase 32b: `CompactBody.advance`, el cuerpo cerrado a una fecha
 
 Tercer mecanismo, inerte. Avanza una persona compacta a una fecha ejecutando el

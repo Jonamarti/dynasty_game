@@ -224,7 +224,10 @@ No se promete que una aglomeración de 300 visibles cueste lo mismo que 30.
    eventos y ledger de transacciones, persona compacta con autoridad única, avance
    del cuerpo cerrado sin ingesta ni producción); estado en
    [m15_phase32b_compact.md](m15_phase32b_compact.md). Todavía no se llaman desde
-   `Simulation.step()`.
+   `Simulation.step()`. Tasas medidas del detallado (alivio de hambre/sed por
+   persona-día, condicionado a la necesidad, agenda, natalidad y mortalidad por
+   edad; `RateWatch`, sec. 4 del doc de 32b): no hay una tasa única, `lean` y
+   `craft` difieren x2-3 en comida/deriva y x50 en mortalidad.
 3. **32b, activación por visión:** conjunto exacto de activos, puente entre
    niveles, viajes, órdenes e interacciones; integración del foco desde main.
 4. **32c, pueblos:** demografía, economía, avance técnico y contactos agregados,

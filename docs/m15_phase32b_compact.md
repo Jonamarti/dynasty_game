@@ -113,3 +113,75 @@ Tests (`compact-advance.test.ts`): igualdad de registro completo con el reloj
 detallado manejado tick a tick; invariancia a cortes y a ida y vuelta JSON; fecha
 de muerte y no resurrección; negativos (tasa de hambre distinta, un trozo de
 tiempo saltado, fecha rebobinada).
+
+## 4. Medir antes de modelar: `RateWatch` y `tools/compact-rates.ts` (commit «tasas medidas»)
+
+2026-10-06. Instrumento determinista y de solo lectura (`compact/CompactCalibration.ts`,
+CLI `npx vite-node tools/compact-rates.ts -- <escenario> <semillas> [pasos] [out.json]`).
+Lee el estado tras cada `sim.step()`; no engancha nada del juego ni saca números de
+ningún stream (un mundo observado y otro sin observar quedan idénticos, test).
+
+**Qué mide.** Para cada persona-día completo: (a) el *alivio* efectivo de hambre y sed
+dividido por la deriva del día (`alivio = necesidad_antes + deriva − necesidad_después`
+por tick; deriva = `hungerRate` × factor de lactancia/lactante, y `thirstRate` ×
+esfuerzo × calor); 1 es «se sostiene», 0 «no obtuvo nada». Se condiciona a la necesidad
+al empezar el día (4 intervalos de 25), porque quien tiene hambre come más y una media
+incondicional alimentaría a un hambriento compacto como a uno saciado. (b) los ticks por
+agenda (`goalOf`) y los de `drink`. (c) personas-año y muertes por edad y causa. (d)
+nacimientos por mujer fértil-año (16-45) y por estación. Se publica la distribución
+(cuantiles 0..100 % en pasos de 5), no solo la media: la cola mala (días sin comer,
+que producen el 65 % de las muertes de la línea de 32a) es justo lo que no se puede
+promediar.
+
+**Datos.** `lean` (24.000 pasos = 100 días ≈ 2,5 años de 40 días) y `craft` (16.000
+pasos), semillas `alpha,beta,gamma` de cada uno: 4.088 y 6.042 personas-día. Salidas
+completas en `artifacts/verification/m15-phase32b-rates-2026-10-06/` (local, ignorado
+por Git; lo que sigue es el registro versionado).
+
+| adultos, por estación | `lean` alivio/deriva (n) | `lean` comido nominal/deriva | `craft` comido nominal/deriva |
+|---|---:|---:|---:|
+| primavera | 0,42-0,89 (558) | 0,56 | 1,14 |
+| verano | 0,65-1,40 (800) | 0,97 | 1,32 |
+| otoño | 0,72-1,98 (674) | 1,21 | 1,33 |
+| invierno | 0,33-0,71 (592) | 0,48 | 1,26 |
+
+(el rango del alivio es el de los cuatro intervalos de hambre al empezar el día; la
+tabla completa con cuantiles está en el artefacto y en `MeasuredRates.ts` cuando se
+emite.) Lo que dice, sin adornar:
+
+- **No existe «la tasa»**. `lean` y `craft` difieren en el balance comida/deriva por un
+  factor de 2-3 en invierno y primavera, y en la mortalidad por un factor de ~50
+  (`lean`: 1,0-1,4 muertes por persona-año en casi todas las edades, 127 muertes en
+  ~104 personas-año, 86 por inanición; `craft`: 0,000-0,095, 4 muertes en ~152 personas-
+  año). Una tabla de intake única regalaría supervivencia a `lean` o se la quitaría a
+  `craft`: el compacto tiene que recibir, además de la tabla, una **medida agregada de lo
+  que la banda consigue** (`bandScale`, mecanismo 2).
+- La ingesta es **a golpes**: la distribución del alivio diario es bimodal (p5 y p50 en
+  0 en casi todos los intervalos de adultos y p95 en 2-4): un día sin comer y otro con
+  dos raciones. Con hambre alta (≥75) la mediana ya es ~1,0.
+- Lactantes: alivio ≈ 0,9-1,1 en todas partes (las tomas mantienen la deriva); no son
+  la fuente de la mortalidad infantil por esta vía, que empieza cuando la madre no come.
+- Agenda de adultos (`lean`/`craft`, verano): comida 0,31/0,29, construir 0,03/0,05,
+  cuidar 0,005/0,02, viajar 0,10/0,05, ocioso 0,55/0,59; beber (dentro de «ocioso» o
+  «viajar» según la acción) 0,046/0,059 del tiempo. Invierno: comida 0,125/0,20.
+  Niños: comida 0,04-0,24, viajar 0,18-0,27.
+- Natalidad: `lean` 0,763 nacimientos por mujer fértil-año (20 / 26,2); `craft` 0,954
+  (38 / 39,8). La línea congelada de 32a (`century`) daba 0,898 (574 mujer-años) y
+  `generations` 0,841: del mismo orden. Con 3 semillas y 26-40 mujer-años el intervalo
+  de cada una es de ±0,2, así que **no se distingue** de la línea 32a ni se afina más.
+- Mortalidad por edad: la de `craft` (sano) y la de `lean` (en colapso) no se parecen a la
+  línea 32a (`century`: <1 año 0,188 por cohorte, edad media al morir 14,9) porque cada
+  escenario es otro régimen; por eso la mortalidad no se calibra desde una tabla sino que
+  surge de las necesidades (mecanismos 2 y 3) y se **compara**.
+
+Límites declarados: tres semillas por escenario y dos escenarios baratos; el alivio
+usa la acción vista al final del paso anterior para el esfuerzo de la sed y la
+temperatura del tick actual; no modela el frío, el veneno ni otros ganchos de hambre
+más allá de lactancia y lactante (mueven el denominador unos pocos por ciento); el alivio
+que el suelo de cero tira no se cuenta (es lo correcto: el cuerpo no lo absorbió).
+Los intervalos de 8 estaciones × 3 grupos × 4 bins con pocas decenas de muestras se
+marcan `*` y el modelo compacto no los usa solos (mecanismo 2). **Producción** (cuántos
+frutos/presas por tick de trabajo en cada terreno) NO se midió: el alivio ya es lo
+que cada persona logró, repartido por la banda; separar «producción» de «reparto» exige
+un ledger de despensas que el detallado no publica. Se documenta como límite en lugar de
+inventar un rendimiento.

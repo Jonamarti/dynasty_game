@@ -3172,6 +3172,10 @@ Entregado: `CompactScheduler` (eventos por tick/fase/sujeto/id y ledger de
 transacciones idempotentes); `CompactPerson`/`CompactAuthority` (misma instancia,
 stream derivado, dueño único con epoch y rechazos nombrados); `CompactBody.advance`
 (cuerpo cerrado a una fecha con el mismo `NeedsSystem`, sin ingesta ni producción).
+**Avance 32b-2 (tasas, 2026-10-06):** `RateWatch` + `tools/compact-rates.ts` miden en
+el detallado alivio de hambre/sed por persona-día condicionado a la necesidad,
+agenda, natalidad y mortalidad por edad (`lean`/`craft`, 3 semillas); tabla en la
+sec. 4 de [m15_phase32b_compact.md](m15_phase32b_compact.md).
 **Pendiente de 32b-2:** ingesta, producción y demografía compactas con tasas
 medidas del modelo detallado (no inventadas) y, por tanto, el enchufe en
 `Simulation` y `lod-matches-detail`. Lista actualizada en
