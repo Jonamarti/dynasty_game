@@ -3942,6 +3942,15 @@ export class ActionSystem {
     // of the two holds a craft the other lacks, so it moves no stream until then.
     ctx.knowledge.conversationLesson(person, other, mode, ctx.tick, ctx.rng,
       (pupil, teacher) => ctx.relationships.opinion(pupil.id, teacher.id) / 100);
+    // A place is passed on the way a recipe is (M15 phase 31): each tells the
+    // other the freshest comarcas they have and the other has not. Draw-free;
+    // a classic world has no `worldKnowledge` and skips it.
+    if (mode !== 'greet' && person.worldKnowledge && other.worldKnowledge) {
+      const stories = CONVERSATION_MODES[mode].stories;
+      const toOther = person.worldKnowledge.tellTo(other.worldKnowledge, stories);
+      const toPerson = other.worldKnowledge.tellTo(person.worldKnowledge, stories);
+      if (toOther + toPerson > 0) telemetry.count('place_told', toOther + toPerson);
+    }
     if (person.householdId !== null && person.householdId === other.householdId) {
       person.mood.add('belonging', 2, 'talked with family', ctx.tick);
       other.mood.add('belonging', 2, 'talked with family', ctx.tick);

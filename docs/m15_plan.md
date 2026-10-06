@@ -3110,6 +3110,10 @@ conocidos, de oídas y desconocidos, todo por `Knowledge.ts`, y
   interfaz **el zoom de `FamilyTree` en el móvil** (`bugs.md`). El globo se
   diseña táctil desde el principio.
 
+**Avance del 2026-10-06 (31a):** `WorldKnowledge` hecho (`m15: WorldKnowledge`):
+por persona, comarcas vistas y de oídas, con los pueblos encontrados; se escribe
+al ver, al conversar y al nacer; ausente en el mundo clásico. [Contrato](m15_phase31_world_knowledge.md).
+
 ## Fase 32 — Simulación por visión y modelos compactos de bandas y pueblos
 
 **Cambio aprobado del 2026-10-03:** incluye LOD dentro de la comarca. El

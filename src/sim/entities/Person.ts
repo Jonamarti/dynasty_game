@@ -4,6 +4,7 @@
  * accident: it is what makes the world feel inhabited rather than staged.
  */
 import { SeasonLore } from '../knowledge/SeasonLore.ts';
+import type { WorldKnowledge } from '../social/WorldKnowledge.ts';
 import type { OpenInvestigation } from '../social/Investigation.ts';
 import type { Debt, Grievance } from '../social/Amends.ts';
 import type { Case } from '../social/Justice.ts';
@@ -367,6 +368,12 @@ export class Person {
    * phase 20. Learned only with plant lore; see `knowledge/SeasonLore.ts`.
    */
   seasonLore = new SeasonLore();
+  /**
+   * Which comarcas of the world this person knows of (M15 phase 31). `declare`,
+   * not an initialiser: only a world with a globe creates it, so a classic
+   * person has no such property at all and persists exactly as before.
+   */
+  declare worldKnowledge?: WorldKnowledge;
   placeMemoryStaticCell = -1;
   placeMemoryStaticDay = -1;
   /** Evidence accumulator for the current food gathering attempt. */

@@ -18,6 +18,7 @@ import { Memory } from '../social/Memory.ts';
 import { Mood } from '../core/Mood.ts';
 import { MacroBalance } from '../core/Macros.ts';
 import { SeasonLore } from '../knowledge/SeasonLore.ts';
+import { WorldKnowledge } from '../social/WorldKnowledge.ts';
 import { fromObjectGraph, registerGraphPrototype, toObjectGraph, type ObjectGraph } from './GraphRecords.ts';
 
 export const WORLD_OBJECT_RECORD_VERSION = 1 as const;
@@ -26,7 +27,7 @@ const classes: [string, Function][] = [
   ['ItemPile', ItemPile], ['Corpse', Corpse], ['Animal', Animal], ['Inscription', Inscription],
   ['Person', Person], ['Household', Household], ['Inventory', Inventory], ['Beliefs', Beliefs],
   ['PlaceMemory', PlaceMemory], ['SpatialHash', SpatialHash], ['Memory', Memory], ['Mood', Mood],
-  ['MacroBalance', MacroBalance], ['SeasonLore', SeasonLore],
+  ['MacroBalance', MacroBalance], ['SeasonLore', SeasonLore], ['WorldKnowledge', WorldKnowledge],
 ];
 for (const [tag, ctor] of classes) registerGraphPrototype(tag, ctor);
 

@@ -47,6 +47,7 @@ import {
 } from '../ai/Autonomy.ts';
 import { RelationshipGraph } from '../social/Relationships.ts';
 import { BandRelations } from '../social/BandRelations.ts';
+import { WorldKnowledge } from '../social/WorldKnowledge.ts';
 import { SocialSystem } from '../social/SocialSystem.ts';
 import { DEFAULT_NORMS, VARIABLE_NORMS, DEED_WEIGHT, type Norms, type EventType } from '../social/Events.ts';
 import { STRANGER_REGARD_MEAN, STRANGER_REGARD_SPREAD } from '../social/Restraint.ts';
@@ -122,6 +123,17 @@ interface RestoreConstruction {
   readonly state: CheckpointState;
 }
 
+export function worldFrameOf(start: GeographicStart): WorldFrame {
+  const wide = start.comarcasWide ?? 1;
+  const high = start.comarcasHigh ?? 1;
+  const map = start.geography.kind === 'legacyIsland' ? null : start.geography.map;
+  return {
+    originX: start.x - wide / 2, originY: start.y - high / 2,
+    comarcasWide: wide, comarcasHigh: high,
+    mapWidth: map?.width ?? 0, mapHeight: map?.height ?? 0,
+  };
+}
+
 /** Optional macro-map placement for inspection worlds. Populated starts wait
  * for phase 30's freshwater semantics; this is intentionally not a game start. */
 export interface GeographicStart {
@@ -132,6 +144,22 @@ export interface GeographicStart {
   /** Local map span in comarcas. Defaults to one by one. */
   comarcasWide?: number;
   comarcasHigh?: number;
+}
+
+/**
+ * Where this simulation's local map sits on the globe, in comarca units. Four
+ * numbers and the size of the globe: just enough to say which comarca a tile is
+ * in. The geography itself stays with `WorldState`, as it always has; this is
+ * the one fact the motor needs to write `WorldKnowledge` (M15 phase 31). Null
+ * in a classic world, which has no globe and therefore records nothing.
+ */
+export interface WorldFrame {
+  originX: number;
+  originY: number;
+  comarcasWide: number;
+  comarcasHigh: number;
+  mapWidth: number;
+  mapHeight: number;
 }
 
 /**
@@ -313,6 +341,8 @@ export class Simulation {
   readonly config: SimConfig;
   /** Present only during deterministic generation; checkpoints bake terrain/nodes. */
   private geographicStart: GeographicStart | null;
+  /** See `WorldFrame`. Set by construction, or by `WorldState.fromRestored`. */
+  worldFrame: WorldFrame | null = null;
   private localGeography: LocalGeographySource | null;
   readonly rng!: RNG;
   readonly world!: World;
@@ -630,6 +660,7 @@ export class Simulation {
     this.geographicStart = geographicStart ?? null;
     const localGeography = geographicStart ? this.makeLocalGeography(geographicStart) : undefined;
     this.localGeography = localGeography ?? null;
+    if (geographicStart) this.worldFrame = worldFrameOf(geographicStart);
     this.rng = new RNG(this.config.seed);
 
     // Fork order is part of the seed contract; do not reorder these.
@@ -1282,6 +1313,7 @@ export class Simulation {
       for (const person of founded.people) {
         person.placeMemory.configure(this.world.width, this.world.height, this.config.knowledge.placeMemoryPerKind);
         person.placeMemory.observe(band.homeX, band.homeY, this.config.knowledge.foundersKnowRadius, this.time.day);
+        this.observeWorld(person, band.homeX, band.homeY, this.config.knowledge.foundersKnowRadius);
         // Knowledge the scenario says the founders already hold. Adults only:
         // a child holding a technology would be able to teach it, and children
         // are excluded from the knowledge system on purpose. Empty for every
@@ -1386,6 +1418,14 @@ export class Simulation {
 
     mother.childIds.push(child.id);
     if (father) father.childIds.push(child.id);
+    // A child grows up hearing where their people have been: both parents'
+    // maps, as hearsay (M15 phase 31). Nothing is drawn, and nothing is made in
+    // a world without a globe.
+    if (mother.worldKnowledge || father?.worldKnowledge) {
+      const heard = child.worldKnowledge ??= new WorldKnowledge();
+      mother.worldKnowledge?.tellAllTo(heard);
+      father?.worldKnowledge?.tellAllTo(heard);
+    }
 
     const household = child.householdId === null
       ? null
@@ -5534,6 +5574,7 @@ export class Simulation {
       (x - person.x) ** 2 + (y - person.y) ** 2 <= radius * radius;
 
     memory.observe(person.x, person.y, radius, day);
+    if (this.worldFrame) this.observeWorld(person, person.x, person.y, radius);
     if (refreshStatic) {
       // M15 phase 20: with plant lore, what is in fruit and what is bare this
       // season is also something learned by looking (`SeasonLore`).
@@ -5588,6 +5629,7 @@ export class Simulation {
         memory.remember('person', other.x, other.y, day, 2, 'seen', {
           type: 'person', id: other.id, sex: other.sex, age, bandId: other.bandId,
         });
+        if (this.worldFrame && other.bandId !== person.bandId) this.meetOnGlobe(person, other);
         this.noticeStarving(person, other);
       }
     }
@@ -5610,6 +5652,50 @@ export class Simulation {
       telemetry.count(`place_memory_age_sum_band_${person.bandId}`, memory.averageAge(day));
       telemetry.count(`place_memory_samples_band_${person.bandId}`);
     }
+  }
+
+  /**
+   * The comarcas inside the circle `person` can see from `(x, y)`, written to
+   * their `WorldKnowledge` as seen (M15 phase 31). The comarca under every
+   * corner of the sight square, which at one comarca per map is the one, and at
+   * thirty by twenty is at most four. Pure arithmetic: no draw, no allocation
+   * but the first time a person is seen to have a globe.
+   */
+  private observeWorld(person: Person, x: number, y: number, radius: number): void {
+    const frame = this.worldFrame;
+    if (!frame) return;
+    const knowledge = person.worldKnowledge ??= new WorldKnowledge();
+    const day = this.time.day;
+    const first = this.comarcaAtTile(x - radius, y - radius);
+    const last = this.comarcaAtTile(x + radius, y + radius);
+    if (!first || !last) return;
+    // Longitude wraps, so walk the span from the first to the last across the
+    // seam if the box straddles it.
+    const across = ((last.cx - first.cx) % frame.mapWidth + frame.mapWidth) % frame.mapWidth;
+    for (let dy = first.cy; dy <= last.cy; dy++) {
+      for (let dx = 0; dx <= across; dx++) {
+        knowledge.see((first.cx + dx) % frame.mapWidth, dy, day);
+      }
+    }
+  }
+
+  /** Which comarca of the globe a tile of the local map lies in; null in a classic world. */
+  comarcaAtTile(x: number, y: number): { cx: number; cy: number } | null {
+    const frame = this.worldFrame;
+    if (!frame) return null;
+    const tx = Math.min(Math.max(x, 0), this.world.width - 1e-6);
+    const ty = Math.min(Math.max(y, 0), this.world.height - 1e-6);
+    const gx = frame.originX + tx / this.world.width * frame.comarcasWide;
+    const gy = frame.originY + ty / this.world.height * frame.comarcasHigh;
+    const cx = ((Math.floor(gx) % frame.mapWidth) + frame.mapWidth) % frame.mapWidth;
+    const cy = Math.min(frame.mapHeight - 1, Math.max(0, Math.floor(gy)));
+    return { cx, cy };
+  }
+
+  /** `person` laid eyes on somebody of another band, in the comarca they stand in. */
+  private meetOnGlobe(person: Person, other: Person): void {
+    const cell = this.comarcaAtTile(other.x, other.y);
+    if (cell) person.worldKnowledge?.meet(cell.cx, cell.cy, other.bandId, this.time.day);
   }
 
   /**

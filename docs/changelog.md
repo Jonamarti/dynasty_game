@@ -1,3 +1,14 @@
+## 2026-10-06 — M15 fase 31a: `WorldKnowledge`, qué comarcas conoce cada persona
+
+Primera mitad del globo (M14 fase 13c): por persona, qué comarcas del mundo ha
+visto, de cuáles le han hablado y qué pueblos encontró en ellas. Se escribe al
+ver (`observePlaces`), al conversar (historia de lugar desde `chat`, sin RNG) y
+al nacer (el hijo oye el mapa de sus padres). Un mundo clásico no tiene globo:
+`Person.worldKnowledge` no existe en él y la matriz `sim:check:all` da los
+mismos checks y fallos que antes. Pendiente y dicho en
+[el contrato](m15_phase31_world_knowledge.md): el canal «viene de fuera»
+(fase 34) y la fauna vista. Sin cambio de interfaz en este commit.
+
 ## 2026-10-06 — M15 fase 30 cerrada: evidencia final y capturas
 
 Completados continuidad de cauces/vados, hidratación continental de leche,

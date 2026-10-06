@@ -1,4 +1,4 @@
-import { Simulation, type GeographicStart } from '../core/Simulation.ts';
+import { Simulation, worldFrameOf, type GeographicStart } from '../core/Simulation.ts';
 import { IdSpace } from '../core/IdSpace.ts';
 import type { DeepPartial, SimConfig } from '../core/Config.ts';
 import type { WorldGeography } from './WorldGeography.ts';
@@ -61,6 +61,12 @@ export class WorldState {
     if ((geography.kind === 'legacyIsland') !== (geographicStart === null) ||
         (geographicStart && geographicStart.geography !== geography)) {
       throw new RangeError('Restored geography must match its starting placement');
+    }
+    // The restored motor never saw its geography (construction input only), so
+    // the root hands back the one fact it needs to keep writing `WorldKnowledge`.
+    if (geographicStart) {
+      current.worldFrame = worldFrameOf({ geography, ...geographicStart.start,
+        comarcasWide: geographicStart.comarcasWide, comarcasHigh: geographicStart.comarcasHigh });
     }
     const state = Object.create(WorldState.prototype) as WorldState;
     Object.defineProperties(state, {
