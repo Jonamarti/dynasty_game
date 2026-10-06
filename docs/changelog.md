@@ -1,3 +1,15 @@
+## 2026-10-06 — M15 fase 13d: la honda (`sling`)
+
+Craft de la red Armas (requiere `spear` y `cordage`; Neolítico). Ítem `sling`:
+una mano, alcance 1,4 (más que la lanza), término de caza 1,7 (más que la
+lanza, menos que el arco) y daño 0,2 (mala en una pelea); `weaponOf` ya la lee,
+así que `doHunt` la elige. Receta `sling` sin estación: cuerda 1 y sílex 2.
+Icono (`item/sling`) y mano (`held/sling`) nuevos en `art/src/props/`, atlas
+regenerado con `tools/art/build.ts`. **No hay munición**: ni el arco la tiene;
+los dos sílex son el coste de la receta, y tampoco se limita a la caza menor.
+Con siembra se enseña (13 y 14 lecciones, 21 portadores) y se fabrican hondas (4
+en una semilla). Cohorte de 20 semillas no corrida.
+
 ## 2026-10-06 — M15 fase 13d: lanza endurecida al fuego (`fire_hardened_spear`)
 
 Craft de la red Armas (puerta `spear`; requiere `spear` y `firemaking`; práctica

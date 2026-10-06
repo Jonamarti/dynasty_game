@@ -263,6 +263,59 @@ añade nada visible fuera de la red de tecnología, cuya pantalla es 13c.
 propietario. **Verificación:** sustituto esbuild/shim de vitest y un servidor
 esbuild en un contenedor Linux en la nube.
 
+## 13d — `sling`: la honda (2026-10-06, comportamiento medido)
+
+**Qué hay.** `sling`, `tier: 'craft'`, `web: 'arms'`, edad `neolithic`, requiere
+`spear` y `cordage`, dispositivo, dificultad 0,4 (0,16 efectiva), habilidad
+`hunt`, prototipo `{ thatch: 2, flint: 1 }`, tres chispas (cazar con sílex en la
+mano; trenzar cuerda; presa escapada). Ítem `sling` al final de `Item.ts`: una
+mano, `weapon: { damage: 0.2, reach: 1.4, hunt: 1.7, tech: 'sling' }`. Receta
+`sling` sin estación: `rope: 1`, `flint: 2`, `keep: 1`.
+
+**Efecto.** `weaponOf` y `weaponItemOf` ya leen cualquier ítem con `weapon`, así
+que `doHunt` elige la honda (1,7) antes que la lanza (1,6) y más que el hacha;
+el arco (2,4) y el átlatl (2,1) siguen por encima. En una pelea (`damage`) la
+lanza (0,55) vale más que la honda (0,2) y es la elegida. Es una arma cara de
+fabricar y barata de llevar, de alcance mayor que la lanza.
+
+**Por qué `craft`.** Es una receta de un objeto pequeño cuyo diseño nadie tiene
+que descifrar, a diferencia del arco, que es una técnica (un resorte que hay
+que entender); y la honda del pastor es el arma a distancia más antigua que hay.
+
+**Munición: lo que no se hizo.** No hay modelo de munición: el arco no lo tiene
+(la caza no gasta nada), así que se hizo lo mínimo honesto. El sílex es el coste
+de la receta (dos por honda) y no se gasta al cazar. **Tampoco se limita a la
+caza menor**: `weaponOf` no sabe qué animal se persigue, y el término vale lo
+mismo contra una liebre que contra un jabalí. Ambos huecos están en `bugs.md` y
+en `next-steps.md`; arco y átlatl tienen el mismo.
+
+**Arte.** Icono `item/sling` (la bolsa de cuero con una piedra y dos cuerdas) y
+mano `held/sling/{S,E}`, en `art/src/props/items.ts` y `held.ts`; el atlas
+`public/art/props.*` se regenera con `tools/art/build.ts` (solo cambia el de
+`props`; personas, edificios y animales salen idénticos). La hoja
+`tools/art/sheet.ts` **no pudo ejecutarse** en este contenedor (falta el binario
+nativo de rolldown que carga Vite), así que se revisó recortando el atlas
+regenerado: `artifacts/screenshots/m15-phase13d-sling-2026-10-06/`. Se añadió
+`sling` a `HeldItemKind`, `HELD_PRIORITY`, `EquipmentAnimation` y `sheet-page.ts`,
+y `art.test.ts` exige ahora su mano y su icono.
+
+**Tests.** 8 más en `craft-nodes.test.ts` y 2 en `art.test.ts`: declaración,
+valores del arma frente a la lanza y el arco, receta, el arma para quien lo
+sabe y nada para quien no, elección en caza y en pelea, chispas, enseñanza y una
+honda fabricada de punta a punta.
+
+**Medida.** `band`, `hearths` y `craft` coinciden en fila final (vivos 31/31,
+42/42, 13/13) y en checks (ninguno cambia; fallos 2, 6 y 6). Ejercicio sin
+siembra, semillas a y b: 25 a 30 y 29 antes; 25 a 30 y 28 después. La
+diferencia de b es divergencia del RNG (añadir un nodo cambia el conjunto de
+candidatos de `tryConceive`), no es atribuible al arma, que nadie tenía. Con
+siembra se enseña (14 y 13 lecciones, 21 portadores), se fabrican hondas (4 en la
+semilla b) y la población no se hunde (25 a 30 y 32).
+
+**No se corrió** la cohorte de 20 semillas; queda para la máquina del
+propietario. **Verificación:** sustituto esbuild/shim de vitest y página servida
+por esbuild en un contenedor Linux en la nube.
+
 ## Dudas abiertas
 
 1. **Cocina no se abre en 13a.** La tabla del plan supone que el asado, `bread` y
@@ -312,4 +365,11 @@ esbuild en un contenedor Linux en la nube.
 13. **Edad de `fire_hardened_spear`, decidida.** Queda en `middle_palaeolithic`
     (ver la sección de arriba); si se quiere la edad del plan hay que mover
     `spear` y `firemaking` o aflojar el test de edades.
+14. **Honda sin munición ni tope de presa.** Ver arriba y `bugs.md`. ¿Se
+    quiere un modelo de munición para los tres proyectiles (arco, átlatl,
+    honda) en una fase propia?
+15. **Honda por encima de la lanza en caza.** Con 1,7 frente a 1,6 la honda
+    desplaza a la lanza en una cacería (no a la lanza endurecida, 2,0). Es una
+    elección de diseño para que el nodo no sea inerte; el propietario puede
+    bajarla.
 

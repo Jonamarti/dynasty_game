@@ -11,6 +11,7 @@ const HELD_ART: Readonly<Record<string, HeldItemKind>> = {
   spear: 'spear',
   bow: 'bow',
   atlatl: 'atlatl',
+  sling: 'sling',
   bone_point: 'bone_point',
 };
 

@@ -398,4 +398,11 @@ export const ES_TECH: Record<string, string> = {
   "left a pointed stick in the embers by mistake and found it hard as bone the next morning": "dejó un palo con punta en las brasas por descuido y a la mañana siguiente lo encontró duro como el hueso",
   "lost a deer to a point that bent and turned the tip in the fire until it would not": "perdió un ciervo por una punta que se dobló y giró la punta en el fuego hasta que dejó de doblarse",
   "The spear hits harder, in a hunt and in a fight.": "La lanza pega más fuerte, en una cacería y en una pelea.",
+  "The sling": "La honda",
+  "A loop of cord and a pouch for a pebble, swung round the head and let go. Small, cheap, and it reaches further than any thrown spear.": "Un lazo de cuerda y una bolsa para una piedra, girado sobre la cabeza y soltado. Pequeña, barata, y llega más lejos que cualquier lanza arrojada.",
+  "whirled a pebble in a loop of cord after a hare the spear could not reach": "hizo girar una piedra en un lazo de cuerda tras una liebre que la lanza no alcanzaba",
+  "was plaiting a cord with a stone caught in a fold of it, and swung it round": "trenzaba una cuerda con una piedra atrapada en un pliegue, y la hizo girar",
+  "watched small game scatter out of spear range and wanted an arm that was longer than a cord": "vio huir la caza menor fuera del alcance de la lanza y quiso un brazo más largo que una cuerda",
+  "A one-handed weapon that reaches past the spear and hunts better: cheap, poor in a fight.": "Un arma de una mano que llega más lejos que la lanza y caza mejor: barata, mala en una pelea.",
+  "Sling": "Honda",
 };

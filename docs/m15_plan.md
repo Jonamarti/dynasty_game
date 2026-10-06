@@ -1547,6 +1547,8 @@ honda`.
 
 **Avance del 2026-10-06 (3):** `fire_hardened_spear` hecho (`m15: lanza endurecida al fuego`): craft de Armas (práctica, se prueba cazando; `spear`, `firemaking`) que multiplica por `HARDENED_SPEAR` (1,25, escalado por `techPower`) el poder de la lanza en `weaponPower`, el único término que leen `weaponOf` y `weaponItemOf` y por tanto `doHunt` y `doAttack`. Edad `middle_palaeolithic`, no la del plan (ver dudas).
 
+**Avance del 2026-10-06 (4):** `sling` hecho (`m15: la honda`): craft de Armas (`spear`, `cordage`; Neolítico), ítem `sling` (una mano, alcance 1,4, caza 1,7, daño 0,2), receta `sling` (cuerda 1 y sílex 2, sin estación), icono y mano nuevos en `art/src/`. **No hay modelo de munición** (el arco tampoco lo tiene): el sílex es el coste de la receta y ni la caza gasta nada, y la honda no se limita a la caza menor; queda en `bugs.md` y `next-steps.md`.
+
 ## Fase 14 — La ropa por capas (nota 1; decisión 8)
 
 **Objetivo.** «No toda la ropa es igual.» Una capa de piel pide piel y una

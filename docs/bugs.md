@@ -1,3 +1,13 @@
+## M15 fase 13d: la honda no gasta munición ni se limita a la caza menor (2026-10-06)
+
+`sling` es un arma como el arco: se elige por `hunt * poder` y no consume nada
+al cazar. El plan pedía «piedra de munición (sílex): caza menor a distancia».
+Hoy el sílex es solo el coste de la receta (dos por honda) y el término de caza
+(1,7) vale igual contra una liebre que contra un jabalí; `weaponOf` no sabe qué
+animal se persigue. Falta un modelo de munición (ítem gastado por golpe, o
+`ammo` en `weapon`) y un tope de presa en `weapon`. Arco y átlatl tienen el
+mismo hueco. [Fase 13d](m15_phase13_subwebs.md).
+
 ## M15 fase 30: continuidad del agua local incompleta (2026-10-06)
 
 La conexión fluvial entre mapas vecinos está cubierta en un tramo recto.

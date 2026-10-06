@@ -1,3 +1,8 @@
+**2026-10-06: fase 13d, la honda.** `sling` entregada sin modelo de munición ni
+tope de presa (ver `bugs.md`): un modelo de munición serviría también al arco y
+al átlatl. Siguiente en 13d: el check `sub-webs-are-climbed`.
+[Detalle](m15_phase13_subwebs.md).
+
 # Next steps
 
 **2026-10-06: fase 30, agua local.** Entregadas semántica dulce/salada,

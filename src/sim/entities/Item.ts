@@ -330,6 +330,15 @@ export const ITEMS: Record<string, ItemDef> = {
     macros: { fat: 0.04, protein: 0.14, carb: 0.82 },
     class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 },
   },
+  // `sling`. Reach past the spear and a better hunting term (small game that a
+  // thrown spear cannot reach), poor in a brawl, one hand. Below the bow in
+  // every term that matters for a hunt. Its ammunition is not an item: see
+  // `RECIPES.sling` and the open doubts of phase 13d.
+  sling: {
+    id: 'sling', label: 'Sling', nutrition: 0, spoilTicks: 0, baseValue: 5,
+    weapon: { damage: 0.2, reach: 1.4, hunt: 1.7, tech: 'sling' },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 },
+  },
 };
 
 export class Inventory {

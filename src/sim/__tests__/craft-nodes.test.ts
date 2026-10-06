@@ -16,7 +16,7 @@ import { World } from '../core/World.ts';
 import { makeConfig } from '../core/Config.ts';
 import { TECH, WEBS, SUB_WEBS, ageIndex, difficultyOf, tierOf, webOf, techsOfWeb } from '../knowledge/Tech.ts';
 import { sparkFires, type Notice } from '../knowledge/Synthesis.ts';
-import { weaponOf, techPower } from '../knowledge/Tech.ts';
+import { weaponOf, weaponItemOf, techPower } from '../knowledge/Tech.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { SICKENS } from '../entities/Body.ts';
@@ -371,5 +371,114 @@ describe('fire_hardened_spear and the spear that hits harder', () => {
     }
     expect(friend.knownTech.has('fire_hardened_spear')).toBe(true);
     expect(stranger.knownTech.has('fire_hardened_spear')).toBe(false);
+  });
+});
+
+describe('sling and the stone it throws', () => {
+  function slinger(name: string): Person {
+    const person = adult(name);
+    for (const tech of ['cordage', 'spear', 'sling']) { person.knownTech.add(tech); person.techLevel.set(tech, 0); }
+    person.inventory.add('sling', 1);
+    return person;
+  }
+
+  it('is a craft that needs the spear and cordage, in the Weapons web, in the Neolithic', () => {
+    const def = TECH.sling;
+    expect(tierOf('sling')).toBe('craft');
+    expect(def.requires).toEqual(['spear', 'cordage']);
+    expect(def.age).toBe('neolithic');
+    expect(def.firstKnown.length).toBeGreaterThan(0);
+    expect(def.kind).toBe('device');
+    expect(webOf('sling')).toBe('arms');
+    expect(techsOfWeb('arms')).toContain('sling');
+    expect(ageIndex(def.age)).toBeGreaterThanOrEqual(ageIndex(TECH.cordage.age));
+    expect(difficultyOf('sling', config.knowledge)).toBeCloseTo(def.difficulty * 0.4, 12);
+  });
+
+  it('is a one-handed weapon that reaches further than the spear and hunts better, but is poor in a fight', () => {
+    const sling = ITEMS.sling!;
+    expect(sling.weapon!.tech).toBe('sling');
+    expect(sling.weapon!.reach).toBeGreaterThan(ITEMS.spear!.weapon!.reach);
+    expect(sling.weapon!.hunt).toBeGreaterThan(ITEMS.spear!.weapon!.hunt);
+    expect(sling.weapon!.damage).toBeLessThan(ITEMS.spear!.weapon!.damage);
+    expect(sling.hand.hands).toBe(1);
+    // ...and below the bow, which is the better answer to the same quarry.
+    expect(sling.weapon!.hunt).toBeLessThan(ITEMS.bow!.weapon!.hunt);
+  });
+
+  it('is made of cord and the flint it throws, with no station', () => {
+    const recipe = RECIPES.sling!;
+    expect(recipe.tech).toBe('sling');
+    expect(recipe.station).toBeUndefined();
+    expect(recipe.ingredients).toEqual({ rope: 1, flint: 2 });
+    expect(recipe.output).toEqual({ sling: 1 });
+    expect(recipe.keep).toBe(1);
+  });
+
+  it('is worth nothing to somebody who does not know it, and a weapon to somebody who does', () => {
+    const none = adult('None');
+    none.inventory.add('sling', 1);
+    expect(weaponOf(none, true)).toBeNull();
+    const hunter = slinger('Hunter');
+    const weapon = weaponOf(hunter, true)!;
+    expect(weapon.reach).toBe(ITEMS.sling!.weapon!.reach);
+    expect(weapon.hunt * weapon.power).toBeGreaterThan(1);
+  });
+
+  it('is picked for a hunt over a spear, and the spear is kept for a fight', () => {
+    const person = slinger('Both');
+    person.inventory.add('spear', 1);
+    expect(weaponItemOf(person, true)).toBe('sling');
+    expect(weaponItemOf(person, false)).toBe('spear');
+  });
+
+  it('occurs to somebody with cord who throws or hunts, by routes that need nothing rare', () => {
+    const [byHunt, byRope, byEscape] = TECH.sling.sparks;
+    const base = { knows: new Set(['spear', 'cordage']) };
+    expect(sparkFires(byHunt!, notice({ ...base, holding: new Set(['flint']), lately: new Set(['hunt']) }))).toBe(true);
+    expect(sparkFires(byHunt!, notice(base))).toBe(false);
+    expect(sparkFires(byRope!, notice({ ...base, holding: new Set(['rope']), lately: new Set(['craft']) }))).toBe(true);
+    expect(sparkFires(byEscape!, notice({ ...base, saw: new Set(['quarry_escaped']) }))).toBe(true);
+    for (const spark of TECH.sling.sparks) {
+      expect(spark.needs.some(n => n.kind === 'doing' || n.kind === 'holding' || n.kind === 'saw')).toBe(true);
+    }
+  });
+
+  it('is passed on over small talk to somebody with the spear and the cord', () => {
+    const knowledge = new KnowledgeSystem();
+    const teacher = adult('Herder');
+    const friend = adult('Friend');
+    const stranger = adult('Stranger');
+    teacher.knownTech.add('sling');
+    teacher.skills.teach = 100;
+    for (const tech of ['spear', 'cordage']) friend.knownTech.add(tech);
+    stranger.knownTech.add('cordage');
+    const rng = new RNG('sling-talk');
+    for (let i = 0; i < 40; i++) {
+      knowledge.conversationLesson(teacher, friend, 'deep', 1000, rng, () => 1);
+      knowledge.conversationLesson(teacher, stranger, 'deep', 1000, rng, () => 1);
+    }
+    expect(friend.knownTech.has('sling')).toBe(true);
+    expect(stranger.knownTech.has('sling')).toBe(false);
+  });
+
+  it('is made end to end from cord and flint, and then carried', () => {
+    const sim = new Simulation({
+      ...SMALL,
+      population: { ...SMALL.population, startingTech: ['cordage', 'hafting', 'spear', 'sling'] },
+    });
+    for (let i = 0; i < 100; i++) sim.step();
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('rope', 1);
+    person.inventory.add('flint', 2);
+    expect(sim.order(person, 'craft', { recipeId: 'sling' })).toBe(true);
+    for (let i = 0; i < 900 && person.inventory.count('sling') === 0; i++) {
+      settle(person);
+      person.inventory.add('rope', 1);
+      person.inventory.add('flint', 2);
+      sim.step();
+    }
+    expect(person.inventory.count('sling')).toBe(1);
   });
 });

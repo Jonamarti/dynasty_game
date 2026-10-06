@@ -585,6 +585,13 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 90, ingredients: { meal: 1 }, output: { flatbread: 1 },
     station: 'hearth', keep: 2,
   },
+  // `sling`: a cord and the flint it throws. There is no ammunition model (the
+  // bow has none either: a hunt spends nothing), so the two flints are the
+  // pebbles it is made with, spent once, here.
+  sling: {
+    id: 'sling', label: 'Sling', icon: '\u{1FA83}', tech: 'sling', skill: 'hunt',
+    workTicks: 80, ingredients: { rope: 1, flint: 2 }, output: { sling: 1 }, keep: 1,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

@@ -156,6 +156,7 @@ export const TECHS = [
   'flatbread',
   // The two weapons of the same phase: a variant of the spear and a new one.
   'fire_hardened_spear',
+  'sling',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1590,6 +1591,35 @@ export const TECH: Record<Tech, TechDef> = {
       'goes deeper and does not splinter: the same spear, a good deal more ' +
       'deadly.',
   },
+  // A craft in Weapons: a loop of cord and a pouch of flint pebbles, made at no
+  // station by anybody who holds the cord. A craft rather than a technique
+  // because it is a recipe for a small new item with a design nobody has to
+  // work out (the shepherd's sling is the oldest ranged weapon there is), where
+  // the bow is a technique: a spring to be understood. It needs the spear
+  // because the sling is a hunter's thing, and cordage because that is the cord.
+  sling: {
+    id: 'sling', label: 'The sling', domain: 'beasts',
+    web: 'arms',
+    tier: 'craft',
+    age: 'neolithic', firstKnown: 'about 8,000 years ago',
+    kind: 'device',
+    requires: ['spear', 'cordage'], difficulty: 0.4, skill: 'hunt',
+    prototype: { thatch: 2, flint: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'cordage' },
+                { kind: 'holding', item: 'flint' }, { kind: 'doing', action: 'hunt' }],
+        weight: 1.0, story: 'whirled a pebble in a loop of cord after a hare the spear could not reach' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'knows', tech: 'spear' },
+                { kind: 'holding', item: 'rope' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'was plaiting a cord with a stone caught in a fold of it, and swung it round' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'cordage' },
+                { kind: 'saw', what: 'quarry_escaped' }],
+        weight: 0.5, story: 'watched small game scatter out of spear range and wanted an arm that was longer than a cord' },
+    ],
+    description:
+      'A loop of cord and a pouch for a pebble, swung round the head and let ' +
+      'go. Small, cheap, and it reaches further than any thrown spear.',
+  },
   the_wheel: {
     id: 'the_wheel', label: 'The wheel', domain: 'timber',
     age: 'neolithic', firstKnown: 'about 3500 BC',
@@ -2227,6 +2257,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   fire_hardened_spear: {
     summary: 'The spear hits harder, in a hunt and in a fight.',
     site: 'weaponPower in Tech.ts, read through weaponOf by ActionSystem.doHunt and doAttack',
+  },
+  sling: {
+    summary: 'A one-handed weapon that reaches past the spear and hunts better: cheap, poor in a fight.',
+    site: 'ITEMS.sling.weapon via weaponOf in ActionSystem.doHunt; RECIPES.sling',
   },
   the_wheel: {
     summary: 'A cart: what a strap and a basket carry, and a cartload more on top.',
