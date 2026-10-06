@@ -242,6 +242,10 @@ No se promete que una aglomeración de 300 visibles cueste lo mismo que 30.
    Crecer o menguar (2026-10-06): nacimientos y muertes por cohorte con las tasas medidas, capacidad
    de carga por región x técnicas y `bandCapacityOf` (la capacidad de banda por estación que pedía el compacto);
    reproduce `craft` (T1-T4) y **no** `lean` (colapso a ~1 frente a ~11 del modelo).
+   Inventar y aprender (2026-10-06): modelo de Kremer con `KAPPA` medida en el detallado (4,7e-4, 16 eventos) y
+   correspondencia de orden de magnitud en semillas nuevas (4,6 frente a 3,7 técnicas); el aprendizaje entre pueblos
+   solo tiene una **cota** medida (`LEARN_MU_BOUND` 0,043) y queda a decisión del propietario (transmisibilidad por técnica);
+   test «nada por guion» con auditoría que falla contra cuatro versiones trucadas.
    Detalle y medidas en [m15_phase32c_peoples.md](m15_phase32c_peoples.md).
 5. **32, integración y coste:** cohortes y perfil de las transiciones; separación
    de dibujo y pasos para aceleración. Guardado definitivo en fase 33.

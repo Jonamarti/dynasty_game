@@ -3263,6 +3263,14 @@ semillas fuera de la curva, tolerancias declaradas antes: `craft` pasa T1-T4; `l
 T4 y T1 pasa 3 de 4. No se declara correspondencia; `peoples-match-bands` pendiente de medición diferida.
 [Detalle](m15_phase32c_peoples.md).
 
+**Avance del 2026-10-06 (32c-3, inventar y aprender):** `PeopleKnowledge.ts`: invención de Kremer (probabilidad por
+candidata con la población efectiva y los contactos, solo si la región tiene los materiales del prototipo) y aprendizaje por contacto y
+similitud climática. `KAPPA` medida en el detallado (4,7e-4); correspondencia K1-K3 de la invención en semillas nuevas: pasa (4,6
+frente a 3,7 técnicas, orden de magnitud). **`MU` del aprendizaje no se pudo medir** (solo una cota, 0,043; `plant_lore` y
+`firemaking` difieren más de 5x): `knowledge()` exige que se la den. Pregunta abierta al propietario en el doc de 32c.
+Test «nada por guion» con auditoría que falla contra versiones trucadas por fecha, nombre, región e identidad.
+[Detalle](m15_phase32c_peoples.md).
+
 **Puertas**, encadenadas:
 
 - `peoples-match-bands`: el mismo escenario, dos años en nivel 1 y dos en nivel

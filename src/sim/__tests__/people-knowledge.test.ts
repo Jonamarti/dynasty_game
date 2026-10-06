@@ -1,0 +1,255 @@
+import { describe, expect, it } from 'vitest';
+import { PeopleSim, TechSet, closeUnderRequires, emptyCohorts, type People, type PeopleCohorts, type SeasonMechanism } from '../world/PeopleSim.ts';
+import {
+  ALL_MATERIALS, KREMER_KAPPA, LEARN_MU_BOUND, climateSimilarity, feasibleIn, inventionChance, knowledge, learningChance,
+  regionMaterials, type KnowledgeEvent, type KnowledgeRegion,
+} from '../world/PeopleKnowledge.ts';
+import { TECHS, TECH, type Tech } from '../knowledge/Tech.ts';
+
+const CLOCK = { ticksPerDay: 24, daysPerSeason: 10 };
+const SEASON = CLOCK.ticksPerDay * CLOCK.daysPerSeason;
+const FULL: KnowledgeRegion = { materials: regionMaterials(), climate: { temperature: 0.5, wetness: 0.5 } };
+const adults = (n: number): PeopleCohorts => {
+  const c = emptyCohorts();
+  const per = Math.max(0, Math.floor(n / 16));
+  for (let b = 3; b <= 10; b++) { c.male[b] = per; c.female[b] = per; }
+  return c;
+};
+
+interface Run { sim: PeopleSim; people: People[]; events: KnowledgeEvent[] }
+/** One world of `specs.length` peoples, related as `contact` says, run `seasons` seasons. */
+function world(seed: string, specs: { n: number; techs?: readonly Tech[]; region?: KnowledgeRegion; comarcas?: number }[],
+  opts: { kappa?: number; mu?: number; contact?: number; seasons: number; extra?: SeasonMechanism[]; startStep?: number }): Run {
+  const events: KnowledgeEvent[] = [];
+  const regions = new Map<number, KnowledgeRegion>();
+  const sim = new PeopleSim(seed, CLOCK, [
+    knowledge({ regionOf: p => regions.get(p.id)!, kappa: opts.kappa, mu: opts.mu ?? 0 }, e => events.push(e)),
+    ...(opts.extra ?? []),
+  ]);
+  if (opts.startStep) sim.advanceTo(opts.startStep);
+  const people = specs.map(s => {
+    const p = sim.found({ cohorts: adults(s.n), comarcas: s.comarcas ?? 1, techs: closeUnderRequires(s.techs ?? []) });
+    regions.set(p.id, s.region ?? FULL);
+    return p;
+  });
+  if (specs.length > 1 && opts.contact !== undefined) for (let i = 1; i < people.length; i++) sim.relation(people[0]!.id, people[i]!.id).contact = opts.contact;
+  sim.advanceTo((opts.startStep ?? 0) + opts.seasons * SEASON);
+  return { sim, people, events };
+}
+const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+/** Season index (relative to founding) of the first acquisition of `tech`, or `cap` when none. */
+function firstSeason(events: KnowledgeEvent[], tech: Tech, from: number, cap: number): number {
+  const e = events.find(x => x.tech === tech);
+  return e ? e.season - from : cap;
+}
+
+describe('invention (Kremer)', () => {
+  it('uses the technique\'s own difficulty and the effective population, and nothing else', () => {
+    for (const a of TECHS) for (const b of TECHS) {
+      if (TECH[a].difficulty === TECH[b].difficulty) expect(inventionChance(a, 40, 1e-3)).toBe(inventionChance(b, 40, 1e-3));
+    }
+    expect(inventionChance('firemaking', 80, 1e-3)).toBeGreaterThan(inventionChance('firemaking', 40, 1e-3));
+    expect(inventionChance('firemaking', 0, 1e-3)).toBe(0);
+    const easy = TECHS.find(t => TECH[t].difficulty < 0.3)!, hard = TECHS.find(t => TECH[t].difficulty > 0.6)!;
+    expect(inventionChance(easy, 40, 1e-3)).toBeGreaterThan(inventionChance(hard, 40, 1e-3));
+  });
+
+  it('only ever acquires a technique whose requires it already held, and not in the season they arrive', () => {
+    const { events, people } = world('prereq', [{ n: 48 }], { kappa: 0.02, seasons: 40 });
+    expect(events.length).toBeGreaterThan(10);
+    for (const t of people[0]!.techs.list()) expect(people[0]!.techs.prerequisitesHeld(t)).toBe(true);
+    const when = new Map(events.map(e => [e.tech, e.season]));
+    for (const e of events) for (const r of TECH[e.tech].requires) expect(when.get(r) ?? -1).toBeLessThan(e.season);
+  });
+
+  it('is faster for a bigger people, in proportion (Kremer), and a contact counts as population', () => {
+    const run = (n: number, neighbour?: number) => {
+      const times: number[] = [];
+      for (let k = 0; k < 300; k++) {
+        const specs = neighbour ? [{ n }, { n: neighbour }] : [{ n }];
+        const r = world(`kremer-${k}`, specs, { kappa: 5e-4, contact: 1, seasons: 80 });
+        times.push(firstSeason(r.events.filter(e => e.peopleId === r.people[0]!.id), 'firemaking', 0, 80));
+      }
+      return mean(times);
+    };
+    const small = run(32), big = run(128), pooled = run(32, 32);
+    expect(small / big).toBeGreaterThan(2.8); expect(small / big).toBeLessThan(5.5); // expected 4
+    expect(pooled).toBeLessThan(small * 0.7);                                      // a neighbour of the same size: about half
+    // A neighbour you do not touch is no help.
+    const times: number[] = [];
+    for (let k = 0; k < 300; k++) {
+      const r = world(`kremer-${k}`, [{ n: 32 }, { n: 32 }], { kappa: 5e-4, contact: 0, seasons: 80 });
+      times.push(firstSeason(r.events.filter(e => e.peopleId === r.people[0]!.id), 'firemaking', 0, 80));
+    }
+    expect(mean(times)).toBeGreaterThan(small * 0.8);
+  });
+
+  it('needs what the first prototype is made of: no wild grain, no farming invented; the same people with grain does', () => {
+    const farming = TECHS.find(t => t === 'farming')!;
+    expect(Object.keys(TECH[farming].prototype)).toContain('grain');
+    expect(feasibleIn(farming, { ...FULL, materials: regionMaterials(['grain']) })).toBe(false);
+    const have = closeUnderRequires(TECH[farming].requires);
+    let withGrain = 0, withoutGrain = 0;
+    for (let k = 0; k < 40; k++) {
+      withGrain += world(`g-${k}`, [{ n: 64, techs: have }], { kappa: 0.05, seasons: 30 }).people[0]!.techs.has(farming) ? 1 : 0;
+      withoutGrain += world(`g-${k}`, [{ n: 64, techs: have, region: { ...FULL, materials: regionMaterials(['grain']) } }], { kappa: 0.05, seasons: 30 }).people[0]!.techs.has(farming) ? 1 : 0;
+    }
+    expect(withGrain).toBeGreaterThan(30);
+    expect(withoutGrain).toBe(0);
+  });
+});
+
+describe('learning from neighbours', () => {
+  const have = closeUnderRequires(TECH.farming.requires);
+  const learner = (contact: number, neighbourClimate: KnowledgeRegion['climate'], seasons = 40, mu = 0.2) => {
+    const noGrain = { materials: regionMaterials(['grain']), climate: { temperature: 0, wetness: 0 } };
+    const r = world('learn', [{ n: 40, techs: have, region: noGrain }, { n: 40, techs: closeUnderRequires(['farming']), region: { ...FULL, climate: neighbourClimate } }],
+      { kappa: 0, mu, contact, seasons });
+    return r.people[0]!.techs.has('farming');
+  };
+
+  it('is how a people without wild grain gets farming; with no contact, or an opposite climate, it does not', () => {
+    const same = { temperature: 0, wetness: 0 }, opposite = { temperature: 1, wetness: 1 };
+    expect(learner(1, same)).toBe(true);
+    expect(learner(0, same)).toBe(false);
+    expect(learner(1, { temperature: 0.5, wetness: 0.5 }, 200)).toBe(true); // a half-similar climate still learns, slower
+    expect(climateSimilarity(same, opposite)).toBe(0);
+    expect(learner(1, opposite, 400)).toBe(false);                          // completely opposite climates share nothing
+    expect(climateSimilarity(same, same)).toBe(1);
+    expect(climateSimilarity(same, { temperature: 0.2, wetness: 0 })).toBeGreaterThan(climateSimilarity(same, { temperature: 0.9, wetness: 0 }));
+  });
+
+  it('learns a chain one rung a season: it cannot take a technique whose requires it lacks, however much contact it has', () => {
+    const chain = closeUnderRequires(['farming']);
+    expect(chain.length).toBeGreaterThan(2);
+    const r = world('lack', [{ n: 40 }, { n: 40, techs: chain }], { kappa: 0, mu: 50, contact: 1, seasons: 1 });
+    const got = r.people[0]!.techs.list();
+    expect(got.length).toBeGreaterThan(0);
+    for (const t of got) { expect(TECH[t].requires).toEqual([]); expect(chain).toContain(t); }
+    expect(got).not.toContain('farming');
+    // And given the seasons, it climbs the whole chain to farming without ever skipping a rung.
+    const later = world('lack', [{ n: 40 }, { n: 40, techs: chain }], { kappa: 0, mu: 50, contact: 1, seasons: chain.length + 1 });
+    expect(later.people[0]!.techs.has('farming')).toBe(true);
+    const when = new Map(later.events.filter(e => e.peopleId === later.people[0]!.id).map(e => [e.tech, e.season]));
+    for (const [t, season] of when) for (const q of TECH[t].requires) expect(when.get(q) ?? -1).toBeLessThan(season);
+  });
+
+  it('is monotone in contact: more contact, more learning', () => {
+    const learned = (contact: number) => { let n = 0; for (let k = 0; k < 100; k++) n += world(`m-${k}`, [{ n: 30 }, { n: 30, techs: ['firemaking', 'plant_lore', 'tracking'] }], { kappa: 0, mu: 0.05, contact, seasons: 6 }).people[0]!.techs.size; return n; };
+    expect(learned(1)).toBeGreaterThan(learned(0.3));
+    expect(learned(0.3)).toBeGreaterThan(learned(0));
+    expect(learned(0)).toBe(0);
+    expect(learningChance(2, 0.02)).toBeGreaterThan(learningChance(1, 0.02));
+  });
+});
+
+describe('stream discipline', () => {
+  it('draws two numbers per technique per update, whatever the people holds', () => {
+    const a = world('draws', [{ n: 40 }], { kappa: 1e-4, seasons: 1 });
+    const b = world('draws', [{ n: 40, techs: ['firemaking', 'plant_lore', 'cordage', 'tracking'] }], { kappa: 1e-4, seasons: 1 });
+    expect(b.people[0]!.rng.getState()).toEqual(a.people[0]!.rng.getState());
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Nothing by script
+// ---------------------------------------------------------------------------------------------
+
+/** The cheats the audit must catch: each is a real mechanism plus a script. */
+type Build = { name: string; extra: SeasonMechanism[] };
+const grant = (people: People, ...techs: Tech[]) => { for (const t of closeUnderRequires(techs)) if (!people.techs.has(t)) people.techs.add(t); };
+const HONEST: Build = { name: 'honest', extra: [] };
+const BY_DATE: Build = { name: 'by date', extra: [ctx => { if (ctx.season === 6) grant(ctx.people, 'cooking'); }] };
+const BY_NAME: Build = { name: 'by name', extra: [ctx => { if (ctx.people.techs.has('plant_lore') && ctx.people.techs.has('cordage')) grant(ctx.people, 'basketry'); }] };
+const BY_REGION: Build = { name: 'by region', extra: [ctx => { if (ctx.people.comarcas === 3) grant(ctx.people, 'farming'); }] };
+const BY_IDENTITY: Build = { name: 'by identity', extra: [ctx => { if (ctx.people.id === 2) grant(ctx.people, 'pottery'); }] };
+
+/**
+ * What an audit must find true of an honest mechanism and false of any scripted one. Returns the names of the
+ * invariants a build violates. Each compares like with like: nothing here reads a coefficient.
+ */
+function audit(build: Build): string[] {
+  const broken: string[] = [];
+  const rich = closeUnderRequires(['cordage', 'plant_lore', 'tracking']);
+
+  // A1 nobody to think, nobody to learn from: nothing is gained, whatever is held and however long it waits.
+  const empty = world(`audit-${build.name}`, [{ n: 0, techs: rich }, { n: 0, techs: rich }], { kappa: 0.05, mu: 1, contact: 1, seasons: 40, extra: build.extra });
+  if (empty.people.some(p => p.techs.size !== rich.length)) broken.push('gains without anyone');
+
+  // A2 the region's materials bind invention, whatever the number of comarcas or the id: without any material
+  // only techniques with an empty prototype can be invented.
+  const none: KnowledgeRegion = { materials: new Set(), climate: FULL.climate };
+  for (const comarcas of [1, 2, 3, 4]) {
+    const r = world(`audit-${build.name}-${comarcas}`, [{ n: 60, region: none, comarcas }, { n: 60, region: none, comarcas }, { n: 60, region: none, comarcas }], { kappa: 0.05, seasons: 40, extra: build.extra });
+    for (const p of r.people) for (const t of p.techs.list()) if (Object.keys(TECH[t].prototype).length > 0) broken.push(`${t} invented without its materials (comarcas ${comarcas}, people ${p.id})`);
+  }
+
+  // A3 a neighbour at zero contact changes nothing (same seeds, same draws).
+  const alone = world('audit-contact', [{ n: 40 }], { kappa: 5e-3, seasons: 30, extra: build.extra });
+  const neighbour = world('audit-contact', [{ n: 40 }, { n: 40, techs: ['farming'] }], { kappa: 5e-3, mu: 1, contact: 0, seasons: 30, extra: build.extra });
+  if (alone.people[0]!.techs.list().join() !== neighbour.people[0]!.techs.list().join()) broken.push('a zero-contact neighbour changed a people');
+
+  // A4 the calendar is not an input: the same people founded 40 seasons later finds its first techniques at the
+  // same relative pace, and not in the same season in every run.
+  const sample = (startStep: number) => {
+    const firsts: number[] = [];
+    for (let k = 0; k < 120; k++) {
+      const r = world(`audit-date-${k}`, [{ n: 40 }], { kappa: 5e-4, seasons: 70, extra: build.extra, startStep });
+      const first = r.events.length > 0 ? Math.min(...r.events.map(e => e.season)) - Math.floor(startStep / SEASON) : 70;
+      firsts.push(first);
+    }
+    return firsts;
+  };
+  const early = sample(0), late = sample(40 * SEASON);
+  if (new Set(early).size === 1 || new Set(late).size === 1) broken.push('the first technique arrives in the same season in every run');
+  if (Math.abs(mean(early) - mean(late)) > 0.25 * Math.max(mean(early), mean(late))) broken.push('the calendar changes the pace');
+
+  // A5 identity: two identical peoples (ids 1 and 2, same everything) are alike on average.
+  const a: number[] = [], b: number[] = [];
+  for (let k = 0; k < 150; k++) {
+    const r = world(`audit-id-${k}`, [{ n: 40 }, { n: 40 }], { kappa: 5e-4, seasons: 70, extra: build.extra });
+    a.push(r.people[0]!.techs.size); b.push(r.people[1]!.techs.size);
+  }
+  if (Math.abs(mean(a) - mean(b)) > 0.2 * Math.max(mean(a), mean(b), 1)) broken.push('peoples are not alike: identity matters');
+  return broken;
+}
+
+describe('nothing by script: no technique is granted by date, name, region or identity', () => {
+  it('the honest mechanism passes every invariant of the audit', () => {
+    expect(audit(HONEST)).toEqual([]);
+  });
+
+  it('the audit is not vacuous: with no materials the honest mechanism still invents the techniques that need none', () => {
+    const none: KnowledgeRegion = { materials: new Set(), climate: FULL.climate };
+    const r = world('vacuous', [{ n: 60, region: none }], { kappa: 0.05, seasons: 40 });
+    const got = r.people[0]!.techs.list();
+    expect(got.length).toBeGreaterThan(5);
+    expect(got.every(t => Object.keys(TECH[t].prototype).length === 0)).toBe(true);
+    expect(TECHS.some(t => Object.keys(TECH[t].prototype).length > 0 && !got.includes(t))).toBe(true);
+  });
+
+  it('control: the audit fails a build that grants by date', () => {
+    expect(audit(BY_DATE).length).toBeGreaterThan(0);
+  });
+  it('control: the audit fails a build that grants by name (a fixed tree step, whatever the people)', () => {
+    expect(audit(BY_NAME)).toContain('gains without anyone');
+  });
+  it('control: the audit fails a build that grants by a particular region', () => {
+    expect(audit(BY_REGION).some(m => m.includes('without its materials'))).toBe(true);
+  });
+  it('control: the audit fails a build that grants to one people by identity', () => {
+    expect(audit(BY_IDENTITY).some(m => m.includes('identity') || m.includes('without anyone'))).toBe(true);
+  });
+
+  it('the measured rates are real numbers, and no technique appears in the source of the mechanism by name', async () => {
+    expect(KREMER_KAPPA).toBeGreaterThan(0);
+    expect(LEARN_MU_BOUND).toBeGreaterThan(0);
+    const fs = await import('node:fs');
+    const src = fs.readFileSync(new URL('../world/PeopleKnowledge.ts', import.meta.url), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    for (const tech of TECHS) expect(src.includes(`'${tech}'`) || src.includes(`"${tech}"`)).toBe(false);
+    expect(ALL_MATERIALS.length).toBeGreaterThan(5);
+  });
+});
+
+void TechSet;

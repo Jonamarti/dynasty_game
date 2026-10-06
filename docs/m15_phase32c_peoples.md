@@ -151,3 +151,91 @@ medida; no hay mortalidad infantil propia, ni frío, ni salud (la vejez es la sa
 62 años; la inanición por encima de `z = 0,81` es extrapolación. Tests: `people-demography.test.ts` (16),
 instrumentos `tools/people-calibrate.ts`, `tools/people-measured.ts`, `tools/people-correspond.ts`. Salidas completas en
 `artifacts/verification/m15-phase32c-2026-10-06/` (local, ignorado por Git; las cifras de arriba son el registro).
+
+## 3. Inventar y aprender de vecinos (`PeopleKnowledge.ts`)
+
+Por temporada y pueblo, para cada técnica que no tiene y cuyos `requires` sí tiene (misma regla que el juego,
+impuesta por `TechSet.add`), dos oportunidades independientes del stream propio:
+
+- **Invención (Kremer).** `p = 1 - exp(-KAPPA x Neff / dificultad)`. `dificultad` es el `TECH[t].difficulty` del
+  juego; `Neff = N + suma(contacto x N del vecino)`: más gente y más contactos, más invenciones por candidata. Solo si
+  la región tiene lo que se necesita para el primer prototipo (todas las claves de `TECH[t].prototype` en
+  `region.materials`): sin trigo silvestre no se inventa la agricultura; el mapa solo condiciona dos materiales (grano
+  silvestre y sílex, `geographicResourceAvailable`), de modo que una región es «todos los materiales menos lo que el mapa
+  dice que le falta» (`regionMaterials`).
+- **Aprendizaje.** `p = 1 - exp(-MU x suma(contacto x similitud climática de quienes la tienen))`. El contacto es el
+  `PeopleRelation.contact` del par (comercio, matrimonio, guerra y cercanía escribirán ahí; **nada lo escribe todavía**);
+  la similitud es `1 - distancia/sqrt(2)` entre dos climas en el cuadrado unidad (temperatura, humedad): **una
+  suposición de diseño, no medida**, que solo se prueba monótona. Aprender no necesita materiales locales (la semilla
+  viaja).
+
+Dos tiradas por técnica y actualización, siempre y en orden de `TECHS`, tenga o no el pueblo la técnica (el stream no
+depende de lo que sabe; test: mismo estado del stream con y sin técnicas). Ambas se juzgan contra lo que se tiene al
+empezar la actualización: una técnica y la que la requiere no llegan en la misma temporada (test). Los vecinos se leen tal
+como están cuando corre este pueblo (orden por paso e id): lo que un vecino aprendió antes en la misma temporada puede
+aprenderse en ella. No se modelan, y por tanto no se declaran, olvidar una técnica ni sus practicantes.
+
+### Medida (`tools/people-discovery.ts`)
+
+**`KREMER_KAPPA` = 4,7e-4** por persona-temporada y por unidad de 1/dificultad, medido en el mundo por defecto (`century`,
+tres bandas, fundadores sin técnicas, 40.000 pasos = 16 temporadas) en `alpha,beta,gamma`: 16 técnicas encontradas, exposición
+33.945 (suma, sobre temporadas, de población x suma de 1/dificultad de las candidatas abiertas: sus requisitos en poder de alguien y sus
+materiales en el mundo); intervalo de Poisson al 95 %: 2,4e-4 a 7,0e-4. **Es un solo número con 16 eventos**, y el modelo
+supone que la tasa por técnica sigue a 1/dificultad. Los datos lo contradicen en lo fino: `plant_lore` (dificultad 0,25) la
+encuentra alguien en las temporadas 3, 4 y 5 en las tres semillas (unos 0,25 por temporada) mientras el modelo da ~0,07;
+`division_of_labour` (0,45) tarda 9-16 temporadas, que es lo que el modelo da. La tasa por técnica depende de sus chispas
+(`sparks`), no solo de `difficulty`. Se usa el agregado y se dice.
+
+**`MU` no se pudo medir** (lo que sigue es lo que decide que `KnowledgeEnv.mu` no tenga valor por defecto). Dos bandas del mundo `craft`
+(el mundo por defecto con dos bandas), la primera con `firemaking`, `plant_lore` y `cooking` de fundadores y la segunda con nada, 40.000
+pasos, 5 semillas (`alpha,beta,gamma,delta,eps`): `firemaking`, abierta durante 85 temporadas-candidata, **no llegó nunca** a la
+segunda banda (0 de 85; cota superior al 95 %: 3,69/85 = **0,043**); `plant_lore` sí llegó en las 5 semillas, a las 2-8 temporadas.
+Pero `plant_lore` la inventa de forma independiente cualquiera en 2-5 temporadas en las tres semillas de la medida de invención, así
+que esas llegadas no se distinguen de invenciones (el número esperado con la tasa agregada es 0,5 por semilla, y el observado es 1: el
+agregado está por debajo de lo que pasa con esa técnica). Hay más de 5x entre las dos técnicas, y un solo `MU` no cabe en los datos.
+Lo que sí queda es la cota `LEARN_MU_BOUND = 0,043` (exportada, documentada como cota y no como estimación).
+
+**Pregunta para el propietario (decisión, no se ha tomado):** el aprendizaje entre pueblos, ¿se mide por técnica (una
+*transmisibilidad* por nodo: lo que se ve usar a diario, como forrajear, pasa casi sin querer; lo que exige un hogar y una
+enseñanza, como encender fuego, casi nunca pasa sin ella), o se acepta un `MU` agregado por debajo de la cota 0,043? Lo
+primero añade un campo a `TECHS` que el juego detallado ya tiene implícito en sus `sparks`; lo segundo seguirá dando
+transferencias de `plant_lore` y de `firemaking` en la misma proporción, que el detallado no produce. Hasta que se decida,
+`knowledge()` exige que quien lo maneje dé `mu` y el resto de pruebas lo pasan explícito.
+
+### Correspondencia de la invención (`tools/people-knowledge-correspond.ts`)
+
+Semillas fuera de la medida (`delta,eps,zeta`); el detallado de 16 temporadas desde nada; el modelo, un pueblo con la población media
+del detallado, 60 streams por semilla. **Tolerancias escritas antes de la primera medida:** K1 media de técnicas dentro del 35 %
+del detallado; K2 al menos 2 de las 3 cuentas del detallado dentro del rango 5-95 % del modelo; K3 con la población doblada el
+modelo halla >= 20 % más (Kremer).
+
+| | detallado | modelo |
+|---|---|---|
+| técnicas tras 16 temporadas (`delta` 38,9 vivos, `eps` 43,3, `zeta` 20,7) | 4, 6, 1: media 3,67 | media 4,62 (razón 1,26): **K1 pasa** |
+| rango 5-95 % del modelo | | [0, 10]: 3 de 3 dentro, **K2 pasa** (con un rango tan ancho es poco exigente) |
+| población doblada | | 10,33 frente a 4,62: **K3 pasa** |
+
+El modelo se pasa un 26 % (dentro de la tolerancia) y el rango de 0 a 10 dice poco: la correspondencia es de orden de magnitud con
+tres semillas, no una medida fina. Por técnica no se compara (ver arriba: `plant_lore` sale mucho más rápida en el detallado).
+
+### «Nada por guion» (`people-knowledge.test.ts`, 15 pruebas)
+
+Ninguna técnica se concede por fecha, nombre, región concreta o identidad: lo único que entra es la población, lo que ya se tiene,
+lo que la región ofrece (materiales) y los contactos. Una *auditoría* mide invariantes que una versión honesta cumple y un guion
+rompe: (A1) un pueblo sin gente y sin vecinos que ya sabe cosas no gana nada en 40 temporadas; (A2) sin materiales solo se
+inventan técnicas de prototipo vacío, con 1 a 4 comarcas y varios pueblos; (A3) un vecino con contacto 0 no cambia nada
+(mismas semillas, mismos números); (A4) fundar el pueblo 40 temporadas después da el mismo ritmo relativo (±25 %) y la primera
+técnica no llega en la misma temporada en todas las ejecuciones; (A5) dos pueblos idénticos con id 1 y 2 se parecen (±20 %). Se
+comprueba que la auditoría **no es vacía** (sin materiales el honesto aún inventa más de cinco técnicas, todas de prototipo
+vacío) y que **falla** contra cuatro versiones trucadas: concesión por fecha (temporada 6), por nombre (si tiene plant_lore y
+cordage, basketry), por región (comarcas == 3, farming) y por identidad (el pueblo 2, pottery). Además, ningún nombre de técnica
+aparece en el código de `PeopleKnowledge.ts` (leído sin comentarios). Otras pruebas: la probabilidad de invención solo usa
+dificultad y población efectiva; solo se adquiere con requisitos y no en la misma temporada; la invención escala con el
+tamaño (razón de tiempos entre 2,8 y 5,5 con 4x población, esperada 4) y un vecino con contacto 1 cuenta como población (<0,7x),
+con contacto 0 no; sin trigo silvestre no hay agricultura (0 de 40) y con trigo sí (más de 30 de 40); aprender sube escalón a
+escalón de la cadena de requisitos de `farming` (la cadena completa llega a farming, sin saltos) y cuenta con la similitud
+climática y el contacto.
+
+Límites: una sola `KAPPA` para todas las técnicas; sin olvido, sin refinamiento ni practicantes; el clima es una suposición;
+`MU` sin medir; contacto sin escritor; la población del pueblo viene de fuera (aquí constante: este mecanismo no la mueve). La
+puerta `peoples-match-bands` no se ha corrido.

@@ -1,3 +1,17 @@
+## M15 fase 32c: el aprendizaje entre pueblos no tiene tasa medida (2026-10-06)
+
+- **`MU` sin medir**: solo la cota `LEARN_MU_BOUND` = 0,043 (`firemaking` 0 de 85 temporadas-candidata en 5 semillas). `plant_lore`
+  llega a la otra banda en las 5 pero se inventa sola igual de rápido; entre las dos técnicas hay >5x. Decisión del
+  propietario pendiente (transmisibilidad por técnica o `MU` agregado): ver el doc de 32c, sec. 3. Hasta entonces `knowledge()` exige `mu`.
+- **`KAPPA` es un agregado**: el detallado encuentra `plant_lore` en 3-5 temporadas en las tres semillas (~0,25 por
+  temporada) y el modelo con 1/dificultad da ~0,07; el modelo acierta el número total de técnicas, no cuáles ni cuándo.
+- **Sin escritor de contactos**: `PeopleRelation.contact` lo leen la invención (población efectiva) y el aprendizaje, y ningún
+  mecanismo lo escribe todavía (comercio, matrimonio, guerra, cercanía son los siguientes). El clima de la región y su
+  similitud son una suposición de diseño, solo probada monótona.
+- **Sin olvido, refinamiento ni practicantes** dentro del pueblo: un bit por técnica. Las técnicas no se pierden nunca.
+- **Medidas con pocos eventos**: 16 invenciones y 5 semillas de traspaso; el rango de 5-95 % del modelo en la
+  correspondencia es [0, 10] técnicas: `K2` es poco exigente.
+
 ## M15 fase 32c: `PeopleSim` no reproduce el colapso de `lean` (2026-10-06)
 
 - **`lean`: el detallado colapsa a ~1 persona y el modelo de pueblo se queda en ~11** (semillas nuevas `delta,eps,zeta`:

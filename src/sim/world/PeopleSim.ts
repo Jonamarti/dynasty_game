@@ -341,6 +341,13 @@ export class PeopleSim {
     return rel;
   }
 
+  /** Every relation that touches a people, in relation-id order (stable). */
+  relationsOf(id: number): PeopleRelation[] {
+    const out: PeopleRelation[] = [];
+    for (const rel of this.relations.values()) if (rel.a === id || rel.b === id) out.push(rel);
+    return out.sort((x, y) => x.id - y.id);
+  }
+
   /** Mark an aggregate transaction as applied. False on the second call with the same id. */
   commit(transactionId: number): boolean {
     if (this.applied.has(transactionId)) return false;

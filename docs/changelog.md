@@ -1,3 +1,20 @@
+## 2026-10-06 — M15 fase 32c: inventar y aprender de vecinos (`PeopleKnowledge`)
+
+Tercer mecanismo del nivel 2. Invención al modo de Kremer: probabilidad por técnica candidata y temporada
+`1 - exp(-KAPPA x Neff / dificultad)`, con `Neff` = población + contactos ponderados y solo si la región tiene los materiales
+del primer prototipo (sin trigo silvestre no se inventa la agricultura, se aprende); aprendizaje por contacto y similitud
+de clima. Por qué así: el diseño exige que las técnicas surjan de población, contacto y región, nunca de una fecha o un nombre
+(§3 de `m15_simulation_lod.md`), con los mismos `requires` (los impone `TechSet.add`). `KAPPA` se midió en el detallado
+(`tools/people-discovery.ts`, 16 invenciones en 3 semillas, intervalo 2,4e-4 a 7,0e-4) y la invención se contrastó en
+semillas nuevas con tolerancias escritas antes: 4,6 frente a 3,7 técnicas (K1, K2, K3 pasan; el rango del modelo es
+ancho). **El aprendizaje no se pudo medir**: `firemaking` no pasó de una banda a otra en 85 temporadas-candidata y
+`plant_lore` pasó en las 5 semillas pero se inventa igual de rápido sola, así que solo hay una cota (0,043) y la
+función exige `mu` explícito; la pregunta (transmisibilidad por técnica o `MU` agregado) queda para el propietario. Test
+«nada por guion»: una auditoría (sin gente nada se gana; sin materiales solo prototipos vacíos; un vecino a contacto 0 no
+cambia nada; el calendario y la identidad no importan) que pasa en el modelo honesto y **falla** contra versiones que
+conceden por fecha, nombre, región o identidad. Juego bit-idéntico (nada de `Simulation` lo llama). Doc: sec. 3 de
+`m15_phase32c_peoples.md`.
+
 ## 2026-10-06 — M15 fase 32c: crecer o menguar y capacidad de banda por estación (`PeopleDemography`)
 
 Segundo mecanismo del nivel 2. Primero se **midió** (`tools/people-calibrate.ts`: `lean`, `craft` y `lean` con el kit
