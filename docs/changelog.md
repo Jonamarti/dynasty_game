@@ -1,3 +1,15 @@
+## 2026-10-06 — M15 fase 13d: lanza endurecida al fuego (`fire_hardened_spear`)
+
+Craft de la red Armas (puerta `spear`; requiere `spear` y `firemaking`; práctica
+que se prueba cazando). La lanza del que lo sabe vale `HARDENED_SPEAR` (1,25)
+veces más, más con el refinamiento: un solo término, `weaponPower`, que leen
+`weaponOf` y `weaponItemOf`, y con ellos `doHunt` y `doAttack`. Quien no lo sabe
+tiene exactamente el poder de antes (bit-idéntico sin el nodo: en las carreras
+sin siembra el resultado es el mismo antes y después). Edad
+`middle_palaeolithic` en lugar de la inferior del plan, porque un nodo no puede
+ser anterior a sus requisitos. Se enseña (13 y 14 lecciones, 21 portadores con
+siembra) pero se caza poco (2 `armed_hunt`). Cohorte de 20 semillas no corrida.
+
 ## 2026-10-06 — M15 fase 13d: torta (`flatbread`) y Cocina
 
 `flatbread` (craft; Epipaleolítico, hace unos 14.400 años; requiere `cooking` y

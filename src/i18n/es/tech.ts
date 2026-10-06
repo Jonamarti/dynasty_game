@@ -392,4 +392,10 @@ export const ES_TECH: Record<string, string> = {
   "was grinding by the hearth when a smear of meal and water caught on the hot stone and baked": "molía junto al hogar cuando un churrete de harina y agua se pegó a la piedra caliente y se coció",
   "tired of gruel and laid a flat of wet meal on the hearth stone to see what the fire made of it": "se cansó de las gachas y puso una torta de harina mojada sobre la piedra del hogar para ver qué hacía el fuego con ella",
   "Meal baked on the hearth stone into a flat cake: more nourishing than the meal, and no oven needed.": "Harina cocida en la piedra del hogar hasta hacer una torta: más nutritiva que la harina, y sin necesidad de horno.",
+  "Fire-hardened spear": "Lanza endurecida al fuego",
+  "The tip of the spear turned in the fire and scraped to a point. It goes deeper and does not splinter: the same spear, a good deal more deadly.": "La punta de la lanza girada en el fuego y raspada hasta afilarla. Penetra más y no se astilla: la misma lanza, bastante más mortífera.",
+  "saw a spear point blunt on a boar’s hide and wondered whether fire could keep an edge on it": "vio cómo una punta de lanza se embotaba en el cuero de un jabalí y se preguntó si el fuego podría conservarle el filo",
+  "left a pointed stick in the embers by mistake and found it hard as bone the next morning": "dejó un palo con punta en las brasas por descuido y a la mañana siguiente lo encontró duro como el hueso",
+  "lost a deer to a point that bent and turned the tip in the fire until it would not": "perdió un ciervo por una punta que se dobló y giró la punta en el fuego hasta que dejó de doblarse",
+  "The spear hits harder, in a hunt and in a fight.": "La lanza pega más fuerte, en una cacería y en una pelea.",
 };

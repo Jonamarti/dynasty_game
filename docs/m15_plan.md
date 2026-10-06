@@ -1545,6 +1545,8 @@ honda`.
 
 **Avance del 2026-10-06 (2):** `flatbread` hecho (`m15: torta — pan sin horno`): craft (Epipaleolítico; `cooking`, `grinding`), receta `flatbread` en la hoguera (1 harina → 1 torta), y **Cocina se abre** (`cooking.opens = 'kitchen'`, con `stone_boiling` y `flatbread`). Detalle y medidas en [m15_phase13_subwebs.md](m15_phase13_subwebs.md).
 
+**Avance del 2026-10-06 (3):** `fire_hardened_spear` hecho (`m15: lanza endurecida al fuego`): craft de Armas (práctica, se prueba cazando; `spear`, `firemaking`) que multiplica por `HARDENED_SPEAR` (1,25, escalado por `techPower`) el poder de la lanza en `weaponPower`, el único término que leen `weaponOf` y `weaponItemOf` y por tanto `doHunt` y `doAttack`. Edad `middle_palaeolithic`, no la del plan (ver dudas).
+
 ## Fase 14 — La ropa por capas (nota 1; decisión 8)
 
 **Objetivo.** «No toda la ropa es igual.» Una capa de piel pide piel y una

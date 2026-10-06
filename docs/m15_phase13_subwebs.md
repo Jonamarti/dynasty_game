@@ -220,6 +220,49 @@ propietario.
 en un contenedor Linux en la nube. **Capturas:**
 `artifacts/screenshots/m15-phase13d-flatbread-2026-10-06/`.
 
+## 13d — `fire_hardened_spear`: la lanza endurecida (2026-10-06, comportamiento medido)
+
+**Qué hay.** `fire_hardened_spear`, `tier: 'craft'`, `web: 'arms'`, edad
+`middle_palaeolithic`, requiere `spear` y `firemaking`, dificultad 0,3 (0,12
+efectiva), habilidad `knap`, `refinamiento` máximo 2. Es una **práctica** que se
+prueba cazando (`practisedBy: ['hunt']`): no hace ningún ítem nuevo, así que no
+tiene prototipo. Tres chispas (cazar con lanza; palo con punta y brasas;
+presa escapada).
+
+**El efecto, un término.** `weaponPower(person, tech)` en `Tech.ts` es
+`techPower` y, solo para la lanza, `x scaled(person, 'fire_hardened_spear',
+HARDENED_SPEAR)` con `HARDENED_SPEAR = 1.25`. Lo leen `weaponOf` y
+`weaponItemOf`, que son lo que llaman `doHunt` (`weapon.hunt * weapon.power`) y
+`doAttack` (`weapon.damage * weapon.power`), así que ni `ActionSystem` ni el
+cerebro cambian. Para quien no sabe el nodo `scaled` es `1 + 0 * ...` y el
+poder es exactamente el de antes. El arco y el átlatl no se tocan; un arco
+(2,4 de caza) sigue por encima de la lanza endurecida (1,6 x 1,25 = 2,0).
+
+**Por qué `craft`.** Es una variante de su puerta, no un diseño nuevo: se
+descubre con facilidad (carbonizar la punta) y se enseña de pasada, que es como
+se difundiría un truco así. **Por qué no cambia la edad del plan:** el plan la
+pone en el Paleolítico inferior (Clacton, hace unos 400.000 años), pero `spear`
+y `firemaking` están en el medio, y el test de edades prohíbe un nodo anterior a
+sus requisitos. Se deja en el medio y el `firstKnown` conserva los 400.000 años.
+
+**Tests.** 6 más en `craft-nodes.test.ts`: declaración y red, edad y práctica,
+efecto en caza y combate para quien lo sabe, término único (el arco, y quien no
+lo sabe, intactos; el refinamiento lo endurece más), chispas y enseñanza por
+`chat`.
+
+**Medida.** `band`, `hearths` y `craft` coinciden en fila final (vivos 31/31,
+42/42, 13/13) y en checks (ninguno cambia; fallos 2, 6 y 6). Las carreras de
+ejercicio sin siembra dan **el mismo resultado antes y después** (25 a 30 y 25 a
+29): nadie concibe el nodo. Con siembra de dos fundadores por banda se enseña
+(14 y 13 lecciones, 21 portadores) y la población no se hunde (25 a 30 y 33),
+pero se caza poco (2 `armed_hunt` por carrera): el efecto se lee pero casi no
+se ejerce. Es la caza la que es rara, no el nodo. No hay captura: el nodo no
+añade nada visible fuera de la red de tecnología, cuya pantalla es 13c.
+
+**No se corrió** la cohorte de 20 semillas; queda para la máquina del
+propietario. **Verificación:** sustituto esbuild/shim de vitest y un servidor
+esbuild en un contenedor Linux en la nube.
+
 ## Dudas abiertas
 
 1. **Cocina no se abre en 13a.** La tabla del plan supone que el asado, `bread` y
@@ -266,4 +309,7 @@ en un contenedor Linux en la nube. **Capturas:**
 12. **Torta sin harina.** `flatbread` se enseña pero no se hornea en carreras
     cortas porque `meal` depende de una muela que casi nadie construye. ¿Basta,
     o se quiere una receta de torta con grano o bellota sin moler?
+13. **Edad de `fire_hardened_spear`, decidida.** Queda en `middle_palaeolithic`
+    (ver la sección de arriba); si se quiere la edad del plan hay que mover
+    `spear` y `firemaking` o aflojar el test de edades.
 

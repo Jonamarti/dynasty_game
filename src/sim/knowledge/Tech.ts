@@ -154,6 +154,8 @@ export const TECHS = [
   // order the web is laid out in.
   'stone_boiling',
   'flatbread',
+  // The two weapons of the same phase: a variant of the spear and a new one.
+  'fire_hardened_spear',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1556,6 +1558,38 @@ export const TECH: Record<Tech, TechDef> = {
       'leaven: a flat cake that is the first bread, and a food worth more than ' +
       'the meal it came from.',
   },
+  // A craft in Weapons, and a variant of its gate: the same spear with its tip
+  // charred and scraped. Craft because it is a variant (it is hit upon at 0.4 of
+  // its difficulty and a hunter shows it over small talk, which is how a trick
+  // like this spread), not a new design to be worked out. It makes no new item,
+  // so it is a practice, tried by the one act it improves: hunting.
+  // The plan puts it in the Lower Palaeolithic (Clacton, ~400,000 years ago),
+  // but `spear` and `firemaking` are Middle Palaeolithic here and a node may not
+  // be older than what it rests on, so it follows them; see Dudas abiertas.
+  fire_hardened_spear: {
+    id: 'fire_hardened_spear', label: 'Fire-hardened spear', domain: 'beasts',
+    web: 'arms',
+    tier: 'craft',
+    age: 'middle_palaeolithic', firstKnown: 'about 400,000 years ago',
+    kind: 'practice', practisedBy: ['hunt'],
+    requires: ['spear', 'firemaking'], difficulty: 0.3, skill: 'knap',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'firemaking' },
+                { kind: 'holding', item: 'spear' }, { kind: 'doing', action: 'hunt' }],
+        weight: 1.0, story: 'saw a spear point blunt on a boar’s hide and wondered whether fire could keep an edge on it' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'firemaking' },
+                { kind: 'holding', item: 'sticks' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'left a pointed stick in the embers by mistake and found it hard as bone the next morning' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'firemaking' },
+                { kind: 'saw', what: 'quarry_escaped' }],
+        weight: 0.5, story: 'lost a deer to a point that bent and turned the tip in the fire until it would not' },
+    ],
+    description:
+      'The tip of the spear turned in the fire and scraped to a point. It ' +
+      'goes deeper and does not splinter: the same spear, a good deal more ' +
+      'deadly.',
+  },
   the_wheel: {
     id: 'the_wheel', label: 'The wheel', domain: 'timber',
     age: 'neolithic', firstKnown: 'about 3500 BC',
@@ -2190,6 +2224,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'Meal baked on the hearth stone into a flat cake: more nourishing than the meal, and no oven needed.',
     site: 'RECIPES.flatbread at the hearth; ITEMS.flatbread',
   },
+  fire_hardened_spear: {
+    summary: 'The spear hits harder, in a hunt and in a fight.',
+    site: 'weaponPower in Tech.ts, read through weaponOf by ActionSystem.doHunt and doAttack',
+  },
   the_wheel: {
     summary: 'A cart: what a strap and a basket carry, and a cartload more on top.',
     site: 'the equipped cart capacity in sim/core/Carry.ts; RECIPES.cart',
@@ -2298,8 +2336,22 @@ export function weaponOf(
     damage: weapon.damage,
     reach: weapon.reach,
     hunt: weapon.hunt,
-    power: techPower(person, weapon.tech as Tech),
+    power: weaponPower(person, weapon.tech as Tech),
   };
+}
+
+/**
+ * How strong a weapon's design is in this person's hands: `techPower`, and for
+ * the spear one factor more, the fire-hardened tip (M15 phase 13d). The single
+ * term both `weaponOf` and `weaponItemOf` read, so `doHunt` and `doAttack` agree
+ * about the spear with no edit of their own. For somebody who lacks the node it
+ * is exactly `techPower` (`scaled` is `1 + 0 * ...`, and `x * 1` is `x`), so a
+ * world that has not found it behaves as it did.
+ */
+export const HARDENED_SPEAR = 1.25;
+export function weaponPower(person: Person, tech: Tech): number {
+  const power = techPower(person, tech);
+  return tech === 'spear' ? power * scaled(person, 'fire_hardened_spear', HARDENED_SPEAR) : power;
 }
 
 /** The item selected by `weaponOf`, exposed so the action system can fit it. */
@@ -2317,7 +2369,7 @@ export function weaponItemOf(
     if (count <= 0 || (equipped && !equipped.has(itemId))) continue;
     const weapon = ITEMS[itemId]?.weapon;
     if (!weapon || ITEMS[itemId]!.hand.hands > maxHands) continue;
-    const power = techPower(person, weapon.tech as Tech);
+    const power = weaponPower(person, weapon.tech as Tech);
     if (power <= 0) continue;
     const worth = (forHunt ? weapon.hunt : weapon.damage) * power;
     if (best === null || worth > best.worth) best = { item: itemId, worth };

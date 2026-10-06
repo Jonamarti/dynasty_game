@@ -14,8 +14,9 @@ import { Person, DAYS_PER_YEAR } from '../entities/Person.ts';
 import { SpatialHash } from '../core/SpatialHash.ts';
 import { World } from '../core/World.ts';
 import { makeConfig } from '../core/Config.ts';
-import { TECH, WEBS, SUB_WEBS, difficultyOf, tierOf, webOf, techsOfWeb } from '../knowledge/Tech.ts';
+import { TECH, WEBS, SUB_WEBS, ageIndex, difficultyOf, tierOf, webOf, techsOfWeb } from '../knowledge/Tech.ts';
 import { sparkFires, type Notice } from '../knowledge/Synthesis.ts';
+import { weaponOf, techPower } from '../knowledge/Tech.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { SICKENS } from '../entities/Body.ts';
@@ -282,5 +283,93 @@ describe('flatbread and the opening of Kitchen', () => {
       sim.step();
     }
     expect(person.inventory.count('flatbread')).toBe(1);
+  });
+});
+
+describe('fire_hardened_spear and the spear that hits harder', () => {
+  function hunter(name: string, ...techs: string[]): Person {
+    const person = adult(name);
+    for (const tech of techs) { person.knownTech.add(tech); person.techLevel.set(tech, 0); }
+    person.inventory.add('spear', 1);
+    return person;
+  }
+
+  it('is a craft that needs the spear and fire, in the Weapons web', () => {
+    const def = TECH.fire_hardened_spear;
+    expect(tierOf('fire_hardened_spear')).toBe('craft');
+    expect(def.requires).toEqual(['spear', 'firemaking']);
+    expect(def.firstKnown.length).toBeGreaterThan(0);
+    expect(webOf('fire_hardened_spear')).toBe('arms');
+    expect(techsOfWeb('arms')).toContain('fire_hardened_spear');
+    expect(difficultyOf('fire_hardened_spear', config.knowledge))
+      .toBeCloseTo(def.difficulty * 0.4, 12);
+  });
+
+  it('is no earlier than what it rests on (the age test), and tried by hunting', () => {
+    const def = TECH.fire_hardened_spear;
+    expect(ageIndex(def.age)).toBeGreaterThanOrEqual(ageIndex(TECH.spear.age));
+    expect(ageIndex(def.age)).toBeGreaterThanOrEqual(ageIndex(TECH.firemaking.age));
+    expect(def.kind).toBe('practice');
+    expect(def.practisedBy).toContain('hunt');
+  });
+
+  it('makes the spear hit harder for whoever knows it, in a hunt and in a fight', () => {
+    const plain = hunter('Plain', 'spear', 'firemaking');
+    const hard = hunter('Hard', 'spear', 'firemaking', 'fire_hardened_spear');
+    const a = weaponOf(plain, true)!;
+    const b = weaponOf(hard, true)!;
+    // `doHunt` reads `hunt * power` and `doAttack` reads `damage * power`.
+    expect(b.hunt * b.power).toBeGreaterThan(a.hunt * a.power);
+    const c = weaponOf(plain, false)!;
+    const d = weaponOf(hard, false)!;
+    expect(d.damage * d.power).toBeGreaterThan(c.damage * c.power);
+    expect(b.hunt).toBe(a.hunt);
+    expect(b.damage).toBe(a.damage);
+  });
+
+  it('is one term: nobody who lacks it, and no weapon but the spear, is touched', () => {
+    const plain = hunter('Plain', 'spear');
+    const power = weaponOf(plain, false)!.power;
+    expect(power).toBe(techPower(plain, 'spear'));
+    const archer = adult('Archer');
+    archer.knownTech.add('bow'); archer.techLevel.set('bow', 0);
+    archer.knownTech.add('fire_hardened_spear'); archer.techLevel.set('fire_hardened_spear', 0);
+    archer.inventory.add('bow', 1);
+    expect(weaponOf(archer, true)!.power).toBe(techPower(archer, 'bow'));
+    // Refining it hardens the spear further, up to its own ceiling.
+    const hard = hunter('Hard', 'spear', 'fire_hardened_spear');
+    const level0 = weaponOf(hard, false)!.power;
+    hard.techLevel.set('fire_hardened_spear', 2);
+    expect(weaponOf(hard, false)!.power).toBeGreaterThan(level0);
+  });
+
+  it('occurs to a hunter with a spear and a fire, by routes that need nothing rare', () => {
+    const [byHunt, byCraft, byEscape] = TECH.fire_hardened_spear.sparks;
+    const base = { knows: new Set(['spear', 'firemaking']) };
+    expect(sparkFires(byHunt!, notice({ ...base, holding: new Set(['spear']), lately: new Set(['hunt']) }))).toBe(true);
+    expect(sparkFires(byHunt!, notice(base))).toBe(false);
+    expect(sparkFires(byCraft!, notice({ ...base, holding: new Set(['sticks']), lately: new Set(['craft']) }))).toBe(true);
+    expect(sparkFires(byEscape!, notice({ ...base, saw: new Set(['quarry_escaped']) }))).toBe(true);
+    for (const spark of TECH.fire_hardened_spear.sparks) {
+      expect(spark.needs.some(n => n.kind === 'doing' || n.kind === 'holding' || n.kind === 'saw')).toBe(true);
+    }
+  });
+
+  it('is passed on over small talk to somebody who has the spear and the fire', () => {
+    const knowledge = new KnowledgeSystem();
+    const teacher = adult('Smith');
+    const friend = adult('Friend');
+    const stranger = adult('Stranger');
+    teacher.knownTech.add('fire_hardened_spear');
+    teacher.skills.teach = 100;
+    for (const tech of ['spear', 'firemaking']) friend.knownTech.add(tech);
+    stranger.knownTech.add('spear');
+    const rng = new RNG('spear-talk');
+    for (let i = 0; i < 40; i++) {
+      knowledge.conversationLesson(teacher, friend, 'chat', 1000, rng, () => 1);
+      knowledge.conversationLesson(teacher, stranger, 'chat', 1000, rng, () => 1);
+    }
+    expect(friend.knownTech.has('fire_hardened_spear')).toBe(true);
+    expect(stranger.knownTech.has('fire_hardened_spear')).toBe(false);
   });
 });
