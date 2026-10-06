@@ -236,6 +236,10 @@ No se promete que una aglomeración de 300 visibles cueste lo mismo que 30.
    niveles, viajes, órdenes e interacciones; integración del foco desde main.
 4. **32c, pueblos:** demografía, economía, avance técnico y contactos agregados,
    cada mecanismo en su commit con tests y medidas; después su materialización.
+   Avance 2026-10-06: `src/sim/world/PeopleSim.ts` (estructura de un pueblo: cohortes por
+   edad y sexo, técnicas como bitset sobre `TECHS`, cultura, organización derivada, relaciones
+   de un solo dueño, stream derivado y actualización estacional por número de paso); inerte.
+   Detalle y medidas en [m15_phase32c_peoples.md](m15_phase32c_peoples.md).
 5. **32, integración y coste:** cohortes y perfil de las transiciones; separación
    de dibujo y pasos para aceleración. Guardado definitivo en fase 33.
 

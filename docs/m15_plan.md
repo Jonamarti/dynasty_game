@@ -3251,6 +3251,10 @@ población, sus técnicas (repartidas para que la banda conozca lo que su pueblo
 conoce), su cultura y su repertorio de nombres. Al revés, al quedar lejos, se
 funden en su pueblo sin perder población ni técnicas.
 
+**Avance del 2026-10-06 (32c-1, estructura):** `PeopleSim.ts` con cohortes por edad y sexo, `TechSet`
+(bitset sobre `TECHS` con los mismos `requires`), cultura, organización derivada, relaciones de un solo
+dueño, stream derivado de la semilla y actualización por número de paso; inerte. [Detalle](m15_phase32c_peoples.md).
+
 **Puertas**, encadenadas:
 
 - `peoples-match-bands`: el mismo escenario, dos años en nivel 1 y dos en nivel

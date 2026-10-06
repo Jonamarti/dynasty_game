@@ -1,3 +1,17 @@
+## 2026-10-06 — M15 fase 32c: estructura de un pueblo (`PeopleSim`)
+
+Primer mecanismo del nivel 2. `src/sim/world/PeopleSim.ts`: un pueblo tiene cohortes por edad y
+sexo (13 bandas de 5 años), comarcas ocupadas (número), técnicas como bitset sobre `TECHS` que
+rechaza una técnica sin sus `requires`, cultura (normas, `strangerRegard`, media de rasgos),
+excedente y un nivel de organización derivado de las técnicas (no guardado). Por qué así: el diseño
+(§3-§5 de `m15_simulation_lod.md`) exige que lo lejano evolucione con el mismo árbol, que ninguna
+relación o transacción se aplique dos veces (una relación = un registro con id; `commit` idempotente)
+y que ni la semilla, ni el FPS, ni el recorte de la corrida cambien el resultado: streams derivados de
+`semilla|id` fuera de los forks de `Simulation`, y la actualización estacional se reparte por número de
+paso (hash de semilla e id), no por reloj. Tests con controles negativos (corte de la corrida,
+streams re-derivados al restaurar, relación duplicada, registro dañado). Nada de `Simulation` lo
+llama: juego bit-idéntico. Doc: `m15_phase32c_peoples.md`.
+
 ## 2026-10-06 — M15 fase 32b: demografía compacta (envejecer, concebir, parir, morir de vejez)
 
 `CompactBody` acepta `env.life`: en cada día de calendario cruzado llama a `LifeSystem.daily` con la
