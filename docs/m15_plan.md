@@ -2969,6 +2969,15 @@ cerrar esta fase**: «una `Simulation` es una isla» deja de ser verdad.
 
 ## Fase 30 — El agua dulce y la sal (M14 fase 12; nota 7 de `notes3`; N2)
 
+**Segunda pasada del 2026-10-06: cohorte autónoma.** `frontier-cohort` añade
+cinco años de dos bandas sin setup forzado y tres checks de bebida/vadeo.
+El observador es pasivo y distingue cruces completos de estancias en agua.
+Sus cinco regresiones incluyen hash salado roto, desvío a la misma orilla,
+checkpoint idéntico y muerte por deshidratación sin fuentes alternativas.
+Suite final: 1.111 tests, 162 archivos; typecheck y 83 e2e pasan.
+El cierre espera veinte semillas finales y auditorías contra las referencias
+de esta pasada y de antes de toda la fase. [Informe](m15_phase30_verification_20261006.md).
+
 **Segunda pasada del 2026-10-06: continuidad fluvial corregida.** Los giros,
 confluencias y vados consultan nodos globales y una fase común hacia el desagüe.
 Un mapa entero coincide baldosa por baldosa con cuatro recortes a la misma

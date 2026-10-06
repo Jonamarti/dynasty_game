@@ -5,6 +5,7 @@ import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { earthWorldGeography } from '../src/sim/world/WorldGeography.ts';
 import { WORLD_FEATURE } from '../src/sim/world/WorldFeatureSeeds.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
+import { hydrationOf } from '../src/sim/core/Macros.ts';
 
 export function frontierGeography() {
   const heights = [100, 85, 70, 55, 40, 25, -10, -20];
@@ -21,6 +22,128 @@ export function frontierGeography() {
 export function createFrontier(config: DeepPartial<SimConfig>): Simulation {
   return new Simulation(config, new IdSpace(), { geography: frontierGeography(),
     x: 40, y: 20, comarcasWide: 60, comarcasHigh: 20 });
+}
+
+/**
+ * A separate, naturally populated continental cohort. Unlike `frontier`, it
+ * gives nobody a thirst value, location, order, or completed route: those are
+ * all the ordinary spawner and AI. It shares the same measured geography so
+ * the short fixture remains available for deterministic mechanism failures.
+ */
+export function createFrontierCohort(config: DeepPartial<SimConfig>): Simulation {
+  return createFrontier(config);
+}
+
+interface CohortWalker {
+  fromComponent: number | null;
+  last: { x: number; y: number };
+}
+const cohortWalkers = new WeakMap<Simulation, Map<number, CohortWalker>>();
+const eatenHydrating = new WeakMap<Simulation, Map<number, Map<string, number>>>();
+const cohortFishAmounts = new WeakMap<Simulation, Map<number, number>>();
+const saltSeenByCohort = new WeakMap<Simulation, Set<number>>();
+const dryComponents = new WeakMap<Simulation, { earthVersion: number; labels: Int32Array }>();
+
+/** Dry-passable components with river and other water treated as barriers. */
+function dryComponentLabels(sim: Simulation): Int32Array {
+  const cached = dryComponents.get(sim);
+  if (cached?.earthVersion === sim.world.earthVersion) return cached.labels;
+  const world = sim.world;
+  const labels = new Int32Array(world.width * world.height).fill(-1);
+  let next = 0;
+  const queue: number[] = [];
+  for (let y = 0; y < world.height; y++) for (let x = 0; x < world.width; x++) {
+    const start = world.index(x, y);
+    if (labels[start] !== -1 || !world.isWalkable(x, y) || world.isWater(x, y) ||
+        world.biomeAt(x, y) === 'river') continue;
+    labels[start] = next;
+    queue.push(start);
+    for (let head = 0; head < queue.length; head++) {
+      const at = queue[head]!;
+      const ax = at % world.width, ay = Math.floor(at / world.width);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const bx = ax + dx, by = ay + dy;
+        if (!world.inBounds(bx, by) || !world.isWalkable(bx, by) || world.isWater(bx, by) ||
+            world.biomeAt(bx, by) === 'river') continue;
+        const bi = world.index(bx, by);
+        if (labels[bi] !== -1) continue;
+        labels[bi] = next;
+        queue.push(bi);
+      }
+    }
+    queue.length = 0;
+    next++;
+  }
+  dryComponents.set(sim, { earthVersion: world.earthVersion, labels });
+  return labels;
+}
+
+/** Read-only per-tick census; it never changes an AI input or consumes RNG. */
+export function observeFrontierCohort(sim: Simulation): void {
+  let walkers = cohortWalkers.get(sim);
+  if (!walkers) { walkers = new Map(); cohortWalkers.set(sim, walkers); }
+  let eaten = eatenHydrating.get(sim);
+  if (!eaten) { eaten = new Map(); eatenHydrating.set(sim, eaten); }
+  let fishAmounts = cohortFishAmounts.get(sim);
+  if (!fishAmounts) { fishAmounts = new Map(); cohortFishAmounts.set(sim, fishAmounts); }
+  let saltSeen = saltSeenByCohort.get(sim);
+  if (!saltSeen) { saltSeen = new Set(); saltSeenByCohort.set(sim, saltSeen); }
+  const w = sim.world;
+  const components = dryComponentLabels(sim);
+  for (const fish of sim.nodes) {
+    if (fish.kind !== 'fish') continue;
+    const before = fishAmounts.get(fish.id);
+    if (before !== undefined && fish.amount < before && w.isFreshWater(fish.x, fish.y)) {
+      telemetry.count('frontier_cohort_fresh_fish_taken', before - fish.amount);
+    }
+    fishAmounts.set(fish.id, fish.amount);
+  }
+  for (const person of sim.livingPeople()) {
+    const x = person.x | 0, y = person.y | 0;
+    const river = w.biomeAt(x, y) === 'river' && w.isWadeTile(x, y);
+    let track = walkers.get(person.id);
+    if (!track) { track = { fromComponent: null, last: { x: person.x, y: person.y } }; walkers.set(person.id, track); }
+    if (river) {
+      telemetry.count('frontier_cohort_wading_steps');
+      if (track.fromComponent === null) {
+        track.fromComponent = components[w.index(track.last.x | 0, track.last.y | 0)] ?? -1;
+      }
+    } else if (track.fromComponent !== null) {
+      const endComponent = w.isWater(x, y) ? -1 : components[w.index(x, y)] ?? -1;
+      // Distance cannot distinguish a ford from walking along the bank and
+      // turning back. Count only when dry movement on opposite components is
+      // separated by the observed wadeable river crossing.
+      if (track.fromComponent >= 0 && endComponent >= 0 && track.fromComponent !== endComponent) {
+        telemetry.count('frontier_cohort_bank_to_bank');
+      }
+      track.fromComponent = null;
+    }
+    track.last = { x: person.x, y: person.y };
+
+    // Brain's visible-target rule is distance plus a route in the same land
+    // region. Count each NPC once only when it really had that salt candidate.
+    if (!person.isPlayer && !saltSeen.has(person.id) &&
+        sim.saltShoreHash.findNearest(person.x, person.y, sim.config.sightRadius,
+          shore => w.sameRegion(person.x, person.y, shore.x, shore.y))) {
+      saltSeen.add(person.id);
+      telemetry.count('frontier_cohort_salt_visible_people');
+    }
+
+    let priorFoods = eaten.get(person.id);
+    if (!priorFoods) { priorFoods = new Map(); eaten.set(person.id, priorFoods); }
+    for (const [itemId, total] of person.eatenToday) {
+      if (hydrationOf(itemId, true) <= 0) continue;
+      const before = priorFoods.get(itemId) ?? 0;
+      const consumed = total >= before ? total - before : total;
+      if (consumed > 0) telemetry.count('frontier_cohort_hydrating_food_units', consumed);
+      priorFoods.set(itemId, total);
+    }
+    // Today’s ledger is cleared at the daily boundary. Forget missing keys so
+    // the next day’s count starts from zero, including when nobody ate fruit.
+    for (const itemId of priorFoods.keys()) {
+      if (!person.eatenToday.has(itemId)) priorFoods.set(itemId, 0);
+    }
+  }
 }
 
 interface Crossing {

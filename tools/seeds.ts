@@ -30,6 +30,7 @@ import { makeConfig, type SimConfig } from '../src/sim/core/Config.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
 import { TECH, type Tech } from '../src/sim/knowledge/Tech.ts';
 import { DemographyWatch, formatDemography, type Demography } from './demography.ts';
+import { observeFrontierCohort } from './frontierFixture.ts';
 import { CohesionWatch, formatCohesion, type Cohesion } from './cohesion.ts';
 import { HistoryWatch, formatHistory, type HistoryReport } from './history.ts';
 import {
@@ -55,6 +56,18 @@ interface SeedResult {
   starvedInfants: number;
   starvedChildren: number;
   starvedAdults: number;
+  frontierWater: {
+    freshDrinkingTicks: number;
+    autonomousSeaDrinks: number;
+    dehydrationDeaths: number;
+    shallowRiverObservations: number;
+    bankToBankCrossings: number;
+    freshFishNodes: number;
+    saltFishNodes: number;
+    freshFishStockDecline: number;
+    hydratingFoodUnitsObserved: number;
+    hydratingFoodCandidates: number;
+  } | null;
   /** Technologies known to somebody still alive at the end. */
   known: number;
   /** Distinct technologies ever conceived that are not root nodes. */
@@ -159,6 +172,10 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   let trough = Infinity;
   let born = 0;
   const startingIds = new Set(sim.people.map(p => p.id));
+  const freshwaterFishNodes = scenarioName === 'frontier-cohort'
+    ? sim.nodes.filter(node => node.kind === 'fish' && sim.world.isFreshWater(node.x, node.y)).length : 0;
+  const saltwaterFishNodes = scenarioName === 'frontier-cohort'
+    ? sim.nodes.filter(node => node.kind === 'fish' && sim.world.isSaltWater(node.x, node.y)).length : 0;
   const demography = new DemographyWatch(sim.peopleById.values(), sim.config.time.ticksPerDay);
   const cohesion = new CohesionWatch(sim);
   const history = new HistoryWatch(sim);
@@ -168,6 +185,9 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   let lastEventId = 0;
   for (let i = 1; i <= steps; i++) {
     sim.step();
+    // This observer only reads completed movement and food ledgers. Keeping
+    // it out of ordinary cohorts preserves both their runtime and their data.
+    if (scenarioName === 'frontier-cohort') observeFrontierCohort(sim);
     if (sim.time.tick % 40 === 0) cohesion.observe();
     if (sim.time.tick % sim.config.time.ticksPerDay === 0) history.observe();
     // One census per day is enough for fertility exposure and birth/death
@@ -207,6 +227,18 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   // same reason mean survival does: on the century seed it is 0 and on eleven
   // other seeds it is 2 to 6, so one run says nothing at all.
   const counts = telemetry.snapshot();
+  const frontierWater = scenarioName === 'frontier-cohort' ? {
+    freshDrinkingTicks: counts.drink_fresh ?? 0,
+    autonomousSeaDrinks: counts.drink_sea_ai ?? 0,
+    dehydrationDeaths: counts.death_dehydration ?? 0,
+    shallowRiverObservations: counts.frontier_cohort_wading_steps ?? 0,
+    bankToBankCrossings: counts.frontier_cohort_bank_to_bank ?? 0,
+    freshFishNodes: freshwaterFishNodes,
+    saltFishNodes: saltwaterFishNodes,
+    freshFishStockDecline: counts.frontier_cohort_fresh_fish_taken ?? 0,
+    hydratingFoodUnitsObserved: counts.frontier_cohort_hydrating_food_units ?? 0,
+    hydratingFoodCandidates: counts.hydrating_food_candidate ?? 0,
+  } : null;
   const socialInterruptions = Object.fromEntries(Object.entries(counts)
     .filter(([key]) => key.startsWith('interrupted_')));
   const pastRoots = Object.keys(counts)
@@ -237,6 +269,7 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
     starvedInfants,
     starvedChildren,
     starvedAdults,
+    frontierWater,
     known: sim.knownTech.size,
     pastRoots,
     transmitted,
@@ -439,6 +472,29 @@ function main(): void {
   console.log(formatHistory(results.map(r => r.history)));
   console.log('  FOOD ACCESS accessible ' + sum(r => r.foodAccessible) + ' · blocked by reach ' +
     sum(r => r.foodBlockedByReach) + ' · absent from search ' + sum(r => r.foodAbsentInSearch));
+  if (results.some(r => r.frontierWater !== null)) {
+    const water = (field: keyof NonNullable<SeedResult['frontierWater']>) =>
+      sum(r => r.frontierWater?.[field] ?? 0);
+    console.log('  FRONTIER WATER freshwater drinking ticks ' + water('freshDrinkingTicks') +
+      ' · autonomous sea drinking ticks ' + water('autonomousSeaDrinks') +
+      ' · dehydration deaths ' + water('dehydrationDeaths') +
+      ' · shallow-river observations ' + water('shallowRiverObservations') +
+      ' · bank-to-bank crossings ' + water('bankToBankCrossings') +
+      ' · fresh/salt fish nodes ' + water('freshFishNodes') + '/' + water('saltFishNodes') +
+      ' · fresh fish stock net decline ' + water('freshFishStockDecline'));
+    console.log('  HYDRATION food units observed in eatenToday ' + water('hydratingFoodUnitsObserved') +
+      ' · AI candidate observations ' + water('hydratingFoodCandidates'));
+    console.log('  WATER BY SEED: seed fresh-drinking-ticks sea dehydration food-death river-observations cross hydrated-food-observed fish-stock-net-decline');
+    for (const result of results) {
+      const row = result.frontierWater;
+      if (!row) continue;
+      console.log('    ' + result.seed.padEnd(9) + String(row.freshDrinkingTicks).padStart(6) +
+        String(row.autonomousSeaDrinks).padStart(5) + String(row.dehydrationDeaths).padStart(12) +
+        String(result.demography.causes.starvation ?? 0).padStart(11) +
+        String(row.shallowRiverObservations).padStart(8) + String(row.bankToBankCrossings).padStart(6) +
+        String(row.hydratingFoodUnitsObserved).padStart(14) + ' ' + String(row.freshFishStockDecline).padStart(11));
+    }
+  }
   // M15 phase 7: keep the result beside the action that was asked for. A
   // world-wide obeyed/refused total hid the distinction between easy errands
   // and dangerous orders, which is the very relationship the phase measures.

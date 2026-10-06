@@ -16,6 +16,14 @@ de fase 15. El navegador mantiene selección clásica.
 
 ## M15 fase 29c: semillas y fuentes históricas incompletas (2026-10-05)
 
+**Hallazgo de auditoría, 2026-10-06.** Los setups clásicos `hearths`,
+`porters`, `scribes` y `conquest` introducen claves de configuración que el codec
+estricto de checkpoints no admite. La auditoría de fase 30 conserva toda la
+configuración original en el digest y normaliza únicamente la entrada del
+codec, tanto en referencia como en candidato; registra `configFallback`.
+Es una deuda previa de esas fixtures, no un fallo nuevo de agua ni una
+demostración de que sus checkpoints crudos sean guardables.
+
 La matriz de esta pasada conserva los 116 fallos del checkout inicial en
 30 escenarios, sin diferencias en recuentos o IDs de fallos. La cifra incluye
 `orchard` y no sustituye el resultado histórico de 27. Los cambios de raíz,

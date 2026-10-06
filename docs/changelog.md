@@ -1,3 +1,17 @@
+## 2026-10-06 — M15 fase 30: cohorte continental autónoma y métricas explícitas
+
+`frontier-cohort` usa dos bandas pobladas por el constructor normal durante
+cinco años de juego, sin órdenes, traslados ni sed forzada. El observador
+pasivo diferencia ticks de bebida, estancias en río somero, cruces entre
+componentes secos, stock neto de pesca y piezas hidratantes observadas.
+Un desvío que regresa a la misma orilla no cuenta como cruce; observar no
+cambia el checkpoint. Un control de hash salado detecta bebida marina de IA
+y otro, sin fruta ni pozo, demuestra muertes reales por deshidratación.
+Los cinco focales de cohorte pasan; la suite final pasa 1.111 tests en 162
+archivos, typecheck y 83 e2e. Se repiten las veinte semillas y ambas auditorías
+tras el último arreglo de fruta. [Informe](m15_phase30_verification_20261006.md).
+Registro visual de integración: `artifacts/screenshots/m15-phase30-closure-2026-10-06T-01/`.
+
 ## 2026-10-06 — M15 fase 30: la fruta de mochila precede a buscar agua
 
 Una regresión sin orillas dulces detectó que el scorer ofrecía explorar

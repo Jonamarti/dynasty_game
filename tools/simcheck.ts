@@ -34,7 +34,7 @@ import { handsEmptyForSwimming } from '../src/sim/core/Swimming.ts';
 import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
 import { auditRegions, auditSwimRegions } from './regions.ts';
 import { setupFoodNews, setupConflicts } from './checkFixtures.ts';
-import { createFrontier, setupFrontier, observeFrontier } from './frontierFixture.ts';
+import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
 
 /**
  * The outer band of a fire's circle that `fire-keeps-wolves-off` does not count.
@@ -175,6 +175,15 @@ function setupOrchard(sim: Simulation): void {
 }
 
 export const SCENARIOS: Record<string, Scenario> = {
+  'frontier-cohort': {
+    name: 'frontier-cohort',
+    description: 'Autonomous continental bands use freshwater and fords through five game years.',
+    config: { seed: 'frontier-cohort', world: { width: 64, height: 48 },
+      population: { bands: 2, peoplePerBand: 12 }, time: { ticksPerDay: 60 } },
+    create: createFrontierCohort,
+    steps: 12000,
+    checks: ['continental-water-is-used', 'continental-sea-is-avoided', 'continental-fords-are-used'],
+  },
   frontier: {
     name: 'frontier',
     description: 'Continental freshwater, a salt coast and a generated ford crossed by a real walker.',
@@ -1311,6 +1320,19 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
       fresh + ' freshwater drinking ticks, ' + sea + ' autonomous sea drinking ticks beside a salt coast');
     add('rivers-are-crossed', (tel.frontier_ford_crossed ?? 0) > 0,
       (tel.frontier_ford_crossed ?? 0) + ' completed bank-to-bank crossings through generated shallow river tiles');
+  }
+
+  if (base.scenario === 'frontier-cohort') {
+    const fresh = tel.drink_fresh ?? 0;
+    const sea = tel.drink_sea_ai ?? 0;
+    const saltSeen = tel.frontier_cohort_salt_visible_people ?? 0;
+    const wading = tel.frontier_cohort_wading_steps ?? 0;
+    add('continental-water-is-used', sim.world.freshShore.length > 0 && fresh > 0,
+      fresh + ' actual freshwater drinking ticks; dehydration deaths=' + (tel.death_dehydration ?? 0));
+    add('continental-sea-is-avoided', saltSeen > 0 && sea === 0,
+      saltSeen + ' autonomous coastal opportunities, ' + sea + ' autonomous sea drinking ticks');
+    add('continental-fords-are-used', wading > 0,
+      wading + ' autonomous shallow-river observations; proven crossings=' + (tel.frontier_cohort_bank_to_bank ?? 0));
   }
 
   const regions = auditRegions(sim.world);
@@ -3993,6 +4015,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   for (let i = 1; i <= steps; i++) {
     sim.step();
     if (scenario.name === 'frontier') observeFrontier(sim);
+    if (scenario.name === 'frontier-cohort') observeFrontierCohort(sim);
     // Every step, not every sample: a behaviour that only ever runs for a few
     // ticks at a time is still the AI using it, and sparse sampling misses it.
     const living = sim.livingPeople();

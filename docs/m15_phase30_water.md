@@ -1,5 +1,15 @@
 # M15 fase 30 — Agua dulce local y salinidad
 
+La segunda pasada incorpora `frontier-cohort`: dos bandas pobladas por el
+constructor geográfico normal y cinco años de juego. Las observaciones
+no alimentan decisiones y conservan un checkpoint idéntico. Los checks
+de cohorte prueban bebida dulce, oportunidad marina evitada y presencia
+en río somero; el cruce completo y su control negativo siguen en `frontier`.
+Una negativa de hash salado y otra de falta de agua sin alimentos hidratantes
+comprueban el daño y la muerte por deshidratación. El runner de veinte semillas
+expone métricas con sus unidades, sin confundir stock neto con capturas ni
+estancias con cruces. [Verificación integrada](m15_phase30_verification_20261006.md).
+
 ## Segunda pasada — continuidad entre mapas
 
 La leche añade cinco puntos de hidratación continental. Se mantiene el nombre
