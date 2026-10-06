@@ -109,3 +109,21 @@ test('broth: the hearth offers it to somebody who knows stone boiling and holds 
   await entry.hover();
   await page.screenshot({ path: dir + '/01-broth-at-the-hearth.png' });
 });
+
+test('flatbread: the hearth offers it to somebody who knows it and holds a meal', async ({ page }) => {
+  const dir = 'artifacts/screenshots/m15-phase13d-flatbread-2026-10-06';
+  mkdirSync(dir, { recursive: true });
+  await openGame(page);
+  const hearth = await furnish(page, {
+    tech: ['firemaking', 'cooking', 'stoneworking', 'grinding', 'flatbread'],
+    items: { meal: 1 }, building: 'hearth',
+  });
+  const at = await screenOf(page, hearth);
+  await page.mouse.click(at.x, at.y, { button: 'right' });
+  await page.locator('.picker-item', { hasText: 'Hearth' }).first().click();
+  await page.locator('.radial-item', { hasText: 'Make' }).first().click();
+  const entry = page.locator('.radial-item', { hasText: 'Flatbread' }).first();
+  await expect(entry).toBeVisible({ timeout: 10_000 });
+  await entry.hover();
+  await page.screenshot({ path: dir + '/01-flatbread-at-the-hearth.png' });
+});

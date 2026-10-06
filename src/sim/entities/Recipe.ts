@@ -578,6 +578,13 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 100, ingredients: { bone: 2 }, output: { broth: 1 },
     station: 'hearth', keep: 2,
   },
+  // `flatbread`: one meal on the hearth stone, no oven. Baking is the whole
+  // difference from `bread`, which needs the oven and two meals.
+  flatbread: {
+    id: 'flatbread', label: 'Flatbread', icon: '\u{1FAD3}', tech: 'flatbread', skill: 'cook',
+    workTicks: 90, ingredients: { meal: 1 }, output: { flatbread: 1 },
+    station: 'hearth', keep: 2,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

@@ -153,6 +153,7 @@ export const TECHS = [
   // with the item and the recipe it unlocks. Appended: `TECHS` order is the
   // order the web is laid out in.
   'stone_boiling',
+  'flatbread',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -260,7 +261,7 @@ export type TechKind = 'practice' | 'device';
  * for the recipes, garments and weapons that are variants of it. **Only the webs
  * that have at least two nodes with an effect are declared here** — a web
  * declared before its content would be inert, and an inert door is the failure
- * the file header forbids. Kitchen, Clothing, Preserving, Fire, Earth and Metal
+ * the file header forbids. Clothing, Preserving, Fire, Earth and Metal
  * join this list in the phase that gives them nodes; see `docs/m15_plan.md`,
  * phase 13a.
  *
@@ -268,7 +269,7 @@ export type TechKind = 'practice' | 'device';
  * a node lives never changes what anyone can discover, which is why moving a
  * node between webs is bit-identical.
  */
-export type WebId = 'main' | 'arms' | 'field' | 'domestication';
+export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen';
 
 export interface WebDef {
   id: WebId;
@@ -285,6 +286,7 @@ export const WEBS: Record<WebId, WebDef> = {
   arms: { id: 'arms', label: 'Weapons', gate: 'spear', color: '#c9694b' },
   field: { id: 'field', label: 'Field', gate: 'farming', color: '#8fb35a' },
   domestication: { id: 'domestication', label: 'Taming', gate: 'taming', color: '#c9a34b' },
+  kitchen: { id: 'kitchen', label: 'Kitchen', gate: 'cooking', color: '#d98b4a' },
 };
 
 /** The webs that hang off a gate, in the order a screen should list them. */
@@ -571,6 +573,7 @@ export const TECH: Record<Tech, TechDef> = {
     id: 'cooking', label: 'Cooking', domain: 'fire',
     age: 'middle_palaeolithic', firstKnown: 'about 300,000 years ago',
     kind: 'device',
+    opens: 'kitchen',
     requires: ['firemaking'], difficulty: 0.25, skill: 'cook',
     answers: ['hunger', 'variety'],
     prototype: { meat: 1, sticks: 1 }, maxRefinement: 3,
@@ -1488,10 +1491,11 @@ export const TECH: Record<Tech, TechDef> = {
   },
   // M15 phase 13d. The first recipe node: a craft, so it is hit upon five times
   // as readily as a technique of its difficulty and is passed on in small talk.
-  // Its web (Kitchen) opens with the next commit, when `flatbread` gives it a
-  // second node; until then it sits in the main web, as 13a's rule says.
+  // It sat in the main web for one commit: Kitchen opened with `flatbread`,
+  // which gave the web the second node 13a's rule asks for.
   stone_boiling: {
     id: 'stone_boiling', label: 'Stone boiling', domain: 'fire',
+    web: 'kitchen',
     tier: 'craft',
     age: 'upper_palaeolithic', firstKnown: 'about 30,000 years ago',
     // A device: it gates `RECIPES.broth`. Its first try is the stones and the
@@ -1523,6 +1527,34 @@ export const TECH: Record<Tech, TechDef> = {
       'Stones heated in the fire and dropped into a hide of water, with the ' +
       'bones that nobody was eating. A broth: the first food made of what a ' +
       'carcass used to leave behind.',
+  },
+  // A craft in Kitchen: flour baked on the hearth stone with no oven, which is
+  // what makes it a node of its own beside `bread` (the oven's loaf, a technique
+  // that needs farming). Shubayqa 1 holds the charred remains of a flatbread
+  // baked some 14,400 years ago, four thousand years before any field.
+  flatbread: {
+    id: 'flatbread', label: 'Flatbread', domain: 'plants',
+    web: 'kitchen',
+    tier: 'craft',
+    age: 'mesolithic', firstKnown: 'about 14,400 years ago',
+    kind: 'device',
+    requires: ['cooking', 'grinding'], difficulty: 0.45, skill: 'cook',
+    prototype: { flint: 1, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'knows', tech: 'grinding' },
+                { kind: 'holding', item: 'meal' }],
+        weight: 1.0, story: 'dropped a damp handful of meal on a stone beside the fire and found it set into a cake' },
+      { needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'knows', tech: 'grinding' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.6, story: 'was grinding by the hearth when a smear of meal and water caught on the hot stone and baked' },
+      { needs: [{ kind: 'knows', tech: 'grinding' }, { kind: 'knows', tech: 'cooking' },
+                { kind: 'wanting', drive: 'variety' }],
+        weight: 0.5, story: 'tired of gruel and laid a flat of wet meal on the hearth stone to see what the fire made of it' },
+    ],
+    description:
+      'Meal wetted and laid on the hot stone of the hearth. No oven, no ' +
+      'leaven: a flat cake that is the first bread, and a food worth more than ' +
+      'the meal it came from.',
   },
   the_wheel: {
     id: 'the_wheel', label: 'The wheel', domain: 'timber',
@@ -2153,6 +2185,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   stone_boiling: {
     summary: 'Bones boiled with hot stones into a broth: food made of what a carcass used to leave behind.',
     site: 'RECIPES.broth at the hearth; ITEMS.broth',
+  },
+  flatbread: {
+    summary: 'Meal baked on the hearth stone into a flat cake: more nourishing than the meal, and no oven needed.',
+    site: 'RECIPES.flatbread at the hearth; ITEMS.flatbread',
   },
   the_wheel: {
     summary: 'A cart: what a strap and a basket carry, and a cartload more on top.',

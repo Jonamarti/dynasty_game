@@ -321,6 +321,15 @@ export const ITEMS: Record<string, ItemDef> = {
   // water in it. Cooked, so absent from `Body.SICKENS` and safe like every other
   // cooked food. It goes off faster than roast meat: a broth is not carried.
   broth: { id: 'broth', label: 'Broth', nutrition: 26, hydration: 10, spoilTicks: 1200, baseValue: 3, macros: { fat: 0.4, protein: 0.6, carb: 0 }, class: 'food', hand: { perHand: 2, perArms: 5, hands: 1 } },
+  // `flatbread`: meal baked on the hearth stone, no oven. Worth more than the
+  // meal and less than the oven's loaf, and it goes stale - the loaf is the one
+  // that keeps. Carbohydrate like the meal it is made of; cooked, so it
+  // makes nobody ill.
+  flatbread: {
+    id: 'flatbread', label: 'Flatbread', nutrition: 38, spoilTicks: 2400, baseValue: 4,
+    macros: { fat: 0.04, protein: 0.14, carb: 0.82 },
+    class: 'food', hand: { perHand: 4, perArms: 10, hands: 1 },
+  },
 };
 
 export class Inventory {

@@ -384,4 +384,12 @@ export const ES_TECH: Record<string, string> = {
   "tired of roast and tried the fire’s hottest stones in a hide full of water": "se cansó del asado y probó las piedras más calientes del fuego en una piel llena de agua",
   "Bones boiled with hot stones into a broth: food made of what a carcass used to leave behind.": "Huesos hervidos con piedras calientes hasta hacer un caldo: comida hecha con lo que una res dejaba atrás.",
   "Broth": "Caldo",
+  "Kitchen": "Cocina",
+  "Flatbread": "Torta",
+  "about 14,400 years ago": "hace unos 14.400 años",
+  "Meal wetted and laid on the hot stone of the hearth. No oven, no leaven: a flat cake that is the first bread, and a food worth more than the meal it came from.": "Harina mojada y puesta sobre la piedra caliente del hogar. Sin horno y sin levadura: una torta plana que es el primer pan, y una comida que vale más que la harina de la que viene.",
+  "dropped a damp handful of meal on a stone beside the fire and found it set into a cake": "dejó caer un puñado de harina húmeda en una piedra junto al fuego y la encontró hecha torta",
+  "was grinding by the hearth when a smear of meal and water caught on the hot stone and baked": "molía junto al hogar cuando un churrete de harina y agua se pegó a la piedra caliente y se coció",
+  "tired of gruel and laid a flat of wet meal on the hearth stone to see what the fire made of it": "se cansó de las gachas y puso una torta de harina mojada sobre la piedra del hogar para ver qué hacía el fuego con ella",
+  "Meal baked on the hearth stone into a flat cake: more nourishing than the meal, and no oven needed.": "Harina cocida en la piedra del hogar hasta hacer una torta: más nutritiva que la harina, y sin necesidad de horno.",
 };

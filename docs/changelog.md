@@ -1,3 +1,16 @@
+## 2026-10-06 — M15 fase 13d: torta (`flatbread`) y Cocina
+
+`flatbread` (craft; Epipaleolítico, hace unos 14.400 años; requiere `cooking` y
+`grinding`) da la receta `flatbread` en la hoguera: 1 harina (`meal`), una torta
+(38 de nutrición: más que la harina y menos que el pan del horno; se pone rancia,
+el pan del horno no). Con él Cocina tiene dos nodos y se abre: `cooking.opens =
+'kitchen'`, y `stone_boiling` se muda a esa red. La pantalla y la simulación no
+leen `web`; el cambio de comportamiento es el nodo. Medido: los informes
+`band`, `hearths` y `craft` no cambian de checks; con siembra se enseña (12 y
+13 lecciones, 18 y 21 portadores) pero no se hornea porque en carreras cortas no
+hay harina (no se construye ninguna muela); con harina servida, 398 tortas en
+10000 pasos. La cohorte de 20 semillas no se corrió.
+
 ## 2026-10-06 — M15 fase 13d: caldo (`stone_boiling`)
 
 Primer nodo `craft`: `stone_boiling` (Paleolítico superior; requiere `cooking` y

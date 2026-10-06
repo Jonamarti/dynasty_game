@@ -173,6 +173,53 @@ en un contenedor Linux en la nube, no `npm test` ni Vite.
 
 **Capturas:** `artifacts/screenshots/m15-phase13d-stone_boiling-2026-10-06/`.
 
+## 13d — `flatbread`: torta, y Cocina se abre (2026-10-06, comportamiento medido)
+
+**Qué hay.** `flatbread`, `tier: 'craft'`, dispositivo, edad `mesolithic`
+(Epipaleolítico; Shubayqa 1, hace unos 14.400 años), requiere `cooking` y
+`grinding`, dificultad 0,45 (0,18 efectiva), habilidad `cook`, prototipo
+`{ flint: 1, sticks: 2 }`, tres chispas de hacer, de objeto manejado (`meal`) y de
+querer. Receta `flatbread` en la hoguera: `meal: 1` → `flatbread: 1`, 90 ticks,
+sin horno. Ítem `flatbread` al final de `Item.ts` (nutrición 38 entre `meal` 34
+y `bread` 42; carbohidrato; caduca a los 2400 ticks, el pan del horno no;
+no enferma). La prueba del primer pan siembra `eat:flatbread` por el mismo
+camino que el caldo.
+
+**Cocina se abre.** `WEBS.kitchen` (puerta `cooking`), `cooking.opens =
+'kitchen'`, y `stone_boiling` lleva `web: 'kitchen'`. Ya hay dos nodos con
+efecto, que es lo que pide la regla de 13a. `techsOfWeb('kitchen')` es
+`stone_boiling`, `flatbread`. La etiqueta «Cocina» está en `i18n/es/tech.ts`.
+La expectativa de `tech.test.ts` sobre `SUB_WEBS` pasa de tres redes a cuatro: es
+el cambio que el plan declara, no un test debilitado. `TechWeb.ts` (13c, otro
+agente) lee `SUB_WEBS` y mostrará la red nueva sin que yo lo toque.
+
+**Por qué `craft`.** Es una receta de la hoguera. `bread` (el horno, requiere
+`farming`) sigue siendo una técnica de la red principal.
+
+**Tests.** 7 más en `craft-nodes.test.ts`: declaración, apertura de Cocina,
+receta, ítem, chispas, enseñanza por `interests`, y una torta horneada de punta a
+punta.
+
+**Medida.** `band`, `hearths` y `craft` coinciden en fila final (vivos 31/31,
+42/42, 13/13) y en estado de checks (ninguno cambia; fallos 2, 6 y 6). Con
+siembra de dos fundadores por banda (10000 pasos, dos semillas): se enseña (12 y
+13 lecciones, 18 y 21 portadores) y la población no se hunde (semillas a y b, de
+25 a 30 y 33 con siembra, a 30 y 29 sin ella, y a 30 y 32 antes del commit; el 29
+sin siembra es divergencia del RNG, el nodo concebido en tres ocasiones no se
+construyó nunca). **No
+se hornea ninguna torta** porque no hay harina: en carreras cortas nadie
+construye la muela, y la torta pide `meal`. Con harina servida a los portadores
+el mismo escenario hornea 398 tortas, así que el camino funciona; el límite es el
+suministro, otra vez. Los números de supervivencia son de carreras cortas con
+caos por divergencia del RNG: no son atribuibles al nodo.
+
+**No se corrió** la cohorte de 20 semillas; queda para la máquina del
+propietario.
+
+**Verificación:** sustituto esbuild/shim de vitest y página servida por esbuild
+en un contenedor Linux en la nube. **Capturas:**
+`artifacts/screenshots/m15-phase13d-flatbread-2026-10-06/`.
+
 ## Dudas abiertas
 
 1. **Cocina no se abre en 13a.** La tabla del plan supone que el asado, `bread` y
@@ -216,4 +263,7 @@ en un contenedor Linux en la nube, no `npm test` ni Vite.
 11. **Edad de `fire_hardened_spear`.** El plan dice Paleolítico inferior, pero
     el test de edades prohíbe una edad anterior a la de los requisitos
     (`firemaking`, `spear`); se decidirá en su commit.
+12. **Torta sin harina.** `flatbread` se enseña pero no se hornea en carreras
+    cortas porque `meal` depende de una muela que casi nadie construye. ¿Basta,
+    o se quiere una receta de torta con grano o bellota sin moler?
 

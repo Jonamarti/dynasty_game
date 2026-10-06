@@ -14,7 +14,7 @@ import { Person, DAYS_PER_YEAR } from '../entities/Person.ts';
 import { SpatialHash } from '../core/SpatialHash.ts';
 import { World } from '../core/World.ts';
 import { makeConfig } from '../core/Config.ts';
-import { TECH, difficultyOf, tierOf, webOf } from '../knowledge/Tech.ts';
+import { TECH, WEBS, SUB_WEBS, difficultyOf, tierOf, webOf, techsOfWeb } from '../knowledge/Tech.ts';
 import { sparkFires, type Notice } from '../knowledge/Synthesis.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -52,14 +52,13 @@ function adult(name: string): Person {
 }
 
 describe('stone_boiling and the broth', () => {
-  it('is a craft that needs cooking and leatherwork, and sits in the main web until Kitchen opens', () => {
+  it('is a craft that needs cooking and leatherwork', () => {
     const def = TECH.stone_boiling;
     expect(tierOf('stone_boiling')).toBe('craft');
     expect(def.requires).toEqual(['cooking', 'leatherwork']);
     expect(def.age).toBe('upper_palaeolithic');
     expect(def.firstKnown.length).toBeGreaterThan(0);
     expect(def.kind).toBe('device');
-    expect(webOf('stone_boiling')).toBe('main');
   });
 
   it('is hit upon at 0.4 of its written difficulty', () => {
@@ -185,5 +184,103 @@ describe('stone_boiling and the broth', () => {
     settle(person);
     person.inventory.add('bone', 2);
     expect(sim.order(person, 'craft', { recipeId: 'broth' })).toBe(false);
+  });
+});
+
+
+describe('flatbread and the opening of Kitchen', () => {
+  it('is a craft that needs cooking and grinding, from the Epipaleolithic', () => {
+    const def = TECH.flatbread;
+    expect(tierOf('flatbread')).toBe('craft');
+    expect(def.requires).toEqual(['cooking', 'grinding']);
+    expect(def.age).toBe('mesolithic');
+    expect(def.firstKnown).toContain('14,400');
+    expect(def.kind).toBe('device');
+    expect(difficultyOf('flatbread', config.knowledge)).toBeCloseTo(def.difficulty * 0.4, 12);
+  });
+
+  it('opens the Kitchen web at cooking, now that it has two nodes, and moves stone boiling in', () => {
+    expect(WEBS.kitchen.gate).toBe('cooking');
+    expect(TECH.cooking.opens).toBe('kitchen');
+    expect(techsOfWeb('kitchen')).toEqual(['stone_boiling', 'flatbread']);
+    expect(SUB_WEBS.map(web => web.id)).toContain('kitchen');
+    expect(webOf('flatbread')).toBe('kitchen');
+    expect(webOf('stone_boiling')).toBe('kitchen');
+  });
+
+  it('gives the recipe on the hearth stone: no oven, one meal for one flatbread', () => {
+    const recipe = RECIPES.flatbread!;
+    expect(recipe.tech).toBe('flatbread');
+    expect(recipe.station).toBe('hearth');
+    expect(recipe.ingredients).toEqual({ meal: 1 });
+    expect(recipe.output).toEqual({ flatbread: 1 });
+    // Bread before the oven: it needs nothing the oven needs.
+    expect(RECIPES.bread!.station).toBe('oven');
+  });
+
+  it('is a cooked food of carbohydrate, worth more than the meal it is made from and less than loaf bread', () => {
+    const flatbread = ITEMS.flatbread!;
+    expect(flatbread.nutrition).toBeGreaterThan(ITEMS.meal!.nutrition);
+    expect(flatbread.nutrition).toBeLessThan(ITEMS.bread!.nutrition);
+    expect(flatbread.macros!.carb).toBeGreaterThan(0.5);
+    expect(flatbread.macros!.fat + flatbread.macros!.protein + flatbread.macros!.carb).toBeCloseTo(1, 9);
+    expect(SICKENS.flatbread).toBeUndefined();
+    // It goes stale; the oven's bread is the one that keeps.
+    expect(flatbread.spoilTicks).toBeGreaterThan(0);
+    expect(ITEMS.bread!.spoilTicks).toBe(0);
+  });
+
+  it('occurs to somebody who grinds and cooks, by routes that need nothing rare', () => {
+    const [byMeal, byGrinding] = TECH.flatbread.sparks;
+    expect(sparkFires(byMeal!, notice({
+      knows: new Set(['cooking', 'grinding']), holding: new Set(['meal']),
+    }))).toBe(true);
+    expect(sparkFires(byMeal!, notice({ knows: new Set(['cooking', 'grinding']) }))).toBe(false);
+    expect(sparkFires(byGrinding!, notice({
+      knows: new Set(['cooking', 'grinding']), lately: new Set(['craft']),
+    }))).toBe(true);
+  });
+
+  it('is passed on over small talk to somebody who can grind and cook', () => {
+    const knowledge = new KnowledgeSystem();
+    const baker = adult('Baker');
+    const friend = adult('Friend');
+    const stranger = adult('Stranger');
+    baker.knownTech.add('flatbread');
+    baker.skills.teach = 100;
+    for (const tech of ['cooking', 'grinding']) friend.knownTech.add(tech);
+    stranger.knownTech.add('cooking');
+    const rng = new RNG('flatbread-talk');
+    for (let i = 0; i < 40; i++) {
+      knowledge.conversationLesson(baker, friend, 'interests', 1000, rng, () => 1);
+      knowledge.conversationLesson(baker, stranger, 'interests', 1000, rng, () => 1);
+    }
+    expect(friend.knownTech.has('flatbread')).toBe(true);
+    expect(stranger.knownTech.has('flatbread')).toBe(false);
+  });
+
+  it('is baked on a hearth from meal, end to end, and the meal is spent', () => {
+    const sim = new Simulation({
+      ...SMALL,
+      population: { ...SMALL.population, startingTech: ['firemaking', 'cooking', 'stoneworking', 'grinding', 'flatbread'] },
+    });
+    for (let i = 0; i < 300; i++) sim.step();
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('meal', 1);
+    let hearth: Building | null = null;
+    for (const [dx, dy] of [[4, 4], [-4, 4], [4, -4], [-4, -4], [6, 0], [0, 6]]) {
+      hearth = sim.place('hearth', Math.round(person.x) + dx!, Math.round(person.y) + dy!, person.bandId);
+      if (hearth) break;
+    }
+    expect(hearth).not.toBeNull();
+    hearth!.complete = true;
+    expect(sim.order(person, 'craft', { recipeId: 'flatbread', buildingId: hearth!.id })).toBe(true);
+    for (let i = 0; i < 900 && person.inventory.count('flatbread') === 0; i++) {
+      settle(person);
+      person.inventory.add('meal', 1);
+      sim.step();
+    }
+    expect(person.inventory.count('flatbread')).toBe(1);
   });
 });
