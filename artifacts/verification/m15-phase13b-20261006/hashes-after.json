@@ -1,0 +1,62 @@
+[
+  {
+    "seed": "band",
+    "tick": 0,
+    "hash": "d622b941918d05e51f3aa5e404f25d34e135679a916ad873f45ec8ceb3034e89"
+  },
+  {
+    "seed": "band",
+    "tick": 180,
+    "hash": "371ad34dfa84dad828de0acd11067d02f68b8469d35135204b8f09128a5a58e2"
+  },
+  {
+    "seed": "band",
+    "tick": 500,
+    "hash": "c4f4991574e1d221da1f36bbc409eda9b955daa1e18164fffec0d03c8d1bfc50"
+  },
+  {
+    "seed": "band",
+    "tick": 1500,
+    "hash": "f5cfb36a13a2648a8eaa6f873dd3d62dd6f214b535467f553d37f5c4010ea98a"
+  },
+  {
+    "seed": "century",
+    "tick": 0,
+    "hash": "ebbd4869703283d38b3b6241f8e67d32a3a4d8baea7897a6dda6ee317c7c06c8"
+  },
+  {
+    "seed": "century",
+    "tick": 180,
+    "hash": "711a2942e26eba51656c4758cff3d28c3ae41bb7e5f2d355fe76f273e4e9ec42"
+  },
+  {
+    "seed": "century",
+    "tick": 500,
+    "hash": "b58b326e5dc3ca217a601630b40b06243f522eb9a6c81751c4473a00fee800b9"
+  },
+  {
+    "seed": "century",
+    "tick": 1500,
+    "hash": "fa82b7061130e9061d8d5a512a4ec98ae87f44e7ce41a5d07575b87e1004a0a8"
+  },
+  {
+    "seed": "phase13a",
+    "tick": 0,
+    "hash": "a683021de07471693c9bfdf26b2a94f848c263912c13bc26c1fa4994aa682977"
+  },
+  {
+    "seed": "phase13a",
+    "tick": 180,
+    "hash": "06767bdf130f4a323957816f81bd95be33f544bfd16dac638b230e8d6f479243"
+  },
+  {
+    "seed": "phase13a",
+    "tick": 500,
+    "hash": "00d22912650732ab0b26916253ebbd71918c8d811bd8df130095e787815db1d8"
+  },
+  {
+    "seed": "phase13a",
+    "tick": 1500,
+    "hash": "73b6751a595270affe99440a394de625d713fd2dca9d0b4c0015ed63dffae251"
+  }
+]

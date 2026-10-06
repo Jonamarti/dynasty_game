@@ -85,6 +85,136 @@ pasan. El e2e dibuja el giro y los vados sin modificar el checkpoint; captura
 revisada: `artifacts/screenshots/m15-phase30-continuity-2026-10-06T-02/04-river-bend-and-fords.png`.
 La verificación integrada y la cohorte de veinte semillas se registrarán al
 cerrar la fase.
+## 2026-10-06 — M15 fase 13: integración de la pantalla y el contenido
+
+La pantalla de sub-redes (13c) y el contenido (13b, 13d) se hicieron en ramas
+paralelas y se juntan aquí. `e2e/tech-subwebs.spec.ts` y
+`e2e/phase13d-nodes.spec.ts` entran en el script `e2e` de `package.json`, que
+antes no los corría. Capturas de la red con las cuatro sub-redes ya abiertas
+(Cocina incluida) en `artifacts/screenshots/m15-phase13-integrada-2026-10-06/`.
+Verificación y límites en [la fase](m15_phase13_subwebs.md).
+
+## 2026-10-06 — M15 fase 13d: `sub-webs-are-climbed` cuenta nodos, no puertas
+
+El check recién añadido pasaba con «una puerta conocida». Una puerta es una
+técnica de la red principal (los fundadores de `craft` empiezan con la lanza),
+así que pasaba en cualquier build que declarase una sub-red: tranquilizaba y no
+detectaba nada. Ahora mide lo que pide el plan, nodos de sub-red conocidos al
+final (N = 1); da n/a si nadie conoce una puerta o si la corrida dura menos de
+un año, y falla en otro caso. Resultado medido: FAIL en `hearths` y en `craft`
+(1 puerta, 0 nodos, 1,67 años). Fallos por escenario: `hearths` 6 → 7, `craft`
+6 → 7, `band` 2 → 2; el único cambio es este check. El hallazgo queda abierto en
+`bugs.md`.
+
+## 2026-10-06 — M15 fase 13d: el check `sub-webs-are-climbed`
+
+Nuevo check en `hearths` y `craft` (bloque pequeño en `tools/simcheck.ts`, junto
+a `cooking-spreads`): al final del escenario alguien vivo conoce la puerta de al
+menos una sub-red (`cooking` abre Cocina, `spear` abre Armas), y el detalle dice
+cuántos de sus nodos se conocen (hoy 0: ningún escenario dura un año y nada se
+prueba en menos). En el árbol anterior a 13a, sin `opens`, falla en los dos
+escenarios; en este pasa. Los demás checks no cambian de estado: fallos 6 y 6 en
+`hearths` y `craft`, 2 en `band`. Estado de 12 a 15 actualizado en
+`m15_status_20261003.md`. Cohorte de 20 semillas no corrida.
+
+## 2026-10-06 — M15 fase 13d: la honda (`sling`)
+
+Craft de la red Armas (requiere `spear` y `cordage`; Neolítico). Ítem `sling`:
+una mano, alcance 1,4 (más que la lanza), término de caza 1,7 (más que la
+lanza, menos que el arco) y daño 0,2 (mala en una pelea); `weaponOf` ya la lee,
+así que `doHunt` la elige. Receta `sling` sin estación: cuerda 1 y sílex 2.
+Icono (`item/sling`) y mano (`held/sling`) nuevos en `art/src/props/`, atlas
+regenerado con `tools/art/build.ts`. **No hay munición**: ni el arco la tiene;
+los dos sílex son el coste de la receta, y tampoco se limita a la caza menor.
+Con siembra se enseña (13 y 14 lecciones, 21 portadores) y se fabrican hondas (4
+en una semilla). Cohorte de 20 semillas no corrida.
+
+## 2026-10-06 — M15 fase 13d: lanza endurecida al fuego (`fire_hardened_spear`)
+
+Craft de la red Armas (puerta `spear`; requiere `spear` y `firemaking`; práctica
+que se prueba cazando). La lanza del que lo sabe vale `HARDENED_SPEAR` (1,25)
+veces más, más con el refinamiento: un solo término, `weaponPower`, que leen
+`weaponOf` y `weaponItemOf`, y con ellos `doHunt` y `doAttack`. Quien no lo sabe
+tiene exactamente el poder de antes (bit-idéntico sin el nodo: en las carreras
+sin siembra el resultado es el mismo antes y después). Edad
+`middle_palaeolithic` en lugar de la inferior del plan, porque un nodo no puede
+ser anterior a sus requisitos. Se enseña (13 y 14 lecciones, 21 portadores con
+siembra) pero se caza poco (2 `armed_hunt`). Cohorte de 20 semillas no corrida.
+
+## 2026-10-06 — M15 fase 13d: torta (`flatbread`) y Cocina
+
+`flatbread` (craft; Epipaleolítico, hace unos 14.400 años; requiere `cooking` y
+`grinding`) da la receta `flatbread` en la hoguera: 1 harina (`meal`), una torta
+(38 de nutrición: más que la harina y menos que el pan del horno; se pone rancia,
+el pan del horno no). Con él Cocina tiene dos nodos y se abre: `cooking.opens =
+'kitchen'`, y `stone_boiling` se muda a esa red. La pantalla y la simulación no
+leen `web`; el cambio de comportamiento es el nodo. Medido: los informes
+`band`, `hearths` y `craft` no cambian de checks; con siembra se enseña (12 y
+13 lecciones, 18 y 21 portadores) pero no se hornea porque en carreras cortas no
+hay harina (no se construye ninguna muela); con harina servida, 398 tortas en
+10000 pasos. La cohorte de 20 semillas no se corrió.
+
+## 2026-10-06 — M15 fase 13d: caldo (`stone_boiling`)
+
+Primer nodo `craft`: `stone_boiling` (Paleolítico superior; requiere `cooking` y
+`leatherwork`; dificultad 0,5 x 0,4). Da la receta `broth` en la hoguera: 2
+huesos, un caldo (`broth`, 26 de nutrición, 10 de hidratación, grasa y
+proteína; no enferma). Quien lo descubre y lo prueba aprende a fiarse del
+caldo (`eat:broth`). Se enseña también de pasada en `chat`. Cambia el
+comportamiento y se midió con una siembra de dos fundadores por banda: se
+enseña (14 y 15 lecciones, 20 y 22 portadores) pero casi no se cocina, porque
+casi nadie lleva dos huesos a la vez (con huesos servidos, 255 caldos en 10000
+pasos). Cocina sigue sin abrirse. La cohorte de 20 semillas no se corrió.
+Evidencia en `artifacts/verification/m15-phase13d-20261006/stone_boiling/`.
+
+## 2026-10-06 — M15 fase 13b: la receta como conocimiento
+
+`TechDef` gana `tier` (`technique` por defecto, o `craft`) y `Config.knowledge`
+gana `craftDifficulty` (0,4). Un `craft` es una receta: su dificultad se
+multiplica por ese valor en el único sitio que la lee (`difficultyOf`, desde
+`tryConceive`) y, además, se enseña en las conversaciones `chat`, `interests` y
+`deep` (`KnowledgeSystem.conversationLesson`, llamado desde `doTalk`), donde las
+técnicas siguen sin enseñarse. No añade tiradas por técnica: sin ningún `craft`
+que compartir, la conversación no toma nada del stream. Ningún nodo existente se
+marca `craft`; los primeros llegan en 13d, que es donde se mide el
+comportamiento. El plan decía que hoy enseñan los modos largos, pero
+`converse` no enseña técnicas (duda abierta en
+[m15_phase13_subwebs.md](m15_phase13_subwebs.md)). 12 hashes de checkpoint y
+los informes de `band`, `hearths` y `craft` coinciden. Evidencia en
+`artifacts/verification/m15-phase13b-20261006/`.
+
+## 2026-10-06 — M15 fase 13a: redes y puertas
+
+`TechDef` gana `web` (ausente = red principal) y `opens`, y `Tech.ts` una tabla
+`WEBS` (id, etiqueta, puerta, color). Se mudan solo de `web`: `bow` y `atlatl`
+a Armas (puerta `spear`); `composting`, `sickle`, `calendar` y `arboriculture`
+a Campo (`farming`); `herding`, `dairying`, `wool` y `dog` a Doma (`taming`).
+Cocina no se abre: el asado es una receta y `bread` y `brewing` no requieren
+`cooking`, así que se quedan en la red principal (duda abierta en
+[m15_phase13_subwebs.md](m15_phase13_subwebs.md)). La simulación y la pantalla
+no leen `web`: 12 hashes de checkpoint (3 semillas por 4 ticks) y los informes
+de `band`, `hearths` y `craft` coinciden antes y después. Verificación en el
+sustituto esbuild de vitest, no en `npm test`. Evidencia en
+`artifacts/verification/m15-phase13a-20261006/`.
+
+## 2026-10-06 — M15 fase 13c: la red se abre y no se mueve
+
+La red principal (`G`) dibuja solo los nodos de `main`; una puerta que el
+personaje del jugador conoce lleva «conocidos / total» de su sub-red y un clic
+la abre en la misma superposición, con miga de pan, botón «Volver» y `Escape`
+que vuelve (el segundo cierra). Una sub-red cuya puerta no se conoce no tiene
+marca ni se puede abrir, y ninguno de los nombres de sus nodos sale en pantalla.
+`layOutWeb` pasa a ser incremental y por red: los nodos ya colocados conservan
+sus coordenadas exactas y solo se relajan los nuevos, en orden de `TECHS`, con
+los colocados congelados; era el defecto de «The tech web's arrangement shifted»
+(`bugs.md`), arreglado en lo que cabe en la página (el estado no se guarda entre
+sesiones). En móvil la tarjeta se ancla arriba: un toque enfocaba el nodo, el
+detalle cambiaba de alto y una tarjeta centrada se recentraba bajo el dedo. 10
+tests unitarios nuevos, `e2e/tech-subwebs.spec.ts` (el propietario debe añadirlo
+al script `e2e`) y capturas en
+`artifacts/screenshots/m15-phase13c-subwebs-2026-10-06/`. Verificación en el
+sustituto esbuild de vitest y en una página servida con esbuild; no se ejecutó
+`npm test` ni `npm run e2e`. Detalle en [m15_phase13_subwebs.md](m15_phase13_subwebs.md).
 
 ## 2026-10-06 — M15 fase 30: puerta continental y límites medidos
 

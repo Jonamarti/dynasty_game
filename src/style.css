@@ -1120,6 +1120,73 @@ html, body, #app {
 }
 .techweb-close:hover { color: var(--text); border-color: var(--accent); }
 
+/* M15 phase 13c. The sub-web's own colour (`--web`, from `WEBS[..].color`) runs
+   through the card: a bar along its top, the breadcrumb's current crumb, the
+   gate's mark and the root node. The main web's is the neutral grey. */
+.techweb-card[data-web-view]:not([data-web-view="main"]) { border-top: 3px solid var(--web); }
+
+.techweb-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--panel-border);
+}
+/* The way back, by touch as much as by Escape. Big enough for a thumb. */
+.techweb-back, .techweb-crumb:not(.is-here) {
+  padding: 4px 10px;
+  min-height: 28px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: rgba(30, 34, 44, 0.9);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.techweb-crumb:not(.is-here) { background: none; border-color: transparent; color: var(--text-dim); }
+.techweb-back:hover, .techweb-crumb:not(.is-here):hover { color: var(--text); border-color: var(--accent); }
+.techweb-crumb-sep { color: var(--text-dim); }
+.techweb-crumb.is-here {
+  padding: 2px 8px;
+  color: var(--text);
+  border-bottom: 2px solid var(--web);
+}
+
+/* The gate's mark: a pill hung under the node, in the web's colour, saying which
+   web it opens and how much of it the subject knows. A span with a role, not a
+   button: it lives inside the gate's own `<button>`, and a button in a button is
+   not valid HTML (the parser would tear the node apart). */
+.techweb-node.is-gate { overflow: visible; }
+.techweb-gatemark {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, -4px);
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+  white-space: nowrap;
+  padding: 3px 9px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #10131a;
+  background: var(--web);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+  z-index: 1;
+}
+/* The pill is small and the canvas is scaled down on a phone; an invisible
+   margin around it keeps it a target a thumb can hit. */
+.techweb-gatemark::before { content: ''; position: absolute; inset: -9px -6px; }
+.techweb-gatemark:hover { filter: brightness(1.15); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+.techweb-gatename { font-weight: 700; }
+.techweb-gatecount { font-variant-numeric: tabular-nums; }
+/* A sub-web's root: the gate you came through. */
+.techweb-node.is-anchor { box-shadow: 0 0 0 3px var(--web); }
+
 .techweb-veil {
   max-width: 380px;
   padding: 22px;
@@ -1962,6 +2029,15 @@ html, body, #app {
     max-height: calc(100dvh - 12px);
   }
   .techweb-body { flex-direction: column; overflow-y: auto; }
+  /* Pinned to the top, not centred. A tap on a phone is a hover first, the hover
+     focuses the node, the detail pane under the web changes height, and a card
+     centred in the screen re-centres — moving the node out from under the
+     finger before the click that was coming for it. Growing downward only
+     leaves the web where the finger found it. */
+  .techweb { place-items: start center; padding-top: 6px; }
+  .techweb-crumbs { flex-wrap: wrap; }
+  .techweb-back, .techweb-crumb:not(.is-here) { min-height: 36px; }
+  .techweb-gatemark { padding: 5px 10px; }
   /* The viewport is sized in pixels by `panelBox`, and on a narrow window that
      number is already the whole width of the card. `flex: none` would let a
      stacked column shrink it; this pins it to what it was told. */

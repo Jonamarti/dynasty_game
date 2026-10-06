@@ -41,6 +41,14 @@ export const ITEMS: ItemArt[] = [
     + shape('M28,14Q28,8 33,8L36,8L36,12L33,12L32,16Z', WOOD, WOOD_D)
     + ell(28, 46, 3, 2, 'none', WOOD_D) + stroke('M25,44L25,52', CORD, 1.6), 32)
     + limb([[10, 18], [54, 10]], 1.4, '#a9835a', WOOD_D)],
+  ['sling', 'Honda', 'sling', () =>
+    stroke('M10,34Q16,10 30,26', CORD, 2.4)
+    + stroke('M10,34Q16,52 30,40', CORD, 2.4)
+    + shape(smooth([[28, 24], [42, 24], [46, 33], [42, 42], [28, 42], [24, 33]]), '#9c7b50', WOOD_D)
+    + stroke('M30,28L40,28M28,33L42,33M30,38L40,38', '#6d5434', 1)
+    + ell(36, 33, 4.2, 3.4, STONE, STONE_D)
+    + stroke('M44,30Q54,22 58,14', CORD, 2.2)
+    + stroke('M44,36Q54,44 58,52', CORD, 2.2)],
   ['bone_point', 'Punta de hueso', 'bone_working', () => rot(
     shape(smooth([[32, 6], [37, 30], [36, 56], [28, 56], [27, 30]]), BONE, BONE_D)
     + stroke('M30,22L30,50M33,20L33,48', '#c9bd9c', 0.9), 20)],

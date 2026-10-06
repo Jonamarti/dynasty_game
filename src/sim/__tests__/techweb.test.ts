@@ -12,7 +12,9 @@ import { describe, it, expect } from 'vitest';
 import {
   layOutWeb, webEdges, depthOf, webRings, NODE_RADIUS, DOMAIN_COLORS,
 } from '../../ui/TechWebLayout.ts';
-import { TECH, TECHS, DOMAINS, AGES, ageIndex, type Tech } from '../knowledge/Tech.ts';
+import {
+  TECH, TECHS, DOMAINS, AGES, WEBS, ageIndex, techsOfWeb, type Tech, type WebId,
+} from '../knowledge/Tech.ts';
 
 describe('the tech web layout', () => {
   it('is byte-identical between two runs', () => {
@@ -22,9 +24,12 @@ describe('the tech web layout', () => {
     expect(JSON.stringify(second.edges)).toBe(JSON.stringify(first.edges));
   });
 
-  it('places every technology exactly once', () => {
+  it('places every technology of the web exactly once', () => {
+    // M15 phase 13c: `layOutWeb()` is the main web. The whole table is spread
+    // over the webs (`techweb-subwebs.test.ts` checks each node is in exactly
+    // one), so this is what "every technology" means now.
     const layout = layOutWeb();
-    expect(layout.nodes.map(n => n.tech).sort()).toEqual([...TECHS].sort());
+    expect(layout.nodes.map(n => n.tech).sort()).toEqual([...techsOfWeb('main')].sort());
   });
 
   it('never puts one node on top of another', () => {
@@ -55,11 +60,20 @@ describe('the tech web layout', () => {
   });
 
   it('gives every edge two endpoints that are really on the web', () => {
-    const placed = new Set(layOutWeb().nodes.map(n => n.tech));
+    // Whole-table edges are over real technologies; each web's own layout
+    // draws only edges whose two ends it places.
     for (const edge of webEdges()) {
-      expect(placed, 'edge from ' + edge.from).toContain(edge.from);
-      expect(placed, 'edge to ' + edge.to).toContain(edge.to);
+      expect(TECHS, 'edge from ' + edge.from).toContain(edge.from);
+      expect(TECHS, 'edge to ' + edge.to).toContain(edge.to);
       expect(edge.from).not.toBe(edge.to);
+    }
+    for (const id of Object.keys(WEBS) as WebId[]) {
+      const layout = layOutWeb(id);
+      const placed = new Set(layout.nodes.map(n => n.tech));
+      for (const edge of layout.edges) {
+        expect(placed, id + ' edge from ' + edge.from).toContain(edge.from);
+        expect(placed, id + ' edge to ' + edge.to).toContain(edge.to);
+      }
     }
   });
 
@@ -135,7 +149,10 @@ describe('the tech web layout', () => {
     // did not. Verified against the old behaviour: with the seed switched back
     // to `depthOf` these two rings differ.
     expect(depthOf('bow')).not.toBe(depthOf('fish_trap'));
-    const nodes = new Map(layOutWeb().nodes.map(node => [node.tech, node]));
+    // `bow` lives in the weapons web now and `fish_trap` in the main one; the
+    // ring is a fact about the period, so it does not care which web draws it.
+    const nodes = new Map(
+      [...layOutWeb().nodes, ...layOutWeb('arms').nodes].map(node => [node.tech, node]));
     expect(nodes.get('bow')!.ring).toBe(nodes.get('fish_trap')!.ring);
   });
 

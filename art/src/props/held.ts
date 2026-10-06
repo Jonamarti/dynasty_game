@@ -7,13 +7,13 @@
  * per body. Facing east is drawn tilted a little forward; west is the mirror.
  */
 import { ell, limb, poly, shade, shape, smooth, stroke } from '../lib/draw.ts';
-import { CORD, STONE_D, WOOD, WOOD_D } from './items.ts';
+import { CORD, STONE, STONE_D, WOOD, WOOD_D } from './items.ts';
 
 /** Where the grip is inside a held object's cell. */
 export const HAND: readonly [number, number] = [48, 48];
 
 /** What the sim can put in a hand today, plus the torch phase 12 adds. */
-export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'digging_stick'] as const;
+export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'digging_stick'] as const;
 export type HeldKind = (typeof HELD_KINDS)[number];
 
 /** `side` is true when seen from the east or west. */
@@ -47,6 +47,15 @@ export function heldSvg(kind: HeldKind, side: boolean): string {
       return limb([[x - 2, y + 14], [x + tx, y - 24]], 1.8, WOOD, WOOD_D)
         + shape(`M${x + tx - 1},${y - 24}Q${x + tx - 3},${y - 29} ${x + tx + 2},${y - 29}L${x + tx + 3},${y - 26}L${x + tx + 1},${y - 26}Z`, WOOD, WOOD_D)
         + limb([[x + 4, y + 2], [x + 4 + tx * 0.4, y - 8]], 1.1, CORD, null);
+    }
+    case 'sling': {
+      // The loop hangs from the fist and a pebble sits in the pouch: seen from the
+      // front it is the pouch and two cords, from the side they swing forward.
+      const tx = side ? 4 : 0;
+      return limb([[x + 1, y - 2], [x + tx - 2, y + 12]], 1.2, CORD, null)
+        + limb([[x + 3, y - 2], [x + tx + 4, y + 12]], 1.2, CORD, null)
+        + shape(smooth([[x + tx - 3, y + 11], [x + tx + 5, y + 11], [x + tx + 6, y + 16], [x + tx + 1, y + 19], [x + tx - 4, y + 16]]), '#9c7b50', WOOD_D)
+        + ell(x + tx + 1, y + 14, 2.4, 2, STONE, STONE_D);
     }
     case 'bone_point': {
       const tx = side ? 3 : 0;

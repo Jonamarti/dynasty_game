@@ -569,6 +569,29 @@ export const RECIPES: Record<string, RecipeDef> = {
     skill: 'build', workTicks: 120, ingredients: { wood: 1 },
     output: { spade: 1 }, keep: 1,
   },
+  // M15 phase 13d. Two bones for a ration, at the hearth. The plan also names
+  // "bone 1 and fat 1" and water as ingredients; there is no fat item and no
+  // water in the pack in this game, so the water is the hide the stones go
+  // into (not modelled) and the recipe is the bone alone. See the phase doc.
+  broth: {
+    id: 'broth', label: 'Broth', icon: '\u{1F372}', tech: 'stone_boiling', skill: 'cook',
+    workTicks: 100, ingredients: { bone: 2 }, output: { broth: 1 },
+    station: 'hearth', keep: 2,
+  },
+  // `flatbread`: one meal on the hearth stone, no oven. Baking is the whole
+  // difference from `bread`, which needs the oven and two meals.
+  flatbread: {
+    id: 'flatbread', label: 'Flatbread', icon: '\u{1FAD3}', tech: 'flatbread', skill: 'cook',
+    workTicks: 90, ingredients: { meal: 1 }, output: { flatbread: 1 },
+    station: 'hearth', keep: 2,
+  },
+  // `sling`: a cord and the flint it throws. There is no ammunition model (the
+  // bow has none either: a hunt spends nothing), so the two flints are the
+  // pebbles it is made with, spent once, here.
+  sling: {
+    id: 'sling', label: 'Sling', icon: '\u{1FA83}', tech: 'sling', skill: 'hunt',
+    workTicks: 80, ingredients: { rope: 1, flint: 2 }, output: { sling: 1 }, keep: 1,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

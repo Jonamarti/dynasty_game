@@ -45,6 +45,9 @@ import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, o
  */
 const FIRE_RIM = 2;
 
+/** How many sub-web nodes (not gates) `hearths` and `craft` must know by the end (`sub-webs-are-climbed`). */
+const SUB_WEB_NODES_KNOWN = 1;
+
 // ---------------------------------------------------------------------------
 // Scenarios
 // ---------------------------------------------------------------------------
@@ -3081,6 +3084,35 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   } else {
     add('cooking-spreads', cookingHolders >= initialCooking * 3,
       initialCooking + ' founded with cooking; ' + cookingHolders + ' surviving adult holders');
+  }
+
+  // M15 phase 13d: the sub-webs are climbed. The world has stepped into a
+  // sub-web when somebody alive knows its gate (a technique with `opens`), and
+  // the check says how many of its nodes are known besides. Before the sub-webs
+  // existed no technique had `opens`, so this counts none and fails. It counts
+  // the gates and not the nodes because neither scenario runs for a year, and a
+  // run under a year proves nothing (`ideas-become-tech` is n/a for that
+  // reason): the nodes known at the end of `hearths` and `craft` are 0 on every
+  // build, so a threshold on them could only ever fail. See phase 13d, doubt 16.
+  if (base.scenario === 'hearths' || base.scenario === 'craft') {
+    const gates = Object.values(TECH).filter(def => def.opens !== undefined && sim.knownTech.has(def.id));
+    const nodes = [...sim.knownTech].filter(tech => {
+      const web = TECH[tech as Tech]?.web;
+      return web !== undefined && web !== 'main';
+    });
+    // The plan asks for sub-web NODES known, not gates. A gate is a main-web
+    // technique (`craft` founders start with the spear), so counting gates
+    // passed on every build that merely declared a web: reassuring, and
+    // detecting nothing. A node takes about a year to be proven, so a shorter
+    // run cannot say either way and reports n/a rather than a pass.
+    const yearsRun = sim.time.tick / sim.config.time.ticksPerDay / sim.time.daysPerYear;
+    const detail = gates.length + ' sub-web gates known at the end' +
+      (gates.length ? ' (' + gates.map(def => def.id).join(', ') + ')' : '') +
+      '; ' + nodes.length + ' of their nodes known; at least ' + SUB_WEB_NODES_KNOWN + ' node expected';
+    if (nodes.length >= SUB_WEB_NODES_KNOWN) add('sub-webs-are-climbed', true, detail);
+    else if (gates.length === 0) skip('sub-webs-are-climbed', 'nobody knows a sub-web gate, so no sub-web is open to climb');
+    else if (yearsRun < 1) skip('sub-webs-are-climbed', detail + '; ' + yearsRun.toFixed(2) + ' years run, too short for a node to be proven');
+    else add('sub-webs-are-climbed', false, detail);
   }
 
   // The granary chain: know pottery, dig clay, make pots, carry them to a site

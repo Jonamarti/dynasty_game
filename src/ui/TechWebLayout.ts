@@ -26,10 +26,13 @@
  * cross-domain arcs are the shape of the image rather than lines drawn over it.
  */
 import {
-  TECH, TECHS, DOMAINS, AGES, type AgeId, type Domain, type Tech,
+  TECH, TECHS, DOMAINS, AGES, WEBS, webOf, techsOfWeb,
+  type AgeId, type Domain, type Tech, type WebId,
 } from '../sim/knowledge/Tech.ts';
 import type { Ingredient } from '../sim/knowledge/Synthesis.ts';
-import { relax, settleOverlaps, shiftToOrigin, type GraphEdge } from './GraphLayout.ts';
+import {
+  relax, settleOverlaps, shiftToOrigin, type GraphEdge, type GraphNode,
+} from './GraphLayout.ts';
 
 export interface LaidOutNode {
   /** Same string as `tech`. Required by the shared relaxation engine. */
@@ -48,6 +51,8 @@ export interface LaidOutNode {
    * ring is the whole gain.
    */
   age: AgeId;
+  /** The web this technology lives in. A sub-web's own gate is drawn in it too, as its anchor. */
+  web: WebId;
   /**
    * Which ring, counting only periods something in the table actually belongs
    * to.
@@ -76,10 +81,44 @@ export interface LaidOutEdge {
 }
 
 export interface WebLayout {
+  /** Which web this is the arrangement of. */
+  web: WebId;
   nodes: LaidOutNode[];
   edges: LaidOutEdge[];
+  /** Extent of `bounds`, margin included. */
   width: number;
   height: number;
+  /**
+   * The box that holds every node plus a node's own margin, in the same
+   * coordinates as `x` and `y`.
+   *
+   * Not `0..width` any more. Coordinates are *stable*: a node placed once keeps
+   * its exact `x, y` for the life of the layout, so a node added later may land
+   * on the negative side of the first ones and the box simply grows to hold it.
+   * The first layout is shifted to start at 0, as it always was; only growth
+   * can reach below it.
+   */
+  bounds: { minX: number; minY: number; maxX: number; maxY: number };
+  /**
+   * Where the middle of the seeding sat after the first layout's shift, so a
+   * node that arrives later is seeded in the same sector the first ones were.
+   */
+  origin: { x: number; y: number };
+}
+
+export interface LayOutOptions {
+  /**
+   * The arrangement to extend. Every node in it that is still a member of the
+   * web keeps its coordinates exactly; only members it has no place for are
+   * relaxed. The argument is never modified.
+   */
+  previous?: WebLayout | null;
+  /**
+   * Which technologies the web's own nodes are. Defaults to `techsOfWeb(web)`,
+   * which is all the screen ever uses; the tests pass a prefix of it to stand
+   * in for a table that grows between two layouts.
+   */
+  members?: readonly Tech[];
 }
 
 /**
@@ -185,11 +224,22 @@ function keyOf(ingredient: Ingredient): string {
   }
 }
 
-/** Every edge the picture draws, both kinds. */
-export function webEdges(): LaidOutEdge[] {
+/**
+ * Every edge the picture draws, both kinds.
+ *
+ * Over `members` when given (a web draws only the edges between nodes it shows:
+ * an edge to a node on another web would name a node the player may not know
+ * exists), and over the whole table otherwise. Computed per web rather than
+ * once and filtered, so the shared-spark degree cap is spent only on edges that
+ * are drawn and one web's relations cannot crowd another's out.
+ */
+export function webEdges(members?: readonly Tech[]): LaidOutEdge[] {
+  const inside = members ? new Set(members) : null;
+  const universe = inside ? TECHS.filter(tech => inside.has(tech)) : TECHS;
   const edges: LaidOutEdge[] = [];
-  for (const tech of TECHS) {
+  for (const tech of universe) {
     for (const required of TECH[tech].requires) {
+      if (inside && !inside.has(required)) continue;
       edges.push({
         from: required, to: tech, kind: 'requires',
         crossDomain: TECH[required].domain !== TECH[tech].domain,
@@ -203,12 +253,12 @@ export function webEdges(): LaidOutEdge[] {
   // one, because almost everything shares a single common verb with something
   // and an edge between every pair is not a picture.
   const keys = new Map<Tech, Set<string>>();
-  for (const tech of TECHS) keys.set(tech, ingredientKeys(tech));
+  for (const tech of universe) keys.set(tech, ingredientKeys(tech));
   const candidates: { a: Tech; b: Tech; shared: number; crossDomain: boolean }[] = [];
-  for (let i = 0; i < TECHS.length; i++) {
-    for (let j = i + 1; j < TECHS.length; j++) {
-      const a = TECHS[i]!;
-      const b = TECHS[j]!;
+  for (let i = 0; i < universe.length; i++) {
+    for (let j = i + 1; j < universe.length; j++) {
+      const a = universe[i]!;
+      const b = universe[j]!;
       // A prerequisite pair is already joined; a second line between them
       // would only be the first one drawn twice.
       if (TECH[b].requires.includes(a) || TECH[a].requires.includes(b)) continue;
@@ -242,23 +292,37 @@ export function webEdges(): LaidOutEdge[] {
 }
 
 /**
- * Lays the whole web out.
+ * Lays one web out — and, given the arrangement it had before, only the nodes
+ * that are new.
  *
- * Called once when the panel opens and cached by the caller. It is O(n²) per
- * iteration over about ten nodes, which is nothing, and will still be nothing
- * at the two dozen the milestone ends with.
+ * M15 phase 13c, the fix for the bug `docs/bugs.md` filed as "the tech web's
+ * arrangement shifted": the whole picture used to be relaxed from scratch, so
+ * adding one technology (or retuning one constant) moved every node on it, and a
+ * player who had learned where `cooking` sits found it somewhere else. Now a
+ * node that has a place keeps it exactly. The newcomers are seeded where the
+ * first layout would have seeded them, relaxed with the placed nodes *frozen*
+ * (`lockX`/`lockY`: they still push and pull, but the result is discarded), and
+ * pushed clear of everyone by `settleOverlaps`, which also respects the locks.
+ * They arrive in `TECHS` order, which is what makes this deterministic.
  *
- * Takes no box to fit into any more. The picture used to be squeezed into a
- * fixed 1080x720 with `fitInto`'s uniform scale, which is the defect this
- * rebuild exists to fix: at seventeen nodes the pre-fit span was already
- * ~908px, the fit scale was ~0.65, and the 92px hard separation the
- * relaxation had won landed at about 60px on screen — under a node's own
- * width. `TechWeb.ts` now owns a pan-and-zoom viewport instead, so the layout
- * only has to give every node a well-defined, non-overlapping position and
- * let the player decide how much of it to look at.
+ * A web is its own members and, for a sub-web, its gate: the gate is drawn as
+ * the web's root so that every edge has somewhere to start, and it is a main-web
+ * node the player already knows (a sub-web is only ever opened from a gate they
+ * know). Nothing else from another web is drawn, and no edge reaches one.
+ *
+ * Takes no box to fit into: `TechWeb.ts` owns a pan-and-zoom viewport, so the
+ * layout only has to give every node a well-defined, non-overlapping position.
+ * The first layout of a web is shifted to start at the margin; later ones are
+ * not, because shifting would move the nodes this exists to keep still.
  */
-export function layOutWeb(): WebLayout {
-  const nodes: LaidOutNode[] = [];
+export function layOutWeb(web: WebId = 'main', options: LayOutOptions = {}): WebLayout {
+  const gate = WEBS[web].gate;
+  const own = new Set<Tech>(options.members ?? techsOfWeb(web));
+  const shown = TECHS.filter(tech => own.has(tech) || tech === gate);
+  const previous = options.previous ?? null;
+  const kept = new Map<Tech, LaidOutNode>();
+  for (const node of previous?.nodes ?? []) if (shown.includes(node.tech)) kept.set(node.tech, node);
+  const origin = previous ? previous.origin : { x: 0, y: 0 };
 
   // Seed: each domain owns an angular sector, and the period sets the radius —
   // so the picture reads outward as history as well as around as subject
@@ -267,45 +331,73 @@ export function layOutWeb(): WebLayout {
   const rings = webRings();
   const byDomain = new Map<Domain, Tech[]>();
   for (const domain of DOMAINS) byDomain.set(domain, []);
-  for (const tech of TECHS) byDomain.get(TECH[tech].domain)!.push(tech);
-
+  for (const tech of shown) byDomain.get(TECH[tech].domain)!.push(tech);
   const sector = (Math.PI * 2) / DOMAINS.length;
-  DOMAINS.forEach((domain, domainIndex) => {
+  const seedOf = (tech: Tech): { x: number; y: number } => {
+    const domain = TECH[tech].domain;
     const members = byDomain.get(domain)!;
-    const centre = domainIndex * sector - Math.PI / 2;
-    members.forEach((tech, index) => {
-      const age = TECH[tech].age;
-      // Fan the members of one domain across its sector rather than stacking
-      // them on the sector's spine, which put same-depth siblings exactly on
-      // top of each other and left the relaxation to guess which way to break
-      // the tie.
-      const spread = members.length <= 1
-        ? 0
-        : (index / (members.length - 1) - 0.5) * sector * 0.72;
-      const angle = centre + spread;
-      const ring = rings.indexOf(age);
-      const radius = INNER_RADIUS + ring * RING_GAP;
-      nodes.push({
-        id: tech, tech, domain, age, ring,
-        x: Math.cos(angle) * radius,
-        y: Math.sin(angle) * radius,
-      });
-    });
+    const centre = DOMAINS.indexOf(domain) * sector - Math.PI / 2;
+    // Fan the members of one domain across its sector rather than stacking
+    // them on the sector's spine, which put same-depth siblings exactly on
+    // top of each other and left the relaxation to guess which way to break
+    // the tie.
+    const spread = members.length <= 1
+      ? 0
+      : (members.indexOf(tech) / (members.length - 1) - 0.5) * sector * 0.72;
+    const angle = centre + spread;
+    const radius = INNER_RADIUS + rings.indexOf(TECH[tech].age) * RING_GAP;
+    return { x: origin.x + Math.cos(angle) * radius, y: origin.y + Math.sin(angle) * radius };
+  };
+
+  const work: (LaidOutNode & GraphNode)[] = shown.map(tech => {
+    const old = kept.get(tech);
+    const at = old ?? seedOf(tech);
+    return {
+      id: tech, tech, domain: TECH[tech].domain, age: TECH[tech].age, web: webOf(tech),
+      ring: rings.indexOf(TECH[tech].age), x: at.x, y: at.y,
+      lockX: old !== undefined, lockY: old !== undefined,
+    };
   });
 
-  const edges = webEdges();
-  const springs: GraphEdge[] = edges.map(edge => ({
-    from: edge.from,
-    to: edge.to,
-    rest: edge.kind === 'shared' ? SPRING_SHARED : edge.crossDomain ? SPRING_FAR : SPRING_NEAR,
-    k: edge.kind === 'shared' ? SHARED_K : SPRING_K,
-  }));
+  const edges = webEdges(shown);
+  if (work.some(node => !node.lockX)) {
+    const springs: GraphEdge[] = edges.map(edge => ({
+      from: edge.from,
+      to: edge.to,
+      rest: edge.kind === 'shared' ? SPRING_SHARED : edge.crossDomain ? SPRING_FAR : SPRING_NEAR,
+      k: edge.kind === 'shared' ? SHARED_K : SPRING_K,
+    }));
+    relax(work, springs, { iterations: ITERATIONS, repulsion: REPULSION, centring: CENTRING });
+    settleOverlaps(work, NODE_RADIUS * 2);
+  }
 
-  relax(nodes, springs, { iterations: ITERATIONS, repulsion: REPULSION, centring: CENTRING });
-  settleOverlaps(nodes, NODE_RADIUS * 2);
-  const { width, height } = shiftToOrigin(nodes, NODE_RADIUS);
+  if (!previous) {
+    let minX = Infinity, minY = Infinity;
+    for (const node of work) { minX = Math.min(minX, node.x); minY = Math.min(minY, node.y); }
+    if (work.length > 0) {
+      origin.x = NODE_RADIUS - minX;
+      origin.y = NODE_RADIUS - minY;
+    }
+    shiftToOrigin(work, NODE_RADIUS);
+  }
 
-  return { nodes, edges, width, height };
+  // The locks were scaffolding for the relaxation, not part of the answer.
+  const nodes: LaidOutNode[] = work.map(({ lockX: _x, lockY: _y, ...node }) => node);
+  const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+  for (const node of nodes) {
+    bounds.minX = Math.min(bounds.minX, node.x - NODE_RADIUS);
+    bounds.maxX = Math.max(bounds.maxX, node.x + NODE_RADIUS);
+    bounds.minY = Math.min(bounds.minY, node.y - NODE_RADIUS);
+    bounds.maxY = Math.max(bounds.maxY, node.y + NODE_RADIUS);
+  }
+  if (nodes.length === 0) {
+    bounds.minX = bounds.minY = 0;
+    bounds.maxX = bounds.maxY = NODE_RADIUS * 2;
+  }
+  return {
+    web, nodes, edges, bounds, origin: { x: origin.x, y: origin.y },
+    width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY,
+  };
 }
 
 /** Domain colours. One hue per area, so a cluster reads as a cluster. */

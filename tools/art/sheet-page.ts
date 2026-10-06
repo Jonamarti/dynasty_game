@@ -93,7 +93,7 @@ function person(over: AspectOver, label: string, row: HTMLElement): void {
 }
 {
   const row = section('hands', 'Holding things, and babies in arms');
-  for (const held of ['spear', 'bow', 'atlatl', 'bone_point', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'digging_stick']) {
+  for (const held of ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'digging_stick']) {
     for (const dir of ['S', 'E'] as ArtDir[]) person({ held, dir, wear: { torso: 'wrap' } }, `${held} ${dir}`, row);
   }
   for (const dir of ['S', 'E', 'N', 'W'] as ArtDir[]) person({ sex: 'f', hairStyle: 'long', carryBaby: true, dir }, `baby ${dir}`, row);

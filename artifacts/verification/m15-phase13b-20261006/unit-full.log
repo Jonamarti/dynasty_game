@@ -1,0 +1,6 @@
+
+Over their time limit (the real vitest would fail these on a timeout if as slow there):
+  6671ms > 5000ms  src/sim/__tests__/earthwork-checks.test.ts > earthworks-are-dug > fails when the progress is never banked (the broken build)
+
+Test files: 159 passed, 0 failed (159)
+Tests: 1115 passed, 0 failed, 0 skipped — 209.1s  [esbuild+shim harness, not real vitest]

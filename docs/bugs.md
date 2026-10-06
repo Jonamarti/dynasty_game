@@ -1,3 +1,27 @@
+## M15 fase 13d: nadie sube a una sub-red en `hearths` ni en `craft` (2026-10-06)
+
+`sub-webs-are-climbed` falla en los dos escenarios: tras 16.000 pasos (1,67
+años de juego) se conoce una puerta (`cooking` en `hearths`, `spear` en
+`craft`) y **cero** nodos de sub-red. Las cuatro recetas nuevas se enseñan bien
+cuando alguien las sabe (18 a 22 portadores en las corridas sembradas), pero
+nadie las concibe desde cero en ese plazo, y el caldo y la torta casi no se
+cocinan aunque se sepan: el hueso es escaso y no se levanta molino en corridas
+cortas (0 caldos y 0 tortas sembrando la técnica; 255 y 398 al entregar además
+el hueso o la harina). No se ha tocado ningún peso ni umbral para ponerlo en
+verde. Falta decidir si se alarga el escenario, si los fundadores de `craft`
+empiezan con una receta, o si hace falta una fuente de hueso.
+[Fase 13d](m15_phase13_subwebs.md).
+
+## M15 fase 13d: la honda no gasta munición ni se limita a la caza menor (2026-10-06)
+
+`sling` es un arma como el arco: se elige por `hunt * poder` y no consume nada
+al cazar. El plan pedía «piedra de munición (sílex): caza menor a distancia».
+Hoy el sílex es solo el coste de la receta (dos por honda) y el término de caza
+(1,7) vale igual contra una liebre que contra un jabalí; `weaponOf` no sabe qué
+animal se persigue. Falta un modelo de munición (ítem gastado por golpe, o
+`ammo` en `weapon`) y un tope de presa en `weapon`. Arco y átlatl tienen el
+mismo hueco. [Fase 13d](m15_phase13_subwebs.md).
+
 ## M15 fase 30: límites conservados tras el cierre (2026-10-06)
 
 Resuelto el corte de cauces al girar entre regiones y el reinicio de los vados:
@@ -1795,6 +1819,15 @@ underneath them silently, and the only tripwire is a human noticing the web
 looks different. A snapshot of a few known node positions would catch it,
 though it would also need rewriting on every deliberate change — which is why
 one was not added here rather than added and immediately tuned green.
+
+**Annotation, M15 phase 13c (2026-10-06): partly fixed.** `layOutWeb` is now
+incremental and per web: a node that already has a place keeps its exact
+coordinates when another is added, and only the newcomers are relaxed (with the
+placed ones frozen), in `TECHS` order. `techweb-subwebs.test.ts` pins it. What is
+*not* fixed: the arrangement lives in the page, not in storage or in the repo, so
+retuning `MAX_PUSH`, `heat` or `AT_REST` still moves a web the next time it is
+first laid out. Pinning it across builds would need the positions persisted, which
+13c did not invent. See `m15_phase13_subwebs.md`.
 
 ### `FamilyTree` never got the mobile zoom treatment the tech web did
 

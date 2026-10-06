@@ -41,6 +41,7 @@
  * deliberately different questions.
  */
 import type { Person, Skill } from '../entities/Person.ts';
+import type { KnowledgeConfig } from '../core/Config.ts';
 import type { Idea } from './Synthesis.ts';
 import type { Spark } from './Synthesis.ts';
 import { PROTOTYPE_AT, PROTOTYPE_POWER, REFINEMENT_STEP } from './Synthesis.ts';
@@ -148,6 +149,14 @@ export const TECHS = [
   // M15 phase 24: planting a tree. A practice, and it ships with its reader —
   // the `plant` verb (`ActionSystem.doPlant`) — so it is not declared inert.
   'arboriculture',
+  // M15 phase 13d: the first recipe nodes (`tier: 'craft'`), one per commit
+  // with the item and the recipe it unlocks. Appended: `TECHS` order is the
+  // order the web is laid out in.
+  'stone_boiling',
+  'flatbread',
+  // The two weapons of the same phase: a variant of the spear and a new one.
+  'fire_hardened_spear',
+  'sling',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -248,10 +257,77 @@ export function ageIndex(age: AgeId): number {
  */
 export type TechKind = 'practice' | 'device';
 
+/**
+ * The sub-webs of the tech web (M15 phase 13).
+ *
+ * The main web holds the techniques; each gate technique opens a web of its own
+ * for the recipes, garments and weapons that are variants of it. **Only the webs
+ * that have at least two nodes with an effect are declared here** — a web
+ * declared before its content would be inert, and an inert door is the failure
+ * the file header forbids. Clothing, Preserving, Fire, Earth and Metal
+ * join this list in the phase that gives them nodes; see `docs/m15_plan.md`,
+ * phase 13a.
+ *
+ * `web` is a *grouping for the screen* and nothing in `src/sim/` reads it: where
+ * a node lives never changes what anyone can discover, which is why moving a
+ * node between webs is bit-identical.
+ */
+export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen';
+
+export interface WebDef {
+  id: WebId;
+  /** Shown through `t()`; the Spanish is in `i18n/es/tech.ts`. */
+  label: string;
+  /** The technique that opens this web, or `null` for the main web itself. */
+  gate: Tech | null;
+  /** Hex, for the web's marker and breadcrumb. */
+  color: string;
+}
+
+export const WEBS: Record<WebId, WebDef> = {
+  main: { id: 'main', label: 'Main web', gate: null, color: '#9aa4b2' },
+  arms: { id: 'arms', label: 'Weapons', gate: 'spear', color: '#c9694b' },
+  field: { id: 'field', label: 'Field', gate: 'farming', color: '#8fb35a' },
+  domestication: { id: 'domestication', label: 'Taming', gate: 'taming', color: '#c9a34b' },
+  kitchen: { id: 'kitchen', label: 'Kitchen', gate: 'cooking', color: '#d98b4a' },
+};
+
+/** The webs that hang off a gate, in the order a screen should list them. */
+export const SUB_WEBS: WebDef[] = Object.values(WEBS).filter(web => web.gate !== null);
+
+/**
+ * What kind of node this is in its web (M15 phase 13b).
+ *
+ * A `technique` is a way of doing things that has to be worked out. A `craft` is
+ * a recipe or a variant of its gate - broth from the hearth, a flatbread, a
+ * hardened spear - which is hit upon quickly (`KnowledgeConfig.craftDifficulty`
+ * multiplies its difficulty, see `difficultyOf`) and is passed on in ordinary
+ * small talk as well as in a lesson (`KnowledgeSystem.conversationLesson`).
+ * Nothing else about it differs: refining, dying with its holder and being
+ * shown to a child at the hearth are the machinery a technique already has.
+ *
+ * Its sparks are mostly `doing` and `holding` ones - a recipe occurs to whoever
+ * is at the work with the ingredients to hand - but that is a way of writing
+ * the node and not a mechanism: the spark machinery is unchanged.
+ */
+export type TechTier = 'technique' | 'craft';
+
 export interface TechDef {
   id: Tech;
   label: string;
   domain: Domain;
+  /**
+   * Which web this node is drawn in. Left out, it is `'main'`: read it through
+   * `webOf`, so the many nodes that never move need no line.
+   */
+  web?: WebId;
+  /** On a gate technique only: the sub-web it opens. */
+  opens?: WebId;
+  /**
+   * Technique or craft. Left out, it is a technique: read it through `tierOf`,
+   * for the same reason `web` is read through `webOf`.
+   */
+  tier?: TechTier;
   /**
    * The archaeological period our own species arrived at this in.
    *
@@ -402,6 +478,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   spear: {
     id: 'spear', label: 'The spear', domain: 'beasts',
+    opens: 'arms',
     age: 'middle_palaeolithic', firstKnown: 'about 200,000 years ago',
     kind: 'device',
     requires: ['hafting'], difficulty: 0.35, skill: 'knap',
@@ -420,6 +497,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   bow: {
     id: 'bow', label: 'The bow', domain: 'beasts',
+    web: 'arms',
     age: 'mesolithic', firstKnown: 'about 12,000 years ago',
     kind: 'device',
     requires: ['cordage', 'spear'], difficulty: 0.6, skill: 'hunt',
@@ -498,6 +576,7 @@ export const TECH: Record<Tech, TechDef> = {
     id: 'cooking', label: 'Cooking', domain: 'fire',
     age: 'middle_palaeolithic', firstKnown: 'about 300,000 years ago',
     kind: 'device',
+    opens: 'kitchen',
     requires: ['firemaking'], difficulty: 0.25, skill: 'cook',
     answers: ['hunger', 'variety'],
     prototype: { meat: 1, sticks: 1 }, maxRefinement: 3,
@@ -927,6 +1006,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   atlatl: {
     id: 'atlatl', label: 'Spear-thrower', domain: 'beasts',
+    web: 'arms',
     age: 'upper_palaeolithic', firstKnown: 'about 18,000 years ago',
     kind: 'device',
     requires: ['spear'], difficulty: 0.45, skill: 'hunt',
@@ -1009,6 +1089,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   taming: {
     id: 'taming', label: 'Taming', domain: 'beasts',
+    opens: 'domestication',
     age: 'upper_palaeolithic', firstKnown: 'about 30,000 years ago',
     kind: 'practice', practisedBy: ['tame'],
     requires: ['tracking'], difficulty: 0.5, skill: 'track',
@@ -1088,6 +1169,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   farming: {
     id: 'farming', label: 'Farming', domain: 'plants',
+    opens: 'field',
     age: 'neolithic', firstKnown: 'about 9500 BC',
     // A device, by this file's own test of one: it gates a building. The
     // prototype is the first deliberate sowing — a handful of seed put in the
@@ -1123,6 +1205,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   composting: {
     id: 'composting', label: 'Composting', domain: 'plants',
+    web: 'field',
     age: 'neolithic', firstKnown: 'about 4000 BC',
     kind: 'device',
     requires: ['farming'], difficulty: 0.5, skill: 'farm',
@@ -1292,6 +1375,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   sickle: {
     id: 'sickle', label: 'Sickle', domain: 'plants',
+    web: 'field',
     age: 'neolithic', firstKnown: 'about 9,000 BC',
     kind: 'device',
     requires: ['farming', 'hafting'], difficulty: 0.4, skill: 'knap',
@@ -1354,6 +1438,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   calendar: {
     id: 'calendar', label: 'Calendar', domain: 'plants',
+    web: 'field',
     age: 'neolithic', firstKnown: 'about 5,000 BC',
     // A practice: nothing is built, and the trial is the act it improves —
     // sowing at the right time rather than by guesswork. The same road
@@ -1378,6 +1463,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   arboriculture: {
     id: 'arboriculture', label: 'Arboriculture', domain: 'plants',
+    web: 'field',
     age: 'neolithic', firstKnown: 'about 5,000 BC',
     // A practice, for the reason `calendar` is one: nothing is built, and the
     // trial is the act it improves. Setting a stone or a nut in the ground
@@ -1405,6 +1491,134 @@ export const TECH: Record<Tech, TechDef> = {
       'A stone or a nut set in the ground beside the camp, and the patience to ' +
       'wait years for it. The first thing anyone did for a generation not yet ' +
       'born.',
+  },
+  // M15 phase 13d. The first recipe node: a craft, so it is hit upon five times
+  // as readily as a technique of its difficulty and is passed on in small talk.
+  // It sat in the main web for one commit: Kitchen opened with `flatbread`,
+  // which gave the web the second node 13a's rule asks for.
+  stone_boiling: {
+    id: 'stone_boiling', label: 'Stone boiling', domain: 'fire',
+    web: 'kitchen',
+    tier: 'craft',
+    age: 'upper_palaeolithic', firstKnown: 'about 30,000 years ago',
+    // A device: it gates `RECIPES.broth`. Its first try is the stones and the
+    // tongs, not the bones: a first attempt with bone as the cost was measured
+    // conceived nine times in three game-years and never once built, because a
+    // band that has not worked bone leaves the carcass where it lies (see
+    // `doHunt`) and the few that do carry two bones home rarely. The bones are
+    // the *recipe's* cost, so the broth is as scarce as the bone.
+    kind: 'device',
+    requires: ['cooking', 'leatherwork'], difficulty: 0.5, skill: 'cook',
+    prototype: { flint: 1, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      // 13b's guidance for a craft: its sparks are mostly doing and handling.
+      // The broth occurs to whoever roasts with bones to hand.
+      { needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'doing', action: 'craft' },
+                { kind: 'holding', item: 'bone' }],
+        weight: 1.0, story: 'was roasting with a heap of cleaned bones beside the hearth and wondered what was left in them' },
+      // The route that needs no bone and no hide in hand: a hide that holds
+      // water, a fire that makes stones hot, and somebody hungry for something
+      // other than roast.
+      { needs: [{ kind: 'knows', tech: 'leatherwork' }, { kind: 'knows', tech: 'cooking' },
+                { kind: 'feeling', need: 'hunger' }, { kind: 'doing', action: 'eat' }],
+        weight: 0.6, story: 'dropped a hot stone from the fire into a hide of water and watched it boil' },
+      { needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'knows', tech: 'leatherwork' },
+                { kind: 'wanting', drive: 'variety' }],
+        weight: 0.5, story: 'tired of roast and tried the fire’s hottest stones in a hide full of water' },
+    ],
+    description:
+      'Stones heated in the fire and dropped into a hide of water, with the ' +
+      'bones that nobody was eating. A broth: the first food made of what a ' +
+      'carcass used to leave behind.',
+  },
+  // A craft in Kitchen: flour baked on the hearth stone with no oven, which is
+  // what makes it a node of its own beside `bread` (the oven's loaf, a technique
+  // that needs farming). Shubayqa 1 holds the charred remains of a flatbread
+  // baked some 14,400 years ago, four thousand years before any field.
+  flatbread: {
+    id: 'flatbread', label: 'Flatbread', domain: 'plants',
+    web: 'kitchen',
+    tier: 'craft',
+    age: 'mesolithic', firstKnown: 'about 14,400 years ago',
+    kind: 'device',
+    requires: ['cooking', 'grinding'], difficulty: 0.45, skill: 'cook',
+    prototype: { flint: 1, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'knows', tech: 'grinding' },
+                { kind: 'holding', item: 'meal' }],
+        weight: 1.0, story: 'dropped a damp handful of meal on a stone beside the fire and found it set into a cake' },
+      { needs: [{ kind: 'knows', tech: 'cooking' }, { kind: 'knows', tech: 'grinding' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.6, story: 'was grinding by the hearth when a smear of meal and water caught on the hot stone and baked' },
+      { needs: [{ kind: 'knows', tech: 'grinding' }, { kind: 'knows', tech: 'cooking' },
+                { kind: 'wanting', drive: 'variety' }],
+        weight: 0.5, story: 'tired of gruel and laid a flat of wet meal on the hearth stone to see what the fire made of it' },
+    ],
+    description:
+      'Meal wetted and laid on the hot stone of the hearth. No oven, no ' +
+      'leaven: a flat cake that is the first bread, and a food worth more than ' +
+      'the meal it came from.',
+  },
+  // A craft in Weapons, and a variant of its gate: the same spear with its tip
+  // charred and scraped. Craft because it is a variant (it is hit upon at 0.4 of
+  // its difficulty and a hunter shows it over small talk, which is how a trick
+  // like this spread), not a new design to be worked out. It makes no new item,
+  // so it is a practice, tried by the one act it improves: hunting.
+  // The plan puts it in the Lower Palaeolithic (Clacton, ~400,000 years ago),
+  // but `spear` and `firemaking` are Middle Palaeolithic here and a node may not
+  // be older than what it rests on, so it follows them; see Dudas abiertas.
+  fire_hardened_spear: {
+    id: 'fire_hardened_spear', label: 'Fire-hardened spear', domain: 'beasts',
+    web: 'arms',
+    tier: 'craft',
+    age: 'middle_palaeolithic', firstKnown: 'about 400,000 years ago',
+    kind: 'practice', practisedBy: ['hunt'],
+    requires: ['spear', 'firemaking'], difficulty: 0.3, skill: 'knap',
+    prototype: {}, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'firemaking' },
+                { kind: 'holding', item: 'spear' }, { kind: 'doing', action: 'hunt' }],
+        weight: 1.0, story: 'saw a spear point blunt on a boar’s hide and wondered whether fire could keep an edge on it' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'firemaking' },
+                { kind: 'holding', item: 'sticks' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'left a pointed stick in the embers by mistake and found it hard as bone the next morning' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'firemaking' },
+                { kind: 'saw', what: 'quarry_escaped' }],
+        weight: 0.5, story: 'lost a deer to a point that bent and turned the tip in the fire until it would not' },
+    ],
+    description:
+      'The tip of the spear turned in the fire and scraped to a point. It ' +
+      'goes deeper and does not splinter: the same spear, a good deal more ' +
+      'deadly.',
+  },
+  // A craft in Weapons: a loop of cord and a pouch of flint pebbles, made at no
+  // station by anybody who holds the cord. A craft rather than a technique
+  // because it is a recipe for a small new item with a design nobody has to
+  // work out (the shepherd's sling is the oldest ranged weapon there is), where
+  // the bow is a technique: a spring to be understood. It needs the spear
+  // because the sling is a hunter's thing, and cordage because that is the cord.
+  sling: {
+    id: 'sling', label: 'The sling', domain: 'beasts',
+    web: 'arms',
+    tier: 'craft',
+    age: 'neolithic', firstKnown: 'about 8,000 years ago',
+    kind: 'device',
+    requires: ['spear', 'cordage'], difficulty: 0.4, skill: 'hunt',
+    prototype: { thatch: 2, flint: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'cordage' },
+                { kind: 'holding', item: 'flint' }, { kind: 'doing', action: 'hunt' }],
+        weight: 1.0, story: 'whirled a pebble in a loop of cord after a hare the spear could not reach' },
+      { needs: [{ kind: 'knows', tech: 'cordage' }, { kind: 'knows', tech: 'spear' },
+                { kind: 'holding', item: 'rope' }, { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'was plaiting a cord with a stone caught in a fold of it, and swung it round' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'cordage' },
+                { kind: 'saw', what: 'quarry_escaped' }],
+        weight: 0.5, story: 'watched small game scatter out of spear range and wanted an arm that was longer than a cord' },
+    ],
+    description:
+      'A loop of cord and a pouch for a pebble, swung round the head and let ' +
+      'go. Small, cheap, and it reaches further than any thrown spear.',
   },
   the_wheel: {
     id: 'the_wheel', label: 'The wheel', domain: 'timber',
@@ -1451,6 +1665,7 @@ export const TECH: Record<Tech, TechDef> = {
   // mechanism behind it. See `BuildingDef.herd` and `Simulation.workHerds`.
   herding: {
     id: 'herding', label: 'Herding', domain: 'beasts',
+    web: 'domestication',
     age: 'neolithic', firstKnown: 'about 8,500 BC',
     kind: 'device',
     requires: ['taming'], difficulty: 0.5, skill: 'track',
@@ -1521,6 +1736,7 @@ export const TECH: Record<Tech, TechDef> = {
   // rather than gating a recipe of their own — see `Simulation.workHerds`.
   dairying: {
     id: 'dairying', label: 'Dairying', domain: 'beasts',
+    web: 'domestication',
     age: 'neolithic', firstKnown: 'about 7,000 BC',
     // A practice, not a device: nothing is built, and milking is not a
     // second thing to build, it is a better way to use a pen that already
@@ -1546,6 +1762,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   wool: {
     id: 'wool', label: 'Wool', domain: 'cloth',
+    web: 'domestication',
     age: 'neolithic', firstKnown: 'about 6,000 BC',
     kind: 'device',
     requires: ['herding', 'spinning'], difficulty: 0.5, skill: 'build',
@@ -1588,6 +1805,7 @@ export const TECH: Record<Tech, TechDef> = {
   },
   dog: {
     id: 'dog', label: 'Dog', domain: 'beasts',
+    web: 'domestication',
     age: 'upper_palaeolithic', firstKnown: 'about 15,000 years ago',
     // A practice for the reason `taming` is one: nothing is built, and the
     // act that tries it out is keeping the beast. It is the same verb, `tame`,
@@ -1779,6 +1997,31 @@ export const TECH: Record<Tech, TechDef> = {
       'An heir who never learned to be king will not pass it on in turn.',
   },
 };
+
+/** The web a technology lives in (`'main'` unless its entry says otherwise). */
+export function webOf(tech: Tech): WebId {
+  return TECH[tech].web ?? 'main';
+}
+
+/** Whether a node is a technique or a craft (a technique unless its entry says otherwise). */
+export function tierOf(tech: Tech): TechTier {
+  return TECH[tech].tier ?? 'technique';
+}
+
+/**
+ * How hard a node is to arrive at unaided. **The one place `difficulty` is
+ * read** by the simulation: a craft is a recipe and is hit upon faster, so its
+ * difficulty is scaled by `craftDifficulty`. A technique is returned as written.
+ */
+export function difficultyOf(tech: Tech, knowledge: Pick<KnowledgeConfig, 'craftDifficulty'>): number {
+  const def = TECH[tech];
+  return tierOf(tech) === 'craft' ? def.difficulty * knowledge.craftDifficulty : def.difficulty;
+}
+
+/** Every technology of one web, in `TECHS` order (deterministic, for the screen). */
+export function techsOfWeb(web: WebId): Tech[] {
+  return TECHS.filter(tech => webOf(tech) === web);
+}
 
 /** Highest chronic motive this design can answer; zero means no recorded need. */
 export function answerPressure(person: Person, tech: Tech): number {
@@ -2003,6 +2246,22 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'Fruit trees planted near the camp: a stone set in the ground now, a crop in years.',
     site: 'ActionSystem.doPlant (the verb it unlocks); Tech.orchardFactor shortens the planting; Brain plant scorer',
   },
+  stone_boiling: {
+    summary: 'Bones boiled with hot stones into a broth: food made of what a carcass used to leave behind.',
+    site: 'RECIPES.broth at the hearth; ITEMS.broth',
+  },
+  flatbread: {
+    summary: 'Meal baked on the hearth stone into a flat cake: more nourishing than the meal, and no oven needed.',
+    site: 'RECIPES.flatbread at the hearth; ITEMS.flatbread',
+  },
+  fire_hardened_spear: {
+    summary: 'The spear hits harder, in a hunt and in a fight.',
+    site: 'weaponPower in Tech.ts, read through weaponOf by ActionSystem.doHunt and doAttack',
+  },
+  sling: {
+    summary: 'A one-handed weapon that reaches past the spear and hunts better: cheap, poor in a fight.',
+    site: 'ITEMS.sling.weapon via weaponOf in ActionSystem.doHunt; RECIPES.sling',
+  },
   the_wheel: {
     summary: 'A cart: what a strap and a basket carry, and a cartload more on top.',
     site: 'the equipped cart capacity in sim/core/Carry.ts; RECIPES.cart',
@@ -2111,8 +2370,22 @@ export function weaponOf(
     damage: weapon.damage,
     reach: weapon.reach,
     hunt: weapon.hunt,
-    power: techPower(person, weapon.tech as Tech),
+    power: weaponPower(person, weapon.tech as Tech),
   };
+}
+
+/**
+ * How strong a weapon's design is in this person's hands: `techPower`, and for
+ * the spear one factor more, the fire-hardened tip (M15 phase 13d). The single
+ * term both `weaponOf` and `weaponItemOf` read, so `doHunt` and `doAttack` agree
+ * about the spear with no edit of their own. For somebody who lacks the node it
+ * is exactly `techPower` (`scaled` is `1 + 0 * ...`, and `x * 1` is `x`), so a
+ * world that has not found it behaves as it did.
+ */
+export const HARDENED_SPEAR = 1.25;
+export function weaponPower(person: Person, tech: Tech): number {
+  const power = techPower(person, tech);
+  return tech === 'spear' ? power * scaled(person, 'fire_hardened_spear', HARDENED_SPEAR) : power;
 }
 
 /** The item selected by `weaponOf`, exposed so the action system can fit it. */
@@ -2130,7 +2403,7 @@ export function weaponItemOf(
     if (count <= 0 || (equipped && !equipped.has(itemId))) continue;
     const weapon = ITEMS[itemId]?.weapon;
     if (!weapon || ITEMS[itemId]!.hand.hands > maxHands) continue;
-    const power = techPower(person, weapon.tech as Tech);
+    const power = weaponPower(person, weapon.tech as Tech);
     if (power <= 0) continue;
     const worth = (forHunt ? weapon.hunt : weapon.damage) * power;
     if (best === null || worth > best.worth) best = { item: itemId, worth };

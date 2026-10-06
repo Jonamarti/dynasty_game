@@ -1483,6 +1483,8 @@ armas como nodos propios que se descubren, se enseñan y se heredan.
   sub-red requiere su puerta (directa o transitivamente), así que nadie lo
   conoce antes; ninguna sub-red se abre vacía.
 
+**Avance del 2026-10-06:** 13a hecha, bit-idéntica (`m15: redes y puertas`). `WEBS`, `SUB_WEBS`, `webOf` y `techsOfWeb` en `Tech.ts`; se abren Armas, Campo y Doma con 2, 4 y 4 nodos mudados solo de `web`. **Cocina no se abre aún**: el asado es una receta (`roast_meat`), no una técnica, y `bread` y `brewing` no requieren `cooking`; se queda sin nodos hasta 13d. Detalle y dudas en [m15_phase13_subwebs.md](m15_phase13_subwebs.md).
+
 ### 13b. El nodo de receta (medido)
 
 `TechDef.tier: 'technique' | 'craft'`. Un nodo `craft`:
@@ -1501,6 +1503,8 @@ candidata, cada técnica nueva añade tiradas y mueve el stream de
 `knowledgeRng`. Es un commit de comportamiento y se mide, pero **13a no puede
 añadir técnicas**, solo moverlas de red.
 
+**Avance del 2026-10-06:** 13b hecha (`m15: la receta como conocimiento`), todavía bit-idéntica: `TechDef.tier`, `Config.knowledge.craftDifficulty` (0,4) leído solo en `difficultyOf`, y enseñanza de crafts en `chat`/`interests`/`deep` sin tiradas si no hay crafts que compartir. Ningún nodo existente es `craft`; la medición pasa a 13d. El plan suponía que los modos largos ya enseñaban; `converse` no enseña técnicas (ver [m15_phase13_subwebs.md](m15_phase13_subwebs.md)).
+
 ### 13c. La pantalla (interfaz; e2e)
 
 - La red principal (`G`) dibuja solo los nodos de `main`. Una puerta que el
@@ -1517,6 +1521,8 @@ añadir técnicas**, solo moverlas de red.
   cada fotograma (la regla de `TechWeb`). `[hidden] { display: none; }`.
 - e2e: abrir la red, entrar en una sub-red, volver y comprobar que no se traga
   los clics; una sub-red de una puerta desconocida no aparece.
+
+**Avance del 2026-10-06:** 13c hecha (`m15: la red se abre y no se mueve`). La red principal dibuja solo `main`; una puerta conocida lleva «conocidos / total» y abre la sub-red con miga de pan y botón «Volver» (`Escape` vuelve; el segundo cierra); una sub-red de puerta desconocida no se ve ni se nombra; `layOutWeb` es incremental y por red (los nodos colocados no se mueven, probado). La puerta se dibuja como raíz de su sub-red. Tests unitarios, `e2e/tech-subwebs.spec.ts` (el propietario debe añadirlo al script `e2e`) y capturas en `artifacts/screenshots/m15-phase13c-subwebs-2026-10-06/`. Detalle y dudas en [m15_phase13_subwebs.md](m15_phase13_subwebs.md).
 
 ### 13d. Contenido que estrena las sub-redes (medido)
 
@@ -1536,6 +1542,16 @@ falla). **Coste declarado:** ≤ 3 puntos.
 **Commits:** `m15: redes y puertas`; `m15: la receta como conocimiento`;
 `m15: la red se abre y no se mueve`; `m15: caldo, torta, lanza endurecida y
 honda`.
+
+**Avance del 2026-10-06:** `stone_boiling` hecho (`m15: caldo — hervir con piedras`): nodo `craft` (Paleolítico superior; `cooking`, `leatherwork`), receta `broth` en la hoguera (2 huesos → 1 caldo), ítem `broth` añadido al final de `Item.ts`, y la prueba del primer caldo siembra la creencia `eat:broth`. Cocina sigue sin abrirse (un solo nodo; se abre con `flatbread`). Los siguientes nodos van en commits propios. Detalle, medidas y dudas en [m15_phase13_subwebs.md](m15_phase13_subwebs.md).
+
+**Avance del 2026-10-06 (2):** `flatbread` hecho (`m15: torta — pan sin horno`): craft (Epipaleolítico; `cooking`, `grinding`), receta `flatbread` en la hoguera (1 harina → 1 torta), y **Cocina se abre** (`cooking.opens = 'kitchen'`, con `stone_boiling` y `flatbread`). Detalle y medidas en [m15_phase13_subwebs.md](m15_phase13_subwebs.md).
+
+**Avance del 2026-10-06 (3):** `fire_hardened_spear` hecho (`m15: lanza endurecida al fuego`): craft de Armas (práctica, se prueba cazando; `spear`, `firemaking`) que multiplica por `HARDENED_SPEAR` (1,25, escalado por `techPower`) el poder de la lanza en `weaponPower`, el único término que leen `weaponOf` y `weaponItemOf` y por tanto `doHunt` y `doAttack`. Edad `middle_palaeolithic`, no la del plan (ver dudas).
+
+**Avance del 2026-10-06 (4):** `sling` hecho (`m15: la honda`): craft de Armas (`spear`, `cordage`; Neolítico), ítem `sling` (una mano, alcance 1,4, caza 1,7, daño 0,2), receta `sling` (cuerda 1 y sílex 2, sin estación), icono y mano nuevos en `art/src/`. **No hay modelo de munición** (el arco tampoco lo tiene): el sílex es el coste de la receta y ni la caza gasta nada, y la honda no se limita a la caza menor; queda en `bugs.md` y `next-steps.md`.
+
+**Avance del 2026-10-06 (5):** check `sub-webs-are-climbed` hecho (`m15: el check sub-webs-are-climbed`), en `hearths` y `craft`. **Mide las puertas, no los nodos:** ninguno de los dos escenarios dura un año y nada se prueba en menos de uno, así que los nodos de sub-red conocidos al final son 0 en cualquier build y un umbral sobre ellos solo podría fallar. Con la puerta (`cooking` en `hearths`, `spear` en `craft`) pasa; sin sub-redes (el árbol anterior a 13a) falla. 13d completa; queda la pantalla (13c, otro agente) y la cohorte de 20 semillas, que no se corrió.
 
 ## Fase 14 — La ropa por capas (nota 1; decisión 8)
 
