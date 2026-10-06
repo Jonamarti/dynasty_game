@@ -1,3 +1,21 @@
+## 2026-10-06 — M15 fase 32a: `profile:systems` mide distribución, duración y percepción
+
+El perfil solo daba medias y tiempos inclusivos por wrapper. Se añade (sin tocar
+el juego): un cronómetro por `step()` fuera de los bucles (media, p50, p95, máx y
+los pasos más lentos); reparto por banda de `think`/`execute` dentro y fuera de
+la visión efectiva; y un modo `counted` que estima el coste de percepción con
+contadores enteros en `SpatialHash` y una repetición por bloques de consultas
+muestreadas, en vez de envolver cada llamada con cronómetros que distorsionan
+funciones de ~2 µs. Porqué: una media de 22 ms esconde un máximo de 171 ms en el
+paso diario, y un wrapper por consulta costaría más que la consulta. Los hashes
+de estado/RNG de los tres modos coinciden (30 y 300 humanos, tick 480): bit-idéntico.
+En 300: p50 21,4 ms, p95 38 ms, máx 171,5 ms (paso 239, cruce de día); 7-8 % de
+`think`/`execute` fuera de visión; percepción estimada ~3,9 ms/paso (~18 %), con
+sesgos documentados. Lógica pura en `tools/profile-stats.ts` con
+`profile-stats.test.ts` (incl. controles negativos). Siguen pendientes las
+cohortes de visibles, compactos y agregados (32b/32c) y una muestra con varias
+bandas. [Detalle](m15_profile_systems.md). Sin cambio de interfaz.
+
 ## 2026-10-06 — M15 fase 32a: línea `DEMOGRAPHY` congelada (`century` y `generations`)
 
 Dos cohortes de 20 semillas sobre `dcc6066`, sin cambio de código: `century`

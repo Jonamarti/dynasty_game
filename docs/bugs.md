@@ -1,3 +1,11 @@
+## M15 fase 32a: perfil fuera de visión sin explicar frente al del 2026-10-03 (2026-10-06)
+
+Con la misma semilla y 300 humanos, `think`/`execute` fuera de visión pasaron de
+955/8.370 (2026-10-03) a 1.643/9.981. No se ha investigado si lo causan los
+cambios posteriores al 2026-10-03 (el mundo ya no es el mismo) o la
+clasificación; no se comparan las dos tablas. El perfil de una sola banda tampoco
+ejercita el reparto entre bandas. Ver [m15_profile_systems.md](m15_profile_systems.md).
+
 ## M15 fase 31: lo que el globo no hace todavía (2026-10-06)
 
 - **El navegador no tiene ajuste de mundo.** El globo solo existe con

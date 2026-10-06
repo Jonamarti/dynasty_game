@@ -3156,6 +3156,14 @@ calibrarían contra una demografía que ya no existe.
 objetivo. [Tabla](m15_phase32a_demography.md). Siguen pendientes distribución,
 percepción sin wrapper y las cohortes de los modelos compactos.
 
+**Avance del 2026-10-06 (32a, instrumento):** `profile:systems` añade duración
+por paso (p50/p95/máx), reparto por banda dentro/fuera de visión y un modo
+`counted` que estima la percepción (~18 % del paso, 3,9 ms de 21,5 con 300
+humanos) sin wrappers por llamada; hashes de estado/RNG idénticos en los tres
+modos. Sesgos y cifras en [m15_profile_systems.md](m15_profile_systems.md). Quedan
+pendientes solo las cohortes de visibles, compactos y agregados (dependen de
+32b/32c) y una muestra con varias bandas.
+
 ### 32b. Nivel 1: `ComarcaSim`
 
 Como en M14 fase 14, extendido también a individuos fuera de vista **dentro de

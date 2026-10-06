@@ -6,6 +6,7 @@ import { createServer } from 'vite';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import { bandDistribution, perceptionEstimate, summarizeDurations, unitCostFromBlocks } from './profile-stats.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -14,7 +15,10 @@ mkdirSync(out, { recursive: true });
 const steps = Number(process.env.PROFILE_STEPS ?? 480);
 if (!Number.isInteger(steps) || steps < 240) throw new Error('PROFILE_STEPS must be an integer >= 240 to include the daily passes');
 
-type Mode = 'unprofiled' | 'profiled';
+// 'counted' installs only integer counters on the spatial hash (no timers) so
+// perception can be estimated without per-call timing wrappers; see
+// docs/m15_profile_systems.md "Percepcion sin wrapper".
+type Mode = 'unprofiled' | 'profiled' | 'counted';
 const setup = async (page: Page, url: string, wanted: number, mode: Mode) => {
   // Let main's initial frame initialize the debug handle, then stop the loop.
   // Calling that frame asynchronously with near-zero delta starts at tick 0.
@@ -111,6 +115,39 @@ const setup = async (page: Page, url: string, wanted: number, mode: Mode) => {
     };
 
     const accum = new Map<string, { values: number[]; calls: number }>();
+    const perBand = new Map<string, { within: number; outside: number }>();
+    // Individuals per band inside/outside the effective vision at this instant.
+    const bandSnapshot = () => {
+      const map = new Map<string, { band: string; within: number; outside: number }>();
+      const focus = sim.player;
+      const sight = focus ? sim.sightOf(focus) : 0;
+      for (const person of live(sim.people)) {
+        const band = String(person.bandId ?? 'none');
+        const entry = map.get(band) ?? { band, within: 0, outside: 0 };
+        const inside = focus ? Math.hypot(person.x - focus.x, person.y - focus.y) <= sight : false;
+        entry[inside ? 'within' : 'outside']++;
+        map.set(band, entry);
+      }
+      return Array.from(map.values());
+    };
+    const bandsStart = bandSnapshot();
+    // Perception counters (mode 'counted'): increments only, plus every 64th
+    // call's arguments kept for a later replay outside the stepping loop.
+    const perception = { queryRadius: 0, findNearest: 0 };
+    const samples: { kind: 'queryRadius' | 'findNearest'; hash: any; args: any[] }[] = [];
+    const hashProto = Object.getPrototypeOf(sim.peopleHash);
+    const originalQuery = hashProto.queryRadius;
+    const originalNearest = hashProto.findNearest;
+    if (runMode === 'counted') {
+      hashProto.queryRadius = function(this: any, x: number, y: number, radius: number, out?: any[]) {
+        if ((++perception.queryRadius & 63) === 0 && samples.length < 1024) samples.push({ kind: 'queryRadius', hash: this, args: [x, y, radius] });
+        return originalQuery.call(this, x, y, radius, out);
+      };
+      hashProto.findNearest = function(this: any, x: number, y: number, radius: number, filter?: any) {
+        if ((++perception.findNearest & 63) === 0 && samples.length < 1024) samples.push({ kind: 'findNearest', hash: this, args: [x, y, radius, filter] });
+        return originalNearest.call(this, x, y, radius, filter);
+      };
+    }
     const wrap = (owner: any, method: string, group: string, required = true) => {
       if (!owner || typeof owner[method] !== 'function') {
         if (required) throw new Error(`Required profile target is missing: ${group}`);
@@ -137,6 +174,11 @@ const setup = async (page: Page, url: string, wanted: number, mode: Mode) => {
             bucket.values.push(elapsed);
             bucket.calls++;
             accum.set(label, bucket);
+            // Distribution across bands: counts only, no extra timing arrays.
+            const bandKey = `${group}|${subject.bandId ?? 'none'}`;
+            const bandEntry = perBand.get(bandKey) ?? { within: 0, outside: 0 };
+            bandEntry[remote ? 'outside' : 'within']++;
+            perBand.set(bandKey, bandEntry);
           }
         }
       };
@@ -164,9 +206,39 @@ const setup = async (page: Page, url: string, wanted: number, mode: Mode) => {
     }
 
     const wallStart = performance.now();
-    for (let i = 0; i < stepCount; i++) sim.step();
+    // One timer pair per whole step, outside every inner loop: gives the
+    // distribution of step durations in every mode, not only the mean.
+    const stepMs: number[] = [];
+    for (let i = 0; i < stepCount; i++) {
+      const t0 = performance.now();
+      sim.step();
+      stepMs.push(performance.now() - t0);
+    }
     const elapsedMs = performance.now() - wallStart;
     const stateAfter = await fingerprint();
+    const bandsEnd = bandSnapshot();
+    let perceptionReport: any = null;
+    if (runMode === 'counted') {
+      hashProto.queryRadius = originalQuery;
+      hashProto.findNearest = originalNearest;
+      // Replay the sampled queries against the final hashes, in blocks, with
+      // one timer pair per block. Read-only: the hash is re-checked below.
+      const sink: any[] = [];
+      const blocks: Record<string, number[]> = { queryRadius: [], findNearest: [] };
+      const perBlock: Record<string, number> = { queryRadius: 0, findNearest: 0 };
+      for (const kind of ['queryRadius', 'findNearest'] as const) {
+        const mine = samples.filter(sample => sample.kind === kind);
+        perBlock[kind] = mine.length;
+        for (let rep = 0; rep < 9; rep++) {
+          const b0 = performance.now();
+          if (kind === 'queryRadius') for (const q of mine) originalQuery.call(q.hash, q.args[0], q.args[1], q.args[2], sink);
+          else for (const q of mine) originalNearest.call(q.hash, q.args[0], q.args[1], q.args[2], q.args[3]);
+          blocks[kind]!.push(performance.now() - b0);
+        }
+      }
+      perceptionReport = { calls: { ...perception }, sampled: { ...perBlock }, blocks,
+        stateAfterReplay: await fingerprint() };
+    }
     const summary = (values: number[]) => {
       const sorted = [...values].sort((a, b) => a - b);
       return { calls: values.length, totalMs: values.reduce((sum, value) => sum + value, 0),
@@ -181,7 +253,8 @@ const setup = async (page: Page, url: string, wanted: number, mode: Mode) => {
       completedSteps: sim.time.tick - initial.tick, elapsedMs,
       meanStepMs: elapsedMs / stepCount,
       callsPerTick: timings['Action.execute']?.calls ? timings['Action.execute'].calls / stepCount : null,
-      timings, stateBefore, stateAfter,
+      timings, stateBefore, stateAfter, stepMs, bandsStart, bandsEnd,
+      bandRows: Array.from(perBand.entries()).map(([key, v]) => ({ key, ...v })), perception: perceptionReport,
     };
   }, { wantedCount: wanted, runMode: mode, stepCount: steps });
 };
@@ -191,31 +264,47 @@ await server.listen();
 const reports: any[] = [];
 try {
   for (const humans of [30, 300]) {
-    for (const mode of ['unprofiled', 'profiled'] as const) {
+    for (const mode of ['unprofiled', 'profiled', 'counted'] as const) {
       const browser = await chromium.launch();
       try {
         const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
         const errors: string[] = [];
         page.on('pageerror', error => errors.push(error.message));
         const report = await setup(page, server.resolvedUrls!.local[0]!, humans, mode);
-        const full = { ...report, browser: browser.version(), seed: 'profile-4', errors,
+        const full: any = { ...report, browser: browser.version(), seed: 'profile-4', errors,
           measurement: 'Fixed synchronous Simulation.step() calls with requestAnimationFrame disabled. No headless-renderer timing is included. System wrapper durations are inclusive and overlap; do not sum them.' };
+        // Interpretation lives in profile-stats.ts (unit-tested).
+        full.stepDuration = summarizeDurations(full.stepMs);
+        full.bandDistributionStart = bandDistribution(full.bandsStart);
+        full.bandDistributionEnd = bandDistribution(full.bandsEnd);
+        if (full.perception) {
+          const unit = (kind: string) => unitCostFromBlocks(full.perception.blocks[kind], full.perception.sampled[kind]);
+          full.perceptionEstimate = perceptionEstimate({
+            queryRadius: { calls: full.perception.calls.queryRadius, unitMs: unit('queryRadius') },
+            findNearest: { calls: full.perception.calls.findNearest, unitMs: unit('findNearest') },
+          }, steps, full.stepDuration.meanMs);
+          if (full.perception.stateAfterReplay !== full.stateAfter) throw new Error('Perception replay mutated simulation state');
+        }
         reports.push(full);
         writeFileSync(join(out, `${humans}-${mode}.json`), JSON.stringify(full, null, 2));
         // Hash/state comparisons between same-population runs are included
         // below in the bundle report rather than used as a performance gate.
-        console.log(JSON.stringify({ ...full, stateBefore: undefined, stateAfter: undefined }, null, 2));
+        console.log(JSON.stringify({ ...full, stateBefore: undefined, stateAfter: undefined, stepMs: undefined,
+          perception: full.perception && { ...full.perception, blocks: undefined } }, null, 2));
       } finally { await browser.close(); }
     }
   }
   const comparisons = [30, 300].map(humans => {
     const baseline = reports.find(r => r.requestedHumans === humans && r.mode === 'unprofiled');
     const profiled = reports.find(r => r.requestedHumans === humans && r.mode === 'profiled');
+    const counted = reports.find(r => r.requestedHumans === humans && r.mode === 'counted');
     return { humans, sameStartingState: baseline?.stateBefore === profiled?.stateBefore,
       sameEndingState: baseline?.stateAfter === profiled?.stateAfter,
-      baselineTick: baseline?.endingTick, profiledTick: profiled?.endingTick };
+      countedSameStartingState: baseline?.stateBefore === counted?.stateBefore,
+      countedSameEndingState: baseline?.stateAfter === counted?.stateAfter,
+      baselineTick: baseline?.endingTick, profiledTick: profiled?.endingTick, countedTick: counted?.endingTick };
   });
-  if (comparisons.some(c => !c.sameStartingState || !c.sameEndingState)) {
+  if (comparisons.some(c => !c.sameStartingState || !c.sameEndingState || !c.countedSameStartingState || !c.countedSameEndingState)) {
     throw new Error(`Profiled/unprofiled state equivalence failed: ${JSON.stringify(comparisons)}`);
   }
   const bundle = { timestamp: new Date().toISOString(), steps, seed: 'profile-4', reports, comparisons,
