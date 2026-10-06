@@ -1,23 +1,29 @@
-## M15 fase 32b-2: capacidad de banda pronosticada, hambre en colas y producción (2026-10-06)
+## M15 fase 32b-2: capacidad de banda pronosticada, colas y producción (2026-10-06)
 
-- **La ingesta compacta no sabe qué capacidad tendrá la banda en la estación siguiente.**
-  Con la capacidad leída de la ventana anterior, `lean` de otoño a invierno da +21 puntos
-  de supervivencia sobre el detallado (62,5 % frente a 41,3 %) y 28 puntos menos de hambre
-  media; con la capacidad de los mismos días baja a +6 puntos. El compacto solo es válido
-  mientras alguien le dé la capacidad **del periodo**; esa entrada es la despensa y la
-  estación del modelo de pueblo (32c). Hasta entonces no debe enchufarse a `Simulation`
-  en ninguna banda que cruce estaciones.
-- **Colas de hambre.** Incluso con capacidad exacta, el hambre media de los supervivientes
-  de `lean` invierno es 69,6 frente a 87,6 (tolerancia declarada 15, falla por 3). El
-  alivio compacto es continuo e independiente por persona; el detallado tiene racha
-  correlacionada en la banda. Posible mejora: sortear el día de la banda (un factor común)
-  además del de la persona; no se hizo porque no se midió la correlación.
-- **No hay producción compacta**: ni rendimiento por tick de trabajo ni avance de órdenes;
-  la tabla mide lo absorbido, no lo producido.
-- **Una sola escala por banda y día**, sin carga, herramientas ni conservación aparte: la
-  escala las resume sin distinguirlas; cuál pesa más no se ha medido.
-- La correspondencia usa 63-80 personas por caso (dos semillas) y un solo corte por
-  escenario; los intervalos de supervivencia son de ~±0,07 por azar.
+- **La ingesta compacta no sabe qué capacidad tendrá la banda en la estación siguiente.** Con la
+  capacidad leída de los 10 días anteriores, `lean` de otoño a invierno da 76,3 % de supervivencia
+  frente a 41,3 % del detallado, y `lean` 40 días 67,5 % frente a 7,5 %; con la capacidad de los
+  mismos días da 43,8 % y 10,0 %. El compacto solo es válido mientras alguien le dé la capacidad
+  **del periodo**; esa entrada es la despensa y la estación del modelo de pueblo (32c). Hasta
+  entonces no debe enchufarse a `Simulation` en una banda que cruce estaciones.
+- **Frío sin modelar**: no hay hogueras ni sueño bajo techo en el compacto; en `craft` 40 días mueren
+  2-4 por exposición frente a ninguno en el detallado. Es parte de los 10 puntos de supervivencia
+  que pierde (89,0 % frente a 98,9 %, al límite de la tolerancia; la semilla `delta` sola 77,4 %
+  frente a 96,8 %, suspende).
+- **Sin correlación de banda**: cada persona sortea sus días por separado; una semana mala para
+  todos (racha correlacionada en el detallado) no existe. Con los 6 supervivientes de `lean` 40
+  días no se pudo medir si afecta a las colas.
+- **La sed en `lean` invierno aprobó por 0,4 puntos** (Δ 14,6 de 15) tras añadir `thirstyZero`
+  después de verla fallar; margen de ruido, no un resultado.
+- **No hay producción compacta**: ni rendimiento por tick de trabajo ni avance de órdenes; la
+  tabla mide lo absorbido, no lo producido. La capacidad resume carga, herramientas y
+  conservación sin distinguirlas; cuál pesa más no se ha medido.
+- **Instrumento**: `RateWatch` contó a las personas pegadas a 100 como aliviadas hasta la
+  corrección de esta pasada (ver changelog); las cifras de §4 anteriores a esa corrección (filas de
+  hambre ≥ 75) se sustituyeron. No se ha buscado si otras cifras de `lean` (mortalidad, agenda)
+  dependían de él: no dependen del alivio.
+- La correspondencia usa 63-91 personas por caso y un solo corte por escenario; los intervalos de
+  supervivencia son de ~±0,07 por azar.
 
 ## M15 fase 32b: lo que el nivel compacto no hace todavía (2026-10-06)
 

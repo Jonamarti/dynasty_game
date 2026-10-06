@@ -59,6 +59,23 @@ describe('RateWatch (the instrument that measures the detailed model)', () => {
   });
 });
 
+describe('RateWatch and the clamp at 100', () => {
+  it('a person pinned at 100 (starving, kept alive) got nothing: reads relief 0, not a full ration', () => {
+    const sim = new Simulation(config());
+    const watch = new RateWatch(sim);
+    watch.observe();
+    for (let i = 0; i < 480; i++) {
+      for (const p of sim.people) { p.needs.hunger = 100; p.needs.thirst = 100; p.health = 100; }
+      sim.step();
+      for (const p of sim.people) { p.needs.hunger = 100; p.needs.thirst = 100; p.health = 100; }
+      watch.observe();
+    }
+    const adults = watch.days.filter(d => d.group === 'adult');
+    expect(adults.length).toBeGreaterThan(5);
+    expect(Math.max(...adults.map(d => d.hungerRatio))).toBeLessThan(0.05);
+  });
+});
+
 describe('rate table helpers', () => {
   it('quantiles interpolate and bins clamp', () => {
     expect(quantiles([0, 10], 3)).toEqual([0, 5, 10]);
@@ -77,6 +94,9 @@ describe('rate table helpers', () => {
     expect(e.mean).toBe(1);
     expect(e.q[0]).toBe(0);
     expect(e.q[20]).toBe(2);
+    expect(e.zero).toBeCloseTo(1 / 3, 3);   // one day of three brought nothing
+    expect(e.nz).toBe(2);
+    expect(e.qf).toEqual([]);               // too few fed days to keep a distribution of them
     expect(table[rateKey('spring', 'adult', 'thirst', 0)]!.mean).toBe(1);
   });
 });

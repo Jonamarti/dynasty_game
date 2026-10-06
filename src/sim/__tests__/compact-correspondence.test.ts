@@ -13,6 +13,7 @@ import { runCorrespondence } from '../../../tools/compactCorrespondence.ts';
  * The compact arm here is given the band capacity of the days it is compared on (the
  * oracle): what is verified is the shape of the intake. Forecasting capacity across a
  * season boundary is NOT verified and fails (docs/m15_phase32b_compact.md section 5).
+
  * Cohorts are 31-42 people, so one seed's survival moves by ~0.07 on chance alone.
  */
 const model = new IntakeModel(MEASURED_RATES);

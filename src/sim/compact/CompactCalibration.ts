@@ -17,8 +17,9 @@
  *   lactation/nursling factor; `thirstRate` × exertion × heat). Whatever the
  *   person *did* — ate from the pack, foraged, nursed, drank at the river, ate a
  *   berry's water — shows as the need coming back down against that drift. So
- *   `relief = need_before + drift − need_after` per tick is the effective intake in
- *   need units, and `relief / drift` over the day is 1 for a person who just
+ *   `relief = min(100, need_before + drift) − need_after` per tick (the needs clock
+ *   clamps at 100: a person pinned there, starving, got *nothing*, and without the clamp
+ *   would read as fully relieved) is the effective intake in need units, and `relief / drift` over the day is 1 for a person who just
  *   sustains themselves, 0 for a person who got nothing. Relief the clamp at zero
  *   throws away is not counted (a full belly gains nothing from a spare berry),
  *   which is the right quantity for the compact model: it needs what the body
@@ -153,8 +154,8 @@ export class RateWatch {
       const tDrift = thirstDriftPerTick(cfg, before.action, temperature);
       st.hungerDrift += hDrift;
       st.thirstDrift += tDrift;
-      st.hungerRelief += Math.max(0, before.hunger + hDrift - now.hunger);
-      st.thirstRelief += Math.max(0, before.thirst + tDrift - now.thirst);
+      st.hungerRelief += Math.max(0, Math.min(100, before.hunger + hDrift) - now.hunger);
+      st.thirstRelief += Math.max(0, Math.min(100, before.thirst + tDrift) - now.thirst);
       // The macro ledger resets at the day boundary: a drop means "restart from the new value".
       st.eaten += now.eaten >= before.eaten ? now.eaten - before.eaten : now.eaten;
       st.ticks++;
@@ -234,7 +235,22 @@ export function quantiles(samples: readonly number[], steps = QUANTILE_STEPS): n
   return out;
 }
 
-export interface RateBin { n: number; mean: number; q: number[] }
+/** A day whose relief is below this share of its drift counts as "got nothing". */
+export const ZERO_RELIEF = 0.05;
+/** Fewer nonzero days than this and the cell keeps no distribution of what a fed day looks like. */
+export const MIN_FED_SAMPLES = 10;
+
+export interface RateBin {
+  n: number;
+  mean: number;
+  /** Quantiles of the whole distribution (zeros included). */
+  q: number[];
+  /** Share of days that brought no relief at all: what a band can or cannot do for somebody who needs food. */
+  zero: number;
+  /** Number of days with relief, and the quantiles of those only (empty under `MIN_FED_SAMPLES`). */
+  nz: number;
+  qf: number[];
+}
 /** `season|group|need|bin` → distribution of the day's relief ratio. */
 export type RateTable = Record<string, RateBin>;
 
@@ -254,7 +270,12 @@ export function buildRateTable(days: readonly PersonDay[]): RateTable {
   const r = (v: number) => Math.round(v * 1000) / 1000;
   for (const key of [...buckets.keys()].sort()) {
     const samples = buckets.get(key)!;
-    table[key] = { n: samples.length, mean: r(samples.reduce((a, b) => a + b, 0) / samples.length), q: quantiles(samples).map(r) };
+    const fed = samples.filter(v => v >= ZERO_RELIEF);
+    table[key] = {
+      n: samples.length, mean: r(samples.reduce((a, b) => a + b, 0) / samples.length), q: quantiles(samples).map(r),
+      zero: r(1 - fed.length / samples.length), nz: fed.length,
+      qf: fed.length >= MIN_FED_SAMPLES ? quantiles(fed).map(r) : [],
+    };
   }
   return table;
 }

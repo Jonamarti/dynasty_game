@@ -30,7 +30,7 @@ import type { World } from '../core/World.ts';
 import { COMPACT_PHASE, type CompactEvent } from './CompactScheduler.ts';
 import type { CompactPerson } from './CompactPerson.ts';
 import { groupOf } from './CompactCalibration.ts';
-import type { BandScale, IntakeModel } from './CompactIntake.ts';
+import type { BandCapacity, IntakeModel } from './CompactIntake.ts';
 
 export interface CompactBodyEnv {
   readonly needs: NeedsConfig;
@@ -41,13 +41,13 @@ export interface CompactBodyEnv {
   readonly hooks?: NeedsHooks;
   /**
    * Eating and drinking from measured rates (CompactIntake.ts). Without it the body
-   * is the closed one of the first commit: needs only climb. `scale` is the band's
-   * aggregate capacity for this person, read by the caller from the band's recent
-   * days (`IntakeModel.scaleFrom`); `childhood` is needed to tell a nursling from a child.
+   * is the closed one of the first commit: needs only climb. `capacity` is the band's
+   * aggregate capacity for this person (how often a hungry day brings nothing), read by
+   * the caller from the band's days (`IntakeModel.capacityFrom`); undefined uses the table's own; `childhood` is needed to tell a nursling from a child.
    */
   readonly intake?: {
     readonly model: IntakeModel;
-    readonly scale: (person: CompactPerson['person']) => BandScale;
+    readonly capacity: (person: CompactPerson['person']) => BandCapacity | undefined;
     readonly childhood: ChildhoodConfig;
   };
   /** Allocates the id of an event this advance produces (the caller's `IdSpace`). */
@@ -87,7 +87,7 @@ export class CompactBody {
         // plan from the need the person starts it with, using the person's own stream.
         if (compact.intake?.day !== day) {
           compact.intake = intake.model.plan(this.clock.season, groupOf(person, intake.childhood),
-            person.needs.hunger, person.needs.thirst, intake.scale(person), compact.rng, day);
+            person.needs.hunger, person.needs.thirst, intake.capacity(person), compact.rng, day);
         }
       }
       this.system.update(people, this.clock, buildings, undefined, this.env.hooks);
@@ -104,6 +104,7 @@ export class CompactBody {
           id: this.env.nextEventId(), tick, phase: COMPACT_PHASE.demography, subjectId: person.id,
           kind: 'death', data: { cause: person.causeOfDeath },
         });
+        break;
       }
     }
     compact.lastAdvancedTick = toTick;

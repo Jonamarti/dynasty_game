@@ -1,3 +1,22 @@
+## 2026-10-06 — M15 fase 32b: ingesta v2 (capacidad = probabilidad de día vacío) y corrección de `RateWatch`
+
+La primera ingesta compacta (entrada de abajo) aprobó 10 días y suspendió a 40: en `craft` murieron
+de hambre 30 de 91 compactos frente a 1 en el detallado. Dos causas, ambas medidas. (1) El
+instrumento contaba como aliviada a una persona clavada en hambre 100 (el reloj recorta; `antes +
+deriva − después` daba la deriva entera), así que las filas de hambre ≥ 75 de la tabla decían
+«mediana 1,0» cuando en `lean` el 80-90 % de esos días no traía nada. Ahora usa `min(100, antes +
+deriva) − después` (test con negativo: la fórmula vieja lee 1 en una banda mantenida a 100). (2) Un
+multiplicador por banda mueve la media, no la probabilidad de un día vacío, y la inanición es una
+racha de días vacíos. La tabla guarda ahora el porcentaje de días vacíos y los cuantiles de los
+no vacíos; la banda aporta la probabilidad de día vacío para sus hambrientos (y sedientos), la
+ración es la medida; 4 sorteos por día. Resultados (cohortes equivalentes, semillas fuera de la
+tabla, tolerancias declaradas antes): con la capacidad del periodo `lean` otoño 92,5 % frente a
+95,0 %, `lean` invierno 43,8 % frente a 41,3 %, `lean` 40 días 10,0 % frente a 7,5 %, `craft` 40 días
+89,0 % frente a 98,9 % (agrupado, al límite de 0,10; la semilla `delta` sola suspende por 19
+puntos). Con la capacidad leída de la ventana previa sigue suspendiendo al cruzar de régimen
+(`lean` otoño→invierno 76,3 % frente a 41,3 %). Cifras completas, el caso que aprobó por 0,4 puntos
+y el frío que no se modela, en la sec. 5 de `m15_phase32b_compact.md`. Nada de `Simulation` lo llama.
+
 ## 2026-10-06 — M15 fase 32b: ingesta compacta con tasas medidas (verificada solo con capacidad dada)
 
 El compacto moría de hambre en ~8 días porque nadie comía. `compact/CompactIntake.ts` sortea

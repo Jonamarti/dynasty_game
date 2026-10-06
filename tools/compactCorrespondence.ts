@@ -19,7 +19,7 @@ import { fromPersonRecord, toPersonRecord } from '../src/sim/persistence/EntityR
 import { CompactBody } from '../src/sim/compact/CompactAdvance.ts';
 import { deriveCompactStream, goalOf, type CompactPerson } from '../src/sim/compact/CompactPerson.ts';
 import { RateWatch, type PersonDay } from '../src/sim/compact/CompactCalibration.ts';
-import { IntakeModel, type BandScale } from '../src/sim/compact/CompactIntake.ts';
+import { IntakeModel, type BandCapacity } from '../src/sim/compact/CompactIntake.ts';
 import { isLactating, isNursling } from '../src/sim/entities/LifeStage.ts';
 import { nurslingHungerFactor } from '../src/sim/ai/Nursing.ts';
 import { SCENARIOS } from './simcheck.ts';
@@ -36,29 +36,34 @@ export interface ArmStats {
   thirst: number;
   /** Deaths by cause (violence excluded in the detailed arm). */
   causes: Record<string, number>;
+  /** Children born to members of the cohort during the run. */
+  births: number;
+  /** Cohort members who died of old age. */
+  oldAge: number;
 }
 
 export interface CorrespondenceResult {
   scenario: string; seed: string;
   detailed: ArmStats; compact: ArmStats;
-  /** The capacity read from the window before T, per band (hunger, thirst). */
-  scales: Record<number, BandScale>;
+  /** The capacity read from the window before T, per band. */
+  scales: Record<number, BandCapacity | undefined>;
   /** Same cohort, intake switched off: the closed body. */
   closed: ArmStats;
   /** Intake with the capacity read from the very days compared (an oracle: what a perfect band forecast would hand over). */
   oracle: ArmStats;
-  oracleScales: Record<number, BandScale>;
+  oracleScales: Record<number, BandCapacity | undefined>;
 }
 
 const wire = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
 function stats(people: readonly Person[], violentAlive: (p: Person) => boolean): ArmStats {
-  const out: ArmStats = { n: people.length, alive: 0, living: 0, hunger: 0, thirst: 0, causes: {} };
+  const out: ArmStats = { n: people.length, alive: 0, living: 0, hunger: 0, thirst: 0, causes: {}, births: 0, oldAge: 0 };
   for (const p of people) {
     if (p.alive || violentAlive(p)) {
       out.alive++;
       if (p.alive) { out.living++; out.hunger += p.needs.hunger; out.thirst += p.needs.thirst; }
     } else out.causes[p.causeOfDeath ?? 'unknown'] = (out.causes[p.causeOfDeath ?? 'unknown'] ?? 0) + 1;
+    if (!p.alive && p.causeOfDeath === 'old age') out.oldAge++;
   }
   out.hunger /= out.living || 1; out.thirst /= out.living || 1;
   return out;
@@ -74,7 +79,7 @@ export interface CorrespondenceOptions {
   days: number;
   model: IntakeModel;
   /** Force a scale for every band instead of reading it (the negative controls). */
-  scaleOverride?: BandScale;
+  scaleOverride?: BandCapacity;
 }
 
 export function runCorrespondence(o: CorrespondenceOptions): CorrespondenceResult {
@@ -93,18 +98,24 @@ export function runCorrespondence(o: CorrespondenceOptions): CorrespondenceResul
   const tpd = sim.config.time.ticksPerDay;
   const cohort = sim.people.filter(p => p.alive);
 
-  // Capacity per band from the window before T; a band with too few days borrows the whole world's.
+  // Capacity per band from the window before T; a band with too few hungry days borrows the whole world's,
+  // and a world with too few uses the table's own behaviour (undefined).
   const window: readonly PersonDay[] = watch.days.slice(mark);
-  const scales: Record<number, BandScale> = {};
-  let world: BandScale;
-  try { world = o.model.scaleFrom(window); } catch { world = { hunger: 1, thirst: 1 }; }
-  for (const bandId of new Set(cohort.map(p => p.bandId))) {
-    try { scales[bandId] = o.model.scaleFrom(window.filter(d => d.bandId === bandId)); } catch { scales[bandId] = world; }
-  }
-  const scaleFor = (p: Person): BandScale => o.scaleOverride ?? scales[p.bandId] ?? world;
+  const read = (days: readonly PersonDay[]): BandCapacity | undefined => {
+    try { return o.model.capacityFrom(days); } catch { return undefined; }
+  };
+  const readBands = (days: readonly PersonDay[]) => {
+    const worldWide = read(days);
+    const bands: Record<number, BandCapacity | undefined> = {};
+    for (const bandId of new Set(cohort.map(p => p.bandId))) bands[bandId] = read(days.filter(d => d.bandId === bandId)) ?? worldWide;
+    return bands;
+  };
+  const scales = readBands(window);
+  const scaleFor = (p: Person): BandCapacity | undefined => o.scaleOverride ?? scales[p.bandId];
 
   const records = cohort.map(p => wire(toPersonRecord(p, T)));
-  const arm = (withIntake: boolean, scaleOf: (p: Person) => BandScale): Person[] => {
+  const arm = (withIntake: boolean, scaleOf: (p: Person) => BandCapacity | undefined): { people: Person[]; born: Person[] } => {
+    const born: Person[] = [];
     const copies = new Map<number, Person>();
     const compacts: CompactPerson[] = records.map(record => {
       const copy = fromPersonRecord(wire(record));
@@ -120,41 +131,39 @@ export function runCorrespondence(o: CorrespondenceOptions): CorrespondenceResul
         hungerFactor: (person: Person) => isLactating(person, copies, sim.config.childhood)
           ? 1 + sim.config.childhood.lactationHunger : isNursling(person, sim.config.childhood) ? nurslingFactor : 1,
       },
-      intake: withIntake ? { model: o.model, scale: scaleOf, childhood: sim.config.childhood } : undefined,
+      intake: withIntake ? { model: o.model, capacity: scaleOf, childhood: sim.config.childhood } : undefined,
       nextEventId: () => id++,
     });
     for (const c of compacts) body.advance(c, T + o.days * tpd);
-    return compacts.map(c => c.person);
+    return { people: compacts.map(c => c.person), born };
   };
 
   const markAfter = watch.days.length;
   for (let i = 0; i < o.days * tpd; i++) { sim.step(); watch.observe(); }
   // The oracle capacity: the band's own relief on the days that are being compared.
   const later: readonly PersonDay[] = watch.days.slice(markAfter);
-  const oracleScales: Record<number, BandScale> = {};
-  let oracleWorld: BandScale;
-  try { oracleWorld = o.model.scaleFrom(later); } catch { oracleWorld = { hunger: 1, thirst: 1 }; }
-  for (const bandId of new Set(cohort.map(p => p.bandId))) {
-    try { oracleScales[bandId] = o.model.scaleFrom(later.filter(d => d.bandId === bandId)); } catch { oracleScales[bandId] = oracleWorld; }
-  }
-  const compactPeople = arm(true, scaleFor);
-  const closedPeople = arm(false, scaleFor);
-  const oraclePeople = arm(true, p => o.scaleOverride ?? oracleScales[p.bandId] ?? oracleWorld);
+  const oracleScales = readBands(later);
+  const compactArm = arm(true, scaleFor);
+  const closedArm = arm(false, scaleFor);
+  const oracleArm = arm(true, p => o.scaleOverride ?? oracleScales[p.bandId]);
+  const compactPeople = compactArm.people, closedPeople = closedArm.people, oraclePeople = oracleArm.people;
+  const cohortIds = new Set(cohort.map(p => p.id));
+  const detailedBirths = [...sim.peopleById.values()].filter(p => !cohortIds.has(p.id) && p.motherId !== null && cohortIds.has(p.motherId)).length;
   const detailedPeople = cohort; // the same instances, now `days` older
   const violent = (p: Person) => (p.causeOfDeath ?? '').startsWith('killed by ');
   return {
     scenario: o.scenario, seed: o.seed, scales,
-    detailed: stats(detailedPeople, violent),
-    compact: stats(compactPeople, () => false),
+    detailed: { ...stats(detailedPeople, violent), births: detailedBirths },
+    compact: { ...stats(compactPeople, () => false), births: compactArm.born.length },
     closed: stats(closedPeople, () => false),
-    oracle: stats(oraclePeople, () => false), oracleScales,
+    oracle: { ...stats(oraclePeople, () => false), births: oracleArm.born.length }, oracleScales,
   };
 }
 
 export function pool(rows: readonly ArmStats[]): ArmStats {
-  const out: ArmStats = { n: 0, alive: 0, living: 0, hunger: 0, thirst: 0, causes: {} };
+  const out: ArmStats = { n: 0, alive: 0, living: 0, hunger: 0, thirst: 0, causes: {}, births: 0, oldAge: 0 };
   for (const r of rows) {
-    out.n += r.n; out.alive += r.alive; out.living += r.living; out.hunger += r.hunger * r.living; out.thirst += r.thirst * r.living;
+    out.n += r.n; out.alive += r.alive; out.living += r.living; out.hunger += r.hunger * r.living; out.thirst += r.thirst * r.living; out.births += r.births; out.oldAge += r.oldAge;
     for (const [k, v] of Object.entries(r.causes)) out.causes[k] = (out.causes[k] ?? 0) + v;
   }
   if (out.living > 0) { out.hunger /= out.living; out.thirst /= out.living; }

@@ -140,10 +140,10 @@ por Git; lo que sigue es el registro versionado).
 
 | adultos, por estación | `lean` alivio/deriva (n) | `lean` comido nominal/deriva | `craft` comido nominal/deriva |
 |---|---:|---:|---:|
-| primavera | 0,42-0,89 (558) | 0,56 | 1,14 |
-| verano | 0,65-1,40 (800) | 0,97 | 1,32 |
-| otoño | 0,72-1,98 (674) | 1,21 | 1,33 |
-| invierno | 0,33-0,71 (592) | 0,48 | 1,26 |
+| primavera | 0,14-0,83 (558) | 0,56 | 1,14 |
+| verano | 0,59-1,40 (800) | 0,97 | 1,32 |
+| otoño | 0,72-1,84 (674) | 1,21 | 1,33 |
+| invierno | 0,12-0,63 (592) | 0,48 | 1,26 |
 
 (el rango del alivio es el de los cuatro intervalos de hambre al empezar el día; la
 tabla completa con cuantiles está en el artefacto y en `MeasuredRates.ts` cuando se
@@ -158,7 +158,12 @@ emite.) Lo que dice, sin adornar:
   que la banda consigue** (`bandScale`, mecanismo 2).
 - La ingesta es **a golpes**: la distribución del alivio diario es bimodal (p5 y p50 en
   0 en casi todos los intervalos de adultos y p95 en 2-4): un día sin comer y otro con
-  dos raciones. Con hambre alta (≥75) la mediana ya es ~1,0.
+  dos raciones. Con hambre alta (≥75) el alivio medio de `lean` es 0,12-0,59 (en invierno
+  y primavera, 80-90 % de esos días no traen nada: una banda que se muere no alimenta ni a
+  los más hambrientos) y el de `craft` 1,2-2,1 (n = 6-23, fino): lo que distingue a una banda
+  de otra es la probabilidad de un día vacío para el hambriento, no el tamaño de la ración.
+  (Corrección del 2026-10-06: la primera medida clavaba esas filas en ~1,0 porque contaba a
+  una persona pegada a 100 como aliviada; ver §5.)
 - Lactantes: alivio ≈ 0,9-1,1 en todas partes (las tomas mantienen la deriva); no son
   la fuente de la mortalidad infantil por esta vía, que empieza cuando la madre no come.
 - Agenda de adultos (`lean`/`craft`, verano): comida 0,31/0,29, construir 0,03/0,05,
@@ -186,83 +191,107 @@ que cada persona logró, repartido por la banda; separar «producción» de «re
 un ledger de despensas que el detallado no publica. Se documenta como límite en lugar de
 inventar un rendimiento.
 
-## 5. Ingesta compacta con tasas medidas (commit «ingesta»)
+## 5. Ingesta compacta con tasas medidas (commits «ingesta» y «ingesta v2»)
 
 `compact/CompactIntake.ts` + `CompactAdvance.ts` (`env.intake`) + tabla generada
 `compact/MeasuredRates.ts` (`tools/compact-rates.ts`, `lean,craft`, semillas
 `alpha,beta,gamma`, 10.130 personas-día).
 
-**Mecanismo.** Una vez por día de calendario y por necesidad, se sortea (dos números del
-stream propio de la persona, siempre los dos y en ese orden) el alivio del día como múltiplo
-de la deriva, de la distribución medida condicionada a estación, etapa y necesidad al
-empezar el día, y se multiplica por la **capacidad de la banda** (`BandScale`: alivio
-observado / alivio que la tabla espera para esas mismas personas-día, leído por
-`IntakeModel.scaleFrom` de una ventana reciente de la banda). Se aplica tick a tick en
-proporción a la deriva nominal de ese tick (no al cambio observado: una necesidad clavada
-en 100 no sube y aun así debe poder bajar), tras el `NeedsSystem` compartido. El sorteo
-vive en la persona (`CompactPerson.intake`, serializado, versión del registro sin cambio:
-ausente = null), de modo que cortar el avance a mitad de día o guardar no lo redibuja
-(test: 0→5 días igual a 0→777 ticks→JSON→5 días; un control que olvida el plan difiere). Sin
-modelo de ingesta el stream no se toca. Rechaza en lugar de inventar: una celda con menos
-de 30 muestras cede a la más cercana poblada; si no hay ninguna, `IntakeUnmeasured`; una
-ventana de banda de menos de 30 personas-día tampoco se lee.
+**Historia, porque el primer diseño estaba mal y el instrumento también.** La primera versión
+(commit «ingesta», 10 días) escalaba toda la distribución del alivio por un solo número de la
+banda y aprobó los casos de otoño; al alargar a 40 días en `craft` dejó morir de hambre a 30 de
+91 personas frente a 1 en el detallado. Dos causas, ambas medidas: (1) un multiplicador mueve la
+media, no la probabilidad de un día sin comer, y la inanición es una racha de días vacíos; y (2)
+`RateWatch` contaba como «aliviada del todo» a una persona clavada en 100 de hambre (el reloj
+recorta en 100, así que `antes + deriva − después` daba la deriva entera): las filas de hambre
+≥75 de la tabla v1 eran falsas (mediana 1,0 en cada estación) y habían inflado la ingesta de los
+hambrientos. El instrumento ahora usa `min(100, antes + deriva) − después` (test con negativo:
+una banda mantenida viva a 100 lee alivio < 0,05; la fórmula vieja leía 1). Las cifras de esta
+sección y de §4 son las posteriores a la corrección; las de la v1 se conservan en
+`artifacts/verification/…/v1-before-clamp-fix/` (local).
 
-Cambio compartido: `thirstDriftPerTick` sale de `NeedsSystem.update` (misma expresión,
-mismo orden de operaciones) para que el reloj de necesidades, `RateWatch` y la
-ingesta compacta no tengan tres copias de la aritmética. La suite completa sigue verde.
+**Mecanismo (v2).** Una vez por día de calendario y por necesidad se sortean **cuatro** números
+del stream propio de la persona (¿día vacío? y ración de hambre; ¿día vacío? y ración de sed,
+siempre los cuatro y en ese orden). El día es *vacío* con la probabilidad medida para
+(estación, etapa, necesidad al empezar el día) y, si no, trae una ración tomada de la
+distribución medida de los días con relief (`qf`, cuantiles de los días no vacíos). Lo que una
+banda puede hacer por quien lo necesita es la probabilidad de día vacío: para los que empiezan
+hambrientos (bin ≥ 1) esa probabilidad **la pone la banda** (`BandCapacity.hungryZero`, leída por
+`IntakeModel.capacityFrom` de los días propios de la banda que empezaron hambrientos; `thirstyZero`
+igual para la sed si hay ≥ 30 días sedientos). El día vacío de un saciado (no come porque no
+quiere) sigue siendo de la tabla: es apetito, no capacidad. El tamaño de la ración es el mismo
+en todas partes. Se aplica tick a tick en proporción a la deriva nominal (no al cambio
+observado: una necesidad clavada en 100 no sube y aun así debe poder bajar), tras el
+`NeedsSystem` compartido. El sorteo vive en la persona (`CompactPerson.intake`, serializado,
+versión del registro sin cambio: ausente = null), de modo que cortar a mitad de día o guardar no
+lo redibuja (test: 0→5 días igual a 0→777 ticks→JSON→5 días; un control que olvida el plan
+difiere). Sin modelo de ingesta el stream no se toca. Rechaza en lugar de inventar: una celda con
+menos de 30 muestras cede a la más cercana poblada, una sin ≥ 10 días con relief presta la ración
+de la más cercana que sí los tiene, y si no hay ninguna lanza `IntakeUnmeasured`; una ventana
+de banda con menos de 30 días hambrientos no se lee.
 
-**Correspondencia (tolerancias declaradas antes de la primera medida):** diferencia de
-supervivencia ≤ 0,10; hambre y sed medias de los supervivientes a ≤ 15 puntos; y el cuerpo
-cerrado (sin ingesta) debe quedar ≥ 0,30 por debajo del detallado o el experimento no
-distingue modelo de no-modelo. Cohorte equivalente = todos los vivos en T copiados por
-JSON del `PersonRecord`; el detallado sigue 10 días y las copias se avanzan con
-`CompactBody`. Una muerte violenta en el detallado cuenta como superviviente (censura:
-el compacto no tiene violencia). Semillas `delta,eps`, que no entraron en la tabla.
+Cambio compartido: `thirstDriftPerTick` sale de `NeedsSystem.update` (misma aritmética) para que
+el reloj de necesidades, `RateWatch` y la ingesta compacta no tengan tres copias.
+
+**Correspondencia (tolerancias declaradas antes de la primera medida y no movidas):** diferencia
+de supervivencia ≤ 0,10; hambre y sed medias de los supervivientes a ≤ 15 puntos; y el cuerpo
+cerrado debe quedar ≥ 0,30 por debajo del detallado. Cohorte equivalente = todos los vivos en T
+copiados por JSON del `PersonRecord`; el detallado sigue N días y las copias se avanzan con
+`CompactBody`. Una muerte violenta en el detallado cuenta como superviviente (censura). Semillas
+`delta,eps(,zeta)`, que no entraron en la tabla. «Previa» = capacidad leída de los 10 días
+anteriores a T; «oráculo» = capacidad de los mismos días que se comparan.
 
 | caso (n) | brazo | supervivencia | hambre media | sed media |
 |---|---|---:|---:|---:|
 | `lean`, otoño d20-30 (80) | detallado | 95,0 % | 47,2 | 15,3 |
-| | compacto, capacidad leída de la ventana previa | 97,5 % | 39,7 | 15,5 |
-| | compacto, capacidad de los mismos días (oráculo) | 95,0 % | 49,1 | 15,7 |
-| | cerrado (sin ingesta) | 21,3 % | 100 | 91,9 |
+| | compacto previa / oráculo | 95,0 % / 92,5 % | 30,5 / 42,0 | 14,4 / 14,3 |
+| | cerrado | 21,3 % | 100 | 91,9 |
 | `craft`, otoño d20-30 (63) | detallado | 100 % | 22,7 | 15,7 |
-| | previa / oráculo | 100 % / 100 % | 24,3 / 25,4 | 13,1 / 14,7 |
+| | previa / oráculo | 100 % / 100 % | 18,5 / 22,9 | 15,4 / 15,6 |
 | | cerrado | 17,5 % | 100 | 88,5 |
 | `lean`, invierno d30-40 (80) | detallado | 41,3 % (33 inanición, 14 exposición) | 87,6 | 32,9 |
-| | compacto, capacidad previa | **62,5 %** | 59,9 | 18,2 |
-| | oráculo | 47,5 % | **69,6** | 22,8 |
+| | previa | **76,3 %** | 46,3 | 15,4 |
+| | oráculo | 43,8 % (29 inanición, 16 exposición) | 79,3 | 18,3 |
 | | cerrado | 3,8 % | 100 | 85,6 |
+| `lean`, 40 días d20-60 (80) | detallado | 7,5 % (6 vivos) | 13,2 | 34,5 |
+| | previa / oráculo | **67,5 %** / 10,0 % | 25,7 / 55,7 | 15,5 / 10,7 |
+| `craft`, 40 días d20-60 (91) | detallado | 98,9 % | 24,0 | 14,4 |
+| | previa / oráculo | 93,4 % / 89,0 % | 19,1 / 20,3 | 19,4 / 19,7 |
 
 Veredicto contra lo declarado, sin matizar:
 
-- **Aprobado**: `lean` otoño y `craft` otoño, con oráculo y con capacidad previa; el
-  control negativo (cerrado) queda a 0,74-0,83 por debajo; con capacidad 0 la persona
+- **Con la capacidad del periodo (oráculo): los cinco casos quedan dentro de 0,10 en
+  supervivencia**: `lean` otoño (Δ −2,5), `craft` otoño (0), `lean` invierno (+2,5; hambre Δ 8,3; sed
+  Δ 14,6, **al límite de 15**), `lean` 40 días (+2,5) y `craft` 40 días (Δ −9,9, **al límite de 0,10**
+  agrupando tres semillas; en la semilla `delta` sola el oráculo da 77,4 % frente a 96,8 %: suspende
+  por 19 puntos; `eps` 93,8 vs 100; `zeta` 96,4 vs 100). La única medida fuera de tolerancia con
+  oráculo es el hambre/sed de los 6 supervivientes de `lean` 40 días (Δ 42 y 24), que son seis
+  personas y no sirven para comparar medias.
+- **Con la capacidad leída de la ventana previa: aprobado donde no cambia el régimen**
+  (`craft` 40 días: Δ −5,5 puntos; `craft` otoño; `lean` otoño en supervivencia, pero el hambre
+  media sale 16,7 puntos por debajo: **suspende** el hambre) y **suspende con claridad al cruzar de
+  régimen**: `lean` otoño→invierno da 76,3 % frente a 41,3 % y `lean` 40 días 67,5 % frente a 7,5 %.
+  La capacidad de la banda en la estación que viene es una entrada que este modelo no sabe
+  producir: es la despensa/estación de la economía de banda (32c).
+- **Cuerpo cerrado**: queda 0,74-0,82 por debajo del detallado en todos los casos (control
+  negativo cumplido). Con una banda que nunca alimenta al hambriento (`hungryZero` = 1) la persona
   muere como el cuerpo cerrado (test).
-- **`lean` invierno, oráculo**: supervivencia +6,2 puntos (aprobado), sed -10 (aprobado),
-  **hambre -18,0 puntos respecto al detallado: suspende (> 15)**. Los supervivientes compactos
-  están menos hambrientos que los detallados: el compacto reparte el alivio de forma
-  continua e independiente por persona, y el detallado tiene colas correlacionadas (una
-  ración que no llega a nadie de la banda esa semana). No se ha corregido.
-- **`lean` invierno, capacidad leída de la ventana previa: suspende con claridad**
-  (+21,2 puntos de supervivencia, hambre -27,7). La ventana era otoño, rica en `lean`,
-  y la escasez invernal no se pronostica desde ella: la diferencia entre escalas leídas
-  (0,79-0,97) y de oráculo (0,68-0,88) parece pequeña y mueve 15-20 puntos de supervivencia
-  porque la banda va al borde de la inanición. **La capacidad de la banda en la estación
-  que viene es una entrada que este modelo no sabe producir**: es la despensa/estación de
-  la economía de banda (32c), no una constante que se pueda poner aquí.
+- **El frío no se modela**: en `craft` 40 días mueren 2-4 compactos por exposición y ninguno en el
+  detallado (donde se acercan al fuego y duermen bajo techo); en `lean` invierno son 16 frente a
+  14. Parte de los 10 puntos que pierde `craft` a 40 días son esas muertes.
+- La extensión a la sed (`thirstyZero`) se añadió **después** de ver que la sed del compacto en `lean`
+  invierno salía 17 puntos por debajo del detallado; movió el resultado de 15,5 a 18,3 (a 14,6
+  del detallado: aprueba por 0,4 puntos). No es un logro: es un margen de ruido.
 
-Por eso lo entregado es **el mecanismo condicionado a una capacidad dada**, no «ingesta
-resuelta»: verificado donde el escenario no cambia de régimen entre la ventana y el
-periodo, refutado donde sí, y con el hueco marcado en `bugs.md`. Los tests del repo
-(`compact-correspondence.test.ts`) solo fijan los dos casos de otoño con oráculo y la semilla
-`delta`, que es lo que se midió y aprobó; el caso de invierno no está en la suite (~45 s por
-semilla) y su suspenso queda aquí y en `bugs.md`.
+Por eso lo entregado es **el mecanismo condicionado a una capacidad del periodo**, no «ingesta
+resuelta». Los tests del repo (`compact-correspondence.test.ts`) fijan lo que se midió y aprobó,
+con oráculo: `lean` y `craft`, semilla `delta`, 10 días de otoño; el invierno y los 40 días de
+`lean` no están en la suite (~45 s por semilla) y su resultado queda aquí y en `bugs.md`.
 
-**No entregado:** *producción* (rendimiento por tick de trabajo y progreso de órdenes) y
-sus dependencias de carga, herramientas y conservación. La tabla mide lo que cada persona
-absorbió, no cuánto se produjo ni de dónde salió; separar producción de reparto exige un
-ledger de despensas que el detallado no publica. El compacto sigue sin avanzar órdenes ni
-construcciones (congelarlas fuera de vista lo prohíbe §4 de `m15_simulation_lod.md`, así que
-sigue sin poder activarse el LOD). No se calienta ni se duerme: el frío sigue entrando por
-el `NeedsSystem` (en `lean` invierno mueren 9-10 por exposición en el compacto, 14 en el
-detallado: el orden de magnitud coincide, no se ha medido más).
+**No entregado:** *producción* (rendimiento por tick de trabajo y progreso de órdenes) y sus
+dependencias de carga, herramientas y conservación. La tabla mide lo que cada persona absorbió,
+no cuánto se produjo ni de dónde salió; separar producción de reparto exige un ledger de
+despensas que el detallado no publica. El compacto sigue sin avanzar órdenes ni construcciones
+(congelarlas fuera de vista lo prohíbe §4 de `m15_simulation_lod.md`, así que sigue sin poder
+activarse el LOD). No se calienta ni se duerme. La correlación entre personas de una misma banda
+(una semana mala para todos) no está: cada persona sortea sus días por separado.
