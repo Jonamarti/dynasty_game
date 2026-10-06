@@ -60,3 +60,47 @@ continuaciones de 180 ticks, incluidos los arrays de agua independientes.
 Cuatro regresiones prueban IA, orden dañina, guardado y fuente desaparecida.
 El navegador ejercita menú, daño y parada en la UI real. Capturas revisadas:
 `artifacts/screenshots/m15-phase30-final-2026-10-06T-02/` (tres imágenes).
+
+## Verificación final — 2026-10-06
+
+- Typecheck limpio; suite completa 1.094/1.094 tests, 158 archivos.
+- E2e completo 82/82; repetición de los dos nuevos después del último arreglo
+  del generador, 2/2. Sus tres capturas se revisaron visualmente.
+- Soak español: 419 líneas distintas, cero sospechosas de inglés.
+- `frontier`: 17 ticks de bebida dulce, cero bebida marina autónoma y un
+  cruce terminado; 2/2 checks aplicables. Los controles negativos pasan.
+- Seis SHA-256 de checkpoints clásicos completos coinciden antes/después:
+  `band`, `tour` y `m15-classic-reference` a ticks 0 y 180, con 60 ticks/día.
+  Esto cubre estado, IDs y RNG de esas muestras; no todos los mundos posibles.
+- Matriz completa: 31 escenarios, incluidos los 30 clásicos con exactamente
+  los mismos recuentos de checks aplicables/pases e IDs de fallo que el checkout
+  inicial. Conserva 116 fallos; ambos comandos salen con código 1. `frontier`
+  añade 2/2 sin fallos. La comparación no afirma igualdad de todas las métricas
+  ni coste: la pasada final compartió CPU con tests y navegador.
+
+Logs y JSON completos en `artifacts/verification/m15-phase30-20261006/`.
+Los intentos durante edición no se presentan como pases: la primera suite
+falló tres pruebas; la siguiente falló la unión fluvial aún en revisión;
+la repetición final pasa todos los archivos. Typecheck detectó una variable
+sobrante y pasó tras retirarla. Un primer audit de hashes usó por error el
+calendario por defecto; el audit final usa el mismo calendario que la referencia.
+Estos logs se conservan junto a los resultados finales.
+
+## Escenario continental y alcance
+
+`frontier` construye una costa salada y un río a través del constructor
+geográfico normal. Una persona sedienta decide autónomamente junto al mar,
+con agua dulce visible; otra recibe una orden de caminar entre orillas a
+través de un vado generado. Las observaciones cuentan bebida dulce, intentos
+autónomos salados y un cruce terminado, sin alimentar decisiones de la IA.
+
+`nobody-drinks-the-sea` exige una oportunidad salada, bebida dulce efectiva y
+cero bebida marina autónoma. `rivers-are-crossed` exige llegada a la otra orilla
+después de pisar un vado. Dos controles negativos reproducen la búsqueda salada
+anterior y bloquean los vados: ambos checks detectan el mecanismo roto. Este
+escenario tiene dos checks aplicables, nunca `n/a`, y no afirma supervivencia
+continental ni mejora económica. `sim:seeds` acepta su constructor geográfico
+sin cambiar el setup histórico de las cohortes clásicas.
+
+Quedan abiertos giros y vados globales, validación continental a largo plazo,
+selección global y contenido salinero de fase 15. La fase 30 continúa abierta.

@@ -1,3 +1,20 @@
+## M15 fase 30: continuidad del agua local incompleta (2026-10-06)
+
+La conexión fluvial entre mapas vecinos está cubierta en un tramo recto.
+La dirección canónica depende de la región: al girar entre regiones el corredor
+puede cambiar y cortar la conexión. Además, los vados usan el índice de ruta
+local, que reinicia en cada mapa; su profundidad no tiene fase global.
+Falta una red de cauces compartida que conecte giros y derive los vados de
+coordenadas globales antes de habilitar viajes entre comarcas.
+
+Los lagos y manantiales actuales son aproximaciones del relieve regional,
+no una reconstrucción de cursos reales. La prueba `frontier` es una oportunidad
+controlada de bebida y cruce, no demuestra supervivencia continental a largo
+plazo. Salinas, `saltmaking` y `salt_pan` no existen aún en el contenido actual;
+la herencia salada de canales está disponible pero no cierra esa dependencia
+de fase 15. El navegador mantiene selección clásica.
+[Contrato y evidencia](m15_phase30_water.md).
+
 ## M15 fase 29c: semillas y fuentes históricas incompletas (2026-10-05)
 
 La matriz de esta pasada conserva los 116 fallos del checkout inicial en

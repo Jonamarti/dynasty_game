@@ -150,7 +150,11 @@ function runSeed(scenarioName: string, seed: string, steps: number, size: number
   };
   const config = makeConfig(scenario.config);
   for (const assignment of sets) applySet(config, assignment);
-  const sim = new Simulation({ ...config, ...sized, seed });
+  const seedConfig = { ...config, ...sized, seed };
+  const sim = scenario.create?.(seedConfig) ?? new Simulation(seedConfig);
+  // Preserve historical cohort starts; only the new geographic construction
+  // hook requires its controlled local opportunity to be prepared here.
+  if (scenario.create) scenario.setup?.(sim);
   let peak = 0;
   let trough = Infinity;
   let born = 0;

@@ -2974,8 +2974,8 @@ al final de los biomas; las orillas dulces/saladas y las superficies fluviales
 se conservan en terreno geográfico v2. Zanjas heredan el agua de su origen.
 El generador talla lechos con vados, lagos en depresiones y manantiales; su
 conexión recta entre mapas está probada; quedan giros y fase global de vados.
-Clásico mantiene
-terreno v1 y mar potable, sin draws nuevos. [Contrato](m15_phase30_water.md).
+Clásico mantiene terreno v1 y mar potable, sin draws nuevos.
+[Contrato](m15_phase30_water.md).
 Capturas del terreno en `artifacts/screenshots/m15-phase30-water-2026-10-06T-02/`.
 
 **Avance del 2026-10-06: consumidores e inicios poblados.** IA, memoria y
@@ -3002,13 +3002,25 @@ al final de `BIOMES`; `freshShore` y `saltShore`; el agua de la fruta
   aparte. Un río parte la comarca en regiones de andar, pero no de nadar, y la
   garantía de vados de M14 se conserva con la profundidad.
 - La pesca en río y lago ya funciona por la fase 27; 12d de M14 queda cubierta.
-- `legacyIsland` conserva el mar potable, y lo dice en su cabecera. La salina
-  de la fase 15 sigue funcionando en él.
+- `legacyIsland` conserva el mar potable. El contenido de salinas de la
+  fase 15 sigue pendiente en el código actual; esta pasada aporta la
+  clasificación y la herencia de canales, no `saltmaking` ni `salt_pan`.
 - Los canales (fase 26) llevan el agua de su origen: dulce desde un río y
   salada desde el mar.
 
 **Puerta:** escenario `frontier`; `nobody-drinks-the-sea` y
 `rivers-are-crossed`; la matriz clásica bit-idéntica.
+
+**Avance del 2026-10-06: puerta de mecanismo.** `frontier` pasa 2/2 checks
+aplicables: 17 ticks de bebida dulce, cero bebida marina autónoma y un cruce
+terminado de vado generado. Los controles negativos fallan al ofrecer mar
+en el hash de bebida o bloquear el vado. Typecheck, 1.094 unitarios, 82 e2e
+y soak español pasan; seis hashes clásicos completos coinciden. Esta evidencia
+conserva los 116 fallos iniciales en la matriz, con los mismos recuentos e IDs
+clásicos; no acredita igualdad de todas las métricas ni una matriz verde.
+Esta pasada
+no cierra giros, vados globales, supervivencia continental ni salinas.
+[Contrato y límites](m15_phase30_water.md).
 
 ## Fase 31 — El globo (M14 fase 13)
 

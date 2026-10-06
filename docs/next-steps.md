@@ -4,8 +4,11 @@
 superficie y lecho fluvial, herencia de agua en zanjas y terreno geográfico v2.
 Clásico conserva su registro v1 y mar potable. IA, recuerdos y campamentos
 buscan agua dulce; la orden salada advierte y explica el daño. Inicios
-continentales poblados guardan y continúan. Escenario continental y evidencia
-final están en integración; giros fluviales y fase global de vados siguen pendientes. No se declara
+continentales poblados guardan y continúan. `frontier` pasa ambos checks con
+controles negativos; giros fluviales y fase global de vados siguen pendientes.
+La supervivencia continental a largo plazo y el contenido salinero requieren
+otra pasada. La matriz conserva los 116 fallos iniciales y los mismos recuentos
+e IDs clásicos; typecheck, 1.094 unitarios, 82 e2e y soak pasan. No se declara
 cerrada la fase ni se ofrece selección geográfica en el navegador.
 [Contrato](m15_phase30_water.md).
 

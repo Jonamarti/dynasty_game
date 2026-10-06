@@ -34,6 +34,7 @@ import { handsEmptyForSwimming } from '../src/sim/core/Swimming.ts';
 import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
 import { auditRegions, auditSwimRegions } from './regions.ts';
 import { setupFoodNews, setupConflicts } from './checkFixtures.ts';
+import { createFrontier, setupFrontier, observeFrontier } from './frontierFixture.ts';
 
 /**
  * The outer band of a fire's circle that `fire-keeps-wolves-off` does not count.
@@ -52,6 +53,8 @@ export interface Scenario {
   name: string;
   description: string;
   config: DeepPartial<SimConfig>;
+  /** Geographic fixtures construct their world through the normal constructor. */
+  create?: (config: DeepPartial<SimConfig>) => Simulation;
   /** Simulation steps to run. One step is one step — no amplification. */
   steps: number;
   /**
@@ -172,6 +175,19 @@ function setupOrchard(sim: Simulation): void {
 }
 
 export const SCENARIOS: Record<string, Scenario> = {
+  frontier: {
+    name: 'frontier',
+    description: 'Continental freshwater, a salt coast and a generated ford crossed by a real walker.',
+    config: { seed: 'frontier', world: { width: 64, height: 48, treeDensity: 0,
+      berryBushes: 0, flintOutcrops: 0, deadwood: 0, reedBeds: 0, clayBanks: 0,
+      fishingSpots: 0, wildGrainPatches: 0, gameHerds: 0, predators: 0 },
+      population: { bands: 1, peoplePerBand: 6 }, ai: { choiceSpread: 0 },
+      motivation: { reachFilter: false, homePressure: false } },
+    create: createFrontier,
+    setup: setupFrontier,
+    steps: 300,
+    checks: ['nobody-drinks-the-sea', 'rivers-are-crossed'],
+  },
   'food-news': {
     name: 'food-news',
     description: 'A hungry adult hears where the only food lies, outside sight.',
@@ -1287,6 +1303,15 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   const first = samples[0]!;
   const last = samples[samples.length - 1]!;
   const tel = base.telemetry;
+
+  if (base.scenario === 'frontier') {
+    const fresh = tel.drink_fresh ?? 0;
+    const sea = tel.drink_sea_ai ?? 0;
+    add('nobody-drinks-the-sea', (tel.frontier_salt_opportunity ?? 0) > 0 && fresh > 0 && sea === 0,
+      fresh + ' freshwater drinking ticks, ' + sea + ' autonomous sea drinking ticks beside a salt coast');
+    add('rivers-are-crossed', (tel.frontier_ford_crossed ?? 0) > 0,
+      (tel.frontier_ford_crossed ?? 0) + ' completed bank-to-bank crossings through generated shallow river tiles');
+  }
 
   const regions = auditRegions(sim.world);
   const swimRegions = auditSwimRegions(sim.world);
@@ -3901,7 +3926,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   telemetry.enable();
 
   const steps = stepsOverride ?? scenario.steps;
-  const sim = new Simulation(scenario.config);
+  const sim = scenario.create?.(scenario.config) ?? new Simulation(scenario.config);
   scenario.setup?.(sim);
   if (scenario.name === 'porters') {
     const ids = [...new Set(sim.livingPeople().map(person => person.bandId))].sort((a, b) => a - b);
@@ -3967,6 +3992,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   const started = Date.now();
   for (let i = 1; i <= steps; i++) {
     sim.step();
+    if (scenario.name === 'frontier') observeFrontier(sim);
     // Every step, not every sample: a behaviour that only ever runs for a few
     // ticks at a time is still the AI using it, and sparse sampling misses it.
     const living = sim.livingPeople();

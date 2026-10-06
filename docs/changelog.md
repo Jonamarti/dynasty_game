@@ -1,3 +1,20 @@
+## 2026-10-06 — M15 fase 30: puerta continental y límites medidos
+
+`frontier` construye agua geográfica real y mide bebida dulce junto al mar
+y llegada a la otra orilla tras pisar un vado: 2/2 checks aplicables. Sus
+controles negativos detectan el hash salado anterior y un vado bloqueado.
+La fábrica de escenario también funciona en el runner de semillas y conserva
+los setups clásicos. Typecheck, 1.094 tests en 158 archivos, 82 e2e y soak
+(419 frases españolas, cero sospechosas de inglés) pasan. Seis hashes completos
+clásicos coinciden con el checkout inicial. La matriz sigue roja: conserva
+los mismos 116 fallos en los 30 escenarios clásicos, con iguales recuentos
+e IDs; `frontier` añade 2/2. No se presenta ese comando como un pase ni se
+afirma igualdad de todas las métricas. Las capturas finales de terreno,
+menú dañino y razón de parada están en
+`artifacts/screenshots/m15-phase30-final-2026-10-06T-02/`.
+La fase sigue abierta por giros, fase global de vados y contenido salinero;
+`frontier` no acredita supervivencia continental. [Evidencia](m15_phase30_water.md).
+
 ## 2026-10-06 — M15 fase 30: consumidores e intención salada
 
 La IA deja de buscar el mar continental como agua potable: bebida, recuerdos,
