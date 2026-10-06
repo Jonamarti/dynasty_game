@@ -1,8 +1,8 @@
 ## M15 fase 32c: el aprendizaje entre pueblos no tiene tasa medida (2026-10-06)
 
 - **`MU` sin medir**: solo la cota `LEARN_MU_BOUND` = 0,043 (`firemaking` 0 de 85 temporadas-candidata en 5 semillas). `plant_lore`
-  llega a la otra banda en las 5 pero se inventa sola igual de rápido; entre las dos técnicas hay >5x. Decisión del
-  propietario pendiente (transmisibilidad por técnica o `MU` agregado): ver el doc de 32c, sec. 3. Hasta entonces `knowledge()` exige `mu`.
+  llega a la otra banda en las 5 pero se inventa sola igual de rápido; entre las dos técnicas hay >5x. Decidido el
+  2026-10-06: transmisibilidad por técnica (pesos de rasgos = suposición, solo el orden está respaldado) y agregado de partida `LEARN_MU_START` bajo la cota; `knowledge()` sigue exigiendo `mu`.
 - **`KAPPA` es un agregado**: el detallado encuentra `plant_lore` en 3-5 temporadas en las tres semillas (~0,25 por
   temporada) y el modelo con 1/dificultad da ~0,07; el modelo acierta el número total de técnicas, no cuáles ni cuándo.
 - **Sin escritor de contactos**: `PeopleRelation.contact` lo leen la invención (población efectiva) y el aprendizaje, y ningún

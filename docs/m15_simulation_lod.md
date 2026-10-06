@@ -244,7 +244,7 @@ No se promete que una aglomeración de 300 visibles cueste lo mismo que 30.
    reproduce `craft` (T1-T4) y **no** `lean` (colapso a ~1 frente a ~11 del modelo).
    Inventar y aprender (2026-10-06): modelo de Kremer con `KAPPA` medida en el detallado (4,7e-4, 16 eventos) y
    correspondencia de orden de magnitud en semillas nuevas (4,6 frente a 3,7 técnicas); el aprendizaje entre pueblos
-   solo tiene una **cota** medida (`LEARN_MU_BOUND` 0,043) y queda a decisión del propietario (transmisibilidad por técnica);
+   solo tiene una **cota** medida (`LEARN_MU_BOUND` 0,043); el propietario decidió (2026-10-06) transmisibilidad por técnica, derivada de rasgos de `TECHS`, con un `mu` agregado de partida (`LEARN_MU_START`) bajo la cota;
    test «nada por guion» con auditoría que falla contra cuatro versiones trucadas.
    Detalle y medidas en [m15_phase32c_peoples.md](m15_phase32c_peoples.md).
 5. **32, integración y coste:** cohortes y perfil de las transiciones; separación

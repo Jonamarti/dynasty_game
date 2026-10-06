@@ -1,3 +1,12 @@
+## 2026-10-06 — M15 fase 32c: transmisibilidad por técnica (`PeopleKnowledge`)
+
+Decisión del propietario sobre `MU`: por técnica, con un agregado pequeño de partida, y difusión pequeña para que haya pueblos por delante de
+otros. Por qué así: los datos del detallado solo dan una cota (0,043) y un orden entre dos técnicas, no un valor por nodo. La facilidad de
+contagio sale de rasgos de la propia fila de `TECHS` (práctica a la vista, receta de conversación; nada por nombre, región o fecha) con pesos
+relativos que son suposición declarada, y `knowledge()` reparte el `mu` agregado entre técnicas en proporción (media = `mu`). `LEARN_MU_START`
+= 0,0215, mitad de la cota, exportado y no escondido. Tests: igualdad por rasgos, orden visible > solo-lección, agregado bajo la cota, efecto en el
+mundo (práctica visible cruza más de 2x que un dispositivo de lección) y control plano. Juego bit-idéntico.
+
 ## 2026-10-06 — M15 fase 32c: por qué `PeopleSim` no reproduce `lean` (investigación, sin cambio de modelo)
 
 Se probaron cinco hipótesis con medidas en el detallado antes de tocar nada (`tools/people-trajectory.ts`, `people-probe.ts`,

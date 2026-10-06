@@ -3271,6 +3271,10 @@ frente a 3,7 técnicas, orden de magnitud). **`MU` del aprendizaje no se pudo me
 Test «nada por guion» con auditoría que falla contra versiones trucadas por fecha, nombre, región e identidad.
 [Detalle](m15_phase32c_peoples.md).
 
+**Avance del 2026-10-06 (32c-5, transmisibilidad por técnica):** decidida por el propietario la pregunta de `MU`: facilidad de contagio por
+técnica derivada de rasgos de su fila en `TECHS` (práctica a la vista, receta), `mu` agregado de partida `LEARN_MU_START` = 0,0215 bajo la cota
+0,043; difusión pequeña a propósito (pueblos por delante de otros). [Detalle](m15_phase32c_peoples.md).
+
 **Avance del 2026-10-06 (32c-4, por qué `PeopleSim` no reproduce `lean`):** investigación sin cambio de modelo. Medido en el
 detallado (3 semillas nuevas, más tres de calibración para la condición): la oferta de primavera a otoño es consumo proporcional a la
 gente (0,85 / 1,0 / 0,8 raciones por persona y día con 12, 25 y 37 fundadores), solo la de invierno es de la comarca; con la oferta exacta

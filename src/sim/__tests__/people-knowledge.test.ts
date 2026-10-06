@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PeopleSim, TechSet, closeUnderRequires, emptyCohorts, type People, type PeopleCohorts, type SeasonMechanism } from '../world/PeopleSim.ts';
 import {
-  ALL_MATERIALS, KREMER_KAPPA, LEARN_MU_BOUND, climateSimilarity, feasibleIn, inventionChance, knowledge, learningChance,
+  ALL_MATERIALS, KREMER_KAPPA, LEARN_MU_BOUND, LEARN_MU_START, MEAN_TRANSMISSIBILITY, climateSimilarity, learnRate, traitsOf, transmissibility, feasibleIn, inventionChance, knowledge, learningChance,
   regionMaterials, type KnowledgeEvent, type KnowledgeRegion,
 } from '../world/PeopleKnowledge.ts';
 import { TECHS, TECH, type Tech } from '../knowledge/Tech.ts';
@@ -140,6 +140,43 @@ describe('learning from neighbours', () => {
     expect(learned(0.3)).toBeGreaterThan(learned(0));
     expect(learned(0)).toBe(0);
     expect(learningChance(2, 0.02)).toBeGreaterThan(learningChance(1, 0.02));
+  });
+});
+
+describe('transmissibility per technique (owner decision 2026-10-06)', () => {
+  it('is read from the technique own traits: same traits, same value; a visible practice and a craft travel more than a lesson-only device', () => {
+    const key = (t: Tech) => JSON.stringify(traitsOf(t));
+    for (const a of TECHS) for (const b of TECHS) if (key(a) === key(b)) expect(transmissibility(a)).toBe(transmissibility(b));
+    const lessonOnly = TECHS.filter(t => !traitsOf(t).seenInUse && !traitsOf(t).craft);
+    const seen = TECHS.filter(t => traitsOf(t).seenInUse), craft = TECHS.filter(t => traitsOf(t).craft);
+    expect(lessonOnly.length).toBeGreaterThan(5); expect(seen.length).toBeGreaterThan(5); expect(craft.length).toBeGreaterThan(1);
+    for (const t of lessonOnly) for (const s of seen) expect(transmissibility(s)).toBeGreaterThan(transmissibility(t));
+    for (const t of TECHS) expect(transmissibility(t)).toBeGreaterThan(0); // no node is untransmittable
+  });
+
+  it('starts from an aggregate strictly below the measured ceiling, which the per-technique rates average to', () => {
+    expect(LEARN_MU_START).toBeGreaterThan(0);
+    expect(LEARN_MU_START).toBeLessThan(LEARN_MU_BOUND);
+    expect(mean(TECHS.map(t => learnRate(t, LEARN_MU_START)))).toBeCloseTo(LEARN_MU_START, 12);
+    expect(MEAN_TRANSMISSIBILITY).toBeGreaterThan(1);
+    // The one technique the detailed game measured as not crossing (a lesson-only device, 0 of 85) stays under its own bound.
+    const device = TECHS.find(t => TECH[t].kind === 'device' && !traitsOf(t).seenInUse && !traitsOf(t).craft && TECH[t].requires.length === 0)!;
+    expect(learnRate(device, LEARN_MU_START)).toBeLessThan(LEARN_MU_BOUND);
+  });
+
+  it('shows in the world: a visible practice crosses to a neighbour far oftener than a lesson-only device with the same open candidacy', () => {
+    const seen = TECHS.find(t => traitsOf(t).seenInUse && TECH[t].requires.length === 0)!;
+    const lesson = TECHS.find(t => !traitsOf(t).seenInUse && !traitsOf(t).craft && TECH[t].requires.length === 0)!;
+    const rate = (tech: Tech) => { let n = 0; for (let k = 0; k < 400; k++) n += world(`tr-${k}`, [{ n: 30 }, { n: 30, techs: [tech] }], { kappa: 0, mu: 0.2, contact: 1, seasons: 4 }).people[0]!.techs.has(tech) ? 1 : 0; return n; };
+    expect(rate(seen)).toBeGreaterThan(rate(lesson) * 2);
+  });
+
+  it('control: a flat build (every technique equally contagious) fails the ordering the traits promise', () => {
+    const flat = () => 1;
+    const seen = TECHS.find(t => traitsOf(t).seenInUse)!, lesson = TECHS.find(t => !traitsOf(t).seenInUse && !traitsOf(t).craft)!;
+    expect(flat()).toBe(flat());
+    expect(transmissibility(seen)).not.toBe(flat());
+    expect(transmissibility(seen)).toBeGreaterThan(transmissibility(lesson));
   });
 });
 

@@ -16,7 +16,8 @@
  * the `PeopleRelation.contact` the pair keeps (trade, marriage, war and nearness all write into that one number;
  * nothing writes it yet) and `similarity` is how alike the two climates are. No materials are needed to *learn*
  * something: seed, a cutting or a recipe travels. `MU` could only be *bounded* from the detailed game
- * (`tools/people-discovery.ts transfer`, `LEARN_MU_BOUND`), so the caller supplies it.
+ * (`tools/people-discovery.ts transfer`, `LEARN_MU_BOUND`), so the caller supplies it, and it is spread over techniques
+ * by their own traits (`transmissibility`): the aggregate stays under the bound, and what a technique is decides its share.
  *
  * ## Nothing by script
  *
@@ -34,7 +35,7 @@
  * Not modelled, and so not declared: forgetting (a technique dying with its last practitioner), refinement and
  * practitioners within a people (conocer como pueblo no es que todos sepan practicar); the people holds a bit.
  */
-import { TECHS, TECH, type Tech } from '../knowledge/Tech.ts';
+import { TECHS, TECH, tierOf, type Tech } from '../knowledge/Tech.ts';
 import { populationOf, type PeopleSeason, type SeasonMechanism, type People } from './PeopleSim.ts';
 
 /** Climate of a region on two unit axes. The similarity of two is how far apart they sit. */
@@ -84,6 +85,59 @@ export const KREMER_KAPPA = 4.714e-4;
  */
 export const LEARN_MU_BOUND = 0.043;
 
+/**
+ * What about a technique makes it travel between peoples, read **only from its own row in `TECHS`** (never from its
+ * name, never from where or when it is held). The detailed game already says each of these in its own data:
+ *
+ * - `seenInUse`: a *practice* with `practisedBy` actions is done in the open every day (foraging, tending, hunting),
+ *   so whoever lives beside it watches it without anybody choosing to show it (`KnowledgeSystem.tryObserve`).
+ * - `craft`: a recipe or a variant of its gate, which "is passed on in ordinary small talk as well as in a lesson"
+ *   (`Tech.ts`, `TechTier`).
+ *
+ * A device that is none of these (a thing one makes at a hearth and has to be shown how) has none of them: it travels
+ * only by being taught, which is the least contagious case.
+ */
+export interface TechTraits { readonly seenInUse: boolean; readonly craft: boolean }
+export function traitsOf(tech: Tech): TechTraits {
+  const def = TECH[tech];
+  return {
+    seenInUse: (def.practisedBy?.length ?? 0) > 0,
+    craft: tierOf(tech) === 'craft',
+  };
+}
+
+/**
+ * Relative weights of those traits. **Design assumptions, not measurements**: the detailed game offers two data
+ * points about transfer between bands and neither fits a coefficient (a device that needs a lesson, 0 of 85
+ * candidate-seasons, bound 0.043; a visible practice, 5 of 5 seeds but not distinguishable from independent invention,
+ * see docs/m15_phase32c_peoples.md section 3). They fix only the *order* (the lesson-only device is the least contagious
+ * and a visible practice more so) and so only the order is claimed. Everything is relative to the floor of 1, which
+ * is what any contact carries (a seed, a cutting, a described recipe).
+ */
+export const TRANSMISSIBILITY_WEIGHTS = { floor: 1, seenInUse: 3, craft: 2 } as const;
+
+/** Relative ease of contagion of one technique: `floor` plus what its traits add. Always at least the floor, so no node is untransmittable. */
+export function transmissibility(tech: Tech): number {
+  const w = TRANSMISSIBILITY_WEIGHTS, tr = traitsOf(tech);
+  return w.floor + (tr.seenInUse ? w.seenInUse : 0) + (tr.craft ? w.craft : 0);
+}
+
+/** The mean transmissibility over the table: what turns a relative weight into a rate for a given aggregate `mu`. */
+export const MEAN_TRANSMISSIBILITY = TECHS.reduce((sum, t) => sum + transmissibility(t), 0) / TECHS.length;
+
+/**
+ * **The aggregate MU a world starts from where nothing more is measured**: half the measured ceiling. A named, visible
+ * starting value (not a hidden default inside `knowledge()`), strictly below `LEARN_MU_BOUND`, never described as an
+ * estimate. The owner's decision (2026-10-06): peoples must be able to stay technologically apart, so whole-technique
+ * diffusion is kept small.
+ */
+export const LEARN_MU_START = LEARN_MU_BOUND / 2;
+
+/** Whole-technique learning rate of one technique: the aggregate spread over the table in proportion to transmissibility, so the table-wide mean is `mu`. */
+export function learnRate(tech: Tech, mu: number): number {
+  return mu * transmissibility(tech) / MEAN_TRANSMISSIBILITY;
+}
+
 /** Chance this season that a people with effective population `neff` invents a feasible, open technique. */
 export function inventionChance(tech: Tech, neff: number, kappa = KREMER_KAPPA): number {
   return 1 - Math.exp(-kappa * neff / TECH[tech].difficulty);
@@ -97,7 +151,11 @@ export function learningChance(exposure: number, mu: number): number {
 export interface KnowledgeEnv {
   readonly regionOf: (people: People) => KnowledgeRegion;
   readonly kappa?: number;
-  /** Learning rate per open candidate-season at full contact and the same climate. Required: no measured value exists (`LEARN_MU_BOUND`). */
+  /**
+   * The *aggregate* whole-technique learning rate per open candidate-season at full contact and the same climate,
+   * spread over techniques by `learnRate`. Required, so no value hides in here: pass `LEARN_MU_START` (below the
+   * measured ceiling `LEARN_MU_BOUND`) unless you are measuring.
+   */
   readonly mu: number;
 }
 
@@ -125,7 +183,7 @@ export function knowledge(env: KnowledgeEnv, report?: (e: KnowledgeEvent) => voi
       for (const { rel, other } of neighbours) {
         if (rel.contact > 0 && other.techs.has(tech)) exposure += rel.contact * climateSimilarity(region.climate, env.regionOf(other).climate);
       }
-      const learned = exposure > 0 && uLearn < learningChance(exposure, mu);
+      const learned = exposure > 0 && uLearn < learningChance(exposure, learnRate(tech, mu));
       if (invented || learned) arrivals.push({ tech, how: invented ? 'invented' : 'learned' });
     }
     for (const { tech, how } of arrivals) {

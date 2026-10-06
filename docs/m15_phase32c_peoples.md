@@ -260,12 +260,25 @@ que esas llegadas no se distinguen de invenciones (el número esperado con la ta
 agregado está por debajo de lo que pasa con esa técnica). Hay más de 5x entre las dos técnicas, y un solo `MU` no cabe en los datos.
 Lo que sí queda es la cota `LEARN_MU_BOUND = 0,043` (exportada, documentada como cota y no como estimación).
 
-**Pregunta para el propietario (decisión, no se ha tomado):** el aprendizaje entre pueblos, ¿se mide por técnica (una
-*transmisibilidad* por nodo: lo que se ve usar a diario, como forrajear, pasa casi sin querer; lo que exige un hogar y una
-enseñanza, como encender fuego, casi nunca pasa sin ella), o se acepta un `MU` agregado por debajo de la cota 0,043? Lo
-primero añade un campo a `TECHS` que el juego detallado ya tiene implícito en sus `sparks`; lo segundo seguirá dando
-transferencias de `plant_lore` y de `firemaking` en la misma proporción, que el detallado no produce. Hasta que se decida,
-`knowledge()` exige que quien lo maneje dé `mu` y el resto de pruebas lo pasan explícito.
+**Decisión del propietario (2026-10-06, tomada):** transmisibilidad por técnica, con un `MU` agregado pequeño como valor de partida
+donde no hay medida; y la difusión no debe ser grande, para que haya pueblos tecnológicamente más avanzados que otros: una tribu puede
+saber hacer armas que otra no, y cuando las ve o las sufre aprende una parte, o sabe por dónde investigar (mecanismo 2, abajo).
+
+### Transmisibilidad por técnica (`transmissibility`, `traitsOf`)
+
+La facilidad de contagio de cada técnica sale **solo de su fila en `TECHS`**, nunca de su nombre, región o fecha: `seenInUse` (una
+*práctica* con `practisedBy` se hace a la vista cada día: `KnowledgeSystem.tryObserve` ya la deja aprender mirando), `craft` (la receta
+«se pasa en la conversación corriente», `TechTier`). Un dispositivo que se hace en el hogar y hay que enseñar no tiene ninguno: solo se
+transmite enseñado, el caso menos contagioso. Pesos relativos `TRANSMISSIBILITY_WEIGHTS = {floor 1, seenInUse 3, craft 2}`: **suposición de
+diseño, no medida**; los datos solo fijan el orden (dos puntos: dispositivo de lección, 0 de 85 temporadas-candidata en 5 semillas, cota 0,043;
+práctica visible, 5 de 5 semillas pero indistinguible de invención independiente) y por eso solo se afirma el orden. Ninguna técnica es
+intransmisible (suelo 1: una semilla, un esqueje, una receta contada viajan).
+
+El `mu` que se da a `knowledge()` es el **agregado**: `learnRate(t) = mu x T(t) / media(T)`, de modo que la media sobre la tabla es `mu`.
+Valor de partida **`LEARN_MU_START` = 0,0215** (mitad de la cota medida 0,043), exportado y con nombre; no hay valor oculto en `knowledge()` (`mu`
+sigue siendo obligatorio). Con él, el dispositivo-de-lección sin requisitos queda por debajo de la cota (test). No es una estimación.
+Muestra de lo medido en el detallado, por honestidad: **dos técnicas, 5 semillas, 85 temporadas-candidata para `firemaking`**; no se midió ningún
+valor por técnica nuevo en esta fase (no hay datos para hacerlo sin otro experimento de dispersión).
 
 ### Correspondencia de la invención (`tools/people-knowledge-correspond.ts`)
 
@@ -302,5 +315,5 @@ escalón de la cadena de requisitos de `farming` (la cadena completa llega a far
 climática y el contacto.
 
 Límites: una sola `KAPPA` para todas las técnicas; sin olvido, sin refinamiento ni practicantes; el clima es una suposición;
-`MU` sin medir; contacto sin escritor; la población del pueblo viene de fuera (aquí constante: este mecanismo no la mueve). La
+`MU` solo acotado (el agregado de partida es una suposición bajo la cota); contacto sin escritor; la población del pueblo viene de fuera (aquí constante: este mecanismo no la mueve). La
 puerta `peoples-match-bands` no se ha corrido.
