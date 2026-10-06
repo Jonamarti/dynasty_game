@@ -227,7 +227,10 @@ No se promete que una aglomeración de 300 visibles cueste lo mismo que 30.
    `Simulation.step()`. Tasas medidas del detallado (alivio de hambre/sed por
    persona-día, condicionado a la necesidad, agenda, natalidad y mortalidad por
    edad; `RateWatch`, sec. 4 del doc de 32b): no hay una tasa única, `lean` y
-   `craft` difieren x2-3 en comida/deriva y x50 en mortalidad.
+   `craft` difieren x2-3 en comida/deriva y x50 en mortalidad. Ingesta compacta
+   (sec. 5): aprobada en otoño, suspende al cruzar a invierno en `lean` si la
+   capacidad de banda se pronostica de la ventana previa; es entrada del modelo de
+   pueblo (32c). Sin producción compacta todavía.
 3. **32b, activación por visión:** conjunto exacto de activos, puente entre
    niveles, viajes, órdenes e interacciones; integración del foco desde main.
 4. **32c, pueblos:** demografía, economía, avance técnico y contactos agregados,

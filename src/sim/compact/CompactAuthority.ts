@@ -71,7 +71,7 @@ export class CompactAuthority {
     if (block) return { ok: false, reason: block };
     const epoch = (entry?.epoch ?? 0) + 1;
     const rng = entry?.stream ? RNG.fromSnapshot(entry.stream) : deriveCompactStream(this.worldSeed, person.id);
-    const compact: CompactPerson = { person, lastAdvancedTick: tick, rng, goal: goalOf(person, tick), epoch };
+    const compact: CompactPerson = { person, lastAdvancedTick: tick, rng, goal: goalOf(person, tick), intake: null, epoch };
     this.entries.set(person.id, { owner: 'compact', epoch, stream: null });
     this.live.set(person.id, compact);
     return { ok: true, value: compact };

@@ -3176,7 +3176,10 @@ stream derivado, dueño único con epoch y rechazos nombrados); `CompactBody.adv
 el detallado alivio de hambre/sed por persona-día condicionado a la necesidad,
 agenda, natalidad y mortalidad por edad (`lean`/`craft`, 3 semillas); tabla en la
 sec. 4 de [m15_phase32b_compact.md](m15_phase32b_compact.md).
-**Pendiente de 32b-2:** ingesta, producción y demografía compactas con tasas
+**Ingesta compacta (2026-10-06):** `CompactIntake` con tabla medida y capacidad de banda;
+aprobada en otoño (`lean`, `craft`), suspende en `lean` invierno con capacidad pronosticada
+(+21 puntos de supervivencia) y por 3 puntos de hambre con capacidad exacta (sec. 5 del doc de 32b).
+**Pendiente de 32b-2:** producción compacta, capacidad de banda por estación (32c); y, antes de esto, ingesta, producción y demografía compactas con tasas
 medidas del modelo detallado (no inventadas) y, por tanto, el enchufe en
 `Simulation` y `lod-matches-detail`. Lista actualizada en
 [m15_phase32b_compact.md](m15_phase32b_compact.md).

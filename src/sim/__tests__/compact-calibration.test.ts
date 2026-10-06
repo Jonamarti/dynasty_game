@@ -69,7 +69,7 @@ describe('rate table helpers', () => {
 
   it('folds person-days into the conditional table', () => {
     const goals = { obtain_food: 0, build: 0, care: 0, travel: 0, idle: 240 };
-    const day = (hungerRatio: number): PersonDay => ({ season: 'spring', group: 'adult', hungerBin: 1, thirstBin: 0,
+    const day = (hungerRatio: number): PersonDay => ({ season: 'spring', group: 'adult', bandId: 0, hungerBin: 1, thirstBin: 0,
       hungerRatio, thirstRatio: 1, eaten: 0, hungerDrift: 13, goals, drinkTicks: 0, ticks: 240 });
     const table = buildRateTable([day(0), day(2), day(1)]);
     const e = table[rateKey('spring', 'adult', 'hunger', 1)]!;

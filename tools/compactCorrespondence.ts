@@ -1,0 +1,162 @@
+/**
+ * Correspondence experiment, M15 phase 32b: an equivalent cohort in the detailed
+ * model and in the compact model, from the same moment, compared.
+ *
+ * At tick T of a detailed world every living person is **copied** (a JSON round trip of
+ * their `PersonRecord`, so nothing is shared). The originals go on being simulated in
+ * detail for `days` more days; the copies are advanced by `CompactBody` with the intake
+ * model, whose band capacity is read from the band's own recorded days in the window
+ * *before* T (what a band-level model will have to hand it), never from the days it is
+ * about to be compared on.
+ *
+ * Violence is outside the compact body, so a person the detailed run lets be killed by
+ * somebody is counted as a survivor in the detailed arm (censored), not as a death the
+ * compact arm could not have had. That is a choice made before measuring.
+ */
+import { Simulation } from '../src/sim/core/Simulation.ts';
+import { makeConfig } from '../src/sim/core/Config.ts';
+import { fromPersonRecord, toPersonRecord } from '../src/sim/persistence/EntityRecords.ts';
+import { CompactBody } from '../src/sim/compact/CompactAdvance.ts';
+import { deriveCompactStream, goalOf, type CompactPerson } from '../src/sim/compact/CompactPerson.ts';
+import { RateWatch, type PersonDay } from '../src/sim/compact/CompactCalibration.ts';
+import { IntakeModel, type BandScale } from '../src/sim/compact/CompactIntake.ts';
+import { isLactating, isNursling } from '../src/sim/entities/LifeStage.ts';
+import { nurslingHungerFactor } from '../src/sim/ai/Nursing.ts';
+import { SCENARIOS } from './simcheck.ts';
+import type { Person } from '../src/sim/entities/Person.ts';
+
+export interface ArmStats {
+  n: number;
+  /** Survivors, counting a violent death in the detailed arm as alive (censored). */
+  alive: number;
+  /** Actually living at the end: the ones the mean needs are taken over. */
+  living: number;
+  /** Mean needs of the survivors, 0-100. */
+  hunger: number;
+  thirst: number;
+  /** Deaths by cause (violence excluded in the detailed arm). */
+  causes: Record<string, number>;
+}
+
+export interface CorrespondenceResult {
+  scenario: string; seed: string;
+  detailed: ArmStats; compact: ArmStats;
+  /** The capacity read from the window before T, per band (hunger, thirst). */
+  scales: Record<number, BandScale>;
+  /** Same cohort, intake switched off: the closed body. */
+  closed: ArmStats;
+  /** Intake with the capacity read from the very days compared (an oracle: what a perfect band forecast would hand over). */
+  oracle: ArmStats;
+  oracleScales: Record<number, BandScale>;
+}
+
+const wire = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+function stats(people: readonly Person[], violentAlive: (p: Person) => boolean): ArmStats {
+  const out: ArmStats = { n: people.length, alive: 0, living: 0, hunger: 0, thirst: 0, causes: {} };
+  for (const p of people) {
+    if (p.alive || violentAlive(p)) {
+      out.alive++;
+      if (p.alive) { out.living++; out.hunger += p.needs.hunger; out.thirst += p.needs.thirst; }
+    } else out.causes[p.causeOfDeath ?? 'unknown'] = (out.causes[p.causeOfDeath ?? 'unknown'] ?? 0) + 1;
+  }
+  out.hunger /= out.living || 1; out.thirst /= out.living || 1;
+  return out;
+}
+
+export interface CorrespondenceOptions {
+  scenario: string; seed: string;
+  /** Steps run (observed) before the cohort is cut. */
+  warmupSteps: number;
+  /** The last `windowSteps` of the warm-up are what the band capacity is read from. */
+  windowSteps: number;
+  /** Days both arms are advanced. */
+  days: number;
+  model: IntakeModel;
+  /** Force a scale for every band instead of reading it (the negative controls). */
+  scaleOverride?: BandScale;
+}
+
+export function runCorrespondence(o: CorrespondenceOptions): CorrespondenceResult {
+  const scenario = SCENARIOS[o.scenario]!;
+  const config = { ...makeConfig(scenario.config), seed: o.seed };
+  const sim = scenario.create?.(config) ?? new Simulation(config);
+  if (scenario.create) scenario.setup?.(sim);
+  const watch = new RateWatch(sim);
+  watch.observe();
+  let mark = 0;
+  for (let i = 1; i <= o.warmupSteps; i++) {
+    if (i === o.warmupSteps - o.windowSteps + 1) mark = watch.days.length;
+    sim.step(); watch.observe();
+  }
+  const T = sim.time.tick;
+  const tpd = sim.config.time.ticksPerDay;
+  const cohort = sim.people.filter(p => p.alive);
+
+  // Capacity per band from the window before T; a band with too few days borrows the whole world's.
+  const window: readonly PersonDay[] = watch.days.slice(mark);
+  const scales: Record<number, BandScale> = {};
+  let world: BandScale;
+  try { world = o.model.scaleFrom(window); } catch { world = { hunger: 1, thirst: 1 }; }
+  for (const bandId of new Set(cohort.map(p => p.bandId))) {
+    try { scales[bandId] = o.model.scaleFrom(window.filter(d => d.bandId === bandId)); } catch { scales[bandId] = world; }
+  }
+  const scaleFor = (p: Person): BandScale => o.scaleOverride ?? scales[p.bandId] ?? world;
+
+  const records = cohort.map(p => wire(toPersonRecord(p, T)));
+  const arm = (withIntake: boolean, scaleOf: (p: Person) => BandScale): Person[] => {
+    const copies = new Map<number, Person>();
+    const compacts: CompactPerson[] = records.map(record => {
+      const copy = fromPersonRecord(wire(record));
+      copies.set(copy.id, copy);
+      return { person: copy, lastAdvancedTick: T, rng: deriveCompactStream(config.seed ?? 'seed', copy.id),
+        goal: goalOf(copy, T), intake: null, epoch: 0 };
+    });
+    const nurslingFactor = nurslingHungerFactor(sim.config.childhood.feedsPerDay, tpd, sim.config.needs.hungerRate);
+    let id = 1;
+    const body = new CompactBody({
+      needs: sim.config.needs, time: sim.config.time, world: sim.world, buildings: sim.buildings,
+      hooks: {
+        hungerFactor: (person: Person) => isLactating(person, copies, sim.config.childhood)
+          ? 1 + sim.config.childhood.lactationHunger : isNursling(person, sim.config.childhood) ? nurslingFactor : 1,
+      },
+      intake: withIntake ? { model: o.model, scale: scaleOf, childhood: sim.config.childhood } : undefined,
+      nextEventId: () => id++,
+    });
+    for (const c of compacts) body.advance(c, T + o.days * tpd);
+    return compacts.map(c => c.person);
+  };
+
+  const markAfter = watch.days.length;
+  for (let i = 0; i < o.days * tpd; i++) { sim.step(); watch.observe(); }
+  // The oracle capacity: the band's own relief on the days that are being compared.
+  const later: readonly PersonDay[] = watch.days.slice(markAfter);
+  const oracleScales: Record<number, BandScale> = {};
+  let oracleWorld: BandScale;
+  try { oracleWorld = o.model.scaleFrom(later); } catch { oracleWorld = { hunger: 1, thirst: 1 }; }
+  for (const bandId of new Set(cohort.map(p => p.bandId))) {
+    try { oracleScales[bandId] = o.model.scaleFrom(later.filter(d => d.bandId === bandId)); } catch { oracleScales[bandId] = oracleWorld; }
+  }
+  const compactPeople = arm(true, scaleFor);
+  const closedPeople = arm(false, scaleFor);
+  const oraclePeople = arm(true, p => o.scaleOverride ?? oracleScales[p.bandId] ?? oracleWorld);
+  const detailedPeople = cohort; // the same instances, now `days` older
+  const violent = (p: Person) => (p.causeOfDeath ?? '').startsWith('killed by ');
+  return {
+    scenario: o.scenario, seed: o.seed, scales,
+    detailed: stats(detailedPeople, violent),
+    compact: stats(compactPeople, () => false),
+    closed: stats(closedPeople, () => false),
+    oracle: stats(oraclePeople, () => false), oracleScales,
+  };
+}
+
+export function pool(rows: readonly ArmStats[]): ArmStats {
+  const out: ArmStats = { n: 0, alive: 0, living: 0, hunger: 0, thirst: 0, causes: {} };
+  for (const r of rows) {
+    out.n += r.n; out.alive += r.alive; out.living += r.living; out.hunger += r.hunger * r.living; out.thirst += r.thirst * r.living;
+    for (const [k, v] of Object.entries(r.causes)) out.causes[k] = (out.causes[k] ?? 0) + v;
+  }
+  if (out.living > 0) { out.hunger /= out.living; out.thirst /= out.living; }
+  return out;
+}

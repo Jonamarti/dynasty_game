@@ -44,7 +44,7 @@
  */
 import type { Simulation } from '../core/Simulation.ts';
 import type { Person } from '../entities/Person.ts';
-import { exertionOf } from '../systems/NeedsSystem.ts';
+import { thirstDriftPerTick } from '../systems/NeedsSystem.ts';
 import { isLactating, isNursling } from '../entities/LifeStage.ts';
 import { nurslingHungerFactor } from '../ai/Nursing.ts';
 import { ADULT_YEARS } from '../entities/Person.ts';
@@ -81,13 +81,15 @@ export function ageBucketOf(years: number): number {
 
 interface Snapshot { hunger: number; thirst: number; action: string; eaten: number }
 interface DayState {
-  hungerStart: number; thirstStart: number; season: RateSeason; group: RateGroup;
+  hungerStart: number; thirstStart: number; season: RateSeason; group: RateGroup; bandId: number;
   hungerDrift: number; hungerRelief: number; thirstDrift: number; thirstRelief: number;
   eaten: number; ticks: number; goals: Record<CompactGoalKind, number>; drinkTicks: number;
 }
 
 export interface PersonDay {
   readonly season: RateSeason; readonly group: RateGroup;
+  /** The band the person belonged to at the start of the day: the aggregate a capacity is read over. */
+  readonly bandId: number;
   readonly hungerBin: number; readonly thirstBin: number;
   /** relief / drift over the day, uncapped. */
   readonly hungerRatio: number; readonly thirstRatio: number;
@@ -135,7 +137,7 @@ export class RateWatch {
       this.startDay(tick);
       return;
     }
-    const heat = Math.max(0, sim.time.temperature);
+    const temperature = sim.time.temperature;
     const nurslingFactor = nurslingHungerFactor(childhood.feedsPerDay, tpd, cfg.hungerRate);
     const next = new Map<number, Snapshot>();
     for (const p of sim.people) {
@@ -148,7 +150,7 @@ export class RateWatch {
       const factor = isLactating(p, sim.peopleById, childhood) ? 1 + childhood.lactationHunger
         : isNursling(p, childhood) ? nurslingFactor : 1;
       const hDrift = cfg.hungerRate * factor;
-      const tDrift = cfg.thirstRate * exertionOf(before.action) * (1 + heat * (cfg.heatThirst - 1));
+      const tDrift = thirstDriftPerTick(cfg, before.action, temperature);
       st.hungerDrift += hDrift;
       st.thirstDrift += tDrift;
       st.hungerRelief += Math.max(0, before.hunger + hDrift - now.hunger);
@@ -170,7 +172,7 @@ export class RateWatch {
     for (const p of sim.people) {
       if (!p.alive) continue;
       this.day.set(p.id, {
-        hungerStart: p.needs.hunger, thirstStart: p.needs.thirst, season, group: groupOf(p, sim.config.childhood),
+        hungerStart: p.needs.hunger, thirstStart: p.needs.thirst, season, group: groupOf(p, sim.config.childhood), bandId: p.bandId,
         hungerDrift: 0, hungerRelief: 0, thirstDrift: 0, thirstRelief: 0, eaten: 0, ticks: 0,
         goals: { obtain_food: 0, build: 0, care: 0, travel: 0, idle: 0 }, drinkTicks: 0,
       });
@@ -185,7 +187,7 @@ export class RateWatch {
       // Only a complete day: present at the start and still alive at the end.
       if (!st || !p.alive || st.ticks < tpd - 1 || st.hungerDrift <= 0 || st.thirstDrift <= 0) continue;
       this.days.push({
-        season: st.season, group: st.group,
+        season: st.season, group: st.group, bandId: st.bandId,
         hungerBin: needBin(st.hungerStart), thirstBin: needBin(st.thirstStart),
         hungerRatio: st.hungerRelief / st.hungerDrift, thirstRatio: st.thirstRelief / st.thirstDrift,
         eaten: st.eaten, hungerDrift: st.hungerDrift, goals: st.goals, drinkTicks: st.drinkTicks, ticks: st.ticks,

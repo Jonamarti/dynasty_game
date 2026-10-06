@@ -27,12 +27,28 @@ export interface CompactGoal {
   readonly target: string | null;
 }
 
+/**
+ * What the intake model drew for one calendar day of a compact person (see
+ * CompactIntake.ts). Kept on the person, not recomputed, so that cutting an advance
+ * in the middle of a day, or a save in the middle of one, cannot redraw it: the
+ * start-of-day need it was conditioned on is gone by then.
+ */
+export interface IntakePlan {
+  /** `floor((tick - 1) / ticksPerDay)`: the day these ratios belong to. */
+  readonly day: number;
+  /** Relief of hunger and thirst as a multiple of that need's drift, already scaled by the band. */
+  readonly hunger: number;
+  readonly thirst: number;
+}
+
 export interface CompactPerson {
   readonly person: Person;
   /** The tick this person has been advanced to. A reader must bring it to `now` first. */
   lastAdvancedTick: number;
   readonly rng: RNG;
   goal: CompactGoal;
+  /** Today's intake draw; null until the intake model first runs for this person. */
+  intake: IntakePlan | null;
   /** Bumped on every transfer between levels; a stale record is refused by its epoch. */
   epoch: number;
 }
@@ -45,6 +61,8 @@ export interface CompactPersonRecord {
   readonly epoch: number;
   readonly rng: RngSnapshot;
   readonly goal: CompactGoal;
+  /** Absent in records written before the intake model existed (version stays 1: absent means null). */
+  readonly intake?: IntakePlan | null;
   readonly person: PersonRecord;
 }
 
@@ -82,7 +100,7 @@ export function toCompactRecord(compact: CompactPerson): CompactPersonRecord {
   return {
     recordType: 'CompactPersonRecord', version: COMPACT_RECORD_VERSION, personId: compact.person.id,
     lastAdvancedTick: compact.lastAdvancedTick, epoch: compact.epoch, rng: compact.rng.snapshot(),
-    goal: { ...compact.goal }, person: toPersonRecord(compact.person, compact.lastAdvancedTick),
+    goal: { ...compact.goal }, intake: compact.intake === null ? null : { ...compact.intake }, person: toPersonRecord(compact.person, compact.lastAdvancedTick),
   };
 }
 
@@ -100,6 +118,9 @@ export function fromCompactRecord(record: unknown): CompactPerson {
   const goal = raw.goal;
   if (!goal || !GOAL_KINDS.includes(goal.kind) || !Number.isSafeInteger(goal.since) ||
       !(goal.target === null || typeof goal.target === 'string')) fail('goal');
+  const plan = raw.intake ?? null;
+  if (plan !== null && (!Number.isSafeInteger(plan.day) || plan.day < 0 || !Number.isFinite(plan.hunger) ||
+      plan.hunger < 0 || !Number.isFinite(plan.thirst) || plan.thirst < 0)) fail('intake');
   const inner = raw.person;
   if (!inner || inner.lastAdvancedTick !== raw.lastAdvancedTick) fail('person record is stamped with another tick');
   const person = fromPersonRecord(inner);
@@ -107,5 +128,6 @@ export function fromCompactRecord(record: unknown): CompactPerson {
   return {
     person, lastAdvancedTick: raw.lastAdvancedTick, epoch: raw.epoch, rng: RNG.fromSnapshot(raw.rng),
     goal: { kind: goal.kind, since: goal.since, target: goal.target },
+    intake: plan === null ? null : { day: plan.day, hunger: plan.hunger, thirst: plan.thirst },
   };
 }

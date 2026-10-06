@@ -79,6 +79,18 @@ export function exertionOf(action: string): number {
 }
 
 /**
+ * What thirst rises by in one tick for somebody doing `action` at `temperature`.
+ * One definition for the needs clock, for `RateWatch` (which measures relief against
+ * this drift) and for the compact intake (which applies relief in proportion to it):
+ * three copies of the arithmetic would drift apart and bias the ratio between them.
+ * The expression is the one `update` always had, operation for operation.
+ */
+export function thirstDriftPerTick(cfg: NeedsConfig, action: string, temperature: number): number {
+  const heat = Math.max(0, temperature);
+  return cfg.thirstRate * exertionOf(action) * (1 + heat * (cfg.heatThirst - 1));
+}
+
+/**
  * Per-person readings the needs clock cannot make for itself, because they
  * depend on who else is alive (M15 phase 20). Optional so a test that drives
  * `update` by hand keeps the plain rates.
@@ -124,9 +136,8 @@ export class NeedsSystem {
     // Cold bites at night and in winter; in high summer people warm back up.
     const chill = Math.max(0, -time.temperature);
     const warming = Math.max(0, time.temperature) * 0.5;
-    // The same reading with the sign the other way: what makes you cold in
-    // February is what makes you thirsty in July.
-    const heat = Math.max(0, time.temperature);
+    // The same reading with the sign the other way — what makes you cold in
+    // February is what makes you thirsty in July — is `thirstDriftPerTick`.
 
     for (const person of people) {
       if (!person.alive) continue;
@@ -152,7 +163,7 @@ export class NeedsSystem {
       // fragile part and only drinking was reported; giving hunger the same
       // treatment would have put a second, larger change in the same measurement.
       const exertion = exertionOf(person.action);
-      const thirstRate = cfg.thirstRate * exertion * (1 + heat * (cfg.heatThirst - 1));
+      const thirstRate = thirstDriftPerTick(cfg, person.action, time.temperature);
       person.needs.thirst = Math.min(100, person.needs.thirst + thirstRate);
 
       // M11 phase 8c: the same reading, folded into today's ledger for

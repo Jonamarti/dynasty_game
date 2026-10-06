@@ -1,3 +1,21 @@
+## 2026-10-06 — M15 fase 32b: ingesta compacta con tasas medidas (verificada solo con capacidad dada)
+
+El compacto moría de hambre en ~8 días porque nadie comía. `compact/CompactIntake.ts` sortea
+cada día, del stream propio de la persona, el alivio de hambre y sed de la distribución medida
+con `RateWatch` (`MeasuredRates.ts`, `lean`+`craft`, 10.130 personas-día) condicionada a
+estación, etapa y necesidad al empezar el día, escalada por la capacidad agregada de la banda
+(`scaleFrom`) y aplicada tick a tick tras el `NeedsSystem` compartido. El sorteo se guarda en
+la persona (`CompactPerson.intake`) para que cortar o guardar a mitad de día no lo redibuje.
+`thirstDriftPerTick` sale de `NeedsSystem` (misma aritmética) para no tener tres copias.
+Correspondencia con cohorte equivalente (tolerancias declaradas antes de medir): `lean` y
+`craft` de otoño aprueban (95,0 % frente a 95,0 % y 100 % frente a 100 %); `lean` de invierno
+**suspende**: con capacidad pronosticada de la ventana previa 62,5 % frente a 41,3 %
+detallado, y con capacidad exacta el hambre media de supervivientes difiere 18 puntos (> 15).
+Por eso se entrega como mecanismo condicionado a una capacidad dada, con el hueco en `bugs.md`.
+No hay producción ni avance de órdenes. Tests: `compact-intake`, `compact-correspondence`
+(suite 1.221/1.221; `sim:check` de una semilla solo con los fallos heredados `perf-budget` y
+`cravings-steer-the-diet`). Nada de `Simulation` lo llama; el juego es bit-idéntico.
+
 ## 2026-10-06 — M15 fase 32b: `RateWatch`, las tasas del detallado se miden antes de modelarse
 
 Hasta hoy el compacto no comía ni bebía y una persona moría en ~8 días; darle una tasa
