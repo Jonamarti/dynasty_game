@@ -1,3 +1,14 @@
+## 2026-10-06 — M15 fase 13d: el check `sub-webs-are-climbed`
+
+Nuevo check en `hearths` y `craft` (bloque pequeño en `tools/simcheck.ts`, junto
+a `cooking-spreads`): al final del escenario alguien vivo conoce la puerta de al
+menos una sub-red (`cooking` abre Cocina, `spear` abre Armas), y el detalle dice
+cuántos de sus nodos se conocen (hoy 0: ningún escenario dura un año y nada se
+prueba en menos). En el árbol anterior a 13a, sin `opens`, falla en los dos
+escenarios; en este pasa. Los demás checks no cambian de estado: fallos 6 y 6 en
+`hearths` y `craft`, 2 en `band`. Estado de 12 a 15 actualizado en
+`m15_status_20261003.md`. Cohorte de 20 semillas no corrida.
+
 ## 2026-10-06 — M15 fase 13d: la honda (`sling`)
 
 Craft de la red Armas (requiere `spear` y `cordage`; Neolítico). Ítem `sling`:

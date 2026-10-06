@@ -1549,6 +1549,8 @@ honda`.
 
 **Avance del 2026-10-06 (4):** `sling` hecho (`m15: la honda`): craft de Armas (`spear`, `cordage`; Neolítico), ítem `sling` (una mano, alcance 1,4, caza 1,7, daño 0,2), receta `sling` (cuerda 1 y sílex 2, sin estación), icono y mano nuevos en `art/src/`. **No hay modelo de munición** (el arco tampoco lo tiene): el sílex es el coste de la receta y ni la caza gasta nada, y la honda no se limita a la caza menor; queda en `bugs.md` y `next-steps.md`.
 
+**Avance del 2026-10-06 (5):** check `sub-webs-are-climbed` hecho (`m15: el check sub-webs-are-climbed`), en `hearths` y `craft`. **Mide las puertas, no los nodos:** ninguno de los dos escenarios dura un año y nada se prueba en menos de uno, así que los nodos de sub-red conocidos al final son 0 en cualquier build y un umbral sobre ellos solo podría fallar. Con la puerta (`cooking` en `hearths`, `spear` en `craft`) pasa; sin sub-redes (el árbol anterior a 13a) falla. 13d completa; queda la pantalla (13c, otro agente) y la cohorte de 20 semillas, que no se corrió.
+
 ## Fase 14 — La ropa por capas (nota 1; decisión 8)
 
 **Objetivo.** «No toda la ropa es igual.» Una capa de piel pide piel y una

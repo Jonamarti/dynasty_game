@@ -316,6 +316,38 @@ semilla b) y la población no se hunde (25 a 30 y 32).
 propietario. **Verificación:** sustituto esbuild/shim de vitest y página servida
 por esbuild en un contenedor Linux en la nube.
 
+## 13d — el check `sub-webs-are-climbed` (2026-10-06)
+
+**Qué hay.** Un bloque en `tools/simcheck.ts`, añadido tras `cooking-spreads`
+(donde se registran los checks de conocimiento) y una constante junto a
+`FIRE_RIM`; ninguna otra edición del archivo. Solo corre en `hearths` y `craft`.
+
+**Lo que mide, y por qué no lo que el plan decía.** El plan pedía «al final hay
+al menos N nodos de sub-red conocidos». No se puede: ninguno de los dos
+escenarios dura un año (16000 pasos), y en menos de un año nada se prueba
+(`ideas-become-tech` sale n/a por eso). Los nodos de sub-red conocidos al final
+son **0 en ambos escenarios en este build**, así que un umbral sobre ellos
+fallaría siempre (un check nuevo en rojo, no medido por una causa real). Se
+mide entonces la puerta: alguien vivo conoce una técnica con `opens` (`cooking`
+en `hearths`, `spear` en `craft`), N = 1. El detalle imprime también cuántos
+nodos de sub-red se conocen, para que el día que un escenario más largo o con
+nodos sembrados los alcance, el umbral sobre nodos sea un cambio de una línea.
+
+**Falla en el árbol anterior.** Se copió el archivo a un árbol en el commit
+anterior a 13a (sin `opens`) y se corrió: en ambos escenarios
+`FAIL sub-webs-are-climbed 0 sub-web gates known at the end`. En este árbol:
+`PASS ... 1 sub-web gates known at the end (cooking)` y `(spear)`. Salidas en
+`artifacts/verification/m15-phase13d-20261006/sub-webs-are-climbed/`
+(`*-pre13.txt` y `*-after.txt`).
+
+**Cambios de estado de checks.** Solo el nuevo: n/a (no existía) a PASS en
+`hearths` y `craft`. Fallos antes y después: `hearths` 6 y 6, `craft` 6 y 6,
+`band` 2 y 2 (los mismos checks). Ningún PASS pasa a FAIL ni a n/a.
+
+**No se corrió** la cohorte de 20 semillas; queda para la máquina del
+propietario. **Verificación:** sustituto esbuild/shim de vitest, informes
+headless en un contenedor Linux en la nube.
+
 ## Dudas abiertas
 
 1. **Cocina no se abre en 13a.** La tabla del plan supone que el asado, `bread` y
@@ -372,4 +404,10 @@ por esbuild en un contenedor Linux en la nube.
     desplaza a la lanza en una cacería (no a la lanza endurecida, 2,0). Es una
     elección de diseño para que el nodo no sea inerte; el propietario puede
     bajarla.
+16. **`sub-webs-are-climbed` mide puertas.** Ver arriba: el plan decía nodos,
+    pero con escenarios de menos de un año los nodos conocidos son 0. Para medir
+    nodos haría falta un escenario más largo o con nodos sembrados (`startingTech`),
+    es decir tocar escenarios, que este encargo no permitía.
+17. **Validación pendiente.** La cohorte de 20 semillas de 13d (no se corrió) y
+    la decisión sobre `bread`/`brewing` y `cooking` (duda 1) son del propietario.
 
