@@ -10,6 +10,7 @@ import { RNG } from '../core/RNG.ts';
 import { availableActions, type CatalogContext } from '../ai/ActionCatalog.ts';
 import { stopReasonLabel } from '../../render/Floaters.ts';
 import { setLanguage } from '../../i18n/i18n.ts';
+import { knowledgeOfPerson, pregnancyLine } from '../social/Knowledge.ts';
 
 /** A woman `along` of the way through a pregnancy (0 to 1). */
 function expecting(along: number): Person {
@@ -208,6 +209,42 @@ describe('M15 phase 19b: heavy work is refused with a reason', () => {
     setLanguage('es');
     try {
       expect(stopReasonLabel('too_heavy_with_child')).toBe('está demasiado avanzada en el embarazo para eso');
+    } finally { setLanguage('en'); }
+  });
+});
+
+/** 19c: who can tell. The line goes through Knowledge, never straight off `pregnant`. */
+describe('M15 phase 19c: she is visible to those who may know', () => {
+  const stranger = { level: 'stranger', displayName: 'a woman', knowsName: false, knowsCondition: false,
+    knowsCharacter: false, knowsTies: false, because: '' } as const;
+  const friend = { ...stranger, level: 'close', knowsName: true, knowsCondition: true } as const;
+
+  it('tells those who know her the third, in words', () => {
+    expect(pregnancyLine(expecting(0.1), friend)).toBe('pregnant (first trimester)');
+    expect(pregnancyLine(expecting(0.5), friend)).toBe('pregnant (second trimester)');
+    expect(pregnancyLine(expecting(0.9), friend)).toBe('pregnant (third trimester)');
+  });
+
+  it('tells a stranger only when the belly shows', () => {
+    expect(pregnancyLine(expecting(0.1), stranger)).toBeNull();
+    expect(pregnancyLine(expecting(0.5), stranger)).toBeNull();
+    expect(pregnancyLine(expecting(0.9), stranger)).toBe('pregnant (third trimester)');
+  });
+
+  it('says nothing of a woman who is not with child', () => {
+    expect(pregnancyLine(new Person('Not', 0, 0, 0, new RNG('x')), friend)).toBeNull();
+  });
+
+  it('is told to the player about herself, and in Spanish', () => {
+    const sim = new Simulation({ seed: 'pregnancy-self', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 4 } });
+    const me = sim.people[0]!;
+    const known = knowledgeOfPerson(me, me, sim.relationships);
+    me.pregnant = true;
+    me.gestationLeft = gestationDays(me) * 0.5;
+    setLanguage('es');
+    try {
+      expect(pregnancyLine(me, known)).toBe('embarazada (segundo trimestre)');
     } finally { setLanguage('en'); }
   });
 });

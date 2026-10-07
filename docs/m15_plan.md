@@ -2016,6 +2016,11 @@ sola lista: `Simulation.order` (la orden, antes de tocar nada), el menú
 hacía cuando empezó el último tercio, `too_heavy_with_child` en `STOP_REASONS`).
 Quedan 19c, 19d y el check.
 
+**Avance del 2026-10-07 (19c, ficha):** `Knowledge.pregnancyLine` y la línea
+«pregnant (… trimester)» bajo «Condition»: el tercio a quien la conoce, el
+último solo al desconocido. El vientre dibujado va en su propio commit, al
+final, por las hojas PNG.
+
 ## Fase 20 — La crianza (M14 fase 6)
 
 **Detalle en `m14_plan.md` fase 6.** El bebé no anda el primer año, mama

@@ -41,9 +41,10 @@ import { ITEMS } from '../sim/entities/Item.ts';
 import { SLOTS } from '../sim/entities/Equipment.ts';
 import { actionLabel } from '../render/Floaters.ts';
 import {
-  knowledgeOfPerson, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree, corpseIdentity,
+  knowledgeOfPerson, pregnancyLine, knowledgeOfNode, knowledgeOfBuilding, knowledgeOfTree, corpseIdentity,
   rememberedAbout, regardFromThem, regardReasons, type RegardContext, type RegardReason,
 } from '../sim/social/Knowledge.ts';
+import { trimesterOf } from '../sim/entities/Pregnancy.ts';
 import type { Relationship, RelationshipGraph } from '../sim/social/Relationships.ts';
 import { foldRepeats } from './LifeLog.ts';
 import { TECH, TECH_EFFECTS, techPower, type Tech } from '../sim/knowledge/Tech.ts';
@@ -973,6 +974,11 @@ export class Hud {
 
     // Injury is visible on anyone — you can see that someone is hurt. The rest
     // of a person's condition is not written on their face.
+    // M15 phase 19c: with child, in the words the observer's knowledge allows
+    // (`Knowledge.pregnancyLine`): the third to anyone who knows her, and only
+    // the last third to a stranger, whom the belly gives away.
+    const expecting = pregnancyLine(person, known);
+    if (expecting) rows.push('<div class="hud-sub hud-pregnancy">' + escapeHtml(expecting) + '</div>');
     if (!known.knowsCondition) {
       rows.push('<div class="hud-sub">' + describeHealth(person.health) + '</div>');
       rows.push(...woundRows(person));
@@ -2168,7 +2174,11 @@ export function selectionKey(selection: Selection): string {
       // Whether there *is* a work bar, not how full it is: the row has to be
       // created and removed on a rebuild, but its width is patched every frame.
       (selection.person.action === 'chop' || selection.person.action === 'build' ||
-        selection.person.cycleProgress !== null ? 'w1' : 'w0');
+        selection.person.cycleProgress !== null ? 'w1' : 'w0') +
+      // Which third of a pregnancy she is in (M15 phase 19c): it changes at
+      // midnight, with nothing else in the key moving, and the line that says
+      // it is built once.
+      'g' + trimesterOf(selection.person);
     case 'node': return 'n' + selection.node.id;
     case 'building': return 'b' + selection.building.id;
     case 'tree': return 't' + selection.tree.id;

@@ -28,6 +28,7 @@ import type { LifeEvent } from './SocialSystem.ts';
 import { describeEvent } from './Events.ts';
 import { comarcaX, comarcaY } from './WorldKnowledge.ts';
 import { t, genderOf } from '../../i18n/i18n.ts';
+import { showing, trimesterOf } from '../entities/Pregnancy.ts';
 
 /** How well the observer knows the subject. */
 export type Acquaintance = 'self' | 'close' | 'known' | 'seen' | 'stranger';
@@ -336,6 +337,28 @@ export function knowledgeOfPerson(
       ? t('you know of them')
       : t('you have crossed paths'),
   };
+}
+
+/**
+ * Whether the observer can tell she is with child, and how far along — M15
+ * phase 19c.
+ *
+ * Somebody you know well enough to read how they are faring (`knowsCondition`,
+ * and always yourself) is told the third; to a stranger or a passing face only
+ * the last third shows, because that is when a belly does. Which is why this
+ * is here and not in the panel: the first two thirds are her private state, and
+ * the panel reading `person.pregnant` directly would have told the player
+ * about every stranger's pregnancy the day it began. Null when there is
+ * nothing the observer can tell.
+ */
+export function pregnancyLine(subject: Person, known: PersonKnowledge): string | null {
+  if (!subject.pregnant) return null;
+  if (!known.knowsCondition && !showing(subject)) return null;
+  switch (trimesterOf(subject)) {
+    case 1: return t('pregnant (first trimester)');
+    case 2: return t('pregnant (second trimester)');
+    default: return t('pregnant (third trimester)');
+  }
 }
 
 /**

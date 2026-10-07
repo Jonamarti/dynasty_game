@@ -81,3 +81,22 @@ tercio y rechazada en el último con la frase en inglés y en español; la camin
 sigue permitida; parada a mitad de tala con su aviso; menú apagado con motivo;
 `stopReasonLabel` en los dos idiomas. `stopreasons.test.ts` e `i18n.test.ts`
 siguen verdes (leen las fuentes).
+
+## 19c. Se ve: la ficha (el vientre dibujado va en su propio commit)
+
+`Knowledge.pregnancyLine(subject, known)`: a quien la conoce lo bastante para
+leer cómo está (`knowsCondition`, y siempre a una misma) le dice el tercio,
+«pregnant (second trimester)»; a un desconocido, o a una cara que se ha cruzado,
+solo cuando el vientre se ve (el último tercio, `Pregnancy.showing`) y con la
+misma frase. Está en `Knowledge.ts` y no en el panel porque los dos primeros
+tercios son estado privado suyo: el panel leyendo `person.pregnant` habría
+contado el embarazo de cada desconocida el día que empezó.
+
+`Hud.tabNow` pone la línea bajo «Condition», en las dos ramas (con y sin
+conocimiento). La clave de selección del panel incluye el tercio (`g1`..`g3`)
+porque cambia a medianoche con nada más en la clave moviéndose y la línea se
+construye una vez. La fila «expecting» de la pestaña de familia se queda: es lo
+que ya veían los allegados.
+
+Pruebas: `pregnancy.test.ts` (18): los tres tercios a quien conoce, el último
+solo al desconocido, nada de quien no está embarazada, y el español.
