@@ -13,7 +13,7 @@ import { deserializeSave, serializeSave, SaveError, type SaveSummary } from './s
 import { SaveStore, describeSaveFailure } from './ui/SaveStore.ts';
 import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography } from './sim/world/WorldGeography.ts';
 import { loadWorldAtlas } from './sim/world/WorldAtlas.ts';
-import { findNearestStart, findWateredGlobeStart, localWorldConfig } from './sim/world/StartPlace.ts';
+import { findNearestStart, findStartInRegion, findWateredGlobeStart, localWorldConfig, type StartPlace } from './sim/world/StartPlace.ts';
 import { WorldPicker } from './ui/WorldPicker.ts';
 import { Camera } from './render/Camera.ts';
 import { Renderer, hitRadiusOf, nodeIsHidden, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
@@ -671,28 +671,63 @@ async function openWorldPicker(): Promise<void> {
   }
 }
 
-async function beginOnEarth(region: { x: number; y: number }): Promise<void> {
-  if (!earthMap) return;
-  worldPicker.setBusy(t('Looking for fresh water near there…'));
-  worldPicker.setNote(null);
-  // Let the label paint before the search holds the thread (it takes a second or so).
-  await new Promise(resolve => setTimeout(resolve, 30));
-  const found = findNearestStart(earthMap, region.x, region.y, GLOBE_SPAN,
-    localWorldConfig((configFrom(settings) as { world?: object }).world));
-  worldPicker.setBusy(null);
-  if (!found) {
-    // The refusal says why: nothing within two regions has fresh water to live by.
-    worldPicker.setNote(t('There is no river or lake within reach of that place. Choose somewhere with water.'), true);
-    return;
-  }
-  earthChoice = { geography: earthMap, start: { x: found.x, y: found.y } };
+/**
+ * Commits to a start found for the Earth map and opens the settings screen, whichever of the three doors in `beginOnEarth`
+ * got there: water within the ordinary search radius (the only door before M15 "begin anywhere"), water further out than
+ * that (the confirm panel's "Go to the nearest water"), or dry land with no water found at all (the panel's "Begin here
+ * anyway"). `warnNoWater` is only true for the last of those — the player chose it knowing the trade, but the game says so
+ * again once it actually starts, the same way a long action's refusal is never silent (see `AGENTS.md`'s rule on that).
+ */
+function settleOnEarth(found: StartPlace, region: { x: number; y: number }, warnNoWater = false): void {
+  earthChoice = { geography: earthMap!, start: { x: found.x, y: found.y } };
   rebuildBeforeStart();
   worldPicker.close();
   const moved = Math.max(Math.abs(found.region.x - region.x), Math.abs(found.region.y - region.y));
   if (moved > 0 && player) {
     renderer.floaters.push(player.x, player.y, t('Starting {n} regions from the place you chose, at the nearest fresh water', { n: moved }), { boxed: true });
   }
+  if (warnNoWater && player) {
+    renderer.floaters.push(player.x, player.y,
+      t('There is no river or lake near here — you will need to look further for water.'), { boxed: true, color: '#e66464' });
+  }
   settingsScreen.open(sim, settings, 'start');
+}
+
+/** How much further than the ordinary search to look before concluding there is truly nothing to offer as "go to the
+ * nearest water" — only reached once that ordinary search has already failed. Widening the *ordinary* radius (2) was not
+ * an option: every ordinary start on Earth, watered on the first try or moved a region or two, still has to behave exactly
+ * as it did before this feature existed. This one only decides whether a button nobody has clicked yet gets to exist. */
+const FAR_WATER_RADIUS = 8;
+
+async function beginOnEarth(region: { x: number; y: number }): Promise<void> {
+  if (!earthMap) return;
+  worldPicker.setBusy(t('Looking for fresh water near there…'));
+  worldPicker.setNote(null);
+  // Let the label paint before the search holds the thread (it takes a second or so).
+  await new Promise(resolve => setTimeout(resolve, 30));
+  const config = localWorldConfig((configFrom(settings) as { world?: object }).world);
+  const found = findNearestStart(earthMap, region.x, region.y, GLOBE_SPAN, config);
+  worldPicker.setBusy(null);
+  if (found) { settleOnEarth(found, region); return; }
+
+  // M15 "begin anywhere" (2026-10-07): nothing within the ordinary search radius has fresh water. Before this, that was a
+  // hard refusal (`docs/m15_phase33_world.md` phase 33's original design: "a band without a drink dies of thirst in
+  // days"). The owner's decision was a choice instead of a wall: the clicked region's own best dry ground, right now, or a
+  // further look for water the player can decide is worth the walk. The dry fallback is measured in the region the player
+  // actually clicked — `found`, if it existed, might have moved them already; "Begin here anyway" means *here*.
+  const dry = findStartInRegion(earthMap, region.x, region.y, GLOBE_SPAN, config, { requireWater: false });
+  if (!dry) {
+    // Genuinely nothing: no water in reach and not even dry ground close enough to call a start (open ocean with no shore
+    // within a window's own half-span — `isCoastalRegion` and `findStartInRegion` already turned away anything that was at
+    // least a coast). This is the one case M15 "begin anywhere" leaves as a refusal, same as it always was.
+    worldPicker.setNote(t('There is no river or lake within reach of that place. Choose somewhere with water.'), true);
+    return;
+  }
+  const far = findNearestStart(earthMap, region.x, region.y, GLOBE_SPAN, config, FAR_WATER_RADIUS);
+  worldPicker.confirmNoWater(
+    () => settleOnEarth(dry, region, true),
+    far ? { regions: Math.max(Math.abs(far.region.x - region.x), Math.abs(far.region.y - region.y)), onGo: () => settleOnEarth(far, region) } : null,
+  );
 }
 
 /** True while the player has deliberately stopped the game to look at a screen. */

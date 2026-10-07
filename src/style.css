@@ -2268,6 +2268,23 @@ html, body, #app {
 .worldpicker-note.is-bad { color: #e66464; }
 .worldpicker-begin, .worldpicker-island { width: 100%; min-height: 36px; }
 
+/* M15 "begin anywhere" (2026-10-07): the panel offered instead of a refusal when the chosen place has no fresh water
+   nearby. `display: flex` here is exactly the author rule AGENTS.md warns about — the sixth time this project has had to
+   add the paired `[hidden]` rule below, after `.worldmap`, `.newgame`, `.picker`, `.techweb` and `.worldpicker` itself. */
+.worldpicker-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(230, 100, 100, 0.08);
+  border: 1px solid rgba(230, 100, 100, 0.35);
+  border-radius: 6px;
+}
+.worldpicker-confirm[hidden] { display: none; }
+.worldpicker-confirm-text { font-size: 12px; color: var(--text); }
+.worldpicker-confirm-anyway, .worldpicker-confirm-nearest { width: 100%; min-height: 32px; }
+.worldpicker-confirm-nearest[hidden] { display: none; }
+
 @media (max-width: 700px) {
   /* The tool row in the top bar carries the globe on a phone. */
   .hud-globe { display: none; }

@@ -5,7 +5,8 @@ import { decodeWorldRaster } from '../world/WorldBinary.ts';
 import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography } from '../world/WorldGeography.ts';
 import { findGlobeStart, worldTerrainOf } from '../world/WorldTerrain.ts';
 import {
-  MIN_FRESH_TILES, findNearestStart, findStartInRegion, findWateredGlobeStart, isStart, localWorldConfig, measureWindow, regionWater,
+  MIN_FRESH_TILES, MIN_LAND_SHARE, findNearestStart, findStartInRegion, findWateredGlobeStart, isCoastalRegion, isStart, localWorldConfig,
+  measureWindow, regionWater,
 } from '../world/StartPlace.ts';
 import { WorldState } from '../world/WorldState.ts';
 
@@ -119,5 +120,50 @@ describe('beginning on the Earth', () => {
       { geography, start: { x: start.x, y: start.y }, comarcasWide: SPAN, comarcasHigh: SPAN, peoples: false });
     expect(state.current.world.freshShore.length).toBeGreaterThan(40);
     expect(state.current.livingPeople().length).toBeGreaterThan(0);
+  });
+});
+
+describe('M15 "begin anywhere" (2026-10-07): a coastal region is selectable, and a start without water is a choice', () => {
+  const geography = earth();
+
+  it('a coastal region is told apart from open ocean: both are classed "ocean", only one borders dry land', () => {
+    // 46,10 sits on a coastline in the fixture atlas (verified by scanning the whole globe for a region whose own centre
+    // samples as ocean but whose dry-fallback window still comes back mixed, below). 5,24 is the open sea already used by
+    // "the open sea is not a place to begin" above — nothing around it for two rings, which is why that test still finds
+    // nothing even with `findStartInRegion`'s own early exit unchanged.
+    expect(worldTerrainOf(geography.profileAt(46 * 10 + 5, 10 * 10 + 5))).toBe('ocean');
+    expect(isCoastalRegion(geography, 46, 10)).toBe(true);
+    expect(worldTerrainOf(geography.profileAt(5 * 10 + 5, 24 * 10 + 5))).toBe('ocean');
+    expect(isCoastalRegion(geography, 5, 24)).toBe(false);
+  });
+
+  it('a coastal region, with no water measured nearby, still gives a dry-land start with both shore and sea in view', () => {
+    // The region itself is ocean, so the water-requiring search (today's default) finds nothing — exactly as it always
+    // has for anything classed ocean. `requireWater: false` is the new door: it widens the search across the boundary
+    // into the region that made this one "coastal", and finds the shore rather than reporting nothing.
+    expect(findStartInRegion(geography, 46, 10, SPAN, config)).toBeNull();
+    const dry = findStartInRegion(geography, 46, 10, SPAN, config, { requireWater: false })!;
+    expect(dry).not.toBeNull();
+    expect(dry.region).toEqual({ x: 46, y: 10 });
+    // Mixed, not merely "found some land somewhere": this is the window a player actually lands in, and it holds both
+    // the ground to live on and the sea the region was chosen for.
+    expect(dry.report.land).toBeGreaterThanOrEqual(MIN_LAND_SHARE);
+    expect(dry.report.land).toBeLessThan(0.9);
+  });
+
+  it('true open ocean has no dry fallback either: there is nothing within reach to fall back to', () => {
+    expect(findStartInRegion(geography, 5, 24, SPAN, config, { requireWater: false })).toBeNull();
+  });
+
+  it('a region with no water nearby gets a dry-land start on request, land only, never invented water', () => {
+    // 49,20 is the same Sahara-ish region "the middle of the Sahara has no water within two regions" already uses: no
+    // river or lake within two rings of regions, so `findNearestStart` (the water-requiring search) refuses it. The
+    // dry fallback is the "Begin here anyway" button's door: it still has to find solid ground, but it must not pretend
+    // there is water where there measurably is none.
+    expect(findNearestStart(geography, 49, 20, SPAN, config, 2)).toBeNull();
+    const dry = findStartInRegion(geography, 49, 20, SPAN, config, { requireWater: false })!;
+    expect(dry).not.toBeNull();
+    expect(dry.region).toEqual({ x: 49, y: 20 });
+    expect(dry.report.land).toBeGreaterThanOrEqual(MIN_LAND_SHARE);
   });
 });

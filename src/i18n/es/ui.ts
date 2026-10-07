@@ -162,6 +162,7 @@ export const ES_UI: Record<string, string> = {
   "Hover over the map to see what is there.": "Pasa el ratón por el mapa para ver qué hay.",
   "Open sea: nobody can begin here.": "Mar abierto: aquí nadie puede empezar.",
   "Ice: nobody can begin here.": "Hielo: aquí nadie puede empezar.",
+  "Coast: you will begin on the shore.": "Costa: empezarás en la orilla.",
   "A river is marked here.": "Aquí hay un río marcado.",
   "A lake is marked here.": "Aquí hay un lago marcado.",
   "No river or lake is marked here. The game will look for the nearest fresh water.": "Aquí no hay río ni lago marcado. El juego buscará el agua dulce más cercana.",
@@ -169,6 +170,12 @@ export const ES_UI: Record<string, string> = {
   "Click to choose this place.": "Haz clic para elegir este lugar.",
   "There is no river or lake within reach of that place. Choose somewhere with water.": "No hay río ni lago al alcance de ese lugar. Elige un sitio con agua.",
   "Starting {n} regions from the place you chose, at the nearest fresh water": "Empiezas a {n} regiones del lugar elegido, en el agua dulce más cercana",
+  "There is no river or lake near here. You can begin on dry land anyway, or go to the nearest water.":
+    "Aquí no hay río ni lago cerca. Puedes empezar en tierra firme de todos modos, o ir al agua más cercana.",
+  "Begin here anyway": "Empezar aquí de todos modos",
+  "Go to the nearest water ({n} regions away)": "Ir al agua más cercana (a {n} regiones)",
+  "There is no river or lake near here — you will need to look further for water.":
+    "Aquí no hay río ni lago — tendrás que buscar agua más lejos.",
   "Save": "Guardar",
   "Load": "Cargar",
   "Export to file": "Exportar a fichero",

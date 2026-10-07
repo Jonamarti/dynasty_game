@@ -1,5 +1,8 @@
 /**
- * M15 phase 33: the game opens on the Earth, to choose where to begin (or a random island), and every start has fresh water.
+ * M15 phase 33: the game opens on the Earth, to choose where to begin (or a random island), and every start has fresh water
+ * whenever one is within reach. M15 "begin anywhere" (2026-10-07) added a door for when it isn't — see
+ * `e2e/begin-anywhere.spec.ts` for the confirm panel ("begin here anyway" / "go to the nearest water") that case opens, and
+ * this file's own "no water, no dry ground either" test below for the one case that is still a hard refusal.
  */
 import { test, expect, type Page } from '@playwright/test';
 
@@ -69,18 +72,26 @@ test('the game opens on the Earth; a place with a river begins there, with water
   expect(errors).toEqual([]);
 });
 
-test('a place with no water within reach is refused, with the reason, and nothing changes', async ({ page }) => {
+test('a place with no water within reach, and no dry ground to fall back to either, is refused with the reason', async ({ page }) => {
+  // M15 "begin anywhere" (2026-10-07) turned "no water nearby" from a hard refusal into a choice — see
+  // `e2e/begin-anywhere.spec.ts`, which exercises that choice at the Sahara-ish region (49,20) this test used to refuse
+  // outright. A hard refusal is still the right answer for the one case neither door can open: a "coastal" region
+  // (`isCoastalRegion` only checks that a neighbour isn't ocean or ice) whose actual dry ground turns out to be too far
+  // from the shared border for even a boundary-crossing window to reach — measured and left as a known gap in
+  // `docs/bugs.md`. 17,18 is one such region in the fixture atlas.
   const errors = guardErrors(page);
   await page.goto('/?seed=e2e-earth');
   const picker = page.locator('.worldpicker');
   await expect(picker.locator('.worldpicker-canvas')).toBeVisible({ timeout: 20_000 });
-  // Deep in the Sahara there is neither river nor lake for two regions around.
-  const desert = await regionPoint(page, 49, 20);
-  await page.mouse.click(desert.x, desert.y);
-  await expect(picker.locator('.worldpicker-info')).toContainText('No river or lake is marked here');
+  const unreachable = await regionPoint(page, 17, 18);
+  await page.mouse.click(unreachable.x, unreachable.y);
+  // The card still promises a shore — `isCoastalRegion` cannot know in advance that this one has none it can reach.
+  await expect(picker.locator('.worldpicker-info')).toContainText('Coast: you will begin on the shore.');
+  await expect(picker.locator('.worldpicker-begin')).toBeEnabled();
   await picker.locator('.worldpicker-begin').click();
   await expect(picker.locator('.worldpicker-note')).toContainText('no river or lake within reach', { timeout: 30_000 });
   await expect(picker.locator('.worldpicker-note')).toHaveClass(/is-bad/);
+  await expect(picker.locator('.worldpicker-confirm')).toBeHidden();
   await expect(picker).toBeVisible();
   expect((await freshWater(page)).kind).not.toBe('earth');
   await page.screenshot({ path: `${SHOTS}/03-no-water-refused.png` });
