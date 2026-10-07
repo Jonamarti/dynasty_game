@@ -1,3 +1,13 @@
+## M15 fase 32c: puertas de la cohorte del mundo que fallan, diferidas a M16 por el propietario (2026-10-07)
+
+Decisión del propietario: ahora se terminan las funcionalidades de M15; los bugs y ajustes se recogen **antes de M16** y se tratan allí. Pendiente para M16, medido y sin ajustar (detalle en `m15_phase32c_peoples.md`, «Puertas medidas»):
+
+- `farming-spreads` 0/10 y `states-arise` 0/10 a 200 años; a 1000 años la agricultura sí se difunde (una semilla) y siguen 0 Estados.
+- **Materiales del prototipo de `writing` (y otras técnicas).** Hoy `writing` usa `flint` como material, y solo 4 de 959 regiones tienen cereal y pocas sílex, lo que bloquea la rama del Estado. El propietario duda de que sea históricamente exacto: la regla es **replicar cómo lo hicieron los primeros humanos**. Para M16: más materiales (piedras de distinto tipo, papiro, arcilla, etc.) y revisar los prototipos de `TECHS` con ese criterio, en vez de tocar tasas o umbrales.
+- Contacto entre regiones vecinas (0,2 / 0,5 en `people-world-model.ts`) sin medir; si el comercio debe aumentarlo.
+- `peoples-match-bands` (20 semillas del detallado) sin correr; `lean` falla T2 y T4.
+- En la cohorte hay 0 guerras y 0 uniones: solo las ejercitan los tests.
+
 ## M15 fase 32c: aprendizaje parcial sin valores medidos (2026-10-06)
 
 - `PARTIAL_START` (`rate` 0,02, `hintGain` 4, `sufferedWeapon` 3) y los pesos de transmisibilidad son **suposiciones de diseño**: el detallado no tiene progreso parcial de banda que medir.
