@@ -43,7 +43,7 @@ import { drivePressures, DRIVES } from '../ai/Drives.ts';
 import { babyToCarry, infantNeedingNursing, infantOutsideHome, mayNurse, nurslingHungerFactor } from '../ai/Nursing.ts';
 import { starvingInCare } from '../ai/Feeding.ts';
 import { canCrawl, canWalk, isBabyInArms, isLactating, isNursling } from '../entities/LifeStage.ts';
-import { handfulsOnly } from '../entities/Pregnancy.ts';
+import { handfulsOnly, tooHeavyForHer } from '../entities/Pregnancy.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -3760,6 +3760,17 @@ export class Simulation {
     if (!person.alive) return false;
     if (!canWalk(person, this.config.childhood)) {
       this.lastRefusal = t('babies cannot act on their own');
+      return false;
+    }
+    // M15 phase 19b: the heavy work is refused her in the last third of a
+    // pregnancy, with the reason. Before any state is touched, so a refused
+    // order leaves her at whatever she was doing — the same seam every other
+    // order shares, which is why a chief's command, the player's menu and a
+    // resumed job are all held to it by this one check. `ActionSystem.execute`
+    // holds what she was already doing when the third begins.
+    if (tooHeavyForHer(person, action)) {
+      telemetry.count('order_too_heavy_with_child');
+      this.lastRefusal = t('she is too heavy with child for that');
       return false;
     }
 

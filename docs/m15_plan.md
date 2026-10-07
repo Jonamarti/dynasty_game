@@ -2008,7 +2008,13 @@ la fase 17.
 0,7 en `MovementSystem.speedOf`, `HEAVY_ACTIONS`, carga de puñados en `Carry`) y
 el veto en `Brain` sobre la tabla terminada. El plan decía «propiedad de
 `ActionDef`»: ese tipo no existe, así que es un conjunto, como los que ya hay
-([detalle](m15_phase19_pregnancy.md)). Quedan 19b a 19d y el check.
+([detalle](m15_phase19_pregnancy.md)).
+
+**Avance del 2026-10-07 (19b):** el rechazo con motivo, en tres puertas con una
+sola lista: `Simulation.order` (la orden, antes de tocar nada), el menú
+(`ActionCatalog`, verbo apagado con motivo) y `ActionSystem.execute` (lo que
+hacía cuando empezó el último tercio, `too_heavy_with_child` en `STOP_REASONS`).
+Quedan 19c, 19d y el check.
 
 ## Fase 20 — La crianza (M14 fase 6)
 

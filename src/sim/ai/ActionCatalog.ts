@@ -42,6 +42,7 @@ import { t, aNoun, theNoun, language, joinAnd } from '../../i18n/i18n.ts';
 import { capitalise } from '../../i18n/i18n.ts';
 import type { ChildhoodConfig } from '../core/Config.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
+import { tooHeavyForHer } from '../entities/Pregnancy.ts';
 import { mayNurse } from './Nursing.ts';
 import { swimRefusal, swimRouteRefusal, swimRefusalText } from '../core/Swimming.ts';
 
@@ -308,6 +309,39 @@ export function itemActions(
  * clockwise from the top and muscle memory is worth more than tidiness.
  */
 export function availableActions(
+  actor: Person,
+  target: ActionTarget,
+  ctx: CatalogContext
+): ActionOption[] {
+  const options = optionsFor(actor, target, ctx);
+  return actor.pregnant ? sparePregnant(actor, options) : options;
+}
+
+/**
+ * M15 phase 19b. In her last third the heavy verbs stay on the ring, greyed,
+ * with the reason — the menu draws what the simulation says is possible, and
+ * `Simulation.order` refuses the same list. One pass over every option the
+ * catalogue built rather than a condition in each of the nine builders that
+ * offer one of those verbs, for the reason `Brain` filters its finished table.
+ * A group is greyed when nothing is left in it, and says why only when it was
+ * this that emptied it.
+ */
+function sparePregnant(actor: Person, options: ActionOption[]): ActionOption[] {
+  return options.map(option => {
+    if (option.children) {
+      const children = sparePregnant(actor, option.children);
+      const changed = children.some((child, i) => child !== option.children![i]);
+      if (!changed) return option;
+      const any = children.some(child => child.enabled);
+      return { ...option, children, enabled: option.enabled && any,
+        reason: option.enabled && !any ? t('Too heavy with child for that') : option.reason };
+    }
+    if (!tooHeavyForHer(actor, option.id) || !option.enabled) return option;
+    return { ...option, enabled: false, reason: t('Too heavy with child for that') };
+  });
+}
+
+function optionsFor(
   actor: Person,
   target: ActionTarget,
   ctx: CatalogContext

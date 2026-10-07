@@ -14,6 +14,7 @@ import type { Person } from '../entities/Person.ts';
 import { dress, needsTending, partWord, poisonGrade, soothe, KNOCKOUT_AT, strikePart, wound } from '../entities/Body.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
+import { tooHeavyForHer } from '../entities/Pregnancy.ts';
 import { feederRole, starvingInCare } from '../ai/Feeding.ts';
 import {
   homeForMother, mayNurse, NURSE_TICKS, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF,
@@ -735,6 +736,16 @@ export class ActionSystem {
     if ((person.actionTimer > 0 || person.order !== null) &&
       !ANSWERS_A_BLOW.has(person.action) && this.underAttack(person, ctx)) {
       this.stop(person, 'under_attack', ctx, 'set_upon_');
+      return;
+    }
+
+    // M15 phase 19b. Heavy with child, she stops what she was in the middle of
+    // when her last third begins (the day turns while she is felling a tree),
+    // and says why. Here, once, ahead of the verbs, rather than a check in
+    // each of eight: `Brain` and `Simulation.order` keep a new one from being
+    // started, so this is only ever the work that began in the second third.
+    if (person.pregnant && tooHeavyForHer(person, person.action)) {
+      this.abandon(person, 'too_heavy_with_child', ctx);
       return;
     }
 

@@ -383,6 +383,9 @@ export const STOP_REASONS: Record<string, string> = {
   bound: 'someone tied them up',
   not_bound: 'they are not tied up',
   too_young: 'they are too young to do that',
+  // M15 phase 19b: the last third of a pregnancy spares her the heavy work;
+  // stopped in the middle of it, or refused at the order, she is told why.
+  too_heavy_with_child: 'she is too heavy with child for that',
   no_rope: 'they had no rope',
   not_held: 'nobody was holding them down',
   // M11 phase 15d.
