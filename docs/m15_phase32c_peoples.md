@@ -357,3 +357,27 @@ identidad y «la pista concede la técnica» (P1). Además se lee el código de 
 Límites: una sola `KAPPA` para todas las técnicas; sin olvido, sin refinamiento ni practicantes; el clima es una suposición;
 `MU` solo acotado (el agregado de partida es una suposición bajo la cota); contacto sin escritor; la población del pueblo viene de fuera (aquí constante: este mecanismo no la mueve). La
 puerta `peoples-match-bands` no se ha corrido.
+
+
+## Dividirse (`PeopleSplit.ts`, 32c-8)
+
+Un pueblo cuya población pasa del techo de su organización (`ORGANISATION_CEILING`: banda 60, tribu 250, jefatura 1200, Estado sin techo; **suposiciones de diseño** de regla antropológica
+común, no medidas: el detallado nunca llegó a más de unos cuarenta) manda una hija. Condiciones, y nada más: el tamaño frente al techo (función de `organisationOf`, es decir, de las técnicas),
+que la hija esperada tenga al menos `MIN_DAUGHTER` = 8 y que el dueño conceda tierra nueva (`env.newGround(padre, pedidas)`, obligatorio; 0 rechaza). Sin tierra no se toma ningún número
+del stream (test: el stream del padre queda igual que el de un pueblo sin mecanismo). La tierra se pide **después** de la viabilidad, para no dejar al dueño comarcas marcadas sin colonos.
+
+Lo que se lleva la hija: `DAUGHTER_SHARE` = 0,4 de cada celda de edad y sexo (binomial del stream del padre; familias enteras, mismas edades y ambos sexos), las técnicas (copia), cultura (copia), el mismo
+reparto del excedente y, si se da `KnowledgeLedger`, la intuición del padre hacia técnicas que no tiene (el padre la conserva). Se conserva exactamente la población, el excedente y las técnicas. El vínculo es el
+único registro de `PeopleSim.relation`, con `SPLIT_STANDING` = 60 y `SPLIT_CONTACT` = 0,5 (suposiciones). Es el primer escritor de `contact`: la difusión de `PeopleKnowledge` ya lo lee, de modo que una hija
+se separa despacio.
+
+**Una hija ya grande vuelve a dividirse**: con 160 personas, 96 + 64 y las dos pasan de 60; es lo que el modelo dice, no un fallo, y el test usa tamaños en que cada mitad queda bajo el techo.
+
+**Corrección de `PeopleSim.found`.** Fundar un pueblo dentro de una actualización lo programaba desde el último paso de `advanceTo`, no del paso en que corría la actualización; la hija quedaba
+con una fecha que dependía de cómo se troceara la ejecución. Ahora un campo privado (`updating`) marca el paso en curso. `currentStep` sigue siendo el que pidió quien llama, y el control que lee
+ese reloj sigue detectándose (`people-sim.test.ts`). Test: troceado en pasos de 97, entero y restaurado de JSON a mitad dan el mismo `snapshot()` con hijas incluidas.
+
+**«Nada por guion».** El código no tiene nombres de técnica, comparaciones de id, `season` ni `step` (lectura sin comentarios), y desplazar los ids de los pueblos no cambia si se divide.
+
+Límites: solo la mitad que divide; unirse (conquista, tributo, alianza) espera a guerra y comercio, que no existen. El crecimiento exponencial de un pueblo en tierra rica genera tantas hijas como tierra conceda el dueño (el
+test lo ata a 100000 comarcas libres); la capacidad de tierra real es del dueño. No se ha corrido `peoples-match-bands`.

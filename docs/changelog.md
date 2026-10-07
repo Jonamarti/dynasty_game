@@ -1,3 +1,15 @@
+## 2026-10-07 — M15 fase 32c: dividirse (`PeopleSplit`), un pueblo manda una hija a tierra nueva
+
+Por qué: el plan de 32c pide que un pueblo se divida cuando crece por encima de lo que su organización sostiene, y sin eso `PeopleSim` solo puede engordar sin límite o morir
+de hambre. `splitting(env)` decide por dos cosas y nada más: el tamaño frente al techo de su `organisationOf` (derivada de las técnicas) y si el dueño concede tierra nueva
+(`env.newGround`, obligatorio: el modelo no sabe qué está libre). La hija se lleva `DAUGHTER_SHARE` de cada celda de edad y sexo (binomial del stream del *padre*), las técnicas,
+la cultura, el reparto proporcional del excedente y la intuición hacia técnicas que aún no tiene (`KnowledgeLedger`); población, excedente y técnicas se conservan exactamente (test). La
+relación padre-hija es el único registro de `PeopleSim.relation`, con `SPLIT_STANDING` y `SPLIT_CONTACT`. **Los techos (60 / 250 / 1200 / sin techo), el 0,4 y el contacto 0,5 son
+suposiciones de diseño, no medidas** (el detallado nunca pasó de unos cuarenta); exportados con nombre. Sin tierra no se toma ningún número del stream. Además `PeopleSim.found` llamado
+dentro de una actualización programa desde el paso de esa actualización (campo privado `updating`), no desde donde acabó la última llamada: sin esto, la hija dependía de cómo se
+troceara `advanceTo` (test: troceado en pasos de 97 = entero, y restaurado a mitad = entero). `currentStep` no cambia. Sin cambio de juego (nada de `Simulation` lo llama): bit-idéntico.
+No se ha corrido `peoples-match-bands` ni cohortes. `sim:check` falla `cravings-steer-the-diet` y `perf-budget` igual con y sin este cambio (base ya fallando, no regresión).
+
 ## 2026-10-06 — M15 fase 32c: la auditoría «nada por guion» cubre transmisibilidad, intuición y exposición
 
 Por qué: la regla del propietario es que nada se conceda por nombre, fecha o región, y los mecanismos nuevos (rasgos por técnica, intuición, pistas, exposición) son justo

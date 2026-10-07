@@ -3289,6 +3289,11 @@ el modelo acierta el primer invierno pero no colapsa (30-42 frente a 0-3) porque
 entrada y del sexo (todas las fundadoras mueren, quedan 1-3 hombres), y el modelo no tiene estado. T4 falla por la oferta, no por
 la natalidad. Sin corrección: ver el veredicto y lo que falta en el doc de 32c. [Detalle](m15_phase32c_peoples.md).
 
+**Avance del 2026-10-07 (32c-8, dividirse):** `PeopleSplit.ts`: un pueblo por encima del techo de su organización (60 banda, 250 tribu, 1200 jefatura, sin techo el Estado: **suposiciones, no
+medidas**) manda una hija con el 40 % de cada celda, sus técnicas, cultura, excedente proporcional e intuición, a tierra nueva que concede el dueño; población, excedente y técnicas se conservan.
+Programación de pueblos fundados en plena actualización independiente de cómo se trocee la ejecución. **Falta de 32c:** unirse (conquista, tributo, alianza), comerciar, guerrear y hacer la
+paz, materializar/fundir, y las puertas. [Detalle](m15_phase32c_peoples.md).
+
 **Puertas**, encadenadas:
 
 - `peoples-match-bands`: el mismo escenario, dos años en nivel 1 y dos en nivel

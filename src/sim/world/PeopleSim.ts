@@ -292,6 +292,8 @@ export class PeopleSim {
   private nextPeopleId = 1;
   private nextRelationId = 1;
   private step = 0;
+  /** The step of the seasonal update that is running, or -1 between updates. */
+  private updating = -1;
 
   constructor(
     readonly seed: string | number,
@@ -316,7 +318,7 @@ export class PeopleSim {
       techs: new TechSet(spec.techs ?? []), culture,
       surplus: spec.surplus ?? 0,
       rng: derivePeopleStream(this.seed, id),
-      nextDue: this.firstDueAfter(id, this.step),
+      nextDue: this.firstDueAfter(id, this.updating >= 0 ? this.updating : this.step),
     };
     this.peoples.set(id, people);
     return people;
@@ -372,7 +374,11 @@ export class PeopleSim {
       const due = next.nextDue;
       const season = Math.floor(due / this.stepsPerSeason);
       const ctx: SeasonContext = { sim: this, people: next, season, seasonOfYear: PEOPLE_SEASONS[season % SEASONS_PER_YEAR]!, step: due };
-      for (const mechanism of this.mechanisms) mechanism(ctx);
+      // While an update runs, "now" for scheduling is the step it is due on, not where the caller asked to stop: a people
+      // founded by a mechanism (a split) is scheduled from here, so the same schedule results however the run was cut
+      // into calls. `currentStep` is left alone (it is the caller's step), so a mechanism that reads it is still caught.
+      this.updating = due;
+      try { for (const mechanism of this.mechanisms) mechanism(ctx); } finally { this.updating = -1; }
       next.nextDue = due + this.stepsPerSeason;
     }
     this.step = step;
