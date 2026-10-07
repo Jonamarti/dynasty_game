@@ -201,6 +201,12 @@ export interface KnowledgeExposure {
   readonly intensity: number;
 }
 
+export interface KnowledgeLedgerRecord {
+  readonly insights: [number, [Tech, number][]][];
+  readonly seen: string[];
+  readonly pending: [number, KnowledgeExposure[]][];
+}
+
 /** What the model keeps about partial learning: each people's insight, and the exposures posted but not yet taken in. */
 export class KnowledgeLedger {
   private readonly insights = new Map<number, Map<Tech, number>>();
@@ -229,6 +235,27 @@ export class KnowledgeLedger {
     if (q) q.push(e); else this.pending.set(e.peopleId, [e]);
     return true;
   }
+  /** Everything the ledger holds, sorted so equal ledgers write equal JSON. A save without it forgets half-learned techniques. */
+  snapshot(): KnowledgeLedgerRecord {
+    return {
+      // A people whose every insight was cleared keeps an empty map; it reads the same as none, so it is not written.
+      insights: [...this.insights].sort((a, b) => a[0] - b[0]).filter(([, m]) => m.size > 0)
+        .map(([id, m]) => [id, TECHS.filter(t => m.has(t)).map(t => [t, m.get(t)!] as [Tech, number])]),
+      seen: [...this.seen].sort(),
+      pending: [...this.pending].sort((a, b) => a[0] - b[0]).map(([id, q]) => [id, q.map(e => ({ ...e }))]),
+    };
+  }
+  static fromSnapshot(record: KnowledgeLedgerRecord): KnowledgeLedger {
+    const ledger = new KnowledgeLedger();
+    for (const [id, list] of record.insights) for (const [tech, v] of list) {
+      if (!TECHS.includes(tech)) throw new RangeError(`unknown technique ${String(tech)} in a ledger`);
+      ledger.addInsight(id, tech, v);
+    }
+    for (const s of record.seen) ledger.seen.add(s);
+    for (const [id, q] of record.pending) ledger.pending.set(id, q.map(e => ({ ...e })));
+    return ledger;
+  }
+
   /** Take (and forget) what is queued for a people, in the order posted. */
   take(peopleId: number): KnowledgeExposure[] {
     const q = this.pending.get(peopleId) ?? [];

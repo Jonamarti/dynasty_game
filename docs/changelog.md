@@ -1,3 +1,8 @@
+## 2026-10-07 — M15 fase 33a: el mundo de pueblos, sembrado desde el juego (`src/sim/world/PeopleWorld.ts`)
+
+Por qué: la fase 33 pide pueblos en todas las regiones habitables al crear una partida con mapa, con cultura propia y con una densidad que salga de lo que cada región alimenta. El modelo vivía en `tools/` (fase 32c); ahora está en `src/` y lo usan las herramientas y el juego. `tools/people-world-model.ts` es un envoltorio y su mundo es **idéntico byte a byte** al de antes (snapshot de dos semillas, 20 años sobre la Tierra), así que las cifras de 32c siguen reproduciéndose.
+Nuevo, solo con `game: true`: regiones desde cualquier geografía (la Tierra por Köppen, el mapa generado por bioma), densidad por productividad (`densityOf`), normas y `strangerRegard` por pueblo de su propio stream `people-cultures` (separado del de la siembra, para no mover quién se funda dónde) y región del jugador reservada. `KnowledgeLedger.snapshot/fromSnapshot` y `PeopleWorld.toRecord/fromRecord`, con test de ida y vuelta bit-idéntico. Sin fork nuevo en `Simulation`. Sin cambio de UI. Detalle en [m15_phase33_world.md](m15_phase33_world.md). El repertorio de nombres queda para cuando un pueblo se materialice (bugs.md).
+
 ## 2026-10-07 — M15 fase 32c: el mundo de pueblos sobre la Tierra, `world:cohort`, y `world:bench` con el `PeopleSim` real (resultado: 1 de 3 puertas pasa)
 
 Por qué: la fase 32c cierra con puertas medidas en la cohorte del mundo y con el banco de coste con el motor de verdad. Se construye `tools/people-world-model.ts` (la siembra del lado de las herramientas; la del juego es la fase 33): un pueblo o dos por región habitable de la Tierra (959 regiones, ~1450 pueblos), con los mecanismos
