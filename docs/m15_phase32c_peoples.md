@@ -396,3 +396,19 @@ Un `tributary` paga `TRIBUTE_SHARE` = 0,15 de su excedente a su `overlord`. Id d
 
 **Suposiciones, no medidas:** las seis constantes. El detallado guarda objetos en pozos, no una tasa agregada; nada midió una. Sin precios ni bienes. Tampoco hay todavía contacto que crezca con el comercio: el contacto lo escribe quien siembra el mundo (y
 `splitting` al dividir), y el comercio solo mueve la `standing`.
+
+
+## Guerra y paz (`PeopleWar.ts`, 32c-10)
+
+| causa de la fase 8 | cantidad del modelo agregado | constante (suposición) |
+|---|---|---|
+| hostilidad | `standing`, bajada por rivalidad por comida (`worst < 1`: `-RIVALRY x contacto x (1 - worst)`) | `RIVALRY` 3 |
+| ambición | peldaño de `organisationOf` (`1 + AMBITION_PER_RUNG` por peldaño) | 0,5 |
+| ventaja | fuerza = varones 15-44 x `1 + STRENGTH_PER_WEAPON` por arma | 0,15; mínimo `ADVANTAGE_MIN` 0,6 |
+| cansancio | paz con probabilidad `1 - exp(-PEACE_RATE x estaciones)` | 0,06 |
+
+Declara quien se actualiza si `standing <= WAR_STANDING` (-40), hay contacto y le basta la ventaja; probabilidad `WAR_RATE` (0,2) x ambición. Una estación de guerra, una vez por relación (transacción clase 2): bajas `LOSS_RATE` (0,03) x 2 x parte de fuerza del otro, tomadas de las celdas de varones de 15 a 44; `standing` -5. Quien sufre un arma que
+no tiene la envía a `KnowledgeLedger.post` (`how: 'suffered'`, intensidad 0,5, id `war:relación:estación:técnica:víctima`: cuenta una vez). Con fuerza 3 a 1 (`CONQUEST_RATIO`) la guerra puede acabar (`CONQUEST_RATE` 0,3) en tributo al más fuerte. La paz deja `standing` en al menos -10.
+
+**Qué no hace:** sin estatus como causa, sin enfermedad ni migración, sin refuerzos ni alianzas entre más de dos, sin rebelión del tributario, y las bajas son solo de varones combatientes (sin civiles, sin hambre de guerra). No sale de guion: ninguna técnica por nombre, ninguna comparación de id, estación ni paso (lectura del código, probada). Tests: rivalidad
+(contacto 0 y abundancia como controles), declaración (umbral, contacto, ventaja), una estación se resuelve una vez y toca solo a los combatientes, el débil pierde más parte, la paz llega con el tiempo y no pronto, tributo solo en guerra desigual y siempre al más fuerte, arma sufrida publicada una vez, troceado igual que entero.

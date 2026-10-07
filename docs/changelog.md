@@ -1,3 +1,12 @@
+## 2026-10-07 — M15 fase 32c: guerra y paz entre pueblos (`PeopleWar`)
+
+Por qué: el plan pide que los pueblos guerreen y hagan la paz «con las mismas causas que la fase 8 da a las bandas». Aquí cada causa es una cantidad que ya existe en el pueblo: la hostilidad es `PeopleRelation.standing`, que baja por **rivalidad
+por comida** (una estación en que alguno de los dos tiene menos de una ración por persona, en proporción al contacto y a la falta) y sube con el comercio; la ambición es el peldaño de organización (`organisationOf`); la ventaja es la fuerza, hombres de 15 a 44
+por `1 + 0,15` por técnica de arma (`traitsOf(t).weapon`, de la fila de `TECHS`, nunca por nombre); el cansancio es una probabilidad de paz que crece con la duración de la guerra (`1 - exp(-0,06 x estaciones)`), con paz inmediata si a un lado no le quedan combatientes. Una estación de guerra
+se resuelve una vez por relación (id de transacción clase 2): cada lado pierde combatientes **de los varones de edad de combatir** según la parte de fuerza del otro, y nadie más; quien sufre un arma que no tiene la publica en `KnowledgeLedger` como `suffered` (primer camino real que escribe la exposición del 32c-6). Si un lado
+es 3 veces el otro la guerra puede acabar en **tributo** (`stance: 'tributary'`, `overlord`). **Todos los números son suposiciones de diseño**: el detallado no tiene una guerra agregada que medir. Estatus, la otra causa, no tiene cantidad agregada y no se modela. Verificado con dos mutaciones: invertir quién sufre
+las bajas rompe «el débil pierde más parte»; quitar el umbral de standing rompe la declaración y la rivalidad. Sin cambio de juego.
+
 ## 2026-10-07 — M15 fase 32c: almacén e intercambio entre pueblos (`PeopleEconomy`)
 
 Por qué: `People.surplus` existía desde 32c-1 y nada lo escribía ni lo leía: contenido declarado pero inerte. `storing` lo escribe (una parte del exceso de comida sobre la necesidad se guarda, una parte se pudre cada estación,
