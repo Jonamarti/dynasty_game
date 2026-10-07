@@ -409,6 +409,7 @@ export const ITEMS: Record<string, ItemDef> = {
   gold_nugget: { id: 'gold_nugget', label: 'Gold nugget', nutrition: 0, spoilTicks: 0, baseValue: 24, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
   gold_ornament: { id: 'gold_ornament', label: 'Gold ornament', nutrition: 0, spoilTicks: 0, baseValue: 60, class: 'small', hand: { perHand: 1, perArms: 2, hands: 1 } },
   charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
+  iron_ore: { id: 'iron_ore', label: 'Iron ore', nutrition: 0, spoilTicks: 0, baseValue: 5, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
 };
 
 export class Inventory {

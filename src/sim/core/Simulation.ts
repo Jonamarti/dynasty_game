@@ -775,6 +775,9 @@ export class Simulation {
     // seed-derived stream instead (`geographicResourceRng`) and this one is
     // never touched.
     const oreRng = this.rng.fork();
+    // M15 phase 40a, appended after oreRng (row 24): iron has a pass of its
+    // own so adding wet-ground candidates cannot shift the M15-37 metals.
+    const ironRng = this.rng.fork();
 
     if (geographicStart) this.spawnGeographicResources();
     else this.spawnResources(spawnRng);
@@ -787,6 +790,7 @@ export class Simulation {
     this.spawnWildPlants(herbRng);
     this.spawnPredators(this.ecologyRng);
     this.spawnOres(oreRng);
+    this.spawnIronOre(ironRng);
     // Geography is construction input, not live simulation state. The root may
     // retain the selected map; the motor keeps only its generated tile arrays.
     this.geographicStart = null;
@@ -1189,9 +1193,21 @@ export class Simulation {
     const geographic = this.geographicStart !== null;
     for (const kind of RESOURCE_KINDS) {
       const quoted = ORE_COUNTS[kind];
-      if (quoted === undefined) continue;
+      if (quoted === undefined || kind === 'iron_ore') continue;
       this.spawnResourceKind(kind, quoted, geographic ? this.geographicResourceRng(kind) : rng, geographic);
     }
+  }
+
+  /**
+   * Bog iron gets a later pass so its deposits cannot move the M15-37 ores.
+   * Atlas data has no explicit wetland layer yet: high local moisture near a
+   * fresh-water bank is the reproducible map proxy. The classic island uses
+   * beach tiles indexed by shoreHash, as M8.4 specifies.
+   */
+  private spawnIronOre(rng: RNG): void {
+    const geographic = this.geographicStart !== null;
+    this.spawnResourceKind('iron_ore', ORE_COUNTS.iron_ore!,
+      geographic ? this.geographicResourceRng('iron_ore') : rng, geographic);
   }
 
   /**
@@ -1277,6 +1293,19 @@ export class Simulation {
       // Placer gold lies where water has sorted the gravel: the stream-mouth
       // beaches and the foot of the hills.
       case 'gold': return biome === 'beach' || biome === 'hills';
+      case 'iron_ore': {
+        if (!this.geographicStart) {
+          return biome === 'beach' && this.shoreHash.findNearest(x + 0.5, y + 0.5, 0.75,
+            shore => shore.x === x && shore.y === y) !== null;
+        }
+        if (this.geographicStart) {
+          const wet = this.world.moisture[this.world.index(x, y)]! >= 0.65;
+          const freshBank = this.shoreHash.findNearest(x + 0.5, y + 0.5, 2,
+            shore => this.world.isFreshShore(shore.x, shore.y)) !== null;
+          return wet && freshBank && (biome === 'grass' || biome === 'forest' || biome === 'beach');
+        }
+        return false;
+      }
     }
   }
 

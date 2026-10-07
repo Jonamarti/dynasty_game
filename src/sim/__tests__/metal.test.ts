@@ -467,6 +467,86 @@ describe('mining', () => {
   });
 });
 
+describe('bog iron', () => {
+  it('is the first Iron age node and follows the existing mine and furnace', () => {
+    expect(TECH.bog_iron.requires).toEqual(['mining', 'smelting']);
+    expect(TECH.bog_iron.domain).toBe('metal');
+    expect(TECH.bog_iron.age).toBe('iron');
+    expect(TECH_EFFECTS.bog_iron.site).toContain('RESOURCE_DEFS.iron_ore');
+    const holders = new Map<Tech, number>();
+    for (const tech of ERAS.at(-1)!.needs) holders.set(tech, 1);
+    expect(eraFor(holders, 1).id).toBe('iron');
+  });
+
+  it('places classic-island iron on beach tiles indexed by the shore hash', () => {
+    const sim = new Simulation({ seed: 'metal-bog-iron' });
+    const deposits = sim.nodes.filter(node => node.kind === 'iron_ore');
+    expect(deposits).toHaveLength(ORE_COUNTS.iron_ore!);
+    for (const node of deposits) {
+      expect(sim.world.biomeAt(node.x, node.y)).toBe('beach');
+      expect(sim.shoreHash.findNearest(node.x + 0.5, node.y + 0.5, 0.75,
+        shore => shore.x === node.x && shore.y === node.y)).not.toBeNull();
+      expect(node.def.requiresTech).toBe('mining');
+      expect(node.def.regrowPerTick).toBe(0);
+      expect(node.def.itemId).toBe('iron_ore');
+    }
+  });
+
+  it('uses moisture beside an indexed freshwater bank as the map wet-ground proxy', () => {
+    const sim = new Simulation({ seed: 'metal-map-wet-proxy' });
+    const tile = sim.world.shoreTiles.find(shore => {
+      const biome = sim.world.biomeAt(shore.x, shore.y);
+      return sim.world.isFreshShore(shore.x, shore.y) &&
+        (biome === 'grass' || biome === 'forest' || biome === 'beach');
+    });
+    expect(tile).toBeDefined();
+    const internals = sim as unknown as {
+      geographicStart: object | null;
+      suitsBiome(kind: string, x: number, y: number): boolean;
+    };
+    internals.geographicStart = {};
+    const index = sim.world.index(tile!.x, tile!.y);
+    sim.world.moisture[index] = 0.8;
+    expect(internals.suitsBiome('iron_ore', tile!.x, tile!.y)).toBe(true);
+    sim.world.moisture[index] = 0.64;
+    expect(internals.suitsBiome('iron_ore', tile!.x, tile!.y)).toBe(false);
+  });
+
+  it('refuses untrained mining with a player-facing reason and lets a miner extract it', () => {
+    const untrained = worldKnowing(['ground_stone', 'hafting'], 'metal-iron-refusal');
+    const person = untrained.livingPeople()[0]!;
+    settle(person);
+    const node = new ResourceNode('iron_ore', Math.round(person.x) + 2, Math.round(person.y), new RNG('iron-seam'), untrained.ids);
+    untrained.nodes.push(node);
+    untrained.nodesById.set(node.id, node);
+    untrained.nodeHash.rebuild(untrained.nodes);
+    expect(untrained.order(person, 'gather', { nodeId: node.id })).toBe(false);
+    expect(untrained.lastRefusal).toContain('mine');
+    const ctx = { world: untrained.world, nearWater: false, buildings: untrained.buildings,
+      backersWanted: 3, relationships: untrained.relationships, tick: 0 };
+    const target = { kind: 'node' as const, x: node.x, y: node.y, node };
+    const option = availableActions(person, target, ctx)[0]!;
+    expect(option.enabled).toBe(false);
+    expect(option.reason).toBe('You do not know how to mine');
+
+    const trained = worldKnowing(['ground_stone', 'hafting', 'mining'], 'metal-iron-gather');
+    const miner = trained.livingPeople()[0]!;
+    settle(miner);
+    const seam = new ResourceNode('iron_ore', Math.round(miner.x) + 2, Math.round(miner.y), new RNG('iron-seam-ready'), trained.ids);
+    seam.amount = 12;
+    trained.nodes.push(seam);
+    trained.nodesById.set(seam.id, seam);
+    trained.nodeHash.rebuild(trained.nodes);
+    expect(trained.order(miner, 'gather', { nodeId: seam.id })).toBe(true);
+    for (let i = 0; i < 800 && miner.inventory.count('iron_ore') === 0; i++) {
+      miner.needs.thirst = 0;
+      miner.needs.hunger = 0;
+      trained.step();
+    }
+    expect(miner.inventory.count('iron_ore')).toBeGreaterThan(0);
+    expect(seam.amount).toBeLessThan(12);
+  });
+});
 describe('smelting and the furnace', () => {
   it('needs native copper, charcoal and the kiln, and is a device of the Chalcolithic', () => {
     const def = TECH.smelting;
@@ -1114,7 +1194,7 @@ describe('wanting down the chain', () => {
 describe('the metal rungs of the ladder', () => {
   it('climbs from the Neolithic to the Chalcolithic to the Bronze Age, and no further', () => {
     const ids = ERAS.map(era => era.id);
-    expect(ids.slice(-3)).toEqual(['neolithic', 'chalcolithic', 'bronze']);
+    expect(ids.slice(-4)).toEqual(['neolithic', 'chalcolithic', 'bronze', 'iron']);
   });
 
   it('is reached by a world where enough adults know the smelter\'s craft', () => {

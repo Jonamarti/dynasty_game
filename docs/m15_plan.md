@@ -3721,6 +3721,8 @@ tribute`; la servidumbre sigue sin darse (un solo golpe entre pueblos).
 La era de Hierro entra en `ERAS` en el mismo commit que su primer nodo
 alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 
+**Avance del 2026-10-07 (40a, `bog_iron`).** El nodo y el recurso `iron_ore` están implementados, con diez vetas en la pasada independiente posterior a `spawnPeople`, su propio `ironRng` y la puerta de `mining` tanto al ordenar como al cosechar. En `legacyIsland` las vetas ocupan tiles de playa en `shoreHash`; en mapas geográficos se usa como aproximación reproducible humedad local alta junto a una orilla de agua dulce. El atlas no declara humedales explícitos, así que esa aproximación no afirma localizar turberas reales. El primer nodo abre la era de Hierro. La negativa de minería se traduce y aparece en la interfaz. Sigue pendiente el resto de los cinco nodos, sus recetas/herramientas y checks por nodo; no se cierra la fase 40.
+
 ## Fase 41 — Calibración final y cierre de M15
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,

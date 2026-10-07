@@ -32,6 +32,8 @@ export const RESOURCE_KINDS = [
   'copper_ore', 'tin_ore',
   // `goldwork`'s: the metal that lies in the gravels as metal.
   'gold',
+  // M15 phase 40a: bog iron is a later, separately placed wet-ground ore.
+  'iron_ore',
 ] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 
@@ -123,6 +125,11 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
     kind: 'gold', itemId: 'gold_nugget', maxAmount: 4, regrowPerTick: 0,
     harvestTicks: 18, skill: 'knap', groundLevel: true,
   },
+  // M15 phase 40a. Bog iron is a surface deposit; only miners can take it.
+  iron_ore: {
+    kind: 'iron_ore', itemId: 'iron_ore', maxAmount: 20, regrowPerTick: 0,
+    harvestTicks: 24, skill: 'knap', requiresTech: 'mining',
+  },
 };
 
 /**
@@ -138,6 +145,8 @@ export const ORE_COUNTS: Partial<Record<ResourceKind, number>> = {
   // One seam on a whole island: the scarcity is the design.
   tin_ore: 1,
   gold: 2,
+  // Common beside wet ground, unlike the scarce tin seam.
+  iron_ore: 10,
 };
 
 /**

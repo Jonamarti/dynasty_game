@@ -4325,3 +4325,14 @@ solo afecta a esta captura, no a las reglas o mensajes del juego.
 - **Una prueba de otro archivo daba por hecha una premisa que cambió** (`herbs.test.ts`: «la pasada de hierbas es la última que pone nodos»): ahora la última es la de minerales. Corregida con su razón.
 - **`tech-subwebs.spec.ts` en el teléfono dependía de dónde cae «La lanza» en el dibujo.** Ver 37m. Es frágil por construcción: cada dominio nuevo reparte la telaraña de otro modo.
 - **`smiths` falla nueve checks que no son de la fase** (`cravings-steer-the-diet`, `nights-are-slept`, `moods-move-choices`, `projects-find-backers`, `roast-wins`, `cooking-spreads`, `discovery-is-situated`, `bands-take-sides` y `perf-budget`): los del mundo de unos fundadores que saben oficios y casi nada de cocina, y la cola de siempre (`perf-budget` en esta máquina). `craft` y `hearths` dan la misma lista en el commit base y aquí.
+
+### M15 fase 40a — localización del hierro en mapas geográficos, 2026-10-07
+
+El atlas y `WORLD_FEATURE` no contienen una capa ni un bioma explícito de
+humedales. Para que `bog_iron` funcione en mundos geográficos sin atribuir
+procedencia inventada, la primera entrega limita el mineral a terreno de humedad
+local alta junto a una orilla dulce; esto es un proxy de disponibilidad, no una
+identificación de turbera. `legacyIsland` conserva el emplazamiento de M8.4:
+playa consultada a través de `shoreHash`. Queda pendiente añadir datos
+geográficos explícitos de humedales antes de afirmar localizaciones regionales
+exactas. No se modificaron Atlas ni `SOURCES`.

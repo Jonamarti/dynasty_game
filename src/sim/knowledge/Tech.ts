@@ -180,6 +180,8 @@ export const TECHS = [
   'bronze_arms',
   // The other metal found as metal: gold, which no fire improves and every people prizes.
   'goldwork',
+  // M15 phase 40a: iron begins with bog ore, before it becomes a bloom.
+  'bog_iron',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2291,6 +2293,25 @@ export const TECH: Record<Tech, TechDef> = {
       'it does nothing; it is worth what a people agrees it is worth, which ' +
       'is more than anything else a band can make.',
   },
+  // M15 phase 40a (M8.4). Wet ground keeps iron where copper belongs to hills.
+  bog_iron: {
+    id: 'bog_iron', label: 'Bog iron', domain: 'metal', web: 'metal',
+    age: 'iron', firstKnown: 'about 1200 BC',
+    kind: 'device',
+    requires: ['mining', 'smelting'], difficulty: 0.65, skill: 'smith',
+    prototype: { iron_ore: 2, charcoal: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'mining' }, { kind: 'knows', tech: 'smelting' },
+                { kind: 'holding', item: 'iron_ore' }],
+        weight: 1.0, story: 'lifted a heavy rust-coloured stone from the wet ground and wondered what the furnace would do to it' },
+      { needs: [{ kind: 'knows', tech: 'smelting' }, { kind: 'place', biome: 'beach' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 0.5, story: 'found dark iron-rich earth beside the water and brought it to the fire' },
+    ],
+    description:
+      'Iron-bearing earth gathered from wet ground: the first step toward a ' +
+      'bloomery and the tools that let the whole band work in iron.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2657,6 +2678,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'A gold ornament: the highest value of anything a band can make, and a gift that raises a house.',
     site: 'RECIPES.gold_ornament; ItemDef.baseValue, read by gift, doSteal and Amends; Ore.wantedOreKinds',
   },
+  bog_iron: {
+    summary: 'Iron-bearing earth gathered from wet ground: the first step toward a bloomery.',
+    site: 'RESOURCE_DEFS.iron_ore; Ore.canWork through ActionSystem.doHarvest, Simulation.order and ActionCatalog.nodeActions',
+  },
 };
 
 /**
@@ -2844,7 +2869,7 @@ export function forageYieldFactor(person: Person, nodeKind: string): number {
   if (nodeKind === 'flint') return scaled(person, 'stoneworking', 1.5) * scaled(person, 'mining', 1.25);
   if (nodeKind === 'native_copper') return scaled(person, 'native_copper', 1.3);
   if (nodeKind === 'gold') return scaled(person, 'goldwork', 1.3);
-  if (nodeKind === 'copper_ore' || nodeKind === 'tin_ore') return scaled(person, 'mining', 1.5);
+  if (nodeKind === 'copper_ore' || nodeKind === 'tin_ore' || nodeKind === 'iron_ore') return scaled(person, 'mining', 1.5);
   // A net multiplies a fishing spot rather than replacing the spear, and it is
   // gated on *carrying* one as well as on knowing how to make one. Both halves
   // matter: knowledge alone would make the recipe pointless, and the item alone
@@ -3195,6 +3220,16 @@ const ERA_LADDER: Omit<EraDef, 'label'>[] = [
     description:
       'Tin in the copper, and the tools of the whole band made of it. The tin ' +
       'is far away, and everything that follows is about getting it.',
+  },
+  {
+    id: 'iron',
+    needs: [
+      'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
+      'farming', 'herding', 'pottery', 'masonry',
+      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools', 'bog_iron',
+    ],
+    heldBy: 0.15,
+    description: 'Iron-bearing earth, the first step toward a bloomery.',
   },
 ];
 

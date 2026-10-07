@@ -127,6 +127,8 @@ const RESOURCE_COLORS: Record<ResourceKind, string> = {
   tin_ore: '#aeb4bb',
   // Yellow, the one colour in the table that is nothing else.
   gold: '#e6c34a',
+  // Bog iron reads as a dark rust stain against wet ground.
+  iron_ore: '#875b4c',
 };
 
 /**
