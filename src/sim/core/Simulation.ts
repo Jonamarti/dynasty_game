@@ -1269,10 +1269,24 @@ export class Simulation {
       // pinched headland is a death sentence: greedy movement cannot route
       // around the shoreline, so the band starves in sight of food.
       const minLand = Math.max(400, this.world.width * this.world.height * 0.05);
+      // On a map the water is a river or a lake and not the shore of an island, and 20 tiles is past what a person can see:
+      // measured on generated worlds, a band camped 17-20 tiles from the only river lost five adults to thirst in twenty days
+      // (the classic island, whose water is everywhere, lost none). So a start with a map asks for water within sight. The
+      // classic island keeps 20: changing it would move every saved seed's camp.
+      const waterRadius = this.geographicStart ? 10 : 20;
       let home = this.world.randomWalkableInLargeRegion(rng, minLand);
       for (let attempt = 0; attempt < 60 && home; attempt++) {
-        if (this.hasWaterNear(home.x, home.y, 20)) break;
+        if (this.hasWaterNear(home.x, home.y, waterRadius)) break;
         home = this.world.randomWalkableInLargeRegion(rng, minLand);
+      }
+      // On a map the river may fill a corner of the window, so sixty random camps can all miss it, and the old fallback (any
+      // walkable tile) put the second and third tribes a hundred tiles from the only water: nine children dead of thirst in
+      // twenty days, on a start that had a river. The fallback there is a bank of the fresh water itself.
+      if (this.geographicStart && (!home || !this.hasWaterNear(home.x, home.y, waterRadius)) && this.world.freshShore.length > 0) {
+        for (let tries = 0; tries < 40; tries++) {
+          const bank = rng.pick(this.world.freshShore);
+          if (this.world.isWalkable(bank.x, bank.y)) { home = { x: bank.x, y: bank.y }; break; }
+        }
       }
       home = home ?? this.world.randomWalkable(rng, 200);
       if (!home) continue;
@@ -3633,6 +3647,10 @@ export class Simulation {
   private hasWaterNear(x: number, y: number, radius: number): boolean {
     for (let dy = -radius; dy <= radius; dy += 2) {
       for (let dx = -radius; dx <= radius; dx += 2) {
+        // `index()` wraps a negative x into the row above, so a camp at the west edge "saw" the river at the east edge of the
+        // row before it: a band was placed 117 tiles from water, convinced it had a drink beside it. Looking outside the map is
+        // refused on a map start only; on the classic island it would move camps of seeds already saved (docs/bugs.md).
+        if (this.geographicStart && !this.world.inBounds(x + dx, y + dy)) continue;
         if (this.world.isFreshWater(x + dx, y + dy)) return true;
       }
     }
