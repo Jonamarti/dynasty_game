@@ -11,6 +11,7 @@ const HELD_ART: Readonly<Record<string, HeldItemKind>> = {
   stone_axe: 'handaxe',
   // The cast axe is the same head on a haft; the dagger has a held picture of its own.
   copper_axe: 'handaxe',
+  bronze_axe: 'handaxe',
   copper_dagger: 'copper_dagger',
   spear: 'spear',
   bow: 'bow',

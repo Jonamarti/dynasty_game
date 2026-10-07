@@ -179,3 +179,13 @@ gris con vetas verdes, o claras para el estaño).
 **`bronze-needs-a-trader` queda sin medir.** La puerta del plan («casi ninguna banda sin estaño en su comarca funde bronce sin haber comerciado o asaltado») necesita el comercio y las caravanas de la fase 36, que no están en esta rama, y una cohorte con mapa. Se deja anotada en `docs/next-steps.md`; lo que sí se puede decir hoy es lo que prueba la cuenta de arriba: sin estaño en la región no hay bronce que fundir.
 
 **Pruebas.** `metal.test.ts` (+6): declaración y edad, chispa sin estaño en mano, las dos recetas y la proporción, `wantedOreKinds` (estaño sí, cobre ya no), el tope de bronce de la isla, y fundir estaño y alear bronce de punta a punta (tres de bronce).
+
+## 37h — `bronze_tools`: hacha, azuela, hoz y pala
+
+**Qué hay.** El nodo `bronze_tools` (dispositivo, red Metal, Edad del Bronce, «hacia el 3000 a. C.», requiere `alloying`), cuatro ítems y cuatro recetas en el horno (`bronze_axe` 2, `bronze_adze` 2, `bronze_sickle` 1, `bronze_spade` 3 de bronce, `keep: 1` cada una: el bronce es lo escaso y una banda que ha hecho sus cuatro ha gastado casi todo el que tendrá).
+
+**Quién lo lee.** Cuatro funciones que ya existían, ninguna con código nuevo de lector: `axeFactor`/`axeItemOf` (`AXE_TOOLS` gana `bronze_axe`, 0,25), `buildFactor` (la azuela de bronce, 1,45, contra la pulida de 1,2; se cuenta la mejor de las dos, no se apilan), `reapFactor` (la hoz de bronce, 0,45, contra la de sílex de 0,6; la menor) y `Earth.digTool` (`DIG_TOOLS` gana `bronze_spade`, potencia 5: «las herramientas de bronce cavan a 5×», frente a la pala de madera de 3 y el palo de 1). Todas con la doble puerta de siempre (saberlo y llevarlo), y `maxRefinement: 1` para que el multiplicador siga siendo positivo (una prueba lo comprueba para el hacha y la hoz).
+
+**Arte.** Cuatro iconos, la mano `held/bronze_spade` (el arte pide una por cada herramienta de cavar con técnica) y el caso de `Sprites`; el hacha de bronce se ve con la silueta del hacha.
+
+**Pruebas.** `metal.test.ts` (+7): declaración, recetas sin armas, la escalera hacha de cobre < bronce, azuela y hoz mejor que su piedra, la doble puerta, cavar a cinco veces el palo (y sin la técnica es solo un palo pesado), el suelo del multiplicador y fundir la pala de punta a punta.

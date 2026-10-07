@@ -59,7 +59,7 @@ const SIZE_CLASSES: readonly SizeClass[] = ['infant', 'child', 'adolescent', 'ad
 export type HairVariant = 'dark' | 'grey' | 'balding' | 'bald';
 const HAIR_VARIANTS: readonly HairVariant[] = ['dark', 'grey', 'balding', 'bald'];
 
-export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'sling' | 'bone_point' | 'copper_dagger' | 'handaxe' | 'net' | 'basket' | 'antler_pick' | 'spade' | 'digging_stick';
+export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'sling' | 'bone_point' | 'copper_dagger' | 'handaxe' | 'net' | 'basket' | 'antler_pick' | 'spade' | 'bronze_spade' | 'digging_stick';
 /**
  * What shows in the hand when more than one thing is carried, most
  * conspicuous first. A hunter carrying both a bow and a basket reads as
@@ -168,7 +168,7 @@ export function heldItemFor(person: Person, autoEquipTools = false): HeldItemKin
   if (person.action === 'dig') {
     const tool = digTool(person);
     if (tool?.item === 'sticks') return 'digging_stick';
-    if (tool?.item === 'spade' || tool?.item === 'antler_pick') return tool.item;
+    if (tool?.item === 'spade' || tool?.item === 'antler_pick' || tool?.item === 'bronze_spade') return tool.item;
   }
   const fitted = fittedActionToolFor(person, autoEquipTools);
   if (fitted !== undefined) return fitted;
@@ -345,8 +345,9 @@ function paintHeld(ctx: CanvasRenderingContext2D, kind: HeldItemKind): void {
 
   switch (kind) {
     case 'antler_pick':
+    case 'bronze_spade':
     case 'spade':
-      ctx.strokeStyle = kind === 'antler_pick' ? '#e6dcc0' : '#86633c';
+      ctx.strokeStyle = kind === 'antler_pick' ? '#e6dcc0' : kind === 'bronze_spade' ? '#b08a3e' : '#86633c';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(cx, cy - 20);
@@ -354,7 +355,7 @@ function paintHeld(ctx: CanvasRenderingContext2D, kind: HeldItemKind): void {
       ctx.stroke();
       ctx.fillStyle = ctx.strokeStyle;
       ctx.beginPath();
-      if (kind === 'spade') {
+      if (kind === 'spade' || kind === 'bronze_spade') {
         ctx.moveTo(cx - 5, cy + 7);
         ctx.lineTo(cx + 5, cy + 7);
         ctx.lineTo(cx + 6, cy + 16);

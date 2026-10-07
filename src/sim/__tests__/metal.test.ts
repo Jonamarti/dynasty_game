@@ -14,13 +14,14 @@ import { Simulation } from '../core/Simulation.ts';
 import { fittedActionToolFor } from '../../render/EquipmentAnimation.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person, DAYS_PER_YEAR } from '../entities/Person.ts';
-import { TECH, TECHS, TECH_EFFECTS, ageIndex, warmthFrom, techPower, awlFactor, forageYieldFactor, SEWN_RECIPES, WEBS, techsOfWeb, webOf, AXE_TOOLS, axeFactor, axeItemOf, weaponOf } from '../knowledge/Tech.ts';
+import { TECH, TECHS, TECH_EFFECTS, ageIndex, warmthFrom, techPower, awlFactor, forageYieldFactor, SEWN_RECIPES, WEBS, techsOfWeb, webOf, AXE_TOOLS, axeFactor, axeItemOf, weaponOf, buildFactor, reapFactor } from '../knowledge/Tech.ts';
 import { availableActions } from '../ai/ActionCatalog.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
 import { BUILDINGS, isStation, type Building } from '../entities/Building.ts';
 import { ORE_COUNTS, RESOURCE_DEFS, ResourceNode } from '../entities/ResourceNode.ts';
 import { wantedOreKinds, canWork } from '../knowledge/Ore.ts';
+import { digTool } from '../core/Earth.ts';
 import { geographicResourceAvailable } from '../world/GeographicResources.ts';
 import { earthWorldGeography } from '../world/WorldGeography.ts';
 import { WORLD_FEATURE } from '../world/WorldFeatureSeeds.ts';
@@ -799,5 +800,99 @@ describe('alloying and bronze', () => {
     expect(person.inventory.count('bronze')).toBe(3);
     expect(person.inventory.count('tin')).toBe(0);
     expect(person.inventory.count('copper')).toBe(0);
+  });
+});
+
+describe('bronze tools', () => {
+  it('needs alloying, and is read by the functions that read the stone tools', () => {
+    const def = TECH.bronze_tools;
+    expect(def.requires).toEqual(['alloying']);
+    expect(def.web).toBe('metal');
+    expect(TECH_EFFECTS.bronze_tools.site).toContain('DIG_TOOLS');
+  });
+
+  it('pours four tools at the furnace out of bronze, none of them a weapon', () => {
+    for (const id of ['bronze_axe', 'bronze_adze', 'bronze_sickle', 'bronze_spade']) {
+      const recipe = RECIPES[id]!;
+      expect(recipe.tech).toBe('bronze_tools');
+      expect(recipe.station).toBe('furnace');
+      expect(Object.keys(recipe.ingredients)).toEqual(['bronze']);
+      expect(ITEMS[id]!.weapon, id).toBeUndefined();
+    }
+  });
+
+  it('fells faster than copper, builds faster than polished stone and reaps faster than flint', () => {
+    const smith = adult('smith');
+    teach(smith, 'bronze_tools', 'casting', 'ground_stone', 'sickle');
+    const base = { fell: axeFactor(smith), build: buildFactor(smith), reap: reapFactor(smith) };
+    smith.inventory.add('copper_axe', 1);
+    const copper = axeFactor(smith);
+    smith.inventory.add('bronze_axe', 1);
+    expect(axeFactor(smith)).toBeLessThan(copper);
+    expect(axeItemOf(smith)).toBe('bronze_axe');
+    smith.inventory.add('adze', 1);
+    const stoneBuild = buildFactor(smith);
+    smith.inventory.add('bronze_adze', 1);
+    expect(buildFactor(smith)).toBeGreaterThan(stoneBuild);
+    expect(stoneBuild).toBeGreaterThan(base.build);
+    smith.inventory.add('sickle', 1);
+    const flint = reapFactor(smith);
+    smith.inventory.add('bronze_sickle', 1);
+    expect(reapFactor(smith)).toBeLessThan(flint);
+    expect(base.fell).toBe(1);
+    expect(base.reap).toBe(1);
+  });
+
+  it('pays only the person who knows how and carries the tool', () => {
+    const stranger = adult('stranger');
+    for (const id of ['bronze_axe', 'bronze_adze', 'bronze_sickle']) stranger.inventory.add(id, 1);
+    expect(axeFactor(stranger)).toBe(1);
+    expect(buildFactor(stranger)).toBe(buildFactor(adult('bare')));
+    expect(reapFactor(stranger)).toBe(1);
+  });
+
+  it('digs at five times a stick and ahead of the wooden spade', () => {
+    const digger = adult('digger');
+    teach(digger, 'bronze_tools', 'carpentry');
+    digger.inventory.add('sticks', 1);
+    const stick = digTool(digger)!.power;
+    digger.inventory.add('spade', 1);
+    const wooden = digTool(digger)!;
+    expect(wooden.item).toBe('spade');
+    digger.inventory.add('bronze_spade', 1);
+    const bronze = digTool(digger)!;
+    expect(bronze.item).toBe('bronze_spade');
+    expect(bronze.power / stick).toBeGreaterThanOrEqual(5);
+    expect(bronze.power).toBeGreaterThan(wooden.power);
+    // Without the technique it is a heavy stick and no more.
+    const stranger = adult('stranger');
+    stranger.inventory.add('bronze_spade', 1);
+    expect(digTool(stranger)).toBeNull();
+  });
+
+  it('keeps the new axe and sickle positive at the refinement the technique allows', () => {
+    const smith = adult('refined');
+    teach(smith, 'bronze_tools');
+    smith.techLevel.set('bronze_tools', TECH.bronze_tools.maxRefinement);
+    smith.inventory.add('bronze_axe', 1);
+    smith.inventory.add('bronze_sickle', 1);
+    expect(axeFactor(smith)).toBeGreaterThan(0.05);
+    expect(reapFactor(smith)).toBeGreaterThan(0.05);
+  });
+
+  it('casts a bronze spade at the furnace end to end', () => {
+    const sim = worldKnowing(['firemaking', 'carpentry', 'charcoal', 'smelting', 'pottery', 'casting', 'ground_stone', 'hafting', 'mining', 'alloying', 'bronze_tools']);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('bronze', 3);
+    const furnace = stationNear(sim, person, 'furnace');
+    expect(sim.order(person, 'craft', { recipeId: 'bronze_spade', buildingId: furnace.id })).toBe(true);
+    for (let i = 0; i < 2500 && person.inventory.count('bronze_spade') === 0; i++) {
+      person.needs.thirst = 0;
+      person.needs.hunger = 0;
+      sim.step();
+    }
+    expect(person.inventory.count('bronze_spade')).toBe(1);
+    expect(person.inventory.count('bronze')).toBe(0);
   });
 });

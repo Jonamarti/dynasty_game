@@ -84,6 +84,23 @@ export const ITEMS: ItemArt[] = [
     shape(poly([[8, 42], [18, 24], [48, 24], [58, 42], [50, 52], [16, 52]]), '#b08a3e', '#5a4216')
     + shape(poly([[18, 24], [48, 24], [44, 32], [22, 32]]), '#dcc072', '#5a4216')
     + stroke('M18,40L48,40M22,46L44,46', '#8a6a28', 1.2)],
+  ['bronze_axe', 'Hacha de bronce', 'bronze_tools', () => rot(
+    limb([[32, 60], [32, 10]], 3.6, WOOD, WOOD_D)
+    + shape(poly([[32, 6], [50, 3], [55, 22], [32, 24]]), '#b08a3e', '#5a4216')
+    + stroke('M30,14L35,14M30,18L35,18M30,22L35,22', CORD, 1.6)
+    + stroke('M48,7L52,20', '#dcc072', 1.2), 30)],
+  ['bronze_adze', 'Azuela de bronce', 'bronze_tools', () => rot(
+    limb([[30, 60], [30, 14]], 3.4, WOOD, WOOD_D)
+    + shape(poly([[26, 14], [48, 9], [50, 15], [30, 20]]), '#b08a3e', '#5a4216')
+    + stroke('M30,17L34,15.6M30,21L34,19.6', CORD, 1.6), 24)],
+  ['bronze_sickle', 'Hoz de bronce', 'bronze_tools', () =>
+    stroke('M16,56Q10,24 40,14Q52,12 56,22Q40,20 30,34Q26,46 22,56', '#b08a3e', 4)
+    + stroke('M14,56L22,56', WOOD, 5)
+    + stroke('M20,26Q30,18 44,16', '#dcc072', 1.2)],
+  ['bronze_spade', 'Pala de bronce', 'bronze_tools', () => rot(
+    limb([[32, 6], [32, 39]], 3.4, WOOD, WOOD_D)
+    + shape('M24,36L40,36L42,53Q32,66 22,53Z', '#b08a3e', '#5a4216')
+    + stroke('M30,39L28,53M34,39L36,53', '#dcc072', 1), 20)],
   ['charcoal', 'Carbón vegetal', 'charcoal', () =>
     shape(smooth([[10, 44], [22, 30], [36, 34], [40, 48], [26, 54]]), '#2f2b28', STONE_D)
     + shape(smooth([[32, 30], [46, 18], [58, 28], [52, 42], [38, 42]]), '#3a3532', STONE_D)

@@ -288,4 +288,8 @@ export const ES_DATA: Record<string, string> = {
   "Bronze": "Bronce",
   "Smelt tin": "Fundir estaño",
   "Alloy bronze": "Alear bronce",
+  "Bronze axe": "Hacha de bronce",
+  "Bronze adze": "Azuela de bronce",
+  "Bronze sickle": "Hoz de bronce",
+  "Bronze spade": "Pala de bronce",
 };

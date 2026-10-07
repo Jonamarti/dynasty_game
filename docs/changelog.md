@@ -1,3 +1,7 @@
+## 2026-10-07 — M15 fase 37h: `bronze_tools`, la pala cava a cinco veces el palo
+
+Por qué: el bronce sirve para algo más que armas. Nodo `bronze_tools` (`alloying`) y cuatro herramientas vertidas en el horno (hacha, azuela, hoz y pala). Ningún lector nuevo: `AXE_TOOLS` gana el hacha, `buildFactor` la azuela (la mejor de las dos, sin apilar), `reapFactor` la hoz y `DIG_TOOLS` la pala con potencia 5 (el «5×» del plan 26b). Doble puerta en todas, `maxRefinement: 1` y una prueba del suelo del multiplicador. `keep: 1` en cada receta: el bronce es lo escaso. Arte: cuatro iconos y la mano de la pala. Tests: `metal.test.ts` (62 en total). Detalle en [m15_phase37_metal.md](m15_phase37_metal.md).
+
 ## 2026-10-07 — M15 fase 37g: `alloying`, el bronce, y el estaño que está lejos
 
 Por qué: el nodo que da nombre a la edad. `alloying` (`casting` + `mining`), ítems `tin` y `bronze`, recetas `smelt_tin` y `alloy_bronze` (tres de cobre y uno de estaño dan tres de bronce) en el horno. **Una sola veta de estaño en toda la isla**, de catorce de mineral: a lo sumo veintiuno de bronce, y una prueba lo cuenta para que subirlo sea una decisión; con mapa, solo donde la región tiene estaño. `bronze-needs-a-trader` queda sin medir porque necesita el comercio de la fase 36 (anotado en `next-steps.md`). Tests: `metal.test.ts` (55 en total). Detalle en [m15_phase37_metal.md](m15_phase37_metal.md).

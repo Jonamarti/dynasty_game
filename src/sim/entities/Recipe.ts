@@ -636,6 +636,25 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 110, ingredients: { copper: 3, tin: 1 }, output: { bronze: 3 },
     station: 'furnace', keep: 3,
   },
+  // `bronze_tools`, at the furnace. Bronze is the scarce input (one seam of tin
+  // on an island), so each tool is the cheapest it can be and `keep` is one:
+  // a band that has made its four has spent most of the bronze it will ever have.
+  bronze_axe: {
+    id: 'bronze_axe', label: 'Bronze axe', icon: '\u{1FA93}', tech: 'bronze_tools', skill: 'smith',
+    workTicks: 120, ingredients: { bronze: 2 }, output: { bronze_axe: 1 }, station: 'furnace', keep: 1,
+  },
+  bronze_adze: {
+    id: 'bronze_adze', label: 'Bronze adze', icon: '\u{1FA93}', tech: 'bronze_tools', skill: 'smith',
+    workTicks: 120, ingredients: { bronze: 2 }, output: { bronze_adze: 1 }, station: 'furnace', keep: 1,
+  },
+  bronze_sickle: {
+    id: 'bronze_sickle', label: 'Bronze sickle', icon: '\u{1F5E1}', tech: 'bronze_tools', skill: 'smith',
+    workTicks: 100, ingredients: { bronze: 1 }, output: { bronze_sickle: 1 }, station: 'furnace', keep: 1,
+  },
+  bronze_spade: {
+    id: 'bronze_spade', label: 'Bronze spade', icon: '\u{2660}', tech: 'bronze_tools', skill: 'smith',
+    workTicks: 130, ingredients: { bronze: 3 }, output: { bronze_spade: 1 }, station: 'furnace', keep: 1,
+  },
   // `bellows`: the same run in less time and three ingots, not two. A second
   // recipe rather than a term on the first, on the `kiln_pot` model, and the
   // trap that comment records applies here exactly: the craft scorer has no

@@ -453,4 +453,10 @@ export const ES_TECH: Record<string, string> = {
   "cast an axe that bent and wondered what made another band's hold its edge": "coló un hacha que se dobló y se preguntó qué hacía que la de otra banda conservara el filo",
   "noticed a heavy pale stone in the same seam as the green and put them in the fire together": "notó una piedra pálida y pesada en la misma veta que la verde y las echó juntas al fuego",
   "Tin from its ore, and bronze from tin and copper: the stuff of the best tools and arms, and the reason to go looking for tin.": "Estaño de su mineral, y bronce de estaño y cobre: la materia de las mejores herramientas y armas, y la razón para ir a buscar estaño.",
+  "Bronze tools": "Herramientas de bronce",
+  "An axe, an adze, a sickle and a spade of bronze: each does the work of the stone one in less of the day. The spade digs five times as fast as a stick.": "Un hacha, una azuela, una hoz y una pala de bronce: cada una hace el trabajo de la de piedra en menos del día. La pala cava cinco veces más rápido que un palo.",
+  "looked at a lump of bronze and saw four tools in it": "miró un lingote de bronce y vio cuatro herramientas en él",
+  "felled a tree with a stone axe that chipped and wished for an edge that would not": "taló un árbol con un hacha de piedra que se mellaba y deseó un filo que no se mellara",
+  "brought in a harvest with a flint blade that blunted before the field was done": "recogió una cosecha con una hoja de sílex que se embotó antes de acabar el campo",
+  "A bronze axe that fells, an adze that builds, a sickle that reaps and a spade that digs, each better than its stone.": "Un hacha de bronce que tala, una azuela que construye, una hoz que siega y una pala que cava, cada una mejor que la de piedra.",
 };

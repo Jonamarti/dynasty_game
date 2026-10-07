@@ -173,6 +173,8 @@ export const TECHS = [
   'casting',
   // Tin into copper: the metal the age is named for, and the one that is far away.
   'alloying',
+  // What bronze is for: the tools that every trade in the band leans on.
+  'bronze_tools',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2207,6 +2209,31 @@ export const TECH: Record<Tech, TechDef> = {
       'and holds an edge. The copper is in every hill; the tin is in a few ' +
       'places in a whole continent, and that is what the age is made of.',
   },
+  // M15 phase 37 (M8.3). The point of bronze for everybody but the soldier: the
+  // axe, the adze, the sickle and the spade, each better than the stone it
+  // replaces, and every one of them read by a function that already existed
+  // (`axeFactor`, `buildFactor`, `reapFactor`, `Earth.digTool`). The plan's
+  // "dig at five times" is the spade: `DIG_TOOLS` power 5 against the wooden
+  // spade's 3 (26b). `maxRefinement: 1` for the reason `casting` gives.
+  bronze_tools: {
+    id: 'bronze_tools', label: 'Bronze tools', domain: 'metal', web: 'metal',
+    age: 'bronze', firstKnown: 'about 3000 BC',
+    kind: 'device',
+    requires: ['alloying'], difficulty: 0.55, skill: 'smith',
+    prototype: { bronze: 2 }, maxRefinement: 1,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'alloying' }, { kind: 'holding', item: 'bronze' }],
+        weight: 1.0, story: 'looked at a lump of bronze and saw four tools in it' },
+      { needs: [{ kind: 'knows', tech: 'alloying' }, { kind: 'doing', action: 'chop' }],
+        weight: 0.7, story: 'felled a tree with a stone axe that chipped and wished for an edge that would not' },
+      { needs: [{ kind: 'knows', tech: 'alloying' }, { kind: 'doing', action: 'reap' }],
+        weight: 0.5, story: 'brought in a harvest with a flint blade that blunted before the field was done' },
+    ],
+    description:
+      'An axe, an adze, a sickle and a spade of bronze: each does the work ' +
+      'of the stone one in less of the day. The spade digs five times as ' +
+      'fast as a stick.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2561,6 +2588,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'Tin from its ore, and bronze from tin and copper: the stuff of the best tools and arms, and the reason to go looking for tin.',
     site: 'RECIPES.smelt_tin and RECIPES.alloy_bronze at the furnace; Ore.wantedOreKinds, which sends the smith to the tin',
   },
+  bronze_tools: {
+    summary: 'A bronze axe that fells, an adze that builds, a sickle that reaps and a spade that digs, each better than its stone.',
+    site: 'Tech.axeFactor (AXE_TOOLS), buildFactor, reapFactor and Earth.digTool (DIG_TOOLS); RECIPES.bronze_*',
+  },
 };
 
 /**
@@ -2771,7 +2802,10 @@ export function buildFactor(person: Person): number {
   // grind one is not enough, and an adze in the hands of somebody who could
   // not have made it is the `handaxe` bug one node along.
   const adze = person.inventory.has('adze') ? scaled(person, 'ground_stone', 1.2) : 1;
-  return scaled(person, 'carpentry', 1.3) * adze;
+  // M15 phase 37: a bronze adze, on the same double gate. One adze swings at a
+  // time, so the better of the two counts and the two do not stack.
+  const bronze = person.inventory.has('bronze_adze') ? scaled(person, 'bronze_tools', 1.45) : 1;
+  return scaled(person, 'carpentry', 1.3) * Math.max(adze, bronze);
 }
 
 /**
@@ -2808,6 +2842,7 @@ export const AXE_TOOLS: readonly { item: string; tech: Tech; full: number }[] = 
   { item: 'handaxe', tech: 'hafting', full: 0.5 },
   { item: 'stone_axe', tech: 'ground_stone', full: 0.35 },
   { item: 'copper_axe', tech: 'casting', full: 0.3 },
+  { item: 'bronze_axe', tech: 'bronze_tools', full: 0.25 },
 ];
 
 /** The strongest axe present, optionally limited to what is actually in hand. */
@@ -2832,7 +2867,11 @@ function equippedItem(person: Person, itemId: string): boolean {
  * teaches nothing about stripping a field by hand.
  */
 export function reapFactor(person: Person): number {
-  return person.inventory.has('sickle') ? scaled(person, 'sickle', 0.6) : 1;
+  const flint = person.inventory.has('sickle') ? scaled(person, 'sickle', 0.6) : 1;
+  // M15 phase 37: the bronze sickle, the better of the two (a smaller number is
+  // less work). `full` 0.45 stays positive at `bronze_tools`' one refinement step.
+  const bronze = person.inventory.has('bronze_sickle') ? scaled(person, 'bronze_tools', 0.45) : 1;
+  return Math.min(flint, bronze);
 }
 
 /**

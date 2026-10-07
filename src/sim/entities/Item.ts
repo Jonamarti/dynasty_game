@@ -377,6 +377,12 @@ export const ITEMS: Record<string, ItemDef> = {
   // thing a band can make before iron, because there is so little of it.
   tin: { id: 'tin', label: 'Tin', nutrition: 0, spoilTicks: 0, baseValue: 22, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
   bronze: { id: 'bronze', label: 'Bronze', nutrition: 0, spoilTicks: 0, baseValue: 20, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  // `bronze_tools`. Read through `AXE_TOOLS`, `buildFactor`, `reapFactor` and
+  // `DIG_TOOLS`; none is a weapon, on the `handaxe` argument.
+  bronze_axe: { id: 'bronze_axe', label: 'Bronze axe', nutrition: 0, spoilTicks: 0, baseValue: 28, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  bronze_adze: { id: 'bronze_adze', label: 'Bronze adze', nutrition: 0, spoilTicks: 0, baseValue: 26, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  bronze_sickle: { id: 'bronze_sickle', label: 'Bronze sickle', nutrition: 0, spoilTicks: 0, baseValue: 22, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  bronze_spade: { id: 'bronze_spade', label: 'Bronze spade', nutrition: 0, spoilTicks: 0, baseValue: 30, class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 } },
   charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
 };
 

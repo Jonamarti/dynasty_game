@@ -3477,6 +3477,8 @@ metal.
 
 **Avance del 2026-10-07 (37g, `alloying`).** El estaño se funde y se alea con el cobre en el horno (tres de cobre y uno de estaño dan tres de bronce). Hay un solo yacimiento de estaño en la isla, de catorce de mineral, y una prueba cuenta el bronce que da como máximo. `bronze-needs-a-trader` espera al comercio de la fase 36.
 
+**Avance del 2026-10-07 (37h, `bronze_tools`).** Hacha, azuela, hoz y pala de bronce, cada una leída por la función que ya leía su piedra (la pala cava a 5×, la del plan 26b). Una pala de bronce necesita tres de bronce: el estaño manda.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)
