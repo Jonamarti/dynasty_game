@@ -100,3 +100,45 @@ que ya veían los allegados.
 
 Pruebas: `pregnancy.test.ts` (18): los tres tercios a quien conoce, el último
 solo al desconocido, nada de quien no está embarazada, y el español.
+
+## 19d. El aborto espontáneo y el parto complicado
+
+**Ni un fork nuevo.** Las dos tiradas salen de `healthRng` (el fork 19, el que ya
+usan los golpes y la supuración), que `LifeSystem` recibe en un
+`LifeContext.pregnancyCare` **opcional**. El modelo compacto (`CompactAdvance`)
+no lo pasa: sin `healthRng` y sin nadie que atienda un parto, fuera de la vista
+nadie pierde un hijo ni sangra. Esa diferencia con el mundo detallado es de
+calibración (fase 41) y está en `bugs.md`.
+
+**Aborto (`Pregnancy.miscarriageRisk`).** Una tirada al día, **solo si hay
+riesgo**: hambre extrema (`hunger >= 85`: 6 % al día), fiebre (4 % por grado:
+leve, moderada, grave) o una herida abierta en el torso de al menos 0,1 (5 % más
+una décima de su profundidad). Se suman, y la causa que se nombra es el término
+mayor. Sin riesgo, **cero tiradas**: un mundo en el que nadie pasa hambre,
+fiebre ni golpe en el cuerpo no consume nada de `healthRng` aquí y cada pelea y
+cada supuración cae donde caía (prueba con un `healthRng` de pega que cuenta sus
+tiradas). No se tira el día del parto: ese día es del parto.
+Consecuencias: pierde 8 de salud y puede concebir de nuevo tras la mitad de la
+espera habitual (`lastBirthDay`): una pérdida no es un parto. La causa queda en
+su crónica («perdió al hijo que llevaba: el hambre la había consumido...»), la
+del padre dice que ella lo perdió, y si el jugador es uno de los dos sale en
+pantalla (`noteInsight`).
+
+**Parto complicado.** Una tirada **en cada parto** (a diferencia del aborto: el
+parto *es* el riesgo; son pocos y ya mueven el mundo por otras vías), con
+probabilidad base 6 % (`COMPLICATION_CHANCE`). Lo que la reduce es la partera:
+`midwifeFor` busca, a la vista y de su tribu, a un adulto que sepa `herbalism`
+(el nodo que hace a un curandero), y `midwifeQuality` va de 0,5 a 1 según su
+práctica de `heal`; la probabilidad se multiplica por `1 - 0,8 × calidad`. Si se
+complica: tajo en el torso de 0,35 (sangra, y lo atiende la curación y la fiebre
+que ya existen) y pierde salud; **con partera** el tajo nace ya vendado
+(`tended`), pierde 10 en vez de 25, y la partera practica `heal` y lo anota en
+su crónica. Sin ninguna, la crónica de la madre dice que no había nadie.
+
+**Cifras: primeras suposiciones**, no calibradas contra ninguna natalidad (la
+regla del plan es «probabilidad baja»). Calibrar en la fase 41, con la
+natalidad de la fase 18 ya a la baja.
+
+**Pruebas:** `pregnancy.test.ts` (26): los tres términos del riesgo, cero
+tiradas sin riesgo, pérdida y conservación según el dado, nada el día del parto,
+parto complicado con y sin partera, compacto intacto, y las crónicas.

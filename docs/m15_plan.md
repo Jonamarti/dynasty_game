@@ -2021,6 +2021,11 @@ Quedan 19c, 19d y el check.
 último solo al desconocido. El vientre dibujado va en su propio commit, al
 final, por las hojas PNG.
 
+**Avance del 2026-10-07 (19d):** aborto y parto complicado con `healthRng` (sin
+fork nuevo): una tirada al día solo con hambre extrema, fiebre o herida de
+torso; una por parto, reducida por la partera (`herbalism`). Crónica y
+pantalla con la causa. Cifras sin calibrar (fase 41). Falta el check.
+
 ## Fase 20 — La crianza (M14 fase 6)
 
 **Detalle en `m14_plan.md` fase 6.** El bebé no anda el primer año, mama

@@ -21,7 +21,9 @@ import type { Building } from '../entities/Building.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { PopulationConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
-import { gestationDays } from '../entities/Pregnancy.ts';
+import {
+  complicationChance, gestationDays, midwifeQuality, miscarriageRisk, type MiscarriageCause,
+} from '../entities/Pregnancy.ts';
 
 /**
  * The roof a person is asleep under right now, or null.
@@ -93,6 +95,23 @@ export interface LifeContext {
   onDeath: (person: Person, cause: string) => void;
   /** Per-simulation birth factory; avoids a cross-world module hook. */
   makeChild: (mother: Person, rng: RNG) => Person;
+  /**
+   * M15 phase 19d: what can go wrong with a pregnancy. **Absent in the compact
+   * model**, which has no `healthRng` and no one to tend a birth: a person out
+   * of sight neither loses a child nor bleeds, and the demography calibration
+   * (phase 41) is where that difference gets measured rather than guessed.
+   */
+  pregnancyCare?: PregnancyCare;
+}
+
+export interface PregnancyCare {
+  /** `Simulation.healthRng`: fork 19, no new stream. */
+  rng: RNG;
+  /** The best person at hand to see her through a birth, or null. */
+  midwifeFor: (mother: Person) => Person | null;
+  onMiscarriage: (mother: Person, father: Person | null, cause: MiscarriageCause) => void;
+  /** Called after the child is registered, so the mother's chronicle says it in order. */
+  onComplicatedBirth: (mother: Person, midwife: Person | null) => void;
 }
 
 export class LifeSystem {
@@ -165,6 +184,29 @@ export class LifeSystem {
 
   private advancePregnancy(mother: Person, ctx: LifeContext): void {
     mother.gestationLeft -= 1;
+    const care = ctx.pregnancyCare;
+    // M15 phase 19d. The roll is made only when something endangers her
+    // (`miscarriageRisk` is null otherwise), so a world with no starving, no
+    // fever and no blow to the body draws nothing from `healthRng` here. Not on
+    // the day she is due: that day is the birth's.
+    if (care && mother.gestationLeft > 0) {
+      const risk = miscarriageRisk(mother);
+      if (risk) {
+        telemetry.count('pregnant_days_at_risk');
+        if (care.rng.next() < risk.chance) {
+          const father = mother.pregnantBy === null ? null : ctx.peopleById.get(mother.pregnantBy) ?? null;
+          mother.pregnant = false;
+          mother.gestationLeft = 0;
+          mother.pregnantBy = null;
+          // She can conceive again after half the usual wait: a loss is not a
+          // birth, and the full wait would be a second punishment.
+          mother.lastBirthDay = ctx.day - birthSpacingDays(mother) / 2;
+          mother.health = Math.max(1, mother.health - 8);
+          care.onMiscarriage(mother, father, risk.cause);
+          return;
+        }
+      }
+    }
     if (mother.gestationLeft > 0) return;
 
     mother.pregnant = false;
@@ -172,7 +214,18 @@ export class LifeSystem {
     const father = mother.pregnantBy === null ? null : ctx.peopleById.get(mother.pregnantBy) ?? null;
     mother.pregnantBy = null;
 
-    ctx.onBirth(this.conceiveChild(mother, father, ctx), mother, father);
+    const child = this.conceiveChild(mother, father, ctx);
+    // Drawn at every birth, unlike the miscarriage: a birth is the risk, and
+    // the dice are cast whether or not anybody is there to help. The help
+    // only changes how often they come up wrong.
+    let complicated = false;
+    let midwife: Person | null = null;
+    if (care) {
+      midwife = care.midwifeFor(mother);
+      complicated = care.rng.next() < complicationChance(midwife ? midwifeQuality(midwife) : 0);
+    }
+    ctx.onBirth(child, mother, father);
+    if (care && complicated) care.onComplicatedBirth(mother, midwife);
   }
 
   /**

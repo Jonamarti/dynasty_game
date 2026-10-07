@@ -17,6 +17,7 @@
  * one list rather than three. Recorded in `docs/bugs.md`.
  */
 import type { Person } from './Person.ts';
+import { techPower } from '../knowledge/Tech.ts';
 
 /**
  * Days a pregnancy runs: a quarter of the calendar year, whatever the
@@ -92,4 +93,75 @@ export function handfulsOnly(person: Person): boolean {
  */
 export function showing(person: Person): boolean {
   return trimesterOf(person) === 3;
+}
+
+// ---------------------------------------------------------------------------
+// 19d: what can go wrong. Both rolls come from `healthRng` (fork 19), the
+// stream blows and festering already use, so no fork is added and the stream
+// order of a world is not extended. Every number is a first guess, in the
+// plan's words "small": nothing here was calibrated against a birth rate, and
+// the demography calibration (phase 41) is where that belongs.
+// ---------------------------------------------------------------------------
+
+/** Hunger from which the body gives up on a pregnancy. Death by starvation is at 100. */
+export const EXTREME_HUNGER = 85;
+
+export type MiscarriageCause = 'hunger' | 'fever' | 'blow';
+
+export interface MiscarriageRisk {
+  /** The chance of losing the child today, 0 to 1. */
+  chance: number;
+  /** The largest of the terms that make it up, for the sentence that says why. */
+  cause: MiscarriageCause;
+}
+
+/**
+ * What is endangering this pregnancy today, or null when nothing is.
+ *
+ * **Null is the point.** The roll is made only when there is a risk, so a
+ * world in which nobody starves, burns with fever or is struck in the body
+ * draws nothing from `healthRng` for this and every fight and festering in it
+ * lands exactly where it did. The three terms (the plan's list): starving
+ * (6% a day), a fever (4% a day per grade — mild, moderate, severe), and an
+ * open wound in the torso (5% plus a tenth of its depth). Added, and named for
+ * the largest.
+ */
+export function miscarriageRisk(mother: Person): MiscarriageRisk | null {
+  const terms: [MiscarriageCause, number][] = [];
+  if (mother.needs.hunger >= EXTREME_HUNGER) terms.push(['hunger', 0.06]);
+  let grade = 0;
+  for (const condition of mother.conditions) {
+    if (condition.kind === 'fever') grade += condition.severity === 'mild' ? 1 : condition.severity === 'moderate' ? 2 : 3;
+  }
+  if (grade > 0) terms.push(['fever', 0.04 * grade]);
+  const torso = mother.body.torso;
+  if ((torso.wound === 'fresh' || torso.wound === 'infected') && torso.damage >= 0.1) {
+    terms.push(['blow', 0.05 + 0.1 * torso.damage]);
+  }
+  if (terms.length === 0) return null;
+  let best = terms[0]!;
+  let chance = 0;
+  for (const term of terms) {
+    chance += term[1];
+    if (term[1] > best[1]) best = term;
+  }
+  return { chance: Math.min(0.9, chance), cause: best[0] };
+}
+
+/** The chance a birth goes badly with nobody to help. A first guess; see above. */
+export const COMPLICATION_CHANCE = 0.06;
+
+/**
+ * How well somebody can see a woman through a birth, 0 to 1: nothing without
+ * `herbalism` (the plan names it; it is the node that makes a healer), and from
+ * half to all of it as their `heal` practice grows.
+ */
+export function midwifeQuality(helper: Person): number {
+  if (!helper.alive || helper.isChild || techPower(helper, 'herbalism') <= 0) return 0;
+  return 0.5 + 0.5 * Math.min(1, helper.skills.heal / 50);
+}
+
+/** A birth's chance of going badly, given the best help at hand (0 for none). */
+export function complicationChance(quality: number): number {
+  return COMPLICATION_CHANCE * (1 - 0.8 * Math.max(0, Math.min(1, quality)));
 }

@@ -22,7 +22,7 @@ import { advanceSnowDepth, isBuried } from './Snow.ts';
 import { SPENT_BELOW, isGroundSpent } from './Soil.ts';
 import { SpatialHash } from './SpatialHash.ts';
 import { telemetry } from './Telemetry.ts';
-import { BODY_PARTS, partWord, poisonDaily, woundsDaily } from '../entities/Body.ts';
+import { BODY_PARTS, partWord, poisonDaily, wound, woundsDaily } from '../entities/Body.ts';
 import { makeConfig, type SimConfig, type DeepPartial } from './Config.ts';
 import { ADULT_YEARS, Person } from '../entities/Person.ts';
 import { IdSpace, type IdSpaceSnapshot } from './IdSpace.ts';
@@ -43,7 +43,7 @@ import { drivePressures, DRIVES } from '../ai/Drives.ts';
 import { babyToCarry, infantNeedingNursing, infantOutsideHome, mayNurse, nurslingHungerFactor } from '../ai/Nursing.ts';
 import { starvingInCare } from '../ai/Feeding.ts';
 import { canCrawl, canWalk, isBabyInArms, isLactating, isNursling } from '../entities/LifeStage.ts';
-import { handfulsOnly, tooHeavyForHer } from '../entities/Pregnancy.ts';
+import { handfulsOnly, midwifeQuality, tooHeavyForHer, type MiscarriageCause } from '../entities/Pregnancy.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -1492,6 +1492,75 @@ export class Simulation {
       tick: this.time.tick, ageDays: 0, text: t('was born'), kind: 'milestone',
     });
     telemetry.count('birth');
+  }
+
+  /**
+   * The best person within sight to see a woman through a birth: an adult of
+   * her own band who knows `herbalism`, the better for practice at `heal`
+   * (`Pregnancy.midwifeQuality`). Ties go to the lower id, so asking twice, or
+   * from a replay, can never give two answers. No RNG: who is there is a fact.
+   */
+  private midwifeFor(mother: Person): Person | null {
+    let best: Person | null = null;
+    let bestQuality = 0;
+    for (const helper of this.peopleHash.queryRadius(mother.x, mother.y, this.config.sightRadius)) {
+      if (helper.id === mother.id || helper.bandId !== mother.bandId) continue;
+      const quality = midwifeQuality(helper);
+      if (quality > bestQuality || (quality === bestQuality && quality > 0 && best !== null && helper.id < best.id)) {
+        best = helper;
+        bestQuality = quality;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * M15 phase 19d: a pregnancy lost. The reason goes in her chronicle, in his,
+   * and on the screen for a player who lost the child — the standing rule that
+   * the interface says why, applied to something that happens to a person
+   * rather than something refused to one.
+   */
+  private registerMiscarriage(mother: Person, father: Person | null, cause: MiscarriageCause): void {
+    telemetry.count('miscarriage');
+    telemetry.count('miscarriage_' + cause);
+    const why = cause === 'hunger' ? t('lost the child she was carrying: hunger had worn her down')
+      : cause === 'fever' ? t('lost the child she was carrying: the fever was too much')
+      : t('lost the child she was carrying: the blow to her body was too much');
+    mother.chronicle.push({ tick: this.time.tick, ageDays: mother.age, kind: 'suffered', text: why });
+    if (father?.alive) {
+      father.chronicle.push({
+        tick: this.time.tick, ageDays: father.age, kind: 'suffered',
+        text: t('{name} lost the child she was carrying', { name: mother.name }),
+      });
+    }
+    if (mother.isPlayer || father?.isPlayer) this.noteInsight(mother, why, 'setback');
+  }
+
+  /**
+   * M15 phase 19d: a birth that went badly. She bleeds (a torso wound, which
+   * the tending that already exists dresses and the festering that already
+   * exists can turn to fever) and loses health; a midwife at hand dresses it
+   * at once and halves the cost. Called after `registerBirth`, so her
+   * chronicle reads "bore" and then "went hard".
+   */
+  private registerComplicatedBirth(mother: Person, midwife: Person | null): void {
+    telemetry.count('complicated_birth');
+    wound(mother.body, 'torso', 0.35);
+    mother.health = Math.max(1, mother.health - (midwife ? 10 : 25));
+    if (midwife) {
+      telemetry.count('complicated_birth_attended');
+      mother.body.torso.wound = 'tended';
+      midwife.practice('heal', 3);
+      midwife.chronicle.push({
+        tick: this.time.tick, ageDays: midwife.age, kind: 'did',
+        text: t('saw {name} through a hard birth', { name: mother.name }),
+      });
+    }
+    const text = midwife
+      ? t('the birth went hard, and {name} saw her through', { name: midwife.name })
+      : t('the birth went hard, and there was nobody to help her');
+    mother.chronicle.push({ tick: this.time.tick, ageDays: mother.age, kind: 'suffered', text });
+    if (mother.isPlayer) this.noteInsight(mother, text, 'setback');
   }
 
   /**
@@ -5273,6 +5342,12 @@ export class Simulation {
         },
         onBirth: (child, mother, father) => this.registerBirth(child, mother, father),
         onDeath: (person, cause) => person.die(cause),
+        pregnancyCare: {
+          rng: this.healthRng,
+          midwifeFor: mother => this.midwifeFor(mother),
+          onMiscarriage: (mother, father, cause) => this.registerMiscarriage(mother, father, cause),
+          onComplicatedBirth: (mother, midwife) => this.registerComplicatedBirth(mother, midwife),
+        },
       });
     }
 

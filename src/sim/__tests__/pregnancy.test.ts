@@ -4,8 +4,11 @@ import { makeConfig } from '../core/Config.ts';
 import { itemCapacityFor, capacityFor } from '../core/Carry.ts';
 import { Person } from '../entities/Person.ts';
 import {
-  HEAVY_ACTIONS, gestationDays, handfulsOnly, pregnancyPace, showing, tooHeavyForHer, trimesterOf,
+  HEAVY_ACTIONS, complicationChance, gestationDays, handfulsOnly, midwifeQuality, miscarriageRisk,
+  pregnancyPace, showing, tooHeavyForHer, trimesterOf,
 } from '../entities/Pregnancy.ts';
+import { wound } from '../entities/Body.ts';
+import { LifeSystem, type LifeContext, type PregnancyCare } from '../systems/LifeSystem.ts';
 import { RNG } from '../core/RNG.ts';
 import { availableActions, type CatalogContext } from '../ai/ActionCatalog.ts';
 import { stopReasonLabel } from '../../render/Floaters.ts';
@@ -246,5 +249,150 @@ describe('M15 phase 19c: she is visible to those who may know', () => {
     try {
       expect(pregnancyLine(me, known)).toBe('embarazada (segundo trimestre)');
     } finally { setLanguage('en'); }
+  });
+});
+
+/** 19d: the risks, rolled from `healthRng` only when there is one. */
+describe('M15 phase 19d: miscarriage and a hard birth', () => {
+  /** A stand-in for `healthRng` that counts its draws and answers what it is told. */
+  function dice(answer: number) {
+    const rolls = { n: 0 };
+    return { rolls, rng: { next: () => { rolls.n++; return answer; } } as unknown as RNG };
+  }
+  function couple(seed: string) {
+    const sim = new Simulation({ seed, world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6 } });
+    const mother = sim.people.find(p => p.sex === 'female' && !p.isChild)!;
+    const father = sim.people.find(p => p.sex === 'male' && !p.isChild)!;
+    mother.needs.hunger = 0; mother.health = 100;
+    return { sim, mother, father };
+  }
+  function ctxFor(sim: Simulation, care: PregnancyCare | undefined, day = 100): LifeContext {
+    return {
+      rng: new RNG('life-rolls'), population: sim.config.population, tick: 0, day,
+      peopleById: sim.peopleById, householdsById: sim.householdsById, roofTonight: new Map(),
+      makeChild: (m, r) => new Person('Baby', m.x, m.y, m.bandId, r),
+      onBirth: () => {}, onDeath: () => {}, pregnancyCare: care,
+    };
+  }
+  const noOne = () => null;
+
+  it('finds no risk in a healthy woman, and one for each of the three causes', () => {
+    const { mother } = couple('risk-terms');
+    expect(miscarriageRisk(mother)).toBeNull();
+    mother.needs.hunger = 90;
+    expect(miscarriageRisk(mother)?.cause).toBe('hunger');
+    mother.needs.hunger = 0;
+    mother.conditions.push({ kind: 'fever', severity: 'moderate', days: 4, part: 'torso' });
+    expect(miscarriageRisk(mother)?.cause).toBe('fever');
+    mother.conditions.length = 0;
+    wound(mother.body, 'torso', 0.4);
+    expect(miscarriageRisk(mother)?.cause).toBe('blow');
+    // A graze is not a blow.
+    mother.body.torso.damage = 0.05;
+    expect(miscarriageRisk(mother)).toBeNull();
+  });
+
+  it('draws nothing from healthRng while nothing endangers her', () => {
+    const { sim, mother, father } = couple('risk-quiet');
+    mother.pregnant = true; mother.pregnantBy = father.id;
+    mother.gestationLeft = 6;
+    const { rng, rolls } = dice(0);
+    const life = new LifeSystem();
+    for (let i = 0; i < 4; i++) life.daily([mother], ctxFor(sim, { rng, midwifeFor: noOne,
+      onMiscarriage: () => { throw new Error('no miscarriage expected'); }, onComplicatedBirth: () => {} }));
+    expect(rolls.n).toBe(0);
+    expect(mother.pregnant).toBe(true);
+  });
+
+  it('loses the child when the dice say so, with the cause, and waits half the usual spacing', () => {
+    const { sim, mother, father } = couple('risk-loss');
+    mother.pregnant = true; mother.pregnantBy = father.id;
+    mother.gestationLeft = 6;
+    mother.needs.hunger = 95;
+    const lost: string[] = [];
+    const { rng, rolls } = dice(0);
+    new LifeSystem().daily([mother], ctxFor(sim, { rng, midwifeFor: noOne,
+      onMiscarriage: (_m, f, cause) => { lost.push(cause); expect(f?.id).toBe(father.id); },
+      onComplicatedBirth: () => {} }, 100));
+    expect(lost).toEqual(['hunger']);
+    expect(rolls.n).toBe(1);
+    expect(mother.pregnant).toBe(false);
+    expect(mother.pregnantBy).toBeNull();
+    expect(mother.health).toBe(92);
+    expect(mother.lastBirthDay).toBe(100 - mother.daysPerYear / 4);
+  });
+
+  it('keeps the child when the dice say so', () => {
+    const { sim, mother, father } = couple('risk-kept');
+    mother.pregnant = true; mother.pregnantBy = father.id; mother.gestationLeft = 6;
+    mother.needs.hunger = 95;
+    const { rng, rolls } = dice(0.99);
+    new LifeSystem().daily([mother], ctxFor(sim, { rng, midwifeFor: noOne,
+      onMiscarriage: () => { throw new Error('kept'); }, onComplicatedBirth: () => {} }));
+    expect(rolls.n).toBe(1);
+    expect(mother.pregnant).toBe(true);
+  });
+
+  it('does not roll a miscarriage on the day she is due, and rolls the birth', () => {
+    const { sim, mother, father } = couple('risk-due');
+    mother.pregnant = true; mother.pregnantBy = father.id; mother.gestationLeft = 1;
+    mother.needs.hunger = 95;
+    const { rng, rolls } = dice(0.99);
+    let born = 0;
+    const ctx = { ...ctxFor(sim, { rng, midwifeFor: noOne, onMiscarriage: () => { throw new Error('due'); },
+      onComplicatedBirth: () => { throw new Error('no complication at 0.99'); } }), onBirth: () => { born++; } };
+    new LifeSystem().daily([mother], ctx);
+    expect(born).toBe(1);
+    expect(rolls.n).toBe(1);
+  });
+
+  it('complicates a birth on a low roll, and a midwife changes how often', () => {
+    const { sim, mother, father } = couple('birth-hard');
+    mother.pregnant = true; mother.pregnantBy = father.id; mother.gestationLeft = 1;
+    const helper = sim.people.find(p => p !== mother && !p.isChild)!;
+    let hard = 0; let seen: unknown = 'unset';
+    new LifeSystem().daily([mother], ctxFor(sim, { rng: dice(0).rng, midwifeFor: () => helper,
+      onMiscarriage: () => {}, onComplicatedBirth: (_m, w) => { hard++; seen = w; } }));
+    expect(hard).toBe(1);
+    expect(seen).toBe(helper);
+    // The chance itself: help only helps if the helper knows herbalism.
+    expect(midwifeQuality(helper)).toBe(0);
+    helper.knownTech.add('herbalism');
+    helper.techLevel.set('herbalism', 0);
+    helper.skills.heal = 50;
+    expect(midwifeQuality(helper)).toBe(1);
+    expect(complicationChance(1)).toBeLessThan(complicationChance(0.5));
+    expect(complicationChance(0.5)).toBeLessThan(complicationChance(0));
+  });
+
+  it('leaves the compact model alone: no care, no rolls, an ordinary birth', () => {
+    const { sim, mother, father } = couple('birth-compact');
+    mother.pregnant = true; mother.pregnantBy = father.id; mother.gestationLeft = 1;
+    mother.needs.hunger = 99;
+    let born = 0;
+    new LifeSystem().daily([mother], { ...ctxFor(sim, undefined), onBirth: () => { born++; } });
+    expect(born).toBe(1);
+  });
+
+  it('writes the loss into both chronicles, in words, and the hard birth into hers and the midwife own', () => {
+    const { sim, mother, father } = couple('chronicle');
+    (sim as unknown as { registerMiscarriage(m: Person, f: Person, c: string): void })
+      .registerMiscarriage(mother, father, 'fever');
+    expect(mother.chronicle.at(-1)!.text).toBe('lost the child she was carrying: the fever was too much');
+    expect(father.chronicle.at(-1)!.text).toBe(`${mother.name} lost the child she was carrying`);
+
+    const helper = sim.people.find(p => p !== mother && p !== father && !p.isChild)!;
+    const hard = (sim as unknown as { registerComplicatedBirth(m: Person, w: Person | null): void });
+    hard.registerComplicatedBirth(mother, helper);
+    expect(mother.body.torso.damage).toBeCloseTo(0.35, 5);
+    expect(mother.body.torso.wound).toBe('tended');
+    expect(mother.chronicle.at(-1)!.text).toBe(`the birth went hard, and ${helper.name} saw her through`);
+    expect(helper.chronicle.at(-1)!.text).toBe(`saw ${mother.name} through a hard birth`);
+    const alone = couple('chronicle-alone');
+    (alone.sim as unknown as { registerComplicatedBirth(m: Person, w: null): void })
+      .registerComplicatedBirth(alone.mother, null);
+    expect(alone.mother.body.torso.wound).toBe('fresh');
+    expect(alone.mother.health).toBe(75);
   });
 });
