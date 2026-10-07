@@ -4332,3 +4332,8 @@ solo afecta a esta captura, no a las reglas o mensajes del juego.
 - **Una prueba de otro archivo daba por hecha una premisa que cambió** (`herbs.test.ts`: «la pasada de hierbas es la última que pone nodos»): ahora la última es la de minerales. Corregida con su razón.
 - **`tech-subwebs.spec.ts` en el teléfono dependía de dónde cae «La lanza» en el dibujo.** Ver 37m. Es frágil por construcción: cada dominio nuevo reparte la telaraña de otro modo.
 - **`smiths` falla nueve checks que no son de la fase** (`cravings-steer-the-diet`, `nights-are-slept`, `moods-move-choices`, `projects-find-backers`, `roast-wins`, `cooking-spreads`, `discovery-is-situated`, `bands-take-sides` y `perf-budget`): los del mundo de unos fundadores que saben oficios y casi nada de cocina, y la cola de siempre (`perf-budget` en esta máquina). `craft` y `hearths` dan la misma lista en el commit base y aquí.
+
+### Fase 19 (embarazo) — hallazgos, 2026-10-07
+
+- **El plan nombra un tipo que no existe.** `m14_plan.md` 5a y `m15_plan.md` fase 19 piden el veto como «propiedad de `ActionDef`»; en el código una acción es una cadena y sus reglas viven en conjuntos (`CUT_OFF_AT_ONCE`, `YOUNG_CHILD_ACTIONS`). El veto es `HEAVY_ACTIONS` en `entities/Pregnancy.ts`. Gana el código; no se introduce un tipo `ActionDef` solo para esto.
+- **Una embarazada del último tercio acorralada no puede defenderse a golpes** (`attack` está en la lista del plan). Huye o se encoge. Decisión del plan, no medida en un mundo con agresores: si el propietario quiere la defensa propia como excepción, es una línea en `Brain`.

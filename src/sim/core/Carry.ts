@@ -1,15 +1,20 @@
 /** M15 phase 11: hands and the containers that turn hands into carrying. */
 import { ITEMS, type ItemClass } from '../entities/Item.ts';
 import type { Person } from '../entities/Person.ts';
+import { handfulsOnly } from '../entities/Pregnancy.ts';
 import type { CarryConfig } from './Config.ts';
 import { carryFactor } from '../knowledge/Tech.ts';
 import { telemetry } from './Telemetry.ts';
 
 const BARE_HANDS = 10;
 
-/** Arms not holding a baby. */
+/**
+ * Arms not holding a baby. M15 phase 19: in her last third a woman with child
+ * has the use of one arm's reach at most — the belly is in the way of an
+ * armful — so she carries handfuls, never armfuls, whatever her arms hold.
+ */
 function freeArms(person: Person): number {
-  return Math.max(0, 2 - person.armsTaken);
+  return Math.max(0, Math.min(handfulsOnly(person) ? 1 : 2, 2 - person.armsTaken));
 }
 
 function equippedCapacity(person: Person, itemClass?: ItemClass): number {
@@ -40,7 +45,10 @@ export function itemCapacityFor(person: Person, config: CarryConfig, itemId: str
   const arms = freeArms(person);
   const handCapacity = Math.max(0, Math.floor(
     (arms === 2 ? def.hand.perArms : arms === 1 ? def.hand.perHand : 0) * person.vigour));
-  const shoulderCapacity = (!person.equipment.shoulder || person.equipment.shoulder.item === itemId)
+  // Nothing on the shoulder in her last third (M15 phase 19): a log across it
+  // is the load the plan names first.
+  const shoulderCapacity = (!handfulsOnly(person) &&
+      (!person.equipment.shoulder || person.equipment.shoulder.item === itemId))
     ? Math.floor((def.hand.shoulder ?? 0) * person.vigour)
     : 0;
   return Math.max(def.container ? 1 : 0,

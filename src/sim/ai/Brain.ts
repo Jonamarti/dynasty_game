@@ -92,6 +92,7 @@ import { cryOf, infantNeedingNursing } from './Nursing.ts';
 import type { PlaceRecord } from '../social/PlaceMemory.ts';
 import { CHILD_FEED_AT, feederRole, starvingInCare } from './Feeding.ts';
 import { canForage, canHunt, isNursling } from '../entities/LifeStage.ts';
+import { HEAVY_ACTIONS, trimesterOf } from '../entities/Pregnancy.ts';
 import { expectationRatio, techAppeal } from './Beliefs.ts';
 import { bondBetween } from './Bond.ts';
 import { support } from '../social/Persuasion.ts';
@@ -3649,6 +3650,22 @@ export class Brain {
       let kept = 0;
       for (const row of scores) {
         if (young ? YOUNG_CHILD_ACTIONS.has(row.id) : !(tooYoungToHunt && row.id === 'hunt')) scores[kept++] = row;
+      }
+      scores.length = kept;
+    }
+
+    // M15 phase 19. In her last third a woman with child is spared the heavy
+    // work (`Pregnancy.HEAVY_ACTIONS`). Filtered here, over the finished table
+    // and after the cornered-fights-back rule above, for the reason the child
+    // filter is: one rule over every route that can score a verb (`attack`
+    // alone has several) instead of a condition threaded through each. What is left to her when she is set upon is
+    // `flee`, and cowering when there is nowhere to go: the plan's veto is
+    // `attack` too, and the check `the-pregnant-are-spared` holds it to that.
+    if (person.pregnant && trimesterOf(person) === 3) {
+      let kept = 0;
+      for (const row of scores) {
+        if (!HEAVY_ACTIONS.has(row.id)) scores[kept++] = row;
+        else telemetry.count('pregnant_spared_' + row.id);
       }
       scores.length = kept;
     }

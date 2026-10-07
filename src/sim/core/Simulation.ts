@@ -43,6 +43,7 @@ import { drivePressures, DRIVES } from '../ai/Drives.ts';
 import { babyToCarry, infantNeedingNursing, infantOutsideHome, mayNurse, nurslingHungerFactor } from '../ai/Nursing.ts';
 import { starvingInCare } from '../ai/Feeding.ts';
 import { canCrawl, canWalk, isBabyInArms, isLactating, isNursling } from '../entities/LifeStage.ts';
+import { handfulsOnly } from '../entities/Pregnancy.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -5606,10 +5607,15 @@ export class Simulation {
       }
     }
     for (const person of this.people) {
-      if (person.armsTaken !== person.armsTakenLastTick) {
+      // M15 phase 19: the last third of a pregnancy takes half an arm's worth
+      // of room too (`Carry.freeArms`), and it begins on a day boundary with
+      // nothing in the inventory changing, so it is counted here or the armful
+      // she was carrying the night before would stay in her arms.
+      const taken = person.armsTaken + (handfulsOnly(person) ? 0.5 : 0);
+      if (taken !== person.armsTakenLastTick) {
         // Room in the hands changed without the inventory changing, so the
         // reconciliation below would not otherwise notice what no longer fits.
-        person.armsTakenLastTick = person.armsTaken;
+        person.armsTakenLastTick = taken;
         person.carryReconciledVersion = -1;
       }
     }

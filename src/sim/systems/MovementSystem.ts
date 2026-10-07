@@ -32,6 +32,7 @@ import { carrySpeedFactor } from '../core/Carry.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { ChildhoodConfig } from '../core/Config.ts';
 import { ageSpeed, canCrawl } from '../entities/LifeStage.ts';
+import { pregnancyPace } from '../entities/Pregnancy.ts';
 import type { Person } from '../entities/Person.ts';
 import { legPace, poisonPace } from '../entities/Body.ts';
 import { telemetry } from '../core/Telemetry.ts';
@@ -361,7 +362,11 @@ export class MovementSystem {
     // this a three-year-old kept up with a forager and outran a deer hunt.
     const age = this.childhood && person.isChild ? ageSpeed(person, this.childhood) : 1;
     return BASE_SPEED * (1 - person.needs.fatigue / 220) * (0.5 + (person.health / 100) * 0.5) * drag * age * legPace(person.body) *
-      (person.conditions.length > 0 ? poisonPace(person.conditions) : 1);
+      (person.conditions.length > 0 ? poisonPace(person.conditions) : 1) *
+      // M15 phase 19: heavy with child she walks slower (0.85, then 0.7).
+      // Here, in the one pace every walk and every keypress shares, so the
+      // player's pregnant character is slowed exactly as an NPC is.
+      pregnancyPace(person);
   }
 
   /**

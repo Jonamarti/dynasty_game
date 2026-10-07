@@ -2004,6 +2004,12 @@ la fase 17.
 
 **Check:** `the-pregnant-are-spared`.
 
+**Avance del 2026-10-07 (19a):** `Pregnancy.ts` (`trimesterOf`, paso 1 / 0,85 /
+0,7 en `MovementSystem.speedOf`, `HEAVY_ACTIONS`, carga de puñados en `Carry`) y
+el veto en `Brain` sobre la tabla terminada. El plan decía «propiedad de
+`ActionDef`»: ese tipo no existe, así que es un conjunto, como los que ya hay
+([detalle](m15_phase19_pregnancy.md)). Quedan 19b a 19d y el check.
+
 ## Fase 20 — La crianza (M14 fase 6)
 
 **Detalle en `m14_plan.md` fase 6.** El bebé no anda el primer año, mama

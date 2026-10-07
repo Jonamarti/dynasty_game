@@ -21,6 +21,7 @@ import type { Building } from '../entities/Building.ts';
 import type { RNG } from '../core/RNG.ts';
 import type { PopulationConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
+import { gestationDays } from '../entities/Pregnancy.ts';
 
 /**
  * The roof a person is asleep under right now, or null.
@@ -39,16 +40,10 @@ export function roofOverSleeper(person: Person, buildingsById: ReadonlyMap<numbe
   return roof && roof.complete && roof.def.shelter > 0 && roof.contains(person.x, person.y, 1) ? roof : null;
 }
 
-/**
- * Days a pregnancy runs: a quarter of the calendar year, whatever the
- * scenario's season length says that is. Kept a function rather than a
- * constant now that a person's `daysPerYear` need not be eighty — a fixed
- * number here would silently decouple gestation from the calendar exactly as
- * `DAYS_PER_YEAR` itself used to.
- */
-export function gestationDays(mother: Person): number {
-  return mother.daysPerYear / 4;
-}
+// Moved to `entities/Pregnancy.ts` (M15 phase 19) so the thirds of a pregnancy
+// are measured against the same span the birth is; re-exported because the
+// compact model's tests and callers have always imported it from here.
+export { gestationDays };
 
 /** Days a mother waits before she can conceive again: half the calendar year. */
 function birthSpacingDays(mother: Person): number {
