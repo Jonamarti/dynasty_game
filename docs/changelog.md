@@ -1,3 +1,15 @@
+## 2026-10-08 — M15 barro y juncos ausentes en mapas aleatorios
+
+Por qué: el mapa aleatorio `resources`, región (64,6), tenía 200 casillas de orilla dulce en bosque pero cero bancos de barro y cero juncos. Los filtros de isla clásica exigían playa para los juncos y playa/pradera para el barro. Incluso con playa, la región (44,5) solo colocaba 3 de los 9 juncos pedidos: el límite de intentos sobre tierra aleatoria perdía las orillas pequeñas.
+
+Cambio: las orillas continentales de bosque y pradera admiten ambos recursos. Su colocación toma directamente las casillas compatibles del índice de orillas y exige agua dentro del mapa, evitando el borde recortado que `isShore` considera agua. Se mantienen los streams derivados por clase, las restricciones regionales de cereal/sílex/metales y la generación clásica. Esto afecta mundos generados de nuevo; no añade nodos a las partidas ya guardadas.
+
+Pruebas: cinco regresiones cubren río boscoso, cuota en orilla pequeña, lago, ausencia real de agua y determinismo/independencia de otras clases, manadas y fundadores. Las pruebas de río/cuota/lago fallaron contra el generador anterior antes de aplicar el arreglo. La nueva prueba de navegador entra en `npm run e2e`; captura revisada en `artifacts/screenshots/m15-bank-resources-2026-10-08/01-wooded-river.png`.
+
+Verificación: `typecheck` limpio; suite completa con `npm.cmd test -- --maxWorkers=1 --testTimeout=60000`: 192/193 ficheros pasan, 1.533 pruebas pasan, 1 omitida y 1 fallo preexistente (`people-knowledge.test.ts`, dispersión 0,43 frente al límite 0,4, ya documentado, sin tocar su código). Las cinco pruebas nuevas pasan también con la versión final del arreglo. Navegador: 2/2 (`bank-resources` y `geographic-terrain`), puerto 5402. `sim:check` de una semilla: mismos fallos antes y después (`cravings-steer-the-diet`, `perf-budget`; 506 pasos/s en la pasada posterior). Cohortes y matriz completa diferidas por la instrucción de M15; no se afirma mejora de la economía.
+
+Hallazgo pendiente: el índice general de orillas aún incluye el perímetro de ventanas continentales secas; registrado en `docs/bugs.md`. El arreglo de recursos lo excluye mediante agua en límites, sin cambiar globalmente el índice ni los mundos clásicos.
+
 ## 2026-10-07 — M15 "begin anywhere": costas elegibles y empezar sin agua con confirmación (`m15/start-anywhere`)
 
 Por qué: dos quejas del propietario sobre la fase 33e. Una región costera (su muestra central cae en el mar, aunque tenga tierra al lado) no se podía elegir en el selector del mapa — `WorldPicker.canBegin` y el primer rechazo de `findStartInRegion` trataban cualquier región `ocean` igual, costera o no. Y una región sin agua a menos de dos regiones terminaba en un rechazo liso, sin alternativa. Decisión del propietario: la selección sigue por región (el punto exacto dentro de ella queda para más adelante, como ya decía la fase 33); lo que cambia es que una costa se puede elegir y que la falta de agua es una elección, no un muro.

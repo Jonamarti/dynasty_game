@@ -1272,8 +1272,16 @@ export class Simulation {
       case 'flint': return biome === 'hills' || biome === 'beach';
       // Reeds and clay both belong at the water's edge, which quietly makes
       // shoreline the most valuable ground to camp on.
-      case 'reeds': return biome === 'beach' && this.world.isShore(x, y);
-      case 'clay': return (biome === 'beach' || biome === 'grass') && this.world.isShore(x, y);
+      case 'reeds':
+        if (this.geographicStart) {
+          return (biome === 'beach' || biome === 'grass' || biome === 'forest') && this.world.isShore(x, y);
+        }
+        return biome === 'beach' && this.world.isShore(x, y);
+      case 'clay':
+        // Continental rivers cut through forest too. Requiring a classic beach
+        // or meadow erased all clay from wooded river starts with real banks.
+        return (biome === 'beach' || biome === 'grass' ||
+          (this.geographicStart !== null && biome === 'forest')) && this.world.isShore(x, y);
       // M15 phase 27c: the fish are in the water, on walkable shallows. Keep
       // them on fishRng's dedicated stream and in this post-people pass; putting
       // them into spawnResources would move every herd and person after them.
@@ -1702,6 +1710,27 @@ export class Simulation {
   /** One resource pass. The legacy caller keeps its old shared stream/order. */
   private spawnResourceKind(kind: ResourceKind, quoted: number, rng: RNG, geographic: boolean): void {
     const count = this.scaledCount(quoted);
+    if (geographic && (kind === 'clay' || kind === 'reeds')) {
+      // A thin river bank may occupy far less than one in sixty land tiles.
+      // Rejection sampling could miss it entirely or silently underfill the
+      // quota. Sample the existing shore index, retaining the habitat gate;
+      // no bank means no resource. Only these per-kind map streams change.
+      // isShore also treats the clipped map boundary as water. In-bounds water
+      // checks exclude those phantom banks on a dry continental window.
+      const banks = this.world.shoreTiles.filter(spot =>
+        ([[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] as const).some(([dx, dy]) =>
+          this.world.inBounds(spot.x + dx, spot.y + dy) && this.world.isWater(spot.x + dx, spot.y + dy)) &&
+        this.suitsBiome(kind, spot.x, spot.y) &&
+        this.geographicResourceAvailableAt(kind, spot.x, spot.y));
+      if (banks.length === 0) return;
+      for (let placed = 0; placed < count; placed++) {
+        const spot = rng.pick(banks);
+        const node = new ResourceNode(kind, spot.x, spot.y, rng, this.ids);
+        this.nodes.push(node);
+        this.nodesById.set(node.id, node);
+      }
+      return;
+    }
     let placed = 0;
     let attempts = 0;
     const maxAttempts = count * 60;

@@ -4129,3 +4129,12 @@ Capturas nuevas: `artifacts/screenshots/m15-seasons-2026-10-03T-final/`.
 No cambia la simulación ni la UI del juego. Verificación conjunta: typecheck
 limpio, 886/886 unitarios, 69/69 e2e; matriz roja con los mismos checks/fallos
 en sus 27 escenarios que la referencia heredada.
+
+
+## 2026-10-08 — M15 recursos de orilla en mapas aleatorios
+
+Corregido: los bancos de barro y los juncos continentales admiten orillas de bosque y pradera, además de playa. En el mapa aleatorio `resources`, región (64,6), había 200 casillas de orilla dulce pero cero bancos de barro y cero juncos: el filtro clásico rechazaba el bosque. La región (44,5), aun teniendo playa, solo colocaba 3 de los 9 juncos pedidos por el muestreo aleatorio limitado. Ahora ambas clases se eligen directamente entre las orillas compatibles con agua real, con sus streams derivados existentes. Las islas clásicas conservan sus filtros y draws; sílex, cereal y metales conservan sus restricciones regionales. Los mapas secos siguen sin estos recursos.
+
+Pruebas: `geographic-bank-resources.test.ts` cubre bosque con río, cuota en orilla pequeña, lago continental, ausencia de agua y estabilidad de las otras clases, manadas y fundadores. Las tres regresiones de río/cuota/lago fallaron sobre HEAD antes de la corrección. `e2e/bank-resources.spec.ts` comprueba los nodos generados y guarda la captura en `artifacts/screenshots/m15-bank-resources-2026-10-08/01-wooded-river.png`.
+
+Cohortes de economía y matriz completa diferidas por la instrucción de M15; este cambio corrige presencia de materiales, sin afirmar mejora de supervivencia.
