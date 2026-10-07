@@ -1110,3 +1110,24 @@ describe('wanting down the chain', () => {
     expect(wantedOreKinds(farmer)).toEqual([]);
   });
 });
+
+describe('the metal rungs of the ladder', () => {
+  it('climbs from the Neolithic to the Chalcolithic to the Bronze Age, and no further', () => {
+    const ids = ERAS.map(era => era.id);
+    expect(ids.slice(-3)).toEqual(['neolithic', 'chalcolithic', 'bronze']);
+  });
+
+  it('is reached by a world where enough adults know the smelter\'s craft', () => {
+    const neolithic = ERAS.find(era => era.id === 'neolithic')!.needs;
+    const holders = new Map<Tech, number>();
+    for (const tech of neolithic) holders.set(tech, 10);
+    expect(eraFor(holders, 10).id).toBe('neolithic');
+    for (const tech of ['native_copper', 'smelting', 'casting'] as Tech[]) holders.set(tech, 2);
+    expect(eraFor(holders, 10).id).toBe('chalcolithic');
+    for (const tech of ['alloying', 'bronze_tools'] as Tech[]) holders.set(tech, 2);
+    expect(eraFor(holders, 10).id).toBe('bronze');
+    // Lose the casters and the age falls back, which is what an era is for.
+    holders.set('casting', 0);
+    expect(eraFor(holders, 10).id).toBe('neolithic');
+  });
+});

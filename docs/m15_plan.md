@@ -3485,6 +3485,8 @@ metal.
 
 **Avance del 2026-10-07 (37k, `smiths` y la cadena).** Escenario `smiths` (los diez nodos, con estaciones y vetas junto al campamento) y dos checks, `ore-becomes-metal` y `metal-is-cast`. Midiéndolos apareció un fallo real: con el mineral que pide la receta, 11 cargas y ninguna fundición; ahora `wantedOreKinds` quiere hasta las hojas de la cadena (palos para el carbón, mineral para el horno, estaño para el bronce) y el mismo mundo funde 3 veces. El check falla contra la build rota.
 
+**Avance del 2026-10-07 (37l, eras).** La escalera gana el Calcolítico y el Bronce (`heldBy` 0,15: un pueblo de metal tiene pocos herreros entre muchos). Con esto la fase tiene sus diez nodos, la mina, el horno, `smith` entrenada, `armourOf` por `techPower`, el escenario `smiths` y los peldaños. Queda fuera lo que el plan nombra y no era de los diez: fíbula, sal gema y sebo (ver `next-steps.md`), y el check `bronze-needs-a-trader`, que espera a la fase 36.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

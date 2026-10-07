@@ -221,3 +221,11 @@ gris con vetas verdes, o claras para el estaño).
 **Fallos del escenario que no son de esta fase.** `smiths` falla además `cravings-steer-the-diet`, `nights-are-slept`, `moods-move-choices`, `projects-find-backers`, `roast-wins`, `cooking-spreads`, `discovery-is-situated`, `bands-take-sides` y `perf-budget`: son los de siempre de un mundo cuya gente empieza sabiendo oficios y casi nada de cocina (los mismos nombres, por familia, que `craft` y `hearths` arrastran); `craft` y `hearths` dan **exactamente la misma lista** en el commit base y en este (7 fallos cada uno, medido en un worktree aparte en `d7e7a29`).
 
 **Pruebas.** `metal.test.ts` (+5): el herrero con mineral va a por palos, el del carbón va a la veta, quien no sabe hacer carbón no va a por palos, un encargo de bronce remonta al estaño, y quien no sabe nada no mira el suelo.
+
+## 37l — los peldaños del Calcolítico y del Bronce
+
+**Qué hay.** `ERAS` gana dos peldaños, `chalcolithic` (los del Neolítico más `native_copper`, `smelting` y `casting`) y `bronze` (más `alloying` y `bronze_tools`), con `heldBy: 0,15`. Antes de esta fase la escalera acababa en el Neolítico porque un peldaño cuyos requisitos nombran algo que nadie puede aprender no lo alcanza ningún mundo (la regla del encabezado de `Tech.ts`); ahora cada nombre es una técnica real y alcanzable. Las cuatro pruebas de eras de `tech.test.ts` (orden, periodos reales, acumulativa, ninguna técnica de un periodo posterior) pasan sin tocarlas.
+
+**Por qué 0,15 y no 0,3.** No es una rebaja: `heldBy` pide la fracción de adultos que saben *todo* lo de la lista, y un pueblo que trabaja el metal tiene unos pocos herreros entre muchos. Un umbral de tres de cada diez adultos pediría un herrero por hogar y el peldaño no se alcanzaría nunca en una banda de la isla. Es una suposición (documentada aquí, sin medir): la cohorte `smiths` de 16.000 pasos no lo alcanza en ninguna banda, lo que es coherente con que el bronce de una isla con una veta de estaño es de unas pocas personas.
+
+**Pruebas.** `metal.test.ts` (+2): la escalera acaba en `neolithic, chalcolithic, bronze`, y un mundo sube y baja por ella según cuántos adultos saben fundir (al perderse los que saben `casting`, vuelve al Neolítico).

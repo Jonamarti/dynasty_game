@@ -473,4 +473,6 @@ export const ES_TECH: Record<string, string> = {
   "wanted a bead that would keep its shine through a lifetime of wear": "quiso una cuenta que conservara su brillo toda una vida de uso",
   "picked a bright grain out of the gravel where the river ran out and kept it": "sacó un grano brillante de la grava donde moría el río y se lo guardó",
   "A gold ornament: the highest value of anything a band can make, and a gift that raises a house.": "Un adorno de oro: lo más valioso que una banda puede hacer, y un regalo que engrandece a una casa.",
+  "Copper out of green rock: a furnace, a mould and an axe that is metal. The first people to have a smith.": "Cobre sacado de piedra verde: un horno, un molde y un hacha que es de metal. El primer pueblo que tiene herrero.",
+  "Tin in the copper, and the tools of the whole band made of it. The tin is far away, and everything that follows is about getting it.": "Estaño en el cobre, y las herramientas de toda la banda hechas con él. El estaño está lejos, y todo lo que sigue trata de conseguirlo.",
 };

@@ -3166,6 +3166,36 @@ const ERA_LADDER: Omit<EraDef, 'label'>[] = [
       'Seed saved from one year to sow the next, and a herd that comes back ' +
       'on its own legs. The band stops moving to the food.',
   },
+  // M15 phase 37: the two rungs the metal tier makes reachable. A rung whose
+  // needs name something nobody can learn is a rung no world can reach, which is
+  // why these waited for the nodes; now every name below is a real, learnable
+  // technology. `heldBy` is lower than the rungs below (0.15 against 0.3) and
+  // that is not a softening: a metal-working people is a few smiths among many,
+  // and a bar of three in ten adults would ask for a smith in every household.
+  {
+    id: 'chalcolithic',
+    needs: [
+      'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
+      'farming', 'herding', 'pottery', 'masonry',
+      'native_copper', 'smelting', 'casting',
+    ],
+    heldBy: 0.15,
+    description:
+      'Copper out of green rock: a furnace, a mould and an axe that is metal. ' +
+      'The first people to have a smith.',
+  },
+  {
+    id: 'bronze',
+    needs: [
+      'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
+      'farming', 'herding', 'pottery', 'masonry',
+      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools',
+    ],
+    heldBy: 0.15,
+    description:
+      'Tin in the copper, and the tools of the whole band made of it. The tin ' +
+      'is far away, and everything that follows is about getting it.',
+  },
 ];
 
 export const ERAS: EraDef[] = ERA_LADDER.map(rung => ({ ...rung, label: AGE_LABELS[rung.id] }));
