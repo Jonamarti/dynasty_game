@@ -321,4 +321,5 @@ export const ES_HUD: Record<string, string> = {
   "node|copper_ore": "mineral de cobre",
   "node|tin_ore": "mineral de estaño",
   "node|gold": "oro",
+  "node|iron_ore": "mineral de hierro",
 };

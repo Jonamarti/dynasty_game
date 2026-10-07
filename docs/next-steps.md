@@ -3,6 +3,7 @@ tope de presa (ver `bugs.md`): un modelo de munición serviría también al arco
 al átlatl. Siguiente en 13d: el check `sub-webs-are-climbed`.
 [Detalle](m15_phase13_subwebs.md).
 
+**2026-10-07: fase 40a (`bog_iron`) entregada; continúa fase 40.** El mineral, su pasada y stream independiente, la puerta de minería y la era de Hierro están implementados. Sigue con `bloomery`, `forging`, `carburising`, `iron_tools` y `ploughshare`, cada nodo en su commit focal con documentación y tests. El mapa geográfico solo tiene proxy de humedad/orilla para hierro; Atlas aún no modela humedales explícitos. Evidencia visual: `artifacts/screenshots/m15-phase40-bog-iron-2026-10-07/`. [Detalle](m15_phase40_iron.md).
 # Next steps
 
 **2026-10-06: fase 30 cerrada; siguiente, fase 31 (el globo).** Entregadas

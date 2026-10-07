@@ -50,6 +50,7 @@ invalidates every saved seed and every pinned test world.
 > | 21 | `ecologyRng` (M15 phase 23e, where the hunters begin, and every kill and bite) | `Simulation.ts:652` |
 > | 22 | `edgeRng` (M15 phase 23h, which herd comes in at the rim, where, and which one leaves) | `Simulation.ts:660` |
 > | 23 | `oreRng` (M15 phase 37, where the native copper lies on a classic island; a map world draws each kind from its own derived stream) | `Simulation.ts:776` |
+> | 24 | `ironRng` (M15 phase 40a, where bog iron lies on a classic island; a map world draws it from its own derived stream) | after `oreRng`, before `spawnResources` |
 >
 > **The genuine append point is the line after the last row of that table**,
 > immediately before the `spawnResources` block. Appending where the comment
@@ -58,16 +59,16 @@ invalidates every saved seed and every pinned test world.
 > the same to the cereal.
 >
 > A fork appended genuinely last cannot shift anything, and the reason is worth
-> knowing: `this.rng` is drawn from **only** by these twenty-three `fork()` calls —
-> nothing else in the constructor takes a number from it — so a twenty-fourth at
-> the bottom leaves all twenty-three exactly where they were.
+> knowing: `this.rng` is drawn from **only** by these twenty-four `fork()` calls —
+> nothing else in the constructor takes a number from it — so a twenty-fifth at
+> the bottom leaves all twenty-four exactly where they were.
 >
 > This paragraph has been wrong before, which is the reason for the table. It
 > used to call the forest fork "the fourteenth" and describe it as the last one
 > — true when it was written, and false from the moment M8.1 appended `fishRng`
 > and M8.2 appended `grainRng` behind it, and again once M11 phase 1a appended
 > `choiceRng`, M11 phase 9b appended `hearthRng`, M12 phase 2d appended
-> `cultureRng` and M15 phase 20 appended `floraRng`. The line numbers drift
+> `cultureRng` and M15 phase 20 appended `floraRng`. M15 phase 40a appended `ironRng` after the entire existing block. The line numbers drift
 > with every edit above them, so trust the order and search for the name. **If you append a stream, add
 > its row here in the same commit**, or the next person inherits the same trap.
 

@@ -4340,3 +4340,14 @@ solo afecta a esta captura, no a las reglas o mensajes del juego.
 - **El modelo compacto no aborta ni complica partos** (fase 19d): `CompactAdvance` no pasa `pregnancyCare` porque no tiene `healthRng` ni nadie que atienda. Fuera de la vista nadie pierde un hijo. Es una diferencia de tasas entre el mundo detallado y el compacto para la calibración de la fase 41 (que ya tiene que reproducir natalidad y mortalidad infantil); no se parcheó aquí porque calibrarlo antes de medirlo sería inventar la cifra.
 - **Las cifras de riesgo del embarazo son suposiciones** (6 %/día de hambre extrema, 4 %/grado de fiebre, 5 % + una décima de la profundidad de una herida de torso, 6 % de complicación por parto, partera −80 %). Ninguna se calibró contra una natalidad; fase 41.
 - **La tirada del parto se hace en cada parto**, no solo con riesgo (a diferencia del aborto): el parto es el riesgo. Mueve `healthRng` una vez por nacimiento, lo que desplaza las peleas y supuraciones posteriores de ese mundo; los mundos sin nacimientos no cambian.
+
+### M15 fase 40a — localización del hierro en mapas geográficos, 2026-10-07
+
+El atlas y `WORLD_FEATURE` no contienen una capa ni un bioma explícito de
+humedales. Para que `bog_iron` funcione en mundos geográficos sin atribuir
+procedencia inventada, la primera entrega limita el mineral a terreno de humedad
+local alta junto a una orilla dulce; esto es un proxy de disponibilidad, no una
+identificación de turbera. `legacyIsland` conserva el emplazamiento de M8.4:
+playa consultada a través de `shoreHash`. Queda pendiente añadir datos
+geográficos explícitos de humedales antes de afirmar localizaciones regionales
+exactas. No se modificaron Atlas ni `SOURCES`.

@@ -236,6 +236,7 @@ const NODE_VERBS: Record<string, { label: string; icon: string; action: string }
   native_copper: { label: 'Pick up native copper', icon: '\u{1FA99}', action: 'gather' },
   copper_ore: { label: 'Mine copper ore', icon: '\u{26CF}', action: 'gather' },
   tin_ore: { label: 'Mine tin ore', icon: '\u{26CF}', action: 'gather' },
+  iron_ore: { label: 'Mine iron ore', icon: '\u{26CF}', action: 'gather' },
   gold: { label: 'Pick out gold', icon: '\u{1FA99}', action: 'gather' },
   // Translated where it is shown, below; `NODE_VERB_LABELS` lets the i18n test
   // see these.

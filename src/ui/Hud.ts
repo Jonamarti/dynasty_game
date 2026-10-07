@@ -2116,6 +2116,7 @@ export const NODE_LABELS: Record<ResourceKind, string> = {
   copper_ore: 'Copper seam',
   tin_ore: 'Tin seam',
   gold: 'Gold in the gravel',
+  iron_ore: 'Iron deposit',
 };
 
 /** Where the panel's folded state is remembered between sessions. */
