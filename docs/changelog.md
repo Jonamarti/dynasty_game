@@ -1,3 +1,7 @@
+## 2026-10-07 — M15 fase 33a: el mundo de pueblos cuelga de `WorldState` y avanza con el reloj del juego
+
+Por qué: sembrar pueblos no sirve si nada los hace avanzar. `WorldState.peoples` se siembra al crear una partida con mapa (región del inicio reservada para el nivel detallado) y `advancePeoples()` lo lleva una vez por día de juego desde el bucle del navegador. Tests: la isla clásica no tiene pueblos; la comarca detallada es idéntica con y sin ellos; el calendario es el del reloj. Sin cambio visible (el globo ya pinta lo que el personaje sabe). `?world=random` sigue siendo la única puerta hasta el ajuste de partida. Detalle en [m15_phase33_world.md](m15_phase33_world.md).
+
 ## 2026-10-07 — M15 fase 33a: el mundo de pueblos, sembrado desde el juego (`src/sim/world/PeopleWorld.ts`)
 
 Por qué: la fase 33 pide pueblos en todas las regiones habitables al crear una partida con mapa, con cultura propia y con una densidad que salga de lo que cada región alimenta. El modelo vivía en `tools/` (fase 32c); ahora está en `src/` y lo usan las herramientas y el juego. `tools/people-world-model.ts` es un envoltorio y su mundo es **idéntico byte a byte** al de antes (snapshot de dos semillas, 20 años sobre la Tierra), así que las cifras de 32c siguen reproduciéndose.

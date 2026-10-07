@@ -103,8 +103,9 @@ const profilePopulation = Number.isInteger(profileHumans) && profileHumans >= 2 
   ? { population: { bands: 1, peoplePerBand: profileHumans } } : {};
 /**
  * `?world=random` starts on a seeded globe instead of the classic island, which
- * has no globe to show. The browser's own world setting comes with phase 33;
- * until then this is the one door into a world with a map (M15 phase 31), and
+ * has no globe to show. The browser's own world setting is the next step of
+ * phase 33; until then this is the one door into a world with a map (M15 phase
+ * 31) — and, since 33a, into a world with peoples in every other region — and
  * the classic island stays the default for every player and every spec.
  */
 const GLOBE_SPAN = 4;
@@ -2238,6 +2239,8 @@ function frame(now: number): void {
       if (intent && sim.player) sim.player.forgetPlans();
       sim.playerIntent = intent;
       sim.step();
+      // The rest of the world (phase 33a): a no-op between game days and on the classic island, which has no map.
+      worldState.advancePeoples();
       // Inside the loop, not outside it: with the speed slider up this runs
       // several times a frame, and the previous position worth drawing from is
       // the one before the *last* step.

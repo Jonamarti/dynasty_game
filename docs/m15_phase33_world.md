@@ -21,3 +21,11 @@ Ningún stream es un `fork` de `Simulation.rng` ni toca `spawnRng`: con o sin pu
 ## El registro (`PeopleWorldRecord`)
 
 `PeopleWorld.toRecord()/fromRecord()`: el `PeopleSimRecord`, la región de cada pueblo, los contadores y el libro de conocimiento (`KnowledgeLedger.snapshot()`, nuevo: sin él un guardado olvida las técnicas a medio aprender y repetiría exposiciones ya vistas). Las regiones no se guardan: salen de la geografía. Test de ida y vuelta: guardar, cargar y avanzar 1, 10 y 60 años da el mismo registro que no haber guardado.
+
+## 33a-2. El mundo de pueblos cuelga de `WorldState` y avanza con el reloj
+
+- `WorldState.peoples` (`PeopleWorld | null`): se siembra en el constructor si la partida tiene mapa (`peoples: false` en el arranque lo apaga: un test que solo quiere la comarca no paga mil pueblos). La isla clásica no tiene mapa, no tiene pueblos.
+- La región donde cae el inicio (`regionOfStart`) se reserva: es del nivel detallado.
+- `WorldState.advancePeoples()` lo llama quien da los pasos (el bucle del navegador, tras `sim.step()`) y solo hace algo una vez por día de juego: `PeopleSim.advanceTo` recorre a todos los pueblos y una actualización estacional toca solo unas pocas veces al año. El calendario depende solo de los pasos, así que llamarlo cada tick, cada día o cada año da el mismo mundo (test).
+- **Comprobado:** con y sin pueblos, la comarca detallada es idéntica (mismas personas, mismos sitios, mismos nombres, antes y tres días después). El stream de siembra y el de cultura no son forks de `Simulation`.
+- Por ahora la única puerta es `?world=random`; el ajuste de partida del navegador («Mundo: una comarca / mapa del mundo») es lo que falta de la fase 33.

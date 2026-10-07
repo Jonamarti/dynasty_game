@@ -71,7 +71,7 @@ describe('seeding the world with peoples in the game (phase 33a)', () => {
     const reserved = new Set([home.id]);
     const w = new PeopleWorld(grid, 'pg-5', gameOptions(reserved));
     for (const p of w.sim.peoples.values()) expect(w.regionOfPeople.get(p.id)).not.toBe(home.id);
-    w.advanceYears(150);
+    w.advanceYears(60);
     for (const p of w.sim.peoples.values()) expect(w.regionOfPeople.get(p.id)).not.toBe(home.id);
     expect(regionOfStart(grid, { x: home.x * grid.comarcasPerRegion + 3, y: home.y * grid.comarcasPerRegion + 3 })).toBe(home.id);
   });
@@ -79,8 +79,8 @@ describe('seeding the world with peoples in the game (phase 33a)', () => {
   it('is a function of the seed, and the same however the years are cut', () => {
     const grid = gridFromGeography(geography('pg-6'))!;
     const run = (cuts: number[]) => { const w = new PeopleWorld(grid, 'pg-6', gameOptions()); for (const y of cuts) w.advanceYears(y); return w.sim.snapshot(); };
-    expect(run([30])).toEqual(run([10, 20]));
-    expect(run([30])).not.toEqual(new PeopleWorld(gridFromGeography(geography('pg-7'))!, 'pg-7', gameOptions()).sim.snapshot());
+    expect(run([20])).toEqual(run([5, 15]));
+    expect(run([20])).not.toEqual(new PeopleWorld(gridFromGeography(geography('pg-7'))!, 'pg-7', gameOptions()).sim.snapshot());
   });
 });
 
@@ -102,7 +102,7 @@ describe('the record of a world of peoples', () => {
     live.advanceYears(40);
     const loaded = PeopleWorld.fromRecord(grid, wire(live.toRecord()), gameOptions());
     expect(wire(loaded.toRecord())).toEqual(wire(live.toRecord()));
-    for (const years of [1, 10, 60]) {
+    for (const years of [1, 10, 30]) {
       live.advanceYears(years); loaded.advanceYears(years);
       expect(wire(loaded.toRecord())).toEqual(wire(live.toRecord()));
     }

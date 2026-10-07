@@ -3,12 +3,18 @@ import { IdSpace } from '../core/IdSpace.ts';
 import type { DeepPartial, SimConfig } from '../core/Config.ts';
 import type { WorldGeography } from './WorldGeography.ts';
 import { legacyIslandGeography } from './WorldGeography.ts';
+import { PeopleWorld, gridFromGeography, regionOfStart, type PeopleWorldRecord } from './PeopleWorld.ts';
 
 export interface WorldStateGeographicStart {
   geography: WorldGeography;
   start: { x: number; y: number };
   comarcasWide?: number;
   comarcasHigh?: number;
+  /**
+   * Seed the rest of the map with peoples (phase 33a). On by default for a start with a map; off for a test that only
+   * wants the detailed comarca and should not pay for a thousand peoples it never reads.
+   */
+  peoples?: boolean;
 }
 
 function retainStart(geography: WorldGeography, input: WorldStateGeographicStart | null) {
@@ -32,6 +38,11 @@ export class WorldState {
   readonly current: Simulation;
   /** Original placement, kept by the root even though Simulation consumes it only during construction. */
   readonly initialGeographicStart: (WorldStateGeographicStart & { comarcasWide: number; comarcasHigh: number }) | null;
+  /**
+   * The abstract peoples of every other habitable region (phase 33a), or null on the classic island, which has no map.
+   * It owns nothing the detailed comarca owns: its streams are derived from the seed, not forked from `Simulation`.
+   */
+  readonly peoples: PeopleWorld | null;
 
   constructor(config: DeepPartial<SimConfig> = {}, geographicStart?: WorldStateGeographicStart) {
     this.geography = geographicStart?.geography ?? legacyIslandGeography();
@@ -45,11 +56,24 @@ export class WorldState {
       comarcasHigh: geographicStart.comarcasHigh,
     } : undefined;
     this.current = new Simulation(config, this.ids, simulationStart);
+    this.peoples = geographicStart && geographicStart.peoples !== false
+      ? seedPeoples(this.geography, geographicStart.start, this.current)
+      : null;
+  }
+
+  /**
+   * Run the world of peoples up to the detailed clock. Called once a game day by whoever steps `current` (the browser loop,
+   * a harness): a seasonal update is due only a few times a year, and the schedule is a function of the steps alone, so
+   * calling this every tick, every day or once a year yields the same world (tested).
+   */
+  advancePeoples(): void {
+    const tick = this.current.time.tick;
+    if (this.peoples && tick % this.current.config.time.ticksPerDay === 0) this.peoples.advanceTo(tick);
   }
 
   /** Join an independently restored Simulation checkpoint to its world root. */
   static fromRestored(current: Simulation, geography: WorldGeography,
-    geographicStart: WorldStateGeographicStart | null): WorldState {
+    geographicStart: WorldStateGeographicStart | null, peoplesRecord: PeopleWorldRecord | null = null): WorldState {
     // The JSON reader is not the only caller of this public assembly path.
     // A classic checkpoint cannot acquire a salt coast merely by attaching
     // macro metadata. Geographic water provenance must come from its terrain.
@@ -74,7 +98,27 @@ export class WorldState {
       ids: { value: current.ids, enumerable: true },
       current: { value: current, enumerable: true },
       initialGeographicStart: { value: retainStart(geography, geographicStart), enumerable: true },
+      peoples: { value: restorePeoples(geography, geographicStart, peoplesRecord), enumerable: true },
     });
     return state;
   }
+}
+
+function peopleOptions(geography: WorldGeography, start: { x: number; y: number }) {
+  const grid = gridFromGeography(geography)!;
+  return { grid, options: { game: true, trackEvents: false, reserved: new Set([regionOfStart(grid, start)]) } };
+}
+
+/** The peoples of every other region, from the world's own seed. The detailed comarca holds the player's region. */
+function seedPeoples(geography: WorldGeography, start: { x: number; y: number }, current: Simulation): PeopleWorld | null {
+  if (!gridFromGeography(geography)) return null;
+  const { grid, options } = peopleOptions(geography, start);
+  return new PeopleWorld(grid, String(current.config.seed), options);
+}
+
+function restorePeoples(geography: WorldGeography, start: WorldStateGeographicStart | null, record: PeopleWorldRecord | null): PeopleWorld | null {
+  if (!record) return null;
+  if (!start || !gridFromGeography(geography)) throw new RangeError('A world of peoples needs a map to stand on');
+  const { grid, options } = peopleOptions(geography, start.start);
+  return PeopleWorld.fromRecord(grid, record, options);
 }
