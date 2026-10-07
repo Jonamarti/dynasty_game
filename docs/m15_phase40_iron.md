@@ -29,3 +29,39 @@ herramientas de hierro y arado; revisar las seis puertas del plan y añadir sus
 checks contra el build anterior al nodo correspondiente. Los humedales
 geográficos explícitos también quedan como deuda de datos, documentada en
 `bugs.md`.
+
+## 40b — `bloomery`, la lupia
+
+`bloomery` requiere `bog_iron` y `bellows`, vive en la sub-red Metal y da la
+receta `smelt_iron` en el horno de fundición existente. Dos unidades de
+`iron_ore` y una de `charcoal` producen una `iron_bloom` (lupia), con la
+habilidad `smith`, 120 `workTicks` y stock objetivo `keep: 2`. Cantidades,
+tiempo y stock son supuestos de diseño; no son rendimientos históricos medidos.
+La lupia conserva escoria: el hierro forjado y sus herramientas esperan a 40c.
+Su valor permite regalo, robo y trueque mientras llega esa siguiente receta.
+
+Los lectores son el catálogo de recetas/órdenes, `doCraft` y la búsqueda
+recursiva de ingredientes de `Ore.wantedOreKinds`. El ejecutor existente
+comprueba el conocimiento, el carbón/mineral y el horno, comunica los motivos
+de parada y guarda el trabajo para retomarlo tras una necesidad urgente. No
+se añade estación, sistema, fork ni pasada de spawn.
+
+El escenario corto `ironsmiths` proporciona un herrero experimentado (70), una
+carga, el conocimiento y un horno terminado, y emite una orden real de fundir. Su único check,
+`iron-ore-becomes-bloom`, falló antes de añadir el nodo: una carga disponible,
+cero fundiciones (1/1 FAIL). No se considera n/a en ese fixture. Las pruebas
+quitan también la receta para mantener esa sensibilidad. Los mundos sin una
+oportunidad de fundición siguen dando n/a. Es una prueba del mecanismo con
+orden; no prueba producción autónoma ni la cadena económica del hierro.
+
+Pruebas: `bloomery.test.ts` y `iron-check.test.ts`; interfaz/capturas:
+`e2e/phase40-bloomery.spec.ts`, en
+`artifacts/screenshots/m15-phase40-bloomery-2026-10-07/`.
+Verificación final registrada en el changelog. Las cohortes y la matriz completa
+siguen diferidas por el propietario hasta finalizar M15. La fase 40 sigue
+abierta: `forging`, `carburising`, `iron_tools`, `ploughshare` y las puertas de
+los nodos restantes.
+
+Hallazgo de calibración para M16: el test de difusión de pueblos pasa de
+0,32 en 40a a 0,43 con el nuevo nodo (límite < 0,4). Es una regresión nueva;
+se conserva la tasa y la aserción sin ajuste. Detalle en `bugs.md`.

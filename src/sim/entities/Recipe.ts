@@ -700,6 +700,14 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'copper_pendant', label: 'Copper pendant', icon: '\u{1F4FF}', tech: 'native_copper', skill: 'smith',
     workTicks: 100, ingredients: { copper_nugget: 2 }, output: { copper_pendant: 1 }, keep: 1,
   },
+  // M15 phase 40b (M8.4): use the existing furnace and bellows to reduce bog
+  // iron. The 2:1 ore-to-bloom batch is a balancing assumption for this model,
+  // not a historical claim about bloomery yields.
+  smelt_iron: {
+    id: 'smelt_iron', label: 'Iron bloom', icon: '\u{1F525}', tech: 'bloomery', skill: 'smith',
+    workTicks: 120, ingredients: { iron_ore: 2, charcoal: 1 }, output: { iron_bloom: 1 },
+    station: 'furnace', keep: 2,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

@@ -299,4 +299,5 @@ export const ES_DATA: Record<string, string> = {
   "Gold ornament": "Adorno de oro",
   "Gold in the gravel": "Oro en la grava",
   "Pick out gold": "Sacar oro",
+  "Iron bloom": "Lupia de hierro",
 };

@@ -34,4 +34,5 @@ export const ES_FEMININE: ReadonlySet<string> = new Set([
   'clay tablet',
   'ochre painting',
   'hide',
+  'iron bloom',
 ]);

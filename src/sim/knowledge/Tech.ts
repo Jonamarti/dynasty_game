@@ -182,6 +182,8 @@ export const TECHS = [
   'goldwork',
   // M15 phase 40a: iron begins with bog ore, before it becomes a bloom.
   'bog_iron',
+  // M15 phase 40b: force air through bog iron to leave a workable bloom.
+  'bloomery',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2312,6 +2314,25 @@ export const TECH: Record<Tech, TechDef> = {
       'Iron-bearing earth gathered from wet ground: the first step toward a ' +
       'bloomery and the tools that let the whole band work in iron.',
   },
+  // M15 phase 40b (M8.4). The furnace turns wet-ground ore into a spongy bloom
+  // once bellows can drive the heat hot enough to work iron.
+  bloomery: {
+    id: 'bloomery', label: 'Bloomery', domain: 'metal', web: 'metal',
+    age: 'iron', firstKnown: 'about 1200 BC',
+    kind: 'device',
+    requires: ['bog_iron', 'bellows'], difficulty: 0.7, skill: 'smith',
+    prototype: { iron_ore: 2, charcoal: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'bog_iron' }, { kind: 'knows', tech: 'bellows' },
+                { kind: 'holding', item: 'iron_ore' }, { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'forced air through a furnace full of iron-rich earth and found a spongy mass of metal' },
+      { needs: [{ kind: 'knows', tech: 'bog_iron' }, { kind: 'knows', tech: 'bellows' },
+                { kind: 'holding', item: 'iron_ore' }, { kind: 'holding', item: 'charcoal' }],
+        weight: 0.7, story: 'set iron-rich earth and charcoal together under the bellows and saw the furnace could make a bloom' },
+    ],
+    description:
+      'Air forced through bog iron and charcoal leaves a spongy bloom for the smith to work.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2681,6 +2702,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   bog_iron: {
     summary: 'Iron-bearing earth gathered from wet ground: the first step toward a bloomery.',
     site: 'RESOURCE_DEFS.iron_ore; Ore.canWork through ActionSystem.doHarvest, Simulation.order and ActionCatalog.nodeActions',
+  },
+  bloomery: {
+    summary: 'Air driven through iron ore and charcoal turns the furnace charge into a bloom the smith can work.',
+    site: 'RECIPES.smelt_iron at BUILDINGS.furnace; Ore.wantedOreKinds follows iron ore and charcoal to their sources',
   },
 };
 
@@ -3226,7 +3251,7 @@ const ERA_LADDER: Omit<EraDef, 'label'>[] = [
     needs: [
       'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
       'farming', 'herding', 'pottery', 'masonry',
-      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools', 'bog_iron',
+      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools', 'bog_iron', 'bloomery',
     ],
     heldBy: 0.15,
     description: 'Iron-bearing earth, the first step toward a bloomery.',

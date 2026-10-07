@@ -1,6 +1,6 @@
 # Architecture
 
-Current as of 2026-10-06 (M15 local continental water and geographic root records). No runtime
+Current as of 2026-10-07 (M15 continental water, geographic root records and iron blooms). No runtime
 dependencies, Vite + a 2D canvas.
 
 ## Layout
@@ -665,3 +665,10 @@ Cold sheltering retains its separate refuge destination. The clock does not
 assign an action: food, water, safety and the other scores still compete.
 Player orders to sleep recover physical debt; an order to rest remains held
 when rested, while urgent interruptions stay visible through onStopped.
+
+Iron's `bloomery` node uses the existing furnace and shared crafting executor:
+`smelt_iron` consumes ore/charcoal and produces `iron_bloom`. Recursive recipe
+sourcing asks for missing ore or the sticks for charcoal without new AI biases,
+streams or spawning. The short `ironsmiths` gate exercises an ordered supplied
+charge; autonomous iron supply and forging remain unmeasured/future work.
+See [m15_phase40_iron.md](m15_phase40_iron.md).

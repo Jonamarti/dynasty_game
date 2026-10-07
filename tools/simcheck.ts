@@ -36,6 +36,7 @@ import { handsEmptyForSwimming } from '../src/sim/core/Swimming.ts';
 import { FIRE_AVOID } from '../src/sim/systems/WildlifeSystem.ts';
 import { auditRegions, auditSwimRegions } from './regions.ts';
 import { setupFoodNews, setupConflicts } from './checkFixtures.ts';
+import { setupIronBloom } from './ironFixture.ts';
 import { createFrontier, setupFrontier, observeFrontier, createFrontierCohort, observeFrontierCohort } from './frontierFixture.ts';
 
 /**
@@ -243,6 +244,15 @@ function setupSmiths(sim: Simulation): void {
 }
 
 export const SCENARIOS: Record<string, Scenario> = {
+  ironsmiths: {
+    name: 'ironsmiths',
+    description: 'One ordered iron smelt at a finished furnace with a supplied charge; tests bloomery, not autonomous economics.',
+    config: { seed: 'ironsmiths', world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 6, startingTech: withPrerequisites(['bloomery']) } },
+    steps: 300,
+    setup: setupIronBloom,
+    checks: ['iron-ore-becomes-bloom'],
+  },
   smiths: {
     name: 'smiths',
     description:
@@ -3562,6 +3572,17 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('wool-is-sheared-and-woven',
       (tel.crafted_wool_cloth ?? 0) > 0,
       woolBred + ' wool bred, ' + (tel.crafted_wool_cloth ?? 0) + ' woven into cloth');
+  }
+
+  // A supplied, ordered charge exposes the absent node on the previous build.
+  // Ordinary worlds without a smelt opportunity still report n/a honestly.
+  const ironOpportunity = tel.iron_bloom_fixture_charges ?? 0;
+  const ironBlooms = tel.crafted_smelt_iron ?? 0;
+  if (ironOpportunity === 0 && ironBlooms === 0) {
+    skip('iron-ore-becomes-bloom', 'no supplied iron-smelting charge in this run');
+  } else {
+    add('iron-ore-becomes-bloom', ironBlooms > 0,
+      ironOpportunity + ' supplied charges, ' + ironBlooms + ' completed iron smelts');
   }
 
   // M15 phase 37. The metal tier is a chain of six steps done by whoever holds

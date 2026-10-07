@@ -482,4 +482,10 @@ export const ES_TECH: Record<string, string> = {
   "A gold ornament: the highest value of anything a band can make, and a gift that raises a house.": "Un adorno de oro: lo más valioso que una banda puede hacer, y un regalo que engrandece a una casa.",
   "Copper out of green rock: a furnace, a mould and an axe that is metal. The first people to have a smith.": "Cobre sacado de piedra verde: un horno, un molde y un hacha que es de metal. El primer pueblo que tiene herrero.",
   "Tin in the copper, and the tools of the whole band made of it. The tin is far away, and everything that follows is about getting it.": "Estaño en el cobre, y las herramientas de toda la banda hechas con él. El estaño está lejos, y todo lo que sigue trata de conseguirlo.",
+  "Bloomery": "Horno bajo",
+  "Air forced through bog iron and charcoal leaves a spongy bloom for the smith to work.": "El aire forzado a través del mineral de pantano y el carbón deja una masa esponjosa de hierro para que la trabaje el herrero.",
+  "forced air through a furnace full of iron-rich earth and found a spongy mass of metal": "forzó aire por un horno lleno de tierra ferruginosa y encontró una masa esponjosa de metal",
+  "set iron-rich earth and charcoal together under the bellows and saw the furnace could make a bloom": "puso tierra ferruginosa y carbón juntos bajo el fuelle y vio que el horno podía producir una lupia",
+  "Air driven through iron ore and charcoal turns the furnace charge into a bloom the smith can work.": "El aire forzado a través del mineral de hierro y el carbón convierte la carga del horno en una masa que puede trabajar el herrero.",
+  "RECIPES.smelt_iron at BUILDINGS.furnace; Ore.wantedOreKinds follows iron ore and charcoal to their sources": "RECIPES.smelt_iron en BUILDINGS.furnace; Ore.wantedOreKinds sigue el mineral de hierro y el carbón hasta sus fuentes",
 };

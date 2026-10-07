@@ -3771,6 +3771,8 @@ alcanzable. **Checks:** uno por nodo, cada uno contra el build sin el nodo.
 
 **Avance del 2026-10-07 (40a, `bog_iron`).** El nodo y el recurso `iron_ore` están implementados, con diez vetas en la pasada independiente posterior a `spawnPeople`, su propio `ironRng` y la puerta de `mining` tanto al ordenar como al cosechar. En `legacyIsland` las vetas ocupan tiles de playa en `shoreHash`; en mapas geográficos se usa como aproximación reproducible humedad local alta junto a una orilla de agua dulce. El atlas no declara humedales explícitos, así que esa aproximación no afirma localizar turberas reales. El primer nodo abre la era de Hierro. La negativa de minería se traduce y aparece en la interfaz. Sigue pendiente el resto de los cinco nodos, sus recetas/herramientas y checks por nodo; no se cierra la fase 40.
 
+**Avance del 2026-10-07 (40b, `bloomery`).** El nodo requiere `bog_iron` y `bellows` y habilita `smelt_iron` en el horno existente: 2 de mineral y 1 de carbón → 1 lupia (`iron_bloom`). Receta con `smith`, progreso e interrupciones del ejecutor común, búsqueda recursiva de materias primas e icono generado. Cantidades y tiempo son supuestos de diseño. `iron-ore-becomes-bloom`, en el fixture corto con orden `ironsmiths`, falla en el build previo sin receta; no demuestra producción autónoma ni mejora económica. Capturas en `artifacts/screenshots/m15-phase40-bloomery-2026-10-07/`. Cohortes diferidas; siguen `forging`, `carburising`, `iron_tools` y `ploughshare`. [Detalle](m15_phase40_iron.md).
+
 ## Fase 41 — Calibración final y cierre de M15
 
 - La segunda pasada completa del protocolo de la fase 10 en `generations`,

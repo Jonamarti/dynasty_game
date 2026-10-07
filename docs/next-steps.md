@@ -1,3 +1,5 @@
+**2026-10-07: fase 40b (`bloomery`) entregada.** La lupia se obtiene de mineral y carbón en el horno; el check corto con orden detecta la receta ausente. Se registra para M16 una regresión nueva de difusión entre pueblos (0,32 → 0,43; test < 0,4), sin ajustar tasas ni aserción. Siguiente entrega: `forging` (yunque, martillo y hierro forjado), después `carburising`, `iron_tools` y `ploughshare`. No se ha medido la producción autónoma de hierro ni se cierra la fase 40. Capturas: `artifacts/screenshots/m15-phase40-bloomery-2026-10-07/`. [Detalle](m15_phase40_iron.md).
+
 **2026-10-06: fase 13d, la honda.** `sling` entregada sin modelo de munición ni
 tope de presa (ver `bugs.md`): un modelo de munición serviría también al arco y
 al átlatl. Siguiente en 13d: el check `sub-webs-are-climbed`.

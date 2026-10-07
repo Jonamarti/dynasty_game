@@ -4351,3 +4351,35 @@ identificación de turbera. `legacyIsland` conserva el emplazamiento de M8.4:
 playa consultada a través de `shoreHash`. Queda pendiente añadir datos
 geográficos explícitos de humedales antes de afirmar localizaciones regionales
 exactas. No se modificaron Atlas ni `SOURCES`.
+
+### M15 fase 40b — límites de la prueba de lupia, 2026-10-07
+
+`ironsmiths` comprueba una orden real con carga y horno proporcionados, no la
+producción autónoma de hierro. La cadena completa (mineral, carbón, lupia,
+forja) y su reparto económico se deben observar tras los nodos siguientes;
+las cohortes están diferidas por el propietario. La carga 2:1 y los 120 ticks
+son supuestos de diseño, no datos históricos medidos. Antes de cambios,
+`sim:check band` ya fallaba `cravings-steer-the-diet` y `perf-budget` (553
+pasos/s, suelo 1.724); no son regresiones de `bloomery`. Sigue la deuda de
+humedales explícitos de 40a.
+### M15 fase 40b — regresión de difusión entre pueblos para M16, 2026-10-07
+
+El test existente «sustained full contact does homogenise» de
+`people-knowledge.test.ts` pasa con la tabla de 40a (dispersión 0,32) y falla
+con `bloomery` (0,43; exige < 0,4), sobre el mismo fixture de 20 streams y
+120 temporadas. No es un fallo heredado: añadir el nodo cambia la tabla que
+lee el modelo de pueblos. La media de transmisibilidad pasa de 1,93151 a
+1,91892, y la normalización cambia las tasas del resto de nodos en ~0,66 %;
+solo 2/20 ejecuciones acaban con `bloomery` en un único pueblo. El incremento
+observado no se explica solo por contar un nodo más; también varían las otras
+técnicas aprendidas. No se han ajustado tasas ni relajado el límite para hacer
+pasar el test. Queda para la revisión de calibración de M16 por la prioridad
+del propietario de terminar funcionalidades de M15. No se han lanzado cohortes
+nuevas: es la comparación aislada del fixture de la prueba existente.
+
+Durante la e2e completa de 40b falló una vez la creación de personaje al cambiar
+de tres a cinco pueblos: `.newgame-option` pasó de 3 a 0 tras una navegación
+observada por Playwright (98/99 pasan). Con archivos estables, la misma prueba
+pasa aislada (1/1, 17,5 s). No se ha confirmado la causa ni se ha cambiado el
+juego o la aserción para ocultar el fallo. Las dos pruebas de 40b pasan y las
+capturas finales 05/06 muestran ambas rutas y «haciendo una lupia de hierro».
