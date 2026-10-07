@@ -82,7 +82,7 @@ sigue permitida; parada a mitad de tala con su aviso; menú apagado con motivo;
 `stopReasonLabel` en los dos idiomas. `stopreasons.test.ts` e `i18n.test.ts`
 siguen verdes (leen las fuentes).
 
-## 19c. Se ve: la ficha (el vientre dibujado va en su propio commit)
+## 19c. Se ve: la ficha y el vientre
 
 `Knowledge.pregnancyLine(subject, known)`: a quien la conoce lo bastante para
 leer cómo está (`knowsCondition`, y siempre a una misma) le dice el tercio,
@@ -172,3 +172,34 @@ sale `n/a` ahí; `century` con una semilla lo ejerce (210 tareas, 5 cruces).
 | Con el veto | PASA: 0 vistas, 0 de excedente (1 paro, 5 cruces; 210 tareas) |
 | Sin el filtro de `Brain` | FALLA: 198 paros inmediatos (203 paros, 5 cruces; 151 tareas) |
 | Sin el filtro y sin la guarda de `execute` | FALLA: 2 vistas en marcha (`spar` 2; 249 tareas) |
+
+## 19c (arte y renderer). El vientre en el sprite
+
+Dos capas nuevas en la tubería de personas (`m15_art_pipeline.md`): `belly` (piel,
+teñida) y `belly_wear` (el mismo bulto en los colores de `wrap`, `tunic` o
+`longtunic`, que si no quedaría plano sobre él), para adolescente, adulta y
+anciana, de frente y de lado. `PersonAspect.belly` es opcional y el renderer lo
+pone con `Pregnancy.showing(person)`: es lo que ve cualquiera, así que el
+sprite no cuenta a un desconocido nada que la ficha no le contaría. El banco
+guarda 24 imágenes nuevas (el dibujo es el mismo en todas las poses).
+`PersonSpec.belly` también es opcional: ninguna imagen existente cambió.
+
+**El renderer no se ve a sí mismo.** El primer intento de captura no mostraba
+vientre alguno: la mujer se había movido a mano con el juego en pausa y el
+interpolador la dibuja donde estaba hasta que pasa un tick, así que la
+captura enfocaba otra cosa. El e2e ahora no teletransporta a nadie para la
+prueba del sprite, y la captura se toma a ×3 (el bulto mide unos nueve píxeles).
+
+**e2e (`e2e/phase19-pregnancy.spec.ts`, 3 pruebas).** El panel dice el tercio a
+una de su tribu y, a una desconocida, nada en el segundo y «pregnant (third
+trimester)» en el último; el menú deja «Fell» apagado con «Too heavy with child
+for that», lo que ella hacía se detiene con `too_heavy_with_child` (el panel lo
+dice) y la orden se rechaza con su frase; la figura compuesta con y sin vientre
+difiere en más de cien píxeles. Capturas en
+`artifacts/screenshots/m15-phase19-pregnancy-2026-10-07/` (ocho del juego y la
+hoja de contacto del arte).
+
+**Lo que no se hizo.** El respaldo procedural (`Sprites.ts`, para cuando las
+hojas no cargan) no dibuja vientre. Las prendas aún no están en la simulación
+(`wear` va siempre vacío), así que en el juego solo se ve el vientre desnudo; las
+capas `belly_wear` están hechas y revisadas en la hoja de contacto, esperando.

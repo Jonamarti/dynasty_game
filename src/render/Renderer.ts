@@ -45,6 +45,7 @@ import { ArtAtlas, type PersonAspect } from './ArtAtlas.ts';
 import type { ArtDir, ArtPose } from './ArtManifest.ts';
 import { choppingPose, craftingPose, diggingPose, gatheringPose } from './WorkAnimation.ts';
 import { ADULT_YEARS } from '../sim/entities/Person.ts';
+import { showing } from '../sim/entities/Pregnancy.ts';
 import {
   SpriteAtlas, BAND_COLORS, bandColorIndex, sizeClassOf, bodyScaleOf, hairVariantOf, hasBeardOf, heldItemFor,
   type SizeClass,
@@ -1999,6 +2000,9 @@ export class Renderer {
       band: BAND_COLORS[colorIndex]!,
       hairStyle, beard: hasBeardOf(person), expression: this.expressionFor(person),
       wear: {}, carryBaby: false, held: gathering || crafting ? null : heldItemFor(person, this.sim.config.carry.autoEquipTools),
+      // M15 phase 19c: the belly of the last third, which anybody can see
+      // (`Pregnancy.showing`); the earlier thirds are not on the sprite.
+      belly: showing(person),
     };
     const ratio = Math.min(1.2, Math.max(0.85, bodyScale / Renderer.NOMINAL_SCALE[sizeClass]));
     const k = (scale * 1.55 * ratio) / 96;

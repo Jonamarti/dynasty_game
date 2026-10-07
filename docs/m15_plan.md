@@ -2021,6 +2021,12 @@ Quedan 19c, 19d y el check.
 último solo al desconocido. El vientre dibujado va en su propio commit, al
 final, por las hojas PNG.
 
+**Avance del 2026-10-07 (19c, arte):** capas `belly` y `belly_wear` y su cableado
+(`PersonAspect.belly` ← `Pregnancy.showing`); e2e de la fase y capturas en
+`artifacts/screenshots/m15-phase19-pregnancy-2026-10-07/`. El vientre con
+prendas está dibujado pero aún no se ve en el juego (las prendas no están en la
+simulación todavía).
+
 **Avance del 2026-10-07 (19d):** aborto y parto complicado con `healthRng` (sin
 fork nuevo): una tirada al día solo con hambre extrema, fiebre o herida de
 torso; una por parto, reducida por la partera (`herbalism`). Crónica y
