@@ -47,6 +47,7 @@ import { ITEMS } from '../entities/Item.ts';
 import {
   TECH, techPower, prerequisitesMet, answerPressure, workableIdea as chooseWorkableIdea, type Tech,
 } from '../knowledge/Tech.ts';
+import { wantedOreKinds } from '../knowledge/Ore.ts';
 import {
   RECIPES, hasIngredients, recipeFor, recipeUsing, nutritionPerUnit,
 } from '../entities/Recipe.ts';
@@ -1094,6 +1095,18 @@ export class Brain {
       const herbNode = this.findNode(person, ctx,
         n => n.itemId === 'herbs' && !n.depleted, true, anchor, reach);
       if (herbNode) matNode = herbNode;
+    }
+    // M15 phase 37: the metals. What a person goes looking for in the ground is
+    // read off the recipe table (`Ore.wantedOreKinds`): somebody who can make a
+    // thing they are short of, and lacks the ore it takes, goes to the nearest
+    // seam they know of. Nobody else does, which is the point.
+    if (!person.isChild) {
+      const wantedOre = wantedOreKinds(person);
+      if (wantedOre.length > 0) {
+        const oreNode = this.findNode(person, ctx,
+          n => !n.depleted && wantedOre.includes(n.kind), true, anchor, reach);
+        if (oreNode) matNode = oreNode;
+      }
     }
     if (matNode) {
       // Only the genuinely comfortable pick up rocks and firewood. The gate is

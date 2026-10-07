@@ -41,6 +41,19 @@ export const ITEMS: ItemArt[] = [
     + shape('M28,14Q28,8 33,8L36,8L36,12L33,12L32,16Z', WOOD, WOOD_D)
     + ell(28, 46, 3, 2, 'none', WOOD_D) + stroke('M25,44L25,52', CORD, 1.6), 32)
     + limb([[10, 18], [54, 10]], 1.4, '#a9835a', WOOD_D)],
+  ['copper_nugget', 'Pepita de cobre', 'native_copper', () =>
+    shape(smooth([[12, 40], [20, 26], [34, 24], [44, 34], [40, 48], [22, 50]]), '#c9803c', '#6b3a14')
+    + shape(smooth([[34, 20], [44, 12], [54, 18], [52, 30], [42, 30]]), '#d99454', '#6b3a14')
+    + ell(24, 34, 3.2, 2.2, '#5f9a7c') + stroke('M18,40L30,36M38,38L46,34', '#e8b27a', 1.1)],
+  ['copper_awl', 'Punzón de cobre', 'native_copper', () => rot(
+    limb([[32, 58], [32, 28]], 5, WOOD, WOOD_D)
+    + shape(poly([[32, 4], [35.5, 28], [28.5, 28]]), '#c9803c', '#6b3a14')
+    + stroke('M32,8L32,26', '#e8b27a', 1), 26)],
+  ['copper_pendant', 'Colgante de cobre', 'native_copper', () =>
+    stroke('M14,10Q32,2 50,10', CORD, 1.8)
+    + stroke('M32,6L32,24', CORD, 1.6)
+    + shape(smooth([[32, 24], [42, 32], [40, 46], [32, 54], [24, 46], [22, 32]]), '#c9803c', '#6b3a14')
+    + ell(32, 36, 5, 5, 'none', '#6b3a14') + stroke('M26,34Q30,28 36,30', '#e8b27a', 1.1)],
   ['charcoal', 'Carbón vegetal', 'charcoal', () =>
     shape(smooth([[10, 44], [22, 30], [36, 34], [40, 48], [26, 54]]), '#2f2b28', STONE_D)
     + shape(smooth([[32, 30], [46, 18], [58, 28], [52, 42], [38, 42]]), '#3a3532', STONE_D)

@@ -160,6 +160,8 @@ export const TECHS = [
   // M15 phase 37: the metal tier (M8.3), one node per commit with its reader.
   // Appended in the order the commits land; `TECHS` order is the web's layout.
   'charcoal',
+  // Copper as metal, found lying about and hammered cold: the door of the Metal web.
+  'native_copper',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -180,6 +182,9 @@ export const DOMAINS = [
   // domain an angular sector in this order, and reordering the list would
   // rearrange a web the player has learned the shape of.
   'people',
+  // M15 phase 37 (M8.3): the ninth, for the metals. Appended for the reason
+  // `people` was: `TechWebLayout` gives each domain a sector in this order.
+  'metal',
 ] as const;
 export type Domain = (typeof DOMAINS)[number];
 
@@ -2029,6 +2034,33 @@ export const TECH: Record<Tech, TechDef> = {
       'and light and burns hotter than any wood. Carried, it is a warmth that ' +
       'travels; in a furnace it is the heat a metal needs.',
   },
+  // M15 phase 37 (M8.3). The first metal anyone used was not smelted: it was
+  // found as metal, a nugget of copper lying in the hills, and hammered cold
+  // until it was an awl or a bead. The door of the Metal web (`opens` is added
+  // with the second node that has an effect, 37c: a web of one is declared
+  // before its content). A device: the first awl or pendant is the prototype.
+  native_copper: {
+    id: 'native_copper', label: 'Native copper', domain: 'metal',
+    age: 'chalcolithic', firstKnown: 'about 7000 BC',
+    kind: 'device',
+    requires: ['stoneworking'], difficulty: 0.55, skill: 'knap',
+    prototype: { copper_nugget: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'holding', item: 'copper_nugget' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 1.0, story: 'struck a green-crusted stone that flattened under the blow instead of cracking' },
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'holding', item: 'copper_nugget' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'worked a bright lump with a hammerstone and found it spread like clay' },
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'place', biome: 'hills' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 0.4, story: 'turned over stones in the hills and kept one that would not break' },
+    ],
+    description:
+      'Copper found lying as metal and hammered cold: it spreads instead of ' +
+      'cracking. An awl that goes through hide, and a bead worth more than ' +
+      'the nugget it came from.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2359,6 +2391,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'A fuel that burns hotter than wood: a charcoal pit to make it, and a warmth to carry in the pack.',
     site: 'BUILDINGS.charcoal_pit and RECIPES.charcoal; NeedsSystem, via warmthFrom, when charcoal is in the pack',
   },
+  native_copper: {
+    summary: 'Copper found as metal, hammered cold: an awl that makes sewn goods faster, and a bead worth giving.',
+    site: 'RECIPES.copper_awl and RECIPES.copper_pendant; ActionSystem.doCraft, via Tech.awlFactor; Brain gather, via Ore.wantedOreKinds',
+  },
 };
 
 /**
@@ -2658,6 +2694,23 @@ export function quarryReachFactor(person: Person): number {
  */
 export function stealthFactor(person: Person): number {
   return scaled(person, 'tracking', 0.75);
+}
+
+/**
+ * The recipes an awl speeds: everything stitched. A bone needle is for sewing
+ * a coat and a copper awl is for piercing the hide first, so the awl is read by
+ * the leather and fur recipes and by nothing else.
+ */
+export const SEWN_RECIPES: ReadonlySet<string> = new Set(['hide_armour', 'hide_bag', 'fur_coat']);
+
+/**
+ * Multiplier on the work of a stitched recipe, read by `ActionSystem.doCraft`.
+ * The double gate every carried tool here follows: carrying a copper awl and
+ * knowing how one is made, and `scaled` is 1 for anybody who does not.
+ */
+export function awlFactor(person: Person, recipeId: string): number {
+  if (!SEWN_RECIPES.has(recipeId) || !person.inventory.has('copper_awl')) return 1;
+  return scaled(person, 'native_copper', 0.7);
 }
 
 /** What a coal of charcoal in the pack adds to the warmth carried, at full knowledge of how it is made. */

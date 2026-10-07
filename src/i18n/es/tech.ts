@@ -412,4 +412,12 @@ export const ES_TECH: Record<string, string> = {
   "burned the chips from a felling to keep warm, and smothered the fire by accident": "quemó las astillas de una tala para entrar en calor, y ahogó el fuego sin querer",
   "wanted a fire that would last the night without being fed": "quiso un fuego que durara la noche sin darle de comer",
   "A fuel that burns hotter than wood: a charcoal pit to make it, and a warmth to carry in the pack.": "Un combustible que arde más que la leña: una carbonera para hacerlo, y un calor que llevar en la mochila.",
+  "domain|metal": "metal",
+  "Native copper": "Cobre nativo",
+  "about 7000 BC": "hacia el 7000 a. C.",
+  "Copper found lying as metal and hammered cold: it spreads instead of cracking. An awl that goes through hide, and a bead worth more than the nugget it came from.": "Cobre hallado como metal y martillado en frío: se extiende en vez de agrietarse. Un punzón que atraviesa el cuero, y una cuenta que vale más que la pepita de la que salió.",
+  "struck a green-crusted stone that flattened under the blow instead of cracking": "golpeó una piedra con costra verde que se aplastó bajo el golpe en vez de agrietarse",
+  "worked a bright lump with a hammerstone and found it spread like clay": "trabajó un grumo brillante con un martillo de piedra y vio que se extendía como arcilla",
+  "turned over stones in the hills and kept one that would not break": "dio la vuelta a piedras en las colinas y se quedó con una que no se rompía",
+  "Copper found as metal, hammered cold: an awl that makes sewn goods faster, and a bead worth giving.": "Cobre hallado como metal, martillado en frío: un punzón que acelera lo cosido, y una cuenta digna de regalar.",
 };

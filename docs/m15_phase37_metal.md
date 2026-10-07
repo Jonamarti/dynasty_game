@@ -52,3 +52,53 @@ soportados (el carbón sí responde al calor). Arte: `b/charcoal_pit/ext` y
 **Medido.** `sim:check` del escenario `band`: los mismos dos fallos de base;
 nadie conoce `charcoal` en ese mundo, así que no cambia. Cohorte de 20 semillas
 no corrida (diferida).
+
+## 37b — `native_copper`: el cobre que se encuentra como metal
+
+**Qué hay.** El nodo `native_copper` (dispositivo, dominio nuevo `metal`,
+Calcolítico, «hacia el 7000 a. C.», requiere `stoneworking`); la clase de nodo
+`native_copper` (pepitas de superficie: seis como mucho, **no vuelven a crecer**,
+las recoge cualquiera); los ítems `copper_nugget`, `copper_awl` y
+`copper_pendant`; y dos recetas manuales, sin fuego ni estación,
+`copper_awl` y `copper_pendant`, las **primeras que entrenan `smith`**, una
+habilidad que todo personaje lleva desde M6b sin nada que la mejore.
+
+**Dónde está en el mundo.** `Simulation.spawnOres`, una pasada propia con su
+propio stream, `oreRng`: **fork n.º 23**, añadido tras `edgeRng` (fila nueva en
+la tabla de `AGENTS.md`, y las cuentas de esa nota corregidas; las filas 21-22
+habían perdido el `>` del bloque y se arreglan de paso). En la isla clásica,
+cinco pepitas (`ORE_COUNTS`, escaladas por `resourceScale`) en colinas. Con
+mapa, cada clase usa su stream derivado (`geographicResourceRng`) y se coloca
+solo donde el perfil de la región lo tiene: `GeographicResources` ahora lee una
+tabla `GATED` (grano, sílex y cobre) en vez de dos `if`; en el mapa generado la
+región debe listar `copper`, en la Tierra el rasgo `copper`. Un test prueba que
+**todo lo demás queda donde estaba** (se apaga el cobre con `ORE_COUNTS` y se
+compara el mundo), que es lo que el test de determinismo no puede ver.
+
+**Quién lo lee.** Tres lectores:
+
+- `Ore.wantedOreKinds` (nuevo, `knowledge/Ore.ts`): **la tabla de recetas dice
+  qué va a buscar uno a la tierra.** Quien puede hacer algo de lo que tiene
+  menos de lo que guarda (`keep`) y le falta un mineral de la receta va al nodo
+  más cercano que conoce; quien no sabe, pasa de largo. `Brain` lo usa como
+  hace con las hierbas: sustituye a `matNode` (flint/sticks), con el mismo
+  puntaje y la misma puerta de comodidad.
+- `Tech.awlFactor`, leído por `ActionSystem.doCraft`: el punzón acelera las
+  recetas cosidas (`SEWN_RECIPES`: armadura de cuero, bolsa y abrigo) con la
+  doble puerta de siempre (saberlo **y** llevarlo).
+- El colgante es un adorno: su razón de existir es `baseValue` (18, tres veces
+  la pepita), que ya leen `gift` (el excedente sobre `keep` se regala), el robo
+  y, desde la fase 36, el trueque.
+
+**Medido.** `sim:check` `band`: los mismos dos fallos de base. Las pepitas
+añaden nodos al mundo pero nadie las busca hasta que alguien concibe el nodo.
+Dos pruebas de otros archivos se actualizaron porque su premisa cambió, no
+porque el juego se rompiera: `herbs.test.ts` daba por hecho que la pasada de
+hierbas era la última en poner nodos (ahora lo es la de minerales).
+
+**Pruebas.** `metal.test.ts` (+11): declaración, chispa sin pepita, pasada
+propia (el resto del mundo no se mueve), determinista, puerta del mapa
+(cobre sí, estaño no), `wantedOreKinds`, recetas y `smith`, `awlFactor` (doble
+puerta y solo lo cosido), un oficio cosido de punta a punta más corto con
+punzón, y recoger una pepita que no se regenera. Arte: tres iconos y los nodos
+dibujados por código en el `Renderer`.

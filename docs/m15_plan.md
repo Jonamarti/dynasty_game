@@ -3457,6 +3457,12 @@ agente trabaja la fase 34). Detalle, decisiones y medidas por entrega en
 brasero de `warmthFrom` y, después, el horno. Va a la red principal porque la
 sub-red Fuego aún no existe (fase 16). Pruebas en `metal.test.ts`.
 
+**Avance del 2026-10-07 (37b, `native_copper`).** El cobre que se encuentra
+como metal: nodo, pepitas en las colinas (pasada y fork propios, el n.º 23;
+con mapa solo donde la región tiene cobre), punzón (más rápido lo cosido) y
+colgante (adorno: `baseValue`), y las primeras recetas que entrenan `smith`.
+`Ore.wantedOreKinds`: la tabla de recetas dice qué va a buscar uno a la tierra.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

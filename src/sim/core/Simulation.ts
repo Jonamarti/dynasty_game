@@ -29,7 +29,7 @@ import { IdSpace, type IdSpaceSnapshot } from './IdSpace.ts';
 import { ITEMS, Inventory } from '../entities/Item.ts';
 import { equipContainer, itemCapacityFor, reconcileCarry } from './Carry.ts';
 import {
-  BUSH_SPECIES, BUSHES, WILD_PLANTS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
+  BUSH_SPECIES, BUSHES, WILD_PLANTS, RESOURCE_KINDS, ORE_COUNTS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
   type BushSpecies, type ResourceKind,
 } from '../entities/ResourceNode.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
@@ -767,6 +767,13 @@ export class Simulation {
     // table): the dice of the edge — which herd comes in, where, how big, and
     // which one leaves. Drawn from once a day and by nothing else.
     this.edgeRng = this.rng.fork();
+    // M15 phase 37, appended after `edgeRng` (row 23 of `AGENTS.md`'s table):
+    // where the ore lies on a classic island. A stream of its own and a pass of
+    // its own after everything else, for the reason every stream below the
+    // named block gives; on a world with a map each kind draws from its own
+    // seed-derived stream instead (`geographicResourceRng`) and this one is
+    // never touched.
+    const oreRng = this.rng.fork();
 
     if (geographicStart) this.spawnGeographicResources();
     else this.spawnResources(spawnRng);
@@ -778,6 +785,7 @@ export class Simulation {
     this.spawnFlora(floraRng);
     this.spawnWildPlants(herbRng);
     this.spawnPredators(this.ecologyRng);
+    this.spawnOres(oreRng);
     // Geography is construction input, not live simulation state. The root may
     // retain the selected map; the motor keeps only its generated tile arrays.
     this.geographicStart = null;
@@ -1171,6 +1179,21 @@ export class Simulation {
   }
 
   /**
+   * Places the metals, M15 phase 37: native copper now, the ores as `mining`
+   * brings them. One kind at a time, in `RESOURCE_KINDS` order, so appending a
+   * kind never moves the ones before it. On a world with a map each kind draws
+   * from its own stream and is placed only where the region's profile has it.
+   */
+  private spawnOres(rng: RNG): void {
+    const geographic = this.geographicStart !== null;
+    for (const kind of RESOURCE_KINDS) {
+      const quoted = ORE_COUNTS[kind];
+      if (quoted === undefined) continue;
+      this.spawnResourceKind(kind, quoted, geographic ? this.geographicResourceRng(kind) : rng, geographic);
+    }
+  }
+
+  /**
    * Places the hunters, M15 phase 23e: a pack of three wolves, a bear and a
    * lynx on the woods and hills, away from where people begin so that nobody
    * wakes beside one. Their own pass on their own stream, after everything
@@ -1243,6 +1266,9 @@ export class Simulation {
       // carries scrub, not a crop worth gathering.
       case 'wild_grain':
         return biome === 'grass' && this.world.fertilityAt(x, y) > 0.42;
+      // M15 phase 37. Float copper weathers out of the hills; the one place a
+      // person is likely to walk past a nugget and not know what it is.
+      case 'native_copper': return biome === 'hills';
     }
   }
 

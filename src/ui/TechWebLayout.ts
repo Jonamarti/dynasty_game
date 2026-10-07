@@ -413,4 +413,7 @@ export const DOMAIN_COLORS: Record<Domain, string> = {
   // branch is the one cluster whose subject is not a material, and it should
   // read as somewhere else on the web at a glance.
   people: '#d8b84a',
+  // M15 phase 37: the metals. A verdigris green, the colour copper turns, and
+  // a hue nothing else in the table is near.
+  metal: '#3fb8a0',
 };

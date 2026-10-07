@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { RNG } from '../core/RNG.ts';
 import { appealOf, consumeFood, knowsPoisonous } from '../core/Macros.ts';
-import { BUSHES, BUSH_SPECIES, WILD_PLANTS, bushPhase } from '../entities/ResourceNode.ts';
+import { BUSHES, BUSH_SPECIES, ORE_COUNTS, WILD_PLANTS, bushPhase } from '../entities/ResourceNode.ts';
 import { dress, newBody, soothe, sicken, wound, type Condition } from '../entities/Body.ts';
 import { nodeName } from '../../ui/Hud.ts';
 
@@ -29,8 +29,11 @@ describe('the wild plants', () => {
     const bushes = sim.nodes.filter(n => ordinary(n.species));
     expect(bushes.length).toBeGreaterThan(wild.length);
     // Every plant of the new pass has a higher id than every ordinary node of
-    // the old ones: it was planted last, from its own stream.
-    const lastOrdinary = Math.max(...sim.nodes.filter(n => n.species === null || ordinary(n.species)).map(n => n.id));
+    // the old ones: it was planted after them, from its own stream. The ore
+    // (M15 phase 37) is the one pass planted after the herbs, so it is not an
+    // "old" node here: a premise this spec used to hold without saying so.
+    const lastOrdinary = Math.max(...sim.nodes
+      .filter(n => (n.species === null && !(n.kind in ORE_COUNTS)) || ordinary(n.species)).map(n => n.id));
     for (const plant of wild) expect(plant.id).toBeGreaterThan(lastOrdinary);
   });
 

@@ -119,6 +119,8 @@ const RESOURCE_COLORS: Record<ResourceKind, string> = {
   // Ripe cereal. Warmer and paler than the grass it stands in, so a stand of it
   // reads as a stand of something from across the valley.
   wild_grain: '#d8c169',
+  // Copper as it lies: orange-brown, with a green bloom on it where it has weathered.
+  native_copper: '#c9803c',
 };
 
 /**
@@ -1046,7 +1048,7 @@ export class Renderer {
         ctx.fillStyle = '#ceb45c';
         for (let i = -1; i <= 1; i++) ctx.fillRect(x + i * scale * 0.18 - 1, y - scale * 0.65, 2, 3);
       }
-    } else if (kind === 'flint' || kind === 'clay') {
+    } else if (kind === 'flint' || kind === 'clay' || kind === 'native_copper') {
       ctx.beginPath(); ctx.ellipse(x, y, scale * 0.65, scale * 0.43, -0.2, 0, Math.PI * 2); ctx.fill();
       if (kind === 'flint' && !depleted) {
         ctx.strokeStyle = '#c6ccd0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - scale * 0.3, y); ctx.lineTo(x + scale * 0.3, y - scale * 0.15); ctx.stroke();
@@ -1293,6 +1295,28 @@ export class Renderer {
         ctx.lineTo(px - size * 0.45, py - size * 0.12);
         ctx.closePath();
         ctx.fill();
+        break;
+      }
+      case 'native_copper': {
+        // Three small nuggets and the green of weathering: metal that is lying
+        // about, which is the thing about it. Taken, the ground keeps a scar
+        // the way an outcrop of flint does - it never grows back.
+        if (spent) {
+          ctx.fillStyle = SPENT_COLORS.scar;
+          ctx.beginPath();
+          ctx.ellipse(px, py, size * 0.36, size * 0.2, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+        const lumps: [number, number, number][] = [[-0.26, 0.1, 0.24], [0.2, 0.18, 0.2], [0, -0.2, 0.27]];
+        for (const [dx, dy, r] of lumps) {
+          ctx.fillStyle = RESOURCE_COLORS.native_copper;
+          ctx.beginPath();
+          ctx.ellipse(px + dx * size, py + dy * size, r * size, r * size * 0.8, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#5f9a7c';
+        ctx.fillRect(px - size * 0.08, py - size * 0.26, Math.max(1, size * 0.12), Math.max(1, size * 0.08));
         break;
       }
       case 'clay':

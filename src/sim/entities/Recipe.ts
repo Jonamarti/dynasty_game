@@ -606,6 +606,18 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 120, ingredients: { sticks: 6 }, output: { charcoal: 3 },
     station: 'charcoal_pit', keep: 4,
   },
+  // `native_copper`: cold-hammered, no fire and no station - which is the whole
+  // point of it. The first recipes in the game to practise `smith`, a skill every
+  // character has carried since M6b with nothing to improve it. The awl comes
+  // first so that a tie in the craft scorer goes to the tool and not the bead.
+  copper_awl: {
+    id: 'copper_awl', label: 'Copper awl', icon: '\u{1FAA1}', tech: 'native_copper', skill: 'smith',
+    workTicks: 90, ingredients: { copper_nugget: 1 }, output: { copper_awl: 1 }, keep: 1,
+  },
+  copper_pendant: {
+    id: 'copper_pendant', label: 'Copper pendant', icon: '\u{1F4FF}', tech: 'native_copper', skill: 'smith',
+    workTicks: 100, ingredients: { copper_nugget: 2 }, output: { copper_pendant: 1 }, keep: 1,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

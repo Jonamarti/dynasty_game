@@ -347,6 +347,13 @@ export const ITEMS: Record<string, ItemDef> = {
   // read in two places, `Tech.warmthFrom` (a coal in the pack is a brazier) and
   // the furnace recipes of `smelting`, which is what it is for. Loose, like
   // earth: a basket takes it, a hand holds a fistful of it.
+  // `native_copper`'s three things. The nugget is the raw metal, found; the awl
+  // is read by `Tech.awlFactor`; the pendant is an ornament, and what it is
+  // for is `baseValue`: the best thing of its size a band can make at this point,
+  // which is exactly what `gift` and `doSteal` read, and what trade will read.
+  copper_nugget: { id: 'copper_nugget', label: 'Copper nugget', nutrition: 0, spoilTicks: 0, baseValue: 6, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  copper_awl: { id: 'copper_awl', label: 'Copper awl', nutrition: 0, spoilTicks: 0, baseValue: 9, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  copper_pendant: { id: 'copper_pendant', label: 'Copper pendant', nutrition: 0, spoilTicks: 0, baseValue: 18, class: 'small', hand: { perHand: 1, perArms: 2, hands: 1 } },
   charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
 };
 

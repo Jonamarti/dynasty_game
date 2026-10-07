@@ -60,7 +60,7 @@ import { telemetry } from '../core/Telemetry.ts';
 import { bestFoodFor, consumeFood, consumeFoodAtSource, knowsPoisonous } from '../core/Macros.ts';
 import { expectedFood } from '../ai/Beliefs.ts';
 import {
-  TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
+  TECH, awlFactor, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
   orchardFactor, prerequisitesMet, reapFactor, tallyFactor, techPower,
   workableIdea as chooseWorkableIdea, weaponOf, armourOf, protectionOf, type Tech,
 } from '../knowledge/Tech.ts';
@@ -4329,7 +4329,7 @@ export class ActionSystem {
     // on until the final tick, when the item appears, so it banks on the crafter.
     const bankKey = 'craft:' + recipe.id;
     if (person.actionTimer <= 0) {
-      const total = Math.ceil(recipe.workTicks / person.skillFactor(recipe.skill));
+      const total = Math.ceil(recipe.workTicks * awlFactor(person, recipe.id) / person.skillFactor(recipe.skill));
       person.actionTimer = Math.max(1, total - person.bankedFor(bankKey));
       return;
     }

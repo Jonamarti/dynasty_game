@@ -273,4 +273,8 @@ export const ES_DATA: Record<string, string> = {
   "The slope cut level: the high edge dug away and the low edge built up with it.": "La ladera cortada a nivel: se cava el borde alto y con ello se levanta el borde bajo.",
   "Charcoal pit": "Carbonera",
   "A stack of deadwood sealed under turf and left to smoulder. What comes out is black, light, and burns hotter than the wood that went in.": "Un montón de leña seca sellado bajo el césped y dejado a arder sin llama. Lo que sale es negro, ligero, y arde más que la madera que entró.",
+  "Pick up native copper": "Recoger cobre nativo",
+  "Copper nugget": "Pepita de cobre",
+  "Copper awl": "Punzón de cobre",
+  "Copper pendant": "Colgante de cobre",
 };

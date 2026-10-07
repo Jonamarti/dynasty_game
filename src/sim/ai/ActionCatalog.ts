@@ -231,6 +231,7 @@ const NODE_VERBS: Record<string, { label: string; icon: string; action: string }
   reeds: { label: 'Cut reeds', icon: '\u{1F33E}', action: 'gather' },
   clay: { label: 'Dig clay', icon: '\u{1FAA8}', action: 'gather' },
   flint: { label: 'Gather flint', icon: '\u{1FAA8}', action: 'gather' },
+  native_copper: { label: 'Pick up native copper', icon: '\u{1FA99}', action: 'gather' },
   // Translated where it is shown, below; `NODE_VERB_LABELS` lets the i18n test
   // see these.
 };

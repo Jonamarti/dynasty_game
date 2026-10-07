@@ -2096,6 +2096,7 @@ export const NODE_LABELS: Record<ResourceKind, string> = {
   clay: 'Clay bank',
   wild_grain: 'Wild grain',
   fish: 'Fishing spot',
+  native_copper: 'Native copper',
 };
 
 /** Where the panel's folded state is remembered between sessions. */
