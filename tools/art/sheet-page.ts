@@ -100,6 +100,18 @@ function person(over: AspectOver, label: string, row: HTMLElement): void {
   for (const dir of ['S', 'E', 'N', 'W'] as ArtDir[]) person({ sex: 'f', hairStyle: 'long', carryBaby: true, dir, wear: { torso: 'tunic', head: 'cap' } }, `baby+tunic ${dir}`, row);
 }
 {
+  // M15 phase 19c: the belly of the last third, bare and over each garment that covers it,
+  // from the front and the side, on the three ages of woman that can carry one.
+  const row = section('belly', 'Belly: the last third of a pregnancy');
+  const sets: [string, WornGarments][] = [['bare', {}], ['wrap', { torso: 'wrap' }], ['tunic', { torso: 'tunic' }], ['longtunic', { torso: 'longtunic' }], ['cape', { torso: 'cape' }]];
+  for (const [age, sexAge] of [['adult', 'f'], ['adolescent', 'f'], ['elder', 'f']] as [ArtAge, ArtSex][]) {
+    for (const [label, wear] of sets) {
+      for (const dir of ['S', 'E', 'W'] as ArtDir[]) person({ age, sex: sexAge, dir, belly: true, wear, hairStyle: 'long' }, `${age} ${label} ${dir}`, row);
+    }
+  }
+  for (const pose of ['w0', 'w1', 'g2'] as ArtPose[]) person({ sex: 'f', belly: true, pose, dir: 'E', hairStyle: 'long', wear: { torso: 'tunic' } }, `tunic ${pose}`, row);
+}
+{
   const row = section('walk', 'Walk cycle');
   for (const dir of ['S', 'E', 'N'] as ArtDir[]) {
     for (const pose of ['idle', 'w0', 'w1', 'w2', 'w3'] as ArtPose[]) person({ pose, dir, sex: 'f', hairStyle: 'long', wear: { torso: 'wrap' } }, `${dir} ${pose}`, row);

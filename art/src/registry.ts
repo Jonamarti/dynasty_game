@@ -15,7 +15,7 @@ import {
 import { ANIMAL_KINDS, ANIMAL_POSES, paintAnimal } from './animals/animals.ts';
 import { BUILDINGS, PLANS } from './buildings/buildings.ts';
 import { ell, limb, normalizeIds, poly, shape, stroke, svgDoc } from './lib/draw.ts';
-import { CARRY_SLOTS, SLOT_ORDER, SLOT_TINT, personLayers, type FaceExpr, type HairStyle, type PersonSpec, type Wear } from './people/rig.ts';
+import { BELLY_COVERS, CARRY_SLOTS, SLOT_ORDER, SLOT_TINT, isWoman, personLayers, type FaceExpr, type HairStyle, type PersonSpec, type Wear } from './people/rig.ts';
 import { BABY_BEDS, HAND, HELD_KINDS, babyLyingLayers, heldSvg } from './props/held.ts';
 import { ITEMS, WOOD, WOOD_D } from './props/items.ts';
 
@@ -72,13 +72,20 @@ export function collectPeople(): Collected {
           const carryCalls: PersonSpec[] = carries
             ? [{ ...base, carry: true }, { ...base, carry: true, wear: { torso: 'tunic' } }, { ...base, carry: true, wear: { torso: 'longtunic' } }, { ...base, carry: true, wear: { hands: 'gloves' } }]
             : [];
-          for (const spec of [...calls, ...carryCalls]) {
+          // M15 phase 19c: the belly of the last third, for women, seen from the
+          // front and the side. Bare, and once over each garment that covers it;
+          // only its own two slots are kept (the rest is the ordinary figure).
+          const bellyCalls: PersonSpec[] = isWoman(age, sex) && dir !== 'N'
+            ? [{ ...base, belly: true }, ...[...BELLY_COVERS].map(torso => ({ ...base, belly: true, wear: { torso } as Wear }))]
+            : [];
+          for (const spec of [...calls, ...carryCalls, ...bellyCalls]) {
             const out = personLayers(spec);
             const ak = anchorKey(age as ArtAge, sex as ArtSex, dir, pose, spec.carry);
             anchors[ak] ??= out.anchors;
             for (const layer of out.layers) {
               // The carrying call redraws every slot; only the ones that change need keeping.
               if (spec.carry && !CARRY_SLOTS.has(layer.slot)) continue;
+              if (spec.belly && layer.slot !== 'belly' && layer.slot !== 'belly_wear') continue;
               bank.add(personKey(layer.slot, layer.variant, age, sex, dir, pose), layer.svg, CELL, CELL);
             }
           }

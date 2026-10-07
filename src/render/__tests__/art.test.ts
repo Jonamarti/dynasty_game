@@ -44,6 +44,24 @@ describe('art coverage', () => {
     }
   });
 
+  it('draws the belly of the last third for every woman, bare and over each garment that covers it (phase 19c)', () => {
+    for (const age of ['adolescent', 'adult', 'elder'] as const) for (const dir of ['S', 'E'] as const) for (const pose of ART_POSES) {
+      expect(people.keys[personKey('belly', 'base', age, 'f', dir, pose)], `belly ${age} ${dir} ${pose}`).toBeDefined();
+      for (const garment of ['wrap', 'tunic', 'longtunic']) {
+        expect(people.keys[personKey('belly_wear', garment, age, 'f', dir, pose)], `belly_wear ${garment} ${age} ${dir} ${pose}`).toBeDefined();
+      }
+    }
+  });
+
+  it('draws no belly for anybody who cannot carry one, nor from behind', () => {
+    for (const age of ART_AGES) for (const sex of ART_SEXES) for (const pose of ART_POSES) {
+      expect(people.keys[personKey('belly', 'base', age, sex, 'N', pose)]).toBeUndefined();
+      if (sex === 'm' || age === 'child' || age === 'infant') {
+        for (const dir of ['S', 'E'] as const) expect(people.keys[personKey('belly', 'base', age, sex, dir, pose)], `${age} ${sex} ${dir}`).toBeUndefined();
+      }
+    }
+  });
+
   it('has a face for every expression the game can show', () => {
     for (const expr of EXPRESSIONS) for (const dir of ['S', 'E'] as const) {
       expect(people.keys[personKey('face', expr, 'adult', 'm', dir, 'idle')], `${expr} ${dir}`).toBeDefined();
@@ -150,6 +168,22 @@ describe('art build', () => {
       }
       expect(hands.size).toBe(4);
     }
+  });
+
+  it('adds the belly as its own layers and leaves every other layer of the figure as it was', () => {
+    const base: PersonSpec = { age: 'adult', sex: 'f', dir: 'S', pose: 'w1', wear: { torso: 'tunic' }, carry: false, hair: 'long', beard: false, expr: 'neutral' };
+    const plain = personLayers(base);
+    const swollen = personLayers({ ...base, belly: true });
+    expect(plain.layers.some(layer => layer.slot.startsWith('belly'))).toBe(false);
+    expect(swollen.layers.filter(layer => layer.slot.startsWith('belly')).map(layer => layer.slot)).toEqual(['belly_wear']);
+    expect(swollen.layers.filter(layer => !layer.slot.startsWith('belly'))).toEqual(plain.layers);
+    expect(swollen.anchors).toEqual(plain.anchors);
+    // Bare, the same bulge is skin, which takes the wearer's colour.
+    const bare = personLayers({ ...base, wear: {}, belly: true });
+    expect(bare.layers.filter(layer => layer.slot.startsWith('belly')).map(layer => layer.slot)).toEqual(['belly']);
+    // Nobody else grows one, and from behind it is not seen.
+    expect(personLayers({ ...base, sex: 'm', belly: true }).layers.some(layer => layer.slot.startsWith('belly'))).toBe(false);
+    expect(personLayers({ ...base, dir: 'N', belly: true }).layers.some(layer => layer.slot.startsWith('belly'))).toBe(false);
   });
 
   it('draws the same text twice', () => {

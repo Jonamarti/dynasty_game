@@ -48,7 +48,15 @@ export interface PersonAspect {
   wear: WornGarments;
   carryBaby: boolean;
   held: string | null;
+  /**
+   * The belly of the last third of a pregnancy (M15 phase 19c). Optional so
+   * every aspect written before it keeps meaning what it meant.
+   */
+  belly?: boolean;
 }
+
+/** Garments that lie over the abdomen, so the belly is drawn in their colours (mirrors `art/src/people/rig.ts`). */
+const BELLY_COVERS: ReadonlySet<string> = new Set(['wrap', 'tunic', 'longtunic']);
 
 /** Slots that stay planted when the upper body bobs in the walk. */
 const GROUNDED = /^(shadow|legs|trousers|feet)/;
@@ -131,7 +139,7 @@ export class ArtAtlas {
     return [
       a.age, a.sex, a.dir, a.pose, a.skin, a.hair, a.band, a.hairStyle, a.beard ? 'b' : '-', a.expression,
       w.torso ?? '', w.legs ?? '', w.feet ?? '', w.hands ?? '', w.head ?? '', w.cloak ?? '',
-      a.carryBaby ? 'c' : '', a.held ?? '',
+      a.carryBaby ? 'c' : '', a.held ?? '', a.belly ? 'belly' : '',
     ].join('|');
   }
 
@@ -170,6 +178,10 @@ export class ArtAtlas {
         case 'beard': variant = a.beard ? 'beard' : null; break;
         case 'head_back': case 'head_wear': variant = w.head ?? null; break;
         case 'baby': case 'baby_skin': variant = a.carryBaby ? 'baby' : null; break;
+        // Bare skin where nothing covers the abdomen; the same bulge in the
+        // garment's colours where a wrap or a tunic does.
+        case 'belly': variant = a.belly && !(w.torso && BELLY_COVERS.has(w.torso)) ? 'base' : null; break;
+        case 'belly_wear': variant = a.belly && w.torso && BELLY_COVERS.has(w.torso) ? w.torso : null; break;
         case 'held': break;
         default: break;
       }

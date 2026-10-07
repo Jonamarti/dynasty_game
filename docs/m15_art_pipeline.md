@@ -48,11 +48,24 @@ Key: `p/<slot>/<variant>/<age>.<sex>/<dir>/<pose>` (`personKey`).
   | `trousers`, `feet`, `head_wear`, `head_back` | `trousers`; `boots wraps`; `cap hood` | none |
   | `cloak_back`, `cloak_front` | `cloak` | none |
   | `baby`, `baby_skin` | `baby` (arms carrying: variants get `+carry`) | skin for `baby_skin` |
+  | `belly` | `base` (women, front and side only) | skin |
+  | `belly_wear` | `wrap tunic longtunic` (women, front and side only) | none |
 
 - **Independence.** Garment regions do not depend on one another (torso, legs,
   feet, hands, head, cloak). The default loincloth is hidden when trousers or a
   tunic cover the hips; the default chest band when a tunic or wrap covers the
   chest (`ArtAtlas.compose` applies both rules).
+- **The belly** (phase 19c): the last third of a pregnancy, for the three ages
+  of woman that can carry one (adolescent, adult, elder), seen from the front
+  and the side; from behind nothing shows. Two pictures that never show
+  together: `belly` is bare skin (tinted) where nothing covers the abdomen,
+  `belly_wear` the same bulge in the garment's own colours over a `wrap`, a
+  `tunic` or a `longtunic`, stacked above `torso_wear` so the garment does not
+  lie flat across it. `PersonAspect.belly` (optional) selects it; the renderer
+  sets it from `Pregnancy.showing`, which is true for anybody to see, so the
+  sprite tells a stranger nothing the panel would not. The picture is the same in
+  every pose (the upper body bobs like the rest), so the bank stores 24 pictures,
+  not one per pose.
 - **Carrying a baby** (phase 20): slots in `meta.carrySlots` take the suffix
   `+carry` (arms folded, the baby's blanket and skin). Adolescents, adults and
   elders only.

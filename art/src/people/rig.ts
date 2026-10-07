@@ -45,6 +45,12 @@ export interface PersonSpec {
   hair: HairStyle;
   beard: boolean;
   expr: FaceExpr;
+  /**
+   * M15 phase 19c: the belly of the last third of a pregnancy. Optional so the
+   * specs written before it keep meaning what they meant; only women drawn
+   * with it (`isWoman`) get anything, and only from the front and the side.
+   */
+  belly?: boolean;
 }
 
 export interface Layer { slot: string; variant: string; svg: string; }
@@ -52,19 +58,19 @@ export interface PersonOut { layers: Layer[]; anchors: PersonAnchors; }
 
 /** Bottom to top, per facing. West is east flipped by the renderer. */
 export const SLOT_ORDER: Record<FacingDir, readonly string[]> = {
-  S: ['shadow', 'cloak_back', 'hair_back', 'legs', 'trousers', 'feet', 'torso', 'loincloth', 'chestband', 'torso_wear', 'cloak_front', 'baby', 'baby_skin',
+  S: ['shadow', 'cloak_back', 'hair_back', 'legs', 'trousers', 'feet', 'torso', 'loincloth', 'chestband', 'belly', 'torso_wear', 'belly_wear', 'cloak_front', 'baby', 'baby_skin',
     'arms', 'sleeves', 'held', 'hands', 'head_back', 'head', 'beard', 'face', 'hair', 'shine', 'head_wear'],
   N: ['shadow', 'cloak_back', 'legs', 'trousers', 'feet', 'torso', 'loincloth', 'chestband', 'torso_wear', 'cloak_front',
     'arms', 'sleeves', 'held', 'hands', 'head_back', 'head', 'hair', 'shine', 'head_wear'],
   E: ['shadow', 'arm_far', 'sleeve_far', 'hand_far', 'legs_far', 'trousers_far', 'feet_far', 'legs_near', 'trousers_near', 'feet_near',
-    'cloak_back', 'hair_back', 'torso', 'loincloth', 'chestband', 'torso_wear', 'cloak_front', 'baby', 'baby_skin',
+    'cloak_back', 'hair_back', 'torso', 'loincloth', 'chestband', 'belly', 'torso_wear', 'belly_wear', 'cloak_front', 'baby', 'baby_skin',
     'arm_near', 'sleeve_near', 'held', 'hand_near', 'head_back', 'head', 'beard', 'face', 'hair', 'shine', 'head_wear'],
 };
 
 /** Which colour multiplies a slot when it is composed. */
 export const SLOT_TINT: Record<string, 'skin' | 'hair' | 'band'> = {
   legs: 'skin', legs_far: 'skin', legs_near: 'skin', torso: 'skin', arms: 'skin', arm_far: 'skin', arm_near: 'skin', head: 'skin',
-  hands: 'skin', hand_far: 'skin', hand_near: 'skin', baby_skin: 'skin',
+  hands: 'skin', hand_far: 'skin', hand_near: 'skin', baby_skin: 'skin', belly: 'skin',
   loincloth: 'band', chestband: 'band',
   hair: 'hair', hair_back: 'hair', beard: 'hair',
 };
@@ -104,7 +110,7 @@ const BASE: Record<ArtAge, Omit<Geo, 'foot'>> = {
   infant:     { leg: 9,  torso: 11.5, neck: 1.6, hrx: 8.2, hry: 8.6,  sh: 6,    wa: 6,   hp: 6,   limb: 4,   arm: 10.5, gap: 2.5, depth: 9.5 },
   elder:      { leg: 23, torso: 24,   neck: 3.6, hrx: 9.4, hry: 10.4, sh: 10.4, wa: 8.4, hp: 8.6, limb: 5.2, arm: 22,   gap: 3.7, depth: 13, stoop: 12 },
 };
-const isWoman = (age: ArtAge, sex: ArtSex): boolean => sex === 'f' && age !== 'child' && age !== 'infant';
+export const isWoman = (age: ArtAge, sex: ArtSex): boolean => sex === 'f' && age !== 'child' && age !== 'infant';
 
 export function geometry(age: ArtAge, sex: ArtSex): Geo {
   const g: Geo = { ...BASE[age], foot: 88 };
@@ -335,6 +341,36 @@ function babySidePieces(G: SideG): { blanket: string; skin: string } {
   return { blanket, skin };
 }
 
+// --------------------------------------------------------------------- belly
+/**
+ * The belly of the last third of a pregnancy (M15 phase 19c), as two pictures
+ * that never show together: bare skin (`belly`, multiplied by the wearer's
+ * skin) where nothing covers the abdomen, and the same bulge in the garment's
+ * own colours (`belly_wear`) over a wrap or a tunic, which would otherwise lie
+ * flat across it. Drawn above the garment and below the belt line, so the belt
+ * stays visible under it. Not drawn from behind: a back does not show one.
+ */
+export const BELLY_COVERS: ReadonlySet<string> = new Set(['wrap', 'tunic', 'longtunic']);
+
+function bellyFront(G: FrontG, fill: string, line: string, crease: string): string {
+  const { cx, sY, wa, T } = G;
+  const cy = sY + T * 0.65, rx = wa + 3.4, ry = T * 0.26;
+  return ell(cx, cy, rx, ry, fill, line)
+    + stroke(`M${cx - rx * 0.5},${cy + ry * 0.62}Q${cx},${cy + ry * 1.04} ${cx + rx * 0.62},${cy + ry * 0.5}`, crease, 0.9)
+    + ell(cx, cy + ry * 0.12, 0.7, 0.9, crease);
+}
+function bellySide(G: SideG, fill: string, line: string, crease: string): string {
+  const { cx, d, sY, T } = G;
+  const bulge = smooth([
+    [cx + d * 0.3, sY + T * 0.4], [cx + d * 0.78, sY + T * 0.5], [cx + d * 1.0, sY + T * 0.7],
+    [cx + d * 0.8, sY + T * 0.9], [cx + d * 0.36, sY + T * 0.95], [cx - d * 0.1, sY + T * 0.86], [cx - d * 0.1, sY + T * 0.52],
+  ]);
+  return shape(bulge, fill, line)
+    + stroke(`M${cx + d * 0.5},${sY + T * 0.86}Q${cx + d * 0.84},${sY + T * 0.82} ${cx + d * 0.94},${sY + T * 0.68}`, crease, 0.9);
+}
+const bellyGarment = (t: NonNullable<Wear['torso']>): [string, string, string] =>
+  t === 'longtunic' ? [W.wool, W.woolLine, W.woolD] : [W.hide, W.hideLine, W.hideD];
+
 // ---------------------------------------------------------------- head parts
 function faceFront(g: Geo, cx: number, hy: number, e: FaceExpr): string {
   const out: string[] = [];
@@ -506,6 +542,12 @@ function frontLayers(spec: PersonSpec, back: boolean): PersonOut {
     if (back) add(P, 'chestband', ell(cx, (top + bot) / 2, 1.6, 1.3, clD, clLine));
   }
   add(P, 'torso_wear', torsoWearFront(w.torso, G, back));
+  if (spec.belly && woman && !back) {
+    if (w.torso && BELLY_COVERS.has(w.torso)) {
+      const [fill, edge, crease] = bellyGarment(w.torso);
+      add(P, 'belly_wear', bellyFront(G, fill, edge, crease));
+    } else add(P, 'belly', bellyFront(G, skin, line, REF.skinD));
+  }
   if (w.cloak) add(P, 'cloak_front', cloakOverFront(G, back));
   if (spec.carry && !back) {
     const b = babyFrontPieces(G);
@@ -662,6 +704,12 @@ function sideLayers(spec: PersonSpec): PersonOut {
     add(P, 'chestband', rot(clipDef + `<g clip-path="url(#${clip})"><path d="M${cx - d},${sY + 4}L${cx + d},${sY + 3.4}L${cx + d},${sY + 10}L${cx - d},${sY + 9.2}Z" fill="${REF.band2}"/></g><path d="${torsoD}" fill="none" stroke="${line}" stroke-width="2.1" clip-path="url(#${clip})"/>`));
   }
   add(P, 'torso_wear', rot(torsoWearSide(w.torso, G)));
+  if (spec.belly && woman) {
+    if (w.torso && BELLY_COVERS.has(w.torso)) {
+      const [fill, edge, crease] = bellyGarment(w.torso);
+      add(P, 'belly_wear', rot(bellySide(G, fill, edge, crease)));
+    } else add(P, 'belly', rot(bellySide(G, skin, line, REF.skinD)));
+  }
   if (w.cloak) add(P, 'cloak_front', rot(cloakOverSide(G)));
   if (spec.carry) {
     const b = babySidePieces(G);
@@ -698,6 +746,7 @@ function flush(sink: Sink, spec: PersonSpec, P: Pieces): void {
       case 'face': return spec.expr;
       case 'beard': return 'beard';
       case 'baby': case 'baby_skin': return 'baby';
+      case 'belly_wear': return w.torso ?? '';
       default: return 'base';
     }
   };
