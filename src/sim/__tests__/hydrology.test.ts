@@ -25,7 +25,7 @@ describe('local hydrology generation', () => {
     expect(local.kind[0]).toBe(0);
   });
 
-  it('creates stable sparse springs on wet slopes without using a Simulation RNG', () => {
+  it('creates stable sparse springs and tributaries on wet slopes without using a Simulation RNG', () => {
     const width = 128, height = 128, count = width * height;
     const elevation = Float32Array.from({ length: count }, (_, i) => 2 - (i % width) * 0.01);
     const input = {
@@ -39,7 +39,18 @@ describe('local hydrology generation', () => {
     const first = generateLocalHydrology(input);
     const second = generateLocalHydrology(input);
 
-    expect(Array.from(first.kind).filter(kind => kind === HYDROLOGY_FRESH).length).toBe(1);
+    // M15 terrain variety, commit C: this fixture (uniformly wet, a steady
+    // slope on every row) is now exactly the "high, wet terrain" addTributaries
+    // looks for, so it no longer produces just addSprings' one lone spring —
+    // it is the fixture that drove TRIBUTARY_MAX_COURSES and
+    // TRIBUTARY_MAX_TILES_PER_COURSE to exist at all, after an early version
+    // of the feature with no caps claimed 12,166 of these 16,384 tiles.
+    // What this test actually guards remains exactly what its name says:
+    // deterministic, RNG-free generation, and that it stays sparse rather
+    // than swallowing the window outright.
+    const freshTiles = Array.from(first.kind).filter(kind => kind === HYDROLOGY_FRESH).length;
+    expect(freshTiles).toBeGreaterThan(1);
+    expect(freshTiles).toBeLessThan(width * height * 0.1);
     expect(second).toEqual(first);
   });
 

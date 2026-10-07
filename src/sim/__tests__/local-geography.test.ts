@@ -519,3 +519,58 @@ describe('M15 terrain variety: river meander and variable width', () => {
     expect(highWidth, 'a much higher discharge should claim measurably more water tiles').toBeGreaterThan(lowWidth);
   });
 });
+
+describe('M15 terrain variety: tributaries', () => {
+  it('gives a wet, mountainous real window several distinct hydrology courses', () => {
+    const geography = earthAtlas();
+    // Region (82, 6): 1594 m, Köppen 24 (continental, one of the wetter
+    // bands — see regionalMoisture) — real high, wet ground found by
+    // scanning the shipped atlas for land above 800 m in a wet Köppen band,
+    // not a hand-built fixture.
+    const config = { ...DEFAULT_CONFIG.world, width: 128, height: 128 };
+    const span = 4;
+    const originX = 82 * 10 + 5 - span / 2, originY = 6 * 10 + 5 - span / 2;
+    const local = createLocalGeography(geography, { originX, originY, comarcasWide: span, comarcasHigh: span }, config);
+    expect(local.hydrology.rivers.length, 'a wet mountain window should carry more than a single course')
+      .toBeGreaterThanOrEqual(2);
+  });
+
+  it('leaves a real arid window close to no hydrology at all', () => {
+    const geography = earthAtlas();
+    // Region (49, 20): the Sahara fixture from start-place.test.ts's "middle
+    // of the Sahara" guard — arid Köppen, well under the wet-terrain
+    // threshold, with no river or lake feature flagged either.
+    const config = { ...DEFAULT_CONFIG.world, width: 128, height: 128 };
+    const span = 4;
+    const originX = 49 * 10 + 5 - span / 2, originY = 20 * 10 + 5 - span / 2;
+    const local = createLocalGeography(geography, { originX, originY, comarcasWide: span, comarcasHigh: span }, config);
+    const fresh = Array.from(local.hydrology.kind).filter(kind => kind === 1).length;
+    expect(fresh, 'an arid window should not spontaneously grow tributaries').toBeLessThanOrEqual(2);
+  });
+
+  it('is a deterministic function of the terrain: the same wet window generates the same courses twice', () => {
+    const geography = earthAtlas();
+    const config = { ...DEFAULT_CONFIG.world, width: 128, height: 128 };
+    const span = 4;
+    const originX = 82 * 10 + 5 - span / 2, originY = 6 * 10 + 5 - span / 2;
+    const bounds = { originX, originY, comarcasWide: span, comarcasHigh: span };
+    const first = createLocalGeography(geography, bounds, config);
+    const second = createLocalGeography(geography, bounds, config);
+    expect(Array.from(second.hydrology.kind)).toEqual(Array.from(first.hydrology.kind));
+    expect(Array.from(second.hydrology.surface)).toEqual(Array.from(first.hydrology.surface));
+  });
+
+  it('respects the fillCandidateLakes basin-size cap: a tributary cannot grow past it either', () => {
+    // Not a new cap — the existing 40% basin cap in Hydrology.ts's
+    // fillCandidateLakes is untouched by this commit (the plan's own
+    // instruction); this just confirms a window thick with tributaries,
+    // same as the wet-mountain window above, never approaches that ceiling.
+    const geography = earthAtlas();
+    const config = { ...DEFAULT_CONFIG.world, width: 128, height: 128 };
+    const span = 4;
+    const originX = 82 * 10 + 5 - span / 2, originY = 6 * 10 + 5 - span / 2;
+    const local = createLocalGeography(geography, { originX, originY, comarcasWide: span, comarcasHigh: span }, config);
+    const fresh = Array.from(local.hydrology.kind).filter(kind => kind === 1).length;
+    expect(fresh).toBeLessThan(config.width * config.height * 0.4);
+  });
+});
