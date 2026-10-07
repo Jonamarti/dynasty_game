@@ -224,8 +224,12 @@ function worldWouldDiffer(): boolean {
  * One mechanism each, for two situations that are genuinely different.
  */
 function rebuildBeforeStart(): void {
+  // A new motor defaults to manual. Preserve the mode already shown by the
+  // HUD, or selecting the Earth silently disables a saved autonomous player.
+  const autonomy = sim.autonomy;
   worldState = makeWorldState({});
   sim = worldState.current;
+  sim.autonomy = autonomy;
   player = sim.possessFirst();
   renderer.setSim(sim);
   newGame.setSim(sim);

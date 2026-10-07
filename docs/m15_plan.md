@@ -4138,3 +4138,7 @@ Corregido: los bancos de barro y los juncos continentales admiten orillas de bos
 Pruebas: `geographic-bank-resources.test.ts` cubre bosque con río, cuota en orilla pequeña, lago continental, ausencia de agua y estabilidad de las otras clases, manadas y fundadores. Las tres regresiones de río/cuota/lago fallaron sobre HEAD antes de la corrección. `e2e/bank-resources.spec.ts` comprueba los nodos generados y guarda la captura en `artifacts/screenshots/m15-bank-resources-2026-10-08/01-wooded-river.png`.
 
 Cohortes de economía y matriz completa diferidas por la instrucción de M15; este cambio corrige presencia de materiales, sin afirmar mejora de supervivencia.
+
+## 2026-10-08 — Autonomía al reconstruir el mundo
+
+Corregida la pérdida silenciosa del modo autónomo al elegir región o cambiar los ajustes de generación. Prueba del flujo completo de navegador y captura en artifacts/screenshots/m15-autonomy-rebuild-2026-10-08/.

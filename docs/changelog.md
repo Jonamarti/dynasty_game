@@ -1,3 +1,9 @@
+## 2026-10-08 — M15 autonomía conservada al elegir o regenerar el mundo
+
+La selección de región y los ajustes reconstruían `Simulation` con su valor inicial `manual`, mientras el HUD seguía mostrando la preferencia autónoma. `rebuildBeforeStart` conserva ahora la autonomía del motor anterior. La regresión de navegador recorre la elección de región, la creación del personaje y 80 ticks reales: fallaba con `manual` antes del arreglo y ahora el personaje actúa en `auto`.
+
+Verificación: typecheck limpio; 17/17 tests de autonomía; 1/1 e2e nuevo. Captura: `artifacts/screenshots/m15-autonomy-rebuild-2026-10-08/01-auto-earth.png`. El sim:check inicial mantiene los fallos heredados de antojos y rendimiento; las cohortes están diferidas por la regla de M15. La suite completa se ejecutará con el resto del encargo de ríos y barro.
+
 ## 2026-10-08 — M15 barro y juncos ausentes en mapas aleatorios
 
 Por qué: el mapa aleatorio `resources`, región (64,6), tenía 200 casillas de orilla dulce en bosque pero cero bancos de barro y cero juncos. Los filtros de isla clásica exigían playa para los juncos y playa/pradera para el barro. Incluso con playa, la región (44,5) solo colocaba 3 de los 9 juncos pedidos: el límite de intentos sobre tierra aleatoria perdía las orillas pequeñas.
