@@ -3483,6 +3483,8 @@ metal.
 
 **Avance del 2026-10-07 (37j, `goldwork`).** El oro de la grava (dos puntos en la isla, solo con mapa donde la región lo tiene) y el adorno de oro, el `baseValue` más alto del juego: regalo, robo y deuda ya lo leen. Con él quedan los diez nodos de la fase.
 
+**Avance del 2026-10-07 (37k, `smiths` y la cadena).** Escenario `smiths` (los diez nodos, con estaciones y vetas junto al campamento) y dos checks, `ore-becomes-metal` y `metal-is-cast`. Midiéndolos apareció un fallo real: con el mineral que pide la receta, 11 cargas y ninguna fundición; ahora `wantedOreKinds` quiere hasta las hojas de la cadena (palos para el carbón, mineral para el horno, estaño para el bronce) y el mismo mundo funde 3 veces. El check falla contra la build rota.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

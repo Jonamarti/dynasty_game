@@ -14,7 +14,7 @@ import { Simulation } from '../core/Simulation.ts';
 import { fittedActionToolFor } from '../../render/EquipmentAnimation.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person, DAYS_PER_YEAR } from '../entities/Person.ts';
-import { TECH, TECHS, TECH_EFFECTS, ageIndex, warmthFrom, techPower, awlFactor, forageYieldFactor, SEWN_RECIPES, WEBS, techsOfWeb, webOf, AXE_TOOLS, axeFactor, axeItemOf, weaponOf, buildFactor, reapFactor, weaponItemOf, protectionOf, armourOf } from '../knowledge/Tech.ts';
+import { TECH, TECHS, TECH_EFFECTS, ageIndex, warmthFrom, techPower, awlFactor, forageYieldFactor, SEWN_RECIPES, WEBS, techsOfWeb, webOf, AXE_TOOLS, axeFactor, axeItemOf, weaponOf, buildFactor, reapFactor, weaponItemOf, protectionOf, armourOf, ERAS, eraFor, type Tech } from '../knowledge/Tech.ts';
 import { availableActions } from '../ai/ActionCatalog.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -1059,5 +1059,54 @@ describe('goldwork', () => {
     // and debt all read. Nothing to run: the claim is that the number is read.
     expect(RECIPES.gold_ornament!.keep).toBe(1);
     expect(ITEMS.gold_ornament!.baseValue).toBeGreaterThan(ITEMS.copper_pendant!.baseValue);
+  });
+});
+
+describe('wanting down the chain', () => {
+  it('sends a smith who holds ore and no charcoal to the deadwood', () => {
+    const smith = adult('smith');
+    teach(smith, 'mining', 'charcoal', 'smelting');
+    smith.inventory.add('copper_ore', 3);
+    // Ore in the pack, no charcoal, and charcoal is made of sticks: so sticks.
+    expect(wantedOreKinds(smith)).toEqual(['sticks']);
+    smith.inventory.add('sticks', 6);
+    // Sticks enough for a pit: nothing more to fetch, the pit makes the rest.
+    expect(wantedOreKinds(smith)).toEqual([]);
+    smith.inventory.remove('sticks', 6);
+    smith.inventory.add('charcoal', 2);
+    expect(wantedOreKinds(smith)).toEqual([]);
+  });
+
+  it('sends the holder of charcoal to the seam, and the one with nothing to both', () => {
+    const smith = adult('smith');
+    teach(smith, 'mining', 'charcoal', 'smelting');
+    smith.inventory.add('charcoal', 2);
+    expect(wantedOreKinds(smith)).toEqual(['copper_ore']);
+    smith.inventory.remove('charcoal', 2);
+    expect(wantedOreKinds(smith).sort()).toEqual(['copper_ore', 'sticks']);
+  });
+
+  it('does not send somebody who cannot make the charcoal to fetch the sticks', () => {
+    const smith = adult('smith');
+    teach(smith, 'mining', 'smelting');
+    expect(wantedOreKinds(smith)).toEqual(['copper_ore']);
+  });
+
+  it('walks a bronze order back to the tin: no bronze, no tin ingot, so tin ore', () => {
+    const smith = adult('smith');
+    teach(smith, 'mining', 'charcoal', 'smelting', 'casting', 'alloying', 'bronze_tools');
+    smith.inventory.add('copper', 4);
+    smith.inventory.add('charcoal', 2);
+    // Holds copper, so wants no copper ore; the bronze tools want bronze, which
+    // wants tin, which is smelted from tin ore.
+    expect(wantedOreKinds(smith)).toContain('tin_ore');
+    expect(wantedOreKinds(smith)).not.toContain('copper_ore');
+  });
+
+  it('does not make anybody who knows none of it look at the ground', () => {
+    expect(wantedOreKinds(adult('nobody'))).toEqual([]);
+    const farmer = adult('farmer');
+    teach(farmer, 'farming', 'cooking');
+    expect(wantedOreKinds(farmer)).toEqual([]);
   });
 });
