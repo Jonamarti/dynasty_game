@@ -164,6 +164,9 @@ export const TECHS = [
   'native_copper',
   // Following a seam into the hill: the ore that nobody finds lying about.
   'mining',
+  // Metal out of rock: the furnace, which is the whole difference between
+  // finding copper and having it.
+  'smelting',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2088,6 +2091,31 @@ export const TECH: Record<Tech, TechDef> = {
       'More from every flint outcrop, and the ore a hill keeps inside it: ' +
       'what nobody can find lying about, somebody who digs can.',
   },
+  // M15 phase 37 (M8.3). Copper out of green rock: ore and charcoal in a
+  // clay-lined furnace, a heat no hearth reaches, and a metal that was never
+  // lying anywhere. The pivot the kiln was waiting for: the same held heat,
+  // pointed at ore instead of clay. A device: the furnace is the thing built.
+  smelting: {
+    id: 'smelting', label: 'Smelting', domain: 'metal',
+    age: 'chalcolithic', firstKnown: 'about 5000 BC',
+    kind: 'device',
+    requires: ['native_copper', 'charcoal', 'kiln'], difficulty: 0.7, skill: 'smith',
+    prototype: { flint: 4, mud: 4 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'kiln' }, { kind: 'knows', tech: 'charcoal' },
+                { kind: 'holding', item: 'copper_ore' }],
+        weight: 1.0, story: 'dropped green rock into a charcoal fire in the kiln and found a bead of metal in the ash' },
+      { needs: [{ kind: 'knows', tech: 'native_copper' }, { kind: 'knows', tech: 'kiln' },
+                { kind: 'holding', item: 'charcoal' }],
+        weight: 0.6, story: 'wondered if a heat that fired clay would run a nugget like wax' },
+      { needs: [{ kind: 'knows', tech: 'charcoal' }, { kind: 'knows', tech: 'kiln' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.4, story: 'banked charcoal in the kiln for the heat of it and left a pot of green stones beside it' },
+    ],
+    description:
+      'Ore and charcoal in a clay-lined furnace, hotter than any hearth. ' +
+      'Metal that was never lying anywhere: ingots of copper out of green rock.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2425,6 +2453,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   mining: {
     summary: 'More from every flint outcrop, and the right to take ore out of a hill at all.',
     site: 'Tech.forageYieldFactor (flint and ore); Ore.canWork, read by ActionSystem.doHarvest, Simulation.order and ActionCatalog.nodeActions',
+  },
+  smelting: {
+    summary: 'A furnace, and copper ingots out of ore and charcoal: the metal that is never found lying about.',
+    site: 'BUILDINGS.furnace and RECIPES.smelt_copper; Ore.wantedOreKinds, which sends the smith to the seam',
   },
 };
 

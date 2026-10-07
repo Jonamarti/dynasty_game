@@ -426,4 +426,10 @@ export const ES_TECH: Record<string, string> = {
   "dug under a ledge for a better stone and found the hill was worth opening": "cavó bajo una cornisa buscando una piedra mejor y vio que el cerro merecía abrirse",
   "cut a footing out of a rock face and saw how much came away in one piece": "talló un cimiento en una pared de roca y vio cuánto se desprendía de una pieza",
   "More from every flint outcrop, and the right to take ore out of a hill at all.": "Más de cada afloramiento de sílex, y poder sacar mineral de un cerro.",
+  "Smelting": "Fundición",
+  "Ore and charcoal in a clay-lined furnace, hotter than any hearth. Metal that was never lying anywhere: ingots of copper out of green rock.": "Mineral y carbón en un horno forrado de arcilla, más caliente que cualquier hogar. Metal que nunca estuvo tirado en ninguna parte: lingotes de cobre sacados de piedra verde.",
+  "dropped green rock into a charcoal fire in the kiln and found a bead of metal in the ash": "echó piedra verde a un fuego de carbón en el horno y encontró una cuenta de metal en la ceniza",
+  "wondered if a heat that fired clay would run a nugget like wax": "se preguntó si un calor que cocía arcilla fundiría una pepita como cera",
+  "banked charcoal in the kiln for the heat of it and left a pot of green stones beside it": "amontonó carbón en el horno por el calor y dejó al lado una vasija de piedras verdes",
+  "A furnace, and copper ingots out of ore and charcoal: the metal that is never found lying about.": "Un horno de fundición, y lingotes de cobre sacados de mineral y carbón: el metal que nunca se encuentra tirado.",
 };

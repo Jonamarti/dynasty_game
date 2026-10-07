@@ -358,6 +358,10 @@ export const ITEMS: Record<string, ItemDef> = {
   // anybody who knows what a furnace does with them. Tin is dearer by far.
   copper_ore: { id: 'copper_ore', label: 'Copper ore', nutrition: 0, spoilTicks: 0, baseValue: 4, class: 'bulky', hand: { perHand: 1, perArms: 4, hands: 1 } },
   tin_ore: { id: 'tin_ore', label: 'Tin ore', nutrition: 0, spoilTicks: 0, baseValue: 9, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  // `smelting`'s ingot. Not a tool and not an ornament: it is the stuff of both,
+  // and what `casting` consumes. Worth four times the ore it came from, which is
+  // what makes carrying one a reason to keep it from a thief.
+  copper: { id: 'copper', label: 'Copper', nutrition: 0, spoilTicks: 0, baseValue: 14, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
   charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
 };
 

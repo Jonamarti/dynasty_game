@@ -3469,6 +3469,8 @@ en `doHarvest`, en la orden y en el menú, cada una con su motivo. Más sílex d
 cada afloramiento. Pasada y stream de 37b; con mapa, donde la región tiene ese
 metal.
 
+**Avance del 2026-10-07 (37d, `smelting`).** El horno de fundición (`furnace`, estación) y la receta `smelt_copper` (tres de mineral y dos de carbón → dos lingotes de `copper`). El herrero va solo a la veta (`wantedOreKinds`) y la banda levanta sola el horno. La sub-red Metal se abre en 37e.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

@@ -208,6 +208,16 @@ export const BUILDINGS: BuildingArt[] = [
     + ell(72, 83, 22, 8, '#2a1c12')
     + limb([[54, 88], [90, 78]], 4.4, '#6a4a2a', B.L) + limb([[56, 78], [88, 90]], 4.4, '#7d5a36', B.L)
     + flame(72, 82, 1.5)],
+  // M15 phase 37: a clay shaft furnace with a tapping hole and the glow of the charge.
+  ['furnace', 'Horno de fundición', 'smelting', 144, () =>
+    gShadow(74, 102, 54, 10)
+    + shape('M38,98L46,34Q72,24 98,34L106,98Z', '#9a5a38', B.L)
+    + stroke('M42,86L102,86M43,70L101,70M45,54L99,54', '#6f3f26', 1.6)
+    + ell(72, 34, 24, 6, B.dark, B.L) + ell(72, 34, 14, 3.4, '#f08a2c')
+    + shape('M60,98L60,84Q72,72 84,84L84,98Z', B.dark, B.L) + shape('M65,98L65,88Q72,81 79,88L79,98Z', '#f2a03a')
+    + shape(poly([[104, 76], [126, 80], [126, 86], [104, 84]]), '#7d5a36', B.L)
+    + smoke(72, 26)
+    + shape(smooth([[24, 96], [34, 90], [44, 96], [38, 102], [26, 102]]), '#2b2622', B.L)],
   // M15 phase 37: a heap of deadwood sealed under turf, a vent smoking at the top.
   ['charcoal_pit', 'Carbonera', 'charcoal', 144, () =>
     gShadow(74, 102, 56, 10)

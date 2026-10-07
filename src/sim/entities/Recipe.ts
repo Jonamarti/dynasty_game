@@ -606,6 +606,14 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 120, ingredients: { sticks: 6 }, output: { charcoal: 3 },
     station: 'charcoal_pit', keep: 4,
   },
+  // `smelting`, at the furnace. Three loads of ore and two of charcoal give two
+  // ingots: the first craft in the game that costs a fuel as well as a material.
+  // `keep: 4` is two runs' worth, and what `casting` will want to spend.
+  smelt_copper: {
+    id: 'smelt_copper', label: 'Smelt copper', icon: '\u{1F525}', tech: 'smelting', skill: 'smith',
+    workTicks: 120, ingredients: { copper_ore: 3, charcoal: 2 }, output: { copper: 2 },
+    station: 'furnace', keep: 4,
+  },
   // `native_copper`: cold-hammered, no fire and no station - which is the whole
   // point of it. The first recipes in the game to practise `smith`, a skill every
   // character has carried since M6b with nothing to improve it. The awl comes

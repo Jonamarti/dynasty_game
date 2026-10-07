@@ -464,3 +464,84 @@ describe('mining', () => {
     expect(wantedOreKinds(miner)).toEqual([]);
   });
 });
+
+describe('smelting and the furnace', () => {
+  it('needs native copper, charcoal and the kiln, and is a device of the Chalcolithic', () => {
+    const def = TECH.smelting;
+    expect(def.requires).toEqual(['native_copper', 'charcoal', 'kiln']);
+    expect(def.kind).toBe('device');
+    expect(def.domain).toBe('metal');
+    for (const required of def.requires) {
+      expect(ageIndex(def.age)).toBeGreaterThanOrEqual(ageIndex(TECH[required].age));
+    }
+  });
+
+  it('is a station only the knowing may raise, built of flint and clay like the kiln', () => {
+    const furnace = BUILDINGS.furnace!;
+    expect(isStation(furnace)).toBe(true);
+    expect(furnace.requiresTech).toBe('smelting');
+    expect(furnace.storage).toBe(0);
+    expect(Object.keys(furnace.materials).sort()).toEqual(['flint', 'mud']);
+    // More than the kiln it is the pivot from.
+    expect(furnace.workTicks).toBeGreaterThan(BUILDINGS.kiln!.workTicks);
+  });
+
+  it('turns ore and charcoal into ingots at the furnace and nowhere else', () => {
+    const recipe = RECIPES.smelt_copper!;
+    expect(recipe.station).toBe('furnace');
+    expect(recipe.tech).toBe('smelting');
+    expect(recipe.skill).toBe('smith');
+    expect(recipe.ingredients).toEqual({ copper_ore: 3, charcoal: 2 });
+    expect(recipe.output).toEqual({ copper: 2 });
+    expect(ITEMS.copper!.baseValue).toBeGreaterThan(ITEMS.copper_ore!.baseValue);
+  });
+
+  it('sends the smith to the seam, and a smith with enough ore nowhere', () => {
+    const smith = adult('smith');
+    teach(smith, 'mining', 'smelting');
+    expect(wantedOreKinds(smith)).toContain('copper_ore');
+    smith.inventory.add('copper_ore', 3);
+    expect(wantedOreKinds(smith)).not.toContain('copper_ore');
+    // Four ingots are all the smith keeps; past that there is nothing to want.
+    smith.inventory.remove('copper_ore', 3);
+    smith.inventory.add('copper', 4);
+    expect(wantedOreKinds(smith)).not.toContain('copper_ore');
+    // Without the technique to dig it, the seam is not wanted however much is needed.
+    const heir = adult('heir');
+    teach(heir, 'smelting');
+    expect(wantedOreKinds(heir)).not.toContain('copper_ore');
+  });
+
+  it('smelts at the furnace end to end', () => {
+    const sim = worldKnowing(['firemaking', 'carpentry', 'charcoal', 'smelting']);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('copper_ore', 3);
+    person.inventory.add('charcoal', 2);
+    const furnace = stationNear(sim, person, 'furnace');
+    expect(sim.order(person, 'craft', { recipeId: 'smelt_copper', buildingId: furnace.id })).toBe(true);
+    for (let i = 0; i < 2000 && person.inventory.count('copper') === 0; i++) {
+      person.needs.thirst = 0;
+      person.needs.hunger = 0;
+      sim.step();
+    }
+    expect(person.inventory.count('copper')).toBe(2);
+    expect(person.inventory.count('copper_ore')).toBe(0);
+    expect(person.inventory.count('charcoal')).toBe(0);
+  });
+
+  it('is abandoned without the charcoal, with the reason named', () => {
+    const sim = worldKnowing(['firemaking', 'carpentry', 'charcoal', 'smelting']);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('copper_ore', 3);
+    const furnace = stationNear(sim, person, 'furnace');
+    // The order is taken and the work abandons on the first tick, with the
+    // reason a `craft` always gives for a pack that lacks the parts.
+    expect(sim.order(person, 'craft', { recipeId: 'smelt_copper', buildingId: furnace.id })).toBe(true);
+    sim.interruptions.length = 0;
+    for (let i = 0; i < 20 && sim.interruptions.length === 0; i++) sim.step();
+    expect(sim.interruptions.map(n => n.reason)).toContain('lack_materials');
+    expect(person.inventory.count('copper')).toBe(0);
+  });
+});

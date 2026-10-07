@@ -141,3 +141,13 @@ con motivo, el menú (deshabilitado con razón / ofrecido), extraer de punta a
 punta, y el saber perdido a mitad de camino (`cannot_mine` llega a
 `sim.interruptions`). Arte: dos iconos y los nodos del `Renderer` (afloramiento
 gris con vetas verdes, o claras para el estaño).
+
+## 37d — `smelting` y el horno de fundición
+
+**Qué hay.** El nodo `smelting` (dispositivo, metal, Calcolítico, «hacia el 5000 a. C.», requiere `native_copper`, `charcoal` y `kiln`: el calor sostenido del horno de alfarero apuntado al mineral en lugar de a la arcilla), la estación `furnace` (3×3, sin almacén, de sílex 10 y barro 8, más larga de levantar que el horno de alfarero), el ítem `copper` (lingote, `baseValue` 14) y la receta `smelt_copper`: tres de mineral y dos de carbón dan dos lingotes, en el horno, con `smith`, `keep: 4`.
+
+**Quién lo lee.** El horno lo planifica solo `BandSystem` (cualquier banda con un miembro que pueda hacer algo en una estación que no tiene); `Ore.wantedOreKinds` manda al herrero a la veta mientras tenga menos lingotes de los que guarda y menos mineral del que pide la receta, y no manda a quien sabe fundir pero no sabe minar (prueba). El lingote es la materia de `casting` (37f) y, mientras tanto, un bien con `baseValue`: regalo, robo y, desde la fase 36, trueque.
+
+**Sub-red Metal.** Sigue sin declararse: una red de un solo nodo es una puerta declarada antes que su contenido y `tech.test.ts` la rechaza. Se abre en 37e, con `bellows`, el segundo nodo que la llena.
+
+**Pruebas.** `metal.test.ts` (+6): declaración, estación, receta, `wantedOreKinds`, fundir de punta a punta (3 mineral + 2 carbón → 2 lingotes en el horno) y la receta sin carbón se abandona con `lack_materials`. Arte: `b/furnace/ext` e `item/copper`.
