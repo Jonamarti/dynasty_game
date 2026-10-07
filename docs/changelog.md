@@ -1,3 +1,7 @@
+## 2026-10-07 — M15 fase 37g: `alloying`, el bronce, y el estaño que está lejos
+
+Por qué: el nodo que da nombre a la edad. `alloying` (`casting` + `mining`), ítems `tin` y `bronze`, recetas `smelt_tin` y `alloy_bronze` (tres de cobre y uno de estaño dan tres de bronce) en el horno. **Una sola veta de estaño en toda la isla**, de catorce de mineral: a lo sumo veintiuno de bronce, y una prueba lo cuenta para que subirlo sea una decisión; con mapa, solo donde la región tiene estaño. `bronze-needs-a-trader` queda sin medir porque necesita el comercio de la fase 36 (anotado en `next-steps.md`). Tests: `metal.test.ts` (55 en total). Detalle en [m15_phase37_metal.md](m15_phase37_metal.md).
+
 ## 2026-10-07 — M15 fase 37f: `casting`, el hacha de cobre y la daga
 
 Por qué: las primeras herramientas que no son de piedra. Nodo `casting` (`smelting` + `pottery`), hacha y daga de cobre en el horno, de lingote. **Una tabla en vez de dos ramas**: `axeFactor` y `axeItemOf` leían el hacha de mano y la pulida con código escrito a mano; ahora recorren `AXE_TOOLS` (y `EquipmentAnimation` también), porque llegan dos hachas más y el empate sigue siendo del hacha más humilde. `maxRefinement: 1` por la regla de `ground_stone` (el multiplicador no puede bajar de cero), y una prueba recorre la tabla. La daga es la única arma: el hacha de cobre no lo es (el error del `handaxe`). Tests: `metal.test.ts` (49 en total). Arte: iconos y mano de la daga. Detalle en [m15_phase37_metal.md](m15_phase37_metal.md).

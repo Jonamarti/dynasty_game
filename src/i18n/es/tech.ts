@@ -446,4 +446,11 @@ export const ES_TECH: Record<string, string> = {
   "wanted the ingot to be an axe and not a lump": "quiso que el lingote fuera un hacha y no un bulto",
   "pressed a flint axe into wet clay for the print and thought of filling it": "apretó un hacha de sílex en arcilla húmeda para ver la huella y pensó en llenarla",
   "A cast axe that fells and a cast dagger that cuts: the first tools that are not stone.": "Un hacha fundida que tala y una daga fundida que corta: las primeras herramientas que no son de piedra.",
+  "Alloying": "Aleación",
+  "about 3300 BC": "hacia el 3300 a. C.",
+  "A tenth of tin in the copper. Harder, it runs cleaner into the mould and holds an edge. The copper is in every hill; the tin is in a few places in a whole continent, and that is what the age is made of.": "Una décima parte de estaño en el cobre. Más duro, corre limpio al molde y conserva el filo. El cobre está en todos los cerros; el estaño, en unos pocos sitios de un continente entero, y de eso está hecha la edad.",
+  "smelted a grey-black stone along with the copper and got a harder, brighter metal": "fundió una piedra gris negruzca junto con el cobre y obtuvo un metal más duro y brillante",
+  "cast an axe that bent and wondered what made another band's hold its edge": "coló un hacha que se dobló y se preguntó qué hacía que la de otra banda conservara el filo",
+  "noticed a heavy pale stone in the same seam as the green and put them in the fire together": "notó una piedra pálida y pesada en la misma veta que la verde y las echó juntas al fuego",
+  "Tin from its ore, and bronze from tin and copper: the stuff of the best tools and arms, and the reason to go looking for tin.": "Estaño de su mineral, y bronce de estaño y cobre: la materia de las mejores herramientas y armas, y la razón para ir a buscar estaño.",
 };

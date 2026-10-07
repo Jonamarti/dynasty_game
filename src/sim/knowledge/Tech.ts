@@ -171,6 +171,8 @@ export const TECHS = [
   'bellows',
   // Metal poured into a shape: the first tools that are not stone.
   'casting',
+  // Tin into copper: the metal the age is named for, and the one that is far away.
+  'alloying',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2176,6 +2178,35 @@ export const TECH: Record<Tech, TechDef> = {
       'Metal run into a hollow shaped in clay. An axe that cuts like the ' +
       'best polished stone, and a dagger: a blade longer than any flint gives.',
   },
+  // M15 phase 37 (M8.3). A tenth part of tin in the copper, and the metal is
+  // harder, runs better and holds an edge: bronze. The plan's whole point is the
+  // tin. Copper is in the hills of nearly every country and tin is in a few
+  // places in a continent, so this is the node a band without a tin seam can
+  // know and never use, and the one that sends the Bronze Age's traders across
+  // it. Tin is smelted here too, from its ore: nothing earlier has a use for the
+  // ingot, so it is not made earlier.
+  alloying: {
+    id: 'alloying', label: 'Alloying', domain: 'metal', web: 'metal',
+    age: 'bronze', firstKnown: 'about 3300 BC',
+    kind: 'device',
+    requires: ['casting', 'mining'], difficulty: 0.75, skill: 'smith',
+    prototype: { copper_ore: 2, mud: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'casting' }, { kind: 'knows', tech: 'mining' },
+                { kind: 'holding', item: 'tin_ore' }],
+        weight: 1.0, story: 'smelted a grey-black stone along with the copper and got a harder, brighter metal' },
+      { needs: [{ kind: 'knows', tech: 'casting' }, { kind: 'holding', item: 'copper' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'cast an axe that bent and wondered what made another band\'s hold its edge' },
+      { needs: [{ kind: 'knows', tech: 'casting' }, { kind: 'knows', tech: 'mining' },
+                { kind: 'place', biome: 'hills' }],
+        weight: 0.4, story: 'noticed a heavy pale stone in the same seam as the green and put them in the fire together' },
+    ],
+    description:
+      'A tenth of tin in the copper. Harder, it runs cleaner into the mould ' +
+      'and holds an edge. The copper is in every hill; the tin is in a few ' +
+      'places in a whole continent, and that is what the age is made of.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2525,6 +2556,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   casting: {
     summary: 'A cast axe that fells and a cast dagger that cuts: the first tools that are not stone.',
     site: 'RECIPES.copper_axe (Tech.axeFactor, via AXE_TOOLS) and RECIPES.copper_dagger (weaponOf, via ITEMS.copper_dagger.weapon)',
+  },
+  alloying: {
+    summary: 'Tin from its ore, and bronze from tin and copper: the stuff of the best tools and arms, and the reason to go looking for tin.',
+    site: 'RECIPES.smelt_tin and RECIPES.alloy_bronze at the furnace; Ore.wantedOreKinds, which sends the smith to the tin',
   },
 };
 

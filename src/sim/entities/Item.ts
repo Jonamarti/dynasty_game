@@ -373,6 +373,10 @@ export const ITEMS: Record<string, ItemDef> = {
     weapon: { damage: 0.5, reach: 0.25, hunt: 1.2, tech: 'casting' },
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
+  // `alloying`'s two: the ingot of tin and the ingot of bronze. Tin is the dearest
+  // thing a band can make before iron, because there is so little of it.
+  tin: { id: 'tin', label: 'Tin', nutrition: 0, spoilTicks: 0, baseValue: 22, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  bronze: { id: 'bronze', label: 'Bronze', nutrition: 0, spoilTicks: 0, baseValue: 20, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
   charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
 };
 

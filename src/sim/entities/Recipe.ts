@@ -621,6 +621,21 @@ export const RECIPES: Record<string, RecipeDef> = {
     workTicks: 100, ingredients: { copper: 1 }, output: { copper_dagger: 1 },
     station: 'furnace', keep: 1,
   },
+  // `alloying`. Tin is smelted from its ore the way copper is (one of charcoal,
+  // for two of ore: it runs at a lower heat), and `keep: 2` is a pour's worth.
+  smelt_tin: {
+    id: 'smelt_tin', label: 'Smelt tin', icon: '\u{1F525}', tech: 'alloying', skill: 'smith',
+    workTicks: 100, ingredients: { tin_ore: 2, charcoal: 1 }, output: { tin: 1 },
+    station: 'furnace', keep: 2,
+  },
+  // Three of copper and one of tin run together: three of bronze (the loss in
+  // the slag is the tenth of tin the real alloy is, so the ratio is the real
+  // one and the yield is not generous). `keep: 3` is what `bronze_tools` will pour.
+  alloy_bronze: {
+    id: 'alloy_bronze', label: 'Alloy bronze', icon: '\u{1F525}', tech: 'alloying', skill: 'smith',
+    workTicks: 110, ingredients: { copper: 3, tin: 1 }, output: { bronze: 3 },
+    station: 'furnace', keep: 3,
+  },
   // `bellows`: the same run in less time and three ingots, not two. A second
   // recipe rather than a term on the first, on the `kiln_pot` model, and the
   // trap that comment records applies here exactly: the craft scorer has no

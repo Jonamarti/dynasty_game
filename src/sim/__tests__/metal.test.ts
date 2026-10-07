@@ -717,3 +717,87 @@ describe('casting', () => {
     }
   });
 });
+
+describe('alloying and bronze', () => {
+  it('needs casting and mining, and is the Bronze Age', () => {
+    const def = TECH.alloying;
+    expect(def.requires).toEqual(['casting', 'mining']);
+    expect(def.web).toBe('metal');
+    expect(def.age).toBe('bronze');
+    for (const required of def.requires) {
+      expect(ageIndex(def.age)).toBeGreaterThanOrEqual(ageIndex(TECH[required].age));
+    }
+  });
+
+  it('can be thought of by a founder who casts and holds only copper', () => {
+    const notice: Notice = {
+      knows: new Set(['casting']), holding: new Set(['copper']), lately: new Set(['craft']), feeling: new Set(),
+      wanting: new Set(), place: 'grass', saw: new Set(), season: 'summer',
+    };
+    expect(TECH.alloying.sparks.some(spark => sparkFires(spark, notice))).toBe(true);
+  });
+
+  it('smelts tin from its ore and runs a tenth of it into the copper', () => {
+    const tin = RECIPES.smelt_tin!;
+    const bronze = RECIPES.alloy_bronze!;
+    for (const recipe of [tin, bronze]) {
+      expect(recipe.tech).toBe('alloying');
+      expect(recipe.station).toBe('furnace');
+      expect(recipe.skill).toBe('smith');
+    }
+    expect(tin.ingredients).toEqual({ tin_ore: 2, charcoal: 1 });
+    expect(tin.output).toEqual({ tin: 1 });
+    // Three parts copper to one of tin, which is the real alloy and not a generous one.
+    expect(bronze.ingredients).toEqual({ copper: 3, tin: 1 });
+    expect(bronze.output).toEqual({ bronze: 3 });
+    expect(ITEMS.tin!.baseValue).toBeGreaterThan(ITEMS.copper!.baseValue);
+    expect(ITEMS.bronze!.baseValue).toBeGreaterThan(ITEMS.copper!.baseValue);
+  });
+
+  it('sends the alloyer to the tin and not to the copper once the ingots are in the pack', () => {
+    const smith = adult('smith');
+    teach(smith, 'mining', 'smelting', 'alloying');
+    smith.inventory.add('copper', 4);
+    expect(wantedOreKinds(smith)).toContain('tin_ore');
+    expect(wantedOreKinds(smith)).not.toContain('copper_ore');
+    smith.inventory.add('tin', 2);
+    expect(wantedOreKinds(smith)).not.toContain('tin_ore');
+  });
+
+  it('leaves a whole island with tin for a handful of bronze tools and no more', () => {
+    // The scarcity is the design: one seam, and what it holds bounds what the
+    // island can ever pour. Counted, so that raising it is a decision.
+    const sim = new Simulation({ seed: 'metal-ore' });
+    const ore = sim.nodes.filter(n => n.kind === 'tin_ore').reduce((sum, n) => sum + n.def.maxAmount, 0);
+    const ingots = Math.floor(ore / RECIPES.smelt_tin!.ingredients.tin_ore!);
+    const bronze = Math.floor(ingots / RECIPES.alloy_bronze!.ingredients.tin!) * RECIPES.alloy_bronze!.output.bronze!;
+    expect(bronze).toBeGreaterThan(0);
+    expect(bronze).toBeLessThan(40);
+  });
+
+  it('smelts tin and alloys bronze at the furnace end to end', () => {
+    const sim = worldKnowing(['firemaking', 'carpentry', 'charcoal', 'smelting', 'pottery', 'casting', 'ground_stone', 'hafting', 'mining', 'alloying']);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('tin_ore', 2);
+    person.inventory.add('charcoal', 1);
+    const furnace = stationNear(sim, person, 'furnace');
+    expect(sim.order(person, 'craft', { recipeId: 'smelt_tin', buildingId: furnace.id })).toBe(true);
+    for (let i = 0; i < 2000 && person.inventory.count('tin') === 0; i++) {
+      person.needs.thirst = 0;
+      person.needs.hunger = 0;
+      sim.step();
+    }
+    expect(person.inventory.count('tin')).toBe(1);
+    person.inventory.add('copper', 3);
+    expect(sim.order(person, 'craft', { recipeId: 'alloy_bronze', buildingId: furnace.id })).toBe(true);
+    for (let i = 0; i < 2000 && person.inventory.count('bronze') === 0; i++) {
+      person.needs.thirst = 0;
+      person.needs.hunger = 0;
+      sim.step();
+    }
+    expect(person.inventory.count('bronze')).toBe(3);
+    expect(person.inventory.count('tin')).toBe(0);
+    expect(person.inventory.count('copper')).toBe(0);
+  });
+});

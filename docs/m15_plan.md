@@ -3475,6 +3475,8 @@ metal.
 
 **Avance del 2026-10-07 (37f, `casting`).** El hacha de cobre (tala más que la pulida, por la tabla `AXE_TOOLS` que sustituye a las dos ramas escritas a mano) y la daga de cobre (arma), vertidas en el horno de lingote. Nuevas manos en el arte para la daga.
 
+**Avance del 2026-10-07 (37g, `alloying`).** El estaño se funde y se alea con el cobre en el horno (tres de cobre y uno de estaño dan tres de bronce). Hay un solo yacimiento de estaño en la isla, de catorce de mineral, y una prueba cuenta el bronce que da como máximo. `bronze-needs-a-trader` espera al comercio de la fase 36.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)
