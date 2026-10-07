@@ -2026,6 +2026,12 @@ fork nuevo): una tirada al día solo con hambre extrema, fiebre o herida de
 torso; una por parto, reducida por la partera (`herbalism`). Crónica y
 pantalla con la causa. Cifras sin calibrar (fase 41). Falta el check.
 
+**Avance del 2026-10-07 (check):** `the-pregnant-are-spared` (`PregnancyWatch` en
+`simcheck.ts`), `n/a` en `band` y activo en `century`; verificado contra builds
+rotas: falla sin el filtro de `Brain` (198 paros inmediatos) y sin la guarda de
+`execute` (2 tareas vistas). La primera redacción pasaba en la build rota y se
+corrigió antes de confiar en ella.
+
 ## Fase 20 — La crianza (M14 fase 6)
 
 **Detalle en `m14_plan.md` fase 6.** El bebé no anda el primer año, mama

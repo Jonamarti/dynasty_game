@@ -142,3 +142,33 @@ natalidad de la fase 18 ya a la baja.
 **Pruebas:** `pregnancy.test.ts` (26): los tres términos del riesgo, cero
 tiradas sin riesgo, pérdida y conservación según el dado, nada el día del parto,
 parto complicado con y sin partera, compacto intacto, y las crónicas.
+
+## El check `the-pregnant-are-spared`
+
+Mide desde las personas (`tools/simcheck.ts`, `PregnancyWatch`), no desde la
+tabla del puntuador: tras cada paso, a toda mujer en su último tercio, su
+acción ahora frente a su acción el paso anterior. Falla de dos maneras:
+
+1. **Una tarea vetada vista en marcha** que el paso anterior no estaba: el veto
+   falta en todas partes.
+2. **Un paro inmediato.** `ActionSystem.execute` detiene en el mismo tick lo
+   que el puntuador empezó, de modo que no queda nada que ver después, y lo
+   cuenta como `abandoned_too_heavy_with_child`. Cada mujer puede tener **un**
+   paro legítimo al cruzar al último tercio (lo que hacía en el segundo), así
+   que solo el excedente sobre los cruces cuenta como tarea empezada. Sin esta
+   segunda vía el check **pasaba en la build rota** (primera redacción: solo
+   miraba la acción tras el paso, y la red de seguridad de 19b la ocultaba):
+   0 de 151 vetadas con el filtro de `Brain` quitado. Lo que mide es
+   el hecho, no la defensa.
+
+Es `n/a` con menos de 10 tareas empezadas por mujeres en ese tercio. El
+escenario `band` de una semilla da 0 concepciones desde la fase 18 y el check
+sale `n/a` ahí; `century` con una semilla lo ejerce (210 tareas, 5 cruces).
+
+**Verificado contra builds rotas** (`century`, una semilla; nada de cohortes):
+
+| Build | Resultado |
+|---|---|
+| Con el veto | PASA: 0 vistas, 0 de excedente (1 paro, 5 cruces; 210 tareas) |
+| Sin el filtro de `Brain` | FALLA: 198 paros inmediatos (203 paros, 5 cruces; 151 tareas) |
+| Sin el filtro y sin la guarda de `execute` | FALLA: 2 vistas en marcha (`spar` 2; 249 tareas) |

@@ -23,6 +23,7 @@ import { TECH, techPower, type Tech } from '../src/sim/knowledge/Tech.ts';
 /** Whether somebody holds a technology at any strength — for the civilisation check. */
 const TECH_KNOWN = (person: import('../src/sim/entities/Person.ts').Person, tech: Tech) => techPower(person, tech) > 0;
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
+import { HEAVY_ACTIONS, trimesterOf } from '../src/sim/entities/Pregnancy.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
 import { Building, BUILDINGS } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
@@ -1220,6 +1221,28 @@ export interface ConflictWatch {
  * silently stopped working would still be seen here.
  */
 export interface ConceptionWatch { total: number; roofless: number }
+/**
+ * M15 phase 19: what women in the last third of a pregnancy begin doing. Read
+ * off the people after each step — their action now against their action the
+ * step before — not off the scorer's table, so a veto that stopped working in
+ * `Brain` would still be seen here (and so would one that `Brain` keeps and a
+ * second route walks around).
+ */
+export interface PregnancyWatch {
+  /** Woman-steps spent in the last third. */
+  thirdSteps: number;
+  /**
+   * Times a woman crossed into the last third. Each can have one task of the
+   * second third stopped as she crosses (`ActionSystem.execute`), which is
+   * legitimate; anything beyond that is a task the scorer started and the
+   * action system had to stop, which is the veto failing upstream.
+   */
+  entered: number;
+  /** Times such a woman's action changed to something else. */
+  starts: number;
+  /** Of those, how many were to a vetoed task, by verb. */
+  heavy: Record<string, number>;
+}
 export interface HomeWatch { adultNightSamples: number; adultsNear: number; adultsSleeping: number; childSamples: number; childrenNear: number; childrenNearAnyParent: number; childActions: Record<string, number> }
 /** M15 phase 5's pre-behaviour instrument: talk choice against belonging mood. */
 export interface MoodChoiceWatch { belongingTalk: { mood: number; talk: boolean }[] }
@@ -1245,6 +1268,7 @@ export interface Report {
   conflict: ConflictWatch;
   home: HomeWatch;
   conceptions: ConceptionWatch;
+  pregnancy: PregnancyWatch;
   moodChoice: MoodChoiceWatch;
   /** The one number `Telemetry.max` tracks rather than sums; see its own note. */
   travel: { worstExpanded: number };
@@ -1568,6 +1592,27 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
   if (base.conceptions.total < 5) skip('conception-needs-a-roof', base.conceptions.total + ' conceptions (need 5)');
   else add('conception-needs-a-roof', base.conceptions.roofless === 0,
     base.conceptions.roofless + ' of ' + base.conceptions.total + ' conceptions began without both parents asleep under one roof (need 0)');
+  // M15 phase 19. In the last third of a pregnancy nobody begins a vetoed task.
+  // Two ways to fail it. A task seen under way that was not there the step
+  // before (the veto missing everywhere), and a task the scorer began and
+  // `ActionSystem.execute` stopped on the same tick, which leaves nothing to
+  // see afterwards and is counted as `abandoned_too_heavy_with_child`: each
+  // woman may have one such stop as she crosses into the third (the work of
+  // the second third), so only the surplus is a start. Needs enough tasks to
+  // have been begun at all: women in that third who only ever sat still would
+  // pass without the veto being tried.
+  if (base.pregnancy.starts < 10) skip('the-pregnant-are-spared', base.pregnancy.starts + ' tasks begun by women in their last third (need 10)');
+  else {
+    const seen = Object.values(base.pregnancy.heavy).reduce((sum, n) => sum + n, 0);
+    const stopped = tel.abandoned_too_heavy_with_child ?? 0;
+    const surplus = Math.max(0, stopped - base.pregnancy.entered);
+    add('the-pregnant-are-spared', seen + surplus === 0,
+      seen + ' heavy tasks seen under way and ' + surplus + ' stopped at once (' + stopped + ' stops, ' +
+      base.pregnancy.entered + ' crossings into the last third) among ' + base.pregnancy.starts +
+      ' tasks begun there' +
+      (seen > 0 ? ' (' + Object.entries(base.pregnancy.heavy).map(([k, n]) => k + ' ' + n).join(', ') + ')' : '') +
+      ' (need 0)');
+  }
   const cravingMeals = tel.eat_craving_protein ?? 0;
   const calmMeals = tel.eat_calm_protein ?? 0;
   if (cravingMeals < 20 || calmMeals < 20) {
@@ -4168,6 +4213,8 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   const moodChoice: MoodChoiceWatch = { belongingTalk: [] };
   const conceptions: ConceptionWatch = { total: 0, roofless: 0 };
   const wasPregnant = new Set<number>();
+  const pregnancy: PregnancyWatch = { thirdSteps: 0, entered: 0, starts: 0, heavy: {} };
+  const lastAction = new Map<number, string>();
   let bedtime: Map<number, { action: string; roof: number | null }> | null = null;
   let lastEventId = 0;
 
@@ -4199,6 +4246,18 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
       const his = person.pregnantBy === null ? undefined : bedtime.get(person.pregnantBy);
       if (!mine || !his || mine.action !== 'sleep' || his.action !== 'sleep' ||
           mine.roof === null || mine.roof !== his.roof) conceptions.roofless++;
+    }
+    for (const person of sim.people) {
+      if (!person.alive || trimesterOf(person) !== 3) { lastAction.delete(person.id); continue; }
+      pregnancy.thirdSteps++;
+      const before = lastAction.get(person.id);
+      lastAction.set(person.id, person.action);
+      // Her first step in the last third has no "before" in it: whatever she
+      // was doing is the second third's work, which `ActionSystem` stops.
+      if (before === undefined) { pregnancy.entered++; continue; }
+      if (before === person.action) continue;
+      pregnancy.starts++;
+      if (HEAVY_ACTIONS.has(person.action)) pregnancy.heavy[person.action] = (pregnancy.heavy[person.action] ?? 0) + 1;
     }
     // Every step, not every sample: a behaviour that only ever runs for a few
     // ticks at a time is still the AI using it, and sparse sampling misses it.
@@ -4425,6 +4484,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
     conflict,
     home,
     conceptions,
+    pregnancy,
     moodChoice,
     relationships: sim.relationships.stats(),
     buildings: {
