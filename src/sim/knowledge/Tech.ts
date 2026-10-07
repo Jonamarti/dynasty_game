@@ -169,6 +169,8 @@ export const TECHS = [
   'smelting',
   // Air driven into the fire: what a furnace is worth once somebody works it.
   'bellows',
+  // Metal poured into a shape: the first tools that are not stone.
+  'casting',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2148,6 +2150,32 @@ export const TECH: Record<Tech, TechDef> = {
       'same furnace comes to heat faster and turns more of the ore to metal ' +
       'for the same charcoal.',
   },
+  // M15 phase 37 (M8.3). Metal run into a mould of fired clay: an axe that is
+  // an axe from the first pour, and a dagger, which is a blade longer than
+  // anything flint gives. `maxRefinement: 1`, not 2, for the reason
+  // `ground_stone` records: `axeFactor` reads this through `scaled` with a
+  // `full` under 1, and a `full` of 0.3 at two refinement steps (power 1.4)
+  // would put the multiplier at 0.02. One step keeps the floor at 0.16.
+  casting: {
+    id: 'casting', label: 'Casting', domain: 'metal', web: 'metal',
+    age: 'chalcolithic', firstKnown: 'about 4000 BC',
+    kind: 'device',
+    requires: ['smelting', 'pottery'], difficulty: 0.65, skill: 'smith',
+    prototype: { mud: 3, flint: 2 }, maxRefinement: 1,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'smelting' }, { kind: 'knows', tech: 'pottery' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'let the run of metal find its way into a hollow pressed in clay, and broke the clay open on an axe' },
+      { needs: [{ kind: 'knows', tech: 'smelting' }, { kind: 'holding', item: 'copper' }],
+        weight: 0.7, story: 'wanted the ingot to be an axe and not a lump' },
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'knows', tech: 'smelting' },
+                { kind: 'holding', item: 'mud' }],
+        weight: 0.5, story: 'pressed a flint axe into wet clay for the print and thought of filling it' },
+    ],
+    description:
+      'Metal run into a hollow shaped in clay. An axe that cuts like the ' +
+      'best polished stone, and a dagger: a blade longer than any flint gives.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2494,6 +2522,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'The same furnace in less time and for the same charcoal, more metal out of the ore.',
     site: 'RECIPES.smelt_copper_bellows, declared ahead of RECIPES.smelt_copper so the scorer prefers it when known',
   },
+  casting: {
+    summary: 'A cast axe that fells and a cast dagger that cuts: the first tools that are not stone.',
+    site: 'RECIPES.copper_axe (Tech.axeFactor, via AXE_TOOLS) and RECIPES.copper_dagger (weaponOf, via ITEMS.copper_dagger.weapon)',
+  },
 };
 
 /**
@@ -2721,27 +2753,38 @@ export function buildFactor(person: Person): number {
  */
 export function axeFactor(person: Person, equippedOnly = false): number {
   let best = 1;
-  if (person.inventory.has('handaxe') && (!equippedOnly || equippedItem(person, 'handaxe'))) {
-    best = Math.min(best, scaled(person, 'hafting', 0.5));
-  }
-  if (person.inventory.has('stone_axe') && (!equippedOnly || equippedItem(person, 'stone_axe'))) {
-    best = Math.min(best, scaled(person, 'ground_stone', 0.35));
+  for (const axe of AXE_TOOLS) {
+    if (person.inventory.has(axe.item) && (!equippedOnly || equippedItem(person, axe.item))) {
+      best = Math.min(best, scaled(person, axe.tech, axe.full));
+    }
   }
   return best;
 }
 
+/**
+ * Every axe, worst first, with the technique behind it and the share of the
+ * felling work it leaves (`scaled`'s `full`). One table where there were two
+ * hand-written branches, because the metal tier adds two more (M15 phase 37)
+ * and four copies of one idea is how four answers drift apart. **Each `full` has
+ * to keep `scaled` positive at that technique's `maxRefinement`** — see the note
+ * on `ground_stone` — and a test walks the table to prove it.
+ */
+export const AXE_TOOLS: readonly { item: string; tech: Tech; full: number }[] = [
+  { item: 'handaxe', tech: 'hafting', full: 0.5 },
+  { item: 'stone_axe', tech: 'ground_stone', full: 0.35 },
+  { item: 'copper_axe', tech: 'casting', full: 0.3 },
+];
+
 /** The strongest axe present, optionally limited to what is actually in hand. */
 export function axeItemOf(person: Person, equippedOnly = false): string | null {
-  const held = equippedOnly
-    ? new Set(['left', 'right'].map(slot => person.equipment[slot as 'left' | 'right']?.item).filter(Boolean))
-    : null;
-  const handaxe = person.inventory.has('handaxe') && (!held || held.has('handaxe'));
-  const stoneAxe = person.inventory.has('stone_axe') && (!held || held.has('stone_axe'));
-  if (!handaxe && !stoneAxe) return null;
-  if (!handaxe) return stoneAxe ? 'stone_axe' : null;
-  if (!stoneAxe) return 'handaxe';
-  return scaled(person, 'ground_stone', 0.35) < scaled(person, 'hafting', 0.5)
-    ? 'stone_axe' : 'handaxe';
+  let best: { item: string; factor: number } | null = null;
+  for (const axe of AXE_TOOLS) {
+    if (!person.inventory.has(axe.item) || (equippedOnly && !equippedItem(person, axe.item))) continue;
+    const factor = scaled(person, axe.tech, axe.full);
+    // Strictly smaller: a tie stays with the earlier, humbler axe, as it did.
+    if (best === null || factor < best.factor) best = { item: axe.item, factor };
+  }
+  return best?.item ?? null;
 }
 
 function equippedItem(person: Person, itemId: string): boolean {

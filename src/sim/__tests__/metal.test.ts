@@ -11,9 +11,10 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
+import { fittedActionToolFor } from '../../render/EquipmentAnimation.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person, DAYS_PER_YEAR } from '../entities/Person.ts';
-import { TECH, TECHS, TECH_EFFECTS, ageIndex, warmthFrom, techPower, awlFactor, forageYieldFactor, SEWN_RECIPES, WEBS, techsOfWeb, webOf } from '../knowledge/Tech.ts';
+import { TECH, TECHS, TECH_EFFECTS, ageIndex, warmthFrom, techPower, awlFactor, forageYieldFactor, SEWN_RECIPES, WEBS, techsOfWeb, webOf, AXE_TOOLS, axeFactor, axeItemOf, weaponOf } from '../knowledge/Tech.ts';
 import { availableActions } from '../ai/ActionCatalog.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -550,7 +551,7 @@ describe('bellows and the metal web', () => {
   it('opens a web of its own at native copper, with smelting and the bellows in it', () => {
     expect(WEBS.metal.gate).toBe('native_copper');
     expect(TECH.native_copper.opens).toBe('metal');
-    expect(techsOfWeb('metal')).toEqual(['smelting', 'bellows']);
+    expect(techsOfWeb('metal')).toEqual(expect.arrayContaining(['smelting', 'bellows']));
     for (const tech of techsOfWeb('metal')) {
       expect(webOf(tech)).toBe('metal');
     }
@@ -617,5 +618,102 @@ describe('bellows and the metal web', () => {
     for (let i = 0; i < 20 && sim.interruptions.length === 0; i++) sim.step();
     expect(sim.interruptions.map(n => n.reason)).toContain('dont_know_how');
     expect(person.inventory.count('copper')).toBe(0);
+  });
+});
+
+describe('casting', () => {
+  it('needs smelting and pottery, and joins the metal web', () => {
+    const def = TECH.casting;
+    expect(def.requires).toEqual(['smelting', 'pottery']);
+    expect(def.web).toBe('metal');
+    expect(def.kind).toBe('device');
+    for (const required of def.requires) {
+      expect(ageIndex(def.age)).toBeGreaterThanOrEqual(ageIndex(TECH[required].age));
+    }
+  });
+
+  it('pours an axe and a dagger at the furnace out of the ingot', () => {
+    for (const id of ['copper_axe', 'copper_dagger']) {
+      const recipe = RECIPES[id]!;
+      expect(recipe.tech).toBe('casting');
+      expect(recipe.station).toBe('furnace');
+      expect(recipe.skill).toBe('smith');
+      expect(Object.keys(recipe.ingredients)).toEqual(['copper']);
+    }
+  });
+
+  it('keeps every axe in the table positive at the refinement its technique allows', () => {
+    // The `ground_stone` rule, as a test, so that the next axe cannot break it:
+    // a multiplier at or under zero fells a tree in no time at all.
+    for (const axe of AXE_TOOLS) {
+      const def = TECH[axe.tech];
+      const person = adult(axe.item);
+      teach(person, axe.tech);
+      person.techLevel.set(axe.tech, def.maxRefinement);
+      person.inventory.add(axe.item, 1);
+      expect(axeFactor(person), axe.item).toBeGreaterThan(0.05);
+    }
+  });
+
+  it('fells faster with a cast axe than with a polished one, and never without knowing how it was made', () => {
+    const stone = adult('stone');
+    teach(stone, 'ground_stone');
+    stone.inventory.add('stone_axe', 1);
+    const cast = adult('cast');
+    teach(cast, 'casting');
+    cast.inventory.add('copper_axe', 1);
+    const stranger = adult('stranger');
+    stranger.inventory.add('copper_axe', 1);
+    expect(axeFactor(cast)).toBeLessThan(axeFactor(stone));
+    expect(axeFactor(stranger)).toBe(1);
+    // A person carrying both takes the better one into the tree.
+    teach(stone, 'casting');
+    stone.inventory.add('copper_axe', 1);
+    expect(axeItemOf(stone)).toBe('copper_axe');
+    // And the old axes behave exactly as they did.
+    const old = adult('old');
+    teach(old, 'hafting', 'ground_stone');
+    old.inventory.add('handaxe', 1);
+    old.inventory.add('stone_axe', 1);
+    expect(axeItemOf(old)).toBe('stone_axe');
+    expect(axeFactor(old)).toBeCloseTo(0.35);
+  });
+
+  it('is a weapon only in the dagger, and the dagger needs casting to be worth anything', () => {
+    expect(ITEMS.copper_axe!.weapon).toBeUndefined();
+    expect(ITEMS.copper_dagger!.weapon!.tech).toBe('casting');
+    const smith = adult('smith');
+    const stranger = adult('stranger');
+    teach(smith, 'casting');
+    smith.inventory.add('copper_dagger', 1);
+    stranger.inventory.add('copper_dagger', 1);
+    expect(weaponOf(smith, false)?.power).toBeGreaterThan(0);
+    expect(weaponOf(stranger, false)).toBeNull();
+  });
+
+  it('pours a cast axe at the furnace end to end', () => {
+    const sim = worldKnowing(['firemaking', 'carpentry', 'charcoal', 'smelting', 'pottery', 'casting']);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('copper', 2);
+    const furnace = stationNear(sim, person, 'furnace');
+    expect(sim.order(person, 'craft', { recipeId: 'copper_axe', buildingId: furnace.id })).toBe(true);
+    for (let i = 0; i < 2000 && person.inventory.count('copper_axe') === 0; i++) {
+      person.needs.thirst = 0;
+      person.needs.hunger = 0;
+      sim.step();
+    }
+    expect(person.inventory.count('copper_axe')).toBe(1);
+    expect(person.inventory.count('copper')).toBe(0);
+  });
+
+  it('draws the fitted axe whatever it is made of', () => {
+    for (const axe of AXE_TOOLS) {
+      const person = adult(axe.item);
+      person.action = 'chop';
+      person.inventory.add(axe.item, 1);
+      person.equipment.right = { item: axe.item, count: 1 };
+      expect(fittedActionToolFor(person, true), axe.item).toBe('handaxe');
+    }
   });
 });

@@ -59,7 +59,7 @@ const SIZE_CLASSES: readonly SizeClass[] = ['infant', 'child', 'adolescent', 'ad
 export type HairVariant = 'dark' | 'grey' | 'balding' | 'bald';
 const HAIR_VARIANTS: readonly HairVariant[] = ['dark', 'grey', 'balding', 'bald'];
 
-export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'sling' | 'bone_point' | 'handaxe' | 'net' | 'basket' | 'antler_pick' | 'spade' | 'digging_stick';
+export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'sling' | 'bone_point' | 'copper_dagger' | 'handaxe' | 'net' | 'basket' | 'antler_pick' | 'spade' | 'digging_stick';
 /**
  * What shows in the hand when more than one thing is carried, most
  * conspicuous first. A hunter carrying both a bow and a basket reads as
@@ -67,7 +67,7 @@ export type HeldItemKind = 'spear' | 'bow' | 'atlatl' | 'sling' | 'bone_point' |
  * to see at a glance.
  */
 const HELD_PRIORITY: readonly HeldItemKind[] =
-  ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'handaxe', 'net', 'basket', 'spade', 'antler_pick'];
+  ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'handaxe', 'net', 'basket', 'spade', 'antler_pick'];
 
 interface BodyGeometry {
   torsoW: number;
@@ -417,6 +417,21 @@ function paintHeld(ctx: CanvasRenderingContext2D, kind: HeldItemKind): void {
       ctx.moveTo(cx + 10, cy - 6);
       ctx.lineTo(cx + 10, cy + 6);
       ctx.stroke();
+      break;
+    case 'copper_dagger':
+      ctx.strokeStyle = '#7a5a34';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + 6);
+      ctx.lineTo(cx, cy + 12);
+      ctx.stroke();
+      ctx.fillStyle = '#c9803c';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 12);
+      ctx.lineTo(cx + 3, cy + 4);
+      ctx.lineTo(cx - 3, cy + 4);
+      ctx.closePath();
+      ctx.fill();
       break;
     case 'handaxe':
       ctx.strokeStyle = '#7a5a34';

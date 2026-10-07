@@ -440,4 +440,10 @@ export const ES_TECH: Record<string, string> = {
   "got dizzy blowing down a reed into the fire and wanted a lung that would not tire": "se mareó soplando por una caña al fuego y quiso un pulmón que no se cansara",
   "pumped a skin of air at a charge that would not run": "bombeó una piel de aire sobre una carga que no quería fundirse",
   "The same furnace in less time and for the same charcoal, more metal out of the ore.": "El mismo horno en menos tiempo y con el mismo carbón, más metal del mineral.",
+  "Casting": "Fundido en molde",
+  "Metal run into a hollow shaped in clay. An axe that cuts like the best polished stone, and a dagger: a blade longer than any flint gives.": "Metal vertido en un hueco modelado en arcilla. Un hacha que corta como la mejor piedra pulida, y una daga: una hoja más larga que cualquiera de sílex.",
+  "let the run of metal find its way into a hollow pressed in clay, and broke the clay open on an axe": "dejó que el chorro de metal buscara su camino hacia un hueco hecho en arcilla, y rompió la arcilla sobre un hacha",
+  "wanted the ingot to be an axe and not a lump": "quiso que el lingote fuera un hacha y no un bulto",
+  "pressed a flint axe into wet clay for the print and thought of filling it": "apretó un hacha de sílex en arcilla húmeda para ver la huella y pensó en llenarla",
+  "A cast axe that fells and a cast dagger that cuts: the first tools that are not stone.": "Un hacha fundida que tala y una daga fundida que corta: las primeras herramientas que no son de piedra.",
 };

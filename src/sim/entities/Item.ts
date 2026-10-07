@@ -362,6 +362,17 @@ export const ITEMS: Record<string, ItemDef> = {
   // and what `casting` consumes. Worth four times the ore it came from, which is
   // what makes carrying one a reason to keep it from a thief.
   copper: { id: 'copper', label: 'Copper', nutrition: 0, spoilTicks: 0, baseValue: 14, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  // `casting`'s two. The axe is read through `AXE_TOOLS`, so it is not a weapon:
+  // knowing how to cast it and a swing at a person are different questions, and
+  // the `handaxe` bug is what mixing them gave. The dagger is a weapon and only a
+  // weapon: short, quick, good in a scuffle, poor against an animal that has to be
+  // caught first.
+  copper_axe: { id: 'copper_axe', label: 'Copper axe', nutrition: 0, spoilTicks: 0, baseValue: 16, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  copper_dagger: {
+    id: 'copper_dagger', label: 'Copper dagger', nutrition: 0, spoilTicks: 0, baseValue: 15,
+    weapon: { damage: 0.5, reach: 0.25, hunt: 1.2, tech: 'casting' },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 },
+  },
   charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
 };
 

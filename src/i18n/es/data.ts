@@ -282,4 +282,6 @@ export const ES_DATA: Record<string, string> = {
   "Smelt copper": "Fundir cobre",
   "Copper": "Cobre",
   "Smelt copper with bellows": "Fundir cobre con fuelle",
+  "Copper axe": "Hacha de cobre",
+  "Copper dagger": "Daga de cobre",
 };

@@ -609,6 +609,18 @@ export const RECIPES: Record<string, RecipeDef> = {
   // `smelting`, at the furnace. Three loads of ore and two of charcoal give two
   // ingots: the first craft in the game that costs a fuel as well as a material.
   // `keep: 4` is two runs' worth, and what `casting` will want to spend.
+  // `casting`, at the furnace (the mould is fired clay it makes as it goes: the
+  // pour is the work, and a clay ingredient nobody would fetch is `pottery` again).
+  copper_axe: {
+    id: 'copper_axe', label: 'Copper axe', icon: '\u{1FA93}', tech: 'casting', skill: 'smith',
+    workTicks: 120, ingredients: { copper: 2 }, output: { copper_axe: 1 },
+    station: 'furnace', keep: 1,
+  },
+  copper_dagger: {
+    id: 'copper_dagger', label: 'Copper dagger', icon: '\u{1F5E1}', tech: 'casting', skill: 'smith',
+    workTicks: 100, ingredients: { copper: 1 }, output: { copper_dagger: 1 },
+    station: 'furnace', keep: 1,
+  },
   // `bellows`: the same run in less time and three ingots, not two. A second
   // recipe rather than a term on the first, on the `kiln_pot` model, and the
   // trap that comment records applies here exactly: the craft scorer has no

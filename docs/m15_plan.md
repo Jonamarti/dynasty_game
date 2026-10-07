@@ -3473,6 +3473,8 @@ metal.
 
 **Avance del 2026-10-07 (37e, `bellows` y la sub-red Metal).** El fuelle da la fundición mejor (tres lingotes en 90 ticks, contra dos en 120) como segunda receta declarada antes de la simple. Con él se abre la sub-red Metal, con puerta en `native_copper`.
 
+**Avance del 2026-10-07 (37f, `casting`).** El hacha de cobre (tala más que la pulida, por la tabla `AXE_TOOLS` que sustituye a las dos ramas escritas a mano) y la daga de cobre (arma), vertidas en el horno de lingote. Nuevas manos en el arte para la daga.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)
