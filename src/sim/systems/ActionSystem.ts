@@ -14,7 +14,7 @@ import type { Person } from '../entities/Person.ts';
 import { dress, needsTending, partWord, poisonGrade, soothe, KNOCKOUT_AT, strikePart, wound } from '../entities/Body.ts';
 import { WORK_ACTIONS } from '../entities/Job.ts';
 import { canWalk, isNursling } from '../entities/LifeStage.ts';
-import { tooHeavyForHer } from '../entities/Pregnancy.ts';
+import { blowFactor, fightsBack, tooHeavyForHer } from '../entities/Pregnancy.ts';
 import { feederRole, starvingInCare } from '../ai/Feeding.ts';
 import {
   homeForMother, mayNurse, NURSE_TICKS, NURSING_HUNGER, NURSING_HUNGER_RELIEF, NURSING_THIRST, NURSING_THIRST_RELIEF,
@@ -744,7 +744,8 @@ export class ActionSystem {
     // and says why. Here, once, ahead of the verbs, rather than a check in
     // each of eight: `Brain` and `Simulation.order` keep a new one from being
     // started, so this is only ever the work that began in the second third.
-    if (person.pregnant && tooHeavyForHer(person, person.action)) {
+    if (person.pregnant && tooHeavyForHer(person, person.action,
+      fightsBack(person, person.targetPersonId, id => ctx.peopleById.get(id), ctx.tick))) {
       this.abandon(person, 'too_heavy_with_child', ctx);
       return;
     }
@@ -6340,7 +6341,9 @@ export class ActionSystem {
     const part = ctx.healthRng ? strikePart(ctx.healthRng) : null;
     const turned = part === null ? armourOf(other) : protectionOf(other, part);
     const bare = Math.max(3, (attack - defence * 0.5) * 22 * ctx.rng.range(0.6, 1.4));
-    const damage = bare * (1 - turned);
+    // M15 phase 19: in her last third she may only be striking back
+    // (`tooHeavyForHer`), and her blow is half of what it would be.
+    const damage = bare * (1 - turned) * blowFactor(person);
     if (turned > 0) {
       telemetry.count('blow_armoured');
       telemetry.count('armour_turned_health', bare - damage);

@@ -4,8 +4,8 @@ import { makeConfig } from '../core/Config.ts';
 import { itemCapacityFor, capacityFor } from '../core/Carry.ts';
 import { Person } from '../entities/Person.ts';
 import {
-  HEAVY_ACTIONS, complicationChance, gestationDays, handfulsOnly, midwifeQuality, miscarriageRisk,
-  pregnancyPace, showing, tooHeavyForHer, trimesterOf,
+  HEAVY_ACTIONS, PREGNANT_BLOW, blowFactor, complicationChance, fightsBack, gestationDays, handfulsOnly,
+  midwifeQuality, miscarriageRisk, pregnancyPace, showing, tooHeavyForHer, trimesterOf,
 } from '../entities/Pregnancy.ts';
 import { wound } from '../entities/Body.ts';
 import { LifeSystem, type LifeContext, type PregnancyCare } from '../systems/LifeSystem.ts';
@@ -213,6 +213,80 @@ describe('M15 phase 19b: heavy work is refused with a reason', () => {
     try {
       expect(stopReasonLabel('too_heavy_with_child')).toBe('está demasiado avanzada en el embarazo para eso');
     } finally { setLanguage('en'); }
+  });
+});
+
+/**
+ * Owner, 2026-10-07: "no puede atacar pero puede defenderse, aunque su ataque
+ * haga menos daño que de normal, por ejemplo la mitad". The veto keeps `attack`
+ * as a thing she begins; striking back at whoever is hitting her is allowed,
+ * at half the blow.
+ */
+describe('M15 phase 19: she may not attack, but she may defend herself', () => {
+  function fight(seed: string, share: number | null) {
+    const sim = new Simulation({ seed, world: { width: 48, height: 48 },
+      population: { bands: 1, peoplePerBand: 8 } });
+    const woman = sim.people.find(p => p.sex === 'female' && !p.isChild)!;
+    const men = sim.people.filter(p => p.sex === 'male' && !p.isChild);
+    const [assailant, bystander] = [men[0]!, men[1]!];
+    for (const p of [woman, assailant, bystander]) { p.needs.hunger = 0; p.needs.thirst = 0; p.health = 100; }
+    assailant.x = woman.x + 0.6; assailant.y = woman.y;
+    bystander.x = woman.x - 0.6; bystander.y = woman.y;
+    if (share !== null) { woman.pregnant = true; woman.gestationLeft = gestationDays(woman) * (1 - share); }
+    // He is attacking her, and has just landed a blow.
+    assailant.action = 'attack'; assailant.targetPersonId = woman.id;
+    woman.lastHarmedBy = assailant.id; woman.lastHarmedTick = sim.time.tick;
+    return { sim, woman, assailant, bystander };
+  }
+
+  it('lets an attack through only as defence, and nothing else heavy', () => {
+    const w = expecting(0.9);
+    expect(tooHeavyForHer(w, 'attack')).toBe(true);
+    expect(tooHeavyForHer(w, 'attack', true)).toBe(false);
+    expect(tooHeavyForHer(w, 'hunt', true)).toBe(true);
+    expect(tooHeavyForHer(w, 'spar', true)).toBe(true);
+  });
+
+  it('halves her blow in the last third, and only then', () => {
+    expect(PREGNANT_BLOW).toBe(0.5);
+    expect(blowFactor(expecting(0.9))).toBe(0.5);
+    expect(blowFactor(expecting(0.5))).toBe(1);
+    expect(blowFactor(new Person('Not', 0, 0, 0, new RNG('x')))).toBe(1);
+  });
+
+  it('knows her assailant from a bystander', () => {
+    const { sim, woman, assailant, bystander } = fight('pregnancy-defence-who', 0.9);
+    const byId = (id: number) => sim.peopleById.get(id);
+    expect(fightsBack(woman, assailant.id, byId, sim.time.tick)).toBe(true);
+    expect(fightsBack(woman, bystander.id, byId, sim.time.tick)).toBe(false);
+    expect(fightsBack(woman, null, byId, sim.time.tick)).toBe(false);
+  });
+
+  it('takes the order to strike back and refuses an attack on anybody else', () => {
+    const { sim, woman, assailant, bystander } = fight('pregnancy-defence-order', 0.9);
+    sim.lastRefusal = null;
+    expect(sim.order(woman, 'attack', { personId: bystander.id })).toBe(false);
+    expect(sim.lastRefusal).toBe('she is too heavy with child for that');
+    expect(sim.order(woman, 'attack', { personId: assailant.id })).toBe(true);
+  });
+
+  it('lights the strike in the menu only against the one attacking her', () => {
+    const { sim, woman, assailant, bystander } = fight('pregnancy-defence-menu', 0.9);
+    const ask = (target: Person) => availableActions(woman, { kind: 'person', x: target.x, y: target.y, person: target }, {
+      world: sim.world, nearWater: false, childhood: sim.config.childhood, peopleById: sim.peopleById,
+    } as CatalogContext).flatMap(o => [o, ...(o.children ?? [])]).find(o => o.id === 'attack');
+    expect(ask(assailant)?.enabled).toBe(true);
+    const other = ask(bystander)!;
+    expect(other.enabled).toBe(false);
+    expect(other.reason).toBe('Too heavy with child for that');
+  });
+
+  it('keeps striking back once begun: the action system does not stop her defence', () => {
+    const { sim, woman, assailant } = fight('pregnancy-defence-keep', 0.9);
+    expect(sim.order(woman, 'attack', { personId: assailant.id })).toBe(true);
+    sim.interruptions.length = 0;
+    sim.step();
+    expect(sim.interruptions.some(n => n.personId === woman.id && n.reason === 'too_heavy_with_child')).toBe(false);
   });
 });
 

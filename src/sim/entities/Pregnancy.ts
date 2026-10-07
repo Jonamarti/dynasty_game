@@ -18,6 +18,7 @@
  */
 import type { Person } from './Person.ts';
 import { techPower } from '../knowledge/Tech.ts';
+import { assailantOf } from '../social/Defence.ts';
 
 /**
  * Days a pregnancy runs: a quarter of the calendar year, whatever the
@@ -72,9 +73,41 @@ export const HEAVY_ACTIONS: ReadonlySet<string> = new Set([
 /** The stop reason (`Floaters.STOP_REASONS`) for work refused her in her last third. */
 export const TOO_HEAVY_WITH_CHILD = 'too_heavy_with_child';
 
-/** Whether this verb is refused to this person right now. */
-export function tooHeavyForHer(person: Person, action: string): boolean {
-  return person.pregnant && HEAVY_ACTIONS.has(action) && trimesterOf(person) === 3;
+/**
+ * Whether this verb is refused to this person right now.
+ *
+ * `defending` is the one exception (owner, 2026-10-07: "no puede atacar pero
+ * puede defenderse"): an `attack` aimed back at whoever is attacking her is
+ * self-defence, not the heavy work, and is allowed — at half the blow
+ * (`PREGNANT_BLOW`). Callers work it out with `fightsBack`, so the scorer, the
+ * order seam, the menu and the action system agree on what defence is.
+ */
+export function tooHeavyForHer(person: Person, action: string, defending = false): boolean {
+  if (!person.pregnant || !HEAVY_ACTIONS.has(action) || trimesterOf(person) !== 3) return false;
+  return !(defending && action === 'attack');
+}
+
+/**
+ * Whether striking `targetId` is answering a blow: the target is the person
+ * `Defence.assailantOf` says is attacking her now. Read from the same window
+ * that makes `ActionSystem` stop work when somebody is hit, so her defence
+ * ends when the attack does and cannot turn into a pursuit.
+ */
+export function fightsBack(
+  person: Person, targetId: number | null, byId: (id: number) => Person | undefined, tick: number,
+): boolean {
+  return targetId !== null && assailantOf(person, byId, tick)?.id === targetId;
+}
+
+/**
+ * What her blow is worth in her last third, against her own (owner: "su
+ * ataque haga menos daño que de normal, por ejemplo la mitad"). Applied to
+ * the damage after every draw, so no stream moves.
+ */
+export const PREGNANT_BLOW = 0.5;
+
+export function blowFactor(person: Person): number {
+  return person.pregnant && trimesterOf(person) === 3 ? PREGNANT_BLOW : 1;
 }
 
 /**

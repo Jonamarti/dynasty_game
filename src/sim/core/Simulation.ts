@@ -43,7 +43,7 @@ import { drivePressures, DRIVES } from '../ai/Drives.ts';
 import { babyToCarry, infantNeedingNursing, infantOutsideHome, mayNurse, nurslingHungerFactor } from '../ai/Nursing.ts';
 import { starvingInCare } from '../ai/Feeding.ts';
 import { canCrawl, canWalk, isBabyInArms, isLactating, isNursling } from '../entities/LifeStage.ts';
-import { handfulsOnly, midwifeQuality, tooHeavyForHer, type MiscarriageCause } from '../entities/Pregnancy.ts';
+import { fightsBack, handfulsOnly, midwifeQuality, tooHeavyForHer, type MiscarriageCause } from '../entities/Pregnancy.ts';
 import {
   stallReason, survivalActions, urgentNeeds, type Autonomy,
 } from '../ai/Autonomy.ts';
@@ -3837,7 +3837,10 @@ export class Simulation {
     // order shares, which is why a chief's command, the player's menu and a
     // resumed job are all held to it by this one check. `ActionSystem.execute`
     // holds what she was already doing when the third begins.
-    if (tooHeavyForHer(person, action)) {
+    // Striking back at whoever is attacking her is self-defence, not the
+    // heavy work (owner, 2026-10-07), and is let through at half the blow.
+    if (tooHeavyForHer(person, action,
+      fightsBack(person, target.personId ?? null, id => this.peopleById.get(id), this.time.tick))) {
       telemetry.count('order_too_heavy_with_child');
       this.lastRefusal = t('she is too heavy with child for that');
       return false;

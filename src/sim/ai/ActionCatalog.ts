@@ -314,7 +314,14 @@ export function availableActions(
   ctx: CatalogContext
 ): ActionOption[] {
   const options = optionsFor(actor, target, ctx);
-  return actor.pregnant ? sparePregnant(actor, options) : options;
+  if (!actor.pregnant) return options;
+  // Owner, 2026-10-07: she may strike back at whoever is attacking her. The
+  // menu has no clock, so "attacking her" is read off the target itself (an
+  // `attack` aimed at her) rather than through `assailantOf`'s window; the
+  // order seam asks `fightsBack` and has the last word.
+  const assailant = target.person;
+  const defending = !!assailant && assailant.action === 'attack' && assailant.targetPersonId === actor.id;
+  return sparePregnant(actor, options, defending);
 }
 
 /**
@@ -326,17 +333,17 @@ export function availableActions(
  * A group is greyed when nothing is left in it, and says why only when it was
  * this that emptied it.
  */
-function sparePregnant(actor: Person, options: ActionOption[]): ActionOption[] {
+function sparePregnant(actor: Person, options: ActionOption[], defending: boolean): ActionOption[] {
   return options.map(option => {
     if (option.children) {
-      const children = sparePregnant(actor, option.children);
+      const children = sparePregnant(actor, option.children, defending);
       const changed = children.some((child, i) => child !== option.children![i]);
       if (!changed) return option;
       const any = children.some(child => child.enabled);
       return { ...option, children, enabled: option.enabled && any,
         reason: option.enabled && !any ? t('Too heavy with child for that') : option.reason };
     }
-    if (!tooHeavyForHer(actor, option.id) || !option.enabled) return option;
+    if (!tooHeavyForHer(actor, option.id, defending) || !option.enabled) return option;
     return { ...option, enabled: false, reason: t('Too heavy with child for that') };
   });
 }

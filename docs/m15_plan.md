@@ -2038,6 +2038,16 @@ rotas: falla sin el filtro de `Brain` (198 paros inmediatos) y sin la guarda de
 `execute` (2 tareas vistas). La primera redacción pasaba en la build rota y se
 corrigió antes de confiar en ella.
 
+**Avance del 2026-10-07 (defensa propia, decisión del propietario):** «no puede
+atacar pero puede defenderse, aunque su ataque haga menos daño que de normal,
+por ejemplo la mitad». En el último tercio `attack` sigue vetado como cosa que
+ella empieza, pero devolver el golpe a quien la está atacando
+(`Pregnancy.fightsBack`, la ventana de `Defence.assailantOf`) pasa por los
+cuatro lectores (`Brain`, `Simulation.order`, el menú y `ActionSystem.execute`)
+y su golpe vale la mitad (`PREGNANT_BLOW`, aplicado tras todas las tiradas).
+El check cuenta esas defensas aparte. También confirmada la otra decisión
+abierta: tras un aborto, la mitad del espaciado habitual.
+
 ## Fase 20 — La crianza (M14 fase 6)
 
 **Detalle en `m14_plan.md` fase 6.** El bebé no anda el primer año, mama

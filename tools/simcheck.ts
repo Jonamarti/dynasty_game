@@ -23,7 +23,7 @@ import { TECH, techPower, type Tech } from '../src/sim/knowledge/Tech.ts';
 /** Whether somebody holds a technology at any strength — for the civilisation check. */
 const TECH_KNOWN = (person: import('../src/sim/entities/Person.ts').Person, tech: Tech) => techPower(person, tech) > 0;
 import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
-import { HEAVY_ACTIONS, trimesterOf } from '../src/sim/entities/Pregnancy.ts';
+import { fightsBack, HEAVY_ACTIONS, trimesterOf } from '../src/sim/entities/Pregnancy.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
 import { Building, BUILDINGS } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
@@ -1242,6 +1242,8 @@ export interface PregnancyWatch {
   starts: number;
   /** Of those, how many were to a vetoed task, by verb. */
   heavy: Record<string, number>;
+  /** Of those, how many were striking back at her assailant (allowed, not counted in `heavy`). */
+  defended: number;
 }
 export interface HomeWatch { adultNightSamples: number; adultsNear: number; adultsSleeping: number; childSamples: number; childrenNear: number; childrenNearAnyParent: number; childActions: Record<string, number> }
 /** M15 phase 5's pre-behaviour instrument: talk choice against belonging mood. */
@@ -1609,7 +1611,7 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('the-pregnant-are-spared', seen + surplus === 0,
       seen + ' heavy tasks seen under way and ' + surplus + ' stopped at once (' + stopped + ' stops, ' +
       base.pregnancy.entered + ' crossings into the last third) among ' + base.pregnancy.starts +
-      ' tasks begun there' +
+      ' tasks begun there, ' + base.pregnancy.defended + ' blows answered in self-defence' +
       (seen > 0 ? ' (' + Object.entries(base.pregnancy.heavy).map(([k, n]) => k + ' ' + n).join(', ') + ')' : '') +
       ' (need 0)');
   }
@@ -4213,7 +4215,7 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
   const moodChoice: MoodChoiceWatch = { belongingTalk: [] };
   const conceptions: ConceptionWatch = { total: 0, roofless: 0 };
   const wasPregnant = new Set<number>();
-  const pregnancy: PregnancyWatch = { thirdSteps: 0, entered: 0, starts: 0, heavy: {} };
+  const pregnancy: PregnancyWatch = { thirdSteps: 0, entered: 0, starts: 0, heavy: {}, defended: 0 };
   const lastAction = new Map<number, string>();
   let bedtime: Map<number, { action: string; roof: number | null }> | null = null;
   let lastEventId = 0;
@@ -4257,7 +4259,11 @@ export function runScenario(scenario: Scenario, stepsOverride?: number): Report 
       if (before === undefined) { pregnancy.entered++; continue; }
       if (before === person.action) continue;
       pregnancy.starts++;
-      if (HEAVY_ACTIONS.has(person.action)) pregnancy.heavy[person.action] = (pregnancy.heavy[person.action] ?? 0) + 1;
+      // Striking back at whoever is attacking her is allowed (owner,
+      // 2026-10-07): counted apart, so the check still sees an attack she began.
+      if (person.action === 'attack' && fightsBack(person, person.targetPersonId, id => sim.peopleById.get(id), sim.time.tick)) {
+        pregnancy.defended++;
+      } else if (HEAVY_ACTIONS.has(person.action)) pregnancy.heavy[person.action] = (pregnancy.heavy[person.action] ?? 0) + 1;
     }
     // Every step, not every sample: a behaviour that only ever runs for a few
     // ticks at a time is still the AI using it, and sparse sampling misses it.

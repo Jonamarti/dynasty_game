@@ -3658,16 +3658,21 @@ export class Brain {
     // work (`Pregnancy.HEAVY_ACTIONS`). Filtered here, over the finished table
     // and after the cornered-fights-back rule above, for the reason the child
     // filter is: one rule over every route that can score a verb (`attack`
-    // alone has several) instead of a condition threaded through each. What is left to her when she is set upon is
-    // `flee`, and cowering when there is nowhere to go: the plan's veto is
-    // `attack` too, and the check `the-pregnant-are-spared` holds it to that.
+    // alone has several) instead of a condition threaded through each.
+    // The one row that survives is an `attack` aimed back at whoever is
+    // hitting her (owner, 2026-10-07: she may not attack, but she may defend
+    // herself, at half the blow — `Pregnancy.blowFactor`). Whether she runs or
+    // answers is still the set-upon rule's reckoning above; she simply keeps
+    // both answers instead of only running or cowering.
     if (person.pregnant && trimesterOf(person) === 3) {
+      const defending = setUpon !== null && foe === setUpon;
       let kept = 0;
       for (const row of scores) {
-        if (!HEAVY_ACTIONS.has(row.id)) scores[kept++] = row;
+        if (!HEAVY_ACTIONS.has(row.id) || (defending && row.id === 'attack')) scores[kept++] = row;
         else telemetry.count('pregnant_spared_' + row.id);
       }
       scores.length = kept;
+      if (defending && scores.some(row => row.id === 'attack')) telemetry.count('pregnant_defends');
     }
 
     scores.sort((a, b) => b.score - a.score);

@@ -41,10 +41,18 @@ en conjuntos junto a quien las pregunta (`CUT_OFF_AT_ONCE`,
 `YOUNG_CHILD_ACTIONS`). `HEAVY_ACTIONS` es ese mismo patrón, en un solo archivo,
 y lo leen los tres consumidores. Anotado en `bugs.md`.
 
-**`attack` también.** Una embarazada del último tercio acorralada no se defiende
-a golpes: huye si puede y se encoge si no. Es lo que dice el plan y lo que mide
-`the-pregnant-are-spared`; si el propietario prefiere que la defensa propia sea
-la excepción, es una línea en el filtro de `Brain`.
+**`attack` también, salvo para defenderse** (decisión del propietario,
+2026-10-07: «no puede atacar pero puede defenderse, aunque su ataque haga menos
+daño que de normal, por ejemplo la mitad»). Empezar un ataque sigue vetado; un
+`attack` contra quien la está atacando (`fightsBack`, que lee la misma ventana
+de `Defence.assailantOf` que corta el trabajo cuando alguien recibe un golpe)
+es defensa propia y lo dejan pasar `Brain`, `Simulation.order`, el menú (que,
+sin reloj, lo lee del propio objetivo: un `attack` dirigido a ella) y
+`ActionSystem.execute`. Su golpe vale `PREGNANT_BLOW` = 0,5, multiplicado tras
+todas las tiradas para no mover ningún stream. El check `the-pregnant-are-spared`
+cuenta esas defensas aparte (`defended`) y sigue fallando si ella empieza un
+ataque. En `century` de una semilla nadie atacó a una embarazada (0 defensas):
+la regla solo está probada por los tests.
 
 **Pruebas:** `src/sim/__tests__/pregnancy.test.ts` (tercios, paso 0,85/0,7 en
 `speedOf`, lista, carga y un mundo de doce personas con todas las mujeres
@@ -119,7 +127,8 @@ fiebre ni golpe en el cuerpo no consume nada de `healthRng` aquí y cada pelea y
 cada supuración cae donde caía (prueba con un `healthRng` de pega que cuenta sus
 tiradas). No se tira el día del parto: ese día es del parto.
 Consecuencias: pierde 8 de salud y puede concebir de nuevo tras la mitad de la
-espera habitual (`lastBirthDay`): una pérdida no es un parto. La causa queda en
+espera habitual (`lastBirthDay`): una pérdida no es un parto. (La mitad la
+confirmó el propietario el 2026-10-07.) La causa queda en
 su crónica («perdió al hijo que llevaba: el hambre la había consumido...»), la
 del padre dice que ella lo perdió, y si el jugador es uno de los dos sale en
 pantalla (`noteInsight`).
