@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest';
 import { Simulation } from '../core/Simulation.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person, DAYS_PER_YEAR } from '../entities/Person.ts';
-import { TECH, TECHS, TECH_EFFECTS, ageIndex, warmthFrom, techPower, awlFactor, forageYieldFactor, SEWN_RECIPES } from '../knowledge/Tech.ts';
+import { TECH, TECHS, TECH_EFFECTS, ageIndex, warmthFrom, techPower, awlFactor, forageYieldFactor, SEWN_RECIPES, WEBS, techsOfWeb, webOf } from '../knowledge/Tech.ts';
 import { availableActions } from '../ai/ActionCatalog.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -542,6 +542,80 @@ describe('smelting and the furnace', () => {
     sim.interruptions.length = 0;
     for (let i = 0; i < 20 && sim.interruptions.length === 0; i++) sim.step();
     expect(sim.interruptions.map(n => n.reason)).toContain('lack_materials');
+    expect(person.inventory.count('copper')).toBe(0);
+  });
+});
+
+describe('bellows and the metal web', () => {
+  it('opens a web of its own at native copper, with smelting and the bellows in it', () => {
+    expect(WEBS.metal.gate).toBe('native_copper');
+    expect(TECH.native_copper.opens).toBe('metal');
+    expect(techsOfWeb('metal')).toEqual(['smelting', 'bellows']);
+    for (const tech of techsOfWeb('metal')) {
+      expect(webOf(tech)).toBe('metal');
+    }
+  });
+
+  it('needs smelting and leatherwork', () => {
+    const def = TECH.bellows;
+    expect(def.requires).toEqual(['smelting', 'leatherwork']);
+    expect(def.kind).toBe('device');
+    for (const required of def.requires) {
+      expect(ageIndex(def.age)).toBeGreaterThanOrEqual(ageIndex(TECH[required].age));
+    }
+  });
+
+  it('gives more metal in less time from the same charge', () => {
+    const plain = RECIPES.smelt_copper!;
+    const blown = RECIPES.smelt_copper_bellows!;
+    expect(blown.tech).toBe('bellows');
+    expect(blown.station).toBe('furnace');
+    expect(blown.ingredients).toEqual(plain.ingredients);
+    expect(blown.output.copper!).toBeGreaterThan(plain.output.copper!);
+    expect(blown.workTicks).toBeLessThan(plain.workTicks);
+  });
+
+  it('is declared ahead of the plain run, because the scorer breaks ties by order', () => {
+    const order = Object.keys(RECIPES);
+    expect(order.indexOf('smelt_copper_bellows')).toBeLessThan(order.indexOf('smelt_copper'));
+  });
+
+  it('runs the blown smelt in fewer ticks for three ingots, and the plain one for two', () => {
+    const run = (recipeId: string): { copper: number; ticks: number } => {
+      const sim = worldKnowing(['firemaking', 'carpentry', 'charcoal', 'smelting', 'leatherwork', 'bellows'], 'metal-bellows');
+      const person = sim.livingPeople()[0]!;
+      settle(person);
+      person.inventory.add('copper_ore', 3);
+      person.inventory.add('charcoal', 2);
+      const furnace = stationNear(sim, person, 'furnace');
+      expect(sim.order(person, 'craft', { recipeId, buildingId: furnace.id })).toBe(true);
+      let ticks = 0;
+      while (person.inventory.count('copper') === 0 && ticks < 3000) {
+        person.needs.thirst = 0;
+        person.needs.hunger = 0;
+        sim.step();
+        ticks++;
+      }
+      return { copper: person.inventory.count('copper'), ticks };
+    };
+    const blown = run('smelt_copper_bellows');
+    const plain = run('smelt_copper');
+    expect(blown.copper).toBe(3);
+    expect(plain.copper).toBe(2);
+    expect(blown.ticks).toBeLessThan(plain.ticks);
+  });
+
+  it('is not something a smith without the bellows can order: the work stops with a reason', () => {
+    const sim = worldKnowing(['firemaking', 'carpentry', 'charcoal', 'smelting'], 'metal-nobellows');
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('copper_ore', 3);
+    person.inventory.add('charcoal', 2);
+    const furnace = stationNear(sim, person, 'furnace');
+    expect(sim.order(person, 'craft', { recipeId: 'smelt_copper_bellows', buildingId: furnace.id })).toBe(true);
+    sim.interruptions.length = 0;
+    for (let i = 0; i < 20 && sim.interruptions.length === 0; i++) sim.step();
+    expect(sim.interruptions.map(n => n.reason)).toContain('dont_know_how');
     expect(person.inventory.count('copper')).toBe(0);
   });
 });

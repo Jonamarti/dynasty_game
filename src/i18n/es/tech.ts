@@ -432,4 +432,12 @@ export const ES_TECH: Record<string, string> = {
   "wondered if a heat that fired clay would run a nugget like wax": "se preguntó si un calor que cocía arcilla fundiría una pepita como cera",
   "banked charcoal in the kiln for the heat of it and left a pot of green stones beside it": "amontonó carbón en el horno por el calor y dejó al lado una vasija de piedras verdes",
   "A furnace, and copper ingots out of ore and charcoal: the metal that is never found lying about.": "Un horno de fundición, y lingotes de cobre sacados de mineral y carbón: el metal que nunca se encuentra tirado.",
+  "Metal": "Metal",
+  "Bellows": "Fuelle",
+  "about 3000 BC": "hacia el 3000 a. C.",
+  "A skin worked like a lung, pressed to push air into the fire. The same furnace comes to heat faster and turns more of the ore to metal for the same charcoal.": "Una piel trabajada como un pulmón, apretada para empujar aire al fuego. El mismo horno llega antes al calor y saca más metal del mineral con el mismo carbón.",
+  "fanned a flagging furnace with a stiff hide and watched the glow come up": "abanicó un horno que decaía con una piel rígida y vio subir el resplandor",
+  "got dizzy blowing down a reed into the fire and wanted a lung that would not tire": "se mareó soplando por una caña al fuego y quiso un pulmón que no se cansara",
+  "pumped a skin of air at a charge that would not run": "bombeó una piel de aire sobre una carga que no quería fundirse",
+  "The same furnace in less time and for the same charcoal, more metal out of the ore.": "El mismo horno en menos tiempo y con el mismo carbón, más metal del mineral.",
 };

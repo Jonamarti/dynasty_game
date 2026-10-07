@@ -3471,6 +3471,8 @@ metal.
 
 **Avance del 2026-10-07 (37d, `smelting`).** El horno de fundición (`furnace`, estación) y la receta `smelt_copper` (tres de mineral y dos de carbón → dos lingotes de `copper`). El herrero va solo a la veta (`wantedOreKinds`) y la banda levanta sola el horno. La sub-red Metal se abre en 37e.
 
+**Avance del 2026-10-07 (37e, `bellows` y la sub-red Metal).** El fuelle da la fundición mejor (tres lingotes en 90 ticks, contra dos en 120) como segunda receta declarada antes de la simple. Con él se abre la sub-red Metal, con puerta en `native_copper`.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

@@ -151,3 +151,13 @@ gris con vetas verdes, o claras para el estaño).
 **Sub-red Metal.** Sigue sin declararse: una red de un solo nodo es una puerta declarada antes que su contenido y `tech.test.ts` la rechaza. Se abre en 37e, con `bellows`, el segundo nodo que la llena.
 
 **Pruebas.** `metal.test.ts` (+6): declaración, estación, receta, `wantedOreKinds`, fundir de punta a punta (3 mineral + 2 carbón → 2 lingotes en el horno) y la receta sin carbón se abandona con `lack_materials`. Arte: `b/furnace/ext` e `item/copper`.
+
+## 37e — `bellows` y la sub-red Metal
+
+**Qué hay.** El nodo `bellows` (dispositivo, metal, Edad del Bronce, «hacia el 3000 a. C.», requiere `smelting` y `leatherwork`) y la receta `smelt_copper_bellows`: la misma carga que la fundición simple (tres de mineral, dos de carbón), **tres** lingotes en vez de dos y 90 ticks en vez de 120. Con este segundo nodo con efecto **se abre la sub-red Metal** (`WebId 'metal'`, puerta `native_copper`, color verdín): `smelting` y `bellows` viven en ella y `native_copper` gana `opens`. `tech.test.ts` ya exigía que toda red tenga dos nodos como mínimo, que sus nodos requieran la puerta y que cada puerta abra exactamente su red; su lista de redes declaradas gana `metal`.
+
+**Por qué una segunda receta y no un término.** Es el modelo de `kiln_pot`, con la trampa que esa receta ya anotó: el puntuador de `Brain` no tiene un término de «mejor» y un empate lo gana la primera receta que llega. Por eso `smelt_copper_bellows` se declara **antes** que `smelt_copper` (una prueba lo fija): quien sabe el fuelle toma la soplada, y quien no lo sabe no puede (`techPower` es cero) y cae a la simple.
+
+**Lo que no se midió.** El puntuador no eligió fundir en una prueba autónoma (la persona estaba cavando y proponiendo: el oficio gana pocos puntos frente al trabajo del campamento); por eso las pruebas ordenan la receta con nombre y comparan ticks y lingotes (3 contra 2, menos ticks). Si un herrero autónomo funde, lo dirá el escenario `smiths` del cierre de la fase.
+
+**Pruebas.** `metal.test.ts` (+5): la red y sus nodos, requisitos y edad, la receta mejor con la misma carga, el orden de declaración, la soplada de punta a punta (3 lingotes, menos ticks que la simple, que da 2) y la orden de la soplada sin saber el fuelle se detiene con `dont_know_how`.

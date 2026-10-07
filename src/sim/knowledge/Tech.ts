@@ -167,6 +167,8 @@ export const TECHS = [
   // Metal out of rock: the furnace, which is the whole difference between
   // finding copper and having it.
   'smelting',
+  // Air driven into the fire: what a furnace is worth once somebody works it.
+  'bellows',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -285,7 +287,7 @@ export type TechKind = 'practice' | 'device';
  * a node lives never changes what anyone can discover, which is why moving a
  * node between webs is bit-identical.
  */
-export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen';
+export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen' | 'metal';
 
 export interface WebDef {
   id: WebId;
@@ -303,6 +305,9 @@ export const WEBS: Record<WebId, WebDef> = {
   field: { id: 'field', label: 'Field', gate: 'farming', color: '#8fb35a' },
   domestication: { id: 'domestication', label: 'Taming', gate: 'taming', color: '#c9a34b' },
   kitchen: { id: 'kitchen', label: 'Kitchen', gate: 'cooking', color: '#d98b4a' },
+  // M15 phase 37: opened by the first metal anyone used, once a second node
+  // (`bellows`, 37e) gives it content. The colour is the domain's verdigris.
+  metal: { id: 'metal', label: 'Metal', gate: 'native_copper', color: '#3fb8a0' },
 };
 
 /** The webs that hang off a gate, in the order a screen should list them. */
@@ -2046,6 +2051,7 @@ export const TECH: Record<Tech, TechDef> = {
   // before its content). A device: the first awl or pendant is the prototype.
   native_copper: {
     id: 'native_copper', label: 'Native copper', domain: 'metal',
+    opens: 'metal',
     age: 'chalcolithic', firstKnown: 'about 7000 BC',
     kind: 'device',
     requires: ['stoneworking'], difficulty: 0.55, skill: 'knap',
@@ -2096,7 +2102,7 @@ export const TECH: Record<Tech, TechDef> = {
   // lying anywhere. The pivot the kiln was waiting for: the same held heat,
   // pointed at ore instead of clay. A device: the furnace is the thing built.
   smelting: {
-    id: 'smelting', label: 'Smelting', domain: 'metal',
+    id: 'smelting', label: 'Smelting', domain: 'metal', web: 'metal',
     age: 'chalcolithic', firstKnown: 'about 5000 BC',
     kind: 'device',
     requires: ['native_copper', 'charcoal', 'kiln'], difficulty: 0.7, skill: 'smith',
@@ -2115,6 +2121,32 @@ export const TECH: Record<Tech, TechDef> = {
     description:
       'Ore and charcoal in a clay-lined furnace, hotter than any hearth. ' +
       'Metal that was never lying anywhere: ingots of copper out of green rock.',
+  },
+  // M15 phase 37 (M8.3). "The enabling technology, not a flourish": a hide bag
+  // worked like a lung, and a furnace that took a day to come up to heat takes
+  // an afternoon. It changes nothing a furnace can do and a great deal about
+  // what a run of it costs. A device: the bellows is what is built.
+  bellows: {
+    id: 'bellows', label: 'Bellows', domain: 'metal', web: 'metal',
+    age: 'bronze', firstKnown: 'about 3000 BC',
+    kind: 'device',
+    requires: ['smelting', 'leatherwork'], difficulty: 0.6, skill: 'smith',
+    prototype: { hide: 1, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'smelting' }, { kind: 'knows', tech: 'leatherwork' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'fanned a flagging furnace with a stiff hide and watched the glow come up' },
+      { needs: [{ kind: 'knows', tech: 'smelting' }, { kind: 'holding', item: 'charcoal' },
+                { kind: 'feeling', need: 'fatigue' }],
+        weight: 0.6, story: 'got dizzy blowing down a reed into the fire and wanted a lung that would not tire' },
+      { needs: [{ kind: 'knows', tech: 'leatherwork' }, { kind: 'knows', tech: 'smelting' },
+                { kind: 'holding', item: 'copper_ore' }],
+        weight: 0.5, story: 'pumped a skin of air at a charge that would not run' },
+    ],
+    description:
+      'A skin worked like a lung, pressed to push air into the fire. The ' +
+      'same furnace comes to heat faster and turns more of the ore to metal ' +
+      'for the same charcoal.',
   },
 };
 
@@ -2457,6 +2489,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
   smelting: {
     summary: 'A furnace, and copper ingots out of ore and charcoal: the metal that is never found lying about.',
     site: 'BUILDINGS.furnace and RECIPES.smelt_copper; Ore.wantedOreKinds, which sends the smith to the seam',
+  },
+  bellows: {
+    summary: 'The same furnace in less time and for the same charcoal, more metal out of the ore.',
+    site: 'RECIPES.smelt_copper_bellows, declared ahead of RECIPES.smelt_copper so the scorer prefers it when known',
   },
 };
 

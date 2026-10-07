@@ -609,6 +609,17 @@ export const RECIPES: Record<string, RecipeDef> = {
   // `smelting`, at the furnace. Three loads of ore and two of charcoal give two
   // ingots: the first craft in the game that costs a fuel as well as a material.
   // `keep: 4` is two runs' worth, and what `casting` will want to spend.
+  // `bellows`: the same run in less time and three ingots, not two. A second
+  // recipe rather than a term on the first, on the `kiln_pot` model, and the
+  // trap that comment records applies here exactly: the craft scorer has no
+  // "better" term, and a tie goes to whichever recipe comes first. So this is
+  // declared AHEAD of `smelt_copper`; whoever knows the bellows takes this one,
+  // whoever does not cannot (`techPower` is zero) and falls through to the plain.
+  smelt_copper_bellows: {
+    id: 'smelt_copper_bellows', label: 'Smelt copper with bellows', icon: '\u{1F525}', tech: 'bellows', skill: 'smith',
+    workTicks: 90, ingredients: { copper_ore: 3, charcoal: 2 }, output: { copper: 3 },
+    station: 'furnace', keep: 4,
+  },
   smelt_copper: {
     id: 'smelt_copper', label: 'Smelt copper', icon: '\u{1F525}', tech: 'smelting', skill: 'smith',
     workTicks: 120, ingredients: { copper_ore: 3, charcoal: 2 }, output: { copper: 2 },

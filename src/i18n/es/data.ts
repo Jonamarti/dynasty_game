@@ -281,4 +281,5 @@ export const ES_DATA: Record<string, string> = {
   "A clay-lined shaft fed from the top with ore and charcoal and from the side with air. The heat is more than a kiln gives, and what runs out of the bottom is metal.": "Un pozo forrado de arcilla, alimentado por arriba con mineral y carbón y por el lado con aire. El calor supera al de un horno de alfarero, y lo que sale por abajo es metal.",
   "Smelt copper": "Fundir cobre",
   "Copper": "Cobre",
+  "Smelt copper with bellows": "Fundir cobre con fuelle",
 };
