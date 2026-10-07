@@ -104,13 +104,33 @@ export function generateLocalHydrology(input: HydrologyInput): HydrologyResult {
     }
   }
 
+  // Tributaries after the main course (claimed[] already marks it, so a
+  // tributary that reaches it stops there instead of overwriting it) and
+  // before the lake fill (a tributary is a linear course, not a basin, and
+  // claims some of what a lake candidate might otherwise flood — acceptable,
+  // same as a real stream cutting across a shallow depression).
+  addTributaries(input, kind, surface, bed, claimed, rivers);
   fillCandidateLakes(input, kind, surface, bed, claimed);
   addSprings(input, kind, surface, bed, claimed);
 
   return { kind, surface, bed, rivers };
 }
 
-function traceDownhill(input: HydrologyInput, source: number, claimed: Uint8Array): { tiles: number[]; outlet: number | null } {
+/**
+ * `respectCorridor` defaults true (the long-standing behaviour: a trace is
+ * assumed to belong to the canonical corridor it was given). Tributaries
+ * (see addTributaries below) start from ordinary wet high ground that is
+ * never part of that corridor, so they pass `respectCorridor: false` to
+ * reach the same shared stepping logic without being rejected at their very
+ * first step. The alignment-by-macro-flow scoring below still applies
+ * either way, but with `flowX`/`flowY` both zero (true of every tile outside
+ * the main corridor — LocalGeography.ts only writes them where a tile was
+ * claimed as a canonical river candidate) it degrades to plain steepest
+ * descent, which is exactly what a tributary wandering through ordinary
+ * terrain should do.
+ */
+function traceDownhill(input: HydrologyInput, source: number, claimed: Uint8Array,
+  respectCorridor = true): { tiles: number[]; outlet: number | null } {
   const tiles = [source];
   const visited = new Uint8Array(input.width * input.height);
   visited[source] = 1;
@@ -133,8 +153,8 @@ function traceDownhill(input: HydrologyInput, source: number, claimed: Uint8Arra
       const candidate = yy * input.width + xx;
       const height = input.elevation[candidate]!;
       if (visited[candidate] || height >= currentHeight) continue;
-      if (input.riverCorridor && !input.riverCorridor[candidate]) continue;
-      if (input.riverDistance && Number.isFinite(input.riverDistance[current]!) &&
+      if (respectCorridor && input.riverCorridor && !input.riverCorridor[candidate]) continue;
+      if (respectCorridor && input.riverDistance && Number.isFinite(input.riverDistance[current]!) &&
           (!Number.isFinite(input.riverDistance[candidate]!) ||
            input.riverDistance[candidate]! >= input.riverDistance[current]!)) continue;
       const projection = dx * flowX + dy * flowY;
@@ -174,6 +194,20 @@ function widenRiver(input: HydrologyInput, route: readonly number[], step: numbe
   // Rivers stay one to three tiles wide. A stable width is important at local
   // map edges: tying width to the route's local step number made a one-tile
   // stream disappear and reappear where two detailed maps met.
+  //
+  // M15 terrain variety (commit B) gave the production river path discharge-
+  // derived variable width — but that is a property of the macro drainage
+  // network (how many upstream regions feed a river region, or its
+  // riverFlow), which this function's caller has no access to: this is the
+  // candidate+traceDownhill fallback, reached only when createLocalGeography
+  // does NOT supply riverCorridor/riverDistance/riverSurface (every real
+  // local map always does — see rasterCanonicalRivers below, which is what
+  // actually ships variable width, through the corridor LocalGeography.ts
+  // selects before this module ever sees it). This branch exists for
+  // Hydrology's own unit tests, which construct a bare elevation grid with
+  // no region graph at all, so there is no discharge here to derive a width
+  // from; inventing one from the local step count would be exactly the
+  // per-map-edge bug the comment above already warns against.
   const radius = 1;
   for (let side = -radius; side <= radius; side++) {
     if (side === 0) continue;
@@ -232,6 +266,98 @@ function fillCandidateLakes(input: HydrologyInput, kind: Uint8Array, surface: Fl
     claimed[index] = 1;
   }
 }
+
+/**
+ * M15 terrain variety, commit C: secondary streams, in addition to the one
+ * canonical river. A local map used to carry exactly one watercourse no
+ * matter how wet or rugged its terrain was; this starts a short course from
+ * every sufficiently high, sufficiently wet point (the kind of place real
+ * headwaters actually form — a moist slope with real relief to run down,
+ * which `addedReliefWorldUnits`, M15 terrain A, is what now gives most
+ * windows at all) and lets it run downhill with the same `traceDownhill`
+ * the fallback river path already uses, until it reaches the main river,
+ * the sea, or the map edge — the same three endings `traceDownhill` was
+ * already built to recognise.
+ *
+ * `respectCorridor: false` is the one thing that has to differ from a
+ * canonical trace: a tributary's source is, by definition, not on the
+ * corridor the one canonical river claims, so constraining its first step to
+ * that corridor would reject it immediately. See the long comment on
+ * `traceDownhill` for why the shared alignment-by-macro-flow scoring still
+ * behaves correctly here (it quietly becomes plain steepest descent once a
+ * tile is off the corridor, since `flowX`/`flowY` are zero there).
+ */
+function addTributaries(input: HydrologyInput, kind: Uint8Array, surface: Float32Array,
+  bed: Float32Array, claimed: Uint8Array, rivers: HydrologyRiver[]): void {
+  const n = input.width * input.height;
+  // Same coordinate-hash thinning as addSprings, so the count and placement
+  // of tributaries is a pure function of position and does not depend on
+  // iteration order or on how many other candidates exist in this window.
+  //
+  // Measured against two existing fixtures while tuning this: a uniform wet
+  // slope (Hydrology's own "creates stable sparse springs" test — constant
+  // moisture, one steady downhill direction, identical on every row) and a
+  // real coastal tropical region from the Earth atlas both have a LOT of
+  // land that is simultaneously wet and sloped, so a spacing anywhere near
+  // addSprings' per-tile thinning let a candidate survive on most rows/most
+  // of the window and the whole thing filled in (12,166 of 16,384 tiles in
+  // the first case). Real alpine terrain is rugged in a way a flat synthetic
+  // ramp or a gentle coastal plain is not, so the actual limit against that
+  // runaway case has to be a hard cap on how many courses one window starts,
+  // not just the hash spacing.
+  const spacing = 61;
+  const candidates: number[] = [];
+  for (let i = 0; i < n; i++) {
+    if (claimed[i] || input.moisture[i]! < TRIBUTARY_WET_MOISTURE) continue;
+    if (stableHash(input.globalX[i]!, input.globalY[i]!) % spacing !== 0) continue;
+    const low = lowestNeighbor(input, i);
+    // A real source has a real slope to fall down, same threshold addSprings
+    // uses for "is this actually a hillside, not noise-flat ground."
+    if (low < 0 || input.elevation[i]! - input.elevation[low]! < input.wadeDepth * 0.35) continue;
+    candidates.push(i);
+  }
+  // Highest first: on a ridge with several candidate heads a short distance
+  // apart, the highest one traces down across the others and claims them,
+  // which is the one that would naturally survive as the real tributary; the
+  // lower starts are skipped once `claimed` rather than tracing a second,
+  // redundant course down the same slope. It also means the cap below keeps
+  // the most prominent sources in a window, not an arbitrary scan-order subset.
+  candidates.sort((a, b) => input.elevation[b]! - input.elevation[a]! || a - b);
+  let coursesAdded = 0;
+  for (const source of candidates) {
+    if (coursesAdded >= TRIBUTARY_MAX_COURSES) break;
+    if (claimed[source]) continue;
+    const route = traceDownhill(input, source, claimed, false);
+    // Shorter than this is a single wet pixel falling into its own puddle,
+    // not a stream with anywhere to go — not worth reporting as a course.
+    if (route.tiles.length < TRIBUTARY_MIN_TILES) continue;
+    // A secondary stream is meant to read as a short tributary feeding the
+    // real system, not itself become a second cross-map river — the same
+    // runaway shape as the uniform-ramp fixture above, just one course at a
+    // time instead of many. Truncating simply means this particular course
+    // does not reach the main river/sea/edge within the window; that is a
+    // fine outcome for a brook, unlike for the one canonical river.
+    const tiles = route.tiles.slice(0, TRIBUTARY_MAX_TILES_PER_COURSE);
+    for (const index of tiles) {
+      if (claimed[index]) continue; // reached the main river or another tributary: stop, do not overwrite it
+      claimed[index] = 1;
+      kind[index] = HYDROLOGY_FRESH;
+      const groundLevel = input.elevation[index]!;
+      surface[index] = groundLevel;
+      // A tributary is a brook: shallower than the main river's channel
+      // depth and never deep enough to need a dedicated ford phase of its
+      // own the way the canonical river does.
+      bed[index] = groundLevel - input.wadeDepth * 0.6;
+    }
+    rivers.push({ source, outlet: tiles.length === route.tiles.length ? route.outlet : null, tiles });
+    coursesAdded++;
+  }
+}
+
+const TRIBUTARY_WET_MOISTURE = 0.6;
+const TRIBUTARY_MIN_TILES = 3;
+const TRIBUTARY_MAX_TILES_PER_COURSE = 40;
+const TRIBUTARY_MAX_COURSES = 6;
 
 function addSprings(input: HydrologyInput, kind: Uint8Array, surface: Float32Array,
   bed: Float32Array, claimed: Uint8Array): void {
