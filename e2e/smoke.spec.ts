@@ -1774,6 +1774,8 @@ test('character creation picks a life inside a world that already exists', async
   // Deliberately *without* `skipIntro`: this is the one spec that wants the
   // overlay, and every other spec bypasses it.
   await page.goto('/?seed=e2e-fixture');
+  // The game opens on the map of the Earth now; these specs are about the island start, which is its other door.
+  await page.locator('.worldpicker-island').click({ timeout: 20_000 });
 
   // The settings screen comes first now — the island has to be settled before
   // anybody can be born on it. Taking the defaults leaves the boot world alone,
@@ -2340,6 +2342,8 @@ test('the game opens on its settings, and Begin rebuilds the island they describ
   const errors = guardErrors(page);
   // No `skipIntro`: this is the one spec that watches the game actually open.
   await page.goto('/?seed=e2e-start');
+  // The game opens on the map of the Earth now; these specs are about the island start, which is its other door.
+  await page.locator('.worldpicker-island').click({ timeout: 20_000 });
 
   const settings = page.locator('.settings');
   const newGame = page.locator('.newgame');
@@ -2655,6 +2659,8 @@ test('the tribe graph stands still while the game is paused', async ({ page }) =
 test('the start screen switches to Spanish and back, and the choice sticks', async ({ page }) => {
   const errors = guardErrors(page);
   await page.goto('/?seed=e2e-start');
+  // The game opens on the map of the Earth now; these specs are about the island start, which is its other door.
+  await page.locator('.worldpicker-island').click({ timeout: 20_000 });
   const settings = page.locator('.settings');
   await expect(settings).toBeVisible({ timeout: 15_000 });
   await expect(settings).toContainText('Before you begin');
@@ -2668,6 +2674,7 @@ test('the start screen switches to Spanish and back, and the choice sticks', asy
 
   // Remembered: a reload opens in Spanish without being asked again.
   await page.reload();
+  await page.locator('.worldpicker-island').click({ timeout: 20_000 });
   await expect(page.locator('.settings')).toContainText('Antes de empezar', { timeout: 15_000 });
 
   await page.locator('.settings .langswitch-option[data-lang="en"]').click();

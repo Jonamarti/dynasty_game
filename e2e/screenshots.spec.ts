@@ -496,6 +496,8 @@ test('the menu and the settings screen', async ({ page }) => {
 test('the screen the game opens on', async ({ page }) => {
   // No `skipIntro`: the tour should show what a player actually sees first.
   await page.goto('/?seed=tour');
+  // The game opens on the map of the Earth now; these specs are about the island start, which is its other door.
+  await page.locator('.worldpicker-island').click({ timeout: 20_000 });
   await expect(page.locator('.settings')).toBeVisible({ timeout: 15_000 });
   await page.waitForTimeout(250);
   await page.screenshot({ path: DIR + '/19-start.png' });

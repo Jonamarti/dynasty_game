@@ -32,7 +32,7 @@ import { knowledgeOfWorld, type ComarcaLore } from '../sim/social/Knowledge.ts';
 import { t, onLanguageChange } from '../i18n/i18n.ts';
 
 /** One colour per word of the globe's vocabulary. Unknown is the page itself. */
-const TERRAIN_COLOR: Record<WorldTerrain, string> = {
+export const TERRAIN_COLOR: Record<WorldTerrain, string> = {
   ocean: '#1f4f7a', lake: '#3b82b8', ice: '#dfe9f1', tundra: '#9aa7a0',
   boreal_forest: '#2f5d46', temperate_forest: '#3f7f46', grassland: '#7fa84a',
   steppe: '#b5a85a', desert: '#d2b062', savanna: '#b8923c', tropical_forest: '#1f6d3a',

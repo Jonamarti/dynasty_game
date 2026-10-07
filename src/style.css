@@ -2175,10 +2175,103 @@ html, body, #app {
 .worldmap-line.is-told { color: #c9b27a; font-style: italic; }
 .worldmap-line.is-here { color: #ffffff; }
 
+/* The map picker is the globe's card under its own names, so a spec or a style about one cannot catch the other. */
+.worldpicker {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 10, 15, 0.86);
+  backdrop-filter: blur(3px);
+}
+/* The fifth time this project has had to write this rule: an author `display`
+   beats the browser's own rule for `hidden`, and a hidden full-screen overlay
+   swallows every click on the game underneath. */
+.worldpicker[hidden] { display: none; }
+
+.worldpicker-card {
+  display: flex;
+  flex-direction: column;
+  width: min(1100px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  background: rgba(14, 17, 24, 0.97);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.worldpicker-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.worldpicker-head b { font-size: 15px; }
+.worldpicker-sub { color: var(--text-dim); font-size: 12px; }
+.worldpicker-back, .worldpicker-close, .worldpicker-closer {
+  padding: 6px 12px;
+  min-height: 32px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(30, 34, 44, 0.9);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+/* Back (when shown) and Close sit together at the right edge. */
+.worldpicker-back { margin-left: auto; }
+.worldpicker-back[hidden] + .worldpicker-close { margin-left: auto; }
+.worldpicker-back[hidden], .worldpicker-closer[hidden], .worldpicker-canvas[hidden] { display: none; }
+.worldpicker-back:hover, .worldpicker-close:hover, .worldpicker-closer:hover { color: var(--text); border-color: var(--accent); }
+
+.worldpicker-body {
+  display: flex;
+  gap: 14px;
+  padding: 12px 14px 14px;
+  overflow: auto;
+  min-height: 0;
+}
+.worldpicker-stage { flex: 1 1 auto; min-width: 0; }
+.worldpicker-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  image-rendering: pixelated;
+  background: #0b0e14;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  /* A finger scrolls the page, not the map: taps are all the canvas listens to. */
+  touch-action: manipulation;
+  cursor: pointer;
+  /* A tap must not select the canvas: the browser paints a blue wash over a
+     selected replaced element, which on a phone covered the whole map. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.worldpicker-side { flex: 0 0 260px; display: flex; flex-direction: column; gap: 8px; }
+.worldpicker-info { font-size: 12px; line-height: 1.5; }
+.worldpicker-line.is-title { margin-top: 8px; font-weight: 600; }
+.worldpicker-line.is-title:first-child { margin-top: 0; }
+.worldpicker-line.is-dim { color: var(--text-dim); }
+.worldpicker-line.is-told { color: #c9b27a; font-style: italic; }
+.worldpicker-line.is-here { color: #ffffff; }
+
+/* The start-of-game map picker reuses the globe's card; it sits above the game and below the settings screen it hands over to. */
+.worldpicker { z-index: 43; }
+.worldpicker[hidden] { display: none; }
+.worldpicker-note { min-height: 1.4em; font-size: 12px; color: var(--text-dim); }
+.worldpicker-note.is-bad { color: #e66464; }
+.worldpicker-begin, .worldpicker-island { width: 100%; min-height: 36px; }
+
 @media (max-width: 700px) {
   /* The tool row in the top bar carries the globe on a phone. */
   .hud-globe { display: none; }
-  .worldmap-body { flex-direction: column; }
-  .worldmap-side { flex: 0 0 auto; }
+  .worldmap-body, .worldpicker-body { flex-direction: column; }
+  .worldmap-side, .worldpicker-side { flex: 0 0 auto; }
   .worldmap-closer { width: 100%; min-height: 40px; }
 }

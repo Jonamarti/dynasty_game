@@ -11,8 +11,10 @@ import './style.css';
 import { WorldState } from './sim/world/WorldState.ts';
 import { deserializeSave, serializeSave, SaveError, type SaveSummary } from './sim/persistence/SaveFile.ts';
 import { SaveStore, describeSaveFailure } from './ui/SaveStore.ts';
-import { randomWorldGeography } from './sim/world/WorldGeography.ts';
-import { findGlobeStart } from './sim/world/WorldTerrain.ts';
+import { earthWorldGeography, randomWorldGeography, type EarthWorldGeography } from './sim/world/WorldGeography.ts';
+import { loadWorldAtlas } from './sim/world/WorldAtlas.ts';
+import { findNearestStart, findWateredGlobeStart, localWorldConfig } from './sim/world/StartPlace.ts';
+import { WorldPicker } from './ui/WorldPicker.ts';
 import { Camera } from './render/Camera.ts';
 import { Renderer, hitRadiusOf, nodeIsHidden, GRAB_MARGIN, PICK_RANGE, type HitTarget } from './render/Renderer.ts';
 import { ArtAtlas } from './render/ArtAtlas.ts';
@@ -104,20 +106,28 @@ const profileHumans = import.meta.env.DEV && params.get('skipIntro') === '1'
 const profilePopulation = Number.isInteger(profileHumans) && profileHumans >= 2 && profileHumans <= 1000
   ? { population: { bands: 1, peoplePerBand: profileHumans } } : {};
 /**
- * `?world=random` starts on a seeded globe instead of the classic island, which
- * has no globe to show. The browser's own world setting is the next step of
- * phase 33; until then this is the one door into a world with a map (M15 phase
- * 31) — and, since 33a, into a world with peoples in every other region — and
- * the classic island stays the default for every player and every spec.
+ * Three kinds of world, and the classic island is the default for every spec:
+ *
+ * - **the Earth**, chosen on the map the game opens on (`WorldPicker`): `earthChoice` holds the map and the window the player
+ *   picked, and every rebuild before the first step (`rebuildBeforeStart`) builds that same place again;
+ * - **a generated globe**, `?world=random`: a seeded map, begun at a place that is *measured* to have fresh water to drink
+ *   (`findWateredGlobeStart`; the first version picked temperate country by its flags and four worlds in a row had no water);
+ * - **the classic island**, which sits on no map, so there is no globe to show.
+ *
+ * Since 33a every world with a map also has peoples in every other region.
  */
 const GLOBE_SPAN = 4;
+let earthChoice: { geography: EarthWorldGeography; start: { x: number; y: number } } | null = null;
 function makeWorldState(overrides: Record<string, unknown>): WorldState {
   const config = { ...configFrom(settings), ...overrides, seed };
+  if (earthChoice) {
+    return new WorldState(config, { geography: earthChoice.geography, start: earthChoice.start, comarcasWide: GLOBE_SPAN, comarcasHigh: GLOBE_SPAN });
+  }
   if (params.get('world') !== 'random') return new WorldState(config);
   const geography = randomWorldGeography(seed);
-  const start = findGlobeStart(geography, GLOBE_SPAN);
+  const start = findWateredGlobeStart(geography, GLOBE_SPAN, localWorldConfig((config as { world?: object }).world), seed);
   if (!start) return new WorldState(config);
-  return new WorldState(config, { geography, start, comarcasWide: GLOBE_SPAN, comarcasHigh: GLOBE_SPAN });
+  return new WorldState(config, { geography, start: { x: start.x, y: start.y }, comarcasWide: GLOBE_SPAN, comarcasHigh: GLOBE_SPAN });
 }
 
 /**
@@ -628,6 +638,63 @@ const settingsScreen = new SettingsOverlay(document.body, {
   },
 });
 
+/**
+ * The first screen of a new game: the Earth, to choose where to begin, or a random island (the classic start).
+ *
+ * The world built at boot is the island, as a draft; choosing a place on the Earth replaces it before the first step, through the
+ * same `rebuildBeforeStart` the settings screen uses, and then the game goes on to the settings and character creation as always.
+ */
+let earthMap: EarthWorldGeography | null = null;
+const worldPicker = new WorldPicker(document.body, {
+  onBegin: region => { void beginOnEarth(region); },
+  onIsland: () => {
+    // The island is the draft already built, unless an earlier choice replaced it.
+    if (earthChoice) { earthChoice = null; rebuildBeforeStart(); }
+    worldPicker.close();
+    settingsScreen.open(sim, settings, 'start');
+  },
+});
+
+async function openWorldPicker(): Promise<void> {
+  worldPicker.open();
+  if (earthMap) { worldPicker.setGeography(earthMap); return; }
+  worldPicker.setBusy(t('Loading the world…'));
+  try {
+    const maps = await loadWorldAtlas('world/');
+    const entry = maps.find(map => map.entry.recommended) ?? maps[0]!;
+    earthMap = earthWorldGeography(entry, 10);
+    worldPicker.setBusy(null);
+    worldPicker.setGeography(earthMap);
+  } catch (error) {
+    worldPicker.setBusy(null);
+    worldPicker.setNote(t('Could not load the map of the world: {why}', { why: error instanceof Error ? error.message : String(error) }), true);
+  }
+}
+
+async function beginOnEarth(region: { x: number; y: number }): Promise<void> {
+  if (!earthMap) return;
+  worldPicker.setBusy(t('Looking for fresh water near there…'));
+  worldPicker.setNote(null);
+  // Let the label paint before the search holds the thread (it takes a second or so).
+  await new Promise(resolve => setTimeout(resolve, 30));
+  const found = findNearestStart(earthMap, region.x, region.y, GLOBE_SPAN,
+    localWorldConfig((configFrom(settings) as { world?: object }).world));
+  worldPicker.setBusy(null);
+  if (!found) {
+    // The refusal says why: nothing within two regions has fresh water to live by.
+    worldPicker.setNote(t('There is no river or lake within reach of that place. Choose somewhere with water.'), true);
+    return;
+  }
+  earthChoice = { geography: earthMap, start: { x: found.x, y: found.y } };
+  rebuildBeforeStart();
+  worldPicker.close();
+  const moved = Math.max(Math.abs(found.region.x - region.x), Math.abs(found.region.y - region.y));
+  if (moved > 0 && player) {
+    renderer.floaters.push(player.x, player.y, t('Starting {n} regions from the place you chose, at the nearest fresh water', { n: moved }), { boxed: true });
+  }
+  settingsScreen.open(sim, settings, 'start');
+}
+
 /** True while the player has deliberately stopped the game to look at a screen. */
 function menuOpen(): boolean {
   return pauseMenu.isOpen || settingsScreen.isOpen;
@@ -685,7 +752,9 @@ if (loadedWorld || bootLoadFailure) {
 if (!skipIntro && sim.livingPeople().length > 0) {
   paused = true;
   hud.setPaused(true);
-  settingsScreen.open(sim, settings, 'start');
+  // The Earth first; `?world=random` is the developer door into a generated globe and goes straight to the settings.
+  if (params.get('world') === 'random') settingsScreen.open(sim, settings, 'start');
+  else void openWorldPicker();
 }
 
 /**
@@ -855,7 +924,7 @@ const held = new Set<string>();
 window.addEventListener('keydown', event => {
   // The two screens the game opens on take no keys at all. There is no game
   // behind them yet to pause, walk around or escape back into.
-  if (newGame.isOpen || settingsScreen.isStartScreen) return;
+  if (newGame.isOpen || worldPicker.isOpen || settingsScreen.isStartScreen) return;
   const key = event.key.toLowerCase();
   // While a menu is up, Escape is the only key the game listens to. Space must
   // not un-pause a world the player deliberately stopped, and `b` must not open
@@ -1451,7 +1520,7 @@ function openActionsAt(event: Pick<PointerEvent, 'clientX' | 'clientY'>): void {
 canvas.addEventListener('pointerdown', event => {
   // The overlays cover the canvas, so this should be unreachable — but so
   // should the four `[hidden]` bugs this project has shipped, and it is a line.
-  if (newGame.isOpen || menuOpen()) return;
+  if (newGame.isOpen || worldPicker.isOpen || menuOpen()) return;
   if (event.pointerType === 'touch') {
     touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
     canvas.setPointerCapture(event.pointerId);

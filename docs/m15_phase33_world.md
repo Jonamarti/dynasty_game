@@ -68,7 +68,24 @@ Tras 29 días el grafo de objetos del mundo (`objects.graph`) de la partida carg
 2. Tras 60 intentos al azar el recurso era *cualquier* casilla caminable. En un inicio con mapa el recurso es ahora una orilla de agua dulce, y el radio exigido pasa de 20 a 10 casillas (20 queda fuera de la vista de una persona: cinco adultos murieron de sed a 17-20 casillas del río, mientras la isla clásica, con agua por todas partes, no perdió a ninguno).
 Ambos cambios van **solo con mapa** (`this.geographicStart`): en la isla clásica moverían los campamentos de semillas ya guardadas (el mismo defecto del índice existe allí; `docs/bugs.md`). Medido en 10 semillas generadas, 30 días: **0 muertes por sed** y todas las poblaciones crecen, frente a 5-9 en tres de las semillas antes. `wp-c` queda como test de regresión.
 
+## 33e. El juego abre sobre la Tierra (`ui/WorldPicker.ts`)
+
+Petición del propietario (2026-10-07): al cargar el juego aparece la Tierra y se puede elegir dónde empezar, o empezar en una isla aleatoria como hasta ahora.
+
+- **Primera pantalla de una partida nueva.** Antes de los ajustes y la creación de personaje: el mapa entero de la Tierra (hace ~12.000 años, el recomendado del atlas, cargado con `loadWorldAtlas`), una casilla por región, con un punto azul pálido en las regiones que tienen un río o un lago marcados. Pasar el ratón dice qué país es y si el dato marca agua; un clic elige, `Empezar aquí` (o un segundo clic en la misma región) empieza. **`Una isla aleatoria`** es la otra puerta: el inicio clásico, sin mapa, intacto.
+- **Elegir un sitio mide el agua** (`findNearestStart`, 33d): «Buscando agua dulce cerca de ahí…» mientras se busca (de 0,1 a 1 s). Si el sitio no sirve pero hay agua a menos de dos regiones, el inicio se mueve y el juego dice a cuántas regiones. Si no hay, **la elección se rechaza con motivo en rojo** («No hay río ni lago al alcance de ese sitio. Elige un sitio con agua») y nada cambia. El mar abierto y el hielo no se pueden elegir y la tarjeta lo dice.
+- **Cómo se monta.** El mundo que se construye al arrancar sigue siendo la isla, como borrador. Elegir un sitio de la Tierra lo sustituye antes del primer paso con el mismo `rebuildBeforeStart` que usa la pantalla de ajustes, y `earthChoice` hace que cada reconstrucción posterior (si los ajustes cambian algo) vuelva a construir el mismo sitio. Después siguen los ajustes y la creación de personaje de siempre. La Tierra trae sus pueblos en todas las demás regiones (33a) y sus pueblos propios.
+- **Lo que no cambia.** `?skipIntro=1` salta todo (los specs y las capturas no ven la pantalla); `?world=random` sigue siendo la puerta de desarrollo a un globo generado y va directo a los ajustes. «Mundo nuevo con estos ajustes» recarga la página y vuelve a mostrar el mapa: un mundo no se cambia bajo un juego en marcha.
+- **Clases propias.** El selector tiene sus nombres (`worldpicker-*`, con el CSS copiado del globo) porque con las del globo (`worldmap-*`) los specs del globo encontraban dos elementos. Teclado: ninguna tecla del juego actúa con el mapa abierto (Escape no abre el menú de pausa encima).
+- **e2e** (`e2e/world-picker.spec.ts`, 3): la Tierra se abre, el mar no se puede elegir, un sitio con río empieza ahí y el mundo tiene agua, pueblos y gente; un sitio del Sáhara se rechaza con su motivo y la partida sigue siendo la isla; la isla es la otra puerta y el selector se lee en español. Cuatro specs que abrían la intro sin `skipIntro` (`smoke` x3, la gira de capturas) ahora pulsan primero «isla aleatoria»: la premisa «la primera pantalla son los ajustes» cambió. Capturas: `artifacts/screenshots/m15-phase33-earth-start-2026-10-07/`.
+
+## Verificación de 33d y 33e (2026-10-07)
+
+`typecheck` limpio; `npm test` 187/187 ficheros, 1381/1381 (con `--maxWorkers=2 --testTimeout=120000`, por la carga paralela, como antes); e2e `smoke` + `globe` + `world-picker` (74/74) y los anteriores `save-load` y `geographic-terrain`. Muertes por sed a 30 días en 10 semillas generadas: 0. **No se ha corrido** `sim:check` ni cohortes tras este cambio: tocan `Simulation.spawnPeople`, pero solo cuando hay un inicio con mapa (`this.geographicStart`), y el arnés no construye mapas; la isla clásica conserva sus campamentos por construcción, no por medición.
+
 ## Lo que queda de la fase 33
 
-- **El ajuste de partida del navegador** («Mundo: una comarca / mapa del mundo»): el mundo con mapa sigue entrando por `?world=random`. Es la mitad de 33a que decide *cuánto mundo cabe en una partida* (hoy 4×4 comarcas, provisional) y qué mapa (generado o la Tierra, que necesita cargar el atlas), y no se ha tomado sin el propietario.
-- El hallazgo del cargador (compartición de objetos) y las suposiciones de densidad: `docs/bugs.md`.
+- **Elegir la zona dentro de una región** (la ventana de 4×4 comarcas se coloca sola, donde más agua hay): el propietario lo dejó para más adelante.
+- **Elegir mapa** (la Tierra de hoy, `earth-present`, está en el atlas) y **cuánto mundo cabe en una partida** (hoy 4×4 comarcas): siguen siendo decisiones de producto.
+- **Mundo nuevo** vuelve a mostrar el mapa tras recargar; no conserva el sitio elegido.
+- El hallazgo del cargador (compartición de objetos), las suposiciones de densidad y lo de `bugs.md`.
