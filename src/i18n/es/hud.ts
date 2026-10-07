@@ -317,4 +317,5 @@ export const ES_HUD: Record<string, string> = {
   "R turns the plan to run the other way": "R gira el plano para que corra al otro lado",
   "node|copper_ore": "mineral de cobre",
   "node|tin_ore": "mineral de estaño",
+  "node|gold": "oro",
 };

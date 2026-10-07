@@ -466,4 +466,11 @@ export const ES_TECH: Record<string, string> = {
   "watched a man go down to a blow on the head and thought of a bronze cap": "vio caer a un hombre de un golpe en la cabeza y pensó en un casquete de bronce",
   "broke a spear shaft in a drill and wished for a blade that could not be broken": "rompió el asta de una lanza en un ejercicio y deseó una hoja que no se rompiera",
   "A bronze sword, and a helm that turns a blow from the head, better in the hands of whoever knows how they are made.": "Una espada de bronce y un yelmo que desvía un golpe de la cabeza, mejores en manos de quien sabe cómo se hacen.",
+  "Goldwork": "Orfebrería",
+  "about 4600 BC": "hacia el 4600 a. C.",
+  "Yellow metal found in the gravel, hammered cold. It does not rust and it does nothing; it is worth what a people agrees it is worth, which is more than anything else a band can make.": "Metal amarillo hallado en la grava, martillado en frío. No se oxida y no sirve para nada; vale lo que un pueblo acuerda que vale, que es más que cualquier otra cosa que una banda pueda hacer.",
+  "beat a yellow stone that spread without cracking and did not go green": "golpeó una piedra amarilla que se extendió sin agrietarse y no se puso verde",
+  "wanted a bead that would keep its shine through a lifetime of wear": "quiso una cuenta que conservara su brillo toda una vida de uso",
+  "picked a bright grain out of the gravel where the river ran out and kept it": "sacó un grano brillante de la grava donde moría el río y se lo guardó",
+  "A gold ornament: the highest value of anything a band can make, and a gift that raises a house.": "Un adorno de oro: lo más valioso que una banda puede hacer, y un regalo que engrandece a una casa.",
 };

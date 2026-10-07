@@ -30,6 +30,8 @@ export const RESOURCE_KINDS = [
   'native_copper',
   // `mining`'s two: ore in the hill, which only somebody who digs can take.
   'copper_ore', 'tin_ore',
+  // `goldwork`'s: the metal that lies in the gravels as metal.
+  'gold',
 ] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 
@@ -115,6 +117,12 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
     kind: 'tin_ore', itemId: 'tin_ore', maxAmount: 14, regrowPerTick: 0,
     harvestTicks: 28, skill: 'knap', requiresTech: 'mining',
   },
+  // M15 phase 37, `goldwork`. Grains in the gravel, four at the most, picked up
+  // by anybody and never replaced: placer gold is there once.
+  gold: {
+    kind: 'gold', itemId: 'gold_nugget', maxAmount: 4, regrowPerTick: 0,
+    harvestTicks: 18, skill: 'knap', groundLevel: true,
+  },
 };
 
 /**
@@ -129,6 +137,7 @@ export const ORE_COUNTS: Partial<Record<ResourceKind, number>> = {
   copper_ore: 4,
   // One seam on a whole island: the scarcity is the design.
   tin_ore: 1,
+  gold: 2,
 };
 
 /**

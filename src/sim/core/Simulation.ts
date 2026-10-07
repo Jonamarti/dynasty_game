@@ -1274,6 +1274,9 @@ export class Simulation {
       // dig will go looking.
       case 'copper_ore': return biome === 'hills';
       case 'tin_ore': return biome === 'hills';
+      // Placer gold lies where water has sorted the gravel: the stream-mouth
+      // beaches and the foot of the hills.
+      case 'gold': return biome === 'beach' || biome === 'hills';
     }
   }
 

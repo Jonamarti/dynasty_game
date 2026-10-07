@@ -665,6 +665,13 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'bronze_helm', label: 'Bronze helm', icon: '\u{1FA96}', tech: 'bronze_arms', skill: 'smith',
     workTicks: 110, ingredients: { bronze: 2 }, output: { bronze_helm: 1 }, station: 'furnace', keep: 1,
   },
+  // `goldwork`, cold-hammered like native copper: no fire and no station. Two
+  // nuggets make an ornament worth more than the six nuggets of copper it would
+  // take to match it; `keep: 1` and the spare is a gift (`Brain`'s gift scorer).
+  gold_ornament: {
+    id: 'gold_ornament', label: 'Gold ornament', icon: '\u{1F4FF}', tech: 'goldwork', skill: 'smith',
+    workTicks: 110, ingredients: { gold_nugget: 2 }, output: { gold_ornament: 1 }, keep: 1,
+  },
   // `bellows`: the same run in less time and three ingots, not two. A second
   // recipe rather than a term on the first, on the `kiln_pot` model, and the
   // trap that comment records applies here exactly: the craft scorer has no

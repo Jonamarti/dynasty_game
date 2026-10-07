@@ -294,4 +294,8 @@ export const ES_DATA: Record<string, string> = {
   "Bronze spade": "Pala de bronce",
   "Bronze sword": "Espada de bronce",
   "Bronze helm": "Yelmo de bronce",
+  "Gold nugget": "Pepita de oro",
+  "Gold ornament": "Adorno de oro",
+  "Gold in the gravel": "Oro en la grava",
+  "Pick out gold": "Sacar oro",
 };

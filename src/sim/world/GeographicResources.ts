@@ -48,4 +48,7 @@ const GATED: Partial<Record<ResourceKind, { resource: WorldResource; features: n
   native_copper: { resource: 'copper', features: WORLD_FEATURE.copper },
   copper_ore: { resource: 'copper', features: WORLD_FEATURE.copper },
   tin_ore: { resource: 'tin', features: WORLD_FEATURE.tin },
+  // Gold lies with copper in the generated map, which has no resource of its own
+  // for it (the ore bodies are the same hills); the Earth carries it as a feature.
+  gold: { resource: 'copper', features: WORLD_FEATURE.gold },
 };

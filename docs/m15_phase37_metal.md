@@ -199,3 +199,11 @@ gris con vetas verdes, o claras para el estaño).
 **Lo que no está.** El yelmo no se dibuja puesto en la cabeza: el arte de personas solo conoce las prendas de `Wear` y añadir una es un pase aparte (anotado en `next-steps.md`); vive como icono de inventario, y la espada como mano (`held/bronze_sword`).
 
 **Pruebas.** `metal.test.ts` (+7): declaración, recetas, la espada supera a la daga y no la maneja quien no sabe, el yelmo (cabeza sí, torso no, techo bajo 1), las prendas sin técnica no cambian, `armourOf` sube y verter la espada de punta a punta.
+
+## 37j — `goldwork`: el adorno que más vale
+
+**Qué hay.** El nodo `goldwork` (dispositivo, red Metal, Calcolítico, «hacia el 4600 a. C.», el oro de Varna; requiere `native_copper`: se martilla en frío igual), la clase de nodo `gold` (granos de la grava: cuatro como mucho, no se reponen, los coge cualquiera; dos puntos en la isla clásica, en playa o colina), los ítems `gold_nugget` y `gold_ornament` y la receta `gold_ornament` (dos granos, sin fuego ni estación, con `smith`).
+
+**Quién lo lee.** El adorno es lo más valioso del juego a propósito (`baseValue` 60, por encima de la espada de bronce, 34): vale lo que un pueblo acuerda que vale, y ese número es el que leen `gift` (el excedente sobre `keep` se regala: la generosidad del «gran hombre»), `doSteal` y las deudas de `Amends`; a la fase 36 le queda el trueque. Una prueba recorre todos los ítems para que siga siendo el máximo. `Ore.wantedOreKinds` manda al orfebre al grano, y `forageYieldFactor` le da más por tirón. Con mapa, el oro solo donde la Tierra lo tiene (`WORLD_FEATURE.gold`); en el mapa generado, que no tiene un recurso propio para él, donde hay cobre (la misma ganga).
+
+**Pruebas.** `metal.test.ts` (+8): declaración, chispa sin oro en mano, dónde está, la puerta del mapa, la receta y el máximo de `baseValue`, el orfebre quiere oro y saca más, martillar de punta a punta y el regalo.

@@ -178,6 +178,8 @@ export const TECHS = [
   // Bronze made for the fight: a sword, and a helm for the one part of the body
   // nothing else here covers.
   'bronze_arms',
+  // The other metal found as metal: gold, which no fire improves and every people prizes.
+  'goldwork',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2263,6 +2265,32 @@ export const TECH: Record<Tech, TechDef> = {
       'blow from the head. What a band that can pour bronze does with it ' +
       'when it has an enemy.',
   },
+  // M15 phase 37 (M8.3). Gold lies as metal in the gravels and is worked cold
+  // like native copper, and nothing makes it better: it does not rust, it does
+  // not tarnish and it does not do anything. It is worth what a people agrees it
+  // is worth, which is the whole use of it, and the `baseValue` of its ornament
+  // is the highest in the game. The oldest worked gold is Varna, 4,600 BC.
+  goldwork: {
+    id: 'goldwork', label: 'Goldwork', domain: 'metal', web: 'metal',
+    age: 'chalcolithic', firstKnown: 'about 4600 BC',
+    kind: 'device',
+    requires: ['native_copper'], difficulty: 0.6, skill: 'smith',
+    prototype: { gold_nugget: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'native_copper' }, { kind: 'holding', item: 'gold_nugget' }],
+        weight: 1.0, story: 'beat a yellow stone that spread without cracking and did not go green' },
+      { needs: [{ kind: 'knows', tech: 'native_copper' }, { kind: 'doing', action: 'craft' },
+                { kind: 'holding', item: 'copper_pendant' }],
+        weight: 0.6, story: 'wanted a bead that would keep its shine through a lifetime of wear' },
+      { needs: [{ kind: 'knows', tech: 'native_copper' }, { kind: 'place', biome: 'beach' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 0.4, story: 'picked a bright grain out of the gravel where the river ran out and kept it' },
+    ],
+    description:
+      'Yellow metal found in the gravel, hammered cold. It does not rust and ' +
+      'it does nothing; it is worth what a people agrees it is worth, which ' +
+      'is more than anything else a band can make.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2625,6 +2653,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'A bronze sword, and a helm that turns a blow from the head, better in the hands of whoever knows how they are made.',
     site: 'weaponOf (ITEMS.bronze_sword.weapon); Tech.protectionOf and armourOf, via ItemDef.armourTech',
   },
+  goldwork: {
+    summary: 'A gold ornament: the highest value of anything a band can make, and a gift that raises a house.',
+    site: 'RECIPES.gold_ornament; ItemDef.baseValue, read by gift, doSteal and Amends; Ore.wantedOreKinds',
+  },
 };
 
 /**
@@ -2811,6 +2843,7 @@ export function forageYieldFactor(person: Person, nodeKind: string): number {
   // eye for it. `scaled` is 1 for anybody who lacks the node.
   if (nodeKind === 'flint') return scaled(person, 'stoneworking', 1.5) * scaled(person, 'mining', 1.25);
   if (nodeKind === 'native_copper') return scaled(person, 'native_copper', 1.3);
+  if (nodeKind === 'gold') return scaled(person, 'goldwork', 1.3);
   if (nodeKind === 'copper_ore' || nodeKind === 'tin_ore') return scaled(person, 'mining', 1.5);
   // A net multiplies a fishing spot rather than replacing the spear, and it is
   // gated on *carrying* one as well as on knowing how to make one. Both halves

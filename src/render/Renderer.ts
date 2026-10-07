@@ -125,6 +125,8 @@ const RESOURCE_COLORS: Record<ResourceKind, string> = {
   // for copper, a pale tin-bright for tin.
   copper_ore: '#7a8f86',
   tin_ore: '#aeb4bb',
+  // Yellow, the one colour in the table that is nothing else.
+  gold: '#e6c34a',
 };
 
 /**
@@ -1052,7 +1054,7 @@ export class Renderer {
         ctx.fillStyle = '#ceb45c';
         for (let i = -1; i <= 1; i++) ctx.fillRect(x + i * scale * 0.18 - 1, y - scale * 0.65, 2, 3);
       }
-    } else if (kind === 'flint' || kind === 'clay' || kind === 'native_copper' || kind === 'copper_ore' || kind === 'tin_ore') {
+    } else if (kind === 'flint' || kind === 'clay' || kind === 'native_copper' || kind === 'copper_ore' || kind === 'tin_ore' || kind === 'gold') {
       ctx.beginPath(); ctx.ellipse(x, y, scale * 0.65, scale * 0.43, -0.2, 0, Math.PI * 2); ctx.fill();
       if (kind === 'flint' && !depleted) {
         ctx.strokeStyle = '#c6ccd0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - scale * 0.3, y); ctx.lineTo(x + scale * 0.3, y - scale * 0.15); ctx.stroke();
@@ -1320,6 +1322,25 @@ export class Renderer {
             ctx.fillRect(px + dx * size, py + dy * size, Math.max(1, size * 0.1), Math.max(1, size * 0.07));
           }
         }
+        break;
+      }
+      case 'gold': {
+        // Three bright grains and a glint: small, and nothing else on the map is yellow.
+        if (spent) {
+          ctx.fillStyle = SPENT_COLORS.scar;
+          ctx.beginPath();
+          ctx.ellipse(px, py, size * 0.3, size * 0.16, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+        for (const [dx, dy, r] of [[-0.22, 0.08, 0.17], [0.2, 0.14, 0.15], [0, -0.16, 0.2]] as const) {
+          ctx.fillStyle = RESOURCE_COLORS.gold;
+          ctx.beginPath();
+          ctx.ellipse(px + dx * size, py + dy * size, r * size, r * size * 0.8, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#fff3b0';
+        ctx.fillRect(px - size * 0.04, py - size * 0.24, Math.max(1, size * 0.1), Math.max(1, size * 0.06));
         break;
       }
       case 'native_copper': {

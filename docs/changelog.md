@@ -1,3 +1,7 @@
+## 2026-10-07 — M15 fase 37j: `goldwork`, el adorno que más vale (los diez nodos están)
+
+Por qué: el décimo nodo, y el único cuyo valor es un acuerdo. Clase de nodo `gold` (granos de la grava, no se reponen), `goldwork` (`native_copper`, martillado en frío), pepita y adorno. El adorno tiene el `baseValue` más alto del juego, y lo leen `gift`, `doSteal` y `Amends` (una prueba recorre `ITEMS` para que siga siéndolo). Con mapa, el oro solo donde la Tierra tiene el rasgo `gold`; en el mapa generado, con el cobre. Con este commit están los diez nodos de M8.3: `charcoal`, `mining`, `native_copper`, `smelting`, `bellows`, `casting`, `alloying`, `bronze_tools`, `bronze_arms` y `goldwork`. Tests: `metal.test.ts` (77 en total). Detalle en [m15_phase37_metal.md](m15_phase37_metal.md).
+
 ## 2026-10-07 — M15 fase 37i: `bronze_arms`, y `armourOf` por fin pasa por `techPower`
 
 Por qué: la deuda que el plan de las edades anotó desde el principio. Nodo `bronze_arms` (`alloying` + `spear`), espada (la mejor hoja) y yelmo (la primera prenda que cubre la cabeza), en el horno. `ItemDef.armourTech` y `Tech.armourFit`: una prenda que nombra su técnica protege tres cuartos de su valor a quien no la sabe hacer y más al refinarla (tope por debajo de 1); **las prendas que no la nombran conservan su número exacto**, así que ningún mundo existente se mueve (prueba). Arte: iconos y mano de la espada; el yelmo no se dibuja puesto (`next-steps.md`). Tests: `metal.test.ts` (69 en total). Detalle en [m15_phase37_metal.md](m15_phase37_metal.md).

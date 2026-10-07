@@ -111,6 +111,16 @@ export const ITEMS: ItemArt[] = [
     + shape(poly([[26, 30], [38, 30], [36, 48], [28, 48]]), '#2b1d12', '#2b1d12')
     + stroke('M16,32Q32,16 48,32', '#dcc072', 1.4)
     + ell(32, 14, 3, 3, '#6b4f1c', '#3a2a0c')],
+  ['gold_nugget', 'Pepita de oro', 'goldwork', () =>
+    shape(smooth([[12, 40], [20, 26], [34, 24], [44, 34], [40, 48], [22, 50]]), '#e6c34a', '#7a5f10')
+    + shape(smooth([[34, 20], [44, 12], [54, 18], [52, 30], [42, 30]]), '#f4dc7a', '#7a5f10')
+    + stroke('M18,40L30,36M38,38L46,34', '#fff3b0', 1.2)],
+  ['gold_ornament', 'Adorno de oro', 'goldwork', () =>
+    stroke('M14,10Q32,2 50,10', CORD, 1.8)
+    + stroke('M32,6L32,22', CORD, 1.6)
+    + shape(smooth([[32, 22], [44, 30], [42, 46], [32, 56], [22, 46], [20, 30]]), '#e6c34a', '#7a5f10')
+    + ell(32, 36, 6, 6, 'none', '#7a5f10') + ell(32, 36, 2.4, 2.4, '#fff3b0', '#7a5f10')
+    + stroke('M25,32Q30,26 38,29', '#fff3b0', 1.2)],
   ['charcoal', 'Carbón vegetal', 'charcoal', () =>
     shape(smooth([[10, 44], [22, 30], [36, 34], [40, 48], [26, 54]]), '#2f2b28', STONE_D)
     + shape(smooth([[32, 30], [46, 18], [58, 28], [52, 42], [38, 42]]), '#3a3532', STONE_D)

@@ -3481,6 +3481,8 @@ metal.
 
 **Avance del 2026-10-07 (37i, `bronze_arms`).** Espada y yelmo de bronce. **`armourOf` pasa por `techPower`** (`ItemDef.armourTech`, `armourFit`): lo que nombra su técnica protege según quien lo lleva; lo que no, igual que siempre. El yelmo aún no se dibuja puesto.
 
+**Avance del 2026-10-07 (37j, `goldwork`).** El oro de la grava (dos puntos en la isla, solo con mapa donde la región lo tiene) y el adorno de oro, el `baseValue` más alto del juego: regalo, robo y deuda ya lo leen. Con él quedan los diez nodos de la fase.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

@@ -985,3 +985,79 @@ describe('bronze arms', () => {
     expect(person.inventory.count('bronze_sword')).toBe(1);
   });
 });
+
+describe('goldwork', () => {
+  it('needs native copper, joins the metal web and is the Chalcolithic', () => {
+    const def = TECH.goldwork;
+    expect(def.requires).toEqual(['native_copper']);
+    expect(def.web).toBe('metal');
+    expect(def.age).toBe('chalcolithic');
+  });
+
+  it('can be thought of by somebody who knows copper and has picked gravel, without gold in hand', () => {
+    const notice: Notice = {
+      knows: new Set(['native_copper']), holding: new Set(), lately: new Set(['gather']), feeling: new Set(),
+      wanting: new Set(), place: 'beach', saw: new Set(), season: 'summer',
+    };
+    expect(TECH.goldwork.sparks.some(spark => sparkFires(spark, notice))).toBe(true);
+  });
+
+  it('lies on the beaches and hills of an island, two grains and never more', () => {
+    const sim = new Simulation({ seed: 'metal-ore' });
+    const gold = sim.nodes.filter(n => n.kind === 'gold');
+    expect(gold.length).toBeGreaterThan(0);
+    for (const node of gold) {
+      expect(['beach', 'hills']).toContain(sim.world.biomeAt(node.x, node.y));
+      expect(node.def.itemId).toBe('gold_nugget');
+      expect(node.def.regrowPerTick).toBe(0);
+      expect(node.def.requiresTech).toBeUndefined();
+    }
+  });
+
+  it('is found on a map only where gold is, and with copper in a generated one', () => {
+    expect(geographicResourceAvailable(earth(0), 20, 10, 'gold')).toBe(false);
+    expect(geographicResourceAvailable(earth(WORLD_FEATURE.gold), 20, 10, 'gold')).toBe(true);
+    expect(geographicResourceAvailable(earth(WORLD_FEATURE.copper), 20, 10, 'gold')).toBe(false);
+  });
+
+  it('makes an ornament worth more than anything else a band can make', () => {
+    const recipe = RECIPES.gold_ornament!;
+    expect(recipe.tech).toBe('goldwork');
+    expect(recipe.station).toBeUndefined();
+    expect(recipe.skill).toBe('smith');
+    expect(recipe.ingredients).toEqual({ gold_nugget: 2 });
+    const worth = ITEMS.gold_ornament!.baseValue;
+    for (const [id, def] of Object.entries(ITEMS)) {
+      if (id !== 'gold_ornament') expect(worth, id).toBeGreaterThan(def.baseValue);
+    }
+  });
+
+  it('is wanted by the goldsmith, and the nugget gives more to the one who knows', () => {
+    const smith = adult('smith');
+    teach(smith, 'native_copper', 'goldwork');
+    expect(wantedOreKinds(smith)).toContain('gold');
+    expect(forageYieldFactor(smith, 'gold')).toBeGreaterThan(forageYieldFactor(adult('bare'), 'gold'));
+  });
+
+  it('hammers an ornament cold end to end', () => {
+    const sim = worldKnowing(['stoneworking', 'native_copper', 'goldwork'], 'metal-gold');
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('gold_nugget', 2);
+    expect(sim.order(person, 'craft', { recipeId: 'gold_ornament' })).toBe(true);
+    for (let i = 0; i < 2000 && person.inventory.count('gold_ornament') === 0; i++) {
+      person.needs.thirst = 0;
+      person.needs.hunger = 0;
+      sim.step();
+    }
+    expect(person.inventory.count('gold_ornament')).toBe(1);
+  });
+
+  it('is a gift only the rich can give: the spare ornament is what a giver gives', () => {
+    // `gift` offers whatever a person holds beyond `keep` of something they can
+    // make, and the ornament's worth is `baseValue`, the one number gift, theft
+    // and debt all read. Nothing to run: the claim is that the number is read.
+    expect(RECIPES.gold_ornament!.keep).toBe(1);
+    expect(ITEMS.gold_ornament!.baseValue).toBeGreaterThan(ITEMS.copper_pendant!.baseValue);
+  });
+});

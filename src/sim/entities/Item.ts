@@ -402,6 +402,12 @@ export const ITEMS: Record<string, ItemDef> = {
     protects: { head: 0.55 }, armourTech: 'bronze_arms',
     class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
+  // `goldwork`. The nugget is the raw metal; the ornament is what a band makes of
+  // it, and its `baseValue` is the highest in the game on purpose: it is worth
+  // what a people agrees it is worth, and `gift`, `doSteal` and the debts of
+  // `Amends` all read exactly that number.
+  gold_nugget: { id: 'gold_nugget', label: 'Gold nugget', nutrition: 0, spoilTicks: 0, baseValue: 24, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  gold_ornament: { id: 'gold_ornament', label: 'Gold ornament', nutrition: 0, spoilTicks: 0, baseValue: 60, class: 'small', hand: { perHand: 1, perArms: 2, hands: 1 } },
   charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
 };
 
