@@ -192,6 +192,11 @@ export interface People {
   culture: PeopleCulture;
   /** Stored food and goods, in rations (a person-day of food). Aggregate; no item list. */
   surplus: number;
+  /**
+   * Rations a day drawn from `surplus` to feed the people this season. Written by the storing mechanism before
+   * demography runs and read by `suppliedRations`; zero in a season of plenty, and zero for any people nothing stores for.
+   */
+  drawn: number;
   /** The people's own derived stream. Never shared. */
   readonly rng: RNG;
   /** The step on which the next seasonal update is due. */
@@ -207,6 +212,10 @@ export interface PeopleRelation {
   /** 0..1, how much the two touch (trade, marriage, shared ground). Symmetric by construction. */
   contact: number;
   stance: 'war' | 'peace' | 'tributary' | null;
+  /** For `tributary`: the people paid (one of `a`, `b`). Null otherwise. */
+  overlord: number | null;
+  /** The step the stance was entered, for how long a war has lasted. Null with no stance. */
+  since: number | null;
 }
 
 export interface PeopleSpec {
@@ -248,6 +257,7 @@ export interface PeopleRecord {
   readonly techs: TechSetRecord;
   readonly culture: PeopleCulture;
   readonly surplus: number;
+  readonly drawn: number;
   readonly rng: ReturnType<RNG['snapshot']>;
   readonly nextDue: number;
 }
@@ -316,7 +326,7 @@ export class PeopleSim {
       id, comarcas: spec.comarcas,
       cohorts: { male: [...spec.cohorts.male], female: [...spec.cohorts.female] },
       techs: new TechSet(spec.techs ?? []), culture,
-      surplus: spec.surplus ?? 0,
+      surplus: spec.surplus ?? 0, drawn: 0,
       rng: derivePeopleStream(this.seed, id),
       nextDue: this.firstDueAfter(id, this.updating >= 0 ? this.updating : this.step),
     };
@@ -339,7 +349,7 @@ export class PeopleSim {
     const a = Math.min(x, y), b = Math.max(x, y);
     const key = `${a}:${b}`;
     let rel = this.relations.get(key);
-    if (!rel) { rel = { id: this.nextRelationId++, a, b, standing: 0, contact: 0, stance: null }; this.relations.set(key, rel); }
+    if (!rel) { rel = { id: this.nextRelationId++, a, b, standing: 0, contact: 0, stance: null, overlord: null, since: null }; this.relations.set(key, rel); }
     return rel;
   }
 
@@ -348,6 +358,53 @@ export class PeopleSim {
     const out: PeopleRelation[] = [];
     for (const rel of this.relations.values()) if (rel.a === id || rel.b === id) out.push(rel);
     return out.sort((x, y) => x.id - y.id);
+  }
+
+  /**
+   * Fold `absorbedId` into `intoId`: conquest, a tribute taken whole, or an alliance that became one society. One call
+   * owns every consequence, so no relation, count or technique is left behind or counted twice:
+   * people and comarcas and surplus are added; techniques are the union (closed under `requires`, since both were);
+   * regard for strangers and the trait means are the population-weighted mean (norms stay the absorber's, the larger
+   * voice being a choice, not a finding); the absorbed's relations move to the absorber, merging with one it already has
+   * (contact the larger, standing the population-weighted mean, a stance the absorber's own, else the absorbed's).
+   */
+  absorb(absorbedId: number, intoId: number): { moved: number } {
+    if (absorbedId === intoId) throw new RangeError('a people cannot absorb itself');
+    const gone = this.peoples.get(absorbedId), host = this.peoples.get(intoId);
+    if (!gone || !host) throw new RangeError('unknown people');
+    const wGone = populationOf(gone), wHost = populationOf(host);
+    const total = wGone + wHost;
+    for (const sex of ['male', 'female'] as const) for (let b = 0; b < AGE_BANDS; b++) host.cohorts[sex][b]! += gone.cohorts[sex][b]!;
+    host.comarcas += gone.comarcas; host.surplus += gone.surplus;
+    for (const tech of TECHS) if (gone.techs.has(tech) && !host.techs.has(tech)) {
+      // `TECHS` is not necessarily ordered by requirement, so close it by repetition.
+      const pending = [tech];
+      while (pending.length) {
+        const t = pending.pop()!;
+        if (host.techs.has(t)) continue;
+        const missing = TECH[t].requires.filter(r => !host.techs.has(r));
+        if (missing.length) pending.push(t, ...missing); else host.techs.add(t);
+      }
+    }
+    if (total > 0) {
+      host.culture.strangerRegard = (host.culture.strangerRegard * wHost + gone.culture.strangerRegard * wGone) / total;
+      for (const trait of TRAITS) host.culture.traitMeans[trait] = (host.culture.traitMeans[trait] * wHost + gone.culture.traitMeans[trait] * wGone) / total;
+    }
+    for (const rel of this.relationsOf(absorbedId)) {
+      const other = rel.a === absorbedId ? rel.b : rel.a;
+      this.relations.delete(`${rel.a}:${rel.b}`);
+      if (other === intoId) continue;
+      const target = this.relation(intoId, other);
+      target.contact = Math.max(target.contact, rel.contact);
+      target.standing = (target.standing * wHost + rel.standing * wGone) / Math.max(1, wHost + wGone);
+      if (target.stance === null && rel.stance !== null) {
+        target.stance = rel.stance; target.since = rel.since;
+        target.overlord = rel.overlord === absorbedId ? intoId : rel.overlord;
+      }
+    }
+    for (const rel of this.relations.values()) if (rel.overlord === absorbedId) rel.overlord = intoId;
+    this.peoples.delete(absorbedId);
+    return { moved: wGone };
   }
 
   /** Mark an aggregate transaction as applied. False on the second call with the same id. */
@@ -398,7 +455,7 @@ export class PeopleSim {
         cohorts: { male: [...p.cohorts.male], female: [...p.cohorts.female] },
         techs: p.techs.toRecord(),
         culture: { norms: { ...p.culture.norms }, strangerRegard: p.culture.strangerRegard, traitMeans: { ...p.culture.traitMeans } },
-        surplus: p.surplus, rng: p.rng.snapshot(), nextDue: p.nextDue,
+        surplus: p.surplus, drawn: p.drawn, rng: p.rng.snapshot(), nextDue: p.nextDue,
       })),
       relations: [...this.relations.values()].sort((x, y) => x.id - y.id).map(r => ({ ...r })),
       applied: [...this.applied].sort((x, y) => x - y),
@@ -420,7 +477,7 @@ export class PeopleSim {
         cohorts: { male: [...p.cohorts.male], female: [...p.cohorts.female] },
         techs: TechSet.fromRecord(p.techs),
         culture: { norms: { ...p.culture.norms }, strangerRegard: p.culture.strangerRegard, traitMeans: { ...p.culture.traitMeans } },
-        surplus: p.surplus, rng: RNG.fromSnapshot(p.rng), nextDue: p.nextDue,
+        surplus: p.surplus, drawn: p.drawn, rng: RNG.fromSnapshot(p.rng), nextDue: p.nextDue,
       });
     }
     for (const rel of r.relations) {

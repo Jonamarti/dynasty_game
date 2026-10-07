@@ -1,3 +1,12 @@
+## 2026-10-07 — M15 fase 32c: almacén e intercambio entre pueblos (`PeopleEconomy`)
+
+Por qué: `People.surplus` existía desde 32c-1 y nada lo escribía ni lo leía: contenido declarado pero inerte. `storing` lo escribe (una parte del exceso de comida sobre la necesidad se guarda, una parte se pudre cada estación,
+con tope de dos estaciones de necesidad) y lo lee: en una estación corta el almacén cubre la falta hasta donde llega, y `People.drawn` (raciones/día) se suma a lo que da la tierra en `suppliedRations`, que ya leían
+la demografía y la capacidad. `trading` es **reparto recíproco, no mercado**: el modelo guarda el excedente como una sola cantidad, no hay bienes con valor distinto que valorar (`baseValue`, fase 36, no tiene aquí a qué
+aplicarse), así que el pueblo más rico por cabeza da al más pobre en proporción al contacto (reparto de riesgo, el uso documentado del intercambio con cosechas variables); cada transacción tiene id `(relación, estación,
+clase)` y `PeopleSim.commit` rechaza el segundo extremo; las raciones se conservan exactamente. Un pueblo `tributary` paga `TRIBUTE_SHARE` a su `overlord`. **Todos los números son suposiciones de diseño, no medidas.** `PeopleRelation`
+gana `overlord` y `since`; `People` gana `drawn`. Sin cambio de juego (nada de `Simulation` lo llama). Los tests incluyen el control: con almacén el pueblo sobrevive más a un invierno corto que sin él.
+
 ## 2026-10-07 — M15 fase 32c: dividirse (`PeopleSplit`), un pueblo manda una hija a tierra nueva
 
 Por qué: el plan de 32c pide que un pueblo se divida cuando crece por encima de lo que su organización sostiene, y sin eso `PeopleSim` solo puede engordar sin límite o morir

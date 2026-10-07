@@ -381,3 +381,18 @@ ese reloj sigue detectándose (`people-sim.test.ts`). Test: troceado en pasos de
 
 Límites: solo la mitad que divide; unirse (conquista, tributo, alianza) espera a guerra y comercio, que no existen. El crecimiento exponencial de un pueblo en tierra rica genera tantas hijas como tierra conceda el dueño (el
 test lo ata a 100000 comarcas libres); la capacidad de tierra real es del dueño. No se ha corrido `peoples-match-bands`.
+
+
+## Almacén e intercambio (`PeopleEconomy.ts`, 32c-9)
+
+`People.surplus` llevaba desde 32c-1 sin escritor ni lector. Ahora **`storing`** (corre antes de `demography`): cada estación una parte `SPOILAGE` = 0,2 de lo guardado se pierde; si la tierra dio más que la necesidad (1 ración por persona y día) se guarda
+`PUT_BY_SHARE` = 0,25 del exceso, con tope de `STORE_CAP_SEASONS` = 2 estaciones de necesidad; si dio menos, el almacén cubre la falta hasta donde llega y lo sacado queda en `People.drawn` (raciones/día), que `suppliedRations` suma a lo que da
+la tierra. Así lo que mata o alimenta (curva de capacidad, hambre, nacimientos) ya lo lee. Control en test: con almacén, un pueblo de invierno corto conserva >1,1 veces la población de un pueblo igual sin él.
+
+**`trading`**: reparto recíproco, **no mercado**. El modelo guarda el excedente como un número, así que no hay bienes con valor distinto que valorar; modela el uso real del intercambio entre gente que vive de una cosecha variable, que es repartir
+el riesgo: con cada vecino con el que no está en guerra y en proporción a su contacto, el pueblo cierra `TRADE_SHARE` = 0,1 de la distancia a un reparto igual por cabeza (se conserva la suma), y la relación sube `TRADE_STANDING` = 2 x contacto.
+Un `tributary` paga `TRIBUTE_SHARE` = 0,15 de su excedente a su `overlord`. Id de transacción `(relación, estación, clase)` (`transactionId`, clases compartidas por todos los mecanismos de relación: 0 intercambio, 1 tributo, 2 guerra, 3 rivalidad,
+4 unión): el segundo extremo lo rechaza `PeopleSim.commit`, y correr el mecanismo dos veces no duplica nada (test).
+
+**Suposiciones, no medidas:** las seis constantes. El detallado guarda objetos en pozos, no una tasa agregada; nada midió una. Sin precios ni bienes. Tampoco hay todavía contacto que crezca con el comercio: el contacto lo escribe quien siembra el mundo (y
+`splitting` al dividir), y el comercio solo mueve la `standing`.

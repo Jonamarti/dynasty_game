@@ -3294,6 +3294,9 @@ medidas**) manda una hija con el 40 % de cada celda, sus técnicas, cultura, exc
 Programación de pueblos fundados en plena actualización independiente de cómo se trocee la ejecución. **Falta de 32c:** unirse (conquista, tributo, alianza), comerciar, guerrear y hacer la
 paz, materializar/fundir, y las puertas. [Detalle](m15_phase32c_peoples.md).
 
+**Avance del 2026-10-07 (32c-9, almacén e intercambio):** `PeopleEconomy.ts`: `storing` (excedente guardado, pudrición, tope; lo que se saca entra en el suministro) y `trading` (reparto recíproco por contacto, tributo al
+`overlord`; una transacción por relación y estación). Todo suposiciones de diseño. [Detalle](m15_phase32c_peoples.md).
+
 **Puertas**, encadenadas:
 
 - `peoples-match-bands`: el mismo escenario, dos años en nivel 1 y dos en nivel

@@ -116,8 +116,9 @@ export function foodMultiplier(techs: TechSet): number {
   return MEASURED_KIT.techs.every(t => techs.has(t as Tech)) ? MEASURED_KIT.multiplier : 1;
 }
 
-export function suppliedRations(people: Pick<People, 'comarcas' | 'techs'>, region: PeopleRegion, season: PeopleSeason): number {
-  return people.comarcas * region.rationsPerComarcaDay[season] * foodMultiplier(people.techs);
+export function suppliedRations(people: Pick<People, 'comarcas' | 'techs'> & { drawn?: number }, region: PeopleRegion, season: PeopleSeason): number {
+  // `drawn` is what the store gives this season (0 unless a storing mechanism wrote it): the land's yield plus the granary's.
+  return people.comarcas * region.rationsPerComarcaDay[season] * foodMultiplier(people.techs) + (people.drawn ?? 0);
 }
 
 /** Rations per person per day. Infinite for an empty people (nobody to feed). */
