@@ -157,6 +157,9 @@ export const TECHS = [
   // The two weapons of the same phase: a variant of the spear and a new one.
   'fire_hardened_spear',
   'sling',
+  // M15 phase 37: the metal tier (M8.3), one node per commit with its reader.
+  // Appended in the order the commits land; `TECHS` order is the web's layout.
+  'charcoal',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -1996,6 +1999,36 @@ export const TECH: Record<Tech, TechDef> = {
       'won again: the head of the king\'s own house, or his eldest child. ' +
       'An heir who never learned to be king will not pass it on in turn.',
   },
+  // M15 phase 37 (M8.3). The fuel every furnace below will want: wood burned
+  // slowly under turf with the air kept out, until what is left is black, light
+  // and hotter than the wood was. A device: the pit is the thing built.
+  //
+  // `fire` rather than a new domain: it is a way of burning, and the Fire
+  // sub-web (phase 16) will take it in when that opens. Its sparks are the
+  // fire-keeper's: a carried armful of sticks, a winter night, a cold hearth.
+  charcoal: {
+    id: 'charcoal', label: 'Charcoal', domain: 'fire',
+    age: 'chalcolithic', firstKnown: 'about 5000 BC',
+    kind: 'device',
+    requires: ['firemaking', 'carpentry'], difficulty: 0.5, skill: 'build',
+    prototype: { sticks: 6, flint: 1 }, maxRefinement: 2,
+    answers: ['warmth'],
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'sticks' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 1.0, story: 'banked a fire under turf and found, come morning, black sticks that burned hotter than the wood had' },
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'doing', action: 'chop' },
+                { kind: 'feeling', need: 'cold' }],
+        weight: 0.6, story: 'burned the chips from a felling to keep warm, and smothered the fire by accident' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'season', season: 'winter' },
+                { kind: 'feeling', need: 'cold' }],
+        weight: 0.5, story: 'wanted a fire that would last the night without being fed' },
+    ],
+    description:
+      'Wood burned slow under turf, with the air kept out, until it is black ' +
+      'and light and burns hotter than any wood. Carried, it is a warmth that ' +
+      'travels; in a furnace it is the heat a metal needs.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2322,6 +2355,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'The chief reigns for life, and the office passes to the head of their house or their eldest child.',
     site: 'BandSystem.chooseChief via Polity.reignsForLife and heirOf',
   },
+  charcoal: {
+    summary: 'A fuel that burns hotter than wood: a charcoal pit to make it, and a warmth to carry in the pack.',
+    site: 'BUILDINGS.charcoal_pit and RECIPES.charcoal; NeedsSystem, via warmthFrom, when charcoal is in the pack',
+  },
 };
 
 /**
@@ -2623,6 +2660,9 @@ export function stealthFactor(person: Person): number {
   return scaled(person, 'tracking', 0.75);
 }
 
+/** What a coal of charcoal in the pack adds to the warmth carried, at full knowledge of how it is made. */
+export const CHARCOAL_WARMTH = 0.12;
+
 /**
  * Warmth a person carries with them, 0-1, before any roof over their head.
  *
@@ -2656,7 +2696,14 @@ export function warmthFrom(person: Person): number {
   const woollen = person.inventory.has('wool_cloth')
     ? 0.32 * techPower(person, 'wool')
     : 0;
-  return 1 - (1 - fire) * (1 - cloth) * (1 - furs) * (1 - woven) * (1 - woollen);
+  // M15 phase 37: the seventh term. A glowing coal of charcoal in a pot is the
+  // oldest brazier there is, and it burns without smoke. Double-gated like the
+  // rest — carrying it and knowing how it is made — and the smallest term in
+  // the list, because it is a fuel and not a garment.
+  const brazier = person.inventory.has('charcoal')
+    ? CHARCOAL_WARMTH * techPower(person, 'charcoal')
+    : 0;
+  return 1 - (1 - fire) * (1 - cloth) * (1 - furs) * (1 - woven) * (1 - woollen) * (1 - brazier);
 }
 
 // ---------------------------------------------------------------------------

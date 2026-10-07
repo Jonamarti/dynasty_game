@@ -592,6 +592,20 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'sling', label: 'Sling', icon: '\u{1FA83}', tech: 'sling', skill: 'hunt',
     workTicks: 80, ingredients: { rope: 1, flint: 2 }, output: { sling: 1 }, keep: 1,
   },
+  // --- M15 phase 37 (M8.3): the metal tier -------------------------------------
+  //
+  // `charcoal`: deadwood stacked under turf and burned with the air shut out.
+  // Sticks rather than timber, deliberately: a forager already carries sticks
+  // home, whereas nothing in the pack-filling scorers fells a tree for a recipe,
+  // and an ingredient nobody would ever fetch is the `pottery` defect again.
+  // Six sticks give three of charcoal, which is the weight a furnace run wants.
+  // `keep: 4`: a smelting run burns two and a person wants a spare, and the pit
+  // is the only place it is made, so it is made in batches.
+  charcoal: {
+    id: 'charcoal', label: 'Charcoal', icon: '\u{26AB}', tech: 'charcoal', skill: 'build',
+    workTicks: 120, ingredients: { sticks: 6 }, output: { charcoal: 3 },
+    station: 'charcoal_pit', keep: 4,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

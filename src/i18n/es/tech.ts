@@ -405,4 +405,11 @@ export const ES_TECH: Record<string, string> = {
   "watched small game scatter out of spear range and wanted an arm that was longer than a cord": "vio huir la caza menor fuera del alcance de la lanza y quiso un brazo más largo que una cuerda",
   "A one-handed weapon that reaches past the spear and hunts better: cheap, poor in a fight.": "Un arma de una mano que llega más lejos que la lanza y caza mejor: barata, mala en una pelea.",
   "Sling": "Honda",
+  "Charcoal": "Carbón vegetal",
+  "about 5000 BC": "hacia el 5000 a. C.",
+  "Wood burned slow under turf, with the air kept out, until it is black and light and burns hotter than any wood. Carried, it is a warmth that travels; in a furnace it is the heat a metal needs.": "Madera quemada despacio bajo el césped, sin dejar entrar el aire, hasta que queda negra y ligera y arde más que cualquier leña. Llevado encima, es un calor que viaja; en un horno, es el calor que pide un metal.",
+  "banked a fire under turf and found, come morning, black sticks that burned hotter than the wood had": "tapó un fuego con césped y al amanecer encontró palos negros que ardían más que la leña",
+  "burned the chips from a felling to keep warm, and smothered the fire by accident": "quemó las astillas de una tala para entrar en calor, y ahogó el fuego sin querer",
+  "wanted a fire that would last the night without being fed": "quiso un fuego que durara la noche sin darle de comer",
+  "A fuel that burns hotter than wood: a charcoal pit to make it, and a warmth to carry in the pack.": "Un combustible que arde más que la leña: una carbonera para hacerlo, y un calor que llevar en la mochila.",
 };

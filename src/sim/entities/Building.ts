@@ -657,6 +657,27 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     requiresTech: 'firemaking',
     description: 'A tended fire for warmth and cooking.',
   },
+  // --- M15 phase 37 (M8.3): the metal tier ------------------------------------
+  //
+  // `charcoal_pit`, a station on the terms the quern set: no storage (or the
+  // larder scorer would fill it with berries), a 3x3 footprint so that
+  // `reachBuilding`'s containment test can be met. Built of what a band can
+  // fetch for a site: deadwood for the stack and clay for the turf seal.
+  charcoal_pit: {
+    id: 'charcoal_pit',
+    label: 'Charcoal pit',
+    icon: '\u{26AB}',
+    width: 3, height: 3,
+    materials: { sticks: 8, mud: 4 },
+    workTicks: 150,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'charcoal',
+    description:
+      'A stack of deadwood sealed under turf and left to smoulder. What comes ' +
+      'out is black, light, and burns hotter than the wood that went in.',
+  },
 };
 
 // --- M15 phase 26c: designs that move ground -----------------------------------

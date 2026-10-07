@@ -3448,6 +3448,15 @@ entrenada y `armourOf` por `techPower`.
 - `bronze-needs-a-trader` sigue siendo la puerta: casi ninguna banda sin
   estaño en su comarca funde bronce sin haber comerciado o asaltado.
 
+**Se hace en la rama `worktree-m15-phase37`, en un worktree propio** (otro
+agente trabaja la fase 34). Detalle, decisiones y medidas por entrega en
+[m15_phase37_metal.md](m15_phase37_metal.md).
+
+**Avance del 2026-10-07 (37a, `charcoal`).** Nodo, ítem, carbonera
+(`charcoal_pit`, estación) y receta (seis palos → tres carbones). Lector: el
+brasero de `warmthFrom` y, después, el horno. Va a la red principal porque la
+sub-red Fuego aún no existe (fase 16). Pruebas en `metal.test.ts`.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

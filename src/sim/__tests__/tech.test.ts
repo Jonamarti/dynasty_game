@@ -58,6 +58,8 @@ describe('the tech table', () => {
   it('only gives motives to technologies whose effects answer them', () => {
     const supported: Partial<Record<Tech, string[]>> = {
       firemaking: ['warmth'], clothing: ['warmth'],
+      // M15 phase 37: a coal in the pack is a brazier (`warmthFrom`).
+      charcoal: ['warmth'],
       cooking: ['hunger', 'variety'], tracking: ['hunger', 'variety'],
       fishing: ['hunger', 'variety'], snares: ['hunger', 'variety'],
       well: ['thirst'], flute: ['company'],

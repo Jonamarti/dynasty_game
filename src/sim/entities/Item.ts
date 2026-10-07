@@ -341,6 +341,13 @@ export const ITEMS: Record<string, ItemDef> = {
     weapon: { damage: 0.2, reach: 1.4, hunt: 1.7, tech: 'sling' },
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
+  // --- M15 phase 37 (M8.3): the metal tier ------------------------------------
+  //
+  // `charcoal`: wood burned slow under turf. Not food and not a weapon; it is
+  // read in two places, `Tech.warmthFrom` (a coal in the pack is a brazier) and
+  // the furnace recipes of `smelting`, which is what it is for. Loose, like
+  // earth: a basket takes it, a hand holds a fistful of it.
+  charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
 };
 
 export class Inventory {

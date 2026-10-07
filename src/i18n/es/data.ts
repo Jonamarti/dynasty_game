@@ -271,4 +271,6 @@ export const ES_DATA: Record<string, string> = {
   "A shallow cut that starts at the water and leads away from it. Where the ground lies low, the water follows.": "Un corte poco hondo que empieza en el agua y se aleja de ella. Donde el suelo es bajo, el agua lo sigue.",
   "Terrace": "Bancal",
   "The slope cut level: the high edge dug away and the low edge built up with it.": "La ladera cortada a nivel: se cava el borde alto y con ello se levanta el borde bajo.",
+  "Charcoal pit": "Carbonera",
+  "A stack of deadwood sealed under turf and left to smoulder. What comes out is black, light, and burns hotter than the wood that went in.": "Un montón de leña seca sellado bajo el césped y dejado a arder sin llama. Lo que sale es negro, ligero, y arde más que la madera que entró.",
 };

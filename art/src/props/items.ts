@@ -41,6 +41,11 @@ export const ITEMS: ItemArt[] = [
     + shape('M28,14Q28,8 33,8L36,8L36,12L33,12L32,16Z', WOOD, WOOD_D)
     + ell(28, 46, 3, 2, 'none', WOOD_D) + stroke('M25,44L25,52', CORD, 1.6), 32)
     + limb([[10, 18], [54, 10]], 1.4, '#a9835a', WOOD_D)],
+  ['charcoal', 'Carbón vegetal', 'charcoal', () =>
+    shape(smooth([[10, 44], [22, 30], [36, 34], [40, 48], [26, 54]]), '#2f2b28', STONE_D)
+    + shape(smooth([[32, 30], [46, 18], [58, 28], [52, 42], [38, 42]]), '#3a3532', STONE_D)
+    + shape(smooth([[26, 54], [40, 46], [54, 52], [48, 60], [30, 60]]), '#262321', STONE_D)
+    + stroke('M16,40L28,38M40,26L52,28M32,56L46,54', '#5a534e', 1.1)],
   ['sling', 'Honda', 'sling', () =>
     stroke('M10,34Q16,10 30,26', CORD, 2.4)
     + stroke('M10,34Q16,52 30,40', CORD, 2.4)

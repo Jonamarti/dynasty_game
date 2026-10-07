@@ -208,6 +208,17 @@ export const BUILDINGS: BuildingArt[] = [
     + ell(72, 83, 22, 8, '#2a1c12')
     + limb([[54, 88], [90, 78]], 4.4, '#6a4a2a', B.L) + limb([[56, 78], [88, 90]], 4.4, '#7d5a36', B.L)
     + flame(72, 82, 1.5)],
+  // M15 phase 37: a heap of deadwood sealed under turf, a vent smoking at the top.
+  ['charcoal_pit', 'Carbonera', 'charcoal', 144, () =>
+    gShadow(74, 102, 56, 10)
+    + shape('M22,98C22,58 46,36 72,36C98,36 122,58 122,98Z', '#5a4630', B.L)
+    + stroke('M30,90Q72,78 114,90M34,74Q72,62 110,74M46,58Q72,50 98,58', '#3f301f', 1.8)
+    + Array.from({ length: 9 }, (_, i) => ell(34 + i * 10.5, 94 - (i % 3) * 4, 6, 2.6, '#6b5236', B.L)).join('')
+    + shape('M30,98C30,70 50,50 72,50C94,50 114,70 114,98Z', '#7a6244', B.L)
+    + stroke('M44,86Q72,76 100,86M52,70Q72,62 92,70', '#5d4930', 1.4)
+    + ell(72, 38, 6, 2.6, B.dark, B.L) + smoke(72, 34)
+    + shape(smooth([[104, 96], [114, 90], [124, 94], [118, 102], [106, 102]]), '#2b2622', B.L)
+    + ell(112, 96, 3, 1.6, '#4a423a') + ell(119, 97, 2.4, 1.4, '#3a342e')],
 ];
 
 const FLOOR = '#6b5236', PLANK = '#a4784c';
