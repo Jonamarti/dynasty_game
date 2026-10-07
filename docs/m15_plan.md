@@ -3345,6 +3345,8 @@ cultura desde el principio, y el ajuste de partida del mundo (29c).
   guardar, cargar, avanzar N pasos y comparar con no haber guardado (**tiene
   que ser bit-idéntico**).
 
+**Avance del 2026-10-07 (33a y 33c).** `PeopleWorld` pasa a `src/` y siembra el mundo en el juego (cultura propia por pueblo, densidad por productividad, región del jugador reservada); `WorldState.peoples` avanza con el reloj; la partida entera (comarca + pueblos) se guarda como un texto (`WorldStateRecord` v2, `SaveFile`) con ida y vuelta medida, en IndexedDB con exportar/importar y botones en el menú de pausa. **Falta:** el ajuste de partida del navegador («Mundo: una comarca / mapa del mundo»; hoy solo `?world=random`) y el repertorio de nombres (cuando un pueblo se materialice). Las puertas 32c que fallan siguen fallando: el mundo sembrado es ese modelo. [Detalle](m15_phase33_world.md).
+
 ## Fase 34 — Salir de la comarca (M14 fase 16)
 
 **Detalle en `m14_plan.md` fase 16.** Los bordes se cruzan (`leave_region`,

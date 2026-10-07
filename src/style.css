@@ -1681,6 +1681,17 @@ html, body, #app {
 }
 .hud-button.is-primary:hover { background: color-mix(in srgb, var(--accent) 82%, #fff); }
 
+.pausemenu-saves { flex-wrap: wrap; margin-top: 8px; }
+.pausemenu-note {
+  min-height: 1.4em;
+  margin-top: 6px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.pausemenu-note.is-bad { color: #e66464; }
+.pausemenu-file[hidden] { display: none; }
+.hud-button:disabled { opacity: 0.45; cursor: not-allowed; }
+
 .pausemenu-keys-head {
   margin-top: 18px;
   color: var(--text-dim);

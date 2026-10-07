@@ -9,6 +9,8 @@
  */
 import './style.css';
 import { WorldState } from './sim/world/WorldState.ts';
+import { deserializeSave, serializeSave, SaveError, type SaveSummary } from './sim/persistence/SaveFile.ts';
+import { SaveStore, describeSaveFailure } from './ui/SaveStore.ts';
 import { randomWorldGeography } from './sim/world/WorldGeography.ts';
 import { findGlobeStart } from './sim/world/WorldTerrain.ts';
 import { Camera } from './render/Camera.ts';
@@ -117,7 +119,34 @@ function makeWorldState(overrides: Record<string, unknown>): WorldState {
   if (!start) return new WorldState(config);
   return new WorldState(config, { geography, start, comarcasWide: GLOBE_SPAN, comarcasHigh: GLOBE_SPAN });
 }
-let worldState = makeWorldState(profilePopulation);
+
+/**
+ * `?load=<slot>` opens a saved game (M15 phase 33c) instead of making a world: the pause menu's Load and Import both end in a
+ * reload with this parameter, for the reason `onNewWorld` reloads — `sim` is captured by the renderer, by `NewGame` and by two
+ * dozen closures, so a world is never swapped under a running game. A save that cannot be read says why on screen (below) and the
+ * game opens on a new world, never on half of the old one.
+ */
+const SAVE_SLOT = 'manual';
+const IMPORT_SLOT = 'imported';
+let loadedWorld: WorldState | null = null;
+let bootLoadFailure: string | null = null;
+const loadSlot = params.get('load');
+if (loadSlot) {
+  try {
+    const store = await SaveStore.open();
+    const text = await store.get(loadSlot).finally(() => store.close());
+    if (text === null) throw new SaveError('not_a_save');
+    loadedWorld = deserializeSave(text);
+  } catch (error) {
+    bootLoadFailure = describeSaveFailure(error);
+  }
+  // A reload of this page must not load it again over whatever the player has done since.
+  const clean = new URLSearchParams(location.search);
+  clean.delete('load');
+  history.replaceState(null, '', location.pathname + (clean.size ? '?' + clean : '') + location.hash);
+}
+
+let worldState = loadedWorld ?? makeWorldState(profilePopulation);
 let sim = worldState.current;
 
 /**
@@ -127,8 +156,9 @@ let sim = worldState.current;
  * game that starts immediately, and a character-creation screen that they all
  * have to be taught to dismiss is a screen that will silently break them.
  */
-const skipIntro = params.get('skipIntro') === '1';
-let player = sim.possessFirst();
+const skipIntro = params.get('skipIntro') === '1' || loadedWorld !== null;
+// A loaded world already has its player (or its succession pending); possessing the first living body would undo that.
+let player = loadedWorld ? sim.player : sim.possessFirst();
 
 const camera = new Camera();
 if (player) camera.snapTo(player.x, player.y);
@@ -489,11 +519,82 @@ const pauseMenu = new PauseMenu(document.body, {
   onResume: () => closeMenu(),
   fogEnabled: () => renderer.fogEnabled,
   onToggleFog: () => toggleFogOfWar(),
+  onSave: () => { void saveGame(); },
+  onLoad: () => reloadInto(SAVE_SLOT),
+  onExport: () => exportGame(),
+  onImport: text => { void importGame(text); },
+  onImportFailed: error => pauseMenu.setSaveNote(describeSaveFailure(error), true),
   onSettings: () => {
     pauseMenu.close();
     settingsScreen.open(sim, settings);
   },
 });
+
+/** "Year 3, spring, day 2 · 7/10/2026, 18:03": what a save is, for the line under the buttons. */
+function describeSave(summary: SaveSummary): string {
+  return summary.label + ' · ' + new Date(summary.savedAt).toLocaleString(language());
+}
+
+/** What the Load button would load, from the browser's own store. Never throws: no store simply means nothing to load. */
+async function refreshSaveInfo(): Promise<void> {
+  try {
+    const store = await SaveStore.open();
+    const meta = await store.meta(SAVE_SLOT).finally(() => store.close());
+    pauseMenu.setLoadable(meta ? describeSave(meta.summary) : null);
+  } catch {
+    pauseMenu.setLoadable(null);
+  }
+}
+
+async function saveGame(): Promise<void> {
+  try {
+    const text = serializeSave(worldState, Date.now());
+    const store = await SaveStore.open();
+    const summary = await store.put(SAVE_SLOT, text).finally(() => store.close());
+    pauseMenu.setLoadable(describeSave(summary));
+    pauseMenu.setSaveNote(t('Saved: {what}', { what: describeSave(summary) }));
+  } catch (error) {
+    pauseMenu.setSaveNote(describeSaveFailure(error), true);
+  }
+}
+
+/** A file with the whole game in it, for a backup or another machine. */
+function exportGame(): void {
+  try {
+    const text = serializeSave(worldState, Date.now());
+    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `dynasty-${String(sim.config.seed)}-tick${sim.time.tick}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    pauseMenu.setSaveNote(t('Exported {name}', { name: link.download }));
+  } catch (error) {
+    pauseMenu.setSaveNote(describeSaveFailure(error), true);
+  }
+}
+
+/** Read the whole file before touching anything: a bad file must leave this game exactly as it was. */
+async function importGame(text: string): Promise<void> {
+  try {
+    deserializeSave(text);
+    const store = await SaveStore.open();
+    await store.put(IMPORT_SLOT, text).finally(() => store.close());
+    reloadInto(IMPORT_SLOT);
+  } catch (error) {
+    pauseMenu.setSaveNote(describeSaveFailure(error), true);
+  }
+}
+
+function reloadInto(slot: string): void {
+  const next = new URLSearchParams(location.search);
+  next.set('load', slot);
+  // The seed in the address is the *new world's*; the loaded world brings its own.
+  next.delete('seed');
+  location.search = next.toString();
+}
 
 const settingsScreen = new SettingsOverlay(document.body, {
   onBegin: () => {
@@ -518,10 +619,11 @@ const settingsScreen = new SettingsOverlay(document.body, {
     saveSettings(settingsScreen.current());
     const next = new URLSearchParams(location.search);
     next.set('seed', nextSeed);
+    next.delete('load');
     // A reload rather than rebuilding the world in place. `sim` is captured by
-    // the renderer, by `NewGame` and by two dozen closures in this file, and
-    // there is no save system for a restart to preserve — `?seed=` and a reload
-    // is already how a specific world is replayed.
+    // the renderer, by `NewGame` and by two dozen closures in this file;
+    // `?seed=` and a reload is how a specific world is replayed (and, since
+    // phase 33c, `?load=` how a saved one is opened — the same reload).
     location.search = next.toString();
   },
 });
@@ -542,6 +644,7 @@ function openMenu(): void {
   // when the menu opened would keep walking the player the moment it closed.
   held.clear();
   pauseMenu.open(sim);
+  void refreshSaveInfo();
 }
 
 function closeMenu(): void {
@@ -568,6 +671,17 @@ function closeMenu(): void {
  * immediately, and a second screen they all have to be taught to dismiss is a
  * second screen that will silently break them.
  */
+if (loadedWorld || bootLoadFailure) {
+  // Opening on the saved moment, paused, so the first thing that happens is the player's choice and not the world's.
+  paused = true;
+  hud.setPaused(true);
+  const at = player ?? { x: sim.world.width / 2, y: sim.world.height / 2 };
+  if (loadedWorld) {
+    renderer.floaters.push(at.x, at.y, t('Game loaded: {what}', { what: sim.time.label() }), { color: '#7ddc96', boxed: true });
+  } else {
+    renderer.floaters.push(at.x, at.y, bootLoadFailure!, { color: '#e66464', boxed: true });
+  }
+}
 if (!skipIntro && sim.livingPeople().length > 0) {
   paused = true;
   hud.setPaused(true);
