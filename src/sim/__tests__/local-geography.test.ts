@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { DEFAULT_CONFIG } from '../core/Config.ts';
 import { RNG } from '../core/RNG.ts';
 import { World } from '../core/World.ts';
 import { fromWorldTerrainRecord, toWorldTerrainRecord } from '../persistence/WorldRecords.ts';
-import { createLocalGeography, RANDOM_RELIEF_TO_WORLD_UNITS } from '../world/LocalGeography.ts';
+import { createLocalGeography, worldElevationAt } from '../world/LocalGeography.ts';
 import { earthWorldGeography, randomWorldGeography } from '../world/WorldGeography.ts';
+import { decodeWorldRaster } from '../world/WorldBinary.ts';
 import type { LoadedWorldMap } from '../world/WorldAtlas.ts';
 import { WORLD_FEATURE } from '../world/WorldFeatureSeeds.ts';
 import { createTurnedRiverFixture } from '../../../tools/waterTerrainFixture.ts';
@@ -34,17 +37,39 @@ describe('local geography terrain projection', () => {
 
     expect(local.bounds).toEqual(bounds);
     expect(local.profileAtLocal(1.5, 0.5)).toMatchObject({ kind: 'earth', x: 1.5, y: 0.5 });
-    expect(fiveHundredMetres.elevation).toBeCloseTo(config.waterLevel + 5);
+    // M15 terrain variety: a local map now layers bounded relief noise on top
+    // of the bilinear sample (see LocalGeography.ts's addedReliefWorldUnits),
+    // so this is no longer exactly 5 world units above sea level — it is
+    // within the noise envelope of it. worldElevationAt is the exact formula
+    // production code uses, so the test calls it rather than keeping a
+    // second, driftable copy of "base + noise".
+    const expectedWithRelief = worldElevationAt(geography, 1.5, 0.5, config.waterLevel, config.metresPerUnit);
+    expect(fiveHundredMetres.elevation).toBeCloseTo(expectedWithRelief);
+    expect(Math.abs(fiveHundredMetres.elevation - (config.waterLevel + 5))).toBeLessThan(2); // noise stays bounded
     expect(fiveHundredMetres.land).toBe(true);
     expect(fiveHundredMetres.profile.kind).toBe('earth');
     if (fiveHundredMetres.profile.kind === 'earth') expect(fiveHundredMetres.profile.region.climateClass).toBe(4);
 
     const seaLevel = local.sample(0.5, 0.5);
-    expect(seaLevel.elevation).toBe(config.waterLevel);
-    expect(seaLevel.land).toBe(true);
+    // This region sits exactly at the configured sea level (elevationMeters:
+    // 0), which used to make it land by the >= waterLevel tie-break. An
+    // irregular coastline is the point of the relief noise (bays, headlands,
+    // small islets instead of a dead-straight line — see the "coastline is
+    // not straight" test below), so this exact tile can now land on either
+    // side of the threshold; only the formula identity is asserted here.
+    expect(seaLevel.elevation).toBeCloseTo(worldElevationAt(geography, 0.5, 0.5, config.waterLevel, config.metresPerUnit));
     expect(seaLevel.profile.kind === 'earth' && seaLevel.profile.water).toBe('fresh');
-    expect(seaLevel.land).toBe(true); // regional lake metadata does not paint a whole tile as water
-    expect(local.sample(3.5, 0.5).land).toBe(false);
+    // This fixture packs a 1500 m drop between adjacent regions into a 4-wide
+    // strip purely to give each comarca a distinct Köppen code (see
+    // loadedEarth above) — a far steeper regional gradient than any real
+    // atlas data, which is exactly what drives the gradient term of the
+    // relief noise. At -10 m this one tile's own amplitude can plausibly
+    // cross back to land, so only the shared formula is asserted here; the
+    // "coastline is not a straight line" test below uses real atlas relief
+    // for the actual irregular-coast claim.
+    const minus10m = local.sample(3.5, 0.5);
+    expect(minus10m.elevation).toBeCloseTo(worldElevationAt(geography, 3.5, 0.5, config.waterLevel, config.metresPerUnit));
+    expect(minus10m.land).toBe(minus10m.elevation >= config.waterLevel);
     expect(() => local.sample(-0.01, 0)).toThrow('inside');
   });
 
@@ -64,7 +89,13 @@ describe('local geography terrain projection', () => {
     const local = createLocalGeography(geography, { originX: 7, originY: 4, comarcasWide: 3, comarcasHigh: 2 }, config);
     const sample = local.sample(1.5, 0.5);
     if (sample.profile.kind !== 'random') throw new Error('Expected a random map profile');
-    expect(sample.elevation).toBeCloseTo(config.waterLevel + sample.profile.elevation * RANDOM_RELIEF_TO_WORLD_UNITS);
+    // M15 terrain variety: elevation is now the bilinear base plus bounded
+    // relief noise (worldElevationAt), not the base formula alone — call the
+    // same shared formula production code uses rather than reconstructing it.
+    // profile.x/y (not the local 1.5, 0.5 passed to sample) are the GLOBAL
+    // comarca coordinates worldElevationAt and the noise field key off.
+    expect(sample.elevation).toBeCloseTo(
+      worldElevationAt(geography, sample.profile.x, sample.profile.y, config.waterLevel, config.metresPerUnit));
     expect(sample.moisture).toBeGreaterThanOrEqual(0);
     expect(sample.moisture).toBeLessThanOrEqual(1);
 
@@ -169,9 +200,11 @@ describe('local geography terrain projection', () => {
     for (const river of local.hydrology.rivers) for (const index of river.tiles) {
       const x = index % 64, y = Math.floor(index / 64);
       const profile = local.profileAtLocal(x + 0.5, y + 0.5);
-      const rawGround = profile.kind === 'earth'
-        ? DEFAULT_CONFIG.world.waterLevel + profile.elevationAboveSeaMeters / DEFAULT_CONFIG.world.metresPerUnit
-        : DEFAULT_CONFIG.world.waterLevel + profile.elevation * RANDOM_RELIEF_TO_WORLD_UNITS;
+      // M15 terrain variety: the ground hydrology actually carved into is the
+      // noisy elevation (worldElevationAt), not the bilinear base alone —
+      // `profile.x`/`.y` are the global coordinates the noise is keyed on.
+      const rawGround = worldElevationAt(riverGeography, profile.x, profile.y,
+        DEFAULT_CONFIG.world.waterLevel, DEFAULT_CONFIG.world.metresPerUnit, profile);
       expect(local.hydrology.bed[index]).toBeLessThanOrEqual(rawGround + 1e-6);
     }
   });
@@ -268,4 +301,97 @@ describe('local geography terrain projection', () => {
     expect(fords.length).toBeGreaterThan(0);
   });
 
+});
+
+/** The real 12000 BCE atlas, loaded once: the same fixture start-place.test.ts
+ * uses, so "an alpine region" and "a coastal region" below are genuine
+ * entries from the shipped map rather than a hand-built height table. */
+function earthAtlas() {
+  const raster = decodeWorldRaster(new Uint8Array(readFileSync(resolve('public/world/earth-12000-bce.bin'))));
+  return earthWorldGeography(
+    { entry: { id: 'earth-12000-bce', title: 'Earth', file: 'earth-12000-bce.bin', seaLevelMeters: -60, recommended: true }, raster },
+    10,
+  );
+}
+
+describe('M15 terrain variety: local relief noise', () => {
+  it('is a pure function of its bounds: the same window generates the same elevation twice', () => {
+    const geography = randomWorldGeography('relief-determinism', { regionsWide: 16, regionsHigh: 8 });
+    const bounds = { originX: 10, originY: 5, comarcasWide: 4, comarcasHigh: 4 };
+    const config = { ...DEFAULT_CONFIG.world, width: 64, height: 64 };
+    const first = createLocalGeography(geography, bounds, config);
+    const second = createLocalGeography(geography, bounds, config);
+    const sampleAll = (source: typeof first) =>
+      Array.from({ length: config.width * config.height }, (_, i) =>
+        source.sample(i % config.width + 0.5, Math.floor(i / config.width) + 0.5).elevation);
+    expect(sampleAll(second)).toEqual(sampleAll(first));
+  });
+
+  it('agrees exactly at the shared edge of two adjacent windows (the seam a save and "leave the comarca" rely on)', () => {
+    const geography = earthAtlas();
+    // A plain strip of ordinary temperate land, away from any crafted test
+    // fixture, so the seam is exercised on real, noisy relief.
+    const config = { ...DEFAULT_CONFIG.world, width: 32, height: 32 };
+    const west = createLocalGeography(geography, { originX: 300, originY: 150, comarcasWide: 4, comarcasHigh: 4 }, config);
+    const east = createLocalGeography(geography, { originX: 304, originY: 150, comarcasWide: 4, comarcasHigh: 4 }, config);
+    for (let y = 0; y < config.height; y++) {
+      const westElevation = west.sample(config.width, y + 0.5).elevation;
+      const eastElevation = east.sample(0, y + 0.5).elevation;
+      expect(eastElevation).toBeCloseTo(westElevation, 5);
+    }
+    // And the same holds north-south, at a different pair of windows.
+    const north = createLocalGeography(geography, { originX: 300, originY: 150, comarcasWide: 4, comarcasHigh: 4 }, config);
+    const south = createLocalGeography(geography, { originX: 300, originY: 154, comarcasWide: 4, comarcasHigh: 4 }, config);
+    for (let x = 0; x < config.width; x++) {
+      expect(south.sample(x + 0.5, 0).elevation).toBeCloseTo(north.sample(x + 0.5, config.height).elevation, 5);
+    }
+  });
+
+  it('reaches hills and rock in a real alpine region, not a flat bilinear plane of one biome', () => {
+    const geography = earthAtlas();
+    // Region (60, 29): 1448 m above this map's sea level, 52 m short of the
+    // "rock" cutoff, next to a neighbour over 6 km different in elevation —
+    // exactly the "almost there" case the bug report described: the old
+    // bilinear plane alone would paint this whole local map one uniform
+    // biome (actually hills throughout, since 1448 m already clears the 500 m
+    // cutoff — see docs/m15_terrain_variety.md), with no texture and no rock
+    // anywhere. Added relief noise gives it real variety: forest low down,
+    // hills through most of it, and patches that cross into rock.
+    const config = { ...DEFAULT_CONFIG.world, width: 128, height: 128 };
+    const span = 4;
+    const originX = 60 * 10 + 5 - span / 2;
+    const originY = 29 * 10 + 5 - span / 2;
+    const source = createLocalGeography(geography, { originX, originY, comarcasWide: span, comarcasHigh: span }, config);
+    const world = new World(config, new RNG('alpine-relief-test'), source);
+    const counts = world.countBiomes();
+    expect(counts.hills + counts.rock, 'an alpine region must produce elevated local classes').toBeGreaterThan(0);
+    expect(counts.rock, 'a region this close to the rock threshold should cross it somewhere once noise is added').toBeGreaterThan(0);
+  });
+
+  it('gives a real coastline measurable irregularity instead of one straight line', () => {
+    const geography = earthAtlas();
+    // Region (23, 2): land next to an ocean neighbour — a genuine coast, not
+    // a crafted fixture. The old bilinear-only coast crossed each row at
+    // essentially the same x (a straight line, give or take the region's
+    // constant tilt); added relief noise should make that crossing wander.
+    const config = { ...DEFAULT_CONFIG.world, width: 128, height: 128 };
+    const span = 4;
+    const originX = 23 * 10 + 5 - span / 2;
+    const originY = 2 * 10 + 5 - span / 2;
+    const source = createLocalGeography(geography, { originX, originY, comarcasWide: span, comarcasHigh: span }, config);
+    const boundaryXByRow: number[] = [];
+    for (let y = 0; y < config.height; y++) {
+      for (let x = 0; x < config.width - 1; x++) {
+        if (source.sample(x + 0.5, y + 0.5).land !== source.sample(x + 1.5, y + 0.5).land) {
+          boundaryXByRow.push(x);
+          break;
+        }
+      }
+    }
+    // A dead-straight (or constant-slope) coast would cross at very few
+    // distinct x positions across 128 rows; real, noisy relief should spread
+    // that crossing over a visible range of columns.
+    expect(boundaryXByRow.length, 'the window should actually show a coastline').toBeGreaterThan(10);
+    expect(new Set(boundaryXByRow).size, 'the coastline should not sit at one constant x').toBeGreaterThan(5);
+  });
 });

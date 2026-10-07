@@ -3,11 +3,23 @@
  * water features are only candidate source areas; Hydrology traces local
  * channels from the elevation field instead of turning a flagged region into
  * one broad water body.
+ *
+ * M15 terrain variety: `RealWorldMap.elevationAt` / `WorldMap`'s per-region
+ * relief are bilinear interpolations between region centres tens of comarcas
+ * apart, so one local map (four comarcas wide) was a flat tilted plane —
+ * straight coastline, no hill or rock tile could ever appear even in the
+ * Alps. `addedReliefWorldUnits` layers deterministic fractal noise on top,
+ * sampled in GLOBAL comarca coordinates so two adjacent local maps agree
+ * exactly at their shared edge (the save system and "leave the comarca"
+ * depend on that seam matching). It never reads a Simulation RNG stream —
+ * see the module-level `RELIEF_NOISE` below.
  */
 import type { WorldConfig } from '../core/Config.ts';
 import type { WorldGeography, WorldGeographyProfile } from './WorldGeography.ts';
 import { WORLD_FEATURE } from './WorldFeatureSeeds.ts';
 import { generateLocalHydrology, type HydrologyResult } from './Hydrology.ts';
+import { SimplexNoise } from '../core/Noise.ts';
+import { RNG } from '../core/RNG.ts';
 
 export interface LocalGeographyBounds {
   /** Global comarca coordinate of the local map's north-west corner. */
@@ -71,17 +83,27 @@ export function createLocalGeography(
   const height = config.height;
   const waterLevel = config.waterLevel;
   const metresPerUnit = config.metresPerUnit;
+  // One formula for local-tile-to-global-comarca projection, used by every
+  // caller below: profileAtLocal, rawSample and the bulk-array loop used to
+  // compute it three slightly different ways, and a drifted copy is exactly
+  // how two of them would someday disagree at a map seam.
+  const toGlobal = (x: number, y: number): { globalX: number; globalY: number } => ({
+    globalX: frozenBounds.originX + x / width * frozenBounds.comarcasWide,
+    globalY: frozenBounds.originY + y / height * frozenBounds.comarcasHigh,
+  });
   const profileAtLocal = (x: number, y: number) => {
     assertLocalCoordinates(x, y, width, height);
-    const globalX = frozenBounds.originX + x / width * frozenBounds.comarcasWide;
-    const globalY = frozenBounds.originY + y / height * frozenBounds.comarcasHigh;
+    const { globalX, globalY } = toGlobal(x, y);
     return geography.profileAt(globalX, globalY) as Exclude<WorldGeographyProfile, { kind: 'legacyIsland' }>;
   };
+  const mappedGeography = geography as MappedGeography;
   const rawSample = (x: number, y: number): LocalTerrainSample => {
     const profile = profileAtLocal(x, y);
-    const elevation = profile.kind === 'earth'
-      ? waterLevel + profile.elevationAboveSeaMeters / metresPerUnit
-      : waterLevel + profile.elevation * RANDOM_RELIEF_TO_WORLD_UNITS;
+    const { globalX, globalY } = toGlobal(x, y);
+    // worldElevationAt is also what canonicalRiverAt uses for river-anchor
+    // heights: one shared formula means the river surface and the ground it
+    // sits in are never computed from two different relief fields.
+    const elevation = worldElevationAt(mappedGeography, globalX, globalY, waterLevel, metresPerUnit, profile);
     return {
       profile,
       elevation,
@@ -106,6 +128,12 @@ export function createLocalGeography(
   const flowByRegion = new Map<string, { x: number; y: number }>();
   const distanceByRegion = new Map<string, number>();
   const activeRiverByRegion = new Map<string, boolean>();
+  // Region-keyed, not coordinate-keyed: a river anchor queried from different
+  // tiles can arrive shifted by a whole world-width (longitude wraps), and
+  // worldElevationAt already normalizes that internally, so caching on the
+  // region id is what actually dedupes the (now noise-bearing, no longer
+  // cheap) height lookup instead of silently missing every time.
+  const heightByRegion = new Map<string, number>();
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
     const index = y * width + x;
     const localX = x + 0.5, localY = y + 0.5;
@@ -113,8 +141,9 @@ export function createLocalGeography(
     const profile = tile.profile;
     elevation[index] = tile.elevation;
     moisture[index] = tile.moisture;
-    globalX[index] = frozenBounds.originX + localX / width * frozenBounds.comarcasWide;
-    globalY[index] = frozenBounds.originY + localY / height * frozenBounds.comarcasHigh;
+    const global = toGlobal(localX, localY);
+    globalX[index] = global.globalX;
+    globalY[index] = global.globalY;
     if (profile.kind === 'earth') {
       riverCandidates[index] = (profile.features & WORLD_FEATURE.river) !== 0 ? 1 : 0;
       lakeCandidates[index] = (profile.features & WORLD_FEATURE.lake) !== 0 ? 1 : 0;
@@ -123,7 +152,7 @@ export function createLocalGeography(
       riverCandidates[index] = region && region.riverFlow >= 3.2 ? 1 : 0;
     }
     const path = canonicalRiverAt(geography, profile.regionX, profile.regionY,
-      globalX[index]!, globalY[index]!, flowByRegion, distanceByRegion, activeRiverByRegion,
+      globalX[index]!, globalY[index]!, flowByRegion, distanceByRegion, activeRiverByRegion, heightByRegion,
       waterLevel, metresPerUnit);
     if (path) {
       const tileRadius = Math.hypot(frozenBounds.comarcasWide / width, frozenBounds.comarcasHigh / height) / 2;
@@ -176,11 +205,12 @@ interface CanonicalRiverSample {
   sourceKey: string;
 }
 
-type MappedGeography = Exclude<WorldGeography, { kind: 'legacyIsland' }>;
+export type MappedGeography = Exclude<WorldGeography, { kind: 'legacyIsland' }>;
 
 function canonicalRiverAt(geography: MappedGeography, regionX: number, regionY: number,
   x: number, y: number, flowCache: Map<string, { x: number; y: number }>,
   distanceCache: Map<string, number>, activeRiverCache: Map<string, boolean>,
+  heightCache: Map<string, number>,
   waterLevel: number, metresPerUnit: number): CanonicalRiverSample | null {
   const regionSize = geography.kind === 'earth'
     ? geography.map.comarcasPerRegion
@@ -219,8 +249,23 @@ function canonicalRiverAt(geography: MappedGeography, regionX: number, regionY: 
     // Surface anchors use the same jittered nodes as the polyline. Sampling
     // region centres here made rivers float above the interpolated ground when
     // an anchor shifted downhill inside a steep macro cell.
-    const sourceHeight = worldElevationAt(geography, x0, y0, waterLevel, metresPerUnit);
-    const targetHeight = worldElevationAt(geography, x1, y1, waterLevel, metresPerUnit);
+    //
+    // Cached by region id, not by (x0, y0): x0 is re-derived per query tile
+    // with a whole-worldWidth shift toward whichever wrapped copy is nearest,
+    // and worldElevationAt already normalizes longitude internally (so both
+    // shifted copies agree) — keying on the raw coordinate would just miss
+    // the cache every time and quietly pay for the fbm call per tile again.
+    let sourceHeight = heightCache.get(key);
+    if (sourceHeight === undefined) {
+      sourceHeight = worldElevationAt(geography, x0, y0, waterLevel, metresPerUnit);
+      heightCache.set(key, sourceHeight);
+    }
+    const targetKey = `${targetX},${targetY}`;
+    let targetHeight = heightCache.get(targetKey);
+    if (targetHeight === undefined) {
+      targetHeight = worldElevationAt(geography, x1, y1, waterLevel, metresPerUnit);
+      heightCache.set(targetKey, targetHeight);
+    }
     const vx = x1 - x0, vy = y1 - y0;
     const lengthSquared = vx * vx + vy * vy;
     const t = Math.max(0, Math.min(1, ((x - x0) * vx + (y - y0) * vy) / lengthSquared));
@@ -347,12 +392,149 @@ function stableHash(x: number, y: number): number {
   return (hash ^ (hash >>> 16)) >>> 0;
 }
 
-function worldElevationAt(geography: MappedGeography, x: number, y: number,
-  waterLevel: number, metresPerUnit: number): number {
-  const profile = geography.profileAt(x, y);
-  return profile.kind === 'earth'
+/**
+ * Absolute World-unit elevation at one GLOBAL comarca coordinate: the coarse
+ * bilinear sample plus `addedReliefWorldUnits`. `knownProfile` lets a caller
+ * that already fetched the profile (rawSample) skip a second `profileAt`
+ * lookup; canonicalRiverAt's anchor queries do not have one to hand, so they
+ * pay for it, memoized per region in `heightByRegion` above.
+ *
+ * Exported so a test that needs the undisturbed ground elevation at a global
+ * coordinate (for example: "a river's carved bed must sit at or below the
+ * ground it was cut into") calls the exact same formula production code
+ * uses, instead of keeping a second copy that silently drifts the day this
+ * one changes.
+ */
+export function worldElevationAt(geography: MappedGeography, x: number, y: number,
+  waterLevel: number, metresPerUnit: number,
+  knownProfile?: Exclude<WorldGeographyProfile, { kind: 'legacyIsland' }>): number {
+  const profile = knownProfile ?? geography.profileAt(x, y);
+  const baseElevation = profile.kind === 'earth'
     ? waterLevel + profile.elevationAboveSeaMeters / metresPerUnit
     : waterLevel + profile.elevation * RANDOM_RELIEF_TO_WORLD_UNITS;
+  return baseElevation + addedReliefWorldUnits(geography, profile.regionX, profile.regionY,
+    x, y, baseElevation - waterLevel, metresPerUnit);
+}
+
+/**
+ * Pure, deterministic macro-relief detail noise. Seeded from fixed text, not
+ * from a caller's RNG: the map-terrain pipeline (this file, Hydrology.ts) is
+ * already RNG-free by design (see the module comment and Hydrology.ts's own
+ * "never reads or advances a Simulation RNG stream"), and a world geography
+ * value is itself built with no RNG at all (see WorldGeography.ts) — so this
+ * has to make its own seed rather than ask Simulation for a fork. One shared
+ * module-level instance so every local map in the game samples the same
+ * field: two crops of the same region must agree pixel for pixel.
+ */
+const RELIEF_NOISE = new SimplexNoise(new RNG('local-relief'));
+
+/** Comarca-scale wavelength: a local map is only ~4 comarcas wide, so this
+ * needs to vary visibly within that span — much higher frequency than
+ * WorldMap's own region-scale continent noise (scale 0.035 per region). */
+const LOCAL_RELIEF_NOISE_SCALE = 0.4;
+
+// Amplitude = a small constant base (visible everywhere, so lowlands are not
+// perfectly flat either) + a share of height above sea level (alpine terrain
+// gets dramatically rougher than a coastal plain) + a share of the region's
+// own elevation contrast against its neighbours (an escarpment stays rugged
+// even in a lowland region next to one). Two unit systems, because Earth
+// relief is carried in metres and random-map relief in its own dimensionless
+// scale (see RANDOM_RELIEF_TO_WORLD_UNITS) — the random constants are
+// written in that native scale and converted the same way elevation already
+// is, rather than guessing an equivalent metre figure.
+// Kept deliberately modest: a hand-built fixture (Hydrology's lake-fill test,
+// geographic-fishing's inland bowl) can encode a real closed depression as a
+// ~50 m-per-ring step across just a few comarcas, entirely by shaping how
+// RealWorldMap's bilinear interpolation blends neighbouring region centres
+// with NO noise at all. A base amplitude anywhere near that figure reliably
+// broke those depressions' monotonic rim during tuning (measured: lake-fill
+// and fishing tests both failed with base=40/gradientFactor=0.55). Height
+// above sea level is what carries the alpine case instead — at real alpine
+// elevations (hundreds to thousands of metres) the height term alone is
+// already an order of magnitude past what any of the gentle-terrain fixtures
+// exercise, so it does not need help from a big base or gradient term.
+const LOCAL_RELIEF_BASE_EARTH_METRES = 12;
+const LOCAL_RELIEF_HEIGHT_FACTOR_EARTH = 0.12;
+const LOCAL_RELIEF_GRADIENT_FACTOR_EARTH = 0.15;
+const LOCAL_RELIEF_BASE_RANDOM_UNITS = 0.01;
+const LOCAL_RELIEF_HEIGHT_FACTOR_RANDOM = 0.12;
+const LOCAL_RELIEF_GRADIENT_FACTOR_RANDOM = 0.15;
+// A region's four-neighbour contrast is sometimes a genuine cliff, but a
+// region raster can also hold an isolated, unrealistic step (a hand-built
+// test fixture with a 1500 m jump between two neighbouring cells, or one bad
+// atlas pixel at a true coastline). The gradient term is capped so one such
+// outlier cannot swing added relief into the kilometres — the goal is
+// noticeably rougher terrain near a real escarpment, not an earthquake.
+const LOCAL_RELIEF_MAX_GRADIENT_EARTH_METRES = 150;
+const LOCAL_RELIEF_MAX_GRADIENT_RANDOM_UNITS = 0.12;
+
+/**
+ * Elevation to add on top of the coarse bilinear sample, in World units.
+ * Shared by `rawSample` (what the player walks on) and `worldElevationAt`'s
+ * river-anchor callers (what a river surface is cut below) — a second copy
+ * of this formula is exactly the kind of drift that once floated a river
+ * surface above its own bank (see the comment at the canonicalRiverAt call
+ * site above).
+ */
+function addedReliefWorldUnits(geography: MappedGeography, regionX: number, regionY: number,
+  globalX: number, globalY: number, aboveSeaWorldUnits: number, metresPerUnit: number): number {
+  const gradientNative = Math.min(regionReliefGradient(geography, regionX, regionY),
+    geography.kind === 'earth' ? LOCAL_RELIEF_MAX_GRADIENT_EARTH_METRES : LOCAL_RELIEF_MAX_GRADIENT_RANDOM_UNITS);
+  // Longitude wraps; a query for the same physical point can arrive as x or
+  // x + worldWidth (canonicalRiverAt picks whichever is nearest the tile it
+  // is rasterizing). Noise is not periodic, so two unwrapped copies of one
+  // region would disagree — wrapping here is what keeps the antimeridian a
+  // seam instead of a visible fault line, on top of the ordinary local-map
+  // seam the global-coordinate sampling already guarantees.
+  const wrappedX = positiveMod(globalX, geography.map.width);
+  // fbm returns [0, 1]; recenter to [-1, 1] so the terrain can dip as well as
+  // rise — a one-sided bump could raise a coast but never carve a bay.
+  const signed = RELIEF_NOISE.fbm(wrappedX, globalY, 4, 2, 0.5, LOCAL_RELIEF_NOISE_SCALE) * 2 - 1;
+  if (geography.kind === 'earth') {
+    const aboveSeaMetres = aboveSeaWorldUnits * metresPerUnit;
+    const amplitudeMetres = LOCAL_RELIEF_BASE_EARTH_METRES
+      + LOCAL_RELIEF_HEIGHT_FACTOR_EARTH * Math.max(0, aboveSeaMetres)
+      + LOCAL_RELIEF_GRADIENT_FACTOR_EARTH * gradientNative;
+    return signed * amplitudeMetres / metresPerUnit;
+  }
+  const aboveSeaUnits = aboveSeaWorldUnits / RANDOM_RELIEF_TO_WORLD_UNITS;
+  const amplitudeUnits = LOCAL_RELIEF_BASE_RANDOM_UNITS
+    + LOCAL_RELIEF_HEIGHT_FACTOR_RANDOM * Math.max(0, aboveSeaUnits)
+    + LOCAL_RELIEF_GRADIENT_FACTOR_RANDOM * gradientNative;
+  return signed * amplitudeUnits * RANDOM_RELIEF_TO_WORLD_UNITS;
+}
+
+const CARDINAL_OFFSETS: ReadonlyArray<readonly [number, number]> = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+/**
+ * How rugged this region's own relief reads against its immediate neighbours
+ * (its largest single-step neighbour difference), in the kind's native
+ * elevation unit. Deliberately the region's own four-neighbour contrast, not
+ * a wider average: an escarpment at the edge of an otherwise flat basin must
+ * still read as rugged locally, which a basin-wide average would wash out.
+ */
+function regionReliefGradient(geography: MappedGeography, regionX: number, regionY: number): number {
+  const regionsWide = geography.map.regionsWide;
+  const regionsHigh = geography.map.regionsHigh;
+  const here = regionNativeElevation(geography, regionX, regionY);
+  let maxDiff = 0;
+  for (const [dx, dy] of CARDINAL_OFFSETS) {
+    const ny = regionY + dy;
+    if (ny < 0 || ny >= regionsHigh) continue; // no wraparound at the poles
+    const nx = positiveMod(regionX + dx, regionsWide);
+    maxDiff = Math.max(maxDiff, Math.abs(here - regionNativeElevation(geography, nx, ny)));
+  }
+  return maxDiff;
+}
+
+/** The one line that differs between the two map kinds' region arrays, kept
+ * out of regionReliefGradient so that function's neighbour-walk is not
+ * duplicated per kind. */
+function regionNativeElevation(geography: MappedGeography, regionX: number, regionY: number): number {
+  const index = regionY * geography.map.regionsWide + regionX;
+  return geography.kind === 'earth'
+    ? geography.map.regions[index]!.elevationMeters
+    : geography.map.regions[index]!.elevation;
 }
 
 function macroFlowDirection(geography: MappedGeography,

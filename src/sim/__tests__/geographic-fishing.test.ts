@@ -72,6 +72,19 @@ describe('geographic fish placement', () => {
   it('lets an autonomous hungry fisher route to and harvest a fresh fish node', () => {
     const sim = createWaterFishSimulation('frontier-fresh-fish-ai', {
       world: { treeDensity: 0, berryBushes: 0, wildGrainPatches: 0, gameHerds: 0 },
+      // M15 terrain variety moved this fixture's spawnRng draws (its walkable
+      // grid now includes relief noise), and this seed's "first non-child"
+      // person happens to have a spouse and child at a home far from the
+      // fish: go_home then permanently outscores hunger once this person is
+      // teleported onto the fish tile (Brain.ts scores go_home on distance
+      // from the home anchor, nothing to do with fish or hunger, and nothing
+      // in the next 1200 ticks ever brings that distance back down). The
+      // point of this test is whether the geographic fish spawn is reachable
+      // and harvestable by ordinary foraging AI, not household behaviour, so
+      // home pressure is switched off for this one fixture rather than
+      // pinned to a population composition that was only ever an accident of
+      // the old terrain's walkable tiles.
+      motivation: { homePressure: false },
     });
     const node = sim.nodes.find(candidate => candidate.kind === 'fish' &&
       sim.world.isFreshWater(candidate.x, candidate.y));
