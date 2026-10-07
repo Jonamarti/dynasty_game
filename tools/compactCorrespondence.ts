@@ -118,6 +118,11 @@ export function runCorrespondence(o: CorrespondenceOptions): CorrespondenceResul
   const scaleFor = (p: Person): BandCapacity | undefined => o.scaleOverride ?? scales[p.bandId];
 
   const records = cohort.map(p => wire(toPersonRecord(p, T)));
+  // M15 phase 18: the compact model conceives only under a household's roof, so
+  // it needs the homes as they stood at T — copied, because the detailed run
+  // below keeps rewriting `homeBuildingId` every midnight.
+  const homesAtT = new Map([...sim.householdsById].map(([id, h]) =>
+    [id, Object.assign(Object.create(Object.getPrototypeOf(h)) as typeof h, h)]));
   const arm = (withIntake: boolean, scaleOf: (p: Person) => BandCapacity | undefined, withLife = false): { people: Person[]; born: Person[] } => {
     const born: Person[] = [];
     let nextChildId = 1_000_000;
@@ -137,7 +142,7 @@ export function runCorrespondence(o: CorrespondenceOptions): CorrespondenceResul
           ? 1 + sim.config.childhood.lactationHunger : isNursling(person, sim.config.childhood) ? nurslingFactor : 1,
       },
       life: withLife ? {
-        population: sim.config.population, peopleById: copies, householdsById: new Map(),
+        population: sim.config.population, peopleById: copies, householdsById: homesAtT,
         makeChild: (mother, childRng) => {
           const name = childRng.pick(NAME_ONSETS) + childRng.pick(NAME_CODAS);
           const child = new Person(name, mother.x, mother.y, mother.bandId, childRng, mother.daysPerYear,

@@ -26,7 +26,7 @@ import type { ChildhoodConfig, NeedsConfig, PopulationConfig, TimeConfig } from 
 import type { RNG } from '../core/RNG.ts';
 import type { Person } from '../entities/Person.ts';
 import type { Household } from '../entities/Household.ts';
-import { LifeSystem } from '../systems/LifeSystem.ts';
+import { LifeSystem, roofOverSleeper } from '../systems/LifeSystem.ts';
 import { TimeManager } from '../core/TimeManager.ts';
 import { NeedsSystem, thirstDriftPerTick, type NeedsHooks } from '../systems/NeedsSystem.ts';
 import type { Building } from '../entities/Building.ts';
@@ -97,6 +97,7 @@ export class CompactBody {
     const events: CompactEvent[] = [];
     const people = [person];
     const buildings = (this.env.buildings ?? []) as Building[];
+    const buildingsById = new Map(buildings.map(building => [building.id, building]));
     for (let tick = compact.lastAdvancedTick + 1; tick <= toTick; tick++) {
       if (!person.alive) break;
       this.clock.tick = tick;
@@ -129,10 +130,31 @@ export class CompactBody {
       }
       const life = this.env.life;
       if (life && tick % this.env.time.ticksPerDay === 0) {
+        // M15 phase 18: conception needs the couple under one roof tonight. Only
+        // this person and their spouse can matter (`daily` sees one person).
+        // The detailed predicate comes first, but a compact person's action is
+        // frozen at whatever it was when they left sight, so almost nobody is
+        // "asleep" at a compact midnight — with that alone the compact model
+        // bore no children at all. The fallback is where they sleep when they
+        // do: their household's home, which the detailed midnight sample wrote
+        // (`shareTheHearth`). A household with no roof still conceives nothing.
+        const roofTonight = new Map<number, number>();
+        const spouse = person.spouseId === null ? undefined : life.peopleById.get(person.spouseId);
+        for (const sleeper of spouse ? [person, spouse] : [person]) {
+          if (!sleeper.alive) continue;
+          let roof = roofOverSleeper(sleeper, buildingsById);
+          if (!roof && sleeper.householdId !== null) {
+            const homeId = life.householdsById.get(sleeper.householdId)?.homeBuildingId;
+            const home = homeId === null || homeId === undefined ? undefined : buildingsById.get(homeId);
+            if (home && home.complete && home.def.shelter > 0) roof = home;
+          }
+          if (roof) roofTonight.set(sleeper.id, roof.id);
+        }
         // The same moment of the step the detailed daily block runs at: after the needs clock.
         this.lifeSystem.daily(people, {
           rng: compact.rng, population: life.population, tick, day: this.clock.day,
           peopleById: life.peopleById, householdsById: life.householdsById,
+          roofTonight,
           makeChild: life.makeChild,
           onBirth: (child, mother, father) => {
             life.onBirth(child, mother, father);

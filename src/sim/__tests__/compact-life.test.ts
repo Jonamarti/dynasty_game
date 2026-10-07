@@ -8,6 +8,8 @@ import { IntakeModel } from '../compact/CompactIntake.ts';
 import { NEED_BINS, QUANTILE_STEPS, rateKey, type RateTable } from '../compact/CompactCalibration.ts';
 import { gestationDays } from '../systems/LifeSystem.ts';
 import type { PopulationConfig } from '../core/Config.ts';
+import { Building, BUILDINGS } from '../entities/Building.ts';
+import { Household } from '../entities/Household.ts';
 
 const config = makeConfig({});
 const tpd = config.time.ticksPerDay;
@@ -37,15 +39,16 @@ function compactOf(p: Person, seed: string): CompactPerson {
 
 function body(options: {
   people: Map<number, Person>; population?: Partial<PopulationConfig>; born?: Person[]; fed?: boolean;
+  households?: Map<number, Household>; buildings?: Building[];
 }) {
   let id = 1;
   let childId = 5_000_000;
   const population = { ...config.population, ...options.population };
   return new CompactBody({
-    needs: config.needs, time: config.time, nextEventId: () => id++,
+    needs: config.needs, time: config.time, nextEventId: () => id++, buildings: options.buildings,
     intake: options.fed === false ? undefined : { model: new IntakeModel(fedTable()), capacity: () => ({ hungryZero: 0 }), childhood: config.childhood },
     life: {
-      population, peopleById: options.people, householdsById: new Map(),
+      population, peopleById: options.people, householdsById: options.households ?? new Map(),
       makeChild: (mother, rng) => {
         const child = new Person('child', mother.x, mother.y, mother.bandId, rng, mother.daysPerYear, { allocate: () => childId++ } as never);
         return child;
@@ -126,14 +129,24 @@ describe('compact conception and birth', () => {
     const father = person('father', 'male', 26, seed + 1);
     mother.spouseId = father.id; father.spouseId = mother.id;
     mother.lastBirthDay = -1000; // long past any birth spacing
-    return { mother, father, people: new Map([[mother.id, mother], [father.id, father]]) };
+    // M15 phase 18: a couple conceives only under a roof they share. Neither
+    // is asleep in a compact advance, so the roof is their household's home.
+    const hut = new Building(BUILDINGS.mud_hut!, 10, 10, 0);
+    hut.complete = true;
+    const household = new Household('House', father.id, 0, 0);
+    household.homeBuildingId = hut.id;
+    mother.householdId = household.id; father.householdId = household.id;
+    return {
+      mother, father, people: new Map([[mother.id, mother], [father.id, father]]),
+      roofed: { households: new Map([[household.id, household]]), buildings: [hut] }, household,
+    };
   }
 
   it('conceives, carries for the gestation of the detailed model and bears a dated child', () => {
-    const { mother, father, people } = couple(10);
+    const { mother, father, people, roofed } = couple(10);
     const born: Person[] = [];
     const c = compactOf(mother, 'births');
-    const events = body({ people, population: { conceptionChance: 1 }, born }).advance(c, 40 * tpd);
+    const events = body({ people, population: { conceptionChance: 1 }, born, ...roofed }).advance(c, 40 * tpd);
     const birth = events.find(e => e.kind === 'birth');
     expect(birth).toBeDefined();
     expect(born.length).toBeGreaterThanOrEqual(1);
@@ -146,11 +159,11 @@ describe('compact conception and birth', () => {
   });
 
   it('negative controls: nothing without a living father or a spouse, at zero chance, or too soon after a birth', () => {
-    const run = (setup: (m: Person, f: Person) => void, options: Parameters<typeof body>[0] extends infer O ? Partial<O> : never = {}) => {
-      const { mother, father, people } = couple(20);
-      setup(mother, father);
+    const run = (setup: (m: Person, f: Person, h: Household) => void, options: Parameters<typeof body>[0] extends infer O ? Partial<O> : never = {}) => {
+      const { mother, father, people, roofed, household } = couple(20);
+      setup(mother, father, household);
       const born: Person[] = [];
-      body({ people, population: { conceptionChance: 1 }, born, ...options }).advance(compactOf(mother, 'neg'), 20 * tpd);
+      body({ people, population: { conceptionChance: 1 }, born, ...roofed, ...options }).advance(compactOf(mother, 'neg'), 20 * tpd);
       return born.length;
     };
     expect(run(() => {})).toBeGreaterThan(0); // the positive control for every line below
@@ -158,6 +171,7 @@ describe('compact conception and birth', () => {
     expect(run((m, f) => { m.spouseId = null; f.spouseId = null; })).toBe(0);
     expect(run(() => {}, { population: { conceptionChance: 0 } })).toBe(0);
     expect(run((m) => { m.lastBirthDay = 1_000_000; })).toBe(0); // too soon after a birth: spacing is honoured
+    expect(run((_m, _f, h) => { h.homeBuildingId = null; })).toBe(0); // phase 18: no roof, no child
   });
 
   it('draws from the person\'s own stream only: a second woman with the same stream seed bears on the same day', () => {
@@ -165,8 +179,8 @@ describe('compact conception and birth', () => {
     const sa = deriveCompactStream('same', 7), sb = deriveCompactStream('same', 7);
     const ca: CompactPerson = { person: a.mother, lastAdvancedTick: 0, rng: sa, goal: goalOf(a.mother, 0), intake: null, epoch: 0 };
     const cb: CompactPerson = { person: b.mother, lastAdvancedTick: 0, rng: sb, goal: goalOf(b.mother, 0), intake: null, epoch: 0 };
-    const ea = body({ people: a.people, population: { conceptionChance: 0.3 } }).advance(ca, 60 * tpd).map(e => [e.kind, e.tick]);
-    const eb = body({ people: b.people, population: { conceptionChance: 0.3 } }).advance(cb, 60 * tpd).map(e => [e.kind, e.tick]);
+    const ea = body({ people: a.people, population: { conceptionChance: 0.3 }, ...a.roofed }).advance(ca, 60 * tpd).map(e => [e.kind, e.tick]);
+    const eb = body({ people: b.people, population: { conceptionChance: 0.3 }, ...b.roofed }).advance(cb, 60 * tpd).map(e => [e.kind, e.tick]);
     expect(ea).toEqual(eb);
     expect(ea.length).toBeGreaterThan(0);
   });

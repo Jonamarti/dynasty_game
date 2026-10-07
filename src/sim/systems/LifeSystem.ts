@@ -23,6 +23,23 @@ import type { PopulationConfig } from '../core/Config.ts';
 import { telemetry } from '../core/Telemetry.ts';
 
 /**
+ * The roof a person is asleep under right now, or null.
+ *
+ * The one predicate behind "slept under a roof": `Simulation.shareTheHearth`
+ * samples it at midnight for the hearth and for conception, and the compact
+ * LOD (`CompactAdvance`) asks it of a couple it advances out of sight. Two
+ * copies would drift — the compact model would grow families the detailed one
+ * forbids. Containment is `reachBuilding`'s own, with a tile of margin:
+ * somebody still walking to the hut has `action === 'sleep'` and a target, and
+ * is not under it yet.
+ */
+export function roofOverSleeper(person: Person, buildingsById: ReadonlyMap<number, Building>): Building | null {
+  if (!person.alive || person.action !== 'sleep' || person.targetBuildingId === null) return null;
+  const roof = buildingsById.get(person.targetBuildingId);
+  return roof && roof.complete && roof.def.shelter > 0 && roof.contains(person.x, person.y, 1) ? roof : null;
+}
+
+/**
  * Days a pregnancy runs: a quarter of the calendar year, whatever the
  * scenario's season length says that is. Kept a function rather than a
  * constant now that a person's `daysPerYear` need not be eighty — a fixed
@@ -68,6 +85,13 @@ export interface LifeContext {
   day: number;
   peopleById: Map<number, Person>;
   householdsById: Map<number, Household>;
+  /**
+   * Who slept under which roof at midnight (`Simulation.shareTheHearth`).
+   * Conception reads it: a couple who did not share a roof tonight conceive
+   * nothing, which is what makes the hut — not the open ground — the thing
+   * that grows a family. Any shelter counts, a windbreak included.
+   */
+  roofTonight: ReadonlyMap<number, number>;
   /** Called with each newborn so the simulation can register and place them. */
   onBirth: (child: Person, mother: Person, father: Person | null) => void;
   /** Called when someone dies of anything this system is responsible for. */
@@ -127,6 +151,16 @@ export class LifeSystem {
     if (condition <= 0) return;
 
     if (ctx.rng.chance(ctx.population.conceptionChance * condition)) {
+      // M15 phase 18: under the same roof tonight, or not at all. The gate sits
+      // *after* the draw on purpose: the life stream also feeds mortality, so a
+      // gate before it removed numbers and shifted every death in the world,
+      // breaking unrelated runs (`diggers`' earthworks) by pure divergence.
+      // Drawn first, a refused conception changes only the conception.
+      const roof = ctx.roofTonight.get(mother.id);
+      if (roof === undefined || ctx.roofTonight.get(father.id) !== roof) {
+        telemetry.count('conception_no_roof');
+        return;
+      }
       mother.pregnant = true;
       mother.gestationLeft = gestationDays(mother);
       mother.pregnantBy = father.id;

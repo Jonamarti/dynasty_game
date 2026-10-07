@@ -1985,6 +1985,10 @@ muestreo.
 **Check:** `conception-needs-a-roof` (0 concepciones sin techo compartido;
 falla en el build anterior).
 
+**Hecho 2026-10-05** ([detalle](m15_phase18_roof.md)): puerta tras el sorteo,
+check verificado contra el build roto. Natalidad medida a la baja (516 → 191
+nacidos en 20 semillas): calibrar en la fase 41.
+
 ## Fase 19 — El embarazo (M14 fase 5)
 
 **Detalle en `m14_plan.md` fase 5.** Tres tercios: nada, luego paso 0,85, y

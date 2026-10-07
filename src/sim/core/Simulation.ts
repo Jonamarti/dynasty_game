@@ -78,7 +78,7 @@ import {
 import { WildlifeSystem, DOG_HEARING, DOG_SIGHT } from '../systems/WildlifeSystem.ts';
 import { ForestSystem, seedInitialForest } from '../systems/ForestSystem.ts';
 import {
-  LifeSystem, findHeir, settleEstate,
+  LifeSystem, findHeir, roofOverSleeper, settleEstate,
 } from '../systems/LifeSystem.ts';
 import { linkFamily } from '../social/SocialSystem.ts';
 import { BandSystem, TERRITORY_RADIUS } from '../systems/BandSystem.ts';
@@ -3485,6 +3485,13 @@ export class Simulation {
   }
 
   /**
+   * Person id to the building they slept under at the last midnight sample.
+   * Transient: `shareTheHearth` clears and refills it on the same tick that
+   * `LifeSystem.daily` reads it, so no checkpoint ever sees it half-built.
+   */
+  private readonly roofTonight = new Map<number, number>();
+
+  /**
    * Who slept under the same roof, handed to `SocialSystem.hearth`.
    *
    * Called from the daily block, which runs at `tick % ticksPerDay === 0` —
@@ -3500,10 +3507,13 @@ export class Simulation {
    */
   private shareTheHearth(): void {
     const byRoof = new Map<number, Person[]>();
+    // M15 phase 18: rebuilt from nothing every midnight, so a person who is
+    // not asleep tonight is simply absent rather than carrying last night's roof.
+    this.roofTonight.clear();
     for (const person of this.people) {
       if (!person.alive || person.action !== 'sleep') continue;
-      const roof = person.targetBuildingId === null ? null : this.buildingsById.get(person.targetBuildingId);
-      const sheltered = !!roof && roof.complete && roof.def.shelter > 0 && roof.contains(person.x, person.y, 1);
+      const roof = roofOverSleeper(person, this.buildingsById);
+      const sheltered = roof !== null;
       const household = person.householdId === null ? null : this.householdsById.get(person.householdId);
       if (sheltered && household?.homeBuildingId === roof!.id) {
         person.mood.add('belonging', 3, 'slept at home', this.time.tick);
@@ -3515,6 +3525,7 @@ export class Simulation {
         }
       }
       if (!sheltered) continue;
+      this.roofTonight.set(person.id, roof.id);
       const under = byRoof.get(roof.id);
       if (under) under.push(person);
       else byRoof.set(roof.id, [person]);
@@ -5238,6 +5249,7 @@ export class Simulation {
         day: this.time.day,
         peopleById: this.peopleById,
         householdsById: this.householdsById,
+        roofTonight: this.roofTonight,
         makeChild: (mother, childRng) => {
           // A process-wide hook let the most recently constructed world choose
           // another world's newborn IDs, calendar and learning rate.

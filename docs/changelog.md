@@ -1,3 +1,7 @@
+## 2026-10-07 — M15: se fusiona la fase 18 (concebir bajo un techo) sobre la fase 37
+
+Por qué: la fase 19 (el embarazo) se apoya en la 18, que estaba hecha en `m15/phase18` sin fusionar. Dos conflictos sin contenido (`simcheck.ts`, este archivo) y un llamador nuevo: `CompactAdvance` (fase 32b) no pasaba `roofTonight`. **Un solo predicado**: `roofOverSleeper` en `LifeSystem.ts` lo usan `Simulation.shareTheHearth` y el modelo compacto, que, como sus personas no duermen, toma por techo el hogar de su familia (`homeBuildingId`); `compactCorrespondence.ts` le pasa los hogares tal como estaban al empezar. `compact-life.test.ts` da un techo a su pareja y gana un control negativo (sin techo, sin hijos). El test de correspondencia demográfica queda omitido con su razón medida (`bugs.md`). Medido: `typecheck` limpio; los 10 archivos de test que fallaban con todos los trabajadores en paralelo pasan en serie (timeouts, igual que en `master`). `sim:check` de una semilla: los dos fallos de siempre (`cravings-steer-the-diet`, `perf-budget`). Sin cambio de interfaz.
+
 ## 2026-10-07 — M15 fase 37m: lo que se ve de la fase 37 (capturas, e2e, nombres de nodo) y su cierre
 
 Por qué: la interfaz cambió (dos estaciones, cuatro clases de nodo, el menú que dice por qué no se puede minar, el dominio y la sub-red Metal en la telaraña) y el proyecto pide capturas y e2e. `e2e/phase37-metal.spec.ts` (3 pruebas) y cuatro capturas nuevas en `artifacts/screenshots/m15-phase37-metal-2026-10-07/`. Salió un defecto de pantalla: los nodos de dos palabras se nombraban con guion bajo en inglés (`wild_grain`, `copper_ore`); `Hud.kindWord`. **Dos pruebas de otros archivos cambiaron de premisa, con su razón:** `tech-subwebs.spec.ts` en el teléfono (la marca de la puerta cae bajo el texto de ayuda con un noveno sector; ahora se arrastra el visor antes de tocar) y `people-knowledge.test.ts` (la cota de dispersión pasa de 0,3 a 0,4: medía 0,21, ahora 0,33 y 0,12 sin los diez nodos de metal; la afirmación se mantiene). Medido: suite completa 1.465 pruebas, `npm run e2e` 97 de 97, `typecheck` limpio, `sim:check` de una semilla en `band`, `craft`, `hearths`, `scribes` y `smiths`. **No corrido (diferido por orden del propietario):** cohortes de `sim:seeds`, `century`, `generations`, `world:cohort`. Lo que queda de la fase, en `m15_phase37_metal.md` y `next-steps.md`.
@@ -691,6 +695,20 @@ E2e geográfico 1/1 y captura revisada:
 [Contrato](m15_phase29_root_records.md). Suite y matriz finales se registran
 al terminar la integración, conservando las ejecuciones fallidas.
 
+## 2026-10-05 — M15 fase 18: concebir exige un techo compartido
+
+`LifeSystem.tryConceive` exige que la madre y su cónyuge hayan dormido bajo el
+mismo edificio en la muestra de medianoche de `shareTheHearth` (cualquier
+refugio, paravientos incluido; no el raso). Nuevo `roofTonight` transitorio,
+sin fork de RNG, y check `conception-needs-a-roof` medido desde las personas:
+falla con la puerta desactivada (16 de 19 concepciones sin techo en `century`)
+y pasa con ella. La puerta va tras el sorteo para no desplazar la mortalidad
+(la primera versión rompía `earthworks-are-dug` de `diggers` por divergencia).
+Veinte semillas de `century`: nacimientos 516 → 191, supervivencia media
+68,2 % → 81,9 %, colapsos 1 → 2 de 20 (medido con la primera versión de la puerta, antes del sorteo); la natalidad queda para calibrar.
+`sim:check:all`: 106 fallos, en línea con la referencia 106-112 de la fase 27;
+`cravings-steer-the-diet` y `perf-budget` siguen fallando como antes.
+Sin cambios de UI, por tanto sin capturas. [Detalle](m15_phase18_roof.md).
 ## 2026-10-05 — M15 fase 27: medición final; coste abierto
 
 Entregadas y verificadas profundidad, vadeo, pesca, natación y checks en commits

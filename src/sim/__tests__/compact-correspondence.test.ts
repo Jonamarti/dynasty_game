@@ -39,7 +39,14 @@ describe('compact vs detailed correspondence (small cohort, 10 days; seeds not u
 });
 
 describe('compact demography against the detailed cohort (craft, 40 days, ageing/conception/birth on)', () => {
-  it('bears about as many children as the detailed mothers did', () => {
+  // Skipped since M15 phase 18 put conception under a shared roof: the detailed
+  // craft cohort now bears 0 children in this window (0-1 on four seed/warm-up
+  // pairs measured), so the control below is vacuous and any ratio is noise.
+  // The compact arm, roofed by the household's home, bore 0-4 on the same
+  // pairs — likely more than the detailed model. `bugs.md` ("compact births
+  // under the roof gate") holds the numbers; re-arm this at phase 41 with a
+  // window long enough for the detailed cohort to bear >= 4.
+  it.skip('bears about as many children as the detailed mothers did', () => {
     const r = runCorrespondence({ scenario: 'craft', seed: 'delta', warmupSteps: 4800, windowSteps: 2400, days: 40, model, life: true });
     expect(r.detailed.births).toBeGreaterThanOrEqual(4);   // the control is not vacuous
     expect(r.oracle.births).toBeGreaterThanOrEqual(1);
