@@ -395,3 +395,127 @@ describe('M15 terrain variety: local relief noise', () => {
     expect(new Set(boundaryXByRow).size, 'the coastline should not sit at one constant x').toBeGreaterThan(5);
   });
 });
+
+/**
+ * One long, single-row descending river, wide enough (nine regions) to chain
+ * several macro segments end to end. A single row — unlike the "traces a
+ * narrow descending river" fixture's 8x4 raster, which repeats the same
+ * profile on every row and so grows several parallel same-shaped channels
+ * side by side — gives exactly one coherent course to measure a chord
+ * against, which is what the meander and seam tests below need.
+ */
+function longRiverGeography() {
+  const width = 10, height = 1;
+  const heights = Int16Array.from({ length: width }, (_, x) => 900 - x * 100);
+  const features = new Uint32Array(width).fill(WORLD_FEATURE.river);
+  features[width - 1] = 0; // the mouth itself carries no flag; the water ends there, not past it
+  return earthWorldGeography({
+    entry: { id: 'long-river', title: 'Long river', file: 'long-river.bin', seaLevelMeters: 0, recommended: false },
+    raster: { width, height, elevationMeters: heights, koppen: new Uint8Array(width).fill(8), features, seaLevelMeters: 0 },
+  }, 10);
+}
+
+describe('M15 terrain variety: river meander and variable width', () => {
+  it('is measurably non-straight: the course deviates from its own chord', () => {
+    const geography = longRiverGeography();
+    const config = { ...DEFAULT_CONFIG.world, width: 128, height: 32 };
+    const local = createLocalGeography(geography, { originX: 10, originY: 0, comarcasWide: 80, comarcasHigh: 10 }, config);
+    // Measure the actual water mask, not hydrology.rivers: `rasterCanonicalRivers`
+    // reports one course per incoming confluence arm (deliberately, so a
+    // merge is not flattened into a fake single line — see its own comment
+    // in Hydrology.ts), so a single named entry can be a short fragment even
+    // when the corridor it belongs to runs the length of the window.
+    const waterTiles: Array<{ x: number; y: number }> = [];
+    for (let i = 0; i < local.hydrology.kind.length; i++) {
+      if (local.hydrology.kind[i] === 1) waterTiles.push({ x: i % config.width, y: Math.floor(i / config.width) });
+    }
+    expect(waterTiles.length, 'need a real water corridor to measure a chord against').toBeGreaterThan(20);
+    // The chord runs between the westmost and eastmost water tile (the river
+    // flows west to east in this fixture); a straight corridor would sit on
+    // that chord everywhere, deviation ~0.
+    const start = waterTiles.reduce((a, b) => (a.x <= b.x ? a : b));
+    const end = waterTiles.reduce((a, b) => (a.x >= b.x ? a : b));
+    const vx = end.x - start.x, vy = end.y - start.y;
+    const chordLengthSquared = vx * vx + vy * vy;
+    let maxDeviation = 0;
+    for (const { x, y } of waterTiles) {
+      const t = chordLengthSquared > 0 ? ((x - start.x) * vx + (y - start.y) * vy) / chordLengthSquared : 0;
+      const px = start.x + t * vx, py = start.y + t * vy;
+      maxDeviation = Math.max(maxDeviation, Math.hypot(x - px, y - py));
+    }
+    expect(maxDeviation, 'a meandering course should measurably leave its own chord').toBeGreaterThan(0.5);
+  });
+
+  it('keeps meander and width agreeing exactly at the shared edge of two adjacent windows', () => {
+    const geography = longRiverGeography();
+    const config = { ...DEFAULT_CONFIG.world, width: 64, height: 32 };
+    const west = createLocalGeography(geography, { originX: 10, originY: 0, comarcasWide: 40, comarcasHigh: 10 }, config);
+    const east = createLocalGeography(geography, { originX: 50, originY: 0, comarcasWide: 40, comarcasHigh: 10 }, config);
+    // Same tolerance as the pre-existing "keeps a flagged river connected
+    // across the edge of adjacent local maps" test above, and for the same
+    // reason: hydrologyAt(width, y) and hydrologyAt(0, y) at a shared edge
+    // read the LAST tile of one grid and the FIRST tile of the other, which
+    // are adjacent but not the identical point — a discrete sampling gap
+    // that exists with or without meander or variable width, so this checks
+    // the river reaches the edge on both sides and lines up closely, not
+    // that it hits the exact same tile row.
+    const westEdge = Array.from({ length: config.height }, (_, y) => west.hydrologyAt(config.width, y + 0.5)?.kind ?? null);
+    const eastEdge = Array.from({ length: config.height }, (_, y) => east.hydrologyAt(0, y + 0.5)?.kind ?? null);
+    expect(west.hydrology.rivers.length).toBeGreaterThan(0);
+    expect(westEdge.some(kind => kind === 'fresh'), 'west window must reach its east edge').toBe(true);
+    expect(eastEdge.some(kind => kind === 'fresh'), 'east window must reach its west edge').toBe(true);
+    const westRows = westEdge.flatMap((kind, y) => kind === 'fresh' ? [y] : []);
+    const eastRows = eastEdge.flatMap((kind, y) => kind === 'fresh' ? [y] : []);
+    expect(Math.min(...westRows.flatMap(a => eastRows.map(b => Math.abs(a - b)))),
+      'the river should line up within a tile or two across the seam').toBeLessThanOrEqual(2);
+  });
+
+  it('gives a higher-discharge river more claimed width than a lower one on the same course', () => {
+    // Same map, same flow topology (macroFlowDirection and the region
+    // downstream graph are untouched); only the discharge reading at one
+    // river region is changed, which only feeds halfWidthTilesOf — this
+    // isolates width from everything else a real difference in flow could
+    // also disturb (course, direction, which tiles are candidates at all).
+    const lowGeography = randomWorldGeography('river-width-test', { regionsWide: 16, regionsHigh: 8 });
+    const highGeography = randomWorldGeography('river-width-test', { regionsWide: 16, regionsHigh: 8 });
+    const regionsWide = lowGeography.map.regionsWide, regionsHigh = lowGeography.map.regionsHigh;
+    const comarcasPerRegion = lowGeography.map.width / regionsWide;
+    const config = { ...DEFAULT_CONFIG.world, width: 64, height: 64 };
+    const span = 4;
+    const boundsFor = (regionX: number, regionY: number) => ({
+      originX: regionX * comarcasPerRegion + comarcasPerRegion / 2 - span / 2,
+      originY: regionY * comarcasPerRegion + comarcasPerRegion / 2 - span / 2,
+      comarcasWide: span, comarcasHigh: span,
+    });
+    // Not every region flagged riverFlow >= 3.2 actually rasterizes water
+    // inside a small, region-centred window — the canonical course runs
+    // between jittered anchors (riverAnchor), not through the region centre
+    // exactly, and isRiverNetworkRegion can reject a locally-flagged region
+    // that is not itself part of a connected, flowing network. So the real
+    // test for "a good candidate" is simply that the window it produces has
+    // water, not that the region's own flag looks promising.
+    let target = -1, bounds = boundsFor(0, 0);
+    for (let i = 0; i < lowGeography.map.regions.length && target < 0; i++) {
+      const x = i % regionsWide, y = Math.floor(i / regionsWide);
+      if (x < 2 || x > regionsWide - 3 || y < 2 || y > regionsHigh - 3) continue; // room for a window
+      if (lowGeography.map.regions[i]!.riverFlow < 3.2) continue;
+      const candidateBounds = boundsFor(x, y);
+      const probe = createLocalGeography(lowGeography, candidateBounds, config);
+      if (Array.from(probe.hydrology.kind).some(kind => kind === 1)) { target = i; bounds = candidateBounds; }
+    }
+    expect(target, 'fixture seed must contain a river region whose window actually carries water').toBeGreaterThanOrEqual(0);
+    // WorldRegionProfile's readonly modifier is a compile-time guard, not a
+    // frozen object; mutating riverFlow in place changes only what
+    // dischargeOfRegion reads, not the precomputed downstream/edge graph
+    // macroFlowDirection follows, so the course itself cannot move.
+    (lowGeography.map.regions[target] as { riverFlow: number }).riverFlow = 3.3;
+    (highGeography.map.regions[target] as { riverFlow: number }).riverFlow = 400;
+
+    const low = createLocalGeography(lowGeography, bounds, config);
+    const high = createLocalGeography(highGeography, bounds, config);
+    const lowWidth = Array.from(low.hydrology.kind).filter(kind => kind === 1).length;
+    const highWidth = Array.from(high.hydrology.kind).filter(kind => kind === 1).length;
+    expect(lowWidth, 'fixture must actually carry a river through this window').toBeGreaterThan(0);
+    expect(highWidth, 'a much higher discharge should claim measurably more water tiles').toBeGreaterThan(lowWidth);
+  });
+});

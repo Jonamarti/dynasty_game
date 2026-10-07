@@ -174,6 +174,20 @@ function widenRiver(input: HydrologyInput, route: readonly number[], step: numbe
   // Rivers stay one to three tiles wide. A stable width is important at local
   // map edges: tying width to the route's local step number made a one-tile
   // stream disappear and reappear where two detailed maps met.
+  //
+  // M15 terrain variety (commit B) gave the production river path discharge-
+  // derived variable width — but that is a property of the macro drainage
+  // network (how many upstream regions feed a river region, or its
+  // riverFlow), which this function's caller has no access to: this is the
+  // candidate+traceDownhill fallback, reached only when createLocalGeography
+  // does NOT supply riverCorridor/riverDistance/riverSurface (every real
+  // local map always does — see rasterCanonicalRivers below, which is what
+  // actually ships variable width, through the corridor LocalGeography.ts
+  // selects before this module ever sees it). This branch exists for
+  // Hydrology's own unit tests, which construct a bare elevation grid with
+  // no region graph at all, so there is no discharge here to derive a width
+  // from; inventing one from the local step count would be exactly the
+  // per-map-edge bug the comment above already warns against.
   const radius = 1;
   for (let side = -radius; side <= radius; side++) {
     if (side === 0) continue;

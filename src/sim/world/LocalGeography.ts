@@ -134,6 +134,15 @@ export function createLocalGeography(
   // region id is what actually dedupes the (now noise-bearing, no longer
   // cheap) height lookup instead of silently missing every time.
   const heightByRegion = new Map<string, number>();
+  const dischargeByRegion = new Map<string, number>();
+  // One tile's footprint in comarca units: the floor a river corridor never
+  // goes narrower than (what the old fixed tileRadius gave everywhere), and
+  // the unit canonicalRiverAt's discharge-derived halfWidthTiles is converted
+  // through below. Loop-invariant — it does not depend on x or y — so this is
+  // computed once rather than redundantly on every one of width*height tiles
+  // the way the old inline version did.
+  const tileSize = Math.hypot(frozenBounds.comarcasWide / width, frozenBounds.comarcasHigh / height);
+  const tileRadius = tileSize / 2;
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
     const index = y * width + x;
     const localX = x + 0.5, localY = y + 0.5;
@@ -153,10 +162,18 @@ export function createLocalGeography(
     }
     const path = canonicalRiverAt(geography, profile.regionX, profile.regionY,
       globalX[index]!, globalY[index]!, flowByRegion, distanceByRegion, activeRiverByRegion, heightByRegion,
-      waterLevel, metresPerUnit);
+      dischargeByRegion, waterLevel, metresPerUnit);
     if (path) {
-      const tileRadius = Math.hypot(frozenBounds.comarcasWide / width, frozenBounds.comarcasHigh / height) / 2;
-      riverCandidates[index] = path.distance <= tileRadius + 1e-9 ? 1 : 0;
+      // Never narrower than one tile (the old fixed behaviour, still right
+      // for a headwater trickle); wider where the macro drainage network
+      // says more water passes through here. path.halfWidthTiles already
+      // blends smoothly from the source region's discharge to the target
+      // region's as the tile moves along the segment (see canonicalRiverAt),
+      // so this corridor does not jump tile-to-tile or at a macro-region
+      // boundary — the exact bug the old fixed radius's sibling comment in
+      // Hydrology.ts's widenRiver warns against.
+      const halfWidth = Math.max(tileRadius, path.halfWidthTiles * tileSize);
+      riverCandidates[index] = path.distance <= halfWidth + 1e-9 ? 1 : 0;
       if (riverCandidates[index]) {
       flowX[index] = path.flow.x;
       flowY[index] = path.flow.y;
@@ -199,9 +216,15 @@ export function createLocalGeography(
 
 interface CanonicalRiverSample {
   flow: { x: number; y: number };
+  /** Perpendicular distance to the MEANDERED centreline, not the straight chord. */
   distance: number;
   distanceToOutlet: number;
   surface: number;
+  /** Channel half-width in TILE units (independent of this map's comarca/tile
+   * ratio — see the call site in createLocalGeography, which converts it
+   * using the local map's own tile size). Blended smoothly from the source
+   * region's discharge to the target region's across the segment. */
+  halfWidthTiles: number;
   sourceKey: string;
 }
 
@@ -210,7 +233,7 @@ export type MappedGeography = Exclude<WorldGeography, { kind: 'legacyIsland' }>;
 function canonicalRiverAt(geography: MappedGeography, regionX: number, regionY: number,
   x: number, y: number, flowCache: Map<string, { x: number; y: number }>,
   distanceCache: Map<string, number>, activeRiverCache: Map<string, boolean>,
-  heightCache: Map<string, number>,
+  heightCache: Map<string, number>, dischargeCache: Map<string, number>,
   waterLevel: number, metresPerUnit: number): CanonicalRiverSample | null {
   const regionSize = geography.kind === 'earth'
     ? geography.map.comarcasPerRegion
@@ -268,18 +291,51 @@ function canonicalRiverAt(geography: MappedGeography, regionX: number, regionY: 
     }
     const vx = x1 - x0, vy = y1 - y0;
     const lengthSquared = vx * vx + vy * vy;
+    const segmentLength = Math.sqrt(lengthSquared);
     const t = Math.max(0, Math.min(1, ((x - x0) * vx + (y - y0) * vy) / lengthSquared));
     const px = x0 + t * vx, py = y0 + t * vy;
-    const distance = Math.hypot(x - px, y - py);
-    const distanceToOutlet = distanceFromOutlet(geography, sx, sy, regionSize, flowCache, distanceCache) - t * Math.sqrt(lengthSquared);
+    // Meander: nudge the straight chord's closest point sideways by a noise
+    // function of position along the segment, enveloped by sin(pi*t) so the
+    // displacement is exactly zero at both ends. That zero is not cosmetic —
+    // t = 0 and t = 1 are riverAnchor(sx, sy) and riverAnchor(targetX,
+    // targetY), the exact points the NEIGHBOURING segments (the bend at a
+    // shared vertex, or the segment a map seam splits) also resolve to, so a
+    // nonzero endpoint displacement would reopen the gap between two bends
+    // that canonicalRiverAt's 3x3 neighbour search exists to close.
+    // Perpendicular unit vector (rotate the tangent 90 degrees); segmentLength
+    // is guarded positive by isRiverNetworkRegion/macroFlowDirection already
+    // requiring a nonzero flow direction, so this is never a 0/0 division.
+    const perpX = -vy / segmentLength, perpY = vx / segmentLength;
+    const meanderOffset = meanderDisplacement(px, py, t, regionSize);
+    const cx = px + perpX * meanderOffset, cy = py + perpY * meanderOffset;
+    const distance = Math.hypot(x - cx, y - cy);
+    const distanceToOutlet = distanceFromOutlet(geography, sx, sy, regionSize, flowCache, distanceCache) - t * segmentLength;
     const surface = sourceHeight + (targetHeight - sourceHeight) * t;
+    // Width comes from the macro drainage network, not the local tile step:
+    // the discharge of the region this segment leaves and the region it
+    // enters, blended by the same t used for height and meander. Two local
+    // maps querying the same global point always compute the same t from the
+    // same two region identities, so the width agrees at a map seam exactly
+    // as the surface already does — unlike a step-index width, which the
+    // comment on Hydrology.ts's widenRiver explains broke exactly that.
+    let sourceDischarge = dischargeCache.get(key);
+    if (sourceDischarge === undefined) {
+      sourceDischarge = dischargeOfRegion(geography, sx, sy, regionSize, flowCache, dischargeCache);
+    }
+    // targetKey already holds `${targetX},${targetY}` from the height lookup above.
+    let targetDischarge = dischargeCache.get(targetKey);
+    if (targetDischarge === undefined) {
+      targetDischarge = dischargeOfRegion(geography, targetX, targetY, regionSize, flowCache, dischargeCache);
+    }
+    const halfWidthTiles = halfWidthTilesOf(sourceDischarge) +
+      (halfWidthTilesOf(targetDischarge) - halfWidthTilesOf(sourceDischarge)) * t;
     // The drainage graph, not the control-point jitter, determines which
     // neighboring tile is downstream. Jitter bends the shared centreline but
     // never makes a flat valley climb toward an arbitrary local grid edge.
     const tangent = flow;
     if (!best || distance < best.distance - 1e-9 ||
         (Math.abs(distance - best.distance) <= 1e-9 && key < best.sourceKey)) {
-      best = { flow: tangent, distance, distanceToOutlet, surface, sourceKey: key };
+      best = { flow: tangent, distance, distanceToOutlet, surface, halfWidthTiles, sourceKey: key };
     }
   }
   return best;
@@ -380,6 +436,95 @@ function isRiverNetworkRegion(geography: MappedGeography, x: number, y: number, 
   visiting.delete(key);
   cache.set(key, false);
   return false;
+}
+
+/**
+ * A discharge proxy for one region, used to size a river's width (see
+ * halfWidthTilesOf and the call site in canonicalRiverAt). The random map
+ * already carries a real flow-accumulation field (`riverFlow`, built by
+ * WorldMap's own drainage solver) and uses it directly. The Earth atlas has
+ * no such field — only per-region elevation and features — so this counts
+ * upstream drainage area instead: 1 (this region) plus every neighbour whose
+ * own macroFlowDirection points back at it, recursively. That neighbour test
+ * is exactly isRiverNetworkRegion's "does an upstream neighbour feed this
+ * cell" search above, reused rather than copied; the difference is that
+ * function stops at the first upstream hit (it only needs a yes/no) while
+ * this one has to visit every contributing branch and sum them.
+ */
+function dischargeOfRegion(geography: MappedGeography, x: number, y: number, regionSize: number,
+  flowCache: Map<string, { x: number; y: number }>, cache: Map<string, number>,
+  visiting = new Set<string>()): number {
+  const key = `${x},${y}`;
+  const cached = cache.get(key);
+  if (cached !== undefined) return cached;
+  if (geography.kind === 'random') {
+    const region = geography.map.regions[y * geography.map.regionsWide + x];
+    const value = region ? region.riverFlow : 0;
+    cache.set(key, value);
+    return value;
+  }
+  if (visiting.has(key)) return 0; // atlas edges are validated; this only bounds a corrupt cycle
+  visiting.add(key);
+  let total = 1; // this region's own contribution
+  const regionsWide = geography.map.regionsWide;
+  const regionsHigh = geography.map.regionsHigh;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    if (!dx && !dy) continue;
+    const uy = y - dy;
+    if (uy < 0 || uy >= regionsHigh) continue;
+    const ux = positiveMod(x - dx, regionsWide);
+    const upstreamKey = `${ux},${uy}`;
+    let upstreamFlow = flowCache.get(upstreamKey);
+    if (!upstreamFlow) {
+      const upstreamProfile = geography.profileAt((ux + 0.5) * regionSize, (uy + 0.5) * regionSize);
+      upstreamFlow = macroFlowDirection(geography, upstreamProfile);
+      flowCache.set(upstreamKey, upstreamFlow);
+    }
+    if (upstreamFlow.x !== dx || upstreamFlow.y !== dy) continue;
+    total += dischargeOfRegion(geography, ux, uy, regionSize, flowCache, cache, visiting);
+  }
+  visiting.delete(key);
+  cache.set(key, total);
+  return total;
+}
+
+/**
+ * Discharge to a channel half-width, in TILE units (not comarca units —
+ * converted at the call site, which knows this local map's own tile size).
+ * Square-root scaling is the common simple hydraulic-geometry approximation
+ * (channel width grows with the square root of discharge); the base keeps a
+ * headwater at roughly the old fixed one-tile radius, and the cap keeps an
+ * enormous drainage network from swallowing a four-comarca local map.
+ */
+function halfWidthTilesOf(discharge: number): number {
+  const HALF_WIDTH_BASE_TILES = 0.5;
+  const HALF_WIDTH_PER_SQRT_DISCHARGE = 0.35;
+  const HALF_WIDTH_MAX_TILES = 4;
+  return Math.min(HALF_WIDTH_MAX_TILES,
+    HALF_WIDTH_BASE_TILES + HALF_WIDTH_PER_SQRT_DISCHARGE * Math.sqrt(Math.max(0, discharge)));
+}
+
+/**
+ * Pure, deterministic meander noise — same rationale as RELIEF_NOISE above
+ * (own fixed seed, never a Simulation RNG draw; one shared instance so every
+ * local map samples the same field). Kept separate from RELIEF_NOISE: they
+ * answer different questions (how rough is the ground vs. how much does the
+ * river wander) and sharing one field would correlate them for no reason.
+ */
+const MEANDER_NOISE = new SimplexNoise(new RNG('local-river-meander'));
+
+/** Perpendicular displacement, in comarca units, at one point along a river
+ * segment. `px, py` is the point's position on the STRAIGHT chord (used as
+ * the noise coordinate, so the wiggle varies along the segment and differs
+ * between segments without needing a separate per-segment seed) and `t` is
+ * its position between the two anchors, 0 to 1. sin(pi*t) is zero at both
+ * t = 0 and t = 1 — see the long comment at the call site for why that zero
+ * is load-bearing, not decorative. */
+function meanderDisplacement(px: number, py: number, t: number, regionSize: number): number {
+  const MEANDER_AMPLITUDE_FRACTION = 0.1; // of one region's size, comarca units
+  const MEANDER_SCALE = 1.6; // wavelength roughly 0.6 region per cycle
+  const raw = MEANDER_NOISE.fbm(px, py, 3, 2, 0.5, MEANDER_SCALE / regionSize) * 2 - 1;
+  return raw * Math.sin(Math.PI * t) * regionSize * MEANDER_AMPLITUDE_FRACTION;
 }
 
 function positiveMod(value: number, divisor: number): number {
