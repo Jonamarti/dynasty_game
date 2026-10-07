@@ -6,6 +6,7 @@
 import type { ResourceKind } from '../entities/ResourceNode.ts';
 import type { WorldGeography } from './WorldGeography.ts';
 import { WORLD_FEATURE } from './WorldFeatureSeeds.ts';
+import type { WorldResource } from './WorldMap.ts';
 
 const WILD_CEREALS = WORLD_FEATURE.wildWheat | WORLD_FEATURE.wildBarley |
   WORLD_FEATURE.wildRice | WORLD_FEATURE.wildMillet | WORLD_FEATURE.wildMaize |
@@ -24,19 +25,30 @@ export function geographicResourceAvailable(
   kind: ResourceKind,
 ): boolean {
   if (geography.kind === 'legacyIsland') return true;
-  if (kind !== 'wild_grain' && kind !== 'flint') return true;
+  const gate = GATED[kind];
+  if (gate === undefined) return true;
 
   const profile = geography.profileAt(x, y);
   if (geography.kind === 'random') {
-    const resources = geography.map.regionAt(profile.regionX, profile.regionY).resources;
-    return kind === 'wild_grain'
-      ? resources.includes('wild_grain')
-      : resources.includes('flint');
+    return geography.map.regionAt(profile.regionX, profile.regionY).resources.includes(gate.resource);
   }
 
   if (geography.kind !== 'earth' || profile.kind !== 'earth') return true;
-  const features = profile.features;
-  return kind === 'wild_grain'
-    ? (features & WILD_CEREALS) !== 0
-    : (features & WORLD_FEATURE.flint) !== 0;
+  return (profile.features & gate.features) !== 0;
 }
+
+/**
+ * The resources a profile can forbid, and how each profile says so: the
+ * generated map by name, the Earth by feature flag. M15 phase 37 adds the
+ * metals: copper on the surface wants a region with copper in it.
+ */
+const GATED: Partial<Record<ResourceKind, { resource: WorldResource; features: number }>> = {
+  wild_grain: { resource: 'wild_grain', features: WILD_CEREALS },
+  flint: { resource: 'flint', features: WORLD_FEATURE.flint },
+  native_copper: { resource: 'copper', features: WORLD_FEATURE.copper },
+  copper_ore: { resource: 'copper', features: WORLD_FEATURE.copper },
+  tin_ore: { resource: 'tin', features: WORLD_FEATURE.tin },
+  // Gold lies with copper in the generated map, which has no resource of its own
+  // for it (the ore bodies are the same hills); the Earth carries it as a feature.
+  gold: { resource: 'copper', features: WORLD_FEATURE.gold },
+};

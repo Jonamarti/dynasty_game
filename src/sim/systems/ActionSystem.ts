@@ -60,7 +60,7 @@ import { telemetry } from '../core/Telemetry.ts';
 import { bestFoodFor, consumeFood, consumeFoodAtSource, knowsPoisonous } from '../core/Macros.ts';
 import { expectedFood } from '../ai/Beliefs.ts';
 import {
-  TECH, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
+  TECH, awlFactor, axeFactor, buildFactor, calendarFactor, forageYieldFactor,
   orchardFactor, prerequisitesMet, reapFactor, tallyFactor, techPower,
   workableIdea as chooseWorkableIdea, weaponOf, armourOf, protectionOf, type Tech,
 } from '../knowledge/Tech.ts';
@@ -95,6 +95,7 @@ import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 import { noteWorkOutcome } from '../core/Mood.ts';
 import { support } from '../social/Persuasion.ts';
 import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
+import { canWork } from '../knowledge/Ore.ts';
 
 export interface ActionContext {
   world: World;
@@ -1444,6 +1445,13 @@ export class ActionSystem {
         }
       }
       this.abandon(person, reason, ctx);
+      return;
+    }
+    // M15 phase 37: ore comes out of a hill only for somebody who knows how.
+    // Reached only by an order (`Ore.wantedOreKinds` offers a person no node
+    // they cannot work), and the reason is shown.
+    if (!canWork(person, node.kind)) {
+      this.abandon(person, 'cannot_mine', ctx);
       return;
     }
     // M15 phase 21d: somebody who knows the plant will not pick it. Reached
@@ -4329,7 +4337,7 @@ export class ActionSystem {
     // on until the final tick, when the item appears, so it banks on the crafter.
     const bankKey = 'craft:' + recipe.id;
     if (person.actionTimer <= 0) {
-      const total = Math.ceil(recipe.workTicks / person.skillFactor(recipe.skill));
+      const total = Math.ceil(recipe.workTicks * awlFactor(person, recipe.id) / person.skillFactor(recipe.skill));
       person.actionTimer = Math.max(1, total - person.bankedFor(bankKey));
       return;
     }

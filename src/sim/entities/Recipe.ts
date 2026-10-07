@@ -592,6 +592,114 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'sling', label: 'Sling', icon: '\u{1FA83}', tech: 'sling', skill: 'hunt',
     workTicks: 80, ingredients: { rope: 1, flint: 2 }, output: { sling: 1 }, keep: 1,
   },
+  // --- M15 phase 37 (M8.3): the metal tier -------------------------------------
+  //
+  // `charcoal`: deadwood stacked under turf and burned with the air shut out.
+  // Sticks rather than timber, deliberately: a forager already carries sticks
+  // home, whereas nothing in the pack-filling scorers fells a tree for a recipe,
+  // and an ingredient nobody would ever fetch is the `pottery` defect again.
+  // Six sticks give three of charcoal, which is the weight a furnace run wants.
+  // `keep: 4`: a smelting run burns two and a person wants a spare, and the pit
+  // is the only place it is made, so it is made in batches.
+  charcoal: {
+    id: 'charcoal', label: 'Charcoal', icon: '\u{26AB}', tech: 'charcoal', skill: 'build',
+    workTicks: 120, ingredients: { sticks: 6 }, output: { charcoal: 3 },
+    station: 'charcoal_pit', keep: 4,
+  },
+  // `smelting`, at the furnace. Three loads of ore and two of charcoal give two
+  // ingots: the first craft in the game that costs a fuel as well as a material.
+  // `keep: 4` is two runs' worth, and what `casting` will want to spend.
+  // `casting`, at the furnace (the mould is fired clay it makes as it goes: the
+  // pour is the work, and a clay ingredient nobody would fetch is `pottery` again).
+  copper_axe: {
+    id: 'copper_axe', label: 'Copper axe', icon: '\u{1FA93}', tech: 'casting', skill: 'smith',
+    workTicks: 120, ingredients: { copper: 2 }, output: { copper_axe: 1 },
+    station: 'furnace', keep: 1,
+  },
+  copper_dagger: {
+    id: 'copper_dagger', label: 'Copper dagger', icon: '\u{1F5E1}', tech: 'casting', skill: 'smith',
+    workTicks: 100, ingredients: { copper: 1 }, output: { copper_dagger: 1 },
+    station: 'furnace', keep: 1,
+  },
+  // `alloying`. Tin is smelted from its ore the way copper is (one of charcoal,
+  // for two of ore: it runs at a lower heat), and `keep: 2` is a pour's worth.
+  smelt_tin: {
+    id: 'smelt_tin', label: 'Smelt tin', icon: '\u{1F525}', tech: 'alloying', skill: 'smith',
+    workTicks: 100, ingredients: { tin_ore: 2, charcoal: 1 }, output: { tin: 1 },
+    station: 'furnace', keep: 2,
+  },
+  // Three of copper and one of tin run together: three of bronze (the loss in
+  // the slag is the tenth of tin the real alloy is, so the ratio is the real
+  // one and the yield is not generous). `keep: 3` is what `bronze_tools` will pour.
+  alloy_bronze: {
+    id: 'alloy_bronze', label: 'Alloy bronze', icon: '\u{1F525}', tech: 'alloying', skill: 'smith',
+    workTicks: 110, ingredients: { copper: 3, tin: 1 }, output: { bronze: 3 },
+    station: 'furnace', keep: 3,
+  },
+  // `bronze_tools`, at the furnace. Bronze is the scarce input (one seam of tin
+  // on an island), so each tool is the cheapest it can be and `keep` is one:
+  // a band that has made its four has spent most of the bronze it will ever have.
+  bronze_axe: {
+    id: 'bronze_axe', label: 'Bronze axe', icon: '\u{1FA93}', tech: 'bronze_tools', skill: 'smith',
+    workTicks: 120, ingredients: { bronze: 2 }, output: { bronze_axe: 1 }, station: 'furnace', keep: 1,
+  },
+  bronze_adze: {
+    id: 'bronze_adze', label: 'Bronze adze', icon: '\u{1FA93}', tech: 'bronze_tools', skill: 'smith',
+    workTicks: 120, ingredients: { bronze: 2 }, output: { bronze_adze: 1 }, station: 'furnace', keep: 1,
+  },
+  bronze_sickle: {
+    id: 'bronze_sickle', label: 'Bronze sickle', icon: '\u{1F5E1}', tech: 'bronze_tools', skill: 'smith',
+    workTicks: 100, ingredients: { bronze: 1 }, output: { bronze_sickle: 1 }, station: 'furnace', keep: 1,
+  },
+  bronze_spade: {
+    id: 'bronze_spade', label: 'Bronze spade', icon: '\u{2660}', tech: 'bronze_tools', skill: 'smith',
+    workTicks: 130, ingredients: { bronze: 3 }, output: { bronze_spade: 1 }, station: 'furnace', keep: 1,
+  },
+  // `bronze_arms`, at the furnace. Three of bronze for the sword and two for the
+  // helm; `keep: 1`, and not more, for the reason the tools give.
+  bronze_sword: {
+    id: 'bronze_sword', label: 'Bronze sword', icon: '\u{2694}', tech: 'bronze_arms', skill: 'smith',
+    workTicks: 130, ingredients: { bronze: 3 }, output: { bronze_sword: 1 }, station: 'furnace', keep: 1,
+  },
+  bronze_helm: {
+    id: 'bronze_helm', label: 'Bronze helm', icon: '\u{1FA96}', tech: 'bronze_arms', skill: 'smith',
+    workTicks: 110, ingredients: { bronze: 2 }, output: { bronze_helm: 1 }, station: 'furnace', keep: 1,
+  },
+  // `goldwork`, cold-hammered like native copper: no fire and no station. Two
+  // nuggets make an ornament worth more than the six nuggets of copper it would
+  // take to match it; `keep: 1` and the spare is a gift (`Brain`'s gift scorer).
+  gold_ornament: {
+    id: 'gold_ornament', label: 'Gold ornament', icon: '\u{1F4FF}', tech: 'goldwork', skill: 'smith',
+    workTicks: 110, ingredients: { gold_nugget: 2 }, output: { gold_ornament: 1 }, keep: 1,
+  },
+  // `bellows`: the same run in less time and three ingots, not two. A second
+  // recipe rather than a term on the first, on the `kiln_pot` model, and the
+  // trap that comment records applies here exactly: the craft scorer has no
+  // "better" term, and a tie goes to whichever recipe comes first. So this is
+  // declared AHEAD of `smelt_copper`; whoever knows the bellows takes this one,
+  // whoever does not cannot (`techPower` is zero) and falls through to the plain.
+  smelt_copper_bellows: {
+    id: 'smelt_copper_bellows', label: 'Smelt copper with bellows', icon: '\u{1F525}', tech: 'bellows', skill: 'smith',
+    workTicks: 90, ingredients: { copper_ore: 3, charcoal: 2 }, output: { copper: 3 },
+    station: 'furnace', keep: 4,
+  },
+  smelt_copper: {
+    id: 'smelt_copper', label: 'Smelt copper', icon: '\u{1F525}', tech: 'smelting', skill: 'smith',
+    workTicks: 120, ingredients: { copper_ore: 3, charcoal: 2 }, output: { copper: 2 },
+    station: 'furnace', keep: 4,
+  },
+  // `native_copper`: cold-hammered, no fire and no station - which is the whole
+  // point of it. The first recipes in the game to practise `smith`, a skill every
+  // character has carried since M6b with nothing to improve it. The awl comes
+  // first so that a tie in the craft scorer goes to the tool and not the bead.
+  copper_awl: {
+    id: 'copper_awl', label: 'Copper awl', icon: '\u{1FAA1}', tech: 'native_copper', skill: 'smith',
+    workTicks: 90, ingredients: { copper_nugget: 1 }, output: { copper_awl: 1 }, keep: 1,
+  },
+  copper_pendant: {
+    id: 'copper_pendant', label: 'Copper pendant', icon: '\u{1F4FF}', tech: 'native_copper', skill: 'smith',
+    workTicks: 100, ingredients: { copper_nugget: 2 }, output: { copper_pendant: 1 }, keep: 1,
+  },
 };
 
 /** Every item any recipe can produce. Used by the "is this reachable?" tests. */

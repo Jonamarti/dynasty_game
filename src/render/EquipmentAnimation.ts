@@ -1,6 +1,7 @@
 /** Reads the object actually fitted to a working person's hands. */
 import type { Person } from '../sim/entities/Person.ts';
 import { ITEMS } from '../sim/entities/Item.ts';
+import { AXE_TOOLS } from '../sim/knowledge/Tech.ts';
 import type { HeldItemKind } from './Sprites.ts';
 
 const HELD_ART: Readonly<Record<string, HeldItemKind>> = {
@@ -8,6 +9,11 @@ const HELD_ART: Readonly<Record<string, HeldItemKind>> = {
   // The atlas has one small stone axe silhouette; the polished head is the
   // same outline at game scale, so both fitted axe stages use that cell.
   stone_axe: 'handaxe',
+  // The cast axe is the same head on a haft; the dagger has a held picture of its own.
+  copper_axe: 'handaxe',
+  bronze_axe: 'handaxe',
+  copper_dagger: 'copper_dagger',
+  bronze_sword: 'bronze_sword',
   spear: 'spear',
   bow: 'bow',
   atlatl: 'atlatl',
@@ -31,7 +37,7 @@ export function fittedActionToolFor(
   // pack. The executor fits the tool; presentation observes hands, preferring
   // a visible action tool and then the right-hand object, without inferring skill.
   const fitted = handItems.find(item => person.action === 'chop'
-    ? item === 'handaxe' || item === 'stone_axe'
+    ? AXE_TOOLS.some(axe => axe.item === item)
     : !!ITEMS[item]?.weapon) ?? handItems[0] ?? null;
   return fitted === null ? null : HELD_ART[fitted] ?? null;
 }

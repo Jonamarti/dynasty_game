@@ -41,6 +41,91 @@ export const ITEMS: ItemArt[] = [
     + shape('M28,14Q28,8 33,8L36,8L36,12L33,12L32,16Z', WOOD, WOOD_D)
     + ell(28, 46, 3, 2, 'none', WOOD_D) + stroke('M25,44L25,52', CORD, 1.6), 32)
     + limb([[10, 18], [54, 10]], 1.4, '#a9835a', WOOD_D)],
+  ['copper_nugget', 'Pepita de cobre', 'native_copper', () =>
+    shape(smooth([[12, 40], [20, 26], [34, 24], [44, 34], [40, 48], [22, 50]]), '#c9803c', '#6b3a14')
+    + shape(smooth([[34, 20], [44, 12], [54, 18], [52, 30], [42, 30]]), '#d99454', '#6b3a14')
+    + ell(24, 34, 3.2, 2.2, '#5f9a7c') + stroke('M18,40L30,36M38,38L46,34', '#e8b27a', 1.1)],
+  ['copper_awl', 'Punzón de cobre', 'native_copper', () => rot(
+    limb([[32, 58], [32, 28]], 5, WOOD, WOOD_D)
+    + shape(poly([[32, 4], [35.5, 28], [28.5, 28]]), '#c9803c', '#6b3a14')
+    + stroke('M32,8L32,26', '#e8b27a', 1), 26)],
+  ['copper_pendant', 'Colgante de cobre', 'native_copper', () =>
+    stroke('M14,10Q32,2 50,10', CORD, 1.8)
+    + stroke('M32,6L32,24', CORD, 1.6)
+    + shape(smooth([[32, 24], [42, 32], [40, 46], [32, 54], [24, 46], [22, 32]]), '#c9803c', '#6b3a14')
+    + ell(32, 36, 5, 5, 'none', '#6b3a14') + stroke('M26,34Q30,28 36,30', '#e8b27a', 1.1)],
+  ['copper_ore', 'Mineral de cobre', 'mining', () =>
+    shape(smooth([[8, 46], [14, 28], [30, 20], [48, 26], [56, 42], [44, 54], [20, 54]]), '#7a8f86', '#2f3d38')
+    + [[22, 32], [34, 28], [44, 38], [26, 44], [38, 46]].map(([x, y]) => ell(x!, y!, 3.2, 2.2, '#3fae8a', '#1f5c49')).join('')
+    + stroke('M14,44L30,38M34,24L46,30', '#a9bdb4', 1.1)],
+  ['tin_ore', 'Mineral de estaño', 'mining', () =>
+    shape(smooth([[8, 46], [14, 28], [30, 20], [48, 26], [56, 42], [44, 54], [20, 54]]), '#aeb4bb', '#3f444a')
+    + [[22, 32], [34, 28], [44, 38], [26, 44], [38, 46]].map(([x, y]) => ell(x!, y!, 3, 2, '#eef1f3', '#69717a')).join('')
+    + stroke('M14,44L30,38M34,24L46,30', '#d4d8dc', 1.1)],
+  ['copper', 'Lingote de cobre', 'smelting', () =>
+    shape(poly([[8, 42], [18, 24], [48, 24], [58, 42], [50, 52], [16, 52]]), '#c9803c', '#6b3a14')
+    + shape(poly([[18, 24], [48, 24], [44, 32], [22, 32]]), '#e8b27a', '#6b3a14')
+    + stroke('M18,40L48,40M22,46L44,46', '#a8642a', 1.2)],
+  ['copper_axe', 'Hacha de cobre', 'casting', () => rot(
+    limb([[32, 60], [32, 10]], 3.6, WOOD, WOOD_D)
+    + shape(poly([[32, 6], [49, 3], [54, 22], [32, 24]]), '#c9803c', '#6b3a14')
+    + stroke('M30,14L35,14M30,18L35,18M30,22L35,22', CORD, 1.6)
+    + stroke('M47,7L51,20', '#e8b27a', 1.2), 30)],
+  ['copper_dagger', 'Daga de cobre', 'casting', () => rot(
+    shape(poly([[32, 4], [37, 38], [27, 38]]), '#c9803c', '#6b3a14')
+    + stroke('M32,9L32,34', '#e8b27a', 1.1)
+    + limb([[22, 40], [42, 40]], 3, '#6b3a14', null)
+    + limb([[32, 40], [32, 58]], 4.6, WOOD, WOOD_D), 24)],
+  ['tin', 'Lingote de estaño', 'alloying', () =>
+    shape(poly([[8, 42], [18, 24], [48, 24], [58, 42], [50, 52], [16, 52]]), '#b9bec4', '#4a5058')
+    + shape(poly([[18, 24], [48, 24], [44, 32], [22, 32]]), '#e6eaee', '#4a5058')
+    + stroke('M18,40L48,40M22,46L44,46', '#8d949b', 1.2)],
+  ['bronze', 'Lingote de bronce', 'alloying', () =>
+    shape(poly([[8, 42], [18, 24], [48, 24], [58, 42], [50, 52], [16, 52]]), '#b08a3e', '#5a4216')
+    + shape(poly([[18, 24], [48, 24], [44, 32], [22, 32]]), '#dcc072', '#5a4216')
+    + stroke('M18,40L48,40M22,46L44,46', '#8a6a28', 1.2)],
+  ['bronze_axe', 'Hacha de bronce', 'bronze_tools', () => rot(
+    limb([[32, 60], [32, 10]], 3.6, WOOD, WOOD_D)
+    + shape(poly([[32, 6], [50, 3], [55, 22], [32, 24]]), '#b08a3e', '#5a4216')
+    + stroke('M30,14L35,14M30,18L35,18M30,22L35,22', CORD, 1.6)
+    + stroke('M48,7L52,20', '#dcc072', 1.2), 30)],
+  ['bronze_adze', 'Azuela de bronce', 'bronze_tools', () => rot(
+    limb([[30, 60], [30, 14]], 3.4, WOOD, WOOD_D)
+    + shape(poly([[26, 14], [48, 9], [50, 15], [30, 20]]), '#b08a3e', '#5a4216')
+    + stroke('M30,17L34,15.6M30,21L34,19.6', CORD, 1.6), 24)],
+  ['bronze_sickle', 'Hoz de bronce', 'bronze_tools', () =>
+    stroke('M16,56Q10,24 40,14Q52,12 56,22Q40,20 30,34Q26,46 22,56', '#b08a3e', 4)
+    + stroke('M14,56L22,56', WOOD, 5)
+    + stroke('M20,26Q30,18 44,16', '#dcc072', 1.2)],
+  ['bronze_spade', 'Pala de bronce', 'bronze_tools', () => rot(
+    limb([[32, 6], [32, 39]], 3.4, WOOD, WOOD_D)
+    + shape('M24,36L40,36L42,53Q32,66 22,53Z', '#b08a3e', '#5a4216')
+    + stroke('M30,39L28,53M34,39L36,53', '#dcc072', 1), 20)],
+  ['bronze_sword', 'Espada de bronce', 'bronze_arms', () => rot(
+    shape(poly([[32, 2], [37.5, 40], [26.5, 40]]), '#b08a3e', '#5a4216')
+    + stroke('M32,8L32,36', '#dcc072', 1.2)
+    + limb([[20, 42], [44, 42]], 3.2, '#6b4f1c', null)
+    + limb([[32, 42], [32, 60]], 4.8, WOOD, WOOD_D), 26)],
+  ['bronze_helm', 'Yelmo de bronce', 'bronze_arms', () =>
+    shape(smooth([[12, 44], [14, 26], [32, 12], [50, 26], [52, 44], [44, 48], [20, 48]]), '#b08a3e', '#5a4216')
+    + shape(poly([[26, 30], [38, 30], [36, 48], [28, 48]]), '#2b1d12', '#2b1d12')
+    + stroke('M16,32Q32,16 48,32', '#dcc072', 1.4)
+    + ell(32, 14, 3, 3, '#6b4f1c', '#3a2a0c')],
+  ['gold_nugget', 'Pepita de oro', 'goldwork', () =>
+    shape(smooth([[12, 40], [20, 26], [34, 24], [44, 34], [40, 48], [22, 50]]), '#e6c34a', '#7a5f10')
+    + shape(smooth([[34, 20], [44, 12], [54, 18], [52, 30], [42, 30]]), '#f4dc7a', '#7a5f10')
+    + stroke('M18,40L30,36M38,38L46,34', '#fff3b0', 1.2)],
+  ['gold_ornament', 'Adorno de oro', 'goldwork', () =>
+    stroke('M14,10Q32,2 50,10', CORD, 1.8)
+    + stroke('M32,6L32,22', CORD, 1.6)
+    + shape(smooth([[32, 22], [44, 30], [42, 46], [32, 56], [22, 46], [20, 30]]), '#e6c34a', '#7a5f10')
+    + ell(32, 36, 6, 6, 'none', '#7a5f10') + ell(32, 36, 2.4, 2.4, '#fff3b0', '#7a5f10')
+    + stroke('M25,32Q30,26 38,29', '#fff3b0', 1.2)],
+  ['charcoal', 'Carbón vegetal', 'charcoal', () =>
+    shape(smooth([[10, 44], [22, 30], [36, 34], [40, 48], [26, 54]]), '#2f2b28', STONE_D)
+    + shape(smooth([[32, 30], [46, 18], [58, 28], [52, 42], [38, 42]]), '#3a3532', STONE_D)
+    + shape(smooth([[26, 54], [40, 46], [54, 52], [48, 60], [30, 60]]), '#262321', STONE_D)
+    + stroke('M16,40L28,38M40,26L52,28M32,56L46,54', '#5a534e', 1.1)],
   ['sling', 'Honda', 'sling', () =>
     stroke('M10,34Q16,10 30,26', CORD, 2.4)
     + stroke('M10,34Q16,52 30,40', CORD, 2.4)

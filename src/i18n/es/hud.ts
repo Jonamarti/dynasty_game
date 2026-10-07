@@ -293,6 +293,7 @@ export const ES_HUD: Record<string, string> = {
   "node|clay": "arcilla",
   "node|fish": "peces",
   "node|wild_grain": "cereal silvestre",
+  "node|native_copper": "cobre nativo",
   "Berry bush": "Arbusto de bayas",
   "Bears in its own seasons. Known to bear nothing in: {seasons}.": "Da fruto en sus propias estaciones. Se sabe que no da nada en: {seasons}.",
   "Bears in its own seasons, and nobody here has watched it long enough to say which.": "Da fruto en sus propias estaciones, y nadie aquí lo ha observado lo bastante para saber cuáles.",
@@ -314,4 +315,7 @@ export const ES_HUD: Record<string, string> = {
   "{name}, in arms": "{name}, en brazos",
   "{n} items of earth to move": "{n} unidades de tierra por mover",
   "R turns the plan to run the other way": "R gira el plano para que corra al otro lado",
+  "node|copper_ore": "mineral de cobre",
+  "node|tin_ore": "mineral de estaño",
+  "node|gold": "oro",
 };

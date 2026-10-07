@@ -42,6 +42,8 @@ export const LIFT = 2;
  * effective power, not table order, so a refined pick can beat a plain spade.
  */
 export const DIG_TOOLS: readonly { item: string; power: number; tech?: Tech }[] = [
+  // M15 phase 37: "the bronze tools dig at five times" (26b), a stick's one.
+  { item: 'bronze_spade', power: 5, tech: 'bronze_tools' },
   { item: 'spade', power: 3, tech: 'carpentry' },
   { item: 'antler_pick', power: 2, tech: 'bone_working' },
   { item: 'sticks', power: 1 },

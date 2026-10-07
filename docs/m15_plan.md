@@ -3448,6 +3448,47 @@ entrenada y `armourOf` por `techPower`.
 - `bronze-needs-a-trader` sigue siendo la puerta: casi ninguna banda sin
   estaño en su comarca funde bronce sin haber comerciado o asaltado.
 
+**Se hace en la rama `worktree-m15-phase37`, en un worktree propio** (otro
+agente trabaja la fase 34). Detalle, decisiones y medidas por entrega en
+[m15_phase37_metal.md](m15_phase37_metal.md).
+
+**Avance del 2026-10-07 (37a, `charcoal`).** Nodo, ítem, carbonera
+(`charcoal_pit`, estación) y receta (seis palos → tres carbones). Lector: el
+brasero de `warmthFrom` y, después, el horno. Va a la red principal porque la
+sub-red Fuego aún no existe (fase 16). Pruebas en `metal.test.ts`.
+
+**Avance del 2026-10-07 (37b, `native_copper`).** El cobre que se encuentra
+como metal: nodo, pepitas en las colinas (pasada y fork propios, el n.º 23;
+con mapa solo donde la región tiene cobre), punzón (más rápido lo cosido) y
+colgante (adorno: `baseValue`), y las primeras recetas que entrenan `smith`.
+`Ore.wantedOreKinds`: la tabla de recetas dice qué va a buscar uno a la tierra.
+
+**Avance del 2026-10-07 (37c, `mining`).** Vetas de cobre (cuatro) y de estaño
+(una) como nodos de las colinas que solo toma quien sabe minar: la puerta está
+en `doHarvest`, en la orden y en el menú, cada una con su motivo. Más sílex de
+cada afloramiento. Pasada y stream de 37b; con mapa, donde la región tiene ese
+metal.
+
+**Avance del 2026-10-07 (37d, `smelting`).** El horno de fundición (`furnace`, estación) y la receta `smelt_copper` (tres de mineral y dos de carbón → dos lingotes de `copper`). El herrero va solo a la veta (`wantedOreKinds`) y la banda levanta sola el horno. La sub-red Metal se abre en 37e.
+
+**Avance del 2026-10-07 (37e, `bellows` y la sub-red Metal).** El fuelle da la fundición mejor (tres lingotes en 90 ticks, contra dos en 120) como segunda receta declarada antes de la simple. Con él se abre la sub-red Metal, con puerta en `native_copper`.
+
+**Avance del 2026-10-07 (37f, `casting`).** El hacha de cobre (tala más que la pulida, por la tabla `AXE_TOOLS` que sustituye a las dos ramas escritas a mano) y la daga de cobre (arma), vertidas en el horno de lingote. Nuevas manos en el arte para la daga.
+
+**Avance del 2026-10-07 (37g, `alloying`).** El estaño se funde y se alea con el cobre en el horno (tres de cobre y uno de estaño dan tres de bronce). Hay un solo yacimiento de estaño en la isla, de catorce de mineral, y una prueba cuenta el bronce que da como máximo. `bronze-needs-a-trader` espera al comercio de la fase 36.
+
+**Avance del 2026-10-07 (37h, `bronze_tools`).** Hacha, azuela, hoz y pala de bronce, cada una leída por la función que ya leía su piedra (la pala cava a 5×, la del plan 26b). Una pala de bronce necesita tres de bronce: el estaño manda.
+
+**Avance del 2026-10-07 (37i, `bronze_arms`).** Espada y yelmo de bronce. **`armourOf` pasa por `techPower`** (`ItemDef.armourTech`, `armourFit`): lo que nombra su técnica protege según quien lo lleva; lo que no, igual que siempre. El yelmo aún no se dibuja puesto.
+
+**Avance del 2026-10-07 (37j, `goldwork`).** El oro de la grava (dos puntos en la isla, solo con mapa donde la región lo tiene) y el adorno de oro, el `baseValue` más alto del juego: regalo, robo y deuda ya lo leen. Con él quedan los diez nodos de la fase.
+
+**Avance del 2026-10-07 (37k, `smiths` y la cadena).** Escenario `smiths` (los diez nodos, con estaciones y vetas junto al campamento) y dos checks, `ore-becomes-metal` y `metal-is-cast`. Midiéndolos apareció un fallo real: con el mineral que pide la receta, 11 cargas y ninguna fundición; ahora `wantedOreKinds` quiere hasta las hojas de la cadena (palos para el carbón, mineral para el horno, estaño para el bronce) y el mismo mundo funde 3 veces. El check falla contra la build rota.
+
+**Avance del 2026-10-07 (37l, eras).** La escalera gana el Calcolítico y el Bronce (`heldBy` 0,15: un pueblo de metal tiene pocos herreros entre muchos). Con esto la fase tiene sus diez nodos, la mina, el horno, `smith` entrenada, `armourOf` por `techPower`, el escenario `smiths` y los peldaños. Queda fuera lo que el plan nombra y no era de los diez: fíbula, sal gema y sebo (ver `next-steps.md`), y el check `bronze-needs-a-trader`, que espera a la fase 36.
+
+**Avance del 2026-10-07 (37m, lo que se ve, y el cierre).** Capturas en `artifacts/screenshots/m15-phase37-metal-2026-10-07/`, e2e propio (`phase37-metal.spec.ts`, 97 de 97 en total) y los nombres de nodo sin guion bajo en inglés. **La fase queda hecha en sus diez nodos, la mina, el horno, `smith` entrenada, `armourOf` por `techPower`, el escenario `smiths` y los peldaños de eras.** No se hizo la fíbula, la sal gema ni el sebo (sub-redes y fases que aún no existen), ni se midió `bronze-needs-a-trader` (espera a la fase 36): `m15_phase37_metal.md`, «Lo que queda».
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

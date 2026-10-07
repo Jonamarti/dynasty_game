@@ -22,6 +22,7 @@ import type { ResourceNode } from '../entities/ResourceNode.ts';
 import type { World } from '../core/World.ts';
 import type { Building } from '../entities/Building.ts';
 import { BUILDINGS, isStation, isStructure } from '../entities/Building.ts';
+import { canWork } from '../knowledge/Ore.ts';
 import { SOW_SEED } from '../entities/Field.ts';
 import type { Tree } from '../entities/Tree.ts';
 import { ITEMS } from '../entities/Item.ts';
@@ -231,6 +232,10 @@ const NODE_VERBS: Record<string, { label: string; icon: string; action: string }
   reeds: { label: 'Cut reeds', icon: '\u{1F33E}', action: 'gather' },
   clay: { label: 'Dig clay', icon: '\u{1FAA8}', action: 'gather' },
   flint: { label: 'Gather flint', icon: '\u{1FAA8}', action: 'gather' },
+  native_copper: { label: 'Pick up native copper', icon: '\u{1FA99}', action: 'gather' },
+  copper_ore: { label: 'Mine copper ore', icon: '\u{26CF}', action: 'gather' },
+  tin_ore: { label: 'Mine tin ore', icon: '\u{26CF}', action: 'gather' },
+  gold: { label: 'Pick out gold', icon: '\u{1FA99}', action: 'gather' },
   // Translated where it is shown, below; `NODE_VERB_LABELS` lets the i18n test
   // see these.
 };
@@ -309,7 +314,7 @@ export function availableActions(
 ): ActionOption[] {
   switch (target.kind) {
     case 'person': return personActions(actor, target.person!, ctx);
-    case 'node': return nodeActions(target.node!);
+    case 'node': return nodeActions(actor, target.node!, ctx);
     case 'tree': return treeActions(target.tree!);
     // `pickup` is a verb in `ActionSystem` as of the pass that answered the
     // owner's "to pick things up npcs must go near the object", so it can be
@@ -800,15 +805,20 @@ function animalActions(actor: Person, animal: Animal): ActionOption[] {
   return options;
 }
 
-function nodeActions(node: ResourceNode): ActionOption[] {
+function nodeActions(actor: Person, node: ResourceNode, ctx: CatalogContext): ActionOption[] {
   const verb = NODE_VERBS[node.kind] ?? { label: 'Harvest', icon: '✋', action: 'forage' };
+  // M15 phase 37: ore is taken out of a hill only by somebody who knows how, and
+  // the menu says so instead of offering a verb the order will refuse.
+  const cannotMine = !canWork(actor, node.kind);
   return [
     {
       id: verb.action,
       label: t(verb.label),
       icon: verb.icon,
-      enabled: !node.depleted,
-      reason: node.depleted ? t('Nothing left here') : undefined,
+      enabled: !node.depleted && !cannotMine,
+      reason: node.depleted ? t('Nothing left here')
+        : cannotMine ? (ctx.commanding ? t('They do not know how to mine') : t('You do not know how to mine'))
+        : undefined,
     },
   ];
 }

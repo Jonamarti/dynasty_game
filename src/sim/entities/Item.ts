@@ -50,6 +50,12 @@ export interface ItemDef {
    */
   protects?: Partial<Record<import('./Body.ts').BodyPart, number>>;
   /**
+   * M15 phase 37. The technique behind a garment, when how well it is made
+   * matters to how well it turns a blow (`Tech.armourFit`). Left out, the
+   * garment protects by `protects` alone, as every garment did before the metal.
+   */
+  armourTech?: string;
+  /**
    * M15 phase 11a. What fits in a hand, in two hands, or on a shoulder.
    * `perHand` is a fistful, `perArms` an armload with both hands, and
    * `shoulder` — only present on the few things big enough to carry that way
@@ -341,6 +347,68 @@ export const ITEMS: Record<string, ItemDef> = {
     weapon: { damage: 0.2, reach: 1.4, hunt: 1.7, tech: 'sling' },
     class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 },
   },
+  // --- M15 phase 37 (M8.3): the metal tier ------------------------------------
+  //
+  // `charcoal`: wood burned slow under turf. Not food and not a weapon; it is
+  // read in two places, `Tech.warmthFrom` (a coal in the pack is a brazier) and
+  // the furnace recipes of `smelting`, which is what it is for. Loose, like
+  // earth: a basket takes it, a hand holds a fistful of it.
+  // `native_copper`'s three things. The nugget is the raw metal, found; the awl
+  // is read by `Tech.awlFactor`; the pendant is an ornament, and what it is
+  // for is `baseValue`: the best thing of its size a band can make at this point,
+  // which is exactly what `gift` and `doSteal` read, and what trade will read.
+  copper_nugget: { id: 'copper_nugget', label: 'Copper nugget', nutrition: 0, spoilTicks: 0, baseValue: 6, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  copper_awl: { id: 'copper_awl', label: 'Copper awl', nutrition: 0, spoilTicks: 0, baseValue: 9, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  copper_pendant: { id: 'copper_pendant', label: 'Copper pendant', nutrition: 0, spoilTicks: 0, baseValue: 18, class: 'small', hand: { perHand: 1, perArms: 2, hands: 1 } },
+  // `mining`'s two ores: raw, heavy, worth nothing to eat and a little to
+  // anybody who knows what a furnace does with them. Tin is dearer by far.
+  copper_ore: { id: 'copper_ore', label: 'Copper ore', nutrition: 0, spoilTicks: 0, baseValue: 4, class: 'bulky', hand: { perHand: 1, perArms: 4, hands: 1 } },
+  tin_ore: { id: 'tin_ore', label: 'Tin ore', nutrition: 0, spoilTicks: 0, baseValue: 9, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  // `smelting`'s ingot. Not a tool and not an ornament: it is the stuff of both,
+  // and what `casting` consumes. Worth four times the ore it came from, which is
+  // what makes carrying one a reason to keep it from a thief.
+  copper: { id: 'copper', label: 'Copper', nutrition: 0, spoilTicks: 0, baseValue: 14, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  // `casting`'s two. The axe is read through `AXE_TOOLS`, so it is not a weapon:
+  // knowing how to cast it and a swing at a person are different questions, and
+  // the `handaxe` bug is what mixing them gave. The dagger is a weapon and only a
+  // weapon: short, quick, good in a scuffle, poor against an animal that has to be
+  // caught first.
+  copper_axe: { id: 'copper_axe', label: 'Copper axe', nutrition: 0, spoilTicks: 0, baseValue: 16, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  copper_dagger: {
+    id: 'copper_dagger', label: 'Copper dagger', nutrition: 0, spoilTicks: 0, baseValue: 15,
+    weapon: { damage: 0.5, reach: 0.25, hunt: 1.2, tech: 'casting' },
+    class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 },
+  },
+  // `alloying`'s two: the ingot of tin and the ingot of bronze. Tin is the dearest
+  // thing a band can make before iron, because there is so little of it.
+  tin: { id: 'tin', label: 'Tin', nutrition: 0, spoilTicks: 0, baseValue: 22, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  bronze: { id: 'bronze', label: 'Bronze', nutrition: 0, spoilTicks: 0, baseValue: 20, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  // `bronze_tools`. Read through `AXE_TOOLS`, `buildFactor`, `reapFactor` and
+  // `DIG_TOOLS`; none is a weapon, on the `handaxe` argument.
+  bronze_axe: { id: 'bronze_axe', label: 'Bronze axe', nutrition: 0, spoilTicks: 0, baseValue: 28, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  bronze_adze: { id: 'bronze_adze', label: 'Bronze adze', nutrition: 0, spoilTicks: 0, baseValue: 26, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  bronze_sickle: { id: 'bronze_sickle', label: 'Bronze sickle', nutrition: 0, spoilTicks: 0, baseValue: 22, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  bronze_spade: { id: 'bronze_spade', label: 'Bronze spade', nutrition: 0, spoilTicks: 0, baseValue: 30, class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  // `bronze_arms`. The sword is a weapon like the dagger, further reaching and
+  // harder-hitting than anything a flint can be; the helm is the first garment
+  // to cover the head, and its worth passes through `armourTech`.
+  bronze_sword: {
+    id: 'bronze_sword', label: 'Bronze sword', nutrition: 0, spoilTicks: 0, baseValue: 34,
+    weapon: { damage: 0.75, reach: 0.55, hunt: 1.35, tech: 'bronze_arms' },
+    class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 },
+  },
+  bronze_helm: {
+    id: 'bronze_helm', label: 'Bronze helm', nutrition: 0, spoilTicks: 0, baseValue: 30,
+    protects: { head: 0.55 }, armourTech: 'bronze_arms',
+    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
+  },
+  // `goldwork`. The nugget is the raw metal; the ornament is what a band makes of
+  // it, and its `baseValue` is the highest in the game on purpose: it is worth
+  // what a people agrees it is worth, and `gift`, `doSteal` and the debts of
+  // `Amends` all read exactly that number.
+  gold_nugget: { id: 'gold_nugget', label: 'Gold nugget', nutrition: 0, spoilTicks: 0, baseValue: 24, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
+  gold_ornament: { id: 'gold_ornament', label: 'Gold ornament', nutrition: 0, spoilTicks: 0, baseValue: 60, class: 'small', hand: { perHand: 1, perArms: 2, hands: 1 } },
+  charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
 };
 
 export class Inventory {

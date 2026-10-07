@@ -431,6 +431,8 @@ export const STOP_REASONS: Record<string, string> = {
   nobody_to_tend: 'there is nobody here to look after',
   nothing_to_treat: 'they are not hurt any more',
   knows_poisonous: 'they know those berries are poisonous',
+  // M15 phase 37: ore needs a miner.
+  cannot_mine: 'they do not know how to mine',
   gored: 'it killed them',
   gored_by_quarry: 'the quarry turned on them',
   grass_gone: 'there is no grass there any more',

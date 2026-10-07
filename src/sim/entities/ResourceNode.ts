@@ -14,6 +14,7 @@ import type { RNG } from '../core/RNG.ts';
 import type { Season } from '../core/TimeManager.ts';
 import { ITEMS } from './Item.ts';
 import type { IdSpace } from '../core/IdSpace.ts';
+import type { Tech } from '../knowledge/Tech.ts';
 
 // `wild_grain` is appended rather than inserted, and it is spawned in a pass of
 // its own on a stream of its own — see `Simulation.spawnWildGrain`. Adding it to
@@ -22,6 +23,15 @@ import type { IdSpace } from '../core/IdSpace.ts';
 // `AGENTS.md` describes and `fish` already had to dodge.
 export const RESOURCE_KINDS = [
   'berries', 'flint', 'sticks', 'reeds', 'clay', 'fish', 'wild_grain',
+  // M15 phase 37 (M8.3). Appended, and spawned in a pass of their own on their
+  // own stream (`Simulation.spawnOres`, `oreRng`) for the reason `wild_grain`
+  // gives above: a new entry in `spawnResources`' plan would move every herd
+  // and every person in every saved seed.
+  'native_copper',
+  // `mining`'s two: ore in the hill, which only somebody who digs can take.
+  'copper_ore', 'tin_ore',
+  // `goldwork`'s: the metal that lies in the gravels as metal.
+  'gold',
 ] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 
@@ -53,6 +63,12 @@ export interface ResourceDef {
    * around, or under things snow does not settle on.
    */
   groundLevel?: boolean;
+  /**
+   * The technique a person needs to take anything from this node at all, read
+   * through `techPower` (`Ore.canWork`). Undefined means anybody: native copper
+   * lies on the surface, and picking it up needs no more than hands.
+   */
+  requiresTech?: Tech;
 }
 
 export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
@@ -79,6 +95,49 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
     kind: 'wild_grain', itemId: 'grain', maxAmount: 8, regrowPerTick: 0.0032,
     harvestTicks: 10, skill: 'forage',
   },
+  // M15 phase 37. Copper lying on the surface as metal — float nuggets washed
+  // out of an outcrop, or weathered out of it — which is how the metal was
+  // first found and why it was worked cold before anyone smelted anything.
+  // Few and small: six at the most, and it never grows back. Anybody can pick
+  // one up; only somebody who knows `native_copper` goes looking (`Brain`).
+  native_copper: {
+    kind: 'native_copper', itemId: 'copper_nugget', maxAmount: 6, regrowPerTick: 0,
+    harvestTicks: 16, skill: 'knap', groundLevel: true,
+  },
+  // M15 phase 37, `mining`. A mine is a node, not a hole: the ground is not
+  // excavated (so nothing here needs the region repair of phase 16a) and a
+  // seam gives out. Neither grows back. Copper is the commoner; tin is the rare
+  // one, and it is rare on purpose - the bronze trade of the real Bronze Age
+  // existed because tin was a few places in a continent.
+  copper_ore: {
+    kind: 'copper_ore', itemId: 'copper_ore', maxAmount: 20, regrowPerTick: 0,
+    harvestTicks: 24, skill: 'knap', requiresTech: 'mining',
+  },
+  tin_ore: {
+    kind: 'tin_ore', itemId: 'tin_ore', maxAmount: 14, regrowPerTick: 0,
+    harvestTicks: 28, skill: 'knap', requiresTech: 'mining',
+  },
+  // M15 phase 37, `goldwork`. Grains in the gravel, four at the most, picked up
+  // by anybody and never replaced: placer gold is there once.
+  gold: {
+    kind: 'gold', itemId: 'gold_nugget', maxAmount: 4, regrowPerTick: 0,
+    harvestTicks: 18, skill: 'knap', groundLevel: true,
+  },
+};
+
+/**
+ * How many of each ore a classic island holds, before `resourceScale`: the
+ * metals come in a pass of their own (`Simulation.spawnOres`), and on a world
+ * with a map each is placed only where the region's profile has it
+ * (`geographicResourceAvailable`). Native copper is scarce even where it is
+ * found - a handful of nuggets, never a seam.
+ */
+export const ORE_COUNTS: Partial<Record<ResourceKind, number>> = {
+  native_copper: 5,
+  copper_ore: 4,
+  // One seam on a whole island: the scarcity is the design.
+  tin_ore: 1,
+  gold: 2,
 };
 
 /**

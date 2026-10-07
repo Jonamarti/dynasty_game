@@ -657,6 +657,46 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     requiresTech: 'firemaking',
     description: 'A tended fire for warmth and cooking.',
   },
+  // --- M15 phase 37 (M8.3): the metal tier ------------------------------------
+  //
+  // `charcoal_pit`, a station on the terms the quern set: no storage (or the
+  // larder scorer would fill it with berries), a 3x3 footprint so that
+  // `reachBuilding`'s containment test can be met. Built of what a band can
+  // fetch for a site: deadwood for the stack and clay for the turf seal.
+  // `furnace`: the kiln's bigger, hotter cousin. Flint and clay as the kiln is,
+  // and more of both, because it has to hold a heat that melts stone. A station
+  // on the quern's terms (no storage; 3x3).
+  furnace: {
+    id: 'furnace',
+    label: 'Furnace',
+    icon: '\u{1F525}',
+    width: 3, height: 3,
+    materials: { flint: 10, mud: 8 },
+    workTicks: 260,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'smelting',
+    description:
+      'A clay-lined shaft fed from the top with ore and charcoal and from ' +
+      'the side with air. The heat is more than a kiln gives, and what runs ' +
+      'out of the bottom is metal.',
+  },
+  charcoal_pit: {
+    id: 'charcoal_pit',
+    label: 'Charcoal pit',
+    icon: '\u{26AB}',
+    width: 3, height: 3,
+    materials: { sticks: 8, mud: 4 },
+    workTicks: 150,
+    shelter: 0,
+    storage: 0,
+    station: true,
+    requiresTech: 'charcoal',
+    description:
+      'A stack of deadwood sealed under turf and left to smoulder. What comes ' +
+      'out is black, light, and burns hotter than the wood that went in.',
+  },
 };
 
 // --- M15 phase 26c: designs that move ground -----------------------------------

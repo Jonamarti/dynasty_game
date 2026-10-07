@@ -13,7 +13,7 @@ import { CORD, STONE, STONE_D, WOOD, WOOD_D } from './items.ts';
 export const HAND: readonly [number, number] = [48, 48];
 
 /** What the sim can put in a hand today, plus the torch phase 12 adds. */
-export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'digging_stick'] as const;
+export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'bronze_sword', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'bronze_spade', 'digging_stick'] as const;
 export type HeldKind = (typeof HELD_KINDS)[number];
 
 /** `side` is true when seen from the east or west. */
@@ -29,6 +29,10 @@ export function heldSvg(kind: HeldKind, side: boolean): string {
     case 'spade':
       return limb([[x, y - 22], [x, y + 6]], 2.2, WOOD, WOOD_D)
         + shape(`M${x - 5},${y + 3}L${x + 5},${y + 3}L${x + 6},${y + 14}Q${x},${y + 23} ${x - 6},${y + 14}Z`, WOOD, WOOD_D);
+    case 'bronze_spade':
+      return limb([[x, y - 22], [x, y + 6]], 2.2, WOOD, WOOD_D)
+        + shape(`M${x - 5},${y + 3}L${x + 5},${y + 3}L${x + 6},${y + 14}Q${x},${y + 23} ${x - 6},${y + 14}Z`, '#b08a3e', '#5a4216')
+        + stroke(`M${x - 3},${y + 6}L${x + 3},${y + 6}`, '#dcc072', 0.9);
     case 'spear': {
       const top: [number, number] = side ? [x + 7, y - 38] : [x, y - 38];
       const bot: [number, number] = side ? [x - 3, y + 14] : [x, y + 14];
@@ -61,6 +65,20 @@ export function heldSvg(kind: HeldKind, side: boolean): string {
       const tx = side ? 3 : 0;
       return shape(smooth([[x + tx, y - 15], [x + tx + 2.4, y - 4], [x + 1.8, y + 6], [x - 1.8, y + 6], [x + tx - 2.2, y - 4]]), '#e6dcc0', '#7a6d4e')
         + stroke(`M${x + tx - 0.6},${y - 8}L${x - 0.6},${y + 2}`, '#c9bd9c', 0.7);
+    }
+    case 'bronze_sword': {
+      const tx = side ? 3 : 0;
+      return shape(poly([[x + tx, y - 30], [x + tx + 3.4, y + 2], [x - 3.4, y + 2]]), '#b08a3e', '#5a4216')
+        + stroke(`M${x + tx},${y - 24}L${x},${y}`, '#dcc072', 0.9)
+        + limb([[x - 6, y + 3], [x + 6, y + 3]], 2, '#6b4f1c', null)
+        + limb([[x, y + 3], [x, y + 10]], 2.8, WOOD, WOOD_D);
+    }
+    case 'copper_dagger': {
+      const tx = side ? 2 : 0;
+      return shape(poly([[x + tx, y - 14], [x + tx + 3, y + 2], [x - 3, y + 2]]), '#c9803c', '#6b3a14')
+        + stroke(`M${x + tx},${y - 10}L${x},${y}`, '#e8b27a', 0.8)
+        + limb([[x - 4, y + 3], [x + 4, y + 3]], 1.8, '#6b3a14', null)
+        + limb([[x, y + 3], [x, y + 9]], 2.4, WOOD, WOOD_D);
     }
     case 'handaxe':
       return shape(smooth([[x, y - 10], [x + 5.4, y - 3], [x + 4, y + 5], [x - 4, y + 5], [x - 5.4, y - 3]]), '#a4a8ab', STONE_D)

@@ -53,7 +53,7 @@ describe('art coverage', () => {
   it('has a hand-held picture for everything the sim can put in a hand', () => {
     const held = props.meta['heldKinds'] as string[];
     // The kinds `Sprites.ts` names today; the renderer would draw nothing for a missing one.
-    for (const kind of ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'handaxe', 'net', 'basket', 'digging_stick', ...DIG_TOOLS.filter(tool => tool.tech).map(tool => tool.item)]) {
+    for (const kind of ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'bronze_sword', 'handaxe', 'net', 'basket', 'digging_stick', ...DIG_TOOLS.filter(tool => tool.tech).map(tool => tool.item)]) {
       expect(held, kind).toContain(kind);
       expect(props.keys[`held/${kind}/S`]).toBeDefined();
       expect(props.keys[`held/${kind}/E`]).toBeDefined();

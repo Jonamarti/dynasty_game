@@ -16,6 +16,7 @@ import { Simulation } from '../src/sim/core/Simulation.ts';
 import { capacityFor, equipContainer } from '../src/sim/core/Carry.ts';
 import { anchorOf, carerOf, childRadius } from '../src/sim/ai/Anchor.ts';
 import { telemetry } from '../src/sim/core/Telemetry.ts';
+import { RNG } from '../src/sim/core/RNG.ts';
 import type { DeepPartial, SimConfig } from '../src/sim/core/Config.ts';
 import { TECH, techPower, type Tech } from '../src/sim/knowledge/Tech.ts';
 
@@ -25,7 +26,7 @@ import { JOB_IDS, JOBS, type JobId } from '../src/sim/entities/Job.ts';
 import { isTrap, isHeap, isHerd, isWell } from '../src/sim/entities/Building.ts';
 import { Building, BUILDINGS } from '../src/sim/entities/Building.ts';
 import { RECIPES } from '../src/sim/entities/Recipe.ts';
-import { isFoodKind } from '../src/sim/entities/ResourceNode.ts';
+import { isFoodKind, ResourceNode, type ResourceKind } from '../src/sim/entities/ResourceNode.ts';
 import { PathStatus } from '../src/sim/core/Pathfinder.ts';
 import { TERRITORY_RADIUS } from '../src/sim/systems/BandSystem.ts';
 import { isHeld, isBound } from '../src/sim/social/Defence.ts';
@@ -177,7 +178,90 @@ function setupOrchard(sim: Simulation): void {
   for (const [i, person] of adults.entries()) person.inventory.add(fruit[i % fruit.length]!, 3);
 }
 
+/**
+ * Everything `techs` rests on, and `techs` themselves, in the order `TECHS`
+ * lists them. The metal tier is ten nodes deep, and a founder who holds a node
+ * without what it requires is a founder `teach` and `tryObserve` cannot use
+ * (both filter on `requires`), so a scenario that starts somebody at the top of
+ * a ladder names the top and lets this name the rest.
+ */
+function withPrerequisites(techs: readonly Tech[]): Tech[] {
+  const all = new Set<Tech>();
+  const visit = (tech: Tech): void => {
+    if (all.has(tech)) return;
+    all.add(tech);
+    for (const required of TECH[tech].requires) visit(required);
+  };
+  for (const tech of techs) visit(tech);
+  return [...all];
+}
+
+/**
+ * `smiths`: a band that has worked out the whole metal tier of M15 phase 37, by
+ * the trick `craft` and `scribes` use, because it is ten nodes deep over
+ * `kiln`, `ground_stone`, `leatherwork` and `spear` and no run in the suite
+ * climbs it from nothing. Harness-only: a charcoal pit and a furnace already
+ * stand beside the camp, since raising two stations from nothing costs a large
+ * share of the run before anything the scenario measures can begin (the same
+ * concession `polity` makes for its granary).
+ */
+function setupSmiths(sim: Simulation): void {
+  for (const [bandIndex, band] of sim.bands.filter(b => !b.outcast).entries()) {
+    // A seam of copper beside every camp, and tin beside only the first: what
+    // the island has (one seam) is the thing the scenario measures a shortage
+    // of, and a band that has never walked into the hills would otherwise never
+    // find a seam at all. Harness-only, like the stations: the simulation is
+    // never told they were put there, and the people learn the seams as they do
+    // any place, by seeing them.
+    const seams: ResourceKind[] = bandIndex === 0 ? ['copper_ore', 'tin_ore', 'native_copper', 'gold'] : ['copper_ore', 'native_copper'];
+    for (const [i, kind] of seams.entries()) {
+      const spot = sim.world.findWalkableNear(Math.round(band.homeX + 5 + i * 2), Math.round(band.homeY - 5 + i));
+      if (!spot) continue;
+      const node = new ResourceNode(kind, spot.x, spot.y, new RNG('smiths-seams'), sim.ids);
+      sim.nodes.push(node);
+      sim.nodesById.set(node.id, node);
+    }
+    sim.nodeHash.rebuild(sim.nodes);
+    for (const id of ['charcoal_pit', 'furnace']) {
+      let placed = false;
+      for (let r = 3; r < 24 && !placed; r++) {
+        for (let a = 0; a < 16 && !placed; a++) {
+          const x = Math.round(band.homeX + Math.cos(a * Math.PI / 8) * r);
+          const y = Math.round(band.homeY + Math.sin(a * Math.PI / 8) * r);
+          if (!sim.canPlace(BUILDINGS[id]!, x, y)) continue;
+          const station = new Building(BUILDINGS[id]!, x, y, band.id, sim.ids);
+          station.complete = true;
+          sim.buildings.push(station);
+          sim.buildingsById.set(station.id, station);
+          sim.buildingHash.insert(station);
+          placed = true;
+        }
+      }
+    }
+  }
+}
+
 export const SCENARIOS: Record<string, Scenario> = {
+  smiths: {
+    name: 'smiths',
+    description:
+      'A band that has worked out the whole metal tier (M15 phase 37), with a ' +
+      'charcoal pit and a furnace already standing at its camp: the only run ' +
+      'in which anything is mined, smelted, cast or alloyed. Two bands, so the ' +
+      'tin on the island is something to be short of.',
+    config: {
+      seed: 'smiths',
+      population: {
+        bands: 2, peoplePerBand: 12,
+        startingTech: withPrerequisites([
+          'firemaking', 'cooking', 'spear', 'native_copper', 'charcoal', 'mining',
+          'smelting', 'bellows', 'casting', 'alloying', 'bronze_tools', 'bronze_arms', 'goldwork',
+        ]),
+      },
+    },
+    steps: 16000,
+    setup: setupSmiths,
+  },
   'frontier-cohort': {
     name: 'frontier-cohort',
     description: 'Autonomous continental bands use freshwater and fords through five game years.',
@@ -3420,6 +3504,36 @@ function buildChecks(sim: Simulation, samples: Sample[], base: Omit<Report, 'che
     add('wool-is-sheared-and-woven',
       (tel.crafted_wool_cloth ?? 0) > 0,
       woolBred + ' wool bred, ' + (tel.crafted_wool_cloth ?? 0) + ' woven into cloth');
+  }
+
+  // M15 phase 37. The metal tier is a chain of six steps done by whoever holds
+  // the ingredients (seam, deadwood, pit, charcoal, furnace, mould), and the
+  // failure worth a check is the chain that breaks in the middle. Measured on
+  // `smiths` against the first `Ore.wantedOreKinds`, which asked only for the
+  // ore a recipe consumes directly: eleven loads of copper ore were mined and
+  // not one ingot was smelted, because the people with ore never held charcoal
+  // and the people with charcoal never held ore. The ore is the thing that was
+  // fetched; the ingot is the thing that was wanted, and the check is the
+  // second as a share of the first.
+  // Copper and not tin: the tin was smelted on the broken build too (a person
+  // who carried tin ore also carried the one charcoal it takes), so a check that
+  // counted both passed there and detected nothing.
+  const oreMined = tel.harvest_copper_ore ?? 0;
+  const smelts = (tel.crafted_smelt_copper ?? 0) + (tel.crafted_smelt_copper_bellows ?? 0);
+  if (oreMined === 0) {
+    skip('ore-becomes-metal', 'no copper ore was mined in this run');
+  } else {
+    add('ore-becomes-metal', smelts > 0,
+      oreMined + ' loads of copper ore mined, ' + smelts + ' furnace runs');
+  }
+  const cast = ['copper_axe', 'copper_dagger', 'bronze_axe', 'bronze_adze', 'bronze_sickle',
+    'bronze_spade', 'bronze_sword', 'bronze_helm']
+    .reduce((n, id) => n + (tel['crafted_' + id] ?? 0), 0);
+  const ingots = (tel.crafted_smelt_copper ?? 0) + (tel.crafted_smelt_copper_bellows ?? 0);
+  if (ingots === 0) {
+    skip('metal-is-cast', 'no copper was smelted in this run');
+  } else {
+    add('metal-is-cast', cast > 0, ingots + ' furnace runs of copper, ' + cast + ' tools and arms cast');
   }
 
   // There is deliberately no `traps-are-emptied` check here, and the reason is

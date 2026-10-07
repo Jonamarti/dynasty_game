@@ -157,6 +157,29 @@ export const TECHS = [
   // The two weapons of the same phase: a variant of the spear and a new one.
   'fire_hardened_spear',
   'sling',
+  // M15 phase 37: the metal tier (M8.3), one node per commit with its reader.
+  // Appended in the order the commits land; `TECHS` order is the web's layout.
+  'charcoal',
+  // Copper as metal, found lying about and hammered cold: the door of the Metal web.
+  'native_copper',
+  // Following a seam into the hill: the ore that nobody finds lying about.
+  'mining',
+  // Metal out of rock: the furnace, which is the whole difference between
+  // finding copper and having it.
+  'smelting',
+  // Air driven into the fire: what a furnace is worth once somebody works it.
+  'bellows',
+  // Metal poured into a shape: the first tools that are not stone.
+  'casting',
+  // Tin into copper: the metal the age is named for, and the one that is far away.
+  'alloying',
+  // What bronze is for: the tools that every trade in the band leans on.
+  'bronze_tools',
+  // Bronze made for the fight: a sword, and a helm for the one part of the body
+  // nothing else here covers.
+  'bronze_arms',
+  // The other metal found as metal: gold, which no fire improves and every people prizes.
+  'goldwork',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -177,6 +200,9 @@ export const DOMAINS = [
   // domain an angular sector in this order, and reordering the list would
   // rearrange a web the player has learned the shape of.
   'people',
+  // M15 phase 37 (M8.3): the ninth, for the metals. Appended for the reason
+  // `people` was: `TechWebLayout` gives each domain a sector in this order.
+  'metal',
 ] as const;
 export type Domain = (typeof DOMAINS)[number];
 
@@ -272,7 +298,7 @@ export type TechKind = 'practice' | 'device';
  * a node lives never changes what anyone can discover, which is why moving a
  * node between webs is bit-identical.
  */
-export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen';
+export type WebId = 'main' | 'arms' | 'field' | 'domestication' | 'kitchen' | 'metal';
 
 export interface WebDef {
   id: WebId;
@@ -290,6 +316,9 @@ export const WEBS: Record<WebId, WebDef> = {
   field: { id: 'field', label: 'Field', gate: 'farming', color: '#8fb35a' },
   domestication: { id: 'domestication', label: 'Taming', gate: 'taming', color: '#c9a34b' },
   kitchen: { id: 'kitchen', label: 'Kitchen', gate: 'cooking', color: '#d98b4a' },
+  // M15 phase 37: opened by the first metal anyone used, once a second node
+  // (`bellows`, 37e) gives it content. The colour is the domain's verdigris.
+  metal: { id: 'metal', label: 'Metal', gate: 'native_copper', color: '#3fb8a0' },
 };
 
 /** The webs that hang off a gate, in the order a screen should list them. */
@@ -1996,6 +2025,272 @@ export const TECH: Record<Tech, TechDef> = {
       'won again: the head of the king\'s own house, or his eldest child. ' +
       'An heir who never learned to be king will not pass it on in turn.',
   },
+  // M15 phase 37 (M8.3). The fuel every furnace below will want: wood burned
+  // slowly under turf with the air kept out, until what is left is black, light
+  // and hotter than the wood was. A device: the pit is the thing built.
+  //
+  // `fire` rather than a new domain: it is a way of burning, and the Fire
+  // sub-web (phase 16) will take it in when that opens. Its sparks are the
+  // fire-keeper's: a carried armful of sticks, a winter night, a cold hearth.
+  charcoal: {
+    id: 'charcoal', label: 'Charcoal', domain: 'fire',
+    age: 'chalcolithic', firstKnown: 'about 5000 BC',
+    kind: 'device',
+    requires: ['firemaking', 'carpentry'], difficulty: 0.5, skill: 'build',
+    prototype: { sticks: 6, flint: 1 }, maxRefinement: 2,
+    answers: ['warmth'],
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'holding', item: 'sticks' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 1.0, story: 'banked a fire under turf and found, come morning, black sticks that burned hotter than the wood had' },
+      { needs: [{ kind: 'knows', tech: 'carpentry' }, { kind: 'doing', action: 'chop' },
+                { kind: 'feeling', need: 'cold' }],
+        weight: 0.6, story: 'burned the chips from a felling to keep warm, and smothered the fire by accident' },
+      { needs: [{ kind: 'knows', tech: 'firemaking' }, { kind: 'season', season: 'winter' },
+                { kind: 'feeling', need: 'cold' }],
+        weight: 0.5, story: 'wanted a fire that would last the night without being fed' },
+    ],
+    description:
+      'Wood burned slow under turf, with the air kept out, until it is black ' +
+      'and light and burns hotter than any wood. Carried, it is a warmth that ' +
+      'travels; in a furnace it is the heat a metal needs.',
+  },
+  // M15 phase 37 (M8.3). The first metal anyone used was not smelted: it was
+  // found as metal, a nugget of copper lying in the hills, and hammered cold
+  // until it was an awl or a bead. The door of the Metal web (`opens` is added
+  // with the second node that has an effect, 37c: a web of one is declared
+  // before its content). A device: the first awl or pendant is the prototype.
+  native_copper: {
+    id: 'native_copper', label: 'Native copper', domain: 'metal',
+    opens: 'metal',
+    age: 'chalcolithic', firstKnown: 'about 7000 BC',
+    kind: 'device',
+    requires: ['stoneworking'], difficulty: 0.55, skill: 'knap',
+    prototype: { copper_nugget: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'holding', item: 'copper_nugget' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 1.0, story: 'struck a green-crusted stone that flattened under the blow instead of cracking' },
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'holding', item: 'copper_nugget' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.7, story: 'worked a bright lump with a hammerstone and found it spread like clay' },
+      { needs: [{ kind: 'knows', tech: 'stoneworking' }, { kind: 'place', biome: 'hills' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 0.4, story: 'turned over stones in the hills and kept one that would not break' },
+    ],
+    description:
+      'Copper found lying as metal and hammered cold: it spreads instead of ' +
+      'cracking. An awl that goes through hide, and a bead worth more than ' +
+      'the nugget it came from.',
+  },
+  // M15 phase 37 (M8.3). Following a seam into the hillside instead of taking
+  // what lies on it: flint first, and the green-stained rock beside it after.
+  // The Neolithic flint mines (Spiennes, about 4,000 BC) are where it was
+  // worked out, which is why its first reader is flint and not metal.
+  mining: {
+    id: 'mining', label: 'Mining', domain: 'stone',
+    age: 'chalcolithic', firstKnown: 'about 4000 BC',
+    kind: 'device',
+    requires: ['ground_stone', 'hafting'], difficulty: 0.6, skill: 'knap',
+    prototype: { flint: 3, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'ground_stone' }, { kind: 'holding', item: 'flint' },
+                { kind: 'place', biome: 'hills' }, { kind: 'doing', action: 'gather' }],
+        weight: 1.0, story: 'followed a band of flint into the hillside with an axe, and kept digging after it ran out' },
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'doing', action: 'gather' },
+                { kind: 'place', biome: 'hills' }],
+        weight: 0.6, story: 'dug under a ledge for a better stone and found the hill was worth opening' },
+      { needs: [{ kind: 'knows', tech: 'ground_stone' }, { kind: 'doing', action: 'build' }],
+        weight: 0.4, story: 'cut a footing out of a rock face and saw how much came away in one piece' },
+    ],
+    description:
+      'Following a seam into the hill rather than taking what lies on it. ' +
+      'More from every flint outcrop, and the ore a hill keeps inside it: ' +
+      'what nobody can find lying about, somebody who digs can.',
+  },
+  // M15 phase 37 (M8.3). Copper out of green rock: ore and charcoal in a
+  // clay-lined furnace, a heat no hearth reaches, and a metal that was never
+  // lying anywhere. The pivot the kiln was waiting for: the same held heat,
+  // pointed at ore instead of clay. A device: the furnace is the thing built.
+  smelting: {
+    id: 'smelting', label: 'Smelting', domain: 'metal', web: 'metal',
+    age: 'chalcolithic', firstKnown: 'about 5000 BC',
+    kind: 'device',
+    requires: ['native_copper', 'charcoal', 'kiln'], difficulty: 0.7, skill: 'smith',
+    prototype: { flint: 4, mud: 4 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'kiln' }, { kind: 'knows', tech: 'charcoal' },
+                { kind: 'holding', item: 'copper_ore' }],
+        weight: 1.0, story: 'dropped green rock into a charcoal fire in the kiln and found a bead of metal in the ash' },
+      { needs: [{ kind: 'knows', tech: 'native_copper' }, { kind: 'knows', tech: 'kiln' },
+                { kind: 'holding', item: 'charcoal' }],
+        weight: 0.6, story: 'wondered if a heat that fired clay would run a nugget like wax' },
+      { needs: [{ kind: 'knows', tech: 'charcoal' }, { kind: 'knows', tech: 'kiln' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.4, story: 'banked charcoal in the kiln for the heat of it and left a pot of green stones beside it' },
+    ],
+    description:
+      'Ore and charcoal in a clay-lined furnace, hotter than any hearth. ' +
+      'Metal that was never lying anywhere: ingots of copper out of green rock.',
+  },
+  // M15 phase 37 (M8.3). "The enabling technology, not a flourish": a hide bag
+  // worked like a lung, and a furnace that took a day to come up to heat takes
+  // an afternoon. It changes nothing a furnace can do and a great deal about
+  // what a run of it costs. A device: the bellows is what is built.
+  bellows: {
+    id: 'bellows', label: 'Bellows', domain: 'metal', web: 'metal',
+    age: 'bronze', firstKnown: 'about 3000 BC',
+    kind: 'device',
+    requires: ['smelting', 'leatherwork'], difficulty: 0.6, skill: 'smith',
+    prototype: { hide: 1, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'smelting' }, { kind: 'knows', tech: 'leatherwork' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'fanned a flagging furnace with a stiff hide and watched the glow come up' },
+      { needs: [{ kind: 'knows', tech: 'smelting' }, { kind: 'holding', item: 'charcoal' },
+                { kind: 'feeling', need: 'fatigue' }],
+        weight: 0.6, story: 'got dizzy blowing down a reed into the fire and wanted a lung that would not tire' },
+      { needs: [{ kind: 'knows', tech: 'leatherwork' }, { kind: 'knows', tech: 'smelting' },
+                { kind: 'holding', item: 'copper_ore' }],
+        weight: 0.5, story: 'pumped a skin of air at a charge that would not run' },
+    ],
+    description:
+      'A skin worked like a lung, pressed to push air into the fire. The ' +
+      'same furnace comes to heat faster and turns more of the ore to metal ' +
+      'for the same charcoal.',
+  },
+  // M15 phase 37 (M8.3). Metal run into a mould of fired clay: an axe that is
+  // an axe from the first pour, and a dagger, which is a blade longer than
+  // anything flint gives. `maxRefinement: 1`, not 2, for the reason
+  // `ground_stone` records: `axeFactor` reads this through `scaled` with a
+  // `full` under 1, and a `full` of 0.3 at two refinement steps (power 1.4)
+  // would put the multiplier at 0.02. One step keeps the floor at 0.16.
+  casting: {
+    id: 'casting', label: 'Casting', domain: 'metal', web: 'metal',
+    age: 'chalcolithic', firstKnown: 'about 4000 BC',
+    kind: 'device',
+    requires: ['smelting', 'pottery'], difficulty: 0.65, skill: 'smith',
+    prototype: { mud: 3, flint: 2 }, maxRefinement: 1,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'smelting' }, { kind: 'knows', tech: 'pottery' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 1.0, story: 'let the run of metal find its way into a hollow pressed in clay, and broke the clay open on an axe' },
+      { needs: [{ kind: 'knows', tech: 'smelting' }, { kind: 'holding', item: 'copper' }],
+        weight: 0.7, story: 'wanted the ingot to be an axe and not a lump' },
+      { needs: [{ kind: 'knows', tech: 'pottery' }, { kind: 'knows', tech: 'smelting' },
+                { kind: 'holding', item: 'mud' }],
+        weight: 0.5, story: 'pressed a flint axe into wet clay for the print and thought of filling it' },
+    ],
+    description:
+      'Metal run into a hollow shaped in clay. An axe that cuts like the ' +
+      'best polished stone, and a dagger: a blade longer than any flint gives.',
+  },
+  // M15 phase 37 (M8.3). A tenth part of tin in the copper, and the metal is
+  // harder, runs better and holds an edge: bronze. The plan's whole point is the
+  // tin. Copper is in the hills of nearly every country and tin is in a few
+  // places in a continent, so this is the node a band without a tin seam can
+  // know and never use, and the one that sends the Bronze Age's traders across
+  // it. Tin is smelted here too, from its ore: nothing earlier has a use for the
+  // ingot, so it is not made earlier.
+  alloying: {
+    id: 'alloying', label: 'Alloying', domain: 'metal', web: 'metal',
+    age: 'bronze', firstKnown: 'about 3300 BC',
+    kind: 'device',
+    requires: ['casting', 'mining'], difficulty: 0.75, skill: 'smith',
+    prototype: { copper_ore: 2, mud: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'casting' }, { kind: 'knows', tech: 'mining' },
+                { kind: 'holding', item: 'tin_ore' }],
+        weight: 1.0, story: 'smelted a grey-black stone along with the copper and got a harder, brighter metal' },
+      { needs: [{ kind: 'knows', tech: 'casting' }, { kind: 'holding', item: 'copper' },
+                { kind: 'doing', action: 'craft' }],
+        weight: 0.5, story: 'cast an axe that bent and wondered what made another band\'s hold its edge' },
+      { needs: [{ kind: 'knows', tech: 'casting' }, { kind: 'knows', tech: 'mining' },
+                { kind: 'place', biome: 'hills' }],
+        weight: 0.4, story: 'noticed a heavy pale stone in the same seam as the green and put them in the fire together' },
+    ],
+    description:
+      'A tenth of tin in the copper. Harder, it runs cleaner into the mould ' +
+      'and holds an edge. The copper is in every hill; the tin is in a few ' +
+      'places in a whole continent, and that is what the age is made of.',
+  },
+  // M15 phase 37 (M8.3). The point of bronze for everybody but the soldier: the
+  // axe, the adze, the sickle and the spade, each better than the stone it
+  // replaces, and every one of them read by a function that already existed
+  // (`axeFactor`, `buildFactor`, `reapFactor`, `Earth.digTool`). The plan's
+  // "dig at five times" is the spade: `DIG_TOOLS` power 5 against the wooden
+  // spade's 3 (26b). `maxRefinement: 1` for the reason `casting` gives.
+  bronze_tools: {
+    id: 'bronze_tools', label: 'Bronze tools', domain: 'metal', web: 'metal',
+    age: 'bronze', firstKnown: 'about 3000 BC',
+    kind: 'device',
+    requires: ['alloying'], difficulty: 0.55, skill: 'smith',
+    prototype: { bronze: 2 }, maxRefinement: 1,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'alloying' }, { kind: 'holding', item: 'bronze' }],
+        weight: 1.0, story: 'looked at a lump of bronze and saw four tools in it' },
+      { needs: [{ kind: 'knows', tech: 'alloying' }, { kind: 'doing', action: 'chop' }],
+        weight: 0.7, story: 'felled a tree with a stone axe that chipped and wished for an edge that would not' },
+      { needs: [{ kind: 'knows', tech: 'alloying' }, { kind: 'doing', action: 'reap' }],
+        weight: 0.5, story: 'brought in a harvest with a flint blade that blunted before the field was done' },
+    ],
+    description:
+      'An axe, an adze, a sickle and a spade of bronze: each does the work ' +
+      'of the stone one in less of the day. The spade digs five times as ' +
+      'fast as a stick.',
+  },
+  // M15 phase 37 (M8.3). A sword is a bronze blade as long as an arm, which flint
+  // never gave anybody, and the helm is the first thing that turns a blow from
+  // the head (21f: a hide cuirass leaves it bare). Both go through `techPower`:
+  // the sword by the `weapon.tech` every weapon has, the helm by `armourTech`,
+  // which is where "`armourOf` finally goes through `techPower`" is paid.
+  bronze_arms: {
+    id: 'bronze_arms', label: 'Bronze arms', domain: 'metal', web: 'metal',
+    age: 'bronze', firstKnown: 'about 2800 BC',
+    kind: 'device',
+    requires: ['alloying', 'spear'], difficulty: 0.6, skill: 'smith',
+    prototype: { bronze: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'alloying' }, { kind: 'knows', tech: 'spear' },
+                { kind: 'holding', item: 'bronze' }],
+        weight: 1.0, story: 'drew a spear point out long and thin in bronze and saw it was no longer a point but a blade' },
+      { needs: [{ kind: 'knows', tech: 'alloying' }, { kind: 'saw', what: 'assault' }],
+        weight: 0.7, story: 'watched a man go down to a blow on the head and thought of a bronze cap' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'alloying' },
+                { kind: 'doing', action: 'spar' }],
+        weight: 0.5, story: 'broke a spear shaft in a drill and wished for a blade that could not be broken' },
+    ],
+    description:
+      'A sword as long as an arm, and a helm: the first thing that turns a ' +
+      'blow from the head. What a band that can pour bronze does with it ' +
+      'when it has an enemy.',
+  },
+  // M15 phase 37 (M8.3). Gold lies as metal in the gravels and is worked cold
+  // like native copper, and nothing makes it better: it does not rust, it does
+  // not tarnish and it does not do anything. It is worth what a people agrees it
+  // is worth, which is the whole use of it, and the `baseValue` of its ornament
+  // is the highest in the game. The oldest worked gold is Varna, 4,600 BC.
+  goldwork: {
+    id: 'goldwork', label: 'Goldwork', domain: 'metal', web: 'metal',
+    age: 'chalcolithic', firstKnown: 'about 4600 BC',
+    kind: 'device',
+    requires: ['native_copper'], difficulty: 0.6, skill: 'smith',
+    prototype: { gold_nugget: 1 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'native_copper' }, { kind: 'holding', item: 'gold_nugget' }],
+        weight: 1.0, story: 'beat a yellow stone that spread without cracking and did not go green' },
+      { needs: [{ kind: 'knows', tech: 'native_copper' }, { kind: 'doing', action: 'craft' },
+                { kind: 'holding', item: 'copper_pendant' }],
+        weight: 0.6, story: 'wanted a bead that would keep its shine through a lifetime of wear' },
+      { needs: [{ kind: 'knows', tech: 'native_copper' }, { kind: 'place', biome: 'beach' },
+                { kind: 'doing', action: 'gather' }],
+        weight: 0.4, story: 'picked a bright grain out of the gravel where the river ran out and kept it' },
+    ],
+    description:
+      'Yellow metal found in the gravel, hammered cold. It does not rust and ' +
+      'it does nothing; it is worth what a people agrees it is worth, which ' +
+      'is more than anything else a band can make.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2322,6 +2617,46 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'The chief reigns for life, and the office passes to the head of their house or their eldest child.',
     site: 'BandSystem.chooseChief via Polity.reignsForLife and heirOf',
   },
+  charcoal: {
+    summary: 'A fuel that burns hotter than wood: a charcoal pit to make it, and a warmth to carry in the pack.',
+    site: 'BUILDINGS.charcoal_pit and RECIPES.charcoal; NeedsSystem, via warmthFrom, when charcoal is in the pack',
+  },
+  native_copper: {
+    summary: 'Copper found as metal, hammered cold: an awl that makes sewn goods faster, and a bead worth giving.',
+    site: 'RECIPES.copper_awl and RECIPES.copper_pendant; ActionSystem.doCraft, via Tech.awlFactor; Brain gather, via Ore.wantedOreKinds',
+  },
+  mining: {
+    summary: 'More from every flint outcrop, and the right to take ore out of a hill at all.',
+    site: 'Tech.forageYieldFactor (flint and ore); Ore.canWork, read by ActionSystem.doHarvest, Simulation.order and ActionCatalog.nodeActions',
+  },
+  smelting: {
+    summary: 'A furnace, and copper ingots out of ore and charcoal: the metal that is never found lying about.',
+    site: 'BUILDINGS.furnace and RECIPES.smelt_copper; Ore.wantedOreKinds, which sends the smith to the seam',
+  },
+  bellows: {
+    summary: 'The same furnace in less time and for the same charcoal, more metal out of the ore.',
+    site: 'RECIPES.smelt_copper_bellows, declared ahead of RECIPES.smelt_copper so the scorer prefers it when known',
+  },
+  casting: {
+    summary: 'A cast axe that fells and a cast dagger that cuts: the first tools that are not stone.',
+    site: 'RECIPES.copper_axe (Tech.axeFactor, via AXE_TOOLS) and RECIPES.copper_dagger (weaponOf, via ITEMS.copper_dagger.weapon)',
+  },
+  alloying: {
+    summary: 'Tin from its ore, and bronze from tin and copper: the stuff of the best tools and arms, and the reason to go looking for tin.',
+    site: 'RECIPES.smelt_tin and RECIPES.alloy_bronze at the furnace; Ore.wantedOreKinds, which sends the smith to the tin',
+  },
+  bronze_tools: {
+    summary: 'A bronze axe that fells, an adze that builds, a sickle that reaps and a spade that digs, each better than its stone.',
+    site: 'Tech.axeFactor (AXE_TOOLS), buildFactor, reapFactor and Earth.digTool (DIG_TOOLS); RECIPES.bronze_*',
+  },
+  bronze_arms: {
+    summary: 'A bronze sword, and a helm that turns a blow from the head, better in the hands of whoever knows how they are made.',
+    site: 'weaponOf (ITEMS.bronze_sword.weapon); Tech.protectionOf and armourOf, via ItemDef.armourTech',
+  },
+  goldwork: {
+    summary: 'A gold ornament: the highest value of anything a band can make, and a gift that raises a house.',
+    site: 'RECIPES.gold_ornament; ItemDef.baseValue, read by gift, doSteal and Amends; Ore.wantedOreKinds',
+  },
 };
 
 /**
@@ -2420,10 +2755,30 @@ export function protectionOf(person: Person, part: BodyPart): number {
   let best = 0;
   for (const [itemId, count] of person.inventory.entries()) {
     if (count <= 0) continue;
-    const covers = ITEMS[itemId]?.protects?.[part];
-    if (covers !== undefined && covers > best) best = covers;
+    const def = ITEMS[itemId];
+    const covers = def?.protects?.[part];
+    if (covers === undefined) continue;
+    // M15 phase 37: "`armourOf` finally goes through `techPower`". A garment that
+    // names the technique behind it (`armourTech`) turns aside more in the hands
+    // of somebody who knows how it was made and kept refining it, and still
+    // turns aside most of its worth for anybody: a helm taken off a corpse is a
+    // helm. Garments that name none keep their number exactly, so no existing
+    // world moves.
+    const worth = def?.armourTech === undefined ? covers : covers * armourFit(person, def.armourTech as Tech);
+    if (worth > best) best = worth;
   }
   return best;
+}
+
+/**
+ * How well a person's knowledge fits a garment of this technique: three
+ * quarters for a stranger to it, about nine tenths for somebody still proving
+ * the design, and full worth and more as it is refined (never past 1.35, which
+ * keeps the dearest garment under 1 - nobody is made unhurtable).
+ */
+export function armourFit(person: Person, tech: Tech): number {
+  const power = techPower(person, tech);
+  return power > 0 ? 0.75 + 0.25 * Math.min(power, 2.4) : 0.75;
 }
 
 /**
@@ -2483,7 +2838,13 @@ export function scaled(person: Person, tech: Tech, full: number): number {
  * already distinguishes them.
  */
 export function forageYieldFactor(person: Person, nodeKind: string): number {
-  if (nodeKind === 'flint') return scaled(person, 'stoneworking', 1.5);
+  // M15 phase 37: a mine gives more flint than the surface does, and is the
+  // only way into the ores. Native copper is picked up whole and needs only the
+  // eye for it. `scaled` is 1 for anybody who lacks the node.
+  if (nodeKind === 'flint') return scaled(person, 'stoneworking', 1.5) * scaled(person, 'mining', 1.25);
+  if (nodeKind === 'native_copper') return scaled(person, 'native_copper', 1.3);
+  if (nodeKind === 'gold') return scaled(person, 'goldwork', 1.3);
+  if (nodeKind === 'copper_ore' || nodeKind === 'tin_ore') return scaled(person, 'mining', 1.5);
   // A net multiplies a fishing spot rather than replacing the spear, and it is
   // gated on *carrying* one as well as on knowing how to make one. Both halves
   // matter: knowledge alone would make the recipe pointless, and the item alone
@@ -2527,7 +2888,10 @@ export function buildFactor(person: Person): number {
   // grind one is not enough, and an adze in the hands of somebody who could
   // not have made it is the `handaxe` bug one node along.
   const adze = person.inventory.has('adze') ? scaled(person, 'ground_stone', 1.2) : 1;
-  return scaled(person, 'carpentry', 1.3) * adze;
+  // M15 phase 37: a bronze adze, on the same double gate. One adze swings at a
+  // time, so the better of the two counts and the two do not stack.
+  const bronze = person.inventory.has('bronze_adze') ? scaled(person, 'bronze_tools', 1.45) : 1;
+  return scaled(person, 'carpentry', 1.3) * Math.max(adze, bronze);
 }
 
 /**
@@ -2544,27 +2908,39 @@ export function buildFactor(person: Person): number {
  */
 export function axeFactor(person: Person, equippedOnly = false): number {
   let best = 1;
-  if (person.inventory.has('handaxe') && (!equippedOnly || equippedItem(person, 'handaxe'))) {
-    best = Math.min(best, scaled(person, 'hafting', 0.5));
-  }
-  if (person.inventory.has('stone_axe') && (!equippedOnly || equippedItem(person, 'stone_axe'))) {
-    best = Math.min(best, scaled(person, 'ground_stone', 0.35));
+  for (const axe of AXE_TOOLS) {
+    if (person.inventory.has(axe.item) && (!equippedOnly || equippedItem(person, axe.item))) {
+      best = Math.min(best, scaled(person, axe.tech, axe.full));
+    }
   }
   return best;
 }
 
+/**
+ * Every axe, worst first, with the technique behind it and the share of the
+ * felling work it leaves (`scaled`'s `full`). One table where there were two
+ * hand-written branches, because the metal tier adds two more (M15 phase 37)
+ * and four copies of one idea is how four answers drift apart. **Each `full` has
+ * to keep `scaled` positive at that technique's `maxRefinement`** — see the note
+ * on `ground_stone` — and a test walks the table to prove it.
+ */
+export const AXE_TOOLS: readonly { item: string; tech: Tech; full: number }[] = [
+  { item: 'handaxe', tech: 'hafting', full: 0.5 },
+  { item: 'stone_axe', tech: 'ground_stone', full: 0.35 },
+  { item: 'copper_axe', tech: 'casting', full: 0.3 },
+  { item: 'bronze_axe', tech: 'bronze_tools', full: 0.25 },
+];
+
 /** The strongest axe present, optionally limited to what is actually in hand. */
 export function axeItemOf(person: Person, equippedOnly = false): string | null {
-  const held = equippedOnly
-    ? new Set(['left', 'right'].map(slot => person.equipment[slot as 'left' | 'right']?.item).filter(Boolean))
-    : null;
-  const handaxe = person.inventory.has('handaxe') && (!held || held.has('handaxe'));
-  const stoneAxe = person.inventory.has('stone_axe') && (!held || held.has('stone_axe'));
-  if (!handaxe && !stoneAxe) return null;
-  if (!handaxe) return stoneAxe ? 'stone_axe' : null;
-  if (!stoneAxe) return 'handaxe';
-  return scaled(person, 'ground_stone', 0.35) < scaled(person, 'hafting', 0.5)
-    ? 'stone_axe' : 'handaxe';
+  let best: { item: string; factor: number } | null = null;
+  for (const axe of AXE_TOOLS) {
+    if (!person.inventory.has(axe.item) || (equippedOnly && !equippedItem(person, axe.item))) continue;
+    const factor = scaled(person, axe.tech, axe.full);
+    // Strictly smaller: a tie stays with the earlier, humbler axe, as it did.
+    if (best === null || factor < best.factor) best = { item: axe.item, factor };
+  }
+  return best?.item ?? null;
 }
 
 function equippedItem(person: Person, itemId: string): boolean {
@@ -2577,7 +2953,11 @@ function equippedItem(person: Person, itemId: string): boolean {
  * teaches nothing about stripping a field by hand.
  */
 export function reapFactor(person: Person): number {
-  return person.inventory.has('sickle') ? scaled(person, 'sickle', 0.6) : 1;
+  const flint = person.inventory.has('sickle') ? scaled(person, 'sickle', 0.6) : 1;
+  // M15 phase 37: the bronze sickle, the better of the two (a smaller number is
+  // less work). `full` 0.45 stays positive at `bronze_tools`' one refinement step.
+  const bronze = person.inventory.has('bronze_sickle') ? scaled(person, 'bronze_tools', 0.45) : 1;
+  return Math.min(flint, bronze);
 }
 
 /**
@@ -2624,6 +3004,26 @@ export function stealthFactor(person: Person): number {
 }
 
 /**
+ * The recipes an awl speeds: everything stitched. A bone needle is for sewing
+ * a coat and a copper awl is for piercing the hide first, so the awl is read by
+ * the leather and fur recipes and by nothing else.
+ */
+export const SEWN_RECIPES: ReadonlySet<string> = new Set(['hide_armour', 'hide_bag', 'fur_coat']);
+
+/**
+ * Multiplier on the work of a stitched recipe, read by `ActionSystem.doCraft`.
+ * The double gate every carried tool here follows: carrying a copper awl and
+ * knowing how one is made, and `scaled` is 1 for anybody who does not.
+ */
+export function awlFactor(person: Person, recipeId: string): number {
+  if (!SEWN_RECIPES.has(recipeId) || !person.inventory.has('copper_awl')) return 1;
+  return scaled(person, 'native_copper', 0.7);
+}
+
+/** What a coal of charcoal in the pack adds to the warmth carried, at full knowledge of how it is made. */
+export const CHARCOAL_WARMTH = 0.12;
+
+/**
  * Warmth a person carries with them, 0-1, before any roof over their head.
  *
  * Fire and clothing are different answers to the same problem and stack, but
@@ -2656,7 +3056,14 @@ export function warmthFrom(person: Person): number {
   const woollen = person.inventory.has('wool_cloth')
     ? 0.32 * techPower(person, 'wool')
     : 0;
-  return 1 - (1 - fire) * (1 - cloth) * (1 - furs) * (1 - woven) * (1 - woollen);
+  // M15 phase 37: the seventh term. A glowing coal of charcoal in a pot is the
+  // oldest brazier there is, and it burns without smoke. Double-gated like the
+  // rest — carrying it and knowing how it is made — and the smallest term in
+  // the list, because it is a fuel and not a garment.
+  const brazier = person.inventory.has('charcoal')
+    ? CHARCOAL_WARMTH * techPower(person, 'charcoal')
+    : 0;
+  return 1 - (1 - fire) * (1 - cloth) * (1 - furs) * (1 - woven) * (1 - woollen) * (1 - brazier);
 }
 
 // ---------------------------------------------------------------------------
@@ -2758,6 +3165,36 @@ const ERA_LADDER: Omit<EraDef, 'label'>[] = [
     description:
       'Seed saved from one year to sow the next, and a herd that comes back ' +
       'on its own legs. The band stops moving to the food.',
+  },
+  // M15 phase 37: the two rungs the metal tier makes reachable. A rung whose
+  // needs name something nobody can learn is a rung no world can reach, which is
+  // why these waited for the nodes; now every name below is a real, learnable
+  // technology. `heldBy` is lower than the rungs below (0.15 against 0.3) and
+  // that is not a softening: a metal-working people is a few smiths among many,
+  // and a bar of three in ten adults would ask for a smith in every household.
+  {
+    id: 'chalcolithic',
+    needs: [
+      'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
+      'farming', 'herding', 'pottery', 'masonry',
+      'native_copper', 'smelting', 'casting',
+    ],
+    heldBy: 0.15,
+    description:
+      'Copper out of green rock: a furnace, a mould and an axe that is metal. ' +
+      'The first people to have a smith.',
+  },
+  {
+    id: 'bronze',
+    needs: [
+      'firemaking', 'cooking', 'hafting', 'clothing', 'fishing', 'netting', 'bow',
+      'farming', 'herding', 'pottery', 'masonry',
+      'native_copper', 'smelting', 'casting', 'alloying', 'bronze_tools',
+    ],
+    heldBy: 0.15,
+    description:
+      'Tin in the copper, and the tools of the whole band made of it. The tin ' +
+      'is far away, and everything that follows is about getting it.',
   },
 ];
 

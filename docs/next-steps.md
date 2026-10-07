@@ -1545,3 +1545,14 @@ semillas: crowded 100% sin cambio, century 78,9% → 77,6%, lean 5,9% → 4,2%.
 Combinan esta pasada con visión y no aíslan el coste del sueño. Dentro del
 límite de tres puntos, con lean sin recuperar y la matriz todavía abierta.
 El LOD necesita sus registros y el perfil por sistemas antes de recortar el loop.
+
+## Fase 37 (metal) — lo que queda
+
+Ver [m15_phase37_metal.md](m15_phase37_metal.md). En orden de lo que desbloquea:
+
+1. **Comercio (fase 36) y `bronze-needs-a-trader`.** La puerta del plan necesita caravanas y una cohorte con mapa; sin ellas, el estaño de una isla es el que haya y nadie lo trae de fuera.
+2. **Sub-redes Fuego y Ropa (fases 14 y 16)**: `charcoal` y `tallow` a Fuego, la fíbula a Ropa.
+3. **La sal gema** (fase 15) como tercera fuente de sal.
+4. **El yelmo puesto**: el arte de personas solo dibuja las prendas de `Wear`; el yelmo de bronce protege pero no se ve en la cabeza.
+5. **Cohortes de 20 semillas** de `sim:seeds` con y sin el metal, cuando el propietario levante el aplazamiento: lo medido hasta ahora son semillas sueltas.
+6. **`heldBy` 0,15** de los peldaños del Calcolítico y del Bronce es una suposición: ningún escenario de una corrida los alcanza.

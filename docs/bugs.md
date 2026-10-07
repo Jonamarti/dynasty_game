@@ -4317,3 +4317,11 @@ Los hitos anteriores se preservan, incluidos sus nombres erróneos. Usar
 `artifacts/screenshots/m15-seasons-2026-10-03T-final/` para la evidencia estacional.
 Los floaters viejos del avance síncrono se limpian tras consumir los avisos;
 solo afecta a esta captura, no a las reglas o mensajes del juego.
+
+### Fase 37 (metal) — hallazgos, 2026-10-07
+
+- **El puntuador de oficios pierde contra el trabajo del campamento.** Una persona con los ingredientes y el horno a seis pasos no fundió en 600 ticks: estaba cavando, proponiendo y hablando. En `smiths` sí se funde (tres fundiciones con fuelle en 16.000 pasos), así que no es que no ocurra, es que ocurre poco: el puntaje de `craft` es `0,55 × (0,4 + habilidad) × cercanía` y casi todo lo demás de la lista lo supera cuando hay un proyecto abierto. No se toca (sería recalibrar `Brain`); queda anotado con el escenario que lo mide.
+- **Los nombres de nodos de dos palabras salían con guion bajo en inglés** (`wild_grain`, `copper_ore`): corregido con `Hud.kindWord`.
+- **Una prueba de otro archivo daba por hecha una premisa que cambió** (`herbs.test.ts`: «la pasada de hierbas es la última que pone nodos»): ahora la última es la de minerales. Corregida con su razón.
+- **`tech-subwebs.spec.ts` en el teléfono dependía de dónde cae «La lanza» en el dibujo.** Ver 37m. Es frágil por construcción: cada dominio nuevo reparte la telaraña de otro modo.
+- **`smiths` falla nueve checks que no son de la fase** (`cravings-steer-the-diet`, `nights-are-slept`, `moods-move-choices`, `projects-find-backers`, `roast-wins`, `cooking-spreads`, `discovery-is-situated`, `bands-take-sides` y `perf-budget`): los del mundo de unos fundadores que saben oficios y casi nada de cocina, y la cola de siempre (`perf-budget` en esta máquina). `craft` y `hearths` dan la misma lista en el commit base y aquí.
