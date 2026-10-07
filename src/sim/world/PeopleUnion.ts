@@ -52,7 +52,7 @@ export function uniting(env: UnionEnv = {}, report?: (e: UnionEvent) => void): S
       const choice = chooseUnion(rel, people, other, step, sim.stepsPerSeason);
       if (!choice) continue;
       if (!unionFits(people, other)) continue;
-      if (!sim.commit(transactionId(rel, season, 4))) continue;
+      if (!sim.commit(transactionId(rel, season, 4), season)) continue;
       if (people.rng.next() >= choice.rate) continue;
       const [host, gone] = choice.host === people.id ? [people, other] : [other, people];
       if (env.ledger) {

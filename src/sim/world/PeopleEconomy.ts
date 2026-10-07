@@ -89,7 +89,7 @@ export function trading(report?: (r: TradeReport) => void): SeasonMechanism {
       if (rel.stance === 'war') continue;
       const other = sim.peoples.get(rel.a === people.id ? rel.b : rel.a)!;
       if (rel.stance === 'tributary' && rel.overlord !== null) {
-        if (sim.commit(transactionId(rel, season, 1))) {
+        if (sim.commit(transactionId(rel, season, 1), season)) {
           const payer = rel.overlord === people.id ? other : people, host = payer === people ? other : people;
           const amount = payer.surplus * TRIBUTE_SHARE;
           payer.surplus -= amount; host.surplus += amount;
@@ -98,7 +98,7 @@ export function trading(report?: (r: TradeReport) => void): SeasonMechanism {
         continue;
       }
       if (rel.contact <= 0) continue;
-      if (!sim.commit(transactionId(rel, season, 0))) continue;
+      if (!sim.commit(transactionId(rel, season, 0), season)) continue;
       const pa = populationOf(people), pb = populationOf(other);
       if (pa + pb === 0) continue;
       const total = people.surplus + other.surplus;

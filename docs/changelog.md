@@ -1,3 +1,11 @@
+## 2026-10-07 — M15 fase 32c: el mundo de pueblos sobre la Tierra, `world:cohort`, y `world:bench` con el `PeopleSim` real (resultado: 1 de 3 puertas pasa)
+
+Por qué: la fase 32c cierra con puertas medidas en la cohorte del mundo y con el banco de coste con el motor de verdad. Se construye `tools/people-world-model.ts` (la siembra del lado de las herramientas; la del juego es la fase 33): un pueblo o dos por región habitable de la Tierra (959 regiones, ~1450 pueblos), con los mecanismos
+`storing, demography, knowledge, trading, warring, splitting, uniting`, y `npm run world:cohort` (10 semillas, 200 años). **Resultado, sin ajustar nada:** `the-world-is-uneven` **PASA** (10 de 10); `farming-spreads` **FALLA** (0 de 10); `states-arise` **FALLA** (0 de 10). Detalle y diagnóstico en `m15_phase32c_peoples.md`.
+Dos defectos reales aparecieron al medir y se corrigen: (1) `PeopleSim.relationsOf` recorría todas las relaciones del mundo en cada llamada (1700 pueblos x ~8000 relaciones por estación): ahora hay un índice por pueblo; el banco pasó de 104 a **43 µs por tick** (permitido 59,6) con el mismo mundo exacto (mismo guardado, mismos 1732 pueblos);
+(2) el registro de transacciones aplicadas crecía sin límite (a ~1000 años desbordó el `Set`: «Set maximum size exceeded», y habría engordado el guardado): las transacciones por relación y estación ahora llevan su estación (`commit(id, season)`) y se olvidan al acabar; test con 400 estaciones. `world:bench` usa por defecto el motor real (`--fixture` conserva el banco de la fase 29d): 200 años, 1458 -> 1732 pueblos, **guardado de `PeopleSim` 2,0 MB** de JSON, RSS máximo 242 MB.
+No se ha corrido `peoples-match-bands` (cohorte de 20 semillas del detallado, diferida por el propietario). Sin cambio de juego.
+
 ## 2026-10-07 — M15 fase 32c: materializar y fundir (`PeopleMaterialize`), una sola autoridad sobre cada persona
 
 Por qué: el plan pide que, al acercarse el jugador, las bandas de un pueblo pasen a personas con técnicas repartidas, y que al alejarse se fundan en su pueblo «sin perder población ni técnicas» (`m15_simulation_lod.md` §3-4: cada persona se contabiliza una sola vez; entrar y salir repetidamente conserva cantidades). `materialize(people, n, rng)` saca *exactamente* esas personas de las cohortes

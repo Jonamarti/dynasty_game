@@ -11,8 +11,9 @@ import {
   runBenchYears,
   toByteLength,
 } from './world-bench-model.ts';
+import { PeopleWorld } from './people-world-model.ts';
 
-interface Args { years: number; seed: string; perfPeak: number; map: string; output?: string; }
+interface Args { years: number; seed: string; perfPeak: number; map: string; output?: string; engine: 'people' | 'fixture'; }
 
 function parseArgs(argv: string[]): Args {
   const args: Args = {
@@ -20,6 +21,7 @@ function parseArgs(argv: string[]): Args {
     seed: 'm15-world-bench',
     perfPeak: BENCH_DEFAULTS.perfBudgetPeakPeople,
     map: 'earth-12000-bce.bin',
+    engine: 'people',
   };
   for (let i = 0; i < argv.length; i++) {
     const value = argv[i + 1];
@@ -29,8 +31,9 @@ function parseArgs(argv: string[]): Args {
       case '--perf-peak': args.perfPeak = Number(value); i++; break;
       case '--map': args.map = value ?? ''; i++; break;
       case '--output': args.output = value; i++; break;
+      case '--fixture': args.engine = 'fixture'; break;
       case '--help':
-        console.log('world:bench [--years 200] [--seed VALUE] [--perf-peak 31] [--map earth-12000-bce.bin] [--output PATH]');
+        console.log('world:bench [--fixture] [--years 200] [--seed VALUE] [--perf-peak 31] [--map earth-12000-bce.bin] [--output PATH]');
         process.exit(0);
       default: throw new Error(`Unknown option: ${argv[i]}`);
     }
@@ -40,6 +43,50 @@ function parseArgs(argv: string[]): Args {
   if (!Number.isFinite(args.perfPeak) || args.perfPeak < 0) throw new Error('--perf-peak must be nonnegative');
   if (!/^[a-z0-9-]+\.bin$/.test(args.map)) throw new Error('--map must be a world atlas .bin filename');
   return args;
+}
+
+/**
+ * The phase 32c re-run: the same costs measured on the real `PeopleSim` with every mechanism (storing, demography, knowledge, trading,
+ * war, splitting, uniting) over the Earth's regions, instead of the synthetic fixture. `--fixture` keeps the phase 29d workload.
+ */
+export function runPeopleBench(args: Args) {
+  const raster = decodeWorldRaster(new Uint8Array(readFileSync(resolve('public/world', args.map))));
+  const beforeSetup = process.memoryUsage();
+  const world = new PeopleWorld(raster, args.seed);
+  const initial = world.stats();
+  const afterSetup = process.memoryUsage();
+  const start = performance.now();
+  world.advanceYears(args.years);
+  const elapsedMs = performance.now() - start;
+  const afterRun = process.memoryUsage();
+  const final = world.stats();
+  const ticksPerYear = benchTicksPerYear();
+  const simulatedTicks = args.years * ticksPerYear;
+  const microsecondsPerTick = elapsedMs * 1_000 / simulatedTicks;
+  const stepBudgetMicroseconds = perfBudgetStepMicroseconds(args.perfPeak);
+  const allowedMicroseconds = stepBudgetMicroseconds * 0.1;
+  const saveBytes = toByteLength(world.sim.snapshot());
+  return {
+    benchmark: 'PeopleSim (real mechanisms) on the Earth regions',
+    map: args.map, seed: args.seed, years: args.years,
+    world: { peoplesAtStart: initial.peoples, peoplesAtEnd: final.peoples, populationAtEnd: final.population, splits: final.splits, merges: final.merges, wars: final.wars },
+    timing: {
+      totalMs: round(elapsedMs),
+      averageMsPerSeasonalPass: round(elapsedMs / (args.years * 4)),
+      amortizedMicrosecondsPerSimulationTick: round(microsecondsPerTick),
+      referenceMicrosecondsPerStep: stepBudgetMicroseconds,
+      allowedMicrosecondsPerTick: round(allowedMicroseconds),
+      passed: microsecondsPerTick < allowedMicroseconds,
+    },
+    memory: {
+      peopleSimSnapshotJsonBytes: saveBytes,
+      heapUsedSetupDeltaBytes: afterSetup.heapUsed - beforeSetup.heapUsed,
+      heapUsedRunDeltaBytes: afterRun.heapUsed - afterSetup.heapUsed,
+      rssAfterRunBytes: afterRun.rss,
+      maxRssKiB: process.resourceUsage().maxRSS,
+    },
+    caveat: 'Amortised over every tick, not peak step latency: the passes are spread over the season by step number, so a single step runs only the peoples due on it. Geography, food and climate are declared proxies (docs/m15_phase32c_peoples.md).',
+  };
 }
 
 export function runWorldBench(args: Args) {
@@ -108,7 +155,7 @@ function round(value: number): number { return Math.round(value * 1_000) / 1_000
 
 try {
   const args = parseArgs(process.argv.slice(2));
-  const result = runWorldBench(args);
+  const result = args.engine === 'fixture' ? runWorldBench(args) : runPeopleBench(args);
   const json = JSON.stringify(result, null, 2);
   if (args.output) writeFileSync(resolve(args.output), `${json}\n`, 'utf8');
   console.log(json);

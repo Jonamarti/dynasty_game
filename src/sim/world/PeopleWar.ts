@@ -87,13 +87,13 @@ export function warring(env: WarEnv, report?: (e: WarEvent) => void): SeasonMech
       const lo = rel.a === people.id ? people : other, hi = lo === people ? other : people;
 
       // Rivalry over food: once per pair and season.
-      if (rel.contact > 0 && sim.commit(transactionId(rel, season, 3))) {
+      if (rel.contact > 0 && sim.commit(transactionId(rel, season, 3), season)) {
         const worst = Math.min(supplyRatioOf(people, env.regionOf(people), seasonOfYear), supplyRatioOf(other, env.regionOf(other), seasonOfYear));
         if (worst < 1) rel.standing = clamp(rel.standing - RIVALRY * rel.contact * (1 - Math.max(0, worst)));
       }
 
       if (rel.stance === 'war') {
-        if (!sim.commit(transactionId(rel, season, 2))) continue;
+        if (!sim.commit(transactionId(rel, season, 2), season)) continue;
         const sLo = strengthOf(lo), sHi = strengthOf(hi);
         const lost: [number, number] = [0, 0];
         if (sLo + sHi > 0) {

@@ -315,6 +315,8 @@ export interface PeopleSimRecord {
   readonly peoples: PeopleRecord[];
   readonly relations: PeopleRelation[];
   readonly applied: number[];
+  /** Transactions that only matter during one season, by season (see `commit`). */
+  readonly appliedSeasonal?: [number, number[]][];
 }
 
 export class PeopleSim {
@@ -323,6 +325,19 @@ export class PeopleSim {
   readonly relations = new Map<string, PeopleRelation>();
   /** Aggregate transactions already applied (trades, tributes, losses): a repeat is refused. */
   private readonly applied = new Set<number>();
+  /**
+   * Transactions scoped to a season (a trade, a season of war): remembered only while that season is the current one. Every
+   * people is updated once per season, so by the time any people runs a later season's update no end of an earlier season's
+   * transaction can still come asking; keeping them for ever grew without bound (a 1000-year world overflowed the `Set`
+   * and the save with it).
+   */
+  private readonly seasonal = new Map<number, Set<number>>();
+  /**
+   * The relations of each people, so asking for them is the size of that people's neighbourhood and not of the whole world
+   * (a scan of every relation per people per season was the bench's hot spot: 1700 peoples x 8000 relations a season).
+   * A cache of `relations`, which stays the one owner: it is only written where `relations` is.
+   */
+  private readonly byPeople = new Map<number, PeopleRelation[]>();
   readonly stepsPerSeason: number;
   private nextPeopleId = 1;
   private nextRelationId = 1;
@@ -374,15 +389,27 @@ export class PeopleSim {
     const a = Math.min(x, y), b = Math.max(x, y);
     const key = `${a}:${b}`;
     let rel = this.relations.get(key);
-    if (!rel) { rel = { id: this.nextRelationId++, a, b, standing: 0, contact: 0, stance: null, overlord: null, since: null }; this.relations.set(key, rel); }
+    if (!rel) { rel = { id: this.nextRelationId++, a, b, standing: 0, contact: 0, stance: null, overlord: null, since: null }; this.relations.set(key, rel); this.link(rel); }
     return rel;
   }
 
   /** Every relation that touches a people, in relation-id order (stable). */
   relationsOf(id: number): PeopleRelation[] {
-    const out: PeopleRelation[] = [];
-    for (const rel of this.relations.values()) if (rel.a === id || rel.b === id) out.push(rel);
-    return out.sort((x, y) => x.id - y.id);
+    return [...(this.byPeople.get(id) ?? [])].sort((x, y) => x.id - y.id);
+  }
+
+  private link(rel: PeopleRelation): void {
+    for (const end of [rel.a, rel.b]) {
+      const list = this.byPeople.get(end);
+      if (list) list.push(rel); else this.byPeople.set(end, [rel]);
+    }
+  }
+  private unlink(rel: PeopleRelation): void {
+    this.relations.delete(`${rel.a}:${rel.b}`);
+    for (const end of [rel.a, rel.b]) {
+      const list = this.byPeople.get(end);
+      if (list) this.byPeople.set(end, list.filter(r => r !== rel));
+    }
   }
 
   /**
@@ -408,7 +435,7 @@ export class PeopleSim {
     }
     for (const rel of this.relationsOf(absorbedId)) {
       const other = rel.a === absorbedId ? rel.b : rel.a;
-      this.relations.delete(`${rel.a}:${rel.b}`);
+      this.unlink(rel);
       if (other === intoId) continue;
       const target = this.relation(intoId, other);
       target.contact = Math.max(target.contact, rel.contact);
@@ -418,13 +445,24 @@ export class PeopleSim {
         target.overlord = rel.overlord === absorbedId ? intoId : rel.overlord;
       }
     }
-    for (const rel of this.relations.values()) if (rel.overlord === absorbedId) rel.overlord = intoId;
+    for (const rel of this.relationsOf(intoId)) if (rel.overlord === absorbedId) rel.overlord = intoId;
+    this.byPeople.delete(absorbedId);
     this.peoples.delete(absorbedId);
     return { moved: wGone };
   }
 
-  /** Mark an aggregate transaction as applied. False on the second call with the same id. */
-  commit(transactionId: number): boolean {
+  /**
+   * Mark an aggregate transaction as applied. False on the second call with the same id. With a `season` the id is only
+   * remembered until that season is over (`advanceTo` forgets older buckets); without one it is remembered for ever.
+   */
+  commit(transactionId: number, season?: number): boolean {
+    if (season !== undefined) {
+      let bucket = this.seasonal.get(season);
+      if (!bucket) { bucket = new Set(); this.seasonal.set(season, bucket); }
+      if (bucket.has(transactionId)) return false;
+      bucket.add(transactionId);
+      return true;
+    }
     if (this.applied.has(transactionId)) return false;
     this.applied.add(transactionId);
     return true;
@@ -450,6 +488,7 @@ export class PeopleSim {
       // While an update runs, "now" for scheduling is the step it is due on, not where the caller asked to stop: a people
       // founded by a mechanism (a split) is scheduled from here, so the same schedule results however the run was cut
       // into calls. `currentStep` is left alone (it is the caller's step), so a mechanism that reads it is still caught.
+      for (const k of this.seasonal.keys()) if (k < season) this.seasonal.delete(k);
       this.updating = due;
       try { for (const mechanism of this.mechanisms) mechanism(ctx); } finally { this.updating = -1; }
       next.nextDue = due + this.stepsPerSeason;
@@ -475,6 +514,7 @@ export class PeopleSim {
       })),
       relations: [...this.relations.values()].sort((x, y) => x.id - y.id).map(r => ({ ...r })),
       applied: [...this.applied].sort((x, y) => x - y),
+      appliedSeasonal: [...this.seasonal].sort((x, y) => x[0] - y[0]).map(([k, v]) => [k, [...v].sort((x, y) => x - y)] as [number, number[]]),
     };
   }
 
@@ -500,8 +540,10 @@ export class PeopleSim {
       if (!sim.peoples.has(rel.a) || !sim.peoples.has(rel.b) || rel.a >= rel.b) throw new RangeError('bad relation');
       const key = `${rel.a}:${rel.b}`;
       if (sim.relations.has(key)) throw new RangeError('duplicate relation');
-      sim.relations.set(key, { ...rel });
+      const copy = { ...rel };
+      sim.relations.set(key, copy); sim.link(copy);
     }
+    for (const [season, ids] of r.appliedSeasonal ?? []) sim.seasonal.set(season, new Set(ids));
     for (const id of r.applied) {
       if (sim.applied.has(id)) throw new RangeError('duplicate transaction');
       sim.applied.add(id);

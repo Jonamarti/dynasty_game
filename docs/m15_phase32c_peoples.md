@@ -436,3 +436,37 @@ requisitos, así que el conjunto de cada persona es cerrado como el de `TechSet`
 **Los números salen del stream que da quien llama**, no del del pueblo: pedir verlo de cerca no mueve su futuro (test: el stream del pueblo queda igual y, 40 años después, el `snapshot` es idéntico con y sin mirada). **Volver:** a la banda de su edad *actual* (quien envejeció fuera entra en la banda que le toca) y lo que el grupo aprendió se suma a lo que sabe el pueblo (`TechSet.union`).
 
 **Qué no hace:** el registro de identidad de las personas ya conocidas del jugador (nombres, historia, equipo: los `Person` del dueño) no es de este módulo, y «la misma persona de nuevo» es regla de ese registro, no un sorteo nuevo; los nacimientos y muertes de quienes están fuera los lleva quien los tiene. Mientras están fuera, el pueblo crece desde las cabezas que quedan. Aún nada de `Simulation` lo llama.
+
+
+## Puertas medidas (32c-13): el mundo de pueblos sobre la Tierra
+
+**Instrumento.** `tools/people-world-model.ts` siembra la Tierra (`earth-12000-bce`, 959 regiones habitables, 1 o 2 pueblos por región, 24-48 personas y 1-3 comarcas cada uno, mismos cuatro oficios de partida para todos) y corre `storing, demography, knowledge, trading, warring, splitting, uniting` con el reloj del juego. `npm run world:cohort -- --seeds 10 --years 200` escribe cada semilla y las tres puertas, con los
+umbrales escritos **antes** de medir (uneven: >= 3 valores distintos de técnicas, desviación > 0,5 y > 20 % de pueblos por encima del inicio, en 8 de 10; farming-spreads: inventada en región con cereal silvestre y en manos de un pueblo de región **sin** él, en 5 de 10; states-arise: algún `state`, en 5 de 10). **Todo lo geográfico es una suposición declarada**, nada medido: clase de Koeppen
+(Beck, 1-30) -> clima (dos ejes) y productividad (x0,3 a x1,3 sobre la región medida `craft`); `grain` solo donde el mapa marca un cereal silvestre, `flint` solo donde marca sílex (las dos puertas que ya aplica `geographicResourceAvailable`); contacto 0,5 entre pueblos de una región y 0,2 entre regiones vecinas ("qué-si"); 10 comarcas libres por región para hijas.
+
+**Resultado (10 semillas, 200 años, 203 s por semilla):**
+
+| puerta | resultado | |
+|---|---|---|
+| `the-world-is-uneven` | **10 de 10 pasan** | técnicas por pueblo: media 23,4-24,2, desviación 2,1-3,9, máximo 47 de 62 |
+| `farming-spreads` | **0 de 10: FALLA** | 0 invenciones y 0 aprendizajes de agricultura en las diez |
+| `states-arise` | **0 de 10: FALLA** | ningún pueblo pasa de jefatura |
+
+Además, en las diez: 1430-1470 pueblos -> 1690-1755 (250-300 divisiones), 118.000-126.000 personas, **0 guerras y 0 uniones**: con tierra y comida de sobra la rivalidad por comida nunca baja el `standing` de nadie a -40 y el contacto de partida (<= 0,5) queda por debajo del de alianza (0,9). Es lo que el diseño dice («un mundo con espacio y recursos puede permanecer en paz»), pero significa
+que en la cohorte **guerra, tributo y unión no se ejercitan**: solo los prueban los tests con la oportunidad preparada.
+
+**Diagnóstico (sondas `tools/people-world-probe.ts`, una semilla, no es una cohorte):**
+
+1. *Qué bloquea la agricultura.* `farming` pide `plant_lore + grinding` y su prototipo es `grain`; `grinding` pide `flint + sticks`. Solo **4 de 959** regiones tienen cereal silvestre y pocas tienen sílex, así que hace falta que `grinding` (de una región con sílex) **llegue por contacto** a una de las cuatro con cereal. Con el contacto declarado (0,2 entre vecinas) y la difusión pequeña que decidió el
+   propietario, a 200 años `grinding` llega a 42 pueblos y a ninguno de los de cereal.
+2. *A 1000 años sí se difunde.* Misma semilla, 1000 años: `farming` en **234 pueblos, 230 de ellos en regiones sin cereal** (4 invenciones, 230 aprendizajes): `farming-spreads` pasaría con ese horizonte. `states-arise` **no**: 0 Estados a 1000 años; `writing` sigue sin aparecer (su prototipo es sílex y quien tiene agricultura rara vez tiene sílex en la misma región) y de ahí cuelgan `clay_tablet`, `accounting`, `taxation`, `standing_army`, `kingship`.
+3. *Control de sensibilidad, no es un arreglo:* con contacto 1 en todas partes y 200 años, la agricultura llega a 63 pueblos (61 sin cereal) y hay 1442 uniones (277 pueblos al final), pero 0 Estados.
+4. *Saturación temprana.* Las técnicas se acumulan deprisa y se detienen: ~22,8 de media a los **10** años y ~23,6 a los 200. `KREMER_KAPPA` se midió en el juego detallado (16 técnicas en 16 estaciones); la saturación está en los bloqueos por materiales y requisitos, no en la tasa.
+
+**Veredicto: ¿es el mundo o es la puerta?** Las puertas de 200 años presuponen una velocidad de difusión que la decisión del propietario («la difusión no debe ser grande») y el contacto «qué-si» no dan: **la puerta `farming-spreads` mide un horizonte demasiado corto para este modelo** (a 1000 años pasa en la semilla probada), mientras que **`states-arise` falla por una razón de contenido, no de tiempo** (la cadena `writing` está bloqueada por dónde hay sílex). No se ha cambiado ninguna constante ni umbral para que pasen. Lo que decide el propietario: (a) el horizonte de la puerta (200 o 1000-3000 años; cuesta 17 min por semilla a 1000); (b) el contacto entre
+regiones, que **nadie ha medido** y que determina casi todo (y si el comercio debe aumentarlo); (c) si `flint` como material del prototipo de `writing` es correcto o es una suposición del detallado que aquí bloquea toda la rama del Estado; (d) si «ningún Estado» a 1000 años es aceptable. Hasta entonces `states-arise` y `farming-spreads` quedan **fallando y dichos**.
+
+**`world:bench` con el motor real** (`npm run world:bench -- --years 200`; `--fixture` conserva el banco de 29d): 1458 -> 1732 pueblos, 200 años, **43,0 µs por tick amortizado frente a 59,6 permitidos** (10 % del suelo de `perf-budget`): **pasa**. La primera medida dio **104 µs y no pasaba**: el punto caliente era `relationsOf` (recorría todas las relaciones del mundo por cada pueblo y estación); con un índice por pueblo el mismo mundo exacto cuesta 43. Guardado de `PeopleSim`: 2,0 MB de JSON (1732 pueblos). RSS máximo 242 MB (incluye el atlas). Es coste **medio** por tick, no latencia de pico: cada paso corre solo los pueblos que
+tocan. Un segundo defecto salió a 1000 años: el registro de transacciones aplicadas crecía sin límite (`Set maximum size exceeded`); ahora las transacciones por relación y estación se olvidan al acabar su estación (`commit(id, season)`), y el registro queda acotado (test de 400 estaciones).
+
+**`peoples-match-bands` sigue sin correrse** (cohorte de 20 semillas del detallado, diferida por el propietario). Lo medido en semillas nuevas (32c-2/32c-4) es que `craft` pasa T1-T4 y `lean` falla T2 y T4; la puerta no se declara cumplida, y por tanto **la condición «si no se cumple, el bloque no sigue» no está resuelta**.

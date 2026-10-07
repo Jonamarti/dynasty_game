@@ -3304,6 +3304,9 @@ Constantes = suposiciones. [Detalle](m15_phase32c_peoples.md).
 
 **Avance del 2026-10-07 (32c-12, materializar y fundir):** `PeopleMaterialize.ts`: personas con edad, sexo y técnicas sacadas de las cohortes y devueltas sin perder ni inventar cabezas; `People.away`. [Detalle](m15_phase32c_peoples.md).
 
+**Avance del 2026-10-07 (32c-13, puertas medidas):** `world:cohort` (10 semillas, 200 años, la Tierra): `the-world-is-uneven` pasa 10/10; `farming-spreads` 0/10 y `states-arise` 0/10 **fallan**, sin ajustar nada; `world:bench` con el motor real pasa (43 frente a 59,6 µs/tick) tras indexar las relaciones. `peoples-match-bands` sin correr. **32c NO queda cerrada**: ver el
+diagnóstico y las decisiones que necesita del propietario en [el doc de 32c](m15_phase32c_peoples.md).
+
 **Puertas**, encadenadas:
 
 - `peoples-match-bands`: el mismo escenario, dos años en nivel 1 y dos en nivel

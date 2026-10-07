@@ -186,3 +186,26 @@ describe('PeopleSim structure and schedule', () => {
     expect(() => PeopleSim.fromSnapshot(neg)).toThrow();
   });
 });
+
+describe('seasonal transactions are forgotten when their season is over', () => {
+  it('refuses a repeat inside its season, forgets it after, survives a save, and the record stays bounded over many seasons', () => {
+    const SEASON = CLOCK.ticksPerDay * CLOCK.daysPerSeason;
+    const sim = new PeopleSim('seasonal-a', CLOCK);
+    expect(sim.commit(5, 0)).toBe(true);
+    expect(sim.commit(5, 0)).toBe(false);
+    expect(sim.commit(5, 1)).toBe(true);                       // another season is another transaction
+    const copy = PeopleSim.fromSnapshot(JSON.parse(JSON.stringify(sim.snapshot())));
+    expect(copy.commit(5, 0)).toBe(false);
+    expect(copy.commit(5, 1)).toBe(false);
+    // a mechanism that commits one id per people and season, for 400 seasons
+    const long = new PeopleSim('seasonal', CLOCK, [ctx => { ctx.sim.commit(ctx.people.id * 1000 + ctx.season, ctx.season); }]);
+    long.found({ cohorts: cohorts(), comarcas: 1 }); long.found({ cohorts: cohorts(), comarcas: 1 });
+    long.advanceTo(SEASON * 400);
+    const kept = (long.snapshot().appliedSeasonal ?? []).reduce((n, [, ids]) => n + ids.length, 0);
+    expect(kept).toBeLessThanOrEqual(4);
+    // a permanent transaction (no season) is never forgotten
+    expect(long.commit(9)).toBe(true);
+    long.advanceTo(SEASON * 500);
+    expect(long.commit(9)).toBe(false);
+  });
+});
