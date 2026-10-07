@@ -117,6 +117,13 @@ cambios posteriores al 2026-10-03 (el mundo ya no es el mismo) o la
 clasificación; no se comparan las dos tablas. El perfil de una sola banda tampoco
 ejercita el reparto entre bandas. Ver [m15_profile_systems.md](m15_profile_systems.md).
 
+## M15 fase 33: lo que el mundo de pueblos y el guardado no hacen todavía (2026-10-07)
+
+- **El cargador no restaura la compartición de objetos (fase 28).** Guardar y cargar una partida y avanzar 29 días da un `objects.graph` con un nodo más que la partida sin guardar: el contenido, expandido, es igual; lo que se pierde es que un objeto compartido (un `SocialEvent` visto por varios, el primer sospechoso) pase a ser dos copias iguales. El resto del registro es idéntico bit a bit. No se ha investigado qué objeto es ni si una mutación posterior puede divergir por ello. Para localizarlo: guardar, cargar, avanzar 20 días, comparar `graph.nodes` nodo a nodo con los `ref` normalizados (el primer nodo distinto es el evento `share_food` que en la original ya es una referencia). `world-state-peoples.test.ts` lo compara por contenido y lo dice.
+- **Los pueblos no tienen repertorio de nombres.** El plan lo pide, pero declararlo sin lector es contenido inerte: un pueblo solo tiene nombres cuando se materializa en personas (fases 34-36). Cuando se materialice, el repertorio debe salir de una función del pueblo y la semilla del mundo, no de un campo guardado.
+- **Densidad y productividad de pueblos son suposiciones.** `densityOf` y `BIOME_PRODUCTIVITY` (mapa generado) no están medidos; la tabla de Köppen es la de 32c. Hasta medir una cohorte, no se afirma nada de la población del mundo.
+- **Las puertas de 32c siguen sin pasar.** `farming-spreads` y `states-arise` fallan en la cohorte de la Tierra (diagnóstico en `m15_phase32c_peoples.md`); el mundo que la fase 33 siembra es el mismo modelo, así que **el mundo de pueblos del juego tampoco produce agricultura que se extienda ni Estados**. La fase 33 los siembra y los guarda; no los arregla.
+
 ## M15 fase 31: lo que el globo no hace todavía (2026-10-06)
 
 - **El navegador no tiene ajuste de mundo.** El globo solo existe con

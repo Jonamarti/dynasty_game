@@ -9,13 +9,17 @@ import { WorldState } from '../world/WorldState.ts';
 import { earthWorldGeography, legacyIslandGeography, randomWorldGeography, type WorldGeography } from '../world/WorldGeography.ts';
 import type { WorldMapEntry } from '../world/WorldAtlas.ts';
 import type { WorldRaster } from '../world/WorldBinary.ts';
+import type { PeopleWorldRecord } from '../world/PeopleWorld.ts';
 
 export interface WorldStateRecord {
   readonly recordType: 'WorldStateRecord';
-  readonly version: 1;
+  /** v2 (phase 33c) adds `peoples`. A v1 record has none and loads as a world without them. */
+  readonly version: 2;
   readonly geography: GeographyRecord;
   readonly start: null | { readonly x: number; readonly y: number; readonly comarcasWide: number; readonly comarcasHigh: number };
   readonly simulation: CheckpointRecord;
+  /** The abstract peoples of every other region (phase 33a); null on the classic island or a world saved without them. */
+  readonly peoples: PeopleWorldRecord | null;
 }
 
 type GeographyRecord =
@@ -122,13 +126,14 @@ function parseGeography(input: unknown): WorldGeography {
 export function toWorldStateRecord(state: WorldState): WorldStateRecord {
   const start = state.initialGeographicStart;
   const record: WorldStateRecord = {
-    recordType: 'WorldStateRecord', version: 1,
+    recordType: 'WorldStateRecord', version: 2,
     geography: geographyRecord(state.geography),
     start: start ? {
       x: start.start.x, y: start.start.y,
       comarcasWide: start.comarcasWide, comarcasHigh: start.comarcasHigh,
     } : null,
     simulation: toCheckpointRecord(state.current),
+    peoples: state.peoples ? state.peoples.toRecord() : null,
   };
   return record;
 }
@@ -136,8 +141,10 @@ export function toWorldStateRecord(state: WorldState): WorldStateRecord {
 /** Restore a detached macro-map and its independent live Simulation checkpoint. */
 export function fromWorldStateRecord(input: unknown): WorldState {
   if (!object(input)) invalid('expected object');
-  exact(input, ['recordType', 'version', 'geography', 'start', 'simulation']);
-  if (input.recordType !== 'WorldStateRecord' || input.version !== 1) invalid('expected WorldStateRecord v1');
+  if (input.recordType !== 'WorldStateRecord' || (input.version !== 1 && input.version !== 2)) invalid('expected WorldStateRecord v1 or v2');
+  exact(input, input.version === 1
+    ? ['recordType', 'version', 'geography', 'start', 'simulation']
+    : ['recordType', 'version', 'geography', 'start', 'simulation', 'peoples']);
   const geography = parseGeography(input.geography);
   let start: WorldStateGeographicStart | null = null;
   if (input.start !== null) {
@@ -155,5 +162,8 @@ export function fromWorldStateRecord(input: unknown): WorldState {
     start = { geography, start: { x, y }, comarcasWide, comarcasHigh };
   } else if (geography.kind !== 'legacyIsland') invalid('geographic map needs a start');
   const current = Simulation.fromCheckpointRecord(input.simulation);
-  return WorldState.fromRestored(current, geography, start);
+  const peoples = input.version === 2 ? input.peoples : null;
+  if (peoples !== null && !object(peoples)) invalid('peoples');
+  if (peoples !== null && start === null) invalid('peoples need a map to stand on');
+  return WorldState.fromRestored(current, geography, start, peoples as PeopleWorldRecord | null);
 }
