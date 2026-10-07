@@ -2065,13 +2065,23 @@ export class Hud {
  * one (M15 phase 20) — "Blackthorn", not "Berry bush" — and anything else by
  * its kind. One reading for the panel, the title and the picker.
  */
+/**
+ * The word for a kind of node. English has no table for it (`tc` hands back the
+ * id), so a two-word kind showed its underscore (`wild_grain`, and from M15
+ * phase 37 `copper_ore`) in the picker and the title; the words are spaced here.
+ */
+function kindWord(kind: string): string {
+  const word = tc('node', kind);
+  return word === kind ? kind.replace(/_/g, ' ') : word;
+}
+
 export function nodeName(node: ResourceNode, observer: Person): string {
-  if (node.species === null) return tc('node', node.kind);
+  if (node.species === null) return kindWord(node.kind);
   // M15 phase 21d: to an eye without plant lore the baneberry is a berry bush
   // and the yarrow a bush of nothing in particular. The species is what plant
   // lore *is*; showing it to everybody would make the poison common knowledge.
   if ((WILD_PLANTS as readonly string[]).includes(node.species) && !observer.knownTech.has('plant_lore')) {
-    return tc('node', node.kind);
+    return kindWord(node.kind);
   }
   return t(BUSHES[node.species].label);
 }

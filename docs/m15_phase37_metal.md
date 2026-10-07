@@ -229,3 +229,27 @@ gris con vetas verdes, o claras para el estaño).
 **Por qué 0,15 y no 0,3.** No es una rebaja: `heldBy` pide la fracción de adultos que saben *todo* lo de la lista, y un pueblo que trabaja el metal tiene unos pocos herreros entre muchos. Un umbral de tres de cada diez adultos pediría un herrero por hogar y el peldaño no se alcanzaría nunca en una banda de la isla. Es una suposición (documentada aquí, sin medir): la cohorte `smiths` de 16.000 pasos no lo alcanza en ninguna banda, lo que es coherente con que el bronce de una isla con una veta de estaño es de unas pocas personas.
 
 **Pruebas.** `metal.test.ts` (+2): la escalera acaba en `neolithic, chalcolithic, bronze`, y un mundo sube y baja por ella según cuántos adultos saben fundir (al perderse los que saben `casting`, vuelve al Neolítico).
+
+## 37m — lo que se ve (interfaz, capturas y e2e)
+
+**Qué cambia en pantalla.** Las dos estaciones y las cuatro clases de nodo se dibujan (el `Renderer` las pinta por código, los edificios y los iconos salen del arte); el menú de un nodo de mineral ofrece «Extraer mineral de cobre» y, para quien no sabe minar, lo deshabilita con su motivo («No sabes extraer mineral», o «No saben…» si se manda); la telaraña de técnicas gana el dominio Metal (un sector más) y la sub-red Metal con su marca en `native_copper`.
+
+**Un defecto de pantalla que apareció al mirar.** El selector y el título de un nodo mostraban el id con guion bajo en inglés (`copper_ore`, y ya `wild_grain` desde hace tiempo): `tc('node', kind)` devuelve el id cuando no hay tabla. `Hud.kindWord` lo escribe con espacios.
+
+**e2e.** `e2e/phase37-metal.spec.ts` (3 pruebas, añadida a `npm run e2e`): las dos estaciones y las cuatro clases de nodo en el suelo, el menú que dice por qué (aserción sobre el `title` del botón deshabilitado) y la telaraña con el sector y la sub-red Metal. **Una prueba existente cambió de premisa, no el juego:** `tech-subwebs.spec.ts`, «screenshots», en el teléfono, daba por hecho que la marca de la puerta cae dentro del visor al abrir la telaraña; con un noveno sector el dibujo reparte los nodos de otro modo y la marca de «La lanza» quedó bajo el texto de ayuda, de modo que el toque caía en el texto. Pasa en el commit base y falla en este por esa razón; la prueba ahora arrastra el visor hasta despejar la marca antes de tocar (como haría quien no la ve), con el motivo en un comentario. Resultado de `npm run e2e` tras la corrección: **97 de 97** (la primera corrida, antes de corregir esa prueba, dio 96 de 97).
+
+**Otra prueba cambió de cota, con su medida.** `people-knowledge.test.ts`, «sustained full contact does homogenise»: el umbral 0,3 medía 0,21 antes de la fase y 0,33 con los diez nodos de metal; sin contar esos diez da 0,12. Lo que queda distinto tras treinta años de contacto pleno es la cadena profunda que un pueblo aprende despacio, y una tabla más larga tiene más. El mundo no está mal y la afirmación se mantiene (sigue muy por debajo del 0,9 que la prueba vecina exige a diez años), así que la cota pasa a 0,4 y lo dice en un comentario. **Efecto sin medir:** `PeopleSim` (nivel 2) lee la misma tabla `TECHS`, así que el mundo de pueblos de la fase 32c/33 también tiene ahora los nodos de metal; `world:cohort` y `world:bench` no se han corrido (cohortes diferidas).
+
+**Capturas.** `artifacts/screenshots/m15-phase37-metal-2026-10-07/`: `01-pit-furnace-and-seams.png` (carbonera, horno y las cuatro clases de nodo sobre el suelo), `02-menu-refuses-the-seam-with-a-reason.png` (el verbo deshabilitado), `03-tech-web-main-with-metal.png` y `04-tech-web-metal-subweb.png`.
+
+## Lo que queda de la fase 37 (y por qué)
+
+El plan nombra, además de los diez nodos, cinco cosas que **no** se han hecho en esta entrega, dichas aquí en vez de dejarlas en silencio:
+
+- **La fíbula de bronce** (sub-red Ropa) y **el sebo y las velas** (`tallow`, sub-red Fuego): son nodos nuevos en redes que todavía no existen (Ropa, Fuego, fases 14 y 16); declararlos antes que sus redes es el defecto de «contenido declarado e inerte».
+- **La sal gema**: la sal no existe en esta rama (fase 15).
+- **`charcoal` en la sub-red Fuego**: espera a que la fase 16 la abra; mudarlo es cambiar un campo.
+- **`bronze-needs-a-trader`**: necesita el comercio de la fase 36 y una cohorte con mapa. Lo que sí hay medido es la escasez (una veta de estaño, a lo sumo veintiuno de bronce por isla).
+- **El trabajo `smith`**: `JOBS` se negaba a tenerlo «hasta que M8.3 le dé un verbo»; el verbo es `craft` en el horno, que ya sesga el trabajo `crafter`. Un segundo trabajo con las mismas acciones no cambia nada que se pueda medir; la habilidad `smith` sí se entrena (las recetas del horno y las de martillar en frío) y es lo que importaba.
+
+**Medidas diferidas por orden del propietario** (hasta cerrar M15): cohortes de 10 o 20 semillas de `sim:seeds`, `century` y `generations`. Lo medido: `typecheck`, la suite completa, un `sim:check` de una semilla de `band`, `craft`, `hearths`, `scribes` y `smiths`, y la e2e. `craft` y `hearths` dan la misma lista de fallos en el commit base y aquí; `smiths` y `band` fallan los de siempre (`perf-budget`, `cravings-steer-the-diet`, ...).

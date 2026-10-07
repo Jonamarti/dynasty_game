@@ -3487,6 +3487,8 @@ metal.
 
 **Avance del 2026-10-07 (37l, eras).** La escalera gana el Calcolítico y el Bronce (`heldBy` 0,15: un pueblo de metal tiene pocos herreros entre muchos). Con esto la fase tiene sus diez nodos, la mina, el horno, `smith` entrenada, `armourOf` por `techPower`, el escenario `smiths` y los peldaños. Queda fuera lo que el plan nombra y no era de los diez: fíbula, sal gema y sebo (ver `next-steps.md`), y el check `bronze-needs-a-trader`, que espera a la fase 36.
 
+**Avance del 2026-10-07 (37m, lo que se ve, y el cierre).** Capturas en `artifacts/screenshots/m15-phase37-metal-2026-10-07/`, e2e propio (`phase37-metal.spec.ts`, 97 de 97 en total) y los nombres de nodo sin guion bajo en inglés. **La fase queda hecha en sus diez nodos, la mina, el horno, `smith` entrenada, `armourOf` por `techPower`, el escenario `smiths` y los peldaños de eras.** No se hizo la fíbula, la sal gema ni el sebo (sub-redes y fases que aún no existen), ni se midió `bronze-needs-a-trader` (espera a la fase 36): `m15_phase37_metal.md`, «Lo que queda».
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

@@ -364,7 +364,23 @@ test('screenshots: the gate mark, a sub-web, in Spanish, and on a phone', async 
     }
     if (shot === 'phone') {
       // The web opens zoomed on what this person knows, which is where their
-      // gate is: the mark is on screen and a finger opens it.
+      // gate is: the mark is on screen and a finger opens it. Where exactly the
+      // gate lands in that view is the layout's business and moves whenever a
+      // domain is added (M15 phase 37's metal made the ninth sector, and the
+      // spear's mark slid under the help text at this size), so a finger first
+      // drags the web until the mark is clear of the bottom edge, the way a
+      // person who could not see it would.
+      const veil = (await page.locator('.techweb-viewport').boundingBox())!;
+      const here = (await mark.boundingBox())!;
+      const clear = veil.y + veil.height - 24;
+      if (here.y + here.height > clear) {
+        const x = veil.x + veil.width / 2;
+        const y = veil.y + veil.height / 2;
+        await page.mouse.move(x, y);
+        await page.mouse.down();
+        await page.mouse.move(x, y - (here.y + here.height - clear) - 40, { steps: 6 });
+        await page.mouse.up();
+      }
       await mark.tap();
     } else {
       await mark.click();

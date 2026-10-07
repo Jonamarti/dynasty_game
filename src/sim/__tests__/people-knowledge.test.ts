@@ -398,7 +398,15 @@ describe('a technological gap persists (owner decision 2026-10-06: diffusion mus
   });
 
   it('the model is honest that sustained full contact does homogenise, over generations', () => {
-    expect(dispersion(1, LEARN_MU_START, PARTIAL_START, 120, 20)).toBeLessThan(0.3);
+    // 0.3 until M15 phase 37, when it measured 0.21; the ten metal nodes made it
+    // 0.33. The cause is measured, not guessed: leaving those ten out of the
+    // count gives 0.12, so what remains different after thirty years of full
+    // contact is the deep chain (smelting under kiln under pottery...) that a
+    // people picks up slowly, and a longer table has more of it. The world is
+    // not wrong and the claim stands - this is still a third of the ten-year
+    // figure the test above holds above 0.9 and well clear of the hot build's
+    // 0.1 - so the bound moves with the table and says why.
+    expect(dispersion(1, LEARN_MU_START, PARTIAL_START, 120, 20)).toBeLessThan(0.4);
   });
 });
 
