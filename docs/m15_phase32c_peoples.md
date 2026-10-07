@@ -424,3 +424,15 @@ se quedan las del absorbente: una elección, no un hallazgo); las relaciones del
 (clase 4) y el mecanismo se detiene en cuanto fusiona, porque el pueblo que se actualiza o su pareja ya no existen. La intuición del absorbido hacia técnicas que el anfitrión aún no tiene se conserva (la mayor de las dos).
 
 **No hace:** conquista directa sin pasar por tributo; los ids de los absorbidos no se reutilizan; sin partición de la hegemonía ni rebeliones. Tasas y umbrales = suposiciones de diseño.
+
+
+## Materializar y fundir (`PeopleMaterialize.ts`, 32c-12)
+
+**Una sola autoridad.** Una persona es una cabeza en una celda de cohorte o un individuo que tiene otro, nunca las dos ni ninguna. `materialize` resta *exactamente* lo que entrega y lo suma a `People.away` (que se guarda); `dissolve` suma exactamente lo que recibe y resta de `away`, y lanza error si se le devuelven más de las entregadas. `headsOf` (cohortes + fuera) es constante a lo largo de cualquier número de entradas y salidas (test, 25 rondas).
+
+**Qué se saca.** Sin reemplazo: celda en proporción a las cabezas que quedan, edad uniforme dentro de la banda (la última, 60 a 84): la muestra es la estructura de edad y sexo del propio pueblo (test: un pueblo de mujeres de 20-24 da una banda de mujeres de 20-24). **Técnicas:** cada técnica que el pueblo tiene va a una persona elegida al azar y a cada una de las demás con `KNOWER_SHARE` = 0,5 (**suposición**), y quien recibe una técnica recibe sus
+requisitos, así que el conjunto de cada persona es cerrado como el de `TechSet`; el grupo sabe todo lo que sabe el pueblo y nadie sabe más (tests), pero no todos lo saben todo («conocer una técnica como pueblo no significa que todos sepan practicarla»).
+
+**Los números salen del stream que da quien llama**, no del del pueblo: pedir verlo de cerca no mueve su futuro (test: el stream del pueblo queda igual y, 40 años después, el `snapshot` es idéntico con y sin mirada). **Volver:** a la banda de su edad *actual* (quien envejeció fuera entra en la banda que le toca) y lo que el grupo aprendió se suma a lo que sabe el pueblo (`TechSet.union`).
+
+**Qué no hace:** el registro de identidad de las personas ya conocidas del jugador (nombres, historia, equipo: los `Person` del dueño) no es de este módulo, y «la misma persona de nuevo» es regla de ese registro, no un sorteo nuevo; los nacimientos y muertes de quienes están fuera los lleva quien los tiene. Mientras están fuera, el pueblo crece desde las cabezas que quedan. Aún nada de `Simulation` lo llama.

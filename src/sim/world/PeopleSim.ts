@@ -114,6 +114,25 @@ export class TechSet {
     return TECH[tech].requires.every(required => this.has(required));
   }
 
+  /**
+   * Add every technique of `other` that this set can hold, closing under `requires` by repetition (`TECHS` is not ordered by
+   * requirement). `other` is closed, so everything in it is eventually added. Returns how many were new.
+   */
+  union(other: TechSet): number {
+    let added = 0;
+    for (const tech of TECHS) {
+      if (!other.has(tech) || this.has(tech)) continue;
+      const pending = [tech];
+      while (pending.length) {
+        const t = pending.pop()!;
+        if (this.has(t)) continue;
+        const missing = TECH[t].requires.filter(r => !this.has(r));
+        if (missing.length) pending.push(t, ...missing); else { this.set(t); added++; }
+      }
+    }
+    return added;
+  }
+
   /** Learn a technique. Refuses (throws) when a prerequisite is missing; returns false if already known. */
   add(tech: Tech): boolean {
     if (!this.prerequisitesHeld(tech)) {
@@ -197,6 +216,11 @@ export interface People {
    * demography runs and read by `suppliedRations`; zero in a season of plenty, and zero for any people nothing stores for.
    */
   drawn: number;
+  /**
+   * Persons of this people that are currently individuals elsewhere (`PeopleMaterialize`): taken out of the cohorts, not yet
+   * returned. Authority over a person is held by exactly one side; this is the count the cohorts do not hold.
+   */
+  away: number;
   /** The people's own derived stream. Never shared. */
   readonly rng: RNG;
   /** The step on which the next seasonal update is due. */
@@ -258,6 +282,7 @@ export interface PeopleRecord {
   readonly culture: PeopleCulture;
   readonly surplus: number;
   readonly drawn: number;
+  readonly away: number;
   readonly rng: ReturnType<RNG['snapshot']>;
   readonly nextDue: number;
 }
@@ -326,7 +351,7 @@ export class PeopleSim {
       id, comarcas: spec.comarcas,
       cohorts: { male: [...spec.cohorts.male], female: [...spec.cohorts.female] },
       techs: new TechSet(spec.techs ?? []), culture,
-      surplus: spec.surplus ?? 0, drawn: 0,
+      surplus: spec.surplus ?? 0, drawn: 0, away: 0,
       rng: derivePeopleStream(this.seed, id),
       nextDue: this.firstDueAfter(id, this.updating >= 0 ? this.updating : this.step),
     };
@@ -376,16 +401,7 @@ export class PeopleSim {
     const total = wGone + wHost;
     for (const sex of ['male', 'female'] as const) for (let b = 0; b < AGE_BANDS; b++) host.cohorts[sex][b]! += gone.cohorts[sex][b]!;
     host.comarcas += gone.comarcas; host.surplus += gone.surplus;
-    for (const tech of TECHS) if (gone.techs.has(tech) && !host.techs.has(tech)) {
-      // `TECHS` is not necessarily ordered by requirement, so close it by repetition.
-      const pending = [tech];
-      while (pending.length) {
-        const t = pending.pop()!;
-        if (host.techs.has(t)) continue;
-        const missing = TECH[t].requires.filter(r => !host.techs.has(r));
-        if (missing.length) pending.push(t, ...missing); else host.techs.add(t);
-      }
-    }
+    host.techs.union(gone.techs);
     if (total > 0) {
       host.culture.strangerRegard = (host.culture.strangerRegard * wHost + gone.culture.strangerRegard * wGone) / total;
       for (const trait of TRAITS) host.culture.traitMeans[trait] = (host.culture.traitMeans[trait] * wHost + gone.culture.traitMeans[trait] * wGone) / total;
@@ -455,7 +471,7 @@ export class PeopleSim {
         cohorts: { male: [...p.cohorts.male], female: [...p.cohorts.female] },
         techs: p.techs.toRecord(),
         culture: { norms: { ...p.culture.norms }, strangerRegard: p.culture.strangerRegard, traitMeans: { ...p.culture.traitMeans } },
-        surplus: p.surplus, drawn: p.drawn, rng: p.rng.snapshot(), nextDue: p.nextDue,
+        surplus: p.surplus, drawn: p.drawn, away: p.away, rng: p.rng.snapshot(), nextDue: p.nextDue,
       })),
       relations: [...this.relations.values()].sort((x, y) => x.id - y.id).map(r => ({ ...r })),
       applied: [...this.applied].sort((x, y) => x - y),
@@ -477,7 +493,7 @@ export class PeopleSim {
         cohorts: { male: [...p.cohorts.male], female: [...p.cohorts.female] },
         techs: TechSet.fromRecord(p.techs),
         culture: { norms: { ...p.culture.norms }, strangerRegard: p.culture.strangerRegard, traitMeans: { ...p.culture.traitMeans } },
-        surplus: p.surplus, drawn: p.drawn, rng: RNG.fromSnapshot(p.rng), nextDue: p.nextDue,
+        surplus: p.surplus, drawn: p.drawn, away: p.away ?? 0, rng: RNG.fromSnapshot(p.rng), nextDue: p.nextDue,
       });
     }
     for (const rel of r.relations) {

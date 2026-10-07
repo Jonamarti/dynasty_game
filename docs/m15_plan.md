@@ -3302,6 +3302,8 @@ Constantes = suposiciones. [Detalle](m15_phase32c_peoples.md).
 
 **Avance del 2026-10-07 (32c-11, unirse):** `PeopleUnion.ts` y `PeopleSim.absorb`: tributo largo o alianza estrecha acaban en un solo pueblo si cabe bajo el techo de su organización. [Detalle](m15_phase32c_peoples.md).
 
+**Avance del 2026-10-07 (32c-12, materializar y fundir):** `PeopleMaterialize.ts`: personas con edad, sexo y técnicas sacadas de las cohortes y devueltas sin perder ni inventar cabezas; `People.away`. [Detalle](m15_phase32c_peoples.md).
+
 **Puertas**, encadenadas:
 
 - `peoples-match-bands`: el mismo escenario, dos años en nivel 1 y dos en nivel

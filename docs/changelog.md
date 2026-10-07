@@ -1,3 +1,9 @@
+## 2026-10-07 — M15 fase 32c: materializar y fundir (`PeopleMaterialize`), una sola autoridad sobre cada persona
+
+Por qué: el plan pide que, al acercarse el jugador, las bandas de un pueblo pasen a personas con técnicas repartidas, y que al alejarse se fundan en su pueblo «sin perder población ni técnicas» (`m15_simulation_lod.md` §3-4: cada persona se contabiliza una sola vez; entrar y salir repetidamente conserva cantidades). `materialize(people, n, rng)` saca *exactamente* esas personas de las cohortes
+(sin reemplazo, celda en proporción a sus cabezas, edad dentro de su banda) y las cuenta en `People.away`; `dissolve` las devuelve a la celda de su edad y sexo actuales y se niega a devolver más de las entregadas. Las técnicas se reparten para que el grupo sepa lo que sabe el pueblo sin que todos lo sepan todo: cada técnica a una persona al azar y a las demás con probabilidad
+`KNOWER_SHARE` (0,5, suposición), siempre con sus requisitos. Los números salen del stream que da quien llama, no del propio del pueblo: mirar de cerca no mueve el futuro (test: el stream no se toca y 40 años después el pueblo es idéntico con y sin mirada). `TechSet.union` cierra bajo `requires` por repetición (también lo usa `absorb`). Sin cambio de juego.
+
 ## 2026-10-07 — M15 fase 32c: unirse por tributo o alianza (`PeopleUnion`, `PeopleSim.absorb`)
 
 Por qué: el plan pide que los pueblos se unan por conquista, tributo o alianza; sin esa mitad, `splitting` solo multiplicaba pueblos. `PeopleSim.absorb(absorbido, anfitrión)` es una llamada que se hace cargo de todas las consecuencias (población por celda, comarcas, excedente, unión de técnicas cerrada bajo `requires`, regard y
