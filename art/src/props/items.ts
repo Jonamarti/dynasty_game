@@ -101,6 +101,16 @@ export const ITEMS: ItemArt[] = [
     limb([[32, 6], [32, 39]], 3.4, WOOD, WOOD_D)
     + shape('M24,36L40,36L42,53Q32,66 22,53Z', '#b08a3e', '#5a4216')
     + stroke('M30,39L28,53M34,39L36,53', '#dcc072', 1), 20)],
+  ['bronze_sword', 'Espada de bronce', 'bronze_arms', () => rot(
+    shape(poly([[32, 2], [37.5, 40], [26.5, 40]]), '#b08a3e', '#5a4216')
+    + stroke('M32,8L32,36', '#dcc072', 1.2)
+    + limb([[20, 42], [44, 42]], 3.2, '#6b4f1c', null)
+    + limb([[32, 42], [32, 60]], 4.8, WOOD, WOOD_D), 26)],
+  ['bronze_helm', 'Yelmo de bronce', 'bronze_arms', () =>
+    shape(smooth([[12, 44], [14, 26], [32, 12], [50, 26], [52, 44], [44, 48], [20, 48]]), '#b08a3e', '#5a4216')
+    + shape(poly([[26, 30], [38, 30], [36, 48], [28, 48]]), '#2b1d12', '#2b1d12')
+    + stroke('M16,32Q32,16 48,32', '#dcc072', 1.4)
+    + ell(32, 14, 3, 3, '#6b4f1c', '#3a2a0c')],
   ['charcoal', 'Carbón vegetal', 'charcoal', () =>
     shape(smooth([[10, 44], [22, 30], [36, 34], [40, 48], [26, 54]]), '#2f2b28', STONE_D)
     + shape(smooth([[32, 30], [46, 18], [58, 28], [52, 42], [38, 42]]), '#3a3532', STONE_D)

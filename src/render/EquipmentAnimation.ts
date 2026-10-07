@@ -13,6 +13,7 @@ const HELD_ART: Readonly<Record<string, HeldItemKind>> = {
   copper_axe: 'handaxe',
   bronze_axe: 'handaxe',
   copper_dagger: 'copper_dagger',
+  bronze_sword: 'bronze_sword',
   spear: 'spear',
   bow: 'bow',
   atlatl: 'atlatl',

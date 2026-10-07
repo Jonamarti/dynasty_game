@@ -14,7 +14,7 @@ import { Simulation } from '../core/Simulation.ts';
 import { fittedActionToolFor } from '../../render/EquipmentAnimation.ts';
 import { RNG } from '../core/RNG.ts';
 import { Person, DAYS_PER_YEAR } from '../entities/Person.ts';
-import { TECH, TECHS, TECH_EFFECTS, ageIndex, warmthFrom, techPower, awlFactor, forageYieldFactor, SEWN_RECIPES, WEBS, techsOfWeb, webOf, AXE_TOOLS, axeFactor, axeItemOf, weaponOf, buildFactor, reapFactor } from '../knowledge/Tech.ts';
+import { TECH, TECHS, TECH_EFFECTS, ageIndex, warmthFrom, techPower, awlFactor, forageYieldFactor, SEWN_RECIPES, WEBS, techsOfWeb, webOf, AXE_TOOLS, axeFactor, axeItemOf, weaponOf, buildFactor, reapFactor, weaponItemOf, protectionOf, armourOf } from '../knowledge/Tech.ts';
 import { availableActions } from '../ai/ActionCatalog.ts';
 import { ITEMS } from '../entities/Item.ts';
 import { RECIPES } from '../entities/Recipe.ts';
@@ -894,5 +894,94 @@ describe('bronze tools', () => {
     }
     expect(person.inventory.count('bronze_spade')).toBe(1);
     expect(person.inventory.count('bronze')).toBe(0);
+  });
+});
+
+describe('bronze arms', () => {
+  it('needs alloying and the spear', () => {
+    const def = TECH.bronze_arms;
+    expect(def.requires).toEqual(['alloying', 'spear']);
+    expect(def.web).toBe('metal');
+    for (const required of def.requires) {
+      expect(ageIndex(def.age)).toBeGreaterThanOrEqual(ageIndex(TECH[required].age));
+    }
+  });
+
+  it('pours a sword and a helm at the furnace out of bronze', () => {
+    for (const id of ['bronze_sword', 'bronze_helm']) {
+      const recipe = RECIPES[id]!;
+      expect(recipe.tech).toBe('bronze_arms');
+      expect(recipe.station).toBe('furnace');
+      expect(Object.keys(recipe.ingredients)).toEqual(['bronze']);
+    }
+  });
+
+  it('is the best blade in the game for whoever knows it, and a plain stick for whoever does not', () => {
+    const smith = adult('smith');
+    const stranger = adult('stranger');
+    teach(smith, 'bronze_arms', 'casting');
+    for (const person of [smith, stranger]) {
+      person.inventory.add('bronze_sword', 1);
+      person.inventory.add('copper_dagger', 1);
+    }
+    const sword = ITEMS.bronze_sword!.weapon!;
+    const dagger = ITEMS.copper_dagger!.weapon!;
+    expect(sword.damage).toBeGreaterThan(dagger.damage);
+    expect(sword.reach).toBeGreaterThan(dagger.reach);
+    expect(weaponItemOf(smith, false)).toBe('bronze_sword');
+    // The stranger has the sword and cannot swing it as a smith does; the dagger
+    // is no better to them, so nothing at all.
+    expect(weaponOf(stranger, false)).toBeNull();
+  });
+
+  it('turns a blow from the head, which nothing else here covers, better for whoever made it', () => {
+    const helm = ITEMS.bronze_helm!;
+    expect(helm.protects!.head).toBeGreaterThan(0);
+    expect(helm.armourTech).toBe('bronze_arms');
+    const bare = adult('bare');
+    const wearer = adult('wearer');
+    const smith = adult('smith');
+    for (const person of [wearer, smith]) person.inventory.add('bronze_helm', 1);
+    teach(smith, 'bronze_arms');
+    expect(protectionOf(bare, 'head')).toBe(0);
+    // A helm off a corpse is a helm: most of its worth, to anybody.
+    expect(protectionOf(wearer, 'head')).toBeCloseTo(helm.protects!.head! * 0.75, 12);
+    expect(protectionOf(smith, 'head')).toBeGreaterThan(protectionOf(wearer, 'head'));
+    // And it covers the head and nothing else.
+    expect(protectionOf(smith, 'torso')).toBe(0);
+    // However well refined, no garment makes anybody unhurtable.
+    smith.techLevel.set('bronze_arms', TECH.bronze_arms.maxRefinement);
+    expect(protectionOf(smith, 'head')).toBeLessThan(1);
+  });
+
+  it('leaves every garment that names no technique exactly as it was', () => {
+    const wearer = adult('wearer');
+    wearer.inventory.add('hide_armour', 1);
+    teach(wearer, 'leatherwork');
+    expect(protectionOf(wearer, 'torso')).toBe(ITEMS.hide_armour!.protects!.torso);
+    expect(armourOf(wearer)).toBeGreaterThan(0);
+  });
+
+  it('moves armourOf, the mean over where blows land, when the helm is worn', () => {
+    const smith = adult('smith');
+    teach(smith, 'bronze_arms');
+    const before = armourOf(smith);
+    smith.inventory.add('bronze_helm', 1);
+    expect(armourOf(smith)).toBeGreaterThan(before);
+  });
+
+  it('pours a sword at the furnace end to end', () => {
+    const sim = worldKnowing(['firemaking', 'carpentry', 'charcoal', 'smelting', 'pottery', 'casting', 'ground_stone', 'hafting', 'mining', 'alloying', 'spear', 'bronze_arms']);
+    const person = sim.livingPeople()[0]!;
+    settle(person);
+    person.inventory.add('bronze', 3);
+    const furnace = stationNear(sim, person, 'furnace');
+    expect(sim.order(person, 'craft', { recipeId: 'bronze_sword', buildingId: furnace.id })).toBe(true);
+    for (let i = 0; i < 2500 && person.inventory.count('bronze_sword') === 0; i++) {
+      person.needs.thirst = 0;
+      person.needs.hunger = 0;
+      sim.step();
+    }
+    expect(person.inventory.count('bronze_sword')).toBe(1);
   });
 });

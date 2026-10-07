@@ -3479,6 +3479,8 @@ metal.
 
 **Avance del 2026-10-07 (37h, `bronze_tools`).** Hacha, azuela, hoz y pala de bronce, cada una leída por la función que ya leía su piedra (la pala cava a 5×, la del plan 26b). Una pala de bronce necesita tres de bronce: el estaño manda.
 
+**Avance del 2026-10-07 (37i, `bronze_arms`).** Espada y yelmo de bronce. **`armourOf` pasa por `techPower`** (`ItemDef.armourTech`, `armourFit`): lo que nombra su técnica protege según quien lo lleva; lo que no, igual que siempre. El yelmo aún no se dibuja puesto.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

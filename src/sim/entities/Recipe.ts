@@ -655,6 +655,16 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'bronze_spade', label: 'Bronze spade', icon: '\u{2660}', tech: 'bronze_tools', skill: 'smith',
     workTicks: 130, ingredients: { bronze: 3 }, output: { bronze_spade: 1 }, station: 'furnace', keep: 1,
   },
+  // `bronze_arms`, at the furnace. Three of bronze for the sword and two for the
+  // helm; `keep: 1`, and not more, for the reason the tools give.
+  bronze_sword: {
+    id: 'bronze_sword', label: 'Bronze sword', icon: '\u{2694}', tech: 'bronze_arms', skill: 'smith',
+    workTicks: 130, ingredients: { bronze: 3 }, output: { bronze_sword: 1 }, station: 'furnace', keep: 1,
+  },
+  bronze_helm: {
+    id: 'bronze_helm', label: 'Bronze helm', icon: '\u{1FA96}', tech: 'bronze_arms', skill: 'smith',
+    workTicks: 110, ingredients: { bronze: 2 }, output: { bronze_helm: 1 }, station: 'furnace', keep: 1,
+  },
   // `bellows`: the same run in less time and three ingots, not two. A second
   // recipe rather than a term on the first, on the `kiln_pot` model, and the
   // trap that comment records applies here exactly: the craft scorer has no

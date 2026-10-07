@@ -13,7 +13,7 @@ import { CORD, STONE, STONE_D, WOOD, WOOD_D } from './items.ts';
 export const HAND: readonly [number, number] = [48, 48];
 
 /** What the sim can put in a hand today, plus the torch phase 12 adds. */
-export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'bronze_spade', 'digging_stick'] as const;
+export const HELD_KINDS = ['spear', 'bow', 'atlatl', 'sling', 'bone_point', 'copper_dagger', 'bronze_sword', 'handaxe', 'net', 'basket', 'torch', 'antler_pick', 'spade', 'bronze_spade', 'digging_stick'] as const;
 export type HeldKind = (typeof HELD_KINDS)[number];
 
 /** `side` is true when seen from the east or west. */
@@ -65,6 +65,13 @@ export function heldSvg(kind: HeldKind, side: boolean): string {
       const tx = side ? 3 : 0;
       return shape(smooth([[x + tx, y - 15], [x + tx + 2.4, y - 4], [x + 1.8, y + 6], [x - 1.8, y + 6], [x + tx - 2.2, y - 4]]), '#e6dcc0', '#7a6d4e')
         + stroke(`M${x + tx - 0.6},${y - 8}L${x - 0.6},${y + 2}`, '#c9bd9c', 0.7);
+    }
+    case 'bronze_sword': {
+      const tx = side ? 3 : 0;
+      return shape(poly([[x + tx, y - 30], [x + tx + 3.4, y + 2], [x - 3.4, y + 2]]), '#b08a3e', '#5a4216')
+        + stroke(`M${x + tx},${y - 24}L${x},${y}`, '#dcc072', 0.9)
+        + limb([[x - 6, y + 3], [x + 6, y + 3]], 2, '#6b4f1c', null)
+        + limb([[x, y + 3], [x, y + 10]], 2.8, WOOD, WOOD_D);
     }
     case 'copper_dagger': {
       const tx = side ? 2 : 0;

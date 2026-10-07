@@ -189,3 +189,13 @@ gris con vetas verdes, o claras para el estaño).
 **Arte.** Cuatro iconos, la mano `held/bronze_spade` (el arte pide una por cada herramienta de cavar con técnica) y el caso de `Sprites`; el hacha de bronce se ve con la silueta del hacha.
 
 **Pruebas.** `metal.test.ts` (+7): declaración, recetas sin armas, la escalera hacha de cobre < bronce, azuela y hoz mejor que su piedra, la doble puerta, cavar a cinco veces el palo (y sin la técnica es solo un palo pesado), el suelo del multiplicador y fundir la pala de punta a punta.
+
+## 37i — `bronze_arms`: la espada, el yelmo y `armourOf` por `techPower`
+
+**Qué hay.** El nodo `bronze_arms` (dispositivo, red Metal, Edad del Bronce, «hacia el 2800 a. C.», requiere `alloying` y `spear`), la espada (`weapon`: daño 0,75, alcance 0,55, caza 1,35; la mejor hoja del juego) y el yelmo (`protects: { head: 0,55 }`, la primera prenda que cubre la cabeza), vertidos en el horno (tres y dos de bronce).
+
+**La deuda que cobra.** El plan dice «`armourOf` por fin pasa por `techPower`». Hasta hoy `protectionOf` leía `ITEMS[...].protects` sin mirar quién la llevaba. Ahora una prenda que nombra su técnica (`ItemDef.armourTech`) protege según `Tech.armourFit`: tres cuartos de su valor para quien no la sabe hacer (un yelmo quitado a un muerto es un yelmo), cerca de nueve décimos mientras se prueba el diseño y el valor entero y algo más al refinarlo, con un techo (nunca 1: nadie queda invulnerable). **Las prendas que no nombran técnica conservan su número exacto**, así que ningún mundo existente se mueve (el chaleco de cuero y el abrigo de pieles no declaran `armourTech`; una prueba lo fija). `armourOf`, el promedio por dónde caen los golpes, pasa por la misma función, y la prueba de que sube al ponerse el yelmo cierra el círculo.
+
+**Lo que no está.** El yelmo no se dibuja puesto en la cabeza: el arte de personas solo conoce las prendas de `Wear` y añadir una es un pase aparte (anotado en `next-steps.md`); vive como icono de inventario, y la espada como mano (`held/bronze_sword`).
+
+**Pruebas.** `metal.test.ts` (+7): declaración, recetas, la espada supera a la daga y no la maneja quien no sabe, el yelmo (cabeza sí, torso no, techo bajo 1), las prendas sin técnica no cambian, `armourOf` sube y verter la espada de punta a punta.

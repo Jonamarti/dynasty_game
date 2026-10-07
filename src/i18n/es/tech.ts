@@ -459,4 +459,11 @@ export const ES_TECH: Record<string, string> = {
   "felled a tree with a stone axe that chipped and wished for an edge that would not": "taló un árbol con un hacha de piedra que se mellaba y deseó un filo que no se mellara",
   "brought in a harvest with a flint blade that blunted before the field was done": "recogió una cosecha con una hoja de sílex que se embotó antes de acabar el campo",
   "A bronze axe that fells, an adze that builds, a sickle that reaps and a spade that digs, each better than its stone.": "Un hacha de bronce que tala, una azuela que construye, una hoz que siega y una pala que cava, cada una mejor que la de piedra.",
+  "Bronze arms": "Armas de bronce",
+  "about 2800 BC": "hacia el 2800 a. C.",
+  "A sword as long as an arm, and a helm: the first thing that turns a blow from the head. What a band that can pour bronze does with it when it has an enemy.": "Una espada larga como un brazo, y un yelmo: lo primero que desvía un golpe de la cabeza. Lo que hace con el bronce una banda que sabe verterlo cuando tiene un enemigo.",
+  "drew a spear point out long and thin in bronze and saw it was no longer a point but a blade": "alargó una punta de lanza en bronce y vio que ya no era una punta sino una hoja",
+  "watched a man go down to a blow on the head and thought of a bronze cap": "vio caer a un hombre de un golpe en la cabeza y pensó en un casquete de bronce",
+  "broke a spear shaft in a drill and wished for a blade that could not be broken": "rompió el asta de una lanza en un ejercicio y deseó una hoja que no se rompiera",
+  "A bronze sword, and a helm that turns a blow from the head, better in the hands of whoever knows how they are made.": "Una espada de bronce y un yelmo que desvía un golpe de la cabeza, mejores en manos de quien sabe cómo se hacen.",
 };

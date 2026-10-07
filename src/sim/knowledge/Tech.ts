@@ -175,6 +175,9 @@ export const TECHS = [
   'alloying',
   // What bronze is for: the tools that every trade in the band leans on.
   'bronze_tools',
+  // Bronze made for the fight: a sword, and a helm for the one part of the body
+  // nothing else here covers.
+  'bronze_arms',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2234,6 +2237,32 @@ export const TECH: Record<Tech, TechDef> = {
       'of the stone one in less of the day. The spade digs five times as ' +
       'fast as a stick.',
   },
+  // M15 phase 37 (M8.3). A sword is a bronze blade as long as an arm, which flint
+  // never gave anybody, and the helm is the first thing that turns a blow from
+  // the head (21f: a hide cuirass leaves it bare). Both go through `techPower`:
+  // the sword by the `weapon.tech` every weapon has, the helm by `armourTech`,
+  // which is where "`armourOf` finally goes through `techPower`" is paid.
+  bronze_arms: {
+    id: 'bronze_arms', label: 'Bronze arms', domain: 'metal', web: 'metal',
+    age: 'bronze', firstKnown: 'about 2800 BC',
+    kind: 'device',
+    requires: ['alloying', 'spear'], difficulty: 0.6, skill: 'smith',
+    prototype: { bronze: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'alloying' }, { kind: 'knows', tech: 'spear' },
+                { kind: 'holding', item: 'bronze' }],
+        weight: 1.0, story: 'drew a spear point out long and thin in bronze and saw it was no longer a point but a blade' },
+      { needs: [{ kind: 'knows', tech: 'alloying' }, { kind: 'saw', what: 'assault' }],
+        weight: 0.7, story: 'watched a man go down to a blow on the head and thought of a bronze cap' },
+      { needs: [{ kind: 'knows', tech: 'spear' }, { kind: 'knows', tech: 'alloying' },
+                { kind: 'doing', action: 'spar' }],
+        weight: 0.5, story: 'broke a spear shaft in a drill and wished for a blade that could not be broken' },
+    ],
+    description:
+      'A sword as long as an arm, and a helm: the first thing that turns a ' +
+      'blow from the head. What a band that can pour bronze does with it ' +
+      'when it has an enemy.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2592,6 +2621,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'A bronze axe that fells, an adze that builds, a sickle that reaps and a spade that digs, each better than its stone.',
     site: 'Tech.axeFactor (AXE_TOOLS), buildFactor, reapFactor and Earth.digTool (DIG_TOOLS); RECIPES.bronze_*',
   },
+  bronze_arms: {
+    summary: 'A bronze sword, and a helm that turns a blow from the head, better in the hands of whoever knows how they are made.',
+    site: 'weaponOf (ITEMS.bronze_sword.weapon); Tech.protectionOf and armourOf, via ItemDef.armourTech',
+  },
 };
 
 /**
@@ -2690,10 +2723,30 @@ export function protectionOf(person: Person, part: BodyPart): number {
   let best = 0;
   for (const [itemId, count] of person.inventory.entries()) {
     if (count <= 0) continue;
-    const covers = ITEMS[itemId]?.protects?.[part];
-    if (covers !== undefined && covers > best) best = covers;
+    const def = ITEMS[itemId];
+    const covers = def?.protects?.[part];
+    if (covers === undefined) continue;
+    // M15 phase 37: "`armourOf` finally goes through `techPower`". A garment that
+    // names the technique behind it (`armourTech`) turns aside more in the hands
+    // of somebody who knows how it was made and kept refining it, and still
+    // turns aside most of its worth for anybody: a helm taken off a corpse is a
+    // helm. Garments that name none keep their number exactly, so no existing
+    // world moves.
+    const worth = def?.armourTech === undefined ? covers : covers * armourFit(person, def.armourTech as Tech);
+    if (worth > best) best = worth;
   }
   return best;
+}
+
+/**
+ * How well a person's knowledge fits a garment of this technique: three
+ * quarters for a stranger to it, about nine tenths for somebody still proving
+ * the design, and full worth and more as it is refined (never past 1.35, which
+ * keeps the dearest garment under 1 - nobody is made unhurtable).
+ */
+export function armourFit(person: Person, tech: Tech): number {
+  const power = techPower(person, tech);
+  return power > 0 ? 0.75 + 0.25 * Math.min(power, 2.4) : 0.75;
 }
 
 /**

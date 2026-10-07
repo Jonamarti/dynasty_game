@@ -50,6 +50,12 @@ export interface ItemDef {
    */
   protects?: Partial<Record<import('./Body.ts').BodyPart, number>>;
   /**
+   * M15 phase 37. The technique behind a garment, when how well it is made
+   * matters to how well it turns a blow (`Tech.armourFit`). Left out, the
+   * garment protects by `protects` alone, as every garment did before the metal.
+   */
+  armourTech?: string;
+  /**
    * M15 phase 11a. What fits in a hand, in two hands, or on a shoulder.
    * `perHand` is a fistful, `perArms` an armload with both hands, and
    * `shoulder` — only present on the few things big enough to carry that way
@@ -383,6 +389,19 @@ export const ITEMS: Record<string, ItemDef> = {
   bronze_adze: { id: 'bronze_adze', label: 'Bronze adze', nutrition: 0, spoilTicks: 0, baseValue: 26, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   bronze_sickle: { id: 'bronze_sickle', label: 'Bronze sickle', nutrition: 0, spoilTicks: 0, baseValue: 22, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   bronze_spade: { id: 'bronze_spade', label: 'Bronze spade', nutrition: 0, spoilTicks: 0, baseValue: 30, class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 } },
+  // `bronze_arms`. The sword is a weapon like the dagger, further reaching and
+  // harder-hitting than anything a flint can be; the helm is the first garment
+  // to cover the head, and its worth passes through `armourTech`.
+  bronze_sword: {
+    id: 'bronze_sword', label: 'Bronze sword', nutrition: 0, spoilTicks: 0, baseValue: 34,
+    weapon: { damage: 0.75, reach: 0.55, hunt: 1.35, tech: 'bronze_arms' },
+    class: 'long', hand: { perHand: 1, perArms: 1, hands: 1 },
+  },
+  bronze_helm: {
+    id: 'bronze_helm', label: 'Bronze helm', nutrition: 0, spoilTicks: 0, baseValue: 30,
+    protects: { head: 0.55 }, armourTech: 'bronze_arms',
+    class: 'bulky', hand: { perHand: 1, perArms: 1, hands: 1 },
+  },
   charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
 };
 

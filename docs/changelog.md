@@ -1,3 +1,7 @@
+## 2026-10-07 — M15 fase 37i: `bronze_arms`, y `armourOf` por fin pasa por `techPower`
+
+Por qué: la deuda que el plan de las edades anotó desde el principio. Nodo `bronze_arms` (`alloying` + `spear`), espada (la mejor hoja) y yelmo (la primera prenda que cubre la cabeza), en el horno. `ItemDef.armourTech` y `Tech.armourFit`: una prenda que nombra su técnica protege tres cuartos de su valor a quien no la sabe hacer y más al refinarla (tope por debajo de 1); **las prendas que no la nombran conservan su número exacto**, así que ningún mundo existente se mueve (prueba). Arte: iconos y mano de la espada; el yelmo no se dibuja puesto (`next-steps.md`). Tests: `metal.test.ts` (69 en total). Detalle en [m15_phase37_metal.md](m15_phase37_metal.md).
+
 ## 2026-10-07 — M15 fase 37h: `bronze_tools`, la pala cava a cinco veces el palo
 
 Por qué: el bronce sirve para algo más que armas. Nodo `bronze_tools` (`alloying`) y cuatro herramientas vertidas en el horno (hacha, azuela, hoz y pala). Ningún lector nuevo: `AXE_TOOLS` gana el hacha, `buildFactor` la azuela (la mejor de las dos, sin apilar), `reapFactor` la hoz y `DIG_TOOLS` la pala con potencia 5 (el «5×» del plan 26b). Doble puerta en todas, `maxRefinement: 1` y una prueba del suelo del multiplicador. `keep: 1` en cada receta: el bronce es lo escaso. Arte: cuatro iconos y la mano de la pala. Tests: `metal.test.ts` (62 en total). Detalle en [m15_phase37_metal.md](m15_phase37_metal.md).
