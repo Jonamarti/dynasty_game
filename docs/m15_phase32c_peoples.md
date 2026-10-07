@@ -412,3 +412,15 @@ no tiene la envía a `KnowledgeLedger.post` (`how: 'suffered'`, intensidad 0,5, 
 
 **Qué no hace:** sin estatus como causa, sin enfermedad ni migración, sin refuerzos ni alianzas entre más de dos, sin rebelión del tributario, y las bajas son solo de varones combatientes (sin civiles, sin hambre de guerra). No sale de guion: ninguna técnica por nombre, ninguna comparación de id, estación ni paso (lectura del código, probada). Tests: rivalidad
 (contacto 0 y abundancia como controles), declaración (umbral, contacto, ventaja), una estación se resuelve una vez y toca solo a los combatientes, el débil pierde más parte, la paz llega con el tiempo y no pronto, tributo solo en guerra desigual y siempre al más fuerte, arma sufrida publicada una vez, troceado igual que entero.
+
+
+## Unirse (`PeopleUnion.ts`, `PeopleSim.absorb`, 32c-11)
+
+**`absorb`** hace en una llamada todo lo que une dos pueblos, para que nada quede contado dos veces ni colgando: suma celdas de edad y sexo, comarcas y excedente; las técnicas son la unión (se cierra por repetición porque `TECHS` no está ordenada por requisito); `strangerRegard` y rasgos medios se ponderan por población (las normas
+se quedan las del absorbente: una elección, no un hallazgo); las relaciones del absorbido pasan al absorbente (contacto el mayor, `standing` ponderado, la postura del absorbente o, si no tiene, la del absorbido; un `overlord` que era el absorbido pasa a ser el absorbente) y se borra la que los unía.
+
+**`uniting`**: (a) `tributary` desde hace `ASSIMILATION_SEASONS` = 80 estaciones con contacto >= 0,5: el vasallo se funde con su `overlord` (probabilidad 0,05 por estación); (b) alianza: sin guerra, `standing >= 90` y contacto >= 0,9 (probabilidad 0,03): absorbe el mayor al menor (el empate lo decide el id más bajo, un desempate entre iguales y no una decisión).
+**Guarda**: se rechaza si el pueblo resultante, con la unión de técnicas, ya superaría `ORGANISATION_CEILING` de su organización (`unionFits`): es exactamente la condición en que `splitting` lo dividiría, y sin ella una hija volvería a su padre. Se probó quitando la guarda: falla el test de unión y el del padre y la hija (que cuenta las fusiones). Una transacción por relación y estación
+(clase 4) y el mecanismo se detiene en cuanto fusiona, porque el pueblo que se actualiza o su pareja ya no existen. La intuición del absorbido hacia técnicas que el anfitrión aún no tiene se conserva (la mayor de las dos).
+
+**No hace:** conquista directa sin pasar por tributo; los ids de los absorbidos no se reutilizan; sin partición de la hegemonía ni rebeliones. Tasas y umbrales = suposiciones de diseño.

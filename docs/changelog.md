@@ -1,3 +1,9 @@
+## 2026-10-07 — M15 fase 32c: unirse por tributo o alianza (`PeopleUnion`, `PeopleSim.absorb`)
+
+Por qué: el plan pide que los pueblos se unan por conquista, tributo o alianza; sin esa mitad, `splitting` solo multiplicaba pueblos. `PeopleSim.absorb(absorbido, anfitrión)` es una llamada que se hace cargo de todas las consecuencias (población por celda, comarcas, excedente, unión de técnicas cerrada bajo `requires`, regard y
+rasgos medios ponderados por población, y las relaciones del absorbido pasan al anfitrión fusionándose con la que ya hubiera, sin dejar ninguna colgando). `uniting`: un tributo de 80 estaciones (veinte años) con contacto >= 0,5, o una alianza (standing >= 90 y contacto >= 0,9); absorbe el mayor al menor. **Se rechaza si el resultado
+ya estaría por encima del techo de su organización** (el mismo que haría dividirse a `splitting`): sin esa guarda una hija volvería con su padre en pocos años (probado: quitar la guarda rompe el test del padre y la hija). Tasas = suposiciones de diseño. Sin cambio de juego.
+
 ## 2026-10-07 — M15 fase 32c: guerra y paz entre pueblos (`PeopleWar`)
 
 Por qué: el plan pide que los pueblos guerreen y hagan la paz «con las mismas causas que la fase 8 da a las bandas». Aquí cada causa es una cantidad que ya existe en el pueblo: la hostilidad es `PeopleRelation.standing`, que baja por **rivalidad
