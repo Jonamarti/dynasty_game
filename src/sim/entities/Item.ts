@@ -354,6 +354,10 @@ export const ITEMS: Record<string, ItemDef> = {
   copper_nugget: { id: 'copper_nugget', label: 'Copper nugget', nutrition: 0, spoilTicks: 0, baseValue: 6, class: 'small', hand: { perHand: 1, perArms: 3, hands: 1 } },
   copper_awl: { id: 'copper_awl', label: 'Copper awl', nutrition: 0, spoilTicks: 0, baseValue: 9, class: 'small', hand: { perHand: 1, perArms: 1, hands: 1 } },
   copper_pendant: { id: 'copper_pendant', label: 'Copper pendant', nutrition: 0, spoilTicks: 0, baseValue: 18, class: 'small', hand: { perHand: 1, perArms: 2, hands: 1 } },
+  // `mining`'s two ores: raw, heavy, worth nothing to eat and a little to
+  // anybody who knows what a furnace does with them. Tin is dearer by far.
+  copper_ore: { id: 'copper_ore', label: 'Copper ore', nutrition: 0, spoilTicks: 0, baseValue: 4, class: 'bulky', hand: { perHand: 1, perArms: 4, hands: 1 } },
+  tin_ore: { id: 'tin_ore', label: 'Tin ore', nutrition: 0, spoilTicks: 0, baseValue: 9, class: 'bulky', hand: { perHand: 1, perArms: 3, hands: 1 } },
   charcoal: { id: 'charcoal', label: 'Charcoal', nutrition: 0, spoilTicks: 0, baseValue: 3, class: 'loose', hand: { perHand: 2, perArms: 6, hands: 1 } },
 };
 

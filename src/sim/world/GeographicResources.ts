@@ -46,4 +46,6 @@ const GATED: Partial<Record<ResourceKind, { resource: WorldResource; features: n
   wild_grain: { resource: 'wild_grain', features: WILD_CEREALS },
   flint: { resource: 'flint', features: WORLD_FEATURE.flint },
   native_copper: { resource: 'copper', features: WORLD_FEATURE.copper },
+  copper_ore: { resource: 'copper', features: WORLD_FEATURE.copper },
+  tin_ore: { resource: 'tin', features: WORLD_FEATURE.tin },
 };

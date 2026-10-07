@@ -32,6 +32,7 @@ import {
   BUSH_SPECIES, BUSHES, WILD_PLANTS, RESOURCE_KINDS, ORE_COUNTS, bushPhase, ResourceNode, isFoodKind, isPlantFood, seasonLoreKind,
   type BushSpecies, type ResourceKind,
 } from '../entities/ResourceNode.ts';
+import { canWork } from '../knowledge/Ore.ts';
 import { NeedsSystem } from '../systems/NeedsSystem.ts';
 import { MovementSystem } from '../systems/MovementSystem.ts';
 import { Pathfinder } from './Pathfinder.ts';
@@ -1269,6 +1270,10 @@ export class Simulation {
       // M15 phase 37. Float copper weathers out of the hills; the one place a
       // person is likely to walk past a nugget and not know what it is.
       case 'native_copper': return biome === 'hills';
+      // The seams are in the hills too, which is where a band that has learned to
+      // dig will go looking.
+      case 'copper_ore': return biome === 'hills';
+      case 'tin_ore': return biome === 'hills';
     }
   }
 
@@ -3927,6 +3932,11 @@ export class Simulation {
       }
       if (node.def.groundLevel && this.isBuried(node.x, node.y)) {
         return this.cancelOrder(person, t('it is under the snow'));
+      }
+      // M15 phase 37: ore is taken out of a hill only by somebody who knows how.
+      // Refused here, with the reason, rather than walked to and abandoned.
+      if (!canWork(person, node.kind)) {
+        return this.cancelOrder(person, t('they do not know how to mine'));
       }
       person.targetNodeId = node.id;
       person.targetX = node.x;

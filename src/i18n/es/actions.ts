@@ -389,4 +389,13 @@ export const ES_ACTIONS: Record<string, string> = {
   "they do not know how to plant a tree": "no saben plantar un árbol",
   "nothing would take root in this season": "nada echaría raíces en esta estación",
   "Plant a tree here": "Plantar un árbol aquí",
+  "Copper ore": "Mineral de cobre",
+  "Tin ore": "Mineral de estaño",
+  "Copper seam": "Veta de cobre",
+  "Tin seam": "Veta de estaño",
+  "Mine copper ore": "Extraer mineral de cobre",
+  "Mine tin ore": "Extraer mineral de estaño",
+  "they do not know how to mine": "no saben extraer mineral",
+  "They do not know how to mine": "No saben extraer mineral",
+  "You do not know how to mine": "No sabes extraer mineral",
 };

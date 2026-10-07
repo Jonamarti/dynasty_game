@@ -102,3 +102,42 @@ propia (el resto del mundo no se mueve), determinista, puerta del mapa
 puerta y solo lo cosido), un oficio cosido de punta a punta más corto con
 punzón, y recoger una pepita que no se regenera. Arte: tres iconos y los nodos
 dibujados por código en el `Renderer`.
+
+## 37c — `mining`: la mina es un nodo, no un agujero
+
+**Qué hay.** El nodo `mining` (dispositivo, piedra, Calcolítico, «hacia el
+4000 a. C.», requiere `ground_stone` y `hafting`); dos clases de nodo, `copper_ore`
+(cuatro vetas en las colinas de la isla clásica) y `tin_ore` (**una**: la escasez
+es el diseño; el comercio del Bronce existió porque el estaño estaba en pocos
+sitios); los ítems `copper_ore` y `tin_ore`. Una veta no se excava: «una mina es
+un nodo, no una casilla», así que no hace falta la reparación de regiones (16a).
+Ni una ni otra vuelven a crecer.
+
+**Quién lo lee.** `mining` tiene tres lectores, y el primero no es metal:
+
+- `Tech.forageYieldFactor`: más sílex de cada afloramiento (×1,25: las minas de
+  sílex neolíticas, Spiennes, son donde se aprendió) y ×1,5 el mineral.
+- La **puerta**: `ResourceDef.requiresTech` y `Ore.canWork`, leída por
+  `ActionSystem.doHarvest` (se abandona con el motivo `cannot_mine`, «no saben
+  extraer mineral», visible en el flotante), por `Simulation.order` (se rechaza
+  *antes* de caminar, con el mismo texto) y por `ActionCatalog.nodeActions` (el
+  menú deshabilita la veta y dice por qué: «No sabes extraer mineral», o «No
+  saben…» si se manda). Un saber perdido a mitad de camino también se detiene
+  con motivo (test). La regla del propietario: si la simulación rechaza algo, la
+  interfaz lo dice.
+- `Ore.wantedOreKinds` ya cubría las vetas, pero hasta que `smelting` (37d)
+  declare una receta que consuma mineral, nadie tiene un motivo para quererlas:
+  un minero sin horno no sale a buscar cobre. Es la respuesta honesta, y una
+  prueba la fija.
+
+**Dónde está en el mundo.** La misma pasada y el mismo `oreRng` de 37b (sin fork
+nuevo); con mapa, `GATED` ahora conoce `copper_ore` (cobre) y `tin_ore` (estaño),
+cada uno donde la región tiene ese metal. La prueba de «el resto del mundo no se
+mueve» ahora apaga **todos** los minerales.
+
+**Pruebas.** `metal.test.ts` (+10): declaración, chispas, estaño más escaso que
+cobre, puerta del mapa por metal, `canWork`, rendimientos, rechazo de la orden
+con motivo, el menú (deshabilitado con razón / ofrecido), extraer de punta a
+punta, y el saber perdido a mitad de camino (`cannot_mine` llega a
+`sim.interruptions`). Arte: dos iconos y los nodos del `Renderer` (afloramiento
+gris con vetas verdes, o claras para el estaño).

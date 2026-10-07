@@ -420,4 +420,10 @@ export const ES_TECH: Record<string, string> = {
   "worked a bright lump with a hammerstone and found it spread like clay": "trabajó un grumo brillante con un martillo de piedra y vio que se extendía como arcilla",
   "turned over stones in the hills and kept one that would not break": "dio la vuelta a piedras en las colinas y se quedó con una que no se rompía",
   "Copper found as metal, hammered cold: an awl that makes sewn goods faster, and a bead worth giving.": "Cobre hallado como metal, martillado en frío: un punzón que acelera lo cosido, y una cuenta digna de regalar.",
+  "Mining": "Minería",
+  "Following a seam into the hill rather than taking what lies on it. More from every flint outcrop, and the ore a hill keeps inside it: what nobody can find lying about, somebody who digs can.": "Seguir una veta hacia dentro del cerro en vez de tomar lo que yace encima. Más de cada afloramiento de sílex, y el mineral que el cerro guarda dentro: lo que nadie encuentra tirado, quien cava sí puede.",
+  "followed a band of flint into the hillside with an axe, and kept digging after it ran out": "siguió una veta de sílex hacia dentro de la ladera con un hacha, y siguió cavando cuando se acabó",
+  "dug under a ledge for a better stone and found the hill was worth opening": "cavó bajo una cornisa buscando una piedra mejor y vio que el cerro merecía abrirse",
+  "cut a footing out of a rock face and saw how much came away in one piece": "talló un cimiento en una pared de roca y vio cuánto se desprendía de una pieza",
+  "More from every flint outcrop, and the right to take ore out of a hill at all.": "Más de cada afloramiento de sílex, y poder sacar mineral de un cerro.",
 };

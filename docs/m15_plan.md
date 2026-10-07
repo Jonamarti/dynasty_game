@@ -3463,6 +3463,12 @@ con mapa solo donde la región tiene cobre), punzón (más rápido lo cosido) y
 colgante (adorno: `baseValue`), y las primeras recetas que entrenan `smith`.
 `Ore.wantedOreKinds`: la tabla de recetas dice qué va a buscar uno a la tierra.
 
+**Avance del 2026-10-07 (37c, `mining`).** Vetas de cobre (cuatro) y de estaño
+(una) como nodos de las colinas que solo toma quien sabe minar: la puerta está
+en `doHarvest`, en la orden y en el menú, cada una con su motivo. Más sílex de
+cada afloramiento. Pasada y stream de 37b; con mapa, donde la región tiene ese
+metal.
+
 ---
 
 # Bloque IX — Civilización y hierro (M14 bloque VIII; M8.4)

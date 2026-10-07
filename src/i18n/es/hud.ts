@@ -315,4 +315,6 @@ export const ES_HUD: Record<string, string> = {
   "{name}, in arms": "{name}, en brazos",
   "{n} items of earth to move": "{n} unidades de tierra por mover",
   "R turns the plan to run the other way": "R gira el plano para que corra al otro lado",
+  "node|copper_ore": "mineral de cobre",
+  "node|tin_ore": "mineral de estaño",
 };

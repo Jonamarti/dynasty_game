@@ -95,6 +95,7 @@ import { t, aNoun, genderOfNoun } from '../../i18n/i18n.ts';
 import { noteWorkOutcome } from '../core/Mood.ts';
 import { support } from '../social/Persuasion.ts';
 import { swimRefusal, swimRouteRefusal } from '../core/Swimming.ts';
+import { canWork } from '../knowledge/Ore.ts';
 
 export interface ActionContext {
   world: World;
@@ -1444,6 +1445,13 @@ export class ActionSystem {
         }
       }
       this.abandon(person, reason, ctx);
+      return;
+    }
+    // M15 phase 37: ore comes out of a hill only for somebody who knows how.
+    // Reached only by an order (`Ore.wantedOreKinds` offers a person no node
+    // they cannot work), and the reason is shown.
+    if (!canWork(person, node.kind)) {
+      this.abandon(person, 'cannot_mine', ctx);
       return;
     }
     // M15 phase 21d: somebody who knows the plant will not pick it. Reached

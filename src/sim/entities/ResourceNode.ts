@@ -28,6 +28,8 @@ export const RESOURCE_KINDS = [
   // gives above: a new entry in `spawnResources`' plan would move every herd
   // and every person in every saved seed.
   'native_copper',
+  // `mining`'s two: ore in the hill, which only somebody who digs can take.
+  'copper_ore', 'tin_ore',
 ] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 
@@ -100,6 +102,19 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
     kind: 'native_copper', itemId: 'copper_nugget', maxAmount: 6, regrowPerTick: 0,
     harvestTicks: 16, skill: 'knap', groundLevel: true,
   },
+  // M15 phase 37, `mining`. A mine is a node, not a hole: the ground is not
+  // excavated (so nothing here needs the region repair of phase 16a) and a
+  // seam gives out. Neither grows back. Copper is the commoner; tin is the rare
+  // one, and it is rare on purpose - the bronze trade of the real Bronze Age
+  // existed because tin was a few places in a continent.
+  copper_ore: {
+    kind: 'copper_ore', itemId: 'copper_ore', maxAmount: 20, regrowPerTick: 0,
+    harvestTicks: 24, skill: 'knap', requiresTech: 'mining',
+  },
+  tin_ore: {
+    kind: 'tin_ore', itemId: 'tin_ore', maxAmount: 14, regrowPerTick: 0,
+    harvestTicks: 28, skill: 'knap', requiresTech: 'mining',
+  },
 };
 
 /**
@@ -111,6 +126,9 @@ export const RESOURCE_DEFS: Record<ResourceKind, ResourceDef> = {
  */
 export const ORE_COUNTS: Partial<Record<ResourceKind, number>> = {
   native_copper: 5,
+  copper_ore: 4,
+  // One seam on a whole island: the scarcity is the design.
+  tin_ore: 1,
 };
 
 /**

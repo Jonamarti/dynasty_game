@@ -121,6 +121,10 @@ const RESOURCE_COLORS: Record<ResourceKind, string> = {
   wild_grain: '#d8c169',
   // Copper as it lies: orange-brown, with a green bloom on it where it has weathered.
   native_copper: '#c9803c',
+  // A seam shows as a grey outcrop stained with the metal's own colour: green
+  // for copper, a pale tin-bright for tin.
+  copper_ore: '#7a8f86',
+  tin_ore: '#aeb4bb',
 };
 
 /**
@@ -1048,7 +1052,7 @@ export class Renderer {
         ctx.fillStyle = '#ceb45c';
         for (let i = -1; i <= 1; i++) ctx.fillRect(x + i * scale * 0.18 - 1, y - scale * 0.65, 2, 3);
       }
-    } else if (kind === 'flint' || kind === 'clay' || kind === 'native_copper') {
+    } else if (kind === 'flint' || kind === 'clay' || kind === 'native_copper' || kind === 'copper_ore' || kind === 'tin_ore') {
       ctx.beginPath(); ctx.ellipse(x, y, scale * 0.65, scale * 0.43, -0.2, 0, Math.PI * 2); ctx.fill();
       if (kind === 'flint' && !depleted) {
         ctx.strokeStyle = '#c6ccd0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - scale * 0.3, y); ctx.lineTo(x + scale * 0.3, y - scale * 0.15); ctx.stroke();
@@ -1295,6 +1299,27 @@ export class Renderer {
         ctx.lineTo(px - size * 0.45, py - size * 0.12);
         ctx.closePath();
         ctx.fill();
+        break;
+      }
+      case 'copper_ore':
+      case 'tin_ore': {
+        // A low grey outcrop with flecks of the metal in it, and a dark opening
+        // where it has been dug into. Worked out, only the opening is left.
+        const fleck = node.kind === 'copper_ore' ? '#3fae8a' : '#e3e7ea';
+        ctx.fillStyle = spent ? SPENT_COLORS.scar : RESOURCE_COLORS[node.kind];
+        ctx.beginPath();
+        ctx.ellipse(px, py + size * 0.1, size * 0.52, size * 0.36, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = SPENT_COLORS.pit;
+        ctx.beginPath();
+        ctx.ellipse(px + size * 0.12, py + size * 0.16, size * 0.2, size * 0.13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        if (!spent) {
+          ctx.fillStyle = fleck;
+          for (const [dx, dy] of [[-0.3, -0.04], [-0.1, -0.16], [0.28, -0.02], [-0.24, 0.2]] as const) {
+            ctx.fillRect(px + dx * size, py + dy * size, Math.max(1, size * 0.1), Math.max(1, size * 0.07));
+          }
+        }
         break;
       }
       case 'native_copper': {

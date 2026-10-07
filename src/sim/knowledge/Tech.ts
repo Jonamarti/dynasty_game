@@ -162,6 +162,8 @@ export const TECHS = [
   'charcoal',
   // Copper as metal, found lying about and hammered cold: the door of the Metal web.
   'native_copper',
+  // Following a seam into the hill: the ore that nobody finds lying about.
+  'mining',
 ] as const;
 export type Tech = (typeof TECHS)[number];
 
@@ -2061,6 +2063,31 @@ export const TECH: Record<Tech, TechDef> = {
       'cracking. An awl that goes through hide, and a bead worth more than ' +
       'the nugget it came from.',
   },
+  // M15 phase 37 (M8.3). Following a seam into the hillside instead of taking
+  // what lies on it: flint first, and the green-stained rock beside it after.
+  // The Neolithic flint mines (Spiennes, about 4,000 BC) are where it was
+  // worked out, which is why its first reader is flint and not metal.
+  mining: {
+    id: 'mining', label: 'Mining', domain: 'stone',
+    age: 'chalcolithic', firstKnown: 'about 4000 BC',
+    kind: 'device',
+    requires: ['ground_stone', 'hafting'], difficulty: 0.6, skill: 'knap',
+    prototype: { flint: 3, sticks: 2 }, maxRefinement: 2,
+    sparks: [
+      { needs: [{ kind: 'knows', tech: 'ground_stone' }, { kind: 'holding', item: 'flint' },
+                { kind: 'place', biome: 'hills' }, { kind: 'doing', action: 'gather' }],
+        weight: 1.0, story: 'followed a band of flint into the hillside with an axe, and kept digging after it ran out' },
+      { needs: [{ kind: 'knows', tech: 'hafting' }, { kind: 'doing', action: 'gather' },
+                { kind: 'place', biome: 'hills' }],
+        weight: 0.6, story: 'dug under a ledge for a better stone and found the hill was worth opening' },
+      { needs: [{ kind: 'knows', tech: 'ground_stone' }, { kind: 'doing', action: 'build' }],
+        weight: 0.4, story: 'cut a footing out of a rock face and saw how much came away in one piece' },
+    ],
+    description:
+      'Following a seam into the hill rather than taking what lies on it. ' +
+      'More from every flint outcrop, and the ore a hill keeps inside it: ' +
+      'what nobody can find lying about, somebody who digs can.',
+  },
 };
 
 /** The web a technology lives in (`'main'` unless its entry says otherwise). */
@@ -2395,6 +2422,10 @@ export const TECH_EFFECTS: Record<Tech, TechEffect> = {
     summary: 'Copper found as metal, hammered cold: an awl that makes sewn goods faster, and a bead worth giving.',
     site: 'RECIPES.copper_awl and RECIPES.copper_pendant; ActionSystem.doCraft, via Tech.awlFactor; Brain gather, via Ore.wantedOreKinds',
   },
+  mining: {
+    summary: 'More from every flint outcrop, and the right to take ore out of a hill at all.',
+    site: 'Tech.forageYieldFactor (flint and ore); Ore.canWork, read by ActionSystem.doHarvest, Simulation.order and ActionCatalog.nodeActions',
+  },
 };
 
 /**
@@ -2556,7 +2587,12 @@ export function scaled(person: Person, tech: Tech, full: number): number {
  * already distinguishes them.
  */
 export function forageYieldFactor(person: Person, nodeKind: string): number {
-  if (nodeKind === 'flint') return scaled(person, 'stoneworking', 1.5);
+  // M15 phase 37: a mine gives more flint than the surface does, and is the
+  // only way into the ores. Native copper is picked up whole and needs only the
+  // eye for it. `scaled` is 1 for anybody who lacks the node.
+  if (nodeKind === 'flint') return scaled(person, 'stoneworking', 1.5) * scaled(person, 'mining', 1.25);
+  if (nodeKind === 'native_copper') return scaled(person, 'native_copper', 1.3);
+  if (nodeKind === 'copper_ore' || nodeKind === 'tin_ore') return scaled(person, 'mining', 1.5);
   // A net multiplies a fishing spot rather than replacing the spear, and it is
   // gated on *carrying* one as well as on knowing how to make one. Both halves
   // matter: knowledge alone would make the recipe pointless, and the item alone
